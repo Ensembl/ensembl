@@ -148,7 +148,11 @@ sub end{
     my ($self) = @_;
     
     if(my $end=$self->rightmost_end) {
-	return $self->start + $end;
+	if( $self->orientation == 1 ) {
+	    return $self->start + ($end - $self->golden_start -1);
+	} else {
+	    return $self->start + ($self->golden_start -end +1);
+	}
     } elsif ( $self->leftmost ) {
 	print STDERR "Using leftmost for ",$self->contig->id,"\n";
 
