@@ -3,10 +3,12 @@
 =head1 SYNOPSIS
 
     $db = Bio::EnsEMBL::DBSQL::DBConnection->new(
-        -user   => 'anonymous',
-        -dbname => 'homo_sapiens_core_20_34c',
-        -host   => 'ensembldb.ensembl.org',
-        -driver => 'mysql',
+        -user    => 'anonymous',
+        -dbname  => 'homo_sapiens_core_20_34c',
+        -host    => 'ensembldb.ensembl.org',
+        -driver  => 'mysql',
+        -species => 'Homo Sapiens',
+        -group   => 'core'
         );
 
 
@@ -40,7 +42,9 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Container;
+#use Bio::EnsEMBL::Container; ## Container no longer needed here
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Root;
 use DBI;
 
@@ -80,33 +84,65 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                  which would otherwise keep open a lot of connections to the
                  database.  Database connections are automatically reopened
                  when required.
+  Arg [DNADB] :  (optional)  Bio::EnsEMBL::DBSQL::DBConnection
+                 The dbconnection to get the dna from.
+  Arg [SPECIES]: (optional) string
+                 Name of the species to be labelled as.
+  Arg [GROUP]: (optional) string
+                 Name of the group to be labelled as. (e.g. core, estgene, vega etc)
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
                   (-user   => 'anonymous',
                    -dbname => 'homo_sapiens_core_20_34c',
                    -host   => 'ensembldb.ensembl.org',
-                   -driver => 'mysql');
+                   -driver => 'mysql'
+                   -species => 'Homo Sapiens',
+                   -group   => 'core');
 
   Description: Constructor for a DatabaseConenction. Any adaptors that require
                database connectivity should inherit from this class.
   Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : thrown if USER or DBNAME are not specified, or if the database
                cannot be connected to.
-  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Caller     : Bio::EnsEMBL::::Utils::ConfigRegistry ( for newer code using the registry)
+               Bio::EnsEMBL::DBSQL::DBAdaptor        ( for old style code)
 
 =cut
 
 sub new {
   my $class = shift;
 
-  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn) =
+  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn, $species, $group, $dnadb) =
     rearrange([qw(DBNAME HOST DRIVER USER PASS PORT
-                  DISCONNECT_WHEN_INACTIVE DBCONN)], @_);
+                  DISCONNECT_WHEN_INACTIVE DBCONN SPECIES GROUP DNADB)], @_);
 
   my $self = {};
   bless $self, $class;
 
+ # make sure the register can find the species name in the alias list as itself.
+
+  if(!defined($species)){
+    $species= "DEFAULT";
+    $group = "core";
+
+    Bio::EnsEMBL::Registry->add_alias($species,$species); #set needed self alias
+
+    my $free=0;
+    my $i = 1;
+    while(!$free){
+      Bio::EnsEMBL::Registry->add_alias($species.$i,$species.$i); #set needed self alias
+      if(!defined(Bio::EnsEMBL::Registry->get_DBAdaptor($species.$i, $group))){
+	$free =1;
+      }
+      else{
+	$i++;
+      }
+    }
+    $species .= $i;
+  }
+
   if($dbconn) {
-    if($db || $host || $driver || $password || $port || $inactive_disconnect) {
+    if($db || $host || $driver || $password || $port || $inactive_disconnect
+      || $dnadb) {
       throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
@@ -116,6 +152,8 @@ sub new {
     $self->password($dbconn->password());
     $self->port($dbconn->port());
     $self->driver($dbconn->driver());
+    $self->species($dbconn->species());
+    $self->group($dbconn->group());
 
     $self->connect();
 
@@ -123,6 +161,7 @@ sub new {
       $self->disconnect_when_inactive(1);
     }
   } else {
+
 
     $db   || throw("-DBNAME argument is required.");
     $user || throw("-USER argument is required.");
@@ -140,18 +179,34 @@ sub new {
     $self->port($port);
     $self->driver($driver);
 
+
     $self->connect();
+
+    
+    if($species){
+#      print "setting species to $species\n";
+      Bio::EnsEMBL::Registry->add_alias($species,$species);
+      $self->species($species);
+#      print "setting species to $species\n";
+    }
+    else{
+      throw("No species specified\n");
+    }
+    if($group){
+      $self->group($group);
+    }
+
 
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
 
-    # be very sneaky and actually return a container object which is outside
-    # of the circular reference loops and will perform cleanup when all 
-    # references to the container are gone.
   }
 
-  return new Bio::EnsEMBL::Container($self);
+  if(defined $dnadb) {
+    $self->dnadb($dnadb);
+  }
+  return $self;
 }
 
 
@@ -183,6 +238,9 @@ sub connect {
   };
 
   if(!$dbh || $@) {
+    warn("Could not connect to database " . $self->dbname() .
+          " as user " . $self->username() .
+          " using [$dsn] as a locator:\n" . $DBI::errstr);
     throw("Could not connect to database " . $self->dbname() .
           " as user " . $self->username() .
           " using [$dsn] as a locator:\n" . $DBI::errstr);
@@ -331,6 +389,53 @@ sub password {
     ( $self->{_password} = $arg );
   $self->{_password};
 }
+
+=head2 species
+
+  Arg [1]    : (optional) string $arg
+               The new value of the species used by this connection. 
+  Example    : $host = $db_connection->species()
+  Description: Getter/Setter for the species of to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
+               by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
+sub species {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_species} = $arg );
+  return $self->{_species};
+}
+
+
+=head2 group
+
+  Arg [1]    : (optional) string $arg
+               The new value of the group used by this connection. 
+  Example    : $host = $db_connection->group()
+  Description: Getter/Setter for the group of to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
+               by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
+sub group {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_group} = $arg );
+  return $self->{_group};
+}
+
+
 
 
 =head2 disconnect_when_inactive
@@ -524,228 +629,6 @@ sub disconnect_if_idle {
     $self->db_handle->disconnect();
   }
 }
-
-
-=head2 _get_adaptor
-
-  Arg [1]    : string $module
-               the fully qualified of the adaptor module to be retrieved
-  Arg [2..n] : (optional) arbitrary list @args
-               list of arguments to be passed to adaptors constructor
-  Example    : $adaptor = $self->_get_adaptor("full::adaptor::name");
-  Description: PROTECTED Used by subclasses to obtain adaptor objects
-               for this database connection using the fully qualified
-               module name of the adaptor. If the adaptor has not been 
-               retrieved before it is created, otherwise it is retreived
-               from the adaptor cache.
-  Returntype : Adaptor Object of arbitrary type
-  Exceptions : thrown if $module can not be instantiated
-  Caller     : Bio::EnsEMBL::DBAdaptor
-
-=cut
-
-sub _get_adaptor {
-  my( $self, $module, @args) = @_;
-
-  my( $adaptor, $internal_name );
-
-  #Create a private member variable name for the adaptor by replacing
-  #:: with _
-
-  $internal_name = $module;
-
-  $internal_name =~ s/::/_/g;
-
-  unless (defined $self->{'_adaptors'}->{$internal_name}) {
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-
-    $adaptor = "$module"->new($self, @args);
-
-    $self->{'_adaptors'}->{$internal_name} = $adaptor;
-  }
-
-  return $self->{'_adaptors'}->{$internal_name};
-}
-
-
-
-=head2 add_db_adaptor
-
-  Arg [1]    : string $name
-               the name of the database to attach to this database
-  Arg [2]    : Bio::EnsEMBL::DBSQL::DBConnection
-               the db adaptor to attach to this database
-  Example    : $db->add_db_adaptor('lite', $lite_db_adaptor);
-  Description: Attaches another database instance to this database so 
-               that it can be used in instances where it is required.
-  Returntype : none
-  Exceptions : none
-  Caller     : EnsWeb
-
-=cut
-
-sub add_db_adaptor {
-  my ($self, $name, $adaptor) = @_;
-
-  unless($name && $adaptor && ref $adaptor) {
-    throw('adaptor and name arguments are required');
-  }
-
-  #avoid circular references and memory leaks
-  if($adaptor->isa('Bio::EnsEMBL::Container')) {
-      $adaptor = $adaptor->_obj;
-  }
-
-  $self->{'_db_adaptors'}->{$name} = $adaptor;
-}
-
-
-=head2 remove_db_adaptor
-
-  Arg [1]    : string $name
-               the name of the database to detach from this database.
-  Example    : $lite_db = $db->remove_db_adaptor('lite');
-  Description: Detaches a database instance from this database and returns
-               it.
-  Returntype : none
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub remove_db_adaptor {
-  my ($self, $name) = @_;
-
-  my $adaptor = $self->{'_db_adaptors'}->{$name};
-  delete $self->{'_db_adaptors'}->{$name};
-
-  unless($adaptor) {
-      return undef;
-  }
-
-  return $adaptor;
-}
-
-
-=head2 get_all_db_adaptors
-
-  Arg [1]    : none
-  Example    : @attached_dbs = values %{$db->get_all_db_adaptors()};
-  Description: returns all of the attached databases as 
-               a hash reference of key/value pairs where the keys are
-               database names and the values are the attached databases  
-  Returntype : hash reference with Bio::EnsEMBL::DBSQL::DBConnection values
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::ProxyAdaptor
-
-=cut
-
-sub get_all_db_adaptors {
-  my ($self) = @_;
-
-  unless(defined $self->{'_db_adaptors'}) {
-    return {};
-  }
-
-  return $self->{'_db_adaptors'};
-}
-
-
-
-=head2 get_db_adaptor
-
-  Arg [1]    : string $name
-               the name of the attached database to retrieve
-  Example    : $lite_db = $db->get_db_adaptor('lite');
-  Description: returns an attached db adaptor of name $name or undef if
-               no such attached database exists
-  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub get_db_adaptor {
-  my ($self, $name) = @_;
-
-  unless($self->{'_db_adaptors'}->{$name}) {
-      return undef;
-  }
-
-  return $self->{'_db_adaptors'}->{$name};
-}
-
-
-#
-# This method is automatically called by the Container DESTROY method to
-# break circular references. Do not call it directly.
-#
-sub deleteObj {
-  my $self = shift;
-
-  #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
-
-  if(exists($self->{'_adaptors'})) {
-    foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
-      my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
-
-      #call each of the adaptor deleteObj methods
-      if($adaptor && $adaptor->can('deleteObj')) {
-        #print STDERR "\t\tdeleting adaptor\n";
-        $adaptor->deleteObj();
-      }
-
-      #break dbadaptor -> object adaptor references
-      delete $self->{'_adaptors'}->{$adaptor_name};
-    }
-  }
-
-  #print STDERR "Cleaning up attached databases\n";
-
-  #break dbadaptor -> dbadaptor references
-  foreach my $db_name (keys %{$self->get_all_db_adaptors()}) {
-    #print STDERR "\tbreaking reference to $db_name database\n";
-    $self->remove_db_adaptor($db_name);
-  }
-}
-
-
-=head2 DESTROY
-
-  Arg [1]    : none
-  Example    : none
-  Description: Called automatically by garbage collector.  Should
-               never be explicitly called.  The purpose of this destructor
-               is to disconnect any active database connections.
-  Returntype : none 
-  Exceptions : none
-  Caller     : Garbage Collector
-
-=cut
-
-sub DESTROY {
-   my ($obj) = @_;
-
-   #print STDERR "DESTROYING DBConnection\n";
-
-   my $dbh = $obj->db_handle();
-
-   if($dbh) {
-     # don't disconnect if InactiveDestroy flag is set, this can really
-     # screw up forked processes
-     if(!$dbh->{'InactiveDestroy'}) {
-       $dbh->disconnect();
-     }
-   }
-
-   $obj->db_handle(undef);
-}
-
 
 
 1;
