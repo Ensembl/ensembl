@@ -1,27 +1,14 @@
-#!/usr/bin/perl -w
-
-#
-# Ignore file anme this should calculate the gene count for a chromosome (X)
-#
-
-
 use strict;
 
-#use dbi;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::SliceAdaptor;
-use Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
-use Bio::EnsEMBL::DBSQL::DensityTypeAdaptor;
-use Bio::EnsEMBL::Slice;
-use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
 
-my $host = '127.0.0.1';
+my $host = 'ecs3d';
 my $user = 'ensadmin';
 my $pass = 'ensembl';
-my $dbname = 'homo_sapiens_core_20_34';
-my $port = '5050';
+my $dbname = 'mcvicker_homo_sapiens_core_20_34b';
+my $port = '3307';
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -user => $user,
@@ -30,84 +17,93 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -dbname => $dbname);
 
 
+#
+# choose a block size that makes 150 blocks for the shortest chromosome
+#
+my $block_size;
+my $min_chr_len;
+my $slice_adaptor = $db->get_SliceAdaptor();
+my @chromosomes = @{$slice_adaptor->fetch_all('chromosome')};
 
-my $block_size = 1e6;
+#my @chromosomes = ($slice_adaptor->fetch_by_region('chromosome', '1'));
+
+foreach my $chr (@chromosomes) {
+  next if($chr->seq_region_name =~ /DR/i);
+  $min_chr_len = $chr->seq_region_length() if(!defined($min_chr_len) || $chr->seq_region_length < $min_chr_len);
+}
+
+$block_size = int($min_chr_len / 150);
+
 
 #
 # Get the adaptors needed;
 #
 
-my $slice_adaptor = $db->get_SliceAdaptor();
 my $dfa = $db->get_DensityFeatureAdaptor();
 my $dta = $db->get_DensityTypeAdaptor();
 my $aa  = $db->get_AnalysisAdaptor();
 
+foreach my $known (1, 0) {
+  #
+  # Create new analysis object for density calculation.
+  #
 
+  my $analysis;
 
-#
-# Create new analysis object for density calculation.
-#
-
-my $analysis = new Bio::EnsEMBL::Analysis (-program     => "gene_density_calc.pl",
-					   -database    => "ensembl",
-					   -gff_source  => "gene_density_calc.pl",
-					   -gff_feature => "density",
-					   -logic_name  => "GeneDensity");
- 
-$aa->store($analysis);
-
-print "New analysis : ".$analysis->dbID." at ".$analysis->created."\n";
-
-#
-# Create new density type.
-#
-
-my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
-					-block_size => $block_size,
-					-value_type => 'sum');
-
-$dta->store($dt);
-
-print "New density type : ".$dt->dbID."\n";
-
-foreach my $chrom (qw(X Y)){
-  print "creating density feature for chromosome $chrom with block size of $block_size\n";
-
-  my $slice = $slice_adaptor->fetch_by_region('chromosome',$chrom);
-  
-  my $start = $slice->start();
-  my $end = ($start + $block_size)-1;
-  my $term = $slice->start+$slice->length;
-  
-  my @density_features=();
-  while($start < $term){
-
-    my $sub_slice = $slice_adaptor->fetch_by_region('chromosome',$chrom,$start,$end);
-
-    my $count =0;
- 
-   #
-    # Store info for genes (ignore pseudo genes)
-    #
-
-    foreach my $gene (@{$sub_slice->get_all_Genes()}){
-      if($gene->analysis()->logic_name() ne "pseudogene" and $gene->start >=1 ){
-	$count++
-      }
-    }
-
-    push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
-							     -start         => $start,
-							     -end           => $end,
-							     -density_type  => $dt,
-							     -density_value => $count);
-
-    $start = $end+1;
-    $end   = ($start + $block_size)-1;
+  if($known) {
+    $analysis = $aa->fetch_by_logic_name('kngene');
+  } else {
+    $analysis = $aa->fetch_by_logic_name('gene');
   }
-  $dfa->store(@density_features);
-  print scalar @density_features;
-  print_features(\@density_features);
+
+  #
+  # Create new density type.
+  #
+
+  my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
+					  -block_size => $block_size,
+					  -value_type => 'sum');
+
+  $dta->store($dt);
+
+
+  foreach my $slice (@chromosomes){
+    print "creating density feature for chromosome ".$slice->seq_region_name()."with block size of $block_size\n";
+
+    my $start = $slice->start();
+    my $end = ($start + $block_size)-1;
+    my $term = $slice->start+$slice->length;
+
+    my @density_features=();
+    while($start < $term){
+
+      my $sub_slice = $slice_adaptor->fetch_by_region('chromosome',$slice->seq_region_name(),$start,$end);
+
+      my $count =0;
+
+      #
+      # Store info for genes (ignore pseudo genes)
+      #
+
+      foreach my $gene (@{$sub_slice->get_all_Genes()}){
+	if($gene->analysis()->logic_name() ne "pseudogene" and $gene->start >=1 ){
+	  $count++ if(!$known || $gene->is_known());
+	}
+      }
+
+      push @density_features, Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
+								-start         => $start,
+								-end           => $end,
+								-density_type  => $dt,
+								-density_value => $count);
+
+      $start = $end+1;
+      $end   = ($start + $block_size)-1;
+    }
+    $dfa->store(@density_features);
+    print scalar @density_features;
+    print_features(\@density_features);
+  }
 }
 
 
