@@ -2353,9 +2353,36 @@ sub _default_contig_overlap_source {
 sub get_PredictionFeature_as_Transcript{
    my ($self,$genscan_id) = @_;
 
-   return $self->Feature_obj->get_PredictionFeature_as_Transcript($genscan_id);
+   return $self->get_Feature_Obj->get_PredictionFeature_as_Transcript($genscan_id);
 
 }
+
+
+
+
+=head2 get_Feature_Obj
+
+ Title   : get_Feature_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Feature_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+ 
+    return $update_obj;
+}
+
+
+
+
 
 
 

@@ -82,8 +82,7 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
 use Bio::EnsEMBL::DB::VirtualPrimarySeq;
-
-
+use Bio::EnsEMBL::DBSQL::Utils;
 use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end );
 
 my $VC_UNIQUE_NUMBER = 0;
@@ -760,6 +759,35 @@ sub get_all_PredictionFeatures {
    my ($self) = @_;
 
    return $self->_get_all_SeqFeatures_type('prediction');
+}
+
+
+=head2 get_all_PredictionFeatures_as_Transcripts
+
+ Title   : get_all_PredictionFeatures_as_Transcripts
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+    
+
+
+sub get_all_PredictionFeatures_as_Transcripts {
+    my ($self) = @_;
+	
+    my @transcripts;
+	
+    foreach my $ft ($self->_get_all_SeqFeatures_type('prediction'))
+    {
+	my $contig=$self->_db_obj->get_Contig($ft->seqname);
+	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+	    
+    }
+
+    return @transcripts;		
 }
 
 
