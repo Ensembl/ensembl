@@ -67,6 +67,7 @@ sub fset2transcript {
     foreach my $f ($genscan->sub_SeqFeature) {
 	
 	my $exon  = new Bio::EnsEMBL::Exon;
+	$transcript->add_Exon($exon);
 	$exon->contig($contig);
 	$exon->stable_id($f->id);
 	$exon->start    ($f->start);
@@ -74,8 +75,9 @@ sub fset2transcript {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
+	
+	# compute directly the end_phase as not all 
 	$exon->end_phase( ($exon->phase + $exon->length)%3 );
-
 	$exon->attach_seq($contig->primary_seq);
 	
 	push(@exons,$exon);
@@ -107,12 +109,11 @@ sub fset2transcript {
     my $endphase = $exons[0]->end_phase;
     
     foreach my $exon (@exons) {
-	
+      
       if ( $exon == $exons[0] ){
 	next;
       }
       $exon->phase         ($endphase);
-      $transcript->add_Exon($exon);
       $endphase = $exon->end_phase;
     }
     
