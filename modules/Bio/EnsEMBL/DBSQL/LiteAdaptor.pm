@@ -115,7 +115,7 @@ sub fetch_virtualgenscans_start_end {
     my @transcripts;
     while( my $row = $sth->fetchrow_hashref() ) {
         push @transcripts, {
-            'genscan'   => $row->{'name'},
+            'genscan'   => $row->{'genscan_name'},
             'chr_name'  => $row->{'chr_name'},
             'chr_start' => $row->{'chr_start'},
             'chr_end'   => $row->{'chr_end'},
