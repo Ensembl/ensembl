@@ -236,11 +236,8 @@ sub fetch_VirtualContig_list_sized{
    if( !defined $gap2 ) {
        $self->throw("Must fetch Virtual Contigs in sized lists");
    }
-   print STDERR "fetching...\n";
-
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
 
-   print STDERR "fetched...\n";
    my @finalfpc;
    my @vclist;
 
@@ -248,12 +245,14 @@ sub fetch_VirtualContig_list_sized{
    my $prev = shift @fpc;
    push(@finalfpc,$prev);
    foreach my $fpc ( @fpc ) {
-       print STDERR "Looking at ",$fpc->id," ",$fpc->fpc_contig_start," ",$fpc->contig_end,"\n";
-       if( ( ($fpc->fpcctg_end - $current_start+1) > $length1 && ($fpc->fpcctg_start - $prev->fpcctg_end +1) >= $gap1) ||
-	   ( ($fpc->fpcctg_end -$current_start+1) > $length2 && ($fpc->fpcctg_start - $prev->fpcctg_end +1) >= $gap2) ) {
+       #print STDERR "Looking at ",$fpc->id," ",$fpc->fpc_contig_start," ",$fpc->fpc_contig_end," ",($fpc->fpc_contig_start - $prev->fpc_contig_end -1),"\n";
+       if( ( ($fpc->fpc_contig_end - $current_start+1) > $length1 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap1) ||
+	   ( ($fpc->fpc_contig_end -$current_start+1) > $length2 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap2) ) {
 	   # build new vc and reset stuff
 
 	   my $start = $finalfpc[0];
+	   #print STDERR "Building with ",$start->id," ",$start->fpc_contig_start,"\n";
+
 	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
 	   $vc->id($name);
 	   push(@vclist,$vc);
