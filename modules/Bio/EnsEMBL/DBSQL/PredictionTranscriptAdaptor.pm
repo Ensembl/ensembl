@@ -293,80 +293,81 @@ sub _objs_from_sth {
 
 =head2 store
 
-  Arg [1]    : Bio::EnsEMBL::PredictionTranscript $pre_trans 
-  Example    : $prediction_transcript_adaptor->store($pre_trans);
-  Description: Stores given $pt in database. Puts dbID and Adaptor into $pt 
-               object. Returns the dbID. 
-  Returntype : int 
+  Arg [1]    : list of Bio::EnsEMBL::PredictionTranscript @pre_transcripts 
+  Example    : $prediction_transcript_adaptor->store(@pre_transcripts);
+  Description: Stores a list of given prediction transcripts in database. 
+               Puts dbID and Adaptor into each object stored object.
+  Returntype : none
   Exceptions : on wrong argument type 
   Caller     : general 
 
 =cut
 
 sub store {
-  my ( $self, $pre_trans ) = @_;
-
-  if( ! $pre_trans->isa('Bio::EnsEMBL::PredictionTranscript') ) {
-    $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript " 
-		 . "- not dumping!");
-  }
-
-  if( $pre_trans->dbID && $pre_trans->adaptor == $self ) {
-    $self->warn("Already stored");
-  }
+  my ( $self, @pre_transcripts ) = @_;
 
   my $exon_sql = q{
-    INSERT INTO prediction_transcript ( prediction_transcript_id, exon_rank, 
-					contig_id, contig_start, contig_end, 
-					contig_strand, start_phase, score, 
-					p_value, analysis_id, exon_count )
-    VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-  };
+      INSERT INTO prediction_transcript ( prediction_transcript_id, exon_rank, 
+					  contig_id, contig_start, contig_end, 
+					  contig_strand, start_phase, score, 
+					  p_value, analysis_id, exon_count )
+	VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+      };
 
   my $exonst = $self->prepare($exon_sql);
 
-  my $exonId = undef;
-
-  my $exons = $pre_trans->get_all_Exons();
-  my $dbID = undef;
-  my $rank = 1;
-  
-  for my $exon ( @$exons ) {
-    if( ! defined $exon ) { $rank++; next; }
-    
-    my $contig_id = $exon->contig->dbID();
-    my $contig_start = $exon->start();
-    my $contig_end = $exon->end();
-    my $contig_strand = $exon->strand();
-    
-    my $start_phase = $exon->phase();
-    my $end_phase = $exon->end_phase();
-
-    # this is only in PredictionExon
-    my $score = $exon->score();
-    my $p_value = $exon->p_value();
-
-    my $analysis = $pre_trans->analysis->dbID;
-
-    if( $rank == 1 ) {
-      $exonst->execute( undef, 1, $contig_id, $contig_start, 
-			$contig_end, $contig_strand,
-			$start_phase, $score, $p_value, $analysis, 
-			scalar( @{$exons} ));
-      $dbID = $exonst->{'mysql_insertid'};
-    } else {
-      $exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
-			$contig_end, $contig_strand,
-			$start_phase, $score, $p_value, $analysis, 
-			scalar( @{$exons} ) );
+  foreach my $pre_trans (@pre_transcripts) {
+    if( ! $pre_trans->isa('Bio::EnsEMBL::PredictionTranscript') ) {
+      $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript " 
+		   . "- not dumping!");
     }
-    $rank++;
+    
+    if( $pre_trans->dbID && $pre_trans->adaptor == $self ) {
+      $self->warn("Already stored");
+    }
+        
+    my $exonId = undef;    
+    my $exons = $pre_trans->get_all_Exons();
+    my $dbID = undef;
+    my $rank = 1;
+    
+    for my $exon ( @$exons ) {
+      if( ! defined $exon ) { $rank++; next; }
+      
+      my $contig_id = $exon->contig->dbID();
+      my $contig_start = $exon->start();
+      my $contig_end = $exon->end();
+      my $contig_strand = $exon->strand();
+      
+      my $start_phase = $exon->phase();
+      my $end_phase = $exon->end_phase();
+      
+      # this is only in PredictionExon
+      my $score = $exon->score();
+      my $p_value = $exon->p_value();
+      
+      my $analysis = $pre_trans->analysis->dbID;
+      
+      if( $rank == 1 ) {
+	$exonst->execute( undef, 1, $contig_id, $contig_start, 
+			  $contig_end, $contig_strand,
+			  $start_phase, $score, $p_value, $analysis, 
+			  scalar( @{$exons} ));
+	$dbID = $exonst->{'mysql_insertid'};
+      } else {
+	$exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
+			  $contig_end, $contig_strand,
+			  $start_phase, $score, $p_value, $analysis, 
+			  scalar( @{$exons} ) );
+      }
+      $rank++;
+    }
+    
+    $pre_trans->dbID( $dbID );
+    $pre_trans->adaptor( $self );
   }
 
-  $pre_trans->dbID( $dbID );
-  $pre_trans->adaptor( $self );
-  
-  return $dbID;
+  $exonst->finish;
 }
 
 
