@@ -260,16 +260,12 @@ sub is_known{
   my ($self) = @_;
 
   for my $entry ( @{$self->get_all_DBLinks()} ) {
-    if( $entry->status eq "KNOWN" ) {
-      return 1;
-    }
+    return 1 if $entry->status =~ /KNOWN/;
   }
 
   foreach my $trans ( @{$self->get_all_Transcripts} ) {
     for my $entry ( @{$trans->get_all_DBLinks()} ) {
-      if( $entry->status eq "KNOWN" ) {
-	return 1;
-      }
+      return 1 if $entry->status =~ /KNOWN/;
     }
   }
   
