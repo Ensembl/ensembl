@@ -35,7 +35,11 @@ void ea_connect ( void )
   }
 
   mysql_init(&mysql);
-  connection = mysql_real_connect(&mysql,host,user,0,db,0,0,0); 
+  if ( verbose ) {
+    fprintf(stderr,"Connecting with %s %s %s\n",host,user,db);
+  }
+
+  connection = mysql_real_connect(&mysql,host,user,pass,db,0,0,0); 
 
   if( connection == NULL ) {
     g_error("Unable to make connection to mysql with host %s, user %s, password %s and database %s",host,user,pass == NULL ? "NoPassword" : pass,db);
@@ -90,7 +94,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Built ORB successfully...\n");
   }
 
-  eadb = new_EA_Database(poa,connection,&ev);
+  eadb = new_EA_Database(poa,connection,verbose,&ev);
 
   if( verbose ) {
     fprintf(stderr,"Built Ensembl Database object...\n");

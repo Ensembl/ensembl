@@ -1,5 +1,5 @@
 #include "artemis-db-mysql.h"
-
+#include <stdio.h>
 
 /*
  * This is the implementation specific structure for an
@@ -14,9 +14,8 @@ typedef struct
   POA_Ensembl_artemis_DB servant;
   PortableServer_POA poa;
   MYSQL * connection; /* connection to the ensembl database */
-}
-
-impl_POA_Ensembl_artemis_DB;
+  int verbose; /* talk to stderr or not? */
+} impl_POA_Ensembl_artemis_DB;
 
 static void impl_Ensembl_artemis_DB__destroy(impl_POA_Ensembl_artemis_DB *
 					     servant, CORBA_Environment * ev);
@@ -81,21 +80,28 @@ impl_Ensembl_artemis_DB__create(PortableServer_POA poa,
  * reference to the caller, which can do what it likes with it ;)
  */
 
-Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,CORBA_Environment * ev)
+Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int verbose,CORBA_Environment * ev)
 {
    Ensembl_artemis_DB retval;
    impl_POA_Ensembl_artemis_DB *newservant;
    PortableServer_ObjectId *objid;
 
+
    g_assert(connection);
+
    newservant = g_new0(impl_POA_Ensembl_artemis_DB, 1);
    newservant->servant.vepv = &impl_Ensembl_artemis_DB_vepv;
    newservant->poa = poa;
    newservant->connection = connection;
+   newservant->verbose = verbose;
    POA_Ensembl_artemis_DB__init((PortableServer_Servant) newservant, ev);
    objid = PortableServer_POA_activate_object(poa, newservant, ev);
    CORBA_free(objid);
    retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
+
+   if( newservant->verbose ) {
+     fprintf(stderr,"DB: Making a new database with verbose flag set\n");
+   }
 
    return retval;
 }
@@ -125,7 +131,16 @@ impl_Ensembl_artemis_DB_getEntry(impl_POA_Ensembl_artemis_DB * servant,
 				 CORBA_Environment * ev)
 {
    Ensembl_artemis_Entry retval;
+   if( servant->verbose ) {
+     fprintf(stderr,"DB: Going to make a new entry with entryname %s\n",entryname);
+   }
+
    retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,entryname,ev);
+
+   if( servant->verbose ) {
+     fprintf(stderr,"DB: Made new entry with entryname %s\n",entryname);
+   }
+
    return retval;
 }
 

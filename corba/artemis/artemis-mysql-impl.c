@@ -17,6 +17,7 @@ typedef struct {
   MYSQL * connection; /* database connection */
   char * contig_id;   /* need this to retrieve the data */
   long length;        /* we store this in memory as it is cheap */
+  int verbose;        /* should we chat to stderr? */
 } impl_POA_Ensembl_artemis_Sequence;
 
 /*
@@ -28,7 +29,7 @@ typedef struct {
   POA_Ensembl_artemis_Feature servant;
   PortableServer_POA poa;
   MYSQL * connection;   /* database connection */
-  char * transcript_id; /* 
+  char * transcript_id; /* transcript id for this feature... */
   char * location;
 } impl_POA_Ensembl_artemis_Feature;
 
@@ -38,6 +39,7 @@ typedef struct {
   MYSQL * connection;
   char * contig_id;
   long transcript_number;
+  int verbose; /* should we chat to stderr? */
 } impl_POA_Ensembl_artemis_Entry;
 
 /*** Implementation stub prototypes ***/
@@ -176,22 +178,22 @@ impl_Ensembl_artemis_Sequence__create(PortableServer_POA poa,
    return retval;
 }
 
-impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,MYSQL * c,char * c_id)
+impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,MYSQL * c,char * c_id,int verbose)
 {
    impl_POA_Ensembl_artemis_Sequence *newservant;
 
-   fprintf(stderr,"About to make implementation\n");
+
    newservant = g_new0(impl_POA_Ensembl_artemis_Sequence, 1);
    newservant->servant.vepv = &impl_Ensembl_artemis_Sequence_vepv;
    newservant->poa = poa;
    newservant->connection =c ;
    newservant->contig_id = c_id;
-   fprintf(stderr,"Returning....\n");
+   newservant->verbose  = verbose;
 
    return newservant;
 }
 
-Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYSQL *c,char * c_id,CORBA_Environment * ev)
+Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYSQL *c,char * c_id,int verbose,CORBA_Environment * ev)
 {
   Ensembl_artemis_Sequence retval;
   impl_POA_Ensembl_artemis_Sequence *newservant;
@@ -238,7 +240,7 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
   row = mysql_fetch_row(result);
 
   fprintf(stderr,"Making implementation\n");
-  newservant = new_impl_EA_Sequence(poa,c,c_id);
+  newservant = new_impl_EA_Sequence(poa,c,c_id,verbose);
   
   fprintf(stderr,"Made newservant...\n");
 
@@ -538,12 +540,35 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
 
 
    sprintf(sqlbuffer,"SELECT p1.transcript,p1.rank,p2.start,p2.end,p2.strand,p2.id,p2.created,p2.modified from exon_transcript as p1,exon as p2 where p2.contig = '%s' and p1.exon = p2.id order by p1.transcript,p1.rank",servant->contig_id);
-   state = mysql_query(c,sqlbuffer);
-   result = mysql_store_result(c);
+   fprintf(stderr,"Going to issue %s\n",sqlbuffer);
 
+   state = mysql_query(c,sqlbuffer);
+   if( state == -1 ) {
+     retval = CORBA_sequence_Ensembl_artemis_Feature__alloc();
+     retval->_buffer = NULL;
+     retval->_length = 0;
+     retval->_maximum = 0;
+     return retval;
+   }
+     
+   result = mysql_store_result(c);
+   
    trans_id = NULL;
    seen = 0;
    i = 0;
+   fprintf(stderr,"Going to call loop...%d\n",state);
+
+   if( mysql_num_rows(result) == 0 ) {
+     fprintf(stderr,"Got none...!\n");
+     /* return empty list */
+     retval = CORBA_sequence_Ensembl_artemis_Feature__alloc();
+     retval->_buffer = NULL;
+     retval->_length = 0;
+     retval->_maximum = 0;
+     
+     return retval;
+   }
+
    while ( row = mysql_fetch_row(result) ) {
      fprintf(stderr,"Got a row for transcript %s\n",trans_id == NULL ? "NoTranscript" : trans_id);
 
@@ -597,6 +622,8 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
      temp_buffer[i++] = new_Ensembl_artemis_Feature(servant->poa,g_strdup(loc),trans_id,ev);
    } 
 
+   fprintf(stderr,"Out of loop...\n");
+
    no = i;
    retval = CORBA_sequence_Ensembl_artemis_Feature__alloc();
    if( no != 0 ) {
@@ -623,7 +650,7 @@ impl_Ensembl_artemis_Entry_getSequence(impl_POA_Ensembl_artemis_Entry *
 
    fprintf(stderr,"Getting into give sequence\n");
 
-   retval = new_Ensembl_artemis_Sequence(servant->poa,servant->connection,servant->contig_id,ev);
+   retval = new_Ensembl_artemis_Sequence(servant->poa,servant->connection,servant->contig_id,1,ev);
    fprintf(stderr,"Made new sequence!\n");
 
    return retval;
