@@ -39,22 +39,22 @@ my %ens2embl;
 my %embl2sp;
 my %errorflag;
 
-if ((!defined $organism) || (!defined $xmap) || (!defined $map) || (!defined $dbname) || (!defined $host)) {
+if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
 }
 
 print STDERR "Connecting to the database...\n";
 
 
-my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -user   => $user,
-        -dbname => $dbname,
-        -host   => $host,
-	-pass   => $pass,			     
-        -driver => 'mysql',
-	);
+#my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+#        -user   => $user,
+#        -dbname => $dbname,
+#        -host   => $host,
+#	-pass   => $pass,			     
+#        -driver => 'mysql',
+#	);
 
-my $adaptor = $db->get_DBEntryAdaptor();
+my $adaptor;# = $db->get_DBEntryAdaptor();
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     print STDERR "Reading Refseq file\n";
@@ -181,13 +181,14 @@ MAPPING: while (<MAP>) {
 
 		    if (($sp2embl{$a->xAC}) && ($ens2embl{$queryid})) {
 
-			if ($ens2embl{$queryid} =~ @{$sp2embl{$a->xAC}}) {
+			if (grep($ens2embl{$queryid}=~ /$_/,@{$sp2embl{$a->xAC}})) {
+		       
 
 			}
 			else {
-			    foreach my $a(@{$sp2embl{$a->xAC}}) {
-				if ($embl2sp{$a}) {
-				    print "DODGY: $queryid\n";
+			    foreach my $b(@{$sp2embl{$a->xAC}}) {
+				if ($embl2sp{$b}) {
+				    print "DODGY: ".$a->xAC."\n";
 				    next MAPPING;
 				}
 			    }
@@ -210,7 +211,7 @@ MAPPING: while (<MAP>) {
 			}
 
 		#print STDERR "Calling store on $queryid\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
 	    
@@ -234,7 +235,7 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 		#print STDERR "Calling store1 on $queryid\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
 	}
