@@ -140,8 +140,8 @@ sub _tables {
 sub _left_join {
   my $self = shift;
 
-  return ( [ 'marker_synonym', 
-	     'm.display_marker_synonym_id = ms.marker_synonym_id' ] );
+  return ( [ 'marker_synonym',
+             'm.display_marker_synonym_id = ms.marker_synonym_id' ] );
 }
 
 sub _default_where_clause {
@@ -267,7 +267,7 @@ sub store {
     my $analysis = $mf->analysis;
 
     if(!$analysis || !ref($analysis) ||
-       $analysis->isa('Bio::EnsEMBL::Analysis')) {
+       !$analysis->isa('Bio::EnsEMBL::Analysis')) {
       throw('Cannot store MarkerFeature without associated Analysis');
     }
 
@@ -283,7 +283,7 @@ sub store {
       throw('Cannot store MarkerFeature that is not in contig coords');
     }
 
-    my $seq_region_id = $self->get_SliceAdaptor->get_seq_region_id($slice);
+    my $seq_region_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
 
     if(!$seq_region_id) {
       throw('Attached slice\'s seq_region is not in database');
