@@ -33,6 +33,7 @@ use Bio::EnsEMBL::SNP;
 
 use vars '@ISA';
 
+
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
@@ -64,7 +65,7 @@ sub fetch_all_by_Slice {
   my $link_col_idx = 12;
   my @link_dbs = ('dbSNP', 'WI', 'HGBASE', 'TSC-CSHL', 'ANO');
 
-  $self->{'link_cache'} ||= {};
+  my %link_cache = ();
 
   foreach my $segment (@projection) {
     my $from_start = $segment->from_start();
@@ -102,14 +103,14 @@ sub fetch_all_by_Slice {
         next if(!$link_id);
 
         my $link_db = $link_dbs[$i];
-        my $link = $self->{'link_cache'}->{"$link_db:$link_id"};
+        my $link = $link_cache{"$link_db:$link_id"};
 
         if(!$link) {
           $link = Bio::EnsEMBL::DBEntry->new_fast
             ({'dbname' => $link_db,
               'primary_id' => $link_id,
               'display_id' => $link_id});
-          $self->{'link_cache'}->{"$link_db:$link_id"} = $link;
+          $link_cache{"$link_db:$link_id"} = $link;
         }
 
         push @links, $link;
