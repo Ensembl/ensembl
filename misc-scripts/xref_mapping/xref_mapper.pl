@@ -18,14 +18,16 @@ unshift @INC, $dir;
 my $file;
 my $verbose;
 my $dumpcheck=undef;
+my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
- 
-GetOptions ('file=s'      => \$file,
-            'verbose'     => \$verbose,
-	    'dumpcheck'   => \$dumpcheck,
-	    'maxdump=n'     => \$maxdump,
-            'help'        => sub { &show_help(); exit 1;} );
+
+GetOptions ('file=s'              => \$file,
+            'verbose'             => \$verbose,
+	    'dumpcheck'           => \$dumpcheck,
+	    'useexistingmappings' => \$use_existing_mappings,
+	    'maxdump=n'           => \$maxdump,
+            'help'                => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
 usage() if($help);
@@ -82,6 +84,9 @@ while( my $line = <FILE> ) {
       if(defined($maxdump)){
 	$new->maxdump($maxdump);
       }
+      if(defined($use_existing_mappings)){
+	$new->use_existing_mappings("yes");
+      }
     }
     else{
       $type= "xref";
@@ -128,6 +133,8 @@ options: -file <input_file>     input file with keyword pairs for  'species',
          -maxdump <int>         dump out only int number of seqs.
 
          -dumpcheck             only dump if files do not exist.
+
+         -useexistingmapping    use existing *.map files
 
          -help                  display this message
  

@@ -185,7 +185,7 @@ sub dir {
 
 sub dumpcheck {
   my ($self, $arg) = @_;
-  
+
   (defined $arg) &&
     ($self->{_dumpcheck} = $arg );
   return $self->{_dumpcheck};
@@ -193,12 +193,19 @@ sub dumpcheck {
 
 sub maxdump {
   my ($self, $arg) = @_;
-  
+
   (defined $arg) &&
     ($self->{_maxdump} = $arg );
   return $self->{_maxdump};
 }
 
+sub use_existing_mappings {
+  my ($self, $arg) = @_;
+
+  (defined $arg) &&
+    ($self->{_use_existing_mappings} = $arg );
+  return $self->{_use_existing_mappings};
+}
 
 sub process_dir {
   my ($dir) = @_;
