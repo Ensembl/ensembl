@@ -1015,7 +1015,7 @@ sub _get_all_SeqFeatures_type {
 		}
 	}
    
-	print STDERR "returning ",scalar(@vcsf)," $type objects\n";
+	print STDERR "\tVirtual::Contig has ",scalar(@vcsf)," $type objects\n";
 	return @vcsf;
 }
 
