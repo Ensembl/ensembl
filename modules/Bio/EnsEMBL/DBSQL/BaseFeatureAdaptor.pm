@@ -212,7 +212,7 @@ sub fetch_all_by_RawContig_constraint {
     $constraint = "contig_id = $cid";
   }
 
-  return $self->generic_fetch($constraint, $logic_name);
+  return @$self->generic_fetch($constraint, $logic_name);
 }
 
 
@@ -464,7 +464,7 @@ sub store{
                _tablename, and the primary key of the table is assumed
                to be _tablename() . '_id'.  The feature argument must 
                be an object implementing the dbID method, and for the
-               feature to be removed from the datasbase a dbID value must
+               feature to be removed from the database a dbID value must
                be returned.
   Returntype : none
   Exceptions : thrown if $feature arg does not implement dbID(), or if 
@@ -496,6 +496,53 @@ sub remove {
   
   return;
 }
+
+
+
+=head2 delete_by_RawContig_id
+
+  Arg [1]    : string $contig_id 
+  Example    : $feature_adaptor->delete_by_RawContig_id($contig_id);
+  Description: This removes a feature from the database.  The table the
+               feature is removed from is defined by the abstract method
+               _tablename, and the primary key of the table is assumed
+               to be contig_id.
+  Returntype : none
+  Exceptions : thrown if no contig_id is supplied
+  Caller     : general
+
+=cut
+
+sub delete_by_RawContig_id {
+  my ($self, $contig_id) = @_;
+
+  unless($contig_id) {
+    $self->throw("BaseFeatureAdaptor::delete_by_RawContig_id - no contig_id defined: ".
+		 "Deletion of feature failed.");
+  }
+
+  my $table = $self->_tablename();
+
+  # RepeatFeatureAdaptor returns 2 table names so need to so do some cleaning
+  # up of the returned table name.  This has the form:
+  #  table_name1 t1, table_name2 t2
+
+  my @tables = split(/,/,$table);
+
+  foreach my $table_name (@tables) {
+    # Not pretty this but there is no need to delete anything from the 
+    # repeat_consensus table
+    next if ($table_name =~ /repeat_consensus/);
+
+    my ($actual_table) = $table_name =~ /(^\w+)/;  # lose the table alias, if there is one
+
+    my $sth = $self->prepare("DELETE FROM $actual_table WHERE contig_id = ?");
+    $sth->execute($contig_id);
+  }
+
+  return;
+}
+
 
 
 =head2 _tablename
