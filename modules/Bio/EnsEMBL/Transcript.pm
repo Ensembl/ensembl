@@ -504,19 +504,118 @@ sub translateable_seq {
 
 
 
+=head2 cdna_coding_start
+
+  Arg [1]    : (optional) $value
+  Example    : $relative_coding_start = $transcript->cdna_coding_start;
+  Description: Retrieves the position of the coding start of this transcript
+               in cdna coordinates (relative to the start of the 5prime end of
+               the transcript, excluding introns, including utrs).
+  Returntype : int
+  Exceptions : none
+  Caller     : five_prime_utr, get_all_snps, general
+
+=cut
+
+sub cdna_coding_start {
+  my ($self, $value) = @_;
+
+  my $transl = $self->translation;
+
+  if(defined $value) {
+    $self->{'cdna_coding_start'} = $value;
+  } elsif(!defined $self->{'cdna_coding_start'} && defined $transl) {
+    #
+    #calculate the coding start relative from the start of the
+    #translation (in cdna coords)
+    #
+    my $start = 0;
+
+    my @exons = @{$self->get_all_Exons};
+ 
+    while($exon = shift @exons) {
+      if($exon == $transl->start_Exon) {
+	#add the utr portion of the start exon
+	$start += $transl->coding_start;
+	last;
+      } else {
+	#add the entire length of this non-coding exon
+	$start += $exon->length;
+      }
+    }
+    $self->{'cdna_coding_start'} = $value;
+  }
+
+  return $self->{'cdna_coding_start'};
+}
+
+
+
+=head2 cdna_coding_end
+
+  Arg [1]    : (optional) $value
+  Example    : $cdna_coding_end = $transcript->coding_end;
+  Description: Retrieves the end of the coding region of this transcript in
+               cdna coordinates (relative to the five prime end of the
+               transcript, excluding introns, including utrs)
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub cdna_coding_end {
+  my ($self, $value) = @_;
+
+  my $transl = $self->translation;
+
+  if($value) {
+    $self->{'cdna_coding_end'} = $value;
+  } elsif(!defined $self->{'cdna_coding_end'} && defined $transl) {
+    my @exons = @{$self->get_all_Exons};
+
+    my $end = 0;
+    while($exon = shift @exons) {
+      if($exon == $transl->end_Exon) {
+	#add the coding portion of the final coding exon
+	$end += $transl->coding_end;
+	last;
+      } else {
+	#add the entire exon
+	$end += $exon->length;
+      }
+    }
+    $self->{'cdna_coding_end'} = $end;
+  }
+
+  return $self->{'cdna_coding_end'};
+}
+
+
+
+=head2 coding_start
+
+  Arg [1]    : (optional) $value
+  Example    : $coding_start = $transcript->coding_start
+  Description: Retrieves the start of the coding region of this transcript
+               in genomic coordinates (i.e. in either slice or contig coords).
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub coding_start {
-  my $self = shift;
-  my $arg = shift;
+  my ($self, $value) = @_;
 
-  my $strand;
-  my $start;
+  my $transl = $self->transl;
 
-  
-  if( defined $arg ) {
-    $self->{'coding_start'} = $arg;
-  } elsif( ! defined $self->{'coding_start'} && 
-	   defined $self->translation() ) {
-    $strand = $self->translation()->start_Exon->strand();
+  if( defined $value ) {
+    $self->{'coding_start'} = $value;
+  } elsif(!defined $self->{'coding_start'} && defined $transl) {
+    #calculate the coding start from the translation
+    my $start;
+    my $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
       $start = $self->translation()->start_Exon->start();
       $start += ( $self->translation()->start() - 1 );
@@ -531,15 +630,26 @@ sub coding_start {
 }
 
 
+
+=head2 coding_end
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub coding_end {
-  my $self = shift;
-  my $arg = shift;
+  my ($self, $value, $arg) = shift;
 
   my $strand;
   my $end;
-  
-  if( defined $arg ) {
-    $self->{'coding_end'} = $arg;
+
+  if( defined $value ) {
+    $self->{'coding_end'} = $value;
   } elsif( ! defined $self->{'coding_end'} && 
 	   defined $self->translation() ) {
     $strand = $self->translation()->start_Exon->strand();
@@ -552,7 +662,7 @@ sub coding_end {
     }
     $self->{'coding_end'} = $end;
   }
-  
+
   return $self->{'coding_end'};
 }
 
@@ -700,101 +810,26 @@ translation attached to the transcript object.
 =cut
 
 sub five_prime_utr {
-    my( $self ) = @_;
-    
-    my $translation = $self->translation
-        or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_Exon->stable_id;
-    my $t_start         = $translation->start;
-    
-    my $seq_string = '';
-    foreach my $ex (@{$self->get_all_Exons}) {
-        if (((defined $ex->stable_id)&&($ex->stable_id eq $start_exon_id))  
-	                        # The criteria for the world with stable_ids.
-	    ||($ex == $translation->start_Exon)) {
-	                        # The criteria for the genebuild where stable_ids are not always about.
-            my $start   = $ex->start;
-            my $end     = $ex->end;
-            my $strand  = $ex->strand;
-            
-            if ($strand == 1) {
-                $end   = $start + $t_start - 2;
-            } else {
-                $start = $end   - $t_start + 2;
-            }
-            
-            if ($start <= $end) {
-                my $utr_exon = Bio::EnsEMBL::Exon->new;
-                $utr_exon->start($start);
-                $utr_exon->end($end);
-                $utr_exon->strand($strand);
-                $utr_exon->attach_seq($ex->entire_seq);
-                $seq_string .= $utr_exon->seq->seq;
-            }
-            last;   # At end of UTR
-        } else {
-            $seq_string .= $ex->seq->seq;
-        }
-    }
-    
-    if ($seq_string) {
-        my $seq = Bio::Seq->new;
-        $seq->id($self->stable_id . '-five_prime_UTR');
-        $seq->seq($seq_string);
-        return $seq;
-    } else {
-        return;
-    }
+  my $self = shift;
+
+  my $seq = substr($self->spliced_seq, 0, $self->cdna_coding_start - 1);
+
+  return Bio::Seq->new(
+	       -DISPLAY_ID => $self->stable_id,
+	       -MOLTYPE    => 'dna',
+	       -SEQ        => $seq);
 }
 
+
 sub three_prime_utr {
-    my( $self ) = @_;
-    
-    my $translation = $self->translation
-        or $self->throw("No translation attached to transcript object");
-    my $end_exon_id   = $translation->end_Exon->stable_id;
-    my $t_end         = $translation->end;
-    
-    my $seq_string = '';
-    my $in_utr = 0;
-    foreach my $ex (@{$self->get_all_Exons}) {
-        if ($in_utr) {
-            $seq_string .= $ex->seq->seq;
-        }
-        elsif ((defined $ex->stable_id)&&($ex->stable_id eq $end_exon_id)
-	                        # The criteria for the world with stable_ids.
-	       ||($ex == $translation->end_Exon)) {
-	                        # The criteria for the genebuild where stable_ids are not always about.
-            $in_utr = 1;
-            my $start   = $ex->start;
-            my $end     = $ex->end;
-            my $strand  = $ex->strand;
-            
-            if ($strand == 1) {
-                $start = $start + $t_end;
-            } else {
-                $end   = $end   - $t_end;
-            }
-            
-            if ($start <= $end) {
-                my $utr_exon = Bio::EnsEMBL::Exon->new;
-                $utr_exon->start($start);
-                $utr_exon->end($end);
-                $utr_exon->strand($strand);
-                $utr_exon->attach_seq($ex->entire_seq);
-                $seq_string .= $utr_exon->seq->seq;
-            }
-        }
-    }
-    
-    if ($seq_string) {
-        my $seq = Bio::Seq->new;
-        $seq->id($self->stable_id . '-three_prime_UTR');
-        $seq->seq($seq_string);
-        return $seq;
-    } else {
-        return;
-    }
+  my $self = shift;
+
+  my $seq = substr($self->spliced_seq, $self->cdna_coding_end);
+
+  return Bio::Seq->new(
+	       -DISPLAY_ID => $self->stable_id,
+	       -MOLTYPE    => 'dna',
+	       -SEQ        => $seq);
 }
 
 
@@ -866,14 +901,6 @@ sub get_all_translateable_Exons {
   return \@translateable;
 }
 
-
-sub translateable_exons {
-    my( $self ) = @_;
-  
-    $self->warn( "Please use get_all_translateable_Exons(). Careful as it returns listref." );
-    
-    return @{$self->get_all_translateable_Exons()};
-}
 
 
 
@@ -988,45 +1015,6 @@ sub sort {
 
 
 
-
-  
-sub pep_coords {
-    my $self = shift;
-
-    # for mapping the peptide coords back onto the dna sequence
-    # it would be handy to have a list of the peptide start end coords
-    # for each exon
-  
-    my ($p,$f,$l) = caller;
-    $self->warn("$f:$l  Calls to pep_coords should no longer be necessary. Please use pep2genomic");
-    my @starts;
-    my @ends;
-  
-    my $fullpep = $self->translate()->seq;
-
-    
-    foreach my $ex ($self->translateable_exons) {
-
-	my $tex=$ex->translate;
-	
-
-	my $pep=$tex->seq;
-	$pep =~ s/X$//g;
-	
-	my $start = index($fullpep,$pep) + 1;
-	
-	my $end = $start + CORE::length($pep) - 1;
-    
-	push(@starts,$start);
-	push(@ends,$end);
-	
-    }
-
-    return \@starts,\@ends;
-}
-
-
-
 =head1 pep2genomic
 
   Arg  1   : integer start - relative to peptide
@@ -1048,8 +1036,8 @@ sub pep2genomic {
 
   # move start end into translate cDNA coordinates now.
   # much easier!
-  $start = 3* $start-2;
-  $end   = 3* $end;
+  $start = 3* $start-2 + ($self->coding_start - 1);
+  $end   = 3* $end + ($self->coding_start - 1);
 
   return $self->cdna2genomic( $start, $end );
 }
@@ -1086,6 +1074,11 @@ sub cdna2genomic {
 
 
 
+sub genomic2cdna {
+
+}
+
+
 =head2 _get_cdna_coord_mapper
 
   Args       : none
@@ -1106,8 +1099,8 @@ sub _get_cdna_coord_mapper {
 
   if( defined $self->{'_exon_coord_mapper'} ) {
     return $self->{'_exon_coord_mapper'};
-  } 
-  
+  }
+
   #
   # the mapper is loaded with OBJECTS in place of the IDs !!!!
   #  the objects are the contigs in the exons
@@ -1115,7 +1108,7 @@ sub _get_cdna_coord_mapper {
 
   my $mapper;
   $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
-  my @exons = @{$self->get_all_translateable_Exons() };
+  my @exons = @{$self->get_all_Exons() };
   my $start = 1;
   for my $exon ( @exons ) {
     $exon->load_genomic_mapper( $mapper, $self, $start );
@@ -1199,102 +1192,6 @@ sub modified{
     }
     return $obj->{'modified'};
 
-}
-
-=head2 rna_pos
-
-  Title   : rna_pos
-  Usage   : $loc = $feat->dna_seq(23456)
-  Function: Translates genomic coordinates into mRNA coordinates
-            ARNE: padding probably not correct
-  Returns : integer
-  Args    : integer, genomic location
-
-=cut
-
-sub rna_pos {
-    my ($self, $loc) = @_;
-
-    my $start = $self->start_exon->start;
-    #test that loc is within  mRNA
-    return undef if $loc < $start;
-    return undef if $loc >= $self->end_Exon->end;
-
-    my $mrna = 1;
-
-    my $prev = undef;
-    foreach my $exon (@{$self->get_all_Exons}) {
-	
-	my $tmp = CORE::length( $exon->seq->seq());
-	#$tmp -= $exon->phase if not $prev;
-
-	# we now have to figure out if the phase is compatible. If it
-	# is not, we need to add some stuff in...
-
-	if( $prev ) {
-	    if( $prev->end_phase != $exon->phase ) {
-		if( $prev->end_phase == 0 ) {
-		    if( $exon->phase == 1 ) {
-			$mrna += 2;
-		    }
-
-		    if( $exon->phase == 2 ) {
-			$mrna += 1;
-		    }
-		} elsif ( $prev->end_phase == 1 ) {
-		    if( $exon->phase == 0 ) {
-			$mrna += 2;
-		    }
-		    
-		    if( $exon->phase == 2 ) {
-			$mrna += 1;
-		    }
-		} elsif ( $prev->end_phase == 2 ) {
-		    if( $exon->phase == 0 ) {
-			$mrna += 1;
-		    }
-		    
-		    if( $exon->phase == 1 ) {
-			$mrna += 2;
-		    }
-		} else {
-		    $self->warn("Impossible phases in calculating fixing stuff");
-		}
-	    }
-	} # end of if previous is there
-
-	if ($loc < $exon->end) {
-	    return $loc - $exon->start + $mrna ;
-	}
-	$mrna  += $tmp;
-	$prev = $exon;
-    }
-    #return $mrna;
-}
-
-=head2 dna_length
-
-  Title   : dna_length
-  Usage   : $loc = $feat->dna_length;
-  Function: return the length of the transcript''s DNA
-  Returns : integer
-  Args    : nn
-
-=cut
-
-sub dna_length {
-     my ($self) = @_;
-
-     # # not setting:
-     # if( defined $value ) {
-     #      $self->{'_dna_length'} = $value;
-     # }
-
-     if (! defined $self->{'_dna_length'}) { 
-         # get from dna_seq;
-         $self->{'_dna_length'} = $self->dna_seq->length;         
-     }
-     return $self->{'_dna_length'};
 }
 
 
@@ -1417,69 +1314,7 @@ sub temporary_id{
 }
 
 
-sub finex_string {
-   my ($self) = @_;
 
-   my $finex;
-
-   if ($self->stable_id ne "") {
-     $finex = $self->stable_id;
-   } else {
-     $finex = $self->dbID;
-   }
-
-   $finex .= " ";
-
-   my @exons = @{$self->get_all_Exons};
-
-   $finex .= scalar(@exons) . " ";
-
-   if ($exons[0]->strand == 1) {
-      @exons = sort {$a->start <=> $b->start} @exons;
-   } else {
-      @exons = sort {$b->start <=> $a->start} @exons;
-   }
-
-
-   my $found_start = 0;
-   my $found_end   = 0;
-
-   foreach my $exon (@exons) {
-     my $length = $exon->length;
-
-     
-     if ($exon == $self->translation->start_Exon &&
-	 $exon == $self->translation->end_Exon) {
-       $length = $self->translation->end - $self->translation->start + 1;
-
-       $found_start = 1;
-       $found_end   = 1;
-
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
-
-     } elsif ($exon == $self->translation->start_Exon) {
-       $length = $exon->length - $self->translation->start + 1;
-       $found_start = 1;
-
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
-
-     } elsif ($exon == $self->translation->end_Exon) {
-       $length = $self->translation->end;
-       $found_end = 1;
-
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
-       
-     } elsif ($found_start == 1 && $found_end == 0) {
-       $length = $exon->length;
-
-       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
-     }
-   }
-
-   $finex =~ s/\ $//;
-
-   return $finex;
-}
 
 
 =head2 transform
@@ -1569,6 +1404,84 @@ sub species {
 #
 ##########################################################
 
+sub translateable_exons {
+    my( $self ) = @_;
+  
+    $self->warn( "Please use get_all_translateable_Exons(). Careful as it returns listref." );
+    
+    return @{$self->get_all_translateable_Exons()};
+}
+
+
+sub finex_string {
+   my ($self) = @_;
+
+   my ($p, $f, $l) = caller;
+
+   $self->warn( "Transcript::finex string is deprecated. Caller $f:$l\n");
+
+   my $finex;
+
+   if ($self->stable_id ne "") {
+     $finex = $self->stable_id;
+   } else {
+     $finex = $self->dbID;
+   }
+
+   $finex .= " ";
+
+   my @exons = @{$self->get_all_Exons};
+
+   $finex .= scalar(@exons) . " ";
+
+   if ($exons[0]->strand == 1) {
+      @exons = sort {$a->start <=> $b->start} @exons;
+   } else {
+      @exons = sort {$b->start <=> $a->start} @exons;
+   }
+
+
+   my $found_start = 0;
+   my $found_end   = 0;
+
+   foreach my $exon (@exons) {
+     my $length = $exon->length;
+
+     
+     if ($exon == $self->translation->start_Exon &&
+	 $exon == $self->translation->end_Exon) {
+       $length = $self->translation->end - $self->translation->start + 1;
+
+       $found_start = 1;
+       $found_end   = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+
+     } elsif ($exon == $self->translation->start_Exon) {
+       $length = $exon->length - $self->translation->start + 1;
+       $found_start = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+
+     } elsif ($exon == $self->translation->end_Exon) {
+       $length = $self->translation->end;
+       $found_end = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       
+     } elsif ($found_start == 1 && $found_end == 0) {
+       $length = $exon->length;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+     }
+   }
+
+   $finex =~ s/\ $//;
+
+   return $finex;
+}
+
+
 
 sub find_coord {
   my ($self,$coord,$type) = @_;
@@ -1655,6 +1568,140 @@ sub find_coord {
       $count++;
     } 
   }
+}
+
+
+
+=head2 rna_pos
+
+  Title   : rna_pos
+  Usage   : $loc = $feat->dna_seq(23456)
+  Function: Translates genomic coordinates into mRNA coordinates
+            ARNE: padding probably not correct
+  Returns : integer
+  Args    : integer, genomic location
+
+=cut
+
+sub rna_pos {
+    my ($self, $loc) = @_;
+
+    my $start = $self->start_exon->start;
+    #test that loc is within  mRNA
+    return undef if $loc < $start;
+    return undef if $loc >= $self->end_Exon->end;
+
+    my $mrna = 1;
+
+    my $prev = undef;
+    foreach my $exon (@{$self->get_all_Exons}) {
+	
+	my $tmp = CORE::length( $exon->seq->seq());
+	#$tmp -= $exon->phase if not $prev;
+
+	# we now have to figure out if the phase is compatible. If it
+	# is not, we need to add some stuff in...
+
+	if( $prev ) {
+	    if( $prev->end_phase != $exon->phase ) {
+		if( $prev->end_phase == 0 ) {
+		    if( $exon->phase == 1 ) {
+			$mrna += 2;
+		    }
+
+		    if( $exon->phase == 2 ) {
+			$mrna += 1;
+		    }
+		} elsif ( $prev->end_phase == 1 ) {
+		    if( $exon->phase == 0 ) {
+			$mrna += 2;
+		    }
+		    
+		    if( $exon->phase == 2 ) {
+			$mrna += 1;
+		    }
+		} elsif ( $prev->end_phase == 2 ) {
+		    if( $exon->phase == 0 ) {
+			$mrna += 1;
+		    }
+		    
+		    if( $exon->phase == 1 ) {
+			$mrna += 2;
+		    }
+		} else {
+		    $self->warn("Impossible phases in calculating fixing stuff");
+		}
+	    }
+	} # end of if previous is there
+
+	if ($loc < $exon->end) {
+	    return $loc - $exon->start + $mrna ;
+	}
+	$mrna  += $tmp;
+	$prev = $exon;
+    }
+    #return $mrna;
+}
+
+=head2 dna_length
+
+  Title   : dna_length
+  Usage   : $loc = $feat->dna_length;
+  Function: return the length of the transcript''s DNA
+  Returns : integer
+  Args    : nn
+
+=cut
+
+sub dna_length {
+     my ($self) = @_;
+
+     # # not setting:
+     # if( defined $value ) {
+     #      $self->{'_dna_length'} = $value;
+     # }
+
+     if (! defined $self->{'_dna_length'}) { 
+         # get from dna_seq;
+         $self->{'_dna_length'} = $self->dna_seq->length;         
+     }
+     return $self->{'_dna_length'};
+}
+
+
+sub pep_coords {
+    my $self = shift;
+
+    # for mapping the peptide coords back onto the dna sequence
+    # it would be handy to have a list of the peptide start end coords
+    # for each exon
+  
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l  Calls to pep_coords should no longer be necessary. Please use pep2genomic");
+    my @starts;
+    my @ends;
+  
+    my $fullpep = $self->translate()->seq;
+
+    
+    foreach my $ex ($self->translateable_exons) {
+
+	my $tex=$ex->translate;
+	
+
+	my $pep=$tex->seq;
+	$pep =~ s/X$//g;
+	
+	my $start = index($fullpep,$pep) + 1;
+	
+	my $end = $start + CORE::length($pep) - 1;
+    
+	push(@starts,$start);
+	push(@ends,$end);
+	
+    }
+
+    return \@starts,\@ends;
 }
 
 
