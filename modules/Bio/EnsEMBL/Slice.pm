@@ -337,8 +337,8 @@ sub _get_all_SeqFeatures_type {
        foreach my $f ($c->get_all_ExternalFeatures()) {
          my @mapped = $mapper->map_coordinates_to_assembly
                             ( $id,
-                              $self->chr_start,
-                              $self->chr_end,
+                              $f->start,
+                              $f->end,
                               $self->strand );
 	 my $newf = Bio::EnsEMBL::SeqFeature->new();
 	 %$newf = %$self;
