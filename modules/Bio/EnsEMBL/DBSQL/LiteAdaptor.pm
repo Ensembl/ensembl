@@ -237,7 +237,6 @@ sub fetch_SangerGenes_start_end {
 
 sub fetch_virtualRepeatFeatures_start_end {
     my ( $self, $chr, $vc_start, $vc_end, $type, $glob_bp ) =@_;
-    print STDERR "REP: $glob_bp\n";
     my $cache_name = "_repeats_$type"."_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
 	$glob_bp ||= 0;
