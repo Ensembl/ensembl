@@ -118,7 +118,7 @@ sub create_xrefs {
     ($xref->{SOURCE_ID}) = $source_id;
 
     # set accession (and synonyms if more than one)
-    my @acc = split /;/, $acc;
+    my @acc = split /;\s*/, $acc;
     $xref->{ACCESSION} = $acc[0];
     for (my $a=1; $a <= $#acc; $a++) {
       push(@{$xref->{"SYNONYMS"} }, $acc[$a]);
@@ -139,18 +139,19 @@ sub create_xrefs {
     #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
 
     # dependent xrefs - only store those that are from sources listed in the source table
-    my ($deps) = $_ =~ /DR\s+(.+)/s; # /s allows . to match newline
+    my ($deps) = $_ =~ /(DR\s+.+)/s; # /s allows . to match newline
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
 	my ($source, $acc, @dummy) = split /;\s*/, $1;
-	my %dependent_sources = BaseParser->get_dependent_xref_sources();
+	my %dependent_sources = BaseParser->get_dependent_xref_sources(); # name-id hash
 	if (exists $dependent_sources{$source}) {
 	  # create dependent xref structure & store it
 	  my %dep;
-	  $dep{SOURCE} = $source;
+	  $dep{SOURCE_NAME} = $source;
+	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
-	  push @{$xref->{DEPENDENT_XREFS}}, %dep;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	}
       }
     }

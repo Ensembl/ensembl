@@ -10,6 +10,9 @@ my $user = "ensadmin";
 my $password = "ensembl";
 
 my $dbi;
+my %dependent_sources;
+
+# --------------------------------------------------------------------------------
 
 sub new {
 
@@ -49,6 +52,8 @@ sub upload_xrefs {
 
   my ($self, @xrefs) = @_;
 
+  my $dbi = dbi();
+
   # remove all existing xrefs with same source ID
   my $source_id = $xrefs[0]->{SOURCE_ID};
   my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
@@ -58,6 +63,7 @@ sub upload_xrefs {
   my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
   my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
   my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
+  my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
 
   foreach my $xref (@xrefs) {
 
@@ -91,11 +97,53 @@ sub upload_xrefs {
 
     } # foreach syn
 
+    # if there are dependent xrefs, add xrefs and dependent xrefs for them
+    foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
+
+      my %dep = %$depref;
+
+      $xref_sth->execute($dep{ACCESSION},
+			 $xref->{LABEL},
+			 $xref->{SOURCE_ID},
+			 $xref->{SPECIES_ID}) || die $dbi->errstr;
+
+      my $dep_xref_id = $xref_sth->{'mysql_insertid'};
+			
+      $dep_sth->execute($xref_id, $dep_xref_id, '', $dep{SOURCE_ID} ) || die $dbi->errstr;
+      # TODO linkage anntation?
+
+    } # foreach dep
+
+
   } # foreach xref
 
   $del_sth->finish() if defined $del_sth;
   $xref_sth->finish() if defined $xref_sth;
   $pri_sth->finish() if defined $pri_sth;
+
+}
+
+# --------------------------------------------------------------------------------
+# Get & cache a hash of all the source names for dependent xrefs (those that are
+# in the source table but don't have an associated URL etc)
+
+sub get_dependent_xref_sources {
+
+  my $self= shift;
+
+  if (!defined %dependent_sources) {
+
+    my $dbi = dbi();
+    my $sth = $dbi->prepare("SELECT name,source_id FROM source WHERE url IS NULL");
+    $sth->execute() || die $dbi->errstr;
+    while(my @row = $sth->fetchrow_array()) {
+      my $source_name = $row[0];
+      my $source_id = $row[1];
+      $dependent_sources{$source_name} = $source_id;
+    }
+  }
+
+  return %dependent_sources;
 
 }
 
