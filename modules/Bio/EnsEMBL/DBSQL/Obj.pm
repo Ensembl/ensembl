@@ -618,12 +618,13 @@ sub prepare {
       $self->throw("Database object has lost its database handle! getting otta here!");
    }
       
-   if ($self->_diffdump) {
-       my $fh=$self->_diff_fh;
-       open (FH,"$fh");
+   if ($self->diffdump) {
+       my $fh=$self->diff_fh;
+       open (FILE,">>$fh");
        if ($string =~/insert|delete|replace/) {
-	   print FH "$string\n";
+	   print FILE "$string\n";
        }
+       
    }
    
    if( $self->_debug > 10 ) {
@@ -2155,27 +2156,27 @@ sub deleteObj {
 sub diff_fh{
     my ($self,$value) = @_;
     if( defined $value) {
-	$self->{'diff_fh'} = $value;
+	$self->{'_diff_fh'} = $value;
     }
-    return $self->{'diff_fh'};
+    return $self->{'_diff_fh'};
     
 }
 
 
-=head2 _diffdump
+=head2 diffdump
 
- Title   : _diffdump
- Usage   : $obj->_diffdump($newval)
+ Title   : diffdump
+ Usage   : $obj->diffdump($newval)
  Function: If set to 1 sets $self->_prepare to print the diff sql 
            statementents to the filehandle specified by $self->diff_fh
  Example : 
- Returns : value of _diffdump
+ Returns : value of diffdump
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _diffdump{
+sub diffdump{
     my ($self,$value) = @_;
     if( defined $value) {
 	$self->{'_diffdump'} = $value;

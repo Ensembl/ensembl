@@ -1241,7 +1241,14 @@ sub write_Exon {
     if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
 	$self->throw("$exon is not a EnsEMBL exon - not dumping!");
     }
-    
+    $exon->id() || $self->throw("Missing exon id");
+    $exon->version() || $self->throw("Missing exon version number"); 
+    $exon->contig_id() || $self->throw("Missing exon contig id");
+    $exon->start || $self->throw("Missing exon start position"); 
+    $exon->end || $self->throw("Missing exon end position");
+    $exon->created || $self->throw("Missing exon created time");
+    $exon->modified || $self->throw("Missing exon modified time");
+
     my $exonst = q{
         insert into exon (id, version, contig, created, modified
           , seq_start, seq_end, strand, phase, stored, end_phase, rank) 
@@ -1344,6 +1351,11 @@ sub write_Transcript{
    if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
+
+   $trans->id || $self->throw("You need a transcript id to write a transcript!");
+   $gene->id || $self->throw("You need a gene id to write a transcript!");
+   $trans->translation->id || $self->throw("You need a translation id to write a transcript!");
+   $trans->version || $self->throw("You need a transcript version number to write a transcript!");
 
    # ok - now load this line in
    my $tst = $self->_db_obj->prepare("
