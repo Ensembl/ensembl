@@ -756,7 +756,7 @@ sub list_supported_assemblies {
 
     my $query = q{
         SELECT distinct type
-        FROM   static_golden_path
+        FROM   assembly
     };
 
     my $sth = $self->prepare($query) ||
@@ -840,24 +840,24 @@ sub extension_tables{
 
 }
 
-=head2 static_golden_path_type
+=head2 assembly_type
 
- Title   : static_golden_path_type
- Usage   : $obj->static_golden_path_type($newval)
+ Title   : assembly_type
+ Usage   : $obj->assembly_type($newval)
  Function: 
  Example : 
- Returns : value of static_golden_path_type
+ Returns : name of assembly
  Args    : newvalue (optional)
 
 
 =cut
 
-sub static_golden_path_type{
+sub assembly_type{
    my ($obj,$value) = @_;
    if($value) {
-      $obj->{'static_golden_path_type'} = $value;
+      $obj->{'assembly'} = $value;
     }
-    return $obj->{'static_golden_path_type'};
+    return $obj->{'assembly'};
 
 }
 
