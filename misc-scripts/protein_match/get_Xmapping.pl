@@ -65,7 +65,7 @@ while ( my $seq = $in->next_seq() ) {
     $tag = $seq->primary_id;
 
     if ($tag eq "STANDARD") {
-	$db = "SWISS-PROT";
+	$db = "SWISSPROT";
     }
     elsif ($tag eq "PRELIMINARY") {
 	$db = "SPTREMBL";
