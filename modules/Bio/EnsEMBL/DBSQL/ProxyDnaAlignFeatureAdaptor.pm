@@ -67,7 +67,7 @@ use vars qw(@ISA);
 sub generic_fetch {
   my($self, $constraint, $logic_name, $mapper, $slice) = @_;
 
-  if($logic_name eq 'ex_e2g_feat') {
+  if((defined $logic_name)&&($logic_name eq 'ex_e2g_feat')) {
     my $est_db = $self->db()->get_db_adaptor('est');
     
     if(defined $est_db) {
