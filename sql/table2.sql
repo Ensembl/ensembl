@@ -60,7 +60,9 @@ CREATE TABLE dna (
   sequence mediumtext NOT NULL,
   created date DEFAULT '0000-00-00' NOT NULL,
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  INDEX idx1 (id,contig),
   KEY id (id)
+ 
 );
 
 #
@@ -77,6 +79,7 @@ CREATE TABLE exon (
   strand char(1) DEFAULT '' NOT NULL,
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
+  INDEX idx1 (id,contig),
   PRIMARY KEY (id),
   KEY id_contig (id,contig)
 );
@@ -96,6 +99,7 @@ CREATE TABLE exon_transcript (
   exon varchar(40) DEFAULT '' NOT NULL,
   transcript varchar(40) DEFAULT '' NOT NULL,
   rank int(10) DEFAULT '0' NOT NULL,
+  INDEX idx1 (exon,transcript),
   KEY exon_transcript (exon,transcript)
 );
 
