@@ -135,12 +135,12 @@ sub genomic2cDNA {
 
     @pairs = sort {$a->start <=> $b->start} @pairs;
     
-#    print STDERR "In genomic2cDNA converting : $coord\n";
+#    #print STDERR "In genomic2cDNA converting : $coord\n";
 
     my $newcoord;
 
   HOMOL: while (my $sf1 = shift(@pairs)) {
-#      print STDERR "Comparing to genomic exon " . $sf1->start . "\t" . $sf1->end . "\t" . $sf1->strand . "\n";
+#      #print STDERR "Comparing to genomic exon " . $sf1->start . "\t" . $sf1->end . "\t" . $sf1->strand . "\n";
 #      print STDERR "Comparing to cDNA    exon " . $sf1->hstart . "\t" . $sf1->hend . "\t" . $sf1->hstrand . "\n";
       next HOMOL unless ($coord >= $sf1->start && $coord <= $sf1->end);
       
@@ -242,149 +242,189 @@ sub find_Pair {
 
 sub convert_cDNA_feature {
     my ($self,$feature) = @_;
-
-    $self->throw("Feature is not a Bio::EnsEMBL::SeqFeature") unless
-	$feature->isa("Bio::EnsEMBL::SeqFeature");
-
+    
+    #$self->throw("Feature is not a Bio::EnsEMBL::SeqFeature") unless
+    #$feature->isa("Bio::EnsEMBL::SeqFeature");
+    #print STDERR "PairAlign:248 Have ".$feature."\n";
     my $foundstart = 0;
     my $foundend   = 0;
-
+    
     my @pairs = $self->eachFeaturePair;
     my @newfeatures;
-
-#    print STDERR "In convert_cDNA_feature: converting " . $feature->start . "\t" . $feature->end . "\t" . $feature->strand ."\n";
-#    print STDERR "Finding the start exon\n";
-
+  
+    #print STDERR "In convert_cDNA_feature: converting " . $feature->start 
+    #      "\t" . $feature->end . "\t" . $feature->strand ."\n";
+    #print STDERR "Finding the start exon\n";
+    #print STDERR "Have ".@pairs." coord pairs\n";
   HOMOL: while (my $sf1 = shift(@pairs)) {
-
-#      print STDERR "Looking at cDNA exon " . $sf1->hstart . "\t" . $sf1->hend . "\t" . $sf1->strand ."\n";
-
-      next HOMOL unless ($feature->start >= $sf1->hstart && $feature->start <= $sf1->hend);
-
-      if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
-	  $foundend = 1;
+       my $skip = 0;
+      #print STDERR "Looking at cDNA exon " . $sf1->hstart . "\t" . $sf1->hend . "\t" . $sf1->strand ."\n";
+      
+      $skip = 1 unless ($feature->start >= $sf1->hstart 
+                        && $feature->start <= $sf1->hend);
+      
+      if($skip){
+        #print STDERR "Skipping ".$sf1->hstart . "\t" . $sf1->hend . "\t" . $sf1->strand ."\n";
+        next HOMOL;
       }
-
+      if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
+        $foundend = 1;
+      }
+      
       my $startcoord = $self->cDNA2genomic($feature->start);
       my $endcoord;
-
+      
       if ($sf1->hstrand == 1) {
-	  $endcoord   = $sf1->end;
+        $endcoord   = $sf1->end;
       } else {
-	  $endcoord   = $sf1->start;
+        $endcoord   = $sf1->start;
       }
-
+      
       if ($foundend) {
-	  $endcoord = $self->cDNA2genomic($feature->end);
+        $endcoord = $self->cDNA2genomic($feature->end);
       }
-
-#      print STDERR "Making new genomic feature $startcoord\t$endcoord\n";
-
+      
+      #print STDERR "Making new genomic feature $startcoord\t$endcoord\n";
+      
       my $tmpf = new Bio::EnsEMBL::SeqFeature(-seqname => $feature->seqname,
-					      -start   => $startcoord,
-					      -end     => $endcoord,
-					      -strand  => $feature->strand);
+                                              -start   => $startcoord,
+                                              -end     => $endcoord,
+                                              -strand  => $feature->strand);
       push(@newfeatures,$tmpf);
       last;
-  }
-
-    # Now the rest of the pairs until we find the endcoord
-
-    while ((my $sf1 = shift(@pairs)) && ($foundend == 0)) {
-
-	if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
-	    $foundend = 1;
-	}
-
-	my $startcoord;
-	my $endcoord;
-
-	if ($sf1->hstrand == 1) {
-	    $startcoord = $sf1->start;
-	    $endcoord   = $sf1->end;
-	} else {
-	    $startcoord = $sf1->end;
-	    $endcoord   = $sf1->start;
-	}
-
-	if ($foundend) {
-	    $endcoord = $self->cDNA2genomic($feature->end);
-	}
-
-#	print STDERR "Making new genomic feature $startcoord\t$endcoord\n";
-
-	my $tmpf = new Bio::EnsEMBL::SeqFeature(-seqname => $feature->seqname,
-						-start   => $startcoord,
-						-end     => $endcoord,
-						-strand  => $feature->strand);
-	push(@newfeatures,$tmpf);
     }
+    
+    # Now the rest of the pairs until we find the endcoord
+    
+    while ((my $sf1 = shift(@pairs)) && ($foundend == 0)) {
+      
+      if ($feature->end >= $sf1->hstart && $feature->end <= $sf1->hend) {
+        $foundend = 1;
+      }
+      
+      my $startcoord;
+      my $endcoord;
+      
+      if ($sf1->hstrand == 1) {
+        $startcoord = $sf1->start;
+        $endcoord   = $sf1->end;
+      } else {
+        $startcoord = $sf1->end;
+        $endcoord   = $sf1->start;
+      }
+      
+      if ($foundend) {
+        $endcoord = $self->cDNA2genomic($feature->end);
+      }
+      
+      #	#print STDERR "Making new genomic feature $startcoord\t$endcoord\n";
+      
+      my $tmpf = new Bio::EnsEMBL::SeqFeature(-seqname => $feature->seqname,
+                                              -start   => $startcoord,
+                                              -end     => $endcoord,
+                                              -strand  => $feature->strand);
+      push(@newfeatures,$tmpf);
+    }
+    #print STDERR "Have ".@newfeatures." features from ".$feature."\n";
     return @newfeatures;
-}
+  }
 
 
 sub convert_FeaturePair {
-    my ($self,$pair) = @_;
+  my ($self,$pair) = @_;
 
-    my $hstrand = $self->get_hstrand;
-    my @newfeatures = $self->convert_cDNA_feature($pair->feature1);
-    my @newpairs;
-
-    my $hitpairaln  = new Bio::EnsEMBL::Analysis::PairAlign;
-       $hitpairaln->addFeaturePair($pair);
-
-    foreach my $new (@newfeatures) {
-
-#	print(STDERR "New " . $new->start  . "\t" . 
-#	                      $new->end    . "\t" . 
-#	                      $new->strand . "\n");
-
-	#Now we want to convert these cDNA coords into hit coords
-
-	my $hstart1 = $self->genomic2cDNA($new->start);
-	my $hend1   = $self->genomic2cDNA($new->end);
-
-#	print (STDERR "New hit start/end " . $hstart1 . "\t" . 
-#	                                     $hend1   . "\n");
-
-	my $hstart2 = $hitpairaln->genomic2cDNA($hstart1);
-	my $hend2   = $hitpairaln->genomic2cDNA($hend1);
-
-#	print (STDERR "Feature start/end " . $hstart2 . "\t" . 
-#	                                     $hend2   . "\n");
-
-	# We can now put the final feature together
-
-	my $finalstrand = $hstrand * $pair->feature1->strand * $pair->feature2->strand;
-#	print ("Final strand is $finalstrand : $hstrand " . $pair->feature1->strand . "\t" . $pair->feature2->strand . "\n");
-	my $final1 = new Bio::EnsEMBL::SeqFeature(-start => $new->start,
-						  -end   => $new->end,
-						  -strand => 1);
-
-        if ($hstart2 > $hend2) {
-	   my $tmp = $hstart2;
-	   $hstart2 = $hend2;
-           $hend2   = $tmp;
-        }
-
-	my $final2 = new Bio::EnsEMBL::SeqFeature(-start => $hstart2,
-						  -end   => $hend2,
-						  -strand => $finalstrand);
-
-	$final1->score($pair->score);
-	$final2->score($pair->score);
-
-	my $finalpair = new Bio::EnsEMBL::FeaturePair(-feature1 => $final1,
-						      -feature2 => $final2);
-	
-
-	push(@newpairs,$finalpair);
-	
+  my $hstrand = $self->get_hstrand;
+  my $feat = $self->create_Feature($pair->start, $pair->end, $pair->strand,
+                                   $pair->slice);
+  my @newfeatures = $self->convert_cDNA_feature($feat);
+  my @newpairs;
+  
+  my $hitpairaln  = new Bio::EnsEMBL::Analysis::PairAlign;
+  $hitpairaln->addFeaturePair($pair);
+  
+  foreach my $new (@newfeatures) {
+    
+    #	print(STDERR "New " . $new->start  . "\t" . 
+    #	                      $new->end    . "\t" . 
+    #	                      $new->strand . "\n");
+    
+    #Now we want to convert these cDNA coords into hit coords
+    
+    my $hstart1 = $self->genomic2cDNA($new->start);
+    my $hend1   = $self->genomic2cDNA($new->end);
+    
+    #	print (STDERR "New hit start/end " . $hstart1 . "\t" . 
+    #	                                     $hend1   . "\n");
+    
+    my $hstart2 = $hitpairaln->genomic2cDNA($hstart1);
+    my $hend2   = $hitpairaln->genomic2cDNA($hend1);
+    
+    #	print (STDERR "Feature start/end " . $hstart2 . "\t" . 
+    #	                                     $hend2   . "\n");
+    
+    # We can now put the final feature together
+    
+    my $finalstrand = $hstrand * $pair->strand * $pair->hstrand;
+    #	print ("Final strand is $finalstrand : $hstrand " . $pair->feature1->strand . "\t" . $pair->feature2->strand . "\n");
+    #   my $final1 = new Bio::EnsEMBL::SeqFeature(-start => $new->start,
+    #                                              -end   => $new->end,
+    #                                              -strand => 1);
+    
+    if ($hstart2 > $hend2) {
+      my $tmp = $hstart2;
+      $hstart2 = $hend2;
+      $hend2   = $tmp;
     }
-
-    return @newpairs;
+    
+#    my $final2 = new Bio::EnsEMBL::SeqFeature(-start => $hstart2,
+#                                              -end   => $hend2,
+#                                              -strand => $finalstrand);
+    
+#    $final1->score($pair->score);
+#    $final2->score($pair->score);
+    
+#    my $finalpair = new Bio::EnsEMBL::FeaturePair(-feature1 => $final1,
+#                                                  -feature2 => $final2);
+    
+    my $finalpair = $self->create_FeaturePair($new->start, $new->end, 1,
+                                              $hstart2, $hend2, 
+                                              $finalstrand, $pair->score);
+    
+    push(@newpairs,$finalpair);
+    
+  }
+  
+  return @newpairs;
 }
 
+sub create_FeaturePair {
+    my ($self, $start, $end, $strand, $hstart, $hend, 
+        $hstrand, $score) = @_;
+   
+    my $fp = Bio::EnsEMBL::FeaturePair->new(
+                                            -start    => $start,
+                                            -end      => $end,
+                                            -strand   => $strand,
+                                            -hstart   => $hstart,
+                                            -hend     => $hend,
+                                            -hstrand  => $hstrand,
+                                            -score    => $score,
+                                           );
+
+   
+    return $fp;
+}
+
+sub create_Feature{
+  my ($self, $start, $end, $strand,  $slice) = @_;
+
+  my $feat = new Bio::EnsEMBL::Feature(-start   => $start,
+                                       -end     => $end,
+                                       -strand  => $strand,
+                                       -slice   => $slice,
+                                      );
+  return $feat;
+}
 
 1;
 
