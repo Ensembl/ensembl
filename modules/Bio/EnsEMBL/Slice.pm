@@ -730,8 +730,7 @@ sub get_repeatmasked_seq {
 sub mask_features {
     my ($self, $dnastr,@repeats) = @_;
 
-   $self->warn("Slice: mask_features\n");
-
+#   $self->warn("Slice: mask_features\n");
 
     my $dnalen = length($dnastr);
     #print "there are ".@repeats."\n";
