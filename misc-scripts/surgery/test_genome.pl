@@ -129,8 +129,7 @@ WHERE  c.clone_id = t.clone_id
 #
 $dbh->do("
 INSERT INTO $destDB.contig
-SELECT c.contig_id, c.name, c.clone_id, c.length, c.offset, c.corder, c.dna_id,
-       c.international_name
+SELECT c.contig_id, c.name, c.clone_id, c.length, c.embl_offset, c.dna_id
 FROM   $srcDB.contig c, $destDB.tmp1 t
 WHERE  c.clone_id = t.clone_id
 ") or die "Could not do contig insertion statement:" . $dbh->errstr;

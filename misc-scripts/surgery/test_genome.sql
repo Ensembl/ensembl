@@ -67,8 +67,7 @@ where   h.clone_id = t.clone_id;
 # or not
 
 insert  into contig
-select  h.contig_id, h.name, h.clone_id, h.length, h.offset, h.corder,
-        h.dna_id, h.international_name
+select  h.contig_id, h.name, h.clone_id, h.length, h.embl_offset, h.dna_id
 from    arne_ens130.contig h, tmp1 t
 where   h.clone_id = t.clone_id;
 
