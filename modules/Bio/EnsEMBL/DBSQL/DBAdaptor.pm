@@ -484,7 +484,7 @@ sub get_TranslationAdaptor {
 sub get_SliceAdaptor {
   my( $self ) = @_;
   
-  return $self->dnadb()->get_adaptor("Slice");
+  return $self->get_adaptor("Slice");
 }
 
 
