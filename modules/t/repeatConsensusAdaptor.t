@@ -7,7 +7,7 @@ use MultiTestDB;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 22;
+	plan tests => 24;
 }
 
 my $multi_db = MultiTestDB->new;
@@ -31,6 +31,7 @@ ok($rc->dbID == 9);
 ok($rc->repeat_consensus eq '');
 ok($rc->length() == 0);
 ok($rc->repeat_class eq 'Type I Transposons/SINE');
+ok( $rc->repeat_type eq "ALU" );
 
 #
 # Test fetch_by_name
@@ -66,6 +67,7 @@ $multi_db->save('core', 'repeat_consensus');
 
 $rc = Bio::EnsEMBL::RepeatConsensus->new
   (-REPEAT_CONSENSUS => 'ACTG',
+   -REPEAT_TYPE      => "testtype",
    -NAME             => 'ACTG(n)',
    -LENGTH           => 4,
    -REPEAT_CLASS    => 'Simple_repeat');
@@ -81,7 +83,7 @@ ok($rc->repeat_consensus eq 'ACTG');
 ok($rc->repeat_class eq  'Simple_repeat');
 ok($rc->length() == 4);
 ok($rc->name eq 'ACTG(n)');
-
+ok($rc->repeat_type() eq "testtype" );
 
 $multi_db->restore('core', 'repeat_consensus');
 

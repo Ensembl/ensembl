@@ -11,7 +11,7 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 0;
+our $verbose = 1;
 
 
 my $multi = MultiTestDB->new();
@@ -30,6 +30,7 @@ my $repeat_c_ad = $db->get_RepeatConsensusAdaptor();
 # Test storing and simple retrieval
 #
 
+$multi->hide( "core", "repeat_feature", "repeat_consensus" );
 my $repeat_consensus = Bio::EnsEMBL::RepeatConsensus->new();
 
 $repeat_consensus->length(10);
@@ -56,7 +57,6 @@ $repeat_feature->repeat_consensus($repeat_consensus);
 $repeat_feature->slice( $slice );
 
 ok($repeat_feature);
-$multi->hide( "core", "repeat_feature" );
 
 $repeat_f_ad->store( $repeat_feature );
 
@@ -85,7 +85,7 @@ ok($r->dbID == $dbID && $r->start == 26 && $r->hend == 45);
 my $ids = $repeat_f_ad->list_dbIDs();
 ok (@{$ids});
 
-$multi->restore('core', 'repeat_feature');
+$multi->restore('core' );
 
 
 
@@ -99,8 +99,13 @@ $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
 my $feats = $repeat_f_ad->fetch_all_by_Slice($slice);
 debug('fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-print_features($feats);
+# print_features($feats);
 
+$feats = $repeat_f_ad->fetch_all_by_Slice_and_type( $slice, "LTR" );
+debug( "fetching by type LTR" );
+debug( "Got ".scalar( @$feats ). " back" );
+
+# print_features( $feats );
 
 $r = $repeat_f_ad->fetch_by_dbID(518841);
 $r = $r->transform('supercontig');
