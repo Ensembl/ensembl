@@ -94,6 +94,7 @@ sub fetch_by_contig_id_start_end_strand {
 
   if( my $aref = $sth->fetchrow_arrayref() ) {
     my ( $length, $seq ) = @$aref;
+    $seq =~ s/\s//g;
     if( $strand == -1 ) {
       return $self->_reverse_comp( $seq );
     } else {
