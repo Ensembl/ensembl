@@ -41,7 +41,7 @@ Bio::EnsEMBL::FeaturePair methods can be used
 
 The cigar_string contains the ungapped pieces that make up the gapped alignment
 
-It's format is qstart,qend,length*strand.
+It is format is qstart,qend,length*strand.
 
 So in the above example the gapped alignment contains 2 ungapped pieces from
 
@@ -164,6 +164,108 @@ sub _parse_features {
   my ($self,$features) = @_;
 
   $self->_generic_parse_features( $features, 1, 1 );
+}
+
+=head2 restrict_between_positions
+
+    Arg      : start_position (integer),end_position (integer), 'seqname' or 'hseqname' (string)
+
+    Usage    : $self->restrict_between_positions(2305,145000,'seqname')
+
+    Function : Take a DnaDnaAlignFeature object ($self) and return a new DnaDnaAlignFeature object
+               with recalculated (if needed) ungapped features which are in between or overlapping
+               start_position and end_position. The third argument ('seqname' or 'hseqname') informs 
+               which sequence the start_position and end_position refer to.
+               Return undef if the new DnaDnaAlignFeature object do not contain any ungapped features.
+    Exception: If arguments are not defined or not of the expected type
+
+    Caller   : No specific caller.
+
+=cut
+
+sub restrict_between_positions {
+  my ($self,$start,$end,$seqref) = @_;
+  
+  unless (defined $start && $start =~ /^\d+$/) {
+    $self->throw("The first argument is not defined or is not an integer");
+  }
+  unless (defined $end && $end =~ /^\d+$/) {
+    $self->throw("The second argument is not defined or is not an integer");
+  }
+  unless (defined $seqref && 
+	  ($seqref eq "seqname" || $seqref eq "hseqname")) {
+    $self->throw("The third argument is not defined or is not equal to 'seqname' or 'hseqname'");
+  }
+
+  my ($start_method1,$end_method1,$strand_method1,$start_method2,$end_method2,$strand_method2) =
+    qw(start end strand hstart hend hstrand);
+
+  if ($seqref eq "hseqname") {
+    ($start_method1,$end_method1,$strand_method1,$start_method2,$end_method2,$strand_method2) =
+    qw(hstart hend hstrand start end strand);
+  }
+  
+  my @restricted_features;
+  
+  foreach my $ungapped_feature ($self->ungapped_features) {
+
+    if ($ungapped_feature->$start_method1() > $end ||
+	$ungapped_feature->$end_method1() < $start) {
+      
+      next;
+      
+    } elsif ($ungapped_feature->$end_method1() <= $end &&
+	     $ungapped_feature->$start_method1() >= $start) {
+      
+      push @restricted_features, $ungapped_feature;
+      
+    } else {
+      
+      if ($ungapped_feature->$strand_method1() eq $ungapped_feature->$strand_method2()) {
+
+	if ($ungapped_feature->$start_method1() < $start) {
+	  
+	  my $offset = $start - $ungapped_feature->$start_method1();
+	  $ungapped_feature->$start_method1($start);
+	  $ungapped_feature->$start_method2($ungapped_feature->$start_method2() + $offset);
+	  
+	}
+	if ($ungapped_feature->$end_method1() > $end) {
+	  
+	  my $offset = $ungapped_feature->$end_method1() - $end;
+	  $ungapped_feature->$end_method1($end);
+	  $ungapped_feature->$end_method2($ungapped_feature->$end_method2() - $offset);
+	  
+	}
+      } else {
+	
+	if ($ungapped_feature->$start_method1() < $start) {
+	  
+	  my $offset = $start - $ungapped_feature->$start_method1();
+	  $ungapped_feature->$start_method1($start);
+	  $ungapped_feature->$end_method2($ungapped_feature->$end_method2() - $offset);
+	  
+	}
+	if ($ungapped_feature->$end_method1() > $end) {
+	  
+	  my $offset = $ungapped_feature->$end_method1() - $end;
+	  $ungapped_feature->$end_method1($end);
+	  $ungapped_feature->$start_method2($ungapped_feature->$start_method2() + $offset);
+	  
+	}
+      }
+      
+      push @restricted_features, $ungapped_feature;
+      
+    }
+  }
+
+  if (scalar @restricted_features) {
+    my $DnaDnaAlignFeature = new Bio::EnsEMBL::DnaDnaAlignFeature('-features' =>\@restricted_features);
+    return $DnaDnaAlignFeature;
+  } else {
+    return undef;
+  }
 }
 
 1;
