@@ -101,23 +101,17 @@ my $attrib_adaptor = $db->get_AttributeAdaptor;
 my $slice_adaptor = $db->get_SliceAdaptor;
 my $top_slices = $slice_adaptor->fetch_all('toplevel');
 
-## determine blocksize
+## determine blocksize, assuming you want 150 blocks for the smallest
+## chromosome
 my ($block_count, $genome_size, $block_size);
-my $sth = $db->prepare( "select count(*) from gene" );
-$sth->execute;
-my ($gene_count) = $sth->fetchrow_array;
-if( ! $gene_count ) {
-    print STDERR "No gene density for " . $db->dbname . ".\n";
-    exit;
-} else {
-    $block_count = $gene_count >> 1;
-}
-my @chr;
+my (@chr, $block_size, $min_chr);
 for my $slice ( @$top_slices ) {
-    $genome_size += $slice->length;
+    if (! $min_chr or ($min_chr > $slice->length)) {
+        $min_chr = $slice->length;
+    }
     push @chr, $slice->seq_region_name;
 }
-$block_size = int( $genome_size / $block_count );
+$block_size = int( $min_chr / 150 );
 print STDERR "\nAvailable chromosomes: @chr\n";
 
 ## gene types
@@ -146,9 +140,9 @@ print STDERR "\n";
 my %dtcache;
 foreach my $type (keys %gene_types) {
     my $analysis = new Bio::EnsEMBL::Analysis (
-            -program     => "vega_gene_density_calc.pl",
+            -program     => "vega_gene_density.pl",
             -database    => "ensembl",
-            -gff_source  => "vega_gene_density_calc.pl",
+            -gff_source  => "vega_gene_density.pl",
             -gff_feature => "density",
             -logic_name  => $gene_types{$type});
     $aa->store($analysis) unless $dry;
@@ -272,7 +266,7 @@ foreach my $slice (@$top_slices){
     push @attribs, Bio::EnsEMBL::Attribute->new
     (-NAME => 'Total pseudogenes',
      -CODE => 'TotPsCount',
-     -VALUE => $total{'Pseudogenes'}
+     -VALUE => $total{'Pseudogene'}
                + $total{'Processed_pseudogene'}
                + $total{'Unprocessed_pseudogene' || 0},
      -DESCRIPTION => 'Total Number of Pseudogenes');
