@@ -88,7 +88,7 @@ $aa->remove_from_MiscFeature($mf);
 #
 # make sure the misc_attrib table was updated
 #
-my $count = $db->db_handle->selectall_arrayref
+$count = $db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM misc_attrib " .
    "WHERE misc_feature_id = 1")->[0]->[0];
 

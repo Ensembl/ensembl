@@ -49,7 +49,7 @@ ok($dt->value_type eq 'sum');
 #
 # test fetch_all
 #
-my @dts = @{$dta->fetch_all()};
+@dts = @{$dta->fetch_all()};
 ok(@dts == 2);
 
 #
