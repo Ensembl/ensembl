@@ -67,9 +67,9 @@ sub _initialize {
 					  ID
 					  )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $id    || $self->throw("Cannot make clone db object without id");
+  $dbobj || $self->throw("Cannot make clone db object without db object");
+  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
 
   $self->id($id);
   $self->_dbobj($dbobj);
@@ -129,7 +129,7 @@ sub get_all_Genes{
        
        #print STDERR "Using [select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank]\n";
 
-       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
    
        $sth->execute();
        my $current_gene_id       = '';
@@ -245,7 +245,7 @@ sub get_all_Genes_slow{
    my $id = $self->id();
    my %got;
 
-   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2, geneclone_neighbourhood as p5 where p5.clone = '$id' and p5.gene = p3.gene and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
+   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2, geneclone_neighbourhood as p5 where p5.clone = '$id' and p5.gene = p3.gene and p4.clone = '$id' and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript");
    
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -307,7 +307,7 @@ sub get_all_Contigs{
 
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_dbobj,
-						      -id => $rowhash->{'id'} );
+							 -id => $rowhash->{'id'} );
 
        $contig->seq_version($version);
        push(@res,$contig);

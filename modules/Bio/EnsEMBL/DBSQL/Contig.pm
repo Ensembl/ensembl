@@ -69,7 +69,7 @@ sub _initialize {
 					  ID
 					  )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
+  $id    || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
   $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 

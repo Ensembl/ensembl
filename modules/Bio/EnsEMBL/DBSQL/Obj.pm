@@ -227,7 +227,7 @@ sub get_Gene_array_supporting {
 				  
     my $sth = $self->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version,p4.clone 
                               from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5,geneclone_neighbourhood as p7 
-                              where p6.id in $inlist and p3.gene = p6.id and p4.clone = p7.clone and p7.gene = p6.id and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+                              where p6.id in $inlist and p3.gene = p6.id and p4.clone = p7.clone and p7.gene = p6.id and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
     
     $sth->execute();
     
@@ -640,7 +640,7 @@ sub get_Exon{
    my $contig_id = $exon->contig_id();
 
    # we have to make another trip to the database to get out the contig to clone mapping.
-   my $sth2     = $self->prepare("select clone from contig where id = '$contig_id'");
+   my $sth2     = $self->prepare("select clone from contig where internal_id = '$contig_id'");
    my $res2     = $sth2->execute;
    my $rowhash2 = $sth2->fetchrow_hashref;
 
@@ -720,7 +720,11 @@ sub get_Clone{
 sub get_Contig{
    my ($self,$id) = @_;
 
-   my $sth = $self->prepare("select p1.id,p2.id,p3.embl_version from dna as p1,contig as p2,clone as p3 where p2.id = '$id' and p2.clone = p3.id");
+   my $sth = $self->prepare("select c.id,c.internal_id,cl.embl_version " . 
+			    "from dna as d,contig as c,clone as cl " .
+			    "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
+
+
    my $res = $sth ->execute;
    my $row = $sth->fetchrow_arrayref;
    
@@ -728,11 +732,15 @@ sub get_Contig{
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
-   my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
-						     -id    => $id );
+   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
+							  -id    => $id );
+
+   $contig->internal_id($row->[1]);
    $contig->seq_version($row->[2]);
+
    return $contig;
 }
+
 =head2 get_all_Clone_id
 
  Title   : get_all_Clone_id
@@ -1135,17 +1143,17 @@ sub delete_Clone{
    
    my @contigs;
    # get a list of contigs to zap
-   my $sth = $self->prepare("select id from contig where clone = '$clone_id'");
+   my $sth = $self->prepare("select internal_id from contig where clone = '$clone_id'");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@contigs,$rowhash->{'id'});
+       push(@contigs,$rowhash->{'internal_id'});
    }
    
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
-       my $sth = $self->prepare("delete from contig where id = '$contig'");
+       my $sth = $self->prepare("delete from contig where internal_id = '$contig'");
        my $res = $sth->execute;
           $sth = $self->prepare("delete from dna where contig = '$contig'");
           $res = $sth->execute;
@@ -1319,7 +1327,7 @@ sub geneid_to_cloneid{
 sub cloneid_to_geneid{
    my ($self,$cloneid) = @_;
 
-   my $sth = $self->prepare("select count(*),cont.clone ,ex.contig,tran.gene  from contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and cont.clone = '$cloneid'  and cont.id = ex.contig group by tran.gene");
+   my $sth = $self->prepare("select count(*),cont.clone ,ex.contig,tran.gene  from contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and cont.clone = '$cloneid'  and cont.internal_id = ex.contig group by tran.gene");
 
    my @out;
 
@@ -1484,15 +1492,21 @@ sub write_Gene{
 
    my %done;
 
-   if( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+   if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
+
    # get out unique contig ids from gene to check against
    # database.
+
+   my %contighash;
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
 	   my $contig = $self->get_Contig($contig_id);
+
+	   $contighash{$contig_id} = $contig;
+
 	   # if there is no exception then it is there. Get rid of it
 	   $contig = 0;
        };
@@ -1514,7 +1528,15 @@ sub write_Gene{
 	   $sth->execute();
 	   if( $done{$exon->id()} ) { next; }
 	   $done{$exon->id()} = 1;
+
+	   my $internal_contig_id = $contighash{$exon->contig_id}->internal_id;
+
+	   if (!defined($internal_contig_id)) {
+	       $self->throw("Internal id not found for contig [" . $exon->contig_id . "]");
+	   }
+	   $exon->contig_id($internal_contig_id);
 	   $self->write_Exon($exon);
+	   
 	   $c++;
        }
    }
@@ -1626,7 +1648,7 @@ sub write_Feature {
     
     my $contigid = $contig->id;
     my $analysis;
-    
+    print("internal id is " . $contig->internal_id . "\n");
     my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
@@ -1669,7 +1691,7 @@ sub write_Feature {
 		my $homol = $feature->feature2;
 	    
 		$sth->execute('NULL',
-			      $contig->id,
+			      $contig->internal_id,
 			      $feature->start,
 			      $feature->end,
 			      $feature->score,
@@ -1681,7 +1703,7 @@ sub write_Feature {
 			      $homol->seqname);
 	    } else {
 		$sth->execute('NULL',
-			      $contig->id,
+			      $contig->internal_id,
 			      $feature->start,
 			      $feature->end,
 			      $feature->score,
@@ -1708,7 +1730,7 @@ sub write_Feature {
 	my $homol = $feature->feature2;
 
 	$sth2->execute('NULL',
-		       $contig->id,
+		       $contig->internal_id,
 		       $feature->start,
 		       $feature->end,
 		       $feature->score,
@@ -1754,7 +1776,7 @@ sub write_Feature {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->id."',"
+	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
 				      .$sub->start   .","
 				      .$sub->end     . ","
 				      .$sub->score   . ","
@@ -1989,7 +2011,7 @@ sub exists_Homol_Feature {
 			     "  and h.hstart = "    . $homol->start . 
 			     "  and h.hend   = "    . $homol->end   . 
 			     "  and h.hid    = '"   . $homol->seqname . 
-			     "' and f.contig = '"   . $contig->id . 
+			     "' and f.contig = '"   . $contig->internal_id . 
 			     "' and f.seq_start = " . $feature->start . 
 			     "  and f.seq_end = "   . $feature->end .
 			     "  and f.score = "     . $feature->score . 
@@ -2164,7 +2186,7 @@ sub write_Translation{
     
     if( !defined $translation->version  ) {
 	$self->throw("No version number on translation");
-    }
+
     my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
 			     . $translation->id . "',"
 			     . $translation->version . ","
@@ -2173,6 +2195,7 @@ sub write_Translation{
 			     . $translation->end . ",'"
 			     . $translation->end_exon_id . "')");
     $tst->execute();
+
 }
 
 =head2 write_Exon
@@ -2194,7 +2217,7 @@ sub write_Exon{
    if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
        $self->throw("$exon is not a EnsEMBL exon - not dumping!");
    }
-
+   
 #   my $lockst = $self->prepare("lock exon");
 #   $lockst->execute;
 
@@ -2204,23 +2227,25 @@ sub write_Exon{
 
 #       print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
        my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
-	   $exon->id() . "'," .
-	       $exon->version() . ",'".
-		   $exon->contig_id() . "', FROM_UNIXTIME(" .
-		       $exon->created(). "), FROM_UNIXTIME(" .
-			   $exon->modified() . ")," .
-			       $exon->start . ",".
-				   $exon->end . ",".
-				       $exon->strand . ",".
-					   $exon->phase . ",now(),".
-					       $exon->end_phase . ")";
-   
-   my $sth = $self->prepare($exonst);
-   $sth->execute();
-   
-   # Now the supporting evidence
-   
-   $self->write_supporting_evidence($exon);
+
+	   $exon->id()        . "'," .
+	   $exon->version()   . ",'".
+	   $exon->contig_id() . "', FROM_UNIXTIME(" .
+	   $exon->created()   . "), FROM_UNIXTIME(" .
+	   $exon->modified()  . ")," .
+	   $exon->start       . ",".
+	   $exon->end         . ",".
+           $exon->strand      . ",".
+	   $exon->phase       . ",now(),".
+	   $exon->end_phase . ")";
+       
+       my $sth = $self->prepare($exonst);
+       $sth->execute();
+
+       # Now the supporting evidence
+
+       $self->write_supporting_evidence($exon);
+   }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
@@ -2248,23 +2273,25 @@ sub write_Contig {
    }
 
    my $dna = $contig->primary_seq || $self->throw("No sequence in contig object");
-             $dna->id     || $self->throw("No contig id entered.");
-             $clone       || $self->throw("No clone entered.");
+   $dna->id                       || $self->throw("No contig id entered.");
+   $clone                         || $self->throw("No clone entered.");
 
-   my $contigid  = $dna->id;
+   my $contigid  = $dna   ->id;
    my $date      = $contig->seq_date;
-   my $len       = $dna->length;
-   my $seqstr    = $dna->seq;
+   my $len       = $dna   ->length;
+   my $seqstr    = $dna   ->seq;
    my $offset    = $contig->embl_offset();
    
    #Removed in new schema?
    #my $orientation    = $contig->embl_orientation();
-   my $order = $contig->embl_order();
+   my $order     = $contig->embl_order();
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
-   push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr',FROM_UNIXTIME($date))");
-   push(@sql,"replace into contig(id,dna,length,clone,offset,corder) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$order)");
+   push(@sql,"insert into dna(sequence,created) values('$seqstr',FROM_UNIXTIME($date))");
+   push(@sql,"insert into contig(id,internal_id,dna,length,clone,offset,corder) " .
+	     "values('$contigid',null,LAST_INSERT_ID(),$len,'$clone',$offset,$order)");
+
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
@@ -2272,6 +2299,17 @@ sub write_Contig {
      my $rv  =  $sth->execute();
      $self->throw("Failed to insert contig $contigid") unless $rv;
    }
+
+
+   my $sth = $self->prepare("select last_insert_id()");
+   my $res = $sth->execute;
+   my $row = $sth->fetchrow_hashref;
+   
+   my $id  = $row->{'last_insert_id()'};
+
+   print(STDERR "Contig $contigid - $id\n");
+
+   $contig->internal_id($id);
 
    # write sequence features. We write all of them together as it
    # is more efficient

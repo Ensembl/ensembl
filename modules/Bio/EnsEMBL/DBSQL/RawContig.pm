@@ -77,7 +77,7 @@ sub _initialize {
 					  ID
 					  )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
+  $id    || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
   $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
@@ -104,7 +104,7 @@ sub _initialize {
 sub get_all_Genes{
    my ($self,$supporting) = @_;
    my @out;
-   my $contig_id = $self->id();
+   my $contig_id = $self->internal_id();
    # prepare the SQL statement
    my %got;
    my $gene;
@@ -146,13 +146,13 @@ sub get_all_Genes{
 
 sub primary_seq {
    my ($self) = @_;
-   my $id = $self->id();
+   my $id = $self->internal_id();
 
    if( $self->_seq_cache() ) {
        return $self->_seq_cache();
    }
 
-   my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.id = \"$id\" and c.dna = d.id");
    my $res = $sth->execute();
 
    # should be a better way of doing this
@@ -160,7 +160,7 @@ sub primary_seq {
      my $str = $rowhash->{sequence};
 
      if( ! $str) {
-       $self->throw("No DNA sequence in contig $id");
+       $self->throw("No DNA sequence in contig " . $self->id . " " . $id);
      } 
      $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
      $str =~ s/\s//g;
@@ -240,7 +240,7 @@ sub get_all_SimilarityFeatures{
 
    my @array;
 
-   my $id     = $self->id();
+   my $id     = $self->internal_id();
    my $length = $self->length();
 
    my %analhash;
@@ -399,7 +399,7 @@ sub get_all_RepeatFeatures {
 
    my @array;
 
-   my $id     = $self->id();
+   my $id     = $self->internal_id();
    my $length = $self->length();
 
    my %analhash;
@@ -468,7 +468,7 @@ sub get_all_PredictionFeatures {
 
    my @array;
 
-   my $id     = $self->id();
+   my $id     = $self->internal_id();
    my $length = $self->length();
 
    my %analhash;
@@ -538,7 +538,7 @@ sub get_all_PredictionFeatures {
 
 sub length{
    my ($self,@args) = @_;
-   my $id= $self->id();
+   my $id= $self->internal_id();
 
    if (!defined($self->{_length})) {
        my $sth = $self->_dbobj->prepare("select length from contig where id = \"$id\" ");
@@ -596,6 +596,9 @@ sub embl_order{
    
 }
 
+
+
+
 =head2 embl_offset
 
  Title   : embl_offset
@@ -610,12 +613,15 @@ sub embl_offset{
    my $self = shift;
    my $id = $self->id();
 
+
    my $sth = $self->_dbobj->prepare("select offset from contig where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'offset'};
 
 }
+
+
 
 
 =head2 id
@@ -630,12 +636,33 @@ sub embl_offset{
 
 =cut
 
-sub id{
+sub id {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'id'} = $value;
     }
     return $self->{'id'};
+
+}
+
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : $obj->internal_id($newval)
+ Function: 
+ Example : 
+ Returns : value of database internal id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub internal_id {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'internal_id'} = $value;
+    }
+    return $self->{'internal_id'};
 
 }
 
@@ -655,7 +682,7 @@ sub id{
 sub seq_date{
    my ($self) = @_;
 
-   my $id = $self->id();
+   my $id = $self->internal_id();
 
    my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from dna where contig = \"$id\" ");
    $sth->execute();
@@ -741,7 +768,8 @@ sub _got_overlaps{
 
 sub _load_overlaps{
    my ($self,@args) = @_;
-   my $id = $self->id();
+
+   my $id = $self->internal_id();
    my $version = $self->seq_version();
 
    print STDERR "select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )\n";
@@ -749,7 +777,6 @@ sub _load_overlaps{
    my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
    
    $sth->execute();
-
 
    #
    # Certainly worth explaining here.
@@ -772,6 +799,9 @@ sub _load_overlaps{
    #
 
    while( my $rowhash = $sth->fetchrow_hashref ) {
+
+       my $contigid = $rowhash->{'id'};
+
        if( $rowhash->{'contig_a'} eq $id) {
 	   my $t = $rowhash->{'overlap_type'};
 	   my ($selflr,$sisterpol);
@@ -791,7 +821,7 @@ sub _load_overlaps{
 	       $self->throw("Impossible type position $t\n");
 	   }
 
-	   my $sis = $self->_dbobj->get_Contig($rowhash->{'contig_b'});
+	   my $sis = $self->_dbobj->get_Contig($contigid);
 	   my $co = Bio::EnsEMBL::ContigOverlap->new(
 						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_b_position'}, 
@@ -821,7 +851,7 @@ sub _load_overlaps{
 	   } else {
 	       $self->throw("Impossible type position $t\n");
 	   }
-	   my $sis = $self->_dbobj->get_Contig($rowhash->{'contig_a'});
+	   my $sis = $self->_dbobj->get_Contig($contigid);
 
 	   my $co = Bio::EnsEMBL::ContigOverlap->new(
 						     -sister => $sis,
