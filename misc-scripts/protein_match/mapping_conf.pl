@@ -26,7 +26,7 @@ package main;
 %mapping_conf = ( 
 	     # Files location (Input/Output)
 
-             'query'        => '/work4/mongin/data/ensembl.pep',
+             'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
              #'query'       => '/work1/mongin/mapping/targetted/total_targetted.pep',   
         
 	     'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
@@ -42,7 +42,7 @@ package main;
 	     #'refseq_gnp'    => '',
 	    
              #File containing all refseq and all SP in fasta format
-              'human_fa'    => '/work1/mongin/mapping/primary/h_prot.fa',
+              'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     #'human_fa'    => '',
 
              
@@ -52,28 +52,23 @@ package main;
 	     'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
 	     # 'ens4'      => '',
 
-             'refseq_map' => '/work1/mongin/mapping/tests/refseq_map.txt',
-             #'refseq_map' => '',
-
-             'sp_map' => '/work1/mongin/mapping/tests/refseq_map3.txt',
-             #'sp_map' => '',
-             
+                          
              #Output file containing the mapping of SP and refseq sequences to external databases
-             'x_map'  => '/work1/mongin/mapping/tests/xmap_out1.txt',
+             'x_map'  => '/work1/mongin/mapping/outputs/xmap_out1.txt',
              #'x_map_out'  => '',
 
              #Output file from pmatch.pl and input file for maps2db.pl
-             'human_map'  => '/work1/mongin/mapping/tests/human_out1.txt',
+             'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
              #'x_map_out'  => '',
 
              #Database handling
 
              #DB name
-             'db' => 'prot_pipeline_test',
+             'db' => 'proteintest',
              #'db' => '',
 
              #Host name
-             'host' => 'ecs1b',
+             'host' => 'ecs1d',
              #'host' => '',
 
 

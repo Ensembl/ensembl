@@ -94,11 +94,11 @@ while (<REFSEQ>) {
     my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
 
     if ($mim) {
-	print OUT "$dna_ac\tRefSeq\t$mim\tMIM\t$mim\t\n";
+	print OUT "$prot_ac\tRefSeq\t$mim\tMIM\t$mim\t\n";
     }
 
     if ($locus) {
-	print OUT "$dna_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\n";
+	print OUT "$prot_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\n";
     }
 }
 close (REFSEQ);

@@ -409,7 +409,7 @@ sub process_matches {
         foreach my $target_id (sort {$percent{$query_id}{$b} <=> $percent{$query_id}{$a}} keys %{$percent{$query_id}}) {
             my ($qperc , $tperc) = split (/\t/ , $percent{$query_id}->{$target_id});
 
-            if ($qperc > $opt_p && $tperc > $opt_p) {
+            if ($qperc > 0 && $tperc > 25) {
                 
 		if( !defined $hash2{$target_id} ) {
 		    $hash2{$target_id} = [];

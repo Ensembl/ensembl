@@ -56,6 +56,14 @@ while (<XMAP>) {
     
     #print STDERR "$targetid,$targetdb,$xac,$xdb,$xid,$xsyn\n";
 
+    if ($targetid =~ /^NP_\d+/) {
+	
+	    ($targetid) = $targetid =~ /^(NP_\d+)/;
+	    #print STDERR "$tid\n";
+	    $targetid = $ref_map{$targetid};
+	}
+
+
     if ($xac =~ /^NP_\d+/) {
 	
 	    ($xac) = $xac =~ /^(NP_\d+)/;
@@ -65,9 +73,9 @@ while (<XMAP>) {
 
     if ($xid =~ /^NP_\d+/) {
 	
-	($xid) = $xac =~ /^(NP_\d+)/;
+	($xid) = $xid =~ /^(NP_\d+)/;
 	#print STDERR "$tid\n";
-	$xac = $ref_map{$xid};
+	$xid = $ref_map{$xid};
     }
 
     my $p= Desc->new;
@@ -82,6 +90,18 @@ while (<XMAP>) {
 
 close (XMAP);
 
+my %missing;
+
+open (MISSING,"/work1/mongin/mapping/primary/missing.txt") || die;
+
+while (<MISSING>) {
+    chomp;
+    #print STDERR $_;
+    my ($hugo,$refseq) = split /\t/;
+    #print STDERR "$refseq\n";
+    $missing{$refseq} = $hugo;
+}
+
 open (MAP,"$map") || die "Can't open $map\n";
 
 while (<MAP>) {
@@ -90,55 +110,66 @@ while (<MAP>) {
     chomp;
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
-        
-    print STDERR "TARGETID0: $tid\n";
-    if ($tid ne "orphan") {
-	if ($tid =~ /^NP_\d+/) {
-	    
-	    ($tid) = $tid =~ /^(NP_\d+)/;
-	    #print STDERR "$tid\n";
-	    $tid = $ref_map{$tid};
-	}
+    
+    my $m = $tid; 
+    
+    #print STDERR "$tid\n";
 
-	if ($tid =~ /^(\w+-\d+)/) {
-	    ($tid) = $tid =~ /^(\w+)-\d+/;
-	}
-
-	#print STDERR "TARGETID1: $tid\n";
-	if (defined $tid) {
+    #print STDERR "TARGETID0: $tid\n";
+    #if ($tid ne "orphan") {
+    if ($tid =~ /^NP_\d+/) {
+	
+	($tid) = $tid =~ /^(NP_\d+)/;
+	#print STDERR "$tid\n";
+	$tid = $ref_map{$tid};
+    }
+    
+    if ($tid =~ /^(\w+-\d+)/) {
+	($tid) = $tid =~ /^(\w+)-\d+/;
+    }
+    
+    #if ($missing{$tid}) {
+    #   print "$m\t$tid\t$missing{$tid}\n";
+    #}
+    
+    #print STDERR "TARGETID1: $tid\n";
+    if (defined $tid) {
+	
+	my @array = @{$map{$tid}};
+	
+	foreach my $a(@array) {
+	    #print STDERR $a->xDB."\n"; 
 	    
-	    my @array = @{$map{$tid}};
-	    
-	    foreach my $a(@array) {
-		#print STDERR $a->xDB."\n"; 
+	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
+		#print STDERR "IDT: $queryperc\t$targetperc\n";
+		my $dbentry = Bio::EnsEMBL::IdentityXref->new
+		    ( -adaptor => $adaptor,
+		      -primary_id => $a->xAC,
+		      -display_id => $a->xID,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $a->xDB);
 		
-		if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
-		    #print STDERR "IDT: $queryperc\t$targetperc\n";
-		    my $dbentry = Bio::EnsEMBL::IdentityXref->new
-			( -adaptor => $adaptor,
-			  -primary_id => $a->xAC,
-			  -display_id => $a->xID,
-			  -version => 1,
-			  -release => 1,
-			  -dbname => $a->xDB);
-		    
-		    $dbentry->query_identity($queryperc);
-		    $dbentry->target_identity($targetperc);
-				    
-		    my @synonyms = split (/;/,$a->xSYN);
-		    
+		$dbentry->query_identity($queryperc);
+		$dbentry->target_identity($targetperc);
 		
-		    foreach my $syn (@synonyms) {
-			if ($syn =~ /\S+/) {
-			    $dbentry->add_synonym($syn);
-			}
+		print STDERR $a->xID,"\t\n";
+		
+		my @synonyms = split (/;/,$a->xSYN);
+		
+		
+		foreach my $syn (@synonyms) {
+		    if ($syn =~ /\S+/) {
+			$dbentry->add_synonym($syn);
 		    }
-		    $adaptor->store($dbentry,$queryid,"Translation");
-		}
-		
-		
-		else {
-		    my $dbentry = Bio::EnsEMBL::DBEntry->new
+			}
+		print STDERR "STORE1: ".$dbentry->display_id."\t".$queryid."\n";
+		$adaptor->store($dbentry,$queryid,"Translation");
+	    }
+	    
+	    
+	    else {
+		my $dbentry = Bio::EnsEMBL::DBEntry->new
 		    ( -adaptor => $adaptor,
 		      -primary_id => $a->xAC,
 		      -display_id => $a->xID,
@@ -146,30 +177,33 @@ while (<MAP>) {
 		      -release => 1,
 		      -dbname => $a->xDB );
 		
-		    
-		    
-		    my @synonyms = split (/;/,$a->xSYN);
-		    
-		    
-		    foreach my $syn (@synonyms) {
-			if ($syn =~ /\S+/) {
-			    $dbentry->add_synonym($syn);
-			}
+		
+		
+		my @synonyms = split (/;/,$a->xSYN);
+		
+			
+		foreach my $syn (@synonyms) {
+		    if ($syn =~ /\S+/) {
+			$dbentry->add_synonym($syn);
 		    }
-		    $adaptor->store($dbentry,$queryid,"Translation");
-		    
 		}
+print STDERR "STORE1: ".$dbentry->display_id,"\t".$queryid."\n";
+#print STDERR "STORE2: $dbentry,$queryid\n";
+		$adaptor->store($dbentry,$queryid,"Translation");
+		    
 	    }
 	}
-	
-	else  {
-	    print STDERR " not defined\n";
-	}  
-	
-	
     }
+    
 	
-
+    else  {
+	print STDERR " not defined\n";
+    }  
+	#}
+    
+    #}
+    
+    
 }
 
 
