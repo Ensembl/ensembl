@@ -219,6 +219,10 @@ sub _parse_exon{
 	    } else {
 		$exon->strand(1);
 	    }
+
+	    # convert gs-phase to real-phase
+	    $phase=&_convert_phase($phase,$start,$end,($exon->strand));
+
 	    $exon->phase($phase);
 	    $exon->start($start);
 	    $exon->end($end);
@@ -232,6 +236,33 @@ sub _parse_exon{
 	}
     }
     $fh->input_record_separator($is);
+}
+
+
+=head2 _convert_phase
+
+ Title   : _convert_phase
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub _convert_phase {
+    my ($phase,$start,$end,$strand) = @_;
+    if($strand==1){
+	$phase=((2+($start%3)-$phase)%3);
+    }else{
+	$phase=((2+($end%3)-$phase)%3);
+    }
+    if($phase==2){
+	$phase=1;
+    }elsif($phase==1){
+	$phase=2;
+    }
+    return $phase;
 }
 
 

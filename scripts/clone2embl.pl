@@ -14,6 +14,16 @@
 
     clone2embl -dbtype rdb -host mysql.server.somewhere dJ271M21
 
+=head1 OPTIONS
+
+    -dbtype    database type (rdb, ace, timdb)
+
+    -nodna     don't write dna part of embl file (for testing)
+
+    -gff       dump in gff format instead of EMBL
+
+    
+
 =cut
 
 
@@ -33,6 +43,7 @@ my $host2  = 'humsrv1';
 my $port   = '410000';
 my $gff;
 my $nodna = 0;
+my $help;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -45,8 +56,13 @@ my $clone  = 'dJ271M21';
 	     'host:s'   => \$host,
 	     'port:n'   => \$port,
 	     'gff'      => \$gff,
-	     'nodna'      => \$nodna,
+	     'nodna'    => \$nodna,
+	     'h|help'   => \$help,
 	     );
+
+if($help){
+    exec('perldoc', $0);
+}
 
 my $db;
 
