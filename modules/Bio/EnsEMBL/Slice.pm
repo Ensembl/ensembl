@@ -128,7 +128,7 @@ sub get_all_SimilarityFeatures_above_score{
 
 sub seq {
   my $self = shift;
-  my $seqAdaptor = $self->db->get_SequenceAdaptor();
+  my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
   my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 );
 
   return $seq;
@@ -149,9 +149,9 @@ sub seq {
 =cut
 
 sub subseq {
-  my ( $self, $start, $end ) = shift;
+  my ( $self, $start, $end ) = @_;
 
-  my $seqAdaptor = $self->db->get_SequenceAdaptor();
+  my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
   my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, $end, 1 );
 
   return $seq;
