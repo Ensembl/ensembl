@@ -121,6 +121,45 @@ sub get_Gene_chr_bp {
 }
 
 
+=head2 get_chr_start_end_of_contig
+
+ Title   : get_chr_start_end_of_contig
+ Usage   :
+ Function: returns the chromosome name, absolute start and absolute end of the 
+           specified contig
+ Returns : returns chr,start,end
+ Args    : contig id
+
+=cut
+sub get_chr_start_end_of_contig {
+    my ($self,$contigid) = @_;
+
+   if( !defined $contigid ) {
+       $self->throw("Must have contig id to fetch VirtualContig of contig");
+   }
+   
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+   					    st.chr_start,
+					    st.chr_end,
+					    st.chr_name 
+                                    FROM static_golden_path st,contig c 
+				    WHERE c.id = '$contigid' 
+                                    AND c.internal_id = st.raw_id 
+				    AND st.type = '$type'"
+		   		    );
+   $sth->execute();
+   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
+
+   if( !defined $contig ) {
+     $self->throw("Contig $contigid is not on the golden path of type $type");
+   }
+
+   return ($chr_name,$start,$end);
+}
+
+
 =head2 fetch_RawContigs_by_fpc_name
 
  Title   : fetch_RawContigs_by_fpc_name
@@ -537,30 +576,10 @@ sub fetch_VirtualContig_of_clone{
 sub fetch_VirtualContig_of_contig{
    my ($self,$contigid,$size) = @_;
 
-   if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch VirtualContig of contig");
-   }
-   
    if( !defined $size ) {$size=0;}
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my ($chr_name,$start,$end) = $self->get_chr_start_end_of_contig($contigid); 
 
-   my $sth = $self->dbobj->prepare("SELECT  c.id,
-   					    st.chr_start,
-					    st.chr_end,
-					    st.chr_name 
-                                    FROM static_golden_path st,contig c 
-				    WHERE c.id = '$contigid' 
-                                    AND c.internal_id = st.raw_id 
-				    AND st.type = '$type'"
-		   		    );
-   $sth->execute();
-   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
-
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
-   
    return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
    							$start-$size,
 							$end+$size
