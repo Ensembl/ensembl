@@ -154,7 +154,7 @@ sub create_xrefs {
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
-      foreach my $ll (@GeneIDline) {
+      foreach my $ll (@EntrezGeneIDline) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{EntrezGene};
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
