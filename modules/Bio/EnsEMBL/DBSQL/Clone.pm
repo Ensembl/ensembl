@@ -128,7 +128,7 @@ sub get_all_Genes{
        
        #print STDERR "Using [select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank]\n";
 
-       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
    
        $sth->execute();
 
@@ -138,7 +138,7 @@ sub get_all_Genes{
        my ($gene,$trans);
 
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$version) = @{$arr};
+	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$geneversion,$transcriptversion,$exonversion,$translationversion) = @{$arr};
 
 	   #print STDERR "Got exon $exonid\n";
 
@@ -159,7 +159,7 @@ sub get_all_Genes{
 	    #   $sth->execute();
 	    #   my $rowhash = $sth->fetchrow_hashref();
 	    
-	       $gene->version($version);
+	       $gene->version($geneversion);
 	       $gene->add_cloneid_neighbourhood($id);
 
 	       $current_gene_id = $geneid;
@@ -170,6 +170,7 @@ sub get_all_Genes{
 	   if( $transcriptid ne $current_transcript_id ) {
 	       $trans = Bio::EnsEMBL::Transcript->new();
 	       $trans->id($transcriptid);
+	       $trans->version($transcriptversion);
 	       $current_transcript_id = $transcriptid;
 
 	       my $translation = Bio::EnsEMBL::Translation->new();
@@ -178,7 +179,7 @@ sub get_all_Genes{
 	       $translation->start_exon_id($trans_exon_start);
 	       $translation->end_exon_id  ($trans_exon_end);
 	       $translation->id           ($translationid);
-
+	       $translation->version      ($translationversion);
 	       $trans->translation        ($translation);
 	       $gene ->add_Transcript     ($trans);
 	   }
@@ -194,7 +195,7 @@ sub get_all_Genes{
 	   $exon->end      ($end);
 	   $exon->strand   ($strand);
 	   $exon->phase    ($phase);
-	   
+	   $exon->version  ($exonversion);
 	   #
 	   # Attach the sequence, cached if necessary...
 	   #
