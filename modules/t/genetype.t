@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..4\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -58,17 +58,5 @@ my @genes=$contig->get_Genes_by_Type('ensembl');
 if (scalar @genes !=0){print "ok 4\n";}
 else {print "Not ok 4\n";}
 
-
-my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
-                                              -focusposition => 10000,
-                                              -ori => 1,
-                                              -left => 2000000,
-                                              -right => 2000000
-                                              );
-
-
-@genes=$vc->get_Genes_by_Type('ensembl');
-if (scalar @genes !=0){print "ok 5\n";}
-else {print "Not ok 5\n";}
 
 

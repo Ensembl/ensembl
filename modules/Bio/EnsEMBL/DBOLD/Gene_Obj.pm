@@ -60,7 +60,7 @@ use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
-use Bio::EnsEMBL::DB::VirtualContig;
+
 use DBI;
 use Bio::EnsEMBL::StickyExon;
 
