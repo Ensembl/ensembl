@@ -317,7 +317,11 @@ sub _get_aligned_evidence {
         my $hlength = $feature->hend - $feature->hstart + 1;
         my $length = $feature->end - $feature->start + 1;
         next PEP_FEATURE_LOOP unless ($length == (3 * $hlength));
-        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
+	my $hseq;
+	eval {
+          $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
+	};
+	next PEP_FEATURE_LOOP if ($@);	# data wrong
         my $hindent;
         if ($exons_to_display[$i]->strand > 0) {
           $hindent = ($total_exon_len + $fstart - $start) / 3;
@@ -353,8 +357,12 @@ sub _get_aligned_evidence {
     $total_exon_len += 3 * length($exon_peps[$i]);
   }
 
-  my @sorted_pep_evidence_arr = sort {    $$a{'score'}    <=> $$b{'score'}
-                                   || $$a{'hseqname'} cmp $$b{'hseqname'}
+  my @sorted_pep_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
+                                           ? -1 : 0 )
+			              || ( $$b{'hseqname'} =~ /^ENST/
+                                           ? 1 : 0 )
+				      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
+				      || ( $$a{'hindent'} <=> $$b{'hindent'} )
  			        } @pep_evidence_arr;
 
   my $evidence_line = "";
@@ -448,7 +456,11 @@ sub _get_aligned_evidence {
       next NUC_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype ne "protein") {
         my $hlength = $feature->hend - $feature->hstart + 1;
-        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
+	my $hseq;
+	eval {
+          $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
+	};
+	next NUC_FEATURE_LOOP if ($@);	# data wrong
         my $strand_wrt_exon = $all_exons[$i]->strand * $feature->strand;
         if ($strand_wrt_exon < 0) {
           my $hseq_obj = Bio::PrimarySeq->new( -seq => $hseq,
@@ -489,9 +501,14 @@ sub _get_aligned_evidence {
     $total_exon_len += $all_exons[$i]->end - $start + 1;
   }
 
-  my @sorted_nuc_evidence_arr = sort {    $$a{'score'}    <=> $$b{'score'}
-                                       || $$a{'hseqname'} cmp $$b{'hseqname'}
-		                } @nuc_evidence_arr;
+   my @sorted_nuc_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
+                                           ? -1 : 0 )
+                                      || ( $$b{'hseqname'} =~ /^ENST/
+                                          ? 1 : 0 )
+                                      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
+                                      || ( $$a{'hindent'} <=> $$b{'hindent'} )
+                                } @nuc_evidence_arr;
+
 
   $evidence_line = "";
   $uppercase = 1;	# case of sequence for output
