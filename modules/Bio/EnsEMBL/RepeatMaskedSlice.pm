@@ -73,7 +73,9 @@ use vars qw(@ISA);
                    -COORD_SYSTEM  => $cs,
                    -ADAPTOR => $adaptor,
                    -REPEAT_MASK => ['repeat_masker'],
-                   -SOFT_MASK => 1);
+                   -SOFT_MASK => 1,
+                   -NOT_DEFAULT_MASKING_CASES => {"repeat_class_SINE/MIR" => 1,
+                                                  "repeat_name_AluSp" => 0});
   Description: Creates a Slice which behaves exactly as a normal slice but
                that returns repeat masked sequence from the seq method.
   Returntype : Bio::EnsEMBL::RepeatMaskedSlice
@@ -86,8 +88,9 @@ sub new {
   my $caller = shift;
   my $class = ref($caller) || $caller;
 
-  my ($logic_names, $soft_mask) = rearrange(['REPEAT_MASK',
-                                            'SOFT_MASK'], @_);
+  my ($logic_names, $soft_mask, $not_default_masking_cases) = rearrange(['REPEAT_MASK',
+                                                                         'SOFT_MASK',
+                                                                         'NOT_DEFAULT_MASKING_CASES'], @_);
 
   my $self = $class->SUPER::new(@_);
 
@@ -99,7 +102,9 @@ sub new {
 
   $self->{'repeat_mask_logic_names'} = $logic_names;
   $self->{'soft_mask'} = $soft_mask;
-
+  $self->{'not_default_masking_cases'} = $not_default_masking_cases;
+  $self->{'not_default_masking_cases'} ||= {};
+  
   return $self;
 }
 
@@ -148,7 +153,36 @@ sub soft_mask {
   return $self->{'soft_mask'} || 0;
 }
 
+=head2 not_default_masking_cases
 
+  Arg [1]    : hash reference $not_default_masking_cases (optional, default is {})
+               The values are 0 or 1 for hard and soft masking respectively
+               The keys of the hash should be of 2 forms
+               "repeat_class_" . $repeat_consensus->repeat_class,
+                e.g. "repeat_class_SINE/MIR"
+               "repeat_name_" . $repeat_consensus->name
+                e.g. "repeat_name_MIR"
+               depending on which base you want to apply the not default masking either 
+               the repeat_class or repeat_name. Both can be specified in the same hash
+               at the same time, but in that case, repeat_name setting has priority over 
+               repeat_class. For example, you may have hard masking as default, and 
+               you may want soft masking of all repeat_class SINE/MIR,
+               but repeat_name AluSp (which are also from repeat_class SINE/MIR)
+  Example    : $rm_slice->not_default_masking_cases({"repeat_class_SINE/MIR" => 1,
+                                                     "repeat_name_AluSp" => 0});
+  Description: Getter/Setter which is used to escape some repeat class or name from the default 
+               masking in place. 
+  Returntype : hash reference
+  Exceptions : none
+  Caller     : seq() and subseq() methods
+
+=cut
+
+sub not_default_masking_cases {
+  my $self = shift;
+  $self->{'not_default_masking_cases'} = shift if (@_);
+  return $self->{'not_default_masking_cases'};
+}
 
 =head2 seq
 
@@ -170,6 +204,7 @@ sub seq {
   #
   my $logic_names = $self->repeat_mask_logic_names();
   my $soft_mask   = $self->soft_mask();
+  my $not_default_masking_cases = $self->not_default_masking_cases;
 
   my $repeats = [];
 
@@ -185,7 +220,7 @@ sub seq {
   #
   # mask the dna
   #
-  $self->_mask_features(\$dna,$repeats,$soft_mask);
+  $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
 
@@ -216,7 +251,7 @@ sub subseq {
   #
   my $logic_names = $self->repeat_mask_logic_names();
   my $soft_mask   = $self->soft_mask();
-
+  my $not_default_masking_cases = $self->not_default_masking_cases;
 
   # We want the repeat coordinates to be relative to the beginning of the
   # subregion requested and we only want the ones in the subregion.
@@ -240,7 +275,7 @@ sub subseq {
   #
   # mask the dna
   #
-  $self->_mask_features(\$dna,$repeats,$soft_mask);
+  $self->_mask_features(\$dna,$repeats,$soft_mask,$not_default_masking_cases);
   return $dna;
 }
 
