@@ -23,7 +23,7 @@ my $repeat_length_tally = 0;
 my $contig_length_tally = 0;
 
 CLONE:
-foreach $clone_acc (@clone_list){
+foreach my $clone_acc (@clone_list){
     my $clone = $db->get_Clone($clone_acc);
 
     foreach my $contig ($clone->get_all_Contigs){
@@ -81,7 +81,7 @@ foreach my $contig ($clone->get_all_Contigs){
 print "In total, there were " . $all_hits . 
     " hits found for this clone.  These hits represented matches to " . 
     scalar (keys %hits) . " distinct sequences.  " . 
-    ($sig_hits/$all_hits)*100 . " of all matches were significant at a threshold p-value of " . 
+    ($sig_hits/$all_hits)*100 . "% of all matches were significant at a threshold p-value of " . 
     $arbitrary_significance_threshold . ".\n";
 
 
