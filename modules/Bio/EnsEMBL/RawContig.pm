@@ -1,4 +1,4 @@
-# EnsEMBL RawContig object
+# EnsEMBL Contig object
 #
 # Copyright EMBL-EBI 2001
 #
@@ -686,18 +686,20 @@ sub get_all_ExternalFeatures {
 
 =cut
 
+
 sub ctg2genomic{
-  # Map the internal ID onto the golden path  
-  my( $self, $start, $end, $strand ) = @_;
-  if( ! $end ){ $self->throw( "Required args: contig_start, contig_end" ) }
-  $strand ||= 1;
+  # Map the internal ID onto the golden path
+  	my $self   = shift;
+	my $start  = shift || 1;
+	my $end    = shift || $self->length;
+	my $strand = shift || 1;  
+
   my $db = $self->adaptor->db();
   my $aa = $db->get_AssemblyMapperAdaptor();
   my $ma = $aa->fetch_by_type( $db->assembly_type );
   return $ma->map_coordinates_to_assembly( $self->dbID, $start, $end,
                                            $strand );
 }
-
 
 =head2 Methods included only for BioPerl compliance
 =cut
