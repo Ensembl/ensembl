@@ -204,7 +204,7 @@ sub fetch_by_feature_and_dbID{
     my %anahash;
 
 #The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the Xref table
-    if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
+ if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE") || ($feature eq "PROFILE")) {
 #      &eprof_start('interpro');
 	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
 	

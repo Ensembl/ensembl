@@ -415,9 +415,7 @@ sub get_all_DomainFeatures{
        
        push(@f,$self->get_all_SuperfamilyFeatures());
 
-#To command if we want also to retrieve profiles
-
-       #push(@f,$self->get_all_ProfileFeatures());
+       push(@f,$self->get_all_ProfileFeatures());
 
        return @f;
     }
