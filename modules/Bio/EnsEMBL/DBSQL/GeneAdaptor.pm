@@ -213,6 +213,7 @@ sub fetch_by_dbID {
 
 sub fetch_by_stable_id{
    my ($self,$id) = @_;
+   print STDERR "CoreGeneAdaptor fetch by stable id called.\n";
 
    my $sth = $self->prepare("select gene_id from gene_stable_id where stable_id = '$id'");
    $sth->execute;

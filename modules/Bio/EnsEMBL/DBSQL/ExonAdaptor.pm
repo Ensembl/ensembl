@@ -292,7 +292,9 @@ sub fetch_evidence_by_Exon {
                      WHERE exon_id = ".$exon->dbID;
 			
 
-
+  if( ! $exon->dbID() ) {
+    $self->throw( "Exon fetch evidence: $statement.\n" );
+  }
 
   my $sth = $self->prepare($statement);
   $sth->execute || $self->throw("execute failed for supporting evidence get!");

@@ -470,7 +470,6 @@ sub map_DBAdaptor {
 
 sub get_GeneAdaptor {
     my( $self ) = @_;
-
     #get a core db adaptor
     my $core_adaptor = $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
 

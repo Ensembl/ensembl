@@ -109,6 +109,11 @@ sub new {
   $self->adaptor($adaptor);
   $self->dbID( $dbID );
 # set stuff in self from @args
+
+  if( defined $adaptor && !defined $type ) {
+    $self->assembly_type
+      ( $adaptor->db()->get_MetaContainer()->get_default_assembly());
+  }
   return $self;
 }
 
