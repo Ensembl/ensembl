@@ -54,8 +54,6 @@ ok(&test_getter_setter($exon, 'contig', $contig));
 $exon->end_phase( -1 );
 ok(&test_getter_setter($exon, 'end_phase', 1));
 
-$multi->hide( "core", "exon" );
-
 
 #
 # find supporting evidence for the exon
@@ -74,6 +72,9 @@ while(my $f = shift @fs) {
 my $count = scalar(@evidence);
 debug("adding $count supporting features");
 $exon->add_supporting_features(@evidence);
+
+$multi->hide( "core", "exon", "supporting_feature", 
+	      "protein_align_feature", "dna_align_feature");
 
 $exonad->store($exon);
 
