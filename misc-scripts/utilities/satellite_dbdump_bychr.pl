@@ -24,11 +24,21 @@
 
   (4) Usage: 
 
-       satellite_dbdump_bychr  -<dbtype> <dbinstance>
+       satellite_dbdump_bychr -litedb <litedbinstance>  -<dbtype> <dbinstance> 
+           [ -<anotherdb> <anotherdb instance>  ... ]  [ -chr <a-chromosome> ] 
   
      e.g
   
        satellite_dbdump_bychr  -disease homo_sapiens_disease_110
+
+     Alternatively, dump all things in one go, relying on the consistent
+     naming scheme, as 
+
+       satellite_dbdump_bychr -litedb <litedbinstance> \
+           -mega 'homo_sapiens_\%s_110' [ -chr <a-chromosome> ] 
+     
+     In this case, the %s will be replaced by all the known database
+     types, and all will be dumped. Is the theory.
 
      Known types are: (see source code)
 
@@ -45,6 +55,7 @@ Based on make_dbdumpk_bychr (which should be used for the core database)
 ;
 
 use strict;
+use Carp;
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
@@ -60,6 +71,7 @@ my $litedb = ''; # 'homo_sapiens_lite_110'; # force user to provide it
 my $dumplite = 0;
 
 my $chr = 'chr21';                      # smaller than chr22
+my $template = undef;                   # when dumping all
 
 my $lim;
 
@@ -97,6 +109,7 @@ my $estdb;
             'snp:s' => \$snpdb,
             'embl:s' => \$embldb,
             'est:s' => \$estdb,
+            'mega:s' => \$template,  #dump all known ones, using $template
            );
 
 die "need a litedb; use -litedb something " unless $litedb;
@@ -108,14 +121,40 @@ if ($lim) {
     $limit = "limit $lim";
 }
 
-&dump_lite($litedb) if $dumplite;
-&dump_family($famdb);
-&dump_disease($diseasedb);
-&dump_maps($mapsdb);
-&dump_expression($expressiondb);
-&dump_snp($snpdb);
-&dump_embl($embldb);
-&dump_est($estdb);
+if ($template) {                        # 
+    # dump all, using naming
+    my $db;
+
+    &dump_lite( template_fill($template, 'lite'));
+    &dump_family( template_fill($template, 'family'));
+    &dump_disease( template_fill($template, 'disease'));
+    &dump_maps( template_fill($template, 'maps'));
+    &dump_expression( template_fill($template, 'expression'));
+    &dump_snp( template_fill($template, 'snp'));
+    &dump_embl( template_fill($template, 'embl'));
+    &dump_est( template_fill($template, 'est'));
+
+} else { 
+
+    &dump_lite($litedb) if $dumplite;
+    &dump_family($famdb);
+    &dump_disease($diseasedb);
+    &dump_maps($mapsdb);
+    &dump_expression($expressiondb);
+    &dump_snp($snpdb);
+    &dump_embl($embldb);
+    &dump_est($estdb);
+    
+}
+
+sub template_fill {
+    my ($tpl,  $actual) = @_;
+    confess "template should look like 'prefix\%ssuffix'\n"
+      unless $template =~ /%s/;
+    my $result = $tpl;
+    $result =~ s/%s/$actual/;
+    $result;
+}
 
 sub dump_lite {
 # needed for a few things
@@ -280,7 +319,6 @@ sub dump_expression  {
     return unless $satdb;
 
     warn "ignoring any non-ENSG aliases";
-    my $dumpdir = "$workdir/$satdb";
     dump_schema($satdb);
 
     my $sql;
@@ -332,7 +370,6 @@ sub dump_snp  {
     return unless $satdb;
 
     warn "ignoring any non-ENSG aliases";
-    my $dumpdir = "$workdir/$satdb";
     dump_schema($satdb);
 
     my $sql;
