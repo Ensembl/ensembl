@@ -101,7 +101,7 @@ sub run {
 	  print "removing $swiss_ref -> $gene : ";
 	}
 	if($create){
-	  XrefParser::BaseParser->add_to_xrefs($swiss_xref,$transcript,'',$transcript,"","",$source_id,$species_id);	  
+	  XrefParser::BaseParser->add_to_xrefs($swiss_xref,$transcript,'',$transcript,"","",$worm_source_id,$species_id);	  
 	  print "adding $swiss_ref -> $transcript\n";
 	}
 	
