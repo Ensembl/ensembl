@@ -539,7 +539,7 @@ sub register_chained {
     $end_mid_mapper   = $casm_mapper->first_middle_mapper();
     $end_cs           = $casm_mapper->first_CoordSystem();
     $end_registry     = $casm_mapper->first_registry();
-    $end_name         = 'first';    
+    $end_name         = 'first';
   } else {
     throw("Invalid from argument: [$from], must be 'first' or 'last'");
   }
@@ -635,7 +635,6 @@ sub register_chained {
 
   my @mid_ranges;
   my @start_ranges;
-  my $newly_added;
 
   #need to perform the query for each unregistered range
   foreach my $range (@$ranges) {
@@ -654,31 +653,27 @@ sub register_chained {
 
     while($sth->fetch()) {
       if( defined $mid_cs ) {
-	$newly_added = 
-	    $start_mid_mapper->add_map_coordinates
-	    (
-	     $seq_region_name,$start_start, $start_end, $ori,
-	     $mid_seq_region, $mid_start, $mid_end
-	     );
+        $start_mid_mapper->add_map_coordinates
+          (
+           $seq_region_name,$start_start, $start_end, $ori,
+           $mid_seq_region, $mid_start, $mid_end
+          );
       } else {
-	if( $from eq "first" ) {
-	  $newly_added = 
-	      $combined_mapper->add_map_coordinates
-	      (
-	       $seq_region_name,$start_start, $start_end, $ori,
-	       $mid_seq_region, $mid_start, $mid_end
-	       );
-	} else {
-	  $newly_added = 
-	      $combined_mapper->add_map_coordinates
-	      (
-	       $mid_seq_region, $mid_start, $mid_end, $ori,
-	       $seq_region_name,$start_start, $start_end
-	       );
-	}
+        if( $from eq "first" ) {
+          $combined_mapper->add_map_coordinates
+            (
+             $seq_region_name,$start_start, $start_end, $ori,
+             $mid_seq_region, $mid_start, $mid_end
+            );
+        } else {
+          $combined_mapper->add_map_coordinates
+            (
+             $mid_seq_region, $mid_start, $mid_end, $ori,
+             $seq_region_name,$start_start, $start_end
+            );
+        }
       }
 
-      next if( ! $newly_added );
       #update sr_name cache
       $self->{'_sr_id_cache'}->{"$mid_seq_region:$mid_cs_id"} =
         $mid_seq_region_id;
@@ -693,23 +688,23 @@ sub register_chained {
       #extra work later
 
       if($start_start < $start || $start_end > $end) {
-	$start_registry->check_and_register($seq_region_name,$start_start,$start_end);
+        $start_registry->check_and_register($seq_region_name,$start_start,
+                                            $start_end);
       }
     }
   }
 
-  # in the one step case, we load the mid ranges in the last_registry and we are done
+  # in the one step case, we load the mid ranges in the
+  # last_registry and we are done
   if( ! defined $mid_cs ) {
     for my $range ( @mid_ranges ) {
-      $end_registry->check_and_register( $range->[1], $range->[2], $range->[3] );
+      $end_registry->check_and_register( $range->[1], $range->[2],
+                                         $range->[3] );
     }
 
     # and thats it for the simple case ...
     return;
   }
-
-
-
 
 
   ###########
@@ -753,13 +748,11 @@ sub register_chained {
       #print STDERR "Adding to end<->mid mapper:\n" .
       #      "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
       #      "$mid_start-$mid_end($ori)\n";
-      $newly_added = $end_mid_mapper->add_map_coordinates
-	(
-	 $end_seq_region, $end_start, $end_end, $ori,
-	 $mid_seq_region, $mid_start, $mid_end
-	);
-
-      next if( ! $newly_added );
+      $end_mid_mapper->add_map_coordinates
+        (
+         $end_seq_region, $end_start, $end_end, $ori,
+         $mid_seq_region, $mid_start, $mid_end
+        );
 
       #update sr_name cache
       $self->{'_sr_id_cache'}->{"$end_seq_region:$end_cs_id"} =
@@ -818,7 +811,7 @@ sub register_chained {
                         $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
                         $seq_region_name, $total_start, $total_end);
           }
-          
+
           #print STDERR "  fcoord: id=".$fcoord->id." start=".
           #  $fcoord->start." end=".$fcoord->end."\n";
           #print STDERR "Loading combined mapper with : " ,
