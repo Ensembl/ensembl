@@ -601,7 +601,7 @@ sub get_AnnSeq {
  Usage   : $contig->write_acedb(\*FILEHANDLE);            
            $contig->write_acedb(\*FILEHANDLE, $ace_seq_name, $type, $supp_evid, $revcom, $url_obj);           
  Function: Dumps exons, transcript and gene objects of a contig in acedb format
- Returns : 
+ Returns : number of genes dumped
  Args    :  \*FILEHANDLE: file handle where the file is going to be written
             $ace_seq_name: name of the aceDB-clone name
             $type: type of gene in the ensEMBL database (default is 'ensembl')
@@ -612,7 +612,8 @@ sub get_AnnSeq {
 
 sub write_acedb {
     my ($self, $fh, $seqname, $type, $supp_evid, $revcom, $url_ob) = @_;
-     
+    
+    my $nexons=0; 
     my $contig_id = $self->id();
      
     $type ||= 'ensembl';
@@ -621,17 +622,18 @@ sub write_acedb {
     
     
     # get all genes 
-    my @genes = $self->get_Genes_by_Type( $type, $supp_evid );
+    my @genes = $self->get_Genes_by_Type( $type );
     
     # exit if the clone has no genes
     unless (@genes) {                
         print STDERR "'$seqname' has no genes\n";
-        return;
+        return $nexons;
     } 
     
     GENE:          
     foreach my $gene ( @genes ){
-        my $gene_id = $gene->id;
+        my $gene_id = $gene->stable_id;
+	$gene_id = $gene->dbID unless $gene_id;
         	
 	# get all the transcripts of this gene. 
         my @trans_in_gene = $gene->each_Transcript;
@@ -644,21 +646,23 @@ sub write_acedb {
         
         # for each transcript
         TRANSCRIPT:
-        foreach my $trans ( @trans_in_gene ) {	              
-            my $trans_id = $trans->id;
+        foreach my $trans ( @trans_in_gene ) {
+            my $trans_id = $trans->stable_id;
+	    $trans_id = $trans->dbID unless $trans_id;
             my $description = $trans->description;
             
             # get all exons of this transcript	                           
-            my @exons = $trans->each_Exon;   
-                                                                                                        
+            my @exons = $trans->get_all_Exons;
+
             # get transcript exons which belong to the contig 
             my @exons_in_contig;
             
-            foreach my $exon ( @exons ) {                             
-               if ( $exon->contig_id eq $contig_id ) {               
-                  push ( @exons_in_contig, $exon );                                                     
-               }
-            }  
+            foreach my $exon ( @exons ) {
+		if ( $exon->contig_id eq $contig_id ) {
+		    push ( @exons_in_contig, $exon );
+		    $nexons++;
+		}
+            }
             
             if (@exons_in_contig) {
                 my $tstart;
@@ -667,7 +671,7 @@ sub write_acedb {
                 my $ace_tend;
                 my $tstrand = $exons_in_contig[0]->strand;
                 
-                # check the strand and get the coordinates                                                       
+                # check the strand and get the coordinates
                 if( $tstrand == 1 ) {
                     $tstart = $exons_in_contig[0]->start;
                     $tend   = $exons_in_contig[$#exons_in_contig]->end;
@@ -726,6 +730,7 @@ sub write_acedb {
             }
         }
     }
+    return $nexons;
 }
 
 
