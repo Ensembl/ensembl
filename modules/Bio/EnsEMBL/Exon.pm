@@ -584,7 +584,7 @@ sub find_supporting_evidence {
       $self->find_supporting_evidence(\@subf);
     } 
     else {
-      if ($f->entire_seq()->name eq $self->contig()->name) {
+      if ($f->entire_seq()->name eq $self->slice()->name) {
 	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
 	  $self->add_supporting_features($f);
 	}
