@@ -31,35 +31,39 @@ sub run {
 
   my $file = $ARGV[0];
 
-  my $species_id = get_species($file);
+  my ($species_id, $species_name) = get_species($file);
 
-  my $source_id = BaseParser->upload_source(create_source($file));
+  $species_name =~ s/ /_/g;
+  my $name = "UniProt_SwissProt_" . $species_name;
+
+  my $source_id = BaseParser->get_source_id($name);
 
   BaseParser->upload_xrefs(create_xrefs($source_id, $species_id, $file));
 
 }
 
 # --------------------------------------------------------------------------------
-# Get species from file
+# Get species (id and name) from file
 # For SwissProt files the filename is the taxonomy ID
 
 sub get_species {
 
   my ($file) = @_;
 
-  my ($species_id, $extension) = split(/\./, basename($file));
+  my ($taxonomy_id, $extension) = split(/\./, basename($file));
 
-  my $sth = BaseParser->dbi()->prepare("SELECT name FROM species WHERE taxonomy_id=?");
-  $sth->execute($species_id);
-  my $species_name;
+  my $sth = BaseParser->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
+  $sth->execute($taxonomy_id);
+  my ($species_id, $species_name);
   while(my @row = $sth->fetchrow_array()) {
-    $species_name = $row[0];
+    $species_id = $row[0];
+    $species_name = $row[1];
   }
   $sth->finish;
 
   if (defined $species_name) {
 
-    print "Taxonomy ID " . $species_id . " corresponds to " . $species_name . "\n";
+    print "Taxonomy ID " . $taxonomy_id . " corresponds to species ID " . $species_id . " name " . $species_name . "\n";
 
   } else {
 
@@ -68,7 +72,7 @@ sub get_species {
 
   }
 
-  return $species_id;
+  return ($species_id, $species_name);
 
 }
 
