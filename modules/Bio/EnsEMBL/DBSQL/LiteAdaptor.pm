@@ -435,7 +435,7 @@ sub fetch_virtualsnps {
                 'strand'    => $row->{'chr_strand'},
                 'id'        => $row->{'refsnpid'},
                 'anosnpid'  => $row->{'anosnpid'},
-                'tscid'     => $row->{'tcsid'},
+                'tscid'     => $row->{'tscid'},
                 'hgbaseid'  => $row->{'hgbaseid'},
                 'type'      => $row->{'type'},
             };
