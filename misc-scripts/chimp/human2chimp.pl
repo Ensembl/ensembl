@@ -4,6 +4,8 @@ use warnings;
 use Getopt::Long;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::Analysis;
 
 use InterimTranscript;
 use InterimExon;
@@ -16,15 +18,16 @@ use StatMsg;
 
 use Utils qw(print_exon print_coords print_translation);
 
-use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
+use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
 
 
-{                               #block to avoid namespace pollution
+{                               # block to avoid namespace pollution
 
-  my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly, #human vars
+  my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly, # human vars
       $hchromosome, $hstart, $hend,
-      $chost, $cdbname, $cuser, $cpass, $cport, $cassembly, #chimp vars
-      $help, $verbose, $logfile);
+      $chost, $cdbname, $cuser, $cpass, $cport, $cassembly, # chimp vars
+      $dhost, $ddbname, $duser, $dpass, $dport, # destination db
+      $help, $verbose, $logfile, $store);
 
   GetOptions('hhost=s'   => \$hhost,
              'hdbname=s' => \$hdbname,
@@ -41,6 +44,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
              'cpass=s'   => \$cpass,
              'cport=i'   => \$cport,
              'cassembly=s' => \$cassembly,
+             'dhost=s'   => \$dhost,
+             'ddbname=s' => \$ddbname,
+             'duser=s'   => \$duser,
+             'dpass=s'   => \$dpass,
+             'dport=i'   => \$dport,
+             'store'     => \$store,
              'logfile=s' => \$logfile,
              'help'      => \$help,
              'verbose'   => \$verbose);
@@ -50,6 +59,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
   usage() if($help);
   usage("-hdbname option is required") if (!$hdbname);
   usage("-cdbname option is required") if (!$cdbname);
+  usage("-ddbname option is required when -store is specified")
+    if($store && !$ddbname);
 
   $hport ||= 3306;
   $cport ||= 3306;
@@ -60,14 +71,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
   $hassembly ||= 'NCBI34';
   $cassembly ||= 'BROAD1';
 
-  info("Connecting to human database");
-
-  my $human_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-    (-host    => $hhost,
-     -dbname => $hdbname,
-     -pass   => $hpass,
-     -user   => $huser,
-     -port   => $hport);
 
   info("Connecting to chimp database");
 
@@ -78,14 +81,36 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
      -user    => $cuser,
      -port    => $cport);
 
+  info("Connecting to human database");
+
+  my $human_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+    (-host    => $hhost,
+     -dbname => $hdbname,
+     -pass   => $hpass,
+     -user   => $huser,
+     -dnadb  => $chimp_db,
+     -port   => $hport);
+
+
+  my $dest_db;
+
+  if($store) {
+    $dest_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+      (-host   => $dhost,
+       -dbname => $ddbname,
+       -pass   => $dpass,
+       -user   => $duser,
+       -dnadb  => $chimp_db,
+       -port   => $dport);
+
+    my $analysis = Bio::EnsEMBL::Analysis->new(-logic_name => 'human2chimp');
+    $dest_db->get_AnalysisAdaptor->store($analysis);
+  }
 
   StatMsg::set_logger(StatLogger->new($logfile));
 
-  $human_db->dnadb($chimp_db);
-
   my $slice_adaptor   = $human_db->get_SliceAdaptor();
   my $gene_adaptor    = $human_db->get_GeneAdaptor();
-
 
   info("Fetching chromosomes");
 
@@ -199,6 +224,11 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
                          StatMsg::ENTIRE);
           }
         }
+
+        if($store) {
+          store_gene($dest_db, $gene, $finished_transcripts);
+        }
+
       }
     }
   }
@@ -464,10 +494,10 @@ sub get_coords_extent {
   $chimp_exon->cdna_end($chimp_exon->cdna_start() + $chimp_exon->length() - 1);
 }
 
-################################################################################
+###############################################################################
 # create_transcripts
 #
-################################################################################
+###############################################################################
 
 sub create_transcripts {
   my $itranscript   = shift;    # interim transcript
@@ -493,6 +523,177 @@ sub create_transcripts {
 
   return \@finished_transcripts;
 }
+
+
+
+###############################################################################
+# store gene
+#
+# Builds Ensembl genes from the generated chimp transcripts and stores them
+# in the database.
+#
+###############################################################################
+
+
+sub store_gene {
+  my $db = shift;
+  my $hum_gene = shift; # human gene
+  my $ctranscripts = shift; # chimp transcripts
+
+  my $MIN_AA_LEN = 15;
+  my $MIN_NT_LEN = 600;
+
+  my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('human2chimp');
+
+  # Look at the translations and convert any transcripts with stop codons
+  # into pseudogenes
+  foreach my $ct (@$ctranscripts) {
+    if($ct->translation && $ct->translate->seq() =~ /\*/) {
+      $ct->translation(undef);
+    }
+  }
+
+
+  # Group transcripts by their strand and scaffold.  We
+  # cannot really build genes that spand scaffolds or strands
+  my (%ctrans_hash, %nt_lens, %aa_lens);
+
+  foreach my $ct (@$ctranscripts) {
+    my $region = $ct->slice->seq_region_name() . ':' . $ct->strand();
+
+    $ctrans_hash{$region} ||= [];
+    push @{$ctrans_hash{$region}}, $ct;
+
+    # keep track of how many nucleotides and amino acids are in the
+    # transcripts from this gene that made it to this area.  If there
+    # are not many, the transcript should probably be rejected.
+    my $nt_len = length($ct->spliced_seq()) || 0;
+    my $aa_len = ($ct->translation()) ? length($ct->translate->seq()) : 0;
+
+    $nt_lens{$region} ||= 0;
+    $nt_lens{$region} += $nt_len;
+
+    $aa_lens{$region} ||= 0;
+    $aa_lens{$region} += $aa_len;
+  }
+
+  my %chimp_genes;
+
+  my $gene_adaptor = $db->get_GeneAdaptor();
+
+  foreach my $region (keys %ctrans_hash) {
+    # keep transcripts if there is a minimum amount of nucleotide
+    # OR amino acid sequence in transcripts in the same region
+    next if($nt_lens{$region}<$MIN_NT_LEN && $aa_lens{$region}<$MIN_AA_LEN);
+
+    # one gene for each region
+    my $cgene = $chimp_genes{$region} ||= Bio::EnsEMBL::Gene->new();
+
+    generate_stable_id($cgene);
+
+    # rename transcripts and add to gene
+    foreach my $ctrans (@{$ctrans_hash{$region}}) {
+      generate_stable_id($ctrans);
+
+      # rename translation
+      if($ctrans->translation) {
+        generate_stable_id($ctrans->translation);
+      }
+
+      $cgene->add_Transcript($ctrans);
+    }
+
+    # rename all of the exons
+    # but watch out because duplicate exons will be merged and we do not
+    # want to generate multiple names
+    my %ex_stable_ids;
+    foreach my $ex (@{$cgene->get_all_Exons()}) {
+      if($ex_stable_ids{$ex->hashkey()}) {
+        $ex->stable_id($ex_stable_ids{$ex->hashkey()});
+      } else {
+        generate_stable_id($ex);
+        $ex_stable_ids{$ex->hashkey()} = $ex->stable_id();
+      }
+    }
+
+    # set the analysis on the gene object
+    $cgene->analysis($analysis);
+
+
+    # for now just grab all HUGO xrefs, and take last one as display xref;
+    my $display_xref;
+    foreach my $gx (@{$hum_gene->get_all_DBLinks()}) {
+      if(uc($gx->dbname()) eq 'HUGO') {
+        $cgene->add_DBEntry($gx);
+        $display_xref = $gx;
+      }
+    }
+
+    $cgene->display_xref($display_xref) if($display_xref);
+
+    my $name = ($display_xref)?$display_xref->display_id():$cgene->stable_id();
+
+    # store the bloody thing
+    print STDERR "Storing gene: $name\n";
+    $gene_adaptor->store($cgene);
+  }
+
+  return;
+}
+
+
+
+###############################################################################
+# generate_stable_id
+#
+# Generates a stable_id for a gene, transcript, translation or exon and sets
+# it on the object.
+#
+###############################################################################
+
+
+my ($TRANSCRIPT_NUM, $GENE_NUM, $EXON_NUM, $TRANSLATION_NUM);
+
+
+sub generate_stable_id {
+  my $object = shift;
+
+  my $SPECIES_PREFIX = 'PTR';
+  my $PAD            = 18;
+
+  my $type_prefix;
+  my $num;
+
+  if($object->isa('Bio::EnsEMBL::Exon')) {
+    $type_prefix = 'E';
+    $EXON_NUM       ||= 0;
+    $num = ++$EXON_NUM;
+  } elsif($object->isa('Bio::EnsEMBL::Transcript')) {
+    $type_prefix = 'T';
+    $TRANSCRIPT_NUM ||= 0;
+    $num = ++$TRANSCRIPT_NUM;
+  } elsif($object->isa('Bio::EnsEMBL::Gene')) {
+    $type_prefix = 'G';
+    $GENE_NUM       ||= 0;
+    $num = ++$GENE_NUM;
+  } elsif($object->isa('Bio::EnsEMBL::Translation')) {
+    $type_prefix = 'P';
+    $TRANSLATION_NUM ||= 0;
+    $num = ++$TRANSLATION_NUM;
+  } else {
+    throw('Unknown object type '.ref($object).'. Cannot create stable_id.');
+  }
+
+  my $prefix = "ENS${SPECIES_PREFIX}${type_prefix}";
+
+  my $pad = $PAD - length($prefix) - length($num);
+
+  $object->version(1);
+  $object->stable_id($prefix . ('0'x$pad) . $num);
+}
+
+
+
 
 
 ###############################################################################
@@ -532,11 +733,26 @@ options: -hdbname <dbname>      human database name
 
          -cassembly <assembly>  chimp assembly version (default BROAD1)
 
+         -store                 flag indicating genes are to be stored in a
+                                destination database
+
+         -ddbname <dbname>      destination database name
+
+         -dhost <hostname>      destination host name (default localhost)
+
+         -duser <user>          destination mysql db user with write priveleges
+
+         -dpass <password>      destination mysql user password (default none)
+
+         -dport <port>          desitnation mysql db port (default 3306)
+
          -help                  display this message
 
 example: perl human2chimp.pl -hdbname homo_sapiens_core_20_34b -hhost ecs2d \\
-                             -huser ensro -cdbname pan_trogldytes_core_20_1 \\
-                             -chost ecs4 -cport 3350 -cuser ensro
+                             -huser ensro -cdbname pan_troglodytes_core_20_1 \\
+                             -chost ecs4 -cport 3350 -cuser ensro \\
+                             -store -ddbname pt_genes -dhost ecs1d \\
+                             -duser ensadmin -dpass secret
 
 EOF
 
