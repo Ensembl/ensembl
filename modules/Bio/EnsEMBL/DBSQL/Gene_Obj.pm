@@ -814,9 +814,9 @@ sub _get_dblinks{
    foreach my $trans ( $gene->each_Transcript ) {
        my $transid = $trans->id;
 
-       my $trans =~ s/P/T/;
+       $transid =~ s/P/T/;
 
-       my @transcript_xrefs = $entryAdaptor->fetch_by_translation($trans);
+       my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
        
        foreach my $translink(@transcript_xrefs) {
 	   $gene->add_DBLink($translink);
