@@ -776,14 +776,11 @@ CREATE TABLE seq_region (
 
     seq_region_id    INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
     name             VARCHAR(40),
-    coord_system     VARCHAR(40),
-    version          VARCHAR(40),
-    is_default       ENUM('true', 'false'),
+    coord_system_id  INT(10),
     length           INT(10),
 
     PRIMARY KEY (seq_region_id)
 ) TYPE=MyISAM;
-
 
 CREATE TABLE seq_region_annotation (
 
@@ -804,5 +801,14 @@ CREATE TABLE assembly_exception (
     exc_seq_region_start INT, 
     exc_seq_region_end   INT,
     ori                  INT
+
+) TYPE=MyISAM;
+
+CREATE TABLE coord_system (
+
+    coord_system_id   INT,
+    name              VARCHAR(40),
+    version           VARCHAR(40),
+    attrib            SET ('top_level', 'default_version', 'sequence')
 
 ) TYPE=MyISAM;
