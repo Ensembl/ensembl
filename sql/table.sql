@@ -514,6 +514,7 @@ CREATE TABLE externalDB(
          externalDBId INT unsigned not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
+	 status  ENUM ('KNOWN','XREF','PRED') not null,
          PRIMARY KEY( externalDBId ) 
    	);
 
