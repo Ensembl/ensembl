@@ -274,9 +274,9 @@ sub fetch_Protein_by_dbid{
 #If protein feature is an Interpro signature and has not been already put into DBlink, add it.       
        if ((! defined ($seen1{$featid})) && (($dbdesc eq "Pfam") || ($dbdesc eq "PRINTS") || ($dbdesc eq "PROSITE"))) {
 	   my $newdbentry = Bio::EnsEMBL::DBEntry->new();
-	   $newdbentry->database($dbdesc);
 	   $newdbentry->primary_id($featid);
-
+	   $newdbentry->dbname($dbdesc);
+	   
 #To work with SP dump the signature id has to be given, because we don't store it, an X is given instead
 	   $newdbentry->optional_id("X");
 	   $protein->annotation->add_DBLink($newdbentry);
@@ -296,7 +296,7 @@ sub fetch_Protein_by_dbid{
 #If the Interpro accession number has not already been put into DBlink, add it 
        if (! defined ($seen2{$interpro}) && defined $interpro) {
 	   my $dblink = Bio::EnsEMBL::DBEntry->new();
-	   $dblink->database('InterPro');
+	   $dblink->dbname('InterPro');
 	   $dblink->primary_id($interpro);
 	   $protein->annotation->add_DBLink($dblink);
 	   $seen2{$interpro} = 1;
@@ -308,7 +308,7 @@ sub fetch_Protein_by_dbid{
 
 #Add the Ensembl gene id (ENSG) as a DBlink to the object
    my $dblink = Bio::EnsEMBL::DBEntry->new();
-   $dblink->database('EnsEMBL');
+   $dblink->dbname('EnsEMBL');
    $dblink->primary_id($geneid);
    $protein->annotation->add_DBLink($dblink);
 
