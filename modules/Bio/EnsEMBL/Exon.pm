@@ -1550,12 +1550,13 @@ sub adjust_start_end {
 
   my $new_exon = Bio::EnsEMBL::Exon->new();
   %{$new_exon} = %{$self};
+
   if( $self->strand() == 1 ) {
     $new_exon->start( $self->start() + $start_adjust );
     $new_exon->end( $self->end() + $end_adjust )
   } else {
-    $new_exon->start( $self->end() - $start_adjust );
-    $new_exon->end( $self->start() - $end_adjust )
+    $new_exon->start( $self->start() - $end_adjust );
+    $new_exon->end( $self->end() - $start_adjust )
   }
 
   return $new_exon;

@@ -722,30 +722,21 @@ sub get_all_translateable_Exons {
   my( @translateable );
 
   foreach my $ex (@{$self->get_all_Exons}) {
-    my $ex_id   = $ex->dbID;
 
     if ($ex ne $start_exon and ! @translateable) {
       next;   # Not yet in translated region
     }
-    my $start   = $ex->start;
-    my $end     = $ex->end;
+
     my $length  = $ex->length;
-    my $strand  = $ex->strand;
         
-    my $trunc_start = $start;
-    my $trunc_end   = $end;
-        
+    my $adjust_start = 0;
+    my $adjust_end = 0;
     # Adjust to translation start if this is the start exon
     if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
 	$self->throw("Translation start '$t_start' is outside exon $ex length=$length");
       }
-      if ($strand == 1) {
-	$trunc_start = $start + $t_start - 1;
-      } 
-      else {
-	$trunc_end   = $end   - $t_start + 1;
-      }
+      $adjust_start = $t_start - 1;
     }
         
     # Adjust to translation end if this is the end exon
@@ -753,22 +744,15 @@ sub get_all_translateable_Exons {
       if ($t_end < 1 or $t_end > $length) {
 	$self->throw("Translation end '$t_end' is outside exon $ex length=$length");
       }
-      if ($strand == 1) {
-	$trunc_end   = $end   - $length + $t_end;
-      } 
-      else {
-	$trunc_start = $start + $length - $t_end;
-      }
+      $adjust_end = $t_end - $length;
     }
-        
+
     # Make a truncated exon if the translation start or
     # end causes the coordinates to be altered.
-    if ($trunc_start != $start or $trunc_end != $end) {
-      my ( $adjust_start, $adjust_end );
-      $adjust_start = $trunc_start - $start;
-      $adjust_end = $trunc_end - $end;
+    if ($adjust_end || $adjust_start) {
+      my $newex = $ex->adjust_start_end( $adjust_start, $adjust_end );
 
-      push( @translateable, $ex->adjust_start_end( $adjust_start, $adjust_end ));
+      push( @translateable, $newex );
     } else {
       push(@translateable, $ex);
     }

@@ -26,6 +26,8 @@ if($opt_l) {
 }
 
 #run all of the specified tests  
+$ENV{'RUNTEST_ACTIVE'} = 1;
+
 runtests(@{&get_all_tests('.', \@ARGV)});
 
 
