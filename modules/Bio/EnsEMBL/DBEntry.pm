@@ -25,10 +25,7 @@ This module stores information about external references to EnsEMBL objects
 
 Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk> 
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal 
-methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -381,6 +378,9 @@ sub comment {
 }
 
 
+=head1 DEPRECATED METHODS
+
+=cut
 
 =head2 get_synonyms
 

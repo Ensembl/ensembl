@@ -12,15 +12,11 @@ memory leak problems.  Its sole purpose is to channel calls to the
 object which is held onto by the container and to invoke the objects deleteObj
 method to breaks all circular memory references at the correct time.
 
-Eventually this problem may be solved through the use of WeakRef instead. 
-
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

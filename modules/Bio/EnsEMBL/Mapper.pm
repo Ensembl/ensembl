@@ -1,5 +1,3 @@
-
-
 #
 # Ensembl module for Bio::EnsEMBL::Mapper
 #
@@ -42,10 +40,7 @@ This module is part of the Ensembl project http://www.ensembl.org
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -526,16 +521,15 @@ sub from{
 }
 
 
-=head2 _dump
-
-    Arg  1      *FileHandle $fh
-    Function    convenience dump function
-                possibly useful for debugging
-    Returntype  none
-    Exceptions  none
-    Caller      internal
-
-=cut
+#  _dump
+#
+#     Arg  1      *FileHandle $fh
+#     Function    convenience dump function
+#                 possibly useful for debugging
+#     Returntype  none
+#     Exceptions  none
+#     Caller      internal
+#
 
 sub _dump{
    my ($self,$fh) = @_;
@@ -554,16 +548,15 @@ sub _dump{
 }
 
 
-=head2 _sort
-
-    Function    sort function so that all
-                mappings are sorted by
-                chromosome start
-    Returntype  none
-    Exceptions  none
-    Caller      internal
-
-=cut
+# _sort
+#
+#    Function    sort function so that all
+#                mappings are sorted by
+#                chromosome start
+#    Returntype  none
+#    Exceptions  none
+#    Caller      internal
+#
 
 sub _sort{
    my ($self) = @_;
@@ -652,20 +645,17 @@ sub _merge_pairs {
     $self->{'pair_count'} += scalar( @$lr );
   }
 }
- 
 
 
-
-=head2 _is_sorted
-
-    Arg  1      int $sorted
-    Function    toggle for whether the (internal)
-                map data are sorted
-    Returntype  int
-    Exceptions  none
-    Caller      internal
-
-=cut
+# _is_sorted
+#
+#    Arg  1      int $sorted
+#    Function    toggle for whether the (internal)
+#                map data are sorted
+#    Returntype  int
+#    Exceptions  none
+#    Caller      internal
+#
 
 sub _is_sorted{
    my ($self,$value) = @_;

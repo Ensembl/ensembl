@@ -1,5 +1,3 @@
-
-
 #
 # Ensembl module for Bio::EnsEMBL::Mapper::Gap
 #
@@ -28,45 +26,46 @@ This modules is part of the Ensembl project http://www.ensembl.org
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::Mapper::Gap;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
-use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+=head2 new
 
-# new() is written here 
+  Arg [1]    : int $start
+  Arg [2]    : int $end
+  Example    : $gap = Bio::EnsEMBL::Mapper::Gap($start, $end);
+  Description: Creates a new Gap object.
+  Returntype : Bio::EnsEMBL::Mapper::Gap
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Mapper
+
+=cut
 
 sub new {
   my($class,$start, $end) = @_;
 
   return bless { 'start' => $start,
-		 'end'   => $end }, $class;
+                 'end'   => $end }, $class;
 
 }
 
+
 =head2 start
 
-  Arg  1      int $start
-	      start coordinate of gap region
-  Function    accessor method
-  Returntype  int
-  Exceptions  none
-  Caller      Bio::EnsEMBL::Mapper::Gap
+  Arg [1]    : (optional) int $start
+               start coordinate of gap region
+  Example    : $start = $gap->start();
+  Description: Getter/Setter for the start attribute
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -82,12 +81,13 @@ sub start{
 
 =head2 end
 
-  Arg  1      int $end
-	      end coordinate of gap region
-  Function    accessor method
-  Returntype  int
-  Exceptions  none
-  Caller      Bio::EnsEMBL::Mapper::Gap
+  Arg [1]    : (optional) int $newval
+               The new value to set the end coordinate to
+  Example    : $end = $gap->end()
+  Description: Getter/Setter for the end coordinate of the gap region
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -97,8 +97,19 @@ sub end{
       $self->{'end'} = $value;
     }
     return $self->{'end'};
-
 }
+
+
+=head2 length
+
+  Arg [1]    : none
+  Example    : $len = $gap->length();
+  Description: Getter for the length of this gap region
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub length {
   my $self = shift;

@@ -60,10 +60,7 @@ hend, hstrand attributes.
 
 Post comments/questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -374,9 +371,10 @@ sub display_id {
 }
 
 
-###########################
-# DEPRECATED METHODS FOLLOW
-###########################
+=head1 DEPRECATED METHODS
+
+=cut
+
 
 =head2 feature1
 

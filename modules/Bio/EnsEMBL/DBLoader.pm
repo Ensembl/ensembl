@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBLoader - Run time database loader
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBLoader->new("Bio::EnsEMBL::DBSQL::Obj/host=localhost;dbname=ensdev;user=ensro;");
+    $db = Bio::EnsEMBL::DBLoader->new("Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;dbname=homo_sapiens_core_19_34a;user=ensro;");
 
     # $db is a database object
     $db = Bio::EnsEMBL::DBLoader->standard();
@@ -41,32 +41,29 @@ These are passed as a hash to the new method of the database object
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions/comments to the Ensembl development list:
+B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::DBLoader;
-
 
 use strict;
 
+
 =head2 new
 
- Title   : new
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $string
+               An Ensembl database locator string.
+  Example    : Bio::EnsEMBL::DBSQL::DBLoader->new("Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;dbname=homo_sapiens_core_19_34a;user=ensro;"
+  Description: Connects to an Ensembl database using the module specified in
+               the locator string.
+  Returntype : The module specified in the load string is returned.
+  Exceptions : thrown if the specified module cannot be instantiated or the
+               locator string cannot be parsed
+  Caller     : ?
 
 =cut
 

@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::Storable
+# Ensembl module for Bio::EnsEMBL::Storable
 #
 
 =head1 NAME
@@ -15,24 +15,20 @@ Bio::EnsEMBL::Storable
   }
 =head1 DESCRIPTION
 
-This is a simple object which contains a few coordinate system attributes:
-name, internal identifier, version
-
-=head1 AUTHOR - Graham McVicker
-
-=head1 CONTACT
-
-Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
-
-=head1 APPENDIX
-
 This is a storable base class.  All objects which are storable in the database
 should inherit from this class.  It provides two getter/setters: dbID()
 adaptor().  And a is_stored() method that can be used to determine if an
 object is already stored in a database.
 
-=cut
+=head1 AUTHOR - Graham McVicker
 
+=head1 CONTACT
+
+Post questions to the Ensembl development list B<ensembl-dev@ebi.ac.uk>
+
+=head1 METHODS
+
+=cut
 
 use strict;
 use warnings;

@@ -27,27 +27,13 @@ This module is part of the Ensembl project http://www.ensembl.org
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::Mapper::Coordinate;
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inheriets from Bio::EnsEMBL::Root
-
-use Bio::EnsEMBL::Root;
-
-
-@ISA = qw(Bio::EnsEMBL::Root);
 
 sub new {
   my($class, $id, $start, $end, $strand) = @_;

@@ -22,14 +22,10 @@ my $xref = Bio::EnsEMBL::IdentityXref->new;
 
 Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-
-# Let the code begin...
 package Bio::EnsEMBL::IdentityXref;
 use vars qw(@ISA $AUTOLOAD);
 use strict;
@@ -393,10 +389,6 @@ sub map_feature {
   
   return @coords;
 }
-
-
-
-
 
 
 

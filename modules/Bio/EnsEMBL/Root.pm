@@ -14,12 +14,12 @@ rearrange method which can be imported in the following way:
    #can now call rearrange as a class method (instead as object method)
    my ($start, $end) = rearrange(['START','END'], \@args);
 
-If you want to use the throw or warn methods the replacement are the class
+If you want to use the throw or warn methods the replacement use the class
 methods throw and warning from the Bio::EnsEMBL::Utils::Exception class:
 
    use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-   #can now call throw or warning even without bless reference
+   #can now call throw or warning even without blessed reference
    warning('This is a warning');
    throw('This is an exception');
 

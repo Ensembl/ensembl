@@ -53,9 +53,7 @@ foreach my $evtag (@{$goxref->get_all_linkage_types()}) {
 
 Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 

@@ -44,10 +44,7 @@ See Bio::EnsEMBL:Transcript
 
 Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal
-methods are usually preceded with a_
+=head1 METHODS
 
 =cut
 
@@ -68,10 +65,10 @@ use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 =head2 new
 
-  Args       : see SUPERCLASS Bio::EnsEMBL::SeqFeature
+  Args       : see SUPERCLASS B<Bio::EnsEMBL::Feature>
   Example    : none
   Description: create an Exon object
-  Returntype : Bio::EnsEMBL::Exon 
+  Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general
 
@@ -105,7 +102,7 @@ sub new {
   Arg [4]    : int $strand (1 or -1)
   Example    : none
   Description: create an Exon object
-  Returntype : Bio::EnsEMBL::Exon 
+  Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
   Caller     : general, creation in Bio::EnsEMBL::Lite::GeneAdaptor
 
@@ -889,9 +886,10 @@ sub display_id {
   return $self->{'stable_id'} || '';
 }
 
-#####################
-# DEPRECATED METHODS
-#####################
+
+=head1 DEPRECATED METHODS
+
+=cut
 
 
 sub _get_stable_entry_info {
