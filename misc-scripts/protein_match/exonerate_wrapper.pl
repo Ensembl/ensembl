@@ -169,7 +169,10 @@ $ENV{EXONERATE_EXONERATE_PROTEINWORDLEN} = 6;
 $ENV{EXONERATE_EXONERATE_WORDTHRESHOLD}  = 3;
 
 my $e_ryo =
-    '%qi\t%qal\t%ql\t%qab\t%qae\t%ti\t%tal\t%tl\t%tab\t%tae\t%p\t%s\t%C\n';
+    '%qi\\\t%qal\\\t%ql\\\t%qab\\\t%qae\\\t' .
+    '%ti\\\t%tal\\\t%tl\\\t%tab\\\t%tae\\\t' .
+    '%p\\\t%s\\\t%C\\\n';
+
 my $e_opt =
     "--showalignment no --showvulgar no -q $q_fa -t $t_fa --ryo $e_ryo " .
     "@ARGV";
