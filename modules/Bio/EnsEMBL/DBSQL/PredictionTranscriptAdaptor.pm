@@ -17,7 +17,8 @@ $pta = $database_adaptor->get_PredictionTranscriptAdaptor();
 
 #get a slice on a region of chromosome 1
 $sa = $database_adaptor->get_SliceAdaptor();
-$slice = $sa->fetch_by_region('x', 100000, 200000);
+
+$slice = $sa->fetch_by_region('chromosome','x', 100000, 200000);
 
 #get all the prediction transcripts from the slice region
 $prediction_transcripts = @{$pta->fetch_all_by_Slice($slice)};
