@@ -214,7 +214,7 @@ sub get_all_SimilarityFeatures_above_score{
     my @global_features;
     
     my $out;
-    
+    my %analhash;
     
   FEATURE: 
 
@@ -231,11 +231,26 @@ sub get_all_SimilarityFeatures_above_score{
 		next;
 	    }
 	}
+
 	
-	# create features
-	$out=$self->_create_similarity_features(@args);
+	my $analysis;
+	if (!$analhash{$analysisid}) 
+	{
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    $analhash{$analysisid} = $analysis;	   
+	} 
+	else {$analysis = $analhash{$analysisid};}
 	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
 	
+	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+	out->analysis($analysis);
 	push(@global_features,$out);
     }
 
@@ -251,8 +266,6 @@ sub get_all_SimilarityFeatures_above_score{
 }                                       # get_all_SimilarityFeatures_above_score
 
 
-#static analysis hash ...
-my %analhash;
 
 
 sub _create_similarity_features {
@@ -261,6 +274,7 @@ sub _create_similarity_features {
     my $out;
     my $analysis;
     my $contig;
+    my %analhash;
     
     my ($fid,$start,$end,$strand,$f_score,$analysisid,
         $name,$hstart,$hend,$hid)=@args;
