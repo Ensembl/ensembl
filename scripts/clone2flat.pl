@@ -96,6 +96,9 @@ use Bio::SeqIO;
 
 use Getopt::Long;
 
+# signal handler
+$SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
+
 # global defaults
 my $host = 'localhost';
 
@@ -371,5 +374,5 @@ foreach my $clone_id ( @clones ) {
 	print STDERR "Dumping Error! Cannot dump $clone_id\n$@\n";
     }
 }
-    
+
 

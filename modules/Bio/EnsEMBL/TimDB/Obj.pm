@@ -62,6 +62,11 @@ sub _initialize {
   # DEFAULT IS NOW LIVE
   $live=1;
 
+  # if we have a list of clones and live not test, write a lock file
+  if($live && !$test && $raclones){
+      $self->_write_lockfile($raclones);
+  }
+
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
   if($raclones){
@@ -330,6 +335,9 @@ sub get_updated_Objects{
 	}
     }
 
+    # if we have a list of clones, write a lock file
+    $self->_write_lockfile(@clones);
+
     # check validity of clones selected, then fetch
     foreach my $id (&_get_Clone_id($self,$fall,\@clones)){
 	push(@objs,$self->get_Clone($id));
@@ -563,8 +571,30 @@ sub write_Contig {
    $self->throw("Cannot write to a TimDB");
 }
 
-# close the dbm clone file
+# write lockfile so timdb knows which clones are being processed
+# outside timdb.
+sub _write_lockfile{
+    my($self,$raclones)=@_;
+    my $dir="$UNFIN_ROOT/timdb-lock";
+    if(-d $dir){
+	my $time=time;
+	my $file="$dir/timdb-lock.$time.$$";
+	local *OUT;
+	if(open(OUT,">$file")){
+	    foreach my $clone (@$raclones){
+		print OUT "$clone\n";
+	    }
+	    close(OUT);
+	    push(@{$self->{'_lockfile'}},$file);
+	}else{
+	    $self->warn("Could not write lock file $file");
+	}
+    }else{
+	$self->warn("Could not read lock directory $dir");
+    }
+}
 
+# close the dbm clone file, remove lock
 sub DESTROY{
     my ($obj) = @_;
     if( $obj->{'_clone_dbm'} ) {
@@ -582,5 +612,24 @@ sub DESTROY{
 	#dbmclose(%{$obj->{'_clone_update_dbm'}});
 	$obj->{'_clone_update_dbm'} = undef;
     }
+    # remove lock file
+    if($obj->{'_lockfile'}){
+	foreach my $file (@{$obj->{'_lockfile'}}){
+	    unlink $file;
+	}
+    }
 }
 
+#END {
+#    local *DIR;
+#    my $dir="$UNFIN_ROOT/timdb-lock";
+#    if(opendir(DIR,$dir)){
+#	my @files=readdir(DIR);
+#	closedir(DIR);
+#	foreach my $file (@files){
+#	    if($file=~/\.$$/){
+#		unlink "$dir/$file";
+#	    }
+#	}
+#    }
+#}
