@@ -149,12 +149,6 @@ if ($use_mapping) {
     # Bio::EnsEMBL::Mapper which is not part of Bioperl)
 
     use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
-
-    # FIXME
-    # Nota bene:  Currently the only mapping supported is a
-    # straight 1:N sequence ID mapping.  The plan is to make
-    # available a more sofisticated mapping based on e.g.
-    # exonerate alignment results.
 }
 
 
@@ -306,9 +300,7 @@ sub do_query
 		last if ($qi gt $seqid);
 		next if ($qi ne $seqid);
 
-		print $cgi->pre($line);
-
-		my $map = new Bio::EnsEMBL::Mapper('query', 'target');
+		my $map = new Bio::EnsEMBL::Mapper('queryCOORD', 'targetCOORD');
 
 		my ($qpos, $tpos) = ($qab, $tab);
 
@@ -321,16 +313,10 @@ sub do_query
 			$len = 1;
 		    }
 
-		    print $cgi->pre("$C, $len, $op");
-
 		    if ($op eq 'M') {
-
-			print $cgi->pre($qpos, $qpos + $len);
-			print $cgi->pre($tpos, $tpos + $len);
-
 			$map->add_map_coordinates(
-			    'query', $qpos, $qpos + $len, 1,
-			    'target', $tpos, $tpos + $len);
+			    'queryID', $qpos, $qpos + $len, 1,
+			    'targetID', $tpos, $tpos + $len);
 
 			$qpos += $len;
 			$tpos += $len;
@@ -342,11 +328,24 @@ sub do_query
 		    } else {
 			die "Unknown cigar string operation '$op'\n";
 		    }
+		}
 
+		if ($range ne '') {
+		    # Map the requested range.
+		    my @mapped = $map->map_coordinates(
+			'queryID', $start, $stop, 1,
+			'queryCOORD');
+
+		    foreach my $mapped (@mapped) {
+			next if ($mapped->isa('Bio::EnsEMBL::Mapper::Gap'));
+			$range = ':' . $mapped->start() . ',' .  $mapped->end();
+			push(@{ $query{$ti}{SEGMENT} }, $ti . $range);
+		    }
+		} else {
+		    $query{$ti}{SEGMENT} = $ti . $range;
 		}
 
 		$query{$ti}{MAPPER} = $map;
-		$query{$ti}{SEGMENT} = $ti . $range;
 		push(@{ $query{$ti}{DSN} }, $source->{DSN});
 	    }
 
@@ -362,6 +361,7 @@ sub do_query
 
     my @replies;
     foreach my $query (values %query) {
+	print $cgi->pre(Dumper($query));
 	my $reply = $das->features(
 	    -dsn	=> $query->{DSN},
 	    -segment    => $query->{SEGMENT});
