@@ -27,13 +27,10 @@ die "Host must be specified"           unless $host;
 die "Target schema must be specified"  unless $target;
 die "Source schema be specifed"        unless $source;
 
-if ($clean) {
-  &clean();
-}
-
-if ($create) {
-  &create();
-}
+# clean and create need to be done in a specific order
+# they create their own db connections as necessary
+&clean()  if $clean;
+&create() if $create;
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password") || die "Can't connect to target DB";
 my $sth;
@@ -212,6 +209,12 @@ while(my $row = $sth->fetchrow_hashref()) {
   execute($dbi, $sql);
 
 }
+
+# ----------------------------------------------------------------------
+# dna table
+
+debug("Copying dna table");
+execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna");
 
 # ----------------------------------------------------------------------
 # Feature tables
