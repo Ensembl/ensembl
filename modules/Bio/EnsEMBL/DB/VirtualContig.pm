@@ -1545,7 +1545,7 @@ sub end_in_vc {
 
 =cut
 sub ori_in_vc {
-    my ($self,$rawcontigid) = @_;
+    my ($self,$cid) = @_;
     
     my $mc=$self->_vmap->get_MapContig($cid);
     return $mc->orientation;   
