@@ -137,6 +137,11 @@ SELECT object
 FROM   blast_result%s
 WHERE  result_id = ? ";
 
+our $SQL_RESULT_RETRIEVE_TICKET = "
+SELECT object
+FROM   blast_result%s
+WHERE  ticket = ? ";
+
 #--- HITS ---
 
 our $SQL_HIT_STORE = "
@@ -276,11 +281,22 @@ sub store {
 sub retrieve {
   my $self = shift;
   my $caller = shift;
-  return $self->retrieve_search_multi( @_ ) if $caller->isa("Bio::Tools::Run::EnsemblSearchMulti");
-  return $self->retrieve_result(       @_ ) if $caller->isa("Bio::Search::Result::ResultI"       );
-  return $self->retrieve_hit(          @_ ) if $caller->isa("Bio::Search::Hit:HitI"              );
-  return $self->retrieve_hsp(          @_ ) if $caller->isa("Bio::Search::HSP:HSPI"              );
-  $self->throw( "Do not know how to retrieve objects of type ". ref($caller)? ref($caller) : $caller );
+  my %METHODS = qw(
+    Bio::Tools::Run::EnsemblSearchMulti search_multi
+    Bio::Search::Result::ResultI        result
+    Bio::Search::Hit::HitI              hit
+    Bio::Search::HSP::HSPI              hsp
+  );
+  foreach my $type (keys %METHODS) {
+    warn "Trying $type -> $METHODS{$type}";
+    if( UNIVERSAL::isa($caller, $type) ) {
+      my $method = "retrieve_$METHODS{$type}";
+      return $self->$method( @_ );
+    }
+  }
+  return undef if UNIVERSAL::isa($caller,'Bio::Tools::Run::Search');
+  $self->throw( "Do not know how to retrieve objects of type ". 
+                ( ref($caller)? ref($caller) : $caller ) );
 }
 
 #----------------------------------------------------------------------
@@ -401,6 +417,45 @@ sub store_result{
 
   my $rv = 0;
   if( $id ){
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
+    $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  if( $rv < 1 ){ # We have no result with this token string Insert
+    my $use_date = $res->use_date() || $res->use_date($self->use_date('RESULT'));
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_STORE, $use_date );
+    $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
+    my $id = $dbh->{mysql_insertid};
+    $res->token( join( '!!', $id, $use_date ) );
+    $sth->finish;
+  } else {  # Update
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_UPDATE, $use_date );
+    $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  return $res->token();
+}
+
+sub store_result_2{
+  my $self   = shift;
+  my $res    = shift || $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
+  my $frozen = shift || $res->serialise;
+  my $dbh    = $self->dbc->db_handle;
+  my $sth;
+
+  my ( $id, $use_date ) = split( '!!', $res->token || '' );
+  $use_date ||= $self->use_date( 'RESULT' );
+          #my $ticket = $res->group_ticket || warn( "Result $id has no ticket" );
+  my $ticket  = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
+
+  my $rv = 0;
+  warn "DATE is $use_date";
+  if( $ticket ){
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE_TICKET, $use_date );
+    $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
+    $sth->finish;
+  } 
+  if( !$rv && $id ){
     $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
