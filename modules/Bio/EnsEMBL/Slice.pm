@@ -73,6 +73,7 @@ sub new {
   $self->chr_name($chr);
   $self->chr_start($start);
   $self->chr_end($end);
+  $self->id("$chr.$start-$end");
 
   #set strand to a default of 1 if it is not set
   if ( undef $strand) {
@@ -370,7 +371,7 @@ sub primary_seq{
 
    my $seq = $self->seq();
     my $slice_seq = Bio::PrimarySeq->new( 
-					 -id    =>$self->dbID,
+					 -id    =>$self->id,
 					 -'seq' =>$seq
 					);
 
@@ -577,6 +578,14 @@ sub dbID {
      $self->{'dbID'} = $value;
    }
    return $self->{'dbID'};
+}
+
+sub id {
+   my ( $self, $value ) = @_;
+   if( defined $value ) {
+     $self->{'id'} = $value;
+   }
+   return $self->{'id'};
 }
 
 
