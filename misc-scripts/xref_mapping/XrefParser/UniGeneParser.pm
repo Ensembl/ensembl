@@ -46,12 +46,6 @@ sub run {
 
 }
 
-# --------------------------------------------------------------------------------
-# Parse file into array of xref objects
-# There are 2 types of RefSeq files that we are interested in:
-# - protein sequence files *.protein.faa
-# - mRNA sequence files *.rna.fna
-# Slightly different formats
 
 my %geneid_2_desc;
 
@@ -59,7 +53,7 @@ sub get_desc{
   my $file = shift;
   my $dir = dirname($file);
  
-  print $file."\n";
+
   (my $name) = $file  =~ /\/(\w+)\.seq\.uniq/;
   print $name."\n";
 
@@ -68,9 +62,6 @@ sub get_desc{
 
   open (DESC, "$dir/$name.data") || die "Can't open $dir/$name.data\n";
 
-
-  my $i =0 ;
-#  my %geneid_2_desc;
   while(<DESC>){
     
     #ID          Hs.159356
@@ -80,14 +71,9 @@ sub get_desc{
     (my $descrip) = $_ =~ /TITLE\s+(.+)\n/;
 
     $geneid_2_desc{$id} = $descrip;
-#    print $id."->".$desc."\n";
-    $i++;
-    if($i < 10){
-      print $id."->".$descrip."\n";
-    }
     
   }
-#  return \%geneid_2_desc;
+
 }
 
 
