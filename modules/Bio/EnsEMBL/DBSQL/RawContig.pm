@@ -88,6 +88,7 @@ sub _initialize {
   $self->id($id);
   $self->dbobj($dbobj);
   $self->_got_overlaps(0);
+  $self->fetch();
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -107,8 +108,9 @@ sub _initialize {
 
 sub fetch {
     my ($self) = @_;
-
+ 
     my $id=$self->id;
+print STDERR "**** About to fetch Rawcontig $id \n";
 #    my $sth = $self->dbobj->prepare("select c.id,c.internal_id,cl.embl_version " . 
 #                           "from dna as d,contig as c,clone as cl " .
 #                           "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
@@ -128,6 +130,7 @@ sub fetch {
     my $res = $sth->execute($id);
 
     if (my $row = $sth->fetchrow_arrayref) {
+print STDERR "**** Setting internal id to " , $row->[0] ,  "\n";    
         $self->internal_id($row->[0]);
         $self->dna_id($row->[1]);
         $self->seq_version($row->[2]);
@@ -729,7 +732,7 @@ sub get_all_ExternalFeatures{
 sub length{
    my ($self,@args) = @_;
    my $id= $self->internal_id();
-
+    $self->throw("Internal ID not set") unless $id;
    if (! defined ($self->{_length})) {
        my $sth = $self->dbobj->prepare("select length from contig where internal_id = \"$id\" ");
        $sth->execute();
