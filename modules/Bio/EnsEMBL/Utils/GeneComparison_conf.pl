@@ -1,13 +1,14 @@
-# configuration file for the gene_comparison_script.pl
+# configuration file for run_GeneComparison
 # based on the config files for the pipeline
 #
 # Written by Eduardo Eyras
 # eae@sanger.ac.uk
 
+
 # Databases in 120 schema (schema as for the 120 release)
 #
 # prediction release 110: ensembl110_new_schema_2@ecs1c, path_type='UCSC', genetype = '1'
-#
+
 # prediction release 120: homo_sapiens_core_120@ensrv3, path_type='UCSC', genetype='ensembl'
 #
 # prediction release 121: ens_NCBI_26_temp@ecs1f, path='NCBI_26', genetype = 'ensembl' 
@@ -33,11 +34,21 @@ package main;
 	     #'genetypes'  => ["HUMACE-Novel_CDS","HUMACE-Known"],
 	     #'genetypes' => ["HUMACE-Pseudogene"],
 	     
-	     'host'      =>  ,
-	     'dbname'    =>  ,
-	     'path'      =>  ,
-	     'user'      =>  ,
-	     'genetypes' =>  ,
+
+	     ######################################################
+	     # mouse_4.2.1 gene-build
+	     ######################################################
+	     'host'      => "ecs1f",
+	     'dbname'    => "mouse_Sanger_Nov01_denormalised",
+	     'path'      => "CHR",    
+	     'user'      => "ensro",
+	     'genetypes' => ["ensembl"],
+	     
+	     #'host'      =>  ,
+	     #'dbname'    =>  ,
+	     #'path'      =>  ,
+	     #'user'      =>  ,
+	     #'genetypes' =>  ,
 	     
 );
 
@@ -80,12 +91,20 @@ package main;
 	     #'user'      => "ensro",
 	     #'genetypes' => ["genomewise_clustering_twice"], 
 
+	     ##################################
+	     # Mouse_4.2.1 EST-genes
+	     ##################################
+	     'host'      => 'ecs1b',                    
+	     'dbname'    => 'mouse_Sanger_Nov01_est',
+	     'path'      => 'CHR',
+	     'user'      => 'ensro',
+	     'genetypes' => ["genomewise"], 
 	     
-	     'host'      =>  ,
-	     'dbname'    =>  ,
-	     'path'      =>  ,
-	     'user'      =>  ,
-	     'genetypes' =>  ,
+	     #'host'      =>  ,
+	     #'dbname'    =>  ,
+	     #'path'      =>  ,
+	     #'user'      =>  ,
+	     #'genetypes' =>  ,
 );
 
 }
