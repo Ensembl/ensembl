@@ -241,8 +241,11 @@ sub dump_xref{
       $i++;
     }
     if($skip){
-      $method[$i] = shift @$list;
-      $self->method(\@method);
+      my $k = 0;
+      foreach my $list (@lists){
+	$method[$k++] = shift @$list;
+      }
+      $self->method(\@lists);
       return;
     }
   }
