@@ -611,13 +611,13 @@ sub dump_genes {
 
   GENE: foreach my $gene (@genes) {
         my $gene_id = $gene->id;
-        #print STDERR "Dumping gene '$gene_id'\n";
+        print STDERR "Dumping gene '$gene_id'\n";
         
         my $type = $gene->type || 'ensembl';
 	
       TRANSCRIPT: foreach my $trans ($gene->each_Transcript) {
             my $trans_id = $trans->id;
-	    #print STDERR "Dumping transcript '$trans_id'\n";
+	    print STDERR "Dumping transcript '$trans_id'\n";
             
             # Extract the data needed from the translation object
             my $skipping_string = "Skipping transcript '$trans' : no translation";
@@ -647,8 +647,13 @@ sub dump_genes {
             # Find the start and end exons
             my( $start_exon, $end_exon );
             foreach my $ex (@exons) {
-                $start_exon = $ex if $ex->id eq $start_exon_id;
-                $end_exon   = $ex if $ex->id eq $end_exon_id;
+                #tania's hack 
+                #this is a bug.
+                # ex_id: SINFRUE00000255773, but start_exon_id: 255773
+                
+                #tania's fix
+                $start_exon = $ex if ($ex->id =~ /$start_exon_id/i);
+                $end_exon   = $ex if ($ex->id =~ /$end_exon_id/i);
             }
 
 	    my $transcript_string = '';
@@ -675,7 +680,9 @@ sub dump_genes {
                 my $group = join('; ', (@group_fields, $exon_num_field, $exon_id_field));
                 
                 # Is the start codon here?
-                if ($exon_id eq $start_exon_id) {
+                #tania
+                if ($exon_id =~ /$start_exon_id/) {
+                #if ($exon_id eq $start_exon_id) {
                     $seen_start = 1;
                     my( $x, $y ) = ($translation_start + $exon_start-1, 
                                     $translation_start + $exon_start-1 + 2);
@@ -700,7 +707,8 @@ sub dump_genes {
                     $group) ."\n";
                 
                 # Is the end codon here?
-                if ($exon_id eq $end_exon_id) {
+                #tania
+                if ($exon_id =~ /$end_exon_id/) {
                     $seen_end = 1;
                     my( $x, $y ) = ($translation_end + $exon_start-1 -2, 
                                     $translation_end + $exon_start-1);
