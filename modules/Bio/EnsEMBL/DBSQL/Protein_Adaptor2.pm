@@ -228,18 +228,11 @@ sub fetch_Protein_by_dbid{
 #Define the moltype
    my $moltype = "protein";
 
-#Define the specie (here by default human, but will have to find something else when other organisms come into Ensembl) 
-   my @class = ( "Eukaryota", "Metazoa", "Chordata", "Craniata", "Vertebrata", "Euteleostomi", "Mammalia", "Eutheria", "Primates", "Catarrhini", "Hominidae","Homo" ,"sapiens (human)");
-   @class = reverse(@class);
-   my $common;
-   my $sub_species;
-   my $org;
+   my $meta_obj = $self->db->get_MetaContainer();
+   my $species = $meta_obj->get_Species();
+   print STDERR "SPEC: ".$species."\n";
+   
 
-   my $species = Bio::Species->new();
-   $species->classification( @class );
-   $species->common_name( $common      ) if $common;
-   $species->sub_species( $sub_species ) if $sub_species;
-   $species->organelle  ( $org         ) if $org;
 
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
@@ -254,6 +247,9 @@ sub fetch_Protein_by_dbid{
 
 					      );
 
+   #Add the species object to protein object
+   $protein->species($species);
+
    $protein->transcriptac($transid);                                              
    $protein->geneac($geneid);
    
@@ -263,8 +259,6 @@ sub fetch_Protein_by_dbid{
 
    $protein->dbEntry_adaptor($self->_dbEntryAdaptor());
   
-#Add the species object to protein object
-   $protein->species($species);
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
