@@ -84,6 +84,43 @@ sub new {
 }
 
 
+
+=head2 get_QtlFeatureAdaptor
+
+  Args       : none 
+  Example    : none
+  Description: ...
+  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_QtlFeatureAdaptor {
+    my( $self ) = @_;
+    
+    return 
+      $self->_get_adaptor("Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor");
+}
+
+=head2 get_QtlAdaptor
+
+  Args       : none 
+  Example    : none
+  Description: ...
+  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlAdaptor 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_QtlAdaptor {
+    my( $self ) = @_;
+    
+    return 
+      $self->_get_adaptor("Bio::EnsEMBL::Map::DBSQL::QtlAdaptor");
+}
+
 =head2 get_MetaContainer
 
   Args       : none
