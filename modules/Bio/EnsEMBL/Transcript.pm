@@ -706,7 +706,7 @@ sub translate {
 	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
 
 	    # translate it.
-	    if( length($filler) != 6 ) {
+	    if( CORE::length($filler) != 6 ) {
 	        my $lphase = $last_exon->end_phase;
 	        my $fphase = $first_exon->phase;
 	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
@@ -731,7 +731,7 @@ sub translate {
 
 Returns a Bio::Seq object which consists of just
 the sequence of the exons concatenated together,
-without messing about with padding with N's from
+without messing about with padding with N\'s from
 Exon phases like B<dna_seq> does.
 
 =cut
@@ -929,7 +929,7 @@ sub _translate_coherent{
        my $str = $seq->seq();
        
 
-       if( length $str == 0 ) {
+       if( CORE::length( $str ) == 0 ) {
 	   $self->throw("Bad internal error - got a 0 length rstring...");
        }
 
@@ -1015,7 +1015,7 @@ sub pep_coords {
 	
 	my $start = index($fullpep,$pep) + 1;
 	
-	my $end = $start + length($pep) - 1;
+	my $end = $start + CORE::length($pep) - 1;
     
 	push(@starts,$start);
 	push(@ends,$end);
@@ -1244,7 +1244,7 @@ sub rna_pos {
     my $prev = undef;
     foreach my $exon ($self->each_Exon) {
 	
-	my $tmp = length $exon->seq->seq();
+	my $tmp = CORE::length( $exon->seq->seq());
 	#$tmp -= $exon->phase if not $prev;
 
 	# we now have to figure out if the phase is compatible. If it
