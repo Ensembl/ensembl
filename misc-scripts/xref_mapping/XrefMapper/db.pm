@@ -178,8 +178,34 @@ sub dir {
   my ($self, $arg) = @_;
 
   (defined $arg) &&
-    ($self->{_dir} = $arg );
+    ($self->{_dir} = process_dir($arg) );
   return $self->{_dir};
+
+}
+
+sub process_dir {
+  my ($dir) = @_;
+
+  if($dir =~ "^\/" ) { # if it start with / then its not from pwd
+    if(! -e $dir){
+      die "directory does not exist $dir\n";
+    }
+  }
+  elsif($dir eq "."){
+    $dir = $ENV{PWD};
+  }
+  elsif($dir =~ "^\.\/"){
+    my $tmp = $dir;
+    $dir = $ENV{PWD}."/".substr($tmp,2);
+    if(! -e $dir){
+      die "directory does not exist $dir\n";
+    }
+  }
+  else{
+    die "directory does not exist $dir\n";
+  }
+  print STDERR $dir."\n";
+  return $dir;
 }
 
 =head2 dbi
@@ -193,11 +219,11 @@ sub dir {
 =cut
                                                                                 
 sub dbi {
-
+  
   my $self = shift;
-
+  
   my $dbi = DBI->connect("dbi:mysql:host=".$self->host().";port=".$self->port().";database=".$self->dbname(),
-                        $self->user,
+			 $self->user,
                         $self->password,
  			 {'RaiseError' => 1}) || die "Can't connect to database";
 
