@@ -17,6 +17,8 @@ Bio::EnsEMBL::Mapper
 
 =head1 SYNOPSIS
 
+  $map = Bio::EnsEMBL::Mapper->new(-to => 'rawcontig', -from => 'chromosome');
+
   # add a coodinate mapping - supply two pairs or coordinates
   $map->add_map_coordinates(
     $contig_id, $contig_start, $contig_end, $contig_ori,
