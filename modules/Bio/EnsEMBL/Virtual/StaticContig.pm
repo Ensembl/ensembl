@@ -1160,6 +1160,7 @@ sub get_all_ExternalFeatures{
    if( scalar(@std) > 0 ) {
        foreach my  $extf ( @std ) {
 	   &eprof_start("external_get_contig_list".$extf);
+
 	   if ( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {
 	       push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,@cintidlist));
 	   }
@@ -1697,7 +1698,7 @@ sub get_all_Genes_exononly{
    }
 
    my $query = "
-        SELECT e.id,e.sticky_rank,et.rank,et.transcript,t.gene, 
+        SELECT e.id,e.sticky_rank,e.phase,et.rank,et.transcript,t.gene, 
         IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
         IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -1717,8 +1718,8 @@ sub get_all_Genes_exononly{
    my $sth = $self->dbobj->prepare($query);
    $sth->execute();
 
-   my ($exonid,$stickyrank,$rank,$transcriptid,$geneid,$start,$end,$strand);
-   $sth->bind_columns(undef,\$exonid,\$stickyrank,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
+   my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$start,$end,$strand);
+   $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
   
    my $current_transcript;
    my $current_gene;
@@ -1739,6 +1740,12 @@ sub get_all_Genes_exononly{
 	   # make a new gene
 	   $current_gene = Bio::EnsEMBL::Gene->new;
 	   $current_gene->id($geneid);
+           my $query = "select type from genetype where gene_id = \'$geneid\'"; 
+           my $sth2 = $self->dbobj->prepare($query);
+           $sth2->execute;
+           my $rowhash = $sth2->fetchrow_hashref;
+           my $type = $rowhash->{'type'};
+           $current_gene->type($type);
 	   push(@out,$current_gene);
 	   $current_gene_id = $geneid;
        }
@@ -1776,6 +1783,7 @@ sub get_all_Genes_exononly{
        $exon->strand($strand);
        $exon->id($exonid);
        $exon->seqname($self->id);
+       $exon->phase($phase);
        $previous_exon = $exon;
        $current_transcript->add_Exon($exon);
        $current_transcript->end_exon_rank($rank);

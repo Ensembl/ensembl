@@ -1585,10 +1585,13 @@ sub convert_Gene_to_raw_contig {
            # can't we reuse the existing object, and forget about deep
            # copying ?)
 	   if( exists $translation{$trans->translation->id} ) {
+#	     print STDERR "Translation already exists " . $trans->id . " " . $trans->translation->id . "\n";
                # (PL: looks like this is cached; should it? )
 	       $clonedtrans->translation($translation{$trans->translation->id});
 	   } else {
+	#     print STDERR "Making new translation " . $trans->id . " " . $trans->translation->id . "\n";
 	       my $trl = $trans->translation(); 
+
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
 	       $clonedtrl->id($trl->id);
 	       $clonedtrl->start_exon_id($trl->start_exon_id);
