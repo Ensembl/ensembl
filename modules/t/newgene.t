@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..19\n"; 
+BEGIN { $| = 1; print "1..22\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -38,7 +38,7 @@ $ens_test->do_sql_file("t/newgene.dump");
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
-print "ok 2\n";    # 1st test passes.
+print "ok 2\n";    
 
 my $gene_obj=$db->gene_Obj;
 
@@ -49,6 +49,7 @@ if ((scalar @genes == 1) && ($genes[0] eq 'test_gene')) {
 }
 else {
     print "not ok 3\n";
+    print STDERR "Could not get gene ids using get_all_Gene_id\n";
 }
 
 #Checking get method exception
@@ -60,6 +61,7 @@ if ($@) {
 }
 else {
     print "not ok 4\n";
+    print STDERR "Trying to get a non-existing gene with gene_obj->get did not throw an exception!\n";
 } 
 
 #Checking get method (correct use)
@@ -69,6 +71,7 @@ if ($gene->isa('Bio::EnsEMBL::Gene')) {
 }
 else {
     print "not ok 5\n";
+    print STDERR "Could not get the test gene from the database!\n";
 }
 
 #Check gene methods
@@ -77,6 +80,7 @@ if ($gene->id eq 'test_gene') {
 }
 else {
     print "not ok 6\n";
+    print "gene->id does not give the expected value!\n";
 }
 
 if ($gene->version == 1) {
@@ -84,6 +88,7 @@ if ($gene->version == 1) {
 }
 else {
     print "not ok 7\n";
+    print STDERR "gene->version does not give the expected value!\n";
 }
 
 if ($gene->created == 962638206) {
@@ -91,19 +96,22 @@ if ($gene->created == 962638206) {
 }
 else {
     print "not ok 8\n";
+    print STDERR "gene->created does not give the expected value!\n";
 }  
 
 if ($gene->modified == 962638206) {
     print "ok 9\n";
 }
 else {
-    print "not ok 9\n";
+    print "not ok 9\n"; 
+    print STDERR "gene->modified does not give the expected value!\n";
 }  
 if ($gene->_stored == 962638206) {
     print "ok 10\n";
 }
 else {
     print "not ok 10\n";
+    print STDERR "gene->_stored does not give the expected value!\n"; 
 } 
 
 #Not checking clone neighbourhood because they are on their way out of the schema
@@ -135,6 +143,8 @@ if ($ok == 4) {
 }
 else {
     print "not ok 12\n";
+    print STDERR "DBLink object added to gene, but when 
+retrieving it with $gene->each_DBLink, the object is not filled properly\n";
 }
 
 if ($gene->is_known == 1) {
@@ -142,6 +152,7 @@ if ($gene->is_known == 1) {
 }
 else {
     print "not ok 13\n";
+    print STDERR "Gene contains DBLinks, but $gene->is_known does not return 1\n";
 }
 $ok=0;
 foreach my $contig_id ($gene->unique_contig_ids) {
@@ -154,6 +165,7 @@ if ($ok == 2) {
 }
 else {
     print "not ok 14\n";
+    print STDERR "$gene->unique_contig_ids not giving expected contig ids\n";
 }
 
 $ok=0;
@@ -167,6 +179,7 @@ if ($ok == 3) {
 }
 else {
     print "not ok 15\n";
+    print STDERR "$gene->each_unique_Exon does not give expected exons\n";
 }
 
 $ok=0;
@@ -195,34 +208,63 @@ if ($ok == 2) {
 else {
     print "not ok 17\n";
 }
+$gene=$gene_obj->get_Gene_by_Transcript_id('bla_bla');
 
-my $gene=$gene_obj->get_Gene_by_Transcript_id('test_transcript_1');
-if ($gene->id eq 'test_gene') {
+if ($gene == undef) {
     print "ok 18\n";
 }
 else {
     print "not ok 18\n";
 }
-
-my $gene=$gene_obj->get_Gene_by_Transcript_id('bla_bla');
-
-if ($gene == undef) {
+$gene=$gene_obj->get_Gene_by_Transcript_id('test_transcript_1');
+if ($gene->id eq 'test_gene') {
     print "ok 19\n";
 }
 else {
     print "not ok 19\n";
 }
+eval{
+
+my $exon = $gene_obj->get_Exon('these_tests_are_boring_to_write');
+};
+if ($@) {
+    print "ok 20\n";
+}
+else {
+    print "not ok 20\n";
+    print STDERR "Trying to get a non-existing exon with 
+gene_obj->get_Exon did not throw an exception!\n";
+} 
+
+#Checking get method (correct use)
+my $gene = $gene_obj->get_Exon('test_exon_1');
+if ($gene->isa('Bio::EnsEMBL::Exon')) {
+    print "ok 21\n";
+}
+else {
+    print "not ok 21\n";
+    print STDERR "Could not get the test exon from the database!\n";
+}
 
 
+$gene_obj->delete($gene->id);
+eval {
+    my $gene = $gene_obj->get_Gene('test_gene');
+};
 
-#Methods to test:
-#$gene_obj->delete;
+if ($@) {
+    print "ok 22\n";
+}
+else {
+    print "not ok 22\n";
+} 
+
+#Methods still needed to test:
+
 #$gene_obj->delete_Exon;
 #$gene_obj->delete_Supporting_Evidence;
 
 #$gene_obj->get_geneids_by_hids;
-#$gene_obj->get_array_supporting;
-#$gene_obj->get_Gene_by_Transcript_id;
 #$gene_obj->get_Gene_by_DBLink; 
 #$gene_obj->get_Exon;
 #$gene_obj->get_supporting_evidence;
