@@ -725,7 +725,6 @@ sub get_all_translateable_Exons {
     if ($ex ne $start_exon and ! @translateable) {
       next;   # Not yet in translated region
     }
-        
     my $start   = $ex->start;
     my $end     = $ex->end;
     my $length  = $ex->length;
@@ -735,25 +734,27 @@ sub get_all_translateable_Exons {
     my $trunc_end   = $end;
         
     # Adjust to translation start if this is the start exon
-    if ($ex eq $start_exon ) {
+    if ($ex == $start_exon ) {
       if ($t_start < 1 or $t_start > $length) {
 	$self->throw("Translation start '$t_start' is outside exon $ex length=$length");
       }
       if ($strand == 1) {
 	$trunc_start = $start + $t_start - 1;
-      } else {
+      } 
+      else {
 	$trunc_end   = $end   - $t_start + 1;
       }
     }
         
     # Adjust to translation end if this is the end exon
-    if ($ex eq $end_exon) {
+    if ($ex == $end_exon) {
       if ($t_end < 1 or $t_end > $length) {
 	$self->throw("Translation end '$t_end' is outside exon $ex length=$length");
       }
       if ($strand == 1) {
 	$trunc_end   = $end   - $length + $t_end;
-      } else {
+      } 
+      else {
 	$trunc_start = $start + $length - $t_end;
       }
     }
@@ -770,7 +771,13 @@ sub get_all_translateable_Exons {
       $new_exon->end  ($trunc_end);
       $new_exon->strand($strand);
 
-      $new_exon->phase($ex->phase);
+      # the truncated first exon of the translation should get start phase = 0
+      if ( $ex == $start_exon ){
+	$new_exon->phase(0);
+      }
+      else{
+	$new_exon->phase($ex->phase);
+      }
       $new_exon->end_phase($ex->end_phase);
       $new_exon->contig($ex->contig);
 
