@@ -1,7 +1,7 @@
 use lib 't';
 use strict;
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test ;
 	plan tests => 20;
 }
@@ -12,7 +12,7 @@ END {print "not ok 1\n" unless $loaded;}
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
 
-our $verbose = 0; #set to 1 to turn on debug printouts
+our $verbose = 1; #set to 1 to turn on debug printouts
 
 $loaded = 1;
 my $multi = MultiTestDB->new();
@@ -27,9 +27,11 @@ ok($db);
 # Exon specific tests
 
 my $exonad = $db->get_ExonAdaptor();
-my $rca = $db->get_RawContigAdaptor();
+my $slice_adaptor = $db->get_SliceAdaptor();
 
-my $contig = $rca->fetch_by_dbID( 469270 );
+my $slice = $slice_adaptor->fetch_by_region('chromosome', '20',
+                                            30_960_859, 
+                                            32_000_000);
 ok($exonad);
 
 my $exon = Bio::EnsEMBL::Exon->new();
@@ -47,21 +49,20 @@ ok(&test_getter_setter($exon, 'strand', -1));
 $exon->phase(0);
 ok(&test_getter_setter($exon, 'phase', -1));
 
-$exon->contig( $contig );
-ok(&test_getter_setter($exon, 'contig', $contig));
+$exon->slice( $slice );
+ok(&test_getter_setter($exon, 'slice', $slice));
 
 # should try to store (!)
 $exon->end_phase( -1 );
 ok(&test_getter_setter($exon, 'end_phase', 1));
-
 
 #
 # find supporting evidence for the exon
 #
 my @evidence = ();
 my @fs = ();
-push @fs, @{$db->get_DnaAlignFeatureAdaptor->fetch_all_by_RawContig($contig)};
-push @fs, @{$db->get_ProteinAlignFeatureAdaptor->fetch_all_by_RawContig($contig)};
+push @fs, @{$db->get_DnaAlignFeatureAdaptor->fetch_all_by_Slice($slice)};
+push @fs, @{$db->get_ProteinAlignFeatureAdaptor->fetch_all_by_Slice($slice)};
 
 while(my $f = shift @fs) {
   #debug("feature at: " . $f->start . "-" . $f->end);
@@ -89,11 +90,7 @@ my $newexon = $exonad->fetch_by_dbID($exon->dbID);
 
 ok($newexon);
 
-
-$exon = $newexon->transform( "chromosome" );
-my $slice = $exon->slice();
-
-
+$slice = $exon->slice();
 debug("exon chr start  = " . $exon->start);
 debug("exon chr end    = " . $exon->end);
 debug("exon chr strand = " . $exon->strand); 
@@ -103,10 +100,11 @@ ok($exon->start == 30_961_059 && $exon->end == 30_961_259 && $exon->strand==1);
 #
 # Test transform to another slice
 #
-$slice = $db->get_SliceAdaptor->fetch_by_chr_start_end($slice->chr_name,
-						   $exon->start - 10,
-						   $exon->end + 10);
-$exon = $exon->transform($slice);
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                $slice->seq_region_name,
+                                                $exon->start - 10,
+                                                $exon->end + 10);
+$exon = $exon->transfer($slice);
 debug("exon chr start  = " . $exon->start);
 debug("exon chr end    = " . $exon->end);
 debug("exon chr strand = " . $exon->strand); 
@@ -116,7 +114,7 @@ ok($exon->start == 11 && $exon->end == 211 && $exon->strand==1);
 #
 # Test Transform back to Raw Contig
 #
-$exon = $exon->transform;
+$exon = $exon->transform('contig');
 ok($exon->start == 31_200);
 ok($exon->end   == 31_400);
 ok($exon->strand == 1);

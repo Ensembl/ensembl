@@ -28,7 +28,7 @@ my $t = Bio::EnsEMBL::Translation->new();
 ok($t);
 
 ok(test_getter_setter($t,'stable_id',1));
-ok(test_getter_setter($t,'temporary_id',2));
+
 ok(test_getter_setter($t,'dbID',3));
 
 ok(test_getter_setter($t,'start',42));

@@ -3,9 +3,9 @@ use warnings;
 
 use lib 't';
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;
+	plan tests => 7;
 }
 
 use TestUtils qw( debug );
@@ -63,17 +63,4 @@ my $taxid = $mc->get_taxonomy_id();
 ok($taxid == 9606);
 
 
-#
-# 8 - get_default_assembly
-#
-$asm_default = $mc->get_default_assembly();
-ok($asm_default eq 'NCBI_30');
-
-#
-# 9 - get_max_assembly_contig
-#
-my $maxac = $mc->get_max_assembly_contig();
-ok($maxac == 1_000_000);
-
-$mdb->restore('core', 'meta');
 

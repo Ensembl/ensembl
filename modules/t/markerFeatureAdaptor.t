@@ -34,7 +34,7 @@ my $mf = $mfa->fetch_by_dbID(1);
 
 ok($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature'));
 
-ok($mf->contig->dbID == 339816 &&
+ok($mf->slice->seq_region_name eq 'AL353092.6.1.25010' &&
    $mf->analysis->dbID == 10 &&
    $mf->start == 5769 &&
    $mf->end == 5959 &&
@@ -49,9 +49,10 @@ ok($mf->contig->dbID == 339816 &&
 
 # test fetch all by slice
 
-my $slice = $db->get_SliceAdaptor->fetch_by_chr_start_end('20',
-							  '30249935', 
-							  '31254640');
+my $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                   '20',
+                                                   '30249935',
+                                                   '31254640');
 
 my $feats = $mfa->fetch_all_by_Slice($slice);
 
@@ -92,12 +93,12 @@ ok(scalar(@$feats) == 1 && $feats->[0]->start==12671 &&
 $multi->hide('core', 'marker_feature');
 
 $marker = $db->get_MarkerAdaptor->fetch_by_dbID(80);
-my $contig = $db->get_RawContigAdaptor->fetch_by_dbID(317101);
+$slice = $db->get_SliceAdaptor->fetch_by_seq_region_id(317101);
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_dbID(10);
 
 my $marker_feature = Bio::EnsEMBL::Map::MarkerFeature->new;
 
-$marker_feature->contig($contig);
+$marker_feature->slice($slice);
 $marker_feature->start(123);
 $marker_feature->end(200);
 $marker_feature->marker($marker);
@@ -105,7 +106,7 @@ $marker_feature->analysis($analysis);
 
 $mfa->store($marker_feature);
 
-ok($marker_feature->dbID && 
+ok($marker_feature->dbID &&
    $marker_feature->adaptor == $mfa);
 
 

@@ -4,23 +4,23 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 9;
 }
 
 
 use MultiTestDB;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 1;
+our $verbose = 0;
 
 
 my $multi = MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( 'core' );
 
-my $cadp = $db->get_RawContigAdaptor();
+my $slice_adaptor = $db->get_SliceAdaptor();
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('RepeatMask');
-my $contig = $cadp->fetch_by_dbID(319456);
+my $slice = $slice_adaptor->fetch_by_seq_region_id(319456);
 
 my $repeat_f_ad = $db->get_RepeatFeatureAdaptor();
 my $repeat_c_ad = $db->get_RepeatConsensusAdaptor();
@@ -53,7 +53,7 @@ $repeat_feature->hend(45);
 $repeat_feature->score(100);
 $repeat_feature->analysis($analysis);
 $repeat_feature->repeat_consensus($repeat_consensus);
-$repeat_feature->contig( $contig );
+$repeat_feature->slice( $slice );
 
 ok($repeat_feature);
 $multi->hide( "core", "repeat_feature" );
@@ -63,7 +63,7 @@ $repeat_f_ad->store( $repeat_feature );
 
 ok(1);
 
-my $repeats = $repeat_f_ad->fetch_all_by_RawContig($contig);
+my $repeats = $repeat_f_ad->fetch_all_by_Slice($slice);
 
 my $repeat = $repeats->[0];
 
@@ -92,9 +92,9 @@ $multi->restore('core', 'repeat_feature');
 #
 # Test retrieval via Slice
 #
-my $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
-                                                   '20', 30_000_000,
-                                                   40_000_000);
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                '20', 30_000_000,
+                                                40_000_000);
 
 my $feats = $repeat_f_ad->fetch_all_by_Slice($slice);
 debug('fetching by chromosomal slice---');
@@ -102,8 +102,9 @@ debug("Got " . scalar(@$feats) . " features back");
 print_features($feats);
 
 
-$r = $repeat_f_ad->fetch_by_dbID(518841, 'supercontig');
-debug('---fetching by dbID (supercontig coords)---');
+$r = $repeat_f_ad->fetch_by_dbID(518841);
+$r = $r->transform('supercontig');
+debug('---fetching by dbID and transform to supercontig coords---');
 print_features([$r]);
 
 

@@ -12,7 +12,7 @@ use MultiTestDB;
 use Bio::EnsEMBL::SimpleFeature;
 
 
-our $verbose = 1;
+our $verbose = 0;
 
 my $multi = MultiTestDB->new;
  

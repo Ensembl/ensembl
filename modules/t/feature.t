@@ -16,11 +16,11 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::CoordSystem;
 use MultiTestDB;
 
+our $verbose= 0; #turn on or off debug statements
+
 
 my $multi_db = MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
-
-our $verbose= 1; #turn on or off debug statements
 
 my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
@@ -75,7 +75,7 @@ ok(&test_getter_setter($feature, 'slice', $slice));
 # Test length
 #
 
-ok($feature->length == $start-$end+1);
+ok($feature->length == ($end-$start+1));
 
 
 #

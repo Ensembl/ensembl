@@ -7,7 +7,7 @@ use Bio::EnsEMBL::CoordSystem;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;
+	plan tests => 7;
 }
 
 

@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 8
+	plan tests => 10
 }
 
 use Bio::EnsEMBL::MiscSet;

@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use vars qw( $verbose );
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
 	plan tests => 31;
 }
@@ -24,7 +24,7 @@ my $db = $multi->get_DBAdaptor('core' );
 
 my $sa = $db->get_SliceAdaptor();
 
-my $slice = $sa->fetch_by_chr_start_end("20", 30_249_935, 31_254_640 );
+my $slice = $sa->fetch_by_region('chromosome', "20", 30_249_935, 31_254_640 );
 
 my $genes = $slice->get_all_Genes();
 
@@ -74,10 +74,12 @@ ok (@{$stable_ids});
 
 my $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
+$tr = $tr->transform('contig');
+
 ok( $tr );
 
 debug ( "External transcript name: " . $tr->external_name );
-ok ( $tr->external_name eq "MAPRE1"); 
+ok ( $tr->external_name eq "MAPRE1");
 
 debug ( "External transcript dbname: " . $tr->external_db );
 ok ( $tr->external_db eq 'HUGO' );
@@ -173,6 +175,8 @@ ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
 # get a fresh tr to check the update method
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
+$multi->save('core', 'transcript');
+
 # the first update should have no effect
 $ta->update($tr);
 
@@ -186,5 +190,7 @@ $ta->update($tr);
 
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 ok ( $up_tr->display_xref->dbID() == 614 );
+
+$multi->restore('core', 'transcript');
 
 

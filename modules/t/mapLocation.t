@@ -7,7 +7,6 @@ BEGIN { $| = 1;
 }
 
 use Bio::EnsEMBL::Map::MapLocation;
-use Bio::EnsEMBL::Chromosome;
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
 
@@ -25,12 +24,12 @@ my $db = $multi->get_DBAdaptor( 'core' );
 #test constructor
 my $mapname = 'genethon';
 my $name = 'DS1234';
-my $chr = $db->get_ChromosomeAdaptor->fetch_by_chr_name('X');
+my $chr_name = 'X';
 my $pos = '12.5';
 my $lod = 0.23;
 
 my $mloc = 
-  Bio::EnsEMBL::Map::MapLocation->new($name, $mapname, $chr, $pos, $lod);
+  Bio::EnsEMBL::Map::MapLocation->new($name, $mapname, $chr_name, $pos, $lod);
 
 ok($mloc && ref $mloc && $mloc->isa('Bio::EnsEMBL::Map::MapLocation'));
 
@@ -49,9 +48,9 @@ ok(&test_getter_setter($mloc, 'map_name', 'marshfield'));
 # 4-5 #
 #######
 
-#test chromosome
-ok($chr == $mloc->chromosome);
-ok(&test_getter_setter($mloc, 'chromosome', undef));
+#test chromosome_name
+ok($chr_name eq $mloc->chromosome_name);
+ok(&test_getter_setter($mloc, 'chromosome_name', undef));
 
 #######
 # 6-7 #
@@ -59,7 +58,7 @@ ok(&test_getter_setter($mloc, 'chromosome', undef));
 
 #test name
 ok($name eq $mloc->name);
-ok(&test_getter_setter($mloc, 'name', 'Z123213')); 
+ok(&test_getter_setter($mloc, 'name', 'Z123213'));
 
 
 #######

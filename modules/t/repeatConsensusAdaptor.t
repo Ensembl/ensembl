@@ -19,7 +19,7 @@ my $verbose = 0;
 
 my $rca = $db->get_RepeatConsensusAdaptor();
 
-ok($rca && ref($rca) && $rca->isa('Bio::EnsEMBL::RepeatConsensusAdaptor'));
+ok(ref($rca) && $rca->isa('Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor'));
 
 #
 # Test fetch_by_dbID
@@ -35,7 +35,7 @@ ok($rc->repeat_class eq 'Type I Transposons/SINE');
 #
 # Test fetch_by_name
 #
-my $rc = $rca->fetch_by_name('MIR');
+$rc = $rca->fetch_by_name('MIR');
 ok($rc->name() eq 'MIR');
 ok($rc->dbID() == 1);
 ok($rc->repeat_consensus eq '');

@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 8
+	plan tests => 12
 }
 
 use MultiTestDB;
@@ -49,7 +49,7 @@ ok($ms->longest_feature == 7e7);
 # Test fetch_by_code
 #
 
-my $ms = $msa->fetch_by_code('cloneset');
+$ms = $msa->fetch_by_code('cloneset');
 ok($ms->dbID() == 4);
 ok($ms->code() eq 'cloneset');
 ok($ms->name() eq '1Mb cloneset');

@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 41;
+	plan tests => 39;
 }
 
 
@@ -39,8 +39,8 @@ $test_adaptor = $db->get_ProteinAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
 $test_adaptor = $db->get_MapFragAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
-$test_adaptor = $db->get_CloneAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::CloneAdaptor"));
+#$test_adaptor = $db->get_CloneAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::CloneAdaptor"));
 $test_adaptor = $db->get_PredictionTranscriptAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor"));
 $test_adaptor = $db->get_SequenceAdaptor();
@@ -53,8 +53,8 @@ $test_adaptor = $db->get_TranscriptAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::TranscriptAdaptor"));
 $test_adaptor = $db->get_TranslationAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::TranslationAdaptor"));
-$test_adaptor = $db->get_RawContigAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::RawContigAdaptor"));
+#$test_adaptor = $db->get_RawContigAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::RawContigAdaptor"));
 $test_adaptor = $db->get_SliceAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::SliceAdaptor"));
 $test_adaptor = $db->get_AnalysisAdaptor();
@@ -132,7 +132,7 @@ eval { my %generic_adpators = $db->get_GenericFeatureAdaptors("Mickey") };
 ok($@);
 
 # Slice tests - should these go in slice.t?
-my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
+my $slice = $db->get_SliceAdaptor()->fetch_by_region('chromosome','X',1,10000);
 ok($slice);
 
 my %features = %{$slice->get_generic_features()};
