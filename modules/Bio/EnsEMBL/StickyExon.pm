@@ -119,7 +119,7 @@ sub id{
 
 =cut
 
-sub each_component_Exons{
+sub each_component_Exon{
    my ($self,@args) = @_;
 
    return @{$self->{'_component_exons'}};
@@ -292,12 +292,6 @@ sub _sort_by_sticky_rank {
 }
 
 
-sub attach_seq {
-  my $self = shift;
-  my $seq = shift;
-
-  $self->seq( $seq->seq() );;
-}
 
 
 =head1 seq
@@ -326,7 +320,7 @@ sub seq {
     }
   } else {
     my $seqString = "";
-    for my $cExon ( $self->component_Exons() ) {
+    for my $cExon ( $self->each_component_Exons() ) {
       $seqString .= $cExon->seq()->seq();
     }
     $self->{'_seq'} = $seqString;
