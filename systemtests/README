@@ -1,0 +1,31 @@
+System tests for data integrity:
+
+1. dna_test.pl
+
+This test checks the whole database and makes sure 
+that all clones contain dna.
+
+3. every_atleast.pl
+
+This test checks the whole database and makes sure 
+that every gene has at least one transcript, and 
+every transcript at least one exon. Also, it checks 
+that every transcript with a translation has a 
+correct start and end exons.
+
+3. transcript_strand.pl
+
+This test checks the whole database and makes sure 
+that exons of transcripts on the same internal contig 
+are on the same strand. 
+
+4. stop_codons_test.pl
+
+This test checks the whole database and makes sure 
+that the translations of all genes do not contain 
+any stop codons.
+
+5. exon_duplicates.pl
+
+This test checks the whole database and makes sure 
+that there are no duplicated exons within a transcript
