@@ -32,16 +32,16 @@ my ($ens,$sp,$refseq);
 
 &runpmatch();
 &postprocesspmatch($sp);
-&postprocesspmatch($refseq);
+#&postprocesspmatch($refseq);
 &finalprocess($sp);
-&finalprocess($refseq);
+#&finalprocess($refseq);
 
 sub runpmatch {
     print STDERR "Running pmatch\n";
  
 #Run pmatch and store the data in files which will be kept for debugging
-    my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch $sp $ens > ens_sp_rawpmatch";
-    my $pmatch2 = "/nfs/griffin2/rd/bin.ALPHA/pmatch $refseq $ens > ens_refseq_rawpmatch";
+    my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $sp $ens > ens_sp_rawpmatch";
+    my $pmatch2 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $refseq $ens > ens_refseq_rawpmatch";
     
     system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
     system($pmatch2); #== 0 or die "$0\Error running '$pmatch2' : $!";
@@ -52,7 +52,7 @@ sub runpmatch {
 sub postprocesspmatch {
     my ($db) = @_;
     my %hash1;
-    
+    my %hashlength;
       
 #Post process the raw data from pmatch
     if ($db eq $sp) {
@@ -69,7 +69,7 @@ sub postprocesspmatch {
     
     while (<PROC>) {
 #538     COBP00000033978 1       538     35.3    Q14146  1       538     35.3 
-	my ($len,$id,$start,$end,$perc,$query,$qst,$qend,$qperc) = split;
+	my ($len,$id,$start,$end,$tperc,$query,$qst,$qend,$perc) = split;
 
 	if ($db eq $refseq) {
 	    #Get only the refseq ac (NP_\d+) 
@@ -81,12 +81,19 @@ sub postprocesspmatch {
 #Add the percentage of similarity for the Ensembl peptide for a single match
 #There is a bug at this step, some similarities can be over 100% !!! This problem may be solved by changing pmatch source code
 	$hash1{$uniq} += $perc;
+	$hashlength{$uniq} += $len;
+	
     }
 
 #Write out the processed data
     foreach my $key ( keys %hash1 ) {
-	($a,$b) = split(/:/,$key);
-	print OUT "$a\t$b\t$hash1{$key}\n";
+	if ($hashlength{$key} >= 20) {
+	    ($a,$b) = split(/:/,$key);
+	    print OUT "$a\t$b\t$hash1{$key}\n";
+	}
+	#else {
+	 #   print "$a\t$b\t$hash1{$key}\t$hashlength{$key}\n";
+	#}
     }
     close (PROC);
     close (OUT);                               
@@ -134,33 +141,44 @@ sub finalprocess {
 	
 #The Ensembl match to the known protein is labelled as PRIMARY and will be used later for the mapping 
 	my $top = shift @array;
-	print  OUT "$know\t",$top->name,"\t",$top->perc,"\tPRIMARY\n";
-	
-	foreach $ens ( @array ) {
-	    if( $ens->perc > $top->perc ) {
-		die "Not good....";
+
+	#if ($top->perc >= 20) {
+	    
+	    print  OUT "$know\t",$top->name,"\t",$top->perc,"\tPRIMARY\n";
+	    
+	    foreach $ens ( @array ) {
+		
+		if( $ens->perc > $top->perc ) {
+		    die "Not good....";
+		}
 	    }
-	}
 
 #If there is more than 20 Ensembl peptides matching a single known protein, these Ensembl peptides are labelled as REPEAT 	
-	if (scalar(@array) >= 20) {
-	    foreach my $repeat (@array) {
-		print OUT "$know\t",$repeat->name,"\t",$repeat->perc,"\tREPEAT\n";
+	    if (scalar(@array) >= 20) {
+		foreach my $repeat (@array) {
+		    if( $repeat->perc+1 >= $top->perc ) {
+			print OUT "$know\t",$repeat->name,"\t",$repeat->perc,"\tDUPLICATE\n";
+		    }
+		    else {
+			
+			print OUT "$know\t",$repeat->name,"\t",$repeat->perc,"\tREPEAT\n";
+		    }
+		}
 	    }
-	}
 	
 #If less than 20, either duplicate if percentage of identity close to the PRIMARY labelled as DUPLICATE or labelled as PSEUDO. DUPLICATEs can also be used for the mapping 
-	if (scalar(@array) < 20) {
-	    foreach my $duplicate (@array) {
-		if( $duplicate->perc+1 >= $top->perc ) {
-		    print OUT "$know\t",$duplicate->name,"\t",$duplicate->perc,"\tDUPLICATE\n";
-		}
-		else {
-		    print OUT "$know\t",$duplicate->name,"\t",$duplicate->perc,"\tPSEUDO\n";
-		}
-	    } 
-	}              
-    } 
+	    if (scalar(@array) < 20) {
+		foreach my $duplicate (@array) {
+		    if( $duplicate->perc+1 >= $top->perc ) {
+			print OUT "$know\t",$duplicate->name,"\t",$duplicate->perc,"\tDUPLICATE\n";
+		    }
+		    else {
+			print OUT "$know\t",$duplicate->name,"\t",$duplicate->perc,"\tPSEUDO\n";
+		    }
+		} 
+	    }              
+	} 
+    #}
     close (PROC);
     close (OUT);
 }

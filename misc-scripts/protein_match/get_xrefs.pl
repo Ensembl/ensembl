@@ -26,6 +26,9 @@ my ($mapping,$xrefs,$dbmap,$refseq,$out);
 my %map;
 my %hash;
 my %ref_map;
+my %ens2embl;
+my %sp2embl;
+
 
 &GetOptions(
             
@@ -69,13 +72,23 @@ while (<XREF>) {
 
 #SP      P31946  EMBL    X57346 
     my ($xrdb,$xrac,$db,$id) = split (/\t/,$_);
-    my $both = "$db:$id";
-  
-    if( !defined $hash{$xrac} ) {
-	$hash{$xrac} = [];
-    }
     
-    push(@{$hash{$xrac}},$both);
+    if ($xrdb ne "ENSEMBL") {
+	my $both = "$db:$id";
+  
+	if( !defined $hash{$xrac} ) {
+	    $hash{$xrac} = [];
+	}
+    
+	push(@{$hash{$xrac}},$both);
+    }
+    if ($xrdb eq "ENSEMBL") {
+	push(@{$ens2embl{$xrac}},$id);
+    }
+    if (($xrdb eq "SP") && ($db eq "EMBL")) {
+	push(@{$sp2embl{$xrac}},$id);
+    }
+
 }
 
 while (<MAP>) {
@@ -83,13 +96,33 @@ while (<MAP>) {
 
 #P01111  COBP00000000001 100     PRIMARY  
     my ($xr,$ens,$perc,$tag) = split (/\t/,$_);
-    if ($tag eq "PRIMARY") {
+    if (($tag eq "PRIMARY") || ($tag eq "DUPLICATE")) {
 
 #Its a hack an another solution will have to be found, if the external known gene is a refseq protein accession number get back the equivalent refseq DNA accession number 
 	if ($xr =~ /^NP_\d+/) {
 	    $xr = $ref_map{$xr};
 	}
 
+	if ($sp2embl{$xr}) {
+	    my $tot_sp_embl;
+	    my $tot_ens_embl;
+	    my @sp_embl = @{$sp2embl{$xr}};
+	    
+	    foreach my $sing1 (@sp_embl) {
+		$tot_sp_embl .= $sing1;
+	    }
+	    
+
+	    my @ens_embl = @{$ens2embl{$xr}};
+	    
+	    foreach my $sing2 (@sp_embl) {
+		$tot_ens_embl .= $sing2;
+	    }
+	    if ($tot_ens_embl =~ $tot_sp_embl) {
+		print OUT "$ens\t$map{$xr}\t$xr\n";
+	    }
+	}
+	
 #Print the know gene AC and its database
 	print OUT "$ens\t$map{$xr}\t$xr\n";
 
