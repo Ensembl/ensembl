@@ -404,6 +404,9 @@ sub _parse_features {
   }
 
   my $strand  = $features->[0]->strand;
+
+  throw ('FeaturePair needs to have strand == 1 or strand == -1') if(!$strand);
+
   my @f;
 
   #
@@ -508,16 +511,15 @@ sub _parse_features {
     if (defined($prev1)) {
       if ( $strand == 1 ) {
         if ($f->start < $prev1) {
-          throw("Inconsistent coordinates feature is forward strand " .
-		       "hstart in current feature should be greater than " .
-		       "hend in previous feature " . $f->start . " < " .
-		       $prev1."\n");
+          throw("Inconsistent coords in feature array (forward strand).\n" .
+		       "Start [".$f->start()."] in current feature should be greater " .
+           "than previous feature end [$prev1].");
         }
       } else {
         if ($f->end > $prev1) {
-          throw("Inconsistent coordinates in feature array feature " .
-                "is reverse strand hend should be less than previous " .
-                "hstart " . $f->end . " > $prev1");
+          throw("Inconsistent coords in feature array (reverse strand).\n" .
+                "End [".$f->end() ."] should be less than previous feature " .
+                "start [$prev1].");
         }
       }
     }
@@ -602,7 +604,7 @@ sub _parse_features {
 
         #there is a deletion
         my $gap = $f->hstart - $prev2 - 1;
-        my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+        my $gap2 = int( $gap * $hlengthfactor + 0.5 );
 	
         if( $gap2 == 1 ) {
           $gap2 = "";  # no need for a number if gap length is 1
@@ -623,7 +625,7 @@ sub _parse_features {
 
         #there is a deletion
         my $gap = $prev2 - $f->hend - 1;
-        my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+        my $gap2 = int( $gap * $hlengthfactor + 0.5 );
 	
         if( $gap2 == 1 ) {
           $gap2 = "";  # no need for a number if gap length is 1
