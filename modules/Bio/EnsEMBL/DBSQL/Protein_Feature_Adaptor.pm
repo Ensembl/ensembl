@@ -202,7 +202,7 @@ sub fetch_by_feature_and_dbID{
     my @features;
     my %anahash;
     if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
-	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.db = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
 	
 	$sth->execute();
 	
@@ -284,7 +284,7 @@ sub fetch_by_feature_and_dbID{
 
 
     else {
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysisprocess a where a.analysisId = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.db = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysisprocess a where a.analysisId = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.gff_source = '$feature'");
 	
 	$sth->execute();
 	my @a = $sth->fetchrow();
@@ -359,6 +359,7 @@ sub write_Protein_feature{
     
     my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
   
+
     my $homol = $feature->feature2;
       
     my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
