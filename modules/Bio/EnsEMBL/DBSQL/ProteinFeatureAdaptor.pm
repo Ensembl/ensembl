@@ -80,7 +80,7 @@ sub fetch_by_translationID {
     my @features;
 
 
-    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain'");
+    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation_id = '$transl' and i.id = p.hit_id and i.interpro_ac = d.interpro_ac and p.analysis_id = a.id and a.gff_feature = 'domain'");
     $sth->execute();
 
 
@@ -119,7 +119,7 @@ sub fetch_by_translationID {
 
     }
 
-    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysis a where a.id = p.analysis and p.translation = '$transl' and p.analysis = a.id and a.gff_feature != 'domain'");
+    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id from protein_feature p,analysis a where a.id = p.analysis_id and p.translation_id = '$transl' and p.analysis_id = a.id and a.gff_feature != 'domain'");
 
     $sth->execute();
 
@@ -203,10 +203,10 @@ sub fetch_by_feature_and_dbID{
     my @features;
     my %anahash;
 
-#The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the Xref table
+#The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the xref table
  if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE") || ($feature eq "PROFILE")) {
 #      &eprof_start('interpro');
-	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis_id, p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, p.hit_id, x.display_label from protein_feature p,interpro i,analysis a, xref x  where p.translation_id = '$transl' and i.id = p.hit_id and i.interpro_ac = x.xref_id and p.analysis_id = a.analysis_id and a.gff_feature = 'domain' and a.gff_source = '$feature'");
 	
 	$sth->execute();
 	
@@ -252,7 +252,7 @@ sub fetch_by_feature_and_dbID{
 #Superfamily has also a description attached to it but there is no join needed with the interpro table. but its also considered as a domain feature
     elsif ($feature eq "superfamily") {
 #      &eprof_start('superfamily');
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id, x.dbprimary_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id,x.display_label, x.xref_id from protein_feature as p, analysis as a, xref as x where a.gff_source = '$feature' and p.translation_id = '$transl' and a.analysis_id = p.analysis_id and x.xref_id = p.hit_id");
 	$sth->execute();
 	
 	
@@ -281,7 +281,7 @@ sub fetch_by_feature_and_dbID{
 								-feature2 => $feat2,);
 	    
 	    $feature->idesc($desc);
-	    $feature->interpro_ac($interproac),
+	    $feature->interpro_ac($interproac);
 
 	    if ($feature) {
 		push(@features,$feature);
@@ -293,7 +293,7 @@ sub fetch_by_feature_and_dbID{
 
 #Get all of the other features...Coils, TMHMM, ...
     else {
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysisprocess a where a.analysisId = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.gff_source = '$feature'");
+	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id from protein_feature p,analysis a where a.analysis_id = p.analysis_id and p.translation_id = '$transl' and a.gff_feature != 'domain' and a.gff_source = '$feature'");
 	
 	$sth->execute();
 	my @a = $sth->fetchrow();
