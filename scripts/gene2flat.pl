@@ -25,7 +25,7 @@ in particular the protein translation
 
     -dbpass    For RDBs, what password to use (dbpass= in locator)
 
-    -module    Module name to load (Defaults to Bio::EnsEMBL::DBOLD::Obj)
+    -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
     -format    [pep/dump/transcript] dump in peptides/info/dna format
 
@@ -61,7 +61,7 @@ my $port   = '410000';
 my $dbname = 'ensdev';
 my $dbuser = 'ensembl';
 my $dbpass = undef;
-my $module = 'Bio::EnsEMBL::DBOLD::Obj';
+my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
 my $format  = 'transcript';
 my $usefile = 0;

@@ -212,7 +212,6 @@ if ( $usetimdb == 1 ) {
 } else {
     
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-   # print "locator $locator\n";
     $db = Bio::EnsEMBL::DBLoader->new($locator);
 
 }
@@ -264,6 +263,9 @@ foreach my $clone_id ( @clones ) {
     # is thrown during the feature table dumping, then it
     # has still dumped part of the entry. Bad news. Need to "exercise" the
     # objects first.
+    #
+    # I think we just have to assumme that if we get an object that
+    # it conforms to the interface. 
     #
 
     eval {
@@ -319,6 +321,17 @@ foreach my $clone_id ( @clones ) {
 	    }
 	    
 	    $emblout->write_annseq($as);
+	} elsif ( $format =~ /genbank/ ) {
+	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    my $gbout = Bio::AnnSeqIO->new( '-format' => 'GenBank', -fh => $OUT);
+	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($gbout);
+	    # genbank format - the ID line is wrong. Fall back to locus
+	    $gbout->_id_generation_func(undef);
+	    if( $nodna == 1 ) {
+		$gbout->_show_dna(0);
+	    }
+	    
+	    $gbout->write_annseq($as);
 	} elsif ( $format =~ /pep/ ) {
 	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => $OUT ) ;
 	    my $cid = $clone->id();

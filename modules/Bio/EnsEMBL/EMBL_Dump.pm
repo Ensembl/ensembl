@@ -156,12 +156,14 @@ sub ensembl_annseq_output {
        confess "Ok. No aseq passed into EMBL_Dump and I can't even throw a nice exception!";
    }
 
-   if( !$aseqstream->isa('Bio::AnnSeqIO::EMBL') ) {
+   if( !$aseqstream->isa('Bio::AnnSeqIO::StreamI') ) {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
-   $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
-   
+   if( $aseqstream->can('_post_sort') ) {
+       $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
+   }
+
    # attach ensembl specific dumping functions
    $aseqstream->_id_generation_func(\&id_EnsEMBL);
    $aseqstream->_kw_generation_func(\&kw_EnsEMBL);

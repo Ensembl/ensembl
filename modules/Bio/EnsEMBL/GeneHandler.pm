@@ -246,7 +246,6 @@ sub _process_Transcript {
    # we want to know whether the last exon is forward or backward first.
    my $loc_comp; 
    my $prev;
-   print STDERR "Looking at this transcript ",$trans->id(),"\n";
 
 
     foreach my $exon ( $trans->each_Exon ) {
@@ -289,8 +288,6 @@ sub _process_Transcript {
 
    foreach my $exon ( @exons ) {
        # get out the clone
-
-       print STDERR "Looking at exon ",$exon->id,"\n";
 
        if( $exon->clone_id() ne $self->clone->id() ) {
 	   $self->throw("Cannot currently dump exons across clones");
