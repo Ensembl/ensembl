@@ -259,5 +259,56 @@ sub store_pexon {
 }
 
 
+#
+# override the clone to seq region so that the version is not
+# tacked on the end
+#
+sub clone_to_seq_region {
+  my $self = shift;
+  my $target_cs_name = shift;
+
+  my $target = $self->target();
+  my $source = $self->source();
+  my $dbh    = $self->dbh();
+
+  # target coord_system will have a different ID
+  $target_cs_name ||= "clone";
+  my $cs_id = $self->get_coord_system_id($target_cs_name);
+
+  $self->debug("AnophelesGambiae Specific: Transforming clones into " .
+               "$target_cs_name seq_regions");
+
+  my $select_sth = $dbh->prepare
+    ("SELECT cl.clone_id, cl.embl_acc,
+             MAX(ctg.embl_offset)+ctg.length-1
+     FROM   $source.clone cl, $source.contig ctg
+		 WHERE  cl.clone_id = ctg.clone_id GROUP BY ctg.clone_id");
+  $select_sth->execute();
+
+  my ($clone_id, $embl_acc, $length);
+  $select_sth->bind_columns(\$clone_id, \$embl_acc, \$length);
+
+  my $insert_sth = $dbh->prepare
+    ("INSERT INTO $target.seq_region (name, coord_system_id, length) " .
+     "VALUES(?,?,?)");
+
+  my $tmp_insert_sth = $dbh->prepare
+    ("INSERT INTO $target.tmp_cln_map (old_id, new_id) VALUES (?, ?)");
+
+  while ($select_sth->fetch()) {
+    $insert_sth->execute("$embl_acc", $cs_id, $length);
+
+    #store mapping of old -> new ids in temp table
+    $tmp_insert_sth->execute($clone_id, $insert_sth->{'mysql_insertid'});
+  }
+
+  $select_sth->finish();
+  $insert_sth->finish();
+  $tmp_insert_sth->finish();
+
+  return;
+}
+
+
 
 1;
