@@ -1,15 +1,15 @@
 xref
-host=ecs1g
-port=3306
-dbname=ianl_test_xref
+host=ecs4
+port=3350
+dbname=glenn_test_xref
 user=ensadmin
 password=ensembl
-dir=./xref
+dir=/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping/xref
 
 species=homo_sapiens
 host=ecs2
-port=3365
-dbname=homo_sapiens_core_25_34e
+port=3364
+dbname=homo_sapiens_core_26_35
 user=ensro
 password=
-dir=./test
+dir=/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping/test
