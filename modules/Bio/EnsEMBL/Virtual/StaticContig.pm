@@ -227,7 +227,7 @@ sub get_all_SimilarityFeatures_above_score{
       }
      
 
-      if ($start>=$glob_start && $end<=$glob_end){
+      if ($vc_start>=$glob_start && $vc_end<=$glob_end){
 
     	$start=$vc_start-$glob_start;
     	$end=$vc_end-$glob_start;
@@ -298,7 +298,7 @@ sub get_all_RepeatFeatures {
   my $chr_name=$self->_chr_name;
   
 
-  print STDERR "new version\n";
+  print STDERR "version 1\n";
   
   my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
                           rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
@@ -350,7 +350,7 @@ sub get_all_RepeatFeatures {
       }
       
       
-      if ($start>=$glob_start && $end<=$glob_end){
+      if ($vc_start>=$glob_start && $vc_end<=$glob_end){
 
 	  $start=$vc_start-$glob_start;
 	  $end=$vc_end-$glob_start;
