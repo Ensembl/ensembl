@@ -491,7 +491,7 @@ sub gene {
 
 sub id {
    my $obj = shift;
-   return $obj->gene->id;
+   return $obj->gene->stable_id;
 }
 
 sub temporary_id {
