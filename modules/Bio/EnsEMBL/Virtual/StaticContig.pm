@@ -474,7 +474,11 @@ eval {
 		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
 
 	my $out=$self->_create_Marker_features(@args);
-	if (defined $out){push @result,$out}; 
+	if (defined $out){
+	    if ($self->_clip_2_vc($out)){
+		push @result,$self->_convert_2_vc($out);
+	    }
+	} 
     }
 };
  
@@ -500,7 +504,7 @@ return @result;
 
 
 
-sub next_Marker
+sub next_landmark_Marker
 {
 
 my ($self,$marker,$contig)=@_;
@@ -588,7 +592,7 @@ eval {
 		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
 
 	my $out=$self->_create_Marker_features(@args);
-	if (defined $out){push @result,$out}; 
+	if (defined $out){push @result,$self->_convert_2_vc($out);}; 
     }
 
 };
@@ -615,31 +619,14 @@ my %analhash;
 my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym,
     $raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name)=@args;
 
-# flip contigs	
-my $vc_start;
-my $vc_end;
 
-if ($raw_ori == -1){    
-    $vc_start=$chr_end+$chr_start-$end;
-    $vc_end=$chr_end+$chr_start-$start;
-    $strand=-1*$strand;
-} else {
-    $vc_start=$start;
-    $vc_end=$end;
+if ($raw_ori == -1)
+{
+($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
 }
 
-# clip and map to vc coordinates  
 
  my ( $out, $seqf1, $seqf2 );
-
-
-if ($vc_start>=$glob_start && $vc_end<=$glob_end){
-
-   
-    $start=$vc_start-$glob_start;
-    $end=$vc_end-$glob_start;
-    
-    # create marker features
         
     if (!$analhash{$analysisid}) {
 	
@@ -664,13 +651,52 @@ if ($vc_start>=$glob_start && $vc_end<=$glob_end){
     $out->analysis($analysis);
     $out->mapdb( $self->dbobj->mapdb );
     $out->id ($synonym);
-}	
+
     return $out;
 
 
 }
 
 
+
+sub _clip_2_vc
+{
+    my ($self,$ft)=@_;
+
+    $self->throw ("need a feature") unless $ft;
+    if ($ft->start>=$self->_global_start && $ft->end<=$self->_global_end){return 1;}
+    else {return 0;}
+}
+
+
+
+sub _convert_2_vc
+{
+ my ($self,$ft)=@_;
+ $self->throw ("need a feature") unless $ft;
+
+ $ft->start ($ft->start-$self->_global_start);
+ $ft->end ($ft->end-$self->_global_start);
+
+ return $ft;
+}
+
+
+
+sub _flip_coordinates
+{
+    my ($self,$start,$end,$strand,$chr_start,$chr_end)=@_;
+
+    $self->throw ("need a start") unless $start;
+    $self->throw ("need a end") unless $end;
+    $self->throw ("need a strand") unless $strand;
+
+    my $vc_start=$chr_end+$chr_start-$end;
+    my $vc_end=$chr_end+$chr_start-$start;
+    $strand=-1*$strand;
+
+    return ($vc_start,$vc_end,$strand);
+}
 
 
 =head2 _global_start
