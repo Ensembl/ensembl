@@ -68,6 +68,7 @@ sub new {
       _id            => undef,
       _version       => undef,
       _internal_id   => undef,
+      _international_name   => undef,		    
       _seq_date      => '',
       _embl_offset   => 0,
       _offset        => 0,
@@ -248,12 +249,23 @@ sub seq{
 
 sub id{
    my $obj = shift;
+   
    if( @_ ) {
        my $value = shift;
        $obj->{'_id'} = $value;
    }
    return $obj->{'_id'};
    
+}
+
+
+sub international_name{
+   my($self, $arg);
+  
+   if($arg){
+      $self->{'_international_name'} = $arg;   
+   } 
+   return $self->{'_international_name'};
 }
 
 =head2 internal_id
