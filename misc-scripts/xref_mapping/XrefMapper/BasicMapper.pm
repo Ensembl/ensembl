@@ -655,22 +655,16 @@ sub submit_depend_job {
 
 sub store {
 
-  my ($self, $target_file_name) = @_;
+  my ($self, $xref, $target_file_name) = @_;
 
   my $type = get_ensembl_object_type($target_file_name);
 
   # get or create the appropriate analysis ID
-  my $analysis_id = get_analysis_id($type);
-
-  # TODO - get this from config
-  my $dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=arne_core_20_34",
-			 "ensadmin",
-			 "ensembl",
-			 {'RaiseError' => 1}) || die "Can't connect to database";
+  my $analysis_id = $self->get_analysis_id($type);
 
   # get current max object_xref_id
   my $max_object_xref_id = 0;
-  my $sth = $dbi->prepare("SELECT MAX(object_xref_id) FROM object_xref");
+  my $sth = $self->dbi()->prepare("SELECT MAX(object_xref_id) FROM object_xref");
   $sth->execute();
   my $max_object_xref_id = ($sth->fetchrow_array())[0];
   if (!defined $max_object_xref_id) {
@@ -678,7 +672,6 @@ sub store {
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
   }
-
 
   #my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
 
@@ -739,7 +732,7 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  dump_xrefs(\%primary_xref_ids);
+  $self->dump_xrefs($xref, \%primary_xref_ids);
 
 }
 
@@ -749,23 +742,20 @@ sub get_ensembl_object_type {
   my $filename = shift;
   my $type;
 
-  if ($filename =~ /gene/i) {
-
-    $type = "Gene";
-
-  } elsif ($filename =~ /transcript/i) {
+  if ($filename =~ /_dna\./i) {
 
     $type = "Transcript";
 
-  } elsif ($filename =~ /translation/i) {
+  } elsif ($filename =~ /_protein\./i) {
 
     $type = "Translation";
 
   } else {
 
-    print STDERR "Cannot deduce Ensembl object type from filename $filename";
+    print STDERR "Cannot deduce Ensembl object type from filename $filename\n";
   }
 
+print "###$filename   $type\n";
   return $type;
 
 }
@@ -773,27 +763,14 @@ sub get_ensembl_object_type {
 
 sub get_analysis_id {
 
-  my $ensembl_type = shift;
+  my ($self, $ensembl_type) = @_;
 
-  my %typeToLogicName = ( 'transcript' => 'XrefExonerateDNA',
-			  'translation' => 'XrefExonerateProtein' );
+  my %typeToLogicName = ( 'dna' => 'XrefExonerateDNA',
+			  'protein' => 'XrefExonerateProtein' );
 
   my $logic_name = $typeToLogicName{lc($ensembl_type)};
 
-  # TODO - get these details from Config
-  my $host = "ecs1g";
-  my $port = 3306;
-  my $database = "arne_core_20_34";
-  my $user = "ensadmin";
-  my $password = "ensembl";
-
-  my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database",
-			 "$user",
-			 "$password",
-			 {'RaiseError' => 1}) || die "Can't connect to database";
-
-
-  my $sth = $dbi->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
+  my $sth = $self->dbi()->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
   $sth->execute();
 
   my $analysis_id;
@@ -806,7 +783,7 @@ sub get_analysis_id {
   } else {
 
     print "No analysis with logic_name $logic_name found, creating ...\n";
-    $sth = $dbi->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
+    $sth = $self->dbi()->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
     # TODO - other fields in analysis table
     $sth->execute();
     $analysis_id = $sth->{'mysql_insertid'};
@@ -821,21 +798,15 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my $xref_ids_hashref = shift;
+  my ($self, $xref, $xref_ids_hashref) = @_;
   my @xref_ids = keys %$xref_ids_hashref;
 
   open (XREF, ">xref.txt");
 
   # TODO - get this from config
-  my $xref_dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=glenn_test_xref",
-			      "ensro",
-			      "",
-			      {'RaiseError' => 1}) || die "Can't connect to database";
+  my $xref_dbi = $xref->dbi();
 
-  my $core_dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=arne_core_20_34",
-			      "ensro",
-			      "",
-			      {'RaiseError' => 1}) || die "Can't connect to database";
+  my $core_dbi = $self->dbi();
 
   # get current highest internal ID from xref
   my $max_xref_id = 0;
@@ -885,9 +856,7 @@ sub dump_xrefs {
       print XREF "$core_xref_id\t$accession\t$label\t$description\n";
       $source_ids{$source_id} = $source_id;
       $core_xref_id++;
-      if ($source_id == 1001) {
-	print "xref $xref_id has source_id 1001\n";
-      }
+
     }
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
