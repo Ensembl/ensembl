@@ -1,15 +1,15 @@
 #!/usr/local/bin/perl
 
 BEGIN {
-    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
     unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
 }
 
 use Bio::EnsEMBL::Analysis::Genscan;
 use Bio::EnsEMBL::Analysis::PepAlign;
-use Bio::EnsEMBL::Analysis::pep_SeqFeature;
+use Bio::EnsEMBL::Pep_SeqFeature;
 
-use Bio::SeqFeature::Homol;
+use Bio::EnsEMBL::FeaturePair;
 use Bio::Seq;
 
 use strict;

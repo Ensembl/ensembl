@@ -1,10 +1,5 @@
 #!/usr/local/bin/perl
 
-BEGIN {
-    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
-    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
-}
-
 # Let the code begin...
 
 
@@ -20,19 +15,25 @@ use strict;
 
 my ($clonefile,
     $clone,
+    $dbname,
+    $user,
+    $host,
 );
 
 
 GetOptions("clonefile=s" => \$clonefile,            # File of clone names
 	   "clone=s"     => \$clone,                # Clone name on the command line
+           "dbname=s"    => \$dbname,
+	   "user=s"      => \$user,
+           "host=s"      => \$host,
 	   ) or usage();
 
 # Connect to the database
 my @clones     = read_clones($clonefile,$clone);
 
-my $db         = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
-					       -host   => 'obi-wan',
-					       -user   => 'ensdev',
+my $db         = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => $dbname,
+					       -host   => $host,
+					       -user   => $user,
 					       )  or die "Can't connect to database";
 
 CLONE: foreach my $cloneid (@clones) {
@@ -72,11 +73,11 @@ CLONE: foreach my $cloneid (@clones) {
 	    print("done gff\n");
 
 	    my $analysis   = make_analysis($repeatfile);
-	    my $analysisid = $db->write_Analysis($analysis);
+	 #   my $analysisid = $db->write_Analysis($analysis);
 	    
-	    foreach my $f ($GFF->each_Feature) {
-		$db->write_Homol_Feature($f,$analysisid,$contig);
-	    }
+#	    foreach my $f ($GFF->each_Feature) {
+#		$db->write_Homol_Feature($f,$analysisid,$contig);
+#	    }
 
 	}
 #    }; 

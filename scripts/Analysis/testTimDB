@@ -39,7 +39,7 @@ my $db;
 #					       -host   => 'obi-wan',
 #					       -user   => 'ensdev',
 #					       )  or die "Can't connect to database";
-my $timdb      = Bio::EnsEMBL::TimDB::Obj->new('','',$test);
+my $timdb      = Bio::EnsEMBL::TimDB::Obj->new(\@clones);
 #my @clones     = $timdb->get_all_Clone_id;
 
 CLONE: foreach my $cloneid (@clones) {
@@ -102,10 +102,8 @@ sub homol2GFF {
 	    $strand1 = '+';
 	}
 
-	my $h2 = $h1->homol_SeqFeature;
-
-
-	if (defined($h2)) {
+	if ($h1->isa("Bio::EnsEMBL::FeaturePair")) {
+	    my $h2 = $h1->feature2;
 	    my $strand = "+";
 	    
 	    if ($h2->strand == -1) {
@@ -116,9 +114,9 @@ sub homol2GFF {
 		  "\t0\tSequence:" . 
 		  $h2->seqname . "\t" . $h2->start . "\t" . $h2->end ."\n");
 	} else {
-
+	    
 	    print($fh $h1->seqname. "\t" . $h1->source_tag . "\t" . $h1->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $score ."\t" . $strand1 . "\t0\t\n");
-	      }
+	}
 	    
     }
 }

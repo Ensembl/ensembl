@@ -17,6 +17,8 @@ use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBSQL::Contig;
 
+use Bio::Tools::HMMER::Results;
+
 use Getopt::Long;
 use strict;
 
@@ -53,12 +55,12 @@ my $gs        = new Bio::EnsEMBL::Analysis::Genscan($gsfile,$dna);
 
 # Connect to the database
 
-my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
-					      -host   => 'obi-wan',
-					      -user   => 'ensdev',
-					      )  or die "Can't connect to database";
+#my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'pogdev',
+#					      -host   => 'obi-wan',
+#					      -user   => 'ensdev',
+#					      )  or die "Can't connect to database";
 
-my $contigobj = $db->get_Contig("$accession.$contig") if $write;
+#my $contigobj = $db->get_Contig("$accession.$contig") if $write;
 
 
 # For each gene there are a set of msptmp files containing
@@ -81,6 +83,9 @@ TRANS: foreach my $g ($gs->each_Transcript) {
 								-type => 'PEP-DNA',
 								-source_tag => 'tblastn_vert');
 
+    my $pfamfile = $root_dir . "/" . $clone . "." . $contig . ".$count.hmmpfam_frag";
+
+    read_Pfam($genpep,$pfamfile,$count);
 
     foreach my $homol ($msp->each_Homol) { # Adds each hit to the GenscanPeptide object
 	$genpep->add_dnaHit($homol);
@@ -93,14 +98,14 @@ TRANS: foreach my $g ($gs->each_Transcript) {
 
     next TRANS unless $write;
 
-    foreach my $h (@homols) {              # Writes the feature to the database
-	$h->seqname($h->homol_SeqFeature->seqname);
-	my $rv = $db->write_Feature($h,$contigobj);
-    }
+#    foreach my $h (@homols) {              # Writes the feature to the database
+#	$h->seqname($h->homol_SeqFeature->seqname);
+#	my $rv = $db->write_Feature($h,$contigobj);
+#    }
 
-    my $analysis   = make_analysis($mspfile);
+#    my $analysis   = make_analysis($mspfile);
 
-    $db->write_Analysis($analysis);        # Writes the analysis object to the database
+#    $db->write_Analysis($analysis);        # Writes the analysis object to the database
 
 
 }
@@ -115,6 +120,46 @@ close($fh);
 # This are inserted mostly just for tidiness
 #
 ############################################################
+
+sub read_Pfam {
+    my ($genscan_peptide,$pfamfile,$count) = @_;
+
+
+    if (! -e $pfamfile) {
+	print( "   - No pfam file $pfamfile exists - Skipping pfam\n");
+	return;
+    } else {
+	print("   - Reading pfam file $pfamfile\n");
+    }
+    
+    my $pfamobj = new Bio::Tools::HMMER::Results(-file => $pfamfile,
+						 -type => 'hmmpfam');
+
+
+
+
+    foreach my $dom ($pfamobj->each_Domain) {
+	my $align     = new Bio::EnsEMBL::Analysis::PairAlign;
+	
+	$dom->source_tag ('hmmpfam');
+	$dom->primary_tag('similarity');
+	$dom->strand    (1);
+#	$dom->add_tag_value('Analysis',$analysis);
+
+	my $dom2 = $dom->feature2;
+
+	$dom2->source_tag('hmmpfam');
+	$dom2->primary_tag('similarity');
+	$dom2->strand(1);
+#	$dom2->add_tag_value('Analysis',$analysis);
+
+	$genscan_peptide->add_pepHit($dom);
+
+    }
+
+    my @homols = $genscan_peptide->each_Homol;
+    homol2gff(\*STDOUT,\@homols);
+}
 
 sub usage {
     print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
@@ -166,9 +211,10 @@ sub homol2gff {
     my $source = "tblastn_dbest";
     my $source = "blastp_swir";
     my $source = "tblastn_vert";
+    my $source = "hmmpfam_frag";
 
     foreach my $h1 (@$homols) {
-	my $h2 = $h1->homol_SeqFeature;
+	my $h2 = $h1->feature2;
 	my $strand = "+";
 
 	if ($h2->strand == -1) {

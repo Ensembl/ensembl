@@ -1,4 +1,4 @@
-GENSCAN 1.0	Date run:  1-May-99	Time: 13:36:11
+GENSCAN 1.0	Date run:  9-Jan-100	Time: 15:35:05
 
 Sequence dJ120G22.03810 : 64843 bp : 52.56% C+G : Isochore 3 (51.00 - 57.00 C+G%)
 

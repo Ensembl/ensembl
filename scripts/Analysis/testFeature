@@ -12,6 +12,7 @@ use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::FeaturePair;
+use Bio::EnsEMBL::DBSQL::Obj;
 
 my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog1",
                                       -start   => 100,

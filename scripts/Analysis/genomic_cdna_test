@@ -15,8 +15,9 @@ use strict;
 
 use Bio::EnsEMBL::Analysis::PairAlign;
 
-use Bio::SeqFeature::Generic;
-use Bio::SeqFeature::Homol;
+use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::FeaturePair;
+use Bio::SeqFeature::FeaturePair;
 
 use Getopt::Long;
 
@@ -32,21 +33,20 @@ my $infh = \*IN;
 my %pairs;
  
 while (my $line = <$infh>) {
-    my $homol = read_homol($line);
-    my $id    = $homol->primary_tag;
+    my $pair = read_FeaturePair($line);
+    my $id    = $pair->primary_tag;
 	    
     if (!defined($pairs{$id})) {
 	$pairs{$id} = new Bio::EnsEMBL::Analysis::PairAlign;
     }
 
-    $pairs{$id}->addHomol($homol);
+    $pairs{$id}->addFeaturePair($pair);
 }
 
 foreach my $key (keys %pairs) {
-    print("Key $key " . $pairs{$key} . "\n");
 
-    foreach my $pair1 ($pairs{$key}->eachHomol) {
-	my $pair2  = $pair1->homol_SeqFeature;
+    foreach my $pair1 ($pairs{$key}->eachFeaturePair) {
+	my $pair2  = $pair1->feature2;
 ;
 	print($pair1->start . " " . 
 	      $pair1->end   . " " . 
@@ -62,11 +62,11 @@ foreach my $key (keys %pairs) {
 }
 
 
-sub read_homol {
+sub read_FeaturePair {
     my ($line) = @_;
     chomp($line);
 
-    my ($score,$pid,$qstart,$qend,$id1,$hstart,$hend,$id2,$desc) = split(' ',$line.9);
+    my ($score,$pid,$qstart,$qend,$id1,$hstart,$hend,$id2,$desc) = split(' ',$line,9);
 
     my $strand1 = 1;
     my $strand2 = 1;
@@ -87,22 +87,23 @@ sub read_homol {
 	$strand2 = -1;
     }
 
-    my $sf1 = new Bio::SeqFeature::Homol(-start  => $qstart,
-					 -end    => $qend,
-					 -strand => $strand1);
+    my $sf1 = new Bio::EnsEMBL::SeqFeature(-start  => $qstart,
+					   -end    => $qend,
+					   -strand => $strand1,
+					   -primary_tag => $id1);
 
 
-    my $sf2 = new Bio::SeqFeature::Generic(-start  => $hstart,
+    my $sf2 = new Bio::EnsEMBL::SeqFeature(-start  => $hstart,
 					   -end    => $hend,
-					   -strand => $strand2);
+					   -strand => $strand2,
+					   -primary_tag => $id2);
 
 
-    $sf1->primary_tag($id1);
-    $sf2->primary_tag($id2);
+    my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $sf1,
+					   -feature2 => $sf2,
+					   );
 
-    $sf1->homol_SeqFeature($sf2);
-
-    return ($sf1);
+    return ($fp);
 }
 
 
