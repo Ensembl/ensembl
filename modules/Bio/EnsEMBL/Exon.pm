@@ -378,22 +378,29 @@ sub sticky_rank{
 =cut
 
 sub end_phase {
-    my ($self) = @_;
-
+  my ($self,$endphase) = @_;
+  
+  if ( $endphase ){
+    $self->{_end_phase} = $endphase;
+  }
+  else{
     defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
     defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
     defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
-
+    
     my $len   = $self->end() - $self->start() + 1;
     my $phase = $self->phase();
     my( $end_phase );
     if ($phase == -1) {
-        $end_phase = -1;
-    } else {
-        $end_phase = ($len + $phase) % 3;
+      $end_phase = -1;
+    } 
+    else {
+      $end_phase = ($len + $phase) % 3;
     }
-    
-    return $end_phase;
+    print STDERR "Exon: setting end phase to $end_phase\n";
+    $self->{_end_phase} = $end_phase;
+  }
+  return $self->{_end_phase};
 }
 
 =pod
@@ -430,9 +437,10 @@ sub phase {
   if (defined($value)) {
     # Value must be 0,1,2, or -1 for non-coding
     if ($value =~ /^(-1|0|1|2)$/) {
-#	print STDERR "Setting phase for " . $self->id . " to $value\n";
+      #	print STDERR "Setting phase for " . $self->id . " to $value\n";
       $self->{'phase'} = $value;
-    } else {
+    } 
+    else {
       $self->throw("Bad value ($value) for exon phase. Should only be -1,0,1,2\n");
     }
   }
