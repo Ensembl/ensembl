@@ -57,6 +57,9 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::Contig;
 use Bio::EnsEMBL::DB::Clone;
+use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Transcript;
 use DBI;
 
 use Bio::EnsEMBL::DB::DummyStatement;
@@ -128,11 +131,101 @@ sub _initialize {
 =cut
 
 sub get_Gene{
-   my ($self,@args) = @_;
+   my ($self,$geneid) = @_;
+   my $gene;
 
-   $self->throw("Not implemented yet! sorry!");
+   $geneid || $self->throw("Attempting to create gene with no id");
 
+   my $gene = Bio::EnsEMBL::Gene->new();
+   # go over each Transcript
+   my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
+
+   my $res = $sth->execute();
+   my $seen =0;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       my $trans = $self->get_Transcript($rowhash->{'id'});
+       $gene->add_Transcript($trans);
+       $seen = 1;
+   }
+   
+   if( $seen == 0 ) {
+       $self->throw("No gene with $geneid as a name! - Sorry!");
+   }
+
+   return $gene;
 }
+
+=head2 get_Transcript
+
+ Title   : get_Transcript
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Transcript{
+   my ($self,$transid) = @_;
+   
+   my $trans = Bio::EnsEMBL::Transcript->new();
+   # go over each Transcript
+   my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
+
+   my $res = $sth->execute();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       my $exon = $self->get_Exon($rowhash->{'exon'});
+       $trans->add_Exon($exon);
+   }
+   $trans->id($transid);
+
+   return $trans;
+}
+
+=head2 get_Exon
+
+ Title   : get_Exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Exon{
+   my ($self,$exonid) = @_;
+
+   my $sth = $self->prepare("select id,contig,created,modified,start,end,strand,phase from exon where id = '$exonid'");
+   $sth->execute;
+   my $rowhash = $sth->fetchrow_hashref;
+
+   my $exon = Bio::EnsEMBL::Exon->new();
+   $exon->contig_id($rowhash->{'contig'});
+
+   # we have to make another trip to the database to get out the contig to clone mapping.
+   my $contig_id = $exon->contig_id();
+   my $sth2 = $self->prepare("select clone from contig where id = '$contig_id'");
+   $sth2->execute;
+   my $rowhash2 = $sth2->fetchrow_hashref;
+
+   $exon->clone_id($rowhash2->{'clone'});
+
+   # rest of the attributes
+   $exon->id($rowhash->{'id'});
+   $exon->created($rowhash->{'created'});
+   $exon->modified($rowhash->{'modified'});
+   $exon->start($rowhash->{'start'});
+   $exon->end($rowhash->{'end'});
+   $exon->strand($rowhash->{'strand'});
+   $exon->phase($rowhash->{'phase'});
+   
+   return $exon;
+}
+
 
 =head2 get_Clone
 
@@ -183,7 +276,6 @@ sub get_Contig{
 
    my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self,
 					       -id => $id );
-
    return $contig;
 }
 

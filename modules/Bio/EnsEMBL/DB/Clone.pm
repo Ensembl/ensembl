@@ -49,9 +49,10 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::DB::CloneI;
 
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
 
-@ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -76,6 +77,44 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 seq
+
+ Title   : seq
+ Usage   : $seq = $clone->seq(400);
+ Function: Gets the sequence of this clone, contigs separated by the necessary 
+           number of N's
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self,$space) = @_;
+
+   $space |= 400;
+   my $seqstr;
+   foreach my $contig ( $self->get_all_Contigs() ) {
+       my $cseq;
+       eval {
+	   $cseq = $contig->seq();
+       }; 
+       if( $@ ) {
+	   my $id = $self->id();
+	   $self->warn("Unable to retrieve sequence for $id.\n\nContinuing for the moment\n\n$@");
+	   next;
+       }
+       $seqstr .= $cseq->str;
+       $seqstr .= 'N' x $space;
+   }
+
+   my $seq = Bio::Seq->new( -id => $self->id(), -seq => $seqstr);
+
+   return $seq;
+
+}
+
 
 
 =head2 get_all_Genes
@@ -92,10 +131,22 @@ sub _initialize {
 
 sub get_all_Genes{
    my ($self,@args) = @_;
-
+   my @out;
+   my $id = $self->id();
    # prepare the SQL statement
 
-#   my $sth = $self->_dbobj->prepare("select p1.id from gene as p1 where p1 
+
+   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
+
+   my $res = $sth->execute();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$self->_dbobj->get_Gene($rowhash->{'gene'}));
+   }
+   
+
+   return @out;
+
+
 }
 
 =head2 get_Contig
@@ -140,9 +191,19 @@ sub get_all_Contigs{
    $sth= $self->_dbobj->prepare($sql);
    my $res = $sth->execute();
    my $seen = 0;
+
+   my $count = 0;
+   my $total = 0;
+
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self->_dbobj,
 						   -id => $rowhash->{'id'} );
+       $contig->order($count++);
+       $contig->offset($total);
+       
+       $total += $contig->length();
+       $total += 400;
+
        push(@res,$contig);
        $seen = 1;
    }

@@ -73,6 +73,38 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 get_all_Genes
+
+ Title   : get_all_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes{
+   my ($self,@args) = @_;
+   my @out;
+   my $contig_id = $self->id();
+   # prepare the SQL statement
+
+
+   my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
+
+   my $res = $sth->execute();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$self->_dbobj->get_Gene($rowhash->{'id'}));
+   }
+   
+
+   return @out;
+
+}
+
+
 =head2 seq
 
  Title   : seq
@@ -101,6 +133,9 @@ sub seq{
      } 
      return Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
    }
+
+   $self->throw("No dna sequence associated with $id!");
+   
 }
 
 =head2 get_all_SeqFeatures
@@ -141,6 +176,90 @@ sub get_all_SeqFeatures{
  
    return @array;
 }
+
+=head2 length
+
+ Title   : length
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub length{
+   my ($self,@args) = @_;
+   my $id= $self->id();
+
+   my $sth = $self->_dbobj->prepare("select length from contig where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'length'};
+}
+
+
+=head2 order
+
+ Title   : order
+ Usage   : $obj->order($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub order{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'order'} = $value;
+   }
+   return $obj->{'order'};
+   
+}
+
+=head2 offset
+
+ Title   : offset
+ Usage   : $obj->offset($newval)
+ Function: FIXME: this is a hack to provide a way of setting this
+ Returns : value of offset
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub offset{
+   my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'offset'} = $value;
+   }
+   return $obj->{'offset'};
+}
+
+
+=head2 orientation
+
+ Title   : orientation
+ Usage   : FIXME: this is a hack for the moment
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub orientation{
+   my ($self,@args) = @_;
+
+   return 1;
+}
+
 
 =head2 id
 
