@@ -203,6 +203,7 @@ sub create_db {
     $db->do("CREATE DATABASE $db_name");
     $db->disconnect;
     
+    
     $self->do_sql_file(@{$self->schema_sql});
 }
 
@@ -308,8 +309,8 @@ sub validate_sql {
 }
 
 sub DESTROY {
-    my( $self, $file ) = @_;
-    
+    my( $self ) = @_;
+
     if (my $dbh = $self->db_handle) {
         my $db_name = $self->dbname;
         $dbh->do("DROP DATABASE $db_name");

@@ -17,21 +17,22 @@ Bio::EnsEMBL::Pipeline::Analysis.pm - Stores details of an analysis run
 
 =head1 SYNOPSIS
 
-    my $obj    = new Bio::EnsEMBL::Analysis::Analysis(-id              => $id,
-						      -logical_name    => 'SWIRBlast',
-						      -db              => $db,
-						      -db_version      => $db_version,
-						      -db_file         => $db_file,
-						      -program         => $program,
-						      -program_version => $program_version,
-						      -program_file    => $program_file,
-						      -gff_source      => $gff_source,
-						      -gff_feature     => $gff_feature,
-						      -module          => $module,
-						      -module_version  => $module_version,
-						      -parameters      => $parameters,
-						      -created         => $created
-						      )
+    my $obj    = new Bio::EnsEMBL::Analysis::Analysis(
+        -id              => $id,
+        -logic_name      => 'SWIRBlast',
+        -db              => $db,
+        -db_version      => $db_version,
+        -db_file         => $db_file,
+        -program         => $program,
+        -program_version => $program_version,
+        -program_file    => $program_file,
+        -gff_source      => $gff_source,
+        -gff_feature     => $gff_feature,
+        -module          => $module,
+        -module_version  => $module_version,
+        -parameters      => $parameters,
+        -created         => $created
+        );
 
 =head1 DESCRIPTION
 

@@ -112,17 +112,32 @@ sub downstream_Exon {
     return $self->{'_downstream_exon'};
 }
 
+sub id {
+    my( $self ) = @_;
+    
+    return join("-", map $_->id, $self->_up_down_exons);
+}
+
+# Just returns the upstream and downstream exons,
+# throwing nice exceptions if they don't exist.
+sub _up_down_exons {
+    my( $self ) = @_;
+    
+    # Get the upstream and downstream exons
+    my $up_exon = $self->upstream_Exon
+        or $self->throw("Missing upstream_Exon");
+    my $down_exon = $self->downstream_Exon
+        or $self->throw("Missing downstream_Exon");
+    return($up_exon, $down_exon);
+}
+
 sub location {
     my( $self ) = @_;
     
     unless ($self->{'_intron_location'}) {
         my $loc = Bio::Location::Simple->new;
     
-        # Get the upstream and downstream exons
-        my $up_exon = $self->upstream_Exon
-            or $self->throw("Missing upstream_Exon");
-        my $down_exon = $self->downstream_Exon
-            or $self->throw("Missing downstream_Exon");
+        my($up_exon, $down_exon) = $self->_up_down_exons;
         
         # Get the PrimarySeqs attached to both and check it is the same sequence
         my $up_seq   = $up_exon  ->entire_seq;

@@ -47,25 +47,6 @@ use Bio::EnsEMBL::Translation;
 
 
 
-=head2 fetch_by_dbID
-
- Title   : fetch_by_dbID
- Usage   : $transcriptobj->fetch_by_dbID( $dbid )
- Function: 
- Example : $obj->get( .. )
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
-
-=cut
-
-
-sub fetch_by_dbID {
-    my ($self,$transcriptId) = @_;
-}
-
-
-
 
 =head2 _store_exons_in_transcript
 
@@ -120,20 +101,21 @@ sub _store_exons_in_transcript{
 }
 
 
-=head2 get_Transcript
-    
- Title   : get_Transcript
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+=head2 fetch_by_dbID
 
+ Title   : fetch_by_dbID
+ Usage   : $transcriptobj->fetch_by_dbID( $dbid )
+ Function: 
+ Example : $obj->get( .. )
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : gene id and supporting tag if latter not specified, assumes without
+	   Note that it is much faster to get genes without supp.evidence!
 
 =cut
+
     
 sub fetch_by_dbID {
-    my ($self,$transcriptId) = @_;
+    my ($self,$transid) = @_;
 
     my $seen = 0;
     my $trans = Bio::EnsEMBL::Transcript->new();

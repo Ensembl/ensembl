@@ -35,9 +35,9 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::NewGene;
-use Bio::EnsEMBL::NewExon;
-use Bio::EnsEMBL::NewTranscript;
+#use Bio::EnsEMBL::NewGene;
+#use Bio::EnsEMBL::NewExon;
+#use Bio::EnsEMBL::NewTranscript;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
@@ -73,15 +73,16 @@ sub fetch_by_dbID {
   my $sth = $self->prepare( $query );
   $sth->execute();
   
+  my( $exon );
   if( $arrRef = $sth->fetchrow_arrayref() ) {
     # exons are made from start end strand context_name context_type
     $exon = Bio::EnsEMBL::NewExon->new( $arrRef->[5..7], $arrRef->[2], "RawContig" );
-    $exon->id( $arrRef->[0]),
-    $exon->version( $arrRef->[1] ),
-    $exon->created( $arrRef->[3]),
-    $exon->modified( $arrRef->[4]),
-    $exon->phase( $addRef->[8] ),
-    $exon->end_phase( $addRef->[10] ),
+    $exon->id       ( $arrRef->[0]  ),
+    $exon->version  ( $arrRef->[1]  ),
+    $exon->created  ( $arrRef->[3]  ),
+    $exon->modified ( $arrRef->[4]  ),
+    $exon->phase    ( $arrRef->[8]  ),
+    $exon->end_phase( $arrRef->[10] ),
   } else {
     # exon id not known
     return undef;
@@ -122,9 +123,11 @@ sub fetch_by_geneId {
 
   $hashRef = $sth->fetchrow_hashref();
 
+    my( $exon );
   while( 1 ) {
+    my( $loading );
     if( $hashRef ) {
-      if( ! exists $exons{ $hashref->{eid} } ) {
+      if( ! exists $exons{ $hashRef->{eid} } ) {
         # exons are made from start end strand context_name context_type
         $exon = Bio::EnsEMBL::NewExon->new
           ( $hashRef->{start}, $hashRef->{end},
@@ -424,7 +427,7 @@ sub store {
   # Now the supporting evidence
   # should be stored from featureAdaptor
 
-  $sth  = $self->prepare("
+  my $sth  = $self->prepare("
      INSERT INTO supporting_feature( 
         id,exon,seq_start,seq_end,score,
         strand,analysis,name,hstart,hend,hid) 

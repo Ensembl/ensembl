@@ -152,6 +152,7 @@ sub get_Gene_chr_bp {
  Args    : contig id
 
 =cut
+
 sub get_chr_start_end_of_contig {
     my ($self,$contigid) = @_;
 
@@ -233,19 +234,21 @@ sub fetch_RawContigs_by_fpc_name {
 
 =cut
  
-sub convert_chromosome_to_fpc{
+sub convert_chromosome_to_fpc {
     my ($self,$chr,$start,$end) = @_;
  
     my $type = $self->dbobj->static_golden_path_type();
  
-    my $sth = $self->dbobj->prepare("SELECT fpcctg_name,
-					    chr_start 
-				    FROM static_golden_path 
-				    WHERE chr_name = '$chr' 
-				    AND	fpcctg_start = 1 
-				    AND	chr_start <= $start 
-				    ORDER BY chr_start DESC"
-				    );
+    my $sth = $self->dbobj->prepare("
+        SELECT fpcctg_name
+          , chr_start
+        FROM static_golden_path
+        WHERE chr_name = '$chr'
+          AND fpcctg_start = 1
+          AND chr_start <= $start
+          AND type = '$type'
+        ORDER BY chr_start DESC
+        ");
     $sth->execute;
     my ($fpc,$startpos) = $sth->fetchrow_array;
  
@@ -268,13 +271,14 @@ sub convert_fpc_to_chromosome {
  
     my $type = $self->dbobj->static_golden_path_type();
  
-    my $sth = $self->dbobj->prepare("SELECT chr_name,
-					    chr_start 
-				    FROM static_golden_path 
-				    WHERE fpcctg_name = '$fpc' 
-                                    ORDER by fpcctg_start LIMIT 1");
-#				    AND fpcctg_start = 1" 
-#				    );
+    my $sth = $self->dbobj->prepare("
+        SELECT chr_name
+          , chr_start
+        FROM static_golden_path
+        WHERE fpcctg_name = '$fpc'
+            AND type = '$type'
+        ORDER BY fpcctg_start LIMIT 1
+        ");
     $sth->execute;
     my ($chr,$startpos) = $sth->fetchrow_array;
  
@@ -298,19 +302,23 @@ sub convert_fpc_to_chromosome {
 =cut
 
 sub convert_rawcontig_to_fpc{
-   my ($self,$rc,$start,$end,$strand) = @_;
+    my ($self,$rc,$start,$end,$strand) = @_;
 
 
     my $type = $self->dbobj->static_golden_path_type();
  
-    my $sth = $self->dbobj->prepare("SELECT st.fpcctg_name,
-					    st.fpcctg_start,
-                                            st.raw_start,
-                                            st.raw_ori,
-                                            st.raw_end
-				    FROM static_golden_path st,contig c 
-				    WHERE c.id = '$rc' AND c.internal_id = st.raw_id"
-				    );
+    my $sth = $self->dbobj->prepare("
+        SELECT st.fpcctg_name
+          , st.fpcctg_start
+          , st.raw_start
+          , st.raw_ori
+          , st.raw_end
+        FROM static_golden_path st
+          , contig c
+        WHERE c.internal_id = st.raw_id
+          AND st.type = '$type'
+          AND c.id = '$rc'
+        ");
    $sth->execute;
    my ($fpc,$fpcstart,$rawstart,$rawori,$rawend) = $sth->fetchrow_array;
    
@@ -1117,18 +1125,20 @@ sub get_chromosome_length {
 
     $self->throw("No chromosome name entered") unless defined($chrname);
 
-    my $sth = $self->dbobj->prepare("SELECT max(chr_end)
-                                     FROM   static_golden_path
-                                     WHERE  chr_name = \'$chrname\'");
+    my $type = $self->dbobj->static_golden_path_type();
+    
+    my $sth = $self->dbobj->prepare("
+        SELECT MAX(chr_end)
+        FROM static_golden_path
+        WHERE chr_name = '$chrname'
+          AND type = '$type'
+        ");
 
     $sth->execute;
 
-    my $rowhash = $sth->fetchrow_hashref;
+    my ($len) = $sth->fetchrow;
 
-    if (defined($rowhash)) {
-	my $len = $rowhash->{'max(chr_end)'};
-	return $len;
-    }
+    return $len;
 }
 
 

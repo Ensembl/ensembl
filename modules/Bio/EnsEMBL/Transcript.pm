@@ -242,6 +242,25 @@ sub each_Exon{
    return @{$self->{'_trans_exon_array'}};
 }
 
+=head2 length
+
+    my $t_length = $transcript->length
+
+Returns the sum of the length of all the exons in
+the transcript.
+
+=cut
+
+sub length {
+    my( $self ) = @_;
+    
+    my $length = 0;
+    foreach my $ex ($self->each_Exon) {
+        $length += $ex->length;
+    }
+    return $length;
+}
+
 =head2 each_Intron
 
     my @introns = $transcript->each_Intron;
@@ -329,16 +348,123 @@ sub last_exon {
     return $self->end_exon;
 }
 
+=head2 five_prime_utr and three_prime_utr
+
+    my $five_prime  = $transcrpt->five_prime_utr
+        or warn "No five prime UTR";
+    my $three_prime = $transcrpt->three_prime_utr
+        or warn "No three prime UTR";
+
+These methods return a B<Bio::Seq> object
+containing the sequence of the five prime or
+three prime UTR, or undef if there isn't a UTR.
+
+Both method throw an exception if there isn't a
+translation attached to the transcript object.
+
+=cut
+
+sub five_prime_utr {
+    my( $self ) = @_;
+    
+    my $translation = $self->translation
+        or $self->throw("No translation attached to transcript object");
+    my $start_exon_id   = $translation->start_exon_id;
+    my $t_start         = $translation->start;
+    
+    my $seq_string = '';
+    foreach my $ex ($self->each_Exon) {
+        if ($ex->id eq $start_exon_id) {
+            my $start   = $ex->start;
+            my $end     = $ex->end;
+            my $strand  = $ex->strand;
+            
+            if ($strand == 1) {
+                $end   = $start + $t_start - 2;
+            } else {
+                $start = $end   - $t_start + 2;
+            }
+            
+            if ($start <= $end) {
+                my $utr_exon = Bio::EnsEMBL::Exon->new;
+                $utr_exon->start($start);
+                $utr_exon->end($end);
+                $utr_exon->strand($strand);
+                $utr_exon->attach_seq($ex->entire_seq);
+                $seq_string .= $utr_exon->seq->seq;
+            }
+            last;   # At end of UTR
+        } else {
+            $seq_string .= $ex->seq->seq;
+        }
+    }
+    
+    if ($seq_string) {
+        my $seq = Bio::Seq->new;
+        $seq->id($self->id . '-five_prime_UTR');
+        $seq->seq($seq_string);
+        return $seq;
+    } else {
+        return;
+    }
+}
+
+sub three_prime_utr {
+    my( $self ) = @_;
+    
+    my $translation = $self->translation
+        or $self->throw("No translation attached to transcript object");
+    my $end_exon_id   = $translation->end_exon_id;
+    my $t_end         = $translation->end;
+    
+    my $seq_string = '';
+    my $in_utr = 0;
+    foreach my $ex ($self->each_Exon) {
+        if ($in_utr) {
+            $seq_string .= $ex->seq->seq;
+        }
+        elsif ($ex->id eq $end_exon_id) {
+            $in_utr = 1;
+            my $start   = $ex->start;
+            my $end     = $ex->end;
+            my $strand  = $ex->strand;
+            
+            if ($strand == 1) {
+                $start = $start + $t_end;
+            } else {
+                $end   = $end   - $t_end;
+            }
+            
+            if ($start <= $end) {
+                my $utr_exon = Bio::EnsEMBL::Exon->new;
+                $utr_exon->start($start);
+                $utr_exon->end($end);
+                $utr_exon->strand($strand);
+                $utr_exon->attach_seq($ex->entire_seq);
+                $seq_string .= $utr_exon->seq->seq;
+            }
+        }
+    }
+    
+    if ($seq_string) {
+        my $seq = Bio::Seq->new;
+        $seq->id($self->id . '-three_prime_UTR');
+        $seq->seq($seq_string);
+        return $seq;
+    } else {
+        return;
+    }
+}
+
 =head2 translatable_exons
 
- Title   : translatable_exons
- Usage   : @exons = $transcript->translateable_exons
- Function: return list of exons that translate with the start- and
-           end-exons truncated to the CDS regions.
- Example :
- Returns : 
- Args    :
+    @exons = $transcript->translateable_exons
 
+Returns a list of exons that translate with the
+start and end exons truncated to the CDS regions.
+
+Throws an exception if there is no translation
+attached to the transcript object.
 
 =cut
 
@@ -527,82 +653,78 @@ sub split_Transcript_to_Partial {
 =cut
 
 sub translate {
-  my ($self) = @_;
+    my ($self) = @_;
 
-  my $debug;
-
-
-  if ( ! defined $self->translation ) {
-      $self->throw("You have to have a translation now to make a translation. Doh!");
-  }
-
-  my @trans = $self->split_Transcript_to_Partial(1);
-
-  unless (@trans) {
-      $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
-  }
-    #if (@trans > 1) {
-    #    warn "Made ", scalar(@trans), " partial transcripts";
-    #}
-  
-
-  my $seqstr;
-  my $prevtrans;
-  my $seen_start =0;
-
-  foreach my $ptrans ( @trans ) {
-      
-      my $tseq = $ptrans->_translate_coherent($debug);
-     
-      # to be consistent with our EMBL dumping, we need to make the actual join
-      # with fill-in N's and then pass into translate so that ambiguous codons
-      # which still have a translation happen! This has to be the weirdest piece
-      # of manipulation I have done in a long time. What we do is take the last
-      # exon of the old transcript and the first exon of the current transcript,
-      # fill both sides in so that they make nice reading frames and then translate
-      # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
-      # that there is some filler.
-      
-      if( defined $prevtrans ) {
-	  my $last_exon  = $prevtrans->end_exon();
-	  my $first_exon = $ptrans   ->start_exon();
-	  my $filler;
-
-	  # last exon
-	  if( $last_exon->end_phase != 0 ) {
-	      $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
-	  } 
-	  $filler .= 'N' x (3 - $last_exon->end_phase);
-
-	  # do first exon now.
-
-	  if( $first_exon->phase != 0 ) {
-	      $filler .= 'N' x $first_exon->phase;
-	  } else {
-	      $filler .= 'NNN';
-	  }
-	  $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
-
-	  # translate it.
-	  if( length($filler) != 6 ) {
-	      my $lphase = $last_exon->end_phase;
-	      my $fphase = $first_exon->phase;
-	      $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
-	  }
-	  my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
-	  my $tfillerseq = $fillerseq->translate();
-	  $seqstr .= $tfillerseq->seq;
-      } 
-      $seqstr .= $tseq->seq;
-      $prevtrans = $ptrans;
-  }
-  
-  $seqstr =~ s/\*$//;
-
-  my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $self->translation->id() ) ;
+    my $debug;
 
 
-  return $trans_seq;
+    if ( ! defined $self->translation ) {
+        $self->throw("You have to have a translation now to make a translation. Doh!");
+    }
+
+    my @trans = $self->split_Transcript_to_Partial(1);
+
+    unless (@trans) {
+        $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
+    }  
+
+    my $seqstr;
+    my $prevtrans;
+    my $seen_start = 0;
+
+    foreach my $ptrans ( @trans ) {
+
+        my $tseq = $ptrans->_translate_coherent($debug);
+
+        # to be consistent with our EMBL dumping, we need to make the actual join
+        # with fill-in N's and then pass into translate so that ambiguous codons
+        # which still have a translation happen! This has to be the weirdest piece
+        # of manipulation I have done in a long time. What we do is take the last
+        # exon of the old transcript and the first exon of the current transcript,
+        # fill both sides in so that they make nice reading frames and then translate
+        # the 6 bases which this makes. Phase 0 exons are filled in by 3 to make sure
+        # that there is some filler.
+
+        if( defined $prevtrans ) {
+	    my $last_exon  = $prevtrans->end_exon();
+	    my $first_exon = $ptrans   ->start_exon();
+	    my $filler;
+
+	    # last exon
+	    if( $last_exon->end_phase != 0 ) {
+	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
+	    } 
+	    $filler .= 'N' x (3 - $last_exon->end_phase);
+
+	    # do first exon now.
+
+	    if( $first_exon->phase == 0 ) {
+	        $filler .= 'N' x $first_exon->phase;
+	    } else {
+	        $filler .= 'NNN';
+	    }
+	    $filler .= substr($first_exon->seq->seq, 0, (3 - $first_exon->phase) % 3);
+
+	    # translate it.
+	    if( length($filler) != 6 ) {
+	        my $lphase = $last_exon->end_phase;
+	        my $fphase = $first_exon->phase;
+	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
+	    }
+	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
+	    my $tfillerseq = $fillerseq->translate();
+	    $seqstr .= $tfillerseq->seq;
+        } 
+        $seqstr .= $tseq->seq;
+        $prevtrans = $ptrans;
+    }
+
+    $seqstr =~ s/\*$//;
+
+    my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $self->translation->id() ) ;
+
+
+    return $trans_seq;
 }
 
 =head2 seq

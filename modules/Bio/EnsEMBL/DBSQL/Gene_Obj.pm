@@ -639,7 +639,7 @@ sub get_array_supporting {
 	#
 	# Attach the sequence, cached if necessary...
 	#
-	if ($supporting && $supporting eq 'evidence') {
+	if ($supporting eq 'evidence') {
 	    push @sup_exons, $exon;
 	}
 	
@@ -665,7 +665,7 @@ sub get_array_supporting {
     
     $self->_store_exons_in_transcript($trans,@transcript_exons);
    
-    if ($supporting && $supporting eq 'evidence') {
+    if ($supporting eq 'evidence') {
 	$self->get_supporting_evidence_direct(@sup_exons);
     }
 

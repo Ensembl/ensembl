@@ -156,7 +156,6 @@ sub new {
     return $self;
 }                                       # new
 
-
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -170,7 +169,7 @@ sub new {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-    my ($self, $analysis_type, $score,$bp) = @_;
+    my ($self, $analysis_type, $score, $bp) = @_;
     
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
@@ -178,12 +177,11 @@ sub get_all_SimilarityFeatures_above_score{
     if( $self->_use_cext_get() ) {
 	return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
     }
-
     
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    my $idlist  = $self->_raw_contig_id_list();
+    my $glob_start = $self->_global_start;
+    my $chr_name   = $self->_chr_name;
+    my $idlist     = $self->_raw_contig_id_list;
+    my $type       = $self->dbobj->static_golden_path_type;
     
     unless ($idlist){
 	return ();
@@ -202,9 +200,8 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
 		        AND    a.db = '$analysis_type'  
-                        AND    sgp.chr_end >= $glob_start 
-		        AND    sgp.chr_start <=$glob_end 
-		        AND    sgp.chr_name='$chr_name' 
+                        AND    sgp.type = '$type'
+		        AND    sgp.chr_name = '$chr_name' 
                         ORDER  by start";
     
     my  $sth = $self->dbobj->prepare($statement);    
@@ -221,7 +218,6 @@ sub get_all_SimilarityFeatures_above_score{
     my @features;
     
     my $out;
-    my %analhash;
     my $length=$self->length;
   FEATURE: 
 
@@ -290,13 +286,14 @@ sub get_all_SimilarityFeatures_above_pid{
     
 
     # this needs to be rewritten properely EB
-       
+    
+    my $type = $self->dbobj->static_golden_path_type;
 
     my $statement = "SELECT ".
       "f.id,
    if(s.raw_ori=1,(f.seq_start-s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_start)),
    if(s.raw_ori=1,(f.seq_end  -s.raw_start+s.chr_start),(s.chr_start+s.raw_end-f.seq_end)),
-   f.strand*s.raw_ori,
+   f.strand * s.raw_ori,
    f.score,f.analysis, f.name, f.hstart, f.hend, f.hid
                FROM feature f, static_golden_path s 
                WHERE f.perc_id > $pid 
@@ -305,7 +302,8 @@ sub get_all_SimilarityFeatures_above_pid{
                AND NOT (s.chr_end < $glob_start) 
                AND   f.seq_start > s.raw_start 
                AND   f.seq_end   < s.raw_end
-               AND   s.chr_name  = '$chr_name'";
+               AND   s.chr_name  = '$chr_name'
+               AND   s.type = '$type'";
 
 
     #my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
@@ -420,6 +418,8 @@ sub get_all_RepeatFeatures {
 	return ();
     }
 
+    my $type = $self->dbobj->static_golden_path_type;
+
     my $statement = "SELECT rf.id,
                      IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                             (sgp.chr_start+sgp.raw_end-rf.seq_end-$glob_start)) as start,                                        
@@ -430,8 +430,7 @@ sub get_all_RepeatFeatures {
                      FROM   repeat_feature rf,static_golden_path sgp
                      WHERE  sgp.raw_id = rf.contig
                      AND    rf.contig in $idlist
-                     AND    sgp.chr_end >= $glob_start 
-                     AND    sgp.chr_start <=$glob_end
+                     AND    sgp.type = '$type'
 		     AND    sgp.chr_name='$chr_name' 
                      ORDER  by start";
     
@@ -532,6 +531,8 @@ sub get_all_PredictionFeatures {
    my %analhash;
    my $analysis_type='genscan';
    
+    my $type = $self->dbobj->static_golden_path_type;
+    
    my $query = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
@@ -544,8 +545,7 @@ sub get_all_PredictionFeatures {
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
 		        AND    a.gff_source = '$analysis_type'  
-                        AND    sgp.chr_end >= $glob_start 
-		        AND    sgp.chr_start <=$glob_end 
+                        AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
                         ";
    
@@ -650,6 +650,150 @@ sub get_all_PredictionFeatures {
 }
 
 
+=head2 get_all_SimpleFeatures
+
+    my @feat = $contig->get_all_SimpleFeatures
+
+Returns a list of B<Bio::EnsEMBL::SeqFeature>
+objects.  Features which overlap the ends of the
+contig are truncated to the contig, not discarded
+like
+
+=head2 get_all_SimpleFeatures_by_feature_type
+
+    my @cpg = $contig->get_all_SimpleFeatures_by_feature_type('cpg_island');
+
+=cut
+
+sub get_all_SimpleFeatures {
+    my( $self ) = @_;
+    
+    return $self->_fetch_SimpleFeatures_SQL_clause('');
+}
+
+sub get_all_SimpleFeatures_by_feature_type {
+    my( $self, $feature_type ) = @_;
+    
+    $self->throw("No feature type given") unless $feature_type;
+    
+    return $self->_fetch_SimpleFeatures_SQL_clause(qq{
+        AND a.gff_feature = '$feature_type'
+        });
+}
+
+sub get_all_SimpleFeatures_by_feature_type_above_score {
+    my( $self, $feature_type, $score ) = @_;
+    
+    $self->throw("No feature type given") unless $feature_type;
+    $self->throw("No score given") unless defined($score);
+    
+    return $self->_fetch_SimpleFeatures_SQL_clause(qq{
+        AND a.type = '$feature_type'
+        AND f.score >= $score
+        });
+}
+
+sub get_all_SimpleFeatures_by_analysis_id {
+    my( $self, $analysis_id ) = @_;
+    
+    $self->throw("No analysis ID given") unless $analysis_id;
+    
+    return $self->_fetch_SimpleFeatures_SQL_clause(qq{
+        AND a.type = $analysis_id
+        });
+}
+
+# Internal method used by the get_all_SimpleFeatures* methods
+sub _fetch_SimpleFeatures_SQL_clause {
+    my( $self, $sql_extra ) = @_;
+
+    my $global_start    = $self->_global_start;
+    my $chr_name        = $self->_chr_name;
+    my $type            = $self->dbobj->static_golden_path_type;
+    
+    # Return if we don't have any raw contigs (all gap)
+    my $idlist = $self->_raw_contig_id_list or return;
+
+    # This is the generic SQL used by all the subroutines
+    # which call this one.
+    my $sql_begin = qq{
+        SELECT f.id
+          , IF (sgp.raw_ori = 1
+              , (sgp.chr_start + f.seq_start - sgp.raw_start - $global_start)
+              , (sgp.chr_start + sgp.raw_end - f.seq_end     - $global_start)) as start
+          , IF (sgp.raw_ori = 1
+              , (sgp.chr_start + f.seq_end   - sgp.raw_start - $global_start)
+              , (sgp.chr_start + sgp.raw_end - f.seq_start   - $global_start))
+          , sgp.raw_ori * f.strand
+          , f.score
+          , f.analysis
+          , f.name
+          , f.hid
+        FROM feature f
+          , analysis a
+          , static_golden_path sgp
+        WHERE f.analysis = a.id
+          AND sgp.raw_id = f.contig
+          AND f.contig IN $idlist
+          AND sgp.type = '$type'
+          AND sgp.chr_name = '$chr_name'
+        };
+    
+    # All statements have this ORDER by clause on the end
+    my $sql_order = qq{
+        ORDER BY start
+        };
+
+    # Make the full statement and execute it
+    my $sql = join(' ', $sql_begin, $sql_extra, $sql_order);
+    my $sth = $self->dbobj->prepare($sql);    
+    $sth->execute();     
+    
+    # Bind columns to variables for the fastest possible
+    # retrieval of results.
+    my ($fid,
+        $start, $end, $strand,
+        $f_score, $analysis_id, $name, $hid);
+    $sth->bind_columns(undef,
+        \$fid,
+        \$start, \$end, \$strand,
+        \$f_score, \$analysis_id, \$name, \$hid);
+        
+    my $length = $self->length;
+
+    my( %anal, @features );
+    while ($sth->fetch) {
+        
+        # Skip features outside our region
+        if ($end < 1 or $start > $length) {
+            next;
+        }
+        
+        # Get an analysis object
+        my( $analysis );
+        unless ($analysis = $anal{$analysis_id}) {
+            my $feature_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	    $analysis = $feature_obj->get_Analysis($analysis_id);
+	    $anal{$analysis_id} = $analysis;
+        }
+    
+        # Truncate the feature coordinates to the region
+        $start = 1       if $start < 1;
+        $end   = $length if $end   > $length;
+    
+        # Make the feature
+        my $feat = Bio::EnsEMBL::FeatureFactory->new_feature;
+        $feat->id       ($fid);
+        $feat->start    ($start);
+        $feat->end      ($end);
+        $feat->strand   ($strand);
+        $feat->score    ($f_score);
+        $feat->analysis ($analysis);
+        
+        push(@features, $feat);
+    }
+    return @features;
+}
 
 
 =head2 get_all_ExternalFeatures
@@ -925,7 +1069,7 @@ my $glob = 100;
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
 
-
+    my $type = $self->dbobj->static_golden_path_type;
     my $statement= "   SELECT 
                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                               (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,                                        
@@ -941,8 +1085,7 @@ eval {
                        WHERE    f.hid=c.marker  
                        AND    f.contig in $idlist 
                        AND    sgp.raw_id=f.contig 
-                       AND    sgp.chr_end >= $glob_start 
-                       AND    sgp.chr_start <=$glob_end 
+                       AND    sgp.type = '$type'
                        AND    sgp.chr_name='$chr_name' 
                        GROUP BY f.hid ORDER BY start ";
     
@@ -996,18 +1139,18 @@ return @markers;
 
 
 sub get_landmark_MarkerFeatures{
-   my ($self,$glob) = @_;
+    my ($self,$glob) = @_;
 
-my $chr_name   = $self->_chr_name;
+    my $chr_name   = $self->_chr_name;
 
-   if( !defined $glob ) {
-       $glob = 500000;
-   }
+    if( !defined $glob ) {
+        $glob = 500000;
+    }
 
 
-my $glob_start = $self->_global_start;
-my $glob_end   = $self->_global_end;
-my $length     = $self->length;
+    my $glob_start = $self->_global_start;
+    my $glob_end   = $self->_global_end;
+    my $length     = $self->length;
 
 
    my $statement= " SELECT  start,
@@ -1016,8 +1159,8 @@ my $length     = $self->length;
 			    name 
 		    FROM    contig_landmarkMarker 
 		    WHERE   chr_name = '$chr_name'
-                    AND     start>=$glob_start 
-                    AND     end <=$glob_end 
+                    AND     start >= $glob_start 
+                    AND     end <= $glob_end 
 		    ORDER BY start
 		";
    
@@ -1079,8 +1222,7 @@ my $length     = $self->length;
 
 
 
-sub next_landmark_Marker
-{
+sub next_landmark_Marker {
 
 my ($self,$start,$chr_name,$Mb)=@_;
 
@@ -1093,12 +1235,13 @@ my $glob_end=$self->_global_end;
    $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
+my $type = $self->dbobj->static_golden_path_type;
 
 my @markers;
 
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
-    
+
     my $end;
     my $limit;
     unless ($#markers>=0 || $end >255000000){
@@ -1120,12 +1263,13 @@ eval {
                                     $dbname.static_golden_path sgp
                           WHERE     sgp.raw_id=f.contig  
                           AND       f.hid=s.marker
-                          AND       sgp.chr_name='$chr_name' 
+                          AND       sgp.chr_name = '$chr_name' 
+                          AND       sgp.type = '$type'
                           AND       f.analysis = a.id 
                           AND       a.db='mapprimer'
-                          AND       sgp.chr_start>$start 
-                          AND       sgp.chr_start <$end 
-                          AND       sgp.chr_start+f.seq_start-sgp.raw_start>$start  
+                          AND       sgp.chr_start > $start 
+                          AND       sgp.chr_start < $end
+                          AND       sgp.chr_start + f.seq_start - sgp.raw_start > $start  
                           AND       (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM') 
                           ORDER BY  start limit 1";
 
@@ -1133,22 +1277,22 @@ eval {
 
 	my $sth = $self->dbobj->prepare($statement);
 	$sth->execute;
-	
+
 	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym);
-	
+
 	my $analysis;
 	my %analhash;
-	
+
 	$sth->bind_columns
 	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
 	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
-	
-        
+
+
 	while( $sth->fetch ) {
-	    
+
 	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
 		      $analysisid,$synonym);
-	    
+
 	    my $out=$self->_create_Marker_features(@args);
 	    if (defined $out){
 		push (@markers,$out);
@@ -1160,7 +1304,6 @@ eval {
 if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
 
 return $markers[0];
-
 }
 
 
@@ -1192,6 +1335,7 @@ my $glob_end=$self->_global_end;
    $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
+my $type = $self->dbobj->static_golden_path_type;
 
 my @markers;
 
@@ -1222,7 +1366,8 @@ eval {
                                     $dbname.static_golden_path sgp
                           WHERE     sgp.raw_id=f.contig  
                           AND       f.hid=s.marker
-                          AND       sgp.chr_name='$chr_name' 
+                          AND       sgp.chr_name='$chr_name'
+                          AND       sgp.type = '$type'
                           AND       f.analysis = a.id 
                           AND       a.db='mapprimer'                       
                           AND       sgp.chr_start<$start 
@@ -1287,6 +1432,7 @@ sub get_all_Genes_exononly{
    my $glob_end=$self->_global_end;
    my $chr_name=$self->_chr_name;
    my $idlist  = $self->_raw_contig_id_list();
+   my $type = $self->dbobj->static_golden_path_type;
    
    unless ($idlist){
        return ();
@@ -1307,10 +1453,11 @@ sub get_all_Genes_exononly{
         WHERE  t.id = et.transcript
         AND    et.exon = e.id 
         AND    sgp.raw_id = e.contig
-	AND    sgp.chr_name = '$chr_name' 
+	AND    sgp.chr_name = '$chr_name'
+        AND    sgp.type = '$type'
         AND    e.contig in $idlist
-        AND    sgp.chr_end >= $glob_start 
-	AND    sgp.chr_start <= $glob_end 
+        AND    sgp.chr_end >= $glob_start
+	AND    sgp.chr_start <= $glob_end
         ORDER  BY t.gene,t.id,et.rank,e.sticky_rank";
 
    my $sth = $self->dbobj->prepare($query);
@@ -1451,6 +1598,7 @@ sub get_all_VirtualGenes_startend
     my $glob_end    = $self->_global_end;
     my $chr_name    = $self->_chr_name;
     my $idlist      = $self->_raw_contig_id_list();
+    my $type = $self->dbobj->static_golden_path_type;
 
     unless ($idlist){
 	return ();
@@ -1474,7 +1622,8 @@ sub get_all_VirtualGenes_startend
             AND        t.id=et.transcript 
             AND        sgp.chr_end >= $glob_start   
             AND        sgp.chr_start <=$glob_end 
-            AND        sgp.chr_name='$chr_name' 
+            AND        sgp.chr_name='$chr_name'
+            AND        sgp.type = '$type'
             GROUP BY   t.gene;";
     
     my $sth = $self->dbobj->prepare($query);
@@ -1582,41 +1731,41 @@ sub _cached_virtualgenes_startend{
 
 
 
-sub get_all_VirtualTranscripts_startend
-{
-my ($self)=shift;
+sub get_all_VirtualTranscripts_startend {
+    my ($self) = @_;
 
-my $transcript;
-my @transcripts;
+    my $transcript;
+    my @transcripts;
 
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
-my $idlist  = $self->_raw_contig_id_list();
-    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    my $idlist  = $self->_raw_contig_id_list();
+    my $type = $self->dbobj->static_golden_path_type;
 
-unless ($idlist){
-    return ();
-}
+    unless ($idlist){
+        return ();
+    }
 
-$self->throw ("I need a chromosome name") unless defined $chr_name;
-$self->throw ("I need a chromosome end") unless defined $glob_end;
-$self->throw ("I need a chromosome start") unless defined $glob_start;
+    $self->throw ("I need a chromosome name") unless defined $chr_name;
+    $self->throw ("I need a chromosome end") unless defined $glob_end;
+    $self->throw ("I need a chromosome start") unless defined $glob_start;
 
-my $query ="SELECT     STRAIGHT_JOIN t.id,
-                       MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
-                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
-            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
-            WHERE      sgp.raw_id=e.contig
-            AND        e.contig in $idlist 
-            AND        e.id=et.exon 
-            AND        t.id=et.transcript 
-            AND        sgp.chr_end >= $glob_start   
-            AND        sgp.chr_start <=$glob_end 
-            AND        sgp.chr_name='$chr_name' 
-            GROUP BY   t.id;";
+    my $query ="SELECT     STRAIGHT_JOIN t.id,
+                           MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                      (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
+                           MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                      (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
+                FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
+                WHERE      sgp.raw_id=e.contig
+                AND        e.contig in $idlist 
+                AND        e.id=et.exon 
+                AND        t.id=et.transcript 
+                AND        sgp.chr_end >= $glob_start   
+                AND        sgp.chr_start <=$glob_end 
+                AND        sgp.chr_name='$chr_name'
+                AND        sgp.type = '$type'
+                GROUP BY   t.id;";
 
 
     my $sth = $self->dbobj->prepare($query);

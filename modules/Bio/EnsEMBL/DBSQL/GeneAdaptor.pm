@@ -25,15 +25,17 @@ Bio::EnsEMBL::DBSQL::GeneAdaptor - MySQL Database queries to generate and store 
 
 =cut
 
-;
 
 package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::NewGene;
-use Bio::EnsEMBL::NewExon;
-use Bio::EnsEMBL::NewTranscript;
+use vars '@ISA';
+#use Bio::EnsEMBL::NewGene;
+#use Bio::EnsEMBL::NewExon;
+#use Bio::EnsEMBL::NewTranscript;
+
+@ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 =head2 remove_by_dbID
 
@@ -204,7 +206,7 @@ sub fetch_by_dbID {
     ORDER BY tscript.gene
       , tscript.id
       , e_t.rank
-    }
+    };
 
   my $sth = $self->prepare( $query );
   $sth->execute();

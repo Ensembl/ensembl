@@ -231,11 +231,7 @@ sub store {
 	$analysis->gff_source,
 	$analysis->gff_feature
       );
-    $sth = $self->prepare( q{
-      SELECT last_insert_id() ;
-    } );
-    $sth->execute;
-    $dbID = ($sth->fetchrow_array)[0];
+    $dbID = $sth->{'insertid'};
   } else {
     my $sth = $self->prepare( q{
 
@@ -269,7 +265,7 @@ sub store {
 	$analysis->gff_feature
       );
 
-    $dbID = $sth->{insertid};
+    $dbID = $sth->{'insertid'};
 
     if( defined $dbID ) {
       $sth = $self->prepare( q{
