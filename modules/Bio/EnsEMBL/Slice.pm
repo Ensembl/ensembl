@@ -125,7 +125,7 @@ sub new {
   if($empty) {
     deprecate("Creation of empty slices is no longer needed" .
               "and is deprecated");
-    return bless({'empty' => 1}, $class);
+    return bless({'empty' => 1, 'adaptor' => $adaptor}, $class);
   }
 
   $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
@@ -705,6 +705,35 @@ sub expand {
   return bless \%new_slice, ref($self);
 }
 
+
+
+=head2 get_seq_region_id
+
+  Arg [1]    : none
+  Example    : my $seq_region_id = $slice->get_seq_region_id();
+  Description: Gets the internal identifier of the seq_region that this slice
+               is on. Note that this function will not work correctly if this
+               slice does not have an attached adaptor. Also note that it may
+               be better to go through the SliceAdaptor::get_seq_region_id 
+               method if you are working with multiple databases since is 
+               possible to work with slices from databases with different
+               internal seq_region identifiers.
+  Returntype : int
+  Exceptions : warning if slice is not associated with a SliceAdaptor
+  Caller     : assembly loading scripts, general
+
+=cut
+
+sub get_seq_region_id {
+  my ($self) = @_;
+  
+  if($self->adaptor) {
+    return $self->adaptor->get_seq_region_id($self);
+  } else {
+    warning('Cannot retrieve seq_region_id without attached adaptor.');
+    return 0;                                                            
+  }
+}
 
 
 =head2 get_all_attribute_types
