@@ -162,7 +162,7 @@ sub parse_file {
 	    my $gene=$self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
 	    $trans_start = undef;
 	    $trans_end = undef;
-	    %exons = undef;
+	    %exons = ();
 	}
 	if ($oldgene ne $gene_id) {
 	    $self->_build_gene($oldgene);
@@ -289,14 +289,14 @@ sub _build_transcript {
 	}
     }
 	
-    if ($trans_start == undef) {
+    if (!defined($trans_start)) {
 	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation start $trans_start\n";
     $translation->start($trans_start);
     
-    if ($trans_end == undef) {
+    if (!defined($trans_end)) {
 	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
 	return;
     }

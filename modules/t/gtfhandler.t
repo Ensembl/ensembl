@@ -45,7 +45,7 @@ sub parse_genes {
     
     #Use new parser module, to empty gene array
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-    open (PARSE,"t/$file") || $self->throw("Could not open $file for Fasta stream reading $!");
+    open (PARSE,"t/$file") || die("Could not open $file for Fasta stream reading $!");
     
     @genes=$gtfh->parse_file(\*PARSE);
     close (PARSE);
