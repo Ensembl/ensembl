@@ -18,8 +18,7 @@ use Bio::EnsEMBL::Pipeline::GeneComparison::CdnaComparison;
 # decides which to do according to the first command-line argument.
 # The master image creates a temporary, fairly small transcript file
 # for each slave, and launches the slaves through LSF. Each slave
-# runs a mapping for the transcripts in the file it is given, then
-# deletes the file.
+# runs a mapping for the transcripts in the file it is given.
 
 if ($ARGV[0] eq "SLAVE") {	# slave: do some work
 
@@ -46,9 +45,6 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
   foreach my $transcript_id (keys %name_map) {
     print "$transcript_id\t", $name_map{$transcript_id}, "\n";
   }
-
-  # tidy up
-  die "file delete error" unless unlink $transcript_fnam;
 
 } else {			# master: prepare for others to do the work
 
