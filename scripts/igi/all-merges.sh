@@ -26,9 +26,9 @@ affy=affymetrix.all
 fgenesh=fgenesh.all
 
 cd $outdir
-gtf_merge.pl -p $prefix $indir/$ens $indir/$affy > ens_affy.merge  2> ens_affy.log
-gtf_merge.pl -p $prefix $indir/$ens $indir/$fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
-gtf_merge.pl -p $prefix $indir/$affy $indir/$fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
+# gtf_merge.pl -p $prefix $indir/$ens $indir/$affy > ens_affy.merge  2> ens_affy.log
+# gtf_merge.pl -p $prefix $indir/$ens $indir/$fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
+# gtf_merge.pl -p $prefix $indir/$affy $indir/$fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
 gtf_merge.pl -p $prefix $indir/$ens $indir/$affy $indir/$fgenesh > ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
 
 cd $outdir
