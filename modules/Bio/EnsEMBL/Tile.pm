@@ -50,30 +50,18 @@ use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
-### JGRG - commented out non-functional new method
-#sub new {
-#  my($class,@args) = @_;
-#
-#  my $self = {};
-#  bless $self,$class;
-#
-#  my ($assembled_seq,$assembled_start,$assembled_end,
-#      $component_seq, $component_start, $component_end,
-#      $component_ori ) =
-#    $self->_rearrange([qw(ASSEMBLED_SEQ
-#              ASSEMBLED_START
-#              ASSEMBLED_END
-#              COMPONENT_SEQ
-#              COMPONENT_START 
-#              COMPONENT_END
-#              COMPONENT_ORI
-#                         )],
-#              @args);
-#  
-#  return $self;
-#}
 
+### Only new_fast() is used by the EnsEMBL API
+### Otter uses new()
+sub new {
+    my $class = shift;
 
+    my $self = bless {}, $class;
+    if (@_) {
+        $self->throw("new does not take any arguments");
+    }
+    return $self;
+}
 
 =head2 new_fast
 
@@ -99,18 +87,18 @@ use Bio::EnsEMBL::Root;
 sub new_fast {
   # make it really fast
   return bless {
-     'assembled_Seq' => $_[1],
-     'assembled_start' => $_[2],
-     'assembled_end' => $_[3],
-     'component_Seq' => $_[4],
-     'component_start' => $_[5],
-     'component_end' => $_[6],
-     'component_ori' => $_[7],
+     'assembled_Seq'    => $_[1],
+     'assembled_start'  => $_[2],
+     'assembled_end'    => $_[3],
+     'component_Seq'    => $_[4],
+     'component_start'  => $_[5],
+     'component_end'    => $_[6],
+     'component_ori'    => $_[7],
 # compatibility zone
-     'start' => $_[2],
-     'end' => $_[3],
-     'strand' => $_[7],
-     'contig' => $_[4]
+     'start'            => $_[2],
+     'end'              => $_[3],
+     'strand'           => $_[7],
+     'contig'           => $_[4]
   }, $_[0];
 }
 
