@@ -1161,7 +1161,7 @@ sub cloneid {
     return $self->{_cloneid};
 }
 
-=head2 chromosome
+=head2 old_chromosome
 
  Title   : chromosome
  Usage   : $chr = $contig->chromosome( [$chromosome] )
@@ -1172,7 +1172,7 @@ sub cloneid {
 
 =cut
 
-sub chromosome {
+sub old_chromosome {
    my ($self,$chromosome ) = @_;
    my $id= $self->internal_id();
 
@@ -1756,6 +1756,391 @@ sub filter_features {
     }
     return @out;
 }
+
+
+#
+# Static golden path tables
+#
+
+
+=head2 chromosome
+
+ Title   : chromosome
+ Usage   : $self->chromosome($newval)
+ Function: 
+ Returns : value of chromosome
+ Args    :
+
+
+=cut
+
+sub chromosome{
+    my $self = shift;
+
+    if( defined $self->_chromosome) { return $self->_chromosome;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select chr_id from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+}
+
+=head2 _chromosome
+
+ Title   : chromosome
+ Usage   : $self->_chromosome($newval)
+ Function: 
+ Returns : value of _chromosome
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _chromosome{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_chromosome'} = $value;
+    }
+    return $self->{'_chromosome'};
+
+}
+
+=head2 fpc_contig
+
+ Title   : fpc_contig
+ Usage   : $self->fpc_contig($newval)
+ Function: 
+ Returns : value of fpc_contig
+ Args    :
+
+
+=cut
+
+sub fpc_contig{
+    my $self = shift;
+
+    if( defined $self->_fpc_contig) { return $self->_fpc_contig;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select ctg_id from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_fpc_contig($value);
+    return $value;
+
+
+}
+
+=head2 _fpc_contig
+
+ Title   : fpc_contig
+ Usage   : $self->_fpc_contig($newval)
+ Function: 
+ Returns : value of _fpc_contig
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _fpc_contig{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_fpc_contig'} = $value;
+    }
+    return $self->{'_fpc_contig'};
+
+}
+
+=head2 global_start
+
+ Title   : global_start
+ Usage   : $self->global_start($newval)
+ Function: 
+ Returns : value of global_start
+ Args    :
+
+
+=cut
+
+sub global_start{
+    my $self = shift;
+
+    if( defined $self->_global_start) { return $self->_global_start;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select global_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_chromosome($value);
+    return $value;
+
+
+}
+
+=head2 _global_start
+
+ Title   : global_start
+ Usage   : $self->_global_start($newval)
+ Function: 
+ Returns : value of _global_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _global_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_global_start'} = $value;
+    }
+    return $self->{'_global_start'};
+
+}
+
+=head2 global_end
+
+ Title   : global_end
+ Usage   : $self->global_end($newval)
+ Function: 
+ Returns : value of global_end
+ Args    :
+
+
+=cut
+
+sub global_end{
+    my $self = shift;
+
+    if( defined $self->_global_end) { return $self->_global_end;}
+
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select global_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_global_end($value);
+    return $value;
+
+}
+
+=head2 _global_end
+
+ Title   : global_end
+ Usage   : $self->_global_end($newval)
+ Function: 
+ Returns : value of _global_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _global_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_global_end'} = $value;
+    }
+    return $self->{'_global_end'};
+
+}
+
+=head2 static_golden_start
+
+ Title   : static_golden_start
+ Usage   : $self->static_golden_start($newval)
+ Function: 
+ Returns : value of static_golden_start
+ Args    :
+
+
+=cut
+
+sub static_golden_start{
+    my $self = shift;
+
+    if( defined $self->_static_golden_start) { return $self->_static_golden_start;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_start from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_start($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_start
+
+ Title   : static_golden_start
+ Usage   : $self->_static_golden_start($newval)
+ Function: 
+ Returns : value of _static_golden_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_start{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_start'} = $value;
+    }
+    return $self->{'_static_golden_start'};
+
+}
+
+=head2 static_golden_end
+
+ Title   : static_golden_end
+ Usage   : $self->static_golden_end($newval)
+ Function: 
+ Returns : value of static_golden_end
+ Args    :
+
+
+=cut
+
+sub static_golden_end{
+    my $self = shift;
+
+    if( defined $self->_static_golden_end) { return $self->_static_golden_end;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_end from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_end($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_end
+
+ Title   : static_golden_end
+ Usage   : $self->_static_golden_end($newval)
+ Function: 
+ Returns : value of _static_golden_end
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_end{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_end'} = $value;
+    }
+    return $self->{'_static_golden_end'};
+
+}
+
+=head2 static_golden_ori
+
+ Title   : static_golden_ori
+ Usage   : $self->static_golden_ori($newval)
+ Function: 
+ Returns : value of static_golden_ori
+ Args    :
+
+
+=cut
+
+sub static_golden_ori{
+    my $self = shift;
+
+    if( defined $self->_static_golden_ori) { return $self->_static_golden_ori;}
+    my $id  = $self->internal_id;
+    my $type = $self->dbobj->static_golden_path_type();
+    my $sth = $self->dbobj->prepare("select raw_ori from static_golden_path where raw_id = $id and type = '$type'");
+    $sth->execute;
+    my ($value) = $sth->fetchrow_array();
+    if( !defined $value) { return undef; }
+    $self->_static_golden_ori($value);
+    return $value;
+
+
+}
+
+=head2 _static_golden_ori
+
+ Title   : static_golden_ori
+ Usage   : $self->_static_golden_ori($newval)
+ Function: 
+ Returns : value of _static_golden_ori
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _static_golden_ori{
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_static_golden_ori'} = $value;
+    }
+    return $self->{'_static_golden_ori'};
+
+}
+
+=head2 static_golden_type
+
+ Title   : static_golden_type
+ Usage   : $self->static_golden_type($newval)
+ Function: 
+ Returns : value of static_golden_type
+ Args    :
+
+
+=cut
+
+sub static_golden_type{
+    my $self = shift;
+
+    return $self->dbobj->static_golden_path_type();
+
+}
+
+
+=head2 is_static_golden
+
+ Title   : is_static_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_static_golden{
+   my ($self,@args) = @_;
+
+   if( defined $self->fpc_contig ) {
+       return 1;
+   }
+
+}
+
 
 =head2 perl_only_sequences
 

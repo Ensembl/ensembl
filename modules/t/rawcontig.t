@@ -21,8 +21,9 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..17\n"; 
+BEGIN { $| = 1; print "1..26\n"; 
 	use vars qw($loaded); }
+
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
@@ -45,6 +46,7 @@ print STDERR "** get_all_SimilarityFeature call (to be fixed sometime)\n";
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";    
+$db->static_golden_path_type('UCSC');
 
 my $c = $db->get_Contig('contig1');
 
@@ -182,6 +184,64 @@ if( $c->embl_offset != 500 ) {
     print "ok 17\n";
 }
 
+
+# static golden path tests...
+
+if( $c->chromosome ne 'chr2' ) {
+   print "not ok 18\n";
+} else {
+   print "ok 18\n";
+}
+
+if( $c->is_static_golden != 1 ) {
+   print "not ok 19\n";
+} else {
+   print "ok 19\n";
+}
+
+if( $c->fpc_contig ne 'ctg123' ) {
+   print "not ok 20\n";
+} else {
+   print "ok 20\n";
+}
+
+if( $c->global_start != 3000 ) {
+   print "not ok 21\n";
+} else {
+   print "ok 21\n";
+}
+
+if( $c->global_end != 3040 ) {
+   print "not ok 22\n";
+} else {
+   print "ok 22\n";
+}
+
+if( $c->static_golden_start != 2  ) {
+   print "not ok 23\n";
+} else {
+   print "ok 23\n";
+}
+
+if( $c->static_golden_end != 40  ) {
+   print "not ok 24\n";
+} else {
+   print "ok 24\n";
+}
+
+if( $c->static_golden_ori != 1  ) {
+   print "not ok 25\n";
+} else {
+   print "ok 25\n";
+}
+
+if( $c->static_golden_type ne 'UCSC'  ) {
+   print "not ok 26\n";
+} else {
+   print "ok 26\n";
+}
+
+  
 $db = undef;
 
 

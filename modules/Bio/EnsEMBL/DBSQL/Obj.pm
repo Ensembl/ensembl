@@ -2054,6 +2054,27 @@ sub perl_only_contigs{
 
 }
 
+=head2 static_golden_path_type
+
+ Title   : static_golden_path_type
+ Usage   : $obj->static_golden_path_type($newval)
+ Function: 
+ Returns : value of static_golden_path_type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub static_golden_path_type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'static_golden_path_type'} = $value;
+    }
+    return $obj->{'static_golden_path_type'};
+
+}
+
 =head2 delete_Clone
 
  Title   : delete_Clone
