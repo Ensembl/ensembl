@@ -140,7 +140,7 @@ sub fetch_by_CoordSystems {
 
   if(!@mapping_path) {
     throw("There is no mapping defined between these coord systems:\n" .
-          $cs1->name() . " " . $cs1->version() . " and " . $cs1->name() . " " .
+          $cs1->name() . " " . $cs1->version() . " and " . $cs2->name() . " " .
           $cs2->version());
   }
 
@@ -355,6 +355,7 @@ sub register_component {
   my $cmp_seq_region = shift;
 
   my $cmp_cs_id = $asm_mapper->component_CoordSystem()->dbID();
+  my $asm_cs_id = $asm_mapper->assembled_CoordSystem()->dbID();
 
   #do nothing if this region is already registered
   return if($asm_mapper->have_registered_component($cmp_seq_region));
@@ -389,17 +390,18 @@ sub register_component {
       SELECT
          asm.asm_start,
          asm.asm_end,
-         asm.seq_region_id,
+         asm.asm_seq_region_id,
          sr.name
       FROM
          assembly asm, seq_region sr
       WHERE
          asm.cmp_seq_region_id = ? AND
-         asm.asm_seq_region_id = sr.seq_region_id
+         asm.asm_seq_region_id = sr.seq_region_id AND
+         sr.coord_system_id = ?
    };
 
   my $sth = $self->prepare($q);
-  $sth->execute($cmp_seq_region_id);
+  $sth->execute($cmp_seq_region_id, $asm_cs_id);
 
   if($sth->rows() == 0) {
     #this component is not used in the assembled part i.e. gap
@@ -416,7 +418,7 @@ sub register_component {
   my ($asm_start, $asm_end, $asm_seq_region_id, $asm_seq_region) =
     $sth->fetchrow_array();
 
-  $self->{'_sr_id_cache'}->{$asm_seq_region} = $asm_seq_region_id;
+  $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} = $asm_seq_region_id;
 
   $sth->finish();
 
