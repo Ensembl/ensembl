@@ -2068,6 +2068,28 @@ sub get_Contig {
     return $contig->fetch();
 }
 
+sub get_Contig_by_internal_id {
+  my ($self,$id) = @_;
+
+  if (!defined($id)) {
+    $self->throw("No id defined\n");
+  }
+  my $query = "select id from contig where internal_id = $id";
+
+  my $sth = $self->prepare($query);
+  my $res = $sth->execute;
+
+  if ($sth->rows < 1) {
+    $self->throw("No contig available with id $id\n");
+  }
+  my $ref = $sth->fetchrow_hashref;
+  my $contigid = $ref->{'id'};
+
+  return $self->get_Contig($contigid);
+}
+
+  
+ 
 sub get_Contig_by_international_id{
    my ($self,$int_id) = @_;
    #$self->warn("Obj->get_Contig is a deprecated method! 

@@ -1294,6 +1294,7 @@ sub get_all_PredictionFeatures {
 
    $previous = -1;
    my $current_fset;
+   my $fsetstart;
    my $count=1;
    my $prev;
 
@@ -1328,6 +1329,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->score(0.0);
            $count++;
 	   $current_fset->raw_seqname($self->id);
+	   $fsetstart = $start;
 	   push(@array,$current_fset);
        }
 
@@ -1346,13 +1348,13 @@ sub get_all_PredictionFeatures {
        $out->end_phase ($end_phase) if (defined $end_phase);
         
 
-	my $query="select fset from fset_feature where feature=$fid"; 
-	my $sth = $self->dbobj->prepare($query);
-   	$sth->execute();
-	my $arr_ref=$sth->fetchrow_arrayref;
+#	my $query="select fset from fset_feature where feature=$fid"; 
+#	my $sth = $self->dbobj->prepare($query);
+#   	$sth->execute();
+#	my $arr_ref=$sth->fetchrow_arrayref;
 
-	$fsetid=$arr_ref->[0];
-
+#	$fsetid=$arr_ref->[0];
+       my $fsetid =  $self->internal_id . "." . $fsetstart;
        $out->id($fsetid); # to make genscan peptide work
 	#print STDERR "\t\t===> get_pred_features fsetid: $fsetid\n";
        $out->source_tag('genscan');
