@@ -94,13 +94,9 @@ sub submit_exonerate {
 
   my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
-  my @main_bsub = ( 'bsub', '-J', $unique_name . "[1-$num_jobs]", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
+  my @main_bsub = ( 'bsub', '-J' . $unique_name . "[1-$num_jobs]", '-o', "$prefix.%J-%I.out", '-e', "$prefix.%J-%I.err");
 
   #print "bsub command: " . join(" ", @main_bsub) . "\n\n";
-
-  # Use IPC::Open3 to open the process so that we can read and write from/to its stdout/stderr
-  my ($wtr, $rtr, $etr, $pid);
-  $pid = open3($wtr, $rtr, $etr, @main_bsub) || die "Cannot call bsub command";
 
   # Create actual execute script to be executed with LSF, and write to pipe
   my $main_job = <<EOF;
@@ -120,24 +116,50 @@ lsrcp /tmp/$output ecs1a:$root_dir/$output
 rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 EOF
 
-  # TODO make sure query/target are the right way round
+  # now submit it
+  my $jobid = 0;
 
-  print $wtr $main_job;
+  eval {
+    my $pid;
+    my $reader;
 
-  #print "Job:\n" . $main_job . "\n\n";
+    local *BSUB;
+    local *BSUB_READER;
 
-  close($wtr);
-
-  # Wait until bsub has actually run - will print to its stdout ($rtr) and then close it
-  my $jobid;
-  while (<$rtr>) {
-    if (/Job <([0-9]+)> is/) {
-      $jobid = $1;
-      print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
+    if (($reader = open(BSUB_READER, '-|'))) {
+      while (<BSUB_READER>) {
+	if (/^Job <(\d+)> is submitted/) {
+	  $jobid = $1;
+	  print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
+	}
+      }
+      close(BSUB_READER);
+    } else {
+      die("Could not fork : $!\n") unless (defined($reader));
+      open(STDERR, ">&STDOUT");
+      if (($pid = open(BSUB, '|-'))) {
+	
+	print BSUB $main_job;
+	close BSUB;
+	if ($? != 0) {
+	  die("bsub exited with non-zero status - job not submitted\n");
+	}
+      } else {
+	if (defined($pid)) {
+	  exec(@main_bsub);
+	  die("Could not exec bsub : $!\n");
+	} else {
+	  die("Could not fork : $!\n");
+	}
+      }
+      exit(0);
     }
-  }
-  if (!defined($jobid)) {
-    print STDERR "Error: could not get LSF job ID for mapping job\n";
+  };
+
+  if ($@) {
+    # Something went wrong
+    warn("Job submission failed:\n$@\n");
+    return 0;
   }
 
   return $unique_name;
