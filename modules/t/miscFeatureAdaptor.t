@@ -132,7 +132,7 @@ ok($sets[0]->code eq 'setcode');
 
 # try to store a misc feature without attributes
 
-my $mf = Bio::EnsEMBL::MiscFeature->new
+$mf = Bio::EnsEMBL::MiscFeature->new
   (-START => 100,
    -END  => 200,
    -STRAND => 1,
