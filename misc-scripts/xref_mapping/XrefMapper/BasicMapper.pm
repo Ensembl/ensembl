@@ -179,7 +179,7 @@ sub get_set_lists{
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  return [["ExonerateGappedBest1", ["homo_sapiens","*"], ["mus_musculus", "*"]]];
+  return [["ExonerateGappedBest1", ["*","*"]]];
 
 }
 
