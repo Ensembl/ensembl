@@ -134,7 +134,25 @@ sub fetch_by_clone {
 }
 
 
+sub fetch {
+  my $self = shift;
+  my $contig = shift;
+  
+  my $dbID = $contig->dbID();
 
+  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
+                          offset, corder, dna_id, international_name
+                   FROM contig
+                   WHERE contig_id = $dbID" );
+  $sth->execute();
+  
+  my $aref = $sth->fetchrow_arrayref();
+  if( defined $aref ) {
+    _contig_from_arrayref( $contig, $aref );
+  } else {
+    $self->throw( "Couldnt fetch contig, unexpected .." );
+  }
+}
 
 
 sub _contig_from_sth {
@@ -146,24 +164,39 @@ sub _contig_from_sth {
   $sth->execute();
   while( my $aref = $sth->fetchrow_arrayref() ) {
     
+    my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
+    _contig_from_arrayref( $contig, $aref );
 
-    my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
-	 $chromosome_id, $international_id ) = @$aref;
-
-    
-    # the contig object, how should it work ?
-    
-    # clone, sequence, chromosome should be lightweight objects attached
-    # possibly either just dbID or I have a join
-
-    my $dbPrimarySeq = Bio::EnsEMBL::DBPrimary(); # ?
-    
-    my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
-    my $contig = Bio::EnsEMBL::RawContig->new( );
     push( @res, $contig );
   }
 
   return @res;
+}
+
+
+
+sub _contig_from_arrayref {
+  my $self;
+  my $contig;
+  my $aref;
+
+  my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
+       $international_name ) = @$aref;
+
+    
+  my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
+    ( $dna_id, $self->db() ); # ?
+    
+  my $clone = Bio::EnsEMBL::Clone->new( $self, $clone_id );
+
+  $contig->clone( $clone );
+  $contig->sequence( $dbPrimarySeq );
+  $contig->length( $length );
+  $contig->name( $name );
+  $contig->offset( $offset );
+  $contig->corder( $corder );
+  $contig->international_name( $international_name );
+  
 }
 
 
