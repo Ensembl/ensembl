@@ -141,10 +141,17 @@ sub check_iexons {
       return check_iexons($itranscript, $itranscript_array);
     }
 
-    # sanity check:
+    # sanity check: start must be less than or equal to end
     if ($iexon->end() < $iexon->start()) {
       throw("Unexpected: exon start less than end:\n" .
             $iexon->stable_id().": ".$iexon->start().'-'.$iexon->end());
+    }
+
+    # sanity check: cdna length must equal length
+    if($iexon->length != $iexon->cdna_end - $iexon->cdna_start + 1) {
+      throw("Unexpected: exon cdna length != exon length:\n" .
+            $iexon->stable_id().": ".$iexon->start().'-'.$iexon->end() ."\n" .
+            "                 " . $iexon->cdna_start.'-'.$iexon->cdna_end());
     }
 
     if (!defined($transcript_seq_region)) {
@@ -207,8 +214,8 @@ sub check_iexons {
   # if there exons left after all the splitting,
   # then add this transcript to the array
   #
-  my $total_exons = $itranscript->get_all_Exons;
-  if (@$total_exons > 0) {
+  my $total_exons = scalar(@{$itranscript->get_all_Exons});
+  if ($total_exons > 0) {
     push @$itranscript_array, $itranscript;
   } else {
     debug("  no exons left in transcript");
@@ -300,8 +307,10 @@ sub split_itrans {
 
     if($cdna_shift) {
       foreach my $ex (@second_exons) {
-        $ex->cdna_start($ex->cdna_start() - $cdna_shift);
-        $ex->cdna_end($ex->cdna_end() - $cdna_shift);
+        if(!$ex->fail()) {
+          $ex->cdna_start($ex->cdna_start() - $cdna_shift);
+          $ex->cdna_end($ex->cdna_end() - $cdna_shift);
+        }
       }
       $itrans->move_cdna_coding_start(-$cdna_shift);
       $itrans->move_cdna_coding_end(-$cdna_shift);
@@ -342,6 +351,7 @@ sub make_Transcript {
     $translation = undef;
   } else {
     $translation = Bio::EnsEMBL::Translation->new();
+    $transcript->translation($translation);
   }
 
   foreach my $iexon (@{$itrans->get_all_Exons}) {
@@ -354,6 +364,7 @@ sub make_Transcript {
        -STRAND    => $iexon->strand(),
        -PHASE     => $iexon->start_phase(),
        -END_PHASE => $iexon->end_phase(),
+       -STABLE_ID => $iexon->stable_id(),
        -SLICE     => $slice);
 
     $transcript->add_Exon($exon);
@@ -373,6 +384,13 @@ sub make_Transcript {
 
       if ($iexon->cdna_start() <= $itrans->cdna_coding_end() &&
           $iexon->cdna_end()   >= $itrans->cdna_coding_end()) {
+        debug("end exon=".$exon->stable_id()."\n".
+              "  ex_coding_start=".$iexon->cdna_start()."\n".
+              "  ex_coding_end=".$iexon->cdna_end()."\n".
+              "  start=".$iexon->start()."\n".
+              "  end=".$iexon->end()."\n".
+              "  transl_end = ".$itrans->cdna_coding_end());
+
         my $translation_end =
           $itrans->cdna_coding_end() - $iexon->cdna_start() + 1;
         $translation->end_Exon($exon);
