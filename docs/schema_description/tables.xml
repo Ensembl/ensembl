@@ -25,29 +25,48 @@
     
     <!-- ============================================================ -->
 
-    <table> 
+    <table>
       
-      <name>clone</name>
+      <name>seq_region</name>
 
-      <description>Contains information about BAC clones inside the EnsEMBL database. As this was the way that DNA came into EnsEMBL for the human genome, all DNA has to be specified in terms of BAC clones, even if they don't exist. Also, some of the BAC clones in early versions of the EnsEMBL database haven't been submitted to EMBL but were Sanger Institute internal BAC names. This is why clone has two different possible identifiers (and versions for each of them). Note that although there are many dates inside this table, they are not well maintained. The htg_phase column describes whether High Throughput Genomic sequencing is finished or unfinished: draft is 123, finished is 4. </description>
+      <description>TBC</description>
       
       <used></used>
-
-      <see></see>
+      
+      <see>
+	
+      </see>
 
     </table>
 
     <!-- ============================================================ -->
 
-    <table> 
+    <table>
       
-      <name>contig</name>
+      <name>coord_system</name>
 
-      <description>A contig is a piece of DNA inside a clone that is contiguous i.e. not interupted by sequencing gaps. One or more contigs made up the BAC clone sequence. Due to this historical importance, they are currently the reference coordinate system for all features inside EnsEMBL, although not all species come in clones/contigs. Contigs directly link to dna table entries which contain the actual sequence information. Currently, fake clone and contig entries must be faked for genomes that don't have these things. The sequence is that of the contig, not that of the golden path, i.e. to construct the golden path from the dna entries, the sequence of contigs with an orientation of -1 must be reversed and bases complemented. The assembly table has the contig orientation (raw_ori).  Note the length of the dna.sequence field is always equal to the appropriate length field in the contig table.</description>
+      <description>TBC</description>
       
       <used></used>
+      
+      <see>
+	
+      </see>
 
-      <see></see>
+    </table>
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>seq_region_attrib</name>
+
+      <description>TBC</description>
+      
+      <used></used>
+      
+      <see>
+	
+      </see>
 
     </table>
 
@@ -90,19 +109,18 @@
 
     <table>
       
-      <name>chromosome</name>
+      <name>assembly_exception</name>
 
-      <description>Describes chromosomes. Currently contains the name and length of each chromosome for the species. Currently also contains additional rows to allow genes to be stored even if the chromosome on which the gene appears is not positively identified.</description>
+      <description>TBC</description>
       
       <used></used>
       
       <see>
-	
       </see>
 
     </table>
 
- <!-- ============================================================ -->
+    <!-- ============================================================ -->
 
     <table>
       
@@ -311,6 +329,22 @@
 
       <see>
 	<tableref name="assembly" reason="The default value for assembly.type is stored in the meta table."/>
+      </see>
+
+    </table>
+
+
+    <!-- ============================================================ -->
+
+    <table> 
+      
+      <name>meta_coord</name>
+
+      <description>TBC</description>
+      
+      <used></used>
+
+      <see>
       </see>
 
     </table>
