@@ -55,6 +55,19 @@ sub fetch_by_Slice {
 }
 
 
+=head2 fetch_by_transcript_stable_id
+
+  Arg [1]    : list of arbitrary args @args
+  Example    : none
+  Description: The proxy overrides this method and automatically calls
+               the lite GeneAdaptor if it is available for greater speed.
+                If it is not available than the core adaptor is used
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_transcript_stable_id {
   my ($self, @args) = @_;
 
@@ -83,6 +96,8 @@ sub fetch_by_stable_id{
   }
   
   #otherwise use the core database
-  return $self->{'_core_adaptor'}->fetch_by_stable_id(@args);
+  return $self->{'_primary_adaptor'}->fetch_by_stable_id(@args);
 }
+
+
 
