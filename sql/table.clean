@@ -283,7 +283,7 @@ CREATE TABLE dna_align_feature (
 ) max_rows=300000000 avg_row_length=80;
 
 
-CREATE TABLE repeat (
+CREATE TABLE repeat_consensus (
     repeat_id           int unsigned NOT NULL auto_increment,
     repeat_name         varchar(255) NOT NULL,
     repeat_class        varchar(40) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
@@ -295,12 +295,12 @@ CREATE TABLE repeat (
 
 
 CREATE TABLE repeat_feature (
-  repeat_feature_id int unsigned not null auto_increment,
+  repeat_feature_id int unsigned NOT NULL auto_increment,
   contig_id int(10) unsigned NOT NULL,
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
+  contig_strand tinyint(1) DEFAULT '1' NOT NULL,
   analysis_id int(10) unsigned NOT NULL,
-  orientation tinyint(1) DEFAULT '1' NOT NULL, # 1 positive oriented 0 not oriented -1 negative oriented
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
   repeat_id int(10) unsigned NOT NULL,
