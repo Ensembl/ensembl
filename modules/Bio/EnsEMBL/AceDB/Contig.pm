@@ -166,6 +166,31 @@ sub embl_order {
 }   
 
 
+=head2 embl_accession
+
+ Title   : embl_accession
+ Usage   : $accession = $contig->embl_accession()
+ Function: Returns the embl accession
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub embl_accession {
+   my ($self) = @_;
+
+    unless (defined $self->{'embl_accession'}) {
+        my $seq = $self->ace_seq();
+        my $hit = $seq->at('DB_info.Database[1]')
+	$self->{'embl_accession'} = map($_->name(), $hit->row(2));
+    }
+    return $self->{'embl_accession'};
+
+} 
+
+
 =head2 get_all_ExternalFeatures
 
  Title   : get_all_ExternalFeatures
@@ -181,7 +206,7 @@ sub embl_order {
 
 
 sub get_all_ExternalFeatures {
-    my ($self, @args) = @_;
+    my ($self) = @_;
     return;     
 }
 
@@ -212,6 +237,101 @@ sub get_all_RepeatFeatures {
     # Return all the sequence features 
     return @repeat_features;
 }
+
+ 
+=head2 get_all_PredictionFeatures
+
+ Title   : get_all_PredictionFeatures
+ Usage   : foreach my $sf ( $contig->get_all_PredictionFeatures ) 
+ Function: 
+ Example :
+ Returns : Array of Bio::EnsEMBL::Feature objects
+ Args    :
+
+
+=cut
+
+sub get_all_PredictionFeatures {
+    my ($self) = @_;
+               
+    # Create a hash of methods we're interested in
+    my %methods = map{$_, 1} ('FGENES', 'FGENESH', 'GENESCAN');
+    
+    my $id = $self->id();        
+    my $seq = $self->ace_seq();
+    my $phase = $self->_get_phase();
+    my @prediction_features;
+    
+    # Loop through the subsequences
+    foreach my $sub ($seq->at('Structure.Subsequence')) {
+        
+        # Fetch the method and check we're interested in this subsequence 
+        my $method = map($_->name, $sub->fetch->at("Method[1]") );
+                  
+        if ($methods{ $method }) {
+             
+            my ($start, $end) = map($_->name(), $sub->row(1));
+            my $strand = ($start < $end) ? 1 : -1;
+            my $seqname = $sub->name;
+
+            my $analysis = new Bio::EnsEMBL::Analysis(
+                                            -db_version      => "NULL",					    
+					    -program         => $method,
+					    -program_version => 1,
+					    -gff_source      => $method,
+					    -gff_feature     => "exon"
+                                            );    
+             
+            my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
+            $feature->start($start);
+            $feature->end($end);
+            $feature->strand($strand);
+            $feature->seqname($id);
+            $feature->score(0);
+            $feature->source_tag($method);
+            $feature->primary_tag("Tag");
+            $feature->analysis($analysis);
+             
+            
+            # Fetch all the exons on the sequence, create subfeatures and add them to the feature 
+            my $subseq = $sub->fetch();           
+            foreach my $exon ($subseq->at('Structure.From.Source_Exons[1]')) {  
+                                         
+	        my ($starte, $ende) = map($_->name(), $exon->row());
+ 
+                my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
+                
+                # We have to map acedb coordinates which are relative to the
+                # start/end in the subsequence to the exon coordinates, which
+                # are absolute.
+                
+                if( $strand == 1 ) {
+                        $subFeature->start($start + $starte - 1);
+                        $subFeature->end($start + $ende - 1);
+                }
+                else {
+                        $subFeature->start($start - $ende + 1);
+                        $subFeature->end($start - $starte + 1);
+                }                
+                
+                $subFeature->strand($strand);
+                $subFeature->seqname($id);
+                $subFeature->score(0);
+                $subFeature->source_tag($method);
+                $subFeature->primary_tag("similarity");
+                $subFeature->analysis($analysis);
+                
+                $feature->add_sub_SeqFeature($subFeature);    
+            }            
+            
+            $feature->validate;
+            # Add the feature to the prediction_features array
+            push(@prediction_features, $feature);
+        }
+    }
+
+    return @prediction_features; 
+} 
       
              
 =head2 get_all_SeqFeatures
@@ -230,10 +350,11 @@ sub get_all_RepeatFeatures {
 sub get_all_SeqFeatures {
     my ($self,@args) = @_;
            
-    # Get repeat, external and similarity features
+    # Get repeat, external similarity and prediction features
     my @seq_features = $self->get_all_RepeatFeatures();
     push(@seq_features, $self->get_all_ExternalFeatures());
     push(@seq_features, $self->get_all_SimilarityFeatures());
+    push(@seq_features, $self->get_all_PredictionFeatures());
 #    print(STDERR "Fetched all features\n");
     
     # Return all the sequence features
@@ -561,6 +682,25 @@ sub seq_date {
     my ($self) = @_;
     if (my $date = $self->ace_seq->at('Properties.Status.Finished[1]')) {
         return $date->name;
+    }
+    return 0; 
+}
+
+=head2 seq_version
+
+ Title   : seq_version
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub seq_version {
+    my ($self) = @_;
+    if (my $version = $self->ace_seq->at('DB_info.Sequence_version[1]')) {
+        return $version->name;
     }
     return 0; 
 }
