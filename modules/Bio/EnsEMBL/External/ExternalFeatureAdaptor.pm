@@ -358,10 +358,12 @@ sub fetch_all_by_RawContig {
 
   if($self->_supported('CLONE')) {
     #retrieve features in clone coordinates
-    my $feats = $self->fetch_all_by_Clone($contig->clone);
-    
+
     my $offset = $contig->embl_offset;
     my $length = $contig->length;
+
+    my $feats = $self->fetch_all_by_Clone($contig->clone, $offset, 
+					  $offset + $length - 1);
     
     my ($start, $end);
 
@@ -499,6 +501,12 @@ sub fetch_all_by_contig_name {
 =head2 fetch_all_by_Clone
 
   Arg [1]    : Bio::EnsEMBL::Clone $clone
+  Arg [2]    : (optional) int $clone_start the start of the clonal region
+               interested in. This information may be used to speed up
+               the query, or may be ignored.
+  Arg [3]    : (optional) int $clone_end the end of the clonal region 
+               interested in.  This information may be used to speed up 
+               the query, or may be ignored.
   Example    : @features = @{$self->fetch_all_by_Clone($clone)};
   Description: Retrieves features on the region defined by the $clone arg in 
                Clone coordinates. 
@@ -524,7 +532,11 @@ sub fetch_all_by_contig_name {
 =cut
 
 sub fetch_all_by_Clone {
-  my ($self, $clone) = @_;
+  my ($self, $clone, $clone_start, $clone_end) = @_;
+
+  #ignore $clone_start && $clone_end it is only useful when 
+  #fetch_all_by_RawContig is not implemented, but fetch_all_by_Clone is
+  #i.e. it can be used by people who override this method...
 
   unless($clone && ref $clone && $clone->isa('Bio::EnsEMBL::Clone')) {
     $self->throw("Clone must be a Bio::EnsEMBL::Clone");
