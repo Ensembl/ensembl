@@ -454,7 +454,6 @@ CREATE TABLE externalDB(
          externalDBId INT not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40),
-         url_pattern VARCHAR(255),
          PRIMARY KEY( externalDBId ) 
    	);
 
