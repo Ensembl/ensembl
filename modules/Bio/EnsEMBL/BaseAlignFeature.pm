@@ -453,6 +453,7 @@ sub _parse_features {
 
 
   my $hstrand     = $f[0]->hstrand;
+  my $contig      = $f[0]->contig();
   my $name        = $f[0]->seqname;
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;
@@ -702,7 +703,11 @@ sub _parse_features {
   $feature1->score($score);
   $feature1->percent_id($percent);
   $feature1->p_value($pvalue);
-  $feature1->seqname($name);
+  if( $contig ) {
+    $feature1->contig($contig);
+  } else {
+    $feature1->seqname($name);
+  }
   $feature1->phase($phase);
   $feature1->analysis($analysis);
   $feature1->validate;
