@@ -477,7 +477,7 @@ sub add_ExternalFeatureFactory{
 sub get_adaptor {
   my ($self, $canonical_name, @other_args) = @_;
 
-  return $reg->get_adaptor($self->db->species(),$self->db->group(),$canonical_name);
+  return $reg->get_adaptor($self->species(),$self->group(),$canonical_name);
 }
 
 

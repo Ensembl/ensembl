@@ -62,7 +62,7 @@ sub get_SNPAdaptor {
   my $self = shift;
 
 #  return $self->_get_adaptor("Bio::EnsEMBL::Lite::SNPAdaptor");
-  return  Bio::EnsEMBL::Registry->get_adaptor($self->db->species(), "lite", "ProxySNP");
+  return  Bio::EnsEMBL::Registry->get_adaptor( $self->species(), "lite", "ProxySNP");
 }
 
 
