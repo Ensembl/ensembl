@@ -100,10 +100,30 @@ sub delete_by_RawContig_internal_id {
     my ($self,$contig_internal_id) = @_;
     $contig_internal_id || $self->throw("I need contig internal id");
     $contig_internal_id =~ /^\d+$/ or $self->warn("[$contig_internal_id] does not look like internal id.");
+    my $sth = $self->db->prepare("select fs.fset " .
+			     "from   fset_feature as fs, " .
+			     "       feature as f " .
+			     "where  fs.feature = f.id " .
+			     "and    f.contig = '$contig_internal_id'");
+    my $res = $sth->execute;
+
+    my $fsstr = "";
+    while (my $rowhash = $sth->fetchrow_hashref) {
+	$fsstr .= $rowhash->{fset} . ",";
+    }
+
+    if ($fsstr) {
+	chop($fsstr);
+	$sth = $self->db->prepare("delete from fset where id in ($fsstr)");
+	$res = $sth->execute;
+	
+	$sth = $self->db->prepare("delete from fset_feature where fset in ($fsstr)");
+	$res = $sth->execute;
+    }
     
     #print(STDERR "Deleting features for contig $contig\n");
-    my $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
-    my $res = $sth->execute;
+    $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
+    $res = $sth->execute;
     
     #print(STDERR "Deleting repeat features for contig $contig\n");
     $sth = $self->db->prepare("delete from repeat_feature where contig = '$contig_internal_id'");
@@ -287,8 +307,8 @@ sub _store_single_feature
 	 -1,
 	 -1,
 	 "__NONE__",
-	 'NULL',
-	 'NULL',
+        ((defined $feature->p_value)      ? $feature->p_value     : 'NULL'),
+        ((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL'),
 	 'NULL',
 	 'NULL' 
    )
