@@ -91,8 +91,27 @@ foreach my $seedid (@seeds)
         $rname =~ s/motif://i;
         $repeatlist{$rname}->{'number'} += 1;
         $repeatlist{$rname}->{'totlen'} += $repeat->length();
-        push (@{$repeatlist{$rname}->{'len'}}, $repeat->length());
+        push (@{$repeatlist{$rname}->{'len'}}, $repeat->length()); #used for S.Dev
         
+        #Aggregate data for ALUs, L1s, and MERs
+        if ($rname =~ /alu/i)
+        {
+            $repeatlist{'ALU family'}->{'number'} += 1;
+            $repeatlist{'ALU family'}->{'totlen'} += $repeat->length();
+            push (@{$repeatlist{'ALU family'}->{'len'}}, $repeat->length());
+        }
+        elsif ($rname =~ /l1/i)
+        {
+            $repeatlist{'L1 family'}->{'number'} += 1;
+            $repeatlist{'L1 family'}->{'totlen'} += $repeat->length();
+            push (@{$repeatlist{'L1 family'}->{'len'}}, $repeat->length())
+        }
+        elsif ($rname =~ /mer/i)
+        {
+            $repeatlist{'MER family'}->{'number'} += 1;
+            $repeatlist{'MER family'}->{'totlen'} += $repeat->length();
+            push (@{$repeatlist{'MER family'}->{'len'}}, $repeat->length())
+        }
     }
 }
 printstats ($vc_totlength, %repeatlist);
@@ -107,11 +126,10 @@ sub printstats {
     {   
         $LengthOfAllRepeats +=  $repeatlist{$rname}->{'totlen'};
         $NumOfAllRepeats += $repeatlist{$rname}->{'number'};
-        #will insert aggregation of ALUs, L1s, and MERs here
     }
     
     #DISPLAY
-    print "Repeat Name \t\t Number \t Tot. Length \t Ave.Length \t % Length\n";
+    print "Repeat Name \t\t Number \t Tot.Length \t Ave.Length \t % Length\n";
     foreach my $rname (keys(%repeatlist))
     {
         my $number = $repeatlist{$rname}->{'number'};
@@ -128,7 +146,7 @@ sub printstats {
                                     $percentlen;
     }
     printf " %-20s \t %-6d \t %-9d \t %-5d \t\t %-3.2f %%\n",
-                                    'TOTAL', 
+                                    "TOTAL ($LengthOfAllVC bp)", 
                                     $NumOfAllRepeats,
                                     $LengthOfAllRepeats,
                                     $LengthOfAllRepeats/$NumOfAllRepeats,
