@@ -371,6 +371,47 @@ sub display_id {
 }
 
 
+=head2 identical_matches
+
+ Arg [1]    : int $identical_matches (optional)
+ Example    : 
+ Description: get/set on the number of identical matches
+ Returntype : int
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub identical_matches{
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        return $self->{'_identical_matches'} = $arg;
+    } 
+    return $self->{'_identical_matches'};
+}
+
+=head2 positive_matches
+
+ Arg [1]    : int $positive_matches (optional)
+ Example    : 
+ Description: get/set on the number of positive matches
+ Returntype : int
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub positive_matches{
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        return $self->{'_positive_matches'} = $arg;
+    } 
+    return $self->{'_positive_matches'};
+}
+
+
 =head1 DEPRECATED METHODS
 
 =cut
