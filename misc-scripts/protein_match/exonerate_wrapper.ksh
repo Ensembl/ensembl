@@ -36,6 +36,11 @@
 # [qts]_min: Minimum values on query, target, and score percentages
 #            (min score is as a percentage of best score per query)
 #            (-Q, -T, and -S flags).
+# fin:    File that is passed to the perl script rather than running
+#         exonerate (-f flag).
+# fout:   File where the intermediate exonerate output should be stored
+#         (this file is the suitable for use with the -f flag in later
+#         runs).
 #
 #----------------------------------------------------------------------
 
@@ -52,8 +57,9 @@ function usage
 
 	cat >&2 <<-EOT
 	Usage:	$0 [-h?]
-	        $0 [-e path] [-q path] [-t path] [-v]
+	        $0 [-v] [-e path] [-q path] [-t path] [-o path]
 	        $padding [-Q val] [-T val] [-S val] [-- opts]	
+	        $0 [-v] [-f path] [-Q val] [-T val] [-S val]
 
 	-h, -?   Show usage information (this text).
 
@@ -65,6 +71,10 @@ function usage
 
 	-f path  Don't run exonerate, read from this properly formatted
 	         file instead.
+
+	-o path  Save intermediate exonerate output to the specified
+	         file.  This file is properly formatted for use with
+	         the -f flag in later runs.
 
 	-v       Be verbose.
 
@@ -91,12 +101,13 @@ function usage
 	EOT
 }
 
-while getopts 'h?e:q:t:f:vQ:T:S:' opt; do
+while getopts 'h?e:q:t:f:o:vQ:T:S:' opt; do
     case $opt in
 	e) e_cmd=$OPTARG ;;
 	q) q_fa=$OPTARG  ;;
 	t) t_fa=$OPTARG  ;;
-	f) e_out=$OPTARG ;;
+	f) fin=$OPTARG   ;;
+	o) fout=$OPTARG  ;;
 	Q) q_min=$OPTARG ;;
 	T) t_min=$OPTARG ;;
 	S) s_min=$OPTARG ;;
@@ -106,7 +117,10 @@ while getopts 'h?e:q:t:f:vQ:T:S:' opt; do
 done
 shift $(( OPTIND - 1 ))
 
-if [[ ! -r $q_fa ]]; then
+if [[ -n $fin && -n $fout ]]; then
+    print -u2 "Can't specify -f and -o at the same time"
+    exit 1
+elif [[ ! -r $q_fa ]]; then
     print -u2 "Can't find or read file '$q_fa'"
     exit 1
 elif [[ ! -r $t_fa ]]; then
@@ -129,13 +143,15 @@ export EXONERATE_EXONERATE_WORDTHRESHOLD=3
 e_ryo='%qi\t%qal\t%ql\t%qab\t%qae\t%ti\t%tal\t%tl\t%tab\t%tae\t%p\t%s\t%C\n'
 e_opt="--showalignment no --showvulgar no -q $q_fa -t $t_fa --ryo $e_ryo $@"
 
-if [[ -z $e_out ]]; then
-    cmd="$e_cmd $e_opt"
+if [[ -n $fin ]]; then
+    cmd="cat $fin"
+elif [[ -n $fout ]]; then
+    cmd='$e_cmd $e_opt | tee $fout'
 else
-    cmd="cat $e_out"
+    cmd="$e_cmd $e_opt"
 fi
 
-$cmd |
+eval $cmd |
 perl -ne '
     # Perl script to calculate the percentage of identity
     # and reformat cigar lines.  Takes tab-delimited list in
