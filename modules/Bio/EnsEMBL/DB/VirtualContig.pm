@@ -18,7 +18,7 @@ Bio::EnsEMBL::DB::VirtualContig - A virtual contig implementation
 
   #get a virtualcontig somehow
  
-  $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $rawcontig,
+  $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $rawcontig,
 					      -focusposition => 2,
 					      -ori => 1,
 					      -left => 5000,
@@ -94,8 +94,9 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($focus,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUS FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
+  my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
 
+  $self->name("Virtual Contig Module"); # set the exception context
 
   # set up hashes for the map
   $self->{'start'} = {};
@@ -108,26 +109,28 @@ sub _initialize {
   # this is for cache's of sequence features if/when we want them
   $self->{'_sf_cache'} = {};
 
-  if( defined $clone && defined $focus ){
-      $self->throw("Build a virtual contig either with a clone or a focus, but not with both");
+  if( defined $clone && defined $focuscontig ){
+      $self->throw("Build a virtual contig either with a clone or a focuscontig, but not with both");
   }
 
   if( defined $clone ) {
       $self->_build_clone_map($clone);
       
   } else {
-      if( !defined $focus || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
-	  $self->throw("Have to provide all arguments to virtualcontig, focus, focusposition, ori, left, right");
+      if( !defined $focuscontig || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
+	  $self->throw("Have to provide all arguments to virtualcontig: focuscontig, focusposition, ori, left and right");
       }
       
       
       # build the map of how contigs go onto the vc coorindates
-      $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
-      $self->dbobj($focus->dbobj);
+      $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
+      $self->dbobj($focuscontig->dbobj);
   }
   
-  srand (time() ^ ($$+($$<<15)));  # seed the number generator
-  $VC_UNIQUE_NUMBER = int(rand(time())+1);
+
+  #srand (time() ^ ($$+($$<<15)));  # seed the number generator
+  #$VC_UNIQUE_NUMBER = int(rand(time()));
+  $VC_UNIQUE_NUMBER = "${focuscontig}_${focusposition}_${ori}_${leftsize}_${rightsize}";
   $self->_unique_number($VC_UNIQUE_NUMBER);
 
 # set stuff in self from @args
@@ -170,8 +173,14 @@ sub primary_seq {
        my $c = $self->{'contighash'}->{$cid};
        my $tseq = $c->primary_seq();
        if( $self->{'start'}->{$cid} != ($last_point+1) ) {
-	   print STDERR "Putting in N's\n";
+       
+           # Tony: added a throw here - we get nagative numbers of inserted N's
 	   my $no = $self->{'start'}->{$cid} - $last_point -1;
+	   #my $no = $self->{'start'}->{$cid} - $last_point;
+           if ($no < 0){
+                $self->throw("Error. Trying to insert negative number ($no)\n of N\'s into contig sequence");
+           }
+	   print STDERR "Putting in $no x N\n";
 	   $seq_string .= 'N' x $no;
 	   $last_point += $no;
        } 
@@ -499,7 +508,7 @@ sub _build_clone_map{
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}->{$contig->id} = 1;
        $self->{'contighash'}->{$contig->id} = $contig;
-       print STDERR "Got [",$contig->embl_offset,"] to [",$contig->length,"]\n";
+       print STDERR "Got ",$contig->id," [",$contig->embl_offset,"] to [",$contig->length,"]\n";
        $tlen = $contig->embl_offset+$contig->length;
        if( $tlen > $length ) {
 	   $length = $tlen;
@@ -534,7 +543,7 @@ sub _build_clone_map{
 =cut
 
 sub _build_contig_map{
-   my ($self,$focus,$focusposition,$ori,$left,$right) = @_;
+   my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
 
    # we first need to walk down contigs going left
    # so we can figure out the start position (contig-wise)
@@ -546,10 +555,10 @@ sub _build_contig_map{
        $current_left_size = $focusposition;
        $current_orientation = 1;
    } else {
-       $current_left_size = $focus->length - $focusposition;
+       $current_left_size = $focuscontig->length - $focusposition;
        $current_orientation = -1;
    }
-   $current_contig = $focus;
+   $current_contig = $focuscontig;
 
    while( $current_left_size < $left ) {
        print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
@@ -766,7 +775,7 @@ sub _build_contig_map{
    
    # put away the focus/size info etc
 
-   $self->_focus($focus);
+   $self->_focus($focuscontig);
    $self->_focus_position($focusposition);
    $self->_focus_orientation($ori);
    $self->_left_size($left);
@@ -776,9 +785,6 @@ sub _build_contig_map{
    # ready to rock and roll. Woo-Hoo!
 
 }
-
-
-
 
 
 =head2 _get_all_SeqFeatures_type
@@ -796,7 +802,7 @@ sub _build_contig_map{
 
 =cut
 
-sub _get_all_SeqFeatures_type{
+sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
 
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
@@ -929,10 +935,11 @@ sub _dump_map{
    my ($self,$fh) = @_;
 
    ! defined $fh && do { $fh = \*STDERR};
-
+ 
    my @ids = keys %{$self->{'contighash'}};
    @ids = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } @ids;
 
+   print $fh "Contig Map Dump: \n";
    foreach my $id ( @ids ) {
        print $fh "Contig $id starts:",$self->{'start'}->{$id}," start in contig ",$self->{'startincontig'}->{$id}," orientation ",$self->{'contigori'}->{$id},"\n";
    }
@@ -1193,7 +1200,49 @@ sub _clone_map{
 }
 
 
+=head2 _at_left_end
 
+ Title   : _at_left_end
+ Usage   : $obj->_at_left_end($newval)
+ Function: 
+ Example : 
+ Returns : true if we have reached the  obsolute left end of vc
+ Args    : newvalue (optional)
+
+
+=cut
+
+
+sub _at_left_end {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_at_left_end'} = $value;
+    }
+    return $obj->{'_at_left_end'};
+
+}
+
+=head2 _at_right_end
+
+ Title   : _at_right_end
+ Usage   : $obj->_at_right_end($newval)
+ Function: 
+ Example : 
+ Returns : true if we have reached the  obsolute right end of vc
+ Args    : newvalue (optional)
+
+
+=cut
+
+
+sub _at_right_end {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_at_right_end'} = $value;
+    }
+    return $obj->{'_at_right_end'};
+
+}
 1;
 
 
