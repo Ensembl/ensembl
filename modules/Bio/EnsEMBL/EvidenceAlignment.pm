@@ -45,9 +45,8 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
-# modify placement on VC by adding the following to genomic start/end
-use constant VC_MINUS_STRAND_HACK_BP => -1;
-use constant VC_PLUS_STRAND_HACK_BP  => +1;
+# modify VCs' features' genomic start/end by the following:
+use constant VC_HACK_BP  => +1;
 
 use vars qw(@ISA);
 use strict;
@@ -195,20 +194,15 @@ sub _get_features_from_transcript {
 
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
-  my $hack_shift_bp;
-  if ($strand < 0) {
-    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
-  } else {
-    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
-  }
   my @all_features = $vc->get_all_SimilarityFeatures;
+  
   my @features = ();
   FEATURE_LOOP:
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
       foreach my $exon (@exons) {
-        if ( $feature->start + $hack_shift_bp >= $exon->start
-	  and $feature->end  + $hack_shift_bp <= $exon->end) {
+        if ( $feature->start + VC_HACK_BP >= $exon->start
+	  and $feature->end  + VC_HACK_BP <= $exon->end) {
 	  push @features, $feature;
 	  next FEATURE_LOOP;
 	}
@@ -788,13 +782,6 @@ sub _get_aligned_evidence_for_transcript {
 		  );
   push @evidence_arr, $evidence_obj;
 
-  my $hack_shift_bp;
-  if ($all_exons[0]->strand < 0) {
-    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
-  } else {
-    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
-  }
-
   my @seqcache = ();
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
@@ -803,8 +790,8 @@ sub _get_aligned_evidence_for_transcript {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
       next PEP_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + $hack_shift_bp >= $exon->start
-	    and $feature->end   + $hack_shift_bp <= $exon->end);
+        unless ($feature->start + VC_HACK_BP >= $exon->start
+	    and $feature->end   + VC_HACK_BP <= $exon->end);
       next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
         if ($last_feat
         && ($last_feat->start  == $feature->start)
@@ -835,11 +822,11 @@ sub _get_aligned_evidence_for_transcript {
       $hseq = $self->_pad_pep_str($hseq);
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + VC_PLUS_STRAND_HACK_BP;
+        $hindent_bp =   $total_exon_len + ($feature->start + VC_HACK_BP)
+	              - $exon->start;
       } else {
-        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + VC_MINUS_STRAND_HACK_BP;
+        $hindent_bp =    $total_exon_len + $exon->end
+	              - ($feature->end   + VC_HACK_BP);
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -906,8 +893,8 @@ sub _get_aligned_evidence_for_transcript {
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + $hack_shift_bp >= $exon->start
-	    and $feature->end   + $hack_shift_bp <= $exon->end);
+        unless ($feature->start + VC_HACK_BP >= $exon->start
+	    and $feature->end   + VC_HACK_BP <= $exon->end);
       next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
         if ($last_feat
         && ($last_feat->start  == $feature->start)
@@ -947,11 +934,11 @@ sub _get_aligned_evidence_for_transcript {
       }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + VC_PLUS_STRAND_HACK_BP;
+        $hindent_bp =   $total_exon_len + ($feature->start + VC_HACK_BP)
+	              - $exon->start;
       } else{
-        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + VC_MINUS_STRAND_HACK_BP;
+        $hindent_bp =    $total_exon_len + $exon->end
+	              - ($feature->end + VC_HACK_BP);
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
