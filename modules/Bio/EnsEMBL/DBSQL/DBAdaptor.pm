@@ -314,7 +314,7 @@ sub lite_DBAdaptor {
   Function  : The liteDB is set in EnsWEB to get denormalized access to
               EnsEMBL data. It provides a GeneAdaptor that makes half
               filled Genes.
-  Returntype: Bio::EnsEMBL::Lite::DBAdaptor
+  Returntype: Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor
   Exceptions: 
   Caller    : set in EnsWEB, get internal
 

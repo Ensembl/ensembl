@@ -1200,51 +1200,62 @@ sub get_chromosome_length {
 sub is_golden_static_contig {
     my ($self,$c_name,$pos) = @_;
 
-    my $type = $self->db->assembly_type()
-     or $self->throw("No assembly type defined");
-
-    my $query = "
-     SELECT c.name, a.contig_start, a.contig_end 
-     FROM contig c, assembly a 
-     WHERE c.name = '$c_name' 
-     AND a.contig_id = c.contig_id
-     AND a.type = '$type'";
-
-    my $sth = $self->db->prepare($query);
-    $sth->execute;
-    my $row = $sth->fetchrow_hashref;
-    if ($row){
-    if (defined($pos)) {
-        if ($pos >= $row->{'raw_start'} && $pos <= $row->{'raw_end'}) {
-        return 1;
-        }
-    } 
-    else {
-        return 1; 
-    } 
-    }
+    $self->throw("StaticGoldenPathAdaptor->is_golden_static_contig() is " .
+          "deprecated use: \$assembly_mapper->in_assembly(\$contig) instead");
 
     return 0;
+
+#    my $type = $self->db->assembly_type()
+#     or $self->throw("No assembly type defined");
+
+#    my $query = "
+#     SELECT c.name, a.contig_start, a.contig_end 
+#     FROM contig c, assembly a 
+#     WHERE c.name = '$c_name' 
+#     AND a.contig_id = c.contig_id
+#     AND a.type = '$type'";
+
+#    my $sth = $self->db->prepare($query);
+#    $sth->execute;
+#    my $row = $sth->fetchrow_hashref;
+#    if ($row){
+#    if (defined($pos)) {
+#        if ($pos >= $row->{'raw_start'} && $pos <= $row->{'raw_end'}) {
+#        return 1;
+#        }
+#    } 
+#    else {
+#        return 1; 
+#    } 
+#    }
+
+#    return 0;
     
 }
 
 sub is_golden_static_clone {
     my ($self,$clone) = @_;
 
-    my $type = $self->db->assembly_type()
-     or $self->throw("No assembly type defined");
 
-    my $query = "   SELECT co.id 
-            FROM contig co, clone cl, assembly a 
-            WHERE cl.id = '$clone' 
-            AND co.clone = cl.internal_id 
-            AND a.contig_id = co.internal_id
-            AND a.type = '$type'
-        ";
+    $self->throw("StaticGoldenPathAdaptor->is_golden_static_clone() is " .
+	  "deprecated use: \$assembly_mapper->in_assembly(\$clone) instead");
+
+    return 0;
+
+#    my $type = $self->db->assembly_type()
+#     or $self->throw("No assembly type defined");
+
+#    my $query = "   SELECT co.id 
+#            FROM contig co, clone cl, assembly a 
+#            WHERE cl.id = '$clone' 
+#            AND co.clone = cl.internal_id 
+#            AND a.contig_id = co.internal_id
+#            AND a.type = '$type'
+#        ";
        
-    my $sth = $self->db->prepare($query);
+#    my $sth = $self->db->prepare($query);
 
-    $sth->execute;
+#    $sth->execute;
 
-    return scalar($sth->fetchrow_array);
+#    return scalar($sth->fetchrow_array);
 }

@@ -198,7 +198,7 @@ sub register_region{
               attempted on that region. Otherwise
               only gaps will
               be returned!
-  Returntype  none
+  Returntype  1 if the contig is present in assembly, 0 if the contig is absent
   Exceptions  none
   Caller      Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
 
@@ -229,13 +229,13 @@ sub register_region_around_contig {
    }
 
    if (@ctg_list == 0) {
-     $self->warn("Not found contig $contig_id");
-     return;
+     #$self->warn("Not found contig $contig_id");
+     return 0;
    }
 
    if (@ctg_list > 1) {
      $self->warn("Contig $contig_id is ambiguous in assembly type $type");
-     return;
+     return 1;
    }
 
    my $start = $ctg_list[0]->[0] - $left;
@@ -272,6 +272,8 @@ sub register_region_around_contig {
            );
        }
    }
+
+   return 1;
 }
 
 

@@ -354,10 +354,15 @@ sub get_all_Genes {
 
 sub get_Contig {
    my ($self,$contigid) = @_;
+
+   $self->throw("CloneAdaptor::get_Contig is deprecated, " .
+		"use \$contig_adaptor->fetch_by_dbID(\$id) instead");
    
-   my $contig = $self->db->get_Contig($contigid);
+   return undef;
    
-   return $contig->fetch();
+   #my $contig = $self->db->get_Contig($contigid);
+   
+   #return $contig->fetch();
 }
 
 

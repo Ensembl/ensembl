@@ -52,17 +52,33 @@ sub fetch_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->lite_DBAdaptor();
- 
+  my $snp_db = $self->db()->SNP_DBAdaptor();
+
   if(defined $lite_db) {
     #use the Lite database if it is available
     return $lite_db->get_SNPAdaptor()->fetch_by_Slice(@args);
+  } elsif(defined $snp_db) {
+    #use the snp database if it is available
+    return $snp_db->get_SNPAdaptor()->fetch_by_Slice(@args);
   }
 
-  #currently the only type of SNP adaptor is the lite one.  If lite is
-  #unavailable throw an exception
+  #There is no core SNPAdaptor so throw an exception if lite and SNP
+  #databases are unavailable
   $self->throw("Lite database unavailable. Unable to create SNP adaptor");
 
   return undef;
+}
+
+sub fetch_by_SNP_id {
+  my ($self, @args) = @_;
+
+  my $snp_db = $self->db()->SNP_DBAdaptor();
+
+  if(defined $snp_db) {
+    return $snp_db->get_SNPAdaptor()->fetch_by_SNP_id(@args);
+  }
+
+  $self->throw("SNP database unavailable. Unable to create SNP adaptor");
 }
 
 
