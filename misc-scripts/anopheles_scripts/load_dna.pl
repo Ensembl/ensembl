@@ -1,15 +1,24 @@
 use strict;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Getopt::Long;
 use Bio::SeqIO;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
-my $host      = 'ecs1b';
-my $dbuser    = 'ensadmin';
-my $dbname    = 'ewan_ciona_int_10';
-my $dbpass    = 'ensembl';
-my $path      = 'JGI_CIONA';
+my $dbhost;
+my $dbuser;
+my $dbname;
+my $dbpass;
+my $input;
+my $assembly;
+
+GetOptions(
+	   'dbname:s'    => \$dbname,
+	   'dbhost:s'    => \$dbhost,
+	   'dbuser:s'    => \$dbuser,
+	   'dbpass:s'    => \$dbpass,
+	   'input:s'     => \$input,
+	   'assembly:s'  => \$assembly
+	   );
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -19,11 +28,14 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 					    '-user'   => $dbuser,
 					    '-dbname' => $dbname,
 					    '-pass'   => $dbpass,
-					   );
+					    );
 
-my ($dna) = @ARGV;
 
-my $in  = Bio::SeqIO->new(-file => $dna, '-format' =>'Fasta');
+if (!defined $input) {
+    die "Please provide a fasta file\n";
+}
+
+my $in  = Bio::SeqIO->new(-file => $input, '-format' =>'Fasta');
 my $count = 1;
 my $total = 0;
 while( (my $seq = $in->next_seq ) ) {
@@ -75,8 +87,6 @@ while( (my $seq = $in->next_seq ) ) {
 	    
 	    my $actmp = $ac."_1";
 	    my $t = $l;
-#	    print STDERR  "AC: $actmp\nAC_CONTIG: $count\nDIV: $count\n";
-#	    print STDERR  "$actmp\t$prev_end\t$length\n";
 	    
 	    my $subseq = $seq->subseq(1,$l);
 	    my $subseql = length($subseq);
@@ -124,7 +134,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $t,
 		      1,
-		      "JGI_CIONA"
+		      "$assembly"
 		      
 		      );
 
@@ -190,7 +200,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $t,
 		      1,
-		      "JGI_CIONA"
+		      "$assembly"
 		      
 		      );
 
@@ -212,9 +222,6 @@ while( (my $seq = $in->next_seq ) ) {
 	   
 	    $total_length = $total_length + $subseql;
 
-#	    print STDERR  "AC: $actmp\nAC_CONTIG: $count\nDIV: $count\n";
-#	    print STDERR  "$actmp\t$prev_end\t$length\n";
-		
 	       #Load DNA table
 		my $statement = $db->prepare("
         insert into dna(sequence,created) 
@@ -253,7 +260,7 @@ while( (my $seq = $in->next_seq ) ) {
 		      1,
 		      $subseql,
 		      1,
-		      "JGI_CIONA"
+		      "$assembly"
 		      
 		      );
 
