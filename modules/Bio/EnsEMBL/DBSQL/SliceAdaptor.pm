@@ -71,6 +71,9 @@ sub new {
 
   Arg [1]    : string $coord_system_name
                The name of the coordinate system of the slice to be created
+               This may be a name of an acutal coordinate system or an alias
+               to a coordinate system.  Valid aliases are 'seqlevel' or
+               'toplevel'.
   Arg [2]    : string $seq_region_name
                The name of the sequence region that the slice will be
                created on
@@ -280,7 +283,10 @@ sub get_seq_region_id {
 =head2 fetch_all
 
   Arg [1]    : string $coord_system_name
-               The name of the coordinate system to retrieve slices of
+               The name of the coordinate system to retrieve slices of.
+               This may be a name of an acutal coordinate system or an alias
+               to a coordinate system.  Valid aliases are 'seqlevel' or
+               'toplevel'.
   Arg [2]    : string $coord_system_version (optional)
                The version of the coordinate system to retrieve slices of
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
