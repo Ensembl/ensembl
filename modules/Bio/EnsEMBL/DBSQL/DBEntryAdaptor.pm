@@ -364,9 +364,9 @@ sub _fetch_by_EnsObject_type {
     }                                   # if (!$seen{$refID})
 
     # $exDB still points to the same Xref, so we can keep adding synonyms
-    if ($synonym) {
-      $exDB->add_synonym( $synonym );
-    }
+    #if ($synonym) {
+    #  $exDB->add_synonym( $synonym );
+    #}
   }                                     # while <a row from database>
   
   return @out;
