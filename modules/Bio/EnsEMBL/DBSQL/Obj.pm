@@ -1,4 +1,4 @@
-
+#
 #
 # BioPerl module for DBSQL::Obj
 #
@@ -1479,7 +1479,7 @@ sub write_Feature {
     # Now the predictions
     # we can't block do these as we need to get out the id wrt to the features
     foreach my $feature ( @fset ) {
-	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
+#	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
 
 	if (!defined($feature->analysis)) {
 
