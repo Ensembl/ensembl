@@ -87,6 +87,10 @@ sub get_Ensembl_Genes_clone{
    my ($self,$cloneid) = @_;
    my $clone;
 
+   my $dbobj = $self->dbobj;
+
+   #print STDERR "Got dbobj $dbobj connected to ",$dbobj->dbname,"\n";
+
    eval {
        $clone = $self->dbobj->get_Clone($cloneid);
    };
@@ -96,7 +100,10 @@ sub get_Ensembl_Genes_clone{
        return ();
    }
 
-   #my @genes=$clone->get_all_Genes();
+   my @genes=$clone->get_all_Genes();
+   #foreach my $gene ( @genes ) {
+   #    print STDERR "got ",$gene->id,"\n";
+   #}
 
    return $clone->get_all_Genes();
 }
@@ -120,19 +127,26 @@ sub get_Ensembl_Genes_contig_list{
        return ();
    }
 
-   my $list = join(',',@contigs);
+   my $list;
+   foreach my $c ( @contigs ) {
+       $list .= "'$c',";
+   }
+   chop $list;
    $list = "($list)";
 
-   my $sth = $self->dbobj->prepare("select distinct(trans.gene) from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
+   my $sth = $self->dbobj->prepare("select t.gene,c.id from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
    
    $sth->execute();
    my @genes;
 
-   while( my ($id) = $sth->fetchrow_array ) {
-       push(@genes,$id);
-   }
+   my %uniq;
 
-   return $self->gene_Obj->get_array_supporting('none',@genes);
+   while( my ($id,$contig) = $sth->fetchrow_array ) {
+       $uniq{$id} =1;
+   }
+   push(@genes,keys %uniq);
+
+   return $self->dbobj->gene_Obj->get_array_supporting('none',@genes);
 }
 
 

@@ -99,6 +99,8 @@ use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::Virtual::Map;
 use Bio::EnsEMBL::Virtual::PrimarySeq;
+use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
+
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
@@ -769,17 +771,25 @@ sub get_all_ExternalGenes {
    
    my @rawids;
 
+
+   if( exists $self->{'_external_gene_cache'} ) {
+       return @{$self->{'_external_gene_cache'}};
+   }
+
    foreach my $rc ( $self->_vmap->get_all_RawContigs ) {
        push(@rawids,$rc->id);
    }
 
+   &eprof_start("external_gene_retrieve");
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->can('get_Ensembl_Genes_contig_list')) {
 	   foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
+	       #print STDERR "Retrieved gene with ",$gene->id,"\n";
 	       $gene{$gene->id()} = $gene;
 	   }
        }
    }
+   &eprof_end("external_gene_retrieve");
    
    # foreach my $contig ($self->_vmap->get_all_RawContigs) {
    # foreach my $gene ( $contig->get_all_ExternalGenes() ) {
@@ -787,7 +797,12 @@ sub get_all_ExternalGenes {
    #}
    #}
 
-    return $self->_gene_query(%gene);
+   &eprof_start("external_gene_lift");
+   my @array=$self->_gene_query(%gene);
+   &eprof_end("external_gene_lift");
+
+   $self->{'_external_gene_cache'} = \@array;
+   return @array;
 }
 
 
