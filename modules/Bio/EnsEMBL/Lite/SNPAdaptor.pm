@@ -164,6 +164,43 @@ sub fetch_all_by_Slice {
   return \@snps;
 }
 
+sub fetch_all_by_Slice_transcript_ids {
+  my $self = shift;
+  my $slice = shift;
+  my $transcript_ids = shift;
+  my $DB             = shift || 'core';
+  my $snps = $self->fetch_all_by_Slice( $slice );
+  my %SNPS = ();
+  foreach my $transid ( @{$transcript_ids||[]} ) {
+  warn "TRANSCRIPT: $transid";
+    my $sth = $self->prepare(qq(select gs.snp_id, gs.type, gs.aminoacid_start,
+                gs.aminoacid_offset, gs.wildtype_aminoacid,
+                gs.aminoacids, s.internal_id, s.chr_start
+           from gene_snp as gs, snp as s
+          where gs.transcript_id = ? and gs.db = "$DB" and
+                gs.snp_id = s.snp_id
+    ));
+    $sth->execute( $transid );
+    while(my $a = $sth->fetchrow_arrayref()) {
+      $SNPS{$a->[6]}{$transid} = [ @$a ];
+    }
+  }
+  foreach my $snp ( @$snps ) {
+    $snp->{'_transcripts'} = {};
+    my $snptype = '99:';
+    if( $SNPS{$snp->dbID} ) {
+      foreach my $transid ( keys %{$SNPS{$snp->dbID}} ) {
+        my $a = $SNPS{$snp->dbID}{$transid};
+        $snp->{'_transcripts'}{$transid} = $a;
+        warn $snp->dbID, $a->[1];
+        $snptype = $a->[1] if $a->[1] lt $snptype;
+      }
+    }
+    $snp->{'_local_type'} = $snptype;
+  }
+  return $snps;
+}
+
 sub fetch_attributes_only{
   my $self = shift;
 

@@ -1200,6 +1200,16 @@ sub get_all_SNPs {
 }
 
 
+sub get_all_SNPs_transcripts {
+  my $self = shift;
+  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
+  if( $snpa ) {
+    return $snpa->fetch_all_by_Slice_transcript_ids($self, @_ );
+  } else {
+    return [];
+  }
+}
+
 
 =head2 get_all_Genes
 
@@ -1479,6 +1489,35 @@ sub get_all_SearchFeatures {
       $_->end(   $_->end-$offset );
     };
     return $features;
+}
+
+=head2 get_all_AssemblyExceptionFeatures
+
+  Arg [1]    : string $set (optional)
+  Example    : $slice->get_all_AssemblyExceptionFeatures();
+  Description: Retreives all misc features which overlap this slice. If
+               a set code is provided only features which are members of
+               the requested set are returned.
+  Returntype : listref of Bio::EnsEMBL::AssemblyExceptionFeatures
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_AssemblyExceptionFeatures {
+  my $self = shift;
+  my $misc_set = shift;
+
+  my $adaptor = $self->adaptor();
+
+  if(!$adaptor) {
+    warning('Cannot retrieve features without attached adaptor.');
+    return [];
+  }
+
+  my $aefa = $adaptor->db->get_AssemblyExceptionFeatureAdaptor();
+
+  return $aefa->fetch_all_by_Slice($self);
 }
 
 
