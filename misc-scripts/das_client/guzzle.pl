@@ -396,10 +396,10 @@ sub do_query
 		my @mapped = $query->{MAPPER}->map_coordinates(
 		    'targetID', $result->start, $result->stop, 1,
 		    'targetCOORD');
-
-		if (scalar @mapped > 1 ||
-		    $mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-		    $result->group($result->group . " [unmappable]");
+		if (scalar @mapped > 1) {
+		    $result->group($result->group . " [fragmented in $seqid]");
+		} elsif ($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+		    $result->group($result->group . " [unmappable in $seqid]");
 		} else {
 		    $result->group($result->group . " [mapped to $seqid]");
 		    $result->start($mapped[0]->start);
