@@ -77,13 +77,7 @@ sub _initialize {
   my ($mspfile,$type,$source_tag) = $self->_rearrange([qw(FILE
 							  TYPE
 							  SOURCE_TAG
-
 							  )],@args);
-  $self->source_tag($source_tag);
-  $self->type      ($type);
-  $self->mspfile   ($mspfile);
-
-
 
   # Stored data
   # -----------
@@ -91,6 +85,13 @@ sub _initialize {
 
   $self->{_homols} = [];
 
+  print("Creating new MSPfile $mspfile\n");
+
+  $self->source_tag($source_tag);
+  $self->type      ($type);
+  $self->mspfile   ($mspfile);
+
+  
   return $self; # success - we hope!
 }
 
@@ -173,7 +174,7 @@ sub _read_Homol {
 							  -end    => $qend,
 							  -strand => 1);
 	$sf1->start_frac(1);
-	$sf1->end_frac(3);
+	$sf1->end_frac  (3);
 
     } else {
 	$sf1 = new Bio::SeqFeature::Homol(-start  => $qstart,
@@ -186,7 +187,7 @@ sub _read_Homol {
 							  -end    => $hend,
 							  -strand => $strand1);
 	$sf2->start_frac(1);
-	$sf2->end_frac(3);
+	$sf2->end_frac  (3);
 
     } else {
 	$sf2 = new Bio::SeqFeature::Homol(-start  => $hstart,
@@ -256,7 +257,7 @@ sub add_Homol {
     my ($self,$homol) = @_;
     
     $self->throw("Argument to Bio::EnsEMBL::Analysis::MSPcrunch->add_Homol is not a Bio::SeqFeature::Homol") unless $homol->isa("Bio::SeqFeature::Homol");
-
+    
     push(@{$self->{_homols}},$homol);
 
 }
@@ -274,15 +275,14 @@ sub add_Homol {
 
 sub mspfile {
     my ($self,$file) = @_;
-
-
+    
     if (defined($file)) {
 	$self->throw("MSPcrunch output file $file doesn't exist") unless -e $file;
-
+	
 	$self->{_mspfile} = $file;
 	$self->_parse;
     }
-
+    
     return $self->{_mspfile};
 }
 
