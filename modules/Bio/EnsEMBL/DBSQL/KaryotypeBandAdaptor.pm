@@ -165,6 +165,7 @@ sub fetch_all_by_chromosome{
 					stain
 				FROM	karyotype 
 				WHERE	chr_name = '$chr' 
+				ORDER BY chr_start
 			     ");
 
     $sth->execute;
