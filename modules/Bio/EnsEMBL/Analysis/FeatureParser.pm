@@ -70,7 +70,7 @@ sub _initialize {
     my($self,@args) = @_;
   
     my $make = $self->SUPER::_initialize;
-    my ($id,$clone_dir,$disk_id,$gs,$seq,$debug)=@args;
+    my ($id,$clone_dir,$disk_id,$gs,$seq,$type,$debug)=@args;
 
     $id                   || $self->throw("Cannot make contig_feature object without id");
     $clone_dir            || $self->throw("Cannot make contig_feature object without clone_dir");
@@ -107,50 +107,50 @@ sub _initialize {
 		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff'  ,'DNA-DNA'],
 		   ];
 
-    # MC. I've bypassed the rest of this code as 
-    #        1. The feature reading doesn't work
-    #        2. The feature reading is being rewritten in as slightly different way
-    #        3. We're only reading repeats at the moment.
-
-    $self->read_Genscan($gs);
-
     # loop over transcripts
     my $count = 1;
 
-    $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+    if ($type eq 'repeat') {
+	$self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+    } elsif ($type eq 'similarity') {
 
-    foreach my $g ($gs->each_Transcript) {
-	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
-	
-	foreach my $msp (@$msptype) {
+	$self->read_Genscan($gs);
+
+	foreach my $g ($gs->each_Transcript) {
+	    my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
 	    
-	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
-	    my $pid            = "$id.$count";
-
-	    if ($msp->[5]     eq 'msp'){
-		$self->read_MSP($mspfile,$genpep,$msp);
-
-	    } elsif ($msp->[5] eq 'pfam'){
-		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
-
-	    } elsif ($msp->[5] eq 'gff'){
+	    foreach my $msp (@$msptype) {
 		
-
-	    } else {
-		$self->throw("no parser for $$msp[5] defined");
+		my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
+		my $pid            = "$id.$count";
+		
+		if ($msp->[5]     eq 'msp'){
+		    $self->read_MSP($mspfile,$genpep,$msp);
+		    
+		} elsif ($msp->[5] eq 'pfam'){
+		    $self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
+		    
+		} elsif ($msp->[5] eq 'gff'){
+		    
+		    
+		} else {
+		    $self->throw("no parser for $$msp[5] defined");
+		}
+		
 	    }
 	    
+	    my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
+	    
+	    foreach my $homol (@homols) {
+		$self->add_Feature($homol);
+	    }
+	    
+	    $count++;    
 	}
-
-	my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
-    
-	foreach my $homol (@homols) {
-	    $self->add_Feature($homol);
-	}
-
-	$count++;    
+    } else {
+	$self->throw("Feature type [$type] not recognized");
     }
-
+    
     return $make;
 }
 
