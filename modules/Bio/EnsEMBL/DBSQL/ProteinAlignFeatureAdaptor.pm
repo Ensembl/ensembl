@@ -98,13 +98,9 @@ sub store{
      if( !defined $sf->analysis ) {
        $self->throw("Cannot store sequence features without analysis");
      }
-     if( !defined $sf->analysis->dbID ) {
-       # maybe we should throw here. Shouldn't we always have an 
-       # analysis from the database?
-       $self->throw("I think we should always have an analysis object " .
-		    "which has originated from the database. No dbID, " .
-		    "not putting in!");
-     }
+
+     # will only store if object is not already stored in this database
+     $self->db()->get_AnalysisAdaptor()->store( $sf->analysis() );
 
      my $contig = $sf->entire_seq();
      #print STDERR $contig."\n";

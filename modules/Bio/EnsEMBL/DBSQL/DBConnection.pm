@@ -520,10 +520,9 @@ sub get_db_adaptor {
 sub deleteObj {
   my $self = shift;
   
-  #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
+#  print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
 
   foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
-    #print STDERR "\tcleaning [$adaptor_name]\n";
 
     my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
 

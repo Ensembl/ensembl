@@ -244,7 +244,14 @@ sub store {
   $analysis->dbID && ( $analysis->adaptor() == $self ) && 
     return $analysis->dbID;
 
+
   my $dbID;
+
+  if( $dbID = $self->exists( $analysis )) {
+    $analysis->adaptor( $self );
+    $analysis->dbID( $dbID );
+    return $dbID;
+  }
  
   if( !defined $analysis->logic_name ) {
     $self->throw("Must have a logic name on the analysis object");
@@ -344,8 +351,8 @@ sub store {
   Arg [1]    : Bio::EnsEMBL::Analysis $anal
   Example    : if($adaptor->exists($anal)) #do something
   Description: Tests whether this Analysis already exists in the database.
-               Returns a true value if it does.
-  Returntype : boolean
+               Returns the dbID, if it does, undef if it doesnt.
+  Returntype : int or undef
   Exceptions : thrown if $anal arg is not an analysis object
   Caller     : ?
 

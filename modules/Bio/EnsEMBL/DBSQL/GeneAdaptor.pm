@@ -89,6 +89,8 @@ sub list_geneIds {
        push(@out, $id);
    }
 
+   $sth->finish;
+
    return \@out;
 }
 
