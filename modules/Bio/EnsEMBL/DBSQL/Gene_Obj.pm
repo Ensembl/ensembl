@@ -801,38 +801,38 @@ sub _make_sticky_exon{
 =cut
 
 sub _get_dblinks{
-   my ($self,$gene) = @_;
+    my ($self,$gene) = @_;
 
-   if( !defined $gene || ! ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("no gene passed to get_dblinks");
-   }
-   my $gene_id = $gene->id;
-    
-    
+    $self->throw("no gene passed to get_dblinks")
+        unless( defined $gene && ref $gene && $gene->isa('Bio::EnsEMBL::Gene') );
+
 #Get the DBlinks for the given gene
     my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
-    my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
+    my @gene_xrefs = $entryAdaptor->fetch_by_gene( $gene->id );
     
     foreach my $genelink (@gene_xrefs) {
         $gene->add_DBLink($genelink);
     }
+
+    my @transcripts = $gene->each_Transcript;
+
+    foreach my $trans ( @transcripts ) {
+        my $transid;
+        if($trans->isa('Bio::EnsEMBL::WebTranscript')) { # We don't have
+           $transid = $trans->id;       # a translation object so we have
+           $transid =~ s/T(\d)/P\1/;    # to fudge this but {ENS}Tx -> {ENS}Px
+        } else {
+            $transid = $trans->translation->id;
+        }
+
+        my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
     
-    my $query1 = "select t.translation from transcript t where t.gene = '$gene_id';";
-    my $sth1 = $self->_db_obj->prepare($query1);
-    $sth1->execute;
-    
-    while (my $transid = $sth1->fetchrow) {
-	
-	my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
-	
-	foreach my $translink(@transcript_xrefs) {
-	    
-	    $gene->add_DBLink($translink);
-	}
+        foreach my $translink(@transcript_xrefs) {
+            $trans->add_DBLink($translink);
+            $gene->add_DBLink($translink);
+        }
     }
-#End for fetching the DBlinks
-    
-}                                       # _get_dblinks
+} # _get_dblinks
 
 =head2 _get_description
 
