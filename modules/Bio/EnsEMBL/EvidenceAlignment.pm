@@ -595,7 +595,16 @@ sub _get_aligned_features_for_contig {
   my $per_hid_effective_scores_hash_ref
     = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
-  my $nucseq_obj = $contig_obj;
+
+  # hack to get a translateable object with Ensembl HEAD and Bioperl
+  # 0.7.2
+  my $nucseq_obj = Bio::PrimarySeq->new(
+                     -seq              => $contig_obj->seq,
+                     -id               => 0,
+	             -accession_number => $contig_obj->name,
+	             -moltype          => 'dna'
+                   );
+
   if ($strand < 0) {
     $nucseq_obj = $nucseq_obj->revcom;
   }
