@@ -45,6 +45,7 @@ use strict;
 use Bio::EnsEMBL::Root; #included for backwards compatibility
 use Bio::EnsEMBL::Tile; #included for backwards compatibility
 use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
+use Bio::EnsEMBL::RawContig; #included for backwards compatibility
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
@@ -1655,6 +1656,9 @@ sub get_tiling_path {
                                                 $contig->seq_region_name(),
                                                 $contig->start(),
                                                 $contig->end());
+    #bless contigs into contigs
+    $contig = bless($contig, 'Bio::EnsEMBL::RawContig');
+
 
     push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
                                                     $slice_start,
