@@ -1220,7 +1220,7 @@ sub get_all_DASFeatures{
     # and somehow pass all this stuff down to the DAS fetcher...eek!
    my @fpccontigs = (undef);
     
-   print STDERR "DAS ", $self->_chr_name,$self->_global_start,$self->_global_end, "\n";
+   #print STDERR "DAS ", $self->_chr_name,$self->_global_start,$self->_global_end, "\n";
    my @clones  = $self->get_all_Clones();
    #foreach (@clones){
    #    print STDERR "Clone: ", $_, "\n";
@@ -1255,9 +1255,9 @@ sub get_all_DASFeatures{
 #                    warn ("Got a mouse clone feature: ", $sf->seqname(), "\n");
  	                push(@contig_features, $sf);
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
-                    print STDERR "CLONE >".$sf->seqname()."<\n";
+#                    print STDERR "CLONE >".$sf->seqname()."<\n";
                     if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
-                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
+#                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
                         $sf->seqname($contig_from_clone);
  	                    push(@contig_features, $sf);
                     }
@@ -1355,7 +1355,7 @@ sub _convert_chrfeature_to_vc_coords{
     my $chr_end   = $self->_global_end();
     
     if($f->das_start > $chr_end || $f->das_end < $chr_start) {
-        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
+#        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
                     $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
                     "\n";
         return ();
