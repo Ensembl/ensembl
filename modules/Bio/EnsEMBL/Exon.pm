@@ -320,6 +320,32 @@ sub phase {
 
 =pod
 
+=head2 frame
+
+  Title   : frame
+  Usage   : $frame = $feat->frame
+  Function: Returns the frame of the exon in the parent DNA
+  Returns : int
+  Args    : none
+
+=cut
+
+sub frame {
+  my ($self,$value) = @_;
+  
+  if (defined($value)) {
+    # Value must be 0,1,2,
+    if ($value < 0 || $value > 2) {
+      $self->throw("Bad value ($value) for exon frame. Should only be 0,1,2\n");
+    } else {
+      $self->{'frame'} = $value;
+    }
+  }
+  return $self->{'frame'};
+}
+
+=pod
+
 =head2 type
 
   Title   : type

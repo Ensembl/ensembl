@@ -23,7 +23,7 @@ or
 
 Extracting the data
 
-    my @genes    = $gs->each_Gene;    # Returns an array of the predicted genes
+    my @genes    = $gs->each_Transcript;    # Returns an array of the predicted genes
     my @peptides = $gs->each_Peptide; # Returns an array of the genscan peptides
     my $dna      = $gs->dna_seq       # Returns a Bio::Seq containging the DNA.
 
@@ -78,17 +78,17 @@ sub _initialize {
   my $file      = shift(@args);
 
   # The DNA Bio::Seq object - optional
-  $self->{dna}  = shift(@args);
+  $self->{_dna}  = shift(@args);
   
   # Stored data:
   # ------------
   # These are the predicted genes
-  @{$self->{genes}}    = ();
+  @{$self->{_transcripts}}    = ();
 
   # These are the peptides *as reported by genscan*
   # The translations of the genes are stored in
   # the gene objects
-  @{$self->{peptides}} = ();
+  @{$self->{_peptides}} = ();
 
   # Now try and get some genes out
   $self->_parse($file);
@@ -113,6 +113,7 @@ sub _parse {
   while(<IN>) {
     if (/^Sequence +(\S+)/) {
       $seqname = $1;
+      $self->id($seqname);
       close(IN);
     }
   } 
@@ -121,7 +122,7 @@ sub _parse {
   
   my $No_Gene_Flag;
   
-   PARSE: while(<IN>) {
+  PARSE: while(<IN>) {
        # Header gives Genscan version
        my $version;
        if (/^GENSCAN\s*(\S+)/o) {
@@ -139,7 +140,7 @@ sub _parse {
 	   # If sequence is too short;
 	   if (m|NO EXONS/GENES PREDICTED IN SEQUENCE|) {
 	     $No_Gene_Flag = 1;
-	     last PARSE;
+	     return;
 	   };
 	   
 	   # End of genes section
@@ -152,12 +153,12 @@ sub _parse {
 	   $n--;
 	   
 	   # Get the right gene from the set
-	   my $gene = $self->_gene( $n );
+	   my $transcript = $self->_transcript( $n );
 	   
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
 	     # Pass type,strand, start, stop, frame,phase to exons()
-	     $self->_exons($gene, @l[1,2,3,4,6,7] );
+	     $self->_exons($transcript, @l[1,2,3,4,6,7] );
 	   }
 	   
 	   # or a Promoter?
@@ -196,17 +197,17 @@ sub _parse {
 
   my $count = 0;
   
-  foreach my $gene ($self->each_Gene) {
+  foreach my $transcript ($self->each_Transcript) {
     
     # This sequence is what genscan thinks the translation is
     my $pep = $self->{peptides}->[$count]->seq();
 
     # Sort the coordinates according to strand
-    $gene->sort();
+    $transcript->sort();
     
     # Catch any exceptions where the phase can't be set for the gene
     if (defined($self->{dna})) {
-      $self->_set_exon_phases($gene,$pep);
+      $self->_set_exon_phases($transcript,$pep);
     }
     $count++;
   }
@@ -214,17 +215,27 @@ sub _parse {
   close IN;
 }
 
+
+sub id {
+  my ($self,$value)  = @_;
+
+  if (defined($value)) {
+    $self->{_id} = $value;
+  }
+
+  return $self->{_id};
+}
 # Takes a gene out from the array.
 
-sub _remove_gene {
-  my ($self,$gene) = @_;
+sub _remove_transcript {
+  my ($self,$transcript) = @_;
   
   my $count = 0;
   
-  if (defined($self->{genes})) {
-    foreach my $g ($self->each_Gene) {
-      if ($g == $gene) {
-	splice(@{$self->{genes}},$count,1);
+  if (defined($self->{_transcripts})) {
+    foreach my $g ($self->each_Transcript) {
+      if ($g == $transcript) {
+	splice(@{$self->{_transcripts}},$count,1);
       }
       $count++;
     }
@@ -242,9 +253,9 @@ sub _remove_gene {
 # all three frames and comparing the string to the full peptide sequence.
 
 sub _set_exon_phases {
-  my ($self,$gene,$pep) = @_;
+  my ($self,$tran,$pep) = @_;
 
-  foreach my $exon ($gene->each_Exon) {
+  foreach my $exon ($tran->each_Exon) {
     my $seq   = $exon->dna_seq->seq();
     my @trans = $exon->pep_seq;
 
@@ -287,7 +298,7 @@ sub _set_exon_phases {
   # Genscan DNA coordinates include a stop codon at the end of the terminal exon.  We 
   # need to remove this and change the coordinates
 
-  my @exons = $gene->each_Exon;
+  my @exons = $tran->each_Exon;
   my $ex = $exons[$#exons];
 
   my @pep = $ex->_translate();
@@ -304,19 +315,19 @@ sub _set_exon_phases {
 # genes array.  Returns a new Transcript object
 # if the object doesn't exist
 
-sub _gene { 
+sub _transcript { 
   my ($self,$n) = @_;
 
-  if ($#{$self->{genes}} >= $n) {
-    return $self->{genes}[$n];
+  if ($#{$self->{_transcripts}} >= $n) {
+    return $self->{_transcripts}[$n];
   } else {
     my $i;
 
-    for ($i = $#{$self->{genes}} +1; $i <= $n; $i++){
-      $self->{genes}[$i] = Bio::EnsEMBL::Transcript->new();
+    for ($i = $#{$self->{_transcripts}} +1; $i <= $n; $i++){
+      $self->{_transcripts}[$i] = Bio::EnsEMBL::Transcript->new();
     }
 
-    return $self->{genes}[$n];
+    return $self->{_transcripts}[$n];
 
   }
 
@@ -326,7 +337,7 @@ sub _gene {
 # to the parent gene exon array ref.
 
 sub _exons {
-  my ($self,$gene,$type,$strand,$start,$stop,$frame,$phase) = @_;
+  my ($self,$tran,$type,$strand,$start,$stop,$frame,$phase) = @_;
 
   # Create the exon object
   my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
@@ -351,25 +362,25 @@ sub _exons {
   $exon->end_phase();		
 
   # Finally add the exon to the gene
-  $gene->add_Exon ($exon);
+  $tran->add_Exon ($exon);
 
 }
 
 
-=head2 each_Gene
+=head2 each_Transcript
 
-  Title   : each_Gene
-  Usage   : @genes = $gs->each_Gene
+  Title   : each_Transcript
+  Usage   : @genes = $gs->each_Transcript
  Function: Returns an array of predicted genes
   Returns : Bio::SeqFeature
   Args    : none
 
 =cut
 
-sub each_Gene {
+sub each_Transcript {
   my ($self) = @_;
-
-  return (@{$self->{genes}});
+  
+  return (@{$self->{_transcripts}});
   
 }
 
@@ -407,5 +418,59 @@ sub dna_seq {
     return ($self->{dna});
   }
 }
+
+
+sub toSQLfeatureset {
+
+  my ($self) = @_;
+
+  my @sqllines;
+
+  my $date   = `date '+%Y-%m-%d'`; chomp $date;;
+  my $gcount = 0;
+  
+  foreach my $tran ($self->each_Transcript) {
+    
+    # Create gene sql
+    # the geneid is initially of the form
+    # dJ401P4.00741.GENSCAN.1.2
+    # i.e. 3rd exon of the 2nd gene (counting from 0)
+    
+    my $tran_id = $tran->id;  #!!!!!
+    
+    $tran_id =~ s/(.*)\..*$/$1/;
+
+    # Extract clone and contig info;
+    my $clone      = $tran_id;
+    my $contig     = $tran_id;
+    my $featureset = $tran_id;
+
+    $clone  =~ s/^(.*?)\..*/$1/;
+    $contig =~ s/^(.*?\..*?)\..*/$1/;
+
+    my $tmp;
+    
+    foreach my $gf ($tran->eachGeneFeature()) {
+      # Exon sql
+      
+      $tmp = "insert into feature(id,contig,start,end,strand,featureset) values(\'" . 
+           $gf->seqname   .   "\',\'$contig\'," .
+           $gf->start     .   "," .
+           $gf->end       .   ",\'" . 
+           $gf->strand    .   "\',\'" .
+           $featureset    .   "\');\n";
+
+      push(@sqllines,$tmp);
+
+      # featureset sql
+      $tmp = "insert into featureset(feature,id) values(\'" . $gf->seqname() . 
+        "\',\'$featureset\');\n";
+      push(@sqllines,$tmp);
+    }
+    $gcount++;
+  }
+  return @sqllines;
+}
+
     
 1;
