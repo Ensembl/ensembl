@@ -69,9 +69,16 @@ sub new {
     $self->throw("Don't have a internal id [$internal_id] for new clone") unless $internal_id;
     $self->throw("Don't have a id [$id] for new clone") unless $id;
     $self->throw("Don't have a embl id [$embl_id] for new clone") unless $embl_id;
-    #$self->throw("Don't have a version [$version] for new clone") unless $version;
-    $self->throw("Don't have a embl verson [$embl_version] for new clone") unless $embl_version;
-    $self->throw("Don't have a htg phase [$htg_phase] for new clone") unless $htg_phase;  
+    
+    $self->throw("Don't have a version [$version] for new clone") unless defined $version;
+    $self->throw("Don't have a embl verson [$embl_version] for new clone") unless defined $embl_version;
+    
+
+    if( $version == 0 ) {
+	$self->warn("seq version $version and embl version $embl_version are 0 - this will not play nicely with external feature factories!");
+    }
+
+   $self->throw("Don't have a htg phase [$htg_phase] for new clone") unless $htg_phase;  
     #$self->throw("Don't have a created [$created] for new clone") unless $created;
     #$self->throw("Don't have a modified [$modified] for new clone") unless $modified;
     #$self->throw("Don't have a stored [$stored] for new clone") unless $stored;
