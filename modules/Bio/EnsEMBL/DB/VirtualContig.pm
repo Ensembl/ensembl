@@ -80,6 +80,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
+use Bio::EnsEMBL::DB::VirtualMap;
 
 my $VC_UNIQUE_NUMBER = 0;
 
@@ -91,20 +92,19 @@ my $VC_UNIQUE_NUMBER = 0;
 
 sub _initialize {
   my($self,@args) = @_;
-
+  
   my $make = $self->SUPER::_initialize(@args);
-
+  
   $self->name("Virtual Contig Module"); # set the exception context (does this work?)
 
   my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
+  
+  #Create a new VirtualMap holder object for MapContigs
+  my $vmap=Bio::EnsEMBL::DB::VirtualMap->new;
+  $self->_vmap($vmap);
 
-  # set up hashes for the map
-  $self->{'start'}         = {};
-  $self->{'startincontig'} = {};
-  $self->{'contigori'}     = {};
+  # set up feature_skip hash
   $self->{'feature_skip'}  = {};
-  # this actually stores the contig we are using
-  $self->{'contighash'}    = {};
 
   # this is for cache's of sequence features if/when we want them
   $self->{'_sf_cache'}     = {};
@@ -130,8 +130,8 @@ sub _initialize {
 		       "(focuscontig, focusposition, ori, left and right)");
       }
       if (! $focuscontig->isa('Bio::EnsEMBL::DBSQL::RawContig') ) {
-	$self->throw("$focuscontig is not a Bio::EnsEMBL::DBSQL::RawContig object, cannot make Virtual Contig!");
-    }
+	  $self->throw("$focuscontig is not a Bio::EnsEMBL::DBSQL::RawContig object, cannot make Virtual Contig!");
+      }
       
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
@@ -165,29 +165,27 @@ These functions are to implement the ContigI interface
 =cut
 
 sub extend {
-   my ($self, $left, $right) = @_;
-
-   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-       $self->throw("Can only extend a VirtualContigI, Bailing out...");
-   }
-
-   if (! defined $left || ! defined $right ){
-       $self->throw("Must supply a left and right value when extending a VirtualContig");
-   }
-   
-   #print STDERR "Extending raw contig ".$self->_focus_contig->id." (ori = $self->_focus_orientation)\n";
-
-   my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_focus_contig,
-					       -focusposition   => $self->_focus_position,
-					       -ori             => $self->_focus_orientation,
-					       -left            => $self->_left_size - $left,
-					       -right           => $self->_right_size + $right,
-					       );
-
-   my $id = join('.', ($nvc->_focus_contig->id, $nvc->_focus_position, $nvc->_focus_orientation, $nvc->_left_size, $nvc->_right_size));
-   $nvc->_unique_number($id);
-   
-   return $nvc;
+    my ($self, $left, $right) = @_;
+    
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+	$self->throw("Can only extend a VirtualContigI, Bailing out...");
+    }
+    
+    if (! defined $left || ! defined $right ){
+	$self->throw("Must supply a left and right value when extending a VirtualContig");
+    }
+    
+    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_focus_contig,
+						    -focusposition   => $self->_focus_position,
+						    -ori             => $self->_focus_orientation,
+						    -left            => $self->_left_size - $left,
+						    -right           => $self->_right_size + $right,
+						    );
+    
+    my $id = join('.', ($nvc->_focus_contig->id, $nvc->_focus_position, $nvc->_focus_orientation, $nvc->_left_size, $nvc->_right_size));
+    $nvc->_unique_number($id);
+    
+    return $nvc;
 }
 
 
@@ -204,14 +202,14 @@ sub extend {
 =cut
 
 sub extend_maximally {
-   my ($self) = @_;
-
-   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-       $self->throw("Can only extend a VirtualContigI, Bailing out...");
-   }
-   # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(10000000000,10000000000);
-   return $nvc;
+    my ($self) = @_;
+    
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+	$self->throw("Can only extend a VirtualContigI, Bailing out...");
+    }
+    # based on an original idea by Ewan Birney. ;)
+    my $nvc = $self->extend(10000000000,10000000000);
+    return $nvc;
 }
 
 
@@ -228,14 +226,14 @@ sub extend_maximally {
 =cut
 
 sub extend_maximally_left {
-   my ($self) = @_;
+    my ($self) = @_;
 
-   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-       $self->throw("Can only extend a VirtualContigI, Bailing out...");
-   }
-   # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(10000000000,0);
-   return $nvc;
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+	$self->throw("Can only extend a VirtualContigI, Bailing out...");
+    }
+    # based on an original idea by Ewan Birney. ;)
+    my $nvc = $self->extend(10000000000,0);
+    return $nvc;
 }
 
 
@@ -252,14 +250,14 @@ sub extend_maximally_left {
 =cut
 
 sub extend_maximally_right {
-   my ($self) = @_;
+    my ($self) = @_;
 
-   if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-       $self->throw("Can only extend a VirtualContigI, Bailing out...");
-   }
-   # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(0,10000000000);
-   return $nvc;
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+	$self->throw("Can only extend a VirtualContigI, Bailing out...");
+    }
+    # based on an original idea by Ewan Birney. ;)
+    my $nvc = $self->extend(0,10000000000);
+    return $nvc;
 }
 
 =head2 windowed_VirtualContig
@@ -277,58 +275,46 @@ sub extend_maximally_right {
 
 sub windowed_VirtualContig {
     my ($self,$position,$left,$right) = @_;
-
+    
     if( $position < 0 || $position > $self->length ) {
-       $self->throw("Attempting to build a new virtual contig out of length bounds!");
+	$self->throw("Attempting to build a new virtual contig out of length bounds!");
     }
-
+    
     # scan along right->left until we find the first contig
     # whoes start point is before the position
     # hmm - should we presort these guys sometime?
     # Tony: maybe - this module does 3 sorts on the same array...
 
-    my @ids = keys %{$self->{'contighash'}};
-    @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
-    #print STDERR "In Windowed vc...\n";
-
-    #print STDERR @ids."\n\n";
-    
-    my $id = undef;
-    foreach $_ ( @ids ) {
-	#print STDERR "Looking at $_\n";
-
-       if( $self->start_in_vc($_) < $position ) {
-           #print STDERR "Starting contig: $_ [". $self->start_in_vc($_). " < $position] \n";
-           $id = $_;
-           last;
-       }
+    my @map_contigs=$self->_vmap->get_all_MapContigs("reverse");
+    my $id;
+    foreach my $mc ( @map_contigs ) {
+	if( $mc->start < $position ) {
+	    $id = $mc->contig->id;
+	    last;
+	}
     }
-
+    
     # $id is going to be our new focus. Now - just call 
     # a constructor with appropriate arithmetic...
-    my $rc  = $self->{'contighash'}->{$id};
-    my $ori = $self->ori_in_vc($id);
-
+    
+    my $mc  = $self->_vmap->get_MapContig($id);
+    my $ori = $mc->orientation();
+    
     my $wvcpos;
     if( $ori == 1 ) {
-       $wvcpos = $rc->golden_start + ($position - $self->start_in_vc($id));
+	$wvcpos = $mc->contig->golden_start + ($position - $mc->start);
     } else {
-       $wvcpos = $rc->golden_end   - ($position - $self->start_in_vc($id));
+	$wvcpos = $mc->contig->golden_end   - ($position - $mc->start);
     }
 
     
-    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $rc,
+    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $mc->contig,
 					        -focusposition => $wvcpos,
 					        -ori           => $ori,
 					        -left          => $left,
 					        -right         => $right
 					        );
-
-
 }
-
-
-
 
 =head2 primary_seq
 
@@ -350,93 +336,73 @@ sub primary_seq {
    if( defined $seq ) {
        return $seq;
    }
-
+   
    # we have to move across the map, picking up the sequences,
    # truncating them and then adding them into the final product.
 
-   my @contig_id = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } keys %{$self->{'start'}};
+   my @map_contigs=$self->_vmap->get_all_MapContigs;
 
    my $seq_string;
    my $last_point = 1;
-
+   
    # if there is a left overhang, add it 
-
+   
    if( $self->_left_overhang() > 0 ) {
        $seq_string = 'N' x $self->_left_overhang();
    }
-
-   foreach my $cid ( @contig_id ) {
-       #print(STDERR "\nFinding sequence for $cid\n");
-       my $c    = $self->{'contighash'}->{$cid};
-       my $tseq = $c->primary_seq();
-
-       #print(STDERR "Seq length/start is " . $tseq->length . "\t" .$self->{start}{$cid} . "\n");
-       if( $self->{'start'}->{$cid} != ($last_point+1) ) {
+   
+   #Go through each MapContig
+   foreach my $mc ( @map_contigs ) {
+       my $tseq = $mc->contig->primary_seq();
        
+       if( $mc->start != ($last_point+1) ) {
+	   
            # Tony: added a throw here - if we get negative numbers of inserted N's
-	   # my $no = $self->{'start'}->{$cid} - $last_point -1;
-
-	   my $no = $self->{'start'}->{$cid} - $last_point;
-
+	   
+	   my $no = $mc->start - $last_point;
+	   
            if ($no < 0){
 	       $self->throw("Error. Trying to insert negative number ($no) of N\'s into contig sequence");
            }
 	   
-	   #print STDERR "Putting in $no x N\n";
-
 	   $seq_string .= 'N' x $no;
 	   $last_point += $no;
        } 
-
+       
        my $trunc;
        my $end;
-
+       
        if( $self->_clone_map == 1 ) {
-	   $end = $c->length;
+	   $end = $mc->contig->length;
        } else {
-	   if( $self->{'rightmostcontig_id'} eq $cid ) {
-	       print STDERR "Rightmost end is ",$self->{'rightmostend'},$cid,"\n";
-	       
-	       $end = $self->{'rightmostend'};
+	   if($mc->rightmost_end) {
+	       $end = $mc->rightmost_end;
 	   } else {
-	       if( $self->{'contigori'}->{$cid} == 1 ) {
-		   $end = $c->golden_end;
+	       if( $mc->orientation == 1 ) {
+		   $end = $mc->contig->golden_end;
 	       } else {
-		   $end = $c->golden_start;
+		   $end = $mc->contig->golden_start;
 	       }
 	   }
        }
-       
-       
-       #print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
-        
-       if( $self->{'contigori'}->{$cid} == 1 ) {
-	   #print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
-	   $trunc = $tseq->subseq($self->{'startincontig'}->{$cid},$end);
+       if( $mc->orientation == 1 ) {
+	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
-	   #print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
-	   $trunc = $tseq->trunc($end,$self->{'startincontig'}->{$cid})->revcom->seq;
+	   $trunc = $tseq->trunc($end,$mc->start_in)->revcom->seq;
        }
-#       print STDERR "Got $trunc\n";
        $seq_string .= $trunc;
        $last_point += length($trunc);
    }
-
+   
    # if there is a right overhang, add it 
-
    if( $self->_right_overhang() > 0 ) {
        $seq_string .= 'N' x $self->_right_overhang();
    }
-
-
    $seq = Bio::PrimarySeq->new( -id      => "virtual_contig_".$self->_unique_number,
 				-seq     => $seq_string,
 				-moltype => 'dna'
 				);
-   
-
    $self->_seq_cache($seq);
-   
    return $seq;
 }
 
@@ -459,7 +425,7 @@ sub id {
 }
 
 =head2 top_SeqFeatures
-
+    
  Title   : top_SeqFeatures
  Usage   :
  Function:
@@ -469,38 +435,37 @@ sub id {
 
 
 =cut
-
+    
 sub top_SeqFeatures {
-   my ($self,@args) = @_;
-   my (@f);
+    my ($self,@args) = @_;
+    my (@f);
 
-
-   if( $self->skip_SeqFeature('similarity') != 1 ) { 
-       push(@f,$self->get_all_SimilarityFeatures());
-   } 
-
-   if( $self->skip_SeqFeature('repeat') != 1 ) { 
-       push(@f,$self->get_all_RepeatFeatures());
-   } 
-
-   if( $self->skip_SeqFeature('external') != 1 ) { 
-       push(@f,$self->get_all_ExternalFeatures());
-   } 
-
-   foreach my $gene ( $self->get_all_Genes()) {
-       print STDERR "Got a $gene\n";
-       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
-       push(@f,$vg);
-   }
-
-   return @f;
+    
+    if( $self->skip_SeqFeature('similarity') != 1 ) { 
+	push(@f,$self->get_all_SimilarityFeatures());
+    } 
+    
+    if( $self->skip_SeqFeature('repeat') != 1 ) { 
+	push(@f,$self->get_all_RepeatFeatures());
+    } 
+    
+    if( $self->skip_SeqFeature('external') != 1 ) { 
+	push(@f,$self->get_all_ExternalFeatures());
+    } 
+    
+    foreach my $gene ( $self->get_all_Genes()) {
+	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+	push(@f,$vg);
+    }
+    
+    return @f;
 }
 
 =head2 get_all_VirtualGenes
-
+    
  Title   : get_all_VirtualGenes
  Usage   : foreach my $virtualgene ( $contig->get_all_VirtualGenes ) 
- Function: Gets all the genes on this contig as VirtualGene objects
+ Function: Gets all teh genes on this VC as VirtualGene objects
  Example : 
  Returns : array of Bio::EnsEMBL::VirtualGene objects
  Args    : none
@@ -510,7 +475,7 @@ sub top_SeqFeatures {
 
 sub get_all_VirtualGenes {
     my ($self) = @_;
-
+    
     my @out;
     foreach my $gene ( $self->get_all_Genes()) {
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
@@ -633,19 +598,18 @@ sub get_all_PredictionFeatures {
 sub get_all_Genes {
     my ($self) = @_;
     my (%gene,%trans,%exon,%exonconverted);
-
-    foreach my $c ( values %{$self->{'contighash'}} ) {   
-	foreach my $gene ( $c->get_all_Genes() ) {      
+    
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {   
+	foreach my $gene ( $contig->get_all_Genes() ) {      
 	    $gene{$gene->id()} = $gene;
 	}
     }
-
-    foreach my $gene ( values %gene ) {
     
+    foreach my $gene ( values %gene ) {
+	
         my $internalExon = 0;
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
-	    print STDERR "Exon: ", $exon->id, " was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
                 
@@ -653,16 +617,12 @@ sub get_all_Genes {
                 $internalExon = 1;
 		$exonconverted{$exon->id} = 1;
             }                           
-
-	    print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
+	    
 	}
         
         unless ($internalExon) {    
             delete $gene{$gene->id};
-            print STDERR "Removing gene with id ", $gene->id, " as none of its exons on VirtualContig\n";
-        } else {
-	    print STDERR "Storing gene with id",$gene->id,"\n";
-	}
+        } 
     }
     
     # get out unique set of translation objects
@@ -672,17 +632,15 @@ sub get_all_Genes {
 	    $trans{"$translation"} = $translation;	    
 	}
     } 
-       
+    
     foreach my $t ( values %trans ) {
 
 	if( exists $exonconverted{$t->start_exon_id} ) {
-	    print STDERR "converting start for ",$t->id,"\n";
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
 	    $t->start($start);
 	}
 
 	if( exists $exonconverted{$t->end_exon_id}  ) {
-	    print STDERR "converting end for ",$t->id,"\n";
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
 	    $t->end($start);
 	}
@@ -790,67 +748,10 @@ sub skip_SeqFeature {
 =cut
 
 sub rawcontig_ids {
-   my ($self,@args) = @_;
-
-   return keys %{$self->{'contighash'}};
-}
-
-=head2 start_in_vc
-
- Title   : start_in_vc
- Usage   : $vc->start_in_vc('rawcontigid');
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub start_in_vc {
-   my ($self,$rawcontigid) = @_;
+   my ($self) = @_;
    
-   if( !defined $rawcontigid || ! exists $self->{'contighash'}->{$rawcontigid} ) {
-       $self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
-   }
-
-   return $self->{'start'}->{$rawcontigid}
+   return $self->_vmap->RawContig_ids;
 }
-
-=head2 end_in_vc
-
- Title   : end_in_vc
- Usage   : $vc->end_in_vc('rawcontigid')
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub end_in_vc {
-   my ($self,$cid) = @_;
-
-   if( $self->{'rightmostcontigid'} eq $cid ) {
-       return $self->start_in_vc($cid) + $self->{'rightmostend'};
-   } else {
-       return $self->start_in_vc($cid) + $self->{'contighash'}->{$cid}->golden_length;
-   } 
-
-}
-
-sub ori_in_vc {
-    my ($self,$rawcontigid) = @_;
-    
-    if( !defined $rawcontigid || ! exists $self->{'contighash'}->{$rawcontigid} ) {
-	$self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
-    }
-    
-    return $self->{'contigori'}->{$rawcontigid}
-}
-
-
 
 =head2 _build_clone_map
 
@@ -872,39 +773,31 @@ sub _build_clone_map {
    my $seen        = 0;
    my $middle      = 0;
    
-   #print STDERR "Making clone map\n";
    foreach my $contig ( $clone->get_all_Contigs ) {
-       $self->{'start'}        ->{$contig->id} = $contig->embl_offset;
-       $self->{'startincontig'}->{$contig->id} = 1;
-       $self->{'contigori'}    ->{$contig->id} = 1;
-       $self->{'contighash'}   ->{$contig->id} = $contig;
-
-       #print STDERR "Clone map: contig: ",$contig->id," [em_offset: ",$contig->embl_offset,"] ==> [contig_offset: ",$contig->length,"]\n";
+       $self->_vmap->create_MapContig($contig->embl_offset,1,1,$contig);
 
        $total_len = $contig->embl_offset + $contig->length;
 
        if( $total_len > $length ) {
 	   $length = $total_len;
-           #print STDERR "New contig length: ",$length,"\n";
        }
        
        if( $seen == 0 ) {
 	   $self->dbobj($contig->dbobj);
 	   $seen = 1;
        }
-
+       
    }
-
+   
    # Tony: This vc made from a clone. Since it must have a left/right arm
    # we set the 'focus' to the middle.
    # The magic -1 avoids counting the focus base twice
    $middle = int($length)/2;
    $self->_left_size($middle-1);
    $self->_right_size($length-$middle);
-
+   
    # Remember this vc contructed from a clone (rather than extending a 'seed' contig)
    $self->_clone_map(1);
-
 }
 
 
@@ -925,340 +818,296 @@ sub _build_clone_map {
 =cut
 
 sub _build_contig_map {
-  my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
-print STDERR "in build contig map\n";  
-  # we first need to walk down contigs going left
-  # so we can figure out the start position (contig-wise)
-  
-  # initialisation - find the correct end of the focus contig
-  #print(STDERR "in build_contig_map\n");
-  my ($current_left_size,$current_orientation,$current_contig,$overlap);
+    my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
     
-  if( $ori == 1 ) {
-    $current_left_size   = $focusposition;
-    $current_orientation = 1;
-  } else {
-    $current_left_size   = $focuscontig->length - $focusposition;
-    $current_orientation = -1;
-  }
-  
-  $current_contig = $focuscontig;
-  
-  print STDERR "Left size is $left\n";
-  
-  my %seen_hash;
-
-
-  GOING_LEFT :
+    # we first need to walk down contigs going left
+    # so we can figure out the start position (contig-wise)
+    # initialisation - find the correct end of the focus contig
     
-      while( $current_left_size < $left ) {
-	  print(STDERR "Current left = $current_left_size\n");
-	  print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
-	
-	  if( exists $seen_hash{$current_contig->id} ) {
-	      $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
-	  } else {
-	      $seen_hash{$current_contig->id} = 1;
-	  }
-	
-	  if( $current_orientation == 1 ) {
-	      
-	      # go left wrt to the contig.
-	      $overlap = $current_contig->get_left_overlap();
-	      
-	      # if there is no left overlap, trim left to this size
-	      # as this means we have run out of contigs
-	      
-	      print STDERR "Gone left\n";
-	      
-	      if( !defined $overlap ) {
-		  $left = $current_left_size;
-		  print STDERR "getting out - no overlap\n";
-		  last;
-	      }
-	      
-	      if( $overlap->distance == 1 ) {
-		  $current_left_size += $overlap->sister->golden_length -1;
-	      } else {
-		  $current_left_size += $overlap->distance;
-		  if( $current_left_size > $left ) {
-		      # set the left overhang!
-		      print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
-		      $self->_left_overhang($overlap->distance - ($current_left_size - $left));
-		      last GOING_LEFT;
-		  }
-
-		  $current_left_size += $overlap->sister->golden_length;
-	      }
-	      print STDERR "Found sister " . $overlap->sister->id . "\t" . $current_left_size . "\n";
-	      $current_contig = $overlap->sister();
-	      
-	      if( $overlap->sister_polarity == 1) {
-		  $current_orientation = 1;
-	      } else {
-		  $current_orientation = -1;
-	      }
-	  } else {
-	      # go right wrt to the contig.
-	      $overlap = $current_contig->get_right_overlap();
-	      print STDERR "Gone rightt\n";
-	      # if there is no left overlap, trim left to this size
-	      # as this means we have run out of contigs
-	      if( !defined $overlap ) {
-		  $left = $current_left_size;
-		  print STDERR "Getting out - no overlap";
-		  last;
-	      }
-	      
-	      if( $overlap->distance == 1 ) {
-		  $current_left_size += $overlap->sister->golden_length-1;
-		  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
-	      } else {
-		  $current_left_size += $overlap->distance;
-		  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
-		  if( $current_left_size > $left ) {
-		      # set the left overhang!
-		      print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
-		      $self->_left_overhang($overlap->distance - ($current_left_size - $left));
-		      last GOING_LEFT;
-		  }
-		  $current_left_size += $overlap->sister->golden_length;
-		  
-	      }
-
-	      $current_contig = $overlap->sister();
-	      
-	      if( $overlap->sister_polarity == 1) {
-		  $current_orientation = -1;
-	      } else {
-		  $current_orientation = 1;
-	      }
-	  }
-      }
-  
-  # now $current_contig is the left most contig in this set, with
-  # its orientation set and ready to rock... ;)
-  
-  my $total = $left + $right;
-  
-  print STDERR "leftmost contig is "  . $current_contig->id . 
-               " with $total to account for, " .
-  	       " gone $current_left_size of $left\n";
-
-  $self->{'leftmostcontig_id'} = $current_contig->id;
-  
-  # the first contig will need to be trimmed at a certain point
-  my $startpos;
-  
-  #print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
-  #print STDERR "Current left = $left vs global left= $current_left_size\n";
-  
-  my $current_length;
-  #print STDERR "Left overhang is " . $self->_left_overhang . "\n";
-  if( $self->_left_overhang() == 0 ) {
-    if( $current_orientation == 1 ) {
-      #print(STDERR "Current orientation $current_orientation\n");
-      #print(STDERR "golden start " . $current_contig->golden_start . "\n");
-      $startpos = $current_contig->golden_start + ($current_left_size - $left);
+    my ($current_left_size,$current_orientation,$current_contig,$overlap);
+    
+    if( $ori == 1 ) {
+	$current_left_size   = $focusposition;
+	$current_orientation = 1;
     } else {
-      #print(STDERR "Current orientation $current_orientation\n");
-      #print(STDERR "golden end " . $current_contig->golden_end . "\n");
-      
-      $startpos = $current_contig->golden_end   - ($current_left_size - $left);
+	$current_left_size   = $focuscontig->length - $focusposition;
+	$current_orientation = -1;
     }
-	
-	#print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
-	
-	$self->{'start'}        ->{$current_contig->id} = 1;
-	$self->{'startincontig'}->{$current_contig->id} = $startpos;
-	$self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
-	$self->{'contighash'}   ->{$current_contig->id} = $current_contig;
+    
+    $current_contig = $focuscontig;
+    
+    my %seen_hash;
 
-	if( $current_orientation == 1 ) {
-	  $current_length = $current_contig->golden_end - $startpos +1;
-	} else {
-	  $current_length = $startpos - $current_contig->golden_start+1;
+
+    GOING_LEFT :
+    
+	while( $current_left_size < $left ) {
+	    if( exists $seen_hash{$current_contig->id} ) {
+		$self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
+	    } else {
+		$seen_hash{$current_contig->id} = 1;
+	    }
+	
+	    if( $current_orientation == 1 ) {
+	      
+		# go left wrt to the contig.
+		$overlap = $current_contig->get_left_overlap();
+		
+		# if there is no left overlap, trim left to this size
+		# as this means we have run out of contigs
+	      
+		if( !defined $overlap ) {
+		    $left = $current_left_size;
+		    last;
+		}
+		
+		if( $overlap->distance == 1 ) {
+		    $current_left_size += $overlap->sister->golden_length -1;
+		} else {
+		    $current_left_size += $overlap->distance;
+		    if( $current_left_size > $left ) {
+			# set the left overhang!
+			$self->_left_overhang($overlap->distance - ($current_left_size - $left));
+			last GOING_LEFT;
+		    }
+		    
+		    $current_left_size += $overlap->sister->golden_length;
+		}
+		$current_contig = $overlap->sister();
+		
+		if( $overlap->sister_polarity == 1) {
+		    $current_orientation = 1;
+		} else {
+		    $current_orientation = -1;
+		}
+	    } else {
+		# go right wrt to the contig.
+		$overlap = $current_contig->get_right_overlap();
+
+		# if there is no left overlap, trim left to this size
+		# as this means we have run out of contigs
+		if( !defined $overlap ) {
+		    $left = $current_left_size;
+		    last;
+		}
+		
+		if( $overlap->distance == 1 ) {
+		    $current_left_size += $overlap->sister->golden_length-1;
+		} else {
+		    $current_left_size += $overlap->distance;
+		    if( $current_left_size > $left ) {
+			# set the left overhang!
+			$self->_left_overhang($overlap->distance - ($current_left_size - $left));
+			last GOING_LEFT;
+		    }
+		    $current_left_size += $overlap->sister->golden_length;
+		}
+		
+		$current_contig = $overlap->sister();
+		
+		if( $overlap->sister_polarity == 1) {
+		    $current_orientation = -1;
+		} else {
+		    $current_orientation = 1;
+		}
+	    }
 	}
-  } else {
+  
+    # now $current_contig is the left most contig in this set, with
+    # its orientation set and ready to rock... ;)
+  
+    my $total = $left + $right;
+  
+    # the first contig will need to be trimmed at a certain point
+    my $startpos;
+    
+    my $current_length;
+
+    if( $self->_left_overhang() == 0 ) {
+	if( $current_orientation == 1 ) {
+	    $startpos = $current_contig->golden_start + ($current_left_size - $left);
+	} else {
+	    $startpos = $current_contig->golden_end   - ($current_left_size - $left);
+	}
+	
+	$self->_vmap->create_MapContig(1,$startpos,$current_orientation,$current_contig);
+	my $mc=$self->_vmap->get_MapContig($current_contig->id);
+	$mc->leftmost(1);
+	
+	if( $current_orientation == 1 ) {
+	    $current_length = $current_contig->golden_end - $startpos +1;
+	} else {
+	    $current_length = $startpos - $current_contig->golden_start+1;
+	}
+    } else {
 	# has an overhang - first contig offset into the system
-      #print STDERR "First contig offset " . $self->_left_overhang . "\n";
-      $self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
+
+	my $mc_start=$self->_left_overhang+1;
+	
+	my $mc_startin;
 	if( $current_orientation == 1 ) {
-	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+	    $mc_startin=$current_contig->golden_start;
 	} else {
-	  #print STDERR "Start in contig is " . $current_contig->golden_end . "\n";
-
-	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
+	    $mc_startin=$current_contig->golden_end;
 	}
-	$self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
-	$self->{'contighash'}   ->{$current_contig->id} = $current_contig;
+	my $mc_start=$self->_left_overhang+1;
 
+	$self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
+	my $mc=$self->_vmap->get_MapContig($current_contig->id);
+	$mc->leftmost(1);
+	
 	$current_length = $self->_left_overhang() + $current_contig->golden_length ;
     }
-
-  # flush $seen_hash
-  %seen_hash = ();
-
-    #print STDERR "current length before we get into this is $current_length\n";
+    
+    # flush $seen_hash
+    %seen_hash = ();
     
     while( $current_length < $total ) {
-	#print STDERR "In building actually got $current_length towards $total\n";
-	
 	# move onto the next contig.
-
+	
 	if( exists $seen_hash{$current_contig->id} ) {
 	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
 	} else {
 	    $seen_hash{$current_contig->id} = 1;
 	}
-
-
 	
 	if( $current_orientation == 1 ) {
 	    # go right wrt to the contig.
-	    #print STDERR "Going right\n";
 	    
 	    $overlap = $current_contig->get_right_overlap();
 	    
 	    # if there is no right overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
-		#print STDERR "Out of contigs!\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
-	   }
+	    }
 	    
 	    # see whether the distance gives us an end condition, and a right_overhang
-
+	    
 	    if( $current_length + $overlap->distance > $total ) {
 		# right overhang
 		$self->_right_overhang($total - $current_length);
 		last;
 	    }
-
+	    
 	    # add to total, move on the contigs
 	    
 	    $current_contig = $overlap->sister();
-	    #print(STDERR "New sister " . $current_contig->id  . "\n");
-	    $self->{'contighash'}->{$current_contig->id} = $current_contig;
-	    
+	   
 	    if( $overlap->sister_polarity == 1) {
 		$current_orientation = 1;
 	    } else {
 		$current_orientation = -1;
 	    }
 	    
-	    # The +1's here are to handle the fact we want to produce abutting
-	    # coordinate systems from overlapping switch points.
+	    # The +1, ++ and -- 's here are to handle the fact we want to produce 
+            #abuting coordinate systems from overlapping switch points.
+	    
+	    my $mc_start;
 	    if( $overlap->distance == 1 ) {
-		$self->{'start'}->{$current_contig->id} = $current_length +1;
+		$mc_start=$current_length +1;
 	    } else {
-		$self->{'start'}->{$current_contig->id} = $current_length + $overlap->distance;
+		$mc_start=$current_length + $overlap->distance;
 		$current_length += $overlap->distance;
 	    }
 	    
+	    my $mc_startin;
 	    if( $current_orientation == 1 ) {
-		if( $overlap->distance == 1 ) {
-		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start+1; 
-		} else {
-		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
-		}
+		$mc_startin=$current_contig->golden_start;
+		($overlap->distance == 1 ) && $mc_startin++; 
 	    } else {
-		if( $overlap->distance == 1 ) {
-		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end-1; 
-		} else {
-		    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end; 
-		}
+		$mc_startin=$current_contig->golden_end;
+		( $overlap->distance == 1 ) && $mc_startin--;
 	    }
 	    
-	    $self->{'contigori'}->{$current_contig->id} = $current_orientation;
+	    $self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
 	    
 	    # up the length
 	    $current_length += $overlap->sister->golden_length -1;
 	} else {
 	    # go left wrt to the contig
-	    print STDERR "Going left with " . $current_contig->id . "\n";
-	    
+	 	    
 	    $overlap = $current_contig->get_left_overlap();
-	    #print STDERR ("Overlap is $overlap\n");
+
 	    # if there is no left overlap, trim right to this size
 	    # as this means we have run out of contigs
+	    #IS THIS FINE?
+
 	    if( !defined $overlap ) {
 		$self->found_left_end(1);
 		$right = $current_length - $left;
 		last;
 	    }
+	    
+	    # add to total, move on the contigs
+	    $current_contig = $overlap->sister();
+	    
+	    if( $overlap->sister_polarity == 1) {
+		$current_orientation = -1;
+	    } else {
+		$current_orientation = 1;
+	    }
+	    
+	    # The +1's here are to handle the fact we want to produce abutting
+	    # coordinate systems from overlapping switch points.
+	    my $mc_start;
+	    if( $overlap->distance == 1 ) {
+		$mc_start=$current_length +1;
+	    } else {
+		$mc_start=$current_length + $overlap->distance;
+		$current_length += $overlap->distance;
+	    }
 
-	   # add to total, move on the contigs
+	    my $mc_startin;
+	    if( $current_orientation == 1 ) {
+		$mc_startin=$current_contig->golden_start+1;
+	    } else {
+		$mc_startin=$current_contig->golden_end-1;
+	    }
+	    
+	    $self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
+	    
+	    # up the length
+	    $current_length += $overlap->sister->golden_length -1;
+	}
+    }
+    
+    # $right might have been modified during the walk
+    
+    $total = $left + $right;
 
-	   $current_contig = $overlap->sister();
-	    #print(STDERR "New sister " . $current_contig->id  . "\n");
-	   $self->{'contighash'}->{$current_contig->id} = $current_contig;
-
-	   if( $overlap->sister_polarity == 1) {
-	       $current_orientation = -1;
-	   } else {
-	       $current_orientation = 1;
-	   }
-
-	   # The +1's here are to handle the fact we want to produce abutting
-	   # coordinate systems from overlapping switch points.
-
-	   if( $overlap->distance == 1 ) {
-	       $self->{'start'}->{$current_contig->id} = $current_length +1;
-	   } else {
-	       $self->{'start'}->{$current_contig->id} = $current_length + $overlap->distance;
-	       $current_length += $overlap->distance;
-	   }
-
-	   if( $current_orientation == 1 ) {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start +1;
-	   } else {
-	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end -1;
-	   }
-
-	   $self->{'contigori'}->{$current_contig->id} = $current_orientation;
-
-	   # up the length
-	   $current_length += $overlap->sister->golden_length -1;
-	    print (STDERR "Length is " . $current_length . "\n");
-       }
-   }
-
-   # $right might have been modified during the walk
-
-   $total = $left + $right;
-
-   # need to store end point for last contig
-   print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
-
-    $self->{'rightmostcontig_id'} = $current_contig->id();
+    # need to store end point for last contig
+    my $mc=$self->_vmap->get_MapContig($current_contig->id);
+   
+    my $end;
+    
     if( $self->_right_overhang == 0 ) {
 	if( $current_orientation == 1 ) {
-	    $self->{'rightmostend'}    = $current_contig->golden_end - ($current_length - $total);
+	    $end= $current_contig->golden_end - ($current_length - $total);
 	} else {
-	    $self->{'rightmostend'}    = $current_contig->golden_start + ($current_length - $total);
+	    $end= $current_contig->golden_start + ($current_length - $total);
 	}
     } else {
 	if( $current_orientation == 1 ) {
-	    $self->{'rightmostend'}    = $current_contig->golden_end;
+	    $end= $current_contig->golden_end;
 	} else {
-	    $self->{'rightmostend'}    = $current_contig->golden_start;
+	    $end= $current_contig->golden_start;
 	}
     }
+    $mc->rightmost_end($end);
    
-   # put away the focus/size info etc
+    # put away the focus/size info etc
 
-   $self->_focus_contig($focuscontig);
-   $self->_focus_position($focusposition);
-   $self->_focus_orientation($ori);
-   $self->_left_size($left);
-   $self->_right_size($right);
+    $self->_focus_contig($focuscontig);
+    $self->_focus_position($focusposition);
+    $self->_focus_orientation($ori);
+    $self->_left_size($left);
+    $self->_right_size($right);
+    
 
-
-   # ready to rock and roll. Woo-Hoo!
-
+    # ready to rock and roll. Woo-Hoo!
 }
 
 
@@ -1276,14 +1125,14 @@ print STDERR "in build contig map\n";
 
 sub found_left_end {
     my ($self, $arg) = @_;
-
+    
     if (defined($arg) && ($arg == 1 || $arg == 0)) {
-
+	
 	$self->{_found_left_end} = $arg;
     } elsif (defined($arg)) {
 	$self->throw("Arg to found_left_end should be 0,1");
     }
-
+    
     return $self->{_found_left_end};
 }
 
@@ -1302,13 +1151,13 @@ sub found_left_end {
 
 sub found_right_end {
     my ($self,$arg) = @_;
-
+    
     if (defined($arg) && ($arg == 1 || $arg == 0)) {
 	$self->{_found_right_end} = $arg;
     } elsif (defined($arg)) {
 	$self->throw("Arg to found_right_end should be 0,1");
     }
-
+    
     return $self->{_found_right_end};
 }
 
@@ -1326,16 +1175,16 @@ sub found_right_end {
 
 sub is_truncated {
     my ($self) = @_;
-
+    
     my $flag = 0;
-
+    
     if ($self->found_right_end == 1) {
 	$flag = 1;
     } 
     if ($self->found_left_end == 1) {
 	$flag = 1;
     }
-
+    
     return $flag;
 }
 
@@ -1364,15 +1213,14 @@ sub _get_all_SeqFeatures_type {
    # ok - build the sequence feature list...
 
    my $sf;
-
+   
    if( $self->_cache_seqfeatures() ) {
        $sf = $self->_make_cache($type);
    } else {
        $sf = []; 
    }
-
-   foreach my $c ( values %{$self->{'contighash'}} ) {
-       #print STDERR "Looking at ",$c->id,"\n";
+   
+   foreach my $c ($self->_vmap->get_all_RawContigs) {
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -1394,7 +1242,6 @@ sub _get_all_SeqFeatures_type {
    foreach $sf ( @$sf ) {
 
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-       #print STDERR "Got a $sf\n";
 
        if( !defined $sf ) {      
 	   next;
@@ -1402,16 +1249,13 @@ sub _get_all_SeqFeatures_type {
 
 	
        if($sf->start < 0 ){
-            #print STDERR "Discarding (L) vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
-            $count++;
+	   $count++;
         }
         elsif ($sf->end > $self->length){
-            #print STDERR "Discarding (R) vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
-            $count++;
+	    $count++;
         }
         else{
-            #print STDERR "Keeping vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
-            push (@vcsf, $sf);
+	    push (@vcsf, $sf);
         }
    }
    
@@ -1432,102 +1276,97 @@ sub _get_all_SeqFeatures_type {
 =cut
 
 sub _convert_seqfeature_to_vc_coords {
-   my ($self,$sf) = @_;
+    my ($self,$sf) = @_;
+    
+    my $cid = $sf->seqname();
+    my $mc;
+    if( !defined $cid ) {
+	$self->throw("sequence feature [$sf] has no seqname!");
+    }
+    eval {
+	$mc=$self->_vmap->get_MapContig($cid);
+    };
+    if ($@) {   
+	return undef;
+    }
 
-   my $cid = $sf->seqname();
-   if( !defined $cid ) {
-       $self->throw("sequence feature [$sf] has no seqname!");
-   }
+    # if this is something with subfeatures, then this is much more complex
+    my @sub = $sf->sub_SeqFeature();
+    
+    if( $#sub >=  0 ) {
+	# chain to constructor of the object. Not pretty this.
+	
+	my $new = Bio::EnsEMBL::SeqFeature->new();
+	$new->primary_tag($sf->primary_tag);
+	$new->source_tag($sf->source_tag);
+	
+	if( $new->can('attach_seq') ) {
+	    $new->attach_seq($self->primary_seq);
+	}
+	
+	my $seen = 0;
+	foreach my $sub ( @sub ) {
+	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	    if( !defined $sub ) {        
+		next;
+	    }
+	    $seen =1;
+	    $new->add_sub_SeqFeature($sub,'EXPAND');
+	}
+	if( $seen == 1 ) {       
+	    return $new;
+	} else {        
+	    return undef;
+	}
+    }
 
-   if( !exists $self->{'contighash'}->{$cid} ) {   
-       return undef;
-   }
-
-   # if this is something with subfeatures, then this is much more complex
-   my @sub = $sf->sub_SeqFeature();
-
-   if( $#sub >=  0 ) {
-       # chain to constructor of the object. Not pretty this.
-       print STDERR "Going for a sub sequence feature\n";
-
-       my $new = Bio::EnsEMBL::SeqFeature->new();
-       $new->primary_tag($sf->primary_tag);
-       $new->source_tag($sf->source_tag);
- 
-       if( $new->can('attach_seq') ) {
-	   $new->attach_seq($self->primary_seq);
-       }
-
-       my $seen = 0;
-       foreach my $sub ( @sub ) {
-	   $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	   if( !defined $sub ) {        
-	       next;
-	   }
-	   $seen =1;
-	   $new->add_sub_SeqFeature($sub,'EXPAND');
-       }
-       if( $seen == 1 ) {       
-	   return $new;
-       } else {        
-	   return undef;
-       }
-   }
-
-
-
-   # might be clipped left/right
-
-   if ( $self->{'leftmostcontig_id'} eq $cid ){
-       
-       if ( $self->ori_in_vc($cid) == 1) {
-	   
-           # If end < startincontig contig for orientation 1 
-	   print STDERR "Exon " . $sf->start . "\t" . $self->{startincontig}{$cid} . "\n";
- 	   if ($sf->start < $self->{'startincontig'}->{$cid}) {  
-               return undef;              
-	   }
-           
-       } else {
+    # might be clipped left/right
+    if ($mc->leftmost){
+	
+	if ( $mc->orientation == 1) {
+	    
+	    # If end < startincontig contig for orientation 1 
+	    if ($sf->start < $mc->start_in) {  
+		return undef;              
+	    }
+	    
+	} else {
             # If start > startincontig for orientation <> 1
-	   print STDERR b"Exon " . $sf->end . "\t" . $self->{startincontig}{$cid} . "\n";
-	   if ($sf->end > $self->{'startincontig'}->{$cid}) {  
-               return undef;              
-	   }
+	    if ($sf->end > $mc->start_in) {  
+		return undef;              
+	    }
         }
-   }  elsif ( $self->{'rightmostcontig_id'} eq $cid ){
-       
-       if ( $self->ori_in_vc($cid) == 1) {
-	   
-	   print STDERR "Exon " . $sf->start . "\t" . $self->{rightmostend} . "\n";
- 	   if ($sf->end >  $self->{rightmostend}) {  
-               return undef;              
-	   }
-           
-       } else {
+    }  elsif ( $mc->rightmost_end){
+	
+	if ( $mc->orientation == 1) {
+	    
+	    if ($sf->end >  $mc->rightmost_end) {  
+		return undef;              
+	    }
+	    
+	} else {
             # If start > startincontig for orientation <> 1
-	   print STDERR "Exon " . $sf->start. "\t" . $self->{rightmostend} . "\n";
-	   if ($sf->start <  $self->{rightmostend}) {  
-               return undef;              
-	   }
+	    if ($sf->start <  $mc->rightmost_end) {  
+		return undef;              
+	    }
         }
-   }
+    }
 
 
-   my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
-   
-   $sf->start ($rstart);
-   $sf->end   ($rend);
-   $sf->strand($rstrand);
+    my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
+    
+    $sf->start ($rstart);
+    $sf->end   ($rend);
+    $sf->strand($rstrand);
+    
+    if( $sf->can('attach_seq') ) {
+	$sf->attach_seq($self->primary_seq);
+    }
+    
+    $sf->seqname($self->id);
+    
 
-   if( $sf->can('attach_seq') ) {
-       $sf->attach_seq($self->primary_seq);
-   }
-
-   $sf->seqname($self->id);
-   
-
-   return $sf;
+    return $sf;
 }
 
 =head2 _convert_start_end_strand_vc
@@ -1544,35 +1383,35 @@ sub _convert_seqfeature_to_vc_coords {
 =cut
 
 sub _convert_start_end_strand_vc {
-   my ($self,$contig,$start,$end,$strand) = @_;
-   my ($rstart,$rend,$rstrand);
+    my ($self,$contig,$start,$end,$strand) = @_;
+    my ($rstart,$rend,$rstrand);
 
-   if( !exists $self->{'contighash'}->{$contig} ) {
-       $self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig");
-   }
-   if( $self->{'contigori'}->{$contig} == 1 ) {
-       # ok - forward with respect to vc. Only need to add offset
-       my $offset = $self->{'start'}->{$contig} - $self->{'startincontig'}->{$contig};
-       $rstart = $start + $offset;
-       $rend   = $end + $offset;
-       $rstrand = $strand;
-   } else {
-       my $offset = $self->{'start'}->{$contig} + $self->{'startincontig'}->{$contig};
-       # flip strand
-       $rstrand = $strand * -1;
+    my $mc;
+    eval {
+	$mc=$self->_vmap->get_MapContig($contig);
+    };
+    if($@) {
+	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig");
+    }
+    if( $mc->orientation == 1 ) {
        
-       # yup. A number of different off-by-one errors possible here
+        # ok - forward with respect to vc. Only need to add offset
+	my $offset = $mc->start - $mc->start_in;
+	$rstart = $start + $offset;
+	$rend   = $end + $offset;
+	$rstrand = $strand;
+    } else {
+	my $offset = $mc->start+ $mc->start_in;
+	# flip strand
+	$rstrand = $strand * -1;
+	
+	# yup. A number of different off-by-one errors possible here
 
-
-       $rstart  = $offset - $end;
-       $rend    = $offset - $start;
-
-   }
-
-   return ($rstart,$rend,$rstrand);
+	$rstart  = $offset - $end;
+	$rend    = $offset - $start;
+    }
+    return ($rstart,$rend,$rstrand);
 }
-
-
 
 =head2 _dump_map
 
@@ -1590,13 +1429,10 @@ sub _dump_map {
    my ($self,$fh) = @_;
 
    ! defined $fh && do { $fh = \*STDERR};
- 
-   my @ids = keys %{$self->{'contighash'}};
-   @ids = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } @ids;
-
    print $fh "Contig Map Dump: \n";
-   foreach my $id ( @ids ) {
-       print $fh "Contig $id starts:",$self->{'start'}->{$id}," start in contig ",$self->{'startincontig'}->{$id}," orientation ",$self->{'contigori'}->{$id},"\n";
+   
+   foreach my $mc ($self->_vmap->get_all_MapContigs) {
+       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," start in contig ",$mc->start_in," orientation ",$mc->orientation,"\n";
    }
 }
 
@@ -1614,27 +1450,18 @@ sub _dump_map {
 =cut
 
 sub get_all_RawContigs {
-
     my ($self) = @_;
+
     my @contigs = ();
 
     if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
         $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
     }
-
-    my @ids = keys %{$self->{'contighash'}};
-    @ids = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } @ids;
-
-    foreach my $cid ( @ids ) {
-        push(@contigs, $self->{'contighash'}->{$cid});
-    }
-
-    return (@contigs);
+    
+    return $self->_vmap->get_all_RawContigs;
 }
 
-
-
-=head2 get_all_RawContigs
+=head2 get_rawcontig_by_position
 
  Title   : get_rawcontig_by_position
  Usage   : $obj->get_rawcontig_by_position($position)
@@ -1649,25 +1476,23 @@ sub get_all_RawContigs {
 sub get_rawcontig_by_position {
 
     my ($self, $pos) = @_;
-
+    
     if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
         $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
     }
-
+    
     if ($pos < 1 || $pos > $self->length){
         $self->throw("get_rawcontig_by_position error: Position must be > 0 and < vc->length");
     }
-    
-    my @ids =  $self->get_all_RawContigs();
 
-    foreach my $cid ( @ids ) {
-        if ($pos > $self->end_in_vc($cid)) {
+    foreach my $mc ($self->_vmap->get_all_MapContigs) {
+        if ($pos > $mc->end) {
             next;
         } else {
-            return $self->{'contighash'}->{$cid};
+            return $mc->contig;
         }
     }
-    
+
     return (undef);
 }
 
@@ -1686,12 +1511,11 @@ sub get_rawcontig_by_position {
 =cut
 
 sub _focus_contig {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_focus_contig'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_focus_contig'} = $value;
     }
     return $obj->{'_focus_contig'};
-
 }
 
 =head2 _focus_position
@@ -1707,12 +1531,11 @@ sub _focus_contig {
 =cut
 
 sub _focus_position {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_focus_position'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_focus_position'} = $value;
     }
     return $obj->{'_focus_position'};
-
 }
 
 =head2 _focus_orientation
@@ -1728,12 +1551,11 @@ sub _focus_position {
 =cut
 
 sub _focus_orientation {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_focus_orientation'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_focus_orientation'} = $value;
     }
     return $obj->{'_focus_orientation'};
-
 }
 
 =head2 _left_size
@@ -1749,13 +1571,13 @@ sub _focus_orientation {
 =cut
 
 sub _left_size {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_left_size'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_left_size'} = $value;
     }
     return $obj->{'_left_size'};
-
 }
+
 =head2 _right_size
 
  Title   : _right_size
@@ -1769,12 +1591,11 @@ sub _left_size {
 =cut
 
 sub _right_size {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_right_size'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_right_size'} = $value;
     }
     return $obj->{'_right_size'};
-
 }
 
 =head2 _cache_seqfeatures
@@ -1789,13 +1610,12 @@ sub _right_size {
 =cut
 
 sub _cache_seqfeatures {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_cache_seqfeatures'} = $value;
+    my $obj = shift;
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'_cache_seqfeatures'} = $value;
     }
     return $obj->{'_cache_seqfeatures'};
-
 }
 
 =head2 _has_cached_type
@@ -1811,13 +1631,13 @@ sub _cache_seqfeatures {
 =cut
 
 sub _has_cached_type {
-   my ($self,$type) = @_;
-
-   if ( exists $self->{'_sf_cache'}->{$type} ) {
-       return 1;
-   } else {
-       return 0;
-   }
+    my ($self,$type) = @_;
+    
+    if ( exists $self->{'_sf_cache'}->{$type} ) {
+	return 1;
+    } else {
+	return 0;
+    }
 }
 
 =head2 _make_cache
@@ -1833,15 +1653,15 @@ sub _has_cached_type {
 =cut
 
 sub _make_cache {
-   my ($self,$type) = @_;
-
-   if( $self->_has_cached_type($type) == 1) {
-       $self->throw("Already got a cache for $type! Error in logic here");
-   }
-
-   $self->{'_sf_cache'}->{$type} = [];
-
-   return $self->{'_sf_cache'}->{$type};
+    my ($self,$type) = @_;
+    
+    if( $self->_has_cached_type($type) == 1) {
+	$self->throw("Already got a cache for $type! Error in logic here");
+    }
+    
+    $self->{'_sf_cache'}->{$type} = [];
+    
+    return $self->{'_sf_cache'}->{$type};
 }
 
 =head2 _get_cache
@@ -1857,10 +1677,10 @@ sub _make_cache {
 =cut
 
 sub _get_cache {
-   my ($self,$type) = @_;
-
-   return $self->{'_sf_cache'}->{$type};
-   
+    my ($self,$type) = @_;
+    
+    return $self->{'_sf_cache'}->{$type};
+    
 }
 
 =head2 _clear_vc_cache
@@ -1895,13 +1715,12 @@ sub _clear_vc_cache {
 =cut
 
 sub _unique_number {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_unique_number'} = $value;
+    my $obj = shift;
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'_unique_number'} = $value;
     }
-    return $obj->{'_unique_number'};
-
+    return $obj->{'_unique_number'};   
 }
 
 =head2 _seq_cache
@@ -1916,13 +1735,12 @@ sub _unique_number {
 =cut
 
 sub _seq_cache {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_seq_cache'} = $value;
+    my $obj = shift;
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'_seq_cache'} = $value;
     }
     return $obj->{'_seq_cache'};
-
 }
 
 =head2 _clone_map
@@ -1938,12 +1756,11 @@ sub _seq_cache {
 =cut
 
 sub _clone_map {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_clone_map'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_clone_map'} = $value;
     }
     return $obj->{'_clone_map'};
-
 }
 
 
@@ -1961,12 +1778,11 @@ sub _clone_map {
 
 
 sub _at_left_end {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_at_left_end'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_at_left_end'} = $value;
     }
     return $obj->{'_at_left_end'};
-
 }
 
 =head2 _at_right_end
@@ -1983,12 +1799,11 @@ sub _at_left_end {
 
 
 sub _at_right_end {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_at_right_end'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_at_right_end'} = $value;
     }
     return $obj->{'_at_right_end'};
-
 }
 
 =head2 _left_overhang
@@ -2004,14 +1819,12 @@ sub _at_right_end {
 =cut
 
 sub _left_overhang{
-   my ($obj,$value) = @_;
-   
-   if( defined $value) {
-     print(STDERR "Setting overhang to $value\n");
-      $obj->{'_left_overhang'} = $value;
+    my ($obj,$value) = @_;
+    
+    if( defined $value) {
+	$obj->{'_left_overhang'} = $value;
     }
-    return $obj->{'_left_overhang'};
-
+    return $obj->{'_left_overhang'};   
 }
 
 =head2 _right_overhang
@@ -2027,15 +1840,33 @@ sub _left_overhang{
 =cut
 
 sub _right_overhang{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_right_overhang'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_right_overhang'} = $value;
     }
-    return $obj->{'_right_overhang'};
-
+    return $obj->{'_right_overhang'};   
 }
 
+=head2 _vmap
 
+ Title   : _vmap
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _vmap{
+    my ($obj,$value) = @_;
+    
+    if( defined $value) {
+	$obj->{'_vmap'} = $value;
+    }
+    return $obj->{'_vmap'};    
+}
 1;
 
 

@@ -129,7 +129,7 @@ foreach my $contig ( $clone->get_all_Contigs ) {
 	print "      <type>gene</type>\n";
 	print "      <name>".$gene->id."</name>\n";
 	print "      <creation_date>".localtime($gene->created)."</creation_date>\n";
-	print "      <modification_date>".localtime($gene->modified)."<modification_date>\n";
+	print "      <modification_date>".localtime($gene->modified)."</modification_date>\n";
 	print "      <version>".$gene->version."</version>\n";
 	
 #Print each transcript as a <feature set>
