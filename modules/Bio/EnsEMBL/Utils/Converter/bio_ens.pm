@@ -78,7 +78,7 @@ sub _initialize {
     $self->SUPER::_initialize(@args);
     
     my ($analysis, $contig) =
-        $self->_rearrange([qw(analysis contig)], @args);
+        $self->_rearrange([qw(ANALYSIS CONTIG)], @args);
 
     if(defined($analysis) && $analysis->isa('Bio::Pipeline::Analysis')){
         my $converter_for_analysis = new Bio::EnsEMBL::Utils::Converter(
@@ -89,6 +89,7 @@ sub _initialize {
     }
 
     $self->analysis($analysis);
+    ($contig) = ref($contig) eq 'ARRAY' ? @{$contig} : $contig;
     $self->contig($contig);
 }
 
