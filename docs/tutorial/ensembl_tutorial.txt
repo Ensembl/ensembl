@@ -2,7 +2,7 @@ Ensembl Perl API Tutorial
 
 By Michele Clamp.  Updated, revised, and rewritten by Michele Clamp, Ewan Birney, Graham McVicker and Dan Andrews.
 
-Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct 02, DA Feb 03, GM Feb 04
+Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct 02, DA Feb 03, GM Feb 04, GM Aug 04
 
 
 Introduction
@@ -75,7 +75,7 @@ user                 anonymous
 
 DBI and DBD::mysql
 
-You will need to install the Perl DBI and DBI::mysql modules from CPAN if they are not already present on your system.  See the CPAN site (www.cpan.org) for installation instructions and further information on DBI and DBD::mysql.
+You will need to install the Perl DBI and DBD::mysql modules from CPAN if they are not already present on your system.  See the CPAN site (www.cpan.org) for installation instructions and further information on DBI and DBD::mysql.
 
 
 Setting up the Environment
@@ -218,13 +218,38 @@ $slice = $slice_adaptor->fetch_by_region('supercontig',
 $slice = $slice_adaptor->fetch_by_region('chromosome', '20',
                                          1e6, 2e6);
 
-
 Another useful way to obtain a Slice is with respect to a gene:
 
 my $slice =
  $slice_adaptor->fetch_by_gene_stable_id('ENSG00000099889', 5000);
 
 This will return a Slice that contains the sequence of the gene specified by its stable Ensembl id.  It also returns 5000bp of flanking sequence at both the 5' and 3' ends, which is useful if you are interested in the environs that a gene inhabits.  You needn't have the flanking sequence it you don't want it -  in this case set the number of flanking bases to 0 or omit the second argument entirely.  Note that for historical reasons the fetch_by_gene_stable_id method always returns a slice on the forward strand even if the gene is on the reverse strand.
+
+To retrieve a set of slices from a particular coordinate system the fetch_all method can be used:
+
+# retrieve slices of every chromosome in the database
+@slices = @{$slice_adaptor->fetch_all('chromosome')};
+
+# retrieve slices of every BAC clone in the database
+@slices = @{$slice_adaptor->fetch_all('clone')};
+
+
+For certain types of analysis it is necessary to break up regions into smaller manageable pieces.  The method split_Slices can be imported from the Bio::EnsEMBL::Utils::Slice modules to break up larger slices into smaller component slices.
+
+use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
+
+#...
+
+my $slices = $slice_adaptor->fetch_all('chromosome');
+
+# basepairs overlap between returned slices
+my $overlap = 0;
+
+# maximum size of returned slices
+my $max_size = 100000;
+
+# break chromosomal slices into smaller 100k component slices
+$slices = split_Slices($slices, $max_length, $overlap);
 
 To obtain sequence from a slice the seq or subseq methods can be used:
 
@@ -294,6 +319,8 @@ my $transcript = $tr_adaptor->fetch_by_dbID(100);
 my $dna_align_feat = $daf_adaptor->fetch_by_dbID(100);
 
 
+All features also have the methods transform, transfer, and project which are described in detail in the Transform, Transfer and Project sections of this tutorial.
+
 Genes, Transcripts, Exons
 
 Genes, Exons and Transcripts are also features and can be treated in the same way as any other feature within Ensembl.  A Transcript in Ensembl is a grouping of Exons.  A Gene in Ensembl is a grouping of Transcripts which share any overlapping (or partially overlapping) Exons.  Transcripts also have an associated Translation object which defines the UTR and and CDS composition of the Transcript.  Introns are not defined explicitly in the database but can be obtained by the transcript method get_all_Introns.
@@ -335,6 +362,29 @@ foreach my $gene (@{$slice->get_all_Genes()}) {
     }
   }
 }
+
+
+In addition to the methods which are present on every feature, the transcript class has many other methods which are commonly used.  Several methods can be used to obtain transcript related sequences.  For historical reasons some of these methods return strings while others return Bio::Seq objects.  The following example demonstrates the use of some of these methods:
+
+# spliced_seq returns the concatenation of the exon sequences.
+# This is the cDNA of the transcript
+print "cDNA: ", $trans->spliced_seq(), "\n";
+
+# translateable_seq returns only the CDS of the transcript
+print "CDS: ", $trans->translateable_seq(), "\n";
+
+# UTR sequences are obtained via the five_prime_utr and
+# three_prime_utr methods
+my $fiv_utr = $trans->five_prime_utr();
+my $thr_utr = $trans->three_prime_utr();
+
+print ($fiv_utr) ? $fiv_utr->seq() : 'No 5' UTR', "\n";
+print ($thr_utr) ? $thr_utr->seq() : 'No 3' UTR', "\n";
+
+# The peptide sequence is obtained from the translate method 
+# undef is returned if this transcript is non-coding
+my $pep = $trans->translate();
+print ($pep) ? $pep->seq() : 'No Translation', "\n";
 
 
 Translations and ProteinFeatures
@@ -387,9 +437,124 @@ foreach my $ptrans (@$ptranscripts) {
 }
 
 
+Alignment Features
+
+Two types of alignments are stored in the core Ensembl database: alignments of DNA sequence to the genome and aligments of peptide sequence to the genome.  These can be retrieved as DnaDnaAlignFeatures and DnaPepAlignFeatures respectively.  A single gapped alignment is represented by a single feature with a CIGAR line.  A CIGAR line is a concise representation of a gapped alignment as single string containing letters M (match) D (deletion), and I (insertion) prefixed by integer lengths (the number may be omitted if it is 1).   A gapped alignment feature can be broken into its component ungapped alignments by the method ungapped_features which returns a list of FeaturePair objects.  The following example shows the retrieval of some alignment features.
+
+# retrieve dna-dna alignment features from the slice region
+my $feats = $slice->get_all_DnaAlignFeatures('Vertrna');
+print_align_features($feats);
+
+# retrieve protein-dna alignment features from the slice region
+$feats = $slice->get_all_ProteinAlignFeatures('Swall');
+print_align_features($feats);
+
+sub print_align_features {
+  my $feats = shift;
+
+  foreach my $feat (@$feats) {
+
+    print_feature_pairs([$feat]);
+
+    print "Percent identity: ", $feat->percent_id(), "\n";
+    print "
+
+    print "CIGAR: ", $feat->cigar_string(), "\n";
+
+    my @ungapped = $feat->ungapped_features();
+
+    print "ungapped:\n";
+    print_feature_pairs(\@ungapped);
+    print "\n";
+  }
+}
+
+sub print_feature_pairs {
+  my $feats = shift;
+
+  foreach my $feat (@$feats) {
+        # print out the 'hit' name and coordinates
+    print $feat->hseqname()," ",$feat->hstart, '-',$feat->hend(),
+          '(', $feat->hstrand(), ')', ' => ',
+        # print out the genomic coordinates
+          $feat->start,  '-', $feat->end(),  
+          '(', $feat->strand(), ")\n";
+  }
+}
+
+
+Repeats
+
+Repetitive regions found by RepeatMasker and TRF (Tandem Repeat Finder) are represented in the Ensembl database as RepeatFeatures.  Short non-repetitive regions between repeats are found by the program Dust and are also stored as RepeatFeatures.  RepeatFeatures can be retrieved and used in the same way as other Ensembl features.
+
+my $repeats = $slice->get_all_RepeatFeatures();
+foreach my $repeat (@$repeats) {
+  print $repeat->display_id(), " ", 
+        $repeat->start(), "-", $repeat->end(), "\n";
+}
+
+RepeatFeatures are used to perform repeat masking of the genomic sequence.  Hard or softmasked genomic sequence can be retrieved from Slice objects using the get_repeatmasked_seq method.  Hardmasking replaces sequence in repeat regions with Ns. Softmasking replaces sequence in repeat regions with lowercase sequence. 
+
+my $unmasked_seq = $slice->seq();
+
+my $hardmasked_seq = $slice->get_repeatmasked_seq();
+
+my $softmasked_seq = $slice->get_repeatmasked_seq(undef, 1);
+
+# softmask sequence using TRF results only
+my $tandem_masked_seq = $slice->get_repeatmasked_seq(['TRF'], 1);
+
+
+Markers
+
+Markers are imported into the Ensembl database from UniSTS and several other sources.  A marker in Ensembl consists of a pair of primer sequences, an expected product size and a set of associated identifiers known as synonyms.  Markers are placed on the genome electronically using an analysis program such as ePCR and their genomic positions are retrievable as MarkerFeatures.  Map  locations (genetic, radiation hybrid and in situ hybridization) for markers obtained from actual experimental evidence are also accessible.
+
+Markers can be fetched via their name from the MarkerAdaptor.
+
+my $marker_adaptor = $db->get_MarkerAdaptor();
+
+# obtain marker by one of its names
+my ($marker) = @{$marker_adaptor->fetch_all_by_synonym('D9S1038E')};
+
+# print the various names associated with the same marker
+foreach my $synonym ($marker->get_all_MarkerSynonyms()}) {
+  print $synonym->source(), ':' if($synonym->source());
+  print $synonym->name(), ' ';
+}
+
+# print the primer info
+print "\nleft primer: ", $marker->left_primer(), "\n";
+print "right primer: ", $marker->right_primer(), "\n";
+print "product size: ", $marker->min_primer_dist(), '-', 
+      $marker->max_primer_dist(), "\n";
+
+# print out genetic/RH/FISH map information
+print "Map locations:\n";
+foreach my $map_loc (@{$marker->get_all_MapLocations()}) {
+  print "  ", $map_loc->map_name(), ' ',  
+        $map_loc->chromosome_name(), ' ', 
+        $map_loc->position(), "\n";
+}
+
+MarkerFeatures, which represent genomic positions of markers, can be retrieved and manipulated in the same way as other Ensembl features.
+
+# obtain the positions for an already retrieved marker
+foreach my $marker_feat (@{$marker->get_all_MarkerFeatures()}) {
+  print $marker_feat->seq_region_name(), 
+        $marker_feat->start(), '-', $marker_feat->end(), "\n";
+}
+
+# retrieve all marker features in a given region
+my $marker_feats = $slice->get_all_MarkerFeatures();
+foreach my $marker_feat (@$marker_feats) {
+  print $marker_feat->display_id(), " ", 
+        $marker_feat->seq_region_name(), 
+        $marker_feat->start(), '-', $marker_feat->end(), "\n";
+}
+
 MiscFeatures
 
-MiscFeatures are features with arbitrary attributes which are placed into arbitrary groupings.  MiscFeatures can be retrieved as any other feature and are classified into distinct sets by a set code.  Generally it only makes sense to retrieve all features which have a particular set code since very diverse types of MiscFeatures are stored in the database.
+MiscFeatures are features with arbitrary attributes which are placed into arbitrary groupings.  MiscFeatures can be retrieved as any other feature and are classified into distinct sets by a set code.  Generally it only makes sense to retrieve all features which have a particular set code because very diverse types of MiscFeatures are stored in the database.
 
 MiscFeature attributes are represented by Attribute objects and can be retrieved via a get_all_Attributes method.
 
@@ -401,8 +566,6 @@ foreach my $enc_region (@$enc_regions) {
     print $attr->name(), ':', $attr->value(), "\n";
   }
 }
-
-
 
 This example retrieves all misc features representing a BAC clone via its name and prints out their location and other information:
 
@@ -458,13 +621,13 @@ Coordinates
 
 We have already discussed the fact that Slices and features have coordinates, but we have not defined exactly what these coordinates mean.
 
-Ensembl, and many other bioinformatics applications, use inclusive coordinates which start at 1.  The first nucleotide of a DNA sequence is 1 and the first amino acid of a peptide sequence is also 1.  The length of a sequence is defined as end -  start + 1.
+Ensembl, and many other bioinformatics applications, use inclusive coordinates which start at 1.  The first nucleotide of a DNA sequence is 1 and the first amino acid of a peptide sequence is also 1.  The length of a sequence is defined as end - start + 1.
 
 In some rare cases inserts are specified with a start which is one greater than the end.  For example a feature with a start of 10 and an end of 9 would be a zero length feature between basepairs 9 and 10. 
 
-Slice coordinates are relative to the start of the underlying DNA sequence region. The strand of the Slice represents orientation relative to the default orientation of the sequence region.  By convention the start of the Slice is always less than or equal to the end - 1, and does not vary with its strandedness.  Most Slices you will encounter will have a strand of 1, and this is what we will consider in our examples.  It is legal to create a Slice which extends past the boundaries of a sequence region. Sequence retrieved from regions where the sequence is not defined will consist of Ns.
+Slice coordinates are relative to the start of the underlying DNA sequence region. The strand of the Slice represents its orientation relative to the default orientation of the sequence region.  By convention the start of the Slice is always less than or equal to the end - 1, and does not vary with its strandedness.  Most Slices you will encounter will have a strand of 1, and this is what we will consider in our examples.  It is legal to create a Slice which extends past the boundaries of a sequence region. Sequence retrieved from regions where the sequence is not defined will consist of Ns.
 
-All features retrieved from the database have an associated Slice (accessible via the slice method).  A feature's coordinates are always relative to this associated Slice.  I.e. the start and end define the feature's position relative to the start of the Slice (or the end of the Slice if it is a negative strand Slice), and the strand of the feature is relative to the strand of the Slice. By convention the start of a feature is always less than or equal to the end the feature regardless of its strand (except in the case of an insert).  It is legal to have features with coordinates which are less than one or greater than the length of the slice.  Such cases are common when features that partially overlap a slice are retrieved from the database.
+All features retrieved from the database have an associated Slice (accessible via the slice method).  A feature's coordinates are always relative to this associated Slice.  I.e. the start and end attributes define a feature's position relative to the start of the Slice the feature is on (or the end of the Slice if it is a negative strand Slice). The strand attribute of a feature is relative to the strand of the Slice. By convention the start of a feature is always less than or equal to the end of the feature regardless of its strand (except in the case of an insert).  It is legal to have features with coordinates which are less than one or greater than the length of the slice.  Such cases are common when features that partially overlap a slice are retrieved from the database.
 
 Consider, for example, the following figure of two features associated with a Slice:
 
@@ -479,7 +642,7 @@ Consider, for example, the following figure of two features associated with a Sl
  1  2  3  4  5  6  7  8  9  10 11 12 13 
 
 
-The Slice itself will has a start of 2, an end of 13, and a length of 12.  Note that the underlying sequence region only has a length of 11.  Retrieving the sequence of such a slice would give the following string: CTAAATCTTGNN. Note that undefined region of sequence is represented by Ns.  Feature A has a start of 0, an end of 2, and a strand of 1.  Feature B has a start of 3, an end of 6, and a strand of -1.    
+The Slice itself will has a start of 2, an end of 13, and a length of 12 even though the underlying sequence region only has a length of 11.  Retrieving the sequence of such a slice would give the following string: CTAAATCTTGNN. Note that the undefined region of sequence is represented by Ns.  Feature A has a start of 0, an end of 2, and a strand of 1.  Feature B has a start of 3, an end of 6, and a strand of -1.    
 
 
 Coordinate Systems
@@ -501,8 +664,8 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', 'X',
 
 Sometimes it is useful to obtain full Slices of every sequence in a given coordinate system; this may be done using the SliceAdaptor method fetch_all:
 
-@chromosomes = @{$slice_adaptor->fetch_all('chromosome')};
-@clones = @{$slice_adaptor->fetch_all('clone')};
+my @chromosomes = @{$slice_adaptor->fetch_all('chromosome')};
+my @clones = @{$slice_adaptor->fetch_all('clone')};
 
 
 Now suppose that you wish to write code which is independent of the species used.  Not all species have the same coordinate systems; the available coordinate systems depends on the style of assembly used for that species (WGS, clone-based, etc.).  You can obtain the list of available coordinate systems for a species using the CoordSystemAdaptor and there is also a special pseudo-coordinate system named toplevel.  The toplevel coordinate system is not a real coordinate system, but is used to refer to the highest level coordinate system in a given region.  The toplevel coordinate system is particulary useful in genomes that are incompletely assembled.  For example, the latest zebrafish genome consists of a set of assembled chromosomes, and a set of supercontigs that are not part of any chromosome.  In this example, the toplevel coordinate system sometimes refers to the chromosome coordinate system and sometimes to the supercontig coordinate system depending on the region it is used in.
@@ -601,3 +764,49 @@ foreach my $segment (@$projection) {
   my $to_strand     = $to_slice->strand();
   print "  $to_seq_region $to_start-$to_end ($to_strand)\n";
 }
+
+
+Feature Convenience Methods
+
+We have described how a feature's position on the genome is defined by an associated Slice and a start, end, and strand on that slice.  Often it is more convenient to retrieve a feature's absolute position on the underlying sequence region rather than its relative position on a Slice.  For convenience a number of methods are provided that can be used to easily obtain a feature's absolute coordinates.
+
+# shortcuts to doing $feat->slice()->coord_system()->name() 
+# and $feat->slice()->seq_region_name();
+print $feat->coord_system_name(),' ',$feat->seq_region_name(),' ';
+
+# get the feature's position on the sequence region
+print $feature->seq_region_start(),'-',$feature->seq_region_end(), 
+      '(', $feature->seq_region_strand(), ")\n";
+
+Another useful method is display_id. This will return a string that can be used as the name or identifier for a particular feature.  For a gene or transcript this method would return the stable_id, for an alignment feature this would return the hit sequence name (hseqname), etc.
+
+# display_id returns a suitable display value for any feature type
+print $feat->display_id(), "\n";
+
+The feature_Slice method will return a Slice which is the exact overlap of the feature the method was called on.  This slice can then be used to obtain the underlying sequence of the feature or to retrieve other features that overlap the same region, etc.
+
+$feat_slice = $feat->feature_Slice();
+
+# print the sequence of the feature region
+print $feat_slice->seq(), "\n";
+
+# print the sequence of the feature region + 5000bp flanking 
+# sequence
+print $feat_slice->expand(5000, 5000)->seq(), "\n";
+
+# get all genes which overlap the feature
+$genes = $feat_slice->get_all_Genes();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
