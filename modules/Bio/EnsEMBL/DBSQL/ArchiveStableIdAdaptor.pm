@@ -64,6 +64,11 @@ use vars qw(@ISA);
 
 =cut
 
+# sub prepare {
+#  my $self = shift;
+#  warn @_;
+#  $self->SUPER::prepare( @_ );
+# }
 
 sub fetch_by_stable_id {
   my $self = shift;
@@ -75,7 +80,7 @@ sub fetch_by_stable_id {
      -stable_id => $stable_id
     );
 
-  _resolve_type( $arch_id );
+  @_ ? $arch_id->type( shift ) : _resolve_type( $arch_id );
 
   if( ! $self->_lookup_version( $arch_id ) ) {
     return undef;
@@ -112,7 +117,7 @@ sub fetch_by_stable_id_version {
      -stable_id => $stable_id
     );
   
-  _resolve_type( $arch_id );
+  @_ ? $arch_id->type( shift ) : _resolve_type( $arch_id );
 
   return $arch_id;
 }
@@ -138,7 +143,7 @@ sub fetch_by_stable_id_dbname {
   my $self = shift;
   my $stable_id = shift;
   my $db_name = shift;
-
+  
   my $arch_id = Bio::EnsEMBL::ArchiveStableId->new
     ( 
      -adaptor => $self,
@@ -146,7 +151,7 @@ sub fetch_by_stable_id_dbname {
      -stable_id => $stable_id
     );
   
-  _resolve_type( $arch_id );
+  @_ ? $arch_id->type( shift ) : _resolve_type( $arch_id );
 
   if( ! $self->_lookup_version( $arch_id ) ) {
     return undef;
@@ -539,28 +544,29 @@ sub _lookup_version {
   }
 
   my $sql;
+  my $EXTRA_SQL = defined($arch_id->{'type'}) ?
+    " and sie.type = '@{[lc($arch_id->{'type'})]}'" : '';
 
   if( ! defined $arch_id->{'db_name'} ) {
     # latest version of this stable id
 
-    $sql = "
+    $sql = qq(
       SELECT new_db_name, new_version
 	FROM stable_id_event sie, mapping_session m
        WHERE sie.mapping_session_id = m.mapping_session_id
-	 AND new_stable_id = \"". 
-	   $arch_id->stable_id()."\"
+	 AND new_stable_id = "@{[$arch_id->stable_id]}"
+             $EXTRA_SQL
     ORDER BY m.created DESC
-      LIMIT 1";
+      LIMIT 1);
   } else {
-
-    $sql = "
+    $sql = qq(
       SELECT old_db_name, old_version
 	FROM stable_id_event sie, mapping_session m
        WHERE sie.mapping_session_id = m.mapping_session_id
-       AND old_stable_id = \"".
-	 $arch_id->stable_id()."\"
-       AND m.old_db_name = \"".
-	 $arch_id->db_name()."\"";
+         AND old_stable_id = "@{[$arch_id->stable_id]}"
+         AND m.old_db_name = "@{[$arch_id->db_name]}"
+             $EXTRA_SQL
+     );
   }
 
   my $id_type;
