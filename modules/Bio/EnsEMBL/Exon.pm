@@ -1356,7 +1356,10 @@ sub seq {
 #    print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
 #    print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
 
-    my $seq = $self->contig()->subseq($self->start, $self->end, $self->strand);
+    my $seq = $self->contig()->subseq($self->start, $self->end);
+    if ($self->strand == -1) {
+      ($seq = reverse $seq) =~ tr/actgACTG/tgacTGAC/;
+    }
     return $seq;
   }
 }
