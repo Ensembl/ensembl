@@ -284,7 +284,7 @@ sub get_valid_xrefs_for_dependencies{
   }
   $sth->finish;
 
-  $sql  = "select d.dependent_xref_id, x2.accession ";
+  $sql  = "select d.master_xref_id, x2.accession ";
   $sql .= "  from dependent_xref d, xref x1, xref x2 ";
   $sql .= "    where x1.xref_id = d.master_xref_id and";
   $sql .= "          x1.source_id=? and ";
@@ -311,7 +311,7 @@ sub get_valid_codes{
   my %valid_codes;
   my @sources;
 
-  my $sql = "select source_id from source where name like '%".$source_name."%'";
+  my $sql = "select source_id from source where upper(name) like '%".uc($source_name)."%'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   while(my @row = $sth->fetchrow_array()){
