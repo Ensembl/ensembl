@@ -197,27 +197,27 @@ while ( @gene_id > 0 ) {
 		foreach my $trans ( $gene->each_Transcript ) {
 		    my $trans_file = $webdir.$trans->id.".trans";
 		    open (TRANS,">$trans_file");
+		    my $seqiot = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS );
 		    my $seq = $trans->dna_seq();
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
 		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
-		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
-		    $seqio->write_seq($seq);
-		    $seqio=undef;
+		    $seqiot->write_seq($seq);
+		    $seqiot=undef;
 		    close (TRANS);
 		    
 		    my $pep_file =  $webdir.$trans->id.".pep";
 		    open (PEP,">$pep_file");
+		    my $seqiop = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
 			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
 		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
-		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
-		    $seqio->write_seq($tseq);
-		    $seqio=undef;
+		    $seqiop->write_seq($tseq);
+		    $seqiop=undef;
 		    close(PEP);
 		}
 	    }
@@ -234,7 +234,8 @@ while ( @gene_id > 0 ) {
 	}
 	print STDERR "unable to process @chunk_list, due to \n$@\n";
     }
-    
+    $db->DESTROY;
+    $db=undef;
 }
 
 

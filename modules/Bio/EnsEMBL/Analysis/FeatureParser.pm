@@ -319,7 +319,7 @@ sub read_MarkerFeatures {
     return;
   }
  
-  my $analysis = new Bio::EnsEMBL::Analysis
+  my $analysis = new Bio::EnsEMBL::Analysis:Analaysis
     ( -program => "e-PCR",
       -gff_source => "blastn",
       -gff_feature => "similarity",

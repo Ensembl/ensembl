@@ -1414,6 +1414,7 @@ sub geneid_to_cloneid{
        push(@out,$rowhash->{'clone'});
    }
 
+   return @out;
 }
 
 =head2 cloneid_to_geneid

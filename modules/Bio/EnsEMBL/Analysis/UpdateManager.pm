@@ -196,9 +196,10 @@ sub connect {
     my ($self,$locator,@args) = @_;
     
     my $db;
-    if ($locator eq "Bio::EnsEMBL::TimDB::Obj") {
-	$db = "$locator"->new(\@args);
-    } else {
+	if ($locator eq "Bio::EnsEMBL::TimDB::Obj") {
+	    $db = "$locator"->new(\@args);
+	} 
+    else {
 	$db = new Bio::EnsEMBL::DBLoader($locator);
     }
     return $db;
@@ -370,12 +371,14 @@ sub get_updated_objects {
     if ($self->usefile) {
 	print STDERR "Using ".$self->usefile." as a list of clones to update!\n";
 	my $file = $self->usefile();
-	open(IN,"<$file");
+	open(IN,"<$file") || die ("Couldn't read $file");
 	while(<IN>){
 	    if(/^(\S+)/){
 		push(@clones,$1);
 	    }
+	   
 	}
+        print STDERR "Going to update ",scalar(@clones),"\n";
     } else {
 	eval {
 	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
@@ -407,13 +410,10 @@ sub check_update_status {
 	$self->warn("Update already running in recipient database. Can't start update");
     }
 
-    my @clones;
-    #push(@clones,'AC000072');
-
-    my $fdb = $self->connect($self->fromlocator,@clones);
+    my $fdb = $self->connect($self->fromlocator);
 
     if ($self->fromlocator ne "Bio::EnsEMBL::TimDB::Obj") {
-
+	
 	if ($fdb->current_update) {
 	    $self->warn("Update running in donor database, watch out!");
 	}
