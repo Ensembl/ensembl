@@ -358,7 +358,7 @@ sub get_cdna {
       $cdna_start += $exon->phase();
     }
     
-    $new_cdna = $exon->seq()->seq();
+    $new_cdna = $exon->seq();
     $cdna .= $new_cdna;
     $cdna_end = $cdna_start + length( $new_cdna ) - 1;
 

@@ -385,7 +385,7 @@ sub _new_Exon_from_hashRef {
   $exon->phase( $hashRef->{start_phase} );
   
   $exon->contig( $contig );
-  $exon->attach_seq( $contig->seq() );
+  $exon->attach_seq( $contig );
   $exon->ori_start( $exon->start );
   $exon->ori_end( $exon->end );
   $exon->ori_strand( $exon->strand );
@@ -409,7 +409,7 @@ sub _new_Exon{
   $exon->phase( $phase );
   
   $exon->contig( $contig );
-  $exon->attach_seq( $contig->seq() );
+  $exon->attach_seq( $contig );
   $exon->ori_start( $start );
   $exon->ori_end( $end );
   $exon->ori_strand( $strand );
