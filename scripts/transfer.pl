@@ -42,6 +42,10 @@
     -start     start point in list of clones (useful with -getall)
 
     -end       end point in list of clones (useful with -getall)
+    
+    -freeze    freeze tag to load data to freeze databases (wihout genes)
+
+    -feature   feature tag to load features only, without modifying anything else
 
     -help      Displays this documentation with PERLDOC
 
@@ -69,6 +73,7 @@ use strict;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Getopt::Long;
 
 $| = 1;
@@ -76,7 +81,7 @@ $| = 1;
 # signal handler
 $SIG{INT} = sub {my $sig=shift;die "exited after SIG$sig";};
 
-my $fdbtype = 'rdb';
+my $fdbtype = 'timdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
 my $fdbname = 'ensembl08';
@@ -86,10 +91,11 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'pogtest';
+my $tdbname = 'ensembl_freeze17';
 my $tdbuser = 'root';
 my $tdbpass = undef;
 
+my $exon_phase = 0;
 my $usefile = 0;
 my $use_embl = 0;
 my $cstart = 0;
@@ -99,6 +105,7 @@ my $help;
 my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $freeze =0;
+my $feature =0;
 
 my $delete_first = 0;
 
@@ -111,6 +118,8 @@ my $delete_first = 0;
 	     'fdbpass:s' => \$fdbpass,
 	     'fmodule:s' => \$fmodule,
 	     'freeze'    => \$freeze,
+	     'feature'   => \$feature,
+	     'exon_phase'=> \$exon_phase,
 	     'tdbtype:s' => \$tdbtype,
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
@@ -118,7 +127,6 @@ my $delete_first = 0;
 	     'tdbuser:s' => \$tdbuser,
 	     'tdbpass:s' => \$tdbpass,
 	     'tmodule:s' => \$tmodule,
-	     
 	     'embl'      => \$use_embl,
 	     'getall'    => \$getall,
 	     'usefile'   => \$usefile,
@@ -139,6 +147,7 @@ if ($help){
 }
 
 if( $usefile == 1 ) {
+    print STDERR "Using list of clones from file!\n";
     while( <> ) {
 	my ($en) = split;
 	push(@clone,$en);
@@ -153,6 +162,21 @@ if ( $tdbtype =~ 'timdb' ) {
     my $locator = "$tmodule/host=$thost;port=$tport;dbname=$tdbname;user=$tdbuser;pass=$tdbpass";
     print STDERR "Using $locator for todb\n";
     $to_db =  Bio::EnsEMBL::DBLoader->new($locator);
+}
+
+if ($exon_phase) {
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
+    foreach my $clone_id ( @clone ) {
+	my $clone = $to_db->get_Clone($clone_id);
+	print STDERR "Deleting features for clone $clone_id\n";
+	foreach my $contig ($clone->get_all_Contigs) {
+	    $feature_obj->delete($contig->id);
+	}
+	print STDERR "Changing clone $clone_id version to 999 until exon bug fixed\n";
+	my $sth = $to_db->prepare("update clone set version=999 where id='$clone_id'");
+	$sth->execute;
+    }
+    exit;
 }
 
 if ( $fdbtype =~ 'timdb' ) {
@@ -179,56 +203,96 @@ if( defined $cend ) {
     @clone = @temp;
 }
 
-foreach my $clone_id ( @clone ) {
-    print STDERR "Loading $clone_id\n";
-    eval {
-	my $clone = $from_db->get_Clone($clone_id);
-	if( $delete_first == 1 ) {
-	    
+if ($feature) {
+    foreach my $clone_id ( @clone ) {
+	print STDERR "Loading $clone_id\n";
+	eval {
+	    my $clone = $from_db->get_Clone($clone_id);
 	    my $oldclone;
 	    eval {
 		$oldclone = $to_db->get_Clone($clone_id);
 	    };
 	    if( $@ ) {
-		# do nothing. Clone not there
-	    } else {
-		foreach my $gene ( $oldclone->get_all_Genes('evidence') ) {
-		    print STDERR "Deleting gene " . $gene->id . "\n";
-		    $to_db->delete_Gene($gene->id());
-		    # Should delete supporting evidence too.
-		} 
-		print STDERR "Deleting clone $clone_id\n";
-		$to_db->delete_Clone($clone_id);
-		# Should delete contig features here too.
+		print STDERR "Clone ".$clone->id." not present in ensembl db!\n";
+	    } 
+	    elsif ($oldclone->version == 0) {
+		print STDERR "Writing features for clone ".$clone->id."\n";
+		foreach my $contig ($clone->get_all_Contigs) {
+		    my @features=$contig->get_all_SeqFeatures;
+		    my $nf=scalar(@features);
+		    print STDERR "Writing $nf features for contig ".$contig->id."\n";
+		    if ($nf) {
+			my $oldcontig = $to_db->get_Contig($contig->id);
+			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
+			$feature_obj->write($oldcontig, @features);
+		    }
+		}
+		print STDERR "Changing clone $clone_id version from 0 to 1\n";
+		my $sth = $to_db->prepare("update clone set version=1 where id='$clone_id'");
+		$sth->execute() || print STDERR "Could not change version number!\n";
 	    }
+	    else {
+		print STDERR "Clone already updated, skipping\n\n";
+	    }
+	};
+	if ( $@ ) {
+	    print STDERR "Could not transfer clone $clone_id\n$@\n";
 	}
-	$to_db->write_Clone($clone);
-	my @features;
-	
-	foreach my $contig ($clone->get_all_Contigs) {
-	    push(@features,$contig->get_all_SeqFeatures);
+    }
+}
 
-	}
-
-	print(STDERR "Number of features for " . $clone->id . " " . scalar(@features) . "\n");	
-
-	if (!$freeze) {
-	    foreach my $gene ( $clone->get_all_Genes() ) {
-		print(STDERR "Writing gene " . $gene->id . "\n");
-		$to_db->write_Gene($gene);
+else {
+    foreach my $clone_id ( @clone ) {
+	print STDERR "Loading $clone_id\n";
+	eval {
+	    my $clone = $from_db->get_Clone($clone_id);
+	    if( $delete_first == 1 ) {
 		
-		# Now generate the supporting evidence and write
-		# into the to database.
-		foreach my $exon ($gene->each_unique_Exon) {
-		    $exon ->find_supporting_evidence (\@features);
-		    $to_db->write_supporting_evidence($exon);
+		my $oldclone;
+		eval {
+		    $oldclone = $to_db->get_Clone($clone_id);
+		};
+		if( $@ ) {
+		    # do nothing. Clone not there
+		} else {
+		    foreach my $gene ( $oldclone->get_all_Genes('evidence') ) {
+			print STDERR "Deleting gene " . $gene->id . "\n";
+			$to_db->delete_Gene($gene->id());
+			# Should delete supporting evidence too.
+		    } 
+		    print STDERR "Deleting clone $clone_id\n";
+		    $to_db->delete_Clone($clone_id);
+		    # Should delete contig features here too.
 		}
 	    }
+	    $to_db->write_Clone($clone);
+	    my @features;
+	    
+	    foreach my $contig ($clone->get_all_Contigs) {
+		push(@features,$contig->get_all_SeqFeatures);
+		
+	    }
+	    
+	    print(STDERR "Number of features for " . $clone->id . " " . scalar(@features) . "\n");	
+	    
+	    if (!$freeze) {
+		foreach my $gene ( $clone->get_all_Genes() ) {
+		    print(STDERR "Writing gene " . $gene->id . "\n");
+		    $to_db->write_Gene($gene);
+		    
+		    # Now generate the supporting evidence and write
+		    # into the to database.
+		    foreach my $exon ($gene->each_unique_Exon) {
+			$exon ->find_supporting_evidence (\@features);
+			$to_db->write_supporting_evidence($exon);
+		    }
+		}
+	    }
+	};
+	if ( $@ ) {
+	    
+	    print STDERR "Could not transfer clone $clone_id\n$@\n";
 	}
-    };
-    if ( $@ ) {
-	
-	print STDERR "Could not transfer clone $clone_id\n$@\n";
     }
 }
 
