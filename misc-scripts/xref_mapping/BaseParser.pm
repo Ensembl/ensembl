@@ -8,10 +8,16 @@ my $database = "glenn_test_xref";
 my $user = "ensadmin";
 my $password = "ensembl";
 
-my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database",
-		       "$user",
-		       "$password",
-		       {'RaiseError' => 1}) || die "Can't connect to database";
+my $dbi;
+
+sub new {
+
+  my $self = {};
+  bless $self, "BaseParser";
+
+  return $self;
+
+}
 
 # --------------------------------------------------------------------------------
 # Upload a source object to the source table.
@@ -26,12 +32,7 @@ sub upload_source {
 		$source->{URL},
 		$source->{FILE_MODIFIED_DATE}, "") || die $dbi->errstr;
 
-  $sth = $dbi->prepare("SELECT last_insert_id()");
-  $sth->execute();
-  my $id;
-  while(my @row = $sth->fetchrow_array()) {
-    $id = $row[0];
-  }
+  my $id = $sth->{'mysql_insertid'};
 
   $sth->finish() if defined $sth;
 
@@ -57,12 +58,7 @@ sub upload_xrefs {
 		  $xref->{SPECIES_ID}) || die $dbi->errstr;
 
     # get ID of xref just inserted
-    $sth = $dbi->prepare("SELECT last_insert_id()");
-    $sth->execute();
-    my $id;
-    while(my @row = $sth->fetchrow_array()) {
-      $id = $row[0];
-    }
+     my $id = $sth->{'mysql_insertid'};
 
     # create entry in primary_xref table with sequence
     # TODO experimental/predicted????
@@ -85,19 +81,19 @@ sub dbi {
 
   my $self = shift;
 
+  if (!defined $dbi) {
+    $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database",
+			"$user",
+			"$password",
+			{'RaiseError' => 1}) || die "Can't connect to database";
+  }
+
   return $dbi;
 
 }
 
 # --------------------------------------------------------------------------------
 
-sub new {
-
-  my $self = {};
-  bless $self, "BaseParser";
-  return $self;
-
-}
 
 # --------------------------------------------------------------------------------
 
