@@ -495,7 +495,8 @@ sub sort_native {
 ## print file that maps igi to native
 sub print_igi_to_native {
     my($OUT, $source, $cluster_n) = @_;
-    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+    foreach my $igi (sort 
+                     { Bio::EnsEMBL::Utils::igi_utils::by_igi_number($a,$b)}
                      keys %{$igis_of_source{$source}}) {
 
         if (defined $ {$igis_of_n_sources [ $cluster_n ]}{$igi} ) {
@@ -512,7 +513,8 @@ sub print_native_to_igi {
 
     my %igis_of_native = undef;         # have to invert first:
 
-    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+    foreach my $igi (sort 
+                     { Bio::EnsEMBL::Utils::igi_utils::by_igi_number($a,$b)}
                      keys %{$igis_of_source{$source}}) {
         
         foreach my $nat (keys %{$natives_of_igi{$source}{$igi}}) {
@@ -538,7 +540,8 @@ sub gtf_for_igis_predicted_by_n {
     my $score = 0;
     my $phase = '.';
 
-    foreach my $igi  (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+    foreach my $igi  (sort 
+                      { Bio::EnsEMBL::Utils::igi_utils::by_igi_number($a, $b)}
                       keys %{$igis_of_n_sources[$n]}) {
         my ($nfeats, $min, $max, $nexons, $seq_name, $strand )
           = @{$igis_of_source{'ALL'}{$igi}};
