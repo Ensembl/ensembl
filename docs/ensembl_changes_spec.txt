@@ -34,10 +34,11 @@ Proposed New/Modified Tables:
   seq_region
   -------
   seq_region_id  int
-  name        varchar
-  type        varchar (or maybe enum)
-  length      int
-
+  name           varchar
+  coord_system   varchar (or maybe enum)
+  version	 varchar
+  default	 enum(true, false)
+  length         int
 
   dna
   ---
@@ -49,11 +50,11 @@ Proposed New/Modified Tables:
   --------
   seq_region_id_assembled  int
   seq_region_id_component  int
-  component_start       int
-  component_end         int
-  assembled_start       int
-  assembly_end          int
-  orientation           tinyint (or enum?)
+  component_start          int
+  component_end            int
+  assembled_start          int
+  assembly_end             int
+  orientation              tinyint (or enum?)
 
   gene
   ----
@@ -264,6 +265,7 @@ SliceAdaptor
     Slice fetch_by_region(coord_system, name, start)
     Slice fetch_by_region(coord_system, name, start, end)
     Slice fetch_by_region(coord_system, name, start, end, strand)
+    Slice fetch_by_region(coord_system, name, start, end, strand, version)
     listref of Slices fetch_all(coord_system)
   
 RawContig
@@ -482,6 +484,7 @@ Features
       seq_region. If there is no transform call necessary, the feature is 
       copied and then moved.
 
+
     move( start, end, strand )
     --------------------------
       In place change of the coordinates of the feature. It will stay on the 
@@ -531,6 +534,8 @@ AssemblyMapper
   AssemblyMapper would only support 1 step mappings and the more complex
   2 step mappings could be introduced at a later date.
 
+  
+
 
 FeatureAdaptors
 ---------------
@@ -569,19 +574,6 @@ FeatureAdaptors
       style call on mapper object.
   (6) Remap features to the requested coord system using the mapper
   (7) Return the features
-
-
-Bio::Seq
---------
-  Bio::Seq objects are not useful and inconsistant with some of the API 
-  methods. Some methods return a string while others return a Bio::Seq.  In 
-  the instances where a Bio::Seq is returned the most common usage is to simply
-  extract the sequence with a call like: $seq = $obj->seq->seq;  For 
-  consistancy Bio::Seq usage will be removed in favour of simple string usage.
-  *Note: This change can be done independently of the other changes.  It may be
-   better to do this change seperately to avoid breaking everyones code at once
-   (or maybe it would be better to do all the major code-breaking changes at
-   once)
 
 
 
