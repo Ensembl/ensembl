@@ -43,7 +43,9 @@ package Bio::EnsEMBL::TranscriptFactory;
 
 use strict;
 
-
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Translation;
+use Bio::EnsEMBL::Transcript;
 
 sub fset2transcript {
     my ($genscan,$contig)=@_;
