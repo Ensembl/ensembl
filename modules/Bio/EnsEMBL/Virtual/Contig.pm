@@ -697,12 +697,125 @@ sub get_all_SimilarityFeatures {
 
 =cut
 
-sub get_all_RepeatFeatures {
+sub get_all_RepeatFeatures_1 {
    my ($self) = @_;
    
    return $self->_get_all_SeqFeatures_type('repeat');
 
 }
+
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures {
+  
+  my ($self) = @_;
+
+   my @array;
+
+  my %analhash;
+  
+  my $glob_start=$self->_global_start;
+  my $glob_end=$self->_global_end;
+  my $chr_name=$self->_chr_name;
+  
+  
+  my $statement = "SELECT rf.id,rf.seq_start,rf.seq_end,rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
+                          sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                   FROM   repeat_feature rf,static_golden_path sgp
+                   WHERE  sgp.raw_id = rf.contig
+                   AND    NOT (sgp.chr_end < '$glob_start' OR sgp.chr_start >'$glob_end' )
+		   AND    sgp.chr_name='$chr_name' ";
+  
+
+  my $sth = $self->dbobj->prepare($statement);
+  
+  $sth->execute();
+  
+  my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
+  
+  $sth->bind_columns
+      (undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
+
+ 
+  print STDERR "testing features\n";
+
+
+ my @distinct_features;  
+
+ FEATURE:  while( $sth->fetch ) {
+     
+     my $out;
+     my $analysis;
+     
+     
+     foreach my $arrayref(@distinct_features){
+	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
+     }
+     my @list=($start,$end,$analysisid);
+     push @distinct_features,\@list;
+      
+     if ($raw_ori == -1){    
+	 my $length=$end-$start;
+	 my $medium=$chr_end+$chr_start-$start-0.5*$length;
+	 $start=$medium-0.5*$length;
+	 $end=$medium+0.5*$length;
+	 $strand=-1*$strand;
+     }
+     
+     
+      if ($start>=$glob_start && $end<=$glob_end){
+	  
+	  $start=$start-$glob_start;
+	  $end=$end-$glob_start;
+	  
+	  
+	  if (!$analhash{$analysisid}) {
+	      
+	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	      $analysis = $feature_obj->get_Analysis($analysisid);
+	      
+	      $analhash{$analysisid} = $analysis;
+	      
+	  } else {
+	      $analysis = $analhash{$analysisid};
+	  }
+	  
+      
+	  if( $hid ne '__NONE__' ) {
+	      # is a paired feature
+	      # build EnsEMBL features and make the FeaturePair
+	      
+	      $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+	      $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
+				   $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+	      
+	      $out->analysis($analysis);
+	      
+	  } else {
+	      $self->warn("Repeat feature does not have a hid. bad news....");
+	  }
+	  
+	  $out->validate();
+	  
+	  push(@array,$out);
+      }  
+  }
+   
+  return @array;
+}
+
+
 
 =head2 get_all_ExternalFeatures
 
@@ -715,6 +828,9 @@ sub get_all_RepeatFeatures {
 
 
 =cut
+
+
+
 
 sub get_all_ExternalFeatures {
    my ($self) = @_;
