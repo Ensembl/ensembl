@@ -160,13 +160,11 @@ sub _parse {
 	   my ($n) = $l[0] =~ /^(\d+)\./;
 	   $n--;
 	   
-	   # Get the right gene from the set
-	   my $transcript = $self->_transcript( $n );
-	   
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
 	     # Pass type,strand, start, stop, frame,phase to exons()
-	     $self->_exons($transcript, @l[1,2,3,4,6,7] );
+	       my $transcript = $self->_transcript( $n );
+	       $self->_exons($transcript, @l[1,2,3,4,6,7] );
 	   }
 	   
 	   # or a Promoter?
@@ -194,10 +192,9 @@ sub _parse {
   #
 
   foreach my $t ( $self->each_Transcript() ) {
+
   my $count = 1;
       foreach my $e ( $t->each_Exon() ) {
-#	  print($e->start . "\t" . $e->end . "\n");
-#	  print($self->{_dna}  . "\n");
 	  $e->attach_seq($self->{_dna});
 	  $e->id("Exon_$count");
 	  $count++;
