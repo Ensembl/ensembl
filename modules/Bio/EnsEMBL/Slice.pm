@@ -963,8 +963,23 @@ sub get_Chromosome {
 
 =head2 get_repeatmasked_seq
 
-  Arg [1]    : listref of strings $logic_names (optional)
-  Arg [2]    : int $soft_masking_enable (optional)
+  Arg [1]    : listref of strings $logic_names (optional, default is '')
+  Arg [2]    : int $default_masking_type (optional, default is 0)
+               0 hard mask, repeats are replaced by Ns
+               1 soft mask, repeats are transformed in lower case  
+  Arg [3]    : hash reference $not_default_masking_cases (optional)
+               The values are 0 or 1 with same definition as in Arg [2]
+               The keys of the hash should be of 2 forms
+               "repeat_class_" . $repeat_consensus->repeat_class,
+                e.g. "repeat_class_SINE/MIR"
+               "repeat_name_" . $repeat_consensus->name
+                e.g. "repeat_name_MIR"
+               depending on which based you want to apply the not default masking,
+               on the repeat_class or repeat_name. Both can be specified in the same hash
+               the same time, but in that case, repeat_name setting has priority over 
+               repeat_class. For example, you may have hard maksing as default, and 
+               you may want soft masking of all repeat_name SINE/MIR,
+               but repeat_name AluSp (which are also from repeat_name SINE/MIR)
   Example    : $slice->get_repeatmasked_seq 
                or $slice->get_repeatmasked_seq(['RepeatMask'],1)
   Description: Returns Bio::PrimarySeq containing the masked (repeat replaced 
@@ -980,14 +995,20 @@ sub get_Chromosome {
 =cut
 
 sub get_repeatmasked_seq {
-    my ($self,$logic_names,$soft_mask) = @_;
+    my ($self,$logic_names,$default_masking_type, $not_default_masking_cases) = @_;
 
     unless($logic_names && @$logic_names) {
       $logic_names = [ '' ];
     }
 
-    unless(defined $soft_mask) {
-      $soft_mask = 0;
+    unless (defined $default_masking_type) {
+      $default_masking_type = 0;
+    # 0 hard mask, repeats are replaced by Ns
+    # 1 soft mask, repeats are transformed in lower case 
+    }
+
+    unless (defined $not_default_masking_cases) {
+      $not_default_masking_cases = {};
     }
 
     my $repeats = [];
@@ -997,7 +1018,7 @@ sub get_repeatmasked_seq {
     }
 
     my $dna = $self->seq();
-    my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
+    my $masked_dna = $self->_mask_features($dna,$repeats,$default_masking_type,$not_default_masking_cases);
     my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
 					  '-display_id' => $self->id,
 					  '-primary_id' => $self->id,
@@ -1015,7 +1036,22 @@ sub get_repeatmasked_seq {
                reference to a list Bio::EnsEMBL::RepeatFeature
                give the list of coordinates to replace with N or with 
                lower case
-  Arg [3]    : int $soft_masking_enable (optional)
+  Arg [3]    : int $default_masking_type (optional)
+               0 hard mask, repeats are replaced by Ns (default)
+               1 soft mask, repeats are transformed in lower case 
+  Arg [4]    : hash reference $not_default_masking_cases (optional)
+               The values are 0 or 1 with same definition as in Arg [3]
+               The keys of the hash should be of 2 forms
+               "repeat_class_" . $repeat_consensus->repeat_class,
+                e.g. "repeat_class_SINE/MIR"
+               "repeat_name_" . $repeat_consensus->name
+                e.g. "repeat_name_MIR"
+               depending on which based you want to apply the not default masking,
+               on the repeat_class or repeat_name. Both can be specified in the same hash
+               the same time, but in that case, repeat_name setting has priority over 
+               repeat_class. For example, you may have hard maksing as default, and 
+               you may want soft masking of all repeat_name SINE/MIR,
+               but repeat_name AluSp (which are also from repeat_name SINE/MIR)
   Example    : none
   Description: replaces string positions described in the RepeatFeatures
                with Ns (default setting), or with the lower case equivalent 
@@ -1027,11 +1063,20 @@ sub get_repeatmasked_seq {
 =cut
 
 sub _mask_features {
-  my ($self,$dnastr,$repeats,$soft_mask) = @_;
+  my ($self,$dnastr,$repeats,$default_masking_type,$not_default_masking_cases) = @_;
   
   # explicit CORE::length call, to avoid any confusion with the Slice 
   # length method
   my $dnalen = CORE::length($dnastr);
+  
+  unless (defined $default_masking_type) {
+    $default_masking_type = 0;
+    # 0 hard mask, repeats are replaced by Ns
+    # 1 soft mask, repeats are transformed in lower case 
+  }
+  unless (defined $not_default_masking_cases) {
+    $not_default_masking_cases = {};
+  }
 
  REP:foreach my $f (@{$repeats}) {
     my $start  = $f->start;
@@ -1063,14 +1108,29 @@ sub _mask_features {
     $start--;
     
     my $padstr;
+    my $repeat_consensus = $f->repeat_consensus;
+
+    my $masking_type = $default_masking_type;
     
-    if ($soft_mask) {
+    if (defined $not_default_masking_cases->{"repeat_class_" . $repeat_consensus->repeat_class}) {
+      $masking_type = $not_default_masking_cases->{"repeat_class_" . $repeat_consensus->repeat_class};
+    }
+    if (defined $not_default_masking_cases->{"repeat_name_" . $repeat_consensus->name}) {
+      $masking_type = $not_default_masking_cases->{"repeat_name_" . $repeat_consensus->name};
+    }
+    
+    if ($masking_type) {
+      print STDERR "LowerCase Masking: ",$repeat_consensus->repeat_class," ",$repeat_consensus->name,"\n";
       $padstr = lc substr ($dnastr,$start,$length);
     } else {
+      print STDERR "Hard Masking: ",$repeat_consensus->repeat_class," ",$repeat_consensus->name,"\n";
       $padstr = 'N' x $length;
     }
     substr ($dnastr,$start,$length) = $padstr;
 
+  }
+  unless (scalar @{$repeats}) {
+    print STDERR "No Repeat Features\n";
   }
   return $dnastr;
 } 
