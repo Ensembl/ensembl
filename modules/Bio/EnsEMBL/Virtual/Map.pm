@@ -121,9 +121,9 @@ sub build_map{
        # go left
        my ($nextcontig,$start_in_contig,$contig_ori,$gap_distance) = 
 	   $self->_go_left($current_contig,$current_ori);
-
        
-
+       
+       
        # if the gap pushes us over the total, we have a left overhang
        $current_left_size += $gap_distance;
        if( $current_left_size >= $left ) {
@@ -136,8 +136,8 @@ sub build_map{
        
        # add gap distance to current_size. Remember, this could be 0
        $current_left_size += $gap_distance;
-
-       if( $current_left_size + $nextcontig->golden_length < $total ) {
+       
+       if( $current_left_size + $nextcontig->golden_length < $left ) {
 	   # add golden length distance
 	   $current_left_size += $nextcontig->golden_length;
 	   $current_contig = $nextcontig;
@@ -146,7 +146,7 @@ sub build_map{
        } else {
 	   # this is the leftmost contig
 	   $current_contig = $nextcontig;
-	   $
+	   
 	   $self->left_overhang(0);
 	   
        }
@@ -156,9 +156,6 @@ sub build_map{
 
    my $total = $left+$right;
    my $current_size = $left_overhang_size;
-
-   # test to see whether this is only a one contig map
-   if( $current_size 
 
    # put in this contig as the first contig. 
 
