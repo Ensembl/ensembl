@@ -253,6 +253,7 @@ sub cluster_Genes {
   #### new clustering algorithm, faster than the old one ####
   #### however, the order of the genes does not guarantee that genes are not skipped, since this algorithm
   #### only checks the current cluster and all previous clusters
+
   # create a new cluster 
   my $cluster=Bio::EnsEMBL::Utils::GeneCluster->new();
 
@@ -442,10 +443,10 @@ See cluster_Transcripts for a different way of clustering transcripts.
 
 sub cluster_Transcripts_by_Gene {
   my ($self,$array) = @_;
-  my @gene_clusters;      # array of GeneCluster objects
+  my @gene_clusters;    
   my @transcript_clusters;
-  if (@array){
-    push(@gene_clusters,@array);
+  if ($array){
+    push(@gene_clusters,@$array);
   }
   else{
     @gene_clusters = $self->cluster_Genes;
@@ -468,18 +469,16 @@ sub cluster_Transcripts_by_Gene {
 
   This method cluster all the transcripts in the gene arrays passed to the GeneComparison constructor new().
   It also accepts an array of transcripts to be clustered. The clustering is done according to exon
-  overlaps, which is implemented in the function _compare_Transcripts.
+  overlaps, which is implemented in the function _compare_Transripts.
   This method returns an array of TranscriptCluster objects.
 
 =cut
   
 sub cluster_Transcripts {
-  my ($self,@array) = @_;
-  my @transcripts;
-  if (@array){                 # transcripts to be clustered can be either provided as argument
-    @transcripts = @array;
-  }
-  else{                        # or else taken from the gene_array data fields
+  my ($self,@transcripts) = @_;
+ 
+  if ( !defined(@transcripts) ){                        
+    my @transcripts = ();
     my @genes = ( @{ $self->{'_gene_array1'} }, @{ $self->{'_gene_array2'} } );
     foreach my $gene (@genes){
       my @more_transcripts = $gene->each_Transcript;
@@ -500,36 +499,331 @@ sub cluster_Transcripts {
     push (@sorted_transcripts, $transcripts[$pos]);
   }
   @transcripts = @sorted_transcripts;
+  my @clusters;
 
-  #### cluster the sorted transcripts
-  my @transcript_clusters;
-  my $found;
+  # create a new cluster 
+  my $cluster=Bio::EnsEMBL::Utils::TranscriptCluster->new();
+
+  # put the first transcript into these cluster
+  $cluster->put_Transcripts( $sorted_transcripts[0] );
+  push( @clusters, $cluster );
+  # $self->transcript_Clusters($cluster);
   
-  foreach my $transcript (@transcripts){
-    $found=0;
+  # loop over the rest of the genes
+ LOOP1:
+  for (my $c=1; $c<=$#sorted_transcripts; $c++){
+    my $found=0;
   LOOP:
-    foreach my $cluster (@transcript_clusters){
-      foreach my $transcript_in_cluster ( $cluster->get_Transcripts ){  
-	                                  # read transcripts from TranscriptCluster object
-	
-	if ( _compare_Transcripts($transcript, $transcript_in_cluster) ){	
-	  $cluster->put_Transcripts ($transcript);  # put gene into Transcript Cluster object
-	  $found=1;
-	  last LOOP;
-	}
+    foreach my $t_in_cluster ( $cluster->get_Transcripts){       
+      if ( _compare_Transcripts( $sorted_transcripts[$c], $t_in_cluster ) ){	
+	$cluster->put_Transcripts( $sorted_transcripts[$c] );                       
+	$found=1;
+	next LOOP1;
       }
     }
-    
-    if ($found==0){
-      my $new_cluster=Bio::EnsEMBL::Utils::TranscriptCluster->new($transcript);   
-                                                  # create a new TranscriptCluser object
-      push(@transcript_clusters,$new_cluster);
+    if ($found==0){  # if not-clustered create a new TranscriptCluser
+      $cluster = new Bio::EnsEMBL::Utils::TranscriptCluster; 
+      $cluster->put_Transcript( $sorted_transcripts[$c] );
+      push( @clusters, $cluster );
+      # $self->transcript_Clusters( $cluster );
     }
   }
-  return @transcript_clusters;
+  return @clusters;
 }
 
 ####################################################################################
+
+=head2
+
+This method takes an array of GeneCluster objects, pairs up all te transcripts in each cluster and then
+go through each transcript pair trying to match the exons. It will write out the analysis on linked, unlinked
+exons, whether the match is exact or there is mismatch, and if so, how many bases and in which
+region 5' and 3'. It also puts a flag to the exons where the translation starts and ends, so that one can see
+which are the coding exons.
+
+=cut
+
+
+sub find_missing_Exons{
+  my ($self,$clusters) = @_;
+  
+  if ( !defined( $clusters ) ){
+    $self->throw( "Must pass an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects");
+  } 
+
+  if ( !$$clusters[0]->isa( 'Bio::EnsEMBL::Utils::GeneCluster' ) ){
+    $self->throw( "Can't process a [$$clusters[0]], you must pass a Bio::EnsEMBL::Utils::GeneCluster" );
+  }
+
+  my $cluster_count=1;
+  # we check for missing exons in each gene cluster
+ GENE:
+  foreach my $gene_cluster (@$clusters){
+    print STDERR "\nIn gene-cluster $cluster_count\n";
+    $cluster_count++; 
+    my ( $genes2, $genes1 ) = $gene_cluster->get_separated_Genes;
+    # it returns first genes stored as benchmark and second genes stored as prediction
+    
+    my (@transcripts1,@transcripts2);
+    foreach my $gene ( @$genes1 ){
+      @transcripts1 = $gene->each_Transcript;
+    }
+    foreach my $gene ( @$genes2 ){
+      @transcripts2 = $gene->each_Transcript;
+    }
+    
+    # pair up the transcripts according to exon_overlap
+    print STDERR "pairing up transcripts ...\n";
+    my @pairs = $self->pair_Transcripts( \@transcripts1, \@transcripts2 );
+
+    # @pairs is an array of TranscriptClusters, each containing two transcripts
+
+   PAIR:
+    foreach my $pair ( @pairs ){
+      my ($tran1,$tran2) = $pair->get_Transcripts;
+      my @exons1 = $tran1->each_Exon;
+      my @exons2 = $tran2->each_Exon;
+      my ($s_exon_id1,$e_exon_id1) = ('','');
+      my ($s_exon_id2,$e_exon_id2) = ('','');
+
+      if ( $tran1->translation ){
+         $s_exon_id1 = $tran1->translation->start_exon_id;
+         $e_exon_id1 = $tran1->translation->end_exon_id;
+      }
+      if ( $tran1->translation ){
+         $s_exon_id1 = $tran1->translation->start_exon_id;
+         $e_exon_id1 = $tran1->translation->end_exon_id;
+      }
+      # now we link the exons, but first, a bit of formatted info
+      
+      print  "\nComparing transcripts:\n";
+      
+      printf "Id: %-16s"      , $tran1->id;
+      printf "Contig: %-20s"  , $exons1[0]->contig_id;
+      printf "Exons: %-3d"    , scalar(@exons1);
+      printf "Start: %-9d"    , $exons1[0]->start;
+      printf "End: %-9d"      , $exons1[$#exons1]->end;
+      printf "Strand: %-2d\n" , $exons1[0]->strand;
+
+      printf "Id: %-16s"      , $tran2->id;
+      printf "Contig: %-20s"  , $exons2[0]->contig_id;
+      printf "Exons: %-3d"    , scalar(@exons2);
+      printf "Start: %-9d"    , $exons2[0]->start;
+      printf "End: %-9d"      , $exons2[$#exons2]->end;
+      printf "Strand: %-2d\n" , $exons2[0]->strand;
+      
+      my %missing1;
+      my %missing2;
+      my %link;
+      my $start=0;    # start looking at the first one
+      my @buffer;     # artifact in order to keep track of the skipped exons in @exons2 
+
+      # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
+     EXONS1:
+      for (my $i=0; $i<=$#exons1; $i++){
+        my $foundlink = 0;
+        
+       EXONS2:
+        for (my $j=$start; $j<=$#exons2; $j++){
+          # compare ( $exons1[$i], $exons2[$j] )
+          # print STDERR "comparing exon $i and $j\n";
+
+          if ( $exons1[$i]->overlaps($exons2[$j]) ){
+            
+            # if you've found a link, check first whether there is anything left unmatched in @buffer
+            # aaarrrgh! my brain hurts!!
+            if ( @buffer && scalar(@buffer) != 0 ){
+              foreach my $exon_number ( @buffer ){
+                print STDERR "no link        ".$exon_number."\n";
+              }
+            } 
+            $foundlink = 1;
+            printf STDERR "%7d <----> %-2d ", ( ($i+1) , ($j+1) );
+
+            # there is a match, check for the different possibilities
+            if ( $exons1[$i]->equals( $exons2[$j] ) ){
+              print STDERR "exact";
+            }
+            else{              
+                if ( $exons1[$i]->start != $exons2[$j]->start ){
+                  my $mismatch = abs($exons1[$i]->start - $exons2[$j]->start);
+                  print STDERR "mismatch: $mismatch bases in the 5' end";
+                }
+                if (  $exons1[$i]->end  != $exons2[$j]->end   ){
+                  my $mismatch = abs($exons1[$i]->end  -  $exons2[$j]->end  );
+                  print STDERR "mismatch: $mismatch bases in the 3' end";
+                }
+            }
+            if ( $exons1[$i]->id eq $s_exon_id1 || $exons2[$j]->id eq $s_exon_id2 ){
+               print STDERR " (start CDS)";
+            }
+            if ( $exons1[$i]->id eq $e_exon_id1 || $exons2[$j]->id eq $e_exon_id2 ){
+               print STDERR " (end CDS)";
+            }
+            print STDERR "\n";
+            $start += scalar(@buffer)+1;
+            @buffer = ();  # we start a new one
+            next EXONS1;
+          }          
+          else {  # oops, no overlap, skip this one
+            # print STDERR "  exon ".($i+1)." does not link with ".($j+1).", skipping it...\n";
+            
+            # keep this info in a @buffer if you haven't exhausted all checks in @exons2  
+            if ( $j<$#exons2 ){
+              push ( @buffer, ($j+1) );
+            }
+            # if you got to the end of @exons2 and found no link, ditch the @buffer
+            elsif ( $j == $#exons2 ){ 
+              @buffer = ();
+            }
+            # and get outta here              
+            next EXONS2;
+          }
+        }   # end of EXONS2 loop
+
+        if ( $foundlink == 0 ){  # found no link for $exons1[$i], go to the next one
+            printf STDERR "%7d        no link\n", ($i+1);
+        }
+    
+      }      # end of EXONS1 loop
+     
+    }        # end of  PAIR  loop      
+
+  }          # end of  GENE  loop
+
+}
+
+
+#########################################################################
+
+=head2 pair_Transcripts()
+
+  This method make pairs of transcripts according to the maximum overlap.
+  It returns an array of TranscriptCluster objects.
+
+=cut
+  
+sub pair_Transcripts {
+  my ($self,$trans1,$trans2) = @_;
+   
+  # first sort the transcripts by their start position coordinate
+  my %start_table1;
+  my %start_table2;
+  my @transcripts1;
+  my @transcripts2;
+
+  my $i=0;
+  foreach my $tran ( @{ $trans1 } ) {
+    $start_table1{$i} = $tran->start_exon->start;
+    $i++;
+  }
+  my $j=0;
+  foreach my $tra ( @{ $trans2 } ) {
+    $start_table2{$j} = $tra->start_exon->start;
+    $j++;
+  }
+
+  foreach my $pos ( sort { $start_table1{$a} <=> $start_table1{$b} } keys %start_table1 ){
+    push (@transcripts1, $$trans1[$pos]);
+  }
+  foreach my $pos ( sort { $start_table2{$a} <=> $start_table2{$b} } keys %start_table2 ){
+    push (@transcripts2, $$trans2[$pos]);
+  }
+
+  # pair the transcripts, but first, some variable definition
+
+  my %seen1;           # those transcripts in @transcripts1 which have been linked
+  my %seen2;           # ditto, for @transcripts2
+  my @pairs;           # list of the transcript-pairs being created 
+  my %overlap_matrix;  # matrix holding the number of exon overaps for each pair of transcripts
+  my $count = 0;       # count the transcript we are at in @transcripts1
+  my %link;            # matrix with 1 for the pairs linked and zero or undef otherwise 
+
+ TRAN1:
+  foreach my $tran1 ( @transcripts1 ){
+    my $max_overlap = 0;
+    my %temp_link;
+    
+  TRAN2:
+    foreach my $tran2 ( @transcripts2 ){
+      my $overlap = _compare_Transcripts( $tran1, $tran2 );
+      $overlap_matrix{ $tran1 }{ $tran2 } = $overlap;
+      
+      if ( $overlap > $max_overlap ) {
+	$max_overlap  = $overlap;
+	
+
+	# if we have used $tran2 before, check whether the overlap is larger 
+	if ( $seen2{ $tran2 } && $seen2{ $tran2} == 1 && $count>0 ){
+	  for (my $c=0; $c<$count ; $c++){
+	    if ( $overlap_matrix{ $transcripts1[$c] }{ $tran2 } ){	    
+	      my $prev_overlap = $overlap_matrix{ $transcripts1[$c] }{ $tran2 };
+	      
+	      # if the previous overlap was larger, keep it and skip this one
+	      if ( $prev_overlap > $overlap ){
+		$link{ $transcripts1[$c] }{ $tran2 } = 1;
+		next TRAN2;
+	      }
+
+	      #if smaller, keep this one and skip previous
+	      if ( $prev_overlap < $overlap ){
+		$link{ $transcripts1[$c] }{ $tran2 } = 0;
+	      }
+	      # if they're equal, we keep both, so we do nothing
+	    }
+	  }
+	}
+	$seen1{ $tran1 } = 1;
+	$temp_link{ $tran1 } = $tran2;
+      }
+      elsif ( $overlap == $max_overlap && $overlap>0 && $seen1{ $tran1 } ) {
+	print STDERR "overlap = ".$overlap."\n";
+
+	print STDERR $tran2->id.            " overlaps as much as ";
+	print STDERR $temp_link{$tran1}->id." we keep both pairs?\n";
+
+	print STDERR "( ".$tran1->id." , ".$temp_link{$tran1}->id." ) and ";
+	print STDERR "( ".$tran1->id." , ".      $tran2->id.      " )\n";
+       
+	# if we want to keep both pairs, we do...
+	$link{ $tran1 }{ $tran2 } = 1;
+      }
+    }
+    # update the link-matrix if found one
+    if ( $temp_link{ $tran1 } ){
+      $link { $tran1 }{ $temp_link{ $tran1 } } = 1;
+      $seen1{ $tran1 } = 1;
+      $seen2{ $temp_link{ $tran1 } } = 1;
+    }
+   $count++;
+  }
+  # create a new cluster for each pair linked
+  my @unpaired;
+  foreach my $tran1 ( @transcripts1 ){
+    if ( $link{$tran1} ){
+      foreach my $tran2 ( @transcripts2 ){
+	if ( $link{ $tran1 }{ $tran2} && $link{ $tran1 }{ $tran2} == 1 ){
+	  my $pair = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+	  $pair->put_Transcripts( $tran1, $tran2 );
+	  push( @pairs, $pair );
+	}
+	else {
+	  push ( @unpaired, $tran2 );
+	}
+      }
+    }
+    else{
+      push ( @unpaired, $tran1 );
+    }
+  }  
+  print STDERR scalar(@pairs)." transcript pairs created\n";
+  print STDERR scalar(@unpaired)." unpaired transcripts\n";
+  
+  return @pairs;
+}
+
+####################################################################################
+
 
 =head2 get_Exon_Statistics()
 
@@ -1012,113 +1306,6 @@ sub get_fragmented_Genes {
 
 #########################################################################
 
-=head2 find_missing_Exons()
-
-  Pretty ambitious method to check missing exons in genes, get its position (1st, last, middle
-  one) and see whether there is available data that could have helped us
-  to predicted.
-
-  You can pass an array (ref) of clusters, or else it will do it for you.
-  It only uses clusters with more than on gene
-
-=cut
-
-sub find_missing_Exons {
-  
-  my ($self,$clusters) = @_;
-
-  my @clusters;
-  if (!defined($clusters)) {
-    print "Creating new clusters for you\n";
-    $self->flush_Clusters;
-    @clusters = $self->cluster_Genes; # this only give clusters with more than one gene
-  }
-  else{
-    my @array = @{ $clusters };
-    
-    # take only the clusters with more than one gene
-    foreach my $cluster (@array){
-      unless ( $cluster->get_Gene_Count == 1 ){
-	push( @clusters, $cluster);
-      }
-    }
-  }
-
- CLUSTER:
-  foreach my $cluster (@clusters){
-    my ($genes1,$genes2) = $cluster->get_separated_Genes;
-    
-    # momentarily we skip the clusters with more than two genes per type
-    # we'll deal with them later
-    if ( scalar( @$genes1 ) >1 || scalar( @$genes2 ) >1){
-      next CLUSTER;
-    }
-    
-    my %exonhash;
-  GENE1:
-    foreach my $gene1 ( @$genes1 ){
-      my @transcripts1 = $gene1->each_Transcript;
-      if ( scalar(@transcripts1) > 1 ){
-	print "skipping gene with more than one transcript\n";  # only for the moment
-	next CLUSTER;
-      }
-      
-      foreach my $transcript1 (@transcripts1){
-	my @exons1 = $transcript1->each_Exon;
-	
-      GENE2:
-	foreach my $gene2 ( @$genes2 ){
-	  my @transcripts2 = $gene2->each_Transcript;
-	  if ( scalar(@transcripts2) > 1 ){
-	    print "skipping gene with more than one transcript\n";  # only for the moment
-	    next CLUSTER;
-	  }
-	  foreach my $transcript2 (@transcripts2){
-	    my @exons2 = $transcript2->each_Exons; # put get_all_Exons in the new_schema;
-	    
-	    my ($exonsA,$exonsB);
-	    my %genehash;
-	    
-	    if ( scalar( @exons1) >= scalar( @exons2 ) ){
-	      ($exonsA, $exonsB) = (\@exons1,\@exons2);
-	      ($genehash{'A'}, $genehash{'B'}) = ($gene1,$gene2);
-	    }
-	    else{
-	      ($exonsA, $exonsB) = (\@exons2,\@exons1);
-	      ($genehash{'A'}, $genehash{'B'}) = ($gene2,$gene1);
-	    }
-	    
-	    my $count = 1;
-	    print "Comparing gene ".$genehash{'A'}->dbID." with ".$genehash{'A'}->dbID."\n";
-	    
-	  EXONS:
-	    for (my $i=1; $i<=scalar( @$exonsA ); $i++){
-	      my $exonA = $$exonsA[$i-1];
-	      my $found = 0;
-	      
-	      while ($found == 0){
-		my $exonB = $$exonsB[$count-1];
-		if ( $exonA->overlaps($exonB) ){
-		  $found =1;
-		  print "exon ".$i. " matches with exon ".$count."\n";
-		  my ($uniqueA,$common,$uniqueB) = $exonA->overlap_extent($exonB);
-		  if ( $uniqueA == 0 && $uniqueB == 0 ){
-		    print "100 percent overlap\n";
-		  }
-		}
-		$count++;
-	      }# end of while loop
-	    }  # end of EXONS:
-	    
-	  }
-	}      # end of GENE2:
-      }
-    }          # end of GENE1: 
-  }            # end of CLUSTER:    
-}
-
-
-#########################################################################
 
 =head2 get_3prime_overlaps()
 
@@ -1158,33 +1345,39 @@ sub _compare_Genes {
 }      
 #########################################################################
 
+
+
 =head2 _compare_Transcripts()
 
  Title: _compare_Transcripts()
  Usage: this internal function compares the exons of two transcripts according to overlap
         and returns the number of overlaps
-
 =cut
 
 sub _compare_Transcripts {         
   my ($transcript1,$transcript2) = @_;
-  my @exons1 = $transcript1->each_Exon;
-  my @exons2 = $transcript2->each_Exon;
+  my @exons1   = $transcript1->each_Exon;
+  my @exons2   = $transcript2->each_Exon;
+  my $overlaps = 0;
   
   foreach my $exon1 (@exons1){
     
     foreach my $exon2 (@exons2){
 
       if ( ($exon1->overlaps($exon2)) && ($exon1->strand == $exon2->strand) ){
-	print "positive transcript comparison.\n";	
-	return 1;
+	$overlaps++;
       }
     }
   }
-  return 0;
+  return $overlaps;  # we keep track of the number of overlaps to be able to choose the best match
 }    
 
+
+
 #########################################################################
+
+
+
 
 =head2 unclustered_Genes()
 
@@ -1225,6 +1418,37 @@ sub clusters {
     }
     return @{$self->{'_clusters'}};
 }
+#########################################################################
+
+=head2 transcript_Clusters()
+
+	Title: clusters()
+	Usage: This function stores and returns an array of transcript_Clusters
+
+=cut
+sub transcript_Clusters {
+    my ($self, @clusters) = @_;
+ 
+    if (@clusters)
+    {
+        push (@{$self->{'_transcript_clusters'}}, @clusters);
+    }
+    return @{$self->{'_transcript_clusters'}};
+}
+#########################################################################
+
+=head2 flush_transcript_Clusters()
+
+	Usage: This function cleans up the array in $self->{'_transcript_clusters'}
+
+=cut
+
+sub flush_transcript_Clusters {
+    my ($self) = @_;
+    $self->{'_transcript_clusters'} = [];
+}
+
+
 #########################################################################
 
 =head2 flush_Clusters()
