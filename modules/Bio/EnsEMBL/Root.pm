@@ -270,41 +270,42 @@ See Also   : L<_initialize>()
 sub _rearrange {
 #----------------
     my($self,$order,@param) = @_;
-    
+
     return unless @param;
-    
+
     # If we've got parameters, we need to check to see whether
     # they are named or simply listed. If they are listed, we
     # can just return them. 
 
     return @param unless (defined($param[0]) && $param[0]=~/^-/); 
-    
+
     # Now we've got to do some work on the named parameters.
     # The next few lines strip out the '-' characters which
     # preceed the keys, and capitalizes them.
     my $i;
     for ($i=0;$i<@param;$i+=2) {
-	$param[$i]=~s/^\-//;
-	$param[$i]=~tr/a-z/A-Z/;
+			$param[$i]=~s/^\-//;
+			$param[$i]=~tr/a-z/A-Z/;
     }
-    
+
     # Now we'll convert the @params variable into an associative array.
     local($^W) = 0;  # prevent "odd number of elements" warning with -w.
     my(%param) = @param;
-    
+
     my(@return_array);
-    
+
     # What we intend to do is loop through the @{$order} variable,
     # and for each value, we use that as a key into our associative
     # array, pushing the value at that key onto our return array.
     my($key);
-    
+
     foreach $key (@{$order}) {
-	my($value) = $param{$key};
-	delete $param{$key};
-	push(@return_array,$value);
+			$key = uc($key);
+			my($value) = $param{$key};
+			delete $param{$key};
+			push(@return_array,$value);
     }
-    
+
     return (@return_array);
 }
 
