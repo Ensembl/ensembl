@@ -4,7 +4,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 18;
+	plan tests => 20;
 }
 
 use MultiTestDB;
