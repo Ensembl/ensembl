@@ -67,7 +67,7 @@ sub run {
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
 	  $source_sql . $species_sql .
 	  "ORDER BY s.ordered";
-  #print $sql . "\n";
+#  print $sql . "\n";
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
@@ -108,14 +108,18 @@ sub run {
 
 	print "Checksum for $file does not match, parsing\n";
 
-	update_source($dbi, $source_url_id, $file_cs, $file);
 
 	# Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
 	# all parsed with the same parser
 	$parser = 'UniProtParser' if ($parser =~ /UniProt/i);
 
 	print "Parsing $file with $parser\n";
-	$parser->run("$dir/$file", $source_id, $species_id);
+	eval "require XrefParser::$parser";
+	my $new = "XrefParser::$parser"->new();
+	$new->run("$dir/$file", $source_id, $species_id);
+
+	# update AFTER processing incase of crash.
+	update_source($dbi, $source_url_id, $file_cs, $file);
 
       } else {
 
