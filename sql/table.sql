@@ -571,4 +571,92 @@ CREATE TABLE assembly_contig (
     KEY(assembly_contig_chr_name,assembly_contig_chr_start,assembly_contig_type)
 );
 
+# MySQL dump 8.12
+#
+# Host: localhost    Database: mus_musculus_core_5_2
+#--------------------------------------------------------
+# Server version	3.23.32-log
+
+#
+# Table structure for table 'mapfrag'
+#
+
+CREATE TABLE mapfrag (
+  mapfrag_id int(10) unsigned NOT NULL auto_increment,
+  type enum('clone','superctg','assembly_contig','band','chr') NOT NULL default 'clone',
+  dnafrag_id int(10) unsigned NOT NULL default '0',
+  seq_start int(10) unsigned NOT NULL default '0',
+  seq_end int(10) unsigned NOT NULL default '0',
+  orientation tinyint(4) NOT NULL default '0',
+  name varchar(40) NOT NULL default '',
+  PRIMARY KEY (mapfrag_id),
+  UNIQUE KEY name(name),
+  KEY m(dnafrag_id,seq_start)
+) TYPE=MyISAM;
+
+#
+# Table structure for table 'dnafrag'
+#
+
+CREATE TABLE dnafrag (
+  dnafrag_id int(10) unsigned NOT NULL auto_increment,
+  name varchar(40) NOT NULL default '',
+  dnafrag_type enum('RawContig','Chromosome') default NULL,
+  PRIMARY KEY (dnafrag_id),
+  UNIQUE KEY name(name)
+) TYPE=MyISAM;
+
+#
+# Table structure for table 'mapannotation'
+#
+
+CREATE TABLE mapannotation (
+  mapannotation_id int(10) unsigned NOT NULL auto_increment,
+  mapfrag_id int(10) unsigned NOT NULL default '0',
+  mapannotationtype_id smallint(5) unsigned NOT NULL default '0',
+  value varchar(240) NOT NULL default '',
+  PRIMARY KEY (mapannotation_id),
+  KEY mapfrag_id(mapfrag_id,mapannotationtype_id),
+  KEY mapannotationtype_id(mapannotationtype_id,mapfrag_id),
+  KEY value(value,mapannotationtype_id),
+  KEY mapannotationtype_id_2(mapannotationtype_id,value)
+) TYPE=MyISAM;
+
+#
+# Table structure for table 'mapannotationtype'
+#
+
+CREATE TABLE mapannotationtype (
+  mapannotationtype_id smallint(5) unsigned NOT NULL auto_increment,
+  code varchar(15) NOT NULL default '',
+  name varchar(255) NOT NULL default '',
+  description text NOT NULL,
+  PRIMARY KEY (mapannotationtype_id),
+  UNIQUE KEY c(code)
+) TYPE=MyISAM;
+
+#
+# Table structure for table 'mapset'
+#
+
+CREATE TABLE mapset (
+  mapset_id smallint(5) unsigned NOT NULL auto_increment,
+  code varchar(15) NOT NULL default '',
+  name varchar(255) NOT NULL default '',
+  description text NOT NULL,
+  PRIMARY KEY (mapset_id),
+  UNIQUE KEY c(code)
+) TYPE=MyISAM;
+
+#
+# Table structure for table 'mapfrag_mapset'
+#
+
+CREATE TABLE mapfrag_mapset (
+  mapfrag_id int(10) unsigned NOT NULL default '0',
+  mapset_id smallint(5) unsigned NOT NULL default '0',
+  PRIMARY KEY (mapset_id,mapfrag_id)
+) TYPE=MyISAM;
+
+
 
