@@ -237,14 +237,24 @@ sub _get_features_from_transcript {
     }
   }
 
-  # remove duplicates
+  my $sorted_features_arr_ref = $self->_remove_duplicate_features(\@features);
+  return @$sorted_features_arr_ref;
+}
+
+# _remove_duplicate_features: takes ref to an array of features,
+# returns ref to an array of those features after duplicates removed
+
+sub _remove_duplicate_features {
+  my ($self, $feature_arr_ref) = @_;
+  $self->throw('interface fault') if (@_ != 2);
+  
   my @sorted_features = sort {    $a->hseqname cmp $b->hseqname
                                || $a->start    <=> $b->start
                                || $a->end      <=> $b->end
                                || $a->hstart   <=> $b->hstart
                                || $a->hend     <=> $b->hend
                                || $a->strand   <=> $b->strand
-			     } @features;
+			     } @$feature_arr_ref;
   for (my $i = 1; $i < @sorted_features; $i++) {
     my $f1 = $sorted_features[$i];
     my $f2 = $sorted_features[$i-1];
@@ -259,41 +269,53 @@ sub _get_features_from_transcript {
       $i--;
     }
   }
-  
-  return @sorted_features;
+  return \@sorted_features;
 }
 
 =head2 _get_features_from_rawcontig
 
     Title   :   _get_features_from_rawcontig
     Usage   :   $ea->_get_features_from_rawcontig($rc_obj, $strand);
+                $ea->_get_features_from_rawcontig($rc_obj, $strand,
+		                               $logic_name);
     Function:   Get features off specified strand of the raw contig
-                supplied
+                supplied; if a list of logic names is given,
+		features not resulting from an analysis with that
+		logic name are cut; duplicate features are removed
     Returns :   array of featurepairs
 
 =cut
 
 sub _get_features_from_rawcontig {
-  my ($self, $rawcontig_obj, $strand) = @_;
-  $self->throw('interface fault') if (@_ != 3);
+  my ($self, $rawcontig_obj, $strand) = splice @_, 0, 3;
+  $self->throw('interface fault') if (!$self or !$rawcontig_obj or !$strand);
+  my @wanted_arr = @_;
 
   my @all_features = $rawcontig_obj->get_all_SimilarityFeatures;
   my @features = ();
+  RC_FEATURE_LOOP:
   foreach my $feature (@all_features) {
     next unless $feature->primary_tag =~ /similarity/i;
+    if (@wanted_arr) {
+      my $wanted = 0;
+      foreach (@wanted_arr) {
+        if ($_ eq $feature->analysis->logic_name) {
+          $wanted = 1;
+        }
+      }
+      next RC_FEATURE_LOOP if ! $wanted;
+    }
     if ($feature->strand == $strand) {
-      my $tmp;
-      eval {
-        $tmp = $feature->hseqname;
-      };
-      if ($@) {
+      if (! $feature->can('hseqname')) {
         $self->warn("feature $feature has no hseqname method");
       } else {
         push @features, $feature;
       }
     }
   }
-  return @features;
+
+  my $sorted_features_arr_ref = $self->_remove_duplicate_features(\@features);
+  return @$sorted_features_arr_ref;
 }
 
 =head2 _get_Seqs_by_accs
@@ -390,10 +412,12 @@ sub _pad_pep_str {
 		contigs, these are displayed for the forward
 		strand followed by the reverse strand
     Args    :   for transcripts, an optional list of accession
-		numbers of hit sequences of interest; if none
+		numbers of hit sequences of interest - if none
 		are given, all relevant hit sequences are
-		retrieved (note that for contigs, all relevant
-		hit sequences are always retrieved)
+		retrieved; for contigs, an optional list of
+		logic names of hits of interest - if none
+		are given, all hits are shown irrespective of
+		logic name
     Returns :   array of Bio::PrimarySeq
 
 =cut
@@ -410,9 +434,9 @@ sub fetch_alignment {
                             $self->transcriptid, $self->dbadaptor, @_);
   } elsif ($self->contigid) {
     my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
-                                 $self->contigid, $self->dbadaptor, 1);
+                                 $self->contigid, $self->dbadaptor, 1, @_);
     my $minus_strand_alignment = $self->_get_aligned_features_for_contig(
-                                 $self->contigid, $self->dbadaptor, -1);
+                                 $self->contigid, $self->dbadaptor, -1, @_);
     my $all_alignments = $plus_strand_alignment;
     foreach my $line (@$minus_strand_alignment) {
       push @$all_alignments, $line;
@@ -571,8 +595,9 @@ sub _get_per_hid_effective_scores {
 # returns ref to an array of Bio::PrimarySeq
 
 sub _get_aligned_features_for_contig {
-  my ($self, $contig_id, $db, $strand) = @_;
-  $self->throw('interface fault') if (@_ != 4);
+  my ($self, $contig_id, $db, $strand) = splice @_, 0, 4;
+  $self->throw('interface fault') if (!$self or !$contig_id or !$db
+                                      or !$strand);
 
   my @evidence_arr;	# a reference to this is returned
   my $evidence_obj;
@@ -580,7 +605,7 @@ sub _get_aligned_features_for_contig {
   # get contig
   my $contig_obj = $db->get_Contig($contig_id);
 
-  my @features = $self->_get_features_from_rawcontig($contig_obj, $strand);
+  my @features = $self->_get_features_from_rawcontig($contig_obj, $strand, @_);
   my $per_hid_effective_scores_hash_ref
     = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
