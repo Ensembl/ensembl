@@ -77,6 +77,8 @@ sub _initialize {
 
   $self->_author($a); # sets author as $a
   $self->{'_eal_mess'} = []; # an array of log messages
+  
+  $self->dump_to_error(0);
 
   return $make; # success - we hope!
 }
@@ -101,6 +103,11 @@ sub store{
    $mess->author($self->_author);
    $mess->text($text);
    $self->add_LogMessage($mess);
+
+   if( $self->dump_to_error() ) {
+       print STDERR "$text\n";
+   }
+
 
 }
 
@@ -170,5 +177,27 @@ sub _author{
    return $self->{'_eal_author'};
 
 }
+
+=head2 dump_to_error
+
+ Title   : dump_to_error
+ Usage   : $obj->dump_to_error($newval)
+ Function: 
+ Returns : value of dump_to_error
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dump_to_error{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'dump_to_error'} = $value;
+    }
+    return $obj->{'dump_to_error'};
+
+}
+
 
 1;

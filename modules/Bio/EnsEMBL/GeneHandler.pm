@@ -230,7 +230,7 @@ sub _process_Transcript{
 	   # make an Exon FTHelper and add them
 	   
 	   my $ft = new Bio::AnnSeqIO::FTHelper->new();
-	   $ft->key("Exon");
+	   $ft->key("exon");
 	   # add other stuff to Exon?
 	   $ft->add_field('created',$exon->created());
 	   $ft->add_field('modified',$exon->modified());
