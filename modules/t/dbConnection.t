@@ -37,8 +37,6 @@ my $dbc;
   my $host    = $db->host;
   my $driver  = $db->driver;
 
-  print STDERR "Using port [$port]\n";
-
   $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbname => $db_name,
 						-user   => $user,
 						-pass   => $pass,
