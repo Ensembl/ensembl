@@ -234,7 +234,7 @@ sub username {
 }
 
 
-=head2 username
+=head2 host
 
   Arg [1]    : (optional) string $arg
                The new value of the host used by this connection. 
@@ -257,7 +257,7 @@ sub host {
 }
 
 
-=head2 username
+=head2 password
 
   Arg [1]    : (optional) string $arg
                The new value of the password used by this connection. 
