@@ -54,12 +54,12 @@ use IO::Handle;
 #
 #----------------------------------------------------------------------
 
-my $q_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/peptides_new.fa';
-my $t_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/total.fa';
-my $e_cmd='/usr/local/ensembl/bin/exonerate-0.7.1';
-my $q_min=25;
-my $t_min=25;
-my $s_min=99;
+my $q_fa;
+my $t_fa;
+my $e_cmd   = '/usr/local/ensembl/bin/exonerate-0.7.1';
+my $q_min   = 25;
+my $t_min   = 25;
+my $s_min   = 99;	# Keep top 1%
 
 sub usage
 {
@@ -67,7 +67,7 @@ sub usage
 
 	print STDERR <<EOT;
 Usage:	$0 [-h?]
-	$0 [-v] [-e path] [-q path] [-t path] [-i path]
+	$0 [-v] [-e path] [-i path] -q path -t path
 	$padding [-o path] [-Q val] [-T val] [-S val] [-- opts]	
 	$0 [-v] [-f path] [-o path] [-Q val] [-T val] [-S val]
 	$0 [-v] -d
@@ -166,10 +166,10 @@ if (defined $opts{d} && $opts{d} == 1) {
 if (defined($fin) && length($fin) != 0 &&
     defined($finter) && length($finter) != 0) {
     die "Can't specify -f and -i at the same time\n";
-} elsif (! -R $q_fa) {
-    die "Can't find or read file '$q_fa'\n";
-} elsif (! -R $t_fa) {
-    die "Can't find or read file '$t_fa'\n";
+} elsif (!defined($q_fa) || ! -R $q_fa) {
+    die "Can't find or read query file '$q_fa'\n";
+} elsif (!defined($t_fa) || ! -R $t_fa) {
+    die "Can't find or read target file '$t_fa'\n";
 } elsif (! -X $e_cmd ) {
     die "Can't find or execute command '$e_cmd'\n";
 }
