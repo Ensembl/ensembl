@@ -651,7 +651,7 @@ sub _objs_from_sth {
 
   FEATURE: while($sth->fetch()) {
     #get the analysis object
-    my $slice = $slice_hash{$seq_region_id};
+    my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);

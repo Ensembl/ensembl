@@ -248,7 +248,7 @@ sub _objs_from_sth {
       $aa->fetch_by_dbID($analysis_id);
 
     #get the slice object
-    my $slice = $slice_hash{$seq_region_id};
+    my $slice = $slice_hash{"ID:".$seq_region_id};
 
     if(!$slice) {
       $slice = $sa->fetch_by_seq_region_id($seq_region_id);
