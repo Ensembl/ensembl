@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..3\n"; 
+BEGIN { $| = 1; print "1..41\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;
@@ -52,56 +52,243 @@ print "ok 3\n";
 my @clones = $fromdb->get_Update_Obj->get_updated_Clone_id(1,time());
 print "ok 4\n";
 
-
 foreach my $clone_id (@clones) {
-    
-    my $don_clone=$fromdb->get_Clone($clone_id);
-    $todb->write_Clone($don_clone);
-    foreach my $gene ($don_clone->get_all_Genes('evidence')) {
-	$todb->gene_Obj->write($gene);
+    if ($clone_id eq 'AB015355') {
+	print "ok 5\n";
     }
+    else {
+	print "not ok 5\n";
+	print STDERR "unexpected clone id $clone_id\n";
+    }
+    my $don_clone=$fromdb->get_Clone($clone_id);
+    print "ok 6\n";
+    check_clone($don_clone,7);
+    $todb->write_Clone($don_clone);
+    print "ok 15\n";
+    my $rec_clone=$todb->get_Clone($clone_id);
+    print "ok 16\n";
+    check_clone($rec_clone,17);
+    my $ok;
+    foreach my $don_gene ($don_clone->get_all_Genes('evidence')) {
+	if ($don_gene->id =~ /ENSG00000008215|ENSG00000008216|ENSG00000008217/) {
+	    $ok++;
+	}
+	push @geneids,$don_gene->id;
+	if ($don_gene->id eq 'ENSG00000008217') {
+	    check_gene($don_gene,25);
+	    $todb->gene_Obj->write($don_gene);
+	    my $rec_gene=$todb->gene_Obj->get('ENSG00000008217');
+	    check_gene($rec_gene,30);
+	}
+    }
+    if ($ok == 3) {
+	print "ok 35\n";
+    }
+    else {
+	print "not ok 35\n";
+	print STDERR "Got $ok genes instead of 3!\n";
+    }
+    foreach my $gene_id (@geneids) {
+	$fromdb->gene_Obj->delete($gene_id);
+    }
+    $don_clone->delete;
+    print "ok 36\n";
+    check_delete(37);
 }
-print "ok 5\n";
 
+sub check_clone {
+    my ($clone,$c)=@_;
 
+    if ($clone->id eq 'AB015355') {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone id not set correctly\n";
+    }
+    $c++;
+    if ($clone->_internal_id == 1) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone internal_id not set correctly\n";
+    }
+    $c++;
+    if ($clone->version ==2) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone version not set correctly\n";
+    }
+    $c++;
+    if ($clone->embl_id eq 'AB015355') {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone embl_id not set correctly\n";
+    }
+    $c++;
+    if ($clone->embl_version == 1) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone embl_version not set correctly\n";
+    }
+    $c++;
+    if ($clone->htg_phase == 4) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone htg_phase not set correctly\n";
+    }
+    $c++;
+    if ($clone->created == 932819268) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone htg_phase not set correctly\n";
+    }
+    $c++;
+    if ($clone->modified == 961872240) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Clone htg_phase not set correctly\n";
+    }
+    
+}
 
+sub check_gene {
+    my ($gene,$c)=@_;
+    
+    if ($gene->id eq 'ENSG00000008217') {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Gene id not set correctly\n";
+    }
+    $c++;
+    if ($gene->version ==1) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Gene version not set correctly\n";
+    }
+    $c++;
+    foreach my $transcript ($gene->each_Transcript) {
+	if ($transcript->id eq 'ENST00000009279') {
+	    print "ok $c\n";
+	}
+	else {
+	    print "not ok $c\n";
+	    print STDERR "Transcript id not set correctly\n";
+	}
+	$c++;
+	my $translation=$transcript->translation;
+	if ($translation->id eq 'ENSP00000009279') {
+	    print "ok $c\n";
+	}
+	else {
+	    print "not ok $c\n";
+	    print STDERR "Transcript id not set correctly\n";
+	}
+	$c++;
+	my $ok=0;
+	foreach $exon ($transcript->each_Exon) {
+	    if ($exon->id =~ /ENSE00000031517|ENSE00000031518|ENSE00000031519|ENSE00000031520|ENSE00000031521|ENSE00000031522/) {
+		$ok++;
+	    }
+	}
+	if ($ok == 6) {
+	    print "ok $c\n";
+	}
+	else {
+	    print "not ok $c\n";
+	    print STDERR "Got $ok exons instead of 6\n";
+	}
+	
+    }    
+    
+}
 
+sub check_delete {
+    my ($c)=@_;
+    
+    my $clone;
+    eval {
+	$clone=$fromdb->get_Clone('AB015355');
+    };
+    if ($@) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Bad news, after deleting clone, found $clone\n";
+    }
+    $c++;
 
+    my $gene;
+    eval {
+	$gene=$fromdb->gene_Obj->get('ENSG00000008217');
+    };
+    if ($@) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Bad news, after deleting clone, found gene $gene\n";
+    }
+    $c++;
 
+    my $exon;
+    eval {
+	$exon=$fromdb->gene_Obj->get_Exon('ENSE00000031517');
+    };
+    if ($@) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Bad news, after deleting clone, found exon $exon\n";
+    }
+    $c++;
 
+    my $transcript;
+    eval {
+	$transcript=$fromdb->gene_Obj->get_Transcript('ENST00000009279');
+    };
+    if ($@) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Bad news, after deleting clone, found transcript $transcript\n";
+    }
+    $c++;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    my $translation;
+    eval {
+	$translation=$fromdb->gene_Obj->get_Translation('ENSP00000009279');
+    };
+    if ($@) {
+	print "ok $c\n";
+    }
+    else {
+	print "not ok $c\n";
+	print STDERR "Bad news, after deleting clone, found translation $translation\n";
+    }
+    $c++;
+}
+    
+    
+    
 

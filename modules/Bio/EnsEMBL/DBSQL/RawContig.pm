@@ -118,7 +118,7 @@ sub fetch {
         SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
-          , clone.id
+          , clone.internal_id
         FROM dna
           , contig
           , clone

@@ -1164,6 +1164,26 @@ sub get_Contig {
     return $self->{_contighash}{$arg};
 }
 
+=head2 _internal_id
+
+ Title   : _internal_id
+ Usage   : $obj->_internal_id($newval)
+ Function: 
+ Returns : value of _internal_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _internal_id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_internal_id'} = $value;
+    }
+    return $obj->{'_internal_id'};
+
+}
 
 =head2 get_all_ContigIds
 

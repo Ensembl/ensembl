@@ -227,30 +227,31 @@ sub write_Clone {
     
     my @sql;
     
-    my $sth = $self->prepare('
-        insert into clone (id, version, embl_id, embl_version, htg_phase, created, modified, stored) 
-        values(?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())
-        '); 
-
+    my $sth = $self->prepare('insert into clone (id, internal_id, version, embl_id, embl_version, htg_phase, created, modified, stored) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())'); 
     my $rv = $sth->execute(
-        $clone_id,
-        $clone->version || "NULL",
-        $clone->embl_id || "NULL",
-        $clone->embl_version || "NULL",
-        $clone->htg_phase,
-        $clone->created,
-        $clone->modified
-        );
+			   $clone_id,
+			   "NULL",
+			   $clone->version || "NULL",
+			   $clone->embl_id || "NULL",
+			   $clone->embl_version || "NULL",
+			   $clone->htg_phase,
+			   $clone->created,
+			   $clone->modified
+			   );
         
     $self->throw("Failed to insert clone $clone_id") unless $rv;
-
+    $sth = $self->prepare("select last_insert_id()");
+    my $res = $sth->execute;
+    my $row = $sth->fetchrow_hashref;
+    my $id  = $row->{'last_insert_id()'};
+    #print(STDERR "Clone $clone_id - $id\n");
     
     foreach my $contig ( $clone->get_all_Contigs() ) {        
-        $self->write_Contig($contig,$clone_id);
+        $self->write_Contig($contig,$id);
     }
     
     foreach my $overlap ($clone->get_all_ContigOverlaps) {    
-        $self->write_ContigOverlap($overlap, $clone);
+        $self->write_ContigOverlap($overlap);
     }
    
 }
@@ -270,6 +271,7 @@ sub write_Clone {
 sub write_Contig {
     my($self, $contig, $clone)  = @_;
        
+    #Why do we have $clone if contig->cloneid is ok?
      
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
         unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
@@ -318,11 +320,9 @@ sub write_Contig {
     $sth = $self->prepare("select last_insert_id()");
     my $res = $sth->execute;
     my $row = $sth->fetchrow_hashref;
-    
     my $id  = $row->{'last_insert_id()'};
     
     #print(STDERR "Contig $contigid - $id\n");
-    
     $contig->internal_id($id);
     
     # write sequence features. We write all of them together as it

@@ -105,7 +105,6 @@ sub fetch {
 	$sth = 0;
 	$self->throw("Clone $id does not seem to occur in the database!");
     }   
-    
     $self->_internal_id($rowhash->{'internal_id'});
     return $self;
 }
@@ -129,13 +128,13 @@ sub delete {
  
    #(ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
-   my $internal_clone_id = $self->_internal_id;
+   my $internal_id = $self->_internal_id;
 
    my @contigs;
    my @dnas;
 
    # get a list of contigs to zap
-   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = '$internal_clone_id'");
+   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = $internal_id");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -146,7 +145,7 @@ sub delete {
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
-       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = '$contig'");
+       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = $contig");
        my $res = $sth->execute;
 
        my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
@@ -163,7 +162,7 @@ sub delete {
 
    }
 
-   $sth = $self->_db_obj->prepare("delete from clone where internal_id = '$internal_clone_id'");
+   $sth = $self->_db_obj->prepare("delete from clone where internal_id = $internal_id");
    $res = $sth->execute;
 }
 
@@ -192,10 +191,10 @@ sub get_all_Genes {
              exon_transcript et,
              exon e,
              contig c
-        WHERE e.contig = c.id
+        WHERE e.contig = c.internal_id
           AND et.exon = e.id
           AND t.id = et.transcript
-          AND c.clone = '$clone_id'
+          AND c.clone = $clone_id
         ");
 
     my $res = $sth->execute();
@@ -265,7 +264,7 @@ sub get_all_my_geneid {
 			    "       exon            as ex " .
 			    "where  ex.id            = et.exon " .
 			    "and    tran.id          = et.transcript " .
-			    "and    cont.clone       = '$cloneid'  " .
+			    "and    cont.clone       = $cloneid  " .
 			    "and    cont.internal_id = ex.contig " .
 			    "group by tran.gene");
 
@@ -296,7 +295,7 @@ sub get_all_Contigs {
    my @res;
    my $internal_id = $self->_internal_id();
 
-   my $sql = "select id,internal_id from contig where clone = \"$internal_id\" ";
+   my $sql = "select id,internal_id from contig where clone = $internal_id";
 
    $sth= $self->_db_obj->prepare($sql);
    my $res  = $sth->execute();
@@ -448,10 +447,9 @@ sub get_all_ContigOverlaps {
 
 sub htg_phase {
    my $self = shift;
+   my $internal_id = $self->_internal_id();
 
-   my $id = $self->id();
-
-   my $sth = $self->_db_obj->prepare("select htg_phase from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select htg_phase from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'htg_phase'};
@@ -473,9 +471,9 @@ sub htg_phase {
 sub created {
    my ($self) = @_;
 
-   my $id = $self->id();
+   my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'UNIX_TIMESTAMP(created)'};
@@ -497,16 +495,12 @@ sub created {
 sub modified {
    my ($self) = @_;
 
-   my $id = $self->id();
+   my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select modified from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(modified) from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
-   my $datetime = $rowhash->{'modified'};
-   $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-   $sth->execute();
-   $rowhash = $sth->fetchrow_arrayref();
-   return $rowhash->[0];
+   return $rowhash->{'UNIX_TIMESTAMP(modified)'};
 }
 
 
@@ -525,9 +519,10 @@ sub modified {
 
 sub version {
    my $self = shift;
-   my $id = $self->id();
 
-   my $sth = $self->_db_obj->prepare("select version from clone where id = \"$id\" ");
+   my $internal_id = $self->_internal_id();
+
+   my $sth = $self->_db_obj->prepare("select version from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'version'};
@@ -568,9 +563,9 @@ sub _stored {
 
 sub embl_version {
    my $self = shift;
-   my $id = $self->id();
+   my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select embl_version from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select embl_version from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_version'};
@@ -644,9 +639,9 @@ sub sv{
 sub embl_id {
    my ($self) = @_;
 
-   my $id = $self->id();
+   my $internal_id = $self->_internal_id();
 
-   my $sth = $self->_db_obj->prepare("select embl_id from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select embl_id from clone where internal_id = $internal_id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_id'};

@@ -374,7 +374,7 @@ sub get_array_supporting {
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
-          , exon.rank
+          , exon.sticky_rank
         };
 
     #print STDERR "query [$query]\n"; 
@@ -1293,7 +1293,7 @@ sub write_Exon {
 
     my $exonst = q{
         insert into exon (id, version, contig, created, modified
-          , seq_start, seq_end, strand, phase, stored, end_phase, rank) 
+          , seq_start, seq_end, strand, phase, stored, end_phase, sticky_rank) 
         values (?,?,?,FROM_UNIXTIME(?),FROM_UNIXTIME(?),?,?,?,?,NOW(),?,?)
         };
     

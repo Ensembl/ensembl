@@ -207,13 +207,14 @@ foreach my $clone_id ( @clone ) {
 
 	foreach my $gene ( $clone->get_all_Genes() ) {
 	    print(STDERR "Writing gene " . $gene->id . "\n");
-	    $to_db->write_Gene($gene);
+	    $to_db->gene_Obj->write($gene);
 	    
 	    # Now generate the supporting evidence and write
 	    # into the to database.
 	    foreach my $exon ($gene->each_unique_Exon) {
 		$exon ->find_supporting_evidence (\@features);
-		$to_db->write_supporting_evidence($exon);
+		
+		$to_db->gene_Obj->write_supporting_evidence($exon);
 	    }
 	
 	}
