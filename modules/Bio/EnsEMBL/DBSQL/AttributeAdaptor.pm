@@ -359,7 +359,7 @@ sub _store_type {
      "description = ?" );
 
   my $rows_inserted =
-    $sth1->execute($attrib->code(), $attrib->name(), $attrib->desc() );
+    $sth1->execute($attrib->code(), $attrib->name(), $attrib->description() );
 
   my $atid = $sth1->{'mysql_insertid'};
 
@@ -399,7 +399,7 @@ sub _obj_from_sth {
   while($sth->fetch()) {
     push @results, Bio::EnsEMBL::Attribute->new(-CODE => $code,
                                                 -NAME => $name,
-                                                -DESC => $desc,
+                                                -DESCRIPTION => $desc,
                                                 -VALUE => $value);
   }
 
