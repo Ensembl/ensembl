@@ -118,6 +118,9 @@ sub _initialize {
   
   # this actually stores the contig we are using
   $self->{'contighash'} = {};
+
+  # this is for cache's of sequence features if/when we want them
+  $self->{'_sf_cache'} = {};
   
   # build the map of how contigs go onto the vc coorindates
   $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
@@ -353,6 +356,104 @@ sub _build_contig_map{
 
 }
 
+
+=head2 _get_all_SeqFeatures_type
+
+ Title   : _get_all_SeqFeatures_type
+ Usage   : Internal function which encapsulates getting
+           features of a particular type and returning
+           them in the VC coordinates, optionally cache'ing
+           them.
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_all_SeqFeatures_type{
+   my ($self,$type) = @_;
+
+   if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
+       return $self->_get_cache($type);
+   }
+
+   # ok - build the sequence feature list...
+
+   my $sf;
+   if( $self->_cache_seqfeatures() ) {
+       $sf = $self->_make_cache($type);
+   } else {
+       $sf = []; # will be destroyed when drops out of scope
+   }
+
+
+   foreach my $c ( values %{$self->{'_contighash'}} ) {
+       if( $type eq 'repeat' ) {
+	   push(@$sf,$c->get_all_RepeatFeatures());
+       } elsif ( $type eq 'similarity' ) {
+	   push(@$sf,$c->get_all_SimilarityFeatures());
+       } elsif ( $type eq 'prediction' ) {
+	   push(@$sf,$c->get_all_PredictionFeatures());
+       } else {
+	   $self->throw("Type $type not recognised");
+       }
+   }
+
+
+   foreach $sf ( @$sf ) {
+       $self->_convert_seqfeature_to_vc_coords($sf);
+   }
+
+   return @$sf;
+}
+
+
+=head2 _convert_seqfeature_to_vc_coords
+
+ Title   : _convert_seqfeature_to_vc_coords
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _convert_seqfeature_to_vc_coords{
+   my ($self,$sf) = @_;
+
+   my $cid = $sf->seqname();
+   if( !exists $self->{'contighash'}->{$cid} ) {
+       $self->throw("Attempting to map a sequence feature with $cid on a virtual contig with no $cid");
+   }
+
+   if( $self->{'contigori'}->{$cid} == 1 ) {
+       # ok - forward with respect to vc. Only need to add offset
+       my $offset = $self->{'start'}->{$cid} - $self->{'startincontig'}->{$cid};
+       $sf->start($sf->start + $offset);
+       $sf->end($sf->start + $offset);
+       # strand stays the same
+   } else {
+       my $offset = $self->{'start'}->{$cid} + $self->{'startincontig'}->{$cid};
+       # flip strand
+       $sf->strand($sf->strand * -1);
+       
+       # yup. A number of different off-by-one errors possible here
+
+       my $tstart = $sf->start;
+       my $tend   = $sf->end;
+
+       $sf->start($offset - $tend);
+       $sf->end($offset - $tstart);
+
+   }
+
+}
+
+
 =head2 _dump_map
 
  Title   : _dump_map
@@ -483,3 +584,92 @@ sub _right_size{
 
 }
 
+=head2 _cache_seqfeatures
+
+ Title   : _cache_seqfeatures
+ Usage   : $obj->_cache_seqfeatures($newval)
+ Function: 
+ Returns : value of _cache_seqfeatures
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _cache_seqfeatures{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_cache_seqfeatures'} = $value;
+    }
+    return $obj->{'_cache_seqfeatures'};
+
+}
+
+=head2 _has_cached_type
+
+ Title   : _has_cached_type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _has_cached_type{
+   my ($self,$type) = @_;
+
+   if ( exists $self->{'_sf_cache'}->{$type} ) {
+       return 1;
+   } else {
+       return 0;
+   }
+}
+
+=head2 _make_cache
+
+ Title   : _make_cache
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _make_cache{
+   my ($self,$type) = @_;
+
+   if( $self->_has_cached_type($type) == 1) {
+       $self->throw("Already got a cache for $type! Error in logic here");
+   }
+
+   $self->{'_sf_cache'}->{$type} = [];
+
+   return $self->{'_sf_cache'}->{$type};
+}
+
+=head2 _get_cache
+
+ Title   : _get_cache
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_cache{
+   my ($self,$type) = @_;
+
+   return $self->{'_sf_cache'}->{$type};
+   
+}
+
+
+
+1;
