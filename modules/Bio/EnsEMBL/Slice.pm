@@ -1222,6 +1222,7 @@ sub get_all_DASFeatures{
    my $chr_end    = $self->chr_end();
    my $chr_strand = $self->strand();
    my $length     = $chr_end + $offset;
+   my $clone_adaptor = $self->adaptor->db->get_CloneAdaptor();
 
 foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
        if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
@@ -1257,8 +1258,8 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                     push(@contig_features, $sf);
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) {
 #                    print STDERR "CLONE >".$sf->seqname()."<\n";
-		 my $clone_adaptor = $self->adaptor->db->get_CloneAdaptor;
-		 my $clone = $clone_adaptor->fetch_by_accession($sf->seqname);
+
+         		 my $clone = $clone_adaptor->fetch_by_accession($sf->seqname);
 
 		 #we only use finished clones. finished means there is only
                  #one contig on the clone and it has an offset of 1
