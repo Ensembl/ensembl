@@ -1113,7 +1113,7 @@ sub get_cdna {
   # if the exon has no frameshifts, simply return the dna
   # sequence unmodified
 
-  if ( !defined @frameshifts ) {
+  if ( scalar(@frameshifts) > 0 ) {
     my $temp_seq = Bio::Seq->new(
 	   -SEQ         => $seq,
 	   -DISPLAY_ID  => 'cdna_unmodified',
