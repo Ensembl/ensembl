@@ -768,46 +768,6 @@ sub get_ChromosomeAdaptor {
     return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
 }
 
-=head2 get_FamilyAdaptor
-
- Title   : get_FamilyAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-## following is not part of core EnsEMBL, so maybe doesn't belong here and
-## has to be moved elsehwere (e.g. as part of a more dynamical
-## add_external_adaptor scheme). For convenience I have it here, now,
-## though. It will break things for people who don't have ensembl-external
-## checked out ...
-
-sub get_FamilyAdaptor {
-    my( $self ) = @_;
-    
-    my( $fa );
-    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
-        eval{
-            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
-        };
-        if ($@) {
-            $self->throw(
-                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
-                . "It is not part of the core Ensembl distribution.\n"
-                . "Have you installed it?");
-        }
-        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
-        $self->{'_externaldata_family_familyadaptor'} = $fa;
-    }
-    return $fa;
-}
-
-
-
 sub list_supported_assemblies {
     my($self) = @_;
     my @out;
@@ -2832,6 +2792,50 @@ sub create_tables {
 
   # create some tables without adaptors
   # (which should disappear once)
+}
+
+#=head2 get_FamilyAdaptor
+
+# Title   : get_FamilyAdaptor
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
+
+
+#=cut
+
+## following is not part of core EnsEMBL, so maybe doesn't belong here and
+## has to be moved elsehwere (e.g. as part of a more dynamical
+## add_external_adaptor scheme). For convenience I have it here, now,
+## though. It will break things for people who don't have ensembl-external
+## checked out ...
+
+sub get_FamilyAdaptor {
+    my( $self ) = @_;
+    
+    $self->throw("DBAdaptor->get_FamilyAdaptor is deprecated.\n" .
+"Family db has now its own DBAdaptor. Use it to connect a family database,\n" .
+"Keep it cached using add_ExternalAdaptor from the core DBAdaptor\n" .
+"From the family DBAdaptor you can then get_FamilyAdaptor\n" .
+"For more info, see perldoc Bio::EnsEMBL::ExternalData::Family::DBSQL::DBAdaptor\n");
+    
+    my( $fa );
+    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
+        eval{
+            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+        };
+        if ($@) {
+            $self->throw(
+                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
+                . "It is not part of the core Ensembl distribution.\n"
+                . "Have you installed it?");
+        }
+        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
+        $self->{'_externaldata_family_familyadaptor'} = $fa;
+    }
+    return $fa;
 }
 
 1;
