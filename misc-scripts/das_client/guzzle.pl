@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -wT
 
 # $Id$
 #
@@ -132,7 +132,7 @@ my $use_stylesheets = 1;
 # $be_nice
 # Whether to be nice to DAS servers or not.
 #
-my $be_nice = 0;
+my $be_nice = 1;
 
 # $use_graphics
 # Whether to generate and use graphics or not.
