@@ -875,6 +875,28 @@ Calling Gene_Obj->get instead!");
    return $self->gene_Obj->get($geneid,$supporting);
 }
 
+=head2 get_Gene_by_Transcript_id
+
+ Title   : get_Gene_by_Transcript_id
+ Usage   : $obj->get_Gene_by_Transcript_id($transid, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Example : $obj->get_Gene_by_Transcript_id('ENST00000009151')
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : transcript id and supporting tag (if latter not specified, assumes without
+	   Note that it is much faster to get genes without supp.evidence!
+
+
+=cut
+
+sub get_Gene_by_Transcript_id {
+   my ($self,$tid, $supporting) = @_;
+
+   $self->warn("Obj->get_Gene_by_Transcript_id is a deprecated method! 
+Calling Gene_Obj->get instead!");
+
+   return $self->gene_Obj->get_Gene_by_Transcript_id($tid,$supporting);
+}
+
 =head2 get_Gene_array
 
  Title   : get_Gene_array

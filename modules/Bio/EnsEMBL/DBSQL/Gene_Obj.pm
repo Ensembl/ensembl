@@ -464,7 +464,7 @@ sub get_Gene_by_Transcript_id {
     if( !defined $geneid ) {
         return undef;
     }
-    return $self->get_Gene($geneid,$supporting);
+    return $self->get($geneid,$supporting);
 }
 
 
