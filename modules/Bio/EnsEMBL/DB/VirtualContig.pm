@@ -847,6 +847,7 @@ sub get_all_Genes {
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
+	    
 	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
                 $internalExon = 1;
 		$exonconverted{$exon->id} = 1;
@@ -1250,9 +1251,10 @@ sub _convert_seqfeature_to_vc_coords {
     if( !defined $cid ) {
 	$self->throw("sequence feature [$sf] has no seqname!");
     }
-
-    $mc=$self->_vmap->get_MapContig($cid);
-    if( !defined $mc ) {
+    eval {
+	$mc=$self->_vmap->get_MapContig($cid);
+    };
+    if($@) {
 	return undef;
     }
 
