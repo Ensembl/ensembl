@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 23;
+	plan tests => 22;
 }
 
 use MultiTestDB;
@@ -15,13 +15,14 @@ use Bio::EnsEMBL::Gene;
 # switch on the debug prints
 my $verbose = 0;
 
+debug( "Startup test" );
 ok(1);
 
 my $multi = MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 
-
+debug( "Test database instatiated" );
 ok( $db );
 
 my $gene;
@@ -29,6 +30,7 @@ my $ga = $db->get_GeneAdaptor();
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
+debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
 my $e_slice = Bio::EnsEMBL::Slice->new
@@ -39,11 +41,12 @@ my $e_slice = Bio::EnsEMBL::Slice->new
 $gene->transform( $e_slice );
 
 debug( "Gene dbID: ". $gene->dbID());
-debug( "Gene start: ".$gene->start );
-debug( "Gene end: ".$gene->end );
-
-ok( $gene->start() == 30735607 );
 ok( $gene->dbID() == 18267 );
+
+debug( "Gene start: ".$gene->start );
+ok( $gene->start() == 30735607 );
+
+debug( "Gene end: ".$gene->end );
 ok( $gene->end() == 30815178 );
 
 
@@ -56,11 +59,12 @@ ok( scalar @$links == 6 );
 # now create a new gene ...
 
 my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
+debug( "Slice from SliceAdaptor" );
+ok($slice);
 
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("ensembl");
-
+debug( "Analysis from AnalysisAdaptor" );
 ok($analysis);
-ok($slice);
 
 
 $gene = Bio::EnsEMBL::Gene->new();
@@ -110,7 +114,6 @@ $translation1->start(1);
 $translation1->end(9);
 $transcript1->translation($translation1);
 
-ok($transcript1);
 
 $transcript2->add_Exon($ex1);
 $transcript2->add_Exon($ex2);
@@ -121,7 +124,8 @@ $translation2->start(1);
 $translation2->end(6);
 $transcript2->translation($translation2);
 
-ok($transcript2);
+debug( "Transcripts created" );
+ok($transcript1);
 
 
 $gene->add_Transcript($transcript1);
@@ -129,7 +133,7 @@ $gene->add_Transcript($transcript2);
 
 $gene->analysis($analysis);
 
-
+debug( "Getting all the Transcripts/Exons from new Gene" );
 
 my $count = 0;
 
@@ -142,8 +146,6 @@ foreach my $tr( @{$gene->get_all_Transcripts()} ) {
   }	
 }
 
-
-
 ok($count == 5);
 
 ok( scalar(@{$gene->get_all_Exons()} ) == 3);
@@ -152,6 +154,7 @@ $gene->transform();
 $multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id" );
 
 my $gene_ad = $db->get_GeneAdaptor();
+debug( "Storing the gene" );
 $gene_ad->store($gene);
 
 ok(1);
@@ -212,6 +215,7 @@ debug( "Pep phase 0: $pep1" );
 debug( "Pep phase 1: $pep2" );
 
 ok( $pep1 ne $pep2 );
+debug( "checking external references" );
 
 $multi->restore();
 
