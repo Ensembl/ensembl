@@ -89,20 +89,26 @@ sub _initialize {
 =cut
 
 sub get_all_Genes{
-   my ($self,@args) = @_;
+   my ($self,$supporting) = @_;
    my @out;
    my $contig_id = $self->id();
    # prepare the SQL statement
    my %got;
+   my $gene;
 
    my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
        if( $got{$rowhash->{'gene'}} != 1 ) {
-          my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
-	  push(@out,$gene);
-	  $got{$rowhash->{'gene'}} = 1;
+	   if ($supporting && $supporting eq 'evidence') {
+	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'},'evidence');
+	   }
+	   else {
+	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
+	   }
+	   push(@out,$gene);
+	   $got{$rowhash->{'gene'}} = 1;
        }
        
    }

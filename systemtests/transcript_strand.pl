@@ -39,10 +39,10 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 use Getopt::Long;
 
-my $host   = 'sol28';
+my $host   = 'obi-wan';
 my $port   = '410000';
-my $dbname = 'ens100';
-my $dbuser = 'ensembl';
+my $dbname = 'ensembl';
+my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $help;

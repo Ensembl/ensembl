@@ -135,28 +135,36 @@ sub _initialize {
 =head2 get_Gene
 
  Title   : get_Gene
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $obj->get_Gene($geneid, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Example : $obj->get_Gene('ENSG00000009151','evidence')
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : gene id and supporting tag (if latter not specified, assumes without
+	   Note that it is much faster to get genes without supp.evidence!
 
 
 =cut
 
 sub get_Gene{
-   my ($self,$geneid) = @_;
-   
-   my @out = $self->get_Gene_array($geneid);
+   my ($self,$geneid, $supporting) = @_;
+   my @out;
+
+   if ($supporting && $supporting eq 'evidence') {
+       @out = $self->get_Gene_array_supporting('evidence',$geneid);
+   }
+   else {
+       @out = $self->get_Gene_array_supporting('without',$geneid);
+   }
    return $out[0];
 }
 
 
 =head2 get_Gene_array
 
- Title   : get_Gene
+ Title   : get_Gene_array
  Usage   :
- Function:
+ Function: old method, present for historical reasons, points to new method
+           get_gene_array_supporting without asking for supp.evidence
  Example :
  Returns : 
  Args    :
@@ -171,7 +179,37 @@ sub get_Gene_array {
 	$self->throw("Attempting to create gene with no id");
     }
     
-    my @out;
+    my @out=$self->get_Gene_array_supporting('without',@geneid); 
+
+    return @out;
+}
+
+=head2 get_Gene_array_supporting
+
+ Title   : get_Gene_array_supporting
+ Usage   : $obj->get_Gene_array_supporting($supporting,@geneid)
+ Function: Gets an array of genes, with transcripts and exons. If $supporting
+           equal to 'evidence' the supporting evidence for each exon is also read
+           from the supporting evidence table
+ Example : $obj->get_Gene_array_supporting ('evidence',@geneid)
+ Returns : an array of gene objects
+ Args    : 'evidence' and gene id array
+
+
+=cut
+
+sub get_Gene_array_supporting {
+    my ($self,$supporting,@geneid) = @_;
+
+    $supporting || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
+
+    if( @geneid == 0 ) {
+	$self->throw("Attempting to create gene with no id");
+    }
+
+    
+    
+    my (@out, @sup_exons);
     my $inlist = join(',',map "'$_'", @geneid);
     $inlist = "($inlist)";
 				
@@ -252,6 +290,9 @@ sub get_Gene_array {
 	#
 	# Attach the sequence, cached if necessary...
 	#
+	if ($supporting && $supporting eq 'evidence') {
+	    push @sup_exons, $exon;
+	}
 	
 	my $seq;
 	
@@ -268,9 +309,13 @@ sub get_Gene_array {
 
     }
     
+    if ($supporting && $supporting eq 'evidence') {
+	$self->get_supporting_evidence(@sup_exons);
+    }
 
     return @out;
 }
+
 
 =head2 donor_locator
     
@@ -1539,7 +1584,7 @@ sub write_supporting_evidence {
  Function: Writes supporting evidence features to the database
  Example :
  Returns : nothing
- Args    : None
+ Args    : array of exon objects, needed to know which exon to attach the evidence to
 
 
 =cut

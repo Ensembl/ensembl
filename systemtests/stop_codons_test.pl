@@ -28,10 +28,10 @@ use Bio::SeqIO;
 
 use Getopt::Long;
 
-my $thost   = 'sol28';
+my $thost   = 'obi-wan';
 my $tport   = '410000';
-my $tdbname = 'ens100';
-my $user    = 'ensembl';
+my $tdbname = 'ensembl';
+my $user    = 'ensro';
 my $usetimdb;
 my $test;
 

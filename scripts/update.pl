@@ -86,12 +86,12 @@ my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$a
 my $arc_db = Bio::EnsEMBL::DBLoader->new($arclocator);
     
 $verbose && print "\nConnecting to recipient database...\n";
+    
 my $recipient_locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $rec_db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
 
 $verbose && print "\nConnecting to donor database...\n";
 my $donor_locator = $rec_db->get_donor_locator;
-
 my $don_db =  Bio::EnsEMBL::DBLoader->new($donor_locator);
 
 my $last_offset = $rec_db->get_last_update_offset;

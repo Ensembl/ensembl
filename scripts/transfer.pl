@@ -158,7 +158,6 @@ if ( $fdbtype =~ 'timdb' ) {
     $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone);
 } else {
     my $locator = "$fmodule/host=$fhost;port=$fport;dbname=$fdbname;user=$fdbuser;pass=$fdbpass";
-    print STDERR "LOCATOR IS: $locator\n";
     $from_db = Bio::EnsEMBL::DBLoader->new($locator); 
 }
 
@@ -209,9 +208,10 @@ foreach my $clone_id ( @clone ) {
 
 	    # Now generate the supporting evidence and write
 	    # into the to database.
-	    foreach my $exon ($gene->each_unique_Exon) {
-		$exon ->find_supporting_evidence (\@features);
-		$to_db->write_supporting_evidence($exon);
+		foreach my $exon ($gene->each_unique_Exon) {
+		    $exon ->find_supporting_evidence (\@features);
+		    $to_db->write_supporting_evidence($exon);
+		}
 	    }
 	}
     };
