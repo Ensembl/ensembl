@@ -1,8 +1,8 @@
 package Bio::EnsEMBL::Root;
 
-use Bio::Root::Root;
+use Bio::Root::RootI;
 
-@ISA = qw(Bio::Root::Root);
+@ISA = qw(Bio::Root::RootI);
 
 
 sub new{
