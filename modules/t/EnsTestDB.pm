@@ -259,7 +259,21 @@ sub do_sql_file {
         my $sql = '';
         open SQL, $file or die "Can't read SQL file '$file' : $!";
         while (<SQL>) {
-            s/(#|--).*//;       # Remove comments
+            # careful with stripping out comments; quoted text
+            # (e.g. aligments) may contain them. Just warn (once) and ignore
+            if (    /'[^']*#[^']*'/ 
+                 || /'[^']*--[^']*'/ ) {
+                     if ( $comment_strip_warned++ ) { 
+                         # already warned
+                     } else {
+                         warn "#################################\n".
+                           warn "# found comment strings inside quoted string; not stripping, too complicated: $_\n";
+                         warn "# (continuing, assuming all these they are simply valid quoted strings)\n";
+                         warn "#################################\n";
+                     }
+                 } else {
+                s/(#|--).*//;       # Remove comments
+            }
             next unless /\S/;   # Skip lines which are all space
             $sql .= $_;
             $sql .= ' ';
@@ -269,14 +283,14 @@ sub do_sql_file {
 	#Modified split statement, only semicolumns before end of line,
 	#so we can have them inside a string in the statement
 	#\s*\n, takes in account the case when there is space before the new line
-        foreach my $s (grep /\S/, split /;\s*\n/, $sql) {
+        foreach my $s (grep /\S/, split /;[ \t]*\n/, $sql) {
             $self->validate_sql($s);
             $dbh->do($s);
             $i++
         }
     }
     return $i;
-}
+}                                       # do_sql_file
 
 sub validate_sql {
     my ($self, $statement) = @_;
