@@ -80,6 +80,7 @@ sub fetch_by_dbID {
 
   if( $hashRef = $sth->fetchrow_hashref() ) {
     $exon = $self->_exon_from_sth( $sth, $hashRef );
+    #print STDERR "found exon: ".$exon->start."-".$exon->end." ".$exon->dbID."\n";
   }
 
   delete $self->{rchash};
@@ -182,6 +183,7 @@ sub _exon_from_sth {
     $exon->dbID($hashRef->{'exon_id'});
     # make first component exon
     my $component = $self->_new_Exon_from_hashRef($hashRef);
+    #print STDERR "component: ".$component->start."-".$component->end." ".$component->dbID."\n";
 
     $exon->add_component_Exon($component);
     $sticky_length += $component->length;
@@ -194,17 +196,18 @@ sub _exon_from_sth {
     # continue while loop until we hit sticky_rank 1
     while( $hashRef = $sth->fetchrow_hashref() ) {
       my $component = $self->_new_Exon_from_hashRef($hashRef);
-
+      
+      #print STDERR "component: ".$component->start."-".$component->end." ".$component->dbID."\n";
       $exon->add_component_Exon($component);
       $sticky_length += $component->length;
       $sticky_str     = $component->seq->seq . $sticky_str;
-
+      
       if( $component->sticky_rank == 1 ) {
 	$exon->contig( $component->contig );
 	last;
       }
     }
-
+    
     $exon->_sort_by_sticky_rank();
 
     # set start = 1 and end = length of sticky exon
@@ -214,12 +217,38 @@ sub _exon_from_sth {
     $exon->start(1);
     $exon->end($sticky_length);
     $exon->strand( 1 );
+    
+    # the commented lines don't work as there are some dependencies hidden some where in the
+    # translation code, which makes this fail horribly. 
+    # Never mind. We can live with imperfection...sometimes. (Happy GeneBuilders Inc.)
+    
+    # put the right strand if you get the chande to do it:
+    #my $global_strand;
+#    my $all_the_same = 1;
+#    foreach my $component ( $exon->each_component_Exon ){
+#      unless ($global_strand){
+#	$global_strand = $component->strand;
+#      }
+#      if ( $component->strand != $global_strand ){
+#	$all_the_same = 0;
+#      }
+#    }
+#    if ( $all_the_same == 1 ){
+#      $exon->strand( $global_strand );
+#    }
+#    else{
+#      # well, nothing we can do really...
+#      $exon->strand( 1 );
+#    }
+    
+    #$exon->seqname('artificial.sticky.exon');
 
     #my $rev = reverse(split(//,$sticky_str));
     my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $sticky_str);
     $exon->attach_seq($tempseq);
-
-  } else {
+    
+  } 
+  else {
     $exon = $self->_new_Exon_from_hashRef($hashRef);
     
   }
@@ -274,7 +303,7 @@ sub fetch_evidence_by_Exon {
   my ( $self, $exon )  = @_;
  
   my $statement = "SELECT seq_start, seq_end, score,
-                          strand, analysis, name, hstart, hend,
+                          strand, analysis, name, hstart, hend, hstrand,
                           hid, evalue, perc_id, phase, end_phase
                    FROM supporting_feature 
 		     WHERE exon_id = ".$exon->dbID;
@@ -299,7 +328,7 @@ sub fetch_evidence_by_Exon {
 			 $contig_id,
 			 $rowhash->{'hstart'},
 			 $rowhash->{'hend'},
-			 1, # hstrand
+			 $rowhash->{'hstrand'}, # hstrand
 			 $rowhash->{'score'},
 			 $rowhash->{'name'},
 			 'similarity',
@@ -428,7 +457,7 @@ sub store {
     return $exon->dbID();
   }
   
-  my $test_endphase = $exon->end_phase;
+  #my $test_endphase = $exon->end_phase;
   #print STDERR "phase is :".$exon->phase."\n";
   #print STDERR "ExonAdaptor.store(): end phase is $test_endphase\n";
 
@@ -445,6 +474,7 @@ sub store {
   if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
     # sticky storing. Sticky exons contain normal exons ...
 
+    
     my @componentExons = $exon->each_component_Exon();
     for my $componentExon ( @componentExons ) {
       $exonst->execute( $exonId, $componentExon->contig_id,
