@@ -467,7 +467,10 @@ sub _parse_features {
 
   my $query_unit = $self->_query_unit();
   my $hit_unit = $self->_hit_unit();
-
+  my $verbose = 0;
+  if($features->[0]->hseqname eq 'CE25688'){
+    $verbose = 1;
+  }
   if (ref($features) ne "ARRAY") {
     $self->throw("features must be an array reference not a [" . 
 		 ref($features) . "]");
@@ -525,9 +528,11 @@ sub _parse_features {
   my $f2start;
   my $f2end;
   if ( $hstrand == 1 ) {
+   # print STDERR "hstrand forward \n" if($verbose);
     $f2start = $f[0]->hstart;
     $f2end   = $f[$#f]->hend;
   } else {
+    # print STDERR "hstrand reverse \n" if($verbose);
     $f2end = $f[0]->hend;
     $f2start = $f[$#f]->hstart;
   }
@@ -539,6 +544,7 @@ sub _parse_features {
     #
     # Sanity checks
     #
+    #print STDERR "supporting feature to convert ".$f->gffstring."\n" if($verbose);
     if (!$f->isa("Bio::EnsEMBL::FeaturePair")) {
       $self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
     }
@@ -571,7 +577,7 @@ sub _parse_features {
     
     my $start1 = $f->start;      #source sequence alignment start
     my $start2 = $f->hstart();   #hit sequence alignment start
-    
+ #   print STDERR "start1 ".$start1." start2 ".$start2."\n"  if($verbose);
     #
     # More sanity checking
     #
@@ -594,7 +600,7 @@ sub _parse_features {
 
     my $length = ($f->end - $f->start + 1); #length of source seq alignment
     my $hlength = ($f->hend - $f->hstart + 1); #length of hit seq alignment
-
+  #  print STDERR "length ".$length." hlength ".$hlength."\n"  if($verbose);
     # using multiplication to avoid rounding errors, hence the
     # switch from query to hit for the ratios
     
@@ -618,6 +624,7 @@ sub _parse_features {
     }
 
     my $hlengthfactor = ($query_unit/$hit_unit);
+   # print STDERR "hlengthfactor ".$hlengthfactor."\n" if($verbose);
     # if( $query_unit == 1 && $hit_unit == 3 ) {
     #	$hlengthfactor = (1/3);
     #     }
@@ -635,7 +642,7 @@ sub _parse_features {
     my $insertion_flag = 0;
     if( $strand == 1 ) {
       if( ( defined $prev1 ) && ( $f->start > $prev1 + 1  )) {
-
+	#print STDERR "there is an insertion\n" if($verbose);
 	#there is an insertion
 	$insertion_flag = 1;
 	my $gap = $f->start - $prev1 - 1;
@@ -643,11 +650,13 @@ sub _parse_features {
 	  $gap = ""; # no need for a number if gap length is 1
 	}
 	$string .= "$gap"."I";
+	#print STDERR "cigar stands at ".$string."\n" if($verbose);
       }
 
       #shift our position in the source seq alignment
       $prev1 = $f->end();
     } else {
+      #print STDERR "there is a insertion\n";
       if(( defined $prev1 ) && ($f->end + 1 < $prev1 )) {
 
 	#there is an insertion
@@ -657,6 +666,7 @@ sub _parse_features {
 	  $gap = ""; # no need for a number if gap length is 1
 	}
 	$string .= "$gap"."I";
+	#print STDERR "cigar stands at ".$string."\n" if($verbose);
       }
 
       #shift our position in the source seq alignment
@@ -670,7 +680,7 @@ sub _parse_features {
     #
     if( $hstrand == 1 ) {
       if((  defined $prev2 ) && ( $f->hstart() > $prev2 + 1 )) {
-	
+	#print STDERR "there is a deletion\n" if($verbose);
 	#there is a deletion
 	my $gap = $f->hstart - $prev2 - 1;
 	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
@@ -679,10 +689,10 @@ sub _parse_features {
 	  $gap2 = "";  # no need for a number if gap length is 1
 	}
 	$string .= "$gap2"."D";
-
+	#print STDERR "cigar stands at ".$string."\n"  if($verbose);
 	#sanity check,  Should not be an insertion and deletion
 	if($insertion_flag) {
-	  $self->throw("Should not be an deletion and insertion on the " .
+	  $self->warn("Should not be an deletion and insertion on the " .
 		       "same alignment region. cigar_line=$string\n");
 	} 
       } 
@@ -691,7 +701,7 @@ sub _parse_features {
 
      } else {
       if( ( defined $prev2 ) && ( $f->hend() + 1 < $prev2 )) {
-
+	#print STDERR "there is a deletion\n" if($verbose);
 	#there is a deletion
 	my $gap = $prev2 - $f->hend - 1;
 	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
@@ -700,7 +710,7 @@ sub _parse_features {
 	  $gap2 = "";  # no need for a number if gap length is 1
 	}
 	$string .= "$gap2"."D";
-
+	#print STDERR "cigar stands at ".$string."\n" if($verbose);
 	#sanity check,  Should not be an insertion and deletion
 	if($insertion_flag) {
 	  $self->throw("Should not be an deletion and insertion on the " .
@@ -709,6 +719,7 @@ sub _parse_features {
 	} 
       }
       #shift our position in the hit seq alignment
+     
       $prev2 = $f->hstart();
     }
       
@@ -717,10 +728,12 @@ sub _parse_features {
       $matchlength = "";
     }
     $string .= $matchlength."M";
+  #  print STDERR "cigar stands at ".$string."\n" if($verbose);
+    #print STDERR "finished with this feature\n\n";
   }
 #  print STDERR "creating align feature start ".$f1start." end ".$f1end." strand ".$strand." score ".$score." percent id ".$percent." pvalue ".$pvalue." seqname ".$name." phase ".$phase." analysis ".$analysis." hstart ".$f2start," hend ".$f2end." hstrand ".$hstrand." hid ".$hname."\n"; 
   if(!$score){
-    $self->warn("score is not set assume its 1");
+    #$self->warn("score is not set assume its 1");
     $score = 1;
   } 
   my $feature1 = new Bio::EnsEMBL::SeqFeature();
@@ -752,6 +765,9 @@ sub _parse_features {
   $self->feature1($feature1);
   $self->feature2($feature2);
   $self->cigar_string($string);
+  #print STDERR "finished ".$self->gffstring."\t ".$self->cigar_string."\n\n" if($verbose);
+
+  #print STDERR "\n\n";
 }
 
 
@@ -765,7 +781,7 @@ sub _transform_to_slice{
 
 sub _transform_to_rawcontig{
   my ($self, $rc) = @_;
-
+  #print STDERR "transforming to raw contig coord\n\n";
   if(!$self->contig){
     $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
   }
@@ -854,6 +870,11 @@ sub _query_unit {
 sub _transform_feature_to_rawcontig{
   my($self, $feature) =  @_;
 
+  my $verbose = 0;
+  #$verbose = 1 if($feature->hseqname eq 'CE25688');
+
+  #print STDERR "transforming ".$feature->gffstring."\n" if($verbose);
+
   if(!$self->contig){
     $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
   }
@@ -878,27 +899,36 @@ sub _transform_feature_to_rawcontig{
     my $hit_start = $feature->hstart;
     #print STDERR " feature is being mapped across multiple contigs ".$feature->gffstring."\n";
   SPLIT: for( my $i=0; $i <= $#mapped; $i++ ) {
+      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	$self->warn("piece of evidence lies on gap\n");
+	next SPLIT;
+      }
+      #print STDERR "query coords ".$mapped[$i]->end." ".$mapped[$i]->start."\n";
       my $query_length = ($mapped[$i]->end - $mapped[$i]->start + 1);
+      #print STDERR " query length = ".$query_length."\n";
       my $hit_length;
       if($self->_query_unit == $self->_hit_unit){
 	$hit_length = $query_length;
       }elsif($self->_query_unit > $self->_hit_unit){
-	$hit_length = int($query_length/$self->_query_unit);
+	my $tmp =  ($query_length/$self->_query_unit);
+	#print STDERR "tmp = ".$tmp."\n";
+	#$hit_length = int($tmp);
+	$hit_length = s#printf "%.0f", $tmp;
       }elsif($self->_hit_unit > $self->_query_unit){
-	$hit_length = int($query_length*$self->_hit_unit);
+	my $tmp = ($query_length*$self->_hit_unit);
+	#print STDERR "tmp = ".$tmp."\n";
+	$hit_length = s#printf "%.0f", $tmp;
       }
-
+      #print STDERR "hit length ".$hit_length."\n";
      
       my $hit_end = ($hit_start + $hit_length) - 1;
+      #print "hit start ".$hit_start." hit end ".$hit_end."\n";
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
       my $f1 = new Bio::EnsEMBL::SeqFeature();
       my $f2 = new Bio::EnsEMBL::SeqFeature();
       my $new_feature = Bio::EnsEMBL::FeaturePair->new(-feature1=>$f1,
 						       -feature2=>$f2);
-      if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
-            $self->warn("piece of evidence lies on gap\n");
-            next SPLIT;
-          }
+     
       $new_feature->start($mapped[$i]->start);
       $new_feature->end($mapped[$i]->end);
       $new_feature->strand($mapped[$i]->strand);
@@ -915,7 +945,7 @@ sub _transform_feature_to_rawcontig{
       $new_feature->attach_seq($rawContig);
       #print STDERR "split feature ".$new_feature->gffstring."\n";
       push(@out, $new_feature);
-      $hit_start = ($hit_start + $hit_length);
+      $hit_start = ($hit_end + 1);
     }
   }else{
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
@@ -943,6 +973,10 @@ sub _transform_feature_to_rawcontig{
     $new_feature->attach_seq($rawContig);
 
     push(@out, $new_feature);
+  }
+
+  foreach my $sf(@out){
+    #print STDERR "gff ".$sf->gffstring."\n";
   }
 
   return @out;

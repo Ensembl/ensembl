@@ -363,8 +363,8 @@ sub fetch_evidence_by_Exon {
  
     $sth->execute;
 
-    my $prot_adp = $self->get_ProteinAlignFeatureAdaptor;
-    my $dna_adp = $self->get_DnaAlignFeatureAdaptor;
+    my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
+    my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
     
     while(my ($type, $feature_id) = $sth->fetchrow){
       
