@@ -81,7 +81,7 @@ while (<>) {
         $rest .= "transcript_id \"$transcript_id\"; " if $transcript_id;
         $rest .= "transcript_id \"$transcript_id\"; " if $transcript_id;
         $rest .= "exon_id \"$exon_id\"; " if $exon_id;
-        $rest .= "exon_number $exon_num; " if $exon_num;
+        $rest .= "exon_number $exon_num; " if defined($exon_num);
         push @fields, $rest;
         print join("\t", @fields), "\n";
     }
