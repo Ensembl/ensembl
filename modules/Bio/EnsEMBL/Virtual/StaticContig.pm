@@ -124,8 +124,6 @@ sub new {
 	}
 
 
-	print STDERR "Calling on ",$rc->id,"\n";
-
 	$self->_vmap->create_MapContig($rc,
 				       $chr_start - $global_start+$vc_start_position,
 				       $chr_end   - $global_start+$vc_start_position,
