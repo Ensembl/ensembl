@@ -148,6 +148,8 @@ sub fetch_Protein_by_dbid{
 
 
 #Get the aa sequence using the transcript object   
+   #my $sequence = $transcript->translate->seq;
+   print STDERR $transcript->id,"\n";
    my $sequence = $transcript->translate->seq;
    
    my $length = length($sequence);
@@ -173,7 +175,7 @@ sub fetch_Protein_by_dbid{
 
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
-
+   print STDERR "$sequence\n";
 #Create the Protein object
    my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					      -accession_number  => $id,
@@ -181,19 +183,20 @@ sub fetch_Protein_by_dbid{
 					      -primary_id => $id,
 					      -id => $id,
 					      -desc => $desc,
-					      -moltype => $moltype,
+					      -moltype => $moltype
 					      );
 
    $protein->species($species);
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
-   $ann->gene_name($geneid);
-   
+      
    $protein ->annotation($ann);
    $protein->add_date($created);
    $protein->add_date($modified);
-   
+
+#Give a gene name to the peptide, here , its Ensembl gene id   
+#$ann->gene_name($geneid); 
 
 #Add the DBlinks to the annotation object
    foreach my $link (@dblinks) {
@@ -253,7 +256,13 @@ sub fetch_Protein_by_dbid{
 	   $seen2{$interpro} = 1;
        }
    }
-   
+
+#Add the Ensembl gene id (ENSG) as a DBlink to the object
+   my $dblink = Bio::Annotation::DBLink->new();
+   $dblink->database('EnsEMBL');
+   $dblink->primary_id($geneid);
+   $protein->annotation->add_DBLink($dblink);
+
 #Add each protein features to the protein object
    foreach my $feat (@prot_feat) {
        if ($feat) {
