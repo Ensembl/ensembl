@@ -543,6 +543,8 @@ sub get_all_SeqFeatures {
 }
 
 
+
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -557,37 +559,85 @@ sub get_all_SeqFeatures {
 
 sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score) = @_;
+     
+    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
+    $self->throw("Must supply score parameter") unless $score;
     
-    my $sf = [];
-    foreach my $c ($self->_vmap->get_all_RawContigs) {
-	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
-	push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
-   }
+       
+    my $chr_start=$self->_global_start;
+    my $chr_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+       
+    my    $statement = "SELECT feature.id, feature.seq_start+static_golden_path.chr_start as s, 
+                               feature.seq_end+static_golden_path.chr_start, strand, score, 
+                               analysis, name, hstart, hend, hid  
+		        FROM   feature, analysis,static_golden_path
+                        WHERE  feature.score > '$score'  
+                        AND    feature.analysis = analysis.id 
+                        AND    static_golden_path.raw_id = feature.contig
+		        AND    analysis.db = '$analysis_type'  
+                        AND    NOT (static_golden_path.chr_end < '$chr_start' 
+		        OR     static_golden_path.chr_start >'$chr_end' )
+		        AND    static_golden_path.chr_name='$chr_name' order by s";
+                     
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
 
-   print STDERR "before clipping ",scalar(@$sf),"\n";
 
-   # Need to clip seq features to fit the boundaries of
-   # our v/c so displays don't break
-   my @vcsf = ();
-   my $count = 0;
-   foreach $sf ( @$sf ) {
-
-       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-
-       if( !defined $sf ) {      
-	   next;
-       }	
-
-       if (($sf->start < 0 ) || ($sf->end > $self->length)) {
-	   $count++;
-       }
-       else{
-	    push (@vcsf, $sf);
-       }
-   }
+    my @array;
+    my %analhash;
+    my $out;
+    
+    while($sth->fetch) {
+       my $out;
+       my $analysis;
    
-   return @vcsf;
+       if ($start>=$chr_start && $end<=$chr_end){
+    
+	   if (!$analhash{$analysisid}) 
+	   {
+	       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	       $analysis = $feature_obj->get_Analysis($analysisid);
+	       $analhash{$analysisid} = $analysis;	   
+	   } 
+	   else {$analysis = $analhash{$analysisid};}
+	   
+	   if( !defined $name ) {
+	       $name = 'no_source';
+	   }
+	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	   $out->analysis    ($analysis);
+	   $out->id          ($hid);              
+	   
+	   $out = new Bio::EnsEMBL::SeqFeature;
+	   $out->seqname   ($self->id);
+	   $out->start     ($start);
+	   $out->end       ($end);
+	   $out->strand    ($strand);
+	   $out->source_tag($name);
+	   $out->primary_tag('similarity');
+	   $out->id         ($fid);
+	   
+	   if( defined $f_score ) {
+	       $out->score($f_score);
+	   }
+	   $out->analysis($analysis);
+	   
+       $out->validate();
+	   
+	   push(@array,$out);       
+       }
+   }
+    return @array;
 }
+
+
 
 
 =head2 get_all_SimilarityFeatures

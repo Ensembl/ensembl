@@ -566,6 +566,7 @@ sub get_all_SeqFeatures {
 }
 
 
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -580,6 +581,7 @@ sub get_all_SeqFeatures {
 
 sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score,$glob) = @_;
+   
 
     &eprof_start('entire_get_above_score');
     
@@ -588,7 +590,7 @@ sub get_all_SimilarityFeatures_above_score{
 	&eprof_start('get_type_raw');
 	my @sf = $mc->contig->get_all_SimilarityFeatures_above_score($analysis_type, $score,$glob); 
 	&eprof_end('get_type_raw');
-		    
+	    
              
 	my ($start_allowed,$end_allowed);
 	foreach my $sf ( @sf ) {
@@ -683,8 +685,15 @@ sub get_all_SimilarityFeatures_above_score{
 
     &eprof_end('entire_get_above_score');
    
+  
     return @vcsf;
 }
+
+
+
+
+
+
 
 
 =head2 get_all_SimilarityFeatures
