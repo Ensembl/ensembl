@@ -55,7 +55,7 @@ sub print_stats {
     print "\tminexons=$minexons, maxexons=$maxexons, avgexons=$avgexons\n";
 }
 
-sub gene_stats {
+sub igi_stats {
     my ($igi_hash) = @_;
     my ( @igis) = keys %$igi_hash;
     my $min = 1000000000000000000000;
@@ -150,6 +150,10 @@ while (<>) {
             ($nfeats, $min, $max, $nexons)= (0, $start, $end, 0);
         }
 
+        # keep track of the native gene_ids of a given igi in a given
+        # source. As always, use a hash for faster collating (i.e. keys
+        # %($gene_ids_of_igi{$s}{$igi}) gives them all; the value is
+        # irrelevant 
         $gene_ids_of_igi{$s}{$igi}{$gene_id}++;
 
         $min = $start if $start < $min;
@@ -198,57 +202,57 @@ print '  '
 # overlaps with named groups
   , map(do {sprintf "%12s  ", substr($_,0,6) }, (@all_sources))
 # multiplicity of groups membership:
-  , map(do {sprintf "        >=%2d  ", $_ }, reverse ( 0 .. (int(@all_sources)-1)))
+  , map(do {sprintf "        >=%2d  ", 2+$_ }, reverse ( 0 .. (int(@all_sources)-2)))
+  , "    unshared  ",
   , "       total\n";
 
 SOURCE1:
-  foreach my $source1 (@all_sources, 'ALL') {
+  foreach my $source1 ('ALL', @all_sources) {
       my @igis_of_source1 = keys %{$igis_of_source{$source1}};
       my $source2;
       
       printf "%6s  ", $source1;
       SOURCE2:
-      my ($shared, $tot);
+      my ($overlap, $tot);
       my %is_shared=undef;
       foreach $source2 (@all_sources) {
-          ($shared, $tot) = (0,0);
-          foreach my $igi1 (@igis_of_source1) {
-              if (defined $igis_of_source{$source2}{$igi1}) {
-                  $shared++;
+          ($overlap, $tot) = (0,0);
+          foreach my $igi (@igis_of_source1) {
+              if (defined $igis_of_source{$source2}{$igi}) {
+                  $overlap++;
                   # keep track of how many sources have this particular igi:
-                  $is_shared{$igi1}++ if $source1 ne $source2;
+                  $is_shared{$igi}++;#  if $source1 ne $source2;
               }
               $tot++;
           }
           if ($source1 eq $source2) {
               print "    --        ";
           } else { 
-              printf "%6d (%2d%%)  ", $shared, 100.0*$shared/$tot;
+              printf "%6d (%2d%%)  ", $overlap, 100.0*$overlap/$tot;
           }
       }
       # print out the sharing multiplicity
-      my ($from, $to) = (int(@all_sources)-1, 1);
-      if ($source1 eq 'ALL') { ($from,$to) = ($from+1, 1)}; # something
-                                                            # fishy here ..
+      my ($from, $to) = (int(@all_sources), 2);
       for(my $i =$from; $i>= $to; $i--) {
           my $num = int(grep( $_ >= $i, values %is_shared));
-          printf "%6d (%2d%%)  ", $num;
+          printf "%6d (%2d%%)  ", $num, 100.0*$num/$tot;
       }
-      my $unshared =   int(@igis_of_source1) - int(keys %is_shared);
+      my $unshared =
+        int(grep( $_ == 1, values %is_shared));# those seen exactly once
+                                               # are in just one source,
+                                               # so are not shared
       printf "%6d (%2d%%)  %6d\n", $unshared, 100.0*$unshared/$tot, $tot; 
   }                                     # for source1
 
 print "----\n";
-### sizes:
+### igi statistics per source
 foreach my $source ('ALL', @all_sources) {
-    print "gene stats on $source:\n";
+    print "igi stats on $source:\n";
 
 #    my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats, 
 #        $minexons, $maxexons, $avgexons) = 
-     gene_stats($igis_of_source{$source});
+     igi_stats($igis_of_source{$source});
 }
-
-print "----\n";
 
 ## do overlaps
 my @all_igis = keys %{$igis_of_source{'ALL'}};
@@ -260,7 +264,7 @@ my %sources_of_igi= undef;
 foreach my $igi (@all_igis) {
     foreach my $source (@all_sources ) { # excluding 'ALL', of course
         # does this source contain this igi?
-        if (defined ${$igis_of_source{$source}}{$igi} ) {
+        if (defined $ {$igis_of_source{$source}}{$igi} ) {
           $sources_of_igi{$igi}{$source}++; # meaning: seen it
       }
     }
@@ -268,53 +272,65 @@ foreach my $igi (@all_igis) {
 
 my @igis_of_n_sources = undef;
 
-## do histogram: give numbers
+## do histogram: find the igis per overlap group (i.e., n sources)
 foreach my $igi (@all_igis) {
     my $n  = int(keys %{$sources_of_igi{$igi}});
-    my $loc = ${$igis_of_source{'ALL'}}{$igi}; # start,end etc. of this igi
+    my $loc = $ {$igis_of_source{'ALL'}}{$igi}; # start,end etc. of this igi
 
-#     ${$igis_of_n_sources[$n]}{$igi} = $loc this is for those that are in
+#     $ {$igis_of_n_sources[$n]}{$igi} = $loc this is for those that are in
 # exactly two groups, but you want to know the  cumulation: simply add it 
 # to all the clusterings. 
     for (my $i=$n; $i>=0; $i--) {
-        ${$igis_of_n_sources[$i]}{$igi} = $loc
+        $ {$igis_of_n_sources[$i]}{$igi} = $loc
     }
 }
 
+# ### following printout can go, since already given under the
+# ### membership multiplicity
+# # warn @igis_of_n_sources;
+# print "overlap totals (histogram)\n" ;
+# for(my $i = 1; $i<=$n_sources; $i++) {
+#     my $n=int(keys %{$igis_of_n_sources[$i]});
+#     printf "numbers of igis in found in $i sources: %d/%d(%d%%)\n",
+#       $n, $n_igis, 100.0*$n/$n_igis;
+# }
 
-### following can go: 
-# warn @igis_of_n_sources;
-print "overlap totals (histogram)\n" ;
-for(my $i = 1; $i<=$n_sources; $i++) {
-    my $n=int(keys %{$igis_of_n_sources[$i]});
-    printf "numbers of igis in found in $i sources: %d/%d(%d%%)\n",
-      $n, $n_igis, 100.0*$n/$n_igis;
-}
-
+### this is too see to what extent the clusters grow as they are
+### shared by an increasing number of sources:
 print "----\n";
-print "gene stats per cluster group:\n";
+print "igi stats per cluster group:\n";
 for(my $i = 1; $i<=$n_sources; $i++) {
     print "those in $i sources:\n";
 #     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
-    gene_stats($igis_of_n_sources[$i]) ;
+    igi_stats($igis_of_n_sources[$i]) ;
 }
 
 ### see to what extent native gene_ids get chained together by the igi
 ### clustering
-print "----\n";
 my @histo = undef;
+my @igis_per_chaining_group = undef;
+
 foreach my $source ('ALL', @all_sources) { 
-    my $gene_ids_of_igi_of_source = $gene_ids_of_igi{$source};
-    foreach my $igi  ( keys %$gene_ids_of_igi_of_source ) {
-        my @gene_ids = keys %{$gene_ids_of_igi_of_source->{$igi}};
-        $histo[ int(@gene_ids) ]{$source} ++;
+    foreach my $igi ( keys % {$igis_of_source{$source}}  ) {
+        my @gene_ids = keys %{$gene_ids_of_igi{$source}{$igi}};
+        # these are all distinct native id's of this igi in this source;
+        # collate them in a histogram
+        my $n = int(@gene_ids);
+        $histo[ $n ]{$source} ++;
+
+        my $loc = $ {$igis_of_source{'ALL'}}{$igi}; # start,end etc. of this igi
+        $ {igis_per_chaining_group[ $n ]{$source}}{$igi} = $loc;
     }
 }
-print "gene id chaining: histogram of number of native gene_ids per igi:\n";
+print "----\n";
+print "gene id chaining: histogram of native gene_ids per igi, and igi statistics on this:\n";
 foreach my $source ('ALL', @all_sources) { 
     print "source $source:\n";
     for (my $i=0;  $i< int(@histo); $i++ ) {
         my $n = $histo[ $i ]{$source};
-        print "\t$i: $n\n" if $n;
+        if ($n > 0) { 
+            print "\t$i: $n\n";
+            igi_stats( $ {igis_per_chaining_group[ $i ]}{$source}) ;
+        }
     }
 }
