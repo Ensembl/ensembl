@@ -105,6 +105,8 @@ sub _parse {
     my ($self) = @_;
 
     my $file = $self->mspfile;
+    
+    $self->_make_analysis($file);
 
     open(IN,"<$file");
 
@@ -205,6 +207,7 @@ sub _read_Homol {
 #    print("DEBUG : in MSPCrunch : " . $sf2->seqname . " " . $sf2->start . " " . $sf2->end . "\n");
 
     $sf1->homol_SeqFeature($sf2);
+    $sf1->add_tag_value('Analysis',$self->analysis);
 
     return ($sf1);
 }
@@ -422,4 +425,36 @@ sub swaphomols {
     $newh2->homol_SeqFeature($newh1);
 
     return $newh2;
+}
+
+sub analysis {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->throw("Argument is not Bio::EnsEMBL::Analysis::Analysis object") 
+	    unless $arg->isa("Bio::EnsEMBL::Analysis::Analysis");
+
+	$self->{_analysis} = $arg;
+    }
+
+    return $self->{_analysis};
+}
+
+sub _make_analysis {
+    my ($self,$mspfile) = @_;
+
+    (my $ext  = $mspfile) =~ s/.*(\..*.msptmp)/$1/;
+
+    my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
+    my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
+    my $anal    = new Bio::EnsEMBL::Analysis::Analysis;
+    
+    $anal->db             ($MSPType->[2]);
+    $anal->db_version     ($MSPType->[6]);
+    $anal->program        ($MSPType->[1]);
+    $anal->program_version($MSPType->[7]);
+    $anal->gff_source     ($MSPType->[1]);
+    $anal->gff_feature    ($MSPType->[8]);
+    
+    $self->analysis($anal);
 }

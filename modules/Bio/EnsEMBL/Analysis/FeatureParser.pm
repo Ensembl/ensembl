@@ -163,22 +163,10 @@ sub read_Repeats {
 	print("   - Reading RepeatMasker file $gfffile\n");
     }
 
-    my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile);
+    my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile,
+						     -type => 'Repeat');
 	    
     foreach my $f ($GFF->each_Feature) {
-	my $repeat = new Bio::EnsEMBL::Analysis::Repeat(-start  => $f->start,
-							-end    => $f->end,
-							-strand => $f->strand,
-							-score  => $f->score,
-							-source => $f->source_tag,
-							-primary=> $f->primary_tag);
-	$repeat->seqname($f->seqname);
-
-#	my $h = $f->homol_SeqFeature;
-
-	
-#	$repeat->homol_SeqFeature;
-	
 	$self->add_Feature($f);
     }
 }

@@ -46,6 +46,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::SeqFeature::Homol;
 use Bio::SeqFeature::Generic;
+use Bio::EnsEMBL::Analysis::Repeat;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -59,12 +60,14 @@ sub _initialize {
   
   my $make = $self->SUPER::_initialize;
 
-  my ($file) = $self->_rearrange([qw(FILE)],@args);
+  my ($file,$type) = $self->_rearrange([qw(FILE
+					   TYPE)],@args);
 
   # The array to store all the feature objects
   $self->{_features} = [];
 
   $self->GFFFile($file);
+  $self->type($type);
 
   return $self; # success - we hope!
 }
@@ -111,6 +114,25 @@ sub add_Feature {
 
 }
 
+=head2 type
+
+  Title   : type
+  Usage   : $self->type($type);
+  Function: Get/set method for the type of feature object to create
+  Returns : Bio::SeqFeature::Generic
+  Args    : string
+
+=cut
+
+sub type {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_type} = $arg;
+    }
+
+    return $self->{_type};
+}
 
 =head2 _parse
 
@@ -213,18 +235,32 @@ sub _parse_attrib {
 
 	my $hstart = $attrib[2];
 	my $hend   = $attrib[3];
+	my $homol;
 
-	my $homol = new Bio::SeqFeature::Homol(-start       => $feature->start,
-					       -end         => $feature->end,
-					       -strand      => $feature->strand,
-					       -frame       => $feature->frame,
-					       -primary     => $feature->primary_tag,
-					       -source      => $feature->source_tag,
-					       -score       => $feature->score,
-					       -seqname     => $feature->seqname,
-					       );
+	if ($self->type eq 'Repeat') {
+	    $homol = new Bio::EnsEMBL::Analysis::Repeat(-start       => $feature->start,
+						 -end         => $feature->end,
+						 -strand      => $feature->strand,
+						 -frame       => $feature->frame,
+						 -primary     => $feature->primary_tag,
+						 -source      => $feature->source_tag,
+						 -score       => $feature->score,
+						 -seqname     => $feature->seqname,
+						 );
+	} else {
+	    $homol = new Bio::SeqFeature::Homol(-start       => $feature->start,
+						-end         => $feature->end,
+						-strand      => $feature->strand,
+						-frame       => $feature->frame,
+						-primary     => $feature->primary_tag,
+						-source      => $feature->source_tag,
+						-score       => $feature->score,
+						-seqname     => $feature->seqname,
+						);
+	}
+
 	$homol->seqname($feature->seqname);
-
+	
 	my $newf = new Bio::SeqFeature::Homol  (-start       => $hstart,
 						-end         => $hend,
 						-strand      => $feature->strand,
