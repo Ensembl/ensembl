@@ -40,14 +40,10 @@ Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 
 =cut
 
-
-# Let the code begin...
-
 package Bio::EnsEMBL::Transcript;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
@@ -57,7 +53,6 @@ use Bio::Tools::CodonTable;
 use Bio::EnsEMBL::Mapper;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
-# new() is inherited from Bio::Root::Object
 
 sub new {
   my($class,@args) = @_;
@@ -77,63 +72,111 @@ sub new {
   }
 
 
-  return $self; # success - we hope!
+  return $self;
 }
-
 
 
 =head2 get_all_DBLinks
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : none
+  Example    : @dblinks = @{$transcript->get_all_DBLinks()};
+  Description: Retrieves _all_ related DBEntries for this transcript.  
+               This includes all DBEntries that are associated with the
+               corresponding translation.
+
+               If you only want to retrieve the DBEntries associated with the
+               transcript then you should use the get_all_DBEntries call 
+               instead.
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_all_DBLinks {
   my $self = shift;
 
-  if( !defined $self->{'_db_link'} ) {
-    $self->{'_db_link'} = [];
-    if( defined $self->adaptor ) {
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self);
-    }
-  } 
-  
-  return $self->{'_db_link'};
+  my @links;
+
+  push @links, @{$self->get_all_DBEntries};
+
+  my $transl = $self->translation();
+  push @links, @{$transl->get_all_DBEntries} if($transl);
+
+  return \@links;
 }
 
 
-=head2 add_DBLink
+=head2 get_all_DBEntries
 
- Title   : add_DBLink
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  Arg [1]    : none
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Retrieves DBEntries (xrefs) for this transcript.  
+               This does _not_ include the corresponding translations 
+               DBEntries (see get_all_DBLinks).
+
+               This method will attempt to lazy-load DBEntries from a
+               database if an adaptor is available and no DBEntries are present
+               on the transcript (i.e. they have not already been added or 
+               loaded).
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : get_all_DBLinks, TranscriptAdaptor::store
 
 =cut
 
-sub add_DBLink{
-   my ($self,$value) = @_;
+sub get_all_DBEntries {
+  my $self = shift;
 
-   unless(defined $value && ref $value && 
-	  $value->isa('Bio::Annotation::DBLink') ) {
-     $self->throw("This [$value] is not a DBLink");
-   }
+  #if not cached, retrieve all of the xrefs for this gene
+  if(!defined $self->{'dbentries'} && $self->adaptor()) {
+    $self->{'dbentries'} = 
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self);
+  }
 
-   if( !defined $self->{'_db_link'} ) {
-     $self->{'_db_link'} = [];
-   }
-
-   push(@{$self->{'_db_link'}},$value);
+  return $self->{'dbentries'};
 }
 
 
+=head2 add_DBEntry
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
+               The dbEntry to be added
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Associates a DBEntry with this gene. Note that adding DBEntries
+               will prevent future lazy-loading of DBEntries for this gene
+               (see get_all_DBEntries).
+  Returntype : none
+  Exceptions : thrown on incorrect argument type
+  Caller     : general
+
+=cut
+
+sub add_DBEntry {
+  my $self = shift;
+  my $dbe = shift;
+
+  unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    $self->throw('Expected DBEntry argument');
+  }
+
+  $self->{'dbentries'} ||= [];
+  push @{$self->{'dbentries'}}, $dbe;
+}
+
+
+
+=head2 dbID
+
+  Arg [1]    : (optional) int $dbID
+               A new value for the internal identifier of this transcript
+  Example    : $id = $transcript->dbID();
+  Description: Getter/Setter for the internal identifier of this transcript
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub dbID {
    my $self = shift;
@@ -145,6 +188,8 @@ sub dbID {
     return $self->{'dbID'};
 
 }
+
+
 
 =head2 external_db
 
@@ -175,6 +220,8 @@ sub external_db {
     return undef;
   }
 }
+
+
 
 =head2 external_status
 
@@ -1835,6 +1882,39 @@ sub coding_end {
 }
 
 
+
+=head2 DEPRECATED add_DBLink
+
+  Arg [1]    : DEPRECATED Bio::Annotation::DBLink $link
+               a link is a database entry somewhere else.
+               Usually this is a Bio::EnsEMBL::DBEntry.
+  Example    : DEPRECATED 
+  Description: This method has been deprecated in favor of the add_DBEntry
+               method.  Objects are responible for holding only xrefs directly
+               associated with themselves now.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub add_DBLink{
+   my ($self,$value) = @_;
+
+   $self->throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+
+#   unless(defined $value && ref $value && 
+#	  $value->isa('Bio::Annotation::DBLink') ) {
+#     $self->throw("This [$value] is not a DBLink");
+#   }
+
+#   if( !defined $self->{'_db_link'} ) {
+#     $self->{'_db_link'} = [];
+#   }
+
+#   push(@{$self->{'_db_link'}},$value);
+}
 
 
 1;

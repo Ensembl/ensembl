@@ -466,11 +466,74 @@ sub description {
 
 
 
+=head2 add_DBEntry
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
+               The dbEntry to be added
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Associates a DBEntry with this gene. Note that adding DBEntries
+               will prevent future lazy-loading of DBEntries for this gene
+               (see get_all_DBEntries).
+  Returntype : none
+  Exceptions : thrown on incorrect argument type
+  Caller     : general
+
+=cut
+
+sub add_DBEntry {
+  my $self = shift;
+  my $dbe = shift;
+
+  unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    $self->throw('Expected DBEntry argument');
+  }
+
+  $self->{'dbentries'} ||= [];
+  push @{$self->{'dbentries'}}, $dbe;
+}
+
+
+=head2 get_all_DBEntries
+
+  Arg [1]    : none
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Retrieves DBEntries (xrefs) for this gene.  This does _not_ 
+               include DBEntries that are associated with the transcripts and
+               corresponding translations of this gene (see get_all_DBLinks).
+
+               This method will attempt to lazy-load DBEntries from a
+               database if an adaptor is available and no DBEntries are present
+               on the gene (i.e. they have not already been added or loaded).
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : get_all_DBLinks, GeneAdaptor::store
+
+=cut
+
+sub get_all_DBEntries {
+  my $self = shift;
+
+  #if not cached, retrieve all of the xrefs for this gene
+  if(!defined $self->{'dbentries'} && $self->adaptor()) {
+    $self->{'dbentries'} = 
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
+  }
+
+  return $self->{'dbentries'};
+}
+
+
 =head2 get_all_DBLinks
 
   Arg [1]    : none
   Example    : @dblinks = @{$gene->get_all_DBLinks()};
-  Description: retrieves a listref of DBLinks for this gene
+  Description: Retrieves _all_ related DBEntries for this gene.  This includes
+               all DBEntries that are associated with the transcripts and
+               corresponding translations of this gene.
+
+               If you only want to retrieve the DBEntries associated with the
+               gene (and not the transcript and translations) then you should
+               use the get_all_DBEntries call instead.
   Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
@@ -480,49 +543,18 @@ sub description {
 sub get_all_DBLinks {
    my $self = shift;
 
-   if( !defined $self->{'_db_link'} ) {
-     $self->{'_db_link'} = [];
-     if( defined $self->adaptor ) {
-       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
-     }
-   } 
+   my @links = @{$self->get_all_DBEntries()};
 
-   return $self->{'_db_link'};
+   # add all of the transcript and translation xrefs to the return list
+   foreach my $transc (@{$self->get_all_Transcripts()}) {
+     push @links, @{$transc->get_all_DBEntries};
+
+     my $transl = $transc->translation();
+     push @links, @{$transl->get_all_DBEntries} if($transl);
+   }
+
+   return \@links;
 }
-
-
-
-=head2 add_DBLink
-
-  Arg [1]    : Bio::Annotation::DBLink $link
-               a link is a database entry somewhere else.
-               Usually this is a Bio::EnsEMBL::DBEntry.
-  Example    : none
-  Description: will add  the link to the list of links already in the
-               gene object.
-  Returntype : none
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub add_DBLink{
-  my ($self,$value) = @_;
-
-  unless(defined $value && ref $value 
-	 && $value->isa('Bio::Annotation::DBLink') ) {
-    $self->throw("This [$value] is not a DBLink");
-  }
-  
-  if( !defined $self->{'_db_link'} ) {
-    $self->{'_db_link'} = [];
-  }
-
-  push(@{$self->{'_db_link'}},$value);
-}
-
-
 
 
 =head2 get_all_Exons
@@ -907,5 +939,39 @@ sub display_xref {
     return $self->{'display_xref'};
 }
 
+
+
+=head2 DEPRECATED add_DBLink
+
+  Arg [1]    : DEPRECATED Bio::Annotation::DBLink $link
+               a link is a database entry somewhere else.
+               Usually this is a Bio::EnsEMBL::DBEntry.
+  Example    : DEPRECATED 
+  Description: This method has been deprecated in favor of the add_DBEntry
+               method.  Objects are responible for holding only xrefs directly
+               associated with themselves now.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub add_DBLink{
+  my ($self,$value) = @_;
+
+  $self->throw("add_DBLink is deprecated.  You probably want add_DBEntry.");
+
+#  unless(defined $value && ref $value 
+#	 && $value->isa('Bio::Annotation::DBLink') ) {
+#    $self->throw("This [$value] is not a DBLink");
+#  }
+  
+#  if( !defined $self->{'_db_link'} ) {
+#    $self->{'_db_link'} = [];
+#  }
+
+#  push(@{$self->{'_db_link'}},$value);
+}
 
 1;

@@ -32,18 +32,12 @@ The rest of the documentation details each of the object methods. Internal metho
 =cut
 
 
-# Let the code begin...
-
-
 package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
 
 use Bio::EnsEMBL::Root;
-
-
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -334,28 +328,79 @@ sub transform {
   }
 }
 
+
+=head2 get_all_DBEntries
+
+  Arg [1]    : none
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Retrieves DBEntries (xrefs) for this translation.  
+
+               This method will attempt to lazy-load DBEntries from a
+               database if an adaptor is available and no DBEntries are present
+               on the translation (i.e. they have not already been added or 
+               loaded).
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
+  Exceptions : none
+  Caller     : get_all_DBLinks, TranslationAdaptor::store
+
+=cut
+
+sub get_all_DBEntries {
+  my $self = shift;
+
+  #if not cached, retrieve all of the xrefs for this gene
+  if(!defined $self->{'dbentries'} && $self->adaptor()) {
+    $self->{'dbentries'} = 
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
+  }
+
+  return $self->{'dbentries'};
+}
+
+
+=head2 add_DBEntry
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
+               The dbEntry to be added
+  Example    : @dbentries = @{$gene->get_all_DBEntries()};
+  Description: Associates a DBEntry with this gene. Note that adding DBEntries
+               will prevent future lazy-loading of DBEntries for this gene
+               (see get_all_DBEntries).
+  Returntype : none
+  Exceptions : thrown on incorrect argument type
+  Caller     : general
+
+=cut
+
+sub add_DBEntry {
+  my $self = shift;
+  my $dbe = shift;
+
+  unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    $self->throw('Expected DBEntry argument');
+  }
+
+  $self->{'dbentries'} ||= [];
+  push @{$self->{'dbentries'}}, $dbe;
+}
+
+
 =head2 get_all_DBLinks
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : see get_all_DBEntries
+  Example    : see get_all_DBEntries
+  Description: This is here for consistancy with the Transcript and Gene 
+               classes.  It is a synonym for the get_all_DBEntries method.
+  Returntype : see get_all_DBEntries
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_all_DBLinks {
   my $self = shift;
 
-  if( !defined $self->{'_db_link'} ) {
-    $self->{'_db_link'} = [];
-    if( defined $self->adaptor ) {
-      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
-    }
-  } 
-  
-  return $self->{'_db_link'};
+  return $self->get_all_DBEntries(@_);
 }
 
 
