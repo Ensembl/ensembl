@@ -68,21 +68,6 @@ CREATE TABLE analysis (
 
 );
 
-################################################################################
-#
-# Table structure for table 'map_density'
-#
-CREATE TABLE map_density (
-
-   seq_region_id              int unsigned NOT NULL,
-   seq_region_start           int(10) NOT NULL,
-   seq_region_end             int(10) NOT NULL,
-   type		              varchar(20) NOT NULL,
-   value	              int(10) NOT NULL,
-    
-   PRIMARY KEY(type,seq_region_id,seq_region_start) 
-
-);
 
 ################################################################################
 #
