@@ -275,10 +275,10 @@ debug("Building assembly table - contig/chromosome");
 
 execute($dbi,
 	 "INSERT INTO $target.assembly " .
-	 "SELECT tcm.new_id, " .            # asm_seq_region_id (old-new chromosome ID mapping)
+	 "SELECT tcm.new_id, " .           # asm_seq_region_id (old-new chromosome ID mapping)
 	 "a.contig_id, " .	           # cmp_seq_region_id
 	 "a.chr_start, " .	           # asm_start
-	 "a.chr_end, " .		           # asm_end
+	 "a.chr_end, " .		   # asm_end
 	 "a.contig_start, " .	           # cmp_start
 	 "a.contig_end, " .	           # cmp_end
 	 "a.contig_ori " .	           # ori
