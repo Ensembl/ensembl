@@ -52,7 +52,7 @@ sub process_insert {
      $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
 
     info("insertion in cds ($insert_len)");
-    print "BEFORE CDS INSERT:\n";
+    print STDERR "BEFORE CDS INSERT:\n";
     print_exon($exon, $transcript);
 
     $code |= StatMsg::CDS;
