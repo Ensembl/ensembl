@@ -1230,8 +1230,6 @@ return @markers;
 
 
 
-
-
 =head2 get_landmark_MarkerFeatures
 
   Title   : get_landmark_MarkerFeatures 
@@ -1287,55 +1285,31 @@ return @markers;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 sub _create_MarkerFeatures
 {
-    my ($self,$statement)=@_;
-   my @result; 
-    my $analysis;
-    my %analhash;
-   
+my ($self,$statement)=@_;
 
-    my $sth = $self->dbobj->prepare($statement);
-    $sth->execute;
+my @result; 
+my $analysis;
+my %analhash;
     
-    my ($start, $end, $score, $strand, $hstart, 
-        $name, $hend, $hid, $analysisid );
 
+my $sth = $self->dbobj->prepare($statement);
+$sth->execute;
+
+my ($start, $end, $score, $strand, $hstart, 
+    $name, $hend, $hid, $analysisid );
+
+
+$sth->bind_columns
+    ( undef, \$start, \$end, \$score, \$strand, \$name, 
+      \$hstart, \$hend, \$hid, \$analysisid);
+
+
+while( $sth->fetch ) {
     
-    $sth->bind_columns
-	( undef, \$start, \$end, \$score, \$strand, \$name, 
-	  \$hstart, \$hend, \$hid, \$analysisid);
- 
-
- while( $sth->fetch ) {
-
-
     my ( $out, $seqf1, $seqf2 );
-   
+    
     if (!$analhash{$analysisid}) {
 	
 	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -1358,16 +1332,12 @@ sub _create_MarkerFeatures
     $out->mapdb( $self->dbobj->mapdb );
     $out->id ($hid);
     
-push( @result, $out );
+    push( @result, $out );
 }
 
-    return @result;
-    
+return @result;
+
 }
-
-
-
-
 
 
 
