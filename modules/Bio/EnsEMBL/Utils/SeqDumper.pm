@@ -337,7 +337,7 @@ sub dump_embl {
 ';
   
   #ID and moltype
-  my $VALUE = "$id    ENSEMBL; DNA; PLN; $len BP.";
+  my $VALUE = "$id    ENSEMBL; DNA; HTG; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
   print $FH "XX\n";
   
