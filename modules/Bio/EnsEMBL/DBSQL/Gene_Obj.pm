@@ -1043,11 +1043,14 @@ sub get_Virtual_Contig{
     my $last_contig=$self->_db_obj->get_Contig($last_exon->contig_id());
     my $last_ori=$last_exon->strand();
     my $not_finished=1;
+    my $length;
 
     EXTEND:while (){
 	foreach my $vcraw ($vc->rawcontig_ids()) {
 	    if ($last_contig->id eq $vcraw) {		
+		#extend full length of contig not 5000! 
 		$vc=$vc->extend(-$last_contig->length,$last_contig->length);
+		
 		last EXTEND;
 	    }
 	}
@@ -1060,7 +1063,13 @@ sub get_Virtual_Contig{
 	    print STDERR "Hit max. length!\n";
 	    return undef;
 	}
+	# to cope with badly built genes
+	if ($length==$vc->length){last EXTEND;}
+	$length=$vc->length;
+	
     }
+
+   
 
     #Check that the Virtual Contig contains all exons of this transcript
     my $ok=undef;
@@ -1070,7 +1079,6 @@ sub get_Virtual_Contig{
 
     foreach my $exon ($transcript->each_Exon) {
 
-	#print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
 	my $contig_id=$exon->contig_id();
 	if ($contig_id ne $old_e_cont) {
 	    foreach my $vcraw ($vc->rawcontig_ids) {
@@ -1107,12 +1115,14 @@ sub get_Virtual_Contig{
 	      print STDERR "Hit max. length!\n";
 	      return undef;
 	  }
+	  # to cope with badly built genes
+	  if ($length==$vc->length){last EXTEND_MORE;}
+	  $length=$vc->length;
+
+
       }
     }
-    #print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
-
    
-    
     return $vc;
 }
 

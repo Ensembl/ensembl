@@ -1020,8 +1020,8 @@ Calling gene_Obj->get_array_supporting instead!");
 sub get_Virtual_Contig_by_Transcript_id {
    my ($self,$tid, $maxlen) = @_;
 
-   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
-Calling gene_Obj->get_Virtual_contig instead!");
+#   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
+#Calling gene_Obj->get_Virtual_contig instead!");
 
    return my $vc =$self->gene_Obj->get_Virtual_Contig($tid,$maxlen);
 }
