@@ -15,6 +15,8 @@ associations.
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::MiscFeature;
+  use Bio::EnsEMBL::MiscSet;
+  use Bio::EnsEMBL::Attribute;
 
   my $mfeat = Bio::EnsEMBL::MiscFeature->new(-START  => 1200,
                                              -END    => 100_000,
@@ -22,31 +24,43 @@ associations.
                                              -SLICE  => $slice);
 
   #  Can add attributes to the misc feature and associate with various sets
-  $clone_set->code('clone');
-  $tiling_path_set->core('tilingpath');
+  my $clone_set = Bio::EnsEMBL::MiscSet->new(-CODE => 'clone',
+                                         -NAME => '1MB clone set',
+                                         -DESCRIPTION => '1MB CloneSet');
 
-  $mfeat->add_attribute('name', 'RLX12451');
-  $mfeat->add_attribute('version', '4');
-  $mfeat->add_attribute('synonym', 'AL42131.4');
-  $mfeat->add_attrubute('synonym', 'Z199311');
-  $mfeat->add_set($clone_set);
-  $mfeat->add_set($tiling_path_set);
 
-  my ($name)   = $mfeat->get_attribute('name');
-  my @synonyms = $mfeat->get_attribute('synonym');
+  my $tiling_path_set = Bio::EnsEMBL::MiscSet->new(-CODE => 'tilingpath',
+                                                   -NAME => 'tiling path set');
 
-  my @attrib_types = $mfeat->get_attribute_types();
-  foreach my $attrib_type (@attrib_types) {
-    print join(',', $mfeat->get_attribute($attrib_type));
-  }
 
-  $clone_set = $mfeat->get_set('clone');
-  $tiling_path_set = $mfeat->get_set('tiling_path');
+  my $attrib1 = Bio::EnsEMBL::Attribute->new(-VALUE => 'RLX12451',
+                                            -CODE => 'name',
+                                            -NAME => 'name');
 
-  my @set_codes = $mfeat->get_set_codes();
-  foreach my $set_code (@set_codes) {
-    print $mfeat->get_set->name(), "\n";
-  }
+  my $attrib2 = Bio::EnsEMBL::Attribute->new(-VALUE => '4',
+                                            -CODE  => 'version',
+                                           -NAME  => 'version');
+
+  my $attrib3 = Bio::EnsEMBL::Attribute->new(-VALUE => 'AL42131.4',
+                                            -CODE  => 'synonym',
+                                            -NAME  => 'synonym');
+
+  # can associate a misc feature with any number of sets
+
+  $mfeat->add_MiscSet($clone_set);
+  $mfeat->add_MiscSet($tiling_path_set);
+
+  # can add arbitrary attributes to a misc feature
+
+  $mfeat->add_Attribute($attrib1);
+  $mfeat->add_Attribute($attrib2);
+  $mfeat->add_Attribute($attrib3);
+
+  my ($name_attrib)   = @{$mfeat->get_all_Attributes('name')};
+  my @all_attribs     = @{$mfeat->get_all_Attributes()};
+
+  my @all_sets = @{$mfeat->get_all_MiscSets()};
+  my ($clone_set) = @{$mfeat->get_all_CloneSets('clone')};
 
 
   # Can do normal feature operations as well
@@ -59,6 +73,9 @@ associations.
 MiscFeatures are extremely general  features with a location, and an
 arbitrary group of attributes.  They are grouped with other features of the
 same 'type' through the use of MiscSets (see Bio::EnsEMBL::MiscSet).
+Attributes are attached in the fom of Bio::EnsEMBL::Attribute objects.
+See Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor for ways to fetch or store
+MiscFeatures.
 
 =head1 CONTACT
 
@@ -84,6 +101,7 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Feature);
 
 
+
 # new is inherited from superclass
 
 sub new_fast {
@@ -93,25 +111,6 @@ sub new_fast {
 }
 
 
-
-
-=head2 add_attribute
-
-  Arg [1]    : string $type
-               The type of attribute to add
-  Arg [2]    : string $value
-               The value of the attribute to add
-  Example    : $misc_feature->add_attribute('synonym', 'AL124141.1');
-  Description: Adds an attribute of a given type to this misc. feature
-  Returntype : none
-  Exceptions : throw if type arg is not provided
-  Caller     : general
-
-=cut
-
-sub add_attribute {
-  throw( "You need to make Attribute objects now, use add_Attribute" );
-}
 
 =head2 add_Attribute
 
@@ -135,23 +134,6 @@ sub add_Attribute {
   push @{$self->{'attributes'}}, $attrib
 }
 
-
-=head2 add_set
-
-  Arg [1]    : Bio::EnsEMBL::MiscSet $set
-               The set to add
-  Example    : $misc_feature->add_set(Bio::EnsEMBL::MiscSet->new(...));
-  Description: Associates this MiscFeature with a given Set.
-  Returntype : none
-  Exceptions : throw if the set arg is not provided,
-               throw if the set to be added does not have a code
-  Caller     : general
-
-=cut
-
-sub add_set {
-  throw( "Use add_MiscSet instead." );
-}
 
 
 =head2 add_MiscSet
@@ -183,25 +165,6 @@ sub add_MiscSet {
 
 
 
-=head2 get_set
-
-  Arg [1]    : optional string $code
-               The code of the set to retrieve
-  Example    : $set = $misc_feature->get_set($code);
-  Description: Retrieves a set that this feature is associated with via its
-               code.  Undef is returned if the feature is not associated with
-               the requested set.
-  Returntype : Bio::EnsEMBL::MiscSet or undef
-  Exceptions : throw if the code arg is not provided
-  Caller     : general
-
-=cut
-
-sub get_set {
-  throw( "Use get_MiscSets()" );
-}
-
-
 =head2 get_all_MiscSets
 
   Arg [1]    : optional string $code
@@ -227,23 +190,6 @@ sub get_all_MiscSets {
   } else {
     return $self->{'miscSets'};
   }
-}
-
-
-=head2 get_attribute
-
-  Arg [1]    : string $type
-               The type of the attribute values to retrieve
-  Example    : @values = $misc_feature->get_attribute('name');
-  Description: Retrieves a list of values for a particular attribute type
-  Returntype : list of strings
-  Exceptions : thrown if a type arg is not provided
-  Caller     : general
-
-=cut
-
-sub get_attribute {
-  throw( "Use get_Attributes now" );
 }
 
 
