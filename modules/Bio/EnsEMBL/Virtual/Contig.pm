@@ -686,7 +686,7 @@ sub get_MarkerFeatures {
 =cut
 
 sub get_all_Genes {
-    my ($self, $supporting) = @_;
+    my ($self) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
     if (defined $self->{'_all_genes'}) {return @{$self->{'_all_genes'}}}
