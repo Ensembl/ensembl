@@ -32,8 +32,6 @@ die "Target schema must be specified"  unless $target;
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$targetDB", "$user", "$password") || die "Can't connect to target DB";
 my $sth;
 
-# TODO - build "meta" table describing which tables use which co-ordinate systems
-
 # ----------------------------------------------------------------------
 # The coord_system table needs to be filled first
 
@@ -49,12 +47,24 @@ foreach my $insert (@inserts) {
 # cache coord-system names to save lots of joins
 debug("Caching coord_system IDs");
 my %coord_system_ids; # hash with keys = coord-system names, values = internal IDs
-$sth = $dbi->prepare("SELECT coord_system_id, name FROM coord_system");
+$sth = $dbi->prepare("SELECT coord_system_id, name FROM $target.coord_system");
 $sth->execute or die "Error when caching coord-system IDs";
 while(my $row = $sth->fetchrow_hashref()) {
   my $id = $row->{"coord_system_id"};
   my $name = $row->{"name"};
   $coord_system_ids{$name} = $id;
+}
+
+# ----------------------------------------------------------------------
+# Add info to the meta table that describes which features are in which
+# co-ordinate systems
+
+copy_table($dbi, "meta");
+debug("Adding co-ordinate system information to meta table");
+$sth = $dbi->prepare("INSERT INTO meta (meta_key, meta_value) VALUES ('feature.coord_system', ?)");
+my @cs = ("gene|chromosome:NCBI33", "transcript|chromosome:NCBI33", "exon|chromosome:NCBI33", "dna_align_feature|contig", "marker_feature|contig", "simple_feature|contig", "protein_align_feature|contig", "repeat_feature|contig", "qtl_feature|chromosome");
+foreach my $val (@cs) {
+  $sth->execute($val);
 }
 
 # ----------------------------------------------------------------------
@@ -91,15 +101,80 @@ while(my $row = $sth->fetchrow_hashref()) {
 #}
 
 # ----------------------------------------------------------------------
+# Gene
+# Need to calculate start, end etc
+
+debug("Building gene table");
+
+my $sql =
+  "INSERT INTO $target.gene " .
+  "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       g.display_xref_id " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " . 
+  "GROUP BY g.gene_id";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Transcript
+# Need to calculate start, end etc
+
+debug("Building transcript table");
+
+$sql =
+  "INSERT INTO $target.transcript " .
+  "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       g.display_xref_id " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " .
+  "GROUP BY t.transcript_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
+# Exon
+# Translation to chromosomal co-ordinates should take care of sticky exons
+# so new exon table will have <= number of rows as old exon table
+debug("Building exon table");
+
+$sql =
+  "INSERT INTO $target.exon " .
+  "SELECT e.exon_id, e.contig_id, " .
+  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+  "       a.contig_ori*e.contig_strand as strand, " .
+  "       e.phase, e.end_phase " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "WHERE  t.transcript_id = et.transcript_id " .
+  "AND    et.exon_id = e.exon_id " .
+  "AND    e.contig_id = a.contig_id " .
+  "AND    g.gene_id = t.gene_id " .
+  "GROUP BY e.exon_id";
+#print $sql . "\n";
+execute($dbi, $sql);
+
+# ----------------------------------------------------------------------
 # Feature tables
 # Note that we can just rename contig_* to set_region_* since the
 # contig IDs were copied verbatim into seq_region
-
-my @feature_tables = ("exon", "repeat_feature", "simple_feature", "dna_align_feature", "protein_align_feature", "marker_feature", "qtl_feature");
-
-# exon
-debug("Copying exon");
-execute($dbi, "INSERT INTO $target.exon (exon_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, phase, end_phase) SELECT exon_id, contig_id, contig_start, contig_end, contig_strand, phase, end_phase FROM $source.exon");
 
 # simple_feature
 debug("Copying simple_feature");
@@ -122,7 +197,16 @@ debug("Copying marker_feature");
 execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
 
 # qtl_feature
-# TODO - this is in chromosomal co-ords so needs to be handled differently
+# Note this uses the perviously constructed %chromosome_id_old_new hash for mapping
+debug("Copying qtl_feature");
+$sth = $dbi->prepare("SELECT * FROM $source.qtl_feature");
+$sth->execute or die "Error when reading qtl_feature";
+while(my $row = $sth->fetchrow_hashref()) {
+
+  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
+  execute($dbi, "INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) VALUES (" . $seq_region_id . ", " . $row->{"start"} . ", " . $row->{"end"} . ", " . $row->{"qtl_id"} . ", " . $row->{"analysis_id"} . ")");
+
+}
 
 
 
@@ -141,7 +225,7 @@ copy_table($dbi, "gene_stable_id");
 copy_table($dbi, "go_xref");
 copy_table($dbi, "identity_xref");
 copy_table($dbi, "interpro");
-copy_table($dbi, "karyotype");
+copy_table($dbi, "karyotype"); # change chromosome_id etc?
 copy_table($dbi, "map");
 copy_table($dbi, "map_density");
 copy_table($dbi, "mapannotation");
@@ -154,7 +238,6 @@ copy_table($dbi, "marker");
 copy_table($dbi, "marker_feature");
 copy_table($dbi, "marker_map_location");
 copy_table($dbi, "marker_synonym");
-copy_table($dbi, "meta");
 copy_table($dbi, "object_xref");
 copy_table($dbi, "peptide_archive");
 copy_table($dbi, "protein_feature");
