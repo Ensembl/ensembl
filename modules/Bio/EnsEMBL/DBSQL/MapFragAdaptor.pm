@@ -70,11 +70,9 @@ sub _get_dnafrag_id {
 sub _get_mapset_id {
     my($self,$mapset_code) = @_;
 
-    my $sth = $self->prepare("select mapset_id from mapset where code = ?");
+    my $sth = $self->prepare("select mapset_id,max_length from mapset where code = ?");
     $sth->execute($mapset_code);
-    my ($mapset_id) = $sth->fetchrow_array();
-
-    return $mapset_id;
+    return $sth->fetchrow_array();
 }
 
 
@@ -103,14 +101,12 @@ sub fetch_all_by_mapset_chr_start_end {
     my( $self, $mapset_code, $chr_name, $chr_start, $chr_end ) = @_;
     my $key = join ':', $mapset_code, $chr_name, $chr_start, $chr_end;
     
-    return @{$self->{'_cache'}{$key}} if $self->{'_cache'}{$key};
+    return $self->{'_cache'}{$key} if $self->{'_cache'}{$key};
 
-    my( $dnafrag_id, $mapset_id );
+    my $dnafrag_id = $self->_get_dnafrag_id( $chr_name );
+    my( $mapset_id, $max_length ) =  $self->_get_mapset_id( $mapset_code );
     
-    unless( 
-        ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) &&
-        ( $mapset_id  = $self->_get_mapset_id( $mapset_code ) )
-    ) {
+    unless( $dnafrag_id && $mapset_id ) {
         $self->{'_cache'}{$key} = [];
         return ();
     }
@@ -125,7 +121,7 @@ sub fetch_all_by_mapset_chr_start_end {
                    left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
              where mm.mapset_id = ? and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
                     ).
-            ( $chr_name ? "and df.dnafrag_id = ?".( defined($chr_start) ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
+            ( $dnafrag_id ? "and df.dnafrag_id = ?".( defined($chr_start) ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
         qq(  order by mf.mapfrag_id, mat.code )
     );
         
@@ -133,7 +129,7 @@ sub fetch_all_by_mapset_chr_start_end {
         $mapset_id, (
              $dnafrag_id ?
             ( $dnafrag_id, ( defined($chr_start) ?
-                           ($chr_end, $chr_start - $self->max_feature_length, $chr_start) :
+                           ($chr_end, $chr_start - $max_length, $chr_start) :
                            () ) ) :
             ()
         )
@@ -222,7 +218,7 @@ sub fetch_by_dbID {
     }
 
     $sth = $self->prepare(
-        qq(select ms.mapset_id, ms.code, ms.name, ms.description, ms.maximum_length
+        qq(select ms.mapset_id, ms.code, ms.name, ms.description, ms.max_length
              from mapset as ms, mapfrag_mapset as mm
             where ms.mapset_id = mm.mapset_id and mm.mapfrag_id = ?
         )
@@ -368,7 +364,7 @@ sub get_mapsets {
     my $self = shift;
     my $flag = shift;
     my $sth = $self->prepare(
-        "select mapset_id, code, name, description, maximum_length
+        "select mapset_id, code, name, description, max_length
            from mapset"
     );
     $sth->execute();
