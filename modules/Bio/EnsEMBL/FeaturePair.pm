@@ -126,9 +126,11 @@ sub analysis{
 
    if( defined $value ) {
        $self->throw("Trying to add a non analysis object!") unless ref($value) eq 'Bio::EnsEMBL::Analysis::Analysis';
-       
        $self->{_analysis} = $value;
    }
+
+   if (defined($self->feature1)) { $self->feature1->analysis($value);}
+   if (defined($self->feature2)) { $self->feature2->analysis($value);}
 
    if (defined($self->{_analysis})) {
        return $self->{_analysis};

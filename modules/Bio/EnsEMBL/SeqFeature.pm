@@ -374,18 +374,33 @@ sub analysis {
 
 sub validate {
     my ($self) = @_;
-    
-    $self->throw("Seqname not defined in feature")     unless defined($self->seqname);
-    $self->throw("start not defined in feature")       unless defined($self->start);
-    $self->throw("end not defined in feature")         unless defined($self->end);
-    $self->throw("strand not defined in feature")      unless defined($self->strand);
-    $self->throw("score not defined in feature")       unless defined($self->score);
-    $self->throw("source_tag not defined in feature")  unless defined($self->source_tag);
-    $self->throw("primary_tag not defined in feature") unless defined($self->primary_tag);
-    $self->throw("analysis not defined in feature")    unless defined($self->analysis);
+
+    $self->vthrow("Seqname not defined in feature")     unless defined($self->seqname);
+    $self->vthrow("start not defined in feature")       unless defined($self->start);
+    $self->vthrow("end not defined in feature")         unless defined($self->end);
+    $self->vthrow("strand not defined in feature")      unless defined($self->strand);
+    $self->vthrow("score not defined in feature")       unless defined($self->score);
+    $self->vthrow("source_tag not defined in feature")  unless defined($self->source_tag);
+    $self->vthrow("primary_tag not defined in feature") unless defined($self->primary_tag);
+    $self->vthrow("analysis not defined in feature")    unless defined($self->analysis);
     
 }
 
+sub vthrow {
+    my ($self,$message) = @_;
+    
+    print("Error validating feature [$message]\n");
+    print("   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
+    print("   Start       : [" . $self->{_gsf_start} . "]\n");
+    print("   End         : [" . $self->{_gsf_end} . "]\n");
+    print("   Strand      : [" . $self->{_gsf_strand} . "]\n");
+    print("   Score       : [" . $self->{_gsf_score} . "]\n");
+    print("   Source_tag  : [" . $self->{_source_tag} . "]\n");
+    print("   Primary_tag : [" . $self->{_primary_tag} . "]\n");
+    print("   Analysis    : [" . $self->{_analysis} . "]\n");
+
+    $self->throw("");
+}
 # These methods are specified in the SeqFeatureI interface but we don't want
 # people to store data in them.  These are just here in order to keep
 # existing code working
