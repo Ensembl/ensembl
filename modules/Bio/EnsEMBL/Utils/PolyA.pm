@@ -78,23 +78,24 @@ sub new{
 sub clip{
   my ($self, $bioseq) = @_;
 
-#  print STDERR "past a $bioseq\n";
+  # print STDERR "past a $bioseq\n";
   my $seq = $bioseq->seq;
   $self->_clip(1);
   $self->_mask(0);
   $self->_softmask(0);
   my $new_seq = $self->_find_polyA($seq);
   my $cdna = Bio::Seq->new();
-  if ($new_seq.length > 0){
+  if (length($new_seq) > 0){
     $cdna->seq($new_seq);
-  } else {
-    print "While clipping the the polyA tail the EST sequence totally disappeared.\n";
-    print "Returning unclipped sequence.\n";
-    $cdna->seq($seq);
+  } 
+  else {
+    print "While clipping the the polyA tail, sequence ".$bioseq->display_id." totally disappeared.\n";
+    print "Returning undef\n";
+    return undef;
   }
   $cdna->display_id( $bioseq->display_id );
   $cdna->desc( $bioseq->desc );
-
+  
   return $cdna;
 }
 
@@ -128,6 +129,7 @@ sub mask{
 
 
 ############################################################
+
 sub _find_polyA{
   my ($self, $seq) = @_;
   my $new_seq;
@@ -211,7 +213,7 @@ sub _find_polyA{
       #print STDERR "length to mask: $length_to_mask\n";
       #print "chunk: $chunk\n";
       $count = $chunk =~ tr/Tt//;
-       $n_count = $chunk =~ tr/Nn//;
+      $n_count = $chunk =~ tr/Nn//;
       if ( ($count+$n_count)  >= 2*( $piece )/3 ){
 	$length_to_mask +=3;
       }
