@@ -409,7 +409,7 @@ sub analysis {
 
     if (defined($arg)) {
 	$self->throw("Argument is not Bio::EnsEMBL::Analysis::Analysis object") 
-	    unless $arg->isa("Bio::EnsEMBL::AnalysisI");
+	    unless $arg->isa("Bio::EnsEMBL::Analysis");
 
 	$self->{_analysis} = $arg;
     }

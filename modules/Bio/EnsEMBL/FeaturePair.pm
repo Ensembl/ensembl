@@ -626,7 +626,7 @@ sub analysis{
    my ($self,$value) = @_;
 
    if( defined $value ) {
-       $self->throw("Trying to add a non analysis object $value!") unless (ref $value && $value->isa('Bio::EnsEMBL::AnalysisI'));
+       $self->throw("Trying to add a non analysis object $value!") unless (ref $value && $value->isa('Bio::EnsEMBL::Analysis'));
        $self->{_analysis} = $value;
    }
 
@@ -733,7 +733,7 @@ sub validate {
 
     # Now the analysis object
     if (defined($self->analysis)) {
-	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::AnalysisI");
+	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::Analysis");
     } else {
 	$self->throw("No analysis object defined");
     }
@@ -767,7 +767,7 @@ sub validate_prot_feature{
 
     # Now the analysis object
     if (defined($self->analysis)) {
-	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::AnalysisI");
+	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::Analysis");
     } else {
 	$self->throw("No analysis object defined");
     }

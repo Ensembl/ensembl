@@ -54,11 +54,10 @@ package Bio::EnsEMBL::Analysis;
 
 use vars qw(@ISA);
 use strict;
-use Bio::EnsEMBL::AnalysisI;
 use Bio::EnsEMBL::Root;
 
 # Inherits from the base bioperl object
-@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::AnalysisI );
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new {
