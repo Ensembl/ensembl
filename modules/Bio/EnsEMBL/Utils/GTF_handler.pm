@@ -630,7 +630,8 @@ sub dump_genes {
 		or $self->warn("$skipping_string start")
 		and next TRANSCRIPT;
 
-            my $start_exon_id = $translation->start_exon_id
+            #tania's fix to use the stable_id becaure start_exon_id is deprecated
+            my $start_exon_id = $translation->start_exon->stable_id
 		or $self->warn("$skipping_string start_exon_id")
 		and next TRANSCRIPT;
 
@@ -638,7 +639,8 @@ sub dump_genes {
 		or $self->warn("$skipping_string end")
 		and next TRANSCRIPT;
 
-            my $end_exon_id = $translation->end_exon_id
+            #tania's fix to use the stable_id becaure end_exon is deprecated
+            my $end_exon_id = $translation->end_exon->stable_id
 		or $self->warn("$skipping_string end_exon_id")
 		and next TRANSCRIPT;
 
@@ -647,13 +649,9 @@ sub dump_genes {
             # Find the start and end exons
             my( $start_exon, $end_exon );
             foreach my $ex (@exons) {
-                #tania's hack 
-                #this is a bug.
-                # ex_id: SINFRUE00000255773, but start_exon_id: 255773
                 
-                #tania's fix
-                $start_exon = $ex if ($ex->id =~ /$start_exon_id/i);
-                $end_exon   = $ex if ($ex->id =~ /$end_exon_id/i);
+                $start_exon = $ex if ($ex->id eq $start_exon_id);
+                $end_exon   = $ex if ($ex->id eq $end_exon_id);
             }
 
 	    my $transcript_string = '';
@@ -680,9 +678,7 @@ sub dump_genes {
                 my $group = join('; ', (@group_fields, $exon_num_field, $exon_id_field));
                 
                 # Is the start codon here?
-                #tania
-                if ($exon_id =~ /$start_exon_id/) {
-                #if ($exon_id eq $start_exon_id) {
+                if ($exon_id eq $start_exon_id) {
                     $seen_start = 1;
                     my( $x, $y ) = ($translation_start + $exon_start-1, 
                                     $translation_start + $exon_start-1 + 2);
@@ -707,8 +703,7 @@ sub dump_genes {
                     $group) ."\n";
                 
                 # Is the end codon here?
-                #tania
-                if ($exon_id =~ /$end_exon_id/) {
+                if ($exon_id eq $end_exon_id) {
                     $seen_end = 1;
                     my( $x, $y ) = ($translation_end + $exon_start-1 -2, 
                                     $translation_end + $exon_start-1);
