@@ -71,7 +71,7 @@ sub fetch_by_contig_id{
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
               the area you want to retrieve features from
-  Function  : retrieve Landmark Markers from core database
+  Function  : retrieve Landmark MarkerFeatures from lite database
   Returntype: list Bio::EnsEMBL::MarkerFeature
   Exceptions: none
   Caller    : Bio::EnsEMBL::Slice
@@ -112,6 +112,55 @@ sub fetch_by_Slice {
     push( @result, $mfeature );
   }
   return @result;
+}
+
+
+# returns Features by Marker object in chromosomal Coords
+
+sub fetch_by_Marker {
+  my $self = shift;
+  my $marker = shift;
+
+  my @result;
+
+  # bark if not a Bio::EnsEMBL::Map::Marker
+  $self->throw
+    ("need Bio::EnsEMBL::Map::Marker" ) 
+      unless ref($marker) && 
+	$marker->isa("Bio::EnsEMBL::Map::Marker");
+  
+  my $synlist;
+  my @synonym = @{$marker->synonyms()};
+  my $alternate = 1;
+  my @syn2 = grep { $alternate = !$alternate; !$alternate; } @synonym;
+  $synlist = '"'.join( '","', @syn2, $self->{'_id'} ).'"';
+
+
+  my $sth = $self->prepare
+    ( "SELECT marker, name, chr_start, chr_end, chr_strand, chr_name
+         FROM landmark_marker 
+        WHERE name in ( $synlist )" );
+
+  $sth->execute;
+
+  while( my $hr = $sth->fetchrow_hashref() ) {
+    my $start = $hr->{'chr_start'};
+    my $end = $hr->{'chr_end'};
+    my $strand = $hr->{'chr_strand'};
+    
+    my $mfeature = Bio::EnsEMBL::MarkerFeature->new();
+    
+    $mfeature->start( $start );
+    $mfeature->end( $end );
+    $mfeature->strand( $strand );
+    $mfeature->seqname( $hr->{'chr_name'} );
+    $mfeature->display_label( $hr->{'name'} );
+    $mfeature->marker_name( $hr->{'marker'} );
+    
+    push( @result, $mfeature );
+  }
+
+  return \@result;
 }
 
 

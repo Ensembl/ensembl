@@ -349,6 +349,7 @@ sub transform {
   my $self = shift;
   my $slice = shift;
   my $mapper;
+
   if(( ! defined $slice ) &&
      ( defined  $self->contig ) &&
      ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
@@ -367,8 +368,9 @@ sub transform {
 sub _transform_to_slice {
   my $self = shift;
   my $slice = shift;
+
   
-  my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+  my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $slice->assembly_type() );
   
   my @mapped = $mapper->map_coordinates_to_assembly
@@ -392,9 +394,16 @@ sub _transform_to_slice {
   # this untransformed exon will be distinguishable as it will still have
   # contig attached to it and not a slice.
   if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-    #print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
     return $self;
   }
+
+  # use empty Slice to map to chromosomal coords
+  if( ! defined $slice->chr_name() ) {
+    $slice->chr_name( $mapped[0]->id() );
+    $slice->chr_start( 1 );
+    $slice->strand( 1 );
+  } 
+	  
 
   my $newexon = Bio::EnsEMBL::Exon->new();
   %$newexon = %$self;
@@ -425,7 +434,7 @@ sub _transform_to_slice {
 sub _transform_to_rawcontig {
   my $self = shift;
 
-  my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+  my $mapper = $self->contig()->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $self->contig()->assembly_type() );
   my $global_start = $self->contig->chr_start();
   my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
@@ -573,7 +582,11 @@ sub _transform_to_rawcontig {
   } else {
     # thats a simple exon
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      $self->throw(" exon lies on a gap cannot be mapped\n");
+      
+      $self->throw(" exon ". $self->start().
+		   " ". $self->end(). " ".
+		   $self->contig()->chr_name().
+		   " lies on a gap cannot be mapped\n");
     }
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
     $self->start( $mapped[0]->start() );

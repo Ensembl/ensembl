@@ -354,10 +354,10 @@ sub transform {
   my $self = shift;
   my $slice = shift;
 
-  if( defined $self->{'contig'} and 
-      $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
+  if( defined $self->contig() and 
+      $self->contig()->isa( "Bio::EnsEMBL::RawContig" ) )  {
 
-    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+    my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
       ( $slice->assembly_type() );
 
     my $dna_seq = "";
@@ -394,12 +394,20 @@ sub transform {
 	$self->throw( "Component Sticky Exon couldnt map" );
       }
     
+
       # should get a gap object returned if an exon lies outside of 
       # the current slice.  Simply return the exon as is - i.e. untransformed.
       # this untransformed exon will be distinguishable as it will still have
       # contig attached to it and not a slice.
       if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
 	return $self;
+      }
+
+      # use empty Slice to map to chromosomal coords
+      if( ! defined $slice->chr_name() ) {
+	$slice->chr_name( $mapped[0]->id() );
+	$slice->chr_start( 1 );
+	$slice->strand( 1 );
       }
 
       # concatenate the raw sequence together
@@ -439,6 +447,7 @@ sub transform {
       }
     }
     
+
     # now build the new composite exon
     my $newexon = Bio::EnsEMBL::Exon->new();
     $newexon->start( $mapped_start - $slice->chr_start() + 1 );

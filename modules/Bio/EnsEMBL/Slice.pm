@@ -67,39 +67,45 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID) = 
+  my ($chr,$start,$end,$strand,$type,$adaptor, $dbID, $empty) = 
     $self->_rearrange([qw(CHR_NAME 
 			  CHR_START 
 			  CHR_END 
 			  STRAND 
 			  ASSEMBLY_TYPE 
 			  ADAPTOR 
-			  DBID)],
+			  DBID
+                          EMPTY)],
 		      @args);
 
-  if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
-    print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
-      "End: " . $end . "\t" . "Type: " . $type . "\n";
-    $self->throw("Do not have all the parameters for slice");
-  }
+  if( ! defined $empty ) {
+    if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
+      print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
+	"End: " . $end . "\t" . "Type: " . $type . "\n";
+      $self->throw("Do not have all the parameters for slice");
+    }
+    $self->chr_name($chr);
+    $self->chr_start($start);
+    $self->chr_end($end);
+    $self->id("$chr.$start-$end");
+    
+    #set strand to a default of 1 if it is not set
+    if ( undef $strand) {
+      $self->strand($strand);
+    }
+    else {
+      $self->strand('1');
+    }
 
-  $self->chr_name($chr);
-  $self->chr_start($start);
-  $self->chr_end($end);
-  $self->id("$chr.$start-$end");
-
-  #set strand to a default of 1 if it is not set
-  if ( undef $strand) {
-    $self->strand($strand);
+    my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->
+      fetch_by_type($type);
+    $mapper->register_region($self->chr_name(),$self->chr_start(),
+			     $self->chr_end());
+  } else {
+    # empty Slices are used to do mapping to chromosomal coords.
+    # After the mapping, the Slice contains chr_name and is reference 
+    # point for the mapped object
   }
-  else {
-    $self->strand('1');
-  }
-
-  my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->
-    fetch_by_type($type);
-  $mapper->register_region($self->chr_name(),$self->chr_start(),
-			   $self->chr_end());
 
   $self->assembly_type($type);
   $self->adaptor($adaptor);
@@ -1059,8 +1065,8 @@ sub get_all_DASFeatures{
      }
 
    }
-
-    
+   
+   
 
    foreach my $sf ( @chr_features ) {
      
@@ -1074,6 +1080,7 @@ sub get_all_DASFeatures{
      }
    }
    $self->{'_das_cached_features'} = \@genomic_features;
+
    return @genomic_features;
 }
 

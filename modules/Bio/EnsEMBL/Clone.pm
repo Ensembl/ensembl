@@ -50,7 +50,7 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw( Bio::EnsEMBL::Root );
 
 sub new {
     my ($class,$adaptor,@args) = @_;

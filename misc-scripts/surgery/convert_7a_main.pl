@@ -6,8 +6,8 @@
 use SchemaConverter;
 use DBI;
 
-my $sourcedbh = DBI->connect("dbi:mysql:host=ecs3b;database=homo_sapiens_core_7_29a", "ensro");
-my $targetdbh = DBI->connect("dbi:mysql:host=ecs1c.sanger.ac.uk;database=arne_main_29", "ensadmin", "ensembl");
+my $sourcedbh = DBI->connect("dbi:mysql:host=ecs3b;database=homo_sapiens_embl_7_29", "ensro");
+my $targetdbh = DBI->connect("dbi:mysql:host=ecs1c.sanger.ac.uk;database=arne_embl_29", "ensadmin", "ensembl");
 
 my $sc = SchemaConverter->new( $sourcedbh, $targetdbh );
 $sc->tmp_dir( "/acari/work1/stabenau/db" );
@@ -23,6 +23,7 @@ $sc->column_rename(  "contig", "id", "name" );
 $sc->column_rename(  "contig", "clone", "clone_id" );
 $sc->column_rename(  "contig", "dna", "dna_id" );
 $sc->column_rename(  "contig", "chromosomeId", "chromosome_id" );
+$sc->column_rename(  "contig", "offset", "embl_offset" );
 
 $sc->column_rename(  "clone", "internal_id", "clone_id" );
 $sc->column_rename(  "clone", "id", "name" );

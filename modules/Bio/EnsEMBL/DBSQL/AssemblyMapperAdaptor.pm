@@ -272,7 +272,9 @@ sub register_region_around_contig {
            );
        }
    }
-
 }
+
+
+
 
 1;

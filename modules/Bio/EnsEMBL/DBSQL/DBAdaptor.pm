@@ -78,22 +78,15 @@ sub new {
   my $self = $class->SUPER::new(@args);
   
   my (
-      $mapdbname,
-      $litedbname,
       $dnadb,
       $source
     ) = $self->_rearrange([qw(
-      MAPDBNAME
-      LITEDBNAME
       DNADB
       SOURCE
     )],@args);  
 
   $self->dnadb($dnadb);
 
-  # following was added on branch; unclear if it is needed:
-  # $self->mapdbname( $mapdbname );
-  #    $self->litedbname( $litedbname );
 
   if(defined $source) {
     $self->source($source);
@@ -121,11 +114,6 @@ sub new {
 #  }
 
 
-  # Store info for connecting to a litedb.
-  {
-      $litedbname ||= 'lite';
-      $self->{'_lite_db_name'} = $litedbname;
-  }
   
   my $sgp = undef;
  
@@ -204,51 +192,6 @@ sub get_MetaContainer {
     }
     return $mc;
 }
-
-
-
-=head2 mapdb
-
-$obj->mapdb($mapdb);
-my $mapdb = $obj->mapdb;
-
-Sets or gets a mapdb connection, which is a
-C<Bio::EnsEMBL::Map::DBSQL::Obj> object.
-
-If a mapdb connection doesn't exist, a new
-connection is made using the information provided
-to the C<_initialize> method.  This will produce
-an exception if the
-C<Bio::EnsEMBL::Map::DBSQL::Obj> module can't be
-found.
-
-=cut
-
-sub mapdb {
-    my( $self, $value ) = @_;
-    
-    if ($value) {
-        $self->throw("$value is not a valid mapdb object")
-            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::DBAdaptor");
-        $self->{'_mapdb'} = $value;
-    }
-    
-    
-    return $self->{'_mapdb'};
-}
-
-# was added on branch; not clear if needed:
-sub mapdbname {
-  my ($self, $arg ) = @_;
-  
-  if (defined($arg))  {
-    $self->{_mapdbname} = $arg;
-  }
-  
-  return $self->{_mapdbname};
-}
-
-
 
 
 
@@ -509,7 +452,6 @@ sub lite_DBAdaptor {
   my ($self, $arg ) = @_;
   if ( defined $arg ) {
     $self->{_liteDB} = $arg;
-   print STDERR "DBAdaptor->lite_DBAdaptor lite db defined\n"; 
 
   }
 
@@ -520,7 +462,6 @@ sub map_DBAdaptor {
   my ($self, $arg ) = @_;
   if ( defined $arg ) {
     $self->{_mapDB} = $arg;
-    print STDERR "DBAdaptor->map_DBAdaptor map db defined\n"; 
   }
 
   return $self->{_mapDB};
