@@ -1837,6 +1837,29 @@ sub noseq{
 }
 
 
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj->dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dbobj{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_dbobj'} = $value;
+    }
+   return $obj->{'_dbobj'};
+
+}
+
+
+
 1;
 
 

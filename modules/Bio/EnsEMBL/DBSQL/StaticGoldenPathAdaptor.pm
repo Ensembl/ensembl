@@ -219,6 +219,7 @@ sub fetch_VirtualContig_by_chr_start_end{
    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
 
    $vc->_chr_name($chr);
+   $vc->dbobj($self->dbobj);
    return $vc;
 }
 
@@ -253,7 +254,9 @@ sub fetch_VirtualContig_by_clone{
 
 
    my $halfsize = int($size/2);
-   if( $start > $size/2 ) {       
+   if( $start > $size/2 ) {    
+       print STDERR "Going to return a vc at $chr_name and $start";
+   
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
    } else {
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
@@ -273,7 +276,7 @@ sub fetch_VirtualContig_by_clone{
 =cut
 
 sub fetch_VirtualContig_by_contig{
-   my ($self,$contig,$size) = @_;
+   my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {
        $self->throw("Must have clone and size to fetch VirtualContig by clone");
@@ -281,14 +284,21 @@ sub fetch_VirtualContig_by_contig{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.id = '$contig' AND c.internal_id = st.raw_id AND st.type = '$type'");
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.id = '$contigid' AND c.internal_id = st.raw_id AND st.type = '$type'");
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
+   if( !defined $contig ) {
+     $self->throw("Contig $contigid is not on the golden path of type $type");
+   }
+
    my $halfsize = int($size/2);
    if( $start > $size/2 ) {       
+       print STDERR "Going to return a vc at $chr_name and $start";
+
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
    } else {
+       print STDERR "Going to return a vc at $chr_name and $start near start point... hmmm...\n";
        return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
    }
 }
