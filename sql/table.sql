@@ -1142,6 +1142,6 @@ CREATE TABLE density_type (
   value_type            ENUM('sum','ratio') NOT NULL,
 
   PRIMARY KEY(density_type_id),
-  KEY analysis_idx (analysis_id, block_size)
+  UNIQUE(analysis_id, block_size)
 
 ) TYPE=MyISAM;
