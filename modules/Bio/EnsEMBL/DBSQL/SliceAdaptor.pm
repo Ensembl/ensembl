@@ -729,19 +729,6 @@ sub fetch_by_misc_feature_attribute {
 }
 
 
-=head2 get_exceptions_by_slice
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Example    : 
- Description: get Bio::EnsEMBL::Mapper::Coordinates where on given slice are
-              PAR or overlapping haplotypes
-  Returntype : listref of Bio::EnsEMBL::Mapper::Coordinate
-  Exceptions : none
-  Caller     : Slice
-
-=cut
-
-
 =head2 fetch_normalized_slice_projection
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -888,6 +875,118 @@ sub fetch_normalized_slice_projection {
   }
 
   return \@out;
+}
+
+
+
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+  Arg [2]    : (optional) $seqref reference to a string
+               The sequence associated with the slice to be stored.
+  Example    : $slice = Bio::EnsEMBL::Slice->new(...);
+               $seq_region_id = $slice_adaptor->store($slice, \$sequence);
+  Description: This stores a slice as a sequence region in the database
+               and returns the seq region id. The passed in slice must
+               start at 1, and must have a valid seq_region name and coordinate
+               system. The attached coordinate system must already be stored in
+               the database.  The sequence region is assumed to start at 1 and
+               to have a length equalling the length of the slice.
+               If the slice coordinate system is the sequence level coordinate
+               system then the seqref argument must also be passed.  If the
+               slice coordinate system is NOT a sequence level coordinate
+               system then the sequence argument cannot be passed.
+  Returntype : int 
+  Exceptions : throw if slice has no coord system.
+               throw if slice coord system is not already stored.
+               throw if slice coord system is seqlevel and no sequence is 
+                     provided.
+               throw if slice coord system is not seqlevel and sequence is
+                     provided.
+               throw if slice does not start at 1
+               throw if sequence is provided and the sequence length does not
+                     match the slice length.
+               throw if the SQL insert fails (e.g. on duplicate seq region)
+               throw if slice argument is not passed
+  Caller     : database loading scripts
+
+=cut
+
+
+
+sub store {
+  my $self = shift;
+  my $slice = shift;
+  my $seqref = shift;
+
+  #
+  # Get all of the sanity checks out of the way before storing anything
+  #
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+  
+  my $cs = $slice->coord_system();
+  throw("Slice must have attached CoordSystem.") if(!$cs);
+  
+  my $db = $self->db();
+  if(!$cs->is_stored($db)) {
+    throw("Slice CoordSystem must already be stored in DB.") 
+  }
+  
+  if($slice->start != 1 || $slice->strand != 1) {
+    throw("Slice must have start==1 and strand==1.");
+  }
+
+  my $sr_len = $slice->length();
+  my $sr_name  = $slice->seq_region_name();
+
+  if(!$sr_name) {
+    throw("Slice must have valid seq region name.");
+  }
+
+  if($cs->is_sequence_level()) {
+    if(!$seqref) {
+      throw("Must provide sequence for sequence level coord system.");
+    }
+    if(ref($seqref) ne 'SCALAR') {
+      throw("Sequence must be a scalar reference.");
+    }
+    my $seq_len = length($$seqref);
+
+    if($seq_len != $sr_len) {
+      throw("Sequence length ($seq_len) must match slice length ($sr_len).");
+    }
+  } else {
+    if($seqref) {
+      throw("Cannot provide sequence for non-sequence level seq regions.");
+    }
+  }
+
+  #store the seq_region
+  
+  my $sth = $db->prepare("INSERT INTO seq_region " .
+                         "SET    name = ?, " .
+                         "       length = ?, " .
+                         "       coord_system_id = ?" );
+
+  $sth->execute($sr_name, $sr_len, $cs->dbID());
+
+  my $seq_region_id = $sth->{'mysql_insertid'};
+
+  if(!$seq_region_id) {
+    throw("Database seq_region insertion failed.");
+  }
+
+  if($cs->is_sequence_level()) {
+    #store sequence if it was provided
+    my $seq_adaptor = $db->get_SequenceAdaptor();
+    $seq_adaptor->store($seq_region_id, $$seqref);
+  }
+
+  return $seq_region_id;
 }
 
 
