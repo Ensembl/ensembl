@@ -143,7 +143,7 @@ CREATE TABLE feature (
 
 # Table structure for repeat features
 
-CREATE TABLE repeat (
+CREATE TABLE repeat_feature (
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
   contig varchar(40) DEFAULT '' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
