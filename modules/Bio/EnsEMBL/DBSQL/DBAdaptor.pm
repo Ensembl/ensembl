@@ -2434,7 +2434,7 @@ sub get_RepeatConsensusAdaptor {
     unless ($rca = $self->{'_simple_feature_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
         $rca = Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor->new($self);
-        $self->{'_simple_feature_adaptor'} = $rca;
+        $self->{'_repeat_consensus_adaptor'} = $rca;
     }
     return $rca;
 }
@@ -2446,7 +2446,7 @@ sub get_RepeatFeatureAdaptor {
     unless ($rfa = $self->{'_simple_feature_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
         $rfa = Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor->new($self);
-        $self->{'_simple_feature_adaptor'} = $rfa;
+        $self->{'_repeat_feature_adaptor'} = $rfa;
     }
     return $rfa;
 }
