@@ -90,8 +90,8 @@ sub start {
     $self->{start} = -1;
     foreach my $exon ($self->get_all_Exons()) {
       
-      unless(defined $self->{'contig'} && 
-             $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
+      unless(defined $exon->contig() && 
+             $exon->contig()->isa('Bio::EnsEMBL::Slice')) {
         $self->throw('Gene start cannot be calculated in slice coordinates' .
                      'because exons are in raw contig coordinates');
       }
@@ -134,8 +134,8 @@ sub end {
     $self->{end} = -1;
     foreach my $exon ($self->get_all_Exons()) {
       
-      unless(defined $self->{'contig'} && 
-             $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
+      unless(defined $exon->contig() && 
+             $exon->contig()->isa('Bio::EnsEMBL::Slice')) {
         $self->throw('Gene end cannot be calculated in slice coordinates' .
                      'because exons are in raw contig coordinates');
       }
@@ -154,6 +154,19 @@ sub end {
   return $self->{end};
 }
 
+
+sub strand {
+  my $self = shift;
+  my $arg = shift;
+
+  if( defined $arg ) {
+    $self->{'strand'} = $arg;
+  } elsif( ! defined $self->{strand} ) {
+    $self->warn( "Gene strand not set, difficult to calculate..." );
+  }
+  return $self->{'strand'};
+
+}
 
 sub source {
   my ($self, $source) = @_;
@@ -190,8 +203,6 @@ sub is_known{
       return 1;
     }
   }
-  
-  
   
   return 0;
 }
@@ -280,6 +291,15 @@ sub external_name {
   return $self->{'_external_name'};
 }
 
+sub external_db {
+  my ($self, $arg ) = @_;
+
+  if( defined $arg ) {
+    $self->{'_external_db'} = $arg;
+  }
+
+  return $self->{'_external_db'};
+}
 
 =head2 description
 
