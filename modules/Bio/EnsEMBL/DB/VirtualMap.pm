@@ -256,8 +256,11 @@ sub build_contig_map {
     # initialisation - find the correct end of the focus contig
     
     my ($current_left_size,$current_orientation,$current_contig,$overlap);
-    
     $current_contig = $focuscontig;
+    if( $focusposition < $current_contig->golden_start || $focusposition > $current_contig->golden_end ) {
+	$self->throw("focus position is before or after golden region. Focus $focusposition [".$current_contig->golden_start.":".$current_contig->golden_end);
+}
+ 
     if( $ori == 1 ) {
 	$current_left_size   = $focusposition - $current_contig->golden_start;
 	$current_orientation = 1;
@@ -265,10 +268,9 @@ sub build_contig_map {
 	$current_left_size   = $focuscontig->golden_end - $focusposition;
 	$current_orientation = -1;
     }
-    
-    
     my %seen_hash;
 
+    print STDERR "Starting with $current_left_size and $left to build\n";
 
     GOING_LEFT :
     
