@@ -148,10 +148,6 @@ sub fetch_by_dbID {
     $self->throw("No exons for gene $geneId, assumming no gene");
   }
 
-  foreach my $exon ( @exons ) {
-    $exonIds{$exon->dbID} = $exon;
-  }
-
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   
   # fetching all exons by gene
@@ -182,7 +178,7 @@ sub fetch_by_dbID {
 
   my $sth = $self->prepare( $query );
   $sth->execute();
-
+  my $ana;
   my $first = 1;
   while( my @arr = $sth->fetchrow_array() ) {
     # building a gene
@@ -190,7 +186,7 @@ sub fetch_by_dbID {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->adaptor($self);
       $gene->dbID( $geneId );
-      my $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($arr[4]);
+      $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($arr[4]);
       $gene->analysis($ana);
       $gene->type($arr[5]);
       $gene->source($self->db->source());
@@ -210,6 +206,12 @@ sub fetch_by_dbID {
     return undef;
   }
   
+  #discard duplicate exons, add analysis object to exons
+  foreach my $exon ( @exons ) {
+    $exon->analysis($ana);
+    $exonIds{$exon->dbID} = $exon;
+  }
+  
   foreach my $transcriptId ( keys %transcripts ) {
     # should be fetch_by_geneId ..
     my $transcript = Bio::EnsEMBL::Transcript->new();
@@ -218,6 +220,7 @@ sub fetch_by_dbID {
     $transcript->_translation_id($transcripts{$transcriptId} );
 
     foreach my $exonId ( @{$transcriptExons{$transcriptId}} ) {
+      
       $transcript->add_Exon( $exonIds{$exonId} );
     }
     # store also a type for the transcript
