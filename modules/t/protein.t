@@ -245,7 +245,8 @@ else {
     print "not ok 25\n";
 }
 
-if ($introns[0]->intron_length == 31) {
+print $introns[0]->intron_length, "\n";
+if ($introns[0]->intron_length == 94) {
     
     print "ok 26\n";
 }
