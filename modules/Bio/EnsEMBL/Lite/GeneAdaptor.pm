@@ -567,7 +567,7 @@ sub _get_empty_Genes {
 
 
   if($logic_name) {
-    $where .= " and g.analysis_id = ?";
+    $where .= " and g.analysis = ?";
     push @bind_vals, $logic_name;
   } 
 
