@@ -436,8 +436,9 @@ sub get_array_supporting {
 	if( $transcriptid ne $current_transcript_id ) {
 
 	    # put away old exons
-	    $self->_store_exons_in_transcript($trans,@transcript_exons);
-
+             if( defined $trans ) {  
+	        $self->_store_exons_in_transcript($trans,@transcript_exons);
+            }
 	    # put in new exons
 
 	    $trans = Bio::EnsEMBL::Transcript->new();
