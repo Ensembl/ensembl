@@ -14,10 +14,11 @@ $dir = join('/', @d);
 unshift @INC, $dir;
 
 
-my ($file, $user, $password, $verbose, $force, $help, $schema, $limit);
+my ($file, $user, $password, $verbose, $force, $help, $schema, $vega_schema, $limit);
 
 GetOptions ('file=s'      => \$file,
             'schema=s'    => \$schema,
+			'vega_schema=s' => \$vega_schema,
             'user=s'      => \$user,
             'password=s'  => \$password,
             'verbose'     => \$verbose,
@@ -31,7 +32,6 @@ usage() if($help);
 
 open(FILE, $file) or die("Could not open input file '$file'");
 
-
 my @all_species_converters;
 
 while( my $line = <FILE> ) {
@@ -43,26 +43,39 @@ while( my $line = <FILE> ) {
     split( "\t", $line );
 
   my $converter;
+  if ($vega_schema) {
+	$species = "vega::".$species;
+	eval "require SeqStoreConverter::$species";
+	if($@) {
+	  warn("Could not require conversion module SeqStoreConverter::$species\n" .
+		   "Using SeqStoreConverter::BasicConverter instead:\n$@");
+	  require SeqStoreConverter::BasicConverter;
+	  $species = "BasicConverter";
+    }
+	else {
+	  warn "Using conversion module SeqStoreConverter::$species\n";
+    }
+   }
 
-  eval "require SeqStoreConverter::$species";
-
-  if($@) {
-    warn("Could not require conversion module SeqStoreConverter::$species\n" .
-         "Using SeqStoreConverter::BasicConverter instead:\n$@");
-
-    require SeqStoreConverter::BasicConverter;
-    $species = "BasicConverter";
+  else {
+	eval "require SeqStoreConverter::$species";
+	if($@) {
+	  warn("Could not require conversion module SeqStoreConverter::$species\n" .
+		   "Using SeqStoreConverter::BasicConverter instead:\n$@");
+	  require SeqStoreConverter::BasicConverter;
+	  $species = "BasicConverter";
+	}
   }
 
   {
-    no strict 'refs';
-
-    $converter = "SeqStoreConverter::$species"->new
-      ( $user, $password, $host, $source_db_name, $target_db_name, 
-        $schema, $force, $verbose, $limit );
+	  no strict 'refs';
+	  $converter = "SeqStoreConverter::$species"->new
+		  ( $user, $password, $host, $source_db_name, $target_db_name, 
+			$schema, $vega_schema, $force, $verbose, $limit );
   }
 
   push @all_species_converters, $converter;
+
 }
 
 for my $converter ( @all_species_converters ) {
@@ -78,10 +91,13 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_dna();
   $converter->transfer_genes();
   $converter->transfer_prediction_transcripts();
-  $converter->transfer_features();
+#  $converter->transfer_features();
   $converter->transfer_stable_ids();
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
+  if ($vega_schema) {
+	$converter->update_clone_info();
+  }
 }
 
 
@@ -100,6 +116,8 @@ options: -file <input_file>     input file with tab delimited 'species',
                                 on each line
 
          -schema <table_file>   file containing SQL schema definition
+
+         -vega_schema <table_file> file containing SQL for additional Vega tables
 
          -user <user>           a mysql db user with read/write priveleges
 
