@@ -11,6 +11,7 @@ use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Analysis::Analysis;
 use Bio::SeqFeature::Generic;
+use Bio::SeqFeature::FeaturePair;
 
 my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog1",
                                       -start   => 100,
@@ -18,8 +19,8 @@ my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog1",
 				      -strand  => 1,
 				      -frame   => 2,
 				      -score   => 250.0,
-				      -source  => "pogsource",
-				      -primary => "pogprimary",
+				      -source_tag  => "pogsource",
+				      -primary_tag => "pogprimary",
 				      );
 
 
@@ -29,9 +30,10 @@ my $f2 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog2",
 				      -strand  => -1,
 				      -frame   => 1,
 				      -score   => 350.0,
-				      -source  => "pogsource2",
-				      -primary => "pogprimary2",
+				      -source_tag  => "pogsource2",
+				      -primary_tag => "pogprimary2",
 				      );
+
 
 
 my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db => 'pogdb',
@@ -42,7 +44,52 @@ my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db => 'pogdb',
 						    -gff_feature => 'anafeature',
 						    );
 
-print("GFF 1 " . $f1->gff_string . "\n");
-print("GFF 2 " . $f1->gff_string . "\n");
+
+my $fp = new Bio::SeqFeature::FeaturePair(-feature1 => $f1,
+					  -feature2 => $f2,
+					  );
+
+
+
+print("Start/end " . $fp->seqname . " " . 
+      $fp->start      . " " . 
+      $fp->end        . " " . 
+      $fp->score      . " " . 
+      $fp->strand     . " " . 
+      $fp->frame      . " " . 
+      $fp->source_tag . " " .
+      $fp->primary_tag ."\n");
+
+print("Start/end " . $fp->hseqname . " " .
+      $fp->hstart . " " . 
+      $fp->hend . " " .
+      $fp->hscore . " " . 
+      $fp->hstrand . " " . 
+      $fp->hframe . " " . 
+      $fp->hsource_tag . " " .
+      $fp->hprimary_tag ."\n");
+
+
+print("Inverting\n");
+
+$fp->invert;
+
+print("Start/end " . $fp->seqname . " " . 
+      $fp->start      . " " . 
+      $fp->end        . " " . 
+      $fp->score      . " " . 
+      $fp->strand     . " " . 
+      $fp->frame      . " " . 
+      $fp->source_tag . " " .
+      $fp->primary_tag ."\n");
+
+print("Start/end " . $fp->hseqname . " " .
+      $fp->hstart . " " . 
+      $fp->hend . " " .
+      $fp->hscore . " " . 
+      $fp->hstrand . " " . 
+      $fp->hframe . " " . 
+      $fp->hsource_tag . " " .
+      $fp->hprimary_tag ."\n");
 
 
