@@ -450,7 +450,7 @@ sub fetch_RawContigs_by_chr_start_end {
 
 
    &eprof_start('VC: fetch_rc_get');
-   my $sth = $self->dbobj->prepare("
+   my $query = "
         SELECT c.id
           , c.internal_id
           , c.dna
@@ -472,7 +472,8 @@ sub fetch_RawContigs_by_chr_start_end {
           AND st.type = '$type'
           AND NOT (st.chr_start > $end) 
           AND NOT (st.chr_end < $start) 
-        ");
+        ";
+   my $sth = $self->dbobj->prepare($query);
    $sth->execute;
    &eprof_end('VC: fetch_rc_get');
 
