@@ -273,7 +273,7 @@ sub add_Exon{
 
 sub get_all_Exons {
    my ($self) = @_;
-
+   
    return @{$self->{'_trans_exon_array'}};
 }
 
@@ -307,6 +307,7 @@ sub get_Exon_by_dbID {
 
    # not nice - linear search
    foreach my $exon ( $self->get_all_Exons() ) {
+
       if( $exon->dbID eq $exonid ) {
           return $exon;
       }
@@ -330,7 +331,7 @@ sub length {
     my( $self ) = @_;
     
     my $length = 0;
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
         $length += $ex->length;
     }
     return $length;
@@ -351,7 +352,7 @@ course, have the same properties).
 sub each_Intron {
     my( $self ) = @_;
     
-    my @exons = $self->each_Exon;
+    my @exons = $self->get_all_Exons;
     my $last = @exons - 1;
     my( @int );
     for (my $i = 0; $i < $last; $i++) {
@@ -448,7 +449,7 @@ sub five_prime_utr {
     my $t_start         = $translation->start;
     
     my $seq_string = '';
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
         if ($ex->id eq $start_exon_id) {
             my $start   = $ex->start;
             my $end     = $ex->end;
@@ -494,7 +495,7 @@ sub three_prime_utr {
     
     my $seq_string = '';
     my $in_utr = 0;
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
         if ($in_utr) {
             $seq_string .= $ex->seq->seq;
         }
@@ -556,7 +557,7 @@ sub translateable_exons {
     my( @translateable );
     foreach my $ex ($self->get_all_Exons) {
         my $ex_id   = $ex->dbID;
-        
+
         if ($ex ne $start_exon and ! @translateable) {
             next;   # Not yet in translated region
         }
@@ -615,7 +616,7 @@ sub translateable_exons {
         }
         
         # Exit the loop when we've found the last exon
-        last if $ex_id eq $end_exon;
+        last if $ex eq $end_exon;
     }
     
     return @translateable;
@@ -648,11 +649,10 @@ sub split_Transcript_to_Partial {
    if( $on_translate == 1 ) {
        @exons = $self->translateable_exons();
    } else {
-       @exons = $self->each_Exon;
+       @exons = $self->get_all_Exons;
    }
 
    print STDERR "Got ",scalar(@exons)," from translateable exons\n";
-
 
    # one exon genes - easy to handle. (unless of course they have UTRs ...)
    if (@exons == 1) {
@@ -828,7 +828,7 @@ sub seq {
     my( $self ) = @_;
     
     my $transcript_seq_string = '';
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
         $transcript_seq_string .= $ex->seq->seq;
     }
     
@@ -862,7 +862,7 @@ sub dna_seq {
   #my $strand = $self->{_trans_exon_array}[0]->strand;
 
   my $prev = undef;
-  foreach my $exon ($self->each_Exon) {
+  foreach my $exon ($self->get_all_Exons) {
 
     # the seq call automatically truncates to the correct 
     # coordinates (handily) in SeqFeature
@@ -949,7 +949,7 @@ sub sort {
   my $self = shift;
 
   # Fetch all the features
-  my @exons = $self->each_Exon();
+  my @exons = $self->get_all_Exons();
 
   # Empty the feature table
   $self->flush_Exon();
@@ -1087,7 +1087,7 @@ sub translateable_dna{
    my $tstr;
 
    #$self->sort();
-   my @exons = $self->each_Exon;
+   my @exons = $self->get_all_Exons;
    my $exon_start = $exons[0];
 
 
@@ -1186,7 +1186,7 @@ sub find_coord {
   my ($self,$coord,$type) = @_;
  
   my $count = 0;
-  my @exons = $self->each_Exon;
+  my @exons = $self->get_all_Exons;
   my $end   = $#exons;
   my $dna;
 
@@ -1198,7 +1198,7 @@ sub find_coord {
   # We ignore these.
 
   if ($strand == 1) {
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
       
       if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
 	my $dna   = $ex->start + $ex->phase;
@@ -1231,7 +1231,7 @@ sub find_coord {
     }
   } else {
 
-    foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->get_all_Exons) {
       
       if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
 	
@@ -1396,7 +1396,7 @@ sub rna_pos {
     my $mrna = 1;
 
     my $prev = undef;
-    foreach my $exon ($self->each_Exon) {
+    foreach my $exon ($self->get_all_Exons) {
 	
 	my $tmp = CORE::length( $exon->seq->seq());
 	#$tmp -= $exon->phase if not $prev;
@@ -1520,7 +1520,7 @@ sub each_Exon_in_context{
 
    my @exons;
 
-   foreach my $exon ( $self->each_Exon ) {
+   foreach my $exon ( $self->get_all_Exons ) {
        if( $exon->seqname eq $context ) {
 	   push(@exons,$exon);
        }
