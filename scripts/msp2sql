@@ -1,0 +1,91 @@
+#!/usr/local/bin/perl 
+
+BEGIN {
+  unshift (@INC,"/home/michele/perl/humpub/modules/");
+  unshift (@INC,"/home/michele/perl/humpub/modules/PerlModules");
+}
+use GFF;
+use GeneFeature;
+
+use strict;
+my @sqllines;
+my $progfile = "analysis.sql";
+
+open (PROG,">>analysis.sql");
+
+
+foreach my $file (@ARGV) {
+  print(STDERR "Processing $file\n");
+  # Make an analysis row
+  my $program;
+  my $db;
+  my $id;
+
+  ($id = $file) =~ s/.*\.(.*)\.msptmp/$1/;
+  
+  if ($id =~ /(.*)_(.*)/) {
+    $program = $1;
+    $db = $2;
+  } else {
+    $program = $id;
+    $db = "embl_other";
+  }
+
+  # Restricted vocab for dbs and programs.
+  my $tmp = "insert into analysis(id,db,program)  values(\'$id\',\'$db\',\'$program\');\n";
+  print(PROG $tmp);
+
+  open(FILE,"<$file");
+
+  while (<FILE>) {
+    if ($_ =~ /BLAST ERROR/) { 
+       print(STDERR "BLAST ERROR: no msp output for $file\n");
+       close(FILE);
+       last;
+    }
+    unless (/^\#/) {
+      my ($score1,
+	  $score2,
+	  $qstart,
+	  $qend,
+	  $exon,
+	  $hstart,
+	  $hend,
+	  $hid,
+	  $title) = split(' ',$_,9);
+
+      # do something with the id line;
+      if ($hid =~ /\|/) {
+	my @tmp = split(/\|/,$hid);
+	my $count = $#tmp;
+	while ($tmp[$count] eq "") {
+	  $count--;
+	} 
+	$hid = $tmp[$count];
+      }
+
+      # Extract the contig from the exon field
+      (my $contig = $exon) =~ s/(.*)\..*/$1/g;
+      
+      # Do the strand thing
+      my $strand;
+      if ($hstart < $hend) {
+
+	$strand = '+';
+      } else {
+	$strand = '-';
+      }
+
+      
+      # Now construct the sql
+      my $tmp = "insert into feature values(\'$hid\',\'$contig\',$qstart,$qend,$hstart,$hend,$score2,\'$strand\',\'$id\',\'\');\n";
+      push(@sqllines,$tmp);
+    }
+  }
+  close(FILE);
+}
+close(PROG);
+print("use pog;\n");
+print("@sqllines");
+1;
+

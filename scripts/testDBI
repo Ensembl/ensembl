@@ -1,21 +1,32 @@
-#!/usr/bin/perl
-use DBI;
+#!/usr/local/bin/perl
 
+########################################################
+# Rough and ready test script using the mysql drivers
+# and the perl DBI.  Connects to  database pog on 
+# localhost.  A series of queries are constructed to
+# extract all genscan predictions and locate all overlapping
+# homologies.  A further query is then constructed to find
+# all contigs each overlapping homology hits.
+#
+########################################################
+# Author:  Michele Clamp 23rd May 1999
+########################################################
+
+use DBI;
 use strict;
 
 my @driver_names = DBI->available_drivers;
-
-#print("Drivers : @driver_names\n");
+my $database = "pog";
 
 # Connect to database
-my $dbh = DBI->connect('DBI:mysql:pog','','');
+my $dbh = DBI->connect('DBI:mysql:pog','root','');
 
 if ($dbh) {
   print("Connection successful. Hoorah!!\n");
 }
 
 # Select all genscan predictions;
-my $sth = $dbh->prepare('select id,contig,start,end from homol where analysis = \'\'');
+my $sth = $dbh->prepare('select id,contig,start,end from feature where analysis = \'\'');
 my $rv = $sth->execute;
 
 # Loop over all predicted exons
@@ -25,10 +36,10 @@ while(my $rowhash = $sth->fetchrow_hashref) {
   my $start  = $rowhash->{start};
   my $end    = $rowhash->{end};
   
-  # Prepare the homol overlap query
+  # Prepare the feature overlap query
   my $sth2 = $dbh->prepare("
        select    p1.id,p1.analysis,p1.start,p1.end,count(*) 
-       from      homol as p1, homol as p2 
+       from      feature as p1, feature as p2 
        where     p2.id = \'" . $id . "\' AND
                  p1.contig = p2.contig   AND
                  p1.analysis != \'\'     AND
@@ -59,11 +70,11 @@ while(my $rowhash = $sth->fetchrow_hashref) {
 
       # Now find any extra contig overlaps for that hit
       my $sth3 = $dbh->prepare("
-           select   homol.contig
-           from     homol
-           where    homol.id = \'" . $hit . "\' AND
-                    homol.contig != \'" . $contig . "\'
-           group by homol.contig;");
+           select   feature.contig
+           from     feature
+           where    feature.id = \'" . $hit . "\' AND
+                    feature.contig != \'" . $contig . "\'
+           group by feature.contig;");
 
       my $rv3 = $sth3->execute;
       if ($sth3->rows > 0) {
@@ -74,6 +85,8 @@ while(my $rowhash = $sth->fetchrow_hashref) {
       }
 
     }
+  } else {
+    print("no overlaps for $id\n");
   }
 }
 
