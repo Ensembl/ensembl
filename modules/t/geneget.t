@@ -64,7 +64,7 @@ $trans = shift @trans;
 
 @dblink = $trans->each_DBLink();
 
-$dbl = shift @dblink;
+$dbl = $dblink[1];
 
 if( !defined $dbl || $dbl->database ne 'embl' ) {
     print "not ok 5\n";
