@@ -595,7 +595,7 @@ sub register_chained {
     #ranges we just added to the mapper
 
     my ($mid_start, $mid_end, $mid_seq_region_id, $mid_seq_region,
-	$ori, $start_start, $start_end);
+        $ori, $start_start, $start_end);
 
     $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
 		       \$mid_seq_region, \$ori, \$start_start,
@@ -611,7 +611,7 @@ sub register_chained {
         $mid_seq_region_id;
 
       push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
-			$mid_start,$mid_end];
+                        $mid_start,$mid_end];
 
       #the region that we actually register may actually be larger or smaller
       #than the region that we wanted to register.
@@ -647,26 +647,25 @@ sub register_chained {
   foreach my $mid_range (@mid_ranges) {
     my ($mid_seq_region_id, $mid_seq_region,$start, $end) = @$mid_range;
     $sth->execute($mid_seq_region_id, $start, $end, $end_cs_id);
-   #print STDERR "bind vals =($mid_seq_region_id, $start, $end, $mid_cs_id)\n";
+    #print STDERR "bind vals=($mid_seq_region_id, $start, $end, $mid_cs_id)\n";
 
     #load the end <-> mid mapper with the results and record the mid cs
     #ranges we just added to the mapper
 
     my ($end_start, $end_end, $end_seq_region_id, $end_seq_region,
-	$ori, $mid_start, $mid_end);
+        $ori, $mid_start, $mid_end);
 
     $sth->bind_columns(\$end_start, \$end_end, \$end_seq_region_id,
 		       \$end_seq_region, \$ori, \$mid_start,
 		       \$mid_end);
 
     while($sth->fetch()) {
-      print STDERR "Adding to end<->mid mapper:\n" .
-            "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
-            "$mid_start-$mid_end($ori)\n";
-
+      #print STDERR "Adding to end<->mid mapper:\n" .
+      #      "$end_seq_region:$end_start-$end_end<->$mid_seq_region:" .
+      #      "$mid_start-$mid_end($ori)\n";
       $end_mid_mapper->add_map_coordinates(
 			       $end_seq_region, $end_start, $end_end, $ori,
-				$mid_seq_region, $mid_start, $mid_end);
+             $mid_seq_region, $mid_start, $mid_end);
 
       #update sr_name cache
       $self->{'_sr_id_cache'}->{"$end_seq_region:$end_cs_id"} =
@@ -693,52 +692,50 @@ sub register_chained {
     my $sum = 0;
 
     my @initial_coords = $start_mid_mapper->map_coordinates($seq_region_name,
-							    $start,$end,1,
-							    $start_name);
+                                                            $start,$end,1,
+                                                            $start_name);
 
     foreach my $icoord (@initial_coords) {
       #skip gaps
       if($icoord->isa('Bio::EnsEMBL::Mapper::Gap')) {
-	$sum += $icoord->length();
-	next;
+        $sum += $icoord->length();
+        next;
       }
 
-      print STDERR "icoord: id=".$icoord->id." start=".$icoord->start." end=".
-                   $icoord->end."\n";
+      #print STDERR "icoord: id=".$icoord->id." start=".$icoord->start." end=".
+      #             $icoord->end."\n";
 
       #feed the results of the first mapping into the second mapper
       my @final_coords =
-	$end_mid_mapper->map_coordinates($icoord->id, $icoord->start,
-					 $icoord->end,
-					 $icoord->strand, $mid_name);
+        $end_mid_mapper->map_coordinates($icoord->id, $icoord->start,
+                                         $icoord->end,
+                                         $icoord->strand, $mid_name);
 
       my $istrand = $icoord->strand();
       foreach my $fcoord (@final_coords) {
-	#load up the final mapper
-	if($fcoord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-	  my $total_start = $start + $sum;
-	  my $total_end   = $total_start + $fcoord->length - 1;
-	  my $ori = $fcoord->strand();
+        #load up the final mapper
+        if($fcoord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+          my $total_start = $start + $sum;
+          my $total_end   = $total_start + $fcoord->length - 1;
+          my $ori = $fcoord->strand();
 
-	  if($from eq 'first') { #the ordering we add coords must be consistant
-	    $combined_mapper->add_map_coordinates(
+          if($from eq 'first') { #the ordering we add coords must be consistant
+            $combined_mapper->add_map_coordinates(
                              $seq_region_name, $total_start, $total_end, $ori,
-			     $fcoord->id(), $fcoord->start(), $fcoord->end());
-	  } else {
-	    $combined_mapper->add_map_coordinates(
-			  $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
-			  $seq_region_name, $total_start, $total_end);
-	  }
-
-	  print STDERR "  fcoord: id=".$fcoord->id." start=".
-	    $fcoord->start." end=".$fcoord->end."\n";
-	  print STDERR "Loading combined mapper with : " ,
-	    "$seq_region_name:$total_start-$total_end, ($ori) <-> "
-	     .$fcoord->id.":".$fcoord->start."-".$fcoord->end."\n";
-	} else {
-	  print STDERR "  fcoord is gap\n";
-	}
-	$sum += $fcoord->length();
+                             $fcoord->id(), $fcoord->start(), $fcoord->end());
+          } else {
+            $combined_mapper->add_map_coordinates(
+                        $fcoord->id(), $fcoord->start(), $fcoord->end(),$ori,
+                        $seq_region_name, $total_start, $total_end);
+          }
+          
+          #print STDERR "  fcoord: id=".$fcoord->id." start=".
+          #  $fcoord->start." end=".$fcoord->end."\n";
+          #print STDERR "Loading combined mapper with : " ,
+          #  "$seq_region_name:$total_start-$total_end, ($ori) <-> "
+          #   .$fcoord->id.":".$fcoord->start."-".$fcoord->end."\n";
+        }
+        $sum += $fcoord->length();
       }
     }
   }
