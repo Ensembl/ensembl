@@ -120,6 +120,13 @@ sub fetch_all {
   return \@ana;
 }
 
+sub deleteObj {
+    my( $self ) = @_;
+    
+    $self->{_cache} = undef;
+    $self->{_logic_name_cache} = undef;
+    $self->SUPER::deleteObj;
+}
 
 =head2 fetch_by_dbID
 
