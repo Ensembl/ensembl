@@ -272,6 +272,31 @@ sub get_seq_by_gene_version{
     return @out;
 }
 
+=head2 write_dead_geneid
+
+ Title   : write_dead_geneid
+ Usage   : $arcdb->write_dead_geneid($geneid)
+ Function: write the id of a dead gene to the db 
+ Example : $arcdb->write_dead_geneid('ENSG0000003456')
+ Returns : nothing
+ Args    : gene id string
+
+
+=cut
+
+sub write_dead_geneid{
+    my ($self,$geneid) = @_;
+    
+    my $sth = $self->prepare("insert into dead_genes (id) values ('$geneid')");
+    eval {
+	$sth->execute();
+    };
+    if ($@) {
+	$self->warn("Could not wirte dead gene $geneid because $@\n");
+    }
+}
+
+
 =head2 write_seq
 
  Title   : write_seq
@@ -287,19 +312,25 @@ sub get_seq_by_gene_version{
 =cut
 
 sub write_seq{
-   my ($self,$seq, $version, $type, $gene_id,$gene_version) = @_;
+   my ($self,$id, $version, $type, $seq,$gene_id,$gene_version,$cid,$cv) = @_;
    
    $seq || $self->throw("Attempting to write a sequence without a sequence object!");
-   $seq->id || $self->throw("Attempting to write a sequence without a sequence id!");
+   $id || $self->throw("Attempting to write a sequence without a sequence id!");
    $type || $self->throw("Attempting to write a sequence without a sequence type!");
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
+   $seq ||  $self->throw("Attempting to write a sequence without a sequence!");
    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
-   #$clone_id || $self->throw("Attempting to write a sequence without a clone id!");
-   #$clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
+   $cid || $self->throw("Attempting to write a sequence without a clone id!");
+   $cv || $self->throw("Attempting to write a sequence without a clone version number!");
 
-   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."')");
-   $sth->execute();
+   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')");
+   eval {
+       $sth->execute();
+   };
+   if ($@) {
+       $self->warn("Could not archive because $@");
+   }
 }
 =head2 delete_seq
 
