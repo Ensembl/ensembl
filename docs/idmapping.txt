@@ -1,0 +1,22 @@
+CROSSMATCH:
+1)Need old and new database on the same machine, so if not present copy current database tables dna,contig,clone. Use mysqldump -q -C -T .
+
+2)Get all clones that have changed version between releases: select c1.id from ensembl080.clone c1, ensembl100.clone c2 where c1.embl_version != c2.version and c1.id = c2.id into outfile '/work2/elia/changed.clones';
+
+3)Create crossmatch database:
+mysqladmin -u root create cross100
+mysql -u root cross100 < src/ensembl/sql/crossmatch.sql
+
+4)Populate clonelist table:
+load data infile '/work2/elia/changed.clones' into table clonelist
+
+5)Fill dblocation table:
+insert into dblocation values('Bio::EnsEMBL::DBOLD::Obj/host=ecs1c;port=410000;dbname=olddbname;user=ensro;pass=','Bio::EnsEMBL::DBSQL::Adaptor/host=ecs1c;port=410000;dbname=newdbname;user=ensro;pass=');
+
+6)Update the DBOLD directory with the previous branch (using misc-scripts/utilities/dbsql_dbold.pl)
+
+7)Run crossclonemap.pl! (change crossdb name)
+
+8)When all jobs are finished, check for failed jobs, rerun if necessary
+
+9)Run map_genes.pl
