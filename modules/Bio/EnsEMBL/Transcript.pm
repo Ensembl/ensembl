@@ -243,7 +243,7 @@ sub split_Transcript_to_Partial{
 
  Title   : translate
  Usage   : $pep = $feat->translate()
- Function: Returns the peptide translation of the gene - in the correct phase
+ Function: returns the peptide translation of the gene - in the correct phase
  Returns : Bio::Seq
  Args    : none
 
@@ -251,18 +251,34 @@ sub split_Transcript_to_Partial{
 
 sub translate {
   my ($self) = @_;
-  my @exon = $self->each_Exon;
 
-  my $phase = $exon[0]->phase;
-  my $mrna  = $self->dna_seq->seq();
+  my $debug;
+  
+  my @trans = $self-> split_Transcript_to_Partial();
 
-  # Hackeroover as we can't translate in any frame apart from 0
-  $mrna = substr($mrna,$phase);
+  if( $#trans == -1 ) {
+      $self->throw("Bad internal error - split a transcript to zero transcripts! Doh!");
+  }
 
-  my $seq = new Bio::Seq(-seq => $mrna);
-  my $trans = $seq->translate();
+  if( $self->id() eq "HT0030651" ) {
+      print STDERR "translating HT0030651\n";
+      $debug = 1;
+  }
 
-  return $trans;
+  my $seqstr;
+  foreach my $ptrans ( @trans ) {
+      my $tseq = $ptrans->_translate_coherent($debug);
+      if( defined $seqstr ) { $seqstr .= 'X'; } 
+      $seqstr .= $tseq->str;
+  }
+  
+  my $trans_seq = Bio::Seq->new( -seq => $seqstr , -id => $self->id() ) ;
+
+  if( $self->id() eq "HT0030651" ) {
+      print STDERR "finished translating HT0030651\n";
+  }
+
+  return $trans_seq;
 }
 
 =head2 dna_seq
@@ -389,6 +405,94 @@ sub sort {
   }
 }
 
+=head2 _translate_coherent
+
+ Title   : _translate_coherent
+ Usage   : <internal function> translates a coherent transcript.
+           Uncoherent transcripts need to be broken up with
+           split to partial first.
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _translate_coherent{
+   my ($self,$debug) = @_;
+   
+   my $prev;
+   my $tstr;
+#   my $debug;
+
+   $self->sort();
+   foreach my $exon ( $self->each_Exon ) {
+      # if( $exon->id eq 'HE000030314' ) {
+#	   print STDERR "setting debug to 1\n";
+	#   $debug = 1;
+#       }
+
+       # trim down start ends on the basis of phase.
+       if( $prev && $prev->end_phase != $exon->phase ) {
+	   $self->throw("Called coherent translate but exon phases don't match. Yuk!");
+       }
+
+       # warn about non DNA passed in. 
+
+       if( $exon->entire_seq()->type ne 'Dna' ) {
+	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
+	   $exon->entire_seq()->type('Dna');
+       }
+
+       
+       
+       # trim start point and end point.
+
+       my $seq = $exon->seq();
+       
+       my $str = $seq->str();
+       
+       # trims off 1,2 either end. The start phase converts 1 to 2 and 2 to 1 ;)
+       my $rstr;
+       if( $exon->end_phase != 0 ) {
+	   $rstr = substr $str, (3 - $exon->phase)%3, -$exon->end_phase ;
+       } else {
+	   $rstr = substr $str, (3 - $exon->phase)%3;
+       }
+
+       if( $debug ) {
+	   my $test_seq = $exon->entire_seq->trunc($exon->start,$exon->end);
+	   my $pre_r = $test_seq->str();
+	   if( $exon->strand == -1 ) {
+	       $test_seq = $test_seq->revcom();
+	   }
+	   my $test_str = $test_seq->str;
+	   print STDERR "Pre $pre_r\nAft $test_str\nStr $str\nRel $rstr\n";
+       }
+
+       if( length $rstr == 0 ) {
+	   $self->throw("Bad internal error - got a 0 length rstring...");
+       }
+
+       $tstr .= $rstr;
+   }
+
+   if ( $debug ) {
+       print STDERR "Tstr is $tstr\n";
+   }
+
+   my $temp_seq = Bio::Seq->new( -seq => $tstr , -id => 'temp', -type => 'Dna' );
+   my $trans_seq = $temp_seq->translate();
+
+   if( $debug ) {
+       print STDERR "translated " . $trans_seq->str . "\n";
+   }
+
+
+   return $temp_seq->translate();
+}
+
 
 sub exon_dna {
   my ($self,$exon) = @_;
@@ -403,22 +507,6 @@ sub exon_dna {
 }
 
   
-sub translate_exon {
-  my ($self,$exon) = @_;
-
-  my @tran;
-  my $dnaseq = $self->exon_dna($exon);
-
-  for (my $i =0; $i < 3; $i++) {
-    my $tmp = substr($dnaseq->seq,$i);
-    my $new = new Bio::Seq(-seq => $tmp);
-    my $pep = $new->translate();
-    push(@tran,$pep);
-  }
-  return @tran;
-}
-    
-
 sub pep_coords {
   my $self = shift;
 
@@ -448,137 +536,6 @@ sub pep_coords {
 }
 
 
-sub translate_region {
-  my ($self,$start,$end) = @_;
-  
-  my $mrna = "";
-  my $count = 0;
-  
-  # Loop through the exons until we find the start
-  # We adjust the start coordinate so we translate
-  # in the right frame
-
-  my $foundstart;    # We have found the start of the region to translate
-  my $foundend;      # We have found the end of the regino to translate
-
-  my @exons  = $self->each_Exon;
-  my $strand = $exons[0]->strand;
-
-  # Separate the forward and reverse strands
-  if ($strand eq 1) {
-
-    foreach my $exon (@exons) {
-      
-      my $tmpstart;
-      my $tmpend;
-      
-      # Find the coords in the current exon that we wish to translate
-      if (!$foundstart) {
-	if ($start >= $exon->start && $start <= $exon->end) {
-	  $foundstart = 1;
-	  $tmpstart = $start;
-	  
-	  # Adjust the start coordinate so we are in the
-	  # right frame
-	  $tmpstart = $tmpstart + (3 - ($tmpstart - $exon->phase - $exon->start)%3) % 3;
-	  
-	}
-      }
-      
-      if ($foundstart && !$foundend) {
-	$tmpend   = $exon->end;
-	$tmpstart = $exon->start unless $tmpstart;
-	
-	# Check to see if we have the end coord as well
-	if ($end <= $exon->end) {
-	  $foundend = 1;
-	  $tmpend = $end;
-	} elsif  ($count < $#exons && $end <= $exons[$count+1]->start) {
-	  # Or does the end occur in the intron (shouldn't do!!!)
-	  $tmpend = $exon->end;
-	  $foundend = 1;
-	} 
-      }
-
-      
-      # Only tack on sequence to the mrna if we are in the middle of the translated region
-      
-      if (defined($tmpstart) && defined($tmpend)) {
-	
-	my $newstart = $tmpstart  - $exon->start + 1;
-	my $newend   = $tmpend    - $exon->start + 1;
-	
-	my $seq    = $self->exon_dna($exon)->seq();
-	my $tmpseq = substr($seq,$newstart-1,($newend-$newstart+1));
-	
-	$mrna = $mrna . $tmpseq;
-      }
-      $count++;
-      
-    }
-
-  } else {
-    foreach my $exon (@exons) {
-      
-      my $tmpstart;
-      my $tmpend;
-      
-      if (!$foundstart) {
-	if ($end <= $exon->end && $end >= $exon->start) {
-	  $foundstart = 1;
-	  $tmpstart = $end;
-
-	  # Adjust the start coordinate so we are in the
-	  # right frame
-
-	  $tmpstart = $tmpstart  - (3 - ($exon->end - $end - $exon->phase)%3)%3;
-#	  print("Adjusting by " . (3-($exon->end - $end - $exon->phase)%3)%3  . "\n");
-
-	}
-      }
-
-      if (!$foundend && $foundstart) {
-	$tmpend   = $exon->start;
-	$tmpstart = $exon->end  unless $tmpstart;
-
-	if ($start >= $exon->start) {
-	  $foundend = 1;
-	  $tmpend = $start;
-	} elsif  ($count < $#exons && $start >= $exons[$count+1]->end) {
-	  # Or does the end occur in the intron (shouldn't do!!!)
-	  $tmpend = $exon->start;
-	  $foundend = 1;
-	} 
-	
-	if (defined($tmpstart) && defined($tmpend)) {
-#	  print("Exon $count\t" . $exon->start . "\t" . $exon->end . "\t" .  $tmpstart . "\t" . $tmpend . "\n");
-	  
-	  my $newstart = $exon->end - $tmpstart + 1;
-	  my $newend   = $exon->end - $tmpend   + 1;
-	  
-	  my $seq    = $self->exon_dna($exon)->seq();
-	  my $tmpseq = substr($seq,$newstart-1,($newend-$newstart+1));
-	  
-	  $mrna .= $tmpseq;
-	}
-      }
-      $count++;
-    }
-  }
-
-  
-  my $seq = new Bio::Seq(-seq => $mrna);
-  my $i = 0;
-  my @out;
-  
-  for ($i=0; $i < 3; $i++) {
-    my $subseq = new Bio::Seq(-seq => substr($mrna,$i));
-    my $trans = $subseq->translate();
-    push(@out,$trans);
-  }
-
-  return \@out;
-}
 
 
 sub find_coord {
