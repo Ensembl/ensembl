@@ -76,6 +76,7 @@ my $diseaseb;
             'limit:n'    => \$lim,
             'family:s' => \$famdb,
             'disease:s' => \$diseasedb,
+            'maps:s' => \$mapsdb,
 	     );
 
 die "need a litedb; use -litedb something " unless $litedb;
@@ -110,7 +111,7 @@ WHERE g.chr_name = '$chr'
   $limit
 ";
     dump_data($litedb, $sql, $dumpdir, 'family_members.dat' );
-}
+}                                       # family
 
 if ($diseasedb) {
     my $dumpdir = "$workdir/$diseasedb";
@@ -161,7 +162,52 @@ WHERE lg.chr_name = '$chr'
         $sql = "select * from $diseasedb.$table";
         dump_data($litedb, $sql, $dumpdir, "$table.dat" );
     }
-}
+}                                       # disease
+
+if ($mapsdb) {
+    # note: this will ignore non-RHdb markers; tough. 
+    my $dumpdir = "$workdir/$mapsdb";
+    dump_schema($mapsdb, $dumpdir, 'maps.sql');
+
+    my $chr_short = $chr;
+    $chr_short =~ s/^chr//;
+
+    my $sql;
+
+    # the simple ones having a chromosome column:
+    foreach my $table ( qw(ChromosomeBands CytogeneticMap RHMaps Fpc_Contig)) {
+        $sql = "
+SELECT * FROM $mapsdb.$table WHERE chromosome = '$chr_short'
+";
+        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+    }
+
+    $sql = "SELECT * FROM $mapsdb.Map";  # 4 rows
+    dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+
+    # less simple ones that can both use the RHMaps table
+    foreach my $table ( qw(Marker MarkerSynonym) ) {              
+        $sql = "
+SELECT t.* 
+FROM $mapsdb.$table t,
+     $mapsdb.RHMaps r
+WHERE t.marker=r.marker 
+  AND r.chromosome = '$chr_short'
+";
+        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+    }    
+
+    # this one needs a join 
+    $sql="
+SELECT cl.*
+FROM $mapsdb.Fpc_Clone cl,
+     $mapsdb.Fpc_Contig cg
+WHERE cg.chromosome = '$chr_short'
+  AND cl.contig_id = cg.contig_id
+";
+    dump_data($litedb, $sql, $dumpdir, 'Fpc_Clone.dat' );
+}                                       # maps
+
 
 sub dump_schema {
     my ($dbinstance, $destdir, $destfile) = @_;
