@@ -19,7 +19,7 @@ Bio::EnsEMBL::DB::VirtualContig - A virtual contig implementation
   #get a virtualcontig somehow
  
   $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $rawcontig,
-					      -focus_position => 2,
+					      -focusposition => 2,
 					      -ori => 1,
 					      -left => 5000,
 					      -right => 5000
