@@ -1866,6 +1866,7 @@ sub get_all_Genes_exononly{
     	    $current_gene = Bio::EnsEMBL::Gene->new;
     	    $current_gene->dbID($geneid);
     	    $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
+                $query = "SELECT type FROM gene WHERE gene.gene_id=$geneid"; 
                 my $sth2 = $self->dbobj->prepare($query);
                 $sth2->execute;
                 my $rowhash = $sth2->fetchrow_hashref;
