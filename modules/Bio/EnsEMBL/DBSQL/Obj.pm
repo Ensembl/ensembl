@@ -1113,14 +1113,21 @@ sub write_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". $gene->id()."','".$gene->version."','".$gene->created."','".$gene->modified."',now())");
+   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
+			     $gene->id()     . "','".
+			     $gene->version  . "','".
+			     $gene->created  . "','".
+			     $gene->modified . "',now())");
    $sth2->execute();
 
-   foreach my $cloneid ( $gene->each_cloneid_neighbourhood ) {
-       print STDERR "Using $cloneid and ",$gene->id,"\n";
-       print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $gene->id ."','".$cloneid."')","\n";
+   print STDERR "Using $cloneid and ",$gene->id,"\n";
+   print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
+       $gene->id ."','" . 
+       $cloneid  . "')","\n";
 
-       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."')");
+   my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
+			    $gene->id . "','". 
+			    $cloneid ."')");
        $sth->execute();
    }
 }
