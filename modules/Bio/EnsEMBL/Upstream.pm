@@ -470,8 +470,8 @@ sub _bases_to_trim {
 
     my @overlap_coords;
     my $slice_length = $slice->length;
-    my $right_trim;
-    my $left_trim;
+    my $right_trim = 0;
+    my $left_trim  = 0;
 
     foreach my $exon (@{$slice->get_all_Exons}){
       next if $exon->stable_id eq $self->_first_coding_Exon->stable_id;
