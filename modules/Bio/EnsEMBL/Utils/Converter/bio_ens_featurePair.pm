@@ -48,6 +48,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::RepeatConsensus;
+use Bio::EnsEMBL::ProteinFeature;
 use Bio::EnsEMBL::Utils::Converter;
 use Bio::EnsEMBL::Utils::Converter::bio_ens;
 @ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
@@ -73,6 +74,8 @@ sub _convert_single {
         return $self->_convert_single_to_repeatFeature($pair);
     }elsif($self->out eq 'Bio::EnsEMBL::FeaturePair'){
         return $self->_convert_single_to_featurePair($pair);
+    }elsif($self->out eq 'Bio::EnsEMBL::ProteinFeature'){
+        return $self->_convert_single_to_proteinFeature($pair);
     }else{
         my $output_module = $self->out;
         $self->throw("Cannot covert to [$output_module]");
@@ -92,6 +95,16 @@ sub _convert_single_to_featurePair {
         -feature2 => $ens_f2
     );
     return $ens_fp;
+}
+
+sub _convert_single_to_proteinFeature {
+    my ($self, $pair) = @_;
+    my $featurePair = $self->_convert_single_to_featurePair($pair);
+    my $proteinFeature = Bio::EnsEMBL::ProteinFeature->new(
+        -feature1 => $featurePair->feature1,
+        -feature2 => $featurePair->feature2
+    );
+    return $proteinFeature;
 }
 
 sub _convert_single_to_repeatFeature {
