@@ -1527,6 +1527,10 @@ sub write{
        $analysisId = 
          $analysisAdaptor->store( $gene->analysis );
      }
+     else{
+       # might be a good plan to set it then
+       $analysisId = $gene->analysis->dbID;
+     }
    }
    
    !$gene->created() && $gene->created(0);
