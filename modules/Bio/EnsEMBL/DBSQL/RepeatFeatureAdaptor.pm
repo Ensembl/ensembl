@@ -76,11 +76,20 @@ sub fetch_all_by_Slice {
 
   my $constraint = '';
 
+  # MySQL was optimising the query the incorrect way when joining to
+  # the repeat_consensus table on type
+  $self->_straight_join(1);
+
   if($repeat_type) {
     $constraint .= "rc.repeat_type =\"$repeat_type\"";
   }
 
-  return $self->fetch_all_by_Slice_constraint($slice,$constraint,$logic_name);
+  my $result =
+    $self->fetch_all_by_Slice_constraint($slice,$constraint,$logic_name);
+
+  $self->_straight_join(0);
+
+  return $result;
 }
 
 
