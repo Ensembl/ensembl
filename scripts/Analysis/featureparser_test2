@@ -77,7 +77,7 @@ TRANS: foreach my $g ($gs->each_Transcript) {
     my $mspfile    = fetch_msp_file($root_dir,$clone,$contig,$count);
 
     my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
-    my $msp        = new Bio::EnsEMBL::Analysis::MSPcrunch     ($mspfile);
+    my $msp        = new Bio::EnsEMBL::Analysis::MSPcrunch     ($mspfile,'PEP-PEP');
 
 
     foreach my $homol ($msp->each_Homol) { # Adds each hit to the GenscanPeptide object
@@ -92,7 +92,7 @@ TRANS: foreach my $g ($gs->each_Transcript) {
     next TRANS unless $write;
 
     foreach my $h (@homols) {              # Writes the feature to the database
-	$h->primary_tag($h->homol_SeqFeature->primary_tag);
+	$h->seqname($h->homol_SeqFeature->seqname);
 	my $rv = $db->write_Feature($h,$contigobj);
     }
 
@@ -171,15 +171,16 @@ sub homol2gff {
 	    $strand = "-";
 	}
 
-	print($fh $h1->primary_tag . "\t$source\tsimilarity\t" . $h1->start . "\t" . $h1->end . "\t" . $h1->score ."\t" . $strand . 
+	print($fh $h1->seqname . "\t" . $source . "\t" . $h2->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $h1->score ."\t" . $strand . 
 	      "\t0\tSequence:" . 
-	      $h2->primary_tag . "\t" . $h2->start . "\t" . $h2->end ."\n");
+	      $h2->seqname . "\t" . $h2->start . "\t" . $h2->end ."\n");
     }
 }
 
 sub fetch_msp_file {
     my ($root_dir,$clone,$contig,$count) = @_;
-    my $ext = ".tblastn_dbest.msptmp";
+#    my $ext = ".tblastn_dbest.msptmp";
+    my $ext = ".blastp_swir.msptmp";
 
     return $root_dir . "/" . $clone . "." . $contig  . "." . $count . $ext;
 }

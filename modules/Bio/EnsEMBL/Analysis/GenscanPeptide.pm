@@ -242,42 +242,47 @@ sub _find_coord {
 sub _pepHit2homol {
     my ($self,$pephit) = @_;
 
-    my $pepaln  = $self->{_pepaln};     # Genomic - peptide alignment (genomic first)
+    my $pepaln  = $self->{_pepaln};
 
     my $pairaln = new Bio::EnsEMBL::Analysis::PairAlign;   # Make a coordinate conversion object from
        $pairaln->addHomol($pephit);                        # the peptide exon and the homol.
 
-    my @pep     = $pepaln->eachHomol;   # Peptide - protein homol alignment (peptide first)    
+    my @pep     = $pepaln->eachHomol;
     my @homols;
 
 
+    print "Debug: looking at peptide",$pephit->seqname,"\n";
+
     # This is dodgy
 
-    foreach my $pep_homol ($pairaln->eachHomol) {               # Peptide range
-	my $pep_homol2 = $pep_homol->homol_SeqFeature;          # Protein hit
+    foreach my $pep_homol ($pairaln->eachHomol) {
+	my $pep_homol2 = $pep_homol->homol_SeqFeature;
 
 	# We now need to loop over each pepaln exon to see which
 	# ones the homol overlaps
 
 	# Find the first exon and process
-	while (my $gen_exon = shift @pep) {                    # Loop over genomic exons.
-	    my $pep_exon = $gen_exon->homol_SeqFeature;        # Peptide exon
+	while (my $gen_exon = shift @pep) {
+	    my $pep_exon = $gen_exon->homol_SeqFeature;
 	    
 	    if ($pep_homol->start >= $pep_exon->start && $pep_homol->start <= $pep_exon->end) {
 		my $pstart = $pep_homol->start;
-		my $pend;
+		my $pend   = $pep_exon ->end;
 		
-		my $start_frac = $pep_homol->start_frac;
+		my $start_frac = $pep_exon->start_frac;
 		my $end_frac;
 		
 		if ($pep_homol->end <= $pep_exon->end) {
 		    $pend     = $pep_homol->end;
-		    $end_frac = 3;
-		} elsif ($pep_exon->end_frac < 3) {
-		    $pend     = $pep_exon->end;
+		    if( $pep_homol->end == $pep_exon->end ) {
+			$end_frac = $pep_exon->end_frac;
+		    } else {
+			$end_frac = 3;
+		    }
+
+		} else {
 		    $end_frac = $pep_exon->end_frac;
 		}
-		
 		
 		# We know whereabouts on the peptide we want the homol to lie
 		# We need to convert these coords into genomic coords and 
@@ -306,10 +311,15 @@ sub _pepHit2homol {
 	    
 	    if ($pep_homol->end <= $pep_exon->end) {
 		$pend     = $pep_homol->end;
-		$end_frac = 3
-	    } elsif ($pep_exon->end_frac < 3) {
+		if( $pep_homol->end == $pep_exon->end ) {
+		    $end_frac = $pep_exon->end_frac;
+		} else {
+		    $end_frac = 3;
+		}
+	    } else {
 		$end_frac = $pep_exon->end_frac;
 	    }
+
 		    
 	    # We know whereabouts on the peptide we want the homol to lie
 	    # We need to convert these coords into genomic coords and 
@@ -367,21 +377,17 @@ sub each_Homol {
 sub _make_homol {
     my ($self,$pairaln,$gen_exon,$pep_exon,$pep_homol,$pstart,$start_frac,$pend,$end_frac) = @_;
 
+
     my $pepaln = $self->{_pepaln};
 
     my $pep_homol2 = $pep_homol->homol_SeqFeature;
 
-    print("Converting $pstart,$start_frac : $pend,$end_frac\n");
-
-    my $g1 = $pepaln ->pep2cDNA($pstart,$start_frac);
-    my $g2 = $pepaln ->pep2cDNA($pend,  $end_frac);
-
-    print("Genomic    $g1 $g2\n");
+    my $g1 = $pepaln->pep2cDNA($pstart,$start_frac);
+    my $g2 = $pepaln->pep2cDNA($pend,  $end_frac);
 
     my $h1 = $pairaln->genomic2cDNA($pstart);
     my $h2 = $pairaln->genomic2cDNA($pend);
 
-    print("homol      $h1 $h2\n");
 
     if ($g1 > $g2) {
 	my $tmp = $g1;
@@ -399,8 +405,8 @@ sub _make_homol {
 					    -end    => $g2,
 					    -strand => 1);
 
-    $newh->seqname    ($pep_homol->seqname);
     $newh->primary_tag($pep_homol->primary_tag);
+    $newh->seqname    ($pep_homol->seqname);
     $newh->score      ($pep_homol->score);
 
     # Create the peptide homol
@@ -458,8 +464,8 @@ sub _make_dna_homol {
 					    -end    => $g2,
 					    -strand => 1);
 
-    $newh->seqname    ($pep_homol2->seqname);
     $newh->primary_tag($pep_homol2->primary_tag);
+    $newh->seqname    ($pep_homol2->seqname);
     $newh->score      ($pep_homol->score);                # This is wrong - this score is for the whole hit
 
     # Create the peptide homol
@@ -469,7 +475,7 @@ sub _make_dna_homol {
 
     $peph->primary_tag($pep_homol->primary_tag);
     $peph->seqname    ($pep_homol->seqname);
-
+    
     # Add the peptide homol to the dna homol
     $newh->homol_SeqFeature($peph);
     
@@ -488,6 +494,7 @@ sub _make_dna_homol {
 
 sub _dnaHit2homol {
     my ($self,$dnahit) = @_;
+    my $debug =0;
 
     my $pepaln  = $self->{_pepaln};
     my $pairaln = new Bio::EnsEMBL::Analysis::PepAlign;
@@ -506,7 +513,7 @@ sub _dnaHit2homol {
 
     
     $dnahit = Bio::EnsEMBL::Analysis::MSPcrunch->swaphomols($dnahit);
-
+    print("Hit types are $dnahit " . $dnahit->homol_SeqFeature . "\n");
     $pairaln->addHomol($dnahit);
 
     my @pep     = $pepaln->eachHomol;
@@ -520,14 +527,18 @@ sub _dnaHit2homol {
 
 	# Find the first exon and process
 	while (my $gen_exon = shift @pep) {
-
+	    
 	    my $pep_exon= $gen_exon->homol_SeqFeature;
+
+	    if( $debug == 1 ) {
+		print STDOUT "Debug: Before start: looking at exon in peptide coordinates of",$pep_exon->start," to ",$pep_exon->end,"dna",$gen_exon->start," to ",$gen_exon->end,"\n";
+	    }
 
 	    if ($pep_homol->start >= $pep_exon->start && $pep_homol->start <= $pep_exon->end) {
 		my $pstart     = $pep_homol->start;
 		my $pend       = $pep_exon->end;
-#		my $start_frac = $pep_exon->start_frac;
-		my $start_frac = 1;       # Ewan debug
+		#my $start_frac = $pep_exon->start_frac;
+		my $start_frac = 1;
 		my $end_frac;
 
 		if ($pep_homol->end <= $pep_exon->end) {
@@ -545,7 +556,16 @@ sub _dnaHit2homol {
 		# We need to convert these coords into genomic coords and 
 		# also homol coords.
 		# Hideous method call. yuck.
+
+		if( $debug == 1 ) {
+		    print STDOUT "Debug: Calling make_dna_homol with $pstart, $pend:$end_frac. Exon end is ",$pep_exon->end,":",$pep_exon->end_frac,"\n";
+		}
+
 		my $newh = $self->_make_dna_homol($pairaln,$gen_exon,$pep_exon,$dna_homol,$pep_homol,$pstart,$start_frac,$pend,$end_frac);
+
+		if( $debug ) {
+		    print STDOUT "Debug Start: Got homol with ",$newh->start,":",$newh->end," and ",$newh->homol_SeqFeature->start,":",$newh->homol_SeqFeature->end,"\n";
+		}
 
 		push(@homols,$newh);
 
@@ -557,9 +577,10 @@ sub _dnaHit2homol {
 	while (my $gen_exon = shift @pep) {
 	    # Check for overlap
 	    my $pep_exon    = $gen_exon->homol_SeqFeature;
-
+	    my $loop = 0;
 	    my $pstart = $pep_exon->start;
 	    my $pend   = $pep_exon->end;
+
 
 	    
 	    last if ($pep_homol->end < $pep_exon->start);
@@ -569,28 +590,41 @@ sub _dnaHit2homol {
 	    
 	    if ($pep_homol->end <= $pep_exon->end) {
 		$pend     = $pep_homol->end;
-		    if( $pep_homol->end == $pep_exon->end ) {
-			$end_frac = $pep_exon->end_frac;
-		    } else {
-			$end_frac = 3;
-		    }
+		if( $pep_homol->end == $pep_exon->end ) {
+		    $end_frac = $pep_exon->end;
+		} else {
+		    $end_frac = 3;
+		}
 
-	    } elsif ($pep_exon->end_frac < 3) {
+	    } else { 
 		$end_frac = $pep_exon->end_frac;
+
 	    }
+
+	    if( $debug == 1 ) {
+		print STDOUT "Debug: [$loop] After start. looking at exon in peptide coordinates of ",$pep_exon->start," to ",$pep_exon->end," dna ",$gen_exon->start," to ",$gen_exon->end,"\n";
+	    }
+
 		    
 	    # We know whereabouts on the peptide we want the homol to lie
 	    # We need to convert these coords into genomic coords and 
 	    # also homol coords.
 	    # /yuskety yuckety.
+	    if( $debug == 1 ) {
+		print STDOUT "Debug: Calling make_dna_homol with $pstart, $pend:$end_frac. Exon end is ",$pep_exon->end,":",$pep_exon->end_frac,"\n";
+	    }
 	    if( $end_frac != 1 && $end_frac != 2 && $end_frac != 3 ) {
 		$self->warn("WE ARE IN TROUBLE. end frac is not real! [$end_frac]");
 	    }
-	    
+
 	    my $newh = $self->_make_dna_homol($pairaln,$gen_exon,$pep_exon,$dna_homol,$pep_homol,$pstart,$start_frac,$pend,$end_frac);
 	    
+	    if( $debug ) {
+		print STDOUT "Debug [$loop]: Got homol with ",$newh->start,":",$newh->end," and ",$newh->homol_SeqFeature->start,":",$newh->homol_SeqFeature->end,"\n";
+	    }
+
 	    push(@homols,$newh);
-	    
+	    $loop++;
 	}
 	
     }

@@ -48,6 +48,9 @@ use strict;
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Homol;
 
+use Bio::EnsEMBL::Analysis::GenscanPeptide;
+use Bio::EnsEMBL::Analysis::MSPcrunch;
+
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -87,13 +90,13 @@ sub _initialize {
     print_genes($gs,$seq) if $self->_debug;
   
     # mapping of data to filenames
-    my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp'  ],
-		   ['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp'  ],
-		   ['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp'  ],
-		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ],
-		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ],
-		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ],
-		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff' ],
+    my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp' ,'PEP-PEP' ],
+		   ['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp'  ,'PEP-DNA'],
+		   ['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp'  ,'PEP-DNA' ],
+		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ,'PEP-DNA' ],
+		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ,'PEP-DNA' ],
+		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ,'DNA-PEP' ],
+		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff'  ,'DNA-DNA'],
 		   ];
 
     # MC. I've bypassed the rest of this code as 
@@ -104,13 +107,13 @@ sub _initialize {
   
     $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
 
-    return $self;
+#    return $self;
 
     # loop over transcripts
     my $count = 1;
 
     foreach my $g ($gs->each_Transcript) {
-	
+	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
 	print_gene_details($g,$count) if $self->_debug;
     
 	foreach my $msp (@$msptype) {
@@ -119,51 +122,20 @@ sub _initialize {
 	    my $pid            = "$id.$count";
 	    my @homols;
 
-	    if ($$msp[5]     eq 'msp'){
-		@homols        = $self->_read_MSP($mspfile,$seq,$pid,$msp);
-	    } elsif ($$msp[5] eq 'pfam'){
-		@homols        = $self->_read_pfam($mspfile,$seq,$pid,$msp);
+	    if ($msp->[5]     eq 'msp'){
+		@homols        = $self->_read_MSP($mspfile,$genpep,$msp);
+	    } elsif ($msp->[5] eq 'pfam'){
+		@homols        = $self->_read_pfam($mspfile,$genpep,$msp);
 	    } else {
 		$self->throw("no parser for $$msp[5] defined");
 	    }
 
-	    my $offset         = $self->_get_offset($gs,$g,$count);
-      
-	    print STDERR "read MSP file $mspfile:\n  $#homols homols. Offset $offset\n"  if $self->_debug;
-      
-	    # these are all matches to transcripts, so need to remap to contig coordinates
-	    foreach my $h (@homols) {
-
-		my $hsf  =  $h->homol_SeqFeature;
-		my $seq;
-
-		print STDERR $h->seqname  . "\t" . 
-		             $h->start    . "\t" . 
-		             $h->end      . "\t" . 
-		             $hsf->start  . "\t" . 
-			     $hsf->end    . "\t" . 
-			     $hsf->strand . "\t" . 
-			     join(',',$hsf->each_tag_value('title')) . "\t" . 
-			     $seq ."\n";
-
-		# Converts peptide to dna coords - MC this doesn't work.
-		my @newhomols = $self->map_homols($h,$g,$offset,$seq,\*STDOUT); 
-		
-		print STDERR "Homols mapped to dna coords are :\n" if $self->_debug;
-
-		foreach my $hh (@newhomols){
-		    my $hsf = $hh->homol_SeqFeature;
-		    my $seq;
-
-		    print STDERR $hh->seqname . "\t" . 
-			         $hh->start   . "\t" . 
-				 $hh->end     . "\t" . 
-				 $hsf->start  . "\t" . 
-                                 $hsf->end    . "\t" . 
-				 $hsf->strand . "\t" . 
-				 $seq ."\n";
-		}	
+	    
+	    foreach my $f (@homols) {
+		$self->add_Feature($f);
 	    }
+	    
+
 	}
 
 	$count++;    
@@ -516,56 +488,27 @@ sub _get_offset {
 
 sub _read_MSP {
 
-    my($self,$mspfile, $seq, $id, $msp) = @_;
-    my($sim_label,$method,$db,$seqtype,$ext)=@$msp;
-    my @homols;
+    my($self,$mspfile, $genpep, $msp,$type) = @_;
 
-    open(MSP,$mspfile) || $self->throw("Couldn't open $mspfile");
-
-    while (defined(my $line = <MSP>)) {
-	unless ($line =~ /^\#/) {
-	    my ($score,$pid,$start,$end,$id,$hstart,$hend,$hid,$title) = split(' ',$line,9);
-
-	    # using Bioperl objects to represent homology
-	    # homol object contains feature on peptide, score, pid
-	    # and is attached to underlying sequence
-	    # strand is always 1 since sequence was peptide
-	    my $homol=Bio::SeqFeature::Homol->new(-start=>$start,
-						  -end=>$end,
-						  -strand=>1,
-						  );
-	    $homol->seqname($id);
-	    $homol->add_tag_value('seqtype','pep');
-
-	    $homol->source_tag('ensembl');
-	    $homol->primary_tag('similarity');
-	    $homol->score($score);
-	    $homol->add_tag_value('percentid',$pid);
-	    $homol->add_tag_value('sim_label',$sim_label);
-	    $homol->add_tag_value('method',$method);
-	    $homol->attach_seq($seq);
-
-	    # hsf object contains matched sequence, title
-	    my $hsf;
-	    if($hstart>$hend){
-		$hsf=Bio::SeqFeature::Generic->new(-start=>$hend,
-						   -end=>$hstart,
-						   -strand=>-1,
-						   );
-	    }else{
-		$hsf=Bio::SeqFeature::Generic->new(-start=>$hstart,
-						   -end=>$hend,
-						   -strand=>1,
-						   );
-	    }
-	    $hsf->add_tag_value('title',$title);
-	    $hsf->add_tag_value('db',$db);
-	    $hsf->add_tag_value('seqtype',$seqtype);
-	    $homol->homol_SeqFeature($hsf);
-	    
-	    push(@homols,$homol);
+    
+    my $mspobj  = new Bio::EnsEMBL::Analysis::MSPcrunch($mspfile,$type);
+    print("Parsing $mspfile\n");
+    if ($msp->[3] eq "dna") {
+	foreach my $homol ($mspobj->each_Homol) { # Adds each hit to the GenscanPeptide object
+	    $genpep->add_dnaHit($homol);
 	}
+    } elsif ($msp->[3] eq "pep") {
+	$self->warn("Reading peptide hits not implemented yet in FeatureParser.pm");
+#	foreach my $homol ($mspobj->each_Homol) { # Adds each hit to the GenscanPeptide object
+#	    $genpep->add_pepHit($homol);
+#	}
+    } else {
+	$self->throw("Unrecognised feature type " . $msp->[3] . "\n");
     }
+
+
+    my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
+
     return @homols;
 }
 
