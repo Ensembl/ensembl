@@ -87,7 +87,10 @@ use vars qw(@ISA @EXPORT_OK);
 =cut
 
 sub throw {
+  #for backwards compatibility with Bio::EnsEMBL::Root::throw
+  #allow to be called as an object method as well as class method
   my $string = shift;
+  $string = shift if(ref($string)); #skip object if one provided
 
   my $std = stack_trace_dump(3);
 
