@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Transcript - Confirmed Transcript object
+Transcript - gene transcript object
 
 =head1 SYNOPSIS
 
@@ -20,7 +20,20 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-Object that represents a confirmed transcript. 
+Contains details of coordinates of all exons that make
+up a gene transcript.
+
+Creation:
+   
+     my $tran = new Bio::EnsEMBL::Transcript();
+     my $tran = new Bio::EnsEMBL::Transcript(@exons);
+
+Manipulation:
+
+     my @exons = $tran->each_Exon         # Returns an array of Exon objects
+     my $pep   = $tran->translate()       # Returns the peptide translation of the exons as a Bio::Seq
+     
+     $tran->sort()                        # Sorts exons into order (forward for + strand, reverse fo - strand)
 
 =head1 CONTACT
 
@@ -35,12 +48,11 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-
 package Bio::EnsEMBL::Transcript;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::SeqFeature::Generic
+# Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::SeqFeature::Generic;
 
@@ -55,11 +67,16 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
+  # Some EnsEMBL stuff
   $self->primary_tag('transcript');
   $self->source_tag('EnsEMBL');
 
-# set stuff in self from @args
-  return $make; # success - we hope!
+  # set stuff in self from @args
+  foreach my $a (@args) {
+    $self->add_Exon($a);
+  }
+
+  return $self; # success - we hope!
 }
 
 =head2 add_Exon
@@ -91,10 +108,10 @@ sub add_Exon{
 
  Title   : each_Exon
  Usage   : foreach $exon ( $trans->each_Exon)
- Function:
- Example :
+ Function: Returns an array of exons in the transcript
+ Example : my @exons = $tr->each_Exon
  Returns : An array of exon objects
- Args    :
+ Args    : none
 
 
 =cut
@@ -116,7 +133,104 @@ sub each_Exon{
 
 }
 
-=head1 Methods inherieted from SeqFeature
+=head2 translate
+
+ Title   : translate
+ Usage   : $pep = $feat->translate()
+ Function: Returns the peptide translation of the gene - in the correct phase
+ Returns : Bio::Seq
+ Args    : none
+
+=cut
+
+sub translate {
+  my ($self) = @_;
+  my @exon = $self->each_Exon;
+  
+  my $phase = $exon[0]->phase;
+  my $mrna  = $self->dna_seq->seq();
+
+  # Hackeroover as we can't ranslate in any frame apart from 0
+  $mrna = substr($mrna,$phase);
+
+  my $seq = new Bio::Seq(-seq => $mrna);
+  my $trans = $seq->translate();
+
+  return $trans;
+}
+
+=head2 dna_seq
+
+ Title   : dna_Seq
+ Usage   : $dna = $feat->dna_seq
+ Function: Returns the dna sequence of the gene
+ Returns : Bio::Seq
+ Args    : none
+
+=cut
+
+sub dna_seq {
+  my ($self) = @_;
+
+  my $mrna = "";
+
+  foreach my $exon ($self->each_Exon) {
+    $mrna .= $exon->dna_seq()->seq();
+  }
+
+  my $seq = new Bio::Seq(-seq => $mrna);
+
+  return $seq;
+}
+
+=head2 sort
+
+ Title   : sort
+ Usage   : $feat->sort()
+ Function: Sorts the exon features by start coordinate
+           Sorts forward for forward strand and reverse for reverse strand
+ Returns : none
+ Args    : none
+
+=cut
+
+sub sort {
+  my $self = shift;
+
+  # Fetch all the features
+  my @features = $self->sub_SeqFeature();
+
+  # Empty the feature table
+  $self->flush_sub_SeqFeature();
+
+  # Extract all the exons from the feature
+  # array and put the non exons back in the
+  # feature table
+  my @exons;
+
+  foreach my $f (@features) {
+    if ($f->isa("Bio::EnsEMBL::Exon")) {
+      push(@exons,$f);
+    } else {
+      $self->add_sub_SeqFeature($f);
+    }
+  }
+
+  # Now sort the exons and put back in the feature table
+  my $strand = $exons[0]->strand;
+
+  if ($strand == 1) {
+    @exons = sort { $a->start <=> $b->start } @exons;
+  } elsif ($strand == -1) {
+    @exons = sort { $b->start <=> $a->start } @exons;
+  }
+
+  foreach my $e (@exons) {
+    $self->add_sub_SeqFeature($e);
+  }
+}
+
+=head1 Methods inherited from SeqFeature
 
 =head2 start
 
