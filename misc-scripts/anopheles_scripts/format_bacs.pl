@@ -1,17 +1,13 @@
 use strict;
-
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
-
-use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 
 my $host      = 'ecs1b';
 my $dbuser    = 'ensro';
 my $dbname    = 'anopheles_arne_core_9_2';
 my $dbpass    = undef;
 my $path      = 'NOTRE_DAME';
-my $port;#      = 19322;
+my $port;
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -45,9 +41,6 @@ while(<BAC>) {
     my $sc = $array[2];
     my $start = $array[8];
     my $end = $array[9];
-    my $status = $array[11];
-
-#    print STDERR "BO:$sc\t$array[4]\t$start\t$end\n";
    
     my $query = "SELECT  
    if(a.superctg_ori=1,($start-a.superctg_start+a.chr_start),
@@ -55,7 +48,7 @@ while(<BAC>) {
    if(a.superctg_ori=1,($end-a.superctg_start+a.chr_start),
                     (a.chr_start+a.superctg_end-$start)),
      c.name FROM assembly a, chromosome c WHERE a.superctg_name = '$sc' and c.chromosome_id = a.chromosome_id";
-#     print STDERR "$query\n";
+
     my $sth = $db->prepare($query);
     $sth->execute();
     my @res = $sth->fetchrow_array();
