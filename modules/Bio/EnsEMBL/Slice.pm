@@ -93,9 +93,16 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my ($coord_system, $seq_region_name,
-      $start, $end, $strand, $adaptor) =
+      $start, $end, $strand, $adaptor, $empty) =
         rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME
-                      START END STRAND ADAPTOR)], @_);
+                      START END STRAND ADAPTOR EMPTY)], @_);
+
+  #empty is only for backwards compatibility
+  if($empty) {
+    deprecate("Creation of empty slices is no longer needed" .
+              "and is deprecated");
+    return bless({'empty' => 1}, $class);
+  }
 
   $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
   defined($start)   || throw('START argument is required');
