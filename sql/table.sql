@@ -486,7 +486,7 @@ CREATE TABLE interpro (
 
 CREATE TABLE gene_description (
   gene_id     int unsigned NOT NULL,
-  description varchar(255),
+  description text,
   PRIMARY KEY (gene_id)
 );
 
