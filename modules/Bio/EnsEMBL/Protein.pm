@@ -944,15 +944,17 @@ sub get_all_DASFeatures{
   $self->{_das_features} ||= {}; # Cache
   my %das_features;
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
-    my $dsn = $dasfact->_dsn;
-    if( $self->{_das_features}->{$dsn} ){ # Use cached
-      $das_features{$dsn} = $self->{_das_features}->{$dsn};
+    my $dsn  = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
+    $name ||= $dasfact->adaptor->url .'/'. $dsn;
+    if( $self->{_das_features}->{$name} ){ # Use cached
+      $das_features{$name} = $self->{_das_features}->{$name};
       next;
     }
     else{ # Get fresh data
       my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
-      $self->{_das_features}->{$dsn} = [@featref];
-      $das_features{$dsn} = [@featref];
+      $self->{_das_features}->{$name} = [@featref];
+      $das_features{$name} = [@featref];
     }
   }
   return \%das_features;
