@@ -87,13 +87,15 @@ sub new {
 	my $chr_start;
 	my $chr_end;
 
+
+
 	if( $rc->chr_start < $global_start ) {
 	    if( $rc->static_golden_ori ==1 ) {
 		# move start
 		$rc_start = $rc->static_golden_start + ($global_start - $rc->chr_start);
 	    } else {
 		# don't need to move start, unless end - handled below
-		$rc_start = $rc->chr_start;
+		$rc_start = $rc->static_golden_start;
 	    }
 
 	    $chr_start = $global_start;
@@ -113,6 +115,7 @@ sub new {
 	}
 
 
+	print STDERR "Calling on ",$rc->id,"\n";
 
 	$self->_vmap->create_MapContig($rc,
 				       $chr_start - $global_start+$vc_start_position,
