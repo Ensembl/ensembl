@@ -29,10 +29,11 @@ Bio::EnsEMBL::DBArchive::Obj - Object representing the EnsEMBL Archive DB
 =head1 DESCRIPTION
 
 This object represents an archive database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object). The archive database holds a slice of data for older
-versions of proteins, genes, and exons. It comprises three methods for writing and retrieving sequences
-from the database. The purpose of this object is to allow versioning in EnsEMBL, holding only the most recent
-of an entry in the main DBSQL database, and storing here only the relevant information of older versions.
+care much as long as you can get the object). The archive database holds a slice of 
+data for older versions of proteins, genes, and exons. It comprises three methods 
+for writing and retrieving sequences from the database. The purpose of this object 
+is to allow versioning in EnsEMBL, holding only the most recent of an entry in the main 
+DBSQL database, and storing here only the relevant information of older versions.
 
 
 =head1 CONTACT
@@ -261,15 +262,14 @@ sub get_seq_by_gene_version{
 sub write_seq{
    my ($self,$seq, $version, $type, $gene_id,$gene_version) = @_;
    
-   $seq || $self->throw("Attempting to write a sequence without a sequence object!");
+   if (!$seq->isa("Bio::Seq")) {
+       $self->throw("Attempting to write a sequence without a sequence object!");
+   }
    $seq->id || $self->throw("Attempting to write a sequence without a sequence id!");
    $type || $self->throw("Attempting to write a sequence without a sequence type!");
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
    $gene_id || $self->throw("Attempting to write a sequence without a gene id!");
    $gene_version || $self->throw("Attempting to write a sequence without a gene version number!");
-   #$clone_id || $self->throw("Attempting to write a sequence without a clone id!");
-   #$clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
-
    my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."')");
    $sth->execute();
 }

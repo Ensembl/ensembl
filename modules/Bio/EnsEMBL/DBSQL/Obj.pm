@@ -1,6 +1,6 @@
 #
 #
-# BioPerl module for DBSQL::Obj
+# bioperl module for DBSQL::Obj
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -1007,7 +1007,7 @@ sub write_Ghost{
 =cut
 
 sub archive_Gene {
-   my ($self,$gene,$arc_db) = @_;
+   my ($self,$gene,$clone,$arc_db) = @_;
 
    my $sth;
    my $res;
@@ -1015,9 +1015,8 @@ sub archive_Gene {
    foreach my $transcript ($gene->each_Transcript) {
        
        my $seq = $transcript->dna_seq;
-          $seq->id($transcript->id);
+       $seq->id($transcript->id);
        
-       #Temporary, since versions not stored yet...
        !$transcript->version && $transcript->version(1);
        !$gene->version && $gene->version(1);
        
@@ -2295,7 +2294,7 @@ sub write_Contig {
    foreach my $sql (@sql) {
      my $sth =  $self->prepare($sql);
      my $rv  =  $sth->execute();
-     $self->throw("Failed to insert contig $contigid") unless $rv;
+     $self->throw("Failed to insert contig $contigid [@sql]") unless $rv;
    }
 
    # write sequence features. We write all of them together as it

@@ -379,7 +379,7 @@ sub check_update_status {
     }
 
     my @clones;
-    push(@clones,'AC000072');
+    #push(@clones,'AC000072');
 
     my $fdb = $self->connect($self->fromlocator,@clones);
 
@@ -417,7 +417,7 @@ sub update {
 
     while ($current < $num_clones) {
 	print(STDERR "Starting new fork chunk $current/$num_clones\n");
-
+	
 	if (my $pid = fork) {
 	    # Parent here
 	    # Wait for the child to finish
@@ -432,26 +432,26 @@ sub update {
 
 	    # child here
 
-	    my @clones = $self->getchunk($current,@clone_id);           print(STDERR  "In child. Transferring @clones\n");
-	    my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR  "Connected to donor database\n");
-	    my $todb   = $self->connect ($self->tolocator); 	        print(STDERR  "Connected to recipient database\n");
-	    my $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
+	   my @clones = $self->getchunk($current,@clone_id);           print(STDERR  "In child. Transferring @clones\n");
+	   my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR  "Connected to donor database\n");
+	   my $todb   = $self->connect ($self->tolocator); 	        print(STDERR  "Connected to recipient database\n");
+	   my $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
+	   
+	   eval {
+	       $self->transfer_chunk($fromdb,$todb,$arcdb,@clones);
+	   };
 
-#	    eval {
-		$self->transfer_chunk($fromdb,$todb,$arcdb,@clones);
-#	    };
-
-	    # must exit child. Big trouble otherwise
-#	    exit($@);
-	    exit(0);
-	} else {
-	    $self->throw("Couldn't fork a new process");
-	}
+	   # must exit child. Big trouble otherwise
+	   exit($@);
+	   #exit(0);
+       } else {
+	   $self->throw("Couldn't fork a new process");
+       }
     }
-
+    
     if (!$self->nowrite) {
 	my $todb = $self->connect($self->tolocator);  print(STDERR  "Connected to recipient database\n");
-  	   $todb->replace_last_update($self->totime);
+	$todb->replace_last_update($self->totime);
     }
 }
 
