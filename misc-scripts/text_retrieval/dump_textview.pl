@@ -27,6 +27,12 @@ ENSG....|ExternalDB|ExternalAC|Text
 
 =cut
 
+#nohup perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/birney/mongin/mapping_dev/current_data/primary/hum_sp_sptrembl.pep -extout outputs/ext1.txt > err1.log & 
+
+# bsub -q acari -o out.out -e out.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/birney/mongin/mapping_dev/current_data/primary/hum_sp_sptrembl.pep -extout /work1/birney/mongin/textsearch/data/outputs/outputs/ext3.txt 
+
+# perl /work1/birney/mongin/src/ensembl-live/misc-scripts/text_retrieval/dump_textview.pl -host ensrv3 -dbuser ensro -db homo_sapiens_core_110 -interpro /work1/birney/mongin/textsearch/data/interpro_07_02.xml -omim /work1/birney/mongin/textsearch/data/omim.txt -sp /work1/mongin/mapping/primary/HS.SPTR -domainout domain_4index.txt -extout extout_4index.txt
+
 use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
@@ -34,13 +40,13 @@ use Getopt::Long;
 
 my $dbpass = undef;
 my $dbuser = 'ensro';
-my $ensdbname = 'ensembl080';
-my $host = 'ecs1c.sanger.ac.uk';
+my $ensdbname = 'homo_sapiens_core_110';
+my $host = 'ensrv3.sanger.ac.uk';
 my $output;
 my $interpro;
 my $omim;
 my $sp;
-
+my $domainout;
 
 &GetOptions(
 	    'db:s' => \$ensdbname,
@@ -60,11 +66,12 @@ my $ensdb =  Bio::EnsEMBL::DBLoader->new($enslocator);
 my %omim;
 my %sp;
 
+
 #In this file will be printed out the results of the parsing of Interpro flat file (domains)
-open (DOMAINOUT, "$domainout") || die "Can't open output\n";
+open (DOMAINOUT, ">/work1/birney/mongin/textsearch/data/outputs/domains3.txt") || die "Can't open $domainout\n";
 
 #In this file will be printed out the results of the parsing of the external DB (eg: Swiss-Prot, OMIM, ...)
-open (OUT, ">$output") || die "Can't open output\n";
+open (OUT, ">$output") || die "Can't open $output\n";
 
 ####################
 #READ INTERPRO FILE#
@@ -248,12 +255,15 @@ while ( my $seq = $in->next_seq() ) {
 	push (@refs,$ref->comment());
     }
 
-    foreach my $comment ( $seq->annotation->each_Comment ) {
-	push (@comments,$comment->text);
-	}
+    #foreach my $comment ( $seq->annotation->each_Comment ) {
+	#push (@comments,$comment->text);
+	#}
 
-    my $tot_sp = "$ke|$desc|@refs|@comments";
+    #my $tot_sp = "$ke|$desc|@refs|@comments";
  
+    my $tot_sp = "$ke|$desc|@refs";
+ 
+
     if (!defined $sp{$ac}) {
 	$sp{$ac} = [];
     }
@@ -266,7 +276,9 @@ while ( my $seq = $in->next_seq() ) {
 print STDERR "Dumping file\n";
 
 #Get all of the distinct gene ac present in genedblink
-my $sth2 = $ensdb->prepare ("select distinct (gene_id) from genedblink");
+#my $sth2 = $ensdb->prepare ("select distinct (gene_id) from genedblink");
+
+my $sth2 = $ensdb->prepare ("select distinct (ensembl_id) from objectXref");
 
 $sth2->execute;
 
@@ -275,7 +287,10 @@ while (my @row2 = $sth2->fetchrow) {
 	#print STDERR "$row2[0]\n";
 #	print STDERR "Dump for MIM\n";
 
-	my $sth3 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and external_db = 'MIM'");
+	#my $sth3 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and external_db = 'MIM'");
+
+	my $sth3 = $ensdb->prepare ("select x.dbprimary_id, t.gene from Xref as x, externalDB as e, objectXref as o, transcript as t where o.xrefId = x.xrefId and o.ensembl_id = '$row2[0]' and t.translation = '$row2[0]'");
+
 	$sth3->execute;
 	my $seen3=0;
 	while (my @row3 = $sth3->fetchrow) {
@@ -283,21 +298,33 @@ while (my @row2 = $sth2->fetchrow) {
 
 	    #If this gene ac has a link to an OMIM ac dump the text corresponding to this OMIM ac
 	    if ($omim{$row3[0]}) {
-		print OUT "$row2[0]\|MIM\|$row3[0]\|$omim{$row3[0]}\n";
+		print OUT "$row3[1]\|MIM\|$row3[0]\|$omim{$row3[0]}\n";
+	    }
+
+	    if ($sp{$row3[0]}) {
+
+		print OUT "$row3[1]\|SPTR\|$row3[0]\|$sp{$row3[0]}\n";
 	    }
 	}
 		
 	#print STDERR "Dump for MIM\n";
 
-	my $sth4 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and (external_db = 'SPTREMBL' or external_db = 'SWISS')");
-	$sth4->execute;
+	#my $sth4 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and (external_db = 'SPTREMBL' or external_db = 'SWISS')");
 
-	my $seen4=0;
-	while (my @row4 = $sth4->fetchrow) {
-	    $seen4 = 1;
+#my $sth4 = $ensdb->prepare ("select x.dbprimary_id, t.gene from Xref as x, externalDB as e, objectXref as o, transcript as t where o.xrefId = x.xrefId and o.ensembl_id = '$row2[0]' and t.translation = '$row2[0]'");
+
+	#$sth4->execute;
+
+	#my $seen4=0;
+	#while (my @row4 = $sth4->fetchrow) {
+	    #$seen4 = 1;
 #Same for SP
-	    print OUT "$row2[0]\|SPTR\|$row4[0]\|$sp{$row4[0]}\n";
-	}
+	    #if ($sp{$row4[0]}) {
+
+		#print OUT "$row4[1]\|SPTR\|$row4[0]\|$sp{$row4[0]}\n";
+	    #}
+	#}
+
     }
 }	    
 	
