@@ -241,6 +241,55 @@ sub subseq {
 
 
 
+=head2 get_base_count
+
+  Arg [1]    : none
+  Example    : $gc_content = $contig->get_base_count()->{'%gc'};
+  Description: Retrieves a hashref containing the counts of each bases in the
+               sequence spanned by this slice.  The format of the hash is :
+               { 'a' => num,
+                 'c' => num,
+                 't' => num,
+                 'g' => num,
+                 'n' => num,
+                 '%gc' => num }
+               
+               All bases which are not in the set [A,a,C,c,T,t,G,g] are 
+               included in the 'n' count.  The 'n' count could therefore be
+               inclusive of ambiguity codes such as 'y'.
+               The %gc is the ratio of GC to AT content as in:
+               total(GC)/total(ACTG) * 100
+  Returntype : hashref
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_base_count {
+  my $self = shift;
+
+  my $seq = $self->seq();
+  my $len = $self->length();
+
+  my $a = $seq =~ tr/Aa/Aa/;
+  my $c = $seq =~ tr/Cc/Cc/;
+  my $t = $seq =~ tr/Tt/Tt/;
+  my $g = $seq =~ tr/Gg/Gg/;
+
+  my $gc_content = 0;
+  if($a || $g || $c || $t) {  #avoid divide by 0
+    $gc_content = sprintf( "%1.2f", (($g + $c)/($a + $g + $t + $c)) * 100);
+  }
+
+  return {'a' => $a,
+	  'c' => $c,
+	  't' => $t,
+	  'g' => $g,
+	  'n' => $len - $a - $c - $t - $g,
+	  '%gc' => $gc_content};
+}
+
+
 =head2 get_repeatmasked_seq
 
   Arg [1]    : string \@logic_names (optional)
