@@ -69,6 +69,9 @@ sub create_xrefs {
     chomp $entry;
     my ($header, $sequence) = split (/\n/, $entry, 2);
     $sequence =~ s/^>//;
+    # remove newlines
+    my @seq_lines = split (/\n/, $sequence);
+    $sequence = join("", @seq_lines);
 
     (my $gi, my $n, my $ref, my $acc, my $description) = split(/\|/, $header);
     my ($species, $mrna);
