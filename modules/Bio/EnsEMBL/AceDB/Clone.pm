@@ -18,11 +18,12 @@ Bio::EnsEMBL::AceDB::Clone - Object representing one clone
 
     # $db is Bio::EnsEMBL::AceDB::Obj 
 
-    @contig = $db->get_Contigs();
 
     $clone = $db->get_Clone();
 
-    @genes    = $clone->get_all_Genes();
+    @contig = $clone->get_Contigs();
+
+    @genes  = $clone->get_all_Genes();
 
 =head1 DESCRIPTION
 
@@ -51,7 +52,7 @@ use strict;
 use Bio::Root::Object;
 
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI );
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -92,11 +93,35 @@ sub _initialize {
 
 sub get_all_Genes{
    my ($self,@args) = @_;
+   my (@genes);
 
-   $self->throw("Not implemented yet!");
+   foreach my $contig ( $self->get_all_Contigs ) {
+       push(@genes,$contig->get_all_Genes());
+   }
+   return @genes;
 }
 
-=head2 get_Contigs
+=head2 seq
+
+ Title   : seq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self) = @_;
+
+   my ($c) = $self->get_Contig($self->id());
+   return $c->seq;
+
+}
+
+=head2 get_all_Contigs
 
  Title   : get_Contigs
  Usage   : foreach $contig ( $clone->get_Contigs ) 
@@ -108,7 +133,7 @@ sub get_all_Genes{
 
 =cut
 
-sub get_Contigs{
+sub get_all_Contigs{
    my ($self) = @_;
    my $sth;
    my @res;
@@ -119,6 +144,29 @@ sub get_Contigs{
    push(@res,$contig);
 
    return @res;   
+}
+
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contig{
+   my ($self,$contigid) = @_;
+
+   if( $contigid ne $self->id() ) {
+       $self->warn("In an Acedb database, trying to get a contigid $contigid not on the clone. Indicates an error!");
+   }
+
+   my ($c) = $self->get_all_Contigs(); 
+   return $c;
 }
 
 =head2 id

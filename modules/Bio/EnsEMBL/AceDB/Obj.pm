@@ -55,11 +55,12 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::AceDB::Contig;
 use Bio::EnsEMBL::AceDB::Clone;
 use Ace;
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -69,8 +70,9 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($host,$port,$debug) = $self->_rearrange([qw(HOST
+  my ($host,$port,$timeout,$debug) = $self->_rearrange([qw(HOST
 					   PORT
+					   TIMEOUT
 					   DEBUG
 					   )],@args);
 
@@ -82,7 +84,9 @@ sub _initialize {
      $self->_debug(0);
  }
   
+  $timeout || do {$timeout = 60;};
   my $ace = my $db = Ace->connect(-host => $host,
+				  -timeout => $timeout,
 				  -port => $port);
 
   if( !$ace ) {
@@ -134,7 +138,7 @@ sub get_Gene{
 sub get_Clone{
    my ($self,$id) = @_;
 
-   my $clone = new Bio::EnsEMBL::DB::Clone( -id => $id,
+   my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
 					-dbobj => $self );
    return $clone;
 }
