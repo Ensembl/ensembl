@@ -263,8 +263,6 @@ sub top_SeqFeatures {
     
     push(@f,$self->get_all_LowcomplFeatures());
     
-    push(@f,$self->get_all_SuperfamilyFeatures());
-    
     return @f;
 }
 
@@ -342,6 +340,8 @@ sub get_all_DomainFeatures{
        push(@f,$self->get_all_PfamFeatures());
 
        push(@f,$self->get_all_PrositeFeatures());
+       
+       push(@f,$self->get_all_SuperfamilyFeatures());
 
        return @f;
     }
