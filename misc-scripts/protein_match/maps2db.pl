@@ -27,13 +27,16 @@ my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
+my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
 my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
 my $dros_ext_annot = $conf{'dros_ext_annot'};
+my $cefile         = $conf{'eleg_nom'};
 
 my %map;
+my %cemap;
 my %ref_map;
 my %sp2embl;
 my %ens2embl;
@@ -52,7 +55,8 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
         -dbname => $dbname,
         -host   => $host,
-	-pass   => $pass,			     
+	-pass   => $pass,
+	-port   => $port,
         -driver => 'mysql',
 	);
 
@@ -276,10 +280,15 @@ MAPPING: while (<MAP>) {
 if ($organism eq "drosophila") {
     open (DROSANNOT,"$dros_ext_annot") || die "Can't open Dros file $dros_ext_annot\n";
     
+    my %seen;
     while (<DROSANNOT>) {
 	chomp;
-	my ($cg,$db,$ac) = split;
-
+	
+	my ($cg,$extdb,$ac) = split;
+	
+	if ($extdb eq "Name") {
+	    $extdb = "flybase_symbol";
+	}
 	
 	#Here we get CG accession numbers ($cg) corresponding to gene_stable_id in Ensembl, get all of the translation internal ids for the given entry
 
@@ -288,7 +297,9 @@ if ($organism eq "drosophila") {
 	$sth->execute();
 
 	while (my $trans_id = $sth->fetchrow) {
-	    
+	    if (! defined $seen{$trans_id}) {
+		$seen{$trans_id} = 1;
+	    }
 	    #Create a new dbentry object
 	    my $dbentry = Bio::EnsEMBL::DBEntry->new
 		( -adaptor => $adaptor,
@@ -296,7 +307,7 @@ if ($organism eq "drosophila") {
 		      -display_id => $ac,
 		      -version => 1,
 		      -release => 1,
-		      -dbname => $db );
+		      -dbname => $extdb );
 		$dbentry->status("XREF");
 	    
 	    $adaptor->store($dbentry,$trans_id,"Translation");
@@ -307,46 +318,67 @@ if ($organism eq "drosophila") {
 }
 
 if ($organism eq "elegans") {
-    
+ 
+    open (IN,"$cefile") || die "can't open file\n";
+
+    while (<CEIN>) {
+	chomp;
+	my @array = split;
+	$cemap{$array[0]} = $array[1];
+    }
+    close (CEIN);
+
+    my $adaptor = $db->get_DBEntryAdaptor();
+
     my $query = "select t.translation_id, ts.stable_id, gs.stable_id from transcript t, gene_stable_id gs, transcript_stable_id ts where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id";
     my $sth = $db->prepare($query);
     $sth->execute();
     while (my @res = $sth->fetchrow) {
 	my $transl_dbid = $res[0];
-	my $transc_stable_id = $res[2];
+	my $transc_stable_id = $res[1];
 	my $gene_stable_id = $res[2];
-
+	
 	my $db1 = "wormbase_gene";
 	my $db2 = "wormbase_transcript";
-	
+	my $db3 = "wormpep_id";
        
 	my $dbentry = Bio::EnsEMBL::DBEntry->new
-		( -adaptor => $adaptor,
-		  -primary_id => $gene_stable_id,
-		  -display_id => $gene_stable_id,
-		  -version => 1,
-		  -release => 1,
-		  -dbname => $db1);
+	    ( -adaptor => $adaptor,
+	      -primary_id => $gene_stable_id,
+	      -display_id => $gene_stable_id,
+	      -version => 1,
+	      -release => 1,
+	      -dbname => $db1);
 	$dbentry->status("XREF");
-	
-#	print STDERR "$db1\t$db2\n";
 	
 	$adaptor->store($dbentry,$transl_dbid,"Translation");
 	
 	my $transdbentry = Bio::EnsEMBL::DBEntry->new
-		( -adaptor => $adaptor,
-		  -primary_id => $transc_stable_id,
-		  -display_id => $transc_stable_id,
-		  -version => 1,
-		  -release => 1,
-		  -dbname => $db2);
+	    ( -adaptor => $adaptor,
+	      -primary_id => $transc_stable_id,
+	      -display_id => $transc_stable_id,
+	      -version => 1,
+	      -release => 1,
+	      -dbname => $db2);
 	$transdbentry->status("XREF");
-	
+    
 	$adaptor->store($transdbentry,$transl_dbid,"Translation");
 
+	my $ce = $cemap{$transc_stable_id};
+	
+	if ($ce) {
+	    my $ceentry = Bio::EnsEMBL::DBEntry->new
+		( -adaptor => $adaptor,
+		  -primary_id => $ce,
+		  -display_id => $ce,
+		  -version => 1,
+		  -release => 1,
+		  -dbname => $db3);
+	    $ceentry->status("XREF");
+	    $adaptor->store($ceentry,$transl_dbid,"Translation");
+	}
     }
 }
-
 ###############
 #Some OO stuff#
 ###############
