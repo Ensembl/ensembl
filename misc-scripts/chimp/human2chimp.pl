@@ -187,9 +187,9 @@ sub transfer_transcript {
 
 	my $entire_delete = 1;
 
-	Deletion::process_entire_delete(\$chimp_cdna_pos, $c->length(),
-					$chimp_exon,
-					$chimp_transcript, $entire_delete);
+	Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
+			         $chimp_exon,
+				 $chimp_transcript, $entire_delete);
 
 	$chimp_exon->fail(1);
 	$chimp_transcript->add_Exon($chimp_exon);
@@ -442,7 +442,6 @@ sub create_transcripts {
       my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SCAFFOLD_SPAN);
       $itranscript->add_StatMsg($stat_msg);
       ### TBD can probably split transcript rather than discarding
-      $itranscript->fail(1);
       return;
     }
 

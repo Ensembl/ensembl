@@ -39,7 +39,7 @@ sub add_Exon {
 sub get_all_Exons {
   my $self = shift;
 
-  return @{$self->{'exons'}};
+  return $self->{'exons'};
 }
 
 

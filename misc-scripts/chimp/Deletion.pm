@@ -101,12 +101,12 @@ sub process_delete {
 }
 
 ###############################################################################
-# process_five_prime_utr_deletion
+# process_five_prime_utr_delete
 #
 # processes a deletion in the five prime utr of a transcript
 ###############################################################################
 
-sub process_five_prime_utr_deletion {
+sub process_five_prime_utr_delete {
   my $cdna_del_pos_ref = shift;
   my $del_len          = shift;
   my $exon             = shift;
@@ -125,12 +125,12 @@ sub process_five_prime_utr_deletion {
 }
 
 ###############################################################################
-# process_three_prime_utr_deletion
+# process_three_prime_utr_delete
 #
 # processes a deletion in the three prime utr of a transcript
 ###############################################################################
 
-sub process_three_prime_utr_deletion {
+sub process_three_prime_utr_delete {
   my $cdna_del_pos_ref = shift;
   my $del_len          = shift;
   my $exon             = shift;
@@ -152,7 +152,7 @@ sub process_three_prime_utr_deletion {
 # processes a deletion in the cds of a transcript
 ###############################################################################
 
-sub process_cds_deletion {
+sub process_cds_delete {
   my $cdna_del_pos_ref = shift;
   my $del_len          = shift;
   my $exon             = shift;
