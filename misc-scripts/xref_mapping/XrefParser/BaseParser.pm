@@ -81,67 +81,76 @@ sub run {
     # Download each source into the appropriate directory for parsing later
     # Also delete previous working directory if we're starting a new source type
 
-    my ($file) = $url =~ /.*\/(.*)/;
+    #can have more than one file
+
+    my @files = split(/\s+/,$url);
+    
+    my $parse = 0;
+    my $file_cs=0;
     my $type = $name;
+    my @new_file=();
     $dir = $base_dir . "/" . $type;
-    $last_type = $type;
-
-    if (!$skipdownload) {
-
-      rmtree $dir if ($type ne $last_type);
-      mkdir $dir if (!-e $dir);
-
-      print "Downloading $url to $dir/$file\n";
-      my $result = system("wget", "--quiet","--directory-prefix=$dir", $url);
-
-      # if the file is compressed, the FTP server may or may not have automatically uncompressed it
-      # TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
-      if ($file =~ /(.*)\.gz$/) {
-	print "Uncompressing $dir/$file\n";
-	system("gunzip", "$dir/$file");
-	$file = $1;
+    foreach my $urls (@files){
+      my ($file) = $urls =~ /.*\/(.*)/;
+      push @new_file, $file;
+      $last_type = $type;
+      
+      if (!$skipdownload) {
+	
+	rmtree $dir if ($type ne $last_type);
+	mkdir $dir if (!-e $dir);
+	
+	print "Downloading $urls to $dir/$file\n";
+	my $result = system("wget", "--quiet","--directory-prefix=$dir", $urls);
+	
+	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
+	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
+	if ($file =~ /(.*)\.gz$/) {
+	  print "Uncompressing $dir/$file\n";
+	  system("gunzip", "$dir/$file");
+	  $file = $1;
+	}
+	
       }
-
-    }
-    else{
-      if ($file =~ /(.*)\.gz$/) {
-	$file = $1;
+      else{
+	if ($file =~ /(.*)\.gz$/) {
+	  $file = $1;
+	}
+      }
+      
+      # compare checksums and parse/upload if necessary
+      # need to check file size as some .SPC files can be of zero length
+      print "HELLO: $dir/$file\n";
+      $file_cs = md5sum("$dir/$file");
+      if (!defined $checksum || $checksum ne $file_cs) {
+	
+	if (-s "$dir/$file") {
+	  $parse =1;
+	  print "Checksum for $file does not match, parsing\n";
+	  
+	  # Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
+	  # all parsed with the same parser
+	  $parser = 'UniProtParser' if ($parser =~ /UniProt/i);
+	}
+	else {
+	  
+	  print $file . " has zero length, skipping\n";
+	  
+	}
       }
     }
+    if($parse){
 
-    # compare checksums and parse/upload if necessary
-    # need to check file size as some .SPC files can be of zero length
-    print "HELLO: $dir/$file\n";
-    my $file_cs = md5sum("$dir/$file");
-    if (!defined $checksum || $checksum ne $file_cs) {
-
-      if (-s "$dir/$file") {
-
-	print "Checksum for $file does not match, parsing\n";
-
-	# Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
-	# all parsed with the same parser
-	$parser = 'UniProtParser' if ($parser =~ /UniProt/i);
-
-	print "Parsing $file with $parser\n";
+	print "Parsing ".join(' ',@new_file)." with $parser\n";
 	eval "require XrefParser::$parser";
 	my $new = "XrefParser::$parser"->new();
-	$new->run("$dir/$file", $source_id, $species_id);
+	$new->run("$dir/$new_file[0]", $source_id, $species_id);
 
 	# update AFTER processing in case of crash.
-	update_source($dbi, $source_url_id, $file_cs, $file);
+	update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
 
-      } else {
-
-	print $file . " has zero length, skipping\n";
-
-      }
-
-    } else {
-
-      print $file . " has not changed, skipping\n";
-
-    }
+      } 
+    
   }
 
   # remove last working directory
