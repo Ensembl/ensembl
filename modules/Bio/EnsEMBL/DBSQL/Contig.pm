@@ -270,6 +270,7 @@ sub get_all_SimilarityFeatures{
 	   print("Making new fset feature $fset\n");
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
+	   $out->analysis($analysis);
 	   $seen = $fset;
 	   push(@array,$out);
        }
