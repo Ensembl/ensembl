@@ -112,24 +112,26 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
 =cut
 
 sub new {
-    my ($class,$dbobj) = @_;
-
-    my $self = {};
-    bless $self,$class;
-
-    if( !defined $dbobj || !ref $dbobj ) {
-        throw("Don't have a db [$dbobj] for new adaptor");
-    }
-
+  my ($class,$dbobj) = @_;
+  
+  my $self = {};
+  bless $self,$class;
+  
+  if( !defined $dbobj || !ref $dbobj ) {
+    throw("Don't have a db [$dbobj] for new adaptor");
+  }
   if( ref($dbobj) =~ /DBAdaptor$/){
     $self->db($dbobj);
     $self->dbc($dbobj->dbc);
   }
+  elsif( ref($dbobj) =~ /DBConnection$/){
+    $self->dbc($dbobj);    
+  }
   else{
     throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
   }
-
-    return $self;
+  
+  return $self;
 }
 
 
