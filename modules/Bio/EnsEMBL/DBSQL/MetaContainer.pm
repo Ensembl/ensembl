@@ -88,7 +88,7 @@ sub create_tables {
   my $sth = $self->prepare( "drop table if exists meta" );
   $sth->execute();
 
-  my $sth = $self->prepare( "
+  $sth = $self->prepare( "
      CREATE TABLE meta (
         meta_id INT not null auto_increment,
         meta_key varchar( 40 ) not null,
