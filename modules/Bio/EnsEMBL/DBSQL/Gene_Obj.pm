@@ -236,7 +236,7 @@ sub get_geneids_by_hids{
     my $inlist = join(',',map "'$_'", @hids);
        $inlist = "($inlist)";
 
-   my $sth = $self->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
+   my $sth = $self->_db_obj->prepare("select transcript.gene from transcript as transcript, exon_transcript as exon_transcript, exon as exon, supporting_feature as supporting_feature where exon.id = supporting_feature.exon and exon_transcript.exon = exon.id and exon_transcript.transcript = transcript.id and supporting_feature.hid in $inlist");
 
    $sth->execute();
    my %gene;
@@ -281,12 +281,12 @@ sub get {
 
 =head2 get_array_supporting
 
-    Title   : get_Gene_array_supporting
-    Usage   : $obj->get_Gene_array_supporting($supporting,@geneid)
+    Title   : get_array_supporting
+    Usage   : $obj->get_array_supporting($supporting,@geneid)
     Function: Gets an array of genes, with transcripts and exons. If $supporting
            equal to 'evidence' the supporting evidence for each exon is also read
     from the supporting evidence table
-    Example : $obj->get_Gene_array_supporting ('evidence',@geneid)
+    Example : $obj->get_array_supporting ('evidence',@geneid)
     Returns : an array of gene objects
     Args    : 'evidence' and gene id array
 
@@ -324,7 +324,10 @@ sub get_array_supporting {
           , transl.seq_end, transl.end_exon
           , transl.id
           , gene.version
-          , tscript.version
+          , UNIX_TIMESTAMP(gene.created)
+	  , UNIX_TIMESTAMP(gene.modified)
+          , UNIX_TIMESTAMP(gene.stored)
+	  , tscript.version
           , exon.version
           , transl.version
           , con.clone
@@ -407,7 +410,7 @@ sub get_array_supporting {
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
-	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+	    $geneversion,$genecreated,$genemodified,$genestored,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
 
  	
 	if( ! defined $phase ) {
@@ -432,6 +435,9 @@ sub get_array_supporting {
 	    
 	    $gene->id                       ($geneid);
 	    $gene->version                  ($geneversion);
+	    $gene->created                  ($genecreated);
+	    $gene->modified                 ($genemodified);
+	    $gene->_stored                  ($genestored);
 	    $gene->add_cloneid_neighbourhood($cloneid);
 	    
 	    $current_gene_id = $geneid;
@@ -1425,7 +1431,8 @@ sub write_Translation{
 sub get_NewId {
     my ($self,$table,$stub) = @_;
 
-
+    $table || $self->throw("Need to provide a table name to get a new id!\n");
+    
     my $query = "select max(id) as id from $table";
 
     my $sth   = $self->_db_obj->prepare($query);
@@ -1433,13 +1440,13 @@ sub get_NewId {
     my $row   = $sth->fetchrow_hashref;
     my $id    = $row->{id};
 
-    print(STDERR "max id is $id\n");
-
+    #print(STDERR "max id is $id\n");
+    
     if ($id eq "") {
 	$id = $stub . "00000000000";
     }
     
-    print(STDERR "max id is $id\n");
+    #print(STDERR "max id is $id\n");
 
     if ($id =~ /$stub(\d+)$/) {
 	my $newid  = $1;
@@ -1453,7 +1460,7 @@ sub get_NewId {
 	    }
 	}
 	$newid = $stub . $newid;
-	print ("New id is $newid\n");
+	#print STDERR ("New id is $newid\n");
 	return $newid;
     } else {
 	$self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
