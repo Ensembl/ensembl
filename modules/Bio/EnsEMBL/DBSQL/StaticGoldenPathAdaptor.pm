@@ -1038,7 +1038,7 @@ sub is_golden_static_clone {
     FROM contig co, clone cl, static_golden_path p 
     WHERE cl.id = '$clone' 
       AND co.clone = cl.internal_id 
-      AND p.raw_id = c.internal_id";
+      AND p.raw_id = co.internal_id";
    
     my $sth = $self->dbobj->prepare($query);
 
