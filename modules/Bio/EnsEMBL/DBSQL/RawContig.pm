@@ -1370,7 +1370,7 @@ sub get_all_PredictionFeatures {
 sub get_all_ExternalFeatures{
    my ($self) = @_;
   
-   print STDERR "Getting all external features\n"; 
+   #print STDERR "Getting all external features\n"; 
 
    my @out;
    my $acc;
