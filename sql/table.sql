@@ -56,7 +56,7 @@ CREATE TABLE analysis (
 # Table structure for table 'chromosome'
 #
 CREATE TABLE chromosome (
-  chromosome_id     tinyint unsigned NOT NULL auto_increment,
+  chromosome_id     int unsigned NOT NULL auto_increment,
   name              varchar(40) NOT NULL,
   known_genes       int(11) NULL,
   unknown_genes     int(11) NULL,
@@ -201,7 +201,8 @@ CREATE TABLE exon_transcript (
                                           # the exon is the 5' most within this transcript
   
   PRIMARY KEY (exon_id,transcript_id,rank),
-  KEY transcript (transcript_id)
+  KEY transcript (transcript_id),
+  KEY exon ( exon_id )
 );
 
 
