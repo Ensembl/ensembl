@@ -1,7 +1,7 @@
 #!/usr/local/ensembl/bin/perl -w
 
 use strict;
-use constant QUEUENAME => "acarilong";	# queue name for bsub
+use constant QUEUENAME => "acari";	# queue name for bsub
 use constant CHUNK_SIZE => 40;		# transcripts per farm job
 use Bio::SeqIO;
 use Bio::EnsEMBL::Pipeline::GeneComparison::CdnaComparison;
