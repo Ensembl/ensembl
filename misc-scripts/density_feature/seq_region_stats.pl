@@ -1,6 +1,7 @@
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Lite::DBAdaptor;
 use Getopt::Long;
 
 my ( $host, $user, $pass, $port, $dbname  );
@@ -42,6 +43,10 @@ if( ! $seq_region_count ) {
   exit();
 }
 
+
+my $snps_present = lite_attach( $db );
+
+
 my $slice_adaptor = $db->get_SliceAdaptor();
 my $attrib_adaptor = $db->get_AttributeAdaptor();
 
@@ -53,7 +58,7 @@ foreach my $slice (@$top_slices) {
   my $num_genes        = 0;
   my $num_pseudo_genes = 0;
 
-  print "Processing seq_region ", $slice->seq_region_name(), "\n";
+  print STDERR "Processing seq_region ", $slice->seq_region_name(), "\n";
 
   my @genes = @{$slice->get_all_Genes()};
 
@@ -88,11 +93,20 @@ foreach my $slice (@$top_slices) {
      -VALUE => $num_pseudo_genes,
      -DESCRIPTION => 'Total Number of PseudoGenes');
 
+  if( $snps_present ) {
+    my $snps = $slice->get_all_SNPs();
+    push @attribs, Bio::EnsEMBL::Attribute->new
+      (-NAME => 'SNP Count',
+       -CODE => 'SNPCount',
+       -VALUE => scalar( @$snps ),
+       -DESCRIPTION => 'Total Number of SNPs');
+  }
+
   $attrib_adaptor->store_on_Slice($slice, \@attribs);
+#  print_chromo_stats([$slice]);
 }
 
 
-print_chromo_stats(\@chromosomes);
 
 sub print_chromo_stats {
   my $chromosomes = shift;
@@ -103,6 +117,42 @@ sub print_chromo_stats {
       print "  ", $attrib->name(), ": ", $attrib->value(), "\n";
     }
   }
+}
+
+
+#
+# tries to attach lite.
+#
+
+sub lite_attach {
+  my $db = shift;
+
+  my $core_db_name;
+  $core_db_name = $db->dbname();
+  if( $core_db_name !~ /_core_/ ) {
+    return 0;
+  }
+  #
+  # get a lost of all databases on that server
+  #
+  my $sth = $db->prepare( "show databases" );
+  $sth->execute();
+  my $all_db_names = $sth->fetchall_arrayref();
+  my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;
+  my $snp_db_name = $core_db_name;
+  $snp_db_name =~ s/_core_/_lite_/;
+  if( ! exists $all_db_names{ $snp_db_name } ) {
+    return 0;
+  }
+
+  my $snp_db = Bio::EnsEMBL::Lite::DBAdaptor->new
+    ( -host => $db->host(),
+      -user => $db->username(),
+      -pass => $db->password(),
+      -port => $db->port(),
+      -dbname => $snp_db_name );
+  $db->add_db_adaptor( "lite", $snp_db );
+  return 1;
 }
 
 
