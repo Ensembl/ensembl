@@ -35,6 +35,7 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
     # can throw an exception: Not on Same Chromosome
     @rawcontigs = $adaptor->fetch_RawContigs_between_RawContigs($start_rc,$end_rc);
 
+
 =head1 DESCRIPTION
 
 Describe the object here
@@ -165,11 +166,11 @@ sub convert_fpc_to_chromosome {
     my $sth = $self->dbobj->prepare("select chr_name,chr_start from static_golden_path where fpcctg_name = '$fpc' AND fpcctg_start = 1");
     $sth->execute;
     my ($chr,$startpos) = $sth->fetchrow_array;
-
-   	unless ($chr) {
-   		$self->throw("Could not find fpc contig $fpc in the database!");
-   	}
-	return ($chr,$start+$startpos,$end+$startpos);
+ 
+    if( !defined $chr ) {
+        $self->throw("Couldn't find fpc contig $fpc in the database with $type golden path");
+    }
+    return ($chr,$start+$startpos,$end+$startpos) ;
 }
 
 
@@ -298,30 +299,39 @@ sub fetch_VirtualContig_by_chr_start_end{
 sub fetch_VirtualContig_by_clone{
    my ($self,$clone,$size) = @_;
 
-   if( !defined $size ) {
-       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+   if( !defined $clone ) {
+       $self->throw("Must have clone to fetch VirtualContig by clone");
    }
+   if( !defined $size ) {$size=0;}
 
    my $type = $self->dbobj->static_golden_path_type();
 
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_end,st.chr_name 
+                                    from static_golden_path st,contig c where c.clone = '$clone' 
+                                    AND c.internal_id = st.raw_id AND st.type = '$type' 
+                                    ORDER BY st.fpcctg_start"
+				   );
    $sth->execute();
-   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
+ 
+   my ($contig,$start,$end,$chr_name); 
+   my $counter; 
+   my $first_start;
+   while ( my @row=$sth->fetchrow_array){
+       $counter++;
+       ($contig,$start,$end,$chr_name)=@row;
+       if ($counter==1){$first_start=$start;}      
+   }
+
+
+    
    if( !defined $contig ) {
        $self->throw("Clone is not on the golden path. Cannot build VC");
    }
+     
+       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$first_start-$size,$end+$size);
 
-
-   my $halfsize = int($size/2);
-   if( $start > $size/2 ) {    
-       print STDERR "Going to return a vc at $chr_name and $start";
-   
-       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
-   } else {
-       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
-   }
 }
 
 =head2 fetch_VirtualContig_by_contig
@@ -339,30 +349,91 @@ sub fetch_VirtualContig_by_clone{
 sub fetch_VirtualContig_by_contig{
    my ($self,$contigid,$size) = @_;
 
-   if( !defined $size ) {
-       $self->throw("Must have contig and size to fetch VirtualContig by contig");
+   if( !defined $contigid ) {
+       $self->throw("Must have contig id to fetch VirtualContig by contig");
    }
+   
+   if( !defined $size ) {$size=0;}
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.id = '$contigid' AND c.internal_id = st.raw_id AND st.type = '$type'");
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_end,st.chr_name 
+                                    from static_golden_path st,contig c where c.id = '$contigid' 
+                                    AND c.internal_id = st.raw_id AND st.type = '$type'"
+				   );
    $sth->execute();
-   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
 
    if( !defined $contig ) {
      $self->throw("Contig $contigid is not on the golden path of type $type");
    }
-
-   my $halfsize = int($size/2);
-   if( $start > $size/2 ) {       
-       print STDERR "Going to return a vc at $chr_name and $start";
-
-       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
-   } else {
-       print STDERR "Going to return a vc at $chr_name and $start near start point... hmmm...\n";
-       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
-   }
+   
+   return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$size,$end+$size);
+  
 }
+
+
+
+
+=head2 fetch_VirtualContig_by_gene
+
+ Title   : fetch_VirtualContig_by_gene
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('ENSG00000012123',40000);
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_VirtualContig_by_gene{
+   my ($self,$geneid,$size) = @_;
+
+   if( !defined $geneid ) {
+       $self->throw("Must have gene id to fetch VirtualContig by gene");
+   }
+   if( !defined $size ) {$size=0;}
+
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("select (e.seq_start+sgp.chr_start),(e.seq_end+sgp.chr_end),sgp.chr_name from exon e,
+                                    transcript tr,exon_transcript et,static_golden_path sgp where e.id=et.exon 
+                                    and et.transcript=tr.id and sgp.raw_id=e.contig and tr.gene = '$geneid';" 
+				   );
+   $sth->execute();
+
+
+   my ($start,$end,$chr_name); 
+   my @start;
+   my @end;
+   while ( my @row=$sth->fetchrow_array){
+       ($start,$end,$chr_name)=@row;
+
+       push @start,$start;
+       push @end,$end;     
+   }   
+   
+   my @start_sorted=sort @start;
+   my @end_sorted=sort @end;
+
+   my $start=pop @start_sorted;
+   my $end=shift @end_sorted;
+
+   if( !defined $start ) {
+       $self->throw("Gene is not on the golden path. Cannot build VC");
+   }
+     
+   return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$size,$end+$size);
+  
+}
+
+
+
+
+
+
 
 
 =head2 fetch_VirtualContig_by_fpc_name
