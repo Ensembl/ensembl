@@ -1057,15 +1057,25 @@ sub _got_overlaps {
     # The sequence has to be appropiately versioned otherwise this gets complicated
     # in the update scheme.
     
-    my %polarity_lut = (
-        'right2left'    => ['right',  1],
-        'right2right'   => ['right', -1],
-        'left2right'    => ['left',   1],
-        'left2left'     => ['left',  -1],
+    # The polarity look up tables in this array belong
+    # with the respective queries in the queries array below.
+    my @polarity_lut = (
+            {
+              'right2left'   => ['right',  1],
+              'right2right'  => ['right', -1],
+              'left2right'   => ['left',   1],
+              'left2left'    => ['left',  -1],
+            },
+            {
+              'right2left'   => ['left',   1],
+              'right2right'  => ['right', -1],
+              'left2right'   => ['right',  1],
+              'left2left'    => ['left',  -1],
+            },
         );
 
     my @queries = (
-       "SELECT c.id sister_id
+       q{SELECT c.id sister_id
           , o.contig_b_position sister_pos
           , o.contig_a_position self_pos
           , o.overlap_type
@@ -1074,9 +1084,9 @@ sub _got_overlaps {
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_b_id
-          AND dna_a_id = ?",
+          AND dna_a_id = ?},
 
-       "SELECT c.id sister_id
+       q{SELECT c.id sister_id
           , o.contig_a_position sister_pos
           , o.contig_b_position self_pos
           , o.overlap_type
@@ -1085,7 +1095,8 @@ sub _got_overlaps {
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_a_id
-          AND dna_b_id = ?");
+          AND dna_b_id = ?},
+        );
 
     sub _load_overlaps {
         my ($self,@args) = @_;
@@ -1097,9 +1108,11 @@ sub _got_overlaps {
         # Statements like:
         #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
         # seem to make queries inordinately slow.
-        foreach my $query (@queries) {
+        foreach my $i (0,1) {
+            my $query_str = $queries[$i];
+            my $pol_lut = $polarity_lut[$i];
 
-            my $sth = $self->dbobj->prepare($query);
+            my $sth = $self->dbobj->prepare($query_str);
             $sth->execute($id);
 
             while (my $row = $sth->fetchrow_arrayref) {
@@ -1119,7 +1132,7 @@ sub _got_overlaps {
                 
                 # Get the overlap end, and sister polarity
                 # (Will cause an exception if $type is 
-                my( $end, $sister_pol ) = @{$polarity_lut{$type}};
+                my( $end, $sister_pol ) = @{$pol_lut->{$type}};
                 
                 # Make a new ContigOverlapHelper object
                 my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
