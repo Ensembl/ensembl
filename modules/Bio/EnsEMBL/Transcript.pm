@@ -177,6 +177,30 @@ sub dbID {
 
 }
 
+
+=head2 external_name
+
+ Title   : external_name
+ Usage   : $ext_name = $obj->external_name();
+ Function: external_name if available
+ Example : 
+ Returns : the external name of this transcript
+ Args    : new external name (optional)
+
+=cut
+
+sub external_name {
+  my ($self, $arg ) = @_;
+
+  if( defined $arg ) {
+    $self->{'_external_name'} = $arg;
+  }
+
+  return $self->{'_external_name'};
+}
+
+
+
 sub adaptor {
    my $self = shift;
    
@@ -293,15 +317,6 @@ sub get_all_Exons {
    return @{$self->{'_trans_exon_array'}};
 }
 
-
-sub each_Exon{
-   my ($self) = @_;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l each_Exon is deprecated. Please use get_all_Exons");
-
-   return @{$self->{'_trans_exon_array'}};
-}
 
 =head2 get_Exon_by_dbID
 
@@ -937,26 +952,7 @@ sub dna_seq {
   return $seq;
 }
 
-=head2 contig_dna
 
-  Title   : contig_dna
-  Usage   : $tran->contig_dna($dna);
-   Function: Sets the dna sequence of the contig
-  Returns : Bio::Seq
-  Args    : Bio::Seq
-
-=cut
-
-# PL: why is this here? Is this OK when using VirtualContigs? 
-sub contig_dna {
-  my ($self,$dna) = @_;
-
-  if (defined($dna)) {
-    $self->{_contig_dna} = $dna;
-  }
-
-  return $self->{_contig_dna};
-}
 
 =head2 sort
 
@@ -1456,17 +1452,6 @@ sub modified{
 
 }
 
-# sneaky web only function...
-sub gene_is_known {
-    my ($self,$value) = @_;
-    
-    if( defined $value ) {
-         $self->{'_web_hack_gene_is_known'} = $value;
-    }
-    
-    return $self->{'_web_hack_gene_is_known'};
-}
-
 =head2 rna_pos
 
   Title   : rna_pos
@@ -1593,113 +1578,6 @@ sub description{
 
 }
 
-
-
-=head2 each_Exon_in_context
-
- Title   : each_Exon_in_context
- Usage   : @exons = $t->each_Exon_in_context($vc->id)
- Function: returns exons with this particular context (aka seqname)
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub each_Exon_in_context{
-   my ($self,$context) = @_;
-
-   my @exons;
-
-   foreach my $exon ( $self->get_all_Exons ) {
-       if( $exon->seqname eq $context ) {
-	   push(@exons,$exon);
-       }
-   }
-
-   return @exons;
-}
-
-=head2 is_start_exon_in_context
-
- Title   : is_start_exon_in_context
- Usage   : if( $t->is_start_exon_in_context($vc->id) ==0 ) {
-               # transcript runs off this VC
- Function: returns 1 or 0 depending whether the start exon is 
-           in this context or not
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub is_start_exon_in_context{
-   my ($self,$context) = @_;
-
-   if( $self->start_exon->seqname eq $context ) {
-       return 1;
-   } else {
-       return 0;
-   }
-
-}
-
-
-=head2 is_end_exon_in_context
-
- Title   : is_end_exon_in_context
- Usage   : if( $t->is_end_exon_in_context($vc->id) ==0 ) {
-               # transcript runs off this VC
- Function: returns 1 or 0 depending whether the end exon is 
-           in this context or not
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub is_end_exon_in_context{
-   my ($self,$context) = @_;
-
-   if( $self->end_exon->seqname eq $context ) {
-       return 1;
-   } else {
-       return 0;
-   }
-
-}
-
-
-=head2 strand_in_context
-
- Title   : strand_in_context
- Usage   : $strand = $t->strand_in_context($vc->id)
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub strand_in_context{
-   my ($self,$context) = @_;
-
-   my @exons = $self->each_Exon_in_context($context);
-
-   if( scalar(@exons) == 0 ) {
-	print STDERR "TRANSCRIPT: ", $self->stable_id,"\n";
-
-       $self->warn("There are no exons in this context. Bad to call this - returning strand 0 from strand_in_context on Transcript");
-       return 0;
-   }
-
-   return $exons[0]->strand;
-}
 
 =head2 Stable id 
 
@@ -1911,5 +1789,173 @@ sub transform {
 }
 
 
+
+##########################################################
+#
+# DEPRECATED METHODS FOLLOW
+#
+##########################################################
+
+
+=head2 contig_dna
+
+  Title   : DEPRECATED contig_dna
+  Usage   : DEPRECATED $tran->contig_dna($dna);
+  Function: DEPRECATED Sets the dna sequence of the contig
+  Returns : DEPRECATED Bio::Seq
+  Args    : DEPRECATED Bio::Seq
+
+=cut
+
+# PL: why is this here? Is this OK when using VirtualContigs? 
+sub contig_dna {
+  my ($self,$dna) = @_;
+
+  $self->warn("Transcript->contig_dna() is deprecated. \n");
+
+  if (defined($dna)) {
+    $self->{_contig_dna} = $dna;
+  }
+
+  return $self->{_contig_dna};
+}
+
+
+# sneaky web only function...
+sub gene_is_known {
+    my ($self,$value) = @_;
+  
+    $self->warn("Transcript->gene_is_known is deprecated. \n");
+  
+    if( defined $value ) {
+         $self->{'_web_hack_gene_is_known'} = $value;
+    }
+    
+    return $self->{'_web_hack_gene_is_known'};
+}
+
+sub each_Exon{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l each_Exon is deprecated. Please use get_all_Exons");
+
+   return @{$self->{'_trans_exon_array'}};
+}
+
+
+
+=head2 each_Exon_in_context
+
+ Title   : each_Exon_in_context
+ Usage   : @exons = $t->each_Exon_in_context($vc->id)
+ Function: returns exons with this particular context (aka seqname)
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_Exon_in_context{
+   my ($self,$context) = @_;
+
+  $self->warn("Transcript->each_Exon_in_context is deprecated");
+
+   my @exons;
+
+   foreach my $exon ( $self->get_all_Exons ) {
+       if( $exon->seqname eq $context ) {
+	   push(@exons,$exon);
+       }
+   }
+
+   return @exons;
+}
+
+=head2 is_start_exon_in_context
+
+ Title   : is_start_exon_in_context
+ Usage   : if( $t->is_start_exon_in_context($vc->id) ==0 ) {
+               # transcript runs off this VC
+ Function: returns 1 or 0 depending whether the start exon is 
+           in this context or not
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_start_exon_in_context{
+   my ($self,$context) = @_;
+
+  $self->warn("Transcript->is_start_exon_in_context is deprecated");
+
+   if( $self->start_exon->seqname eq $context ) {
+       return 1;
+   } else {
+       return 0;
+   }
+
+}
+
+
+=head2 is_end_exon_in_context
+
+ Title   : is_end_exon_in_context
+ Usage   : if( $t->is_end_exon_in_context($vc->id) ==0 ) {
+               # transcript runs off this VC
+ Function: returns 1 or 0 depending whether the end exon is 
+           in this context or not
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_end_exon_in_context{
+   my ($self,$context) = @_;
+
+  $self->warn("Transcript->is_end_Exon_in_context is deprecated");
+
+   if( $self->end_exon->seqname eq $context ) {
+       return 1;
+   } else {
+       return 0;
+   }
+
+}
+
+=head2 strand_in_context
+
+ Title   : strand_in_context
+ Usage   : $strand = $t->strand_in_context($vc->id)
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub strand_in_context{
+   my ($self,$context) = @_;
+
+  $self->warn("Transcript->strand_in_context is deprecated");
+
+   my @exons = $self->each_Exon_in_context($context);
+
+   if( scalar(@exons) == 0 ) {
+	print STDERR "TRANSCRIPT: ", $self->stable_id,"\n";
+
+       $self->warn("There are no exons in this context. Bad to call this - returning strand 0 from strand_in_context on Transcript");
+       return 0;
+   }
+
+   return $exons[0]->strand;
+}
 
 1;

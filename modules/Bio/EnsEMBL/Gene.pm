@@ -88,7 +88,7 @@ sub start {
 
     # calculate the start of this gene
     $self->{start} = -1;
-    foreach my $exon ($self->get_all_exons()) {
+    foreach my $exon ($self->get_all_Exons()) {
       
       unless(defined $self->{'contig'} && 
              $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
@@ -132,7 +132,7 @@ sub end {
 
     # calculate the end of this gene
     $self->{end} = -1;
-    foreach my $exon ($self->get_all_exons()) {
+    foreach my $exon ($self->get_all_Exons()) {
       
       unless(defined $self->{'contig'} && 
              $exon->{'contig'}->isa('Bio::EnsEMBL::Slice')) {
@@ -153,10 +153,6 @@ sub end {
 
   return $self->{end};
 }
-
-
-
-
 
 
 
@@ -234,7 +230,7 @@ sub analysis {
 =head2 dbID
 
  Title   : dbID
- Usage   :
+ Usage   : $id = $obj->dbID();
  Function: internal db id if available
  Example :
  Returns : 
@@ -250,6 +246,28 @@ sub dbID {
       $self->{'_dbID'} = $arg ;
    }
    return $self->{'_dbID'};
+}
+
+
+=head2 external_name
+
+ Title   : external_name
+ Usage   : $ext_name = $obj->external_name();
+ Function: external_name if available
+ Example : 
+ Returns : the external name of this gene
+ Args    : new external name (optional)
+
+=cut
+
+sub external_name {
+  my ($self, $arg ) = @_;
+
+  if( defined $arg ) {
+    $self->{'_external_name'} = $arg;
+  }
+
+  return $self->{'_external_name'};
 }
 
 
@@ -328,27 +346,6 @@ sub add_DBLink{
 }
 
 
-
-
-sub each_unique_Exon{
-   my ($self) = @_;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l each_unique_Exon deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
-
-   return $self->get_all_Exons;
-}
-
-
-sub all_Exon_objects{
-
-   my ($self) = @_;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l all_Exon_objects deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
-
-   return $self->get_all_Exons;
-}
 
 
 
@@ -475,58 +472,25 @@ sub add_Transcript{
    push(@{$self->{'_transcript_array'}},$trans);
 }
 
-=head2 each_Transcript
 
- Title   : each_Transcript
- Usage   : foreach $trans ( $gene->each_Transcript)
+=head2 get_all_Transcripts
+
+ Title   : get_all_Transcripts
+ Usage   : foreach $trans ( $gene->get_all_Transcripts)
  Function:
  Example :
  Returns : An array of Transcript objects
  Args    :
 
-
 =cut
 
-sub each_Transcript {
-   my ($self) = @_;
-   my @sub;
-   my @ret;
+sub get_all_Transcripts {
+  my ($self) = @_;
 
-   return @{$self->{'_transcript_array'}};   
-
+  return @{$self->{'_transcript_array'}};
 }
 
-=head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Returns : value of id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub id{
-  my $self = shift;
-  my $value = shift;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
-
-  if( defined $value ) {
-    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
-    return;
-  }
-
-
-   if( defined $self->stable_id ) {
-     return $self->stable_id();
-   } else {
-     return $self->dbID;
-   }
-
-}
 
 =head2 Stable id 
 
@@ -790,6 +754,90 @@ sub temporary_id {
     }
     return $obj->{'temporary_id'};
 
+}
+
+
+
+
+
+#############################
+#
+# DEPRECATED METHODS FOLLOW
+#
+#############################
+
+=head2 each_Transcript
+
+ Title   : each_Transcript
+ Usage   : DEPRECATED foreach $trans ( $gene->each_Transcript)
+ Function: DEPRECATED
+ Example : DEPRECATED
+ Returns : DEPRECATED An array of Transcript objects
+ Args    : DEPRECATED
+
+
+=cut
+
+sub each_Transcript {
+   my ($self) = @_;
+
+   $self->warn("Gene->get_all_Transcripts is deprecated.  " .
+	       "Use get_all_Transcripts().\n");
+   
+   return @$self->get_all_Transcripts;   
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : DEPRECATED $obj->id($newval)
+ Function: DEPRECATED
+ Returns : DEPRECATED value of id
+ Args    : DEPRECATED newvalue (optional)
+
+
+=cut
+
+sub id{
+  my $self = shift;
+  my $value = shift;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
+
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
+
+
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
+   }
+
+}
+
+
+sub each_unique_Exon{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l each_unique_Exon deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
+
+   return $self->get_all_Exons;
+}
+
+
+sub all_Exon_objects{
+
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l all_Exon_objects deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
+
+   return $self->get_all_Exons;
 }
 
 
