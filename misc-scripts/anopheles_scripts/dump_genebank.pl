@@ -58,19 +58,15 @@ while(<MAP>) {
 
 close(MAP);
 
-#Get all of the scaffolds
-#my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
-#my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name";
-
-my $query1 = "select distinct(c.name), a.superctg_ori from clone c, assembly a where a.superctg_name = c.name";
+my $query1 = "select distinct(c.name), a.superctg_ori from clone c, assembly a where a.superctg_name = c.name and c.name = 'AAAB01008849'";
 
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
 
 while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
 
-    open (OUT,">/acari/work1/mongin/test_dump/tmp1/$clone_name.tbl") || die;
-    open (SEQ,">/acari/work1/mongin/test_dump/tmp1/$clone_name.fsa") || die;
+    open (OUT,">/acari/work1/mongin/test_dump/tmp2/$clone_name.tbl") || die;
+    open (SEQ,">/acari/work1/mongin/test_dump/tmp2/$clone_name.fsa") || die;
 
     my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
     
@@ -87,16 +83,28 @@ while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
     my $length_clone = length($clone_seq);
 
     my $old_clone_name = $scafmap{$clone_name};
-    
-    print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
-    
+
+    if ($chr_name !~ /UNKN/) {
+	print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    }
+    else {
+	print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs]\n$clone_seq\n";
+    }
     print OUT ">Feature gnl|WGS:AAAB|$old_clone_name|gb|$clone_name\n";
     
     my @genes = @{$slice->get_all_Genes};
     
+   
+
     foreach my $gene(@genes) {
-	if (($gene->strand == 1 && $gene->start >0 && $gene->end <= $length_clone) || ($gene->strand == -1 && $gene->start <= $length_clone && $gene->end > 0)) {
-	
+
+	 print STDERR "ID: ".$gene->stable_id."\tSTRAND: ".$gene->strand."\tSTART: ".$gene->start."\tEND: ".$gene->end."\n";
+
+	if (($gene->start < 0) || ($gene->start > $length_clone) || ($gene->end < 0) || ($gene->end > $length_clone)) {
+	    next;
+	}
+	 
+	 else {
 	    my $gene_id = $gene->dbID;
 	    
 	    my @transcripts = @{$gene->get_all_Transcripts};
@@ -192,8 +200,14 @@ sub checks {
 	my $tr_dbID = $tr->dbID;
 	my $c_start = $tr->cdna_coding_start;
 	my $c_end = $tr->cdna_coding_end;
-	my $spl_seq = $tr->spliced_seq;
-	
+	my $spl_seq;
+	#eval {
+	$spl_seq = $tr->spliced_seq;
+	 #   };
+	#if ($@){
+	#    next;
+	#}
+
 	my $tl_start = $tr->translation->start;
 	my $tl_end = $tr->translation->end;
 
@@ -596,6 +610,9 @@ sub print_translation_coordinates {
 	print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
 	print OUT "\t\t\tprot_desc\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
     }
+			   if ((!defined $cel_id)&&(!defined $ebi_id)) {
+			       print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$translation_name\n";
+			   }
     if ($symbol) {
 	print OUT "\t\t\tgene\t$symbol\n";
     }
@@ -621,7 +638,7 @@ sub fetch_2update {
 
 #    my $query1 = "select ts.stable_id from transcript_stable_id ts, xref x, external_db e, object_xref o, transcript t where o.ensembl_id = t.translation_id and t.transcript_id = ts.transcript_id and o.xref_id = x.xref_id and x.external_db_id = e.external_db_id and e.db_name = 'anopheles_paper' and o.ensembl_id = $tr_dbID";
 
-    my $query1 = "select tr.stable_id from transcript_stable_id tr, transcript t, translation_stable_id ts where ts.stable_id = '$tr_dbID' and ts.translation_id = t.translation_id and t.transcript_id = tr.transcript_id";
+    my $query1 = "select tr.stable_id from transcript_stable_id tr, transcript t, translation_stable_id ts where ts.translation_id = '$tr_dbID' and ts.translation_id = t.translation_id and t.transcript_id = tr.transcript_id";
 
     my $sth1 = $db->prepare($query1);
     $sth1->execute();
@@ -631,7 +648,8 @@ sub fetch_2update {
     
 
     my $new_ebi_id = $ebimap{$transcript_id};;
-
+    
+    
     #if($ebi_id) {
 #	my ($nid) = $ebi_id =~ /(\d+)$/;
 #	$new_ebi_id = "ebiP".int($nid);
