@@ -122,6 +122,9 @@ sub fetch_max_length_by_CoordSystem_feature_type {
                The coordinate system to associate with a feature table
   Arg [2]    : string $table - the name of the table in which features of
                a given coordinate system will be stored in
+  Arg [3]    : int $length
+               This length is used to update the max_length in the database
+               and the internal cache. 
   Example    : $csa->add_feature_table($chr_coord_system, 'gene');
   Description: This function tells the coordinate system adaptor that
                features from a specified table will be stored in a certain
@@ -138,6 +141,7 @@ sub add_feature_type {
   my $self = shift;
   my $cs   = shift;
   my $table = lc(shift);
+  my $length = shift;
 
   if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
     throw('CoordSystem argument is required.');
@@ -151,22 +155,35 @@ sub add_feature_type {
 
   my ($exists) = grep {$cs->dbID() == $_} @$cs_ids;
 
-  #do not do anything if this feature table is already associated with the
-  #coord system
-  return if($exists);
+  if( $exists ) {
+    if( $self->{'_max_len_cache'}->{$cs->dbID()}->{$table}
+	< $length ) {
+      my $sth = $self->prepare('UPDATE meta_coord ' .
+			       "SET max_length = $length " .
+			       'WHERE coord_system_id = ? ' .
+			       'AND table_name = ? ' .
+			       "AND max_length<$length " );
+      $sth->execute( $cs->dbID(), $table );
+      $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
+    }
+    return;
+  }
 
   #store the new tablename -> coord system relationship in the db
   #ignore failures b/c during the pipeline multiple processes may try
   #to update this table and only the first will be successful
   my $sth = $self->prepare('INSERT IGNORE INTO meta_coord ' .
                               'SET coord_system_id = ?, ' .
-                                  'table_name = ?');
+                                  'table_name = ?, ' .
+			   'max_length = ? ' 
+			  );
 
-  $sth->execute($cs->dbID, $table);
+  $sth->execute($cs->dbID, $table, $length );
 
   #update the internal cache
   $self->{'_feature_cache'}->{$table} ||= [];
   push @{$self->{'_feature_cache'}->{$table}}, $cs->dbID();
+  $self->{'_max_len_cache'}->{$cs->dbID()}->{$table} = $length;
 
   return;
 }
