@@ -402,6 +402,30 @@ $clone_name = 'AL031658';
 $slice = $slice_adaptor->fetch_by_region(undef, $clone_name);
 ok($slice->seq_region_name =~ /$clone_name\.\d+/);
 
+
+# test that with multiple sequence regions with the same name, the
+# highest (lowest-numbered) ranked comes out first
+$multi->hide('core', 'seq_region');
+
+my $sth = $db->prepare(qq{INSERT INTO seq_region (coord_system_id, name,
+                                                  length)
+                SELECT cs.coord_system_id, 'TESTREGION', 1000000
+                FROM coord_system cs
+                WHERE cs.name in ('supercontig', 'chromosome')});
+
+$sth->execute();
+$sth->finish();
+
+$slice = $slice_adaptor->fetch_by_region('toplevel', 'TESTREGION');
+
+ok($slice->seq_region_name() eq 'TESTREGION');
+ok($slice->coord_system()->name() eq 'chromosome');
+
+
+$multi->restore('core', 'seq_region');
+
+
+
 sub print_slices {
   my $slices = shift;
   foreach my $slice (@$slices) {
