@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use DBI;
 
+
 package SeqStoreConverter::BasicConverter;
 
 ###############################################################################
@@ -59,11 +60,10 @@ sub new {
   system ($cmd);
 
   if ($vega_schema) {
-
-	  $self->debug("Adding vega tables for $target");
-	  die "Cannot open vega creation script" if (! -e $vega_schema);
-	  my $cmd = "mysql -u $user -p$pass -P $port -h $host $target < $vega_schema";
-	  system ($cmd);
+      $self->debug("Adding vega tables for $target");
+      die "Cannot open vega creation script" if (! -e $vega_schema);
+      my $cmd = "mysql -u $user -p$pass -P $port -h $host $target < $vega_schema";
+      system ($cmd);
   }
 
   $self->debug("Creating temporary tables");
@@ -577,7 +577,6 @@ sub create_coord_systems {
 }
 
 
-
 #
 # populates the contents of the meta_coord table
 # must be executed after all of the feature tables in the target database
@@ -1026,6 +1025,42 @@ sub transfer_stable_ids {
   $self->copy_tables
     ("stable_id_event","mapping_session","transcript_stable_id",
      "translation_stable_id","gene_archive","peptide_archive");
+
+  return;
+}
+
+sub transfer_vega_stable_ids {
+  my $self = shift;
+
+  my $source = $self->source();
+  my $target = $self->target();
+  my $dbh    = $self->dbh();
+
+  $self->debug("Building vega_stable id tables");
+
+# Copy the stable id tables
+
+  # add blank columns for created and modified dates for transcript and translations
+
+  $self->debug("Copying transcript_stable_id");
+  $dbh->do
+    ("INSERT INTO $target.transcript_stable_id " .
+     " (transcript_id, stable_id, version) " .
+     "SELECT * " .
+     "FROM $source.transcript_stable_id" );
+
+  $self->debug("Copying translation_stable_id");
+  $dbh->do
+    ("INSERT INTO $target.translation_stable_id " .
+     " (translation_id, stable_id, version) " .
+     "SELECT * " .
+     "FROM $source.translation_stable_id" );
+
+  # copy all other tables
+
+  $self->copy_tables
+    ("gene_stable_id","exon_stable_id","stable_id_event",
+     "mapping_session","gene_archive","peptide_archive");
 
   return;
 }

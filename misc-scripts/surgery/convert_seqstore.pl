@@ -44,19 +44,19 @@ while( my $line = <FILE> ) {
 
   my $converter;
   if ($vega_schema) {
-	$species = "vega::".$species;
-	eval "require SeqStoreConverter::$species";
-	if($@) {
+      $species = "vega::".$species;
+      eval "require SeqStoreConverter::$species";
+      if($@) {
 	  warn("Could not require conversion module SeqStoreConverter::$species\n" .
-		   "Using SeqStoreConverter::BasicConverter instead:\n$@");
+	       "Using SeqStoreConverter::BasicConverter instead:\n$@");
 	  require SeqStoreConverter::BasicConverter;
 	  $species = "BasicConverter";
-    }
-	else {
+      }
+      else {
 	  warn "Using conversion module SeqStoreConverter::$species\n";
-    }
-   }
-
+      }
+  }
+  
   else {
 	eval "require SeqStoreConverter::$species";
 	if($@) {
@@ -92,13 +92,17 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_genes();
   $converter->transfer_prediction_transcripts();
   $converter->transfer_features();
-  $converter->transfer_stable_ids();
+  if ($vega_schema) {
+      $converter->transfer_vega_stable_ids();
+  } else {
+      $converter->transfer_stable_ids();
+  }
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
   $converter->create_meta_coord();
   if ($vega_schema) {
-    $converter->update_clone_info();
-    $converter->remove_supercontigs();
+      $converter->update_clone_info();
+      $converter->remove_supercontigs();
   }
 }
 
