@@ -80,8 +80,8 @@ ok ( $tr->external_name eq "MAPRE1");
 debug ( "External transcript dbname: " . $tr->external_db );
 ok ( $tr->external_db eq 'HUGO' );
 
-debug ( "Display_xref_id: " . $tr->display_xref );
-ok ( $tr->display_xref == 97759 );
+debug ( "Display_xref_id: " . $tr->display_xref->dbID() );
+ok ( $tr->display_xref->dbID() == 97759 );
 ok( test_getter_setter( $tr, "display_xref", 42 ));
 
 ok( test_getter_setter( $tr, "dbID", 100000 ));
@@ -175,13 +175,14 @@ $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 $ta->update($tr);
 
 my $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
-ok ( $up_tr->display_xref == 97759 );
+ok ( $up_tr->display_xref->dbID() == 97759 );
 
+my $dbentryAdaptor = $db->get_DBEntryAdaptor();
 
-$tr->display_xref(42);
+$tr->display_xref($dbentryAdaptor->fetch_by_dbID( 614 ));
 $ta->update($tr);
 
 $up_tr = $ta->fetch_by_stable_id( "ENST00000217347" );
-ok ( $up_tr->display_xref == 42 );
+ok ( $up_tr->display_xref->dbID() == 614 );
 
 

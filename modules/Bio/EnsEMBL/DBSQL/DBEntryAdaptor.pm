@@ -305,6 +305,46 @@ sub store {
 
 
 
+
+=head2 exists
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe
+  Example    : if($dbID = $db_entry_adaptor->exists($dbe)) { do stuff; }
+  Description: Returns the db id of this DBEntry if it exists in this database
+               otherwise returns undef.  Exists is defined as an entry with 
+               the same external_db and display_id
+  Returntype : int
+  Exceptions : thrown on incorrect args
+  Caller     : GeneAdaptor::store, TranscriptAdaptor::store
+
+=cut
+
+sub exists {
+  my $self = shift;
+  my $dbe = shift;
+
+  unless($dbe && ref $dbe && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    $self->throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
+  }
+  
+  my $sth = $self->prepare('SELECT x.xref_id 
+                            FROM   xref x, external_db xdb
+                            WHERE  x.external_db_id = xdb.external_db_id
+                            AND    x.display_label = ? 
+                            AND    xdb.db_name = ?');
+
+  $sth->execute($dbe->display_id, $dbe->external_db);
+
+  my ($dbID) = $sth->fetchrow_array;
+
+  $sth->finish;
+
+  return $dbID;
+}
+
+
+
+
 =head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 

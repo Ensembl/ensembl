@@ -391,16 +391,20 @@ sub external_name {
   my ($self, $ext_name) = @_;
 
   if(defined $ext_name) { 
-    $self->{'_ext_name'} = $ext_name;
+    return ( $self->{'_ext_name'} = $ext_name );
   } 
 
   if( exists $self->{'_ext_name'} ) {
     return $self->{'_ext_name'};
   }
 
-  $self->{'_ext_name'} = $self->adaptor->get_external_name($self->dbID);
-  return $self->{'_ext_name'};
+  my $display_xref = $self->display_xref();
 
+  if( defined $display_xref ) {
+    return $display_xref->display_id()
+  } else {
+    return undef;
+  }
 }
 
 
@@ -417,19 +421,23 @@ sub external_name {
 =cut
 
 sub external_db {
-  my ($self, $ext_dbname) = @_;
+  my ( $self, $ext_dbname ) = @_;
 
   if(defined $ext_dbname) { 
-    $self->{'_ext_dbname'} = $ext_dbname;
+    return ( $self->{'_ext_dbname'} = $ext_dbname );
   } 
 
   if( exists $self->{'_ext_dbname'} ) {
     return $self->{'_ext_dbname'};
   }
 
-  $self->{'_ext_dbname'} = $self->adaptor->get_external_dbname($self->dbID);
-  return $self->{'_ext_dbname'};
+  my $display_xref = $self->display_xref();
 
+  if( defined $display_xref ) {
+    return $display_xref->dbname()
+  } else {
+    return undef;
+  }
 }
 
 
@@ -925,20 +933,16 @@ sub species {
 
 =cut
 
-sub display_xref{
+sub display_xref {
 
-    my ($self,$value) = @_;
-    
-    if( defined $value ) {
-      $self->{'display_xref'} = $value;
-      return;
-    }
-
-    if( exists $self->{'display_xref'} ) {
+    my $self = shift;
+    if( @_ ) {
+      $self->{'display_xref'} = shift;
+    } elsif( exists $self->{'display_xref'} ) {
       return $self->{'display_xref'};
-    }
-
-    $self->{'display_xref'} = $self->adaptor->get_display_xref_id($self->dbID);
+    } elsif ( defined $self->adaptor() ) {
+      $self->{'display_xref'} = $self->adaptor->get_display_xref( $self );
+    } 
 
     return $self->{'display_xref'};
 }

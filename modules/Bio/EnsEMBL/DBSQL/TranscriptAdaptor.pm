@@ -202,13 +202,13 @@ sub store {
    # ok - now load this line in
    my $tst = $self->prepare("
         insert into transcript ( gene_id, translation_id, exon_count, display_xref_id )
-        values ( ?, ?, ?, ?)
+        values ( ?, ?, ?, 0)
         ");
 
    if( defined $translation ) {
-     $tst->execute( $gene_dbID, $translation->dbID(), $exon_count, $xref_id );
+     $tst->execute( $gene_dbID, $translation->dbID(), $exon_count );
    } else {
-     $tst->execute( $gene_dbID, 0, $exon_count, $xref_id );
+     $tst->execute( $gene_dbID, 0, $exon_count );
    }
 
    my $transc_dbID = $tst->{'mysql_insertid'};
@@ -218,7 +218,22 @@ sub store {
 
    foreach my $dbl ( @{$transcript->get_all_DBLinks} ) {
      $dbEntryAdaptor->store( $dbl, $transc_dbID, "Transcript" );
+
    }
+
+   #
+   # Update transcript to point to display xref if it is set 
+   #
+   if(my $dxref = $transcript->display_xref) {
+     if(my $dxref_id = $dbEntryAdaptor->exists($dxref)) {
+       $self->prepare( "update transcript set display_xref_id = ".
+		   $dxref_id . " where transcript_id = ".$transc_dbID);
+       $self->execute();
+       $dxref->dbID($dxref_id);
+       $dxref->adaptor($dbEntryAdaptor);
+     }
+   }
+
 
    my $etst = $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank) values (?,?,?)");
    my $rank = 1;
@@ -374,87 +389,9 @@ sub remove {
 
 
 
-=head2 get_external_name
-
-  Arg [1]    : int $dbID
-               the database identifier of the transcript whose external name 
-               is sought
-  Example    : $external_name = $transcript_adaptor->get_external_name(42);
-  Description: Retrieves the external name for a transcript.  This is implemented
-               by joining across the xref and transcript tables, using the 
-               display_xref_id column.
-  Returntype : string
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
-
-=cut
-
-sub get_external_name {
-  my ($self, $dbID) = @_;
-
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
-  }
-
-  my $sth = $self->prepare("SELECT x.display_label 
-                            FROM   transcript t, 
-                                   xref x 
-                            WHERE  t.transcript_id = ?
-                              AND  t.display_xref_id = x.xref_id
-                           ");
-  $sth->execute($dbID);
-
-  my ($xref) = $sth->fetchrow_array();
-  if( !defined $xref ) {
-    return undef;
-  }
-
-  return $xref;
-}
 
 
-=head2 get_external_dbname
-
-  Arg [1]    : int $dbID
-               the database identifier of the transcript for which the name of
-               external db from which its external name is derived.
-  Example    : $external_dbname = $transcript_adaptor->get_external_dbname(42);
-  Description: Retrieves the external db name for a transcript from which its external
-               name is derived..  This is implemented by joining across the xref, 
-               transcript and external_db tables, using the display_xref_id column.
-  Returntype : string
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
-
-=cut
-
-sub get_external_dbname {
-  my ($self, $dbID) = @_;
-
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
-  }
-
-  my $sth = $self->prepare("SELECT e.db_name 
-                            FROM   transcript t, 
-                                   xref x, 
-                                   external_db e
-                            WHERE  t.transcript_id = ?
-                              AND  t.display_xref_id = x.xref_id
-                              AND  x.external_db_id = e.external_db_id
-                           ");
-  $sth->execute($dbID);
-
-  my ($db_name) = $sth->fetchrow_array();
-  if( !defined $db_name ) {
-    return undef;
-  }
-
-  return $db_name;
-}
-
-
-=head2 get_display_xref_id
+=head2 get_display_xref
 
   Arg [1]    : int $dbID
                the database identifier of the transcript for which the name 
@@ -467,25 +404,40 @@ sub get_external_dbname {
 
 =cut
 
-sub get_display_xref_id {
-  my ($self, $dbID) = @_;
+sub get_display_xref {
+  my ($self, $transcript) = @_;
 
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
+  if( !defined $transcript ) {
+      $self->throw("Must call with a Transcript object");
   }
 
-  my $sth = $self->prepare("SELECT display_xref_id 
-                            FROM   transcript 
-                            WHERE  transcript_id = ?
+  my $sth = $self->prepare("SELECT e.db_name,
+                                   x.display_label,
+                                   x.xref_id
+                            FROM   transcript t, 
+                                   xref x, 
+                                   external_db e
+                            WHERE  t.transcript_id = ?
+                              AND  t.display_xref_id = x.xref_id
+                              AND  x.external_db_id = e.external_db_id
                            ");
-  $sth->execute($dbID);
+  $sth->execute( $transcript->dbID );
 
-  my ($xref_id) = $sth->fetchrow_array();
+
+  my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
   if( !defined $xref_id ) {
     return undef;
   }
 
-  return $xref_id;
+  my $db_entry = Bio::EnsEMBL::DBEntry->new
+    (
+     -dbid => $xref_id,
+     -adaptor => $self->db->get_DBEntryAdaptor(),
+     -dbname => $db_name,
+     -display_id => $display_label
+    );
+
+  return $db_entry;
 }
 
 
@@ -512,33 +464,24 @@ sub update {
        $self->throw("Must update a transcript object, not a $transcript");
    }
 
-   my $sth = $self->prepare("SELECT exon_count, display_xref_id 
-                             FROM   transcript 
-                             WHERE  transcript_id = ?
-                           ");
+   my $sth = $self->prepare("UPDATE transcript
+                          SET    display_xref_id = ?,
+                                 exon_count = ?
+                          WHERE  transcript_id = ?
+                         ");
 
-   $sth->execute($transcript->dbID);
+   my $display_xref = $transcript->display_xref();
+   my $display_xref_id;
 
-   if ( my ($exons, $dxref_id) = $sth->fetchrow_array() ){
-
-     if ( $exons != scalar(@{$transcript->get_all_Exons})) {
-       $self->warn("Trying to update the number of exons on a stored transcript. Not yet implemented.");
-     }
-
-     if ( $dxref_id != $transcript->display_xref ) {
-
-       $sth = $self->prepare("UPDATE transcript
-                              SET    display_xref_id = ?
-                              WHERE  transcript_id = ?
-                            ");
-
-       $sth->execute($transcript->display_xref, $transcript->dbID);
-     }
+   if( defined $display_xref && $display_xref->dbID() ) {
+     $display_xref_id = $display_xref->dbID();
+   } else {
+     $display_xref_id = 0;
    }
-   else {
-     $self->warn("Trying to update a transcript that is not in the database.  Try store\'ing first.");
-   }
-}
+
+   my $exon_count = scalar( @{$transcript->get_all_Exons()} );
+   $sth->execute( $display_xref_id, $exon_count, $transcript->dbID() );
+ }
 
 
 

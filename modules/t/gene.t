@@ -62,7 +62,7 @@ debug( "Gene external dbname: " . $gene->external_db );
 ok( $gene->external_db eq "SPTREMBL");
 
 debug( "Gene display xref id: " . $gene->display_xref );
-ok( $gene->display_xref == 128324);
+ok( $gene->display_xref->dbID() == 128324);
 
 
 # test the getters and setters
@@ -385,14 +385,16 @@ $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 $ga->update($gene);
 
 my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
-ok ( $newgene->display_xref == 128324 );
+ok ( $newgene->display_xref->dbID() == 128324 );
 ok ( $newgene->type eq 'ensembl' );
 
 # now change the original gene and update it
-$gene->display_xref(42);
+my $dbEntryAdaptor=  $db->get_DBEntryAdaptor();
+
+$gene->display_xref( $dbEntryAdaptor->fetch_by_dbID( 614 ));
 $gene->type('dummy');
 $ga->update($gene);
 
 $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
-ok ( $newgene->display_xref == 42 );
+ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );

@@ -745,12 +745,27 @@ sub store {
    }
 
 
+   #
+   # store the dbentries associated with this gene
+   #
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
    foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
      $dbEntryAdaptor->store( $dbl, $gene_dbID, "Gene" );
    }
 
+   #
+   # Update the genes display xref if it is set
+   #
+   my $display_xref = $gene->display_xref;
+   if($display_xref) {
+     if(my $dbe_id = $dbEntryAdaptor->exists($display_xref)) {
+       my $dispxref_sth = $self->prepare('UPDATE gene SET display_xref_id = ? 
+                                        WHERE gene_id = ?');
+       $dispxref_sth->execute($dbe_id, $gene_dbID);
+     }
+   }
+       
 
    # write exons transcripts and exon_transcript table
 
@@ -912,68 +927,30 @@ sub deleteObj {
 }
 
 
-=head2 get_external_name
+							
 
-  Arg [1]    : int $dbID
-               the database identifier of the gene whose external name is 
-               sought
-  Example    : $external_name = $gene_adaptor->get_external_name(42);
-  Description: Retrieves the external name for a gene.  This is implemented
-               by joining across the xref and gene tables, using the 
-               display_xref_id column.
-  Returntype : string
+=head2 get_display_xref
+
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+               retrieve display_xref for this gene
+  Example    : none
+  Description: Retrieves the display_xref for a gene.
+  Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : thrown if $dbId arg is not defined
   Caller     : general
 
 =cut
 
-sub get_external_name {
-  my ($self, $dbID) = @_;
+sub get_display_xref {
+  my ($self, $gene ) = @_;
 
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
+  if( !defined $gene ) {
+      $self->throw("Must call with a Gene object");
   }
 
-  my $sth = $self->prepare("SELECT x.display_label 
-                            FROM   gene g, 
-                                   xref x 
-                            WHERE  g.gene_id = ?
-                              AND  g.display_xref_id = x.xref_id
-                           ");
-  $sth->execute($dbID);
-
-  my ($xref) = $sth->fetchrow_array();
-  if( !defined $xref ) {
-    return undef;
-  }
-
-  return $xref;
-}
-
-
-=head2 get_external_dbname
-
-  Arg [1]    : int $dbID
-               the database identifier of the gene for which the name of
-               external db from which its external name is derived.
-  Example    : $external_dbname = $gene_adaptor->get_external_dbname(42);
-  Description: Retrieves the external db name for a gene from which its external
-               name is derived..  This is implemented by joining across the xref, 
-               gene and external_db tables, using the display_xref_id column.
-  Returntype : string
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
-
-=cut
-
-sub get_external_dbname {
-  my ($self, $dbID) = @_;
-
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
-  }
-
-  my $sth = $self->prepare("SELECT e.db_name 
+  my $sth = $self->prepare("SELECT e.db_name,
+                                   x.display_label,
+                                   x.xref_id
                             FROM   gene g, 
                                    xref x, 
                                    external_db e
@@ -981,49 +958,22 @@ sub get_external_dbname {
                               AND  g.display_xref_id = x.xref_id
                               AND  x.external_db_id = e.external_db_id
                            ");
-  $sth->execute($dbID);
+  $sth->execute( $gene->dbID );
 
-  my ($db_name) = $sth->fetchrow_array();
-  if( !defined $db_name ) {
-    return undef;
-  }
 
-  return $db_name;
-}
-							
-
-=head2 get_display_xref_id
-
-  Arg [1]    : int $dbID
-               the database identifier of the gene for which the name of
-               external db from which its external name is derived.
-  Example    : $external_dbname = $gene_adaptor->get_display_xref_id(42);
-  Description: Retrieves the display_xref_id for a gene.
-  Returntype : int
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
-
-=cut
-
-sub get_display_xref_id {
-  my ($self, $dbID) = @_;
-
-  if( !defined $dbID ) {
-      $self->throw("Must call with a dbID");
-  }
-
-  my $sth = $self->prepare("SELECT display_xref_id 
-                            FROM   gene 
-                            WHERE  gene_id = ?
-                           ");
-  $sth->execute($dbID);
-
-  my ($xref_id) = $sth->fetchrow_array();
+  my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
   if( !defined $xref_id ) {
     return undef;
   }
+  my $db_entry = Bio::EnsEMBL::DBEntry->new
+    (
+     -dbid => $xref_id,
+     -adaptor => $self->db->get_DBEntryAdaptor(),
+     -dbname => $db_name,
+     -display_id => $display_label
+    );
 
-  return $xref_id;
+  return $db_entry;
 }
 
 
@@ -1048,40 +998,30 @@ sub update {
    my $update = 0;
 
    if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-       $self->throw("Must update a gene object, not a $gene");
+     $self->throw("Must update a gene object, not a $gene");
    }
 
-   my $sth = $self->prepare("SELECT type, analysis_id, transcript_count, display_xref_id 
-                             FROM   gene 
-                             WHERE  gene_id = ?
-                           ");
-
-   $sth->execute($gene->dbID);
-
-   if ( my ($type, $analysis, $transcripts, $dxref_id) = $sth->fetchrow_array() ){
-
-     if ( $dxref_id != $gene->display_xref ) { $update = 1; }
-     elsif ( $type ne $gene->type ) { $update = 1; }
-     elsif ( $analysis != $gene->analysis->dbID ) { $update = 1; }
-     elsif ( $transcripts != scalar(@{$gene->get_all_Transcripts})) {
-       $self->warn("Trying to update the number of transcripts on a stored gene. Not yet implemented.");
-     }
-
-     if ( $update ) {
-
-       $sth = $self->prepare("UPDATE gene
-                              SET    type = ?,
-                                     analysis_id = ?,
-                                     display_xref_id = ?
-                              WHERE  gene_id = ?
-                            ");
-
-       $sth->execute($gene->type, $gene->analysis->dbID, $gene->display_xref, $gene->dbID);
-     }
+   my $xref_id;
+   if($gene->display_xref && $gene->display_xref->dbID) {
+     $xref_id = $gene->display_xref->dbID;
+   } else {
+     $xref_id = 0;
    }
-   else {
-     $self->warn("Trying to update a gene that is not in the database.  Try store\'ing first.");
-   }
+
+   my $tcount = scalar @{$gene->get_all_Transcripts};
+
+   $sth = $self->prepare("UPDATE gene
+                          SET    type = ?,
+                                 analysis_id = ?,
+                                 display_xref_id = ?,
+                                 transcript_count = ?
+                          WHERE  gene_id = ?");
+
+   $sth->execute($gene->type, 
+		 $gene->analysis->dbID, 
+		 $xref_id, 
+		 $tcout, 
+		 $gene->dbID);
 }
 
 
