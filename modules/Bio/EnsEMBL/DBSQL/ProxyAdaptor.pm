@@ -74,18 +74,6 @@ sub new {
   #invoke superclass constructor
   my $self = $class->SUPER::new($db);
 
-  unless($primary_adaptor) {
-    throw("The primary_adaptor argument is required\n");
-    return undef;
-  }
-  
-  #determine the type of adaptor the proxy is filling in for
-  $self->{'_proxy_type'} = ref($primary_adaptor);
-  
-  #strip out fully qualified package name
-  $self->{'_proxy_type'} =~ s/.*:://;
-
-  $self->{'_primary_adaptor'} = $primary_adaptor;
 
   return $self;
 }
@@ -112,7 +100,7 @@ sub new {
 
 sub AUTOLOAD {
   my ($self, @args) =  @_;
-
+  
   #determine the method which was called
   my $method = $AUTOLOAD;
   
@@ -128,30 +116,29 @@ sub AUTOLOAD {
 
     return $adaptor->$method(@args);
   } 
-
+  
   #
   # The request could not be filled by the primary adaptor
   # try the same request using all of the attached databases
   #
   my @databases = values %{$self->db()->get_all_db_adaptors()};
-  foreach my $database (@databases) {
-
+  foreach my $adaptor (@databases) {
+    
     #Try to get the appropriate adaptor from the database
-    my $get_adaptor = "get_" . $self->{'_proxy_type'};
-    if($database->can($get_adaptor)) {
-
-      #Try to invoke the request on the database's adaptor
-      my $adaptor = eval "\$database->$get_adaptor";
-      if($adaptor->can($method)) {
-	return $adaptor->$method(@args);
-      }
+    #    my $get_adaptor = "get_" . $self->{'_proxy_type'};
+    #    if($database->can($get_adaptor)) {
+    
+    #Try to invoke the request on the database's adaptor
+    #     my $adaptor = eval "\$database->$get_adaptor";
+    if($adaptor->can($method)) {
+      return $adaptor->$method(@args);
     }
   }
 
   #none of the attached adaptors could fulfill the request either
   throw("The requested method $method could not be found in the " 
         . $self->{'_proxy_type'} . " of the attached databases:" .
-	       @databases);
+	@databases);
   return undef;
 }
 

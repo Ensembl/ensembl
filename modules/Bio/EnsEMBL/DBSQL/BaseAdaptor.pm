@@ -124,12 +124,13 @@ sub new {
         throw("Don't have a db [$dbobj] for new adaptor");
     }
 
-    if($dbobj->isa('Bio::EnsEMBL::Container')) {
-      #avoid a circular reference loop!
-      $self->db($dbobj->_obj);
-    } else {
-      $self->db($dbobj);
-    }
+  if( ref($dbobj) =~ /DBAdaptor$/){
+    $self->db($dbobj);
+    $self->dbc($dbobj->db);
+  }
+  else{
+    throw("Don't have a DBAdaptor [$dbobj] for new adaptor");
+  }
 
     return $self;
 }
@@ -152,7 +153,7 @@ sub new {
 sub prepare{
    my ($self,$string) = @_;
 
-   return $self->db->prepare($string);
+   return $self->dbc->prepare($string);
 }
 
 
@@ -170,15 +171,19 @@ sub prepare{
 =cut
 
 sub db{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'db'} = $value;
-    }
-    return $obj->{'db'};
+  my $self = shift;
+  $self->{'db'} = shift if(@_);
+
+  return $self->{'db'};
 
 }
 
+sub dbc{
+  my $self = shift;
+  $self->{'dbc'} = shift if(@_);
+
+  return $self->{'dbc'};
+}
 
 
 =head2 deleteObj

@@ -182,6 +182,13 @@ SET     chr_name  = NULL,
 WHERE   hsp_id    = ?";
 
 
+
+sub new_fast{
+  my ($caller,$connection) = @_;
+  my $self = $caller->SUPER::new($connection);
+  return $self;
+}
+
 #----------------------------------------------------------------------
 
 =head2 new
@@ -197,7 +204,16 @@ WHERE   hsp_id    = ?";
 
 sub new {
   my $caller = shift;
-  my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
+  my @tmp = @_;
+  my $con = shift;
+  my $connection;
+
+  if(ref($con) and $con->isa("Bio::EnsEMBL::DBSQL::DBConnection")){
+    $connection = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $con);
+  }
+  else{
+    $connection =  Bio::EnsEMBL::DBSQL::DBAdaptor->new(@tmp);
+  }
   my $self = $caller->SUPER::new($connection);
   return $self;
 }

@@ -73,6 +73,8 @@ use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 use Bio::EnsEMBL::ProjectionSegment;
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 
 # inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
@@ -1307,20 +1309,18 @@ sub get_all_Genes{
     return [];
   }
 
-   my $db;
+  my $ga;
    if($dbtype) {
-     $db = $self->adaptor->db->get_db_adaptor($dbtype);
-     if(!$db) {
-       warning("Don't have db $dbtype returning empty list\n");
+   $ga = $reg->get_adaptor( $self->adaptor()->db()->species(), $dbtype, "Gene" );
+     if(!defined $ga) {
+       warning( "$dbtype genes not available" );
        return [];
      }
-   } else {
-     $db = $self->adaptor->db;
+ } else {
+    $ga =  $self->adaptor->db->get_GeneAdaptor();
    }
 
-   my $ga = $db->get_GeneAdaptor();
-
-   return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
+  return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
 }
 
 =head2 get_all_Genes_by_type

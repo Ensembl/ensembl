@@ -726,6 +726,6 @@ sub get_alias{
 #
 
 eval{ require Bio::EnsEMBL::Utils::User_defined_load };
-if ($@){ print STDERR  "No user defined loads\n"; }
+#if ($@){ print STDERR  "No user defined loads\n"; }
 
 1;

@@ -35,11 +35,14 @@ package Bio::EnsEMBL::Lite::DBAdaptor;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::Registry;
+my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::DBSQL::DBConnection;
 
 use Bio::EnsEMBL::Utils::Exception qw(deprecate);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
+@ISA = qw(Bio::EnsEMBL::DBSQL::DBAdaptor);
 
 
 
@@ -58,7 +61,8 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate);
 sub get_SNPAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor("Bio::EnsEMBL::Lite::SNPAdaptor");
+#  return $self->_get_adaptor("Bio::EnsEMBL::Lite::SNPAdaptor");
+  return  Bio::EnsEMBL::Registry->get_adaptor($self->db->species(), "lite", "ProxySNP");
 }
 
 

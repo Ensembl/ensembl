@@ -1267,7 +1267,7 @@ sub prepare {
   my $self = shift;
   my $sql = shift;
 
-  return $self->db()->dnadb()->prepare( $sql );
+  return $self->db()->dnadb()->db->prepare( $sql );
 }
 
 sub _build_exception_cache {
