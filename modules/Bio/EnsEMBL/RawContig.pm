@@ -114,11 +114,11 @@ sub ctg2genomic{
   my $top_level = $csa->fetch_top_level();
   my $ma = $aa->fetch_by_CoordSystems($top_level, $self->coord_system);
 
-  return $ma->map_coordinates_to_assembly( $self->seq_region_name,
-                                           $start,
-                                           $end,
-                                           $strand,
-                                           $self->coord_system);
+  return $ma->map( $self->seq_region_name,
+                   $start,
+                   $end,
+                   $strand,
+                   $self->coord_system);
 }
 
 

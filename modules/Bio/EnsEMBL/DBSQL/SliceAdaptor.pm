@@ -477,11 +477,11 @@ sub get_seq_region_attribs {
   Arg [2]    : string $coord_system_version (optional)
                The version of the coordinate system to retrieve slices of
   Arg [3]    : bool $include_non_reference (optional)
-               If this argument is not provided then onlt reference slices 
-               will be returned. If set both reference and non refeference 
-               slices will be rerurned. 
+               If this argument is not provided then only reference slices
+               will be returned. If set, both reference and non refeference
+               slices will be rerurned.
   Arg [4]    : int $no_duplicates (optional)
-               If set eno duplicate entries will be returned.
+               If set no duplicate entries will be returned.
 
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
@@ -494,8 +494,12 @@ sub get_seq_region_attribs {
                seq_regions and are on the forward strand.
                If the coordinate system with the provided name and version
                does not exist an empty list is returned.
-               If the coordinate system name provided is 'toplevel', all 
+               If the coordinate system name provided is 'toplevel', all
                non-redundant toplevel slices are returned.
+
+               Retrieved slices can be broken into smaller slices using the
+               Bio::EnsEMBL::Utils::Slice module.
+
   Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : none
   Caller     : general
@@ -519,7 +523,6 @@ sub fetch_all {
 
   my $sth;
 
-  
   my %bad_vals=();
   #
   # Get a hash of non reference seq regions
@@ -571,45 +574,47 @@ sub fetch_all {
   while($sth->fetch()) {
     if(!defined($bad_vals{$seq_region_id})){
       my $cs = $csa->fetch_by_dbID($cs_id);
-      
+
       if(!$cs) {
-	throw("seq_region $name references non-existent coord_system $cs_id.");
+        throw("seq_region $name references non-existent coord_system $cs_id.");
       }
-      
+
       my $cs_key = lc($cs->name().':'.$cs_version);
-      
+
       #cache values for future reference, but stop adding to the cache once we
       #we know we have filled it up
       if($cache_count < $SEQ_REGION_CACHE_SIZE) {
-	my $key = lc($name) . ':'. $cs_key;
-	$name_cache->{$key} = [$seq_region_id, $length];
-	$id_cache->{$seq_region_id} = [$name, $length, $cs];
-	$cache_count++;
+        my $key = lc($name) . ':'. $cs_key;
+        $name_cache->{$key} = [$seq_region_id, $length];
+        $id_cache->{$seq_region_id} = [$name, $length, $cs];
+        $cache_count++;
       }
-      
-      my $slice = Bio::EnsEMBL::Slice->new(-START             => 1,
-					-END               => $length,
-					-STRAND            => 1,
-					-SEQ_REGION_NAME   => $name,
-					-SEQ_REGION_LENGTH => $length,
-					-COORD_SYSTEM      => $cs,
-					-ADAPTOR           => $self);
 
-      if(!defined($include_duplicates) or !$include_duplicates){  #do not include duplicates
-	my @dup = @{$self->fetch_normalized_slice_projection($slice)};
-	foreach my $dup_test( @dup){
-	  if($dup_test->[2]->get_seq_region_id == $slice->get_seq_region_id){
-	    push @out, $dup_test->[2];
-	  }
-	}
+      my $slice = Bio::EnsEMBL::Slice->new
+        (-START             => 1,
+         -END               => $length,
+         -STRAND            => 1,
+         -SEQ_REGION_NAME   => $name,
+         -SEQ_REGION_LENGTH => $length,
+         -COORD_SYSTEM      => $cs,
+         -ADAPTOR           => $self);
+
+      if(!defined($include_duplicates) or !$include_duplicates){
+        #do not include duplicates
+        my @dup = @{$self->fetch_normalized_slice_projection($slice)};
+        foreach my $dup_test( @dup){
+          if($dup_test->[2]->get_seq_region_id == $slice->get_seq_region_id){
+            push @out, $dup_test->[2];
+          }
+        }
       }
-      else{
-	push @out, $slice;
+      else {
+        push @out, $slice;
       }
     }
   }
   $sth->finish();
-  
+
   return \@out;
 }
 
@@ -1281,7 +1286,7 @@ sub fetch_by_chr_start_end {
   #assume that by chromosome the user actually meant top-level coord
   #system since this is the old behaviour of this deprecated method
   my $csa = $self->db->get_CoordSystemAdaptor();
-  my $cs = $csa->fetch_top_level();
+  my ($cs) = @{$csa->fetch_all()}; # get the highest coord system
 
   return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
 }
@@ -1303,20 +1308,18 @@ sub fetch_by_contig_name {
   #previously wanted chromosomal slice on a given contig.  Assume this means
   #a top-level slice on a given seq_region in the seq_level coord system
   my $csa = $self->db()->get_CoordSystemAdaptor();
-  my $top_level = $csa->fetch_top_level();
   my $seq_level = $csa->fetch_sequence_level();
 
   my $seq_lvl_slice = $self->fetch_by_region($seq_level->name(), $name);
 
-  my @projection = @{$seq_lvl_slice->project($top_level->name(),
-                                             $top_level->version())};
-  if(@projection == 0) {
-    warning("contig $name is not used in ".$top_level->name().' assembly.');
+  if(!$seq_lvl_slice) {
     return undef;
   }
 
-  if(@projection > 1) {
-    warning("$name is mapped to multiple locations in " . $top_level->name());
+  my @projection = @{$seq_lvl_slice->project('toplevel')};
+
+  if(@projection != 1) {
+    warning("$name is mapped to multiple toplevel locations.");
   }
 
   return $projection[0]->[2]->expand($size, $size);
@@ -1336,7 +1339,6 @@ sub fetch_by_clone_accession{
   deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
-  my $top_level = $csa->fetch_top_level();
   my $clone_cs = $csa->fetch_by_name('clone');
 
   if(!$clone_cs) {
@@ -1363,15 +1365,12 @@ sub fetch_by_clone_accession{
   }
 
   my $clone = $self->fetch_by_region($clone_cs->name(), $name);
-  my @projection = @{$clone->project($top_level->name(),
-                                     $top_level->version())};
-  if(@projection == 0) {
-    warning("clone $name is not used in " . $top_level->name() . ' assembly.');
-    return undef;
-  }
+  return undef if(!$clone);
 
-  if(@projection > 1) {
-    warning("$name is mapped to multiple locations in " . $top_level->name());
+  my @projection = @{$clone->project('toplevel')};
+
+  if(@projection != 1) {
+    warning("$name is mapped to multiple locations.");
   }
 
   return $projection[0]->[2]->expand($size, $size);
@@ -1391,7 +1390,6 @@ sub fetch_by_supercontig_name {
   deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
-  my $top_level = $csa->fetch_top_level();
   my $sc_level = $csa->fetch_by_name('supercontig');
 
   if(!$sc_level) {
@@ -1401,16 +1399,12 @@ sub fetch_by_supercontig_name {
 
   my $sc_slice = $self->fetch_by_region($sc_level->name(),$name);
 
-  my @projection = @{$sc_slice->project($top_level->name(),
-                                        $top_level->version())};
-  if(@projection == 0) {
-    warning("Supercontig $name is not used in " . $top_level->name() .
-         ' assembly.');
-    return undef;
-  }
+  return undef if(!$sc_slice);
+
+  my @projection = @{$sc_slice->project('toplevel')};
 
   if(@projection > 1) {
-    warning("$name is mapped to multiple locations in " . $top_level->name());
+    warning("$name is mapped to multiple locations in toplevel");
   }
 
   return $projection[0]->[2]->expand($size, $size);
@@ -1431,7 +1425,6 @@ sub list_overlapping_supercontigs {
    deprecate('Use Slice::project() instead.');
 
    my $csa = $self->db()->get_CoordSystemAdaptor();
-   my $top_level = $csa->fetch_top_level();
    my $sc_level = $csa->fetch_by_name('supercontig');
 
    if(!$sc_level) {
