@@ -87,38 +87,31 @@ sub fetch_by_dbID {
   return $res[0];
 }
 
+sub fetch_by_Contig{
+  my ($self, $contig, $logic_name) = @_;
 
-
-=head2 fetch_by_Slice
-
-  Arg  1    : Bio::EnsEMBL::Slice $slice
-              start, end, chromosome and type are used from the slice.
-  Function  : retrieves PTs from database which overlap with given slice.
-              PTs not fully in the slice are retrieved partially, with exons 
-              set to undef. 
-  Returntype: listref Bio::EnsEMBL::PredictionTranscript
-  Exceptions: none, list can be empty.
-  Caller    : Slice or WebSlice
-
-=cut
-
-sub fetch_by_Slice {
-   my $self = shift;
-   my $slice = shift;
-
-   $self->throw( "Not implemented yet" );
+  my @results = $self->fetch_by_contig_id($contig->dbID, $logic_name);
+  
+  return @results;
 }
 
-sub fetch_by_Slice_and_logic_name {
-   my $self = shift;
-   my $slice = shift;
-   my $logic_name = shift;
+sub fetch_by_contig_id{
+ my ($self, $contig_id, $logic_name) = @_;
+ 
+ my $constraint = undef;
 
-   $self->throw( "Not implemented yet" );
+ if($logic_name){
+    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+   $constraint = " analysis_id = ".$analysis->dbID;
+ }
+
+ my @results = $self->fetch_by_contig_id_constraint($contig_id, $constraint);
+
+ return @results;
+
 }
 
-
-=head2 fetch_by_Contig
+=head2 fetch_by_contig_id_constraint
 
   Arg  1    : Bio::EnsEMBL::RawContig $contig
               Only dbID in Contig is used.
@@ -130,9 +123,10 @@ sub fetch_by_Slice_and_logic_name {
 =cut
 
 
-sub fetch_by_Contig {
+sub fetch_by_contig_id_constraint {
   my $self = shift;
-  my $contig = shift;
+  my $contig_id = shift;
+  my $constraint = shift;
 
   my $query = qq {
     SELECT  p.prediction_transcript_id
@@ -149,47 +143,169 @@ sub fetch_by_Contig {
 
     FROM prediction_transcript p
     WHERE p.contig_id = ?
-    ORDER BY p.prediction_transcript_id, p.exon_rank
-  };
+   };
 
+  if($constraint){
+    $query .= " and ".$constraint;
+  }
+
+  $query .= " order by p.prediction_transcript_id, p.exon_rank";
+  #print $query."\n";
   my $sth = $self->prepare( $query );
-  $sth->execute( $contig->dbID );
+  $sth->execute( $contig_id );
 
   my @res = $self->_ptrans_from_sth( $sth );
-  return \@res;
+  return @res;
 }
 
-sub fetch_by_Contig_and_logic_name {
-  my $self = shift;
-  my $contig = shift;
-  my $logic_name = shift;
 
-  my $query = qq {
+sub fetch_by_Slice{
+  my ($self, $slice, $logic_name) = @_;
+
+  my $constraint = undef;
+
+  if($logic_name){
+    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    $constraint = " analysis_id = ".$analysis->dbID;
+  }
+  
+  my @results = $self->fetch_by_assembly_location_constraint($slice->chr_start, $slice->chr_end, $slice->chr_name, $slice->assembly_type, $constraint);
+
+  my @out;
+
+ GENE: foreach my $transcript(@results){
+    my $exon_count = 1;
+    my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
+    $pred_t->dbID($transcript->dbID);
+    $pred_t->adaptor($self);
+    $pred_t->analysis($transcript->analysis);
+    $pred_t->set_exon_count($transcript->get_exon_count);
+    my @exons = $transcript->get_all_Exons;
+    my @sorted_exons;
+    if($exons[0]->strand == 1){
+      @sorted_exons = sort{$a->start <=> $b->start} @exons;
+    }else{
+      @sorted_exons = sort{$b->start <=> $a->start} @exons;
+    }
+    my $contig = $sorted_exons[0]->contig;
+  EXON:foreach my $e(@sorted_exons){
+      my $start = ($e->start - ($slice->chr_start - 1));
+      my $end = ($e->end - ($slice->chr_start - 1));
+      my $exon = $self->_new_Exon($start, $end, $e->strand, $e->phase, $e->score, $e->p_value, $contig);
+      $pred_t->add_Exon( $exon, $exon_count );
+      $exon_count++;
+    }
+    push(@out, $pred_t);
+  }
+  
+
+  return @out;
+}
+
+sub fetch_by_assembly_location{
+  my ($self, $chr_start, $chr_end, $chr, $type, $logic_name) = @_;
+
+  my $constraint = undef;
+
+  if($logic_name){
+    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    $constraint = " analysis_id = ".$analysis->dbID;
+  }
+  
+  my @results = $self->fetch_by_assembly_location_constraint($chr_start, $chr_end, $chr, $type, $constraint);
+
+  return @results;
+}
+
+
+sub fetch_by_assembly_location_constraint{
+  my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
+
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  
+  if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
+    $self->throw("start/end must be numbers not $chr_start,$chr_end (have you typed the location in the right way around - start,end,chromosome,type)?");
+  }
+  
+  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
+  
+  $mapper->register_region($chr,$chr_start,$chr_end);
+  
+  my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
+  my %ana;
+  my $cid_list = join(',',@cids);
+  
+  my $sql = qq {
     SELECT  p.prediction_transcript_id
-      , p.contig_id
-      , p.contig_start
-      , p.contig_end
-      , p.contig_strand
-      , p.start_phase
-      , p.exon_rank
-      , p.score
-      , p.p_value	
-      , p.analysis_id
-      , p.exon_count
+          , p.contig_id
+	  , p.contig_start
+	  , p.contig_end
+	  , p.contig_strand
+	  , p.start_phase
+          , p.exon_rank
+          , p.score
+          , p.p_value	
+          , p.analysis_id
+          , p.exon_count
 
-    FROM prediction_transcript p, analysis a
-    WHERE p.contig_id = ? 
-    AND a.analysis_id = p.analysis_id
-    AND a.logic_name = ?
-    ORDER BY p.prediction_transcript_id, p.exon_rank
-  };
+    FROM prediction_transcript p
+    WHERE
+   };
 
-  my $sth = $self->prepare( $query );
-  $sth->execute( $contig->dbID, $logic_name );
+  $sql .= "contig_id in($cid_list) ";
 
-  my @res = $self->_ptrans_from_sth( $sth );
-  return \@res;
+  if($constraint){
+    $sql .= " and $constraint";
+  }
+
+  my $sth = $self->prepare($sql);
+  $sth->execute;
+
+  my @results = $self->_ptrans_from_sth($sth);
+  my @out;
+  GENE: foreach my $transcript(@results){
+      my $exon_count = 1;
+      my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
+      $pred_t->dbID($transcript->dbID);
+      $pred_t->adaptor($self);
+      $pred_t->analysis($transcript->analysis);
+      $pred_t->set_exon_count($transcript->get_exon_count);
+      my @exons = $transcript->get_all_Exons;
+      my @sorted_exons;
+      if($exons[0]->strand == 1){
+	@sorted_exons = sort{$a->start <=> $b->start} @exons;
+      }else{
+	@sorted_exons = sort{$b->start <=> $a->start} @exons;
+      }
+      my $contig = $sorted_exons[0]->contig;
+    EXON:foreach my $e(@sorted_exons){
+	my @coord_list = $mapper->map_coordinates_to_assembly($e->contig->dbID, $e->start, $e->end, $e->strand, "rawcontig");
+	if( scalar(@coord_list) > 1 ) {
+	  #$self->warn("maps to ".scalar(@coord_list)." coordinate objs not all of feature will be on golden path skipping\n");
+	  next GENE;
+	}
+	
+	if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	  #$self->warn("this feature is on a part of $contig_id which isn't on the golden path skipping");
+	  next GENE;
+	}
+	if(!($coord_list[0]->start >= $chr_start) ||
+	   !($coord_list[0]->end <= $chr_end)) {
+	  next GENE;
+	}
+	my $exon = $self->_new_Exon($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $e->phase, $e->score, $e->p_value, $contig);
+	$pred_t->add_Exon( $exon, $exon_count );
+	$exon_count++;
+      }
+      push(@out, $pred_t);
+    }
+
+  return @out;
 }
+
+
 
 
 =head2 _ptrans_from_sth
@@ -214,11 +330,12 @@ sub _ptrans_from_sth {
   my $pre_trans = undef; 
   my $pre_trans_id = undef;
   my @result = ();
-
+  my $count = 0;
+  my $exon_count = 0;
   while( my $hashRef = $sth->fetchrow_hashref() ) {
     if(( ! defined $pre_trans  ) ||
        ( $pre_trans_id != $hashRef->{'prediction_transcript_id'} )) {
-
+      $count++;
       $pre_trans = Bio::EnsEMBL::PredictionTranscript->new(); 
       $pre_trans_id = $hashRef->{'prediction_transcript_id'};
       $pre_trans->dbID( $pre_trans_id );
@@ -232,7 +349,9 @@ sub _ptrans_from_sth {
 
     my $exon = $self->_new_Exon_from_hashRef( $hashRef );
     $pre_trans->add_Exon( $exon, $hashRef->{'exon_rank'} );
+    $exon_count++;
   }
+  #print "have created ".$count." transcripts and ".$exon_count." exons\n";
   return @result;
 }
 
@@ -280,7 +399,27 @@ sub _new_Exon_from_hashRef {
 
 
 
-
+sub _new_Exon{
+  my ($self, $start, $end, $strand, $phase, $score, $pvalue, $contig) = @_; 
+  my $exon = Bio::EnsEMBL::Exon->new();
+  
+  $exon->start( $start);
+  $exon->end( $end );
+  $exon->strand( $strand );
+  $exon->phase( $phase );
+  
+  $exon->contig( $contig );
+  $exon->attach_seq( $contig->seq() );
+  $exon->ori_start( $start );
+  $exon->ori_end( $end );
+  $exon->ori_strand( $strand );
+  
+  # does exon not have score?
+  $exon->score( $score );
+  $exon->p_value( $pvalue );
+  
+  return $exon;
+}
 
 =head2 store
 

@@ -129,16 +129,21 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_by_contig_id{
-   my ($self,$cid) = @_;
+sub fetch_by_contig_id_constraint{
+   my ($self,$cid, $constraint) = @_;
 
    if( !defined $cid ) {
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id = '$cid'");
+   my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id = '$cid'";
+  
+   if($constraint){
+     $sql .= " AND $constraint";
+   }
+   #print $sql."\n";
+   my $sth = $self->prepare($sql);
    $sth->execute();
-
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score,$evalue,$perc_ident);
 
    $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score,\$evalue,\$perc_ident);
@@ -160,125 +165,242 @@ sub fetch_by_contig_id{
    return @f;
 }
 
-sub fetch_by_contig_id_and_logic_name{
+sub fetch_by_contig_id{
+  my ($self, $cid, $logic_name) = @_;
+  
+  my $analysis;
+  my $constraint = undef;
+ 
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor($logic_name);
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint = " p.analysis_id = ".$analysis->dbID();
+  }
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
 
-  my($self, $cid, $logic_name) = @_;
+  return @features;
+}
+
+sub fetch_by_contig_id_and_score{
+  my($self, $cid, $score, $logic_name) = @_;
+
+  my $analysis;
+  my $constraint;
+  if(!$cid){
+    $self->throw("need a contig id or this won't work\n");
+  }  
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint = "p.score > $score";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
+  }
 
   
-   if( !defined $cid ) {
-       $self->throw("fetch_by_contig_id_and_logic_name must have an contig id");
-   }
-
-   if(!defined $logic_name){
-     $self->throw("must provide a logic_name to fetch by logic name: $!\n");
-   } 
-
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
-   $sth->execute();
-
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
-
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
-
-   my @f;
-   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
-   my %ana;
-
-   while( $sth->fetch ) {
-     if( !defined $ana{$analysis_id} ) {
-       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-     }
-     my $f1 = Bio::EnsEMBL::SeqFeature->new();
-     my $f2 = Bio::EnsEMBL::SeqFeature->new();
-     
-     $f1->start($start);
-     $f1->end($end);
-     $f1->score($score);
-     $f1->seqname($contig->name);
-     $f1->strand($strand);
-       
-     $f2->start($hstart);
-     $f2->end($hend);
-     $f2->seqname($hname);
-   
-       
-       
-     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-     $dnapep->analysis($ana{$analysis_id});
-     $dnapep->seqname($contig->name);
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
   
-     push(@f,$dnapep);
-   }
-   
-   return @f;
+  return @features;
 
 }
 
-sub fetch_by_contig_id_and_dbname{
 
-  my($self, $cid, $db_name) = @_;
+sub fetch_by_contig_id_and_pid{
+  my($self, $cid, $pid, $logic_name) = @_;
+
+  my $analysis;
+  my $constraint;
+  if(!$cid){
+    $self->throw("need a contig id or this won't work\n");
+  }  
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint = "p.perc_ident > $pid";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
+  }
 
   
-   if( !defined $cid ) {
-       $self->throw("fetch_by_contig_id_and_logic_name must have an contig id");
-   }
-
-   if(!defined $db_name){
-     $self->throw("must provide a db_name to fetch by db name: $!\n");
-   }
-
-   my $sth1 = $self->prepare("select analysis_id from analysis where db = '$db_name'");
-
-   $sth1->execute();
-   my @analysis_ids;
-   my $array_ref;
-   while($array_ref = $sth1->fetchrow_arrayref){
-        my $analysis_id = $array_ref->[0];
-        push(@analysis_ids, $analysis_id);
-   }
-   my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
-   $sth->execute();
-
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
-
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
-
-   my @f;
-   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
-   my %ana;
-
-   while( $sth->fetch ) {
-     if( !defined $ana{$analysis_id} ) {
-       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-     }
-     my $f1 = Bio::EnsEMBL::SeqFeature->new();
-     my $f2 = Bio::EnsEMBL::SeqFeature->new();
-     
-     $f1->start($start);
-     $f1->end($end);
-     $f1->score($score);
-     $f1->seqname($contig->name);
-     $f1->strand($strand);
-       
-     $f2->start($hstart);
-     $f2->end($hend);
-     $f2->seqname($hname);
-   
-       
-       
-     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-     $dnapep->analysis($ana{$analysis_id});
-     $dnapep->seqname($contig->name);
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
   
-     push(@f,$dnapep); 
-   }
-   
-   return @f;
+  return @features;
+
+}
+
+sub fetch_by_Slice{
+  my($self, $slice, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " p.analysis_id = ".$analysis->dbID(); 
+  }
+  
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
+  
+  my @out_f;
+  
+  foreach my $f(@features){
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
+    push(@out_f, $out);
+  }
+
+  return @out_f;
+}
+
+sub fetch_by_Slice_and_score {
+  my ($self,$slice,$score, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint .= "p.score > $score";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
+  }
+  
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
+
+  my @out_f;
+
+  foreach my $f(@features){
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+    
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
+
+    push(@out_f, $out);
+  }
+
+  return @out_f;
+
+}  
+
+sub fetch_by_Slice_and_pid {
+  my ($self,$slice,$pid, $logic_name) = @_;
+  my $constraint;
+  my $analysis;
+  if(!$slice){
+    $self->throw("need a slice to work\n");
+  }
+  unless ($slice->isa("Bio::EnsEMBL::Slice")) 
+        {
+            $self->throw("$slice isn't a slice");
+        }
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint .= "p.perc_ident > $pid";
+  }
+  if($logic_name){
+   my $aa = $self->db->get_AnalysisAdaptor();
+   $analysis = $aa->fetch_by_logic_name($logic_name);
+   $constraint .= " and p.analysis_id = ".$analysis->dbID(); 
+  }
+  my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
+
+  my @out_f;
+
+  foreach my $f(@features){
+    my $start = ($f->start - ($slice->chr_start - 1));
+    my $end = ($f->end - ($slice->chr_start - 1));
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
+    
+
+    push(@out_f, $out);
+  }
+
+  return @out_f;
+
+}  
+
+sub fetch_by_assembly_location{
+  my ($self,$start,$end,$chr,$type, $logic_name) = @_;
+  
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  my $constraint = undef;
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint = " p.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
+
+}
+
+sub fetch_by_assembly_location_and_score{
+  my ($self,$start,$end,$chr,$type, $score, $logic_name) = @_;
+  my $constraint;
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  if(!$score){
+    $self->throw("need a score even if its 0\n");
+  }else{
+    $constraint .= "p.score > $score";
+  }
+
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint .= " and p.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
+
+}
+
+
+sub fetch_by_assembly_location_and_pid{
+  my ($self,$start,$end,$chr,$type, $pid, $logic_name) = @_;
+  my $constraint;
+  if( !defined $type ) {
+    $self->throw("Assembly location must be start,end,chr,type");
+  }
+  if(!$pid){
+    $self->throw("need a pid even if its 0\n");
+  }else{
+    $constraint .= "p.perc_ident > $pid";
+  }
+
+  my $analysis;
+  if($logic_name){
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    $constraint .= " and p.analysis_id = ".$analysis->dbID();  
+  }
+  return $self->fetch_by_assembly_location_constraint($start,$end,$chr,$type,$constraint);
 
 }
 
@@ -294,26 +416,29 @@ sub fetch_by_contig_id_and_dbname{
 
 =cut
 
-sub fetch_by_assembly_location{
-   my ($self,$start,$end,$chr,$type) = @_;
-
+sub fetch_by_assembly_location_constraint{
+   my ($self,$chr_start,$chr_end,$chr,$type, $constraint) = @_;
+   
    if( !defined $type ) {
        $self->throw("Assembly location must be start,end,chr,type");
    }
 
-   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
-       $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
+   if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
+       $self->throw("start/end must be numbers not $chr_start,$chr_end (have you typed the location in the right way around - start,end,chromosome,type");
    }
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($chr,$start,$end);
+   $mapper->register_region($chr,$chr_start,$chr_end);
 
-   my @cids = $mapper->list_contig_ids($chr, $start,$end);
-
-   # build the SQL
-
+   my @cids = $mapper->list_contig_ids($chr, $chr_start,$chr_end);
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id in ($cid_list)");
+   # build the SQL
+   my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id in ($cid_list)";
+   if($constraint) {
+     $sql .=  " AND $constraint";
+   }
+  
+   my $sth = $self->prepare($sql);
    $sth->execute();
 
 
@@ -331,15 +456,18 @@ sub fetch_by_assembly_location{
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {
-	   next;
+	 #$self->warn("feature part on part of the golden path skipping\n");
+	 next;
        }
-
+       if(!($coord_list[0]->start >= $chr_start) ||
+	  !($coord_list[0]->end <= $chr_end)) {
+	 next;
+       }
        if( !defined $ana{$analysis_id} ) {
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
        if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
-	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
+	 #$self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
 	 
 	 next;
        }
@@ -349,195 +477,13 @@ sub fetch_by_assembly_location{
 
        push(@f,$dnapep);
    }
-
-   return @f;
-
-}
-
-
-sub fetch_by_assembly_location_and_dbname{
-
-    my ($self,$start,$end,$chr,$type,$db_name) = @_;
-
-   if( !defined $type ) {
-       $self->throw("Assembly location must be start,end,chr,type");
-   }
-
-   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
-       $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
-   }
-
-   if(!defined $db_name){
-  
-      $self->throw($db_name." not defined must have a db name to get features\n");
-
-   } 
-
-   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($chr, $start,$end);
-
-   my @cids = $mapper->list_contig_ids($chr, $start,$end);
-
-   # build the SQL
-
-   my $cid_list = join(',',@cids);
-    
-
-    my $sth1 = $self->prepare("select analysis_id from analysis where db = '$db_name'");
-   
-
-   $sth1->execute();
-   my @analysis_ids;
-   my $array_ref;
-   while($array_ref = $sth1->fetchrow_arrayref){
-        my $analysis_id = $array_ref->[0];
-        push(@analysis_ids, $analysis_id);
-   }
-   my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id in($cid_list) and p.analysis_id in($analysis_idlist)");
-   $sth->execute();
-
-   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
-
-   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
-
-   my @f;
-    my %ana;
-
-   while( $sth->fetch ) {
-       
-     # we whether this is sensible to use or not
-     my @coord_list = $mapper->map_coordinates_to_assembly($contig_id,$contig_start,$contig_end,$strand,"rawcontig");
-     
-     # coord list > 1 - means does not cleanly map. At the moment, skip
-     if( scalar(@coord_list) > 1 ) {
-       next;
-     }
-     
-     if( !defined $ana{$analysis_id} ) {
-       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-     }
-     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-       #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
-       $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
-       
-       next;
-     }       
-     # ok, ready to build a sequence feature: do we want this relative or not?
-     
-     
-     my $f1 = Bio::EnsEMBL::SeqFeature->new();
-     my $f2 = Bio::EnsEMBL::SeqFeature->new();
-     
-     $f1->start($coord_list[0]->start);
-     $f1->end($coord_list[0]->end);
-     $f1->score($score);
-     $f1->seqname($coord_list[0]->id);
-     $f1->strand($coord_list[0]->strand);
-     
-     $f2->start($hstart);
-     $f2->end($hend);
-     $f2->seqname($hname);
-     
-     
-     
-     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-     $dnapep->analysis($ana{$analysis_id});
-     $dnapep->seqname($coord_list[0]->id);
-     push(@f,$dnapep);
-   }
    
    return @f;
 
 }
 
-sub fetch_by_assembly_location_and_logic_name{
 
-  my($self, $start,$end,$chr,$type, $logic_name) = @_;
 
-  
-   if( !defined $type ) {
-       $self->throw("Assembly location must be start,end,chr,type");
-   }
-   if(!defined $logic_name){
-     $self->throw("must provide a logic_name to fetch by logic name: $!\n");
-   } 
-
-   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
-       $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
-   }
-
-   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($chr, $start,$end);
-
-   my @cids = $mapper->list_contig_ids($chr, $start,$end);
-
-   # build the SQL
-
-   my $cid_list = join(',',@cids);
-
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
-   $sth->execute();
-
-   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
-
-   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
-
-   my @f;
-   
-   my %ana;
-
-   while( $sth->fetch ) {
-     # we whether this is sensible to use or not
-     my @coord_list = $mapper->map_coordinates_to_assembly($contig_id,$contig_start,$contig_end,$strand,"rawcontig");
-     
-     # coord list > 1 - means does not cleanly map. At the moment, skip
-     if( scalar(@coord_list) > 1 ) {
-       next;
-     }
-     
-     if( !defined $ana{$analysis_id} ) {
-       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-     }
-     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-       #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
-       $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
-       
-       next;
-     }       
-     # ok, ready to build a sequence feature: do we want this relative or not?
-     
-     
-     my $f1 = Bio::EnsEMBL::SeqFeature->new();
-     my $f2 = Bio::EnsEMBL::SeqFeature->new();
-     
-     $f1->start($coord_list[0]->start);
-     $f1->end($coord_list[0]->end);
-     $f1->score($score);
-     $f1->seqname($coord_list[0]->id);
-     $f1->strand($coord_list[0]->strand);
-     
-     $f2->start($hstart);
-     $f2->end($hend);
-     $f2->seqname($hname);
-     
-     
-     
-     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-     $dnapep->analysis($ana{$analysis_id});
-     $dnapep->seqname($coord_list[0]->id);
-     push(@f,$dnapep);
-     
-     
-   }
-  
-   return @f;
-
-}
 
 =head2 store
 
@@ -594,7 +540,7 @@ sub _new_feature {
   if( !defined $seqname ) {
     $self->throw("Do not have all the parameters for making features");
   }
-
+  
   my $f1 = Bio::EnsEMBL::SeqFeature->new();
   my $f2 = Bio::EnsEMBL::SeqFeature->new();
   
@@ -623,7 +569,7 @@ sub _new_feature {
   if( defined $seq ) {
     $dnapep->attach_seq($seq);
   }
-
+  
   return $dnapep;
 }
 

@@ -98,7 +98,7 @@ sub fetch_by_dbID{
 
 }
 
-=head2 fetch_by_contig_id_and_constraint
+=head2 fetch_by_contig_id_constraint
 
  Title   : fetch_by_contig_id
  Usage   :
@@ -110,7 +110,7 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_by_contig_id_and_constraint{
+sub fetch_by_contig_id_constraint{
    my ($self,$cid, $constraint) = @_;
 
    if( !defined $cid ) {
@@ -153,12 +153,11 @@ sub fetch_by_contig_id{
   my $constraint = undef;
  
   if($logic_name){
-    #print "fetching analysis obj as logic_name = ".$logic_name."\n";
     my $aa = $self->db->get_AnalysisAdaptor($logic_name);
     $analysis = $aa->fetch_by_logic_name($logic_name);
     $constraint = " d.analysis_id = ".$analysis->dbID();
   }
-  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
 
   return @features;
 }
@@ -183,7 +182,7 @@ sub fetch_by_contig_id_and_score{
   }
 
   
-  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
   
   return @features;
 
@@ -210,7 +209,7 @@ sub fetch_by_contig_id_and_pid{
   }
 
   
-  my @features = $self->fetch_by_contig_id_and_constraint($cid, $constraint);
+  my @features = $self->fetch_by_contig_id_constraint($cid, $constraint);
   
   return @features;
 
@@ -233,23 +232,21 @@ sub fetch_by_Slice{
    $analysis = $aa->fetch_by_logic_name($logic_name);
    $constraint .= " d.analysis_id = ".$analysis->dbID(); 
   }
-  #print "fetching feature for chr ".$slice->chr_name." start ".$slice->chr_start." end ".$slice->chr_end." type ".$slice->assembly_type."\n"; 
+  
   my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
   
   my @out_f;
-  #print STDERR "started converting coordinates\n";
+  
   foreach my $f(@features){
-    #print STDERR "chr start = ".$f->start."\n";
-    #print STDERR "chr end = ".$f->end."\n"; 
+   
     my $start = ($f->start - ($slice->chr_start - 1));
     my $end = ($f->end - ($slice->chr_start - 1));
-    #print STDERR "slice start = ".$start."\n";
-    #print STDERR "slice end = ".$end."\n";
+   
     my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
 
     push(@out_f, $out);
   }
- # print STDERR "finished converting cooridinate\n";
+
   return @out_f;
 }
 
@@ -274,7 +271,7 @@ sub fetch_by_Slice_and_score {
    $analysis = $aa->fetch_by_logic_name($logic_name);
    $constraint .= " and d.analysis_id = ".$analysis->dbID(); 
   }
-  #print "constraint ".$constraint."\n";
+  
   my @features = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
 
   my @out_f;
@@ -419,7 +416,7 @@ sub fetch_by_assembly_location_and_pid{
 
 sub fetch_by_assembly_location_constraint{
   my ($self,$chr_start,$chr_end,$chr,$type,$constraint) = @_;
-  #print STDERR "started fetch_by assembly location\n";
+  
   if( !defined $type ) {
     $self->throw("Assembly location must be start,end,chr,type");
   }
@@ -437,7 +434,7 @@ sub fetch_by_assembly_location_constraint{
   # build the SQL
   
 
-  #print STDERR "have @cids contig ids\n";
+ 
 
   if( scalar(@cids) == 0 ) {
     return ();
@@ -450,7 +447,7 @@ sub fetch_by_assembly_location_constraint{
   if($constraint) {
     $sql .=  " AND $constraint";
   }
-  print STDERR "SQL $sql\n";
+  #print STDERR "SQL $sql\n";
 
   my $sth = $self->prepare($sql);
 
@@ -495,8 +492,7 @@ sub fetch_by_assembly_location_constraint{
 
     push(@f,$out);
   }
-  #print STDERR "have ".$counter." gaps\n";
-  #print STDERR "finished fetch by assembly location\n";
+  
   return @f;
 
 }
@@ -558,11 +554,7 @@ sub _new_feature {
   if( !defined $seqname ) {
     $self->throw("Internal error - wrong number of arguments to new_feature");
   }
-  #print STDERR "start = ".$start."\n";
-  #print STDERR "end = ".$end."\n";
-  #print STDERR "hstart = ".$hstart."\n";
-  #print STDERR "hend = ".$hend."\n";
-  #print STDERR "cigar ".$cigar."\n";
+ 
   my $f1 = Bio::EnsEMBL::SeqFeature->new();
   my $f2 = Bio::EnsEMBL::SeqFeature->new();
 
@@ -590,7 +582,7 @@ sub _new_feature {
 
   my $out = Bio::EnsEMBL::DnaDnaAlignFeature->new( -cigar_string => $cigar, -feature1 => $f1, -feature2 => $f2);
 
-  #print "outputting feature with cigar ".$out->cigar_string."\n";
+
   return $out;
 }
     

@@ -171,32 +171,16 @@ sub fetch_by_dbID {
 sub fetch_by_newest_logic_name {
   my $self = shift;
   my $logic_name = shift;
-
-  my $sth = $self->prepare( q{
-    SELECT analysis_id, logic_name,
-           program, program_version, program_file,
-           db, db_version, db_file,
-           module, module_version,
-           gff_source, gff_feature,
-           created, parameters
-    FROM   analysis
-    WHERE  logic_name = ?
-    ORDER BY created DESC } );
   
-  $sth->execute( $logic_name );
-  my $rowHashRef = $sth->fetchrow_hashref;
-  if( ! defined $rowHashRef ) {
-    return undef;
-  }
+  $self->warn("logic_names should now be unique should need to use this method use fetch_by_logic_name\n");
 
-  return $self->_objFromHashref( $rowHashRef );
+  return $self->fetch_by_logic_name($logic_name);
 }
 
 
 sub fetch_by_logic_name {
   my $self = shift;
   my $logic_name = shift;
-  my @result;
   my $analysis;
   my $rowHash;
 
@@ -208,18 +192,14 @@ sub fetch_by_logic_name {
            gff_source, gff_feature,
            created, parameters
     FROM   analysis
-    WHERE  logic_name = ?
-    ORDER BY created DESC } );
+    WHERE  logic_name = ? } );
   
   $sth->execute( $logic_name );
   my $rowHashRef;
-  while( $rowHashRef = $sth->fetchrow_hashref ) {
-       $analysis = $self->_objFromHashref( $rowHashRef );
-    if( defined $analysis ) {
-      push( @result, $analysis );
-    }
-  }
-  return @result;
+  $rowHashRef = $sth->fetchrow_hashref; 
+  $analysis = $self->_objFromHashref( $rowHashRef );
+  
+  return $analysis;
 }
 
 
