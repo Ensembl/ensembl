@@ -43,17 +43,11 @@ are usually preceded with a _
 
 
 # Let the code begin...
-
-
 package Bio::EnsEMBL::Ghost;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::SeqFeature::Generic
-
 use Bio::Root::Object;
-use Bio::EnsEMBL::Transcript;
-
 
 @ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object

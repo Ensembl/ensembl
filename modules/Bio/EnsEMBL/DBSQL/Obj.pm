@@ -55,6 +55,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::DBSQL::Contig;
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
@@ -566,12 +567,12 @@ sub get_all_Gene_id{
 =head2 get_updated_Objects
     
  Title   : get_updated_Objects
- Usage   : $obj->get_updated_Objects ($recipient_last_update, $recipient_now, $recipient_offset)
+ Usage   : $obj->get_updated_Objects ($recipient_last_update, $recipient_now)
  Function: Gets all the objects that have been updated (i.e.change in 
 	   version number) between the current time - offset time given by
            the recipient database and the last update time stored in its meta table 
  Example : $obj->get_updated_Objects (973036800,973090800)
- Returns : all the objects updated within that timespan
+ Returns : database objects (clones and genes)
  Args    : $recipient_last_update, $recipient_now
 
 =cut
@@ -625,6 +626,105 @@ sub get_updated_Objects{
     return @out;
 }
 
+=head2 get_Ghosts
+    
+ Title   : get_Ghosts
+ Usage   : $obj->get_Ghosts ($recipient_last_update, $recipient_now_offset)
+ Function: Gets all the ghosts for objects that have been deleted (i.e.permanently from 
+	   the donor db) between the current time - offset time given by
+           the recipient database and the last update time stored in its meta table 
+ Example : $obj->get_Ghosts (973036800,973090800)
+ Returns : ghost objects
+ Args    : $recipient_last_update, $recipient_now_offset
+
+=cut
+
+sub get_Ghosts_by_deleted{
+    my ($self, $last, $now_offset) = @_;
+    my @out;
+    
+    $last || $self->throw("Attempting to get updated objects without the recipient db last update time");
+    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+    
+    #First, let us convert the unix times now_offset and last into mysql times
+    my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    $sth->execute();
+    my $rowhash = $sth->fetchrow_arrayref();
+    $last = $rowhash->[0];
+    
+    $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    $now_offset = $rowhash->[0];
+    
+    #Get all ghosts that have deleted times between last and now-offset
+    $sth = $self->prepare("select id,version,seq_type,deleted_time from ghost where deleted_time > '".$last."' and deleted_time <= '".$now_offset."'");
+    $sth->execute();
+    while(my $rowhash = $sth->fetchrow_hashref()) {
+	my $ghost = Bio::EnsEMBL::Ghost->new();
+	$ghost->id($rowhash->{'id'});
+	$ghost->version($rowhash->{'version'});
+	$ghost->obj_type($rowhash->{'seq_type'});
+	$ghost->deleted_time($rowhash->{'deleted_time'});
+	push @out, $ghost;
+    }
+    return @out;
+}
+
+=head2 get_Ghost
+    
+ Title   : get_Ghost
+ Usage   : $obj->get_Ghost ($ghost_id,$ghost_version,$ghost_obj_type)
+ Function: Gets a ghost by id, version,obj_type  
+ Example : $obj->get_Ghost ('test','1','transcript')
+ Returns : ghost objects
+ Args    : ghost id, version and object type
+
+=cut
+
+sub get_Ghost{
+    my ($self, $g_id, $g_version, $g_obj_type) = @_;
+    my @out;
+    
+    $g_id || $self->throw("Attempting to get a ghost object without an id");
+    $g_version || $self->throw("Attempting to get a ghost object without a version");
+    $g_obj_type || $self->throw("Attempting to get a ghost object without an object type");
+
+    my $sth = $self->prepare("select id, version, seq_type from ghost where id='".$g_id."' and version = '".$g_version."' and seq_type = '".$g_obj_type."'");
+    $sth->execute();
+    my  $rv = $sth->rows;
+    ! $rv && $self->throw("Ghost not found in database!");
+    my $rowhash = $sth->fetchrow_hashref();
+    my $ghost = Bio::EnsEMBL::Ghost->new();
+    $ghost->id($rowhash->{'id'});
+    $ghost->version($rowhash->{'version'});
+    $ghost->obj_type($rowhash->{'seq_type'});
+    $ghost->deleted_time($rowhash->{'deleted_time'});
+    return $ghost;
+}
+
+=head2 write_Ghost
+    
+ Title   : write_Ghost
+ Usage   : $obj->write_Ghost ($ghost)
+ Function: Writes a ghost to the database  
+ Example : $obj->write_Ghost ($ghost)
+ Returns : 
+ Args    : ghost object
+
+=cut
+
+sub write_Ghost{
+    my ($self, $ghost) = @_;
+    
+    $ghost || $self->throw("Attempting to write a ghost without a ghost object");
+    $ghost->isa("Bio::EnsEMBL::Ghost") || $self->throw("$ghost is not an EnsEMBL ghost - not dumping!");
+    
+    my $sth = $self->prepare("insert into ghost (id, version, seq_type,deleted_time) values('".$ghost->id."','".$ghost->version."','".$ghost->obj_type."','".$ghost->deleted_time."')");
+    $sth->execute();
+    return 1;
+}
+
 =head2 archive_Gene
     
  Title   : archive_Gene
@@ -633,32 +733,31 @@ sub get_updated_Objects{
            and archives partial info in the archive db passed on.
  Example : 
  Returns : nothing
- Args    : $gene, $clone, $arcdb (archive database object)
+ Args    : $gene, $arcdb (archive database object)
 
 
 =cut
 
 sub archive_Gene {
-   my ($self,$gene,$clone,$arc_db) = @_;
+   my ($self,$gene,$arc_db) = @_;
    my $sth;
 
    # get transcripts for the gene given 
-
+   
    foreach my $transcript ($gene->each_Transcript) {
        
        #Get out transcript info needed to write into archive db
        my $seq = $transcript->dna_seq;
        $seq->id($transcript->id);
        print STDERR "The transcript sequence id is ".$seq->id."\n";
-
+       
        #Temporary, since versions not stored yet...
        !$transcript->version && $transcript->version(1);
        !$gene->version && $gene->version(1);
-       !$clone->version && $clone->version(1);
        
        #Finally, write all the info to a new entry in the archive database
-
-       $arc_db->write_seq($seq, $transcript->version, 'transcript', $gene->id, $gene->version, $clone->id, $clone->version);
+       
+       $arc_db->write_seq($seq, $transcript->version, 'transcript', $gene->id, $gene->version);
        
        #Get out translation to write protein into archive db
        #Note: version is the one from transcript!
@@ -666,7 +765,7 @@ sub archive_Gene {
        $seq = $transcript->translate;
        print STDERR "The protein sequence id is ".$seq->id."\n";
 
-       $arc_db->write_seq($seq, $transcript->version, 'protein', $gene->id, $gene->version, $clone->id, $clone->version);
+       $arc_db->write_seq($seq, $transcript->version, 'protein', $gene->id, $gene->version);
 
        #Delete transcript rows
        $sth= $self->prepare("delete from transcript where id = '".$transcript->id."'");
@@ -683,7 +782,7 @@ sub archive_Gene {
 	   !$exon->version && $exon->version(1);
 	   
 	   #Write into archive db
-	   $arc_db->write_seq($seq, $exon->version, 'exon', $gene->id, $gene->version, $clone->id, $clone->version);
+	   $arc_db->write_seq($seq, $exon->version, 'exon', $gene->id, $gene->version);
 	   
            #Delete exon_transcript rows
 	   $sth= $self->prepare("delete from exon_transcript where transcript = '".$transcript->id."'");
@@ -712,10 +811,9 @@ sub archive_Gene {
 =cut
 
 sub delete_Clone{
-   my ($self,$clone_id,$arc_db) = @_;
+   my ($self,$clone_id) = @_;
    
    $clone_id || $self->throw ("Trying to delete clone without a clone_id\n");
-   $arc_db || $self->throw ("Not allowed to delete clones without passing on a valid, connected, archive_DB!\n");
    
    my @contigs;
    # get a list of contigs to zap
@@ -845,6 +943,34 @@ sub cloneid_to_geneid{
    return @out;
 }
 
+=head2 write_last_update
+    
+ Title   : write_last_update
+ Usage   : $obj->write_last_update
+ Function: Writes the current time in the last update field of the meta table
+ Example : 
+ Returns : nothing
+ Args    : 
+
+=cut
+
+sub replace_last_update {
+     my ($self) = @_;
+     
+     my $last= $self->get_last_update;
+     
+     my $sth = $self->prepare("insert into meta (last_update,donor_database_locator) values (CURRENT_TIMESTAMP,'".$self->get_donor_locator."')");
+     $sth->execute;
+
+     my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+     $sth->execute();
+     my $rowhash = $sth->fetchrow_arrayref();
+     $last = $rowhash->[0];
+     
+     $sth = $self->prepare("delete from meta where last_update = '".$last."'");  
+     $sth->execute;
+
+}
 =head2 write_Gene
 
  Title   : write_Gene
@@ -904,7 +1030,7 @@ sub write_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("insert into gene (id) values ('". $gene->id(). "')");
+   my $sth2 = $self->prepare("insert into gene (id,version,created,modified) values ('". $gene->id()."','".$gene->version."','".$gene->created."','".$gene->modified."')");
    $sth2->execute();
 
    #$self->_unlock_tables();
@@ -1264,7 +1390,7 @@ sub write_Contig {
              $clone       || $self->throw("No clone entered.");
 
    my $contigid  = $dna->id;
-   my $date      = `date '+%Y-%m-%d'`; chomp $date;
+   my $date      = $contig->created;
    my $len       = $dna->seq_len;
    my $seqstr    = $dna->seq;
    my $offset    = $contig->offset();
@@ -1300,19 +1426,16 @@ sub write_Contig {
 sub write_Clone{
    my ($self,$clone) = @_;
 
+   my $clone_id = $clone->id;
+   $clone || $self->throw("Trying to write a clone without a clone object!\n");
    if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
        $self->throw("Clone must be a CloneI type, not a $clone");
    }
-
-
-   my $clone_id = $clone->id();
-   my $version = $clone->version();
-   my $embl_id = $clone->embl_id();
-   my $htg_phase = $clone->htg_phase();
+   
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,htg_phase,modified) values('$clone_id','$version','$embl_id','$htg_phase',CURRENT_TIMESTAMP)");
+   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified.")");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
