@@ -63,14 +63,15 @@ print STDERR "Writing flat files for $num clones...\n";
 
 die "No clones!\n" unless (@clones);
 
-#exit;
-#close(STDERR);
+
 
 my $emblout;
 my ($clone,$as);
 
 HOP: foreach my $c (@clones){
 	$count++;
+
+	
 
 #&eprof_dump(\*STDERR);	
 
@@ -120,8 +121,7 @@ HOP: foreach my $c (@clones){
 
 	    my $filename = "$outpath/embl/$c.embl";
 	    print STDERR "Creating embldump file $count: $filename...\n";
-	    open (FLAT, ">$filename") or die "Cannot create flat file ($filename): $!\n";
-            &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    open (FLAT, ">$filename") or die "Cannot create flat file ($filename): $!\n";           
             my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => \*FLAT);
             &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
             $emblout->write_seq($as);

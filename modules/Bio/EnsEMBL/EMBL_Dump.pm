@@ -173,10 +173,10 @@ sub ensembl_annseq_output {
    }
 
    if( $aseqstream->can('_post_sort') ) {
-       $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
+      $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
    }
 
-   # attach ensembl specific dumping functions
+#    attach ensembl specific dumping functions
    $aseqstream->_id_generation_func(\&id_EnsEMBL);
    $aseqstream->_kw_generation_func(\&kw_EnsEMBL);
    $aseqstream->_sv_generation_func(\&sv_EnsEMBL);
