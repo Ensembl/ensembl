@@ -541,6 +541,32 @@ sub store {
    return $gene->dbID;
 }
 
+=head2 get_all_Gene_dbID
+
+ Title   : get_all_Gene_dbID
+ Usage   : $geneobj->get_all_Gene_dbID
+ Function: Gets an array of ids for all genes in the current db
+ Example : $geneobj->get_all_Gene_dbID
+ Returns : array of ids
+ Args    : none
+
+=cut
+
+sub get_all_Gene_dbID {
+   my ($self) = @_;
+
+   my @out;
+   my $sth = $self->db->prepare("select gene_id from gene");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'gene_id'});
+   }
+
+   return @out;
+}
+
+
 
 sub remove {
   my $self = shift;
