@@ -501,10 +501,9 @@ eval {
                              f.name, f.hstart, f.hend, 
                              f.hid, f.analysis, s.name 
                       FROM   $dbname.feature f, $dbname.analysis a, 
-                             $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                             $mapsdbname.MarkerSynonym s, 
                              $dbname.static_golden_path sgp 
-                      WHERE  m.marker=s.marker 
-                      AND    f.hid=m.marker 
+                      WHERE  f.hid=s.marker  
                       AND    sgp.raw_id=f.contig 
                       AND    f.analysis = a.id 
                       AND    a.db='mapprimer'
@@ -603,10 +602,10 @@ eval {
                                     f.name, f.hstart, f.hend, 
                                     f.hid, f.analysis, s.name  
                           FROM      $dbname.feature f, $dbname.analysis a, 
-                                    $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                    $mapsdbname.MarkerSynonym s, 
                                     $dbname.static_golden_path sgp
-                          WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
-                          AND       f.hid=m.marker
+                          WHERE     sgp.raw_id=f.contig  
+                          AND       f.hid=s.marker
                           AND       sgp.chr_name='$chr_name' 
                           AND       f.analysis = a.id 
                           AND       a.db='mapprimer'
@@ -705,10 +704,10 @@ eval {
                                     f.name, f.hstart, f.hend, 
                                     f.hid, f.analysis, s.name  
                           FROM      $dbname.feature f, $dbname.analysis a, 
-                                    $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                                    $mapsdbname.MarkerSynonym s, 
                                     $dbname.static_golden_path sgp
-                          WHERE     sgp.raw_id=f.contig and  m.marker=s.marker 
-                          AND       f.hid=m.marker
+                          WHERE     sgp.raw_id=f.contig  
+                          AND       f.hid=s.marker
                           AND       sgp.chr_name='$chr_name' 
                           AND       f.analysis = a.id 
                           AND       a.db='mapprimer'                       
