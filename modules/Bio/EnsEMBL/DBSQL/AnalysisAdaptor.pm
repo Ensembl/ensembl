@@ -43,6 +43,7 @@ package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Exception;
 
 use vars qw(@ISA);
 use strict;
