@@ -214,26 +214,31 @@ sub _exon_from_sth {
 
     $exon->start(1);
     $exon->end($sticky_length);
-    $exon->seqname('artificial.sticky.exon');
+    $exon->strand( 1 );
 
-    # put the right strand if you get the chance to do it:
-    my $global_strand;
-    my $all_the_same = 1;
-    foreach my $component ( $exon->each_component_Exon ){
-      unless ($global_strand){
-	$global_strand = $component->strand;
-      }
-      if ( $component->strand != $global_strand ){
-	$all_the_same = 0;
-      }
-    }
-    if ( $all_the_same == 1 ){
-      $exon->strand( $global_strand );
-    }
-    else{
-      # well, nothing we can do really...
-      $exon->strand( 1 );
-    }
+    # the commented lines don't work as there are some dependencies hidden some where in the
+    # translation code, which makes this fail horribly. 
+    # Never mind. We can live with imperfection...sometimes. (Happy GeneBuilders Inc.)
+
+#   $exon->seqname('artificial.sticky.exon');
+       ## put the right strand if you get the chance to do it:
+#    my $global_strand;
+#    my $all_the_same = 1;
+#    foreach my $component ( $exon->each_component_Exon ){
+#      unless ($global_strand){
+#	$global_strand = $component->strand;
+#      }
+#      if ( $component->strand != $global_strand ){
+#	$all_the_same = 0;
+#      }
+#    }
+#    if ( $all_the_same == 1 ){
+#      $exon->strand( $global_strand );
+#    }
+#    else{
+#      # well, nothing we can do really...
+#      $exon->strand( 1 );
+#    }
   } 
   else {
     $exon = $self->_new_Exon_from_hashRef($hashRef);
