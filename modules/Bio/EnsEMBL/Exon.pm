@@ -83,10 +83,10 @@ use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
-use Bio::SeqFeature::Generic;
+use Bio::EnsEMBL::SeqFeature;
 use Bio::Seq; # exons have to have sequences...
 
-@ISA = qw(Bio::SeqFeature::Generic Exporter);
+@ISA = qw(Bio::EnsEMBL::SeqFeature Exporter);
 
 
 sub new {
@@ -192,6 +192,27 @@ sub dbID {
       $self->{'dbID'} = $value;
     }
     return $self->{'dbID'};
+
+}
+
+=head2 temporary_id
+
+ Title   : temporary_id
+ Usage   : $obj->temporary_id($newval)
+ Function: 
+ Returns : value of temporary_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub temporary_id {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'tempID'} = $value;
+    }
+    return $self->{'tempID'};
 
 }
 

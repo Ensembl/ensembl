@@ -259,10 +259,10 @@ sub length{
 
 =cut
 
-sub strand{
+sub strand {
     my ($self,$value) = @_;
     
-    if (defined($value) ) {
+    if (defined($value)) {
 	if( $value eq '+' ) { $value = 1; }
 	if( $value eq '-' ) { $value = -1; }
 	if( $value eq '.' ) { $value = 0; }

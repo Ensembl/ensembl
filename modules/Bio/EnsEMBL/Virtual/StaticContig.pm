@@ -51,6 +51,7 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::Contig;
+use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::Annotation;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::VirtualGene;
@@ -185,8 +186,8 @@ sub get_all_SimilarityFeatures {
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)) as end , 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)) as strand,
                                 f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
-		        FROM   feature f, analysis a,static_golden_path sgp
-                        WHERE  f.analysis = a.id 
+		        FROM   feature f, analysisprocess a,static_golden_path sgp
+                        WHERE  f.analysis = a.analysisId 
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
                         AND    sgp.chr_end >= $glob_start 
@@ -292,13 +293,13 @@ sub get_all_SimilarityFeatures_above_score{
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
-                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
-		        FROM   feature f, analysis a,static_golden_path sgp
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid, f.contig 
+		        FROM   feature f, analysisprocess a,static_golden_path sgp
                         WHERE  sgp.raw_id = f.contig
                         AND    f.contig in $idlist
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name = '$chr_name'
-                        AND    a.id = f.analysis
+                        AND    a.analysisId = f.analysis
                         AND    f.score > $score
                         ORDER  by hid,start";
       # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
@@ -319,7 +320,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
     
       $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
-			 \$analysisid,\$name,\$hstart,\$hend,\$hid);
+			 \$analysisid,\$name,\$hstart,\$hend,\$hid,\$contig);
     
     
       $self->{'_feature_cache'} = {};
@@ -354,9 +355,10 @@ sub get_all_SimilarityFeatures_above_score{
 	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
 	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
 			       $hstart,$hend,1,$f_score,$name,'similarity',$hid);
-	  
+
 	  $out->analysis($analysis);
 	  $out->id      ($hid);
+
 	  if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
 	      $self->{'_feature_cache'}->{$analysis->db()} = [];
 	  }
@@ -591,9 +593,9 @@ sub get_all_SimilarityFeatures_above_pid{
 
 	  if (!$analhash{$analysisid}) 
 	  {
-	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	      $analysis = $feature_obj->get_Analysis($analysisid);
-	      $analhash{$analysisid} = $analysis;	   
+	    my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	    $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	    $analhash{$analysisid} = $analysis;	   
 	  } 
 	  else {$analysis = $analhash{$analysisid};}
 	  
@@ -780,13 +782,14 @@ sub get_all_PredictionFeatures {
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
                         f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig 
-                        FROM   feature f, analysis a,static_golden_path sgp 
-                        WHERE    f.analysis = a.id 
+                        FROM   feature f, analysisprocess a,static_golden_path sgp 
+                        WHERE    f.analysis = a.analysisId 
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
 		        AND    a.gff_source = '$analysis_type'  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
+                        ORDER BY f.strand,f.seq_start
                         ";
    
    my $sth = $self->dbobj->prepare($query);
@@ -815,18 +818,16 @@ sub get_all_PredictionFeatures {
        my $analysis;
        
        if (!$analhash{$analysisid}) {
-	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   
-	   $analhash{$analysisid} = $analysis;
+	 my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	 $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	 $analhash{$analysisid} = $analysis;	   
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
 
        
-       if( $hid =~ /Initial/ || $hid =~ /Single/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 || $previous_contig != $contig) {
+       if( $hid ne $previous|| $previous eq -1 || $previous_contig != $contig) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
 	   $current_fset->source_tag('genscan');
@@ -965,7 +966,7 @@ sub get_all_SimpleFeatures_by_analysis_id {
     $self->throw("No analysis ID given") unless $analysis_id;
     
     return $self->_fetch_SimpleFeatures_SQL_clause(qq{
-        AND a.id = $analysis_id
+        AND a.analysisId = $analysis_id
         });
 }
 
@@ -996,9 +997,9 @@ sub _fetch_SimpleFeatures_SQL_clause {
           , f.name
           , f.hid
         FROM feature f
-          , analysis a
+          , analysisproces a
           , static_golden_path sgp
-        WHERE f.analysis = a.id
+        WHERE f.analysis = a.analysisId
           AND sgp.raw_id = f.contig
           AND f.contig IN $idlist
           AND sgp.type = '$type'
@@ -1038,8 +1039,8 @@ sub _fetch_SimpleFeatures_SQL_clause {
         # Get an analysis object
         my( $analysis );
         unless ($analysis = $anal{$analysis_id}) {
-            my $feature_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	    $analysis = $feature_obj->get_Analysis($analysis_id);
+	  my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	  $analysis = $analysis_adp->fetch_by_dbID($analysis_id);
 	    $anal{$analysis_id} = $analysis;
         }
     
@@ -1559,14 +1560,14 @@ eval {
                           IF        (sgp.raw_ori=1,f.strand,(-f.strand)),
                                     f.name, f.hstart, f.hend, 
                                     f.hid, f.analysis, s.name  
-                          FROM      $dbname.feature f, $dbname.analysis a, 
+                          FROM      $dbname.feature f, $dbname.analysisprocess a, 
                                     $mapsdbname.MarkerSynonym s, 
                                     $dbname.static_golden_path sgp
                           WHERE     sgp.raw_id=f.contig  
                           AND       f.hid=s.marker
                           AND       sgp.chr_name = '$chr_name' 
                           AND       sgp.type = '$type'
-                          AND       f.analysis = a.id 
+                          AND       f.analysis = a.analysisId 
                           AND       a.db='mapprimer'
                           AND       sgp.chr_start > $start 
                           AND       sgp.chr_start < $end
@@ -1662,14 +1663,14 @@ eval {
                           IF        (sgp.raw_ori=1,f.strand,(-f.strand)), 
                                     f.name, f.hstart, f.hend, 
                                     f.hid, f.analysis, s.name  
-                          FROM      $dbname.feature f, $dbname.analysis a, 
+                          FROM      $dbname.feature f, $dbname.analysisprocess a, 
                                     $mapsdbname.MarkerSynonym s, 
                                     $dbname.static_golden_path sgp
                           WHERE     sgp.raw_id=f.contig  
                           AND       f.hid=s.marker
                           AND       sgp.chr_name='$chr_name'
                           AND       sgp.type = '$type'
-                          AND       f.analysis = a.id 
+                          AND       f.analysis = a.analysisId 
                           AND       a.db='mapprimer'                       
                           AND       sgp.chr_start<$start 
                           AND       sgp.chr_start>=$end 
@@ -2373,10 +2374,9 @@ sub _get_analysis {
     my $analysis;
     my $analhash=$self->{_anal_hash};
     if (!$analhash->{$analysisid}) {
-	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	$analysis = $feature_obj->get_Analysis($analysisid);
-	
-	$self->{_anal_hash}->{$analysisid} = $analysis;
+	  my $analysis_adp = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor($self->dbobj);
+	  $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+	  $self->{_anal_hash}->{$analysisid} = $analysis;
 	
     } else {
 	$analysis = $analhash->{$analysisid};

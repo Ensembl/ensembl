@@ -688,7 +688,7 @@ sub split_Transcript_to_Partial {
        push(@out,$t);
 
        while( my $exon = shift @exons ) {
-	   print STDERR "Looking at exon ",$exon->dbID," with phase ",$exon->phase," vs ",$prev->dbID," ",$prev->phase,"\n";
+#	   print STDERR "Looking at exon ",$exon->dbID," with phase ",$exon->phase," vs ",$prev->dbID," ",$prev->end_phase,"\n";
 	   if( $exon->phase == $prev->end_phase) {
 	       # add it
 	       $t->add_Exon($exon);
@@ -995,7 +995,6 @@ sub _translate_coherent{
    my @exons = $self->get_all_Exons;
    my $exon_start = $exons[0];
 
-
    foreach my $exon ( @exons ) {
 
 
@@ -1010,8 +1009,8 @@ sub _translate_coherent{
 	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
 	   $exon->entire_seq()->moltype('dna');
        }
-#       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
-#       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
+#       print STDERR "Exon phase " . $exon->temporary_id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
+ #      print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
 
        my $seq = $exon->seq();
        my $str = $seq->seq();
@@ -1063,7 +1062,7 @@ sub _translate_coherent{
    my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
   #my $trans_seq = $temp_seq->translate();
 
-   print STDERR "Sequence is $tstr \n";
+#   print STDERR "Sequence is $tstr \n";
 
    return $temp_seq->translate();
 }

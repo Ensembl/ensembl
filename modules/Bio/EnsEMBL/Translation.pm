@@ -307,6 +307,27 @@ sub _get_stable_entry_info {
 }
 
 
+=head2 temporary_id
+
+ Title   : temporary_id
+ Usage   : $obj->temporary_id($newval)
+ Function: 
+ Returns : value of temporary_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub temporary_id {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'tempID'} = $value;
+    }
+    return $self->{'tempID'};
+
+}
+
 
 =head2 dbID
 

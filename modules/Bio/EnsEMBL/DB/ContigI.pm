@@ -931,11 +931,6 @@ sub mask_features {
       my $padstr = 'N' x $length;
       
       substr ($dnastr,$start,$length) = $padstr;
-      #PL: this may be overcautious, remove if too slow
-      if ($dnastr !~ /^[A-Za-z\-\.\*]+$/) {
-          $dnastr =~ s/[A-Za-z\-\.\*]//g;
-          $self->throw("Nonstandard characters found $dnastr\n"); 
-      }
   }
     return $dnastr;
 }                                       # mask_features

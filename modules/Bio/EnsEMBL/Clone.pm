@@ -50,8 +50,6 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::DBSQL::RawContig;
-use Bio::EnsEMBL::DBSQL::Feature_Obj;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DB::CloneI;
 
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
