@@ -196,21 +196,21 @@ sub _initialize {
 sub dbname {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
-    $self->{_dbname} = $arg;
+    ( $self->{_dbname} = $arg );
   $self->{_dbname};
 }
 
 sub username {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
-    $self->{_username} = $arg;
+    ( $self->{_username} = $arg );
   $self->{_username};
 }
 
 sub host {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
-    $self->{_host} = $arg;
+    ( $self->{_host} = $arg );
   $self->{_host};
 }
 
