@@ -156,7 +156,7 @@ sub fetch_by_contig_id_constraint{
        $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
      }
 
-     my $dnapep = $self->_new_feature($start,$end,$strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$contig->name,$contig);
+     my $dnapep = $self->_new_feature($start,$end,$strand,$hstart,$hend,1,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$contig->name,$contig);
 
      push(@f,$dnapep);
    }
@@ -273,7 +273,7 @@ sub fetch_by_Slice{
   foreach my $f(@features){
     my $start = ($f->start - ($slice->chr_start - 1));
     my $end = ($f->end - ($slice->chr_start - 1));
-    my $out = $self->_new_feature($start,$end,$f->strand,$f->score,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->percent_id,$f->p_value,$f->seqname,undef);
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,$f->hstrand,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname,undef);
     push(@out_f, $out);
   }
 
@@ -314,7 +314,7 @@ sub fetch_by_Slice_and_score {
     my $start = ($f->start - ($slice->chr_start - 1));
     my $end = ($f->end - ($slice->chr_start - 1));
     
-    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,1,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
 
     push(@out_f, $out);
   }
@@ -355,7 +355,7 @@ sub fetch_by_Slice_and_pid {
   foreach my $f(@features){
     my $start = ($f->start - ($slice->chr_start - 1));
     my $end = ($f->end - ($slice->chr_start - 1));
-    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
+    my $out = $self->_new_feature($start,$end,$f->strand,$f->hstart,$f->hend,1,$f->hseqname,$f->cigar_string,$f->analysis,$f->score,$f->p_value,$f->percent_id,$f->seqname);
     
 
     push(@out_f, $out);
@@ -513,7 +513,7 @@ sub fetch_by_assembly_location_constraint{
        }
 
 
-       my $dnapep = $self->_new_feature($coord_list[0]->start,$coord_list[0]->end,$coord_list[0]->strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$coord_list[0]->id,undef);
+       my $dnapep = $self->_new_feature($coord_list[0]->start,$coord_list[0]->end,$coord_list[0]->strand,$hstart,$hend,1,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$coord_list[0]->id,undef);
 
        push(@f,$dnapep);
    }
@@ -575,7 +575,7 @@ sub store{
 #
 
 sub _new_feature {
-  my ($self,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis,$score,$evalue,$perc_id,$seqname,$seq) = @_;
+  my ($self,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis,$score,$evalue,$perc_id,$seqname,$seq) = @_;
 
   if( !defined $seqname ) {
     $self->throw("Do not have all the parameters for making features");
@@ -590,6 +590,7 @@ sub _new_feature {
   
   $f2->start($hstart);
   $f2->end($hend);
+  $f2->strand($hstrand);
   $f2->seqname($hname);
 
   $f1->score($score);
