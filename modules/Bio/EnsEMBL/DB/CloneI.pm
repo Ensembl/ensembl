@@ -390,7 +390,7 @@ sub get_AnnSeq {
     foreach my $contig ($self->get_all_Contigs) {
         # Add features to annseq object
         # coordinates are in contig coordinate space
-        foreach my $homol ($contig->get_all_Clone_SeqFeatures) {
+        foreach my $homol ($contig->get_all_clone_SeqFeatures) {
             $as->add_SeqFeature( $homol );
         }
     }
