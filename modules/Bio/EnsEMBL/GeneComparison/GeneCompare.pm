@@ -22,27 +22,34 @@ These are compared to the array of exons found on the genes stored in
 
 =head1 DESCRIPTION
 
-This module represents a class that is used for gene comparison. It is a specialisation 
-of Bio::Root::RootI. The constructor (new method) takes an array of genes which is stored
-in the @{$self->{'_predictorGenes'}} property. These are the genes against which all 
-comparisons are made. An array of exons on these genes is obtained by calling the
-_getPredictorExons method. The standard gene is set by the setStandardGene method which
-finds all the standard exons and stores them in the $self->{'_standardExons'} property. 
+This module represents a class that is used for gene comparison. It is a 
+specialisation of Bio::Root::RootI. The constructor (new method) takes an array 
+of genes which is stored in the @{$self->{'_predictorGenes'}} property. These 
+are the genes against which all comparisons are made. An array of exons on these 
+genes is obtained by calling the _getPredictorExons method. The standard gene is 
+set by the setStandardGene method which finds all the standard exons and stores 
+them in the $self->{'_standardExons'} property. 
 
-Various methods perform comparisons between the standard gene and the array of predictor genes
-by in turn creating objects of the class Bio::EnsEMBL::GeneComparison::ExonCompare and calling
-appropriate methods on these:
+Various methods perform comparisons between the standard gene and the array of 
+predictor genes by in turn creating objects of the class 
+Bio::EnsEMBL::GeneComparison::ExonCompare and calling appropriate methods on 
+these:
 
-isMissed returns 1 if none of the exons on the standard gene are overlapped by the predictor genes.
-isExactlyMatched returns 1 if all the exons on the standard gene are exactly identified 
-by only one of the predictor genes.
-getGeneOverlapCount returns the number of predictor genes that the standard gene overlaps. 
-getExactOverlapRatio returns a list. The first item is the number of exons on the standard 
-gene that are exactly overlapped; the second is the number that are not.
-getMissed returns the number of standard exons which are not overlapped by predictor exons.
-getExonOverlaps returns an array containing predictor exons which the standard gene overlaps.
-getBaseOverlaps returns the number of bases on the standard gene that have true positive, true negative
-and false positive overlaps with all the overlapping exons from the predictor genes. 
+isMissed returns 1 if none of the exons on the standard gene are overlapped by 
+the predictor genes. isExactlyMatched returns 1 if all the exons on the standard 
+gene are exactly identified by only one of the predictor genes.
+getGeneOverlapCount returns the number of predictor genes that the standard gene 
+overlaps. 
+getExactOverlapRatio returns a list. The first item is the number of exons on 
+the standard gene that are exactly overlapped; the second is the number that are 
+not.
+getMissedExon returns the number of standard exons which are not overlapped by 
+predictor exons.
+getExonOverlaps returns an array containing predictor exons which the standard 
+gene overlaps.
+getBaseOverlaps returns the number of bases on the standard gene that have true 
+positive, true negative and false positive overlaps with all the overlapping 
+exons from the predictor genes. 
 
 
 =head1 CONTACT
@@ -309,10 +316,10 @@ sub getExactOverlapRatio {
 
 
 
-=head2 getMissed
+=head2 getMissedExon
 
- Title   : getMissed
- Usage   : $missed = $obj->getMissed()
+ Title   : getMissedExon
+ Usage   : $missed = $obj->getMissedExon()
  Function: The number of standard exons which are not overlapped by predictor exons.
  Example : 
  Returns : Integer
@@ -321,7 +328,7 @@ sub getExactOverlapRatio {
 
 =cut
 
-sub getMissed {
+sub getMissedExon {
     my ($self) = @_;
 
     my $comparer = new Bio::EnsEMBL::GeneComparison::ExonCompare($self->_getPredictorExons());
