@@ -170,7 +170,6 @@ sub fetch_Protein_by_dbid{
 #Define the moltype
    my $moltype = "protein";
    
-   
    my $meta_obj = $self->db->get_MetaContainer();
    my $species = $meta_obj->get_Species();
    
@@ -496,6 +495,7 @@ sub get_exon_global_coordinates{
 sub get_snps {
     my ($self,$protein,$sndb,$gbd) = @_;
 
+    
     my $transid = $protein->transcriptac();
 
     my @exons;
@@ -505,36 +505,41 @@ sub get_snps {
     my $snp;
     my %expos;
     my @array_snp;
+    my @features;
 
-#Get the exon information for this given transcript
+    #Get the exon information for this given transcript
     my $sth = $gbd->prepare("select exon,exon_chrom_start,exon_chrom_end from exon where transcript='$transid'");
     $sth->execute;
     
     while (my @loc = $sth->fetchrow) {
+	my $loc;
 	$count++;
 	$expos{$loc[0]} = $count;
-	$ex->{id} = $loc[0];
-	$ex->{pos} = $count;
-	$ex->{start} = $loc[1];
-	$ex->{end} =$loc[2];
-	$ex->{length} = ($loc[2] - $loc[1]);
-	push (@exons,$ex);
+	
+	$$loc[0]->{id} = $loc[0];
+	$$loc[0]->{pos} = $count;
+	$$loc[0]->{start} = $loc[1];
+	$$loc[0]->{end} = $loc[2];
+	$$loc[0]->{length} = ($loc[2] - $loc[1]);
+	push (@exons,$$loc[0]);
     }
 	
-#Now, get information about the snps on this transcript    
+    #Now, get information about the snps on this transcript    
     my $sth1 = $gbd->prepare("select exon,s.refsnpid,s.snp_chrom_start from exon e, gene_snp s where s.gene=e.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end and e.transcript='$transid'");
     $sth1->execute;
   
     while (@array_snp = $sth1->fetchrow) {
-	$snp->{id} = $array_snp[1];
-	$snp->{exon} = $array_snp[0];
-	$snp->{pos} = $array_snp[2];
-	push (@snps,$snp);
+	my $array_snp;
+	$$array_snp[1]->{exon} = $array_snp[0];
+	$$array_snp[1]->{id} = $array_snp[1];
+	$$array_snp[1]->{pos} = $array_snp[2];
+	push (@snps,$$array_snp[1]);
     }
     
-    foreach my $s(@array_snp) {
+    foreach my $s(@snps) {
 	my $e;
-	my $exid = $s->{id};
+	my $exid = $s->{exon};
+	
 	my $pos = $expos{$exid};
 	
 	my $previous_exons_length = 0;
@@ -547,9 +552,35 @@ sub get_snps {
 		$e = $exs;
 	    }
 	}
-	
 	#Get the location of the snp in aa coordinates      
-        my $aa_pos = int (($s->{start} - $e->{start} + $previous_exons_length)/3) + 1;
+        my $aa_pos = int (($s->{pos} - $e->{start} + $previous_exons_length)/3) + 1;
+	
+	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+	
+	    $anal->program        ('NULL');
+	    $anal->program_version('NULL');
+	    $anal->gff_source     ('SNP');
+	    $anal->gff_feature    ('SNP');
+	    #$anal->dbID(2);
+
+
+	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protein->id,
+						       -start => $aa_pos,
+						       -end => $aa_pos,
+						       -score => 0, 
+						       -percent_id => "NULL",
+						       -analysis => $anal,
+						       -p_value => "NULL");
+	    
+	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
+						      -end => 0,
+						      -analysis => $anal,
+						      -seqname => "Variant");
+	    
+	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+								-feature2 => $feat2,);
+	push(@features,$feature);
 	
     }
+    return @features;
 }
