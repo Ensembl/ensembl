@@ -27,9 +27,9 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
     #move the feature to a different slice (possibly on another coord system)
     $feature = $feature->transfer($new_slice);
 
-    #project the feature onto another coordinate system possible accross
+    #project the feature onto another coordinate system possibly across
     #boundaries:
-    @coords = $feature->map('contig');
+    @projection = @{$feature->project('contig')};
 
     #change the start, end, and strand of the feature in place
     $feature->move($new_start, $new_end, $new_strand);
@@ -329,20 +329,114 @@ sub slice {
 }
 
 
+=head2 slice
+
+  Arg [1]    : string $coord_system
+               The coord system to transform this feature to.
+  Arg [2]    : string $version (optional)
+               The version of the coord system to transform this feature to.
+  Example    : $feature = $feature->transform('contig');
+               next if(!defined($feature));
+  Description: Returns a copy of this feature, but converted to a different
+               coordinate system. The converted feature will be placed on a
+               slice which spans an entire sequence region of the new
+               coordinate system.  If The requested coordinate system is the
+               same coordinate system (but may be ona different slice if the
+               original slice did not span the entire seq_region).
+
+               If a feature spans a boundary in the new coordinate system, 
+               undef is returned instead.
+
+               For example, transforming an exon in contig coordinates to one 
+               in chromosomal coodinates will place the exon on a slice of an 
+               entire chromosome.
+  Returntype : Bio::EnsEMBL::Feature (or undef)
+  Exceptions : thrown if an invalid coordinate system is provided
+               thrown if this feature is not already on a slice
+  Caller     : general
+
+=cut
 
 sub transform {
+  my $self = shift;
+  my $cs_name = shift;
+  my $cs_version = shift;
 
+  ### for backwards compatibility it might be a good idea to transform to
+  ### contig coords if no args are provided and to chain this method to
+  ### transfer() if a slice is provided
+
+  my $slice = $self->{'slice'};
+
+  if(!$slice) {
+    throw('Feature is not associated with a slice and may not be transformed');
+  }
+
+  my $db = $self->adaptor->db();
+  my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
+  my $current_cs = $slice->coord_system();
+
+  #convert this features coords to absolute coords (i.e. relative to the start
+  #of the seq_region, not to the slice)
+  my $slice_adaptor = $db->get_SliceAdaptor->fetch_by_region();
+  $slice = $slice_adaptor->fetch_by_region($current_cs->name(),
+                                           $slice->seq_region(),
+                                           undef, #start
+                                           undef, #end
+                                           1, #strand
+                                           $current_cs->version);
+
+  #this also copies the feature so we no longer have to, and can alter it
+  #in place
+  my $feature = $self->transfer($slice);
+
+  #if the current coord system is the same as the new one, we are already done
+  return $feature if($cs->equals($current_cs));
+
+  #otherwise convert this features coordinates to the other coord system
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($current_cs, $cs);
+
+  #remember the coords are already relative to start of seq_region
+  my @coords = $asm_mapper->map($slice->seq_region_name(),
+                                $feature->{'start'},
+                                $feature->{'end'},
+                                $feature->{'strand'},
+                                $current_cs);
+
+  #we don't deal with gaps or with multiple seq_region mappings
+  if(@coords != 1 || $coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    return undef;
+  }
+  my $coord = $coords[0];
+
+  $slice = $slice_adaptor->fetch_by_region($cs->name(),
+                                           $coord->id(), #seq_region
+                                           undef,        #start
+                                           undef,        #end
+                                           1,            #strand
+                                           $cs->version());
+
+  #shift the feature and place it on the appropriate slice
+  $feature->{'start'}  = $coord->start();
+  $feature->{'end'}    = $coord->end();
+  $feature->{'strand'} = $coord->strand();
+  $feature->{'slice'}  = $slice;
+
+  return $feature;
 }
 
 
 sub transfer {
-
+  
 
 }
 
 
-sub map {
 
+
+sub project {
+  my $self = shift;
 
 }
 
