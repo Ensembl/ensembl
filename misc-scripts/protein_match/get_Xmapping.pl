@@ -63,7 +63,7 @@ my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
 &process_parsed_sp($swiss, $ac, $id, \*OUT);
 
 
-if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat") || ($organism eq "zebrafish")) {
   #Read the refseq file in gnp format
   print STDERR "Reading REFSEQ File\n";
   
@@ -243,23 +243,38 @@ if($organism eq "zebrafish") {
     
      while (<ZEBLINK>) {
 	chomp;
-	my ($ac,$db,$ext_ac) = split;
+	my ($ac,$db,$ext_ac) = split /\t/;
+        my (@accs) = split /,/, $ext_ac if ($ext_ac =~ /,/);
+        @accs = ($ext_ac) unless ($ext_ac =~ /,/);
 
-	if (($db eq "SWISS-PROT") || ($db eq "RefSeq")) {
-	    $map{$ac} = "$db:$ext_ac";
-	}
+        if (($db eq "SWISS-PROT") || ($db eq "RefSeq") || ($db eq "LocusLink") || ($db eq "Genbank") || ($db eq "UniGene")) {
+	    foreach my $newac (@accs) {
+                push @{$map{$ac}}, "$newac:$db";
+            }
+        }
     }
     
     while (<ZEBGENE>) {
 	chomp;
-	my ($ac,$a,$b,$id) = split;
-	my $pri = $map{$ac};
-	my ($displ_id,$tag) = split(/:/,$pri);
-	if ($tag eq "SWISS-PROT") {
-	    $tag = "SPTR";
-	}
-	print OUT "$displ_id\tSPTR\t$ac\tZFIN_ID\t$id\t\tXREF\n";
-	print OUT "$displ_id\tSPTR\t$ac\tZFIN_AC\t$ac\t\tXREF\n";
+        next if /ZDB\S+\s+\w\w:/;
+        next if /cnf/;
+        my ($ac,$desc,$id,$num) = split /\t/;
+	if (exists $map{$ac}) {
+            my @accs = @{$map{$ac}} ;
+
+            for (my $k = 0; $k < scalar @accs; $k++) {
+                my $pri = $accs[$k];
+                print STDERR "$_\n" unless ($pri);
+                next unless ($pri);
+	        my ($displ_id,$tag) = split(/:/,$pri);
+	        if ($tag eq "SWISS-PROT") {
+	            $tag = "SPTR";
+	        }
+	        print OUT "$displ_id\tSPTR\t$ac\tZFIN_ID\t$id\t\tXREF\n";
+	        print OUT "$displ_id\tSPTR\t$ac\tZFIN_AC\t$ac\t\tXREF\n";
+            }
+
+        }
     }
     close (ZEBGENE);
 }
