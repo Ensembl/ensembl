@@ -974,33 +974,39 @@ sub has_MapSet {
 
 
 
-=head2 get_tiling_path
+=head2 project
 
   Arg [1]    : string $name
-              The name of the coordinate system to get a tiling path of
+               The name of the coordinate system to project this slice onto
   Arg [2]    : string $version
-              The version of the requested coordinate system (such as 'NCBI34')
+               The version of the coordinate system (such as 'NCBI34') to
+               project this slice onto
   Example    :
-    my $clone_path = $slice->get_tiling_path('clone');
+    my $clone_projection = $slice->project('clone');
 
-    foreach my $tile (@$clone_path) {
-      my ($start, $end, $clone) = @$tile;
+    foreach my $segment (@$clone_projection) {
+      my ($start, $end, $clone) = @$segment;
       print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
             $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
             $clone->strand, "\n";
     }
-  Description: Retrieves a 'tiling path' to another coordinate system.
-               This method returns a list of triplets [start,end,slice]
-               which represent the path.  The start and end refer to the
-               part of this slice which is made up of the the third
-               value: a slice of the requested coordinate system.
-  Returntype : list reference [$start,$end,$slice] triplets
+  Description: Returns the results of 'projecting' this slice onto another
+               coordinate system.  Projecting to a coordinate system that
+               the slice is assembled from is analagous to retrieving a tiling
+               path.  This method may also be used to 'project up' to a higher
+               level coordinate system however.
+
+               This method returns a listref of triplets [start,end,slice]
+               which represents the projection.  The start and end defined the
+               region of this slice which is made up of the third value of
+               the triplet: a slice in the requested coordinate system.
+  Returntype : list reference of [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub get_tiling_path {
+sub project {
   my $self = shift;
   my $cs_name = shift;
   my $cs_version = shift;
@@ -1012,19 +1018,20 @@ sub get_tiling_path {
   my $db = $self->adaptor()->db();
   my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+  my $slice_cs = $self->coord_system();
   my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($self->coord_system, $cs);
+  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
   # perform the mapping between this slice and the requested system
 
   my @coords =
     $asm_mapper->map($self->seq_region_name(), $self->start(),
-                     $self->end(), $self->strand(), $cs);
+                     $self->end(), $self->strand(), $slice_cs);
 
 
-  #construct a path from the mapping results and return it
+  #construct a projection from the mapping results and return it
 
-  my @tiling_path;
+  my @projection;
 
   my $current_start = 1;
 
@@ -1046,13 +1053,13 @@ sub get_tiling_path {
 
       my $current_end = $current_start + $length - 1;
 
-      push @tiling_path, [$current_start, $current_end, $slice];
+      push @projection, [$current_start, $current_end, $slice];
     }
 
     $current_start += $length;
   }
 
-  return \@tiling_path;
+  return \@projection;
 }
 
 
@@ -1496,6 +1503,56 @@ sub assembly_type{
   deprecated('Use version() instead');
   version(@_);
 }
+
+
+=head2 get_tiling_path
+
+  Description: DEPRECATED use project instead
+
+=cut
+
+sub get_tiling_path {
+  my $self = shift;
+
+  deprecate('Use project() instead.');
+
+  my $csa = $self->adaptor()->db()->get_CoordSystemAdaptor();
+
+  #assume that they want the tiling path to the sequence coord system
+  #this might not work well if this isn't a chromosomal slice
+  my $cs = $csa->fetch_sequence_level();
+
+  my $projection = $self->project($cs->name(), $cs->version());
+
+  my @tiling_path;
+
+  foreach my $segment (@$projection) {
+
+    my ($slice_start, $slice_end, $contig) = @$segment;
+    my $contig_ori   = $contig->strand();
+    my $contig_start = $contig->start();
+    my $contig_end   = $contig->end();
+
+    #the old get_tiling_path always gave back entire contigs in the forward
+    #strand
+    $contig = $contig->adaptor->fetch_by_region($cs->name(),
+                                                $contig->seq_region_name(),
+                                                $contig->start(),
+                                                $contig->end());
+
+    push @tiling_path, Bio::EnsEMBL::Tile->new_fast($self,
+                                                    $slice_start,
+                                                    $slice_end,
+                                                    $contig,
+                                                    $contig_start,
+                                                    $contig_end,
+                                                    $contig_ori);
+  }
+
+  return \@tiling_path;
+}
+
+
 
 
 1;
