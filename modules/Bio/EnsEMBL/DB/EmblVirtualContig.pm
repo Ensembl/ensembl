@@ -38,7 +38,7 @@ Bio::EnsEMBL::DB::EmblVirtualContig - Virtual Contig for EMBL dumping
 
 EmblVirtualContigs are a type of VirtualContig which has accessor for
 all the annoying details for EMBL flat file dumping, such as dates,
-divisions, phases, keywords and other aspects. We've put this into a
+divisions, phases, keywords and other aspects. We''ve put this into a
 derived object so that the main VC code is not cluttered up with 
 trivialities 
 
@@ -147,27 +147,6 @@ sub species{
       $obj->{'species'} = $value;
     }
     return $obj->{'species'};
-
-}
-
-=head2 id
-
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub id{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'id'} = $value;
-    }
-    return $obj->{'id'};
 
 }
 
