@@ -57,8 +57,8 @@ use Bio::Root::Object;
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
-
+  my $make = $self->SUPER::_initialize(@args);
+  $self->{'_pointer_array'} = [];
 # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -147,7 +147,46 @@ sub deleted{
 
 }
 
-=head2 __stored
+=head2 add_pointer_id
+
+ Title   : add_pointer_id
+ Usage   : $ghost->add_pointer_id('ENSG0000000012');
+ Function: Adds the id of a forward reference, for the new
+           object (if present) of this deleted object. There
+           is no ability to put in new classes of objects
+ Returns : nothing
+ Args    : an id
+
+
+=cut
+
+sub add_pointer_id{
+   my ($self,$value) = @_;
+
+   push(@{$self->{'_pointer_array'}},$value);
+}
+
+=head2 each_pointer_id
+
+ Title   : each_pointer_id
+ Usage   : foreach $id ( $ghost->each_pointer_id() )
+ Function: returns all the forward references for the new
+           object of this deleted object.
+ Example :
+ Returns : an array of strings
+ Args    :
+
+
+=cut
+
+sub each_pointer_id{
+   my ($self) = @_;
+
+   return @{$self->{'_pointer_array'}};
+}
+
+
+=head2 _stored
 
  Title   : _stored
  Usage   : $obj->_stored($newval)
