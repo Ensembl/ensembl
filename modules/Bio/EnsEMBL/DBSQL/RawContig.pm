@@ -685,7 +685,7 @@ sub internal_id {
 =cut
 
 sub seq_date{
-   my ($self) = @_;
+   my ($self) = @_; 
 
    my $id = $self->internal_id();
 
