@@ -265,8 +265,8 @@ sub transfer_features {
        "       seq_region_end   = seq_region_end   + ? " . 
        "WHERE  seq_region_id = ?");
 
-    foreach my $new_id (keys %$contig_mappings) {
-      my ($old_id, $offset) = @{$contig_mappings->{$new_id}};
+    foreach my $old_id (keys %$contig_mappings) {
+      my ($new_id, $offset) = @{$contig_mappings->{$old_id}};
       if($offset > 1) {
         $sth->execute($new_id, $offset, $offset, $old_id)
       }
