@@ -21,8 +21,13 @@ Manipulation:
 
      # Returns an array of Exon objects
      my @exons = @{$tran->get_all_Exons()};
+
      # Returns the peptide translation of the exons as a Bio::Seq
-     my $pep   = $tran->translate();
+     if($tran->translation() {
+       my $pep   = $tran->translate();
+     } else {
+       print "Transcript ", $tran->stable_id(), " is non-coding\n";
+     }
 
 =head1 DESCRIPTION
 
@@ -333,12 +338,21 @@ sub display_xref {
 
 =head2 translation
 
- Title   : translation
- Usage   : $obj->translation($newval)
- Function: 
- Returns : value of translation
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::Translation
+  Example    : if($transcript->translation()) {
+                 print $translation->stable_id(), "\n";
+               } else {
+                 print "Pseudogene\n";
+               }
+  Description: Getter/setter for the Translation object which defines the
+               CDS (and as a result the peptide encoded by) this transcript.
+               This function will return undef if this Transcript is a
+               pseudogene - i.e. a non-translating transcript such as an
+               ncRNA.  This is the accepted method of determining whether
+               a transcript is a pseudogene or not.
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -417,6 +431,9 @@ sub spliced_seq {
                The code will not support monkey exons any more. If you want to
                have non phase matching exons, defined appropriate _rna_edit
                attributes!
+
+               An empty string is returned if this transcript is a pseudogene
+               (i.e. is non-translateable).
   Returntype : txt
   Exceptions : none
   Caller     : general
@@ -456,6 +473,9 @@ sub translateable_seq {
   Description: Retrieves the position of the coding start of this transcript
                in cdna coordinates (relative to the start of the 5prime end of
                the transcript, excluding introns, including utrs).
+
+               This will return undef if this is a pseudogene (i.e. a
+               transcript with no translation).
   Returntype : int
   Exceptions : none
   Caller     : five_prime_utr, get_all_snps, general
@@ -516,8 +536,10 @@ sub cdna_coding_start {
   Description: Retrieves the end of the coding region of this transcript in
                cdna coordinates (relative to the five prime end of the
                transcript, excluding introns, including utrs).
-               Note 
-  Returntype : none
+
+               This will return undef if this transcript is a pseudogene
+               (i.e. a transcript with no translation and therefor no CDS).
+  Returntype : int
   Exceptions : none
   Caller     : general
 
@@ -578,6 +600,9 @@ sub cdna_coding_end {
                The value returned by this function is NOT the biological
                coding start since on the reverse strand the biological coding
                start would be the higher genomic value.
+
+               This function will return undef if this is a pseudogene
+               (a non-translated transcript).
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -613,13 +638,16 @@ sub coding_region_start {
 
   Arg [1]    : (optional) $value
   Example    : $coding_region_end = $transcript->coding_region_end
-  Description: Retrieves the start of the coding region of this transcript
+  Description: Retrieves the end of the coding region of this transcript
                in genomic coordinates (i.e. in either slice or contig coords).
-               By convention, the coding_region_end is always higher than the 
-               value returned by the coding_region_start method.  
-               The value returned by this function is NOT the biological 
-               coding start since on the reverse strand the biological coding 
+               By convention, the coding_region_end is always higher than the
+               value returned by the coding_region_start method.
+               The value returned by this function is NOT the biological
+               coding end since on the reverse strand the biological coding
                end would be the lower genomic value.
+
+               This function will return undef if this is a pseudogene
+               (a non-translated transcript).
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -953,15 +981,16 @@ sub length {
 
 
 
+
 =head2 flush_Exons
 
- Title   : flush_Exons
- Usage   : Removes all Exons from the array.
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : $transcript->flush_Exons();
+  Description: Removes all Exons from this transcript and flushes related
+               internal caches.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -981,26 +1010,29 @@ sub flush_Exons{
 
 
 
-=head2 five_prime_utr and three_prime_utr
+=head2 five_prime_utr
 
-    my $five_prime  = $transcrpt->five_prime_utr
-        or warn "No five prime UTR";
-    my $three_prime = $transcrpt->three_prime_utr
-        or warn "No three prime UTR";
-
-These methods return a B<Bio::Seq> object
-containing the sequence of the five prime or
-three prime UTR, or undef if there isn't a UTR.
-
-Both method throw an exception if there isn't a
-translation attached to the transcript object.
+  Arg [1]    : none
+  Example    : my $five_prime  = $transcrpt->five_prime_utr
+                 or warn "No five prime UTR";
+  Description: Obtains a Bio::Seq object of the five prime UTR of this
+               transcript.  If this transcript is a pseudogene
+               (i.e. non-translating) or has no five prime UTR undef is
+               returned instead.
+  Returntype : Bio::Seq or undef
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub five_prime_utr {
   my $self = shift;
 
-  my $seq = substr($self->spliced_seq, 0, $self->cdna_coding_start - 1);
+  my $cdna_coding_start  = $self->cdna_coding_start();
+
+  return undef if(!$cdna_coding_start);
+
+  my $seq = substr($self->spliced_seq, 0, $cdna_coding_start - 1);
 
   return undef if(!$seq);
 
@@ -1011,10 +1043,30 @@ sub five_prime_utr {
 }
 
 
+
+=head2 three_prime_utr
+
+  Arg [1]    : none
+  Example    : my $three_prime  = $transcrpt->three_prime_utr
+                 or warn "No five prime UTR";
+  Description: Obtains a Bio::Seq object of the three prime UTR of this
+               transcript.  If this transcript is a pseudogene
+               (i.e. non-translating) or has no three prime UTR,
+               undef is returned instead.
+  Returntype : Bio::Seq or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub three_prime_utr {
   my $self = shift;
 
-  my $seq = substr($self->spliced_seq, $self->cdna_coding_end);
+  my $cdna_coding_end = $self->cdna_coding_end();
+
+  return undef if(!$cdna_coding_end);
+
+  my $seq = substr($self->spliced_seq, $cdna_coding_end);
 
   return undef if(!$seq);
 
@@ -1035,6 +1087,10 @@ sub three_prime_utr {
                (post transcriptional RNA modifictions) when constructing the
                the 'translateable' exons, and it does not update the phase
                information of the created 'translateable' exons.
+
+               If this transcript is a pseudogene (i.e. non-translateable)
+               a reference to an empty list is returned.
+
   Returntype : listref Bio::EnsEMBL::Exon
   Exceptions : throw if translation has invalid information
   Caller     : Genebuild
