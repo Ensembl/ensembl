@@ -231,4 +231,23 @@ sub gff_feature {
     return $self->{_gff_feature};
 }
 
+=head2 has_database
+
+ Title   : has_database
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_database{
+   my ($self,@args) = @_;
+
+   if( defined $self->db ){ return 1; }
+   return 0;
+}
+
 1;

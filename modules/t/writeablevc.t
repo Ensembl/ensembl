@@ -21,80 +21,34 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..12\n"; 
+BEGIN { $| = 1; print "1..8\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DB::ConvertibleVirtualContig;
-use Bio::EnsEMBL::FeaturePair;
-$loaded=1;
-print "ok \n";    # 1st test passed, loaded needed modules
 
-#Creating test overlap database
+use lib 't';
+use EnsTestDB;
+$loaded = 1;
+print "ok 1\n";    # 1st test passes.
+    
+my $ens_test = EnsTestDB->new();
+    
+# Load some data into the db
+$ens_test->do_sql_file("t/writeablevc.dump");
+    
+# Get an EnsEMBL db object for the test db
+my $db = $ens_test->get_DBSQL_Obj;
+print "ok 2\n";    
 
-$conf{'overlap'}      = 'testoverlap';
-$conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
-$conf{'mysql'}      = '/mysql/current/bin/mysql';
-$conf{'user'}       = 'root';
-$conf{'perl'}       = 'perl';
-
-if ( -e 't/overlap.conf' ) {
-  print STDERR "Reading configuration from overlap.conf\n";
-  open(C,"t/overlap.conf");
-  while(<C>) {
-    my ($key,$value) = split;
-    $conf{$key} = $value;
-  }
-} else {
-  print STDERR "Using default values\n";
-  foreach $key ( keys %conf ) {
-    print STDERR " $key $conf{$key}\n";
-  }
-  print STDERR "\nPlease use a file t/overlap.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
-}
-
-$nuser = $conf{user};
-
-my $create_overlap        = "$conf{mysqladmin} -u ".$nuser." create $conf{overlap}";
-
-system($create_overlap)   == 0 or die "$0\nError running '$create_overlap' : $!";
-
-print "ok 2\n";    #Databases created successfuly
-
-#Initialising databases
-my $init_overlap        = "$conf{mysql} -u ".$nuser." $conf{overlap} < ../sql/table.sql";
-
-system($init_overlap)     == 0 or die "$0\nError running '$init_overlap' : $!";
-
-print "ok 3\n";
-
-#Suck test data into db
-print STDERR "Inserting test data in test overlap db...\n";
-my $suck_data      = "$conf{mysql} -u ".$nuser." $conf{overlap} < t/writeablevc.dump";
-system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
-
-print "ok 4\n";
-
-# Connect to test db
-
-my $db             = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'localhost',
-						  -user   => $conf{user},
-						  -dbname => $conf{overlap},
-						  -perlonlyfeatures => 1,
-						  -perlonlysequences => 1,
-						 );
-
-die "$0\nError connecting to database : $!" unless defined($db);
-
-print "ok 5\n";
 
 my $contig = $db->get_Contig('contig2');
 
 die "$0\nError fetching contig1 : $!" unless defined ($contig);
 
-print "ok 6\n";
+print "ok 3\n";
 
 my $wvc     = new Bio::EnsEMBL::DB::ConvertibleVirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
@@ -105,11 +59,7 @@ my $wvc     = new Bio::EnsEMBL::DB::ConvertibleVirtualContig(-focuscontig   => $
 
 die ("$0\nCan't create virtual contig :$!") unless defined ($wvc);
 
-$wvc->_dump_map(\*STDERR);
-print "...seq",$wvc->primary_seq->seq,"\n";
-
-
-print "ok 7\n";
+#$wvc->_dump_map(\*STDERR);
 
 $gene = Bio::EnsEMBL::Gene->new();
 $gene->id('gene-id-1');
@@ -170,7 +120,8 @@ $sf->primary_tag('similarity');
 $sf->source_tag('someone');
 $sf->feature2->primary_tag('similarity');
 $sf->feature2->source_tag('someone');
-$analysis = Bio::EnsEMBL::Analysis->new();
+
+$analysis = Bio::EnsEMBL::FeatureFactory->new_analysis();
 $analysis->program('program');
 $analysis->program_version('version-49');
 $analysis->gff_source('source');
@@ -199,12 +150,12 @@ $exon->attach_seq($wvc->primary_seq);
 
 $newgene = $wvc->convert_Gene_to_raw_contig($gene);
 $db->write_Gene($newgene);
-print "ok 8\n";
+print "ok 4\n";
 
 ($newgene) = $db->gene_Obj->get_array_supporting('evidence','gene-id-1');
 
 if( !defined $newgene ) {
-    print "not ok 9\n";
+    print "not ok 5\n";
 } else {
     $error = 0;
     foreach $exon ( $newgene->each_unique_Exon ) {
@@ -232,9 +183,9 @@ if( !defined $newgene ) {
     $savedgene = $newgene;
     
     if( $error == 1 ) {
-	print "not ok 9\n";
+	print "not ok 5\n";
     } else {
-	print "ok 9\n";
+	print "ok 5\n";
     }
 }
 
@@ -322,18 +273,18 @@ foreach $exon ( $newgene->each_unique_Exon ) {
 }
 
 if( $error == 1 ) {
-    print "not ok 10\n";
+    print "not ok 6\n";
 } else {
-    print "ok 10\n";
+    print "ok 6\n";
 }
 
 @dblink = $savedgene->each_DBLink();
 $dbl = shift @dblink;
 
 if( !defined $dbl || $dbl->database ne 'swissprot' ) {
-    print "not ok 11\n";
+    print "not ok 7\n";
 } else {
-  print "ok 11\n";
+  print "ok 7\n";
 }
 
 @trans = $savedgene->each_Transcript();
@@ -344,16 +295,9 @@ $trans = shift @trans;
 $dbl = shift @dblink;
 
 if( !defined $dbl || $dbl->database ne 'embl' ) {
-    print "not ok 12\n";
+    print "not ok 8\n";
 }    else {
-  print "ok 12\n";
-}
-
-
-
-END {
-   my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
-  system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
+  print "ok 8\n";
 }
 
 

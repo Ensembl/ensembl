@@ -946,7 +946,7 @@ sub get_all_PredictionFeatures {
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid);
    
-   $previous = '';
+   $previous = -1;
    my $current_fset;
    while( $sth->fetch ) {
        my $out;

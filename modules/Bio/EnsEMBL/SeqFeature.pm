@@ -69,23 +69,6 @@ use strict;
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::RootI;
 
-BEGIN {
-    
-    eval { 
-	require EnsemblExt;
-    };
-    if( $@ ) {
-	$ENSEMBL_EXT_LOADED = 0;
-	$ENSEMBL_EXT_USED = 0;
-    } else {
-
-	$ENSEMBL_EXT_LOADED = 1;
-	$ENSEMBL_EXT_USED = 0;
-	print STDERR "Using EnsemblExt...\n";
-	print STDERR "Got $ENSEMBL_EXT_LOADED with $ENSEMBL_EXT_USED\n";
-    }
-}
-
 @ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
 
 # new is inherited from Bio::Root::Object

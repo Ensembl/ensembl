@@ -131,6 +131,26 @@ sub program_version{
    $self->throw("No program version on analysis implementing object");
 }
 
+=head2 has_database
+
+ Title   : has_database
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_database {
+   my ($self,@args) = @_;
+
+   $self->throw("No has_database analysis implementing object");
+
+}
+
+
 1;
 
 

@@ -151,9 +151,9 @@ sub convert_Gene_to_raw_contig {
 	       $clonedtrl->end_exon_id($trl->end_exon_id);
 	       $clonedtrl->version($trl->version);
 
-	       my ($srawcontig,$start,$sstrand) = $self->_vmap->vcpos_to_rcpos($trl->start,1);
+	       my ($srawcontig,$start,$sstrand) = $self->_vmap->raw_contig_position($trl->start,1);
 	       $clonedtrl->start($start);
-	       my ($erawcontig,$end,$estrand) = $self->_vmap->vcpos_to_rcpos($trl->end,1);
+	       my ($erawcontig,$end,$estrand) = $self->_vmap->raw_contig_position($trl->end,1);
 	       $clonedtrl->end($end);
 	       
 	       $translation{$trl->id} = $clonedtrl;

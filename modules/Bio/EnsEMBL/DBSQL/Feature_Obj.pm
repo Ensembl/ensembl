@@ -123,7 +123,7 @@ sub delete {
 
 	chop($fsstr);
 	
-	#print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
+
 	
 	$sth = $self->_db_obj->prepare("delete from fset where id in ($fsstr)");
 	$res = $sth->execute;
@@ -179,6 +179,7 @@ sub write {
 
     FEATURE :
     foreach my $feature ( @features ) {	
+
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
@@ -188,12 +189,12 @@ sub write {
 	};
 
 	if ($@) {
-	    print(STDERR "Feature invalid. Skipping feature\n");
+
 	    next FEATURE;
 	}
 
 	
-	if($feature->isa('Bio::EnsEMBL::Repeat')) {
+	if($feature->isa('Bio::EnsEMBL::RepeatI')) {
 	    push(@repeats,$feature);
 	} elsif ( $feature->sub_SeqFeature ) {
 	    push(@fset,$feature);
@@ -203,9 +204,9 @@ sub write {
 	    } else {
 		$analysis = $feature->analysis;
 	    }
-	    
-	    my $analysisid = $self->write_Analysis($analysis);
 
+
+	    my $analysisid = $self->write_Analysis($analysis);
 
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $feature->feature2;
@@ -245,6 +246,7 @@ sub write {
 	} else {
 	    $analysis = $feature->analysis;
 	}
+
 
 	my $analysisid = $self->write_Analysis($analysis);
 	my $homol = $feature->feature2;
@@ -538,7 +540,7 @@ sub exists_Analysis {
         
     my $query;
 
-    if ($anal->db and $anal->db_version) {
+    if ($anal->has_database == 1) {
             $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
                 " program =    \""      . $anal->program         . "\" and " .
@@ -592,16 +594,13 @@ sub write_Analysis {
     $self->throw("gff_source property of analysis object not defined") unless ($anal->gff_source); 
     $self->throw("gff_feature property of analysis object not defined") unless ($anal->gff_feature); 
         
-        
     # First check whether this entry already exists.
     my $query;
     my $analysisid = $self->exists_Analysis($anal);
     return $analysisid if $analysisid;
 
     
-        
-
-    if ($anal->db and $anal->db_version) {
+    if ($anal->has_database == 1) {
         local $^W = 0;
 	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
                 $anal->db               . "\",\""   .

@@ -79,14 +79,21 @@ $USE_PERL_ONLY = 0;
 
 BEGIN {
     
-    eval { 
-	require EnsemblExt;
-    };
-    if( $@ ) {
+    my $load_ext = $ENV{'ENSEMBL_C_EXTENSION'};
+    
+    if( $load_ext == 0 ) {
+	# do not even attempt to load
 	$ENSEMBL_EXT_LOADED = 0;
     } else {
-	$ENSEMBL_EXT_LOADED = 1;
-        print STDERR "Loaded Ensembl Feature C Extensions.\n";
+	eval { 
+	    require EnsemblExt;
+	};
+	if( $@ ) {
+	    $ENSEMBL_EXT_LOADED = 0;
+	} else {
+	    $ENSEMBL_EXT_LOADED = 1;
+	    print STDERR "Loaded Ensembl Feature C Extensions.\n";
+	}
     }
 }
 

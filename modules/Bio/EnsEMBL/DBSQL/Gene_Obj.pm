@@ -1350,7 +1350,7 @@ sub write_supporting_evidence {
 	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
   	my $analysisid = $feature_obj->write_Analysis($f->analysis);
 	
-	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
+	if ($f->isa("Bio::EnsEMBL::FeaturePairI")) {
 	    $sth->execute('NULL',
 			  $exon->id,
 			  $f->start,

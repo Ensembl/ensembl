@@ -1644,8 +1644,7 @@ Calling Update_Obj->finish_update instead!");
 sub write_Gene{
    my ($self,$gene) = @_;
 
-   $self->warn("Obj->write_Gene is a deprecated method! 
-Calling gene_Obj->write instead!");
+  # $self->warn("Obj->write_Gene is a deprecated method! Calling gene_Obj->write instead!");
 
    return $self->gene_Obj->write($gene);
 }
