@@ -364,7 +364,6 @@ CREATE TABLE gene_stable_id (
 #
 # Table structure for table 'supporting_feature'
 #  try use the exon_feature table
-# this table is deprecated!
 
 CREATE TABLE supporting_feature (
   supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
