@@ -33,9 +33,12 @@ my %priority;
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
 $priority{'wormbase_transcript'} = 1000;
+$priority{'flybase_symbol'} = 1000;
+$priority{'Anopheles_symbol'} = 1000;
 $priority{'SWISSPROT'} = 900;
-$priority{'SPTREMBL'} = 800;
-$priority{'RefSeq'} = 600;
+$priority{'RefSeq'} = 800;
+$priority{'SPTREMBL'} = 700;
+
 
 if (!defined $organism) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
@@ -117,6 +120,8 @@ elsif ($organism eq "elegans") {
      }
     
 }
+
+
 
 
 
