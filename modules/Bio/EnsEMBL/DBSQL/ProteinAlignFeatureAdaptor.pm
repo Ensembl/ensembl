@@ -112,20 +112,6 @@ sub fetch_by_dbID{
    $dnapep->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
    $dnapep->seqname($contig->name);
    $dnapep->attach_seq($contig->seq);
-  # my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-#   $out->start($start);
-#   $out->end($end);
-#   $out->strand($strand);
-#   $out->score($score);
-#   $out->hstart($hstart);
-#   $out->hend($hend);
-#   $out->hseqname($hname);
-#   $out->cigar($cigar);
-   
-#   $out->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
-
-#   $out->seqname($contig->id);
-#   $out->attach_seq($contig->seq);
 
    return $dnapep;
 
@@ -150,12 +136,12 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = '$cid'");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id = '$cid'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score,$evalue,$perc_ident);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score,\$evalue,\$perc_ident);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -165,27 +151,9 @@ sub fetch_by_contig_id{
      if( !defined $ana{$analysis_id} ) {
        $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
      }
-     my $f1 = Bio::EnsEMBL::SeqFeature->new();
-     my $f2 = Bio::EnsEMBL::SeqFeature->new();
-     
-     $f1->start($start);
-     $f1->end($end);
-     $f1->score($score);
-     $f1->seqname($contig->name);
-     $f1->strand($strand);
-       
-     $f2->start($hstart);
-     $f2->end($hend);
-     $f2->seqname($hname);
-   
-       
-       
-     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-     $dnapep->analysis($ana{$analysis_id});
-     $dnapep->seqname($contig->name);
-  
+
+     my $dnapep = $self->_new_feature($start,$end,$strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$contig->name,$contig->seq);
+
      push(@f,$dnapep);
    }
    
@@ -345,13 +313,13 @@ sub fetch_by_assembly_location{
    # build the SQL
 
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score from protein_align_feature p where p.contig_id in ($cid_list)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score,p.evalue,p.perc_ident from protein_align_feature p where p.contig_id in ($cid_list)");
    $sth->execute();
 
 
-   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score);
+   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score,$evalue,$perc_ident);
 
-   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score,\$evalue,\$perc_ident);
 
 
    my @f;
@@ -374,30 +342,11 @@ sub fetch_by_assembly_location{
 	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
 	 
 	 next;
-       }       
-       # ok, ready to build a sequence feature: do we want this relative or not?
+       }
 
-     
-       my $f1 = Bio::EnsEMBL::SeqFeature->new();
-       my $f2 = Bio::EnsEMBL::SeqFeature->new();
-       
-       $f1->start($coord_list[0]->start);
-       $f1->end($coord_list[0]->end);
-       $f1->score($score);
-       $f1->seqname($coord_list[0]->id);
-       $f1->strand($coord_list[0]->strand);
-       
-       $f2->start($hstart);
-       $f2->end($hend);
-       $f2->seqname($hname);
-   
-       
-       
-       my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							 -feature2 => $f2,
-							 -cigar_string => $cigar);
-       $dnapep->analysis($ana{$analysis_id});
-       $dnapep->seqname($coord_list[0]->id);
+
+       my $dnapep = $self->_new_feature($coord_list[0]->start,$coord_list[0]->end,$coord_list[0]->strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$coord_list[0]->id,undef);
+
        push(@f,$dnapep);
    }
 
@@ -635,6 +584,48 @@ sub store{
 }
 
 
+# 
+# Internal functions not to called be anyone else
+#
+
+sub _new_feature {
+  my ($self,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis,$score,$evalue,$perc_id,$seqname,$seq) = @_;
+
+  if( !defined $seqname ) {
+    $self->throw("Do not have all the parameters for making features");
+  }
+
+  my $f1 = Bio::EnsEMBL::SeqFeature->new();
+  my $f2 = Bio::EnsEMBL::SeqFeature->new();
+  
+  $f1->start($start);
+  $f1->end($end);
+  $f1->strand($strand);
+  
+  $f2->start($hstart);
+  $f2->end($hend);
+  $f2->seqname($hname);
+
+  $f1->score($score);
+  $f1->p_value($evalue);
+  $f1->percent_id($perc_id);
+
+  $f2->score($score);
+  $f2->p_value($evalue);
+  $f2->percent_id($perc_id);
+
+  my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+						      -feature2 => $f2,
+						      -cigar_string => $cigar);
+  $dnapep->analysis($analysis);
+  $dnapep->seqname($seqname);
+  
+  if( defined $seq ) {
+    $dnapep->attach_seq($seq);
+  }
+
+  return $dnapep;
+}
 
 
 1;

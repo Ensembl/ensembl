@@ -117,12 +117,12 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score,p.perc_ident,p.evalue from dna_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score,$perc_ident,$evalue);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand,\$hname,\$cigar,\$analysis_id, \$score,\$perc_ident,\$evalue);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -134,7 +134,7 @@ sub fetch_by_contig_id{
        }
 
 
-       my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$contig->name,$contig->seq);
+       my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,$contig->name,$contig->seq);
 
        push(@f,$out);
    }
@@ -213,7 +213,7 @@ sub fetch_by_assembly_location_constraint{
 
   my $cid_list = join(',',@cids);
 
-  my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id,p.score from dna_align_feature p where p.contig_id in ($cid_list)";
+  my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id,p.score,p.perc_ident,p.evalue from dna_align_feature p where p.contig_id in ($cid_list)";
   
   if( defined $constraint ) {
     $sql .=  " AND $constraint";
@@ -225,9 +225,9 @@ sub fetch_by_assembly_location_constraint{
   $sth->execute();
   
   
-  my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score);
+  my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score,$perc_ident,$evalue);
   
-  $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand, \$hname,\$cigar,\$analysis_id, \$score);
+  $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand, \$hname,\$cigar,\$analysis_id, \$score,\$perc_ident,\$evalue);
   
 
   my @f;
@@ -250,7 +250,7 @@ sub fetch_by_assembly_location_constraint{
     # ok, ready to build a sequence feature: do we want this relative or not?
 
   
-    my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},"slice",undef);
+    my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,"slice",undef);
 
     push(@f,$out);
   }
@@ -311,7 +311,7 @@ Internal functions to the adaptor which you never need to call
 
 
 sub _new_feature {
-  my ($self,$start,$end,$strand,$score,$hstart,$hend,$hstrand,$hseqname,$cigar,$analysis,$seqname,$seq) = @_;
+  my ($self,$start,$end,$strand,$score,$hstart,$hend,$hstrand,$hseqname,$cigar,$analysis,$perc_ident,$evalue,$seqname,$seq) = @_;
 
   if( !defined $seqname ) {
     $self->throw("Internal error - wrong number of arguments to new_feature");
@@ -324,6 +324,8 @@ sub _new_feature {
   $f1->end($end);
   $f1->strand($strand);
   $f1->score($score);
+  $f1->percent_id($perc_ident);
+  $f1->p_value($evalue);
   $f1->seqname($seqname);
   if( defined $seq ) {
     $f1->attach_seq($seq);
@@ -332,6 +334,8 @@ sub _new_feature {
   $f2->start($hstart);
   $f2->end($hend);
   $f2->strand($hstrand);
+  $f2->percent_id($perc_ident);
+  $f2->p_value($evalue);
   $f2->seqname($hseqname);
 
   $f1->analysis($analysis);
