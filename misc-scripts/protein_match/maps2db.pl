@@ -51,7 +51,7 @@ if ($help) {
 my $dros_ext_annot = $conf{'dros_ext_annot'};
 
 #Elegans
-my $cefile         = $conf{'eleg_nom'};
+my $cefile = $conf{'elegans_nom'};
 my $type = $conf{'elegans_pseudo'};
 
 #working option but obsolete
@@ -230,7 +230,7 @@ if ($organism eq "zebrafish") {
 
 print STDERR "Connecting to the database... $dbname:$host\n";
 print STDERR "dealing with organism ".$organism."\n";
-
+print STDERR "Have files ".$xmap." and ".$mapping." and elegans ".$cefile."\n";
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
         -dbname => $dbname,
@@ -454,7 +454,7 @@ MAPPING: while (<MAP>) {
 		if($targetid == 0){
 		  die "have no translation_id $!";
 		}
-		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$targetid."\n";
+		print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$targetid."\n";
 		$adaptor->store($dbentry,$targetid,"Translation");
 	    }
 	    
@@ -613,7 +613,7 @@ if ($organism eq "drosophila") {
 
 if ($organism eq "elegans") {
   #print STDERR " parsing wormbase information\n";
-  open (IN,"$cefile") || die "can't open file\n";
+  open (IN,"$cefile") || die "can't open wormpep table file ".$cefile."\n";
   #print STDERR "have opened ".$cefile."\n";
   while (<IN>) {
     #print STDERR "have open file\n";
@@ -631,7 +631,13 @@ if ($organism eq "elegans") {
   my $db2 = "wormbase_transcript";
   my $db3 = "wormpep_id";
   my $db4 = "wormbase_pseudogene";
-  my $query = "select t.translation_id, ts.stable_id, gs.stable_id, g.type from transcript t, gene_stable_id gs, transcript_stable_id ts, gene g where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id and t.gene_id = g.gene_id";
+  my $query = ("select tr.translation_id, ts.stable_id, gs.stable_id, ".
+               "g.type from transcript t, gene_stable_id gs, ".
+               "transcript_stable_id ts, gene g, translation tr ".
+               "where t.gene_id = gs.gene_id and ".
+               "t.transcript_id = ts.transcript_id and ".
+               "t.transcript_id = tr.transcript_id and ".
+               "t.gene_id = g.gene_id");
     my $sth = $db->prepare($query);
     $sth->execute();
     while (my @res = $sth->fetchrow) {
