@@ -842,13 +842,15 @@ unless ($idlist){
     return ();
 }
 
+my $glob = 100;
+
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
 
 
     my $statement= "   SELECT 
                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                              (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)),                                        
+                              (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,                                        
                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                               (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                               f.score, 
@@ -864,7 +866,7 @@ eval {
                        AND    sgp.chr_end >= $glob_start 
                        AND    sgp.chr_start <=$glob_end 
                        AND    sgp.chr_name='$chr_name' 
-                       GROUP BY f.hid ";
+                       GROUP BY f.hid ORDER BY start ";
     
 
 	my $sth = $self->dbobj->prepare($statement);
@@ -880,6 +882,7 @@ eval {
 	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
 	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
 	
+    my $prev;
       while( $sth->fetch ) {
 
 	    #clipping
@@ -887,6 +890,10 @@ eval {
 		next;
 	    }
 	    
+	    if( defined $prev && $prev->end+$glob > $start && $synonym eq $prev->id) {
+		next;
+	    }
+
 	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
 		      $analysisid,$synonym);
 	    
@@ -894,6 +901,7 @@ eval {
 	    my $out=$self->_create_Marker_features(@args);
 	    if (defined $out){
 		push (@markers,$out);
+		$prev = $out;
 	    } 
 	}
 };
@@ -1530,7 +1538,7 @@ sub get_Genes {
   }
   
    # this delegates off to Virtual::Contig
-   my @newgenes=$self->_gene_query(%gene);
+   @newgenes=$self->_gene_query(%gene);
 
   $self->{'_static_vc_gene_get'} = \@newgenes;
 

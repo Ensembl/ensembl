@@ -151,9 +151,6 @@ sub get_displayname{
 }
 
 
-
-
-
 =head2 get_AlignBlockSet
 
  Title   : get_AlignBlockSet
@@ -167,38 +164,9 @@ sub get_displayname{
 =cut
 
 sub get_AlignBlockSet{
-   my ($self,$row_number) = @_;
+   my ($self,$row) = @_;
 
-   my %contighash;
-
-   if( !defined $row_number ) {
-       $self->throw("Must get AlignBlockSet by row number");
-   }
-   my $align_id = $self->align_id;
-
-   my $sth = $self->adaptor->prepare("select align_start,align_end,raw_id,raw_start,raw_end,raw_strand from genomic_align_block where align_id = $align_id and align_row = $row_number order by align_start");
-   $sth->execute;
-
-   my $alignset = Bio::EnsEMBL::AlignBlockSet->new();
-
-   while( my $ref = $sth->fetchrow_arrayref ) {
-       my($align_start,$align_end,$raw_id,$raw_start,$raw_end,$raw_strand) = @$ref;
-       my $alignblock = Bio::EnsEMBL::AlignBlock->new();
-       $alignblock->align_start($align_start);
-       $alignblock->align_end($align_end);
-       $alignblock->start($raw_start);
-       $alignblock->end($raw_end);
-       $alignblock->strand($raw_strand);
-       
-       if( ! defined $contighash{$raw_id} ) {
-	   $contighash{$raw_id} = $self->adaptor->db->get_Contig($raw_id);
-       }
-
-       $alignblock->raw_contig($contighash{$raw_id});
-       $alignset->add_AlignBlock($alignblock);
-   }
-
-   return $alignset;
+   return $self->adaptor->get_AlignBlockSet($self->align_id,$row);
 }
 
 
