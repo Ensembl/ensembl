@@ -1,3 +1,34 @@
+=head1 NAME - Bio::EnsEMBL::Utils::SeqDumper
+
+=head1 SYNOPSIS
+
+  $seq_dumper = Bio::EnsEMBL::Utils::SeqDumper;
+
+  #don't dump snps or repeats
+  $seq_dumper->disable_feature_type('repeat');
+  $seq_dumper->disable_feature_type('variation');
+
+  #dump EMBL format to STDOUT
+  $seq_dumper->dump($slice, 'EMBL');
+
+  #dump GENBANK format to a file
+  $seq_dumper->dump($contig, 'GENBANK', 'out.genbank');
+
+  #dump FASTA format to a file
+  $seq_dumper->dump($slice, 'FASTA', 'out.fasta');
+
+=head1 DESCRIPTION
+
+  A relatively simple and lite-weight flat file dumper for EnsEMBL slice or
+  RawContigs.  The memory efficiency could be improved and this is currently
+  not very good for dumping very large sequences such as whole chromosomes.
+
+=head1 CONTACT
+
+  Contact the EnsEMBL development list with questions: <ensembl-dev@ebi.ac.uk>
+
+=cut
+
 use strict;
 
 package Bio::EnsEMBL::Utils::SeqDumper;
@@ -24,8 +55,9 @@ my @COMMENTS =
    'have clonal location coordinates in the format: ' .
    '<clone accession>.<version>:<start>..<end>',
 
-   'The /gene indicates a unique id for a gene, /cds a unique id for a ' .
-   'translation and a /exon a unique id for an exon. These ids are ' .
+   'The /gene indicates a unique id for a gene, /note="transcript_id=..."' . 
+   ' a unique id for a transcript, /protein_id a unique id for a peptide ' .
+   'and note="exon_id=..." a unique id for an exon. These ids are ' .
    'maintained wherever possible between versions.',
 
    'All the exons and transcripts in Ensembl are confirmed by ' .
@@ -53,7 +85,8 @@ sub new {
 		       'repeat'      => 1,
 		       'similarity'  => 1,
 		       'variation'   => 1,
-		       'contig'      => 1};
+		       'contig'      => 1,
+		       'marker'      => 1};
 
   my $self = bless {'feature_types' => $feature_types}, $class;
 
@@ -195,12 +228,13 @@ sub dump {
 
 =head2 dump_embl
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [2]    : IO::File $FH
+  Example    : $seq_dumper->dump_embl($slice, $FH);
+  Description: Dumps an EMBL flat file to an open file handle
+  Returntype : none
+  Exceptions : none
+  Caller     : dump
 
 =cut
 
@@ -317,12 +351,13 @@ sub dump_embl {
 
 =head2 dump_genbank
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [2]    : IO::File $FH
+  Example    : $seq_dumper->dump_genbank($slice, $FH);
+  Description: Dumps a GENBANK flat file to an open file handle
+  Returntype : none
+  Exceptions : none
+  Caller     : dump
 
 =cut
 
@@ -468,7 +503,6 @@ sub _dump_feature_table {
   #source
   my $classification = join(', ', $species->classification);
   $self->write(@ff,'source', "1.." . $slice->length());
-  $self->write(@ff,''      , '/classification="'.$classification.'"');
   $self->write(@ff,''      , '/organism="'.$species->binomial . '"');
   $self->write(@ff,''      , '/db_xref="taxon:'.$meta->get_taxonomy_id().'"');
 
@@ -483,8 +517,8 @@ sub _dump_feature_table {
 	$value = $self->features2location($transcript->get_all_Exons);
 	$self->write(@ff,'CDS', $value);
 	$self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
-	$self->write(@ff,''   , '/cds="'.$translation->stable_id().'"');
-	$self->write(@ff,''   , '/transcript="'.$transcript->stable_id().'"');
+	$self->write(@ff,''   , '/protein_id="'.$translation->stable_id().'"');
+	$self->write(@ff,''   , '/note="transcript_id='.$transcript->stable_id().'"');
 
 	foreach my $dbl (@{$transcript->get_all_DBLinks}) {
 	  $value = '/db_xref="'.$dbl->dbname().':'.$dbl->primary_id().'"';
@@ -499,7 +533,7 @@ sub _dump_feature_table {
     foreach my $gene (@{$slice->get_all_Genes}) {
       foreach my $exon (@{$gene->get_all_Exons}) {
 	$self->write(@ff,'exon', $self->features2location([$exon]));
-	$self->write(@ff,''    , '/exon_id="'.$exon->stable_id().'"');
+	$self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
       }
     }
   }
@@ -512,15 +546,11 @@ sub _dump_feature_table {
     foreach my $transcript (@{$slice->get_all_PredictionTranscripts}) {
       my $exons = $transcript->get_all_Exons();
       push @genscan_exons, @$exons;
-      $self->write(@ff, 'CDS_gscan', $self->features2location($exons));
-      $self->write(@ff, '', '/transcript="'.$transcript->stable_id().'"');
-      $self->write(@ff, '', 
-		   '/translation="'.$transcript->translate()->seq().'"');
-    }
-    foreach my $exon (@genscan_exons) {
-      $self->write(@ff, 'exon_gscan', $self->features2location([$exon]));
-      $self->write(@ff, ''          , '/start_phase="'.$exon->phase.'"'); 
-      $self->write(@ff, ''          , '/end_phase="'.$exon->end_phase.'"');
+      $self->write(@ff, 'mRNA', $self->features2location($exons));
+      $self->write(@ff, '', '/product="'.$transcript->translate()->seq().'"');
+      $self->write(@ff, '', '/note="Derived by automated computational' .
+		   'analysis using gene prediction method:' . 
+		   $transcript->analysis->logic_name . '"');
     }
   }
 
@@ -554,13 +584,9 @@ sub _dump_feature_table {
   #     
   if($self->is_enabled('similarity')) {
     foreach my $sim (@{$slice->get_all_SimilarityFeatures}) {
-      $self->write(@ff, 'similarity', $self->features2location([$sim]));
-      $self->write(@ff, ''       , '/hit_name="'.$sim->hseqname.'"');
-      $self->write(@ff, ''       , '/hit_score="'.$sim->score.'"');
-      $self->write(@ff, ''       , '/percent_ident="'.$sim->percent_id.'"');
-      $self->write(@ff, ''       , '/hit_start="'.$sim->hstart.'"');
-      $self->write(@ff, ''       , '/hit_end="'.$sim->hend.'"');
-      $self->write(@ff, ''       , '/hit_strand="'.$sim->hstrand.'"');
+      $self->write(@ff, 'misc_feature', $self->features2location([$sim]));
+      $self->write(@ff, ''       , '/note="match: '.$sim->hseqname.
+		  ' : '.$sim->hstart.'..'.$sim->hend.'('.$sim->hstrand.')"');
     }
   }
 
@@ -569,22 +595,43 @@ sub _dump_feature_table {
   #
   if($self->is_enabled('repeat')) {
     foreach my $repeat (@{$slice->get_all_RepeatFeatures}) {
-      $self->write(@ff, 'repeat', $self->features2location([$repeat]));
-      $self->write(@ff, ''    , '/name="'.$repeat->repeat_consensus->name.'"');
+      $self->write(@ff, 'repeat_region', $self->features2location([$repeat]));
+      $self->write(@ff, ''    , '/note="' . $repeat->repeat_consensus->name.
+		   ' repeat: matches ' . $repeat->hstart.'..'.$repeat->hend .
+		   '('.$repeat->hstrand.') of consensus"');
+    }
+  }
+
+  #
+  # markers
+  #
+  if($self->is_enabled('marker')) {
+    foreach my $mf (@{$slice->get_all_MarkerFeatures}) {
+      $self->write(@ff, 'STS', $self->features2location([$mf]));
+      $self->write(@ff, ''   , '/standard_name="' . 
+		   $mf->marker->display_MarkerSynonym->name . '"');
+
+
+      #grep out synonyms without a source
+      my @synonyms = @{$mf->marker->get_all_MarkerSynonyms};
+      @synonyms = grep {$_->source } @synonyms;
+      foreach my $synonym (@synonyms) {
+	$self->write(@ff, '', '/db_xref="'.$synonym->source.
+		     ':'.$synonym->name.'"');
+      }
     }
   }
 
   #
   # contigs
   #
-  if($self->is_enabled('contig')) {
+  if($self->is_enabled('contig') && $slice->can('get_tiling_path')) {
     foreach my $tile (@{$slice->get_tiling_path}) {
-      $self->write(@ff, 'contig', 
+      $self->write(@ff, 'misc_feature', 
 		   $tile->assembled_start .'..'. $tile->assembled_end);
-      $self->write(@ff, '', '/name="'.$tile->component_Seq->name.'"');
-      $self->write(@ff, '', '/contig_start="'.$tile->component_start.'"');
-      $self->write(@ff, '', '/contig_end="'.$tile->component_end.'"');
-      $self->write(@ff, '', '/contig_orientation="'.$tile->component_ori.'"');
+      $self->write(@ff, '', '/note="contig '.$tile->component_Seq->name .
+		   ' ' . $tile->component_start . '..' . $tile->component_end.
+		    '(' . $tile->component_ori . ')"');
     }
   }
 
@@ -596,12 +643,13 @@ sub _dump_feature_table {
 
 =head2 dump_fasta
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [2]    : IO::File $FH
+  Example    : $seq_dumper->dump_fasta($slice, $FH);
+  Description: Dumps an FASTA flat file to an open file handle
+  Returntype : none
+  Exceptions : none
+  Caller     : dump
 
 =cut
 
