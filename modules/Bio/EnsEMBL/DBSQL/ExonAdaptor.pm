@@ -103,7 +103,7 @@ sub fetch_by_stable_id {
 
   my $sth = $self->prepare( "SELECT exon_id from exon_stable_id
                              WHERE stable_id = ?" );
-  $sth->execute( $stable_id );
+  $sth->execute( "$stable_id" );
   if( my $arr = $sth->fetchrow_arrayref ) {
     my $exon = $self->fetch_by_dbID( $arr->[0] );
     return $exon;
