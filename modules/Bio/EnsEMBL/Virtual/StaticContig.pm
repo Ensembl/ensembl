@@ -442,7 +442,7 @@ sub get_all_ExternalFeatures{
        foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
 	   foreach my $extf ( @std ) {
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length)) {
+		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length,$contig->id)) {
 			$sf->seqname($contig->id);
 			push(@contig_features,$sf);
 		   }
@@ -863,6 +863,26 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
 
 
 
+=head2 fetch_karyotype_band
+
+ Title   : fetch_karyotype_band
+ Usage   : $label = $self->fetch_karyotype_band
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_karyotype_band {
+   my ($self,@args) = @_;
+
+   my $kadp = $self->dbobj->get_KaryotypeAdaptor();
+   my $band = $kadp->get_band_label_by_position($self->_chr_name,$self->_global_start + ($self->length/2));
+
+   return $band 
+}
 
 
 
