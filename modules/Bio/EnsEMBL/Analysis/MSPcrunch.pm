@@ -405,6 +405,7 @@ sub swaphomols {
 
 
     $newh1->primary_tag($h1->primary_tag);
+    $newh1->source_tag($h1->source_tag);
     $newh1->seqname    ($h1->seqname);
     $newh1->score      ($h1->score);
 
@@ -426,6 +427,7 @@ sub swaphomols {
 					    );
     }
 
+    $newh2->source_tag ($h2->source_tag);
     $newh2->primary_tag($h2->primary_tag);
     $newh2->seqname    ($h2->seqname);
     $newh2->score      ($h2->score);
