@@ -185,6 +185,8 @@ CREATE TABLE feature (
   hid           varchar(40) NOT NULL,
   evalue        double(16,4),
   perc_id       int(10),
+  phase         tinyint(1),
+  end_phase     tinyint(1),
   
   PRIMARY KEY (id),
   KEY overlap (id,contig,seq_start,seq_end,analysis),
@@ -297,6 +299,10 @@ CREATE TABLE supporting_feature (
   hstart        int(11) NOT NULL,
   hend          int(11) NOT NULL,
   hid           varchar(40) NOT NULL,
+  evalue        double(16,4),
+  perc_id       int(10),
+  phase         tinyint(1),
+  end_phase     tinyint(1),
   
   PRIMARY KEY (id),
   KEY overlap (id,seq_start,seq_end,analysis),
