@@ -85,6 +85,25 @@ sub new {
 
 
 
+=head2 get_ArchiveStableIdAdaptor
+
+  Args       : none 
+  Example    : none
+  Description: ...
+  Returntype : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_ArchiveStableIdAdaptor {
+    my( $self ) = @_;
+    
+    return 
+      $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor");
+}
+
+
 =head2 get_QtlFeatureAdaptor
 
   Args       : none 
