@@ -5,61 +5,94 @@ package Bio::EnsEMBL::RepeatFeature;
 
 use strict;
 use Bio::EnsEMBL::SeqFeature;
-use Bio::LocationI;
 
 use vars '@ISA';
 
-@ISA = qw{ Bio::EnsEMBL::SeqFeature Bio::LocationI };
+@ISA = qw{ Bio::EnsEMBL::SeqFeature };
 
 
-#ultra fast hacky constructor for rapid feature creation
+=head2 new_fast
+
+  Arg [1]    : hash reference $hashref
+  Example    : none
+  Description: This is an ultra fast constructor which requires knowledge of
+               the objects internals to be used.  It is only used by 
+               RepeatFeatureAdaptors (when thousands of repeats need to be
+               quickly created).  The SeqFeature superclass constructor 'new'
+               should be used in most instances.
+  Returntype : Bio::EnsEMBL::RepeatFeature
+  Exceptions : none
+  Caller     : RepeatFeatureAdaptors
+
+=cut
+
 sub new_fast {
   my ($class, $hashref) = @_;
-
+  
   return bless $hashref, $class;
 }
 
 
-sub repeat_consensus_id {
-    my( $self, $repeat_consensus_id ) = @_;
-    
-    if ($repeat_consensus_id) {
-        $self->{'_repeat_consensus_id'} = $repeat_consensus_id;
-    }
-    return $self->{'_repeat_consensus_id'};
-}
 
+=head2 adaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor $adaptor
+  Example    : $adaptor = $repeat->adaptor;
+  Description: The adaptor which performs database requests for this object.
+               This should be set when the object is stored in the database or
+               retrieved from the database.
+  Returntype : Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub adaptor {
   my ($self, $adaptor) = @_;
-
+  
   if(defined $adaptor) {
     $self->{'_adaptor'} = $adaptor;
   }
-
+  
   return $self->{'_adaptor'};
 }
 
 
+
+=head2 repeat_consensus
+
+  Arg [1]    : (optional) Bio::EnsEMBL::RepeatConsensus
+  Example    : $repeat_consensus = $repeat->repeat_consensus;
+  Description: Getter/Setter for the repeat consensus of this repeat
+  Returntype : Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub repeat_consensus {
-    my( $self, $con ) = @_;
+  my( $self, $con ) = @_;
     
-    if (defined $con) {
-	$self->throw("$con is not a RepeatConsensus")
-	 unless $con->isa("Bio::EnsEMBL::RepeatConsensus");
-        $self->{'_repeat_consensus'} = $con;
-    }
-    return $self->{'_repeat_consensus'};
+  if (defined $con) {
+    $self->throw("$con is not a RepeatConsensus")
+      unless $con->isa("Bio::EnsEMBL::RepeatConsensus");
+    $self->{'_repeat_consensus'} = $con;
+  }
+  return $self->{'_repeat_consensus'};
 }
 
-sub get_RepeatConsensus {
-    my( $self ) = @_;
-    
-    my $rc_id = $self->repeat_consensus_id;
-    return $self->adaptor->db->get_RepeatConsensusAdaptor
-      ->fetch_by_dbID($rc_id);
-}
 
+
+=head2 dbID
+
+  Arg [1]    : (optional) $db_id
+  Example    : $dbID = $repeat->dbID
+  Description: getter/setter for this objects internal database identifier
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub dbID {
     my( $self, $db_id ) = @_;
@@ -70,6 +103,19 @@ sub dbID {
     return $self->{'_db_id'};
 }
 
+
+=head2 analysis
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Analysis
+  Example    : $analysis = $repeat_feat->analysis;
+  Description: Getter/Setter for the analysis that was used to generate this
+               object
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub analysis {
     my( $self, $analysis ) = @_;
     
@@ -79,21 +125,18 @@ sub analysis {
     return $self->{'_analysis'};
 }
 
-sub validate {
 
-}
+=head2 hstart
 
-# Should these return anything?
-sub       phase { return -1  }
-sub   end_phase { return -1  }
-sub      hphase { return -1  }
-sub  hend_phase { return -1  }
-sub  percent_id { return 100 }
-sub hpercent_id { return 100 }
-sub     e_value { return 0   }
-sub     p_value { return 0   }
-sub    hp_value { return 0   }
+  Arg [1]    : (optional) int $hstart
+  Example    : $hit_start = $repeat->hstart;
+  Description: Getter/Setter for the start bp of this repeat match on the 
+               consensus sequence.
+  Returntype : int
+  Exceptions : none 
+  Caller     : general
 
+=cut
 
 sub hstart {
     my( $self, $hstart ) = @_;
@@ -104,6 +147,20 @@ sub hstart {
     return $self->{'_hstart'};
 }
 
+
+
+=head2 hend
+
+  Arg [1]    : (optional) int $hend
+  Example    : $hit_end = $repeat->hend;
+  Description: Getter/Setter for the end bp of this repeat match on the 
+               consensus sequence.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub hend {
     my( $self, $hend ) = @_;
     
@@ -113,17 +170,24 @@ sub hend {
     return $self->{'_hend'};
 }
 
-sub hstrand { return 1 }
 
-sub location_type { return 'EXACT' }
 
-sub min_start { return };
-sub min_end   { return };
-sub max_start { return };
-sub max_end   { return };
+=head2 hstrand
 
-sub start_pos_type { return 'EXACT' }
-sub   end_pos_type { return 'EXACT' }
+  Arg [1]    : none 
+  Example    : none
+  Description: always returns 1. method exists for consistancy with other 
+               features.
+  Returntype : int
+  Exceptions : none
+  Caller     : 
+
+=cut
+
+sub hstrand { 
+  return 1; 
+}
+
 
 sub to_FTString {
     my( $self ) = @_;
@@ -137,6 +201,59 @@ sub to_FTString {
     if ($strand == -1) {
         $loc = "complement($loc)";
     }
+}
+
+
+
+=head2 repeat_consensus_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use repeat_consensus->dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+
+sub repeat_consensus_id {
+  my( $self, $repeat_consensus_id ) = @_;
+
+    my ($f,$p, $l) = caller;
+    $self->warn("repeat_consensus_id is deprecated, use repeat_consensus ".
+		"instead. caller = $f, $p, $l"); 
+  
+  if ($repeat_consensus_id) {
+    $self->{'_repeat_consensus_id'} = $repeat_consensus_id;
+  }
+  return $self->{'_repeat_consensus_id'};
+}
+
+
+
+
+=head2 get_RepeatConsensus
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use repeat_consensus instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_RepeatConsensus {
+    my( $self ) = @_;
+
+    my ($f,$p, $l) = caller;
+    $self->warn("get_RepeatConsensus is deprecated, use repeat_consensus ".
+		"instead. caller = $f, $p, $l"); 
+    
+    my $rc_id = $self->repeat_consensus_id;
+    return $self->adaptor->db->get_RepeatConsensusAdaptor
+      ->fetch_by_dbID($rc_id);
 }
 
 
