@@ -22,10 +22,6 @@
     # Password if needed
     'password'      => undef,
     
-    # File(s) containing the database schema in SQL format - mandatory
-    'schema_sql'    => ['/nfs/disk65/mq2/ensembl/sql/table.sql',
-                        '/nfs/disk65/mq2/ensembl-pipeline/sql/table.sql'],
-    
-    #EnsEMBL DBSQL::Obj module name - optional                  
-    'module'        => 'Bio::EnsEMBL::DBSQL::Obj',
+    # File containing the datbase schema in SQL format - mandatory
+    'schema_sql'    => '../sql/table.sql',
 }
