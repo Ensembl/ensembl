@@ -328,6 +328,23 @@ sub store {
 }
 
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @feature_ids = @{$repeat_feature_adaptor->list_dbIDs()};
+  Description: Gets an array of internal ids for all repeat features in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("repeat_feature");
+}
+
 1;
 
 
