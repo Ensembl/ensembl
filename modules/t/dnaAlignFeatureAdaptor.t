@@ -1,4 +1,5 @@
 use lib 't';
+use strict;
 
 BEGIN { $| = 1;
 	use Test;
@@ -9,7 +10,7 @@ BEGIN { $| = 1;
 use MultiTestDB;
 use TestUtils qw(test_getter_setter debug);
 
-our $verbose = 1;
+our $verbose = 0;
 
 my $multi = MultiTestDB->new();
 ok(1);
@@ -27,13 +28,52 @@ ok (@{$ids});
 # Test retrieval via Slice
 #
 
-my $slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
-                                                   30_500_000, 31_000_000);
+my $feats;
 
-my $feats = $dafa->fetch_all_by_Slice($slice);
+my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome','20',
+                                                   30_500_000, 30_700_000);
+
+$feats = $dafa->fetch_all_by_Slice($chr_slice);
 debug('---fetching by chromosomal slice---');
 debug("Got " . scalar(@$feats) . " features back");
-ok(@$feats == 11069);
+ok(@$feats == 1354);
+print_features($feats);
+
+
+my $ctg_slice;
+my $ctg_slice  = $db->get_SliceAdaptor->fetch_by_region('contig',
+                                                       'AL031658.11.1.162976',
+                                                       1,
+                                                       50_000);
+$feats = $dafa->fetch_all_by_Slice($ctg_slice);
+debug('--- contig AL031658.11.1.162976 (1-50000) features ---');
+debug("Got " . scalar(@$feats));
+ok(@$feats == 709);
+print_features($feats);
+
+
+#
+# Test fetch_by_dbID
+#
+my $feat = $dafa->fetch_by_dbID(22171863, 'contig');
+debug('--- fetching by dbID in contig coords ---');
+ok($feat);
+print_features([$feat]);
+
+
+$feat = $dafa->fetch_by_dbID(22171863, 'supercontig');
+debug('--- fetching by dbID in supercontig coords ---');
+ok($feat);
+print_features([$feat]);
+
+
+#
+# Test fetch_by_Slice_and_pid
+#
+$feats = $dafa->fetch_all_by_Slice_and_pid($chr_slice, '90');
+debug('--- fetching by chr Slice and pid (90) ---');
+debug("Got " . scalar(@$feats));
+ok(@$feats == 253);
 print_features($feats);
 
 
@@ -48,7 +88,7 @@ sub print_features {
       debug($seqname . ' ' . $f->start().'-'.$f->end().'('.$f->strand().
             ') ['. $f->dbID.'] '. $f->cigar_string . ' ' .
             $f->hstart .'-'.$f->hend.' ('.$f->hstrand.')'.$f->score() .
-            " ($analysis)");
+            " ($analysis) " . $f->percent_id);
     } else {
       debug('UNDEF');
     }
