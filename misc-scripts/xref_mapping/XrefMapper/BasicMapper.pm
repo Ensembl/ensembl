@@ -1,8 +1,15 @@
-package BasicMapper;
+package XrefMapper::BasicMapper;
  
 use strict;
 use DBI;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Translation;
+
+my $xref_host = "ecs1g";
+my $xref_port = 3306;
+my $xref_database = "ianl_test_xref";
+my $xref_user = "ensadmin";
+my $xref_password = "ensembl";
  
  
 sub new {
@@ -15,10 +22,15 @@ sub new {
   $self->host($host);
   $self->port($port);
   $self->dbname($dbname);
-  $self->$user($user);
-  $self->$password($password);
-  $self->$dir($dir);
+  $self->user($user);
+  $self->password($password);
+  $self->dir($dir);
+
+
+  return $self;
 }
+
+
 
 
 sub dump_seqs{
@@ -33,7 +45,8 @@ sub dump_xref{
 
 
   my $sql = "select species_id from species where name = '".$self->species."'";
-  my $sth = dbi()->prepare($sql);
+  my $dbi = $self->dbi();
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $species_id;
@@ -59,10 +72,16 @@ sub dump_xref{
   $sql   .= "      x.species_id = ".$species_id." ";
   $sth = dbi()->prepare($sql);
   $sth->execute();
+  my $i = 0;
   while(my @row = $sth->fetchrow_array()){
+    $i++;
     $row[1] =~ s/(.{60})/$1\n/g;
     print XDNA ">".$row[0]."\n".$row[1]."\n";
+    if($i > 10){
+      goto ENDDNA;
+    }
   }
+ENDDNA:
   close XDNA;
 
   open(XPEP,">".$self->dir."/xref_prot.fasta") || die "Could not open xref_prot.fasta";
@@ -72,10 +91,16 @@ sub dump_xref{
   $sql   .= "      x.species_id = ".$species_id." ";
   $sth = dbi()->prepare($sql);
   $sth->execute();
+  $i = 0;
   while(my @row = $sth->fetchrow_array()){
+    $i++;
     $row[1] =~ s/(.{60})/$1\n/g;
     print XPEP ">".$row[0]."\n".$row[1]."\n";
+    if($i > 10){
+      goto ENDXPEP;
+    }
   }
+ENDXPEP:
   close XPEP;
 
 }
@@ -102,57 +127,68 @@ sub fetch_and_dump_seq{
                            -host    => $self->host(),
                            -port    => $self->port(),
                            -password => $self->password(),
-                           -username => $self->username(),
+                           -user     => $self->user(),
                            -group    => 'core');
  
-  open(FILE,">".$self->ensembl_dna_file()) 
+  open(DNA,">".$self->ensembl_dna_file()) 
     || die("Could not open dna file for writing: ".$self->ensembl_dna_file."\n");
 
-  $gene_adap = $reg->get_adaptor($self->species(),'core','Gene');
-  my @genes = @{$gene_adap->list_dbIDs()};
-  foreach my $gene (@genes){
+  open(PEP,">".$self->ensembl_protein_file()) 
+    || die("Could not open dna file for writing: ".$self->ensembl_protein_file."\n");
+
+  my $gene_adap = $db->get_GeneAdaptor();
+  my @gene_ids = @{$gene_adap->list_dbIDs()};
+  my $i =0;
+  foreach my $gene_id (@gene_ids){
+    $i++;
+    my $gene = $gene_adap->fetch_by_dbID($gene_id);
+    print "gene ".$gene."\n";
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
       my $seq = $transcript->spliced_seq(); 
       $seq =~ s/(.{60})/$1\n/g;
-      print FILE ">" . $transcript->dbID() . "\n" .$seq."\n";
+      print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
+      my $trans = $transcript->translation();
+      my $translation = $transcript->translate();
+      print "tranlation ".$translation."\n";
+      my $pep_seq = $translation->seq();
+      $pep_seq =~ s/(.{60})/$1\n/g;
+      print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+    }
+    if($i > 10){
+      goto FIN;
     }
   }
-  close FILE;
-
-  #now do the translations.
-
+FIN:
+  close DNA;
+  close PEP;
 }
                                       
 
 
-# @transcript_ids = @{$transcript_adaptor->list_dbIDs()};
-#  $transcript = $transcript_adaptor->fetch_by_dbID($trans_id);
+sub ensembl_protein_file{
+  my ($self, $arg) = @_;
+ 
+  (defined $arg) &&
+    ($self->{_ens_prot_file} = $arg );
+  return $self->{_ens_prot_file};
+}
 
+sub ensembl_dna_file{
+  my ($self, $arg) = @_;
+ 
+  (defined $arg) &&
+    ($self->{_ens_dna_file} = $arg );
+  return $self->{_ens_dna_file};
+}
 
-
-#  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-#  $slice_adaptor = $db->get_SliceAdaptor();
-#                                                                                
-#  $transcript_adaptor = $db->get_TranscriptAdaptor();
-#                                                                                
-#  $transcript = $transcript_adaptor->fetch_by_dbID(1234);
-#                                                                                
-#  $transcript = $transcript_adaptor->fetch_by_stable_id('ENST00000201961');
-#                                                                                
-#  $slice = $slice_adaptor->fetch_by_region('chromosome', '3', 1, 1000000);
-#  @transcripts = @{$transcript_adaptor->fetch_all_by_Slice($slice)};
-#                                                                                
-#  ($transcript) = @{$transcript_adaptor->fetch_all_by_external_name('BRCA2')};
-                                                                                
 
 sub get_ensembl_type{
+  my %type;
 
-  my %type; # 
-
-  my $type{'Translation'} = "peptide";
+  $type{'Translation'} = "peptide";
   $type{'Transcript'} = "dna";
 
-  return /%type;
+  return \%type;
 }
 
 sub species {
@@ -211,4 +247,20 @@ sub dir {
     ($self->{_dir} = $arg );
   return $self->{_dir};
 }
+
+
+sub dbi {
  
+  my $self = shift;
+  
+  my $dbi = DBI->connect("dbi:mysql:host=$xref_host;port=$xref_port;database=$xref_database",
+                        "$xref_user",
+                        "$xref_password",
+ 			 {'RaiseError' => 1}) || die "Can't connect to database";
+  
+ 
+  return $dbi;
+}
+ 
+ 
+1;
