@@ -156,6 +156,7 @@ sub load_genomic_mapper {
     $mapper->add_map_coordinates( $id, $start, $start+$exon->length()-1,
 				  $exon->strand(), $exon->contig,
 				  $exon->start(), $exon->end() );
+    $start += $exon->length;
   }
 }
 
