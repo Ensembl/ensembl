@@ -48,36 +48,39 @@ use vars qw(@ISA);
 
 
 
-=head2 fetch_all_by_Slice_and_type
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Arg [2]    : String $type
-  Example    : none
-  Description: uses optional type to retrieve repeat features
-               uses BaseFeatureAdaptor fetch_all_by_Slice_constraint
-  Returntype : listref Bio::EnsEMBL::RepeatFeature
-  Exceptions : 
-  Caller     : general
+  Arg [2]    : (optional) string $logic_name
+               Limits RepeatFeatures obtained to those having an Analysis with
+               of the specified logic_name.  If no logic name is specified
+               Repeats of all analysis types are retrieved.
+  Arg [3]    : (optional) string $repeat_type
+               Limits RepeatFeatures obtained to those of specified repeat_type
+  Example    : @rfeats = @{$rfa->fetch_all_by_Slice($slice, undef, 'LTR')};
+  Description: Retrieves repeat features overlapping the area designated by
+               the provided slice argument.  Returned features will be in
+               in the same coordinate system as the provided slice and will
+               have coordinates relative to the slice start.
+  Returntype : reference to a list of Bio::EnsEMBL::RepeatFeatures.
+  Exceptions : throw on bad argument
+  Caller     : Slice::get_all_RepeatFeatures
 
 =cut
 
-
-sub fetch_all_by_Slice_and_type {
+sub fetch_all_by_Slice {
   my $self = shift;
   my $slice = shift;
-  my $type = shift;
+  my $logic_name = shift;
+  my $repeat_type = shift;
 
-  if( ! $slice || ! $slice->isa("Bio::EnsEMBL::Slice") ) {
-    throw( "Need slice as first argument" );
+  my $constraint = '';
+
+  if($repeat_type) {
+    $constraint .= "rc.repeat_type =\"$repeat_type\"";
   }
 
-  if($type) {
-    my $constraint = "rc.repeat_type = \"$type\"";
-    return $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint );
-  } else {
-    return $self->SUPER::fetch_all_by_Slice( $slice );
-  }
-
+  return $self->fetch_all_by_Slice_constraint($slice,$constraint,$logic_name);
 }
 
 
