@@ -18,6 +18,8 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Exception qw(throw info);
 
 
+use constant MAX_INTRON_LEN => 2e6;
+
 
 #
 # sanity checks the interim exons, and splits this
@@ -115,9 +117,6 @@ sub check_iexons {
       return check_iexons($itranscript, $itranscript_array);
     }
 
-    $prev_end = $iexon->end();
-    $prev_start = $iexon->start();
-
     if (!defined($transcript_strand)) {
       $transcript_strand = $iexon->strand();
     } elsif ($transcript_strand != $iexon->strand()) {
@@ -134,6 +133,31 @@ sub check_iexons {
       }
       return check_iexons($itranscript, $itranscript_array);
     }
+
+    # watch out for extremely long introns
+    my $intron_len = 0;
+
+    if(defined($prev_start)) {
+      if($iexon->strand() == 1) {
+        $intron_len = $iexon->start - $prev_end + 1;
+      } else {
+        $intron_len = $prev_start - $iexon->end + 1;
+      }
+    }
+
+    if($intron_len > MAX_INTRON_LEN) {
+      info("  very long intron, splitting transcripts");
+      my $keep_exon = 1;
+      my $first_transcript = split_itrans($itranscript, $iexon, $keep_exon);
+
+      if($first_transcript) {
+        push @$itranscript_array, $first_transcript;
+      }
+      return check_iexons($itranscript, $itranscript_array);
+    }
+
+    $prev_end = $iexon->end();
+    $prev_start = $iexon->start();
   }
 
   $itranscript_array ||= [];

@@ -10,7 +10,7 @@ use vars qw(@ISA @EXPORT_OK);
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(print_exon print_coords print_translation);
+@EXPORT_OK = qw(print_exon print_coords print_translation print_three_phase_translation);
 
 
 
@@ -107,6 +107,26 @@ sub print_translation {
 
   return;
 }
+
+
+sub print_three_phase_translation {
+  my $transcript = shift;
+
+  return if(!$transcript->translation());
+
+  my $orig_phase = $transcript->start_Exon->phase();
+
+  foreach my $phase (0,1,2) {
+    info("======== Phase $phase translation: ");
+    $transcript->start_Exon->phase($phase);
+    info("Peptide: " . $transcript->translate->seq() . "\n\n===============");
+  }
+
+  $transcript->start_Exon->phase($orig_phase);
+
+  return;
+}
+
 
 
 1;

@@ -13,6 +13,7 @@ use StatMsg;
 use Deletion;
 use Insertion;
 use Transcript;
+use Gene;
 use StatLogger;
 use StatMsg;
 
@@ -152,6 +153,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
       info("Gene: ".$gene->stable_id);
       my $transcripts = $gene->get_all_Transcripts();
 
+      my @finished;
+
       foreach my $transcript (@$transcripts) {
         next if(!$transcript->translation); #skip pseudo genes
 
@@ -162,98 +165,102 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
         my $finished_transcripts =
           create_transcripts($interim_transcript, $slice_adaptor);
 
-        my $transcript_count = @$finished_transcripts;
-        my $translation_count = 0;
-        my $stop_codons_count = 0;
 
-        if($transcript_count > 1) {
-          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SPLIT);
-        }
-        elsif($transcript_count== 0) {
-          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_SEQUENCE_LEFT);
-        }
-
-        foreach my $ftrans (@$finished_transcripts) {
-          if($ftrans->translation()) {
-            $translation_count++;
-            my $pep = $ftrans->translate->seq();
-
-            print STDERR "\n\n$pep\n\n";
-
-            if($pep =~ /\*/) {
-              $stop_codons_count++;
-            }
-
-            # sanity check, if translation is defined we expect a peptide
-            if(!$pep) {
-              print_translation($ftrans->translation());
-              throw("Unexpected Translation but no peptide");
-            }
-          } else {
-            print STDERR "NO TRANSLATION LEFT\n";
+        # set the translation stable identifier on the finished transcripts
+        foreach my $tr (@$finished_transcripts) {
+          if($tr->translation() && $transcript->translation()) {
+            $tr->translation->stable_id($transcript->translation->stable_id);
           }
         }
 
-        # If there were stop codons in one of the split transcripts
-        # report it. Report it as 'entire' if all split transcripts had
-        # stops.
-        if($stop_codons_count) {
-          my $code = StatMsg::TRANSCRIPT | StatMsg::DOESNT_TRANSLATE;
-          if($stop_codons_count == $translation_count) {
-            $code |= StatMsg::ENTIRE;
-          } else {
-            $code |= StatMsg::PARTIAL;
-          }
-          StatMsg->new($code);
-        }
+        # This method call is optional, just for statistics gathering
+        # and extra sanity checking / debug output:
+        gen_transcript_stats($finished_transcripts);
 
-        if(!$translation_count) {
-          StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_CDS_LEFT);
-        }
+        push @finished, @$finished_transcripts;
+      }
 
-        if($translation_count) {
-          if($stop_codons_count) {
-            if($translation_count > $stop_codons_count) {
-              StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
-                          StatMsg::PARTIAL);
-            }
-          } else {
-            StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
-                         StatMsg::ENTIRE);
-          }
-        }
-
-#         foreach my $ftr (@$finished_transcripts) {
-#           print_three_phase_translation($ftr);
-#         }
-
-        if($store) {
-          store_gene($dest_db, $gene, $finished_transcripts);
-        }
-
+      if($store) {
+        Gene::store_gene($dest_db, $gene, \@finished);
       }
     }
   }
 }
 
 
-sub print_three_phase_translation {
-  my $transcript = shift;
 
-  return if(!$transcript->translation());
+#
+# method which does some sanity checking of generated transcripts,
+# gathers some stats about the completed transcripts and prints the
+# created translations to STDERR
+#
+sub gen_transcript_stats {
+  my $finished_transcripts = shift;
 
-  my $orig_phase = $transcript->start_Exon->phase();
+  my $transcript_count = @$finished_transcripts;
+  my $translation_count = 0;
+  my $stop_codons_count = 0;
 
-  foreach my $phase (0,1,2) {
-    info("======== Phase $phase translation: ");
-    $transcript->start_Exon->phase($phase);
-    info("Peptide: " . $transcript->translate->seq() . "\n\n===============");
+  if($transcript_count > 1) {
+    StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SPLIT);
+  }
+  elsif($transcript_count== 0) {
+    StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_SEQUENCE_LEFT);
   }
 
-  $transcript->start_Exon->phase($orig_phase);
+  foreach my $ftrans (@$finished_transcripts) {
+    if($ftrans->translation()) {
+      $translation_count++;
+      my $pep = $ftrans->translate->seq();
 
-  return;
+      print STDERR "\n\n$pep\n\n";
+
+      if($pep =~ /\*/) {
+        $stop_codons_count++;
+      }
+
+      # sanity check, if translation is defined we expect a peptide
+      if(!$pep) {
+        print_translation($ftrans->translation());
+        throw("Unexpected Translation but no peptide");
+      }
+    } else {
+      print STDERR "NO TRANSLATION LEFT\n";
+    }
+  }
+
+  # If there were stop codons in one of the split transcripts
+  # report it. Report it as 'entire' if all split transcripts had
+  # stops.
+  if($stop_codons_count) {
+    my $code = StatMsg::TRANSCRIPT | StatMsg::DOESNT_TRANSLATE;
+    if($stop_codons_count == $translation_count) {
+      $code |= StatMsg::ENTIRE;
+    } else {
+      $code |= StatMsg::PARTIAL;
+    }
+    StatMsg->new($code);
+  }
+
+  if(!$translation_count) {
+    StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_CDS_LEFT);
+  }
+
+  if($translation_count) {
+    if($stop_codons_count) {
+      if($translation_count > $stop_codons_count) {
+        StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
+                     StatMsg::PARTIAL);
+      }
+    } else {
+      StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::TRANSLATES |
+                   StatMsg::ENTIRE);
+    }
+  }
 }
+
+
+
 
 
 
@@ -271,11 +278,6 @@ sub transfer_transcript {
   info("Transcript: " . $transcript->stable_id());
 
   my $human_exons = $transcript->get_all_Exons();
-
-  if (!$transcript->translation()) { # watch out for pseudogenes
-    info("pseudogene - discarding");
-    return;
-  }
 
   my $chimp_cdna_pos = 0;
   my $cdna_exon_start = 1;
@@ -403,25 +405,20 @@ sub transfer_transcript {
                 # insert in chimp, deletion in human
                 #
 
-                #info("before insert, CDNA_POS= $chimp_cdna_pos");
-
                 Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
                                           $chimp_exon, $chimp_transcript);
 
                 $chimp_cdna_pos += $insert_len;
-                #info("after insert, CDNA_POS= $chimp_cdna_pos");
               }
             }
 
             $chimp_cdna_pos += $c->length();
-            #info("after match (" . $c->length(). ") CDNA_POS= $chimp_cdna_pos");
           }
         }  # foreach coord
       }
     }
 
     $cdna_exon_start = $chimp_cdna_pos + 1;
-    # info("after exon, CDNA_POS= $chimp_cdna_pos");
 
     $chimp_transcript->add_Exon($chimp_exon);
   } # foreach exon
@@ -553,177 +550,6 @@ sub create_transcripts {
   return \@finished_transcripts;
 }
 
-
-
-###############################################################################
-# store gene
-#
-# Builds Ensembl genes from the generated chimp transcripts and stores them
-# in the database.
-#
-###############################################################################
-
-
-sub store_gene {
-  my $db = shift;
-  my $hum_gene = shift; # human gene
-  my $ctranscripts = shift; # chimp transcripts
-
-  my $MIN_AA_LEN = 15;
-  my $MIN_NT_LEN = 600;
-
-  my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('ensembl');
-
-  # Look at the translations and convert any transcripts with stop codons
-  # into pseudogenes
-  foreach my $ct (@$ctranscripts) {
-    if($ct->translation && $ct->translate->seq() =~ /\*/) {
-      $ct->translation(undef);
-    }
-  }
-
-
-  # Group transcripts by their strand and scaffold.  We
-  # cannot really build genes that spand scaffolds or strands
-  my (%ctrans_hash, %nt_lens, %aa_lens);
-
-  foreach my $ct (@$ctranscripts) {
-    my $region = $ct->slice->seq_region_name() . ':' . $ct->strand();
-
-    $ctrans_hash{$region} ||= [];
-    push @{$ctrans_hash{$region}}, $ct;
-
-    # keep track of how many nucleotides and amino acids are in the
-    # transcripts from this gene that made it to this area.  If there
-    # are not many, the transcript should probably be rejected.
-    my $nt_len = length($ct->spliced_seq()) || 0;
-    my $aa_len = ($ct->translation()) ? length($ct->translate->seq()) : 0;
-
-    $nt_lens{$region} ||= 0;
-    $nt_lens{$region} += $nt_len;
-
-    $aa_lens{$region} ||= 0;
-    $aa_lens{$region} += $aa_len;
-  }
-
-  my %chimp_genes;
-
-  my $gene_adaptor = $db->get_GeneAdaptor();
-
-  foreach my $region (keys %ctrans_hash) {
-    # keep transcripts if there is a minimum amount of nucleotide
-    # OR amino acid sequence in transcripts in the same region
-    next if($nt_lens{$region}<$MIN_NT_LEN && $aa_lens{$region}<$MIN_AA_LEN);
-
-    # one gene for each region
-    my $cgene = $chimp_genes{$region} ||= Bio::EnsEMBL::Gene->new();
-
-    generate_stable_id($cgene);
-
-    # rename transcripts and add to gene
-    foreach my $ctrans (@{$ctrans_hash{$region}}) {
-      generate_stable_id($ctrans);
-
-      # rename translation
-      if($ctrans->translation) {
-        generate_stable_id($ctrans->translation);
-      }
-
-      $cgene->add_Transcript($ctrans);
-    }
-
-    # rename all of the exons
-    # but watch out because duplicate exons will be merged and we do not
-    # want to generate multiple names
-    my %ex_stable_ids;
-    foreach my $ex (@{$cgene->get_all_Exons()}) {
-      if($ex_stable_ids{$ex->hashkey()}) {
-        $ex->stable_id($ex_stable_ids{$ex->hashkey()});
-      } else {
-        generate_stable_id($ex);
-        $ex_stable_ids{$ex->hashkey()} = $ex->stable_id();
-      }
-    }
-
-    # set the analysis on the gene object
-    $cgene->analysis($analysis);
-
-
-    # for now just grab all HUGO xrefs, and take last one as display xref;
-    my $display_xref;
-    foreach my $gx (@{$hum_gene->get_all_DBLinks()}) {
-      if(uc($gx->dbname()) eq 'HUGO') {
-        $cgene->add_DBEntry($gx);
-        $display_xref = $gx;
-      }
-    }
-
-    $cgene->display_xref($display_xref) if($display_xref);
-
-    my $name = $cgene->stable_id();
-
-    $name .= '/'.$display_xref->display_id() if($display_xref);
-
-    $cgene->type('ensembl');
-
-    # store the bloody thing
-    print STDERR "Storing gene: $name\n";
-    $gene_adaptor->store($cgene);
-  }
-
-  return;
-}
-
-
-
-###############################################################################
-# generate_stable_id
-#
-# Generates a stable_id for a gene, transcript, translation or exon and sets
-# it on the object.
-#
-###############################################################################
-
-
-my ($TRANSCRIPT_NUM, $GENE_NUM, $EXON_NUM, $TRANSLATION_NUM);
-
-
-sub generate_stable_id {
-  my $object = shift;
-
-  my $SPECIES_PREFIX = 'PTR';
-  my $PAD            = 18;
-
-  my $type_prefix;
-  my $num;
-
-  if($object->isa('Bio::EnsEMBL::Exon')) {
-    $type_prefix = 'E';
-    $EXON_NUM       ||= 0;
-    $num = ++$EXON_NUM;
-  } elsif($object->isa('Bio::EnsEMBL::Transcript')) {
-    $type_prefix = 'T';
-    $TRANSCRIPT_NUM ||= 0;
-    $num = ++$TRANSCRIPT_NUM;
-  } elsif($object->isa('Bio::EnsEMBL::Gene')) {
-    $type_prefix = 'G';
-    $GENE_NUM       ||= 0;
-    $num = ++$GENE_NUM;
-  } elsif($object->isa('Bio::EnsEMBL::Translation')) {
-    $type_prefix = 'P';
-    $TRANSLATION_NUM ||= 0;
-    $num = ++$TRANSLATION_NUM;
-  } else {
-    throw('Unknown object type '.ref($object).'. Cannot create stable_id.');
-  }
-
-  my $prefix = "ENS${SPECIES_PREFIX}${type_prefix}";
-
-  my $pad = $PAD - length($prefix) - length($num);
-
-  $object->version(1);
-  $object->stable_id($prefix . ('0'x$pad) . $num);
-}
 
 
 
