@@ -1402,17 +1402,19 @@ sub start_update {
     my ($self,$start,$end) = @_;
 
     my $cid = $self->current_update;
+    
+    $self->throw("No start time defined") unless defined($start);
+    $self->throw("No end time defined")   unless defined($end);
 
     $self->throw("Update already in progresss id [$cid]") unless ! $cid;
     
     
     my $sth = $self->prepare("insert into db_update" . 
 			     "(id,time_started,status,modified_start,modified_end) " . 
-			     " values(NULL,now(),FROM_UNIXTIME($start),FROM_UNIXTIME($end))");
+			     " values(NULL,now(),'STARTED',FROM_UNIXTIME($start),FROM_UNIXTIME($end))");
 
     $sth->execute;
-    
-    $sth->prepare("select last_insert_id()");
+    $sth = $self->prepare("select last_insert_id()");
     $sth->execute;
 
     my $rowhash = $sth->fetchrow_hashref;
@@ -1747,6 +1749,7 @@ sub write_Feature {
 
 	my $sth4 = $self->prepare("select LAST_INSERT_ID()");
 	   $sth4->execute();
+
 	my $arr = $sth4->fetchrow_arrayref();
 	my $fset_id = $arr->[0];
 
