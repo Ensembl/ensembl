@@ -72,7 +72,7 @@ sub new {
 
     # EMBL dumping support
     $self->{'date'} = [];
-    $self->{_anal_hash}=();
+    $self->{_anal_hash}={};
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
    
@@ -798,7 +798,7 @@ sub get_all_PredictionFeatures {
    my $previous;
    my $previous_contig;
    my %analhash;
-   my $analysis_type='genscan';
+   my $analysis_type="('genscan', 'fgenesh')";
    
     my $type = $self->dbobj->static_golden_path_type;
     
@@ -808,12 +808,12 @@ sub get_all_PredictionFeatures {
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
-                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig 
+                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.contig,f.name 
                         FROM   feature f, analysisprocess a,static_golden_path sgp 
                         WHERE    f.analysis = a.analysisId 
                         AND    sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    a.gff_source = '$analysis_type'  
+		        AND    a.gff_source in $analysis_type  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
                         ORDER BY f.contig,f.strand*f.seq_start
@@ -823,10 +823,10 @@ sub get_all_PredictionFeatures {
    
    $sth->execute();
    
-   my ($fid,$rawstart,$rawend,$seqstart,$seqend,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig);
+   my ($fid,$rawstart,$rawend,$seqstart,$seqend,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig,$name);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$rawstart,\$rawend,\$seqstart,\$seqend,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig);
+   $sth->bind_columns(undef,\$fid,\$rawstart,\$rawend,\$seqstart,\$seqend,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig,\$name);
    
    $previous = -1;
    my $current_fset;
@@ -866,7 +866,7 @@ sub get_all_PredictionFeatures {
 #        if($phase != $previous || $previous_contig != $contig $previous == -1) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
-	   $current_fset->source_tag('genscan');
+	   $current_fset->source_tag($name);
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
@@ -907,12 +907,12 @@ sub get_all_PredictionFeatures {
 
        $out->id($fsetid); # to make genscan peptide work
 
-       $out->source_tag('genscan');
+       $out->source_tag($name);
        $out->primary_tag('prediction');
        
        if( defined $score ) {
 	   $out->score($score);
-       }
+	 }
 
        $out->analysis($analysis);
 
@@ -1161,7 +1161,7 @@ sub get_all_DASFeatures{
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
                     #warn ("Got a clone feature: ", $sf->seqname(), "\n");
  	                push(@clone_features, $sf);
-               } elsif( $sf->seqname() eq '__ERROR__') { 
+               } elsif( $sf->das_type_id() eq '__ERROR__') { 
                     #Always push errors even if they aren't wholly within the VC
 	                push(@genomic_features, $sf);
                } elsif( $sf->seqname() eq '') { 
@@ -1194,6 +1194,12 @@ sub get_all_DASFeatures{
    foreach my $sf ( @chr_features ) {
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+            #print STDERR "SC SEG ID: ",         $sf->seqname(), "\t";
+            #print STDERR "SC DSN: ",            $sf->das_dsn(), "\t";
+            #print STDERR "SC FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "SC FEATURE END: ",    $sf->das_end(), "\t";
+            #print STDERR "SC FEATURE STRAND: ", $sf->das_strand(), "\t";
+            #print STDERR "SC FEATURE TYPE: ",   $sf->das_type_id(), "\n";
        #print STDERR "FEATURE START: ",  $sf->start() , "\t";
        #print STDERR "FEATURE END: ",    $sf->end() , "\t";
        #print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
@@ -1234,16 +1240,15 @@ sub _convert_chrfeature_to_vc_coords{
     my $chr_start = $self->_global_start();
     my $chr_end   = $self->_global_end();
     
-	if($f->start() < $self->_global_start()){
-		print STDERR "DAS ERROR! Feature not on VC  between $chr_start and $chr_end: ";
-        print STDERR " START: ",  $f->das_start(), "\t";
-        print STDERR " END: ",    $f->das_end(), "\t";
-        print STDERR " STRAND: ", $f->das_strand(), "\t";
-       	print STDERR " ID: ",   $f->das_feature_id(), "\n";	
-		return();
-	}
-    $f->start($f->start() - $chr_start + 1);
-    $f->end($f->end() - $chr_start + 1);
+    if($f->start < $chr_start) {
+        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
+                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
+                    "\n";
+        return ();
+    }
+        
+    $f->start( $f->start() - $chr_start +1 );
+    $f->end(   $f->end() - $chr_start  + 1);
     return($f);
 }
 
@@ -1290,6 +1295,7 @@ sub get_all_ExternalFeatures{
    ## Note that they should always return lists (possible empty) or bad things happen.
    
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+	print STDERR "EXTFEATFACT: $extf\n";
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	   push(@web,$extf);
        } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
@@ -1481,6 +1487,29 @@ sub get_all_FPCClones {
     return @fpcclones;
 }
 
+sub get_cloneset_on_chromosome {
+    my $self = shift;
+    my $cloneset = shift;
+    my $chr_name      = shift; 
+
+    my $mapdb;
+    eval {
+        $mapdb = $self->dbobj->mapdb();
+    };
+    if( $@ || !defined $mapdb ) {
+	    $self->warn("in get_all_clones_in_cloneset, unable to get mapdb. Returning empty list [$@]");
+	    return ();
+    }
+    my $fpcmap = $mapdb->get_Map('FPC');
+    $chr_name =~ s/chr//g;
+    my $chr_name_X = $self->_chr_name;
+    $chr_name_X =~ s/chr//g; 
+
+    my $chr = $fpcmap->get_ChromosomeMap($chr_name||$chr_name_X);
+    my $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
+    return @$cloneset;
+}
+
 sub get_all_clones_in_cloneset {
     my $self = shift;
     my $cloneset = shift;
@@ -1571,7 +1600,7 @@ eval {
 		next;
 	    }
 	    
-	    if( defined $prev && $prev->end+$glob > $start && $synonym eq $prev->id) {
+	    if( defined $prev && $prev->end+$glob > $start && uc($synonym) eq uc($prev->id)) {
 		next;
 	    }
 
@@ -1874,9 +1903,11 @@ return $markers[0];
 
  Title   : get_all_Genes_exononly
  Usage   :
- Function:
+ Function: Get all genes making sure there is no redundant exons
+           Suitable if no translation has to be intended on transcript.
+           Much faster than get_all_Genes.
  Example :
- Returns : 
+ Returns : Array of Bio::EnsEMBL::Gene
  Args    :
 
 
@@ -1933,6 +1964,7 @@ sub get_all_Genes_exononly{
     my @out;
     my @trans;
     my $length = $glob_end - $glob_start;
+    my %exon_already_seen;
 
     while( $sth->fetch ) {
         next if (($end > $length) || ($start < 1));
@@ -1981,6 +2013,7 @@ sub get_all_Genes_exononly{
 #	        }
 #        }
 
+	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
         my $exon = Bio::EnsEMBL::Exon->new();
             $exon->start($start);
             $exon->end($end);
@@ -1992,6 +2025,7 @@ sub get_all_Genes_exononly{
             $previous_exon = $exon;
             $current_transcript->add_Exon($exon);
             $current_transcript->end_exon_rank($rank);
+            $exon_already_seen{$exonid} = 1;
    }
 
    #
@@ -2040,6 +2074,24 @@ sub get_all_VirtualGenes_startend_lite {
         $self->_global_start, 
         $self->_global_end
     ); 
+}
+
+sub get_all_VirtualTranscripts_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
+}
+
+sub get_all_VirtualGenscans_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualgenscans_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
 }
 
 sub get_all_EMBLGenes_startend_lite {
@@ -2338,8 +2390,7 @@ sub get_all_Genes {
     my $idlist  = $self->_raw_contig_id_list();
     
     if( $idlist !~ /\w/ ) { 
-       &eprof_end("total-static-gene-get");
-       return ();
+        return ();
     }
 
     my $query = "
@@ -2832,7 +2883,7 @@ sub top_SeqFeatures{
 sub _raw_contig_id_list {
    my ($self,@args) = @_;
     
-   my $string = "";
+   my $string;
 
    if( defined $self->{'_raw_contig_id_list'} ) {
        return $self->{'_raw_contig_id_list'};
