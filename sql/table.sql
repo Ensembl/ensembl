@@ -71,6 +71,16 @@ CREATE TABLE contig (
   KEY length (length)
 );
 
+
+CREATE table contigext (
+       contig_id     int(10) NOT NULL,
+       tag	     varchar(40) NOT NULL,
+       value	     varchar(40) NOT NULL,
+       KEY (contig_id,tag),
+       KEY (tag)
+       );
+
+
 #
 # Table structure for table 'contigoverlap'
 #

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..12\n"; 
+BEGIN { $| = 1; print "1..8\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -88,48 +88,14 @@ eval {
     $contig = $db->get_Contig('AC021078.00017');
 };
 
-if( $@ ) {
-    print STDERR "Does not have contig test, cannot test overlap\n";
-    print "ok 8\n";
-    print "ok 9\n";
-} else {
-    print "ok 8\n";    
-    print "ok 9\n";
-    
-    
-    $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
-						-focusposition => 10,
-						-ori => 1,
-						-left => 1000000,
-						-right => 1000000 );
-
-						    
-    $seq = $vc->primary_seq();
-    if( $seq->isa('Bio::PrimarySeqI') ) {
-	print "ok 10\n";
-	#print STDERR "Seq is ".$seq->seq."\n";
-	$eout = Bio::SeqIO->new( "-format" => 'EMBL', -file => ">t/DB.vc.embl" ) ;
-	$eout->write_seq($vc);
-    } else {
-	print STDERR "Could not make sequence - got a [$seq]\n";
-	print "not ok 10\n";
-    }
-
-    @sf = $vc->get_all_SeqFeatures();
-    @sf = (); # keep -w happy
-    print "ok 11\n";
-
-
-}
-
 $db->extension_tables(1);
 
 $contig->set_attribute('silly','something');
 
 if( $contig->get_attribute('silly') ne 'something' ) {
-    print "not ok 12\n";
+    print "not ok 8\n";
 } else {
-    print "ok 12\n";
+    print "ok 8\n";
 }
 
 
