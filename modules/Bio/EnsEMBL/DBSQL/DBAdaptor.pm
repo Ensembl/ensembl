@@ -280,7 +280,7 @@ sub get_SNPAdaptor {
     my $snp = $self->get_db_adaptor('SNP');
     
     unless($snp) {
-      warn("No lite or SNP database, cannot get snp adaptor\n");
+      warn("No lite or SNP database, cannot get snp adaptor");
       return undef;
     }
 
@@ -289,8 +289,7 @@ sub get_SNPAdaptor {
   }
   
   #return a proxy adaptor which can use the lite or the core database
-  return $self->get_adaptor("ProxySNP",
-			     $primary_adaptor);
+  return $self->get_adaptor("ProxySNP", $primary_adaptor);
 }
 
 
