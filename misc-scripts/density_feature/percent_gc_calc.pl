@@ -43,7 +43,7 @@ my $small_blocksize = 500;
 #
 # Check wether the script should run on given database
 #
-my $sth = $db->prepare( "select count(*) from dna" );
+my $sth = $db->dbc->prepare( "select count(*) from dna" );
 $sth->execute();
 my ( $dna_count )  = $sth->fetchrow_array();
 if( ! $dna_count ) {

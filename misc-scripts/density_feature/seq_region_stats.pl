@@ -33,7 +33,7 @@ $genestats = $snpstats = 1 if(!$genestats && !$snpstats);
 my $genes_present;
 
 if($genestats) {
-  my $sth = $db->prepare( "select count(*) from gene" );
+  my $sth = $db->dbc()->prepare( "select count(*) from gene" );
   $sth->execute();
 
   my ( $gene_count )  = $sth->fetchrow_array();
@@ -46,7 +46,7 @@ if($genestats) {
 #
 # and seq_regions
 #
-my $sth = $db->prepare( "select count(*) from seq_region" );
+my $sth = $db->dbc()->prepare( "select count(*) from seq_region" );
 $sth->execute();
 my ( $seq_region_count ) = $sth->fetchrow_array();
 if( ! $seq_region_count ) {
@@ -146,7 +146,7 @@ sub lite_attach {
   #
   # get a lost of all databases on that server
   #
-  my $sth = $db->prepare( "show databases" );
+  my $sth = $db->dbc()->prepare( "show databases" );
   $sth->execute();
   my $all_db_names = $sth->fetchall_arrayref();
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;

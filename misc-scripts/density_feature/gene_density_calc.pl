@@ -32,7 +32,7 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 					    -pass => $pass,
 					    -dbname => $dbname);
 
-my $sth = $db->prepare( "select count(*) from gene" );
+my $sth = $db->dbc()->prepare( "select count(*) from gene" );
 $sth->execute();
 
 my ( $gene_count )  = $sth->fetchrow_array();
@@ -48,7 +48,7 @@ if( ! $gene_count ) {
 # Could be database without seq_regions
 #  Then have to try and attach core db
 #
-$sth = $db->prepare( "select count(*)  from seq_region" );
+$sth = $db->dbc()->prepare( "select count(*)  from seq_region" );
 $sth->execute();
 my ( $seq_region_count ) = $sth->fetchrow_array();
 if( ! $seq_region_count ) {

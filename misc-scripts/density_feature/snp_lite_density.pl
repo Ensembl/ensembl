@@ -137,7 +137,7 @@ sub lite_attach {
   #
   # get a lost of all databases on that server
   #
-  my $sth = $db->prepare( "show databases" );
+  my $sth = $db->dbc->prepare( "show databases" );
   $sth->execute();
   my $all_db_names = $sth->fetchall_arrayref();
   my %all_db_names = map {( $_->[0] , 1)} @$all_db_names;

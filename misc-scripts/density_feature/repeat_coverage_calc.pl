@@ -38,7 +38,7 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 
 
 
-my $sth = $db->prepare( "select count(*) from repeat_feature" );
+my $sth = $db->dbc()->prepare( "select count(*) from repeat_feature" );
 $sth->execute();
 
 my ( $repeat_count )  = $sth->fetchrow_array();
