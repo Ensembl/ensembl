@@ -25,7 +25,7 @@ read_database=$1; shift
 read_gene_desc_table='gene_description'
 
 # the table with new descriptions to be created (in the current database):
-new_gene_description='merged_gene_description'
+new_gene_description='gene_description'
 
 # now produce the SQL (with the $variables  being replaced with their values)
 # and pipe this as input into mysql:
