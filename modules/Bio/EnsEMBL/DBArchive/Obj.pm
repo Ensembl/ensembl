@@ -298,7 +298,7 @@ sub write_dead_geneid{
     my ($self,$geneid) = @_;
     my $query="insert into dead_genes (id) values ('$geneid')";
     if($self->_readonly){
-	$self->warn("READONLY: $query");
+	print "READONLY: $query\n";
     }else{
 	my $sth = $self->prepare("$query");
 	$sth->execute();
@@ -334,7 +334,7 @@ sub write_seq{
     
     my $query="insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')";
     if($self->_readonly){
-	$self->warn("READONLY: $query");
+	print "READONLY: $query\n";
     }else{
 	my $sth = $self->prepare($query);
 	$sth->execute();
@@ -365,7 +365,7 @@ sub delete_seq{
     # delete the sequence entry
     my $query="delete from sequence where (id = '$seqid' && version = '$seqversion')";
     if($self->_readonly){
-	$self->warn("READONLY: $query");
+	print "READONLY: $query\n";
     }else{
 	my $sth = $self->prepare($query);
 	my $res = $sth->execute();
@@ -546,7 +546,7 @@ sub get_new_stable_ids {
 
     my $query="lock table $table write";
     if($self->_readonly){
-	$self->warn("READONLY: $query");
+	print "READONLY: $query\n";
     }else{
 	my $lsth   = $self->prepare($query);
 	$lsth->execute;
@@ -587,7 +587,7 @@ sub get_new_stable_ids {
 		my $c = $stub . $newid;
 		my $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
 		if($self->_readonly){
-		    $self->warn("READONLY: $query");
+		    print "READONLY: $query\n";
 		}else{
 		    my $sth   = $self->prepare($query);
 		    my $res   = $sth->execute;
@@ -610,7 +610,7 @@ sub get_new_stable_ids {
 
     $query = "unlock tables";
     if($self->_readonly){
-	$self->warn("READONLY: $query");
+	print "READONLY: $query\n";
     }else{
 	my $usth   = $self->prepare($query);
 	$usth->execute;

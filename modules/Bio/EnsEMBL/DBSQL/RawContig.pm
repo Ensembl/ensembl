@@ -370,12 +370,18 @@ sub get_old_Exons {
 
     #If the clone does not exist, these are really new exons
     if ($@) {
+	print $@."\n";
+	print "No clone ".$self->cloneid." in cross100\n";
 	return ();
     }
    
     my $newclone= $self->dbobj->get_Clone($self->cloneid);
     #If the clones have the same version, the underlying dna hasn't changed,
     #therefore we just return the old exons...
+
+    #FIXME - the above is not necessarily true - contigs may have changed
+    #due to spliting on different boundaries and coordinates shifted accordingly
+
     if ($oldclone->embl_version == $newclone->embl_version) {
 	my $oldcontig;
 	eval {

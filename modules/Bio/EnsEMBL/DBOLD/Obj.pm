@@ -59,7 +59,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::RootI;
+use Bio::Root::Object;
 
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::DBOLD::Gene_Obj;
@@ -82,7 +82,7 @@ use Bio::EnsEMBL::DB::ObjI;
 
 use Bio::EnsEMBL::DBOLD::DummyStatement;
 
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
 
 sub new {
   my($pkg, @args) = @_;
@@ -147,7 +147,7 @@ sub new {
 	$self->host( $host );
     }
     if ( ! $port ) {
-        $port = 3306;
+	$port = 3306;
     }
 
     if( ! defined $perlonlysequences ) {

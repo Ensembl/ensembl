@@ -162,7 +162,7 @@ sub new {
         $host = 'localhost';
     }
     if ( ! $port ) {
-        $port = 3306;
+	$port = 3306;
     }
 
     if( ! defined $perlonlysequences ) {

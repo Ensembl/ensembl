@@ -781,10 +781,10 @@ sub get_old_Exons{
     
     my @exons;
 
-
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	push(@exons,$c->get_old_Exons($logfile));
     }
+    print "fetched ".scalar(@exons)."\n";
     
     my @vcexons = ();
     foreach my $exon ( @exons ) {
@@ -802,12 +802,15 @@ sub get_old_Exons{
 	    push @vcexons,$exon;
 	}
     }
+    print "converted ".scalar(@vcexons)."\n";
+
     #Make sure it's not redundant
     my @unique=();
     my %seen=();
     foreach my $exon (@vcexons) {
 	push (@unique,$exon) unless $seen{$exon->id}++;
     }
+    print "unique ".scalar(@unique)."\n";
     
     return @unique;	  
 }

@@ -12,9 +12,12 @@ my $logfile=shift(@ARGV);
 my $mapfile=shift(@ARGV);
 open (LOG,">$logfile");
 open (MAP,">$mapfile");
-my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'cross_oct07',-host=>'ecs1a',-user=>'ensadmin');
+my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'cross100',
+							-host=>'ecs1c',
+							-user=>'ensadmin');
 my $db=$cross->new_dbobj();
 my $olddb=$cross->old_dbobj();
+
 
 $db->static_golden_path_type('UCSC');
 print STDERR "New db= $db\n";
@@ -22,12 +25,15 @@ print STDERR "Old db= $olddb\n";
 
 my $st=$db->get_StaticGoldenPathAdaptor;
 
-print STDERR "Building Virtual Contig for chromosome $chr...\n";
+print STDERR "Building Virtual Contig for ctg $chr...\n";
 print LOG "Building Virtual Contig for $chr...\n";
-my $vc=$st->fetch_VirtualContig_by_chr_name($chr);
+my $vc=$st->fetch_VirtualContig_by_fpc_name($chr);
 #print $vc->primary_seq->seq;
 
-my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive',-host=>'ecs1c',-user=>'ensadmin');
+my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive',
+					      -host=>'ecs1c',
+					      -user=>'ensadmin',
+					      -readonly => 1);
 #No final db writing, only logging
 #my $finaldb = Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'freeze05_final',-host=>'ecs1c',-user=>'ensadmin');
 
