@@ -36,10 +36,11 @@ my $analysis = $analysis_adaptor->fetch_by_logic_name( $logic_name ) ||
 
 #
 # What sort of feature does this logic_name correspond to?
+# Need this to estimate block size etc
 #
 my @feature_types;
-foreach my $type( $analysis_adaptor->all_feature_types() ){
-  foreach my $analysis( @{$analysis_adaptor->fetch_all_by_feature($type)} ){
+foreach my $type( $analysis_adaptor->feature_classes() ){
+  foreach my $analysis( @{$analysis_adaptor->fetch_all_by_feature_class($type)} ){
     if( uc($analysis->logic_name) eq uc($logic_name) ){
       push( @feature_types, $type );
       last;
@@ -78,10 +79,11 @@ my $slice_adaptor = $db->get_adaptor('Slice');
 #
 # block size estimation
 #
+my $feature_table = join( '_', map lc, ( $feature_type =~ /([A-Z][a-z]+)/g ) );
 my $analysis_id = $analysis->dbID;
 my $count_sql = qq(
 SELECT COUNT(*) 
-FROM  $feature_type 
+FROM  $feature_table 
 WHERE analysis_id=$analysis_id );
 my $sth = $db->dbc()->prepare( $count_sql );
 $sth->execute() || die( $sth->errstr );
