@@ -30,12 +30,39 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 =cut
 
+=head2 dump_seqs
+
+  Arg[1]: xref object which holds info needed for the dump of xref
+
+  Description: Dumps out the files for the mapping. Xref object should hold
+              the value of the databases and source to be used.
+  Returntype : none
+  Exceptions : will die if species not known or an error occurs while
+             : trying to write to files. 
+  Caller     : general
+ 
+=cut
+ 
+
 
 sub dump_seqs{
   my ($self, $xref) = @_;
   $self->dump_xref($xref);
   $self->dump_ensembl();
 }
+
+
+
+=head2 run_matching
+
+  Arg[1]: xref object which holds info on method and files.
+
+  Description: runs the mapping of the list of files with specied methods
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub run_matching{
   my ($self,$xref) = @_;
@@ -74,6 +101,18 @@ sub store{
   print "NOT done yet Either :-)\n";
 }
 
+=head2 get_species_id_from_species_name
+
+  Arg[1]: species name
+
+  Description: get the species_id from the database for the named database.
+  Example    : my $id = get_species_id_from_species_name('homo_sapiens');
+  Returntype : int (species_id)
+  Exceptions : will die if species does not exist in given xref database.
+  Caller     : general
+
+=cut
+
 sub get_species_id_from_species_name{
   my ($xref,$species) = @_;
 
@@ -96,9 +135,22 @@ sub get_species_id_from_species_name{
     }
     die("Please try again :-)\n");
   }
+  $sth->finish();
+  $dbi->disconnect();
   return $species_id;
 }
 
+
+=head2 get_set_lists
+
+  Description: specifies the list of databases and source to be used in the
+             : generation of one or more data sets.
+  Returntype : list of lists
+  Example    : my @lists =@{$self->get_set_lists()};
+  Exceptions : none
+  Caller     : dump_xref
+
+=cut
 
 sub get_set_lists{
   my ($self) = @_;  
@@ -108,6 +160,17 @@ sub get_set_lists{
 	  ["method3",["*","*"]]];
 }
 
+=head2 get_source_id_from_source_name
+
+  Arg[1]: source name
+
+  Description: get the source_id from the database for the named source.
+  Example    : my $id = get_source_id_from_source_name('RefSeq');
+  Returntype : int (source_id)
+  Exceptions : will die if source does not exist in given xref database.
+  Caller     : general
+
+=cut
 
 sub get_source_id_from_source_name{
   my ($xref, $source) = @_;
@@ -132,8 +195,22 @@ sub get_source_id_from_source_name{
     }
     die("Please try again :-)\n");
   }  
+  $sth->finish();
+  $dbi->disconnect();
   return $source_id;
 } 
+
+
+=head2 dump_xref
+
+  Arg[1]: xref object which holds info on method and files.
+
+  Description: Dumps the Xref data as fasta file(s)
+  Returntype : none
+  Exceptions : none
+  Caller     : dump_seqs
+
+=cut
 
 sub dump_xref{
   my ($self,$xref) = @_;
@@ -147,7 +224,6 @@ sub dump_xref{
     }
   }
   
-  
   my @method=();
   
   my @lists =@{$self->get_set_lists()};
@@ -157,7 +233,7 @@ sub dump_xref{
     print "method->".@$list[0]."\n";
     $method[$i] = shift @$list;
     my $j = 1;
-    my @source_id-();
+    my @source_id=();
     my @species_id=();
     foreach my $element (@$list){
       while(my $species = shift(@$element)){
@@ -190,6 +266,20 @@ sub dump_xref{
   return;
   
 }
+
+=head2 dump_subset
+
+  Arg[1]: xref object which holds info on files.
+  Arg[2]: list of species to use.
+  Arg[3]: list of sources to use.
+  Arg[4]: index to be used in file creation.
+  
+  Description: Dumps the Xref data for one set of species/databases
+  Returntype : none
+  Exceptions : none
+  Caller     : dump_xref
+
+=cut
 
 
 sub dump_subset{
@@ -264,9 +354,19 @@ sub dump_subset{
     }
   }
  ENDPRO:
+  $sth->finish();
   close XPRO;
 
 }
+
+=head2 dump_ensembl
+
+  Description: Dumps the ensembl data to a file in fasta format.
+  Returntype : none
+  Exceptions : none
+  Caller     : dump_seqs
+
+=cut
 
 sub dump_ensembl{
   my ($self) = @_;
@@ -275,6 +375,15 @@ sub dump_ensembl{
 
 }
 
+
+=head2 fetch_and_dump_seq
+
+  Description: Dumps the ensembl data to a file in fasta format.
+  Returntype : none
+  Exceptions : wil die if the are errors in db connection or file creation.
+  Caller     : dump_ensembl
+
+=cut
 
 sub fetch_and_dump_seq{
   my ($self) = @_;
@@ -339,21 +448,57 @@ FIN:
 # Getter/Setter methods
 ###
 
-sub xref_protein_file{
-  my ($self, $arg) = @_;
 
-  (defined $arg) &&
-    ($self->{_xref_prot_file} = $arg );
-  return $self->{_xref_prot_file};
-}
 
-sub xref_dna_file{
-  my ($self, $arg) = @_;
+#=head2 xref_protein_file
+# 
+#  Arg [1]    : (optional) string $arg
+#               the fasta file name for the protein xref
+#  Example    : $file name = $xref->xref_protein_file();
+#  Description: Getter / Setter for the protien xref fasta file 
+#  Returntype : string
+#  Exceptions : none
+#
+#=cut
+#
+#
+#sub xref_protein_file{
+#  my ($self, $arg) = @_;
+#
+#  (defined $arg) &&
+#    ($self->{_xref_prot_file} = $arg );
+#  return $self->{_xref_prot_file};
+#}
+#
+#=head2 xref_dna_file
+#
+#  Arg [1]    : (optional) string $arg
+#               the fasta file name for the dna xref
+#  Example    : $file name = $xref->xref_dna_file();
+#  Description: Getter / Setter for the dna xref fasta file 
+#  Returntype : string
+#  Exceptions : none
+#
+#=cut
+#
+#sub xref_dna_file{
+#  my ($self, $arg) = @_;
+#
+#  (defined $arg) &&
+#    ($self->{_xref_dna_file} = $arg );
+#  return $self->{_xref_dna_file};
+#}
 
-  (defined $arg) &&
-    ($self->{_xref_dna_file} = $arg );
-  return $self->{_xref_dna_file};
-}
+=head2 ensembl_protein_file
+ 
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl proteins 
+  Example    : $file_name = $self->ensembl_protein_file();
+  Description: Getter / Setter for the protien ensembl fasta file 
+  Returntype : string
+  Exceptions : none
+
+=cut
 
 sub ensembl_protein_file{
   my ($self, $arg) = @_;
@@ -363,6 +508,17 @@ sub ensembl_protein_file{
   return $self->{_ens_prot_file};
 }
 
+=head2 ensembl_dna_file
+ 
+  Arg [1]    : (optional) string $arg
+               the fasta file name for the ensembl dna 
+  Example    : $file_name = $self->ensembl_dna_file();
+  Description: Getter / Setter for the protien ensembl fasta file 
+  Returntype : string
+  Exceptions : none
+
+=cut
+
 sub ensembl_dna_file{
   my ($self, $arg) = @_;
 
@@ -371,6 +527,18 @@ sub ensembl_dna_file{
   return $self->{_ens_dna_file};
 }
 
+=head2 method
+ 
+  Arg [1]    : (optional) list reference $arg
+               reference to a list of method names 
+  Example    : my @methods = @{$self->method()};
+  Description: Getter / Setter for the methods 
+  Returntype : list
+  Exceptions : none
+
+=cut
+
+
 sub method{
   my ($self, $arg) = @_;
 
@@ -378,15 +546,5 @@ sub method{
     ($self->{_method} = $arg );
   return $self->{_method};
 }
-
-
-#sub get_ensembl_type{
-#  my %type;
-#
-#  $type{'Translation'} = "peptide";
-#  $type{'Transcript'} = "dna";
-#
-#  return \%type;
-#}
 
 1;
