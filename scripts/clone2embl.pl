@@ -43,7 +43,7 @@
                accession for a sanger clone or its clonename, it will
                dump as its accession.  Use -noacc to dump by clonename
 
-    -test      use test database rather than live [currently only timdb]
+    -test      use test database rather than live [only timdb]
                clones in testdb are listed with a T below
 
     -getall    all clones from the database [no applicable to timdb]

@@ -117,8 +117,9 @@ sub _initialize {
   # define a few other important files
   my $file_root;
   if($part){
-      $self->throw("Do not use -part  This is a development option which is currently disabled");
-      $file_root="$unfinished_root/partial";
+      #$self->throw("Do not use -part  This is a development option which is currently disabled");
+      $self->warn("Using -part to take g/t/co files from test_gtc/ [development option]");
+      $file_root="$unfinished_root/test_gtc";
   }else{
       $file_root="$unfinished_root";
   }
