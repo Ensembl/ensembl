@@ -174,9 +174,9 @@ my $feature = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat1,
 					    -feature2 => $feat2);
 
 
-eval {
+#eval {
 $protfeat->write_Protein_feature($feature);
-};
+#};
 
 if ($@) {
     print "not ok 17\n";
