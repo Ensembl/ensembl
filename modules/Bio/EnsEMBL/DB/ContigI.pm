@@ -261,6 +261,7 @@ sub top_SeqFeatures{
    my (@f);
    push(@f,$self->get_all_SeqFeatures());
    foreach my $gene ( $self->get_all_Genes()) {
+       print STDERR "Got a $gene\n";
        my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
        push(@f,$vg);
    }

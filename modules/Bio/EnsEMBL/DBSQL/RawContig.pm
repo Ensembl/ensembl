@@ -108,6 +108,8 @@ sub get_all_Genes{
    # prepare the SQL statement
    my %got;
    my $gene;
+   
+   print STDERR "Getting into get_all_Genes";
 
    my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
 
@@ -120,6 +122,8 @@ sub get_all_Genes{
 	   else {
 	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
 	   }
+	   print STDERR "Got a $gene in get all Genes\n";
+
 	   push(@out,$gene);
 	   $got{$rowhash->{'gene'}} = 1;
        }
@@ -152,7 +156,7 @@ sub primary_seq {
        return $self->_seq_cache();
    }
 
-   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.id = \"$id\" and c.dna = d.id");
+   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = \"$id\" and c.dna = d.id");
    my $res = $sth->execute();
 
    # should be a better way of doing this
