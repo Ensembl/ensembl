@@ -346,8 +346,8 @@ sub primary_seq{
 
    my $seq = $self->seq();
     my $slice_seq = Bio::PrimarySeq->new( 
-					 -id =>$self->dbID,
-					 -seq =>$seq
+					 -id    =>$self->dbID,
+					 -'seq' =>$seq
 					);
 
     $self->{'_virtual_primary_seq'} = $slice_seq;
