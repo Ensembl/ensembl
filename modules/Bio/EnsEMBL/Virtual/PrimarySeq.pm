@@ -265,7 +265,10 @@ sub subseq{
    }
    # end of sequence
    if( !defined $current ) {
-       $self->throw("Should be impossible to reach this point. Convention bug");
+	   # last contig was beside a gap. Sneaky
+	   $seqstr .= 'N' x ($end - $previous->end);
+	   return $seqstr;
+	   
    }
 
    # last contig

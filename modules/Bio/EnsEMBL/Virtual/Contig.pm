@@ -564,30 +564,33 @@ sub get_all_SimilarityFeatures_above_score{
     $self->throw("Must supply score parameter") unless $score;
     
        
-    my $chr_start=$self->_global_start;
-    my $chr_end=$self->_global_end;
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
     
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
     
        
-    my    $statement = "SELECT feature.id, feature.seq_start+static_golden_path.chr_start as s, 
+    my    $statement = "SELECT feature.id, feature.seq_start+static_golden_path.chr_start as s,
                                feature.seq_end+static_golden_path.chr_start, strand, score, 
-                               analysis, name, hstart, hend, hid  
+                               analysis, name, hstart, hend, hid,
+                               static_golden_path.chr_start,static_golden_path.chr_end,
+                               static_golden_path.raw_ori
 		        FROM   feature, analysis,static_golden_path
                         WHERE  feature.score > '$score'  
                         AND    feature.analysis = analysis.id 
                         AND    static_golden_path.raw_id = feature.contig
 		        AND    analysis.db = '$analysis_type'  
-                        AND    NOT(static_golden_path.chr_end < '$chr_start' 
-		        OR     static_golden_path.chr_start >'$chr_end' )
+                        AND    NOT(static_golden_path.chr_end < '$glob_start' 
+		        OR     static_golden_path.chr_start >'$glob_end' )
 		        AND    static_golden_path.chr_name='$chr_name' 
                         ORDER  by s";
     
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
-    
+
+$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+
 
     my @array;
     my %analhash;
@@ -597,7 +600,8 @@ sub get_all_SimilarityFeatures_above_score{
   FEATURE: while($sth->fetch) {
       my $out;
       my $analysis;
-   
+
+    
       foreach my $arrayref(@distinct_features){
 	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1]){ next FEATURE;}
       }
@@ -605,8 +609,35 @@ sub get_all_SimilarityFeatures_above_score{
       push @distinct_features,\@list;
       
       
-      if ($start>=$chr_start && $end<=$chr_end){
-    
+      if ($start>=$glob_start && $end<=$glob_end){
+
+
+
+#print STDERR "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  $start  $end before\n";
+
+print STDERR "raw ori = ",$raw_ori," LATEST ",$chr_end, " chr start ",$chr_start," start ",$start,"\n"; 
+
+if ($raw_ori == -1){
+	$start=$chr_end+$chr_start-$start;
+	$end=$chr_end+$chr_start-$end; 
+	$strand=-1*$strand;
+}
+
+   
+#print STDERR "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  $start  $end before\n";
+      
+    $start=$start-$chr_start;
+    $end=$end-$chr_start;
+      
+#print STDERR "???????????????????????????????????????/  $start  $end done\n";
+          
+ 
+
+
+
+
+
+
 	  if (!$analhash{$analysisid}) 
 	  {
 	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -643,6 +674,9 @@ sub get_all_SimilarityFeatures_above_score{
 	  push(@array,$out);       
       }
   }
+
+print STDERR "size ",$#array,"\n";
+
     return @array;
 }
 
