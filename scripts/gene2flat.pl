@@ -154,8 +154,11 @@ while ( @gene_id > 0 ) {
 	} else {
 	    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 	    $db =  Bio::EnsEMBL::DBLoader->new($locator);
+            $db->static_golden_path_type('UCSC');
 	}
 	my @genes = $db->gene_Obj->get_array_supporting('none',@chunk_list);
+        my $stgp = $db->get_StaticGoldenPathAdaptor();
+
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -168,7 +171,8 @@ while ( @gene_id > 0 ) {
 			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+                    my ($chr,$bp) = $stgp->get_Gene_chr_bp($gene_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr:".$chr." basepair:".$bp);
 		    $seqio->write_seq($tseq);
 		}
 	    } elsif ( $format eq 'dump' ) {
