@@ -281,37 +281,11 @@ sub windowed_VirtualContig {
 	$self->throw("Attempting to build a new virtual contig out of length bounds!");
     }
     
-    # scan along right->left until we find the first contig
-    # whoes start point is before the position
-    # hmm - should we presort these guys sometime?
-    # Tony: maybe - this module does 3 sorts on the same array...
-
-    my @map_contigs=$self->_vmap->get_all_MapContigs("reverse");
-    my $id;
-    foreach my $mc ( @map_contigs ) {
-	if( $mc->start < $position ) {
-	    $id = $mc->contig->id;
-	    last;
-	}
-    }
+    my ($map_contig,$position,$ori) = $self->raw_contig_position($position,1);
     
-    # $id is going to be our new focus. Now - just call 
-    # a constructor with appropriate arithmetic...
-    
-    my $mc  = $self->_vmap->get_MapContig($id);
-    my $ori = $mc->orientation();
-    
-    my $wvcpos;
-    if( $ori == 1 ) {
-	$wvcpos = $mc->contig->golden_start + ($position - $mc->start);
-    } else {
-	$wvcpos = $mc->contig->golden_end   - ($position - $mc->start);
-    }
-
-    
-    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $mc->contig,
-					        -focusposition => $wvcpos,
-					        -ori           => $ori,
+    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $map_contig->contig,
+					        -focusposition => $position,
+					        -ori           => $map_contig->orientation,
 					        -left          => $left,
 					        -right         => $right
 					        );
