@@ -1991,7 +1991,7 @@ sub get_Clone {
 
     my $ca = $self->get_CloneAdaptor;
 
-    if ($accession =~ /(.+?)\.(\d+)/) {
+    if ($accession =~ /(.+?)\.(\d+)$/) {
 	$accession = $1;
 	my $version   = $2;
 	return $ca->fetch_by_accession_version($accession, $version);
