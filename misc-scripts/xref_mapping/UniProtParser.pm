@@ -122,7 +122,7 @@ sub create_xrefs {
       if (!exists $taxonomy2species_id{$taxon}) {
 	print "Skipping xref for species with taxonomy ID $taxon\n";
 	next;
-      }
+     }
     }
 
     my $xref;

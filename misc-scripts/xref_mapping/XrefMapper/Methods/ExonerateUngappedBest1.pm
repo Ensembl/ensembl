@@ -10,7 +10,7 @@ use vars '@ISA';
 
 sub options {
 
-  return ('--model', 'affine:local', '--subopt', 'no', '--bestn', '1');
+  return ('--model', 'affine:bestfit', '--subopt', 'no', '--bestn', '1');
 
 }
 
