@@ -11,8 +11,6 @@ END {print "not ok 1\n" unless $loaded;}
 use EnsTestDB;
 use Bio::EnsEMBL::DBLoader;
 
-
-
 $loaded = 1;
 
 ok(1);
