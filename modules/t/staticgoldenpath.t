@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..20\n"; 
+BEGIN { $| = 1; print "1..24\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -76,6 +76,7 @@ if( $rc1->id ne 'contig1' ) {
 
 $vc = $stadaptor->fetch_VirtualContig_by_fpc_name('ctg123');
 
+#$vc->_dump_map(\*STDERR);
 
 
 my $vseq=$vc->primary_seq;
@@ -93,7 +94,7 @@ print "ok 8\n";
 
 ($start,$end,$strand) = $vc2->_convert_start_end_strand_vc('contig1',5,7,1);
 
-if( $start != 203 || $end != 205 || $strand != 1 ) {
+if( $start != 204 || $end != 206 || $strand != 1 ) {
     print "not ok 9\n";
     print STDERR "Got $start:$end:$strand\n";
 } else {
@@ -109,7 +110,7 @@ if( $start != 368 || $end != 370 || $strand != -1 ) {
     print "ok 10\n";
 }
 
-($rc,$rc_pos,$rc_strand) = $vc2->_vmap->raw_contig_position(203,1);
+($rc,$rc_pos,$rc_strand) = $vc2->_vmap->raw_contig_position(204,1);
 
 if( $rc->id ne 'contig1' || $rc_pos != 5 || $rc_strand != 1 ) {
     print "not ok 11\n";
@@ -117,7 +118,7 @@ if( $rc->id ne 'contig1' || $rc_pos != 5 || $rc_strand != 1 ) {
     print "ok 11\n";
 }
 
-($rc,$rc_pos,$rc_strand) = $vc2->_vmap->raw_contig_position(205,-1);
+($rc,$rc_pos,$rc_strand) = $vc2->_vmap->raw_contig_position(206,-1);
 
 if( $rc->id ne 'contig1' || $rc_pos != 7 || $rc_strand != -1 ) {
     print "not ok 12\n";
@@ -177,8 +178,8 @@ $gene->modified(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-1');
-$exon->start(200);
-$exon->end(205);
+$exon->start(201);
+$exon->end(206);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
@@ -191,8 +192,8 @@ $exon{'exon-1'} = $exon;
 
 $sf = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
-$sf->start(200);
-$sf->end(205);
+$sf->start(201);
+$sf->end(206);
 $sf->hstart(100);
 $sf->hend(110);
 $sf->strand(1);
@@ -285,7 +286,7 @@ if( $vseq->subseq(1,10) ne 'AAAAAAAAAT' ) {
     print "ok 19\n";
 }
 
-if( $vseq->subseq(1,40) ne 'AAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTTNNNN' ) {
+if( $vseq->subseq(1,40) ne 'AAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTNNNNN' ) {
     print "not ok 20\n";
     print STDERR "Sequence ",$vseq->subseq(1,40),"\n";
 } else {
@@ -293,6 +294,60 @@ if( $vseq->subseq(1,40) ne 'AAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTTNNNN' ) {
 }
 
 #print STDERR "Whole is ",$vseq->seq,"\n";
+
+
+# testing slices 
+
+my $slice = $stadaptor->fetch_VirtualContig_by_fpc_name_slice('ctg123',135,196);
+
+if( $slice->length != 194 ) {
+    print "not ok 21\n";
+    print STDERR "Length is ",$slice->length,"\n";
+} else {
+    print "ok 21\n";
+}
+
+#$slice->_dump_map(\*STDERR);
+
+if( $slice->primary_seq->subseq(1,134) ne 'N'x134 ) {
+    print "not ok 22\n";
+    print STDERR "sequence ",$slice->primary_seq->subseq(1,134),"\n";
+} else {
+    print "ok 22\n";
+}
+
+my @fp = $slice->get_all_SimilarityFeatures();
+my $fp = shift @fp;
+
+if( $fp->start != 176 || $fp->end != 186 ) {
+    print "not ok 23\n";
+    print STDERR "Feature ",$fp->start," ",$fp->end,"\n";
+} else {
+    print "ok 23\n";
+}
+
+# testing get on vc is good
+
+@genes = $vc2->get_all_Genes();
+$gene = shift @genes;
+if( !defined $gene ) {
+    print "not ok 24\n";
+} else {
+    $error = 0;
+    foreach $exon ( $gene->each_unique_Exon ) {
+	if( $exon->seqname ne $vc2->id ) {
+	    print STDERR "Got exon on ",$exon->seqname," not ",$vc2->id,"\n";
+	    $error = 1;
+	}
+	#print STDERR "Got exon [$exon] on ",$exon->seqname," not ",$vc2->id,"\n";
+    }
+    if( $error == 0 ) {
+	print "ok 24\n";
+    } else {
+	print "not ok 24\n";
+    }
+}
+
 
        
 

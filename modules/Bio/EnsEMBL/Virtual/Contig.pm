@@ -319,24 +319,27 @@ sub windowed_VirtualContig {
 =head1 Functions implementing the Bio::SeqI interface inherieted by ContigI
 
 =head2 id
-
+    
  Title   : id
- Usage   : $obj->id($newval)
+ Usage   : 
  Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
+ Example :
+ Returns : 
+ Args    :
 
 
 =cut
 
 sub id {
-    my ($self, $id) = @_;
-
-    $self->throw("Not allowed to set id") if defined $id;
-
-    return "virtual_contig_".$self->_unique_number;
+    my $obj = shift;
+    
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'id'} = $value;
+    }
+    return $obj->{'id'};
 }
+
 
 =head2 top_SeqFeatures
     
@@ -657,10 +660,56 @@ sub _gene_query{
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
-	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
-                $internalExon = 1;
-		$exonconverted{$exon->id} = 1;
-            }                           
+
+	    ### got to treat sticky exons separately.
+	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+		my @stickies = $exon->each_component_Exon();
+		# sort them by start-end
+		@stickies = sort { $a->start <=> $b->start } @stickies;
+		my $st_start;
+		my $st_end;
+		my $st_strand;
+		my $current_end;
+		my $mapped_sticky = 1;
+
+		foreach my $sticky ( @stickies ) {
+		    if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
+			$mapped_sticky = 0;
+			last;
+		    } else {
+			if( defined $current_end ) {
+			    if( $sticky->start-1 != $current_end ) {
+				$mapped_sticky = 0;
+				last; 
+			    }
+			}
+			if( !defined $st_start ) {
+			    $st_start = $sticky->start;
+			}
+			# at the end of this loop, will be the last one
+			$st_end = $sticky->end;
+			$st_strand = $sticky->strand;
+		    }
+		}
+
+		if( $mapped_sticky == 1 ) {
+		    $exon->attach_seq($self->primary_seq);
+		    $exon->seqname($self->id);
+		    $exon->start($st_start);
+		    $exon->end($st_end);
+		    $exon->strand($st_strand);
+		    $exonconverted{$exon->id} = 1;
+		} else {
+		    # do nothing
+		}
+
+	    } else {
+		# soooooo much simpler
+		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+		    $internalExon = 1;
+		    $exonconverted{$exon->id} = 1;
+		}               
+	    }
 	}
         
         unless ($internalExon) {    
@@ -711,6 +760,7 @@ sub _gene_query{
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
 
+   #print STDERR "Getting into seq feature get $type\n";
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
        return $self->_get_cache($type);
    }
@@ -726,6 +776,7 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
+       #print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -740,8 +791,11 @@ sub _get_all_SeqFeatures_type {
 	   $self->throw("Type $type not recognised");
        }
    }
+   #print STDERR "before clipping ",scalar(@$sf)," for $type\n";
 
    my @vcsf = ();
+
+
    # need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
 
@@ -766,6 +820,7 @@ sub _get_all_SeqFeatures_type {
         }
    }
    
+   #print STDERR "returning ",scalar(@vcsf)," for $type\n";
    return @vcsf;
 }
 
@@ -794,15 +849,13 @@ sub _convert_seqfeature_to_vc_coords {
     # potentially we could be asked to convert something
     # that wasn't on this VC at all, eg, an exon from a distant contig
     eval {
-	$mc=$self->_vmap->get_MapContig($cid);
+	$mc=$self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@) { 
 	return undef;
     }
     
     #print STDERR "starting $sf ",$sf->seqname,":",$sf->start,":",$sf->end,":",$sf->strand,"\n";
-    
-    
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
@@ -810,6 +863,7 @@ sub _convert_seqfeature_to_vc_coords {
     
     if( $#sub >=  0 ) {
 	# chain to constructor of the object. Not pretty this.
+	#print STDERR "sub seqfeature...\n";
 	$sf->flush_sub_SeqFeature();
 	
 	my $seen = 0;
@@ -835,80 +889,44 @@ sub _convert_seqfeature_to_vc_coords {
 
 	    $sf->strand($strand);
 	    
-	    #print STDOUT "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
+	    #print STDERR "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
 	    return $sf;
-	} else {        
+	} else {
+	    #print STDERR "not returning it...\n";
 	    return undef;
+	    
 	}
     }
 
     # might be clipped left/right
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
 
-
-    if ($mc->leftmost){
-	
-	if ( $mc->orientation == 1) {
-	    
-	    # If end < startincontig contig for orientation 1 
-	    if ($sf->start < $mc->start_in) {  
-		return undef;              
-	    }
-	    
-	} else {
-	    # If start > startincontig for orientation <> 1
-	    if ($sf->end > $mc->start_in) {  
-		return undef;              
-	    }
-	}
-    }  elsif ($mc->rightmost_end){
-	
-	if ( $mc->orientation == 1) {
-	    
-	    if ($sf->end >  $mc->rightmost_end) {  
-		return undef;              
-	    }
-	    
-	} else {
-            # If start > startincontig for orientation <> 1
-	    if ($sf->start <  $mc->rightmost_end) {  
-		return undef;              
-	    }
-        }
-    }
-    
     
     # Could be clipped on ANY contig
 
-    if( $mc->orientation == 1 ) {
-	if ($sf->start < $mc->start_in) {  
-	    return undef;              
-	}
-	if ($sf->end >  $mc->end_in) {  
-	    return undef;              
-	}
-    } else {
-	if ($sf->end > $mc->start_in) {  
-	    return undef;              
-	}
-	if ($sf->start <  $mc->end_in) {  
-	    return undef;              
-	}
+    #print STDERR "standard feature\n";
+
+  
+    if ($sf->start < $mc->rawcontig_start) {  
+	return undef;              
     }
-	
+    if ($sf->end >  $mc->rawcontig_end) {  
+	return undef;              
+    }
+
+    #print STDERR "got through clipping\n";
 
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
-    
-    $sf->start ($rstart);
-    $sf->end   ($rend);
-    $sf->strand($rstrand);
+
     
     if( $sf->can('attach_seq') ) {
 	if (!$self->noseq) {
 	    $sf->attach_seq($self->primary_seq);
 	}
     }
-    
+    $sf->start ($rstart);
+    $sf->end   ($rend);
+    $sf->strand($rstrand);
     $sf->seqname($self->id);
     return $sf;
 }
@@ -1124,9 +1142,9 @@ sub get_all_RawContigs {
 
     my @contigs = ();
 
-    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
-    }
+#    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+#        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
+#    }
     
     return $self->_vmap->get_all_RawContigs;
 }
@@ -1232,6 +1250,7 @@ sub convert_Gene_to_raw_contig {
 
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
+       #print STDERR "Reverse mapping ",$trans->id,"\n";
        $clonedtrans->id($trans->id);
        $clonedtrans->version($trans->version);
        $clonedtrans->created($trans->created);
@@ -1244,6 +1263,7 @@ sub convert_Gene_to_raw_contig {
 
        foreach my $exon ( $trans->each_Exon ) {
 	   $clonedtrans->add_Exon($convertedexon{$exon->id});
+
 
 	   # translations
 	   if( exists $translation{$trans->translation->id} ) {
@@ -1506,6 +1526,7 @@ sub _sanity_check{
 	   if( !defined $exon->created ) {
 	       $error = 1;
 	       $message .= "Exon has no created date";
+
 	   } 
 	   if( !defined $exon->modified ) {
 	       $error = 1;
@@ -1515,11 +1536,9 @@ sub _sanity_check{
 	       $error = 1;
 	       $message .= "Exon has no contig id";
 	   } else {
-               my $exon_contig_id = $exon->contig_id;
-               my $virtual_contig_id = $self->id;
-	       if( $exon_contig_id ne $virtual_contig_id ) {
+	       if( $exon->contig_id ne $self->id ) {
 		   $error = 1;
-		   $message .= "Exon [".$exon->id."] seems to be on '$exon_contig_id', not on VirtualContig '$virtual_contig_id'";
+		   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
 	       }
 	   }
 	   if( !defined $exon->start || !defined $exon->end) {
