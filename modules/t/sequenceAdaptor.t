@@ -21,7 +21,7 @@ my $db = $multi_db->get_DBAdaptor('core');
 
 
 my $CHR           = '20';
-my $START         = 30_270_000;
+my $START         = 30_220_000;
 my $END           = 31_200_000;
 my $STRAND        = 1;
 
@@ -31,7 +31,7 @@ my $STRAND        = 1;
 #
 
 my $slice_adaptor = $db->get_SliceAdaptor;
-my $slice = $slice_adaptor->fetch_by_chr_start_end($CHR, $START, $END);
+my $slice = $slice_adaptor->fetch_by_region('chromosome', $CHR, $START, $END);
 
 
 my $seq_adaptor = $db->get_SequenceAdaptor();

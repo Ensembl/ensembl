@@ -33,7 +33,7 @@ my $priority = 80;
 
 #test the constructor
 my $marker = Bio::EnsEMBL::Map::Marker->new
-  ($dbID, $marker_adaptor, $left_primer, $right_primer, $min_primer_dist, 
+  ($dbID, $marker_adaptor, $left_primer, $right_primer, $min_primer_dist,
    $max_primer_dist, $priority);
 
 ok($marker && ref $marker && $marker->isa('Bio::EnsEMBL::Map::Marker'));
@@ -154,7 +154,7 @@ ok(scalar @{$marker->get_all_MapLocations} == 2 );
 ######
 
 #test get_MapLocation
-ok($marker->get_MapLocation('genethon') && 
+ok($marker->get_MapLocation('genethon') &&
    $marker->get_MapLocation('marshfield'));
 
 #########
