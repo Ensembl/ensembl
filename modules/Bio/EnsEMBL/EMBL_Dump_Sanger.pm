@@ -71,6 +71,12 @@ use Exporter;
 use Carp;
 use Bio::Annotation::Reference;
 
+# We inherit a number of functions from Bio::EnsEMBL::EMBL_Dump
+use Bio::EnsEMBL::EMBL_Dump qw(
+                               id_EnsEMBL
+                               sort_FTHelper_EnsEMBL
+                               );
+
 @ISA = ('Exporter');
 @EXPORT_OK = qw(
                 add_ensembl_de_cc
@@ -79,6 +85,7 @@ use Bio::Annotation::Reference;
                 add_accession_info
                 add_reference
                 ensembl_annseq_output
+                add_phase_keywords
                 );
 
 =head2 add_ensembl_comments
@@ -104,22 +111,12 @@ the release of this data is based on the understanding that the sequence
 may change as work continues.  The sequence may be contaminated with
 foreign sequence from E.coli, yeast, vector, phage etc.",
 
-"This sequence was reannotated via the Ensembl system. Please visit the
+"This sequence was annotated via the Ensembl system.  Please visit the
 Ensembl web site, http://ensembl.ebi.ac.uk for more information.",
-
-"The /gene_id indicates a unique id for a gene, /transcript_id a unique id
-for a transcript and a /exon_id a unique id for an exon. These ids are
-maintained wherever possible between versions. For more information on how
-to interpret the feature table, please visit
-http://ensembl.ebi.ac.uk/docs/embl.html.",
 
 "All the exons and transcripts in Ensembl are confirmed by similarity to
 either protein or cDNA sequences.",
 
-"In unfinished, rough draft DNA sequence gene structures can cross
-fragments and, in these cases, the order and orientation of the fragments
-is likely to be different from the order in the the nucleotide data
-library."
     );
     
     # Replace newlines with spaces
@@ -188,7 +185,7 @@ sub add_contig_comments {
 
 "The order of contigs shown below is Ensembl's best guess.  Contigs which
 have been flipped relative to the original data are marked 'Reversed'. 
-800 N's separate contigs\n");
+800 N's separate the contigs:\n");
 
     foreach my $contig ($clone->get_all_Contigs) {
         my $id          = $contig->id;
@@ -237,10 +234,11 @@ sub add_reference {
     confess("No author supplied") unless $author;
     my $reference = Bio::Annotation::Reference->new();
     $reference->authors("$author;");
-    $reference->location("Submitted ($date) to the EMBL/Genbank/DDBJ databases.\n"
-                        ."Sanger Centre, Hinxton, Cambridgeshire, CB10 1SA, UK.\n"
-                        ."E-mail enquiries: humquery\@sanger.ac.uk\n"
-                        ."Clone requests: clonerequest\@sanger.ac.uk\n");
+    $reference->location(
+"Submitted ($date) to the EMBL/Genbank/DDBJ databases.
+Sanger Centre, Hinxton, Cambridgeshire, CB10 1SA, UK.
+E-mail enquiries: humquery\@sanger.ac.uk
+Clone requests: clonerequest\@sanger.ac.uk\n");
     
     $aseq->annotation->add_Reference($reference);
 }
@@ -272,35 +270,8 @@ sub ensembl_annseq_output {
    
    # attach ensembl specific dumping functions
    $aseqstream->_id_generation_func(\&id_EnsEMBL);
-   $aseqstream->_kw_generation_func(\&kw_EnsEMBL);
    $aseqstream->_ac_generation_func(\&ac_EnsEMBL);
    $aseqstream->_sv_generation_func(\&sv_EnsEMBL);
-}
-
-#########################
-#  subroutines
-#########################
-
-sub id_EnsEMBL {
-    my $annseq = shift;
-
-    # JGRG - is this correct?  I thought phase 3 was HUM.
-    my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
-    my $length = $annseq->seq->seq_len();
-    my $id = $annseq->embl_id();
-
-    return sprintf("%-9s  standard; DNA; %s; %d BP.", $id, $division, $length );
-}
-
-
-sub kw_EnsEMBL {
-   my ($annseq) = @_;
-
-   if( $annseq->htg_phase == 4 ) {
-       return "HTG.";
-   }
-
-   return "HTG; HTG_PHASE " . $annseq->htg_phase() . ".";
 }
 
 sub ac_EnsEMBL {
@@ -319,28 +290,20 @@ sub ac_EnsEMBL {
 sub sv_EnsEMBL {  }
 
 
-BEGIN {
-    # A value of 0 is illegal in %sort_order
-    my %sort_order = (
-        source  => 1,
-        CDS     => 2,
-    );
+sub add_phase_keywords {
+    my ($annseq, $draft) = @_;
 
-    # $last is one more than the largest value in %sort_order
-    my $last = (sort {$b <=> $a} values %sort_order)[0] + 1;
+    my @kw = ('HTG');
 
-    sub sort_FTHelper_EnsEMBL {
-        my $a = shift;
-        my $b = shift;
-
-        my $a_ord = $sort_order{$a->key} || $last;
-        my $b_ord = $sort_order{$b->key} || $last;
-
-        # Features are sorted by location if they don't
-        # sort by thier keys.
-        return $a_ord <=> $b_ord  || $a->loc cmp $b->loc;
+    unless ($annseq->htg_phase == 4) {
+        push(@kw, 'HTG_PHASE ' . $annseq->htg_phase);
+        push(@kw, $draft) if $draft;
     }
+    
+    $annseq->keywords( join('; ', @kw).'.' );
 }
+
+
 
 1;
 

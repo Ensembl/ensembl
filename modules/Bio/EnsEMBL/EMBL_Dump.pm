@@ -59,8 +59,26 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::EMBL_Dump;
+use vars qw( @ISA @EXPORT_OK );
+use Exporter;
 use strict;
 use Carp;
+
+@ISA = ('Exporter');
+
+# Some of these subroutines are used
+# by Bio::EnsEMBL::EMBL_Dump_Sanger
+@EXPORT_OK = qw(
+                add_ensembl_comments
+                ensembl_annseq_output
+                id_EnsEMBL
+                kw_EnsEMBL
+                sv_EnsEMBL
+                ac_EnsEMBL
+                sort_FTHelper_EnsEMBL
+                );
+
+
 
 =head2 add_ensembl_comments
 
@@ -164,7 +182,7 @@ sub id_EnsEMBL {
     my $length = $annseq->seq->seq_len();
     my $id = $annseq->embl_id();
 
-    return sprintf("%-11s standard; DNA; %s; %d BP.", $id, $division, $length );
+    return sprintf("%-9s  standard; DNA; %s; %d BP.", $id, $division, $length );
 }
 
 
@@ -201,8 +219,10 @@ sub ac_EnsEMBL {
 BEGIN {
     # A value of 0 is illegal in %sort_order
     my %sort_order = (
-        source  => 1,
-        CDS     => 2,
+        source          => 1,
+        CDS             => 2,
+        exon            => 3,
+        repeat_region   => 4,
     );
 
     # $last is one more than the largest value in %sort_order
@@ -215,9 +235,12 @@ BEGIN {
         my $a_ord = $sort_order{$a->key} || $last;
         my $b_ord = $sort_order{$b->key} || $last;
 
+        my ($a_5prime) = $a->loc =~ /(\d+)/;
+        my ($b_5prime) = $b->loc =~ /(\d+)/;
+
         # Features are sorted by location if they don't
-        # sort by thier keys.
-        return $a_ord <=> $b_ord  || $a->loc cmp $b->loc;
+        # sort by their keys.
+        return $a_ord <=> $b_ord  || $a_5prime <=> $b_5prime;
     }
 }
 

@@ -361,8 +361,10 @@ sub _process_Transcript {
    
     if ($self->strict_EMBL_dumping) {
         # FIXME
-        ### NB: THIS WILL BREAK WITH MULTIPLE SPECIES ###
-        my $cds_id = "HUMAN-Gene-" . $trans->translation->id();
+        ### NB: 'HUMAN' hard coded - will break with multiple species ###
+        $t_fth->add_field('gene', 'HUMAN-Gene-'. $self->gene->id);
+        my $cds_id = "HUMAN-CDS-" . $trans->translation->id();
+        $t_fth->add_field('product', $cds_id);
         $t_fth->add_field('product', "_$cds_id");
         $t_fth->add_field('db_xref', "ENSEMBL:$cds_id");
     } else {
