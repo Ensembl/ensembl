@@ -237,9 +237,10 @@ CREATE TABLE protein_align_feature (
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL,
   hit_name varchar(40) NOT NULL,
-  cigar_line varchar(255),
+  cigar_line text,
 
   # cigar might be too small
+  # - yes it was :-)
   #  What scoring do we need ?
 
   evalue double,
@@ -264,7 +265,7 @@ CREATE TABLE dna_align_feature (
   hit_name varchar(40) NOT NULL,
   hit_strand tinyint(1) NOT NULL,
 
-  cigar_line varchar(255),
+  cigar_line text,
   
 #  What scoring do we need ?
 
