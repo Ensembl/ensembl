@@ -544,7 +544,7 @@ sub transfer_chunk {
 	if ($@) {
 	    warn($@);
 	    warn("ERROR: problems in updating clone $id, will be deleted from recipient database to preserve data integrity\n");
-	    $todb->delete_Clone($object);
+	    $todb->delete_Clone($object->id);
 	}
     }
 }
