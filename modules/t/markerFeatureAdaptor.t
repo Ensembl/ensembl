@@ -34,7 +34,7 @@ my $mf = $mfa->fetch_by_dbID(1);
 
 ok($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature'));
 
-ok($mf->contig->dbID == 339816 && 
+ok($mf->contig->dbID == 339816 &&
    $mf->analysis->dbID == 10 &&
    $mf->start == 5769 &&
    $mf->end == 5959 &&

@@ -27,9 +27,9 @@ my $db = $multi_db->get_DBAdaptor('core');
 
 my $slice = $db->get_SliceAdaptor->fetch_by_chr_start_end($CHR,$START,$END);
 
-my $contig = new Bio::EnsEMBL::RawContig;
-$contig->seq('ACTGACTG');
-$contig->name('bogus contig');
+my $contig = $db->get_SliceAdaptor->fetch_by_region('contig',
+                                                    'AL359765.6.1.13780');
+
 
 my @feats;
 my $fp = new Bio::EnsEMBL::FeaturePair;
@@ -585,6 +585,6 @@ ok($dnaf->validate || 1); #validate doesn't return true but throws on fail
 
 @dnafs = $dnaf->transform;
 ok(scalar(@dnafs) == 2);
-ok($dnafs[0]->validate || 1); 
+ok($dnafs[0]->validate || 1);
 ok($dnafs[1]->validate || 1);
 
