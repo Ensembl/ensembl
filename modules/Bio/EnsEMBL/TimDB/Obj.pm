@@ -80,16 +80,23 @@ sub _initialize {
   # it is only for reading (cannot open readonly) since to certainly of locking
   # or dataconsistency
 
-  # FIXME
-  # MACHINE SPECIFIC CONFIG
-  if($ENV{'HOST'} eq 'sol28'){
-      $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
-      $UNFIN_DATA_ROOT=$UNFIN_ROOT;
-  }
-
   my $unfinished_root="$UNFIN_ROOT";
   my $exon_file;
   if($test){
+  # FIXME
+      # MACHINE SPECIFIC CONFIG
+      if($ENV{'HOST'} eq 'sol28'){
+	  $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
+	  $UNFIN_DATA_ROOT=$UNFIN_ROOT;
+      # ADD NEW MACHINES HERE
+      #}elsif($ENV{'HOST'} eq ''){
+      #	  $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
+      #   $UNFIN_DATA_ROOT=$UNFIN_ROOT;
+      }elsif($ENV{'HOST'} eq 'humsrv1'){
+      	  $UNFIN_ROOT="/nfs/disk100/humpub/th/unfinished_ana/tmp1";
+	  $UNFIN_DATA_ROOT=$UNFIN_ROOT;
+      }
+      $unfinished_root="$UNFIN_ROOT";
       $unfinished_root.="/test";
       $self->{'_test'}=1;
       $exon_file="$unfinished_root/test_confirmed_exon";
@@ -484,6 +491,4 @@ sub DESTROY{
 	$obj->{'_clone_update_dbm'} = undef;
     }
 }
-
-
 
