@@ -99,6 +99,48 @@ sub get_Gene_chr_MB {
 }
 
 sub get_Gene_chr_bp {
+    my ($self, $geneid) = @_;
+    my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT  
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
+     sgp.chr_name
+  
+				    FROM    exon e,
+					    transcript tr,
+					    exon_transcript et,
+					    static_golden_path sgp 
+				    WHERE e.id=et.exon 
+				    AND et.transcript=tr.id 
+				    AND sgp.raw_id=e.contig 
+				    AND sgp.type = '$type' 
+				    AND tr.gene = '$geneid';" 
+		   		    );
+   $sth->execute();
+
+   my ($start,$end,$chr_name);
+   my @start;
+   while ( my @row=$sth->fetchrow_array){
+      ($start,$end,$chr_name)=@row;
+       push @start,$start;
+       push @start,$end;
+   }   
+   
+   my @start_sorted=sort { $a <=> $b } @start;
+
+   $start=shift @start_sorted;
+   $end=pop @start_sorted;
+
+   if( !defined $start ) {
+       $self->throw("Gene is not on the golden path. Cannot build VC");
+   }
+    return ($chr_name, $start, $end);
+
+}
+sub get_Gene_chr_bp_old {
     my ($self,$gene) =  @_;
 
     my $query = "
