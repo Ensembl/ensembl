@@ -187,9 +187,9 @@ sub load_databases {
   }
 
   #only unzip if there are non-preloaded datbases
-  UNZIP: foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
-    if(( ! exists $db_conf->{'preloaded'}->{$dbtype} ) ||
-       ( ! _db_exists( $db, $db_conf->{'preloaded'}{$dbtype}) )) {
+ UNZIP: foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
+    if (( ! exists $db_conf->{'preloaded'}->{$dbtype} ) ||
+        ( ! _db_exists( $db, $db_conf->{'preloaded'}{$dbtype}) )) {
       #unzip database files
       $self->unzip_test_dbs($self->curr_dir . $zip);
       last UNZIP;
@@ -200,8 +200,8 @@ sub load_databases {
   #create a database for each database specified
   foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
     #don't create a database if there is a preloaded one specified
-    if(( $db_conf->{'preloaded'}->{$dbtype} ) &&
-       ( _db_exists( $db,$db_conf->{'preloaded'}->{$dbtype} ))) {
+    if (( $db_conf->{'preloaded'}->{$dbtype} ) &&
+        ( _db_exists( $db,$db_conf->{'preloaded'}->{$dbtype} ))) {
       #copy the general config into a dbtype specific config 
       $self->{'conf'}->{$dbtype} = {};
       %{$self->{'conf'}->{$dbtype}} = %$db_conf;
@@ -227,11 +227,11 @@ sub load_databases {
 
       #create a unique random dbname    
       my $dbname = $db_conf->{'preloaded'}->{$dbtype};
-      if( ! defined $dbname ) {
-	$dbname = $self->_create_db_name($dbtype);
-	delete $self->{'conf'}->{$dbtype}->{'preloaded'};
+      if ( ! defined $dbname ) {
+        $dbname = $self->_create_db_name($dbtype);
+        delete $self->{'conf'}->{$dbtype}->{'preloaded'};
       } else {
-	$self->{'conf'}->{$dbtype}->{'preloaded'} = 1;
+        $self->{'conf'}->{$dbtype}->{'preloaded'} = 1;
       }
 
       #store the temporary database name in the dbtype specific config
@@ -240,8 +240,8 @@ sub load_databases {
       print STDERR "\nCreating db $dbname";
       
       unless($db->do("CREATE DATABASE $dbname")) {
-	warning("Could not create database [$dbname]");
-	return;
+        warning("Could not create database [$dbname]");
+        return;
       }
 
       #copy the general config into a dbtype specific config 
@@ -253,8 +253,8 @@ sub load_databases {
       local *DIR;
 
       unless(opendir(DIR, $dir)) {
-	warning("could not open dump directory '$dir'");
-	return;
+        warning("could not open dump directory '$dir'");
+        return;
       }
 
       my @files = readdir DIR;
@@ -265,38 +265,38 @@ sub load_databases {
 
       foreach my $sql_file (grep /\.sql$/, @files) {
 	
-	$sql_file = "$dir/$sql_file";
+        $sql_file = "$dir/$sql_file";
 	
-	unless(-f $sql_file && -r $sql_file) {
-	  warning("could not read SQL file '$sql_file'\n");
-	  next;
-	}
-
-	open(FILE, $sql_file);
-	
-	my $sql_com ='';
-	
-	while (<FILE>) {
-	  next if ( /^#/ );  # ignore comments
-	  next unless ( /\S/ );  # ignore lines of white spaces
-
-	  $sql_com .= $_;
+        unless(-f $sql_file && -r $sql_file) {
+          warning("could not read SQL file '$sql_file'\n");
+          next;
         }
-        $sql_com =~ s/;$//;  # chop off the last ;
+
+        open(FILE, $sql_file);
+	
+        my $sql_com ='';
+	
+        while (<FILE>) {
+          next if ( /^#/ );  # ignore comments
+          next unless ( /\S/ ); # ignore lines of white spaces
+
+          $sql_com .= $_;
+        }
+        $sql_com =~ s/;$//; # chop off the last ;
 
         $db->do($sql_com);
 
         close FILE;
 
-	#import data from the txt files of the same name
+        #import data from the txt files of the same name
         $sql_file  =~ /.*\/(.*)\.sql/;
         my $tablename = $1;
 
         (my $txt_file = $sql_file) =~ s/\.sql$/\.txt/;
 
         unless(-f $txt_file && -r $txt_file) {
-	  warning("could not read data file '$txt_file'\n");
-	  next;
+          warning("could not read data file '$txt_file'\n");
+          next;
         }
 
         $db->do( "load data local infile '$txt_file' into table $tablename" );
@@ -306,8 +306,10 @@ sub load_databases {
     print STDERR "\n";
     closedir DIR;
 
-    $db->disconnect;
   }
+
+  $db->disconnect;
+
 }
 
 
