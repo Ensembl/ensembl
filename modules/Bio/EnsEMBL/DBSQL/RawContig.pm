@@ -252,19 +252,22 @@ sub get_all_SimilarityFeatures{
 				             "p1.seq_start, p1.seq_end, " . 
  				             "p1.strand,p1.score,p1.analysis,p1.name,  " .
 				             "p1.hstart,p1.hend,p1.hid,"  .
-				             "p2.fset,p2.rank " . 
+				             "p2.fset,p2.rank, " . 
+				             "fs.score " .
 				    "from    feature as p1,  " .
-				    "        fset_feature as p2 " .
+				    "        fset_feature as p2, " .
+				    "        fset as fs " .
 				    "where   p1.contig ='$id' " .
 				    "and     p2.feature = p1.id " .
+				    "and     fs.id = p2.fset " .
 				    "order by p2.fset");
    $sth->execute();
 
-   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank);
+   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$score);
    my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$score);
 
    my $out;
    
@@ -292,6 +295,11 @@ sub get_all_SimilarityFeatures{
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
 	   $out->analysis($analysis);
+	   $out->seqname ($self->id);
+	   $out->score(-1000);
+	   $out->source_tag($name);
+	   $out->primary_tag("FSET");
+
 	   $seen = $fset;
 	   push(@array,$out);
        }
@@ -359,7 +367,7 @@ sub get_all_SimilarityFeatures{
 	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
-	   $out->set_all_fields($start,$end,$strand,$score,$self->id(),'similarity',$self->id,
+	   $out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$self->id,
 				$hstart,$hend,1,$score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);

@@ -312,7 +312,7 @@ sub get_Gene_array_supporting {
 	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
-	
+	print(STDERR "Creating exon - contig id $contigid\n");
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
 	$exon->id       ($exonid);
@@ -645,19 +645,23 @@ sub get_Translation{
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   my $sth     = $self->prepare("select id,version,contig,UNIX_TIMESTAMP(created)," . 
-				"UNIX_TIMESTAMP(modified),seq_start,seq_end,strand," . 
-				"phase from exon where id = '$exonid'");
+   my $sth     = $self->prepare("select e.id as exonid,e.version,e.contig," .
+				        "UNIX_TIMESTAMP(e.created),UNIX_TIMESTAMP(e.modified), " .
+				        "e.seq_start,e.seq_end,e.strand,e.phase, " .
+				"       c.id as contigid " .
+				"from   exon as e," .
+				"       contig as c " .
+				"where  e.id = '$exonid'" . 
+				"and    e.contig = c.internal_id");
    my $res     = $sth->execute;
    my $rowhash = $sth->fetchrow_hashref;
 
    if( ! defined $rowhash ) {
        $self->throw("No exon of this id $exonid");
    }
-
    my $exon = Bio::EnsEMBL::Exon->new();
 
-      $exon->contig_id($rowhash->{'contig'});
+      $exon->contig_id($rowhash->{'contigid'});
       $exon->version  ($rowhash->{'version'});
 
    my $contig_id = $exon->contig_id();
@@ -670,7 +674,7 @@ sub get_Exon{
    $exon->clone_id($rowhash2->{'clone'});
 
    # rest of the attributes
-   $exon->id      ($rowhash->{'id'});
+   $exon->id      ($rowhash->{'exonid'});
    $exon->created ($rowhash->{'UNIX_TIMESTAMP(created)'});
    $exon->modified($rowhash->{'UNIX_TIMESTAMP(modified)'});
    $exon->start   ($rowhash->{'seq_start'});

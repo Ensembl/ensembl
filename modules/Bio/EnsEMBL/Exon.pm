@@ -698,8 +698,10 @@ sub each_Supporting_Feature {
 
 sub find_supporting_evidence {
     my ($self,$features) = @_;
-
+#    print(STDERR "Number of features = " . scalar(@$features) . "\n");
+#    print(STDERR "id is " . $self->contig_id . "\n");
     foreach my $f (@$features) {
+#	print(STDERR "fname is " . $f->seqname . "\n");
 	if (($f->seqname eq $self->contig_id) && ($f->overlaps($self))) {
 
 	    $self->add_Supporting_Feature($f);
