@@ -311,7 +311,7 @@ sub get_Gene_by_Peptide_id {
     my $supporting = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->_db_obj->prepare("select gene from transcript where        >>>translation = '$peptideid'");
+    my $sth = $self->_db_obj->prepare("select gene from transcript where translation = '$peptideid'");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
