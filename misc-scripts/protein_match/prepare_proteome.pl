@@ -58,7 +58,7 @@ my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
 
 
-if ($organism eq "human") {
+if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
 }
 
