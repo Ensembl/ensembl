@@ -33,6 +33,7 @@ CREATE TABLE clone (
        id varchar(40) DEFAULT '' NOT NULL,
        embl_id varchar(40) DEFAULT '' NOT NULL,
        sv int(10) DEFAULT '0' NOT NULL,
+       htg_phase int(10) DEFAULT '-1' NOT NULL,
        PRIMARY KEY(id)
 );
 
@@ -44,6 +45,9 @@ CREATE TABLE contig (
   clone varchar(40) DEFAULT '' NOT NULL,
   mapbin varchar(40) DEFAULT '' NOT NULL,
   length int(10) unsigned,
+  offset int(10) unsigned,
+  orientation char(1) DEFAULT '0' NOT NULL,
+  corder int(10) unsigned,
   dna varchar(40),
   PRIMARY KEY (id)
 );
