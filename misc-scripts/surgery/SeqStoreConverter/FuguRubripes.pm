@@ -27,7 +27,7 @@ sub create_coord_systems {
    ("INSERT INTO $target.coord_system (name, version, attrib, rank)" .
     "VALUES (?,?,?,?)");
   $sth->execute('scaffold', $default_assembly,
-                'default_version,sequence_level', $rank);
+                'default_version,sequence_level', 1);
 
   my $csid =  $sth->{'mysql_insertid'};
 
