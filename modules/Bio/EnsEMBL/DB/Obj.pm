@@ -28,7 +28,7 @@ Bio::EnsEMBL::DB::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 DESCRIPTION
 
-This object represents a database that is implemented somehow (you shouldn't
+This object represents a database that is implemented somehow (you shouldn\'t
 care much as long as you can get the object). From the object you can pull
 out other objects by their stable identifier, such as Clone (accession number),
 Exons, Genes and Transcripts. The clone gives you a DB::Clone object, from
@@ -426,6 +426,49 @@ sub write_Exon{
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
    
+   return 1;
+}
+
+=head2 write_Contig
+
+ Title   : write_Contig
+ Usage   : $obj->write_Contig($contigid,$dna)
+ Function: writes a contig and its dna into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+sub write_Contig {
+   my($self,$clone,$dna)  = @_;
+
+   if( ! $dna->isa('Bio::Seq') ) {
+       $self->throw("$dna is not a Bio::Seq can't insert contig for clone $clone");
+   }
+
+   $dna->id  || $self->throw("No contig id entered.");
+   $clone    || $self->throw("No clone entered.");
+
+   my $contigid  = $dna->id;
+   my $date      = `date '+%Y-%m-%d'`; chomp $date;
+   my $len       = $dna->seq_len;
+   my $seqstr    = $dna->seq;
+   my @sql;
+
+   push(@sql,"lock tables contig write,dna write");
+   push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
+   push(@sql,"replace into contig(id,dna,length,clone) values('$contigid',LAST_INSERT_ID(),$len,'$clone')");
+   push(@sql,"unlock tables");   
+
+   foreach my $sql (@sql) {
+     my $sth =  $self->prepare($sql);
+     my $rv  =  $sth->execute();
+     $self->throw("Failed to insert contig $contigid") unless $rv;
+   }
+
    return 1;
 }
 
