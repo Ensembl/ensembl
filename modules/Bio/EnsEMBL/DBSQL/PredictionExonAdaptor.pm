@@ -161,7 +161,8 @@ sub store {
 
   if( ! $pexon->start || ! $pexon->end ||
       ! $pexon->strand || ! defined $pexon->phase ) {
-    throw("PredictionExon does not have all attributes to store");
+    throw("PredictionExon does not have all attributes to store.\n" .
+         "start, end, strand and phase attributes must be set.");
   }
 
   #maintain reference to original passed-in prediction exon
