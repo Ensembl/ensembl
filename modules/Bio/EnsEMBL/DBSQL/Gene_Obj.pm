@@ -795,7 +795,7 @@ sub get_Gene_by_DBLink {
 
     my $biggest;
     my $max;
-    if (defined @genes) {
+    if ($#genes > 0) {
 	foreach my $gene (@genes) {
 	    my $size = (scalar($gene->each_unique_Exon));
 	    if ($size > $max) {
