@@ -446,9 +446,14 @@ sub transform {
                feature is transformed first and then placed on the slice.
                If the feature would be split across a coordinate system
                boundary or mapped to a gap undef is returned instead.
+
+               If the feature cannot be placed on the provided slice because
+               it maps to an entirely different location, undef is returned
+               instead.
+
   Returntype : Bio::EnsEMBL::Feature (or undef)
-  Exceptions : Thrown if the feature cannot be placed on the the same
-               seq_region as the slice.
+  Exceptions : throw on incorrect argument
+               throw if feature does not have attached slice
   Caller     : general, transform()
 
 =cut
@@ -483,8 +488,9 @@ sub transfer {
     $current_slice = $feature->{'slice'};
   }
 
+  # feature went to entirely different seq_region
   if($current_slice->seq_region_name() ne $slice->seq_region_name()) {
-    throw('Feature is not on the seq_region of the slice to transfer to');
+    return undef;
   }
 
   #if the current feature positions are not relative to the start of the
