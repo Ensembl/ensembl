@@ -5,6 +5,8 @@ INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES 
 
 INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (2,'dummy-contig-2',1,100,201,1,2);
 
+INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (3,'dummy-contig-3',1,100,301,1,3);
+
 INSERT into clone (clone_id,name,embl_acc,version,htg_phase) VALUES (1,'dummy-clone-1','dummy-embl-acc',12,2);
 
 INSERT into analysis (analysis_id,logic_name,db,db_version,gff_source,gff_feature) VALUES (1,"dummy-blast","swall","1","blast","similarity");
@@ -17,7 +19,15 @@ INSERT into analysis (analysis_id,logic_name,db,db_version,gff_source,gff_featur
 
 INSERT into analysis (analysis_id,logic_name,gff_source,gff_feature) VALUES (4,"dummy-repeatmask","repeatmask","repeat");
 
+
+INSERT into analysis (analysis_id,logic_name,gff_source,gff_feature) VALUES (5,"dummy-gene","dummy-gene","gene");
+
+
+
 INSERT into dna(dna_id, sequence, created) values(1, 'ATGATCAGTACAGTTACAGTAGACACAGATGTAG', now());
 
 
 INSERT into dna(dna_id, sequence, created) values(2, 'CGATCGATCGATCGATCGATCGACGATCGCGTACGATCG', now());
+
+
+INSERT into dna(dna_id, sequence, created) values(3, 'ATGCTTTTCGNNNNCTCCCACAANNNNCGAGGGNNNNNNNNN', now());
