@@ -45,6 +45,7 @@ use Bio::PrimarySeqI;
   Arg  4    : Bio::SeqI sequenceContainer
   Arg  5    : int sequenceLength
   Arg  6    : Bio::EnsEMBL::Clone clone
+  Arg  7    : int emblCloneBaseOffset
   Arg  7    : int emblCloneContigNumber
   Arg  8    : int emblCloneBaseOffset
   Function  : creates RawContig. Neds either dbID and Adaptor or clone and sequence.
@@ -78,7 +79,7 @@ sub new {
   (defined $sequence) && $self->sequence( $sequence );
   (defined $name) && $self->name( $name );
   (defined $length) && $self->length( $length );
-  (defined $offset) && $self->offset( $offset );
+  (defined $offset) && $self->embl_offset( $offset );
 
   return $self;
 }
@@ -114,8 +115,6 @@ sub new {
 # cloneid - dead, use clone->dbID or clone->name,embl_name etc
 # old_chromosome - ?? I assume unused and dead
 # seq_version - Maybe clone->embl_version ?
-# embl_order - good name, corder to be renamed
-# embl_offset- good name, offset to be renamed
 # embl_accession - Is there one for our contigs ?
 # id - should be name
 # internal_id - dbID
@@ -188,20 +187,21 @@ sub id {
   return $self->name || $self->dbID;
 }
 
-sub offset {
+
+sub embl_offset {
   my $self = shift;
   my $arg = shift;
   
   if( defined $arg ) {
-    $self->{_offset} = $arg ;
+    $self->{_embl_offset} = $arg ;
   } else {
-    if( ! defined $self->{_offset} &&
+    if( ! defined $self->{_embl_offset} &&
       defined $self->adaptor() ) {
       $self->adaptor->fetch_attributes( $self );
     }
   }
   
-  return $self->{_offset};
+  return $self->{_embl_offset};
 }
 
 sub clone {
@@ -509,7 +509,7 @@ sub get_all_ExternalFeatures {
    
    $acc = $self->clone->id();
 
-   my $offset = $self->offset();
+   my $offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
 
@@ -523,7 +523,7 @@ sub get_all_ExternalFeatures {
      }
      if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone(
-         $acc,$self->clone->embl_version,$self->offset, $self->offset+$self->length()) )
+         $acc,$self->clone->embl_version,$self->embl_offset, $self->embl_offset+$self->length()) )
        {
           my $start = $sf->start - $offset+1;
           my $end   = $sf->end   - $offset+1;
