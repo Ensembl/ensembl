@@ -208,6 +208,7 @@ sub get_all_SeqFeatures {
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
 #   push(@out,$self->get_all_PredictionFeatures);
+    push( @out, $self->get_all_StsFeatures );
 
     print(STDERR "Fetched all features\n");
     return @out;
@@ -308,11 +309,11 @@ sub get_all_SimilarityFeatures{
    $fset_id_str =~ s/\,$//;
 
    if ($fset_id_str) {
-       $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
-				     "from feature where id not in (" . $fset_id_str . ") and contig = \"$id\"");
+       $sth = $self->_dbobj->prepare("select f.id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
+				     "from feature as f, analysis as a  where id not in (" . $fset_id_str . ") and contig = \"$id\" and analysis = a.id and a.db != \"dbsts\"");
    } else {
-       $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid ".
-				     "from feature where contig = \"$id\"");
+       $sth = $self->_dbobj->prepare("select f.id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid ".
+				     "from feature as f, analysis as a  where contig = \"$id\" and analysis = a.id and a.db != \"dbsts\"");
    }
 
    $sth->execute();
@@ -449,11 +450,12 @@ sub get_all_RepeatFeatures {
  
    return @array;
 }
-=head2 get_all_RepeatFeatures
 
- Title   : get_all_RepeatFeatures
- Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures )
- Function: Gets all the repeat features on a contig.
+=head2 get_all_PredictionFeatures
+
+ Title   : get_all_PredictionFeatures
+ Usage   : 
+ Function: 
  Example :
  Returns : 
  Args    :
@@ -519,6 +521,66 @@ sub get_all_PredictionFeatures {
       push(@array,$out);
   }
  
+   return @array;
+}
+
+=head2 get_all_StsFeatures
+
+ Title   : get_all_StsFeatures
+ Usage   : foreach my $sf ( $contig->get_all_StsFeatures )
+ Function: Gets all the features on a contig which come from dbsts matches.
+ Example :
+ Returns : an array of FeaturePair objects
+ Args    :
+
+
+=cut
+
+sub get_all_StsFeatures {
+   my ($self) = @_;
+
+   my @array;
+
+   my $id     = $self->id();
+   my $length = $self->length();
+
+   my %analhash;
+
+   # make the SQL query
+   my $sth = $self->_dbobj->prepare("select seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
+				    "from feature, analysis as a where contig = '$id' and ".
+				    "analysis = a.id and a.db='dbsts'" );
+
+   $sth->execute();
+
+   my ($start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+
+   # bind the columns
+   $sth->bind_columns(\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid);
+
+   
+   while( $sth->fetch ) {
+       my $out;
+       my $analysis;
+       
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+
+       $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+       $out->set_all_fields($start,$end,$strand,$score,'blastn','similarity',$id,
+			    $hstart,$hend,1,$score,'blastn','similarity',$hid);
+       $out->analysis($analysis);
+
+       # Final check that everything is ok.
+       
+       $out->validate();
+
+      push(@array,$out);
+  }
    return @array;
 }
 
