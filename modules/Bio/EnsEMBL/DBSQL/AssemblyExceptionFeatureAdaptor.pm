@@ -1,7 +1,6 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
+# Ensembl module for Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright EMBL/EBI
 #
@@ -11,7 +10,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor 
+Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
 
 =head1 SYNOPSIS
 
@@ -24,10 +23,8 @@ Assembly Exception Feature Adaptor - database access for assembly exception feat
 
 =head1 AUTHOR - Glenn Proctor
 
-=head1 APPENDIX
+=head1 METHODS
 
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
 
 =cut
 
@@ -119,7 +116,8 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( ae.seq_region_id ae.seq_region_start ae.seq_region_end 
+  return qw( ae.assembly_exception_id
+             ae.seq_region_id ae.seq_region_start ae.seq_region_end 
              ae.exc_type ae.exc_seq_region_id ae.exc_seq_region_start 
              ae.exc_seq_region_end );
 }
@@ -145,10 +143,11 @@ sub _objs_from_sth {
 
   my $slice_adaptor = $self->db()->get_SliceAdaptor();
 
-  my ($seq_region_id, $seq_region_start, $seq_region_end, $type,
+  my ($dbID, $seq_region_id, $seq_region_start, $seq_region_end, $type,
       $exc_seq_region_id, $exc_seq_region_start, $exc_seq_region_end);
 
-  $sth->bind_columns(\$seq_region_id, \$seq_region_start, \$seq_region_end, 
+  $sth->bind_columns(\$dbID,
+                     \$seq_region_id, \$seq_region_start, \$seq_region_end,
                      \$type, \$exc_seq_region_id, \$exc_seq_region_start, 
                      \$exc_seq_region_end);
 
@@ -162,7 +161,8 @@ sub _objs_from_sth {
 
     push @features,
       Bio::EnsEMBL::AssemblyExceptionFeature->new
-          ('-start'           => $seq_region_start,
+          ('-dbID'            => $dbID,
+           '-start'           => $seq_region_start,
            '-end'             => $seq_region_end,
            '-strand'          => 1,
            '-adaptor'         => $self,
@@ -172,7 +172,8 @@ sub _objs_from_sth {
 
     push @features, 
       Bio::EnsEMBL::AssemblyExceptionFeature->new
-          ('-start'           => $exc_seq_region_start,
+          ('-dbID'            => $dbID,
+           '-start'           => $exc_seq_region_start,
            '-end'             => $exc_seq_region_end,
            '-strand'          => 1,
            '-adaptor'         => $self,
