@@ -1064,15 +1064,14 @@ sub dump_comparison {
   print "Dumping comparison data\n";
 
   open (COMPARISON, ">comparison/xref_mappings.txt");
+  print COMPARISON "xref_accession" . "\t" . "ensembl_type" . "\t" . "ensembl_id\n";
 
   # get the xref accession for each xref as the xref_ids are ephemeral
-
   # first read all the xrefs that were dumped and get an xref_id->accession map
   my %xref_id_to_accesson;
   open (XREF, "$dir/xref.txt");
-  print XREF "xref_accession" . "\t" . "ensembl_type" . "\t" . "ensembl_id\n";
   while (<XREF>) {
-    my ($xref_id,$accession,$label,$description) = split;
+    my ($xref_id,$external_db_id,$accession,$label,$version,$description) = split;
     $xref_id_to_accesson{$xref_id} = $accession;
   }
   close (XREF);
@@ -1082,7 +1081,6 @@ sub dump_comparison {
     my ($object_xref_id,$object_id,$type,$xref_id) = split;
     print COMPARISON $xref_id_to_accesson{$xref_id} . "\t" . $type . "\t" . $object_id . "\n";
   }
-
 
   close (OBJECT_XREF);
   close (COMPARISON);
