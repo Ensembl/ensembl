@@ -129,6 +129,9 @@ sub is_stored {
   my $self = shift;
   my $db = shift;
 
+  if($db and $db->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) {
+    $db = $db->db();
+  }
   if(!$db || !ref($db) || !$db->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
     throw('db argument must be a Bio::EnsEMBL::DBSQL::DBConnection');
   }
@@ -148,7 +151,7 @@ sub is_stored {
 
   return 0 if (!$adaptor && !$dbID);
 
-  my $cur_db = $adaptor->db();
+  my $cur_db = $adaptor->dbc();
 
   #
   # Databases are the same if they share the same port, host and username
