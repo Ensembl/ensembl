@@ -418,10 +418,10 @@ sub get_all_SimilarityFeatures {
   my ($self, $logic_name, $score) = @_;
 
   my @out;
-  push @out, $self->get_all_ProteinAlignFeatures($logic_name, $score);
-  push @out, $self->get_all_DnaAlignFeatures($logic_name, $score);
+  push ( @out, @{ $self->get_all_ProteinAlignFeatures($logic_name, $score) }  );
+  push ( @out, @{ $self->get_all_DnaAlignFeatures($logic_name, $score) }  );
 
-  return @out;
+  return \@out;
 }
 
 
