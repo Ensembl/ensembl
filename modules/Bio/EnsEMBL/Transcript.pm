@@ -492,6 +492,10 @@ sub translateable_seq {
   my $start = $self->cdna_coding_start();
   my $end = $self->cdna_coding_end();
   
+  my $start_phase = $self->translation->start_Exon->phase();
+  if( $start_phase > 0 ) {
+    $mrna = "N"x$start_phase . $mrna;
+  }
   if( ! $start || ! $end ) {
     return "";
   }
