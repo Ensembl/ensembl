@@ -209,6 +209,35 @@ sub get_all_clone_SeqFeatures{
    return @out;
 }
 
+=head2 get_clone_RepeatFeatures
+
+ Title   : get_clone_RepeatFeatures
+ Usage   : foreach $feat ( $contig->get_clone_RepeatFeatures )
+ Function: returns sequence features but in the clone coordinate space.
+ Example :
+ Returns : an array of SeqFeatures
+ Args    : None
+
+ This method is common to all Contig objects, whatever the implementation.
+Implementation objects do not need to write this method
+
+=cut
+
+sub get_clone_RepeatFeatures {
+   my ($self) = @_;
+   my @out;
+
+   foreach my $sf ( $self->get_all_RepeatFeatures ) {
+       my ($start,$end,$strand) = $self->_convert_coords_contig_clone($sf->start,$sf->end,$sf->strand);
+       $sf->start($start);
+       $sf->end($end);
+       $sf->strand($strand);
+       push(@out,$sf);
+   }
+
+   return @out;
+}
+
 
 sub _convert_coords_contig_clone {
     my $self = shift;

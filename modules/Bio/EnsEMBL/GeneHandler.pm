@@ -263,8 +263,8 @@ sub _process_Transcript {
             if ($self->strict_EMBL_dumping) {
                 $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
             } else {
-	        $ft->add_field('created',     $exon->created());
-	        $ft->add_field('modified',    $exon->modified());
+	        $ft->add_field('created',     scalar(gmtime($exon->created())));
+	        $ft->add_field('modified',    scalar(gmtime($exon->modified())));
 	        $ft->add_field('exon_id',     $exon->id());
 	        $ft->add_field('start_phase', $exon->phase());
 	        $ft->add_field('end_phase',   $exon->end_phase());

@@ -63,6 +63,7 @@ use vars qw( @ISA @EXPORT_OK );
 use Exporter;
 use strict;
 use Carp;
+use Bio::Species;
 
 @ISA = ('Exporter');
 
@@ -113,7 +114,7 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment);
    
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html.");
+   $comment->text("The /gene_id indicates a unique id for a gene, /cds_id a unique id for a translation and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html.");
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
@@ -123,7 +124,6 @@ sub add_ensembl_comments {
    $comment = Bio::Annotation::Comment->new();
    $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the nucleotide data library.");
 
-#   $comment->text("In unfinished, rough draft DNA sequence, the ordering of the fragments is likely to be different from the order in EMBL/Genbank/DDBJ. In addition, gene structures can cross fragments and, in these cases, maybe in different orientations relative to the ordering of the fragments.");
    $aseq->annotation->add_Comment($comment); 
   
    my $sf = Bio::SeqFeature::Generic->new();
@@ -133,7 +133,15 @@ sub add_ensembl_comments {
    $sf->primary_tag('source');
    $sf->add_tag_value('organism','Homo sapiens');
    $aseq->add_SeqFeature($sf);
+   
+   my $species = new Bio::Species;
+   $species->common_name("Human");
+   $species->classification(qw( sapiens Homo Hominidae
+				Catarrhini Primates Eutheria
+				Mammalia Vertebrata Chordata
+				Metazoa Eukaryota ));
 
+   $aseq->species($species);
    # done!
 }
 

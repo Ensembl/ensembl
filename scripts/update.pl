@@ -91,6 +91,7 @@ my $rec_db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
 
 $verbose && print "\nConnecting to donor database...\n";
 my $donor_locator = $rec_db->get_donor_locator;
+
 my $don_db =  Bio::EnsEMBL::DBLoader->new($donor_locator);
 
 my $last_offset = $rec_db->get_last_update_offset;

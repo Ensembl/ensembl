@@ -52,6 +52,7 @@ use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 use strict;
 use Bio::EnsEMBL::GeneHandler;
 use Bio::EnsEMBL::AnnSeq;
+use POSIX;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -393,11 +394,11 @@ sub get_AnnSeq {
 	$hash_ref = {};
     }
 
-    print STDERR "Starting on the annseq build\n";
+    #print STDERR "Starting on the annseq build\n";
 
     @genes = $self->get_all_Genes();
 
-    print STDERR "Built genes\n";
+    #print STDERR "Built genes\n";
     
     $seq = $self->seq();
     
@@ -408,6 +409,12 @@ sub get_AnnSeq {
     $as->htg_phase($self->htg_phase());
 
     $as->seq($seq);
+
+    my $str = POSIX::strftime( "%d-%b-%Y", gmtime($self->seq_date) );
+    $as->add_date($str);
+
+
+
     foreach my $gene ( @genes ) {
         my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self,
                                                 -gene => $gene,
@@ -416,7 +423,7 @@ sub get_AnnSeq {
         $as->add_SeqFeature($gh);
     }
 
-    print STDERR "Attached genes\n";
+    #print STDERR "Attached genes\n";
 
     # Add features to annseq object
     foreach my $contig ($self->get_all_Contigs) {
@@ -424,7 +431,9 @@ sub get_AnnSeq {
 
         # Coordinates retrieved are in Clone coordinate space
         # from the get_all_clone_SeqFeatures method
-        foreach my $feature ($contig->get_all_clone_SeqFeatures) {
+
+	#
+        foreach my $feature ($contig->get_clone_RepeatFeatures ) {
 
 	    # apply filter if there
 	    if( $hash_ref->{'seqfeature_filter'} ) {
