@@ -52,7 +52,7 @@ pep-collate.sh 2> pep-collate.log
 
 # Now pull out the longest peptide of each original igi
 # peptide file, using the 'valid' igi's from the summary files (which are
-# proudced by all-stats.sh.
+# produced by all-stats.sh.
 summary=out/summary/ens_affy_fgenesh.summary
 peptidefiles="ensembl/ensembl.pep affymetrix/affymetrix.pep fgenesh/fgenesh.pep"
 outdir=out/pep

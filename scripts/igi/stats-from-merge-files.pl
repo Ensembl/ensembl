@@ -50,8 +50,8 @@ die "need both cluster_n and gtf_summary or neither"
   unless ( defined($gtf_summary) == defined($cluster_n));
 
 die "need -cluster_n when doing igi2native or native2igi"
-  unless ( (defined($n2imapping)||defined($i2nmapping))  
-           == defined($cluster_n));
+  if ( (defined($n2imapping)||defined($i2nmapping)) >   
+           defined($cluster_n));
 
 
 my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
@@ -61,6 +61,10 @@ my %igis_of_source; # $igis_of_source_{$source}{$igi} = [nfeats, start,
 my %natives_of_source; # $natives_of_source{$source}{$native_id} =
                        # [ nfeats, start, end, nexons ]
 my %natives_of_igi; # $natives_of_igi{$source}{$igi}{$native_id} => 1
+
+my %transcripts_of_native; #
+                           # $transcripts_of_native{$source}{$native}{$transcript}
+                           # = length of the transcript
 
 my $blurp = blurp();
 
@@ -84,7 +88,7 @@ while (<>) {
     }
     
     # Extract the extra information from the final field of the GTF line.
-    my ($igi, $gene_name, $native_ids, $transcript_id, $exon_num, $exon_id) =
+    my ($igi, $gene_name, $native_ids, $transcript_ids, $exon_num, $exon_id) =
       Bio::EnsEMBL::Utils::igi_utils::parse_group_field($group_field);
 
     unless ($igi) {
@@ -93,19 +97,27 @@ while (<>) {
     }
 
     my $native_id; 
-    unless ($native_ids) {
-        warn("Skipping line with no gene_id: '$_'\n");
+    if (@$native_ids == 0 ) {
+        warn("Skipping line with no gene_id(s): '$_'\n");
         next GTF_LINE;
     }
 
     if (int(@$native_ids) > 1 ) {
         warn("Line with several gene_ids (taking first one): '$_'\n");
+    }
+    $native_id =  $ {$native_ids}[0];
+
+    if  (@$transcript_ids == 0) {
+        warn("Skipping line with no transcript_id(s): '$_'\n");
         next GTF_LINE;
     }
-    $native_id =  ${$native_ids}[0];
+    if (int(@$transcript_ids) > 1 ) {
+        warn("Line with several transcript_ids (taking first one): '$_'\n");
+    }
+    my $transcript_id =  $ {$transcript_ids}[0];
 
-    # keep track of marginals by looping over current one as well
-    # as fictional source 'ALL':
+    # keep track of marginals by 'looping' over current one +
+    # fictional source 'ALL':
     foreach my $s ($source, 'ALL') {
 
         # keep track of number of features, exons, start and end of this igi:
@@ -125,6 +137,11 @@ while (<>) {
         # pointless to keep track of exon statistics; call exon-lengths.awk
         # for that.
     }                                   # foreach $s
+
+    if ( $feature eq 'exon' ) {
+        $transcripts_of_native{$source}{$native_id}{$transcript_id} +=
+          ($end - $start);
+    }
 }                                       # while(<>)
 ### done reading files
 
@@ -184,7 +201,8 @@ if ($gtf_summary) {
 ## features are given. Only genes predicted by $cluster_n or more gene
 ## predictions have been included. The original gene id's have been
 ## prefixed with <source-name>. The output is sorted by fpc contig id,
-## strand, and start.  This is not the final IGI3 file
+## strand, and start.  This is not the final IGI3 file; it just summarizes
+## the extent of the igi3 clusters.
 MOREBLURP
   ;
     close(OUT);
@@ -530,7 +548,7 @@ sub print_native_to_igi {
     }
 }                                       # print_native_to_igi
 
-### print a gtf file for all igi's that are predicted by N sources for
+### print a gtf file for all igi's that are predicted by N sources. For
 ### now, just print start and end, nothing else. I.e., don't give any
 ### native exons or so:
 sub gtf_for_igis_predicted_by_n {
@@ -553,7 +571,20 @@ sub gtf_for_igis_predicted_by_n {
         foreach my $source (sort @all_sources) {
             foreach my $nat_id (sort keys %{$natives_of_igi{$source}{$igi}}) {
                 $rest .= "gene_id \"$source:$nat_id\"; ";
-            }
+                
+                ## find id of the longest transcript:
+                my $max = -1; my $max_tid=undef;
+                my @tids = keys %{$transcripts_of_native{$source}{$nat_id}};
+# warn "tids:  @tids" if @tids > 2;
+                foreach my $tid ( @tids ) { 
+                    my $len = $transcripts_of_native{$source}{$nat_id}{$tid};
+                    if ($len > $max) {
+                        $max_tid = $tid;
+                        $max = $len;
+                    }
+                }
+                $rest .= "transcript_id \"$source:$max_tid\"; ";
+            }                           # foreach $nat
         }                               # source
         push(@fields, $rest);
         print $OUT join("\t", @fields), "\n"; 
