@@ -82,7 +82,6 @@ my $dna_id = $dbseq->dna_id;
 my $primary_id = $dbseq->primary_id;
 my $display_id = $dbseq->display_id;
 my $id = $dbseq->id;
-print STDERR "Got $dna_id,$primary_id,$id and $contig_id,$display_id\n";
 print "ok 6\n";
 #print STDERR "Dna id of $conf{'contig'} is $dna_id\n";
 

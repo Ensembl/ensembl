@@ -108,7 +108,7 @@ $dbname = $conf{'recipient'};
 $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $rec_db =  Bio::EnsEMBL::DBLoader->new($locator);
 
-$gene=$don_db->get_Gene('ENSG00000019482');
+$gene=$don_db->get_Gene('ENSG00000019419');
 
 $rec_db->delete_Gene($gene->id);
 $rec_db->write_Gene($gene);

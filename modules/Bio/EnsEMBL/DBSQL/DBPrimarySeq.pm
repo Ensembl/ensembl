@@ -76,6 +76,7 @@ sub new {
   if( !defined $dbh) {
       $self->throw("You must provide a database handle to create a DBPrimarySeq object!");
   }
+  
   $self->dna_id($dna_id);
   $self->primary_id($dna_id);
   $self->db_handle($dbh);
@@ -86,7 +87,7 @@ sub new {
       $self->display_id($rowhash->{'id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
       $self->contig_internal_id($rowhash->{'internal_id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
       }
-  
+
   # set stuff in self from @args
   return $self; # success - we hope!
 }
@@ -166,6 +167,20 @@ sub primary_id {
     return $self->{'_primary_id'};
 } 
 
+=head2 accession_number
+
+ Title   : accession_number
+ Usage   : $obj->accession_number($newval)
+ Function: get/set method for the dna id
+ Returns : value of accession_number
+ Args    : newvalue (optional) 
+
+=cut
+
+sub accession_number {
+    my ($self) = @_;
+    return $self->display_id;
+}
 
 =head2 db_handle
 
@@ -277,7 +292,7 @@ sub moltype{
 sub id {
    my ($self)= @_;
 
-   return $self->primary_id();
+   return $self->display_id();
 }
 
 =head2 length
@@ -303,4 +318,24 @@ sub  length {
        or $self->throw("Could not determine length of dna " .$id);
    
    return $length;
+}
+
+
+=head2 can_call_new
+
+ Title   : can_call_new
+ Usage   : if( $obj->can_call_new ) {
+             $newobj = $obj->new( %param );
+	 }
+ Function: indicates that this object can call the ->new method
+ Example :
+ Returns : 1 or 0
+ Args    :
+
+
+=cut
+
+sub can_call_new{
+
+   return 0;
 }

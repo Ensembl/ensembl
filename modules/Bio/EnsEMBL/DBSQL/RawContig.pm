@@ -257,10 +257,10 @@ sub has_genes{
    return $seen;
 }
 
-=head2 DB_primary_seq
+=head2 primary_seq
 
- Title   : DB_primary_seq
- Usage   : $dbseq = $contig->DB_Primary_Seq();
+ Title   : primary_seq
+ Usage   : $dbseq = $contig->Primary_Seq();
  Function: Gets a Bio::EnsEMBL::DBSQL::DBPrimarySeq object out from the contig
  Example :
  Returns : Bio::EnsEMBL::DBSQL::DBPrimarySeq object
@@ -269,7 +269,7 @@ sub has_genes{
 
 =cut
 
-sub DB_primary_seq {
+sub primary_seq {
     my ($self) = @_;
     
     my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
@@ -280,10 +280,10 @@ sub DB_primary_seq {
     return $dbseq;
 }
 
-=head2 primary_seq
+=head2 old_primary_seq
 
  Title   : seq
- Usage   : $seq = $contig->primary_seq();
+ Usage   : $seq = $contig->old_primary_seq();
  Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
  Returns : Bio::PrimarySeqI object
@@ -292,7 +292,7 @@ sub DB_primary_seq {
 
 =cut
 
-sub primary_seq {
+sub old_primary_seq {
     my ($self) = @_;
 
     if ( $self->_seq_cache() ) {
