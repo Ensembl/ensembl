@@ -1,7 +1,20 @@
 use strict;
 use warnings;
 
+use StatMsg;
+
 package InterimExon;
+
+#
+# errors which are fatal for exons
+#
+my @FATAL =
+  (StatMsg::DELETE | StatMsg::CDS | StatMsg::LONG,
+   StatMsg::DELETE | StatMsg::CDS | StatMsg::MEDIUM | StatMsg::FRAMESHIFT,
+   StatMsg::STRAND_FLIP,
+   StatMsg::INVERT,
+   StatMsg::SCAFFOLD_SPAN,
+   StatMsg::CONFUSED);
 
 
 sub new {
@@ -10,6 +23,25 @@ sub new {
   return bless {'StatMsgs' => [],
                 'fail'     => 0}, $class;
 }
+
+
+#
+# returns true if this exon has a 'fatal' error
+#
+sub is_fatal {
+  my $self = shift;
+
+  foreach my $msg (@{$self->get_all_StatMsgs}) {
+    foreach my $code (@FATAL) {
+      if(($msg & $code) == $code) {
+	return 1;
+      }
+    }
+  }
+
+  return 0;
+}
+
 
 sub add_StatMsg {
   my $self    = shift;
@@ -88,6 +120,20 @@ sub slice {
   my $self = shift;
   $self->{'slice'} = shift if(@_);
   return $self->{'slice'};
+}
+
+
+sub start_phase {
+  my $self = shift;
+  $self->{'start_phase'} = shift if(@_);
+  return $self->{'start_phase'};
+}
+
+
+sub end_phase {
+  my $self = shift;
+  $self->{'end_phase'} = shift if(@_);
+  return $self->{'end_phase'};
 }
 
 sub fail {
