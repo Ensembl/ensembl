@@ -8,6 +8,10 @@ use Apache::Log ();
 sub handler {
     my $r = shift;
     my ($header, $footer);
+
+    if ($r->content_type ne 'text/html') {
+        return DECLINED;
+    }
     
     if ((my $rc = $r->discard_request_body) != OK) {
         return $rc;
@@ -54,7 +58,7 @@ sub handler {
         return $rc;
     }
 
-    $r->set_content_length;
+    #$r->set_content_length;
 
     if($ENV{PERL_SEND_HEADER}) {
         print "Content-type: text/html\n\n";
@@ -64,12 +68,16 @@ sub handler {
         $r->send_http_header;
     }
     
+    my $trail;
+    
+    &make_nav_trail (\$r, \$trail);
     &make_ensembl_header(\$r, \$header);
     &make_ensembl_footer(\$r, \$footer);
     my ($title, $gif);
     
     unless ($r->header_only) {
         $r->print($header);
+        $r->print($trail);
         while (<$fh>){
             $r->print($_);
         }
@@ -80,6 +88,83 @@ sub handler {
     close $fh;
     return OK;
 }
+
+#############################################################
+# Construct the navigation trail
+#############################################################
+
+sub make_nav_trail {
+
+    my ($req_ref, $trail_ref) = @_;
+    
+    my %map = ();
+    my %trail =();
+    my $uri = $$req_ref->uri;
+    my @dirs = split (/\//,$uri);
+    my $mapfile = $$req_ref->document_root."/urlmappings.txt";
+    pop(@dirs);             # remove the html filename at the end of the URL
+    shift(@dirs);           # remove the root dir
+
+    #$$req_ref->log->error("Mapfile: $mapfile");
+    #$$req_ref->log->error("URL dirs: @dirs");
+
+    unless (open (MAP, "$mapfile")) {
+        $$req_ref->log->error("Cannot open URL map file: $!");
+        return;
+    }
+
+    my @lines = <MAP>;
+    foreach my $l (@lines){
+        chomp ($l);
+        my ($url, $label) = split (/ /,$l, 2);
+        $url =~ s/^\///;    # remove the leading slash from URL mapping
+        $map{$url} = $label;        
+    }
+
+    #foreach my $key (keys %map){
+    #    $$req_ref->log->error("HASH: $key -> $map{$key}")
+    #}
+    
+    my $path_tmp ="";
+    $$trail_ref = "<B CLASS=\"navbar\">You are here:</B> <A HREF=\"/\">Home</A>";
+    
+    for (my $i=0;$i<(scalar(@dirs));$i++){
+        $path_tmp .= "$dirs[$i]/";
+        #$$req_ref->log->error("PATH: $path_tmp");
+        if ($i < $#dirs){
+            if ($map{$path_tmp}){
+                $$trail_ref .= " -> <A HREF=\"/$path_tmp\">$map{$path_tmp}</A>";
+            }    
+            else{
+                $$trail_ref .= " -> <A HREF=\"/$path_tmp\">$dirs[$i]</A>";
+            }
+        }
+        else{
+            if ($map{$path_tmp}){
+                $$trail_ref .= " -> $map{$path_tmp}";
+            }    
+            else{
+                $$trail_ref .= " -> $dirs[$i]";
+            }
+        }
+        
+    }
+    
+    #$$req_ref->log->error("Trail: $$trail_ref");
+     
+    $$trail_ref=<<EOS; 
+<TABLE WIDTH="100%" BORDER="0">
+ <TR>
+  <TD CLASS="navbar">
+    $$trail_ref
+  </TD>
+ </TR>
+</TABLE>
+<P>
+EOS
+
+
+} # end of sub"
 
 #############################################################
 # Construct the standard EnsEMBL page header
