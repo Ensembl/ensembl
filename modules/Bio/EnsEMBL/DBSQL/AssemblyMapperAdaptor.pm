@@ -42,19 +42,18 @@ I<Singleton> class.  ie: There is only one per
 database (C<DBAdaptor>).
 
 This is used to retrieve mappers between any two coordinate systems whose
-makeup is described by the assembly table.  Currently only pairwise mapping
-is supported (i.e there must be an explicit relationship between the coordinate
-systems in the assembly table), but in the future 'chained' mapping between
-coordinate systems with indirect relationships may be possible.
+makeup is described by the assembly table.  Currently one step (explicit) and
+two step (implicit) pairwise mapping is supported.  In one-step mapping
+an explicit relationship between the coordinate systems is defined in the
+assembly table.  In two-step 'chained' mapping no explicit mapping is present 
+but the coordinate systems must share a common mapping to an intermediate 
+coordinate system.
 
 =head1 CONTACT
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
