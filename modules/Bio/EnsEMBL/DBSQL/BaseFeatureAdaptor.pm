@@ -357,9 +357,10 @@ sub fetch_all_by_Slice_constraint {
     $self->throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
   }
 
-  #check the cache and return if we have already done this query
-  $logic_name = '' unless defined $logic_name;
+  $logic_name = '' unless $logic_name;
+  $constraint = '' unless $constraint;
 
+  #check the cache and return if we have already done this query
   my $key = join($slice->name, $constraint, $logic_name);
   return $self->{'_slice_feature_cache'}{$key} 
     if $self->{'_slice_feature_cache'}{$key};
