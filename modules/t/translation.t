@@ -8,7 +8,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 29;
+	plan tests => 30;
 }
 
 my $loaded = 0;
@@ -208,3 +208,12 @@ $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
 
 $tlseq = $tr->translate->seq();
 ok( $tlseq !~ /^.UUU/ );
+
+
+
+# test the fetch_all_by_Transcript_list method
+my $tr2 = $tra->fetch_by_stable_id('ENST00000252021');
+
+my @tls = @{$ta->fetch_all_by_Transcript_list([$tr,$tr2])};
+
+ok(@tls == 2);
