@@ -67,7 +67,7 @@ sub fetch_all_by_Slice {
         'id_tsc'    => 'TSC-CSHL'
   );
   my $C = 9;
-  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, allele, snpclass, mapweight ";
+  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, alleles, snpclass, mapweight, ambiguity ";
   foreach(@$columns) {
     if($SNPS{$_}) {
       $QUERY.= ", $_";
@@ -77,8 +77,7 @@ sub fetch_all_by_Slice {
   $QUERY .= " FROM snp WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
   $sth = $self->prepare( $QUERY ); 
-  warn( $QUERY, $slice->chr_name, $slice_start-1000, $slice_end, $slice_start );
-  $sth->execute($slice->chr_name(), $slice_start - 1000 , $slice_end, $slice_start);
+  $sth->execute($slice->chr_name(), $slice_start - 500 , $slice_end, $slice_start);
   
   my @snps = ();  
 
@@ -89,7 +88,7 @@ sub fetch_all_by_Slice {
     
     my @links = ();
 
-    my $C = 10;
+    my $C = 11;
     foreach( @COLUMN ) {
        my $V = $arrayref->[$C];
        if( $V && $V ne '' ) {
@@ -115,6 +114,7 @@ sub fetch_all_by_Slice {
                     '_range_type' => $arrayref->[5],
                     '_validated'  => $arrayref->[6],
                     'alleles'    => $arrayref->[7],
+                    '_ambiguity_code' => $arrayref->[10],
                     '_snpclass'   => $arrayref->[8],
                     '_mapweight'  => $arrayref->[9],
 		    'link'        => \@links });
