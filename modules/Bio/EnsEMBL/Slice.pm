@@ -476,7 +476,7 @@ sub get_Genes_by_type{
    print STDERR "Slice : Getting genes of type $type \n";
 
    foreach my $gene (@genes) {
-     print STDERR "Slice : Got gene of type " . $gene->type();
+     print STDERR "Slice : Got gene of type " . $gene->type() . "\n";
      if($gene->type() eq $type) {
        push @out, $gene;
      }
