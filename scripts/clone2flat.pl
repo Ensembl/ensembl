@@ -366,8 +366,8 @@ foreach my $clone_id ( @clones ) {
 	    # genbank format - the ID line is wrong. Fall back to locus
 	    $gbout->_id_generation_func(undef);
 	    $gbout->_ac_generation_func(undef);
-	    $as->accession($clone->id());
-	    $as->division("PRI");
+	   # $as->accession($clone->id());
+	   # $as->division("PRI");
 	    if( $nodna == 1 ) {
 		$gbout->_show_dna(0);
 	    }

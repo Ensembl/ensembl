@@ -144,6 +144,7 @@ sub _initialize {
   
   $self->_unique_number($VC_UNIQUE_NUMBER);
   
+ # print STDERR "We are ending with length ",$self->length,"\n";
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -360,6 +361,9 @@ sub primary_seq {
    #Go through each MapContig
    my $previous = undef;
    foreach my $mc ( @map_contigs ) {
+     #  print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
+     #  print STDERR "adding to",length($seq_string),"\n";
+
        if( defined $previous && $previous->end+1 != $mc->start ) {
 	   # then start had better be before end
 	   if( $mc->start < $previous->end ) {
@@ -377,8 +381,6 @@ sub primary_seq {
        }
        
        # now add in the actual sequence.
-       #print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
-       #print STDERR "adding to",length($seq_string),"\n";
 
        # flip if other way around
        my $substring;
@@ -395,6 +397,10 @@ sub primary_seq {
        $previous = $mc;
    }
    
+
+  # print STDERR "length is ",length($seq_string),"compared to ",$self->length,"\n";
+
+
    # if there is a right overhang, add it 
    if( $self->_vmap->right_overhang() > 0 ) {
        $seq_string .= 'N' x $self->_vmap->right_overhang();
@@ -1336,17 +1342,25 @@ sub _convert_seqfeature_to_vc_coords {
     }
 	
 
+   # print STDERR "before ",$sf->id," ",$sf->start," end ",$sf->end,"\n";
+
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
-    
-    $sf->start ($rstart);
-    $sf->end   ($rend);
-    $sf->strand($rstrand);
-    
+
+   # print STDERR "rstart ",$rstart," rend ",$rend,"\n";
+
+   # print STDERR "seq length ",$sf->seq,"\n";
+
     if( $sf->can('attach_seq') ) {
 	if (!$self->noseq) {
 	    $sf->attach_seq($self->primary_seq);
 	}
     }
+    #  print STDERR "seq length ",$sf->seq->length,"\n";
+
+    $sf->start ($rstart);
+    $sf->end   ($rend);
+    $sf->strand($rstrand);
+    
     
     $sf->seqname($self->id);
 

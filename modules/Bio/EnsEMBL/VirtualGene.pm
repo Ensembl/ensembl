@@ -280,7 +280,7 @@ sub _calculate_coordinates{
    my $inside_exon = 0;
    my ($start,$end,$strand);
    foreach my $exon ( @exons ) {
-       print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
+      # print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
 
        if( $cid eq $exon->seqname ) {
 	   if( $inside_exon == 0 ) {
@@ -573,9 +573,9 @@ sub to_FTHelper {
 	    my $ft = Bio::SeqIO::FTHelper->new();
 	    $ft->loc("join(".$join.")");
 	    $ft->key('CDS');
-	    print STDERR "Translation is [",$translated_seq->seq,"]\n";
+	    #print STDERR "Translation is [",$translated_seq->seq,"]\n";
 
-	    $ft->add_field('translate',$translated_seq->seq);
+	    $ft->add_field('translatation',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
 	    $ft->add_field('gene',$self->gene->id);
 	    $ft->add_field('transcript',$trans->id);
