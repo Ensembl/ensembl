@@ -85,10 +85,10 @@ sub new {
 
   bless $self,$class;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value); 
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
 
   eval {
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -100,6 +100,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    SEQNAME
                 PERCENT_ID
                 P_VALUE
+                PHASE
+                end_phase
 			    )],@args);
 };
   if( $@ ) {
@@ -120,6 +122,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   $seqname      && $self->seqname($seqname);
   $percent_id   && $self->percent_id($percent_id);
   $p_value      && $self->p_value($p_value);
+  $phase        && $self->phase($phase);
+  $end_phase    && $self->end_phase($end_phase);
   return $self; # success - we hope!
 
 }
@@ -739,6 +743,69 @@ sub p_value {
     }
 
     return $self->{_p_value};
+}
+
+=head2 phase
+
+ Title   : phase
+ Usage   : $phase = $feat->phase()
+           $feat->phase($phase)
+ Function: get/set on start phase of predicted exon feature
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub phase {
+    my ($self, $value) = @_;
+    
+    if (defined($value)) 
+    {
+        $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
+	    $self->{_phase} = $value;
+    }
+
+    return $self->{_phase};
+}
+
+=head2 end_phase
+
+ Title   : end_phase
+ Usage   : $end_phase = $feat->end_phase()
+           $feat->end_phase($end_phase)
+ Function: get/set on end phase of predicted exon feature
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub end_phase {
+    my ($self, $value) = @_;
+    
+    if (defined($value)) 
+    {
+	    $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
+	    $self->{_end_phase} = $value;
+    }
+
+    return $self->{_end_phase};
+}
+
+sub gffstring {
+   my ($self) = @_;
+
+   my $str;
+   
+   $str .= (defined $self->seqname)     ?   $self->seqname."\t"      :  "\t";
+   $str .= (defined $self->source_tag)  ?   $self->source_tag."\t"   :  "\t";
+   $str .= (defined $self->primary_tag) ?   $self->primary_tag."\t"  :  "\t";
+   $str .= (defined $self->start)       ?   $self->start."\t"        :  "\t";
+   $str .= (defined $self->end)         ?   $self->end."\t"          :  "\t";
+   $str .= (defined $self->strand)      ?   $self->strand."\t"       :  ".\t";
+   $str .= (defined $self->score)       ?   $self->score."\t"        :  "\t";
+   $str .= (defined $self->phase)       ?   $self->phase."\t"        :  ".\t";
+
+   return $str;
 }
 
 1;

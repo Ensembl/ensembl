@@ -150,4 +150,37 @@ sub e_value {
     $self->throw("e value() not yet implemented");
 }
 
+=head2 phase
+
+ Title   : phase
+ Usage   : $phase = $feat->phase()
+           $feat->phase($phase)
+ Function: get/set on start phase of predicted exon feature
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub phase {
+    my ($self) = @_;
+    $self->throw("phase() not yet implemented");
+}
+
+=head2 end_phase
+
+ Title   : end_phase
+ Usage   : $end_phase = $feat->end_phase()
+           $feat->end_phase($end_phase)
+ Function: get/set on end phase of predicted exon feature
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub end_phase {
+    my ($self) = @_;
+    $self->throw("end_phase() not yet implemented");
+}
+
+
 1;
