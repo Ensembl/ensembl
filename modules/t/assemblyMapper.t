@@ -44,16 +44,62 @@ ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 # 3 Test map
 #
 
-my @coords = $asm_mapper->map('20', 50_0001, 60_000_000, 1, $ctg_cs);
+my @coords = $asm_mapper->map('20', 50_0001, 60_000_000, 1, $chr_cs);
 
-foreach my $coord (@coords) {
-  if($coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
-    debug("GAP");
-    next;
+print_coords(@coords);
+
+
+@coords = $asm_mapper->map('AL359765.6.1.13780', 1, 13780, 1, $ctg_cs);
+
+print_coords(@coords);
+
+
+#
+# Test list_seq_regions
+#
+
+my @seq_regions =
+  $asm_mapper->list_seq_regions('20', 50_0001, 60_000_000, $chr_cs);
+
+my $str = join("\n", "----------", @seq_regions);
+debug("$str\n");
+
+@seq_regions =
+  $asm_mapper->list_seq_regions('AL359765.6.1.13780', 1, 13780, $ctg_cs);
+
+$str = join("\n", "----------", @seq_regions);
+debug("$str\n");
+
+
+#
+# Test list_seq_ids
+#
+
+
+my @seq_ids =
+  $asm_mapper->list_ids('20', 50_0001, 60_000_000, $chr_cs);
+
+my $str = join("\n", "----------", @seq_ids);
+debug("$str\n");
+
+@seq_ids =
+  $asm_mapper->list_ids('AL359765.6.1.13780', 1, 13780, $ctg_cs);
+
+$str = join("\n", "----------", @seq_ids);
+debug("$str\n");
+
+
+
+sub print_coords {
+  my @coord_list = @_;
+
+  foreach my $coord (@coord_list) {
+    if($coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      debug("GAP");
+      next;
+    }
+    debug($coord->id()."\t". $coord->start()."-".$coord->end().
+          " (".$coord->strand.")");
   }
-  debug($coord->id()."\t". $coord->start()."-".$coord->end().
-        " (".$coord->strand.")");
 }
-
-
 
