@@ -1034,7 +1034,7 @@ sub is_golden_static_clone {
     my ($self,$clone) = @_;
 
     my $query = "
-    SELECT c.id 
+    SELECT co.id 
     FROM contig co, clone cl, static_golden_path p 
     WHERE cl.id = '$clone' 
       AND co.clone = cl.internal_id 
