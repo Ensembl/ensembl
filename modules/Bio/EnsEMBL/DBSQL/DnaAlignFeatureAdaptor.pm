@@ -139,7 +139,7 @@ sub fetch_by_contig_id_constraint{
        }
 
 
-       my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,$contig->name,$contig->seq);
+       my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$perc_ident,$evalue,$contig->name,$contig);
 
        push(@f,$out);
    }

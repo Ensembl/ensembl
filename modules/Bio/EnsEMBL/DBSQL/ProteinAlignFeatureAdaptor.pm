@@ -157,7 +157,7 @@ sub fetch_by_contig_id_constraint{
        $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
      }
 
-     my $dnapep = $self->_new_feature($start,$end,$strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$contig->name,$contig->seq);
+     my $dnapep = $self->_new_feature($start,$end,$strand,$hstart,$hend,$hname,$cigar,$ana{$analysis_id},$score,$evalue,$perc_ident,$contig->name,$contig);
 
      push(@f,$dnapep);
    }
