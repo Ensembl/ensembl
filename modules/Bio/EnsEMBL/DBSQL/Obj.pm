@@ -175,6 +175,8 @@ sub new {
         }
     }
 
+   
+
     # Store info for connecting to a mapdb.
     {
       $mapdbname ||= 'maps';
@@ -188,6 +190,10 @@ sub new {
           };
     }
 
+    $self->dbname( $db );
+    $self->mapdbname( $mapdbname );
+
+
     # What source of contigoverlaps should we use?
     $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
 
@@ -197,6 +203,27 @@ sub new {
 
     return $self; # success - we hope!
 }
+
+
+sub dbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_dbname} = $arg );
+  $self->{_dbname};
+}
+
+
+sub mapdbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_mapdbname} = $arg );
+  $self->{_mapdbname};
+}
+
+
+
+
+
 
 =head2 get_Update_Obj
 

@@ -396,10 +396,133 @@ sub get_all_RepeatFeatures {
 	  
 	  push(@array,$out);
       }  
-  }
+ }
    
   return @array;
 }
+
+
+=head2 get_landmark_MarkerFeatures
+
+  Title   : get_landmark_MarkerFeatures 
+  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
+  Function: Gets MarkerFeatures with identifiers like D8S509. 
+            MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+sub get_landmark_MarkerFeatures {
+my $self = shift;
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+
+my @result = ();
+
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+    
+    my $statement= "SELECT f.seq_start+sgp.chr_start-sgp.raw_start, 
+                             f.seq_end+sgp.chr_start-sgp.raw_start, 
+                             f.score, f.strand, f.name, f.hstart, f.hend, 
+                             f.hid, f.analysis, s.name,
+                             sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                      FROM   $dbname.feature f, $dbname.analysis a, 
+                             $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
+                             $dbname.static_golden_path sgp 
+                      WHERE  m.marker=s.marker 
+                      AND    f.hid=m.marker 
+                      AND    sgp.raw_id=f.contig 
+                      AND    f.analysis = a.id 
+                      AND    a.db='mapprimer'
+                      AND    sgp.chr_end >= $glob_start 
+                      AND    sgp.chr_start <=$glob_end 
+                      AND    s.name regexp '^D[0-9]'";
+
+    
+    my $sth = $self->dbobj->prepare($statement);
+    $sth->execute;
+    
+    my ($start, $end, $score, $strand, $hstart, 
+        $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+    my $analysis;
+    my %analhash;
+    
+    $sth->bind_columns
+	( undef, \$start, \$end, \$score, \$strand, \$name, 
+	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
+    
+    while( $sth->fetch ) {
+
+	# flip contigs	
+	my $vc_start;
+	my $vc_end;
+	
+	if ($raw_ori == -1){    
+	    $vc_start=$chr_end+$chr_start-$end;
+	    $vc_end=$chr_end+$chr_start-$start;
+	    $strand=-1*$strand;
+	} else {
+	    $vc_start=$start;
+	    $vc_end=$end;
+	}
+	
+	# clip and map to vc coordinates  
+	
+	if ($vc_start>=$glob_start && $vc_end<=$glob_end){
+	    
+	    $start=$vc_start-$glob_start;
+	    $end=$vc_end-$glob_start;
+	    
+	    # create marker features
+	    
+	    my ( $out, $seqf1, $seqf2 );
+	    
+	    if (!$analhash{$analysisid}) {
+		
+		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+		$analysis = $feature_obj->get_Analysis($analysisid);
+		$analhash{$analysisid} = $analysis;
+		
+	    } else {
+		$analysis = $analhash{$analysisid};
+	    }
+	    
+	    $seqf1 = Bio::EnsEMBL::SeqFeature->new();
+	    $seqf2 = Bio::EnsEMBL::SeqFeature->new();
+	    $out = Bio::EnsEMBL::Map::MarkerFeature->new
+		( -feature1 => $seqf1, -feature2 => $seqf2 );
+	    $out->set_all_fields
+		( $start,$end,$strand,$score,
+		  $name,'similarity',$self->id,
+		  $hstart,$hend,1,$score,$name,'similarity',$name);
+	    $out->analysis($analysis);
+	    $out->mapdb( $self->dbobj->mapdb );
+	    $out->id ($synonym);
+	    push( @result, $out );	       
+	}	
+    }
+};
+ 
+ 
+if( $@ ) {
+    print STDERR ("Problems retrieving map data\n $@\n" );
+  }
+
+return @result;
+
+}
+
 
 
 
