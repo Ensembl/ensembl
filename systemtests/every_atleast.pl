@@ -41,7 +41,7 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 my $dbtype = 'rdb';
-my $host   = 'sol28';
+my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'ensdev';
 my $dbuser = 'ensembl';

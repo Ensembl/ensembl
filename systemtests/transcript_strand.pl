@@ -39,7 +39,7 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 use Getopt::Long;
 
-my $host   = 'sol28';
+my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'ensdev';
 my $dbuser = 'ensembl';

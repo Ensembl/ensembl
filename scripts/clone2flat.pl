@@ -95,7 +95,7 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 # global defaults
-my $host = 'sol28';
+my $host = 'localhost';
 
 my $module    = 'Bio::EnsEMBL::DBOLD::Obj';
 

@@ -72,14 +72,14 @@ use Bio::AnnSeqIO;
 use Getopt::Long;
 
 my $fdbtype = 'rdb';
-my $fhost   = 'sol28';
+my $fhost   = 'localhost';
 my $fport   = '410000';
 my $fdbname = 'ensdev';
 my $fdbuser = 'ensembl';
 my $fdbpass = undef;
 
 my $tdbtype = 'rdb';
-my $thost   = 'sol28';
+my $thost   = 'localhost';
 my $tport   = '410000';
 my $tdbname = 'ensdev';
 my $tdbuser = 'ensembl';
