@@ -45,64 +45,101 @@ sub run {
     print "species id is $species_id \n";
   }
 
-  my $dir = dirname($file);
- 
-  my %short_name;
-  my %description;
-  my %pfam;
-    
-  open (SHORT, $dir."/short_name.dat") || die "Can't open hugo interpro file $dir/short_name.dat\n";
-#IPR000001       Kringle
-#IPR000002       Fizzy
-#IPR000003       RtnoidX_receptor
-
-  while(<SHORT>){
-    chomp;
-    my ($interpro, $name) = split(/\t/,$_);
-    $short_name{$interpro} = $name;
-  }
-  close SHORT;
-
-  
-  my $count = 0;
-
-  open (LONG, $dir."/protein2interpro.dat") || 
-    die "Can't open interpro file  $dir/protein2interpro.dat\n";
-  #O00050  PF03184 166     377     IPR004875       CENP-B protein
-  #O00050  PF05225 15      60      IPR007889       Helix-turn-helix, Psq
-  #O00050  PF06465 448     500     IPR009463       Protein of unknown function DUF10
-  #  0        1     2       3        4               5
-
-  while (<LONG>) {
-    chomp;
-    my @array = split(/\t/,$_);
-    my $hgnc = $array[0];
-    $description{$array[4]} = $array[5];
-    $pfam{$array[4]} = $array[1];
-  }
-  close (LONG);
-
   my $add_interpro_sth =  XrefParser::BaseParser->dbi->prepare
     ("INSERT INTO interpro (interpro, pfam) VALUES(?,?)");
 
-  foreach my $interpro (keys %short_name){
-    $count++;
-#    print $short_name{$interpro}."\t".$interpro."\t".$description{$interpro}.
-#      "\t".$pfam{$interpro}."\n";
-    XrefParser::BaseParser->add_xref($interpro,'',$short_name{$interpro},
-				     $description{$interpro},$source_id,$species_id);
-    if(defined($pfam{$interpro})){
-      $add_interpro_sth->execute($interpro,$pfam{$interpro});
+  my $get_interpro_sth =  XrefParser::BaseParser->dbi->prepare
+    ("SELECT interpro from interpro where interpro = ? and pfam = ?");
+ 
+  my $add_xref_sth = XrefParser::BaseParser->dbi->prepare
+    ("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
+  
+  my $get_xref_sth = XrefParser::BaseParser->dbi->prepare
+    ("select xref_id from xref where accession = ? and source_id = ?");
+
+
+  my $dir = dirname($file);
+                                                                                                                         
+  my %short_name;
+  my %description;
+  my %pfam;
+     
+  open (XML, $dir."/interpro.xml") || die "Can't open hugo interpro file $dir/interpro.xml\n";
+  #<interpro id="IPR001023" type="Family" short_name="Hsp70" protein_count="1556">
+  #    <name>Heat shock protein Hsp70</name>
+  #     <db_xref protein_count="18" db="PFAM" dbkey="PF01278" name="Omptin" />
+  #      <db_xref protein_count="344" db="TIGRFAMs" dbkey="TIGR00099" name="Cof-subfamily" />
+  
+  my $count  = 0;
+  my $count2 = 0;
+  my $count3 = 0;
+  local $/ = "</interpro>";
+ 
+
+  my $last = "";
+  my $i =0;
+  while (<XML>) {
+
+    my $interpro;
+    my $short_name;
+    my $pfam;
+    my $tigr;
+    my $name;
+    
+    ($interpro) = $_ =~ /interpro id\=\"(\S+)\"/;
+    ($short_name) = $_ =~ /short_name\=\"(\S+)\"/;
+    ($name) = $_ =~ /\<name\>(.*)\<\/name\>/;
+    ($pfam) = $_ =~ /db\=\"PFAM\".*dbkey\=\"(\S+)\"/;
+    ($tigr) = $_ =~ /db\=\"TIGRFAMs\".*dbkey\=\"(\S+)\"/;
+    
+
+#    print "#########################################################\n$interpro\n$name\n$short_name\n";
+#    $i++;
+#    if($i > 10){
+#      die "first ten done";
+#    }
+    if($interpro){
+      if(!get_xref($get_xref_sth, $interpro, $source_id)){
+	$count++;
+	$add_xref_sth->execute($interpro,'',$short_name, $name,$source_id,$species_id)
+	  || die "Problem adding ".$interpro."\n";
+      }
+      if($pfam){
+	#      print "PFAM $pfam\n";
+	if(!get_xref($get_interpro_sth, $interpro,$pfam)){
+	  $add_interpro_sth->execute($interpro,$pfam);
+	  $count2++;
+	}
+      }  
+      if($tigr){
+	#     print "TIGR $tigr\n";
+	if(!get_xref($get_interpro_sth, $interpro,$tigr)){
+	  $add_interpro_sth->execute($interpro,$tigr);
+	  $count3++;
+	}
+      }  
     }
-    else{
-      print "No pfam for $interpro\n";
-    }
-       
   }
+  close (LONG);
+       
   print "$count xref successfully loaded.\n";
+  print "$count2 interpro/pfam relationships added\n";
+  print "$count3 interpro/tigr relationships added\n";
 #  die "not ready yet\n";
   
   
+}
+
+sub get_xref{
+  my ($get_xref_sth, $acc, $source) = @_;
+
+  $get_xref_sth->execute($acc, $source) || die "FAILED $acc  $source\n";
+  if(my @row = $get_xref_sth->fetchrow_array()) {
+#    print "FOUND $acc\n";
+    return $row[0];
+  }   
+#  print "UNKOWN $acc";
+  return 0;
 }
 
 sub new {
