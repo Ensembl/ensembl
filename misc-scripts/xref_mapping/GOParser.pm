@@ -23,7 +23,7 @@ if (!defined(caller())) {
     exit(1);
   }
 
-  run($ARGV[0], -1);
+  run($ARGV[0]);
 
 }
 
@@ -33,20 +33,24 @@ sub run {
   my $file = shift;
   my $source_id = shift;
   my $species_id = shift;
-  $xref_sth = dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
+  $xref_sth = BaseParser->dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
 
-  $dep_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+  $dep_sth = BaseParser->dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+
+
 
   if(!defined($source_id)){
     $source_id = BaseParser->get_source_id_for_filename($file);
+    print "source id is $source_id \n";
   }
   if(!defined($species_id)){
-    $species_id = BaseParser->get_species_id_for_file($file);
+    $species_id = BaseParser->get_species_id_for_filename($file);
+    print "species id is $species_id \n";
   }
 
 
-  my (%swiss) = %{BaseParser->get_valid_codes("uniprot",$species_id)};
-  my (%refseq) = %{BaseParser->get_valid_codes("refseq",$species_id)};
+  my (%swiss) = BaseParser->get_valid_codes("uniprot",$species_id);
+  my (%refseq) = BaseParser->get_valid_codes("refseq",$species_id);
 
   open(GO,"<".$file) || die "Could not open $file\n";
 
@@ -79,13 +83,28 @@ sub run {
   }
 }
 
+sub get_xref{
+  my ($acc,$source) = @_;
+
+  my $dbi =BaseParser->dbi;
+  my $sql = "select xref_id from xref where accession = '".$acc."' and source_id = $source";
+  my $sth = $dbi->prepare($sql);  
+  
+  $sth->execute() || die $dbi->errstr;
+  if(my @row = $sth->fetchrow_array()) {
+    return $row[0];
+  }   
+  return undef;
+}
+
 sub add_to_xrefs{
   my ($master_xref,$go,$linkage,$source_id,$species_id) = @_;
 
-  if(!exist($go)){
+  my $dependent_id = get_xref($go, $source_id);
+  if(!defined($dependent_id)){
     $xref_sth->execute($go,$go,"",$source_id,$species_id);
   }
-  my $dependent_id = get_xref($go);;
+  $dependent_id = get_xref($go, $source_id);
   $dep_sth->execute($master_xref, $dependent_id,  $linkage, $source_id);
 
 }
