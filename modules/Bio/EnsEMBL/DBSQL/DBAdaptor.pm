@@ -203,8 +203,10 @@ sub new {
       $self->{'_lite_db_name'} = $litedbname;
     }
 
-    my $sgp = $self->get_MetaContainer->get_default_assembly || undef;
-    $self->static_golden_path_type($sgp);
+    eval{ 
+      my $sgp = $self->get_MetaContainer->get_default_assembly || undef;
+      $self->static_golden_path_type($sgp);
+    };
 
     return $self; # success - we hope!
 }
