@@ -269,6 +269,9 @@ sub id {
     return $obj->{'id'};
 }
 
+sub moltype { 
+    return 'dna';
+}
 
 =head2 top_SeqFeatures
     
