@@ -1265,35 +1265,120 @@ sub get_supporting_evidence_direct {
 =cut
     
 sub get_Transcript{
-    my ($self,$transid) = @_;
-
-    my $seen = 0;
-    my $trans = Bio::EnsEMBL::Transcript->new();
-
-    my $sth = $self->_db_obj->prepare("select exon from exon_transcript where transcript = '$transid'");
-    my $res = $sth->execute();
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $exon = $self->get_Exon($rowhash->{'exon'});
-	$trans->add_Exon($exon);
-	$seen = 1;
-    }
-
-    $sth = $self->_db_obj->prepare("select version,translation from transcript where id = '$transid'");
-    $sth->execute();
-
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $translation = $self->get_Translation($rowhash->{'translation'});
-	$trans->translation($translation);
-	$trans->version($rowhash->{'version'});
-    }
-
-    if ($seen == 0 ) {
-	$self->throw("transcript $transid is not present in db");
-    }
+    my ($self,$transid,$supporting) = @_;
+    my @sup_exons;
+    my $query = qq{
+        SELECT tscript.id
+	    , con.id
+	    , e_t.exon, e_t.rank
+	    , exon.seq_start, exon.seq_end
+	    , UNIX_TIMESTAMP(exon.created)
+	    , UNIX_TIMESTAMP(exon.modified)
+	    , exon.strand
+	    , exon.phase
+	    , exon.sticky_rank
+	    , transl.seq_start, transl.start_exon
+            , transl.seq_end, transl.end_exon
+            , transl.id
+            , tscript.version
+            , exon.version
+            , transl.version
+            , cl.id
+		FROM contig con
+                    , transcript tscript
+                    , exon_transcript e_t
+                    , exon
+                    , translation transl
+	      	    , clone cl
+            WHERE tscript.id = e_t.transcript
+            AND e_t.exon = exon.id
+            AND exon.contig = con.internal_id
+            AND tscript.translation = transl.id
+	    AND cl.internal_id = con.clone
+	    AND tscript.id = '$transid'
+	    };
     
-    $trans->id($transid);
+#    print STDERR "Query is " . $query . "\n";
+    my $sth = $self->_db_obj->prepare($query);
+    my $res = $sth ->execute();
+    
+    my ($trans);
+    my @transcript_exons;
+    
+    while( (my $arr = $sth->fetchrow_arrayref()) ) {
+	my ($transcriptid,$contigid,$exonid,$rank,$start,$end,
+	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
+	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
+	    $transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+	
 
+ 	
+	if( ! defined $phase ) {
+	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
+	}
+	
+	# I think this is a dirty hack 
+	#if( exists $seen{"$exonid-$rank"} ) {
+	#    next;
+	#}
+	$trans = Bio::EnsEMBL::Transcript->new();
+	
+	$trans->id     ($transcriptid);
+	$trans->version($transcriptversion);
+	
+	my $translation = Bio::EnsEMBL::Translation->new();
+	
+	$translation->start        ($trans_start);
+	$translation->end          ($trans_end);
+	$translation->start_exon_id($trans_exon_start);
+	$translation->end_exon_id  ($trans_exon_end);
+	$translation->id           ($translationid);
+	$translation->version      ($translationversion);
+	$trans->translation        ($translation);
+	    
+	my $exon = Bio::EnsEMBL::Exon->new();
+	
+	#print(STDERR "Creating exon - contig id $contigid\n");
+	
+	$exon->clone_id ($cloneid);
+	$exon->contig_id($contigid);
+	$exon->id       ($exonid);
+	$exon->created  ($exoncreated);
+	$exon->modified ($exonmodified);
+	$exon->start    ($start);
+	$exon->end      ($end);
+	$exon->phase   ($phase);
+	$exon->strand    ($strand);
+	$exon->version  ($exonversion);
+	$exon->seqname  ($contigid);
+	$exon->sticky_rank($exon_rank);
+        
+	#
+	# Attach the sequence, cached if necessary...
+	#
+	if ($supporting && $supporting eq 'evidence') {
+	    push @sup_exons, $exon;
+	}
+	
+	my $seq;
+	
+	if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
+	    $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
+	} else {
+	    my $contig      = $self->_db_obj->get_Contig($exon->contig_id);
+	    $contig->fetch(); 
+	    $seq = $contig->primary_seq();
+	    $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
+	}
+	
+	$exon ->attach_seq($seq);
+	push(@transcript_exons,$exon);
+    }
+    $self->_store_exons_in_transcript($trans,@transcript_exons);
+    
+    if ($supporting && $supporting eq 'evidence') {
+	$self->get_supporting_evidence_direct(@sup_exons);
+    }
     return $trans;
 }
 
