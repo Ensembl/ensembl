@@ -37,6 +37,11 @@ use strict;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBAdaptor);
 
+sub get_available_adaptors{
+  my %pairs = ("SNP", "Bio::EnsEMBL::Lite::SNPAdaptor");
+  return (\%pairs);
+}
+
 
 
 1;
