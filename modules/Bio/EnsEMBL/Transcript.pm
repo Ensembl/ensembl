@@ -265,6 +265,52 @@ sub translation {
 }
 
 
+sub start {
+  my $self = shift;
+  my $arg = shift;
+
+  my $strand;
+  my $start;
+  if( defined $arg ) {
+    $self->{'_start'} = $arg;
+  } else {
+    $strand = $self->start_exon->strand();
+    if( $strand == 1 ) {
+      $start = $self->start_exon->start();
+    } else {
+      $start = $self->end_exon->start();
+    }
+    $self->{'_start'} = $start;
+  }
+  
+  return $self->{'_start'};
+}
+
+
+sub end {
+  my $self = shift;
+  my $arg = shift;
+
+  my $strand;
+  my $end
+;
+  if( defined $arg ) {
+    $self->{'_end'} = $arg;
+  } else {
+    $strand = $self->start_exon->strand();
+    if( $strand == 1 ) {
+      $end = $self->end_exon->end();
+    } else {
+      $end = $self->start_exon->end();
+    }
+    $self->{'_end'} = $end;
+  }
+  
+  return $self->{'_end'};
+}
+
+
+
 
 sub coding_start {
   my $self = shift;
