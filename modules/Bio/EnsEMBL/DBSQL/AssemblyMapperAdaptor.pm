@@ -261,7 +261,7 @@ sub register_assembled {
       if(defined($begin_chunk_region)) {
         #this is the end of an unregistered region.
         my $region = [($begin_chunk_region   << $CHUNKFACTOR),
-                      ($end_chunk_region     << $CHUNKFACTOR)-1];
+                      (($end_chunk_region+1)     << $CHUNKFACTOR)-1];
         push @chunk_regions, $region;
         $begin_chunk_region = $end_chunk_region = undef;
       }
@@ -275,7 +275,7 @@ sub register_assembled {
   #the last part may have been an unregistered region too
   if(defined($begin_chunk_region)) {
     my $region = [($begin_chunk_region << $CHUNKFACTOR),
-                  ($end_chunk_region   << $CHUNKFACTOR) -1];
+                  (($end_chunk_region+1)   << $CHUNKFACTOR) -1];
     push @chunk_regions, $region;
   }
 
