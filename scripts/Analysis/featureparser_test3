@@ -1,0 +1,79 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+# Let the code begin...
+
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::TimDB::Obj;
+
+use Getopt::Long;
+use strict;
+
+my ($cloneid,
+);
+
+$|=1;
+GetOptions("clone=s"     => \$cloneid,                # Clone name      e.g. dJ998N21
+	   ) or usage();
+
+# Connect to the database
+
+my @clones;
+push(@clones,$cloneid);
+
+my $timdb     = Bio::EnsEMBL::TimDB::Obj->new(\@clones);
+
+my $clone = $timdb->get_Clone($cloneid);
+
+foreach my $contig ($clone->get_all_Contigs) {
+    open(POG,">" . $contig->id . ".gff");
+    print("   - processing contig " . $contig->id . "\n");
+    
+    print("   - getting genes\n");
+
+    my @homols;
+
+    push(@homols,$contig->get_all_SeqFeatures);
+    
+    homol2gff(\*POG,\@homols);               # Prints out gff.
+
+close(POG);
+}
+
+
+
+############################################################
+#
+# Subroutines.
+# 
+# This are inserted mostly just for tidiness
+#
+############################################################
+
+sub usage {
+    print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
+    exit(0);
+}
+
+
+sub homol2gff {
+    my ($fh,$homols) = @_;
+
+    foreach my $h1 (@$homols) {
+        print($fh $h1->gff_string);
+        if ($h1->isa("Bio::EnsEMBL::FeaturePair")) {
+           print($fh "\tSequence:" . $h1->hseqname . "\t" . $h1->hstart . "\t" . $h1->hend . "\n");
+        } else {
+	   print($fh "\n");
+        }
+    }
+}
+
+
+
+
