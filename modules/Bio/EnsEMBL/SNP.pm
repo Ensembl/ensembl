@@ -103,6 +103,17 @@ sub end {
   return $self->{_gsf_end};
 }
 
+
+sub source {
+   my ($self, $arg) = @_;
+
+   if(defined $arg) {
+     $self->{_source} = $arg;
+   }
+
+   return $self->{_source};
+ }
+
 sub score {
   my ($self, $arg) = @_;
 
@@ -112,6 +123,7 @@ sub score {
 
   return $self->{_gsf_score};
 }
+
 
 sub source_tag {
   my ($self, $arg) = @_;

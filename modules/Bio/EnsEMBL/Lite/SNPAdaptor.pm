@@ -67,7 +67,7 @@ sub fetch_all_by_Slice {
         'id_tsc'    => 'TSC-CSHL'
   );
   my $C = 9;
-  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, alleles, snpclass, mapweight, ambiguity ";
+  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, alleles, snpclass, mapweight, ambiguity, source ";
   foreach(@$columns) {
     if($SNPS{$_}) {
       $QUERY.= ", $_";
@@ -88,7 +88,7 @@ sub fetch_all_by_Slice {
     
     my @links = ();
 
-    my $C = 11;
+    my $C = 12;
     foreach( @COLUMN ) {
        my $V = $arrayref->[$C];
        if( $V && $V ne '' ) {
@@ -117,6 +117,7 @@ sub fetch_all_by_Slice {
                     '_ambiguity_code' => $arrayref->[10],
                     '_snpclass'   => $arrayref->[8],
                     '_mapweight'  => $arrayref->[9],
+		    '_source_tag' => $arrayref->[11],
 		    'link'        => \@links });
     push @snps, $snp;
   }
