@@ -26,11 +26,12 @@ exons, etc.
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj, dealing with
-Gene methods, such as writing and getting genes, transcripts, translations, and exons.
+This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj,
+dealing with Gene methods, such as writing and getting genes,
+transcripts, translations, and exons.
 
-The Obj object represents a database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object).
+The Obj object represents a database that is implemented somehow (you
+shouldn\'t care much as long as you can get the object).
 
 =head1 CONTACT
 
@@ -38,8 +39,8 @@ Elia Stupka: elia@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are 
-usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -80,32 +81,6 @@ sub _initialize {
 
   return $make; # success - we hope!
 
-}
-
-=head2 each_cloneid
-
- Title   : each_cloneid
- Usage   : @each_cloneid = $gene_obj->each_cloneid($geneid);
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_my_cloneid{
-   my ($self,$geneid) = @_;
-
-   my $sth = $self->_db_obj->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
-
-   my @out;
-
-   $sth->execute;
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'clone'});
-   }
-   return @out;
 }
 
 =head2 delete
