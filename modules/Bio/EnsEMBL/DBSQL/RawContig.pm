@@ -186,18 +186,17 @@ sub fetch {
         FROM dna
           , contig
           , clone
-        WHERE contig.dna = dna.id
-          AND contig.clone = clone.internal_id
+          WHERE contig.clone = clone.internal_id
           AND contig.id = '$id'
+          AND contig.dna = dna.id
         ";
-
 
     my $sth = $self->dbobj->prepare($query);    
     my $res = $sth->execute();
 
     if (my $row = $sth->fetchrow_arrayref) {  
         $self->internal_id($row->[0]);
-        $self->dna_id($row->[1]);
+        $self->dna_id     ($row->[1]);
         $self->seq_version($row->[2]);
 	$self->cloneid    ($row->[3]);
 	$self->embl_offset    ($row->[4]);
@@ -227,6 +226,7 @@ sub get_all_Genes{
    my %got;
     # prepare the SQL statement
  
+
 my $query="
         SELECT t.gene
         FROM transcript t,
@@ -507,7 +507,7 @@ sub _gene_query{
              $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
          };
          if ($@) {
-             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
+             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?) [$@]\n");
          }
          else {
              push(@out, $gene);
@@ -1348,11 +1348,12 @@ sub get_all_PredictionFeatures {
        # Final check that everything is ok.
        
        $out->validate();
+
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
        $previous = $hid;
   }
- 
+
    return @array;
 }
 
@@ -1720,7 +1721,8 @@ sub seq_date {
    my ($self) = @_; 
 
    my $id = $self->internal_id();
-   my $sth = $self->dbobj->prepare("select UNIX_TIMESTAMP(d.created) from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
+   my $query = "select UNIX_TIMESTAMP(d.created) from dna as d,contig as c where c.internal_id = $id and c.dna = d.id";
+   my $sth = $self->dbobj->prepare($query);
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref(); 
    return $rowhash->{'UNIX_TIMESTAMP(d.created)'};
@@ -1923,6 +1925,8 @@ sub _load_overlaps {
 
     sub get_all_Overlaps {
         my ($self) = @_;
+    
+        return;
 
         my $id      = $self->dna_id();
         my $version = $self->seq_version();
