@@ -114,7 +114,19 @@ sub _make_datastructures {
     return $self;
 }
 
+=head2 new_from_one
 
+ Title   : new_from_one
+ Usage   :
+ Function: makes a copy of a contig. 
+ Example :
+ Returns : 
+ Args    : a Contig (virtual or otherwise)
+
+=cut
+
+# PL: should this be called 'clone' ? 
+# PL: doesn't seem to be used anywhere
 sub new_from_one {
     my ($class,$contig) = @_;
 
@@ -130,6 +142,30 @@ sub new_from_one {
     $self->id($contig->id);
     return $self;
 }
+
+=head2 new
+
+ Title   : new
+ Usage   : see SYNOPSIS
+ Function: creates a new virtual contig
+ Example : see SYNOPSIS
+ Returns : a virtual contig
+ Args    : 
+           -focuscontig: (raw?) contig that forms the basis of the new
+                         Virtual contig
+
+           -focusposition: the reference point in the focuscontig,
+                           relative to which the left and right (see
+                           below) positions are taken.
+
+           -orientation: the orientation (1 or -1) of the VirtualContig
+
+           -left: How many nucleotides to the left of focusposition are
+                  included
+
+           -right: How many nucleotides to the right of focusposition are 
+                   included.
+=cut
 
 sub new {
     my ($class,@args) = @_;
