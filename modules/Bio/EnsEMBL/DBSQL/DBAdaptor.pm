@@ -90,48 +90,50 @@ sub new {
 	# $self here is actually a Container object
 	# so need to call _obj to get the DBAdaptor
 	$self->_obj->{'default_module'} =
-    { 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-      'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-      'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-      'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-      'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
-      'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
-      'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-      'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
-      'PredictionTranscript' =>
-           'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-      'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-      'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-      'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-      'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-      'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
-      'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
-      'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-      'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-      'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-      'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-      'ProteinAlignFeature'  =>
-           'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+    { 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
+      'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
       'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-      'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-      'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+      'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
       'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
-      'SupportingFeature'    =>
-          'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-      'MarkerFeature'        => 
-          'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+      'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
+      'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
+      'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
+      'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+      'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+      'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+      'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
       'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+      'MarkerFeature'        =>
+          'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
       'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
       'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
-      'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+      'PredictionTranscript' =>
+           'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
+      'PredictionExon'       => 'Bio::EnsEMBL::DBSQL::PredictionExonAdaptor',
+      'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+      'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
+      'ProteinAlignFeature'  =>
+           'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+      'ProxyDnaAlignFeature' =>
+          'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
       'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
       'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
       'ProxyRepeatFeature'   =>
           'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
-      'ProxyDnaAlignFeature' =>
-          'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
-      'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-      'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor'};
+      'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
+      'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
+      'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
+      'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
+      'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+      'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
+      'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
+      'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
+      'SupportingFeature'    =>
+          'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
+      'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
+      'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor'
+    };
+
 
 	# initialise storage for hash of names of current modules
 	%{$self->_obj->{'current_module'}} = %{$self->_obj->{'default_module'}};
@@ -375,9 +377,26 @@ sub get_CloneAdaptor {
 sub get_PredictionTranscriptAdaptor {
   my ($self) = @_;
 
-  return 
-    $self->get_adaptor("PredictionTranscript");
- }
+  return $self->get_adaptor("PredictionTranscript");
+}
+
+
+=head2 get_PredictionExonAdaptor
+
+  Args       : none
+  Example    : $pea = $db_adaptor->get_PredictionExonAdaptor();
+  Description: Gets a PredictionExonAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::PredictionExonAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_PredictionExonAdaptor {
+  my ($self) = @_;
+
+  return $self->get_adaptor("PredictionExon");
+}
 
 
 =head2 get_SequenceAdaptor
