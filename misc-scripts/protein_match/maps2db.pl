@@ -155,7 +155,9 @@ while (<XMAP>) {
     $p->xSYN($xsyn);
     $p->stat($status);
 
+    
     push(@{$map{$targetid}},$p);
+    
 }
 
 close (XMAP);
@@ -182,7 +184,7 @@ MAPPING: while (<MAP>) {
     
     my $m = $tid; 
     
-    #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
+#    print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
 
     if ($tid =~ /^NP_\d+/) {
 	
@@ -285,7 +287,23 @@ MAPPING: while (<MAP>) {
 	}
     }
     
+    if (defined $map{$queryid}) {
+	print STDERR "HERE\n";
+	my @array = @{$map{$queryid}};
 	
+	foreach my $a(@array) {
+	    my $dbentry = Bio::EnsEMBL::DBEntry->new
+		    ( -adaptor => $adaptor,
+		      -primary_id => $a->xAC,
+		      -display_id => $a->xID,
+		      -version => 1,
+		      -release => 1,
+		      -dbname => $a->xDB );
+	    $dbentry->status($a->stat);
+	    $adaptor->store($dbentry,$queryid,"Translation");
+	}
+    }
+
     else  {
 	 print STDERR " $tid not defined in x_map...hum, not good\n";
     }  
