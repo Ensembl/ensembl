@@ -39,7 +39,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-my $SLICE_FEATURE_CACHE_SIZE = 4;
+our $SLICE_FEATURE_CACHE_SIZE = 4;
 
 
 =head2 new
@@ -349,6 +349,7 @@ sub fetch_all_by_Slice_constraint {
 
       #features may still have to have coordinates made relative to slice start
       $fs = $self->_remap($fs, $mapper, $slice);
+
       push @features, @$fs;
     } else {
       $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
@@ -365,40 +366,41 @@ sub fetch_all_by_Slice_constraint {
       @ids = map {$_->id()} @coords;
       @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
 
-    }
-
-    #if the regions are large and only partially spanned
-    #it is faster to to limit the query with start and end constraints
-    #however, it is difficult to tell if a region is large and only partially
-    #wanted. The easy approach is just to limit the queries if there are less
-    #than a certain number of regions. As well seperate queries are needed
-    #otherwise the indices will not be useful
-    if(@coords > 3) {
-      #do one query, and do not limit with start / end constraints
-      my $id_str = join(',', @ids);
-      $constraint .= " AND " if($constraint);
-      $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-
-      my $fs = $self->generic_fetch($constraint, $logic_name, $mapper, $slice);
-
-      $fs = $self->_remap($fs, $mapper, $slice);
-
-      push @features, @$fs;
-
-    } else {
-      #do multiple queries using start / end constraints
-      my $len = @coords;
-      for(my $i = 0; $i < $len; $i++) {
+      #if the regions are large and only partially spanned
+      #it is faster to to limit the query with start and end constraints
+      #however, it is difficult to tell if a region is large and only partially
+      #wanted. The easy approach is just to limit the queries if there are less
+      #than a certain number of regions. As well seperate queries are needed
+      #otherwise the indices will not be useful
+      if(@coords > 3) {
+        #do one query, and do not limit with start / end constraints
+        my $id_str = join(',', @ids);
         $constraint .= " AND " if($constraint);
-        $constraint .=
-          "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
-          "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
-          "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
-        my $fs = $self->generic_fetch($constraint,$logic_name,$mapper,$slice);
+        $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
+
+        my $fs = 
+          $self->generic_fetch($constraint, $logic_name, $mapper, $slice);
 
         $fs = $self->_remap($fs, $mapper, $slice);
 
         push @features, @$fs;
+
+      } else {
+        #do multiple queries using start / end constraints
+        my $len = @coords;
+        for(my $i = 0; $i < $len; $i++) {
+          $constraint .= " AND " if($constraint);
+          $constraint .=
+            "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
+            "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
+            "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
+          my $fs = $self->generic_fetch($constraint,$logic_name,
+                                        $mapper,$slice);
+
+          $fs = $self->_remap($fs, $mapper, $slice);
+
+          push @features, @$fs;
+        }
       }
     }
   }
@@ -671,7 +673,7 @@ sub _default_where_clause {
 sub _left_join {
   my $self = shift;
 
-  return '';
+  return ([]);
 }
 
 
