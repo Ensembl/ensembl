@@ -197,7 +197,8 @@ else {
     print "ok 17\n";
 }
 
-if (($seq_feat[0]->start == 2) && ($seq_feat[0]->end ==6) && ($seq_feat[0]->strand == 1) && ($seq_feat[0]->score == 68) && ($seq_feat[0]->primary_tag eq "similarity") && ( $seq_feat[0]->source_tag eq "feat_test") && ($seq_feat[0]->seqname eq "id_cont_test3") && ($seq_feat[0]->hseqname eq "id_test") && ($seq_feat[0]->hstart == 6) && ($seq_feat[0]->hend == 10) && ($seq_feat[0]->hstrand == 1) && ($seq_feat[0]->hscore == 68) && ($seq_feat[0]->hprimary_tag eq "similarity") && ($seq_feat[0]->hsource_tag eq "feat_test") && ($seq_feat[0]->p_value == 4) && ($seq_feat[0]->phase == 1) && ( $seq_feat[0]->end_phase == 2)) {
+
+if (($seq_feat[1]->start == 2) && ($seq_feat[1]->end ==6) && ($seq_feat[1]->strand == 1) && ($seq_feat[1]->score == 68) && ($seq_feat[1]->primary_tag eq "similarity") && ( $seq_feat[1]->source_tag eq "feat_test") && ($seq_feat[1]->seqname eq "id_cont_test3") && ($seq_feat[1]->hseqname eq "id_test") && ($seq_feat[1]->hstart == 6) && ($seq_feat[1]->hend == 10) && ($seq_feat[1]->hstrand == 1) && ($seq_feat[1]->hscore == 68) && ($seq_feat[1]->hprimary_tag eq "similarity") && ($seq_feat[1]->hsource_tag eq "feat_test") && ($seq_feat[1]->p_value == 4) && ($seq_feat[1]->phase == 1) && ( $seq_feat[1]->end_phase == 2)) {
     print "ok 18\n";
 }
 else {

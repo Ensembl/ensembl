@@ -45,7 +45,6 @@ use Bio::EnsEMBL::DBLoader;
 use DBI;
 use Carp;
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::DBAdaptor);
 
 #Package variable for unique database name
 my $counter=0;
@@ -58,7 +57,7 @@ my $counter=0;
         host
         user
         port
-        password
+        pass
         schema_sql
         module
         );
@@ -79,7 +78,7 @@ my $counter=0;
 		'host'          => 'localhost',
 		'user'          => 'root',
 		'port'          => '3306',
-		'password'      => undef,
+		'pass'      => undef,
 		'schema_sql'    => ['../sql/table.sql'],
 		'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
 		};
@@ -142,13 +141,13 @@ sub port {
     return $self->{'port'};
 }
 
-sub password {
+sub pass {
     my( $self, $value ) = @_;
     
     if ($value) {
-        $self->{'password'} = $value;
+        $self->{'pass'} = $value;
     }
-    return $self->{'password'};
+    return $self->{'pass'};
 }
 
 sub schema_sql {
@@ -197,9 +196,9 @@ sub create_db {
     my( $self ) = @_;
     
     ### FIXME: not portable between different drivers
-    my $locator = 'dbi:'. $self->driver .':host='. $self->host .';database=mysql';
+    my $locator = 'DBI:'. $self->driver .':host='.$self->host;
     my $db = DBI->connect(
-        $locator, $self->user, $self->password, {RaiseError => 1}
+        $locator, $self->user, $self->pass, {RaiseError => 1}
         ) or confess "Can't connect to server";
     my $db_name = $self->dbname;
     $db->do("CREATE DATABASE $db_name");
@@ -214,7 +213,7 @@ sub db_handle {
     
     unless ($self->{'_db_handle'}) {
         $self->{'_db_handle'} = DBI->connect(
-            $self->test_locator, $self->user, $self->password, {RaiseError => 1}
+            $self->test_locator, $self->user, $self->pass, {RaiseError => 1}
             ) or confess "Can't connect to server";
     }
     return $self->{'_db_handle'};
@@ -237,12 +236,14 @@ sub ensembl_locator {
     
     my $module = ($self->module() || 'Bio::EnsEMBL::DBSQL::DBAdaptor');
     my $locator = '';
-    foreach my $meth (qw{ host port dbname user password }) {
+    foreach my $meth (qw{ host port dbname user pass }) {
         my $value = $self->$meth();
 	next unless defined $value;
         $locator .= ';' if $locator;
         $locator .= "$meth=$value";
     }
+    $locator .= ";perlonlyfeatures=1";
+   
     return "$module/$locator";
 }
 

@@ -55,6 +55,7 @@ print "ok 3\n";
 
 $gene_obj =$db->gene_Obj();
 
-$gene = $gene_obj->get('HSHNRNPA.gene.1');
+$gene = $gene_obj->get('HSHNRNPA.1.1.1');
+
 
 print "ok 4\n";
