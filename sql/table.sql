@@ -78,11 +78,10 @@ CREATE TABLE map_density (
 # This table stores DNA sequence.
 
 CREATE TABLE dna (
-
-  dna_id                      int(10) unsigned NOT NULL auto_increment,
+  seq_region_id       int unsigned NOT NULL,
   sequence  		      mediumtext NOT NULL,
 
-  PRIMARY KEY (dna_id)
+  PRIMARY KEY (seq_region_id)
 
 ) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
 
@@ -96,12 +95,12 @@ CREATE TABLE dna (
 # n_line column contains start-end pairs of coordinates in the string that are really Ns
 
 CREATE TABLE dnac (
-  dna_id    int(10) unsigned NOT NULL auto_increment,
+  seq_region_id  int unsigned NOT NULL,
   sequence  mediumblob NOT NULL,
   created   datetime NOT NULL,
   n_line    text,  
 
-  PRIMARY KEY (dna_id)
+  PRIMARY KEY (seq_region_id)
 ) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
 
 ################################################################################
@@ -882,13 +881,13 @@ CREATE TABLE qtl_synonym (
 CREATE TABLE qtl_feature (
 
   seq_region_id 	      int not null,
-  start                       int not null,
-  end                         int not null,
-  qtl_id                      int not null,
-  analysis_id                 int not null,
+  seq_region_start      int not null,
+  seq_region_end        int not null,
+  qtl_id                int not null,
+  analysis_id           int not null,
 
   KEY( qtl_id ),
-  KEY loc_idx( seq_region_id, start )
+  KEY loc_idx( seq_region_id, seq_region_start )
 );
 
 ################################################################################
