@@ -519,17 +519,16 @@ sub _fetch_by_object_type {
         $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
       
-      $exDB->description( $desc ) if ( $desc );
+      $exDB->description( $desc ) if ( $desc eq defined);
       
-	  $exDB->status( $exDB_status ) if ( $exDB_status );
+	  $exDB->status( $exDB_status ) if ( $exDB_status eq defined);
       
       push( @out, $exDB );
     } #if (!$seen{$refID})
 
 #    $exDB still points to the same xref, so we can keep adding synonyms
-    if ($synonym) {
-    	$exDB->add_synonym( $synonym );
-    }
+     
+    	$exDB->add_synonym( $synonym ) if ($synonym eq defined);    
   }                                     # while <a row from database>
   
   return \@out;
