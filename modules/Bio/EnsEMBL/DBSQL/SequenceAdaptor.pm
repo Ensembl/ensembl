@@ -85,6 +85,7 @@ sub fetch_by_RawContig_start_end_strand {
     if($compressed==1 || $self->is_compressed){
 
       # query for compressed mode, uses hex and a different range
+      # (compression implemented by th, 14/7/03)
       # needs to getback dna_id as will have to check for Ns in dnan table
       my $start4=int(($start-1)/4)+1;
       
@@ -476,13 +477,8 @@ sub store_compressed {
     $seq.='A' x ($len-(int($len/4))*4);
     #print "DEBUG $seq\n";
     # process in blocks of 2 to do conversion
-    my $seq_hex;
-    my @seq=split(//,$seq);
-    while(my $pair=shift(@seq)){
-      $pair.=shift(@seq);
-      $seq_hex.=$table{$pair};
-    }
-    return pack("H*",$seq_hex);
+    $seq=~s/(\G..)/$table{$1}/g;
+    return pack("H*",$seq);
   }
 }
 
