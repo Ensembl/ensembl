@@ -1,6 +1,7 @@
 # apply given sql statement to all databases on a given host
 # you can specify a name pattern for the database
 # it displays results for select statements
+
 # Author: Arne Stabenau
 #  Date : 21.02.2003
 
@@ -40,9 +41,14 @@ for my $dbname ( @dbnames ) {
       next;
     }
   }
+  
+    
+  print STDERR "$dbname\n";
+  if( ! $expression ) {
+    next;
+  }
 
   $db->do( "use $dbname" );
-  print STDERR "$dbname\n";
   if( $expression =~ /^\s*select/i ||
       $expression =~ /^\s*show/i ||
       $expression =~ /^\s*describe/i ) {
@@ -60,6 +66,7 @@ for my $dbname ( @dbnames ) {
 
 sub usage {
   print STDERR <<EOF
+
              Usage: multidb_sql options
  Where options are: -host hostname 
                     -user username 
@@ -67,7 +74,10 @@ sub usage {
                     -port port_of_server optional
                     -dbpattern regular expression that the database name has to match
                     -expr sql statement you want to execute. Has to be a select.
+                          if omitted, just print database names matching
+
 EOF
 ;
+  exit;
 }
 
