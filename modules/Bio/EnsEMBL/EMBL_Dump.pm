@@ -122,7 +122,7 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment); 
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the nucleotide data library.");
+   $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the International Nucleotide Sequence Databases DDBJ/EMBL/GenBank.");
 
    $aseq->annotation->add_Comment($comment); 
   
