@@ -317,6 +317,8 @@ execute($dbi,
 	  "WHERE tsm.name = a.superctg_name " .
 	  "AND c.contig_id = a.contig_id "); # only copy assembly entries that refer to valid contigs
 
+# Note use the following to check if the assembly table looks sane:
+# SELECT a.asm_seq_region_id, a.cmp_seq_region_id, a.asm_start, a.asm_end, a.cmp_start, a.cmp_end, s.name, s.length, cs.name AS coord_system FROM glenn_new_schema.assembly a, glenn_new_schema.seq_region s, glenn_new_schema.coord_system cs WHERE a.asm_seq_region_id=s.seq_region_id AND s.coord_system_id=cs.coord_system_id;
 
 # ----------------------------------------------------------------------
 # dna table
