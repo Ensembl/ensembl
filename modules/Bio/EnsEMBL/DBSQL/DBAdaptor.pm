@@ -15,7 +15,7 @@ Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::Obj->new(
+    $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => 'root',
         -dbname => 'pog',
         -host   => 'caldy',
@@ -52,7 +52,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::Obj;
+package Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use vars qw(@ISA);
 use strict;
@@ -70,6 +70,7 @@ use Bio::EnsEMBL::DBSQL::GapContig;
 
 use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
@@ -89,7 +90,6 @@ sub new {
   my($pkg, @args) = @_;
 
   my $self = bless {}, $pkg;
-  $self->warn( "DBAdaptor is now copy of Obj. Please start using DBAdaptor instead of Obj" );
 
     my (
         $db,
@@ -277,24 +277,26 @@ sub get_Feature_Obj {
     return $update_obj;
 }
 
-=head2 get_Gene_Obj
 
- Title   : get_Gene_Obj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+=head2 gene_Obj
+    
+ Title   : gene_Obj
+ Usage   : my $geneobj = $db->gene_Obj
+ Function: Returns the gene object database handle
+ Example : 
+ Returns : Bio::EnsEMBL::DB::Gene_ObjI
+ Args    : 
 
 =cut
 
-sub get_Gene_Obj {
+sub gene_Obj {
     my ($self) = @_;
-    
-    my $update_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
- 
-    return $update_obj;
+
+    unless (defined($self->{_gene_obj})) {
+	$self->{_gene_obj} = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);    
+    }
+
+    return $self->{_gene_obj};
 }
 
 =head2 get_Protfeat_Adaptor
@@ -317,6 +319,35 @@ sub get_Protfeat_Adaptor {
     return $update_obj;
 }
 
+=head2 get_all_fpcctg_ids
+
+ Title   : get_all_fpcctg_ids
+ Usage   : @cloneid = $obj->get_all_fpcctg_ids
+ Function: returns all the valid FPC contigs from given golden path
+ Example :
+ Returns : 
+ Args    : static golden path type (typically, 'UCSC')
+
+
+=cut
+
+sub get_all_fpcctg_ids {
+   my ($self, $type) = @_;
+
+   $self->throw("no static_gold_path given") unless defined $type;
+   my @out;
+
+   my $q= "SELECT DISTINCT fpcctg_name 
+           FROM static_golden_path sgp
+           WHERE type = '$type'";
+   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
+   my $res = $sth->execute || $self->throw("can't prepare: $q");
+
+   while( my ($id) = $sth->fetchrow_array) {
+       push(@out, $id);
+   }
+   return @out;
+}
 
 =head2 get_object_by_wildcard
 
@@ -2193,36 +2224,6 @@ sub get_all_Clone_id{
    return @out;
 }
 
-=head2 get_all_fpcctg_ids
-
- Title   : get_all_fpcctg_ids
- Usage   : @cloneid = $obj->get_all_fpcctg_ids
- Function: returns all the valid FPC contigs from given golden path
- Example :
- Returns : 
- Args    : static golden path type (typically, 'UCSC')
-
-
-=cut
-
-sub get_all_fpcctg_ids {
-   my ($self, $type) = @_;
-
-   $self->throw("no static_gold_path given") unless defined $type;
-   my @out;
-
-   my $q= "SELECT DISTINCT fpcctg_name 
-           FROM static_golden_path sgp
-           WHERE type = '$type'";
-   my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
-   my $res = $sth->execute || $self->throw("can't prepare: $q");
-
-   while( my ($id) = $sth->fetchrow_array) {
-       push(@out, $id);
-   }
-   return @out;
-}
-
 
 
 =head2 perl_only_sequences
@@ -2341,6 +2342,37 @@ sub gene_Obj {
     return $self->{_gene_obj};
 }
 
+sub get_GeneAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_geneAdaptor})) {
+	$self->{_geneAdaptor} = Bio::EnsEMBL::DBSQL::GeneAdaptor->new($self);    
+    }
+
+    return $self->{_geneAdaptor};
+}
+
+sub get_ExonAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_exonAdaptor})) {
+	$self->{_exonAdaptor} = Bio::EnsEMBL::DBSQL::ExonAdaptor->new($self);    
+    }
+
+    return $self->{_exonAdaptor};
+}
+
+sub get_TranscriptAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_transcriptAdaptor})) {
+	$self->{_transcriptAdaptor} = Bio::EnsEMBL::DBSQL::TranscriptAdaptor->new($self);    
+    }
+
+    return $self->{_transcriptAdaptor};
+}
+
+
 =head2 feature_Obj
     
  Title   : feature_Obj
@@ -2384,6 +2416,15 @@ sub get_AnalysisAdaptor {
    return $self->{_analysisAdaptor};
 }
 
+
+sub get_DBEntryAdaptor {
+   my ($self) = @_;
+   if( ! defined $self->{_dBEntryAdaptor} ) {
+     $self->{_dBEntryAdaptor} = 
+       Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
+   }
+   return $self->{_dBEntryAdaptor};
+}
 
 
 =head2 get_StaticGoldenPathAdaptor
