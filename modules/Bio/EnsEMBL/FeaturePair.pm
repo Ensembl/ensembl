@@ -90,16 +90,19 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object
 
 
-use Bio::EnsEMBL::FeaturePairI;
 use Bio::EnsEMBL::Root;
 
 
-@ISA = qw(Bio::EnsEMBL::FeaturePairI Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 sub new {
   my($class,@args) = @_;
   my $self = {};
+
+  if( ref( $class) ) {
+    $class = ref( $class );
+  }
 
   bless ($self,$class);
 
