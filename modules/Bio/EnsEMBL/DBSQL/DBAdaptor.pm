@@ -311,7 +311,8 @@ sub get_PredictionTranscriptAdaptor {
 sub get_SequenceAdaptor {
    my $self = shift;
 
-   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
+   #return the sequence adaptor for the dnadb (which may be this db)
+   return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
 }
 
 
@@ -749,9 +750,10 @@ sub dnadb {
   my ($self,$arg) = @_;
 
   if (defined($arg)) {
-    $self->{_dnadb} = $arg;
+    $self->add_db_adaptor('dnadb', $arg);
   }
-  return $self->{_dnadb} || $self;
+
+  return $self->get_db_adaptor('dnadb') || $self;
 }
 
 
