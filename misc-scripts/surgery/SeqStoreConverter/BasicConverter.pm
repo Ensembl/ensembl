@@ -877,9 +877,9 @@ sub transfer_features {
             "FROM $source.protein_align_feature $limit");
 
   $self->debug("Readding indexes on protein_align_feature");
-  $dbh->do( "ALTER TABLE $target.protein_align_feature " .
-            "ADD index  seq_region_idx( seq_region_id, analysis_id, score,".
-            "                           seq_region_start )");
+  $dbh->do( qq{ALTER TABLE $target.protein_align_feature
+               ADD index  seq_region_idx(  analysis_id, seq_region_id,
+                                           seq_region_start, score )});
   $dbh->do( "ALTER TABLE $target.protein_align_feature " .
             "ADD index hit_idx(hit_name)");
 
@@ -901,9 +901,9 @@ sub transfer_features {
 
 
   $self->debug("Readding indexes on dna_align_feature");
-  $dbh->do( "ALTER TABLE $target.dna_align_feature " .
-            "ADD INDEX seq_region_idx(seq_region_id, analysis_id, score, " .
-            "                         seq_region_start)");
+  $dbh->do( qq{ALTER TABLE $target.dna_align_feature
+               ADD INDEX seq_region_idx(seq_region_id, analysis_id,
+                                        seq_region_start, score)});
   $dbh->do( "ALTER TABLE $target.dna_align_feature " .
             "ADD index hit_idx(hit_name)");
 
