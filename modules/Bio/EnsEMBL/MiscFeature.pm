@@ -221,6 +221,12 @@ sub get_all_Attributes {
   }
 }
 
+sub get_scalar_attribute {
+  my $self = shift;
+  my $code = shift;
+  my @results = grep { uc( $_->code() ) eq uc( $code )} @{$self->{'attributes'}};
+  return @results ? $results[0]->value() : '';
+}
 
 =head2 display_id
 
