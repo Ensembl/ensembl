@@ -1,7 +1,6 @@
 #
-# BioPerl module for Exon
+# EnsEMBL module for Bio::EnsEMBL::Exon
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
 # Copyright Ewan Birney
 #
@@ -11,40 +10,35 @@
 
 =pod 
 
-=head1 NAME
-
-Bio::EnsEMBL::Exon - Confirmed Exon 
+=head1 NAME Bio::EnsEMBL::Exon - A class representing an Exon
 
 =head1 SYNOPSIS
 
-    $ex = new Bio::EnsEMBL::Exon;
+    $ex = new Bio::EnsEMBL::Exon(-START     => 100,
+                                 -END       => 200,
+                                 -STRAND    => 1,
+                                 -SLICE     => $slice,
+                                 -DBID      => $dbID,
+                                 -ANALYSIS  => $analysis,
+                                 -STABLE_ID => 'ENSE000000123',
+                                 -VERSION   => 2
+                                 );
 
-    $ex->start(10);
-    $ex->end(100);
+   #seq returns a Bio::Seq
+   my $seq = $exon->seq->seq();
 
-Examples of creating an exon
+   #peptide only makes sense within transcript context
+   my $pep = $exon->peptide($transcript)->seq();
 
-    # start = 1208, end = 1506, forward strand
-    $ex = new Bio::EnsEMBL::Exon(1208,1506,1) 
-    
-    Start and end coordinates are always stored with start < end. If they are 
-    input in the reverse order they will be swapped over.  The value for the 
-    strand will be kept as its input value;
-
-    Strand values:  + or  1 = forward strand
-                    - or -1 = reverse strand
-                    . or  0 = unknown strand
-
-    $ex->contig($dna);     # $dna is a Bio::Seq
-    $ex->phase(0);         # Sets the phase of the exon
-    $ex->end_phase(1);      # sets the end_phase of the exon
-
-    Phase values  are 0,1,2
-
+   #normal feature operations can be performed:
+   $exon = $exon->transform('clone');
+   $exon->move($new_start, $new_end, $new_strand);
+   print $exon->slice->seq_region_name();
 
 =head1 DESCRIPTION
 
-Exon object.  
+This is a class which represents an exon which is part of a transcript.
+See Bio::EnsEMBL:Transcript
 
 =head1 CONTACT
 
@@ -52,20 +46,15 @@ Post questions to the EnsEMBL developer list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal 
+The rest of the documentation details each of the object methods. Internal
 methods are usually preceded with a_
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::Exon;
-use vars qw(@ISA $AUTOLOAD);
+use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::EnsEMBL::Feature;
 use Bio::Seq; # exons have to have sequences...
@@ -94,7 +83,7 @@ sub new {
   $class = ref $class || $class;
 
   my $self = $class->SUPER::new( @_ );
-  
+
   my ( $phase, $end_phase, $stable_id, $version ) = 
     rearrange( [ "PHASE", "END_PHASE", "STABLE_ID", "VERSION" ], @_ );
 
@@ -133,84 +122,15 @@ sub new_fast {
   if ($start > $end) {
     throw( "End smaller than start not allowed" );
   }
-  
+
   $self->start ($start);
   $self->end   ($end);
   $self->strand($strand);
   $self->slice($slice);
-  
+
   return $self;
 }
 
-
-
-=head2 dbID
-
-  Arg [1]    : int $dbID
-  Example    : none
-  Description: get/set for the database internal id
-  Returntype : int
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub dbID {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'dbID'} = $value;
-    }
-    return $self->{'dbID'};
-
-}
-
-
-
-=head2 temporary_id
-
-  Arg [1]    : string $temporary_id
-  Example    : none
-  Description: get/set for attribute temporary_id
-               was invented from genebuild and shouldnt be necessary   
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub temporary_id {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'tempID'} = $value;
-    }
-    return $self->{'tempID'};
-
-}
-
-
-=head2 adaptor
-
-  Arg [1]    : Bio::EnsEMBL::DBSQL::ExonAdaptor $adaptor
-  Example    : none
-  Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::ExonAdaptor
-  Exceptions : none
-  Caller     : general, set from adaptor on store
-
-=cut
-
-sub adaptor {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
-}
 
 
 
@@ -239,7 +159,7 @@ sub end_phase {
     $self->{'end_phase'} = shift;
   } else {
     if( ! defined ( $self->{'end_phase'} )) {
-      warning( "No end phase set in Exon. You must set it explicitly. $!" );
+      warning( "No end phase set in Exon. You must set it explicitly." );
     }
   }
   return $self->{'end_phase'};
@@ -293,8 +213,8 @@ sub phase {
       #print STDERR "Setting phase to $value\n";
       $self->{'phase'} = $value;
     } else {
-      $self->throw("Bad value ($value) for exon phase. Should only be" .
-		   " -1,0,1,2\n");
+      throw("Bad value ($value) for exon phase. Should only be" .
+            " -1,0,1,2\n");
     }
   }
   return $self->{'phase'};
@@ -318,7 +238,7 @@ sub frame {
   my ($self,$value) = @_;
 
   if( defined $value ) {
-    $self->throw("Cannot set frame. Deduced from seq_start and phase");
+    throw("Cannot set frame. Deduced from seq_start and phase");
   }
 
   # frame is mod 3 of the translation point
@@ -338,7 +258,7 @@ sub frame {
     return ($self->start+1)%3;
   }
 
-  $self->throw("bad phase in exon ".$self->phase);
+  throw("bad phase in exon ".$self->phase);
 
 }
 
@@ -366,6 +286,117 @@ sub type {
 
 
 
+=head2 start
+
+  Arg [1]    : int $start (optional)
+  Example    : $start = $exon->start();
+  Description: Getter/Setter for the start of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub start {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::start(@_);
+}
+
+
+=head2 end
+
+  Arg [1]    : int $end (optional)
+  Example    : $end = $exon->end();
+  Description: Getter/Setter for the end of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub end {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::end(@_);
+}
+
+
+=head2 strand
+
+  Arg [1]    : int $strand (optional)
+  Example    : $start = $exon->strand();
+  Description: Getter/Setter for the strand of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub strand {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::strand(@_);
+}
+
+
+=head2 slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice
+  Example    : $slice = $exon->slice();
+  Description: Getter/Setter for the slice this exon is on.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub contig {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::slice(@_);
+}
+
+
+
+=head2 move
+
+  Arg [1]    : int start
+  Arg [2]    : int end
+  Arg [3]    : (optional) int strand
+  Example    : None
+  Description: Sets the start, end and strand in one call rather than in 
+               3 seperate calls to the start(), end() and strand() methods.
+               This is for convenience and for speed when this needs to be
+               done within a tight loop.  This overrides the superclass
+               move() method so that the internal sequence cache can be
+               flushed if the exon if moved.
+  Returntype : none
+  Exceptions : Thrown is invalid arguments are provided
+  Caller     : general
+
+=cut
+
+sub move {
+  my $self = shift;
+  #flush the internal sequence cache
+  delete $self->{'_seq_cache'};
+  return $self->SUPER::move(@_);
+}
+
+
 
 =head2 transform
 
@@ -385,7 +416,8 @@ sub transform {
 
   # catch for old style transform calls
   if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
-    throw( "transform needs coordinate systems details now, please use transfer" );
+    throw( "transform needs coordinate systems details now," .
+           "please use transfer" );
   }
 
   my $new_exon = $self->SUPER::transform( @_ );
@@ -399,6 +431,10 @@ sub transform {
     }
     $new_exon->{'_supporting_evidence'} = \@new_features;
   }
+
+  #dont want to share the same sequence cache
+  delete $new_exon->{'_seq_cache'};
+
   return $new_exon;
 }
 
@@ -430,6 +466,10 @@ sub transfer {
     }
     $new_exon->{'_supporting_evidence'} = \@new_features;
   }
+
+  #dont want to share the same sequence cache
+  delete $new_exon->{'_seq_cache'};
+
   return $new_exon;
 }
 
@@ -467,15 +507,15 @@ sub add_supporting_features {
  FEATURE: foreach my $feature (@features) {
     #print STDERR "have ".$feature." to add to exon\n\n";
     unless($feature && $feature->isa("Bio::EnsEMBL::Feature")) {
-      $self->throw("Supporting feat [$feature] not a " . 
-		   "Bio::EnsEMBL::Feature");
+      throw("Supporting feat [$feature] not a " .
+            "Bio::EnsEMBL::Feature");
     } 
     
     if ((defined $self->slice() && defined $feature->slice())&&
 	    ( $self->slice()->name() ne $feature->slice()->name())){
-      $self->throw("Supporting feat not in same coord system as exon\n" .
-		   "exon is attached to [".$self->slice()->name()."]\n" .
-		   "feat is attached to [".$feature->slice()->name()."]");
+      throw("Supporting feat not in same coord system as exon\n" .
+            "exon is attached to [".$self->slice()->name()."]\n" .
+            "feat is attached to [".$feature->slice()->name()."]");
     }
 
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
@@ -562,54 +602,6 @@ sub find_supporting_evidence {
 }
 
 
-
-=head2 created
-
- Title   : created
- Usage   : $obj->created()
- Function: 
- Returns : value of created
- Args    :
-
-
-=cut
-
-sub created{
-    my ($self,$value) = @_;
-
-    deprecated( "Created attribute not supported any more" );
-    if(defined $value ) {
-      $self->{'_created'} = $value;
-    }
-
-
-    return $self->{'_created'};
-
-}
-
-=head2 modified
-
- Title   : modified
- Usage   : $obj->modified()
- Function: 
- Returns : value of modified
- Args    : 
-
-
-=cut
-
-sub modified{
-    my ($self,$value) = @_;
-    
-
-    deprecated( "Created attribute not supported any more" );
-    if( defined $value ) {
-      $self->{'_modified'} = $value;
-    }
-
-
-    return $self->{'_modified'};
-}
 
 
 =head2 stable_id
@@ -738,7 +730,7 @@ sub peptide {
   my $tr = shift;
 
   unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
-    $self->throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
+    throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
   }
 
   #convert exons coordinates to peptide coordinates
@@ -752,7 +744,7 @@ sub peptide {
   my $pep_str = '';
 
   if(scalar(@coords) > 1) {
-    $self->throw("Error. Exon maps to multiple locations in peptide." .
+    throw("Error. Exon maps to multiple locations in peptide." .
 		 " Is this exon [$self] a member of this transcript [$tr]?");
   } elsif(scalar(@coords) == 1) {
     my $c = $coords[0];
@@ -792,7 +784,7 @@ sub seq {
   my $arg = shift;
 
   if( defined $arg ) {
-    $self->warn( "seq setting on Exon not supported currently" );
+    warning( "seq setting on Exon not supported currently" );
     $self->{'_seq_cache'} = $arg->seq();
   }
 
@@ -803,7 +795,7 @@ sub seq {
   my $seq;
 
   if ( ! defined $self->slice ) {
-    $self->warn(" this exon doesn't have a slice you won't get a seq \n");
+    warning(" this exon doesn't have a slice you won't get a seq \n");
     return undef;
   }
   else {
@@ -824,168 +816,10 @@ sub seq {
 }
 
 
-# Inherited methods
-# but you do have all the SeqFeature documentation: reproduced here
-# for convenience...
+#####################
+# DEPRECATED METHODS
+#####################
 
-=pod
-
-=head1 Methods inherited from SeqFeature
-
-=head2 start
-
- Title   : start
- Usage   : $start = $feat->start
- Function: Returns the start coordinate of the feature
- Returns : integer
- Args    : none
-
-=head2 end
-
- Title   : end
- Usage   : $end = $feat->end
- Function: Returns the end coordinate of the feature
- Returns : integer
- Args    : none
-
-=head2 strand
-
- Title   : strand
- Usage   : $strand = $feat->strand()
-           $feat->strand($strand)
- Function: get/set on strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
-
-=cut
-
-=head2 length
-
- Title   : length
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=head2 sub_SeqFeature
-
- Title   : sub_SeqFeature
- Usage   : @feats = $feat->sub_SeqFeature();
- Function: Returns an array of sub Sequence Features
- Returns : An array
- Args    : none
-
-=head2 primary_tag
-
- Title   : primary_tag
- Usage   : $tag = $feat->primary_tag()
- Function: Returns the primary tag for a feature,
-           eg 'exon'
- Returns : a string 
- Args    : none
-
-=head2 source_tag
-
- Title   : source_tag
- Usage   : $tag = $feat->source_tag()
- Function: Returns the source tag for a feature,
-           eg, 'genscan' 
- Returns : a string 
- Args    : none
-
-=head2 has_tag
-
- Title   : has_tag
- Usage   : $value = $self->has_tag('some_tag')
- Function: Returns the value of the tag (undef if 
-           none)
- Returns : 
- Args    :
-
-=head2 all_tags
-
- Title   : all_tags
- Usage   : @tags = $feat->all_tags()
- Function: gives all tags for this feature
- Returns : an array of strings
- Args    : none
-
-=head2 gff_string
-
- Title   : gff_string
- Usage   : $str = $feat->gff_string
- Function: provides the feature information in GFF
-           version 2 format.
- Returns : A string
- Args    : None
-
-
-
-=head1 RangeI methods
-
-These methods are inherited from RangeI and can be used
-directly from a SeqFeatureI interface. Remember that a 
-SeqFeature is-a RangeI, and so wherever you see RangeI you
-can use a feature ($r in the below documentation).
-
-=head2 overlaps
-
-  Title   : overlaps
-  Usage   : if($feat->overlaps($r)) { do stuff }
-            if($feat->overlaps(200)) { do stuff }
-  Function: tests if $feat overlaps $r
-  Args    : a RangeI to test for overlap with, or a point
-  Returns : true if the Range overlaps with the feature, false otherwise
-
-
-=head2 contains
-
-  Title   : contains
-  Usage   : if($feat->contains($r) { do stuff }
-  Function: tests whether $feat totally contains $r
-  Args    : a RangeI to test for being contained
-  Returns : true if the argument is totaly contained within this range
-
-
-=head2 equals
-
-  Title   : equals
-  Usage   : if($feat->equals($r))
-  Function: test whether $feat has the same start, end, strand as $r
-  Args    : a RangeI to test for equality
-  Returns : true if they are describing the same range
-
-
-=head1 Geometrical methods
-
-These methods do things to the geometry of ranges, and return
-triplets (start, stop, strand) from which new ranges could be built.
-
-=cut
-
-=head2 intersection
-
-  Title   : intersection
-  Usage   : ($start, $stop, $strand) = $feat->intersection($r)
-  Function: gives the range that is contained by both ranges
-  Args    : a RangeI to compare this one to
-  Returns : nothing if they don''t overlap, or 
-            a new exon based on the range that they do overlap
-
-
-=head2 union
-
-  Title   : union
-  Usage   : ($start, $stop, $strand) = $feat->union($r);
-          : ($start, $stop, $strand) = Bio::RangeI->union(@ranges);
-  Function: finds the minimal range that contains all of the ranges
-  Args    : a range or list of ranges to find the union of
-  Returns : the range containing all of the ranges
-
-=cut
 
 sub _get_stable_entry_info {
    my $self = shift;
@@ -997,6 +831,54 @@ sub _get_stable_entry_info {
 
    $self->adaptor->get_stable_entry_info($self);
 
+}
+
+
+=head2 temporary_id
+
+  Description: DEPRECATED.  This should not be necessary
+
+=cut
+
+sub temporary_id {
+  my $self = shift;
+  deprecate('It should not be necessary to use this method.');
+  $self->{'tempID'} = shift if(@_);
+  return $self->{'tempID'};
+}
+
+=head2 created
+
+  Description: DEPRECATED.  Do not use.
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+
+    deprecated( "Created attribute not supported any more" );
+    if(defined $value ) {
+      $self->{'_created'} = $value;
+    }
+
+    return $self->{'_created'};
+}
+
+=head2 modified
+
+  Description: DEPRECATED.  Do not use.
+
+=cut
+
+sub modified{
+    my ($self,$value) = @_;
+
+    deprecated( "Created attribute not supported any more" );
+    if( defined $value ) {
+      $self->{'_modified'} = $value;
+    }
+
+    return $self->{'_modified'};
 }
 
 
