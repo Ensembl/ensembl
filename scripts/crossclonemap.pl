@@ -10,7 +10,7 @@ $| = 1;
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
 my $port   = '410000';
-my $dbname = 'crossmatch';
+my $dbname = 'cross_sept05';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
@@ -51,6 +51,7 @@ $crossmap->run;
 #	die("Died because of $@");
 #    }
 #}
+print STDERR "Writing output for clone $clone\n";
 $crossmap->write_output;
 
 
