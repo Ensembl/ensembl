@@ -549,10 +549,7 @@ sub _new_Exon{
   
   $exon->contig( $contig );
   $exon->attach_seq( $contig );
-  $exon->ori_start( $start );
-  $exon->ori_end( $end );
-  $exon->ori_strand( $strand );
-  
+    
   # does exon not have score?
   $exon->score( $score );
   $exon->p_value( $pvalue );
