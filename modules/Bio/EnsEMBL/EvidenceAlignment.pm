@@ -128,6 +128,7 @@ sub dbadaptor {
     Usage   :   $ea->seqfetcher($seqfetcher_obj);
     Function:   get/set for seqfetcher, which must have a
                 get_Seqs_by_accs method
+
 =cut
 
 sub seqfetcher {
