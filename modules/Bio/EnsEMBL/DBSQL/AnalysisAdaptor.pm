@@ -241,7 +241,7 @@ sub store {
     $self->throw("called store on AnalysisAdaptor with a [$analysis]");
   }
 
-  $analysis->dbID && ( $analysis->adaptor() == $self ) && 
+  $analysis->dbID && $analysis->adaptor && ( $analysis->adaptor() == $self ) && 
     return $analysis->dbID;
 
 
