@@ -195,7 +195,7 @@ sub get_Ensembl_Genes_contig_list{
        }
        $self->cg(\%cg);
        
-       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       #print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
        return @genes;
    }
 }
