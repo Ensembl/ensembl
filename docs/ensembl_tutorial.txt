@@ -14,11 +14,11 @@ ensembl-external
 
 Instructions on how to install these are contained on the ensembl website www.ensembl.org
 
-If you don’t have (or don’t want) to install the ensembl database locally you can point your scripts at a 
+If you don't have (or don't want) to install the ensembl database locally you can point your scripts at a 
 publically available one at the Sanger Centre.  Use the following fields in your scripts
 
 host		kaka.sanger.ac.uk
-dbname 	homo_sapiens_core_110
+dbname 	current
 user  	anonymous
 What does Ensembl contain?
 The Core Database
@@ -265,14 +265,17 @@ probability and also a percent identity which we can also retrieve.
 Let's try this with similarity features.
 
 foreach my $feat ($contig->get_all_SimilarityFeatures) {
-
+  # need to protect this for anything that is not a 
+  # similaritypair, cpgs are in current db for similarity
+  next if( $feat->source_tag eq 'cpg' );
   print "Feature scores are " . $feat->score      . "\t" . 
                                 $feat->percent_id . "\t" .
                                 $feat->p_value    . "\n";
 
 }
 
-Note we're using a different method to only get the similarity (FeaturePair) features out.
+Note we're using a different method to only get the similarity
+(FeaturePair) features out.
 
 Feature types
 
@@ -287,7 +290,8 @@ my $analysis = $feature->analysis;
 
 print "Database :   " . $analysis->db;
 print "Program :    " . $analysis->program;
-print "Parameters : " . $analysis->parameters;
+# note: This will not work with current Ensembl 110 branch
+# print "Parameters : " . $analysis->parameters;
 
 For instance a feature that comes out of a blast run will have an analysis object that tells us it was run 
 with 'blastx' and was run against database 'sptr';
@@ -362,7 +366,7 @@ foreach my $gene (@genes) {
      foreach my $link (@dblinks) {
        print "Gene " . $gene->id . " links to " . $link->display_id . " " . 
 $link->database . "\n";
-       my @syns = $gene->get_synonyms;
+       my @syns = $link->get_synonyms;
        print "Synonyms for gene are @syns\n"; 
   } else {
     print "Gene " . $gene->id . " is not a known gene\n";
@@ -424,7 +428,7 @@ supporting evidence
 The information that was used to make a gene is also stored in the database in the form of 
 FeaturePairs.  This can be retrieved when the genes are retrieved by using the call
 
-My @genes = $contig->get_all_Genes(‘evidence’);
+My @genes = $contig->get_all_Genes('evidence');
 
 The evidence is attached as an array of feature pairs to each exon and can be retrieved
 
@@ -501,7 +505,7 @@ my $vcontig = $sgp->fetch_VirtualContig_of_contig('AC005663.00001',10000);
 
 and a single clone
 
-my $vcontig = $sgp->fetch_VirtualContig_of_clone(‘AC005663’,1000);
+my $vcontig = $sgp->fetch_VirtualContig_of_clone('AC005663',1000);
 
 and now regions of chromosome
 
@@ -519,7 +523,7 @@ my @pred  = $vcontig->get_all_PredictionFeatures;
 my @sims  = $vcontig->get_all_SimilarityFeatures;
 my @genes = $vcontig->get_all_Genes;
 
-If you don’t want to translate your genes use 
+If you don't want to translate your genes use 
 
 My @genes = $vcontig->get_all_Genes_exononly;
 
@@ -564,11 +568,11 @@ genes).
 Print the 200bp flanking each exon for the first 10 genes.  (Again be careful of reverse stranded genes 
 and also be careful of alternative transcripts).
 
-Print out all the 5’ and 3’ utrs for the first 10 genes.
+Print out all the 5' and 3' utrs for the first 10 genes.
 
 Translation
 
-Each transcript could be split into a 5’ untranslated region, a CDS and a 3’ untranslated region.  The 
+Each transcript could be split into a 5' untranslated region, a CDS and a 3' untranslated region.  The 
 points in the cdna where the translation starts and stops are stored in a translation object which is 
 attached to each transcript. I.e.
 
@@ -587,13 +591,13 @@ $translation->end
 
 
 The start and end methods refer to the exon coordinates so they should never be less than one or 
-greater than the exon’s length.
+greater than the exon's length.
 
 Protein
 
 If you have a gene id you can retrieve which interpro hits it contains as follows
 
-My @interpro = $db->Gene_Obj->get_Interpro_by_geneid(‘ENSG00000100259’);
+My @interpro = $db->Gene_Obj->get_Interpro_by_geneid('ENSG00000100259');
 
 This just returns you a list of strings of the interpro ids.
 
@@ -623,7 +627,7 @@ is this surprising?
 
 2. How many of those genes have no protein features at all.
 
-3. How many WD40 domains are there in the database. – whoops – can’t do this without sql.
+3. How many WD40 domains are there in the database. – whoops – can't do this without sql.
 
 External Features
 
