@@ -6,7 +6,7 @@
 outdir=stats
 
 for m in *.merge; do
-  ./stats-from-merge-files.pl $m | remap-sources.sed   \
+  stats-from-merge-files.pl $m | remap-sources.sed  \
          > $outdir/$m.stats 2> $outdir/$m.log
 done
 
