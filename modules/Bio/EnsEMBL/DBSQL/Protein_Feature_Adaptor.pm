@@ -401,7 +401,9 @@ sub get_interproac_by_signature_id{
 sub _set_protein_feature{
    my ($self,$rowhash) = @_;
 
-my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+#my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+
+my $analysis = $self->_feature_obj->get_Analysis(7);
 
    
    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
