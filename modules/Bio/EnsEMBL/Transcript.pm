@@ -278,11 +278,18 @@ sub translation {
   return $self->{'translation'};
 }
 
+=head2 start
+
+ Description: it returns the start coordinate of the lef-most exon, i.e.
+              the 5prime exon in the forward strand and the 3prime exon in the reverse strand
+
+=cut
+
 
 sub start {
   my $self = shift;
   my $arg = shift;
-
+  
   my $strand;
   my $start;
   if( defined $arg ) {
@@ -485,7 +492,7 @@ sub add_Exon{
   Arg [1]    : none
   Example    : my @exons = @{$transcript->get_all_Exons()};
   Description: Returns an listref of the exons in this transcipr in order.
-               i.e. the first exon in the listref is the 5 most exon in 
+               i.e. the first exon in the listref is the 5prime most exon in 
                the transcript.
   Returntype : a list reference to Bio::EnsEMBL::Exon objects
   Exceptions : none
@@ -502,6 +509,7 @@ sub get_all_Exons {
 
 
 =head2 length
+
 
     my $t_length = $transcript->length
 
