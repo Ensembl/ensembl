@@ -289,11 +289,11 @@ sub _objs_from_sth {
           $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
           $seq_region_strand *= -1;
         }
+      }
 
-        #throw away features off the end of the requested slice
-        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-          next FEATURE;
-        }
+      #throw away features off the end of the requested slice
+      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+	next FEATURE;
       }
       $slice = $dest_slice;
     }
