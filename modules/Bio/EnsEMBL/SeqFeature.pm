@@ -728,9 +728,19 @@ sub add_sub_SeqFeature{
 
        }
    } else {
-       if( !$self->contains($feat) ) {
-           $self->throw("$feat is not contained within parent feature, and expansion is not valid");
-       }
+     if( !defined($feat->start()) || !defined($feat->end()) ||
+         !defined($self->start())  || !defined($self->end())) {
+       $self->throw( "This SeqFeature and the sub_SeqFeature must define".
+                     " start and end.");
+     }
+     if($feat->start() > $feat->end() || $self->start() > $self->end()) {
+       $self->throw("This SeqFeature and the sub_SeqFeature must have " .
+                    "start that is less than or equal to end.");
+     }
+     if($feat->start() < $self->start() || $feat->end() > $self->end() ) {
+       $self->throw("$feat is not contained within parent feature, " .
+                    "and expansion is not valid");
+     }
    }
 
    push(@{$self->{'_gsf_sub_array'}},$feat);
