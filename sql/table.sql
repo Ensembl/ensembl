@@ -106,22 +106,15 @@ CREATE TABLE dnac (
 # when the exon is on the other strand the seq_start
 # is specifying the 3' end of the exon.
 
-# The Sticky Rank differentiates between fragments of
-# the same exon. I.e for exons that
-# span multiple contigs, all the fragments
-# are in this table with the same id,
-# but different sticky_rank values
-
 CREATE TABLE exon (
   exon_id       int unsigned NOT NULL auto_increment,
-  seq_region_id     int(10) unsigned NOT NULL,            # foreign key, dnafrag:seq_region_id
-  seq_region_start  int(10) unsigned NOT NULL,            # start of exon within dnafrag
-  seq_region_end    int(10) unsigned NOT NULL,            # end of exon within specified dnafrag
+  seq_region_id     int(10) unsigned NOT NULL,            # foreign key, seq_region:seq_region_id
+  seq_region_start  int(10) unsigned NOT NULL,            # start of exon within seq_region
+  seq_region_end    int(10) unsigned NOT NULL,            # end of exon within specified seq_region
   seq_region_strand tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
 
   phase         tinyint(2) NOT NULL,
   end_phase     tinyint(2) NOT NULL,
-  sticky_rank   tinyint DEFAULT '1' NOT NULL,         # see note above
   
   PRIMARY KEY ( exon_id, sticky_rank),
   KEY seq_region_idx (seq_region_id, seq_region_start )
@@ -317,7 +310,7 @@ CREATE TABLE transcript (
   seq_region_id          int(10) unsigned NOT NULL, 
   seq_region_start       int(10) unsigned NOT NULL, 
   seq_region_end         int(10) unsigned NOT NULL, 
-  dnafrag_strand      tinyint(2) NOT NULL, 
+  seq_region_strand      tinyint(2) NOT NULL, 
   display_xref_id int unsigned NOT NULL,
 
   PRIMARY KEY (transcript_id),
@@ -633,13 +626,10 @@ CREATE TABLE mapfrag (
 CREATE TABLE dnafrag (
   dnafrag_id     int(10) unsigned NOT NULL auto_increment,
   name           varchar(40) NOT NULL default '',
-  type           varchar(40) default NULL,
-  length         int(10),
+  dnafrag_type   varchar(40) default NULL,
   PRIMARY KEY (dnafrag_id),
   UNIQUE KEY name(name)
 ) TYPE=MyISAM;
-
-
 
 #
 # Table structure for table 'mapannotation'
