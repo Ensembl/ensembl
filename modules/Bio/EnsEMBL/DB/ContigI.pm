@@ -242,6 +242,25 @@ sub get_all_ExternalFeatures{
 
 }
 
+=head2 get_all_ExternalGenes
+
+ Title   : get_all_ExternalGenes (Abstract)
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalGenes {
+   my ($self) = @_;
+   
+   $self->throw("Abstract method get_all_ExternalGenes encountered in base class. Implementation failed to complete it")
+
+}
+
 
 
 

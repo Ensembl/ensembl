@@ -1378,14 +1378,18 @@ sub get_all_ExternalFeatures{
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-       push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->internal_id,$self->seq_version,1,$self->length));
+       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+	   push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->internal_id,$self->seq_version,1,$self->length));
+       }
+       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
-       foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
-	   my $start = $sf->start - $embl_offset+1;
-	   my $end   = $sf->end   - $embl_offset+1;
-	   $sf->start($start);
-	   $sf->end($end);
-	   push(@out,$sf);
+	   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
+	       my $start = $sf->start - $embl_offset+1;
+	       my $end   = $sf->end   - $embl_offset+1;
+	       $sf->start($start);
+	       $sf->end($end);
+	       push(@out,$sf);
+	   }
        }
    }
    my $id = $self->id();

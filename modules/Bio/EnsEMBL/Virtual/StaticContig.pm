@@ -167,18 +167,17 @@ sub new {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-
-my ($self, $analysis_type, $score) = @_;
+    my ($self, $analysis_type, $score) = @_;
     
-$self->throw("Must supply analysis_type parameter") unless $analysis_type;
-$self->throw("Must supply score parameter") unless $score;
-
-
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
-
-my    $statement = "SELECT f.id, 
+    $self->throw("Must supply analysis_type parameter") unless $analysis_type;
+    $self->throw("Must supply score parameter") unless $score;
+    
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    
+    my    $statement = "SELECT f.id, 
                       IF     (sgp.raw_ori=1,
                                  (f.seq_start+sgp.chr_start-sgp.raw_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end)),
