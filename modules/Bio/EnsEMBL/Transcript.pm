@@ -51,7 +51,6 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::TranscriptI;
 use Bio::Tools::CodonTable;
