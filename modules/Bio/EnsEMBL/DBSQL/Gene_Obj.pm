@@ -62,6 +62,7 @@ use Bio::EnsEMBL::Transcript;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DB::Gene_ObjI;
 
 @ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::Object);
 
