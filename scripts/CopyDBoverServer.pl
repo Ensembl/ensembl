@@ -6,7 +6,7 @@ use Cwd 'chdir';
 
 $| = 1;
 
-my $usage = "\nUsage: $0 -pass XXXXX [-noflush] input_file
+my $usage = "\nUsage: $0 -pass XXXXX [-noflush] --nochk] input_file
 
 Copy mysql databases between different servers and run myisamchk on the indices when copied.
 
@@ -37,7 +37,14 @@ RESTRICTIONS:
    ia64[ef] port: 3306
 3- -pass is compulsory and is expected to be the mysql password to connect as ensadmin
 
-This script MUST be run as the mysqlens Unix user.\n\n";
+This script MUST be run as the mysqlens Unix user.
+
+Also it is best to run it on the same node as the destination MySQL instance, e.g. for ecs2:3365 run
+
+caa_stat mysql_3365
+
+... which will reveal that it's running on ecs2e (caa_stat alone will show all instances).
+\n\n";
 
 my $help = 0;
 my $pass;
@@ -69,7 +76,7 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs2:3364' => "/mysql/data_3364/databases",
 			       'ecs2:3365' => "/mysql/data_3365/databases",
 			       'ecs2:3366' => "/mysql/data_3366/databases",
-			       'ecs3:3307' => "/mysqld/current/var",
+			       'ecs3:3307' => "/mysqld/mysql-4.1.10/data",
 			       'ecs3:3309' => "/mysqlh/current/var",
 			       'ecs3:3304' => "/mysql_archive/current/var",
 			       'ecs4:3350' => "/mysql-3350/databases",
@@ -80,6 +87,8 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
                                'ia64f:3306' => "/mysql/data_3306/databases",
                                'ia64g:3306' => "/mysql/data_3306/databases",
                                'ia64h:3306' => "/mysql/data_3306/databases");
+
+# Change ecs3:3307 back to 'ecs3:3307' => "/mysqld/current/var", when link is fixed
 
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
@@ -232,7 +241,7 @@ skipped copy of $db_to_copy->{src_db} from $db_to_copy->{src_srv} to $db_to_copy
   print STDERR "// Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI in progress...
 //\n";
   chdir "$destination_tmp_directory/$db_to_copy->{dest_db}";
-  my $myisamchk_cmd = "ls | grep MYI | xargs $myisamchk_executable -r";
+  my $myisamchk_cmd = "ls | grep MYI | xargs $myisamchk_executable -F -f -s --key_buffer_size=2000000000 --sort_buffer_size=2000000000 --read_buffer_size=2000000 --write_buffer_size=2000000";
   if (system("$myisamchk_cmd") == 0) {
     print STDERR "//
 // Checking $destination_tmp_directory/$db_to_copy->{dest_db}/*.MYI DONE\n";
