@@ -101,8 +101,8 @@
 
     You  have the  option  to  turn certain  features  on  or off.   These
     features are  the graphics, the  "being nice to DAS  servers" feature,
-    and the stylesheet feature.  Turning features off removes dependencies
-    on some Perl modules.
+    the stylesheet feature, and the mapping feature.  Turning features off
+    removes dependencies on some Perl modules.
 
     Turning  the  graphics  feature  off  will  inhibit  the  creation  of
     temporary PNG files (which otherwise would need to be cleaned out with
@@ -118,6 +118,42 @@
 
     Turning off the  stylesheet feature will prevent the  client from ever
     asking the DAS server for stylesheet information.
+
+
+    MAPPING
+
+    The mapping  feature is a  new addition.  It  allows you to  provide a
+    simple <tab>-delimited file containing mapping information.  Currently
+    mappings may be of the following types:
+
+        * simple
+            A  simple  mapping of  a  user-requested  ID into  one  or
+            several  other IDs  is performed  before querying  the DAS
+            server.  The IDs  in the result are then  mapped back into
+            the user-requested ID.
+
+          Format of map data file:
+
+            queryID,targetID
+
+          The  "queryID" is  what the  user requests  and need  not be
+          unique.  The file needs to be sorted.
+
+
+        * align (not implemented)
+            Like the  simpe mapping, but  the mapping is  dependent on
+            alignment information.   This depends on  the availability
+            of the  Bio::EnsEMBL::Mapper module  which is not  part of
+            Bioperl.
+
+          Format of map data file:
+
+            queryID,targetID,qAlignStart,tAlignStart,cigarLine
+
+          The  "queryID" is  what the  user requests  and need  not be
+          unique.  The cigar line is  on the Ensembl Cigar format, see
+          [5] (at  the end  of the  document).  The  file needs  to be
+          sorted.
 
 
     BUGS
@@ -148,3 +184,7 @@
     [2] http://www.biojava.org/dazzle/
     [3] http://www.biodas.org/servers/
     [4] http://www.ensembl.org/
+    [5] http://www.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html
+
+
+// vim: et
