@@ -244,7 +244,7 @@ sub fetch_VirtualContig_by_clone{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND cl.internal_id = c.clone AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.clone = '$clone' AND c.internal_id = c.clone AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
 
@@ -447,30 +447,6 @@ sub fetch_VirtualContig_by_chr_name{
 
 }
 
-
-=head2 convert_chromosome_to_fpc
-
- Title   : convert_chromosome_to_fpc
- Usage   : ($fpcname,$start,$end) = $stadp->convert_chromosome_to_fpc('chr1',10000,10020)
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub convert_chromosome_to_fpc{
-   my ($self,$chr,$start,$end) = @_;
-
-   my $type = $self->dbobj->static_golden_path_type();
-
-   my $sth = $self->dbobj->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpcctg_start = 1 AND chr_start <= $start ORDER BY chr_start desc");
-   $sth->execute;
-   my ($fpc,$startpos) = $sth->fetchrow_array;
-
-   return ($fpc,$start-$startpos,$end-$startpos);
-}
 
 
 =head2 get_all_fpc_ids
