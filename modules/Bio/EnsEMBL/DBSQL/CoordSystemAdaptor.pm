@@ -453,14 +453,7 @@ sub fetch_all_by_feature_table {
 
   throw('Name argument is required') unless $table;
 
-  my $result = $self->{'_feature_cache'}->{$table};
-
-  if(!$result) {
-    throw("Feature table [$table] does not have a defined coordinate system" .
-          " in the meta_coord table");
-  }
-
-  return $result;
+  return $self->{'_feature_cache'}->{$table};
 }
 
 
