@@ -341,7 +341,7 @@ sub fetch_by_dbID {
    }
 
    my $transcript_adaptor = $self->db()->get_TranscriptAdaptor();
-   my $transcript = $transcript_adaptor->fetch_by_translation_id($dbID);
+   $transcript = $transcript_adaptor->fetch_by_translation_id($dbID);
 
    return undef if(!$transcript);
 

@@ -170,9 +170,9 @@ sub fetch_by_translation_stable_id {
 
   my ($id) = $sth->fetchrow_array;
   if ($id){
-  	return $self->fetch_by_dbID($id);
+    return $self->fetch_by_dbID($id);
   } else {
-  	return undef;
+    return undef;
   }
 }
 
@@ -204,11 +204,11 @@ sub fetch_by_translation_id {
 
   $sth->execute($id);
 
-  my ($id) = $sth->fetchrow_array;
-  if ($id){
-  	return $self->fetch_by_dbID($id);
+  my ($dbID) = $sth->fetchrow_array;
+  if ($dbID){
+    return $self->fetch_by_dbID($id);
   } else {
-  	return undef;
+    return undef;
   }
 }
 
@@ -650,9 +650,10 @@ sub list_dbIDs {
 =head2 list_stable_dbIDs
 
   Arg [1]    : none
-  Example    : @stable_transcript_ids = @{$transcript_adaptor->list_stable_dbIDs()};
-  Description: Gets an array of stable ids for all transcripts in the current db
-  Returntype : list of ints
+  Example    : @stable_trans_ids = @{$transcript_adaptor->list_stable_dbIDs()};
+  Description: Gets an array of stable ids for all transcripts in the current
+               database.
+  Returntype : listref of ints
   Exceptions : none
   Caller     : ?
 
