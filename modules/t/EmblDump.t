@@ -32,6 +32,8 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
 
+use Bio::AnnSeqIO;
+
 use Bio::Seq;
 
 $loaded = 1;
@@ -43,25 +45,66 @@ $contig = Bio::EnsEMBL::PerlDB::Contig->new();
 # $sf is a Bio::SeqFeatureI type object. $seq is a Bio::Seq object
 
 
-$seq = Bio::Seq->new( -id => 'Contig-1' , -seq => 'ATGGCGGTGGGTGGCCCGGGG' );
+$seq = Bio::Seq->new( -id => 'Contig-1' , -seq => 'ATGGCGGATGTTTATGTGGGTGGCCCGGGG' );
  
 #$contig->add_SeqFeature($sf);
+$contig->offset(1);
+$contig->orientation(1);
 $contig->seq($seq); 
 $contig->id('Contig-1');
 
-$seq = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TGGGTGGCCCTGGTGGTTTGGGTTT' );
+$seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TTTTGGGTGGCCCTGGTGGTTTGGGTTT' );
 $contig2 = Bio::EnsEMBL::PerlDB::Contig->new();
+$contig2->offset(60);
+$contig2->orientation(1);
 $contig2->id('Contig-2');
-$contig2->seq($seq);
+$contig2->seq($seq2);
 
 $obj = Bio::EnsEMBL::PerlDB::Obj->new();
 
+$gene = new Bio::EnsEMBL::Gene;
+$tr   = new Bio::EnsEMBL::Transcript;
+$ex1   = new Bio::EnsEMBL::Exon;
+$ex2   = new Bio::EnsEMBL::Exon;
+
+$ex1->start(8);
+$ex1->end(13);
+$ex1->phase(0);
+$ex1->strand(1);
+$ex1->attach_seq($seq);
+$ex1->contig_id('Contig-1');
+$ex1->clone_id('test-clone');
+$ex1->created('dummy_creation_date');
+$ex1->modified('dummy_modification_date');
+$ex1->id('exon-id-1');
+
+$ex2->start(1);
+$ex2->end(3);
+$ex2->phase(0);
+$ex2->strand(1);
+$ex2->attach_seq($seq2);
+$ex2->contig_id('Contig-2');
+$ex2->clone_id('test-clone');
+$ex2->created('dummy_creation_date');
+$ex2->modified('dummy_modification_date');
+$ex2->id('exon-id-2');
+
+$gene->id('gene-id');
+$tr->id('transcript-id');
+
+$tr->add_Exon($ex1);
+$tr->add_Exon($ex2);
+
+$gene->add_Transcript($tr);
+
+$contig->add_Gene($gene);
 
 $obj->write_Contig($contig);
 $obj->write_Contig($contig2);
 
 
 $clone = Bio::EnsEMBL::PerlDB::Clone->new();
+$clone->id("test-clone");
 
 $clone->add_Contig($contig);
 $clone->add_Contig($contig2);

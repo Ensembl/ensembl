@@ -77,45 +77,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-=head2 seq
-
- Title   : seq
- Usage   : $seq = $clone->seq(400);
- Function: Gets the sequence of this clone, contigs separated by the necessary 
-           number of N's
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub seq{
-   my ($self,$space) = @_;
-
-   $space |= 400;
-   my $seqstr;
-   foreach my $contig ( $self->get_all_Contigs() ) {
-       my $cseq;
-       eval {
-	   $cseq = $contig->seq();
-       }; 
-       if( $@ ) {
-	   my $id = $self->id();
-	   $self->warn("Unable to retrieve sequence for $id.\n\nContinuing for the moment\n\n$@");
-	   next;
-       }
-       $seqstr .= $cseq->str;
-       $seqstr .= 'N' x $space;
-   }
-
-   my $seq = Bio::Seq->new( -id => $self->id(), -seq => $seqstr);
-
-   return $seq;
-
-}
-
-
 
 =head2 get_all_Genes
 

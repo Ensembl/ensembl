@@ -59,9 +59,27 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  $self->{'_contig_array'} = [];
+  $self->{'_contig_hash'} = {};
 # set stuff in self from @args
  return $make; # success - we hope!
+}
+
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contig{
+   my ($self,$id) = @_;
+
+   return $self->{'_contig_hash'}->{$id};
 }
 
 
@@ -80,7 +98,7 @@ sub _initialize {
 sub get_all_Contigs{
    my ($self) = @_;
 
-   return @{$self->{'_contig_array'}};
+   return values %{$self->{'_contig_hash'}};
 }
 
 =head2 add_Contig
@@ -103,7 +121,7 @@ sub add_Contig{
        $self->warn("$contig is not a contigI object...");
    }
 
-   push(@{$self->{'_contig_array'}},$contig);
+   $self->{'_contig_hash'}->{$contig->id()} = $contig;
 }
 
 
@@ -124,13 +142,46 @@ sub get_all_Genes{
    my %h;
 
    # read into a hash to make unique
-   foreach my $gene ( $self->get_all_Contigs ) {
-       $h{$gene->id()} = $gene;
+   foreach my $contig ( $self->get_all_Contigs ) {
+       foreach my $gene ( $contig->get_all_Genes ) {
+	   $h{$gene->id()} = $gene;
+       }
+
    }
 
    return values %h;
 
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+       $obj->{'id'} = $value;
+   }
+   return $obj->{'id'};
+   
+}
+
 
 1;
+
+
+
+
+
+
+
+
+

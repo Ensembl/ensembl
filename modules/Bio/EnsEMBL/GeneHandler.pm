@@ -71,6 +71,11 @@ sub _initialize {
   $clone || $self->throw("Cannot make a gene handler without a clone");
   $gene  || $self->throw("Cannot make a gene handler without a gene");
 
+
+  $clone->isa("Bio::EnsEMBL::DB::CloneI") || $self->throw("You haven't given me a valid clone object for this gene!");
+  $gene->isa("Bio::EnsEMBL::Gene") || $self->throw("You haven't given me a valid gene object for this gene!");
+
+  
   # this could be a bad way to do this... ;)
 
   # print STDERR "Dumping in GeneHandler!\n";
@@ -117,6 +122,8 @@ sub to_FTHelper{
 
 		   # find the offset position of the contig in the clone
 		   my $contig = $self->clone()->get_Contig($exon->contig_id());
+		   $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
+
 		   my $pos = $contig->offset();
 		   my $ori = $contig->orientation();
 		   
@@ -141,8 +148,9 @@ sub to_FTHelper{
 			   $exst = 1;
 		       }
 		   } else {
-		       $locstart = $pos-1 + ($contig->length() - $exon->end +1);
-		       $locend   = $pos-1 + ($contig->length() - $exon->start +1);
+		       my $tseq = $contig->seq(); # this is bad news to get out the length
+		       $locstart = $pos-1 + ($tseq->seq_len() - $exon->end +1);
+		       $locend   = $pos-1 + ($tseq->seq_len() - $exon->start +1);
 		       $ft->loc("$locstart..$locend"); 
 		       if( $exon->strand == 1 ) {
 			   $exst = -1;
@@ -171,10 +179,9 @@ sub to_FTHelper{
 		   # ok - now handle the location line in the transcript object
 		   if( defined $trans_loc  ) {
 		       $trans_loc .= ",";
-		       $trans_loc .= "$locstart..$locend";
+		       $trans_loc .= $ft->loc;
 		   } else {
-		       $trans_loc = "";
-		       $trans_loc = "$locstart..$locend";
+		       $trans_loc = $ft->loc;
 		   }
 
 
@@ -182,13 +189,13 @@ sub to_FTHelper{
 		       $trans_strand = $exst;
 		   } else {
 		       if( $exst != $trans_strand ) {
-			   $self->warn("Oh no - transcript with orientation different from implied gene order");
+			   $self->warn("Oh no - transcript with orientation different from implied gene order on" . $self->id());
 		       }
 		   }
 
 		   
 	       } else {
-		   $self->throw("Have not delt with exons on other clones yet! Self is ". $self->clone->id(). " exon is " . $exon->clone_id());
+		   $self->throw("Have not delt with exons on other clones yet! Self is ". $self->clone->id(). " exon is " . $exon->clone_id() . "$exon");
 	       }
 	   }
 

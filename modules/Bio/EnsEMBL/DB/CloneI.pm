@@ -116,6 +116,55 @@ sub get_all_Genes{
    $self->warn("Base class has not implemented this yet!");
 }
 
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $seq = $clone->seq()
+ Function: Provides a Bio::Seq object which represents the
+           the clone, potentially with N's inserted. 
+ Example :
+ Returns : A Bio::Seq object
+ Args    : 
+
+
+=cut
+
+sub seq{
+   my ($self,$spacer) = @_;
+   my $out;
+   my $seqstr = "";
+   my $current_end;
+   
+   
+   my @contigs = $self->get_all_Contigs();
+   # get paranoid about contigs with their orientation!
+   
+   @contigs = sort { $a->offset <=> $b->offset } @contigs;
+   $current_end = 1;
+   foreach my $contig ( $self->get_all_Contigs ) {
+       my $nlen = $contig->offset - $current_end;
+       if( $nlen < 0 ) {
+	   $self->throw("I am sorry - we have a clone whoses offsets of contigs do not make sense! Contig" . $contig->id() . "at $current_end");
+       }
+
+       $seqstr .= 'N' x $nlen;
+       
+       my $seq = $contig->seq(); # throw exception if it can't do this.
+       if( $contig->orientation == -1 ) {
+	   $seq = $seq->revcom();
+       }
+
+       $seqstr .= $seq->str();
+
+       $current_end = $contig->offset + $seq->seq_len;
+   }
+
+   $out = Bio::Seq->new( -id => $self->id() , -seq => $seqstr, -type => 'Dna');
+
+   return $out;
+}
+
 =head2 get_AnnSeq
 
  Title   : get_AnnSeq

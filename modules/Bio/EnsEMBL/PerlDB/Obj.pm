@@ -44,6 +44,8 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
+use Bio::EnsEMBL::PerlDB::Contig;
+use Bio::EnsEMBL::PerlDB::Clone;
 
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ObjI);

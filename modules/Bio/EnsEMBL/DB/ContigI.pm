@@ -138,7 +138,6 @@ sub orientation{
 
 }
 
-
 =head2 annseq
 
  Title   : annseq
