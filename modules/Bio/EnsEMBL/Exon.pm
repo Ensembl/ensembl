@@ -951,7 +951,7 @@ sub _genscan_peptide{
 
 
 
-=head2 add_supporting_feature
+=head2 add_supporting_features
 
   Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
   Example    : $exon->add_supporting_features(@features);
@@ -1070,7 +1070,7 @@ sub find_supporting_evidence {
     else {
       if ($f->entire_seq()->name eq $self->contig()->name) {
 	if ($f->end >= $self->start && $f->start <= $self->end && $f->strand == $self->strand) {
-	  $self->add_supporting_feature($f);
+	  $self->add_supporting_features($f);
 	}
       }
     }
@@ -1770,7 +1770,7 @@ sub each_Supporting_Feature {
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED use add_supporting_feature instead
+  Description: DEPRECATED use add_supporting_features instead
   Returntype : none
   Exceptions : none
   Caller     : none
