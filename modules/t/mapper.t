@@ -25,7 +25,7 @@
 ## We start with some black magic to print on failure.
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 5;   # 5 tests total
+	plan tests => 9;   # 5 tests total
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
@@ -73,6 +73,75 @@ test_transform ($mapper,
 #
 # for @dest array, $strand=0 indicates gap.
 # for @dest array, $id=$srcid for gaps.
+
+#
+# check if the mapper can do merging
+#
+
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
+$mapper->add_map_coordinates( "1", 21, 30, 1, "1", 121, 130 );
+$mapper->add_map_coordinates( "1", 11, 20, 1, "1", 111, 120 );
+
+test_transform( $mapper, 
+		[ "1", 5, 25, 1, "asm1" ],
+		[ "1", 105, 125, 1 ] );
+
+#
+# dont merge on wrong orientation
+#
+
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
+$mapper->add_map_coordinates( "1", 21, 30, 1, "1", 121, 130 );
+$mapper->add_map_coordinates( "1", 11, 20, -1, "1", 111, 120 );
+
+test_transform( $mapper, 
+		[ "1", 5, 25, 1, "asm1" ],
+		[ "1", 105, 110, 1 ],
+		[ "1", 111, 120, -1 ],
+		[ "1", 121, 125, 1 ] );
+
+#
+# can reverse strands merge?
+#
+
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper->add_map_coordinates( "1", 1, 10, -1, "1", 121, 130 );
+$mapper->add_map_coordinates( "1", 21, 30, -1, "1", 101, 110 );
+$mapper->add_map_coordinates( "1", 11, 20, -1, "1", 111, 120 );
+
+test_transform( $mapper, 
+		[ "1", 5, 25, 1, "asm1" ],
+		[ "1", 106, 126, -1 ] );
+
+
+#
+# normal merge, not three
+#
+
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
+$mapper->add_map_coordinates( "1", 11, 20, 1, "1", 111, 120 );
+$mapper->add_map_coordinates( "1", 22, 30, 1, "1", 132, 140 );
+$mapper->add_map_coordinates( "1", 51, 70, 1, "1", 161, 180 );
+$mapper->add_map_coordinates( "1", 31, 35, 1, "1", 141, 145 );
+
+test_transform( $mapper, 
+		[ "1", 5, 45, 1, "asm1" ],
+		[ "1", 105, 120, 1 ],
+		[ "1", 21, 21, 0 ],
+		[ "1", 132, 145, 1 ],
+		[ "1", 36, 45, 0 ]
+	      );
+
+
 
 sub test_transform {
     my ($mapper, $src, @dest) = @_;
