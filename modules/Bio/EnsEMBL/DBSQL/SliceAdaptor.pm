@@ -468,9 +468,12 @@ sub fetch_by_gene_stable_id{
    if( !defined $geneid ) {
        $self->throw("Must have gene id to fetch Slice of gene");
    }
-   if( !defined $size ) {$size=0;}
-
    my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_gene($geneid);
+
+   if( $size =~/([\d+\.]+)%/ ) {
+     $size = int($1/100 * ($end-$start+1));
+   }
+   if( !defined $size ) {$size=0;}
 
    if( !defined $start ) {
      my $type = $self->db->assembly_type()

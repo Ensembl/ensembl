@@ -222,7 +222,14 @@ sub get_translation_archive_id {
   my $self = shift;
 
   if( $self->type() eq "Transcript" ) {
-    return $self->adaptor->fetch_by_transcript_archive_id( $self );
+    return [$self->adaptor->fetch_by_transcript_archive_id( $self )];
+  } elsif( $self->type() eq "Gene" ) {
+    my $transcripts = $self->adaptor->fetch_all_by_gene_archive_id( $self );
+	my @peptides ;
+	for (@$transcripts) {
+		push @peptides , $self->adaptor->fetch_by_transcript_archive_id( $_ );
+	}
+	return \@peptides;
   } else {
     return undef;
   }

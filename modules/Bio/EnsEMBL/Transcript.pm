@@ -895,7 +895,6 @@ sub get_all_peptide_variations {
   return \%out;
 }
 
-
 =head2 get_all_SNPs
 
   Arg [1]    : (optional) int $flanking

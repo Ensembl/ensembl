@@ -71,8 +71,6 @@ sub new {
   return $self;
 }
 
-
-
 =head2 fetch_all_by_gene_id_list
 
   Arg [1]    : arrayref $gene_ids  
