@@ -24,58 +24,83 @@ if( !($old && $new) ) {
 # TODO - more than one mapping?
 
 my ($new_x2e_r, $new_e2x_r) = read_mappings($new);
-my ($old_x2e_r, $old_e2x_r)  = read_mappings($old);
+my ($old_x2e_r, $old_e2x_r) = read_mappings($old);
 
-my %new_x2e = %$new_x2e_r;
-my %old_x2e = %$old_x2e_r;
-my %new_e2x = %$new_e2x_r;
-my %old_e2x = %$old_e2x_r;
+#my %new_x2e = %$new_x2e_r;
+#my %old_x2e = %$old_x2e_r;
+#my %new_e2x = %$new_e2x_r;
+#my %old_e2x = %$old_e2x_r;
+
+compare($old_x2e_r, $new_x2e_r, "xref");
+compare($old_e2x_r, $new_e2x_r, "ensembl object");
 
 # ----------------------------------------
 # Compare mappings keyed on xref
 
-my ($matched, $mismatched, $new_only, $old_only, $total);
+sub compare {
 
-foreach my $xref_id (keys %new_x2e) {
+  my ($oldr, $newr, $desc) = @_;
 
-  # if a mapping exists, look for any matches
-  my $found = 0;
-  if (exists $old_x2e{$xref_id}) {
-    foreach my $old_value (@{$old_x2e{$xref_id}}) {
-      foreach my $new_value (@{$new_x2e{$xref_id}}) {
-	if ($old_value eq $new_value) {
-	  $found = 1;
+  open(NEW_ONLY,   ">${desc}_new_only.txt");
+  open(OLD_ONLY,   ">${desc}_old_only.txt");
+
+  my %new = %$newr;
+  my %old = %$oldr;
+
+  my ($matched, $mismatched, $new_only, $old_only, $total);
+
+  foreach my $key (keys %new) {
+
+    # if a mapping exists, look for any matches
+    my $found = 0;
+    if (exists $old{$key}) {
+      foreach my $old_value (@{$old{$key}}) {
+	foreach my $new_value (@{$new{$key}}) {
+	  if ($old_value eq $new_value) {
+	    $found = 1;
+	  }
 	}
       }
+      if ($found) {
+	$matched++ 
+      } else {
+	$mismatched++;
+      }
+      $total++;
+
+    } else {
+      $new_only++;
+      print NEW_ONLY "$key\n";
     }
-    $found ? $matched++ : $mismatched++;
-    $total++;
 
-  } else {
-    $new_only++;
   }
 
-}
+  foreach my $key (keys %old) {
 
-foreach my $xref_id (keys %old_x2e) {
+    if (!exists $new{$key}) {
+      $old_only++;
+      print OLD_ONLY "$key\n";
+    }
 
-  if (!exists $new_x2e{$xref_id}) {
-    $old_only++;
   }
 
+  close(NEW_ONLY);
+  close(OLD_ONLY);
+  close(MISMATCHED);
+
+  print "\nCompared " . scalar(keys %new) . " new xref mappings with " . scalar(keys %old) . " existing ensembl mappings\n";
+
+  print "\nComparing keyed on $desc:\n\n";
+
+  my $fmt = "%-30s\t%6d\t%5s%%\n";
+  printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
+  printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
+  printf $fmt, "Total mapped:", $total, pc($total, $total);
+
+  print "\nNumber mapped by new method only: $new_only\n";
+  print "Number mapped by old method only: $old_only\n";
+
 }
-
-print "Compared " . scalar(keys %new_x2e) . " new xref mappings with " . scalar(keys %old_x2e) . " existing ensembl mappings\n";
-
-print "\nComparing by xref:\n\n";
-
-my $fmt = "%-30s\t%6d\t%5s%%\n";
-printf $fmt, "Mapped with same result:", $matched, pc($matched, $total);
-printf $fmt, "Mapped with different result:", $mismatched, pc($mismatched, $total);
-printf $fmt, "Total mapped:", $total, pc($total, $total);
-
-print "\nNumber mapped by new method only: $new_only\n";
-print "Number mapped by old method only: $old_only\n";
 
 # ----------------------------------------------------------------------
 
@@ -109,7 +134,6 @@ EOF
 sub read_mappings {
 
   my $filename = shift;
-  my $i = 0;
 
   my %xref_to_ensembl;
   my %ensembl_to_xref;
@@ -123,13 +147,16 @@ sub read_mappings {
     # TODO - better way of handling type?
     my $value = $ensembl_id . "." . $type;
     push @{$xref_to_ensembl{$xref_id}}, $value;
-
-    $ensembl_to_xref{$value} = $xref_id; # TODO map of lists
-    $i++;
+    push @{$ensembl_to_xref{$value}}, $xref_id;
 
   }
 
   close(FILE);
+
+  my $i = 0;
+  foreach my $xref_id (keys %xref_to_ensembl) {
+    $i += @{$xref_to_ensembl{$xref_id}};
+  }
 
   print "Read $i mappings from $filename\n";
 
