@@ -772,12 +772,12 @@ sub get_all_Genes {
 sub get_all_ExternalGenes {
    my ($self) = @_;
    my (%gene);
-   
+
    my @rawids;
 
 
    if( exists $self->{'_external_gene_cache'} ) {
-       return @{$self->{'_external_gene_cache'}};
+     return @{$self->{'_external_gene_cache'}};
    }
 
    foreach my $rc ( $self->_vmap->get_all_RawContigs ) {
@@ -786,11 +786,11 @@ sub get_all_ExternalGenes {
 
    &eprof_start("external_gene_retrieve");
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-       if( $extf->can('get_Ensembl_Genes_contig_list')) {
+     if( $extf->can('get_Ensembl_Genes_contig_list')) {
 	     foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
 	       #print STDERR "Retrieved gene with ",$gene->id,"\n";
-	       #$gene{$gene->id()} = $gene;
-	       $gene{$gene->dbID()} = $gene;
+	       $gene{$gene->id()} = $gene;
+	       #$gene{$gene->stable_id()} = $gene;
 	     }
        }
    }
@@ -806,6 +806,7 @@ sub get_all_ExternalGenes {
    &eprof_end("external_gene_lift");
 
    $self->{'_external_gene_cache'} = \@array;
+
    return @array;
 }
 
@@ -1006,7 +1007,7 @@ sub _gene_query{
 
 	foreach my $exon ( $gene->get_all_Exons() ) {
 	    # hack to get things to behave
-	    # $exon->seqname($exon->contig_id);
+	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->dbID} = $exon;
 	    
       #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
@@ -1213,7 +1214,7 @@ sub _convert_seqfeature_to_vc_coords {
     if ($@ || !ref $mc) { 
 	    return undef;
     }
-    
+
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
@@ -1249,11 +1250,11 @@ sub _convert_seqfeature_to_vc_coords {
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
     # Could be clipped on ANY contig  
     if ($sf->start < $mc->rawcontig_start) {
-        #print STDERR "Binning $cid\n";
+        # print STDERR "Binning $cid\n";
 	    return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-        #print STDERR "Binning $cid\n";
+        # print STDERR "Binning $cid\n";
 	    return undef;              
     }
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
