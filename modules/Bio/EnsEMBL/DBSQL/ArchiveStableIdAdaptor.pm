@@ -355,17 +355,18 @@ sub fetch_succ_by_arch_id {
   my ( $new_stable_id, $new_version, $new_db_name );
   $sth->bind_columns( \$new_stable_id, \$new_version, \$new_db_name );
   while( $sth->fetch() ) {
-    my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new
-      ( 
-       -version => $new_version,
-       -stable_id => $new_stable_id,
-       -db_name => $new_db_name,
-       -adaptor => $self
-      );
-    _resolve_type( $new_arch_id );
-    push( @result, $new_arch_id );
+    if( defined $new_stable_id ) {
+      my $new_arch_id = Bio::EnsEMBL::ArchiveStableId->new
+	( 
+	 -version => $new_version,
+	 -stable_id => $new_stable_id,
+	 -db_name => $new_db_name,
+	 -adaptor => $self
+	);
+      _resolve_type( $new_arch_id );
+      push( @result, $new_arch_id );
+    }
   }
-  
   $sth->finish();
   return \@result;
 }
