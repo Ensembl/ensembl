@@ -4,13 +4,14 @@ use GD;
 
 $| = 1;
 
+my %go_map;
 my $iprgo = shift(@ARGV);
 open (IPRGO,"<$iprgo");
 while (<IPRGO>) {
     my ($ipr,$go) = split (/\t/);
-    print STDERR "INTERPRO $ipr maps to GO $go\n";
+    $go_map{$ipr}=$go;
 }
-exit;
+
 #DB parameters
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
@@ -35,20 +36,6 @@ while (my $row= $sth->fetchrow_array) {
 }
 
 foreach my $domain (@domains) {
-    print STDERR "Processing domain $domain\n";
-    print STDERR "Finding genes...\n";
-    my @genes = find_Genes($db,$domain);
-    
-    print STDERR "Processing genes...\n";
-    my %bychr=process_Genes($domain,@genes);
-
-    print STDERR "Dumping genes...\n";
-    dump_genes($domain,@genes);
-}
-
-sub find_Genes {
-    my ($db,$domain) = @_;
-
     my @genes;
     
     #Find all genes that have an interpro domain, 
@@ -59,7 +46,7 @@ sub find_Genes {
     my $exnum;
     while (my $rowhash = $sth->fetchrow_hashref) {
 	my $geneid = $rowhash->{'gene'};
-	
+	print "$geneid\tGO\t".$go_mapping{$ipr}."\n";
     }
-    return @genes;
 }
+
