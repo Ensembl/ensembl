@@ -815,23 +815,98 @@ sub assembly_type{
    if($value) {
       $obj->{'assembly'} = $value;
     }
-    if (! defined $obj->{'assembly'}) {
-      my $ass;
-      eval {
-        $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly();
-      };
-      if ( $@ ) {
-        $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
-          ."assembly type must be set with assembly_type() first");
-      } elsif (! $ass) {
-        $obj->throw("No default assembly defined in ".$obj->dnadb->dbname. " - must set with assembly_type() first");
-      }
-      $obj->{'assembly'} = $ass;
-    }
-    return $obj->{'assembly'};
+   if (! defined $obj->{'assembly'}) {
+     my $ass;
+     eval {
+       $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly();
+     };
+     if ( $@ ) {
+       $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
+         ."assembly type must be set with assembly_type() first");
+     } elsif (! $ass) {
+       $obj->throw("No default assembly defined in ".$obj->dnadb->dbname. " - must set with assembly_type() first");
+     }
+     $obj->{'assembly'} = $ass;
+   }
+   return $obj->{'assembly'};
 
 }
 
+
+=head2 assembly_name
+
+  Arg [1]    : (optional) string $value
+                the new assembly name value
+  Example    : $db_adaptor->assembly_name($newval);
+  Description: Getter / Setter for the name of assembly used by
+               this database.  If the value is not set then the 
+               default value is obtained from the MetaContainer
+  Returntype : string
+  Exceptions : warn if there is no defined assembly name, and the default
+               assembly name cannot be obtained from the MetaContainer 
+  Caller     : ?
+
+=cut
+
+sub assembly_name {
+   my ($obj,$value) = @_;
+   if($value) {
+        $obj->{'assembly_name'} = $value;
+   }
+   if (! defined $obj->{'assembly_name'}) {
+        my $ass;
+        eval {
+            $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly_name();
+        };
+        if ( $@ ) {
+            warn("*** get_MetaContainer->get_default_assembly_name failed ***\n$@\n");
+        } elsif (! $ass) {
+            warn("No default assembly name defined in ".$obj->dnadb->dbname. "!");
+        }
+        
+        $obj->{'assembly_name'} = $ass;
+   }
+   return $obj->{'assembly_name'};
+
+}
+
+
+=head2 assembly_version
+
+  Arg [1]    : (optional) string $value
+                the new assembly version value
+  Example    : $db_adaptor->assembly_version($newval);
+  Description: Getter / Setter for the version of assembly used by
+               this database.  If the value is not set then the 
+               default value is obtained from the MetaContainer
+  Returntype : string
+  Exceptions : warn if there is no defined assembly version, and the default
+               assembly version cannot be obtained from the MetaContainer 
+  Caller     : ?
+
+=cut
+
+sub assembly_version {
+   my ($obj,$value) = @_;
+   if($value) {
+        $obj->{'assembly_version'} = $value;
+   }
+   if (! defined $obj->{'assembly_version'}) {
+        my $ass;
+        eval {
+            $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly_version();
+        };
+        if ( $@ ) {
+            warn("*** get_MetaContainer->get_default_assembly_version failed ***\n$@\n");
+        } elsif (! $ass) {
+            warn("No default assembly version defined in ".$obj->dnadb->dbname. "!");
+        }
+        
+        $obj->{'assembly_version'} = $ass;
+   }
+   return $obj->{'assembly_version'};
+
+}
 
 =head2 dnadb
 

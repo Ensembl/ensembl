@@ -863,12 +863,58 @@ sub strand{
 
 =cut
 
-sub assembly_type{
+sub assembly_type {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'assembly_type'} = $value;
     }
     return $self->{'assembly_type'};
+
+}
+
+
+
+=head2 assembly_name
+
+  Arg [1]    : string $value
+  Example    : $slice->assembly_name();
+  Description: Gets/Sets the assembly name that this slice is constructed 
+               from.  This is generally set by the slice adaptor and probably
+               shouldnt be set outside of this context. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub assembly_name {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->adaptor->db->assembly_name($value);
+    }
+    return $self->adaptor->db->assembly_name();
+
+}
+
+=head2 assembly_version
+
+  Arg [1]    : string $value
+  Example    : $slice->assembly_version();
+  Description: Gets/Sets the assembly version that this slice is constructed 
+               from.  This is generally set by the slice adaptor and probably
+               shouldnt be set outside of this context. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub assembly_version {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->adaptor->db->assembly_version($value);
+    }
+    return $self->adaptor->db->assembly_version();
 
 }
 
