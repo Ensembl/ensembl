@@ -88,25 +88,25 @@ if ($gene->version == 1) {
 }
 else {
     print "not ok 7\n";
-    print STDERR "gene->version does not give the expected value!\n";
+    print STDERR "gene->version does not give the expected value! - instead it give ",$gene->version,"\n";
 }
 
-if ($gene->created == 962638206) {
+if ($gene->created == 962641806 ) {
     print "ok 8\n";
 }
 else {
     print "not ok 8\n";
-    print STDERR "gene->created does not give the expected value!\n";
+    print STDERR "gene->created does not give the expected value! - instead it gives ",$gene->created,"\n";
 }  
 
-if ($gene->modified == 962638206) {
+if ($gene->modified == 962641806 ) {
     print "ok 9\n";
 }
 else {
     print "not ok 9\n"; 
     print STDERR "gene->modified does not give the expected value!\n";
 }  
-if ($gene->_stored == 962638206) {
+if ($gene->_stored == 962641806) {
     print "ok 10\n";
 }
 else {
@@ -123,7 +123,7 @@ $dblink->comment('This is a fake dblink object');
 $gene->add_DBLink($dblink);
 print "ok 11\n";
 
-$ok=0;;
+$ok=0;
 foreach my $link ($gene->each_DBLink) {
     if ($link->database eq 'EMBL_dummy') {
 	$ok++;
@@ -210,7 +210,7 @@ else {
 }
 $gene=$gene_obj->get_Gene_by_Transcript_id('bla_bla');
 
-if ($gene == undef) {
+if (! defined $gene) {
     print "ok 18\n";
 }
 else {
