@@ -1216,8 +1216,11 @@ sub get_all_MarkerFeatures {
                The name of the species to retrieve similarity features from
   Arg [2]    : string $qy_assembly
                The name of the assembly to retrieve similarity features from
+  Arg [3]    : string $type
+               The type of the alignment to retrieve similarity features from
   Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus musculus',
-							    'MGSC3');
+							    'MGSC3',
+							    'WGA');
   Description: Retrieves a list of DNA-DNA Alignments to the species specified
                by the $qy_species argument.
                The compara database must be attached to the core database
@@ -1231,10 +1234,10 @@ sub get_all_MarkerFeatures {
 =cut
 
 sub get_all_compara_DnaAlignFeatures {
-  my ($self, $qy_species, $qy_assembly) = @_;
+  my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
 
-  unless($qy_species && $qy_assembly) {
-    $self->throw("Query species and assembly arguments are required");
+  unless($qy_species && $qy_assembly && $alignment_type) {
+    $self->throw("Query species and assembly and alignmemt type arguments are required");
   }
 
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
@@ -1246,8 +1249,7 @@ sub get_all_compara_DnaAlignFeatures {
   }
 
   my $dafa = $compara_db->get_DnaAlignFeatureAdaptor;
-
-  return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly);
+  return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly, $alignment_type);
 }
 
 sub get_all_compara_Syntenies {
