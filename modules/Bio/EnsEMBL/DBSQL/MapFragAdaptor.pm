@@ -106,6 +106,7 @@ sub fetch_all_by_mapset_chr_start_end {
     my $dnafrag_id = $self->_get_dnafrag_id( $chr_name );
     my( $mapset_id, $max_length ) =  $self->_get_mapset_id( $mapset_code );
     
+    $max_length ||= 1e8;
     unless( $mapset_id ) {
         return $self->{'_cache'}{$key} = [];
     }
@@ -168,6 +169,7 @@ sub fetch_all_mapsets_by_chr_start_end {
            $max_length = $L if $L>$max_length;
         } 
     }
+    $max_length ||= 1e8;
 
     my $dnafrag_id = $self->_get_dnafrag_id( $chr_name );
 
