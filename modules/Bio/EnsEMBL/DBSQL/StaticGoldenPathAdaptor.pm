@@ -88,21 +88,37 @@ sub new {
 
 
 sub get_Gene_chr_MB {
+    my ($self,$gene) = @_;
+
+    my ($chr,$bp) = $self->get_Gene_chr_bp($gene);
+    my $mbase = $bp/1000000;
+    my $round = sprintf("%.1f",$mbase);   
+
+    return ($chr,$round);
+}
+
+sub get_Gene_chr_bp {
     my ($self,$gene) =  @_;
 
-    my $sth = $self->dbobj->prepare("select STRAIGHT_JOIN p.chr_name,p.chr_start from transcript tr,translation t,exon e,static_golden_path p where tr.gene = '$gene' and t.id = tr.translation and t.start_exon = e.id and e.contig = p.raw_id");
+    my $query = "
+     SELECT STRAIGHT_JOIN p.chr_name, p.chr_start 
+     FROM transcript tr, translation tl, exon e, static_golden_path p 
+     WHERE tr.gene = '$gene' 
+       AND tl.id = tr.translation 
+       AND tl.start_exon = e.id 
+       AND e.contig = p.raw_id";
+
+    my $sth = $self->dbobj->prepare($query);
 
     $sth->execute();
 
     my ($chr,$mbase) = $sth->fetchrow_array;
 
-    $mbase = $mbase / 1000000;
-      
-    my $round = sprintf("%.1f",$mbase);   
 
-    return ($chr,$round); 
+    return ($chr,$mbase); 
         
 }
+
 
 =head2 fetch_RawContigs_by_fpc_name
 
@@ -177,7 +193,7 @@ sub convert_chromosome_to_fpc{
 
 =head2 convert_fpc_to_chromosome
 
-  Title   : convert_chromosome_to_fpc
+  Title   : convert_fpc_to_chromosome
   Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
   Function:
   Returns : 
@@ -309,7 +325,10 @@ sub fetch_RawContigs_by_chr_start_end {
    
    $self->throw("I need a golden path type") unless ($type);
    
-   # go for new go-faster method
+   # go for new go-faster method 
+   # PL: is the query below correct? The 'NOT
+   # <' looks odd, the join is different from e.g. the branch version
+   # (e.g., look at 1.3.2.41). We'll keep it for now :-)
    my $sth = $self->dbobj->prepare("
         SELECT c.id
           , c.internal_id
@@ -527,8 +546,10 @@ sub fetch_VirtualContig_of_gene{
    my $type = $self->dbobj->static_golden_path_type();
 
    my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_start)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
      sgp.chr_name
   
 				    FROM    exon e,
@@ -831,6 +852,8 @@ sub fetch_VirtualContig_list_sized {
        $self->throw("Must fetch Virtual Contigs in sized lists");
    }
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
+   my $chr;
+   if ($#fpc >= 0) { $chr = $fpc[0]->chromosome; }
 
    my @finalfpc;
    my @vclist;
@@ -839,6 +862,8 @@ sub fetch_VirtualContig_list_sized {
    my $prev = shift @fpc;
    push(@finalfpc,$prev);
    foreach my $fpc ( @fpc ) {
+       $fpc->dbobj($self->dbobj);
+
        if( ( ($fpc->fpc_contig_end - $current_start+1) > $length1 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap1) ||
 	   ( ($fpc->fpc_contig_end -$current_start+1) > $length2 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap2) ) {
 	   # build new vc and reset stuff
@@ -848,15 +873,19 @@ sub fetch_VirtualContig_list_sized {
 	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
 	   $vc->id($name);
            $vc->dbobj($self->dbobj);
+	   $vc->_chr_name($chr);
+
 	   push(@vclist,$vc);
 	   
 	   $prev = $fpc;
 	   $current_start = $prev->fpc_contig_start;
 	   @finalfpc = ();
 	   push(@finalfpc,$prev);
+ 	   $prev->dbobj($self->dbobj);
        } else {
 	   push(@finalfpc,$fpc);
 	   $prev = $fpc;
+	   $fpc->dbobj($self->dbobj);
        }
    }
    # last contig
@@ -864,6 +893,8 @@ sub fetch_VirtualContig_list_sized {
    my $start = $finalfpc[0];
    my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
    $vc->dbobj($self->dbobj);
+   $vc->_chr_name($chr);
+
    push(@vclist,$vc);
 
    return @vclist;
@@ -926,6 +957,24 @@ sub get_all_fpc_ids {
    return @out;
 }
 
+sub get_chromosome_length {
+    my ($self,$chrname) = @_;
+
+    $self->throw("No chromosome name entered") unless defined($chrname);
+
+    my $sth = $self->dbobj->prepare("SELECT max(chr_end)
+                                     FROM   static_golden_path
+                                     WHERE  chr_name = \'$chrname\'");
+
+    $sth->execute;
+
+    my $rowhash = $sth->fetchrow_hashref;
+
+    if (defined($rowhash)) {
+	my $len = $rowhash->{'max(chr_end)'};
+	return $len;
+    }
+}
 
 
 =head2 dbobj
@@ -953,19 +1002,45 @@ sub dbobj{
 # sneaky
 
 sub is_golden_static_contig {
-    my ($self,$cid) = @_;
+    my ($self,$cid,$pos) = @_;
 
-    my $sth = $self->dbobj->prepare("select c.id from contig c,static_golden_path p where c.id = '$cid' and p.raw_id = c.internal_id");
+    my $query = "
+     SELECT c.id,p.raw_start,p.raw_end 
+     FROM contig c, static_golden_path p 
+     WHERE c.id = '$cid' AND p.raw_id = c.internal_id";
 
+    my $sth = $self->dbobj->prepare($query);
     $sth->execute;
-
-    return scalar($sth->fetchrow_array);
+#    my @contigs;
+     foreach my $row ($sth->fetchrow_hashref) {
+         my $contig = $row->{'id'};
+         my $start  = $row->{'raw_start'};
+         my $end    = $row->{'raw_end'};
+         if (defined($pos)) {
+             if ($pos >= $start && $pos <= $end) {
+                 return 1;
+                # push(@contigs,$contig);
+             }
+         } else {
+             return 1; 
+             # push(@contigs,$contig);
+         } 
+     }
+     return 0;
+#     return scalar(@contigs);
 }
 
 sub is_golden_static_clone {
     my ($self,$clone) = @_;
 
-    my $sth = $self->dbobj->prepare("select c.id from contig c,static_golden_path p where c.clone = '$clone' and p.raw_id = c.internal_id");
+    my $query = "
+    SELECT c.id 
+    FROM contig co, clone cl, static_golden_path p 
+    WHERE cl.id = '$clone' 
+      AND co.clone = cl.internal_id 
+      AND p.raw_id = c.internal_id";
+   
+    my $sth = $self->dbobj->prepare($query);
 
     $sth->execute;
 
