@@ -100,11 +100,11 @@ foreach $gene ( $clone->get_all_Genes() ) {
 
 print "ok 7\n";
 
-$seqout = Bio::SeqIO->new( '-format' => 'embl',-fh => \*STDERR );
+$seqout = Bio::SeqIO->new( -Format => 'embl',-fh => \*STDERR );
 $seqout->write_seq($contig);
 
 eval {
-    $contig = $db->get_Contig('D87012.00001');
+    $contig = $db->get_Contig('AC012192.00001');
 };
 
 if( $@ ) {
@@ -128,7 +128,7 @@ if( $@ ) {
     if( $seq->isa('Bio::PrimarySeqI') ) {
 	print "ok 10\n";
 	#print STDERR "Seq is ".$seq->seq."\n";
-	$eout = Bio::SeqIO->new( -format => 'EMBL', -fh => \*STDERR ) ;
+	$eout = Bio::SeqIO->new( "-format" => 'EMBL', -fh => \*STDERR ) ;
 	$eout->write_seq($vc);
     } else {
 	print STDERR "Could not make sequence - got a [$seq]\n";
