@@ -1,4 +1,4 @@
-#
+ore#
 # BioPerl module for Contig
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
@@ -1210,7 +1210,7 @@ sub _got_overlaps {
         );
 
     sub _load_overlaps {
-        my ($self,@args) = @_;
+        my ($self) = @_;
 
         my $id      = $self->dna_id();
         my $version = $self->seq_version();
