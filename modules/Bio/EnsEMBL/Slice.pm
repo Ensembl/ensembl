@@ -1243,6 +1243,8 @@ sub accession_number {
 
 =head2 DEPRECATED methods
 =cut
+
+# sub DEPRECATED METHODS #
 ###############################################################################
 
 

@@ -1504,6 +1504,35 @@ sub cdna2genomic {
 }
 
 
+=Head1 load_genomic_mapper
+
+  Arg  1   : Bio::EnsEMBL::Mapper $mapper
+             a mapper that will know how to go from cdna to genomic,
+             after it is loaded here with the coordinates
+  Arg  2   : int $id
+             an id for the cdna, will probably be the address of the transcript
+             that called this function. 
+
+  Function : Loads the given mapper with cdna and genomic coordinates, so it can map 
+             from one system to the other.
+
+ Returntype: none
+  Caller  : Bio::EnsEMBL::Transcript->convert_peptide_coordinate_to_contig
+
+
+=cut
+
+
+sub load_genomic_mapper {
+  my ( $self, $mapper, $id, $start ) = @_;
+
+  $mapper->add_map_coordinates( $id, $start, $start+$self->length()-1,
+				$self->strand(), $self->contig->dbID(),
+				$self->start(), $self->end() );
+}
+
+
+
 sub seq {
   my $self = shift;
   my $arg = shift;

@@ -961,13 +961,29 @@ sub pep_coords {
   Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
              is the genomic coordinates of this start/end on the peptide
 
-
   Returns  : list of Bio::EnsEMBL::SeqFeature
 
 =cut
 
 sub convert_peptide_coordinate_to_contig {
   my ($self,$start,$end) = @_;
+
+  my $mapper;
+  my @out;
+
+  # try with a mapper
+  if( defined $self->{'_exon_coord_mapper'} ) {
+    $mapper = $self->{'_exon_coord_mapper'};
+  } else {
+    $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
+    my @exons = @{$self->get_all_translateable_Exons() };
+    my $start = 1;
+    for my $exon ( @exons ) {
+      $exon->load_genomic_mapper( $mapper, $self, $start );
+      $start += $exon->length;
+    }
+    $self->{'_exon_coord_mapper'} = $mapper;
+  }
 
   if( !defined $end ) {
     $self->throw("Must call with start/end");
@@ -978,58 +994,22 @@ sub convert_peptide_coordinate_to_contig {
   $start = 3* $start-2;
   $end   = 3* $end;
 
-  if( !defined $self->translation ) {
-    $self->throw("No translation, so no peptide coordinate!");
-  }
+  my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
 
-  # get out exons, walk along until we hit first exon
-  # calculate remaining distance.
+  my $rca = $self->db()->get_RawContigAdaptor();
 
-  my $start_exon;
-  my @exons = @{$self->get_all_Exons};
-  while( my $exon = shift  @exons ) {
-    if( $exon = $self->translation->start_Exon ) { # in memory reliance
-      my $start_exon = $exon;
-      last;
+  for my $coord ( @mapped_coords ) {
+    if( $coord->isa( "Bio::EnsEMBL::Mapper::Coordinate" ) ) {
+      my $sf = Bio::EnsEMBL::SeqFeature->new
+	( -start => $coord->start(),
+	  -end => $coord->end(),
+	  -strand => $coord->strand()
+	);
+      $sf->contig( $rca->fetch_by_dbID( $coord->id() ));
+      push( @out, $sf );
     }
-  }
-
-  my $current_len_exon = $start_exon->length - $self->translation->start -1;
-  my $trans_len = 0;
-  my @out;
-
-  my $offset_into_exon = $self->translation->start;
-
-  my $exon;
-  while( $exon = shift @exons && $start < $trans_len + $current_len_exon ) {
-      $trans_len += $exon->length();
-  }
-
-  unshift(@exons,$exon);
-
-  # main loop!
-  while( my $exon = shift @exons && $end  < $trans_len + $current_len_exon ) {
-    # definitely want something in this exon. Find start position
-    my $start_in_exon;
-    my $end_in_exon;
-
-    if( $start > $trans_len ) {
-      $start_in_exon = $offset_into_exon + $start - $trans_len +1;
-    } else {
-      $start_in_exon = $offset_into_exon;
-    }
-    
-    if( $end < $trans_len + $current_len_exon ) {
-      $end_in_exon = $offset_into_exon -1 + ($end - $trans_len+1);
-    } else {
-      $end_in_exon = $exon->length;
-    }
-    $offset_into_exon = 0;
-
-    # the main reason for make this an attribute of the exon is to handle stickies
-    push(@out,$exon->contig_seqfeatures_from_relative_position($start_in_exon,$end_in_exon));
-  }
-
+  } 
+	  
   return @out;
 }
 
@@ -1518,6 +1498,7 @@ sub transform {
   $self->{'_start'} = undef;
   $self->{'_end'} = undef;
   $self->{'_strand'} = undef;
+  $self->{'_exon_coord_mapper'} = undef;
 }
 
 

@@ -125,7 +125,7 @@ sub start {
 
 
 
-=head2 start
+=head2 end
 
   Arg [1]    : (optional) int $end
   Example    : $end = $gene->end;

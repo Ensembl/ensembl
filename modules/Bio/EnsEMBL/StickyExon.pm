@@ -129,98 +129,34 @@ sub get_all_component_Exons{
 
 
 
-=Head1
+=Head1 load_genomic_mapper
 
-  Arg  1   : integer start - relative to the exon
-  Arg  2   : integer end   - relative to the exon
+  Arg  1   : Bio::EnsEMBL::Mapper $mapper
+             a mapper that will know hwo to go from cdna to genomic,
+             after it is loaded here with the coordinates
+  Arg  2   : int $id
+             an id for the cdna, will probably be the address of the transcript
+             that callewd this function. 
 
-  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
-             is the genomic coordinates of this start/end on the exon
-             For simple exons this is one feature  for Stickies this
-             is overridden and gives out a list of Bio::EnsEMBL::SeqFeatures
+  Function : Loads the given mapper with cdna and genomic coordinates, so it can map 
+             from one system to the other.
 
-  Returns  : list of Bio::EnsEMBL::SeqFeature
+ Returntype: none
+  Caller  : Bio::EnsEMBL::Transcript->convert_peptide_coordinate_to_contig
 
 
 =cut
 
-sub contig_seqfeatures_from_relative_position {
-  my ($self,$start,$end) = @_;
 
-  if( !defined $end ) {
-    $self->throw("Have not defined all the methods!");
-  }
+sub load_genomic_mapper {
+  my ( $self, $mapper, $id, $start ) = @_;
 
-  # easy
-  if( $start < 1 ) {
-    $self->warn("Attempting to fetch start less than 1 ($start)");
-    $start = 1;
-  }
-
-  if( $end > $self->length ) {
-    $self->warn("Attempting to fetch end greater than end of exon ($end)");
-    $end = $self->length;
-  }
-
-  my @out;
-  my $sf;
   my $exons = $self->get_all_component_Exons;
-  my $len = 0;
-  while( scalar(@$exons) > 0 ) {
-    if( $exons->[0]->length + $len > $start ) {
-       last;
-    } else {
-       my $discard = shift @$exons;
-       $len += $discard;
-    }
+  for my $exon ( @{$exons} ) {
+    $mapper->add_map_coordinates( $id, $start, $start+$exon->length()-1,
+				  $exon->strand(), $exon->contig->dbID(),
+				  $exon->start(), $exon->end() );
   }
-
-  # handle the first component exon
-
-  if( scalar(@$exons) == 0 ) {
-     return @out;
-  }
-  
-  $sf = Bio::EnsEMBL::SeqFeature->new();
-  $sf->seqname($exons->[0]->contig->id);
-  $sf->strand($exons->[0]->strand);
-  $sf->start($exons->[0]->start + $start - $len);
-
-  if( $end < $len + $exons->[0]->length ) {
-      $sf->end($exons->[0]->start + $end - $len);
-      return $sf;
-  } else {
-      $sf->end($exons->[0]->end);
-      push(@out,$sf);
-  }
-
-
-  while( scalar(@$exons) ) {
-     if( $exons->[0]->length + $len > $end ) {
-        last;
-     }
-     $sf = Bio::EnsEMBL::SeqFeature->new();
-     $sf->seqname($exons->[0]->contig->id);
-     $sf->strand($exons->[0]->strand);
-     $sf->start($exons->[0]->start);
-     $sf->start($exons->[0]->end);
-     push(@out,$sf);
-     $len += $exons->[0]->length;
-  }
-
-  if( scalar(@$exons) == 0 ) {
-     return @out;
-  }
-
-  # handle the last exon
-
-  $sf = Bio::EnsEMBL::SeqFeature->new();
-  $sf->seqname($exons->[0]->contig->id);
-  $sf->strand($exons->[0]->strand);
-  $sf->start($exons->[0]->start);
-  $sf->start($exons->[0]->start + $end - $len);
-
-  return @out;
 }
 
 =head2 add_component_Exon

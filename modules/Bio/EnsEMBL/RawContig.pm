@@ -662,7 +662,7 @@ sub desc{
 
 sub moltype {
   my $self = shift;
-  return 'DNA';
+  return 'dna';
 }
 
 =head2 accession_number
