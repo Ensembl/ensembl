@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
+Bio::EnsEMBL::DBSQL::SlicetAdaptor - Adaptors for slices
 
 =head1 SYNOPSIS
 
@@ -46,6 +46,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Mapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
@@ -707,7 +708,7 @@ sub fetch_normalized_slice_projection {
     SELECT seq_region_id, seq_region_start, seq_region_end,
            exc_type, exc_seq_region_id, exc_seq_region_start,
            exc_seq_region_end
-      FROM assembly_exception 
+      FROM assembly_exception
      WHERE seq_region_id = ?
   ";
 
@@ -775,7 +776,14 @@ sub fetch_normalized_slice_projection {
     my $rel_start = 1;
     for my $coord ( @linked ) {
       if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-	push( @$result, [ $rel_start, $coord->length()+$rel_start-1, $slice ] );
+        my $exc_slice = Bio::EnsEMBL::Slice->new
+          (-START        => $coord->start(),
+           -END          => $coord->end(),
+           -STRAND       => $slice->strand(),
+           -COORD_SYSTEM => $slice->coord_system(),
+           -ADAPTOR      => $self,
+           -SEQ_REGION_NAME => $slice->seq_region_name);
+        push( @$result, [ $rel_start, $coord->length()+$rel_start-1, $exc_slice ] );
       } else {
 	my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
 	my $exc2_slice = Bio::EnsEMBL::Slice->new
@@ -792,6 +800,9 @@ sub fetch_normalized_slice_projection {
       }
       $rel_start += $coord->length();
     }
+  } else {
+    #just return this slice, there were no haps or pars
+    return  [[1,$slice->length, $slice]];
   }
 
 
