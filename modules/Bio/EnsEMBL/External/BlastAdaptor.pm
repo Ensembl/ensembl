@@ -207,7 +207,15 @@ sub new_fast{
 
 sub new {
   my $caller = shift;
-  my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
+  my @tmp = @_;
+  my $con = shift;
+  my $connection;
+  if(ref($con) and $con->isa("Bio::EnsEMBL::DBSQL::DBConnection")){
+    $connection = $con;
+  }
+  else{
+    $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@tmp);
+  }
   my $self = $caller->SUPER::new($connection);
   return $self;
 }
