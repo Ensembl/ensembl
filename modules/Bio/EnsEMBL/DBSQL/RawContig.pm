@@ -528,15 +528,6 @@ sub _gene_query{
      }
  }
  
- if($supporting eq 'evidence'){
-   my $exona = $self->dbobj->get_ExonAdaptor();
-   foreach my $g(@out){
-     foreach my $exon($g->get_all_Exons){
-       $exona->fetch_evidence_by_Exon($exon);
-     }
-   }
- }
-
  if (@out) {
      return @out;
  }
