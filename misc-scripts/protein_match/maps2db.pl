@@ -381,5 +381,25 @@ sub xSYN{
 
 }
 
+=head2 stat
+
+ Title   : stat
+ Usage   : $obj->stat($newval)
+ Function: 
+ Returns : value of stat
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub stat{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'stat'} = $value;
+    }
+    return $obj->{'stat'};
+
+}
 
 

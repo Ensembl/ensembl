@@ -56,14 +56,20 @@ my $sptr     = $conf{'sptr_fa'};
 my $protfile = $conf{'pmatch_input_fa'};
 my $pmatch   = $conf{'pmatch'};
 my $organism = $conf{'organism'};
+my $refseq_pred = $conf{'refseq_pred_fa'};
 
 
 if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
 }
 
+if ($organism eq "human") {
+    &parse_refseq_pred;
+}
+
 &parse_sptr;
 &test_protfile;
+
 
 ### END MAIN
 
@@ -120,6 +126,33 @@ sub parse_refseq {
   close OUT;
 
 }
+
+sub parse_refseq_pred {
+    
+  open (IN, "<$refseq_pred") or die "Can't open $refseq_pred\n";
+  open (OUT, ">$protfile") or die "Can't open $protfile\n";
+
+  while(<IN>){
+    # eg >gi|4501893|ref|NP_001094.1| actinin, alpha 2 [Homo sapiens]
+    if(/^>/){
+      if(/^>\w+\|\w+\|\w+\|(\S+)\.\d+\|/){
+	print OUT ">$1\n";
+      }
+      else {
+	print OUT $_;
+      }
+    }
+    else {
+      # sequence - sub U by X
+      s/U/X/g;
+      print OUT $_;
+    }
+  }
+  close IN;
+  close OUT;
+
+}
+
 
 sub test_protfile {
 
