@@ -195,7 +195,7 @@ sub new {
 
  MAP_PATH:
   foreach my $map_path (@{$mc->list_value_by_key('assembly.mapping')}) {
-    my @cs_strings = split(/\|/, $map_path);
+    my @cs_strings = split(/[|#]/, $map_path);
 
     if(@cs_strings < 2) {
       warning("Incorrectly formatted assembly.mapping value in meta " .
@@ -213,6 +213,14 @@ sub new {
         next MAP_PATH;
       }
       push @coord_systems, $cs;
+    }
+
+    # if the delimiter is a # we want a special case, multiple parts of the same
+    # componente map to same assembly part. As this looks like the "long" mapping
+    # we just make the path a bit longer :-)
+
+    if( $map_path =~ /\#/ && scalar( @coord_systems ) == 2 ) {
+      splice( @coord_systems, 1, 0, ( undef ));
     }
 
     my $cs1 = $coord_systems[0];

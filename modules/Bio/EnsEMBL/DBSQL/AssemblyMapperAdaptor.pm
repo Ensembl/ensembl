@@ -167,7 +167,7 @@ sub fetch_by_CoordSystems {
           $cs2->version());
   }
 
-  my $key = join(':', map({$_->dbID()} @mapping_path));
+  my $key = join(':', map({defined($_)?$_->dbID():"-"} @mapping_path));
 
   my $asm_mapper = $self->{'_asm_mapper_cache'}->{$key};
 
@@ -185,8 +185,9 @@ sub fetch_by_CoordSystems {
     $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
 
 #   If you want multiple pieces on two seqRegions to map to each other
-#   uncomment following. AssemblyMapper assumes only one mapped piece per contig
-#   $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
+#   you need to make an assembly.mapping entry that is seperated with a #
+#   instead of an |.
+
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
     return $asm_mapper;
   }
@@ -200,7 +201,7 @@ sub fetch_by_CoordSystems {
     #e.g.   chr <-> contig <-> clone   and   clone <-> contig <-> chr
 
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
-    $key = join(':', map({$_->dbID()} reverse(@mapping_path)));
+    $key = join(':', map({defined($_)?$_->dbID():"-"} reverse(@mapping_path)));
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
     return $asm_mapper;
   }
@@ -660,7 +661,7 @@ sub register_chained {
       @path = @{$csa->get_mapping_path( $start_cs, $end_cs )};
   }
 
-  if(@path != 2) {
+  if(@path != 2 && defined( $path[1] )) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
     my $len  = scalar(@path) - 1;
     throw("Unexpected mapping path between start and intermediate " .
@@ -671,7 +672,10 @@ sub register_chained {
   }
 
   my $sth;
-  my ($asm_cs,$cmp_cs) = @path;
+  my ($asm_cs,$cmp_cs);
+  $asm_cs = $path[0];
+  $cmp_cs = $path[-1];
+
   $sth = ($asm_cs->equals($start_cs)) ? $asm2cmp_sth : $cmp2asm_sth;
 
   my $seq_region_id = $self->_seq_region_name_to_id($seq_region_name,
