@@ -617,6 +617,7 @@ sub _build_contig_map{
    # so we can figure out the start position (contig-wise)
 
    # initialisation - find the correct end of the focus contig
+    print(STDERR "in build_contig_map\n");
     my ($current_left_size,$current_orientation,$current_contig,$overlap);
     
     if( $ori == 1 ) {
