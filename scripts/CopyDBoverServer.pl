@@ -64,10 +64,10 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs2e:3306' => "/mysqle/current/var",
 			       'ecs2f:3306' => "/mysqlf/current/var",
 			       'ecs3d:3307' => "/mysqld/current/var",
-			       'ecs4:3350' => "/mysql-3350",
-			       'ecs4:3351' => "/mysql-3351",
-			       'ecs4:3352' => "/mysql-3352",
-			       'ecs4:3353' => "/mysql-3353");
+			       'ecs4:3350' => "/mysql-3350/databases",
+			       'ecs4:3351' => "/mysql-3351/databases",
+			       'ecs4:3352' => "/mysql-3352/databases",
+			       'ecs4:3353' => "/mysql-3353/databases");
 
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
@@ -146,8 +146,12 @@ foreach my $db_to_copy (@dbs_to_copy) {
   $destination_srv =~ s/(ecs[1234][a-h]?)\.*.*/$1/;
   my $destination_port = $db_to_copy->{dest_port};
 
-  my $destination_tmp_directory = "/tmp";
   my $destination_directory = $mysql_directory_per_svr{$destination_srv . ":" . $destination_port};
+  
+  my $destination_tmp_directory = $destination_directory;
+  $destination_tmp_directory =~ s/\/var//;
+  $destination_tmp_directory =~ s/\/databases//;
+  $destination_tmp_directory .= "/tmp";
 
   # checking that destination db does not exist
   if (-e "$destination_directory/$db_to_copy->{dest_db}") {
@@ -158,7 +162,6 @@ foreach my $db_to_copy (@dbs_to_copy) {
     next;
   }
   
-#  my $myisamchk_executable = $mysql_directory_per_svr{$destination_srv}."/current/bin/myisamchk";
   my $myisamchk_executable = "/usr/local/ensembl/mysql/bin/myisamchk";
   
   $source_srv =~ s/(ecs[1234]).*/$1/;
