@@ -294,7 +294,7 @@ sub _calculate_coordinates{
    my $inside_exon = 0;
    my ($start,$end,$strand);
    foreach my $exon ( @exons ) {
-       #print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname,"\n";
+       #print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname," ",$start,"\n";
 
        if( $cid eq $exon->seqname ) {
 	   if( $inside_exon == 0 ) {

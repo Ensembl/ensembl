@@ -117,6 +117,7 @@ sub fetch_by_chrname{
 sub get_landmark_MarkerFeatures_old{
    my ($self,$chr_name) = @_;
 
+   my $glob = 1000;
 
    my $statement= "   SELECT 
                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-1),
@@ -180,8 +181,12 @@ sub get_landmark_MarkerFeatures_old{
 =cut
 
 sub get_landmark_MarkerFeatures{
-   my ($self,$chr_name) = @_;
+   my ($self,$chr_name,$glob) = @_;
 
+
+   if( !defined $glob ) {
+       $glob = 500000;
+   }
 
    my $statement= " SELECT  start,
 			    end,
@@ -207,13 +212,20 @@ sub get_landmark_MarkerFeatures{
        ( undef, \$start, \$end,  \$strand, \$name);
    
    my @out;
+   my $prev;
    while( $sth->fetch ) {
+       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {
+           
+           next;
+       }
+
        my $sf = Bio::EnsEMBL::SeqFeature->new();
        $sf->start($start);
        $sf->end($end);
        $sf->strand($strand);
        $sf->id($name);
        push(@out,$sf);
+       $prev = $sf;
    } 
 
    return @out;

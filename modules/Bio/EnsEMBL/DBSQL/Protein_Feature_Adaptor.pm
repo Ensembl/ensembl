@@ -93,6 +93,7 @@ sub fetch_by_translationID {
 
     my %anahash;
 
+
     while( my $arrayref = $sth->fetchrow_arrayref) {
     
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};

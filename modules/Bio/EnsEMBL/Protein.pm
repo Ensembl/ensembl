@@ -101,9 +101,13 @@ sub top_SeqFeatures{
    
    my @seq_features = $self->each_Protein_feature;
 
+
+
    if (@seq_features) {
        return @seq_features;
    }
+ 
+	
 }
 
 =head2 all_SeqFeature
@@ -211,9 +215,14 @@ sub each_Protein_feature{
    my ($self,@args) = @_;
 
    if (defined ($self->{'_prot_feat'})) {
+        #print STDERR "ENTERING PROTEIN FEATURE RETURN\n";
+  	#foreach my $sf ( @{$self->{'_prot_feat'}} ) {
+	#	print STDERR "Protein feature $sf\n";
+       ##}
        return @{$self->{'_prot_feat'}};
    }
 
+  return ();
 }
 
 =head2 add_intron

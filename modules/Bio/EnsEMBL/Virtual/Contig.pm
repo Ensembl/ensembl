@@ -921,6 +921,8 @@ sub _gene_query{
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
+	    
+            #print STDERR "Exon for gene ",$gene->id," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
 
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
@@ -988,6 +990,8 @@ sub _gene_query{
 		    $exonconverted{$exon->id} = 1;
 		}               
 	    }
+            #print STDERR "Exon for gene is now on ",$gene->id," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
+
 	}                               # foreach exon
         
         if ($internalExon == 0) { 

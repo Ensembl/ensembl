@@ -850,10 +850,8 @@ sub get_all_FPCClones {
     my @fpcclones = $chr->get_Clones_by_start_end($glob_start,$glob_end);
 
     foreach my $clone ( @fpcclones ) {
-		print STDERR "For ",$clone->name," got ",$clone->start," ",$glob_start,"\n";
         my $newstart = $clone->start - $glob_start;
        	$clone->start($newstart);
-       print STDERR "Now got ",$clone->start," ",$clone->end,"\n";
     }
 
     return @fpcclones;
