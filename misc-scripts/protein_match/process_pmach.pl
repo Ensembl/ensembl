@@ -13,6 +13,10 @@ NB: All of the intermediary files are written.
 -sp : SP, SPTREMBL fasta file
 -refseq: Refseq peptide fasta file
 
+=head2 Contacts
+mongin@ebi.ac.uk
+birney@ebi.ac.uk
+
 =cut  
 
 use Getopt::Long;
@@ -68,17 +72,18 @@ sub postprocesspmatch {
 	my ($len,$id,$start,$end,$perc,$query,$qst,$qend,$qperc) = split;
 
 	if ($db eq $refseq) {
-	    #Get the refseq ac (NP_\d+) 
+	    #Get only the refseq ac (NP_\d+) 
 	    ($query) = $query =~ /\w+\|\d+\|\w+\|(\w+)/;
 	}
 
 	my $uniq = "$id:$query";
 	
+#Add the percentage of similarity for the Ensembl peptide for a single match
+#There is a bug at this step, some similarities can be over 100% !!! This problem may be solved by changing pmatch source code
 	$hash1{$uniq} += $perc;
     }
 
-
-
+#Write out the processed data
     foreach my $key ( keys %hash1 ) {
 	($a,$b) = split(/:/,$key);
 	print OUT "$a\t$b\t$hash1{$key}\n";
@@ -88,6 +93,7 @@ sub postprocesspmatch {
 }
 
 sub finalprocess {
+#This final subroutine will use the postprocessed pmatch file and get back the best Ensembl match (labelled as PRIMARY) for a given external known protein.
     my ($db) = @_;
     
     if ($db eq $sp) {
@@ -108,10 +114,13 @@ sub finalprocess {
 	#if ($perc > 100) {
 	 #   print "$ens\t$known\t$perc\n";
 	#}
+	
+
 	if( !defined $hash2{$known} ) {
 	    $hash2{$known} = [];
 	}
 	
+#Each single external protein correspond to an array of objects dealing with the name and the percentage of similarity of the Ensembl peptide matching with the the known external protein.
 	my $p= NamePerc->new;
 	$p->name($ens);
 	$p->perc($perc);
@@ -119,11 +128,11 @@ sub finalprocess {
 	push(@{$hash2{$known}},$p);
     }
 
-
     foreach my $know ( keys %hash2 ) {
 	my @array = @{$hash2{$know}};
 	@array = sort { $b->perc <=> $a->perc } @array;
 	
+#The Ensembl match to the known protein is labelled as PRIMARY and will be used later for the mapping 
 	my $top = shift @array;
 	print  OUT "$know\t",$top->name,"\t",$top->perc,"\tPRIMARY\n";
 	
@@ -132,13 +141,15 @@ sub finalprocess {
 		die "Not good....";
 	    }
 	}
-	
+
+#If there is more than 20 Ensembl peptides matching a single known protein, these Ensembl peptides are labelled as REPEAT 	
 	if (scalar(@array) >= 20) {
 	    foreach my $repeat (@array) {
 		print OUT "$know\t",$repeat->name,"\t",$repeat->perc,"\tREPEAT\n";
 	    }
 	}
 	
+#If less than 20, either duplicate if percentage of identity close to the PRIMARY labelled as DUPLICATE or labelled as PSEUDO. DUPLICATEs can also be used for the mapping 
 	if (scalar(@array) < 20) {
 	    foreach my $duplicate (@array) {
 		if( $duplicate->perc+1 >= $top->perc ) {
@@ -154,6 +165,7 @@ sub finalprocess {
     close (OUT);
 }
 
+#Set of objects to deal with the script
 
 package NamePerc;
 
