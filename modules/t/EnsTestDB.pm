@@ -99,6 +99,7 @@ my $counter=0;
 
         my $self =undef;
 	$self = do $conf_file || $fallback_defaults;
+
 	if ($arg) {
 	    if  (ref $arg eq 'HASH' ) {  # a hash ref
                 foreach my $key (keys %$arg) {
@@ -115,7 +116,9 @@ my $counter=0;
         foreach my $f (keys %$self) {
             confess "Unknown config field: '$f'" unless $known_field{$f};
         }
+
         bless $self, $pkg;
+
         $self->create_db;
 	
         return $self;
@@ -293,10 +296,10 @@ sub do_sql_file {
                      if ( $comment_strip_warned++ ) { 
                          # already warned
                      } else {
-                         warn "#################################\n".
-                           warn "# found comment strings inside quoted string; not stripping, too complicated: $_\n";
-                         warn "# (continuing, assuming all these they are simply valid quoted strings)\n";
-                         warn "#################################\n";
+                         #warn "#################################\n".
+                         #warn "# found comment strings inside quoted string; not stripping, too complicated: $_\n";
+                         #warn "# (continuing, assuming all these they are simply valid quoted strings)\n";
+                         #warn "#################################\n";
                      }
                  } else {
                 s/(#|--).*//;       # Remove comments
