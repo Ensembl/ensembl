@@ -60,6 +60,36 @@ use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
 
 @ISA = qw(Bio::EnsEMBL::Feature);
 
+
+
+=head2 new
+
+  Arg [-EXONS] :
+        reference to list of Bio::EnsEMBL::Exon objects - exons which make up 
+        this transcript
+  Arg [-STABLE_ID] :
+        string - the stable identifier of this transcript
+  Arg [-VERSION] :
+        int - the version of the stable identifier of this transcript
+  Arg [-EXTERNAL_NAME] :
+        string - the external database name associated with this transcript
+  Arg [-EXTERNAL_DB] :
+        string - the name of the database the external name is from
+  Arg [-EXTERNAL_STATUS]:
+        string - the status of the external identifier
+  Arg [-DISPLAY_XREF]:
+        Bio::EnsEMBL::DBEntry - The external database entry that is used
+        to label this transcript when it is displayed.
+  Example    : $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
+  Description: Constructor. Instantiates a Transcript object.
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : throw on bad arguments
+  Caller     : general
+
+=cut
+
+
+
 sub new {
   my($class) = shift;
 
