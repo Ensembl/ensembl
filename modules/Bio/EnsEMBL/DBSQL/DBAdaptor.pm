@@ -2352,8 +2352,8 @@ sub get_RawContigAdaptor {
 sub get_SliceAdaptor {
     my( $self ) = @_;
 
-    my( $rca );
-    unless ($rca = $self->{'_slice_adaptor'}) {
+    my( $sa );
+    unless ($sa = $self->{'_slice_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::SliceAdaptor;
 	$a = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($self);
         $self->{'_slice_adaptor'} = $a;
@@ -2540,7 +2540,7 @@ sub get_StaticGoldenPathAdaptor{
     unless ($sgpa = $self->{'_static_golden_path_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
         $sgpa = Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(
-            -dbobj => $self,
+            -db => $self,
             );
         $self->{'_static_golden_path_adaptor'} = $sgpa;
     }
