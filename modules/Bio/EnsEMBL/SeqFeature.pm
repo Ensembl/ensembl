@@ -901,7 +901,7 @@ sub gffstring {
 
    my $strand = "+";
    
-   if ($self->strand == -1) {
+   if ((defined $self->strand)&&($self->strand == -1)) {
      $strand = "-";
    }
    
