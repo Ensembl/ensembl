@@ -267,6 +267,25 @@ sub coord_system {
   return $self->{'coord_system'};
 }
 
+=head2 coord_system_name
+
+  Arg [1]    : none
+  Example    : print $slice->coord_system_name()
+  Description: Gets the name of the coord_system which this slice is on.
+               Returns undef if this Feature is not on a slice.
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+
+=cut
+
+sub coord_system_name {
+  my $self = shift;
+  my $csystem = $self->{'coord_system'};
+  return ($csystem) ? $csystem->name() : undef;
+}
+
 
 =head2 centrepoint
 

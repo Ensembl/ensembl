@@ -370,7 +370,6 @@ sub transform {
   my $self = shift;
   my $cs_name = shift;
   my $cs_version = shift;
-
   #
   # For backwards compatibility check if the arguments are old style args
   #
@@ -618,7 +617,6 @@ sub project {
   #fetch by feature always gives back forward strand slice:
   $slice = $slice_adaptor->fetch_by_Feature($self);
   $slice = $slice->invert if($strand == -1);
-
   return $slice->project($cs_name, $cs_version);
 }
 
@@ -713,9 +711,6 @@ sub feature_Slice {
 
   
 }
-
-
-
 
 
 =head2 seq_region_name
@@ -821,6 +816,25 @@ sub seq_region_end {
   }
 }
 
+
+=head2 coord_system_name
+
+  Arg [1]    : none
+  Example    : print $feature->coord_system_name()
+  Description: Gets the name of the coord_system which this feature is on.
+               Returns undef if this Feature is not on a slice.
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+
+=cut
+
+sub coord_system_name {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+  return ($slice) ? $slice->coord_system_name() : undef;
+}
 
 
 =head2 seq
