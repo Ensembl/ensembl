@@ -87,17 +87,17 @@ sub run {
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
 
-    if ($array[2]) {
-      my $master = $refseq{$array[2]};
-      my $dep    = $hugo{$hgnc};
-      if(!defined($master) or !defined($dep)){
-	$mismatch++;
-      }
-      else{
-	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id);
-	$count++;
-      }
-    }
+#    if ($array[2]) {
+#      my $master = $refseq{$array[2]};
+#      my $dep    = $hugo{$hgnc};
+#      if(!defined($master) or !defined($dep)){
+#	$mismatch++;
+#      }
+#      else{
+#	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,'',$hugo{$hgnc},"","",$source_id,$species_id);
+#	$count++;
+#      }
+#    }
   }
   close (ENS1);
   print "\t$count xrefs succesfully loaded\n";
