@@ -90,7 +90,7 @@ sub run {
     #can have more than one file
 
     my @files = split(/\s+/,$url);
-    
+
     my $parse = 0;
     my $empty = 0;
     my $file_cs=0;
@@ -99,7 +99,7 @@ sub run {
     $dir = $base_dir . "/" . sanitise($type);
     foreach my $urls (@files){
       my ($file) = $urls =~ /.*\/(.*)/;
-      
+
       if (!$skipdownload) {
 	
 	rmtree $dir if ($type ne $last_type);
