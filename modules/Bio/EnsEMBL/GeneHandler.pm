@@ -240,7 +240,7 @@ sub _process_Transcript{
 	   $ft->add_field('created',$exon->created());
 	   $ft->add_field('modified',$exon->modified());
 	   $ft->add_field('exon_id',$exon->id());
-	   $ft->add_field('phase',$exon->phase());
+	   $ft->add_field('start_phase',$exon->phase());
 	   $ft->add_field('end_phase',$exon->end_phase());
 
 
@@ -272,7 +272,7 @@ sub _process_Transcript{
 	   }
        } else {
 	   if( ! defined $trans_loc ) {
-	       $trans_loc = "complement(<$locstart..$locend)";
+	       $trans_loc = "complement($locstart..>$locend)";
 	   } else {
 	       $trans_loc .= ",complement($locstart..$locend)";
 	   }
@@ -290,9 +290,9 @@ sub _process_Transcript{
 
    # puts a > on the last location line
    if( $loc_comp == 1 ) {
-       $trans_loc =~ s/\.\.(\d+)(\)?)$/..$1>$2/;
+       $trans_loc =~ s/(\d+)\.\.(\d+)(\)?)$/$1..>$2$3/;
    } else {
-       $trans_loc =~ s/\.\.(\d+)(\)?)$/..>$1$2/;
+       $trans_loc =~ s/(\d+)\.\.(>?)(\d+)(\)?)$/<$1..$2$3$4/;
    }
 
    # use first exon to find appropiate start point
