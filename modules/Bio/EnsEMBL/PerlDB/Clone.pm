@@ -98,7 +98,8 @@ sub get_all_Contigs{
 sub add_Contig{
    my ($self,$contig) = @_;
 
-   if( ! $conting->isa('Bio::EnsEMBL::DB::ContigI') ) {
+
+   if( ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
        $self->warn("$contig is not a contigI object...");
    }
 
@@ -124,7 +125,7 @@ sub get_all_Genes{
 
    # read into a hash to make unique
    foreach my $gene ( $self->get_all_Contigs ) {
-       $hash{$gene->id()} = $gene;
+       $h{$gene->id()} = $gene;
    }
 
    return values %h;

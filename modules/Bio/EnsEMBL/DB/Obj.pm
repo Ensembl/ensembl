@@ -138,7 +138,6 @@ sub _initialize {
 
 sub get_Gene{
    my ($self,$geneid) = @_;
-   my $gene;
 
    $geneid || $self->throw("Attempting to create gene with no id");
 

@@ -143,7 +143,7 @@ sub add_SeqFeature{
 sub add_Gene{
    my ($self,$gene) = @_;
 
-   if( $gene->isa("Bio::EnsEMBL::Gene") ) {
+   if( !$gene->isa("Bio::EnsEMBL::Gene") ) {
        $self->throw("$gene is a not a Bio::EnsEMBL::Gene type");
    }
 
@@ -210,8 +210,8 @@ sub seq{
     if( @_ ) {
 	my $value = shift;
 	if(! $value->isa("Bio::Seq") ) {
-	    $obj->throw("$seq is not a Bio::Seq!");
-	}
+	    $obj->throw("$value is not a Bio::Seq!");
+	}			
 
 	$obj->{'seq'} = $value;
     }
