@@ -431,6 +431,9 @@ sub get_Interpro_by_keyword{
 sub get {
     my ($self, $geneid, $supporting) = @_;
     
+
+    $self->throw("should not be call this anymore");
+
     $supporting ||= 'without';
     my @out = $self->get_array_supporting($supporting, $geneid);
     

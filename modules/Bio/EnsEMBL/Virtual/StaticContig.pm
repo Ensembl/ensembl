@@ -1698,22 +1698,22 @@ sub get_all_Genes_exononly{
    }
 
    my $query = "
-        SELECT e.id,e.sticky_rank,e.phase,et.rank,et.transcript,t.gene, 
+        SELECT e.exon_id,e.sticky_rank,e.phase,et.rank,et.transcript_id,t.gene_id, 
         IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
         IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
         IF     (sgp.raw_ori=1,e.strand,(-e.strand))
         FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
-        WHERE  t.id = et.transcript
-        AND    et.exon = e.id 
-        AND    sgp.raw_id = e.contig
+        WHERE  t.transcript_id = et.transcript_id
+        AND    et.exon_id = e.exon_id 
+        AND    sgp.raw_id = e.contig_id
 	AND    sgp.chr_name = '$chr_name'
         AND    sgp.type = '$type'
-        AND    e.contig in $idlist
+        AND    e.contig_id in $idlist
         AND    sgp.chr_end >= $glob_start
 	AND    sgp.chr_start <= $glob_end
-        ORDER  BY t.gene,t.id,et.rank,e.sticky_rank";
+        ORDER  BY t.gene_id,t.transcript_id,et.rank,e.sticky_rank";
 
    my $sth = $self->dbobj->prepare($query);
    $sth->execute();
@@ -1739,8 +1739,8 @@ sub get_all_Genes_exononly{
        if( $geneid ne $current_gene_id ) {
 	   # make a new gene
 	   $current_gene = Bio::EnsEMBL::Gene->new;
-	   $current_gene->id($geneid);
-           my $query = "select type from genetype where gene_id = \'$geneid\'"; 
+	   $current_gene->dbID($geneid);
+	   $current_gene->adaptor($self->dbobj->get_GeneAdaptor);
            my $sth2 = $self->dbobj->prepare($query);
            $sth2->execute;
            my $rowhash = $sth2->fetchrow_hashref;
@@ -1762,7 +1762,7 @@ sub get_all_Genes_exononly{
 	   }
 
 	   $current_transcript_id = $transcriptid;
-	   $current_transcript->id($transcriptid);
+	   $current_transcript->dbID($transcriptid);
        }
 
        if( $stickyrank > 1 ) {
@@ -1781,7 +1781,7 @@ sub get_all_Genes_exononly{
        $exon->start($start);
        $exon->end($end);
        $exon->strand($strand);
-       $exon->id($exonid);
+       $exon->dbID($exonid);
        $exon->seqname($self->id);
        $exon->phase($phase);
        $previous_exon = $exon;
@@ -1796,7 +1796,7 @@ sub get_all_Genes_exononly{
    #
 
    foreach my $trans ( @trans ) {
-       my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript = '".$trans->id."'");
+       my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript_id = '".$trans->id."'");
        $sth2->execute;
        my ($rank) = $sth2->fetchrow_array();
        if( $rank == $trans->end_exon_rank) {
@@ -1807,18 +1807,6 @@ sub get_all_Genes_exononly{
                                                               
    }
 
-
-   #
-   # This can obviously be optimised to a better single trip
-   # to the database
-   #
-
-   my $gene_obj = $self->dbobj->gene_Obj;
-
-   foreach my $g ( @out ) {
-       $gene_obj->_get_dblinks($g);
-       $gene_obj->_get_description($g);
-   }
 
    $self->{'_all_Genes_exononly'} = \@out;
 
@@ -2148,13 +2136,13 @@ sub get_all_Genes {
     }
 
     my $query = "
-        SELECT DISTINCT(t.gene)
+        SELECT DISTINCT(t.gene_id)
         FROM exon e
           , exon_transcript et
           , transcript t
-        WHERE e.contig IN $idlist
-          AND e.id = et.exon
-          AND et.transcript = t.id
+        WHERE e.contig_id IN $idlist
+          AND e.exon_id = et.exon_id
+          AND et.transcript_id = t.transcript_id
         ";
 
    &eprof_start("gene-sql-get");
@@ -2180,9 +2168,12 @@ sub get_all_Genes {
 
    &eprof_start("full-gene-get");
 
-   my $gene_obj = $self->dbobj->gene_Obj();
+   my $gadp = $self->dbobj->get_GeneAdaptor();
 
-   my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
+    my @genes;
+   foreach my $geneid ( @gene_ids ) {
+       push(@genes,$gadp->fetch_by_dbID($geneid));
+   }
 
    my %gene;
 
