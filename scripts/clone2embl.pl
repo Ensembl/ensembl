@@ -137,6 +137,7 @@ if( $format =~ /gff/ ) {
     $emblout->_id_generation_func(\&id_EnsEMBL);
     $emblout->_kw_generation_func(\&kw_EnsEMBL);
     $emblout->_sv_generation_func(\&sv_EnsEMBL);
+    $emblout->_ac_generation_func(\&ac_EnsEMBL);
 
     if( $nodna == 1 ) {
 	$emblout->_show_dna(0);
