@@ -479,6 +479,23 @@ sub _make_translation {
         $translation_end = [$end, $exon->id];
     }
 
+    ### these start/ends are in fpc contig coords; we now have to map it
+    ### back to exon coords (the new convention); 
+    {   my ($start, $exonid) = @$translation_start;
+        $start -= $transcript->start_exon->start; 
+        $start +=1;
+        $translation_start = [ $start, $exonid ];
+    }
+    # and same for end:
+    {   my ($end, $exonid) = @$translation_end;
+        $end -= $transcript->end_exon->start; 
+        $end +=1;
+        $translation_end = [ $end, $exonid ] ;
+    }
+
+    ### $translation_start/end are in fpc coords; have to translate them
+    ### to exon coords, since that's what's expected now
+    
     # New translation object
     my $translation = Bio::EnsEMBL::Translation->new;
     $translation->id($transcript->id);
