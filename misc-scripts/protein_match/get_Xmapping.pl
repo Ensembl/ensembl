@@ -60,10 +60,10 @@ while ( my $seq = $in->next_seq() ) {
     
     foreach my $link(@dblink) {
 	if ($link->database eq "EMBL") {
-	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t\t\n";
+	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
 
 	    my ($protac) = $link->optional_id =~ /^(\w+).\S+/;
-	    print OUT "$ac\tSPTR\t".$protac."\tEMBL_PROT_AC\t\t\n";
+	    print OUT "$ac\tSPTR\t".$protac."\tEMBL_PROT_AC\t$protac\t\n";
 	}
 
 	if  ($link->database eq "MIM") {

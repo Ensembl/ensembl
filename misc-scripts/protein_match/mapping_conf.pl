@@ -27,7 +27,7 @@ package main;
 	     # Files location (Input/Output)
 
              'query'        => '/work4/mongin/data/ensembl.pep',
-             #'query'       => '',   
+             #'query'       => '/work1/mongin/mapping/targetted/total_targetted.pep',   
         
 	     'sptr_fa'      => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     #'sptr_fa'      => '',
@@ -41,6 +41,9 @@ package main;
 	     'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
 	     #'refseq_gnp'    => '',
 	    
+              'human_fa'    => '/work1/mongin/mapping/primary/h_prot.fa',
+	     #'human_fa'    => '',
+
 	     'ens1'      => '/work1/mongin/mapping/primary/ens1.txt',
 	     #'ens1'      => '',
 
@@ -54,6 +57,9 @@ package main;
              #'sp_map' => '',
 
              'x_map'  => '/work1/mongin/mapping/tests/xmap_out1.txt',
+             #'x_map_out'  => '',
+
+             'human_map'  => '/work1/mongin/mapping/tests/human_out1.txt',
              #'x_map_out'  => '',
 
              #Database handling

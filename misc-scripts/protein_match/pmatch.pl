@@ -31,8 +31,8 @@ my $refseq_fa = $conf{'refseq_fa'};
 $opt_p = 66;
 
 $opt_q = $conf{'query'};
-$opt_t = $conf{'sptr_fa'};
-$opt_o = $conf{'sp_map'};
+$opt_t = $conf{'human_fa'};
+$opt_o = $conf{'human_map'};
 
 getopts ("q:t:l:o:p:wsc:d");
 
@@ -49,7 +49,7 @@ $usage .= "-p minimum percentage off identity accepted OPTIONAL (default value 6
 #    die "$usage";
 #}
 
-
+print STDERR "Running $opt_q against $opt_t.\n The output will be there: $opt_o\n"; 
 
 #################################
 
