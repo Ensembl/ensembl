@@ -121,6 +121,7 @@ use vars qw(@ISA);
 
 use Bio::EnsEMBL::Root;
 
+
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
@@ -148,10 +149,10 @@ sub new {
 
 
 
-=head2 db
+=head2 ensembl_db
 
   Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor
-  Example    : $external_feature_adaptor->db($new_val);
+  Example    : $external_feature_adaptor->ensembl_db($new_val);
   Description: none
   Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
   Exceptions : none
@@ -159,17 +160,19 @@ sub new {
 
 =cut
 
-sub db {
+sub ensembl_db {
   my ($self, $value) = @_;
 
   if($value) {
     #avoid potentially nasty memory leaks
     if(ref $value && $value->isa("Bio::EnsEMBL::Container")) {
-      $self->{'db'} = $value->_obj;
+      $self->{'ensembl_db'} = $value->_obj;
+    } else {
+      $self->{'ensembl_db'} = $value;
     }
   }     
 
-  return $self->{'db'};
+  return $self->{'ensembl_db'};
 }
 
 
@@ -368,7 +371,7 @@ sub fetch_all_by_RawContig {
       $end   = $f->end   - $offset + 1;
       
       #skip features which are not entirely on this contig
-      next if($start < 1 || $end > $self->length);
+      next if($start < 1 || $end > $length);
       
       $f->start($start);
       $f->end($end);
@@ -383,13 +386,13 @@ sub fetch_all_by_RawContig {
     $self->_no_valid_coord_system;
   }
 
-  unless($self->db) {
+  unless($self->ensembl_db) {
     $self->throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
-  my $asma = $self->db->get_AssemblyMapperAdaptor;
-  my $mapper = $asma->fetch_by_type($self->db->assembly_type);
+  my $asma = $self->ensembl_db->get_AssemblyMapperAdaptor;
+  my $mapper = $asma->fetch_by_type($self->ensembl_db->assembly_type);
   
   #map the whole contig to the assembly
   my @mapped = $mapper->map_coordinates_to_assembly($contig->dbID, 1, 
@@ -472,12 +475,12 @@ sub fetch_all_by_contig_name {
 		 " but fetch_all_by_contig_name is not implemented");
   }
 
-  unless($self->db) {
+  unless($self->ensembl_db) {
     $self->throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
-  my $contig_adaptor = $self->db->get_RawContigAdaptor; 
+  my $contig_adaptor = $self->ensembl_db->get_RawContigAdaptor; 
   my $contig = $contig_adaptor->fetch_by_name($contig_name);
 
   unless($contig) {
@@ -599,13 +602,13 @@ sub fetch_all_by_clone_accession {
 		 'but does not implement fetch_all_by_clone_accession');
   }
 
-  unless($self->db) {
+  unless($self->ensembl_db) {
     $self->throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
 
-  my $clone_adaptor = $self->db->get_CloneAdaptor;
+  my $clone_adaptor = $self->ensembl_db->get_CloneAdaptor;
   my $clone = $clone_adaptor->fetch_by_accession($acc);
 
 
@@ -655,16 +658,16 @@ sub fetch_all_by_chr_start_end {
     $self->throw("Incorrect start [$start] end [$end] or chr [$chr_name] arg");
   }
 
-  unless($self->db) {
+  unless($self->ensembl_db) {
     $self->throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
   my $out = [];
 
-  my $asma = $self->db->get_AssemblyMapperAdaptor;
-  my $mapper = $asma->fetch_by_type($self->db->assembly_type);
-  my $contig_adaptor = $self->db->get_RawContigAdaptor;
+  my $asma = $self->ensembl_db->get_AssemblyMapperAdaptor;
+  my $mapper = $asma->fetch_by_type($self->ensembl_db->assembly_type);
+  my $contig_adaptor = $self->ensembl_db->get_RawContigAdaptor;
 
   if($self->_supported('ASSEMBLY')) {
     $self->throw("ExternalFeatureAdaptor supports ASSEMBLY coordinate system".
@@ -672,7 +675,7 @@ sub fetch_all_by_chr_start_end {
 
   } 
 
-  my $slice_adaptor = $self->db->get_SliceAdaptor;
+  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor;
   #get a slice of the whole chromosome
   my $chrom_slice = $slice_adaptor->fetch_by_chr_name($chr_name);
 
