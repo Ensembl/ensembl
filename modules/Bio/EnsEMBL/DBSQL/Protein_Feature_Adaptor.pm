@@ -201,6 +201,8 @@ sub fetch_by_feature_and_dbID{
     my ($self,$feature,$transl) = @_;
     my @features;
     my %anahash;
+
+#The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the Xref table
     if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
 	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
 	
@@ -244,6 +246,7 @@ sub fetch_by_feature_and_dbID{
 	}
     }
 
+#Superfamily has also a description attached to it but there is no join needed with the interpro table. but its also considered as a domain feature
     elsif ($feature eq "superfamily") {
 	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
 	$sth->execute();
@@ -282,7 +285,7 @@ sub fetch_by_feature_and_dbID{
 	}
     }
 
-
+#Get all of the other features...Coils, TMHMM, ...
     else {
 	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid from protein_feature p,analysisprocess a where a.analysisId = p.analysis and p.translation = '$transl' and a.gff_feature != 'domain' and a.gff_source = '$feature'");
 	
