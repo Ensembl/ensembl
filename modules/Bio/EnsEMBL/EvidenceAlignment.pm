@@ -47,7 +47,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::EnsEMBL::EvidenceAlignment;
 
 # modify slices' features' genomic start/end by the following:
-use constant VC_HACK_BP  => +1;
+use constant VC_HACK_BP  => +0;
 
 use vars qw(@ISA);
 use strict;
