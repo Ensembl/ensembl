@@ -1226,7 +1226,10 @@ sub get_all_DASFeatures{
                     #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
-                    #warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+ 	                push(@chr_features, $sf);
+               } elsif( $sf->seqname() =~ /[1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24]/o) {  # breaks on mouse!
+                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
  	                push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) { 
                     #warn ("Got a FPC contig feature: ", $sf->seqname(), "\n");
