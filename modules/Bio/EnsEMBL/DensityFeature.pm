@@ -14,14 +14,11 @@ coverage etc. in a given region.
 
 use Bio::EnsEMBL::DensityFeature;
 
-$feature = Bio::EnsEMBL::DensityFeature->new(-start    => 100,
-                                             -end      => 220,
-                                             -slice    => $slice,
-                                             -analysis => $analysis,
-                                             -density_value    => 90.1,
-                                             -density_value_type => 'sum',
-                                             -dbID     => 112,
-                                             -adaptor  => $adaptor);
+$feature = Bio::EnsEMBL::DensityFeature->new(-seq_region    => $region,
+			                     -start         => 1,
+                                             -end           => 1e6,
+                                             -density_type  => $dt,
+			                     -density_value => 98.5)
 
 =head1 DESCRIPTION
 
@@ -47,6 +44,7 @@ package Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::DensityType;
 
 use vars qw(@ISA);
 
@@ -55,22 +53,24 @@ use vars qw(@ISA);
 
 =head2 new
 
-  Arg [DENSITY_VALUE] : The number of features which were found within the
-               region of this DensityFeature.  May also be a percentage or
-               coverage, etc.
-  Arg [DENSITY_VALUE_TYPE] : string - should be 'ratio' or 'sum'.  A value
-               which is a sum represents a summation values in the
-               the range of this feature. A ratio is some sort of average
-               of the values in the range of this feature.  A 'sum' could be
-               a count of the snps in the region and a 'ratio' could be a
-               percent gc contenct or repeat coverage.
+  Arg [SEQ_REGION] : the sequence over which the density was calculated.
+
+  Arg [START] : start point on the seq at which density was calulated.
+
+  Arg [END] : end point on the seq at which density was calulated.
+
+  Arg [DENSITY_TYPE] : the type of density calculated.
+
+  Arg [DENSITY_VALUE] : the density.
+
   Arg [...]  : Named arguments passed to superclass
-  Example    : $feature = Bio::EnsEMBL::SimpleFeature->new
-                            (-start    => 1,
-                             -end      => 1e6,
-                             -analysis => $analysis,
-                             -density_value => 80.5,
-                             -density_value_type => 'ratio');
+  Example    : $feature = Bio::EnsEMBL::DensityFeature->new
+                            (-seq_region    => $region,
+			     -start         => 1,
+                             -end           => 1e6,
+                             -density_type  => $dt,
+			     -density_value => 98.5)
+
   Description: Creates a new density feature.
   Returntype : Bio::EnsEMBL::DensityFeature
   Exceptions : throw if invalid density value type is provided
@@ -80,36 +80,45 @@ use vars qw(@ISA);
 
 sub new {
   my $caller = shift;
-
- #allow constructor to be called as class or object method
+  
+  #allow constructor to be called as class or object method
   my $class = ref($caller) || $caller;
-
+  
   my $self = $class->SUPER::new(@_);
-
-  my($density_value,$density_value_type) =
-    rearrange(['DENSITY_VALUE', 'DENSITY_VALUE_TYPE'], @_);
-
-  throw("Density value must be >= 0.") if($density_value < 0);
-
-  if($density_value) {
-    $density_value = lc($density_value);
-    if($density_value_type ne 'sum' && $density_value_type ne 'ratio') {
-      throw("Unknown density value type [$density_value_type].");
-    }
+  
+  my($seq_region, $start, $end, $dt, $dv) =
+    rearrange(['SEQ_REGION', 'START', 'END', 'DENSITY_TYPE', 'DENSITY_VALUE'], @_);
+  
+  throw("Density value must be >= 0.") if($dv < 0);
+  
+  if(!defined($dt)){
+#    if(!$dt->isStored()) {
+#      $dt->store();
+#    }
+#  }
+#  else{
+    throw("Density Type is NOT optional.");
   }
-
-  $self->{'density_value'} = $density_value;
-  $self->{'density_value_type'} = $density_value_type;
-  $self->{'strand'} = 0;
-
+  
+  $self->{'density_type'} = $dt;
+  $self->{'density_value'} = $dv;
+  
+  $self->{'slice'}    = $seq_region;
+  $self->{'seq_region_start'} = $start;
+  $self->{'seq_region_end'}   = $end;
+  
   return $self;
 }
 
+sub new_fast{
+  my $caller = shift;
+  
+  #allow constructor to be called as class or object method
+  my $class = ref($caller) || $caller;
+  
+  my $self = $class->SUPER::new(@_);
 
-sub new_fast {
-  my $class = shift;
-  my $hashref = shift;
-  return bless($hashref,$class);
+  return $self;
 }
 
 
@@ -160,29 +169,43 @@ sub density_value {
 
 
 
+sub analysis {
+  my $self = shift;
 
-=head2 density_value_type
+  my $dt = $self->density_type();
+
+  return undef if(!$dt);
+
+  return $dt->analysis(@_);
+}
+
+
+
+=head2 density_type
 
   Arg [1]    : string $newval (optional) 
                The new value to set the density_value_type attribute to
   Example    : $density_value_type = $obj->density_value_type()
   Description: Getter/Setter for the density_value_type attribute
-  Returntype : string
-  Exceptions : none
+  Returntype : Bio::EnsEMBL::DensityType
+  Exceptions : if object passed is not of type DensityType
   Caller     : general
 
 =cut
 
-sub density_value_type{
+sub density_type{
   my $self = shift;
   if(@_) {
-    my $density_value_type = lc(shift);
-    if($density_value_type ne 'sum' && $density_value_type ne 'ratio') {
-      throw("Unknown density value type [$density_value_type]");
+    my $type = shift;
+    if( !ref $type || !$type->isa("Bio::EnsEMBL::DensityType")){
+      throw("object passed must be an ensembl DensityType ". 
+	    "not a [".ref($type)."]");
     }
-    $self->{'density_value_type'} = $density_value_type;
+    else{
+      $self->{'density_type'}=$type;
+    }
   }
-  return $self->{'density_value_type'};
+  return $self->{'density_type'};
 }
 
 1;

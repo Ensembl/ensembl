@@ -38,8 +38,11 @@ package Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
 
+
+use POSIX;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DensityFeature;
+use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
@@ -102,7 +105,10 @@ sub fetch_all_by_Slice {
 
   $num_blocks ||= 50;
   my $length = $slice->length();
-  my $wanted_block_size = int($length/$num_blocks);
+
+
+#  my $wanted_block_size = int($length/$num_blocks);
+  my $wanted_block_size = POSIX::ceil($length/$num_blocks);
 
   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
   my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
@@ -120,7 +126,7 @@ sub fetch_all_by_Slice {
   $sth->execute($analysis->dbID());
 
   my $best_ratio = undef;
-  my ($density_type_id, $density_value_type, $row);
+  my ($density_type_id, $density_value_type, $new_block_size, $row);
 
   while($row = $sth->fetchrow_arrayref) {
     my $block_size = $row->[1];
@@ -140,6 +146,7 @@ sub fetch_all_by_Slice {
     if(!defined($best_ratio) || $ratio < $best_ratio) {
       $best_ratio = $ratio;
       $density_type_id = $row->[0];
+      $new_block_size = $row->[1];
       $density_value_type = $row->[3];
     }
   }
@@ -151,10 +158,15 @@ sub fetch_all_by_Slice {
     return [];
   }
 
-  my $constraint = "dt.density_type_id = $density_type_id";
+
+  my $density_type = Bio::EnsEMBL::DensityType->new(-analysis => $analysis,
+						    -block_size =>  $new_block_size,
+						    -value_type => $density_value_type);
+
+  $density_type->dbID($density_type_id);
 
   my @features =
-    @{$self->fetch_all_by_Slice_constraint($slice,$constraint)};
+    @{$self->fetch_all_by_slice_and_density_type($slice,$density_type)};
 
   #we don't want to interpolate if the ratio was very close
   $interpolate = 0 if($best_ratio < 1.05);
@@ -171,7 +183,7 @@ sub fetch_all_by_Slice {
   my $end   = $start+$wanted_block_size-1;
 
   while($start < $length) {
-    $end = $length if($end > $length);
+#    $end = $length if($end > $length);
 
     my $density_value = 0.0;
     my ($f, $fstart, $fend, $portion);
@@ -226,14 +238,12 @@ sub fetch_all_by_Slice {
       }
     }
 
-    push @out, Bio::EnsEMBL::DensityFeature->new_fast
-      ({'start'    => $start,
-        'end'      => $end,
-        'slice'    => $slice,
-        'analysis' => $analysis,
-        'adaptor'  => $self,
-        'density_value'      => $density_value,
-        'density_value_type' => $density_value_type});
+    push @out, Bio::EnsEMBL::DensityFeature->new
+      (-seq_region    => $slice,
+       -start         => $start,
+       -end           => $end,
+       -density_type  => $density_value_type,
+       -density_value => $density_value);
 
     $start = $end + 1;
     $end  += $wanted_block_size;
@@ -396,17 +406,14 @@ sub _objs_from_sth {
       $slice = $dest_slice;
     }
 
-    push @features, Bio::EnsEMBL::DensityFeature->new_fast(
-      {'start'    => $seq_region_start,
-       'end'      => $seq_region_end,
-       'slice'    => $slice,
-       'analysis' => $analysis,
-       'adaptor'  => $self,
-       'dbID'     => $density_feature_id,
-       'density_value'      => $density_value,
-       'density_value_type' => $density_value_type});
+    push @features, Bio::EnsEMBL::DensityFeature->new
+      (-start    => $seq_region_start,
+       -end      => $seq_region_end,
+       -seq_region    => $slice,
+       #	-adaptor  => $self,
+       -density_value      => $density_value,
+       -density_type => $density_value_type); 
   }
-
   return \@features;
 }
 
@@ -428,5 +435,114 @@ sub list_dbIDs {
 
    return $self->_list_dbIDs("density_feature");
 }
+
+
+=head2 store
+
+  Arg [1]    : list of Bio::EnsEMBL::DensityFeatures @df
+               the simple features to store in the database
+  Example    : $density_feature_adaptor->store(1234, @density_feats);
+  Description: Stores a list of density feature objects in the database
+  Returntype : none
+  Exceptions : thrown if @df is not defined, if any of the features do not
+               have an attached slice.
+               or if any elements of @df are not Bio::EnsEMBL::SeqFeatures 
+  Caller     : general
+
+=cut
+
+sub store{
+  my ($self,@df) = @_;
+
+  if( scalar(@df) == 0 ) {
+    throw("Must call store with list of DensityFeatures");
+  }
+#mysql> desc density_feature;
+#+--------------------+---------+------+-----+---------+----------------+
+#| Field              | Type    | Null | Key | Default | Extra          |
+#+--------------------+---------+------+-----+---------+----------------+
+#| density_feature_id | int(11) |      | PRI | NULL    | auto_increment |
+#| density_type_id    | int(11) |      | MUL | 0       |                |
+#| seq_region_id      | int(11) |      |     | 0       |                |
+#| seq_region_start   | int(11) |      |     | 0       |                |
+#| seq_region_end     | int(11) |      |     | 0       |                |
+#| density_value      | float   |      |     | 0       |                |
+#+--------------------+---------+------+-----+---------+----------------+
+
+  my $sth = $self->prepare
+    ("INSERT INTO density_feature (seq_region_id, seq_region_start, " .
+                                  "seq_region_end, density_type_id, " .
+                                  "density_value) " .
+     "VALUES (?,?,?,?,?)");
+
+  my $db = $self->db();
+  my $analysis_adaptor = $db->get_AnalysisAdaptor();
+
+ FEATURE: foreach my $df ( @df ) {
+
+    if( !ref $df || !$df->isa("Bio::EnsEMBL::DensityFeature") ) {
+      throw("DensityFeature must be an Ensembl DensityFeature, " .
+            "not a [".ref($df)."]");
+    }
+
+    if($df->is_stored($db)) {
+      warning("DensityFeature [".$df->dbID."] is already stored" .
+              " in this database.");
+      next FEATURE;
+    }
+
+    if(!defined($df->density_type)) {
+      throw("A density type must be attached to the features to be stored.");
+    }
+
+    #store the density_type if it has not been stored yet
+    
+    if(!$df->density_type->is_stored($db)) {
+      $df->density_type->store($df->density_type_id);
+    }
+
+    my $original = $df;
+    my $seq_region_id;
+    ($df, $seq_region_id) = $self->_pre_store($df);
+
+    $sth->execute($seq_region_id, $df->start, $df->end,
+                  $df->density_type->dbID, $df->density_value);
+
+    $original->dbID($sth->{'mysql_insertid'});
+    $original->adaptor($self);
+  }
+}
+
+sub fetch_all_by_slice_and_density_type{
+  my ($self,$slice,$density_type) = @_;
+
+  my $sth = $self->prepare
+    ("SELECT density_feature_id, seq_region_start, seq_region_end, density_value  ".
+     "FROM density_feature ".
+     "WHERE seq_region_id=".$slice->get_seq_region_id." and ".
+     "density_type_id = ".$density_type->dbID);
+  
+  my @out=();
+  my ($id, $start, $end, $value);
+  $sth->execute();
+  $sth->bind_columns(\$id, \$start, \$end, \$value);
+
+
+  while($sth->fetch()) {
+
+    push @out, Bio::EnsEMBL::DensityFeature->new
+      (-start    => $start,
+       -end      => $end,
+       -seq_region    => $slice,
+       #	-adaptor  => $self,
+       -density_value      => $value,
+       -density_type => $density_type); 
+}
+  
+  return \@out;
+}
+
+ 
+
 
 1;

@@ -102,6 +102,7 @@ sub new {
       'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
       'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
       'DensityFeature'       => 'Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor',
+      'DensityType'          => 'Bio::EnsEMBL::DBSQL::DensityTypeAdaptor',
       'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
       'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
       'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
@@ -655,6 +656,22 @@ sub get_DBEntryAdaptor {
 sub get_DensityFeatureAdaptor {
   my $self = shift;
   return $self->get_adaptor('DensityFeature');
+}
+
+=head2 get_DensityTypeAdaptor
+
+  Arg [1]    : none
+  Example    : $density_feature_adaptor = $db_adaptor->get_DBEntryAdaptor();
+  Description: Gets a DensityTypeAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::DensityTypeAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_DensityTypeAdaptor {
+  my $self = shift;
+  return $self->get_adaptor('DensityType');
 }
 
 
