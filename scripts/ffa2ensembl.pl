@@ -30,6 +30,7 @@ contigs for a particular clone will be together.
     -dbhost   DB host
     -dbuser   DB user
     -dbname   DB name
+    -dbpass   DB pass
     -clones   file containing list of "clone.version" or literal 'all'
     -clobber  overwrite existing clone
     -ffa      location of ffa.gz file
@@ -59,7 +60,7 @@ use Bio::SeqIO;
 my ($clone, $contig);
 my (%required_clones, %written_clone);
 my ($clonelist, $ffa, $seqfile, $write, $clobber);
-my ($dbname, $dbhost, $dbuser);
+my ($dbname, $dbhost, $dbuser, $dbpass);
 my ($help, $info);
 my (%inDB);
 
@@ -73,6 +74,7 @@ $dbuser = 'ensadmin';  # default
             "dbname=s"  => \$dbname,
             "dbhost=s"  => \$dbhost,
             "dbuser=s"  => \$dbuser,
+            "dbpass=s"  => \$dbpass,
             "help"      => \$help,
             "clobber"   => \$clobber,
             "info"      => \$info,
@@ -112,7 +114,8 @@ else {
 my $dbobj = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
     '-host'   => $dbhost,
     '-user'   => $dbuser,
-    '-dbname' => $dbname
+    '-dbname' => $dbname,
+    '-pass'   => $dbpass
 ) or die "Can't connect to DB";
 
 my $seq = new FileHandle;;
@@ -120,7 +123,7 @@ if ($ffa =~ /\.gz$/) {
     open $seq, "gzcat $ffa |" or die "Can't open zipped file $ffa";
 }
 else {
-    open $seq, "$ffa |" or die "Can't open plain file $ffa";
+    open $seq, "< $ffa" or die "Can't open plain file $ffa";
 }
 
 my $seqio = Bio::SeqIO->new(
@@ -136,7 +139,7 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
     my $length = $end - $offset + 1;
 
     # write the clone if this contig is from a different clone
-    if (defined $clone && $acc ne $clone->id) {
+    if (defined $clone && $acc ne $clone->id && !defined $written_clone{$clone->id}) {
 	if ($write) {
 	    $dbobj->write_Clone($clone);
 	    $written_clone{$clone->id} = 1;
@@ -174,15 +177,16 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
     # this is for the case where a clone is not contiguous in the file
     # get clone -> add contig -> delete old clone -> write new one
     # not tested
-    if ($written_clone{$acc}) {
-	print STDERR "Fetching clone $acc for rewrite\n";
-	my $tmpclone = $dbobj->get_Clone($acc);
-	$clone = $tmpclone;
-	$clone->add_Contig($contig);
-	$tmpclone->delete;
-	$dbobj->write_Clone($clone);
-	next SEQ;
-    }
+    # was breaking with duplicates in ffa files
+    # if ($written_clone{$acc}) {
+	# print STDERR "Fetching clone $acc for rewrite\n";
+	# my $tmpclone = $dbobj->get_Clone($acc);
+	# $clone = $tmpclone;
+	# $clone->add_Contig($contig);
+	# $tmpclone->delete;
+	# $dbobj->write_Clone($clone);
+	# next SEQ;
+    # }
 
     unless (defined $clone) {
 	my $dbclone;
@@ -242,6 +246,7 @@ Options:
   -dbname
   -dbhost
   -dbuser
+  -dbpass
   -ffa      location of ffa file
   -clobber  overwrite existing clone
 EOF
