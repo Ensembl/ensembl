@@ -40,8 +40,8 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-my $SLICE_FEATURE_CACHE_SIZE = 4;
-my $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
+our $SLICE_FEATURE_CACHE_SIZE = 4;
+our $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 
 =head2 new
 
@@ -72,19 +72,17 @@ sub new {
 
 
 
-=head2 _straight_join
+# _straight_join
 
-  Arg [1]    : (optional) boolean $new_val
-  Example    : $self->_straight_join(1);
-               $self->generic_fetch($constraint);
-               $self->_straight_join(0);
-  Description: Getter/Setter that turns on/off the use of a straight join
-               in queries.
-  Returntype : boolean
-  Exceptions : none
-  Caller     : general
-
-=cut
+#   Arg [1]    : (optional) boolean $new_val
+#   Example    : $self->_straight_join(1);
+#                $self->generic_fetch($constraint);
+#                $self->_straight_join(0);
+#   Description: PROTECTED Getter/Setter that turns on/off the use of 
+#                a straight join in queries.
+#   Returntype : boolean
+#   Exceptions : none
+#   Caller     : general
 
 sub _straight_join {
   my $self = shift;
@@ -255,8 +253,8 @@ sub fetch_all_by_dbID_list {
   my @tabs = $self->_tables;
   my ($name, $syn) = @{$tabs[0]};
 
-  #mysql is faster and we ensure that we do not exceed the max query size by
-  #splitting large queries into smaller queries of 200 ids
+  # mysql is faster and we ensure that we do not exceed the max query size by
+  # splitting large queries into smaller queries of 200 ids
   my $max_size = 200;
 
   while(@$id_list) {
@@ -267,7 +265,6 @@ sub fetch_all_by_dbID_list {
       @ids = splice(@$id_list, 0);
     }
 
-    
     my $id_str;
     if(@ids > 1)  {
       $id_str = " IN (" . join(',', @ids). ")";
@@ -366,173 +363,182 @@ sub fetch_all_by_Slice_and_score {
 =cut
 
 sub fetch_all_by_Slice_constraint {
-  my($self, $orig_slice, $original_constraint, $logic_name) = @_;
-  my @result_features;
+  my($self, $slice, $constraint, $logic_name) = @_;
 
-  if(!ref($orig_slice) || !$orig_slice->isa("Bio::EnsEMBL::Slice")) {
+  my @result;
+
+  if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Bio::EnsEMBL::Slice argument expected.");
   }
 
-  $original_constraint ||= '';
-  $original_constraint = $self->_logic_name_to_constraint($original_constraint,
-                                                          $logic_name);
+  $constraint ||= '';
+  $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
 
   #if the logic name was invalid, undef was returned
-  return [] if(!defined($original_constraint));
+  return [] if(!defined($constraint));
 
   #check the cache and return if we have already done this query
-  my $key = uc(join(':', $orig_slice->name, $original_constraint));
+  my $key = uc(join(':', $slice->name, $constraint));
 
   if(exists($self->{'_slice_feature_cache'}->{$key})) {
     return $self->{'_slice_feature_cache'}->{$key};
   }
 
-  my $slice_adaptor = $orig_slice->adaptor();
+  my $sa = $slice->adaptor();
 
-  #retrieve normalized 'non-symlinked' slices
-  #this allows us to support haplotypes and PARs
-  my @projection =
-    @{$slice_adaptor->fetch_normalized_slice_projection($orig_slice)};
+  # Hap/PAR support: retrieve normalized 'non-symlinked' slices
+  my @proj = @{$sa->fetch_normalized_slice_projection($slice)};
 
-  if(@projection == 0) {
+  if(@proj == 0) {
     throw('Could not retrieve normalized Slices. Database contains ' .
           'incorrect assembly_exception information.');
   }
 
-  #we want to retrieve all features calculated on the FULL original slice 
-  #as well as any symlinked slices.  
+  # Want to get features on the FULL original slice
+  # as well as any symlinked slices
 
-  #Filter out any partial slices from the normalized projection that are on 
-  #the same seq region as the original slice
-  my @new_projection = 
-    grep { $_->[2]->seq_region_name() ne $orig_slice->seq_region_name() } 
-    @projection;
+  # Filter out partial slices from projection that are on
+  # same seq_region as original slice
 
-  push( @new_projection, [ 1, $orig_slice->length(), $orig_slice ] );
+  my $sr_id = $slice->get_seq_region_id();
 
-  #fetch features for the primary slice AND all symlinked slices
-  foreach my $segment (@new_projection) {
-    my ($offset, $slice);
-    ($offset, undef, $slice) = @$segment;
+  @proj = grep { $_->to_Slice->get_seq_region_id() != $sr_id } @proj;
 
-    my $slice_start  = $slice->start();
-    my $slice_end    = $slice->end();
-    my $slice_strand = $slice->strand();
-    my $slice_cs     = $slice->coord_system();
-    my $slice_seq_region = $slice->seq_region_name();
+  my $segment = bless([1,$slice->length(),$slice ],
+                      'Bio::EnsEMBL::ProjectionSegment');
+  push( @proj, $segment );
 
-    #get the synonym and name of the primary_table
-    my @tabs = $self->_tables;
-    my ($tab_name, $tab_syn) = @{$tabs[0]};
+  # fetch features for the primary slice AND all symlinked slices
+  foreach my $segment (@proj) {
+    my $offset = $segment->from_start();
+    my $seg_slice  = $segment->to_Slice();
 
-    #find out what coordinate systems the features are in
-    my $mcc = $self->db->get_MetaCoordContainer();
-    my @feat_css = @{$mcc->fetch_all_CoordSystems_by_feature_type($tab_name)};
+    my $features = $self->_slice_fetch($seg_slice, $constraint);
 
-    my $asma = $self->db->get_AssemblyMapperAdaptor();
-    my @features;
-
-    # fetch the features from each coordinate system they are stored in
-  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
-      my $mapper;
-      my @coords;
-      my @ids;
-
-      if($feat_cs->equals($slice_cs)) {
-        #no mapping is required if this is the same coord system
-        my $constraint = $original_constraint;
-
-        # obtain seq_region_id of this slice from db
-        my $seq_region_id = 
-          $self->db->get_SliceAdaptor->get_seq_region_id($slice);
-        $constraint .= " AND " if($constraint);
-        $constraint .=
-          "${tab_syn}.seq_region_id = $seq_region_id AND " .
-          "${tab_syn}.seq_region_start <= $slice_end AND " .
-          "${tab_syn}.seq_region_end >= $slice_start";
-        my $fs = $self->generic_fetch($constraint,undef,$slice);
-
-        #features may still have to have coordinates made relative to slice 
-        #start
-        $fs = $self->_remap($fs, $mapper, $slice);
-
-        push @features, @$fs;
-      } else {
-        $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
-
-        # Get a list of coordinates and corresponding internal ids for the
-        # regions we are interested in
-        @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
-                               $slice_strand, $slice_cs);
-
-        @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
-
-        next COORD_SYSTEM if(!@coords);
-
-        @ids = map {$_->id()} @coords;
-        @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
-
-        #if the regions are large and only partially spanned
-        #it is faster to to limit the query with start and end constraints
-        #however, it is difficult to tell if a region is large and only 
-        #partially wanted. The easy approach is just to limit the queries if 
-        #there are less than a certain number of regions. As well seperate 
-        #queries are needed otherwise the indices will not be useful
-        if(@coords > $MAX_SPLIT_QUERY_SEQ_REGIONS) {
-          #do one query, and do not limit with start / end constraints
-          my $constraint = $original_constraint;
-          my $id_str = join(',', @ids);
-          $constraint .= " AND " if($constraint);
-          $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-
-          my $fs =
-            $self->generic_fetch($constraint, $mapper, $slice);
-
-          $fs = $self->_remap($fs, $mapper, $slice);
-
-          push @features, @$fs;
-
-        } else {
-          #do multiple split queries using start / end constraints
-          my $len = @coords;
-          for(my $i = 0; $i < $len; $i++) {
-            my $constraint = $original_constraint;
-            $constraint .= " AND " if($constraint);
-            $constraint .=
-              "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
-              "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND ".
-              "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
-            my $fs = $self->generic_fetch($constraint,$mapper,$slice);
-
-            $fs = $self->_remap($fs, $mapper, $slice);
-
-            push @features, @$fs;
-          }
-        }
-      }
-    } #COORD system loop
-
-    #if this was a symlinked slice offset the feature coordinates as needed
-    if($slice != $orig_slice) {
-      foreach my $f (@features) {
-        #function calls are slow!
+    # if this was a symlinked slice offset the feature coordinates as needed
+    if($seg_slice->name() ne $slice->name()) {
+      foreach my $f (@$features) {
         if($offset != 1) {
           $f->{'start'} += $offset-1;
           $f->{'end'}   += $offset-1;
         }
-        $f->{'slice'} = $orig_slice;
-        push @result_features, $f;
+        $f->{'slice'} = $slice;
+        push @result, $f;
       }
     } else {
-      push @result_features, @features;
+      push @result, @$features;
     }
+  }
 
-  } #slice & symmlinked slice loop
+  $self->{'_slice_feature_cache'}->{$key} = \@result;
 
-  $self->{'_slice_feature_cache'}->{$key} = \@result_features;
-
-  return \@result_features;
+  return \@result;
 }
+
+
+#
+# helper function used by fetch_all_by_Slice_constraint method
+#
+sub _slice_fetch {
+  my $self = shift;
+  my $slice = shift;
+  my $orig_constraint = shift;
+
+  my $slice_start  = $slice->start();
+  my $slice_end    = $slice->end();
+  my $slice_strand = $slice->strand();
+  my $slice_cs     = $slice->coord_system();
+  my $slice_seq_region = $slice->seq_region_name();
+
+  #get the synonym and name of the primary_table
+  my @tabs = $self->_tables;
+  my ($tab_name, $tab_syn) = @{$tabs[0]};
+
+  #find out what coordinate systems the features are in
+  my $mcc = $self->db->get_MetaCoordContainer();
+  my @feat_css = @{$mcc->fetch_all_CoordSystems_by_feature_type($tab_name)};
+
+  my $asma = $self->db->get_AssemblyMapperAdaptor();
+  my @features;
+
+  # fetch the features from each coordinate system they are stored in
+ COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
+    my $mapper;
+    my @coords;
+    my @ids;
+
+    if($feat_cs->equals($slice_cs)) {
+      # no mapping is required if this is the same coord system
+      my $constraint = $orig_constraint;
+
+      my $sr_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+      $constraint .= " AND " if($constraint);
+      $constraint .=
+          "${tab_syn}.seq_region_id = $sr_id AND " .
+          "${tab_syn}.seq_region_start <= $slice_end AND " .
+          "${tab_syn}.seq_region_end >= $slice_start";
+      my $fs = $self->generic_fetch($constraint,undef,$slice);
+
+      # features may still have to have coordinates made relative to slice
+      # start
+      $fs = $self->_remap($fs, $mapper, $slice);
+
+      push @features, @$fs;
+    } else {
+      $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
+
+      # Get list of coordinates and corresponding internal ids for
+      # regions the slice spans
+      @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
+                             $slice_strand, $slice_cs);
+
+      @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
+
+      next COORD_SYSTEM if(!@coords);
+
+      @ids = map {$_->id()} @coords;
+      @ids = @{$asma->seq_regions_to_ids($feat_cs, \@ids)};
+
+      # When regions are large and only partially spanned by slice
+      # it is faster to to limit the query with start and end constraints.
+      # Take simple approach: use regional constraints if there are less
+      # than a specific number of regions covered.
+
+      if(@coords > $MAX_SPLIT_QUERY_SEQ_REGIONS) {
+        my $constraint = $orig_constraint;
+        my $id_str = join(',', @ids);
+        $constraint .= " AND " if($constraint);
+        $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
+
+        my $fs = $self->generic_fetch($constraint, $mapper, $slice);
+
+        $fs = $self->_remap($fs, $mapper, $slice);
+
+        push @features, @$fs;
+
+      } else {
+        # do multiple split queries using start / end constraints
+        my $len = @coords;
+        for(my $i = 0; $i < $len; $i++) {
+          my $constraint = $orig_constraint;
+          $constraint .= " AND " if($constraint);
+          $constraint .=
+              "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
+              "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND ".
+              "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
+          my $fs = $self->generic_fetch($constraint,$mapper,$slice);
+
+          $fs = $self->_remap($fs, $mapper, $slice);
+
+          push @features, @$fs;
+        }
+      }
+    }
+  } #COORD system loop
+
+  return \@features;
+}
+
 
 
 #
@@ -568,10 +574,9 @@ sub _pre_store {
     throw('Feature must be attached to Slice to be stored.');
   }
 
-  # make sure that the feature coordinates are relative to
-  # the start of the entire seq_region
+  # make sure feature coords are relative to start of entire seq_region
   if($slice->start != 1 || $slice->strand != 1) {
-    #move the feature onto a slice of the entire seq_region
+    #move feature onto a slice of the entire seq_region
     $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
                                              $slice->seq_region_name(),
                                              undef, #start
@@ -587,10 +592,7 @@ sub _pre_store {
     }
   }
 
-  #
-  # Ensure that this type of feature is known to be stored in this coord
-  # system.
-  #
+  # Ensure this type of feature is known to be stored in this coord system.
   my $cs = $slice->coord_system;
 
   my ($tab) = $self->_tables();
@@ -599,23 +601,6 @@ sub _pre_store {
   my $mcc = $db->get_MetaCoordContainer();
 
   $mcc->add_feature_type($cs, $tabname);
-
-  # we have to update the meta coord table in both the dna db and the feature
-  # db so that the feature db can be used independently later
-
-  #  Actually, the meta coord info should probably only go in the database
-  #  where the features are actually stored, not the dnadb (which is often
-  #  going to be read-only anyway)
-  #   if($db->dnadb() != $db) {
-  #     my $dnadb = $db->dnadb();
-  #     $db->dnadb(undef); # unset the dnadb temporarily
-
-  #     #get a coord system adaptor from the feature database
-  #     $csa = $db->get_CoordSystemAdaptor();
-  #     $csa->add_feature_table($cs, $tabname);
-
-  #     $db->dnadb($dnadb); # reinstate the dnadb
-  #   }
 
   my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
 
@@ -767,8 +752,6 @@ sub _logic_name_to_constraint {
   my $an = $aa->fetch_by_logic_name($logic_name);
 
   if(!$an) {
-    warning("No analysis exists with logic_name = [$logic_name].\n" .
-            "Returning empty list.\n");
     return undef;
   }
 
