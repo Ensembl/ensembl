@@ -407,7 +407,7 @@ sub get_all_SimilarityFeatures_above_score{
 
   # now extract requested features
 ## Why use loads of lines when you can use just one...    
-  return grep { $feature->score() > $score } @{$self->{_feature_cache}->{$analysis_type}};
+  return grep { $_->score() > $score } @{$self->{_feature_cache}->{$analysis_type}};
 
 #  my @features;
 #  foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
