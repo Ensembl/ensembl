@@ -47,11 +47,10 @@ package Bio::EnsEMBL::Utils::Argument;
 
 use Exporter;
 
-use vars qw(@ISA @EXPORT_OK);
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter);
-
-@EXPORT_OK = qw(&rearrange);
+@EXPORT = qw(rearrange);
 
 
 
