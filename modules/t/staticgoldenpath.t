@@ -363,7 +363,7 @@ if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 25\n";}
 else {print "not ok 25\n";}
 
 
-my $contig=$stadaptor->fetch_VirtualContig_by_clone('pog',100);
+$contig=$stadaptor->fetch_VirtualContig_by_clone('pog',100);
 
 if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 26\n";}
 else {print "not ok 26\n";}
