@@ -436,13 +436,13 @@ sub get_array_supporting {
 	if( $transcriptid ne $current_transcript_id ) {
 
 	    # put away old exons
-             if( defined $trans ) {  
+             if( defined $trans ) {       
 	        $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
 	    # put in new exons
-
+            
 	    $trans = Bio::EnsEMBL::Transcript->new();
-	    
+            
 	    $trans->id     ($transcriptid);
 	    $trans->version($transcriptversion);
 	    
@@ -504,6 +504,8 @@ sub get_array_supporting {
 
     }
     
+    $self->_store_exons_in_transcript($trans,@transcript_exons);
+   
     if ($supporting && $supporting eq 'evidence') {
 	$self->get_supporting_evidence(@sup_exons);
     }
@@ -530,26 +532,34 @@ sub _store_exons_in_transcript{
        $self->throw(" $trans is not a transcript");
    }
 
-   foreach my $exon ( @exons ) {
-       if( $exons[0]->id eq $exon->id ) {
+   my $exon;
+   while ( ($exon = shift @exons)) {
+        
+       if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
+        
 	   # sticky exons.
 	   my @sticky_exons;
 	   push(@sticky_exons,$exon);
 	   foreach my $newexon ( @exons ) {
 	       if( $newexon->id eq $exon->id ) {
+                            
 		   push(@sticky_exons,$newexon);
+                   
 	       } else {
+               
 		   unshift(@exons,$exon);
 		   last;
 	       }
 	   }
-
+           
 	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
 	   $trans->add_Exon($sticky);
+           
        } else {
 	   $trans->add_Exon($exon);
        }
    }
+
 }
 
 =head2 _make_sticky_exon
@@ -573,6 +583,7 @@ sub _make_sticky_exon{
 
    @exons = sort { $a->sticky_rank <=> $b->sticky_rank } ( @exons );
    $seq->id("exon.sticky_contig.".$exons[0]->id);
+   
    $sticky->id($exons[0]->id);
    $sticky->phase($exons[0]->phase);
    $sticky->contig_id($seq->id);
@@ -582,17 +593,17 @@ sub _make_sticky_exon{
 	
    $sticky->version  ($exons[0]->version);
    $sticky->seqname  ($seq->id);
- 
+
    foreach my $exon ( @exons ) {
        $seqstr .= $exon->seq->seq();
-       $sticky->add_component_Exons($exon);
+       $sticky->add_component_Exon($exon);
    }
 
    $seq->seq($seqstr);
    $sticky->start    (1);
    $sticky->end      ($seq->length);
    $sticky->strand   (1);
-  
+
    return $sticky;
 
 }
