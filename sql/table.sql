@@ -393,6 +393,22 @@ CREATE TABLE supporting_feature (
 
 ################################################################################
 #
+# Table structure for table 'transcript_supporting_feature'
+#
+
+CREATE TABLE transcript_supporting_feature (
+
+  transcript_id 	      int(11) DEFAULT '0' NOT NULL,
+  feature_type                enum('dna_align_feature','protein_align_feature'),
+  feature_id                  int(11) DEFAULT '0' NOT NULL,
+
+  UNIQUE all_idx (transcript_id,feature_type,feature_id),
+  KEY feature_idx (feature_type,feature_id)
+
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
+
+################################################################################
+#
 # Table structure for table 'transcript'
 #
 
