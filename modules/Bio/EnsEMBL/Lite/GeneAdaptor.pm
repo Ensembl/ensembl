@@ -378,6 +378,8 @@ sub _objects_from_sth {
       $exon->adaptor( $core_db_adaptor->get_ExonAdaptor() );
       $exon_cache{"$exon_id"} = $exon;
       $exon->dbID( $exon_id );
+      $exon->phase( 0 );
+      $exon->end_phase( 0 );
     } else {
       $exon = $exon_cache{"$exon_id"};
     }
