@@ -266,6 +266,47 @@ sub translation {
 
 
 
+sub coding_start {
+  my $self = shift;
+  my $strand;
+  my $start;
+
+  if( defined $self->translation() ) {
+    $strand = $self->translation()->start_exon->strand();
+    if( $strand == 1 ) {
+      $start = $self->translation()->start_exon->start();
+      $start += ( $self->translation()->start() - 1 );
+    } else {
+      $start = $self->translation()->end_exon->end();
+      $start -= ( $self->translation()->end() - 1 );
+    }
+  }
+
+  return $start;
+}
+
+sub coding_end {
+  my $self = shift;
+  my $strand;
+  my $end;
+
+  if( defined $self->translation() ) {
+    $strand = $self->translation()->start_exon->strand();
+    if( $strand == 1 ) {
+      $end = $self->translation()->end_exon->start();
+      $end += ( $self->translation()->end() - 1 );
+    } else {
+      $end = $self->translation()->start_exon->end();
+      $end -= ( $self->translation()->start() - 1 );
+    }
+  }
+
+  return $end;
+}
+
+
+
+
 =head2 add_Exon
 
  Title   : add_Exon
