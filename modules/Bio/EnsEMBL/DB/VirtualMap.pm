@@ -257,15 +257,15 @@ sub build_contig_map {
     
     my ($current_left_size,$current_orientation,$current_contig,$overlap);
     
+    $current_contig = $focuscontig;
     if( $ori == 1 ) {
-	$current_left_size   = $focusposition;
+	$current_left_size   = $focusposition - $current_contig->golden_start;
 	$current_orientation = 1;
     } else {
-	$current_left_size   = $focuscontig->length - $focusposition;
+	$current_left_size   = $focuscontig->golden_end - $focusposition;
 	$current_orientation = -1;
     }
     
-    $current_contig = $focuscontig;
     
     my %seen_hash;
 
@@ -290,6 +290,7 @@ sub build_contig_map {
 		# as this means we have run out of contigs
 	      
 		if( !defined $overlap ) {
+		    print "Run out of contigs on the left with $current_left_size to look at<p>\n";
 		    $left = $current_left_size;
 		    last;
 		}
@@ -412,6 +413,7 @@ sub build_contig_map {
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
 		$self->found_right_end(1);
+                print "Run out of contigs on the right with $current_length to find<p>\n";
 		$right = $current_length - $left;
 		last;
 	    }
@@ -509,6 +511,7 @@ sub build_contig_map {
     # $right might have been modified during the walk
     
     $total = $left + $right;
+    print "Total is $total<p>\n";
 
     # need to store end point for last contig
     my $mc=$self->get_MapContig($current_contig->id);
@@ -538,6 +541,7 @@ sub build_contig_map {
     $self->left_size($left);
     $self->right_size($right);
     
+    print "Put away left $left and right $right<p>\n";
     # ready to rock and roll. Woo-Hoo!
 }
 
@@ -776,21 +780,21 @@ sub found_left_end {
 =head2 vcpos_to_rcpos
 
  Title   : vcpos_to_rcpos
- Usage   : Deprecated: use raw_contig_postion instead
+ Usage   : Deprecated: use raw_contig_position instead
 
 
 =cut
 
 sub vcpos_to_rcpos {
     my $self = shift;
-    $self->warn("vcpos_to_rcpos: Deprecated name, use raw_contig_postion instead\n");
-    $self->raw_contig_postion(@_);
+    $self->warn("vcpos_to_rcpos: Deprecated name, use raw_contig_position instead\n");
+    $self->raw_contig_position(@_);
 }
 
-=head2 raw_contig_postion
+=head2 raw_contig_position
 
- Title   : raw_contig_postion
- Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_postion($vc_pos,$vc_strand)
+ Title   : raw_contig_position
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position($vc_pos,$vc_strand)
  Function: Maps a VirtualContig position to the RawContig Position
  Returns : Bio::EnsEMBL::DB::MapContig object, 
            position (int), strand (int)
@@ -799,7 +803,7 @@ sub vcpos_to_rcpos {
 
 =cut
 
-sub raw_contig_postion {
+sub raw_contig_position {
     my ($self, $vcpos, $vcstrand)=@_;
  
     my $rc;
@@ -827,6 +831,7 @@ sub raw_contig_postion {
 	    $rc=$mc->contig;
 	    if ($mc->orientation == 1) {
 		# the contig starts at startin
+                print "Calculation $vcpos - ",$mc->start,"+1+",$mc->start_in,"\n";
 		$rc_pos=$vcpos-$mc->start+1+$mc->start_in;
 	    }
 	    else {
