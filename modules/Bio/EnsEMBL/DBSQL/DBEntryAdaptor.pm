@@ -360,19 +360,21 @@ sub exists {
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
  
-  my $query1 = "SELECT t.translation_id 
+  my $query1 = "SELECT t.transcript_id, t.translation_id
                 FROM transcript t
                 WHERE t.gene_id = ?";
 
   my $sth1 = $self->prepare($query1);
   $sth1->execute( $gene->dbID );
 
-  while (my $transid = $sth1->fetchrow) {
-   
-    my $translation_xrefs = 
-      $self->_fetch_by_object_type( $transid, 'Translation' );
-    foreach my $translink(@$translation_xrefs) {
-      $gene->add_DBLink($translink);
+  while (my($transcript_id,$translation_id) = $sth1->fetchrow) {
+    if($translation_id) {
+      foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) { 
+        $gene->add_DBLink($translink);
+      }
+    }
+    foreach my $translink(@{ $self->_fetch_by_object_type( $transcript_id, 'Transcript' )} ) { 
+        $gene->add_DBLink($translink);
     }
   }
   if($gene->stable_id){
@@ -429,12 +431,15 @@ sub fetch_all_by_Transcript {
   # be better. Oh well. EB
   #
   
-  while (my $transid = $sth1->fetchrow) {
-    my $translation_xrefs = $self->_fetch_by_object_type( $transid, 
-							  'Translation' );
-    foreach my $translink(@$translation_xrefs) {
-      $trans->add_DBLink($translink);
+  while (my($translation_id) = $sth1->fetchrow) {
+    if($translation_id) {
+      foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) {
+        $trans->add_DBLink($translink);
+      }
     }
+  }
+  foreach my $translink(@{ $self->_fetch_by_object_type( $trans->dbID, 'Transcript' )} ) {
+     $trans->add_DBLink($translink);
   }
 }
 
@@ -496,8 +501,6 @@ sub _fetch_by_object_type {
   ");
   
   $sth->execute();
-  
-  
   my %seen;
   
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {

@@ -521,6 +521,9 @@ sub fetch_by_chr_name{
    #set the end of the slice to the end of the chromosome
    my $ca = $self->db()->get_ChromosomeAdaptor();
    my $chromosome = $ca->fetch_by_chr_name($chr_name);
+
+   $self->throw("Unknown chromosome $chr_name") unless $chromosome;
+
    my $chr_end = $chromosome->length();
 
    my $type = $self->db->assembly_type();
