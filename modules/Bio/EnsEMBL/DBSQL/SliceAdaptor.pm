@@ -212,8 +212,6 @@ sub fetch_by_seq_region_id {
 
 
 
-
-
 =head2 get_seq_region_id
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -261,7 +259,7 @@ sub get_seq_region_id {
   $sth->execute("$seq_region_name", $coord_system->dbID());
 
   if($sth->rows() != 1) {
-    throw("Non existant or ambigous seq_region:" .
+    throw("Non existant or ambigous seq_region:\n" .
           "  coord_system=[$cs_name],\n" .
           "  name=[$seq_region_name],\n" .
           "  version=[$cs_version]");
@@ -278,6 +276,62 @@ sub get_seq_region_id {
   return $seq_region_id;
 }
 
+
+=head2 get_seq_region_attribs
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch attributes for
+  Example    : %attribs = %{$slice_adaptor->get_seq_region_attribs($slice)};
+               ($htg_phase) = @{$attribs->{'htg_phase'} || []};
+               @synonyms    = @{$attribs->{'synonym'} || []};
+  Description: Retrieves a reference to a hash containing attrib code values
+               and listref value keys.
+  Returntype : hashref
+  Exceptions : throw if the seq_region of the slice is not in the db
+               throw if incorrect arg provided
+  Caller     : Bio::EnsEMBL::Slice
+
+=cut
+
+sub get_seq_region_attribs {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $srid = $self->get_seq_region_id($slice);
+
+  if(!$srid) {
+    throw('Slice is not on a seq_region stored in this database.');
+  }
+
+  $self->{'_attribs_cache'} ||= {};
+  if($self->{'_attribs_cache'}->{$srid}) {
+    return $self->{'_attribs_cache'}->{$srid};
+  }
+
+  my $sth = $self->prepare('SELECT at.code, sra.value ' .
+                           'FROM   seq_region_attrib sra, attrib_type at ' .
+                           'WHERE  sra.seq_region_id = ? ' .
+                           'AND    at.attrib_type_id = sra.attrib_type_id');
+
+  $sth->execute($srid);
+
+  my($code, $attrib);
+  $sth->bind_columns(\$code, \$attrib);
+
+  my %attrib_hash;
+  while($sth->fetch()) {
+    $attrib_hash{$code} ||= [];
+    push @{$attrib_hash{$code}}, $attrib;
+  }
+
+  $sth->finish();
+  $self->{'_attribs_cache'} = \%attrib_hash;
+  return \%attrib_hash;
+}
 
 
 =head2 fetch_all
@@ -842,9 +896,3 @@ sub fetch_by_chr_name{
 
 
 1;
-
-
-
-
-
-
