@@ -372,7 +372,7 @@ sub _objs_from_sth {
       if($feat) {
         #start working on a new feature, discard references to last one
         $feat = {};
-        $feat_attribs = {};
+        $feat_attribs = [];
         $feat_misc_sets = {};
         $seen_attribs = {};
       }
