@@ -245,7 +245,7 @@ sub load_SNP{
 }
 
 sub load_variation{
-  load_adaptors(@_);
+  load_and_attach_dnadb_to_core(@_);
 }
 
 
