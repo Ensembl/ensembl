@@ -619,7 +619,7 @@ sub _dump_feature_table {
   foreach my $gene_slice (@gene_slices) {
     foreach my $gene (@{$gene_slice->get_all_Genes}) {
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
-	my $translation = $transcript->translation;
+        my $translation = $transcript->translation;
         
         # normal transcripts get dumped differently than pseudogenes
         if($translation) {
@@ -627,6 +627,8 @@ sub _dump_feature_table {
           $value = $self->features2location($transcript->get_all_Exons);
           $self->write(@ff, 'mRNA', $value);
           $self->write(@ff,''   , '/gene="'.$gene->stable_id().'"');
+          $self->write(@ff,''
+                       ,'/note="transcript_id='.$transcript->stable_id().'"');
 
           # ...and a CDS section
           $value = 
@@ -642,8 +644,8 @@ sub _dump_feature_table {
             $self->write(@ff, '', $value);
           }
 
-	  $value = '/translation="'.$transcript->translate()->seq().'"';
-	  $self->write(@ff, '', $value);
+          $value = '/translation="'.$transcript->translate()->seq().'"';
+          $self->write(@ff, '', $value);
         } else {
           #pseudogene
           $value = $self->features2location($transcript->get_all_Exons);
@@ -654,6 +656,8 @@ sub _dump_feature_table {
             $self->write(@ff, '', $value);
           }
           $self->write(@ff,''   , '/note="pseudogene"');
+          $self->write(@ff,''
+                       ,'/note="transcript_id='.$transcript->stable_id().'"');
         }
       }
     }
