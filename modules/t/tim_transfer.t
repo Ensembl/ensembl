@@ -77,7 +77,7 @@ print "ok 3\n";
 
 #Update recipient from donor
 print STDERR "Running an update from the donor to the recipient\n";
-my $update="$conf{perl} $conf{update} -thost localhost -tdbname $conf{recipient} -tdbuser $nuser -usefile clone.list";
+my $update="$conf{perl} $conf{update} -thost localhost -tdbname $conf{recipient} -tdbuser $nuser -usefile ../modules/t/clone.list";
 system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 4\n";
