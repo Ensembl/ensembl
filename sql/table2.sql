@@ -28,6 +28,14 @@ CREATE TABLE analysis_history (
   created date
 );
 
+
+CREATE TABLE clone (
+       id varchar(40) DEFAULT '' NOT NULL,
+       embl_id varchar(40) DEFAULT '' NOT NULL,
+       sv int(10) DEFAULT '0' NOT NULL,
+       PRIMARY KEY(id)
+);
+
 #
 # Table structure for table 'contig'
 #
