@@ -290,54 +290,33 @@ sub fetch_evidence_by_Exon {
     return;
   }
 
-  my $statement = "SELECT contig_id, contig_start, contig_end, score, 
-                          strand, analysis_id, hit_start, hit_end, hit_id,
-                          evalue, perc_ident, phase, end_phase
-		     FROM supporting_feature 
-                     WHERE exon_id = ".$exon->dbID;
-			
+  
 
-  if( ! $exon->dbID() ) {
-    $self->throw( "Exon fetch evidence: $statement.\n" );
-  }
-  #print STDERR $statement."\n";
-  my $sth = $self->prepare($statement);
-  $sth->execute || $self->throw("execute failed for supporting evidence get!");
+  my $sql = "select type, feature_id from supporting feature where exon_id = ".$exon->dbID;
 
-  my @features;
-  my $anaAdaptor = $self->db->get_AnalysisAdaptor;
+  my $sth->prepare($sql);
 
-  while (my $rowhash = $sth->fetchrow_hashref) {
-      my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
-      
-      my $f = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
-      $f->set_featurepair_fields($rowhash->{'contig_start'},
-				 $rowhash->{'contig_end'},
-				 $rowhash->{'strand'},
-				 $rowhash->{'score'},
-				 $rowhash->{'contig_id'},
-				 $rowhash->{'hit_start'},
-				 $rowhash->{'hit_end'},
-				 1, # hstrand
-				 $rowhash->{'score'},
-				 $rowhash->{'hit_id'},
-				 $analysis,
-				 $rowhash->{'evalue'},
-				 $rowhash->{'perc_ident'},
-				 $rowhash->{'phase'},
-				 $rowhash->{'end_phase'},
-				);
-      
-      #
-      # WARNING - assumming perl extensions, not C
-      #
-      #print STDERR $f->gffstring."\n";
-      $f->analysis($analysis);
-	
-      $f->validate;
+  $sth->execute;
 
+  my $prot_adp = $self->db->fetch_ProteinAlignFeatureAdaptor;
+  my $dna_adp = $self->db->fetch_DnaAlignFeatureAdaptor;
+  
+  while(my ($type, $feature_id) = $sth->fetchrow){
+  
+    if($type eq 'protein_align_feature'){
+      my $f = $prot_adp->fetch_by_dbID($feature_id);
+       $exon->add_Supporting_Feature($f);
+    }elsif($type eq 'dna_align_feature'){
+      my $f = $dna_adp->fetch_by_dbID($feature_id);
       $exon->add_Supporting_Feature($f);
     }
+
+    
+
+  }
+
+ 
+  
 
   return 1;
 }
