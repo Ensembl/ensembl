@@ -1,9 +1,12 @@
 
 module Ensembl {
   module artemis {
-    
+
+    exception RequestedSequenceTooLong { };
+    exception NoEntry { string reason; };
+
     interface Sequence {
-      string getSubSequence(in long start,in long end);
+      string getSubSequence(in long start,in long end) raises (RequestedSequenceTooLong);
       long length();
     };
     
@@ -29,10 +32,22 @@ module Ensembl {
 	Sequence getSequence();
     };
 
+    typedef sequence<string> QualiferDefinitionList;
+    struct FeatureDefinition {
+      string key;
+      QualiferDefinitionList qualifers;
+    };
+    typedef sequence<FeatureDefinition> FeatureDefinitionList;
+
     typedef sequence<string> EntryNameList;
+
     interface DB {
-      Entry getEntry(in string entryname);
+      Entry getEntry(in string entryname) raises (NoEntry);
       EntryNameList getallEntryNames();
+
+      // coordination of the ORB.
+      FeatureDefinitionList getFeatureDefinitionList();
+      long max_sequence_length();
     };
   };
 };

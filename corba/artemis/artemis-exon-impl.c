@@ -1,5 +1,5 @@
 #include "artemis-exon-impl.h"
-#include <stdio.h>
+
 
 /*** App-specific servant structures ***/
 
@@ -7,6 +7,7 @@ typedef struct
 {
   POA_Ensembl_artemis_Feature servant;
   PortableServer_POA poa;
+  SimpleObjectManagerAdaptor soma;
   int start;
   int end;
   int strand;
@@ -81,7 +82,16 @@ impl_Ensembl_artemis_Feature__create(PortableServer_POA poa,
    return retval;
 }
 
-Ensembl_artemis_Feature new_EA_Exon_Feature(PortableServer_POA poa,const char * id,const char * created,const char * modified,int start,int end,int strand,int phase,CORBA_Environment *ev)
+static int remove_EA_Exon_func(gpointer data)
+{
+  impl_POA_Ensembl_artemis_Feature * serv;
+  serv = (impl_POA_Ensembl_artemis_Feature *) data;
+  SimpleObjectManagerAdaptor_log_message(&serv->soma,G_LOG_LEVEL_MESSAGE,"Removing exon");
+  impl_Ensembl_artemis_Feature__destroy(serv,serv->soma.ev);
+  return 0;
+}
+
+Ensembl_artemis_Feature new_EA_Exon_Feature(PortableServer_POA poa,const char * id,const char * created,const char * modified,int start,int end,int strand,int phase,SimpleObjectManagerAdaptor soma,CORBA_Environment *ev)
 {
    Ensembl_artemis_Feature retval;
    impl_POA_Ensembl_artemis_Feature *newservant;
@@ -97,10 +107,11 @@ Ensembl_artemis_Feature new_EA_Exon_Feature(PortableServer_POA poa,const char * 
    newservant->end = end;
    newservant->start_phase = phase;
    newservant->strand = strand;
-
+   newservant->soma = soma;
    POA_Ensembl_artemis_Feature__init((PortableServer_Servant) newservant, ev);
    objid = PortableServer_POA_activate_object(poa, newservant, ev);
    CORBA_free(objid);
+   SimpleObjectManagerAdaptor_activate(&newservant->soma,"EAFeatureE",id,retval,(gpointer)newservant,remove_EA_Exon_func);
    retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
 
    return retval;
@@ -115,7 +126,9 @@ impl_Ensembl_artemis_Feature__destroy(impl_POA_Ensembl_artemis_Feature *
    objid = PortableServer_POA_servant_to_id(servant->poa, servant, ev);
    PortableServer_POA_deactivate_object(servant->poa, objid, ev);
    CORBA_free(objid);
-
+   g_free(servant->id);
+   g_free(servant->modified);
+   g_free(servant->created);
    POA_Ensembl_artemis_Feature__fini((PortableServer_Servant) servant, ev);
    g_free(servant);
 }
@@ -125,7 +138,6 @@ impl_Ensembl_artemis_Feature_getKey(impl_POA_Ensembl_artemis_Feature *
 				    servant, CORBA_Environment * ev)
 {
    CORBA_char *retval;
-   fprintf(stderr,"Getting exon key...\n");
    retval = CORBA_string_dup("exon");
    return retval;
 }
@@ -136,7 +148,6 @@ impl_Ensembl_artemis_Feature_getLocation(impl_POA_Ensembl_artemis_Feature *
 {
    CORBA_char *retval;
    char buffer[1024];
-   fprintf(stderr,"Getting exon location...\n");
    if( servant->strand == 1 ) {
      sprintf(buffer,"%d..%d",servant->start,servant->end);
    } else {
@@ -153,7 +164,7 @@ impl_Ensembl_artemis_Feature_getQualifiers(impl_POA_Ensembl_artemis_Feature *
   Ensembl_artemis_QualifierList *retval;
    
   retval = CORBA_sequence_Ensembl_artemis_Qualifier__alloc();
-  retval->_buffer = (Ensembl_artemis_Qualifier *) calloc (3,sizeof(Ensembl_artemis_Qualifier));
+  retval->_buffer = CORBA_sequence_Ensembl_artemis_Qualifier_allocbuf (3);
   
   retval->_buffer[0] = new_EA_Qualifier("created",servant->created);
   retval->_buffer[1] = new_EA_Qualifier("modified",servant->modified);
@@ -161,7 +172,7 @@ impl_Ensembl_artemis_Feature_getQualifiers(impl_POA_Ensembl_artemis_Feature *
   retval->_length = 3;
   retval->_maximum = 3;
   /*retval->_buffer[3] = new_EA_Qualifier("exon_id",servant->id);*/
-  
+  CORBA_sequence_set_release(retval,1);
   return retval;
 }
 

@@ -11,6 +11,11 @@ char  * user       = "ensemblro";
 char  * pass       = "ensemblropass";
 char  * db         = "ensdev";
 
+int   max_objects  = 512;
+int   block_size   = 20;
+int   lifetime     = 60;
+int   allow_cache  = 0;
+
 MYSQL mysql;
 
 int verbose        = 0; 
@@ -22,6 +27,10 @@ struct poptOption options[] = {
   {"pass", 'p', POPT_ARG_STRING, &pass, 0, "Password for the MySQL connection (- means NULL)", "password"},
   {"db",'d',POPT_ARG_STRING, &pass, 0, "Database name for the MySQL connection", "db"},
   {"verbose",'v',POPT_ARG_NONE, &verbose, 0, "Verbose reporting on STDERR", NULL},
+  {"max",'m',POPT_ARG_INT,&max_objects,0,"Maximum objects held by orb",NULL},
+  {"block",'b',POPT_ARG_INT,&block_size,0,"Number of objects removed when over max",NULL},
+  {"time",'t',POPT_ARG_INT,&lifetime,0,"Life time of objects in seconds","seconds"},
+  {"cache",'c',POPT_ARG_NONE,&allow_cache,0,"Allow object caching",NULL},
   POPT_AUTOHELP
   {NULL, '\0', 0, NULL, 0, NULL, NULL}
 };
@@ -54,22 +63,23 @@ int main (int argc, char *argv[])
 {
     MYSQL * connection;
     char sqlbuffer[1024];
-   MYSQL_RES * result;
-   MYSQL_ROW row;
-   int state;
-   
-   char * c_id = "Z69666.00001";
+    MYSQL_RES * result;
+    MYSQL_ROW row;
+    int state;
+    SimpleObjectManager * som;
+    SimpleObjectManagerAdaptor soma;
 
-  PortableServer_ObjectId objid = {0, sizeof("EnsemblArtemisServer"), "EnsemblArtemisServer"};
-  PortableServer_POA poa;
-  FILE * ifp;
-  CORBA_Environment ev;
-  char *retval;
-  CORBA_ORB orb;
-  Ensembl_artemis_DB eadb;
-  
-  poptContext pcon;
-  int rc;
+   
+   PortableServer_ObjectId objid = {0, sizeof("EnsemblArtemisServer"), "EnsemblArtemisServer"};
+   PortableServer_POA poa;
+   FILE * ifp;
+   CORBA_Environment ev;
+   char *retval;
+   CORBA_ORB orb;
+   Ensembl_artemis_DB eadb;
+   
+   poptContext pcon;
+   int rc;
   
   pcon=poptGetContext("ensembl-artemis-server", argc, argv, options, 0);
   /*  poptSetOtherOptionHelp(pcon, "<IDL files>");*/
@@ -99,10 +109,13 @@ int main (int argc, char *argv[])
 
   if( verbose ) {
     fprintf(stderr,"Built ORB successfully...\n");
+    fprintf(stderr,"Building Object Manager: max %d, time(secs) %d, caching %s\n",max_objects,lifetime,allow_cache == 1 ? "yes" : "no");
   }
+  
+  som = new_SimpleObjectManager(stderr,0,0,lifetime,"ensembl-mysql",max_objects,block_size,allow_cache,&ev);
+  soma = SimpleObjectManager_get_Adaptor(som);
 
-
-  eadb = new_EA_Database(poa,connection,verbose,&ev);
+  eadb = new_EA_Database(poa,connection,verbose,soma,&ev);
 
   if( verbose ) {
     fprintf(stderr,"Built Ensembl Database object...\n");
@@ -129,4 +142,5 @@ int main (int argc, char *argv[])
 
 
 }
+
 

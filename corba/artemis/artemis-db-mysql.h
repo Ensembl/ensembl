@@ -4,6 +4,6 @@
 
 #include "artemis-mysql-impl.h"
 
-Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int verbose,CORBA_Environment * ev);
+Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int verbose,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev);
 
 #endif

@@ -1,4 +1,5 @@
 #include "artemis-db-mysql.h"
+#include "timetolease.h"
 #include <stdio.h>
 
 /*
@@ -15,6 +16,7 @@ typedef struct
   PortableServer_POA poa;
   MYSQL * connection; /* connection to the ensembl database */
   int verbose; /* talk to stderr or not? */
+  SimpleObjectManagerAdaptor soma;
 } impl_POA_Ensembl_artemis_DB;
 
 static void impl_Ensembl_artemis_DB__destroy(impl_POA_Ensembl_artemis_DB *
@@ -80,7 +82,7 @@ impl_Ensembl_artemis_DB__create(PortableServer_POA poa,
  * reference to the caller, which can do what it likes with it ;)
  */
 
-Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int verbose,CORBA_Environment * ev)
+Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int verbose,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev)
 {
    Ensembl_artemis_DB retval;
    impl_POA_Ensembl_artemis_DB *newservant;
@@ -94,6 +96,8 @@ Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int
    newservant->poa = poa;
    newservant->connection = connection;
    newservant->verbose = verbose;
+   newservant->soma = soma;
+
    POA_Ensembl_artemis_DB__init((PortableServer_Servant) newservant, ev);
    objid = PortableServer_POA_activate_object(poa, newservant, ev);
    CORBA_free(objid);
@@ -137,16 +141,15 @@ impl_Ensembl_artemis_DB_getEntry(impl_POA_Ensembl_artemis_DB * servant,
    MYSQL_ROW row;
    int state;
 
-   if( servant->verbose ) {
-     fprintf(stderr,"DB: Going to make a new entry with entryname %s\n",entryname);
+   retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,g_strdup(entryname),servant->soma,ev);
+   if ((ev)->_major != CORBA_NO_EXCEPTION ) {
+     fprintf(stderr,"Rethrowing exception...\n");
+     return;
    }
 
-   retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,g_strdup(entryname),ev);
+   RETHROW_VOID(ev);
 
-   if( servant->verbose ) {
-     fprintf(stderr,"DB: Made new entry with entryname %s\n",entryname);
-   }
-
+   SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Made new entry with entryname %s\n",entryname);
 
    return retval;
 }
