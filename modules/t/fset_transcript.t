@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..7\n"; 
+BEGIN { $| = 1; print "1..9\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -73,6 +73,22 @@ $feature_obj->get_PredictionFeature_as_Transcript("wrong_id");
 
 if ($@){print "ok 7\n";}
 else { print "not ok 7\n";}
+
+
+
+if ($db->get_PredictionFeature_as_Transcript(40)->isa ("Bio::EnsEMBL::Transcript"))
+{print  "ok 8\n";}
+else { print "not ok 8\n";}
+
+
+eval {
+$db->get_PredictionFeature_as_Transcript("wrong_id");
+};
+
+if ($@){print "ok 9\n";}
+else { print "not ok 9\n";}
+
+
 
 
 
