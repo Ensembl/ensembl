@@ -335,6 +335,28 @@ sub subseq{
 =cut
 
 sub moltype{
+   my ($self)= @_;
+	warn("The Bioperl moltype method is depricated. Use alphabet instead");
+    return $self->alphabet();
+}
+
+
+sub desc {
+   return "";
+}
+
+=head2 alphabet
+
+ Title   : alphabet
+ Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
+ Function: Returns the type of sequence 
+ Returns : dna
+ Args    : none
+
+
+=cut
+
+sub alphabet {
    return "dna";
 }
 
