@@ -176,7 +176,7 @@ CREATE TABLE exon (
 CREATE TABLE exon_stable_id (
     exon_id   int unsigned not null,       # foreign key exon:exon_id
     stable_id VARCHAR(40) not null,
-    version   int(10) DEFAULT '1' NOT NULL,
+    version   int(10),
     created   datetime NOT NULL,
     modified  datetime NOT NULL,
     
@@ -327,7 +327,7 @@ CREATE TABLE gene (
 CREATE TABLE gene_stable_id (
     gene_id int unsigned not null,    # foreign key gene:gene_id
     stable_id VARCHAR(40) not null,
-    version   int(10) DEFAULT '1' NOT NULL,
+    version   int(10),
     created   datetime NOT NULL,
     modified  datetime NOT NULL,
     
@@ -370,7 +370,7 @@ CREATE TABLE transcript (
 CREATE TABLE transcript_stable_id (
     transcript_id int unsigned not null,  # foreign key transcript:transcript_id
     stable_id     VARCHAR(40) not null,
-    version       int(10) DEFAULT '1' NOT NULL,
+    version       int(10),
     
     PRIMARY KEY( transcript_id ),
     UNIQUE( stable_id, version )
@@ -399,7 +399,7 @@ CREATE TABLE translation (
 CREATE TABLE translation_stable_id (
     translation_id INT unsigned NOT NULL, # foreign key translation:translation_id
     stable_id VARCHAR(40) NOT NULL,
-    version   INT(10) DEFAULT '1' NOT NULL,
+    version   INT(10),
     
     PRIMARY KEY( translation_id ),
     UNIQUE( stable_id, version )
@@ -621,8 +621,8 @@ CREATE TABLE marker (
     right_primer               varchar(100) not null,
     min_primer_dist            int(10) unsigned not null,
     max_primer_dist            int(10) unsigned not null,
-    type                       enum('est', 'microsatellite'),
     priority                   int,
+    type                       enum('est', 'microsatellite'),
     
     PRIMARY KEY (marker_id),
     KEY marker_idx (marker_id, priority)
@@ -668,7 +668,7 @@ CREATE TABLE map (
 
 CREATE TABLE mapfrag (
   mapfrag_id int(10) unsigned NOT NULL auto_increment,
-  type enum('clone','superctg','assembly_contig','band','chr') NOT NULL default 'clone',
+  type enum('clone','superctg','assembly_contig','band','chr','matepair', 'haploblock') NOT NULL default 'clone',
   dnafrag_id int(10) unsigned NOT NULL default '0',
   seq_start int(10) unsigned NOT NULL default '0',
   seq_end int(10) unsigned NOT NULL default '0',
@@ -781,7 +781,6 @@ CREATE TABLE qtl_feature (
   key loc_idx( chromosome_id, start )
 );
 
-
 #
 # tables for stable id mapping tracking
 #
@@ -791,16 +790,35 @@ CREATE TABLE mapping_session (
   old_db_name varchar(80) NOT NULL default '',
   new_db_name varchar(80) NOT NULL default '',
   created timestamp(14) NOT NULL,
-  rank int(10) default NULL,
-  PRIMARY KEY  (mapping_session_id),
-  UNIQUE KEY rank (rank)
+  PRIMARY KEY  (mapping_session_id)
 ) TYPE=MyISAM;
 
 CREATE TABLE stable_id_event (
-  old_stable_id varchar(40) NOT NULL default '',
-  new_stable_id varchar(40) NOT NULL default '',
+  old_stable_id varchar(40),
+  old_version smallint,
+  new_stable_id varchar(40),
+  new_version smallint,
   mapping_session_id int(11) NOT NULL default '0',
   UNIQUE KEY tpl_idx (old_stable_id,new_stable_id,mapping_session_id),
   KEY new_idx (new_stable_id)
 ) TYPE=MyISAM;
 
+CREATE TABLE gene_archive (
+  gene_stable_id VARCHAR(40) NOT NULL,
+  gene_version smallint NOT NULL,
+  transcript_stable_id VARCHAR(40) NOT NULL,
+  transcript_version smallint NOT NULL,
+  translation_stable_id VARCHAR(40) NOT NULL,
+  translation_version smallint NOT NULL,
+  mapping_session_id int NOT NULL,
+  KEY gene_idx( gene_stable_id, gene_version ),
+  KEY transcript_idx( transcript_stable_id, transcript_version )
+) TYPE=MyISAM;
+
+CREATE TABLE peptide_archive (
+  translation_stable_id VARCHAR(40) NOT NULL,
+  translation_version smallint NOT NULL,
+  peptide_seq mediumtext NOT NULL,
+
+  PRIMARY KEY( translation_stable_id, translation_version )
+) TYPE=MyISAM;
