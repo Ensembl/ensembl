@@ -104,7 +104,7 @@ sub fetch_by_dbID {
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
-					 -length => $length );
+					 '-length' => $length );
 
     $self->{'_chr_cache'}->{$id} = $chr;
   }
@@ -156,7 +156,7 @@ sub fetch_all {
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
-					 -length => $length );
+					 '-length' => $length );
 
     $self->{'_chr_cache'}->{$chromosome_id} = $chr;
     push @chrs, $chr;
