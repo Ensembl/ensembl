@@ -539,13 +539,22 @@ CREATE TABLE object_xref (
 # Table structure for table 'identity_xref'
 #
 
-CREATE TABLE identity_xref (
+CREATE TABLE identity_xref(
+        object_xref_id INT unsigned not null ,
+	query_identity 	int(5),
+        target_identity int(5),
 
-  object_xref_id              INT unsigned not null ,
-  query_identity 	      int(5),
-  target_identity             int(5),
-  PRIMARY KEY (object_xref_id)
+	hit_start int,
+	hit_end int,
+	translation_start int,
+	translation_end int,
+	cigar_line text,
+	
+	score double,
+	evalue double,
+	analysis_id int,
 
+        PRIMARY KEY (object_xref_id)
 );
 
 ################################################################################
