@@ -354,6 +354,16 @@ sub fetch_evidence_by_Exon {
 sub store {
   my ( $self, $exon ) = @_;
 
+  if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
+    $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+  }
+
+  if( $exon->dbID && $exon->adaptor == $self ) {
+      $self->warn("Exon with dbID ".$exon->dbID." has already got a dbID and is attached to this adaptor. No need therefore to store");
+      return $exon->dbID();
+  }
+
+
   my $exon_sql = q{
        INSERT into exon ( exon_id, contig_id, seq_start, seq_end, strand, phase, 
 			  end_phase, sticky_rank)
@@ -361,9 +371,6 @@ sub store {
 		};
   my $exonst = $self->prepare($exon_sql);
 
-  if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-    $self->throw("$exon is not a EnsEMBL exon - not dumping!");
-  }
 
   my $exonId = undef;
 
