@@ -64,7 +64,7 @@ use Bio::EnsEMBL::DB::ExternalFeatureFactoryI;
 sub get_Ensembl_SeqFeatures_clone_web{
    my ($self,@args) = @_;
 
-   $self->warn("Object $self did not implement get_Ensembl_SeqFeatures_clone_web depiste having the correct interface!");
+   $self->warn("Object $self did not implement get_Ensembl_SeqFeatures_clone_web despite having the correct interface!");
    return ();
 }
 
