@@ -108,7 +108,7 @@ sub _objs_from_sth {
 
   while ($sth->fetch()) {
 
-    my $sr_slice = $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
+    my $sr_slice  = $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
     my $exc_slice = $slice_adaptor->fetch_by_seq_region_id($exc_seq_region_id);
 
     # each row creates TWO features, each of which has alternate_slice pointing to the "other" one
