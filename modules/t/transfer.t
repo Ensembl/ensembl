@@ -44,8 +44,8 @@ system($create_recipient) == 0 or die "$0\nError running '$create_recipient' : $
 print "ok 2\n";    #Databases created successfuly
 
 #Initialising databases
-my $init_donor = "mysql -u ".$nuser." donor < ../../sql/table.sql";
-my $init_recipient = "mysql -u ".$nuser." recipient < ../../sql/table.sql";
+my $init_donor = "mysql -u ".$nuser." donor < ../sql/table.sql";
+my $init_recipient = "mysql -u ".$nuser." recipient < ../sql/table.sql";
 system($init_donor) == 0 or die "$0\nError running '$init_donor' : $!";
 system($init_recipient) == 0 or die "$0\nError running '$init_recipient' : $!";
 
