@@ -20,6 +20,7 @@ any stop codons.
 
 
 =cut
+
 use strict;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
@@ -29,7 +30,7 @@ use Getopt::Long;
 
 my $thost   = 'sol28';
 my $tport   = '410000';
-my $tdbname = 'ensdev';
+my $tdbname = 'ens100';
 my $user    = 'ensembl';
 my $usetimdb;
 my $test;
@@ -48,6 +49,7 @@ if($usetimdb){
 }else{
     $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
 }
+
 my @gene_id = $db->get_all_Gene_id();
 my $seqio;
 my $errcount = 0;

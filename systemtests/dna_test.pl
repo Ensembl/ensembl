@@ -16,28 +16,46 @@ that all clones contain dna.
 =cut
 
 use strict;
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 use Getopt::Long;
+use vars qw(@ISA);
 
-my $tdbtype = 'rdb';
-my $thost   = 'sol28';
-my $tport   = '410000';
-my $tdbname = 'ensdev';
-my $user    = 'ensembl';
+@ISA = qw(Bio::Root::Object);
+
+my $dbtype = 'rdb';
+my $host   = 'sol28';
+my $port   = '410000';
+my $dbname = 'ens100';
+my $dbuser = 'ensembl';
+my $dbpass = undef;
+my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+my $help;
 
 &GetOptions( 
-	     'dbtype:s'   => \$tdbtype,
-	     'host:s'     => \$thost,
-	     'port:n'     => \$tport,
-	     'user:s'     => \$user,
-	     'dbname:s'   => \$tdbname,
+	     'dbtype:s'   => \$dbtype,
+	     'host:s'     => \$host,
+	     'port:n'     => \$port,
+	     'dbname:s'   => \$dbname,
+	     'dbuser:s'   => \$dbuser,
+	     'dbpass:s'   => \$dbpass,
+	     'module:s'   => \$module,
+	     'h|help'     => \$help,
 	     );
 
-my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
+
+if ($help) {
+    exec('perldoc', $0);
+}
+
+print STDERR "\nConnecting to $dbname database...\n";
+my $recipient_locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+my $db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
+
 my @clone_id = $db->get_all_Clone_id();
 my $seqio;
 my $errcount = 0;
+my $err;
 
 foreach my $clone_id ( @clone_id ) {
     print STDERR "\nDumping clone $clone_id:\n";
@@ -48,15 +66,20 @@ foreach my $clone_id ( @clone_id ) {
 	foreach my $contig (@contig_id) {
 	    print STDERR "       contig ".$contig->id."\n";
 	    my $contig_seq = $contig->seq->seq();
-	    if ( $contig_seq =~ /[^A,T,G,C,N,R,Y]/ || $contig_seq eq "") {
+	    
+	    if ($contig_seq eq "") {
+		$err = "no sequence present in this contig!\n";
+	    }
+	    $contig_seq =~ s/[A,T,G,C,N,Y,R]//g;
+	    print "$contig_seq\n";
+	    if ($contig_seq ne "") {
 		$errcount++;
-		$contig_seq =~ s/[A,T,G,C,N]//g;
 		print "Error $errcount\n";
 		print "Clone:   $clone_id\n";
 		print "Contig:  ",$contig->id,"\n";
 		print "Error:\n";
-		if ($contig_seq eq "") {
-		    print "no sequence present in this contig!\n";
+		if ($err) {
+		    print $err;
 		}
 		else {
 		    print "non-DNA sequence found:\"$contig_seq\"\n\n";

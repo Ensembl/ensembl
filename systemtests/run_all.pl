@@ -2,8 +2,8 @@
 
 use strict;
 
-system ("perl dna.pl");
-system ("perl every_atleast.pl");
-system ("perl stop_codons.pl");
-system ("perl transcript_strand.pl");
-system ("perl exon_duplicates.pl");
+system ("perl dna_test.pl -dbname ens100");
+system ("perl every_atleast.pl -dbname ens100");
+system ("perl stop_codons.pl -dbname ens100");
+system ("perl transcript_strand.pl -dbname ens100");
+system ("perl exon_duplicates.pl -dbname ens100");
