@@ -49,6 +49,7 @@ in particular the protein translation
 use strict;
 
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::SeqIO;
 
@@ -95,7 +96,7 @@ if ($help) {
     exec('perldoc', $0);
 }
 
-if ( $tdbtype =~ 'timdb' ) {
+if ( $dbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
