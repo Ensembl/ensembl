@@ -264,7 +264,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  $out->strand    ($strand);
 	  $out->source_tag($name);
 	  $out->primary_tag('similarity');
-	  $out->id         ($fid);
+	  $out->id         ($hid);
 	  
 	  if( defined $f_score ) {
 	      $out->score($f_score);
