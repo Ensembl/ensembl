@@ -230,9 +230,9 @@ sub get_all_Clone_id{
    print STDERR "$nsid have cloneid rather than accession numbers\n";
    print STDERR "$nisv have invalid SV numbers";
    if($fall){
-       print " and are included\n";
+       print STDERR " and are included\n";
    }else{
-       print " and are excluded\n";
+       print STDERR " and are excluded\n";
    }
    return @list;
 }
