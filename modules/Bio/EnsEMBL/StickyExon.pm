@@ -156,6 +156,7 @@ sub load_genomic_mapper {
     $mapper->add_map_coordinates( $id, $start, $start+$exon->length()-1,
 				  $exon->strand(), $exon->contig,
 				  $exon->start(), $exon->end() );
+    $start += $exon->length;
   }
 }
 
@@ -342,6 +343,69 @@ sub seq {
   }
 
   return Bio::Seq->new( -seq => $self->{'_seq'} );
+}
+
+
+
+=head2 peptide
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $tr
+  Example    : my $pep_str = $sticky_exon->peptide($transcript)->seq; 
+  Description: StickyExon implementation of Bio::EnsEMBL::Exon::peptide.
+               See Bio::EnsEMBL::Exon::peptide for details
+  Returntype : Bio::Seq
+  Exceptions : thrown if transcript argument is not provided
+  Caller     : general
+
+=cut
+
+sub peptide {
+  my $self = shift;
+  my $tr   = shift;
+
+  unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
+    $self->throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
+  }
+  
+  my $pep_start = undef;
+  my $pep_end   = undef;
+
+  foreach my $exon (@{$self->get_all_component_Exons}) {
+    #convert exons coordinates to peptide coordinates
+    my @coords = 
+      $tr->genomic2pep($exon->start, $exon->end, $exon->strand, $exon->contig);
+    
+    #filter out gaps
+    my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+ 
+    if(scalar(@coords) > 1) {
+      $self->throw("Error. Exon maps to multiple locations in peptide." .
+		   " Is this exon [$self] a member of this transcript [$tr]?");
+      #if this is UTR then the peptide will be empty string
+    } elsif(scalar(@coords) == 1) {
+      my $c = $coords[0];
+      #set the pep start to the minimum of all coords
+      if(!defined $pep_start || $c->start < $pep_start) {
+	$pep_start = $c->start;
+      }
+
+      #set the pep end to the maximum of all coords
+      if(!defined $pep_end || $c->end > $pep_end) {
+	$pep_end = $c->end;
+      }
+    }
+  }
+
+  #the peptide of this sticky is the region spanned by the component exons
+  my $pep_str = '';
+  if($pep_start && $pep_end) {
+    $pep_str = $tr->translate->subseq($pep_start, $pep_end);
+  }
+
+  return Bio::Seq->new(-seq => $pep_str, 
+		       -moltype => 'protein',
+		       -alphabet => 'protein',
+                       -id => $self->stable_id);
 }
 
 

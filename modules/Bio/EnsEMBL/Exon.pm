@@ -1567,6 +1567,59 @@ sub adjust_start_end {
 }
 
 
+=head2 peptide
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $tr
+  Example    : my $pep_str = $exon->peptide($transcript)->seq; 
+  Description: Retrieves the portion of the transcripts peptide
+               encoded by this exon.  The transcript argument is necessary
+               because outside of the context of a transcript it is not
+               possible to correctly determine the translation.  Note that
+               an entire amino acid will be present at the exon boundaries
+               even if only a partial codon is present.  Therefore the 
+               concatenation of all of the peptides of a transcripts exons 
+               is not the same as a transcripts translation because the 
+               summation may contain duplicated amino acids at splice sites.
+               In the case that this exon is entirely UTR, a Bio::Seq object 
+               with an empty sequence string is returned.
+  Returntype : Bio::Seq
+  Exceptions : thrown if transcript argument is not provided
+  Caller     : general
+
+=cut
+
+sub peptide {
+  my $self = shift;
+  my $tr = shift;
+
+  unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
+    $self->throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
+  }
+
+  #convert exons coordinates to peptide coordinates
+  my @coords = 
+    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
+  
+  #filter out gaps
+  my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+
+  #if this is UTR then the peptide will be empty string
+  my $pep_str = '';
+
+  if(scalar(@coords) > 1) {
+    $self->throw("Error. Exon maps to multiple locations in peptide." .
+		 " Is this exon [$self] a member of this transcript [$tr]?");
+  } elsif(scalar(@coords) == 1) {
+    my $c = $coords[0];
+    $pep_str = $tr->translate->subseq($c->start, $c->end);
+  }
+    
+  return Bio::Seq->new(-seq => $pep_str, 
+		       -moltype => 'protein',
+		       -alphabet => 'protein',
+                       -id => $self->stable_id);
+}
+
 
 
 sub seq {

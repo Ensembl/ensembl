@@ -408,6 +408,92 @@ sub translateable_seq {
 
 
 
+=head2 cdna_coding_start
+
+  Arg [1]    : (optional) $value
+  Example    : $relative_coding_start = $transcript->cdna_coding_start;
+  Description: Retrieves the position of the coding start of this transcript
+               in cdna coordinates (relative to the start of the 5prime end of
+               the transcript, excluding introns, including utrs).
+  Returntype : int
+  Exceptions : none
+  Caller     : five_prime_utr, get_all_snps, general
+
+=cut
+
+sub cdna_coding_start {
+  my ($self, $value) = @_;
+
+  if(defined $value) {
+    $self->{'cdna_coding_start'} = $value;
+  } elsif(!defined $self->{'cdna_coding_start'} && defined $self->translation){
+    #
+    #calculate the coding start relative from the start of the
+    #translation (in cdna coords)
+    #
+    my $start = 0;
+
+    my @exons = @{$self->get_all_Exons};
+    my $exon;
+
+    while($exon = shift @exons) {
+      if($exon == $self->translation->start_Exon) {
+	#add the utr portion of the start exon
+	$start += $self->translation->start;
+	last;
+      } else {
+	#add the entire length of this non-coding exon
+	$start += $exon->length;
+      }
+    }
+    $self->{'cdna_coding_start'} = $start;
+  }
+
+  return $self->{'cdna_coding_start'};
+}
+
+
+
+=head2 cdna_coding_end
+
+  Arg [1]    : (optional) $value
+  Example    : $cdna_coding_end = $transcript->coding_end;
+  Description: Retrieves the end of the coding region of this transcript in
+               cdna coordinates (relative to the five prime end of the
+               transcript, excluding introns, including utrs)
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub cdna_coding_end {
+  my ($self, $value) = @_;
+
+  if($value) {
+    $self->{'cdna_coding_end'} = $value;
+  } elsif(!defined $self->{'cdna_coding_end'} && defined $self->translation) {
+    my @exons = @{$self->get_all_Exons};
+
+    my $end = 0;
+    while(my $exon = shift @exons) {
+      if($exon == $self->translation->end_Exon) {
+	#add the coding portion of the final coding exon
+	$end += $self->translation->end;
+	last;
+      } else {
+	#add the entire exon
+	$end += $exon->length;
+      }
+    }
+    $self->{'cdna_coding_end'} = $end;
+  }
+
+  return $self->{'cdna_coding_end'};
+}
+
+
+
 sub coding_start {
   my $self = shift;
   my $arg = shift;
@@ -964,6 +1050,90 @@ sub pep2genomic {
   return $self->cdna2genomic( $start, $end );
 }
 
+sub genomic2pep {
+  my ($self, $start, $end, $strand, $contig) = @_;
+
+  unless(defined $start && defined $end && defined $strand) {
+    $self->throw("start, end and strand arguments are required");
+  }
+ 
+  my @coords = $self->genomic2cdna($start, $end, $strand, $contig);
+
+  my @out;
+
+  my $exons = $self->get_all_Exons;
+  my $start_phase;
+  if(@$exons) {
+    $start_phase = $exons->[0]->phase;
+  } else {
+    $start_phase = -1;
+  }
+
+  foreach my $coord (@coords) {
+    if($coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      push @out, $coord;
+    } else {
+      my $start = $coord->start;
+      my $end   = $coord->end;
+      my $cdna_cstart = $self->cdna_coding_start;
+      my $cdna_cend   = $self->cdna_coding_end;
+      
+      if($coord->strand == -1 || $end < $cdna_cstart || $start > $cdna_cend) {
+	#is all gap - does not map to peptide
+	my $gap = new Bio::EnsEMBL::Mapper::Gap;
+	$gap->end($end);
+	$gap->start($start);
+	push @out, $gap;
+      } else {
+	#we know area is at least partially overlapping CDS
+	
+	my $cds_start = $start - $cdna_cstart + 1;
+	my $cds_end   = $end   - $cdna_cstart + 1;
+
+	if($start < $cdna_cstart) {
+	  #start of coordinates are in the 5prime UTR
+	  my $gap = new Bio::EnsEMBL::Mapper::Gap;
+	  $gap->start($start);
+	  $gap->end($cdna_cstart - 1);
+	  #start is now relative to start of CDS
+	  $cds_start = 1;
+	  push @out, $gap;
+	} 
+	
+	my $end_gap = undef;
+	if($end > $cdna_cend) {
+	  #end of coordinates are in the 3prime UTR
+	  $end_gap = new Bio::EnsEMBL::Mapper::Gap;
+	  $end_gap->end($end);
+	  $end_gap->start($cdna_cend + 1);
+	  #adjust end to relative to CDS start
+	  $cds_end = $cdna_cend - $cdna_cstart + 1;
+	}
+
+	#start and end are now entirely in CDS and relative to CDS start
+
+	#take into account possible N padding at beginning of CDS
+	my $shift = ($start_phase > 0) ? $start_phase : 0;
+	
+	#convert to peptide coordinates
+	my $pep_start = int(($cds_start + $shift + 2) / 3);
+	my $pep_end   = int(($cds_end   + $shift + 2) / 3);
+	$coord->start($pep_start);
+	$coord->end($pep_end);
+	
+	push @out, $coord;
+
+	if($end_gap) {
+	  #push out the region which was in the 3prime utr
+	  push @out, $end_gap;
+	}
+      }	
+    }
+  }
+
+  return @out;
+}
+
 
 sub cdna2genomic {
   my ($self,$start,$end) = @_;
@@ -994,6 +1164,55 @@ sub cdna2genomic {
   return @out;
 }
   
+=head2 genomic2cdna
+
+  Arg [1]    : $start
+               The start position in genomic coordinates
+  Arg [2]    : $end
+               The end position in genomic coordinates
+  Arg [3]    : (optional) $strand
+               The strand of the genomic coordinates (default value 1)
+  Arg [4]    : (optional) $contig
+               The contig the coordinates are on.  This can be a slice
+               or RawContig, but must be the same object in memory as
+               the contig(s) of this transcripts exon(s), because of the
+               use of object identity. If no contig argument is specified the
+               contig of the first exon is used, which is fine for slice
+               coordinates but may cause incorrect mappings in raw contig
+               coords if this transcript spans multiple contigs.
+  Example    : @coords = $transcript->genomic2cdna($start, $end, $strnd, $ctg);
+  Description: Converts genomic coordinates to cdna coordinates.  The
+               return value is a list of coordinates and gaps.  Gaps
+               represent intronic or upstream/downstream regions which do
+               not comprise this transcripts cdna.  Coordinate objects
+               represent genomic regions which map to exons (utrs included).
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate and
+               Bio::EnsEMBL::Mapper::Gap objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub genomic2cdna {
+  my ($self, $start, $end, $strand, $contig) = @_;
+
+  unless(defined $start && defined $end && defined $strand) {
+    $self->throw("start, end and strand arguments are required\n");
+  }
+
+  #"ids" in mapper are contigs of exons, so use the same contig that should
+  #be attached to all of the exons...
+  $contig = $self->get_all_Exons->[0]->contig unless(defined $contig);
+  my $mapper = $self->_get_cdna_coord_mapper;
+
+
+  #print "MAPPING $start - $end ($strand)\n";
+  #print $contig->name . "=" . $self->get_all_Exons->[0]->contig->name . "\n";
+
+  return $mapper->map_coordinates($contig, $start, $end, $strand, "genomic");
+}
+
+
 sub _get_cdna_coord_mapper {
   my ( $self ) = @_;
 
@@ -1008,7 +1227,7 @@ sub _get_cdna_coord_mapper {
 
   my $mapper;
   $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
-  my @exons = @{$self->get_all_translateable_Exons() };
+  my @exons = @{$self->get_all_Exons() };
   my $start = 1;
   for my $exon ( @exons ) {
     $exon->load_genomic_mapper( $mapper, $self, $start );
