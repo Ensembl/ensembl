@@ -18,10 +18,11 @@ Bio::EnsEMBL::EvidenceAlignment.pm
  my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
                           -DBADAPTOR    => $dba,
                           -TRANSCRIPTID => $tr_stable_id,
-			  -SEQFETCHER   => $seqfetcher);
+			  -PFETCH       => '/path/to/pfetch');
  my $alignment_arr_ref = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_stable_id);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
+ my $short_alignment_arr_ref = $ea->fetch_alignment($hid);
  $ea->contigid($contig_stable_id);
  my $contig_based_alignment_arr_ref = $ea->fetch_alignment;
 
@@ -54,7 +55,6 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
-use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -63,7 +63,8 @@ use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
     Title   :   new
     Usage   :   my $tr_ea   = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR    => $dba,
-                                -TRANSCRIPTID => $transcript_stable_id);
+                                -TRANSCRIPTID => $transcript_stable_id,
+				-PFETCH       => '/path/to/pfetch');
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
                                 -CONTIGID  => $contig_stable_id);
@@ -71,9 +72,9 @@ use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
     Returns :   An EvidenceAlignment object
     Args    :   Database adaptor object and an ID string (-CONTIGID
                 with contig ID or -TRANSCRIPTID with transcript
-		stable ID); optional seqfetcher (-SEQFETCHER), which
-		must have a get_Seqs_by_accs method (by default,
-		Pfetch is used).
+		stable ID); optional full path of pfetch binary
+		(-PFETCH), defaulting to whatever is in the user's
+		search path.
 
 =cut
 
@@ -81,11 +82,11 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher) = $self->_rearrange(
+  my ($transcriptid, $contigid, $dbadaptor, $pfetch) = $self->_rearrange(
                                                          ['TRANSCRIPTID',
 						          'CONTIGID',
                                                           'DBADAPTOR',
-						          'SEQFETCHER'],
+						          'PFETCH'],
 						         @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
@@ -96,10 +97,10 @@ sub new {
   if ($contigid) {
     $self->contigid($contigid);
   }
-  if (! $seqfetcher) {
-    $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch->new();
+  if (! $pfetch) {
+    $pfetch = 'pfetch';
   }
-  $self->seqfetcher($seqfetcher);
+  $self->pfetch($pfetch);
   $self->dbadaptor($dbadaptor);
 
   return $self; # success - we hope!
@@ -122,22 +123,22 @@ sub dbadaptor {
   return $obj->{evidencealignment_db_adaptor};
 }
 
-=head2 seqfetcher
+=head2 pfetch
 
-    Title   :   seqfetcher
-    Usage   :   $ea->seqfetcher($seqfetcher_obj);
-    Function:   get/set for seqfetcher, which must have a
-                get_Seqs_by_accs method
+    Title   :   pfetch
+    Usage   :   $ea->pfetch('/path/to/pfetch');
+    Function:   get/set for pfetch, the location of the pfetch
+                binary.
 
 =cut
 
-sub seqfetcher {
+sub pfetch {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{evidencealignment_seqfetcher} = $value;
+    $obj->{evidencealignment_pfetch} = $value;
   }
-  return $obj->{evidencealignment_seqfetcher};
+  return $obj->{evidencealignment_pfetch};
 }
 
 =head2 transcriptid
@@ -182,17 +183,22 @@ sub contigid {
 
     Title   :   _get_features_from_transcript
     Usage   :   $ea->_get_features_from_transcript($transcript_obj, $vc);
+                $ea->_get_features_from_transcript($transcript_obj, $vc, $hid);
     Function:   use SGP adaptor supplied to get evidence off a VC
                 of the transcript supplied; features not overlapping
-		any exon are cut; genomic start and end are modified
-		by VC_HACK_BP; duplicate features are removed
+		any exon are cut; if a list of hit accession numbers
+		are given, features not involving those accession
+		numbers are cut; genomic start and end are always
+		modified by VC_HACK_BP; duplicate features are
+		removed
     Returns :   array of featurepairs
 
 =cut
 
 sub _get_features_from_transcript {
-  my ($self, $transcript_obj, $vc) = @_;
-  $self->throw('interface fault') if (@_ != 3);
+  my ($self, $transcript_obj, $vc) = splice @_, 0, 3;
+  $self->throw('interface fault') if (!$self or !$transcript_obj or !$vc);
+  my @wanted_arr = @_;
 
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
@@ -205,11 +211,24 @@ sub _get_features_from_transcript {
       # fix VC-related coordinate problem
       $feature->start($feature->start + VC_HACK_BP);
       $feature->end($feature->end + VC_HACK_BP);
-      # store on overlap
+      # store on overlap, unless we're not interested in this hit seq.
       foreach my $exon (@exons) {
         if ($exon->overlaps($feature)) {
-	  push @features, $feature;
-	  next FEATURE_LOOP;
+	  my $hid = $feature->hseqname;
+	  my $wanted = 0;
+	  if (@wanted_arr) {
+	    foreach (@wanted_arr) {	# we only want some hits
+	      if ($_ eq $hid) {
+	        $wanted = 1;
+	      }
+	    }
+	  } else {			# we want all hits
+	    $wanted = 1;
+	  }
+	  if ($wanted) {
+	    push @features, $feature;
+	    next FEATURE_LOOP;
+	  }
 	}
       }
     }
@@ -273,6 +292,67 @@ sub _get_features_from_rawcontig {
   return @features;
 }
 
+=head2 _get_Seqs_by_accs
+
+    Title   :   _get_Seqs_by_accs
+    Usage   :   $seqs = $self->_get_Seqs_by_accs(@hid_arr);
+    Function:   Does the sequence retrieval for an array of
+                accesions in one pfetch call. This is closely
+		based on
+		Bio/EnsEMBL::Pipeline::SeqFetcher::Pfetch in
+		ensembl-pipeline. Having it here allows
+		the current module to work for both pipeline
+		and Web users.
+    Returns :   Array of Bio::Seq
+
+=cut
+
+sub _get_Seqs_by_accs {
+  my ($self, @acc) = @_;
+
+  if (!defined(@acc) || scalar(@acc < 1)) {
+    $self->throw("No accession input");
+  }
+
+  my @seq;
+  my $newseq;
+  my $tracker = 0;
+  my $pfetch = $self->pfetch;
+
+  my $command = "$pfetch -q ";
+  $command .= join " ", @acc;
+
+  open(EVIDENCEALIGNMENT_IN_FH,"$command |")
+    or $self->throw("Error opening pipe to pfetch for $pfetch");
+  while(<EVIDENCEALIGNMENT_IN_FH>){
+
+    chomp;
+    eval{
+      if(defined $_ && $_ ne "no match") {
+        $newseq = new Bio::Seq('-seq'               => $_,
+                               '-accession_number'  => $acc[$tracker],
+                               '-display_id'        => $acc[$tracker]);
+      }
+    };
+
+    if($@){
+      print STDERR "$@\n";
+    }
+
+    if (defined $newseq){
+      push (@seq, $newseq);
+    }
+    else{
+      $self->warn("Could not even pfetch sequence for [" . $acc[$tracker] . "]\n");
+    }
+    $tracker++;
+  }
+
+  close EVIDENCEALIGNMENT_IN_FH
+    or $self->throw("Error running pfetch for $pfetch");
+  return @seq;
+}
+
 =head2 _pad_pep_str
 
     Title   :   _pad_pep_str
@@ -300,22 +380,29 @@ sub _pad_pep_str {
 
     Title   :   fetch_alignment
     Usage   :   my $seq_arr_ref = $ea->fetch_alignment;
+                my $seq_arr_ref = $ea->fetch_alignment($hid);
     Function:   gets transcript or raw contig and corresponding
                 evidence or similarity features; for raw
 		contigs, these are displayed for the forward
 		strand followed by the reverse strand
+    Args    :   for transcripts, an optional list of accession
+		numbers of hit sequences of interest; if none
+		are given, all relevant hit sequences are
+		retrieved; for contigs, all relevant hit
+		sequences are always retrieved
     Returns :   reference to array of Bio::PrimarySeq
 
 =cut
 
 sub fetch_alignment {
-  my ($self) = @_;
-  $self->throw('interface fault') if (@_ != 1);
+  my ($self) = shift;
+  $self->throw('interface fault') if (! $self);
   $self->throw('must have a stable ID and a DB adaptor object')
     unless (($self->transcriptid || $self->contigid) && $self->dbadaptor);
+
   if ($self->transcriptid) {
     return $self->_get_aligned_evidence_for_transcript($self->transcriptid,
-                                                       $self->dbadaptor);
+                                                       $self->dbadaptor, @_);
   } elsif ($self->contigid) {
     my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
                                  $self->contigid, $self->dbadaptor, 1);
@@ -356,7 +443,7 @@ sub _get_transcript_nuc {
   return $retval;
 }
 
-# get all hit sequences by aggregated use of seqfetcher
+# get all hit sequences by aggregated use of pfetch
 sub _get_hits {
   my ($self, $features_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
@@ -385,7 +472,7 @@ sub _get_hits {
 	}
         my @seqs;
 	if (@tofetch) {
-	  @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+	  @seqs = $self->_get_Seqs_by_accs(@tofetch);
 	}
 	foreach my $seq_obj (@seqs) {
           $hits_hash{$seq_obj->accession_number} = $seq_obj;
@@ -416,7 +503,7 @@ sub _get_hits {
     }
     my @seqs;
     if (@tofetch) {
-      @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+      @seqs = $self->_get_Seqs_by_accs(@tofetch);
     }
     foreach my $seq_obj (@seqs) {
       $hits_hash{$seq_obj->accession_number} = $seq_obj;
@@ -741,12 +828,12 @@ sub _get_aligned_features_for_contig {
 }
 
 # _get_aligned_evidence_for_transcript: takes a transcript ID and
-# a DB adaptor
+# a DB adaptor, and an optional list of hit sequence accession numbers
 # returns ref to an array of Bio::PrimarySeq
 
 sub _get_aligned_evidence_for_transcript {
-  my ($self, $transcript_id, $db) = @_;
-  $self->throw('interface fault') if (@_ != 3);
+  my ($self, $transcript_id, $db) = splice @_, 0, 3;
+  $self->throw('interface fault') if (!$self or !$transcript_id or !$db);
 
   my $sgp = $db->get_StaticGoldenPathAdaptor;
   my @evidence_arr;	# a reference to this is returned
@@ -776,7 +863,7 @@ sub _get_aligned_evidence_for_transcript {
   }
   my @all_exons = $transcript_obj->get_all_Exons;
 
-  my @features = $self->_get_features_from_transcript($transcript_obj, $vc);
+  my @features = $self->_get_features_from_transcript($transcript_obj, $vc, @_);
   my $per_hid_effective_scores_hash_ref =
     $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
@@ -1123,6 +1210,29 @@ sub _get_aligned_evidence_for_transcript {
   foreach my $evidence_line (@evidence_arr) {
     push @filtered_evidence_arr, $evidence_line
       if ($$evidence_line{seq} =~ /[^-]/);
+  }
+
+  # for transcripts: remove cDNA if one protein hid specified,
+  # remove translation if one nucleotide hid specified, but (in
+  # desperation) leave translation in place if there are no hits
+  # of any kind
+
+  if ($self->transcriptid) {
+    my $prot_lines = 0;
+    my $nuc_lines = 0;
+    foreach my $evidence_line (@filtered_evidence_arr) {
+      if ($evidence_line->moltype eq 'protein') {
+        $prot_lines++;
+      } else {
+        $nuc_lines++;
+      }
+    }
+    if ($nuc_lines eq 1) {	# for nucleotides, we have cDNA only
+      splice @filtered_evidence_arr, $#filtered_evidence_arr, 1;
+    }
+    if (@filtered_evidence_arr > 1 and $prot_lines == 1) {
+      splice @filtered_evidence_arr, 0, 1;
+    }
   }
 
   # change case at exon boundaries
