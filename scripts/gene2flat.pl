@@ -134,6 +134,10 @@ if( $format eq 'id' ) {
     exit(0);
 }
 
+if ($format eq 'webdump') {
+    mkdir($webdir, 0777) or die "Can't create '$webdir' : $!";
+}
+
 while ( @gene_id > 0 ) {
     my @chunk_list = splice(@gene_id,0,$chunk);
 
@@ -182,7 +186,6 @@ while ( @gene_id > 0 ) {
 		}
 	    }
 	    elsif ($format eq 'webdump') {
-		mkdir($webdir, 0777) or die "Can't create '$webdir' : $!";
 		my $trans_file = $webdir.$gene->id.".trans";
 		open (TRANS,">$trans_file");
 		foreach my $trans ( $gene->each_Transcript ) {
@@ -202,7 +205,7 @@ while ( @gene_id > 0 ) {
 		    my $fe = $exon[0];
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
-			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
 		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
@@ -217,7 +220,11 @@ while ( @gene_id > 0 ) {
     };
     
     if( $@ ) {
-	print STDERR "Unable to process @chunk_list due to \n$@\n";
+	my $gene_id = "@chunk_list";
+	foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
+	    print STDERR "Error in clone $clone:\n";
+	}
+	print STDERR "unable to process @chunk_list, due to \n$@\n";
     }
     
 }
