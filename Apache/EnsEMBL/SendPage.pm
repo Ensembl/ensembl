@@ -6,70 +6,72 @@ use Apache::File ();
 use Apache::Log ();
 
 sub handler {
-   my $r = shift;
-   if ((my $rc = $r->discard_request_body) != OK) {
+    my $r = shift;
+    if ((my $rc = $r->discard_request_body) != OK) {
       return $rc;
-   }
+    }
 
-   if ($r->method_number == M_INVALID) {
+    #$r->log->error("SendPage.pm handling: ", $r->filename);
+
+    if ($r->method_number == M_INVALID) {
        $r->log->error("Invalid method in request ", $r->the_request);
        return NOT_IMPLEMENTED;
-   }
+    }
 
-   if ($r->method_number == M_OPTIONS) {
+    if ($r->method_number == M_OPTIONS) {
        return DECLINED;                     #http_core.c:default_handler() will pick this up
-   }
+    }
 
-   if ($r->method_number == M_PUT) {
+    if ($r->method_number == M_PUT) {
        return HTTP_METHOD_NOT_ALLOWED;
-   }
+    }
 
-   if (-d $r->finfo) {
+    if (-d $r->finfo) {
       #$r->log->error("Directory request: ", $r->filename);
       #printf "%s is a directory\n", $r->filename;
       return DECLINED;
-   }
+    }
 
-   unless (-e $r->finfo) {
+    unless (-e $r->finfo) {
       $r->log->error("File does not exist: ", $r->filename);
       return NOT_FOUND;
-   }
+    }
 
-   if ($r->method_number != M_GET) {
+    if ($r->method_number != M_GET) {
        return HTTP_METHOD_NOT_ALLOWED;
-   }
+    }
 
-   my $fh = Apache::File->new($r->filename);
-   unless ($fh) {
+    my $fh = Apache::File->new($r->filename);
+    unless ($fh) {
       $r->log->error("file permissions deny server access: ", 
                      $r->filename);
        return FORBIDDEN;
-   }
+    }
 
-   $r->update_mtime(-s $r->finfo);
-   $r->set_last_modified;
-   $r->set_etag;
+    $r->update_mtime(-s $r->finfo);
+    $r->set_last_modified;
+    $r->set_etag;
 
-   if((my $rc = $r->meets_conditions) != OK) {
+    if((my $rc = $r->meets_conditions) != OK) {
       return $rc;
-   }
+    }
 
-   $r->set_content_length;
+    $r->set_content_length;
 
-   if($ENV{PERL_SEND_HEADER}) {
+    if($ENV{PERL_SEND_HEADER}) {
         print "Content-type: text/html\n\n";
-   }
-   else {
+    }
+    else {
        $r->content_type('text/html');
        $r->send_http_header;
-   }
+    }
 
-   unless ($r->header_only) {
+    unless ($r->header_only) {
       $r->send_fd($fh);
-   }
+    }
 
-   close $fh;
-   return OK;
+    close $fh;
+    return OK;
 }
 
 1;
