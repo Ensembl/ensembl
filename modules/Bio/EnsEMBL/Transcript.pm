@@ -888,27 +888,27 @@ sub dna_seq {
 	if( $prev->end_phase != $exon->phase ) {
 	    if( $prev->end_phase == 0 ) {
 		if( $exon->phase == 1 ) {
-		    $mrna .= 2 x "N";
+		    $mrna .= "N" x 2;
 		}
 
 		if( $exon->phase == 2 ) {
-		    $mrna .= 1 x "N";
+		    $mrna .= "N" x 1;
 		}
 	    } elsif ( $prev->end_phase == 1 ) {
 		if( $exon->phase == 0 ) {
-		    $mrna .= 2 x "N";
+		    $mrna .= "N" x 2;
 		}
 		
 		if( $exon->phase == 2 ) {
-		    $mrna .= 1 x "N";
+		    $mrna .= "N" x 1;
 		}
 	    } elsif ( $prev->end_phase == 2 ) {
 		if( $exon->phase == 0 ) {
-		    $mrna .= 1 x "N";
+		    $mrna .= "N" x 1;
 		}
 		
 		if( $exon->phase == 1 ) {
-		    $mrna .= 2 x "N";
+		    $mrna .= "N" x 2;
 		}
 	    } else {
 		$self->warn("Impossible phases in calculating fixing stuff "  . $prev->end_phase . " " . $exon->phase);
