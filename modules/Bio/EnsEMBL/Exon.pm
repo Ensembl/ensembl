@@ -526,10 +526,15 @@ sub _transform_to_RawContig {
       $componentExon->adaptor( $self->adaptor() );
 
       #add the supporting features on this contig to the component exon
+      print STDERR "features in ".$rawContig->name."?\n";
       if(exists $sf_hash{$rawContig->name}) {	
+	print STDERR "yes!\n";
         $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name}});
       }
-
+      else{
+	print STDERR "no!\n";
+      }
+      
       $stickyExon->add_component_Exon( $componentExon );
       $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
     }
@@ -547,7 +552,12 @@ sub _transform_to_RawContig {
     if (defined($self->modified)) {
       $stickyExon->modified($self->modified);
     }
-   #  print STDERR "transformed sticky exon ".$stickyExon->gffstring."\n";
+    #  print STDERR "transformed sticky exon ".$stickyExon->gffstring."\n";
+    print STDERR "returning an sticky exon\n";
+    print STDERR "sticky: ".$stickyExon->gffstring."\n";
+    foreach my $component ( @{$stickyExon->get_all_component_Exons} ){
+      print STDERR "component: ".$component->gffstring."\n";
+    }
     return $stickyExon;
     
   } else {
@@ -1089,7 +1099,14 @@ sub add_supporting_features {
 
 sub get_all_supporting_features {
   my $self = shift;
-
+  
+  # if exon is StickyExon, get the evidence from the components
+  if ( $self->isa('Bio::EnsEMBL::StickyExon') && ! $self->{_supporting_evidence} ){
+    foreach my $component ( @{$self->get_all_component_Exons} ){
+      push( @{$self->{_supporting_evidence} }, @{$component->get_all_supporting_features} );
+    }
+  }
+  
   if( !defined( $self->{_supporting_evidence} ) 
       || scalar @{$self->{_supporting_evidence}} == 0) {
 
