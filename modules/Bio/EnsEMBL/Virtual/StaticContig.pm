@@ -48,6 +48,7 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::Contig
+    use Bio::Annotation;
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
@@ -61,6 +62,12 @@ sub new {
     my $self = {};
     bless $self,$class;
     $self->_make_datastructures(); # back to virtual contig
+
+
+    # EMBL dumping support
+    $self->{'date'} = [];
+    $self->annotation( Bio::Annotation->new());
+    $self->{'additional_seqf'} = [];
 
 
 
@@ -208,5 +215,259 @@ sub _chr_name{
     return $obj->{'_chr_name'};
 
 }
+
+
+=head2 EMBL Dumping support
+
+These functions are just to support EMBL dumping
+
+=cut
+
+=head2 desc
+
+ Title   : desc
+ Usage   : $obj->desc($newval)
+ Function: 
+ Example : 
+ Returns : value of desc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub desc{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'desc'} = $value;
+    }
+    return $obj->{'desc'};
+
+}
+
+=head2 species
+
+ Title   : species
+ Usage   : $obj->species($newval)
+ Function: 
+ Example : 
+ Returns : value of species
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub species{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'species'} = $value;
+    }
+    return $obj->{'species'};
+
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+=cut
+
+sub id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'id'} = $value;
+    }
+    return $obj->{'id'};
+
+}
+
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   : $obj->htg_phase($newval)
+ Function: 
+ Example : 
+ Returns : value of htg_phase
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub htg_phase{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'htg_phase'} = $value;
+    }
+    return $obj->{'htg_phase'};
+
+}
+
+=head2 sv
+
+ Title   : sv
+ Usage   : $obj->sv($newval)
+ Function: 
+ Example : 
+ Returns : value of sv
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub sv{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'sv'} = $value;
+    }
+    return $obj->{'sv'};
+
+}
+
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   : $obj->embl_id($newval)
+ Function: 
+ Example : 
+ Returns : value of embl_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub embl_id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'embl_id'} = $value;
+    }
+    return $obj->{'embl_id'};
+
+}
+
+=head2 project_name
+
+ Title   : project_name
+ Usage   : $obj->project_name($newval)
+ Function: 
+ Example : 
+ Returns : value of project_name
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub project_name{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'project_name'} = $value;
+    }
+    return $obj->{'project_name'};
+
+}
+
+=head2 add_date
+
+ Title   : add_date
+ Usage   : $self->add_domment($ref)
+ Function: adds a date
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_date {
+   my ($self) = shift;
+   foreach my $dt ( @_ ) {
+       push(@{$self->{'date'}},$dt);
+   }
+}
+
+=head2 each_date
+
+ Title   : each_date
+ Usage   : foreach $dt ( $self->each_date() )
+ Function: gets an array of dates
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_date {
+   my ($self) = @_;
+   return @{$self->{'date'}}; 
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   : $obj->annotation($newval)
+ Function: 
+ Example : 
+ Returns : value of annotation
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub annotation{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'annotation'} = $value;
+    }
+    return $obj->{'annotation'};
+
+}
+
+=head2 add_SeqFeature
+
+ Title   : add_SeqFeature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_SeqFeature{
+   my ($self,$sf) = @_;
+
+   push(@{$self->{'additional_seqf'}},$sf);
+}
+
+
+=head2 top_SeqFeatures
+
+ Title   : top_SeqFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub top_SeqFeatures{
+   my ($self) = @_;
+   my @sf;
+
+   @sf = $self->SUPER::top_SeqFeatures();
+   push(@sf,@{$self->{'additional_seqf'}});
+   return @sf;
+}
+
+
+
 
 1;
