@@ -1,9 +1,6 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::Translation
+# Ensembl module for Bio::EnsEMBL::Translation
 #
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -15,7 +12,6 @@ Bio::EnsEMBL::Translation - A class representing the translation of a
 transcript
 
 =head1 SYNOPSIS
-
 
 
 =head1 DESCRIPTION
@@ -50,19 +46,21 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my ( $start_exon, $end_exon, $seq_start, $seq_end,
-       $stable_id, $version, $dbID, $adaptor ) = 
+       $stable_id, $version, $dbID, $adaptor, $seq ) = 
     rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
-                 "STABLE_ID", "VERSION", "DBID", "ADAPTOR" ], @_ );
+                 "STABLE_ID", "VERSION", "DBID", "ADAPTOR",
+                 "SEQ" ], @_ );
 
   my $self = bless {
 		    'start_exon' => $start_exon,
-		    'end_exon' => $end_exon,
-		    'adaptor' => $adaptor,
-		    'dbID' => $dbID,
-		    'start' => $seq_start,
-		    'end' => $seq_end,
-		    'stable_id' => $stable_id,
-		    'version' => $version
+		    'end_exon'   => $end_exon,
+		    'adaptor'    => $adaptor,
+		    'dbID'       => $dbID,
+		    'start'      => $seq_start,
+		    'end'        => $seq_end,
+		    'stable_id'  => $stable_id,
+		    'version'    => $version,
+        'seq'        => $seq
 		   }, $class;
 
   return $self;
@@ -360,10 +358,10 @@ sub get_all_ProteinFeatures {
     foreach my $f (@{$pfa->fetch_all_by_translation_id($dbID)}) {
       my $analysis = $f->analysis();
       if($analysis) {
-	$name = lc($f->analysis->logic_name());
+        $name = lc($f->analysis->logic_name());
       } else {
-	warning("ProteinFeature has no attached analysis\n");
-	$name = '';
+        warning("ProteinFeature has no attached analysis\n");
+        $name = '';
       }
       $hash{$name} ||= [];
       push @{$hash{$name}}, $f;
@@ -420,6 +418,8 @@ sub get_all_DomainFeatures{
  return \@features;
 }
 
+
+
 =head2 display_id
 
   Arg [1]    : none
@@ -439,6 +439,69 @@ sub display_id {
 }
 
 
+=head2 length
+
+  Arg [1]    : none
+  Example    : print "Peptide length =", $translation->length();
+  Description: Retrieves the length of the peptide sequence (i.e. number of
+               amino acids) represented by this Translation object.
+  Returntype : int
+  Exceptions : none
+  Caller     : webcode (protview etc.)
+
+=cut
+
+sub length {
+  my $self = shift;
+  my $seq = $self->seq();
+  return ($seq) ? length($seq) : 0;
+}
+
+
+=head2 seq
+
+  Arg [1]    : none
+  Example    : print $translation->seq();
+  Description: Retrieves a string representation of the peptide sequence
+               of this Translation.  This retrieves the transcript from the
+               database and gets its sequence, or retrieves the sequence which
+               was set via the constructor.  If no adaptor is attached to this
+               translation.
+  Returntype : string
+  Exceptions : warning if the sequence is not set and cannot be retrieved from
+               the database.
+  Caller     : webcode (protview etc.)
+
+=cut
+
+sub seq {
+  my $self = shift;
+
+  return $self->{'seq'} if($self->{'seq'});
+
+  my $adaptor = $self->{'adaptor'};
+  if(!$adaptor) {
+    warning("Cannot retrieve sequence from Translation - adaptor is not set.");
+  }
+
+  my $dbID = $self->{'dbID'};
+  if(!$dbID) {
+    warning("Cannot retrieve sequence from Translation - adaptor is not set.");
+  }
+  
+  my $tr_adaptor = $self->{'adaptor'}->db()->get_TranscriptAdaptor;
+
+  my $seq = $tr_adaptor->fetch_by_translation_id($dbID)->translate();
+  $self->{'seq'} = $seq->seq();
+
+  return $self->{'seq'};
+}
+
+
+
+=head1 DEPRECATED METHODS
+
+=cut
 
 
 =head2 temporary_id
