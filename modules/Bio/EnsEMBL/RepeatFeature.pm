@@ -8,7 +8,7 @@ use Bio::EnsEMBL::SeqFeatureI;
 
 use vars '@ISA';
 
-@ISA = qw{ Bio::EnsEMBL::SeqFeatureI Bio::LocationI };
+@ISA = qw{ Bio::EnsEMBL::SeqFeature Bio::LocationI };
 
 sub new {
     my $pkg = shift;
