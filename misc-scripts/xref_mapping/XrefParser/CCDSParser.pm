@@ -1,7 +1,6 @@
 package XrefParser::CCDSParser;
 
 use strict;
-use File::Basename;
 
 use XrefParser::BaseParser;
 
@@ -21,7 +20,6 @@ sub run {
 
   while (<CCDS>) {
 
-    # TODO extract stable ID, CCDS identifier
     my ($stable_id, $ccds) = split;
 
     my $xref_id = $self->add_xref($ccds, 1, $ccds, "", $source_id, $species_id);
