@@ -549,6 +549,39 @@ sub update {
    $sth->execute( $display_xref_id, $exon_count, $transcript->dbID() );
  }
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @g_ids = $transcript_adaptor->list_dbIDs();
+  Description: Gets an array of internal ids for all transcripts in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("transcript");
+}
+
+=head2 list_stable_dbIDs
+
+  Arg [1]    : none
+  Example    : @stable_transcript_ids = $transcript_adaptor->list_stable_dbIDs();
+  Description: Gets an array of stable ids for all transcripts in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_stable_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("transcript_stable_id", "stable_id");
+}
 
 
 
