@@ -1,3 +1,0 @@
-The most up-to-date version of this document can be found on 
-branch-new-seqstore.  It has been moved there so it does not have to be
-maintained in two locations.
