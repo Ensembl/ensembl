@@ -1033,6 +1033,9 @@ sub _get_all_SeqFeatures_type {
 		#print STDERR "\n ##### Starting to convert feature " . $sf->seqname . " " . $sf->id . "\n";
 		#print STDERR "SEQNAME:" . $sf->seqname . " ID: " . $sf->id . " START: " . $sf->start . " END: " . $sf->end ."\n";
 
+		#print STDERR "\tTrace: " . $sf->seqname . " (". $sf->id . ")\n" if $sf->isa('Bio::EnsEMBL::ExternalData::Trace');
+		#print STDERR "SNP:" . $sf->seqname . "\n" if $sf->isa('Bio::EnsEMBL::ExternalData::Variation');
+
 		$sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
 		if( !defined $sf ) {      

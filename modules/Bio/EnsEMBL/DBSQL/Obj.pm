@@ -233,10 +233,10 @@ sub get_Update_Obj {
 sub get_object_by_wildcard{
    my ($self,$type,$string) = @_;
 
-   print STDERR "Got type: $type and string: $string\n";
+   #print STDERR "Got type: $type and string: $string\n";
    my @ids;
    my $sth = $self->prepare("select id from $type where id like \'$string\'");
-   print STDERR "mysql: select id from $type where id like \'$string\'\n";
+   #print STDERR "mysql: select id from $type where id like \'$string\'\n";
    my $res = $sth->execute || $self->throw("Could not get any ids!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@ids,$rowhash->{'id'});
@@ -391,7 +391,7 @@ sub write_Contig {
     
     my $id  = $row->{'last_insert_id()'};
     
-    print(STDERR "Contig $contigid - $id\n");
+    #print(STDERR "Contig $contigid - $id\n");
     
     $contig->internal_id($id);
     
@@ -2239,7 +2239,7 @@ sub deleteObj {
   my  $self=shift;
   my $dummy;
 
-  print STDERR "Destroying DB Obj!\n";       
+  #print STDERR "Destroying DB Obj!\n";       
   $self->DESTROY;
   
   foreach my $name ( keys %{$self} ) {
