@@ -1213,8 +1213,9 @@ sub get_all_MarkerFeatures {
 
   Arg [1]    : string $qy_species
                The name of the species to retrieve similarity features from
-  Arg [2]    : string $qy_assembly
+  Arg [2]    : string $qy_assembly (can be undef)
                The name of the assembly to retrieve similarity features from
+                if undef assembly_default will be queried from compara db.
   Arg [3]    : string $type
                The type of the alignment to retrieve similarity features from
   Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus musculus',
