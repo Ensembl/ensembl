@@ -17,6 +17,7 @@ sub fetch_by_RawContig {
     foreach my $r (@repeats) {
         $r->attach_seq($contig);
     }
+    return @repeats;
 }
 
 sub fetch_by_contig_id {
