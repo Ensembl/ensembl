@@ -7,7 +7,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Path;
 use POSIX qw(strftime);
 
-use SwissProtParser;
+use UniProtParser;
 use RefSeqParser;
 use RefSeqGPFFParser;
 
@@ -73,6 +73,10 @@ sub run {
 
 	update_source($dbi, $source_url_id, $file_cs, $file);
 
+	# Files from sources "UniProtSwissProt" and "UniProtSpTREMBL" are
+	# all parsed with the same parser
+	$parser = 'UniProtParser' if ($parser =~ /UniProt/i);
+
 	print "Parsing $file with $parser\n";
 	$parser->run("$dir/$file", $source_id);
 
@@ -107,14 +111,13 @@ sub new {
 }
 
 # --------------------------------------------------------------------------------
-# Get source ID for a particular file; matches url field 
+# Get source ID for a particular file; matches url field
 
 sub get_source_id_for_filename {
 
   my ($self, $file) = @_;
 
-  my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'"; 
-  #print $sql . "\n";
+  my $sql = "SELECT s.source_id FROM source s, source_url su WHERE su.source_id=s.source_id AND su.url LIKE  '%/" . $file . "%'";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
@@ -123,6 +126,29 @@ sub get_source_id_for_filename {
     $source_id = $row[0];
   } else {
     warn("Couldn't get source ID for file $file\n");
+    $source_id = -1;
+  }
+
+  return $source_id;
+
+}
+
+# --------------------------------------------------------------------------------
+# Get source ID for a particular source name
+
+sub get_source_id_for_source_name {
+
+  my ($self, $source_name) = @_;
+
+  my $sql = "SELECT source_id FROM source WHERE name='" . $source_name . "'";
+  my $sth = dbi()->prepare($sql);
+  $sth->execute();
+  my @row = $sth->fetchrow_array();
+  my $source_id;
+  if (defined @row) {
+    $source_id = $row[0];
+  } else {
+    warn("Couldn't get source ID for source name $source_name\n");
     $source_id = -1;
   }
 
@@ -140,14 +166,9 @@ sub upload_xrefs {
   my $dbi = dbi();
 
   if ($#xrefs > -1) {
-    # remove all existing xrefs with same source ID
 
-    # TODO re-instate deletion
-
-
-    my $source_id = $xrefs[0]->{SOURCE_ID};
-    my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
-    #$del_sth->execute();
+    # remove all existing xrefs with same source ID(s)
+    delete_by_source(\@xrefs);
 
     # upload new ones
     my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
@@ -223,7 +244,7 @@ sub upload_xrefs {
 
     }				# foreach xref
 
-    $del_sth->finish() if defined $del_sth;
+
     $xref_sth->finish() if defined $xref_sth;
     $pri_insert_sth->finish() if defined $pri_insert_sth;
     $pri_update_sth->finish() if defined $pri_update_sth;
@@ -413,4 +434,33 @@ sub primary_xref_id_exists {
 
 # --------------------------------------------------------------------------------
 
+# delete all xrefs & related objects
+
+sub delete_by_source {
+
+  my $xrefs = shift;
+
+  # SQL for deleting stuff
+  # TODO - warning about MySQL 4
+  # TODO - SQL
+
+  # xrefs may come from more than one source (e.g. UniProt/SP/SPtr)
+  # so find all sources first
+  my %source_ids;
+  foreach my $xref (@$xrefs) {
+    my $xref_source = $xref->{SOURCE_ID};
+    $source_ids{$xref_source} = 1;
+  }
+
+  # now delete them
+  foreach my $source (keys %source_ids) {
+    #$del_sth->execute($source);
+    #print "Deleting xrefs with source ID $source \n";
+  }
+
+  #$del_xref_sth->finish() if defined $del_sth;
+
+}
+
+# --------------------------------------------------------------------------------
 1;
