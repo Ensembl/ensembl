@@ -50,8 +50,6 @@ use vars qw(@ISA);
 use strict;
 
 
-my @_type = ('DNA-DNA','DNA-PEP','PEP-DNA','PEP-PEP');
-
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
@@ -308,29 +306,33 @@ sub source_tag {
 =cut
 
 
-sub type {
-    my ($self,$arg) = @_;
+BEGIN {
+    
+    my @_type = ('DNA-DNA','DNA-PEP','PEP-DNA','PEP-PEP');
 
-    my $type;
-    my @types = @_type;
+    sub type {
+        my ($self,$arg) = @_;
 
-    if (defined($arg)) {
-	foreach my $t (@types) {
-	    if ($t eq $arg) {
-		$type = $t;
-		last;
+        my $type;
+        my @types = @_type;
+
+        if (defined($arg)) {
+	    foreach my $t (@types) {
+	        if ($t eq $arg) {
+		    $type = $t;
+		    last;
+	        }
 	    }
-	}
-	
-	if ($type eq "") {
-	    $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @types");
-	}
-	
-	$self->{_type} = $type;
-    }
-    return $self->{_type};
-}
 
+	    unless (defined $type) {
+	        $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @_type");
+	    }
+
+	    $self->{_type} = $type;
+        }
+        return $self->{_type};
+    }
+}
 
 =head2 get_types
 

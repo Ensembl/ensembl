@@ -79,7 +79,6 @@ use Bio::Annotation::Reference;
                 add_accession_info
                 add_reference
                 ensembl_annseq_output
-                format_seqfeatures
                 );
 
 =head2 add_ensembl_comments
