@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 17;
+	plan tests => 18;
 }
 
 use MultiTestDB;
@@ -127,6 +127,20 @@ ok($attribs[0]->code eq 'attribcode');
 my @sets = @{$mf->get_all_MiscSets()};
 ok(@sets == 1);
 ok($sets[0]->code eq 'setcode');
+
+
+
+# try to store a misc feature without attributes
+
+my $mf = Bio::EnsEMBL::MiscFeature->new
+  (-START => 100,
+   -END  => 200,
+   -STRAND => 1,
+   -SLICE => $chr_slice);
+
+$mfa->store($mf);
+
+ok($mf->is_stored($dba));
 
 
 $multi->restore('core', 'misc_feature', 'misc_feature_misc_set', 'meta_coord',
