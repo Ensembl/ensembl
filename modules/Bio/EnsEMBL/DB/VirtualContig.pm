@@ -486,7 +486,7 @@ sub top_SeqFeatures {
    } 
 
    foreach my $gene ( $self->get_all_Genes()) {
-#       print STDERR "Got a $gene\n";
+       print STDERR "Got a $gene\n";
        my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
        push(@f,$vg);
    }
@@ -609,33 +609,42 @@ sub get_all_Genes {
     my ($self) = @_;
     my (%gene,%trans,%exon);
 
-    foreach my $c ( values %{$self->{'contighash'}} ) {
-	foreach my $gene ( $c->get_all_Genes() ) {
+    foreach my $c ( values %{$self->{'contighash'}} ) {   
+	foreach my $gene ( $c->get_all_Genes() ) {      
 	    $gene{$gene->id()} = $gene;
 	}
+    }
+
+    foreach my $gene ( values %gene ) {
+    
+        my $internalExon = 0;
+	foreach my $exon ( $gene->all_Exon_objects() ) {
+	    # hack to get things to behave
+	    #print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+	    $exon->seqname($exon->contig_id);
+	    $exon{$exon->id} = $exon;
+                
+	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+                $internalExon = 1;
+            }                           
+
+	    #print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
+	}
+        
+        unless ($internalExon) {    
+            delete $gene{$gene->id};
+            print STDERR "Removing gene with id ", $gene->id, " as none of its exons on VirtualContig\n";
+        }
     }
     
     # get out unique set of translation objects
     foreach my $gene ( values %gene ) {
 	foreach my $transcript ( $gene->each_Transcript ) {
 	    my $translation = $transcript->translation;
-	    $trans{"$translation"} = $translation;
-	    
+	    $trans{"$translation"} = $translation;	    
 	}
-    }
-
-    foreach my $gene ( values %gene ) {
-	foreach my $exon ( $gene->all_Exon_objects() ) {
-	    # hack to get things to behave
-	    #print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
-	    $exon->seqname($exon->contig_id);
-	    $exon{$exon->id} = $exon;
-	    $self->_convert_seqfeature_to_vc_coords($exon);
-	   
-	    #print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
-	}
-    }
-    
+    } 
+       
     foreach my $t ( values %trans ) {
 	if( exists $self->{'contighash'}->{$exon{$t->start_exon_id}->contig_id} ) {
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
@@ -886,7 +895,7 @@ sub _build_clone_map {
 
 sub _build_contig_map {
   my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
-  
+print STDERR "in build contig map\n";  
   # we first need to walk down contigs going left
   # so we can figure out the start position (contig-wise)
   
@@ -1354,7 +1363,7 @@ sub _get_all_SeqFeatures_type {
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
        #print STDERR "Got a $sf\n";
 
-       if( !defined $sf ) {
+       if( !defined $sf ) {      
 	   next;
        }
 
@@ -1393,12 +1402,11 @@ sub _convert_seqfeature_to_vc_coords {
    my ($self,$sf) = @_;
 
    my $cid = $sf->seqname();
-
    if( !defined $cid ) {
        $self->throw("sequence feature [$sf] has no seqname!");
    }
 
-   if( !exists $self->{'contighash'}->{$cid} ) {
+   if( !exists $self->{'contighash'}->{$cid} ) {   
        return undef;
    }
 
@@ -1420,15 +1428,15 @@ sub _convert_seqfeature_to_vc_coords {
        my $seen = 0;
        foreach my $sub ( @sub ) {
 	   $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	   if( !defined $sub ) {
+	   if( !defined $sub ) {        
 	       next;
 	   }
 	   $seen =1;
 	   $new->add_sub_SeqFeature($sub,'EXPAND');
        }
-       if( $seen == 1 ) {
+       if( $seen == 1 ) {       
 	   return $new;
-       } else {
+       } else {        
 	   return undef;
        }
    }
@@ -1437,16 +1445,13 @@ sub _convert_seqfeature_to_vc_coords {
 
    # might be clipped left/right
 
-   if( $self->{'leftmostcontig_id'} eq $cid ){
-       if( $self->ori_in_vc($cid) == 1) {
-	   # if end is less than startincontig - a no-go
-	   if( $sf->end < $self->{'startincontig'}->{$cid} ) {     
-	       return undef;
-	   }
-       } else {
-	   # if start is > start in contig
-	   if( $sf->start > $self->{'startincontig'}->{$cid} ) {    
-	       return undef;
+   if ( $self->{'leftmostcontig_id'} eq $cid ){
+       
+       if ( $self->ori_in_vc($cid) == 1) {
+	   
+           # If end is less than startincontig or start is > start in contig - a no-go
+	   if ($sf->end < $self->{'startincontig'}->{$cid}) || ($sf->start > $self->{'startincontig'}->{$cid}) {  
+               return undef;              
 	   }
        }
    }
@@ -1463,6 +1468,7 @@ sub _convert_seqfeature_to_vc_coords {
    }
 
    $sf->seqname($self->id);
+   
 
    return $sf;
 }
