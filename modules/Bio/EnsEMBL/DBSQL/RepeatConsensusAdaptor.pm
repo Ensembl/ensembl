@@ -205,6 +205,7 @@ sub store {
         $rc->adaptor($self);
     }
 
+}
 
 1;
 
