@@ -791,7 +791,7 @@ sub parse_mappings {
       $ensembl_object_types{$target_id} = $type;
 
       # store mapping for later - note NON-OFFSET xref_id is used
-      my $key = $type . ":" . $target_id;
+      my $key = $type . "|" . $target_id;
       my $xref_id = $query_id;
       push @{$object_xref_mappings{$key}}, $xref_id;
 
@@ -965,9 +965,11 @@ sub dump_core_xrefs {
 
       if (!$xrefs_written{$xref_id}) {
 	my $external_db_id = $source_to_external_db{$source_id};
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-	$xrefs_written{$xref_id} = 1;
-	$source_ids{$source_id} = $source_id;
+	if ($external_db_id) { # skip "unknown" sources
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  $xrefs_written{$xref_id} = 1;
+	  $source_ids{$source_id} = $source_id;
+	}
       }
     }
 
@@ -981,6 +983,8 @@ sub dump_core_xrefs {
     while ($dep_sth->fetch()) {
 
       my $external_db_id = $source_to_external_db{$source_id};
+      next if (!$external_db_id);
+
       $label = $accession if (!$label);
 
       if (!$xrefs_written{$xref_id}) {
@@ -991,17 +995,17 @@ sub dump_core_xrefs {
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
-      if (defined $xref_to_objects{$master_xref_id}) { # XXX check
-	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); # XXX check
+      if (defined $xref_to_objects{$master_xref_id}) {
+	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); 
 	#print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
 	foreach my $object_id (@ensembl_object_ids) {
 	  my $type = $ensembl_object_types{$object_id};
-	  my $full_key = $type.":".$object_id.":".$xref_id;
+	  my $full_key = $type."|".$object_id."|".$xref_id;
 	  if (!$object_xrefs_written{$full_key}) {
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
 	    $object_xref_id++;
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
-	    my $key = $type . ":" . $object_id;
+	    my $key = $type . "|" . $object_id;
 	    push @{$object_xref_mappings->{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
 	  }
@@ -1097,9 +1101,10 @@ sub build_transcript_display_xrefs {
 
   print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
 
-  # Cache the list of translation->transcript mappings
+  # Cache the list of translation->transcript mappings & vice versa
   print "Building translation to transcript mappings\n";
   my %translation_to_transcript;
+  my %transcript_to_translation;
   my $sth = $self->dbi()->prepare("SELECT translation_id, transcript_id FROM translation");
   $sth->execute();
 
@@ -1108,23 +1113,20 @@ sub build_transcript_display_xrefs {
 
   while ($sth->fetch()) {
     $translation_to_transcript{$translation_id} = $transcript_id;
+    $transcript_to_translation{$transcript_id} = $translation_id if ($translation_id);
   }
 
   print "Building transcript display_xrefs\n";
   my @priorities = $self->transcript_display_xref_sources();
 
-  open (TRANSCRIPT_DX, ">transcript_display_xref.sql");
-
   my $n = 0;
-  # go through each object/xref mapping
-  # store the best ones as we go along
-  # hash keyed on transcript id, value is xref_id:source prioirity index
-  # xref is stored with offset added
-  # Note xrefs to translations are also considered; transcript ID is always stored
-  my %transcript_display_xrefs;
+
+  # go through each object/xref mapping and store the best ones as we go along
+  my %obj_to_best_xref;
+
   foreach my $key (keys %{$object_xref_mappings}) {
 
-    my ($type, $obj) = split /:/, $key;
+    my ($type, $object_id) = split /\|/, $key;
 
     next if ($type !~ /(Transcript|Translation)/i);
 
@@ -1134,6 +1136,7 @@ sub build_transcript_display_xrefs {
     my ($best_xref, $best_xref_priority_idx);
     $best_xref_priority_idx = 99999;
     foreach my $xref (@xrefs) {
+
       my $source = $xref_to_source{$xref};
       if ($source) {
 	my $i = find_in_list($source, @priorities);
@@ -1145,29 +1148,67 @@ sub build_transcript_display_xrefs {
 	warn("Couldn't find a source for xref $xref \n");
       }
     }
+    # store object type, id, and best xref id and source priority
+    if ($best_xref) {
+      $obj_to_best_xref{$key} = $best_xref . "|" . $best_xref_priority_idx;
+    }
 
-    if (!$best_xref) {
-      #warn("Couldn't find a display xref for transcript id $obj\n");
-    } else {
+  }
 
-      # If transcript, store directly
-      # If translation, lookup transcript id
-      my $object_id;
-      if ($type =~ /Transcript/i) {
-	$object_id = $obj;
-      } elsif ($type =~ /Translation/i) {
-	$object_id = $translation_to_transcript{$obj};
+  # Now go through each of the calculated best xrefs and convert any that are
+  # calculated against translations to be associated with their transcript,
+  # if the priority of the translation xref is higher than that of the transcript
+  # xref.
+  # Needs to be done this way to avoid clobbering higher-priority transcripts.
+
+  # hash keyed on transcript id, value is xref_id|source prioirity index
+  my %transcript_display_xrefs;
+
+  # Write a .sql file that can be executed, and a .txt file that can be processed
+  open (TRANSCRIPT_DX, ">transcript_display_xref.sql");
+  open (TRANSCRIPT_DX_TXT, ">transcript_display_xref.txt");
+
+  foreach my $key (keys %obj_to_best_xref) {
+
+    my ($type, $object_id) = split /\|/, $key;
+    my ($best_xref, $best_xref_priority_idx) = split /\|/, $obj_to_best_xref{$object_id};
+
+    # If transcript has a translation, use the best xref out of the transcript & translation
+    if ($type =~ /Transcript/i) {
+      my $transcript_id = $object_id;
+      my $translation_id = $transcript_to_translation{$transcript_id};
+      if ($translation_id) {
+	my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
+	my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
+
+	if ($translation_priority < $transcript_priority) {
+	  $best_xref = $translation_xref;
+	  $best_xref_priority_idx = $translation_priority;
+	} else {
+	  $best_xref = $transcript_xref;
+	  $best_xref_priority_idx = $transcript_priority;
+	}
+
       }
+    }
+
+    if ($best_xref) {
+
       # Write record with xref_id_offset
       print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
+      print "wrote " . $best_xref . " (plus offset) for 95625\n" if ($object_id eq 95625);
+      print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
       $n++;
-      my $value = ($best_xref+$xref_id_offset) . ":" . $best_xref_priority_idx;
+
+      my $value = ($best_xref+$xref_id_offset) . "|" . $best_xref_priority_idx;
       $transcript_display_xrefs{$object_id} = $value;
+
     }
 
   }
 
   close(TRANSCRIPT_DX);
+  close(TRANSCRIPT_DX_TXT);
 
   print "Wrote $n transcript display_xref entries to transcript_display_xref.sql\n";
 
@@ -1213,6 +1254,7 @@ sub build_gene_display_xrefs {
   print "Assigning display_xrefs to genes\n";
 
   open (GENE_DX, ">gene_display_xref.sql");
+  open (GENE_DX_TXT, ">gene_display_xref.txt");
   my $hit = 0;
   my $miss = 0;
   my $trans_no_xref = 0;
@@ -1231,9 +1273,10 @@ sub build_gene_display_xrefs {
       } else {
 	$trans_xref++;
       }
-      my ($xref_id, $priority) = split (/:/, $transcript_display_xrefs->{$transcript_id});
+      my ($xref_id, $priority) = split (/\|/, $transcript_display_xrefs->{$transcript_id});
       #print "gene $gene_id orig:" . $transcript_display_xrefs->{$transcript_id} . " xref id: " . $xref_id . " pri " . $priority . "\n";
       # 2 separate if clauses to avoid having to fetch transcripts unnecessarily
+
       if (($priority lt $best_xref_priority_idx)) {
 
 	$best_xref_priority_idx = $priority;
@@ -1252,21 +1295,21 @@ sub build_gene_display_xrefs {
       }
     }
 
-    if (!$best_xref) {
-      #XXXwarn("Couldn't find a display xref for gene id $gene_id\n");
-      $miss++;
-    } else{ 
-      # Write record 
+    if ($best_xref) {
+      # Write record
       print GENE_DX "UPDATE gene SET display_xref_id=" . $best_xref . " WHERE gene_id=" . $gene_id . ";\n";
+      print GENE_DX_TXT $best_xref . "\t" . $gene_id ."\n";
       $hit++;
     }
 
   }
 
   close (GENE_DX);
+  close (GENE_DX_TXT);
   print "Transcripts with no xrefs: $trans_no_xref with xrefs: $trans_xref\n";
   print "Wrote $hit gene display_xref entries to gene_display_xref.sql\n";
-  print "Couldn't find display_xrefs for $miss genes\n";
+  print "Couldn't find display_xrefs for $miss genes\n" if ($miss > 0);
+  print "Found display_xrefs for all genes\n" if ($miss eq 0);
 
 }
 
@@ -1291,19 +1334,20 @@ sub transcript_display_xref_sources {
 }
 
 
-# Find the index of an item in a list(ref), or -1 if it's not in the list
+# Find the index of an item in a list(ref), or 999999 if it's not in the list.
+# Only look for exact matches (case insensitive)
 
 sub find_in_list {
 
   my ($item, @list) = @_;
 
   for (my $i = 0; $i < scalar(@list); $i++) {
-    if ($list[$i] =~ /$item/) {
+    if (lc($list[$i]) eq lc($item)) {
       return $i;
     }
   }
 
-  return -1;
+  return 999999;
 
 }
 
@@ -1337,7 +1381,7 @@ sub map_source_to_external_db {
 
     } else {
 
-      print STDERR "Can't find external_db entry for source name $source_name\n"
+      print STDERR "Can't find external_db entry for source name $source_name; xrefs for this source will not be written. Consider adding $source_name to external_db\n"
 
     }
 
@@ -1379,29 +1423,30 @@ sub do_upload {
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
 
-    my $file = getcwd() . "/" . $table . "_display_xref.sql";
+    my $file = getcwd() . "/" . $table . "_display_xref.txt";
     my $sth;
 
     if ($deleteexisting) {
 
       $sth = $self->dbi()->prepare("UPDATE $table SET display_xref_id=NULL");
-      print "Setting all existing display_xref_id in $table to NULL\n";
+      print "Setting all existing display_xref_id in $table to null\n";
       $sth->execute();
 
     }
 
-    # is this nicer than using the mysql client?
     print "Setting $table display_xrefs from $file\n";
-    open(DISPLAY_XREF, $file);
-    while(<DISPLAY_XREF>) {
+    # TODO this better
+    #my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbname() . " < $file";
+    #system $str;
 
-      $sth = $self->dbi()->prepare($_);
-      $sth->execute();
-
+    $sth = $self->dbi()->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
+    open(DX_TXT, $file);
+    while (<DX_TXT>) {
+      my ($xref_id, $object_id) = split;
+      $sth->execute($xref_id, $object_id);
     }
 
-    close(DISPLAY_XREF);
-
+    close(DX_TXT);
   }
 
 }
