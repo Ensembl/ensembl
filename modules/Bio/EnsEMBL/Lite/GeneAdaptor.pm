@@ -57,12 +57,14 @@ sub fetch_by_Slice {
   my $core_DBAdaptor = $self->db->core_DBAdaptor();
 
   my $sth = $self->prepare
-    ( "SELECT id, transcript_id, chr_name, chr_start, chr_end, chr_strand,
-              transcript_name, translation_id, translation_name, gene_id,
-              type, gene_name, db, exon_structure, external_name,
-              external_db, coding_start, coding_end 
-        FROM  transcript
-        WHERE chr_name = ? and chr_start <= ? and chr_start >= ? and
+    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, t.chr_strand,
+              t.transcript_name, t.translation_id, t.translation_name, t.gene_id,
+              t.type, t.gene_name, t.db, t.exon_structure, t.external_name,
+              t.external_db, t.coding_start, t.coding_end, g.external_name as gene_external_name, 
+              g.gene_external_db 
+        FROM  transcript t, gene g
+        WHERE g.gene_id = t.gene_id 
+          AND chr_name = ? and chr_start <= ? and chr_start >= ? and
               chr_end >= ?"
     );
     
@@ -87,6 +89,9 @@ sub fetch_by_Slice {
       $gene->dbID( $hr->{'gene_id'} );
       $gene->source( $hr->{'db'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
+      $gene->external_name( $hr->{'gene_external_name'} );
+      $gene->external_db( $hr->{'gene_external_db'} );
+
       $gene_cache{ $hr->{gene_id} } = $gene;
     } else {
       $gene = $gene_cache{ $hr->{gene_id} };
