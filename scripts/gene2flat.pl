@@ -199,7 +199,8 @@ while ( @gene_id > 0 ) {
 		    open (TRANS,">$trans_file");
 		    my $seqiot = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS );
 		    my $seq = $trans->dna_seq();
-		    $seq->id($trans->id);
+		    print STDERR "dumping transcript",$trans->id,"\n";
+		    $seq->display_id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
 		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);

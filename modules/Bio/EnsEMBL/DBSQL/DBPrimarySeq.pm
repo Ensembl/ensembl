@@ -318,6 +318,10 @@ sub id {
 sub  length {
    my ($self)= @_;
 
+   if( defined $self->_length() ) {
+       return $self->_length();
+   }
+
    my $id=$self->dna_id;
    
    my $sth=$self->db_handle->prepare("SELECT length(sequence) FROM dna WHERE id = $id");
@@ -325,8 +329,31 @@ sub  length {
    
    my($length) = $sth->fetchrow
        or $self->throw("Could not determine length of dna " .$id);
-   
+
+   $self->_length($length);
+
    return $length;
+}
+
+=head2 _length
+
+ Title   : _length
+ Usage   : $obj->_length($newval)
+ Function: 
+ Returns : value of _length
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _length{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_length'} = $value;
+    }
+    return $obj->{'_length'};
+
 }
 
 
