@@ -65,10 +65,18 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 
 =cut
 
+
+# setup a cache for clone accno's:
+my %clone_cache;
+
 sub fetch_by_accession { 
     my ($self,$id) = @_;
 
     if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
+
+    if ( defined $clone_cache{$id} ) {
+        return $clone_cache{$id};
+    }
 
     my $statement="select internal_id,embl_id,version,embl_version,htg_phase,
                           UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
@@ -87,8 +95,11 @@ sub fetch_by_accession {
     $self->throw("no clone for $id") unless defined $internal_id;
     
     my @args=($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified, $stored);
-    
-    return Bio::EnsEMBL::Clone->new($self,@args);
+
+    my $clone = Bio::EnsEMBL::Clone->new($self,@args);
+
+    $clone_cache{$id}= $clone;
+    return $clone;
 }
 
 
