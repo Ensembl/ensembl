@@ -91,6 +91,8 @@ sub fetch_by_Slice {
       $gene->dbID( $hr->{'gene_id'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
       $gene->source( $hr->{'db'} );
+      $gene->strand( $hr->{'chr_strand'} );
+
       if( defined $hr->{'gene_type' } ) {
 	$gene->external_name( $hr->{'gene_external_name'} );
 	$gene->external_db( $hr->{'gene_external_db'} );
@@ -152,7 +154,7 @@ sub fetch_by_Slice {
     $transcript->adaptor( $core_DBAdaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
     $transcript->coding_start( $hr->{'coding_start'} -$slice->chr_start() + 1);
-    $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() - 1);
+    $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() + 1);
 
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
