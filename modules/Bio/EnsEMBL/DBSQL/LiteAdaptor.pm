@@ -167,7 +167,7 @@ sub fetch_EMBLgenes_start_end {
     my $cache_name = "_emblgenes_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select gene, name, 
+        "select gene_id, gene_stable_id, 
                 chr_name, gene_chrom_start, gene_chrom_end,
                 chrom_strand, display_id, db_name, type
            from $_db_name.www_embl_gene 
@@ -204,7 +204,7 @@ sub fetch_SangerGenes_start_end {
     my $cache_name = "_sangergenes_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select gene, name,
+        "select gene_id, gene_stable_id,
                 chr_name, gene_chrom_start, gene_chrom_end,
                 chrom_strand, display_id, db_name, type
            from $_db_name.www_sanger_gene
