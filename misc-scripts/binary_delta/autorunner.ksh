@@ -1,4 +1,4 @@
-#/bin/ksh
+#/bin/ksh -x
 
 # $Id$
 #
@@ -15,13 +15,16 @@ function getdb
     typeset db=$2
     typeset ver=$3
 
-    typeset url='ftp://ftp.ensembl.org'${path}/${db}_${ver}.tar
+    typeset dbver=${db}_${ver}
+
+    typeset url='ftp://ftp.ensembl.org'${path}/${dbver}.tar
 
     if [[ ! -d databases ]]; then
 	mkdir databases
     fi
     if [[ ! -d databases/${db}_${ver} ]]; then
-	lynx -source $url | tar xvf - -C databases
+	lynx -source $url | (cd databases; pax -r -v \
+		-s "/.*${dbver}\//${dbver}\//")
     fi
 }
 
@@ -32,6 +35,9 @@ function do_delta
     typeset v1=$2
     typeset v2=$3
 
+    typeset path1=$4
+    typeset path2=$5
+
     if [[ ! -d deltas ]]; then
 	mkdir deltas
     fi
@@ -40,14 +46,17 @@ function do_delta
     typeset apply_out=deltas/${db}_${v1}_delta_${v2}_apply.out
 
     if [[ ! -f $build_out ]]; then
+	getdb $path1 $db $v1
+	getdb $path2 $db $v2
+
 	/usr/bin/time perl -w ./build.pl -c ./xdelta.osf \
 	    -s databases -d deltas \
-	    $db $v1 $v2 1>&2 | tee $build_out
+	    $db $v1 $v2 2>&1 | tee $build_out
     fi
     if [[ ! -f $apply_out ]]; then
 	/usr/bin/time perl -w ./apply.pl -c ./xdelta.osf \
 	    -d databases -s deltas \
-	    $db $v1 $v2 1>&2 | tee $apply_out
+	    $db $v1 $v2 2>&1 | tee $apply_out
     fi
 }
 
@@ -75,7 +84,7 @@ version_re='[0-9][0-9]*_[0-9][0-9]*'
 # available
 lynx -source ftp://ftp.ensembl.org/ls-lR.Z | \
     sed -n 's/^\.\(.*data\/mysql\)\/\(.*\)_\('"$version_re"'\):$/\1 \2 \3/p' | \
-    sort -k2 |&
+    sort -k2 >ls-lR
 
 while read path db ver; do
     if [[ $db != $this_db ]]; then
@@ -86,15 +95,11 @@ while read path db ver; do
 	continue
     fi
 
-    getdb $old_path $this_db $old_ver
-    getdb $path $this_db $ver
-
-    do_delta $this_db $old_ver $ver
-
+    do_delta $this_db $old_ver $ver $old_path $path
     cleandb $this_db $old_ver
 
     old_ver=$ver
     old_path=$path
-done <&p
+done <ls-lR
 
 cleandb $this_db $ver
