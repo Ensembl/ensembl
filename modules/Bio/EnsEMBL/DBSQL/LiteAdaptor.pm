@@ -4,7 +4,6 @@
 #
 # Author: James Smith
 #
-
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::LiteAdaptor - MySQL Database queries to generate and store gens.
@@ -435,6 +434,7 @@ sub fetch_virtualsnps {
                 'end'       => $start - $vc_start + 1,
                 'strand'    => $row->{'chr_strand'},
                 'id'        => $row->{'refsnpid'},
+                'anosnpid'  => $row->{'anosnpid'},
                 'tscid'     => $row->{'tcsid'},
                 'hgbaseid'  => $row->{'hgbaseid'},
                 'type'      => $row->{'type'},
