@@ -58,13 +58,10 @@ INSERT INTO source VALUES (2000, 'CCDS', 1, 'Y', 4);
 ################################################################################
 # Files to fetch data from
 
+
 # --------------------------------------------------------------------------------
-# UniProt (SwissProt & SPTrEMBL)
 
-# Note currently no UniProt data for fugu, anopheles, c.briggsae or chicken.
-
-
-###HUMAN
+### HUMAN
 ##       uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now(), "UniProtParser");
 
@@ -95,6 +92,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9606,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Hs.data.gz', '', now(), now(), "UniGeneParser");
 
+# --------------------------------------------------------------------------------
 
 ###MOUSE
 ##      uniprot
@@ -115,10 +113,14 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.MOUSE.fasta.gz', '', now(), now(), "IPIParser");
 
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 10090,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
+
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10090,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Mm.data.gz', '', now(), now(), "UniGeneParser");
 
-###RAT
+# --------------------------------------------------------------------------------
+### RAT
 ##      uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 10116, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now(), "UniProtParser");
 
@@ -144,8 +146,9 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 10116,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Rn.data.gz', '', now(), now(), "UniGeneParser");
 
+# --------------------------------------------------------------------------------
 
-###Zebrafish
+### Zebrafish
 ##      uniprot
 #until zebra fish has it's own .SPC file parse all.
 #INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7955.SPC', '', now(), now(), "UniProtParser");
@@ -153,7 +156,6 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 7955, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_trembl.dat.gz', '', now(), now(), "UniProtParser");
-
 
 ##       refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7955,'ftp://ftp.ncbi.nih.gov/genomes/D_rerio/protein/protein.gbk.gz', '', now(), now(), "RefSeqGPFFParser");
@@ -170,10 +172,14 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      IPI
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (5, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/IPI/current/ipi.BRARE.fasta.gz', '', now(), now(), "IPIParser");
 
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
+
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 7955,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Dr.data.gz', '', now(), now(), "UniGeneParser");
 
-###chicken
+# --------------------------------------------------------------------------------
+### Chicken
 ##      uniprot
 # no chicken specific file!!!!
 #INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), "UniProtParser");
@@ -191,12 +197,15 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', '', now(), now(), "GOParser");
 
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9031,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
+
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9031,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Gga.data.gz', '', now(), now(), "UniGeneParser");
 
-###8364,  'xenopus_tropicalis'
-
-#uniprot
+# --------------------------------------------------------------------------------
+### XENOPUS
+# uniprot
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 8364, 'ftp://ftp.ebi.ac.uk/pub/databases/uniprot/knowledgebase/uniprot_sprot.dat.gz', '', now(), now(), "UniProtParser");
 
 #uniprot
@@ -214,8 +223,13 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 8364,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other2.rna.fna.gz', '', now(), now(), "RefSeqParser");
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (4, 8364,'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_other/vertebrate_other3.rna.fna.gz', '', now(), now(), "RefSeqParser");
 
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 8364,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
+
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 8364,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Str.data.gz', '', now(), now(), "UniGeneParser");
+
+# --------------------------------------------------------------------------------
 
 ### Dog
 
@@ -232,8 +246,15 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##       GO
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/UNIPROT/gene_association.goa_uniprot.gz', '', now(), now(), "GOParser");
 
+##      Interpro
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9615,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/interpro.xml.gz', '', now(), now(), "InterproParser");
+
 ##      UniGene
 ##INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (6, 9615,'ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.seq.uniq.gz ftp://ftp.ncbi.nih.gov/repository/UniGene/Cfa.data.gz', '', now(), now(), "UniGeneParser");
+
+# --------------------------------------------------------------------------------
+
+
 
 ################################################################################
 
