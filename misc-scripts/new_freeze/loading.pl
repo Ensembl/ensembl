@@ -96,6 +96,7 @@ for $file (@files) {
   close FH;
   if( $load ) {
     print DNA "$dna\t$now\t$nextDNAid\n";
+    $nextDNAid++;
   }
 }
 
