@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 11;
+	plan tests => 22;
 }
 
 use MultiTestDB;
