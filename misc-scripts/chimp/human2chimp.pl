@@ -4,8 +4,6 @@ use warnings;
 use Getopt::Long;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Transcript;
-use Bio::EnsEMBL::Exon;
 
 use InterimTranscript;
 use InterimExon;
@@ -404,164 +402,26 @@ sub create_transcripts {
   my $itranscript   = shift; # interim transcript
   my $slice_adaptor = shift;
 
-  my $transcript_strand = undef;
-  my $transcript_seq_region = undef;
+  # set the phases of the interim exons
+  Transcript::set_iexon_phases($itranscript);
 
-  my $transcript = Bio::EnsEMBL::Transcript->new();
-  my $translation = Bio::EnsEMBL::Translation->new();
+  # check the exons and split transcripts where exons are bad
+  my $itranscripts = Transcript::check_iexons();
 
-  my @chimp_transcripts;
-
-  my $cdna_start = 1;
-  my $cur_phase  = undef;
-
-  #
-  # If all of the CDS was deleted, then we do not want to create a translation
-  #
-  my $has_translation = 1;
-  if($itranscript->cdna_coding_start == $itranscript->cdna_coding_end + 1) {
-    my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_CDS_LEFT);
-    $itranscript->add_StatMsg($stat_msg);
-    $has_translation = 0;
+  # if there are any exons left in this transcript add it to the list
+  if(@{$itranscript->get_all_Exons()}) {
+   push @$itranscripts, $itranscript;
   }
 
-  foreach my $iexon (@{$itranscript->get_all_Exons()}) {
+  my @finished_transcripts;
 
-    ### TBD do something with failed exons, maybe split transcript here?
-    next if($iexon->fail());
-
-    #sanity check:
-    if($iexon->end() < $iexon->start()) {
-      throw("Unexpected: exon start less than end:\n" .
-            $iexon->stable_id().": ".$iexon->start().'-'.$iexon->end());
-    }
-
-    my $cdna_end = $cdna_start + $iexon->length() - 1;
-
-    if(!defined($transcript_seq_region)) {
-      $transcript_seq_region = $iexon->seq_region();
-    }
-    elsif($transcript_seq_region ne $iexon->seq_region()) {
-      my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SCAFFOLD_SPAN);
-      $itranscript->add_StatMsg($stat_msg);
-      ### TBD can probably split transcript rather than discarding
-      return;
-    }
-
-    if(!defined($transcript_strand)) {
-      $transcript_strand = $iexon->strand();
-    }
-    elsif($transcript_strand != $iexon->strand()) {
-      my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::STRAND_FLIP);
-      $itranscript->add_StatMsg($stat_msg);
-      ### TBD can probably split transcript rather than discarding
-      return;
-    }
-
-    #
-    # calculate the start & end phases
-    #
-
-    my ($start_phase, $end_phase);
-
-    if($has_translation) {
-
-      if(defined($cur_phase)) {
-	if($cdna_start <= $itranscript->cdna_coding_end()) {
-	  $start_phase = $cur_phase; #start phase is last exons end phase
-	} else {
-	  #the end of the last exon was the end of the CDS
-	  $start_phase = -1;
-	}
-      } else {
-	#sanity check
-	if($cdna_start > $itranscript->cdna_coding_start() &&
-	   $cdna_start < $itranscript->cdna_coding_end()) {
-	  throw("Unexpected.  Start of CDS is not in exon?\n" .
-		"  exon_cdna_start = $cdna_start\n" .
-		"  cdna_coding_start = ".$itranscript->cdna_coding_start());
-	}
-	if($cdna_start == $itranscript->cdna_coding_start()) {
-	  $start_phase = 0;
-	} else {
-	  $start_phase = -1;
-	}
-      }
-
-      if($cdna_end < $itranscript->cdna_coding_start() ||
-	 $cdna_end > $itranscript->cdna_coding_end()) {
-	#the end of this exon is outside the CDS
-	$end_phase = -1;
-      } else {
-	#the end of this exon is in the CDS
-	#figure out how much coding sequence in the exon
-	
-	my $coding_start;
-	if($itranscript->cdna_coding_start() > $cdna_start) {
-	  $coding_start = $itranscript->cdna_coding_start();
-	} else {
-	  $coding_start = $cdna_start;
-	}
-	my $coding_len = $cdna_end - $cdna_start + 1;
-	
-	if($start_phase > 0) {
-	  $coding_len += $start_phase;
-	}
-
-	$end_phase = $coding_len % 3;
-      }
-    } else {
-      #if there is no translation, all phases should be -1
-      $start_phase = -1;
-      $end_phase   = -1;
-    }
-
-    my $slice =
-      $slice_adaptor->fetch_by_region('scaffold', $iexon->seq_region);
-
-    my $exon = Bio::EnsEMBL::Exon->new
-      (-START     => $iexon->start(),
-       -END       => $iexon->end(),
-       -STRAND    => $iexon->strand(),
-       -PHASE     => $start_phase,
-       -END_PHASE => $end_phase,
-       -SLICE     => $slice);
-
-    $transcript->add_Exon($exon);
-
-    #
-    # see if this exon is the start or end exon of the translation
-    #
-
-    if($has_translation) {
-      if($cdna_start <= $itranscript->cdna_coding_start() &&
-	 $cdna_end   >= $itranscript->cdna_coding_start()) {
-	my $translation_start =
-	  $itranscript->cdna_coding_start - $cdna_start + 1;
-	$translation->start_Exon($exon);
-	$translation->start($translation_start);
-      }
-      if($cdna_start <= $itranscript->cdna_coding_end() &&
-	 $cdna_end   >= $itranscript->cdna_coding_end()) {
-	my $translation_end = $itranscript->cdna_coding_end() - $cdna_start + 1;
-	$translation->end_Exon($exon);
-	$translation->end($translation_end);
-      }
-
-      $cdna_start = $cdna_end + 1;
-      $cur_phase = ($end_phase >= 0) ? $end_phase : undef;
-    }
+  foreach my $itrans (@$itranscripts) {
+    push @finished_transcripts, Transcript::make_Transcript($itrans,
+							    $slice_adaptor);
   }
 
-
-  if($has_translation) {
-    $transcript->translation($translation);
-  }
-  push @chimp_transcripts, $transcript;
-
-  return @chimp_transcripts;
+  return \@finished_transcripts;
 }
-
 
 
 ###############################################################################
