@@ -35,7 +35,7 @@ use vars '@ISA';
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
-
+my $MAX_TRANSCRIPT_LENGTH=3000000;
 
 
 =head2 fetch_by_Slice
@@ -66,7 +66,7 @@ sub fetch_by_Slice {
     );
     
   eval {
-    $sth->execute( $slice->chr_name, $slice->chr_end, $slice->chr_start-3000000, $slice->chr_start );
+    $sth->execute( $slice->chr_name, $slice->chr_end, $slice->chr_start-$MAX_TRANSCRIPT_LENGTH, $slice->chr_start );
   };
 
   return () if($@);
@@ -134,6 +134,9 @@ sub fetch_by_Slice {
     my $transcript = Bio::EnsEMBL::Transcript->new();
     $transcript->adaptor( $core_DBAdaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
+    $transcript->coding_start( $hr->{'coding_start'} );
+    $transcript->coding_end( $hr->{'coding_end'} );
+
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->external_name( $hr->{'external_name'} );

@@ -268,10 +268,13 @@ sub translation {
 
 sub coding_start {
   my $self = shift;
+  my $arg = shift;
+
   my $strand;
   my $start;
-
-  if( defined $self->translation() ) {
+  if( defined $arg ) {
+    $self->{'_coding_start'} = $arg;
+  } elsif( defined $self->translation() ) {
     $strand = $self->translation()->start_exon->strand();
     if( $strand == 1 ) {
       $start = $self->translation()->start_exon->start();
@@ -280,17 +283,23 @@ sub coding_start {
       $start = $self->translation()->end_exon->end();
       $start -= ( $self->translation()->end() - 1 );
     }
+    $self->{'coding_start'} = $start;
   }
-
-  return $start;
+  
+  return $self->{'coding_start'};
 }
+
 
 sub coding_end {
   my $self = shift;
+  my $arg = shift;
+
   my $strand;
   my $end;
-
-  if( defined $self->translation() ) {
+  
+  if( defined $arg ) {
+    $self->{'coding_end'} = $arg;
+  } elsif( defined $self->translation() ) {
     $strand = $self->translation()->start_exon->strand();
     if( $strand == 1 ) {
       $end = $self->translation()->end_exon->start();
@@ -300,8 +309,8 @@ sub coding_end {
       $end -= ( $self->translation()->start() - 1 );
     }
   }
-
-  return $end;
+  
+  return $self->{'coding_end'};
 }
 
 
