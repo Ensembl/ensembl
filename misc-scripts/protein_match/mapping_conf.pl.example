@@ -162,6 +162,8 @@ package main;
                    ############
                    #drosophila#
                    ############
+                   # written by parsing the ncbi-downloaded file with script extract_FBgn.pl
+                   # the file is tab-delimited and has the format "CG23423    FLYBASE     FBgn234889"
 
                    'dros_ext_annot' => '',
 
