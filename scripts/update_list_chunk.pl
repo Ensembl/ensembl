@@ -109,6 +109,7 @@ my $update_manager   = new Bio::EnsEMBL::Analysis::UpdateManager(-fromlocator =>
 								 -totime      => $now_offset,
 								 );
 
+print "USEFILE = $usefile\n";
 $update_manager->nowrite  ($nowrite);
 $update_manager->verbose  ($verbose);
 $update_manager->usefile ($usefile);

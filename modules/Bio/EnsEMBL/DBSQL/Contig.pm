@@ -519,7 +519,7 @@ sub get_all_PredictionFeatures {
    my $sth = $self->_dbobj->prepare("select  p1.id, p1.seq_start, p1.seq_end, " . 
 				    "p1.strand,p1.score,p1.analysis,p1.name,  " .
 				    "p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank " . 
-				    "from feature as p1, fset_feature as p2 analysis as p3 where " .
+				    "from feature as p1, fset_feature as p2, analysis as p3 where " .
 				    "p1.contig ='$id' and p2.feature = p1.id and p3.id = p1.analysis ".
                                     "and p3.program = 'Genscan' order by p2.fset");
    $sth->execute();

@@ -368,9 +368,9 @@ sub get_updated_objects {
     $self->throw("Can't connect to donor database") unless $fromdb;
     
     if ($self->usefile) {
+	print STDERR "Using ".$self->usefile." as a list of clones to update!\n";
 	my $file = $self->usefile();
 	open(IN,"<$file");
-	my @clones;
 	while (<IN>) {
 	    chomp;
 	    push(@clones,$_);
@@ -415,7 +415,7 @@ sub check_update_status {
     if ($self->fromlocator ne "Bio::EnsEMBL::TimDB::Obj") {
 
 	if ($fdb->current_update) {
-	    $self->throw("Update running in donor database.  Can't transfer objects");
+	    $self->warn("Update running in donor database, watch out!");
 	}
     } 
 
