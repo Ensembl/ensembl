@@ -1,0 +1,710 @@
+Ensembl Tutorial
+July 2001 Michele Clamp (michele@sanger.ac.uk)
+
+What are we going to do?
+
+These notes are from a half day introduction course to the ensembl code base.  They take you through 
+connecting to an ensembl database and how to access the data.   They require you to have the 
+relevant ensembl and bioperl modules installed.  These are :
+
+bioperl-0.7
+ensembl
+ensembl-trace
+ensembl-external
+
+Instructions on how to install these are contained on the ensembl website www.ensembl.org
+
+If you donÕt have (or donÕt want) to install the ensembl database locally you can point your scripts at a 
+publically available one at the Sanger Centre.  Use the following fields in your scripts
+
+host		kaka.sanger.ac.uk
+dbname 	homo_sapiens_core_110
+user  	anonymous
+What does Ensembl contain?
+The Core Database
+
+_ Clones (embl accessions) both finished and unfinished.
+
+_ Each contiguous piece of sequence is called a contig.  These are the basic lengths of dna that 
+we analyse and annotate.
+
+_ Each clone will contain one or more contigs.
+
+_ Finished clones   - 1 contig
+
+_ Unfinished clones - any number of contigs.
+
+_ Each contig (whether finished or unfinished) has certain features associated with it that are the 
+result of various analysis programs (e.g. RepeatMasker, blast, genscan).  These are the basic 
+computes used to build the genes.
+
+_ The raw analysis results are used to build genes which are also stored in the database.  Each 
+gene contains one or more transcripts and each transcript will contain a translation.
+
+_ Each gene has various information attached to it describing whether it is a known gene or 
+corresponds to a swissprot or  trembl protein.  Some genes are novel genes which have been 
+built out of similarities to other sequences.  In these cases  this information will be absent.
+
+_ Each translation has had a variety of protein analysis programs run on it and you can access 
+information about the results of  these.  This includes information on pfam, prosite and prints.
+
+_ There are other features accessible through external databases such as snps, mouse trace 
+hits and embl annotations.
+
+
+Setup 
+
+Before starting with the ensembl modules you have to set up your environment so perl knows where to 
+find them.  As ensembl is built on top of bioperl this includes telling it where bioperl lives.
+
+The environment variable to do this is PERL5LIB.  If you are using csh  or tcsh you need to type in the 
+following
+
+     setenv ENSHOME /nfs/croc/michele/branch
+
+  setenv PERL5LIB $ENSHOME/ensembl/modules:$ENSHOME/bioperl-
+0.7:$ENSHOME/ensembl-external/modules:$ENSHOME/ensembl-trace/modules
+
+
+You are now ready to write your first script.
+
+
+Connection
+
+All the ensembl data is stored in a mysql relational database.  If you want to access this database the 
+first thing you have to do is to connect to it.  This is done underneath using a perl module called DBI 
+and you need to know three things before you start :
+
+   host 	the hostname where the ensembl database lives
+   dbname	the name of the ensembl database
+   user		the username to access the database
+
+First we need to declare to perl the modules we want to use so it can go and check the syntax of them.  
+This is done by a use statement.
+
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
+This line has to be in all your ensembl scripts;
+
+my $host   = 'ensrv1';
+my $user   = 'ensro';
+my $dbname = 'ensembl100';
+
+The all important variables telling perl where and what your database is.
+
+And now we connect
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
+                                            -user   => $user,
+                                            -dbname => $dbname);
+
+We've made a connection to an ensembl database and passed parameters in using the -pog => 
+'somevalue' syntax.  This is very common in the ensembl code.  Formatted correctly it lets you see 
+exactly what things you are passing.
+
+The $db variable is now your friend and you can now start using it to extract data. If, heaven forbid, the 
+connection fails an error message will come up.  
+
+Let's get some data
+
+There are methods you can call on your database adaptor to fetch sequences and genes.  We'll now 
+try out a few of them
+
+my @clones = $db->get_all_Clone_id;
+
+This returns an array of strings listing all the clones in the database.  The strings themselves are not 
+that much use to us.  To get more information we need to create clone *objects* that have access to all 
+the data associated with that clone.
+
+To get a clone by its accession number
+
+my $clone = $db->get_Clone('AC005663');
+
+You can check it is the right clone by calling the id method
+
+print "Clone is " . $clone->id . "\n";
+
+We now have a clone object.  To get the most use out of this object we now need to ask it about its 
+contigs (Remember clones have 1 or more contigs  which are the basic sequence units).
+
+my @contigs = $clone->get_all_Contigs;
+
+We now have an array of contig objects which we can ask questions of
+
+Say we want to get the sequence for each contig
+
+foreach my $contig (@contigs) {
+  my $seqobj = $contig->primary_seq;
+
+  my $length = $contig->length;
+  my $id     = $contig->id;
+
+  # Remember this is a bioperl sequence *object* and not a string.
+  # If we want the actual sequence string we can do 
+
+  print $seqobj->seq . "\n";
+
+  # If we want to write it out to a file we use bioperl again
+  # (Note: if we are creating a new object we need to include
+  # a use Bio::SeqIO line at the start of our file
+
+  my $seqio = new Bio::SeqIO(-fh     => \*STDOUT,
+                             -format => 'fasta');
+
+  $seqio->write_seq($seqobj);
+
+}
+
+Contigs have all sorts of features attached to them.  One set of features that is extremely useful if you're 
+going to do any analysis on them are the repeat features.  These can be used to mask out the
+sequence ready for a blast search for example.
+
+Ensembl has a handy call to output the repeatmasked sequence without you having to rerun 
+RepeatMasker
+
+my $maskedseq = $contig->get_repeatmasked_seq;
+
+Exercises
+
+1. Connect to the database - how many clones are in there
+
+   (Hint: Make a $db object and call get_all_Clone_id);
+
+2. What is the average number of contigs per clone for the first
+   100 clones in the database
+
+   (Hint: get_all_Contigs on clone);
+
+3. Print out in fasta format the repeat masked sequence for the
+   last 10 clones.
+
+   
+Sequence Features
+
+So now we're pretty happy about getting out dna sequence.  The more  interesting things associated 
+with contigs are the features attached to them.  These include the repeat features mentioned in the 
+previous section and also similarity features (blast results), prediction features (genscan results) and 
+marker features.  Not to mention the genes of course.
+
+Each contig has a set of features and (you're probably getting used to this by now) these are returned 
+to us as feature *objects*.  For instance
+
+my @repeats = $contig->get_all_RepeatFeatures;
+
+We now have an array of feature objects.  An easy way to print these out is to call the method gffstring 
+which returns information about the feature as a string.
+
+e.g.
+
+foreach my $repeat ($contig->get_all_RepeatFeatures) {
+
+  print "Feature is " . $repeat->gffstring . "\n";
+
+}
+
+You should get a series of output lines like
+
+91272515        wublastp        similarity      4895    4933    58.0000 1 	.       Q9SQ95.1        10      
+22
+91272551        wublastp        similarity      4937    4960    58.0000 1	.       Q9SQ95.1        23      
+30
+91272582        wublastp        similarity      4787    4825    62.0000 1	.       O15769.1        216     
+228
+91272612        wublastp        similarity      4838    4951    62.0000 1	.       O15769.1        229     
+266
+91272656        wublastp        similarity      4799    4816    55.0000 1	.       Q9Q936.1        22      
+27
+
+
+The different columns have the following meaning
+
+1 	sequence name
+2 	feature type
+3 	main feature type
+4 	sequence start
+5 	sequence end
+6 	score
+7 	strand
+8 	phase (no phase in this case)
+9 	hit sequence name
+10 	hit start
+11 	hit end
+
+Alternatively we can ask the feature objects directly about their properties
+
+foreach my $repeat ($contig->get_all_RepeatFeatures) { 
+
+   print "Name   : " . $repeat->seqname . "\n";
+   print "Start  : " . $repeat->start   . "\n";
+   print "End    : " . $repeat->end     . "\n";
+   print "Strand : " . $repeat->strand . "\n";
+   print "Score  : " . $repeat->score  . "\n";
+
+}
+
+Some features (like CpG islands for instance) are simple features and only have the methods printed 
+above.
+
+Other features are more complex in that as well as having coordinates on  the contig sequence they 
+also have coordinates on a hit sequence.   The classic example of this is a set of blast results where 
+the query sequence is similar to another sequence (protein, est, cdna) and so we need to store which 
+sequence it has hit and whereabouts in that sequence it has hit.  These have the generic name 
+similarity features and the object name is Bio::EnsEMBL::FeaturePair.
+
+To find this out we can call
+
+foreach my $repeat ($contig->get_all_RepeatFeatures) { 
+	print "Hit name  " . $repeat->hseqname . "\n";
+	print "Hit start " . $repeat->hstart . "\n";
+	print "Hit end   " . $repeat->hend . "\n";
+}
+
+As well as a raw score sequence features also have other scores.   Blast features will have a 
+probability and also a percent identity which we can also retrieve.
+
+Let's try this with similarity features.
+
+foreach my $feat ($contig->get_all_SimilarityFeatures) {
+
+  print "Feature scores are " . $feat->score      . "\t" . 
+                                $feat->percent_id . "\t" .
+                                $feat->p_value    . "\n";
+
+}
+
+Note we're using a different method to only get the similarity (FeaturePair) features out.
+
+Feature types
+
+All features have a type string  associated with them that tells us what sort of feature they are.  This is 
+accessed through the gff_source method.  These types are things like 'genscan','repeat','cpg' and give 
+us an idea of what each feature is about.  
+
+Each feature knows somewhat more about its origin and it stores this information in an analysis 
+object. 
+
+my $analysis = $feature->analysis;
+
+print "Database :   " . $analysis->db;
+print "Program :    " . $analysis->program;
+print "Parameters : " . $analysis->parameters;
+
+For instance a feature that comes out of a blast run will have an analysis object that tells us it was run 
+with 'blastx' and was run against database 'sptr';
+
+
+Overlaps
+
+A very, very useful feature of bioperl is it makes it easy to find  whether one feature overlaps another.  
+This comes in jolly handy if you want to find all genscan prediction that don't overlap exons or all snps 
+that do overlap exons or mouse trace hits that don't overlap exons (I sense a trend here).
+
+If we have two features - say an exon $exon and a snp $snp
+
+   if ($exon->overlaps($snp)) {
+      print "Whey! coding snp "    . $snp->gffstring . "\n";
+   } else {
+      print "Boo! non coding snp " . $snp->gffstring . "\n";
+   }
+
+i.e. overlaps returns 1 if the two features overlap and 0 if they don't
+
+Marker features
+
+ Markers are types of feature pair and can be retrieved using the call
+
+My @markers = $contig->get_MarkerFeatures
+ 
+Often people will want to retrieve the sequence and features in between two markers.  We will cover 
+this in  the VirtualContig section.
+
+Exercises
+
+1. Print out all the repeat features for the first 100 contigs.  (Hint: Use the gffstring method for easy 
+printing)
+
+2. What proportion of dna is repeat for the first 100 contigs and  is this what you expect.  (Hint: tot 
+up the length for each repeat feature and compare to the total contig length)
+
+
+3. For clone AC005663 retrieve all the similarity features.  How many different sequences did this 
+clone hit and were these hits significant?  (Hint: Use the hseqname method and the p_value 
+method)
+
+Genes
+
+Genes are build on virtual contigs (see next section) and as a lot of genes span  more than one contig 
+it makes the most sense to use virtual contigs to access them. However, having said that you can 
+access genes via contigs as follows and the process is identical for genes on virtual contigs.
+
+my @genes = $contig->get_all_Genes;
+
+As usual we are returned an array of objects - gene objects this time. They contain all the information 
+about the exon/intron structure, dna sequence.
+
+Genes have ensembl identifiers which can be accessed using the id method
+
+foreach my $gene (@genes) {
+  print "Gene : " . $gene->id . "\n";
+}
+
+Ensembl identifiers don't really tell us much about the gene (and they're not  intended to) and some 
+genes will have one or more more common names.
+
+We can tell immediately if a gene is a known gene (refseq or sptrembl) by calling the is_known 
+method.  If it is a known gene then we can call the each_DBLink method to find out more about it.
+
+foreach my $gene (@genes) {
+  if ($gene->is_known) {
+
+     my @dblinks = $gene->each_DBLink;
+
+     foreach my $link (@dblinks) {
+       print "Gene " . $gene->id . " links to " . $link->display_id . " " . 
+$link->database . "\n";
+       my @syns = $gene->get_synonyms;
+       print "Synonyms for gene are @syns\n"; 
+  } else {
+    print "Gene " . $gene->id . " is not a known gene\n";
+  }
+}
+
+Other information about a known gene is contained in its description method.  This information is 
+extracted from the relevant swissprot or refseq entry.
+
+My $description = $gene->description
+
+Genes are quite complicated objects and are constructed like this.
+
+Each gene object has one or more transcript objects (one for each alternatively spliced cdna).  
+
+my @transcripts = $gene->each_Transcript;
+
+Each transcript is made up of a series of exons.  We can access the exons and find out their sequence 
+and coordinates.
+
+foreach my $exon ($transcript->each_Exon) {
+   print "Found exon " . $exon->id    . " " .
+                         $exon->start . " " . 
+                         $exon->end   . " " .
+                         $exon->seq->seq;
+}
+
+Notice that again calling the seq method on an exon object returns us a sequence object and we have 
+to call seq again to get a string.
+
+We can get the protein sequence of a transcript by calling the translate method.  So to get all the 
+protein translations from a gene into a file we would do
+
+my $seqio = new Bio::SeqIO->(-format => 'fasta',
+                             -fh     => \*STDOUT);
+
+foreach my $transcript ($gene->each_Transcript) {
+  my $peptide = $transcript->translate;
+
+  $seqio->write_seq($peptide);
+}
+
+Note that when writing to a bioperl seqio object we pass the peptide object  and not a string but when 
+writing out to the screen we have to stringify it first.
+
+
+Exercises
+
+1. How many genes are alternatively spliced for the first 100 genes  (Hint: Count the number of 
+transcripts using the $gene->each_Transcript method)
+
+2. What is the average size and number of exons per gene  (Hint: Use the each_unique_Exon 
+method and remember that exons are  like features with $ex->start $ex->end)
+
+3. Translate the first 10 genes;
+
+supporting evidence
+
+The information that was used to make a gene is also stored in the database in the form of 
+FeaturePairs.  This can be retrieved when the genes are retrieved by using the call
+
+My @genes = $contig->get_all_Genes(ÔevidenceÕ);
+
+The evidence is attached as an array of feature pairs to each exon and can be retrieved
+
+Foreach my $gene (@genes) {
+     Foreach my $transcript ($gene->each_Transcript) {
+      	Foreach my $exon ($transcript->each_Exon) {
+	     My @evidence = $exon->each_Supporting_Feature;
+
+    		Foreach my $f (@evidence) {
+			Print "Evidence " . $f->gffstring . "\n";
+ 		}
+	   }
+     }
+}
+
+Prediction features
+
+Ensembl stores ab initio gene predictions from genscan.  Each predicted  exon is represented as a 
+separate feature and each genscan gene is  returned as a set of these features.
+
+my @genscan = $contig->get_all_PredictionFeatures;
+
+Each element of the genscan array is a separate genscan gene.  To access the exons of these 
+predictions we use the bioperl sub_SeqFeature method
+
+foreach my $genscan (@genscan) {
+  my @exons = $genscan->sub_SeqFeature;
+
+  foreach my $exon (@exons) {
+    print $exon->start  . " - " . 
+          $exon->end    . " : " . 
+          $exon->strand . " " . 
+          $exon->phase ."\n";
+  }
+}
+
+As these predictions should translate there is a nifty method to call to retrieve the translations.  It is a 
+utility method to convert any feature set into a transcript object.
+ 
+my $transcript = Bio::EnsEMBL::DBSQL::Utils::fset2transcript($genscan,$contig);
+
+print "Peptide is " . $transcript->translate->seq
+
+You have to give fset2Transcript a contig so it can retrieve the sequence for the gene.
+Virtual Contigs
+
+Up to now we've only been dealing with clones and contigs which are only about 150kb long at most.  
+The set of human sequences has been assembled (by Jim Kent at UCSC) into a complete genome.  
+The route traced through these sequences to make up this is known as the 'golden path'.  All the 
+methods you have been using on individual contigs can also be applied to the golden path.  This
+makes it very easy to access features on megabases of sequence up to whole  chromosomes.
+
+But how do we get at this golden path?
+
+First of all we need to retrieve something called a static_golden_path_adaptor  (not a great name I 
+know).  This is akin to your database adaptor ($db) that you used to retrieve individual clones and 
+contigs but now we can ask it to get whole regions of chromosomes.
+
+To create one of these (sgp for short)
+
+We need to tell it what golden path to use.
+
+$db->static_golden_path_type('UCSC');
+
+my $sgp = $db->get_StaticGoldenPathAdaptor;
+
+Instead of getting contigs from out sgp we now get 'VirtualContigs' (virtual because they're many pieces 
+of sequence pretending to be one single piece).
+
+
+We can still get an individual contig
+
+my $vcontig = $sgp->fetch_VirtualContig_of_contig('AC005663.00001',10000);
+
+and a single clone
+
+my $vcontig = $sgp->fetch_VirtualContig_of_clone(ÔAC005663Õ,1000);
+
+and now regions of chromosome
+
+my $vcontig = $sgp->fetch_VirtualContig_by_chr_start_end('chr1',1,1000000);
+
+and also regions of chromosome around a gene
+
+my $vcontig = $sgp->fetch_VirtualContig_of_Gene('ENSG00000051236',5000)
+
+Even though we now have many contigs stitched together we can still pretend
+it is a single sequence. i.e.
+
+my @rept  = $vcontig->get_all_RepeatFeatures;
+my @pred  = $vcontig->get_all_PredictionFeatures;
+my @sims  = $vcontig->get_all_SimilarityFeatures;
+my @genes = $vcontig->get_all_Genes;
+
+If you donÕt want to translate your genes use 
+
+My @genes = $vcontig->get_all_Genes_exononly;
+
+As it is much faster than get_all_Genes;
+
+All these features behave exactly the same way as if we'd retrieved 
+them from a single contig.
+
+In addition we can find out what contigs make up our virtual contigs.
+
+my @contigs  = $vcontig->_vmap->each_MapContig
+
+When virtual contigs are retrieved their coordinates start from one.  We can find out the absolute 
+position of the sequences and features using the global_start and global_end methods.
+
+my $chrstart = $vcontig->_global_start;
+my $chrend   = $vcontig->_global_end;
+
+Exercises
+
+1. Fetch 1Mb of repeatmasked sequence from the contig of your choice  (Hint: Create a virtual 
+contig using fetch_VirtualContig_by_chr_start_end($chr,$start,$end and have a look back at 
+section 1)
+
+2. Get all the genes on that contig and print their ensembl ids.
+
+3. Which of those genes are known genes and what is their more common name.  (Hint. Use the 
+is_known method and use the each_DBLink->display_id)
+
+4. Translate all of the genes - are there any stop codons (there shouldn't be!!) (Remember there 
+may be more than one transcript per gene)
+
+5. Fetch a virtual contig of the gene ENSG00000100259
+
+6. Print out the 200 bases of sequence that flanks each exon  (Use the $gene-
+>each_unique_Exon method and call $vcontig->subseq($start,$end) method to retrieve the 
+dna)
+
+Extract all the introns from the first 10 genes and write them to a file (be careful about reverse strand 
+genes).
+
+Print the 200bp flanking each exon for the first 10 genes.  (Again be careful of reverse stranded genes 
+and also be careful of alternative transcripts).
+
+Print out all the 5Õ and 3Õ utrs for the first 10 genes.
+
+Translation
+
+Each transcript could be split into a 5Õ untranslated region, a CDS and a 3Õ untranslated region.  The 
+points in the cdna where the translation starts and stops are stored in a translation object which is 
+attached to each transcript. I.e.
+
+my $translation = $transcript->translation;
+
+The translation object has methods 
+
+$translation->start_exon_id
+$translation->end_exon_id
+
+which denotes which exons the translation starts and ends in.  To find the exact coordinate of the start 
+and stop of translation use the methods
+
+$translation->start
+$translation->end
+
+
+The start and end methods refer to the exon coordinates so they should never be less than one or 
+greater than the exonÕs length.
+
+Protein
+
+If you have a gene id you can retrieve which interpro hits it contains as follows
+
+My @interpro = $db->Gene_Obj->get_Interpro_by_geneid(ÔENSG00000100259Õ);
+
+This just returns you a list of strings of the interpro ids.
+
+If we want more detail about the protein we have to use the ensembl protein adaptor which returns us 
+a  protein object
+
+My $protein_adaptor = new Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($db);
+
+My $protein  = $protein_adaptor->fetch_Protein_by_dbid($translation->id);
+
+This gets a protein by the translation identifier
+
+My $protein = $protein_adaptor->fetch_Protein_by_transcript ($transcript->id)
+
+As every transcript only has one translation we can fetch proteins using the transcript identifier as well.
+
+Once we have a protein object we can look at its features
+
+My @prot_features = $protein->each_Protein_feature;
+
+These features are the usual feature pairs (with a couple of extras) and can be printed out as normal.
+
+Exercises
+
+1. Find all the pfam domains contained in the first 100 genes.  Which ones are most common and 
+is this surprising?  
+
+2. How many of those genes have no protein features at all.
+
+3. How many WD40 domains are there in the database. Ð whoops Ð canÕt do this without sql.
+
+External Features
+
+The General Idea
+
+The core ensembl database (the one you've been using up to now) contains dna, genes and some 
+sequence features.  There are extra satellite databases that contain other features that can also be 
+accessed.
+
+The idea is that you take your main ensembl database handle ($db - way back in the first section) and 
+give it another database handle to look after.  This external database could contain all manner of 
+things e.g. snps, mouse trace hits or embl annotations.  You can now access the features in the 
+second database as though they were all in the same place even though they could be sitting
+on a completely different machine. 
+
+Mouse
+
+Let's give the mouse trace database as an example
+
+First we need to connect to the main ensembl database;
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => 'ecs1e',
+	                                       -dbname => 'ensembl100',
+                                            -user   => 'ensro');
+
+And then to the mouse database
+
+my $mouse = new Bio::EnsEMBL::ExternalData::EXONERATESQL::DBAdaptor
+(-host   => $host,
+ -dbname => 'mouse',
+                                -user   => 'ensro);
+
+We now tell the main database to also look in the mouse db
+
+my $mouse_external_feature_factory = $mouse->get_ExonerateAdaptor;
+
+$db->add_External_Feature_Factory($mouse_external_feature_factory);
+
+We now forget about the $mouse database and to access the mouse features call
+get_all_ExternalFeatures on our $contigs or $virtual_contigs
+
+my @mouse_features = $contig->get_all_ExternalFeatures;
+
+foreach my $mouse (@mouse) {
+   print "Mouse hit : " . $mouse->gffstring . "\n";
+}
+
+We can add as many external feature databases as we like.
+
+Exercises
+
+1. Connect to the main ensembl database and the mouse database and add the mouse database 
+to the ensembl database.
+
+2. Create a virtual contig of 1Mb of sequence from your chromosome of choice (hint - remember 
+back to the virtual contig exercises)
+
+3. How many mouse hits are there to this sequence
+
+4. How many mouse hits hit exons. (Hint - get all genes and use each_unique_Exon to get the 
+exons. Then use the overlaps method to compare each mouse hit to each exon)
+
+5. Compare the fraction of hits to exons to the total.  Can you infer anything from this?
+
+
+Let's put the whole thing together with some example scripts.  These are real scripts and some need 
+access to the ensembl analyis pipeline or the viewing code.
+
+ - chrhits
+ - dumpUTR
+ - dumpgff
+ - snps - coding snps
+ - mouse - non overlapping with exons
+ - mouse_genscan
+ - embl annotations
+
+
+
+
+
+
+
+
+
