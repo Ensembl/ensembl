@@ -529,6 +529,7 @@ sub _transform_to_rawcontig {
       $componentExon->contig_id( $rawContig->dbID );
       $componentExon->sticky_rank( $i + 1 );
       $componentExon->phase( $self->phase );
+      $componentExon->end_phase($self->end_phase);
       $componentExon->dbID( $self->dbID() );
       $componentExon->adaptor( $self->adaptor() );
       $stickyExon->add_component_Exon( $componentExon );
@@ -568,17 +569,25 @@ sub _transform_features_to_rawcontig {
   if( ! defined $self->{'_supporting_evidence'} ) {
     return;
   }
-  
+  #print STDERR "TRANSFORMING SUPPORTING FEATURES\n";
   my @supporting_features = $self->each_Supporting_Feature;
   my @remapped_sf;
   foreach my $sf(@supporting_features) {
+    #print "transforming ".$sf."\n";
     my @new_sf = $sf->transform();
-    #print STDERR "have ".$new_sf."\n";
+    #print STDERR "have ".@new_sf." supporting features from transform\n";
+    #foreach my $f(@new_sf){
+    #  print "have ".$f." from transformation\n";
+    #}
     push(@remapped_sf, @new_sf);
     
   }
-
-  $self->{'_supporting_evidence'} = \@remapped_sf;
+  $self->{'_supporting_evidence'} = undef;
+  foreach my $f(@remapped_sf){
+   # print "adding ".$f." to supporting feature\n";
+    $self->add_Supporting_Feature($f);
+  }
+  
 }
 
 
@@ -994,10 +1003,10 @@ sub _genscan_peptide{
 
 sub add_Supporting_Feature {
     my ($self,$feature) = @_;
-
+    #print STDERR "args ".$feature."\n";
     $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeatureI") unless 
 	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeatureI");
-
+    #print STDERR "adding ".$feature." supporting feature\n";
     $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
 
     # check whether this feature object has been added already
