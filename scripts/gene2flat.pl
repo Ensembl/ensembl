@@ -16,7 +16,7 @@ in particular the protein translation
 =head1 OPTIONS
 
 
-    -dbhost    host name for database (gets put as host= in locator)
+    -host    host name for database (gets put as host= in locator)
 
     -dbname    For RDBs, what name to connect to (dbname= in locator)
 
@@ -28,16 +28,9 @@ in particular the protein translation
 
     -format    [pep/dump/transcript] dump in peptides/info/dna format
 
-    -noacc     [only timdb] by default, regardless of specifing the
-               accession for a sanger clone or its clonename, it will
-               dump as its accession.  Use -noacc to dump by clonename
+    -getall    all genes from the database [no applicable to timdb]
 
-    -test      use test database rather than live [only timdb]
-               clones in testdb are listed with a T below
-
-    -getall    all clones from the database [no applicable to timdb]
-
-    -usefile   read in on stdin a list of clones, one clone per line
+    -usefile   read in on stdin a list of gene ids, one gene id per line
 
     -verbose   print to STDERR on each gene to dump
 
@@ -69,8 +62,6 @@ my $format  = 'transcript';
 my $usefile = 0;
 my $getall  = 0;
 my $verbose = 0;
-my $noacc   = 0;
-my $test    = 0;
 my $webdir = undef;
 my $logerror = undef;
 my $help;
@@ -90,8 +81,6 @@ my $chunk   = 1;
 	     'getall'     => \$getall,
 	     'verbose'    => \$verbose,
 	     'webdir:s'     => \$webdir,
-	     'test'       => \$test,
-	     'noacc'      => \$noacc,
 	     'logerror:s' => \$logerror,
 	     'h|help'     => \$help
 	     );
@@ -115,7 +104,7 @@ if( $usefile ) {
 	push(@gene_id,$g);
     }
 } elsif ( $getall == 1 ) {
-    @gene_id = $db->get_all_Gene_id();
+    @gene_id = $db->gene_Obj->get_all_Gene_id();
 } else {
     @gene_id = @ARGV;
 }
