@@ -33,7 +33,7 @@ my $i = 0;
 for ($i = 0; $i <= $#$clone1; $i++) {
     print("Processing clone " . $clone1->[$i] . "\t" . $acc->[$i] . "\n");
     eval {
-    my $cl1    = $db1->get_Clone($acc->[$i]);
+    my $cl1    = $db1->get_Clone($clone1->[$i]);
 
     my @genes1 = $cl1->get_all_Genes();
 

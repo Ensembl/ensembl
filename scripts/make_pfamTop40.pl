@@ -2,7 +2,7 @@
 
 
 
-use EnsWeb;
+#use EnsWeb;
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
@@ -21,8 +21,8 @@ if ($help) {
 
 
 eval {
-     my $locator = &EnsWeb::get_locator();
-#    my $locator = "Bio::EnsEMBL::DBSQL::Obj/host=obi-wan;port=3306;dbname=ensembl;user=ensro;pass=";
+#     my $locator = &EnsWeb::get_locator();
+    my $locator = "Bio::EnsEMBL::DBSQL::Obj/host=obi-wan;port=3306;dbname=ensembl;user=ensro;pass=";
      $db =  Bio::EnsEMBL::DBLoader->new($locator);
 };
 

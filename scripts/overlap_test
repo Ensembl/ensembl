@@ -1,12 +1,13 @@
 #!/usr/local/bin/perl
 
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DB::VirtualContig;
-
-my $db = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'obi-wan',
+$| = 1;
+my $db = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'ensrv3',
 				      -port   => 410000,
-				      -dbname => 'ens500b',
-				      -user => 'ensro',
+                                      -dbname => 'ensembl07',
+                                      -user => 'ensro',
 				      );
 
 
@@ -15,12 +16,21 @@ my $contig = $db->get_Contig($ARGV[0]);
 my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => 1,
-						 -left          => 1000000,
-						 -right         => 1000000);
+						 -left          => 200000,
+						 -right         => 200000);
+my @genes = $vc->get_all_Genes;
 
-my $seq      = $vc->primary_seq;
-
-print("Sequence is        " . $seq->length . "\n");
+my $seq = $vc->seq;
+foreach my $g (@genes) {
+  foreach my $t ($g->each_Transcript) {
+   eval {
+   my  $pep = $t->translate();
+   print STDERR "Translation ".$pep->seq()."\n";
+   };
+   print ("Error : " . $@ . "\n");
+  }
+}
+#print("Sequence is        " . $seq->length . "\n");
 print("Contig length is   " . $vc->length . "\n");
 #print("sequence should be AAAACCCCTTGGGAAA\n");
 #use overlap;
