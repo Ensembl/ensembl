@@ -263,8 +263,8 @@ sub _get_evidence_from_transcript {
   my $strand = $exons[0]->strand;
   my @features = ();
   foreach my $exon (@exons) {
-    my @exon_features = $exon->each_Supporting_Feature;
-    foreach my $feature (@exon_features) {
+    my $exon_features = $exon->get_all_supporting_features;
+    foreach my $feature (@$exon_features) {
       next unless $feature->primary_tag =~ /similarity/i;
       # store on overlap, unless we're not interested in this hit seq.
       if ($exon->overlaps($feature)) {	# which it should (evidence)!
