@@ -1,5 +1,5 @@
 // $Id$
-### $Id: stats-from-merge-files.pl,v 1.11 2001/03/21 19:00:49 lijnzaad Exp
+### $Id: stats-from-merge-files.pl,v 1.17 2001/03/27 15:59:07 lijnzaad Exp
 ### run on Thu Mar 22 14:24:18 GMT 2001 by lijnzaad @ ecs1d
 ### argument(s): ens_affy_fgenesh.merge
 ### -rw-rw-r--   1 lijnzaad ensembl  104089688 Mar 16 17:21 ens_affy_fgenesh.merge
@@ -8,11 +8,12 @@ Sources: AFFY ENS FGENH // i.e., this was a merge of gene predictions from
                         // on AFFY, ENS + another source, statistics will be
                         // different, since the other source will link more
                         // native features into bigger igi's
-number of igi's per source: // one 'igi' is a  gene merged from all different predictions
+number of igi's per source: // one 'igi' is a  gene merged from all different
+                            // predictions 
 ALL: 42854
 AFFY: 19087   //
-ENS: 22467    // the numbers don't add up, because of overlaps. The closer these numbers are
-FGENH: 32832  // to the ALL numbers, the better.
+ENS: 22467    // the numbers don't add up, because of overlaps. The closer
+FGENH: 32832  // these numbers are to the ALL numbers, the better.
 ----
 number of igis shared with other source; sharing multiplicity
 // (sorry about any misalignments ...)
@@ -35,49 +36,47 @@ number of igis shared with other source; sharing multiplicity
 //
 ----
 igi stats on ALL:
-	minl=102, maxl=63879900, avgl=3382718 // minimum length of an igi, maximum, average
-	minfeats=1, maxfeats=762, avgfeats=16 // number of features per igi: min, max, avg.
-	minexons=0, maxexons=190, avgexons=5  // number of exons per igi: min, max
-igi stats on AFFY: // same statistics, but the igi's of a particular source
-	minl=102, maxl=11703845, avgl=42129
-	minfeats=1, maxfeats=193, avgfeats=9
-	minexons=0, maxexons=190, avgexons=6
-igi stats on ENS:
-	minl=638, maxl=63879900, avgl=6382696
-	minfeats=3, maxfeats=408, avgfeats=10
-	minexons=1, maxexons=138, avgexons=5
-igi stats on FGENH:
-	minl=141, maxl=40655289, avgl=72536
-	minfeats=1, maxfeats=307, avgfeats=8
-	minexons=1, maxexons=109, avgexons=6
-----
-igi stats per cluster group: // same statistics, but now for igi sets that correspond
-                              // to the membership multiplicity
-those in 1 sources: // i.e., those unique to a source
-	minl=102, maxl=63879900, avgl=3382718
-	minfeats=1, maxfeats=762, avgfeats=16
+	minl=3, maxl=40655289, avgl=66649
+          // minimum length of an igi, maximum, average
+	minfeats=1, maxfeats=852, avgfeats=18
+          // mininum number of features of an igi, maximum, average
 	minexons=0, maxexons=190, avgexons=5
-those in 2 sources: // i.e., igi's shared between 2 or more sources
-	minl=381, maxl=63879900, avgl=5920848
-	minfeats=3, maxfeats=762, avgfeats=29
+          // mininum number of exons of an igi, maximum, average
+igi stats on AFFY: // same stats, but now per source
+	minl=107, maxl=16016027, avgl=50930
+	minfeats=1, maxfeats=563, avgfeats=13
+	minexons=0, maxexons=190, avgexons=7
+.
+.
+.
+----
+igi stats per cluster group:
+ // same stats, but now on the igi's found in  >=1, >=2 , >=3 sources:
+those in 1 sources:
+	minl=3, maxl=40655289, avgl=66649
+	minfeats=1, maxfeats=852, avgfeats=18
+	minexons=0, maxexons=190, avgexons=5
+those in 2 sources:
+	minl=137, maxl=36234355, avgl=80609
+	minfeats=3, maxfeats=852, avgfeats=32
 	minexons=1, maxexons=190, avgexons=8
-those in 3 sources: // igi's shared between all sources
-	minl=3308, maxl=63721433, avgl=6688290
-	minfeats=6, maxfeats=762, avgfeats=40
+those in 3 sources:
+	minl=297, maxl=21843793, avgl=92732
+	minfeats=6, maxfeats=852, avgfeats=44
 	minexons=1, maxexons=190, avgexons=10
 ----
 gene id chaining: histogram of native gene_ids per igi, and igi statistics on this:
 source ALL:
-	1: 22527 // i.e., 22527 igi's correspond to exactly one native gene
-	minl=102, maxl=63478426, avgl=1156023 // igi statistics of this group
-	minfeats=1, maxfeats=62, avgfeats=5   
-	minexons=0, maxexons=55, avgexons=3
-	2: 7340                               // This many igi's consist of 2 different 
-	minl=172, maxl=63879900, avgl=4843376 // native genes. The average   
-	minfeats=3, maxfeats=235, avgfeats=12 // igi gene length goes up the 
-	minexons=1, maxexons=78, avgexons=4   // more native genes it has (of course)
-	3: 8635
-         . 
+	1: 20301 // i.e., 20301 igi's correspond to exactly one native gene
+	minl=3, maxl=40655289, avgl=51149 // igi statistics on this as above
+	minfeats=1, maxfeats=75, avgfeats=5
+	minexons=0, maxexons=73, avgexons=3
+	2: 6708 //                            // This many igi's consist of  
+	minl=35, maxl=39446593, avgl=64369    // 2 different native          
+	minfeats=3, maxfeats=265, avgfeats=11 // genes. The average igi gene 
+	minexons=1, maxexons=52, avgexons=4   // length goes up the more     
+	3: 8807                               // native genes it has (of     
+         .                                    // course)                     
          .
          .
 	26: 1
@@ -93,11 +92,29 @@ source AFFY: // same thing, but now per source.
          .
          .
          .
-source FGENH:
-	1: 28877
-	minl=149, maxl=63879900, avgl=3177104
-	minfeats=1, maxfeats=295, avgfeats=15
-	minexons=1, maxexons=117, avgexons=5
-         .
-         .
-         .
+----
+igi's and native ids of igi's that chain together >= 5 native ids
+source AFFY:
+    chaining together 5 native ids ( 4 cases) :
+      igi3_39917 [ ctg22fin4	3596308	3701371	- ]:
+        // this igi, which lies on fpcctg ctg22fin4, start 3596308, 
+        // end 3701371, reverse strand, chains to together the following 
+        // AFFY gene_ids:
+        AFFY Affy.ctg22fin4-000000.57 [ 3596308	3599716 ]
+           // runs from 3596308	to 3599716. This list is sorted by coordinate
+        AFFY Affy.ctg22fin4-000000.59 [ 3609955	3618417 ]
+        AFFY Affy.ctg22fin4-000000.61 [ 3636993	3643656 ]
+        AFFY Affy.ctg22fin4-000000.62 [ 3672539	3680629 ]
+        AFFY Affy.ctg22fin4-000000.63 [ 3691050	3701371 ]
+        // this chaining together is brought about by the following genes
+        // from other sources; this list is sorted by source, then coordinates
+        linked by:
+          ENS ENSG00000099970 [ 3596311	3698200 ]
+          ENS ENSG00000099977 [ 3610141	3613001 ]
+          ENS ENSG00000099987 [ 3642053	3643651 ]
+          FGENH S.C22000279 [ 3596307	3600526 ]
+          FGENH S.C22000281 [ 3612136	3616899 ]
+          FGENH S.C22000284 [ 3637133	3643650 ]
+          FGENH S.C22000288 [ 3672820	3680628 ]
+          FGENH S.C22000289 [ 3691049	3698199 ]
+          FGENH S.C22000291 [ 3699141	3700957 ]
