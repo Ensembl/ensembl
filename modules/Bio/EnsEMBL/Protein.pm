@@ -154,6 +154,49 @@ sub family{
 }
 
 
+=head2 geneac
+
+ Title   : geneac
+ Usage   : $obj->geneac($newval)
+ Function: 
+ Returns : value of geneac
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub geneac{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'geneac'} = $value;
+    }
+    return $obj->{'geneac'};
+
+}
+
+=head2 transcriptac
+
+ Title   : transcriptac
+ Usage   : $obj->transcriptac($newval)
+ Function: 
+ Returns : value of transcriptac
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub transcriptac{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'transcriptac'} = $value;
+    }
+    return $obj->{'transcriptac'};
+
+}
+
+
 =head2 each_Protein_feature
 
  Title   : each_Protein_feature
