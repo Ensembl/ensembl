@@ -2388,7 +2388,7 @@ sub write_Contig {
    $clone                         || $self->throw("No clone entered.");
 
 #   (defined($contig->species)    && $contig->species   ->isa("Bio::EnsEMBL::Species"))    || $self->throw("No species object defined");
-   (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) || $self->throw("No chromosomeobject defined");
+#   (defined($contig->chromosome) && $contig->chromosome->isa("Bio::EnsEMBL::Chromosome")) || $self->throw("No chromosomeobject defined");
 
    my $contigid      = $contig->id;
    my $date          = $contig->seq_date;
@@ -2400,8 +2400,8 @@ sub write_Contig {
 #   my $species_id    = $self->write_Species   ($contig->species);
 #   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id); 
 
-   my $chromosome_id  = $contig->chromosome->get_db_id;
-
+#   my $chromosome_id  = $contig->chromosome->get_db_id;
+    my $chromosome_id  = 25;
    $seqstr =~ tr/atgcn/ATGCN/;
 
    my @sql;

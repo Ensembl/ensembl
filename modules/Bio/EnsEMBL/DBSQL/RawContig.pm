@@ -184,11 +184,11 @@ sub primary_seq {
 
 =head2 _seq_cache
 
-  Title   : _seq_cache
-  Usage   : $obj->_seq_cache($newval);
-  Function: 
-  Returns : value of _seq_cache
-  Args    : newvalue (optional);
+ Title   : _seq_cache
+ Usage   : $obj->_seq_cache($newval)
+ Function: 
+ Returns : value of _seq_cache
+ Args    : newvalue (optional)
 
 =cut
 
@@ -968,7 +968,7 @@ sub _load_overlaps{
                 "and      con.dna = co.dna_b_id)) " .
 		"and    con.internal_id = $id";
 
-#   print(STDERR "Query is $query");
+#   print(STDERR "Query is $query\n");
 
    my $sth = $self->_dbobj->prepare($query);
    
