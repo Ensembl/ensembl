@@ -14,7 +14,7 @@ my $port=3306;
 my $password;
 my $create_password;
 my $db_history="db_history";
-my $create_user="root";
+my $create_user="ensadmin";
 
 # derived
 # name of user running db_history.pl
@@ -74,6 +74,7 @@ $Getopt::Long::ignorecase=0;
 	    'v'=>\$opt_v,
 	    'passwd|password|p:s'=>\$password,
 	    'create_password|P:s'=>\$create_password,
+	    'create_user|c:s'=>\$create_user,
 
 	     );
 
