@@ -74,6 +74,16 @@ CREATE TABLE source (
 
 );
 
+# Sources to fetch data from
+# Note currently now UniProt/SwissProt data for fugu, anopheles, c.briggsae or chicken.
+INSERT INTO source VALUES (1, 'UniProt_SwissProt_homo_sapiens', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (2, 'UniProt_SwissProt_mus_musculus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (3, 'UniProt_SwissProt_rattus_norvegicus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (4, 'UniProt_SwissProt_drosophilla_melanogaster', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (5, 'UniProt_SwissProt_caenorhabditis_elegans', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (6, 'UniProt_SwissProt_gallus_gallus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (7, 'UniProt_SwissProt_pan_troglodytes', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now(), 1);
+
 ################################################################################
 
 CREATE TABLE species (
@@ -88,7 +98,18 @@ CREATE TABLE species (
 
 );
 
-INSERT INTO species (taxonomy_id, name) VALUES (9606, 'homo_sapiens');
+INSERT INTO species (taxonomy_id, name) VALUES (9606,  'homo_sapiens');
+INSERT INTO species (taxonomy_id, name) VALUES (10090, 'mus_musculus');
+INSERT INTO species (taxonomy_id, name) VALUES (10116, 'rattus_norvegicus');
+INSERT INTO species (taxonomy_id, name) VALUES (31033, 'fugu_rubripes');
+INSERT INTO species (taxonomy_id, name) VALUES (7165,  'anopheles_gambiae');
+INSERT INTO species (taxonomy_id, name) VALUES (7227,  'drosophila_melanogaster');
+INSERT INTO species (taxonomy_id, name) VALUES (6239,  'caenorhabditis_elegans');
+INSERT INTO species (taxonomy_id, name) VALUES (6238,  'caenorhabditis_briggsae');
+INSERT INTO species (taxonomy_id, name) VALUES (7955,  'danio_rerio');
+INSERT INTO species (taxonomy_id, name) VALUES (9598,  'pan_troglodytes');
+INSERT INTO species (taxonomy_id, name) VALUES (9031,  'gallus_gallus');
+
 
 ################################################################################
 
