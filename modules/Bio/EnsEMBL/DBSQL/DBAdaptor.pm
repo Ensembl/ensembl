@@ -264,18 +264,23 @@ sub get_available_adaptors{
   my %pairs =  ( 
    # Firstly those that just have an adaptor named after there object in the main DBSQL directory
     map( { $_ => "Bio::EnsEMBL::DBSQL::${_}Adaptor" } qw( 
-      AffyFeature AffyArray AffyProbe Analysis ArchiveStableId
-      Attribute AssemblyExceptionFeature AssemblyMapper 
-      CoordSystem CompressedSequence DBEntry DnaAlignFeature DensityFeature DensityType 
-      Exon Gene KaryotypeBand MiscSet MiscFeature PredictionTranscript PredictionExon 
-      ProteinFeature ProteinAlignFeature RepeatConsensus RepeatFeature Sequence SimpleFeature
-      Slice SupportingFeature Transcript Translation
+      AffyFeature              AffyArray            AffyProbe
+      Analysis                 ArchiveStableId      Attribute
+      AssemblyExceptionFeature AssemblyMapper       CoordSystem
+      CompressedSequence       DBEntry              DnaAlignFeature
+      DensityFeature           DensityType          Exon
+      Gene                     KaryotypeBand        MiscSet
+      MiscFeature              PredictionTranscript PredictionExon 
+      ProteinFeature           ProteinAlignFeature  RepeatConsensus
+      RepeatFeature            Sequence             SimpleFeature
+      Slice                    SupportingFeature    Transcript
+      Translation
     ) ),
    # Those whose adaptors are in Map::DBSQL
     map( { $_ => "Bio::EnsEMBL::Map::DBSQL::${_}Adaptor" } qw(
-      Marker MarkerFeature QtlFeature Qtl
+      Marker                   MarkerFeature        QtlFeature     Qtl
     ) ),
-   # Finally the exceptions... those that have non-standard names....
+   # Finally the exceptions... those that have non-standard mapping between object / adaptor ....
     'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
     'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
     'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
