@@ -375,11 +375,13 @@ sub store {
   # Now the supporting evidence
   # should be stored from featureAdaptor
 
+ 
+
   my $sth  = $self->prepare("
      INSERT INTO supporting_feature( 
-        exon_id,contig_id,seq_start,seq_end,score,
+        exon_id,seq_start,seq_end,score,
         strand,analysis,name,hstart,hend,hid,hstrand) 
-     VALUES(?,?,?,?,?,?,?,?,?,?,?,?) 
+     VALUES(?,?,?,?,?,?,?,?,?,?,?) 
    ");
 
 
@@ -407,7 +409,6 @@ sub store {
 	
 	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
 	    $sth->execute($exon->dbID(),
-			  $f->seqname,
 			  $f->start,
 			  $f->end,
 			  $f->score,
