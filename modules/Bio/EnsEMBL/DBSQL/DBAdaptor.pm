@@ -112,6 +112,7 @@ sub new {
       'MarkerFeature'        =>
           'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
       'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
+      'MetaCoordContainer'   => 'Bio::EnsEMBL::DBSQL::MetaCoordContainer',
       'MiscSet'              => 'Bio::EnsEMBL::DBSQL::MiscSetAdaptor',
       'MiscFeature'          => 'Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor',
       'PredictionTranscript' =>
@@ -209,7 +210,7 @@ sub get_QtlAdaptor {
 =head2 get_MetaContainer
 
   Args       : none
-  Example    : $meta_container = $db_adaptor->get_MetaContainer(); 
+  Example    : $meta_container = $db_adaptor->get_MetaContainer();
   Description: Gets a MetaContainer object for this database
   Returntype : Bio::EnsEMBL::DBSQL::MetaContainer
   Exceptions : none
@@ -222,6 +223,23 @@ sub get_MetaContainer {
     return $self->get_adaptor('MetaContainer');
 }
 
+
+
+=head2 get_MetaCoordContainer
+
+  Arg [1]    : none
+  Example    : $meta_coord_container = $db_adaptor->get_MetaCoordContainer();
+  Description: Gets a MetaCoordContainer object for this database.
+  Returntype : Bio::EnsEMBL::DBSQL::MetaCoordContainer
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_MetaCoordContainer {
+  my $self = shift;
+  return $self->get_adaptor('MetaCoordContainer');
+}
 
 =head2 get_ProteinFeatureAdaptor
 

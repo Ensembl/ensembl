@@ -430,8 +430,8 @@ sub fetch_all_by_Slice_constraint {
     my ($tab_name, $tab_syn) = @{$tabs[0]};
 
     #find out what coordinate systems the features are in
-    my $csa = $self->db->get_CoordSystemAdaptor();
-    my @feat_css = @{$csa->fetch_all_by_feature_table($tab_name)};
+    my $mcc = $self->db->get_MetaCoordContainer();
+    my @feat_css = @{$mcc->fetch_all_CoordSystems_by_feature_type($tab_name)};
 
     my $asma = $self->db->get_AssemblyMapperAdaptor();
     my @features;
@@ -441,11 +441,11 @@ sub fetch_all_by_Slice_constraint {
       my $mapper;
       my @coords;
       my @ids;
-      
+
       if($feat_cs->equals($slice_cs)) {
         #no mapping is required if this is the same coord system
         my $constraint = $original_constraint;
-        
+
         # obtain seq_region_id of this slice from db
         my $seq_region_id = 
           $self->db->get_SliceAdaptor->get_seq_region_id($slice);
@@ -463,7 +463,7 @@ sub fetch_all_by_Slice_constraint {
         push @features, @$fs;
       } else {
         $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
-        
+
         # Get a list of coordinates and corresponding internal ids for the
         # regions we are interested in
         @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,
@@ -488,10 +488,10 @@ sub fetch_all_by_Slice_constraint {
           my $id_str = join(',', @ids);
           $constraint .= " AND " if($constraint);
           $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
-          
-          my $fs = 
+
+          my $fs =
             $self->generic_fetch($constraint, $mapper, $slice);
-          
+
           $fs = $self->_remap($fs, $mapper, $slice);
 
           push @features, @$fs;
@@ -509,13 +509,13 @@ sub fetch_all_by_Slice_constraint {
             my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
             $fs = $self->_remap($fs, $mapper, $slice);
-            
+
             push @features, @$fs;
           }
         }
       }
     } #COORD system loop
-    
+
     #if this was a symlinked slice offset the feature coordinates as needed
     if($slice != $orig_slice) {
       foreach my $f (@features) {
@@ -530,7 +530,7 @@ sub fetch_all_by_Slice_constraint {
     } else {
       push @result_features, @features;
     }
-    
+
   } #slice & symmlinked slice loop
 
   $self->{'_slice_feature_cache'}->{$key} = \@result_features;
@@ -595,27 +595,31 @@ sub _pre_store {
   # Ensure that this type of feature is known to be stored in this coord
   # system.
   #
-  my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $slice->coord_system;
 
   my ($tab) = $self->_tables();
   my $tabname = $tab->[0];
 
-  $csa->add_feature_table($cs, $tabname);
+  my $mcc = $db->get_MetaCoordContainer();
+
+  $mcc->add_feature_type($cs, $tabname);
 
   # we have to update the meta coord table in both the dna db and the feature
   # db so that the feature db can be used independently later
 
-  if($db->dnadb() != $db) {
-    my $dnadb = $db->dnadb();
-    $db->dnadb(undef); # unset the dnadb temporarily
+  #  Actually, the meta coord info should probably only go in the database
+  #  where the features are actually stored, not the dnadb (which is often
+  #  going to be read-only anyway)
+  #   if($db->dnadb() != $db) {
+  #     my $dnadb = $db->dnadb();
+  #     $db->dnadb(undef); # unset the dnadb temporarily
 
-    #get a coord system adaptor from the feature database
-    $csa = $db->get_CoordSystemAdaptor();
-    $csa->add_feature_table($cs, $tabname);
+  #     #get a coord system adaptor from the feature database
+  #     $csa = $db->get_CoordSystemAdaptor();
+  #     $csa->add_feature_table($cs, $tabname);
 
-    $db->dnadb($dnadb); # reinstate the dnadb
-  }
+  #     $db->dnadb($dnadb); # reinstate the dnadb
+  #   }
 
   my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
 
