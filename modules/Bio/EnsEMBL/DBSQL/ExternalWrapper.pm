@@ -135,7 +135,7 @@ sub get_Ensembl_Genes_contig_list{
    my @todocontigs;
    if (my $cgr = $self->cg) {
        #Get them from the cache
-       print STDERR "Getting external genes from the cache\n";
+       #print STDERR "Getting external genes from the cache\n";
        my %cgh = %$cgr;
        foreach my $c (@contigs) {
 	   if ($cgh{$c}) {
@@ -157,7 +157,7 @@ sub get_Ensembl_Genes_contig_list{
        push (@todocontigs,@contigs);
    }
    if( scalar @todocontigs == 0 ) {
-       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       #print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
        return @genes;
    }
    else {
@@ -181,13 +181,13 @@ sub get_Ensembl_Genes_contig_list{
        }
        push(@geneids,keys(%gc));
        if( scalar(@geneids) == 0 ) {
-	   print STDERR "No ids here...\n";
+	   #print STDERR "No ids here...\n";
 	   return();
        }
            
       
        
-       print STDERR "Getting external genes normally\n";
+       #print STDERR "Getting external genes normally\n";
        @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@geneids);
        foreach my $gene (@genes) {
 	   if (my $contig = $gc{$gene->id}) {
@@ -196,7 +196,7 @@ sub get_Ensembl_Genes_contig_list{
        }
        $self->cg(\%cg);
        
-       print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
+       #print STDERR "Returning ".scalar(@genes)." $genes[0] genes...\n";
        return @genes;
    }
 }
