@@ -73,7 +73,7 @@ sub dbi {
 
   my $self = shift;
 
-  my $dbi = DBI->connect("dbi:mysql:host=".$self->host().";port=".$self->port().";database="$self->database(),
+  my $dbi = DBI->connect("dbi:mysql:host=".$self->host().";port=".$self->port().";database=".$self->dbname(),
                         $self->user,
                         $self->password,
  			 {'RaiseError' => 1}) || die "Can't connect to database";

@@ -44,7 +44,7 @@ my $xref_password = "ensembl";
 
 sub dump_seqs{
   my ($self, $xref) = @_;
-  $self->dump_ensembl($slice);
+  $self->dump_ensembl();
   $self->dump_xref($xref);
 }
 
@@ -96,7 +96,7 @@ sub dump_xref{
   $sql   .= "where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='dna' and ";
   $sql   .= "      x.species_id = ".$species_id." ";
-  $sth = dbi()->prepare($sql);
+  $sth = $xref->dbi()->prepare($sql);
   $sth->execute();
   my $i = 0;
   while(my @row = $sth->fetchrow_array()){
@@ -120,7 +120,7 @@ ENDDNA:
   $sql   .= "where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='peptide' and ";
   $sql   .= "      x.species_id = ".$species_id." ";
-  $sth = dbi()->prepare($sql);
+  $sth = $xref->dbi()->prepare($sql);
   $sth->execute();
   $i = 0;
   while(my @row = $sth->fetchrow_array()){
