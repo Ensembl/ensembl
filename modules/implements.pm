@@ -64,7 +64,7 @@ CHECK {
  
   #validate each module that imported 'implements'
   foreach my $implementor (keys %__INTERFACES) {
-    print STDERR "CHECKING $implementor\n";
+    #print STDERR "CHECKING $implementor\n";
     my %seen_packages = ();
     my @checked_packages = ();
     
