@@ -96,6 +96,13 @@ sub new {
 }
 
 
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  return bless $hashref, $class;
+}
+
+
 =head2 display_label
 
   Arg [1]    : (optional) string $value
