@@ -69,20 +69,30 @@ sub fetch_by_Slice {
       my $rc = new Bio::EnsEMBL::RepeatConsensus;
       my $core = $self->db()->get_db_adaptor('core');
 
-      $rc->adaptor($core->get_RepeatConsensusAdaptor());
-      $rc->name($hid);
-      $rc->dbID($id);
-
       #create a partially filled repeat object
       my $r = new Bio::EnsEMBL::RepeatFeature();
             $rc->name($hid);
       $r->repeat_id($id);
-      #set the adaptor to be the proxy repeat feature adaptor
-      $r->adaptor($core->get_RepeatFeatureAdaptor());
+
       $r->start($start - $slice->chr_start() + 1);
       $r->end($end - $slice->chr_start() + 1);
       $r->strand($strand);
-      $r->repeat_consensus($rc);
+
+      if($core) {
+	$rc->adaptor($core->get_RepeatConsensusAdaptor());
+	$rc->name($hid);
+	$rc->dbID($id);
+	$r->repeat_consensus($rc);
+
+	#set the adaptor to be the proxy repeat feature adaptor
+	$r->adaptor($core->get_RepeatFeatureAdaptor());
+      } else {
+	$self->warn("Core Database not attached to lite database.  Not able to 
+                     Retrieve repeat consensi for repeat features\n");
+	$r->adaptor($self);
+      }
+
+      
       push @repeats, $r;
     }
 

@@ -10,21 +10,58 @@ use vars qw(@ISA);
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
+
+=head2 fetch_by_dbID
+
+  Arg [1]    : int $db_id
+               The database identifier for the RepeatConsensus to obtain
+  Example    : $repeat_consensus = $repeat_consensus_adaptor->fetch_by_dbID(4);
+  Description: Obtains a RepeatConsensus object from the database via its
+               primary key. 
+  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : general, Bio::EnsEMBL::RepeatFeatureAdaptor
+
+=cut
+
 sub fetch_by_dbID {
     my( $self, $db_id ) = @_;
 
-    return $self->_generic_fetch(
-        "repeat_id = $db_id"
-        );   
+    return $self->_generic_fetch("repeat_id = $db_id");   
 }
+
+
+
+=head2 fetch_by_name
+
+  Arg [1]    : string $name
+               the name of the repeat consensus to obtain
+  Example    : $rc = $repeat_consensus_adaptor->fetch_by_name('AluSx');
+  Description: Obtains a repeat consensus from the database via its name
+  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_by_name {
     my( $self, $name ) = @_;
 
-    return $self->_generic_fetch(
-        "repeat_name = '$name'"
-        );   
+    return $self->_generic_fetch("repeat_name = '$name'");   
 }
+
+
+=head2 _generic_fetch
+
+  Arg [1]    : string $where_clause
+  Example    : none
+  Description: PRIVATE used to create RepeatConsensus features from an 
+               SQL constraint
+  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _generic_fetch {
     my( $self, $where_clause ) = @_;
@@ -63,6 +100,21 @@ sub _generic_fetch {
     return @consensi;
 }
 
+
+=head2 fetch_seq_string_for_dbID
+
+  Arg [1]    : int $db_id
+  Example    : none
+  Description: Should probably be deprecated or renamed since it does not 
+               return an object and it is a fetch method - not consistent.
+               Retrieves the repeat_consensus string of a feature.  Looking
+               at the database this always apears to be 'N' anyway.  
+  Returntype : string
+  Exceptions : thrown if the RepeatConsensus with $db_id cannot be found
+  Caller     : ?
+
+=cut
+
 sub fetch_seq_string_for_dbID {
     my( $self, $db_id ) = @_;
     
@@ -77,6 +129,18 @@ sub fetch_seq_string_for_dbID {
         or $self->throw("Can't fetch repeat_consensus for repeat_id = '$db_id'");
     return $seq;
 }
+
+
+=head2 store
+
+  Arg [1]    : list of Bio::EnsEMBL::RepeatConsensus @consensi
+  Example    : $repeat_consensus_adaptor->store(@consensi);
+  Description: stores a list of RepeatConsensus objects in the database
+  Returntype : none
+  Exceptions : none
+  Caller     : ?
+
+=cut
 
 sub store {
     my( $self, @consensi ) = @_;

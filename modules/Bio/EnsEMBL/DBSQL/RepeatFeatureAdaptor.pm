@@ -1,250 +1,139 @@
+#
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+#
+# Copyright EMBL/EBI
+#
+# You may distribute this module under the same terms as perl itself
 
-### Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor - Abstract Base class for 
+
+=head1 SYNOPSIS
+
+$repeat_feature_adaptor = $database_adaptor->get_RepeatFeatureAdaptor();
+
+=head1 DESCRIPTION
+
+This is an adaptor for the rertrieval and storage of RepeatFeature objects
+from the RepeatFeature database
+
+=head1 AUTHOR - James Gilbert
+
+Email jgrg@ebi.ac.uk
+
+=head1 CONTACT
+
+Arne Stabenau - stabenau@ebi.ac.uk
+Graham McVicker - mcvicker@ebi.ac.uk
+Ewan Birney - birney@ebi.ac.uk
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+
+=cut
+
+# Let the code begin...
 
 package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
 
 use strict;
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::RepeatFeature;
 
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
-sub fetch_by_RawContig {
-    my( $self, $contig, $logic_name ) = @_;
+sub _tablename {
+  my $self = shift;
 
-    my @repeats = $self->fetch_by_contig_id($contig->dbID, $logic_name);
-    foreach my $r (@repeats) {
-        $r->attach_seq($contig);
-    }
-    return @repeats;
+  return 'repeat_feature r, repeat_consensus rc';
 }
 
 
-sub fetch_by_contig_id {
-    my( $self, $contig_id, $logic_name ) = @_;
-    my $constraint = "contig_id = $contig_id";
-
-    if($logic_name){
-      my $analysis = 
-	$self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
-      if($analysis->dbID()) {
-	$self->warn("No analysis for logic name $logic_name\n");
-	return ();
-      }
-
-      $constraint .= " AND analysis_id = ".$analysis->dbID;
-    }
-
-    return $self->_generic_fetch($constraint);
-}
-
-
-sub fetch_by_dbID {
-    my( $self, $db_id ) = @_;
-
-    my ($rf) = $self->_generic_fetch(
-        qq{ repeat_feature_id = $db_id }
-        );
-    return $rf;
-}
-
-
-
-sub _generic_fetch {
-    my( $self, $where_clause ) = @_;
-
-    my( $repeat_feature_id,
-        $contig_id,
-        $contig_start,
-        $contig_end,
-        $contig_strand,
-        $repeat_id,
-        $repeat_start,
-        $repeat_end,
-        $analysis_id,
-	$score,
-	$repeat_name,
-	$repeat_class,
-	$repeat_consensus
-        );
-
-    my $sth = $self->prepare(qq{
-      SELECT f.repeat_feature_id
-	, f.contig_id
-	, f.contig_start
-        , f.contig_end
-        , f.contig_strand
- 	, f.repeat_id
-        , f.repeat_start
-        , f.repeat_end
-        , f.analysis_id
-	, f.score
-	, c.repeat_name
-	, c.repeat_class
-	, c.repeat_consensus
-        FROM repeat_feature f, repeat_consensus c
-        WHERE }. $where_clause . " AND f.repeat_id = c.repeat_id");
-
-    $sth->execute;
-    $sth->bind_columns(
-        \$repeat_feature_id,
-        \$contig_id,
-        \$contig_start,
-        \$contig_end,
-        \$contig_strand,
-        \$repeat_id,
-        \$repeat_start,
-        \$repeat_end,
-        \$analysis_id,
-	\$score,
-	\$repeat_name,
-        \$repeat_class,
-	\$repeat_consensus
-        );
-
-    my $rca = $self->db->get_RepeatConsensusAdaptor();
-    my $aa  = $self->db->get_AnalysisAdaptor();
-    my $rfa = $self->db->get_RepeatFeatureAdaptor();
-
-    my @repeats;
-    while ($sth->fetch) {        
-      my $r = $self->_new_repeat($contig_start, $contig_end, $contig_strand, 
-				 $repeat_start, $repeat_end, $score, 
-				 $contig_id, $repeat_id, $repeat_name,
-				 $repeat_class, $repeat_consensus,
-				 $analysis_id, $rfa, $rca, 
-				 $aa, $repeat_feature_id);
-      push(@repeats, $r);
-    }
-    return( @repeats );
-}
-
-
-
-
-sub fetch_by_assembly_location{
-  my ($self,$start,$end,$chr,$type, $logic_name) = @_;
+sub _columns {
+  my $self = shift;
   
-  my $constraint;
+  return qw (r.repeat_feature_id
+	     r.contig_id
+	     r.contig_start
+	     r.contig_end
+	     r.contig_strand
+	     r.repeat_id
+	     r.repeat_start
+	     r.repeat_end
+	     r.analysis_id
+	     r.score
+	     rc.repeat_id
+	     rc.repeat_name
+	     rc.repeat_class
+	     rc.repeat_consensus);
+}
 
-  if($logic_name){
-    my $analysis  = 
-      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
-      $self->warn("No analysis for logic name $logic_name\n");
-      return ();
-    }
-    $constraint = " analysis_id = ".$analysis->dbID;
+#
+# Override superclass generic_fetch
+#
+sub generic_fetch {
+  my ($self, $constraint, $logic_name) = @_;
+
+  #modify the constraint to join the repeat and repeat_consensus tables
+  if($constraint) {
+    $constraint .= ' AND r.repeat_id = rc.repeat_id';
+  } else {
+    $constraint = 'r.repeat_id = rc.repeat_id';
   }
-  
-  my @repeats = 
-    $self->fetch_by_assembly_location_constraint($start, $end, $chr, 
-						 $type, $constraint);
 
-  return @repeats;
+  #invoke the super class method
+  return $self->SUPER::generic_fetch($constraint, $logic_name);
 }
 
+sub _obj_from_hashref {
+  my ($self, $hashref) = @_;
 
+  my $rca = $self->db()->get_RepeatConsensusAdaptor();
 
-sub fetch_by_Slice{
-  my ($self, $slice, $logic_name) = @_;
+  #create a repeat consensus object
+  my $rc = new Bio::EnsEMBL::RepeatConsensus;
+  $rc->dbID($hashref->{'repeat_id'});
+  $rc->repeat_class($hashref->{'repeat_class'});
+  $rc->name($hashref->{'repeat_name'});
+  $rc->repeat_consensus($hashref->{'repeat_consensus'});
+  $rc->adaptor($rca);
 
-  my $constraint;
+  #get the analysis object for this repeat
+  my $aa = $self->db->get_AnalysisAdaptor();
+  my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
 
-  if($logic_name){
-      my $analysis  = 
-	$self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
-      unless($analysis->dbID()) {
-	$self->warn("No analysis for logic name $logic_name\n");
-	return ();
-      }
+  #create the new repeat feature
+  my $r = new Bio::EnsEMBL::RepeatFeature;
+  $r->dbID($hashref->{'repeat_feature_id'});
+  $r->repeat_id($hashref->{'repeat_id'});
+  $r->contig_id($hashref->{'contig_id'});
 
-      $constraint = " analysis_id = ".$analysis->dbID;
-    }
-  
+  $r->start($hashref->{'contig_start'});
+  $r->end($hashref->{'contig_end'});
 
-  my @repeats = 
-    $self->fetch_by_assembly_location_constraint($slice->chr_start, 
-						 $slice->chr_end, 
-						 $slice->chr_name, 
-						 $slice->assembly_type, 
-						 $constraint);
+  $r->score($hashref->{'score'});
+  $r->strand( $hashref->{'contig_strand'} );  
+  $r->hstart( $hashref->{'repeat_start'} );
+  $r->hend( $hashref->{'repeat_end'} );
+
+  $r->analysis($analysis);
+  $r->repeat_consensus($rc);
+  $r->adaptor($self);
+
+  #attach the appropriate contig to this sequence
+  my $ca = $self->db()->get_RawContigAdaptor();
+  my $contig = $ca->fetch_by_dbID($hashref->{'contig_id'});
+  $r->attach_seq($contig);
  
-  foreach my $r(@repeats){
-    #convert from chromosomal to slice coordiantes
-    my $start = ($r->start - ($slice->chr_start - 1));
-    my $end = ($r->end - ($slice->chr_start - 1));
-    $r->start($start);
-    $r->end($end);
-  }
-  return(@repeats);
+  return $r;
 }
-
-
-
-sub fetch_by_assembly_location_constraint{
-  my ($self,$chr_start,$chr_end,$chr,$type,$constraint) = @_;
   
-  if( !defined $type ) {
-    $self->throw("Assembly location must be start,end,chr,type");
-  }
-  
-  if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
-    $self->throw("start/end must be numbers not $chr_start,$chr_end " .
-		 "(have you typed the location in the right way around " .
-		 "- start,end,chromosome,type)?");
-  }
-  
-  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-  
-  $mapper->register_region($chr,$chr_start,$chr_end);
-
-  # determine the raw contigs that these repeats are on
-  my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
-  my $cid_list = join(',',@cids);
-  my $sql = "contig_id in($cid_list) ";
-  if($constraint){
-    $sql .= "AND $constraint";
-  }
-
-  #fetch the repeats from the database
-  my @repeats = $self->_generic_fetch(qq{$sql});
-  my @result;
-
-  #
-  # Adjust each repeat so start and end are in chromosomal coordinates
-  # 
-  foreach my $r(@repeats){
-    my @coord_list = 
-      $mapper->map_coordinates_to_assembly($r->contig_id, $r->start, 
-					   $r->end, $r->strand, "rawcontig");
-
-    if(scalar(@coord_list) > 1){
-      #$self->warn("this feature doesn't cleanly map skipping\n");
-      next;
-    }
-    if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      #$self->warn("this feature is on a part of ".$r->contig_id.
-      #            " which isn't on the golden path skipping");
-      next;
-    }
-    if(!($coord_list[0]->start >= $chr_start) ||
-       !($coord_list[0]->end <= $chr_end)){
-      next;
-    }
-
-    $r->start($coord_list[0]->start());
-    $r->end($coord_list[0]->end());
-    push( @result, $r );
-  }
-
-  return @result;
-}
-
-
-
 
 sub store {
   my( $self, $contig_id, @repeats ) = @_;
@@ -342,53 +231,10 @@ sub store {
 
 
 
-sub _new_repeat{
-  my($self, $start, $end, $strand, $hstart, $hend, $score, $contig_id, 
-     $repeat_id, $repeat_name, $repeat_class, $repeat_consensus, 
-     $analysis_id, $rfa, $rca, $aa, $dbID) = @_;
-
-  #create a repeat consensus object
-  my $rc = new Bio::EnsEMBL::RepeatConsensus;
-  $rc->dbID($repeat_id);
-  $rc->repeat_class($repeat_class);
-  $rc->name($repeat_name);
-  $rc->repeat_consensus($repeat_consensus);
-  $rc->adaptor($rca);
-
-  #get the analysis object for this repeat
-  my $analysis = $aa->fetch_by_dbID($analysis_id);
-
-  #create the new repeat feature
-  my $r = new Bio::EnsEMBL::RepeatFeature;
-  $r->dbID($dbID);
-  $r->repeat_consensus($rc);
-  $r->repeat_id($repeat_id);
-  $r->contig_id( $contig_id);
-  $r->start    ( $start  );
-  $r->end      ( $end    );
-  if($strand == -0){
-    $strand = 0;
-  }
-  $r->score($score);
-  $r->strand   ( $strand );  
-  $r->hstart   ( $hstart  );
-  $r->hend     ( $hend    );
-  $r->analysis($analysis);
-
-  return $r;
-}
 
 1;
 
 
 
 
-
-__END__
-
-=head1 NAME - Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
-
-=head1 AUTHOR
-
-James Gilbert B<email> jgrg@sanger.ac.uk
 

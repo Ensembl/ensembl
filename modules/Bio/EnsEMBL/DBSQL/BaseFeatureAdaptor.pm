@@ -1,5 +1,5 @@
 #
-# BioPerl module for Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
