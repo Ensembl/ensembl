@@ -988,8 +988,8 @@ sub get_all_ExternalFeatures{
 
    my @features;
    my @contig_features;
-
-   if( scalar($self->_vmap->get_all_RawContigs) == 0) {
+   my @rawcontigs = $self->_vmap->get_all_RawContigs();
+   if( scalar(@rawcontigs) == 0) {
        return();
    }
    ## Loop over the currently config'd EFFs and sort them onto lists that
@@ -997,31 +997,38 @@ sub get_all_ExternalFeatures{
    ## Ensembl internal clone/contig IDs. 
    ## After sorting call each one to get a list of feature back in contig/clone coords.
    ## Note that they should always return lists (possible empty) or bad things happen.
-      
+   
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
-	   		push(@web,$extf);
+	   push(@web,$extf);
        } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
-	   		push(@das,$extf);
+	   push(@das,$extf);
        } else {
-	   		push(@std,$extf);
+	   push(@std,$extf);
        }
    }
 
-   if( scalar(@web) > 0 ) {
-       my @clones;
-       my %cloneh;
-       my %featureh;
-       foreach my $contig ( $self->_vmap->get_all_RawContigs) {
-	   if( !defined $cloneh{$contig->cloneid} ) {
-	       $cloneh{$contig->cloneid} = [];
-	       $featureh{$contig->cloneid} = [];
-	   }
-	   my $string = $contig->cloneid.".".$contig->seq_version;
-	  
-	   push(@clones,$string);
-	   push(@{$cloneh{$contig->cloneid}},$contig);
+   #Build needed arrays and hashes in one go
+   my %int_ext;
+   my @clones;
+   my %cloneh;
+   my %featureh;
+   my @cintidlist;
+   foreach my $contig (@rawcontigs) {
+       $int_ext{$contig->internal_id}=$contig->id;
+       push (@cintidlist,$contig->internal_id);
+       if( !defined $cloneh{$contig->cloneid} ) {
+	   $cloneh{$contig->cloneid} = [];
+	   $featureh{$contig->cloneid} = [];
        }
+       my $string = $contig->cloneid.".".$contig->seq_version;
+       push(@clones,$string);
+       push(@{$cloneh{$contig->cloneid}},$contig);
+   }
+   
+
+   if( scalar(@web) > 0 ) {
+      
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
 	   &eprof_start("external_get_web".$extf);
@@ -1032,81 +1039,62 @@ sub get_all_ExternalFeatures{
 	   }
 	   &eprof_end("external_get_web".$extf);
        }
-
+       
        # loop over clone. Sort both feature and contig arrays.
        # then loop over features, changing identifiers and then push onto final array
-
+       
        foreach my $clone ( keys %cloneh ) {
 	   my @features = sort { $a->start <=> $b->start } @{$featureh{$clone}};
 	   my @contigs  = sort { $a->embl_offset <=> $b->embl_offset } @{$cloneh{$clone}};
 	   my $current_contig = shift @contigs;
-          FEATURE :
-	   foreach my $f ( @features ) {
-	       while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
-		   $current_contig = shift @contigs;
-                   if( !defined $current_contig ) { last FEATURE; }
+	   FEATURE :
+	       foreach my $f ( @features ) {
+		   while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
+		       $current_contig = shift @contigs;
+		       if( !defined $current_contig ) { last FEATURE; }
+		   }
+		   if( $f->end < $current_contig->embl_offset ) {
+		       next; # not on a contig on this golden path presumably
+		   }
+		   $f->start($f->start - $current_contig->embl_offset+1);
+		   $f->end  ($f->end   - $current_contig->embl_offset+1);
+		   $f->seqname($current_contig->id);
+		   push(@contig_features,$f);
 	       }
-	       if( $f->end < $current_contig->embl_offset ) {
-		   next; # not on a contig on this golden path presumably
-	       }
-	       $f->start($f->start - $current_contig->embl_offset+1);
-	       $f->end  ($f->end   - $current_contig->embl_offset+1);
-	       $f->seqname($current_contig->id);
-	       push(@contig_features,$f);
-	   }
        }
    }
- 
+
+   #Standard EFFs now take a list of contig ids
    if( scalar(@std) > 0 ) {
-       foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
-	   foreach my $extf ( @std ) {
-	       &eprof_start("external_get_std".$extf);
-
-	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length,$contig->id)) {
-			$sf->seqname($contig->id);
-			push(@contig_features,$sf);
-		   }
-	       }
-	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
-       
-		   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->id) ) {
-		       
-		       my $start = $sf->start - $contig->embl_offset+1;
-		       my $end   = $sf->end   - $contig->embl_offset+1;
-		       $sf->start($start);
-		       $sf->end($end);
-		       $sf->seqname($contig->id);
-		       push(@contig_features,$sf);
-		   }
-	       }
-
-	       &eprof_end("external_get_std".$extf);
+       foreach my  $extf ( @std ) {
+	   if ( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {
+	       push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,@cintidlist));
 	   }
        }
    }
-	
 
-	## The DAS external feature factory is based on coordinates on contigs (at the moment)
-	## The standara EFF system has been moved to use contig/clone internal IDs so we have to
-	## make a special case for DAS (and possibly other) EFFs that know nothing about Ensembl
-	## internal IDs	. There are probably more efficient ways to do this....what about DAS caching?
-	if( scalar(@das) > 0 ) {
-       foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
+   ## The DAS external feature factory is based on coordinates on contigs (at the moment)
+   ## The standara EFF system has been moved to use contig/clone internal IDs so we have to
+   ## make a special case for DAS (and possibly other) EFFs that know nothing about Ensembl
+   ## internal IDs.There are probably more efficient ways to do this....
+   ## what about DAS caching?
+
+   if( scalar(@das) > 0 ) {
+       foreach my $contig (@rawcontigs) {       
 	   foreach my $extf ( @das ) {
 	       &eprof_start("external_get_std".$extf);
-
+	       
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
 		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
-			$sf->seqname($contig->id);
-			push(@contig_features,$sf);
+		       $sf->seqname($contig->id);
+		       push(@contig_features,$sf);
 		   }
 	       }
 	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
-       
+		   
 		   foreach my $sf (
-		  
-$extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
+				   
+				   $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
 		       
 		       my $start = $sf->start - $contig->embl_offset+1;
 		       my $end   = $sf->end   - $contig->embl_offset+1;
@@ -1116,7 +1104,7 @@ $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$cont
 		       push(@contig_features,$sf);
 		   }
 	       }
-
+	       
 	       &eprof_end("external_get_std".$extf);
 	   }
        }
@@ -1126,10 +1114,10 @@ $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$cont
    # ok. Now @contig_features are in contig coordinates. Map up.
    
    # this is the simplest way. We can do this more efficiently if need be
-
+   
    
    &eprof_start("External-coordinate-lift");
-
+   
    my @final;
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
