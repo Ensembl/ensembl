@@ -96,9 +96,9 @@ sub fetch_by_type{
 	      golden path type (e.g. NCBI_xx)
   Arg  3      char $chr_name
 	      chromosome name (e.g. '2', 'X')
-  Arg  4      char $start
+  Arg  4      int $start
 	      chromosome start coordinate
-  Arg  5      char $end
+  Arg  5      int $end
 	      chromosome end coordinate
   Function    Declares a chromosomal region to the AssemblyMapper.
               This extracts the relevant data from the assembly
@@ -115,6 +115,9 @@ sub fetch_by_type{
 
 sub register_region{
    my ($self, $assmapper, $type, $chr_name, $start, $end) = @_;
+
+   $self->throw("$assmapper is not a Bio::EnsEMBL::AssemblyMapper")
+      unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
 
    # This is to reassure people that I've got this piece of
    # SQL correct ;) EB
@@ -166,5 +169,102 @@ sub register_region{
 
 }
 
+
+=head2 register_region
+
+  Arg  1      Bio::EnsEMBL::AssemblyMapper $assmapper
+	      A valid AssemblyMapper object
+  Arg  2      char $type
+	      golden path type (e.g. NCBI_xx)
+  Arg  3      int $contig_id
+	      RawContig internal ID
+  Arg  4      int $left
+	      5 prime (chromosomal) extension
+  Arg [5]     int $right
+	      optional 3 prime extension
+	      (same as 5 prime if not defined)
+  Function    Declares a chromosomal region to the AssemblyMapper.
+              This extracts the relevant data from the assembly
+              table and stores it in a Bio::EnsEMBL::Mapper.
+              It therefore must be called before any mapping is
+              attempted on that region. Otherwise
+              only gaps will
+              be returned!
+  Returntype  none
+  Exceptions  none
+  Caller      Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+
+=cut
+
+sub register_region_around_contig {
+   my ($self, $assmapper, $type, $contig_id, $left, $right) = @_;
+
+   $right = $left unless defined $right;
+
+   my $sth = $self->prepare(qq{
+      select
+         chr_start,
+         chr_end
+      from
+         assembly
+      where
+	 contig_id = '$contig_id' and
+	 type = '$type'
+   });
+
+   $sth->execute();
+
+   my @ctg_list;
+
+   while (my $row = $sth->fetchrow_arrayref) {
+       push @ctg_list, $row;
+   }
+
+   if (@ctg_list == 0) {
+     $self->warn("Not found contig $contig_id");
+     return;
+   }
+
+   if (@ctg_list > 1) {
+     $self->warn("Contig $contig_id is ambiguous in assembly type $type");
+     return;
+   }
+
+   my $start = $ctg_list[0]->[0] - $left;
+   my $end   = $ctg_list[0]->[1] + $right;
+
+   $sth = $self->prepare(qq{
+      select
+         ass.contig_start,
+         ass.contig_end,
+         ass.contig_id,
+         ass.contig_ori,
+         chr.name,
+         ass.chr_start,
+         ass.chr_end
+      from
+         assembly ass,
+         chromosome chr
+      where
+         ass.chromosome_id = chr.chromosome_id and
+         ass.chr_start <= $end and
+         ass.chr_end   >= $start and
+         ass.type = '$type'
+   });
+
+   $sth->execute();
+
+   while( my $arrayref = $sth->fetchrow_arrayref ) {
+       my ($contig_start,$contig_end,$contig_id,$contig_ori,$chr_name,$chr_start,$chr_end) = @$arrayref;
+       if( $assmapper->_have_registered_contig($contig_id) == 0 ) {
+	   $assmapper->_register_contig($contig_id);
+	   $assmapper->_mapper->add_map_coordinates(
+               $contig_id, $contig_start, $contig_end, $contig_ori,
+	       $chr_name, $chr_start, $chr_end
+           );
+       }
+   }
+
+}
 
 1;

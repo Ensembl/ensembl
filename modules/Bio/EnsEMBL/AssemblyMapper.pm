@@ -21,6 +21,8 @@ Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coor
 
     $mapper->register_region('chr1', 1, 100000);
 
+    $mapper->register_region_around_contig(30001, 1000, 1000);
+
     my @chr_coordlist = $mapper->map_coordinates_to_assembly(627012, 2, 5, -1);
 
     my @raw_coordlist = $mapper->map_coordinates_to_rawcontig("1", 10002, 10020);
@@ -181,25 +183,37 @@ sub map_coordinates_to_rawcontig {
                 end position on chromosome
     Function    Returns a list of RawContig internal IDs
                 which overlap the given chromosome region
-    Returntype  @int - list of internal contig IDs
+    Returntype  @int - list of contig internal IDs
     Exceptions  none
     Caller      Bio::EnsEMBL::AssemblyMapper
 
 =cut
 
-sub list_contig_ids{
-   my ($self, $chr, $start, $end) = @_;
+sub list_contig_ids {
+   my ($self, $chr_name, $start, $end) = @_;
+
+   unless ($chr_name =~ /^\S+$/) {
+      $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+   }
+
+   unless ($start =~ /^\d+$/) {
+      $self->throw("Expecting integer for chromosome start, but got '$start'");
+   }
+
+   unless ($end =~ /^\d+$/) {
+      $self->throw("Expecting integer for chromosome end, but got '$end'");
+   }
 
    # may not have registered this region yet
 
-   $self->register_region($chr, $start, $end);
+   $self->register_region($chr_name, $start, $end);
 
-   my @pairs = $self->_mapper->list_pairs($start,$end,$chr,'assembly');
+   my @pairs = $self->_mapper->list_pairs($start, $end, $chr_name, 'assembly');
 
    my @ids;
 
    foreach my $pair ( @pairs ) {
-       push(@ids,$pair->from->id);
+      push(@ids,$pair->from->id);
    }
 
    return @ids;
@@ -226,10 +240,64 @@ sub list_contig_ids{
 
 =cut
 
-sub register_region{
+sub register_region {
    my ($self, $chr_name, $start, $end) = @_;
 
+   unless ($chr_name =~ /^\S+$/) {
+      $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+   }
+
+   unless ($start =~ /^\d+$/) {
+      $self->throw("Expecting integer for chromosome start, but got '$start'");
+   }
+
+   unless ($end =~ /^\d+$/) {
+      $self->throw("Expecting integer for chromosome end, but got '$end'");
+   }
+
+
    $self->adaptor->register_region($self, $self->_type, $chr_name, $start, $end);
+}
+
+
+=head2 register_region_around_contig
+
+  Arg  1      int $contig_id
+              contig internal ID
+  Arg  2      int $left
+              5 prime (chromosomal) extension
+  Arg [3]     int $right
+              optional 3 prime extension
+	      (same as 5 prime if not defined)
+  Function    Declares a chromosomal region to the AssemblyMapper
+	      based around a RawContig.
+              This extracts the relevant data from the assembly
+              table and stores it in a Bio::EnsEMBL::Mapper.
+              It therefore must be called before any mapping is
+              attempted on that region. Otherwise only gaps will
+              be returned!
+  Returntype  none
+  Exceptions  none
+  Caller      Bio::EnsEMBL::AssemblyMapper
+
+=cut
+
+sub register_region_around_contig {
+   my ($self, $contig_id, $left, $right) = @_;
+
+   unless ($contig_id =~ /^\d+$/) {
+      $self->throw("Expecting integer for RawContig id, but got '$contig_id'");
+   }
+
+   unless ($left =~ /^\d+$/) {
+      $self->throw("Expecting integer for 5 prime extension, but got '$left'");
+   }
+
+   unless ($right =~ /^\d+$/) {
+      $self->throw("Expecting integer for 3 prime extension, but got '$right'");
+   }
+
+   $self->adaptor->register_region_around_contig($self, $self->_type, $contig_id, $left, $right);
 }
 
 
@@ -252,7 +320,7 @@ Internal functions
 
 =cut
 
-sub _have_registered_contig{
+sub _have_registered_contig {
    my ($self,$id) = @_;
 
    if( $self->{'_contig_register'}->{$id} ) {
@@ -275,7 +343,7 @@ sub _have_registered_contig{
 
 =cut
 
-sub _register_contig{
+sub _register_contig {
    my ($self,$id) = @_;
 
    $self->{'_contig_register'}->{$id} = 1;
@@ -295,7 +363,7 @@ sub _register_contig{
 
 =cut
 
-sub _type{
+sub _type {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'_type'} = $value;
@@ -317,7 +385,7 @@ sub _type{
 
 =cut
 
-sub _mapper{
+sub _mapper {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'_mapper'} = $value;
@@ -340,7 +408,7 @@ sub _mapper{
 
 =cut
 
-sub adaptor{
+sub adaptor {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'adaptor'} = $value;
