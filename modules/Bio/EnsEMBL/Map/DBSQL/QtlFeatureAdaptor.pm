@@ -115,8 +115,8 @@ sub _objs_from_sth {
 
     my $mad = $self->db()->get_MarkerAdaptor();
 
-    my $flank_marker_1 = $mad->fetch_by_dbID( $flank_marker_id_1 );
-    my $flank_marker_2 = $mad->fetch_by_dbID( $flank_marker_id_1 );
+    my $flank_marker_1 = $flank_marker_id_1 ? $mad->fetch_by_dbID( $flank_marker_id_1 ) : undef;
+    my $flank_marker_2 = $flank_marker_id_2 ? $mad->fetch_by_dbID( $flank_marker_id_2 ) : undef;
     my $peak_marker = $peak_marker_id ? $mad->fetch_by_dbID( $peak_marker_id ) : undef;
     
     my $analysis = $self->db()->get_AnalysisAdaptor()->fetch_by_dbID( $analysis_id );
