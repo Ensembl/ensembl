@@ -76,6 +76,7 @@ use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DBSQL::CloneAdaptor;
+use Bio::EnsEMBL::DBSQL::MetaContainer;
 
 ## following is not part of core EnsEMBL, so maybe doesn't belong here and
 ## has to be moved elsehwere (e.g. as part of a more dynamical
@@ -86,7 +87,7 @@ eval {
     require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 };
 if ($@) {
-    warn "error use'ing FamilyAdaptor - that's fine\n";
+    # warn "error use'ing FamilyAdaptor - that's fine\n";
 }
 
 
@@ -296,6 +297,29 @@ sub get_Feature_Obj {
     my $update_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
  
     return $update_obj;
+}
+
+
+=head2 get_MetaContainer
+
+ Title   : get_Meta_Container
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_MetaContainer {
+    my ($self) = @_;
+    if( !exists $self->{_metacontainer} ) {
+      $self->{_metacontainer} = 
+	Bio::EnsEMBL::DBSQL::MetaContainer->new($self);
+    } 
+ 
+    return $self->{_metacontainer};
 }
 
 
@@ -2806,6 +2830,18 @@ sub _crossdb {
     return $obj->{'_crossdb'};
 
 }
+
+
+sub create_tables { 
+  my $self = shift;
+
+  # get all adaptors ...
+  # call create_tables on them
+
+  # create some tables without adaptors
+  # (which should disappear once)
+}
+
 
 ## internal stuff for external adaptors
 =head2 _ext_adaptor
