@@ -609,7 +609,10 @@ sub five_prime_utr {
     
     my $seq_string = '';
     foreach my $ex (@{$self->get_all_Exons}) {
-        if ($ex->stable_id eq $start_exon_id) {
+        if (((defined $ex->stable_id)&&($ex->stable_id eq $start_exon_id))  
+	                        # The criteria for the world with stable_ids.
+	    ||($ex == $translation->start_Exon)) {
+	                        # The criteria for the genebuild where stable_ids are not always about.
             my $start   = $ex->start;
             my $end     = $ex->end;
             my $strand  = $ex->strand;
@@ -658,7 +661,10 @@ sub three_prime_utr {
         if ($in_utr) {
             $seq_string .= $ex->seq->seq;
         }
-        elsif ($ex->stable_id eq $end_exon_id) {
+        elsif ((defined $ex->stable_id)&&($ex->stable_id eq $end_exon_id)
+	                        # The criteria for the world with stable_ids.
+	       ||($ex == $translation->end_Exon)) {
+	                        # The criteria for the genebuild where stable_ids are not always about.
             $in_utr = 1;
             my $start   = $ex->start;
             my $end     = $ex->end;
