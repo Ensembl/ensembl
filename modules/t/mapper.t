@@ -23,14 +23,14 @@
 # This test script heavily edited by ihh@fruitfly.org
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..6\n";   # 6 tests total
+BEGIN { $| = 1; #print "1..6\n";   # 6 tests total
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
 use lib 't';
 
 $loaded = 1;
-$n_test = 0;  # global test counter
+# $n_test = 0;
 printok();
 
 use Bio::EnsEMBL::Mapper;    
@@ -54,6 +54,13 @@ test_transform ($mapper,
 		[314696, 31917, 31937, -1],
 		[341, 126, 59773, -1],
 		[315843, 5332, 5963, +1]);
+
+# now a simple gap
+test_transform ($mapper,
+		["chr1", 273701, 273781, +1, "virtualcontig"],
+		[627011, 7447, 7507, +1],
+		["chr1", 273762, 273781, 0]);
+
 
 
 # the following subroutine tests that a given source co-ordinate range
@@ -84,7 +91,6 @@ sub test_transform {
 	printnotok();
 	return;
     }
-    printok();
     for (my $i = 0; $i < @coord; ++$i) {
 	for (my $n = 0; $n < 4; ++$n) {
 	    if ($n == 0
@@ -238,6 +244,8 @@ chr1	625359	1214016	1216330	1	2315	1
 sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
 # ok & notok subroutines
-sub printok { print "ok ", ++$n_test, "\n" }
-sub printnotok { print "not ok ", ++$n_test, "\n" }
+sub printok { print "ok\n" }
+sub printnotok { print "not ok\n" }
+#sub printok { print "ok ", ++$n_test, "\n" }
+#sub printnotok { print "not ok ", ++$n_test, "\n" }
 
