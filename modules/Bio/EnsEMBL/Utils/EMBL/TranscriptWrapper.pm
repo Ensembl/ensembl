@@ -153,7 +153,7 @@ sub to_FTHelper {
   }
   $ft->add_field('transcript', $trans->stable_id());
   foreach my $dbl (@dblinks) {
-    $ft->add_field('db_xref', $dbl->database().":".$dbl->primary_id());
+    $ft->add_field('db_xref', $dbl->database().":".$dbl->display_id());
   }
   push(@out, $ft);
 
