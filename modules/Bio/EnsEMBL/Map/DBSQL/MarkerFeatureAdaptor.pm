@@ -236,7 +236,8 @@ sub _objs_from_sth {
                dbID of the newly stored feature on success.  The dbID and
                adaptor will also be set on successful storing.
   Returntype : int
-  Exceptions : none
+  Exceptions : thrown if not all data needed for storing is populated in the
+               marker feature
   Caller     : general
 
 =cut
@@ -245,18 +246,74 @@ sub store {
   my $self = shift;
   my $mf = shift;
 
+  #
+  # Sanity checking!
+  #
+  unless($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
+    $self->throw('Incorrect argument [$mf] to store.  Expected ' .
+		 'Bio::EnsEMBL::Map::MarkerFeature');
+  }
+
   #don't store this feature if it has already been stored
   return $mf->dbID if($mf->adaptor == $self);
     
   my $marker = $mf->marker;
 
   unless($marker && ref $marker && $marker->isa('Bio::EnsEMBL::Map::Marker')) {
-    $self->throw('MarkerFeature cannot be stored without an associated'.
-		 ' marker');
+    $self->throw('Cannot store MarkerFeature without an associated Marker');
   }
 
-  
+  my $marker_id = $marker->dbID;
+  unless($marker_id) {
+    $self->throw('Associated marker must have dbID to store MarkerFeature');
+  }
 
+
+  my $analysis = $mf->analysis;
+
+  unless($analysis && ref $analysis && 
+	 $analysis->isa('Bio::EnsEMBL::Analysis')) {
+    $self->throw('Cannot store MarkerFeature without an associated Analysis');
+  }
+
+  my $analysis_id = $analysis->dbID;
+
+  unless($analysis_id) {
+    $self->throw('Associated analysis must have dbID to store MarkerFeature');
+  }
+
+  my $contig = $mf->contig;
+
+  unless($contig && ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
+    $self->throw('Cannot store MarkerFeature that is not in contig coords');
+  }
+
+  my $contig_id = $contig->dbID;
+
+  unless($contig_id) {
+    $self->throw('Attached contig must have dbID to store MarkerFeature');
+  }
+
+  #
+  # Everything looks ok so store
+  #
+
+  my $sth = 
+    $self->prepare("INSERT INTO marker_feature (marker_id,
+                           contig_id, contig_start, contig_end, contig_strand,
+                           analysis_id, map_weight)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)");
+  $sth->execute($marker_id, 
+		$contig_id, $mf->start,$mf->end,$mf->strand,
+		$analysis_id,0);
+
+  my $dbID = $sth->{'mysql_insertid'};
+                                        
+  $mf->dbID($dbID);
+  $mf->adaptor($self);
+
+  return $dbID;
 }
+
 
 1;
