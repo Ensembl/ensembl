@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+use DBI;
+
+use strict;
+
+my @driver_names = DBI->available_drivers;
+
+#print("Drivers : @driver_names\n");
+
+# Connect to database
+my $dbh = DBI->connect('DBI:mysql:pog','','');
+
+if ($dbh) {
+  print("Connection successful. Hoorah!!\n");
+}
+
+# Select all genscan predictions;
+my $sth = $dbh->prepare('select id,contig,start,end from homol where analysis = \'\'');
+my $rv = $sth->execute;
+
+# Loop over all predicted exons
+while(my $rowhash = $sth->fetchrow_hashref) {
+  my $id     = $rowhash->{id};
+  my $contig = $rowhash->{contig};
+  my $start  = $rowhash->{start};
+  my $end    = $rowhash->{end};
+  
+  # Prepare the homol overlap query
+  my $sth2 = $dbh->prepare("
+       select    p1.id,p1.analysis,p1.start,p1.end,count(*) 
+       from      homol as p1, homol as p2 
+       where     p2.id = \'" . $id . "\' AND
+                 p1.contig = p2.contig   AND
+                 p1.analysis != \'\'     AND
+        	 p2.analysis  = \'\'     AND
+                 p2.strand = p1.strand   AND 
+                 p1.start >= p2.start    AND 
+                 p1.end <= p2.end                     
+       group by  p1.id;");
+
+  # And execute
+  my $rv2=  $sth2->execute;
+
+  # Only report if we have overlaps
+  if ($sth2->rows > 0) {
+
+    print("\nHomols overlapping with predicted exon $id from $contig ($start - $end)\n\n");
+    printf("%20s %10s %15s %5s %5s\n","Hit id","No of hits","Type","Start","End");
+    printf("%20s %10s %15s %5s %5s\n","------","----------","----","-----","---");
+
+    while(my $rowhash2 = $sth2->fetchrow_hashref) {
+      my $hit    = $rowhash2->{id};
+      my $count  = $rowhash2->{'count(*)'};
+      my $type   = $rowhash2->{'analysis'};
+      my $start2 = $rowhash2->{'start'};
+      my $end2   = $rowhash2->{'end'};
+
+      printf("%20s %10d %15s %5d %5d ",$hit,$count,$type,$start2,$end2);
+
+      # Now find any extra contig overlaps for that hit
+      my $sth3 = $dbh->prepare("
+           select   homol.contig
+           from     homol
+           where    homol.id = \'" . $hit . "\' AND
+                    homol.contig != \'" . $contig . "\'
+           group by homol.contig;");
+
+      my $rv3 = $sth3->execute;
+      if ($sth3->rows > 0) {
+	my @contigs = $sth3->fetchrow_array;
+	print("@contigs\n");
+      } else {
+	print("\n");
+      }
+
+    }
+  }
+}
+
+
+# Nice and tidy
+$dbh->disconnect;
