@@ -53,13 +53,15 @@ my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
 my %opts = (
 	'c'	=> $pmatch_cmd,
 	'k'	=> '0',
+	'd'     => '0', 
 	'p'	=> '2',
 	'q'	=> $query,
-	't'	=> $target );
+	't'	=> $target
+	   );
 
-if (!getopts('c:kp:q:t:', \%opts)) {
+if (!getopts('c:kdp:q:t:', \%opts)) {
 	print STDERR <<EOT;
-Usage: $0 [-c path] [-k] [-p num] [-q path] [-t path]
+Usage: $0 [-c path] [-k] [-d] [-p num] [-q path] [-t path]
 
 -c path	Use the pmatch executable located at 'path' rather than at
 	'$pmatch_cmd'.
@@ -75,6 +77,8 @@ Usage: $0 [-c path] [-k] [-p num] [-q path] [-t path]
 
 -t path	Take target FastA file from 'path' rather than from
 	'$target'.
+
+-d      Dump an output file which will be used for the known gene mapping
 
 EOT
 	die;
@@ -160,8 +164,9 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-#my %maps;
 
+#my %maps;
+my %goodhits;
 foreach my $query (values(%hits)) {
 	my $best;
 	my $priority = 0;
@@ -171,6 +176,8 @@ foreach my $query (values(%hits)) {
 		$best = $target->{QIDENT} if (!defined($best));
 
 		last if ($target->{QIDENT} < $best - $opts{'p'});
+
+		$goodhits{$target->{QID}}{$target->{TID}} = $target;
 
 		#my $map = new Bio::EnsEMBL::Mapper('query', 'target');
 
@@ -182,10 +189,10 @@ foreach my $query (values(%hits)) {
 				#$target->{TID},
 				#$hit->{TSTART}, $hit->{TEND});
 
-			printf("%s\t%d\t%s\t%d\t%d\t%d\t%d\n", 
-				$target->{QID}, $priority, $target->{TID},
-				$hit->{QSTART}, $hit->{QEND},
-				$hit->{TSTART}, $hit->{TEND});
+	#		printf("%s\t%d\t%s\t%d\t%d\t%d\t%d\n", 
+		#		$target->{QID}, $priority, $target->{TID},
+		#		$hit->{QSTART}, $hit->{QEND},
+		#		$hit->{TSTART}, $hit->{TEND});
 		}
 		++$priority;
 
@@ -207,6 +214,21 @@ foreach my $query (values(%hits)) {
 
 		#push(@{ $maps{$target->{QID}} }, $map);
 	}
+}
+
+
+if ($opts{'d'} == 1) {
+
+    foreach my $query (values(%goodhits)) {
+	foreach my $target (values(%{ $query })) {
+	    my $qperc = sprintf ("%.1f" , $target->{'QIDENT'});
+	    my $tperc = sprintf ("%.1f" , $target->{'TIDENT'});
+	    
+	    print $target->{'QID'}."\t".$target->{'TID'}."\t$qperc\t$tperc\n";
+	    
+
+	}
+    }
 }
 
 # Example use of map.  Map [1,1000] on 'O61479' through whatever the
