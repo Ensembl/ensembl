@@ -214,7 +214,6 @@ sub _exon_from_sth {
 
   my ( $self, $sth, $hashRef ) = @_;
   my $sticky_length = 0;
-  my $sticky_str = "";
   my $exon;
   if( $hashRef->{'sticky_rank'} >1 ) {	
     
@@ -226,7 +225,6 @@ sub _exon_from_sth {
     
     $exon->add_component_Exon($component);
     $sticky_length += $component->length;
-    $sticky_str    .= $component->seq->seq;
 
     $exon->phase($component->phase);
     $exon->end_phase($component->end_phase);
@@ -238,7 +236,6 @@ sub _exon_from_sth {
 
       $exon->add_component_Exon($component);
       $sticky_length += $component->length;
-      $sticky_str     = $component->seq->seq . $sticky_str;
 
       if( $component->sticky_rank == 1 ) {
 	$exon->contig( $component->contig );
@@ -256,29 +253,6 @@ sub _exon_from_sth {
     $exon->end($sticky_length);
     $exon->strand( 1 );
 
-    # the commented lines don't work as there are some dependencies hidden some where in the
-    # translation code, which makes this fail horribly. 
-    # Never mind. We can live with imperfection...sometimes. (Happy GeneBuilders Inc.)
-
-#   $exon->seqname('artificial.sticky.exon');
-       ## put the right strand if you get the chance to do it:
-#    my $global_strand;
-#    my $all_the_same = 1;
-#    foreach my $component ( $exon->each_component_Exon ){
-#      unless ($global_strand){
-#	$global_strand = $component->strand;
-#      }
-#      if ( $component->strand != $global_strand ){
-#	$all_the_same = 0;
-#      }
-#    }
-#    if ( $all_the_same == 1 ){
-#      $exon->strand( $global_strand );
-#    }
-#    else{
-#      # well, nothing we can do really...
-#      $exon->strand( 1 );
-#    }
   } 
   else {
     $exon = $self->_new_Exon_from_hashRef($hashRef);
