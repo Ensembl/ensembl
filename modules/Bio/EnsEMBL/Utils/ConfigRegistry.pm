@@ -110,16 +110,19 @@ sub gen_load{
   }
   elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
     #vega uses the core DBAdaptor so test if vega is in the dbname
-    if($dba->dbc->dbname() =~ /vega/){
-      if(!defined($dba->group())){
-	$dba->group('vega');
-      }
+    if(!defined($dba->group())){
+      $dba->group('core');
+    }
+    if($dba->group eq "estgene"){
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_estgene;
+     }
+    elsif($dba->group eq "est"){
+      $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_est;
+     }
+    elsif($dba->group eq "vega"){
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_vega;
      }
     else{
-      if(!defined($dba->group())){
-	$dba->group('core');
-      }
       $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_core;
     }
   }
@@ -195,10 +198,6 @@ sub load_core{
   }
 
 
-  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
-  }
-
 }
 
 
@@ -221,7 +220,6 @@ sub load_SNP{
 sub attach_database{
   my ($class, $species, $core, $name1) = @_;
 
-  print STDERR "attach_databse called ".caller(). "\n";
 
   my $first =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$name1);
   my $coredb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$core);
@@ -232,7 +230,6 @@ sub attach_database{
 
 sub attach_dna{
   my ($class, $species, $main, $attach) = @_; 
-  print STDERR "attach_dna called ".caller(). "\n";
 
   my $no_seq =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$main);
   my $seq = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$attach);
@@ -282,16 +279,14 @@ sub load_estgene{
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
 
-  #if dnadb has been set then for the follwing use it.
-  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
-  }
+  
 
-  ## if the core exists then set this for the dna getting
-  my $core = $reg->get_DBAdaptor($dba->species,"core");
-  if(defined($core)){
-    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
-  }
+#  #if dnadb has been set then for the follwing use it.
+#  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
+#    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
+#  }
+
+  $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
 }
 
 
@@ -305,13 +300,13 @@ sub load_est{
   }
 
   #if dnadb has been set then for the follwing use it.
-  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
-    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
-  }
-  my $core = $reg->get_DBAdaptor($dba->species,"core");
-  if(defined($core)){
-    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
-  }
+#  foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
+#    Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
+#  }
+#  my $core = $reg->get_DBAdaptor($dba->species,"core");
+#  if(defined($core)){
+    $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
+#  }
 }
 
 
@@ -323,10 +318,10 @@ sub load_vega{
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
   }
-  my $core = $reg->get_DBAdaptor($dba->species,"core");
-  if(defined($core)){
-    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
-  }
+#  my $core = $reg->get_DBAdaptor($dba->species,"core");
+#  if(defined($core)){
+    $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
+#  }
 }
 
 
@@ -397,7 +392,6 @@ sub load_pipeline{
 sub dnadb_add{
   my $class = shift;
   my ($dnaspecies, $dnagroup, $species, $group) = @_;
-  print STDERR "dnadb_add called ".caller(). "\n";
 
   my $dnadb =  Bio::EnsEMBL::Registry->get_DBAdaptor($dnaspecies, $dnagroup);
   my $featdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group);

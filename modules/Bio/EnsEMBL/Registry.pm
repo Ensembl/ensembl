@@ -382,12 +382,17 @@ sub get_all_DBAdaptors{
 =cut
 
 sub add_DNAAdaptor{
-  my ($class, $species, $group, $adap) = @_;
+  my ($class, $species, $group, $dnadb_group) = @_;
 
   $species = $class->get_alias($species);
-
-  $registry_register{$species}{$group}{'_DNA'} = $adap;
-
+  if($dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
+#    print STDERR "AHHH ".caller()."\n";
+    $registry_register{$species}{$group}{'_DNA'} = $dnadb_group->group();
+  }
+  else{
+#    print STDERR "AHHH MEN ".caller()."\n";
+    $registry_register{$species}{$group}{'_DNA'} = $dnadb_group;
+  }
 }
 
 =head2 get_DNAAdaptor
@@ -404,7 +409,12 @@ sub get_DNAAdaptor{
   my ($class, $species, $group) = @_;
 
   $species = $class->get_alias($species);
-  return  $registry_register{$species}{$group}{'_DNA'};
+  my $new_group = $registry_register{$species}{$group}{'_DNA'};
+  if( defined $new_group ) {
+    return  $class->get_DBAdaptor($species,$new_group);
+  } else {
+    return undef;
+  }
 }
 
 #
@@ -489,11 +499,11 @@ sub add_adaptor{
 
 =cut
 
-sub set_get_via_dnadb_if_set{
-  my ($class,$species,$type) = @_;
-
-  $registry_register{$class->get_alias($species)}{$type}{'DNADB'} = 1;
-}
+#sub set_get_via_dnadb_if_set{
+#  my ($class,$species,$type) = @_;
+#
+#  $registry_register{$class->get_alias($species)}{$type}{'DNADB'} = 1;
+#}
 
 =head2 get_adaptor
 
@@ -508,15 +518,27 @@ sub set_get_via_dnadb_if_set{
 
 sub get_adaptor{
   my ($class,$species,$group,$type)= @_;
-
-  $species = $class->get_alias($species);
  
-  #throw in a check to see if we should get the dnadb one and not the normal
-  if(defined($registry_register{$species}{$type}{'DNADB'}) && $class->get_DNAAdaptor($species,$group)){
-    my $dna = $class->get_DNAAdaptor($species,$group);
-    $species = $dna->species();
-    $group = $dna->group();
+  $species = $class->get_alias($species);
+  my %dnadb_adaptors = qw(Sequence  1 AssemblyMapper 1  KaryotypeBand 1 RepeatFeature 1 CoordSystem 1  AssemblyExceptionFeature 1 );
+
+  my $dnadb_group =  $registry_register{$species}{$group}{_DNA};
+
+  if( defined($dnadb_group) && defined($dnadb_adaptors{$type}) ) {
+#      print STDERR "new### $group  $dnadb_group \n";
+      $group = $dnadb_group;
   }
+#  else{
+#    if (defined($dnadb_adaptors{$type}) ) {
+#      print STDERR "old### $species $group $type no dnadb \n";    
+#    }
+#  }
+#throw in a check to see if we should get the dnadb one and not the normal
+#  if(defined($registry_register{$species}{$type}{'DNADB'}) && $class->get_DNAAdaptor($species,$group)){
+#    my $dna = $class->get_DNAAdaptor($species,$group);
+#    $species = $dna->species();
+#    $group = $dna->group();
+#  }
 
   my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
