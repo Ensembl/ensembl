@@ -415,7 +415,7 @@ sub analysis {
 
 sub validate {
     my ($self) = @_;
-    #print STDERR "SeqFeature  Validate ".$self->strand."\n";
+
     $self->vthrow("Seqname not defined in feature")     unless defined($self->seqname);
     $self->vthrow("start not defined in feature")       unless defined($self->start);
     $self->vthrow("end not defined in feature")         unless defined($self->end);
@@ -435,7 +435,7 @@ sub vthrow {
     my ($self,$message) = @_;
 
     print(STDERR "Error validating feature [$message]\n");
-    print(STDERR "   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
+    print(STDERR "   Seqname     : [" . $self->{_seqname} . "]\n");
     print(STDERR "   Start       : [" . $self->{_gsf_start} . "]\n");
     print(STDERR "   End         : [" . $self->{_gsf_end} . "]\n");
     print(STDERR "   Strand      : [" .
@@ -577,7 +577,7 @@ sub all_tags{
 sub seqname{
    my ($self,$seqname) = @_;
 
-   my $seq = $self->entire_seq();
+   my $seq = $self->contig();
 
    if(defined $seqname) {
      $self->{_seqname} = $seqname;
@@ -698,7 +698,7 @@ sub sub_SeqFeature{
            as to whether it lies inside the parent, and throw
            an exception if not.
 
-           If EXPAND is used, the parent's start/end/strand will
+           If EXPAND is used, the parents start/end/strand will
            be adjusted so that it grows to accommodate the new
            subFeature
  Returns : nothing
@@ -1069,7 +1069,12 @@ sub _transform_to_Slice {
   my ($self, $slice) = @_;
 
   $self->throw("can't transform coordinates of $self without a contig defined")
-   unless $self->contig;
+    unless $self->contig;
+
+  unless($self->contig->adaptor) {
+    $self->throw("cannot transform coordinates of $self without adaptor " .
+		 "attached to contig");
+  }
 
   my $dbh = $self->contig->adaptor->db;
 
@@ -1168,6 +1173,11 @@ sub _transform_to_RawContig {
    unless $self->contig;
 
   my $slice = $self->contig;
+
+  unless($slice->adaptor) {
+    $self->throw("can't transform coordinates of $self without an adaptor " .
+		 "attached to the feature's slice");
+  }
 
   my $dbh = $slice->adaptor->db;
 

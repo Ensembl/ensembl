@@ -122,8 +122,8 @@ sub new {
 		      -PHASE => $feature1->phase(),
 		      -END_PHASE => $feature1->end_phase());
 
-    if($feature1->entire_seq()) {
-      $self->attach_seq($feature1->entire_seq());
+    if($feature1->contig) {
+      $self->contig($feature1->contig);
     }
   } else {
     $self->SUPER::new();

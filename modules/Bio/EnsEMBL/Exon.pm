@@ -207,15 +207,14 @@ sub temporary_id {
 
 =head2 adaptor
 
-  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor $adaptor
+  Arg [1]    : Bio::EnsEMBL::DBSQL::ExonAdaptor $adaptor
   Example    : none
   Description: get/set for this objects Adaptor
-  Returntype : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+  Returntype : Bio::EnsEMBL::DBSQL::ExonAdaptor
   Exceptions : none
   Caller     : general, set from adaptor on store
 
 =cut
-
 
 sub adaptor {
    my $self = shift;
@@ -227,20 +226,21 @@ sub adaptor {
 
 }
 
+
+
 =head2 _transform_between_Slices
 
   Arg [1]    : Bio::EnsEMBL::Slice $new_slice
   Example    : none
-  Description: Transforms the exons from one Slice to the given Slice, that needs to be
-               on the same Chromosome. The method overwrites the same method in
-               Bio::EnsEMBL::SeqFeature
+  Description: Transforms the exons from one Slice to the given Slice, 
+               that needs to be on the same Chromosome. The method overwrites 
+               the same method in Bio::EnsEMBL::SeqFeature
   Returntype : Bio::EnsEMBL::Exon
-  Exceptions : Checks if Slice is attached and argument is Slice on same chromosome
+  Exceptions : Checks if Slice is attached and argument is Slice on same 
+               chromosome.
   Caller     : transform
 
 =cut
-
-
 
 sub _transform_between_Slices {
   my ($self, $to_slice) = @_;
@@ -259,10 +259,14 @@ sub _transform_between_Slices {
   }
 
   unless(defined $to_slice->chr_name()) {
+    #sanity check - we need an adaptor from a slice
+    my $slice_adaptor = $to_slice->adaptor || $from_slice->adaptor;
+    unless($slice_adaptor) {
+      $self->throw("Exon cannot be transformed to empty slice without an " .
+		   "an attached adaptor on the From slice or To slice");
+    }
     #from slice is an empty slice, create a entire chromosome slice
-    my $sa = $self->adaptor()->db()->get_SliceAdaptor();
-    %$to_slice = %{$sa->fetch_by_chr_name($from_slice->chr_name())}
-
+    %$to_slice = %{$slice_adaptor->fetch_by_chr_name($from_slice->chr_name())};
   }
 
   #sanity check - make sure we are transforming to the same chromosome
@@ -334,8 +338,19 @@ sub _transform_between_Slices {
 
 sub _transform_to_Slice {
   my ($self,$slice) = @_;
-  
-  my $mapper = $slice->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+
+  unless($self->contig) {
+    $self->throw("Exon's contig must be defined to transform to Slice coords");
+  }
+
+  my $adaptor = $slice->adaptor || $self->contig_adaptor;
+
+  unless($adaptor) {
+    $self->throw("Cannot transform to exon slice unless either the " .
+		 "exon->contig->adaptor or slice->adaptor is defined");
+  }
+
+  my $mapper = $adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
     ( $slice->assembly_type() );
   
   my @mapped = $mapper->map_coordinates_to_assembly
@@ -363,8 +378,8 @@ sub _transform_to_Slice {
   # the slice is an empty slice, create an enitre chromosome slice and
   # replace the empty slice with it
   if( ! defined $slice->chr_name() ) {
-    my $sa = $slice->adaptor()->db()->get_SliceAdaptor();
-    %$slice = %{$sa->fetch_by_chr_name( $mapped[0]->id() )};
+    my $slice_adaptor = $adaptor->db->get_SliceAdaptor;
+    %$slice = %{$slice_adaptor->fetch_by_chr_name( $mapped[0]->id() )};
   } 
 
   my $newexon = new Bio::EnsEMBL::Exon();
@@ -416,10 +431,18 @@ sub _transform_to_Slice {
 sub _transform_to_RawContig {
   my $self = shift;
   #print STDERR "\tTransforming exons to rawcontig coords\n";
-  my $asma = $self->contig()->adaptor()->db->get_AssemblyMapperAdaptor();
+  
+  my $slice_adaptor = $self->contig->adaptor;
+
+  unless($slice_adaptor) {
+    $self->throw("Cannot transform exon to raw contig unless attached slice" .
+		 " has adaptor defined. (i.e. exon->contig->adaptor)");
+  }
+
+  my $asma = $slice_adaptor->db->get_AssemblyMapperAdaptor();
 
   my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
-  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
+  my $rcAdaptor = $slice_adaptor->db->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
   my $slice_chr_end = $self->contig->chr_end();
 
@@ -1734,8 +1757,8 @@ sub clone_id{
 
 sub contig_id{
   my $self = shift;
-#  $self->warn("Bio::EnsEMBL::Exon::contig_id is deprecated.  \n" .
-#	      "Use contig instead\n");
+  $self->warn("Bio::EnsEMBL::Exon::contig_id is deprecated.  \n" .
+	      "Use exon->contig->dbID instead\n");
 
 #  if($contig_id) {
 #    my $contig = 

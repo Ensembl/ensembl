@@ -287,11 +287,11 @@ sub _parse_cigar {
   
   my $string = $self->cigar_string;
  
-  if (!defined($string)) {
-    $self->throw("No cigar string defined in object.  This should be caught by the cigar_string method and never happen");
+  unless(defined($string)) {
+    $self->throw("No cigar string defined in object.  This should be caught" .
+		 "by the cigar_string method and never happen");
   }
 
-  
   my @pieces = ( $string =~ /(\d*[MDI])/g );
   #print "cigar: ",join ( ",", @pieces ),"\n";
   
@@ -329,11 +329,13 @@ sub _parse_cigar {
     } elsif ( $query_unit == 1 && $hit_unit == 1 ) {
       $mapped_length = $length;
     } else {
-      $self->throw("Internal error $query_unit $hit_unit, currently only allowing 1 or 3 ");
+      $self->throw("Internal error $query_unit $hit_unit, currently only " .
+		   "allowing 1 or 3 ");
     }
     
     if( int($mapped_length) != $mapped_length ) {
-      $self->throw("Internal error with mismapped length of hit, query $query_unit, hit $hit_unit, length $length");
+      $self->throw("Internal error with mismapped length of hit, query " .
+		   "$query_unit, hit $hit_unit, length $length");
     }
 
     if( $piece =~ /M$/ ) {
@@ -465,13 +467,13 @@ sub _parse_features {
     
   my $string;
 
-  # Use strandedness info of query and hit to make sure both sets of start and end 
-  # coordinates are oriented the right way around.
+  # Use strandedness info of query and hit to make sure both sets of 
+  # start and end  coordinates are oriented the right way around.
   my $f1start;
   my $f1end;
   my $f2end;
   my $f2start;
-  #print STDERR "STRAND = ".$strand."\n";
+
   if ($strand == 1) {
     $f1start = $f[0]->start;
     $f1end = $f[-1]->end;
@@ -480,7 +482,6 @@ sub _parse_features {
     $f1end = $f[0]->end;
   }
 
-  #print STDERR "HSTRAND = ".$hstrand."\n";
   if ($hstrand == 1) {
     $f2start = $f[0]->hstart;
     $f2end = $f[-1]->hend;
@@ -551,7 +552,7 @@ sub _parse_features {
       }
     }
 
-    my $length = ($f->end - $f->start + 1); #length of source seq alignment
+    my $length = ($f->end - $f->start + 1);    #length of source seq alignment
     my $hlength = ($f->hend - $f->hstart + 1); #length of hit seq alignment
 
     # using multiplication to avoid rounding errors, hence the
@@ -583,14 +584,6 @@ sub _parse_features {
     }
 
     my $hlengthfactor = ($query_unit/$hit_unit);
-
-    # if( $query_unit == 1 && $hit_unit == 3 ) {
-    #	$hlengthfactor = (1/3);
-    #     }
-    #     if( $query_unit == 3 && $hit_unit == 1 ) {
-    #	$hlengthfactor = 3;
-    #      }
-      
 
     #
     # Check to see if there is an I type (insertion) gap:
@@ -625,7 +618,6 @@ sub _parse_features {
 	  $gap = ""; # no need for a number if gap length is 1
 	}
 	$string .= "$gap"."I";
-	#print STDERR "cigar stands at ".$string."\n" if($verbose);
       }
 
       #shift our position in the source seq alignment
@@ -687,8 +679,6 @@ sub _parse_features {
       $matchlength = "";
     }
     $string .= $matchlength."M";
-
-    #print STDERR "finished with this feature\n\n";
   }
 
   if(!$score){
@@ -706,7 +696,6 @@ sub _parse_features {
   $feature1->seqname($name);
   $feature1->phase($phase);
   $feature1->analysis($analysis);
-  #print STDERR "checking feature1 ".$feature1->gffstring."\n";
   $feature1->validate;
   
   my $feature2 = new Bio::EnsEMBL::SeqFeature();
@@ -737,37 +726,47 @@ sub _parse_features {
 sub _transform_to_RawContig{
   my ($self) = @_;
 
-  if(!$self->contig){
-    $self->throw("can't transform coordinates of ". $self
-		 . " without some sort of contig defined");
+  my $slice = $self->contig;
+
+  unless($slice){
+    $self->throw("can't transform coordinates of $self "
+		 . " without slice attached to feature");
   }
 
-  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
-  #my $global_start = $self->contig->chr_start();
+  my $adaptor = $slice->adaptor;
+
+  unless($adaptor) {
+    $self->throw("can't transform $self without an adaptor attached " .
+		 "to the feature's slice");
+  }
+
+  my $rcAdaptor = $adaptor->db->get_RawContigAdaptor();
   my @out;
 
+  #parse cigarline and split this gapped feature into list of ungapped features
   my @features = $self->_parse_cigar();
+
   my @mapped_features;
   my %rc_features;
 
+  #transform each of the ungapped features into raw contig coordinates
   foreach my $f(@features){
-
-    my @new_features = $self->_transform_feature_to_RawContig($f);
-    push(@mapped_features, @new_features);
+    push @mapped_features, $self->_transform_feature_to_RawContig($f);
   }
 
+  #sort the transformed ungapped features into contig buckets
   foreach my $mf(@mapped_features){
-
     my $contig_id = $mf->contig->dbID;
-    if(!$rc_features{$contig_id}){
+    unless($rc_features{$contig_id}){
       $rc_features{$contig_id} = [];
     }
-
     push(@{$rc_features{$contig_id}}, $mf);
   }
 
-  foreach my $contig_id(keys(%rc_features)){
-
+  #create a single gapped feature from all the ungapped features
+  #in each contig bucket
+  foreach my $contig_id (keys(%rc_features)){
+    #create a gapped feature from a list of ungapped features
     my $outputf = $self->new( -features => $rc_features{$contig_id} );
     $outputf->analysis( $self->analysis() );
     $outputf->score( $self->score() );
@@ -777,9 +776,8 @@ sub _transform_to_RawContig{
     $outputf->contig($contig);
     push(@out, $outputf);
   }
-  #print STDERR "returning ".@out." feature from basealignfeature\n";
-  return @out;
 
+  return @out;
 }
 
 
@@ -822,27 +820,31 @@ sub _query_unit {
 sub _transform_feature_to_RawContig{
   my($self, $feature) =  @_;
 
-  my $verbose = 0;
-  #$verbose = 1 if($feature->hseqname eq 'CE25688');
-
-  #print STDERR "transforming ".$feature->gffstring."\n" if($verbose);
-
-  if(!$self->contig){
-    $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
-  }
-  my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
-  
-  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
-
-
   my $slice = $feature->contig;
+
+  unless($slice){
+    $self->throw("can't transform coordinates of ".$self.
+		 " without some sort of contig defined");
+  }
+  
+  my $adaptor = $slice->adaptor;
+
+  unless($adaptor) {
+    $self->throw("can't tranform coordinates of $self without " .
+		 "adaptor attached to feature's slice");
+  }
+
+  my $asma = $adaptor->db->get_AssemblyMapperAdaptor;
+  my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
+  
+  my $rcAdaptor = $adaptor->db->get_RawContigAdaptor();
+
   my $slice_start  = $slice->chr_start;
   my $slice_end    = $slice->chr_end;
   my $slice_strand = $slice->strand;
-
   my ($global_start, $global_end, $global_strand);
 
-  #change feature coords from slice coordinates to assembly
+  #change feature coords from slice coordinates to assembly coords
   if($slice_strand == 1) {
     $global_start  = $feature->start + $slice_start - 1;
     $global_end    = $feature->end   + $slice_start - 1;
@@ -853,7 +855,7 @@ sub _transform_feature_to_RawContig{
     $global_strand = $feature->strand * -1;
   }
 
-  my @out;
+
   #convert assembly coords to raw contig coords
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
@@ -867,38 +869,41 @@ sub _transform_feature_to_RawContig{
     $self->throw( "couldn't map ".$self."\n" );
     return $self;
   }
+
+  my @out;
   my ( $hit_start, $hit_end );
 
   if( scalar( @mapped ) > 1 ) {
-    #print STDERr "splitting evidence\n";
+    #The feature needs to be mapped accross multiple contigs
+
     if( $feature->hstrand == 1 ) {
       $hit_start = $feature->hstart();
     } else {
       $hit_end = $feature->hend();
     }
-    #print STDERR " feature is being mapped across multiple contigs ".$feature->gffstring."\n";
+
+    #split the feature into a seperate feature for each raw contig
   SPLIT: for( my $i=0; $i <= $#mapped; $i++ ) {
       if($mapped[$i]->isa("Bio::EnsEMBL::Mapper::Gap")){
 	$self->warn("piece of evidence lies on gap\n");
 	next SPLIT;
       }
-      #print STDERR "query coords ".$mapped[$i]->end." ".$mapped[$i]->start."\n";
+
+      #caculate query and hit length for each portion of the split feature
+      #may need to round hit length to avoid 'partial' peptide
+
       my $query_length = ($mapped[$i]->end - $mapped[$i]->start + 1);
-      #print STDERR " query length = ".$query_length."\n";
       my $hit_length;
       if($self->_query_unit == $self->_hit_unit){
 	$hit_length = $query_length;
       }elsif($self->_query_unit > $self->_hit_unit){
 	my $tmp =  ($query_length/$self->_query_unit);
-	#print STDERR "tmp = ".$tmp."\n";
-	#$hit_length = int($tmp);
-	$hit_length = sprintf "%.0f", $tmp;
+	$hit_length = sprintf "%.0f", $tmp; #round value up or down
       }elsif($self->_hit_unit > $self->_query_unit){
 	my $tmp = ($query_length*$self->_hit_unit);
-	#print STDERR "tmp = ".$tmp."\n";
-	$hit_length = sprintf "%.0f", $tmp;
+	$hit_length = sprintf "%.0f", $tmp; #round value up or down
       }
-      #print STDERR "hit length ".$hit_length."\n";
+
       if($hit_length == 0){
 	next SPLIT;
       }
@@ -907,13 +912,12 @@ sub _transform_feature_to_RawContig{
       } else {
 	$hit_start = ( $hit_end - $hit_length + 1 );
       } 
-      #print "hit start ".$hit_start." hit end ".$hit_end."\n";
+
+
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
-      my $f1 = new Bio::EnsEMBL::SeqFeature();
-      my $f2 = new Bio::EnsEMBL::SeqFeature();
-      my $new_feature = Bio::EnsEMBL::FeaturePair->new(-feature1=>$f1,
-						       -feature2=>$f2);
-     
+
+      #create the new feature
+      my $new_feature = Bio::EnsEMBL::FeaturePair->new;
       $new_feature->start($mapped[$i]->start);
       $new_feature->end($mapped[$i]->end);
       $new_feature->strand($mapped[$i]->strand);
@@ -924,10 +928,11 @@ sub _transform_feature_to_RawContig{
       $new_feature->hend($hit_end);
       $new_feature->hstrand($feature->hstrand);
       $new_feature->hseqname($feature->hseqname);
-
       $new_feature->analysis($feature->analysis);
       $new_feature->contig($rawContig);
+
       push(@out, $new_feature);
+
       if( $feature->hstrand() == 1 ) {
 	$hit_start = ($hit_end + 1);
       } else {
@@ -935,15 +940,16 @@ sub _transform_feature_to_RawContig{
       }
     }
   }else{
+    #feature maps to single contig
+
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
       $self->warn("piece of evidence lies on gap\n");
       return;
     }
+
+    #create the new feature
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
-    my $f1 = new Bio::EnsEMBL::SeqFeature();
-    my $f2 = new Bio::EnsEMBL::SeqFeature();
-    my $new_feature = Bio::EnsEMBL::FeaturePair->new(-feature1=>$f1,
-						     -feature2=>$f2);
+    my $new_feature = Bio::EnsEMBL::FeaturePair->new;
     $new_feature->start($mapped[0]->start);
     $new_feature->end($mapped[0]->end);
     $new_feature->strand($mapped[0]->strand);
@@ -960,12 +966,8 @@ sub _transform_feature_to_RawContig{
     push(@out, $new_feature);
   }
 
-  #foreach my $sf(@out){
-    #print STDERR "returning gff ".$sf->gffstring."\n";
-  #}
 
   return @out;
-
 }
 
 1;
