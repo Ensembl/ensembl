@@ -103,6 +103,35 @@ sub fetch_by_dbID {
    return $out;
 }
 
+=head2 fetch_all_by_DBEntry
+
+  Arg [1]    : in $external_id
+                the external identifier for the translation to be obtained
+  Example    : @trans = @{$trans_adaptor->fetch_all_by_DBEntry($ext_id)}
+  Description: retrieves a list of translation with an external database
+                idenitifier $external_id
+  Returntype : listref of Bio::EnsEMBL::DBSQL::Translation in contig coordinates
+  Exceptions : none
+  Caller        : ?
+
+=cut
+
+sub fetch_all_by_DBEntry {
+  my $self = shift;
+  my $external_id = shift;
+  my @trans = ();
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+  my @ids = $entryAdaptor->translationids_by_extids($external_id);
+  foreach my $trans_id ( @ids ) {
+    my $trans = $self->fetch_by_dbID( $trans_id );
+    warn $trans_id;
+    if( $trans ) {
+        push( @trans, $trans );
+    }
+  }
+  return \@trans;
+}
 
 
 sub store {

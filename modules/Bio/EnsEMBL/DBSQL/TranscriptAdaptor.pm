@@ -150,7 +150,34 @@ sub fetch_by_translation_stable_id {
   return $self->fetch_by_dbID($id);
 } 
                              
+=head2 fetch_all_by_DBEntry
 
+  Arg [1]    : in $external_id
+                the external identifier for the transcript to be obtained
+  Example    : @trans = @{$trans_adaptor->fetch_all_by_DBEntry($ext_id)}
+  Description: retrieves a list of transcripts with an external database
+                idenitifier $external_id
+  Returntype : listref of Bio::EnsEMBL::DBSQL::Transcript in contig coordinates
+  Exceptions : none
+  Caller        : ?
+
+=cut
+
+sub fetch_all_by_DBEntry {
+  my $self = shift;
+  my $external_id = shift;
+  my @trans = ();
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+  my @ids = $entryAdaptor->transcriptids_by_extids($external_id);
+  foreach my $trans_id ( @ids ) {
+    my $trans = $self->fetch_by_dbID( $trans_id );
+    if( $trans ) {
+        push( @trans, $trans );
+    }
+  }
+  return \@trans;
+}
 
 =head2 store
 
