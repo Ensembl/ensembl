@@ -221,6 +221,12 @@ sub get_all_Attributes {
   }
 }
 
+sub get_all_attribute_values {
+  my $self = shift;
+  my $code = shift;
+  my @results = map { uc( $_->code() ) eq uc( $code ) ? $_->value : () } @{$self->{'attributes'}};
+  return \@results;
+}
 sub get_scalar_attribute {
   my $self = shift;
   my $code = shift;
