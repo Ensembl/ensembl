@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for ContigOverlap
+# BioPerl module for ContigOverlapHelper
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::ContigOverlap - Describes the overlap between two contigs
+Bio::EnsEMBL::ContigOverlapHelper - Describes the overlap between two contigs
 
 =head1 SYNOPSIS
 
@@ -40,7 +40,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::ContigOverlap;
+package Bio::EnsEMBL::ContigOverlapHelper;
 use vars qw(@ISA);
 use strict;
 
@@ -65,7 +65,7 @@ sub _initialize {
 										 SELFPOSITION
 										 )], @args);
   if( !defined $sister || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
-      $self->throw("You have to construct ContigOverlap objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
+      $self->throw("You have to construct ContigOverlapHelper objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
   }
 
   $self->sister($sister);
