@@ -40,11 +40,10 @@ my $opt_o = $conf{'pmatch_out'};
 
 my $t_thr = $conf{'target_idt'};
 my $q_thr = $conf{'query_idt'};
-
+my $pmatch_bin = $conf{'pmatch'};
 my ($opt_w,$opt_l,$opt_d);
 
-$t_thr = 40;
-$q_thr = 40;
+
 
 #################################
 
@@ -78,12 +77,14 @@ if ($opt_l) {
     }
     close DB;        
     foreach my $file (@files) {
-        my $pmatch = "/nfs/disk65/ms2/bin/pmatch -T 14 $file $query >> $$.pmatch";
+        my $pmatch = $pmatch_bin."  -T 14 $file $query >> $$.pmatch";
+	print $pmatch."\n";
         system "$pmatch";
     }
 }
 else {
-    my $pmatch = "/nfs/disk65/ms2/bin/pmatch -T 14 $target $query > $$.pmatch";
+    my $pmatch = $pmatch_bin."  -T 14 $target $query > $$.pmatch";
+    print $pmatch."\n";
     system "$pmatch";
 }
 
@@ -368,7 +369,7 @@ sub process_matches {
         chomp;
         my ($len,$qid,$qstart,$qend,$qperc,$qlen,$tid,$tstart,$tend,$tperc,$tlen) = split /\t/;
         # we only consider the best match per query-target pair. Use the -s option to
-        # get the total matching sequence (pmatch gives multiple hits either due to e.g.
+        # get the total matching sequence (pmatchn gives multiple hits either due to e.g.
         # introns, or to internal repeats (we don't want the latter))
         if ($qid ne $old_qid || $tid ne $old_tid) {
             $percent{$qid}->{$tid} = $qperc."\t".$tperc;
