@@ -23,12 +23,6 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my %filetype2parser = (
-		       "UniProtSwissProt" => "SwissProtParser",
-		       "UniProtTrEMBL"    => "SwissProtParser",
-		       "RefSeq"           => "RefSeqParser"
-		      );
-
 run() if (!defined(caller()));
 
 # --------------------------------------------------------------------------------
@@ -37,10 +31,10 @@ run() if (!defined(caller()));
 sub run {
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
+  my $sth = $dbi->prepare("SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser FROM source s, source_url su WHERE s.download='Y' AND su.source_id=s.source_id ORDER BY s.name");
   $sth->execute();
-  my ($source_id, $source_url_id, $name, $url, $checksum);
-  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum);
+  my ($source_id, $source_url_id, $name, $url, $checksum, $parser);
+  $sth->bind_columns(\$source_id, \$source_url_id, \$name, \$url, \$checksum, \$parser);
   my $last_type = "";
   my $dir;
   while (my @row = $sth->fetchrow_array()) {
@@ -78,9 +72,8 @@ sub run {
 
 	update_source($dbi, $source_url_id, $file_cs, $file);
 
-	my $parserType = $filetype2parser{$type};
-	print "Parsing $file with $parserType\n";
-	$parserType->run("$dir/$file", $source_id);
+	print "Parsing $file with $parser\n";
+	$parser->run("$dir/$file", $source_id);
 
       } else {
 	
@@ -373,7 +366,7 @@ sub insert_or_select {
   if ($error) {
 
     $id = get_xref_id_by_accession_and_source($acc, $source);
-    print "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+    #print "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
 
   } else {
 	
