@@ -432,41 +432,44 @@ sub _get_hits {
 }
 
 # _evidence_lines_sort: takes reference to an array of evidence lines
-# and reference to a hash of per-hid maximum scores,
+# and reference to a hash of scores,
 # returns reference to the former sorted by score (highest score first),
 # with ties sorted alphabetically
 
 sub _evidence_lines_sort {
-  my ($self, $tmp_evidence_arr_ref, $per_hid_max_scores_hash_ref) = @_;
+  my ($self, $tmp_evidence_arr_ref, $scores_hash_ref) = @_;
   $self->throw('interface fault') if (@_ != 3);
 
   my @sorted_arr = sort {
-    $$per_hid_max_scores_hash_ref{$b->accession_number}
-    <=> $$per_hid_max_scores_hash_ref{$a->accession_number}
-    ||  $a->accession_number cmp $b->accession_number
+    $$scores_hash_ref{$b->accession_number}
+      <=> $$scores_hash_ref{$a->accession_number}
+      ||  $a->accession_number cmp $b->accession_number
   } @$tmp_evidence_arr_ref;
 
   return \@sorted_arr;
 }
 
-# _get_per_hid_max_scores: takes reference to an array of features,
-# returns a reference to a hash giving the maximum score for each
-# hseqname
+# _get_per_hid_effective_scores: takes reference to an array of features,
+# returns a reference to a hash giving the 'effective score' for each
+# hseqname, i.e., the score-like value upon which we wish to sort.
 
-sub _get_per_hid_max_scores {
+sub _get_per_hid_effective_scores {
   my ($self, $feature_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
 
-  my %per_hid_max_scores = ();
+  my %per_hid_effective_scores = ();
   foreach my $feature (@$feature_arr_ref) {
     my $hseqname = $feature->hseqname;
-    if ((not exists $per_hid_max_scores{$hseqname})
-        or $per_hid_max_scores{$hseqname} < $feature->score)
+    my $feature_len = $feature->end - $feature->start + 1;
+    if (not exists $per_hid_effective_scores{$hseqname})
     {
-      $per_hid_max_scores{$hseqname} = $feature->score;
+      $per_hid_effective_scores{$hseqname} = 0;
     }
+    $per_hid_effective_scores{$hseqname} += $feature_len;
+    # another possibility:
+    # $per_hid_effective_scores{$hseqname} += $feature_len * $feature->score
   }
-  return \%per_hid_max_scores;
+  return \%per_hid_effective_scores;
 }
 
 # _get_aligned_features_for_contig: takes a contig ID, a DB adaptor
@@ -484,7 +487,8 @@ sub _get_aligned_features_for_contig {
   my $contig_obj = $db->get_Contig($contig_id);
 
   my @features = $self->_get_features_from_rawcontig($contig_obj, $strand);
-  my $per_hid_max_scores_hash_ref = $self->_get_per_hid_max_scores(\@features);
+  my $per_hid_effective_scores_hash_ref
+    = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $nucseq_obj = $contig_obj->primary_seq;
   if ($strand < 0) {
@@ -608,7 +612,7 @@ sub _get_aligned_features_for_contig {
 
   my $sorted_pep_evidence_lines_ref =
     $self->_evidence_lines_sort(\@tmp_pep_evidence_arr,
-                                $per_hid_max_scores_hash_ref);
+                                $per_hid_effective_scores_hash_ref);
   push @evidence_arr, @$sorted_pep_evidence_lines_ref;
 
   # nucleic acid evidence
@@ -715,7 +719,7 @@ sub _get_aligned_features_for_contig {
 
   my $sorted_nuc_evidence_lines_ref =
     $self->_evidence_lines_sort(\@tmp_nuc_evidence_arr,
-                                $per_hid_max_scores_hash_ref);
+                                $per_hid_effective_scores_hash_ref);
   push @evidence_arr, @$sorted_nuc_evidence_lines_ref;
 
   # remove blank evidence lines
@@ -772,7 +776,8 @@ sub _get_aligned_evidence_for_transcript {
   my @all_exons = $transcript_obj->get_all_Exons;
 
   my @features = $self->_get_features_from_transcript($transcript_obj, $vc);
-  my $per_hid_max_scores_hash_ref = $self->_get_per_hid_max_scores(\@features);
+  my $per_hid_effective_scores_hash_ref =
+    $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $translation = $transcript_obj->translate->seq;
   my $nucseq_str = $self->_get_transcript_nuc(\@all_exons);
@@ -951,7 +956,7 @@ sub _get_aligned_evidence_for_transcript {
 
   my $sorted_pep_evidence_lines_ref =
     $self->_evidence_lines_sort(\@tmp_pep_evidence_arr,
-                                $per_hid_max_scores_hash_ref);
+                                $per_hid_effective_scores_hash_ref);
   push @evidence_arr, @$sorted_pep_evidence_lines_ref;
 
   # nucleic acid evidence
@@ -1076,7 +1081,7 @@ sub _get_aligned_evidence_for_transcript {
 
   my $sorted_nuc_evidence_lines_ref =
     $self->_evidence_lines_sort(\@tmp_nuc_evidence_arr,
-                                $per_hid_max_scores_hash_ref);
+                                $per_hid_effective_scores_hash_ref);
   push @evidence_arr, @$sorted_nuc_evidence_lines_ref;
 
   # remove blank evidence lines
