@@ -152,7 +152,7 @@ sub get_all_predecessors {
 sub get_all_successors {
   my $self = shift;
 
-  $self->adaptor->fetch_succ_by_arch_id();
+  $self->adaptor->fetch_succ_by_arch_id( $self );
 }
 
 
