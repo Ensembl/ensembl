@@ -113,8 +113,11 @@ sub fetch_Protein_by_transcriptId{
 sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
 
+  
+
 #Get the transcript id from the translation id 
    my $query = "select id,gene from transcript where translation = '$id'";
+   
    my $sth = $self->prepare($query);
    $sth ->execute();
    my @rowid = $sth->fetchrow;

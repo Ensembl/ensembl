@@ -259,8 +259,6 @@ sub top_SeqFeatures {
     
     push(@f,$self->get_all_LowcomplFeatures());
     
-    push(@f,$self->get_all_SuperfamilyFeatures());
-    
     return @f;
 }
 
@@ -338,6 +336,8 @@ sub get_all_DomainFeatures{
        push(@f,$self->get_all_PfamFeatures());
 
        push(@f,$self->get_all_PrositeFeatures());
+
+       push(@f,$self->get_all_SuperfamilyFeatures());
 
        return @f;
     }
@@ -716,16 +716,17 @@ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
 =cut
 
 sub get_all_SuperfamilyFeatures{
- my ($self) = @_;
+    my ($self) = @_;
 
     if (defined ($self->{'_superfamily'})) {
 	return @{$self->{'_superfamily'}};
     }
     else {
-       my $proteinid = $self->id();
+	my $proteinid = $self->id();
 	my @array_features = $self->protfeat_adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
+	
 	foreach my $in (@array_features) {
-	    $self->add_Lowcompl($in);
+	    $self->add_Superfamily($in);
 	}
 	return @array_features;
     }
