@@ -158,6 +158,7 @@ if ($check eq "yes") {
 open (MAP,"$map") || die "Can't open MAP $map\n";
 
 print STDERR "Reading pmatch output\n";
+
 MAPPING: while (<MAP>) {
     my $target;
     chomp;
@@ -286,7 +287,7 @@ if ($organism eq "drosophila") {
 	my $sth = $db->prepare($query);
 	$sth->execute();
 
-	while (my $trans_is = $sth->fetchrow) {
+	while (my $trans_id = $sth->fetchrow) {
 	    
 	    #Create a new dbentry object
 	    my $dbentry = Bio::EnsEMBL::DBEntry->new
@@ -315,14 +316,20 @@ if ($organism eq "elegans") {
 	my $transc_stable_id = $res[2];
 	my $gene_stable_id = $res[2];
 
+	my $db1 = "wormbase_gene";
+	my $db2 = "wormbase_transcript";
+	
+       
 	my $dbentry = Bio::EnsEMBL::DBEntry->new
 		( -adaptor => $adaptor,
 		  -primary_id => $gene_stable_id,
 		  -display_id => $gene_stable_id,
 		  -version => 1,
 		  -release => 1,
-		  -dbname => "wormbase gene");
+		  -dbname => $db1);
 	$dbentry->status("XREF");
+	
+#	print STDERR "$db1\t$db2\n";
 	
 	$adaptor->store($dbentry,$transl_dbid,"Translation");
 	
@@ -332,8 +339,8 @@ if ($organism eq "elegans") {
 		  -display_id => $transc_stable_id,
 		  -version => 1,
 		  -release => 1,
-		  -dbname => "wormbase transcript");
-	$dbentry->status("XREF");
+		  -dbname => $db2);
+	$transdbentry->status("XREF");
 	
 	$adaptor->store($transdbentry,$transl_dbid,"Translation");
 

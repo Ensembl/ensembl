@@ -302,29 +302,29 @@ if($organism eq "anopheles") {
 }
 
 #Get specific xmapping for elegans
-if($organism eq "elegans") {
-    print STDERR "Getting Xref specifically for briggsae\n";
-    open (ELEGNOM,"$eleg_nom") || die "Can't open $eleg_nom";
+#if($organism eq "elegans") {
+#    print STDERR "Getting Xref specifically for briggsae\n";
+#    open (ELEGNOM,"$eleg_nom") || die "Can't open $eleg_nom";
     
-    while (<ELEGNOM>) {
-	chomp;
-	my $sp;
-	my ($name,$ac) = split;
+#    while (<ELEGNOM>) {
+#	chomp;
+#	my $sp;
+#	my ($name,$ac) = split;
 		
-	if ($_ =~ /TR:/) {
-	    ($sp) = $_ =~ /TR:(\S+)/;
-	}
+#	if ($_ =~ /TR:/) {
+#	    ($sp) = $_ =~ /TR:(\S+)/;
+#	}
 	
-	if ($_ =~ /SW:/) {
-	    ($sp) = $_ =~ /SW:(\S+)/;
-	}
+#	if ($_ =~ /SW:/) {
+#	    ($sp) = $_ =~ /SW:(\S+)/;
+#	}
 
-	if ($sp) {
-	    print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
-	}
-    }
-    close(ELEGNOM);
-}
+#	if ($sp) {
+#	    print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
+#	}
+#    }
+#    close(ELEGNOM);
+#}
 
 #Get specific xmapping for zebrafishq
 if($organism eq "zebrafish") {

@@ -32,7 +32,7 @@ my %priority;
 
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
-$prority{'Wormbase'} = 1000;
+$priority{'wormbase_transcript'} = 1000;
 $priority{'SWISSPROT'} = 900;
 $priority{'SPTREMBL'} = 800;
 $priority{'RefSeq'} = 600;
@@ -78,27 +78,45 @@ while(my $id = $sth->fetchrow) {
     #print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
 }
 
-my $query1 = "select gene_id from gene";
-my $sth1 = $db->prepare($query1);
-$sth1->execute();
+if ($organism ne "elegans") {
 
-while(my $gene_id = $sth1->fetchrow) {
-    my $gene = $geneadaptor->fetch_by_dbID($gene_id);
-    my $transcripts = $gene->get_all_Transcripts();
-    my $display;
-    my $current;
-    foreach my $trans(@$transcripts) {
-	my $id = $trans->dbID();
-	my $xrefid = $transadaptor->get_display_xref_id($id);
-	
-	eval {
-	    my $xref = $xrefadaptor->fetch_by_dbID($xrefid);
-	    if ($priority{$xref->database} > $current) {
-		$display = $xref->dbID;
-	    }
-	};
-    }
-    $gene->display_xref($display);
-    $geneadaptor->update($gene);
+    my $query1 = "select gene_id from gene";
+    my $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my $gene_id = $sth1->fetchrow) {
+	my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	my $transcripts = $gene->get_all_Transcripts();
+	my $display;
+	my $current;
+	foreach my $trans(@$transcripts) {
+	    my $id = $trans->dbID();
+	    my $xrefid = $transadaptor->get_display_xref_id($id);
+	    
+	    eval {
+		my $xref = $xrefadaptor->fetch_by_dbID($xrefid);
+		if ($priority{$xref->database} > $current) {
+		    $display = $xref->dbID;
+		}
+	    };
+	}
+	$gene->display_xref($display);
+	$geneadaptor->update($gene);
 #    print STDERR "GENE_ID: $gene_id\tDISPLAY: $display\tTEST: ".$geneadaptor->get_display_xref_id($gene_id)."\n";
+    }
 }
+elsif ($organism eq "elegans") {
+    my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_gene'";
+    my $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+	my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	$gene->display_xref($xref);
+	$geneadaptor->update($gene);
+     }
+    
+}
+
+
+
