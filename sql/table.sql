@@ -48,6 +48,10 @@ CREATE TABLE chromosome (
   name              varchar(40) NOT NULL,
   species_id        int(11) NOT NULL,
   id                int(11) NOT NULL,
+  known_genes       int(11) NULL,
+  unknown_genes     int(11) NULL,
+  snps              int(11) NULL,
+  length            int(11) NULL,
   
   PRIMARY KEY (chromosome_id)
 );
