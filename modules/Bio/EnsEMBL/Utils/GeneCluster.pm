@@ -219,52 +219,39 @@ sub get_first_Gene {
 
 #########################################################################
 
-=head2 string()
+=head2 to_String()
 
-  it returns a string containing the information from a GeneCluster object,
-  i.e. the geneID, the start position and the end position.
+  it returns a string containing the information about the genes contained in the
+  GeneCluster object
 
 =cut
 
-sub string {
+sub to_String {
   my $self = shift @_;
   my $data='';
-
   foreach my $gene ( $self->get_Genes ){
-    $data .= $gene->id." ".$gene->type."\t".$self->get_start($gene)."  ".$self->get_end($gene)."\n";
+    my @exons = $gene->each_unique_Exon;
+     
+    $data .= sprintf "Id: %-16s"      , $gene->id;
+    $data .= sprintf "Contig: %-20s"  , $exons[0]->contig_id;
+    $data .= sprintf "Exons: %-3d"    , scalar(@exons);
+    $data .= sprintf "Start: %-9d"    , $self->_get_start($gene);
+    $data .= sprintf "End: %-9d"      , $self->_get_end  ($gene);
+    $data .= sprintf "Strand: %-2d\n" , $exons[0]->strand;
   }
-
-    
- # foreach my $gene ( @{ $self->{'_benchmark_genes'} } ){
-#    my $id = $gene->id;
-#    #while (length($id)<16){
-#    #  $id .=' ';
-#    #}
-#    $data .= $id."  ".$gene->type."\t".$self->get_start($gene)."  ".$self->get_end($gene)."\n";
-#  }
-#  foreach my $gene ( @{ $self->{'_prediction_genes'} } ){
-#    my $id = $gene->id;
-#    #while (length($id)<16){
-#    #  $id .=' ';
-#    #}
-#    $data .= $id."  ".$gene->type."\t".$self->get_start($gene)."  ".$self->get_end($gene)."\n";
-#  }
-
-
-
   return $data;
 }
 
 #########################################################################
 
-=head2 get_start()
+=head2 _get_start()
 
  function to get the start position of a gene - it reads the gene object and it returns
  the start position of the first exon
 
 =cut
 
-sub get_start {
+sub _get_start {
   my ($self,$gene) = @_;
   my @exons = $gene->each_unique_Exon;
   my $st;
@@ -281,14 +268,14 @@ sub get_start {
 
 #########################################################################
 
-=head2 get_end()
+=head2 _get_end()
 
  function to get the end position of a gene - it reads the gene object and it returns
  the end position of the last exon
 
 =cut
 
-sub get_end {
+sub _get_end {
   my ($self,$gene) = @_;
   my @exons = $gene->each_unique_Exon;
   my $end;
