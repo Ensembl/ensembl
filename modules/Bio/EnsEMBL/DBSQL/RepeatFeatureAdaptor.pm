@@ -37,6 +37,41 @@ sub fetch_by_dbID {
     return $rf;
 }
 
+sub fetch_by_logic_name {
+    my( $self, $logic_name ) = @_;
+
+    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_newest_logic_name($logic_name);
+
+    my $db_id = $analysis->dbID;
+    my @rf = $self->_generic_fetch(
+        qq{ analysis_id = $db_id }
+        );
+    return @rf;
+}
+
+
+sub fetch_by_logic_name_and_contig_id {
+    my( $self, $logic_name, $contig_id ) = @_;
+
+    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_newest_logic_name($logic_name);
+
+    my $db_id = $analysis->dbID;
+    my @rf = $self->_generic_fetch(
+        qq{ analysis_id = $db_id and contig_id = $contig_id }
+        );
+    return @rf;
+}
+
+sub fetch_by_logic_name_and_RawContig {
+    my( $self, $contig, $logic_name ) = @_;
+
+    my @repeats = $self->fetch_by_logic_name_and_contig_id($logic_name, $contig->dbID);
+    foreach my $r (@repeats) {
+        $r->attach_seq($contig);
+    }
+    return @repeats;
+}
+
 sub _generic_fetch {
     my( $self, $where_clause ) = @_;
 
@@ -111,90 +146,94 @@ sub _generic_fetch {
 }
 
 sub store {
-    my( $self, $contig_id, @repeats ) = @_;
+  my( $self, $contig_id, @repeats ) = @_;
+  
+  my $rca = $self->db->get_RepeatConsensusAdaptor;
+  my ($cons, $db_id);
 
-    my $rca = $self->db->get_RepeatConsensusAdaptor;
-    my ($cons, $db_id);
+  $self->throw("Can't store repeats without a contig_id (got '$contig_id')")
+    unless $contig_id =~ /^\d+$/;
 
-    $self->throw("Can't store repeats without a contig_id (got '$contig_id')")
-        unless $contig_id =~ /^\d+$/;
+  my $sth = $self->prepare(qq{
+    INSERT into repeat_feature( repeat_feature_id
+				, contig_id
+				, contig_start
+				, contig_end
+				, contig_strand
+				, repeat_id
+				, repeat_start
+				, repeat_end
+				, score
+				, analysis_id )
+      VALUES(NULL, ?,?,?,?,?,?,?,?,?)
+    });
+  foreach my $rf (@repeats) {
+            
+        unless ($rf->repeat_id){
 
-    my $sth = $self->prepare(qq{
-        INSERT into repeat_feature( repeat_feature_id
-          , contig_id
-          , contig_start
-          , contig_end
-          , contig_strand
-          , repeat_id
-          , repeat_start
-          , repeat_end
-	  , score
-          , analysis_id )
-        VALUES(NULL, ?,?,?,?,?,?,?,?,?)
-        });
-    foreach my $rf (@repeats) {
-
-	# must have a consensus attached
-
-        $self->throw("Must have a RepeatConsensus attached")
-	 unless defined ($cons = $rf->repeat_consensus);
-
-	# for tandem repeats - simply store consensus and repeat
-	# one pair per hit. don't need to check consensi stored
-	# already. consensus has name and class set to 'trf'
-
-	if ($cons->name eq 'trf') {
-	    $rca->store($cons);
-	    $rf->repeat_id($cons->dbID);
-
-	} else {
-
+   $self->throw("Must have a RepeatConsensus attached")
+	unless defined ($cons = $rf->repeat_consensus);
+      
+      # for tandem repeats - simply store consensus and repeat
+      # one pair per hit. don't need to check consensi stored
+      # already. consensus has name and class set to 'trf'
+ }
+      if ($cons->name eq 'trf') {
+	$rca->store($cons);
+	$rf->repeat_id($cons->dbID);
+	
+      } else {
+	
 	# for other repeats - need to see if a consensus is stored already
+	
+	unless ($rf->repeat_id) {
 
-            unless ($rf->repeat_id) {
+	  # need to get the consensus seq object for this repeat
 
-	        # need to get the consensus seq object for this repeat
-
-                unless ($cons->dbID) {
-	            my @match = ($rca->fetch_by_name($cons->name));
-
-		    if (@match > 1) {
-		        $self->warn(@match . " consensi for " . $cons->name . "\n");
-		    } elsif (@match == 0) {
-		    # if we don't match a consensus already stored
-		    # create a fake one
-		    # set consensus to 'N' as null seq not allowed
-		    # FIXME: not happy with this, but ho hum ...
-		        $self->warn("Can't find " . $cons->name . "\n");
-		        $cons->repeat_consensus("N");
-		        $rca->store($cons);
-		    }
-	            $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
-
-	            $cons->dbID($db_id);
-	        }
-	        $rf->repeat_id($cons->dbID);
+	  unless ($cons->dbID) {
+	    my @match = ($rca->fetch_by_name($cons->name));
+	    
+	    if (@match > 1) {
+	      $self->warn(@match . " consensi for " . $cons->name . "\n");
+	    } elsif (@match == 0) {
+	      # if we don't match a consensus already stored
+	      # create a fake one
+	      # set consensus to 'N' as null seq not allowed
+	      # FIXME: not happy with this, but ho hum ...
+	      $self->warn("Can't find " . $cons->name . "\n");
+	      $cons->repeat_consensus("N");
+	      $rca->store($cons);
 	    }
+	    $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
+	    
+	    $cons->dbID($db_id);
+	  }
+	  $rf->repeat_id($cons->dbID);
 	}
+      }
 
-        $sth->execute(
-            $contig_id,
-            $rf->start,
-            $rf->end,
-            $rf->strand,
-            $rf->repeat_id,
-            $rf->hstart,
-            $rf->hend,
-	    $rf->score,
-            $rf->analysis->dbID,
-            );
-        my $db_id = $sth->{'mysql_insertid'}
-            or $self->throw("Didn't get an insertid from the INSERT statement");
-        $rf->dbID($db_id);
-    }
+      $sth->execute(
+		    $contig_id,
+		    $rf->start,
+		    $rf->end,
+		    $rf->strand,
+		    $rf->repeat_id,
+		    $rf->hstart,
+		    $rf->hend,
+		    $rf->score,
+		    $rf->analysis->dbID,
+		   );
+      my $db_id = $sth->{'mysql_insertid'}
+      or $self->throw("Didn't get an insertid from the INSERT statement");
+      $rf->dbID($db_id);
+      }
 }
 
 1;
+
+
+
+
 
 __END__
 

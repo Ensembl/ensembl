@@ -45,12 +45,12 @@ sub fetch_by_dbID {
   my ($self, $dbID ) = @_;
   
   my $sth = $self->prepare( "
-    SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
-           Xref.version, Xref.description,
+    SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
+           xref.version, xref.description,
            exDB.db_name, exDB.release
-      FROM Xref, externalDB exDB
-     WHERE Xref.xrefId = $dbID
-       AND Xref.externalDBId = exDB.externalDBId 
+      FROM xref, external_db exDB
+     WHERE xref.xref_id = $dbID
+       AND xref.external_db_id = exDB.external_db_id 
    " );
 
   $sth->execute();
@@ -76,8 +76,8 @@ sub fetch_by_dbID {
 
   my $get_synonym = $self->prepare( "
     SELECT synonym 
-      FROM externalSynonym
-     WHERE xrefId = $dbID
+      FROM external_synonym
+     WHERE xref_id = $dbID
   " );
   $get_synonym->execute();
   
@@ -98,8 +98,8 @@ sub store {
     # check if db exists
     # urlPattern dbname release
     my $sth = $self->prepare( "
-     SELECT externalDBId
-       FROM externalDB
+     SELECT external_db_id
+       FROM external_db
       WHERE db_name = ?
         AND release = ?
     " );
@@ -112,7 +112,7 @@ sub store {
     } else {
 	# store it, get dbID for that
 	$sth = $self->prepare( "
-       INSERT INTO externalDB 
+       INSERT INTO external_db 
        SET db_name = ?,
            release = ?,
            status  = ?
@@ -140,10 +140,10 @@ sub store {
         $dbX = undef;
     } else {
 	$sth = $self->prepare( "
-       SELECT xrefId
-         FROM Xref
-        WHERE externalDBId = ?
-          AND dbprimary_id = ?
+       SELECT xref_id
+         FROM xref
+        WHERE external_db_id = ?
+          AND dbprimary_acc = ?
           AND version = ?
      " );
 	$sth->execute( $dbRef, $exObj->primary_id(), 
@@ -154,14 +154,14 @@ sub store {
     if( ! defined $dbX ) {
 	
 	$sth = $self->prepare( "
-      INSERT INTO Xref 
-       SET dbprimary_id = ?,
-           display_id = ?,
+      INSERT INTO xref 
+       SET dbprimary_acc = ?,
+           display_label = ?,
            version = ?,
            description = ?,
-           externalDBId = $dbRef
+           external_db_id = $dbRef
      " );
-	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
+	$sth->execute( $exObj->primary_id(), $exObj->display_label(), $exObj->version(),
 		       $exObj->description());
 	
 	$sth = $self->prepare( "
@@ -176,10 +176,10 @@ sub store {
 	    
 #Check if this synonym is already in the database for the given primary id
 	    my $sth = $self->prepare( "
-     SELECT xrefId,
+     SELECT xref_id,
             synonym
-       FROM externalSynonym
-      WHERE xrefId = '$dbX'
+       FROM external_synonym
+      WHERE xref_id = '$dbX'
         AND synonym = '$syn'
     " );
 	    $sth->execute;
@@ -190,8 +190,8 @@ sub store {
 	    
 	    if( ! $dbSyn ) {
 		$sth = $self->prepare( "
-        INSERT INTO externalSynonym
-         SET xrefId = $dbX,
+        INSERT INTO external_synonym
+         SET xref_id = $dbX,
             synonym = '$syn'
       " );
 		$sth->execute();
@@ -200,8 +200,8 @@ sub store {
 	
 	
 	$sth = $self->prepare( "
-   INSERT INTO objectXref
-     SET xrefId = $dbX,
+   INSERT INTO object_xref
+     SET xref_id = $dbX,
          ensembl_object_type = ?,
          ensembl_id = ?
   " );
@@ -211,7 +211,7 @@ sub store {
 	$exObj->dbID( $dbX );
 	$exObj->adaptor( $self );
 	
-	if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+	if ($exObj->isa('Bio::EnsEMBL::Identityxref')) {
 	    $sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
@@ -219,8 +219,8 @@ sub store {
 	    my ( $Xidt ) = $sth->fetchrow_array();
 	    
 	    $sth = $self->prepare( "
-             INSERT INTO identityXref
-             SET objectxrefId = $Xidt,
+             INSERT INTO identity_xref
+             SET object_xref_id = $Xidt,
              query_identity = ?,
              target_identity = ?
     " );
@@ -230,9 +230,9 @@ sub store {
     } else {
 	$sth = $self->prepare ( "
 
-              SELECT xrefId
-              FROM objectXref
-              WHERE xrefId = $dbX
+              SELECT xref_id
+              FROM object_xref
+              WHERE xref_id = $dbX
               AND   ensembl_object_type = '$ensType'
               AND   ensembl_id = '$ensObject'");
 	
@@ -241,10 +241,10 @@ sub store {
 
 
 	if (! defined $tst) {
-	# line is already in Xref table. Need to add to objectXref
+	# line is already in xref table. Need to add to object_xref
 	    $sth = $self->prepare( "
-             INSERT INTO objectXref
-               SET xrefId = $dbX,
+             INSERT INTO object_xref
+               SET xref_id = $dbX,
                ensembl_object_type = ?,
                ensembl_id = ?");
 	
@@ -254,7 +254,7 @@ sub store {
 	    $exObj->adaptor( $self );
 
 
-	    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+	    if ($exObj->isa('Bio::EnsEMBL::Identityxref')) {
 		$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
     " );
@@ -262,8 +262,8 @@ sub store {
 		my ( $Xidt ) = $sth->fetchrow_array();
 		
 		$sth = $self->prepare( "
-             INSERT INTO identityXref
-             SET objectxrefId = $Xidt,
+             INSERT INTO identity_xref
+             SET object_xref_id = $Xidt,
              query_identity = ?,
              target_identity = ?
     " );
@@ -367,19 +367,19 @@ sub _fetch_by_EnsObject_type {
     
     my $exDB;
     
-    # using an outer join on the synonyms as well as on identityxref, we
+    # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
-    # original). Since there is at most one identityXref row per Xref,
+    # original). Since there is at most one identity_xref row per xref,
     # this is easy enough; all the 'extra' bits are synonyms
     if ( !$seen{$refID} )  {
       $seen{$refID}++;
       
-      if ((defined $queryid)) {         # an Xref with similarity scores
-        $exDB = Bio::EnsEMBL::IdentityXref->new
+      if ((defined $queryid)) {         # an xref with similarity scores
+        $exDB = Bio::EnsEMBL::Identityxref->new
           ( -adaptor => $self,
             -dbID => $refID,
             -primary_id => $dbprimaryId,
-            -display_id => $displayid,
+            -display_label => $displayid,
             -version => $version,
             -release => $release,
             -dbname => $dbname);
@@ -392,7 +392,7 @@ sub _fetch_by_EnsObject_type {
           ( -adaptor => $self,
             -dbID => $refID,
             -primary_id => $dbprimaryId,
-            -display_id => $displayid,
+            -display_label => $displayid,
             -version => $version,
             -release => $release,
             -dbname => $dbname );
@@ -404,7 +404,7 @@ sub _fetch_by_EnsObject_type {
       push( @out, $exDB );
     }                                   # if (!$seen{$refID})
 
-    # $exDB still points to the same Xref, so we can keep adding synonyms
+    # $exDB still points to the same xref, so we can keep adding synonyms
     #if ($synonym) {
     #  $exDB->add_synonym( $synonym );
     #}
@@ -431,10 +431,10 @@ sub geneids_by_extids{
 
    my $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
                   FROM transcript tr, 
-                       Xref x, objectXref oxr
+                       xref x, object_xref oxr
                   WHERE tr.translation_id = oxr.ensembl_id 
-                    AND oxr.xrefId = x.xrefId 
-                    AND x.display_id = '$name'");
+                    AND oxr.xref_id = x.xref_id 
+                    AND x.display_label = '$name'");
    $sth->execute();
 
    while( ($a) = $sth->fetchrow_array ) {
@@ -527,15 +527,15 @@ my @out;
 
   my $sth = $self->prepare( "
     SELECT oxr.ensembl_id
-    FROM Xref, externalDB exDB, objectXref oxr, externalSynonym syn 
-     WHERE (Xref.dbprimary_id = '$name'
-            AND Xref.xrefId = oxr.xrefId
+    FROM xref, external_db exDB, object_xref oxr, external_synonym syn 
+     WHERE (xref.dbprimary_acc = '$name'
+            AND xref.xref_id = oxr.xref_id
             AND oxr.ensembl_object_type = '$ensType')
-     OR    (Xref.display_id = '$name'
-            AND Xref.xrefId = oxr.xrefId
+     OR    (xref.display_label = '$name'
+            AND xref.xref_id = oxr.xref_id
             AND oxr.ensembl_object_type = '$ensType')
      OR    (syn.synonym = '$name'
-            AND syn.xrefId = oxr.xrefId
+            AND syn.xref_id = oxr.xref_id
             AND oxr.ensembl_object_type = '$ensType')
          " );
 
@@ -555,48 +555,55 @@ my @out;
 sub create_tables {
   my $self = shift;
 
-  my $sth = $self->prepare( "drop table if exists objectXref, Xref, externalDescription, externalSynonym, externalDB" );
+  my $sth = $self->prepare( "drop table if exists object_xref, xref, externalDescription, external_synonym, external_db" );
   $sth->execute();
 
   $sth = $self->prepare( qq{
-     CREATE TABLE objectXref(
-       ensembl_id VARCHAR(40) not null, 
-       ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
-       xrefId INT not null,
-       PRIMARY KEY( ensembl_object_type, ensembl_id, xrefId ),
-       KEY xrefIdx( xrefId, ensembl_object_type, ensembl_id )
-     )
+    
+    CREATE TABLE object_xref(
+			     object_xref_id INT not null auto_increment,
+			     ensembl_id int unsigned not null, 
+			     ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
+			     xref_id INT unsigned not null,
+			     
+			     UNIQUE ( ensembl_object_type, ensembl_id, xref_id ),
+			     KEY xref_index( object_xref_id, xref_id, ensembl_object_type, ensembl_id )
+			    );
+  } );
+  $sth->execute();
+  $sth = $self->prepare( qq{
+    CREATE TABLE xref (
+		       xref_id INT unsigned not null auto_increment,
+		       external_db_id int not null,
+		       dbprimary_acc VARCHAR(40) not null,
+		       display_label VARCHAR(40) not null,
+		       version VARCHAR(10) DEFAULT '' NOT NULL,
+		       description VARCHAR(255),
+		       
+		       PRIMARY KEY( xref_id ),
+		       UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
+		       KEY display_index ( display_label )
+		      );
+    
    } );
-  $sth->execute();
-  $sth = $self->prepare( qq{
-     CREATE TABLE Xref(
-         xrefId INT not null auto_increment,
-         externalDBId int not null,
-         dbprimary_id VARCHAR(40) not null,
-	 display_id VARCHAR(40) not null,
-         version VARCHAR(10),
-	 description VARCHAR(255),
-         PRIMARY KEY( xrefId ),
-         KEY idIdx( dbprimary_id ))
-   } );
 
   $sth->execute();
 
   $sth = $self->prepare( qq{
-     CREATE TABLE externalSynonym(
-         xrefId INT not null,
+     CREATE TABLE external_synonym(
+         xref_id INT not null,
          synonym VARCHAR(40) not null,
-         PRIMARY KEY( xrefId, synonym ),
+         PRIMARY KEY( xref_id, synonym ),
 	 KEY nameIdx( synonym )) 
    } );
   $sth->execute();
 
   $sth = $self->prepare( qq{
-     CREATE TABLE externalDB(
-         externalDBId INT not null auto_increment,
+     CREATE TABLE external_db(
+         external_db_id INT not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40),
-         PRIMARY KEY( externalDBId ) ) 
+         PRIMARY KEY( external_db_id ) ) 
    } );
   $sth->execute();
 }
@@ -616,33 +623,33 @@ sub delete_tables {
 sub exists_tables {
 }
 
-ObjectXref
+Objectxref
 =============
 ensembl_id varchar, later int
 ensembl_object_type  enum 
-xrefId int
-primary key (ensembl_id,ensembl_object_type,xrefId) 
+xref_id int
+primary key (ensembl_id,ensembl_object_type,xref_id) 
 
 
-Xref
+xref
 =================
-xrefId int (autogenerated) 
-externalDBId int
-dbprimary_id  varchar
+xref_id int (autogenerated) 
+external_db_id int
+dbprimary_acc  varchar
 version varchar
 
-primary key (xrefId)
+primary key (xref_id)
 
 ExternalDescription
 =======================
-xrefId int
+xref_id int
 description varchar (256)
 
-primary key (xrefId)
+primary key (xref_id)
 
 ExternalSynonym
 =================
-xrefId int
+xref_id int
 synonym varchar
 
 primary key (external_id,synonym)
@@ -650,7 +657,7 @@ primary key (external_id,synonym)
 
 ExternalDB
 ===================
-externalDBId int
+external_db_id int
 db_name varchar
 release varchar
 

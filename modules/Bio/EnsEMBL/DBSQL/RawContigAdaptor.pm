@@ -61,28 +61,28 @@ sub get_internal_id_by_id
     my ($self, $id) = @_;
     my $sth = $self->db->prepare
     (
-         "select internal_id from contig where id = '$id'"
+         "select contig_id from contig where name = '$id'"
     );
     my $res = $sth->execute;
     if(my $rowhash = $sth->fetchrow_hashref) {
-	return $rowhash->{internal_id};
+	return $rowhash->{contig_id};
     } else {
 	$self->warn("Could not find contig with id $id");
     }
 }
 
-sub get_id_by_internal_id
+sub get_id_by_contig_id
 {
-    my ($self, $internal_id) = @_;
+    my ($self, $contig_id) = @_;
     my $sth = $self->db->prepare
     (
-         "select id from contig where internal_id = '$internal_id'"
+         "select name from contig where contig_id = '$contig_id'"
     );
     my $res = $sth->execute;
     if(my $rowhash = $sth->fetchrow_hashref) {
-	return $rowhash->{id};
+	return $rowhash->{name};
     } else {
-	$self->warn("Could not find contig with internal_id $internal_id");
+	$self->warn("Could not find contig with contig_id $contig_id");
     }
 }
 
@@ -110,7 +110,7 @@ sub fetch_all {
   my @res;
 
   my $sth = $self->prepare( "SELECT contig_id, dna_id
-                          FROM contig " );
+                             FROM contig " );
   $sth->execute();
   while( my $aref = $sth->fetchrow_arrayref() ) {
     my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
@@ -130,10 +130,10 @@ sub fetch_by_name {
   my $name = shift;
 
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                          offset, corder, dna_id, 
-                          international_name
-                   FROM contig
-                   WHERE name = '$name'" );
+                             offset, corder, dna_id, 
+                             international_name
+                             FROM contig
+                             WHERE name = '$name'" );
   $sth->execute();
   
   my ( $contig ) = $self->_contig_from_sth( $sth );
@@ -149,10 +149,10 @@ sub fetch_by_clone {
   my $clone_id = $clone->dbID;
   
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                          offset, corder, dna_id, chromosome_id, 
-                          international_name
-                   FROM contig
-                   WHERE clone_id = $clone_id" );
+                             offset, corder, dna_id, chromosome_id, 
+                             international_name
+                             FROM contig
+                             WHERE clone_id = $clone_id" );
 
   my @res = $self->_contig_from_sth( $sth );
   return \@res;
@@ -169,9 +169,9 @@ sub fetch {
   my $dbID = $contig->dbID();
 
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                          offset, corder, dna_id, international_name
-                   FROM contig
-                   WHERE contig_id = $dbID" );
+                             offset, corder, dna_id, international_name
+                             FROM contig
+                             WHERE contig_id = $dbID" );
   $sth->execute();
   
   my $aref = $sth->fetchrow_arrayref();

@@ -134,7 +134,7 @@ sub fetch_by_geneId {
       , e.phase
       , e.end_phase
       , e.sticky_rank
-      , c.id cid
+      , c.name cid
     FROM exon e
       , exon_transcript et
       , transcript t
@@ -142,7 +142,7 @@ sub fetch_by_geneId {
     WHERE t.gene_id = $geneId
       AND et.transcript_id = t.transcript_id
       AND e.exon_id = et.exon_id
-      AND e.contig_id = c.internal_id
+      AND e.contig_id = c.contig_id
     ORDER BY t.transcript_id,e.exon_id
       , e.sticky_rank DESC
   };
@@ -282,12 +282,14 @@ sub fetch_evidence_by_Exon {
     }
     return;
   }
+
+  my $statement = "SELECT contig_id, contig_start, contig_end, score, 
+                          strand, analysis_id, hit_start, hit_end, hit_id,
+                          evalue, perc_ident, phase, end_phase
+		     FROM supporting_feature 
+                     WHERE exon_id = ".$exon->dbID;
 			
-  my $statement = "SELECT contig_id, seq_start, seq_end, score,
-                          strand, analysis, name, hstart, hend,
-                          hid, evalue, perc_id, phase, end_phase
-                   FROM supporting_feature 
-		     WHERE exon_id = ".$exon->dbID;
+
 
 
   my $sth = $self->prepare($statement);

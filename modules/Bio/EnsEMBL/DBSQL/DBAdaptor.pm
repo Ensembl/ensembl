@@ -434,8 +434,8 @@ sub get_all_chr_ids {
    $self->throw("no static_gold_path given") unless defined $type;
    my @out;
 
-   my $q= "SELECT DISTINCT chr_name 
-           FROM static_golden_path sgp
+   my $q= "SELECT DISTINCT chromosome_id 
+           FROM assembly
            WHERE type = '$type'";
    my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
    my $res = $sth->execute || $self->throw("can't prepare: $q");
@@ -464,8 +464,8 @@ sub get_all_fpcctg_ids {
    $self->throw("no static_gold_path given") unless defined $type;
    my @out;
 
-   my $q= "SELECT DISTINCT fpcctg_name 
-           FROM static_golden_path sgp
+   my $q= "SELECT DISTINCT superctg_name 
+           FROM assembly 
            WHERE type = '$type'";
    my $sth = $self->prepare($q) || $self->throw("can't prepare: $q");
    my $res = $sth->execute || $self->throw("can't prepare: $q");
@@ -553,18 +553,10 @@ sub write_Clone {
     }
     
     my @sql;
-    
-    my $sth = $self->prepare('insert into clone (id, internal_id, version, embl_id, embl_version, htg_phase, created, modified, stored) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())'); 
-    my $rv = $sth->execute(
-			   $clone_id,
-			   "NULL",
-			   $clone->version || "NULL",
-			   $clone->embl_id || "NULL",
-			   $clone->embl_version || "NULL",
-			   $clone->htg_phase,
-			   $clone->created,
-			   $clone->modified
-			   );
+    my $sql = "insert into clone(name, embl_acc, version, embl_version, htg_phase, created, modified) values('$clone_id', '".$clone->embl_id."', ".$clone->version.",".$clone->embl_version.", ".$clone->htg_phase.", FROM_UNIXTIME(".$clone->created."), FROM_UNIXTIME(".$clone->modified."))";
+    my $sth = $self->prepare($sql);
+    #my $sth = $self->prepare('insert into clone (clone_id, name,  embl_acc, version, embl_version, htg_phase, created, modified) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?)'); 
+    my $rv = $sth->execute();
         
     $self->throw("Failed to insert clone $clone_id") unless $rv;
     $sth = $self->prepare("select last_insert_id()");
@@ -611,32 +603,30 @@ sub write_Contig {
 #   my $species_id    = $self->write_Species   ($contig->species);
 #   my $chromosome_id = $self->write_Chromosome($contig->chromosome,$species_id);    
     my $contigid      = $contig->id;
-    my $date          = $contig->seq_date;
     my $len           = $dna   ->length;
     my $seqstr        = $dna   ->seq;
     my $offset        = $contig->embl_offset();
-    my $order         = $contig->embl_order();
+    my $corder         = $contig->order();
     #my $chromosome_id = $contig->chromosome->get_db_id;
-    my  $chromosome_id = 25;
+    my  $international_name = $contig->international_name();
 
     # Insert the sequence into the dna table
-    $self->_insertSequence($seqstr, $date);
+    $self->_insertSequence($seqstr, $contig->seq_date);
     
     my @sql;
     
     my $sth = $self->prepare("
-        insert into contig(id, internal_id, dna, length, clone, offset, corder, chromosomeId ) 
-        values(?, ?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
+        insert into contig(name, dna_id, length, clone_id, offset, corder, international_name ) 
+        values(?, LAST_INSERT_ID(), ?, ?, ?, ?, ?)
         "); 
-        
+    #print STDERR "contig name = ",$contigid,"\n";
     my $rv = $sth->execute(
-        $contigid,
-        'null',
+        $contigid,			   
         $len,
         $clone,
         $offset,
-        $order,
-        $chromosome_id    
+        $corder,
+        $international_name
         );  
           
     $self->throw("Failed to insert contig $contigid") unless $rv;
@@ -646,15 +636,14 @@ sub write_Contig {
     $sth->execute;
     my ($id) = $sth->fetchrow
         or $self->throw("Failed to get last insert id");
-
+    #can no longer do this as get_all_SeqFeatures no longer exists
+    #if a contig is written to the database
     # this is a nasty hack. We should have a cleaner way to do this.
-    my @features = $contig->get_all_SeqFeatures;
-    #print(STDERR "Contig $contigid - $id\n");
-    $contig->internal_id($id);
-    
+    #my @features = $contig->get_all_SeqFeatures;
+    #print(STDERR "Contig $contigid - $id\n"); 
     # write sequence features. We write all of them together as it
     # is more efficient
-    $self->get_Feature_Obj->write($contig, @features);
+    #$self->get_Feature_Obj->write($contig, @features);
     
     return 1;
 }
@@ -705,21 +694,35 @@ sub _insertSequence {
 =cut
 
 sub write_Chromosome {
-    my ($self,$chromosome,$species_id) = @_;
+  my ($self,$chromosome,$length, $known_genes, $unknown_genes, $snps) = @_;
 
-    $self->throw("No chromosome argument input") unless defined($chromosome);
-    $self->throw("No species_id argument input") unless defined($species_id);
-
-    if (!$chromosome->isa("Bio::EnsEMBL::Chromosome")) {
-	$self->throw("[$chromosome] is not a Bio::EnsEMBL::Chromosome object");
-    }
-
-    my $query = "select chromosome_id " .
-	        "from   chromosome " .
-		"where  name       = '" . $chromosome->name . "' " .
-		"and    species_id = "  . $species_id . 
-		"and    id         = "  . $chromosome->id;
-
+  $self->throw("No chromosome argument input") unless defined($chromosome);
+   
+  
+  if (!$chromosome->isa("Bio::EnsEMBL::Chromosome")) {
+    $self->throw("[$chromosome] is not a Bio::EnsEMBL::Chromosome object");
+  }
+  if(!$length){
+    $length = 0;
+  }
+  if(!$known_genes){
+    $known_genes = 0;
+  }
+  if(!$unknown_genes){
+    $unknown_genes = 0;
+  }
+  if(!$snps){
+    $snps = 0;
+  }
+  
+  my $query = "select chromosome_id " .
+              "from   chromosome " .
+              "where  name       = '" . $chromosome->chrname . "' " .
+	      " and    known_genes = "  . $known_genes . 
+	      " and    unknown_genes = ".$unknown_genes .
+	      " and    snps = ".$snps.
+	      " and    length = ".$length;
+  
     my $sth = $self->prepare($query);
     my $res = $sth->execute;
 
@@ -729,10 +732,9 @@ sub write_Chromosome {
 	return $chromosome_id;
     } 
 
-    $query =  "insert into chromosome(chromosome_id,name,id,species_id) " . 
-	      "            values(null,'" . $chromosome->name . "'," . $chromosome->id . "," . $species_id . ")";
+    $query =  "insert into chromosome(chromosome_id,name,known_genes,unknown_genes,snps,length) values(null,'" . $chromosome->chrname . "',".$known_genes.",".$unknown_genes.",".$snps.",".$length.")";
 	
-    
+  print $query."\n";
     $sth = $self->prepare($query);
     $res = $sth->execute;
 
@@ -743,7 +745,7 @@ sub write_Chromosome {
     my $chromosome_id = $rowhash->{'last_insert_id()'};
    
     return $chromosome_id;
-}
+  }
 
 =head2 mapdb
 
@@ -810,41 +812,43 @@ sub mapdbname {
 sub write_Species {
     my ($self,$species) = @_;
 
-    if (!defined($species)) {
-	$self->throw("No species argument input");
-    }
-    if (!$species->isa("Bio::EnsEMBL::Species")) {
-	$self->throw("[$species] is not a Bio::EnsEMBL::Species object");
-    }
+    $self->throw("there isn't a species table in the new schema\n");
 
-    my $query = "select species_id " .
-	        "from   species " .
-		"where  nickname    = '" . $species->nickname . "' " . 
-		"and    taxonomy_id = "  . $species->taxonomy_id;
+    #if (!defined($species)) {
+#	$self->throw("No species argument input");
+#    }
+#    if (!$species->isa("Bio::EnsEMBL::Species")) {
+#	$self->throw("[$species] is not a Bio::EnsEMBL::Species object");
+#    }
 
-    my $sth = $self->prepare($query);
-    my $res = $sth->execute;
+#    my $query = "select species_id " .
+#	        "from   species " .
+#		"where  nickname    = '" . $species->nickname . "' " . 
+#		"and    taxonomy_id = "  . $species->taxonomy_id;
 
-    if ($sth->rows == 1) {
-	my $rowhash    = $sth->fetchrow_hashref;
-	my $species_id = $rowhash->{species_id};
-	return $species_id;
-    } 
+#    my $sth = $self->prepare($query);
+#    my $res = $sth->execute;
 
-    $query =  "insert into species(species_id,nickname,taxonomy_id) " . 
-	      "            values(null,'" . $species->nickname . "'," . $species->taxonomy_id . ")";
+#    if ($sth->rows == 1) {
+#	my $rowhash    = $sth->fetchrow_hashref;
+#	my $species_id = $rowhash->{species_id};
+#	return $species_id;
+#    } 
+
+#    $query =  "insert into species(species_id,nickname,taxonomy_id) " . 
+#	      "            values(null,'" . $species->nickname . "'," . $species->taxonomy_id . ")";
 	
     
-    $sth = $self->prepare($query);
-    $res = $sth->execute;
+#    $sth = $self->prepare($query);
+#    $res = $sth->execute;
 
-    $sth = $self->prepare("select last_insert_id()");
-    $res = $sth->execute;
+#    $sth = $self->prepare("select last_insert_id()");
+#    $res = $sth->execute;
 
-    my $rowhash = $sth->fetchrow_hashref;
-    my $species_id = $rowhash->{'last_insert_id()'};
+#    my $rowhash = $sth->fetchrow_hashref;
+#    my $species_id = $rowhash->{'last_insert_id()'};
    
-    return $species_id;
+#    return $species_id;
 }
 
 

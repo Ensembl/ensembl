@@ -134,7 +134,7 @@ sub fetch_by_dbID {
     SELECT tscript.gene_id
       , tscript.transcript_id
       , e_t.exon_id, e_t.rank
-      , gene.analysisId
+      , gene.analysis_id
       , gene.type
       , tscript.translation_id
     FROM gene
@@ -251,7 +251,7 @@ sub fetch_by_contig_list{
    # trips to the database. should fix here
    #
 
-   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.id in $str and c.internal_id = e.contig_id and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.name in $str and c.contig_id = e.contig_id and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
    $sth->execute;
 
    my @out;
@@ -570,13 +570,13 @@ sub get_Interpro_by_geneid {
         FROM	transcript t, 
 		protein_feature pf, 
 		interpro i, 
-                Xref x,
+                xref x,
 		gene_stable_id gsi
 	WHERE	gsi.stable_id = '$gene' 
 	    AND	t.gene_id = gsi.gene_id
 	    AND	t.translation_id = pf.translation 
-	    AND	i.id = pf.hid 
-	    AND	i.interpro_ac = x.dbprimary_id";
+	    AND	i.id = pf.hit_id 
+	    AND	i.interpro_ac = x.dbprimary_acc";
    
    my $sth = $self->prepare($sql);
    $sth->execute;
