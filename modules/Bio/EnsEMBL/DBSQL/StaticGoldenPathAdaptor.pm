@@ -992,13 +992,25 @@ sub dbobj{
 # sneaky
 
 sub is_golden_static_contig {
-    my ($self,$cid) = @_;
+    my ($self,$cid,$pos) = @_;
 
-    my $sth = $self->dbobj->prepare("select c.id from contig c,static_golden_path p where c.id = '$cid' and p.raw_id = c.internal_id");
-
+    my $sth = $self->dbobj->prepare("select c.id,p.raw_start,p.raw_end from contig c,static_golden_path p where c.id = '$cid' and p.raw_id = c.internal_id");
     $sth->execute;
+    my @contigs;
+     foreach my $row ($sth->fetchrow_hashref) {
+         my $contig = $row->{'id'};
+         my $start  = $row->{'raw_start'};
+         my $end    = $row->{'raw_end'};
+         if (defined($pos)) {
+             if ($pos >= $start && $pos <= $end) {
+                push(@contigs,$contig);
+             }
+         } else {
+             push(@contigs,$contig);
+         } 
+     }
+     return scalar(@contigs);
 
-    return scalar($sth->fetchrow_array);
 }
 
 sub is_golden_static_clone {
