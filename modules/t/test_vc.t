@@ -76,9 +76,9 @@ my $vc=Bio::EnsEMBL::DB::VirtualContig->new(
 print "ok 3\n";
 
 #Check methods on vc
-my $seq=$vc->virtual_seq;
+my $seq=$vc->virtual_primary_seq;
 my $subseq=$seq->subseq(100,200);
-print $subseq;
+print $subseq."\n";
 $vc->id;
 $vc->length;
 print "ok 4\n";

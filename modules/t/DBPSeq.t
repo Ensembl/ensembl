@@ -69,7 +69,7 @@ my $contig=$db->get_Contig($conf{'contig'});
 print "ok 3\n";
 
 #Get DBPrimarySeq for this contig
-my $dbseq = $contig->DB_primary_seq();
+my $dbseq = $contig->primary_seq();
 print "ok 4\n";
 
 #Check that DBPrimarySeq methods work

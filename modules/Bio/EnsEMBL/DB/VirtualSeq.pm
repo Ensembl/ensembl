@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for DB::VirtualSeq
+# BioPerl module for DB::VirtualPrimarySeq
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::VirtualSeq - DESCRIPTION of Object
+Bio::EnsEMBL::DB::VirtualPrimarySeq - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
@@ -34,7 +34,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 # Let the code begin...
-package Bio::EnsEMBL::DB::VirtualSeq;
+package Bio::EnsEMBL::DB::VirtualPrimarySeq;
 use vars qw(@ISA);
 use strict;
 
@@ -57,7 +57,7 @@ sub _initialize {
       $self->throw("$vmap is not a Bio::EnsEMBL::DB::VirtualMap!");
   }
   if (! defined $un) {
-      $self->throw("Need to provide a unique number for the VirtualSeq id");
+      $self->throw("Need to provide a unique number for the VirtualPrimarySeq id");
   }
   if (! defined $length) {
       $self->throw("Need to pass on the length of the vc");
@@ -239,8 +239,6 @@ sub subseq{
    if( $start > $end ){
        $self->throw("in subseq, start [$start] has to be greater than end [$end]");
    }
-   print STDERR "Got $start and $end and length".$self->length;
-   
    if( $start <= 0 || $end > $self->length ) {
        $self->throw("You have to have start positive and length less than the total length of sequence");
    }

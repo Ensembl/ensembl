@@ -410,13 +410,13 @@ sub get_all_SimilarityFeatures{
 				    "and     fs.id = p2.fset " .
 				    "order by p2.fset");
    $sth->execute();
-
-   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$score);
+   
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
    my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$score);
-
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
+   
    my $out;
    
    my $fset_id_str = "";
@@ -446,7 +446,7 @@ sub get_all_SimilarityFeatures{
 	   $out->id($fset);
 	   $out->analysis($analysis);
 	   $out->seqname ($self->id);
-	   $out->score(-1000);
+	   $out->score($fset_score);
 	   $out->source_tag($name);
 	   $out->primary_tag("FSET");
 
@@ -464,8 +464,8 @@ sub get_all_SimilarityFeatures{
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
        
-       if( defined $score ) {
-	   $feature->score($score);
+       if( defined $f_score ) {
+	   $feature->score($f_score);
        }
        
        $feature->analysis($analysis);
@@ -492,7 +492,7 @@ sub get_all_SimilarityFeatures{
    $sth->execute();
 
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
    
    while($sth->fetch) {
        my $out;
@@ -519,8 +519,8 @@ sub get_all_SimilarityFeatures{
 	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
-	   $out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$self->id,
-				$hstart,$hend,1,$score,$name,'similarity',$hid);
+	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
+				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
 	   $out->id          ($hid);              # MC This is for Arek - but I don't
@@ -535,8 +535,8 @@ sub get_all_SimilarityFeatures{
 	   $out->primary_tag('similarity');
 	   $out->id         ($fid);
 
-	   if( defined $score ) {
-	       $out->score($score);
+	   if( defined $f_score ) {
+	       $out->score($f_score);
 	   }
 	   $out->analysis($analysis);
        }

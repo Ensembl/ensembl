@@ -81,7 +81,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
-use Bio::EnsEMBL::DB::VirtualSeq;
+use Bio::EnsEMBL::DB::VirtualPrimarySeq;
 
 my $VC_UNIQUE_NUMBER = 0;
 
@@ -101,7 +101,7 @@ sub _initialize {
   my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
   
   #Create a new VirtualMap holder object for MapContigs
-  my $vmap=Bio::EnsEMBL::DB::VirtualMap->new;
+  my $vmap=Bio::EnsEMBL::DB::VirtualMap->new();
   $self->_vmap($vmap);
 
   # set up feature_skip hash
@@ -118,7 +118,7 @@ sub _initialize {
   }
   
   if( defined $clone ) {
-      $self->_build_clone_map($clone);
+      $self->_vmap->build_clone_map($clone);
       $VC_UNIQUE_NUMBER = $clone->id;
       
   } else {
@@ -135,8 +135,8 @@ sub _initialize {
       }
       
       # build the map of how contigs go onto the vc coorindates
-      $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
-      $self->dbobj($focuscontig->dbobj);
+      $self->_vmap->build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
+      $self->_vmap->dbobj($focuscontig->dbobj);
       $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
   }
   
@@ -176,14 +176,14 @@ sub extend {
 	$self->throw("Must supply a left and right value when extending a VirtualContig");
     }
     
-    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_focus_contig,
-						    -focusposition   => $self->_focus_position,
-						    -ori             => $self->_focus_orientation,
-						    -left            => $self->_left_size - $left,
-						    -right           => $self->_right_size + $right,
+    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $self->_vmap->focus_contig,
+						    -focusposition   => $self->_vmap->focus_position,
+						    -ori             => $self->_vmap->focus_orientation,
+						    -left            => $self->_vmap->left_size - $left,
+						    -right           => $self->_vmap->right_size + $right,
 						    );
     
-    my $id = join('.', ($nvc->_focus_contig->id, $nvc->_focus_position, $nvc->_focus_orientation, $nvc->_left_size, $nvc->_right_size));
+    my $id = join('.', ($nvc->_vmap->focus_contig->id, $nvc->_vmap->focus_position, $nvc->_vmap->focus_orientation, $nvc->_vmap->left_size, $nvc->_vmap->right_size));
     $nvc->_unique_number($id);
     
     return $nvc;
@@ -317,23 +317,23 @@ sub windowed_VirtualContig {
 					        );
 }
 
-=head2 virtual_seq
+=head2 virtual_primary_seq
 
- Title   : virtual_seq
- Usage   : $seq = $contig->virtual_seq();
- Function: Gets a Bio::EnsEMBL::DB::VirtualSeq object out from the contig
- Returns : Bio::EnsEMBL::VirtualSeq object
+ Title   : virtual_primary_seq
+ Usage   : $seq = $contig->virtual_primary_seq();
+ Function: Gets a Bio::EnsEMBL::DB::VirtualPrimarySeq object out from the contig
+ Returns : Bio::EnsEMBL::VirtualPrimarySeq object
  Args    : none
 
 =cut
 
-sub virtual_seq {
+sub virtual_primary_seq {
     my ($self) = @_;
     
-    my $vseq = Bio::EnsEMBL::DB::VirtualSeq->new(-vmap =>$self->_vmap,
+    my $vseq = Bio::EnsEMBL::DB::VirtualPrimarySeq->new(-vmap =>$self->_vmap,
 						 -un =>$self->_unique_number,
-						 -clone =>$self->_clone_map,
-						 -length =>$self->length
+						 -clone =>$self->_vmap->clone_map,
+						 -"length" =>$self->length
 						 );
     return $vseq;
 }
@@ -394,7 +394,7 @@ sub primary_seq {
        my $trunc;
        my $end;
        
-       if( $self->_clone_map == 1 ) {
+       if( $self->_vmap->clone_map == 1 ) {
 	   $end = $mc->contig->length;
        } else {
 	   if($mc->rightmost_end) {
@@ -689,9 +689,7 @@ sub get_all_Genes {
 sub length {
    my ($self,@args) = @_;
 
-   #return $self->_left_size + $self->_right_size +1;
-   return $self->_left_size + $self->_right_size;
-
+   return $self->_vmap->left_size + $self->_vmap->right_size;
 }
 
 =head2 embl_accession
@@ -719,22 +717,17 @@ sub embl_accession {
 =head2 dbobj
 
  Title   : dbobj
- Usage   : $obj->dbobj($newval)
+ Usage   : 
  Function: 
  Returns : value of dbobj
- Args    : newvalue (optional)
+ Args    : 
 
 
 =cut
 
 sub dbobj {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'dbobj'} = $value;
-    }
-    return $obj->{'dbobj'};
-
+   my $self =shift;
+   return $self->_vmap->dbobj;
 }
 
 =head2 skip_SeqFeature
@@ -777,363 +770,6 @@ sub rawcontig_ids {
    return $self->_vmap->RawContig_ids;
 }
 
-=head2 _build_clone_map
-
- Title   : _build_clone_map
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _build_clone_map {
-   my ($self,$clone) = @_;
-
-   my $total_len   = 0;
-   my $length      = 0;
-   my $seen        = 0;
-   my $middle      = 0;
-   
-   foreach my $contig ( $clone->get_all_Contigs ) {
-       $self->_vmap->create_MapContig($contig->embl_offset,1,1,$contig);
-
-       $total_len = $contig->embl_offset + $contig->length;
-
-       if( $total_len > $length ) {
-	   $length = $total_len;
-       }
-       
-       if( $seen == 0 ) {
-	   $self->dbobj($contig->dbobj);
-	   $seen = 1;
-       }
-       
-   }
-   
-   # Tony: This vc made from a clone. Since it must have a left/right arm
-   # we set the 'focus' to the middle.
-   # The magic -1 avoids counting the focus base twice
-   $middle = int($length)/2;
-   $self->_left_size($middle-1);
-   $self->_right_size($length-$middle);
-   
-   # Remember this vc contructed from a clone (rather than extending a 'seed' contig)
-   $self->_clone_map(1);
-}
-
-
-=head2 _build_contig_map
-
- Title   : _build_contig_map
- Usage   : Internal function for building the map
-           of rawcontigs onto the virtual contig positions.
-
-           To do this we need contig ids mapped to start positions
-           in the vc, and the orientation of the contigs.
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _build_contig_map {
-    my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
-    
-    # we first need to walk down contigs going left
-    # so we can figure out the start position (contig-wise)
-    # initialisation - find the correct end of the focus contig
-    
-    my ($current_left_size,$current_orientation,$current_contig,$overlap);
-    
-    if( $ori == 1 ) {
-	$current_left_size   = $focusposition;
-	$current_orientation = 1;
-    } else {
-	$current_left_size   = $focuscontig->length - $focusposition;
-	$current_orientation = -1;
-    }
-    
-    $current_contig = $focuscontig;
-    
-    my %seen_hash;
-
-
-    GOING_LEFT :
-    
-	while( $current_left_size < $left ) {
-	    if( exists $seen_hash{$current_contig->id} ) {
-		$self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
-	    } else {
-		$seen_hash{$current_contig->id} = 1;
-	    }
-	
-	    if( $current_orientation == 1 ) {
-	      
-		# go left wrt to the contig.
-		$overlap = $current_contig->get_left_overlap();
-		
-		# if there is no left overlap, trim left to this size
-		# as this means we have run out of contigs
-	      
-		if( !defined $overlap ) {
-		    $left = $current_left_size;
-		    last;
-		}
-		
-		if( $overlap->distance == 1 ) {
-		    $current_left_size += $overlap->sister->golden_length -1;
-		} else {
-		    $current_left_size += $overlap->distance;
-		    if( $current_left_size > $left ) {
-			# set the left overhang!
-			$self->_vmap->left_overhang($overlap->distance - ($current_left_size - $left));
-			last GOING_LEFT;
-		    }
-		    
-		    $current_left_size += $overlap->sister->golden_length;
-		}
-		$current_contig = $overlap->sister();
-		
-		if( $overlap->sister_polarity == 1) {
-		    $current_orientation = 1;
-		} else {
-		    $current_orientation = -1;
-		}
-	    } else {
-		# go right wrt to the contig.
-		$overlap = $current_contig->get_right_overlap();
-
-		# if there is no left overlap, trim left to this size
-		# as this means we have run out of contigs
-		if( !defined $overlap ) {
-		    $left = $current_left_size;
-		    last;
-		}
-		
-		if( $overlap->distance == 1 ) {
-		    $current_left_size += $overlap->sister->golden_length-1;
-		} else {
-		    $current_left_size += $overlap->distance;
-		    if( $current_left_size > $left ) {
-			# set the left overhang!
-			$self->_vmap->left_overhang($overlap->distance - ($current_left_size - $left));
-			last GOING_LEFT;
-		    }
-		    $current_left_size += $overlap->sister->golden_length;
-		}
-		
-		$current_contig = $overlap->sister();
-		
-		if( $overlap->sister_polarity == 1) {
-		    $current_orientation = -1;
-		} else {
-		    $current_orientation = 1;
-		}
-	    }
-	}
-  
-    # now $current_contig is the left most contig in this set, with
-    # its orientation set and ready to rock... ;)
-  
-    my $total = $left + $right;
-  
-    # the first contig will need to be trimmed at a certain point
-    my $startpos;
-    
-    my $current_length;
-
-    if( $self->_vmap->left_overhang() == 0 ) {
-	if( $current_orientation == 1 ) {
-	    $startpos = $current_contig->golden_start + ($current_left_size - $left);
-	} else {
-	    $startpos = $current_contig->golden_end   - ($current_left_size - $left);
-	}
-	
-	$self->_vmap->create_MapContig(1,$startpos,$current_orientation,$current_contig);
-	my $mc=$self->_vmap->get_MapContig($current_contig->id);
-	$mc->leftmost(1);
-	
-	if( $current_orientation == 1 ) {
-	    $current_length = $current_contig->golden_end - $startpos +1;
-	} else {
-	    $current_length = $startpos - $current_contig->golden_start+1;
-	}
-    } else {
-	# has an overhang - first contig offset into the system
-
-	my $mc_start=$self->_vmap->left_overhang+1;
-	
-	my $mc_startin;
-	if( $current_orientation == 1 ) {
-	    $mc_startin=$current_contig->golden_start;
-	} else {
-	    $mc_startin=$current_contig->golden_end;
-	}
-
-	$self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
-	my $mc=$self->_vmap->get_MapContig($current_contig->id);
-	$mc->leftmost(1);
-	
-	$current_length = $self->_vmap->left_overhang() + $current_contig->golden_length ;
-    }
-    
-    # flush $seen_hash
-    %seen_hash = ();
-    
-    while( $current_length < $total ) {
-	# move onto the next contig.
-	
-	if( exists $seen_hash{$current_contig->id} ) {
-	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
-	} else {
-	    $seen_hash{$current_contig->id} = 1;
-	}
-	
-	if( $current_orientation == 1 ) {
-	    # go right wrt to the contig.
-	    
-	    $overlap = $current_contig->get_right_overlap();
-	    
-	    # if there is no right overlap, trim right to this size
-	    # as this means we have run out of contigs
-	    if( !defined $overlap ) {
-		$self->found_right_end(1);
-		$right = $current_length - $left;
-		last;
-	    }
-	    
-	    # see whether the distance gives us an end condition, and a right_overhang
-	    
-	    if( $current_length + $overlap->distance > $total ) {
-		# right overhang
-		$self->_vmap->right_overhang($total - $current_length);
-		last;
-	    }
-	    
-	    # add to total, move on the contigs
-	    
-	    $current_contig = $overlap->sister();
-	   
-	    if( $overlap->sister_polarity == 1) {
-		$current_orientation = 1;
-	    } else {
-		$current_orientation = -1;
-	    }
-	    
-	    # The +1, ++ and -- 's here are to handle the fact we want to produce 
-            #abuting coordinate systems from overlapping switch points.
-	    
-	    my $mc_start;
-	    if( $overlap->distance == 1 ) {
-		$mc_start=$current_length +1;
-	    } else {
-		$mc_start=$current_length + $overlap->distance;
-		$current_length += $overlap->distance;
-	    }
-	    
-	    my $mc_startin;
-	    if( $current_orientation == 1 ) {
-		$mc_startin=$current_contig->golden_start;
-		($overlap->distance == 1 ) && $mc_startin++; 
-	    } else {
-		$mc_startin=$current_contig->golden_end;
-		( $overlap->distance == 1 ) && $mc_startin--;
-	    }
-	    
-	    $self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
-	    
-	    # up the length
-	    $current_length += $overlap->sister->golden_length -1;
-	} else {
-	    # go left wrt to the contig
-	 	    
-	    $overlap = $current_contig->get_left_overlap();
-
-	    # if there is no left overlap, trim right to this size
-	    # as this means we have run out of contigs
-	    #IS THIS FINE?
-
-	    if( !defined $overlap ) {
-		$self->found_left_end(1);
-		$right = $current_length - $left;
-		last;
-	    }
-	    
-	    # add to total, move on the contigs
-	    $current_contig = $overlap->sister();
-	    
-	    if( $overlap->sister_polarity == 1) {
-		$current_orientation = -1;
-	    } else {
-		$current_orientation = 1;
-	    }
-	    
-	    # The +1's here are to handle the fact we want to produce abutting
-	    # coordinate systems from overlapping switch points.
-	    my $mc_start;
-	    if( $overlap->distance == 1 ) {
-		$mc_start=$current_length +1;
-	    } else {
-		$mc_start=$current_length + $overlap->distance;
-		$current_length += $overlap->distance;
-	    }
-
-	    my $mc_startin;
-	    if( $current_orientation == 1 ) {
-		$mc_startin=$current_contig->golden_start+1;
-	    } else {
-		$mc_startin=$current_contig->golden_end-1;
-	    }
-	    
-	    $self->_vmap->create_MapContig($mc_start,$mc_startin,$current_orientation,$current_contig);
-	    
-	    # up the length
-	    $current_length += $overlap->sister->golden_length -1;
-	}
-    }
-    
-    # $right might have been modified during the walk
-    
-    $total = $left + $right;
-
-    # need to store end point for last contig
-    my $mc=$self->_vmap->get_MapContig($current_contig->id);
-   
-    my $end;
-    
-    if( $self->_vmap->right_overhang == 0 ) {
-	if( $current_orientation == 1 ) {
-	    $end= $current_contig->golden_end - ($current_length - $total);
-	} else {
-	    $end= $current_contig->golden_start + ($current_length - $total);
-	}
-    } else {
-	if( $current_orientation == 1 ) {
-	    $end= $current_contig->golden_end;
-	} else {
-	    $end= $current_contig->golden_start;
-	}
-    }
-    $mc->rightmost_end($end);
-   
-    # put away the focus/size info etc
-
-    $self->_focus_contig($focuscontig);
-    $self->_focus_position($focusposition);
-    $self->_focus_orientation($ori);
-    $self->_left_size($left);
-    $self->_right_size($right);
-    
-
-    # ready to rock and roll. Woo-Hoo!
-}
-
-
 =head2 found_left_end
 
  Title   : found_left_end
@@ -1147,16 +783,8 @@ sub _build_contig_map {
 =cut
 
 sub found_left_end {
-    my ($self, $arg) = @_;
-    
-    if (defined($arg) && ($arg == 1 || $arg == 0)) {
-	
-	$self->{_found_left_end} = $arg;
-    } elsif (defined($arg)) {
-	$self->throw("Arg to found_left_end should be 0,1");
-    }
-    
-    return $self->{_found_left_end};
+    my ($self) = @_;
+    return $self->_vmap->found_left_hand;
 }
 
 
@@ -1173,15 +801,9 @@ sub found_left_end {
 =cut
 
 sub found_right_end {
-    my ($self,$arg) = @_;
+    my ($self) = @_;
     
-    if (defined($arg) && ($arg == 1 || $arg == 0)) {
-	$self->{_found_right_end} = $arg;
-    } elsif (defined($arg)) {
-	$self->throw("Arg to found_right_end should be 0,1");
-    }
-    
-    return $self->{_found_right_end};
+    return $self->_vmap->found_right_end;
 }
 
 =head2 is_truncated
@@ -1575,106 +1197,6 @@ sub ori_in_vc {
     return $mc->orientation;   
 }
 
-=head2 _focus_contig
-
- Title   : _focus_contig
- Usage   : $obj->_focus_contig($newval)
- Function: 
- Example : 
- Returns : value of _focus_contig
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _focus_contig {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_focus_contig'} = $value;
-    }
-    return $obj->{'_focus_contig'};
-}
-
-=head2 _focus_position
-
- Title   : _focus_position
- Usage   : $obj->_focus_position($newval)
- Function: 
- Example : 
- Returns : value of _focus_position
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _focus_position {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_focus_position'} = $value;
-    }
-    return $obj->{'_focus_position'};
-}
-
-=head2 _focus_orientation
-
- Title   : _focus_orientation
- Usage   : $obj->_focus_orientation($newval)
- Function: 
- Example : 
- Returns : value of _focus_orientation
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _focus_orientation {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_focus_orientation'} = $value;
-    }
-    return $obj->{'_focus_orientation'};
-}
-
-=head2 _left_size
-
- Title   : _left_size
- Usage   : $obj->_left_size($newval)
- Function: 
- Example : 
- Returns : value of _left_size
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _left_size {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_left_size'} = $value;
-    }
-    return $obj->{'_left_size'};
-}
-
-=head2 _right_size
-
- Title   : _right_size
- Usage   : $obj->_right_size($newval)
- Function: 
- Example : 
- Returns : value of _right_size
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _right_size {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_right_size'} = $value;
-    }
-    return $obj->{'_right_size'};
-}
-
 =head2 _cache_seqfeatures
 
  Title   : _cache_seqfeatures
@@ -1818,69 +1340,6 @@ sub _seq_cache {
 	$obj->{'_seq_cache'} = $value;
     }
     return $obj->{'_seq_cache'};
-}
-
-=head2 _clone_map
-
- Title   : _clone_map
- Usage   : $obj->_clone_map($newval)
- Function: 
- Example : 
- Returns : value of _clone_map
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _clone_map {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_clone_map'} = $value;
-    }
-    return $obj->{'_clone_map'};
-}
-
-
-=head2 _at_left_end
-
- Title   : _at_left_end
- Usage   : $obj->_at_left_end($newval)
- Function: 
- Example : 
- Returns : true if we have reached the  obsolute left end of vc
- Args    : newvalue (optional)
-
-
-=cut
-
-
-sub _at_left_end {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_at_left_end'} = $value;
-    }
-    return $obj->{'_at_left_end'};
-}
-
-=head2 _at_right_end
-
- Title   : _at_right_end
- Usage   : $obj->_at_right_end($newval)
- Function: 
- Example : 
- Returns : true if we have reached the  obsolute right end of vc
- Args    : newvalue (optional)
-
-
-=cut
-
-
-sub _at_right_end {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_at_right_end'} = $value;
-    }
-    return $obj->{'_at_right_end'};
 }
 
 =head2 _vmap
