@@ -191,18 +191,19 @@ debug("Building gene table");
 
 my $sql =
   "INSERT INTO $target.gene " .
-  "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
+  "SELECT g.gene_id, g.type, g.analysis_id, tcm.new_id, " .
   "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
   "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
   "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
   "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
   "       a.contig_ori*e.contig_strand as strand, " .
   "       g.display_xref_id " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g, $target.tmp_chr_map tcm " .
   "WHERE  t.transcript_id = et.transcript_id " .
   "AND    et.exon_id = e.exon_id " .
   "AND    e.contig_id = a.contig_id " .
   "AND    g.gene_id = t.gene_id " . 
+  "AND    a.chromosome_id = tcm.old_id " . 
   "GROUP BY g.gene_id";
 execute($dbi, $sql);
 
@@ -214,18 +215,19 @@ debug("Building transcript table");
 
 $sql =
   "INSERT INTO $target.transcript " .
-  "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
+  "SELECT t.transcript_id, g.gene_id, tcm.new_id, " .
   "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
   "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
   "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
   "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
   "       a.contig_ori*e.contig_strand as strand, " .
   "       g.display_xref_id " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g, $target.tmp_chr_map tcm " .
   "WHERE  t.transcript_id = et.transcript_id " .
   "AND    et.exon_id = e.exon_id " .
   "AND    e.contig_id = a.contig_id " .
   "AND    g.gene_id = t.gene_id " .
+  "AND    a.chromosome_id = tcm.old_id " .
   "GROUP BY t.transcript_id";
 #print $sql . "\n";
 execute($dbi, $sql);
@@ -238,18 +240,19 @@ debug("Building exon table");
 
 $sql =
   "INSERT INTO $target.exon " .
-  "SELECT e.exon_id, e.contig_id, " .
+  "SELECT e.exon_id, tcm.new_id, " .
   "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
   "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
   "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
   "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
   "       a.contig_ori*e.contig_strand as strand, " .
   "       e.phase, e.end_phase " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g, $target.tmp_chr_map tcm " .
   "WHERE  t.transcript_id = et.transcript_id " .
   "AND    et.exon_id = e.exon_id " .
   "AND    e.contig_id = a.contig_id " .
   "AND    g.gene_id = t.gene_id " .
+  "AND    a.chromosome_id = tcm.old_id " . 
   "GROUP BY e.exon_id";
 #print $sql . "\n";
 execute($dbi, $sql);
