@@ -209,7 +209,8 @@ CREATE TABLE protein_align_feature (
   PRIMARY KEY ( protein_align_feature_id ),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY hit_idx( hit_name ),
-  KEY ana_idx( analysis_id )
+  KEY ana_idx( analysis_id ),
+  KEY score_idx( score )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -238,7 +239,8 @@ CREATE TABLE dna_align_feature (
   PRIMARY KEY ( dna_align_feature_id ),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY hit_idx( hit_name ),
-  KEY ana_idx( analysis_id )
+  KEY ana_idx( analysis_id ),
+  KEY score_idx( score )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
