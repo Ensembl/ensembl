@@ -1,4 +1,3 @@
-
 #
 # Ensembl module for Bio::EnsEMBL::Utils::GTF_Merge
 #
