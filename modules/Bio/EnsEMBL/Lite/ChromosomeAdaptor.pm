@@ -88,14 +88,14 @@ sub fetch_by_dbID {
   # from the database and add it to the cache.
   #
   unless($chr = $self->{'_chr_cache'}->{$id}) {
-    my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, 
+    my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, xref_genes, 
                                       snps, length
                                FROM chromosome
                                WHERE chromosome_id = ?" );
     $sth->execute( $id );
     
-    my($name, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    my($name, $known_genes, $unknown_genes, $snps, $length, $xref_genes);
+    $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$xref_genes, \$snps,\$length); 
     $sth->fetch();
    
 
@@ -112,6 +112,7 @@ sub fetch_by_dbID {
                                          -dbID => $id,
 					 -chr_name => $name,
 					 -known_genes => $known_genes,
+					 -xref_genes => $xref_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
 					 '-length' => $length );
@@ -156,14 +157,14 @@ sub fetch_by_chr_name{
   # from the database and add it to the cache.
   #
   unless($chr = $self->{'_chr_name_cache'}->{$chr_name}) {
-    my $sth = $self->prepare( "SELECT chromosome_id, known_genes, unknown_genes, 
+    my $sth = $self->prepare( "SELECT chromosome_id, known_genes, unknown_genes, xref_genes,
                                       snps, length
                                FROM chromosome
                                WHERE name = ?" );
     $sth->execute( $chr_name );
     
-    my($dbID, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    my($name, $known_genes, $unknown_genes, $snps, $length, $xref_genes, $dbID);
+    $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$xref_genes, \$snps,\$length); 
 
     if ($sth->rows > 0) {
     $sth->fetch();
@@ -172,6 +173,7 @@ sub fetch_by_chr_name{
 					 -dbID => $dbID,
 					 -chr_name => $chr_name,
 					 -known_genes => $known_genes,
+					 -xref_genes => $xref_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
 					 '-length' => $length );
@@ -201,13 +203,13 @@ sub fetch_all {
   my @chrs = (); 
 
 
-    my $sth = $self->prepare( "SELECT chromosome_id, name, known_genes, 
+    my $sth = $self->prepare( "SELECT chromosome_id, name, known_genes, xref_genes,
                                       unknown_genes, snps, length
                                FROM chromosome" );
     $sth->execute();
     
-    my($chromosome_id, $name, $known_genes, $unknown_genes, $snps, $length);
-    $sth->bind_columns(\$chromosome_id,\$name,\$known_genes,
+    my($chromosome_id, $name, $known_genes, $unknown_genes, $xref_genes, $snps, $length);
+    $sth->bind_columns(\$chromosome_id,\$name,\$known_genes,\$xref_genes,
                        \$unknown_genes,\$snps,\$length); 
 
     while($sth->fetch()) {
@@ -216,6 +218,7 @@ sub fetch_all {
 					 -chr_name => $name,
 					 -dbID => $chromosome_id,
 					 -known_genes => $known_genes,
+					 -xref_genes => $xref_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
 					 '-length' => $length );

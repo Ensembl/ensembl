@@ -182,6 +182,37 @@ sub external_db {
   }
 }
 
+=head2 external_status
+
+ Title   : external_status
+ Usage   : $ext_db = $obj->external_status();
+ Function: external_name if available
+ Returns : the external db link for this transcript
+ Args    : new external db (optional)
+
+=cut
+
+sub external_status { 
+  my ( $self, $ext_status ) = @_;
+
+  if(defined $ext_status) {
+    return ( $self->{'_ext_status'} = $ext_status );
+  }
+
+  if( exists $self->{'_ext_status'} ) {
+    return $self->{'_ext_status'};
+  }
+
+  my $display_xref = $self->display_xref();
+
+  if( defined $display_xref ) {
+    return $display_xref->status()
+  } else {
+    return undef;
+  }
+}
+
+
 
 =head2 external_name
 

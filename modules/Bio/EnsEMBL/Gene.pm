@@ -440,6 +440,34 @@ sub external_db {
   }
 }
 
+=head2 external_status
+
+  Arg [1]    : string $external_status
+  Example    : none
+  Description: get/set for attribute external_status. The status of
+               the external db of the one that belongs to the external_name.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub external_status {
+  my ( $self, $ext_status ) = @_;
+
+  return $self->{'_ext_status'} = $ext_status if defined $ext_status;
+  return $self->{'_ext_status'} if exists $self->{'_ext_status'};
+
+  my $display_xref = $self->display_xref();
+
+  if( defined $display_xref ) {
+    return $display_xref->status()
+  } else {
+    return undef;
+  }
+}
+
+
 
 =head2 description
 

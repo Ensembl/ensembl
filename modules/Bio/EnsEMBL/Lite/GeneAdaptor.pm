@@ -182,10 +182,12 @@ sub fetch_all_by_Slice {
     my $sth = $self->prepare( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
-              t.exon_structure, t.external_name, t.exon_ids, t.external_db, 
+              t.exon_structure, t.external_name, t.external_status, t.exon_ids, t.external_db, 
               t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
-              g.external_db as gene_external_db, g.type as gene_type 
+              g.external_db as gene_external_db, 
+              g.external_status as gene_external_status, 
+              g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
            ON g.gene_id = t.gene_id
@@ -256,9 +258,10 @@ sub fetch_by_stable_id {
     ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
               t.translation_name, t.gene_id, t.type, t.gene_name, 
-              t.db, t.exon_structure, t.external_name, t.exon_ids,
+              t.db, t.exon_structure, t.external_name, t.external_status, t.exon_ids,
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
+              g.external_status as gene_external_status, 
               g.external_db as gene_external_db, g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
@@ -291,9 +294,10 @@ sub fetch_by_transcript_stable_id {
     ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
-              t.exon_structure, t.external_name, t.exon_ids,
+              t.exon_structure, t.external_name, t.external_status, t.exon_ids,
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
+              g.external_status as gene_external_status, 
               g.external_db as gene_external_db, g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
@@ -346,6 +350,7 @@ sub _objects_from_sth {
       $gene->strand( $hr->{'chr_strand'} );
 
       if( defined $hr->{'gene_type' } ) {
+        $gene->external_name( $hr->{'gene_external_status'} );
 	$gene->external_name( $hr->{'gene_external_name'} );
 	$gene->external_db( $hr->{'gene_external_db'} );
 	$gene->type( $hr->{'gene_type'} );
@@ -482,6 +487,7 @@ sub _objects_from_sth {
     $transcript->coding_end( $coding_end );
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->type( $hr->{ 'type' } );
+    $transcript->external_status( $hr->{'external_status'} );
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
 
@@ -550,7 +556,7 @@ sub _get_empty_Genes {
   
   my $sth = $self->prepare
     ( "SELECT g.db, g.gene_id, g.gene_name, g.chr_name, g.chr_start, 
-              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db
+              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db, g.external_status
        FROM   gene g
        WHERE  g.chr_name = ? AND g.chr_start <= ? AND 
               g.chr_start >= ? AND g.chr_end >= ?" );
@@ -576,6 +582,7 @@ sub _get_empty_Genes {
     $gene->strand( $hashref->{'chr_strand'} );
 
     if( defined $hashref->{'type' } ) {
+      $gene->external_status( $hashref->{'external_status'} );
       $gene->external_name( $hashref->{'external_name'} );
       $gene->external_db( $hashref->{'external_db'} );
       $gene->type( $hashref->{'type'} );
@@ -629,10 +636,11 @@ sub fetch_all_by_external_name {
     my $sth = $self->prepare( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end,
               t.chr_strand, t.transcript_name, t.translation_id,
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db,
-              t.exon_structure, t.external_name, t.exon_ids, t.external_db,
+              t.exon_structure, t.external_name, t.exon_ids, t.external_db, t.external_status,
               t.coding_start, t.coding_end,
               g.external_name as gene_external_name,
-              g.external_db as gene_external_db, g.type as gene_type
+              g.external_db as gene_external_db, g.external_status as gene_external_status,
+              g.type as gene_type
          FROM transcript t, gene_xref as gx, gene as g
         where g.gene_id = t.gene_id AND g.db = t.db and t.db = ? and gx.external_name = ? and gx.gene_id = g.gene_id
         order by g.gene_name, t.gene_name"
@@ -656,7 +664,7 @@ sub _get_empty_Genes_by_external_name {
 
   my $sth = $self->prepare(
 	 "SELECT distinct g.db, g.gene_id, g.gene_name, g.chr_name, g.chr_start,
-              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db
+              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db, g.external_status
        FROM   gene g, gene_xref as gx
        WHERE  g.gene_id = gx.gene_id and g.db = ? and gx.external_name = ?" );
 
@@ -678,6 +686,7 @@ sub _get_empty_Genes_by_external_name {
     $gene->strand( $hashref->{'chr_strand'} );
 
     if( defined $hashref->{'type' } ) {
+      $gene->external_status( $hashref->{'external_status'} );
       $gene->external_name( $hashref->{'external_name'} );
       $gene->external_db( $hashref->{'external_db'} );
       $gene->type( $hashref->{'type'} );
@@ -726,6 +735,7 @@ sub store {
           chr_strand = ?,
           description = ?,
           external_db = ?,
+          external_status = ?,
           external_name = ? " 
     );
 
@@ -733,6 +743,7 @@ sub store {
 		 $gene->type(), $gene->dbID(), $gene->stable_id(),
 		 $gene->chr_name(), $gene->start(), $gene->end(),
 		 $gene->strand(), $gene->description(), $gene->external_db(),
+                 $gene->external_status(), 
 		 $gene->external_name() );
 
  # now store transcripts
@@ -757,7 +768,8 @@ sub store {
         gene_name = ?,
    exon_structure = ?,
          exon_ids = ?,
-      external_db = ?,
+     external_db = ?,
+  external_status = ?,
     external_name = ? " 
     );
 
@@ -791,7 +803,7 @@ sub store {
 		   $tr->start(), $tr->end(), $gene->strand(), $tr->coding_start(),
 		   $tr->coding_end(), $tr->translation->dbID(), 
 		   $tr->translation->stable_id(), $gene->dbID(), $gene->stable_id(),
-		   $exon_structure, $exon_ids, $tr->external_db(),
+		   $exon_structure, $exon_ids, $tr->external_db(), $tr->external_status(),
 		   $tr->external_name() );
   }
 }

@@ -53,6 +53,7 @@ use Bio::EnsEMBL::Root;
                                      -adaptor       => $adaptor,
                                      -length        => $length,
                                      -known_genes   => $known_genes,
+                                     -xref_genes    => $xref_genes,
                                      -unknown_genes => $unknown_genes,
                                      -snps          => $snps);
   Description: Creates a new chromosome object
@@ -70,12 +71,13 @@ sub new {
     bless($self, $class);
 	 
     my ( $chr_name, $chromosome_id, $adaptor, $length, 
-	 $known_genes, $unknown_genes, $snps) = 
+	 $known_genes, $xref_genes, $unknown_genes, $snps) = 
 	 $self->_rearrange([qw(CHR_NAME
 			       DBID
 			       ADAPTOR 
 			       LENGTH 
 			       KNOWN_GENES
+			       XREF_GENES
 			       UNKNOWN_GENES
 			       SNPS)], 
 			   @args);
@@ -89,6 +91,7 @@ sub new {
     $self->dbID($chromosome_id);
     $self->unknown_genes($unknown_genes);
     $self->length($length);
+    $self->xref_genes($xref_genes);
     $self->known_genes($known_genes);
     $self->snps($snps);
 
@@ -186,6 +189,28 @@ sub length {
 }
 
 
+
+=head2 xref_genes
+
+  Arg [1]    : int $number_of_xref_genes
+  Example    : none
+  Description: get/set for the attribute xref_genes, the number of xref genes
+               on this chromosome
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub xref_genes {
+  my ($self, $xref_genes) = @_;
+
+  if(defined $xref_genes) {
+    $self->{'xref_genes'} = $xref_genes;
+  }
+
+  return $self->{'xref_genes'};
+}
 
 =head2 known_genes
 
