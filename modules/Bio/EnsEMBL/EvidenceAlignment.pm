@@ -197,9 +197,9 @@ sub _get_features_from_transcript {
   my $strand = $exons[0]->strand;
   my $hack_shift_bp;
   if ($strand < 0) {
-    $hack_shift_bp = - VC_MINUS_STRAND_HACK_BP;
+    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
   } else {
-    $hack_shift_bp = - VC_PLUS_STRAND_HACK_BP;
+    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
   }
   my @all_features = $vc->get_all_SimilarityFeatures;
   my @features = ();
@@ -790,9 +790,9 @@ sub _get_aligned_evidence_for_transcript {
 
   my $hack_shift_bp;
   if ($all_exons[0]->strand < 0) {
-    $hack_shift_bp = - VC_MINUS_STRAND_HACK_BP;
+    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
   } else {
-    $hack_shift_bp = - VC_PLUS_STRAND_HACK_BP;
+    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
   }
 
   my @seqcache = ();
