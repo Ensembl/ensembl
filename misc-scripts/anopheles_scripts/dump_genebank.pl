@@ -31,7 +31,8 @@ my $gene_adapt = $db->get_GeneAdaptor();
 my $slice_adapt = $db->get_SliceAdaptor();
 
 open (MAP,"/Users/emmanuelmongin/work/ncbi_dump/AAAB01.output.p2g") || die;
-open (OUT,">/Users/emmanuelmongin/work/ncbi_dump/test.out") || die;
+open (OUT,">/Users/emmanuelmongin/work/ncbi_dump/tmp/test.tbl") || die;
+open (SEQ,">/Users/emmanuelmongin/work/ncbi_dump/tmp/test.fsa") || die;
 
 while(<MAP>) {
     chomp;
@@ -42,25 +43,45 @@ while(<MAP>) {
 close(MAP);
 
 #Get all of the scaffolds
-my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
+#my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
+my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name";
+
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
 
-while(my ($id,$clone_name) = $sth1->fetchrow_array) {
+while(my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
 
     my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
     
+    if ($ori == -1) {
+	$slice = $slice->invert();
+    }
+        
+
     my $chr_name = $slice->chr_name;
 
-    # print STDERR ">gnl|WGS:AAAB|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    print STDERR "$chr_name\n"; 
 
-    print OUT ">Feature gnl|WGS:AAAB|$clone_name\n";
+    my $clone_seq = $slice->seq;
+    
+    print SEQ ">gnl|WGS:AAAB|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    
+    
+    print OUT ">gnl|WGS:AAAB|$clone_name\n";
+    
+    print STDERR "$slice\n";
     
     my @genes = @{$slice->get_all_Genes};
 
+    print STDERR "HERE\n";
+
     foreach my $gene(@genes) {
+
+	print STDERR "HERE1\n";
 	
 	my $gene_id = $gene->dbID;
+
+	print STDERR "$gene_id\n";
 	
 	my @transcripts = @{$gene->get_all_Transcripts};
 
