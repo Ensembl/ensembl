@@ -1566,8 +1566,10 @@ sub write_Gene{
 	   if (!defined($internal_contig_id)) {
 	       $self->throw("Internal id not found for contig [" . $exon->contig_id . "]");
 	   }
+	   my $tmpid = $exon->contig_id;
 	   $exon->contig_id($internal_contig_id);
 	   $self->write_Exon($exon);
+	   $exon->contig_id($tmpid);
 	   
 	   $c++;
        }
@@ -1680,7 +1682,7 @@ sub write_Feature {
     
     my $contigid = $contig->id;
     my $analysis;
-    print("internal id is " . $contig->internal_id . "\n");
+
     my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
@@ -2243,7 +2245,7 @@ sub write_Translation{
 
 =cut
 
-sub write_Exon{
+sub write_Exon {
    my ($self,$exon) = @_;
    my $old_exon;
 
@@ -2251,14 +2253,14 @@ sub write_Exon{
        $self->throw("$exon is not a EnsEMBL exon - not dumping!");
    }
    
-#   my $lockst = $self->prepare("lock exon");
-#   $lockst->execute;
+   #   my $lockst = $self->prepare("lock exon");
+   #   $lockst->execute;
 
    # ok - now load this line in
 
    # FIXME: better done with placeholders. (perhaps?).
 
-#       print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
+   # print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
        my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
 
 	   $exon->id()        . "'," .
