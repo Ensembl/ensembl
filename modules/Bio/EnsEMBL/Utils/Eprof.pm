@@ -1,0 +1,222 @@
+
+#
+# BioPerl module for Bio::EnsEMBL::Util::Eprof
+#
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
+#
+# Copyright EBI and GRL
+#
+# You may distribute this module under the same terms as perl itself
+
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::EnsEMBL::Util::Eprof - Bespoke Ensembl profiler
+
+=head1 SYNOPSIS
+
+    use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
+
+    &eprof_start('function-a');
+    ... do something
+    &eprof_end('function-a');
+
+
+    &eprof_dump(\*STDERR);
+
+    # there is an object based set for above as well, for running
+    # multiple concurrent profilers
+
+
+=head1 DESCRIPTION
+
+This is an Ensembl profiler as we broke the Perl profilers.
+
+=head1 CONTACT
+
+Describe contact details here
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+
+=cut
+
+
+# Let the code begin...
+
+
+package Bio::EnsEMBL::Utils::Eprof;
+use vars qw(@ISA @EXPORT_OK);
+use strict;
+use Exporter;
+use Bio::EnsEMBL::Utils::EprofStack;
+
+# Object preamble - inheriets from Bio::Root::Object
+
+use Bio::Root::RootI;
+
+@ISA = qw(Bio::Root::RootI Exporter);
+@EXPORT_OK = qw(eprof_start eprof_end eprof_dump );
+
+my $global;
+
+sub new { 
+    my ($class) = shift;
+    my $self = {};
+    $self->{'_tags'} = {};
+    bless $self,$class;
+
+    return $self;
+}
+
+=head2 eprof_start
+
+ Title   : eprof_start
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub eprof_start{
+   my ($tag) = @_;
+
+   if( !defined $global ) {
+       $global = Bio::EnsEMBL::Utils::Eprof->new();
+   }
+
+   $global->start($tag);
+}
+
+=head2 eprof_end
+
+ Title   : eprof_end
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub eprof_end {
+   my ($tag) = @_;
+
+   if( !defined $global ) {
+       $global = Bio::EnsEMBL::Utils::Eprof->new();
+   }
+
+   $global->end($tag);
+}
+
+sub eprof_dump {
+    my $fh = shift;
+
+    if( !defined $global ) {
+	return;
+    }
+
+    $global->dump($fh);
+}
+
+
+=head2 dump
+
+ Title   : dump
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dump{
+   my ($self,$fh) = @_;
+
+   foreach my $st ( values %{$self->_tags} ) {
+       print $fh sprintf("%14s  %6f  %6f  %d\n",$st->tag,$st->total_time,$st->total_time/$st->number,$st->number);
+   }
+
+}
+
+
+=head2 start
+
+ Title   : start
+ Usage   : $eprof->start('this_tag');
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub start{
+   my ($self,$tag) = @_;
+
+   if( !defined $tag ) {
+       $self->throw("Must start on tag");
+   }
+
+   if( !defined $self->_tags->{$tag} ) {
+       $self->_tags->{$tag} = Bio::EnsEMBL::Utils::EprofStack->new($tag);
+   }
+
+   $self->_tags->{$tag}->push_stack();
+}
+
+=head2 end
+
+ Title   : end
+ Usage   : $eprof->end('this_tag');
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end{
+   my ($self,$tag) = @_;
+
+   if( !defined $tag ) {
+       $self->throw("Must end on tag");
+   }
+
+   if( !defined $self->_tags->{$tag} ) {
+       $self->throw("Ending with a nonexistant tag");
+   }
+
+   $self->_tags->{$tag}->pop_stack();
+}
+
+
+=head2 _tags
+
+ Title   : _tags
+ Usage   : $obj->_tags($newval)
+ Function: 
+ Returns : value of _tags
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _tags{
+   my $obj = shift;
+
+    return $obj->{'_tags'};
+}
+
+1;
+
