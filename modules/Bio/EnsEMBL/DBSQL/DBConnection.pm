@@ -1,31 +1,28 @@
-#=Head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
+=head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
 
 =head1 SYNOPSIS
 
     $db = Bio::EnsEMBL::DBSQL::DBConnection->new(
-        -user   => 'root',
-        -dbname => 'pog',
-        -host   => 'caldy',
+        -user   => 'anonymous',
+        -dbname => 'homo_sapiens_core_20_34c',
+        -host   => 'ensembldb.ensembl.org',
         -driver => 'mysql',
         );
 
 
    You should use this as a base class for all objects (DBAdaptor) that 
-   connect to a database. 
+   connect to a database.  SQL statements should be created/executed through
+   this modules prepare() and do() methods.
 
    $sth = $db->prepare( "SELECT something FROM yourtable" );
 
-   If you go through prepare you could log all your select statements.
-
-   If you want to share a database handle with other database connections
-   you can do the following:
-
-   $db2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $db);
-
 =head1 DESCRIPTION
 
-  This only wraps around the perl DBI->connect call, 
-  so you dont have to remember how to do this.
+  This class is a wrapper around DBIs datbase handle.  It provides some
+  additional functionality such as the ability to automatically disconnect
+  when inactive and reconnect when needed, and a way to obtain ObjectAdaptors.
+  This class is intended to be inherited from rather than used directly.
+  See Bio::EnsEMBL::DBSQL::DBAdaptor.
 
 =head1 CONTACT
 
@@ -47,10 +44,12 @@ use Bio::EnsEMBL::Container;
 use Bio::EnsEMBL::Root;
 use DBI;
 
+use Bio::EnsEMBL::DBSQL::StatementHandle;
+
 use Bio::EnsEMBL::Utils::Exception qw(throw info warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root); # for backwards compatibility
 
 
 =head2 new
@@ -70,16 +69,26 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Arg [DRIVER] : (optional) string
                  The type of database driver to use to connect to the DB
                  mysql by default.
+  Arg [DBCONN] : (optional)
+                 Open another handle to the same database as another connection
+                 If this argument is specified, no other arguments should be
+                 specified.
+  Arg [DISCONNECT_WHEN_INACTIVE]: (optional) boolean
+                 If set to true, the database connection will be disconnected
+                 everytime there are no active statement handles. This is
+                 useful when running a lot of jobs on a compute farm
+                 which would otherwise keep open a lot of connections to the
+                 database.  Database connections are automatically reopened
+                 when required.
   Example    : $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new
-                  (-user=> 'anonymous',
-                   -dbname => 'pog',
-                   -host   => 'caldy',
+                  (-user   => 'anonymous',
+                   -dbname => 'homo_sapiens_core_20_34c',
+                   -host   => 'ensembldb.ensembl.org',
                    -driver => 'mysql');
 
-               $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-DBCONN => $dbc);
   Description: Constructor for a DatabaseConenction. Any adaptors that require
                database connectivity should inherit from this class.
-  Returntype : Bio::EnsEMBL::DBSQL::DBConnection 
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
   Exceptions : thrown if USER or DBNAME are not specified, or if the database
                cannot be connected to.
   Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
@@ -89,82 +98,68 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 sub new {
   my $class = shift;
 
-  my ($db, $dbconn,$host,$driver,$user,$password,$port) =
-    rearrange([qw(DBNAME DBCONN HOST DRIVER USER PASS PORT)],@_);
+  my ($db,$host,$driver,$user,$password,$port, $inactive_disconnect, $dbconn) =
+    rearrange([qw(DBNAME HOST DRIVER USER PASS PORT
+                  DISCONNECT_WHEN_INACTIVE DBCONN)], @_);
 
   my $self = {};
   bless $self, $class;
 
   if($dbconn) {
-    if(!ref($dbconn) || !$dbconn->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
-      throw("Bio::EnsEMBL::DBSQL::DBConnection argument expected.");
+    if($db || $host || $driver || $password || $port || $inactive_disconnect) {
+      throw("Cannot specify other arguments when -DBCONN argument used.");
     }
 
-    #share a common db_handle, use a shared scalar ref_count to track # connections
-    my $rcount = $dbconn->ref_count();
-    $$rcount++; # dereference and increment shared var
-    $self->ref_count($rcount);
-    $self->db_handle($dbconn->db_handle());
-
-    $self->driver($dbconn->driver());
-    $self->host($dbconn->host());
-    $self->port($dbconn->port());
     $self->dbname($dbconn->dbname());
     $self->username($dbconn->username());
+    $self->host($dbconn->host());
     $self->password($dbconn->password());
+    $self->port($dbconn->port());
+    $self->driver($dbconn->driver());
 
-    return Bio::EnsEMBL::Container->new($self);
+    $self->connect();
+
+    if($dbconn->disconnect_when_inactive()) {
+      $self->disconnect_when_inactive(1) 
+    }
+  } else {
+
+    $db   || throw("-DBNAME argument is required.");
+    $user || throw("-USER argument is required.");
+
+    $driver ||= 'mysql';
+    $host   ||= 'mysql';
+    $port   ||= 3306;
+
+    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
+
+    $self->username( $user );
+    $self->host( $host );
+    $self->dbname( $db );
+    $self->password( $password );
+    $self->port($port);
+    $self->driver($driver);
+
+    $self->connect();
+
+    if($inactive_disconnect) {
+      $self->disconnect_when_inactive($inactive_disconnect);
+    }
+
+    # be very sneaky and actually return a container object which is outside
+    # of the circular reference loops and will perform cleanup when all 
+    # references to the container are gone.
   }
 
-  $db   || throw("Database object must have a database name");
-  $user || throw("Database object must have a user");
-
-  if( ! $driver ) {
-    $driver = 'mysql';
-  }
-  if( ! $host ) {
-    $host = 'localhost';
-  }
-  if ( ! $port ) {
-    $port = 3306;
-  }
-
-=head1
-  my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
-
-  my $dbh;
-  eval{
-    $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-  };
-
-  $dbh || throw("Could not connect to database $db user " .
-		       "$user using [$dsn] as a locator\n" . $DBI::errstr);
-
-  my $ref_count = 1;
-  $self->ref_count(\$ref_count);
-  $self->db_handle($dbh);
-=cut
-
-  $self->username( $user );
-  $self->host( $host );
-  $self->dbname( $db );
-  $self->password( $password);
-  $self->port($port);
-  $self->driver($driver);
-
-  $self->connect();
-  
-  # be very sneaky and actually return a container object which is outside
-  # of the circular reference loops and will perform cleanup when all 
-  # references to the container are gone.
   return new Bio::EnsEMBL::Container($self);
 }
 
 
 =head2 connect
 
-  Example    : $db_connection->connect()
-  Description: Explicitely connect to database if not connected
+  Example    : $dbcon->connect()
+  Description: Connects to the database using the connection attribute 
+               information.
   Returntype : none
   Exceptions : none
   Caller     : new, db_handle
@@ -174,29 +169,26 @@ sub new {
 sub connect {
   my $self = shift;
 
-  if($self->{'_db_handle'}) { return; }
-
-  my $host      = $self->host();
-  my $driver    = $self->driver();
-  my $user      = $self->username();
-  my $password  = $self->password();
-  my $port      = $self->port();
-  my $db        = $self->dbname();
-
-  my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
+  my $dsn = "DBI:" . $self->driver() .
+            ":database=". $self->dbname() .
+            ";host=" . $self->host() .
+            ";port=" . $self->port();
 
   my $dbh;
   eval{
-    $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+    $dbh = DBI->connect($dsn,
+                        $self->username(),
+                        $self->password(),
+                        {RaiseError => 1});
   };
 
-  $dbh || throw("Could not connect to database $db user " .
-                "$user using [$dsn] as a locator\n" . $DBI::errstr);
+  $dbh || throw("Could not connect to database " . $self->dbname() .
+                " as user " . $self->username() .
+                " using [$dsn] as a locator:\n" . $DBI::errstr);
 
-  #print STDERR "DBConnection : CONNECT\n";
-  my $ref_count = 1;
-  $self->ref_count(\$ref_count);
-  $self->{'_db_handle'} = $dbh;
+  $self->db_handle($dbh);
+
+  return;
 }
 
 
@@ -339,33 +331,38 @@ sub password {
 }
 
 
-=head2 ref_count
+=head2 disconnect_when_inactive
 
-  Arg [1]    : (optional) ref to int $ref_count
-  Example    : $count = 1; $self->ref_count(\$count);
-  Description: Getter/setter for the number of existing references to
-               this DBConnections database handle.  This is a reference to
-               a scalar because it is shared by all database connections which
-               share the same database handle.  This is used by the DESTROY
-               method to decide whether it should disconnect from the database.
-  Returntype : reference to int
-  Exceptions : throw on bad argument
-  Caller     : new
+  Arg [1]    : (optional) boolean $newval
+  Example    : $db->disconnect_when_inactive(1);
+  Description: Getter/Setter for the disconnect_when_inactive flag.  If set
+               to true this DBConnection will continually disconnect itself
+               when there are no active statement handles and reconnect as
+               necessary.  Useful for farm environments when there can be
+               many (often inactive) open connections to a database at once.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : Pipeline
 
 =cut
 
-sub ref_count {
+sub disconnect_when_inactive {
   my $self = shift;
 
   if(@_) {
-    my $ref_count = shift;
-    if(ref($ref_count) ne 'SCALAR') {
-      throw("Reference to scalar argument expected.");
+    my $val = shift;
+    $self->{'disconnect_when_inactive'} = $val;
+    if($val) {
+      $self->disconnect_if_idle();
+    } elsif(!$self->db_handle->ping()) {
+      # reconnect if the connect went away
+      $self->connect();
     }
-    $self->{'ref_count'} = $ref_count;
   }
-  return $self->{'ref_count'};
+
+  return $self->{'disconnect_when_inactive'};
 }
+
 
 
 =head2 locator
@@ -384,16 +381,145 @@ sub ref_count {
 sub locator {
   my $self = shift;
 
-  my $ref;
-
-  if($self->isa('Bio::EnsEMBL::Container')) {
-    $ref = ref($self->_obj);
-  } else {
-    $ref = ref($self);
-  }
+  my $ref = ref($self);
 
   return "$ref/host=".$self->host.";port=".$self->port.";dbname=".
     $self->dbname.";user=".$self->username.";pass=".$self->password;
+}
+
+
+=head2 db_handle
+
+  Arg [1]    : DBI Database Handle $value
+  Example    : $dbh = $db_connection->db_handle() 
+  Description: Getter / Setter for the Database handle used by this
+               database connection.
+  Returntype : DBI Database Handle
+  Exceptions : none
+  Caller     : new, DESTROY
+
+=cut
+
+sub db_handle {
+   my $self = shift;
+
+   $self->{'db_handle'} = shift if(@_);
+
+   return $self->{'db_handle'};
+}
+
+
+
+=head2 prepare
+
+  Arg [1]    : string $string
+               the SQL statement to prepare
+  Example    : $sth = $db_connection->prepare("SELECT column FROM table");
+  Description: Prepares a SQL statement using the internal DBI database handle
+               and returns the DBI statement handle.
+  Returntype : DBI statement handle
+  Exceptions : thrown if the SQL statement is empty, or if the internal
+               database handle is not present
+  Caller     : Adaptor modules
+
+=cut
+
+sub prepare {
+   my ($self,$string) = @_;
+
+   if( ! $string ) {
+     throw("Attempting to prepare an empty SQL query.");
+   }
+   if( ! defined($self->db_handle) ) {
+     throw("Database object has lost its database handle.");
+   }
+
+   if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
+     # reconnect if we have been disconnected
+     $self->connect();
+   }
+
+   #info("SQL(".$self->dbname."):$string");
+
+   my $sth = $self->db_handle->prepare($string);
+
+   # return an overridden statement handle that provides us with
+   # the means to disconnect inactive statement handles automatically
+   bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
+
+   $sth->dbc($self);
+
+   return $sth;
+}
+
+
+=head2 do
+
+  Arg [1]    : string $string
+               the SQL statement to prepare
+  Example    : $sth = $db_connection->do("SELECT column FROM table");
+  Description: Executes a SQL statement using the internal DBI database handle.
+  Returntype : Result of DBI dbh do() method
+  Exceptions : thrown if the SQL statement is empty, or if the internal
+               database handle is not present.
+  Caller     : Adaptor modules
+
+=cut
+
+sub do {
+   my ($self,$string) = @_;
+
+   if( ! $string ) {
+     throw("Attempting to do an empty SQL query.");
+   }
+   if( ! defined($self->db_handle) ) {
+     throw("Database object has lost its database handle.");
+   }
+
+   if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
+     # reconnect if we have been disconnected
+     $self->connect();
+   }
+
+   #info("SQL(".$self->dbname."):$string");
+
+   my $result = $self->db_handle->do($string);
+
+   # disconnect if the disconnect when inactive flag is set and
+   # there are no active statement handles
+
+   if($self->disconnect_when_inactive()) {
+     $self->disconnect_if_idle();
+   }
+
+   return $result;
+}
+
+
+
+=head2 disconnect_if_idle
+
+  Arg [1]    : none
+  Example    : $dbc->disconnect_if_idle();
+  Description: Disconnects from the database if there are no currently active
+               statement handles.  You should not call this method directly.
+               It is called automatically by the DESTROY method of the
+               Bio::EnsEMBL::DBSQL::SQL::StatementHandle if the
+               disconect_when_inactive flag is set.
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::SQL::StatementHandle::DESTROY
+               Bio::EnsEMBL::DBSQL::DBConnection::do
+
+=cut
+
+sub disconnect_if_idle {
+  my $self = shift;
+
+  if(!$self->db_handle()->{'ActiveKids'} &&
+     !$self->db_handle()->{'InactiveDestroy'}) {
+    $self->db_handle->disconnect();
+  }
 }
 
 
@@ -418,10 +544,6 @@ sub locator {
 sub _get_adaptor {
   my( $self, $module, @args) = @_;
 
-  if ($self->isa('Bio::EnsEMBL::Container')) {
-    $self = $self->_obj;
-  }
-
   my( $adaptor, $internal_name );
 
   #Create a private member variable name for the adaptor by replacing
@@ -431,7 +553,7 @@ sub _get_adaptor {
 
   $internal_name =~ s/::/_/g;
 
-  unless (defined $self->{'_adaptors'}{$internal_name}) {
+  unless (defined $self->{'_adaptors'}->{$internal_name}) {
     eval "require $module";
 
     if($@) {
@@ -441,64 +563,12 @@ sub _get_adaptor {
 
     $adaptor = "$module"->new($self, @args);
 
-    $self->{'_adaptors'}{$internal_name} = $adaptor;
+    $self->{'_adaptors'}->{$internal_name} = $adaptor;
   }
 
-  return $self->{'_adaptors'}{$internal_name};
+  return $self->{'_adaptors'}->{$internal_name};
 }
 
-
-=head2 db_handle
-
-  Arg [1]    : DBI Database Handle $value
-  Example    : $dbh = $db_connection->db_handle() 
-  Description: Getter / Setter for the Database handle used by this
-               database connection.
-  Returntype : DBI Database Handle
-  Exceptions : none
-  Caller     : new, DESTROY
-
-=cut
-
-sub db_handle {
-   my ($self,$value) = @_;
-
-   if( defined $value) {
-      $self->{'_db_handle'} = $value;
-   }
-   else { $self->connect(); }
-   return $self->{'_db_handle'};
-}
-
-
-=head2 prepare
-
-  Arg [1]    : string $string
-               the SQL statement to prepare
-  Example    : $sth = $db_connection->prepare("SELECT column FROM table");
-  Description: Prepares a SQL statement using the internal DBI database handle
-               and returns the DBI statement handle.
-  Returntype : DBI statement handle
-  Exceptions : thrown if the SQL statement is empty, or if the internal
-               database handle is not present
-  Caller     : Adaptor modules
-
-=cut
-
-sub prepare {
-   my ($self,$string) = @_;
-
-   if( ! $string ) {
-       throw("Attempting to prepare an empty SQL query.");
-   }
-   if( !defined $self->db_handle ) {
-      throw("Database object has lost its database handle.");
-   }
-
-   #info("SQL(".$self->dbname."):$string");
-
-   return $self->db_handle->prepare($string);
-} 
 
 
 =head2 add_db_adaptor
@@ -521,8 +591,8 @@ sub add_db_adaptor {
 
   unless($name && $adaptor && ref $adaptor) {
     throw('adaptor and name arguments are required');
-  } 
-				   
+  }
+
   #avoid circular references and memory leaks
   if($adaptor->isa('Bio::EnsEMBL::Container')) {
       $adaptor = $adaptor->_obj;
@@ -573,7 +643,7 @@ sub remove_db_adaptor {
 =cut
 
 sub get_all_db_adaptors {
-  my ($self) = @_;   
+  my ($self) = @_;
 
   unless(defined $self->{'_db_adaptors'}) {
     return {};
@@ -608,12 +678,15 @@ sub get_db_adaptor {
 }
 
 
-
+#
+# This method is automatically called by the Container DESTROY method to
+# break circular references. Do not call it directly.
+#
 sub deleteObj {
   my $self = shift;
-  
+
   #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
-  
+
   if(exists($self->{'_adaptors'})) {
     foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
       my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
@@ -657,46 +730,19 @@ sub DESTROY {
 
    #print STDERR "DESTROYING DBConnection\n";
 
-   $obj->disconnect();
+   my $dbh = $obj->db_handle();
+
+   if($dbh) {
+     # don't disconnect if InactiveDestroy flag is set, this can really
+     # screw up forked processes
+     if(!$dbh->{'InactiveDestroy'}) {
+       $dbh->disconnect();
+     }
+   }
+
+   $obj->db_handle(undef);
 }
 
 
-=head2 disconnect
-
-  Example    : $db_connection->disconnect()
-  Description: Explicitely disconnect from database if connected
-  Returntype : none
-  Exceptions : none
-  Caller     : ?, DESTROY
-
-=cut
-
-sub disconnect {
-  my $self = shift;
-
-  my $dbh = $self->{'_db_handle'};
-
-  if( $dbh ) {
-    my $refcount = $self->ref_count();
-    $$refcount--;
-    #print STDERR "DBConnection : ref_count-- ";
-
-    # Do not disconnect if the InactiveDestroy flag has been set
-    # this can really screw up forked processes.
-    # Also: do not disconnect if this database handle is shared by
-    # other DBConnections (as indicated by the refcount)
-    if(!$dbh->{'InactiveDestroy'} && $$refcount == 0) {
-      $dbh->disconnect;
-      #print STDERR ": DISCONNECT ";
-    }
-    #print STDERR "\n";
-
-    $self->{'_db_handle'} = undef;
-    #unlink shared ref_count variable since no longer sharing db_handle
-    my $unlinked_refcount = 0;
-    $self->ref_count(\$unlinked_refcount);  
-  }
-
-}
 
 1;
