@@ -54,10 +54,22 @@ while( <FH> ) {
     next;
   }
 
-  chomp;
-  split;
+  if( /^@/  ) {
+    # no start defined probably no name either
+    $lastContig = undef;
+    next;
+  }
 
-  if(/^COMMITTED/) {
+  chomp;
+  if( /\t/ ) {
+    split( '\t', $_ );
+    map { s/^\s*//g;s/\s*$//g } @_;
+  } else {
+    split;
+  }
+
+
+  if( $_[0] =~ /^COMMITTED/) {
     $embl = 0;
   } else { 
     $embl = 1;
