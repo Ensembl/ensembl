@@ -44,68 +44,98 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 =cut
 
-sub store{
-  my ($self,@probes) = @_;
+sub store {
+  my ( $self, @probes ) = @_;
 
-  if( scalar(@probes) == 0 ) {
+  if ( scalar(@probes) == 0 ) {
     throw("Must call store with list of AffyFeatures");
   }
 
-  my $sth = $self->prepare
-    ("INSERT INTO affy_probe ( affy_probe_id, affy_array_id, probeset, name )".
-     "VALUES (?,?,?,?)" );
+  my $sth = $self->prepare( "INSERT INTO affy_probe ( affy_probe_id, affy_array_id, probeset, name )" . "VALUES (?,?,?,?)" );
 
   my $db = $self->db();
 
- PROBE:
-  foreach my $probe ( @probes ) {
-      
-      if( !ref $probe || !$probe->isa("Bio::EnsEMBL::AffyProbe") ) {
-	  throw("Probe must be an Ensembl AffyProbe, " .
-		"not a [".ref($probe)."]");
+PROBE:
+  foreach my $probe (@probes) {
+
+    if ( !ref $probe || !$probe->isa("Bio::EnsEMBL::AffyProbe") ) {
+      throw( "Probe must be an Ensembl AffyProbe, " . "not a [" . ref($probe) . "]" );
+    }
+
+    if ( $probe->is_stored($db) ) {
+      warning( "AffyProbe [" . $probe->dbID . "] is already stored in this database." );
+      next PROBE;
+    }
+
+    # all arrays in the probe need to be stored
+    my $arrays = $probe->get_all_AffyArrays();
+    my @stored_arrays;
+
+    for my $array (@$arrays) {
+      if ( defined $array->dbID() ) {
+        push( @stored_arrays, $array );
       }
+    }
 
-      if($probe->is_stored($db)) {
-	  warning("AffyProbe [".$probe->dbID."] is already stored in this database.");
-	  next PROBE;
+    if ( !@stored_arrays ) {
+      warn("Probes need attached arrays to be stored in database");
+      next PROBE;
+    }
+
+    my $dbID;
+    my $sth;
+
+    for my $array (@stored_arrays) {
+      if ( defined $dbID ) {
+        $sth = $self->prepare( "INSERT INTO affy_probe( affy_probe_id," . "affy_array_id, name, probeset ) " . "VALUES( ?,?,?,? )" );
+        $sth->execute( $dbID, $array->dbID(), $probe->get_probename( $array->name() ), $probe->probeset() );
+      } else {
+        $sth = $self->prepare( "INSERT INTO affy_probe( " . "affy_array_id, name, probeset ) " . "VALUES( ?,?,? )" );
+        $sth->execute( $array->dbID(), $probe->get_probename( $array->name() ), $probe->probeset() );
+        $dbID = $sth->{'mysql_insertid'};
+        $probe->dbID($dbID);
+        $probe->adaptor($self);
       }
+    }
+  }
+}
 
-      # all arrays in the probe need to be stored
-      my $arrays = $probe->get_all_AffyArrays();
-      my @stored_arrays;
+=head2 fetch_by_array_probeset_probename
 
-      for my $array ( @$arrays ) {
-	  if( defined $array->dbID() ) {
-	      push( @stored_arrays, $array );
-	  }
-      }
+  Arg [1]    : string $affy_array_name
+  Arg [2]    : string $affy_probeset_name
+  Arg [3]    : string $affy_probe_name
+  Example    : none
+  Description: Returns the (unique) affy probe for given combination of
+               affy feature and affy_probeset
+  Returntype : a single Bio::EnsEMBL::AffyProbe
+  Exceptions : none
+  Caller     : general
 
-      if( ! @stored_arrays ) {
-	  warn( "Probes need attached arrays to be stored in database" );
-	  next PROBE;
-      }
 
-      my $dbID;
-      my $sth;
+=cut
 
-      for my $array ( @stored_arrays ) {
-	  if( defined $dbID ) {
-	      $sth = $self->prepare( "INSERT INTO affy_probe( affy_probe_id," .
-				     "affy_array_id, name, probeset ) ".
-				     "VALUES( ?,?,?,? )" );
-	      $sth->execute( $dbID, $array->dbID(), $probe->get_probename( $array->name()),
-			     $probe->probeset() );
-	  } else {
-	      $sth = $self->prepare( "INSERT INTO affy_probe( " .
-				     "affy_array_id, name, probeset ) ".
-				     "VALUES( ?,?,? )" );
-	      $sth->execute( $array->dbID(), $probe->get_probename( $array->name()),
-			     $probe->probeset() );
-	      $dbID = $sth->{'mysql_insertid'};
-	      $probe->dbID( $dbID );
-	      $probe->adaptor($self);
-	  }
-      }
+sub fetch_by_array_probeset_probe {
+  my $self     = shift;
+  my $affy_array_name = shift;
+  my $affy_probeset_name = shift;
+  my $affy_probe_name = shift;
+
+  my $statement = 
+    $self->prepare(
+      "select affy_probe_id from affy_probe, affy_array where
+       affy_probe.affy_array_id = affy_probe.affy_array_id and
+       affy_array.name = ? and affy_probe.probeset = ? and affy_probe.name = ?"
+    );
+  
+  $statement->execute($affy_array_name, $affy_probeset_name, $affy_probe_name);
+
+  my ($affy_probe_id) = $statement->fetchrow();
+
+  if($affy_probe_id){
+    return $self->fetch_by_dbID($affy_probe_id);
+  }else{
+    return undef;
   }
 }
 
@@ -122,13 +152,11 @@ sub store{
 =cut
 
 sub fetch_all_by_probeset {
-    my $self = shift;
-    my $probeset = shift;
-    
-    return $self->generic_fetch( "ap.probeset = '$probeset'" );
+  my $self     = shift;
+  my $probeset = shift;
+
+  return $self->generic_fetch("ap.probeset = '$probeset'");
 }
-
-
 
 =head2 fetch_all_by_AffyArray
 
@@ -143,23 +171,23 @@ sub fetch_all_by_probeset {
 =cut
 
 sub fetch_by_AffyArray {
-    my $self = shift;
-    my $array = shift;
+  my $self  = shift;
+  my $array = shift;
 
-    if( !ref( $array) || !$array->isa( "Bio::EnsEMBL::AffyArray" ) ) {
-	warn( "Argument must be a stored AffyArray" );
-	return [];
-    }
-    my $array_id = $array->dbID();
-    if( ! defined $array_id ) {
-	warn( "Argument must be a stored AffyArray" );
-	return [];	
-    }
+  if ( !ref($array) || !$array->isa("Bio::EnsEMBL::AffyArray") ) {
+    warn("Argument must be a stored AffyArray");
+    return [];
+  }
+  my $array_id = $array->dbID();
+  if ( !defined $array_id ) {
+    warn("Argument must be a stored AffyArray");
+    return [];
+  }
 
-    return $self->generic_fetch( "ap.affy_array_id = $array_id" );
+  return $self->generic_fetch("ap.affy_array_id = $array_id");
 }
 
-=head2 fetch_all_by_AffyProbe
+=head2 fetch_all_by_AffyFeature
 
   Arg [1]    : Bio::EnsEMBL::AffyProbe $probe
   Example    : none
@@ -171,20 +199,19 @@ sub fetch_by_AffyArray {
 
 =cut
 
-
 sub fetch_by_AffyFeature {
-    my $self = shift;
-    my $feature = shift;
+  my $self    = shift;
+  my $feature = shift;
 
-    if( ! ref( $feature ) || !$feature->isa( "Bio::EnsEMBL::AffyFeature" ) ||
-	! $feature->{'_probe_id'} ) {
-	throw( "Need AffyFeature from database as argument" );
-    }
+  if ( !ref($feature)
+    || !$feature->isa("Bio::EnsEMBL::AffyFeature")
+    || !$feature->{'_probe_id'} )
+  {
+    throw("Need AffyFeature from database as argument");
+  }
 
-    $self->fetch_by_dbID( $feature->{'_probe_id'} );
+  $self->fetch_by_dbID( $feature->{'_probe_id'} );
 }
-
-
 
 =head2 _tablename
 
@@ -200,10 +227,9 @@ sub fetch_by_AffyFeature {
 
 sub _tables {
   my $self = shift;
-  
-  return ['affy_probe', 'ap'];
-}
 
+  return [ 'affy_probe', 'ap' ];
+}
 
 =head2 _columns
 
@@ -224,7 +250,6 @@ sub _columns {
 
 }
 
-
 =head2 _objs_from_sth
 
   Arg [1]    : hash reference $hashref
@@ -238,17 +263,18 @@ sub _columns {
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice) = @_;
+  my ( $self, $sth, $mapper, $dest_slice ) = @_;
 
   my ( @result, $current_dbid, $probe_id, $array_id, $probeset, $name );
-  my ( $array, %array_cache) ;
+  my ( $array,  %array_cache );
 
   $sth->bind_columns( \$probe_id, \$array_id, \$probeset, \$name );
   my $probe;
 
-  while( $sth->fetch() ) {
-    $array  = $array_cache{$array_id} ||= $self->db->get_AffyArrayAdaptor()->fetch_by_dbID( $array_id );
-    if( $current_dbid != $probe_id ) {
+  while ( $sth->fetch() ) {
+    $array = $array_cache{$array_id} ||= $self->db->get_AffyArrayAdaptor()->fetch_by_dbID($array_id);
+    if ( !$current_dbid || ($current_dbid != $probe_id) ) {
+
       # make a new probe
       $probe = Bio::EnsEMBL::AffyProbe->new( -array => $array, -probeset => $probeset, -name => $name, -dbID => $probe_id, -adaptor => $self );
       push @result, $probe;
@@ -259,8 +285,6 @@ sub _objs_from_sth {
   }
   return \@result;
 }
- 
-
 
 =head2 list_dbIDs
 
@@ -274,9 +298,9 @@ sub _objs_from_sth {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
+  my ($self) = @_;
 
-   return $self->_list_dbIDs("affy_probe");
+  return $self->_list_dbIDs("affy_probe");
 }
 
 1;
