@@ -87,6 +87,17 @@ sub dbname {
 }
 
 
+sub database {
+  my $self = shift;
+  return $self->dbname();
+}
+
+sub optional_id {
+  my $self = shift;
+  return "";
+}
+
+
 sub release {
   my ( $self, $arg ) = @_;
   if( defined $arg ) {
