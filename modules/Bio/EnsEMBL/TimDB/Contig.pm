@@ -43,8 +43,9 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
-use Bio::SeqIO::fasta;
+use Bio::SeqIO;
 use Bio::EnsEMBL::Analysis::Genscan;
+use Bio::EnsEMBL::Analysis::FeatureParser;
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -93,20 +94,19 @@ sub _initialize {
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
-
-  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . $self->disk_id . ".gs",$self->seq());
+  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
+						$self->disk_id . ".gs",$self->seq());
+  # save for later
+  $self->_gs($gs);
 
   # we yank out each exon and build a hash on start position
-
   my %exhash;
-
   foreach my $t ( $gs->each_Transcript ) {
       foreach my $ex ( $t->each_Exon ) {
 	  $exhash{$ex->start} = $ex;
       }
   }
   
-
   # build array of genes
   $self->{'_gene_array'} = [];
   {
@@ -119,7 +119,8 @@ sub _initialize {
 	  $exon->attach_seq($bioseq);
 	  
 	  if( ! defined $exhash{$exon->start()} ) {
-	      $self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".$self->disk_id);
+	      $self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".
+			  $self->disk_id);
 	      next;
 	  } 
 	  if( $exhash{$exon->start()}->end != $exon->end() ) {
@@ -181,8 +182,8 @@ sub _initialize {
       }
   }
 
-  # FIXME
-  # not implemented here or elsewhere
+  # declared here as an array, but data is parsed in
+  # method call to get features
   $self->{'_sf_array'} = [];
  
   # set stuff in self from @args
@@ -203,11 +204,42 @@ sub _initialize {
 =cut
 
 sub get_all_SeqFeatures{
-   my ($self) = @_;
+    my ($self) = @_;
 
-   $self->throw("Tim has not reimplemented this function");
+    # $self->throw("Tim has not reimplemented this function");
 
-   return @{$self->{'_sf_array'}};
+    # not clear if this load step should be here or in init
+    {
+	# get sf object
+	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->_clone_dir,
+							     $self->disk_id,
+							     $self->_gs,
+							     $self->seq);
+	# make objects for each feature, save in object
+	my @array;
+	foreach my $sf ($sfobj->each_feature){
+	    my($start,$end,$strand,$score,
+	       $name2,$start2,$end2,$pid,$method)=@$sf;
+	    my $out=Bio::SeqFeature::Generic->new();
+	    $out->seqname($self->id);
+	    $out->source_tag('ensembl');
+	    $out->primary_tag('similarity');
+	    $out->start($start);
+	    $out->end($end);
+	    $out->strand($strand);
+	    $out->score($score);
+	    $out->add_tag_value('target',$name2);
+	    $out->add_tag_value('start',$start2);
+	    $out->add_tag_value('end',$end2);
+	    $out->add_tag_value('percentid',$pid);
+	    $out->add_tag_value('method',$method);
+	    push(@array,$out);
+	}
+	@{$self->{'_sf_array'}}=@array;
+    }
+
+    # return array of objects
+    return @{$self->{'_sf_array'}};
 }
 
 =head2 get_all_Genes
@@ -371,7 +403,9 @@ sub seq{
     # read from sequence file
     my $file=$self->_clone_dir . "/$clonediskid.seq";
 
-    my $seqin = Bio::SeqIO::Fasta->new( -file => $file);
+    local *IN;
+    open(IN,$file) || die "cannot open $file";
+    my $seqin = Bio::SeqIO->new( -format => 'Fasta', -fh => \*IN);
     my($seq,$seqid,$ffound);
     while($seq=$seqin->next_seq()){
 	$seqid=$seq->id;
@@ -381,6 +415,7 @@ sub seq{
 	    last;
 	}
     }
+    close(IN);
     if(!$ffound){
 	$self->throw("Cannot find contig $id in $file");
     }
@@ -466,7 +501,25 @@ sub _clone_dir{
 
 }
 
+=head2 _gs
+
+ Title   : _gs
+ Usage   : $obj->_gs($newval)
+ Function: 
+ Returns : value of _gs
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _gs{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_gs'} = $value;
+    }
+    return $obj->{'_gs'};
+
+}
+
 1;
-
-
-

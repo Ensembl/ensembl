@@ -276,6 +276,7 @@ sub as_seqfeatures {
     my $contig_id=$self->id();
     my @sf;
 
+    # build objects for each exon in each gene
     foreach my $gene ($self->get_all_Genes()){
 	my $gene_id=$gene->id;
 	foreach my $trans ( $gene->each_Transcript ) {
@@ -296,8 +297,11 @@ sub as_seqfeatures {
 		push(@sf,$sf);
 	    }
 	}
-
     }
+
+    # add objects for each feature on contig
+    push(@sf,$self->get_all_SeqFeatures);
+
     return @sf;
 }
 

@@ -157,10 +157,11 @@ sub _parse {
 	   my @l = split;
 	   
 	   my ($n) = $l[0] =~ /^(\d+)\./;
+	   my $id=$n;
 	   $n--;
 	   
 	   # Get the right gene from the set
-	   my $transcript = $self->_transcript( $n );
+	   my $transcript = $self->_transcript($n,$id);
 	   
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
@@ -230,6 +231,12 @@ sub _parse {
     if (defined($self->{_dna})) {
       $self->_set_exon_phases($transcript,$pep);
     }
+
+    # now we know the phases, create a real translation for each exon
+    foreach my $exon ($transcript->each_Exon){
+	$exon->translate;
+    }
+
     $count++;
   }
 
@@ -399,16 +406,20 @@ sub _translate {
 # if the object doesn't exist
 
 sub _transcript { 
-  my ($self,$n) = @_;
+  my ($self,$n,$id) = @_;
 
   if ($#{$self->{_transcripts}} >= $n) {
+    $self->{_transcripts}[$n]->id($id) if $id;
     return $self->{_transcripts}[$n];
   } else {
-    my $i;
 
+    my $i;
     for ($i = $#{$self->{_transcripts}} +1; $i <= $n; $i++){
       $self->{_transcripts}[$i] = Bio::EnsEMBL::Transcript->new();
     }
+
+    # set name of transcript (need to map back to filenames for timdb)
+    $self->{_transcripts}[$n]->id($id) if $id;
 
     return $self->{_transcripts}[$n];
 
