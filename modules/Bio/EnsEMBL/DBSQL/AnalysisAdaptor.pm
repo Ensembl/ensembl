@@ -112,7 +112,7 @@ sub fetch_all {
     my $analysis = $self->_objFromHashref( $rowHashRef  );
 
     $self->{_cache}->{$analysis->dbID}                    = $analysis;
-    $self->{_logic_name_cache}->{$analysis->logic_name()} = $analysis;
+    $self->{_logic_name_cache}->{lc($analysis->logic_name())} = $analysis;
   }
 
   my @ana = values %{$self->{_cache}};
@@ -162,7 +162,7 @@ sub fetch_by_dbID {
 
   my $anal = $self->_objFromHashref( $rowHashRef );
   $self->{_cache}->{$anal->dbID} = $anal;
-  $self->{_logic_name_cache}->{$anal->logic_name()} = $anal;
+  $self->{_logic_name_cache}->{lc($anal->logic_name())} = $anal;
   return $anal;
 }
 
@@ -186,8 +186,8 @@ sub fetch_by_logic_name {
   my $rowHash;
 
   #check the cache for the logic name
-  if(defined $self->{_logic_name_cache}{$logic_name}) {
-    return $self->{_logic_name_cache}{$logic_name};
+  if(defined $self->{_logic_name_cache}{lc($logic_name)}) {
+    return $self->{_logic_name_cache}{lc($logic_name)};
   }
 
   my $sth = $self->prepare( "
@@ -212,7 +212,7 @@ sub fetch_by_logic_name {
   
   #place the analysis in the caches, cross referenced by dbID and logic_name
   $self->{_cache}{$analysis->dbID()} = $analysis;
-  $self->{_logic_name_cache}{$logic_name} = $analysis;
+  $self->{_logic_name_cache}{lc($logic_name)} = $analysis;
 
   return $analysis;
 }
@@ -241,7 +241,7 @@ sub store {
     $self->throw("called store on AnalysisAdaptor with a [$analysis]");
   }
 
-  $analysis->dbID && ( $analysis->adaptor() == $self ) && 
+  $analysis->dbID && $analysis->adaptor && ( $analysis->adaptor() == $self ) && 
     return $analysis->dbID;
 
 
@@ -258,7 +258,7 @@ sub store {
   }
 
  
-  if( defined $analysis->created ) {
+  if($analysis->created ) {
     my $sth = $self->prepare( q{
       INSERT INTO analysis
       SET created = ?,
@@ -325,7 +325,7 @@ sub store {
 
     $dbID = $sth->{'mysql_insertid'};
 
-    if( defined $dbID ) {
+    if( $dbID ) {
       $sth = $self->prepare( q{
 	SELECT created 
 	FROM   analysis
@@ -335,13 +335,90 @@ sub store {
     }
   }
   $self->{_cache}->{$dbID} = $analysis;
+  $self->{_logic_name_cache}{lc($analysis->logic_name)} = $analysis;
 
-  if( $analysis->can( "adaptor" )) {
-    $analysis->adaptor( $self );
-    $analysis->dbID( $dbID );
-  }
+  $analysis->adaptor( $self );
+  $analysis->dbID( $dbID );
   
   return $dbID;
+}
+
+
+
+=head2 update
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $anal
+  Example    : $adaptor->update($anal)
+  Description: Updates this analysis in the database
+  Returntype :
+  Exceptions : thrown if $anal arg is not an analysis object
+  Caller     : ?
+
+=cut
+
+sub update {
+  my ($self, $analysis) = @_;
+  
+  if (!defined $analysis || !ref $analysis) {
+    $self->throw("called update on AnalysisAdaptor with a [$analysis]");
+  }
+
+  $analysis->dbID && ($analysis->adaptor() == $self) or
+    return undef;
+
+  my $dbID;
+
+  unless ($dbID = $self->exists($analysis)) {
+    return undef;
+  }
+
+  my $query = "UPDATE analysis SET ";
+
+  foreach my $m (qw/
+    created         logic_name
+    db              db_version      db_file
+    program         program_version program_file
+    parameters      module          module_version
+    gff_source      gff_feature/) {
+    $query .= " $m = '" . $analysis->$m . "'," if defined $analysis->$m;
+  };
+  chop $query;
+  $query .= " WHERE analysis_id = $dbID";
+
+  my $sth = $self->db->db_handle->do($query);
+
+  return 1;
+}
+
+
+
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Analysis $anal
+  Example    : $adaptor->remove($anal)
+  Description: Removes this analysis from the database
+  Returntype :
+  Exceptions : thrown if $anal arg is not an analysis object
+  Caller     : ?
+
+=cut
+
+sub remove {
+  my ($self, $analysis) = @_;
+  my $dbID;
+  
+  if (!defined $analysis || !ref $analysis) {
+    $self->throw("called remove on AnalysisAdaptor with a [$analysis]");
+  }
+
+  unless ($dbID = $self->exists($analysis)) {
+    return undef;
+  }
+
+  my $res = $self->db->db_handle->do(qq{
+    DELETE from analysis
+    WHERE  analysis_id = $dbID
+  });
 }
 
 
