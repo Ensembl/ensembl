@@ -503,7 +503,7 @@ sub _slice_fetch {
 
       # features may still have to have coordinates made relative to slice
       # start
-      $fs = $self->_remap($fs, $mapper, $slice);
+      $fs = _remap($fs, $mapper, $slice);
 
       push @features, @$fs;
     } else {
@@ -534,7 +534,7 @@ sub _slice_fetch {
 
         my $fs = $self->generic_fetch($constraint, $mapper, $slice);
 
-        $fs = $self->_remap($fs, $mapper, $slice);
+        $fs = _remap($fs, $mapper, $slice);
 
         push @features, @$fs;
 
@@ -550,7 +550,7 @@ sub _slice_fetch {
               "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
-          $fs = $self->_remap($fs, $mapper, $slice);
+          $fs = _remap($fs, $mapper, $slice);
 
           push @features, @$fs;
         }
@@ -671,7 +671,7 @@ sub _check_start_end_strand {
 # converted and placed on the slice.
 #
 sub _remap {
-  my ($self, $features, $mapper, $slice) = @_;
+  my ($features, $mapper, $slice) = @_;
 
   #check if any remapping is actually needed
   if(@$features && (!$features->[0]->isa('Bio::EnsEMBL::Feature') ||
