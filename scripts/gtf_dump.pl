@@ -109,7 +109,7 @@ if ( $getall) {
    print STDERR scalar(@clones)." clones found in DB\n";
 }
 
-#push @clones,'AB019437';
+push @clones,'AC011324';
 
 foreach my $clone_id (@clones) {
     my $clone=$db->get_Clone($clone_id);

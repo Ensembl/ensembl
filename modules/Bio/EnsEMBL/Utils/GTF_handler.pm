@@ -95,12 +95,14 @@ sub parse_file {
     my %exons;
     my $trans_start;
     my $trans_end;
+    my $type;
     while( <FILE> ) {
 	(/^\#/) && next;
 	(/^$/) && next;
 	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame);
 	my ($gene_name, $gene_id,$transcript_id,$exon_num);
 
+	#First we have to be able to parse the basic feature information
 	if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
 	    $contig=$1;
 	    $source=$2;
@@ -110,6 +112,19 @@ sub parse_file {
 	    $score=$6;
 	    $strand=$7;
 	    $frame=$8;
+	    $type="NEO";
+	}
+	#This allows us to parse gtf entries starting with a rawcontig id
+	elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
+	    $contig=$1;
+	    $source=$2;
+	    $feature=$3;
+	    $start=$4;
+	    $end=$5;
+	    $score=$6;
+	    $strand=$7;
+	    $frame=$8;
+	    $type="ENS";
 	}
 	else {
 	    $self->warn("Could not parse line:\n$_");
@@ -135,9 +150,6 @@ sub parse_file {
 
 	if (/exon_number (\d)/) { $exon_num = $1;}
 	
-	if ($contig !~ /^ctg/) {
-	    $self->warn("Could not parse line\n$_\n");
-	}
 	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
 	if ($flag == 1) {
 	    $oldtrans = $transcript_id;
@@ -168,7 +180,7 @@ sub parse_file {
 		die("Parsing error! Exon with strand $strand");
 	    }
 	    my $exon = Bio::EnsEMBL::Exon->new($start,$end,$strand);
-	    my $id = "NEOE-$gene_name-$exon_num";
+	    my $id = "$type-$gene_id-$exon_num";
 	    $exon->id($id);
 	    $exon->version(1);
 	    $exon->contig_id($contig);
@@ -221,6 +233,7 @@ sub _build_gene {
 	my $time = time; chomp($time);
 	$gene->created($time);
 	$gene->modified($time);
+	#This is for the main trunk only!
 	$gene->type('neomorphic');
 	foreach my $transcript (@{$self->{'_transcript_array'}}) {
 	    $gene->add_Transcript($transcript);
@@ -259,13 +272,13 @@ sub _build_transcript {
 	$trans->add_Exon($exons{$num});
     }
     if ($trans_start == undef) {
-	$self->warn("Could not find translation start for gene $oldtrans, skipping");
+	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation start $trans_start\n";
     $translation->start($trans_start);
     if ($trans_end == undef) {
-	$self->warn("Could not find translation end for gene $oldtrans, skipping");
+	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation end $trans_end\n";
@@ -310,19 +323,35 @@ sub dump_genes {
 	    my $end_strand;
 	    
 	    foreach my $exon ($trans->each_Exon) {
-		print FILE $exon->seqname."   ensembl   exon   ".$exon->start."   ".$exon->end."   ".$exon->score."   ".$exon->strand."   .   gene_id ".$gene->id."   transcript_id ".$trans->id."   exon_number ".$c."\n"; 
+		 my $score = "0";
+		 if ($exon->score) {
+		     $score=$exon->score;
+		 }
+
+		 my $strand="+";
+		 if ($exon->strand == -1) {
+		     $strand="-";
+		 }
+
+		print FILE $exon->seqname."   ensembl   exon   ".$exon->start."   ".$exon->end."   $score   $strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;   exon_number ".$c."\n"; 
 		$c++;
 		if ($exon->id eq $start_exon_id) {
-		    $start_strand=$exon->strand;
+		    $start_strand = "+";
+		    if ($exon->strand == -1) {
+			$start_strand = "-";
+		    }
 		    $start_seqname=$exon->seqname;
 		}
 		if ($exon->id eq $end_exon_id) {
-		    $end_strand=$exon->end;
+		    $end_strand="+";
+		    if ($exon->strand == -1) {
+			$end_strand = "-";
+		    }
 		    $end_seqname=$exon->seqname;
 		}
 	    }
-	    print FILE $start_seqname."   ensembl   start_codon   $start   $start_end   .   $start_strand   .   gene_id ".$gene->id."   transcript_id ".$trans->id."\n";
-	    print FILE $end_seqname."   ensembl   end_codon   $end   $end_start   .   $end_strand   .   gene_id ".$gene->id."   transcript_id ".$trans->id."\n";
+	    print FILE $start_seqname."   ensembl   start_codon   $start   $start_end   0   $start_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\n";
+	    print FILE $end_seqname."   ensembl   stop_codon   $end   $end_start   0   $end_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;\n";
 	}
     }
 }
