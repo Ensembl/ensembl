@@ -275,9 +275,7 @@ sub coord_system {
   Example    : $cp = $slice->centrepoint();
   Description: Returns the mid position of this slice relative to the
                start of the sequence region that it was created on.
-               Coordinates are inclusive and start at 1.  Negative coordinates
-               or coordinates exceeding the length of the sequence region are
-               permitted.
+               Coordinates are inclusive and start at 1.
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -1142,14 +1140,8 @@ sub get_all_SNPs {
 
   Arg [1]    : (optional) string $logic_name
                The name of the analysis used to generate the genes to retrieve 
-  Arg [2]    : (optional) boolean $empty_flag 
   Example    : @genes = @{$slice->get_all_Genes};
-  Description: Retrieves all genes that overlap this slice.  The empty flag is 
-               used by the web code and is used to retrieve light weight genes
-               that only have a start, end and strand (only works if lite db
-               is available).  If the lite database has been attached to the
-               core database this method will use the lite database (and 
-               genes will not be as full featured).
+  Description: Retrieves all genes that overlap this slice.  
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : none
@@ -1157,12 +1149,11 @@ sub get_all_SNPs {
 =cut
 
 sub get_all_Genes{
-   my ($self, $logic_name, $empty_flag) = @_;
+   my ($self, $logic_name) = @_;
 
    #caching is performed on a per slice basis in the GeneAdaptor
    return $self->adaptor->db->get_GeneAdaptor->fetch_all_by_Slice($self,
-								  $logic_name,
-								  $empty_flag);
+								  $logic_name);
 }
 
 
@@ -1172,9 +1163,7 @@ sub get_all_Genes{
 
   Arg [1]    : string $type 
   Arg [2]    : (optional) string $logic_name
-  Arg [3]    : (optional) boolean $empty_flag
-  Example    : @genes = @{$slice->get_all_Genes_by_type($type, 
-							'ensembl')};
+  Example    : @genes = @{$slice->get_all_Genes_by_type($type, 'ensembl')};
   Description: Retrieves genes that overlap this slice of type $type.
                This is primarily used by the genebuilding code when several
                types of genes are used.
@@ -1182,11 +1171,6 @@ sub get_all_Genes{
                The logic name is the analysis of the genes that are retrieved.
                If not provided all genes will be retrieved instead.
 
-               The empty flag indicates light weight genes that only have a
-               start, end and strand should be used (only works if lite db is
-               available). If the lite database has
-               been attached to the core database this method will use the
-               lite database (and genes will not be as full featured).
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : genebuilder
@@ -1194,10 +1178,9 @@ sub get_all_Genes{
 =cut
 
 sub get_all_Genes_by_type{
-  my ($self, $type, $logic_name, $empty_flag) = @_;
+  my ($self, $type, $logic_name) = @_;
 
-  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name,
-							       $empty_flag)};
+  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name)};
 
   return \@out;
 }
