@@ -154,9 +154,9 @@ sub fetch_RawContigs_by_chr_name{
 }
 
 
-=head2 VirtualContig_by_fpc_name
+=head2 fetch_VirtualContig_by_fpc_name
 
- Title   : VirtualContig_by_fpc_name
+ Title   : fetch_VirtualContig_by_fpc_name
  Usage   :
  Function:
  Example :
@@ -171,10 +171,112 @@ sub fetch_VirtualContig_by_fpc_name{
    
    my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
    my $start = $fpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,-1,@fpc);
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,1,-1,@fpc);
    $vc->id($name);
    return $vc;
 }
+
+=head2 fetch_VirtualContig_by_fpc_name_slice
+
+ Title   : fetch_VirtualContig_by_fpc_name_slice
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_VirtualContig_by_fpc_name_slice{
+   my ($self,$name,$start,$end) = @_;
+
+   if( !defined $end ) {
+       $self->throw("must have start end to fetch by slice");
+   }
+
+   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
+   my @finalfpc;
+
+   foreach my $fpc ( @fpc ) {
+       if( $fpc->fpc_contig_start >= $start && $fpc->fpc_contig_end <= $end ) {
+	   push(@finalfpc,$fpc);
+       }
+   }
+   if( scalar @finalfpc == 0 ) {
+       $self->throw("No complete raw contigs between $start and $end");
+   }
+
+   my $start = $finalfpc[0];
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
+   $vc->id("$name-$start-$end");
+   return $vc;
+}
+
+=head2 fetch_VirtualContig_list_sized
+
+ Title   : fetch_VirtualContig_list_sized
+ Usage   : @vclist = $stadaptor->fetch_VirtualContig_list_sized('ctg123',2000000,100000,4000000,100)
+ Function: returns a list of virtual contigs from a FPC contig, split at gaps. The
+           splitting happens as a greedy process:
+              read as many contigs in until the first lenght threshold hits
+              after this, split at the first gap length given
+              If no gaps of this length are around, when the next length threshold is hit
+              split at that gap.
+ Example :
+ Returns : A list of VirtualContigs
+ Args    : name,first lenght threshold, first gap size, second length threshold, second gap size
+
+
+=cut
+
+sub fetch_VirtualContig_list_sized{
+   my ($self,$name,$length1,$gap1,$length2,$gap2) = @_;
+
+   if( !defined $gap2 ) {
+       $self->throw("Must fetch Virtual Contigs in sized lists");
+   }
+   print STDERR "fetching...\n";
+
+   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
+
+   print STDERR "fetched...\n";
+   my @finalfpc;
+   my @vclist;
+
+   my $current_start = 1;
+   my $prev = shift @fpc;
+   push(@finalfpc,$prev);
+   foreach my $fpc ( @fpc ) {
+       print STDERR "Looking at ",$fpc->id," ",$fpc->fpc_contig_start," ",$fpc->contig_end,"\n";
+       if( ( ($fpc->fpcctg_end - $current_start+1) > $length1 && ($fpc->fpcctg_start - $prev->fpcctg_end +1) >= $gap1) ||
+	   ( ($fpc->fpcctg_end -$current_start+1) > $length2 && ($fpc->fpcctg_start - $prev->fpcctg_end +1) >= $gap2) ) {
+	   # build new vc and reset stuff
+
+	   my $start = $finalfpc[0];
+	   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
+	   $vc->id($name);
+	   push(@vclist,$vc);
+	   
+	   $prev = $fpc;
+	   $current_start = $prev->fpc_contig_start;
+	   @finalfpc = ();
+	   push(@finalfpc,$prev);
+       } else {
+	   push(@finalfpc,$fpc);
+	   $prev = $fpc;
+       }
+   }
+   # last contig
+
+   my $start = $finalfpc[0];
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
+   push(@vclist,$vc);
+
+   return @vclist;
+}
+
+
 
 =head2 fetch_VirtualContig_by_chr_name
 
@@ -191,10 +293,12 @@ sub fetch_VirtualContig_by_fpc_name{
 sub fetch_VirtualContig_by_chr_name{
    my ($self,$name) = @_;
 
-   return Bio::EnsEMBL::Virtual::StaticContig->new(1,-1,$self->fetch_RawContigs_by_chr_name($name));
+   return Bio::EnsEMBL::Virtual::StaticContig->new(1,1,-1,$self->fetch_RawContigs_by_chr_name($name));
 
 
 }
+
+
 
 =head2 get_all_fpc_ids
 

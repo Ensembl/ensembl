@@ -56,7 +56,7 @@ use Bio::EnsEMBL::Virtual::Contig
 my $static_number = 0;
 
 sub new {
-    my ($class,$global_start,$global_end,@contigs) = @_;
+    my ($class,$global_start,$vc_start_position,$global_end,@contigs) = @_;
     
     my $self = {};
     bless $self,$class;
@@ -72,7 +72,7 @@ sub new {
     # waaaaaay too easy
 
     foreach my $rc ( @contigs ) {
-	$self->_vmap->create_MapContig($rc,$rc->chr_start - $global_start+1,$rc->chr_end - $global_start +1,$rc->static_golden_start,$rc->static_golden_ori);
+	$self->_vmap->create_MapContig($rc,$rc->chr_start - $global_start+$vc_start_position,$rc->chr_end - $global_start +$vc_start_position,$rc->static_golden_start,$rc->static_golden_ori);
     }
 
     # needs to handle overhangs...
