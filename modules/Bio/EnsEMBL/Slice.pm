@@ -1369,18 +1369,6 @@ sub fetch_karyotype_band_start_end {
 
 =head2 convert_Gene_to_raw_contig
 
- Title   : convert_Gene_to_raw_contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-=cut
-
-
-
-=head2 convert_Gene_to_raw_contig
-
   Arg [1]    : none
   Example    : none
   Description: DEPRECATED use Bio::EnsEMBL::Gene::transform instead
