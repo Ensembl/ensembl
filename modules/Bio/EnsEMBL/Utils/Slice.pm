@@ -116,7 +116,7 @@ sub split_Slices{
          -SEQ_REGION_LENGTH => $length,
          -COORD_SYSTEM      => $slice->coord_system,
          -ADAPTOR           => $slice->adaptor);
-      $start += $multiple;
+      $start += $multiple + 1;
     }
   }
 
