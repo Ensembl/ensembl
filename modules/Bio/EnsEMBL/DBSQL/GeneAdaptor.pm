@@ -710,12 +710,15 @@ sub store {
 
 =head2 remove
 
-  Arg [1]    : Bio::EnsEMBL::Gene $gene 
-               the gene to remove from the database 
+  Arg [1]    : Bio::EnsEMBL::Gene $gene
+               the gene to remove from the database
   Example    : $gene_adaptor->remove($gene);
-  Description: Removes a gene from the database
+  Description: Removes a gene completely from the database.  All associated
+               transcripts, exons, stable_identifiers, descriptions, etc.
+               are removed as well. Use with caution!
   Returntype : none
-  Exceptions : none
+  Exceptions : throw on incorrect arguments 
+               warning if gene is not stored in this database
   Caller     : general
 
 =cut
@@ -724,24 +727,59 @@ sub remove {
   my $self = shift;
   my $gene = shift;
 
-  if( ! defined $gene->dbID() ) {
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw("Bio::EnsEMBL::Gene argument expected.");
+  }
+
+  if( !$gene->is_stored($self->db()) ) {
+    warning("Cannot remove gene " . $gene->dbID() . ". Is not stored in " .
+            "this database.");
     return;
   }
 
-  my $sth= $self->prepare( "delete from gene where gene_id = ? " );
-  $sth->execute( $gene->dbID );
-  $sth= $self->prepare( "delete from gene_stable_id where gene_id = ? " );
-  $sth->execute( $gene->dbID );
-  $sth = $self->prepare( "delete from gene_description where gene_id = ?" );
-  $sth->execute( $gene->dbID() );
+  # remove all object xrefs associated with this gene
+
+  my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
+  foreach my $dbe (@{$gene->get_all_DBEntries()}) {
+    $dbe_adaptor->remove_from_object($dbe, $gene, 'Gene');
+  }
+
+  # remove all alternative allele entries associated with this gene
+  my $sth = $self->prepare("delete from alt_allele where gene_id = ?");
+  $sth->execute($gene->dbID());
+  $sth->finish();
+
+  # remove all of the transcripts associated with this gene
 
   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
   foreach my $trans ( @{$gene->get_all_Transcripts()} ) {
-    $transcriptAdaptor->remove($trans,$gene);
+    $transcriptAdaptor->remove($trans);
   }
+
+  # remove the gene stable identifier
+
+  $sth = $self->prepare( "delete from gene_stable_id where gene_id = ? " );
+  $sth->execute( $gene->dbID );
+  $sth->finish();
+
+  # remove this genes description
+
+  $sth = $self->prepare( "delete from gene_description where gene_id = ?" );
+  $sth->execute( $gene->dbID() );
+  $sth->finish();
+
+  # remove this gene from the database
+
+  $sth = $self->prepare( "delete from gene where gene_id = ? " );
+  $sth->execute( $gene->dbID );
+  $sth->finish();
+
+  # unset the gene identifier and adaptor thereby flagging it as unstored
 
   $gene->dbID(undef);
   $gene->adaptor(undef);
+
+  return;
 }
 
 

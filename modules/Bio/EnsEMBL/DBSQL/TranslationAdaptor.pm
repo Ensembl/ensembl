@@ -15,11 +15,11 @@ Translation objects from a database.
 =head1 DESCRIPTION
 
 This adaptor provides a means to retrieve and store Bio::EnsEMBL::Translation
-objects from/in a database.  
+objects from/in a database.
 
 Translation objects only truly make sense in the context of their transcripts
-so the recommended means to retrieve Translations is by retrieving the 
-Transcript object first, and then fetching the Translation. 
+so the recommended means to retrieve Translations is by retrieving the
+Transcript object first, and then fetching the Translation.
 
 =head1 SYNOPSIS
 
@@ -211,7 +211,7 @@ sub store {
   if(!$end_exon->dbID) {
     throw("end_Exon must have a dbID for Translation to be stored.");
   }
-                   
+
   my $sth = $self->prepare( "
          INSERT INTO translation( seq_start, start_exon_id,
                                   seq_end, end_exon_id, transcript_id) 
@@ -222,7 +222,7 @@ sub store {
                  $translation->end(),
                  $translation->end_Exon()->dbID(),
                  $transcript_id );
-  
+
   my $transl_dbID = $sth->{'mysql_insertid'};
 
   #store object xref mappings to translations
@@ -232,20 +232,20 @@ sub store {
   foreach my $dbl ( @{$translation->get_all_DBEntries} ) {
      $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
   }
-  
-  
+
+
   if (defined($translation->stable_id)) {
     if (!defined($translation->version)) {
      throw("Trying to store incomplete stable id information for translation");
     }
-    
+
     my $sth = $self->prepare
       ("INSERT INTO translation_stable_id(translation_id, stable_id, version)".
        "     VALUES (?, ?, ?)");
-   
+
     $sth->execute($transl_dbID, $translation->stable_id(), 
                   $translation->version());
-    
+
     $sth->finish();
   }
 
@@ -257,19 +257,62 @@ sub store {
 
 
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Translation $translation
+  Example    : $translation_adaptor->remove($translation);
+  Description: Removes a translation completely from the database, and all
+               associated information including protein features etc.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               warning if translation is not in this database
+  Caller     : TranscriptAdaptor::remove
+
+=cut
 
 sub remove {
   my $self = shift;
   my $translation = shift;
 
-  my $sth = $self->prepare("DELETE FROM translation 
-                            WHERE translation_id = ?" );
+  if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
+    throw("Bio::EnsEMBL::Translation argument expected.");
+  }
+
+  if( !$translation->is_stored($self->db()) ) {
+    warning("Cannot remove translation " . $translation->dbID() . 
+            ". Is not stored in this database.");
+    return;
+  }
+
+  # remove all xref associations to this translation
+  my $dbe_adaptor = $self->db()->get_DBEntryAdaptor();
+  foreach my $dbe (@{$translation->get_all_DBEntries()}) {
+    $dbe_adaptor->remove_from_object($dbe, $translation, 'Translation');
+  }
+
+  # remove all protein_features on this translation
+  my $sth = $self->prepare
+    ("DELETE FROM protein_feature WHERE translation_id = ?");
+  $sth->execute($translation->dbID());
+  $sth->finish();
+
+  # remove the translation stable identifier
+
+  $sth = $self->prepare
+    ("DELETE FROM translation_stable_id WHERE translation_id = ?" );
   $sth->execute( $translation->dbID );
-  $sth = $self->prepare("DELETE FROM translation_stable_id 
-                         WHERE translation_id = ?" );
+  $sth->finish();
+
+  # remove the translation itself
+
+  $sth = $self->prepare("DELETE FROM translation WHERE translation_id = ?" );
   $sth->execute( $translation->dbID );
+  $sth->finish();
+
   $translation->dbID( undef );
   $translation->adaptor(undef);
+
+  return
 }
 
 

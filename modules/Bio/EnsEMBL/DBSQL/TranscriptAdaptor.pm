@@ -541,46 +541,98 @@ sub get_Interpro_by_transid {
 
 
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Example    : $transcript_adaptor->remove($transcript);
+  Description: Removes a transcript completely from the database, and all
+               associated information.
+               This method is usually called by the GeneAdaptor::remove method
+               because this method will not preform the removal of genes
+               which are associated with this transcript.  Do not call this
+               method directly unless you know there are no genes associated
+               with the transcript!
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               warning if transcript is not in this database
+  Caller     : GeneAdaptor::remove
+
+=cut
+
 sub remove {
   my $self = shift;
   my $transcript = shift;
-  my $gene = shift;
 
-  if( ! defined $transcript->dbID() ) {
+  if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+    throw("Bio::EnsEMBL::Transcript argument expected");
+  }
+
+  # sanity check: make sure nobody tries to slip past a prediction transcript
+  # which inherits from transcript but actually uses different tables
+  if($transcript->isa('Bio::EnsEMBL::PredictionTranscript')) {
+    throw("TranscriptAdaptor can only remove Transcripts " .
+          "not PredictionTranscripts");
+  }
+
+  if( !$transcript->is_stored($self->db()) ) {
+    warning("Cannot remove transcript ". $transcript->dbID .". Is not stored ".
+            "in this database.");
     return;
+  }
+
+  # remove all xref linkages to this transcript
+
+  my $dbeAdaptor = $self->db->get_DBEntryAdaptor();
+  foreach my $dbe (@{$transcript->get_all_DBEntries}) {
+    $dbeAdaptor->remove($dbe, $transcript, 'Transcript');
   }
 
   my $exonAdaptor = $self->db->get_ExonAdaptor();
   my $translationAdaptor = $self->db->get_TranslationAdaptor();
 
-  if( defined $transcript->translation ) {
+  # remove the translation associated with this transcript
+
+  if( defined($transcript->translation()) ) {
     $translationAdaptor->remove( $transcript->translation );
   }
 
-  foreach my $exon ( @{$transcript->get_all_Exons()} ) {  
-    my $sth = $self->prepare( "SELECT count(*) 
-                               FROM   exon_transcript 
+  # remove exon associations to this transcript
+
+  foreach my $exon ( @{$transcript->get_all_Exons()} ) {
+    # get the number of transcript references to this exon
+    # only remove the exon if this is the last transcript to
+    # reference it
+
+    my $sth = $self->prepare( "SELECT count(*)
+                               FROM   exon_transcript
                                WHERE  exon_id = ?" );
     $sth->execute( $exon->dbID );
-    my ($count) = $sth->fetchrow_array;
-    if($count == 1){ 
+    my ($count) = $sth->fetchrow_array();
+    $sth->finish();
+
+    if($count == 1){
       $exonAdaptor->remove( $exon );
-    } 
+    }
   }
 
-  my $sth = $self->prepare( "DELETE FROM exon_transcript 
+  my $sth = $self->prepare( "DELETE FROM exon_transcript
                              WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-  $sth = $self->prepare( "DELETE FROM transcript_stable_id 
+  $sth = $self->prepare( "DELETE FROM transcript_stable_id
                           WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-  $sth = $self->prepare( "DELETE FROM transcript 
+  $sth->finish();
+
+
+  $sth = $self->prepare( "DELETE FROM transcript
                           WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-  
+  $sth->finish();
 
   $transcript->dbID(undef);
   $transcript->adaptor(undef);
+
+  return;
 }
 
 

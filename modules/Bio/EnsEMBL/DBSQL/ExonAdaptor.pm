@@ -185,7 +185,7 @@ sub fetch_all_by_Transcript {
   Returntype : none
   Exceptions : thrown if exon (or component exons) do not have a contig_id
                or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
-               are not defined or if $exon is not a Bio::EnsEMBL::Exon 
+               are not defined or if $exon is not a Bio::EnsEMBL::Exon
   Caller     : general
 
 =cut
@@ -243,7 +243,6 @@ sub store {
     $sth->execute( $exon->version, $exon->stable_id, $exonId );
   }
 
-
   # Now the supporting evidence
   # should be stored from featureAdaptor
   my $sql = "insert into supporting_feature (exon_id, feature_id, feature_type)
@@ -291,9 +290,13 @@ sub store {
 =head2 remove
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon
-               the exon to remove from the database 
+               the exon to remove from the database
   Example    : $exon_adaptor->remove($exon);
-  Description: Removes an exon from the database
+  Description: Removes an exon from the database.  This method is generally
+               called by the TranscriptAdaptor::store method. Database
+               integrity will not be maintained if this method is simply
+               called on its own without taking into account transcripts which
+               may refer to the exon being removed.
   Returntype : none
   Exceptions : none
   Caller     : general
@@ -303,47 +306,47 @@ sub store {
 sub remove {
   my $self = shift;
   my $exon = shift;
-  
-  if ( ! $exon->dbID() ) {
+
+  if(!ref($exon) || !$exon->isa('Bio::EnsEMBL::Exon')) {
+    throw('Bio::EnsEMBL::Exon argument expected.');
+  }
+
+  if(!$exon->is_stored($self->db())) {
+    warning("Cannot remove exon " .$exon->dbID.
+            "Is not stored in this database.");
     return;
   }
-  #print "have ".$self->db."\n";
-  my $sth = $self->prepare( "delete from exon where exon_id = ?" );
-  $sth->execute( $exon->dbID );
-  #print "have deleted ".$exon->dbID."\n";
-  $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
-  $sth->execute( $exon->dbID );
-  
-  my $sql = "select feature_type, feature_id from supporting_feature where exon_id = ".$exon->dbID." ";
 
-  #    print STDERR "sql = ".$sql."\n";
-  $sth = $self->prepare($sql);
-  
-  $sth->execute;
-  
-  my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
-  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
-  
-  while(my ($type, $feature_id) = $sth->fetchrow){
-    
-    if($type eq 'protein_align_feature'){
-      my $f = $prot_adp->fetch_by_dbID($feature_id);
-      $prot_adp->remove($f);
-      #print "have removed ".$f->dbID."\n";
-    }
-    elsif($type eq 'dna_align_feature'){
-      my $f = $dna_adp->fetch_by_dbID($feature_id);
-      #print "have removed ".$f->dbID."\n";
-      $dna_adp->remove($f);
-    }
+  # sanity check: make sure nobdody tries to slip past a prediction exon
+  # which inherits from exon but actually uses different tables
+  if($exon->isa('Bio::EnsEMBL::PredictionExon')) {
+    throw("ExonAdaptor can only remove Exons not PredictionExons.");
   }
 
-  $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
+  # delete the association to supporting features, but not the alignment
+  # features themselves.
+
+  my $sth = $self->prepare("DELETE FROM supporting_feature WHERE exon_id = ?");
   $sth->execute( $exon->dbID );
+
+  # delete the exon stable identifier
+
+  $sth = $self->prepare( "DELETE FROM exon_stable_id WHERE exon_id = ?" );
+  $sth->execute( $exon->dbID );
+  $sth->finish();
+
+  # delete the exon
+
+  $sth = $self->prepare( "DELETE FROM exon WHERE exon_id = ?" );
+  $sth->execute( $exon->dbID );
+  $sth->finish();
 
   $exon->dbID(undef);
   $exon->adaptor(undef);
+
+  return;
 }
+
 
 =head2 list_dbIDs
 
