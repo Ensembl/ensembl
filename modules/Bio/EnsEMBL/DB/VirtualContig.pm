@@ -109,8 +109,8 @@ sub _initialize {
   # this is for cache's of sequence features if/when we want them
   $self->{'_sf_cache'}     = {};
 
-  $self->_left_overhang(0);
-  $self->_right_overhang(0);
+  $self->_vmap->left_overhang(0);
+  $self->_vmap->right_overhang(0);
 
   if( defined $clone && defined $focuscontig ){
       $self->throw("Build a virtual contig either with a clone or a focuscontig, but not with both");
@@ -347,8 +347,8 @@ sub primary_seq {
    
    # if there is a left overhang, add it 
    
-   if( $self->_left_overhang() > 0 ) {
-       $seq_string = 'N' x $self->_left_overhang();
+   if( $self->_vmap->left_overhang() > 0 ) {
+       $seq_string = 'N' x $self->_vmap->left_overhang();
    }
    
    #Go through each MapContig
@@ -397,8 +397,8 @@ sub primary_seq {
    }
    
    # if there is a right overhang, add it 
-   if( $self->_right_overhang() > 0 ) {
-       $seq_string .= 'N' x $self->_right_overhang();
+   if( $self->_vmap->right_overhang() > 0 ) {
+       $seq_string .= 'N' x $self->_vmap->right_overhang();
    }
    $seq = Bio::PrimarySeq->new( -id      => "virtual_contig_".$self->_unique_number,
 				-seq     => $seq_string,
@@ -869,7 +869,7 @@ sub _build_contig_map {
 		    $current_left_size += $overlap->distance;
 		    if( $current_left_size > $left ) {
 			# set the left overhang!
-			$self->_left_overhang($overlap->distance - ($current_left_size - $left));
+			$self->_vmap->left_overhang($overlap->distance - ($current_left_size - $left));
 			last GOING_LEFT;
 		    }
 		    
@@ -899,7 +899,7 @@ sub _build_contig_map {
 		    $current_left_size += $overlap->distance;
 		    if( $current_left_size > $left ) {
 			# set the left overhang!
-			$self->_left_overhang($overlap->distance - ($current_left_size - $left));
+			$self->_vmap->left_overhang($overlap->distance - ($current_left_size - $left));
 			last GOING_LEFT;
 		    }
 		    $current_left_size += $overlap->sister->golden_length;
@@ -925,7 +925,7 @@ sub _build_contig_map {
     
     my $current_length;
 
-    if( $self->_left_overhang() == 0 ) {
+    if( $self->_vmap->left_overhang() == 0 ) {
 	if( $current_orientation == 1 ) {
 	    $startpos = $current_contig->golden_start + ($current_left_size - $left);
 	} else {
@@ -944,7 +944,7 @@ sub _build_contig_map {
     } else {
 	# has an overhang - first contig offset into the system
 
-	my $mc_start=$self->_left_overhang+1;
+	my $mc_start=$self->_vmap->left_overhang+1;
 	
 	my $mc_startin;
 	if( $current_orientation == 1 ) {
@@ -957,7 +957,7 @@ sub _build_contig_map {
 	my $mc=$self->_vmap->get_MapContig($current_contig->id);
 	$mc->leftmost(1);
 	
-	$current_length = $self->_left_overhang() + $current_contig->golden_length ;
+	$current_length = $self->_vmap->left_overhang() + $current_contig->golden_length ;
     }
     
     # flush $seen_hash
@@ -989,7 +989,7 @@ sub _build_contig_map {
 	    
 	    if( $current_length + $overlap->distance > $total ) {
 		# right overhang
-		$self->_right_overhang($total - $current_length);
+		$self->_vmap->right_overhang($total - $current_length);
 		last;
 	    }
 	    
@@ -1084,7 +1084,7 @@ sub _build_contig_map {
    
     my $end;
     
-    if( $self->_right_overhang == 0 ) {
+    if( $self->_vmap->right_overhang == 0 ) {
 	if( $current_orientation == 1 ) {
 	    $end= $current_contig->golden_end - ($current_length - $total);
 	} else {
@@ -1859,47 +1859,6 @@ sub _at_right_end {
 	$obj->{'_at_right_end'} = $value;
     }
     return $obj->{'_at_right_end'};
-}
-
-=head2 _left_overhang
-
- Title   : _left_overhang
- Usage   : $obj->_left_overhang($newval)
- Function: 
- Example : 
- Returns : value of _left_overhang
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _left_overhang{
-    my ($obj,$value) = @_;
-    
-    if( defined $value) {
-	$obj->{'_left_overhang'} = $value;
-    }
-    return $obj->{'_left_overhang'};   
-}
-
-=head2 _right_overhang
-
- Title   : _right_overhang
- Usage   : $obj->_right_overhang($newval)
- Function: 
- Example : 
- Returns : value of _right_overhang
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _right_overhang{
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_right_overhang'} = $value;
-    }
-    return $obj->{'_right_overhang'};   
 }
 
 =head2 _vmap

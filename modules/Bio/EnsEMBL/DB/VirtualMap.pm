@@ -183,4 +183,43 @@ sub RawContig_ids{
    return keys %{$self->{'mapcontighash'}};
 }
 
+=head2 left_overhang
 
+ Title   : left_overhang
+ Usage   : $obj->left_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of left_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub left_overhang{
+    my ($obj,$value) = @_;
+    
+    if( defined $value) {
+	$obj->{'_left_overhang'} = $value;
+    }
+    return $obj->{'_left_overhang'};   
+}
+
+=head2 right_overhang
+
+ Title   : right_overhang
+ Usage   : $obj->right_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of right_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub right_overhang{
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_right_overhang'} = $value;
+    }
+    return $obj->{'_right_overhang'};   
+}
