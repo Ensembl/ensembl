@@ -1212,7 +1212,7 @@ sub translate {
   }
 
   if( CORE::length( $mrna ) % 3 == 0 ) {
-#    $mrna =~ s/TAG$|TGA$|TAA$//i;
+    $mrna =~ s/TAG$|TGA$|TAA$//i;
   }
   # the above line will remove the final stop codon from the mrna
   # sequence produced if it is present, this is so any peptide produced
@@ -1274,7 +1274,7 @@ sub sort {
 
   # Fetch all the features
   my @exons = @{$self->get_all_Exons()};
-
+  
   # Empty the feature table
   $self->flush_Exons();
 
