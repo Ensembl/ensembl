@@ -96,10 +96,10 @@ CREATE TABLE contig (
   internal_id       int(10) unsigned NOT NULL auto_increment,
   id                varchar(40) NOT NULL,
   clone             int(10) NOT NULL,
-  length            int(10) unsigned NOT NULL,
+  length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
   offset            int(10) unsigned,
   corder            int(10) unsigned,
-  dna               int(10) NOT NULL,
+  dna               int(10) NOT NULL,            # foreign key dna:id
   chromosomeId      int(10) unsigned NOT NULL,
   international_id  varchar(40),
   
@@ -114,6 +114,18 @@ CREATE TABLE contig (
 #
 # Table structure for table 'dna'
 #
+
+# This table holds the sequence of the contigs from the contig table.
+# The sequence is that of the contig, not that of the golden
+# path. I.e. to construct the golden path from the dna entries,
+# the sequence of contigs with an orientation of -1 must be
+# reversed and bases complemented. The static_golden_path
+# table has the contig orientation (raw_ori).
+# Note the length of the dna.sequence field is always equal
+# to the appropriate length field in the contig table
+# (probably a violation of some form of normal form since contig.length
+# is an attibute of the dna.sequence field)
+
 CREATE TABLE dna (
   id        int(10) unsigned NOT NULL auto_increment,
   sequence  mediumtext NOT NULL,
@@ -125,23 +137,34 @@ CREATE TABLE dna (
 #
 # Table structure for table 'exon'
 #
+
+# Note seq_start always less that seq_end, i.e.
+# when the exon is on the other strand the seq_start
+# is specifying the 3' end of the exon.
+
+# The Sticky Rank differentiates between fragments of
+# the same exon. I.e for exons that
+# span multiple contigs, all the fragments
+# are in this table with the same id,
+# but different sticky_rank values
+
 CREATE TABLE exon (
   exon_id       int unsigned NOT NULL auto_increment,
-  contig_id     int(10) unsigned NOT NULL,
-  seq_start     int(10) NOT NULL,
-  seq_end       int(10) NOT NULL,
-  strand        tinyint(2) NOT NULL,
+  contig_id     int(10) unsigned NOT NULL,            # foreign key, contig:internal_id
+  seq_start     int(10) NOT NULL,                     # start of exon within contig
+  seq_end       int(10) NOT NULL,                     # end of exon within specified contig
+  strand        tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
 
   phase         tinyint(2) NOT NULL,
   end_phase     tinyint(2) NOT NULL,
-  sticky_rank   int(10) DEFAULT '1' NOT NULL,
+  sticky_rank   int(10) DEFAULT '1' NOT NULL,         # see note above
   
   PRIMARY KEY ( exon_id, sticky_rank),
   KEY contig (contig_id)
 );
 
 CREATE TABLE exon_stable_id (
-    exon_id   int unsigned not null,
+    exon_id   int unsigned not null,       # foreign key exon:exon_id
     stable_id VARCHAR(40) not null,
     version   int(10) DEFAULT '1' NOT NULL,
     created   datetime NOT NULL,
@@ -157,9 +180,11 @@ CREATE TABLE exon_stable_id (
 # Table structure for table 'exon_transcript'
 #
 CREATE TABLE exon_transcript (
-  exon_id          INT unsigned NOT NULL,
-  transcript_id    INT unsigned NOT NULL,
-  rank          int(10) NOT NULL,
+  exon_id          INT unsigned NOT NULL, # foreign key exon:exon_id
+  transcript_id    INT unsigned NOT NULL, # foregin key transcript:transcript_id
+  rank          int(10) NOT NULL,         # Indicates the 5' to 3' position of the exon
+                                          # within the transcript ie rank of 1 means
+                                          # the exon is the 5' most within this transcript
   
   PRIMARY KEY (exon_id,transcript_id,rank),
   KEY transcript (transcript_id)
@@ -170,12 +195,12 @@ CREATE TABLE exon_transcript (
 #
 CREATE TABLE feature (
   id            int(10) unsigned NOT NULL auto_increment,
-  contig        int(10) unsigned NOT NULL,
+  contig        int(10) unsigned NOT NULL,      # foreign key contig:internal_id  
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
   score         double(16,4) NOT NULL,
   strand        int(1) DEFAULT '1' NOT NULL,
-  analysis      int(10) unsigned NOT NULL,
+  analysis      int(10) unsigned NOT NULL,      # foreign key analysisprocess:analysisId
   name          varchar(40),
   hstart        int(11) NOT NULL,
   hend          int(11) NOT NULL,
@@ -194,6 +219,11 @@ CREATE TABLE feature (
 #
 # Table structure for table 'fset'
 #
+
+# NOT USED
+# The fset and fset_feature table are not actively used and will
+# be dropped in the future.
+
 CREATE TABLE fset (
   id        int(10) unsigned NOT NULL auto_increment,
   score     double(16,4) DEFAULT '0.0000' NOT NULL,
@@ -204,6 +234,8 @@ CREATE TABLE fset (
 #
 # Table structure for table 'fset_feature'
 #
+# NOT USED
+
 CREATE TABLE fset_feature (
   feature   int(10) unsigned NOT NULL,
   fset      int(10) unsigned NOT NULL,
@@ -225,7 +257,7 @@ CREATE TABLE gene (
 );
 
 CREATE TABLE gene_stable_id (
-    gene_id int unsigned not null,
+    gene_id int unsigned not null,    # foreign key gene:gene_id
     stable_id VARCHAR(40) not null,
     version   int(10) DEFAULT '1' NOT NULL,
     created   datetime NOT NULL,
@@ -241,12 +273,12 @@ CREATE TABLE gene_stable_id (
 #
 CREATE TABLE repeat_feature (
   id        int(10) unsigned NOT NULL auto_increment,
-  contig    int(10) unsigned NOT NULL,
+  contig    int(10) unsigned NOT NULL,         # foreign key contig:internal_id
   seq_start int(10) NOT NULL,
   seq_end   int(10) NOT NULL,
   score     double(16,4) NOT NULL,
   strand    tinyint(1) DEFAULT '1' NOT NULL,
-  analysis  int(10) unsigned NOT NULL,
+  analysis  int(10) unsigned NOT NULL,         # foregin key analysisprocess:analysisId
   hstart    int(11) NOT NULL,
   hend      int(11) NOT NULL,
   hid       varchar(40) NOT NULL,
@@ -262,7 +294,7 @@ CREATE TABLE repeat_feature (
 #
 CREATE TABLE supporting_feature (
   supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
-  exon_id          int NOT NULL,
+  exon_id          int NOT NULL,             # foreign key exon:exon_id
   contig_id     int(10) unsigned NOT NULL,
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
@@ -290,9 +322,9 @@ CREATE TABLE supporting_feature (
 # Table structure for table 'transcript'
 #
 CREATE TABLE transcript (
-  transcript_id    INT UNSIGNED NOT NULL auto_increment,
-  gene_id          INT UNSIGNED NOT NULL,
-  translation_id   INT UNSIGNED NOT NULL,
+  transcript_id    INT UNSIGNED NOT NULL auto_increment,  
+  gene_id          INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
+  translation_id   INT UNSIGNED NOT NULL,          # foreign key translation:translation_id
   
   PRIMARY KEY (transcript_id),
   KEY gene_index (gene_id),
@@ -300,7 +332,7 @@ CREATE TABLE transcript (
 );
 
 CREATE TABLE transcript_stable_id (
-    transcript_id int unsigned not null,
+    transcript_id int unsigned not null,  # foreign key transcript:transcript_id
     stable_id     VARCHAR(40) not null,
     version       int(10) DEFAULT '1' NOT NULL,
     
@@ -312,18 +344,24 @@ CREATE TABLE transcript_stable_id (
 #
 # Table structure for table 'translation'
 #
+
+# The seq_start and seq_end are 1-based offsets into the
+# *relative* coordinate system of start_exon_id and end_exon_id.
+# ie, if the translation starts at the first base of the exon, seq_start 
+# would be 1
+
 CREATE TABLE translation (
-  translation_id  INT UNSIGNED NOT NULL auto_increment,
+  translation_id  INT UNSIGNED NOT NULL auto_increment, 
   seq_start       INT(10) NOT NULL,
-  start_exon_id   INT UNSIGNED NOT NULL,
+  start_exon_id   INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
   seq_end         INT(10) NOT NULL,
-  end_exon_id     INT UNSIGNED NOT NULL,
+  end_exon_id     INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
   
   PRIMARY KEY (translation_id)
 );
 
 CREATE TABLE translation_stable_id (
-    translation_id INT unsigned NOT NULL,
+    translation_id INT unsigned NOT NULL, # foreign key translation:translation_id
     stable_id VARCHAR(40) NOT NULL,
     version   INT(10) DEFAULT '1' NOT NULL,
     
@@ -333,10 +371,29 @@ CREATE TABLE translation_stable_id (
 
 # this is a denormalised golden path
 
+#
+# The data in this table defines the "static golden path", i.e. the
+# best effort draft full genome sequence as determined by the UCSC or NCBI
+# (depending which assembly you are using)
+#
+# Each row represents a contig (raw_id, FK from contig table) at least part of
+# which is present in the golden path. The part of the contig that is
+# in the path is delimited by fields raw_start and raw_end (start < end), and
+# the absolute position within the golden path chromosome (chr_name) is given
+# by chr_start and chr_end. Each contig is in some "fingerprint clone contig"
+# and the fpc contig is identified by field fpcctg_name and the position of
+# the specified bit of the contig within its FPC contig is given by fields
+# fpcctg_start and fpcctg_end.
+# With the data set at time of this writing, field type is always "UCSC".
+# 
+# NB, chr_start <= chr_end, raw_start <= raw_end, and fpcctg_start <= fpcctg_end.
+# 
+ 
+
 CREATE TABLE static_golden_path (
     fpcctg_name    varchar(20) NOT NULL,
     chr_name       varchar(20)  NOT NULL,
-    raw_id         int(10) unsigned NOT NULL,
+    raw_id         int(10) unsigned NOT NULL, # foreign key contig:internal_id
     chr_start      int(10) NOT NULL,
     chr_end        int(10) NOT NULL,
     fpcctg_start   int(10) NOT NULL,
