@@ -260,7 +260,7 @@ sub _transform_between_Slices {
   %$new_exon = %$self;
 
   #unset the new exons supporting features
-  $new_exon->{'_supporting_evidence'} = [];
+  delete $new_exon->{'_supporting_evidence'};
 
   #calculate the exons position in the assembly
   my ($exon_chr_start, $exon_chr_end, $exon_chr_strand);
