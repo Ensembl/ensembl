@@ -100,27 +100,23 @@ if(defined($species)){
   push @all_species, $species;
 }
 
+my $i = 1;
 
 for my $species ( @all_species ) {
 
-  my $sp = (split(/::/, ref($species)))[1];
-
-  my $i = 1;
-
-  print "\nDumping xrefs for $sp " . info($i, @all_species) . "\n";
   $species->xref($xref); # attach xref object to species object
 
-  print "\nDumping Ensembl sequences for $sp " . info($i, @all_species) . "\n";
+  print "\nDumping xref & Ensembl sequences" . info($i, @all_species) . "\n";
   $species->dump_seqs();
 
-  print "\nRunning mapping for $sp of " . info($i, @all_species) . "\n";
+  print "\nRunning mapping" . info($i, @all_species) . "\n";
   $species->build_list_and_map();
 
-  print "\nParsing mapping output for $sp of " . info($i, @all_species) . "\n";
+  print "\nParsing mapping output" . info($i, @all_species) . "\n";
   $species->parse_mappings();
 
-  print "\nUploading $sp of " . info($i, @all_species) . "\n";
-  $species->do_upload($deleteexisting);
+  print "\nUploading xrefs" . info($i, @all_species) . "\n" if ($upload);
+  $species->do_upload($deleteexisting) if ($upload);
 
   $i++;
 
@@ -132,7 +128,7 @@ sub info {
 
   my ($i, @all_species) = @_;
 
-  return "(species $i of " . scalar(@all_species) . ")";
+  return " for species $i of " . scalar(@all_species);
 
 }
 
