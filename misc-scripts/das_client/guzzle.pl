@@ -13,7 +13,7 @@
 use strict;
 use warnings;
 
-# Whereever you keep non-standard modules
+# Where you keep non-standard modules (including Bioperl)
 use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
 	   /opt/local/libdata/perl5/i386-openbsd
 	   /opt/local/libdata/perl5/site_perl/i386-openbsd
@@ -23,7 +23,7 @@ use lib qw(/opt/local/libdata/perl5/i386-openbsd/5.8.0
 use Bio::Das;
 use CGI::Pretty qw(:standard -compile);
 
-#use Data::Dumper;
+use Data::Dumper;
 
 #---------------------------------------------------------------
 # Configurable things (change these):
@@ -66,12 +66,14 @@ my $result_page_title	= 'Guzzle result page';
 # default.
 #
 my @presets = (
-    {	NAME	=> 'Pfam-A (test)',
-	DSN	=> 'http://uhuru/cgi-bin/das/pfam',
-	CHECKED	=> 1 },
-    {	NAME	=> 'Sprot (test)',
+    {	NAME	=> 'EMBL (via Sprot) [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
-	CHECKED	=> 1 } );
+	MAP	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
+		   'das_client/sprot_embl.dat',
+	CHECKED	=> 1 },
+    {	NAME	=> 'Sprot [test]',
+	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
+	CHECKED	=> 0 } );
 
 # $nblanks:
 # The number of blank/empty fields to present on the query page
@@ -91,7 +93,6 @@ my @colours = qw( red green blue magenta cyan yellow gray black );
 # page.
 #
 my $stylesheet = <<EOT;
-<!--
 body {
     color:	    #000;
     background:	    #6a6;
@@ -115,7 +116,6 @@ tt {
 .thetable {
     background:	    #9c9;
 }
--->
 EOT
 
 #
@@ -138,6 +138,14 @@ my $be_nice = 1;
 #
 my $use_graphics = 1;
 
+# $use_mapping
+# Whether to make available and use mappings between e.g. EMBL
+# and Swissprot.
+my $use_mapping = 1;
+if ($use_mapping) {
+    # Where you keep Ensembl modules.
+    use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
+}
 
 # No servicable parts inside...
 #---------------------------------------------------------------
@@ -156,6 +164,111 @@ if ($use_graphics) {
 
     require File::Temp;
     import File::Temp 'tempfile';
+}
+
+if ($use_mapping) {
+    require Bio::EnsEMBL::Mapper;
+}
+
+#---------------------------------------------------------------
+
+# do_query():
+# Will perform the query.
+
+sub do_query
+{
+    my $cgi = shift;
+    my $sources = shift;
+
+    my $start = $cgi->param('START') || undef;
+    my $stop  = $cgi->param('STOP')  || undef;
+    my $segment;
+
+    my $seqid = $cgi->param('ID');
+
+    my $range;
+    if (defined $start && defined $stop) {
+	$range = ':' . $start . ',' . $stop;
+    } else {
+	$range = '';
+    }
+
+    my %query;
+    foreach my $source (@{ $sources }) {
+	if (!defined $source->{USEMAP}) {
+	    push(@{ $query{$seqid} }, $source->{DSN});
+	    next;
+	}
+
+	# Do mapping.
+
+        # 1. Find the sequence ID that corresponds to the
+        #    requested sequence ID in the map file.  The
+        #    requested ID should be found in column 1, and the
+        #    corresponding ID will then be in column 2 (this is
+        #    a <tab>-separated file).
+        #
+        # 2. The alignment between the two sequences is
+        #    represented as two coordinates and a cigar line.
+        #    The two coordinates (column 3 and column 4) are
+        #    the start of the alignment in the requested and
+        #    corresponding sequences respectively, and the cigar
+        #    line (column 5) describes the matches, insertions,
+        #    and deletions in the alignment.  Get all this.
+        #
+        # 3. If the user requested a range, then map this range
+        #    into the corresponding range.
+        #
+        # 4. Perform query.
+        #
+        # 5. Map each returned feature back.
+
+	open(IN, $source->{USEMAP}) or
+	    die "Can't open map data file '" .
+		$source->{USEMAP} ."': " .  $!;
+
+	while (defined(my $line = <IN>)) {
+	    next if $line !~ /^$seqid\t/;
+
+	    chomp $line;
+	    my ($qi, $ti, $qab, $tab, $C) = split /\t/, $line;
+	    print $cgi->pre($line);
+
+	    # Create Bio::EnsEMBL::Mapper object
+	    my $mapper = new Bio::EnsEMBL::Mapper('query', 'target');
+
+	    # Decompose the cigar line and build up the mapper.
+	    my ($qspos, $tspos) = ($qab + 1, $tab + 1);	# Start of match
+	    my ($qepos, $tepos) = ($qspos, $tspos);	# End of match
+	    while ($C =~ /(\d*)(\w)/g) {
+		print $cgi->pre($1, $2, "\n");
+		$qepos += (defined($1) ? $1 : 1);
+		$tepos += (defined($1) ? $1 : 1);
+		$mapper->add_map_coordinates('query', $qsops, $qepos,
+		    'target', $tspos, $tepos);
+		$qspos = $qepos;
+		$tspos = $tepos;
+	    }
+	    print $cgi->pre($C);
+
+            # TODO: If $range, then map range.  Perform query,
+            # then map back.
+
+	    $query{$ti}{SEGMENT} = $ti . $range;
+	    push(@{ $query{$ti}{DSN} }, $source->{DSN});
+	}
+	close IN;
+    }
+
+    my $das = new Bio::Das(15);
+
+    my @replies;
+    foreach my $query (values %query) {
+	push(@replies, $das->features(
+	    -dsn	=> $query->{DSN},
+	    -segment    => $query->{SEGMENT}));
+    }
+    return @replies;
 }
 
 #---------------------------------------------------------------
@@ -375,6 +488,9 @@ sub query_page
 	print $cgi->hidden(
 	    -name   => 'DSN',
 	    -value  => $preset->{DSN});
+	print $cgi->hidden(
+	    -name   => 'MAP',
+	    -value  => $preset->{MAP}) if exists($preset->{MAP});
 	++$count;
     }
 
@@ -428,7 +544,7 @@ sub query_page
 	$cgi->td({ -colspan => '2' }, $cgi->textfield(
 	    -name	=> 'ID',
 	    -size	=> '25',
-	    -default	=> 'FLNA_HUMAN') ),
+	    -default	=> 'ENSP00000158529') ),
 	($use_stylesheets ? $cgi->td('&nbsp;') : ''));
 
 
@@ -486,7 +602,8 @@ sub result_page
 		NAME	    => [ $cgi->param('NAME')    ]->[$idx],
 		DSN	    => [ $cgi->param('DSN')	]->[$idx],
 		COLOUR	    => [ $cgi->param('COLOUR')  ]->[$idx],
-		USESTYLE    => [ $cgi->param('STYLE')	]->[$idx] );
+		USESTYLE    => [ $cgi->param('STYLE')	]->[$idx],
+		USEMAP	    => [ $cgi->param('MAP')	]->[$idx] );
 
 	    $source{DSN} =~ s/\s//g;
 	    next unless (length $source{DSN} > 0);
@@ -494,26 +611,7 @@ sub result_page
 	    push(@sources, \%source);
 	}
 
-	my $start = $cgi->param('START') || undef;
-	my $stop  = $cgi->param('STOP')  || undef;
-	my $segment;
-
-	if (defined $start && defined $stop) {
-	    $segment = $cgi->param('ID') . ':' . $start . ',' . $stop;
-	} else {
-	    $segment = $cgi->param('ID');
-	}
-
-	my @query;
-	foreach my $source (@sources) {
-	    push(@query, $source->{DSN} . '/features?segment=' . $segment);
-	}
-
-	my $das = new Bio::Das(15);
-
-	my @replies = $das->features(
-	    -dsn	=> \@query,
-	    -segment	=> $segment);
+	my @replies = do_query($cgi, \@sources);
 
 	foreach my $reply (@replies) {
 	    next unless ($reply->is_success && defined $reply->results);
@@ -530,7 +628,7 @@ sub result_page
                 # FIXME:  This is a quick'n dirty hack to work
                 # around the non-existant Bio::Das::Stylesheet
                 # module (in the CPAN distribution of the
-                # Bio::Das modules, as of 2003-05-08).  It will
+                # Bio::Das modules, as of 2003-09-22).  It will
                 # pick up and use the *first* FGCOLOR from the
                 # stylesheet, if one exists.
 
