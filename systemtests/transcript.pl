@@ -52,7 +52,8 @@ my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $help;
 my $usefile = 0;
-my $getall = 0;
+my $getall = 1;
+my $debug;
 
 &GetOptions( 
 	     'dbtype:s'   => \$dbtype,
@@ -64,7 +65,8 @@ my $getall = 0;
 	     'module:s'   => \$module,
 	     'usefile'    => \$usefile,
 	     'getall'     => \$getall,
-	     'h|help'     => \$help
+	     'h|help'     => \$help,
+	     'debug'      => \$debug
 	     );
 
 
@@ -103,8 +105,13 @@ foreach my $clone_id ( @clone_id ) {
 		print STDERR "\n        gene       ",$gene->id,"\n";
 		foreach my $trans ($gene->each_Transcript()) {
 		    print STDERR "\n        transcript ",$trans->id,"\n";
-		    my $trans_seq = $trans->dna_seq();
+		    my $trans_dna = $trans->dna_seq;
+		    my $trans_seq=$trans_dna->seq;
 		    my $err;
+		    $debug && print "Start: ".$trans_dna->start."\n";
+		    $debug && print "End:   ".$trans_dna->end."\n";
+		    $debug && print "Sequence:\n$trans_seq.\n";
+		    
 		    if ($trans_seq eq "") {
 			$err = "no sequence present in this contig!\n";
 		    }
