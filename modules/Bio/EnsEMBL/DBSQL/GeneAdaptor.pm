@@ -679,7 +679,7 @@ sub fetch_all_by_DBEntry {
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
 
 
-  my @ids = $entryAdaptor->geneids_by_extids($external_id);
+  my @ids = $entryAdaptor->list_gene_ids_by_extids($external_id);
   foreach my $gene_id ( @ids ) {
     my $gene = $self->fetch_by_dbID( $gene_id );
     if( $gene ) {
