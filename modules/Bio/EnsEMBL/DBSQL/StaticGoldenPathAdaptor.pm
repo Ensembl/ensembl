@@ -386,9 +386,6 @@ sub fetch_VirtualContig_by_chr_start_end{
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
 
 
-   print STDERR "size ".$#rc."\n";
-
-
    foreach my $rc(@rc){
 #       print STDERR "got rc ", $rc->id,"\n";
    }
