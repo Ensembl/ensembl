@@ -253,7 +253,9 @@ sub do_sql_file {
     local *SQL;
     my $i = 0;
     my $dbh = $self->db_handle;
-    
+
+    my $comment_strip_warned=0;
+
     foreach my $file (@files)
     {
         my $sql = '';
