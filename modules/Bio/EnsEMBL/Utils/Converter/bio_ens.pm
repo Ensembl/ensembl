@@ -136,7 +136,7 @@ sub _guess_module {
         $tail = 'bio_ens_predictionGene';
     }elsif($in eq 'Bio::Tools::Prediction::Exon'){
         $tail = 'bio_ens_predictionExon';
-    }elsif($in eq 'Bio::SeqFeature::Gene::GeneStructur'){
+    }elsif($in eq 'Bio::SeqFeature::Gene::GeneStructure'){
         $tail = 'bio_ens_gene';
     }elsif($in eq 'Bio::SeqFeature::Gene::Transcript'){
         $tail = 'bio_ens_transcript';

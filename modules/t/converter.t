@@ -52,6 +52,8 @@ use Bio::EnsEMBL::Utils::Converter;
 &test_SeqFeature;
 &test_FeaturePair;
 &test_hit;
+&test_predictionTranscript;
+&test_gene;
 
 # Test for SeqFeature, 10 OKs
 sub test_SeqFeature{
@@ -182,3 +184,18 @@ sub test_hit {
     
 }
 
+sub test_predictionTranscript{
+    my $converter = new Bio::EnsEMBL::Utils::Converter(
+        -in => 'Bio::Tools::Prediction::Gene',
+        -out => 'Bio::EnsEMBL::PreditionTranscript'
+    );
+    ok 1;
+}
+
+sub test_gene{
+    my $converter = new Bio::EnsEMBL::Utils::Converter(
+        -in => 'Bio::SeqFeature::Gene::GeneStructure',
+        -out => 'Bio::EnsEMBL::Gene'
+    );
+    ok 1;
+}

@@ -62,7 +62,7 @@ sub _convert_single {
     $self->throw("a Bio::Tools::Prediction::Exon object needed")
         unless($input->isa("Bio::Tools::Prediction::Exon"));
 
-    $output = Bio::EnsEMBL::Exon->new(
+    my $output = Bio::EnsEMBL::Exon->new(
         -start => $input->start,
         -end => $input->end,
         -strand => $input->strand
