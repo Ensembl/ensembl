@@ -369,17 +369,22 @@ sub list_pairs{
    }
 
    my @output;
-   foreach my $p ( @list ) {
-
+   if( $start == -1 && $end == -1 ) {
+     return @list;
+   } else {
+     
+     foreach my $p ( @list ) {
+       
        if( &$self_func($p)->end < $start ) {
-	   next;
+	 next;
        }
        if( &$self_func($p)->start > $end ) {
-	   last;
+	 last;
        }
        push(@output,$p);
+     }
+     return @output;
    }
-   return @output;
 }
 
 
