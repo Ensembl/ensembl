@@ -292,7 +292,7 @@ sub add_synonym {
 }
 
 
-=head2 get_synonyms
+=head2 get_all_synonyms
 
   Args       : none
   Example    : @synonyms = @{$db_entry->get_all_synonyms()};

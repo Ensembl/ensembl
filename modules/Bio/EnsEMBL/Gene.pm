@@ -458,20 +458,6 @@ sub get_all_Exons {
 }
 
 
-=head2 get_Exon_by_id
-
- Title   : get_Exon_by_id
- Usage   : $gene->get_Exon($exon_id);
- Function: resolve the id into an exon (or return undef)
- Example :
- Returns : an Exon or undef
- Args    :
-
-=cut
-
-
-
-
 =head2 type
 
  Title   : type

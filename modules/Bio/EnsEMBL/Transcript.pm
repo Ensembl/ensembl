@@ -1744,7 +1744,8 @@ sub each_Exon{
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED do not use
+  Description: DEPRECATED use get_all_Exons and search through for seqname 
+               yourself
   Returntype : none
   Exceptions : none
   Caller     : none
@@ -1754,7 +1755,9 @@ sub each_Exon{
 sub each_Exon_in_context{
    my ($self,$context) = @_;
 
-  $self->warn("Transcript->each_Exon_in_context is deprecated");
+  $self->warn("Transcript->each_Exon_in_context is deprecated, use " .
+              "get_all_Exons and search through them for matching seqnames " .
+              "yourself");
 
    my @exons;
 

@@ -908,7 +908,20 @@ sub get_tiling_path {
   
 
 
-sub get_landmark_MarkerFeatures {
+=head2 get_all_landmark_MarkerFeatures
+
+  Arg [1]    : none
+  Example    : my @marker_feats = @{$slice->get_all_landmark_MarkerFeatures};
+  Description: Retrieves all landmark markers which lie on this slice. This
+               query uses the lite database, and an empty list will be returned
+               if the lite database is not available.
+  Returntype : reference to a list of Bio::EnsEMBL::MarkerFeatures
+  Exceptions : warning if lite database is not available
+  Caller     : contigview?, general
+
+=cut
+
+sub get_all_landmark_MarkerFeatures {
   my $self = shift;
 
   my $lma = $self->adaptor()->db()->get_LandmarkMarkerAdaptor();
@@ -1365,5 +1378,29 @@ sub convert_Gene_to_raw_contig{
   
   return $gene;
 }
+
+
+
+
+=head2 get_landmark_MarkerFeatures
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_landmarkMarkerFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_landmark_MarkerFeatures {
+  my ($self, @args) = @_;
+
+  $self->warn("get_landmark_MarkerFeatures has been renamed get_all_landmarkMarkerFeatures\n" . caller);
+
+  return $self->get_all_landmarkMarkerFeatures(@args);
+}
+
+
 
 1;
