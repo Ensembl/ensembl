@@ -114,7 +114,9 @@ sub direct_new {
 	$internal_id,
 	$dna_id,
 	$seq_version,
-	$cloneid
+	$cloneid,
+	$chr_start,
+	$chr_end
         ) = $self->_rearrange([qw(
 				  DBOBJ
 				  ID
@@ -124,14 +126,16 @@ sub direct_new {
 				  DNA_ID
 				  SEQ_VERSION
 				  CLONEID
+				  CHR_START
+				  CHR_END
 	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
     $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
-    if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid ) {
-	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid]!");
+    if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid || !defined $chr_start || !defined $chr_end) {
+	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid,$chr_start,$chr_end]!");
     }
 
     $self->id($id);
@@ -143,6 +147,8 @@ sub direct_new {
     $self->cloneid    ($cloneid);
     $self->perl_only_sequences($perlonlysequences);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
+    $self->_chr_start($chr_start);
+    $self->_chr_end($chr_end);
 
     return $self;
 }

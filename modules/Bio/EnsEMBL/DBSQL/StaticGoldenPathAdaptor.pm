@@ -279,26 +279,47 @@ sub fetch_RawContigs_by_chr_name{
    my ($self,$chr) = @_;
 
    my $type = $self->dbobj->static_golden_path_type();
-   
-   # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("SELECT  c.id 
-				    FROM    static_golden_path st,
-					    contig c 
-				    WHERE c.internal_id = st.raw_id 
-				    AND st.chr_name = '$chr' 
-				    AND  st.type = '$type' 
-				    ORDER BY st.fpcctg_start"
-				    );
+
+   my $sth = $self->dbobj->prepare("
+        SELECT c.id
+          , c.internal_id
+          , c.dna
+          , cl.id
+          , cl.embl_version
+          , st.chr_start
+          , st.chr_end
+        FROM static_golden_path st
+          , contig c
+          , clone cl
+        WHERE cl.internal_id = c.clone
+          AND c.internal_id = st.raw_id
+          AND st.chr_name = '$chr'
+          AND st.type = '$type'
+        ");
    $sth->execute;
+
    my @out;
    my $cid;
-   while( ( my $cid = $sth->fetchrow_arrayref) ) {
-       my $rc = $self->dbobj->get_Contig($cid->[0]);
+   while( ( my $array = $sth->fetchrow_arrayref) ) {
+
+       my ($id,$internalid,$dna,$clone,$seq_version,$chr_start,$chr_end) = @{$array};
+       my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
+	   ( 
+	     -dbobj => $self->dbobj,
+	     -id    => $id,
+	     -perlonlysequences => $self->dbobj->perl_only_sequences,
+	     -contig_overlap_source      => $self->dbobj->contig_overlap_source(),
+	     -overlap_distance_cutoff    => $self->dbobj->overlap_distance_cutoff(),
+	     -internal_id => $internalid,
+	     -dna_id => $dna,
+	     -seq_version => $seq_version,
+	     -cloneid     => $clone,
+             -chr_start   => $chr_start,
+             -chr_end     => $chr_end
+	     );
        push(@out,$rc);
    }
-   if ($sth->rows == 0) {
-       $self->throw("Could not find rawcontigs for chromosome $chr!");
-   }
+
    return @out;
 }
 
@@ -343,6 +364,8 @@ sub fetch_RawContigs_by_chr_start_end {
           , c.dna
           , cl.id
           , cl.embl_version
+          , st.chr_start
+          , st.chr_end
         FROM static_golden_path st
           , contig c
           , clone cl
@@ -359,7 +382,7 @@ sub fetch_RawContigs_by_chr_start_end {
    my $cid;
    while( ( my $array = $sth->fetchrow_arrayref) ) {
 
-       my ($id,$internalid,$dna,$clone,$seq_version) = @{$array};
+       my ($id,$internalid,$dna,$clone,$seq_version,$chr_start,$chr_end) = @{$array};
        my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
 	   ( 
 	     -dbobj => $self->dbobj,
@@ -370,7 +393,9 @@ sub fetch_RawContigs_by_chr_start_end {
 	     -internal_id => $internalid,
 	     -dna_id => $dna,
 	     -seq_version => $seq_version,
-	     -cloneid => $clone
+	     -cloneid     => $clone,
+             -chr_start   => $chr_start,
+             -chr_end     => $chr_end
 	     );
        push(@out,$rc);
    }
