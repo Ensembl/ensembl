@@ -90,10 +90,11 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end 
-	     g.seq_region_strand g.analysis_id g.type g.display_xref_id 
-	     gd.description gsi.stable_id gsi.version x.display_label 
-	     exdb.db_name exdb.status );
+  return qw( g.gene_id g.seq_region_id g.seq_region_start g.seq_region_end
+	     g.seq_region_strand g.analysis_id g.type g.display_xref_id
+	     gd.description gsi.stable_id gsi.version x.display_label
+       x.dbprimary_acc x.description x.version exdb.db_name exdb.status
+       exdb.release );
 }
 
 
@@ -595,7 +596,7 @@ sub store {
     return $gene->dbID();
   }
 
-  #force lazy-loading of transcripts and exons, and ensure coords are correct
+  # ensure coords are correct before storing
   $gene->recalculate_coordinates();
 
   my $analysis = $gene->analysis();
@@ -692,23 +693,32 @@ sub store {
     $transcript_adaptor->store($t,$gene_dbID );
   }
 
+  # update gene to point to display xref if it is set
+  if(my $display_xref = $gene->display_xref) {
+    my $dxref_id;
 
-  # if a display_xref is defined store it as well.  This requires an
-  # update to the gene table and could not have been done at the time
-  # the gene was stored because the gene needed to be stored to store
-  # the xrefs and get the display xref id. A bit of a catch22.
-  my $display_xref = $gene->display_xref;
-  if($display_xref) {
-    if(!$display_xref->is_stored($db)) {
-      # This should be stored already b/c it should at least
-      # be associated with one of the transcripts or translations.
-      # We'll allow this though because it could be desired behaviour.
-      $dbEntryAdaptor->store($display_xref, $gene_dbID, "Gene");
+    if($display_xref->is_stored($db)) {
+      $dxref_id = $display_xref->dbID();
+    } else {
+      $dxref_id = $dbEntryAdaptor->exists($display_xref);
     }
-    $sth = $self->prepare
-      ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
-    $sth->execute($display_xref->dbID(), $gene_dbID);
-    $sth->finish();
+
+    if(defined($dxref_id)) {
+      $sth = $self->prepare
+        ("UPDATE gene SET display_xref_id = ? WHERE gene_id = ?");
+      $sth->execute($dxref_id, $gene_dbID);
+      $sth->finish();
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+      $display_xref->dbID($dxref_id);
+      $display_xref->adaptor($dbEntryAdaptor);
+    } else {
+      warning("Display_xref ".$display_xref->dbname().":".
+              $display_xref->display_id() . " is not stored in database.\n".
+              "Not storing relationship to this gene.");
+      $display_xref->dbID(undef);
+      $display_xref->adaptor(undef);
+    }
   }
 
   # set the adaptor and dbID on the original passed in gene not the
@@ -716,7 +726,7 @@ sub store {
   $original->adaptor( $self );
   $original->dbID( $gene_dbID );
 
-   return $gene_dbID;
+  return $gene_dbID;
 }
 
 
@@ -951,13 +961,16 @@ sub _objs_from_sth {
 
   my ( $gene_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $analysis_id, $type, $display_xref_id, 
-       $gene_description, $stable_id, $version, $external_name, $external_db, 
-       $external_status );  
+       $gene_description, $stable_id, $version, $xref_display_id,
+       $xref_primary_acc, $xref_desc, $xref_version, $external_name, 
+       $external_db, $external_status, $external_release );
 
-  $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start, 
-          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$type, 
-          \$display_xref_id, \$gene_description, \$stable_id, \$version, 
-          \$external_name, \$external_db, \$external_status );
+  $sth->bind_columns( \$gene_id, \$seq_region_id, \$seq_region_start,
+          \$seq_region_end, \$seq_region_strand, \$analysis_id, \$type,
+          \$display_xref_id, \$gene_description, \$stable_id, \$version,
+          \$xref_display_id, \$xref_primary_acc, \$xref_desc, \$xref_version,
+          \$external_db, \$external_status,
+          \$external_release );
 
   my $asm_cs;
   my $cmp_cs;
@@ -1048,7 +1061,7 @@ sub _objs_from_sth {
           next FEATURE;
         }
       }
-      
+
       $slice = $dest_slice;
     }
 
@@ -1058,7 +1071,11 @@ sub _objs_from_sth {
       $display_xref = Bio::EnsEMBL::DBEntry->new_fast
         ({ 'dbID' => $display_xref_id,
            'adaptor' => $dbEntryAdaptor,
-           'display_id' => $external_name,
+           'display_id' => $xref_display_id,
+           'primary_id' => $xref_primary_acc,
+           'version'    => $xref_version,
+           'description' => $xref_desc,
+           'release' => $external_release,
            'dbname' => $external_db
          });
       $display_xref->status( $external_status );
