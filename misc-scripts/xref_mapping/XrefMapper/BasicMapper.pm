@@ -1,6 +1,7 @@
 package XrefMapper::BasicMapper;
 
 use strict;
+use Cwd;
 use DBI;
 use File::Basename;
 use IPC::Open3;
@@ -389,12 +390,12 @@ sub fetch_and_dump_seq{
   my ($self) = @_;
 
   my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-species => $self->species(),
-                           -dbname  => $self->dbname(),
-                           -host    => $self->host(),
-                           -port    => $self->port(),
-                           -password => $self->password(),
-                           -user     => $self->user(),
-                           -group    => 'core');
+					      -dbname  => $self->dbname(),
+					      -host    => $self->host(),
+					      -port    => $self->port(),
+					      -pass    => $self->password(),
+					      -user    => $self->user(),
+					      -group   => 'core');
 
   #
   # store ensembl dna file name and open it
@@ -701,7 +702,7 @@ sub parse_mappings {
   my $row = @{$self->dbi()->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
-    print "Can't get highest existing object_xref_id, using 1\n)";
+    print "Can't get highest existing object_xref_id, using 1\n";
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
     $max_object_xref_id = 1;
@@ -976,7 +977,7 @@ sub dump_core_xrefs {
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
-      if (defined $xref_to_objects{$master_xref_id}) { # XXX check 
+      if (defined $xref_to_objects{$master_xref_id}) { # XXX check
 	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); # XXX check
 	#print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
 	foreach my $object_id (@ensembl_object_ids) {
@@ -1169,9 +1170,9 @@ sub build_gene_display_xrefs {
 					      -dbname  => $self->dbname(),
 					      -host    => $self->host(),
 					      -port    => $self->port(),
-					      -password => $self->password(),
-					      -user     => $self->user(),
-					      -group    => 'core');
+					      -pass    => $self->password(),
+					      -user    => $self->user(),
+					      -group   => 'core');
   my $ta = $db->get_TranscriptAdaptor();
 
   print "Building gene display_xrefs\n";
@@ -1318,4 +1319,63 @@ sub map_source_to_external_db {
   return %source_to_external_db;
 }
 
+# Upload .txt files and execute .sql files.
+
+sub do_upload {
+
+  my ($self, $deleteexisting) = @_;
+
+  # xref.txt etc
+
+  # TODO warn if table not empty
+
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym") {
+
+    my $file = getcwd() . "/" . $table . ".txt";
+    my $sth;
+
+    if ($deleteexisting) {
+
+      $sth = $self->dbi()->prepare("DELETE FROM $table");
+      print "Deleting existing data in $table\n";
+      $sth->execute();
+
+    }
+
+    # don't seem to be able to use prepared statements here
+    $sth = $self->dbi()->prepare("LOAD DATA INFILE \'$file\' INTO TABLE $table");
+    print "Uploading data in $file to $table\n";
+    $sth->execute();
+
+  }
+
+  # gene_display_xref.sql etc
+  foreach my $table ("gene", "transcript") {
+
+    my $file = getcwd() . "/" . $table . "_display_xref.sql";
+    my $sth;
+
+    if ($deleteexisting) {
+
+      $sth = $self->dbi()->prepare("UPDATE $table SET display_xref_id=NULL");
+      print "Setting all existing display_xref_id in $table to NULL\n";
+      $sth->execute();
+
+    }
+
+    # is this nicer than using the mysql client?
+    open(DISPLAY_XREF, $file);
+    while(<DISPLAY_XREF>) {
+
+      $sth = $self->dbi()->prepare($_);
+      print $_;
+      #$sth->execute();
+
+    }
+
+    close(DISPLAY_XREF);
+
+  }
+
+}
 1;
