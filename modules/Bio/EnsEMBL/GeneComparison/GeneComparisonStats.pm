@@ -586,7 +586,7 @@ sub make_merges{
        if ($seen !~ /$st_id/ && $seen !~ /$pr_id/) {
 	   print STDERR "Creating new gene\n";
 	   my $m_gene=Bio::EnsEMBL::Gene->new;
-	   $m_gene->id("IGI_M1_ctg$ctg\_$id");
+	   $m_gene->id("IGI_M2_ctg$ctg\_$id");
 	   $m_gene->version(1);
 	   my $time = time; chomp($time);
 	   $m_gene->created($time);
@@ -625,8 +625,8 @@ sub make_merges{
    foreach my $missed (@{$self->{'_missedGeneObjects'}}) {
        
        my $m_gene=Bio::EnsEMBL::Gene->new;
-       $m_gene->id("IGI_M1_ctg$ctg\_$id");
-       print STDERR "Creating new gene IGI_M1_ctg$ctg\_$id \n";
+       $m_gene->id("IGI_M2_ctg$ctg\_$id");
+       print STDERR "Creating new gene IGI_M2_ctg$ctg\_$id \n";
        $m_gene->version(1);
        my $time = time; chomp($time);
        $m_gene->created($time);
@@ -641,8 +641,8 @@ sub make_merges{
    }
    foreach my $missed (@{$self->{'_other_missedGeneObjects'}}) {
        my $m_gene=Bio::EnsEMBL::Gene->new;
-       $m_gene->id("IGI_M1_ctg$ctg\_$id");
-       print STDERR "Creating new gene IGI_M1_ctg$ctg\_$id \n";
+       $m_gene->id("IGI_M2_ctg$ctg\_$id");
+       print STDERR "Creating new gene IGI_M2_ctg$ctg\_$id \n";
        $m_gene->version(1);
        my $time = time; chomp($time);
        $m_gene->created($time);
