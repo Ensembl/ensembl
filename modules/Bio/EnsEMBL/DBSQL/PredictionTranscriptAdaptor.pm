@@ -109,6 +109,14 @@ sub fetch_by_Slice {
    $self->throw( "Not implemented yet" );
 }
 
+sub fetch_by_Slice_and_logic_name {
+   my $self = shift;
+   my $slice = shift;
+   my $logic_name = shift;
+
+   $self->throw( "Not implemented yet" );
+}
+
 
 =head2 fetch_by_Contig
 
@@ -151,6 +159,37 @@ sub fetch_by_Contig {
   return \@res;
 }
 
+sub fetch_by_Contig_and_logic_name {
+  my $self = shift;
+  my $contig = shift;
+  my $logic_name = shift;
+
+  my $query = qq {
+    SELECT  p.prediction_transcript_id
+      , p.contig_id
+      , p.contig_start
+      , p.contig_end
+      , p.contig_strand
+      , p.start_phase
+      , p.exon_rank
+      , p.score
+      , p.p_value	
+      , p.analysis_id
+      , p.exon_count
+
+    FROM prediction_transcript p, analysis a
+    WHERE p.contig_id = ? 
+    AND a.analysis_id = p.analysis_id
+    AND a.logic_name = ?
+    ORDER BY p.prediction_transcript_id, p.exon_rank
+  };
+
+  my $sth = $self->prepare( $query );
+  $sth->execute( $contig->dbID, $logic_name );
+
+  my @res = $self->_ptrans_from_sth( $sth );
+  return \@res;
+}
 
 
 =head2 _ptrans_from_sth
@@ -194,7 +233,6 @@ sub _ptrans_from_sth {
     my $exon = $self->_new_Exon_from_hashRef( $hashRef );
     $pre_trans->add_Exon( $exon, $hashRef->{'exon_rank'} );
   }
-
   return @result;
 }
 
@@ -282,10 +320,10 @@ sub store {
   my @exons = $pre_trans->get_all_Exons();
   my $dbID = undef;
   my $rank = 1;
-
+  
   for my $exon ( @exons ) {
     if( ! defined $exon ) { $rank++; next; }
-
+    
     my $contig_id = $exon->contig->dbID();
     my $contig_start = $exon->start();
     my $contig_end = $exon->end();
@@ -297,7 +335,7 @@ sub store {
     # this is only in PredictionExon
     my $score = $exon->score();
     my $p_value = $exon->p_value();
-
+    #print "storing exon with pvalue ".$exon->p_value." and score ".$exon->score."\n";
     my $analysis = $pre_trans->analysis->dbID;
 
     if( $rank == 1 ) {
@@ -306,7 +344,7 @@ sub store {
       $dbID =   $exonst->{'mysql_insertid'};
     } else {
       $exonst->execute( $dbID, $rank, $contig_id, $contig_start, $contig_end, $contig_strand,
-			$start_phase, $end_phase, $score, $analysis, scalar( @exons ) );
+			$start_phase, $score, $p_value, $analysis, scalar( @exons ) );
     }
     $rank++;
   }
