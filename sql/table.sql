@@ -20,7 +20,6 @@ CREATE TABLE affy_feature (
        seq_region_strand TINYINT NOT NULL,
        
        mismatches TINYINT,
-       probeset VARCHAR(20),
        affy_probe_id INT NOT NULL,
        analysis_id INT NOT NULL,
 
