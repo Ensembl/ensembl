@@ -16,7 +16,7 @@ BEGIN { $| = 1;
 
 
 our $verbose = 1;
-verbose('INFO');
+verbose('WARNING');
 
 my $multi_db = MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
@@ -32,22 +32,40 @@ my $slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1, 600);
 my $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity');
 print_features($dfs);
 
-my $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 10, 1);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 10, 1);
+print_features($dfs);
+
+$dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 50, 1);
+print_features($dfs);
+
+$dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 2, 1);
 print_features($dfs);
 
 
+
+#
+# helper to draw an ascii representation of the density features
+#
 sub print_features {
   my $features = shift;
 
+  my $sum = 0;
+  my $length = 0;
+
   debug("\n");
   foreach my $f (@$features) {
-    my $start = $f->start();
-    my $end   = $f->end();
+    my $draw_width = 1;
     my $density_value = $f->density_value();
-    my $n = int(0.75 * $density_value);
-    debug(('*'x$n)."($start-$end)");
+    my $draw_height = int(0.75 * $density_value);
+    $sum += $density_value;
+    $length += $f->length();
+    for(my $i = 0; $i < $draw_width; $i++) {
+      debug(('*'x$draw_height));
+    }
   }
-  debug("\n");
+  my $avg = undef;
+  $avg = $sum/$length if($length < 0);
+  debug("\nSum=$sum, Length=$length, Avg/Base=$sum");
 }
 
 
