@@ -44,6 +44,7 @@ use Bio::EnsEMBL::DBLoader;
 use DBI;
 use Carp;
 
+#Package variable for unique database name
 my $counter=0;
 
 {
