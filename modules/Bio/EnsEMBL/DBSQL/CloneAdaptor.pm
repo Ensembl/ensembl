@@ -64,7 +64,7 @@ sub _generic_sql_fetch {
           , htg_phase
           , UNIX_TIMESTAMP(created)
           , UNIX_TIMESTAMP(modified)
-	      , UNIX_TIMESTAMP(stored) FROM clone }
+	  FROM clone }
         . $where_clause .
         q{ ORDER BY embl_version DESC };
 
@@ -379,7 +379,6 @@ sub create_tables {
       htg_phase     int(10) DEFAULT '-1' NOT NULL,
       created       datetime NOT NULL,
       modified      datetime NOT NULL,
-      stored        datetime NOT NULL,
   
       PRIMARY KEY (internal_id),
       UNIQUE embl (embl_id,embl_version),

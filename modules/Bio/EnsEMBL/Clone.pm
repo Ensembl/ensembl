@@ -61,7 +61,7 @@ sub new {
     bless $self,$class;
 
 
-    my ($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified, $stored)=@args;
+    my ($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified)=@args;
 
     $self->throw("Don't have a id [$id] for new clone") unless $id;
     $self->throw("Don't have a adaptor [$adaptor] for new clone $id") unless $adaptor;
@@ -80,8 +80,6 @@ sub new {
    $self->warn("Don't have a htg phase [$htg_phase] for new clone $id") unless $htg_phase;  
     #$self->throw("Don't have a created [$created] for new clone") unless $created;
     #$self->throw("Don't have a modified [$modified] for new clone") unless $modified;
-    #$self->throw("Don't have a stored [$stored] for new clone") unless $stored;
-
 
     $self->adaptor($adaptor);
     $self->dbID($internal_id);
@@ -92,7 +90,6 @@ sub new {
     $self->htg_phase($htg_phase);
     $self->created($created);
     $self->modified($modified);
-    $self->_stored($stored);
 
     return $self;
 }
@@ -428,29 +425,6 @@ sub version{
     }
     return $obj->{'version'};
 
-}
-
-
-
-=head2 _stored
-
- Title   : _stored
- Usage   : $obj->_stored($newval)
- Function: Internal method should not really be needed
-           stores the time of storage of the deleted object
- Returns : value of stored
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _stored {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_stored'} = $value;
-    }
-    return $obj->{'_stored'};
 }
 
 =head2 embl_version
