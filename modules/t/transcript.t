@@ -64,6 +64,14 @@ ok( $translates );
 
 my $ta = $db->get_TranscriptAdaptor();
 
+debug ("Transcript->list_dbIDs");
+my $ids = $ta->list_dbIDs();
+ok (@{$ids});
+
+debug ("Transcript->list_stable_dbIDs");
+my $stable_ids = $ta->list_stable_dbIDs();
+ok (@{$stable_ids});
+
 my $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
 ok( $tr );
