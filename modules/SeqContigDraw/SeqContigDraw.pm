@@ -66,10 +66,11 @@ sub draw_contig_image
     &draw_seq($im);
 
     # draw genes
-    my $seq_len=$contig->seq->seq_len;
+    my $seq_len=$contig->primary_seq->length;
     my @genes = $contig->get_all_Genes();    
-    foreach my $gene(@genes){&draw_gene($im,$gene,$seq_len,$contig->id);}
-   
+    foreach my $gene(@genes){
+       draw_gene($im,$gene,$seq_len,$contig->id);
+    }
     # draw sequence features
     my @features= $contig->get_all_SeqFeatures();
     foreach my $ft (sort @features)
@@ -273,7 +274,6 @@ sub draw_gene
 
 sub draw_feature
 {
- 
     my ($im,$ft,$seq_len,$type,$color)=@_;
 
     my $image_comp_ref=&Parameters::contig_image_components;  
@@ -300,7 +300,6 @@ sub draw_feature
 
     unless ($url eq ""){&print_map($x_start,$y_start,$x_end,$y_end,$name,$url,$name);}
     $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$color);    
-
 }
 
 
@@ -344,7 +343,7 @@ sub draw_scale
 	my ($y_start,$y_end)=&calc_y_coord(@arg);
 	$im->line($x_start,$y_start,$x_end,$y_end,$color);    
 			
-	my $seq_len=$contig->seq->seq_len;
+	my $seq_len=$contig->primary_seq->length;
 	my $x_img=$image_param_ref->{x_img_len};
 	my $times;
 	my $scale_len=$image_comp_ref->{$type}{length};
@@ -382,7 +381,6 @@ sub draw_scale
 	$im->line($x_start,$y_start-2,$x_end,$y_end+2,$color);
 		
     }
-    
 }
 
 
