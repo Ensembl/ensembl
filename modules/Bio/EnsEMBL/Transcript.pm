@@ -563,7 +563,7 @@ sub get_all_Introns {
 }
 
 
-=head2 flush_Exon
+=head2 flush_Exons
 
  Title   : flush_Exon
  Usage   : Removes all Exons from the array.
@@ -575,7 +575,7 @@ sub get_all_Introns {
 
 =cut
 
-sub flush_Exon{
+sub flush_Exons{
    my ($self,@args) = @_;
 
    $self->{'_start'} = undef;

@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 17;
+	plan tests => 19;
 }
 
 use MultiTestDB;
@@ -92,8 +92,7 @@ ok( $tr->coding_start() == 85834 );
 debug( "coding_end() == ".$tr->coding_end() );
 ok( $tr->coding_end() == 108631 );
 
-debug( "pep2genomic: ".($tr->pep2genomic( 10,20))[0]->start());
-
+debug( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
 ok( $pepcoords[0]->start() == 85861 );
 
@@ -106,19 +105,13 @@ ok( substr( $tr->five_prime_utr()->seq(), -5, 5) eq "CGAAG" );
 debug( "three_prime_utr: ".substr( $tr->three_prime_utr()->seq(), -5, 5  ));
 ok( substr( $tr->three_prime_utr()->seq(), -5, 5  ) eq "TTCAA");
 
+debug( "Transcript has: ". scalar( @{$tr->get_all_Exons()} ). " Exons" );
+ok( scalar( @{$tr->get_all_Exons()} ) == 7 );
 
-# add_Exon
-# get_all_Exons
-# length
-# get_all_Introns
-# flush_Exons
-# five_prime_utr
-# three_prime_utr
+debug( "Flushing Exons" );
+$tr->flush_Exons();
 
-# get_all_translateable_Exons
-# translate
-# sort
-# pep2genomic
-# cdna2genomic
-# start_Exon
-# end_Exon
+ok( scalar( @{$tr->get_all_Exons()} ) == 0 );
+
+
+
