@@ -18,7 +18,7 @@ my $dbuser = 'ensro';
 my $dbname = 'ensembl080';
 #my $host = 'obi-wan';
 #my $host = 'cgisrv4';
-my $host = 'ensrv5';
+my $host = 'ensrv1';
 my $dbpass = undef;
 
 sub get_locator {
@@ -27,7 +27,7 @@ sub get_locator {
 
 $|=1;
 
-my $outpath = '../..';
+my $outpath = '/mysql/dumps/';
 my @clones = ();
 my @contigs;
 my $db;

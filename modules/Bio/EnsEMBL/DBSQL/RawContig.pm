@@ -1329,6 +1329,7 @@ sub get_all_PredictionFeatures {
 	$fsetid=$arr_ref->[0];
 
        $out->id($fsetid); # to make genscan peptide work
+	#print STDERR "\t\t===> get_pred_features fsetid: $fsetid\n";
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
        

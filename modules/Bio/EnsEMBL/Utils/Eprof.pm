@@ -141,7 +141,10 @@ sub eprof_dump {
 sub dump{
    my ($self,$fh) = @_;
 
-   foreach my $st ( values %{$self->_tags} ) {
+   my @tags = sort {  $self->_tags->{$a}->total_time <=> $self->_tags->{$b}->total_time } keys %{$self->_tags};
+   
+   foreach my $tag ( @tags ) {
+       my $st = $self->_tags->{$tag};
        print $fh sprintf("%14s  %6f  %6f  %d\n",$st->tag,$st->total_time,$st->total_time/$st->number,$st->number);
    }
 
