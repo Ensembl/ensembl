@@ -80,7 +80,7 @@ sub _initialize {
   
   $db_obj || $self->throw("Database Gene object must be passed a db obj!");
   $self->_db_obj($db_obj);
-
+  $self->use_delayed_insert(1);
   return $make; # success - we hope!
 
 }
@@ -1373,7 +1373,15 @@ sub write_supporting_evidence {
 
     $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
 
-    my $sth  = $self->_db_obj->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
+    my $string;
+    if( $self->use_delayed_insert == 1 ) {
+	$string = 'DELAYED';
+    } else {
+	$string = '';
+    }
+
+
+    my $sth  = $self->_db_obj->prepare("insert $string into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
 
@@ -1640,3 +1648,23 @@ sub _db_obj{
 
 }
 
+=head2 use_delayed_insert
+
+ Title   : use_delayed_insert
+ Usage   : $obj->use_delayed_insert($newval)
+ Function: 
+ Returns : value of use_delayed_insert
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub use_delayed_insert{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'use_delayed_insert'} = $value;
+    }
+    return $obj->{'use_delayed_insert'};
+
+}

@@ -77,24 +77,26 @@ foreach my $clone_id (@clones) {
 	if ($don_gene->id eq 'ENSG00000008217') {
 	    check_gene($don_gene,25);
 	    $todb->gene_Obj->write($don_gene);
-	    my $rec_gene=$todb->gene_Obj->get('ENSG00000008217');
-	    check_gene($rec_gene,30);
+	    my $rec_gene=$todb->gene_Obj->get('ENSG00000008217','evidence');
+	    check_gene($rec_gene,31);
 	}
     }
     if ($ok == 3) {
-	print "ok 35\n";
+	print "ok 37\n";
     }
     else {
-	print "not ok 35\n";
+	print "not ok 37\n";
 	print STDERR "Got $ok genes instead of 3!\n";
     }
     foreach my $gene_id (@geneids) {
 	$fromdb->gene_Obj->delete($gene_id);
     }
     $don_clone->delete;
-    print "ok 36\n";
-    check_delete(37);
+    print "ok 38\n";
+    check_delete(39);
 }
+
+# end of checks.
 
 sub check_clone {
     my ($clone,$c)=@_;
@@ -203,7 +205,12 @@ sub check_gene {
 	}
 	$c++;
 	my $ok=0;
+	my $suppexon;
 	foreach $exon ($transcript->each_Exon) {
+	    if( $exon->id eq 'ENSE00000031521' ) {
+		$suppexon = $exon;
+	    }
+
 	    if ($exon->id =~ /ENSE00000031517|ENSE00000031518|ENSE00000031519|ENSE00000031520|ENSE00000031521|ENSE00000031522/) {
 		$ok++;
 	    }
@@ -215,7 +222,24 @@ sub check_gene {
 	    print "not ok $c\n";
 	    print STDERR "Got $ok exons instead of 6\n";
 	}
-	
+	$c++;
+
+	my $test =0;
+	if( defined $suppexon ) {
+	    my @sup = $suppexon->each_Supporting_Feature();
+	    my $sup = shift @sup;
+	    if( defined $sup && $sup->hseqname eq 'AB004857' ) {
+		$test = 1;
+	    }
+	}
+
+	if( $test == 0 ) {
+	    print STDERR "Supporting feature on exon not retrieved\n";
+	    print "not ok $c\n";
+	} else {
+	    print "ok $c\n";
+	}
+
     }    
     
 }

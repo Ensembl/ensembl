@@ -74,6 +74,7 @@ INSERT INTO dna (sequence, created, id) VALUES ('GCATAGGGACCCGTCGTGATAACTGAACACA
 
 INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000083516','3',1,'2000-01-18 01:06:47','2000-01-18 01:06:47','2000-04-19 13:43:58',464,781,-1,0,0,1);
 
+
 #
 # Dumping data for table 'exon_transcript'
 #
