@@ -505,14 +505,15 @@ CREATE TABLE gene_description (
 #
 
 CREATE TABLE karyotype (
-
+  karyotype_id                int unsigned NOT NULL auto_increment,
   seq_region_id               int unsigned NOT NULL,
   seq_region_start            int(10)     NOT NULL,
   seq_region_end              int(10)     NOT NULL,
   band                        varchar(40) NOT NULL,
   stain                       varchar(40) NOT NULL,
 
-  PRIMARY KEY (seq_region_id,band)
+  PRIMARY KEY (karyotype_id),
+  KEY region_band_idx (seq_region_id,band)
 
 );
 
