@@ -26,7 +26,7 @@ Bio::EnsEMBL::SeqFeature - Ensembl specific sequence feature.
                                             );
 
     # $analysis is a Bio::EnsEMBL::Analysis object
-    
+
     # SeqFeatureI methods can be used
     my $start = $feat->start;
     my $end   = $feat->end;
@@ -61,7 +61,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::SeqFeature;
-                               
+
 use vars qw(@ISA);
 use strict;
 
@@ -75,21 +75,22 @@ use Bio::EnsEMBL::Root;
 
 sub new {
   my($caller,@args) = @_;
-  
+
   my $self = {};
-  
+
   if(ref $caller) {
     bless $self, ref $caller;
-  } else { 
+  } else {
     bless $self, $caller;
   }
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
+  $self->{'_is_splittable'} = 0;
 
-  my ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag, 
-      $primary_tag, $percent_id, $p_value, $phase, $end_phase) = 
+  my ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag,
+      $primary_tag, $percent_id, $p_value, $phase, $end_phase) =
 
       $self->_rearrange([qw(START
                             END
@@ -105,7 +106,7 @@ sub new {
                             PHASE
                             END_PHASE
                             )],@args);
-  
+
   #  $gff_string && $self->_from_gff_string($gff_string);
 
   if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
@@ -149,7 +150,7 @@ sub start{
         $self->throw("$value is not a valid start");
     }
     $self->{'_gsf_start'} = $value
-   } 
+   }
 
     return $self->{'_gsf_start'};
 
@@ -176,7 +177,7 @@ sub end{
         }
         $self->{'_gsf_end'} = $value;
     }
-    
+
    return $self->{'_gsf_end'};
 }
 
@@ -186,7 +187,7 @@ sub end{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -213,18 +214,18 @@ sub length{
 
 sub strand {
     my ($self,$value) = @_;
-    
+
     if (defined($value)) {
         if( $value eq '+' ) { $value = 1; }
         if( $value eq '-' ) { $value = -1; }
         if( $value eq '.' ) { $value = 0; }
-        
+
         if( $value != -1 && $value != 1 && $value != 0 ) {
             $self->throw("$value is not a valid strand info");
         }
         $self->{'_gsf_strand'} = $value;
-    } 
-    
+    }
+
     return $self->{'_gsf_strand'};
 }
 
@@ -242,14 +243,14 @@ sub strand {
 
 sub score {
     my ($self,$value) = @_;
-  
+
     if(defined ($value) ) {
       if( $value !~ /^[+-]?\d+\.?\d*(e-\d+)?/ ) {
           $self->throw("'$value' is not a valid score");
       }
       $self->{'_gsf_score'} = $value;
   }
-  
+
   return $self->{'_gsf_score'};
 }
 
@@ -267,14 +268,14 @@ sub score {
 
 sub frame {
     my ($self,$value) = @_;
-  
+
     if (defined($value)) {
         if( $value != 1 && $value != 2 && $value != 3 ) {
             $self->throw("'$value' is not a valid frame");
        }
         $self->{'_gsf_frame'} = $value;
     }
-  
+
     return $self->{'_gsf_frame'};
 }
 
@@ -285,7 +286,7 @@ sub frame {
            $feat->primary_tag('exon')
  Function: get/set on the primary tag for a feature,
            eg 'exon'
- Returns : a string 
+ Returns : a string
  Args    : none
 
 
@@ -308,8 +309,8 @@ sub primary_tag{
  Usage   : $tag = $feat->source_tag()
            $feat->source_tag('genscan');
  Function: Returns the source tag for a feature,
-           eg, 'genscan' 
- Returns : a string 
+           eg, 'genscan'
+ Returns : a string
  Args    : none
 
 
@@ -334,9 +335,9 @@ sub source_tag{
  Usage   : $sf->analysis();
  Function: Store details of the program/database
            and versions used to create this feature.
-           
+
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -348,7 +349,7 @@ sub analysis {
    if (defined($value)) {
      unless(ref($value) && $value->isa('Bio::EnsEMBL::Analysis')) {
        $self->throw("Analysis is not a Bio::EnsEMBL::Analysis object "
-		    . "but a $value object"); 
+		    . "but a $value object");
      }
 
      $self->{_analysis} = $value;
@@ -369,7 +370,7 @@ sub analysis {
  Function: Checks whether all the data is present in the
            object.
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -388,7 +389,7 @@ sub validate {
     if ($self->end < $self->start) {
       $self->vthrow("End coordinate < start coordinate");
     }
-    
+
 }
 
 
@@ -400,13 +401,11 @@ sub vthrow {
     print(STDERR "   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
     print(STDERR "   Start       : [" . $self->{_gsf_start} . "]\n");
     print(STDERR "   End         : [" . $self->{_gsf_end} . "]\n");
-    print(STDERR "   Strand      : [" . 
+    print(STDERR "   Strand      : [" .
         ((defined ($self->{_gsf_strand})) ? $self->{_gsf_strand} : "undefined") . "]\n");
-        
+
     print(STDERR "   Score       : [" . $self->{_gsf_score} . "]\n");
-    
-    
-        
+
     print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
 
     $self->throw("Invalid feature - see dump on STDERR");
@@ -419,7 +418,7 @@ sub vthrow {
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -436,7 +435,7 @@ sub validate_prot_feature{
         $self->throw("percent_id not defined in feature") unless defined($self->percent_id);
         $self->throw("evalue not defined in feature") unless defined($self->p_value);
     }
-    $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
+    $self->throw("analysis not defined in feature")    unless defined($self->analysis);
 }
 
 
@@ -450,9 +449,9 @@ sub validate_prot_feature{
 
  Title   : has_tag
  Usage   : $value = $self->has_tag('some_tag')
- Function: Returns the value of the tag (undef if 
+ Function: Returns the value of the tag (undef if
            none)
- Returns : 
+ Returns :
  Args    :
 
 
@@ -490,7 +489,7 @@ sub add_tag_value{
  Usage   :
  Function:
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -529,8 +528,8 @@ sub all_tags{
 
   Arg [1]    : string $seqname
   Example    : $seqname = $self->seqname();
-  Description: Obtains the seqname of this features sequence.  This is set 
-               automatically when a sequence with a name is attached, or may 
+  Description: Obtains the seqname of this features sequence.  This is set
+               automatically when a sequence with a name is attached, or may
                be set manually.
   Returntype : string
   Exceptions : none
@@ -565,29 +564,16 @@ sub seqname{
            Bio::PrimarySeqI object is for the *entire* sequence: ie
            from 1 to 10000
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
 =cut
 
 sub attach_seq{
-   my ($self,$seq) = @_;
+   my ($self, $seq) = @_;
 
-   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::PrimarySeqI") ) {
-       $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
-   }
-
-   $self->{'_gsf_seq'} = $seq;
-
-
-   # attach to sub features if they want it
-
-   foreach my $sf ( $self->sub_SeqFeature() ) {
-       if( $sf->can("attach_seq") ) {
-           $sf->attach_seq($seq);
-       }
-   }
+   $self->contig($seq);
 }
 
 =head2 seq
@@ -596,7 +582,7 @@ sub attach_seq{
  Usage   : $tseq = $sf->seq()
  Function: returns the truncated sequence (if there) for this
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -637,7 +623,7 @@ sub seq{
  Usage   : $whole_seq = $sf->entire_seq()
  Function: gives the entire sequence that this seqfeature is attached to
  Example :
- Returns : 
+ Returns :
  Args    :
 
 
@@ -645,7 +631,8 @@ sub seq{
 
 sub entire_seq{
    my ($self) = @_;
-   return $self->{'_gsf_seq'};
+
+   return $self->contig;
 }
 
 
@@ -721,9 +708,9 @@ sub add_sub_SeqFeature{
            $self->throw("$feat is not contained within parent feature, and expansion is not valid");
        }
    }
-   
+
    push(@{$self->{'_gsf_sub_array'}},$feat);
-   
+
 }
 
 =head2 flush_sub_SeqFeature
@@ -773,7 +760,7 @@ sub id {
 sub percent_id {
     my ($self,$value) = @_;
 
-    if (defined($value)) 
+    if (defined($value))
     {
             $self->{_percent_id} = $value;
     }
@@ -795,7 +782,7 @@ sub percent_id {
 sub p_value {
     my ($self,$value) = @_;
 
-    if (defined($value)) 
+    if (defined($value))
     {
             $self->{_p_value} = $value;
     }
@@ -810,16 +797,16 @@ sub p_value {
            $feat->phase($phase)
  Function: get/set on start phase of predicted exon feature
  Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
+ Args    : none if get, 0,1 or 2 if set.
 
 =cut
 
 sub phase {
     my ($self, $value) = @_;
-    
-    if (defined($value) ) 
+
+    if (defined($value) )
     {
-        $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
+        $self->throw("Valid values for Phase are [0,1,2]") if ($value < 0 || $value > 2);
             $self->{_phase} = $value;
     }
 
@@ -839,10 +826,10 @@ sub phase {
 
 sub end_phase {
    my ($self, $value) = @_;
-    
-    if (defined($value)) 
+
+    if (defined($value))
     {
-            $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
+            $self->throw("Valid values for Phase are [0,1,2]") if ($value < 0 || $value > 2);
             $self->{_end_phase} = $value;
     }
 
@@ -853,7 +840,7 @@ sub gffstring {
    my ($self) = @_;
 
    my $str;
-   
+
    $str .= (defined $self->seqname)     ?   $self->seqname."\t"      :  "\t";
    $str .= (defined $self->source_tag)  ?   $self->source_tag."\t"   :  "\t";
    $str .= (defined $self->primary_tag) ?   $self->primary_tag."\t"  :  "\t";
@@ -873,25 +860,21 @@ sub gffstring {
  Usage   : $pid = $feat->external_db()
            $feat->external_db($dbid)
  Function: get/set for an external db accession number (e.g.: Interpro)
- Returns : 
+ Returns :
  Args    : none if get, the new value if set
 
 =cut
 
 sub external_db {
     my ($self,$value) = @_;
-    
-    if (defined($value)) 
+
+    if (defined($value))
     {
             $self->{'_external_db'} = $value;
     }
 
     return $self->{'_external_db'};
 }
-
-
-
-
 
 
 =head2 contig_id
@@ -918,6 +901,39 @@ sub contig_id{
    }
 
    return $self->entire_seq();
+}
+
+
+=head2 contig
+
+  Arg [1]    : Bio::PrimarySeqI $seq
+  Example    : $seq = $self->contig;
+  Description: Accessor to attach/retrieve a sequence to/from a feature
+  Returntype : Bio::PrimarySeqI
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub contig {
+    my ($self, $arg) = @_;
+
+    if ($arg) {
+        unless (defined $arg && ref $arg && $arg->isa("Bio::PrimarySeqI")) {
+            $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
+        }
+
+        $self->{'_gsf_seq'} = $arg;
+
+        # attach to sub features if they want it
+
+        foreach my $sf ($self->sub_SeqFeature) {
+            if ($sf->can("attach_seq")) {
+                $sf->attach_seq($arg);
+            }
+        }
+    }
+    return $self->{'_gsf_seq'};
 }
 
 
@@ -950,6 +966,232 @@ sub raw_seqname{
    }
 
    return undef;
- }
+}
+
+
+sub is_splittable {
+   my ($self, $arg) = @_;
+
+   if (defined $arg) {
+       $self->{'_is_splittable'} = $arg;
+   }
+   return $self->{'_is_splittable'};
+}
+
+
+sub transform {
+  my ($self, $slice) = @_;
+
+  unless (defined $slice) {
+
+    if ((defined $self->contig) &&
+      ($self->contig->isa("Bio::EnsEMBL::RawContig"))) {
+
+      # we are already in rawcontig coords, nothing needs to be done
+      return $self;
+
+    }
+    else {
+
+      # transform to raw_contig coords from Slice coords
+      return $self->_transform_to_RawContig();
+    }
+  }
+
+  if (defined $self->contig) {
+
+    if ($self->contig->isa("Bio::EnsEMBL::RawContig"))  {
+
+      # transform to slice coords from raw contig coords
+      return $self->_transform_to_Slice($slice);
+    }
+    elsif ($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
+
+      # transform to slice coords from other slice coords
+      return $self->_transform_between_Slices($slice);
+    }
+    else {
+
+      # Unknown contig type
+      $self->throw("Cannot transform unknown contig type @{[$self->contig]}");
+    }
+  }
+  else {
+
+    #Can't convert to slice coords without a contig to work with
+    return $self->throw("Object's contig is not defined - cannot transform");
+  }
+
+}
+
+
+sub _transform_to_Slice {
+  my ($self, $slice) = @_;
+
+  $self->throw("can't transform coordinates of $self without a contig defined")
+   unless $self->contig;
+
+  my $dbh = $self->contig->adaptor->db;
+
+  my $mapper = $dbh->get_AssemblyMapperAdaptor->
+   fetch_by_type($slice->assembly_type);
+  my $rca = $dbh->get_RawContigAdaptor;
+
+  my @mapped = $mapper->map_coordinates_to_assembly(
+    $self->contig->dbID,
+    $self->start,
+    $self->end,
+    $self->strand * $slice->strand
+  );
+
+  unless (@mapped) {
+    $self->throw("couldn't map $self to Slice");
+  }
+
+  unless (@mapped == 1) {
+    $self->throw("$self should only map to one chromosome - something bad has happened ...");
+  }
+
+  if ($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
+    $self->warn("feature lies on gap\n");
+    return;
+  }
+
+  # mapped coords are on chromosome - need to convert to slice
+  my $global_start = $slice->chr_start;
+
+  $self->start  ($mapped[0]->start - $global_start + 1);
+  $self->end    ($mapped[0]->end   - $global_start + 1);
+  $self->strand ($mapped[0]->strand);
+  $self->seqname($mapped[0]->id);
+
+  return $self;
+}
+
+
+sub _transform_between_Slices {
+  my ($self, $slice) = @_;
+
+  $self->throw("New contig [$slice] is not a Bio::EnsEMBL::Slice")
+   unless $slice->isa("Bio::EnsEMBL::Slice");
+
+  if ((my $c1 = $self->contig->chr_name) ne (my $c2 = $slice->chr_name)) {
+    $self->warn("Can't transform between chromosomes: $c1 and $c2");
+    return;
+  }
+
+  my $shift = $slice->chr_start - $self->contig->chr_start;
+
+  $self->start ($self->start  - $shift);
+  $self->end   ($self->end    - $shift);
+  $self->strand($self->strand * $slice->strand);
+  $self->contig($slice);
+
+  return $self;
+}
+
+
+sub _transform_to_RawContig {
+  my($self) = @_;
+
+  $self->throw("can't transform coordinates of $self without a contig defined")
+   unless $self->contig;
+
+  my $dbh = $self->contig->adaptor->db;
+
+  my $mapper = $dbh->get_AssemblyMapperAdaptor->
+   fetch_by_type($self->contig->assembly_type);
+  my $rca = $dbh->get_RawContigAdaptor;
+
+  # need to convert to chromosomal coords before mapping
+  my $global_start = $self->contig->chr_start;
+
+  my @mapped = $mapper->map_coordinates_to_rawcontig(
+    $self->contig->chr_name,
+    $self->start  + $global_start - 1,
+    $self->end    + $global_start - 1,
+    $self->strand * $self->contig->strand
+  );
+
+  unless (@mapped) {
+    $self->throw("couldn't map $self");
+    return $self;
+  }
+
+  if (@mapped == 1) {
+
+    if ($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
+      $self->warn("feature lies on gap\n");
+      return;
+    }
+
+    my $rc = $rca->fetch_by_dbID($mapped[0]->id);
+
+    $self->start     ($mapped[0]->start);
+    $self->end       ($mapped[0]->end);
+    $self->strand    ($mapped[0]->strand);
+    $self->seqname   ($mapped[0]->id);
+    $self->attach_seq($rca->fetch_by_dbID($mapped[0]->id));
+
+    return $self;
+  }
+  else {
+
+    # more than one object returned from mapper
+    # possibly more than one RawContig in region
+
+    my (@gaps, @coords);
+
+    foreach my $m (@mapped) {
+
+	if ($m->isa("Bio::EnsEMBL::Mapper::Gap")) {
+	    push @gaps, $m;
+	}
+	elsif ($m->isa("Bio::EnsEMBL::Mapper::Coordinate")) {
+	    push @coords, $m;
+	}
+    }
+
+    # case where only one RawContig maps
+    if (@coords == 1) {
+
+        $self->start     ($coords[0]->start);
+        $self->end       ($coords[0]->end);
+        $self->strand    ($coords[0]->strand);
+        $self->seqname   ($coords[0]->id);
+        $self->attach_seq($rca->fetch_by_dbID($coords[0]->id));
+
+	$self->warn("Feature [$self] truncated as lies partially on a gap");
+        return $self;
+    }
+
+    unless ($self->is_splittable) {
+        print STDERR "Feature spans >1 raw contig - can't split\n";
+        return;
+    }
+
+    my @out;
+    my $obj = ref $self;
+
+    SPLIT: foreach my $map (@mapped) {
+
+      if ($map->isa("Bio::EnsEMBL::Mapper::Gap")) {
+	$self->warn("piece of evidence lies on gap\n");
+	next SPLIT;
+      }
+
+      my $feat = $obj->new;
+
+      $feat->start     ($map->start);
+      $feat->end       ($map->end);
+      $feat->strand    ($map->strand);
+      $feat->attach_seq($rca->fetch_by_dbID($map->id));
+
+      push @out, $feat;
+    }
+    return @out;
+  }
+}
+
 
 1;
