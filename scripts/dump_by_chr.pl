@@ -15,7 +15,11 @@ use Carp;
   a particular chromosome. Useful to create a small but fully functional
   ensembl installation, e.g. for a laptop. It needs access to an ensembl-lite
   database (for golden path etc.). It is used for ensembl-pruned. It replaces 
-  the  former make_dbdumpk_bychr.pl and satellite_dbdump_bychr.pl
+  the  former make_dbdumpk_bychr.pl and satellite_dbdump_bychr.pl. 
+
+  It will not overwrite previous dumps, so if one or more dumps failed,
+  correct the bug, delete the files produced (if any), and simply run
+  again. It will complain a bit, that is all. 
 
   (1) Needs to be called within a new directory where you want
      all the files to be written
@@ -921,6 +925,9 @@ SELECT distinct ox.*
 ";
     dump_data($sql, $satdb, 'objectXref');
 
+    # this one is a total dog ... I need the LIKE statement, given the
+    # strange embl id mapping ...  I suppose I should create a temp table,
+    # index it, then do it on that. Left as an exercise :-(
     $sql="
 SELECT distinct x.*
   FROM $litedb.gene lg,
@@ -934,17 +941,20 @@ SELECT distinct x.*
        $satdb.Xref  x
  WHERE lg.chr_name = '$chr'
    AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
+   AND cl.internal_id = ctg.clone 
    AND ctg.internal_id = e.contig
-   AND e.id = et.exon
    AND e.sticky_rank = 1
+   AND e.id = et.exon
    AND et.transcript=tsc.id
    AND tsc.translation = tl.id
    AND tl.id = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
    AND ox.xrefId = x.xrefId
 ";
-    dump_data($sql, $satdb, 'Xref');
+
+    warn "**** Not dumping Xref, too slow; rewrite using a temporary table";
+    # then just re-run
+#    dump_data($sql, $satdb, 'Xref');
     return;
 }                                       # dump_embl
 
