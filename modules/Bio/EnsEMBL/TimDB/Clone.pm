@@ -118,7 +118,7 @@ sub _initialize {
   $self->{'_contig_array'}=\@res;
 
   # DEBUG
-  print scalar(@{$self->{'_contig_array'}})." contigs found in clone\n";
+  print STDERR scalar(@{$self->{'_contig_array'}})." contigs found in clone\n";
 
   return $make; # success - we hope!
 }
@@ -208,7 +208,7 @@ sub get_all_Genes{
        }
     }
     # DEBUG
-    print "Clone contains ".scalar(keys %h)." genes\n";
+    print STDERR "Clone contains ".scalar(keys %h)." genes\n";
     return values %h;
 }
 

@@ -344,7 +344,7 @@ sub map_all{
 	push(@{$contig2exon{$contig_id}},$exon);
     }
     # DEBUG
-    print scalar(keys %contig2exon)." contigs have exons\n";
+    print STDERR scalar(keys %contig2exon)." contigs have exons\n";
     $obj->{'_contig2exon'}=\%contig2exon;
 
     # exons->transcripts
@@ -367,13 +367,16 @@ sub map_all{
 	    $transcript->add_Exon($self->{'_exon_hash'}->{$exon_id});
 	    push(@{$exon2transcript{$exon_id}},$transcript);
 	}
+	if(scalar($transcript->each_Exon())){
+	    $transcript->sort();
+	}
     }
     # report missing exons
     if($n_missed_exons && !$clone){
 	$self->warn("$n_missed_exons exons missing: $missed_exons");
     }
     # DEBUG
-    print scalar(keys %exon2transcript)." exons have transcripts\n";
+    print STDERR scalar(keys %exon2transcript)." exons have transcripts\n";
     $obj->{'_exon2transcript'}=\%exon2transcript;
     
     # transcript2gene
@@ -392,7 +395,7 @@ sub map_all{
 	}
     }
     # DEBUG
-    print scalar(keys %transcript2gene)." transcripts have genes\n";
+    print STDERR scalar(keys %transcript2gene)." transcripts have genes\n";
     $obj->{'_transcript2gene'}=\%transcript2gene;
 }
 

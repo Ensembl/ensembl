@@ -14,6 +14,8 @@ my $host;
 my $host1  = 'croc';
 my $host2  = 'humsrv1';
 my $port   = '410000';
+my $gff;
+
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
 # this does have genes (finished)
@@ -24,6 +26,7 @@ my $clone  = 'dJ271M21';
 &GetOptions( 'dbtype:s' => \$dbtype,
 	     'host:s'   => \$host,
 	     'port:n'   => \$port,
+	     'gff'      => \$gff,
 	     );
 
 my $db;
@@ -46,15 +49,29 @@ if( $dbtype =~ 'ace' ) {
 my $clone = $db->get_Clone($clone_id);
 my $as = $clone->get_AnnSeq();
 
-$as->seq->desc("Reannotated Clone via EnsEMBL");
-my $comment = Bio::Annotation::Comment->new();
+# choose output mode
 
-$comment->text("This clone was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
+if($gff){
+    
+    # only works with one contig for now
+    if(scalar($clone->get_all_Contigs)!=1){
+	$clone->throw("More than one contig in clone ".$clone->id()."\n");
+    }
+    my ($contig)=$clone->get_all_Contigs;
+    my $gff=$contig->gff;
+    $gff->dump;
 
-$as->annotation->add_Comment($comment);
+}else{
+    $as->seq->desc("Reannotated Clone via EnsEMBL");
+    my $comment = Bio::Annotation::Comment->new();
 
-my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+    $comment->text("This clone was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
 
-$emblout->write_annseq($as);
+    $as->annotation->add_Comment($comment);
+
+    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+
+    $emblout->write_annseq($as);
+}
 
 

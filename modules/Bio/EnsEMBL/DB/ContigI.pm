@@ -165,4 +165,67 @@ sub annseq{
 
 }
 
+
+=head2 write_acedb
+
+ Title   : write_acedb
+ Usage   : $contig->write_acedb(\*FILEHANDLE);
+ Function: Dumps exon, transcript and gene objects in acedb format
+ Returns : 
+ Args    :
+
+=cut
+
+sub write_acedb{
+    my ($self) = @_;
+    
+    $self->throw("To be implemented");
+
+}
+
+
+
+
+=head2 gff
+
+ Title   : gff
+ Usage   : $gff=$contig->gff();
+ Function: Dumps exon, transcript and gene objects to a gff object
+ Returns : 
+ Args    :
+
+=cut
+
+sub gff{
+    my ($self) = @_;
+    my $contig_id=$self->id();
+    
+    use GFF;
+    my $gff=new GFF::GeneFeatureSet;
+    foreach my $gene ($self->get_all_Genes()){
+	my $gene_id=$gene->id;
+	foreach my $trans ( $gene->each_Transcript ) {
+	    my $transcript_id=$trans->id;
+	    foreach my $exon ( $trans->each_Exon ) {
+		my $gf=new GFF::GeneFeature;
+		$gf->seqname($contig_id);
+		$gf->source('ensembl');
+		$gf->feature('exon');
+		$gf->start($exon->start);
+		$gf->end($exon->end);
+		#$gf->score();
+		$gf->strand($exon->strand);
+		$gf->frame($exon->frame);
+		$gf->group_value_list('ensembl_exon_id',[$exon->id]);
+		$gf->group_value_list('ensembl_transcript_id',[$transcript_id]);
+		$gf->group_value_list('ensembl_gene_id',[$gene_id]);
+		$gff->addGeneFeature($gf);
+	    }
+	}
+
+    }
+    return $gff;
+}
+
+
 1;
