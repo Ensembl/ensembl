@@ -960,7 +960,7 @@ sub dump_core_xrefs {
     }
 
     # Now get the synonyms for each of these xrefs and write them to the external_synonym table
-    $sql = "SELECT s.synonym_xref_id, x2.accession FROM synonym s, xref x, xref x2 WHERE x.xref_id=s.xref_id AND x2.xref_id=s.synonym_xref_id AND s.xref_id $id_str";
+    $sql = "SELECT xref_id, synonym FROM synonym WHERE xref_id $id_str";
 
     my $syn_sth = $xref_dbi->prepare($sql);
     $syn_sth->execute();
