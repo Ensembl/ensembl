@@ -564,10 +564,15 @@ sub transfer {
                the region on the requested coordinate system that this feature
                projected to.
 
+               For additional clarity the returned triplets are blessed into
+               Bio::EnsEMBL::ProjectionSegment objects and can be accessed
+               via from_start(), from_end() and to_Slice() methods.
+
                If the feature projects entirely into a gap then a reference to
                an empty list is returned.
 
-  Returntype : list reference of [$start,$end,$slice] triplets
+  Returntype : list reference of [$start,$end,$slice]
+               (Bio::EnsEMBL::ProjectionSegment) triplets
   Exceptions : none
   Caller     : general
 
@@ -876,7 +881,6 @@ sub get_all_alt_locations {
   my (@haps, @alt);
 
   foreach my $axf (@$axfs) {
-    warn $axf->type;
     if(uc($axf->type()) eq 'HAP') {
       push @haps, $axf;
     } elsif(uc($axf->type()) =~ 'PAR') {
@@ -889,7 +893,6 @@ sub get_all_alt_locations {
     }
   }
 
-  warn "@{[ map { $_->type() } @haps ]}";
   # regions surrounding hap are those of interest, not hap itself
   # convert hap alt. exc. features to regions around haps instead
   foreach my $h (@haps) {
