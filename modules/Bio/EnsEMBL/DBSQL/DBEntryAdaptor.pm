@@ -237,7 +237,7 @@ sub store {
 	my ($tst) = $sth->fetchrow_array;
 
 
-	if (! defined $sth) {
+	if (! defined $tst) {
 	# line is already in Xref table. Need to add to objectXref
 	    $sth = $self->prepare( "
              INSERT INTO objectXref
