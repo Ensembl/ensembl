@@ -62,6 +62,7 @@ my $mysqldump = 'mysqldump'; # in $PATH we trust
 
 # satellites:
 my $famdb;
+my $diseaseb;
 # end of satellites
 
 &GetOptions( 
@@ -74,6 +75,7 @@ my $famdb;
             'workdir:s'  => \$workdir,
             'limit:n'    => \$lim,
             'family:s' => \$famdb,
+            'disease:s' => \$diseasedb,
 	     );
 
 die "need a litedb; use -litedb something " unless $litedb;
@@ -84,10 +86,6 @@ my $limit;
 if ($lim) {
     $limit = "limit $lim";
 }
-
-my $locator = "$module/host=$host;port=;dbname=$litedb;user=$dbuser;pass=$dbpass";
-# $liteh =  Bio::EnsEMBL::DBLoader->new($locator);
-# $liteh->{RaiseError}++;
 
 if ($famdb) {
     my $dumpdir = "$workdir/$famdb";
@@ -112,6 +110,57 @@ WHERE g.chr_name = '$chr'
   $limit
 ";
     dump_data($litedb, $sql, $dumpdir, 'family_members.dat' );
+}
+
+if ($diseasedb) {
+    my $dumpdir = "$workdir/$diseasedb";
+    dump_schema($diseasedb, $dumpdir, 'disease.sql');
+
+# may need an ALTER TABLE gene ADD KEY(gene_symbol);
+    my $sql;
+    $sql = "
+SELECT dg.*
+FROM  $diseasedb.gene dg, 
+      $litedb.gene lg, 
+      $litedb.gene_xref lgx
+WHERE lg.chr_name = '$chr' 
+  AND lg.gene = lgx.gene 
+  AND lgx.display_id = dg.gene_symbol
+";
+    dump_data($litedb, $sql, $dumpdir, 'gene.dat' );
+
+    $sql = "
+SELECT dd.*
+FROM  $diseasedb.gene dg, 
+      $diseasedb.disease dd,
+      $litedb.gene lg, 
+      $litedb.gene_xref lgx
+WHERE lg.chr_name = '$chr' 
+  AND lg.gene = lgx.gene 
+  AND lgx.display_id = dg.gene_symbol
+  AND dd.id = dg.id;
+";
+    dump_data($litedb, $sql, $dumpdir, 'disease.dat' );
+
+# here's the sql to restrict the disease_index_*list, but they're so small
+# it's really not worth the trouble. Left here in case anyone is interested
+#     $sql = "
+# SELECT ddl.*
+# FROM  $diseasedb.gene dg, 
+#       $diseasedb.disease_index_doclist ddl,
+#       $litedb.gene lg, 
+#       $litedb.gene_xref lgx
+# WHERE lg.chr_name = '$chr' 
+#   AND lg.gene = lgx.gene 
+#   AND lgx.display_id = dg.gene_symbol
+#   AND ddl.id  = dg.id
+# ";
+
+    foreach my $w ( qw(doc stop vector word) ) {
+        my $table = "disease_index_${w}list";
+        $sql = "select * from $diseasedb.$table";
+        dump_data($litedb, $sql, $dumpdir, "$table.dat" );
+    }
 }
 
 sub dump_schema {
@@ -148,6 +197,7 @@ sub dump_data {
     }
 }
 
+## stuff below is not used (yet), since everything is done by plain SQL
 
 ## This comes from family-input.pl, and should at one point be put somewhere
 ## more central (the ones in EnsEMBL load modules etc. that are not relevant)
