@@ -149,6 +149,26 @@ sub _initialize {
 
 }
 
+=head2 get_Update_Obj
+
+ Title   : get_Update_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Update_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+ 
+    return $update_obj;
+}
+
 =head2 write_Clone
 
  Title   : write_Clone
@@ -1660,8 +1680,9 @@ Calling Gene_Obj->write_Exon instead!");
 sub get_Clone { 
     my ($self,$id) = @_;
     
-    $self->warn("Obj->get_Clone is a deprecated method! 
-Calling Clone->fetch instead!");
+    #No warning shown for the time being...
+   #$self->warn("Obj->get_Clone is a deprecated method! 
+#Calling Clone->fetch instead!");
     
     my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $id,
 						-dbobj => $self );
@@ -1684,8 +1705,8 @@ Calling Clone->fetch instead!");
 sub get_Contig{
    my ($self,$id) = @_;
 
-   $self->warn("Obj->get_Contig is a deprecated method! 
-Calling Contig->fetch instead!");
+   #$self->warn("Obj->get_Contig is a deprecated method! 
+#Calling Contig->fetch instead!");
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 							  -id    => $id );

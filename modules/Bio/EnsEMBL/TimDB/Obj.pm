@@ -275,16 +275,16 @@ sub get_Gene{
 sub get_Clone {
     my ($self,$id) = @_;
     
-    $self->warn("Obj->get_Clone is a deprecated method! 
-Calling Clone->fetch instead!");
+    #No warning thrown for the time being
+    #$self->warn("Obj->get_Clone is a deprecated method! 
+#Calling Clone->fetch instead!");
     
     # create clone object
     my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
 					       -dbobj => $self);
-
+    
     return $clone->fetch();
 }
-
 
 =head2 get_all_Clone_id
 
@@ -307,6 +307,24 @@ sub get_all_Clone_id{
 
 
 # Following is not currently coded
+
+=head2 get_update_Obj
+
+ Title   : get_Update_Obj
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    : 
+
+=cut
+
+sub get_Update_Obj{
+    my($self)=@_;
+    
+    my $update_obj = Bio::EnsEMBL::TimDB::Update_Obj->new($self);
+    return $update_obj;
+}
 
 =head2 get_updated_Objects
 
