@@ -174,7 +174,11 @@ sub get_all_SimilarityFeatures_above_score{
     
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
-    
+
+    if( $self->_use_cext_get() ) {
+	return $self->_cext_get_all_SimilarityFeatures_type($analysis_type);
+    }
+
     
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
@@ -2034,6 +2038,102 @@ sub _raw_contig_id_list {
 		   
 }
 
+
+=head2 _use_cext_get
+
+ Title   : _use_cext_get
+ Usage   : $obj->_use_cext_get($newval)
+ Function: 
+ Example : 
+ Returns : value of _use_cext_get
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _use_cext_get{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_use_cext_get'} = $value;
+    }
+    return $obj->{'_use_cext_get'};
+
+}
+
+=head2 _cext_get_all_SimilarityFeatures_type
+
+ Title   : _cext_get_all_SimilarityFeatures_type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _cext_get_all_SimilarityFeatures_type{
+   my ($self,$db) = @_;
+
+   if( !exists $self->{'_cext_sim_cache'} ) {
+       $self->_fill_cext_SimilarityFeature_cache();
+   }
+
+   return @{$self->{'_cext_sim_cache'}->{$db}};
+
+}
+
+
+=head2 _fill_cext_SimilarityFeature_cache
+
+ Title   : _fill_cext_SimilarityFeature_cache
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _fill_cext_SimilarityFeature_cache{
+   my ($self) = @_;
+
+   my $host = $self->dbobj->host;
+   my $user = $self->dbobj->username;
+   my $dbname = $self->dbobj->dbname;
+   my $pass = $self->dbobj->password;
+   if( !defined $pass ) {
+       $pass = '-';
+   }
+
+   &Bio::EnsEMBL::Ext::ContigAcc::prepare_Ensembl_cache($host,$user,$pass,$dbname);
+
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   
+   my $fpl = &Bio::EnsEMBL::Ext::ContigAcc::FeaturePairList_by_Score_VC($chr_name,$glob_start,$glob_end,'10');
+   
+   my $cache = {};
+   $self->{'_cext_sim_cache'} = $cache;
+   my $save;
+   foreach my $f ( $fpl->each_FeaturePair ) {
+       my $db = $f->analysis->db;
+       if( !defined $cache->{$db} ) {
+	   $cache->{$db} = [];
+       }
+       #print STDERR "in loop Got $f ",$f->start," ",$f->end,"\n";
+
+       push(@{$cache->{$db}},$f);
+       $save = $f;
+   }
+
+   $fpl = 0;
+   #print STDERR "out of loop $save ",$save->start," ",$save->end,"\n";
+   &Bio::EnsEMBL::Ext::ContigAcc::release_Ensembl_cache();
+
+}
 
 
 
