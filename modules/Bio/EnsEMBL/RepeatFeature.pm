@@ -19,19 +19,6 @@ sub new_fast {
   return bless $hashref, $class;
 }
 
-# new() comes from SeqFeature::new()
-
-
-# Unique to RepeatFeature
-
-#sub score {
-#    my( $self, $score ) = @_;
-    
-#    if (defined $score) {
-#        $self->{'_score'} = $score;
-#    }
-#    return $self->{'_score'};
-#}
 
 sub repeat_consensus_id {
     my( $self, $repeat_consensus_id ) = @_;
@@ -107,34 +94,6 @@ sub     e_value { return 0   }
 sub     p_value { return 0   }
 sub    hp_value { return 0   }
 
-# LocationI methods
-
-#sub start {
-#    my( $self, $start ) = @_;
-    
-#    if ($start) {
-#        $self->{'_start'} = $start;
-#    }
-#    return $self->{'_start'};
-#}
-
-#sub end {
-#    my( $self, $end ) = @_;
-    
-#    if ($end) {
-#        $self->{'_end'} = $end;
-#    }
-#    return $self->{'_end'};
-#}
-
-#sub strand {
-#    my( $self, $strand ) = @_;
-    
-#    if (defined $strand) {
-#        $self->{'_strand'} = $strand;
-#    }
-#    return $self->{'_strand'};
-#}
 
 sub hstart {
     my( $self, $hstart ) = @_;
@@ -180,40 +139,6 @@ sub to_FTString {
     }
 }
 
-
-=head2 contig_id
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use attach_seq or entire_seq insted
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub contig_id {
-    my( $self, $contig_id ) = @_;
-    
-    $self->warn("call to deprecated method " .
-		"Bio::EnsEMBL::RepeatFeature::contig_id. Use contig " .
-		"to associate contig objects instead");
-
-    if($contig_id) {
-      my $contig = 
-	$self->adaptor->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
-
-      $self->contig($contig);
-    }
-
-    return $self->entire_seq()->dbID();
-
-#    if ($contig_id) {
-#        $self->{'_contig_id'} = $contig_id;
-#    }
-
-#    return $self->{'_contig_id'};
-}
 
 
 1;

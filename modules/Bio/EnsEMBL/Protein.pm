@@ -294,26 +294,6 @@ sub get_all_Families{
 }
 
 
-=head2 get_Family
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use get_all_Families instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_Family {
-  my ($self, @args) = @_;
-
-  $self->warn("get_Family has been renamed get_all_Families\n" . caller);
-
-  return $self->get_all_Families(@args);
-}
-
-
 
 =head2 add_Family
 
@@ -926,27 +906,6 @@ sub get_all_DBLinks{
  return $self->{'_dblinks'};
 }
 
-
-
-
-=head2 all_SeqFeature
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use Bio::EnsEMBL::get_all_ProteinFeatures instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub all_SeqFeature{
-  my ($self) = @_;
-
-  $self->warn("all_SeqFeature has been renamed get_all_ProteinFeatures\n");
-  
-  return @{$self->get_all_ProteinFeautres};
-}
 
 1;
 

@@ -12,19 +12,15 @@
 
 =head1 NAME
 
-SimilarityXref.pl - DESCRIPTION of Object
+Bio::EnsEMBL::IdentiyXref
 
 =head1 SYNOPSIS
 
-Give standard usage here
-
-=head1 DESCRIPTION
-
-Describe the object here
+my $xref = Bio::EnsEMBL::IdentityXref->new;
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -41,14 +37,16 @@ use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBEntry );
 
+
+
 =head2 query_identity
 
- Title   : query_identity
- Usage   : $obj->query_identity($newval)
- Function: 
- Returns : value of query_identity
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) string $value
+  Example    : $query_identity = $id_xref->query_identity;
+  Description: Getter/Setter for query identity
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -62,14 +60,15 @@ sub query_identity{
 
 }
 
+
 =head2 target_identity
 
- Title   : target_identity
- Usage   : $obj->target_identity($newval)
- Function: 
- Returns : value of target_identity
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) string $value
+  Example    : $target_identity = $id_xref->target_identity;
+  Description: Getter/Setter for query identity
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -83,3 +82,4 @@ sub target_identity{
 
 }
 
+1;

@@ -350,7 +350,6 @@ sub invert {
 sub validate {
   my ($self) = @_;
   
-  #print STDERR "Feature Pair validate strand ".$self->strand." hstrand ".$self->hstrand."\n";
   $self->SUPER::validate();
   $self->feature2->validate;
   #$f2->validate();
@@ -395,7 +394,7 @@ sub validate_prot_feature{
 
  Title   : set_featurepair_fields
  Usage   : $fp->set_featurepair_fields($start, $end, $strand,
-           $score, $seqname, $hstart, $hend, $hstrand, $hscore,
+           $score, $seqname, $hstart, $hend, $hstrand,
 	   $hseqname, $analysis);
  Returns : nothing
  Args    : listed above, followed by optional $e_value, $perc_id, 
@@ -405,10 +404,10 @@ sub validate_prot_feature{
 
 sub set_featurepair_fields {
    my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
-        $hstrand, $hscore, $hseqname, $analysis, $e_value, $perc_id, 
+        $hstrand, $hseqname, $analysis, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
    
-   $self->throw('interface fault') if (@_ < 12 or @_ > 16);
+   $self->throw('interface fault') if (@_ < 12 or @_ > 15);
 
    $self->start($start);
    $self->end($end);
@@ -418,7 +417,6 @@ sub set_featurepair_fields {
    $self->hstart($hstart);
    $self->hend($hend);
    $self->hstrand($hstrand);
-   $self->hscore($hscore);
    $self->hseqname($hseqname);
    $self->analysis($analysis);
    $self->p_value    ($e_value)   if (defined $e_value);
@@ -427,32 +425,6 @@ sub set_featurepair_fields {
    $self->end_phase  ($end_phase) if (defined $end_phase);
 }
 
-sub set_all_fields{
-   my ($self, $start, $end, $strand, $score, $source, $primary, $seqname,
-       $hstart, $hend, $hstrand, $hscore, $hsource, $hprimary, $hseqname, 
-       $e_value, $perc_id, $phase, $end_phase) = @_;
-    
-   $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments! $!");
-
-    $self->start($start);
-    $self->end($end);
-    $self->strand($strand);
-    $self->score($score);
-    $self->source_tag($source);
-    $self->primary_tag($primary);
-    $self->seqname($seqname);
-    $self->hstart($hstart);
-    $self->hend($hend);
-    $self->hstrand($hstrand);
-    $self->hscore($hscore);
-    $self->hsource_tag($hsource);
-    $self->hprimary_tag($hprimary);
-    $self->hseqname($hseqname);
-    $self->p_value    ($e_value)   if (defined $e_value);
-    $self->percent_id ($perc_id)   if (defined $perc_id);
-    $self->phase      ($phase)     if (defined $phase);
-    $self->end_phase  ($end_phase) if (defined $end_phase);
-}
 
 =head2 to_FTHelper
 
@@ -563,56 +535,6 @@ sub hend_phase {
 
 
 
-
-
-=head2 hscore
-
- Title   : hscore
- Usage   : $score = $feat->score()
-           $feat->score($score)
- Function: get/set on score information
- Returns : float
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub hscore {
-    my ($self,$arg) = @_;
-
-    $self->warn("FeaturePair::hscore is deprecated.  " .
-		"Just use FeaturePair::score");
-    
-    if (defined($arg)) {
-	$self->{_hscore} = $arg;
-    } 
-
-    return $self->{_hscore};
-}
-
-
-=head2 hframe
-
- Title   : hframe
- Usage   : $frame = $feat->frame()
-           $feat->frame($frame)
- Function: get/set on frame information
- Returns : 0,1,2
- Args    : none if get, the new value if set
-
-=cut
-
-sub hframe {
-  my ($self,$arg) = @_;
- 
-  $self->warn("FeaturePair::hframe is deprecated just use FeaturePair::frame");
- 
-  if (defined($arg)) {
-    $self->{_hframe} = $arg;
-  } 
-  
-  return $self->{_hframe};
-}
 
 =head2 hprimary_tag
 

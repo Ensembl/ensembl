@@ -577,29 +577,4 @@ sub add_supporting_features {
   }
 }
 
-
-
-
-=head2 each_component_Exon
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use get_all_component_Exons instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub each_component_Exon {
-  my ($self, @args) = @_;
-
-  $self->warn("each_component_Exon has been renamed get_all_component_Exons\n" . caller);
-
-  return @{$self->get_all_component_Exons(@args)};
-}
-
-
-
-
 1;
