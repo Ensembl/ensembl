@@ -645,7 +645,7 @@ sub get_MarkerFeatures {
     require Bio::EnsEMBL::Map::MarkerFeature;
 
     # features for this contig with db=mapprimer
-    my $sth = $self->_dbobj->prepare
+    my $sth = $self->dbobj->prepare
       ( "select f.seq_start, f.seq_end, f.score, f.strand, f.name, ".
         "f.hstart, f.hend, f.hid, f.analysis ".
         "from feature f, analysis a ".
@@ -659,27 +659,30 @@ sub get_MarkerFeatures {
     my %analhash;
 
     $sth->bind_columns
-      ( \$start, \$end, \$score, \$strand, \$name, 
+      ( undef, \$start, \$end, \$score, \$strand, \$name, 
         \$hstart, \$hend, \$hid, \$analysisid );
         
     while( $sth->fetch ) {
-      my $out;
+      my ( $out, $seqf1, $seqf2 );
       
       if (!$analhash{$analysisid}) {
-        $analysis = $self->_dbobj->get_Analysis($analysisid);
+        $analysis = $self->dbobj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
       } else {
         $analysis = $analhash{$analysisid};
       }
     
-      $out = Bio::EnsEMBL::Map::MarkerFeature->new();
+      $seqf1 = Bio::EnsEMBL::SeqFeature->new();
+      $seqf2 = Bio::EnsEMBL::SeqFeature->new();
+      $out = Bio::EnsEMBL::Map::MarkerFeature->new
+	( -feature1 => $seqf1, -feature2 => $seqf2 );
       $out->set_all_fields
         ( $start,$end,$strand,$score,
           $name,'similarity',$self->id,
           $hstart,$hend,1,$score,$name,'similarity',$hid);
           $out->analysis($analysis);
-      $out->mapdb( $self->_dbobj->mapdb );
+      $out->mapdb( $self->dbobj->mapdb );
       push( @result, $out );
     }
   };
