@@ -128,8 +128,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_ta
   if ( defined $p_value && $p_value ne "")      { $self->p_value($p_value)};
   if ( defined $phase && $phase ne "")          { $self->phase($phase)};
   if ( defined $end_phase && $end_phase ne "")  { $self->end_phase($end_phase)};
-  if ( defined $primary_tag && $primary_tag ne "")  { $self->primary_tag($primary_tag)}
-  if ( defined $source_tag && $source_tag ne ""){ $self->source_tag($source_tag)}
+
   return $self; # success - we hope!
 
 }
