@@ -140,7 +140,7 @@ sub delete_existing {
   my $dbi = shift;
 
   $dbi->do("DELETE FROM regulatory_feature");
-  $dbi->do("DELETE FROM regulatory_motif");
+  #$dbi->do("DELETE FROM regulatory_motif");
   $dbi->do("DELETE FROM regulatory_feature_object");
   $dbi->do("DELETE FROM peptide_regulatory_feature");
 
