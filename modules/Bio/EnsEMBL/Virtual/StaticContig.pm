@@ -1352,9 +1352,15 @@ sub get_all_Genes{
        return @{$self->{'_static_vc_gene_get'}};
    }
 
-   &eprof_start("total-static-gene-get");
 
+   &eprof_start("total-static-gene-get");
    my $idlist  = $self->_raw_contig_id_list();
+
+   
+    if( $idlist !~ /\w/ ) { 
+       return ();
+   }
+
 
    my $query = "SELECT t.gene from exon e,exon_transcript et,transcript t where e.contig in $idlist and e.id = et.exon and et.transcript = t.id";
 
@@ -1375,6 +1381,11 @@ sub get_all_Genes{
 
    while ($sth->fetch){
        push(@gene_ids,$gene_id);
+   }
+
+   if( scalar(@gene_ids) == 0 ) {
+       &eprof_end("total-static-gene-get");
+       return ();
    }
 
    &eprof_start("full-gene-get");
