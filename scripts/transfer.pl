@@ -71,6 +71,8 @@ use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
 use Getopt::Long;
 
+$| = 1;
+
 # signal handler
 $SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
 
@@ -186,15 +188,30 @@ foreach my $clone_id ( @clone ) {
 	    } else {
 		foreach my $gene ( $oldclone->get_all_Genes() ) {
 		    $to_db->delete_Gene($gene->id());
+		    # Should delete supporting evidence too.
 		} 
 		$to_db->delete_Clone($clone_id);
+		# Should delete contig features here too.
 	    }
 	}
 
 	$to_db->write_Clone($clone);
+
+	my @features;
+	
+	foreach my $contig ($clone->get_all_Contigs) {
+	    push(@features,$contig->get_all_SimilarityFeatures);
+	}
 	
 	foreach my $gene ( $clone->get_all_Genes() ) {
 	    $to_db->write_Gene($gene);
+
+	    # Now generate the supporting evidence and write
+	    # into the to database.
+	    foreach my $exon ($gene->each_unique_Exon) {
+		$exon ->find_supporting_evidence (\@features);
+		$to_db->write_supporting_evidence($exon);
+	    }
 	}
     };
     if ( $@ ) {

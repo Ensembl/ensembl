@@ -130,7 +130,7 @@ my $host1     = 'obi-wan';
 # msql was 'ensdev'
 my $dbname    = 'ensdev';
 my $dbuser    = 'ensembl';
-#my $dbpass    = 'ens2pass';
+my $dbpass    = '';
 my $dbpass = undef;
 
 # defaults for acedb (humace)

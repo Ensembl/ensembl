@@ -1,2 +1,2 @@
 #!/bin/ksh
-perl -I ~/bioperl-live -I ~/pogdir/ensembl/modules/ transfer.pl -fdbtype timdb -tdbtype rdb -tdbname webtest -thost localhost -tmodule Bio::EnsEMBL::DBSQL::Obj -tdbpass superpog $1 
+perl -I ~/bioperl-live -I ~/pogdir/ensembl/modules/ ./transfer.pl -fdbtype timdb -tdbtype rdb -tdbname pogtest -thost localhost -tmodule Bio::EnsEMBL::DBSQL::Obj -tdbpass superpog -delete $1 
