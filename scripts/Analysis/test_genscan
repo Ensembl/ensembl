@@ -5,7 +5,7 @@ BEGIN {
     unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
 }
 
-use Bio::EnsEMBL::Analysis::GenscanMC;
+use Bio::EnsEMBL::Analysis::Genscan;
 use Bio::EnsEMBL::Analysis::PepAlign;
 use Bio::EnsEMBL::Analysis::pep_SeqFeature;
 
@@ -30,7 +30,7 @@ while (my $seq = $seqio->next_seq) {
     }
 }
 
-my $gs       = new Bio::EnsEMBL::Analysis::GenscanMC($genfile,$gsdna);
+my $gs       = new Bio::EnsEMBL::Analysis::Genscan($genfile,$gsdna);
 print("Made genscan\n");
 my @genes    = $gs->each_Transcript;
 print("Fetched transcripts\n");
