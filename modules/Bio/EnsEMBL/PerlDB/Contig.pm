@@ -62,31 +62,14 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  $self->{'_sf_array'} = [];
+  $self->{'_repeat_array'} = [];
+  $self->{'_simil_array'} = [];
   $self->{'_gene_array'} = [];
  
 # set stuff in self from @args
   return $make; # success - we hope!
 }
 
-
-=head2 get_all_SeqFeatures
-
- Title   : get_all_SeqFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_SeqFeatures{
-   my ($self) = @_;
-
-   return @{$self->{'_sf_array'}};
-}
 
 =head2 get_all_Genes
 
@@ -106,27 +89,6 @@ sub get_all_Genes{
    return @{$self->{'_gene_array'}};
 }
 
-=head2 add_SeqFeature
-
- Title   : add_SeqFeature
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_SeqFeature{
-   my ($self,$sf) = @_;
-
-   if( $sf->isa("Bio::SeqFeatureI") ) {
-       $self->throw("$sf is a not a SeqFeatureI type");
-   }
-
-   push(@{$self->{'_sf_array'}},$sf);
-}
 
 =head2 add_Gene
 
@@ -149,6 +111,88 @@ sub add_Gene{
 
    push(@{$self->{'_gene_array'}},$gene);
 }
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures{
+   my ($self,@args) = @_;
+
+   return @{$self->{'_repeat_array'}};
+}
+
+=head2 add_RepeatFeature
+
+ Title   : add_RepeatFeature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_RepeatFeature{
+   my ($self,$value) = @_;
+   
+   if( !ref $value || !$value->isa('Bio::EnsEMBL::Repeat') ) {
+       $self->throw("$value is not a repeat");
+   }
+
+   push(@{$self->{'_repeat_array'}},$value);
+}
+
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures{
+   my ($self,@args) = @_;
+
+   return @{$self->{'_simil_array'}};
+}
+
+=head2 add_SimilarityFeatures
+
+ Title   : add_SimilarityFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_SimilarityFeatures {
+   my ($self,$value) = @_;
+   
+   if( !ref $value || !$value->isa('Bio::EnsEMBL::FeaturePair') ) {
+       $self->throw("$value is not a FeaturePair");
+   }
+
+   push(@{$self->{'_simil_array'}},$value);
+}
+
 
 =head2 offset
 
@@ -190,6 +234,27 @@ sub orientation{
    }
    return $obj->{'orientation'};
    
+}
+
+=head2 order
+
+ Title   : order
+ Usage   : $obj->order($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub order{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'order'} = $value;
+    }
+    return $obj->{'order'};
+
 }
 
 
@@ -238,6 +303,27 @@ sub id{
    }
    return $obj->{'id'};
    
+}
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: 
+ Returns : value of version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub version{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'version'} = $value;
+    }
+    return $obj->{'version'};
+
 }
 
 1;

@@ -27,6 +27,7 @@ BEGIN { $| = 1; print "1..2\n";
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::Ghost;
+$loaded = 1;
 print "ok 1\n";    # 1st test passes.
 
 $ghost = new Bio::EnsEMBL::Ghost;

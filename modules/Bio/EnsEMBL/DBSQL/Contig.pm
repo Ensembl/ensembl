@@ -249,6 +249,9 @@ sub get_all_SimilarityFeatures{
 	   $analysis = $analhash{$analysisid};
        }
 
+       if( !defined $name ) {
+	   $name = 'no_source';
+       }
 
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature

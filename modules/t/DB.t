@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -67,18 +67,33 @@ if( $@  ) {
 print "ok 2\n";
 @cloneids =  $db->get_all_Clone_id();
 my $clone  = $db->get_Clone($cloneids[0]);
+
+# check clone stuff.
+$discard = $clone->htg_phase();
+$discard = $clone->embl_id();
+$discard = $clone->version();
+$discard = $clone->embl_version();
 print "ok 3\n";
+
 
 my @contigs = $clone->get_all_Contigs();
 my $contig = $db->get_Contig($contigs[0]->id);
 print "ok 4\n";
 
+@repeats = $contig->get_all_RepeatFeatures();
+@repeats = ();
+print "ok 5\n";
+
+@simil   = $contig->get_all_SimilarityFeatures();
+@simil = ();
+print "ok 6\n";
+
 foreach $gene ( $clone->get_all_Genes() ) {
     if( ! $gene->isa("Bio::EnsEMBL::Gene") ) {
-      print "not ok 5\n";
+      print "not ok 7\n";
       exit(1);
     }
 }
 
-print "ok 5\n";
+print "ok 7\n";
 

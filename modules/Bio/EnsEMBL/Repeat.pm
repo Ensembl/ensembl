@@ -11,25 +11,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Repeat
+Bio::EnsEMBL::Repeat - Object for repeats
 
 =head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-Extends Bio::EnsEMBL::FeaturePair to store
-genomic repeat features.  
-
-Creation:
-
-    my $rep = new Bio::EnsEMBL::Repeat(-start => $start,
-				       -end    => $end,
-				       -strand => $strand,
-				       -source => $source,
-				       -primary=> $primary,
-				       );
-
-Manipulation:
+  
+  # behaves exactly like a Bio::EnsEMBL::FeaturePair
 
     my $start = $rep->start;
     my $end   = $rep->end;
@@ -37,6 +23,14 @@ Manipulation:
     my $repname  = $rep->hseqname;
     my $repstart = $rep->hstart;
     my $repend   = $rep->hend;
+
+=head1 DESCRIPTION
+
+Extends Bio::EnsEMBL::FeaturePair to store
+genomic repeat features. Only here really so we can
+put in to_FTHelper (EMBL/GenBank dumping code)
+specific to repeats.
+
 
 
 =head1 CONTACT

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..8\n"; 
+BEGIN { $| = 1; print "1..9\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -29,6 +29,7 @@ END {print "not ok 1\n" unless $loaded;}
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Translation;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
@@ -43,33 +44,54 @@ $ex2   = new Bio::EnsEMBL::Exon;
 $ex3   = new Bio::EnsEMBL::Exon;
 print "ok 4\n";   
 
+$seq = Bio::Seq->new( -id => 'Contig-1' , -seq => 'ATGGCGGATGTTTATGTGGGTGGCCCGGGG' );
+$seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT' );
+
 
 $ex1->id("dummy_id_1");
 $ex1->contig_id("c_id_1");
-$ex1->start(10);
-$ex1->end(20);
+$ex1->phase(0);
+$ex1->start(8);
+$ex1->end(13);
+$ex1->attach_seq($seq);
 $ex1->strand(1);
 
 $ex2->id("dummy_id_2");
-$ex2->contig_id("c_id_1");
-$ex2->start(40);
-$ex2->end(50);
+$ex2->contig_id("c_id_2");
+$ex2->phase(0);
+$ex2->start(18);
+$ex2->end(23);
+$ex2->attach_seq($seq2);
 $ex2->strand(1);
 
 $ex3->id("dummy_id_3");
 $ex3->contig_id("c_id_2");
-$ex3->start(40);
-$ex3->end(50);
+$ex3->phase(0);
+$ex3->start(26);
+$ex3->end(28);
+$ex3->attach_seq($seq2);
 $ex3->strand(1);
 
 
 
 $tr->add_Exon($ex1);
 $tr->add_Exon($ex2);
+$trans = Bio::EnsEMBL::Translation->new();
+$trans->start_exon_id('dummy_id_1');
+$trans->start(8);
+$trans->end_exon_id('dummy_id_2');
+$trans->end(23);
+$tr->translation($trans);
 
-$tr->add_Exon($ex1);
-$tr->add_Exon($ex2);
-$tr->add_Exon($ex3);
+$tr1->add_Exon($ex1);
+$tr1->add_Exon($ex2);
+$tr1->add_Exon($ex3);
+$trans = Bio::EnsEMBL::Translation->new();
+$trans->start_exon_id('dummy_id_1');
+$trans->start(8);
+$trans->end_exon_id('dummy_id_3');
+$trans->end(28);
+$tr1->translation($trans);
 
 $gene->add_Transcript($tr);
 $gene->add_Transcript($tr1);
@@ -110,6 +132,11 @@ if( scalar @contigs != 2 ) {
        print "ok 8\n";
 }
 	  
+foreach $trans ( $gene->each_Transcript ) {
+	$pep = $trans->translate();
+	}
 
+print "ok 9\n";
+$pep = 0;
 
 

@@ -175,6 +175,110 @@ sub id{
 }
 
 
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   : $obj->embl_id($newval)
+ Function: 
+ Returns : value of embl_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub embl_id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'embl_id'} = $value;
+    }
+    return $obj->{'embl_id'};
+
+}
+
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : $obj->embl_version($newval)
+ Function: 
+ Returns : value of embl_version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub embl_version{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'embl_version'} = $value;
+    }
+    return $obj->{'embl_version'};
+
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $obj->seq_date($newval)
+ Function: 
+ Returns : value of seq_date
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub seq_date{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'seq_date'} = $value;
+    }
+    return $obj->{'seq_date'};
+
+}
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: 
+ Returns : value of version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub version{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'version'} = $value;
+    }
+    return $obj->{'version'};
+
+}
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   : $obj->htg_phase($newval)
+ Function: 
+ Returns : value of htg_phase
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub htg_phase{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'htg_phase'} = $value;
+    }
+    return $obj->{'htg_phase'};
+
+}
+
 1;
 
 

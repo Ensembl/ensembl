@@ -392,17 +392,17 @@ sub validate {
 sub vthrow {
     my ($self,$message) = @_;
     
-    print("Error validating feature [$message]\n");
-    print("   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
-    print("   Start       : [" . $self->{_gsf_start} . "]\n");
-    print("   End         : [" . $self->{_gsf_end} . "]\n");
-    print("   Strand      : [" . $self->{_gsf_strand} . "]\n");
-    print("   Score       : [" . $self->{_gsf_score} . "]\n");
-    print("   Source_tag  : [" . $self->{_source_tag} . "]\n");
-    print("   Primary_tag : [" . $self->{_primary_tag} . "]\n");
-    print("   Analysis    : [" . $self->{_analysis} . "]\n");
+    print(STDERR "Error validating feature [$message]\n");
+    print(STDERR "   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
+    print(STDERR "   Start       : [" . $self->{_gsf_start} . "]\n");
+    print(STDERR "   End         : [" . $self->{_gsf_end} . "]\n");
+    print(STDERR "   Strand      : [" . $self->{_gsf_strand} . "]\n");
+    print(STDERR "   Score       : [" . $self->{_gsf_score} . "]\n");
+    print(STDERR "   Source_tag  : [" . $self->{_source_tag} . "]\n");
+    print(STDERR "   Primary_tag : [" . $self->{_primary_tag} . "]\n");
+    print(STDERR "   Analysis    : [" . $self->{_analysis} . "]\n");
 
-    $self->throw("");
+    $self->throw("Invalid feature - see dump on STDERR");
 }
 # These methods are specified in the SeqFeatureI interface but we don't want
 # people to store data in them.  These are just here in order to keep

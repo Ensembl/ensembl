@@ -84,6 +84,7 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::SeqFeature::Generic;
+use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::SeqFeature::Generic Exporter);
 # new() is inherited from Bio::Root::Object

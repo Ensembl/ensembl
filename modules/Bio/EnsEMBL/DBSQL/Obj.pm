@@ -1091,9 +1091,7 @@ sub delete_Gene{
 sub geneid_to_cloneid{
    my ($self,$geneid) = @_;
 
-   my $sth = $self->prepare("select count(*),cl.id, cont.clone ,ex.contig, tran.gene from clone as cl,contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and ex.contig = cont.id and cont.clone = cl.id and tran.gene = '$geneid' group by cl.id");
-
-#   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
+   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
 
    my @out;
 

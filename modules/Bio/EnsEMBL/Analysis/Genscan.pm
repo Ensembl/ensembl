@@ -334,7 +334,7 @@ EXON:    foreach my $exon ($tran->each_Exon) {
 	    $trans[2] = $exseq->translate('*','X',1);
 	    
 	    my $i = 0;
-	    $phase;
+	    $phase = 4;
 	    
 	    # Loop over all frames 0,1,2
 	    for ($i=0; $i < 3; $i++) {
