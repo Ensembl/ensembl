@@ -1100,13 +1100,17 @@ sub get_all_landmark_MarkerFeatures {
 =head2 get_all_compara_DnaAlignFeatures
 
   Arg [1]    : string $qy_species
-               The name of the speicies to retrieve similarity features from
-  Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus_musculus');
+               The name of the species to retrieve similarity features from
+  Arg [2]    : string $qy_assembly
+               The name of the assembly to retrieve similarity features from
+  Example    : $fs = $slc->get_all_compara_DnaAlignFeatures('Mus musculus',
+							    'MGSC_3');
   Description: Retrieves a list of DNA-DNA Alignments to the species specified
-               by the $qy_species argument. The argument must be the genus
-               name and species name as an underscore seperated string.
+               by the $qy_species argument.
                The compara database must be attached to the core database
-               for this call to work correctly.
+               for this call to work correctly.  As well the compara database
+               must have the core dbadaptors for both this species, and the
+               query species added to function correctly.
   Returntype : reference to a list of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : warning if compara database is not available
   Caller     : contigview
@@ -1114,10 +1118,10 @@ sub get_all_landmark_MarkerFeatures {
 =cut
 
 sub get_all_compara_DnaAlignFeatures {
-  my ($self, $qy_species) = @_;
+  my ($self, $qy_species, $qy_assembly) = @_;
 
-  unless($qy_species) {
-    $self->throw("Query species argument is required");
+  unless($qy_species && $qy_assembly) {
+    $self->throw("Query species and assembly arguments are required");
   }
 
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
@@ -1130,7 +1134,7 @@ sub get_all_compara_DnaAlignFeatures {
 
   my $dafa = $compara_db->get_DnaAlignFeatureAdaptor;
 
-  return $dafa->fetch_all_by_Slice($self, $qy_species);
+  return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly);
 }
 
 
@@ -1163,7 +1167,7 @@ sub get_all_Haplotypes {
   my $haplo_adaptor = $haplo_db->get_HaplotypeAdaptor;
 
   my $haplotypes = $haplo_adaptor->fetch_all_by_Slice($self, $lite_flag);
-		
+
   return $haplotypes;
 }
 
