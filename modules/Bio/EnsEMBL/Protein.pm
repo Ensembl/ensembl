@@ -25,23 +25,6 @@ my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					      -moltype => $moltype,
 					      );
 
-If the SNPs are wanted:
-
-my $snpdb = Bio::EnsEMBL::ExternalData::SNPSQL::DBAdapter->new(
-							       -dbname=>$snpdbname,
-							       -user=>$dbuser,
-							       -host=>$host);    
- 
-$protein->snp_adaptor($snpdb);
-
-If the Gbrowser has to be used (with the SNPs for example) do the following:
-
-my $data_source = "DBI:$driver:database=$db;host=$host;port=$port";
-my $username="";
-     
-my $dbh = DBI->connect($data_source, $username);
-
-$protein->gbrowser_adaptor($dbh);
 
 =head1 DESCRIPTION
 
@@ -70,7 +53,6 @@ use vars qw(@ISA);
 use strict;
 use Bio::Root::Object;
 use Bio::SeqI;
-use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
 use Bio::SeqIO;
@@ -84,71 +66,74 @@ use Bio::Tools::SeqStats;
 =cut
 
 
-=head2 db
-
- Title   : db
- Usage   : $obj->db($newval)
- Function: 
- Returns : value of db
- Args    : newvalue (optional)
 
 
-=cut
+#=head2 add_date
 
-sub db{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'db'} = $value;
-    }
-    return $obj->{'db'};
+# Title   : add_date
+# Usage   : $self->add_date($ref)
+# Function: adds a date
+# Example :
+# Returns : 
+# Args    :
 
-}
+#=cut
+
+#sub add_date {
+#   my ($self) = shift;
+#   foreach my $dt ( @_ ) {
+#       push(@{$self->{'date'}},$dt);
+#   }
+#}
 
 
-=head2 add_date
 
- Title   : add_date
- Usage   : $self->add_date($ref)
- Function: adds a date
- Example :
- Returns : 
- Args    :
+=head2 adaptor
 
-=cut
-
-sub add_date {
-   my ($self) = shift;
-   foreach my $dt ( @_ ) {
-       push(@{$self->{'date'}},$dt);
-   }
-}
-
-=head2 get_dates
-
- Title   : get_dates
- Usage   : foreach $dt ( $self->get_dates() )
- Function: gets an array of dates
- Example :
- Returns : 
- Args    :
+ Title   : adaptor
+ Usage   : $self->adaptor($adaptor)
+ Function: Getter/Setter for the ProteinAdaptor for this object
+ Example : my $db = $prot->adaptor()->db();
+ Returns : a ProteinAdaptor object
+ Args    : (optional) a new ProteinAdaptor
 
 =cut
 
-sub get_dates {
-   my ($self) = @_;
+sub adaptor {
+  my ($self, $adaptor) = @_;
 
-   $self->warn("In giving back dates, have not sorted out how stable id system works with proteins");
-
-   return ();
-   return @{$self->{'date'}}; 
+  if(defined $adaptor) {
+    $self->{_adaptor} = $adaptor;
+  }
+  return $self->{_adaptor};
 }
 
 
-sub each_date { 
-   my ($self) = @_;
-   return $self->get_dates; 
-}
+#=head2 get_dates
+
+# Title   : get_dates
+# Usage   : foreach $dt ( $self->get_dates() )
+# Function: gets an array of dates
+# Example :
+# Returns : 
+# Args    :
+
+#=cut
+
+#sub get_dates {
+#   my ($self) = @_;
+
+#   $self->warn("In giving back dates, have not sorted out how stable id system works with proteins");
+
+#   return ();
+#   return @{$self->{'date'}}; 
+#}
+
+
+#sub each_date { 
+#   my ($self) = @_;
+#   return $self->get_dates; 
+#}
 
 =head2 species
 
@@ -189,25 +174,52 @@ sub primary_seq{
 
 
 
-=head2 geneac
+=head2 gene
 
- Title   : geneac
- Usage   : $obj->geneac($newval)
- Function: 
- Returns : value of geneac
+ Title   : gene
+ Usage   : my $gene = $prot->gene()
+ Function: Getter/Setter for the gene associated with this protein
+ Returns : Bio::EnsEMBL::Gene
  Args    : newvalue (optional)
-
 
 =cut
 
-sub geneac{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'geneac'} = $value;
-    }
-    return $obj->{'geneac'};
+sub gene {
+  my ($self, $gene) = @_;
 
+  if(defined $gene) {
+    unless($gene->isa('Bio::EnsEMBL::Gene')) {
+      $self->throw("$gene is not a valid Bio::EnsEMBL::Gene object");
+    }
+    $self->{'_gene'} = $gene;
+  }
+
+  return $self->{'_gene'};
+}
+
+
+=head2 transcript
+
+ Title   : transcript
+ Usage   : my $transcript = $prot->transcript()
+ Function: Getter/Setter for the gene associated with this protein
+ Returns : Bio::EnsEMBL::Transcript
+ Args    : newvalue (optional)
+
+=cut
+
+sub transcript {
+  my ($self, $transcript) = @_;
+
+  if(defined $transcript) {
+    unless($transcript->isa('Bio::EnsEMBL::Transcript')) {
+      $self->throw("$transcript is not a valid" .
+		   "Bio::EnsEMBL::Transcript object");
+    }
+    $self->{'_transcript'} = $transcript;
+  }
+
+  return $self->{'_transcript'};
 }
 
 
@@ -252,29 +264,6 @@ sub moltype{
     return $obj->{'moltype'};
 
 }
-
-
-=head2 annotation
-
- Title   : annotation
- Usage   : $obj->annotation($newval)
- Function: 
- Returns : value of annotation
- Args    : newvalue (optional)
-
-
-=cut
-
-sub annotation{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'annotation'} = $value;
-    }
-    return $obj->{'annotation'};
-
-}
-
 
 =head2 top_SeqFeatures
     
@@ -356,7 +345,8 @@ sub get_Family{
     }
    else {
        my $proteinid = $self->id();
-       my $family = $self->db->get_FamilyAdaptor->get_Family_of_Ensembl_pep_id($proteinid);
+       my $fa = $self->adaptor()->db()->get_FamilyAdaptor();
+       my $family = $fa->get_Family_of_Ensembl_pep_id($proteinid);
        $self->add_Family($family);
        return $family;
    }
@@ -442,7 +432,9 @@ sub get_all_ProfileFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PROFILE',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = 
+	 $pfa->fetch_by_feature_and_dbID('PROFILE',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Profile($in);
        }
@@ -468,7 +460,7 @@ sub get_all_ProfileFeatures{
 sub add_Profile{
     my ($self,$value) = @_;
         
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
@@ -496,7 +488,9 @@ sub get_all_blastpFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('blastp',$proteinid);
+       my $pfa = $self->adaptor->get_ProteinFeatureAdaptor();
+       my @array_features = 
+	 $pfa->fetch_by_feature_and_dbID('blastp',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_blastp($in);
        }
@@ -522,7 +516,7 @@ sub get_all_blastpFeatures{
 sub add_blastp{
     my ($self,$value) = @_;
         
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
@@ -550,7 +544,9 @@ sub get_all_PrintsFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PRINTS',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = 
+	 $pfa->fetch_by_feature_and_dbID('PRINTS',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Prints($in);
        }
@@ -576,7 +572,7 @@ sub get_all_PrintsFeatures{
 sub add_Prints{
     my ($self,$value) = @_;
         
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
@@ -604,9 +600,8 @@ sub get_all_PfamFeatures{
     }
    else {
        my $proteinid = $self->id();
-       
-       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Pfam',$proteinid);
-       
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = $pfa->fetch_by_feature_and_dbID('Pfam',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Pfam($in);
        }
@@ -630,7 +625,7 @@ sub get_all_PfamFeatures{
 sub add_Pfam{
  my ($self,$value) = @_;
         
- if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
@@ -658,7 +653,9 @@ sub get_all_PrositeFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('PROSITE',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = 
+	 $pfa->fetch_by_feature_and_dbID('PROSITE',$proteinid);
        foreach my $in (@array_features) {
 	   $self->add_Prosite($in);
        }
@@ -681,7 +678,7 @@ sub get_all_PrositeFeatures{
 sub add_Prosite{
     my ($self,$value) = @_;
     
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
@@ -708,7 +705,9 @@ sub get_all_SigpFeatures{
     }
     else {
 	my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Signalp',$proteinid);
+	my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+	my @array_features = 
+	  $pfa->fetch_by_feature_and_dbID('Signalp',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Sigp($in);
 	}
@@ -732,7 +731,7 @@ sub get_all_SigpFeatures{
 sub add_Sigp{
     my ($self,$value) = @_;
     
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
     push(@{$self->{'_sigp'}},$value); 
@@ -759,7 +758,9 @@ sub get_all_TransmembraneFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Tmhmm',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = 
+	 $pfa->fetch_by_feature_and_dbID('Tmhmm',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Transmembrane($in);
 	}
@@ -784,8 +785,9 @@ sub get_all_TransmembraneFeatures{
 sub add_Transmembrane{
     my ($self,$value) = @_;
     
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
-	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
+      $self->throw("The Protein Feature added is not defined" .
+		   "or is not a protein feature object");
     }
     push(@{$self->{'_transmembrane'}},$value); 
 }
@@ -810,7 +812,9 @@ sub get_all_CoilsFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('ncoils',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+	my @array_features = 
+	  $pfa->fetch_by_feature_and_dbID('ncoils',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Coils($in);
 	}
@@ -833,7 +837,7 @@ sub get_all_CoilsFeatures{
 sub add_Coils{
     my ($self,$value) = @_;
 
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
 	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
     push(@{$self->{'_coils'}},$value); 
@@ -860,7 +864,8 @@ sub get_all_LowcomplFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Seg',$proteinid);
+       my $pfa = $self->adaptor()->db()->get_ProteinFeatureAdaptor();
+       my @array_features = $pfa->fetch_by_feature_and_dbID('Seg',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Lowcompl($in);
 	}
@@ -883,7 +888,7 @@ sub get_all_LowcomplFeatures{
 sub add_Lowcompl{
 my ($self,$value) = @_;
 
-if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
     $self->throw("The Protein Feature added is not defined or is not a protein feature object");
 }
 
@@ -910,7 +915,9 @@ sub get_all_SuperfamilyFeatures{
     }
     else {
        my $proteinid = $self->id();
-	my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('superfamily',$proteinid);
+       my $pfa = $self->adaptor()->db->get_ProteinFeatureAdaptor();
+	my @array_features = 
+	  $pfa->fetch_by_feature_and_dbID('superfamily',$proteinid);
 	foreach my $in (@array_features) {
 	    $self->add_Superfamily($in);
 	}
@@ -935,7 +942,7 @@ sub get_all_SuperfamilyFeatures{
 sub add_Superfamily{
 my ($self,$value) = @_;
     
-if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
     $self->throw("The Protein Feature added is not defined or is not a protein feature object");
 } 
 
@@ -943,79 +950,113 @@ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
 
 }
 
-=head2 transcriptac
 
- Title   : transcriptac
- Usage   : $obj->transcriptac($newval)
- Function: 
- Returns : value of transcriptac
- Args    : newvalue (optional)
+#=head2 add_intron
 
-
-=cut
-
-sub transcriptac{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'transcriptac'} = $value;
-    }
-    return $obj->{'transcriptac'};
-
-}
-
-=head2 add_intron
-
- Title   : add_intron
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+# Title   : add_intron
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
 
 
-=cut
+#=cut
 
-sub add_intron{
-    my ($self,$value) = @_;
-    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
-	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
-    } 
-    push(@{$self->{'_intron'}},$value);   
+#sub add_intron{
+#    my ($self,$value) = @_;
+#    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
+#	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+#    } 
+#    push(@{$self->{'_intron'}},$value);   
 
-}
-
-
-=head2 get_all_IntronFeatures
-
- Title   : get_all_IntronFeatures
- Usage   :my @introns_feature = $protein->get_all_IntronFeatures($proteinid)
- Function:Get all of the introns as Protein_FeaturePair for a given peptide and add them to protein features
- Example :
- Returns : Nothing
- Args    :Peptide ID
+#}
 
 
-=cut
+#=head2 get_all_IntronFeatures
+
+# Title   : get_all_IntronFeatures
+# Usage   :my @introns_feature = $protein->get_all_IntronFeatures($proteinid)
+# Function:Get all of the introns as ProteinFeatures for a given peptide and add them to protein features
+# Example :
+# Returns : Nothing
+# Args    :Peptide ID
+
+
+#=cut
  
-sub get_all_IntronFeatures{
-   my ($self) = @_;
-   if (defined ($self->{'_intron'})) {
-       return @{$self->{'_intron'}};
-   }
-   else {
-       my $proteinid = $self->id();
-       my @array_introns = $self->db->get_Protein_Adaptor->get_Introns($proteinid);
-       foreach my $in (@array_introns) {
-	   $self->add_intron($in);
-       }
-       return @array_introns;
-   }
-}
+#sub get_all_IntronFeatures{
+#   my ($self) = @_;
+#   if (defined ($self->{'_intron'})) {
+#       return @{$self->{'_intron'}};
+#   }
+#   else {
+#       my $proteinid = $self->id();
+#       my $pa = $self->adaptor()->db()->get_ProteinAdaptor();
+#       my @array_introns = $pa->get_Introns($proteinid);
+#       foreach my $in (@array_introns) {
+#	   $self->add_intron($in);
+#       }
+#       return @array_introns;
+#   }
+#}
 
-=head2 add_snps
+#=head2 add_snps
 
- Title   : add_snps
+# Title   : add_snps
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
+
+
+#=cut
+
+#sub add_snps{
+#    my ($self,$value) = @_;
+
+#    if ((!defined $value)) {
+#	$self->throw("Value is not defined");
+#   } 
+
+#   push(@{$self->{'_snp'}},$value);  
+#}
+
+
+#=head2 get_all_SnpsFeatures
+
+# Title   : get_all_SnpsFeatures
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
+
+
+#=cut
+
+#sub get_all_SnpsFeatures{
+#   my ($self) = @_;
+#   if (defined ($self->{'_snp'})) {
+#       return @{$self->{'_snp'}};
+#   }
+#   else {
+#       my $gbdb = $self->gbrowser_adaptor();
+#       my $snpdb = $self->snp_adaptor();
+#       my @snps_array = $self->adaptor->get_snps($self,$snpdb,$gbdb);
+#       foreach my $sn (@snps_array) {
+#	   $self->add_snps($sn);
+#       }
+#       return @snps_array;
+#   }
+
+#}
+
+
+=head2 add_ProteinFeature
+
+Title   : add_ProteinFeature (formerly add_Protein_feature)
  Usage   :
  Function:
  Example :
@@ -1025,63 +1066,10 @@ sub get_all_IntronFeatures{
 
 =cut
 
-sub add_snps{
-    my ($self,$value) = @_;
-
-    if ((!defined $value)) {
-	$self->throw("Value is not defined");
-   } 
-
-   push(@{$self->{'_snp'}},$value);  
-}
-
-
-=head2 get_all_SnpsFeatures
-
- Title   : get_all_SnpsFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_SnpsFeatures{
-   my ($self) = @_;
-   if (defined ($self->{'_snp'})) {
-       return @{$self->{'_snp'}};
-   }
-   else {
-       my $gbdb = $self->gbrowser_adaptor();
-       my $snpdb = $self->snp_adaptor();
-       my @snps_array = $self->adaptor->get_snps($self,$snpdb,$gbdb);
-       foreach my $sn (@snps_array) {
-	   $self->add_snps($sn);
-       }
-       return @snps_array;
-   }
-
-}
-
-
-=head2 add_Protein_feature
-
- Title   : add_Protein_feature
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_Protein_feature{
+sub add_ProteinFeature{
    my ($self,$value) = @_;
 
-   if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+   if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
      $self->throw("The Protein Feature added is not defined or is not a protein feature object");
    }
 
@@ -1106,7 +1094,6 @@ sub length{
    my ($self) = @_;
    my $length = length($self->seq);
 
-
    return $length;
 
 }
@@ -1125,120 +1112,98 @@ sub length{
 
 sub get_all_DBLinks{
  my ($self) = @_;
- my @dbl = $self->annotation->each_DBLink();
 
- if (@dbl) {
-     return(@dbl);
+ unless(defined $self->{'_dblinks'}) {
+   my $transcript = $self->transcript();
+
+   unless(defined $transcript) {
+     throw("Cannot fetch Protein DBLinks without a valid Transcript.\n");
    }
 
-   else {
-       my $protein_id = $self->id();
-       my @snps_array = $self->db->get_DBEntryAdaptor->fetch_by_translation($protein_id);
-       foreach my $sn (@snps_array) {
-	   $self->annotation->add_DBLink($sn);
-       }
-       my @dbls = $self->annotation->each_DBLink();
-	   return(@dbls);
-   }
+   my $dbea = $self->adaptor()->db()->get_DBEntryAdaptor();
+   my $translation_id = $transcript->translation()->dbID();
+   $self->{'_dblinks'} = [];
+   my @dblinks = $dbea->fetch_by_translation($translation_id);
+   push @{$self->{'_dblinks'}}, @dblinks;
+ }
+ 
+ return @{$self->{'_dblinks'}};
 }
 
-=head2 molecular_weight
+#=head2 molecular_weight
 
- Title   : molecular_weight
- Usage   : 
- Function: This method has been placed here for convenience function. This gets and return the molecular weight of the protein
- Example : my $mw = $protein->molecular_weight
- Returns : Moleculat weight of the peptide
- Args    :
+# Title   : molecular_weight
+# Usage   : 
+# Function: This method has been placed here for convenience function. This gets and return the molecular weight of the protein
+# Example : my $mw = $protein->molecular_weight
+# Returns : Moleculat weight of the peptide
+# Args    :
+
+#=cut
+
+#sub molecular_weight{
+#  my ($self) = @_;
+#  my $mw = ${Bio::Tools::SeqStats->get_mol_wt($self)}[0];
+#  return $mw;
+#}
+
+#=head2 checksum
+
+# Title   : checksum
+# Usage   : my $checksum = $protein->checksum()
+# Function: Get the crc64 for the sequence of the protein (this method has been copied from _crc64 method which is in swiss.pm in Bioperl and have been placed here for convenience function
+# Example : 
+# Returns : CRC64
+# Args    : Nothing
 
 
-=cut
+#=cut
 
-sub molecular_weight{
-   my ($self) = @_;
-   my $mw = ${Bio::Tools::SeqStats->get_mol_wt($self)}[0];
-return $mw
-}
+#sub checksum{
+#   my ($self) = @_;
 
-=head2 checksum
+#   my $sequence = \$self->seq();
 
- Title   : checksum
- Usage   : my $checksum = $protein->checksum()
- Function: Get the crc64 for the sequence of the protein (this method has been copied from _crc64 method which is in swiss.pm in Bioperl and have been placed here for convenience function
- Example : 
- Returns : CRC64
- Args    : Nothing
-
-
-=cut
-
-sub checksum{
-   my ($self) = @_;
-
-   my $sequence = \$self->seq();
-
-   my $POLY64REVh = 0xd8000000;
-    my @CRCTableh = 256;
-    my @CRCTablel = 256;
-    my $initialized;       
+#   my $POLY64REVh = 0xd8000000;
+#    my @CRCTableh = 256;
+#    my @CRCTablel = 256;
+#    my $initialized;       
     
 
-    my $seq = $$sequence;
+#    my $seq = $$sequence;
       
-    my $crcl = 0;
-    my $crch = 0;
-    if (!$initialized) {
-	$initialized = 1;
-	for (my $i=0; $i<256; $i++) {
-	    my $partl = $i;
-	    my $parth = 0;
-	    for (my $j=0; $j<8; $j++) {
-		my $rflag = $partl & 1;
-		$partl >>= 1;
-		$partl |= (1 << 31) if $parth & 1;
-		$parth >>= 1;
-		$parth ^= $POLY64REVh if $rflag;
-	    }
-	    $CRCTableh[$i] = $parth;
-	    $CRCTablel[$i] = $partl;
-	}
-    }
+#    my $crcl = 0;
+#    my $crch = 0;
+#    if (!$initialized) {
+#	$initialized = 1;
+#	for (my $i=0; $i<256; $i++) {
+#	    my $partl = $i;
+#	    my $parth = 0;
+#	    for (my $j=0; $j<8; $j++) {
+#		my $rflag = $partl & 1;
+#		$partl >>= 1;
+#		$partl |= (1 << 31) if $parth & 1;
+#		$parth >>= 1;
+#		$parth ^= $POLY64REVh if $rflag;
+#	    }
+#	    $CRCTableh[$i] = $parth;
+#	    $CRCTablel[$i] = $partl;
+#	}
+#    }
     
-    foreach (split '', $seq) {
-	my $shr = ($crch & 0xFF) << 24;
-	my $temp1h = $crch >> 8;
-	my $temp1l = ($crcl >> 8) | $shr;
-	my $tableindex = ($crcl ^ (unpack "C", $_)) & 0xFF;
-	$crch = $temp1h ^ $CRCTableh[$tableindex];
-	$crcl = $temp1l ^ $CRCTablel[$tableindex];
-    }
-    my $crc64 = sprintf("%08X%08X", $crch, $crcl);
+#    foreach (split '', $seq) {
+#	my $shr = ($crch & 0xFF) << 24;
+#	my $temp1h = $crch >> 8;
+#	my $temp1l = ($crcl >> 8) | $shr;
+#	my $tableindex = ($crcl ^ (unpack "C", $_)) & 0xFF;
+#	$crch = $temp1h ^ $CRCTableh[$tableindex];
+#	$crcl = $temp1l ^ $CRCTablel[$tableindex];
+#    }
+#    my $crc64 = sprintf("%08X%08X", $crch, $crcl);
         
-    return $crc64;
+#    return $crc64;
 
-}
-
-=head2 stable_id
-
- Title   : stable_id
- Usage   : $obj->stable_id($newval)
- Function: 
- Returns : value of stable_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub stable_id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'stable_id'} = $value;
-    }
-    return $obj->{'stable_id'};
-
-}
-
+#}
 
 
 

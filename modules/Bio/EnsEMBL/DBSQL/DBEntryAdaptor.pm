@@ -401,6 +401,7 @@ sub _fetch_by_EnsObject_type {
       if( $desc ) {
         $exDB->description( $desc );
       }
+      
       push( @out, $exDB );
     }                                   # if (!$seen{$refID})
 

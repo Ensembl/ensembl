@@ -1046,8 +1046,8 @@ sub add_Supporting_Feature {
 
 sub each_Supporting_Feature {
     my ($self) = @_;
-
-    if ( !defined ( $self->{_supporting_evidence} )) {
+    if ( !defined ( $self->{_supporting_evidence} ) || 
+	 (scalar @{$self->{_supporting_evidence}} == 0)) {
       $self->{_supporting_evidence} = [];  
       $self->adaptor->fetch_evidence_by_Exon( $self );
     }

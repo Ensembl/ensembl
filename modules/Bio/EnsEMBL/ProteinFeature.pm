@@ -12,16 +12,18 @@
 
 =head1 NAME
 
-Protein_FeaturePair.pm - DESCRIPTION of Object
+ProteinFeature.pm - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-						    -feature2 => $feat2,);
+my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+					       -feature2 => $feat2,);
 
 =head1 DESCRIPTION
 
 This object inherits from Bio::EnsEMBL::FeaturePair. This extension has been implemented to work with the Protein object. Each Protein Feature should be stored in a Protein_FeaturePair object.
+
+This object was formerly named Protein_FeaturePair.
 
 =head1 CONTACT
 
@@ -37,7 +39,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Protein_FeaturePair;
+package Bio::EnsEMBL::ProteinFeature;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::FeaturePair;

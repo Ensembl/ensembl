@@ -390,43 +390,43 @@ sub get_adaptor {
 }
 
 
-=head2 get_Protfeat_Adaptor
+=head2 get_ProteinFeatureAdaptor
 
- Title   : get_Protfeat_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+ Title   : get_ProteinFeatureAdaptor
+ Usage   : my $pfa = $dba->get_ProteinFeatureAdaptor(); 
+ Function: Gets a ProteinFeatureAdaptor for this database.  
+           Formerly named get_Protfeat_Adaptor()
+ Example : my $protfeat = $dba->get_ProteinFeatureAdaptor->fetch_by_dbID($id);
+ Returns : Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
+ Args    : none
 
 =cut
 
-#sub get_Protfeat_Adaptor {
-#    my( $self ) = @_;
+sub get_ProteinFeatureAdaptor {
+    my( $self ) = @_;
     
-#    return 
-#      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
-#}
+    return 
+      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
+}
 
 
-#=head2 get_Protein_Adaptor
+=head2 get_ProteinAdaptor
 
-# Title   : get_Protein_Adaptor
-# Usage   :
-# Function:
-# Example :
-# Returns : 
-# Args    :
+ Title   : get_ProteinAdaptor
+ Usage   : my $pa = $dba->get_ProteinAdaptor(); 
+ Function: Gets a ProteinAdaptor for this database.  
+           Formerly named get_Protein_Adaptor()
+ Example : my $prot = $dba->get_ProteinAdaptor->fetch_by_dbID($id);
+ Returns : Bio::EnsEMBL::DBSQL::ProteinAdaptor
+ Args    : none
 
+=cut
 
-#=cut
-
-#sub get_Protein_Adaptor {
-#    my( $self ) = @_;
+sub get_ProteinAdaptor {
+    my( $self ) = @_;
  
-#    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
-#}
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAdaptor");
+}
 
 
 sub get_MapFragAdaptor {

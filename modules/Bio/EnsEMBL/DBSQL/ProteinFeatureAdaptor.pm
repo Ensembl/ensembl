@@ -50,102 +50,105 @@ use strict;
 
 # Object preamble - inheriets from Bio::EnsEMBL::DBSQL::BaseAdaptor
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-use Bio::EnsEMBL::Protein_FeaturePair;
+use Bio::EnsEMBL::ProteinFeature;
 use Bio::EnsEMBL::SeqFeature;
-# use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
-
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+=head2 fetch_by_Translation_id
 
-=head2 fetch_by_translationID
-
- Title   : fetch_by_translationID
- Usage   :@features = $prot_feat-> fetch_by_translationID($transl_id)
- Function:Get all of the protein feature objects of one peptide (this identifiant for this peptide is given by the transaltion id)
- Example :
- Returns : Protein feature objects
- Args    :
-
+ Title   : fetch_by_Translation_id (formerly fetch_by_translationID)
+ Usage   : @features = $protfeat_adaptor->fetch_by_Translation_id($transl_id)
+ Function: Get all of the protein feature objects of a peptide            
+ Example : @feats  = $protfeat_adaptor->fetch_by_Translation_id($transl_id)
+ Returns : @Bio::EnsEMBL::ProteinFeature
+ Args    : dbID of the translation corresponding to the peptide
 
 =cut
 
 
-
-sub fetch_by_translationID {
+sub fetch_by_Translation_id {
     my($self,$transl) = @_;
 
     my @features;
+    my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
-
-    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation_id = '$transl' and i.id = p.hit_id and i.interpro_ac = d.interpro_ac and p.analysis_id = a.id and a.gff_feature = 'domain'");
+    my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id,
+                                     p.score, p.perc_ident, p.evalue, 
+                                     p.hit_start, p.hit_end, p.hit_id, 
+                                     d.short_description 
+                              FROM   protein_feature p,interpro_description 
+                                     d,interpro i,analysis a 
+                              WHERE  p.translation_id = '$transl' 
+                                     AND i.id = p.hit_id 
+                                     AND i.interpro_ac = d.interpro_ac 
+                                     AND p.analysis_id = a.id 
+                                     AND a.gff_feature = 'domain'");
     $sth->execute();
 
-
-    my %anahash;
-
-
     while( my $arrayref = $sth->fetchrow_arrayref) {
-    
-	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
-	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
-	    $anahash{$analysisid} = $analysis;
-	}
+      my ($start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
+	  $hend,$hid,$desc) = @{$arrayref};
 
-	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+      my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+
+      my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
 						   -start => $start,
 						   -end => $end,
 						   -score => $score, 
-						   -analysis => $anahash{$analysisid},
+						   -analysis => $analysis,
 						   -percent_id => $perc_id,
 						   -p_value => $evalue);
 	
-	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						  -end => $hend,
-						  -analysis => $anahash{$analysisid},
-						  -seqname => $hid);
+      my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						-end => $hend,
+						-analysis => $analysis,
+						-seqname => $hid);
 	
-	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-							    -feature2 => $feat2,);
+      my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						     -feature2 => $feat2,);
 
-	$feature->idesc($desc);
-	
-	if ($feature) {
-	    push(@features,$feature);
-	}
-
+      $feature->idesc($desc);
+      
+      if ($feature) {
+	push(@features,$feature);
+      }
     }
 
-    $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id from protein_feature p,analysis a where a.id = p.analysis_id and p.translation_id = '$transl' and p.analysis_id = a.id and a.gff_feature != 'domain'");
+    $sth = $self->prepare ("SELECT p.seq_start, p.seq_end, p.analysis_id, 
+                                   p.score, p.perc_ident, p.evalue, 
+                                   p.hit_start, p.hit_end, p.hit_id 
+                            FROM   protein_feature p, analysis a 
+                            WHERE  a.id = p.analysis_id 
+                                   AND p.translation_id = '$transl' 
+                                   AND p.analysis_id = a.id 
+                                   AND a.gff_feature != 'domain'");
 
     $sth->execute();
 
     while( my $arrayref = $sth->fetchrow_arrayref) {
-	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
+	my ($start,$end,$analysisid,$score,$perc_id,
+	    $evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	
-	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
-	    $anahash{$analysisid} = $analysis;
-	}
+	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+	
 
 	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
 						   -start => $start,
 						   -end => $end,
 						   -score => $score, 
-						   -analysis => $anahash{$analysisid},
+						   -analysis => $analysis,
 						   -percent_id => $perc_id,
 						   -p_value => $evalue);
 	
 	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
 						  -end => $hend,
-						  -analysis => $anahash{$analysisid},
+						  -analysis => $analysis,
 						  -seqname => $hid);
 	
-	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-							    -feature2 => $feat2,);
+	my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						       -feature2 => $feat2,);
 
 	$feature->idesc($desc);
 	if ($feature) {
@@ -156,13 +159,14 @@ sub fetch_by_translationID {
     return @features;    
 }
 
+
 =head2 fetch_by_dbID
 
  Title   : fetch_by_dbID
- Usage   :$feature = $prot_feat->fetch_by_dbID($id)
- Function:Get a protein feature object
+ Usage   : $feature = $prot_feat->fetch_by_dbID($id)
+ Function: Get a protein feature object
  Example :
- Returns :Protein feature object 
+ Returns : Protein feature object 
  Args    :
 
 
@@ -172,7 +176,8 @@ sub fetch_by_dbID{
    my ($self,$protfeat_id) = @_;
    
    my $features;
-   my $sth = $self->prepare ("select * from protein_feature where id = '$protfeat_id'");
+   my $sth = 
+     $self->prepare("select * from protein_feature where id = '$protfeat_id'");
    my $res = $sth->execute;
    
    my $rowhash = $sth->fetchrow_hashref;
@@ -185,6 +190,7 @@ sub fetch_by_dbID{
    
    return $feature;
 }
+
 
 =head2 fetch_by_feature_and_dbID
 
@@ -201,143 +207,161 @@ sub fetch_by_dbID{
 sub fetch_by_feature_and_dbID{
     my ($self,$feature,$transl) = @_;
     my @features;
-    my %anahash;
+    my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
-#The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the xref table
- if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE") || ($feature eq "PROFILE")) {
-#      &eprof_start('interpro');
-	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis_id, p.score, p.perc_ident, p.evalue, p.hit_start, p.hit_end, p.hit_id, x.display_label from protein_feature p,interpro i,analysis a, xref x  where p.translation_id = '$transl' and i.id = p.hit_id and i.interpro_ac = x.xref_id and p.analysis_id = a.analysis_id and a.gff_feature = 'domain' and a.gff_source = '$feature'");
-	
-	$sth->execute();
-	
-		
-	while( my $arrayref = $sth->fetchrow_arrayref) {
-	
+    #The call has to be specific for the Interpro components because there 
+    #is one join to make on the interpro table and then with the xref table
+    if (($feature eq "PRINTS") || ($feature eq "Pfam") || 
+	($feature eq "PROSITE") || ($feature eq "PROFILE")) {
+
+      my $sth = $self->prepare("SELECT p.seq_start, p.seq_end, p.analysis_id, 
+                                       p.score, p.perc_ident, p.evalue, 
+                                       p.hit_start, p.hit_end, p.hit_id, 
+                                       x.display_label 
+                                FROM protein_feature p,interpro i,analysis a, 
+                                     xref x  
+                                WHERE p.translation_id = '$transl' 
+                                      AND i.id = p.hit_id 
+                                      AND i.interpro_ac = x.dbprimary_acc 
+                                      AND p.analysis_id = a.analysis_id 
+                                      AND a.gff_feature = 'domain' 
+                                      AND a.gff_source = '$feature'");
+      
+      $sth->execute();
+            
+      while( my $arrayref = $sth->fetchrow_arrayref) {
+	my ($start,$end,$analysisid,$score,$perc_id,$evalue,
+	    $hstart,$hend,$hid,$desc) = @{$arrayref};
+
+	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+						   -start => $start,
+						   -end => $end,
+						   -score => $score, 
+						   -analysis => $analysis,
+						   -percent_id => $perc_id,
+						   -p_value => $evalue);
 	    
-    
-	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
-
-
-	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
-	    $anahash{$analysisid} = $analysis;
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						  -end => $hend,
+						  -analysis => $analysis,
+						  -seqname => $hid);
+	
+	my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						       -feature2 => $feat2,);
+	
+	$feature->idesc($desc);
+	
+	if ($feature) {
+	  push(@features,$feature);
 	}
-
-	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
-						       -start => $start,
-						       -end => $end,
-						       -score => $score, 
-						       -analysis => $anahash{$analysisid},
-						       -percent_id => $perc_id,
-						       -p_value => $evalue);
-	    
-	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						      -end => $hend,
-						      -analysis => $anahash{$analysisid},
-						      -seqname => $hid);
 	
-	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-								-feature2 => $feat2,);
-	    
-	    $feature->idesc($desc);
-	    
-	    if ($feature) {
-		push(@features,$feature);
-	    }
-	    
-	}
-#      &eprof_end('interpro');
+      }
     }
 
-#Superfamily has also a description attached to it but there is no join needed with the interpro table. but its also considered as a domain feature
+    #Superfamily has also a description attached to it but there is 
+    #no join needed with the interpro table. but its also considered 
+    #as a domain feature
     elsif ($feature eq "superfamily") {
-#      &eprof_start('superfamily');
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id,x.display_label, x.xref_id from protein_feature as p, analysis as a, xref as x where a.gff_source = '$feature' and p.translation_id = '$transl' and a.analysis_id = p.analysis_id and x.xref_id = p.hit_id");
-	$sth->execute();
-	
-	
-	while( my $arrayref = $sth->fetchrow_arrayref) {
+      my $sth = $self->prepare ("SELECT p.seq_start, p.seq_end, p.analysis_id,
+                                        p.score, p.perc_ident, p.evalue, 
+                                        p.hit_start, p.hit_end, p.hit_id, 
+                                        x.display_label, x.dbprimary_acc 
+                                 FROM protein_feature AS p, analysis AS a, 
+                                      xref AS x 
+                                 WHERE a.gff_source = '$feature' AND 
+                                       p.translation_id = '$transl' AND 
+                                       a.analysis_id = p.analysis_id AND 
+                                       x.dbprimary_acc = p.hit_id");
+      $sth->execute();
+      
+      
+      while( my $arrayref = $sth->fetchrow_arrayref) {
 	    
-	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc,$interproac) = @{$arrayref};
-	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
-	    $anahash{$analysisid} = $analysis;
-	}
+	my ($start,$end,$analysisid,$score,$perc_id,$evalue,
+	    $hstart,$hend,$hid,$desc,$interproac) = @{$arrayref};
 
-	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
-						       -start => $start,
-						       -end => $end,
-						       -score => $score, 
-						       -analysis => $anahash{$analysisid},
-						       -percent_id => $perc_id,
-						       -p_value => $evalue);
-	    
-	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						      -end => $hend,
-						      -analysis => $anahash{$analysisid},
-						      -seqname => $hid);
-	
-	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-								-feature2 => $feat2,);
-	    
-	    $feature->idesc($desc);
-	    $feature->interpro_ac($interproac);
+	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
 
-	    if ($feature) {
-		push(@features,$feature);
-	    }
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+						   -start => $start,
+						   -end => $end,
+						   -score => $score, 
+						   -analysis => $analysisid,
+						   -percent_id => $perc_id,
+						   -p_value => $evalue);
 	    
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						  -end => $hend,
+						  -analysis => $analysis,
+						  -seqname => $hid);
+	
+	my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						       -feature2 => $feat2,);
+	
+	$feature->idesc($desc);
+	$feature->interpro_ac($interproac);
+	
+	if ($feature) {
+	  push(@features,$feature);
 	}
-#      &eprof_end('superfamily');
+	    
+      }
     }
-
-#Get all of the other features...Coils, TMHMM, ...
+    
+    #Get all of the other features...Coils, TMHMM, ...
     else {
-	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis_id,p.score,p.perc_ident,p.evalue,p.hit_start,p.hit_end,p.hit_id from protein_feature p,analysis a where a.analysis_id = p.analysis_id and p.translation_id = '$transl' and a.gff_feature != 'domain' and a.gff_source = '$feature'");
+      my $sth = $self->prepare ("SELECT p.seq_start, p.seq_end, p.analysis_id,
+                                        p.score, p.perc_ident, p.evalue, 
+                                        p.hit_start, p.hit_end, p.hit_id 
+                                 FROM protein_feature p,analysis a 
+                                 WHERE a.analysis_id = p.analysis_id 
+                                       AND p.translation_id = '$transl' 
+                                       AND a.gff_feature != 'domain' 
+                                       AND a.gff_source = '$feature'");
+      
+      $sth->execute();
+      my @a = $sth->fetchrow();
+
+      $sth->execute();
+      while( my $arrayref = $sth->fetchrow_arrayref) {
+	my ($start, $end, $analysisid, $score, $perc_id, 
+	    $evalue, $hstart,$hend,$hid) = @{$arrayref};
+
+	my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
+	    
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
+						   -start => $start,
+						   -end => $end,
+						   -score => $score, 
+						   -analysis => $analysis,
+						   -percent_id => $perc_id,
+						   -p_value => $evalue);
 	
-	$sth->execute();
-	my @a = $sth->fetchrow();
-
-	$sth->execute();
-	while( my $arrayref = $sth->fetchrow_arrayref) {
-	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid) = @{$arrayref};
-
-	    if( !defined $anahash{$analysisid} ) {
-		my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
-		$anahash{$analysisid} = $analysis;
-	    }
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
+						  -end => $hend,
+						  -analysis => $analysis,
+						  -seqname => $hid);
+	
+	my $feature = new Bio::EnsEMBL::ProteinFeature(-feature1 => $feat1,
+						       -feature2 => $feat2);
 	    
-	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $transl,
-						       -start => $start,
-						       -end => $end,
-						       -score => $score, 
-						       -analysis => $anahash{$analysisid},
-						       -percent_id => $perc_id,
-						       -p_value => $evalue);
-	    
-	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $hstart,
-						      -end => $hend,
-						      -analysis => $anahash{$analysisid},
-						      -seqname => $hid);
-	    
-	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-								-feature2 => $feat2,);
-	    
-	    if ($feature) {
-		push(@features,$feature);
-	    }
+	if ($feature) {
+	  push(@features,$feature);
 	}
+      }
     }	
     
-	return @features;
-}
+    return @features;
+  }
 
 
-=head2 write_Protein_feature
+=head2 store
 
- Title   : write_Protein_feature
- Usage   : $obj->write_Protein_feature($feature)
- Function: writes a protein feature object           
+ Title   : store
+ Usage   : $obj->store($feature)
+ Function: writes a protein feature object to the database           
  Example :
  Returns : 
  Args    :
@@ -345,7 +369,7 @@ sub fetch_by_feature_and_dbID{
 
 =cut
 
-sub write_Protein_feature{
+sub store {
     my ($self,$feature) = @_;
     my $analysis;
 
@@ -387,145 +411,146 @@ sub write_Protein_feature{
 
 }
 
-=head2 write_Protein_feature_by_translationID
+#=head2 write_Protein_feature_by_translationID
 
- Title   : write_Protein_feature_by_translationID
- Usage   :$obj->write_Protein_feature_by_translation($pep,@features)
- Function: Write all of the protein features into the database of a particular peptide
- Example :
- Returns : nothing
- Args    :
+# Title   : write_Protein_feature_by_translationID
+# Usage   :$obj->write_Protein_feature_by_translation($pep,@features)
+# Function: Write all of the protein features into the database of a particular peptide
+# Example :
+# Returns : nothing
+# Args    :
 
 
-=cut
+#=cut
 
-sub write_Protein_feature_by_translationID {
-    my ($self,$pep,@features) = @_;
+#sub write_Protein_feature_by_translationID {
+#    my ($self,$pep,@features) = @_;
     
-    my $analysis;
+#    my $analysis;
    
-#Check if the translation id exist in the database, throw an exeption if not.
-    my $sth1 = $self->prepare("select translation_id from translation where translation_id = $pep");
-    $sth1->execute;
+##Check if the translation id exist in the database, throw an exeption if not.
+#    my $sth1 = $self->prepare("select translation_id from translation where translation_id = $pep");
+#    $sth1->execute;
    
-    if ($sth1->rows == 0) {
-	$self->throw("This translation id: $pep does not exist in the database");
-    }
+#    if ($sth1->rows == 0) {
+#	$self->throw("This translation id: $pep does not exist in the database");
+#    }
 
-    FEATURE :
-	foreach my $features(@features) {	
+#    FEATURE :
+#	foreach my $features(@features) {	
 	   
-	    if( ! $features->isa('Bio::EnsEMBL::SeqFeatureI') ) {
-		$self->throw("Feature $features is not a feature!");
-	    }
+#	    if( ! $features->isa('Bio::EnsEMBL::SeqFeatureI') ) {
+#		$self->throw("Feature $features is not a feature!");
+#	    }
 	    
-	    eval {
-		$features->validate_prot_feature();
-	    };
+#	    eval {
+#		$features->validate_prot_feature();
+#	    };
 	    
 	   
 	    
-	    if ($@) {
-		print STDERR "Feature for peptide ". $features->seqname." is not a protein feature, skipped\n";
-		next FEATURE;
-	    }
+#	    if ($@) {
+#		print STDERR "Feature for peptide ". $features->seqname." is not a protein feature, skipped\n";
+#		next FEATURE;
+#	    }
 	    
 	    
-	    if (!defined($features->analysis)) {
-		$self->throw("Feature " . $features->seqname . "doesn't have analysis. Can't write to database");
-	    } else {
-		$analysis = $features->analysis;
-	    }
+#	    if (!defined($features->analysis)) {
+#		$self->throw("Feature " . $features->seqname . "doesn't have analysis. Can't write to database");
+#	    } else {
+#		$analysis = $features->analysis;
+#	    }
 	    
-	    my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
+#	    my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
 	    
-	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
-		my $homol = $features->feature2;
+#	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
+#		my $homol = $features->feature2;
 		
-		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
-					   "values ('NULL',"
-					   ."".$pep                 .","
-					   .$features->start          .","
-					   .$features->end            .","
-					   .$analysisid              .","
-					   .$homol->start            .","
-					   .$homol->end              .","
-					   ."'".$homol->seqname      ."',"
-					   .$features->score         .","
-					   .$features->percent_id    .","
-					   .$features->p_value       .")");
-		$sth->execute();
-	    }
-	}
-}
+#		my $sth = $self->prepare(  "insert into protein_feature(id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,perc_id,evalue) ".
+#					   "values ('NULL',"
+#					   ."".$pep                 .","
+#					   .$features->start          .","
+#					   .$features->end            .","
+#					   .$analysisid              .","
+#					   .$homol->start            .","
+#					   .$homol->end              .","
+#					   ."'".$homol->seqname      ."',"
+#					   .$features->score         .","
+#					   .$features->percent_id    .","
+#					   .$features->p_value       .")");
+#		$sth->execute();
+#	    }
+#	}
+#}
     
 
 
-=head2 delete_by_translationID
+#=head2 delete_by_translationID
 
- Title   : delete_by_translationID
- Usage   :
- Function: deletes all protein features for a particular peptide
- Example :
- Returns : 
- Args    :
+# Title   : delete_by_translationID
+# Usage   :
+# Function: deletes all protein features for a particular peptide
+# Example :
+# Returns : 
+# Args    :
 
 
-=cut
+#=cut
 
-sub delete_by_translationID {
-    my ($self,$trans) = @_;
-    my $sth = $self->prepare("delete from protein_feature where translation = '$trans'");
+#sub delete_by_translationID {
+#    my ($self,$trans) = @_;
+#    my $sth = $self->prepare("delete from protein_feature where translation = '$trans'");
 
-    $sth->execute;
-}
+#    $sth->execute;
+#}
 
-=head2 delete_by_dbID
+=head2 remove
 
- Title   : delete_by_dbID
+ Title   : remove (formerly delete_by_dbID)
  Usage   :
  Function: deletes a protein feature
  Example :
  Returns : 
  Args    :
 
-
 =cut
 
-sub delete_by_dbID {
+sub remove {
     my ($self,$id) = @_;
     my $sth = $self->prepare("delete from protein_feature where id = $id");
 
     $sth->execute;
 }
 
-=head2 get_interproac_by_signature_id
-
- Title   : get_interproac_by_signature_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
 
-=cut
+#=head2 get_interproac_by_signature_id
 
-sub get_interproac_by_signature_id{
-   my ($self,$sign_id) = @_;
-   my $sth = $self->prepare("select interpro_ac from interpro where id = '$sign_id'");
-   
-   $sth->execute;
-   
-   my $interpro_ac = $sth->fetchrow;
-   
-   my $feat = new Bio::EnsEMBL::SeqFeature;
-   
-   $feat->external_db($interpro_ac);
-   
-   return $feat;
+# Title   : get_interproac_by_signature_id
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
 
-}
+
+#=cut
+
+#sub get_interproac_by_signature_id{
+#   my ($self,$sign_id) = @_;
+#   my $sth = $self->prepare("select interpro_ac from interpro where id = '$sign_id'");
+   
+#   $sth->execute;
+   
+#   my $interpro_ac = $sth->fetchrow;
+   
+#   my $feat = new Bio::EnsEMBL::SeqFeature;
+   
+#   $feat->external_db($interpro_ac);
+   
+#   return $feat;
+
+#}
 
 
 =head2 _set_protein_feature
@@ -540,18 +565,20 @@ sub get_interproac_by_signature_id{
 
 =cut
 
-sub _set_protein_feature{
+sub _set_protein_feature {
    my ($self,$rowhash) = @_;
 
-my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($rowhash->{'analysis'});
+   my $analysis = 
+     $self->db->get_AnalysisAdaptor->fetch_by_dbID($rowhash->{'analysis'});
    
-   my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
-					      -start => $rowhash->{'seq_start'},
-					      -end => $rowhash->{'seq_end'},
-					      -score => $rowhash->{'score'}, 
-					      -analysis => $analysis,
-					      -percent_id => $rowhash->{'perc_id'},
-					      -p_value => $rowhash->{'evalue'});
+   my $feat1 =
+     new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
+				    -start => $rowhash->{'seq_start'},
+				    -end => $rowhash->{'seq_end'},
+				    -score => $rowhash->{'score'}, 
+				    -analysis => $analysis,
+				    -percent_id => $rowhash->{'perc_id'},
+				    -p_value => $rowhash->{'evalue'});
    
    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $rowhash->{'hstart'},
 					     -end => $rowhash->{'hend'},
@@ -559,9 +586,8 @@ my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($rowhash->{'analysi
 					     -seqname => $rowhash->{'hid'});
    
    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-					       -feature2 => $feat2,);
+						       -feature2 => $feat2,);
    return $feature;
-
 }
 
 
