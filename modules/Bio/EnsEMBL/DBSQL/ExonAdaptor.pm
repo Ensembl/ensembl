@@ -317,7 +317,7 @@ sub fetch_evidence_by_Exon {
  Title   : store
  Usage   : $exonAdaptor->store($exonObject)
  Function: Stores the exon.
- Example : $dbID = $exonAdaptor->store( $exon );
+ Example : $exonAdaptor->store( $exon );
  Returns : nothing
  Args    : Exon or StickyExon
 
@@ -422,6 +422,29 @@ sub store {
 	    #$self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
 	}
     }
+
+  # Commented out until fully integrated into codebase
+  # store exon frameshifts BUT only if there are some
+  
+#  if ( exists $exon->{'_frameshifts'} ) {
+#
+#   my $frameshift_sql = q{
+#      INSERT INTO exon_frameshift 
+#	( exon_id, frameshift_start, length )
+#      VALUES ( ?, ?, ? )
+#    };
+
+#    my $frameshift_sth = $self->prepare($frameshift_sql);
+
+#    for my $i ( 0 .. $#{$exon->{'_frameshifts'}} ) {
+
+#      $frameshift_sth->execute( $exon->dbID,
+#                               $exon->{'_frameshifts'}[$i][0],
+#			       $exon->{'_frameshifts'}[$i][1]
+#			     );
+#    }
+#  }
+
 }
 
 =head2 get_stable_entry_info
@@ -474,6 +497,36 @@ sub remove {
 
   # uhh, didnt know another way of resetting to undef ...
   $exon->{dbID} = undef;
+}
+
+
+=head2 fetch_frameshifts
+
+ Title   : fetch_frameshifts
+ Usage   : exonAdaptor->fetch_frameshifts{exonObject)
+ Function: populates the _frameshifts list with frameshift data
+ Returns : populated _frameshifts list in exon object
+ Args    : Exon
+
+=cut
+
+sub fetch_frameshifts {
+  my ( $self, $exon ) = @_;
+
+  my @frameshifts;
+
+  my $frameshift_sql = "
+    SELECT    frameshift_start, length
+    FROM      exon_frameshift 
+    WHERE     exon_id = " . $exon->dbID;
+
+  my $sth = $self->prepare($frameshift_sql);
+
+  $sth->execute || $self->throw("Execute failed for getting frameshifts in ExonAdaptor.pm!");
+
+  while( my @arr = $sth->fetchrow_array() ) {
+   push @{$exon->{'_frameshifts'}}, [$arr[0], $arr[1]];
+  }
 }
 
 
