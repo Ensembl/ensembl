@@ -73,12 +73,13 @@ use Carp;
            (sort -k1,1 -k7,7 -k4,4n in UNIX commands)
            output stream
            prefix
+           (optional log output stream for intermedaite data)
 
 
 =cut
 
 sub gtf_merge {
-    my ($sort,$out,$new_prefix) = @_;
+    my ($sort,$out,$new_prefix,$log) = @_;
 
 
     if( !defined $new_prefix ) {
@@ -109,6 +110,10 @@ sub gtf_merge {
 	push(@lines,$_);
 	my ($ctg,$source,$tag,$start,$end,$score,$strand) = split;
 	if( $tag ne 'exon' ) { next; }
+
+	if( $strand != '-' && $strand != '+' ) {
+	    &confess("Strand is neither + or -. A GTF file error? At $_");
+	}
 
 	/transcript_id\s+(\S+)/ || next;
 	my $trans = $1;
@@ -144,11 +149,12 @@ sub gtf_merge {
 	    &confess("Not sorted GTF file - start $ctg:$start is smaller than previous line of $ctg:$prevstart");
 	}
 
-	print STDERR "exon from $trans $start vs $prevend\n";
+
 	if( $start <= $prevend ) {
 	    # merge $trans into $prevtrans
-	    print STDERR "Seeing a merge between $trans and $prevtrans\n";
-
+	    if( $log ) {
+		print $log "$prevtrans\t$trans\t$prevstart:$prevend\t$start:$end\n";
+	    }
 	    my $combined_igi  =  $thash{$prevtrans};
 	    my $dead_igi      = $thash{$trans};
 
