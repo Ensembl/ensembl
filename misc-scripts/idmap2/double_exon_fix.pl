@@ -16,7 +16,7 @@ my ( %exonHash, %stickies );
 my ( $rowsRead, $nrExons );
 my %exonTranslate;
 
-my $dbh = DBI->connect( "DBI:mysql:host=ensrv3;database=ensembl110_new_schema_2", "ensadmin", "ensembl");
+my $dbh = DBI->connect( "DBI:mysql:host=ecs1d;database=ens_UCSC_0801", "ensadmin", "ensembl");
 
 my $sth = $dbh->prepare( "select exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank from exon order by exon_id, sticky_rank desc" );
 $sth->execute();
@@ -111,16 +111,16 @@ sub dumping_data {
   $sth->execute();
   
   open ( EXON, ">exon.txt" ) or die;
-  open ( EXONT, ">exon_transcript.txt" ) or die;
-  open ( EXONS, ">exon_stable_id.txt" ) or die;
   
   while( my $arr = $sth->fetchrow_arrayref() ) {
     if( ! defined $exonTranslate{$arr->[0]} ) {
       print EXON join( "\t", @$arr ),"\n";
     }
   }
+  close( EXON );
   
   
+  open ( EXONT, ">exon_transcript.txt" ) or die;
   $sth = $dbh->prepare( "select * from exon_transcript" );
   $sth->execute();
   while( my $arr = $sth->fetchrow_arrayref() ) {
@@ -129,19 +129,29 @@ sub dumping_data {
     }
     print EXONT join( "\t", @$arr ),"\n";
   }
+  close( EXONT );
   
   
-  $sth = $dbh->prepare( "select * from exon_stable_id" );
+#  open ( EXONS, ">exon_stable_id.txt" ) or die;
+#  $sth = $dbh->prepare( "select * from exon_stable_id" );
+#  $sth->execute();
+#  while( my $arr = $sth->fetchrow_arrayref() ) {
+#    if( ! defined $exonTranslate{$arr->[0]} ) {
+#      print EXONS join( "\t", @$arr ),"\n";
+#    }
+#  }
+#  close( EXONS );
+
+  open ( SUPF, ">supporting_feature.txt" ) or die;
+  $sth = $dbh->prepare( "select * from supporting_feature" );
   $sth->execute();
   while( my $arr = $sth->fetchrow_arrayref() ) {
-    if( ! defined $exonTranslate{$arr->[0]} ) {
-      print EXONS join( "\t", @$arr ),"\n";
+    if( defined $exonTranslate{$arr->[0]} ) {
+      $arr->[1] = $exonTranslate{$arr->[1]};
     }
+    print SUPF join( "\t", @$arr ),"\n";
   }
-  
-  close( EXON );
-  close( EXONT );
-  close( EXONS );
+  close( SUPF );
 }
 
 

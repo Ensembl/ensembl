@@ -7,6 +7,8 @@
 
 
 package MapGenes;
+use strict;
+
 
 # starting with one exon, build_exon_group tries to build an 
 # 'envelope' around it. That is a set of genes and exons where neither
@@ -16,7 +18,7 @@ package MapGenes;
 my ( %newGeneHash, %oldGeneHash, 
      %oldExonHash, %newExonHash,
      @oldPruneExon, @newPruneExon );
-
+my $mappedGene;
 
 # go through old Exons
 # skip if gene is mapped
@@ -25,15 +27,17 @@ sub map_genes {
   my ( $oldExonInfo, $newExonInfo )  = @_;
 
   my %oldGenesMapped; 
-
+  print STDERR ( "Start gene mapping ",scalar( localtime() ),"\n");
   init_lookup_tables( $oldExonInfo, $newExonInfo );
 
-  for $oExon ( @oldPruneExon ) {
+  for my $oExon ( @oldPruneExon ) {
     if( ! exists $oExon->{'gene_mapped'} ) {
       my @map_exons = build_envelope( $oExon, \@oldPruneExon, \@newPruneExon );
       map_envelope( \@map_exons );
     }
   }
+  print STDERR ( "End gene mapping ",scalar( localtime() ),"\n");
+  print STDERR ( "Mapped Genes ",$mappedGene,"\n" );
 }
 
 
@@ -171,6 +175,8 @@ sub build_exon_group {
   
   for my $exon_stable ( @$newExonSet ) {
     $exon = $exonLookup->{$exon_stable};
+    my $geneId;
+
     $geneId = $exon->{'gene_id'};
     if( ! defined $geneId ) {
       print STDERR "undefined ";
@@ -183,7 +189,7 @@ sub build_exon_group {
   }
       
 
-  for $geneId ( keys %newGenes ) {
+  for my $geneId ( keys %newGenes ) {
     my $exons = $geneLookup->{$geneId};
     for my $exon ( @$exons ) {
       if( ! exists( $exonSet->{$exon->{'exon_stable'}} ) ) {

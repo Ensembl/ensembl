@@ -13,33 +13,67 @@ use Bio::PrimarySeq;
 use strict;
 use Bio::EnsEMBL::Pipeline::Runnable::CrossMatch;
 use MapGenes;
+use MapTranscripts;
 
 my $direct_maps = 0;
 my $crossmatches = 0;
 my $cloneGroups = 0;
 my $seqMatches = 0;
 my $cmmaps = 0;
+my $lasttime;
 
-
-my $sdbh = DBI->connect( "DBI:mysql:host=ecs1f;database=arne_ens080", "ensadmin", "ensembl");
-my $tdbh = DBI->connect( "DBI:mysql:host=ecs1f;database=arne_ens100", "ensadmin", "ensembl" );
+my $sdbh = DBI->connect( "DBI:mysql:host=ensrv3;database=ensembl110_new_schema_2", "ensro", "");
+my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=ens_UCSC_0801", "ensro", "" );
 
 my $starttime = scalar( localtime() );
 
 print STDERR "Start: ",scalar(localtime()),"\n";
-my $oExonInfo = &SQL::orig_exon_information( $sdbh );
-my $nExonInfo = &SQL::target_exon_information( $tdbh );
+my $alloExonInfo = &SQL::orig_exon_information( $sdbh );
+my $allnExonInfo = &SQL::target_exon_information( $tdbh );
+
+# remove exon doublettes caused by multiple transcripts
+my ( %exonHash, %geneHash );
+my ( $oExonInfo, $nExonInfo );
+my ( $oGenes, $nGenes );
+
+for  my $exon ( @$alloExonInfo ) {
+  if( ! exists $exonHash{ $exon->{'exon_id'}."-".$exon->{'sticky_rank'} } ) {
+    push( @{$oExonInfo}, $exon );
+    $exonHash{$exon->{'exon_id'}."-".$exon->{'sticky_rank'} } = 1;
+  }
+  if( ! exists $geneHash{$exon->{'gene_id'}} ) {
+    $geneHash{$exon->{'gene_id'}} = 1;
+  }
+}
+
+$oGenes = scalar( keys %geneHash);
+
+%geneHash = ();
+%exonHash = ();
+
+for  my $exon ( @$allnExonInfo ) {
+  if( ! exists $exonHash{ $exon->{'exon_id'}."-".$exon->{'sticky_rank'} } ) {
+    push( @{$nExonInfo},$exon );
+    $exonHash{$exon->{'exon_id'}."-".$exon->{'sticky_rank'} } = 1;
+  }
+  if( ! exists $geneHash{$exon->{'gene_id'}} ) {
+    $geneHash{$exon->{'gene_id'}} = 1;
+  }
+}
+$nGenes = scalar( keys %geneHash);
+
 print STDERR "Finish: ",scalar(localtime()),"\n";
 
-print STDERR "Count: ",scalar( @$oExonInfo ),"\n";
+print STDERR "OldExons: ",scalar( @$oExonInfo ),"\n";
+print STDERR "NewExons: ",scalar( @$nExonInfo ),"\n";
+print STDERR "OldGenes: $oGenes\n";
+print STDERR "NewGenes: $nGenes\n";
 
 
 direct_mapping( $oExonInfo, $nExonInfo );
-print "# finished direct mapping\n";
-
 contig_version_update( $oExonInfo, $nExonInfo );
 MapGenes::map_genes( $oExonInfo, $nExonInfo );
-
+MapTranscripts::map_transcripts( $alloExonInfo, $allnExonInfo ); 
 
 $sdbh->disconnect();
 
@@ -55,6 +89,7 @@ print STDERR "Crossmatches: $crossmatches\n";
 print STDERR "CloneGroups: $cloneGroups\n";
 print STDERR "SeqMatches: $seqMatches\n";
 print STDERR "Mappings on Crossmatch: $cmmaps\n";
+
 exit;
 
 
@@ -98,20 +133,21 @@ exit;
 
 # similar as direct mapping
 # checks if there is an old exon, and a new exon on same clone but
-# updated version
+# updated version. Exclude clones with same version.
 
 sub contig_version_update {
   my ( $old, $new ) = @_;
-  
+  $lasttime = time();
+
   my ( $pruneOld, $pruneNew, $sortOld, $sortNew  );
-  my ( $old_iter, $new_iter );
+  my ( $old_iter, $new_iter, $skip_clone );
 
   @{$pruneOld} = grep { ! exists $_->{'mapped'} } @{$old};
   @{$pruneNew} = grep { ! exists $_->{'mapped'} } @{$new};
 
   # prune short exons (<10) would be appropriat
-  print "Old Exons left to map: ",scalar( @$pruneOld ),"\n";
-  print "New Exons left to map: ",scalar( @$pruneNew ),"\n";
+  print STDERR "Old Exons left to map: ",scalar( @$pruneOld ),"\n";
+  print STDERR "New Exons left to map: ",scalar( @$pruneNew ),"\n";
  
   @{$sortOld} = sort { $a->{'clone_id'} cmp $b->{'clone_id'} } @$pruneOld;
   @{$sortNew} = sort { $a->{'clone_id'} cmp $b->{'clone_id'} } @$pruneNew;
@@ -128,14 +164,19 @@ sub contig_version_update {
     my $cmp = ( $old_exon->{'clone_id'} cmp $new_exon->{'clone_id'} );
     if( $cmp == 0 ) {
       my $clone_id = $old_exon->{'clone_id'};
+
+      # skip clones with no updates
+      if( $old_exon->{'clone_version'} == $new_exon->{'clone_version'} ) {
+	$skip_clone = 1;
+      } else {
+	$skip_clone = 0;
+      }
+
       my ( $newCloneExons, $oldCloneExons );
       while( defined $old_exon && 
 	     $old_exon->{'clone_id'} eq $clone_id ) {
 	push( @{$oldCloneExons}, $old_exon );
 	$old_iter++;
-	if( $old_iter % 10000 == 0 ) {
-	  print STDERR "$old_iter exons done.\n";
-	}
 	$old_exon = $sortOld->[$old_iter];
       }
 	  
@@ -145,14 +186,12 @@ sub contig_version_update {
 	$new_iter++;
 	$new_exon = $sortNew->[$new_iter];
       }
-      
-      clone_map( $oldCloneExons, $newCloneExons );
-      # build groups of exons and compare
+      if( !$skip_clone ) {
+	clone_map( $oldCloneExons, $newCloneExons );
+      }
+
     } elsif ( $cmp < 0 ) {
       $old_iter++;
-      if( $old_iter % 10000 == 0 ) {
-	print STDERR "$old_iter exons done.\n";
-      }
     } else {
       $new_iter++;
     }
@@ -160,8 +199,9 @@ sub contig_version_update {
 	$old_iter >= scalar( @$sortOld )) {
       last;
     }
-    if( $old_iter % 10000 == 0 ) {
-      print STDERR "$old_iter exons done.\n";
+    if( time() - $lasttime > 3600 ) {
+      print STDERR ( "Finished $old_iter exons ",scalar( localtime() ),"\n" );
+      $lasttime = time();
     }
   }
 
@@ -190,21 +230,8 @@ sub clone_map {
     # $exon->{'seq'} = $newExHash->{$exon->{'exon_id'}};
   }
 
-  for my $oEx ( @$oldCloneExons ) {
-    for my $nEx ( @$newCloneExons ) {
-      if( $oldExHash->{$oEx->{'exon_id'}} eq 
-	  $newExHash->{$nEx->{'exon_id'}} ) {
-	# we have equal sequence exons here, map them
-	$oEx->{'mapped'} = 'same Clone Seq';
-	$nEx->{'mapped'} = 'same Clone Seq';
-	$nEx->{'exon_stable'} = $oEx->{'exon_stable'};
-	print ( "Exon mapped:\t", $oEx->{'exon_id'},"\t",
-		$nEx->{'exon_id'},"\t", $oEx->{'exon_stable'},"\n" );
-	$seqMatches++;
-#	print STDERR "---- DIRECT SEQUENCE MAP ----\n";
-      }
-    }
-  }
+  clone_seq_match( $oldCloneExons, $newCloneExons, 
+		   $oldExHash, $newExHash );
 
   # no crossmatch mappings
   return;
@@ -249,8 +276,9 @@ sub clone_map {
 									 
     }
   }
-
-  my @sortedScores;
+  
+  # now map exons which have crossmatches 
+  my @sortedScores; 
   @sortedScores = sort { $b->{'score'} <=> $a->{'score'} } @scorelist;
   
   for my $scoreRecord ( @sortedScores ) {
@@ -266,6 +294,69 @@ sub clone_map {
       
       $cmmaps++;
 #      print STDERR "---- CROSSMATCH MAP ----",$scoreRecord->{'score'},"\n";
+    }
+  }
+}
+
+
+# direct sequence mapping inside a clone
+sub clone_seq_match {
+  my ( $oldCloneExons, $newCloneExons,
+       $oldSeqHash, $newSeqHash ) = @_;
+  
+
+  my ( @sold, @snew );
+  @sold = sort { $a->{'chr_start'} <=> $b->{'chr_start'} } @$oldCloneExons;
+  @snew = sort { $a->{'chr_start'} <=> $b->{'chr_start'} } @$newCloneExons;
+
+  my %hashOnSeq;
+
+  for my $exon ( @$oldCloneExons ) {
+    my $seq = $oldSeqHash->{$exon->{'exon_id'}};
+    if( ! exists $hashOnSeq{ $seq } ) {
+      $hashOnSeq{$seq} = [[ $exon ],[]];
+    } else {
+      push( @{$hashOnSeq{ $seq }->[0]}, $exon );
+    }
+  }
+
+  for my $exon ( @$newCloneExons ) {
+    my $seq = $newSeqHash->{$exon->{'exon_id'}};
+    if( ! exists $hashOnSeq{ $seq } ) {
+      next;
+    } else {
+      push( @{$hashOnSeq{ $seq }->[1]}, $exon );
+    }
+  }
+
+  for my $seq ( keys %hashOnSeq ) {
+    my $seqEqExons = $hashOnSeq{$seq};
+    my $seqO = $seqEqExons->[0];
+    my $seqN = $seqEqExons->[1];
+    
+    if(( ! @$seqO ) ||  ( ! @$seqN )) {
+      next;
+    }
+
+    if( scalar( @$seqO ) == scalar( @$seqN )) {
+      if( scalar( @$seqO ) > 1 ) {
+	print STDERR ( "Matching exon sequences.\n" );
+      }
+      for( my $i=0; $i<=$#$seqO; $i++ ) {
+	my $oEx = $seqO->[$i];
+	my $nEx = $seqN->[$i];
+	if( ! exists $oEx->{'mapped'} &&
+	    ! exists $nEx->{'mapped'} ) {
+	  $oEx->{'mapped'} = 'same Clone Seq';
+	  $nEx->{'mapped'} = 'same Clone Seq';
+	  $nEx->{'exon_stable'} = $oEx->{'exon_stable'};
+	  print ( "Exon mapped:\t", $oEx->{'exon_id'},"\t",
+		  $nEx->{'exon_id'},"\t", $oEx->{'exon_stable'},"\n" );
+	  $seqMatches++;
+	}
+      }
+    } else {
+      print STDERR ( "Unequal number of matching exon sequences.\n" );
     }
   }
 }
