@@ -169,8 +169,10 @@ sub AUTOLOAD {
 
 =cut
 
-sub DELETE {
+sub DESTROY {
   #do nothing
 }
 
+
   
+1;
