@@ -275,7 +275,6 @@ sub get_all_SimilarityFeatures_above_score{
 }
 
 
-
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
