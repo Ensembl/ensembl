@@ -1029,6 +1029,7 @@ CREATE TABLE seq_region (
 
 CREATE TABLE assembly_exception (
 
+  assembly_exception_id       INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   seq_region_id               INT,
   seq_region_start            INT,
   seq_region_end              INT, 
