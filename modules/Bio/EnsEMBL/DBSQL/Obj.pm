@@ -1760,7 +1760,7 @@ sub write_Feature {
 				      .$sub->score   . ","
 				      .$sub->strand  . ","
 				      .$analysisid   . ",\'" 
-				      .$sub->name    . "\',-1,-1,'__NONE__')");
+				      .$sub->source_tag  . "\',-1,-1,'__NONE__')");
 	    $sth5->execute();
 	    my $sth6 = $self->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
