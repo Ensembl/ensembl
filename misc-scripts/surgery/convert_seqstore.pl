@@ -91,7 +91,7 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_dna();
   $converter->transfer_genes();
   $converter->transfer_prediction_transcripts();
-#  $converter->transfer_features();
+  $converter->transfer_features();
   $converter->transfer_stable_ids();
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
