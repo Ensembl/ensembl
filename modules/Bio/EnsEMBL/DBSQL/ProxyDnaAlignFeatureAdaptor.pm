@@ -20,11 +20,7 @@ if it is available).
 
 =head1 CONTACT
 
-  Graham McVicker : mcvicker@ebi.ac.uk
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Ewan Birney  : birney@ebi.ac.uk
-
-=head1 APPENDIX
+Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
 
 =cut
 

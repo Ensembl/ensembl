@@ -25,24 +25,14 @@ Allows for the retrieval and storage of RawContig objects from the database.
 
 =head1 CONTACT
 
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are 
-usually preceded with a _
+Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
 
 =cut
-
-
-# Let the code begin...
 
 package Bio::EnsEMBL::DBSQL::RawContigAdaptor;
 
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inheriets from Bio::Root::Object
-
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use DBI;
@@ -55,9 +45,6 @@ use Bio::EnsEMBL::Utils::Cache; # CPAN LRU Cache module
 my $RAW_CONTIG_CACHE_SIZE = 20;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-#Override the inherited constructor
-
 
 =head2 new
 
@@ -83,8 +70,6 @@ sub new {
 
   return $self;
 }
-
-
 
 
 

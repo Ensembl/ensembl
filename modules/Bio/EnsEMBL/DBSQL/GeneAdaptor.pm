@@ -413,7 +413,7 @@ sub fetch_all_by_Slice {
 
   $logic_name ||= '';
 
-  my $key = $slice->name .":" . $logic_name;
+  my $key = uc($slice->name .":" . $logic_name);
 
   #check the cache which uses the slice name as it key
   if($self->{'_slice_gene_cache'}{$key}) {

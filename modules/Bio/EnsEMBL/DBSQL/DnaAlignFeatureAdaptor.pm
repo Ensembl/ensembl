@@ -34,23 +34,14 @@ its BaseAlignFeatureAdaptor superclass.
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
 
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;

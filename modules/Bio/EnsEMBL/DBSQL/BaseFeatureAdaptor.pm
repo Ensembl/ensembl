@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor - Abstract Base class for
 
 =head1 SYNOPSIS
 
-Abstract class should not be instantiated.  Implementation of
+Abstract class - should not be instantiated.  Implementation of
 abstract methods must be performed by subclasses.
 
 =head1 DESCRIPTION
@@ -25,19 +25,15 @@ This is a base adaptor for feature adaptors. This base class is simply a way
 of eliminating code duplication through the implementation of methods 
 common to all feature adaptors.
 
+=head1 CONTACT
+
 Contact EnsEMBL development list for info: <ensembl-dev@ebi.ac.uk>
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use vars qw(@ISA $SLICE_FEATURE_CACHE_SIZE);
 use strict;
-
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
@@ -397,7 +393,7 @@ sub fetch_all_by_Slice_constraint {
   $constraint = '' unless $constraint;
 
   #check the cache and return if we have already done this query
-  my $key = join($slice->name, $constraint, $logic_name);
+  my $key = uc(join($slice->name, $constraint, $logic_name));
   return $self->{'_slice_feature_cache'}{$key} 
     if $self->{'_slice_feature_cache'}{$key};
     
