@@ -105,6 +105,10 @@ sub _guess_module {
         $tail = 'bio_ens_featurePair';
     }elsif($in eq 'Bio::Pipeline::Analysis'){
         $tail = 'bio_ens_analysis';
+    }elsif($in eq 'Bio::Tools::Prediction::Gene'){
+        $tail = 'bio_ens_predictionGene';
+    }elsif($in eq 'Bio::Tools::Prediction::Exon'){
+        $tail = 'bio_ens_predictionExon';
     }else{
         $self->throw("[$in] to [$out], not supported");
     }

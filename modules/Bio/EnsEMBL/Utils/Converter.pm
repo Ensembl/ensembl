@@ -28,6 +28,15 @@ Bio::EnsEMBL::Utils::Converter, a converter factory
     
     Module to converter the business objects between EnsEMBL and any other projects, currently BioPerl.
 
+    What the ready conversions are,
+
+Bio::SeqFeature::Generic <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::SimpleFeature
+Bio::SeqFeature::FeaturePair <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::RepeatFeature
+Bio::Search::HSP::GenericHSP -> Bio::EnsEMBL::BaseAlignFeature's submodules
+Bio::Tools::Prediction::Gene -> Bio::EnsEMBL::PredictionTranscript
+Bio::Tools::Prediction::Exon -> Bio::EnsEMBL::Exon
+Bio::Pipeline::Analysis -> Bio::EnsEMBL::Analysis
+
 =head1 FEEDBACK
 
 
