@@ -19,7 +19,7 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my ($host, $port, $dbname, $user, $pass);
+my ($host, $port, $dbname, $user, $pass, $create);
 my $skipdownload;
 
 # --------------------------------------------------------------------------------
@@ -27,10 +27,12 @@ my $skipdownload;
 
 sub run {
 
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
+
+  create($host, $port, $user, $pass, $dbname) if ($create);
 
   my $dbi = dbi();
 
@@ -771,5 +773,42 @@ sub sanitise {
 
 # --------------------------------------------------------------------------------
 
+# Create database if required. Assumes sql/table.sql and sql/populate_metadata.sql
+# are present.
+
+sub create {
+
+  my ($host, $port, $user, $pass, $dbname) = @_;
+
+  my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
+                          {'RaiseError' => 1});
+
+  # check to see if the database already exists
+  my %dbs = map {$_->[0] => 1} @{$dbh->selectall_arrayref('SHOW DATABASES')};
+
+  if ($dbs{$dbname}) {
+    if ($create) {
+      $dbh->do( "DROP DATABASE $dbname" );
+      print "Removed existing database $dbname\n";
+    } else {
+      die("Database $dbname already exists. Use -create option to overwrite it.");
+    }
+  }
+
+  $dbh->do( "CREATE DATABASE " . $dbname );
+
+  print "Creating $dbname from sql/table.sql\n";
+  die "Cannot open sql/table.sql" if (! -e "sql/table.sql");
+  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < sql/table.sql";
+  system ($cmd);
+
+  print "Populating metadata in $dbname from sql/populate_metadata.sql\n";
+  die "Cannot open sql/populate_metadata.sql" if (! -e "sql/populate_metadata.sql");
+  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < sql/populate_metadata.sql";
+  system($cmd);
+
+}
+
+# --------------------------------------------------------------------------------
 1;
 
