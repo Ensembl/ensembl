@@ -127,7 +127,6 @@ sub fetch_by_dbID {
     FROM analysisprocess
       WHERE analysisId = ? };
 
-  print STDERR "Query is $query : $id \n";
   my $sth = $self->prepare($query);  
   $sth->execute( $id );
   my $rowHashRef = $sth->fetchrow_hashref;
