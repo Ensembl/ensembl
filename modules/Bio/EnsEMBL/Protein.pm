@@ -293,25 +293,52 @@ sub all_SeqFeature{
 }
 
 
+=head2 get_Family
 
-=head2 family
-
- Title   : family
- Usage   : $obj->family($newval)
- Function: This method contains the family object (Not used yet)
- Returns : value of family
- Args    : newvalue (optional)
+ Title   : get_Family
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
 
 =cut
 
-sub family{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'family'} = $value;
+sub get_Family{
+    my ($self) = @_;
+
+    if (defined ($self->{'_family'})) {
+	return @{$self->{'_family'}};
     }
-    return $obj->{'family'};
+   else {
+       my $proteinid = $self->id();
+       my $family = $self->db->get_FamilyAdaptor->get_Family_of_Ensembl_pep_id($proteinid);
+       $self->add_Family($family);
+       return $family;
+   }
+}
+
+=head2 add_Family
+
+ Title   : add_Family
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_Family{
+    my ($self,$value) = @_;
+        
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ExternalData::Family::Family'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+    }
+
+   push(@{$self->{'_family'}},$value); 
 
 }
 
