@@ -69,13 +69,12 @@ use strict;
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::RootI;
 
-@ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
+@ISA = qw(Bio::Root::RootI EnsEMBL::SeqFeatureI);
 
 sub new {
-  my($class,@args) = @_;
-  my $self;
+  my($caller,@args) = @_;
 
-  $self = {};
+  my ($self) = $caller->SUPER::new(@args);
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
