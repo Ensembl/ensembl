@@ -428,7 +428,7 @@ sub get_Protein_annseq{
     
 sub get_Transcript{
     my ($self,$transid) = @_;
-    
+    my $seen = 0;
     my $trans = Bio::EnsEMBL::Transcript->new();
     # go over each Transcript
     my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
@@ -437,7 +437,12 @@ sub get_Transcript{
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $exon = $self->get_Exon($rowhash->{'exon'});
 	$trans->add_Exon($exon);
+	$seen = 1;
     }
+    if( $seen == 0 ) {
+	$self->throw("transcript $transid is not present in db");
+    }
+
     $trans->id($transid);
 
     return $trans;
@@ -461,6 +466,10 @@ sub get_Translation{
    my $sth = $self->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
    my $res = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
+   if( !defined $rowhash ) {
+       $self->throw("no translation of $translation_id");
+   }
+
    my $out = Bio::EnsEMBL::Translation->new();
    $out->version($rowhash->{'version'});
    $out->start($rowhash->{'seq_start'});
@@ -490,6 +499,9 @@ sub get_Exon{
    my $sth = $self->prepare("select id,contig,created,modified,seq_start,seq_end,strand,phase from exon where id = '$exonid'");
    $sth->execute;
    my $rowhash = $sth->fetchrow_hashref;
+   if( ! defined $rowhash ) {
+       $self->throw("No exon of this id $exonid");
+   }
 
    my $exon = Bio::EnsEMBL::Exon->new();
    $exon->contig_id($rowhash->{'contig'});
@@ -828,7 +840,6 @@ sub archive_Gene {
        #Get out transcript info needed to write into archive db
        my $seq = $transcript->dna_seq;
        $seq->id($transcript->id);
-       print STDERR "The transcript sequence id is ".$seq->id."\n";
        
        #Temporary, since versions not stored yet...
        !$transcript->version && $transcript->version(1);
@@ -842,7 +853,6 @@ sub archive_Gene {
        #Note: version is the one from transcript!
 
        $seq = $transcript->translate;
-       print STDERR "The protein sequence id is ".$seq->id."\n";
 
        $arc_db->write_seq($seq, $transcript->version, 'protein', $gene->id, $gene->version);
 
@@ -1163,7 +1173,7 @@ sub write_Gene{
        $sth2->execute();
    }
    else {
-       print "Got this gene with this version already, no need to write in db";
+       print "Got this gene with this version already, no need to write in db\n";
    }
 
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
@@ -1575,7 +1585,7 @@ sub write_Transcript{
        $self->write_Translation($trans->translation());
    }
    else {
-       print "Transcript already present in the database with the same version number [",$old_trans->version,"], no need to write it in\n";
+       print "Transcript already present in the database with the same version number $old_trans [",$old_trans->version,"], no need to write it in\n";
    }
    return 1;
 }
@@ -1606,6 +1616,9 @@ sub write_Translation{
     
 
     if ( $@ || $translation->version > $old_transl->version) {
+	if( !defined $translation->version  ) {
+	    $self->throw("No version number on translation");
+	}
 	my $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
 				 . $translation->id . "',"
 				 . $translation->version . ","
@@ -1616,7 +1629,7 @@ sub write_Translation{
 	$tst->execute();
     }
     else {
-	print "Translation already present in the database with the same version number, no need to write it in";
+	print "Translation already present in the database with the same version number, no need to write it in\n";
     }
 }
 
