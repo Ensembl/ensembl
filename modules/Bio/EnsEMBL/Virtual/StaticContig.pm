@@ -172,7 +172,7 @@ sub get_all_SimilarityFeatures_above_score{
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
     
-    print "doing this one\n";
+    print STDERR "doing this one\n";
        
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
@@ -303,7 +303,7 @@ sub get_all_RepeatFeatures {
   my %analhash;
 
 
-  print "doing repeats from here\n";
+  print STDERR "doing repeats from here\n";
   
   my $glob_start=$self->_global_start;
   my $glob_end=$self->_global_end;
