@@ -212,6 +212,7 @@ sub _exon_from_sth {
 
     $exon->start(1);
     $exon->end($sticky_length);
+    $exon->strand( 1 );
 
     #my $rev = reverse(split(//,$sticky_str));
     my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $sticky_str);
