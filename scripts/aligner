@@ -4,44 +4,56 @@
 # (or similarity features) in Fasta format, to stdout.
 # Can also output more than one such alignment.
 #
-# usage: aligner --transcript|contig <id> [<id> ...]
+# usage: aligner [--user <username>] [--pass <password>] [--dbname <dbname>] \
+#        [--host <host>] --transcript|contig <id> [<id>...]
 #
 # For example:
-# aligner --transcript ENST00000286945
-# aligner --transcript ENST00000279043 ENST00000217176
-# aligner AL356104.6.1.96693
+#
+# aligner --transcript ENST00000279043 > ENST00000279043.fa
+#
+# aligner --contig --host ecs1h --dbname homo_sapiens_core_4_28 \
+# --user ensro AL356104.6.1.96693 > AL356104.6.1.96693.fa
 #
 # It isn't possible to mix contigs and transcripts in the same command.
+
+use constant DEFAULT_USER   => 'anonymous';
+use constant DEFAULT_DBNAME => 'current';
+use constant DEFAULT_HOST   => 'kaka.sanger.ac.uk';
 
 use strict;
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::EvidenceAlignment;
 
-# database details
-my $host = 'ecs1h';
-my $user = 'ensro';
-my $dbname = 'homo_sapiens_core_4_28';
+sub usage_die {
+  die "Usage: $0 [--user <username>] [--pass <password>] [--dbname <dbname>] [--host <host>] --transcript|contig <id> [<id>...]";
+}
 
 # main program
 
-my $using_transcripts;
-my $using_contigs;
+my ($using_transcripts, $using_contigs, $user, $pass, $dbname, $host);
 
 GetOptions("transcript" => \$using_transcripts,
-           "contig"     => \$using_contigs
-          ) or die "Usage: $0 --transcript|contig <id> [<id> ...]";
+           "contig"     => \$using_contigs,
+	   "user=s"     => \$user,
+	   "pass=s"     => \$pass,
+	   "dbname=s"   => \$dbname,
+	   "host=s"     => \$host
+          ) or usage_die();
 
-if ($using_transcripts and $using_contigs) {
-  die "Usage: $0 --transcript|contig <id> [<id> ...]";
-}
-if (! $using_transcripts and ! $using_contigs) {
-  die "Usage: $0 --transcript|contig <id> [<id> ...]";
-}
+usage_die()
+  if ( ( $using_transcripts and  $using_contigs)
+    || (!$using_transcripts and !$using_contigs) );
 
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
-                                            -user   => $user,
-                                            -dbname => $dbname);
+$user = DEFAULT_USER if (!$user);
+$dbname = DEFAULT_DBNAME if (!$dbname);
+$host = DEFAULT_HOST if (!$host);
+
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-user   => $user,
+                                            -pass   => $pass,
+                                            -dbname => $dbname,
+					    -host   => $host
+					   );
 
 my $ea = Bio::EnsEMBL::EvidenceAlignment->new(-DBADAPTOR => $db);
 
