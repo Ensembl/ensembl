@@ -1,2 +1,0 @@
-#!/bin/ksh
-perl -I ~/bioperl-live -I ../modules/ ./transfer.pl -fdbtype rdb -tdbtype rdb -tdbname arek -fdbname ensembl -thost localhost -tmodule Bio::EnsEMBL::DBSQL::Obj -tdbuser root -fdbuser ensro -fhost obi-wan -thost obi-wan $1 
