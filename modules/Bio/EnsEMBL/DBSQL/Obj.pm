@@ -1097,31 +1097,42 @@ sub write_Protein_feature {
 =cut
 
 sub write_Feature {
-    my ($self,$feature,$contig) = @_;
+    my ($self,$feature,$analysisid,$contig) = @_;
 
     $self->throw("Wrong number of arguments entered for write_Feature") unless defined($contig);
     $self->throw("Feature is not a Bio::SeqFeature::Generic")           unless $feature->isa("Bio::SeqFeature::Generic");
-    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")        unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
 
 
     my $contigid = $contig->id;
+    my $analysis;
 
-    if (! $feature->each_tag_value('Analysis')) {
+    if (! $feature->has_tag('Analysis')) {
 	$self->throw("Feature " . $feature->seqname . " doesn't have analysis. Can't write to database");
+    } else {
+	my @res = $feature->each_tag_value('Analysis');
+	if ($#res == 0 && $res[0]->isa("Bio::EnsEMBL::Analysis::Analysis")) {
+	    $analysis = $res[0];
+	} else {
+	    $self->throw("Can't write feature as >1 Analysis tag or not present");
+	}
     }
 
-    my $analysisid = 1;
-    
-    my $sth = $self->prepare("insert into feature(id,contig,start,end,score,strand,name,analysis) values (NULL,\"" . 
-			     $contig ->id          . "\"," .
-			     $feature->start       . "," . 
-			     $feature->end         . "," . 
-			     $feature->score       . "," . 
-			     $feature->strand      . ",\"" . 
-			     $feature->source_tag . "\"," .
-			     $analysisid           . ")");
-    my $rv = $sth->execute();
+    my $analysisid = $self->write_Analysis($analysis);
 
+
+			                                  
+    my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis) values (NULL,\"" . 
+			  $contig ->id          . "\"," .
+			  $feature->start       . "," . 
+			  $feature->end         . "," . 
+			  $feature->score       . "," . 
+			  $feature->strand      . ",\"" . 
+			  $feature->source_tag . "\"," .
+			  $analysisid           . ")");
+
+    my $rv = $sth->execute();
+    
     return $rv;
 }
 
@@ -1146,6 +1157,107 @@ sub write_Analysis {
 
     # First check whether this entry already exists.
     my $query;
+    my $analysisid = $self->exists_Analysis($anal);
+
+    return $analysisid if $analysisid;
+
+    if ($anal->db ne "" && $anal->db_version ne "") {
+	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->db               . "\","   .
+                $anal->db_version       . ",\""   .
+		$anal->program          . "\",\"" .
+		$anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+    } else {
+	$query = "insert into analysis(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->program          . "\",\"" .
+                $anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+    }
+
+    print("Query is $query\n");
+    
+    my $sth  = $self->prepare($query);
+    my $rv   = $sth->execute;
+    
+    
+    $sth = $self->prepare("select last_insert_id()");
+    $rv  = $sth->execute;
+    
+    if ($sth->rows == 1) {
+	my $rowhash = $sth->fetchrow_hashref;
+	return $rowhash->{'last_insert_id()'};
+    } else {
+	$self->throw("Wrong number of rows returned : " . $sth->rows . " : should be 1");
+    }
+
+}
+
+
+=head2 exists_Homol_Feature
+
+ Title   : exists_Homol_Feature
+ Usage   : $obj->exists_Homol_Feature($feature)
+ Function: Tests whether this feature already exists in the database
+ Example :
+ Returns : nothing
+ Args    : Bio::SeqFeature::Homol
+
+
+=cut
+
+sub exists_Homol_Feature {
+    my ($self,$feature,$analysisid,$contig) = @_;
+
+    $self->throw("Feature is not a Bio::SeqFeature::Homol") unless $feature->isa("Bio::SeqFeature::Homol");
+    
+    my $homol = $feature->homol_SeqFeature;
+
+    my $sth = $self->prepare("select f.id  from feature as f,homol_feature as h where " .
+			     "  f.id = h.feature " . 
+			     "  and h.hstart = "    . $homol->start . 
+			     "  and h.hend   = "    . $homol->end   . 
+			     "  and h.hid    = '"   . $homol->seqname . 
+			     "' and f.contig = '"   . $contig->id . 
+			     "' and f.seq_start = " . $feature->start . 
+			     "  and f.seq_end = "   . $feature->end .
+			     "  and f.score = "     . $feature->score . 
+			     "  and f.name = '"     . $feature->source_tag . 
+			     "' and f.analysis = "  . $analysisid);
+
+    my $rv  = $sth->execute;
+    my $rowhash;
+
+    if ($rv && $sth->rows > 0) {
+	my $rowhash = $sth->fetchrow_hashref;
+	return $rowhash->{'id'};
+    } else {
+	return 0;
+    }
+}
+    
+
+=head2 exists_Analysis
+
+ Title   : exists_Analysis
+ Usage   : $obj->exists_Analysis($anal)
+ Function: Tests whether this feature already exists in the database
+ Example :
+ Returns : Analysis id if the entry exists
+ Args    : Bio::EnsEMBL::Analysis::Analysis
+
+
+=cut
+
+sub exists_Analysis {
+    my ($self,$anal) = @_;
+
+    $self->throw("Object is not a Bio::EnsEMBL::Analysis::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis::Analysis");
+
+    my $query;
+
     if ($anal->db ne "" && $anal->db_version ne "") {
         $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
@@ -1160,55 +1272,20 @@ sub write_Analysis {
                 " gff_source = \""      . $anal->gff_source      . "\" and" .
                 " gff_feature = \""     . $anal->gff_feature     . "\"";
     }
+    
     my $sth = $self->prepare($query);
 
     my $rv = $sth->execute();
 
-    # Ony write if we have no result
 
-    # temporary id here
-
-    if ($sth->rows == 0) {
-        if ($anal->db ne "" && $anal->db_version ne "") {
-            $query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
-                $anal->db               . "\","   .
-                $anal->db_version       . ",\""   .
-                $anal->program          . "\",\"" .
-                $anal->program_version  . "\",\"" .
-                $anal->gff_source       . "\",\"" .
-                $anal->gff_feature      . "\")";
-        } else {
-            $query = "insert into analysis(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
-                $anal->program          . "\",\"" .
-                $anal->program_version  . "\",\"" .
-                $anal->gff_source       . "\",\"" .
-                $anal->gff_feature      . "\")";
-        }
-        print("Query is $query\n");
-
-        my $sth2 = $self->prepare($query);
-        my $rv   = $sth2->execute;
-
-
-        $sth = $self->prepare("select last_insert_id()");
-        $rv  = $sth->execute;
-
-        $sth = $self->prepare("select last_insert_id()");
-        $rv  = $sth->execute;
-
-        if ($sth->rows == 1) {
-            my $rowhash = $sth->fetchrow_hashref;
-            return $rowhash->{'last_insert_id()'};
-        } else {
-            $self->throw("Wrong number of rows returned : " . $sth->rows . " : should be 1");
-        }
+    if ($rv && $sth->rows > 0) {
+	my $rowhash = $sth->fetchrow_hashref;
+	return $rowhash->{'id'};
     } else {
-        my $rowhash = $sth->fetchrow_hashref;
-        return $rowhash->{'id'};
+	return 0;
     }
-
 }
-
+    
 
 =head2 write_Homol_Feature
 
@@ -1225,14 +1302,26 @@ sub write_Analysis {
 sub write_Homol_Feature {
     my ($self,$feature,$contig) = @_;
 
-    $self->throw("Wrong number of arguments to write_Homol_Feature") unless $contig;
+    $self->throw("Wrong number of arguments to write_Homol_Feature") unless defined($contig);
     $self->throw("Feature is not a Bio::SeqFeature::Homol")          unless $feature->isa("Bio::SeqFeature::Homol");
-    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
-
+    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")       unless $contig ->isa("Bio::EnsEMBL::DB::ContigI");
+    
     my $contigid = $contig->id;
     my $homol    = $feature->homol_SeqFeature;
 
+    my $analysisid;
+    
+    if ($feature->has_tag('Analysis')) {
+	my @res = $feature->each_tag_value('Analysis');
+	$analysisid = $self->write_Analysis($res[0]);
+    }
+    
+    my $id = $self->exists_Homol_Feature($feature,$analysisid,$contig);
+
+    return 1 if $id;
+
     my $rv = $self->write_Feature($feature,$analysisid,$contig);
+
 
     $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
 
@@ -1240,12 +1329,12 @@ sub write_Homol_Feature {
     # work on a per client basis so I shouldn't have to lock the tables.
 
     my $sth    = $self->prepare("insert into homol_feature(feature,hstart,hend,hid) values (last_insert_id()," .
-                                $homol->start        . "," .
-                                $homol->end          . ",\"" .
-                                $homol->seqname      . "\")");
-
-    my $rv  = $sth->execute;
-
+			     $homol->start        . "," .
+			     $homol->end          . ",\"" .
+			     $homol->seqname      . "\")");
+    
+    $rv  = $sth->execute;
+    
     return $rv;
 }
 
@@ -1412,9 +1501,10 @@ sub write_Contig {
        my $rv;
        
        if ($f->isa("Bio::SeqFeature::Homol")) {
-	   $rv = $self->write_Feature($f,$contig);
+	   $rv = $self->write_Homol_Feature($f,$contig);
        } elsif ($f->isa("Bio::SeqFeature::Generic")) {
-	   $rv = $self->write_Homol_Feature($f);
+
+	   $rv = $self->write_Feature($f,$contig);
        } else {
 	   $self->throw("Can't write feature - $f is not a Bio::SeqFeature::Generic");
        }
@@ -1675,3 +1765,4 @@ sub DESTROY{
 }
 
 
+				# 
