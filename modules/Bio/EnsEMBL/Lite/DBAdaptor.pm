@@ -48,13 +48,6 @@ sub get_GeneAdaptor {
       $self->_get_adaptor("Bio::EnsEMBL::Lite::GeneAdaptor");
 }
 
-sub get_LandmarkMarkerAdaptor {
-  my $self = shift;
-
-    return 
-      $self->_get_adaptor("Bio::EnsEMBL::Lite::LandmarkMarkerAdaptor");
-}
-
 sub get_RepeatFeatureAdaptor {
   my $self = shift;
 
