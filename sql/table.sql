@@ -704,7 +704,7 @@ CREATE TABLE marker_map_location (
 
   marker_id                   int unsigned not null, #foreign key marker:marker_id
   map_id                      int unsigned not null, #foreign key map:map_id
-  seq_region_id               int unsigned not null, #foreign key 
+  chromosome_name             varchar(15)  not null, 
   marker_synonym_id           int unsigned not null, #foreign key marker_synonym:marker_synonym_id
   position                    varchar(15) not null,
   lod_score                   double,
