@@ -1281,7 +1281,7 @@ sub get_all_PredictionFeatures {
 
    # make the SQL query
    my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
-       "from feature f where contig = $id and name = 'genscan' order by hid";
+       "from feature f where contig = $id and name = 'genscan' order by f.strand*f.seq_start";
 
    my $sth = $self->dbobj->prepare($query);
    
@@ -1295,6 +1295,7 @@ sub get_all_PredictionFeatures {
    $previous = -1;
    my $current_fset;
    my $count=1;
+   my $prev;
 
    while( $sth->fetch ) {
        my $out;
@@ -1311,10 +1312,13 @@ sub get_all_PredictionFeatures {
        } else {
 	   $analysis = $analhash{$analysisid};
        }
-
+       # Oh boyoboy.  Yet another genscan hack to avoid duplicate genscans
+       if (defined($prev) && $start == $prev->start && $end = $prev->end) {
+	 next;
+       }
        #MC.  This has been temporarily changed back to the old way of genscans
-       #if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
-       if( $hid ne $previous || $previous eq -1 ) {
+       if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
+       #if( $hid ne $previous || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
@@ -1367,6 +1371,8 @@ sub get_all_PredictionFeatures {
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
        $previous = $hid;
+       $prev     = $out;
+
   }
 
    return @array;
