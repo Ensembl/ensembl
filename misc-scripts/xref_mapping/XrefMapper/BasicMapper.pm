@@ -803,14 +803,6 @@ sub parse_mappings {
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
-	
-      # Store in database
-      # create entry in object_xref and get its object_xref_id
-      #$ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
-      #my $object_xref_id = $ox_sth->{'mysql_insertid'};
-	
-      # create entry in identity_xref
-      #$ix_sth->execute($object_xref_id, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score, undef, $analysis_id) || warn "Error writing to identity_xref table";
 
     }
 
