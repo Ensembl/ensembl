@@ -1025,24 +1025,27 @@ sub get_supporting_evidence {
 	$self->throw("No exon objects were passed on!");
     }
 
+    my %anahash;
+
     foreach my $exon (@exons) {
 
 	$exhash{$exon->id} = $exon;
 
-	$instring = $instring . $exon->id . "','";
-    }
+#	$instring = $instring . $exon->id . "','";
+#    }
     
-    $instring = substr($instring,0,-2);
+#    $instring = substr($instring,0,-2);
    
-    my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
-    #print STDERR "going to execute... [$statement]\n";
+	my $statement = "select * from feature where seq_start = " . $exon->start . " and seq_end = " . $exon->end;
+    #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
+	print STDERR "going to execute... [$statement]\n";
 
-    my $sth = $self->_db_obj->prepare($statement);
-    $sth->execute || $self->throw("execute failed for supporting evidence get!");
+	my $sth = $self->_db_obj->prepare($statement);
+	$sth->execute || $self->throw("execute failed for supporting evidence get!");
 
-    my %anahash;
 
-    while (my $rowhash = $sth->fetchrow_hashref) {
+
+	while (my $rowhash = $sth->fetchrow_hashref) {
 	my $f1 = new Bio::EnsEMBL::SeqFeature;
 	my $f2 = new Bio::EnsEMBL::SeqFeature;
 	
@@ -1083,6 +1086,7 @@ sub get_supporting_evidence {
 	$f->validate;
 
 	$exhash{$exon}->add_Supporting_Feature($f);
+    }
     }
 
 }
