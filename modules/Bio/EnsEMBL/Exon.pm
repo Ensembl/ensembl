@@ -259,27 +259,6 @@ sub frame {
 
 
 
-=head2 type
-
-  Arg [1]    : (optional) $value
-  Example    : Gets/Sets th etype of this exon
-  Description: Returns the type of the exon (Init, Intr, Term)
-  Returntype : string
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub type {
-  my ($self,$value) = @_;
-
-  if (defined($value)) {
-    $self->{'type'} = $value;
-  }
-  return $self->{'type'};
-}
-
-
 
 =head2 start
 
@@ -889,7 +868,7 @@ sub temporary_id {
 
 sub created{
     my ($self,$value) = @_;
-    deprecate( "Created attribute not supported any more" );
+    deprecate( "Created attribute not supported any more." );
     if(defined $value ) {
       $self->{'_created'} = $value;
     }
@@ -904,11 +883,27 @@ sub created{
 
 sub modified{
     my ($self,$value) = @_;
-    deprecate( "Modified attribute not supported any more" );
+    deprecate( "Modified attribute not supported any more." );
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
     return $self->{'_modified'};
+}
+
+
+=head2 type
+
+  Description: DEPRECATED. Do not use.
+
+=cut
+
+sub type {
+  my ($self,$value) = @_;
+  deprecate("Type attribute not supported anymore.");
+  if (defined($value)) {
+    $self->{'type'} = $value;
+  }
+  return $self->{'type'};
 }
 
 
