@@ -187,6 +187,7 @@ sub new {
       $self->{'_mapdb'} = {
           -DBNAME => $mapdbname,
           -HOST   => $host,
+          -PORT   => $port,
           -DRIVER => $driver,
           -USER   => $user,
           -PASS   => $password,
