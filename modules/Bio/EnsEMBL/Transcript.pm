@@ -1294,6 +1294,97 @@ sub pep2genomic {
   return $self->cdna2genomic( $start, $end );
 }
 
+
+
+
+sub genomic2pep {
+  my ($self, $start, $end, $strand) = @_;
+
+  unless(defined $start && defined $end && defined $strand) {
+    $self->throw("start, end and strand arguments are required");
+  }
+ 
+  my @coords = $self->genomic2cdna($start, $end, $strand);
+
+  my @out;
+
+  my $exons = $self->get_all_Exons;
+  my $start_phase;
+  if(@$exons) {
+    $start_phase = $exons->[0]->phase;
+  } else {
+    $start_phase = -1;
+  }
+
+  foreach my $coord (@coords) {
+    if($coord->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      push @out, $coord;
+    } else {
+      my $start = $coord->start;
+      my $end   = $coord->end;
+      my $cdna_cstart = $self->cdna_coding_start;
+      my $cdna_cend   = $self->cdna_coding_end;
+      
+      if($coord->strand == -1 || $end < $cdna_cstart || $start > $cdna_cend) {
+	#is all gap - does not map to peptide
+	my $gap = new Bio::EnsEMBL::Mapper::Gap;
+	$gap->length($end - $start + 1);
+	push @out, $gap;
+      } else {
+	#we know area is at least partially overlapping CDS
+	
+	my $cds_start = $start - $cdna_cstart + 1;
+	my $cds_end   = $end   - $cdna_cstart + 1;
+
+	if($start < $cdna_cstart) {
+	  #start of coordinates are in the 5prime UTR
+	  my $gap = new Bio::EnsEMBL::Mapper::Gap;
+	  my $gap_len = $cdna_cstart - $start;
+	  $gap->length($gap_len);
+	  #start is now relative to start of CDS
+	  $cds_start = 1;
+	  push @out, $gap;
+	} 
+	
+	my $end_gap = undef;
+	if($end > $cdna_cend) {
+	  #end of coordinates are in the 3prime UTR
+	  $end_gap = new Bio::EnsEMBL::Mapper::Gap;
+	  my $gap_len = $end - $cdna_cend;
+	  $end_gap->length($gap_len);
+	  #adjust end to relative to CDS start
+	  $cds_end = $cdna_cend - $cdna_cstart + 1;
+	}
+
+	#start and end are now entirely in CDS and relative to CDS start
+
+	#take into account possible N padding at beginning of CDS
+	my $shift = ($start_phase > 0) ? $start_phase : 0;
+	
+	#convert to peptide coordinates
+	my $pep_start = int(($cds_start + $shift + 2) / 3);
+	my $pep_end   = int(($cds_end   + $shift + 2) / 3);
+	$coord->start($pep_start);
+	$coord->end($pep_end);
+	
+	push @out, $coord;
+
+	if($end_gap) {
+	  #push out the region which was in the 3prime utr
+	  push @out, $end_gap;
+	}
+      }	
+    }
+  }
+
+  return @out;
+}
+
+    
+  
+  
+
+
 =head2 cdna2genomic
 
   Arg [1]    : $start
@@ -1358,10 +1449,9 @@ sub cdna2genomic {
 sub genomic2cdna {
   my ($self, $start, $end, $strand, $contig) = @_;
 
-  unless(defined $start && defined $end) {
-    $self->throw("start and end arguments are required\n");
+  unless(defined $start && defined $end && defined $strand) {
+    $self->throw("start, end and strand arguments are required\n");
   }
-  $strand = 1 unless(defined $strand);
 
   #"ids" in mapper are contigs of exons, so use the same contig that should
   #be attached to all of the exons...
