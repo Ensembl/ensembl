@@ -88,6 +88,12 @@ sub id {
 sub destroy { return 1; }
 
 ## Returns a textual description of what the bacflags variable means
+sub h_state {
+    my( $self,$value ) = @_;
+    (my $t = $self->{'_annotations'}{'state'}) =~ s/^\d+://g;
+    return $t;
+}
+
 sub bacinfo {
     my $self = shift;
     return ('Interpolated',
