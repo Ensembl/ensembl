@@ -102,6 +102,7 @@ package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::CoordSystem;
+use DBI;
 
 use vars qw(@ISA);
 
@@ -155,12 +156,17 @@ sub new {
   while($sth->fetch()) {
     my $seq_lvl = 0;
     my $top_lvl = 0;
-    foreach my $attrib (split(',', $attrib)) {
-      $self->{"_is_$attrib"}->{$dbID} = 1;
-      if($attrib eq 'sequence_level') {
-        $seq_lvl = 1;
-      } elsif($attrib eq 'top_level') {
-        $top_lvl = 1;
+    my $default = 0;
+    if($attrib) {
+      foreach my $attrib (split(',', $attrib)) {
+        $self->{"_is_$attrib"}->{$dbID} = 1;
+        if($attrib eq 'sequence_level') {
+          $seq_lvl = 1;
+        } elsif($attrib eq 'top_level') {
+          $top_lvl = 1;
+        } elsif($attrib eq 'default_version') {
+          $default = 1;
+        }
       }
     }
 
@@ -170,7 +176,8 @@ sub new {
        -NAME           => $name,
        -VERSION        => $version,
        -TOP_LEVEL      => $top_lvl,
-       -SEQUENCE_LEVEL => $seq_lvl);
+       -SEQUENCE_LEVEL => $seq_lvl,
+       -DEFAULT        => $default);
 
     $self->{'_dbID_cache'}->{$dbID} = $cs;
 
@@ -784,6 +791,106 @@ sub deleteObj {
   delete $self->{'_mapping_paths'};
   delete $self->{'_shortest_paths'};
 }
+
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem
+  Example    : $csa->store($coord_system);
+  Description: Stores a CoordSystem object in the database.
+  Returntype : none
+  Exceptions : Warning if CoordSystem is already stored in this database.
+  Caller     : none
+
+=cut
+
+sub store {
+  my $self = shift;
+  my $cs = shift;
+
+  if(!$cs || !ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('CoordSystem argument expected.');
+  }
+
+  my $db = $self->db();
+  my $name = $cs->name();
+  my $version = $cs->version();
+  my $toplevel = $cs->is_top_level();
+  my $seqlevel = $cs->is_sequence_level();
+  my $default  = $cs->is_default();
+  
+  #
+  # Do lots of sanity checking to prevent bad data from being entered
+  #
+
+  if($cs->is_stored($db)) {
+    warning("CoordSystem $name $version is already in db.\n");
+    return;
+  }
+
+  if($name eq 'toplevel' || $name eq 'seqlevel' || !$name) {
+    throw("[$name] is not a valid name for a CoordSystem.");
+  }
+
+  if($seqlevel && keys(%{$self->{'_is_sequence_level'}})) {
+    throw("There can only be one sequence level CoordSystem.");
+  }
+
+  if(exists $self->{'_name_cache'}->{lc($name)}) {
+    my @coord_systems = @{$self->{'_name_cache'}->{lc($name)}};
+    foreach my $c (@coord_systems) {
+      if(lc($c->version()) eq lc($version)) {
+        warning("CoordSystem $name $version is already in db.\n");
+        return;
+      }
+      if($default && $self->{'_is_default_version'}->{$c->dbID()}) {
+        throw("There can only be one default version of CoordSystem $name");
+      }
+    }
+  }
+
+  my $attrib = ($toplevel) ? 'top_level' : '';
+  $attrib   .= ($seqlevel) ? 'seq_level' : '';
+  $attrib   .= ($default)  ? 'default_version' : '';
+  $attrib ||= undef;
+
+  #
+  # store the coordinate system in the database
+  #
+
+  my $sth = $db->prepare('INSERT INTO coord_system ' .
+                         'SET name    = ?, ' .
+                             'version = ?, ' .
+                             'attrib  = ?');
+
+  $sth->execute($name, $version, $attrib);
+  my $dbID = $sth->{'mysql_insertid'};
+  $sth->finish();
+
+  if(!$dbID) {
+    throw("Did not get dbID from store of CoordSystem.");
+  }
+
+  $cs->dbID($dbID);
+  $cs->adaptor($self);
+
+  #
+  # update the internal caches that are used for fetching
+  #
+  $self->{'_is_default_version'}->{$dbID} = 1 if($default);
+  $self->{'_is_sequence_level'}->{$dbID} = 1 if($seqlevel);
+  $self->{'_is_top_level'}->{$dbID} = 1 if($toplevel);
+
+  $self->{'_name_cache'}->{lc($name)} ||= [];
+  push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
+
+  $self->{'_dbID_cache'}->{$dbID} = $cs;
+
+  return $cs;
+}
+
+
+
 
 1;
 
