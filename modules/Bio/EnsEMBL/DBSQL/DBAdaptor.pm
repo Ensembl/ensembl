@@ -3023,7 +3023,7 @@ sub get_MapFragAdaptor {
     unless ($mfa = $self->{'_mapfrag_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::MapFragAdaptor;
 	    $mfa = Bio::EnsEMBL::DBSQL::MapFragAdaptor->new($self);
-        print STDERR "MFA: $mfa\n";
+#        print STDERR "MFA: $mfa\n";
         $self->{'_mapfrag_adaptor'} = $mfa;
     }
     return $mfa;
