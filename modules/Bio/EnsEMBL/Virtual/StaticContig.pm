@@ -1272,16 +1272,25 @@ sub get_all_DASFeatures{
        }
    }
    
+    my $chr_start = $self->_global_start();
+    my $chr_end   = $self->_global_end();
    foreach my $sf ( @contig_features ) {
-          #  print STDERR "SEG ID: ",         $sf->seqname(), "\t";
-          #  print STDERR "DSN: ",            $sf->das_dsn(), "\t";
-          #  print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
-          #  print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
-          #  print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
-          #  print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
-       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
-	        push(@genomic_features, $sf);
-       }
+#            print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+#            print STDERR "ID: ",             $sf->das_id(), "\t";
+#            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+#            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+#            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+#            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+#            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+            my( $st, $en, $str) = $self->_convert_start_end_strand_vc( $sf->seqname(), $sf->das_start,$sf->das_end, $sf->das_strand );
+            $sf->das_start(  $st );
+            $sf->das_end(    $en );
+            $sf->das_strand( $str );
+#       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
+        if($sf->das_start <= $chr_end-$chr_start && $sf->das_end >= 1) {
+            push(@genomic_features, $sf);
+        }
+#       }
        #else {
        # print STDERR "Binning ", $sf->seqname(), "\n";
        #}
@@ -1338,15 +1347,16 @@ sub _convert_chrfeature_to_vc_coords{
     my $chr_start = $self->_global_start();
     my $chr_end   = $self->_global_end();
     
-    if($f->start < $chr_start) {
+    if($f->das_start > $chr_end || $f->das_end < $chr_start) {
         print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
                     $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
                     "\n";
         return ();
     }
-        
-    $f->start( $f->start() - $chr_start +1 );
-    $f->end(   $f->end() - $chr_start  + 1);
+
+    $f->das_start( $f->das_start() - $chr_start +1 );
+    $f->das_end(   $f->das_end() - $chr_start  + 1);
+#    print STDERR "---> ",$f->das_start(), " , ", $f->das_end(),"\n";       
     return($f);
 }
 
