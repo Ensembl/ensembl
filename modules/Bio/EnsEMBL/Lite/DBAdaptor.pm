@@ -90,15 +90,4 @@ sub get_SNPAdaptor {
   return $self->_get_adaptor("Bio::EnsEMBL::Lite::SNPAdaptor");
 }
 
-sub get_DensityAdaptor {
-  my $self = shift;
-  return $self->_get_adaptor("Bio::EnsEMBL::Lite::DensityPlot::DensityAdaptor");
-}
- 
-sub get_ChromosomeAdaptor {
-  my $self = shift;
-  return $self->_get_adaptor("Bio::EnsEMBL::Lite::ChromosomeAdaptor");
-}
-
-
 1;
