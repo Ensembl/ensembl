@@ -65,7 +65,7 @@ sub print_coords {
     if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
       info("  GAP");
     } else {
-      info("  ", $c->start, '-', $c->end, ' (',$c->strand,")");
+      info("  ". $c->start. '-'. $c->end. ' ('.$c->strand.")");
     }
   }
 }

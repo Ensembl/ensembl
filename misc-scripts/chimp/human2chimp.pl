@@ -155,7 +155,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
       foreach my $transcript (@$transcripts) {
         next if(!$transcript->translation); #skip pseudo genes
 
-        print ++$total_transcripts, "\n";
+        print STDERR ++$total_transcripts, "\n";
 
         my $interim_transcript = transfer_transcript($transcript, $mapper,
                                                      $human_cs);
@@ -403,20 +403,26 @@ sub transfer_transcript {
                 # insert in chimp, deletion in human
                 #
 
+                #info("before insert, CDNA_POS= $chimp_cdna_pos");
+
                 Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
                                           $chimp_exon, $chimp_transcript);
 
                 $chimp_cdna_pos += $insert_len;
+                #info("after insert, CDNA_POS= $chimp_cdna_pos");
               }
             }
 
             $chimp_cdna_pos += $c->length();
+            #info("after match (" . $c->length(). ") CDNA_POS= $chimp_cdna_pos");
           }
         }  # foreach coord
       }
     }
 
-    $cdna_exon_start = $chimp_cdna_pos + 1; 
+    $cdna_exon_start = $chimp_cdna_pos + 1;
+    # info("after exon, CDNA_POS= $chimp_cdna_pos");
+
     $chimp_transcript->add_Exon($chimp_exon);
   } # foreach exon
 
@@ -445,7 +451,7 @@ sub get_coords_extent {
 
   my $stat_code = StatMsg::EXON;
 
-  #print_coords($coords);
+  print_coords($coords);
 
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
