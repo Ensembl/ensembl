@@ -1118,7 +1118,7 @@ sub _build_contig_map {
 	    print STDERR "Going left with " . $current_contig->id . "\n";
 	    
 	    $overlap = $current_contig->get_left_overlap();
-	 
+	    print ("Overlap is $overlap\n");
 	    # if there is no left overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
