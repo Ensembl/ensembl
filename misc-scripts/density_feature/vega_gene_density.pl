@@ -263,7 +263,7 @@ foreach my $object ($big_chr, $small_chr) {
 		 -DESCRIPTION => 'Total Number of Novel transcripts');
 	    
 	    push @attribs, Bio::EnsEMBL::Attribute->new
-		(-NAME => '24:Putative transcripts',
+		(-NAME => '24:Putative',
 		 -CODE => 'PutTransCount',
 		 -VALUE => $total{'Putative'} || 0,
 		 -DESCRIPTION => 'Total Number of Putative transcripts');
@@ -281,7 +281,7 @@ foreach my $object ($big_chr, $small_chr) {
 		 -DESCRIPTION => 'Total Number of Ig Segments');
 	    
 	    push @attribs, Bio::EnsEMBL::Attribute->new
-		(-NAME => '28:Ig pseudogene Segments',
+		(-NAME => '28:Ig pseudogene segments',
 		 -CODE => 'IgPsSegCount',
 		 -VALUE => $total{'Ig_Pseudogene_Segment'} || 0,
 		 -DESCRIPTION => 'Total Number of Ig Pseudogene Segments');
