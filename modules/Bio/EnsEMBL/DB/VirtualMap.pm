@@ -770,3 +770,65 @@ sub found_left_end {
     
     return $self->{'_found_left_end'};
 }
+
+=head2 vcpos_to_rcpos
+
+ Title   : vcpos_to_rcpos
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->vcpos_to_rcpos($vc_pos,$vc_strand)
+ Function: Maps a VirtualContig position to the RawContig Position
+ Returns : Bio::EnsEMBL::DB::MapContig object, 
+           position (int), strand (int)
+ Args    : position (int), strand (int)
+
+
+=cut
+
+sub vcpos_to_rcpos {
+    my ($self, $vcpos, $vcstrand)=@_;
+ 
+    my $rc;
+    my $rc_pos;
+    my $rc_strand;
+    
+    my $length=$self->left_size + $self->right_size;
+    if ($vcpos >$length) {
+	$self->throw("Asked to map vc position outside vc coordinates!\n");
+    }
+    
+    #Go through all Contigs and find out where vcpos lies
+    foreach my $mc ($self->get_all_MapContigs) {
+	
+	#If we are still on a RawContig which finished vcpos, 
+        #move to next contig
+	if ($mc->end < $vcpos) {
+	    next;
+	}
+
+	#If vcpos is within the start and enf of this Contig, we found it!
+	#And we get out of the loop...
+	if (($vcpos >= $mc->start)&&($vcpos <= $mc->end)) {
+	    $rc=$mc->contig;
+	    $rc_pos=$vcpos-$mc->start;
+
+	    #Sort out the strand
+	    my $strand=$mc->orientation;
+	    if ($vcstrand == 1) {
+		$rc_strand = $strand;
+	    }
+	    else {
+		$rc_strand = -$strand;
+	    }
+	    last;
+	}
+
+	#If we are not out of the loop at this stage it means that
+	#our Contig lies in a gap
+	if ($mc->start > $vcpos) {
+	    $rc='N';
+	    $rc_pos=-1;
+	    $rc_strand=-2;
+	    last;
+	}
+    }
+    return $rc,$rc_pos,$rc_strand;
+}

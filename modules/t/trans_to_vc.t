@@ -69,4 +69,13 @@ print "ok 2\n";
 my $vc=$gene_obj->get_Virtual_Contig($conf{'transcript'},150000);
 print "ok 3\n";
 
-				      
+my $seq=$vc->virtual_primary_seq;
+my $subseq=$seq->subseq(100,200);
+print $subseq."\n";
+$vc->id;
+my $length=$vc->length;
+print STDERR "Length of contig is $length\n";
+print "ok 4\n";
+my ($rc,$rc_pos,$rc_strand)=$vc->_vmap->vcpos_to_rcpos(40000,-1);
+print STDERR "Got RawContig ".$rc->id." rc_pos=$rc_pos, rc_strand=$rc_strand\n";
+			      

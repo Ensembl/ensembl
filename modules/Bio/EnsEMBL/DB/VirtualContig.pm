@@ -784,7 +784,7 @@ sub rawcontig_ids {
 
 sub found_left_end {
     my ($self) = @_;
-    return $self->_vmap->found_left_hand;
+    return $self->_vmap->found_left_end;
 }
 
 

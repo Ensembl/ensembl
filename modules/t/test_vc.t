@@ -65,12 +65,12 @@ my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 print "ok 2\n";
 
 my $contig=$db->get_Contig($conf{'contig'});
-#Make a VirtualContig from the contig extending 200000
+#Make a VirtualContig from the contig extending 100000
 my $vc=Bio::EnsEMBL::DB::VirtualContig->new(
 					 -focuscontig => $contig,
 					 -focusposition => 100,
-					 -right => 100000,
-					 -left => 100000,
+					 -right => 50000,
+					 -left => 50000,
 					 -ori =>1
 					 );
 print "ok 3\n";
@@ -80,5 +80,9 @@ my $seq=$vc->virtual_primary_seq;
 my $subseq=$seq->subseq(100,200);
 print $subseq."\n";
 $vc->id;
-$vc->length;
+my $length=$vc->length;
+print STDERR "Length of contig is $length\n";
 print "ok 4\n";
+
+
+
