@@ -1330,6 +1330,11 @@ sub write_Protein_feature {
 sub write_Feature {
     my ($self,$contig,@features) = @_;
 
+    #
+    # Yes - we need to rethink how we are writing features into the
+    # database. This is a little obtuse and clunky now
+    #
+
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
     
     my $contigid = $contig->id;
@@ -1337,8 +1342,10 @@ sub write_Feature {
     
     my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
-    # Put the repeats in a different table
+    # Put the repeats in a different table, and also things we need to write
+    # as fsets.
     my @repeats;
+    my @fset;
 
     FEATURE :
     foreach my $feature ( @features ) {
@@ -1356,9 +1363,11 @@ sub write_Feature {
 	    next FEATURE;
 	}
 
-
+	
 	if($feature->isa('Bio::EnsEMBL::Repeat')) {
 	    push(@repeats,$feature);
+	} elsif ( $feature->sub_SeqFeature ) {
+	    push(@fset,$feature);
 	} else {    
 	    if (!defined($feature->analysis)) {
 		$self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
@@ -1423,7 +1432,44 @@ sub write_Feature {
 		       $homol->seqname);
     }
 
+
     # Now the predictions
+    # we can't block do these as we need to get out the id wrt to the features
+    foreach my $feature ( @fset ) {
+	print STDERR "Adding in a fset feature ",$feature->gff_string,"\n";
+	if (!defined($feature->analysis)) {
+	    $self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
+	} else {
+	    $analysis = $feature->analysis;
+	}
+
+	my $analysisid = $self->write_Analysis($analysis);
+	my $score = $feature->score();
+	if( !defined $score ) { $score = "-1000"; }
+
+	my $sth3 = $self->prepare("insert into fset(id,score) values ('NULL',$score)");
+	$sth3->execute();
+	# get out this id. This looks really clunk I know. Any better ideas... ?
+
+	my $sth4 = $self->prepare("select LAST_INSERT_ID()");
+	$sth4->execute();
+	my $arr = $sth4->fetchrow_arrayref();
+	my $fset_id = $arr->[0];
+	# now write each sub feature
+	my $rank = 1;
+	foreach my $sub ( $feature->sub_SeqFeature ) {
+	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values('NULL','".$contig->id."',"
+				      .$sub->start.","
+				      .$sub->end. ","
+				      .$sub->score. ","
+				      .$sub->strand. ","
+				      .$analysisid. ",-1,-1,'__NONE__')");
+	    $sth5->execute();
+	    my $sth6 = $self->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
+	    $sth6->execute();
+	    $rank++;
+	}
+    }
 
     return 1;
 }

@@ -163,7 +163,7 @@ CREATE TABLE repeat_feature (
 # Table structure for table 'fset'
 #
 CREATE TABLE fset (
-  id varchar(40) DEFAULT '' NOT NULL,
+  id varchar(40) DEFAULT '' NOT NULL auto_increment,
   score double(16,4) DEFAULT '0.0000' NOT NULL,
   KEY feature_id (id)
 );
@@ -174,7 +174,8 @@ CREATE TABLE fset (
 CREATE TABLE fset_feature (
   fset varchar(40) DEFAULT '' NOT NULL,
   feature varchar(40) DEFAULT '' NOT NULL,
-  rank int(11)
+  rank int(11) DEFAULT '' NOT NULL,
+  PRIMARY KEY(fset,feature,rank)
 );
 
 #
