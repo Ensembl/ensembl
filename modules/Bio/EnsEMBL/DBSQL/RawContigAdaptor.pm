@@ -99,24 +99,23 @@ sub fetch_by_dbID {
                    WHERE contig_id = $dbID" );
   $sth->execute();
   
-  my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
-       $international_id ) = $sth->fetchrow_array();
+  my ( $contig ) = _contig_from_sth( $sth );
 
-  if( ! defined $contig_id ) {
-    # no contig found
-    return undef;
-  }
+  return $contig;
+}
 
-  # the contig object, how should it work ?
+sub fetch_by_name {
+  my $self = shift;
+  my $name = shift;
 
-  # clone, sequence, chromosome should be lightweight objects attached
-  # possibly either just dbID or I have a join
-
-  my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new( '-db_handle' => $self->db, '-dna' => $dna_id); # ?
-
-  # my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
-  my $contig = Bio::EnsEMBL::RawContig->new();
-  $contig->seq($dbPrimarySeq);
+  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
+                          offset, corder, dna_id, 
+                          international_name
+                   FROM contig
+                   WHERE name = '$name'" );
+  $sth->execute();
+  
+  my ( $contig ) = _contig_from_sth( $sth );
 
   return $contig;
 }
@@ -138,6 +137,9 @@ sub fetch_by_clone {
   return \@res;
 }
 
+
+# mainly used from RawContig object. 
+# Argument is a ready contig which needs its attributes filled
 
 sub fetch {
   my $self = shift;
