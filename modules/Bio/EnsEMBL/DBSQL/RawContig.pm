@@ -72,7 +72,7 @@ use Bio::PrimarySeq;
 
 sub _initialize {
   my($self,@args) = @_;
-
+  
   my $make = $self->SUPER::_initialize;
 
   my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
@@ -81,7 +81,8 @@ sub _initialize {
 
   $id    || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || 
+    $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->id($id);
   $self->_dbobj($dbobj);
@@ -93,138 +94,206 @@ sub _initialize {
 
 =head2 get_all_Genes
 
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Title   : get_all_Genes
+  Usage   :
+  Function:
+  Example :
+  Returns : 
+  Args    :
+  
 
 =cut
 
-sub get_all_Genes{
-   my ($self,$supporting) = @_;
-   my @out;
-   my $contig_id = $self->internal_id();
-   # prepare the SQL statement
-   my %got;
-   my $gene;
 
-   my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
-
-   my $res = $sth->execute();
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       if( ! exists $got{$rowhash->{'gene'}}  ) {
-	   if ($supporting && $supporting eq 'evidence') {
-	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'},'evidence');
-	   }
-	   else {
-	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
-	   }
-	   push(@out,$gene);
-	   $got{$rowhash->{'gene'}} = 1;
-       }
-       
-   }
-   
-
-   return @out;
-
+sub get_all_Genes {
+  my ($self,$supporting) = @_;
+  my @out;
+  my $contig_id = $self->internal_id();
+  # prepare the SQL statement
+  my %got;
+  my $gene;
+  
+  my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
+  
+  my $res = $sth->execute();
+  while( my $rowhash = $sth->fetchrow_hashref) {
+    if( ! exists $got{$rowhash->{'gene'}}  ) {
+      if ($supporting && $supporting eq 'evidence') {
+	$gene = $self->_dbobj->get_Gene($rowhash->{'gene'},'evidence');
+      }
+      else {
+	$gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
+      }
+      push(@out,$gene);
+      $got{$rowhash->{'gene'}} = 1;
+    }
+    
+  }
+  
+  
+  return @out;
+  
 }
 
 
 =head2 primary_seq
 
- Title   : seq
- Usage   : $seq = $contig->primary_seq();
- Function: Gets a Bio::PrimarySeqI object out from the contig
- Example :
- Returns : Bio::PrimarySeqI object
- Args    :
+  Title   : seq
+  Usage   : $seq = $contig->primary_seq();
+  Function: Gets a Bio::PrimarySeqI object out from the contig
+  Example :
+  Returns : Bio::PrimarySeqI object
+  Args    :
 
 
 =cut
 
 sub primary_seq {
-   my ($self) = @_;
-   my $id = $self->internal_id();
-
-   if( $self->_seq_cache() ) {
-       return $self->_seq_cache();
-   }
-
-   my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
-   my $res = $sth->execute();
-
-   # should be a better way of doing this
-   while(my $rowhash = $sth->fetchrow_hashref) {
-     my $str = $rowhash->{sequence};
-
-     if( ! $str) {
-       $self->throw("No DNA sequence in contig " . $self->id . " " . $id);
-     } 
-
-     $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+  my ($self) = @_;
+  my $id = $self->internal_id();
+  
+  if( $self->_seq_cache() ) {
+    return $self->_seq_cache();
+  }
+  
+  my $sth = $self->_dbobj->prepare("select d.sequence from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
+  my $res = $sth->execute();
+  
+  # should be a better way of doing this
+  while(my $rowhash = $sth->fetchrow_hashref) {
+    my $str = $rowhash->{sequence};
+    
+    if( ! $str) {
+      $self->throw("No DNA sequence in contig " . $self->id . " " . $id);
+    } 
+    
+    $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
      $str =~ s/\s//g;
-     $str =~ s/[^ATGCNRY]/N/g;
+    $str =~ s/[^ATGCNRY]/N/g;
+    
+    my $ret =Bio::PrimarySeq->new ( -seq => $str, -id => $id, -moltype => 'dna' );
+    $self->_seq_cache($ret);
+    
+    return $ret;
+  }
 
-     my $ret =Bio::PrimarySeq->new ( -seq => $str, -id => $id, -moltype => 'dna' );
-     $self->_seq_cache($ret);
-     
-     return $ret;
-   }
 
-
-   $self->throw("No dna sequence associated with $id!");
+  $self->throw("No dna sequence associated with $id!");
    
 }
 
 =head2 _seq_cache
 
- Title   : _seq_cache
- Usage   : $obj->_seq_cache($newval)
- Function: 
- Returns : value of _seq_cache
- Args    : newvalue (optional)
-
+  Title   : _seq_cache
+  Usage   : $obj->_seq_cache($newval);
+  Function: 
+  Returns : value of _seq_cache
+  Args    : newvalue (optional);
 
 =cut
 
 sub _seq_cache{
-   my $obj = shift;
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'_seq_cache'} = $value;
-   }
-   return $obj->{'_seq_cache'};
-
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{'_seq_cache'} = $value;
+  }
+  return $obj->{'_seq_cache'};
+  
 }
 
 =head2 get_all_SeqFeatures
 
- Title   : get_all_SeqFeatures
- Usage   : foreach my $sf ( $contig->get_all_SeqFeatures
- Function: Gets all the sequence features on the whole contig
- Example :
- Returns : 
- Args    :
+  Title   : get_all_SeqFeatures
+  Usage   : foreach my $sf ( $contig->get_all_SeqFeatures );
+  Function: Gets all the sequence features on the whole contig
+  Example :
+  Returns : 
+  Args    :
 
+=cut
+  
+sub get_all_SeqFeatures {
+  my ($self) = @_;
+  
+  my @out;
+  
+  push(@out,$self->get_all_SimilarityFeatures);
+  push(@out,$self->get_all_RepeatFeatures);
+  #   push(@out,$self->get_all_PredictionFeatures);
+  print(STDERR "Fetched all features\n");
+  return @out;
+}
+
+
+=head2 get_MarkerFeatures
+
+  Title   : get_MarkerFeatures 
+  Usage   : @fp = $contig->get_MarkerFeatures; 
+  Function: Gets MarkerFeatures. MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
 
 =cut
 
-sub get_all_SeqFeatures {
-    my ($self) = @_;
 
-    my @out;
+sub get_MarkerFeatures {
+  my $self = shift;
 
-    push(@out,$self->get_all_SimilarityFeatures);
-    push(@out,$self->get_all_RepeatFeatures);
-#   push(@out,$self->get_all_PredictionFeatures);
+  my $id = $self->internal_id;
+  my @result = ();
+  eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
 
-    print(STDERR "Fetched all features\n");
-    return @out;
+    # features for this contig with db=mapprimer
+    my $sth = $self->_dbobj->prepare
+      ( "select f.seq_start, f.seq_end, f.score, f.strand, f.name, ".
+	"f.hstart, f.hend, f.hid, f.analysis ".
+	"from feature f, analysis a ".
+	"where f.contig='$id' and ".
+	"f.analysis = a.id and a.db='mapprimer'" );
+    $sth->execute;
+    
+    my ($start, $end, $score, $strand, $hstart, 
+	$name, $hend, $hid, $analysisid );
+    my $analysis;
+    my %analhash;
+
+    $sth->bind_columns
+      ( \$start, \$end, \$score, \$strand, \$name, 
+	\$hstart, \$hend, \$hid, \$analysisid );
+	
+    while( $sth->fetch ) {
+      my $out;
+      
+      if (!$analhash{$analysisid}) {
+	$analysis = $self->_dbobj->get_Analysis($analysisid);
+	$analhash{$analysisid} = $analysis;
+	
+      } else {
+	$analysis = $analhash{$analysisid};
+      }
+    
+      $out = Bio::EnsEMBL::Map::MarkerFeature->new();
+      $out->set_all_fields
+	( $start,$end,$strand,$score,
+	  $name,'similarity',$self->id,
+	  $hstart,$hend,1,$score,$name,'similarity',$hid);
+	  $out->analysis($analysis);
+      $out->mapdb( $self->_dbobj->mapdb );
+      push( @result, $out );
+    }
+  };
+
+  if( $@ ) {
+    print STDERR ("Install the Ensembl-map package for this feature" );
+  }
+  return @result;
 }
+
 
 =head2 get_all_SimilarityFeatures
 
@@ -238,18 +307,20 @@ sub get_all_SeqFeatures {
 
 =cut
 
+
+  
 sub get_all_SimilarityFeatures{
-   my ($self) = @_;
-
-   my @array;
-
+  my ($self) = @_;
+   
+  my @array;
+   
    my $id     = $self->internal_id();
    my $length = $self->length();
-
+   
    my %analhash;
-
+   
    #First of all, get all features that are part of a feature set
-
+   
    my $sth = $self->_dbobj->prepare("select  p1.id, " .
 				             "p1.seq_start, p1.seq_end, " . 
  				             "p1.strand,p1.score,p1.analysis,p1.name,  " .
