@@ -95,6 +95,9 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
+  # Array to store supporting evidence for this exon
+  $self->{_supporting_evidence} = [];
+
   # add in EnsEMBL tag as 1.
 
   $self->primary_tag('exon');
@@ -629,6 +632,52 @@ sub _genscan_peptide{
 
 }
 
+
+=head2 add_supporting_evidence
+
+ Title   : add_supporting_evidence
+ Usage   : $obj->add_supporting_evidence($feature)
+ Function: 
+ Returns : Nothing
+ Args    : Bio::EnsEMBL::SeqFeature
+
+
+=cut
+
+
+sub add_supporting_evidence {
+    my ($self,$feature) = @_;
+
+    $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeature") unless 
+	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeature");
+
+    $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
+
+    push(@{$self->{_supporting_evidence}},$feature);
+}
+
+
+
+=head2 each_supporting_evidence
+
+ Title   : each_supporting_evidence
+ Usage   : my @f = $obj->each_supporting_evidence
+ Function: 
+ Returns : @Bio::EnsEMBL::Feature
+ Args    : none
+
+
+=cut
+
+
+sub each_supporting_evidence {
+    my ($self) = @_;
+
+    $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
+
+    return @{$self->{_supporting_evidence}};
+
+}
 
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here
