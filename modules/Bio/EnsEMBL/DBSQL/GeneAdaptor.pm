@@ -743,7 +743,7 @@ sub _objs_from_sth {
     $asm_cs_name = $asm_cs->name();
     $asm_cs_vers = $asm_cs->version();
     $cmp_cs_name = $cmp_cs->name();
-    $asm_cs_vers = $cmp_cs->version();
+    $cmp_cs_vers = $cmp_cs->version();
   }
 
   my $dest_slice_start;
