@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 9;
 }
 
 use MultiTestDB;
@@ -114,6 +114,14 @@ for my $asi ( @$asis ) {
 
 ok(( $asis->[0]->db_name eq "release_4" ) &&
    ( scalar @$asis == 2 ));
+
+
+#
+# 9 reject unknown stable ids
+#
+
+ok( ! defined $asia->fetch_by_stable_id_dbname( "FooBar", "release_unknown" ));
+
 
 
 sub _print_asi {
