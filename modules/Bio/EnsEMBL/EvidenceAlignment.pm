@@ -45,9 +45,8 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
-# modify placement on VC by adding the following to genomic start/end
-use constant VC_MINUS_STRAND_HACK_BP => -1;
-use constant VC_PLUS_STRAND_HACK_BP  => +1;
+# modify VCs' features' genomic start/end by the following:
+use constant VC_HACK_BP  => +1;
 
 use vars qw(@ISA);
 use strict;
@@ -183,8 +182,9 @@ sub contigid {
     Title   :   _get_features_from_transcript
     Usage   :   $ea->_get_features_from_transcript($transcript_obj, $vc);
     Function:   use SGP adaptor supplied to get evidence off a VC
-		of the transcript supplied; features not falling witin
-		exons are cut
+                of the transcript supplied; features not overlapping
+		any exon are cut; genomic start and end are modified
+		by VC_HACK_BP; duplicate features are removed
     Returns :   array of featurepairs
 
 =cut
@@ -195,27 +195,49 @@ sub _get_features_from_transcript {
 
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
-  my $hack_shift_bp;
-  if ($strand < 0) {
-    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
-  } else {
-    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
-  }
   my @all_features = $vc->get_all_SimilarityFeatures;
+  
   my @features = ();
   FEATURE_LOOP:
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
+      # fix VC-related coordinate problem
+      $feature->start($feature->start + VC_HACK_BP);
+      $feature->end($feature->end + VC_HACK_BP);
+      # store on overlap
       foreach my $exon (@exons) {
-        if ( $feature->start + $hack_shift_bp >= $exon->start
-	  and $feature->end  + $hack_shift_bp <= $exon->end) {
+        if ($exon->overlaps($feature)) {
 	  push @features, $feature;
 	  next FEATURE_LOOP;
 	}
       }
     }
   }
-  return @features;
+
+  # remove duplicates
+  my @sorted_features = sort {    $a->hseqname cmp $b->hseqname
+                               || $a->start    <=> $b->start
+                               || $a->end      <=> $b->end
+                               || $a->hstart   <=> $b->hstart
+                               || $a->hend     <=> $b->hend
+                               || $a->strand   <=> $b->strand
+			     } @features;
+  for (my $i = 1; $i < @sorted_features; $i++) {
+    my $f1 = $sorted_features[$i];
+    my $f2 = $sorted_features[$i-1];
+    if ( not $f1->hseqname cmp $f2->hseqname
+          || $f1->start    <=> $f2->start
+          || $f1->end      <=> $f2->end
+          || $f1->hstart   <=> $f2->hstart
+          || $f1->hend     <=> $f2->hend
+          || $f1->strand   <=> $f2->strand )
+    {
+      splice @sorted_features, $i, 1;
+      $i--;
+    }
+  }
+  
+  return @sorted_features;
 }
 
 =head2 _get_features_from_rawcontig
@@ -409,6 +431,47 @@ sub _get_hits {
   return \%hits_hash;
 }
 
+# _evidence_lines_sort: takes reference to an array of evidence lines
+# and reference to a hash of scores,
+# returns reference to the former sorted by score (highest score first),
+# with ties sorted alphabetically
+
+sub _evidence_lines_sort {
+  my ($self, $tmp_evidence_arr_ref, $scores_hash_ref) = @_;
+  $self->throw('interface fault') if (@_ != 3);
+
+  my @sorted_arr = sort {
+    $$scores_hash_ref{$b->accession_number}
+      <=> $$scores_hash_ref{$a->accession_number}
+      ||  $a->accession_number cmp $b->accession_number
+  } @$tmp_evidence_arr_ref;
+
+  return \@sorted_arr;
+}
+
+# _get_per_hid_effective_scores: takes reference to an array of features,
+# returns a reference to a hash giving the 'effective score' for each
+# hseqname, i.e., the score-like value upon which we wish to sort.
+
+sub _get_per_hid_effective_scores {
+  my ($self, $feature_arr_ref) = @_;
+  $self->throw('interface fault') if (@_ != 2);
+
+  my %per_hid_effective_scores = ();
+  foreach my $feature (@$feature_arr_ref) {
+    my $hseqname = $feature->hseqname;
+    my $feature_len = $feature->end - $feature->start + 1;
+    if (not exists $per_hid_effective_scores{$hseqname})
+    {
+      $per_hid_effective_scores{$hseqname} = 0;
+    }
+    $per_hid_effective_scores{$hseqname} += $feature_len;
+    # another possibility:
+    # $per_hid_effective_scores{$hseqname} += $feature_len * $feature->score
+  }
+  return \%per_hid_effective_scores;
+}
+
 # _get_aligned_features_for_contig: takes a contig ID, a DB adaptor
 # and strand
 # returns ref to an array of Bio::PrimarySeq
@@ -424,6 +487,8 @@ sub _get_aligned_features_for_contig {
   my $contig_obj = $db->get_Contig($contig_id);
 
   my @features = $self->_get_features_from_rawcontig($contig_obj, $strand);
+  my $per_hid_effective_scores_hash_ref
+    = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $nucseq_obj = $contig_obj->primary_seq;
   if ($strand < 0) {
@@ -468,12 +533,6 @@ sub _get_aligned_features_for_contig {
 
   PEP_FEATURE_LOOP:
   foreach my $feature (@features) {
-    next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
-      if ($last_feat
-      && ($last_feat->start  == $feature->start)
-      && ($last_feat->end    == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
     if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
       $self->warn("genomic coordinates out of range: start " .
         $feature->start . ", end " . $feature->end);
@@ -520,6 +579,7 @@ sub _get_aligned_features_for_contig {
   }
 
   my @sorted_pep_evidence_arr = @{$self->_evidence_sort(\@pep_evidence_arr)};
+  my @tmp_pep_evidence_arr = ();
 
   my $evidence_line = '';
   my $prev_hseqname = '-' x 1000;	# fake initial ID
@@ -545,10 +605,15 @@ sub _get_aligned_features_for_contig {
                       -accession_number => $$hit{hseqname},
 		      -moltype          => $$hit{moltype}
 	              );
-      push @evidence_arr, $evidence_obj;
+      push @tmp_pep_evidence_arr, $evidence_obj;
     }
     $prev_hseqname = $$hit{hseqname};
   }
+
+  my $sorted_pep_evidence_lines_ref =
+    $self->_evidence_lines_sort(\@tmp_pep_evidence_arr,
+                                $per_hid_effective_scores_hash_ref);
+  push @evidence_arr, @$sorted_pep_evidence_lines_ref;
 
   # nucleic acid evidence
 
@@ -565,12 +630,6 @@ sub _get_aligned_features_for_contig {
   $last_feat = undef;
   NUC_FEATURE_LOOP:
   foreach my $feature(@features) {
-    next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
-      if ($last_feat
-      && ($last_feat->start  == $feature->start)
-      && ($last_feat->end    == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
     if (($feature->start < 1) || ($feature->end > $dna_len_bp)) {
       $self->warn("genomic coordinates out of range: start " .
         $feature->start . ", end " . $feature->end);
@@ -626,6 +685,7 @@ sub _get_aligned_features_for_contig {
   }
 
   my @sorted_nuc_evidence_arr = @{$self->_evidence_sort(\@nuc_evidence_arr)};
+  my @tmp_nuc_evidence_arr = ();
 
   $evidence_line = '';
   my $hit = $sorted_nuc_evidence_arr[0];
@@ -652,10 +712,15 @@ sub _get_aligned_features_for_contig {
   		      -accession_number => $$hit{hseqname},
 		      -moltype          => $$hit{moltype}
 		    );
-      push @evidence_arr, $evidence_obj;
+      push @tmp_nuc_evidence_arr, $evidence_obj;
     }
     $prev_hseqname = $$hit{hseqname};
   }
+
+  my $sorted_nuc_evidence_lines_ref =
+    $self->_evidence_lines_sort(\@tmp_nuc_evidence_arr,
+                                $per_hid_effective_scores_hash_ref);
+  push @evidence_arr, @$sorted_nuc_evidence_lines_ref;
 
   # remove blank evidence lines
 
@@ -708,9 +773,11 @@ sub _get_aligned_evidence_for_transcript {
       }
     }
   }
-
   my @all_exons = $transcript_obj->get_all_Exons;
+
   my @features = $self->_get_features_from_transcript($transcript_obj, $vc);
+  my $per_hid_effective_scores_hash_ref =
+    $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
   my $translation = $transcript_obj->translate->seq;
   my $nucseq_str = $self->_get_transcript_nuc(\@all_exons);
@@ -788,13 +855,6 @@ sub _get_aligned_evidence_for_transcript {
 		  );
   push @evidence_arr, $evidence_obj;
 
-  my $hack_shift_bp;
-  if ($all_exons[0]->strand < 0) {
-    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
-  } else {
-    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
-  }
-
   my @seqcache = ();
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
@@ -803,14 +863,7 @@ sub _get_aligned_evidence_for_transcript {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
       next PEP_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + $hack_shift_bp >= $exon->start
-	    and $feature->end   + $hack_shift_bp <= $exon->end);
-      next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
-        if ($last_feat
-        && ($last_feat->start  == $feature->start)
-        && ($last_feat->end    == $feature->end)
-        && ($last_feat->hstart == $feature->hstart)
-        && ($last_feat->hseqname eq $feature->hseqname));
+        unless $exon->overlaps($feature);
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
         next PEP_FEATURE_LOOP;	# already warned in _get_hits()
@@ -833,13 +886,31 @@ sub _get_aligned_evidence_for_transcript {
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       $hseq = $self->_pad_pep_str($hseq);
+      if ($feature->start < $exon->start) {
+        my $old_flen = $flen;
+	$flen -= $exon->start - $feature->start;
+        $feature->start($exon->start);
+	if ($exon->strand > 0) {	# trim start of hit
+          $hseq = substr $hseq, $flen - $old_flen, $flen;
+	} else {			# trim end of hit
+          $hseq = substr $hseq, 0, $flen;
+	}
+      }
+      if ($feature->end > $exon->end) {
+        my $old_flen = $flen;
+	$flen -= $feature->end - $exon->end;
+	$feature->end($exon->end);
+        if ($exon->strand > 0) {	# trim end of hit
+          $hseq = substr $hseq, 0, $flen;
+	} else {			# trim start of hit
+	  $hseq = substr $hseq, $old_flen - $flen, $flen;
+	}
+      }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + VC_PLUS_STRAND_HACK_BP;
+        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
       } else {
-        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + VC_MINUS_STRAND_HACK_BP;
+        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -857,6 +928,7 @@ sub _get_aligned_evidence_for_transcript {
   }
 
   my @sorted_pep_evidence_arr = @{$self->_evidence_sort(\@pep_evidence_arr)};
+  my @tmp_pep_evidence_arr = ();
 
   $evidence_line = '';
   my $prev_hseqname = '-' x 1000;	# fake initial ID
@@ -868,25 +940,32 @@ sub _get_aligned_evidence_for_transcript {
 
     # splice in the evidence fragment
     my $hseqlen = length $$hit{hseq};
-    next if (($$hit{hindent} < $total_5prime_utr_len)
-          || ($$hit{hindent} + $hseqlen
-	     > ($cdna_len_bp - $total_3prime_utr_len)));
     substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
 
     # store if end of evidence line
     if (($i == $#sorted_pep_evidence_arr)
      || ($sorted_pep_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
     {
+      # purge the UTRs of protein 'evidence'
+      substr $evidence_line, 0, $total_5prime_utr_len,
+             ('-' x $total_5prime_utr_len);
+      substr $evidence_line, $cdna_len_bp - $total_3prime_utr_len,
+             $total_3prime_utr_len, ('-' x $total_3prime_utr_len);
       $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
   		      -accession_number => $$hit{hseqname},
 		      -moltype          => $$hit{moltype}
 		    );
-      push @evidence_arr, $evidence_obj;
+      push @tmp_pep_evidence_arr, $evidence_obj;
     }
     $prev_hseqname = $$hit{hseqname};
   }
+
+  my $sorted_pep_evidence_lines_ref =
+    $self->_evidence_lines_sort(\@tmp_pep_evidence_arr,
+                                $per_hid_effective_scores_hash_ref);
+  push @evidence_arr, @$sorted_pep_evidence_lines_ref;
 
   # nucleic acid evidence
 
@@ -906,14 +985,7 @@ sub _get_aligned_evidence_for_transcript {
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP	# unless feature falls within this exon
-        unless ($feature->start + $hack_shift_bp >= $exon->start
-	    and $feature->end   + $hack_shift_bp <= $exon->end);
-      next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
-        if ($last_feat
-        && ($last_feat->start  == $feature->start)
-        && ($last_feat->end    == $feature->end)
-        && ($last_feat->hstart == $feature->hstart)
-        && ($last_feat->hseqname eq $feature->hseqname));
+        unless $exon->overlaps($feature);
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
 	next NUC_FEATURE_LOOP;	# already warned in _get_hits()
@@ -934,6 +1006,28 @@ sub _get_aligned_evidence_for_transcript {
           ", hit start " . $feature->hstart . ", hit length $hlen\n");
         next NUC_FEATURE_LOOP;
       }
+      if ($feature->start < $exon->start) {
+        my $old_flen = $flen;
+	$flen -= $exon->start - $feature->start;
+	$hlen -= $exon->start - $feature->start;
+        $feature->start($exon->start);
+	if ($exon->strand > 0) {	# trim start of hit
+	  $feature->hstart($feature->hstart + $old_flen - $flen);
+	} else {			# trim end of hit
+	  $feature->hend($feature->hend - ($old_flen - $flen));
+	}
+      }
+      if ($feature->end > $exon->end) {
+        my $old_flen = $flen;
+	$flen -= $feature->end - $exon->end;
+	$hlen -= $feature->end - $exon->end;
+	$feature->end($exon->end);
+        if ($exon->strand > 0) {	# trim end of hit
+	  $feature->hend($feature->hend - ($old_flen - $flen));
+	} else {			# trim start of hit
+	  $feature->hstart($feature->hstart + $old_flen - $flen);
+	}
+      }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       my $strand_wrt_exon = $exon->strand * $feature->strand;
       if ($strand_wrt_exon < 0) {	# reverse-compliment the hit
@@ -947,11 +1041,9 @@ sub _get_aligned_evidence_for_transcript {
       }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
-	              + VC_PLUS_STRAND_HACK_BP;
+        $hindent_bp =   $total_exon_len + $feature->start - $exon->start;
       } else{
-        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
-	              + VC_MINUS_STRAND_HACK_BP;
+        $hindent_bp =    $total_exon_len + $exon->end - $feature->end;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -969,6 +1061,7 @@ sub _get_aligned_evidence_for_transcript {
   }
 
   my @sorted_nuc_evidence_arr = @{$self->_evidence_sort(\@nuc_evidence_arr)};
+  my @tmp_nuc_evidence_arr = ();
 
   $evidence_line = '';
   my $hit = $sorted_nuc_evidence_arr[0];
@@ -996,11 +1089,16 @@ sub _get_aligned_evidence_for_transcript {
   		      -accession_number => $$hit{hseqname},
 		      -moltype          => $$hit{moltype}
 		    );
-      push @evidence_arr, $evidence_obj;
+      push @tmp_nuc_evidence_arr, $evidence_obj;
     }
     $prev_hseqname = $$hit{hseqname};
     $prev_exon = $$hit{exon};
   }
+
+  my $sorted_nuc_evidence_lines_ref =
+    $self->_evidence_lines_sort(\@tmp_nuc_evidence_arr,
+                                $per_hid_effective_scores_hash_ref);
+  push @evidence_arr, @$sorted_nuc_evidence_lines_ref;
 
   # remove blank evidence lines
 
