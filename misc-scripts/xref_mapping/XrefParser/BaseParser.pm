@@ -693,6 +693,18 @@ sub show_valid_species() {
 
 }
 
+sub get_taxonomy_from_species_id{
+  my ($self,$species_id) = @_;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT taxonomy_id FROM species WHERE species_id = $species_id");
+  $sth->execute() || die $dbi->errstr;
+  if(my @row = $sth->fetchrow_array()) {
+    return $row[0];
+  }   
+  $sth->finish;
+  return undef;
+}
 
 sub get_xref{
   my ($acc,$source) = @_;
