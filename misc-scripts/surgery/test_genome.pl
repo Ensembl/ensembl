@@ -325,6 +325,11 @@ SELECT *
 FROM $srcDB.meta
 ") or die "Could not do meta table insertion: $dbh->errstr\n";
 
+$dbh->do("
+INSERT INTO $destDB.chromosome
+SELECT * 
+FROM $srcDB.chromosome
+") or die "Could not do meta table insertion: $dbh->errstr\n";
 
 # object_xref, identity_xref, xref
 # gene_description
