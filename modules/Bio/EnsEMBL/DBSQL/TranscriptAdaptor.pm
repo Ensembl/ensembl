@@ -139,9 +139,11 @@ sub store {
    # then store the transcript
    # then store the exon_transcript table
 
-   foreach my $exon ( $transcript->get_all_Exons() ) {
-     $exonAdaptor->store( $exon );
-   }
+# this will write in all the duplicate exons
+#   foreach my $exon ( $transcript->get_all_Exons() ) {
+#     $exonAdaptor->store( $exon );
+#   }
+
 
    my $translation = $transcript->translation();
    if( defined $translation ) {
