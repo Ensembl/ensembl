@@ -147,6 +147,7 @@ sub fetch_virtualRepeatFeatures_start_end {
 	while( my $row = $sth->fetchrow_arrayref() ) {
       	my $end = $row->[4];
 ## Glob results! 
+        next if($end < $old_end );
     	if($end < $old_end + $glob_bp) {
 			$repeats[-1]->{'chr_end'} = $end;
 	  	}	else {
