@@ -110,6 +110,48 @@ sub _final_clause {
   return  'order by p.prediction_transcript_id, p.exon_rank';
 }
 
+=head2 fetch_by_stable_id
+
+Arg [1]    : string $stable_id
+             The stable id of the transcript to retrieve
+Example    : $trans = $trans_adptr->fetch_by_stable_id('3.10.190');
+Description: Retrieves a prediction transcript via its stable id.  Note that
+             the stable id is not actually stored in the database and is 
+             calculated upon retrieval as the contig.start.end of the 
+             prediction transcript
+Returntype : Bio::EnsEMBL::PredictionTranscript
+Caller     : general
+
+=cut
+
+sub fetch_by_stable_id {
+  my $self = shift;
+  my $id = shift;
+
+  $self->throw('ID argument is required') if(!$id);
+
+  #strip the start/end off the end of the id to get the contig name
+  my @components = split(/\./, $id);
+  pop(@components);
+  pop(@components);
+
+  my $contig_name = join('.', @components);
+  my $contig = $self->db->get_RawContigAdaptor->fetch_by_name($contig_name);
+
+  $self->throw("unknown contig [$contig_name] in identifier [$id]") 
+    if(!$contig);
+  
+  #
+  # Retrieve all the prediction transcripts on the contig it is known to be on.
+  # Return the one found with the matching 'id'
+  #
+  foreach my $pt (@{$self->fetch_all_by_RawContig($contig)}) {
+    return $pt if($id eq $pt->stable_id);
+  }
+
+  #prediction transcript does not exist
+  $self->throw("No prediction transcipt exists with stable id [$id]");
+}
 
 
 =head2 _objs_from_sth
