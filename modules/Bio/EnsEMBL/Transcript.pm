@@ -891,17 +891,17 @@ sub pep_coords {
   
     my $fullpep = $self->translate()->seq;
 
+    
     foreach my $ex ($self->translateable_exons) {
 
 	my $tex=$ex->translate;
-	$tex =~ s/X$//g;
+	
 
 	my $pep=$tex->seq;
-
+	$pep =~ s/X$//g;
+	
 	my $start = index($fullpep,$pep) + 1;
-
-	#print STDERR "$start\n";
-
+	
 	my $end = $start + length($pep) - 1;
     
 	push(@starts,$start);
