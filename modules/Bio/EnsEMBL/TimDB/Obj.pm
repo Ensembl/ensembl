@@ -179,6 +179,7 @@ sub get_Clone{
 					       -sv=>$sv,
 					       -emblid=>$emblid,
 					       -htgsp=>$htgsp,
+					       -byacc => $self->{'_byacc'},
 					       );
     return $clone;
 }

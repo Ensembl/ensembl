@@ -288,7 +288,7 @@ sub seq{
     my $seqin = Bio::SeqIO::Fasta->new( -file => $file);
     $self->{'seq'} = $seqin->next_seq();
     $self->{'seq'}->type('Dna');
-
+    $self->{'seq'}->id($self->id());
     if( ! $self->{'seq'} ) {
 	$self->throw("Could not read sequence in $file");
     }

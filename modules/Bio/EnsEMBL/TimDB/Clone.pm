@@ -54,7 +54,7 @@ sub _initialize {
   my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
-  my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp)=
+  my ($dbobj,$id,$cgp,$disk_id,$sv,$emblid,$htgsp,$byacc)=
       $self->_rearrange([qw(DBOBJ
 			    ID
 			    CGP
@@ -62,6 +62,7 @@ sub _initialize {
 			    SV
 			    EMBLID
 			    HTGSP
+			    BYACC
 			    )],@args);
   $id || $self->throw("Cannot make contig db object without id");
   $disk_id || $self->throw("Cannot make contig db object without disk_id");
@@ -76,6 +77,7 @@ sub _initialize {
   $self->sv($sv);
   $self->embl_id($emblid);
   $self->htg_phase($htgsp);
+  $self->byacc($byacc);
   # db object
   $self->_dbobj($dbobj);
 
@@ -121,8 +123,10 @@ sub _initialize {
   my @res;
   foreach my $contig_id (@contig_id){
       my $disk_contig_id=$contig_id;
-      if($dbobj->{'_byacc'}){
+      print STDERR "Attempting to retrieve contig with $disk_contig_id\n";
+      if($self->byacc == 1){
 	  $contig_id=~s/^$disk_id/$id/;
+	  print STDERR "Mapping contig id $contig_id\n";
       }
       my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
 						     -cloneobj => $self,
@@ -354,6 +358,27 @@ sub htg_phase {
 	}
     }
     return $obj->{'_clone_htgsp'};
+}
+
+=head2 byacc
+
+ Title   : byacc
+ Usage   : $obj->byacc($newval)
+ Function: 
+ Returns : value of byacc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub byacc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'byacc'} = $value;
+    }
+    return $obj->{'byacc'};
+
 }
 
 
