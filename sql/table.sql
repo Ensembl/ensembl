@@ -727,107 +727,85 @@ CREATE TABLE map (
     
 ################################################################################
 #
-# Table structure for table 'mapfrag'
+# Table structure for table 'misc_feature'
 #
 
-CREATE TABLE mapfrag (
+CREATE TABLE misc_feature (
 
-  mapfrag_id 		      int(10) unsigned NOT NULL auto_increment,
-  type                        enum('clone','superctg','assembly_contig','band','chr','matepair', 'haploblock') NOT NULL default 'clone',
-  dnafrag_id                  int(10) unsigned NOT NULL default '0',
-  seq_start                   int(10) unsigned NOT NULL default '0',
-  seq_end                     int(10) unsigned NOT NULL default '0',
-  orientation                 tinyint(4) NOT NULL default '0',
-  name                        varchar(40) NOT NULL default '',
+  misc_feature_id 	      int(10) unsigned NOT NULL auto_increment,
+  seq_region_id               int(10) unsigned NOT NULL default '0',
+  seq_region_start            int(10) unsigned NOT NULL default '0',
+  seq_region_end              int(10) unsigned NOT NULL default '0',
+  seq_region_strand           tinyint(4) NOT NULL default '0',
 
-  PRIMARY KEY (mapfrag_id),
-  KEY name_idx( name ),
-  KEY m(dnafrag_id,seq_start)
+  PRIMARY KEY (misc_feature_id),
+  KEY seq_region_idx( seq_region_id, seq_region_start )
 
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'misc_attrib'
+#
+
+CREATE TABLE misc_attrib (
+
+  misc_feature_id             int(10) unsigned NOT NULL default '0',
+  misc_attrib_type_id         smallint(5) unsigned NOT NULL default '0',
+  value                       varchar(255) NOT NULL default '',
+
+  KEY type_val_idx( misc_attrib_type_id, value ),
+  KEY misc_feature_idx( misc_feature_id )
 ) TYPE=MyISAM;
 
 ################################################################################
 #
-# Table structure for table 'dnafrag'
+# Table structure for table 'misc_attrib_type'
 #
 
-CREATE TABLE dnafrag (
+CREATE TABLE misc_attrib_type (
 
-  dnafrag_id                  int(10) unsigned NOT NULL auto_increment,
-  name                        varchar(40) NOT NULL default '',
-  dnafrag_type                varchar(40) default NULL,
-
-  PRIMARY KEY (dnafrag_id),
-  UNIQUE KEY name(name)
-
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'mapannotation'
-#
-
-CREATE TABLE mapannotation (
-
-  mapannotation_id 	      int(10) unsigned NOT NULL auto_increment,
-  mapfrag_id                  int(10) unsigned NOT NULL default '0',
-  mapannotationtype_id        smallint(5) unsigned NOT NULL default '0',
-  value                       varchar(240) NOT NULL default '',
-
-  PRIMARY KEY (mapannotation_id),
-  KEY mapfrag_id(mapfrag_id,mapannotationtype_id),
-  KEY mapannotationtype_id(mapannotationtype_id,mapfrag_id),
-  KEY value(value,mapannotationtype_id),
-  KEY mapannotationtype_id_2(mapannotationtype_id,value)
-
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'mapannotationtype'
-#
-
-CREATE TABLE mapannotationtype (
-
-  mapannotationtype_id        smallint(5) unsigned NOT NULL auto_increment,
+  misc_attrib_type_id         smallint(5) unsigned NOT NULL auto_increment,
   code                        varchar(15) NOT NULL default '',
   name                        varchar(255) NOT NULL default '',
   description                 text NOT NULL,
 
-  PRIMARY KEY (mapannotationtype_id),
+  PRIMARY KEY ( misc_attrib_type_id),
   UNIQUE KEY c(code)
 
 ) TYPE=MyISAM;
 
 ################################################################################
 #
-# Table structure for table 'mapset'
+# Table structure for table 'misc_set'
 #
 
-CREATE TABLE mapset (
+CREATE TABLE misc_set (
 
-  mapset_id                   smallint(5) unsigned NOT NULL auto_increment,
+  misc_set_id                 smallint(5) unsigned NOT NULL auto_increment,
   code                        varchar(15) NOT NULL default '',
   name                        varchar(255) NOT NULL default '',
   description                 text NOT NULL,
   max_length                  int unsigned not null,
 
-  PRIMARY KEY (mapset_id),
+  PRIMARY KEY (misc_set_id),
   UNIQUE KEY c(code)
 
 ) TYPE=MyISAM;
 
 ################################################################################
 #
-# Table structure for table 'mapfrag_mapset'
+# Table structure for table 'misc_feature_misc_set'
 #
 
-CREATE TABLE mapfrag_mapset (
+CREATE TABLE misc_feature_misc_set (
 
-  mapfrag_id 		      int(10) unsigned NOT NULL default '0',
-  mapset_id 		      smallint(5) unsigned NOT NULL default '0',
+  misc_feature_id 	      int(10) unsigned NOT NULL default '0',
+  misc_set_id 		      smallint(5) unsigned NOT NULL default '0',
 
-  PRIMARY KEY (mapset_id,mapfrag_id)
+  PRIMARY KEY ( misc_feature_id, misc_set_id ),
+  KEY reverse_idx( misc_set_id, misc_feature_id )
 
 ) TYPE=MyISAM;
 
