@@ -490,9 +490,12 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
+   my $query = "select id,seq_start,seq_end,strand,score,analysis " . 
+       "from feature where contig = $id and name = 'genscan'";
 
-   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis" . 
-				    "from feature where contig = '$id' and name = 'genscan'");
+   #print STDERR "Query is " . $query . "\n";
+
+   my $sth = $self->_dbobj->prepare($query);
    
    $sth->execute();
    

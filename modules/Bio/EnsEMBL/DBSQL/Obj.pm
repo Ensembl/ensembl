@@ -2353,7 +2353,7 @@ sub write_Contig {
    my $len       = $dna   ->length;
    my $seqstr    = $dna   ->seq;
    my $offset    = $contig->embl_offset();
-   my $chromosomeId = $contig->chromosome->get_db_id;
+   my $chromosomeId = $self->write_Chromosome;#$contig->chromosome->get_db_id;
 
    $seqstr =~ tr/atgcn/ATGCN/;
 
@@ -2370,6 +2370,7 @@ sub write_Contig {
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
+       print(STDERR "$sql\n");
      my $sth =  $self->prepare($sql);
      my $rv  =  $sth->execute();
      $self->throw("Failed to insert contig $contigid") unless $rv;
@@ -2394,6 +2395,12 @@ sub write_Contig {
    return 1;
 }
 
+sub write_Chromosome {
+    my ($self,$chromosome) = @_;
+    
+    return 1;
+
+}
 =head2 write_Clone
 
  Title   : write_Clone
