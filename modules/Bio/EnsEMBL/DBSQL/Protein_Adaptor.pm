@@ -504,6 +504,58 @@ sub fetch_by_array_feature{
    
 }
 
+=head2 get_Intron_Position
+
+ Title   : get_Intron_Position
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Intron_Position{
+    my ($self,$protein) = @_;
+
+    my $count = 1;
+    
+    my $protid = $protein->id;
+        my $query = "select id from transcript where translation = '$protid'";
+    my $sth = $self->prepare($query);
+    $sth ->execute();
+    my @rowid = $sth->fetchrow;
+    my $transid = $rowid[0];
+    
+    my $transcript = $self->fetch_Transcript_by_dbid($transid);
+    my ($starts,$ends) = $transcript->pep_coords;
+    
+    my @exons = $transcript->each_Exon();
+    my $nbex = scalar(@exons);
+
+    while ($count < $nbex) {
+	
+#An analysis object should also be created here
+	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
+						   -start => $starts->[$count],
+						   -end => $starts->[$count],
+						   -score => 0, 
+						   -percent_id => "NULL",
+						   -p_value => "NULL");
+	
+	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 1,
+						  -end => 1,
+						  -seqname => "Intron");
+	
+	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+							    -feature2 => $feat2,);
+        
+	$protein->add_Protein_feature($feature);
+	$count++;
+    }    
+    return $protein; 
+}
 
 
 

@@ -1311,21 +1311,13 @@ sub get_Transcript{
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
 	
-
- 	
-	if( ! defined $phase ) {
-	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
-	}
-	
-	# I think this is a dirty hack 
-	#if( exists $seen{"$exonid-$rank"} ) {
-	#    next;
-	#}
+#Creates a transcript object
 	$trans = Bio::EnsEMBL::Transcript->new();
 	
 	$trans->id     ($transcriptid);
 	$trans->version($transcriptversion);
-	
+
+#Creates a translation object	
 	my $translation = Bio::EnsEMBL::Translation->new();
 	
 	$translation->start        ($trans_start);
@@ -1335,10 +1327,9 @@ sub get_Transcript{
 	$translation->id           ($translationid);
 	$translation->version      ($translationversion);
 	$trans->translation        ($translation);
-	    
+
+#Creates an exon object	    
 	my $exon = Bio::EnsEMBL::Exon->new();
-	
-	#print(STDERR "Creating exon - contig id $contigid\n");
 	
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
