@@ -859,6 +859,8 @@ sub pep_coords {
 	my $tex=$ex->translate;
 	my $pep=$tex->seq;
     
+	$tex =~ s/X$//g;
+
 	my $start = index($fullpep,$pep) + 1;
 	my $end = $start + length($pep) - 1;
     

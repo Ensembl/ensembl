@@ -175,6 +175,27 @@ sub each_Protein_feature{
 
 }
 
+=head2 each_Intron_feature
+
+ Title   : each_Intron_feature
+ Usage   :my @introns_feature = $protein->each_Intron_feature($proteinid)
+ Function:Get all of the introns as Protein_FeaturePair for a given peptide and add them to protein features
+ Example :
+ Returns : Nothing
+ Args    :Peptide ID
+
+
+=cut
+
+sub each_Intron_feature{
+   my ($self) = @_;
+   my $proteinid = $self->id();
+   print STDERR "$proteinid\n";
+   my @array_introns = $self->adaptor->get_Intron_Position($proteinid);
+   return @array_introns;
+}
+
+
 
 =head2 add_Protein_feature
 
@@ -192,7 +213,7 @@ sub add_Protein_feature{
    my ($self,$value) = @_;
 
    if (!defined $value) {
-     $self->throw("This [$value] is not a Protein feature");
+     $self->throw("The Protein Feature added is not defined!!!");
    }
 
    push(@{$self->{'_prot_feat'}},$value);   
@@ -379,6 +400,29 @@ sub end{
    return $length;
 
 }
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   : $obj->adaptor($newval)
+ Function: 
+ Returns : value of adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub adaptor{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+
+      $obj->{'adaptor'} = $value;
+    }
+    return $obj->{'adaptor'};
+
+}
+
 
 
 1;

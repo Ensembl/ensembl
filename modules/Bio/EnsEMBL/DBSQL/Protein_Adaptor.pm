@@ -191,8 +191,9 @@ sub fetch_Protein_by_dbid{
 					      -primary_id => $id,
 					      -id => $id,
 					      -desc => $desc,
-					      -moltype => $moltype
+
 					      );
+   $protein->adaptor($self);	
 
 #Add the species object to protein object
    $protein->species($species);
@@ -517,17 +518,21 @@ sub fetch_by_array_feature{
 =cut
 
 sub get_Intron_Position{
-    my ($self,$protein) = @_;
-
+    my ($self,$protid) = @_;
+    my @array_features;
     my $count = 1;
     
-    my $protid = $protein->id;
-        my $query = "select id from transcript where translation = '$protid'";
+    #my $protid = $protein->id;
+    my $query = "select id from transcript where translation = '$protid'";
     my $sth = $self->prepare($query);
     $sth ->execute();
     my @rowid = $sth->fetchrow;
     my $transid = $rowid[0];
     
+    if (!defined $transid) {
+	$self->throw("No transcript can be retrieved with this translation id: $protid")
+	}
+
     my $transcript = $self->fetch_Transcript_by_dbid($transid);
     my ($starts,$ends) = $transcript->pep_coords;
     
@@ -551,10 +556,12 @@ sub get_Intron_Position{
 	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
 							    -feature2 => $feat2,);
         
-	$protein->add_Protein_feature($feature);
+	#$protein->add_Protein_feature($feature);
+	push(@array_features,$feature);
+	
 	$count++;
     }    
-    return $protein; 
+    return @array_features; 
 }
 
 
