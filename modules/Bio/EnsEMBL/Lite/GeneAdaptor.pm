@@ -169,7 +169,7 @@ sub fetch_by_gene_id_list {
 sub fetch_all_by_Slice {
     my ( $self, $slice, $logic_name, $empty_flag ) = @_;
 
-    my $key = $slice->name . ":$logic_name";
+    my $key = $slice->name . (defined ($logic_name) ? ":$logic_name" : "");
 
     if($empty_flag) {
     # return from cache or the _get_empty_Genes fn while caching results....
@@ -246,6 +246,7 @@ sub fetch_by_DBEntry {
 
 sub fetch_by_stable_id {
   my ($self, $stable_id, $chr_coords) = @_;
+  warn( "~~~~~~~~~~~~~~" );
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
   my $sth = $self->prepare
