@@ -124,7 +124,7 @@ WHERE g.chr_name = '$chr'
     dump_data($sql, $satdb, 'family' );
 
     $sql = "
-SELECT fm.* 
+SELECT distinct fm.* 
 FROM $satdb.family_members fm, $satdb.family f, $litedb.gene g
 WHERE g.chr_name = '$chr'
   and g.family = f.id
