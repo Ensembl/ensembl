@@ -73,11 +73,16 @@ my $dbseq = $contig->DB_primary_seq();
 print "ok 4\n";
 
 #Check that DBPrimarySeq methods work
-my $contig_id = $dbseq->contig_id;
+my $contig_id = $dbseq->contig_internal_id;
+
 print "ok 5\n";
 #print STDERR "Internal id of $conf{'contig'} is $contig_id\n";
 
 my $dna_id = $dbseq->dna_id;
+my $primary_id = $dbseq->primary_id;
+my $display_id = $dbseq->display_id;
+my $id = $dbseq->id;
+print STDERR "Got $dna_id,$primary_id,$id and $contig_id,$display_id\n";
 print "ok 6\n";
 #print STDERR "Dna id of $conf{'contig'} is $dna_id\n";
 

@@ -44,45 +44,51 @@ Internal methods are usually preceded with a _
 
 
 # Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
+use Bio::PrimarySeqI;
 
-use Bio::Root::Object;
-
-
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::RootI Bio::PrimarySeqI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
+  my $self;
+
+  $self = {};
+  bless $self,$class;
 
   my($dna_id,$dbh) =
       $self->_rearrange([qw(DNA 
-                            DB_HANDLE
+			    DB_HANDLE
 			    )],
 			@args);
-
-  my $make = $self->SUPER::_initialize;
-
+  
   if( !defined $dna_id) {
       $self->throw("You must provide a dna id to create a DBPrimarySeq object!");
   }
   if( !defined $dbh) {
       $self->throw("You must provide a database handle to create a DBPrimarySeq object!");
   }
-  
   $self->dna_id($dna_id);
+  $self->primary_id($dna_id);
   $self->db_handle($dbh);
-
-# set stuff in self from @args
- return $make; # success - we hope!
+  
+  my $sth=$self->db_handle->prepare("SELECT id,internal_id FROM contig WHERE dna = ".$self->dna_id."");
+  $sth->execute(); 
+  while (my $rowhash=$sth->fetchrow_hashref) {
+      $self->display_id($rowhash->{'id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
+      $self->contig_internal_id($rowhash->{'internal_id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
+      }
+  
+  # set stuff in self from @args
+  return $self; # success - we hope!
 }
 
 =head2 dna_id
@@ -105,55 +111,61 @@ sub dna_id{
     return $obj->{'dna_id'};
 }
 
-=head2 contig_id
+=head2 contig_internal_id
 
- Title   : contig_id
- Usage   : $obj->contig_id($newval)
+ Title   : contig_internal_id
+ Usage   : $obj->contig_internal_id($newval)
  Function: get/set method for the contig internal id
  Example : 
  Returns : value of contig internal id
  Args    : newvalue (optional) 
 =cut
 
-sub contig_id{
+sub contig_internal_id{
     my ($self,$value) = @_;
-    
-    my $id=$self->dna_id;
-    
-    my $sth=$self->db_handle->prepare("SELECT internal_id FROM contig WHERE dna = $id");
-    $sth->execute(); 
-    
-    my($contig_id) = $sth->fetchrow
-	or $self->throw("No contig id for dna " .$id);
-    
-    return $contig_id;
-}
+    if( defined $value) {
+	$self->{'_internal_id'} = $value;
+    }
+    return $self->{'_internal_id'};
+} 
 
 =head2 display_id
 
  Title   : display_id
- Usage   : $id_string = $obj->display_id();
- Function: returns the EnsEMBL contig id
-           note that most other id methods are mapped to this one
- Returns : A string
+ Usage   : $obj->display_id($newval)
+ Function: get/set method for the dna id
+ Returns : value of display_id
+ Args    : newvalue (optional) 
+
+=cut
+
+sub display_id {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_display_id'} = $value;
+    }
+    return $self->{'_display_id'};
+} 
+
+=head2 primary_id
+
+ Title   : primary_id
+ Usage   : $obj->primary_id($newval);
+ Function: get/set method for the primary id
+ Returns : value of primary id
  Args    : None
 
 
 =cut
 
-sub display_id {
-   my ($self) = @_;
+sub primary_id {
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_primary_id'} = $value;
+    }
+    return $self->{'_primary_id'};
+} 
 
-   my $id=$self->contig_id;
-   
-   my $sth=$self->db_handle->prepare("SELECT id FROM contig WHERE internal_id = $id");
-   $sth->execute(); 
-   
-   my($display_id) = $sth->fetchrow
-       or $self->throw("No EnsEMBL id for contig internal id " .$id);
-
-   return $display_id;
-}
 
 =head2 db_handle
 
@@ -193,11 +205,6 @@ sub seq {
    $sth->execute();
    my($str) = $sth->fetchrow
        or $self->throw("No DNA sequence for dna id " . $id);
-   
-   $str =~ /[^ABCDGHKMNRSTVWY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
-   $str =~ s/\s//g;
-   $str =~ s/[^ABCDGHKMNRSTVWY]/N/g;
-
    return $str;
 }
 
@@ -253,8 +260,6 @@ sub subseq{
 =cut
 
 sub moltype{
-   my ($self,@args) = @_;
-
    return "dna";
 }
 
@@ -269,10 +274,10 @@ sub moltype{
 
 =cut
 
-sub  id {
+sub id {
    my ($self)= @_;
 
-   return $self->display_id();
+   return $self->primary_id();
 }
 
 =head2 length

@@ -35,7 +35,7 @@ print "ok \n";    # 1st test passed, loaded needed modules
 $conf{'overlap'}      = 'testoverlap';
 $conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
 $conf{'mysql'}      = '/mysql/current/bin/mysql';
-$conf{'user'}       = 'ensembl';
+$conf{'user'}       = 'root';
 $conf{'perl'}       = 'perl';
 
 if ( -e 't/overlap.conf' ) {
