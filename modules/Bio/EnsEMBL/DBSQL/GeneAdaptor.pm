@@ -1,24 +1,24 @@
-# EnsEMBL Gene reading writing adaptor for mySQL
 #
 # Copyright EMBL-EBI 2001
 #
 # Author: Arne Stabenau
-# based on 
+# based on
 # Elia Stupkas Gene_Obj
-# 
+#
 # Date : 20.02.2001
 #
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::GeneAdaptor - MySQL Database queries to generate and store gens.
+Bio::EnsEMBL::DBSQL::GeneAdaptor - A database aware adaptor responsible for the
+retrieval and storage of Gene objects.
 
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::DBSQL::DBAdaptor;
-  
+
   $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
-  
+
   $gene_adaptor = $db->get_GeneAdaptor();
 
   $gene = $gene_adaptor->fetch_by_dbID(1234);

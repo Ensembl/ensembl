@@ -12,14 +12,15 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
+Bio::EnsEMBL::DBSQL::SliceAdaptor - A database aware adaptor responsible for
+the creation of Slice objects.
 
 =head1 SYNOPSIS
 
   my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
 
   my $slice_adaptor = $db->get_SliceAdaptor();
-  
+
   #get a slice on the entire chromosome X
   my $chr_slice = $slice_adaptor->fetch_by_region('chromosome','X');
 
@@ -36,7 +37,7 @@ Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
 =head1 DESCRIPTION
 
 This module is responsible for fetching Slices representing genomic regions
-from a database.  Details on how slices can be used are in the 
+from a database.  Details on how slices can be used are in the
 Bio::EnsEMBL::Slice module.
 
 =head1 AUTHOR - Ewan Birney
@@ -499,7 +500,7 @@ sub fetch_all {
     my $key = lc($name) . ':'. $cs_key;
     $name_cache->{$key} = [$seq_region_id, $length];
     $id_cache->{$seq_region_id} = [$name, $length, $cs];
-    
+
     #
     # split the seq regions into appropriately sized chunks
     #
@@ -517,7 +518,7 @@ sub fetch_all {
       #calculate number of slices to create
       $number = ($length-$overlap) / ($max_length-$overlap);
       $number = int($number + 1.0); #round up to int (ceiling) 
-      
+
       #calculate length of created slices
       $multiple = $length / $number;
       $multiple   = int($multiple); #round down to int (floor)
@@ -533,7 +534,7 @@ sub fetch_all {
 
       #any remainder gets added to the last slice of the seq_region
       $end = $length if($i == $number-1);
-      
+
       push @out, Bio::EnsEMBL::Slice->new(-START           => $start,
                                           -END             => $end,
                                           -STRAND          => 1,
@@ -881,11 +882,11 @@ sub fetch_by_misc_feature_attribute {
 sub fetch_normalized_slice_projection {
   my $self = shift;
   my $slice = shift;
-  
+
   my $slice_seq_region_id = $self->get_seq_region_id( $slice );
-  
+
   my $result = $self->{'asm_exc_cache'}->{$slice_seq_region_id};
- 
+
   if(!defined($result)) {
     my $sql = "
       SELECT seq_region_id, seq_region_start, seq_region_end,
@@ -906,7 +907,7 @@ sub fetch_normalized_slice_projection {
     my ( $seq_region_id, $seq_region_start, $seq_region_end,
          $exc_type, $exc_seq_region_id, $exc_seq_region_start,
          $exc_seq_region_end ) = @$row;
-    
+
     # need overlapping PAR and all HAPs if any
     if( $exc_type eq "PAR" ) {
       if( $seq_region_start <= $slice->end() && 
@@ -925,7 +926,7 @@ sub fetch_normalized_slice_projection {
     return  [[1,$slice->length, $slice]];
   }
 
-  my @syms;    
+  my @syms;
   if( @haps > 1 ) {
     my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
     throw( "More than one HAP region not supported yet" );
@@ -947,13 +948,13 @@ sub fetch_normalized_slice_projection {
     #the inserted region can differ in length, but mapped sections
     #need to be same lengths
     my $diff = $hap->[4] - $hap->[1];
-      
+
     # we want the region of the haplotype INVERTED
     push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
     push( @syms, [ $hap->[1]+1, $max_len - $diff, 
                    $hap->[2], $hap->[4] + 1, $max_len ] );   
   }
-    
+
   # for now haps and pars should not be both there, but in theory we 
   # could handle it here by cleverly merging the pars into the existing syms,
   # for now just:
@@ -966,9 +967,9 @@ sub fetch_normalized_slice_projection {
   }
 
   my @linked = $mapper->map_coordinates( $slice_seq_region_id,
-                                         $slice->start(), $slice->end(), 
+                                         $slice->start(), $slice->end(),
                                          $slice->strand(), "sym" );
-    
+
   # gaps are regions where there is no mapping to another region
   my $rel_start = 1;
 
@@ -988,7 +989,7 @@ sub fetch_normalized_slice_projection {
          -COORD_SYSTEM => $slice->coord_system(),
          -ADAPTOR      => $self,
          -SEQ_REGION_NAME => $slice->seq_region_name);
-      push( @out, [ $rel_start, $coord->length()+$rel_start-1, 
+      push( @out, [ $rel_start, $coord->length()+$rel_start-1,
                         $exc_slice ] );
     } else {
       my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
@@ -1002,7 +1003,7 @@ sub fetch_normalized_slice_projection {
          -ADAPTOR => $self
         );
 	
-      push( @out, [ $rel_start, $coord->length() + $rel_start - 1, 
+      push( @out, [ $rel_start, $coord->length() + $rel_start - 1,
                     $exc2_slice ] );
     }
     $rel_start += $coord->length();
@@ -1061,15 +1062,15 @@ sub store {
   if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
     throw('Slice argument is required');
   }
-  
+
   my $cs = $slice->coord_system();
   throw("Slice must have attached CoordSystem.") if(!$cs);
-  
+
   my $db = $self->db();
   if(!$cs->is_stored($db)) {
     throw("Slice CoordSystem must already be stored in DB.") 
   }
-  
+
   if($slice->start != 1 || $slice->strand != 1) {
     throw("Slice must have start==1 and strand==1.");
   }
@@ -1100,7 +1101,7 @@ sub store {
   }
 
   #store the seq_region
-  
+
   my $sth = $db->prepare("INSERT INTO seq_region " .
                          "SET    name = ?, " .
                          "       length = ?, " .
@@ -1167,7 +1168,7 @@ sub fetch_by_chr_start_end {
 
 =head2 fetch_by_contig_name
 
-  Description: Deprecated. Use fetch_by_region(), Slice::project(), 
+  Description: Deprecated. Use fetch_by_region(), Slice::project(),
                Slice::expand() instead
 
 =cut

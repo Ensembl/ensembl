@@ -302,22 +302,22 @@ sub _objs_from_sth {
     #
     if($dest_slice) {
       if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	if($dest_slice_strand == 1) {
-	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	} else {
-	  my $tmp_seq_region_start = $seq_region_start;
-	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	  $seq_region_strand *= -1;
-	}
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
 
-	#throw away features off the end of the requested slice
-	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE;
-	}
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
       }
-	$slice = $dest_slice;
+      $slice = $dest_slice;
     }
 
     #finally, create the new dna align feature
