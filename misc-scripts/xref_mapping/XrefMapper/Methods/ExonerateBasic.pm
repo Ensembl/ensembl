@@ -8,7 +8,7 @@ use File::Basename;
 use IPC::Open3;
 
 # Path to exonerate executable
-my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.8.3";
+my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.9";
 
 
 sub new {
@@ -39,6 +39,8 @@ sub run() {
   my ($self, $query, $target, $dir) = @_;
 
   my $name = $self->submit_exonerate($query, $target, $dir, $self->options());
+
+  $self->check_err($dir);
 
   return $name;
 
@@ -178,6 +180,20 @@ sub get_class_name() {
 
   return @bits[$#bits];
 
+}
+
+# Check if any .err files exist that have non-zero size;
+# this indicates that something has gone wrong with the exonerate run
+
+sub check_err {
+
+  my ($self, $dir) = @_;
+
+  foreach my $err (glob("$dir/*.err")) {
+
+    print "Warning: $err has non-zero size; may indicate problems with exonerate run\n" if (-s $err);
+
+  }
 }
 
 1;
