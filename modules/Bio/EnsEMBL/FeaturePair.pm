@@ -130,6 +130,11 @@ sub analysis{
        $self->{_analysis} = $value;
    }
 
+   if (defined($self->{_analysis})) {
+       return $self->{_analysis};
+   } else {
+       return $self->feature1->analysis;
+   }
    return $self->{_analysis};
 }
 
