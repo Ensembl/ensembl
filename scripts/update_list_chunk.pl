@@ -40,12 +40,6 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::Root::Object);
 
-my $fdbtype = 'timdb';
-my $fhost   = 'obi-wan';
-my $fport   = '410000';
-my $fdbname = 'ensembl';
-my $fdbuser = 'ensro';
-my $fpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
@@ -61,12 +55,6 @@ my $verbose = 1;
 my $slice;
 
 &GetOptions( 
-	     'fdbtype:s'  => \$fdbtype,
-	     'fhost:s'    => \$fhost,
-	     'fport:n'    => \$fport,
-	     'fdbname:s'  => \$fdbname,
-	     'fdbuser:s'  => \$fdbuser,
-	     'fpass:s'    => \$fpass,
 	     'tdbtype:s'  => \$tdbtype,
 	     'thost:s'    => \$thost,
 	     'tport:n'    => \$tport,
