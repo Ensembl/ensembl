@@ -213,8 +213,7 @@ foreach my $vc_list_ref ( @vcs ) {
 	# try to load genes
 	#$vc->get_all_Genes;
 	
-	$vc->molecule('dna');
-	$vc->division('HUM');
+	
 	# debug tests by contig
 	print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
