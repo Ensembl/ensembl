@@ -138,7 +138,6 @@ sub to_FTHelper {
    
   foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
     $join .= ',' if($join); #append a comma to the last coord set
-
     if($exon->strand() == 1) {
       $join .= $exon->start()."..".$exon->end();
     } else {
@@ -160,7 +159,7 @@ sub to_FTHelper {
   }
   push(@out, $ft);
 
-  foreach my $exon (@{$trans->get_all_Exons()}) {
+  foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
     my $ft = Bio::SeqIO::FTHelper->new();
     
     if( $exon->strand() == 1 ) {
