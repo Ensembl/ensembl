@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 =head1 SYNOPSIS
 
-  $analysisAdaptor = $dbobj->getAnalysisAdaptor;
+  $analysisAdaptor = $db_adaptor->getAnalysisAdaptor;
   $analysisAdaptor = $analysisobj->getAnalysisAdaptor;
 
 
@@ -45,48 +45,50 @@ package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Time::Local;
 
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::Root );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
 
 
 =head2 new
 
-  Arg  1    : Bio::EnsEMBL::DBSQL::DBAdaptor $dbadaptor
-  Function  : create an AnalysisAdaptor. Caches all Analysis objects from the database.
-  Returntype: Bio::EnsEMBL::DBSQL::AnalysisAdaptor
-  Exceptions: none
-  Caller    : DBAdaptor::get_AnalysisAdaptor
+  Args       : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Example    : my $aa = new Bio::EnsEMBL::DBSQL::AnalysisAdaptor();
+  Description: Creates a new Bio::EnsEMBL::DBSQL::AnalysisAdaptor object and
+               internally loads and caches all the Analysis objects from the 
+               database.
+  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
 
 =cut
 
-
 sub new {
-  my $class = shift;
-  my $self = bless {},$class;
-  
-  my $dbobj = shift;
+  my ($class, $db) = @_;
 
-  $self->db( $dbobj );
+  my $self = $class->SUPER::new($db);
+  
+  #load and cache all of the Analysis objects
   $self->fetch_all;
+
   return $self;
 }
 
 
 =head2 fetch_all
 
-  Args      : none
-  Function  : Retrieves all Analysis objects from the database,
-              caches them.
-  Returntype: list Bio::EnsEMBL::Analysis
-  Exceptions: none
-  Caller    : $self->new
+  Args       : none
+  Example    : my @analysis = $analysis_adaptor->fetch_all()
+  Description: fetches all of the Analysis objects from the database and caches
+               them internally.
+  Returntype : list of Bio::EnsEMBL::Analysis retrieved from the database
+  Exceptions : none
+  Caller     : AnalysisAdaptor::new
 
 =cut
-
 
 sub fetch_all {
   my $self = shift;
@@ -118,12 +120,14 @@ sub fetch_all {
 
 =head2 fetch_by_dbID
 
-  Arg 1     : int $internal_analysis_id
-  Function  : Retrieves an analysis from database by internal id.
-              Returns undef if id not present in db.
-  Returntype: Bio::EnsEMBL::Analysis
-  Exceptions: none
-  Caller    : generally used
+  Arg [1]    : int $internal_analysis_id - the database id of the analysis 
+               record to retrieve
+  Example    : my $analysis = $analysis_adaptor->fetch_by_dbID(1);
+  Description: Retrieves an Analysis object from the database via its internal
+               id.
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -160,27 +164,17 @@ sub fetch_by_dbID {
 }
 
 
-=head2 fetch_by_newest_logic_name
+=head2 fetch_by_logic_name
 
-  Arg  1    : txt $logic_name
-  Function  : Retrieve latest Analysis object from db with given logic_name
-  Returntype: Bio::EnsEMBL::Analysis
-  Exceptions: none
-  Caller    : Probably Pipeline control scripts
+  Arg [1]    : string $logic_name the logic name of the analysis to retrieve
+  Example    : my $analysis = $a_adaptor->fetch_by_logic_name('Eponine');
+  Description: Retrieves an analysis object from the database using its unique
+               logic name.
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
 
 =cut
-
-
-sub fetch_by_newest_logic_name {
-  my $self = shift;
-  my $logic_name = shift;
-  
-  $self->warn("logic_names should now be unique should not " .
-	      "need to use this method use fetch_by_logic_name\n");
-
-  return $self->fetch_by_logic_name($logic_name);
-}
-
 
 sub fetch_by_logic_name {
   my $self = shift;
@@ -221,18 +215,19 @@ sub fetch_by_logic_name {
 }
 
 
+
 =head2 store
 
-  Arg  1    : Bio:EnsEMBL::Analysis $analysis
-  Function  : stores $analysis in db. Doesn if already equppied with dbID
-              Sets created date if not already set. Sets dbID and adaptor
-              inside $analysis. Returns dbID.
-  Returntype: int
-  Exceptions: none
-  Caller    : Every store that links to analysis object
+  Arg [1]    : Bio:EnsEMBL::Analysis $analysis 
+  Example    : $analysis_adaptor->store($analysis);
+  Description: stores $analysis in db. Does not if already equiped with dbID.
+               Sets created date if not already set. Sets dbID and adaptor
+               inside $analysis. Returns dbID.
+  Returntype : int dbID of stored analysis
+  Exceptions : thrown if analysis argument does not have a logic name
+  Caller     : ?
 
 =cut
-
 
 sub store {
 
@@ -337,62 +332,60 @@ sub store {
   return $dbID;
 }
 
+
+
 =head2 exists
 
- Title   : exists
- Usage   : $adaptor->exists($anal)
- Function: Tests whether this Analysis already exists in the database
- Example :
- Returns : analysisId or undef
- Args    : Bio::EnsEMBL::Analysis
+  Arg [1]    : Bio::EnsEMBL::Analysis $anal
+  Example    : if($adaptor->exists($anal)) #do something
+  Description: Tests whether this Analysis already exists in the database.
+               Returns a true value if it does.
+  Returntype : boolean
+  Exceptions : thrown if $anal arg is not an analysis object
+  Caller     : ?
 
 =cut
 
 sub exists {
-    my ($self,$anal) = @_;
+  my ($self,$anal) = @_;
 
-    $self->throw("Object is not a Bio::EnsEMBL::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis");
-    
-    # objects with already have this adaptor are store here.
-    if( $anal->can("adaptor") && defined $anal->adaptor &&
+  unless($anal->isa("Bio::EnsEMBL::Analysis")) {
+    $self->throw("Object is not a Bio::EnsEMBL::Analysis");
+  } 
+  
+  
+  # objects with already have this adaptor are store here.
+  if( $anal->can("adaptor") && defined $anal->adaptor &&
       $anal->adaptor == $self ) {
-      if (my $id = $anal->dbID) {
-        return $id;
-      }
-      else {
-        $self->throw ("analysis does not have an analysisId");
-      }
+    if (my $id = $anal->dbID) {
+      return $id;
     }
-
-    foreach my $cacheId (keys %{$self->{_cache}}) {
-      if ($self->{_cache}->{$cacheId}->compare($anal) >= 0) {
-	# $anal->dbID( $cacheId );
-	# $anal->adaptor( $self );
-        return $cacheId;
-      }
+    else {
+      $self->throw ("analysis does not have an analysisId");
     }
-    return undef;
+  }
+  
+  foreach my $cacheId (keys %{$self->{_cache}}) {
+    if ($self->{_cache}->{$cacheId}->compare($anal) >= 0) {
+      # $anal->dbID( $cacheId );
+      # $anal->adaptor( $self );
+      return $cacheId;
+    }
+  }
+  return undef;
 }
 
-=head2 mysql2Unixtime
 
-  Title    : mysql2Unixtime
-  Usage    : no object function, yet.
-  Function : Calculates the unix time from mysql time string
-  Example  :
-  Returns  : a unix time
-  Args     : "2001-01-09 18:02:13" somthing like this
+=head2 _objFromHashref
+
+  Arg [1]    : hashref $rowHash
+  Description: Private helper function generates an Analysis object from a 
+               mysql row hash reference.
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::AnalsisAdaptor::fetch_* methods
 
 =cut
-
-
-sub mysql2Unixtime {
-  my $sqltime = shift;
-  
-  my ($year,$month,$mday,$hour,$min,$sec ) = ( $sqltime =~ /(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/ );
-  my $time = timelocal( $sec, $min, $hour, $mday, $month, $year );
-}
-
   
 sub _objFromHashref {
   my $self = shift;
@@ -419,6 +412,20 @@ sub _objFromHashref {
   return $analysis;
 }
 
+
+=head2 db
+
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBAdaptor $db
+               the database used by this adaptor.
+  Example    : my $db = $analysis_adaptor->db()
+  Description: Getter/Setter for the database this adaptor uses internally
+               to fetch and store database objects.
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : none
+  Caller     : BaseAdaptor::new, general
+
+=cut
+
 sub db {
   my ( $self, $arg )  = @_;
   ( defined $arg ) &&
@@ -426,54 +433,45 @@ sub db {
   $self->{_db};;
 }
 
-sub prepare {
-  my ( $self, $query ) = @_;
-  $self->db->prepare( $query );
-}
 
 
-sub deleteObj {
+=head2 fetch_by_newest_logic_name
+
+  Description: DEPRECATED Logic names should now be unique and should not
+               need to use this method.  Use fetch_by_logic_name instead.
+
+=cut
+
+sub fetch_by_newest_logic_name {
   my $self = shift;
-  my @dummy = values %{$self};
-  foreach my $key ( keys %$self ) {
-    delete $self->{$key};
-  }
-  foreach my $obj ( @dummy ) {
-    eval {
-      $obj->deleteObj;
-    }
-  }
+  my $logic_name = shift;
+  
+  $self->warn("logic_names should now be unique should not " .
+	      "need to use this method use fetch_by_logic_name\n");
+
+  return $self->fetch_by_logic_name($logic_name);
 }
 
 
+=head2 mysql2Unixtime
 
-sub create_tables {
-  my $self = shift;
+  Description: DEPRECATED do not use
 
-  my $sth = $self->prepare( "drop table if exists analysis" );
-  $sth->execute();
+=cut
 
-  $sth = $self->prepare( qq{
-    CREATE TABLE analysis (
-      analysis_id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
-      created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-      logic_name varchar(40) not null,
-      db varchar(120),
-      db_version varchar(40),
-      db_file varchar(120),
-      program varchar(80),
-      program_version varchar(40),
-      program_file varchar(40),
-      parameters varchar(80),
-      module varchar(80),
-      module_version varchar(40),
-      gff_source varchar(40),
-      gff_feature varchar(40),
-      PRIMARY KEY (analysis_id)
-    )
-  } );
-  $sth->execute();
+
+sub mysql2Unixtime {
+  my $sqltime = shift;
+  
+  my ($package, $file, $line) = caller();
+
+  warn("AnalysisAdaptor::mysql2Unixtime is deprecated.\n " .
+	      "package:$package: file:$file line:$line\n");
+
+  require "Time::Local";
+  
+  my ($year,$month,$mday,$hour,$min,$sec ) = ( $sqltime =~ /(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/ );
+  my $time = timelocal( $sec, $min, $hour, $mday, $month, $year );
 }
-
 
 1;

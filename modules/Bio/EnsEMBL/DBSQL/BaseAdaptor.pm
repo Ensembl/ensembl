@@ -28,7 +28,7 @@ Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
     $adaptor->deleteObj();
 
     # constructor, ok for inheritence
-    $adaptor = Bio::EnsEMBL::DBSQL::ClassWhichInheritsFromBaseAdaptor->new($dbobj)
+    $adaptor = Bio::EnsEMBL::DBSQL::SubClassOfBaseAdaptor->new($dbobj)
 
 =head1 DESCRIPTION
 
@@ -77,8 +77,6 @@ convention is to go list_XXXX, such as
 
     @gene_ids = $gene_adaptor->list_geneIds();
 
-
-
 =head1 CONTACT
 
 Describe contact details here
@@ -100,6 +98,21 @@ use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
+
+=head2 new
+
+  Arg [1]    : Bio::EnsEMBL::DBSQL::DBConnection $dbobj
+  Example    : $adaptor = new AdaptorInheritedFromBaseAdaptor($dbobj);
+  Description: Creates a new BaseAdaptor object.  The intent is that this
+               constructor would be called by an inherited superclass either
+               automatically or through $self->SUPER::new in an overridden 
+               new method.
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBConnection
+
+=cut
+
 sub new {
     my ($class,$dbobj) = @_;
 
@@ -115,17 +128,18 @@ sub new {
     return $self;
 }
 
+
 =head2 prepare
 
- Title   : prepare
- Usage   : $sth = $adaptor->prepare("select yadda from blabla")
- Function: provides a DBI statement handle from the adaptor. A convience
-           function so you dont have to write $adaptor->db->prepare all the
-           time
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $string
+               a SQL query to be prepared by this adaptors database
+  Example    : $sth = $adaptor->prepare("select yadda from blabla")
+  Description: provides a DBI statement handle from the adaptor. A convenience
+               function so you dont have to write $adaptor->db->prepare all the
+               time
+  Returntype : DBI::StatementHandle
+  Exceptions : none
+  Caller     : Adaptors inherited from BaseAdaptor
 
 =cut
 
@@ -138,12 +152,14 @@ sub prepare{
 
 =head2 db
 
- Title   : db
- Usage   : $obj->db($newval)
- Function: 
- Returns : value of db
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::DBConnection $obj 
+               the database this adaptor is using.
+  Example    : $db = $adaptor->db();
+  Description: Getter/Setter for the DatabaseConnection that this adaptor is 
+               using.
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection
+  Exceptions : none
+  Caller     : Adaptors inherited fro BaseAdaptor
 
 =cut
 
@@ -160,12 +176,16 @@ sub db{
 
 =head2 deleteObj
 
- Title   : deleteObj
- Usage   : $obj->deleteObj
- Function: removes memory cycles. Probably triggered by Root deleteObj
- Returns : 
- Args    : none
-
+  Arg [1]    : none
+  Example    : $adaptor->deleteObj();
+  Description: Explicitly destroys this object and objects referenced by 
+               this object.  This method should only be called if you know
+               what you are doing, and is only needed for object destruction
+               when circular references are present (these will prevent 
+               perls automatic garbage collection).
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBConnection?
 
 =cut
 

@@ -51,6 +51,21 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+
+=head2 generic_fetch
+
+  Arg [1]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [2]    : (optional) string $logic_name
+               the logic_name of the analysis of the features to obtain
+  Example    : @fts = $a->generic_fetch('contig_id in (1234, 1235)', 'swall');
+  Description: Performs a database fetch and returns feature objects in
+               contig coordinates.
+  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
+
+=cut
   
 sub generic_fetch {
   my ($self, $constraint, $logic_name) = @_;
@@ -99,12 +114,15 @@ sub generic_fetch {
 
 
 =head2 fetch_by_dbID
-  Args      : none
-  Function  : Retrieves AlignFeature from database
-  Returntype: BaseAlignFeature
-  Exceptions: thrown: if _columns() or _table() not implemented by subclass
-                      if $id arg is not defined
-  Caller    : Slice
+
+  Arg [1]    : int $id
+               the unique database identifier for the feature to be obtained 
+  Example    : $feat = $adaptor->fetch_by_dbID(1234);
+  Description: Returns the feature created from the database defined by the
+               the id $id. 
+  Returntype : Bio::EnsEMBL::*Feature
+  Exceptions : thrown if $id is not defined
+  Caller     : general
 
 =cut
 
@@ -124,16 +142,22 @@ sub fetch_by_dbID{
 }
 
 
-
 =head2 fetch_by_contig_id_constraint
 
- Title   : fetch_by_contig_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : int $cid
+               the unique identifier (dbID) for contig to obtain feats from
+  Arg [2]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_contig_id_constraint(1, 'perc_ident > 5.0');
+  Description: Returns a list of features created from the database which are 
+               are on the contig defined by $cid and fulfill the SQL constraint
+               defined by $constraint. If logic name is defined, only features
+               with an analysis of type $logic_name will be returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Exceptions : thrown if $cid is not defined
+  Caller     : general
 
 =cut
 
@@ -153,6 +177,23 @@ sub fetch_by_contig_id_constraint {
   return $self->generic_fetch($constraint, $logic_name);
 }
 
+
+=head2 fetch_by_contig_id
+
+  Arg [1]    : int $cid
+               the unique identifier (dbID) for contig to obtain feats from
+  Arg [2]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_contig_id(1, 'swall');
+  Description: Returns a list of features created from the database which are 
+               are on the contig defined by $cid If logic name is defined, 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Exceptions : none
+  Caller     : general
+
+=cut
    
 sub fetch_by_contig_id{
   my ($self, $cid, $logic_name) = @_;
@@ -161,6 +202,25 @@ sub fetch_by_contig_id{
   return $self->fetch_by_contig_id_constraint($cid, '',$logic_name);
 }
 
+
+=head2 fetch_by_contig_id_and_score
+
+  Arg [1]    : int $cid
+               the unique identifier (dbID) for contig to obtain feats from
+  Arg [2]    : float $score
+               the lower bound of the score of the features to obtain
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_contig_id_and_score(1, 50.0, 'swall');
+  Description: Returns a list of features created from the database which are 
+               are on the contig defined by $cid and which have score greater
+               than score.  If logic name is defined, only features with an 
+               analysis of type $logic_name will be returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Exceptions : thrown if $score is not defined
+  Caller     : general
+
+=cut
 
 sub fetch_by_contig_id_and_score{
   my($self, $cid, $score, $logic_name) = @_;
@@ -179,6 +239,26 @@ sub fetch_by_contig_id_and_score{
   return @features;
 }
 
+
+=head2 fetch_by_Slice_constraint
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Arg [2]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_Slice_constraint($slice, 'perc_ident > 5');
+  Description: Returns a list of features created from the database which are 
+               are on the Slice defined by $slice and fulfill the SQL 
+               constraint defined by $constraint. If logic name is defined, 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Exceptions : thrown if $slice is not defined
+  Caller     : Bio::EnsEMBL::Slice
+
+=cut
 
 sub fetch_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
@@ -212,6 +292,23 @@ sub fetch_by_Slice_constraint {
 }
 
 
+=head2 fetch_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Arg [2]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_Slice($slice, 'swall');
+  Description: Returns a list of features created from the database which are 
+               are on the Slice defined by $slice.If $logic_name is defined, 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice
+
+=cut
+
 sub fetch_by_Slice {
   my ($self, $slice, $logic_name) = @_;
   
@@ -219,6 +316,26 @@ sub fetch_by_Slice {
   return $self->fetch_by_Slice_constraint($slice, '', $logic_name);
 }
 
+
+=head2 fetch_by_Slice_and_score
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Arg [2]    : float $score
+               lower bound of the the score of the features retrieved
+  Arg [3]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @fts = $a->fetch_by_Slice($slice, 'swall');
+  Description: Returns a list of features created from the database which are 
+               are on the Slice defined by $slice and which have a score 
+               greated than $score. If $logic_name is defined, 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Slice
+
+=cut
 
 sub fetch_by_Slice_and_score {
   my ($self, $slice, $score, $logic_name) = @_;
@@ -236,13 +353,26 @@ sub fetch_by_Slice_and_score {
 
 =head2 fetch_by_assembly_location
 
- Title   : fetch_by_assembly_location
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : int $start
+               the start of the assembly region from which to obtain align
+               features (in chromosomal coords).
+  Arg [2]    : int $end
+               the end of the assembly region from which to obtain align 
+               features (in chromosomal coords).
+  Arg [3]    : string $chr
+               the name of the chromosome from which to obtain align features.
+  Arg [4]    : string $type
+               the type of assembly to obtain features from
+  Arg [5]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @feats = $adaptor->fetch_by_assembly_location(1, 10000, '9', 'NCBI30');
+  Description: Returns a list of features created from the database which are 
+               are in the assembly region defined by $start, $end, and $chr. 
+               If $logic_name is defined, only features with an analysis 
+               of type $logic_name will be returned.
+  Returntype : list of Bio::EnsEMBL::*Features
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -254,6 +384,34 @@ sub fetch_by_assembly_location{
 						      $type, '', $logic_name);
 }
 
+
+=head2 fetch_by_assembly_location_and_score
+
+  Arg [1]    : int $start
+               the start of the assembly region from which to obtain align
+               features (in chromosomal coords).
+  Arg [2]    : int $end
+               the end of the assembly region from which to obtain align 
+               features (in chromosomal coords).
+  Arg [3]    : string $chr
+               the name of the chromosome from which to obtain align features.
+  Arg [5]    : string $type
+               the type of assembly to obtain features from
+  Arg [6]    : float $score
+               a lower bound for the score of feats to obtain
+  Arg [7]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @f = $a->fetch_by_assembly_location_and_score(1,10000,'9','NCBI30', 50.0);
+  Description: Returns a list of features created from the database which are 
+               are in the assembly region defined by $start, $end, and $chr, 
+               and with a percentage identity greater than $pid.  If 
+               $logic_name is defined, only features with an analysis of type 
+               $logic_name will be returned. 
+  Returntype : list of Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
+  Exceptions : thrown if $score is not defined
+  Caller     : general
+
+=cut
 
 sub fetch_by_assembly_location_and_score{
   my ($self, $start, $end, $chr, $type, $score, $logic_name) = @_;
@@ -272,13 +430,29 @@ sub fetch_by_assembly_location_and_score{
 
 =head2 fetch_by_assembly_location_constraint
 
- Title   : fetch_by_assembly_location_constraint
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : int $start
+               the start of the assembly region from which to obtain align
+               features (in chromosomal coords).
+  Arg [2]    : int $end
+               the end of the assembly region from which to obtain align 
+               features (in chromosomal coords).
+  Arg [3]    : string $chr
+               the name of the chromosome from which to obtain align features.
+  Arg [4]    : string $type
+               the type of assembly to obtain features from
+  Arg [5]    : (optional) string $constraint
+               a SQL constraint restricting which features should be obtained
+  Arg [5]    : (optional) string $logic_name
+               the logic name of the type of features to obtain
+  Example    : @f = $a->fetch_by_assembly_location_constraint(1,10000,'9','NCBI30', 'score > 50.0', 'swall');
+  Description: Returns a list of features created from the database which are 
+               are in the assembly region defined by $start, $end, and $chr, 
+               and with a percentage identity greater than $pid.  If 
+               $logic_name is defined, only features with an analysis of type 
+               $logic_name will be returned. 
+  Returntype : list of Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
+  Exceptions : thrown if $score is not defined
+  Caller     : BaseFeatureAdaptor
 
 =cut
 
@@ -352,15 +526,17 @@ sub fetch_by_assembly_location_constraint {
   return @out;
 }
 
+
 =head2 store
 
- Title   : store
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : list of Bio::EnsEMBL::*Feature
+  Example    : $adaptor->store(@feats);
+  Description: ABSTRACT  Subclasses are responsible for implementing this 
+               method.  It should take a list of features and store them in 
+               the database.
+  Returntype : none
+  Exceptions : thrown method is not implemented by subclass
+  Caller     : general
 
 =cut
 
@@ -373,12 +549,14 @@ sub store{
 
 =head2 _tablename
 
-  Args      : none
-  Function  : abstract protected method implemented by subclass to provide 
-              name of table for sql queries
-  Returntype: string
-  Exceptions: thrown if not implemented by subclass
-  Caller    : Implementing AlignFeatureAdaptor subclasses
+  Args       : none
+  Example    : $tablename = $self->_table_name()
+  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
+               this method.  It should return the name of the table to be
+               used to obtain features.  
+  Returntype : string
+  Exceptions : thrown if not implemented by subclass
+  Caller     : BaseFeatureAdaptor::generic_fetch
 
 =cut
 
@@ -390,14 +568,17 @@ sub _tablename {
   return undef;
 }
 
+
 =head2 _columns
 
-  Args      : none
-  Function  : abstract protected method implemented by subclass to provide 
-              column names for sql queries
-  Returntype: string list
-  Exceptions: thrown if not implemented by subclass
-  Caller    : Implementing AlignFeatureAdaptor subclasses
+  Args       : none
+  Example    : $tablename = $self->_columns()
+  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
+               this method.  It should return a list of columns to be used
+               for feature creation
+  Returntype : list of strings
+  Exceptions : thrown if not implemented by subclass
+  Caller     : BaseFeatureAdaptor::generic_fetch
 
 =cut
 
@@ -409,9 +590,24 @@ sub _columns {
 }
 
 
+
 =head2 _obj_from_hashref
 
-  Args      : a  DBI hashref
+  Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
+               for each of the columns specified by the _columns method
+  Example    : my @feats = $self->_obj_from_hashref
+  Description: ABSTRACT PROTECTED The subclass is responsible for implementing
+               this method.  It should take in a DBI row hash reference and
+               return a list of created features in contig coordinates.
+  Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
+  Exceptions : thrown if not implemented by subclass
+  Caller     : BaseFeatureAdaptor::generic_fetch
+
+=cut
+
+=head2 _obj_from_hashref
+
+  Arg      : 
   Function  : abstract protected method implemented by subclass to provide 
               object creation from a sql DBI hashref
   Returntype: BaseAlignFeature
