@@ -7,8 +7,6 @@
 #
 # You may distribute this module under the same terms as perl itself
 
-# POD documentation - main docs before the code
-
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
@@ -16,60 +14,48 @@ Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 =head1 SYNOPSIS
 
 $seq_adptr = $database_adaptor->get_SequenceAdaptor();
-$dna = $seq_adptr->fetch_by_RawContig_start_end_strand($contig, 1, 1000, -1);
+$dna = ${$seq_adptr->fetch_by_Slice($slice, 1, 1000, -1);}
 
 =head1 DESCRIPTION
 
-An adaptor for the retrieval of sequences of DNA from the database
+An adaptor for the retrieval of DNA sequence from the EnsEMBL database
 
 =head1 CONTACT
 
-Arne Stabenau - stabenau@ebi.ac.uk
-Elia Stupka - elia@fugu-sg.org
+Post questions/comments to the EnsEMBL development list:
+ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-
 package Bio::EnsEMBL::DBSQL::SequenceAdaptor;
+
 use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
-
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
-
-=head2 fetch_by_RawContig_start_end_strand
-
-  Description: DEPRECATED use fetch_by_Slice_start_end_strand instead
-
-=cut
-
-sub fetch_by_RawContig_start_end_strand {
-  deprecate('Use fetch_by_Slice_start_end_strand instead.');
-  fetch_by_Slice_start_end_strand(@_);
-}
-
-
-
 
 =head2 fetch_by_Slice_start_end_strand
 
   Arg  [1]   : Bio::EnsEMBL::Slice slice
                The slice from which you want the sequence
-  Arg  [2]   : int startBasePair 
+  Arg  [2]   : (optional) int startBasePair 
+               The start base pair relative to the start of the slice. Negative
+               values or values greater than the length of the slice are fine.
+               default = 1
+  Arg  [3]   : (optional) int endBasePair
+               The end base pair relative to the start of the slice. Negative
+               values or values greater than the length of the slice are fine,
+               but the end must be greater than or equal to the start
                count from 1
-  Arg  [3]   : int endBasePair 
-               count from 1, undef is last one
-  Arg  [4]   : int strand 
+               default = the length of the slice
+  Arg  [4]   : (optional) int strand 
                1, -1
+               default = 1
   Example    : $dna = $seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 
                                                                   1000, -1);
   Description: retrieves from db the sequence for this slice
@@ -83,17 +69,15 @@ sub fetch_by_RawContig_start_end_strand {
 sub fetch_by_Slice_start_end_strand {
    my ( $self, $slice, $start, $end, $strand ) = @_;
 
-   if(!$slice || !ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
+   if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
      throw("Slice argument is required.");
    }
 
-   if( !defined($end) ) {
-     $end = $slice->end() - $slice->start() + 1;
-   }
+   $start = 1 if(!defined($start));
 
-   if($start > $end) {
-     throw("Start must be less than or equal to end.");
-   }
+   $end = $slice->end() - $slice->start() + 1 if(!defined($end));
+
+   throw("Start must be less than or equal to end.") if($start > $end);
 
    $strand ||= 1;
 
@@ -101,7 +85,9 @@ sub fetch_by_Slice_start_end_strand {
    my $right_expand  = $end - $slice->length(); #negative is fine
    my $left_expand   = 1 - $start; #negative is fine
 
-   $slice = $slice->expand($left_expand, $right_expand);
+   if($right_expand || $left_expand) {
+     $slice = $slice->expand($left_expand, $right_expand);
+   }
 
    #retrieve normalized 'non-symlinked' slices
    #this allows us to support haplotypes and PARs
@@ -141,11 +127,6 @@ sub fetch_by_Slice_start_end_strand {
      @projection = @{$slice->project($seqlevel->name(), $seqlevel->version())};
    }
 
-
-   my $sth = $self->prepare(
-               "SELECT SUBSTRING( d.sequence, ?, ?)
-                FROM dna d
-                WHERE d.seq_region_id = ?");
    my $seq = '';
    my $total = 0;
    my $tmp_seq;
@@ -162,9 +143,8 @@ sub fetch_by_Slice_start_end_strand {
 
      my $seq_region_id = $slice_adaptor->get_seq_region_id($seq_slice);
 
-     $sth->execute($seq_slice->start, $seq_slice->length(), $seq_region_id);
-     $sth->bind_columns(\$tmp_seq);
-     $sth->fetch();
+     $tmp_seq = ${$self->_fetch_seq($seq_region_id,
+                                    seq_slice->start, $seq_slice->length())};
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {
@@ -172,7 +152,6 @@ sub fetch_by_Slice_start_end_strand {
      }
 
      $seq .= $tmp_seq;
-
 
      $total = $end;
    }
@@ -200,34 +179,33 @@ sub fetch_by_Slice_start_end_strand {
 
 
 
-=head2 fetch_by_assembly_location
+sub _fetch_seq {
+  my $self          = shift;
+  my $seq_region_id = shift;
+  my $start         = shift;
+  my $length           = shift;
 
-  Description: DEPRECATED use fetch_by_Slice_start_end_strand() instead.
+  my $tmp_seq;
 
-=cut
+  my $sth = $self->prepare(
+               "SELECT SUBSTRING( d.sequence, ?, ?)
+                FROM dna d
+                WHERE d.seq_region_id = ?");
+  $sth->execute($start, $length, $seq_region_id);
+  $sth->bind_columns(\$tmp_seq);
+  $sth->fetch();
+  $sth->finish();
 
-sub fetch_by_assembly_location {
-   my ( $self, $chrStart, $chrEnd, 
-        $strand, $chrName, $assemblyType ) = @_;
-
-   deprecate('Use fetch_by_Slice_start_end_strand() instead');
-
-   my $slice_adaptor = $self->db->get_SliceAdaptor();
-   my $slice = $slice_adaptor->fetch_by_region('toplevel', $chrName,
-                                               $chrStart, $chrEnd,
-                                               $strand);
-
-   return $self->fetch_by_Slice_start_end_strand($slice,1, $slice->length,1);
+  return \$tmp_seq;
 }
-
 
 
 =head2 store
 
-  Arg [1]    : string $sequence the dna sequence to be stored in the database
-  Arg [2]    : string $date create date to be associated with the dna sequence
-               to be stored.
-  Example    : $dbID = $seq_adaptor->store('ACTGGGTACCAAACAAACACAACA', $date);
+  Arg [1]    : string $seq_region_id the id of the sequence region this dna
+               will be associated with.
+  Arg [2]    : string $sequence the dna sequence to be stored in the database
+  Example    : $dbID = $seq_adaptor->store(11, 'ACTGGGTACCAAACAAACACAACA');
   Description: stores a dna sequence in the databases dna table and returns the
                database identifier for the new record.
   Returntype : int
@@ -237,7 +215,7 @@ sub fetch_by_assembly_location {
 =cut
 
 sub store {
-  my ($self, $seq_region_id, $sequence, $date) = @_;
+  my ($self, $seq_region_id, $sequence) = @_;
 
   if(!$seq_region_id) {
     throw('seq_region_id is required');
@@ -245,12 +223,11 @@ sub store {
 
   $sequence = uc($sequence);
 
-  my $statement = $self->prepare(
-        "INSERT INTO dna(seq_region_id, sequence,created) " .
-        "VALUES(?, ?, FROM_UNIXTIME(?))");
+  my $statement = 
+    $self->prepare("INSERT INTO dna(seq_region_id, sequence) VALUES(?,?)");
 
-  my $rv = $statement->execute($seq_region_id, $sequence, $date);
-  $self->throw("Failed to insert dna $sequence") unless $rv;
+  my $rv = $statement->execute($seq_region_id, $sequence);
+  throw("Failed to insert dna.") if(!$rv);
 
   my $id = $statement->{'mysql_insertid'};
 
@@ -258,8 +235,6 @@ sub store {
 
   return $id;
 }
-
-
 
 
 =head2 _reverse_comp
@@ -284,6 +259,42 @@ sub _reverse_comp {
 
   return undef;
 }
+
+
+
+=head2 fetch_by_assembly_location
+
+  Description: DEPRECATED use fetch_by_Slice_start_end_strand() instead.
+
+=cut
+
+sub fetch_by_assembly_location {
+   my ( $self, $chrStart, $chrEnd, 
+        $strand, $chrName, $assemblyType ) = @_;
+
+   deprecate('Use fetch_by_Slice_start_end_strand() instead');
+
+   my $slice_adaptor = $self->db->get_SliceAdaptor();
+   my $slice = $slice_adaptor->fetch_by_region('toplevel', $chrName,
+                                               $chrStart, $chrEnd,
+                                               $strand);
+
+   return $self->fetch_by_Slice_start_end_strand($slice,1, $slice->length,1);
+}
+
+
+=head2 fetch_by_RawContig_start_end_strand
+
+  Description: DEPRECATED use fetch_by_Slice_start_end_strand instead
+
+=cut
+
+sub fetch_by_RawContig_start_end_strand {
+  deprecate('Use fetch_by_Slice_start_end_strand instead.');
+  fetch_by_Slice_start_end_strand(@_);
+}
+
+
 
 
 1;
