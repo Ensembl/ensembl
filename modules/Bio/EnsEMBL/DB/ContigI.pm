@@ -904,7 +904,7 @@ sub get_repeatmasked_seq {
     my $masked_dna = $self->mask_features($dna, @repeats);
     my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
                                              '-display_id' => $self->id,
-                                             '-primary_id' => $self->internal_id,
+                                             '-primary_id' => $self->id,
                                              '-moltype' => 'dna',
 					     );
     return $masked_seq;
