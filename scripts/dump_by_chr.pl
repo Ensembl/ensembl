@@ -286,7 +286,7 @@ SELECT distinct f.*
         dump_data($sql, $satdb, $table);
     }
 
-# has gone:
+# has gone (or is at least empty):
 #     $sql="
 # SELECT distinct fsf.* 
 #   FROM $satdb.static_golden_path sgp,
