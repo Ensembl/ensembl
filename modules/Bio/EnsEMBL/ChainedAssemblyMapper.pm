@@ -74,7 +74,7 @@ use Bio::EnsEMBL::Mapper::RangeRegistry;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 my $CHUNKFACTOR = 20; #2^20 = approx 10^6
-
+my $MAX_PAIR_COUNT = 6000; # max size of the pair cache in the mappers
 
 =head2 new
 
@@ -127,6 +127,25 @@ sub new {
 
   return $self;
 }
+
+
+sub flush {
+  my $self = shift;
+  $self->{'first_registry'}->flush();
+  $self->{'last_registry'}->flush();
+
+  $self->{'first_mid_mapper'}->flush();
+  $self->{'last_mid_mapper'}->flush();
+  $self->{'first_last_mapper'}->flush();
+}
+
+sub size {
+  my $self = shift;
+  return ( $self->{'first_last_mapper'}->{'pair_count'} +
+           $self->{'last_mid_mapper'}->{'pair_count'} +
+           $self->{'first_mid_mapper'}->{'pair_count'} );
+}
+
 
 
 =head2 map
@@ -203,6 +222,12 @@ sub map {
 				  $min_start, $min_end);
 
   if(defined($ranges)) {
+    if( $self->size() > $MAX_PAIR_COUNT ) {
+      $self->flush();
+      $ranges =
+	$registry->check_and_register($frm_seq_region, $frm_start, $frm_end,
+				      $min_start, $min_end);
+    }
     $self->adaptor->register_chained($self,$frm,$frm_seq_region,$ranges);
   }
 
