@@ -30,7 +30,7 @@ CREATE TABLE analysis (
   gff_feature varchar(40),
 
   PRIMARY KEY (analysis_id),
-  UNIQUE (logic_name)
+  KEY logic_name_idx( logic_name )
 
 );
 
@@ -708,7 +708,7 @@ CREATE TABLE mapfrag (
   orientation tinyint(4) NOT NULL default '0',
   name varchar(40) NOT NULL default '',
   PRIMARY KEY (mapfrag_id),
-  UNIQUE KEY name(name),
+  KEY name_idx( name ),
   KEY m(dnafrag_id,seq_start)
 ) TYPE=MyISAM;
 
