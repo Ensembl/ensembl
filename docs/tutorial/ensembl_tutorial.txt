@@ -1,39 +1,75 @@
 EnsEMBL Tutorial
-July 2001 Michele Clamp (michele@sanger.ac.uk)
-Revisions :
-edited by Ewan Birney, Oct 2001
-updated Jan 2002 MC (NCBI_26).
-updated Mar 2002 MC (NCBI_28).
-edited/updated Jul 2002 by Dan Andrews
-major revision for new code Oct 2002 by Dan Andrews
-edited/updated Oct 2002 by Graham McVicker
-Remote Access to EnsEMBL.  Set-up.
+by Michele Clamp (and revised/updated by Ewan Birney, Dan Andrews and Graham McVicker)
 
-EnsEMBL provides an internet accessible host (kaka.sanger.ac.uk) with the latest databases. This means you can do a lot of work from an internet connected host by only installing "client" software. In general, we've noticed that the best learning route for developers starting to use EnsEMBL is as follows:
+Revisions: EB Oct01, MC Jan02, MC Mar02, DA Jul02, new API revision DA Oct02, GMV Oct02, DA Feb03
 
-*  Play around with the data on kaka.sanger.ac.uk with just a mysql client.
-*  Start using the object layer API (perl based) against kaka.sanger.ac.uk (you will need to download EnsEMBL and bioperl software)
-*  Install the database locally. You may as well install the web site locally while you are about it as it is pretty easy to get up and running
+­_______________________________________________________________________
 
-Of course, you might want to jump straight to installing the EnsEMBL web site or the API. Take your pick.
+Contents
 
-Currently, a rather hard thing to do is to use the EnsEMBL software system to generate features de novo (ie. run the gene building process) from raw sequence.  This is called the "pipeline". To illustrate this, there are presently numerous remote EnsEMBL web sites but only a couple of remote pipelines. We expect that documentation and understanding of the pipeline  will improve as more and more people attempt to run it remotely.
+Introduction.
+Remote Access to EnsEMBL via MySQL.
+Introduction to the Perl object API.
+	Companion script and exercises.
+	What does the core EnsEMBL database contain?
+	Set-up.
+	Connection.
+	Business objects and object adaptors.
+	Let's get some data.
+	Clones and RawContigs.
+	Slices.
+	Slices vs RawContigs.
+	Sequence features.
+	Analysis objects
+	Overlaps
+	Genes.
+	Supporting evidence.
+	Prediction transcripts.
+	Translation.
+	Protein.
+	External databases - the general idea.
+	SNPs.
+	MarkerFeatures.
+	A final, but important, note to users of older versions of the EnsEMBL API - Lists and List References
 
-For more EnsEMBL documentation have a look at the EnsEMBL web page (www.ensembl.org) and follow the "Docs" link. In there there are a number of useful "big" documents, including the one you are presently reading and web-site installation instructions. 
+_______________________________________________________________________
+Introduction
 
-For more detailed documents click on the "Wiki" link.   Some of the documents you can see via this link are up to date, some (most) are not.  Use the search button through the Wiki pages to find what you are looking for. Also, browse the archives of the ensembl-dev mailing list for discussions which may have already answered your questions.  Finally, feel free to actually post a question on the ensembl-dev mailing list.  We respond quickly and are generally nice about it, even if you just haven't bothered to read the documentation (where it exists).
+It is important to us that you should be able to access the data in EnsEMBL databases as easily as possible.  To try and meet the different needs of vastly differing data users we have developed a number of interfaces to the EnsEMBL data.  You are probably reading this document because the web interface, while being very pretty and fast, is purely a web interface and won't provide the kind of bulk information you are needing.  If you are a bioinformatician who is Perl aware, the API that this document describes is going to be very useful.  Not only can you retrieve data directly through your scripts, to either remote or local EnsEMBL databases, you can do quite a lot of data processing via the tools built into the API data types.  However, a point that needs to be made now is that you most probably DON'T have to use this API if your data needs are relatively simple.  Instead, you can use the purpose-built data-mining tool called EnsEMBL Mart.  We don't want to chase you away, but if you haven't already looked at Mart (www.ensembl.org/EnsMart/) we enthusiastically encourage you to do so soon. 
 
-MySQL-only access
+Okay.  If you are still here, good.  Now we can talk about accessing EnsEMBL databases, both directly and through the Perl API.  The following document covers two broad areas.  The first section pertains to accessing the public EnsEMBL MySQL server (kaka.sanger.ac.uk) and running queries with your own SQL.  The second and larger section will introduce you to the EnsEMBL core API.
 
-You probably have mysql clients installed if you are running a standard linux distribution.  Try:
+In general, we've noticed that the best learning route for developers starting to use EnsEMBL is as follows:
+
+*  Play around with the data on kaka.sanger.ac.uk with just a MySQL client.
+*  Start using the object layer API (Perl based) against kaka.sanger.ac.uk (you will need to download EnsEMBL and bioPerl software).
+*  Install the database locally.  You may as well install the web site locally while you are about it, as it is pretty easy to get up and running.
+
+Of course, you might want to jump straight to installing the EnsEMBL web site, or the delve into the Perl API. Take your pick.
+
+Alternatively, you need no longer feel compelled to use Perl to work directly with EnsEMBL databases.  If you want to work in Java you should definitely have a look at the rapidly growing Java API (www.ensembl.org/java/).  This is not a subject covered in this document, so if you are interested please have a look at the Java specific documentation.
+
+Currently, a rather hard thing to do is to use the EnsEMBL software system to generate features de novo (i.e. run the gene building process) from raw sequence.  This is called the "pipeline".  To illustrate this, there are presently numerous remote EnsEMBL web sites but only a couple of remote pipelines.  We expect that documentation and understanding of the pipeline will improve as more and more people attempt to run it remotely.  The documentation of the pipeline that does exist is stored in our CVS repository, which is externally accessible.  Perhaps the easiest way to obtain these documents in through our web-CVS (http://cvsweb.sanger.ac.uk/cgi-bin/cvsweb.cgi/ensembl-doc/).  You are unlikely to get the pipeline working 100% properly without a bit of help, so if you are heading in this direction let us know and say hello.
+
+For other EnsEMBL documentation, have a browse through the EnsEMBL web site (www.ensembl.org) and follow the "Documentation" link.  This should lead you to a number of useful "big" documents, including the one you are presently reading and the web-site installation instructions. 
+
+For more detailed documents click on the "Wiki" link from the "Documentation" page.   Some of the documents available in the Wiki are up to date, some (most) are not - caution.  Once you are in the Wiki pages you can use the 'search' button to find what you are looking for.  You can also browse the archives of the ensembl-dev mailing list for discussions which may have already answered some of your questions.  If after doing this you still can't find what you need, please feel free to post a question on the ensembl-dev@ebi.ac.uk mailing list.  We respond quickly and are nice people that don't bite, even if you haven't bothered to read the documentation (where it exists).
+
+Finally, if you find something in this document that is not clear or is incorrect, we will be most grateful if you let us know on the EnsEMBL developers mailing list (ensembl-dev@ebi.ac.uk).  If you are shy, you can also email me directly (dta@sanger.ac.uk), I don't bite either.
+
+Remote Access to EnsEMBL via MySQL.
+
+EnsEMBL provides an internet accessible host (kaka.sanger.ac.uk) with the latest databases. This means you can do a lot of work from an internet connected host solely by using "client" software.
+
+You probably have a MySQL client installed if you are running a standard linux distribution.  Try:
 
 mysql -u anonymous -h kaka.sanger.ac.uk
 
-If mysql is not installed, go to www.mysql.com to download the client.
+If MySQL is not installed, go to www.mysql.com to download the client.
 
-Inside the mysql prompt you generally want to start with the database "homo_sapiens_core_9_30" (at time of writing this was the most recent build) and the database "homo_sapiens_mart_9_30".  There are also databases for other species - you should be able to use these in the same way as described here for human.
+Inside the MySQL prompt you generally want to start with the database "homo_sapiens_core_9_30" (at time of writing this was the most recent build) and the database "ensembl_mart_9_1".  There are also databases for other species - you should be able to use these in the same way as described here for human.
 
-Try the "show databases" sql command to see all the databases that are available, followed by a use command similar to "use homo_sapiens_core_9_30" to choose the current/most recent database.  Other databases are named like "homo_sapiens_lite_9_30" - the naming scheme being species tag, database type and then release number.  Have a look around to see what you can use.
+Try the "show databases" SQL command to see all the databases that are available, followed by a "use" command similar to "use homo_sapiens_core_9_30" to choose the current/most recent database.  Other databases are named like "homo_sapiens_lite_9_1" - the naming scheme following the convention of  species tag, underscore, database type, underscore and  release number.  Have a look around to see what you can use.
 
 Starting with the "core" database (homo_sapiens_core_9_30 or the most recent update of this database), try some of these nice queries to get a taste of what is stored in the databases:
 
@@ -49,32 +85,32 @@ Retrieve the first two confirmed genes in the database:
 
 "SELECT * FROM gene LIMIT 2;"
 
-Retrieve the DDBJ/EMBL/GenBank entries from the first 200,000 base-pairs of chr1. The assembly information is stored in the assembly table, hence we need to perform a join across the clone, contig, chromosome and assembly tables:
+Retrieve the DDBJ/EMBL/GenBank entries from the first 5Mb of human chromosome 1. The assembly information is stored in the assembly table, hence we need to perform a join across the clone, contig, chromosome and assembly tables:
 
  "SELECT DISTINCT(clone.name) 
  FROM   assembly, contig, clone, chromosome 
  WHERE  chromosome.name = '1'  
  AND    chromosome.chromosome_id = assembly.chromosome_id 
- AND    assembly.chr_end < 200000 
+ AND    assembly.chr_end < 5000000 
  AND    assembly.contig_id = contig.contig_id 
  AND    clone.clone_id = contig.clone_id;"
 
 Each table has a unique, consistently-named identifier which can be used as foreign keys in other tables.  The unique identifier column is always named  tablename_id and contains integer values.  For example, the unique identifier of the chromosome table is the contained in the chromosome_id column and the row with chromosome_id = 23 corresponds to the chromosome named 'X'.   
 
-Retrieve the exons which lie within the first 200,000 base-pairs of chr1:
+Retrieve the exons which lie within the first 200,000 base-pairs of chromosome 1:
 
 "SELECT exon.exon_id 
- FROM   exon, assembly 
+ FROM   exon, assembly, chromosome 
  WHERE  chromosome.name = '1' 
  AND    chromosome.chromosome_id = assembly.chromosome_id 
- AND    assembly.chr_end < 200000 
+ AND    assembly.chr_end < 500000 
  AND    assembly.contig_id = exon.contig_id;"
 
 (Note:  Existing EnsEMBL users may notice that the exon.id column has been replaced by exon.exon_id which now contains an integer value.  To get the ENSE number you will need to join to exon_stable.  Be aware that the newest release of the EnsEMBL database represents quite a big shift in the schema compared to previous releases.)
 
-At this point you can see that constructing queries against the EnsEMBL core database in chromosomal coordinates will always mean joining to the assembly table. This is a bit painful. Thankfully we have developed a query-optimised database that is derived from this database (a datamart in trendy computer speak), called EnsEMBL-mart. This is changing rapidly, but is well worth playing around with:
+At this point you can see that constructing queries against the EnsEMBL core database in chromosomal coordinates will always mean joining to the assembly table. This is a bit painful. Thankfully we have developed a query-optimised database that is derived from this database (a datamart in trendy computer speak), called EnsEMBL Mart. This is changing rapidly, but is well worth playing around with:
 
-"USE ensembl_mart_8_2;"
+"USE ensembl_mart_9_1;"
 
 To  genes from a particular region:
 
@@ -86,27 +122,29 @@ Or from a particular band:
 
 (notice the use of LIKE to truncate to the major band)
 
-EnsEMBL-mart will expand over time to allow progressively richer queries. To investigate more use the commands:
+EnsEMBL Mart will expand over time to allow progressively richer queries. To investigate more use the commands:
 
-"SHOW tables"
+"SHOW tables;"
 
 and 
 
-"DESCRIBE tablename"
+"DESCRIBE tablename ;"
 
 So, now you can play with the data, but where are things like the translations or cDNAs?  Additionally, how can I find all the BLAST hits which overlap exons that live in my genomic region of interest? To do this you will need to write code often.  Do yourself a favour and take advantage of our API which we use every day to wrangle this kind of data.
 
 Introduction to the Perl object API
 
-These notes are from an introductory half-day course on the EnsEMBL code base.  They will take you through the process of connecting to an EnsEMBL database and accessing data contained therein.   They require you to have the relevant EnsEMBL and bioperl modules installed.  These are :
+This document grew from notes prepared for an introductory half-day course that we occasionally run on the EnsEMBL code base (0.5M lines of code in half a day - now there's value).  It will take you through the process of connecting to an EnsEMBL database and accessing the data contained therein.  The information contained here is by no means exhaustive, but should give you enough knowledge to be able to competently use the core EnsEMBL code.  After learning how to retrieve genes, exons, sequence and process these to your own ends, we hope you will feel confident enough to delve deeper into other less-trodden parts of the code that may interest you.
 
-bioperl-0.7   (we know this is not the latest version - for now, EnsEMBL is tied to this version, so please use it.)
+Before you start, you will need to have the relevant EnsEMBL and BioPerl modules installed.  These are :
+
+bioperl-0.7   (we know this is not the latest version - for now, EnsEMBL is tied to it, so please use it.)
 ensembl
 ensembl-external
 
 Instructions on how to install these perl modules are contained on the EnsEMBL website www.ensembl.org. Basically, you need to do the following steps (in both cases below we are using cvs to get the code, which is much better than ftp as we are getting the latest bug fixes. Notice the - r flag to the cvs commands. These indicate the branch of each repository to get out.  (Branches are stable versions of the code).
 
-     Bioperl (see cvs.bioperl.org for more details)
+     BioPerl (see cvs.bioperl.org for more details)
 cvs -d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl login
 when prompted, the password is 'cvs'
 cvs -d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl checkout -r branch-07 bioperl-live
@@ -118,14 +156,20 @@ when prompted, the password is CVSUSER
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-9 ensembl
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-9 ensembl-external
 
-If you don't have, or don't want to install, the EnsEMBL database locally you can point your scripts at a publically available one at the Sanger Centre.  Use the following fields in your scripts (where X_X is the latest version of the database):
+If you don't have, or don't want to install, the EnsEMBL database locally (which is all you will need to complete the tutorial exercises) you can point your scripts at a publically available one at the Sanger Centre.  Use the following fields in your scripts (where X_X is the latest version of the database):
 
 host		kaka.sanger.ac.uk
 dbname			homo_sapiens_core_X_X
 user			anonymous
 
+     DBI and DBI::mysql
+
+Unless you already have them installed, before you can begin you will need to install the Perl DBI and DBI::mysql modules from the CPAN (www.cpan.org).  See the CPAN site for instructions on how to do this.
+
+
 Companion script and exercises
-There is a script called tutorial.pl which contains all the example code in this document and should run successfully if you have the right database and version of the code installed.  In addition, soon there are worked solutions to the exercises included later in this tutorial.  When you check-out a copy of EnsEMBL from the cvs, both the companion script and the worked solutions will be in the ensembl/docs/ directory.
+Accompanying this document is a script called tutorial.pl.  This script contains all the example code in this document and should run successfully if you have the right database and version of the code installed.  In addition, soon there will be worked solutions to the exercises included later in this tutorial.  When you check-out a copy of EnsEMBL from the cvs, both the companion script and the pending worked solutions will be in the ensembl/docs/tutorial directory.
+
 What does the core EnsEMBL database contain?
 
 *Clones (with embl accessions) - both finished and unfinished.
@@ -150,19 +194,23 @@ What does the core EnsEMBL database contain?
 
 Setup 
 
-Before starting with the EnsEMBL modules you will need to set up your environment so Perl knows where to find them.   As EnsEMBL is built on top of bioperl, this includes telling it where bioperl-0.7 lives on your system.
+Before starting with the EnsEMBL modules you will need to set up your environment so Perl knows where to find them.   As EnsEMBL is built on top of BioPerl (version 0.7 for now), this includes telling it where bioperl-0.7 lives on your system.
 
-The environment variable to do this is PERL5LIB.  If you are using csh  or tcsh you need to type in the following (changing /nfs/croc/michele/branch to your directory containing the perl modules you downloaded).  If you are concomitantly using a version of bioperl newer than version 0.7 make sure that the older version appears in your perl library path before the newer version.
+The environment variable to do this is PERL5LIB.  If you are using csh  or tcsh you need to type in the following (changing /nfs/croc/michele/branch to your directory containing the perl modules you downloaded).  If you are concomitantly using a version of BioPerl newer than version 0.7 make sure that the older version appears in your Perl library path before the newer version.
 
 setenv ENSHOME /nfs/croc/michele/branch
 
 setenv PERL5LIB $ENSHOME/ensembl/modules:$ENSHOME/bioperl-0.7:$ENSHOME/ensembl-external/modules:$ENSHOME/ensembl-lite/modules
 
-You are now ready to write your first script.
+It has become apparent recently that the EnsEMBL code-base just won't run on older versions of Perl.  We use version 5.6 for development and testing.  We recommend that you should do so too.  If you are unsure of what version is running on your machine. Type:
+
+perl -v
+
+Presuming that this is all in order, you are now ready to write your first script.
 
 Connection
 
-All data used and created by EnsEMBL is stored in a mySQL relational database.  If you want to access this database the first thing you have to do is to connect to it.  This is done behind the scenes by EnsEMBL using a Perl module called DBI.  You will need to know three things before you start :
+All data used and created by EnsEMBL is stored in a MySQL relational database.  If you want to access this database the first thing you have to do is to connect to it.  This is done behind the scenes by EnsEMBL using the famous Perl module called DBI.  You will need to know three things before you start :
 
    host 	the hostname where the EnsEMBL database lives
    dbname	the name of the EnsEMBL database
@@ -176,7 +224,7 @@ The we set the all important variables telling Perl where and what your database
 
 my $host   = 'kaka.sanger.ac.uk';
 my $user   = 'anonymous';
-my $dbname = 'current';
+my $dbname = 'homo_sapiens_core_9_30';
 
 Now we can make a database connection:
 
@@ -184,51 +232,28 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $host,
                                             -user   => $user,
                                             -dbname => $dbname);
 
-We've made a connection to an EnsEMBL database and passed parameters in using the -attribute => 'somevalue' syntax present in many of the ensembl object constructors.  Formatted correctly, it lets you see exactly what arguments and values you are passing.
+We've made a connection to an EnsEMBL database and passed parameters in using the -attribute => 'somevalue' syntax present in many of the EnsEMBL object constructors.  Formatted correctly, this syntax lets you see exactly what arguments and values you are passing.
 
-The $db variable now conains a reference to the newly created DBAdaptor object which you can start using to extract data. If, heaven forbid, the connection fails an error message will be returned.  
+The $db variable now contains a reference to the newly created DBAdaptor object which you can start using to extract data.  If, heaven forbid, the connection fails an error message will be returned.  
 
 Business Objects and Object Adaptors
 
-The EnsEMBL API allows manipulation of the database data through various business objects.  For example, there is a Gene object, a Clone object and an Exon object within the EnsEMBL API.  These objects are retrieved and stored in the database through the use of object adaptors.  The object adaptors have internal knowledge of the underlying database schema and use this knowledge to fetch, store or remove objects (data) from the database.  The database adaptor is a special adaptor which has the responsibility of maintaining the database connection and creating the object adaptors.  
+Before we launch into the ways the API can be used to retrieve and process data from the EnsEMBL databases it is best to mention the fundamental relationships the EnsEMBL objects have with the database.
 
-To obtain object adaptors from the database adaptor there is a suite of methods that have the following naming convention: get_ObjectAdaptor.  To obtain a SliceAdaptor and a CloneAdaptor to use for the retrieval of Slice objects or Clone objects we could do the following:
+The EnsEMBL API allows manipulation of the database data through various business objects.  For example, some of the more heavily used objects are the Gene, Clone and Exon objects.  More details of how to effectively use these objects will be covered later.  These objects are retrieved and stored in the database through the use of object 'adaptors'.  The object adaptors have internal knowledge of the underlying database schema and use this knowledge to fetch, store and remove objects (and data) from the database.  This way you can write code and use the EnsEMBL API without having to know anything about the underlying databases you are using.  The database adaptor (that we obtained by connecting to our database, in the previous section) is a special adaptor which has the responsibility of maintaining the database connection and creating other object adaptors.  
+
+As will be shown later in this document, to obtain object adaptors from the main database adaptor there is a suite of methods that have the  naming convention "get_ObjectAdaptor".  To obtain a SliceAdaptor or a CloneAdaptor (which, oddly enough, retrieve Slice and Clone objects) do the following:
 
 my $gene_adaptor = $db->get_GeneAdaptor();
-my $clone_adaptor = $db->get_CloneAdaptor(); 
-Lists and List References
+my $clone_adaptor = $db->get_CloneAdaptor();
+Don't worry if you don't immediately see how useful this could be.  Just remember that you don't need to know anything about how the database is structured, but you can retrieve the necessary data (neatly packaged in objects) by asking for it from the correct adaptor.  Throughout the rest of this document we are going to work through the ways the EnsEMBL business objects can be used to derive the information you want. 
 
-A significant difference between old and new versions of the EnsEMBL API is the widespread use of list references (listrefs).  Some methods can potentially return very long lists and it is far more efficient, both time-wise and memory-wise, for these methods to return listrefs instead.  Although not all methods return large numbers of objects, for consistancy most methods in the API now return list references rather than lists.  A naming standard has also been developed which should enable API users to surmise which methods return a single value or a list reference.  Business object methods with the prefix get_all_ return a list reference as do adaptor methods with the prefix fetch_all_ .  It is a simple matter to dereference listrefs to use them as a normal list.  The following examples illustrate the use of list references in the EnsEMBL API:
-
-#get a reference to a list of clones
-my $clones = $clone_adaptor->fetch_all;
-
-#get the first clone from the list:
-my $first_clone = $clones->[0];
-
-#another way of getting the same thing:
-($first_clone) = @$clones;
-
-#iterate through all of the contigs on a clone
-foreach my $contig (@{$first_clone->get_all_Contigs}) {
-  print $contig->name . "\n";
-}
-
-#another way of doing the same thing:
-my $contigs = $first_clone->get_all_Contigs;
-foreach my $contig (@$contigs) {
-  print $contig->name . "\n";
-}
-
-#retrieve a single Clone object (not a listref)
-$clone = $clone_adaptor->fetch_by_dbID(1);
-#no dereferencing needed:
-print $clone->id . "\n";  
 Let's get some data
 
 Once you have a database adaptor, you are ready to retrieve data.  Conceptually, there are two main ways to go about retrieving and manipulating genome data.  Historically, data has been handled on a clone- by- clone basis.  The EnsEMBL API is fully capable of working with the clone- based data that comes out of a sequencing project, and fundamentally EnsEMBL works with data at a contig level.  However, due to the nearing completion of the first big genome sequencing projects it is now becoming possible to practically work with genomes as long stretches of gap-less sequence.  EnsEMBL also allows you to work with sequence information in this way.  Previous releases of the EnsEMBL API called these un-interrupted stretches of sequence virtual contigs.  From release 9 onwards these have been called Slices -  literally, slices of genomic sequence.  All you need to do to retrieve such a sequence is stipulate the chromsome number and the start and end coordinates -  we'll get to doing this in just a bit.
 
 Most users of the EnsEMBL API will probably end up using both means of retrieving and manipulating genome sequences.  Hence, we'll introduce both of these here in the next two sections.
+
 
 Clones and RawContigs
 
@@ -376,6 +401,7 @@ Each 'tile' that we are returned is a Bio::EnsEMBL::Tile object representing the
  
 A Slice is a good starting place for retrieving information about a region of a chromosome, including the genes it contains.  The next few sections will go into more detail about how to do this.
 
+
 Slices vs RawContigs
 
 Before going on to the next topics an important point needs to be made.  Despite the fact that Slices and RawContigs are different objects and don't represent exactly the same thing (one is an experimentally generated stretch of sequence, the other is a computationally pooled sequence) they can effectively be used as such.  In the rest of this document a distinction won't be drawn between the two - unless there is an actual difference between how the two objects behave (which by design should be few).  We will be using Slices by default though, as we would encourage you to do too.
@@ -499,9 +525,10 @@ my @simple_features = @{$slice->get_all_SimpleFeatures};
 
 #get all of the tRNAscan hits on a contig
 my $trnas = $contig->get_all_SimpleFeatures('tRNAscan'); 
+
 Analysis Objects
 
-All features retrieved from the database have an Analysis object attached to them that contains information regarding the analysis/algorithm that created the feature.  This is a good means by which to determine where the feature has come from or what is actually is.  The gff_source method of the Analysis object tells us what sort of feature we have, such as 'genscan','repeat' or 'cpg'.  Other information can be derived from the Analysis object, such as the database that was used in a BLAST job, the parameters that were provided to the executable, and even the path to the executable that was used:
+All features retrieved from the database have an Analysis object attached to them that contains information regarding the analysis/algorithm that created the feature.  This is a good means by which to determine where the feature has come from or what it actually is.  The gff_source method of the Analysis object tells us what sort of feature we have, such as 'genscan','repeat' or 'cpg'.  Other information can be derived from the Analysis object, such as the database that was used in a BLAST job, the parameters that were provided to the executable, and even the path to the executable that was used:
 
 my $analysis = $feature->analysis;
 
@@ -528,11 +555,11 @@ The overlaps method returns true (1) if the two features do overlap, or false (0
  
 Exercises 3
 
-1.Print out all the repeat features for the first 100kb of sequence of human chromsome 1.  (Hint: Use the gffstring method for easy printing)
+1.  Print out all the repeat features for the first 100kb of sequence of human chromsome 1.  (Hint: Use the gffstring method for easy printing)
 
-2.What proportion of DNA is repeat in the above sequence and is this what you expect?  (Hint: tot up the length for each repeat feature and compare to the total sequence length)
+2.  What proportion of DNA is repeat in the above sequence and is this what you expect?  (Hint: tot up the length for each repeat feature and compare to the total sequence length)
 
-3.For clone AC005663 retrieve all the DNA features matched to EMBL vertrna.  How many different sequences did this clone hit and were these hits significant?  (Hint: Use the hseqname method and the p_value method)
+3.  For clone AC005663 retrieve all the DNA features matched to EMBL vertrna.  How many different sequences did this clone hit and were these hits significant?  (Hint: Use the hseqname method and the p_value method)
 
 Genes
 
@@ -701,11 +728,11 @@ foreach my $pf (@$protein_features) {
 }
 exercises 5
 
-1.Find all the pfam domains contained in the first 100 genes on chromosome 1.  Which ones are most common and is this surprising?  
+1.  Find all the pfam domains contained in the first 100 genes on chromosome 1.  Which ones are most common and is this surprising?  
 
-2.How many of those genes have no protein features at all.
+2.  How many of those genes have no protein features at all.
 
-3.How many of the proteins contain WD40 domains?
+3.  How many of the proteins contain WD40 domains?
 
 External Databases - The General Idea
 
@@ -774,15 +801,45 @@ my @landmark_features = @{$slice->get_all_landmark_MarkerFeatures};
 
 Exercises 6
 
-1.Connect to the core EnsEMBL database and the SNP database.  Add the SNP database to the EnsEMBL database and vice-versa.
+1.  Connect to the core EnsEMBL database and the SNP database.  Add the SNP database to the EnsEMBL database and vice-versa.
 
-2.Create a Slice of 1Mb of sequence from your chromosome of choice (hint - remember back to the Slice exercises)
+2.  Create a Slice of 1Mb of sequence from your chromosome of choice (hint - remember back to the Slice exercises)
 
-3.How many SNPs are there in this region?
+3.  How many SNPs are there in this region?
 
-4.How many SNPs overlap exons? (Hint - get all genes from the Slice and use get_all_Exons to get the exons from the genes. Use the overlaps method to calculate the proportion of SNPs that are situated in coding sequences.)
+4.  How many SNPs overlap exons? (Hint - get all genes from the Slice and use get_all_Exons to get the exons from the genes. Use the overlaps method to calculate the proportion of SNPs that are situated in coding sequences.)
 
 
+A final, but important, note to users of older versions of the EnsEMBL API - Lists and List References
 
+The EnsEMBL API has just recently passed through a rapid period of change.  A significant difference between old and new versions of the API is the now widespread use of list references (listrefs).  Some method calls can potentially return very long lists and it is far more efficient, both time- and memory-wise, for these methods to return references to these lists instead.  Although not all methods return large arrays of objects, for consistency almost all methods in the API should now return list references rather than lists/arrays.  A naming standard has also been developed which should make it easier for API users to surmise which methods return a single value or return a list reference.  Business object methods with the prefix get_all_ return a list reference, as do adaptor methods with the prefix fetch_all_ .  If you are returned a listref from a method call it is a simple matter to de-reference this.  The following examples illustrate the use of list references in the EnsEMBL API:
+
+#fetch all clones from the clone adaptor
+my $clones = $clone_adaptor->fetch_all;			# returns a list reference
+
+#if you must have a copy of the referenced array, do this:
+my @clones = @$clones;						# but you don't need to do this
+
+#get the first clone from the list via the reference:
+my $first_clone = $clones->[0];
+
+#another way of getting the same thing:
+($first_clone) = @$clones;
+
+#iterate through all of the contigs on a clone
+foreach my $contig (@{$first_clone->get_all_Contigs}) {
+  print $contig->name . "\n";
+}
+
+#another way of doing the same thing:
+my $contigs = $first_clone->get_all_Contigs;
+foreach my $contig (@$contigs) {
+  print $contig->name . "\n";
+}
+
+#retrieve a single Clone object (not a listref)
+$clone = $clone_adaptor->fetch_by_dbID(1);
+#no dereferencing needed:
+print $clone->id . "\n";  
 
 
