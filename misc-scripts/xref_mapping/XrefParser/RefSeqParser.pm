@@ -41,7 +41,7 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-  XrefParser::BaseParser->upload_xrefs(create_xrefs($source_id, $file, $species_id));
+  XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($source_id, $file, $species_id));
 
 }
 

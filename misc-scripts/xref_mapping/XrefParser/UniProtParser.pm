@@ -59,7 +59,7 @@ sub run {
   }
 
   # upload
-  XrefParser::BaseParser->upload_xrefs(@xrefs);
+  XrefParser::BaseParser->upload_xref_object_graphs(@xrefs);
 
 }
 

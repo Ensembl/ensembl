@@ -276,7 +276,7 @@ sub get_valid_codes{
 # --------------------------------------------------------------------------------
 # Upload xrefs to the database
 
-sub upload_xrefs {
+sub upload_xref_object_graphs {
 
   my ($self, @xrefs) = @_;
 
