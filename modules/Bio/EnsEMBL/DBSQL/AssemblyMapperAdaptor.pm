@@ -202,6 +202,9 @@ sub register_assembled {
   my $asm_end        = shift;
 
 
+  my $asm_cs_id = $asm_mapper->assembled_CoordSystem->dbID();
+  my $cmp_cs_id = $asm_mapper->component_CoordSystem->dbID();
+
   #split up the region to be registered into fixed chunks
   #this allows us to keep track of regions that have already been
   #registered and also works under the assumption that if a small region
@@ -222,14 +225,14 @@ sub register_assembled {
       if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
         if(defined($begin_chunk_region)) {
           #this is the end of an unregistered region.
-          my $region = [$begin_chunk_region << $CHUNKFACTOR,
-                        $end_chunk_region   << $CHUNKFACTOR];
+          my $region = [$begin_chunk_region   << $CHUNKFACTOR,
+                        $end_chunk_region     << $CHUNKFACTOR];
           push @chunk_regions, $region;
           $begin_chunk_region = $end_chunk_region = undef;
         }
       } else {
         $begin_chunk_region = $i if(!defined($begin_chunk_region));
-        $end_chunk_region   = $i;
+        $end_chunk_region   = $i+1;
         $asm_mapper->register_assembled($asm_seq_region,$i);
       }
     }
@@ -244,27 +247,26 @@ sub register_assembled {
 
   return if(!@chunk_regions);
 
-  my $asm_seq_region_id = $self->{'_sr_id_cache'}->{$asm_seq_region};
+  my $asm_seq_region_id = $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"};
 
   if(!$asm_seq_region_id) {
     # Get the seq_region_id via the name.  This would be quicker if we just
     # used internal ids instead but stored but then we lose the ability
     # the transform accross databases with different internal ids
-    my $cs = $asm_mapper->assembled_CoordSystem();
 
     my $sth = $self->prepare("SELECT seq_region_id" .
                              "FROM   seq_region" .
                              "WHERE  name = ? AND coord_system_id = ?");
 
-    $sth->execute($asm_seq_region, $cs->dbID);
+    $sth->execute($asm_seq_region, $asm_cs_id);
 
     if(!$sth->rows() == 1) {
       throw("Ambiguous or non-existant seq_region [$asm_seq_region]" .
-            "in coord system " . $cs->name . " " . $cs->version);
+            "in coord system $asm_cs_id");
     }
 
     ($asm_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{$asm_seq_region} = $asm_seq_region_id;
+    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} = $asm_seq_region_id;
 
     $sth->finish();
   }
@@ -277,7 +279,7 @@ sub register_assembled {
       SELECT
          asm.cmp_start,
          asm.cmp_end,
-         asm.cmp_seq_region_name,
+         asm.cmp_seq_region_id,
          sr.name,
          asm.ori,
          asm.asm_start,
@@ -288,14 +290,16 @@ sub register_assembled {
          asm.asm_seq_region_id = ? AND
          ? <= asm.asm_end AND
          ? >= asm.asm_start AND
-         asm.cmp_seq_region_id = sr.seq_region_id
+         asm.cmp_seq_region_id = sr.seq_region_id AND
+	 sr.coord_system_id = ?
    };
 
   my $sth = $self->prepare($q);
 
   foreach my $region (@chunk_regions) {
     my($region_start, $region_end) = @$region;
-    $sth->execute($asm_seq_region_id, $region_start, $region_end);
+    $sth->execute($asm_seq_region_id, $region_start, $region_end, 
+		  $asm_mapper->component_CoordSystem->dbID());
 
     my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori);
     $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id,
@@ -311,7 +315,7 @@ sub register_assembled {
                  $cmp_seq_region, $cmp_start, $cmp_end,
                  $ori,
                  $asm_seq_region, $region_start, $region_end);
-      $self->{'_sr_id_cache'}->{$cmp_seq_region} = $cmp_seq_region_id;
+      $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $cmp_seq_region_id;
     }
   }
 
@@ -345,32 +349,29 @@ sub register_component {
   my $asm_mapper = shift;
   my $cmp_seq_region = shift;
 
+  my $cmp_cs_id = $asm_mapper->component_CoordSystem()->dbID();
+
   #do nothing if this region is already registered
   return if($asm_mapper->have_registered_component($cmp_seq_region));
 
 
-  my $cmp_seq_region_id = $self->{'_sr_id_cache'}->{$cmp_seq_region};
+  my $cmp_seq_region_id = $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"};
 
 
   if(!$cmp_seq_region_id) {
-    # Get the seq_region id of the slice.  This would be quicker if we just
-    # stored it one the slice,  but then we lose the ability
-    # the transform accross databases with different internal ids
-    my $cs = $asm_mapper->component_CoordSystem();
-
     my $sth = $self->prepare("SELECT seq_region_id" .
                              "FROM   seq_region" .
                              "WHERE  name = ? AND coord_system_id = ?");
 
-    $sth->execute($cmp_seq_region, $cs->dbID);
+    $sth->execute($cmp_seq_region, $cmp_cs_id);
 
     if(!$sth->rows() == 1) {
       throw("Ambiguous or non-existant seq_region [$cmp_seq_region] " .
-            "in coord system" . $cs->name . " " . $cs->version);
+            "in coord system $cmp_cs_id");
     }
 
     ($cmp_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{$cmp_seq_region} = $cmp_seq_region_id;
+    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $cmp_seq_region_id;
 
     $sth->finish();
   }
