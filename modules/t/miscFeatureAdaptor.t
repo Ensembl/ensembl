@@ -86,7 +86,7 @@ ok(@$features == 1);
 print_features($features);
 
 
-$multi->hide('core', 'misc_feature', 'misc_feature_misc_set', 
+$multi->hide('core', 'misc_feature', 'misc_feature_misc_set', 'meta_coord',
             'misc_attrib', 'attrib_type', 'misc_set');
 
 #
@@ -129,7 +129,7 @@ ok(@sets == 1);
 ok($sets[0]->code eq 'setcode');
 
 
-$multi->restore('core', 'misc_feature', 'misc_feature_misc_set', 
+$multi->restore('core', 'misc_feature', 'misc_feature_misc_set', 'meta_coord',
                 'misc_attrib', 'attrib_type', 'misc_set');
 
 
