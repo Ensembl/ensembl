@@ -971,9 +971,9 @@ sub dbobj {
 
    if (defined($arg)) {
         $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless $arg->isa("Bio::EnsEMBL::DBSQL::Obj");
-        $self->{_dbobj} = $arg;
+        $self->{'_dbobj'} = $arg;
    }
-   return $self->{_dbobj};
+   return $self->{'_dbobj'};
 }
 	
 =head2 _got_overlaps
