@@ -343,9 +343,11 @@ sub primary_tag{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{'_primary_tag'} = $arg;
+	# throw warnings about setting primary tag
+	my ($p,$f,$l) = caller;
+	$self->warn("$f:$l setting primary_tag now deprecated. Primary tag is delegated to analysis object");
    }
-   return $self->{'_primary_tag'};
+   return $self->analysis->gff_feature();
 }
 
 =head2 source_tag
@@ -365,10 +367,12 @@ sub source_tag{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{'_source_tag'} = $arg;
+	# throw warnings about setting primary tag
+	my ($p,$f,$l) = caller;
+	$self->warn("$f:$l setting source_tag now deprecated. Source tag is delegated to analysis object");
     }
 
-   return $self->{'_source_tag'};
+   return $self->analysis->gff_source();
 }
 
 

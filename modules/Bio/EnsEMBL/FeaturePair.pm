@@ -1020,6 +1020,27 @@ sub phase {
     return $self->feature1->phase();
 }
 
+=head2 cigar
+
+ Title   : cigar
+ Usage   : $obj->cigar($newval)
+ Function: 
+ Example : 
+ Returns : value of cigar
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub cigar{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'cigar'} = $value;
+    }
+    return $self->{'cigar'};
+
+}
+
 =head2 end_phase
 
  Title   : end_phase

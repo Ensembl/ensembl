@@ -1,7 +1,7 @@
 
 
 #
-# BioPerl module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
+# BioPerl module for Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -13,15 +13,23 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor - DESCRIPTION of Object
+Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor - Adaptor for ProteinAlignFeatures
 
 =head1 SYNOPSIS
 
-Give standard usage here
+    $pfadp = $dbadaptor->get_ProteinAlignFeatureAdaptor();
+
+    my @feature_array = $pfadp->fetch_by_contig_id($contig_numeric_id);
+
+    my @feature_array = $pfadp->fetch_by_assembly_location($start,$end,$chr,'UCSC');
+ 
+    $pfadp->store($contig_numeric_id,@feature_array);
+
 
 =head1 DESCRIPTION
 
-Simple Feature Adaptor - database access for simple features 
+
+This is an adaptor for protein features on DNA sequence
 
 =head1 AUTHOR - Ewan Birney
 
@@ -39,14 +47,14 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
+package Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::SimpleFeature;
+use Bio::EnsEMBL::FeatureFactory;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 # new() can be inherited from Bio::Root::RootI
@@ -69,23 +77,29 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.simple_feature_id = $id");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.protein_align_feature_id = $id");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$display,$analysis_id) = $sth->fetchrow_array();
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id) = $sth->fetchrow_array();
 
    if( !defined $contig_id ) {
        $self->throw("No simple feature with id $id");
    }
 
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
-   my $out = Bio::EnsEMBL::SimpleFeature->new();
-   my $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+
+   my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
    $out->start($start);
    $out->end($end);
    $out->strand($strand);
+
+   $out->hstart($hstart);
+   $out->hend($hend);
+   $out->hseqname($hname);
+   $out->cigar($cigar);
    
-   $out->display_text($display);
+   $out->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
+
    $out->seqname($contig->id);
    $out->attach_seq($contig->seq);
 
@@ -112,29 +126,34 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$display,$analysis_id);
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$display,\$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
    my %ana;
 
    while( $sth->fetch ) {
-
        if( !defined $ana{$analysis_id} ) {
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
 
-       my $out = Bio::EnsEMBL::SimpleFeature->new();
+
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-       
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       $out->cigar($cigar);
+
        $out->analysis($ana{$analysis_id});
-       $out->display_text($display);
        $out->seqname($contig->name);
        $out->attach_seq($contig->seq);
        push(@f,$out);
@@ -175,11 +194,14 @@ sub fetch_by_assembly_location{
    # build the SQL
 
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.contig_id in ($cid_list)");
+   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,a.gff_source,a.gff_feature from protein_align_feature p where p.contig_id in ($cid_list)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$display,$analysis_id);
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$display,\$analysis_id);
+
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+
 
    my @f;
    my %ana;
@@ -199,13 +221,18 @@ sub fetch_by_assembly_location{
 
        # ok, ready to build a sequence feature: do we want this relative or not?
 
-       my $out = Bio::EnsEMBL::SimpleFeature->new();
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
        $out->start($coord_list[0]->start);
        $out->end($coord_list[0]->end);
-       $out->seqname($coord_list[0]->seqname);
        $out->strand($coord_list[0]->strand);
+       $out->seqname($coord_list[0]->seqname);
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       $out->cigar($cigar);
+
        $out->analysis($ana{$analysis_id});
-       $out->display_text($display);
        
        push(@f,$out);
    }
@@ -237,11 +264,11 @@ sub store{
        $self->throw("Contig_id must be a number, not [$contig_id]");
    }
 
-   my $sth = $self->prepare("insert into simple_feature (contig_id,contig_start,contig_end,contig_strand,display_label,analysis_id,score) values (?,?,?,?,?,?,?)");
+   my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_name,cigar_line,analysis_id,score) values (?,?,?,?,?,?,?,?,?,?)");
 
    foreach my $sf ( @sf ) {
-       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
-	   $self->throw("Simple feature must be an Ensembl SimpleFeature, not a [$sf]");
+       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::FeaturePair") ) {
+	   $self->throw("Simple feature must be an Ensembl ProteinAlignFeature, not a [$sf]");
        }
 
        if( !defined $sf->analysis ) {
@@ -252,7 +279,7 @@ sub store{
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
 
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->display_text,$sf->analysis->dbID,$sf->score);
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hseqname,$sf->cigar,$sf->analysis->dbID,$sf->score);
    }
 
 

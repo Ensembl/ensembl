@@ -2452,6 +2452,29 @@ sub get_SimpleFeatureAdaptor {
     return $sf;
 }
 
+=head2 get_ProteinAlignFeatureAdaptor
+
+ Title   : get_ProteinAlignFeatureAdaptor
+ Usage   : $sa = $db->get_ProteinAlignFeatureAdaptor;
+ Example :
+ Returns : the adaptor
+ Args    :
+
+
+=cut
+
+sub get_ProteinAlignFeatureAdaptor {
+    my( $self ) = @_;
+    
+    my( $sf );
+    unless ($sf = $self->{'_protein_align_feature_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
+        $sf = Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor->new($self);
+        $self->{'_protein_align_feature_adaptor'} = $sf;
+    }
+    return $sf;
+}
+
 
 sub get_DBEntryAdaptor {
     my( $self ) = @_;

@@ -55,7 +55,44 @@ if( scalar(@sf) != 1 || $sf[0]->start != $start ||
 	print "ok 6\n";
 }
 
+#
+# Test protein alignment feature adaptor
+#
+
+my $pfad = $db->get_ProteinAlignFeatureAdaptor();
+
+print "ok 7\n";
 
 
+my $sf = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+my $hstart = 300;
+my $hend   = 340;
+my $hname  = 'wibble';
+
+$sf->start($start);
+$sf->end($end);
+$sf->strand($strand);
+
+$sf->hstart($hstart);
+$sf->hend($hend);
+$sf->hseqname($hname);
+
+$sf->analysis($analysis);
+
+$pfad->store(1,$sf);
+
+print "ok 8\n";
+
+
+my @sf = $pfad->fetch_by_contig_id(1);
+
+if( scalar(@sf) != 1 || $sf[0]->start != $start ||
+	$sf[0]->end != $end || $sf[0]->strand != $strand ||
+	$sf[0]->hseqname ne $hname || $sf[0]->hstart != $hstart
+	|| $sf[0]->hend != $hend ) {
+	print "not ok 9\n";
+} else {
+	print "ok 9\n";
+}
 
 
