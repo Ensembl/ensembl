@@ -194,7 +194,7 @@ sub fetch_filled_by_dbIDs {
                                     co.length, co.embl_offset, co.dna_id,
                                     cl.embl_acc, cl.embl_version,
                                     cl.name, cl.version, cl.htg_phase,
-                                    cl.created, cl.modified
+                                    UNIX_TIMESTAMP(cl.created), UNIX_TIMESTAMP(cl.modified)
                              FROM contig co, clone cl
                              WHERE co.contig_id IN ( " .
 			           join( ", ", @contig_ids ) . ")  
