@@ -69,7 +69,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  print "Got",join(',',@args),"\n";
+  #print "Got",join(',',@args),"\n";
   my ($db,$host,$driver,$user,$password,$debug) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
@@ -78,7 +78,7 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    )],@args);
-  print "Got $db as db and $user as user\n";
+  #print "Got $db as db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -115,6 +115,37 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 get_new_id_from_old_id
+
+ Title   : get_new_id_from_old_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_new_id_from_old_id{
+   my ($self,$type,$old_id) = @_;
+
+   if( !defined $old_id ) {
+       $self->throw("Must give type and old_id");
+   }
+
+   my $sth = $self->prepare("select old_id,new_id from deleted_id where old_id = '$old_id' and id_type = '$type'");
+   my $res = $sth->execute();
+   my ($old,$new) = $sth->fetchrow_array();
+   
+   if( !defined $new || $new eq "" ) {
+       return "__DELETED__";
+   } else {
+       return $new;
+   }
+
+}
+
 
 =head2 get_seq
 
@@ -142,7 +173,7 @@ sub get_seq{
     my $sth = $self->prepare("select id,version,sequence from sequence where (id = '$seqid' && version = '$seqversion')");
     my $res = $sth->execute();
     my @out = $self->_create_seq_obj($sth);
-    return @out[0];
+    return $out[0];
 }
 
 =head2 get_seq_by_id
@@ -160,7 +191,6 @@ sub get_seq{
 sub get_seq_by_id{
     my ($self,$seqid) = @_;
     
-    my @out;
     $seqid || $self->throw("Attempting to get a sequence with no id");
     
     # get the sequence object
@@ -186,7 +216,6 @@ sub get_seq_by_id{
 sub get_seq_by_clone_version{
     my ($self,$clone_id, $clone_version, $seq_type) = @_;
     my $where_clause;
-    my @out;
 
     $clone_id || $self->throw("Attempting to get a sequence with no clone id");
     $clone_version || $self->throw("Attempting to get a sequence with no clone version");
@@ -223,7 +252,6 @@ sub get_seq_by_clone_version{
 sub get_seq_by_gene_version{
     my ($self,$gene_id, $gene_version, $seq_type) = @_;
     my $where_clause;
-    my @out;
     
     $gene_id || $self->throw("Attempting to get a sequence with no gene id");
     $gene_version || $self->throw("Attempting to get a sequence with no gene version");
@@ -247,7 +275,7 @@ sub get_seq_by_gene_version{
 =head2 write_seq
 
  Title   : write_seq
- Usage   : $db->write_seq (seq,gene_id,gene_version,clone_id,clone_version)
+ Usage   : $db->write_seq (seq,gene_id,gene_version,type,clone_id,clone_version)
  Function: Writes an entry in the archive database
  Example : $db->get_seq_by_id (ENSP0000012)
  Returns : array of $seq objects
