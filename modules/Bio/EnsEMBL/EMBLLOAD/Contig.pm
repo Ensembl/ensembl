@@ -136,7 +136,6 @@ sub seq{
 sub primary_seq{
    my ($self,@args) = @_;
 
-   my ($self) = @_;
    my $seq=$self->_get_Seq;
    return $seq;
    

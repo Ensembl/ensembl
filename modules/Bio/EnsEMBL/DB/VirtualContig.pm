@@ -78,7 +78,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
 use Bio::EnsEMBL::DB::VirtualPrimarySeq;
@@ -87,18 +87,18 @@ use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end );
 
 my $VC_UNIQUE_NUMBER = 0;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::VirtualContigI);
 
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
   
-  my $make = $self->SUPER::_initialize(@args);
+  my $self = {};
+  bless $self,$class;
   
-  $self->name("Virtual Contig Module"); # set the exception context (does this work?)
 
   my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
   
@@ -147,7 +147,7 @@ sub _initialize {
  # print STDERR "We are ending with length ",$self->length,"\n";
 
 # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 

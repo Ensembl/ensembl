@@ -546,11 +546,13 @@ sub get_all_ExternalFeatures{
        }
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
+	   &eprof_start("external_get_web".$extf);
 	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
 	       my $clone = $feature->seqname;
 	       $clone =~ s/\.\d+$//g;
 	       push(@{$featureh{$clone}},$feature);
 	   }
+	   &eprof_end("external_get_web".$extf);
        }
 
        # loop over clone. Sort both feature and contig arrays.
@@ -580,6 +582,8 @@ sub get_all_ExternalFeatures{
    if( scalar(@std) > 0 ) {
        foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
 	   foreach my $extf ( @std ) {
+	       &eprof_start("external_get_std".$extf);
+
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
 		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length,$contig->id)) {
 			$sf->seqname($contig->id);
@@ -598,6 +602,8 @@ sub get_all_ExternalFeatures{
 		       push(@contig_features,$sf);
 		   }
 	       }
+
+	       &eprof_end("external_get_std".$extf);
 	   }
        }
    }
@@ -958,6 +964,11 @@ sub get_all_VirtualGenes_startend
     my $gene;
     my @genes;
     
+    if( $self->_cached_virtualgenes_startend == 1 ) {
+	return @{$self->{'_virtualgenes_startend'}};
+    }
+
+
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
@@ -1035,7 +1046,32 @@ sub get_all_VirtualGenes_startend
 	push @genes,$vg;
     }
 
+
+    $self->{'_virtualgenes_startend'} = \@genes;
+    $self->_cached_virtualgenes_startend(1);
+
     return @genes;
+
+}
+
+=head2 _cached_virtualgenes_startend
+
+ Title   : _cached_virtualgenes_startend
+ Usage   : $obj->_cached_virtualgenes_startend($newval)
+ Function: 
+ Example : 
+ Returns : value of _cached_virtualgenes_startend
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _cached_virtualgenes_startend{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_cached_virtualgenes_startend'} = $value;
+    }
+    return $obj->{'_cached_virtualgenes_startend'};
 
 }
 

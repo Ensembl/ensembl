@@ -54,7 +54,7 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
@@ -67,22 +67,18 @@ use Bio::EnsEMBL::StickyExon;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 
-@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::Object);
+@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI);
 
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+sub new {
+  my($class,$db_obj) = @_;
+  my $self = {};
+  bless $self,$class;
 
-sub _initialize {
-  my($self,$db_obj) = @_;
-
-  my $make = $self->SUPER::_initialize;
-  
   $db_obj || $self->throw("Database Gene object must be passed a db obj!");
   $self->_db_obj($db_obj);
   $self->use_delayed_insert(1);
-  return $make; # success - we hope!
-
+  return $self; # success - we hope!
 }
 
 =head2 delete
@@ -1085,10 +1081,10 @@ sub get_supporting_evidence {
     my @features;
     
     while (my $rowhash = $sth->fetchrow_hashref) {
-	my $f1 = new Bio::EnsEMBL::SeqFeature;
-	my $f2 = new Bio::EnsEMBL::SeqFeature;
+	my $f1 = Bio::EnsEMBL::SeqFeature->new();
+	my $f2 = Bio::EnsEMBL::SeqFeature->new();
 	
-	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
+	my $f = Bio::EnsEMBL::FeaturePair->new(-feature1 => $f1,
 					      -feature2 => $f2);
 	
 #	    my $exon = $rowhash->{exon};

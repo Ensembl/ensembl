@@ -41,22 +41,25 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::DB::MapContig;
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::RootI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self) = @_;
+sub new {
+  my($class,@args) = @_;
   
-  my $make = $self->SUPER::_initialize;
+  my $self = {};
+  bless $self,$class;
+
+
   $self->{'mapcontighash'}= {};
 
 # set stuff in self from @args
- return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 get_MapContig

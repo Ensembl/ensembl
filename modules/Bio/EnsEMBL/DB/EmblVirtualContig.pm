@@ -95,17 +95,18 @@ use Bio::Annotation;
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
+  my $self = Bio::EnsEMBL::DB::VirtualContig->new(@args);
+  bless $self,$class;
 
   $self->{'date'} = [];
   $self->annotation( Bio::Annotation->new());
   $self->{'additional_seqf'} = [];
 
  # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 desc

@@ -349,9 +349,10 @@ sub get_Contig {
 
 sub get_all_Contigs {
    my ($self) = @_;
+   my @contigs;
 
    my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_get_Seq);
-   push my @contigs,$contig;
+   push @contigs,$contig;
  
    return @contigs;
 

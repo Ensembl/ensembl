@@ -54,29 +54,36 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Translation;
 use Bio::DBLinkContainerI;
 
 
-@ISA = qw(Bio::Root::Object Bio::DBLinkContainerI);
+@ISA = qw(Bio::Root::RootI Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
+
+  if( ref $class ) { 
+      $class = ref $class;
+  }
+
+  my $self = {};
+  bless $self,$class;
 
   $self->{'_trans_exon_array'} = [];
   $self->{'_db_link'} = [];
-  my $make = $self->SUPER::_initialize;
 
   # set stuff in self from @args
   foreach my $a (@args) {
     $self->add_Exon($a);
   }
-  $self->is_partial(0);
+
+  #$self->is_partial(0);
 
   return $self; # success - we hope!
 }
@@ -958,6 +965,7 @@ sub find_coord {
     } 
   }
 }
+
 
 =head2 is_partial
 
