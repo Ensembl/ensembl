@@ -22,7 +22,7 @@ use vars qw(@ISA);
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: UniProtParser.pm file.SPC\n\n";
+    print "\nUsage: UniProtParser.pm file.SPC <soure_id> <species_id>\n\n";
     exit(1);
   }
 
@@ -37,11 +37,14 @@ sub run {
   my $self = shift if (defined(caller(1)));
   my $file = shift;
   my $source_id = shift;
+  my $species_id = shift;
+  my $species_name;
 
   my ($sp_source_id, $sptr_source_id);
 
-  my ($species_id, $species_name) = get_species($file);
-
+  if(!defined($species_id)){
+    ($species_id, $species_name) = get_species($file);
+  }
   $sp_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SWISSPROT');
   $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('Uniprot/SPTREMBL');
   print "SwissProt source id for $file: $sp_source_id\n";
@@ -101,7 +104,8 @@ sub create_xrefs {
 
   my ($sp_source_id, $sptr_source_id, $species_id, $file) = @_;
 
-  my ($num_sp, $num_sptr) = 0;
+  my $num_sp = 0;
+  my $num_sptr = 0;
 
   my %dependent_sources = XrefParser::BaseParser->get_dependent_xref_sources(); # name-id hash
 
@@ -119,8 +123,9 @@ sub create_xrefs {
     if (defined $ox) {
       my $taxon = $1;
       my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
-      if (!exists $taxonomy2species_id{$taxon}) {
-	print "Skipping xref for species with taxonomy ID $taxon\n";
+      if (!exists $taxonomy2species_id{$taxon} 
+	  or $taxonomy2species_id{$taxon} ne $species_id) {
+#	print "Skipping xref for species with taxonomy ID $taxon\n";
 	next;
      }
     }
