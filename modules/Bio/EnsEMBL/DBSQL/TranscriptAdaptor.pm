@@ -197,7 +197,36 @@ sub get_stable_entry_info {
 }
 
 
+sub remove {
+  my $self = shift;
+  my $transcript = shift;
+  my $gene = shift;
 
+  if( ! defined $transcript->dbID() ) {
+    return;
+  }
+
+  my $exonAdaptor = $self->db->get_ExonAdaptor();
+  my $translationAdaptor = $self->db->get_TranslationAdaptor();
+
+  if( defined $transcript->translation ) {
+    $translationAdaptor->remove( $transcript->translation );
+  }
+
+  my $sth = $self->prepare( "delete from exon_transcript where transcript_id = ?" );
+  $sth->execute( $transcript->dbID );
+  $sth = $self->prepare( "delete from transcript_stable_id where transcript_id = ?" );
+  $sth->execute( $transcript->dbID );
+  $sth = $self->prepare( "delete from transcript where transcript_id = ?" );
+  $sth->execute( $transcript->dbID );
+
+  foreach my $exon ( $transcript->get_all_Exons() ) {
+    $exonAdaptor->remove( $exon );
+  }
+  
+
+  $transcript->{'dbID'} = undef;
+}
 
 1;
 

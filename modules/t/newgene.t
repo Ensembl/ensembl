@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..14\n"; 
+BEGIN { $| = 1; print "1..15\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -96,6 +96,7 @@ else {
 
 # skipping date tests
 
+
     print "ok 8\n";
     print "ok 9\n";
     print "ok 10\n";
@@ -150,5 +151,13 @@ else {
 }
 
 
+# test removeing gene
 
+$gad->remove( $gene );
+
+if( ! defined $gene->dbID() ) {
+	print "ok 15\n";
+} else {
+	print "not ok 15\n";
+}
 

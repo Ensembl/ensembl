@@ -140,3 +140,17 @@ sub get_stable_entry_info {
 
   return 1;
 }
+
+
+sub remove {
+  my $self = shift;
+  my $translation = shift;
+
+  my $sth = $self->prepare( "delete from translation where translation_id = ?" );
+  $sth->execute( $translation->dbID );
+  $sth = $self->prepare( "delete from translation_stable_id where translation_id = ?" );
+  $sth->execute( $translation->dbID );
+  $translation->dbID( undef );
+}
+
+1;

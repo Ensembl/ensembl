@@ -451,6 +451,31 @@ sub store {
 }
 
 
+sub remove {
+  my $self = shift;
+  my $gene = shift;
+
+  if( ! defined $gene->dbID() ) {
+    return;
+  }
+
+  my $sth= $self->prepare( "delete from gene where gene_id = ? " );
+  $sth->execute( $gene->dbID );
+  $sth= $self->prepare( "delete from gene_stable_id where gene_id = ? " );
+  $sth->execute( $gene->dbID );
+  my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
+  # my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
+  foreach my $trans ( $gene->each_Transcript() ) {
+    $transcriptAdaptor->remove($trans,$gene);
+  }
+
+  $gene->{'_dbID'} = undef;
+}
+
+
+
+
+
 sub create_tables {
 # read sql from geneAdaptor.sql
 }

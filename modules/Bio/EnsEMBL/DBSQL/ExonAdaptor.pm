@@ -499,4 +499,26 @@ sub get_stable_entry_info {
   return 1;
 }
 
+sub remove {
+  my $self = shift;
+  my $exon = shift;
+  
+  if ( ! defined $exon->dbID() ) {
+    return;
+  }
+
+  my $sth = $self->prepare( "delete from exon where exon_id = ?" );
+  $sth->execute( $exon->dbID );
+
+  $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
+  $sth->execute( $exon->dbID );
+
+  $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
+  $sth->execute( $exon->dbID );
+
+  # uhh, didnt know another way of resetting to undef ...
+  $exon->{dbID} = undef;
+}
+
+
 1;
