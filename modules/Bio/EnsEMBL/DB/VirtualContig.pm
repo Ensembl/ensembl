@@ -1483,14 +1483,14 @@ sub _convert_seqfeature_to_vc_coords {
        if ( $self->ori_in_vc($cid) == 1) {
 	   
            # If end < startincontig contig for orientation 1 
-	   print "Exon " . $sf->start . "\t" . $self->{startincontig}{$cid} . "\n";
+	   print STDERR "Exon " . $sf->start . "\t" . $self->{startincontig}{$cid} . "\n";
  	   if ($sf->start < $self->{'startincontig'}->{$cid}) {  
                return undef;              
 	   }
            
        } else {
             # If start > startincontig for orientation <> 1
-	   print "Exon " . $sf->end . "\t" . $self->{startincontig}{$cid} . "\n";
+	   print STDERR b"Exon " . $sf->end . "\t" . $self->{startincontig}{$cid} . "\n";
 	   if ($sf->end > $self->{'startincontig'}->{$cid}) {  
                return undef;              
 	   }
@@ -1499,14 +1499,14 @@ sub _convert_seqfeature_to_vc_coords {
        
        if ( $self->ori_in_vc($cid) == 1) {
 	   
-	   print "Exon " . $sf->start . "\t" . $self->{rightmostend} . "\n";
+	   print STDERR "Exon " . $sf->start . "\t" . $self->{rightmostend} . "\n";
  	   if ($sf->end >  $self->{rightmostend}) {  
                return undef;              
 	   }
            
        } else {
             # If start > startincontig for orientation <> 1
-	   print "Exon " . $sf->start. "\t" . $self->{rightmostend} . "\n";
+	   print STDERR "Exon " . $sf->start. "\t" . $self->{rightmostend} . "\n";
 	   if ($sf->start <  $self->{rightmostend}) {  
                return undef;              
 	   }
