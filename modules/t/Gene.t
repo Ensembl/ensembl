@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..6\n"; 
+BEGIN { $| = 1; print "1..8\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -36,25 +36,43 @@ print "ok 1\n";    # 1st test passes.
 $gene = new Bio::EnsEMBL::Gene;
 print "ok 2\n";   
 $tr   = new Bio::EnsEMBL::Transcript;
+$tr1   = new Bio::EnsEMBL::Transcript;
 print "ok 3\n";   
 $ex1   = new Bio::EnsEMBL::Exon;
 $ex2   = new Bio::EnsEMBL::Exon;
+$ex3   = new Bio::EnsEMBL::Exon;
 print "ok 4\n";   
 
 
+$ex1->id("dummy_id_1");
+$ex1->contig_id("c_id_1");
 $ex1->start(10);
 $ex1->end(20);
 $ex1->strand(1);
 
+$ex2->id("dummy_id_2");
+$ex2->contig_id("c_id_1");
 $ex2->start(40);
 $ex2->end(50);
 $ex2->strand(1);
+
+$ex3->id("dummy_id_3");
+$ex3->contig_id("c_id_2");
+$ex3->start(40);
+$ex3->end(50);
+$ex3->strand(1);
+
 
 
 $tr->add_Exon($ex1);
 $tr->add_Exon($ex2);
 
+$tr->add_Exon($ex1);
+$tr->add_Exon($ex2);
+$tr->add_Exon($ex3);
+
 $gene->add_Transcript($tr);
+$gene->add_Transcript($tr1);
 
 print "ok 5\n";
 
@@ -69,9 +87,29 @@ foreach $tr ( $gene->each_Transcript() ) {
 $x =0; # stop it whining...
 
 
-if( $count != 2 ) {
+if( $count != 5 ) {
     print "not ok 6\n";
 } else {
     print "ok 6\n";
 }
+
+
+@exons = $gene->each_unique_Exon();
+
+if( scalar @exons != 3 ) {
+      print "not ok 7\n";
+} else {
+       print "ok 7\n";
+}
+
+@contigs = $gene->unique_contig_ids();
+
+if( scalar @contigs != 2 ) {
+      print "not ok 8\n";
+} else {
+       print "ok 8\n";
+}
+	  
+
+
 

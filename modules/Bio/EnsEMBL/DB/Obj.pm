@@ -90,6 +90,9 @@ sub _initialize {
   #
   $self->{'_contig_seq_cache'} = {};
   
+
+  $self->{'_lock_table_hash'} = {};
+
   if( $debug ) {
      $self->_debug($debug);
  } else {
@@ -142,6 +145,20 @@ sub get_Gene{
    $geneid || $self->throw("Attempting to create gene with no id");
 
    my $gene = Bio::EnsEMBL::Gene->new();
+
+   # check the database is sensible before we yank out this gene. Yes this is
+   # paranoid.
+
+   my $sth1 = $self->prepare("select p1.contig from exon as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3.exon = p1.id");
+   $sth1->execute();
+   while( my $rowhash = $sth1->fetchrow_hashref) {
+       # get a contig object, which checks that this exists. 
+       my $contig = $self->get_Contig($rowhash->{'contig'});
+       # if there is no exception then it is there. Get rid of it
+       $contig = 0;
+   }
+
+
    # go over each Transcript
    my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
 
@@ -212,8 +229,9 @@ sub get_Exon{
    my $exon = Bio::EnsEMBL::Exon->new();
    $exon->contig_id($rowhash->{'contig'});
 
-   # we have to make another trip to the database to get out the contig to clone mapping.
    my $contig_id = $exon->contig_id();
+
+   # we have to make another trip to the database to get out the contig to clone mapping.
    my $sth2 = $self->prepare("select clone from contig where id = '$contig_id'");
    $sth2->execute;
    my $rowhash2 = $sth2->fetchrow_hashref;
@@ -297,7 +315,14 @@ sub get_Clone{
 sub get_Contig{
    my ($self,$id) = @_;
 
-   # FIXME: should check that this id is correct in this db.
+   my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
+
+   $sth->execute;
+   my $rowa = $sth->fetchrow_arrayref;
+   
+   if( ! $rowa->[0] || ! $rowa->[1] ) {
+       $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
+   }
 
    my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self,
 					       -id => $id );
@@ -326,6 +351,26 @@ sub write_Gene{
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
+   # get out unique contig ids from gene to check against
+   # database.
+
+   foreach my $contig_id ( $gene->unique_contig_ids() ) {
+       eval {
+	   my $contig = $self->get_Contig($contig_id);
+	   # if there is no exception then it is there. Get rid of it
+	   $contig = 0;
+       };
+       if( $@ ) {
+	   $self->throw("In trying to write gene " . $gene->id(). " into the database, unable to find contig $contig_id. Aborting write\n\nFull Exception\n\n$@\n");
+	   # done before locks, so we are ok.
+       }
+       
+   }
+
+
+
+   $self->_lock_tables('gene','exon','transcript','exon_transcript');
+
    # gene is big daddy object
 
    foreach my $trans ( $gene->each_Transcript() ) {
@@ -343,6 +388,8 @@ sub write_Gene{
 
    my $sth2 = $self->prepare("insert into gene (id) values ('". $gene->id(). "')");
    $sth2->execute();
+
+   $self->_unlock_tables();
 
 }
 
@@ -371,16 +418,10 @@ sub write_Transcript{
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
-#   my $lockst = $self->prepare("lock transcript;");
-#   $lockst->execute;
-
    # ok - now load this line in
 
    my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "')");
    $tst->execute();
-   
-#   my $unlockst = $self->prepare("unlock transcript");
-#   $unlockst->execute;
    
    return 1;
 }
@@ -409,6 +450,8 @@ sub write_Exon{
 #   $lockst->execute;
 
    # ok - now load this line in
+
+   # FIXME: better done with placeholders. (perhaps?).
 
    my $exonst = "insert into exon (id,contig,created,modified,start,end,strand,phase) values ('" .
        $exon->id() . "','" .
@@ -574,6 +617,56 @@ sub _db_handle{
     return $self->{'_db_handle'};
 
 }
+
+=head2 _lock_table
+
+ Title   : _lock_table
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _lock_table{
+   my ($self,@tables) = @_;
+
+   foreach my $table ( @tables ) {
+       if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
+	   $self->warn("$table already locked. Relock request ignored");
+       } else {
+	   my $sth = $self->prepare("lock tables $table write");
+	   my $rv = $sth->execute();
+	   $self->throw("Failed to lock table $table") unless $rv;
+	   $self->{'_lock_table_hash'}->{$table} = 1;
+       }
+   }
+
+}
+
+=head2 _unlock_table
+
+ Title   : _unlock_table
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _unlock_table{
+   my ($self,@tables) = @_;
+
+   my $sth = $self->prepare("unlock tables");
+   my $rv = $sth->execute();
+   $self->throw("Failed to unlock tables") unless $rv;
+   %{$self->{'_lock_table_hash'}} = ();
+}
+
 
 =head2 DESTROY
 
