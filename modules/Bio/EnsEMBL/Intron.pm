@@ -81,10 +81,10 @@ sub new {
 }
 
 
-=head2 prev_exon
+=head2 prev_Exon
 
   Args       : none
-  Example    : $exon = $intron->prev_exon
+  Example    : $exon = $intron->prev_Exon
   Description: Returns the exon before this Intron
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
@@ -92,17 +92,17 @@ sub new {
 
 =cut
 
-sub prev_exon {
+sub prev_Exon {
   my ($self) = shift;
 
   return $self->{'prev'};
 }
 
 
-=head2 next_exon
+=head2 next_Exon
 
   Args       : none
-  Example    : $exon = $intron->next_exon
+  Example    : $exon = $intron->next_Exon
   Description: Returns the exon after this Intron
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : none
@@ -110,7 +110,7 @@ sub prev_exon {
 
 =cut
 
-sub next_exon {
+sub next_Exon {
   my ($self) = shift;
 
   return $self->{'next'};
