@@ -129,7 +129,7 @@ EOF
   while (<$rtr>) {
     if (/Job <([0-9]+)> is/) {
       $jobid = $1;
-      print "LSF job ID for main mapping job: $jobid \n"
+      print "LSF job ID for main mapping job: $jobid (job array with $num_jobs jobs)\n"
     }
   }
   if (!defined($jobid)) {
