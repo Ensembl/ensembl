@@ -210,6 +210,6 @@ foreach my $ghost (@object_array) {
 
     #Nothing needs to be done if the ghost is already present
 }
-$rec_db->replace_last_update;
+$rec_db->replace_last_update($now);
 
 

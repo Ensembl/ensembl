@@ -924,9 +924,9 @@ sub cloneid_to_geneid{
 
 =head2 replace_last_update
     
- Title   : replace_last_update
- Usage   : $obj->replace_last_update
- Function: Replaces the time in the last update field of the meta table with the current time
+ Title   : replace_last_update(@$now_offset)
+ Usage   : $obj->replace_last_update($now_offset)
+ Function: Replaces the time in the last update field of the meta table with the now_offset time of the recipient
  Example : 
  Returns : nothing
  Args    : 
@@ -934,20 +934,26 @@ sub cloneid_to_geneid{
 =cut
 
 sub replace_last_update {
-     my ($self) = @_;
-     
-     my $last= $self->get_last_update;
-     
-     my $sth = $self->prepare("insert into meta (last_update,donor_database_locator) values (CURRENT_TIMESTAMP,'".$self->get_donor_locator."')");
-     $sth->execute;
-
-     my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
-     $sth->execute();
-     my $rowhash = $sth->fetchrow_arrayref();
-     $last = $rowhash->[0];
-     
-     $sth = $self->prepare("delete from meta where last_update = '".$last."'");  
-     $sth->execute;
+    my ($self, $now_offset) = @_;
+    
+    $now_offset || $self->throw("Trying to replace last update without a now-offset time\n");
+    
+    my $last= $self->get_last_update;
+    my $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $sth->execute();
+    my $rowhash = $sth->fetchrow_arrayref();
+    $now_offset = $rowhash->[0];
+    
+    $sth = $self->prepare("insert into meta (last_update,donor_database_locator) values ('".$now_offset."','".$self->get_donor_locator."')");
+    $sth->execute;
+    
+    $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    $last = $rowhash->[0];
+    
+    $sth = $self->prepare("delete from meta where last_update = '".$last."'");  
+    $sth->execute;
 
 }
 
