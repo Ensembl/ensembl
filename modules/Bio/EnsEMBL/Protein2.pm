@@ -886,7 +886,7 @@ sub get_all_SnpsFeatures{
    else {
        my $gbdb = $self->gbrowser_adaptor();
        my $snpdb = $self->snp_adaptor();
-       my @snps_array = $self->adaptor->get_snps($self,$gbdb,$snpdb);
+       my @snps_array = $self->adaptor->get_snps($self,$snpdb,$gbdb);
        foreach my $sn (@snps_array) {
 	   $self->add_snps($sn);
        }
