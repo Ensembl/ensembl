@@ -31,29 +31,22 @@ ok($sf);
 #
 
 # 2 start
-my $test = 0;
-$test = test_getter_setter($sf,'start',10);
-ok($test);
+ok(test_getter_setter($sf,'start',10));
 
 # 3 end
-$test = test_getter_setter($sf,'end',14);
-ok($test);
+ok(test_getter_setter($sf,'end',14));
 
 # 4 strand
-$test = test_getter_setter($sf,'strand',1);
-ok($test);
+ok(test_getter_setter($sf,'strand',1));
 
 # 5 score
-$test = test_getter_setter($sf,'score',42);
-ok($test);
+ok(test_getter_setter($sf,'score',42));
 
 # 6 display_label
-$test = test_getter_setter($sf,'display_label','dummy_label');
-ok($test);
+ok(test_getter_setter($sf,'display_label','dummy_label'));
 
 # 7 dbID
-$test = test_getter_setter($sf,'dbID',42);
-ok($test);
+ok(test_getter_setter($sf,'dbID',42));
 
 
 #
