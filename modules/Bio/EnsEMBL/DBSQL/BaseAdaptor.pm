@@ -414,6 +414,14 @@ sub fetch_all_by_dbID_list {
   return \@out;
 }
 
+# might not be a good idea, but for convenience
+# shouldnt be called on the BIG tables though
+sub fetch_all {
+    my $self = shift;
+    return $self->generic_fetch();
+}
+
+
 #_tables
 #
 #  Args       : none
