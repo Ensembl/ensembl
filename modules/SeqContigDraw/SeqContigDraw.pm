@@ -72,12 +72,13 @@ sub draw_contig_image
    
     # draw sequence features
     my @features= $contig->get_all_SeqFeatures();
-    foreach my $ft (sort @features)
+    foreach my $ft (@features)
     {
 	my $type;
         
 	if ($ft->analysis && $ft->analysis->db ne ""){$type=$ft->analysis->db;}
 	else{$type=$ft->analysis->gff_source;}
+
 	my $color=$gd_col_ref->{$image_comp_ref->{$type}{color}};	
 
         if ($ft->sub_SeqFeature) {
@@ -294,6 +295,7 @@ sub draw_feature
     if ($ft->isa("Bio::EnsEMBL::FeaturePair"))
     {
 	if ($ft->analysis->db eq "swir"){($db,$name)=split /:/,$ft->hseqname;}
+	if ($ft->analysis->db eq "dbest"){($db,$name)=split /\|/,$ft->hseqname;}
 	else {$name=$ft->hseqname;}
     }
     if ($ft->isa("Bio::EnsEMBL::SeqFeature")){$name=$ft->analysis->gff_source}
