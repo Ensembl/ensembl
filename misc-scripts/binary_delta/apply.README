@@ -37,7 +37,6 @@ Requirements / Configuration
        others available from CPAN at http://www.cpan.org/
 
        * Compress::Zlib
-       * Cwd
        * Digest::MD5
        * File::Basename
        * File::Copy
@@ -80,6 +79,12 @@ Usage
     those  used  with build.pl  to  create  the  delta files.   The  delta
     files  for   this  example  are   assumed  to  be  available   in  the
     homo_sapiens_core_11_31_delta_12_31 directory.
+
+    The "| apply.out" bit  is only needed if you want  to store the output
+    of the apply.pl in a separate file, "apply.out" in this case.
+
+    Alternate locations  for the xdelta  executable etc. may  be specified
+    using the options shown above.
 
     The  apply.pl program  will  verify  the MD5  checksums  of all  files
     involved in the  patch, including the delta files.   The patching will

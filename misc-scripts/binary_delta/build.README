@@ -11,12 +11,12 @@ Andreas Kähäri, andreas.kahari@ebi.ac.uk
     (more on this below).
 
     The program  will compute binary  "delta files"  that may be  used for
-    upgrading from  one release of  an Ensembl  database to the  next one.
-    The deltas  are computed from  the raw  MySQL database files  and will
-    thus incorporate  any schema changes as  well as data changes.   It is
-    hoped that the process of downloading the delta files and appying them
-    to the older release of the database  on an external site will be much
-    quicker than downloading the complete new release.
+    upgrading  from  one  release  of  an Ensembl  database  to  the  next
+    one.  The  deltas are computed from  the raw MySQL database  files and
+    will thus incorporate any schema changes  as well as data changes.  It
+    is hoped that the process of  downloading the delta files and applying
+    them to the older release of the  database on an external site will be
+    much quicker than downloading the complete new release.
 
     The  build.pl program  creates a  new directory  that apart  from some
     extra files *looks*  exactly the same as the MySQL  data directory for
@@ -38,10 +38,8 @@ Requirements / Configuration
        others available from CPAN at http://www.cpan.org/
 
        * Compress::Zlib
-       * Cwd
        * Digest::MD5
        * File::Basename
-       * File::Copy
        * Getopt::Std
 
     Check your  distribution CDs  before downloading and  installing these
