@@ -56,21 +56,15 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 
 sub fetch_all_by_AffyProbe {
-    my $self = shift;
-    my $probe = shift;
+  my $self = shift;
+  my $probe = shift;
 
-    if( ! ( ref($probe) && $probe->isa( "Bio::EnsEMBL::AffyProbe" ))) {
-	throw( "AffyProbe is required argument to fetch_by_AffyProbe\n".
-	       "You supplied $probe" );
-    }
+  throw( "AffyProbe is required argument to fetch_by_AffyProbe\nYou supplied $probe" ) unless 
+    ref($probe) && $probe->isa( "Bio::EnsEMBL::AffyProbe" );
 
-    if( ! defined $probe->dbID() ) {
-	throw( "Supplied probe is not stored in database" );
-    }
+  throw "Supplied probe is not stored in database" unless defined $probe->dbID();
 
-    my $dbID = $probe->dbID();
-    my $res = $self->SUPER::generic_fetch( "af.affy_probe_id = $dbID" );
-    return $res;
+  return $self->generic_fetch( "af.affy_probe_id = ". $probe->dbID() );
 }
 
 
@@ -90,28 +84,21 @@ sub fetch_all_by_AffyProbe {
 =cut
 
 sub fetch_all_by_Slice_arrayname {
-    my $self = shift;
-    my $slice = shift;
-    my @arraynames = @_;
+  my( $self, $slice, @arraynames ) = @_;
 
-    if( !@arraynames ) {
-	throw( "Need arrayname as parameter" );
-    }
+  throw "Need arrayname as parameter" unless @arraynames;
 
-    my $constraint;
+  my $constraint;
 
-    if( scalar @arraynames == 1 ) {
-	$constraint = "aa.name = \"".$arraynames[0]."\"";
-    } else { 
-	$constraint = join( ",", ( map { "\"$_\"" } @arraynames ));
-	$constraint = "aa.name in ( $constraint )";
-    }
+  if( scalar @arraynames == 1 ) {
+    $constraint = qq( aa.name = "$arraynames[0]" );
+  } else { 
+    $constraint = join '","' ,  @arraynames;
+    $constraint = qq( aa.name in ( "$constraint" ) );
+  }
 
-    return $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint );
+  return $self->SUPER::fetch_all_by_Slice_constraint( $slice, $constraint );
 }
-
-
-
 
 =head2 store
 
@@ -193,9 +180,9 @@ sub store{
 sub _tables {
   my $self = shift;
   
-  return ( ['affy_feature', 'af' ], 
-	   ['affy_probe', 'ap' ], 
-	   [ 'affy_array', 'aa' ]);
+  return ( [ 'affy_feature', 'af' ], 
+	   [ 'affy_probe',   'ap' ], 
+	   [ 'affy_array',   'aa' ]);
 }
 
 
@@ -223,7 +210,7 @@ sub _columns {
   return qw( af.affy_feature_id af.seq_region_id af.seq_region_start
              af.seq_region_end af.seq_region_strand 
              af.mismatches af.affy_probe_id af.analysis_id
-             aa.name )
+             aa.name ap.probeset ap.name)
 
 }
 
@@ -243,11 +230,9 @@ sub _columns {
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;
 
-  #
   # This code is ugly because an attempt has been made to remove as many
   # function calls as possible for speed purposes.  Thus many caches and
   # a fair bit of gymnastics is used.
-  #
 
   my $sa = $self->db()->get_SliceAdaptor();
   my $aa = $self->db->get_AnalysisAdaptor();
@@ -259,14 +244,14 @@ sub _objs_from_sth {
   my %sr_cs_hash;
 
 
-  my($affy_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
-     $seq_region_strand, $mismatches, $analysis_id,
-     $affy_probe_id, $array_name);
+  my( $affy_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
+      $seq_region_strand, $mismatches, $analysis_id,
+      $affy_probe_id, $array_name, $affy_probe_set, $affy_probe_name );
 
   $sth->bind_columns(\$affy_feature_id,\$seq_region_id, \$seq_region_start,
                      \$seq_region_end, \$seq_region_strand, 
 		     \$mismatches, \$affy_probe_id, \$analysis_id,
-                     \$array_name );
+                     \$array_name, \$affy_probe_set, \$affy_probe_name );
  
   my $asm_cs;
   my $cmp_cs;
@@ -275,8 +260,8 @@ sub _objs_from_sth {
   my $cmp_cs_vers;
   my $cmp_cs_name;
   if($mapper) {
-    $asm_cs = $mapper->assembled_CoordSystem();
-    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs      = $mapper->assembled_CoordSystem();
+    $cmp_cs      = $mapper->component_CoordSystem();
     $asm_cs_name = $asm_cs->name();
     $asm_cs_vers = $asm_cs->version();
     $cmp_cs_name = $cmp_cs->name();
@@ -287,7 +272,7 @@ sub _objs_from_sth {
   my $dest_slice_end;
   my $dest_slice_strand;
   my $dest_slice_length;
-  if($dest_slice) {
+  if( $dest_slice ) {
     $dest_slice_start  = $dest_slice->start();
     $dest_slice_end    = $dest_slice->end();
     $dest_slice_strand = $dest_slice->strand();
@@ -300,17 +285,16 @@ sub _objs_from_sth {
     next if( $last_feature_id == $affy_feature_id );
     $last_feature_id = $affy_feature_id;
 
-    my $analysis = $analysis_hash{$analysis_id} ||=
-      $aa->fetch_by_dbID($analysis_id);
+    my $analysis = $analysis_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
 
     #get the slice object
     my $slice = $slice_hash{"ID:".$seq_region_id};
 
-    if(!$slice) {
-      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+    unless($slice) {
+      $slice                            = $sa->fetch_by_seq_region_id($seq_region_id);
       $slice_hash{"ID:".$seq_region_id} = $slice;
-      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
-      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+      $sr_name_hash{$seq_region_id}     = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id}       = $slice->coord_system();
     }
 
     #
@@ -322,8 +306,7 @@ sub _objs_from_sth {
       my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
       ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
-        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                          $seq_region_strand, $sr_cs);
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end, $seq_region_strand, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
       next FEATURE if(!defined($sr_name));
@@ -331,12 +314,10 @@ sub _objs_from_sth {
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
         $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
-          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
-                               $cmp_cs_vers);
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef, $cmp_cs_vers);
       } else {
         $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
-          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
-                               $asm_cs_vers);
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef, $asm_cs_vers);
       }
     }
 
@@ -345,35 +326,37 @@ sub _objs_from_sth {
     # If the dest_slice starts at 1 and is foward strand, nothing needs doing
     #
     if($dest_slice) {
-      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+      unless( $dest_slice_start == 1 && $dest_slice_strand == 1) {
         if($dest_slice_strand == 1) {
           $seq_region_start = $seq_region_start - $dest_slice_start + 1;
           $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
         } else {
           my $tmp_seq_region_start = $seq_region_start;
-          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-          $seq_region_strand *= -1;
+          $seq_region_start        = $dest_slice_end - $seq_region_end       + 1;
+          $seq_region_end          = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand      *= -1;
         }
       }
 
       #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-          next FEATURE;
-      }
+      next FEATURE if $seq_region_end < 1 || $seq_region_start > $dest_slice_length;
+
       $slice = $dest_slice;
     }
 
-    push @features, Bio::EnsEMBL::AffyFeature->new_fast(
-      {'start'    => $seq_region_start,
-       'end'      => $seq_region_end,
-       'strand'   => $seq_region_strand,
-       'slice'    => $slice,
-       'analysis' => $analysis,
-       'adaptor'  => $self,
-       'dbID'     => $affy_feature_id,
-       'mismatchcount' => $mismatches,
-       '_probe_id'    => $affy_probe_id});
+    push @features, Bio::EnsEMBL::AffyFeature->new_fast( {
+      'start'         => $seq_region_start,
+      'end'           => $seq_region_end,
+      'strand'        => $seq_region_strand,
+      'slice'         => $slice,
+      'analysis'      => $analysis,
+      'adaptor'       => $self,
+      'dbID'          => $affy_feature_id,
+      'mismatchcount' => $mismatches,
+      '_probe_id'     => $affy_probe_id,
+      'probeset'      => $affy_probe_set,
+      '_probe_name'   => $affy_probe_name
+    } );
   }
 
   return \@features;
@@ -392,9 +375,8 @@ sub _objs_from_sth {
 =cut
 
 sub list_dbIDs {
-   my ($self) = @_;
-
-   return $self->_list_dbIDs("affy_feature");
+  my ($self) = @_;
+  return $self->_list_dbIDs( "affy_feature" );
 }
 
 1;
