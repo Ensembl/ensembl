@@ -235,6 +235,60 @@ sub get_Update_Obj {
     return $update_obj;
 }
 
+=head2 get_object_by_wildcard
+
+ Title   : get_object_by_wildcard
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_object_by_wildcard{
+   my ($self,$type,$string) = @_;
+
+   print STDERR "Got type: $type and string: $string\n";
+   my @ids;
+   my $sth = $self->prepare("select id from $type where id like \'$string\'");
+   print STDERR "mysql: select id from $type where id like \'$string\'\n";
+   my $res = $sth->execute || $self->throw("Could not get any ids!");
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@ids,$rowhash->{'id'});
+   }
+   
+   if ($type eq 'gene') {
+       return $self->gene_Obj->get_array_supporting('without',@ids);
+   }
+   if ($type eq 'transcript') {
+       my @trans;
+       foreach my $id (@ids) {
+	   push @trans, $self->gene_Obj->get_Transcript($id);
+       }
+       return @trans;
+   }
+   if ($type eq 'exon') {
+       my @exons;
+       foreach my $id (@ids) {
+	   push @exons, $self->gene_Obj->get_Exon($id);
+       }
+       return @exons;
+   }
+   if ($type eq 'clone') {
+       my @clones;
+       foreach my $id (@ids) {
+	   push @clones, $self->get_Clone($id);
+       }
+       return @clones;
+   }
+   else {
+       $self->throw("Type $type not supported, only gene, transcript, exon and clone\n");
+   }
+   return;
+}
+
 =head2 write_Clone
 
  Title   : write_Clone
