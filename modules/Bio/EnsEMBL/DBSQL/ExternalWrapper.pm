@@ -138,15 +138,12 @@ sub get_Ensembl_Genes_contig_list{
        #print STDERR "Getting external genes from the cache\n";
        my %cgh = %$cgr;
        foreach my $c (@contigs) {
-	   if ($cgh{$c}) {
-	       foreach my $g (@{$cgh{$c}}) {
-		   $g->refresh();
-	       }
-	       push (@genes,@{$cgh{$c}});
+	 if ($cgh{$c}) {
+	   foreach my $g (@{$cgh{$c}}) {
+	     $g->refresh();
 	   }
-	   else {
-	       push (@todocontigs,$c);
-	   }
+	   push (@genes,@{$cgh{$c}});
+	 }
        }
        return @genes;
    }
@@ -156,6 +153,7 @@ sub get_Ensembl_Genes_contig_list{
        }
        push (@todocontigs,@contigs);
    }
+
    if( scalar @todocontigs == 0 ) {
        return @genes;
    }
@@ -166,32 +164,42 @@ sub get_Ensembl_Genes_contig_list{
        chop $list;
        $list = "($list)";
        
-       my $sth = $self->dbobj->prepare("select t.gene,c.id from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
-   
+       my $sth = $self->dbobj->prepare("
+             SELECT t.gene_id,c.id 
+               FROM transcript t,exon_transcript et,exon e,
+                    contig c 
+              WHERE c.id in $list 
+                AND c.internal_id = e.contig_id 
+                AND e.exon_id = et.exon_id 
+                AND t.transcript_id = et.transcript_id");
+
        $sth->execute();
        my @geneids;
-       
-       my %seen;
+
        while( my ($id,$contig) = $sth->fetchrow_array ) {
-	   if (!$seen{$id}) {
-	       $gc{$id}=$contig;
-	       $seen{$id}++;
-	   }
+	 if (!exists $gc{$id}) {
+	   $gc{$id}=$contig;
+	 }
        }
+
        push(@geneids,keys(%gc));
+
        if( scalar(@geneids) == 0 ) {
 	   #print STDERR "No ids here...\n";
 	   return();
        }
-           
-      
-       
+
        #print STDERR "Getting external genes normally\n";
-       @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@geneids);
+       my $ga = $self->dbobj->get_GeneAdaptor();
+       for my $gene_id ( @geneids ) {
+	 my $gene = $ga->fetch_by_dbID( $gene_id );
+	 push( @genes, $gene );
+       }
+
        foreach my $gene (@genes) {
-	   if (my $contig = $gc{$gene->id}) {
-	       push(@{$cg{$contig}},$gene);
-	   }
+	 if (my $contig = $gc{$gene->id}) {
+	   push(@{$cg{$contig}},$gene);
+	 }
        }
        $self->cg(\%cg);
        
