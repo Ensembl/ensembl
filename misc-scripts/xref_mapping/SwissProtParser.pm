@@ -107,10 +107,19 @@ sub create_xrefs {
   while (<SWISSPROT>) {
 
     my $xref;
-    ($xref->{ACCESSION}) =$_ =~ /AC\s+(\w+);/; # note only takes first accession if > 1
+    my $acc;
+    ($acc) =$_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions 
     ($xref->{LABEL})    = $_ =~ /ID\s+(\w+)/;
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
+
+    # set accession (and synonyms if more than one)
+    # note synonyms 
+    my @acc = split /;/, $acc;
+    $xref->{ACCESSION} = $acc[0];
+    for (my $a=1; $a <= $#acc; $a++) {
+      push(@{$xref->{"SYNONYMS"} }, $acc[$a]);
+    }
 
     # extract sequence
     my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline 

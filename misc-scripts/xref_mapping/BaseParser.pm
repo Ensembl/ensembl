@@ -58,17 +58,31 @@ sub upload_xrefs {
 		  $xref->{SPECIES_ID}) || die $dbi->errstr;
 
     # get ID of xref just inserted
-     my $id = $sth->{'mysql_insertid'};
+    my $xref_id = $sth->{'mysql_insertid'};
 
     # create entry in primary_xref table with sequence
     # TODO experimental/predicted????
     $sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
-    $sth->execute($id,
+    $sth->execute($xref_id,
 		  $xref->{SEQUENCE},
 		  'peptide',
 		  'experimental',
 		  $xref->{SOURCE_ID}) || die $dbi->errstr;
 
+    # if there are synonyms, create xrefs for them and entries in the synonym table
+    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
+    my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
+    foreach my $syn (@{$xref->{SYNONYMS}}) {
+      
+      $xref_sth->execute($syn,
+			 $xref->{LABEL},
+			 $xref->{SOURCE_ID},
+			 $xref->{SPECIES_ID}) || die $dbi->errstr;
+
+      my $syn_xref_id = $xref_sth->{'mysql_insertid'};
+      $syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
+
+    }
   }
 
   $sth->finish() if defined $sth;
