@@ -1649,7 +1649,7 @@ sub transform {
               'Use $trans->transfer($slice) or ' .
               '$trans->transform("coordsysname") instead.');
     my (undef, $new_ex) = each(%{$_[0]});
-    $self->transfer($new_ex->slice);
+    return $self->transfer($new_ex->slice);
   }
 
   my $new_transcript = $self->SUPER::transform( @_ );
