@@ -488,7 +488,7 @@ sub get_all_blastpFeatures{
     }
    else {
        my $proteinid = $self->id();
-       my $pfa = $self->adaptor->get_ProteinFeatureAdaptor();
+       my $pfa = $self->adaptor->db()->get_ProteinFeatureAdaptor();
        my @array_features = 
 	 $pfa->fetch_by_feature_and_dbID('blastp',$proteinid);
        foreach my $in (@array_features) {
