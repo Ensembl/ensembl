@@ -346,11 +346,12 @@ sub slice {
   Description: Returns a copy of this feature, but converted to a different
                coordinate system. The converted feature will be placed on a
                slice which spans an entire sequence region of the new
-               coordinate system.  If The requested coordinate system is the
-               same coordinate system (but may be ona different slice if the
-               original slice did not span the entire seq_region).
+               coordinate system. If the requested coordinate system is the
+               same coordinate system it is simply placed on a slice which
+               spans the entire seq_region (as opposed to the original slice
+               which may have only partially covered the seq_region).
 
-               If a feature spans a boundary in the new coordinate system, 
+               If a feature spans a boundary in the new coordinate system,
                undef is returned instead.
 
                For example, transforming an exon in contig coordinates to one 
