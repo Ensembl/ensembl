@@ -1,0 +1,181 @@
+#!/usr/local/bin/perl
+
+=head1 NAME
+
+glovar_snp_density.pl -
+script to calculate glovar SNP density and stats for Vega
+
+=head1 SYNOPSIS
+
+
+=head1 DESCRIPTION
+
+Blocksize condition is 4000 per genome.
+
+=head1 LICENCE
+
+This code is distributed under an Apache style licence:
+Please see http://www.ensembl.org/code_licence.html for details
+
+=head1 AUTHOR
+
+Patrick Meidl <pm2@sanger.ac.uk>
+
+=head1 CONTACT
+
+Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
+
+=cut
+
+use strict;
+BEGIN {
+    $ENV{'ENSEMBL_SERVERROOT'} = "../../..";
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/conf");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-compara/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-draw/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-external/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl-otter/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/ensembl/modules");
+    unshift(@INC,"$ENV{'ENSEMBL_SERVERROOT'}/bioperl-live");
+}
+
+use SiteDefs;
+use EnsWeb;
+use EnsEMBL::DB::Core;
+use Getopt::Long;
+use Bio::EnsEMBL::DensityType;
+use Bio::EnsEMBL::DensityFeature;
+use POSIX;
+
+my ($species, $dry, $help);
+&GetOptions(
+    "species=s" => \$species,
+    "dry-run"   => \$dry,
+    "n"         => \$dry,
+    "help"      => \$help,
+    "h"         => \$help,
+);
+
+if($help || !$species){
+    print qq(Usage:
+    ./glovar_snp_density.pl
+        --species=Homo_sapiens
+        [--dry-run|-n]
+        [--help|-h]\n\n);
+    exit;
+}
+
+$ENV{'ENSEMBL_SPECIES'} = $species;
+
+## set db user/pass to allow write access
+my $db_ref = $EnsWeb::species_defs->databases;
+$db_ref->{'ENSEMBL_DB'}{'USER'} = $EnsWeb::species_defs->ENSEMBL_WRITE_USER;
+$db_ref->{'ENSEMBL_DB'}{'PASS'} = $EnsWeb::species_defs->ENSEMBL_WRITE_PASS;
+
+## connect to databases
+my $databases = &EnsEMBL::DB::Core::get_databases(qw(core glovar));
+
+die "Problem connecting to databases: $databases->{'error'}\n"
+    if  $databases->{'error'} ;
+warn "Database error: $databases->{'non_fatal_error'}\n"
+    if $databases->{'non_fatal_error'};
+
+## get the adaptors needed
+my $dfa = $databases->{'core'}->get_DensityFeatureAdaptor;
+my $dta = $databases->{'core'}->get_DensityTypeAdaptor;
+my $aa  = $databases->{'core'}->get_AnalysisAdaptor;
+my $attrib_adaptor = $databases->{'core'}->get_AttributeAdaptor();
+my $slice_adaptor = $databases->{'core'}->get_SliceAdaptor();
+my $top_slices = $slice_adaptor->fetch_all("toplevel");
+
+## calculate block size
+my ( $block_size, $genome_size );
+for my $slice ( @$top_slices ) {
+    $genome_size += $slice->length;
+}
+$block_size = int( $genome_size / 4000 );
+
+## analysis
+my $analysis = new Bio::EnsEMBL::Analysis (
+        -program     => "glovar_snp_density.pl",
+        -database    => "vega",
+        -gff_source  => "glovar_snp_density.pl",
+        -gff_feature => "density",
+        -logic_name  => "snpDensity");
+$aa->store( $analysis ) unless $dry;
+
+## density type
+my $dt = Bio::EnsEMBL::DensityType->new(
+        -analysis   => $analysis,
+        -block_size => $block_size,
+        -value_type => 'sum');
+$dta->store($dt) unless $dry;
+
+## loop over chromosomes
+my @chr;
+foreach my $sl (@$top_slices) {
+    push @chr, $sl->seq_region_name;
+}
+print STDERR "\nAvailable chromosomes: @chr\n";
+
+my ($current_start, $current_end);
+foreach my $slice (@$top_slices){
+    $current_start = 1;
+    my $chr = $slice->seq_region_name();
+    my ($total, $i);
+    my $bins = POSIX::ceil($slice->end / $block_size);
+    
+    print STDERR "\nSNP densities for chr $chr with block size $block_size\n";
+    print STDERR "Start at " . `date`;
+
+    ## loop over blocks
+    while($current_start <= $slice->end) {
+        $i++;
+        $current_end = $current_start+$block_size-1;
+        if ($current_end > $slice->end) {
+            $current_end = $slice->end;
+        }
+        my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
+        my $count =0;
+
+        my $snps;
+        eval { $snps = $sub_slice->get_all_ExternalFeatures('GlovarSNP'); };
+        if ($@) {
+            warn $@;
+            $current_start = $current_end + 1;
+            next;
+        }
+        foreach my $snp (@{$snps}){
+            $count++ if ($snp->start >= 1);
+        }
+
+        ## density
+        my $df = Bio::EnsEMBL::DensityFeature->new
+            (-seq_region    => $slice,
+             -start         => $current_start,
+             -end           => $current_end,
+             -density_type  => $dt,
+             -density_value => $count);
+        $current_start = $current_end + 1;
+        $dfa->store($df) unless $dry;
+        $total += $count;
+
+        ## logging
+        print STDERR "Chr: $chr | Bin: $i/$bins | Count: $count | ";
+        print STDERR "Mem: " . `ps $$ -o vsz |tail -1`;
+    }
+
+    ## stats
+    print STDERR "Total for chr $chr: $total\n";
+    my $stat = Bio::EnsEMBL::Attribute->new
+	(-NAME => 'SNPs',
+	 -CODE => 'SNPCount',
+	 -VALUE => $total,
+	 -DESCRIPTION => 'Total Number of SNPs');
+    $attrib_adaptor->store_on_Slice($slice, [$stat]) unless $dry;
+}
+
+print STDERR "\nAll done at " . `date` . "\n";
+
+1;
