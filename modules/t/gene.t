@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 40;
+	plan tests => 44;
 }
 
 use MultiTestDB;
@@ -17,7 +17,6 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 
 # switch on the debug prints
-
 our $verbose = 0;
 
 debug( "Startup test" );
@@ -416,3 +415,29 @@ ok ( $newgene->display_xref->dbID() == 614 );
 ok ( $newgene->type eq 'dummy' );
 
 $multi->restore('core', 'gene');
+
+
+#
+# test GeneAdaptor::fetch_all_by_domain
+#
+my @genes = @{$ga->fetch_all_by_domain('IPR000010')};
+
+debug("Fetch by domain 'IPR000010'");
+
+ok(@genes == 2);
+debug("Got " . scalar(@genes) . " genes");
+ok(($genes[0]->stable_id() eq 'ENSG00000131044') ||
+   ($genes[1]->stable_id() eq 'ENSG00000131044'));
+ok(($genes[0]->stable_id() eq 'ENSG00000174873') ||
+   ($genes[1]->stable_id() eq 'ENSG00000174873'));
+
+
+#
+# test GeneAdaptor::fetch_all_by_external_name
+#
+
+#Q15691
+($gene) = @{$ga->fetch_all_by_external_name('MAE1_HUMAN')};
+debug($gene->stable_id);
+ok($gene->stable_id() eq 'ENSG00000101367');
+
