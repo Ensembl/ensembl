@@ -20,8 +20,8 @@ ab initio prediction method
                                  -STRAND    => 1,
                                  -SLICE     => $slice,
                                  -DBID      => $dbID,
-				 -P_VALUE   => 23.5,
-				 -SCORE     => 99
+                                 -P_VALUE   => 23.5,
+                                 -SCORE     => 99
                                  );
 
    #seq returns a Bio::Seq
@@ -56,6 +56,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
@@ -91,6 +92,43 @@ sub new {
 }
 
 
+=head2 score
+
+  Arg [1]    : string $newval (optional) 
+               The new value to set the score attribute to
+  Example    : $score = $obj->score()
+  Description: Getter/Setter for the score attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub score{
+  my $self = shift;
+  $self->{'score'} = shift if(@_);
+  return $self->{'score'};
+}
+
+
+
+=head2 p_value
+
+  Arg [1]    : string $newval (optional) 
+               The new value to set the p_value attribute to
+  Example    : $p_value = $obj->p_value()
+  Description: Getter/Setter for the p_value attribute
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub p_value{
+  my $self = shift;
+  $self->{'p_value'} = shift if(@_);
+  return $self->{'p_value'};
+}
 
 
 =head2 end_phase
