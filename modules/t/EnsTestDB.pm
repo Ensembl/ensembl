@@ -194,6 +194,7 @@ sub ensembl_locator {
     my $locator = '';
     foreach my $meth (qw{ host port dbname user }) {
         my $value = $self->$meth();
+	if( !defined $value ) { next; }
         $locator .= ';' if $locator;
         $locator .= "$meth=$value";
     }

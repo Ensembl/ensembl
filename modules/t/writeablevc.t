@@ -83,6 +83,7 @@ my $db             = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'localhost',
 						  -user   => $conf{user},
 						  -dbname => $conf{overlap},
 						  -perlonlyfeatures => 1,
+						  -perlonlysequences => 1,
 						 );
 
 die "$0\nError connecting to database : $!" unless defined($db);

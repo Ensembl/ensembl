@@ -440,15 +440,15 @@ sub top_SeqFeatures {
     my (@f);
 
     
-    if( $self->skip_SeqFeature('similarity') != 1 ) { 
+    if( !$self->skip_SeqFeature('similarity')  ) { 
 	push(@f,$self->get_all_SimilarityFeatures());
     } 
     
-    if( $self->skip_SeqFeature('repeat') != 1 ) { 
+    if( !$self->skip_SeqFeature('repeat')  ) { 
 	push(@f,$self->get_all_RepeatFeatures());
     } 
     
-    if( $self->skip_SeqFeature('external') != 1 ) { 
+    if( !$self->skip_SeqFeature('external')  ) { 
 	push(@f,$self->get_all_ExternalFeatures());
     } 
     
