@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 27;
+	plan tests => 31;
 }
 
 use MultiTestDB;
@@ -200,13 +200,30 @@ ok( $results->[1]->[2]->seq_region_name() eq "20_HAP1" );
 ok( $results->[2]->[2]->seq_region_name() eq "20" );
 
 
+#try a projection from chromosome 20 to supercontigs
+$slice = $slice_adaptor->fetch_by_region('chromosome', "20", 29_252_000, 
+                                         31_252_001 );
 
-#$slice = $slice_adaptor->fetch_by_chr_start_end("20", 29_252_000, 31_252_001 );
-#my $name_list = $slice_adaptor->list_overlapping_supercontigs( $slice );
+debug("Projection from chromosome 20 to supercontig");
+my @projection = @{$slice->project('supercontig')};
+ok(@projection == 1);
+ok($projection[0]->[2]->seq_region_name eq 'NT_028392');
+foreach my $seg (@projection) {
+  my ($start, $end, $slice) = @$seg;
+  debug("$start-$end " . $slice->seq_region_name);
+}
 
-#for my $name ( @$name_list ) {
-#  debug( "Overlapping supercontig ".$name );
-#}
+#try a projection from clone to supercontig
+$slice = $slice_adaptor->fetch_by_region('clone', 'AL121583.25');
 
-#ok( grep { $_ eq "NT_028392" } @$name_list);
+debug("Projection from clone AL121583.25 to supercontig");
+
+@projection = @{$slice->project('supercontig')};
+ok(@projection == 1);
+ok($projection[0]->[2]->seq_region_name eq 'NT_028392');
+foreach my $seg (@projection) {
+  my ($start, $end, $slice) = @$seg;
+  debug("$start-$end -> " . $slice->start . '-'. $slice->end . ' ' . $slice->seq_region_name);
+}
+
 
