@@ -125,7 +125,8 @@ if( $format =~ /gff/ ) {
 
     # attach ensembl specific dumping functions
     $emblout->_id_generation_func(\&id_EnsEMBL);
-
+    $emblout->_kw_generation_func(\&kw_EnsEMBL);
+    $emblout->_sv_generation_func(\&sv_EnsEMBL);
 
     if( $nodna == 1 ) {
 	$emblout->_show_dna(0);
@@ -146,8 +147,30 @@ if( $format =~ /gff/ ) {
 sub id_EnsEMBL {
     my $annseq = shift;
 
-    return sprintf("%-11s",$annseq->seq->id() );
+    return sprintf("%-11s",$annseq->embl_id() );
 }
+
+
+sub kw_EnsEMBL{
+   my ($annseq) = @_;
+
+   if( $annseq->htg_phase == 4 ) {
+       return "HTG";
+   }
+
+   return "HTG; HTG_PHASE" . $annseq->htg_phase();
+}
+
+sub sv_EnsEMBL {
+   my ($annseq) = @_;
+
+   if( ! $annseq->sv ) {
+       return "NO_SV_NUMBER";
+   }
+
+   return $annseq->seq->id() . "." . $annseq->sv
+}
+
 
 sub sort_FTHelper_EnsEMBL {
     my $a = shift;
