@@ -584,27 +584,6 @@ sub get_DBEntryAdaptor {
 }
 
 
-=head2 get_StaticGoldenPathAdaptor
-
-  Args       : none 
-  Example    : $sgpa = $db_adaptor->get_StaticGoldenPathAdaptor();
-  Description: Gets a StaticGoldenPathAdaptor for this database
-               Use of the StaticGoldenPathAdaptor is not recommended.  It is
-               being phased out, and is largly deprecated already.  The 
-               SliceAdaptor or AssemblyMapperAdaptor may be a viable 
-               alternatives.
-  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_StaticGoldenPathAdaptor{
-  my( $self ) = @_;
-  
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor");
-}
-
 
 =head2 get_KaryotypeBandAdaptor
 

@@ -205,59 +205,6 @@ sub to_FTString {
 
 
 
-=head2 repeat_consensus_id
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use repeat_consensus->dbID instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-
-sub repeat_consensus_id {
-  my( $self, $repeat_consensus_id ) = @_;
-
-    my ($f,$p, $l) = caller;
-    $self->warn("repeat_consensus_id is deprecated, use repeat_consensus ".
-		"instead. caller = $f, $p, $l"); 
-  
-  if ($repeat_consensus_id) {
-    $self->{'_repeat_consensus_id'} = $repeat_consensus_id;
-  }
-  return $self->{'_repeat_consensus_id'};
-}
-
-
-
-
-=head2 get_RepeatConsensus
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use repeat_consensus instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_RepeatConsensus {
-    my( $self ) = @_;
-
-    my ($f,$p, $l) = caller;
-    $self->warn("get_RepeatConsensus is deprecated, use repeat_consensus ".
-		"instead. caller = $f, $p, $l"); 
-    
-    my $rc_id = $self->repeat_consensus_id;
-    return $self->adaptor->db->get_RepeatConsensusAdaptor
-      ->fetch_by_dbID($rc_id);
-}
-
-
-
 1;
 
 __END__

@@ -131,44 +131,37 @@ sub fetch_by_chr_start_end {
 =cut
 
 sub fetch_by_contig_name {
-   my ($self,$name, $size) = @_;
+  my ($self,$name, $size) = @_;
+  
+  if( !defined $size ) {$size=0;}
 
-   if( !defined $size ) {$size=0;}
-
-   my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($name);
-
-   $start -= $size;
-   $end += $size;
-
-   if($start < 1) {
-     $start  = 1;
-   }
-
-   return $self->fetch_by_chr_start_end($chr_name, $start, $end);
- }
+  my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($name);
+  
+  $start -= $size;
+  $end += $size;
+  
+  if($start < 1) {
+    $start  = 1;
+  }
+  
+  return $self->fetch_by_chr_start_end($chr_name, $start, $end);
+}
 
 
+=head2 fetch_by_supercontig_name
 
-=head2 fetch_by_fpc_name
-
-  Arg [1]    : string $fpc_name
-  Example    : my $slice = $slice_adaptor->fetch_by_fpc_name('NT_004321');
+  Arg [1]    : string $supercontig_name
+  Example    : $slice = $slice_adaptor->fetch_by_supercontig_name('NT_004321');
   Description: Creates a Slice on the region of the assembly where 
-               the specified FPC (super) contig lies.
+               the specified super contig lies.  Note that this slice will
+               have the same orientation as the supercontig. If the supercontig
+               has a negative assembly orientation, the slice will also have
+               a negative orientation relative to the assembly.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
 
 =cut
-
-sub fetch_by_fpc_name {
-    my ($self,$fpc_name) = @_;
-    
-    my( $p, $f, $l ) = caller; 
-    $self->warn( "$f:$l calls deprecated method fetch_by_fpc_name. Please use fetch_by_supercontig_name instead" );
-
-    $self->fetch_by_supercontig_name( $fpc_name ); 
-}
 
 sub fetch_by_supercontig_name {
   my ($self,$supercontig_name) = @_;

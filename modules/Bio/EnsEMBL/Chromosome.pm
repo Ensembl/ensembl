@@ -284,52 +284,6 @@ sub snps {
 
 
 
-=head2 chromosome_id
-
-  Args       : none
-  Example    : none
-  Description: deprecated, use dbID or chr_name
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub chromosome_id {
-  my ($self, $id ) = @_;
-
-  my ($package, $filename, $line) = caller();
-
-  $self->warn("Chromosome::chromosome_id is deprecated, use Chromosome::dbID 
-              instead\n line:$line package:$package filename:$filename");
-
-  return $self->dbID($id);
-}
-
-
-
-=head2 get_landmark_MarkerFeatures
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED 
-               use Bio::EnsEMBL::Slice::get_all_landmark_MarkerFeatures instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub get_landmark_MarkerFeatures{
-   my ($self,@args) = @_;
-
-   $self->warn("Chromosome::get_landmark_MarkerFeatures is deprecated. \n" .
-	       "Use Slice::get_landmark_MarkerFeatures instead\n");
-
-   return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
-}
-
-
 1;
 
 

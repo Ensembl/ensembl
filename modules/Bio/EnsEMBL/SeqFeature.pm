@@ -918,32 +918,6 @@ sub external_db {
 }
 
 
-=head2 contig_id
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use Bio::EnsEMBL::SeqFeature::attach_seq or
-               Bio::EnsEMBL::SeqFeature::entire_seq instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub contig_id{
-   my ($self,$arg) = @_;
-
-   $self->warn("Bio::EnsEMBL::SeqFeature::contig_id is deprecated. " .
-	    "Use contig() instead to associate a contig with a SeqFeature");
-
-   if($arg) {
-     my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($arg);
-     $self->attach_seq($contig);
-   }
-
-   return $self->entire_seq();
-}
-
 
 =head2 contig
 
@@ -977,37 +951,6 @@ sub contig {
   return $self->{'_gsf_seq'};
 }
 
-
-=head2 raw_seqname
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use Bio::EnsEMBL::SeqFeature::attach_seq->name or
-               Bio::EnsEMBL::SeqFeature::raw_seqname instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub raw_seqname{
-   my ($self,$arg) = @_;
-
-   $self->warn("Bio::EnsEMBL::SeqFeature::raw_seqname is deprecated. " .
-	       "Use Bio::EnsEMBL::entire_seq()->name() instead");
-
-   my $seq = $self->entire_seq();
-
-   if($arg && $seq && ref $seq && $seq->can('name')) {
-     $self->entire_seq()->name($arg);
-   }
-
-   if($seq && ref $seq && $seq->can('name')) {
-     return $seq->name;
-   }
-
-   return undef;
-}
 
 
 sub is_splittable {
