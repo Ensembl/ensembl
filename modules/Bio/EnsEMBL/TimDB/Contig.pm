@@ -386,7 +386,7 @@ sub seq{
 
     local *IN;
     open(IN,$file) || die "cannot open $file";
-    my $seqin = Bio::SeqIO->new( -format => 'Fasta', -fh => \*IN);
+    my $seqin = Bio::SeqIO->new( '-format' => 'Fasta', -fh => \*IN);
     my($seq,$seqid,$ffound);
     while($seq=$seqin->next_seq()){
 	$seqid=$seq->id;

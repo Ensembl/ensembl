@@ -77,7 +77,7 @@ use Carp;
 
 =cut
 
-sub add_ensembl_comments{
+sub add_ensembl_comments {
    my ($aseq) = @_;
 
    if( !$aseq  ) {
@@ -111,6 +111,7 @@ sub add_ensembl_comments{
    my $sf = Bio::SeqFeature::Generic->new();
    $sf->start(1);
    $sf->end($aseq->seq->seq_len());
+   $sf->strand(1);
    $sf->primary_tag('source');
    $sf->add_tag_value('organism','Homo sapiens');
    $aseq->add_SeqFeature($sf);
@@ -130,7 +131,7 @@ sub add_ensembl_comments{
 
 =cut
 
-sub ensembl_annseq_output{
+sub ensembl_annseq_output {
    my ($aseqstream) = @_;
 
    if( !$aseqstream  ) {
@@ -158,18 +159,23 @@ sub ensembl_annseq_output{
 sub id_EnsEMBL {
     my $annseq = shift;
 
-    return sprintf("%-11s standard; DNA; %s; %d BP.",$annseq->embl_id(),$annseq->htg_phase == 4 ? 'HUM' : 'HTG',$annseq->seq->seq_len() );
+    # JGRG - is this correct?  I thought phase 3 was HUM.
+    my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
+    my $length = $annseq->seq->seq_len();
+    my $id = $annseq->embl_id();
+
+    return sprintf("%-11s standard; DNA; %s; %d BP.", $id, $division, $length );
 }
 
 
-sub kw_EnsEMBL{
+sub kw_EnsEMBL {
    my ($annseq) = @_;
 
    if( $annseq->htg_phase == 4 ) {
        return "HTG.";
    }
 
-   return "HTG; HTG_PHASE" . $annseq->htg_phase() . ".";
+   return "HTG; HTG_PHASE " . $annseq->htg_phase() . ".";
 }
 
 sub sv_EnsEMBL {
@@ -203,10 +209,6 @@ sub sort_FTHelper_EnsEMBL {
     if( $a->key eq 'source' ) {
 	return -1;
     }
-    if( $b->key eq 'source' ) {
-	return 1;
-    }
-
     if( $a->key eq 'CDS' ) {
 	return -1;
     }

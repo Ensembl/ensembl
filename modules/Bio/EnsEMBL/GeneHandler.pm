@@ -185,7 +185,8 @@ sub gene{
 
 sub _process_Transcript{
    my ($self,$trans,$exon_hash_ref,$oldstyle) = @_;
-
+   $oldstyle ||= 0;
+   
    my $ori;
    my $firstexon;
    my $trans_loc;

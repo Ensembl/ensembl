@@ -35,7 +35,7 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-# Let the code begin...
+# Let's begin the code:
 package Bio::EnsEMBL::TimDB::Clone;
 use vars qw($AUTOLOAD @ISA);
 use strict;
@@ -195,7 +195,7 @@ sub _initialize {
 						     -order => $order{$contig_id},
 						     -offset => $offset{$contig_id},
 						     -orientation => $orientation{$contig_id},
-						     -length => $contig_len{$contig_id},
+						     '-length' => $contig_len{$contig_id},
 						     );
       push(@res,$contig);
   }

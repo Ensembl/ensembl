@@ -112,19 +112,20 @@ sub _initialize {
 sub _parse {
   my ($self,$file) = @_;
 
+  local *IN;
   my $seqname;
 
-  open(IN,"<$file") || die "Couldn't open genscan file $file\n";
+  open(IN,"<$file") || die "Couldn't open genscan file '$file' : $!\n";
   
   while(<IN>) {
     if (/^Sequence +(\S+)/) {
       $seqname = $1;
       $self->id($seqname);
-      close(IN);
+      last;
     }
   } 
   
-  open(IN,"<$file");
+  seek(IN, 0, 0) or die "Can't seek to beginning of '$file' : $!";
   
   my $No_Gene_Flag;
   

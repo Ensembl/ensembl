@@ -48,7 +48,7 @@ B<James Gilbert> email jgrg@sanger.ac.uk
 
 =cut
 
-
+#'
 
 package Bio::EnsEMBL::Analysis::ensConf;
 

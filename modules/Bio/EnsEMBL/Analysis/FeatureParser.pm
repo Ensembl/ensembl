@@ -452,7 +452,7 @@ sub _read_MSP {
 
     open(MSP,$mspfile) || $self->throw("Couldn't open $mspfile");
 
-    while (my $line = <MSP>) {
+    while (defined(my $line = <MSP>)) {
 	unless ($line =~ /^\#/) {
 	    my ($score,$pid,$start,$end,$id,$hstart,$hend,$hid,$title) = split(' ',$line,9);
 
@@ -508,7 +508,7 @@ sub _read_pfam {
 
     open(MSP,$mspfile) || $self->throw("Couldn't open $mspfile");
 
-    while (my $line = <MSP>) {
+    while (defined(my $line = <MSP>)) {
 	unless ($line =~ /^\#/) {
 	    my ($score,$pid,$start,$end,$id,$hstart,$hend,$hid,$title) = split(' ',$line,9);
 

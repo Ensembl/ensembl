@@ -250,7 +250,7 @@ sub seq{
        $current_end = $contig->offset + $seq->seq_len;
    }
 
-   $out = Bio::Seq->new( -id => $self->id() , -seq => $seqstr, -type => 'Dna');
+   $out = Bio::Seq->new( '-id' => $self->id() , -seq => $seqstr, -type => 'Dna');
 
    return $out;
 }

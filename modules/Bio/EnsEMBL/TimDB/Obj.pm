@@ -215,7 +215,7 @@ sub get_Gene{
 
 =cut
 
-sub get_Clone{
+sub get_Clone {
     my ($self,$id) = @_;
 
     my($disk_id,$cgp,$sv,$emblid,$htgsp);

@@ -544,7 +544,7 @@ sub translate {
   
   $seqstr =~ s/\*$//g;
 
-  my $trans_seq = Bio::Seq->new( -seq => $seqstr , -id => $self->translation->id() ) ;
+  my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $self->translation->id() ) ;
 
 
   return $trans_seq;
@@ -742,7 +742,7 @@ sub _translate_coherent{
    # phase 0 - no need.
 
 
-   my $temp_seq = Bio::Seq->new( -seq => $tstr , -id => 'temp', -type => 'Dna' );
+   my $temp_seq = Bio::Seq->new( -seq => $tstr , '-id' => 'temp', -type => 'Dna' );
    my $trans_seq = $temp_seq->translate();
 
    return $temp_seq->translate();

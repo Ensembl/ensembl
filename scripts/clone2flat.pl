@@ -1,6 +1,6 @@
-#!/usr/local/bin/perl
+#!/usr/local/bin/perl -w
 
-=head1 NAME - clone2embl
+=head1 NAME - clone2flat.pl
 
  provides flat file formats from EnsEMBL databases
 
@@ -38,7 +38,7 @@
 
     -nodna     dont write dna part of embl file (for testing)
 
-    -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
+    -format    [gff/ace/pep/fasta] dump in gff/ace/peptide/fasta format, not EMBL
 
     -pepformat What format output to dump to. NB gene2flat is a better
                script now for dumping translations.
@@ -99,7 +99,7 @@ my $host = 'localhost';
 
 my $module    = 'Bio::EnsEMBL::DBOLD::Obj';
 
-my $dbtype;
+my $dbtype    = '';
 my $format    = 'embl';
 my $nodna     = 0;
 my $help;
@@ -161,7 +161,7 @@ my $port      = '410000';
 	     'end:i'     => \$cend,
 	     'outfile:s' => \$outfile,
 	     'oldstyle'  => \$oldstyle,
-	     );
+	     ) or exec('perldoc', $0);
 
 if ($help){
     exec('perldoc', $0);
@@ -193,7 +193,7 @@ if( $fromfile == 1 ) {
 if ( $usetimdb == 1 ) {
 
     # EWAN: no more - you should be able to load as many clones as you like!
-    if( $#ARGV == -1 ) {
+    unless (@clones) {
 	push(@clones,'dJ271M21');
     }
 
@@ -220,9 +220,9 @@ if($debug_lists){
     my @list=$db->get_all_Clone_id();
     print scalar(@list)." clones returned in list\n";
     # clones updated from before when I first started updating
-    my @list=$db->get_updated_Clone_id('939220000');
+    @list=$db->get_updated_Clone_id('939220000');
     # clones updated from now (should be none)
-    my @list=$db->get_updated_Clone_id(time);
+    @list=$db->get_updated_Clone_id(time);
     exit 0;
 }
 
@@ -276,15 +276,15 @@ foreach my $clone_id ( @clones ) {
 		    print $OUT $sf->gff_string, "\n";
 		}
 	    }
-	} elsif ( $format =~ /fastac/ ) {
-	    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => $OUT);
+	} elsif ( $format =~ /fasta/ ) {
+	    my $seqout = Bio::SeqIO->new( '-format' => 'Fasta' , -fh => $OUT);
 	    
 	    foreach my $contig ( $clone->get_all_Contigs ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
-	    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => $OUT);
+	    my $emblout = Bio::AnnSeqIO->new( '-format' => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
 		$emblout->_show_dna(0);
