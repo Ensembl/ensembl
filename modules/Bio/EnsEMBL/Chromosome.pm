@@ -84,27 +84,6 @@ sub new {
 }
 
 
-=head2 get_lanmark_MarkerFeatures
-
-  Args       : none
-  Example    : none
-  Description: gets landmark Marker SeqFeatures. 
-               Should be using LandmarkMarkerAdaptor
-  Returntype : list of Bio::EnsEMBL::SeqFeature
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-
-sub get_landmark_MarkerFeatures{
-   my ($self,@args) = @_;
-
-   return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
-}
-
-
 =head2 chr_name
 
   Arg [1]    : string $chr_name
@@ -282,6 +261,23 @@ sub chromosome_id {
 
   return $self->dbID($id);
 }
+
+
+=head2 get_landmark_MarkerFeatures
+
+  Description: DEPRECATED use Slice::get_landmark_MarkerFeatures instead
+
+=cut
+
+sub get_landmark_MarkerFeatures{
+   my ($self,@args) = @_;
+
+   $self->warn("Chromosome::get_landmark_MarkerFeatures is deprecated. \n" .
+	       "Use Slice::get_landmark_MarkerFeatures instead\n");
+
+   return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
+}
+
 
 1;
 
