@@ -451,9 +451,10 @@ sub display_id {
 
 =cut
 
-sub length {
+sub seq_length {
   my $self = shift;
   my $seq = $self->seq();
+
   return ($seq) ? CORE::length($seq) : 0;
 }
 
@@ -519,5 +520,35 @@ sub temporary_id {
   return $self->{'temporary_id'};
 }
 
+
+=head2 get_all_DASFeatures
+
+  Arg [1]    : none
+  Example    : $features = $prot->get_all_DASFeatures;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+=cut
+
+sub get_all_DASFeatures{
+    my ($self,@args) = @_;
+    my %das_features;
+    foreach my $dasfact( $self->adaptor()->db()->_each_DASFeatureFactory ){
+	my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+	$das_features{$dasfact->_dsn} = [@featref];
+    }
+    return \%das_features;
+}
+
+sub length {
+	my $self = shift;
+	return 1 ;
+}
 
 1;
