@@ -77,7 +77,7 @@ sub push_stack{
    my ($self,@args) = @_;
 
    if( $self->is_active == 1 ) {
-       $self->warn("Attempting to push stack on tag ",$self->tag," when active. Discarding previous push");
+       $self->warn("Attempting to push stack on tag ".$self->tag." when active. Discarding previous push");
    }
    #my($user,$sys) = times();
    my $real = (POSIX::times)[0];

@@ -145,6 +145,9 @@ sub dump{
    
    foreach my $tag ( @tags ) {
        my $st = $self->_tags->{$tag};
+       if( $st->number == 0 ) {
+	   next;
+       }
        print $fh sprintf("%14s  %6f  %6f  %d\n",$st->tag,$st->total_time,$st->total_time/$st->number,$st->number);
    }
 
