@@ -176,7 +176,7 @@ sub flush_Exon{
 sub translate {
   my ($self) = @_;
   my @exon = $self->each_Exon;
-  
+
   my $phase = $exon[0]->phase;
   my $mrna  = $self->dna_seq->seq();
 
@@ -193,7 +193,8 @@ sub translate {
 
   Title   : dna_seq
   Usage   : $dna = $feat->dna_seq
-  Function: Returns the dna sequence of the gene
+  Function: Returns the dna sequence of the gene, ie the mRNA
+            sequence
   Returns : Bio::Seq
   Args    : none
 
@@ -205,13 +206,50 @@ sub dna_seq {
   my $mrna = "";
   my $strand = $self->{_trans_exon_array}[0]->strand;
 
-  
+  my $prev = undef;
   foreach my $exon ($self->each_Exon) {
 
     # the seq call automatically truncates to the correct 
     # coordinates (handily) in SeqFeature
 
     my $tmp = $exon->seq->str();
+
+    # we now have to figure out if the phase is compatible. If it
+    # is not, we need to add some stuff in...
+
+    if( $prev ) {
+	if( $prev->end_phase != $exon->phase ) {
+	    if( $prev->end_phase == 0 ) {
+		if( $exon->phase == 1 ) {
+		    $mrna .= 2 x "N";
+		}
+
+		if( $exon->phase == 2 ) {
+		    $mrna .= 1 x "N";
+		}
+	    } elsif ( $prev->end_phase == 1 ) {
+		if( $exon->phase == 0 ) {
+		    $mrna .= 2 x "N";
+		}
+		
+		if( $exon->phase == 2 ) {
+		    $mrna .= 1 x "N";
+		}
+	    } elsif ( $prev->end_phase == 2 ) {
+		if( $exon->phase == 0 ) {
+		    $mrna .= 1 x "N";
+		}
+		
+		if( $exon->phase == 1 ) {
+		    $mrna .= 2 x "N";
+		}
+	    } else {
+		$self->warn("Impossible phases in calculating fixing stuff");
+	    }
+	}
+    } # end of if previous is there
+
+    
     $mrna  .= $tmp;
   }
 
