@@ -125,7 +125,7 @@ sub AUTOLOAD {
     #execute the request using the primary adaptor
     my $adaptor = $self->{'_primary_adaptor'};
 
-    return eval "\$adaptor->$method(\@args)";
+    return $adaptor->$method(@args);
   } 
 
   #
@@ -142,7 +142,7 @@ sub AUTOLOAD {
       #Try to invoke the request on the database's adaptor
       my $adaptor = eval "\$database->$get_adaptor";
       if($adaptor->can($method)) {
-	return eval "\$adaptor->$method(\@args)";
+	return $adaptor->$method(@args);
       }
     }
   }
