@@ -83,13 +83,14 @@ use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 sub fetch_Protein_by_transcriptId{
    my ($self,$transid) = @_;
    my $query = "SELECT	t.translation_id 
-		FROM	transcript as t, 
+		FROM    transcript as t, 
 			transcript_stable_id as s 
 		WHERE	s.stable_id = '$transid' 
 		AND	t.transcript_id = s.transcript_id";
    my $sth = $self->prepare($query);
    $sth->execute();
    my @row = $sth->fetchrow;
+   
    return $self->fetch_Protein_by_dbid($row[0]);
  }
 
