@@ -1757,6 +1757,28 @@ sub get_all_MiscFeatures {
 
 
 
+sub get_all_AffyFeatures {
+    my $self = shift;
+    my @arraynames = @_;
+
+    my $sa = $self->adaptor();
+    if( ! $sa ) {
+	warn( "Cannot retrieve features without attached adaptor." );
+    }
+    my $fa = $sa->db()->get_AffyFeatureAdaptor();
+    my $features;
+
+    if( @arraynames ) {
+	$features = $fa->fetch_all_by_Slice_arrayname( $self, @arraynames);
+    } else {
+	$features = $fa->fetch_all_by_Slice( $self );
+    }
+    return $features;
+}
+
+
+
+
 =head2 get_all_MarkerFeatures
 
   Arg [1]    : (optional) string logic_name
