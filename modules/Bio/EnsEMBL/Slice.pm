@@ -693,11 +693,18 @@ sub project {
     my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
     # perform the mapping between this slice and the requested system
-    my @coords = $asm_mapper->map($normal_slice->seq_region_name(),
-				  $normal_slice->start(),
-				  $normal_slice->end(),
-				  $normal_slice->strand(),
-				  $slice_cs);
+    my @coords;
+
+    if( defined $asm_mapper ) {
+      @coords = $asm_mapper->map($normal_slice->seq_region_name(),
+				 $normal_slice->start(),
+				 $normal_slice->end(),
+				 $normal_slice->strand(),
+				 $slice_cs);
+    } else {
+      $coords[0] = Bio::EnsEMBL::Mapper::Gap->new( $normal_slice->start(),
+						   $normal_slice->end());
+    }
 
     #construct a projection from the mapping results and return it
 

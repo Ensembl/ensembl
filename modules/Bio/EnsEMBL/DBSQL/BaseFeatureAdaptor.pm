@@ -316,6 +316,8 @@ sub _slice_fetch {
     } else {
       $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
 
+      next unless defined $mapper;
+
       # Get list of coordinates and corresponding internal ids for
       # regions the slice spans
       @coords = $mapper->map($slice_seq_region, $slice_start, $slice_end,

@@ -127,7 +127,7 @@ sub new {
                $mapper = $asma->fetch_by_CoordSystems($cs1,$cs2);
                $mapper = $asma->fetch_by_CoordSystems($cs2,$cs1);
   Returntype : Bio::EnsEMBL::AssemblyMapper
-  Exceptions : none
+  Exceptions : wrong argument types
   Caller     : general
 
 =cut
@@ -162,9 +162,10 @@ sub fetch_by_CoordSystems {
   my @mapping_path = @{$csa->get_mapping_path($cs1,$cs2)};
 
   if(!@mapping_path) {
-    throw("There is no mapping defined between these coord systems:\n" .
+    warn("There is no mapping defined between these coord systems:\n" .
           $cs1->name() . " " . $cs1->version() . " and " . $cs2->name() . " " .
           $cs2->version());
+    return undef;
   }
 
   my $key = join(':', map({defined($_)?$_->dbID():"-"} @mapping_path));
