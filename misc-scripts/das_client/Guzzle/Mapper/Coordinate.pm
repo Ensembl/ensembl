@@ -38,7 +38,7 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package Coordinate;
+package Guzzle::Mapper::Coordinate;
 use vars qw(@ISA);
 use strict;
 

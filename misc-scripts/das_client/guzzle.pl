@@ -180,7 +180,7 @@ if ($use_align_mapping) {
     require Storable;
     import Storable 'dclone';
 
-    require Mapper;
+    require Guzzle::Mapper;
 }
 
 my $use_mapping = ($use_align_mapping || $use_simple_mapping);
@@ -289,7 +289,7 @@ sub do_query
             #    thing).
 	    #
             # 2. Parse the cigar line and build a
-            #    Mapper object from it.
+            #    Guzzle::Mapper object from it.
 	    #
             # 3. If a range was specified, map it into the
             #    target coordinate system.
@@ -314,7 +314,7 @@ sub do_query
 		last if ($qi gt $seqid);
 		next if ($qi ne $seqid);
 
-		my $map = new Mapper('queryCOORD', 'targetCOORD');
+		my $map = new Guzzle::Mapper('queryCOORD', 'targetCOORD');
 
 		my ($qpos, $tpos) = ($qab, $tab);
 

@@ -49,16 +49,14 @@ Internal methods are usually preceded with a _
 
 =cut
 
-package Mapper;
+package Guzzle::Mapper;
 use vars qw(@ISA);
 use strict;
 
-
-use Pair;
-use Unit;
-use Coordinate;
-use Gap;
-
+use Guzzle::Mapper::Pair;
+use Guzzle::Mapper::Unit;
+use Guzzle::Mapper::Coordinate;
+use Guzzle::Mapper::Gap;
 
 sub new {
   my($class,@args) = @_;
@@ -138,7 +136,7 @@ sub map_coordinates{
 
    if( !defined $hash->{uc($id)} ) {
        # one big gap!
-       my $gap = Gap->new($start, $end);
+       my $gap = Guzzle::Mapper::Gap->new($start, $end);
        return $gap;
    }
 
@@ -161,7 +159,8 @@ sub map_coordinates{
 
        if( $start < $self_coord->{'start'} ) {
 	   # gap detected
-	   my $gap = Gap->new($start, $self_coord->{'start'}-1);
+	   my $gap = Guzzle::Mapper::Gap->new($start, 
+						    $self_coord->{'start'}-1);
 	
 	   push(@result,$gap);
            $start = $gap->{'end'}+1;
@@ -200,7 +199,7 @@ sub map_coordinates{
 	   }
        }
 
-       my $res = Coordinate->new($target_coord->{'id'},
+       my $res = Guzzle::Mapper::Coordinate->new($target_coord->{'id'},
 						     $target_start,
 						     $target_end,
 						     $pair->{'ori'} * $strand);
@@ -211,12 +210,12 @@ sub map_coordinates{
    }
 
    if( !defined $last_used_pair ) {
-       my $gap = Gap->new($start, $end);
+       my $gap = Guzzle::Mapper::Gap->new($start, $end);
        push(@result,$gap);
 
    } elsif( $last_used_pair->{$from}->{'end'} < $end ) {
        # gap at the end
-       my $gap = Gap->new(
+       my $gap = Guzzle::Mapper::Gap->new(
 			   $last_used_pair->{$from}->{'end'} + 1,
 			   $end);
        push(@result,$gap);
@@ -341,14 +340,14 @@ sub add_map_coordinates{
        $self->throw("Cannot deal with mis-lengthed mappings so far");
    }
 
-   my $pair = Pair->new();
+   my $pair = Guzzle::Mapper::Pair->new();
 
-   my $from = Unit->new();
+   my $from = Guzzle::Mapper::Unit->new();
    $from->start($contig_start);
    $from->end($contig_end);
    $from->id($contig_id);
 
-   my $to = Unit->new();
+   my $to = Guzzle::Mapper::Unit->new();
    $to->start($chr_start);
    $to->end($chr_end);
    $to->id($chr_name);

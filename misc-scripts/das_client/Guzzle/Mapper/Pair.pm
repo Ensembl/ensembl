@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::Mapper::Unit
+# Ensembl module for Bio::EnsEMBL::Mapper::Pair
 #
 # Written by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,12 +12,12 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Mapper::Unit - One side of a map pair
+Bio::EnsEMBL::Mapper::Pair
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
- 
+
 Two regions mapped between different coordinate systems are
 each represented by a Bio::EnsEMBL::Mapper::Unit and joined
 together as a Bio::EnsEMBL::Mapper::Pair.
@@ -39,11 +39,9 @@ Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package Unit;
+package Guzzle::Mapper::Pair;
 use vars qw(@ISA);
 use strict;
-
-# Object preamble - inherits from Bio::EnsEMBL::Root
 
 # new() is written here 
 
@@ -58,70 +56,56 @@ sub new {
 }
 
 
-=head2 id
+=head2 from, to
 
-  Arg  1      int|char $id
-	      the id of the object (e.g. chromosome
-	      or RawContig) which is mapped
+  Arg  1      Bio::EnsEMBL::Mapper::Unit $seqobj
+	      from and to represent the two regions
+	      which are mapped to each other
   Function    accessor method
-  Returntype  int|char
+  Returntype  Bio::EnsEMBL::Mapper::Unit
   Exceptions  none
-  Caller      Bio::EnsEMBL::Mapper::Unit
+  Caller      Bio::EnsEMBL::Mapper::Pair
 
 =cut
 
-sub id{
+sub to {
    my ($self,$value) = @_;
    if( defined $value) {
-      $self->{'id'} = $value;
+      $self->{'to'} = $value;
     }
-    return $self->{'id'};
+    return $self->{'to'};
+
+}
+
+sub from {
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'from'} = $value;
+    }
+    return $self->{'from'};
 
 }
 
 
-=head2 start
+=head2 ori
 
-  Arg  1      int $start
-	      the start coordinate of the mapped
-	      region which this object represents
+  Arg  1      Bio::EnsEMBL::Mapper::Unit $ori
   Function    accessor method
-  Returntype  int
+	      relative orientation of the the
+	      two mapped regions
+  Returntype  Bio::EnsEMBL::Mapper::Unit
   Exceptions  none
-  Caller      Bio::EnsEMBL::Mapper::Unit
+  Caller      Bio::EnsEMBL::Mapper::Pair
 
 =cut
 
-sub start{
+sub ori {
    my ($self,$value) = @_;
    if( defined $value) {
-      $self->{'start'} = $value;
+      $self->{'ori'} = $value;
     }
-    return $self->{'start'};
+    return $self->{'ori'};
 
 }
-
-
-=head2 end
-
-  Arg  1      int $end
-	      the end coordinate of the mapped
-	      region which this object represents
-  Function    accessor method
-  Returntype  int
-  Exceptions  none
-  Caller      Bio::EnsEMBL::Mapper::Unit
-
-=cut
-
-sub end{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'end'} = $value;
-    }
-    return $self->{'end'};
-
-}
-
 
 1;
