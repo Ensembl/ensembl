@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 93;
+	plan tests => 94;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -469,7 +469,7 @@ my $f2 = new Bio::EnsEMBL::Feature( -start => 10,
 # simple same coord system overlap
 #
 
-
+debug( "f1<->f2 overlap = ".($f1->overlaps( $f2 )));
 ok( $f1->overlaps( $f2 ));
 
 $f2 = new Bio::EnsEMBL::Feature( -start => 11,
@@ -492,4 +492,25 @@ $f2 = new Bio::EnsEMBL::Feature( -start => 1,
 				 -analysis => $analysis
 			       );
 
+debug( "Other coord overlaps ".( $f1->overlaps( $f2 )));
 ok( $f1->overlaps( $f2 ));
+
+
+#
+# Just seqname features
+#
+
+
+$f1->seqname( "minigenewise" );
+$f1->slice( undef );
+
+$f2 = new Bio::EnsEMBL::Feature( -start => 10,
+				 -end => 20,
+				 -strand => -1,
+				 -seqname => "minigenewise",
+				 -analysis => $analysis
+			       );
+
+
+debug( "seqname f1<->f2 overlap = ".($f1->overlaps( $f2 )));
+ok( ($f1->overlaps( $f2 )));
