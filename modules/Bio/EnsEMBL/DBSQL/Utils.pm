@@ -59,7 +59,7 @@ sub fset2transcript {
 
     
     my $transcript = new Bio::EnsEMBL::Transcript;
-    $transcript->id($contig->id . "." . $genscan->raw_seqname);
+    $transcript->temporary_id($contig->id . "." . $genscan->raw_seqname);
         
     my @exons;
     my $count= 1;
@@ -67,7 +67,6 @@ sub fset2transcript {
     foreach my $f ($genscan->sub_SeqFeature) {
 	
 	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->id       ($contig->id . "." .$count);
 	$exon->contig_id($contig->id);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
@@ -86,8 +85,6 @@ sub fset2transcript {
     }
 
     my $translation = new Bio::EnsEMBL::Translation;
-    $translation->id($contig->id.".".$genscan->raw_seqname);
-
     #
     # This code got changed due to Translation convention changing. Should work...
     #
@@ -101,8 +98,8 @@ sub fset2transcript {
     $translation->start(1);
     $translation->end($exons[scalar(@exons)-1]->length);
     
-    $translation->start_exon_id($exons[0]->id);
-    $translation->end_exon_id  ($exons[$#exons]->id);
+    $translation->start_exon($exons[0]);
+    $translation->end_exon($exons[$#exons]);
     
     my $endphase = $exons[0]->phase;
     
@@ -124,7 +121,8 @@ sub fset2transcript_guess_phases {
 
     my $transcript = new Bio::EnsEMBL::Transcript;
 
-    $transcript->id($contig->id . "." . $fset->id);
+    $transcript->temporary_id($contig->id . "." . $fset->id);
+
 
     my @exons;
     my $count    = 1;
@@ -132,7 +130,6 @@ sub fset2transcript_guess_phases {
     foreach my $f ($fset->sub_SeqFeature) {
 
 	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->id       ($contig->id . ".$count");
 	$exon->contig_id($contig->id);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
@@ -145,7 +142,6 @@ sub fset2transcript_guess_phases {
     }
 	
     my $translation = new Bio::EnsEMBL::Translation;
-    $translation->id($contig->id . "." . $fset->id);
 	
     if ($exons[0]->strand == 1) {
 	@exons = sort {$a->start <=> $b->start} @exons;
@@ -155,8 +151,8 @@ sub fset2transcript_guess_phases {
 	
     $translation->start        (1);
     $translation->end          ($exons[$#exons]->end - $exons[$#exons]->start + 1);
-    $translation->start_exon_id($exons[0]->id);
-    $translation->end_exon_id  ($exons[$#exons]->id);
+    $translation->start_exon($exons[0]);
+    $translation->end_exon($exons[$#exons]);
     $transcript->translation($translation);
     
     my $endphase = 0;

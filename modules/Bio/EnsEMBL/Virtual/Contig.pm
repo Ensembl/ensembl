@@ -285,7 +285,7 @@ sub moltype {
     
  Title   : top_SeqFeatures
  Usage   :
- Function:
+ function:
  Example :
  Returns : 
  Args    :
@@ -496,7 +496,7 @@ sub get_all_VirtualGenes_startend{
 		   }
 		   
 		   if( $mapped_sticky == 1 ) {	
-		    $exonconverted{$exon->id} = 1;
+		    $exonconverted{$exon->dbID} = 1;
 		    $internalExon = 1;
 		} else {
 		    # do nothing
@@ -505,7 +505,7 @@ sub get_all_VirtualGenes_startend{
 	       } else {
 		   if ($self->_convert_seqfeature_to_vc_coords($exon)) {
 		       $internalExon = 1;
-		       $exonconverted{$exon->id} = 1;
+		       $exonconverted{$exon->dbID} = 1;
 		   } else {$internalExon=0;}               
 		   
 	       }   
@@ -718,13 +718,13 @@ sub get_all_Genes {
     my $idlist = join(',',@internal_id);
 
     my $sth = $self->dbobj->prepare("
-        SELECT distinct(t.gene)
+        SELECT distinct(t.gene_id)
         FROM transcript t
           , exon_transcript et
           , exon e
-        WHERE e.contig IN ($idlist)
-          AND et.exon = e.id
-          AND et.transcript = t.id
+        WHERE e.contig_id IN ($idlist)
+          AND et.exon_id = e.exon_id
+          AND et.transcript_id = t.transcript_id
         ");
     my $res = $sth->execute;
 
@@ -737,11 +737,15 @@ sub get_all_Genes {
 	return ();
     }
 
-    my $gobj = $self->dbobj->gene_Obj();
+    my $gadp = $self->dbobj->get_GeneAdaptor();
+    my @gene;
 
-    my @gene = $gobj->get_array_supporting('without',@geneid);
+    foreach my $geneid ( @geneid ) {
+	push(@gene,$gadp->fetch_by_dbID($geneid));
+    }
+
     foreach my $gene ( @gene ) {
-	$gene{$gene->id()}= $gene;
+	$gene{$gene->dbID()}= $gene;
     }
 
     my @genes=$self->_gene_query(%gene);
@@ -972,10 +976,10 @@ sub _gene_query{
 
         $internalExon =0;
 
-	foreach my $exon ( $gene->all_Exon_objects() ) {
+	foreach my $exon ( $gene->get_all_Exons() ) {
 	    # hack to get things to behave
-	    $exon->seqname($exon->contig_id);
-	    $exon{$exon->id} = $exon;
+	    # $exon->seqname($exon->contig_id);
+	    $exon{$exon->dbID} = $exon;
 	    
             #print STDERR "Exon for gene ",$gene->id," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
 
@@ -1034,7 +1038,7 @@ sub _gene_query{
 		    $exon->start($vc_start);
 		    $exon->end($vc_end);
 		    $exon->strand($vc_strand);
-		    $exonconverted{$exon->id} = 1;
+		    $exonconverted{$exon->dbID} = 1;
                     $internalExon = 1;
                 }
 
@@ -1042,7 +1046,7 @@ sub _gene_query{
 		# soooooo much simpler
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
 		    $internalExon = 1;
-		    $exonconverted{$exon->id} = 1;
+		    $exonconverted{$exon->dbID} = 1;
 		}               
 	    }
             #print STDERR "Exon for gene is now on ",$gene->id," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";

@@ -112,8 +112,6 @@ sub fetch_by_geneId {
 		  $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
 	      }
 
-	      print STDERR "adding ",$rchash{$component->contig_id}," ",$hashRef->{'cid'},"\n";
-
 	      $component->attach_seq($rchash{$component->contig_id}->primary_seq);
 	      $component->seqname($hashRef->{'cid'});
 
@@ -122,6 +120,7 @@ sub fetch_by_geneId {
 	      $sticky->add_component_Exon($component);
 	      $sticky_length += $component->length;
 	      $sticky_str    .= $component->seq->seq;
+	      $sticky->phase($component->phase);
 
 	      # continue while loop until we hit sticky_rank 1
 	      while( $hashRef = $sth->fetchrow_hashref() ) {
@@ -130,8 +129,6 @@ sub fetch_by_geneId {
 		  if( !exists $rchash{$component->contig_id} ) {
 		      $rchash{$component->contig_id} = $self->db->get_Contig($hashRef->{'cid'});
 		  }
-
-		  print STDERR "adding ",$rchash{$component->contig_id}," ",$hashRef->{'cid'},"\n";
 
 		  $component->attach_seq($rchash{$component->contig_id}->primary_seq);
 		  $component->seqname($hashRef->{'cid'});

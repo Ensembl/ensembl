@@ -436,9 +436,7 @@ sub _build_gene{
 		$product_tag=$product_tag2;
 	    }
 	}
-	$trans->id($product_tag);
 	$$rhtranscripts{$product_tag}=$trans;
-	$trans->version(1);
 
 	# create exons, avoiding duplicates
 	foreach my $sub (@exon_features){
@@ -464,14 +462,8 @@ sub _build_gene{
 		$exon->strand($sub->strand);
 		$exon->contig_id($self->id);
 		$exon->seqname($self->id);
-		$exon->version(1);
-		$exon->created($time);
-		$exon->modified($time);
-		my $exon_id=$id.".exon.".$$rexoncounter++;
-		$exon->id($exon_id);
-		print STDERR "created exon $exon_id [".$trans->id."]\n";
 	    }else{
-		print STDERR "reused exon ".$exon->id." [".$trans->id."]\n";
+		#print STDERR "reused exon ".$exon->id." [".$trans->id."]\n";
 	    }
 	    $trans->add_Exon($exon);
 	}
@@ -496,8 +488,11 @@ sub _build_gene{
 		}
 	    }
 	    $gene=Bio::EnsEMBL::Gene->new();
-	    $gene->id($gene_id);
-	    $gene->version(1);
+	    my $ana = Bio::EnsEMBL::Analysis->new();
+	    $ana->logic_name("embl_load_gene");
+	    $ana->program("embl_load");
+	    $gene->analysis($ana);
+
 	    $$rhgenes{$gene_id}=$gene;
 	    # add type tag to gene
 	    if( $ft->has_tag('pseudo') ) {
@@ -521,7 +516,7 @@ sub _build_gene{
 	# if range of CDS in transcript not defined, must be entire
 	# transcript (i.e. no mRNA record, or reading turned off)
 	if(!$first){
-	    my @exons = $trans->each_Exon;
+	    my @exons = $trans->get_all_Exons;
 	    $first = shift @exons;
 	    if( $#exons == -1 ) {
 		$last = $first;
@@ -533,7 +528,7 @@ sub _build_gene{
 
 	    # HACK BELOW
 	    my $phase = 0;
-	    foreach my $exon ($trans->each_Exon){
+	    foreach my $exon ($trans->get_all_Exons){
 		$exon->phase($phase);
 		$phase = $exon->end_phase();
 	    }
@@ -544,12 +539,10 @@ sub _build_gene{
 	# HACK ABOVE
 
 	my $tranl = Bio::EnsEMBL::Translation->new();
-	$tranl->id($trans->id.".transl");
-	$tranl->start_exon_id($first->id);
-	$tranl->end_exon_id($last->id);
+	$tranl->start_exon($first);
+	$tranl->end_exon($last);
 	$tranl->start($first_start);
 	$tranl->end($last_end);
-	$tranl->version(1);
 	$trans->translation($tranl);
     }
 

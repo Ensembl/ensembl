@@ -50,18 +50,6 @@ INSERT INTO contig (internal_id, id, clone, length, offset, corder, dna, chromos
 
 INSERT INTO dna (id, sequence, created) VALUES (1,'ACTAGATGATTCAGTA','2000-10-18 11:50:56');
 
-#
-# Dumping data for table 'exon'
-#
-
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('manu-test',1,2,'2000-10-16 14:51:30','2000-10-16 14:51:30','2000-10-16 14:51:30',3,14,2,24,26,34);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('exon_id3',1,2,'2000-10-17 10:41:06','2000-10-17 10:41:06','2000-10-17 10:41:06',25,100,1,0,0,3);
-
-#
-# Dumping data for table 'exon_transcript'
-#
-
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('exon_id3','transcript_id3',2);
 
 #
 # Dumping data for table 'feature'
@@ -79,78 +67,4 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 #
 
 INSERT INTO fset_feature (feature, fset, rank) VALUES (1,3,1);
-
-#
-# Dumping data for table 'gene'
-#
-
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('gene_id3',1,'2000-10-17 13:29:52','2000-10-17 13:29:52','2000-10-17 13:29:52');
-
-#
-# Dumping data for table 'genedblink'
-#
-
-
-#
-# Dumping data for table 'genetype'
-#
-
-INSERT INTO genetype (gene_id, type) VALUES ('gene_id3','test');
-
-#
-# Dumping data for table 'ghost'
-#
-
-
-#
-# Dumping data for table 'meta'
-#
-
-
-#
-# Dumping data for table 'repeat_feature'
-#
-
-
-#
-# Dumping data for table 'species'
-#
-
-
-#
-# Dumping data for table 'static_golden_path'
-#
-
-
-#
-# Dumping data for table 'supporting_feature'
-#
-
-
-#
-# Dumping data for table 'symmetric_contig_feature'
-#
-
-
-#
-# Dumping data for table 'symmetric_contig_pair_hit'
-#
-
-
-#
-# Dumping data for table 'transcript'
-#
-
-INSERT INTO transcript (id, version, gene, translation) VALUES ('transcript_id3',2,'gene_id3','translation_id3');
-
-#
-# Dumping data for table 'transcriptdblink'
-#
-
-
-#
-# Dumping data for table 'translation'
-#
-
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('translation_id3',1,25,'exon_id3',100,'exon_id3');
 

@@ -31,7 +31,7 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 
 INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,1,2,4,1,0,1);
 INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,2,36,40,2,0,-1);
-INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,6,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,6,1,1,1);
 
 INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (1,1,1);
 INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (2,1,2);
@@ -39,6 +39,10 @@ INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (2,1,2);
 INSERT INTO transcript (transcript_id,gene_id,translation_id) VALUES (1,1,1);
 INSERT INTO gene (gene_id, type ) VALUES (1, 'type' );
 insert into gene_stable_id( gene_id, stable_id ) VALUES( 1, 'tgene-id-1' );
+insert into exon_stable_id( exon_id, stable_id ) VALUES( 1, 'exon-id-1' );
+insert into exon_stable_id( exon_id, stable_id ) VALUES( 2, 'exon-id-2' );
+insert into transcript_stable_id( transcript_id, stable_id ) VALUES( 1, 'transcript-id-1' );
+insert into translation_stable_id( translation_id, stable_id ) VALUES( 1, 'translation-id-1' );
 
 INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,1);
 

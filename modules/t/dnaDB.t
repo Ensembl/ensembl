@@ -36,8 +36,8 @@ my $ens_dna  = EnsTestDB->new();
 
 
 # Load some data into the db
-$ens_test->do_sql_file("t/db.dump");
-$ens_dna ->do_sql_file("t/db.dump");
+$ens_test->do_sql_file("t/staticgoldenpath.dump");
+$ens_dna ->do_sql_file("t/staticgoldenpath.dump");
 
 print "ok 2\n";    
 
@@ -58,7 +58,7 @@ my @contigs = $clone->get_all_Contigs();
 my $contig = $db->get_Contig($contigs[0]->id);
 print "ok 6\n";
 
-$seqout = Bio::SeqIO->new( -Format => 'embl',-file => ">t/DB.embl" );
+$seqout = Bio::SeqIO->new( -Format => 'fasta',-file => ">t/DB.fasta" );
 $seqout->write_seq($contig);
 
 print "ok 7\n";

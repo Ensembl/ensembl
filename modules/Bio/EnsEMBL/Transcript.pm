@@ -136,7 +136,7 @@ sub id {
    my $value = shift;
 
    my ($p,$f,$l) = caller;
-   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID, or, for predictions, temporary id");
 
   # catch adaptorless genes
   if( defined $value ) {
@@ -146,6 +146,8 @@ sub id {
 
    if( defined $self->stable_id ) {
      return $self->stable_id();
+   } elsif ( defined $self->temporary_id ) {
+     return $self->temporary_id; 
    } else {
      return $self->dbID;
    }
@@ -220,7 +222,7 @@ sub translation {
       if( ! defined $self->{'translation'} &&
 	  defined $self->_translation_id() ) {
 	$self->{'translation'} = $self->adaptor->db->get_TranslationAdaptor()
-	  ->fetch_by_dbID( $self->_translation_id() );
+	  ->fetch_by_dbID( $self->_translation_id(),$self );
       }
     }
     return $self->{'translation'};
@@ -546,14 +548,14 @@ sub translateable_exons {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_exon_id;
-    my $end_exon_id     = $translation->end_exon_id;
+    my $start_exon_id   = $translation->start_exon->dbID;
+    my $end_exon_id     = $translation->end_exon->dbID;
     my $t_start         = $translation->start;
     my $t_end           = $translation->end;
     
     my( @translateable );
-    foreach my $ex ($self->each_Exon) {
-        my $ex_id   = $ex->id;
+    foreach my $ex ($self->get_all_Exons) {
+        my $ex_id   = $ex->dbID;
         
         if ($ex_id ne $start_exon_id and ! @translateable) {
             next;   # Not yet in translated region
@@ -595,7 +597,7 @@ sub translateable_exons {
         # end causes the coordinates to be altered.
         if ($trunc_start != $start or $trunc_end != $end) {
             my $new_exon = Bio::EnsEMBL::Exon->new;
-            $new_exon->id($ex_id);
+            $new_exon->dbID($ex_id);
             
             # Use the new start and end
             $new_exon->start($trunc_start);
@@ -655,7 +657,7 @@ sub split_Transcript_to_Partial {
      # return $self;
      
      my $t = $self->new();
-     $t->id($self->id);
+     $t->dbID($self->dbID);
      
      $t->add_Exon($exons[0]);
      return $t;
@@ -672,9 +674,10 @@ sub split_Transcript_to_Partial {
    TRANSCRIPT :
    while (@exons) {
 
+
        # make a new transcript, add the old exon
        $t = $self->new();
-       $t->id($self->id);
+       $t->dbID($self->dbID);
 
        $t->add_Exon($prev);
        $t->is_partial(1);
@@ -682,6 +685,7 @@ sub split_Transcript_to_Partial {
        push(@out,$t);
 
        while( my $exon = shift @exons ) {
+	   print STDERR "Looking at exon ",$exon->dbID," with phase ",$exon->phase," vs ",$prev->dbID," ",$prev->phase,"\n";
 	   if( $exon->phase == $prev->end_phase) {
 	       # add it
 	       $t->add_Exon($exon);
@@ -793,7 +797,17 @@ sub translate {
     }
 
     $seqstr =~ s/\*$//;
-    my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $self->translation->id() ) ;
+    my $display_id;
+
+    if( defined $self->translation->stable_id ) {
+	$display_id = $self->translation->stable_id;
+    } elsif ( defined $self->temporary_id ) {
+	$display_id = $self->temporary_id;
+    } else {
+	$display_id = $self->translation->dbID;
+    }
+	
+    my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $display_id ) ;
 
 
     return $trans_seq;
@@ -976,7 +990,7 @@ sub _translate_coherent{
    my $tstr;
 
    #$self->sort();
-   my @exons = $self->each_Exon;
+   my @exons = $self->get_all_Exons;
    my $exon_start = $exons[0];
 
 
@@ -1667,6 +1681,27 @@ sub _get_stable_entry_info {
 
 }
 
+=head2 temporary_id
+
+ Title   : temporary_id
+ Usage   : $obj->temporary_id($newval)
+ Function: Temporary ids are used for Genscan predictions - which should probably
+           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::DBSQL::Utils use this
+ Example : 
+ Returns : value of temporary_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub temporary_id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+
+}
 
 
 

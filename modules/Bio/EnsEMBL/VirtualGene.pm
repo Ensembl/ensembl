@@ -307,14 +307,14 @@ sub _calculate_coordinates{
        $self->throw("_calculate_coordinates(gene,contig)");
    }
 
-   my @exons = $gene->each_unique_Exon();
+   my @exons = $gene->get_all_Exons();
    my $cid = $contig->id;
    my $outside_exon = 0;
    my $inside_exon = 0;
    my ($start,$end,$strand);
    foreach my $exon ( @exons ) {
-       #print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname," ",$start,"\n";
-
+       print STDERR "Looking at $cid vs ",$exon->contig_id,":",$exon->seqname," ",$start,"\n";
+      
        if( $cid eq $exon->seqname ) {
 	   if( $inside_exon == 0 ) {
 	       $start = $exon->start();
@@ -583,7 +583,7 @@ sub to_FTHelper {
     my (@out);
 
     my %contig;
-    my $id = $self->gene->id();
+    my $id = $self->gene->stable_id();
     my $cid = $self->contig_id();
 
 
@@ -597,7 +597,7 @@ sub to_FTHelper {
 
 	    # flatten exons for stickies
 	    my @exons;
-	    foreach my $exon ( $ptrans->each_Exon ) {
+	    foreach my $exon ( $ptrans->get_all_Exons ) {
 		if( $exon->isa("Bio::EnsEMBL::StickyExon") ) {
 		    push(@exons,$exon->each_component_Exon);
 		} else {
@@ -644,9 +644,9 @@ sub to_FTHelper {
 	    #print STDERR "Translation is [",$translated_seq->seq,"]\n";
 
 	    $ft->add_field('translation',$translated_seq->seq);
-	    $ft->add_field('cds',$trans->translation->id);
-	    $ft->add_field('gene',$self->gene->id);
-	    $ft->add_field('transcript',$trans->id);
+	    $ft->add_field('cds',$trans->translation->stable_id);
+	    $ft->add_field('gene',$self->gene->stable_id);
+	    $ft->add_field('transcript',$trans->stable_id);
 	    foreach my $dbl ( @dblinks ) {
 		$ft->add_field('db_xref',$dbl->database.":".$dbl->primary_id);
 	    }
@@ -669,11 +669,11 @@ sub to_FTHelper {
 	$ft->key("exon");
 	# add other stuff to Exon?
 	if ($self->strict_EMBL_dumping) {
-	    $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->id);
+	    $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'. $exon->stable_id);
 	} else {
 	    #$ft->add_field('created',     scalar(gmtime($exon->created())));
 	    #$ft->add_field('modified',    scalar(gmtime($exon->modified())));
-	    $ft->add_field('exon_id',     $exon->id());
+	    $ft->add_field('exon_id',     $exon->stable_id());
 	    $ft->add_field('start_phase', $exon->phase());
 	    $ft->add_field('end_phase',   $exon->end_phase());
 	}

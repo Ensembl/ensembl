@@ -239,13 +239,13 @@ sub get_all_Genes{
  
 
 my $query="
-        SELECT t.gene
+        SELECT t.gene_id
         FROM transcript t,
              exon_transcript et,
              exon e
-        WHERE e.contig = '$contig_id'
-          AND et.exon = e.id
-          AND t.id = et.transcript
+        WHERE e.contig_id = '$contig_id'
+          AND et.exon_id = e.exon_id
+          AND t.transcript_id = et.transcript_id
         ";
 
 
@@ -488,16 +488,14 @@ sub get_Genes_by_Type{
 unless ($type){$self->throw("I need a type argument e.g. ensembl")}; 
 
 my $query="
-        SELECT t.gene
+        SELECT t.gene_id
         FROM transcript t,
              exon_transcript et,
              exon e,
-             genetype gt
-        WHERE e.contig = '$contig_id'
-          AND et.exon = e.id
-          AND t.id = et.transcript
-          AND gt.gene_id=t.gene
-          AND gt.type = '$type'
+        WHERE e.contig_id = '$contig_id'
+          AND et.exon_id = e.exon_id
+          AND t.transcript_id = et.transcript_id
+          AND g.type = '$type'
         ";
 
 
@@ -516,24 +514,13 @@ sub _gene_query{
  my $sth = $self->dbobj->prepare($query);
  
  my $res = $sth->execute();
- 
+ my $genea = $self->dbobj->get_GeneAdaptor();
+
  while (my $rowhash = $sth->fetchrow_hashref) { 
      
-     if( ! exists $got{$rowhash->{'gene'}}) {  
-	 
-	 my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
-         my $gene;
-         #PL: this may be overcautious, e.g. when called by get_GeneByType()
-         eval {
-             $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
-         };
-         if ($@) {
-             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?) [$@]\n");
-         }
-         else {
-             push(@out, $gene);
-         }
-	 $got{$rowhash->{'gene'}} = 1;
+     if( ! exists $got{$rowhash->{'gene_id'}}) {  
+	 push(@out,$genea->fetch_by_dbID($rowhash->{'gene_id'}));
+	 $got{$rowhash->{'gene_id'}} = 1;
      }
  }
  

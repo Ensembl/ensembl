@@ -266,7 +266,7 @@ sub get_all_Exons {
    my %h;
 
    foreach my $trans ( $self->each_Transcript ) {
-       foreach my $exon ( $trans->each_Exon ) {
+       foreach my $exon ( $trans->get_all_Exons ) {
 	   $h{"$exon"} = $exon;
        }
    }

@@ -388,6 +388,14 @@ sub store {
 
    my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
 
+   if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("Must store a gene object, not a $gene");
+   }
+
+   if( !defined $gene->analysis ) {
+       $self->throw("Genes must have an analysis object!");
+   }
+
    my $analysisId = $self->db->get_AnalysisAdaptor()->store( $gene->analysis );
 
 
@@ -395,8 +403,6 @@ sub store {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
 
-   !$gene->created() && $gene->created(0);
-   !$gene->modified() && $gene->modified(0);
  
    my $sth2 = $self->prepare("insert into gene set analysisId=$analysisId, type='".
 			    $gene->type()."'" );

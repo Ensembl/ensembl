@@ -243,6 +243,7 @@ sub ensembl_locator {
         $locator .= ';' if $locator;
         $locator .= "$meth=$value";
     }
+    $locator .= ";perlonlyfeatures=1";
     return "$module/$locator";
 }
 
