@@ -78,15 +78,10 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    )],@args);
-  print "Got $db is db and $user as user\n";
+  print "Got $db as db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
-
-  #
-  # This needs to be rethought. We are caching sequences
-  # here to allow multiple exons to be retrieved fine
-  #
 
   if( $debug ) {
       $self->_debug($debug);
@@ -105,9 +100,8 @@ sub _initialize {
   if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
-
-      my $dbh = DBI->connect("$dsn","$user",$password);
-
+      
+      my $dbh = DBI->connect("$dsn","$user","$password",{RaiseError => 1});
       $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
       
       if( $self->_debug > 3 ) {
@@ -145,31 +139,10 @@ sub get_seq{
     #$seqtype || $self->throw("Attempting to get a sequence without a sequence type");
         
     # get the sequence object
-    my $sth = $self->prepare("select * from sequence where (id = '$seqid' && version = '$seqversion')");
+    my $sth = $self->prepare("select id,version,sequence from sequence where (id = '$seqid' && version = '$seqversion')");
     my $res = $sth->execute();
-    my $seq = Bio::Seq->new;
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-    }
-    
-    
-    return $seq;
+    my @out = $self->_create_seq_obj($sth);
+    return @out[0];
 }
 
 =head2 get_seq_by_id
@@ -191,79 +164,9 @@ sub get_seq_by_id{
     $seqid || $self->throw("Attempting to get a sequence with no id");
     
     # get the sequence object
-    my $sth = $self->prepare("select * from sequence where id = '$seqid'");
+    my $sth = $self->prepare("select id,version,sequence from sequence where id = '$seqid'");
     my $res = $sth->execute();
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $seq = Bio::Seq->new;
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-	push @out, $seq;
-    }
-    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
-
-    return @out;
-}
-
-=head2 get_seq_by_clone
-
- Title   : get_seq_by_clone
- Usage   : $db->get_seq (clone_id, seq_type)
- Function: Gets all the sequence objects for a given clone_id and sequence type out of the Archive database
- Example : $db->get_seq_by_clone ('AL021546', 'exon')
- Returns : array of $seq objects
- Args    : clone_id
-
-
-=cut
-
-sub get_seq_by_clone{
-    my ($self,$clone_id, $seq_type) = @_;
-    
-    my @out;
-    $clone_id || $self->throw("Attempting to get a sequence with no clone id");
-    $seq_type || $self->throw("Attempting to get a sequence with no sequence type");
-
-    # get the sequence object
-    my $sth = $self->prepare("select * from sequence where (clone_id = '$clone_id' && seq_type='$seq_type')");
-    my $res = $sth->execute();
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $seq = Bio::Seq->new;
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-	push @out, $seq;
-    }
-    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
-
+    my @out = $self->_create_seq_obj($sth);
     return @out;
 }
 
@@ -282,86 +185,24 @@ sub get_seq_by_clone{
 
 sub get_seq_by_clone_version{
     my ($self,$clone_id, $clone_version, $seq_type) = @_;
-    
+    my $where_clause;
     my @out;
+
     $clone_id || $self->throw("Attempting to get a sequence with no clone id");
     $clone_version || $self->throw("Attempting to get a sequence with no clone version");
     $seq_type || $self->throw("Attempting to get a sequence with no sequence type");
 
-    # get the sequence object
-    my $sth = $self->prepare("select * from sequence where (clone_id = '$clone_id' && clone_version = '$clone_version' && seq_type='$seq_type')");
-    my $res = $sth->execute();
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $seq = Bio::Seq->new;
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-	push @out, $seq;
+    if ($clone_version eq 'all') {
+	$where_clause = "where (clone_id = '$clone_id' && seq_type='$seq_type')";
     }
-    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
-
-    return @out;
-}
-
-
-=head2 get_seq_by_gene
-
- Title   : get_seq_by_gene
- Usage   : $db->get_seq (gene_id)
- Function: Gets all the sequence objects for a given gene_id out of the Archive database
- Example : $db->get_seq_by_gene (AL021546)
- Returns : array of $seq objects
- Args    : gene_id
-
-
-=cut
-
-sub get_seq_by_gene{
-    my ($self,$gene_id) = @_;
-    
-    my @out;
-    $gene_id || $self->throw("Attempting to get a sequence with no gene id");
-    
-    # get the sequence object
-    my $sth = $self->prepare("select * from sequence where gene_id = '$gene_id'");
-    my $res = $sth->execute();
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $seq = Bio::Seq->new;
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-	push @out, $seq;
+    else {
+	$where_clause = "where (clone_id = '$clone_id' && clone_version = '$clone_version' && seq_type='$seq_type')";
     }
-    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
 
+    # get the sequence objects
+    my $sth = $self->prepare("select id,version,sequence from sequence $where_clause");
+    my $res = $sth->execute();
+    my @out = $self->_create_seq_obj($sth);
     return @out;
 }
 
@@ -369,8 +210,10 @@ sub get_seq_by_gene{
 
  Title   : get_seq_by_gene_version
  Usage   : $db->get_seq (gene_id, version)
- Function: Gets all the sequence objects for a given gene_id out of the Archive database
- Example : $db->get_seq_by_gene ('AL021546','1')
+ Function: If version is specified, gets all the sequence objects for a given gene_id 
+           and gene_version out of the Archive database. If version is equal to 'all',
+           then gets all the sequence objects for a given gene_id
+ Example : $db->get_seq_by_gene ('AL021546','1'), or $db->get_seq_by_gene ('AL021546','all')
  Returns : array of $seq objects
  Args    : gene_id, version
 
@@ -378,38 +221,26 @@ sub get_seq_by_gene{
 =cut
 
 sub get_seq_by_gene_version{
-    my ($self,$gene_id, $gene_version) = @_;
-    
+    my ($self,$gene_id, $gene_version, $seq_type) = @_;
+    my $where_clause;
     my @out;
+    
     $gene_id || $self->throw("Attempting to get a sequence with no gene id");
     $gene_version || $self->throw("Attempting to get a sequence with no gene version");
+    $seq_type || $self->throw("Attempting to get a sequence with no sequence type"); 
     
-    # get the sequence object
-    my $sth = $self->prepare("select * from sequence where (gene_id = '$gene_id' && gene_version = '$gene_version')");
-    my $res = $sth->execute();
-    
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	my $seq = Bio::Seq->new;
-	my $type;
-	my $id = $rowhash->{'id'};
-	$id .= ".";
-	$id .= $rowhash->{'version'};
-	if ($rowhash->{'seq_type'} eq 'protein') {
-	    $type = 'amino';
-	}
-	else {
-	    $type = 'dna';
-	}
-	$seq = Bio::Seq->new(
-			     -seq=>$rowhash->{'sequence'},
-			     -id=>$id,
-			     -desc=>'Sequence from the EnsEMBL Archive database',
-			     -type=>$type,
-			     );
-	push @out, $seq;
+    if ($gene_version eq 'all') {
+	$where_clause = "where (gene_id = '$gene_id' && seq_type = '$seq_type')";
     }
-    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
+    
+    else {
+	$where_clause = "where (gene_id = '$gene_id' && gene_version = '$gene_version' && seq_type = '$seq_type')";
+    }
 
+    # get the sequence object
+    my $sth = $self->prepare("select id,version,sequence from sequence $where_clause");
+    my $res = $sth->execute();
+    my @out = $self->_create_seq_obj($sth);
     return @out;
 }
 
@@ -459,7 +290,11 @@ sub delete_seq{
     
     $seqid || $self->throw("Attempting to delete a sequence with no id");
     $seqversion || $self->throw("Attempting to delete a sequence without a version number");
-    
+
+    if ($self->_debug < 10) { 
+	$self->throw ("Attempting to delete a sequence not in debug 10 mode!");
+    }
+
     # delete the sequence entry
     my $sth = $self->prepare("delete from sequence where (id = '$seqid' && version = '$seqversion')");
     my $res = $sth->execute();
@@ -543,59 +378,48 @@ sub _db_handle{
 
 }
 
-=head2 _lock_tables
+=head2 _create_seq_obj
 
- Title   : _lock_tables
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _lock_tables{
-   my ($self,@tables) = @_;
-   
-   my $state;
-   foreach my $table ( @tables ) {
-       if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
-	   $self->warn("$table already locked. Relock request ignored");
-       } else {
-	   if( $state ) { $state .= ","; } 
-	   $state .= "$table write";
-	   $self->{'_lock_table_hash'}->{$table} = 1;
-       }
-   }
-
-   my $sth = $self->prepare("lock tables $state");
-   my $rv = $sth->execute();
-   $self->throw("Failed to lock tables $state") unless $rv;
-
-}
-
-=head2 _unlock_tables
-
- Title   : _unlock_tables
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Title   : _create_seq_obj
+ Usage   : $obj->_create_seq_obj ($sth)
+ Function: 
+ Example : 
+ Returns : seq object
+ Args    : $sth
 
 
 =cut
 
-sub _unlock_tables{
-   my ($self,@tables) = @_;
+sub _create_seq_obj{
+    my ($self,$sth) = @_;
 
-   my $sth = $self->prepare("unlock tables");
-   my $rv = $sth->execute();
-   $self->throw("Failed to unlock tables") unless $rv;
-   %{$self->{'_lock_table_hash'}} = ();
+    my $seq = Bio::Seq->new;
+    my @out;
+    
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $type;
+	my $id = $rowhash->{'id'};
+	$id .= ".";
+	$id .= $rowhash->{'version'};
+	if ($rowhash->{'seq_type'} eq 'protein') {
+	    $type = 'amino';
+	}
+	else {
+	    $type = 'dna';
+	}
+	$seq = Bio::Seq->new(
+			     -seq=>$rowhash->{'sequence'},
+			     -id=>$id,
+			     -desc=>'Sequence from the EnsEMBL Archive database',
+			     -type=>$type,
+			     );
+	push @out, $seq;
+    }
+    
+    #Sort array of sequence objects by id
+    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
+    return @out;
 }
-
 
 =head2 DESTROY
 
@@ -611,8 +435,6 @@ sub _unlock_tables{
 
 sub DESTROY{
    my ($obj) = @_;
-
-   $obj->_unlock_tables();
 
    if( $obj->{'_db_handle'} ) {
        $obj->{'_db_handle'}->disconnect;

@@ -285,7 +285,6 @@ sub get_AnnSeq{
       
    $as->seq($seq);
    foreach my $gene ( @genes ) {
-       #print STDERR "Adding gene $gene\n";
        my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self, -gene => $gene );
        $as->add_SeqFeature($gh);
    }

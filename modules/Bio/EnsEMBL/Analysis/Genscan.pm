@@ -86,12 +86,11 @@ sub _initialize {
   
   $self->{_dna}  = $seq;
   
-  
   # Stored data:
   # ------------
   # These are the predicted genes
   @{$self->{_transcripts}}    = ();
-
+  
   # These are the peptides *as reported by genscan*
   # The translations of the genes are stored in
   # the gene objects
@@ -99,7 +98,7 @@ sub _initialize {
 
   # Now try and get some genes out
   $self->_parse($file);
-
+  
   return $self; # success - we hope!
 }
 
@@ -302,6 +301,7 @@ sub _set_exon_phases {
     }
 
     my @trans;
+
     $trans[0] = $exon->seq->translate();
     # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
     # intron leaves one base pair.
@@ -314,7 +314,6 @@ sub _set_exon_phases {
 #      print("PHASE $i : " . $trans[$i]->seq() . "\n");
 #    }
 
-#    print("Genscan phase is " . $exon->phase . "\n");
 #    print("Genscan frame is " . $exon->frame . "\n");
 
     my $i = 0;
@@ -326,7 +325,6 @@ sub _set_exon_phases {
       # If we have a stop codon at the end of the translation
       # chop it off before comparing
       my $tmp = $trans[$i]->seq();
-      
 
       if (substr($tmp,-1) eq "*") {
 	$tmp = substr($tmp,0,-1);
@@ -349,8 +347,7 @@ sub _set_exon_phases {
     # Seet phase if poss.  If no phase is found the input DNA is
     # probably wrong.
     if (defined($phase)) {
-      #print STDERR "new phase is $phase\n";
-      $exon->phase($phase);
+	$exon->phase($phase);
     } else {
 	my $pep0 = $trans[0]->seq;
 	my $pep1 = $trans[1]->seq;

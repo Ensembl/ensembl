@@ -117,7 +117,6 @@ sub _initialize {
       foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
 	  my $exon_id=$exon->id;
 	  $exon->attach_seq($bioseq);
-	  
 	  if( ! defined $exhash{$exon->start()} ) {
 	      $self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".
 			  $self->disk_id);
@@ -153,7 +152,6 @@ sub _initialize {
 		  $trans->start($fe->start + (3 -$fe->phase)%3 );
 	      } else {
 		  $trans->start($fe->end - (3 -$fe->phase)%3 );
-		  print STDERR "Translation start at ",$trans->start," vs ",$fe->end," from phase ",$fe->phase,"\n";
 	      }
 	      
 	      if( $le->strand == -1 ) {

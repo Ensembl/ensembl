@@ -65,7 +65,7 @@ my $module = 'Bio::EnsEMBL::DBOLD::Obj';
 
 my $format  = 'transcript';
 my $usefile = 0;
-my $getall  = 1;
+my $getall  = 0;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;

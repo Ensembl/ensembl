@@ -44,8 +44,10 @@ methods. Internal methods are usually preceded with a _
 package Bio::EnsEMBL::Analysis::FeatureParser;
 use vars qw($AUTOLOAD @ISA);
 use strict;
+
 use Bio::SeqFeature::Generic;
 use Bio::SeqFeature::Homol;
+
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object

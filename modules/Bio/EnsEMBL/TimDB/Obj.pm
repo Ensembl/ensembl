@@ -79,6 +79,14 @@ sub _initialize {
   # NOTE FIXME it is not very clever to have this open DBM file hanging, even if 
   # it is only for reading (cannot open readonly) since to certainly of locking
   # or dataconsistency
+
+  # FIXME
+  # MACHINE SPECIFIC CONFIG
+  if($ENV{'HOST'} eq 'sol28'){
+      $UNFIN_ROOT="/net/nfs0/vol0/home/elia/unfinished_ana";
+      $UNFIN_DATA_ROOT=$UNFIN_ROOT;
+  }
+
   my $unfinished_root="$UNFIN_ROOT";
   my $exon_file;
   if($test){

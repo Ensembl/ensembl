@@ -26,7 +26,7 @@ my $help;
 	     'h|help'     => \$help
 	     );
 
-my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass;debug=10";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
 print "\nTesting get_seq... ";
@@ -39,7 +39,7 @@ foreach $seq ($db->get_seq_by_id('ENSP0000dummy')) {
 }
 
 print "Now testing get_seq_by_clone...\n";
-foreach $seq ($db->get_seq_by_clone('dummy_clone_id','transcript')) {
+foreach $seq ($db->get_seq_by_clone_version('dummy_clone_id','all','transcript')) {
     print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
 }
 
@@ -49,12 +49,12 @@ foreach $seq ($db->get_seq_by_clone_version('dummy_clone_id','1','transcript')) 
 }
 
 print "Now testing get_seq_by_gene...\n";
-foreach $seq ($db->get_seq_by_gene('dummy_gene_id2')) {
+foreach $seq ($db->get_seq_by_gene_version('dummy_gene_id2','all','transcript')) {
     print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
 }
 
 print "Now testing get_seq_by_gene_version...\n";
-foreach $seq ($db->get_seq_by_gene_version('dummy_gene_id2','1')) {
+foreach $seq ($db->get_seq_by_gene_version('dummy_gene_id2','1','transcript')) {
     print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
 }
 
@@ -68,7 +68,7 @@ $db->write_seq ($newseq,'1','exon','gene_from_test','1','clone_from_test','1');
 print "written!\n";
 print "Testing delete_seq... ";
 $db->delete_seq ('from_archive.pl','1');
-print "deleted!\n";
+print "deleted in debug mode\n";
 
  
 
