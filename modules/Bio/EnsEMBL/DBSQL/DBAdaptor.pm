@@ -63,160 +63,101 @@ package Bio::EnsEMBL::DBSQL::DBAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
+use Bio::EnsEMBL::DBSQL::DBConnection;
 
-use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::DB::ObjI;
-#use Bio::EnsEMBL::FeatureFactory;
-use DBI;
-use Bio::EnsEMBL::DBSQL::SQL;
-use Bio::EnsEMBL::DBSQL::DummyStatement;
+@ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
-### Should not be an ObjI!
-@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::EnsEMBL::Root);
 
+#Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
 sub new {
-  my($pkg, @args) = @_;
+  my($class, @args) = @_;
 
-  my $self = bless {}, $pkg;
-
-  my (
-        $db,
-        $mapdbname,
-        $litedbname,
-	$dnadb,
-        $host,
-        $driver,
-        $user,
-        $password,
-        $debug,
-        $external,
-        $port,
-        $mode
-    ) = $self->_rearrange([qw(
-        DBNAME
-	MAPDBNAME
-        LITEDBNAME
-	DNADB
-	HOST
-	DRIVER
-	USER
-	PASS
-	DEBUG
-	EXTERNAL
-	PORT
-	MODE
-    )],@args);
+  #call superclass constructor
+  my $self = $class->SUPER::new(@args);
   
-  $db   || $self->throw("Database object must have a database name");
-  $user || $self->throw("Database object must have a user");
-
-  if( $debug ) {
-    $self->_debug($debug);
-  } else {
-    $self->_debug(0);
-  }
-  if( ! $driver ) {
-    $driver = 'mysql';
-  }
-  if( ! $host ) {
-    $host = 'localhost';
-  }
-  if ( ! $port ) {
-    $port = 3306;
-  }
-
+  my (
+      $mapdbname,
+      $litedbname,
+      $dnadb,
+      $external,
+      $mode
+    ) = $self->_rearrange([qw(
+      MAPDBNAME
+      LITEDBNAME
+      DNADB
+      MODE 
+    )],@args);  
+  
   if($mode) {
     $self->{_db_mode};
   } else {
     $self->{_db_mode} = 'default';
   }
 
+  $self->dnadb($dnadb);
 
-  my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
-	
-  if( $debug && $debug > 10 ) {
-    $self->_db_handle("dummy dbh handle in debug mode $debug");
-  } else {
-    my( $dbh );
-    eval{
-      $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-    };
+  # following was added on branch; unclear if it is needed:
+  $self->mapdbname( $mapdbname );
+  #    $self->litedbname( $litedbname );
 
-    $dbh || $self->throw("Could not connect to database $db user " .
-			 "$user using [$dsn] as a locator\n" . $DBI::errstr);
-
-    if( $self->_debug > 3 ) {
-      $self->warn("Using connection $dbh");
+  #
+  # [mcvicker] We are no longer using the FeatureFactory for feature creation.
+  # C objects are no longer being implemented, and if need necessitates the
+  # creation of C Objects then they will be created in a decentralized 
+  # manner and be the responsibility of the individual objects.  
+  # If the FeatureFactory was to be used conceptually correctly, the creation
+  # of every object would have to be managed by the factory rather than
+  # by the new constructors.  It is simply to much work to perform this 
+  # migration right now and not necessary anyway.
+  # 
+  #    if ($perl && $perl == 1) {
+  #        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+  #    }
+  #    $self->perl_only_sequences($perlonlysequences);
+  
+  if( defined $external ){
+    foreach my $external_f ( @{$external} ) {
+      $self->add_ExternalFeatureFactory($external_f);
     }
+  }
 
-    $self->_db_handle($dbh);
-    }
-    $self->username( $user );
-    $self->host( $host );
-    $self->dbname( $db );
-    $self->dnadb ($dnadb);
-    $self->password( $password);
-    # following was added on branch; unclear if it is needed:
-    $self->mapdbname( $mapdbname );
-#    $self->litedbname( $litedbname );
-
-#
-# [mcvicker] We are no longer using the FeatureFactory for feature creation.
-# C objects are no longer being implemented, and if need necessitates the
-# creation of C Objects then they will be created in a decentralized 
-# manner and be the responsibility of the individual objects.  
-# If the FeatureFactory was to be used conceptually correctly, the creation
-# of every object would have to be managed by the factory rather than
-# by the new constructors.  It is simply to much work to perform this 
-# migration right now and not necessary anyway.
-# 
-#    if ($perl && $perl == 1) {
-#        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
-#    }
-#    $self->perl_only_sequences($perlonlysequences);
-
-    if( defined $external ){
-        foreach my $external_f ( @{$external} ) {
-	    $self->add_ExternalFeatureFactory($external_f);
-        }
-    }
-
-    # Store info for connecting to a mapdb.
-    {
-      $mapdbname ||= 'maps';
-      $self->{'_mapdb'} = {
+  # Store info for connecting to a mapdb.
+  {
+    $mapdbname ||= 'maps';
+    $self->{'_mapdb'} = {
           -DBNAME => $mapdbname,
-          -HOST   => $host,
-          -PORT   => $port,
-          -DRIVER => $driver,
-          -USER   => $user,
-          -PASS   => $password,
-          -ENSDB  => $db,
+          -HOST   => $self->host(),
+          -PORT   => $self->port(),
+          -DRIVER => $self->driver(),
+          -USER   => $self->username(),
+          -PASS   => $self->password(),
+          -ENSDB  => $self->dbname(),
           };
     }
 
-    # Store info for connecting to a litedb.
-    {
+  # Store info for connecting to a litedb.
+  {
       $litedbname ||= 'lite';
       $self->{'_lite_db_name'} = $litedbname;
-    }
+  }
+  
+  my $sgp = undef;
+ 
+  eval { 
+    $sgp = $self->get_MetaContainer->get_default_assembly
+  };
+ 
+  if ( $@ ) {
+    $self->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
+	    ."assembly type must be set with static_golden_path_type() first");
+  } elsif (! $sgp) {
+    $self->throw("No default assembly defined"
+		 . " - must set with static_golden_path_type() first");
+  } else {
+    $self->static_golden_path_type($sgp);
+  }
 
-    my $sgp = undef;
-    eval { 
-        $sgp = $self->get_MetaContainer->get_default_assembly
-    };
-    use Carp qw(cluck);
-    if ( $@ ) {
-        cluck "*** get_MetaContainer->get_default_assembly failed:\n$@\n"
-          ."assembly type must be set with static_golden_path_type() first";
-    } elsif (! $sgp) {
-        cluck "No default assembly defined - must set with static_golden_path_type() first";
-    } else {
-      $self->static_golden_path_type($sgp);
-    }
-
-    return $self; # success - we hope!
+  return $self; # success - we hope!
 }
 
 
@@ -242,34 +183,6 @@ sub release_number{
    return 110;
 }
 
-
-sub dbname {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_dbname} = $arg );
-  $self->{_dbname};
-}
-
-sub username {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_username} = $arg );
-  $self->{_username};
-}
-
-sub host {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_host} = $arg );
-  $self->{_host};
-}
-
-sub password {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_password} = $arg );
-  $self->{_password};
-}
 
 
 
@@ -301,8 +214,8 @@ sub get_MetaContainer {
 
 =head2 mapdb
 
-    $obj->mapdb($mapdb);
-    my $mapdb = $obj->mapdb;
+$obj->mapdb($mapdb);
+my $mapdb = $obj->mapdb;
 
 Sets or gets a mapdb connection, which is a
 C<Bio::EnsEMBL::Map::DBSQL::Obj> object.
@@ -370,17 +283,18 @@ sub db_mode_web {
   return ($self->{_db_mode} eq 'web');
 }
       
+
 =head2 db_mode_default
+
+#Place the database in default mode: 
+$db->db_mode_default(1);
+#Check if the database is in default mode:
+$db->db_mode_default() && print "db in default mode!\n"; 
 
  Title   : db_mode_default
  Usage   : $db->db_mode_default(1);
  Function: Boolean getter/setter for database default mode 
- Example : 
-#Place the database in default mode: 
-$db->db_mode_default(1);
-
-#Check if the database is in default mode:
-$db->db_mode_default() && print "db in default mode!\n"; 
+ Example : $db->db_mode_default(1);
  Returns : true if this database is in default, false otherwise
  Args    : none or a true value.  A false argument will do nothing.
 
@@ -410,51 +324,6 @@ sub mapdbname {
 
 
 
-=head2 prepare
-
- Title   : prepare
- Usage   : $sth = $dbobj->prepare("select seq_start,seq_end from feature where analysis = \" \" ");
- Function: prepares a SQL statement on the DBI handle
-
-           If the debug level is greater than 10, provides information into the
-           DummyStatement object
- Example :
- Returns : A DBI statement handle object
- Args    : a SQL string
-
-
-=cut
-
-sub prepare {
-   my ($self,$string) = @_;
-
-   if( ! $string ) {
-       $self->throw("Attempting to prepare an empty SQL query!");
-   }
-   if( !defined $self->_db_handle ) {
-      $self->throw("Database object has lost its database handle! getting otta here!");
-   }
-      
-   if ($self->diffdump) {
-       my $fh=$self->diff_fh;
-       open (FILE,">>$fh");
-       if ($string =~ /insert|delete|replace/i) {
-	   print FILE "$string\n";
-       }
-       
-   }
-   
-   if( $self->_debug > 10 ) {
-       print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
-       $st->_fileh(\*STDERR);
-       $st->_statement($string);
-       return $st;
-   }
-
-   # should we try to verify the string?
-   return $self->_db_handle->prepare($string);
-}
 
 
 =head2 add_ExternalFeatureFactory
@@ -539,78 +408,6 @@ sub _each_DASFeatureFactory{
 
    return @{$self->{'_das_ff'}}
 }
-
-
-
-=head2 _debug
-
- Title   : _debug
- Usage   : $obj->_debug($newval)
- Function: 
- Example : 
- Returns : value of _debug
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _debug{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_debug'} = $value;
-    }
-    return $self->{'_debug'};
-    
-}
-
-
-=head2 _db_handle
-
- Title   : _db_handle
- Usage   : $obj->_db_handle($newval)
- Function: 
- Example : 
- Returns : value of _db_handle
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _db_handle{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_db_handle'} = $value;
-    }
-    return $self->{'_db_handle'};
-
-}
-
-
-
-=head2 DESTROY
-
- Title   : DESTROY
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub DESTROY {
-   my ($obj) = @_;
-
-   #$obj->_unlock_tables();
-
-   if( $obj->{'_db_handle'} ) {
-       $obj->{'_db_handle'}->disconnect;
-       $obj->{'_db_handle'} = undef;
-   }
-}
-
-
 
 
 
@@ -1082,56 +879,6 @@ sub deleteObj {
 }
 
 
-
-=head2 diff_fh
-
- Title   : diff_fh
- Usage   : $obj->diff_fh($newval)
- Function: path and name of the file to use for writing the mysql diff dump
- Example : 
- Returns : value of diff_fh
- Args    : newvalue (optional)
-
-
-=cut
-
-sub diff_fh{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diff_fh'} = $value;
-    }
-    return $self->{'_diff_fh'};
-    
-}
-
-
-=head2 diffdump
-
- Title   : diffdump
- Usage   : $obj->diffdump($newval)
- Function: If set to 1 sets $self->_prepare to print the diff sql 
-           statementents to the filehandle specified by $self->diff_fh
- Example : 
- Returns : value of diffdump
- Args    : newvalue (optional)
-
-
-=cut
-
-sub diffdump{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'_diffdump'} = $value;
-    }
-    return $self->{'_diffdump'};
-    
-}
-
-
-
-
-
-
 =head2 extension_tables
 
  Title   : extension_tables
@@ -1173,8 +920,6 @@ sub static_golden_path_type{
     return $obj->{'static_golden_path_type'};
 
 }
-
-
 
 
 ## internal stuff for external adaptors
