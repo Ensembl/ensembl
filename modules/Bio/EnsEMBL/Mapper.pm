@@ -239,6 +239,80 @@ sub map_coordinates{
    return @result;
 }
 
+=head2 fastmap
+
+    Arg  1      int $id
+                id of 'source' sequence
+    Arg  2      int $start
+                start coordinate of 'source' sequence
+    Arg  3      int $end
+                end coordinate of 'source' sequence
+    Arg  4      int $strand
+                raw contig orientation (+/- 1)
+    Arg  5      int $type
+                nature of transform - gives the type of
+                coordinates to be transformed *from*
+    Function    inferior map method. Will only do ungapped unsplit mapping.
+                Will return id, start, end strand in a list.
+    Returntype  list of results
+    Exceptions  none
+    Caller      Bio::EnsEMBL::AssemblyMapper
+
+=cut
+
+sub fastmap {
+   my ($self, $id, $start, $end, $strand, $type) = @_;
+
+   my ($from, $to);
+
+   if($type eq $self->{'to'}) {
+     $from = 'to';
+     $to = 'from';
+   } else {
+     $from = 'from';
+     $to = 'to';
+   }
+
+   my $hash = $self->{"_pair_$type"};
+     
+   unless(defined $hash) {
+       $self->throw("Type $type is neither to or from coordinate systems");
+   }
+
+   if( $self->{'_is_sorted'} == 0 ) {
+       $self->_sort();
+   }
+
+   my $pairs = $hash->{$id};
+
+   for my $pair ( @$pairs ) {
+     my $pair = $pairs->[0];
+     my $self_coord   = $pair->{$from};
+     my $target_coord = $pair->{$to};
+   
+     # only super easy mapping is done 
+     if( $start < $self_coord->{'start'} ||
+         $end > $self_coord->{'end'} ) {
+       next;
+     }
+
+     if( $pair->{'ori'} == 1 ) {
+       return ( $target_coord->{'id'},
+                $target_coord->{'start'}+$start-$self_coord->{'start'},
+                $target_coord->{'start'}+$end-$self_coord->{'start'},
+                $strand );
+     } else {
+       return ( $target_coord->{'id'},
+                $target_coord->{'end'} - ($end - $self_coord->{'start'}),
+                $target_coord->{'end'} - ($start - $self_coord->{'start'}),
+                -$strand );
+     }
+  }
+
+  return ();
+}
+
+
 
 =head2 add_map_coordinates
 
