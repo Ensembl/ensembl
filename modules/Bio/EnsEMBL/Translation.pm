@@ -779,15 +779,20 @@ sub get_all_DAS_Features{
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
     my $dsn = $dasfact->adaptor->dsn;
+    my $name = $dasfact->adaptor->name;
     my $type = $dasfact->adaptor->type;
+
     my $key = defined($dasfact->adaptor->url) ? $dasfact->adaptor->url .'/'. $dsn : $dasfact->adaptor->protocol .'://'.$dasfact->adaptor->domain.'/'. $dsn;
-    if( $self->{_das_features}->{$key} ){ # Use cached
-		  $das_features{$key} = $self->{_das_features}->{$key};
+
+	 $name ||= $key;
+
+    if( $self->{_das_features}->{$name} ){ # Use cached
+		  $das_features{$key} = $self->{_das_features}->{$name};
 		  next;
     } else{ # Get fresh data
-		  my @featref = ($type eq 'ensembl_location') ?  ($key, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_DBLink_Container( $self );
-		  $self->{_das_features}->{$key} = [@featref];
-		  $das_features{$key} = [@featref];
+		  my @featref = ($type eq 'ensembl_location') ?  ($name, ($dasfact->fetch_all_by_Slice( $slice ))[0]) : $dasfact->fetch_all_by_ID( $self );
+		  $self->{_das_features}->{$name} = [@featref];
+		  $das_features{$name} = [@featref];
 	 }
   }
   return \%das_features;
