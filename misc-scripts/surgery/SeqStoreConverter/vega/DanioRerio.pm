@@ -1,13 +1,53 @@
+package SeqStoreConverter::vega::DanioRerio;
+
 use strict;
 use warnings;
 
 use SeqStoreConverter::DanioRerio;
-
-package SeqStoreConverter::vega::DanioRerio;
-
+use SeqStoreConverter::vega::VBasicConverter;
 use vars qw(@ISA);
 
-@ISA = qw(SeqStoreConverter::DanioRerio);
+@ISA = qw(SeqStoreConverter::vega::VBasicConverter SeqStoreConverter::DanioRerio);
+
+sub copy_internal_clone_names {
+    my $self = shift;
+
+    my $target = $self->target();
+    my $source = $self->source();
+    my $dbh    = $self->dbh();
+    $self->debug("Vega danio specific - copying internal clone names to seq_region_attrib");
+
+#get id for 'fpc_clone_id' attribute
+
+    $dbh->do("INSERT INTO $target.attrib_type (code,name,description)".
+	     "values ('fpc_clone_id','fpc clone','clone id used for linking to Zebrafish webFPC')");
+
+    my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'fpc_clone_id'");
+    warn "No attrib id found\n" unless defined($attrib_id);
+
+#get clone details
+    my $select1_sth = $dbh->prepare
+        ("SELECT seq_region_id, name from $target.seq_region where coord_system_id = 3;");
+    $select1_sth->execute();
+    my ($seq_region_id, $embl_name);
+    $select1_sth->bind_columns(\$seq_region_id, \$embl_name);
+
+    my $clone_name;
+    my $select2_sth = $dbh->prepare("select name from $source.clone where embl_acc= ?");
+
+    my $insert_sth = $dbh->prepare("insert into $target.seq_region_attrib values (?,$attrib_id,?)");
+
+    while ($select1_sth->fetch()) {
+		$embl_name =~ s/([\d\w]+).*/$1/;
+		$select2_sth->bind_param(1,$embl_name);
+		$select2_sth->execute;
+		$insert_sth->bind_param(1,$seq_region_id);
+		while (my ($clone_name) = $select2_sth->fetchrow_array()) {
+			$insert_sth->bind_param(2,$clone_name);
+			$insert_sth->execute();
+		}
+	}
+}
 
 sub update_clone_info {
   my $self = shift;
@@ -61,124 +101,6 @@ sub update_clone_info {
       $dbh->do($alter_struct_2);
   }
 }
-
-sub copy_internal_clone_names {
-    my $self = shift;
-
-    my $target = $self->target();
-    my $source = $self->source();
-    my $dbh    = $self->dbh();
-    $self->debug("Vega danio specific - copying internal clone names to seq_region_attrib");
-
-#get id for 'fpc_clone_id' attribute
-
-    $dbh->do("INSERT INTO $target.attrib_type (code,name,description)".
-	     "values ('fpc_clone_id','fpc clone','clone id used for linking to Zebrafish webFPC')");
-
-    my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'fpc_clone_id'");
-    warn "No attrib id found\n" unless defined($attrib_id);
-
-#get clone details
-    my $select1_sth = $dbh->prepare
-        ("SELECT seq_region_id, name from $target.seq_region where coord_system_id = 3;");
-    $select1_sth->execute();
-    my ($seq_region_id, $embl_name);
-    $select1_sth->bind_columns(\$seq_region_id, \$embl_name);
-
-    my $clone_name;
-    my $select2_sth = $dbh->prepare("select name from $source.clone where embl_acc= ?");
-
-    my $insert_sth = $dbh->prepare("insert into $target.seq_region_attrib values (?,$attrib_id,?)");
-
-    while ($select1_sth->fetch()) {
-		$embl_name =~ s/([\d\w]+).*/$1/;
-		$select2_sth->bind_param(1,$embl_name);
-		$select2_sth->execute;
-		$insert_sth->bind_param(1,$seq_region_id);
-		while (my ($clone_name) = $select2_sth->fetchrow_array()) {
-			$insert_sth->bind_param(2,$clone_name);
-			$insert_sth->execute();
-		}
-	}
-}
-
-
-sub copy_other_tables {
-  my $self = shift;
-
-  #xref tables
-  $self->copy_tables("xref",
-                     "go_xref",
-                     "identity_xref",
-                     "object_xref",
-                     "external_db",
-                     "external_synonym",
-  #marker/qtl related tables
-                     "map",
-                     "marker",
-                     "marker_synonym",
-                     "qtl",
-                     "qtl_synonym",
-  #misc other tables
-		     "supporting_feature",
-		     "analysis",
-		     "exon_transcript",
-		     "interpro",
-		     "gene_description",
-		     "protein_feature",
-  #vega tables
-		     "gene_synonym",
-		     "transcript_info",
-		     "current_gene_info",
-		     "current_transcript_info",
-		     "author",
-		     "gene_name",
-		     "transcript_class",
-		     "gene_remark",
-		     "gene_info",
-		     "evidence",
-		     "transcript_remark",
-		     "clone_remark",
-		     "clone_info",
-		     "clone_info_keyword",
-		     "clone_lock");
-$self->copy_current_clone_info;
-}
-
-sub copy_current_clone_info {
-    my $self=shift;
-    my $source = $self->source();
-    my $target = $self->target();
-    my $sth = $self->dbh()->prepare
-        ("INSERT INTO $target.current_clone_info(clone_id,clone_info_id) SELECT * FROM $source.current_clone_info");
-    $sth->execute();
-    $sth->finish();    
-}
-
-
-sub remove_supercontigs {
-    my $self = shift;
-    
-    my $target = $self->target();
-    my $dbh    = $self->dbh();
-    $self->debug("Vega danio specific - removing supercontigs from $target");
-
-    $dbh->do("DELETE FROM $target.meta ". 
-	     "WHERE meta_value like '%supercontig%'");
-
-    $dbh->do("DELETE FROM $target.coord_system ".
-	     "WHERE name like 'supercontig'");
-    
-    $dbh->do("DELETE $target.assembly ".
-	     "FROM $target.assembly a, $target.seq_region sr ". 
-	     "WHERE sr.coord_system_id = 2 ".
-	     "and a.asm_seq_region_id = sr.seq_region_id");
-
-    $dbh->do("DELETE FROM $target.seq_region ".
-	     "WHERE coord_system_id = 2");
-}
-
-
 
 
 1;
