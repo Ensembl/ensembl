@@ -48,37 +48,32 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use Bio::EnsEMBL::DBOLD::RawContig;
 use Bio::EnsEMBL::DBOLD::Feature_Obj;
 use Bio::EnsEMBL::DBOLD::Gene_Obj;
 use Bio::EnsEMBL::DB::CloneI;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
+@ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
 
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;
-
-  my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
-					  ID
-					  )],@args);
-
-  $id    || $self->throw("Cannot make clone db object without id");
-  $dbobj || $self->throw("Cannot make clone db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
-
-  $self->id($id);
-  $self->_db_obj($dbobj);
-  $self->fetch();
+sub new {
+    my($class,@args) = @_;
+    my $self = $class->SUPER::new(@args);
+    
+    my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
+					    ID
+					    )],@args);
+    
+    $id    || $self->throw("Cannot make clone db object without id");
+    $dbobj || $self->throw("Cannot make clone db object without db object");
+    $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
+    
+    $self->id($id);
+    $self->_db_obj($dbobj);
+    $self->fetch();
 
 # set stuff in self from @args
-  return $make; # success - we hope!
+    return $self; # success - we hope!
 }
 
 =head2 fetch

@@ -33,7 +33,7 @@ my $vc=$st->fetch_VirtualContig_by_fpc_name($chr);
 my $arcdb = Bio::EnsEMBL::DBArchive::Obj->new(-dbname=>'archive_test',
 					      -host=>'ecs1c',
 					      -user=>'ensadmin',
-					      -readonly => 0);
+					      -readonly => 1);
 #No final db writing, only logging
 #my $finaldb = Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'freeze05_final',-host=>'ecs1c',-user=>'ensadmin');
 

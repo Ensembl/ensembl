@@ -299,8 +299,8 @@ sub write_deleted_id{
     
     $old_v || $self->throw("Must give type[got $type], old_id [got $old_id] and version [got $old_v] at least");
     $new_id ||= "NULL";
-    my $sth = $self->prepare("insert into deleted_id (old_id,old_version,new_id,id_type) values('$old_id',$old_v,'$new_id','$type')");
-    my $res = $sth->execute();
+    my $query = "insert into deleted_id (old_id,old_version,new_id,id_type) values('$old_id',$old_v,'$new_id','$type')";
+    $self->_execute($query);
 }
 
 
