@@ -599,21 +599,21 @@ sub fetch_VirtualContig_of_clone{
  
    my ($contig,$start,$end,$chr_name); 
    my $counter; 
-   my $first_start;
+   my $cl_start = 1e20;
+   my $cl_end   = 0;
    while ( my @row=$sth->fetchrow_array){
-       $counter++;
        ($contig,$start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}      
+       $cl_start = $start if $start < $cl_start;
+       $cl_end   = $end   if $end   > $cl_end;
    }
 
    if( !defined $contig ) {
        $self->throw("Clone is not on the golden path. Cannot build VC");
    }
      
-   my $vc = $self->fetch_VirtualContig_by_chr_start_end(    $chr_name,
-                            $first_start-$size,
-                            $end+$size
-                            );
+   my $vc = $self->fetch_VirtualContig_by_chr_start_end(
+                $chr_name,    $cl_start - $size,    $cl_end   + $size
+   );
    $vc->dbobj($self->dbobj);
    return $vc;
 
