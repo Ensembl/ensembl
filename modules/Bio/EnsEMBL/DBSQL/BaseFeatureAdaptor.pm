@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -515,7 +515,7 @@ sub _tablename {
   my $self = shift;
 
   $self->throw("abstract method _tablename not defined by implementing" .
-               " subclass of AlignFeatureAdaptor");
+               " subclass of BaseFeatureAdaptor");
   return undef;
 }
 
@@ -537,7 +537,7 @@ sub _columns {
   my $self = shift;
 
   $self->throw("abstract method _columns not defined by implementing" .
-               " subclass of AlignFeatureAdaptor");
+               " subclass of BaseFeatureAdaptor");
 }
 
 
@@ -600,7 +600,7 @@ sub _objs_from_sth {
   my $self = shift;
 
   $self->throw("abstract method _obj_from_hashref not defined by implementing"
-             . " subclass of AlignFeatureAdaptor");
+             . " subclass of BaseFeatureAdaptor");
 } 
 
 
