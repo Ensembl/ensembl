@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 36;
+	plan tests => 37;
 }
 
 use MultiTestDB;
@@ -282,3 +282,36 @@ ok($slice->length eq $len);
 ok($slice->seq_region_name eq $name);
 
 $multi->restore('core', 'seq_region', 'dna', 'dnac');
+
+
+#
+# There was a bug such that features were not being retrieved
+# from slices that had a start < 1.  This is a test for that case.
+#
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1,35_000_000);
+debug("slice start = " . $slice->start);
+debug("slice end   = " . $slice->end);
+
+my $sfs1 = $slice->get_all_SimpleFeatures();
+print_features($sfs1);
+
+$slice = $slice_adaptor->fetch_by_region('chromosome', '20', -10, 35_000_000);
+
+debug("slice start = " . $slice->start);
+debug("slice end   = " . $slice->end);
+
+my $sfs2 = $slice->get_all_SimpleFeatures();
+print_features($sfs2);
+
+ok(@$sfs1 == @$sfs2);
+
+
+sub print_features {
+  my $fs = shift;
+  foreach my $f (@$fs) {
+    my $start  = $f->start();
+    my $end    = $f->end();
+    my $strand = $f->strand();
+    debug("  $start-$end($strand)");
+  }
+}
