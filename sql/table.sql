@@ -165,6 +165,17 @@ CREATE TABLE gene (
 );
 
 #
+# Table structure for table 'ghost'
+#
+CREATE TABLE ghost (
+  id varchar(40) DEFAULT '' NOT NULL,
+  version varchar(5) DEFAULT '' NOT NULL,
+  seq_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
+  deleted_time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  PRIMARY KEY (id,version,seq_type)
+);
+
+#
 # Table structure for table 'homol_feature'
 #
 CREATE TABLE homol_feature (
@@ -181,6 +192,16 @@ CREATE TABLE mapbin (
   id varchar(40) DEFAULT '' NOT NULL,
   chromosome char(2) DEFAULT '' NOT NULL,
   PRIMARY KEY (id)
+);
+
+#
+# Table structure for table 'meta'
+#
+CREATE TABLE meta (
+  last_update datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  donor_database_locator varchar(40) DEFAULT '' NOT NULL,
+  offset_time time(5) DEFAULT '30' NOT NULL,
+  schema_version varchar(40) DEFAULT '' NOT NULL
 );
 
 #
