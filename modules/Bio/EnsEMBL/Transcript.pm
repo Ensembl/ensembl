@@ -222,7 +222,7 @@ sub external_name {
 
 sub is_known {
   my $self = shift;
-  if( defined $self->external_name() && $self->external_name() ne '') {
+  if( defined $self->external_name() ) {
     return 1;
   } else {
     return 0;
@@ -312,7 +312,8 @@ sub start {
   my $start;
   if( defined $arg ) {
     $self->{'_start'} = $arg;
-  } else {
+  } elsif(!  defined $self->{'_start'} ) {
+
     $strand = $self->start_exon->strand();
     if( $strand == 1 ) {
       $start = $self->start_exon->start();
@@ -335,7 +336,7 @@ sub end {
 ;
   if( defined $arg ) {
     $self->{'_end'} = $arg;
-  } else {
+  } elsif( ! defined $self->{'_end'} ) {
     $strand = $self->start_exon->strand();
     if( $strand == 1 ) {
       $end = $self->end_exon->end();
@@ -357,9 +358,11 @@ sub coding_start {
 
   my $strand;
   my $start;
+  
   if( defined $arg ) {
     $self->{'coding_start'} = $arg;
-  } elsif( defined $self->translation() ) {
+  } elsif( ! defined $self->{'coding_start'} && 
+	   defined $self->translation() ) {
     $strand = $self->translation()->start_exon->strand();
     if( $strand == 1 ) {
       $start = $self->translation()->start_exon->start();
@@ -384,7 +387,8 @@ sub coding_end {
   
   if( defined $arg ) {
     $self->{'coding_end'} = $arg;
-  } elsif( defined $self->translation() ) {
+  } elsif( ! defined $self->{'coding_end'} && 
+	   defined $self->translation() ) {
     $strand = $self->translation()->start_exon->strand();
     if( $strand == 1 ) {
       $end = $self->translation()->end_exon->start();
