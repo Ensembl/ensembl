@@ -684,7 +684,6 @@ sub _dump_feature_table {
     foreach my $gene (@{$gene_slice->get_all_Genes(undef,undef, 1)}) {
       $value = $self->features2location( [$gene] );
       $self->write( @ff, 'gene', $value );
-      $self->write( @ff, "", '/locus_tag='.$gene->stable_id() );
       $self->write( @ff, "", '/gene='.$gene->stable_id() );
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
         my $translation = $transcript->translation;
