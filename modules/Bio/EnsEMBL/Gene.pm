@@ -59,10 +59,10 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $stable_id, $version, $external_name, $type, $external_db, 
-       $external_status, $display_xref ) = 
+       $external_status, $display_xref, $description ) = 
     rearrange( [ 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 'TYPE',
-		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
-  
+		 'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF', 'DESCRIPTION' ], @_ );
+
   $self->stable_id( $stable_id );
   $self->version( $version );
   $self->external_name( $external_name ) if( defined $external_name );
@@ -70,6 +70,8 @@ sub new {
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
   $self->type( $type ) if( defined $type );
+  $self->description($description);
+
   return $self;
 }
 
@@ -79,8 +81,7 @@ sub new {
 
   Args       : none
   Example    : none
-  Description: returns true if the Gene or one of its Transcripts have
-               DBLinks
+  Description: returns true if this gene has a display_xref
   Returntype : 0,1
   Exceptions : none
   Caller     : general
@@ -89,19 +90,8 @@ sub new {
 
 
 sub is_known{
-  my ($self) = @_;
-
-  for my $entry ( @{$self->get_all_DBLinks()} ) {
-    return 1 if $entry->status =~ /KNOWN/;
-  }
-
-  foreach my $trans ( @{$self->get_all_Transcripts} ) {
-    for my $entry ( @{$trans->get_all_DBLinks()} ) {
-      return 1 if $entry->status =~ /KNOWN/;
-    }
-  }
-
-  return 0;
+  my $self = shift;
+  return ($self->{'display_xref'}) ? 1 : 0;
 }
 
 
@@ -550,16 +540,9 @@ sub transfer {
 =cut
 
 sub display_xref {
-
-    my $self = shift;
-
-    if( @_ ) {
-      $self->{'display_xref'} = shift;
-    } elsif( exists $self->{'display_xref'} ) {
-      return $self->{'display_xref'};
-    } 
-
-    return $self->{'display_xref'};
+  my $self = shift;
+  $self->{'display_xref'} = shift if(@_);
+  return $self->{'display_xref'};
 }
 
 
@@ -578,12 +561,9 @@ sub display_xref {
 sub recalculate_coordinates {
   my $self = shift;
 
-  if( ! defined $self->{'_transcript_array'} ) {
-    warning( "Cant recalculate position without transcripts" );
-    return;
-  }
-  
-  my $transcripts = $self->{'_transcript_array'};
+  my $transcripts = $self->get_all_Transcripts();
+
+  return if(!$transcripts || !@$transcripts);
 
   my ( $slice, $start, $end, $strand );
   $slice = $transcripts->[0]->slice();
@@ -597,15 +577,15 @@ sub recalculate_coordinates {
     if( $t->start() < $start ) {
       $start = $t->start();
     }
-  
+
     if( $t->end() < $end ) {
       $end = $t->end();
     }
-  
+
     if( $t->slice()->name() ne $slice->name() ) {
       throw( "Transcripts with different slices not allowed on one Gene" );
     }
-    
+
     if( $t->strand() != $strand ) {
       $transsplicing = 1;
     }
