@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 26;
+	plan tests => 28;
 }
 
 use MultiTestDB;
@@ -80,6 +80,9 @@ ok ( $tr->external_name eq "MAPRE1");
 debug ( "External transcript dbname: " . $tr->external_db );
 ok ( $tr->external_db eq 'HUGO' );
 
+debug ( "Relevant_xref_id: " . $tr->relevant_xref );
+ok ( $tr->relevant_xref == 97759 );
+ok( test_getter_setter( $tr, "relevant_xref", 42 ));
 
 ok( test_getter_setter( $tr, "dbID", 100000 ));
 ok( test_getter_setter( $tr, "type", "NOVEL" ));
