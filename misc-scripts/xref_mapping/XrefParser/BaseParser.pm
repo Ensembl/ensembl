@@ -98,13 +98,14 @@ sub run {
     $dir = $base_dir . "/" . sanitise($type);
     foreach my $urls (@files){
       my ($file) = $urls =~ /.*\/(.*)/;
-      $last_type = $type;
       
       if (!$skipdownload) {
 	
 	rmtree $dir if ($type ne $last_type);
 	mkdir $dir if (!-e $dir);
 	
+	$last_type = $type;
+
 	print "Downloading $urls to $dir/$file\n";
 	my $result = system("wget", "--quiet","--directory-prefix=$dir", $urls);
 	
