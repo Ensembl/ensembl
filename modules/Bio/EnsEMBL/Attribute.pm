@@ -18,7 +18,7 @@ Bio::EnsEMBL::Attribute - A generic Attribute class.
   my $attribute = Bio::EnsEMBL::Attribute->new
        (-CODE => 'myCode',
         -NAME => 'My Attribute',
-        -DESC => 'This is my attribute description.',
+        -DESCRIPTION => 'This is my attribute description.',
         -VALUE => '10023');
 
   print $attrib->name(), "\n";
