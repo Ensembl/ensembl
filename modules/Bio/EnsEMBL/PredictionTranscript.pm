@@ -312,7 +312,7 @@ sub add_Exon {
 
 =head2 get_all_Exons
 
-  Args      : none
+  Arg [1]   : optional 1 $wish_undefined_exons 
   Function  : Returns all Exons currently in the PredictionTranscript
               in the order 5' to 3'. If this is a partial PredictionTranscript,
               elements of the list will be undef.
@@ -323,9 +323,13 @@ sub add_Exon {
 =cut
 
 sub get_all_Exons {
-   my ($self) = @_;
+   my ($self, $wish_undefined_exon ) = @_;
    
-   return $self->{'exons'};
+   if( $wish_undefined_exon ) {
+     return $self->{'exons'};
+   } else {
+     return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->{'exons'}} ];
+   }
 }
 
 
@@ -366,6 +370,10 @@ sub get_all_translateable_Exons {
 sub sort {
   my $self = shift;
 
+  # dont sort if there are undefined exons
+  if( grep { ! defined $_ } @{$self->{'exons'}} ) {
+    return;
+  }
   # Fetch all the exons
   my @exons = @{$self->get_all_Exons()};
 
