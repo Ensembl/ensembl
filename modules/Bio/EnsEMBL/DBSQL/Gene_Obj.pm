@@ -713,6 +713,42 @@ sub get_Gene_by_Transcript_id {
 
 
 
+=head2 get_Gene_by_DBLink
+
+ Title   : get_Gene_by_DBLink
+ Usage   : $gene_obj->get_Gene_by_DBLink($ext_id, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : transcript id and supporting tag (if latter not specified,
+assumes without
+           Note that it is much faster to get genes without supp.evidence!
+
+
+=cut
+
+sub get_Gene_by_DBLink {
+    my $self = shift;
+    my $external_id = shift;
+    my $supporting = shift;
+   
+    my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
+    $sth->execute;
+
+    my ($geneid) = $sth->fetchrow_array();
+    if( !defined $geneid ) {
+        return undef;
+    }
+    return $self->get($geneid,$supporting);
+}
+
+
+
+
+
+
+
+
+
 
 
 =head2 get_Exon

@@ -910,6 +910,36 @@ Calling gene_Obj->get instead!");
    return $self->gene_Obj->get_Gene_by_Transcript_id($tid,$supporting);
 }
 
+
+
+=head2 get_Gene_by_DBLink
+
+ Title   : get_Gene_by_DBLink
+ Usage   : $obj->get_Gene_by_DBLink($ext_id, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Example : $obj->get_Gene_by_DBLink( 'MC1R')
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : transcript id and supporting tag (if latter not specified, assumes without
+	   Note that it is much faster to get genes without supp.evidence!
+
+
+=cut
+
+sub get_Gene_by_DBLink {
+   my ($self,$ext_id, $supporting) = @_;
+
+  # $self->warn("Obj->get_Gene_by_DBLink is a deprecated method! Calling gene_Obj->get instead!");
+
+   return $self->gene_Obj->get_Gene_by_DBLink($ext_id,$supporting);
+}
+
+
+
+
+
+
+
+
 =head2 get_Gene_array
 
  Title   : get_Gene_array
