@@ -166,7 +166,7 @@ sub fetch_all_by_chr_name {
 
 
 
-=head2 fetch_all_by_chr_band
+=head2 fetch_by_chr_band
 
   Arg  [1]   : string $chr_name
                Name of the chromosome from which to retrieve the band
@@ -182,7 +182,7 @@ sub fetch_all_by_chr_name {
 
 =cut
 
-sub fetch_all_by_chr_band {
+sub fetch_by_chr_band {
     my ($self,$chr_name, $band) = @_;
 
     $self->throw("Need band name") unless defined $band;
@@ -198,7 +198,7 @@ sub fetch_all_by_chr_band {
 
     $sth->execute( $band, $chr_id );
 
-    my ($chr, $chr_start,$chr_end,$stain) = $sth->fetchrow_array;
+    my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
 
     return undef unless defined $chr_start;
 

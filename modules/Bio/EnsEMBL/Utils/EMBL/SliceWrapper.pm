@@ -361,10 +361,12 @@ sub top_SeqFeatures {
 
   my @sfs;
 
+  my $slice_length = $self->slice->length();
+
   unless( $self->skip_SeqFeature('meta') ) {
     my $sf = new Bio::SeqFeature::Generic();
     $sf->start(1);
-    $sf->end($self->slice->length());
+    $sf->end($slice_length);
     $sf->strand(1);
     $sf->primary_tag( "source" );
     my $species = $self->species;
@@ -374,7 +376,6 @@ sub top_SeqFeatures {
     push @sfs, $sf;
   }
 
-
   unless($self->skip_SeqFeature('similarity')) {
     push @sfs, @{$self->slice->get_all_SimilarityFeatures()};
   }
@@ -382,31 +383,24 @@ sub top_SeqFeatures {
     push @sfs, @{$self->slice->get_all_RepeatFeatures()};
   }
   unless($self->skip_SeqFeature('external')) {
-    push @sfs, @{$self->slice->get_all_ExternalFeatures()};
+    push @sfs, @{$self->slice->get_all_ExternalFeatures()},
   }
+
   unless($self->skip_SeqFeature('snp')) {
     push @sfs, @{$self->slice->get_all_SNPs};
   }
 
   #filter out features overlapping slice boundary
-  my @out = ();
-  my $slice_length   = $self->slice->length;
-  while(my $f = shift @sfs) {
-    if($f->start > 1 && $f->end < $slice_length) {
-      push(@out, $f);
-    }
-  }
+  my @out = grep { $_->start >0 && $_->end <= $slice_length } @sfs;
 
   #transcripts and genes are allowed to overlap boundary
   unless($self->skip_SeqFeature('prediction')) {
-    foreach my $pt (@{$self->slice->get_all_PredictionTranscripts}) {
-      push @out, new Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper($pt);
-    }
+    push @out, map { new Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper($_) }
+        @{$self->slice->get_all_PredictionTranscripts};
   }
   unless($self->skip_SeqFeature('gene')) {
-    foreach my $gene (@{$self->slice->get_all_Genes()}) {
-      push @out, new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($gene);
-    }
+    push @out, map { new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($_) } 
+        @{$self->slice->get_all_Genes()};
   }
 
   return @out;
