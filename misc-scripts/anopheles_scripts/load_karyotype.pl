@@ -54,13 +54,9 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 					   );
 
 
-#Used to get the complete scaffold accession number. Shouldn't have to do it...
-my $tmp = '/acari/work1/mongin/tmp/sc.txt';
-
 my %chr_map;
 my %map;
 
-open (TMP,$tmp) || die "Can't open $tmp\n";
 open (IN, $file) || die "Can't open $file\n";
 
 my $q1 = "select chromosome_id, name from chromosome";
@@ -70,16 +66,6 @@ $sth->execute();
 while (my @ar = $sth->fetchrow_array) {
     $chr_map{$ar[1]} = $ar[0];
 }
-
-
-
-
-while (<TMP>) {
-    chomp;
-#    print STDERR $_;
-}
-
-close (TMP);
 
 while (<IN>) {
     chomp;
@@ -107,12 +93,13 @@ while (<IN>) {
 
     my ($min,$max) = $sth3->fetchrow_array();
 
-    my $mid = $max - $min + 1;
+    my $mid = $min + (($max - $min)/2);
 
     my $f_start = $min;
     my $f_end = $mid;
     my $s_start = $mid + 1;
     my $s_end  = $max;
+    
 
     if ((! defined $band2loc{$band_start})) {
 	$band2loc{$band_start}->{'start'} = $f_start;
@@ -122,6 +109,9 @@ while (<IN>) {
     elsif ($band2loc{$band_start}->{'end'} <= $f_end) {
 	$band2loc{$band_start}->{'end'} = $f_end;
     }
+    elsif ($band2loc{$band_start}->{'end'} <= $f_start) {
+	$band2loc{$band_start}->{'end'} = $f_start;
+    } 
 
     if ((! defined $band2loc{$band_end})) {
 	$band2loc{$band_end}->{'start'} = $s_start;
@@ -131,10 +121,15 @@ while (<IN>) {
     elsif ($band2loc{$band_end}->{'end'} <= $s_end) {
 	$band2loc{$band_end}->{'end'} = $s_end;
     }
+     elsif ($band2loc{$band_start}->{'end'} <= $s_start) {
+	 $band2loc{$band_start}->{'end'} = $s_start;
+    } 
+
 }
 
 foreach my $k(keys %band2loc) {
     print "$band2loc{$k}->{'chr_id'}\t$band2loc{$k}->{'start'}\t$band2loc{$k}->{'end'}\t$k\t\\N\n";
     
 }
+
 
