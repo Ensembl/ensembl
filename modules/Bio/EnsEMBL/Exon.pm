@@ -1601,7 +1601,7 @@ sub peptide {
     $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
   
   #filter out gaps
-  my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+  @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
 
   #if this is UTR then the peptide will be empty string
   my $pep_str = '';
