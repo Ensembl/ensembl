@@ -89,10 +89,11 @@ my $counter=0;
 		    $self->{$key} = $arg->{$key};
 		}
 	    }
-	} elsif (-f $arg )  { # a file name
-	    $self = do $arg;
-	} else {
-	    confess "expected a hash ref or existing file";
+	    elsif (-f $arg )  { # a file name
+		$self = do $arg;
+	    } else {
+		confess "expected a hash ref or existing file";
+	    }
 	}
         
         foreach my $f (keys %$self) {
