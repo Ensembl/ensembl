@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 92;
+	plan tests => 97;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -26,7 +26,7 @@ my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
    -VERSION => 'NCBI34',
    -DBID    => 123,
-   -TOP_LEVEL => 1);
+   -RANK => 1);
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
 
@@ -158,6 +158,8 @@ ok($feature->slice->seq_region_name() eq 'AL359765.6.1.13780');
 ok($feature->slice->coord_system->name() eq 'contig');
 
 
+
+
 #
 # Test Transform contig -> clone
 #
@@ -174,6 +176,30 @@ ok($feature->end() == 600);
 ok($feature->strand() == 1);
 ok($feature->slice->seq_region_name() eq 'AL359765.6');
 ok($feature->slice->coord_system->name() eq 'clone');
+
+
+
+#
+# Test transform clone -> toplevel
+#
+
+$feature = $feature->transform('toplevel');
+
+debug("\nclone -> toplevel");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+
+ok($feature->start() == 300 + $slice->start() - 1);
+ok($feature->end()   == 500 + $slice->start() - 1);
+ok($feature->strand() == 1);
+ok($feature->slice->coord_system->name() eq 'chromosome');
+ok($feature->slice->seq_region_name() eq '20');
+
+#put back to clone
+$feature = $feature->transform('clone');
 
 
 #

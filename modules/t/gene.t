@@ -361,7 +361,7 @@ debug( "checking external references" );
 $multi->restore();
 
 $slice = $db->get_SliceAdaptor()->fetch_by_region
-  ( "toplevel", "20", 30_252_000, 31_252_001 );
+  ( "chromosome", "20", 30_252_000, 31_252_001 );
 
 my $known = 0;
 my $unknown = 0;

@@ -22,7 +22,7 @@ my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
    -VERSION => 'NCBI34',
    -DBID    => 123,
-   -TOP_LEVEL => 1);
+   -RANK    => 1);
 
 my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
 

@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 25;
+	plan tests => 32;
 }
 
 use MultiTestDB;
@@ -33,7 +33,7 @@ my $cs = $csa->fetch_by_name('chromosome');
 ok($cs->name eq 'chromosome');
 ok($cs->dbID());
 ok($cs->version eq 'NCBI33');
-ok($cs->is_top_level());
+ok(!$cs->is_top_level());
 ok(!$cs->is_sequence_level());
 ok($cs->is_default());
 
@@ -48,6 +48,7 @@ ok(@cs_list == 1);
 ok($cs_list[0]->equals($cs));
 
 
+
 #
 # Test fetch_by_dbID()
 #
@@ -59,22 +60,26 @@ ok($cs->version() eq '');
 
 
 #
-# 11 Test fetch_top_level
+# Test fetch_top_level
 #
 $cs = $csa->fetch_top_level();
 
-ok($cs->name eq 'chromosome');
+ok($cs->name eq 'toplevel');
+ok($cs->is_top_level());
+ok($cs->rank == 0);
 
 #
-# 12 Test fetch_all_top_level
+# Test fetch_by_rank
 #
-($cs) = @{$csa->fetch_all_top_level()};
+$cs = $csa->fetch_by_rank(1);
+ok($cs->name() eq 'chromosome' && $cs->rank() == 1);
 
-ok($cs->name eq 'chromosome');
+$cs = $csa->fetch_by_rank(0);
+ok($cs->name() eq 'toplevel' && $cs->rank() == 0);
 
 
 #
-# 13-14 Test fetch_sequence_level
+# Test fetch_sequence_level
 #
 $cs = $csa->fetch_sequence_level();
 
@@ -83,7 +88,22 @@ ok($cs->is_sequence_level());
 
 
 #
-# 15-16 Test get_mapping_path
+# Test fetch_all
+#
+@cs_list = @{$csa->fetch_all()};
+my $prev_cs;
+
+#make sure that they are ordered by rank
+foreach my $cs (@cs_list) {
+  if($prev_cs) {
+    ok($prev_cs->rank < $cs->rank);
+  }
+  $prev_cs = $cs;
+}
+
+
+#
+# Test get_mapping_path
 #
 
 my $ctg_cs = $csa->fetch_by_name('contig');
@@ -116,11 +136,11 @@ ok(@$path == 3 &&
 $multi->save('core', 'coord_system');
 
 $cs = Bio::EnsEMBL::CoordSystem->new
-  (-NAME            => 'chromosome',
+  (-NAME            => 'newsystem',
    -VERSION         => 'NCBI35',
-   -DEFAULT         => 0,
+   -DEFAULT         => 1,
    -SEQUENCE_LEVEL  => 0,
-   -TOP_LEVEL        => 1);
+   -RANK            => 10);
 
 $csa->store($cs);
 
@@ -128,19 +148,20 @@ ok($cs->adaptor == $csa);
 ok($cs->dbID());
 
 #now make sure we can retrieve this
-$cs = $csa->fetch_by_name('chromosome', 'NCBI35');
-ok($cs->name eq 'chromosome');
+$cs = $csa->fetch_by_name('newsystem', 'NCBI35');
+ok($cs->name eq 'newsystem');
 ok($cs->version eq 'NCBI35');
-ok(!$cs->is_default);
+ok($cs->is_default);
 ok(!$cs->is_sequence_level);
-ok($cs->is_top_level);
+ok(!$cs->is_top_level);
+ok($cs->rank() == 10);
 
 my $sth = $db->prepare('SELECT attrib FROM coord_system ' .
                        'WHERE  name = ? and version = ?');
-$sth->execute('chromosome', 'NCBI35');
+$sth->execute('newsystem', 'NCBI35');
 
 my ($attrib) = $sth->fetchrow_array();
-ok($attrib eq 'top_level');
+ok($attrib eq 'default_version');
 $sth->finish();
 
 $multi->restore('core', 'coord_system');

@@ -36,7 +36,7 @@ ok($slice_adaptor->db);
 #
 # fetch_by_region
 #
-my $slice = $slice_adaptor->fetch_by_region('toplevel',$CHR, $START, $END);
+my $slice = $slice_adaptor->fetch_by_region('chromosome',$CHR, $START, $END);
 ok($slice->seq_region_name eq $CHR);
 ok($slice->start == $START);
 ok($slice->end   == $END);

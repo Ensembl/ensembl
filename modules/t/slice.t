@@ -47,7 +47,7 @@ ok($slice->adaptor == $slice_adaptor);
 #
 #TEST - Slice::new
 #
-my $coord_system = $csa->fetch_by_name('toplevel');
+my $coord_system = $csa->fetch_by_name('chromosome');
 
 $slice = new Bio::EnsEMBL::Slice
   (-seq_region_name   => $CHR,

@@ -22,7 +22,7 @@ my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
    -VERSION => 'NCBI34',
    -DBID    => 123,
-   -TOP_LEVEL => 1);
+   -RANK => 1);
 
 
 my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
