@@ -65,7 +65,7 @@ package Bio::EnsEMBL::SeqFeature;
 use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
 use strict;
 
-# Object preamble - inherits from Bio::Root::Object
+
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::Root::RootI;
 
@@ -102,7 +102,11 @@ sub new {
 
   bless $self,$class;
 
-  my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
+  print STDERR "self is $self with class $class\n";
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname); 
+
+  eval {
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -113,6 +117,11 @@ sub new {
 			    PRIMARY_TAG
 			    SEQNAME
 			    )],@args);
+};
+  if( $@ ) {
+      my $dummy = Bio::Root::Object->new();
+      $dummy->throw($@);
+  }
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 

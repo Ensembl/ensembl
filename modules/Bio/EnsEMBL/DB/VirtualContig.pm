@@ -1329,6 +1329,8 @@ sub _get_all_SeqFeatures_type {
    my $count = 0;
    foreach $sf ( @$sf ) {
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+       print STDERR "Got a $sf\n";
+
        if( !defined $sf ) {
 	   next;
        }
@@ -1378,12 +1380,16 @@ sub _convert_seqfeature_to_vc_coords {
    }
 
    # if this is something with subfeatures, then this is much more complex
-   my @sub = $sf->sub_SeqFeatures();
+   my @sub = $sf->sub_SeqFeature();
 
    if( $#sub >=  0 ) {
        # chain to constructor of the object. Not pretty this.
-       my $new = $sf->new();
+       print STDERR "Going for a sub sequence feature\n";
 
+       my $new = Bio::EnsEMBL::SeqFeature->new();
+       $new->primary_tag($sf->primary_tag);
+       $new->source_tag($sf->source_tag);
+ 
        if( $new->can('attach_seq') ) {
 	   $new->attach_seq($self->primary_seq);
        }
@@ -1395,7 +1401,7 @@ sub _convert_seqfeature_to_vc_coords {
 	       next;
 	   }
 	   $seen =1;
-	   $new->add_SeqFeature($sub);
+	   $new->add_sub_SeqFeature($sub,'EXPAND');
        }
        if( $seen == 1 ) {
 	   return $new;
@@ -1435,7 +1441,7 @@ sub _convert_seqfeature_to_vc_coords {
 
    $sf->seqname($self->id);
 
-   return 1;
+   return $sf;
 }
 
 =head2 _convert_start_end_strand_vc

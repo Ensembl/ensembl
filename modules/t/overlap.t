@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..8\n"; 
+BEGIN { $| = 1; print "1..12\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -108,6 +108,44 @@ print STDERR "Sequence is [" .$seq->seq ."] Should be AAAACCCCTTGGGAAA\n";
 die "$0\nVirtual contig sequence " . $seq->seq . "does not equal AAAACCCCTTGGGAAA : $!" if ($seq->seq ne "AAAACCCCTTGGGAAA");
   
 print "ok 8\n";
+
+
+if( $vc->length != $vc->primary_seq->length ) {
+   print "not ok 9\n";
+} else {
+   print "ok 9\n";
+}
+
+$vc =  new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+						 -focusposition => 1,
+						 -ori           => 1,
+						 -left          => 2,
+						 -right         => 2);
+
+if( $vc->length != $vc->primary_seq->length ) {
+   print "not ok 10\n";
+} else {
+   print "ok 10\n";
+}
+
+
+my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
+						 -focusposition => 1,
+						 -ori           => 1,
+						 -left          => 20,
+						 -right         => 20);
+
+
+@sf = $vc->get_all_SimilarityFeatures();
+if( $#sf == -1 ) {
+     print "not ok 11\n";
+} else {
+  print "ok 11\n";
+}
+
+@sf = $vc->get_all_PredictionFeatures();
+print "ok 12\n";
+
 
 END {
     my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
