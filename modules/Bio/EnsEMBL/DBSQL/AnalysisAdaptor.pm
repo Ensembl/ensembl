@@ -142,8 +142,8 @@ sub fetch_all_by_feature_class {
     $feat_table_map{$class} = $table;
   }
   $feat_table_map{DensityFeature}='density_type'; # analysis_id in diff table
-  my $feat_table = $feat_table_map{$feat_type} || 
-      ( warning( "No feature type corresponding to $feat_type" ) &&
+  my $feat_table = $feat_table_map{$feat_class} || 
+      ( warning( "No feature type corresponding to $feat_class" ) &&
         return [] );
 
   my $sql_t = qq|
