@@ -108,7 +108,13 @@ sub run {
 
 	print "Downloading $urls to $dir/$file\n";
 	my $result = system("wget", "--quiet","--directory-prefix=$dir", $urls);
-	
+
+	# check that the file actually downloaded; may not (e.g. if too many anonymous users)
+	if ($result != 0) {
+	  print "wget returned exit code $result; $file not downloaded. Skipping.\n";
+	  next;
+	}
+
 	# if the file is compressed, the FTP server may or may not have automatically uncompressed it
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
 	if ($file =~ /(.*)\.gz$/) {
