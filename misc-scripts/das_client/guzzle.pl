@@ -516,9 +516,6 @@ sub create_graphics
 	    $maxpos = $feature->stop;
 	}
 
-	my $tag	    = $table_row->{COLUMNS}[0];
-	my $source  = $table_row->{COLUMNS}[1];
-
 	if ($feature->group ne 'NOSHOW') {
 	    if ($feature->group =~ /^Sequence:/) {
 		if (!defined $full_seq) {
@@ -527,6 +524,9 @@ sub create_graphics
 			-end	=> $feature->end );
 		}
 	    } else {
+		my $tag	    = $table_row->{COLUMNS}{LABEL};
+		my $source  = $table_row->{COLUMNS}{SOURCE};
+
 		push(@{ $all{$source}->{$tag} },
 		    new Bio::SeqFeature::Generic(
 			-start	    => $feature->start,
@@ -828,13 +828,13 @@ sub result_page
 
 		foreach my $feature ($reply->results) {
 		    my %table_row = (
-			COLUMNS => [
-			    $feature->group,	    # Label
-			    $source->{NAME},	    # Source
-			    $feature->type->label,  # Description
-			    $feature->start,	    # Start
-			    $feature->stop,	    # Stop
-			    $feature->score ],	    # Score
+			COLUMNS => {
+			    LABEL   => $feature->group,		# Label
+			    SOURCE  => $source->{NAME},		# Source
+			    DESCR   => $feature->type->label,	# Description
+			    START   => $feature->start,		# Start
+			    STOP    => $feature->stop,		# Stop
+			    SCORE   => $feature->score },	# Score
 			FEATURE => $feature,	# Yes, this will duplicate
 						# some of the data...
 			COLOUR	=> $source->{COLOUR} );
@@ -877,39 +877,47 @@ sub result_page
 
     # Column 5 (score) is a special case.
 
-    if ($sort1 == 5) {
+    if ($sort1 eq 'SCORE') {
 	$table = [ sort {
-	    substr($a->{COLUMNS}[2], 0, 1 + index($a->{COLUMNS}[2], ':')) cmp
-	    substr($b->{COLUMNS}[2], 0, 1 + index($b->{COLUMNS}[2], ':')) ||
-	    $a->{COLUMNS}[5] <=> $b->{COLUMNS}[5] } @{ $table } ];
+	    substr($a->{COLUMNS}{DESCR}, 0,
+		1 + index($a->{COLUMNS}{DESCR}, ':')) cmp
+	    substr($b->{COLUMNS}{DESCR}, 0,
+		1 + index($b->{COLUMNS}{DESCR}, ':')) ||
+	    $a->{COLUMNS}{SCORE} <=> $b->{COLUMNS}{SCORE} } @{ $table } ];
     } else {
-	if ($sort1 <= 2) {
-	    if ($sort2 <= 2) {
+	if ($sort1 eq 'LABEL'  ||
+	    $sort1 eq 'SOURCE' ||
+	    $sort1 eq 'DESCR') {
+	    if ($sort2 eq 'LABEL'  ||
+		$sort2 eq 'SOURCE' ||
+		$sort2 eq 'DESCR') {
 		$table = [ sort {
-		    $a->{COLUMNS}[$sort1] cmp
-		    $b->{COLUMNS}[$sort1] ||
-		    $a->{COLUMNS}[$sort2] cmp
-		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+		    $a->{COLUMNS}{$sort1} cmp
+		    $b->{COLUMNS}{$sort1} ||
+		    $a->{COLUMNS}{$sort2} cmp
+		    $b->{COLUMNS}{$sort2} } @{ $table } ];
 	    } else {
 		$table = [ sort {
-		    $a->{COLUMNS}[$sort1] cmp
-		    $b->{COLUMNS}[$sort1] ||
-		    $a->{COLUMNS}[$sort2] <=>
-		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+		    $a->{COLUMNS}{$sort1} cmp
+		    $b->{COLUMNS}{$sort1} ||
+		    $a->{COLUMNS}{$sort2} <=>
+		    $b->{COLUMNS}{$sort2} } @{ $table } ];
 	    }
 	} else {
-	    if ($sort2 <= 2) {
+	    if ($sort2 eq 'LABEL'  ||
+		$sort2 eq 'SOURCE' ||
+		$sort2 eq 'DESCR') {
 		$table = [ sort {
-		    $a->{COLUMNS}[$sort1] <=>
-		    $b->{COLUMNS}[$sort1] ||
-		    $a->{COLUMNS}[$sort2] cmp
-		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+		    $a->{COLUMNS}{$sort1} <=>
+		    $b->{COLUMNS}{$sort1} ||
+		    $a->{COLUMNS}{$sort2} cmp
+		    $b->{COLUMNS}{$sort2} } @{ $table } ];
 	    } else {
 		$table = [ sort {
-		    $a->{COLUMNS}[$sort1] <=>
-		    $b->{COLUMNS}[$sort1] ||
-		    $a->{COLUMNS}[$sort2] <=>
-		    $b->{COLUMNS}[$sort2] } @{ $table } ];
+		    $a->{COLUMNS}{$sort1} <=>
+		    $b->{COLUMNS}{$sort1} ||
+		    $a->{COLUMNS}{$sort2} <=>
+		    $b->{COLUMNS}{$sort2} } @{ $table } ];
 	    }
 	}
     }
@@ -979,18 +987,24 @@ sub result_page
 
     foreach my $table_row (@{ $table }) {
 	# Don't display the full sequence reply (good/bad?)
-	next if ($table_row->{COLUMNS}[0] =~ /^Sequence:/);
+	next if ($table_row->{COLUMNS}{LABEL} =~ /^Sequence:/);
 	# ... or if it is set to 'NOSHOW'
-	next if ($table_row->{COLUMNS}[0] eq 'NOSHOW');
+	next if ($table_row->{COLUMNS}{LABEL} eq 'NOSHOW');
 
 	# Make the first column the link.
-	$table_row->{COLUMNS}[0] = $cgi->a({
+	$table_row->{COLUMNS}{LABEL} = $cgi->a({
 	    -href => $table_row->{FEATURE}->link },
-	    $table_row->{COLUMNS}[0]);
+	    $table_row->{COLUMNS}{LABEL});
 
 	print $cgi->Tr($cgi->td( {
 	    -style => 'background:' . $table_row->{COLOUR} }, '&nbsp;' ),
-	    $cgi->td($table_row->{COLUMNS}));
+	    $cgi->td([
+		$table_row->{COLUMNS}{LABEL},
+		$table_row->{COLUMNS}{SOURCE},
+		$table_row->{COLUMNS}{DESCR},
+		$table_row->{COLUMNS}{START},
+		$table_row->{COLUMNS}{STOP},
+		$table_row->{COLUMNS}{SCORE} ] ));
     }
 
     print $cgi->Tr($cgi->td({ -colspan => 6 }, '&nbsp;' ));
@@ -1002,15 +1016,16 @@ sub result_page
 	$cgi->td({ -colspan => 2 },
 	$cgi->radio_group(
 	    -name	=> 'SORT1',
-	    -values	=> [ 0, 1, 2, 3, 4, 5 ],
+	    -values	=> [ 'LABEL', 'SOURCE', 'DESCR',
+			     'START', 'STOP', 'SCORE' ],
 	    -labels	=> {
-		0	=> ' Label',
-		1	=> ' Source',
-		2	=> ' Description',
-		3	=> ' Start',
-		4	=> ' Stop',
-		5	=> ' Score' },
-	    -default	=> 1 ) ),
+		LABEL	=> ' Label',
+		SOURCE	=> ' Source',
+		DESCR	=> ' Description',
+		START	=> ' Start',
+		STOP	=> ' Stop',
+		SCORE	=> ' Score' },
+	    -default	=> 'SOURCE' ) ),
 	$cgi->td({
 	    -rowspan	=> 2,
 	    -colspan	=> 2,
@@ -1023,15 +1038,16 @@ sub result_page
 	$cgi->td({ -colspan => 2 },
 	$cgi->radio_group(
 	    -name	=> 'SORT2',
-	    -values	=> [ 0, 1, 2, 3, 4, 5 ],
+	    -values	=> [ 'LABEL', 'SOURCE', 'DESCR',
+			     'START', 'STOP', 'SCORE' ],
 	    -labels	=> {
-		0	=> ' Label',
-		1	=> ' Source',
-		2	=> ' Description',
-		3	=> ' Start',
-		4	=> ' Stop',
-		5	=> ' Score' },
-	    -default	=> 3 ) ));
+		LABEL	=> ' Label',
+		SOURCE	=> ' Source',
+		DESCR	=> ' Description',
+		START	=> ' Start',
+		STOP	=> ' Stop',
+		SCORE	=> ' Score' },
+	    -default	=> 'START' ) ));
     $cgi->autoEscape(1);
     print $cgi->end_table, $cgi->end_form;
 
