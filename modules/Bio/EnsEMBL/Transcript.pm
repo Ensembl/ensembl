@@ -1131,4 +1131,14 @@ sub rna_pos {
     #return $mrna;
 }
 
+sub gene_name {
+     my ($self,$value) = @_;
+     
+     if( defined $value ) {
+          $self->{'_web_hack_gene_name'} = $value;
+     }
+     
+     return $self->{'_web_hack_gene_name'};
+}
+
 1;
