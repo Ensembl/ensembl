@@ -356,6 +356,7 @@ sub _objFromHashref {
     ( -id => $rowHash->{analysisId},
       -db => $rowHash->{db},
       -db_file => $rowHash->{db_file},
+      -db_version => $rowHash->{db_version},
       -program => $rowHash->{program},
       -program_version => $rowHash->{program_version},
       -program_file => $rowHash->{program_file},
@@ -425,6 +426,60 @@ sub create_tables {
     )
   } );
   $sth->execute();
+}
+
+=head2 update
+
+  Title   : update
+  Usage   : $adaptor->update(1, 'db => "swall"');
+  Function: updates a variable in an Analysis object
+  Returns : -
+  Args    : dbID, update string (col => 'newvalue')
+
+=cut
+
+sub update {
+  my ($self, $dbID, $update) = @_;
+  my ($str, $col, $val);
+
+  my @cols = split /,/, $update;
+  $self->throw("Must specify an update 'a => b'") unless (@cols);
+
+  my %allowed_variables = map { $_, 1 } qw{
+    analysisId
+    created
+    logic_name
+    db
+    db_version
+    db_file
+    program
+    program_version
+    program_file
+    parameters
+    module
+    module_version
+    gff_source
+    gff_feature
+  };
+
+  foreach (@cols) {
+    ($col, $val) = $_ =~ /(\S+)\s+=>\s+(.*)/;
+    $self->throw("Must specify an update 'a => b'")
+     unless ($col && $val =~ /\S/);
+    $self->throw("$col is not a Bio::EnsEMBL::Analysis variable")
+     unless (defined $allowed_variables{$col});
+    $str .= qq{ $col = $val,};
+  }
+  chop $str;
+
+  my $query  = qq{ UPDATE analysisprocess SET };
+  $query .= $str;
+  $query .= qq{ WHERE  analysisId = $dbID };
+
+  my $sth = $self->prepare($query);
+  my $rv  = $sth->execute();
+  $sth->finish;
+
 }
 
 1;
