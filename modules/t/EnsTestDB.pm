@@ -317,6 +317,7 @@ sub do_sql_file {
 	#so we can have them inside a string in the statement
 	#\s*\n, takes in account the case when there is space before the new line
         foreach my $s (grep /\S/, split /;[ \t]*\n/, $sql) {
+	    $s =~ s/\;\s*$//g;
             $self->validate_sql($s);
             $dbh->do($s);
             $i++

@@ -1,4 +1,8 @@
 
 
 
-INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (1,'dummy-contig',1,100,1,1,1);
+INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (1,'dummy-contig-1',1,100,1,1,1);
+
+INSERT into contig (contig_id,name,clone_id,length,offset,corder,dna_id) VALUES (2,'dummy-contig-2',1,100,201,1,2);
+
+INSERT into clone (clone_id,name,embl_acc,version,htg_phase) VALUES (1,'dummy-clone-1','dummy-embl-acc',12,2);

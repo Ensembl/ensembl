@@ -233,7 +233,9 @@ sub _fill_contig_from_arrayref {
   (defined $corder) && $contig->corder( $corder );
   (defined $international_name) && $contig->international_name( $international_name );
 
-  # these are lazy fetched
+  # maybe these should be lazy fetched...
+  $contig->_clone_id($clone_id);
+
   #my $clone = $self->db->get_CloneAdaptor->fetch_by_dbID($clone_id);
   #$contig->clone( $clone );
   

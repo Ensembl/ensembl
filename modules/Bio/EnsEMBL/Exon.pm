@@ -107,8 +107,8 @@ sub new {
 
   # add in EnsEMBL tag as 1.
 
-  $self->primary_tag('exon');
-  $self->source_tag('EnsEMBL');
+  #$self->primary_tag('exon');
+  #$self->source_tag('EnsEMBL');
 
   # Parse the input paramters (start,end,strand)
   if ($#args == 2) {

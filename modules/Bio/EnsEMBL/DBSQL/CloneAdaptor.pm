@@ -68,7 +68,7 @@ sub _generic_sql_fetch {
         . $where_clause .
         q{ ORDER BY embl_version DESC };
 
-    print STDERR "issue: $sql\n";
+    #print STDERR "issue: $sql\n";
 
     my $sth = $self->prepare($sql);
     $sth->execute;

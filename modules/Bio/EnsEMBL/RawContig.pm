@@ -237,11 +237,25 @@ sub clone {
   } else {
     if( ! defined $self->{_clone} &&
       defined $self->adaptor() ) {
-      $self->adaptor->fetch( $self );
+      if( !defined $self->_clone_id() ) {
+	$self->adaptor->fetch( $self);
+      }
+      $self->{_clone} = $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
     }
   }
   
   return $self->{_clone};
+}
+
+sub _clone_id {
+  my $self = shift;
+  my $arg = shift;
+  
+  if( defined $arg ) {
+    $self->{_clone_id} = $arg ;
+  }
+
+  return $self->{_clone_id};
 }
 
 sub length {
