@@ -197,7 +197,10 @@ sub connect {
    
     my $db;
     if ($locator eq "Bio::EnsEMBL::TimDB::Obj") {
-	$db = "$locator"->new(\@args);
+        my $args = "";
+	$db = "$locator"->new(-nogene  => $self->nogene,
+                              -freeze  => $self->freeze,
+                              \@args);
     } else { 
 	$db = new Bio::EnsEMBL::DBLoader($locator);
     }
@@ -351,6 +354,49 @@ sub totime {
 
     return $self->{_totime} || time;
 }
+
+=head2 nogene 
+
+  Title   : nogene
+  Usage   : 
+  Function: Flag used when connecting to TimDB which
+            says whether to get genes or not 
+  Returns : 0,1 
+  Args    : 0,1
+
+=cut
+
+sub nogene {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        $self->{_nogene} = $arg;
+    }
+
+    return $self->{_nogene} || 0;
+}
+
+=head2 freeze
+
+  Title   : freeze 
+  Usage   :
+  Function: Flag used when connecting to TimDB which
+            says which sequence freeze version to use
+  Returns : int 
+  Args    : int 
+
+=cut
+
+sub freeze {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        $self->{_freeze} = $arg;
+    }
+
+    return $self->{_freeze} || 0;
+}
+
 
 =head2 get_updated_objects
 
@@ -551,7 +597,9 @@ sub transfer_chunk {
         
         # Check if it is a gene
         elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-            $self->write_gene($todb,$arcdb,$object);
+            if ($self->nogene == 0) {
+              $self->write_gene($todb,$arcdb,$object);
+            }
         }
         
         # Check if it is an exon
@@ -662,12 +710,13 @@ sub write_clone {
         unless ($self->nowrite) {
             $db  ->write_Clone($object);
         }
-
+       
+        unless ($self->nogene) { 
         foreach my $gene ($object->get_all_Genes('evidence')) {
             $self->verbose &&  print STDERR "Getting all genes via clone get_all_Genes method\n";        
             $self->write_gene($db,$arcdb,$gene,'1');
         }
-
+        }
     } 
     
     else {
@@ -676,6 +725,7 @@ sub write_clone {
          
         if ($object->version > $rec_clone->version) {
             $self->verbose && print STDERR "Clone with new version, updating the database, and deleting the old version\n";
+            if ($self->nogene == 0) {
             print STDERR "Getting all genes from donor clone\n";
             my @new_genes=$object->get_all_Genes('evidence');
             print STDERR "Getting all genes from recipient clone\n";    
@@ -688,6 +738,7 @@ sub write_clone {
             }
             foreach my $gene (@new_genes) {
                 $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
+            }
             }
         }       
         elsif ($rec_clone->version > $object->version) {
