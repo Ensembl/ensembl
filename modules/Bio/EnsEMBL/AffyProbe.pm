@@ -39,7 +39,7 @@ use warnings;
 package Bio::EnsEMBL::AffyProbe;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange ) ;
-use Bio::EnsEMBL::Utils::Exception qw( throw );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
 use vars qw(@ISA);
 
@@ -53,55 +53,125 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my($arrays, $probenames, $probeset, $arraynames ) =
-      rearrange(['ARRAYS', 'PROBENAMES', 'PROBESET', 'ARRAYNAMES' ],
+  my($arrays, $probenames, $probeset, $arraynames, $arrayname, $probename, $array ) =
+      rearrange(['ARRAYS', 'NAMES', 'PROBESET', 'ARRAYNAMES', 'ARRAYNAME', 'NAME', 'ARRAY' ],
 		@_);
 
-  $self->arrays( $arrays ) if defined( $arrays );
-  $self->probenames( $probenames ) if defined $probenames;
-  $self->arraynames( $arraynames ) if $arraynames;
+  my $i;
+  if( $probenames && ref( $probenames ) eq "ARRAY") {
+      $i = scalar( @$probenames );
+  } elsif( defined $probename ) {
+    if( defined $arrayname ) {
+      $self->add_arrayname_probename( $arrayname, $probename );
+    } elsif( defined $array ) {
+      $self->add_Array_probename( $array, $probename );
+    } else {
+      throw( "Provide array or arrayname with probename" );
+    }
+  } else {
+      throw( "You need to provide probenames to generat a probe" );
+  }
 
-
+  # check the parameters and fill internal data structures
+  if( $arrays &&  ref( $arrays ) eq "ARRAY" ) {
+      if( scalar( @$arrays ) != $i ) {
+	  throw( "Need a probename for each array" );
+      }
+      for( $i = 0 ; $i < scalar( @$probenames ); $i++ ) {
+	  $self->add_Array_probename( $arrays->[$i], $probenames->[$i] );
+      }
+  } elsif( $arraynames && ref( $arraynames )) {
+      if( scalar( @$arraynames ) != $i ) {
+	  throw( "Need a probename for each array" );
+      }
+      for( $i = 0 ; $i < scalar( @$probenames ); $i++ ) {
+	  $self->add_arrayname_probename( $arraynames->[$i], $probenames->[$i] );
+      }
+  } elsif( ! defined $probename ) {
+      throw( "Need to provide arrays or names for a probe" );
+  }
+  
   $self->{'probeset'} = $probeset;
 
   return $self;
 }
 
 
-sub add_Array {
+sub add_Array_probename {
     my $self = shift;
     my ( $array, $probename ) = @_;
+    $self->{'arrays'} ||= {};
+    $self->{'arrays'}->{$array->name()} = $array;
+    $self->{'probenames'}->{$array->name()} = $probename;
 }
 
 sub get_all_AffyFeatures {
     my $self = shift;
+    if( $self->adaptor() && $self->dbID() ) {
+	
+    } elsif( defined $self->{'features'} ) {
+	return $self->{'features'};
+    } else {
+	warning( "Need to have attached features or database connection for that" );
+	return [];
+    }    
 }
 
 sub get_all_AffyArrays {
     my $self = shift;
+    if( defined $self->{'arrays'} ) {
+	return [values %{$self->{'arrays'}}];
+    } elsif( $self->adaptor() && $self->dbID()) { 
+	# retrieve them by name
+	my $array_adaptor = $self->adaptor()->db->get_AffyArrayAdaptor();
+    } else {
+	warning( "Need database connection to make Arrays from names" );
+	return [];
+    }
 }
+
 
 sub get_all_complete_names {
     my $self = shift;
+    my @result = ();
+
+    while( my ( $arrayname, $probename ) = each %{$self->{'probenames'}} ) {
+	push( @result , ($arrayname.":".$self->probeset().":".$probename));
+    }
+    return \@result;
 }
 
 sub get_complete_name {
     my $self = shift;
     my $arrayname = shift;
+
+    my $probename = $self->{'probenames'}->{$arrayname};
+    if(  ! defined $probename ) {
+	throw( "Unknown array name" );
+    } 
+    $probename = $arrayname.":".$self->probeset().":".$probename;
+    return $probename;
 }
 
 sub get_all_probenames {
     my $self = shift;
+    return [ values %{$self->{'probenames'}} ]
 }
 
 sub get_probename {
     my $self = shift;
     my $arrayname = shift;
+    my $probename = $self->{'probenames'}->{$arrayname};
+    if( ! defined $probename ) {
+	throw( "Unknown array name" );
+    }
+    return $probename;
 }
 
-sub add_array_name {
+sub add_arrayname_probename {
     my $self = shift;
-    my ( $affy_array, $probename ) = @_;
+    my ( $arrayname, $probename ) = @_;
+    $self->{'probenames'}->{$arrayname} = $probename;
 }
 
 
@@ -113,24 +183,7 @@ sub probeset {
     return $self->{'probeset'};
 }
 
-# lazy load this
-sub probe {
-    my $self = shift;
-    if( @_ ) {
-	my $probe = shift;
-	if( $probe ) {
-	    throw( "Need Bio::EnsEMBL::AffyProbe as probe" ) unless
-		(ref( $probe ) && $probe->isa( "Bio::EnsEMBL::AffyProbe" ));
-	}
-	$self->{'probe'} = $probe;
-    } else {
-	if( defined $self->adaptor() && $self->dbID() ) {
-	    $self->{'probe'} = $self->adaptor()->db()->
-		get_AffyProbeAdaptor()->fetch_by_AffyFeature( $self );
-	}
-    }
-    return $self->{'probe'};
-}
+1;
 
 
 

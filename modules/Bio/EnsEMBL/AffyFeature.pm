@@ -63,15 +63,22 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my($probe, $probeset ) =
-      rearrange(['PROBE', 'PROBESET'],
+  my($probe, $probeset, $mismatchcount ) =
+      rearrange(['PROBE', 'MISMATCHCOUNT' ],
 		@_);
 
   $self->{'probe'} = $probe;
-  $self->{'probeset'} = $probeset;
+  $self->{'mismatchcount'} = $mismatchcount;
 
   return $self;
 }
+
+sub new_fast {
+  my ( $class, $hashref )  = @_;
+
+  return bless( $hashref, $class );
+}
+
 
 
 # if the probe is set, take it from there
@@ -84,6 +91,19 @@ sub probeset {
     return $self->{'probeset'};
 }
 
+sub mismatchcount {
+    my $self = shift;
+    $self->{'mismatchcount'} = shift if @_;
+    return $self->{'mismatchcount'};
+}
+
+sub probelength {
+    my $self = shift;
+    $self->length();
+}
+
+
+
 # lazy load this
 sub probe {
     my $self = shift;
@@ -95,7 +115,9 @@ sub probe {
 	}
 	$self->{'probe'} = $probe;
     } else {
-	if( defined $self->adaptor() && $self->dbID() ) {
+	if( !defined $self->{'probe'} && 
+	    defined $self->adaptor() && 
+	    $self->dbID() ) {
 	    $self->{'probe'} = $self->adaptor()->db()->
 		get_AffyProbeAdaptor()->fetch_by_AffyFeature( $self );
 	}

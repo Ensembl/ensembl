@@ -42,7 +42,7 @@ use warnings;
 package Bio::EnsEMBL::AffyArray;
 
 use Bio::EnsEMBL::Utils::Argument;
-use Bio::EnsEMBL::Utils::Exception qw( throw );
+use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
 use vars qw(@ISA);
 
@@ -60,32 +60,53 @@ sub new {
     rearrange(['NAME', 'INCLUDED_IN', 'PROBECOUNT', 'SETSIZE'],
               @_);
 
-  $self->{'name'} = $name;
-  $self->{'superset'} = $superset;
+  $self->{'name'} = $name if(defined $name);
+  $self->{'superset'} = $superset if( defined $superset);
 
-  $self->{'probecount'}    = $probecount;
-  $self->{'setsize'} = $setsize;
+  $self->{'probecount'}    = $probecount if( defined  $probecount);
+  $self->{'setsize'} = $setsize if( defined $setsize );
 
   return $self;
 }
 
+sub get_all_AffyProbes {
+  my $self = shift;
+
+  if( $self->adaptor() && $self->dbID() ) {
+    my $probeAdaptor = $self->adaptor()->db()->get_AffyProbeAdaptor();
+    my $probes = $probeAdaptor->fetch_all_by_AffyArray( $self );
+    return $probes;
+  } else {
+    warning( "Need database connection to retrieve Probes" );
+    return [];
+  }
+}
 
     
 sub name {
     my $self = shift;
     $self->{'name'} = shift if( @_ );
+    if(( ! exists $self->{'name'}) && $self->{'dbID'} && $self->{'adaptor'} ) {
+	$self->adaptor->fetch_attributes( $self );
+    }
     return $self->{'name'};
 }
 
 sub setsize {
     my $self = shift;
     $self->{'setsize'} = shift if( @_ );
+    if(( ! exists $self->{'setsize'}) && $self->{'dbID'} && $self->{'adaptor'} ) {
+	$self->adaptor->fetch_attributes( $self );
+    }
     return $self->{'setsize'};
 }
 
 sub probecount {
     my $self = shift;
     $self->{'probecount'} = shift if( @_) ;
+    if(( ! exists $self->{'probecount'}) && $self->{'dbID'} && $self->{'adaptor'} ) {
+	$self->adaptor->fetch_attributes( $self );
+    }
     return $self->{'probecount'};
 }
 
@@ -98,6 +119,8 @@ sub superset {
 		(ref( $superset ) && $superset->isa( "Bio::EnsEMBL::AffyArray" ));
 	}
 	$self->{'superset'} = $superset;
+    } elsif (( ! exists $self->{'superset'}) && $self->{'dbID'} && $self->{'adaptor'} ) {
+	$self->adaptor->fetch_attributes( $self );
     }
     return $self->{'superset'};
 }
