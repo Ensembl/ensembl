@@ -35,7 +35,7 @@
      naming scheme, as 
 
        satellite_dbdump_bychr -litedb <litedbinstance> \
-           -mega 'homo_sapiens_\%s_110' [ -chr <a-chromosome> ] 
+           -all 'homo_sapiens_\%s_110' [ -chr <a-chromosome> ] 
      
      In this case, the %s will be replaced by all the known database
      types, and all will be dumped. Is the theory.
@@ -102,7 +102,7 @@ my $mousedb;
 #            'module:s'   => \$module,
             'chr:s'      => \$chr,
             'workdir:s'  => \$workdir,
-            'limit:n'    => \$lim,
+            'limit:n'    => \$lim,      # no more than so many rows (debugging)
             'family:s' => \$famdb,
             'disease:s' => \$diseasedb,
             'maps:s' => \$mapsdb,
@@ -111,7 +111,7 @@ my $mousedb;
             'embl:s' => \$embldb,
             'est:s' => \$estdb,
             'mouse:s' => \$mousedb,
-            'mega:s' => \$template,  #dump all known ones, using $template
+            'all:s' => \$template,  #dump all known ones, using $template
            );
 
 die "need a litedb; use -litedb something " unless $litedb;
