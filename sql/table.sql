@@ -1114,7 +1114,7 @@ CREATE TABLE meta_coord (
 
   table_name                  VARCHAR(40) NOT NULL,
   coord_system_id             INT NOT NULL,
-  max_length                  INT
+  max_length                  INT,
 
   UNIQUE(table_name, coord_system_id)
 
