@@ -55,96 +55,74 @@ sub fetch_all_by_Slice {
   my $slice_end   = $slice->chr_end();
   
   my $sth = $self->prepare(
-      "SELECT chr_start, chr_strand, 
-              refsnpid, tscid, hgbaseid, type
-       FROM   snp
-       WHERE  chr_name = ? AND chr_start >= ? AND chr_start <= ?");
+      "SELECT * from snp limit 1"
+  ); 
+  $sth->execute();
+  my $columns = $sth->{NAME};
+  my @COLUMN;
+  my %SNPS = (
+	'id_refsnp' => 'dbSNP',
+        'id_wi'     => 'WI',
+        'id_hgbase' => 'HGBASE',
+        'id_tsc'    => 'TSC-CSHL'
+  );
+  my $C = 9;
+  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, allele, snpclass, mapweight ";
+  foreach(@$columns) {
+    if($SNPS{$_}) {
+      $QUERY.= ", $_";
+      push @COLUMN, $SNPS{$_};
+    }
+  }
+  $QUERY .= " FROM snp WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
-  $sth->execute($slice->chr_name(), $slice_start, $slice_end);
+  $sth = $self->prepare( $QUERY ); 
+  warn( $QUERY, $slice->chr_name, $slice_start-1000, $slice_end, $slice_start );
+  $sth->execute($slice->chr_name(), $slice_start - 1000 , $slice_end, $slice_start);
   
-  my($chr_start, $chr_strand, $refsnpid, $tscid, $hgbaseid, $type); 
-  
-  $sth->bind_columns(\$chr_start, \$chr_strand, \$refsnpid, 
-		     \$tscid, \$hgbaseid, \$type);
-
   my @snps = ();  
 
   my %link_hash;
   my $link;
 
-  while($sth->fetch()) {
+  while(my $arrayref = $sth->fetchrow_arrayref()) {
+    
     my @links = ();
 
-    #Add db links to the snp variation object
-    unless($link = $link_hash{"dbSNP:$refsnpid"}) {
-      $link = Bio::EnsEMBL::DBEntry->new_fast( 
-		{'_dbname'     => 'dbSNP',
-		 '_primary_id' => $refsnpid });
-      $link_hash{"dbSNP:$refsnpid"} = $link;
-    }
-    push @links, $link;
-   
-    if ($hgbaseid) {
-      unless($link = $link_hash{"HGBASE:$hgbaseid"}) {
-	$link = Bio::EnsEMBL::DBEntry->new_fast( 
-		{'_dbname' => 'HGBASE',
-		 '_primary_id' => $hgbaseid});
-
-	$link_hash{"HGBASE:$hgbaseid"} = $link;
-      }
-      push @links, $link;
-    }
-    if ($tscid) {
-      unless($link = $link_hash{"TSC-CSHL:$tscid"}) {
-	$link = Bio::EnsEMBL::DBEntry->new_fast(
-		  {'dbname'      => 'TSC-CSHL',
-		   '_primary_id' => $tscid     });
-	$link_hash{"TSC-CSHL:$tscid"} = $link;
-      }
-      push @links, $link;
+    my $C = 10;
+    foreach( @COLUMN ) {
+       my $V = $arrayref->[$C];
+       if( $V && $V ne '' ) {
+         unless($link = $link_hash{"$_:$V"}) {
+           $link_hash{"$_:$V"} = 
+           $link = Bio::EnsEMBL::DBEntry->new_fast( 
+		{'_dbname'     => $_,
+		 '_primary_id' => $V }
+           );
+         }
+       }
+       $C++;
+       push @links, $link;
     }
 
     #create a snp object through a fast (hacky) constructor
     my $snp = Bio::EnsEMBL::SNP->new_fast(
-		  { '_gsf_start'  => $chr_start - $slice_start + 1,
-		    '_gsf_end'    => $chr_start - $slice_start + 1,
-		    '_snp_strand' => $chr_strand,
+		  { '_gsf_start'  => $arrayref->[1] - $slice_start + 1,
+		    '_gsf_end'    => $arrayref->[2] - $slice_start + 1,
+		    '_snp_strand' => $arrayref->[3],
 		    '_gsf_score'  => 1,
-		    '_type'       => $type ,
+		    '_type'       => $arrayref->[4],
+                    '_range_type' => $arrayref->[5],
+                    '_validated'  => $arrayref->[6],
+                    'alleles'    => $arrayref->[7],
+                    '_snpclass'   => $arrayref->[8],
+                    '_mapweight'  => $arrayref->[9],
 		    'link'        => \@links });
-
-
     push @snps, $snp;
   }
 	
   return \@snps;
 }
 
-
-
-
-=head2 fetch_by_Slice
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
-
-  return $self->fetch_all_by_Slice(@args);
-}
-
-    
-    
-    
 1;
 
-__END__
