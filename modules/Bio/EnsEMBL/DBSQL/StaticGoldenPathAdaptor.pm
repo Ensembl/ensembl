@@ -195,8 +195,9 @@ sub convert_fpc_to_chromosome {
 					    chr_start 
 				    FROM static_golden_path 
 				    WHERE fpcctg_name = '$fpc' 
-				    AND fpcctg_start = 1"
-				    );
+                                    ORDER by fpcctg_start LIMIT 1");
+#				    AND fpcctg_start = 1" 
+#				    );
     $sth->execute;
     my ($chr,$startpos) = $sth->fetchrow_array;
  
