@@ -307,10 +307,9 @@ sub write_dead_geneid{
 =cut
 
 sub write_seq{
-   my ($self,$id, $version, $type, $seq,$gene_id,$gene_version,$cid,$cv) = @_;
+   my ($self, $seq, $version, $type, $gene_id,$gene_version,$cid,$cv) = @_;
    
    $seq || $self->throw("Attempting to write a sequence without a sequence object!");
-   $id || $self->throw("Attempting to write a sequence without a sequence id!");
    $type || $self->throw("Attempting to write a sequence without a sequence type!");
    $version || $self->throw("Attempting to write a sequence without a sequence version number!");
    $seq ||  $self->throw("Attempting to write a sequence without a sequence!");
@@ -321,7 +320,6 @@ sub write_seq{
 
    my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence,clone_id,clone_version) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."','".$cid."','".$cv."')");
    $sth->execute();
-   $self->warn("Not good, BUG: Could not archive because $@");
 }
 =head2 delete_seq
 
