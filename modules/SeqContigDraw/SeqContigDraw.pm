@@ -282,7 +282,7 @@ sub draw_transcript
     my $image_comp_ref;
 
 
- # if it is a gene image
+  # if it is a gene image
     if (!defined $seq_len){ $image_param_ref=&Parameters::gene_image_par;$image_comp_ref=&Parameters::gene_image_components;}
              
     # if it is a contig image
@@ -296,11 +296,12 @@ sub draw_transcript
     my $substr;
 
   my @exons = sort { $a->start <=> $b->start } $trans->each_Exon();
+  #print STDERR join("\n", @exons);
+  
     foreach my $exon ( @exons )
     {
-    
-        if( defined $seq_len ){$len=$seq_len;}
-            else {$len=&transcript_length($trans);$fixed=1;}
+    	if( defined $seq_len ){$len=$seq_len;}
+        else {$len=&transcript_length($trans);$fixed=1;}
         if (!defined $seq_len && $new_gene_status==1){$substr=$exon->start;}
              
         my $width=1;
@@ -318,15 +319,16 @@ sub draw_transcript
             my @arg=($type,$width,$exon->strand,$image_param_ref);
             my ($y_start,$y_end)=&calc_y_coord(@arg);
     
-  # start drawing from first exon
+  			# start drawing from first exon
             if  ($type eq 'exon' || $new_gene_status !=1){
-    
-                # do not draw unless exons and introns are on the contig (contig image) or it is a gene image
-                if (!defined $seq_len || $exon->contig_id eq $contig_id){
-                $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$gd_col_ref->{$image_comp_ref->{$type}{color}});
-            }
+            # do not draw unless exons and introns are on the contig (contig image) or it is a gene image
+            	if (!defined $seq_len || $exon->contig_id eq $contig_id){
+                	$im->filledRectangle($x_start,$y_start,$x_end,$y_end,$gd_col_ref->{$image_comp_ref->{$type}{color}});
+            	}
                 # do not print map for a gene image
-           # if (defined $seq_len){&print_map($x_start,$y_start,$x_end,$y_end,$gene->id,$image_comp_ref->{$type}{link},$gene->id);}
+            	if (defined $seq_len){
+	    			#&print_map($x_start,$y_start,$x_end,$y_end,$exon->id,$image_comp_ref->{$type}{link},$exon->id);
+	    		}
             }
         } 
         # do not reset variables unless exons and introns are on the contig (contig image) or it is a gene image
