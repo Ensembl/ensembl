@@ -138,6 +138,21 @@ package main;
                    #File containing the submitted genes, see ensembl-genename/scripts for utility scripts
                    'submitted_genes' => '',
 
+                   #########
+                   #elegans#
+                   #########
+                   
+                   #File containing the wormbase names: ftp.sanger.ac.uk/pub/databases/wormpep/wormpep.table
+                   'eleg_nom' => '',
+
+                   ###########
+                   #zebrafish#
+                   ###########
+                   #Files containing the ZFIN names for zebrafish, available at: /nfs/team71/zfish/kj2/zebrafish/ZFIN  zfin_dblinks.txt and zfin_genes.txt
+                   'zeb_gene' => '',
+                
+                   'zeb_dblink' => '',
+
              ###################
              #Database handling#
              ###################
@@ -170,7 +185,7 @@ package main;
              #Organism related information#
              ##############################
 
-             #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
+             #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
              'organism' => 'anopheles',
