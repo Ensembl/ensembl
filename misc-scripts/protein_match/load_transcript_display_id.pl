@@ -45,7 +45,7 @@ $priority{'LocusLink'} = 100;
 if (!defined $organism) {    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
 }
 
-print STDERR "Connecting to the database...\n";
+print STDERR "Connecting to the database...$dbname $host\n";
 print STDERR "dealing with organism ".$organism."\n";
 
 
@@ -126,6 +126,27 @@ elsif ($organism eq "elegans") {
       my $gene = $geneadaptor->fetch_by_dbID($gene_id);
 	$gene->display_xref($xref_obj);
 	$geneadaptor->update($gene);
+     }
+    my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
+    my $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	$gene->display_xref($xref_obj);
+	$geneadaptor->update($gene);
+     }
+
+     my $query1 = "select t.transcript_id, x.xref_id from transcript_stable_id t, xref x, external_db e where t.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
+    my $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $trans = $transadaptor->fetch_by_dbID($gene_id);
+	$trans->display_xref($xref_obj);
+	$transadaptor->update($trans);
      }
     
 }

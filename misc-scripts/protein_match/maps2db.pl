@@ -549,22 +549,19 @@ if ($organism eq "elegans") {
   
   my $adaptor = $db->get_DBEntryAdaptor();
   
-  
+  my $db1 = "wormbase_gene";
+  my $db2 = "wormbase_transcript";
+  my $db3 = "wormpep_id";
+  my $db4 = "wormbase_pseudogene";
   my $query = "select t.translation_id, ts.stable_id, gs.stable_id, g.type from transcript t, gene_stable_id gs, transcript_stable_id ts, gene g where t.gene_id = gs.gene_id and t.transcript_id = ts.transcript_id and t.gene_id = g.gene_id";
-  if($type){
-   $query .= "and g.type != '$type'";
-  }
     my $sth = $db->prepare($query);
     $sth->execute();
     while (my @res = $sth->fetchrow) {
 	my $transl_dbid = $res[0];
 	my $transc_stable_id = $res[1];
 	my $gene_stable_id = $res[2];
-	
-	my $db1 = "wormbase_gene";
-	my $db2 = "wormbase_transcript";
-	my $db3 = "wormpep_id";
-       
+	my $gene_type = $res[3];
+	if($gene_type ne $type){
 	my $dbentry = Bio::EnsEMBL::DBEntry->new
 	    ( -adaptor => $adaptor,
 	      -primary_id => $gene_stable_id,
@@ -574,7 +571,7 @@ if ($organism eq "elegans") {
 	      -dbname => $db1);
 	$dbentry->status("KNOWNXREF");
 	if($transl_dbid == 0){
-	  die "have no translation_id $!";
+	  die "have no translation_id  for $transc_stable_id $!";
 	}
 	#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
 	$adaptor->store($dbentry,$transl_dbid,"Translation");
@@ -611,7 +608,18 @@ if ($organism eq "elegans") {
 	  #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
 	  $adaptor->store($ceentry,$transl_dbid,"Translation");
 	}
+      }else{
+	my $transdbentry = Bio::EnsEMBL::DBEntry->new
+	    ( -adaptor => $adaptor,
+	      -primary_id => $transc_stable_id,
+	      -display_id => $transc_stable_id,
+	      -version => 1,
+	      -release => 1,
+	      -dbname => $db4);
+	$transdbentry->status("PSEUDO");
+	$adaptor->store($transdbentry,$transl_dbid,"Transcript");
       }
+    }
   }
 
 sub usage {
