@@ -61,18 +61,18 @@ sub _initialize {
   my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
-  my ($dbobj,$id)=
+  my ($dbobj,$diskid)=
       $self->_rearrange([qw(DBOBJ
-			    ID
+			    DISKID
 			    )],@args);
 
-  $id      || $self->throw("Cannot make contig db object without id");
-  $dbobj   || $self->throw("Cannot make contig db object without db object");
+  $diskid  || $self->throw("Cannot make clone db object without id");
+  $dbobj   || $self->throw("Cannot make clone db object without db object");
 
   $dbobj->isa('Bio::EnsEMBL::SlimTim::Obj') || 
-      $self->throw("Cannot make contig db object with a $dbobj object");
+      $self->throw("Cannot make clone db object with a $dbobj object");
 
-  my $dir = $dbobj->_dir . "$id";
+  my $dir = $dbobj->_dir . "$diskid";
   if( ! -e $dir ) {
       $self->throw("Directory $dir does not exist - cannot load clones from it");
   }
@@ -87,7 +87,7 @@ sub _initialize {
   $self->{_sequence_hash} = {};
 
   $self->_dir($dir);
-  $self->id          ($id);
+  $self->disk_id($diskid);
   $self->fetch_sequences();
   $self->fetch_contigs();
   $self->fetch();
@@ -109,7 +109,7 @@ sub _initialize {
 
 sub fetch_sequences{
    my ($self) = @_;
-   my $file = $self->_dir . "/". $self->id.".seq"; 
+   my $file = $self->_dir . "/". $self->disk_id.".seq"; 
 
    if( !-e  $file ) {
        $self->throw("$file does not exist!");
@@ -180,6 +180,7 @@ sub fetch {
 
     $self->embl_version($sv);
     $self->embl_id     ($acc);
+    $self->id($acc);
     #$self->chromosome  ($chr);
     #$self->species     ($species);
     my $clonephase = $contig->clone_phase;
@@ -231,93 +232,6 @@ sub get_all_Contigs {
    return values %{$self->{_contig_hash}};
 }
 
-
-=head2 _parse_exon
-
- Title   : _parse_exon
-    (cut down version of routine in Legacyparser, using MappedExon.
-     Missing pepide, phase, etc.]
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub _parse_exon{
-    my ($self,$file,$contig_id) = @_;
-
-    my @exons;
-
-    my $fh = new FileHandle;
-    $fh->open($file) || 
-	$self->throw("Could not open file [", $file, "]");
-
-    my $id=$self->id;
-    my $disk_id=$self->disk_id;
-    
-    my $is = $fh->input_record_separator('>');
-    my $dis = <$fh>; # skip first record (dull!)
-    while( <$fh> ) {
-	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(\d{4}-\d\d-\d\d_[\d:]+)\s+(\d{4}-\d\d-\d\d_[\d:]+).*\n(.*)/  ) {
-	    my $e = $1;
-	    my $contigid = $2;
-	    my $start = $3;
-	    my $end = $4;
-	    my $phase = $5;
-	    my $created = &Bio::EnsEMBL::Analysis::LegacyParser::acetime($6,1);
-	    my $modified = &Bio::EnsEMBL::Analysis::LegacyParser::acetime($7,1);
-	    my $pep = $8;
-	    
-	    $pep =~ s/\s+//g;
-	    
-	    my($eid,$ever);
-	    if($e=~/^$EXON_ID_SUBSCRIPT(\d+)\.(\d+)/){
-		$eid=$EXON_ID_SUBSCRIPT.$1;
-		$ever=$2;
-	    }else{
-		$self->throw("Exon identifier could not be parsed: $eid");
-	    }
-
-	    # convert from disk_id to whatever internal clone_id is
-	    $contigid=~s/^$disk_id/$id/;
-	    my $cloneid=$contigid;
-	    $cloneid=~s/\.\d+$//;
-
-	    # if calling by contig, skip those that are wrong
-	    next if($contig_id && $contigid ne $contig_id);
-
-	    my $exon = Bio::EnsEMBL::MappedExon->new();
-	    $exon->id($eid);
-	    $exon->version($ever);
-
-	    $exon->contig_id($contigid);
-	    $exon->clone_id($cloneid);
-	    
-	    if( $end < $start ) {
-		my $s = $end;
-		$end = $start;
-		$start = $s;
-		$exon->strand(-1);
-	    } else {
-		$exon->strand(1);
-	    }
-
-	    $exon->start($start);
-	    $exon->end($end);
-	    
-	    $exon->created($created);
-	    $exon->modified($modified);
-	    push(@exons,$exon);
-	} else {
-	    chomp;
-	    $self->throw("Yikes. Line with > but not parsed! [$_]");
-	}
-    }
-    $fh->input_record_separator($is);
-    return @exons;
-}
 
 =head2 get_all_ContigOverlaps
 
@@ -470,88 +384,6 @@ sub htg_phase {
 	}
     }
     return $obj->{'_clone_htgsp'};
-}
-
-
-=head2 byacc
-
- Title   : byacc
- Usage   : $obj->byacc($newval)
- Function: 
- Returns : value of byacc
- Args    : newvalue (optional)
-
-
-=cut
-
-sub byacc{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'byacc'} = $value;
-    }
-    return $obj->{'byacc'};
-
-}
-
-
-=head2 compare_dna
-
- Title   : compare_dna
- Usage   : $obj->compare_dna($file)
- Function: 
- Returns : 1 if dna in $file is different (checksum comparision) to dna in clone object
- Args    : newvalue (optional)
-
-
-=cut
-
-sub compare_dna {
-    my $self = shift;
-    my $file = shift;
-
-    print "Comparing with $file\n";
-
-    my $seqio=Bio::SeqIO->new( '-format' => 'Fasta', -file => $file);
-
-    my $fseq;
-    my %contigs;
-    my $eflag=0;
-
-    my $id      = $self->id;
-    my $disk_id = $self->disk_id;
-
-    while ($fseq=$seqio->next_seq()){
-	my $seqid = $fseq->id; 
-	$seqid =~ s/^$disk_id/$id/;
-	my $seqlen   = $fseq->seq_len;
-	my $seq      = $fseq->seq;
-	my $checksum = unpack("%32C*",$seq) % 32767;
-
-	my $contig = $self->get_Contig($seqid);
-
-	if (defined($contig)) {
-	    my $checksum2 = $contig->checksum;
-	    $contigs{$seqid} = 1;
-	    
-	    if ($checksum == $checksum2){
-		print STDERR "Contig $seqid same in Ensembl: $checksum $checksum2\n";
-	    } else {
-		print STDERR "ERROR: Contig $seqid different in Ensembl: $checksum $checksum2\n";
-		$eflag=1;
-	    }
-	} else {
-	    print STDERR "ERROR: Contig $seqid not in Ensembl\n";
-	    $eflag=1;
-	}
-    }
-    
-    foreach my $contig ($self->get_all_ContigIds){
-	if(!$contigs{$contig}){
-	    print STDERR "ERROR: Contig $contig only in Ensembl\n";
-	}
-    }
-    return $eflag;
 }
 
 

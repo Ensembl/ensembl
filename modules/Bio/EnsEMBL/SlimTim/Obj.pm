@@ -89,7 +89,7 @@ sub get_Clone {
     my ($self,$id) = @_;
     
     # create clone object
-    my $clone = new Bio::EnsEMBL::SlimTim::Clone(-id => $id,
+    my $clone = new Bio::EnsEMBL::SlimTim::Clone(-diskid => $id,
 					       -dbobj => $self);
     
     return $clone;
@@ -117,3 +117,12 @@ sub _dir{
 }
 
 1;
+
+
+
+
+
+
+
+
+
