@@ -101,7 +101,7 @@ WHERE description = 'unknown';
 # those ones that are unknown.  (This table is local to our mysql session,
 # and is deleted automatically when it ends).
 CREATE TEMPORARY TABLE tmp_new_descriptions
-  SELECT gd.gene_id, f.description
+  SELECT gd.gene_id, CONCAT(f.description," [Source:ENSEMBL_PROTEIN_FAMILIES;Acc:",f.id,"]") as concat
   FROM family f, family_members fm, $merged_gene_desc_table gd
   WHERE gd.description ='unknown'
     AND fm.db_name ='$db_name'
