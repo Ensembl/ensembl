@@ -236,7 +236,13 @@ sub _initialize {
 		    $fok=1;
 		}else{
 		    # see if maps via a translation
-		    my($clone2)=$self->get_id_acc($clone,1);
+		    my $clone2;
+		    eval {
+		    ($clone2)=$self->get_id_acc($clone,1);
+		};
+		    if ($@) {
+			$self->warn("Clone $clone is not recognised or locked");
+		    }
 		    next if $clone2 eq 'unk';
 		    if($clones{$clone2}){
 			push(@okclones,$clone2);

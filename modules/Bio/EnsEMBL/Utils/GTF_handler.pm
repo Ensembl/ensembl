@@ -184,6 +184,7 @@ sub parse_file {
 	    $exon->id($id);
 	    $exon->version(1);
 	    $exon->contig_id($contig);
+	    $exon->seqname($contig);
 	    $exon->sticky_rank(1);
 	    $exons{$exon_num}=$exon;
 	}
@@ -224,7 +225,7 @@ sub _build_gene {
     #Only build genes if there are transcripts in the trans array
     #If translation start/end were not found, no transcript would be built!
     if ($trans_number > 1) {
-	print STDERR "Wow! Got multiple transcripts! Gene: $oldgene\n";
+	#print STDERR "Wow! Got multiple transcripts! Gene: $oldgene\n";
     }
     if ($trans_number) {
 	my $gene=Bio::EnsEMBL::Gene->new();
@@ -258,7 +259,7 @@ sub _build_gene {
 
 sub _build_transcript {
     my ($self,$trans_start,$trans_end,$oldtrans,%exons)=@_;
-
+    
     my $trans = Bio::EnsEMBL::Transcript->new;
     my $translation = Bio::EnsEMBL::Translation->new;
     $trans->id($oldtrans);
@@ -266,17 +267,36 @@ sub _build_transcript {
     my $time = time; chomp($time);
     $trans->created($time);
     $trans->modified($time);
-
     foreach my $num (keys%exons) {
 	#print STDERR "Adding exon ".$exons{$num}->id." to transcript\n";
 	$trans->add_Exon($exons{$num});
+	if ($exons{$num}->strand == 1) {
+	    
+	    if ($trans_start == $exons{$num}->start) {
+		$translation->start_exon_id($exons{$num}->id);
+	    }
+	    my $end=$exons{$num}->end-3;
+	    if ($trans_end == $end) {
+		$translation->end_exon_id($exons{$num}->id);
+	    }
+	}
+	else {
+	    if ($trans_start == $exons{$num}->end) {
+		$translation->start_exon_id($exons{$num}->id);
+	    }
+	    if ($trans_end == ($exons{$num}->start-3)) {
+		$translation->end_exon_id($exons{$num}->id);
+	    }
+	}
     }
+	
     if ($trans_start == undef) {
 	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
 	return;
     }
     #print STDERR "Adding translation start $trans_start\n";
     $translation->start($trans_start);
+    
     if ($trans_end == undef) {
 	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
 	return;
@@ -333,21 +353,21 @@ sub dump_genes {
 		     $strand="-";
 		 }
 
-		print FILE $exon->seqname."   ensembl   exon   ".$exon->start."   ".$exon->end."   $score   $strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;   exon_number ".$c."\n"; 
+		print FILE $exon->contig_id."   ensembl   exon   ".$exon->start."   ".$exon->end."   $score   $strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;   exon_number ".$c."\n"; 
 		$c++;
 		if ($exon->id eq $start_exon_id) {
 		    $start_strand = "+";
 		    if ($exon->strand == -1) {
 			$start_strand = "-";
 		    }
-		    $start_seqname=$exon->seqname;
+		    $start_seqname=$exon->contig_id;
 		}
 		if ($exon->id eq $end_exon_id) {
 		    $end_strand="+";
 		    if ($exon->strand == -1) {
 			$end_strand = "-";
 		    }
-		    $end_seqname=$exon->seqname;
+		    $end_seqname=$exon->contig_id;
 		}
 	    }
 	    print FILE $start_seqname."   ensembl   start_codon   $start   $start_end   0   $start_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\n";

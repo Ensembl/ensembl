@@ -207,15 +207,17 @@ if ($feature) {
     foreach my $clone_id ( @clone ) {
 	print STDERR "Loading $clone_id\n";
 	eval {
-	    my $clone = $from_db->get_Clone($clone_id);
 	    my $oldclone;
 	    eval {
 		$oldclone = $to_db->get_Clone($clone_id);
 	    };
 	    if( $@ ) {
-		print STDERR "Clone ".$clone->id." not present in ensembl db!\n";
+		print STDERR "Clone $clone_id not present in ensembl db!\n";
+		next;
 	    } 
 	    elsif ($oldclone->version == 0) {
+		my $clone = $from_db->get_Clone($clone_id);
+		my $oldclone;
 		print STDERR "Writing features for clone ".$clone->id."\n";
 		foreach my $contig ($clone->get_all_Contigs) {
 		    my @features=$contig->get_all_SeqFeatures;
