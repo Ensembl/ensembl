@@ -16,8 +16,13 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 =head1 SYNOPSIS
 
-  $analysisAdaptor = $db_adaptor->getAnalysisAdaptor;
-  $analysisAdaptor = $analysisobj->getAnalysisAdaptor;
+  use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
+  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
+
+  $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor;
+
+  my $analysis = $analysis_adaptor->fetch_by_logic_name('genscan');
 
 
 =head1 DESCRIPTION
@@ -28,17 +33,12 @@ Bio::EnsEMBL::DBSQL::AnalysisAdaptor
 
 =head1 CONTACT
 
-    Contact Arne Stabenau on implemetation/design detail: stabenau@ebi.ac.uk
-    Contact Ewan Birney on EnsEMBL in general: birney@sanger.ac.uk
+  Post questions/comments to the EnsEMBL development list:
+  ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
-
-
-# Let the code begin...
 
 
 package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
@@ -50,7 +50,6 @@ use vars qw(@ISA);
 use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
 
 
 =head2 new
@@ -220,8 +219,8 @@ sub fetch_by_logic_name {
   $analysis = $self->_objFromHashref( $rowHashRef );
   
   #place the analysis in the caches, cross referenced by dbID and logic_name
-  $self->{_cache}{$analysis->dbID()} = $analysis;
-  $self->{_logic_name_cache}{lc($logic_name)} = $analysis;
+  $self->{_cache}->{$analysis->dbID()} = $analysis;
+  $self->{_logic_name_cache}->{lc($logic_name)} = $analysis;
 
   return $analysis;
 }
