@@ -789,7 +789,7 @@ sub get_all_ExternalGenes {
      if( $extf->can('get_Ensembl_Genes_contig_list')) {
 	     foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
 	       #print STDERR "Retrieved gene with ",$gene->id,"\n";
-	       $gene{$gene->id()} = $gene;
+	       $gene{$gene->dbID()} = $gene;
 	       #$gene{$gene->stable_id()} = $gene;
 	     }
        }
