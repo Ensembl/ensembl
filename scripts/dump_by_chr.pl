@@ -322,49 +322,99 @@ SELECT distinct e.*
        $satdb.exon e
  WHERE sgp.chr_name = '$chr'
    AND sgp.type = '$static_golden_path_type'
-   AND sgp.raw_id = e.contig
+   AND sgp.raw_id = e.contig_id
 ";
     dump_data($sql, $satdb, 'exon');
 
+    dump_data('to be done', $satdb, 'exon_stable_id');
+
+
+
+# dumping exon_transcript, transcript and supporting_feature used to be
+# able to make use of $litedb.gene_exon; replaced by big join. If 
+# gene_exon reappears, look at rev. 1.5 to find the old, prolly faster code
     $sql="
-SELECT distinct et.*
-  FROM $litedb.gene_exon ge,
+SELECT et.*
+  FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
+       $satdb.transcript tsc,
        $satdb.exon_transcript et
- WHERE ge.chr_name = '$chr'
-   AND ge.exon = et.exon
+ WHERE lg.chr_name = '$chr'
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = tsc.gene_id
+   AND tsc.transcript_id = et.transcript_id
 ";
     dump_data($sql, $satdb, 'exon_transcript');
 
     $sql="
-SELECT distinct tsc.*
-  FROM $litedb.gene_exon ge,
-       $satdb.exon_transcript et,
+SELECT tsc.*
+  FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
        $satdb.transcript tsc
- WHERE ge.chr_name = '$chr'
-       ge.exon = et.exon
-   and et.transcript = tsc.id
+ WHERE lg.chr_name = '$chr'
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = tsc.gene_id
 ";
     dump_data($sql, $satdb, 'transcript');
 
     $sql="
-SELECT distinct g.*
+SELECT tsi.*
   FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
+       $satdb.transcript tsc, 
+       $satdb.transcript_stable_id tsi
+ WHERE lg.chr_name = '$chr'
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = tsc.gene_id
+   AND tsc.transcript_id = tsi.transcript_id
+";
+    dump_data('to be done', $satdb, 'transcript_stable_id');
+
+    $sql="
+SELECT g.*
+  FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
        $satdb.gene g
- WHERE lg.chr_name = '$chr' 
-   AND lg.name = g.id
+ WHERE lg.chr_name = '$chr'
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = g.gene_id
 ";
     dump_data($sql, $satdb, 'gene');
 
     $sql="
-SELECT distinct trl.*
+SELECT gsi.*
   FROM $litedb.gene lg,
-       $litedb.gene_prot lgp,
+       $satdb.gene_stable_id gsi
+ WHERE lg.chr_name = '$chr'
+   AND lg.name = gsi.stable_id
+"
+    dump_data('to be done', $satdb, 'gene_stable_id');
+
+    $sql="
+SELECT trl.*
+  FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
+       $satdb.transcript tsc, 
        $satdb.translation trl
  WHERE lg.chr_name = '$chr'
-   AND lg.gene = lgp.gene
-   AND lgp.translation = trl.id
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = tsc.gene_id
+   AND tsc.translation_id = trl.translation_id
 ";
     dump_data($sql, $satdb, 'translation');
+
+    $sql="
+SELECT trlsi.*
+  FROM homo_sapiens_lite_120.gene lg,
+       ensembl110_new_schema_2.gene_stable_id gsi,
+       ensembl110_new_schema_2.transcript tsc, 
+       ensembl110_new_schema_2.translation_stable_id trlsi
+ WHERE lg.chr_name = 'chr21'
+   AND lg.name = gsi.stable_id
+   AND gsi.gene_id = tsc.gene_id
+   AND tsc.translation_id = trlsi.translation_id
+";
+    dump_data('to be done', $satdb, 'translation_stable_id');
 
     $sql="
 SELECT distinct pf.*
@@ -387,20 +437,28 @@ WHERE  lg.chr_name = '$chr'
     dump_data($sql, $satdb, 'genetype');
 
     $sql="
-SELECT distinct gd.* 
-FROM   $satdb.gene_description gd, 
-       $litedb.gene lg
+SELECT gd.* 
+FROM    $litedb.gene lg,
+        $satdb.gene_stable_id gsi,
+      $satdb.gene_description gd
 WHERE  lg.chr_name = '$chr'
-  AND  lg.name = gd.gene_id
+  AND  lg.name = gsi.stable_id
+  AND  gsi.gene_id = gd.gene_id
 ";
     dump_data($sql, $satdb, 'gene_description');
 
     $sql="
 SELECT distinct sf.*
-FROM   $litedb.gene_exon ge, 
+FROM   $litedb.gene lg, 
+       $satdb.gene_stable_id gsi,
+       $satdb.transcript tsc,
+       $satdb.exon_transcript et,
        $satdb.supporting_feature sf
-WHERE  ge.chr_name = '$chr'
-  AND  sf.exon  = ge.exon
+WHERE  lg.chr_name = '$chr'
+  AND  lg.name = gsi.stable_id
+  AND  gsi.gene_id = tsc.gene_id  
+  AND  tsc.transcript_id = et.transcript_id
+  AND  et.exon_id  = sf.exon_id
 ";
     dump_data($sql, $satdb, 'supporting_feature');
 
