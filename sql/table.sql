@@ -521,4 +521,52 @@ create table genomic_align_block (
        KEY (raw_id,raw_end)
        );
 
+#
+#Table structure for table objectXref
+#
 
+CREATE TABLE objectXref(
+       ensembl_id VARCHAR(40) not null, 
+       ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
+       xrefId INT not null,
+       PRIMARY KEY( ensembl_object_type, ensembl_id, xrefId ),
+       KEY xrefIdx( xrefId, ensembl_object_type, ensembl_id )
+   	);			
+
+#
+#Table structure for table Xref
+#
+
+CREATE TABLE Xref(
+         xrefId INT not null auto_increment,
+         externalDBId int not null,
+         dbprimary_id VARCHAR(40) not null,
+         version VARCHAR(10),
+	 description VARCHAR(255),
+         PRIMARY KEY( xrefId ),
+         KEY idIdx( dbprimary_id )
+   	);
+
+
+#
+#Table structure for table externalSynonym
+#
+
+CREATE TABLE externalSynonym(
+         xrefId INT not null,
+         synonym VARCHAR(40) not null,
+         PRIMARY KEY( xrefId, synonym ),
+	 KEY nameIdx( synonym )
+   	);
+
+#
+#Table structure for table externalDB 
+#
+
+CREATE TABLE externalDB(
+         externalDBId INT not null auto_increment,
+         db_name VARCHAR(40) not null,
+	 release VARCHAR(40),
+         url_pattern VARCHAR(255),
+         PRIMARY KEY( externalDBId ) 
+   	);
