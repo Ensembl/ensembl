@@ -1128,9 +1128,9 @@ sub get_all_compara_DnaAlignFeatures {
     return [];
   }
 
-  my $gaa = $compara_db->get_GenomicAlignAdaptor;
+  my $dafa = $compara_db->get_DnaAlignFeatureAdaptor;
 
-  return $gaa->fetch_DnaDnaAlignFeatures_by_Slice($self, $qy_species);
+  return $dafa->fetch_all_by_Slice($self, $qy_species);
 }
 
 
