@@ -98,7 +98,7 @@ use strict;
 # ContigI uses RootI.
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::Virtual::Map;
-
+use Bio::EnsEMBL::Virtual::PrimarySeq;
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
@@ -158,16 +158,35 @@ sub new {
       $self->_vmap->dbobj($focuscontig->dbobj);
       $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
     }
-
-
+    my $length=$leftsize+$rightsize;
+    print STDERR "CHECK!!!Got length $length\n";
+    $self->length($length);
     $self->_unique_number($VC_UNIQUE_NUMBER);
 
     return $self;
 }
 
-			 
+		 
 		    
 =head1 New Virtual::Contig functions.
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   : $seq = $contig->primary_seq();
+ Function: Gets a Bio::EnsEMBL::DB::VirtualPrimarySeq object out from the contig
+ Returns : Bio::EnsEMBL::VirtualPrimarySeq object
+ Args    : none
+
+=cut
+
+sub primary_seq {
+    my ($self) = @_;
+
+    my $vseq = Bio::EnsEMBL::Virtual::PrimarySeq->new( -vmap =>$self->_vmap, 
+						       -id =>$self->id						        );
+    return $vseq;
+}
 
 =head2 extend
 
@@ -349,7 +368,6 @@ sub top_SeqFeatures {
     return @f;
 }
 
-
 =head2 length
     
  Title   : length
@@ -363,10 +381,15 @@ sub top_SeqFeatures {
 =cut
 
 sub length {
-   my ($self,@args) = @_;
-   # I think this should be delegated to virtualprimaryseq when we make one
-   return $self->_vmap->left_size + $self->_vmap->right_size;
+    my $obj = shift;
+    
+    if( @_ ) {
+	my $value = shift;
+	$obj->{'length'} = $value;
+    }
+    return $obj->{'length'};
 }
+
 
 =head2 embl_accession
 

@@ -76,7 +76,15 @@ if( $rc1->id ne 'contig1' ) {
 
 $vc = $stadaptor->VirtualContig_by_fpc_name('ctg123');
 
-print "ok 7\n";
+my $vseq=$vc->primary_seq->subseq(10,20);
+print STDERR "Subseq from 2 to 3: ".$vseq->subseq(2,3)."\n";
+
+if( $vc->primary_seq->seq eq 'AAATTT' ) {
+    print "ok 7\n";
+} else {
+    print "not ok 7\n";
+}
+
 
 
 $vc2 = $stadaptor->VirtualContig_by_chr_name('chr2');

@@ -34,7 +34,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 # Let the code begin...
-package Bio::EnsEMBL::DB::VirtualPrimarySeq;
+package Bio::EnsEMBL::Virtual::PrimarySeq;
 use vars qw(@ISA);
 use strict;
 
@@ -46,33 +46,28 @@ use Bio::PrimarySeqI;
 @ISA = qw(Bio::Root::Object Bio::PrimarySeqI);
 
 sub new {
-    my ($class,$vmap,$length,$id) = @_;
+    my ($class,@args) = @_;
     
     my $self = {};
     bless $self,$class;
-
+    
+    my ($vmap,$id,$length) = 
+	$self->_rearrange([qw( 
+			       VMAP
+			       ID
+			       )],@args);
+    
     if (!$vmap->isa('Bio::EnsEMBL::Virtual::Map')) {
 	$self->throw("$vmap is not a Bio::EnsEMBL::DB::VirtualMap!");
     }
     if (! defined $id) {
 	$self->throw("Need to provide a unique number for the VirtualPrimarySeq id");
     }
-    if (! defined $length) {
-	$self->throw("Need to pass on the length of the vc");
-    }
-  
     $self->_vmap($vmap);
-
     $self->id($id);
     $self->primary_id($id);
     $self->display_id($id);
     $self->accession_number($id);
-    $self->length($length);
-
-    if (defined $clone) {
-	$self->_clone_map($clone);
-    }
-    
     return $self;
 }
 
@@ -140,7 +135,6 @@ sub accession_number {
 
 sub seq {
    my ($self) = @_;
-
    $self->throw("Needs to be reimplemented in subseq");
 
 }
@@ -164,12 +158,19 @@ sub subseq{
    if( $start > $end ){
        $self->throw("in subseq, start [$start] has to be greater than end [$end]");
    }
-   if( $start <= 0 || $end > $self->length ) {
-       $self->throw("You have to have start positive and length less than the total length of sequence");
+   if( $start <= 0) {
+       $self->throw("In subseq start must be positive");
    }
-
+   my @mapcontigs=$self->_vmap->get_all_MapContigs();
+   my $start_contig=shift(@mapcontigs);
+   print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
+   while ($start_contig->rawcontigstart < $start) {
+       $start_contig = shift(@mapcontigs);
+       print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
+   }
+   
    $self->throw("Not implemented yet!");
-
+   
 }
 
 =head2 moltype
@@ -269,9 +270,9 @@ sub _seq_cache{
  Returns : Bio::EnsEMBL::DB::VirtualMap object
  Args    : newvalue (optional)
 
-
+    
 =cut
-
+    
 sub _vmap{
     my ($obj,$value) = @_;
     
@@ -290,7 +291,7 @@ sub _vmap{
 
 
 =cut
-
+    
 sub _revcom{
     my ($self,$str)=@_;
     $str =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;

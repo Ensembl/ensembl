@@ -286,9 +286,18 @@ sub get_MapContig_by_id {
 =cut
 
 sub each_MapContig{
-   my ($self,@args) = @_;
+   my ($self,$reverse) = @_;
 
-   return values %{$self->{'_contig_map'}};
+   my @mapcontigs = values %{$self->{'_contig_map'}};
+
+   if ($reverse) {
+       @mapcontigs = sort { $b->start <=> $a->start} @mapcontigs;
+   }
+   else {
+       @mapcontigs = sort { $a->start <=> $b->start} @mapcontigs;
+   }
+
+   return (@mapcontigs);
 }
 
 =head2 right_overhang
