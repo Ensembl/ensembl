@@ -636,12 +636,12 @@ sub get_all_Genes {
     }
     
     foreach my $t ( values %trans ) {
-	if( exists $self->{'contig'}->{$exon{$t->start_exon_id}->contig_id} ) {
+	if( exists $self->{'contighash'}->{$exon{$t->start_exon_id}->contig_id} ) {
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
 	    $t->start($start);
 	}
 
-	if( exists $self->{'contig'}->{$exon{$t->end_exon_id}->contig_id} ) {
+	if( exists $self->{'contighash'}->{$exon{$t->end_exon_id}->contig_id} ) {
 	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
 	    $t->end($start);
 	}
@@ -751,7 +751,7 @@ sub skip_SeqFeature {
 sub rawcontig_ids {
    my ($self,@args) = @_;
 
-   return keys %{$self->{'contig'}};
+   return keys %{$self->{'contighash'}};
 }
 
 =head2 start_in_vc
@@ -1373,7 +1373,7 @@ sub _convert_seqfeature_to_vc_coords {
        $self->throw("sequence feature [$sf] has no seqname!");
    }
 
-   if( !exists $self->{'contig'}->{$cid} ) {
+   if( !exists $self->{'contighash'}->{$cid} ) {
        return undef;
    }
 
@@ -1383,6 +1383,11 @@ sub _convert_seqfeature_to_vc_coords {
    if( $#sub >=  0 ) {
        # chain to constructor of the object. Not pretty this.
        my $new = $sf->new();
+
+       if( $new->can('attach_seq') ) {
+	   $new->attach_seq($self->primary_seq);
+       }
+
        my $seen = 0;
        foreach my $sub ( @sub ) {
 	   $sub = $self->_convert_seqfeature_to_vc_coords($sub);
@@ -1429,20 +1434,6 @@ sub _convert_seqfeature_to_vc_coords {
    }
 
    $sf->seqname($self->id);
-
-   foreach my $f ($sf->sub_SeqFeature) {
-       my ($subrstart,$subrend,$subrstrand) = $self->_convert_start_end_strand_vc($cid,$f->start,$f->end,$f->strand);
-
-       $f->start ($subrstart);
-       $f->end   ($subrend);
-       $f->strand($subrstrand);
-
-       if( $sf->can('attach_seq') ) {
-	   $sf->attach_seq($self->primary_seq);
-       }
-       
-       $sf->seqname($self->id);
-   }
 
    return 1;
 }
