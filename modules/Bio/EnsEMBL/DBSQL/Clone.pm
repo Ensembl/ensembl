@@ -95,9 +95,121 @@ sub get_all_Genes{
    my ($self,@args) = @_;
    my @out;
    my $id = $self->id();
+   my @genes;
+
+   #
+   # A quick trip to the database to pull out from the neighbourhood the genes
+   # that might be on this clone.
+   #
+
+   my $sth = $self->_dbobj->prepare("select gene from geneclone_neighbourhood where clone = '$id'");
+   $sth->execute();
+   while( (my $hash = $sth->fetchrow_hashref()) ) {
+       push(@genes,$hash->{'gene'});
+   }
+
+
+   #
+   # A Gene/Clone Neighbourhood positive does not guarentee that a gene is
+   # actually on this clone. The SQL statement needs to double check this
+   #
+
+   foreach my $geneid ( @genes ) {
+       #
+       # The aim here is to get all the information for constructing the genes one
+       # juicy SQL statement, effectively removing multiple SQL statement gets from this
+       # construction.
+       #
+       
+       #
+       # I know this SQL statement is silly.
+       #
+       
+       $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id from contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+   
+       $sth->execute();
+       my $current_gene_id = '';
+       my $current_transcript_id = '';
+       my ($gene,$trans);
+       while( (my $arr = $sth->fetchrow_arrayref()) ) {
+	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid) = @{$arr};
+	   if( ! defined $phase ) {
+	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
+	   }
+
+	   if( $geneid != $current_gene_id ) {
+	       if( $transcriptid == $current_transcript_id ) {
+		   $self->throw("Bad internal error. Switching genes without switching transcripts");
+	       } 
+	       $gene = Bio::EnsEMBL::Gene->new();
+	       $gene->id($geneid);
+	       push(@out,$gene);
+	   }
+	   if( $transcriptid != $current_transcript_id ) {
+	       $trans = Bio::EnsEMBL::Transcript->new();
+	       $trans->id($transcriptid);
+	       my $translation = Bio::EnsEMBL::Translation->new();
+	       $translation->start($trans_start);
+	       $translation->end($trans_end);
+	       $translation->start_exon_id($trans_exon_start);
+	       $translation->end_exon_id($trans_exon_end);
+	       $translation->id($translationid);
+	       $gene->add_Transcript($trans);
+	   }
+	   
+	   my $exon = Bio::EnsEMBL::Exon->new();
+	   $exon->clone_id($id);
+	   $exon->contig_id($contigid);
+	   $exon->id($exonid);
+	   $exon->created($exoncreated);
+	   $exon->modified($exonmodified);
+	   $exon->start($start);
+	   $exon->end($end);
+	   $exon->strand($strand);
+	   $exon->phase($phase);
+	   
+	   #
+	   # Attach the sequence, cached if necessary...
+	   #
+	   
+	   my $seq;
+	   
+	   if( $self->_dbobj->_contig_seq_cache($exon->contig_id) ) {
+	       $seq = $self->_dbobj->_contig_seq_cache($exon->contig_id);
+	   } else {
+	       my $contig = $self->_dbobj->get_Contig($exon->contig_id());
+	       $seq = $contig->seq();
+	       $self->_dbobj->_contig_seq_cache($exon->contig_id,$seq);
+	   }
+	   
+	   $exon->attach_seq($seq);
+	   $trans->add_Exon($exon);
+       }
+   }
+
+   return @out;
+
+}
+
+=head2 get_all_Genes
+
+ Title   : get_all_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes_slow{
+   my ($self,@args) = @_;
+   my @out;
+   my $id = $self->id();
    my %got;
 
-   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
+   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2, geneclone_neighbourhood as p5 where p5.clone = '$id' and p5.gene = p3.gene and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
    
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {

@@ -47,6 +47,7 @@ use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Homol;
 use Bio::EnsEMBL::Analysis::Repeat;
 
@@ -191,7 +192,7 @@ sub _seq_cache{
 =cut
 
 sub get_all_SeqFeatures{
-   my ($self,$start,$end,$filter) = @_;
+   my ($self) = @_;
 
    my @array;
 
@@ -200,94 +201,69 @@ sub get_all_SeqFeatures{
 
    my %analhash;
 
-   $start  = 1       unless $start;
-   $end    = $length unless $end;
-
-   # Check the start and end coords are within the length
-   
-   $self->throw("Start-end coordinates ($start,$end) are outside the length ($length) of the contig $id\n") unless
-       ($start > 0 && $start <= $length && $end > $start && $end <= $length);
-   
-   
    # make the SQL query
 
    my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
-				    "from feature where contig = \"$id\""                . 
-				    " and seq_start >= $start and seq_end <= $end");
-   my $res = $sth->execute();
+				    "from feature where contig = '$id'");
+   $sth->execute();
+   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid);
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
 
-   FEAT: while( my $rowhash = $sth->fetchrow_hashref) {
-   
-       # EB. Removing this line.
-       #next FEAT unless $rowhash->{name} !~ /Repeat/;
-   
-       # Get the feature id
-       my $fid = $rowhash->{id};
+   while( $sth->fetch ) {
        my $out;
-       
-       if ($rowhash->{'hid'} ne '__NONE__' ) {
 
-	   $out = new Bio::EnsEMBL::Homol;
-	   
-	   my $homol = new Bio::SeqFeature::Homol(-start  => $rowhash->{hstart},
-						  -end    => $rowhash->{hend},
-						  -strand => 1,
-				
-						  );
-	   $homol->seqname   ($rowhash->{hid});						 
-	   $homol->source_tag($rowhash->{name});
-	   $homol->primary_tag('similarity');
-	   $homol->strand    ($rowhash->{strand});
+       if( $hid ne '__NONE__' ) {
+	   # is a paired feature
+	   # build EnsEMBL features and make the FeaturePair
+	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
+	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
 
-	   if( defined $rowhash->{score} ) {
-	       $homol->score($rowhash->{score});
+	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, -feature2 => $feature2);
+	   $out->hstart($hstart);
+	   $out->hend($hend);
+	   $out->hseqname($hid);
+	   $out->hsource_tag($name);
+	   $out->hprimary_tag('similarity');
+	   #$out->strand    ($strand);
+	   if( defined $score ) {
+	       $out->hscore($score);
 	   }
-
-	   $out->homol_SeqFeature($homol);
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
        }
 
       
        $out->seqname   ($id);
-       $out->start     ($rowhash->{seq_start});
-       $out->end       ($rowhash->{seq_end});
-       $out->strand    ($rowhash->{strand});
-       $out->source_tag($rowhash->{name});
+       $out->start     ($start);
+       $out->end       ($end);
+       $out->strand    ($strand);
+       $out->source_tag($name);
 
        $out->primary_tag('similarity');
 
-       if( defined $rowhash->{score} ) {
-	   $out->score($rowhash->{score});
+       if( defined $score ) {
+	   $out->score($score);
        }
-       #print("Creating feature\n");
-       # Now fetch the analysis
+
        my $analysis;
-       my $analid = $rowhash->{analysis};
 
-       if (!$analhash{$analid}) {
-	   #print("creating analysis " . $analid . "\n");
-
-	   $analysis = $self->_dbobj->get_Analysis($analid);
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
 	   
-	   $analhash{$analid} = $analysis;
+	   $analhash{$analysisid} = $analysis;
 
        } else {
-	   $analysis = $analhash{$rowhash->{analysis}};
+	   $analysis = $analhash{$analysisid};
        }
 
        $out->analysis($analysis);
-       #$out->add_tag_value('Analysis',$analysis);
-
-       if ($out->isa("Bio::SeqFeature::Homol")){ 
-	   $out->homol_SeqFeature->add_tag_value('Analysis',$analysis);
-       }
 
        # downcast to repeat for repeats. Not pretty.
-       
-       if( $out->source_tag() =~ /Repeat/ ) {
-	   bless $out, "Bio::EnsEMBL::Analysis::Repeat";
-       }
+       #
+       #if( $out->source_tag() =~ /Repeat/ ) {
+       #bless $out, "Bio::EnsEMBL::Analysis::Repeat";
+       #}
 
 
       push(@array,$out);

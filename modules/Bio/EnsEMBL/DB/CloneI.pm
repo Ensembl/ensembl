@@ -393,7 +393,11 @@ sub get_AnnSeq {
 	$hash_ref = {};
     }
 
+    print STDERR "Starting on the annseq build\n";
+
     @genes = $self->get_all_Genes();
+
+    print STDERR "Built genes\n";
     
     $seq = $self->seq();
     
@@ -412,9 +416,12 @@ sub get_AnnSeq {
         $as->add_SeqFeature($gh);
     }
 
+    print STDERR "Attached genes\n";
+
     # Add features to annseq object
     foreach my $contig ($self->get_all_Contigs) {
-    
+        print STDERR "Getting features for contig" .$contig->id."\n";
+
         # Coordinates retrieved are in Clone coordinate space
         # from the get_all_clone_SeqFeatures method
         foreach my $feature ($contig->get_all_clone_SeqFeatures) {
@@ -428,6 +435,7 @@ sub get_AnnSeq {
             $as->add_SeqFeature( $feature );
         }
     }
+    print STDERR "Built AnnSeq\n";
     return $as;
 }
 

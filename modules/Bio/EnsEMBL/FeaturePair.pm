@@ -102,7 +102,7 @@ use Bio::SeqFeature::FeaturePair;
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
 
   # set stuff in self from @args
   return $make; # success - we hope!
@@ -200,4 +200,45 @@ sub validate {
 	$self->throw("No analysis object defined");
     }
 }
+
+=head2 to_FTHelper
+
+ Title   : to_FTHelper
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub to_FTHelper{
+   my ($self) = @_;
+
+   # Make new FTHelper, and fill in the key
+   my $fth = Bio::AnnSeqIO::FTHelper->new;
+   $fth->key('similarity');
+   
+   # Add location line
+   my $g_start = $self->start;
+   my $g_end   = $self->end;
+   my $loc = "$g_start..$g_end";
+   if ($self->strand == -1) {
+        $loc = "complement($loc)";
+    }
+   $fth->loc($loc);
+   
+   # Add note describing similarity
+   my $type    = $self->hseqname;
+   my $r_start = $self->hstart;
+   my $r_end   = $self->hend;
+   $fth->add_field('note', "$type: matches $r_start to $r_end");
+   $fth->add_field('note', "score=".$self->score);
+   
+   
+   return $fth;
+}
+
+
 1;
