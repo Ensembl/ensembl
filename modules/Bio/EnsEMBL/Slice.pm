@@ -262,6 +262,8 @@ sub invert {
   my $strand = $self->strand();
 
   $self->strand(-$strand);
+
+  return $self;
 }
 
 

@@ -187,7 +187,7 @@ sub _objs_from_sth {
       if($slice_strand == -1) {
 	$feat_start  = $slice_end - $end + 1;
 	$feat_end    = $slice_end - $start + 1;
-	$feat_strand = -$strand;
+	$feat_strand = $strand * -1;
       } else {
 	$feat_start  = $start - $slice_start + 1;
 	$feat_end    = $end   - $slice_start + 1;

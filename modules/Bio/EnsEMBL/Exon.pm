@@ -271,18 +271,35 @@ sub _transform_between_Slices {
 		 "to chr " . $to_slice->chr_name());
   }
   
+  #create a copy of the old exon
   my $new_exon = new Bio::EnsEMBL::Exon;
   %$new_exon = %$self;
-
-  my $shift = $from_slice->chr_start() - $to_slice->chr_start();
 
   #unset the new exons supporting features
   $new_exon->{'_supporting_evidence'} = [];
 
-  #shift the start and end of the exon accordingly
-  #negative coordinates are permitted, as are coords past slice boundary
-  $new_exon->start($self->start() + $shift);
-  $new_exon->end($self->end() + $shift);
+  #calculate the exons position in the assembly
+  my ($exon_chr_start, $exon_chr_end, $exon_chr_strand);
+  if($from_slice->strand == 1) {
+    $exon_chr_start  = $self->start + $from_slice->chr_start - 1;
+    $exon_chr_end    = $self->end   + $from_slice->chr_start - 1;
+    $exon_chr_strand = $self->strand;
+  } else {
+    $exon_chr_start  = $from_slice->chr_end - $self->end   + 1;
+    $exon_chr_end    = $from_slice->chr_end - $self->start + 1;
+    $exon_chr_strand = $self->strand * -1;
+  } 
+
+  #now calculate the exons position on the new slice
+  if($to_slice->strand == 1) {
+    $new_exon->start($exon_chr_start - $to_slice->chr_start + 1);
+    $new_exon->end  ($exon_chr_end   - $to_slice->chr_start + 1);
+    $new_exon->strand($exon_chr_strand);
+  } else {
+    $new_exon->start($to_slice->chr_end - $exon_chr_end   + 1);
+    $new_exon->end  ($to_slice->chr_end - $exon_chr_start + 1);
+    $new_exon->strand($exon_chr_strand * -1);
+  }
 
   $new_exon->contig($to_slice);
 

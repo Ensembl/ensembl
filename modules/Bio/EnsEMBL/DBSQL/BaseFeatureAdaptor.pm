@@ -377,12 +377,11 @@ sub fetch_all_by_Slice_constraint {
     return $self->{'_slice_feature_cache'}{$key} = $features;
   }
 
-  #remapping has not been done, we have to do our own
+  #remapping has not been done, we have to do our own conversion from
+  # raw contig coords to slice coords
 
   my @out = ();
   
-  #convert the features to slice coordinates from raw contig coordinates
-
   my ($feat_start, $feat_end, $feat_strand); 
 
   foreach my $f (@$features) {
@@ -401,7 +400,7 @@ sub fetch_all_by_Slice_constraint {
     
     #shift the feature start, end and strand in one call
     if($slice_strand == -1) {
-      $f->move( $slice_end - $end + 1, $slice_end - $start + 1, -$strand );
+      $f->move( $slice_end - $end + 1, $slice_end - $start + 1, $strand * -1 );
     } else {
       $f->move( $start - $slice_start + 1, $end - $slice_start + 1, $strand );
     }

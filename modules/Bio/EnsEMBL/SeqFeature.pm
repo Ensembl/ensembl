@@ -1036,7 +1036,6 @@ sub transform {
 
     }
     else {
-
       # transform to raw_contig coords from Slice coords
       return $self->_transform_to_RawContig();
     }
@@ -1103,11 +1102,16 @@ sub _transform_to_Slice {
   }
 
   # mapped coords are on chromosome - need to convert to slice
-  my $global_start = $slice->chr_start;
+  if($slice->strand == 1) {
+    $self->start  ($mapped[0]->start - $slice->chr_start + 1);
+    $self->end    ($mapped[0]->end   - $slice->chr_start + 1);
+    $self->strand ($mapped[0]->strand);
+  } else {
+    $self->start  ($slice->end - $mapped[0]->end   + 1);
+    $self->end    ($slice->end - $mapped[0]->start + 1);
+    $self->strand ($mapped[0]->strand * -1);
+  }
 
-  $self->start  ($mapped[0]->start - $global_start + 1);
-  $self->end    ($mapped[0]->end   - $global_start + 1);
-  $self->strand ($mapped[0]->strand);
   $self->seqname($mapped[0]->id);
 
   #set the contig to the slice
@@ -1118,22 +1122,43 @@ sub _transform_to_Slice {
 
 
 sub _transform_between_Slices {
-  my ($self, $slice) = @_;
+  my ($self, $to_slice) = @_;
 
-  $self->throw("New contig [$slice] is not a Bio::EnsEMBL::Slice")
-   unless $slice->isa("Bio::EnsEMBL::Slice");
+  my $from_slice = $self->contig;
 
-  if ((my $c1 = $self->contig->chr_name) ne (my $c2 = $slice->chr_name)) {
+  $self->throw("New contig [$to_slice] is not a Bio::EnsEMBL::Slice")
+   unless $to_slice->isa("Bio::EnsEMBL::Slice");
+
+  if ((my $c1 = $from_slice->chr_name) ne (my $c2 = $to_slice->chr_name)) {
     $self->warn("Can't transform between chromosomes: $c1 and $c2");
     return;
   }
 
-  my $shift = $slice->chr_start - $self->contig->chr_start;
+  my($start, $end, $strand);
 
-  $self->start ($self->start  - $shift);
-  $self->end   ($self->end    - $shift);
-  $self->strand($self->strand * $slice->strand);
-  $self->contig($slice);
+  #first convert to assembly coords
+  if($from_slice->strand == 1) {
+    $start  = $from_slice->chr_start + $self->start - 1;
+    $end    = $from_slice->chr_start + $self->end   - 1;
+    $strand = $self->strand;
+  } else {
+    $start  = $from_slice->chr_end - $self->end   + 1;
+    $end    = $from_slice->chr_end - $self->start + 1;
+    $strand = $self->strand;
+  }
+
+  #now convert to the other slice's coords 
+  if($to_slice->strand == 1) {
+    $self->start ($start - $to_slice->chr_start + 1); 
+    $self->end   ($end   - $to_slice->chr_start + 1); 
+    $self->strand($strand);
+  } else {
+    $self->start ($to_slice->chr_end - $end   + 1);
+    $self->end   ($to_slice->chr_end - $start + 1);
+    $self->strand($strand * -1);
+  }
+
+  $self->contig($to_slice);
 
   return $self;
 }
@@ -1145,20 +1170,32 @@ sub _transform_to_RawContig {
   $self->throw("can't transform coordinates of $self without a contig defined")
    unless $self->contig;
 
-  my $dbh = $self->contig->adaptor->db;
+  my $slice = $self->contig;
 
-  my $mapper = $dbh->get_AssemblyMapperAdaptor->
-   fetch_by_type($self->contig->assembly_type);
+  my $dbh = $slice->adaptor->db;
+
+  my $mapper = 
+    $dbh->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
   my $rca = $dbh->get_RawContigAdaptor;
 
-  # need to convert to chromosomal coords before mapping
-  my $global_start = $self->contig->chr_start;
+  #first convert the features coordinates to assembly coordinates
+  my($start, $end, $strand);
+  if($slice->strand == 1) {
+    $start  = $slice->chr_start + $self->start - 1;
+    $end    = $slice->chr_start + $self->end   - 1;
+    $strand = $self->strand;
+  } else {
+    $start = $slice->chr_end - $self->end   + 1;
+    $end   = $slice->chr_end - $self->start + 1;
+    $strand = $self->strand * -1;
+  }
 
+  #convert the assembly coordinates to RawContig coordinates
   my @mapped = $mapper->map_coordinates_to_rawcontig(
-    $self->contig->chr_name,
-    $self->start  + $global_start - 1,
-    $self->end    + $global_start - 1,
-    $self->strand * $self->contig->strand
+    $slice->chr_name,
+    $start,
+    $end,
+    $strand
   );
 
   unless (@mapped) {
@@ -1214,7 +1251,7 @@ sub _transform_to_RawContig {
     }
 
     unless ($self->is_splittable) {
-        print STDERR "Feature spans >1 raw contig - can't split\n";
+        $self->warn("Feature spans >1 raw contig - can't split\n");
         return;
     }
 
