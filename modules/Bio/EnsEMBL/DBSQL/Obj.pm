@@ -1173,6 +1173,9 @@ sub write_Gene{
 
    if ( $@ || ($gene->version > $old_gene->version)) {
 
+       !$gene->created() && $gene->created(0);
+       !$gene->modified() && $gene->modified(0);
+
        my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
 				 $gene->id()     . "','".
 				 $gene->version  . "',FROM_UNIXTIME(".
