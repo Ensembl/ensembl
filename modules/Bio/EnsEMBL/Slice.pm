@@ -822,7 +822,7 @@ sub get_all_Attributes {
     return [];
   }
 
-  my $attribute_adaptor = $self->db->get_AttributeAdaptor();
+  my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
 
   if( defined $attrib_code ) {
     @results = grep { uc($_->code()) eq uc($attrib_code) }  
