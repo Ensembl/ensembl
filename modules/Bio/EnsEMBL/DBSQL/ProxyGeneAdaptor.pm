@@ -40,15 +40,15 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 #implement the interface GeneAdaptorI
-use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
+# use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
 sub new {
   my($class, $db, $core_adaptor) = @_;
 
   #call superclass constructor
   my $self = $class->SUPER::new($db);
-
   $self->{'_core_adaptor'} = $core_adaptor;
+  return $self;
 }
 
 sub fetch_by_Slice {
@@ -64,6 +64,22 @@ sub fetch_by_Slice {
   #otherwise use the core database
   return $self->{'_core_adaptor'}->fetch_by_Slice(@args);
 }
+
+
+sub fetch_by_transcript_stable_id {
+  my ($self, @args) = @_;
+
+  my $lite_db = $self->db()->lite_DBAdaptor();
+  
+  if(defined $lite_db) {
+    #use the Lite database if it is available
+    return $lite_db->get_GeneAdaptor()->fetch_by_transcript_stable_id(@args);
+  }
+  
+  #otherwise use the core database
+  return $self->{'_core_adaptor'}->fetch_by_transcript_stable_id(@args);
+}
+
 
 sub list_geneIds {
    my ($self, @args) = @_;
@@ -88,8 +104,17 @@ sub fetch_by_dbID {
 
 sub fetch_by_stable_id{
   my ($self, @args) = @_;
+  print STDERR ( "ProxyGeneAdaptor is called.\n" );
 
-  #use core db
+  my $lite_db = $self->db()->lite_DBAdaptor();
+  
+  if(defined $lite_db) {
+    #use the Lite database if it is available
+    print STDERR "Lite Database used for fetch_by_stable_id.\n" ; 
+    return $lite_db->get_GeneAdaptor()->fetch_by_stable_id(@args);
+  }
+  
+  #otherwise use the core database
   return $self->{'_core_adaptor'}->fetch_by_stable_id(@args);
 }
 
