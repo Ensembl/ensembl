@@ -1,0 +1,125 @@
+package PACKAGE_LABEL;
+
+# Fields are read from the database in the order specified in
+# @selection_list, they can then be modified, after loading, in the
+# function modify_loaded_values() before being written to a file.  
+
+# If the fields to be read are different to that list in #
+# @selection_list then edit the list. Similarly if the values need #
+# modifying before being saved change modify_loaded_values().
+
+use DBI;
+use strict;
+use Getopt::Long;
+
+# @row is a global array used to hold row of data read from data
+# base.It can be modified in modify_loaded_values() before writing to 
+# file as tab separated fields.
+
+my @row; 
+my $verbose;
+
+
+# *********************************************************************
+# INPUT PARAMETERS
+#
+my $old_tables="OLD_TABLE_NAME";
+my $where="";
+INPUT_ARRAY
+# *********************************************************************  
+
+# *********************************************************************  
+# MODIFY VALUES LOADED IN BEFORE WRITING TO FILE
+sub modify_loaded_values {
+  @row[0] = ensembl_id_to_int(@row[0]);
+}
+# *********************************************************************  
+
+
+# *********************************************************************
+# TARGET SQL DATABASE TABLE
+#OUTPUT_TABLE_CREATE_STATEMENT
+# *********************************************************************
+	
+
+
+main();
+
+
+sub main {
+  # Handle command line params
+  my $num_rows;
+  my $all;
+
+  GetOptions("num_rows:i" => \$num_rows,
+	     "all" => \$all,
+	     "verbose" => \$verbose);
+
+  my $limit = ($num_rows) ? "limit $num_rows" : "limit 10";
+  my $limit = ($all) ? "" : $limit;
+
+  my $file_contents = export($old_tables, CONNECTION_STRING, USER, PASSWORD, $limit); 
+
+  # Write the export program to a file.
+  open(OUTHANDLE, ">OUT_FILE_PATH");
+  print OUTHANDLE $file_contents;
+  close(OUTHANDLE);
+
+  if ($verbose) {print $file_contents;}
+  
+}
+
+
+sub ensembl_id_to_int {
+  my $old_id = shift;
+  $old_id =~ /[\D|0]*(\d*)/;
+  return $1;
+}
+
+sub chr_name_to_int {
+  (my $v) = @_;
+  $v =~ s/chr//; # remove chr from string
+  if ($v eq "x" || $v eq "X") {$v = 23} # map chr X to 23
+  elsif ($v eq "y" || $v eq "Y") {$v = 24; } # map chr Y to 24
+  return $v;
+}
+
+sub export {
+  ( my $table,
+    my $connection_string,
+    my $user,
+    my $password,
+    my $limit ) = @_;
+  
+  my $db_old = DBI->connect ($connection_string, $user, $password); 
+  if (!$db_old) {
+    print "Error connecting to old database; $DBI::errstr\n";
+    exit 1;
+  }
+  
+  # Construct the list of values to retrieve.
+  my $selection_list;
+  $selection_list = join(", ", @selection_list);
+
+  # Get the old format data
+  my $cmd = "select $selection_list from $table $where $limit";
+  if ($verbose) {print "SQL query : " . $cmd . "\n";}
+  $db_old->prepare($cmd);
+
+  my $sth_old = $db_old->prepare($cmd);
+  $sth_old->execute;
+  
+  my $export_program = "";
+  while ((@row) = $sth_old->fetchrow_array) {
+    modify_loaded_values();
+    $export_program .=  join("\t", @row) . "\n";
+  }
+
+  $sth_old->finish();
+  $db_old->disconnect();
+  
+  return $export_program;
+}
+
+
+1;
