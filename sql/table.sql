@@ -1201,3 +1201,74 @@ CREATE TABLE density_type (
   UNIQUE(analysis_id, block_size)
 
 ) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_region'
+#
+
+CREATE TABLE regulatory_region (
+
+  regulatory_region_id  INT NOT NULL auto_increment,
+  name                  VARCHAR(255) NOT NULL,
+  seq_region_id         INT NOT NULL,                  # FK refs seq_region
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  seq_region_strand     TINYINT NOT NULL,
+  analysis_id           INT NOT NULL,                  # FK refs analysis
+  regulatory_motif_id   INT,                           # FK refs regulatory_motif
+  type                  ENUM('miRNA_target', 'promoter'),
+  influence             ENUM('positive', 'negative', 'mixed', 'unknown'),
+
+  PRIMARY KEY(regulatory_region_id)
+
+) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_motif'
+#
+
+CREATE TABLE regulatory_motif (
+
+  regulatory_motif_id   INT NOT NULL auto_increment,
+  name                  VARCHAR(255) NOT NULL,
+
+  PRIMARY KEY(regulatory_motif_id)
+
+) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_region_object'
+#
+# Relates regulatory regions to the Ensembl objects they influence. Many-many.
+
+CREATE TABLE regulatory_region_object (
+
+  regulatory_region_id  INT NOT NULL,               # FK to regulatory_region
+  ensembl_object_type   ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
+  ensembl_object_id     INT NOT NULL,               # FK to transcript,gene etc
+
+  KEY regulatory_region_idx (regulatory_region_id),
+  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
+
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'peptide_regulatory_region'
+#
+
+CREATE TABLE peptide_regulatory_region (
+
+  translation_id        INT NOT NULL,                # FK to translation
+  regulatory_region_id  INT NOT NULL,                # FK to regulatory_region
+
+  KEY translation_idx (translation_id),
+  KEY regulatory_region_idx (regulatory_region_id)
+
+) TYPE=MyISAM;
+
+
