@@ -268,6 +268,110 @@ sub fetch_all_by_domain {
 
 
 
+=head2 fetch_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch genes on.
+  Arg [3]    : (optional) boolean $load_transcripts
+               if true, transcripts will be loaded immediately rather than
+               lazy loaded later.
+  Example    : @genes = @{$gene_adaptor->fetch_all_by_Slice()};
+  Description: Overrides superclass method to optionally load transcripts
+               immediately rather than lazy-loading them later.  This
+               is more efficient when there are a lot of genes whose
+               transcripts are going to be used.
+  Returntype : reference to list of transcripts
+  Exceptions : thrown if exon cannot be placed on transcript slice
+  Caller     : Slice::get_all_Transcripts
+
+=cut
+
+sub fetch_all_by_Slice {
+  my $self  = shift;
+  my $slice = shift;
+  my $logic_name = shift;
+  my $load_exons = shift;
+
+  my $genes = $self->SUPER::fetch_all_by_Slice($slice, $logic_name);
+
+  # if there are 0 or 1 genes still do lazy-loading
+  if(!$load_exons || @$genes < 2) {
+    return $genes;
+  }
+
+  # preload all of the transcripts now, instead of lazy loading later
+  # faster than 1 query per transcript
+
+  # get extent of region spanned by transcripts
+  my ($min_start, $max_end);
+  foreach my $g (@$genes) {
+    if(!defined($min_start) || $g->start() < $min_start) {
+      $min_start = $g->start();
+    }
+    if(!defined($max_end) || $g->end() > $max_end) {
+      $max_end   = $g->end();
+    }
+  }
+
+  $min_start += $slice->start() - 1;
+  $max_end   += $slice->start() - 1;
+
+  my $ext_slice;
+
+  if($min_start >= $slice->start() && $max_end <= $slice->end()) {
+    $ext_slice = $slice;
+  } else {
+    my $sa = $self->db()->get_SliceAdaptor();
+    $ext_slice = $sa->fetch_by_region
+      ($slice->coord_system->name(), $slice->seq_region_name(),
+       $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
+  }
+
+  # associate transcript identifiers with genes
+
+  my %g_hash = map {$_->dbID => $_} @$genes;
+
+  my $g_id_str = '(' . join(',', keys %g_hash) . ')';
+
+  my $sth = $self->prepare("SELECT gene_id, transcript_id " .
+                           "FROM   transcript " .
+                           "WHERE  gene_id IN $g_id_str");
+
+  $sth->execute();
+
+  my ($g_id, $tr_id);
+  $sth->bind_columns(\$g_id, \$tr_id);
+
+  my %tr_g_hash;
+
+  while($sth->fetch()) {
+    $tr_g_hash{$tr_id} = $g_hash{$g_id};
+  }
+
+  $sth->finish();
+
+  my $ta = $self->db()->get_TranscriptAdaptor();
+  my $transcripts = $ta->fetch_all_by_Slice($ext_slice,1);
+
+  # move transcripts onto gene slice, and add them to genes
+  foreach my $tr (@$transcripts) {
+    $tr = $tr->transfer($slice) if($slice != $ext_slice);
+
+    if(!$tr) {
+      throw("Unexpected. Transcript could not be transfered onto Gene slice.");
+    }
+
+    $tr_g_hash{$tr->dbID()}->add_Transcript($tr);
+  }
+
+  return $genes;
+}
+
+
+
+
+
+
 =head2 fetch_by_transcript_id
 
   Arg [1]    : int $transid

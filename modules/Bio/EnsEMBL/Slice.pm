@@ -1250,9 +1250,18 @@ sub get_all_SNPs_transcripts {
 =head2 get_all_Genes
 
   Arg [1]    : (optional) string $logic_name
-               The name of the analysis used to generate the genes to retrieve 
+               The name of the analysis used to generate the genes to retrieve
+  Arg [2]    : (optional) string $dbtype
+               The dbtype of genes to obtain.  This assumes that the db has
+               been added to the DBAdaptor under this name (using the
+               DBConnection::add_db_adaptor method).
+  Arg [3]    : (optional) boolean $load_transcripts
+               If set to true, transcripts will be loaded immediately rather
+               than being lazy-loaded on request.  This will result in a
+               significant speed up if the Transcripts and Exons are going to
+               be used (but a slow down if they are not).
   Example    : @genes = @{$slice->get_all_Genes};
-  Description: Retrieves all genes that overlap this slice.  
+  Description: Retrieves all genes that overlap this slice.
   Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : none
   Caller     : none
@@ -1260,7 +1269,7 @@ sub get_all_SNPs_transcripts {
 =cut
 
 sub get_all_Genes{
-   my ($self, $logic_name, $dbtype) = @_;
+   my ($self, $logic_name, $dbtype, $load_transcripts) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
@@ -1278,7 +1287,9 @@ sub get_all_Genes{
      $db = $self->adaptor->db;
    }
 
-   return $db->get_GeneAdaptor()->fetch_all_by_Slice( $self, $logic_name );
+   my $ga = $db->get_GeneAdaptor();
+
+   return $ga->fetch_all_by_Slice( $self, $logic_name, $load_transcripts);
 }
 
 =head2 get_all_Genes_by_type
@@ -1286,6 +1297,11 @@ sub get_all_Genes{
 
   Arg [1]    : string $type 
   Arg [2]    : (optional) string $logic_name
+  Arg [3]    : (optional) boolean $load_transcripts
+               If set to true, transcripts will be loaded immediately rather
+               than being lazy-loaded on request.  This will result in a
+               significant speed up if the Transcripts and Exons are going to
+               be used (but a slow down if they are not).
   Example    : @genes = @{$slice->get_all_Genes_by_type($type, 'ensembl')};
   Description: Retrieves genes that overlap this slice of type $type.
                This is primarily used by the genebuilding code when several
@@ -1301,14 +1317,15 @@ sub get_all_Genes{
 =cut
 
 sub get_all_Genes_by_type{
-  my ($self, $type, $logic_name) = @_;
+  my ($self, $type, $logic_name, $load_transcripts) = @_;
 
   if(!$self->adaptor()) {
     warning('Cannot get Genes without attached adaptor');
     return [];
   }
 
-  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name)};
+  my @out = grep { $_->type eq $type } 
+    @{ $self->get_all_Genes($logic_name, $load_transcripts)};
 
   return \@out;
 }

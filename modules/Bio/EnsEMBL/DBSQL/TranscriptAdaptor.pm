@@ -327,7 +327,7 @@ sub fetch_all_by_Slice {
     $ext_slice = $slice;
   } else {
     my $sa = $self->db()->get_SliceAdaptor();
-    my $ext_slice = $sa->fetch_by_region
+    $ext_slice = $sa->fetch_by_region
       ($slice->coord_system->name(), $slice->seq_region_name(),
        $min_start,$max_end, $slice->strand(), $slice->coord_system->version());
   }
