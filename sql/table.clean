@@ -135,7 +135,7 @@ CREATE TABLE contig (
 # The sequence is that of the contig, not that of the golden
 # path. I.e. to construct the golden path from the dna entries,
 # the sequence of contigs with an orientation of -1 must be
-# reversed and bases complemented. The static_golden_path
+# reversed and bases complemented. The assembly
 # table has the contig orientation (raw_ori).
 # Note the length of the dna.sequence field is always equal
 # to the appropriate length field in the contig table
