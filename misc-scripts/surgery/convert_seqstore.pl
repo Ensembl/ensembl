@@ -6,7 +6,7 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
-my ($host, $port, $user, $password, $source, $target, $verbose, $create, $clean);
+my ($host, $port, $user, $password, $source, $target, $verbose, $create, $clean, $check);
 $host = "127.0.0.1";
 $port = 5000;
 $password = "";
@@ -20,6 +20,7 @@ GetOptions ('host=s'      => \$host,
             'target=s'    => \$target,
             'verbose'     => \$verbose,
 	    'clean'       => \$clean,
+	    'check'       => \$check,
 	    'create=s'    => \$create,
             'help'        => sub { &show_help(); exit 1;} );
 
@@ -148,7 +149,7 @@ $sql =
   "AND    g.gene_id = t.gene_id " .
   "GROUP BY t.transcript_id";
 #print $sql . "\n";
-#execute($dbi, $sql);
+execute($dbi, $sql);
 
 # ----------------------------------------------------------------------
 # Exon
@@ -296,7 +297,8 @@ while(my $row = $sth->fetchrow_hashref()) {
 }
 
 # ----------------------------------------------------------------------
-# These tables are copied as-is
+# These tables are copied as-is]
+copy_table($dbi, "supporting_feature");
 copy_table($dbi, "map");
 copy_table($dbi, "analysis");
 copy_table($dbi, "dnafrag");
@@ -329,10 +331,14 @@ copy_table($dbi, "repeat_consensus");
 copy_table($dbi, "stable_id_event");
 copy_table($dbi, "transcript_stable_id");
 copy_table($dbi, "translation_stable_id");
+copy_table($dbi, "xref");
 
 # TODO finish
 
 # ----------------------------------------------------------------------
+
+&check() if $check;
+
 $dbi->disconnect();
 
 debug("Done");
@@ -352,6 +358,7 @@ sub show_help {
   print "  --target {schema} The name of the target schema\n";
   print "  --clean           Remove target schema, which must have been specified with --target\n";
   print "  --create {file}   Create target schema, which must have been specified with --target, from SQL file\n";
+  print "  --check           Check target schema for empty tables at end od run\n";
   print "  --verbose         Print extra output information\n";
 
 }
@@ -425,7 +432,7 @@ sub create {
     debug("Creating database $target");
 
     my $dbic = DBI->connect("dbi:mysql:host=$host;port=$port;", "$user", "$password") || die "Can't connect to DB";
-    execute($dbic, "CREATE DATABASE $target") || die "Error removing $target";
+    execute($dbic, "CREATE DATABASE $target") || die "Error creating $target";
     $dbic->disconnect();
 
     debug("Building schema for $target from $create");
@@ -438,3 +445,39 @@ sub create {
 
 }
 
+# ----------------------------------------
+
+sub check {
+
+  my ($sth_source, $sth_target);
+  my $dbi_source = DBI->connect("dbi:mysql:host=$host;port=$port;database=$source", "$user", "$password") || die "Can't connect to DB";
+  my $dbi_target = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password") || die "Can't connect to DB";
+
+  $sth = $dbi_source->prepare("SHOW TABLES");
+  $sth->execute or die "Error when listing tables";
+  while(my @row = $sth->fetchrow_array()) {
+
+    my $table_name = $row[0];
+
+    $sth_source = $dbi_source->prepare("SELECT COUNT(*) FROM " . $table_name);
+    $sth_source->execute or die "Error when counting rows in source " . $table_name;
+    my @count = $sth_source->fetchrow_array();
+    my $source_count = $count[0];
+
+    $sth_target = $dbi_target->prepare("SELECT COUNT(*) FROM " . $table_name);
+    my $res = $sth_target->execute();
+    if (defined $res) {
+      @count = $sth_target->fetchrow_array();
+      my $target_count = $count[0];
+      if ($source_count > $target_count) {
+	print "Warning: " . $table_name . " has " . $source_count . " rows in " . $source . " but " . $target_count . " rows in " . $target . "\n";
+      }
+    }
+  }
+
+  $sth_source->finish();
+  $sth_target->finish();
+  $dbi_source->disconnect();
+  $dbi_target->disconnect();
+
+}
