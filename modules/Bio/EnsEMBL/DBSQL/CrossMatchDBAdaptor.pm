@@ -166,6 +166,29 @@ sub get_SymmetricContigFeatureContainer{
    return Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer->new($self);
 }
 
+=head2 get_clonelist
+
+ Title   : get_clonelist
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_clonelist{
+   my ($self,@args) = @_;
+
+   my @clones;
+   my $sth=$self->prepare("select clone from clonelist");
+   $sth->execute;
+   while (my $clone = $sth->fetchrow_array()) {
+       push @clones,$clone;
+   }
+   return @clones;
+}
 
 =head2 _new_dbobj
 
