@@ -158,24 +158,23 @@ ok(count_rows($db, 'protein_feature') == $pfeat_count - $pfeat_minus);
 
 my $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
 
-my $attrib = Bio::EnsEMBL::Attribute->new
-    ( 
-      -code => '_selenocystein',
-      -value => 2,
-      -name => "Selenocystein positions"
-      );
+my $sc = Bio::EnsEMBL::SeqEdit->new(-START   => 2,
+                                    -END     => 2,
+                                    -ALT_SEQ => 'U',
+                                    -CODE    => '_selenocystein',
+                                    -NAME    => 'Selenocystein');
 
-$tr->translation->add_Attributes( $attrib );
+$tr->translation->add_Attributes( $sc->get_Attribute() );
 
-$attrib = Bio::EnsEMBL::Attribute->new
-    ( 
-      -code => '_selenocystein',
-      -value => 3,
-      -name => "Selenocystein positions"
-      );
-$tr->translation->add_Attributes( $attrib );
+$sc->start(3);
+$sc->end(3);
 
-$tr->translation->add_selenocystein_position( 4 );
+$tr->translation->add_Attributes( $sc->get_Attribute() );
+
+$sc->start(4);
+$sc->end(4);
+
+$tr->translation->add_Attributes( $sc->get_Attribute() );
 
 my $tlseq = $tr->translate->seq();
 
