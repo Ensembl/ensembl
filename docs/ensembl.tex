@@ -73,7 +73,7 @@ the scale of the problem makes even doing simple things hard.
 
 Enough waffle! Let's get to the code
 
-\section{First steps with Ensembl}
+\section{Installing Ensembl}
 
 Before you can code with Ensembl you need to download and install the
 following packages (the order listed is the best order to download them in).
@@ -136,6 +136,139 @@ found.
 
 \end{description} 
 
-The first two is just your error. The third is more understandable. Ensembl needs to 
+The first two is just your error. The third is more understandable. Ensembl needs to connect to 
+a local mysql to run tests (it loads and dumps mini mysql databases for testing purposes). By
+default it connects to localhost mysql as user root with no password. This is a bad - but default -
+connection protocol!
+
+To change this copy the file in modules/t called
+EnsTestDB.conf.example to EnsTestDB.conf (also in modules/t), and edit
+the configuration to match your system: in particular you want to
+connect to a database as a user that has drop and create database
+priviledges. The EnsTestDB.pm module will create a unique database
+name for each test, so you need not worry about it ``trashing'' other
+pieces of information.
+
+When the test system runs, it will output alot of stuff to the terminal, but hopefully say
+``All Tests Successful'' at the end. It is really worth getting the test system to run, as then you
+will be confident that Ensembl actually works on your system as you embark on more complex processes.
+
+\section{First script}
+
+The first script we'll write is to dump the underlying DNA fragments which make an assembly out
+as fasta format. What we'll use as a database is one of the mini-tests databases used by the testing
+system. The good thing about this is that (a) they are small (b) they are present in the source
+distribution - no need to worry about downloading additional information and (c) they are guarenteed
+to be working with the source code you have.
+
+First we need to build the database, which we will call test\_ensembl
+
+\begin{description}
+\item[create a test database]. Either go ``mysqladmin -u user\_who\_can\_create create test\_ensembl'' or open
+a mysql terminal window with ``mysql -u user\_who\_can\_create'' and go ``create database test\_ensembl''
+in the terminal window
+\item[load the schema]. The schema is kept in sql/table.sql. View the file if you are interested:
+these SQL ``create table'' syntax is called the DDL of the database, or the schema, and provides the 
+definition of the structure of the database. Go ``mysql -u user\_who\_can\_write test\_ensembl < sql/table.sql''
+\item[load the database]. We'll use the staticgoldenpath.dump mini-database found in modules/t directory.
+Again view the file if you are interested. The ``insert'' statements here put data into the database. Go
+``mysql -u user\_who\_can\_write test\_ensembl < modules/t/staticgoldenpath.dump''
+\end{description}
+
+We are now ready for our first script (finally!)
+
+\begin{verbatim}
+
+#!/usr/local/bin/perl
+
+use Bio::EnsEMBL::DBLoader;
+use Bio::SeqIO;
+
+
+# this will die if if can't load this database
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::Obj/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+# build seqio output stream
+
+$seqout = Bio::SeqIO->new( '-format' => fasta, '-fh' => \*STDOUT);
+
+# get out all the accession numbers (clone ids) for
+# sequences in this database
+
+@clones = $db->get_all_Clone_id();
+
+
+# for each clone_id, get the clone
+foreach $clone_id ( @clones ) {
+	$clone = $db->get_Clone($clone_id);
+	foreach $fragment ( $clone->get_all_Contigs() ) {
+		$seqout->write_seq($fragment);
+   	}
+}
+
+\end{verbatim}
+
+To explain this in more detail:
+
+\begin{verbatim}
+
+#!/usr/local/bin/perl
+
+use Bio::EnsEMBL::DBLoader;
+use Bio::SeqIO;
+
+\end{verbatim}
+
+This loads up the necessary Perl modules. Only one Perl module for Ensembl is needed: DBLoader.
+DBLoader will at run time load up the modules required for loading the database of choice
+
+\begin{verbatim}
+# this will die if if can't load this database
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::Obj/host=localhost;user=read_only_user;dbname=test_ensembl');
+\end{verbatim}
+
+This connects to the actual database. The string used for DBLoader is a sort of combined software+location
+string. The first part indicates that the Bio::EnsEMBL::DBSQL::Obj is the software module which will
+negotiate the Ensembl objects from the database. The remainder are parameters used in that modules
+construction, in this case the host, user and dbname of the database
+
+\begin{verbatim}
+$seqout = Bio::SeqIO->new( '-format' => fasta, '-fh' => \*STDOUT);
+\end{verbatim}
+
+This builds a standard Bioperl output stream. In this case to Fasta format to stdout.
+
+\begin{verbatim}
+@clones = $db->get_all_Clone_id();
+
+
+# for each clone_id, get the clone
+foreach $clone_id ( @clones ) {
+	$clone = $db->get_Clone($clone_id);
+	foreach $fragment ( $clone->get_all_Contigs() ) {
+		$seqout->write_seq($fragment);
+   	}
+}
+\end{verbatim}
+
+This is the real guts of the system. For each id, it is making a Clone object with the call
+``\$db->get\_Clone''. In Ensembl a Clone is really a single sequence entry from EMBL/GenBank. For
+draft (unfinished) cases, these are split up into a series of pieces of contiguous DNA, called ``RawContigs''
+in Ensembl terminology. Each ``RawContig'' implements the Bio::SeqI interface of bioperl, meaning that standard
+bioperl methods (including dump to flat files) work fine. 
+
+
+It is a pretty simple case to do a pretty simple task. 
+
+\section{Ensembl Cookbook}
+
+To be continued.
 
 \end{document}
+
+
+
+
+
+
+
