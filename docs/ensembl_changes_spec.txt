@@ -1,11 +1,67 @@
 ENSEMBL - API Change Specification
 ==================================
 
+CONTENTS
+--------
+
+Introduction
+Goals
+Schema Modifications
+  Proposed New/Modified Tables
+    seq_region
+    coord_system
+    seq_region_annotation
+    dna
+    assembly
+    gene
+    transcript
+    translation
+    all feature tables
+    meta_coord
+    misc_feature
+    misc_set
+    misc_feature_misc_set
+    misc_attrib
+  Removed Tables
+    contig
+    clone
+    chromosome
+Meta Information
+API Changes
+  Slice
+  Tile
+  SliceAdaptor
+  RawContig
+  RawContigAdaptor
+  Clone
+  CloneAdaptor
+  Chromosome
+  ChromosomeAdaptor
+  Root
+  Storable Base Class
+  Features
+    transform
+    transfer
+    move
+    project
+  StickyExon
+  AssemblyMapper
+  FeatureAdaptors
+  CoordSystemAdaptor
+New Features
+  Assembly Exceptions
+  Haplotypes
+  Pseudo Autosomal Regions
+  Multiple Assemblies
+Other Considerations
+  Loci  
+
+
 INTRODUCTION
 ------------
 
 This document describes the changes that are being made to the EnsEMBL core
-schema and Perl API.
+schema and Perl/Java/C APIs.
 
 GOALS
 -----
@@ -27,7 +83,7 @@ Proposed New/Modified Tables:
   assembly table are also present in this table.  The name column can contain
   chromosome names, clone accessions, supercontig names or anything that is
   appropriate for the seq_region it describes.  The coord_system_id is a 
-  foreign key to the new cooridinate system and is used to distinguish 
+  foreign key to the new coordinate system and is used to distinguish 
   between the divergent types of sequence regions in the table.
 
   seq_region_id    int
