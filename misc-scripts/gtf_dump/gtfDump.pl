@@ -8,9 +8,9 @@
 use DBI;
 use Getopt::Long;
 
-my $host   = "kaka.sanger.ac.uk";
-my $dbname = "current";
-my $dbuser = "anonymous";
+my $host   = "ecs1d.sanger.ac.uk";
+my $dbname = "mus_musculus_core_5_3";
+my $dbuser = "ensro";
 my $dbpass = undef;
 
 &GetOptions( 
@@ -28,132 +28,113 @@ if( !defined $db ) {
 }
 
 
+
+#$sth = $db->prepare( "
+#            SELECT gene_stable_id, transcript_stable_id, exon_stable_id, 
+#	           exon_chrom_start, exon_chrom_end, exon_chrom_strand, 
+#                   rank, start_rank, end_rank, seq_start, seq_end,
+#		   chr_name 
+#              FROM gene_structure
+#          ORDER BY gene_stable_id, transcript_stable_id, rank
+#" );
+#$sth->execute();
+
+
 $sth = $db->prepare( "
-            SELECT t.gene, t.id, e.id, e.seq_start, 
-                   e.seq_end, e.strand, e.phase, 
-                   e.sticky_rank, sp.fpcctg_name, 
-                   sp.fpcctg_start, sp.fpcctg_end, 
-                   sp.raw_start, sp.raw_ori, tl.start_exon, 
-                   tl.seq_start, tl.end_exon, tl.seq_end 
-              FROM transcript t, translation tl, 
-                   exon_transcript et , exon e, 
-                   static_golden_path sp 
-             WHERE et.transcript = t.id 
-               AND tl.id = t.translation 
-               AND et.exon = e.id 
-               AND e.contig = sp.raw_id 
-          ORDER BY t.gene, t.id, et.rank, e.sticky_rank
+ SELECT gsi.stable_id as gene_stable_id,
+         tsi.stable_id as transcript_stable_id,
+         esi.stable_id as exon_stable_id,
+         MIN(IF(sgp.raw_ori=1,
+             ( e.seq_start+sgp.chr_start-sgp.raw_start ),
+             ( sgp.chr_start+sgp.raw_end-e.seq_end ))) 
+          as exon_chrom_start,
+         MAX(IF(sgp.raw_ori=1,
+             ( e.seq_end+sgp.chr_start-sgp.raw_start ),
+             ( sgp.chr_start+sgp.raw_end-e.seq_start ))) 
+          as exon_chrom_end, 
+         e.strand * sgp.raw_ori as exon_chrom_strand,
+         et.rank as rank,
+         tl.start_exon_id,
+         tl.seq_start as seq_start,
+         tl.end_exon_id,
+         tl.seq_end as seq_end,
+         sgp.chr_name as chr_name,
+         e.exon_id as exon_id
+   FROM  exon e, exon_stable_id esi,
+         exon_transcript et, transcript t,
+         transcript_stable_id tsi,
+         static_golden_path sgp,
+         gene_stable_id gsi,
+         translation tl
+   WHERE e.contig_id = sgp.raw_id
+     AND esi.exon_id = e.exon_id
+     AND et.exon_id = e.exon_id
+     AND t.transcript_id = et.transcript_id
+     AND t.translation_id = tl.translation_id
+     AND tsi.transcript_id = et.transcript_id
+     AND gsi.gene_id = t.gene_id
+   GROUP BY t.transcript_id, e.exon_id
+   ORDER BY gene_stable_id, transcript_stable_id, rank
 " );
+
 $sth->execute();
-
-
 
 my %gh;
 
-while( $colsRef = $sth->fetchrow_arrayref() ) {
+while( my $h = $sth->fetchrow_hashref() ) {
 
-  if( ! defined $_first ) {
-    $_first = 1;
-    next;
-  }
-
-  @cols = @$colsRef;
   
-  if( !exists $gh{$cols[0]} ) {
+  if( !exists $gh{$h->{gene_stable_id}} ) {
     # print_genes();
     # delete the other genes
     # %gh = ();
-    $gh{$cols[0]} = {};
+    $gh{$h->{gene_stable_id}} = {};
     $tr = 1; 
   }
 
-  $g = $gh{$cols[0]};
+  $g = $gh{$h->{gene_stable_id}};
+  $g->{name} = $h->{gene_stable_id};
+  $g->{chrom} = $h->{chr_name};	
 
-  if( $g->{buggy} ) {
-    next;
-  }
-
-  $g->{fpc} = $cols[8];
-  $g->{name} = $cols[0];
-
-  if( ! exists $g->{transcript}{$cols[1]} ) {
-    $g->{transcript}{$cols[1]} = { 'rank' => $tr,
-				 'name' => $cols[1]};
+  if( ! exists $g->{transcript}{$h->{transcript_stable_id}} ) {
+    $g->{transcript}{$h->{transcript_stable_id}} = { 'rank' => $tr,
+				 'name' => $h->{transcript_stable_id}};
     $tr++;
     # first exon comes as rank 1
     $er = 1;
   }
 
-  $t = $g->{transcript}{$cols[1]};
+  $t = $g->{transcript}{$h->{transcript_stable_id}};
 
-  if( exists $t->{exon}{$cols[2]} ) {
-    # sticky exon
-    # print "Sticky Exon ",$cols[7],".\n";
-    if( $cols[7] == 1 ) {
-      $g->{buggy} = 1;
-      next;
-      # buggy gene
-    }
-
-    my ( $seqstart, $seqend, $strand );
-    $e = $t->{exon}{$cols[2]};
-
-    if( $cols[12] == 1 ) {
-      $seqstart = $cols[3]-$cols[11]+$cols[9];
-      $seqend = $cols[4]-$cols[11]+$cols[9];
-    } else {
-      $seqend = $cols[10] - $cols[3]+$cols[11];
-      $seqstart = $cols[10] - $cols[4]+$cols[11];
-    }
-
-    $strand = $cols[5]*$cols[12];
+  if( ! exists $t->{exon}{$h->{exon_stable_id}} ) {
     
-    if( $e->{strand} == 1 ) {
-      if( $e->{seqend} +1 != $seqstart ) {
-	print "COMPLAIN: ",$e->{name}, " ",$e->{seqend}," ",$e->{seqstart}," $seqstart $seqend\n";
-      } else {
-	# print "Gottit\n";
-	$e->{seqend} = $seqend;
-      }
-    } else {
-      if( $e->{seqstart} -1 != $seqend ) {
-	print "COMPLAIN: ",$e->{seqend}," ",$e->{seqstart}," $seqstart $seqend\n";
-      } else {
-	# print "Gottit\n";
-	$e->{seqstart} = $seqstart;
-      }
-    }
-    if( $er == 2  && $tr == 2 ) {
-      $g->{start} = $e->{seqstart};
-    }
-  } else {
-    
-    $e = { 'name' => $cols[2],
-	      'rank' => $er};
-    $t->{exon}{$cols[2]} = $e;
+    $e = { 'name' => $h->{exon_stable_id},
+	      'rank' => $h->{rank}};
+    $t->{exon}{$h->{exon_stable_id}} = $e;
 
     # exon rank up
     $er++;
 
-    if( $cols[13] eq $e->{name} ) {
-      $e->{startcodon} = $cols[14];
+    if( $h->{start_exon_id} == $h->{exon_id} ) {
+      $e->{startcodon} = $h->{seq_start};
     }
-    if( $cols[15] eq $e->{name} ) {
-      $e->{stopcodon} = $cols[16];
-    }
-
-    $e->{strand} = $cols[5]*$cols[12];
-
-    if( $cols[12] == 1 ) {
-      $e->{seqstart} = $cols[3]-$cols[11]+$cols[9];
-      $e->{seqend} = $cols[4]-$cols[11]+$cols[9];
-    } else {
-      $e->{seqend} = $cols[10] - $cols[3]+$cols[11];
-      $e->{seqstart} = $cols[10] - $cols[4]+$cols[11];
+    
+    if( $h->{end_exon_id} == $h->{exon_id}) {
+      $e->{stopcodon} = $h->{seq_end};
     }
 
+    $e->{strand} = $h->{exon_chrom_strand};
+
+    $e->{seqstart} = $h->{exon_chrom_start};
+    $e->{seqend} = $h->{exon_chrom_end};
+
+    	
     if( $er ==2 && $tr == 2 ) {
       $g->{start} = $e->{seqstart};
+      $g->{end} = $e->{seqend};
+    } else {
+      if( $g->{start} > $e->{seqstart} ) { $g->{start} = $e->{seqstart} }
+      if( $g->{end} < $e->{seqend} ) { $g->{end} = $e->{seqend} }
     }
   }
 }
@@ -166,21 +147,17 @@ sub print_genes {
   my @genes = values %gh;;
   
   local *FH;
+  my $chrom;
   
-  @sortedGenes = sort { $a->{fpc} cmp $b->{fpc} ||
-			  $a->{start} <=> $b->{start} } @genes;
+  @sortedGenes = sort { $a->{chrom} cmp $b->{chrom} || $a->{start} <=> $b->{start} } @genes;
   
-  $fpc = undef;
   print STDERR scalar( @sortedGenes )," Genes\n";
 
   foreach $g ( @sortedGenes ) {
-    if( $g->{buggy} ) {
-      next;
-    }
 
-    if( $g->{fpc} ne $fpc ) {
+    if( $g->{chrom} ne $chrom ) {
       close FH;
-      open( FH, ">".$g->{fpc}.".gtf" ) or die( "Couldnt write result" );
+      open( FH, ">".$g->{chrom}.".gtf" ) or die( "Couldnt write result" );
     }
 
     @transcripts = values %{$g->{transcript}};
@@ -188,8 +165,17 @@ sub print_genes {
     foreach $t ( @transcripts ) {
       my @exons = values %{$t->{exon}};
       @exons = sort { $a->{rank} <=> $b->{rank} } @exons;
-	
+      my $coding = 0;	
+      my $frame = 0;
+      
       foreach $e ( @exons ) {
+	my $gtfLineTail = 
+	  "gene_id \"".$g->{name}."\"; ".
+	  "transcript_id \"". $t->{name}. "\"; ".
+	  "exon_number \"". $e->{rank}."\"; ".
+	  "exon_id \"". $e->{name}."\"".
+	  "\n";
+
 	if( exists $e->{startcodon} ) {
 	  my ( $start, $end );
 	  if( $e->{strand} == 1 ) {
@@ -200,29 +186,21 @@ sub print_genes {
 	    $start = $end -2;
 	  }
 
-	  print FH $g->{fpc},"\t",
+	  print FH $g->{chrom},"\t",
 	  "ENSEMBL\tstart_codon\t", 
 	  $start,"\t",
 	  $end,"\t",
-	  "0\t",
+	  ".\t",
 	  ($e->{strand}==1?"+":"-"),"\t.\t",
-	  "gene_id \"",$g->{name},"\"; ",
-	  "transcript_id \"", $t->{name}, "\"; ",
-	  "exon_number ", $e->{rank},"; ",
-	  "exon_id \"", $e->{name},"\"",
-	  "\n";
+	  $gtfLineTail;
 	}
-	print FH $g->{fpc},"\t",
+	print FH $g->{chrom},"\t",
 	"ENSEMBL\texon\t", 
 	$e->{seqstart},"\t",
 	$e->{seqend},"\t",
-	"0\t",
+	".\t",
 	($e->{strand}==1?"+":"-"),"\t.\t",
-	"gene_id \"",$g->{name},"\"; ",
-	"transcript_id \"", $t->{name}, "\"; ",
-	"exon_number ", $e->{rank},"; ",
-	"exon_id \"", $e->{name},"\"",
-	"\n";
+	$gtfLineTail;
 
 	if( exists $e->{stopcodon} ) {
 	  my ( $start, $end );
@@ -233,22 +211,93 @@ sub print_genes {
 	    $start = $e->{seqend} - $e->{stopcodon} + 1;
 	    $end = $start + 2;
 	  }
-	  print FH $g->{fpc},"\t",
+	  print FH $g->{chrom},"\t",
 	  "ENSEMBL\tstop_codon\t", 
 	  $start,"\t",
 	  $end,"\t",
-	  "0\t",
+	  ".\t",
 	  ($e->{strand}==1?"+":"-"),"\t.\t",
-	  "gene_id \"",$g->{name},"\"; ",
-	  "transcript_id \"", $t->{name}, "\"; ",
-	  "exon_number ", $e->{rank},"; ",
-	  "exon_id \"", $e->{name},"\"",
-	  "\n";
+	  $gtfLineTail;
 	}
+
+        # 0 not coding, 1 contains just startcodon
+	# 2 contains only coding
+	# 3 just stopcodon, 4 start and stopcodon
+	
+	if( $coding == 0 ) {
+	  if( exists $e->{startcodon} ) {
+	    if( exists $e->{stopcodon} ) {
+	      $coding = 4;
+	    } else {
+	      $coding = 1;
+	    }
+	  }
+	} elsif( $coding == 1 ) {
+	  if( exists $e->{stopcodon} ) {
+	    $coding = 4;
+	  } else {
+	    $coding = 2;
+	  }
+	} elsif( $coding == 2 ) {
+          if( exists $e->{stopcodon} ) {
+	    $coding = 3;
+	  }
+	} elsif( $coding == 3 ) {
+	  $coding = 0;
+	} elsif( $coding == 4 ) {
+	  $coding = 0;
+	}
+	
+	# construct CDS line
+	my ( $cdsstart, $cdsend );
+	
+	if( $coding == 0 ) {
+	  next;
+	  # no CDS line
+	} elsif( $coding == 1 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{startcodon} + $e->{seqstart} - 1;
+	    $cdsend = $e->{seqend};
+	  } else {
+	    $cdsstart = $e->{seqstart};
+	    $cdsend = $e->{seqend} - $e->{startcodon} + 1 ;
+	  }
+	} elsif( $coding == 2 ) {
+	  $cdsstart = $e->{seqstart};
+	  $cdsend = $e->{seqend};
+	} elsif( $coding == 3 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{seqstart};
+	    $cdsend = $e->{seqstart}+$e->{stopcodon} - 4;
+	  } else {
+	    $cdsstart = $e->{seqend} - $e->{stopcodon} + 4;
+	    $cdsend = $e->{seqend};
+	  }
+	} elsif( $coding == 4 ) {
+	  if( $e->{strand} == 1 ) {
+	    $cdsstart = $e->{startcodon} + $e->{seqstart} - 1;
+	    $cdsend = $e->{seqstart}+$e->{stopcodon} - 4;
+	  } else {
+	    $cdsstart = $e->{seqend} - $e->{stopcodon} + 4;
+	    $cdsend = $e->{seqend} - $e->{startcodon} + 1 ;
+	  }  
+	}
+	
+	if( $cdsend >= $cdsstart ) {
+	  print FH $g->{chrom},"\t",
+	  "ENSEMBL\tCDS\t", 
+	  $cdsstart,"\t",
+	  $cdsend,"\t",
+	  ".\t",
+	  ($e->{strand}==1?"+":"-"),"\t",$frame,"\t",
+	  $gtfLineTail;
+
+	  $frame = ( $cdsend - $cdsstart + 1 - $frame ) % 3;
+	} 
       }
     }
     # print "GENE:",$g->{name}, " ", $g->{fpc},"\n";
-    $fpc = $g->{fpc};
+    $chrom = $g->{chrom};
   }
   close FH;
 }
