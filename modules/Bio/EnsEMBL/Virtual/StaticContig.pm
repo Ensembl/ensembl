@@ -694,36 +694,7 @@ return $markers[0];
 
 }
 
-# PL: not used in this file, should it be called _gp_position ? 
-sub _gp_position
-{
-my ($self,$marker,$contig)=@_;
-
-$self->throw("Must supply marker id") unless $marker;
-$self->throw("Must supply contig id") unless $contig;
-
-
-my $statement=  "select sgp.chr_start+f.seq_start-sgp.raw_start,sgp.chr_name 
-                 from static_golden_path sgp, feature f,contig c 
-                 where c.internal_id=sgp.raw_id 
-                 and sgp.raw_id=f.contig  
-                 and f.analysis=11 
-                 and f.hid='$marker' 
-                 and c.id='$contig'";
- 
-
-my $sth = $self->dbobj->prepare($statement);
-$sth->execute;
-
-my ($start, $chr_name);
-$sth->bind_columns(undef,\$start,\$chr_name);
-while ($sth->fetch){}; 
-
-return ($start,$chr_name);
-
-
-}
-
+# sub _gp_position has been removed since revision 1.18
 
 sub _create_Marker_features
 {
