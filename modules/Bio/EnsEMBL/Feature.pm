@@ -386,11 +386,15 @@ sub transform {
     throw('Feature is not associated with a slice and may not be transformed');
   }
 
-
   #use db from slice since this feature may not yet be stored in a database
   my $db = $slice->adaptor->db();
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
+
+  if(!$cs) {
+    throw("Cannot transform to unknown coordinate system " .
+          "[$cs_name $cs_version]\n");
+  }
 
   # if feature is already in the requested coordinate system, we can just
   # return a copy
