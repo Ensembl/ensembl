@@ -397,7 +397,8 @@ sub external_name {
   if( defined $arg ) {
     $self->{'_external_name'} = $arg;
   }
-  else { 
+  # if not already set, go off and set it
+  elsif ( !defined $self->{'_external_name'} ) {
     # find the transcript with the longest length which is 
     # attached to this gene.  Use the longest length as the
     # determining factor when having to select between transcripts
@@ -433,7 +434,8 @@ sub external_db {
   if( defined $arg ) {
     $self->{'_external_db'} = $arg;
   }
-  else {
+  # if not already set, go off and set it
+  elsif ( !defined $self->{'_external_db'} ) {
     # find the transcript with the longest length which is 
     # attached to this gene.  Use the longest length as the
     # determining factor when having to select between transcripts

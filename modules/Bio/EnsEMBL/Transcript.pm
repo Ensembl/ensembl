@@ -167,7 +167,8 @@ sub external_db {
   if( defined $arg ) {
     $self->{'_external_db'} = $arg;
   }
-  else { 
+  # if not already set, go off and set it
+  elsif ( !defined $self->{'_external_db'} ) { 
     $self->{'_external_db'} = $self->_get_external_info("db");
   }
 
@@ -192,7 +193,8 @@ sub external_name {
   if( defined $arg ) {
     $self->{'_external_name'} = $arg;
   }
-  else {
+  # if not already set, go off and set it
+  elsif ( !defined $self->{'_external_name'} ) { 
     $self->{'_external_name'} = $self->_get_external_info("name");
   }
 
