@@ -640,6 +640,121 @@ sub fetch_VirtualContig_of_gene{
 
 
 
+=head2 fetch_VirtualContig_of_exon
+
+ Title   : fetch_VirtualContig_of_exon
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_exon('ENSE00000648605',1000);
+ Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the gene.  Throws if the object is not golden.
+ Returns : Virtual Contig object 
+ Args    : exon id, [context size in bp]
+
+=cut
+
+sub fetch_VirtualContig_of_exon{
+   my ($self,$exonid,$size) = @_;
+
+   if( !defined $exonid ) {
+       $self->throw("Must have exon id to fetch VirtualContig of exon");
+   }
+   if( !defined $size ) {$size=0;}
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT  
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
+     sgp.chr_name
+				    FROM    exon e,
+					    static_golden_path sgp 
+				    WHERE e.id='$exonid' 
+				    AND sgp.raw_id=e.contig 
+				    AND sgp.type = '$type' 
+		   		    ");
+   $sth->execute();
+
+   my ($start,$end,$chr_name)=$sth->fetchrow_array;
+   
+   if( !defined $start ) {
+       $self->throw("Exon is not on the golden path. Cannot build VC");
+   }
+     
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+							$start-$size,
+							$end+$size
+							);
+}
+
+
+
+
+
+=head2 fetch_VirtualContig_of_transcript
+
+ Title   : fetch_VirtualContig_of_transcript
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_transcript('ENST00000012123',1000);
+ Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the gene.  Throws if not golden.
+ Returns : Virtual Contig object 
+ Args    : transcript id, [context size in bp]
+
+
+=cut
+
+sub fetch_VirtualContig_of_transcript{
+   my ($self,$transcriptid,$size) = @_;
+
+   if( !defined $transcriptid ) {
+       $self->throw("Must have gene id to fetch VirtualContig of transcript");
+   }
+   if( !defined $size ) {$size=0;}
+
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("SELECT  
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
+                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
+     sgp.chr_name
+  
+				    FROM    exon e,
+					    exon_transcript et,
+					    static_golden_path sgp 
+				    WHERE et.transcript='$transcriptid'  
+				    AND e.id=et.exon 
+				    AND sgp.raw_id=e.contig 
+				    AND sgp.type = '$type' 
+		   		    ");
+   $sth->execute();
+
+   my ($start,$end,$chr_name);
+   my @start;
+   while ( my @row=$sth->fetchrow_array){
+      ($start,$end,$chr_name)=@row;
+       push @start,$start;
+       push @start,$end;
+   }   
+   
+   my @start_sorted=sort { $a <=> $b } @start;
+
+   $start=shift @start_sorted;
+   $end=pop @start_sorted;
+
+   if( !defined $start ) {
+       $self->throw("Transcript is not on the golden path. Cannot build VC");
+   }
+     
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+							$start-$size,
+							$end+$size
+							);
+   
+}
+
+
+
 =head2 fetch_VirtualContig_by_clone
 
  Title   : fetch_VirtualContig_by_clone
