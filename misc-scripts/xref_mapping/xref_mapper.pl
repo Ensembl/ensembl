@@ -3,6 +3,7 @@ use warnings;
  
 use Getopt::Long;
 use Cwd;
+use XrefMapper::db;
  
 use vars qw(@INC);
  
@@ -27,6 +28,7 @@ open(FILE, $file) or die("Could not open input file '$file'");
  
 my  @all_species;
 my $xref;
+#my $output=undef;
 my $new=undef;
 my $type;
 while( my $line = <FILE> ) {
@@ -42,6 +44,9 @@ while( my $line = <FILE> ) {
       if($type eq "species"){
 	push @all_species, $new;
       }
+#      elsif($type eq "output"){
+#	$output = $new;
+#      }
       else{
 	$xref = $new;
       }
@@ -66,9 +71,11 @@ while( my $line = <FILE> ) {
 	$new->species($value);
       }
     }
+#    elsif($key eq "output"){
+#      $type= "output";
+#      $new = new XrefMapper::db();
+#    }
     else{
-      my $module = "db";
-      use XrefMapper::db;
       $type= "xref";
       $new = new XrefMapper::db();
     }
@@ -82,6 +89,9 @@ if(defined($new)){ #save last one
   if($type eq "species"){
     push @all_species, $new;
   }
+#  elsif($type eq "output"){
+#    $output= $new;
+#  }
   else{
     $xref = $new;
   }
@@ -89,8 +99,10 @@ if(defined($new)){ #save last one
 }
 
 for my $species ( @all_species ) {
-  $species->dump_seqs($xref);
-  $species->run_matching($xref);
+  $species->xref($xref);
+#  $species->output($output);
+  $species->dump_seqs();
+  $species->run_matching();
   $species->store();
 }
 
