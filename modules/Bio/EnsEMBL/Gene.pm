@@ -61,7 +61,6 @@ sub _initialize {
   $self->{'_transcript_array'} = [];
   $self->{'_clone_neighbourhood'} = [];
   $self->{'_db_link'} = [];
-
 # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -213,7 +212,13 @@ sub unique_contig_ids{
    my %h;
 
    foreach my $exon ( $self->all_Exon_objects ) {
-       $h{$exon->contig_id()} = 1;
+       if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+	   foreach my $se ( $exon->each_component_Exon ) {
+	       $h{$se->contig_id()} = 1;
+	   }
+       } else {
+	   $h{$exon->contig_id()} = 1;
+       }
    }
 
    return keys %h;
@@ -286,6 +291,32 @@ sub id{
     return $obj->{'id'};
 
 }
+
+
+
+=head2 type
+
+ Title   : type
+ Usage   : $obj->type($newval)
+ Function: 
+ Returns : value of type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'type'} = $value;
+    }
+    return $obj->{'type'};
+}
+
+
+
+
 
 =head2 each_cloneid_neighbourhood
 
