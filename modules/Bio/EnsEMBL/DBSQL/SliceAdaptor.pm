@@ -225,14 +225,17 @@ sub fetch_by_chr_band {
        ( $slice_start, $slice_end) = $sth->fetchrow_array;
     }
 
-    return new Bio::EnsEMBL::Slice
-      (
-       -chr_name  => $chr,
-       -chr_start => $slice_start,
-       -chr_end   => $slice_end,
-       -strand    => 1,
-       -assembly_type => $type
-      );
+    if(defined $slice_start) {
+        return new Bio::EnsEMBL::Slice(
+           -chr_name  => $chr,
+           -chr_start => $slice_start,
+           -chr_end   => $slice_end,
+           -strand    => 1,
+           -assembly_type => $type
+        );
+    }
+
+    $self->throw("Band not recognised in database");
 }
 
 
