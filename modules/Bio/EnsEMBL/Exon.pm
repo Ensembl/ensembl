@@ -276,11 +276,9 @@ sub modified{
 =cut
 
 sub pep_seq {
-  my ($self) = @_;
-
-  my @pep = $self->_translate();
-
-  return @pep;
+    my ($self) = @_;
+    my $pep = $self->_translate();
+    return @$pep;
 }
 
 =pod 
@@ -400,29 +398,28 @@ sub type {
 =cut
 
 sub _translate {
-  my($self) = @_;
-  my @pep;
-  my $i;
+    my($self) = @_;
+    my $pep;
+    my $i;
   
-  # changed this to work with the new SeqFeature stuff. I am still not
-  # 100% happy about this. EB.
+    # changed this to work with the new SeqFeature stuff. I am still not
+    # 100% happy about this. EB.
   
-  # Get the DNA sequence and create the sequence string
-  $self->seq() || $self->throw("No DNA in object. Can't translate\n");
+    # Get the DNA sequence and create the sequence string
+    $self->seq() || $self->throw("No DNA in object. Can't translate\n");
 
-  my $dna = $self->seq()->seq();
+    my $dna = $self->seq()->seq();
   
-  # Translate in all frames - have to chop
-  # off bases from the beginning of the dna sequence 
-  # for frames 1 and 2 as the translate() method
-  # only translates in one frame. Pah!
+    # Translate in all frames - have to chop
+    # off bases from the beginning of the dna sequence 
+    # for frames 1 and 2 as the translate() method
+    # only translates in one frame. Pah!
   
-  for ($i = 0; $i < 3; $i++) {
-    my $tmp = new Bio::Seq(-seq => substr($dna,$i));
-    $pep[$i] = $tmp->translate();
-  }
-  
-  return @pep;
+    for ($i = 0; $i < 3; $i++) {
+	my $tmp = new Bio::Seq(-seq => substr($dna,$i));
+	$pep->[$i] = $tmp->translate();
+    }
+    return $pep;
 }
 
 =pod
@@ -438,10 +435,11 @@ sub _translate {
 =cut
 
 sub translate {
-  my($self) = @_;
-
-  my @pep = $self->_translate() || throw ("Can't translate DNA\n");
-  return $pep[$self->phase()];
+    my($self) = @_;
+    my $pep = $self->_translate() || throw ("Can't translate DNA\n");
+    my $phase=$self->phase();
+    if($phase){$phase=3-$phase;}
+    return $pep->[$phase];
 }
 
 =head2 strand
@@ -466,6 +464,57 @@ sub strand {
       $self->{'strand'} = $value;
     }
     return $self->{'strand'};
+}
+
+=head2 start_translation
+
+ Title   : start_translation
+ Usage   : $start_translation = $feat->start_translation
+ Function: Returns coordinate taking into account phase
+ Returns : number
+ Args    : none
+
+=cut
+
+sub start_translation {
+    my ($self,$value) = @_;
+  
+    if( defined $value){
+	$self->throw("cannot set translation start!");
+    }
+
+    my $phase=$self->phase;
+    $phase=3-$phase if $phase;
+    if($self->strand==1){
+	return ($self->start + $phase);
+    }else{
+	return ($self->end - $phase);
+    }
+}
+
+=head2 end_translation
+
+ Title   : end_translation
+ Usage   : $end_translation = $feat->end_translation
+ Function: Returns coordinate taking into account phase
+ Returns : number
+ Args    : none
+
+=cut
+
+sub end_translation {
+    my ($self,$value) = @_;
+  
+    if( defined $value){
+	$self->throw("cannot set translation end!");
+    }
+
+    my $phase=$self->end_phase;
+    if($self->strand==1){
+	return ($self->end - $phase);
+    }else{
+	return ($self->start + $phase);
+    }
 }
 
 =head2 _rephase_exon_genscan

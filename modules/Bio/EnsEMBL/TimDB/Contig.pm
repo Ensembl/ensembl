@@ -211,31 +211,14 @@ sub get_all_SeqFeatures{
     # not clear if this load step should be here or in init
     {
 	# get sf object
-	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->_clone_dir,
+	my $debug=1;
+	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
+							     $self->_clone_dir,
 							     $self->disk_id,
 							     $self->_gs,
-							     $self->seq);
-	# make objects for each feature, save in object
-	my @array;
-	foreach my $sf ($sfobj->each_feature){
-	    my($start,$end,$strand,$score,
-	       $name2,$start2,$end2,$pid,$method)=@$sf;
-	    my $out=Bio::SeqFeature::Generic->new();
-	    $out->seqname($self->id);
-	    $out->source_tag('ensembl');
-	    $out->primary_tag('similarity');
-	    $out->start($start);
-	    $out->end($end);
-	    $out->strand($strand);
-	    $out->score($score);
-	    $out->add_tag_value('target',$name2);
-	    $out->add_tag_value('start',$start2);
-	    $out->add_tag_value('end',$end2);
-	    $out->add_tag_value('percentid',$pid);
-	    $out->add_tag_value('method',$method);
-	    push(@array,$out);
-	}
-	@{$self->{'_sf_array'}}=@array;
+							     $self->seq,
+							     $debug);
+	@{$self->{'_sf_array'}}=($sfobj->each_feature);
     }
 
     # return array of objects

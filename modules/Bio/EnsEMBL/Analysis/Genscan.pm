@@ -166,7 +166,7 @@ sub _parse {
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
 	     # Pass type,strand, start, stop, frame,phase to exons()
-	     $self->_exons($transcript, @l[1,2,3,4,6,7] );
+	     $self->_exons($transcript, @l[0,1,2,3,4,6,7] );
 	   }
 	   
 	   # or a Promoter?
@@ -232,10 +232,18 @@ sub _parse {
       $self->_set_exon_phases($transcript,$pep);
     }
 
-    # now we know the phases, create a real translation for each exon
-    foreach my $exon ($transcript->each_Exon){
-	$exon->translate;
-    }
+    # now we know the phases, create a real translation for each transcript
+    my $translation=Bio::EnsEMBL::Translation->new();
+    # FIXME not sure what id should be set as, or if needed
+    # $translation->id();
+    my $fe=$transcript->first_exon;
+    my $le=$transcript->last_exon;
+    $translation->start($fe->start_translation);
+    $translation->end($le->end_translation);
+    $translation->start_exon_id($fe->id);
+    $translation->end_exon_id($le->id);
+    # link translation object to transcript
+    $transcript->translation($translation);
 
     $count++;
   }
@@ -431,19 +439,20 @@ sub _transcript {
 # to the parent gene exon array ref.
 
 sub _exons {
-  my ($self,$tran,$type,$strand,$start,$stop,$frame,$phase) = @_;
+    my ($self,$tran,$name,$type,$strand,$start,$stop,$frame,$phase) = @_;
 
-  # Create the exon object
-  my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
-
-  # Set the other variables
-  $exon->type     ($type);
-  $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input
-  $exon->frame    ($frame);
-  $exon->end_phase();		
-
-  # Finally add the exon to the gene
-  $tran->add_Exon ($exon);
+    # Create the exon object
+    my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
+    
+    # Set the other variables
+    $exon->type     ($type);
+    $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input
+    $exon->frame    ($frame);
+    $exon->id       ($name);   # form is n.n
+    $exon->end_phase();
+    
+    # Finally add the exon to the gene
+    $tran->add_Exon ($exon);
 
 }
 

@@ -763,31 +763,31 @@ sub exon_dna {
 
   
 sub pep_coords {
-  my $self = shift;
+    my $self = shift;
 
-  # for mapping the peptide coords back onto the dna sequence
-  # it would be handy to have a list of the peptide start end coords
-  # for each exon
+    # for mapping the peptide coords back onto the dna sequence
+    # it would be handy to have a list of the peptide start end coords
+    # for each exon
   
-  my @starts;
-  my @ends;
+    my @starts;
+    my @ends;
   
-  my $fullpep = $self->translate()->seq;
+    my $fullpep = $self->translate()->seq;
 
-  foreach my $ex ($self->each_Exon) {
+    foreach my $ex ($self->each_Exon) {
     
-    my @tmp = $self->translate_exon($ex);
-    my $pep = $tmp[$ex->phase]->seq;
+	my $tex=$ex->translate;
+	my $pep=$tex->seq;
     
-    my $start = index($fullpep,$pep) + 1;
-    my $end = $start + length($pep) - 1;
+	my $start = index($fullpep,$pep) + 1;
+	my $end = $start + length($pep) - 1;
     
-    push(@starts,$start);
-    push(@ends,$end);
-    
-  }
+	push(@starts,$start);
+	push(@ends,$end);
+	
+    }
 
-  return \@starts,\@ends;
+    return \@starts,\@ends;
 }
 
 
