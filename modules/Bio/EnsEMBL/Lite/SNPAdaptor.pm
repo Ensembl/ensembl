@@ -54,6 +54,7 @@ sub fetch_all_by_Slice {
   my $slice_start = $slice->chr_start();
   my $slice_end   = $slice->chr_end();
   
+  warn "FETCH_ALL_LITE_SNPS";
   my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL 16 ANO );
   my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type,
 		      validated, alleles, snpclass, mapweight, ambiguity, source,
@@ -86,7 +87,7 @@ sub fetch_all_by_Slice {
     #create a snp object through a fast (hacky) constructor
     my $STATUS = $arrayref->[6];
     $STATUS =~s/-/ /;
-    $STATUS = $STATUS eq 'no info' ? 'suspected' : "proven $STATUS";
+    $STATUS = ( $STATUS && $STATUS ne 'no info' ) ? "proven $STATUS" : 'suspected';
     my $snp = Bio::EnsEMBL::SNP->new_fast(
 		  { 'dbID'       => $arrayref->[0], 
 		   '_gsf_start'  => $arrayref->[1] - $slice_start + 1,
@@ -113,7 +114,6 @@ sub fetch_all_by_Slice {
 sub fetch_attributes_only{
   my $self = shift;
 
-  warn "LITE SNP";
   my $refsnp_id = shift;
   my $source = shift || 'dbSNP';
 
@@ -127,7 +127,6 @@ sub fetch_attributes_only{
 
   my $sth = $self->prepare( $QUERY );
   eval { $sth->execute($refsnp_id);};
-  warn $@;
   return [] if $@;
   my @snps = ();
 
@@ -149,7 +148,7 @@ sub fetch_attributes_only{
     #create a snp object through a fast (hacky) constructor
     my $STATUS = $arrayref->[6];
     $STATUS =~s/-/ /;
-    $STATUS = $STATUS eq 'no info' ? 'suspected' : "proven $STATUS";
+    $STATUS = ( $STATUS && $STATUS ne 'no info' ) ? "proven $STATUS" : 'suspected';
     my $snp = Bio::EnsEMBL::SNP->new_fast(
                   { 'dbID'       => $arrayref->[0],
                     '_snp_strand' => $arrayref->[3],
