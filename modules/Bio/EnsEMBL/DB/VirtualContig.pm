@@ -213,7 +213,7 @@ sub extend_maximally {
 	$self->throw("Can only extend a VirtualContigI, Bailing out...");
     }
     # based on an original idea by Ewan Birney. ;)
-    my $nvc = $self->extend(10000000000,10000000000);
+    my $nvc = $self->extend(-10000000000,10000000000);
     return $nvc;
 }
 
