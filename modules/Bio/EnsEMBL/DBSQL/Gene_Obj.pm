@@ -1029,14 +1029,17 @@ sub get_supporting_evidence {
 
     foreach my $exon (@exons) {
 
+	$instring = $instring . $exon->contig_id . "','";
+    }
+    
+    $instring = substr($instring,0,-2);
+
+    foreach my $exon (@exons) {
+
 	$exhash{$exon->id} = $exon;
 
-#	$instring = $instring . $exon->id . "','";
-#    }
-    
-#    $instring = substr($instring,0,-2);
    
-	my $statement = "select * from feature where seq_start = " . $exon->start . " and seq_end = " . $exon->end;
+	my $statement = "select * from feature where contig in (" . $instring . ") and seq_start = " . $exon->start . " and seq_end = " . $exon->end;
     #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
 	print STDERR "going to execute... [$statement]\n";
 	
