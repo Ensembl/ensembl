@@ -158,6 +158,13 @@ sub validate {
 
     # First the features;
 
+    $self->throw("Empty or wrong type of feature1 object") unless defined($self->feature1)   && 
+	                                             ref($self->feature1) ne "" && 
+						     $self->feature1->isa("Bio::EnsEMBL::SeqFeatureI");
+    $self->throw("Empty or wrong type of feature1 object ") unless defined($self->feature2) &&
+	                                             ref($self->feature2) ne "" && 
+						     $self->feature2->isa("Bio::EnsEMBL::SeqFeatureI");
+
     $self->feature1->validate();
     $self->feature2->validate();
 
