@@ -217,9 +217,7 @@ if ($organism eq "human") {
 	
 #Its a curated Refseq, flag it as predicted
 	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq_pred\t$prot_ac\t\tPRED\n";
-       
-	my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
-	my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
+
     }
     close (REFSEQ);
     
@@ -232,7 +230,8 @@ if ($organism eq "human") {
     while (<GO>) {
 	chomp;
 	my @array = split (/\t/,$_);
-	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t\tXREF\n";	
+	$array[9] =~ s/\'/\\\'/g;
+	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t$array[9]\tXREF\n";	
 	}
 
 }
