@@ -12,7 +12,7 @@ use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 
 my ($host, $port, $user, $password, $db, $verbose, $check);
 $host = "127.0.0.1";
-$port = 5000;
+$port = 3306;
 $password = "";
 $user = "ensro";
 
@@ -75,13 +75,10 @@ my @toplevel = @{$slice_adaptor->fetch_all('toplevel')};
 debug("Got " . @toplevel . " sequence regions in the top-level co-ordinate system");
 set_nr_attribute($slice_adaptor, $nr_attrib_type_id, $dbi, @toplevel);
 
-# Rest of the co-ordinate systems, in "descending" order
-# TODO - smarter way of getting this
-my @coord_systems = ('contig', 'clone', 'supercontig', 'chromosome' ); # XXX clone above supercontig?
+# Rest of the co-ordinate systems, in "ascending" order
+my @coord_systems = get_coord_systems_in_order($db_adaptor, $slice_adaptor);
 
 debug("Starting pair-wise co-ordinate system comparison");
-
-my $cs_adaptor = $db_adaptor->get_CoordSystemAdaptor();
 
 my @nr_slices; # will store non-redundant ones for later
 
@@ -91,7 +88,7 @@ for (my $lower_cs_idx = 0; $lower_cs_idx < @coord_systems; $lower_cs_idx++) {
     my $higher_cs = $coord_systems[$higher_cs_idx];
     my $lower_cs = $coord_systems[$lower_cs_idx];
 
-    #debug("$lower_cs:$higher_cs");
+    debug("$lower_cs:$higher_cs");
 
     # we are interested in the slices that do *not* project onto the "higher" coordinate system
     my @slices = @{$slice_adaptor->fetch_all($lower_cs)};
@@ -122,6 +119,52 @@ set_nr_attribute($slice_adaptor, $nr_attrib_type_id, $dbi, @nr_slices);
 #----------------------------------------
 
 check_non_redundant($slice_adaptor) if $check;
+
+$sth->finish();
+$dbi->disconnect();
+
+# ----------------------------------------
+# Get all the co-ordinate systems in order
+# Order is descending average length
+# Return an array of co-ordinate system names
+
+sub get_coord_systems_in_order() {
+
+  my $db_adaptor = shift;
+  my $slice_adaptor = shift;
+
+  debug("Ordering co-ordinate systems by average length");
+
+  my $cs_adaptor = $db_adaptor->get_CoordSystemAdaptor();
+  my @coord_system_objs = @{$cs_adaptor->fetch_all()};
+
+  # Calculate average lengths
+  my %lengths;
+  foreach my $cs (@coord_system_objs) {
+    my @slices = @{$slice_adaptor->fetch_all($cs->name())};
+    my $total_len = 0;
+    foreach my $slice (@slices) {
+      $total_len += $slice->length();
+    }
+    if ($total_len > 0) {
+      $lengths{$cs->name()} = $total_len /= scalar(@slices);
+    } else {
+      $lengths{$cs->name()} = 0;
+      print "Warning - total length for " . $cs->name() . " is zero!\n";
+    }
+  }
+
+  my @coord_systems = sort { $lengths{$a} <=> $lengths{$b} } keys %lengths;
+
+  foreach my $cs_name (@coord_systems) {
+    debug("Co-ord system: " . $cs_name . "  Average length: " . $lengths{$cs_name});
+  }
+
+  debug("Got co-ordinate systems in order: " . join(', ', @coord_systems));
+
+  return @coord_systems;
+
+}
 
 # ----------------------------------------------------------------------
 # Misc / utility functions
