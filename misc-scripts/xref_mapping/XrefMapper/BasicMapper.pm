@@ -1338,7 +1338,6 @@ sub transcript_display_xref_sources {
 	  'wormbase_transcript',
 	  'flybase_symbol',
 	  'Anopheles_symbol',
-	  'Genoscope_annotated_gene',
 	  'Genoscope_predicted_transcript',
 	  'Genoscope_predicted_gene',
 	  'Uniprot/SWISSPROT',
