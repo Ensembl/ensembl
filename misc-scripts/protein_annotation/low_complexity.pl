@@ -137,7 +137,7 @@ foreach my $pfamseq_tmp (@pfamseqlist) {
 		}
 	my $blank = "BLANK";
 		print $write_fh "$seqid\t$from\t$to\t15\t0\t0\tlow_complexity\t0\t0\t$score\n";
-
+		print STDERR "$seqid\t$from\t$to\t15\t0\t0\tlow_complexity\t0\t0\t$score\n";
 		#print $write_fh "\\N\t$seqid\t$from\t$to\tlow_complexity\tseg\t$score\n";
 	    }
 	    else {
@@ -145,6 +145,7 @@ foreach my $pfamseq_tmp (@pfamseqlist) {
 #Print in the following format to allow an easy loading into Ensembl database
 #FORMAT: translation\tseq_start\tseq_end\tanalysis\thstart\thend\thid\tscore\tevalue\tperc_id\n
 			print _SEGOUTPUT "$seqid\t$from\t$to\t15\t0\t0\tlow_complexity\t0\t0\t$score\n";
+			#print STDERR "$seqid\t$from\t$to\t15\t0\t0\tlow_complexity\t0\t0\t$score\n";
 
 			#print _SEGOUTPUT "\\N\t$seqid\t$from\t$to\tlow_complexity\tseg\t$score\n";
 

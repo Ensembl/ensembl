@@ -118,12 +118,8 @@ while(<_PFAMSEQ>) {
     $entries++;
     $truncate = 1;
 
-    my ($ac) = $_  =~ /^\>ENSP(\d+)/;
+    my ($ac) = $_  =~ /^\>COBP(\d+)/;
     
-    #print STDERR "$_\n\n";
-
-    #print STDERR "$ac\n";
-		
     #print DATABASE $_;
 
     print DATABASE ">$ac\n";

@@ -8,10 +8,10 @@ my $file;
 	    );
 
 
-&split_file();
-&run_low_complexity();
-&run_coils();
-&run_tmhmm();
+#&split_file();
+#&run_low_complexity();
+#&run_coils();
+#&run_tmhmm();
 &run_sign_pep();
 
 sub split_file {

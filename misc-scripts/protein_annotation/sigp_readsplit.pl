@@ -192,16 +192,12 @@ sub find_sigp {
   
   my $sigp_data;
   while(<_SIGP>) {
-    
-      #print STDERR "$_\n";
-    
-    $name = "ENSP".$1 if( $_ =~ /^>(\S+)/);
+        
+    $name = "COBP".$1 if( $_ =~ /^>(\S+)/);
      
       
-  #$name = $1 if( $_ =~ /^>(\S+)/);
-  
-    print STDERR "$name\n";
-        
+      #$name = $1 if( $_ =~ /^>(\S+)/);
+            
     $line_store{$line_counter} = $_ if ($_ =~ /max./i);
     if ($_ =~ /Most likely/i) {
       
