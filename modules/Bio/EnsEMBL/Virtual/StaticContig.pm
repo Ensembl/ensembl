@@ -1093,6 +1093,7 @@ sub _cached_virtualgenes_startend{
 
 
 
+
 =head2 get_all_VirtualTranscripts_startend
 
  Title   : get_all_VirtualTranscripts_startend
@@ -1185,6 +1186,78 @@ my $query ="SELECT     STRAIGHT_JOIN t.id,
 }
 
 
+=head2 get_all_Genes
+
+ Title   : get_all_Genes
+ Usage   : @genes = $vc->get_all_Genes()
+ Function: accelerated get_all_Genes for statics
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Genes{
+   my ($self) = @_;
+
+
+   if( defined $self->{'_static_vc_gene_get'} ) {
+       return @{$self->{'_static_vc_gene_get'}};
+   }
+
+   &eprof_start("total-static-gene-get");
+
+   my $idlist  = $self->_raw_contig_id_list();
+
+   my $query = "SELECT t.gene from exon e,exon_transcript et,transcript t where e.contig in $idlist and e.id = et.exon and et.transcript = t.id";
+
+
+   #print STDERR "Query is $query\n";
+
+   &eprof_start("gene-sql-get");
+
+   my $sth = $self->dbobj->prepare($query);
+   $sth->execute;
+   
+   &eprof_end("gene-sql-get");
+
+   my ($gene_id,$start,$end);	# 
+   $sth->bind_columns(undef,\$gene_id);
+
+   my @gene_ids;
+
+   while ($sth->fetch){
+       push(@gene_ids,$gene_id);
+   }
+
+   &eprof_start("full-gene-get");
+
+   my $gene_obj = $self->dbobj->gene_Obj();
+
+   my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
+   my %gene;
+
+   foreach my $gene ( @genes ) {
+       $gene{$gene->id()}= $gene;
+   }
+
+   &eprof_end("full-gene-get");
+
+   &eprof_start("gene-convert");
+   
+   # this delegates off to Virtual::Contig
+   my @newgenes=$self->_gene_query(%gene);
+
+
+   &eprof_end("gene-convert");
+
+   $self->{'_static_vc_gene_get'} = \@newgenes;
+
+   &eprof_end("total-static-gene-get");
+
+   return @newgenes;
+}
 
 
 
