@@ -562,7 +562,7 @@ sub prepare {
 
   # print STDERR  "SQL(".$self->dbname."):$string\n";
 
-   $self->connect() unless $self-connected;
+   $self->connect() unless $self->connected;
    my $sth = $self->db_handle->prepare($string);
   
    # return an overridden statement handle that provides us with
@@ -595,7 +595,7 @@ sub do {
 
    #info("SQL(".$self->dbname."):$string");
 
-   $self->connect() unless $self-connected;
+   $self->connect() unless $self->connected;
    
    my $result = $self->db_handle->do($string);
  #  if( $self->db_handle->err == 2006 ) {
