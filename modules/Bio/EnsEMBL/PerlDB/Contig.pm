@@ -18,10 +18,14 @@ Bio::EnsEMBL::PerlDB::Contig - Pure Perl implementation of contig object
 
     $contig = Bio::EnsEMBL::PerlDB::Contig->new();
     
-    # $sf is a Bio::SeqFeatureI type object. $seq is a Bio::Seq object
-
-    $contig->add_SeqFeature($sf);
+    #$contig inherits of Bio::SeqI and therefore suuports:
     $contig->seq($seq); 
+    $contig->top_SeqFeatures;
+
+    #$contig also has its own methods such as:
+    $contig->add_Gene($gene);
+    $contig->add_SeqFeature($feature);
+    my @genes=$contig->get_all_genes;
 
 =head1 DESCRIPTION
 
@@ -192,7 +196,7 @@ sub get_all_SeqFeatures{
 
 =cut
 
-sub add_SeqFeatures {
+sub add_SeqFeature {
    my ($self,$value) = @_;
    
    if( !ref $value || !$value->isa('Bio::EnsEMBL::SeqFeatureI') ) {
@@ -423,6 +427,36 @@ sub embl_order {
     return $self->{'_embl_order'};
 }
 
+=head2 length
+
+ Title   : length
+ Usage   : This is a slightly sneaky method, it returns the seq length 
+           there is a seq attached, and otherwise works as a set/get.
+           This is in order to have "artificial" contigs which have no seq,
+           but still comply to ContigI
+ Returns : length if defined in seq or if set
+ Args    : optional length
+
+=cut
+
+sub length {
+   my ($self,$value) = @_;
+
+   if( defined $self->seq ) {
+       return $self->seq->length;
+   } else {
+       if ( defined $value && $value ne '' ) {
+	   $self->{'_length'} = $value;
+       }
+   }
+   if (defined  $self->{'_length'}) {
+       return $self->{'_length'};
+   }
+   else {
+       $self->throw("You must either set the length of a PerlDB::Contig or attach a Bio::Seq object to it to determine the length!");
+   }
+}
+
 
 =head2 species
 
@@ -463,4 +497,6 @@ sub chromosome{
     
 }
 
+
 1;
+
