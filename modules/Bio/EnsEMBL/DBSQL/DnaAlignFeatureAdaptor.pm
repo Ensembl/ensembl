@@ -327,6 +327,71 @@ sub fetch_featurepair_list_by_contig_id{
 }
 
 
+sub fetch_featurepair_list_by_dbID{
+  my($self, $dbId) = @_;
+
+  my $cigar_feat = $self->fetch_by_dbId($dbId);
+  my @fps;
+  
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaDnaAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  
+
+  return @fps;
+}
+
+
+sub fetch_featurepair_list_by_assembly_location{
+  my($self, $start, $end, $chr, $type) = @_;
+
+  my @cigar_feats = $self->fetch_by_assembly_location($start, $end, $chr, $type);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaDnaAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
 1;
 
 
