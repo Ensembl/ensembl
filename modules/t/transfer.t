@@ -34,8 +34,8 @@ print "ok \n";    # 1st test passed, loaded needed modules
 
 $conf{'donor'} = 'testdonor';
 $conf{'recipient'} = 'testrecipient';
-$conf{'mysqladmin'} = 'mysqladmin';
-$conf{'mysql'} = 'mysql';
+$conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
+$conf{'mysql'} = '/mysql/current/bin/mysql';
 $conf{'user'}  = 'ensembl';
 $conf{'update'} = '../scripts/update_list_chunk.pl';
 $conf{'perl'} = 'perl';
