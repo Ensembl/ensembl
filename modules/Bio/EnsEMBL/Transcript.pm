@@ -60,6 +60,7 @@ use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
 use Bio::DBLinkContainerI;
 use Bio::EnsEMBL::TranscriptI;
+use Bio::EnsEMBL::Mapper;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI Bio::EnsEMBL::TranscriptI);
 # new() is inherited from Bio::Root::Object
@@ -996,7 +997,7 @@ sub convert_peptide_coordinate_to_contig {
 
   my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
 
-  my $rca = $self->db()->get_RawContigAdaptor();
+  my $rca = $self->adaptor->db->get_RawContigAdaptor();
 
   for my $coord ( @mapped_coords ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Coordinate" ) ) {
