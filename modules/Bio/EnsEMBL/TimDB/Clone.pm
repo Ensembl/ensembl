@@ -220,7 +220,6 @@ sub build_contigs {
 	    
 	    my $disk_key = $key;
 	    $key =~ s/^$disk_id/$id/;
-	    print STDERR "KEY: $key\n";
 	    print STDERR "Attempting to retrieve contig with $disk_key [$key]\n";
 	    
 	    my $tmpcontig = new Bio::EnsEMBL::TimDB::Contig( -dbobj => $self->_dbobj,
