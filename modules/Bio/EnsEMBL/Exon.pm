@@ -757,6 +757,8 @@ sub type {
 sub add_supporting_features {
   my ($self,@features) = @_;
   #print STDERR "calling add supporting features\n\n";
+  return unless @features;
+
   $self->{_supporting_evidence} = [] 
     unless defined($self->{_supporting_evidence});
   
@@ -810,12 +812,9 @@ sub get_all_supporting_features {
       my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
       $self->{_supporting_evidence} = $sfa->fetch_all_by_Exon($self);
     } 
-    else {
-      $self->{_supporting_evidence} = [];
-    }
   }
   
-  return $self->{_supporting_evidence};
+  return $self->{_supporting_evidence} || [];
 }
 
 
