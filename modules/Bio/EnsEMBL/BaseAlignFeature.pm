@@ -238,7 +238,31 @@ sub ungapped_features {
   return @{$self->_parse_cigar()};
 }
 
+=head2 strands_reversed
+ 
+  Arg [1]    : int $strands_reversed
+  Example    : none
+  Description: get/set for attribute strands_reversed
+               0 means that strand and hstrand are the original strands obtained
+                 from the alignment program used
+               1 means that strand and hstrand have been flipped as compared to
+                 the original result provided by the alignment program used.
+                 You may want to use the reverse_complement method to restore the
+                 original strandness.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+ 
+=cut
 
+sub strands_reversed {
+   my ($self, $arg) = @_;
+ 
+   if ( defined $arg ) {
+      $self->{'strands_reversed'} = $arg ;
+   }
+   return $self->{'strands_reversed'};
+}
 
 =head2 reverse_complement
 
