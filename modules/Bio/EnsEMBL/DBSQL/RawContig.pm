@@ -546,7 +546,7 @@ sub get_old_Exons {
 
     #If the clone does not exist, these are really new exons
     if ($@) {
-	print STDERR "Clone doesn't exist, returning empty array...\n";
+	print STDERR "Clone doesn't exist in old db, returning empty array...\n";
 	return ();
     }
    
