@@ -555,7 +555,7 @@ sub to_FTHelper {
 		    }
 		    my $tstart = $exon->start + $contig{$exon->contig_id}->embl_offset;
 		    my $tend   = $exon->end   + $contig{$exon->contig_id}->embl_offset;
-		    my $acc = $contig{$exon->contig_id}->embl_accession;
+		    my $acc = $contig{$exon->contig_id}->cloneid;
 
 		    if( $exon->strand == 1 ) {
 			$join .= "$acc:".$exon->start."..".$exon->end.",";
@@ -581,6 +581,9 @@ sub to_FTHelper {
 	    $ft->add_field('transcript',$trans->id);
 	    foreach my $dbl ( @dblinks ) {
 		$ft->add_field('dbxref',$dbl->database.":".$dbl->primary_id);
+	    }
+	    if( $ptrans->is_partial == 1 ) {
+		$ft->add_field('note',"transcript split due to inability to predict a single translateable transcript");
 	    }
 	    push(@out,$ft);
 	}
