@@ -1120,14 +1120,15 @@ sub write_Gene{
 			     $gene->modified . "',now())");
    $sth2->execute();
 
-   print STDERR "Using $cloneid and ",$gene->id,"\n";
-   print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
-       $gene->id ."','" . 
-       $cloneid  . "')","\n";
-
-   my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
-			    $gene->id . "','". 
-			    $cloneid ."')");
+   foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
+       print STDERR "Using $cloneid and ",$gene->id,"\n";
+       print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
+	   $gene->id ."','" . 
+	   $cloneid  . "')","\n";
+       
+       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
+				$gene->id . "','". 
+				$cloneid ."')");
        $sth->execute();
    }
 }
