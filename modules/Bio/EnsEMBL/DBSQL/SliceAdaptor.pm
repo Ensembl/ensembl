@@ -63,10 +63,11 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
-
+my $SEQ_REGION_CACHE_SIZE = 100;
 
 sub new {
   my $caller = shift;
@@ -75,8 +76,14 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  $self->{'_name_cache'} = {};
-  $self->{'_id_cache'} = {};
+  my %name_cache;
+  my %id_cache;
+
+  tie(%name_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+  tie(%id_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_REGION_CACHE_SIZE);
+
+  $self->{'_name_cache'} = \%name_cache;
+  $self->{'_id_cache'} = \%id_cache;
 
   return $self;
 }
