@@ -565,6 +565,10 @@ sub get_all_SimilarityFeatures_above_pid{
 sub get_all_RepeatFeatures {
     my ($self,$bp) = @_;
     
+    $bp = $bp+100;
+
+    print STDERR "Repeat Bases glob $bp\n";
+
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
@@ -1027,11 +1031,15 @@ sub get_all_ExternalFeatures{
    }
    
 
+   &eprof_start("External-feature-web-get");
+
    if( scalar(@web) > 0 ) {
       
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
 	   &eprof_start("external_get_web".$extf);
+	   print STDERR "web using glob $glob\n";
+
 	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
 	       my $clone = $feature->seqname;
 	       $clone =~ s/\.\d+$//g;
@@ -1064,14 +1072,22 @@ sub get_all_ExternalFeatures{
        }
    }
 
+   &eprof_end("External-feature-web-get");
+
+   &eprof_start("External-feature-std");
+
    #Standard EFFs now take a list of contig ids
    if( scalar(@std) > 0 ) {
        foreach my  $extf ( @std ) {
+	   &eprof_start("external_get_contig_list".$extf);
 	   if ( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {
 	       push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig_list(\%int_ext,@cintidlist));
 	   }
+	   &eprof_end("external_get_contig_list".$extf);
        }
    }
+
+   &eprof_end("External-feature-std");
 
    ## The DAS external feature factory is based on coordinates on contigs (at the moment)
    ## The standara EFF system has been moved to use contig/clone internal IDs so we have to
@@ -1079,10 +1095,12 @@ sub get_all_ExternalFeatures{
    ## internal IDs.There are probably more efficient ways to do this....
    ## what about DAS caching?
 
+   &eprof_start("External-feature-das");
+
    if( scalar(@das) > 0 ) {
        foreach my $contig (@rawcontigs) {       
 	   foreach my $extf ( @das ) {
-	       &eprof_start("external_get_std".$extf);
+	       &eprof_start("external_get_das".$extf);
 	       
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
 		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
@@ -1105,10 +1123,13 @@ sub get_all_ExternalFeatures{
 		   }
 	       }
 	       
-	       &eprof_end("external_get_std".$extf);
+	       &eprof_end("external_get_das".$extf);
 	   }
        }
    }	    
+
+   &eprof_end("External-feature-das");
+
    &eprof_end("External-feature-get");
 
    # ok. Now @contig_features are in contig coordinates. Map up.
