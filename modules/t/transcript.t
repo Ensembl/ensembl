@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 53;
+	plan tests => 61;
 }
 
 use MultiTestDB;
@@ -333,36 +333,39 @@ $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 # 5 prime UTR editing
 #
 
-my $seq1 = $tr->edited_seq();
+my $seq1 = $tr->spliced_seq();
 my $tlseq1 = $tr->translateable_seq();
 
+my $cdna_cds_start1 = $tr->cdna_coding_start();
+my $cdna_cds_end1   = $tr->cdna_coding_end();
+
 my $attrib = Bio::EnsEMBL::Attribute->new
-    ( 
-      -code => '_rna_edit',
-      -value => "0 6 GATTACA",
-      -name => "RNA editing"
-      );
+  (-code => '_rna_edit',
+   -value => "1 6 GATTACA",
+   -name => "RNA editing");
 
 $tr->add_Attributes( $attrib );
 
-my $seq2 = $tr->edited_seq();
+my $seq2 = $tr->spliced_seq();
 
 ok( $seq1 ne $seq2 );
 ok( $seq2 =~ /^GATTACA/ );
 
+my $cdna_cds_start2 = $tr->cdna_coding_start();
+my $cdna_cds_end2   = $tr->cdna_coding_end();
 
-#
+ok($cdna_cds_start1 == $cdna_cds_start2 - 1);
+ok($cdna_cds_end1   == $cdna_cds_end2   - 1);
+
+
 # insert just at the start of the translation
 # makes it longer. (For non phase zero start exons)
 # cdna_coding_start for this transcript is 65, 64 is just before that
-#
 
 $attrib = Bio::EnsEMBL::Attribute->new
-    ( 
-      -code => '_rna_edit',
-      -value => "64 64 NNN",
-      -name => "RNA editing"
-      );
+  ( -code => '_rna_edit',
+    -value => "65 64 NNN",
+    -name => "RNA editing");
 
 $tr->add_Attributes( $attrib );
 
@@ -371,6 +374,19 @@ my $tlseq2 = $tr->translateable_seq();
 ok( $tlseq1 ne $tlseq2 );
 ok( $tlseq2 =~ /^NNNATG/ );
 ok( $tlseq1 eq substr( $tlseq2,3 ));
+
+ok($cdna_cds_start2 == $tr->cdna_coding_start());
+ok($cdna_cds_end2   == $tr->cdna_coding_end() - 3);
+
+# test that the edits can be disabled
+$tr->edits_enabled(0);
+
+ok($tr->cdna_coding_start() == $cdna_cds_start1);
+ok($tr->cdna_coding_end()   == $cdna_cds_end1);
+
+ok($tr->spliced_seq() eq $seq1);
+ok($tr->translateable_seq() eq $tlseq1);
+
 
 #
 # try save and retrieve by lazy load
@@ -384,6 +400,6 @@ $attribAdaptor->store_on_Transcript( $tr, $tr->get_all_Attributes() );
 $tr = $ta->fetch_by_stable_id( "ENST00000217347" );
 
 ok( $tr->translateable_seq() eq $tlseq2 );
-ok( $tr->edited_seq() =~ /^GATTACA/ );
+ok( $tr->spliced_seq() =~ /^GATTACA/ );
 
 $multi->restore();
