@@ -97,16 +97,36 @@ foreach my $clone_id ( @clone_id ) {
     print STDERR "\nDumping clone      $clone_id\n";
     eval {
 	my $clone = $db->get_Clone($clone_id);
+	if ($clone->version == 0) {
+	    $errcount++;
+	    print "Error $errcount\n";
+	    print "Clone $clone_id has version zero!\n";
+	}
 	foreach my $contig ($clone->get_all_Contigs()) {
 	    print STDERR "\n        contig     ",$contig->id,"\n";
 	    foreach my $gene ($contig->get_all_Genes()) {
 		print STDERR "\n        gene       ",$gene->id,"\n";
+		if ($gene->version == 0) {
+		    $errcount++;
+		    print "Error $errcount\n";
+		    print "Clone:      $clone_id\n";
+		    print "Contig:     ",$contig->id,"\n";
+		    print "Gene ".$gene->id." has version zero!\n";
+		}
 		if (my $trans= $gene->each_Transcript()) {
 		    foreach $trans ($gene->each_Transcript()) {
 			print STDERR "\n        transcript ",$trans->id,"\n";
 			my $switch = 0;
 			my $start_exon_id = $trans->translation->start_exon_id;
 			my $end_exon_id = $trans->translation->end_exon_id;
+			if ($trans->version == 0) {
+			    $errcount++;
+			    print "Error $errcount\n";
+			    print "Clone:      $clone_id\n";
+			    print "Contig:     ",$contig->id,"\n";
+			    print "Gene:       ",$gene->id,"\n";
+			    print "Transcript ",$trans->id," has version 0!\n";
+			}
 			if (my $exon = $trans->each_Exon()) { 
 			    foreach $exon ($trans->each_Exon()) {
 				print STDERR "        exon       ",$exon->id,"\n";
@@ -116,6 +136,15 @@ foreach my $clone_id ( @clone_id ) {
 				if ($end_exon_id eq $exon->id) {
 				    $switch++;
 				}
+				if ($exon->version == 0) {
+				    $errcount++;
+				    print "Error $errcount\n";
+				    print "Clone:      $clone_id\n";
+				    print "Contig:     ",$contig->id,"\n";
+				    print "Gene:       ",$gene->id,"\n";
+				    print "Transcript: ",$trans->id,"\n";
+				    print "Exon ".$exon->id." has version 0!\n";
+				}  
 			    }
 			}
 			else {
@@ -157,5 +186,6 @@ foreach my $clone_id ( @clone_id ) {
 	print STDERR "\nFound $errcount errors\n";
     }
 }
+
 
 

@@ -79,15 +79,15 @@ $SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
 my $fdbtype = 'rdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
-my $fdbname = 'ensdev';
-my $fdbuser = 'root';
+my $fdbname = 'ensembl';
+my $fdbuser = 'ensro';
 my $fdbpass = undef;
 
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'eliatest1';
-my $tdbuser = 'root';
+my $tdbname = 'test100';
+my $tdbuser = 'ensro';
 my $tdbpass = undef;
 
 my $usefile = 0;
@@ -96,7 +96,7 @@ my $cstart = 0;
 my $cend;
 my $getall = 0;
 my $help;
-my $fmodule = 'Bio::EnsEMBL::DBOLD::Obj';
+my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 
 my $delete_first = 0;
