@@ -926,9 +926,10 @@ sub dump_core_xrefs {
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
 
-  # keep track of what xref_ids have been written to prevent duplicates; e.g. several dependent
-  # xrefs my be dependent on the same master xref.
+  # keep track of what xref_id & object_xref_ids have been written to prevent 
+  # duplicates; e.g. several dependent xrefs may be dependent on the same master xref.
   my %xrefs_written;
+  my %object_xrefs_written;
 
   while(@xref_ids) {
 
@@ -959,6 +960,9 @@ sub dump_core_xrefs {
     # core database so we add on $xref_id_offset
     while ($xref_sth->fetch()) {
 
+      # make sure label is set to /something/ so that the website displays something
+      $label = $accession if (!$label);
+
       if (!$xrefs_written{$xref_id}) {
 	my $external_db_id = $source_to_external_db{$source_id};
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
@@ -977,6 +981,7 @@ sub dump_core_xrefs {
     while ($dep_sth->fetch()) {
 
       my $external_db_id = $source_to_external_db{$source_id};
+      $label = $accession if (!$label);
 
       if (!$xrefs_written{$xref_id}) {
 	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
@@ -991,11 +996,15 @@ sub dump_core_xrefs {
 	#print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
 	foreach my $object_id (@ensembl_object_ids) {
 	  my $type = $ensembl_object_types{$object_id};
-	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
-	  $object_xref_id++;
-	  # Add this mapping to the list - note NON-OFFSET xref_id is used
-	  my $key = $type . ":" . $object_id;
-	  push @{$object_xref_mappings->{$key}}, $xref_id;
+	  my $full_key = $type.":".$object_id.":".$xref_id;
+	  if (!$object_xrefs_written{$full_key}) {
+	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
+	    $object_xref_id++;
+	    # Add this mapping to the list - note NON-OFFSET xref_id is used
+	    my $key = $type . ":" . $object_id;
+	    push @{$object_xref_mappings->{$key}}, $xref_id;
+	    $object_xrefs_written{$full_key} = 1;
+	  }
 	}
       }
     }
@@ -1382,12 +1391,12 @@ sub do_upload {
     }
 
     # is this nicer than using the mysql client?
+    print "Setting $table display_xrefs from $file\n";
     open(DISPLAY_XREF, $file);
     while(<DISPLAY_XREF>) {
 
       $sth = $self->dbi()->prepare($_);
-      print $_;
-      #$sth->execute();
+      $sth->execute();
 
     }
 
