@@ -1025,6 +1025,41 @@ sub _mask_features {
 } 
 
 
+=head2 get_all_SearchFeatures
+
+  Arg [1]    : scalar $ticket_ids
+  Example    : $slice->get_all_SearchFeatures('BLA_KpUwwWi5gY');
+  Description: Retreives all search features for stored blast
+               results for the ticket that overlap this slice
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures
+  Exceptions : none
+  Caller     : general (webby!)
+
+=cut
+
+sub get_all_SearchFeatures {
+    my $self = shift;
+    my $ticket = shift;
+    local $_;
+
+    unless($ticket) {
+      $self->throw("ticket argument is required");
+    }
+
+    my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
+
+    my $offset = $self->chr_start-1;
+    warn $sfa,"--",$ticket;
+    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket) : [];#, $self->chr_name, $self->chr_start, $self->chr_end) : [];
+
+    foreach( @$features ) { 
+      warn ( $_ );
+      $_->start( $_->start-$offset );
+      $_->end(   $_->end-$offset );
+    };
+    return $features;
+}
+
 
 =head2 get_all_MapFrags
 
