@@ -155,6 +155,30 @@ sub get_Contig{
    return $contig;
 }
 
+=head2 prepare
+
+ Title   : prepare
+ Usage   : $sth = $dbobj->prepare("select start,end from feature where analysis = \" \" ");
+ Function: prepares a SQL statement on the DBI handle
+ Example :
+ Returns : A DBI statement handle object
+ Args    : a SQL string
+
+
+=cut
+
+sub prepare{
+   my ($self,$string) = @_;
+
+   if( ! $string ) {
+       $self->throw("Attempting to prepare an empty SQL query!");
+   }
+
+   # should we try to verify the string?
+
+   return $self->_db_handle->prepare($string);
+}
+
 
 
 =head2 _db_handle

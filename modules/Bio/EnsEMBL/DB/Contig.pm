@@ -89,12 +89,10 @@ sub get_all_SeqFeatures{
    my @array;
 
    my $id = $self->id();
-   # actual DBI object.
-   my $dbh= $self->_dbobj->_db_handle;
 
    # make the SQL query
 
-   my $sth = $dbh->prepare("select start,end,strand,score,analysis from feature where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select start,end,analysis from feature where contig = \"$id\"");
    my $res = $sth->execute();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
