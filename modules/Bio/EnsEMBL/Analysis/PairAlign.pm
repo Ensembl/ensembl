@@ -316,6 +316,7 @@ sub convert_FeaturePair {
   my ($self,$pair) = @_;
 
   my $hstrand = $self->get_hstrand;
+  
   my $feat = $self->create_Feature($pair->start, $pair->end, $pair->strand,
                                    $pair->slice);
   my @newfeatures = $self->convert_cDNA_feature($feat);
@@ -344,7 +345,8 @@ sub convert_FeaturePair {
       $hend2   = $tmp;
     }
     
-    my $finalpair = $self->create_FeaturePair($new->start, $new->end, 1,
+    my $finalpair = $self->create_FeaturePair($new->start, $new->end, 
+                                              $new->strand,
                                               $hstart2, $hend2, 
                                               $finalstrand, $pair->score);
     
