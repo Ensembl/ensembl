@@ -24,10 +24,9 @@
 
 =head1 CONTACT
 
-=head1 APPENDIX
+  Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -45,7 +44,6 @@ use Bio::Species;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 # new() is inherited from Bio::EnsEMBL::DBSQL::BaseAdaptor
-
 
 
 =head2 list_value_by_key
@@ -111,6 +109,31 @@ sub store_key_value {
   return;
 }
 
+
+=head2 delete_key
+
+  Arg [1]    : string $key
+               The key which should be removed from the database.
+  Example    : $meta_container->delete_key('sequence.compression');
+  Description: Removes all rows from the meta table which have a meta_key
+               equal to $key.
+  Returntype : none
+  Exceptions : none
+  Caller     : dna_compress script, general
+
+=cut
+
+sub delete_key {
+  my ($self, $key) = @_;
+
+  my $sth = $self->prepare("DELETE FROM meta WHERE meta_key = ?");
+  $sth->execute($key);
+  $sth->finish();
+
+  delete $self->{'cache'}->{$key};
+
+  return;
+}
 
 
 # add well known meta info get-functions below
