@@ -1,6 +1,6 @@
-# MySQL dump 6.4
+# MySQL dump 5.13
 #
-# Host: localhost    Database: ensdev
+# Host: obi-wan    Database: ensembl
 #--------------------------------------------------------
 # Server version	3.22.27
 
@@ -38,7 +38,7 @@ CREATE TABLE clone (
   htg_phase int(10) DEFAULT '-1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,	
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
 );
 
@@ -93,10 +93,10 @@ CREATE TABLE exon (
   version int(10) DEFAULT '1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, 
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
-  strand int (2) DEFAULT '1' NOT NULL,
+  strand int(2) DEFAULT '1' NOT NULL,
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
   KEY idx1 (id,contig),
@@ -118,8 +118,11 @@ CREATE TABLE exon_transcript (
   exon varchar(40) DEFAULT '' NOT NULL,
   transcript varchar(40) DEFAULT '' NOT NULL,
   rank int(10) DEFAULT '0' NOT NULL,
-  PRIMARY KEY(exon,transcript,rank),	
-  KEY idx1 (exon,transcript)
+  PRIMARY KEY (exon,transcript,rank),
+  KEY idx1 (exon,transcript),
+  KEY exon_index (exon),
+  KEY transcript_index (transcript),
+  KEY et_index (exon,transcript)
 );
 
 #
@@ -131,41 +134,25 @@ CREATE TABLE feature (
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   score int(10) DEFAULT '0' NOT NULL,
-  strand int(1) DEFAULT 1 NOT NULL,
+  strand int(1) DEFAULT '1' NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
   hstart int(11) DEFAULT '0' NOT NULL,
   hend int(11) DEFAULT '0' NOT NULL,
   hid varchar(40) DEFAULT '' NOT NULL,
   KEY overlap (id,contig,seq_start,seq_end,analysis),
-  PRIMARY KEY(id)
+  PRIMARY KEY (id),
+  KEY contig_index (contig),
+  KEY hid_index (hid)
 );
-
-# Table structure for repeat features
-
-CREATE TABLE repeat_feature (
-  id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
-  contig varchar(40) DEFAULT '' NOT NULL,
-  seq_start int(10) DEFAULT '0' NOT NULL,
-  seq_end int(10) DEFAULT '0' NOT NULL,
-  score int(10) DEFAULT '0' NOT NULL,
-  strand int(1) DEFAULT 1 NOT NULL,
-  analysis varchar(40) DEFAULT '' NOT NULL,
-  hstart int(11) DEFAULT '0' NOT NULL,
-  hend int(11) DEFAULT '0' NOT NULL,
-  hid varchar(40) DEFAULT '' NOT NULL,
-  KEY overlap (id,contig,seq_start,seq_end,analysis),
-  PRIMARY KEY(id)
-);
-
 
 #
 # Table structure for table 'fset'
 #
 CREATE TABLE fset (
-  id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  id varchar(40) DEFAULT '' NOT NULL auto_increment,
   score double(16,4) DEFAULT '0.0000' NOT NULL,
-  PRIMARY KEY (id)
+  KEY feature_id (id)
 );
 
 #
@@ -174,8 +161,8 @@ CREATE TABLE fset (
 CREATE TABLE fset_feature (
   fset varchar(40) DEFAULT '' NOT NULL,
   feature varchar(40) DEFAULT '' NOT NULL,
-  rank int(11) DEFAULT '' NOT NULL,
-  PRIMARY KEY(fset,feature,rank)
+  rank int(11) DEFAULT '0' NOT NULL,
+  PRIMARY KEY (fset,feature,rank)
 );
 
 #
@@ -191,17 +178,25 @@ CREATE TABLE gene (
 );
 
 #
+# Table structure for table 'geneclone_neighbourhood'
+#
+CREATE TABLE geneclone_neighbourhood (
+  clone varchar(40) DEFAULT '' NOT NULL,
+  gene varchar(40) DEFAULT '' NOT NULL,
+  PRIMARY KEY (clone,gene)
+);
+
+#
 # Table structure for table 'ghost'
 #
 CREATE TABLE ghost (
   id varchar(40) DEFAULT '' NOT NULL,
   version varchar(5) DEFAULT '' NOT NULL,
-  obj_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
+  obj_type set('transcript','protein','exon') DEFAULT '' NOT NULL,
   deleted datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id,version,obj_type)
 );
-
 
 #
 # Table structure for table 'mapbin'
@@ -223,6 +218,25 @@ CREATE TABLE meta (
 );
 
 #
+# Table structure for table 'repeat_feature'
+#
+CREATE TABLE repeat_feature (
+  id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  contig varchar(40) DEFAULT '' NOT NULL,
+  seq_start int(10) DEFAULT '0' NOT NULL,
+  seq_end int(10) DEFAULT '0' NOT NULL,
+  score int(10) DEFAULT '0' NOT NULL,
+  strand int(1) DEFAULT '1' NOT NULL,
+  analysis varchar(40) DEFAULT '' NOT NULL,
+  hstart int(11) DEFAULT '0' NOT NULL,
+  hend int(11) DEFAULT '0' NOT NULL,
+  hid varchar(40) DEFAULT '' NOT NULL,
+  KEY overlap (id,contig,seq_start,seq_end,analysis),
+  PRIMARY KEY (id),
+  KEY contig_index (contig)
+);
+
+#
 # Table structure for table 'supporting_feature'
 #
 CREATE TABLE supporting_feature (
@@ -231,7 +245,7 @@ CREATE TABLE supporting_feature (
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   score int(10) DEFAULT '0' NOT NULL,
-  strand int(1) DEFAULT 1 NOT NULL,
+  strand int(1) DEFAULT '1' NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
   hstart int(11) DEFAULT '0' NOT NULL,
@@ -239,9 +253,11 @@ CREATE TABLE supporting_feature (
   hid varchar(40) DEFAULT '' NOT NULL,
   KEY overlap (id,seq_start,seq_end,analysis),
   KEY exon_id (id,exon),
-  PRIMARY KEY(id)
+  PRIMARY KEY (id),
+  KEY exon_index (exon),
+  KEY analysis_index (analysis),
+  KEY hid_index (hid)
 );
-
 
 #
 # Table structure for table 'transcript'
@@ -255,28 +271,16 @@ CREATE TABLE transcript (
   KEY id_geneid (id)
 );
 
+#
+# Table structure for table 'translation'
+#
 CREATE TABLE translation (
   id varchar(40) DEFAULT '' NOT NULL,
   version int(10) DEFAULT '1' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   start_exon varchar(40) DEFAULT '' NOT NULL,
-  seq_end   int(10) DEFAULT '0' NOT NULL,
+  seq_end int(10) DEFAULT '0' NOT NULL,
   end_exon varchar(40) DEFAULT '' NOT NULL,
-  PRIMARY KEY(id)
-); 
-
-CREATE TABLE geneclone_neighbourhood ( 
-       clone varchar(40) NOT NULL, 
-       gene varchar(40) NOT NULL, 
-       primary key (clone,gene)
+  PRIMARY KEY (id)
 );
-
-
-
-
-
-
-
-
-
 
