@@ -195,8 +195,8 @@ sub store {
 	( $dbX ) = $sth->fetchrow_array();
 	
 	# synonyms
-	my @synonyms = $exObj->get_all_synonyms();
-	foreach my $syn ( @synonyms ) {
+	my $synonyms = $exObj->get_all_synonyms();
+	foreach my $syn ( @{$synonyms} ) {
 	    
 #Check if this synonym is already in the database for the given primary id
 	    my $sth = $self->prepare( "
