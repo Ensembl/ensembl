@@ -24,7 +24,7 @@ my %conf =  %::mapping_conf; # configuration options
 my $org_list = $conf{'organism_list'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
-my $map        = $conf{'mapping_out'};
+my $mapping    = $conf{'mapping_out'};
 my $celera_mapping = $conf{'celera_mapping'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
@@ -32,7 +32,7 @@ my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
 my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
-my $query_pep  = $conf{'ensembl_predictions'};
+my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
 my $help;
 
@@ -342,9 +342,9 @@ if ($check eq "yes") {
     close (QUERY);
 }
 
-open (MAP,"$map") || die "Can't open MAP $map\n";
+open (MAP,"$mapping") || die "Can't open MAPPING $mapping\n";
 
-print STDERR "Reading pmatch output\n";
+print STDERR "Reading mapping output\n";
 
 MAPPING: while (<MAP>) {
     my $target;
@@ -357,35 +357,38 @@ MAPPING: while (<MAP>) {
 					       -module       => 'NULL',
 					       -logic_name   => 'mapping'
 					       );
+
     chomp;
 #    my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
-    my ($tid,$queryid,$tag,$targetperc,$queryperc) = split (/\t/,$_);
+#    my ($tid,$queryid,$tag,$targetperc,$queryperc) = split (/\t/,$_);
+    
+     my ($targetid,$tperc,$targetalignstart,$targetalignend,$queryid,$qperc,$qalignstart,$qalignend,$score,$cigarline) = split (/\,/,$_);
 
-    my $m = $tid; 
-    #print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
+    my $m = $queryid; 
+    #print STDERR "$targetid,$queryid,$tag,$tperc,$qperc\n";
 
-    if ($tid =~ /^NP_\d+/) {
+    if ($queryid =~ /^NP_\d+/) {
 	
-	($tid) = $tid =~ /^(NP_\d+)/;
-	$tid = $ref_map{$tid};
+	($queryid) = $queryid =~ /^(NP_\d+)/;
+	$queryid = $ref_map{$queryid};
     }
 
-    if ($tid =~ /^XP_\d+/) {
+    if ($queryid =~ /^XP_\d+/) {
 	
-	($tid) = $tid =~ /^(XP_\d+)/;
-	$tid = $ref_map_pred{$tid};
+	($queryid) = $queryid =~ /^(XP_\d+)/;
+	$queryid = $ref_map_pred{$queryid};
     }
     
-    if (($tid =~ /^(\w+-\d+)/)&&($organism ne "anopheles")) {
-	($tid) = $tid =~ /^(\w+)-\d+/;
+    if (($queryid =~ /^(\w+-\d+)/)&&($organism ne "anopheles")) {
+	($queryid) = $queryid =~ /^(\w+)-\d+/;
     }
  
-    #print STDERR "TID: $tid\n";
+    #print STDERR "TID: $queryid\n";
    
-    if ((defined $tid) && (defined $map{$tid})) {
+    if ((defined $queryid) && (defined $map{$queryid})) {
 	
 	
-	my @array = @{$map{$tid}};
+	my @array = @{$map{$queryid}};
 	
 	
 	foreach my $a(@array) {
@@ -407,9 +410,9 @@ MAPPING: while (<MAP>) {
 
 		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT"))) {
 
-		    if (($sp2embl{$a->xAC}) && ($ens2embl{$queryid})) {
+		    if (($sp2embl{$a->xAC}) && ($ens2embl{$targetid})) {
 
-			if (grep($ens2embl{$queryid}=~ /$_/,@{$sp2embl{$a->xAC}})) {
+			if (grep($ens2embl{$targetid}=~ /$_/,@{$sp2embl{$a->xAC}})) {
 		       
 
 			}
@@ -424,10 +427,17 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 
-		$dbentry->query_identity($queryperc);
-		$dbentry->target_identity($targetperc);
+
+		$dbentry->target_identity($tperc);
+		$dbentry->query_identity($qperc);
+		$dbentry->score($score);
+		$dbentry->cigar_line($cigarline);
+		$dbentry->query_start($qalignstart);
+		$dbentry->query_end($qalignend);
+		$dbentry->translation_start($targetalignstart);
+		$dbentry->translation_end($targetalignend);
 		$dbentry->analysis($analysis);
-		
+		    
 		my @synonyms = split (/;/,$a->xSYN);
 		
 		
@@ -436,11 +446,11 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 			}
-		if($queryid == 0){
+		if($targetid == 0){
 		  die "have no translation_id $!";
 		}
-		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$queryid."\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$targetid."\n";
+		$adaptor->store($dbentry,$targetid,"Translation");
 	    }
 	    
 	    elsif ($a->xDB eq "GO") {
@@ -457,7 +467,7 @@ MAPPING: while (<MAP>) {
 		$dbentry->status($a->stat);
 		
 		$dbentry->add_linkage_type($a->xID);
-		$adaptor->store($dbentry,$queryid,"Translation");
+		$adaptor->store($dbentry,$targetid,"Translation");
 	    }
 
 	    
@@ -480,11 +490,11 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
-		if($queryid == 0){
+		if($targetid == 0){
 		  die "have no translation_id $!";
 		}
-		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$queryid."\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$targetid."\n";
+		$adaptor->store($dbentry,$targetid,"Translation");
 		    
 	    }
 	}
@@ -492,12 +502,13 @@ MAPPING: while (<MAP>) {
     
 	
     else  {
-	 print STDERR " $tid not defined in x_map...hum, not good\n";
+	 print STDERR " $queryid not defined in x_map...hum, not good\n";
     }  
 }
 
+
 if ($organism eq "anopheles") {
-    open (ANOANNOT,"$celera_mapping") || die "Can't open Anno file\n";
+    open (ANOANNOT,"$celera_mapping") || die "Can't open Anno file $celera_mapping\n";
     
     while (<ANOANNOT>) {
 	chomp;
