@@ -44,12 +44,21 @@ Internal methods are usually preceded with a _
 package Bio::EnsEMBL::Utils::Converter::bio_ens_exon;
 
 use strict;
-use vars qw(@ISA);
+use vars qw(@ISA %GTF_ENS_PHASE);
 use Bio::EnsEMBL::Utils::Converter;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::Utils::Converter::bio_ens;
 @ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
+
+BEGIN {
+    %GTF_ENS_PHASE = (
+        0  =>  0,
+        1  =>  2,
+        2  =>  1,
+       '.' => -1
+    );
+}
 
 sub _initialize {
     my ($self, @args) = @_;
@@ -100,7 +109,15 @@ sub _convert_single {
     my $exon = $arg;
     my $ens_exon = Bio::EnsEMBL::Exon->new_fast(
         $self->contig, $exon->start, $exon->end, $exon->strand);
-    
+
+    my ($phase) = $exon->each_tag_value('phase');
+    $ens_exon->phase($GTF_ENS_PHASE{$phase});
+    my $ens_end_phase = 3 - ($exon->length - $phase) % 3;
+    $ens_end_phase = 0 if $ens_end_phase == 3;
+    $ens_exon->end_phase($ens_end_phase);
+    if($self->contig->isa('Bio::EnsEMBL::RawContig')){
+        $ens_exon->sticky_rank(1);
+    }
     $self->_attach_supporting_feature($exon, $ens_exon);
     return $ens_exon;
 }
