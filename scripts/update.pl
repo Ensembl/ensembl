@@ -290,7 +290,7 @@ sub _place_gene {
 	    if ($clone_level) {
 		$verbose && print "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 		$rec_db->delete_Gene($rec_gene->id);
-		$rec_db->write_gene($don_gene);
+		$rec_db->write_Gene($don_gene);
 	    }
 	    else {
 		$verbose && print "Genes with the same version, nothing needs to be done\n"; 

@@ -531,14 +531,10 @@ sub seq_date{
 
    my $id = $self->id();
 
-   my $sth = $self->_dbobj->prepare("select created from dna where contig = \"$id\" ");
+   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from dna where contig = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref(); 
-   my $datetime = $rowhash->{'created'};
-   $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-   $sth->execute();
-   $rowhash = $sth->fetchrow_arrayref();
-   return $rowhash->[0];
+   return $rowhash->{'UNIX_TIMESTAMP(created)'};
 }
 
 

@@ -356,14 +356,10 @@ sub created{
 
    my $id = $self->id();
 
-   my $sth = $self->_dbobj->prepare("select created from clone where id = \"$id\" ");
+   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
-   my $datetime = $rowhash->{'created'};
-   $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-   $sth->execute();
-   $rowhash = $sth->fetchrow_arrayref();
-   return $rowhash->[0];
+   return $rowhash->{'UNIX_TIMESTAMP(created)'};
 }
 
 =head2 modified

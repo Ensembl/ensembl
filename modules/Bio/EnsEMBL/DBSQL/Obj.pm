@@ -167,12 +167,12 @@ sub get_Gene{
 	$contig = 0;
     }
    
-    my $sth2 = $self->prepare("select version,created,modified from gene where id = '$geneid'");
+    my $sth2 = $self->prepare("select version,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified) from gene where id = '$geneid'");
     $sth2->execute();
     my $rowhash= $sth2->fetchrow_hashref;
     $gene->version($rowhash->{'version'});
-    $gene->created($rowhash->{'created'});
-    $gene->modified($rowhash->{'modified'});
+    $gene->created($rowhash->{'UNIX_TIMESTAMP(created)'});
+    $gene->modified($rowhash->{'UNIXTIMESTAMP(modified)'});
 
    # go over each Transcript
     my $sth = $self->prepare("select id,translation,version from transcript where gene = '$geneid'");
@@ -973,26 +973,31 @@ sub delete_Gene{
    my ($self,$geneid) = @_;
    my @trans;
    my %exon;
-
+   my $translation;
    # get out exons, transcripts for gene. 
 
-   my $sth = $self->prepare("select id from transcript where gene = '$geneid'");
+   my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@trans,$rowhash->{'id'});
+       $translation = $rowhash->{'translation'};
    }
 
    foreach my $trans ( @trans ) {
        my $sth = $self->prepare("select exon from exon_transcript where transcript = '$trans'");
        $sth->execute;
        while( my $rowhash = $sth->fetchrow_hashref) {
-	   $exon{$rowhash->{'id'}} =1;
+	   $exon{$rowhash->{'exon'}} =1;
        }
    }
+
+   my $sth2 = $self->prepare("delete from translation where id = '$translation'");
+   $sth2->execute;
 
    # delete exons, transcripts, gene rows
 
    foreach my $exon ( keys %exon ) {
+       print STDERR "Got exon $exon in delete_Gene\n";
        my $sth = $self->prepare("delete from exon where id = '$exon'");
        $sth->execute;
    }
@@ -1003,6 +1008,8 @@ sub delete_Gene{
        $sth= $self->prepare("delete from exon_transcript where transcript = '$trans'");
        $sth->execute;
    }
+
+   
 
    $sth = $self->prepare("delete from gene where id = '$geneid'");
    $sth->execute;
@@ -1168,9 +1175,9 @@ sub write_Gene{
 
        my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
 				 $gene->id()     . "','".
-				 $gene->version  . "','".
-				 $gene->created  . "','".
-				 $gene->modified . "',now())");
+				 $gene->version  . "',FROM_UNIXTIME(".
+				 $gene->created  . "),FROM_UNIXTIME(".
+				 $gene->modified . "),now())");
        $sth2->execute();
    }
    else {
@@ -1746,7 +1753,7 @@ sub write_Contig {
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
-   push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
+   push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr',FROM_UNIXTIME($date))");
    push(@sql,"replace into contig(id,dna,length,clone,offset,orientation,corder) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation,$order)");
    push(@sql,"unlock tables");   
 
@@ -1788,7 +1795,7 @@ sub write_Clone{
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,embl_version,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->embl_version."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."',now())");
+   push(@sql,"insert into clone(id,version,embl_id,embl_version,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->embl_version."','".$clone->htg_phase."',FROM_UNIXTIME(".$clone->created."),FROM_UNIXTIME(".$clone->modified."),now())");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
