@@ -212,7 +212,8 @@ sub fetch_by_CoordSystems {
 =cut
 
 my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
-my $MAX_PAIR_COUNT = 1000; # if the mapper is bigger than that its flushed before registering new stuff
+# if the mapper is bigger than that its flushed before registering new stuff:
+my $MAX_PAIR_COUNT = 1000; 
 
 sub register_assembled {
   my $self = shift;
@@ -269,7 +270,8 @@ sub register_assembled {
   # keep the Mapper to a reasonable size
   if( $asm_mapper->size() > $MAX_PAIR_COUNT ) {
     $asm_mapper->flush();
-    @chunk_regions = ( [ $start_chunk, $end_chunk ] );
+    @chunk_regions = ( [ ( $start_chunk << $CHUNKFACTOR) + 1
+                         , ($end_chunk+1) << $CHUNKFACTOR ] );
     for( my $i = $start_chunk; $i <= $end_chunk; $i++ ) {
       $asm_mapper->register_assembled( $asm_seq_region, $i );
     }
