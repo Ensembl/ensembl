@@ -81,7 +81,6 @@ use Carp;
 sub gtf_merge {
     my ($sort,$out,$new_prefix,$log) = @_;
 
-
     if( !defined $new_prefix ) {
 	&confess("Did not pass in new_prefix - must be sort,out,new_prefix");
     }
@@ -217,7 +216,8 @@ sub gtf_merge {
 
 
 	if( !defined $trans ) {
-	    print STDERR "Line starting [",substr($_,0,50),"] has no transcript id. Cannot provide IGI\n";
+	    #print STDERR "Line starting [",substr($_,0,50),"] has no transcript id. Cannot provide IGI\n";
+	    print STDERR "Line with no transcript id: $_\n";
 	    print $out $_;
 	    next;
 	}
