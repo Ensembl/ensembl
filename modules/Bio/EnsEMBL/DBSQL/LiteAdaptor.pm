@@ -68,7 +68,7 @@ sub fetch_virtualtranscripts_start_end {
     );
     
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-3000000, $vc_start, $database );
+        $sth->execute( "$chr", $vc_end, $vc_start-3000000, $vc_start, $database );
     };
     return [] if($@);
     my @transcripts;
@@ -106,7 +106,7 @@ sub fetch_virtualgenscans_start_end {
                 chr_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+        $sth->execute( "$chr", $vc_end, $vc_start-1000000, $vc_start );
     };
     return [] if($@);
     my @transcripts;
@@ -140,7 +140,7 @@ sub fetch_virtualgenes_start_end {
                 g.gene_chrom_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+        $sth->execute( "$chr", $vc_end, $vc_start-2000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -176,7 +176,7 @@ sub fetch_EMBLgenes_start_end {
                 gene_chrom_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-2000000, $vc_start );
+        $sth->execute( "$chr", $vc_end, $vc_start-2000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -213,7 +213,7 @@ sub fetch_SangerGenes_start_end {
                 gene_chrom_end >= ? "
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-2000000, $vc_start );
+        $sth->execute( "$chr" , $vc_end, $vc_start-2000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -253,7 +253,7 @@ sub fetch_virtualRepeatFeatures_start_end {
     );
 
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start);
+        $sth->execute( "$chr", $vc_end, $vc_start-1000000, $vc_start);
     };
     return [] if($@);
 
@@ -399,7 +399,7 @@ sub fetch_virtualfeatures {
                 score >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start, $score );
+        $sth->execute( "$chr", $vc_end, $vc_start-1000000, $vc_start, $score );
     };
     return [] if($@);
     my @features;
@@ -434,7 +434,7 @@ sub fetch_virtualsnps {
         order by snp_chrom_start"
     );
     eval {
-        $sth->execute( $chr, $vc_start, $vc_end );
+        $sth->execute( "$chr", $vc_start, $vc_end );
     };
     return [] if($@);
     my @variations;
