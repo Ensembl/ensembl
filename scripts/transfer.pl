@@ -100,6 +100,8 @@ my $help;
 my $fmodule = 'Bio::EnsEMBL::DBOLD::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 
+my $delete_first = 0;
+
 &GetOptions( 
 	     'fdbtype:s' => \$fdbtype,
 	     'fhost:s'   => \$fhost,
@@ -124,7 +126,8 @@ my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 	     'usefile'   => \$usefile,
 	     'start:i'   => \$cstart,
 	     'end:i'     => \$cend,
-	     'h|help'    => \$help
+	     'h|help'    => \$help,
+	     'delete'    => \$delete_first,
 	     );
 
 my $from_db;
@@ -217,7 +220,11 @@ foreach my $clone_id ( @clone ) {
     print STDERR "Loading $clone_id\n";
     eval {
 	my $clone = $from_db->get_Clone($clone_id);
-	
+	if( $delete_first == 1 ) {
+	    print STDERR "Deleting clone $clone_id";
+	    $to_db->delete_Clone($clone_id);
+	}
+
 	$to_db->write_Clone($clone);
 	
 	foreach my $gene ( $clone->get_all_Genes() ) {
