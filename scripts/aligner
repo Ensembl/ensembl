@@ -71,7 +71,9 @@ foreach my $id (@ARGV) {
     die "error: can't fetch alignment for $id\n";
   }
   foreach my $evidence_obj (@$evidence_seq_arr_ref) {
-    print ">", $evidence_obj->accession_number , "\n";
-    print $evidence_obj->seq , "\n";
+    print ">", $evidence_obj->accession_number , "\n"
+      or die "write error for $id";
+    print $evidence_obj->seq , "\n\n"
+      or die "write error for $id";
   }
 }
