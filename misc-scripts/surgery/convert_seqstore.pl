@@ -95,10 +95,11 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_stable_ids();
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
+  $converter->create_meta_coord();
   if ($vega_schema) {
     $converter->update_clone_info();
+    $converter->remove_supercontigs();
   }
-  $converter->create_meta_coord();
 }
 
 
