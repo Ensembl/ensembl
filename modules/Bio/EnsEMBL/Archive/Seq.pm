@@ -66,21 +66,26 @@ sub new {
   
   my $self = $class->SUPER::new(@args);
   
-   my ($dbid,$name,$type,$adaptor) = $self->_rearrange([qw(
+   my ($dbid,$name,$type,$created,$adaptor) = $self->_rearrange([qw(
 					  DBID
 					  NAME
 					  TYPE
+					  CREATED
 			                  ADAPTOR
 					  )],@args);
 
   $name || $self->throw("An Archive Seq object must have a name");
   $type || $self->throw("An Archive seq object must have a type");
-  
+  $created || $self->throw("An Archive seq object must have a created date"); 
+ 
   if ($adaptor) {
       $dbid || $self->throw("Creating Archive Seq with adaptor but without a db_ID");
       $self->adaptor($adaptor);
       $self->db_ID($dbid);
   }
+  $self->name($name);
+  $self->type($type);
+  $self->created($created);
 
   return $self;
 }
@@ -126,6 +131,28 @@ sub type{
     return $obj->{'type'};
 
 }
+
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created($newval)
+ Function: Getset for created value
+ Returns : value of created
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub created{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'created'} = $value;
+    }
+    return $obj->{'created'};
+
+}
+
 
 =head2 adaptor
 

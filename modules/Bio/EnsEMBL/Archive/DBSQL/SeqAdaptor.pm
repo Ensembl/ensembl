@@ -100,7 +100,7 @@ sub store {
    }
    
    if (! $self->_exists($seq)) {
-       my $statement = "INSERT INTO seq(seq_id,name,type,created) values (NULL,'".$seq->name."','".$seq->type."',now())";
+       my $statement = "INSERT INTO seq(seq_id,name,type,created) values (NULL,'".$seq->name."','".$seq->type."','".$seq->created."')";
        
        my $sth = $self->db->execute($statement);
        my $id = $sth->{'mysql_insertid'};

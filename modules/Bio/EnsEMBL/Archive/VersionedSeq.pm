@@ -236,7 +236,7 @@ sub subseq{
 sub moltype{
     my $self = shift;
 
-    my $type = $self->archive->type;
+    my $type = $self->archive_seq->type;
 
     if ($type =~ /exon|transcript/) {
 	return 'dna';

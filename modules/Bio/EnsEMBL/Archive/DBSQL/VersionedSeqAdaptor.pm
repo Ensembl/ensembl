@@ -79,7 +79,7 @@ sub fetch_by_dbID {
 					      -release_number => $rel,
 					      -adaptor => $self
 					      );
-    return $seq;
+    return $vseq;
 }
 
 =head2 store

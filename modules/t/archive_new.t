@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n"; 
+BEGIN { $| = 1; print "1..20\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -50,6 +50,7 @@ print "ok 2\n";
 my $seq = Bio::EnsEMBL::Archive::Seq->new(
 					  -name => 'test_e',
 					  -type => 'exon',
+					  -created => '2001-06-28 13:45:00'
 					  );
 
 my $vseq = Bio::EnsEMBL::Archive::VersionedSeq->new(
@@ -58,12 +59,128 @@ my $vseq = Bio::EnsEMBL::Archive::VersionedSeq->new(
 						    -start_clone => 'test_clone',
 						    -start => 1,
 						    -end_clone => 'test_clone',
-						    -end => 10,
-						    -sequence => 'ATGCGTATGC',
+						    -end => 9,
+						    -sequence => 'ATGCGTGTG',
 						    -modified => '2001-06-28 13:45:00',
 						    -release_number => 100
 						    );
 my $vsda = $db->get_VersionedSeqAdaptor;
 
-$vsda->store($vseq);
+my $id = $vsda->store($vseq);
 print "ok 3\n";
+my $vs = $vsda->fetch_by_dbID($id);
+print "ok 4\n";
+
+#Test all Seq methods
+if ($vs->archive_seq->name eq 'test_e') {
+    print "ok 5\n";
+}
+else {
+    print "not ok 5\n";
+}
+
+if ($vs->archive_seq->type eq 'exon') {
+    print "ok 6\n";
+}
+else {
+    print "not ok 6\n";
+}
+
+if ($vs->archive_seq->created eq '2001-06-28 13:45:00') {
+    print "ok 7\n";
+}
+else {
+    print "not ok 7\n";
+}
+
+#Now check all VersionedSeq methods
+if ($vs->version == 1) {
+    print "ok 8\n";
+}
+else {
+    print "not ok 8\n";
+}
+
+if ($vs->start_clone eq 'test_clone') {
+    print "ok 9\n";
+}
+else {
+    print "not ok 9\n";
+}
+
+if ($vs->start == 1) {
+    print "ok 10\n";
+}
+else {
+    print "not ok 10\n";
+}
+
+if ($vs->end_clone eq 'test_clone') {
+    print "ok 11\n";
+}
+else {
+    print "not ok 11\n";
+}
+
+if ($vs->end == 9) {
+    print "ok 12\n";
+}
+else {
+    print "not ok 12\n";
+}
+
+if ($vs->modified eq '2001-06-28 13:45:00') {
+    print "ok 13\n";
+}
+else {
+    print "not ok 13\n";
+}
+
+if ($vs->release_number == 100) {
+    print "ok 14\n";
+}
+else {
+    print "not ok 14\n";
+}
+
+if ($vs->seq eq 'ATGCGTGTG') {
+    print "ok 15\n";
+}
+else {
+    print "not ok 15\n";
+}
+
+if ($vs->subseq(1,3) eq 'ATG') {
+    print "ok 16\n";
+}
+else {
+    print "not ok 16\n";
+}
+
+if ($vs->length == 9) {
+    print "ok 17\n";
+}
+else {
+    print "not ok 17\n";
+}
+
+if ($vs->moltype eq 'dna') {
+    print "ok 18\n";
+}
+else {
+    print "not ok 18\n";
+}
+
+if ($vs->display_id eq 'test_e') {
+    print "ok 19\n";
+}
+else {
+    print "not ok 19\n";
+}
+
+if ($vseq->translate->seq eq 'MRV') {
+    print "ok 20\n";
+}
+else {
+    print "not ok 20\n";
+}

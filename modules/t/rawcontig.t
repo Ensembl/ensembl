@@ -111,7 +111,7 @@ if( !$dbseq->isa('Bio::PrimarySeqI') || !$pseq->isa('Bio::PrimarySeqI') ||
 }
 
 @features = $c->get_all_SeqFeatures();
-if( scalar(@features) != 4 ) {
+if( scalar(@features) != 3 ) {
     print STDERR "Did not get the expected 3 features out from all_SeqFeatures\n";
     print "not ok 10\n";
 } else {
@@ -129,7 +129,7 @@ if( $f->start != 5 || $f->end != 8 ) {
 }
 
 @features = $c->get_all_SimilarityFeatures();
-if( scalar(@features) != 3 ) {
+if( scalar(@features) != 2 ) {
     print STDERR "Did not get the expected 2 features out from all_SimilarityFeatures\n";
     print "not ok 12\n";
 } else {
