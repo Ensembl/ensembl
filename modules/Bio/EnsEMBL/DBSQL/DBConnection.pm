@@ -40,7 +40,7 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::DBSQL::DBAdaptorContainer;
+use Bio::EnsEMBL::Container;
 use Bio::EnsEMBL::Root;
 use DBI;
 
@@ -133,12 +133,10 @@ sub new {
   $self->port($port);
   $self->driver($driver);
 
-  #be very sneaky and actually return a dbholder object which is outside
-  #of the circular reference loops and will cleanup after the subclass 
-  #dbadaptor
-  return new Bio::EnsEMBL::DBSQL::DBAdaptorContainer($self);
-
-#  return $self;
+  #be very sneaky and actually return a container object which is outside
+  #of the circular reference loops and will perform cleanup when all references
+  #to the container are gone.
+  return new Bio::EnsEMBL::Container($self);
 }
 
 
@@ -429,6 +427,11 @@ sub prepare {
 sub add_db_adaptor {
   my ($self, $name, $adaptor) = @_;
 
+  #avoid circular references and memory leaks
+  if($adaptor->isa('Bio::EnsEMBL::Container')) {
+      $adaptor = $adaptor->_obj;
+  }
+
   $self->{'_db_adaptors'}->{$name} = $adaptor;
 }
 
@@ -452,7 +455,11 @@ sub remove_db_adaptor {
   my $adaptor = $self->{'_db_adaptors'}->{$name};
   delete $self->{'_db_adaptors'}->{$name};
 
-  return $adaptor;
+  unless($adaptor) {
+      return undef;
+  }
+
+  return new Bio::EnsEMBL::Container($adaptor);
 }
 
 
@@ -479,6 +486,8 @@ sub get_all_db_adaptors {
   return $self->{'_db_adaptors'};
 }
 
+
+
 =head2 get_db_adaptor
 
   Arg [1]    : string $name
@@ -495,7 +504,11 @@ sub get_all_db_adaptors {
 sub get_db_adaptor {
   my ($self, $name) = @_;
 
-  return $self->{'_db_adaptors'}->{$name};
+  unless($self->{'_db_adaptors'}->{$name}) {
+      return undef;
+  }
+
+  return new Bio::EnsEMBL::Container($self->{'_db_adaptors'}->{$name});
 }
 
 
