@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 39;
+	plan tests => 38;
 }
 
 
@@ -35,8 +35,8 @@ $test_adaptor = $db->get_QtlAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::QtlAdaptor"));
 $test_adaptor = $db->get_ProteinFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor"));
-$test_adaptor = $db->get_ProteinAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
+#$test_adaptor = $db->get_ProteinAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
 $test_adaptor = $db->get_MapFragAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
 #$test_adaptor = $db->get_CloneAdaptor();
