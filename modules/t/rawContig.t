@@ -2,13 +2,15 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 18;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
+
+my $verbose = 0;
 
 $loaded = 1;
 
@@ -41,20 +43,59 @@ ok($clone->embl_id eq 'AL353092');
 
 ok($contig->seq);
 
+debug( "Contig length: ".$contig->length() );
+ok( $contig->length() == 25010 );
 
-# $contig->subseq( start end strand)
-# $contig->get_repeatmasked_seq( logic_name soft_mask_enable_flag )
-# $contig->get_all_PredictionTranscripts()
-# $contig->get_all_RepeatFeatures()
-# $contig->get_all_SimilarityFeatures( logicname score )
-# $contig->get_all_DnaAlignFeatures( logic_name score )
-# $contig->get_all_ProteinAlignFeatures( logic_name score )
-# $contig->get_all_SimpleFeatures( logic_name score )
-# $contig->embl_offset()
-# $contig->clone()
-# $contig->get_all_ExternalFeatures()
+my $subseq = $contig->subseq( 1, 5, -1 );
+debug( "subseq: $subseq" );
 
-# we should be able to store RawContigs, shouldnt we?
+ok( $subseq eq "GAACT" );
+
+
+my $ptrans = $contig->get_all_PredictionTranscripts();
+ok( $ptrans );
+
+my $rFeatures = $contig->get_all_RepeatFeatures();
+debug( "repeat features: ".@{$rFeatures} );
+
+ok( @$rFeatures == 55 );
+
+my $repseq  = $contig->get_repeatmasked_seq( );
+debug( "Repeatmasked: ".substr( $repseq->seq(), 0, 50 ) );
+debug( "  isa ".ref( $repseq ));
+
+ok( $repseq->isa( "Bio::PrimarySeq" ));
+
+
+my $sFeatures = $contig->get_all_SimilarityFeatures( "swall" );
+debug( "SimilarityFeatures swall: ".@{$sFeatures} );
+ok( @$sFeatures == 123 );
+
+my $daFeatures = $contig->get_all_DnaAlignFeatures( );
+debug( "DnaAlignFeatures ".@{$daFeatures} );
+ok( @$daFeatures == 392 );
+
+
+my $pFeatures = $contig->get_all_ProteinAlignFeatures( );
+debug( "Protein Align Features: ".@{$pFeatures} );
+ok( @$pFeatures == 136 );
+
+my $simFeatures = $contig->get_all_SimpleFeatures( );
+debug( "Simple Features: ".@{$simFeatures} );
+
+debug( "Embloffset: ". $contig->embl_offset());
+ok( $contig->embl_offset() == 1 );
+
+my $extFeatures = $contig->get_all_ExternalFeatures();
+debug( "External Features: ".@{$extFeatures} );
+ok( @$extFeatures == 0 );
+
+sub debug {
+  my $txt = shift;
+  if( $verbose ) {
+    print STDERR $txt,"\n";
+  }
+}
 
 
 
