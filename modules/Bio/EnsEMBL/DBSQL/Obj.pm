@@ -184,6 +184,95 @@ sub get_Gene{
    return $gene;
 }
 
+=head2 get_last_update
+
+ Title   : get_last_update
+ Usage   : $obj->get_last_update; 
+ Function: Reads the meta table of the database to get the last_update time
+ Example : get_last_update
+ Returns : UNIX TIME of last update
+ Args    : none
+
+
+=cut
+
+sub get_last_update{
+    my ($self) = @_;
+    
+    my $sth = $self->prepare("select last_update from meta");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    my $datetime = $rowhash->{'last_update'};
+    $sth = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    return $rowhash->[0];
+}
+
+=head2 get_offset_time
+
+ Title   : get_offset_time
+ Usage   : $obj->get_offset_time; 
+ Function: Reads the meta table of the database to get the offset_time
+ Example : get_offset_time
+ Returns : UNIX TIME of offset_time
+ Args    : none
+
+
+=cut
+
+sub get_offset_time {
+    my ($self) = @_;
+
+    my $sth = $self->prepare("select offset_time from meta");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    return $rowhash->{'offset_time'};
+}
+
+=head2 get_now_offset
+
+ Title   : get_now_offset
+ Usage   : $obj->get_now_minus_offset; 
+ Function: Gets the current time from the point of view of the database, substracts the
+           offset time found in the meta table and gives back unix time of now-offset
+ Example : get_now_offset
+ Returns : UNIX TIME of now - offset_time
+ Args    : none
+
+
+=cut
+
+sub get_now_offset{
+    my ($self) = @_;
+
+    #First, get now, i.e. current time from db, in datetime format
+    my $sth = $self->prepare("select now()");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    my $now = $rowhash->{'now()'};
+    
+    #Now get the offset time from the meta table, which is in time format
+    $sth = $self->prepare("select offset_time from meta");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_hashref();
+    my $offset = $rowhash->{'offset_time'};
+
+    #Perform the subtraction in mysql
+    $sth = $self->prepare("select DATE_SUB(\"$now\", INTERVAL \"$offset\" HOUR_SECOND)");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    my $datetime = $rowhash->[0];
+
+    #Trasform the result into unix time and return it
+    $sth = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    return $rowhash->[0];
+}
+    
+    
+
 =head2 get_Protein_annseq
 
  Title   : get_Protein_annseq
@@ -453,10 +542,72 @@ sub get_all_Gene_id{
    return @out;
 }
 
-=head2 archive_Gene
+=head2 get_updated_objects
+    
+ Title   : get_updated_objects
+ Usage   : $obj->get_updated_objects ($recipient_last_update, $recipient_now, $recipient_offset)
+ Function: Gets all the objects that have been updated (i.e.change in 
+	   version number) between the current time - offset time given by
+           the recipient database and the last update time stored in its meta table 
+ Example : $obj->get_updated_objects (973036800,973090800)
+ Returns : all the objects updated within that timespan
+ Args    : $recipient_last_update, $recipient_now
 
+=cut
+
+sub get_updated_objects{
+    my ($self, $last, $now_offset) = @_;
+    
+    $last || $self->throw("Attempting to get updated objects without the recipient db last update time");
+    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+
+    #First, let us convert the unix times now_offset and last into mysql times
+    my $sth = $self->prepare("select FROM_UNIXTIME(".$last.")");
+    $sth->execute();
+    my $rowhash = $sth->fetchrow_arrayref();
+    $last = $rowhash->[0];
+
+    $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $sth->execute();
+    $rowhash = $sth->fetchrow_arrayref();
+    $now_offset = $rowhash->[0];
+    
+
+    #First, get all clone ids that have been updated between last and now-offset
+    my $sth = $self->prepare("select id from clone where modified > '".$last."' and modified <= '".$now_offset."'");
+   
+    $sth->execute;
+    my @out;
+    my @clones;
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	push(@clones,$rowhash->{'id'});
+    }
+    
+    #Get all clone objects for the ids contained in @clones, and push them in @out
+    foreach my $cloneid (@clones) {
+	push @out, $self->get_Clone ($cloneid);
+    }	
+    
+    #Get all gene ids that have been updated between last and now-offset
+    $sth = $self->prepare("select id from gene where modified > '".$last."' and modified <= '".$now_offset."'");
+    $sth->execute;
+
+    my @genes;
+    while( $rowhash = $sth->fetchrow_hashref) {
+	push(@genes,$rowhash->{'id'});
+    }
+    
+    #Get all clone objects for the ids contained in @clones, and push them in @out
+    foreach my $geneid (@genes) {
+	push @out, $self->get_Gene ($geneid);
+    }	
+    return @out;
+}
+
+=head2 archive_Gene
+    
  Title   : archive_Gene
- Usage   : $obj->archive_gene($gene,$clone$arcdb)
+ Usage   : $obj->archive_gene($gene,$clone,$arcdb)
  Function: Deletes a gene and all its transcripts and exons, 
            and archives partial info in the archive db passed on.
  Example : 
@@ -466,7 +617,7 @@ sub get_all_Gene_id{
 
 =cut
 
-sub archive_Gene{
+sub archive_Gene {
    my ($self,$gene,$clone,$arc_db) = @_;
    my $sth;
 
@@ -481,11 +632,7 @@ sub archive_Gene{
 
        #Temporary, since versions not stored yet...
        !$transcript->version && $transcript->version(1);
-
-       #Temporary, since versions not stored yet...
        !$gene->version && $gene->version(1);
-
-       #Temporary, since versions not stored yet...
        !$clone->version && $clone->version(1);
        
        #Finally, write all the info to a new entry in the archive database
@@ -527,7 +674,6 @@ sub archive_Gene{
    }
    
    # delete gene rows
-   
    $sth = $self->prepare("delete from gene where id = '".$gene->id."'");
    $sth->execute;
 }   
