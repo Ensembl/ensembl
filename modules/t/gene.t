@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 36;
+	plan tests => 38;
 }
 
 use MultiTestDB;
@@ -28,6 +28,14 @@ ok( $db );
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
+
+debug ("Gene->list_dbIDs");
+my $ids = $ga->list_dbIDs();
+ok (@{$ids});
+
+debug ("Gene->list_stable_dbIDs");
+my $stable_ids = $ga->list_stable_dbIDs();
+ok (@{$stable_ids});
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
