@@ -35,22 +35,25 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 @ISA = qw( Bio::Root::RootI );
 
+=head2 new
 
-# arguments
-# 1: dbID database internal id
-# 2: adaptor connecting to the database
+  Arg  1    : int dbID
+  Arg  2    : Bio::EnsEMBL::DBSQL::RawContigAdaptor adaptor
+  Arg  3    : txt contigName
+  Arg  4    : Bio::SeqI sequenceContainer
+  Arg  5    : int sequenceLength
+  Arg  6    : Bio::EnsEMBL::Clone clone
+  Arg  7    : int emblCloneContigNumber
+  Arg  8    : int emblCloneBaseOffset
+  Arg [9]   : txt internationalName
+  Function  : creates RawContig. Neds either dbID and Adaptor or clone and sequence.
+              With dbID its connected to DB, with the other it may be stored. 
+  Returntype: Bio::EnsEMBL::RawContig
+  Exceptions: none
+  Caller    : RawContigAdaptor, Data upload script
 
-# 3: name - a name you give this contig ...
+=cut
 
-# 4: sequence object, can be primarySeq
-# 5: length of sequence (if you want to avoid a fetch on the seq
-#    to find out ..
-
-# 6: clone this contig belongs to
-# 7: corder EMBL clone file position 
-# 8: offset EMBL clone file position in bp from start
-
-# 9: international_name
 
 sub new {
   my ( $class, @args ) = @_;
@@ -131,7 +134,7 @@ sub new {
 
 
 ############################
-#
+#                          #
 #  Attribute section       #
 #                          #
 ############################
@@ -266,7 +269,7 @@ sub seq {
   my $self = shift;
   my $arg = shift;
 
-  print STDERR "Sequence with $arg\n";
+#   print STDERR "Sequence with $arg\n";
 
   if( defined $arg ) {
     $self->{_seq} = $arg ;
@@ -277,8 +280,14 @@ sub seq {
       $self->adaptor->fetch( $self );
     }
   }
-  print STDERR "Returning...\n";
+#   print STDERR "Returning...\n";
   return $self->{_seq};
+}
+
+sub primary_seq {
+  my $self = shift;
+  
+  $self->seq();
 }
 
 
