@@ -515,11 +515,11 @@ sub cdna_coding_end {
   Example    : $coding_region_start = $transcript->coding_region_start
   Description: Retrieves the start of the coding region of this transcript
                in genomic coordinates (i.e. in either slice or contig coords).
-               By convention, the coding_region_start is always lower than 
-               the value returned by the coding_end method.  
-               The value returned by this function is NOT the biological 
-               coding start since on the reverse strand the biological coding 
-               start would be the higher genomic value. 
+               By convention, the coding_region_start is always lower than
+               the value returned by the coding_end method.
+               The value returned by this function is NOT the biological
+               coding start since on the reverse strand the biological coding
+               start would be the higher genomic value.
   Returntype : int
   Exceptions : none
   Caller     : general
@@ -1137,10 +1137,11 @@ sub translate {
   my $display_id;
   if( defined $self->translation->stable_id ) {
     $display_id = $self->translation->stable_id;
-  } elsif ( defined $self->temporary_id ) {
-    $display_id = $self->temporary_id;
+  } elsif ( defined $self->translation->dbID ) {
+    $display_id = $self->translation->dbID();
   } else {
-    $display_id = $self->translation->dbID;
+    #use memory location as temp id
+    $display_id = scalar($self->translation());
   }
 
   if( CORE::length( $mrna ) % 3 == 0 ) {
@@ -1151,12 +1152,12 @@ sub translate {
   # won't have a terminal stop codon
   # if you want to have a terminal stop codon either comment this line out
   # or call translatable seq directly and produce a translation from it
-  
+
   my $peptide = Bio::Seq->new( -seq => $mrna,
 			       -moltype => "dna",
 			       -alphabet => 'dna',
 			       -id => $display_id );
-    
+
   return $peptide->translate;
 }
 
