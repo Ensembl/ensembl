@@ -47,6 +47,8 @@ use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
 
+use Bio::SeqIO::Fasta;
+
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
@@ -130,27 +132,52 @@ sub seq{
        return $self->_seq_cache();
    }
 
-   my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select filename,byteposition from dnafindex where contigid = \"$id\"");
    my $res = $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   my $filename = $rowhash->{'filename'};
+   my $byteposition = $rowhash->{'byteposition'};
 
-   # should be a better way of doing this
-   while(my $rowhash = $sth->fetchrow_hashref) {
-     my $str = $rowhash->{sequence};
-
-     if( ! $str) {
-       $self->throw("No DNA sequence in contig $id");
-     } 
-     $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
-     $str =~ s/\s//g;
-     $str =~ s/[^ATGCNRY]/N/g;
-
-     my $ret =Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
-     $self->_seq_cache($ret);
-     
-     return $ret;
+   if( ! defined $filename ) {
+       $self->throw("Contig $id does not have an entry in dnafindex table!");
    }
 
-   $self->throw("No dna sequence associated with $id!");
+   my $fh = $self->_dbobj->_dna_filehandle($rowhash->{'filename'});
+   $fh->seek($byteposition,0);
+   
+   my $seqio = Bio::SeqIO::Fasta->new( -fh => $fh );
+   my $ret = $seqio->next_seq();
+   if( !defined $ret ) {
+       $self->throw("Unable to read sequence $id from $filename at $byteposition");
+   }
+
+   $self->_seq_cache($ret);
+   
+   return $ret;
+
+  # Old, direct table access.
+
+#     my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
+#     my $res = $sth->execute();
+
+#     # should be a better way of doing this
+#     while(my $rowhash = $sth->fetchrow_hashref) {
+#       my $str = $rowhash->{sequence};
+
+#       if( ! $str) {
+#         $self->throw("No DNA sequence in contig $id");
+#       } 
+#       $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+#       $str =~ s/\s//g;
+#       $str =~ s/[^ATGCNRY]/N/g;
+
+#       my $ret =Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+#       $self->_seq_cache($ret);
+     
+#       return $ret;
+#     }
+
+#     $self->throw("No dna sequence associated with $id!");
    
 }
 
