@@ -727,6 +727,7 @@ sub _build_clone_map {
    
    #print STDERR "Making clone map\n";
    foreach my $contig ( $clone->get_all_Contigs ) {
+       print(STDERR "Contig is " . ref($contig) . "\n");
        $self->{'start'}        ->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}    ->{$contig->id} = 1;
@@ -1066,7 +1067,7 @@ sub found_left_end {
     if (defined($arg) && ($arg == 1 || $arg == 0)) {
 
 	$self->{_found_left_end} = $arg;
-    } else {
+    } elsif (defined($arg)) {
 	$self->throw("Arg to found_left_end should be 0,1");
     }
 
@@ -1091,7 +1092,7 @@ sub found_right_end {
 
     if (defined($arg) && ($arg == 1 || $arg == 0)) {
 	$self->{_found_right_end} = $arg;
-    } else {
+    } elsif (defined($arg)) {
 	$self->throw("Arg to found_right_end should be 0,1");
     }
 
