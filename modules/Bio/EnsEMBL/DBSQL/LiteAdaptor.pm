@@ -183,7 +183,7 @@ sub fetch_snp_features {
 
         SELECT   snp_chrom_start,strand,chrom_strand,
                  refsnpid,
-                 tcsid, hgbaseid,clone 
+                 tscid, hgbaseid,clone 
         FROM   	 $_db_name.snp
         WHERE  	 chr_name='$chr' 
         AND      snp_chrom_start>$vc_start
