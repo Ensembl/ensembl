@@ -68,16 +68,16 @@ VALUES (1, 100);
 INSERT INTO fset_feature (feature, fset, rank) 
 VALUES (2, 1, 1);
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (3, 'repeat', 12, 'repeatmasker', 12, 'repeatmasker', 'repeat');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','trans','trans');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (9,'superfamily',3,'hmm','1','superfamily','domain');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (1, now(),'swissprot','swissprot', 12, 'blast', 12,  'blast', 'similarity');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (2, now(),'genscan','genscan', 12, 'blast', 12, 'blast', 'similarity');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (3, now(),'repeat','repeat', 12, 'repeatmasker', 12, 'repeatmasker', 'repeat');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,now(),'Pfam','Pfam',3,'hmm','1','Fasta','domain');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,now(),'prints','PRINTS',3,'hmm','1','Fasta','domain');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,now(),'transmembrane','transmembrane',3,'hmm','1','trans','trans');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (9,now(),'superfamily','superfamily',3,'hmm','1','superfamily','domain');
 
 #
 # Dumping data for table 'objectXref'

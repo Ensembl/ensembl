@@ -44,13 +44,13 @@ INSERT INTO fset_feature (feature, fset, rank)
 VALUES (3, 1, 2);
 
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (2, 'genscan', 12, 'blast', 12, 'genscan', 'prediction');
+INSERT INTO analysisprocess (analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (1, now(),'swissprot','swissprot', 12, 'blast', 12,  'blast', 'similarity');
+INSERT INTO analysisprocess (analysisId, created,logic_name,db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (2, now(),'genscan','genscan', 12, 'blast', 12, 'genscan', 'prediction');
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
-VALUES (3, 'repeat', 12, 'repeatmasker', 12, 'repeatmasker', 'repeat');
+INSERT INTO analysisprocess (analysisId, created,logic_name,db, db_version, program, program_version, gff_source, gff_feature)
+VALUES (3, now(),'repeat','repeat', 12, 'repeatmasker', 12, 'repeatmasker', 'repeat');
 
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',1,2,4,1,0,1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',2,2,4,2,0,1);
