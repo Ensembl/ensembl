@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for Bio::EnsEMBL::DBOLD::BaseAdaptor
+# BioPerl module for Bio::EnsEMBL::DBSQL::BaseAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::BaseAdaptor - Base Adaptor for DBOLD adaptors
+Bio::EnsEMBL::DBSQL::BaseAdaptor - Base Adaptor for DBSQL adaptors
 
 =head1 SYNOPSIS
 
@@ -28,11 +28,11 @@ Bio::EnsEMBL::DBOLD::BaseAdaptor - Base Adaptor for DBOLD adaptors
     $adaptor->deleteObj();
 
     # constructor, ok for inheritence
-    $adaptor = Bio::EnsEMBL::DBOLD::ClassWhichInheritsFromBaseAdaptor->new($dbobj)
+    $adaptor = Bio::EnsEMBL::DBSQL::ClassWhichInheritsFromBaseAdaptor->new($dbobj)
 
 =head1 DESCRIPTION
 
-This is a true base class for Adaptors in the Ensembl DBOLD
+This is a true base class for Adaptors in the Ensembl DBSQL
 system. Original idea from Arne
 
 =head1 CONTACT
@@ -49,7 +49,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::BaseAdaptor;
+package Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use vars qw(@ISA);
 use strict;
 use Bio::Root::RootI;

@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBOLD::Feature_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::Feature_Obj
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,14 +11,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
+Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feature Objects
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBOLD::Obj;
-  use Bio::EnsEMBL::DBOLD::Feature_Obj;
+  use Bio::EnsEMBL::DBSQL::Obj;
+  use Bio::EnsEMBL::DBSQL::Feature_Obj;
 
-  $db = new Bio::EnsEMBL::DBOLD::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $feature_obj=Bio::EnsEMBL::Feature_Obj->new($obj);
 
   #Check if a feature exists
@@ -26,7 +26,7 @@ Bio::EnsEMBL::DBOLD::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj, dealing with
+This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj, dealing with
 feature objects.
 
 The Obj object represents a database that is implemented somehow (you shouldn\'t
@@ -46,7 +46,7 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBOLD::Feature_Obj;
+package Bio::EnsEMBL::DBSQL::Feature_Obj;
 
 use vars qw(@ISA);
 use strict;
@@ -54,7 +54,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-#use Bio::EnsEMBL::DBOLD::Obj;
+#use Bio::EnsEMBL::DBSQL::Obj;
 
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::Gene;
@@ -62,8 +62,8 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
 use DBI;
-use Bio::EnsEMBL::DBOLD::Utils;
-use Bio::EnsEMBL::DBOLD::DummyStatement;
+use Bio::EnsEMBL::DBSQL::Utils;
+use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 
 
@@ -99,7 +99,7 @@ sub _initialize {
 sub delete {
     my ($self,$contig) = @_;
 
-    if ($contig->isa("Bio::EnsEMBL::DB::ContigI")) {
+    if (ref( $contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI")) {
 	$self->throw("You have to give a contig id, not a contig object!");
     }
 
@@ -128,7 +128,7 @@ sub delete {
 
 	chop($fsstr);
 	
-	print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
+
 	
 	$sth = $self->_db_obj->prepare("delete from fset where id in ($fsstr)");
 	$res = $sth->execute;
@@ -137,12 +137,12 @@ sub delete {
 	$res = $sth->execute;
     }
     
-    print(STDERR "Deleting features for contig $contig\n");
+    #print(STDERR "Deleting features for contig $contig\n");
     
     $sth = $self->_db_obj->prepare("delete from feature where contig = '$contig'");
     $res = $sth->execute;
     
-    print(STDERR "Deleting repeat features for contig $contig\n");
+    #print(STDERR "Deleting repeat features for contig $contig\n");
     
     $sth = $self->_db_obj->prepare("delete from repeat_feature where contig = '$contig'");
     $res = $sth->execute;
@@ -175,7 +175,6 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
@@ -184,6 +183,7 @@ sub write {
 
     FEATURE :
     foreach my $feature ( @features ) {	
+
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
@@ -193,10 +193,11 @@ sub write {
 	};
 
 	if ($@) {
-	    print(STDERR "Feature invalid. Skipping feature\n");
+
 	    next FEATURE;
 	}
-	if($feature->isa('Bio::EnsEMBL::Repeat')) {
+	
+	if($feature->isa('Bio::EnsEMBL::RepeatI')) {
 	    push(@repeats,$feature);
 	} elsif ( $feature->sub_SeqFeature ) {
 	    push(@fset,$feature);
@@ -206,36 +207,52 @@ sub write {
 	    } else {
 		$analysis = $feature->analysis;
 	    }
-	    
-	    my $analysisid = $self->write_Analysis($analysis);
 
+
+	    my $analysisid = $self->write_Analysis($analysis);
 
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $feature->feature2;
-	    
-		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      $homol->start,
-			      $homol->end,
-			      $homol->seqname);
-	    } else {
-		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      -1,
-			      -1,
-			      "__NONE__");
+	    my $sth = $self->_db_obj->prepare(  
+                  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                  "values ('NULL',"
+                  .$contig->internal_id     .","
+                  .$feature->start          .","
+                  .$feature->end            .","
+                  .$feature->score          .","
+                  .$feature->strand         .","
+                  ."'".$feature->source_tag."',"
+                  .$analysisid              .","
+                  .$homol->start            .","
+                  .$homol->end              .","
+                  ."'".$homol->seqname      ."',"
+                  .((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL')  .","    
+                  .((defined $feature->p_value)      ? &exponent($feature->p_value)     : 'NULL')  .","
+                  .((defined $feature->phase)        ? $feature->phase       : 'NULL')  .","
+                  .((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')  .")");
+        
+        $sth->execute();
+        
+        
+        } else {
+		my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    
+        $sth->execute('NULL',
+			          $contig->internal_id,
+			          $feature->start,
+			          $feature->end,
+			          $feature->score,
+			          $feature->strand,
+			          $feature->source_tag,
+			          $analysisid,
+			          -1,
+			          -1,
+			          "__NONE__",
+                      'NULL',
+                      'NULL',
+                      'NULL',
+                      'NULL' );
 	    }
 	}
     }
@@ -248,6 +265,7 @@ sub write {
 	} else {
 	    $analysis = $feature->analysis;
 	}
+
 
 	my $analysisid = $self->write_Analysis($analysis);
 	my $homol = $feature->feature2;
@@ -299,84 +317,31 @@ sub write {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    if ($sub->isa("Bio::EnsEMBL::FeaturePairI")) {
-
-	    my $sth5 = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
-				      .$sub->start   .","
-				      .$sub->end     . ","
-				      .$sub->score   . ","
-				      .$sub->strand  . ","
-				      .$analysisid   . ",\'" 
-				      .$sub->source_tag  . "\',"
-                                      .$sub->hstart   . ","
-                                      .$sub->hend     . ",\'"
-				      .$sub->hseqname . "\')");
-	    $sth5->execute();
-	} else {
-	    my $sth5 = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->internal_id."',"
-					       .$sub->start   .","
-					       .$sub->end     . ","
-					       .$sub->score   . ","
-					       .$sub->strand  . ","
-					       .$analysisid   . ",\'" 
-					       .$sub->source_tag  . "\',-1,-1,'__NONE__')");
-	    $sth5->execute();
-	}
+	    my $sth5 = $self->_db_obj->prepare("insert into feature "
+                      ."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
+                      ."values('NULL','"
+                      .$contig->internal_id ."',"
+				      .$sub->start          .","
+				      .$sub->end            . ","
+				      .$sub->score          . ","
+				      .$sub->strand         . ","
+				      .$analysisid          . "," 
+				      ."'".$sub->source_tag ."',"
+                      ."-1,-1,"
+                      ."'".($sub->primary_tag || "__NONE__")."',"
+                      . ((defined $sub->p_value)     ?   &exponent($sub->p_value)       : 'NULL')  .","
+                      . ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL')  .","
+                      . ((defined $sub->phase)       ?   $sub->phase         : 'NULL')  .","
+                      . ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')  .")");
+	    
+        $sth5->execute();
 	    my $sth6 = $self->_db_obj->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
 	    $rank++;
-	}
+	    }
     }
     
     return 1;
-}
-
-=head2 exists
-
- Title   : exists
- Usage   : $obj->exists($feature,$analisysid,$contig)
- Function: Tests whether this feature already exists in the database
- Example :
- Returns : nothing
- Args    : Bio::SeqFeature::Homol
-
-
-=cut
-
-sub exists {
-    my ($self,$feature,$analysisid,$contig) = @_;
-
-    $self->throw("Feature is not a Bio::SeqFeature::Homol") unless $feature->isa("Bio::SeqFeature::Homol");
-    
-    my $homol = $feature->homol_SeqFeature;
-
-    if (!defined($homol)) {
-	$self->throw("Homol feature doesn't exist");
-    }
-    
-    my $query = "select f.id  from feature as f,homol_feature as h where " .
-			     "  f.id = h.feature " . 
-			     "  and h.hstart = "    . $homol  ->start . 
-			     "  and h.hend   = "    . $homol  ->end   . 
-			     "  and h.hid    = '"   . $homol  ->seqname . 
-			     "' and f.contig = '"   . $contig ->internal_id . 
-			     "' and f.seq_start = " . $feature->start . 
-			     "  and f.seq_end = "   . $feature->end .
-			     "  and f.score = "     . $feature->score . 
-			     "  and f.name = '"     . $feature->source_tag . 
-			     "' and f.analysis = "  . $analysisid;
-
-
-    my $sth = $self->_db_obj->prepare($query);
-    my $rv  = $sth->execute;
-    my $rowhash;
-
-    if ($rv && $sth->rows > 0) {
-	my $rowhash = $sth->fetchrow_hashref;
-	return $rowhash->{'id'};
-    } else {
-	return 0;
-    }
 }
 
 =head2 get_Protein_annseq
@@ -402,7 +367,7 @@ sub get_Protein_annseq{
     my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
     
-    my $gene_obj=Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->_db_obj);
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
     my $transcript = $gene_obj->get_Transcript($rowhash->{'id'});
     my $translation = $gene_obj->get_Translation($ENSP);
 
@@ -524,7 +489,7 @@ sub get_Analysis {
 	$anal->gff_feature    ($rh->{gff_feature});
 	my $mid = $rh->{'id'};
 
-	$anal->id("$mid");
+	$anal->dbID("$mid");
 	return $anal;
     }  else {
 	$self->throw("Can't fetch analysis id $id\n");
@@ -557,7 +522,7 @@ sub exists_Analysis {
         
     my $query;
 
-    if ($anal->db and $anal->db_version) {
+    if ($anal->has_database == 1) {
             $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
                 " program =    \""      . $anal->program         . "\" and " .
@@ -611,16 +576,13 @@ sub write_Analysis {
     $self->throw("gff_source property of analysis object not defined") unless ($anal->gff_source); 
     $self->throw("gff_feature property of analysis object not defined") unless ($anal->gff_feature); 
         
-        
     # First check whether this entry already exists.
     my $query;
     my $analysisid = $self->exists_Analysis($anal);
     return $analysisid if $analysisid;
 
     
-        
-
-    if ($anal->db and $anal->db_version) {
+    if ($anal->has_database == 1) {
         local $^W = 0;
 	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
                 $anal->db               . "\",\""   .
@@ -850,7 +812,7 @@ sub get_PredictionFeature_as_Transcript{
     my $ft=$self->get_PredictionFeature_by_id($genscan_id);
     my $contig=$self->_db_obj->get_Contig($ft->seqname);
  
-    &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($ft,$contig);
+    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
 
 
 }
@@ -880,3 +842,10 @@ sub _db_obj{
 
 
 
+
+sub exponent {
+    my ($number) = @_;
+
+    my ($exp) = sprintf("%.3e", $number);
+    return $exp;
+}

@@ -46,7 +46,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::RawContig;
+package Bio::EnsEMBL::DBSQL::RawContig;
 use vars qw(@ISA);
 use strict;
 
@@ -54,16 +54,16 @@ use strict;
 
 use Bio::Root::RootI;
 
-use Bio::EnsEMBL::DBOLD::Obj;
-use Bio::EnsEMBL::DBOLD::Feature_Obj;
-use Bio::EnsEMBL::DBOLD::Gene_Obj;
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::Feature_Obj;
+use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
-use Bio::EnsEMBL::DBOLD::DBPrimarySeq;
+use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::EnsEMBL::DB::RawContigI Bio::Root::RootI);
@@ -89,14 +89,13 @@ sub new {
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
     $self->id($id);
     $self->dbobj($dbobj);
     $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
-    $self->contig_overlap_source($contig_overlap_source);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
 
     return $self;
@@ -111,29 +110,32 @@ sub direct_new {
         $dbobj,
         $id,
         $perlonlysequences,
-        $contig_overlap_source,
         $overlap_distance_cutoff,
 	$internal_id,
 	$dna_id,
 	$seq_version,
-	$cloneid
+	$cloneid,
+	$chr_start,
+	$chr_end
         ) = $self->_rearrange([qw(
 				  DBOBJ
 				  ID
 				  PERLONLYSEQUENCES
-				  CONTIG_OVERLAP_SOURCE
 				  OVERLAP_DISTANCE_CUTOFF
 				  INTERNAL_ID
 				  DNA_ID
 				  SEQ_VERSION
 				  CLONEID
+				  CHR_START
+				  CHR_END
 	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
-    if( !$internal_id || !$dna_id || !$seq_version || !$cloneid ) {
-	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid]!");
+    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+
+    if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid || !defined $chr_start || !defined $chr_end) {
+	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid,$chr_start,$chr_end]!");
     }
 
     $self->id($id);
@@ -144,8 +146,9 @@ sub direct_new {
     $self->seq_version($seq_version);
     $self->cloneid    ($cloneid);
     $self->perl_only_sequences($perlonlysequences);
-    $self->contig_overlap_source($contig_overlap_source);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
+    $self->_chr_start($chr_start);
+    $self->_chr_end($chr_end);
 
     return $self;
 }
@@ -157,7 +160,7 @@ sub direct_new {
  Usage   : $contig->fetch($contig_id)
  Function: fetches the data necessary to build a Rawcontig object
  Example : $contig->fetch(1)
- Returns : Bio::EnsEMBL::DBOLD::RawContig object
+ Returns : Bio::EnsEMBL::DBSQL::RawContig object
  Args    : $contig_id
 
 
@@ -168,24 +171,19 @@ sub fetch {
  
     my $id=$self->id;
 
-#    my $sth = $self->dbobj->prepare("select c.id,c.internal_id,cl.embl_version " . 
-#                           "from dna as d,contig as c,clone as cl " .
-#                           "where d.id = c.dna and c.id = '$id' and c.clone = cl.id");
-
     my $sth = $self->dbobj->prepare("
         SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
-          , contig.clone
+          , clone.id
         FROM dna
           , contig
           , clone
         WHERE contig.dna = dna.id
-          AND contig.clone = clone.id
-          AND contig.id = ?
+          AND contig.clone = clone.internal_id
+          AND contig.id = '$id'
         ");
-
-    my $res = $sth->execute($id);
+    my $res = $sth->execute();
 
     if (my $row = $sth->fetchrow_arrayref) {  
         $self->internal_id($row->[0]);
@@ -197,66 +195,6 @@ sub fetch {
     }
 
     return $self;
-}
-
-
-=head2 get_Genes_by_Type
-
- Title   : get_Genes_by_Type
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Genes_by_Type{
-   my ($self,$type,$supporting) = @_;
-   my $contig_id = $self->internal_id();   
-    # prepare the SQL statement
-unless ($type){$self->throw("I need a type argument e.g. ensembl")}; 
-
-my $query="
-        SELECT t.gene
-        FROM transcript t,
-             exon_transcript et,
-             exon e,
-             genetype gt
-        WHERE e.contig = '$contig_id'
-          AND et.exon = e.id
-          AND t.id = et.transcript
-          AND gt.gene_id=t.gene
-          AND gt.type = '$type'
-        ";
-
-
-   my $sth = $self->dbobj->prepare($query);
-   
-   my $res = $sth->execute();
-   my %got;
-   my @gene_array;
-   while (my $rowhash = $sth->fetchrow_hashref) { 
-       if( ! exists $got{$rowhash->{'gene'}}) {  
-	   push(@gene_array,$rowhash->{'gene'});
-       }
-           
-       $got{$rowhash->{'gene'}} = 1;
-   }       
-   
-
-#   print STDERR "Gene array is [@gene_array]\n";
-   my $gene_obj = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->dbobj);             
-
-   my @out;
-
-   if (@gene_array) {
-       @out = $gene_obj->get_array_supporting($supporting,@gene_array);
-   }
-   return @out;
-
-
 }
 
 =head2 get_all_Genes
@@ -277,7 +215,8 @@ sub get_all_Genes{
    my $contig_id = $self->internal_id();   
    my %got;
     # prepare the SQL statement
-   my $sth = $self->dbobj->prepare("
+ 
+my $query="
         SELECT t.gene
         FROM transcript t,
              exon_transcript et,
@@ -285,33 +224,10 @@ sub get_all_Genes{
         WHERE e.contig = '$contig_id'
           AND et.exon = e.id
           AND t.id = et.transcript
-        ");
+        ";
 
-    my $res = $sth->execute();
-   
-    while (my $rowhash = $sth->fetchrow_hashref) { 
-            
-        if( ! exists $got{$rowhash->{'gene'}}) {  
-            
-           my $gene_obj = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->dbobj);             
-	   my $gene;
-	   eval {
-	       $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
-	   };
-	   if ($@) {
-	       $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
-	   }
-           else {
-	       push(@out, $gene);
-           }
-	   $got{$rowhash->{'gene'}} = 1;
-        }       
-    }
-   
-    if (@out) {
-        return @out;
-    }
-    return;
+
+   return  $self->_gene_query($query,$supporting);
 }
 
 =head2 get_old_Genes
@@ -408,9 +324,192 @@ sub get_all_Exons {
 }
 
 
+=head2 get_old_Exons
+
+ Title   : get_old_Exons
+ Usage   : my @mapped_exons=$rc->get_old_Exons 
+ Function: Used to get out exons in new coordinates
+ Returns : an array of Bio::EnsEMBL::Exon objects
+ Args    : none
 
 
+=cut
 
+sub get_old_Exons {
+    my ($self,$logfile) = @_;
+
+    #This method requires a connection to a crossmatch database
+    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
+    my $crossdb = $self->_crossdb;
+
+    
+    #The crossdb should be holding onto old and new dbs, we need the old one here...
+    my $old_db;
+    eval {
+	$old_db=$self->_crossdb->old_dbobj;
+    }; 
+    if ($@) {
+	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
+    }
+    my $oldclone;
+    my $oldcontig;
+    eval {
+	$oldclone = $old_db->get_Clone($self->cloneid);
+    };
+
+    #If the clone does not exist, these are really new exons
+    if ($@) {
+	return ();
+    }
+   
+    my $newclone= $self->dbobj->get_Clone($self->cloneid);
+    #If the clones have the same version, the underlying dna hasn't changed,
+    #therefore we just return the old exons...
+    if ($oldclone->embl_version == $newclone->embl_version) {
+	my $oldcontig;
+	eval {
+	    $oldcontig = $oldclone->get_Contig($self->id);
+	};
+	if ($@) {
+	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
+	    return ();
+	}
+	my @exons=$oldcontig->get_all_Exons();
+	my $size=scalar (@exons);
+	#print STDERR "Returning $size old exons as they are for contig ".$self->id." on clone ".$oldclone->id."\n"; 
+	return @exons; 
+    }
+    #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
+    my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
+    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id,$newclone->embl_version);
+    my @sorted_fp= sort { $a->start <=> $b->start} @fp;
+    
+    my %validoldcontigs;
+    my %fphash;
+    my @old_exons;
+    foreach my $fp ( @sorted_fp ) {
+	my $contigid = $fp->hseqname;
+	my $oldcontig=$old_db->get_Contig($contigid);
+	push @old_exons, $oldcontig->get_all_Exons;
+	$validoldcontigs{$contigid} = $fp->hseqname;
+	if( !exists $fphash{$fp->hseqname} ) {
+	    $fphash{$fp->hseqname} = [];
+	}
+	push(@{$fphash{$fp->hseqname}},$fp);
+    }
+    #We now need to get all the Genes for this clone on the old case
+    # now perform the mapping
+
+    my @mapped_exons;
+    my @unmapped;
+    EXON:foreach my $exon (@old_exons) {
+	my $mapped=0;
+	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
+	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
+		if( $fp->strand == $fp->hstrand ) {
+		    # straightforward mapping
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
+		    $exon->start($fp->start + $exon->start - $fp->hstart);
+		    $exon->end($fp->start + $exon->end - $fp->hstart);
+		} else {
+		    # Grrr strand hell.
+		    my $oldstart = $exon->start;
+		    my $oldend   = $exon->end;
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
+		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
+		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
+		    $exon->strand( -1 * $exon->strand);
+		}
+		$mapped=1;
+		push (@mapped_exons,$exon);
+		next EXON;
+	    }
+	}
+	if ($mapped == 0) {
+	    print $logfile "LOST EXON: ".$exon->id."\n"; 
+	}
+    }
+    return @mapped_exons;		
+}
+
+
+=head2 get_Genes_by_Type
+
+ Title   : get_Genes_by_Type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Genes_by_Type{
+   my ($self,$type,$supporting) = @_;
+   my @out;
+   my $contig_id = $self->internal_id();   
+   my %got;
+    # prepare the SQL statement
+unless ($type){$self->throw("I need a type argument e.g. ensembl")}; 
+
+my $query="
+        SELECT t.gene
+        FROM transcript t,
+             exon_transcript et,
+             exon e,
+             genetype gt
+        WHERE e.contig = '$contig_id'
+          AND et.exon = e.id
+          AND t.id = et.transcript
+          AND gt.gene_id=t.gene
+          AND gt.type = '$type'
+        ";
+
+
+   return  $self->_gene_query($query,$supporting);
+}
+
+
+sub _gene_query{
+
+ my ($self, $query,$supporting) = @_;
+
+ my @out;
+ my $contig_id = $self->internal_id();   
+ my %got;
+ # prepare the SQL statement
+ my $sth = $self->dbobj->prepare($query);
+ 
+ my $res = $sth->execute();
+ 
+ while (my $rowhash = $sth->fetchrow_hashref) { 
+     
+     if( ! exists $got{$rowhash->{'gene'}}) {  
+	 
+	 my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
+         my $gene;
+         #PL: this may be overcautious, e.g. when called by get_GeneByType()
+         eval {
+             $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+         };
+         if ($@) {
+             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
+         }
+         else {
+             push(@out, $gene);
+         }
+	 $got{$rowhash->{'gene'}} = 1;
+     }
+ }
+ 
+ if (@out) {
+     return @out;
+ }
+ return;
+}
 
 
 
@@ -471,9 +570,9 @@ sub primary_seq{
 
  Title   : db_primary_seq
  Usage   : $dbseq = $contig->db_primary_seq();
- Function: Gets a Bio::EnsEMBL::DBOLD::DBPrimarySeq object out from the contig
+ Function: Gets a Bio::EnsEMBL::DBSQL::DBPrimarySeq object out from the contig
  Example :
- Returns : Bio::EnsEMBL::DBOLD::DBPrimarySeq object
+ Returns : Bio::EnsEMBL::DBSQL::DBPrimarySeq object
  Args    : 
 
 
@@ -482,7 +581,7 @@ sub primary_seq{
 sub db_primary_seq {
     my ($self) = @_;
     
-    my $dbseq = Bio::EnsEMBL::DBOLD::DBPrimarySeq->new(
+    my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
 						       -dna => $self->dna_id,
 						       -db_handle => $self->dbobj->_db_handle
 						       );
@@ -557,134 +656,6 @@ sub _seq_cache{
 }
 
 
-=head2 get_old_Exons
-
- Title   : get_old_Exons
- Usage   : my @mapped_exons=$rc->get_old_Exons 
- Function: Used to get out exons in new coordinates
- Returns : an array of Bio::EnsEMBL::Exon objects
- Args    : none
-
-
-=cut
-
-sub get_old_Exons {
-    my ($self,$logfile) = @_;
-
-    #This method requires a connection to a crossmatch database
-    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
-    my $crossdb = $self->_crossdb;
-
-    
-    #The crossdb should be holding onto old and new dbs, we need the old one here...
-    my $old_db;
-    eval {
-	$old_db=$self->_crossdb->old_dbobj;
-    }; 
-    if ($@) {
-	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
-    }
-    my $oldclone;
-    my $oldcontig;
-    eval {
-	$oldclone = $old_db->get_Clone($self->cloneid);
-    };
-
-    #If the clone does not exist, these are really new exons
-    if ($@) {
-	#print STDERR "Clone ".$self->cloneid." doesn't exist in old db, returning empty array...\n";
-	return ();
-    }
-   
-    my $newclone= $self->dbobj->get_Clone($self->cloneid);
-    #If the clones have the same version, the underlying dna hasn't changed,
-    #therefore we just return the old exons...
-    if ($oldclone->embl_version == $newclone->embl_version) {
-	my $oldcontig;
-	eval {
-	    $oldcontig = $oldclone->get_Contig($self->id);
-	};
-	if ($@) {
-	    print STDERR "CLONE VERSION BUG: ".$oldclone->id."\n";
-	    return ();
-	}
-	my @exons=$oldcontig->get_all_Exons();
-	my $size=scalar (@exons);
-	#print STDERR "Returning $size old exons as they are for contig ".$self->id." on clone ".$oldclone->id."\n"; 
-	return @exons; 
-    }
-    #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
-    #print STDERR "Not empty or identical, going through mapping\n";
-    my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
-    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id,$newclone->embl_version);
-    #print STDERR "Looking for feature pairs for contig ".$self->id."\n";
-    my @sorted_fp= sort { $a->start <=> $b->start} @fp;
-    
-    my %validoldcontigs;
-    my %fphash;
-    my @old_exons;
-    foreach my $fp ( @sorted_fp ) {
-	#print STDERR "Going through $fp\n";
-	my $contigid = $fp->hseqname;
-	#$contigid =~ s/\.\d+\./\./g;
-	#$contigid =~ /(\S+)\.(\d+)/;
-	#my $newid = $1.".0000".$2; 
-	#print STDERR "Contig id called $contigid\n";
-	my $oldcontig=$old_db->get_Contig($contigid);
-	push @old_exons, $oldcontig->get_all_Exons;
-	$validoldcontigs{$contigid} = $fp->hseqname;
-	if( !exists $fphash{$fp->hseqname} ) {
-	    $fphash{$fp->hseqname} = [];
-	}
-	push(@{$fphash{$fp->hseqname}},$fp);
-    }
-
-
-    #We now need to get all the Genes for this clone on the old case
-    # now perform the mapping
-
-    my @mapped_exons;
-    my @unmapped;
-EXON: foreach my $exon (@old_exons) {
-	#print STDERR "Going through old exon ".$exon->id."\n";
-	my $mapped=0;
-	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
-	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
-		if( $fp->strand == $fp->hstrand ) {
-		    # straightforward mapping
-		    #print STDERR $exon->id."is on a == strands feature pair\n";
-		    #print STDERR "FP Seqname ".$fp->seqname." hseqname ".$fp->hseqname."\n";
-		    #print STDERR "Exon seqname ".$exon->seqname."\n";
-		    $exon->seqname($fp->seqname);
-		    $exon->contig_id($fp->seqname);
-		    $exon->start($fp->start + $exon->start - $fp->hstart);
-		    $exon->end($fp->start + $exon->end - $fp->hstart);
-		} else {
-		    #print STDERR $exon->id." is in opposite strands feature pair!\n";
-		    # Grrr strand hell.
-		    my $oldstart = $exon->start;
-		    my $oldend   = $exon->end;
-		    $exon->seqname($fp->seqname);
-		    $exon->contig_id($fp->seqname);
-		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
-		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
-		    $exon->strand( -1 * $exon->strand);
-		}
-		push (@mapped_exons,$exon);
-		$mapped=1;
-		next EXON;
-	    }
-	}
-	if ($mapped == 0) {
-	    print $logfile "LOST EXON: ".$exon->id."\n";
-	}
-    }
-    my $size=scalar(@mapped_exons);
-    #print STDERR "Returning $size mapped exons\n";
-    return (@mapped_exons);		
-}
-
-
 
 =head2 get_all_SeqFeatures
 
@@ -734,12 +705,18 @@ sub get_all_SimilarityFeatures_above_score{
    my $id     = $self->internal_id();
    my $length = $self->length();
 
+    if( $self->use_rawcontig_acc() ) {
+	my $fplist = Bio::EnsEMBL::Ext::RawContigAcc::FeaturePairList_by_Score($id,$analysis_type,$score);
+	@array = $fplist->each_FeaturePair;
+	return @array;
+    }
+
    my %analhash;
 
    #First of all, get all features that are part of a feature set with high enough score and have the right type
 
     my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
-		             "hstart, hend, hid, fset, rank, fset.score " .
+		             "hstart, hend, hid, evalue, perc_id, phase, end_phase, fset, rank, fset.score " .
 		     "FROM   feature, fset_feature, fset, analysis " .
 		     "WHERE  feature.contig ='$id' " .
 		     "AND    fset_feature.feature = feature.id " .
@@ -752,11 +729,12 @@ sub get_all_SimilarityFeatures_above_score{
    my $sth = $self->dbobj->prepare($statement);                                                                       
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase,$fset,$rank,$fset_score);
    my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
+  
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase,\$fset,\$rank,\$fset_score);
    
    my $out;
    
@@ -768,7 +746,7 @@ sub get_all_SimilarityFeatures_above_score{
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
        
@@ -797,13 +775,17 @@ sub get_all_SimilarityFeatures_above_score{
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($self->id);
-       $feature->start     ($start);
-       $feature->end       ($end);
-       $feature->strand    ($strand);
-       $feature->source_tag($name);
+       $feature->seqname    ($self->id);
+       $feature->start      ($start);
+       $feature->end        ($end);
+       $feature->strand     ($strand);
+       $feature->source_tag ($name);
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
+       $feature->p_value    ($evalue)       if (defined $evalue);
+       $feature->percent_id ($perc_id)      if (defined $perc_id);
+       $feature->phase      ($phase)        if (defined $phase);
+       $feature->end_phase  ($end_phase)    if (defined $end_phase);
        
        if( defined $f_score ) {
 	   $feature->score($f_score);
@@ -823,9 +805,9 @@ sub get_all_SimilarityFeatures_above_score{
    $fset_id_str =~ s/\,$//;
 
    if ($fset_id_str) {
-        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
 		     "FROM   feature, analysis " .
-                     "WHERE  id not in (" . $fset_id_str . ") " .
+                     "WHERE  feature.id not in (" . $fset_id_str . ") " .
                      "AND    feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
                      "AND    analysis.db = '$analysis_type' " .
@@ -834,7 +816,7 @@ sub get_all_SimilarityFeatures_above_score{
        $sth = $self->dbobj->prepare($statement);
        
    } else {
-        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase " .
 		     "FROM   feature, analysis " .
                      "WHERE  feature.score > '$score' " . 
                      "AND    feature.analysis = analysis.id " .
@@ -849,7 +831,7 @@ sub get_all_SimilarityFeatures_above_score{
    $sth->execute();
 
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
    while($sth->fetch) {
        my $out;
@@ -857,7 +839,7 @@ sub get_all_SimilarityFeatures_above_score{
               
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
 	   
@@ -884,13 +866,17 @@ sub get_all_SimilarityFeatures_above_score{
 	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($self->id);
-	   $out->start     ($start);
-	   $out->end       ($end);
-	   $out->strand    ($strand);
-	   $out->source_tag($name);
+	   $out->seqname    ($self->id);
+	   $out->start      ($start);
+	   $out->end        ($end);
+	   $out->strand     ($strand);
+	   $out->source_tag ($name);
 	   $out->primary_tag('similarity');
 	   $out->id         ($fid);
+       $out->p_value    ($evalue)    if (defined $evalue);
+       $out->percent_id ($perc_id)   if (defined $perc_id); 
+       $out->phase      ($phase)     if (defined $phase);    
+       $out->end_phase  ($end_phase) if (defined $end_phase);
 
 	   if( defined $f_score ) {
 	       $out->score($f_score);
@@ -921,7 +907,7 @@ sub get_all_SimilarityFeatures_above_score{
 
 =cut
 
-sub get_all_SimilarityFeatures{
+sub get_all_SimilarityFeatures {
    my ($self) = @_;
 
    my @array;
@@ -930,163 +916,79 @@ sub get_all_SimilarityFeatures{
    my $id     = $self->internal_id();
    my $length = $self->length();
 
+   my @genscan = $self->get_all_PredictionFeatures;
+
+   push(@array,@genscan);
    my %analhash;
 
-   #First of all, get all features that are part of a feature set
-
-   #my $sth = $self->dbobj->prepare("select  p1.id, " .
-   #                          "p1.seq_start, p1.seq_end, " . 
-   #                           "p1.strand,p1.score,p1.analysis,p1.name,  " .
-   #                          "p1.hstart,p1.hend,p1.hid,"  .
-   #                          "p2.fset,p2.rank, " . 
-   #                          "fs.score " .
-   #                 "from    feature as p1,  " .
-   #                 "        fset_feature as p2, " .
-   #                 "        fset as fs " .
-   #                 "where   p1.contig ='$id' " .
-   #                 "and     p2.feature = p1.id " .
-   #                 "and     fs.id = p2.fset " .
-   #                 "order by p2.fset");
-
-    my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
-		             "hstart, hend, hid, fset, rank, fset.score " .
-		     "FROM   feature, fset_feature, fset " .
-		     "WHERE  feature.contig =$id " .
-		     "AND    fset_feature.feature = feature.id " .
-		     "AND    fset.id = fset " .
-                     "ORDER BY fset";
-		     
-                                    
-   my $sth = $self->dbobj->prepare($statement);                                    
-                                    
-   $sth->execute();
-   
-   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
-   my $seen = 0;
-   
-   # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
-   
-   my $out;
-   
-   my $fset_id_str = "";
-
-   while($sth->fetch) {
-
-       my $analysis;
-
-       if (!$analhash{$analysisid}) {
-	   
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   $analhash{$analysisid} = $analysis;
-       
-       } else {
-	   $analysis = $analhash{$analysisid};
-       }
-       
-       if( !defined $name ) {
-	   $name = 'no_source';
-       }
-       
-       #Build fset feature object if new fset found
-       if ($fset != $seen) {
-#	   print(STDERR "Making new fset feature $fset\n");
-	   $out =  new Bio::EnsEMBL::SeqFeature;
-	   $out->id($fset);
-	   $out->analysis($analysis);
-	   $out->seqname ($self->id);
-	   $out->raw_seqname ($self->id);
-	   $out->score($fset_score);
-	   $out->source_tag($name);
-	   $out->primary_tag("FSET");
-
-	   $seen = $fset;
-	   push(@array,$out);
-       }
-       $fset_id_str = $fset_id_str . $fid . ",";       
-       #Build Feature Object
-       my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($self->id);
-       $feature->raw_seqname ($self->id);
-       $feature->start     ($start);
-       $feature->end       ($end);
-       $feature->strand    ($strand);
-       $feature->source_tag($name);
-       $feature->primary_tag('similarity');
-       $feature->id         ($fid);
-       
-       if( defined $f_score ) {
-	   $feature->score($f_score);
-       }
-       
-       $feature->analysis($analysis);
-       
-       # Final check that everything is ok.
-       $feature->validate();
-
-       #Add this feature to the fset
-       $out->add_sub_SeqFeature($feature,'EXPAND');
-
-   }
-   
    #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
-   $fset_id_str =~ s/\,$//;
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$phase,$end_phase);
 
-   if ($fset_id_str) {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
-				     "from feature where id not in (" . $fset_id_str . ") and contig = $id");
-   } else {
-       $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid ".
-				     "from feature where contig = $id");
-   }
-
+   my $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
+				"from feature where contig = $id");
+   
    $sth->execute();
 
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
-   while($sth->fetch) {
+   FEAT: while($sth->fetch) {
        my $out;
        my $analysis;
               
+#       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fset\n";
+       
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
-	   $analysis = $feature_obj->get_Analysis($analysisid);
-	   $analhash{$analysisid} = $analysis;
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   eval {
+	     $analysis = $feature_obj->get_Analysis($analysisid);
+	     $analhash{$analysisid} = $analysis;
+	   };
+	   if ($@) {
+	     print STDERR "Error fetching analysis $analysisid. Skipping [$@]\n";
+	     next FEAT;
+	   }
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
        }
        
        if( !defined $name ) {
-	   $name = 'no_source';
+	 $name = 'no_source';
+       } elsif ($name eq "genscan") {
+	 next FEAT;
        }
        
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
 	 
-	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+	 $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
 	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
-				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+				            $hstart,$hend,1,$f_score,$name,'similarity',$hid, $evalue, $perc_id, $phase, $end_phase);
 
 	   $out->analysis    ($analysis);
-	   $out->id          ($hid);              # MC This is for Arek - but I don't
+	   $out->id($fid);
+	   # see comment below
+	   #$out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
        } else {
-	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($self->id);
+	 $out = new Bio::EnsEMBL::SeqFeature;
+	 $out->seqname    ($self->id);
+	 $out->start      ($start);
+	 $out->end        ($end);
+	 $out->strand     ($strand);
+	 $out->source_tag ($name);
+	 $out->primary_tag('similarity');
+	 $out->id         ($fid);
+	 $out->p_value    ($evalue)    if (defined $evalue);
+	 $out->percent_id ($perc_id)   if (defined $perc_id); 
+	 $out->phase      ($phase)     if (defined $phase);    
+	 $out->end_phase  ($end_phase) if (defined $end_phase); 
 	   $out->raw_seqname   ($self->id);
-	   $out->start     ($start);
-	   $out->end       ($end);
-	   $out->strand    ($strand);
-	   $out->source_tag($name);
-	   $out->primary_tag('similarity');
-	   $out->id         ($fid);
 
 	   if( defined $f_score ) {
 	       $out->score($f_score);
@@ -1094,7 +996,7 @@ sub get_all_SimilarityFeatures{
 	   $out->analysis($analysis);
        }
        # Final check that everything is ok.
-       $out->validate();
+       $out->validate() || $out->throw("Invalid data in $out");
        if( $out->can('attach_seq') ) {
 	   $out->attach_seq($self->primary_seq);
        }
@@ -1103,11 +1005,7 @@ sub get_all_SimilarityFeatures{
       
    }
    
-   my @extras = $self->get_extra_features;
-   my @newfeatures = $self->filter_features(\@fps,\@extras);
-
-#   print ("Size " . @array . " " . @newfeatures . "\n");
-   push(@array,@newfeatures);
+   push(@array,@fps);
 
    return @array;
 }
@@ -1154,7 +1052,7 @@ sub get_all_RepeatFeatures {
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 
 	   $analhash{$analysisid} = $analysis;
@@ -1173,7 +1071,7 @@ sub get_all_RepeatFeatures {
 				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 
 	   $out->analysis($analysis);
-
+	   $out->id($fid);
        } else {
 	   $self->warn("Repeat feature does not have a hid. bad news....");
        }
@@ -1184,7 +1082,7 @@ sub get_all_RepeatFeatures {
   }
  
    return @array;
-}
+}                                       # get_all_RepeatFeatures
 
 =head2 get_MarkerFeatures
 
@@ -1199,35 +1097,31 @@ sub get_all_RepeatFeatures {
 
 =cut
 
-
 sub get_MarkerFeatures {
-my ($self)=@_;
+    my ($self)=@_;
   
-my $id = $self->internal_id;
-my @markers;
+    my $id = $self->internal_id;
+    my @markers;
 
-
-eval {
-    require Bio::EnsEMBL::Map::MarkerFeature;
-    
-    my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+    eval {
+        require Bio::EnsEMBL::Map::MarkerFeature;
+        
+        my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
 	                  f.hstart, f.hend, f.hid, f.analysis 
 	           FROM   feature f, analysis a 
 		   WHERE  f.contig='$id' 
                    AND    f.analysis = a.id and a.db='mapprimer'";
-       
-    @markers=$self->_create_MarkerFeatures($statement);	
+        
+        @markers=$self->_create_MarkerFeatures($statement);	
 	
-};
+    };
 
-if( $@ ) {
-    print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
-}
-
-return @markers;
-
-}
-
+    if( $@ ) {
+        print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+    }
+    
+    return @markers;
+}                                       # get_MarkerFeatures
 
 
 =head2 get_landmark_MarkerFeatures
@@ -1245,22 +1139,21 @@ return @markers;
 =cut
 
 
-
 sub get_landmark_MarkerFeatures {
-my ($self)=@_;
-
-
-my $dbname=$self->dbobj->dbname;
-my $mapsdbname=$self->dbobj->mapdbname;
-
-my $id = $self->internal_id;
-my @markers;
-
-
-eval {
-    require Bio::EnsEMBL::Map::MarkerFeature;
-    
-    my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+      my ($self)=@_;
+      
+      
+      my $dbname=$self->dbobj->dbname;
+      my $mapsdbname=$self->dbobj->mapdbname;
+      
+      my $id = $self->internal_id;
+      my @markers;
+      
+      
+      eval {
+          require Bio::EnsEMBL::Map::MarkerFeature;
+          
+          my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
 	                  f.hstart, f.hend, s.name, f.analysis 
                    FROM   $dbname.feature f, $dbname.analysis a, 
                           $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m 
@@ -1270,18 +1163,17 @@ eval {
                    AND    m.marker=s.marker 
                    AND    f.hid=m.marker 
                    AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
-    
-    @markers=$self->_create_MarkerFeatures($statement);	
-	
-};
+          
+          @markers=$self->_create_MarkerFeatures($statement);	
+          
+      };
+      
+      if( $@ ) {
+          print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+      }
 
-if( $@ ) {
-    print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
-}
-
-return @markers;
-
-}
+      return @markers;
+}                                       # get_landmark_MarkerFeatures
 
 
 
@@ -1312,7 +1204,7 @@ while( $sth->fetch ) {
     
     if (!$analhash{$analysisid}) {
 	
-	my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
+	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	$analysis = $feature_obj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
@@ -1337,9 +1229,7 @@ while( $sth->fetch ) {
 
 return @result;
 
-}
-
-
+}                                       # _create_MarkerFeatures
 
 =head2 get_all_PredictionFeatures
 
@@ -1365,20 +1255,22 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id " . 
-       "from feature f, fset fset,fset_feature ff where ff.feature = f.id and fset.id = ff.fset and contig = $id and name = 'genscan'";
-    
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
+       "from feature f where contig = $id and name = 'genscan'";
+
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$analysisid);
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid);
-   
-   $previous = undef;
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
+  
+   $previous = -1;
    my $current_fset;
+   my $count;
+
    while( $sth->fetch ) {
        my $out;
        
@@ -1386,7 +1278,7 @@ sub get_all_PredictionFeatures {
 	   
        if (!$analhash{$analysisid}) {
 
-	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 
 	   $analhash{$analysisid} = $analysis;
@@ -1396,14 +1288,15 @@ sub get_all_PredictionFeatures {
        }
 
 
-       if( $fsetid != $previous ) {
+       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous == -1) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
+	   $current_fset->id($count);
+           $count++;
 	   $current_fset->raw_seqname($self->id);
-	   $current_fset->id($fsetid);
 	   push(@array,$current_fset);
        }
 
@@ -1411,9 +1304,23 @@ sub get_all_PredictionFeatures {
        
        $out->seqname   ($self->id);
        $out->raw_seqname($self->id);
+
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
+       $out->p_value   ($evalue)    if (defined $evalue);
+       $out->percent_id($perc_id)   if (defined $perc_id); 
+       $out->phase     ($phase)     if (defined $phase);    
+       $out->end_phase ($end_phase) if (defined $end_phase);
+        
+
+	my $query="select fset from fset_feature where feature=$fid"; 
+	my $sth = $self->dbobj->prepare($query);
+   	$sth->execute();
+	my $arr_ref=$sth->fetchrow_arrayref;
+
+	$fsetid=$arr_ref->[0];
+
        $out->id($fsetid); # to make genscan peptide work
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
@@ -1429,10 +1336,36 @@ sub get_all_PredictionFeatures {
        $out->validate();
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
-       $previous = $fsetid;
+       $previous = $hid;
   }
  
    return @array;
+}
+
+
+=head2 get_genscan_peptides
+
+ Title   : get_genscan_peptides
+ Usage   : 
+ Function: Returns genscan predictions as peptides
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+#have written this to use the new phase and end_phase tag in SeqFeature
+#Therefore this won't work with the older features, after all the old system was pretty ropey.
+sub get_genscan_peptides {
+    my ($self) = @_;
+    my @transcripts;
+    foreach my $fset ($self->get_all_PredictionFeatures) {
+	my $trans = &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset,$self);
+	push(@transcripts,$trans);
+    }
+
+    return @transcripts;
 }
 
 =head2 get_all_ExternalFeatures
@@ -1449,37 +1382,78 @@ sub get_all_PredictionFeatures {
 
 sub get_all_ExternalFeatures{
    my ($self) = @_;
-  
-   #print STDERR "Getting all external features\n"; 
-
+   
    my @out;
    my $acc;
    
-   # this is not pretty.
-   $acc = $self->id();
-   $acc =~ s/\.\d+$//g;
+   $acc = $self->cloneid();
+
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-	
-       push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->id,$self->seq_version,1,$self->length));
+
+
+       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+	   push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->internal_id,$self->seq_version,1,$self->length));
+       }
+       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
-       foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
-	   my $start = $sf->start - $embl_offset+1;
-	   my $end   = $sf->end   - $embl_offset+1;
-	   $sf->start($start);
-	   $sf->end($end);
-	   push(@out,$sf);
+	   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
+
+	       my $start = $sf->start - $embl_offset+1;
+	       my $end   = $sf->end   - $embl_offset+1;
+	       $sf->start($start);
+	       $sf->end($end);
+	       push(@out,$sf);
+	   }
        }
    }
    my $id = $self->id();
-
    foreach my $f ( @out ) {
        $f->seqname($id);
    }
 
    return @out;
 
+}                                       # get_all_ExternalFeatures
+
+
+=head2 get_all_ExternalGenes
+
+ Title   : get_all_ExternalGenes 
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalGenes {
+   my ($self) = @_;
+   my @out;
+   my $acc;
+
+   $acc = $self->cloneid();
+   my $embl_offset = $self->embl_offset();
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+       if( $extf->can('get_Ensembl_Genes_clone') ) {
+	   my @genes = $extf->get_Ensembl_Genes_clone($acc);
+	   foreach my $gene (@genes){
+	   foreach my $exon ( $gene->all_Exon_objects ) {
+	       $exon->start($exon->start - $embl_offset+1);
+	       $exon->end($exon->end - $embl_offset+1);
+	   }
+	   push(@out,@genes);
+       }
+
+
+       }
+   }
+
+   return @out;
 }
 
 
@@ -1497,6 +1471,7 @@ sub get_all_ExternalFeatures{
 
 sub length{
    my ($self,@args) = @_;
+
    my $id= $self->internal_id();
     $self->throw("Internal ID not set") unless $id;
    if (! defined ($self->{_length})) {
@@ -1521,6 +1496,36 @@ sub cloneid {
     return $self->{_cloneid};
 }
 
+=head2 old_chromosome
+
+ Title   : chromosome
+ Usage   : $chr = $contig->chromosome( [$chromosome] )
+ Function: get/set the chromosome of the contig.
+ Example :
+ Returns : the chromsome object
+ Args    :
+
+=cut
+
+sub old_chromosome {
+   my ($self,$chromosome ) = @_;
+   my $id= $self->internal_id();
+
+   if( defined( $chromosome )) {
+       $self->{_chromosome} = $chromosome;
+   } else {
+       if (! defined ($self->{_chromosome})) {
+	   my $sth = $self->dbobj->prepare("select chromosomeId from contig where internal_id = \"$id\" ");
+	   $sth->execute();
+	   
+	   my $rowhash = $sth->fetchrow_hashref();
+	   my $chrId = $rowhash->{'chromosomeId'};
+	   $self->{_chromosome} = Bio::EnsEMBL::Chromosome->get_by_id
+	       ( $chrId );
+       }
+   }
+   return $self->{_chromosome};
+}
 
 =head2 seq_version
 
@@ -1752,7 +1757,7 @@ sub _db_obj {
  Usage   :
  Function:
  Example :
- Returns : The Bio::EnsEMBL::DBOLD::ObjI object
+ Returns : The Bio::EnsEMBL::DBSQL::ObjI object
  Args    :
 
 
@@ -1762,7 +1767,7 @@ sub dbobj {
    my ($self,$arg) = @_;
 
    if (defined($arg)) {
-        $self->throw("[$arg] is not a Bio::EnsEMBL::DBOLD::Obj") unless $arg->isa("Bio::EnsEMBL::DBOLD::Obj");
+        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless $arg->isa("Bio::EnsEMBL::DBSQL::Obj");
         $self->{'_dbobj'} = $arg;
    }
    return $self->{'_dbobj'};
@@ -1774,7 +1779,7 @@ sub dbobj {
  Usage   :
  Function:
  Example :
- Returns : The Bio::EnsEMBL::DBOLD::CrossMatchAdaptor object
+ Returns : The Bio::EnsEMBL::DBSQL::CrossMatchAdaptor object
  Args    :
 
 
@@ -1816,10 +1821,8 @@ sub _got_overlaps {
 
 =cut
 
-
 sub _load_overlaps {
     my( $self ) = @_;
-    
     my $id = $self->id;
     my @over = $self->get_all_Overlaps;
     foreach my $lap (@over) {
@@ -1844,9 +1847,23 @@ sub _load_overlaps {
     }
 }
 
+{ # (this brace is the beginning of a block that results in static compilation
+  # of the SQL queries)
 
+    # Certainly worth explaining here.
+    #
+    # The overlap type indicates which end on the two contigs this overlap is.
+    # left means 5', right means 3'. There are four options. From these four
+    # options we can figure out
+    #    a) whether this overlap is on the 5' or the 3' of our contig
+    #    b) which polarity the overlap on the next contig is 
+    #
+    # Polarity indicates whether the sequence is being read in the same 
+    # direction as this contig. 
+    # 
+    # The sequence has to be appropiately versioned otherwise this gets complicated
+    # in the update scheme.
 
-{ # Begin bare block to keep @queries array private to get_all_Overlaps
 
     # Doing two queries seems to be quickest
     # Statements like:
@@ -1854,39 +1871,45 @@ sub _load_overlaps {
     # make queries inordinately slow because MySQL
     # doesn't use indices on OR statements.
     my @queries = (
-       q{SELECT cb.id
-          , co.contig_a_position
-          , co.contig_b_position
-          , co.overlap_type
-          , co.overlap_size
-          , co.type
-        FROM contigoverlap co
-          , contig cb
-        WHERE co.dna_b_id = cb.dna
-          AND co.dna_a_id = ?
-        },
+       q{SELECT c.id sister_id
+          , o.contig_b_position sister_pos
+          , o.contig_a_position self_pos
+          , o.overlap_type
+          , o.overlap_size
+          , o.overlap_source
+        FROM contigoverlap o
+          , contig c
+        WHERE c.dna = o.dna_b_id
+          AND dna_a_id = ?},
 
-       q{SELECT ca.id
-          , co.contig_a_position
-          , co.contig_b_position
-          , co.overlap_type
-          , co.overlap_size
-          , co.type
-        FROM contigoverlap co
-          , contig ca
-        WHERE co.dna_a_id = ca.dna
-          AND co.dna_b_id = ?
-        },
-    );
+       q{SELECT c.id sister_id
+          , o.contig_a_position sister_pos
+          , o.contig_b_position self_pos
+          , o.overlap_type
+          , o.overlap_size
+          , o.overlap_source
+        FROM contigoverlap o
+          , contig c
+        WHERE c.dna = o.dna_a_id
+          AND dna_b_id = ?},
+        );
 
     sub get_all_Overlaps {
         my ($self) = @_;
 
-        my $id                  = $self->dna_id();
-        my $version             = $self->seq_version();
-        my $overlap_source_sub  = $self->contig_overlap_source();
+        my $id      = $self->dna_id();
+        my $version = $self->seq_version();
+
+        # Doing two queries seems to be quickest
+        # Statements like:
+        #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
+        # seem to make queries inordinately slow.
+        my $overlap_source_sub  = $self->dbobj->contig_overlap_source();
         my $overlap_cutoff      = $self->overlap_distance_cutoff();
-        
+        if( !defined $overlap_cutoff) {
+	    $overlap_cutoff = 100000;
+	}
+
         my( @overlap );
         foreach my $i (0,1) {
             my $query_str = $queries[$i];
@@ -1941,6 +1964,8 @@ sub _load_overlaps {
         }
     }
 } # End privacy block
+
+
 
 =head2 _right_overlap
 
@@ -2095,158 +2120,16 @@ sub filter_features {
 
     foreach my $newid (keys %newids) {
 	if ($newids{$newid} > $oldids{$newid}) {
-	    print(STDERR "Using new features for $newid\n");
+	    #print(STDERR "Using new features for $newid\n");
 	    push(@out,@{$newfeatures{$newid}});
 	} else {
-	    print(STDERR "Using old features for $newid\n");
+	    #print(STDERR "Using old features for $newid\n");
 	    push(@out,@{$oldfeatures{$newid}});
 	}
     }
     return @out;
 }
 
-=head2 perl_only_sequences
-
- Title   : perl_only_sequences
- Usage   : $obj->perl_only_sequences($newval)
- Function: 
- Returns : value of perl_only_sequences
- Args    : newvalue (optional)
-
-
-=cut
-
-sub perl_only_sequences{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'perl_only_sequences'} = $value;
-    }
-    return $obj->{'perl_only_sequences'};
-
-}
-
-
-=head2 contig_overlap_source
-
- Title   : contig_overlap_source
- Usage   : my $source_sub = $contig->contig_overlap_source()
- Function: Gets or sets a subroutine which is used to
-           decide which overlap sources are used to
-           build virtual contigs.
- Returns : value of contig_overlap_source.
- Args    : ref to a subroutine
-
-
-=cut
-
-sub contig_overlap_source {
-    my( $self, $sub ) = @_;
-    
-    if ($sub) {
-        $self->throw("'$sub' is not a CODE reference")
-            unless ref($sub) eq 'CODE';
-        $self->{'_contig_overlap_source'} = $sub;
-    }
-    return $self->{'_contig_overlap_source'};
-}
-
-
-=head2 overlap_distance_cutoff
-
- Title   : overlap_distance_cutoff
- Usage   : my $cutoff = $contig->overlap_distance_cutoff()
- Function: Gets or sets an integer which is used when building
-           VirtualContigs.  If the distance in a contig overlap
-           is greater than the cutoff, then the overlap will
-           not be returned.
- Returns : value of overlap_distance_cutoff
- Args    : positive integer
-
-
-=cut
-
-
-sub overlap_distance_cutoff {
-    my( $self, $cutoff ) = @_;
-    
-    if (defined $cutoff) {
-	if( $cutoff !~ /^\d+$/ && $cutoff != -1 ) {
-	    $self->throw("'$cutoff' is not an positive integer");
-	    }
-        $self->{'_overlap_distance_cutoff'} = $cutoff;
-    }
-    return $self->{'_overlap_distance_cutoff'};
-}
-
-
-sub is_golden {
-   my $self = shift;
-
-   if( defined $self->get_left_overlap || defined $self->get_right_overlap ) {
-       return 1;
-   } 
-   return 0;
-}
-
-
-=head2 set_attribute
-
- Title   : set_attribute
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub set_attribute{
-   my ($self,$tag,$value) = @_;
-
-   if( !$self->dbobj->extension_tables ) {
-       # only warn
-       $self->warn("attempting to set attribute with no extension tables. Skipping");
-   }
-   my $id = $self->internal_id;
-
-   my $sth = $self->dbobj->prepare("insert into contigext (contig_id,tag,value) VALUES ($id,'$tag','$value')");
-   $sth->execute();
-
-}
-
-=head2 get_attribute
-
- Title   : get_attribute
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_attribute{
-   my ($self,$tag) = @_;
-
-   if( !$self->dbobj->extension_tables ) {
-       # only warn
-       $self->warn("attempting to set attribute with no extension tables. Skipping");
-   }
-   if( !defined $tag ) {
-       $self->throw("no tag passed to get attribute");
-   }
-
-   my $id = $self->internal_id;
-
-   my $sth = $self->dbobj->prepare("select value from contigext where contig_id = $id and tag = '$tag'");
-   $sth->execute();
-   my ($value) = $sth->fetchrow_array();
-
-   return $value;
-}
 
 #
 # Static golden path tables
@@ -2459,7 +2342,7 @@ sub _chr_end{
 
 =cut
 
-sub fpc_contig_start{
+sub fpc_contig_start {
     my $self = shift;
 
     if( defined $self->_fpc_contig_start) { return $self->_fpc_contig_start;}
@@ -2552,7 +2435,7 @@ sub _fpc_contig_end{
  Title   : static_golden_start
  Usage   : $self->static_golden_start($newval)
  Function: 
- Returns : value of static_golden_start
+ Returns : value of static_golden_start (in RawContig coordinates)
  Args    :
 
 
@@ -2600,7 +2483,7 @@ sub _static_golden_start{
  Title   : static_golden_end
  Usage   : $self->static_golden_end($newval)
  Function: 
- Returns : value of static_golden_end
+ Returns : value of static_golden_end (in RawContig coordinates)
  Args    :
 
 
@@ -2731,10 +2614,142 @@ sub is_static_golden{
 
 }
 
+
+=head2 perl_only_sequences
+
+ Title   : perl_only_sequences
+ Usage   : $obj->perl_only_sequences($newval)
+ Function: 
+ Returns : value of perl_only_sequences
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_sequences{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_sequences'} = $value;
+    }
+    return $obj->{'perl_only_sequences'};
+
+}
+
+=head2 use_rawcontig_acc
+
+ Title   : use_rawcontig_acc
+ Usage   : $obj->use_rawcontig_acc($newval)
+ Function: 
+ Returns : value of use_rawcontig_acc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub use_rawcontig_acc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'use_rawcontig_acc'} = $value;
+    }
+    return $obj->{'use_rawcontig_acc'};
+
+}
+
+=head2 overlap_distance_cutoff
+
+ Title   : overlap_distance_cutoff
+ Usage   : my $cutoff = $contig->overlap_distance_cutoff()
+ Function: Gets or sets an integer which is used when building
+           VirtualContigs.  If the distance in a contig overlap
+           is greater than the cutoff, then the overlap will
+           not be returned.
+ Returns : value of overlap_distance_cutoff
+ Args    : positive integer
+
+
+=cut
+
+
+sub overlap_distance_cutoff {
+    my( $self, $cutoff ) = @_;
+    
+    if (defined $cutoff) {
+	if( $cutoff !~ /^\d+$/ && $cutoff != -1 ) {
+	    $self->throw("'$cutoff' is not an positive integer");
+	    }
+        $self->{'_overlap_distance_cutoff'} = $cutoff;
+    }
+    return $self->{'_overlap_distance_cutoff'};
+}
+
+
+sub is_golden {
+   my $self = shift;
+
+   if( defined $self->get_left_overlap || defined $self->get_right_overlap ) {
+       return 1;
+   } 
+   return 0;
+}
+
+=head2 set_attribute
+
+ Title   : set_attribute
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub set_attribute{
+   my ($self,$tag,$value) = @_;
+
+   if( !$self->dbobj->extension_tables ) {
+       # only warn
+       $self->warn("attempting to set attribute with no extension tables. Skipping");
+   }
+   my $id = $self->internal_id;
+
+   my $sth = $self->dbobj->prepare("insert into contigext (contig_id,tag,value) VALUES ($id,'$tag','$value')");
+   $sth->execute();
+
+}
+
+=head2 get_attribute
+
+ Title   : get_attribute
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub get_attribute{
+   my ($self,$tag) = @_;
+
+   if( !$self->dbobj->extension_tables ) {
+       # only warn
+       $self->warn("attempting to set attribute with no extension tables. Skipping");
+   }
+   if( !defined $tag ) {
+       $self->throw("no tag passed to get attribute");
+   }
+
+   my $id = $self->internal_id;
+   my $sth = $self->dbobj->prepare("select value from contigext where contig_id = $id and tag = '$tag'");
+   $sth->execute();
+   my ($value) = $sth->fetchrow_array();
+
+   return $value;
+}
+
+
+
 1;
-
-
-
-
-
-

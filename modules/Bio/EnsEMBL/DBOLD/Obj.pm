@@ -1,5 +1,5 @@
 #
-# BioPerl module for DBOLD::Obj
+# BioPerl module for DBSQL::Obj
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -11,11 +11,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::Obj - Object representing an instance of an EnsEMBL DB
+Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBOLD::Obj->new(
+    $db = Bio::EnsEMBL::DBSQL::Obj->new(
         -user   => 'root',
         -dbname => 'pog',
         -host   => 'caldy',
@@ -52,40 +52,42 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::Obj;
+package Bio::EnsEMBL::DBSQL::Obj;
 
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+# Object preamble - inherits from Bio::Root::Object
 
 use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DB::ObjI;
-use Bio::EnsEMBL::DBOLD::Gene_Obj;
-use Bio::EnsEMBL::DBOLD::Update_Obj;
-use Bio::EnsEMBL::DBOLD::Feature_Obj;
-use Bio::EnsEMBL::DBOLD::RawContig;
-use Bio::EnsEMBL::DBOLD::GapContig;
+use Bio::EnsEMBL::DBSQL::Gene_Obj;
+use Bio::EnsEMBL::DBSQL::Update_Obj;
+use Bio::EnsEMBL::DBSQL::Feature_Obj;
+use Bio::EnsEMBL::DBSQL::RawContig;
+use Bio::EnsEMBL::DBSQL::GapContig;
 
-use Bio::EnsEMBL::DBOLD::Clone;
+use Bio::EnsEMBL::DBSQL::Clone;
+use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBSQL::KaryotypeAdaptor;
+use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
+
 use DBI;
+
+use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::DB::ObjI;
 
-use Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor;
-
-use Bio::EnsEMBL::DBOLD::DummyStatement;
+use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 @ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
 
-# _initialize is where the heavy stuff will happen when new is called
-
 sub new {
-    my($pkg, @args) = @_;
+  my($pkg, @args) = @_;
 
-    my $self = bless {}, $pkg;
+  my $self = bless {}, $pkg;
 
     my (
         $db,
@@ -130,21 +132,20 @@ sub new {
     $self->{'_lock_table_hash'} = {};
     $self->_analysis_cache({});
     $self->{'_external_ff'} = [];
+  $self->static_golden_path_type('UCSC');
 
     if( $debug ) {
         $self->_debug($debug);
     } else {
         $self->_debug(0);
     }
-
     if( ! $driver ) {
         $driver = 'mysql';
     }
-
     if( ! $host ) {
         $host = 'localhost';
+	$self->host( $host );
     }
-    
     if ( ! $port ) {
         $port = 3306;
     }
@@ -154,18 +155,25 @@ sub new {
     }
 
     my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
-
+	
     if( $debug && $debug > 10 ) {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
     } else {
+
         my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+
         $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
+
         if( $self->_debug > 3 ) {
-	    	$self->warn("Using connection $dbh");
+	    $self->warn("Using connection $dbh");
         }
+
         $self->_db_handle($dbh);
     }
-    #print STDERR "Connected to ensembl database \"$db\" on server \"$host\" as user \"$user\".\n";
+    $self->username( $user );
+    $self->dbname( $db );
+    # following was added on branch; unclear if it is needed:
+    $self->mapdbname( $mapdbname );
 
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
@@ -178,8 +186,6 @@ sub new {
 	    $self->add_ExternalFeatureFactory($external_f);
         }
     }
-
-   
 
     # Store info for connecting to a mapdb.
     {
@@ -195,40 +201,15 @@ sub new {
           };
     }
 
-    $self->dbname( $db );
-    $self->mapdbname( $mapdbname );
-
-
-    # What source of contigoverlaps should we use?
-    $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
-
+  # What source of contigoverlaps should we use?
+  $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
+  
     # What is the maximum distance allowed between contigs
     # in an overlap?
     $self->overlap_distance_cutoff($overlap_distance_cutoff) if $overlap_distance_cutoff;
 
     return $self; # success - we hope!
 }
-
-
-sub dbname {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_dbname} = $arg );
-  $self->{_dbname};
-}
-
-
-sub mapdbname {
-  my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_mapdbname} = $arg );
-  $self->{_mapdbname};
-}
-
-
-
-
-
 
 =head2 get_Update_Obj
 
@@ -245,10 +226,55 @@ sub mapdbname {
 sub get_Update_Obj {
     my ($self) = @_;
     
-    my $update_obj = Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+ 
+    return $update_obj;
+  }
+
+# only the get part of the 3 functions should be considered public
+
+sub dbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_dbname} = $arg );
+  $self->{_dbname};
+}
+
+sub username {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_username} = $arg );
+  $self->{_username};
+}
+
+sub host {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_host} = $arg );
+  $self->{_host};
+}
+
+
+=head2 get_Feature_Obj
+
+ Title   : get_Feature_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Feature_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
  
     return $update_obj;
 }
+
 
 =head2 get_object_by_wildcard
 
@@ -265,10 +291,10 @@ sub get_Update_Obj {
 sub get_object_by_wildcard{
    my ($self,$type,$string) = @_;
 
-   #print STDERR "Got type: $type and string: $string\n";
+   print STDERR "Got type: $type and string: $string\n";
    my @ids;
    my $sth = $self->prepare("select id from $type where id like \'$string\'");
-   #print STDERR "mysql: select id from $type where id like \'$string\'\n";
+   print STDERR "mysql: select id from $type where id like \'$string\'\n";
    my $res = $sth->execute || $self->throw("Could not get any ids!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@ids,$rowhash->{'id'});
@@ -304,7 +330,6 @@ sub get_object_by_wildcard{
    return;
 }
 
-
 =head2 write_Clone
 
  Title   : write_Clone
@@ -329,30 +354,31 @@ sub write_Clone {
     
     my @sql;
     
-    my $sth = $self->prepare('
-        insert into clone (id, version, embl_id, embl_version, htg_phase, created, modified, stored) 
-        values(?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())
-        '); 
-
+    my $sth = $self->prepare('insert into clone (id, internal_id, version, embl_id, embl_version, htg_phase, created, modified, stored) values(?, ?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), NOW())'); 
     my $rv = $sth->execute(
-        $clone_id,
-        $clone->version || "NULL",
-        $clone->embl_id || "NULL",
-        $clone->embl_version || "NULL",
-        $clone->htg_phase,
-        $clone->created,
-        $clone->modified
-        );
+			   $clone_id,
+			   "NULL",
+			   $clone->version || "NULL",
+			   $clone->embl_id || "NULL",
+			   $clone->embl_version || "NULL",
+			   $clone->htg_phase,
+			   $clone->created,
+			   $clone->modified
+			   );
         
     $self->throw("Failed to insert clone $clone_id") unless $rv;
-
+    $sth = $self->prepare("select last_insert_id()");
+    my $res = $sth->execute;
+    my $row = $sth->fetchrow_hashref;
+    my $id  = $row->{'last_insert_id()'};
+    #print(STDERR "Clone $clone_id - $id\n");
     
     foreach my $contig ( $clone->get_all_Contigs() ) {        
-        $self->write_Contig($contig,$clone_id);
+        $self->write_Contig($contig,$id);
     }
     
     foreach my $overlap ($clone->get_all_ContigOverlaps) {    
-        $self->write_ContigOverlap($overlap, $clone);
+        $self->write_ContigOverlap($overlap);
     }
    
 }
@@ -372,6 +398,7 @@ sub write_Clone {
 sub write_Contig {
     my($self, $contig, $clone)  = @_;
        
+    #Why do we have $clone if contig->cloneid is ok?
      
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI - cannot insert contig for clone $clone")
         unless $contig->isa('Bio::EnsEMBL::DB::ContigI');   
@@ -420,17 +447,16 @@ sub write_Contig {
     $sth = $self->prepare("select last_insert_id()");
     my $res = $sth->execute;
     my $row = $sth->fetchrow_hashref;
-    
     my $id  = $row->{'last_insert_id()'};
-    
+
+    # this is a nasty hack. We should have a cleaner way to do this.
+    my @features = $contig->get_all_SeqFeatures;
     #print(STDERR "Contig $contigid - $id\n");
-    
     $contig->internal_id($id);
     
     # write sequence features. We write all of them together as it
     # is more efficient
-    my @features = $contig->get_all_SeqFeatures;
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     $feature_obj->write($contig, @features);
     
     return 1;
@@ -523,13 +549,13 @@ sub write_Chromosome {
     my $mapdb = $obj->mapdb;
 
 Sets or gets a mapdb connection, which is a
-C<Bio::EnsEMBL::Map::DBOLD::Obj> object.
+C<Bio::EnsEMBL::Map::DBSQL::Obj> object.
 
 If a mapdb connection doesn't exist, a new
 connection is made using the information provided
 to the C<_initialize> method.  This will produce
 an exception if the
-C<Bio::EnsEMBL::Map::DBOLD::Obj> module can't be
+C<Bio::EnsEMBL::Map::DBSQL::Obj> module can't be
 found.
 
 =cut
@@ -539,7 +565,7 @@ sub mapdb {
     
     if ($value) {
         $self->throw("$value is not a valid mapdb object")
-            unless $value->isa("Bio::EnsEMBL::Map::DBOLD::Obj");
+            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::Obj");
         $self->{'_mapdb'} = $value;
     }
     else {
@@ -549,12 +575,21 @@ sub mapdb {
         # If $map is just an unblessed hash (first time
         # mapdb is called), connect to the map database.
         if (ref($map) eq 'HASH') {
-            require Bio::EnsEMBL::Map::DBOLD::Obj;
-            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBOLD::Obj->new(%$map);
+            require Bio::EnsEMBL::Map::DBSQL::Obj;
+            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new(%$map);
         }
     }
     return $self->{'_mapdb'};
 }
+
+# was added on branch; not clear if needed:
+sub mapdbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_mapdbname} = $arg );
+  $self->{_mapdbname};
+}
+
 
 
 =head2 write_Species
@@ -667,7 +702,7 @@ sub write_ContigOverlap {
     $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
         if $dna_a_id == $dna_b_id;
 
-    my $type     = $overlap->source;
+    my $source   = $overlap->source;
     my $distance = $overlap->distance;
 
     #print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
@@ -677,7 +712,7 @@ sub write_ContigOverlap {
         INSERT contigoverlap(
             dna_a_id, dna_b_id
           , contig_a_position, contig_b_position
-          , type
+          , overlap_source
           , overlap_size, overlap_type)
         VALUES(?,?,?,?,?,?,?)
         });
@@ -685,7 +720,7 @@ sub write_ContigOverlap {
         $insert->execute(
             $dna_a_id, $dna_b_id
           , $contig_a_position, $contig_b_position
-          , $type
+          , $source
           , $distance, $overlap_type);
     };
     
@@ -729,7 +764,7 @@ sub prepare {
    if ($self->diffdump) {
        my $fh=$self->diff_fh;
        open (FILE,">>$fh");
-       if ($string =~/insert|delete|replace/) {
+       if ($string =~ /insert|delete|replace/i) {
 	   print FILE "$string\n";
        }
        
@@ -737,7 +772,7 @@ sub prepare {
    
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DBOLD::DummyStatement->new();
+       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
        $st->_fileh(\*STDERR);
        $st->_statement($string);
        return $st;
@@ -1128,8 +1163,8 @@ Calling gene_Obj->get_array_supporting instead!");
 sub get_Virtual_Contig_by_Transcript_id {
    my ($self,$tid, $maxlen) = @_;
 
-   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
-Calling gene_Obj->get_Virtual_contig instead!");
+#   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
+#Calling gene_Obj->get_Virtual_contig instead!");
 
    return my $vc =$self->gene_Obj->get_Virtual_Contig($tid,$maxlen);
 }
@@ -1180,7 +1215,7 @@ sub get_donor_locator {
     $self->warn("Obj->get_donor_locator is a deprecated method! 
 Calling Update_Obj->get_donor_locator instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_donor_locator();
 }
 
@@ -1201,7 +1236,7 @@ sub get_last_update_offset{
     $self->warn("Obj->get_last_update_offset is a deprecated method! 
 Calling Update_Obj->get_last_update_offset instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_last_update_offset();
 }    
 
@@ -1223,7 +1258,7 @@ sub get_last_update{
     $self->warn("Obj->get_last_update is a deprecated method! 
 Calling Update_Obj->get_last_update_offset instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_last_update_offset();
 }     
 
@@ -1246,7 +1281,7 @@ sub get_now_offset{
     $self->warn("Obj->get_now_offset is a deprecated method! 
 Calling Update_Obj->get_now_offset instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_now_offset();
 }
     
@@ -1288,7 +1323,7 @@ sub get_Protein_annseq{
     $self->warn("Obj->get_Protein_annseq is a deprecated method! 
 Calling Feature_Obj->get_Protein_annseq instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->get_Protein_annseq($ENSP);
 } 
 
@@ -1418,7 +1453,7 @@ sub get_updated_Clone_id {
     $self->warn("Obj->get_updated_Clone_id is a deprecated method! 
 Calling Update_Obj->get_updated_Clone_id instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_updated_Clone_id($last_offset, $now_offset);
 }
     
@@ -1442,7 +1477,7 @@ sub get_updated_Objects{
     $self->warn("Obj->get_updated_Objects is a deprecated method! 
 Calling Update_Obj->get_updated_Objects instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_updated_Objects($last_offset,$now_offset);
 }
     
@@ -1466,7 +1501,7 @@ sub get_updated_Ghosts{
     $self->warn("Obj->get_updated_Ghosts is a deprecated method! 
 Calling Update_Obj->get_updated_Ghosts instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_updated_Ghosts($last_offset, $now_offset);
 }
     
@@ -1487,7 +1522,7 @@ sub get_Ghost{
     $self->warn("Obj->get_Ghost is a deprecated method! 
 Calling Update_Obj->get_Ghost instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->get_Ghost($ghost_id,$ghost_type);
 }
     
@@ -1509,7 +1544,7 @@ sub write_Ghost{
     $self->warn("Obj->write_Ghost is a deprecated method! 
 Calling Update_Obj->write_Ghost instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->write_Ghost($ghost);
 }
     
@@ -1533,7 +1568,7 @@ sub archive_Gene {
    $self->warn("Obj->archive_Gene is a deprecated method! 
 Calling Update_Obj->archive_Gene instead!");
    
-   my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+   my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
    return $update_obj->archive_Gene($gene,$arc_db);
 }
 
@@ -1597,7 +1632,7 @@ sub delete_Features {
     $self->warn("Obj->delete_Features is a deprecated method! 
 Calling Feature_Obj->delete instead!");
 
-   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
    return $feature_obj->delete($contig);
 } 
 
@@ -1659,7 +1694,7 @@ sub replace_last_update {
     $self->warn("Obj->replace_last_update is a deprecated method! 
 Calling Update_Obj->replace_last_update instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->replace_last_update($now_offset);
 }        
 
@@ -1680,7 +1715,7 @@ sub current_update {
      $self->warn("Obj->current_update is a deprecated method! 
 Calling Update_Obj->current_update instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->current_update();
 }    
 
@@ -1701,7 +1736,7 @@ sub start_update {
      $self->warn("Obj->start_update is a deprecated method! 
 Calling Update_Obj->start_update instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->start_update($start,$end);
 }   
 
@@ -1722,7 +1757,7 @@ sub finish_update {
     $self->warn("Obj->finish_update is a deprecated method! 
 Calling Update_Obj->finish_update instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
     return $update_obj->finish_update();
 }   
 
@@ -1743,8 +1778,7 @@ Calling Update_Obj->finish_update instead!");
 sub write_Gene{
    my ($self,$gene) = @_;
 
-   $self->warn("Obj->write_Gene is a deprecated method! 
-Calling gene_Obj->write instead!");
+  # $self->warn("Obj->write_Gene is a deprecated method! Calling gene_Obj->write instead!");
 
    return $self->gene_Obj->write($gene);
 }
@@ -1767,7 +1801,7 @@ sub write_all_Protein_features {
     $self->warn("Obj->write_all_Protein_features is a deprecated method! 
 Calling Feature_Obj->write_all_Protein_features instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->write_all_Protein_features($prot_annseq,$ENSP);
 } 
 
@@ -1790,7 +1824,7 @@ sub write_Protein_feature {
     $self->warn("Obj->write_Protein_feature is a deprecated method! 
 Calling Feature_Obj->write_Protein_feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->write_Protein_feature($ENSP,$feature);
 } 
 
@@ -1812,7 +1846,7 @@ sub write_Feature {
     $self->warn("Obj->write_Feature is a deprecated method! 
 Calling Feature_Obj->write_Feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->write($contig,@features);
 } 
 
@@ -1877,7 +1911,7 @@ sub write_Analysis {
     $self->warn("Obj->write_Analysis is a deprecated method! 
 Calling Feature_Obj->write_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->write_Analysis($analysis);
 } 
     
@@ -1899,7 +1933,7 @@ sub exists_Homol_Feature {
     $self->warn("Obj->exists_Homol_Feature is a deprecated method! 
 Calling Feature_Obj->exists_Homol_Feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->exists($feature,$analysisid,$contig);
 } 
     
@@ -1921,7 +1955,7 @@ sub get_Analysis {
     $self->warn("Obj->get_Analysis is a deprecated method! 
 Calling Feature_Obj->get_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->get_Analysis($id);
 } 
 
@@ -1943,7 +1977,7 @@ sub exists_Analysis {
     $self->warn("Obj->exists_Analysis is a deprecated method! 
 Calling Feature_Obj->exists_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
     return $feature_obj->exists_Analysis($analysis);
 } 
  
@@ -2032,7 +2066,7 @@ sub get_Clone {
    #$self->warn("Obj->get_Clone is a deprecated method! 
 #Calling Clone->fetch instead!");
     
-    my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $id,
+    my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $id,
 						-dbobj => $self );
    
     return $clone->fetch();
@@ -2051,24 +2085,29 @@ sub get_Clone {
 =cut
 
 sub get_Contig{
-    my ($self,$id) = @_;
+   my ($self,$id) = @_;
 
-    #$self->warn("Obj->get_Contig is a deprecated method! 
- #Calling Contig->fetch instead!");
+   #$self->warn("Obj->get_Contig is a deprecated method! 
+#Calling Contig->fetch instead!");
 
-    if( $id eq 'gapcontig' ) {
-	my $contig = new Bio::EnsEMBL::DBOLD::GapContig;
-	return $contig;
-    }
-    my $contig = new Bio::EnsEMBL::DBOLD::RawContig(
-        -id                         => $id,
-        -dbobj                      => $self,
-        -perlonlysequences          => $self->perl_only_sequences(),
-        -contig_overlap_source      => $self->contig_overlap_source(),
-        -overlap_distance_cutoff    => $self->overlap_distance_cutoff(),
-        );
+   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
+							  -id    => $id,
+							  -perlonlysequences => $self->perl_only_sequences(),
+							  -userawcontigacc => !$self->perl_only_contigs );
+   
+   return $contig->fetch();
+}
 
-    return $contig->fetch();
+sub get_Contig_by_international_id{
+   my ($self,$int_id) = @_;
+   #$self->warn("Obj->get_Contig is a deprecated method! 
+#Calling Contig->fetch instead!");
+   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
+   $sth->execute;
+   my $row = $sth->fetchrow_hashref;
+   my $id  = $row->{'id'};
+
+   return $self->get_Contig($id);
 }
 
 =head2 get_Contigs_by_Chromosome
@@ -2105,16 +2144,18 @@ Calling Contig->get_by_Chromosome instead!");
 
 sub get_all_Clone_id{
    my ($self) = @_;
+   my @out;
 
-   #$self->warn("Obj->get_all_Clone_id is a deprecated method! Calling Clone->get_all_id instead!");
-   
+   my $sth = $self->prepare("select id from clone");
+   my $res = $sth->execute;
 
-   # FIXME. This should be in here I think.
-   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => 'temp',
-					       -dbobj => $self );
-   
-   return $clone->get_all_id();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
 }
+
 
 
 =head2 perl_only_sequences
@@ -2138,6 +2179,27 @@ sub perl_only_sequences{
 
 }
 
+=head2 perl_only_contigs
+
+ Title   : perl_only_contigs
+ Usage   : $obj->perl_only_contigs($newval)
+ Function: 
+ Returns : value of perl_only_contigs
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_contigs{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_contigs'} = $value;
+    }
+    return $obj->{'perl_only_contigs'};
+
+}
+
 =head2 delete_Clone
 
  Title   : delete_Clone
@@ -2153,12 +2215,12 @@ sub perl_only_sequences{
 sub delete_Clone{
    my ($self,$clone_id) = @_;
 
-   $self->warn("Obj->delete_Clone is a deprecated method! 
-Calling Clone->delete instead!");
+   #$self->warn("Obj->delete_Clone is a deprecated method! 
+#Calling Clone->delete instead!");
    
    (ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
-   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $clone_id,
+   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $clone_id,
 					       -dbobj => $self );
    
    return $clone->delete();
@@ -2184,7 +2246,7 @@ Calling Clone->get_all_geneid instead!");
 
    (ref($cloneid)) && $self->throw ("Passing an object reference instead of a variable!\n");
 
-   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $cloneid,
+   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $cloneid,
 					       -dbobj => $self );
    
    return $clone->get_all_my_geneid();
@@ -2206,7 +2268,7 @@ sub gene_Obj {
     my ($self) = @_;
 
     unless (defined($self->{_gene_obj})) {
-	$self->{_gene_obj} = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self);    
+	$self->{_gene_obj} = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);    
     }
 
     return $self->{_gene_obj};
@@ -2227,11 +2289,70 @@ sub feature_Obj {
     my ($self) = @_;
 
     unless (defined($self->{_feature_obj})) {
-	$self->{_feature_obj} = Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);    
+	$self->{_feature_obj} = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);    
     }
 
     return $self->{_feature_obj};
 
+}
+
+=head2 get_AnalysisAdaptor
+
+ Title   : get_AnalysisAdaptor
+ Usage   : $analysisAdaptor = $dbObj->get_AnalysisAdaptor;
+ Function: gives the adaptor to fetch/store Analysis objects.
+ Example :
+ Returns : the adaptor
+ Args    :
+
+
+=cut
+
+sub get_AnalysisAdaptor {
+   my ($self) = @_;
+   if( ! defined $self->{_analysisAdaptor} ) {
+     $self->{_analysisAdaptor} = 
+       Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self);
+   }
+   return $self->{_analysisAdaptor};
+}
+
+
+
+=head2 get_StaticGoldenPathAdaptor
+
+ Title   : get_StaticGoldenPathAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_StaticGoldenPathAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(-dbobj => $self);
+}
+
+=head2 get_KaryotypeAdaptor
+
+ Title   : get_KaryotypeAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_KaryotypeAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::KaryotypeAdaptor->new($self);
 }
 
 
@@ -2271,16 +2392,18 @@ sub deleteObj {
   my  $self=shift;
   my $dummy;
 
-  #print STDERR "Destroying DB Obj!\n";       
+  print STDERR "Destroying DB Obj!\n";       
   $self->DESTROY;
   
   foreach my $name ( keys %{$self} ) {
-    eval {$dummy = $self->{$name}; 
-          $dummy->deleteObj;
+    eval {
+      $dummy = $self->{$name}; 
+      $self->{$name}  = undef;
+      $dummy->deleteObj;
     };
-    delete $self->{$name};
-   }
+  }
 }
+
 
 
 =head2 diff_fh
@@ -2388,28 +2511,6 @@ sub get_PredictionFeature_as_Transcript{
 
 
 
-=head2 get_Feature_Obj
-
- Title   : get_Feature_Obj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Feature_Obj {
-    my ($self) = @_;
-    
-    my $update_obj = Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
- 
-    return $update_obj;
-}
-
-
-
 
 
 
@@ -2486,24 +2587,6 @@ sub static_golden_path_type{
     }
     return $obj->{'static_golden_path_type'};
 
-}
-
-=head2 get_StaticGoldenPathAdaptor
-
- Title   : get_StaticGoldenPathAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_StaticGoldenPathAdaptor{
-   my ($self,@args) = @_;
-
-   return Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor->new(-dbobj => $self);
 }
 
 

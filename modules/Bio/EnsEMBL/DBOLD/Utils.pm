@@ -1,4 +1,4 @@
-# Ensembl module for Bio::EnsEMBL::DBOLD::Utils
+# Ensembl module for Bio::EnsEMBL::DBSQL::Utils
 #
 # Written by Arek Kasprzyk
 #
@@ -11,13 +11,13 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::Utils - Module having the fset2transcript subroutines
+Bio::EnsEMBL::DBSQL::Utils - Module having the fset2transcript subroutines
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::DBOLD::Utils;
+    use Bio::EnsEMBL::DBSQL::Utils;
 
-    &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($fset_id);
+    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset_id);
 
 =head1 DESCRIPTION
 
@@ -42,8 +42,8 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 
-package Bio::EnsEMBL::DBOLD::Utils;
-use Bio::EnsEMBL::DBOLD::Obj;
+package Bio::EnsEMBL::DBSQL::Utils;
+use Bio::EnsEMBL::DBSQL::Obj;
 use strict;
 
 
@@ -81,18 +81,31 @@ sub fset2transcript {
     
     my $translation = new Bio::EnsEMBL::Translation;
     $translation->id($contig->id.".".$genscan->raw_seqname);
+
+    #
+    # This code got changed due to Translation convention changing. Should work...
+    #
     
     if ($exons[0]->strand == 1) {
 	@exons = sort {$a->start <=> $b->start} @exons;
-	$translation->start        ($exons[0]->start);
-	$translation->end          ($exons[$#exons]->end);
-	
     } else {
 	@exons = sort {$b->start <=> $a->start} @exons;
-	$translation->start        ($exons[0]->end);
-	$translation->end          ($exons[$#exons]->start);
-	
     }
+    
+    
+    if( $exons[0]->phase == 0 ) {
+	$translation->start(1);
+    } elsif ( $exons[0]->phase == 1 ) {
+	$translation->start(3);
+    } elsif ( $exons[0]->phase == 2 ) {
+	$translation->start(2);
+    } else {
+	$genscan->throw("Nasty exon phase".$exons[0]->phase);
+    }
+    
+    # this doesn't really 
+    $translation->end($exons[scalar(@exons)-1]->end);
+    
     
     $translation->start_exon_id($exons[0]->id);
     $translation->end_exon_id  ($exons[$#exons]->id);

@@ -1,6 +1,6 @@
 
 #
-# Ensembl module for Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer
+# Ensembl module for Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer - Binds to SymmetricContigFeature table
+Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer - Binds to SymmetricContigFeature table
 
 =head1 SYNOPSIS
 
@@ -42,17 +42,17 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::SymmetricContigFeatureContainer;
+package Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
 
 
-use Bio::EnsEMBL::DBOLD::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 
-@ISA = qw(Bio::EnsEMBL::DBOLD::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 =head2 get_FeaturePair_list_by_rawcontig_id
 
@@ -78,9 +78,13 @@ sub get_FeaturePair_list_by_rawcontig_id{
    }
 
    my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id' and a.rawversion=$version");
+
+
    #print STDERR "SQL: select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id'";
-   $sth->execute;
+
+   $sth->execute || $self->throw("Unable to retrieve versions!");
    my @out;
+
    while( my $aref = $sth->fetchrow_arrayref ) {
        my ($start,$end,$strand,$hstart,$hend,$hstrand,$hname,$score) = @{$aref};
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();

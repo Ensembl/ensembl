@@ -44,7 +44,7 @@ Internal methods are usually preceded with a _
 
 
 # Let the code begin...
-package Bio::EnsEMBL::DBOLD::DBPrimarySeq;
+package Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use vars qw(@ISA);
 use strict;
 
@@ -376,6 +376,24 @@ sub can_call_new{
    return 0;
 }
 
+=head2 desc
+
+ Title   : desc
+ Usage   : $obj->desc($newval)
+ Function: 
+ Example : 
+ Returns : value of desc
+ Args    : newvalue (optional)
+
+
+=cut
+
 sub desc {
-    return "";
+   my ($self,$value) = @_;
+   if( defined $value && $value ne '' ) {
+       $self->{'desc'} = $value;
+   } 
+   return $self->{'desc'} || '';
 }
+
+1;
