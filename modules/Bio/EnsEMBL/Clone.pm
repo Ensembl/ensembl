@@ -192,7 +192,7 @@ sub get_all_Contigs
 sub delete
 {
     my ($self)=shift;
-    $self->warn->("delete is now deprecated, use delete_by_dbID instead");
+    $self->warn("delete is now deprecated, use delete_by_dbID instead");
     $self->delete_by_dbID;
 }
 
