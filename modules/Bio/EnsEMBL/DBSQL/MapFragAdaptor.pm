@@ -1,8 +1,8 @@
 package Bio::EnsEMBL::DBSQL::MapFragAdaptor;
 use strict;
 use vars '@ISA';
-use Bio::EnsEMBL::DBSQL::MapFrag;
-use Bio::EnsEMBL::DBSQL::MapSet;
+use Bio::EnsEMBL::MapFrag;
+use Bio::EnsEMBL::MapSet;
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
@@ -81,7 +81,7 @@ sub fetch_mapset_chr_start_end {
     while( my $data = $sth->fetchrow_hashref() ) {
     if($data->{'mapfrag_id'}!=$old_id) {
         push @map_frags, $map_frag if defined $map_frag;
-            $map_frag = Bio::EnsEMBL::DBSQL::MapFrag->new(
+            $map_frag = Bio::EnsEMBL::MapFrag->new(
                 $chr_start || 1,
                 $data->{'mapfrag_id'},      
                 $data->{'type'},            $data->{'seq'},
@@ -126,7 +126,7 @@ sub fetch_by_internal_id {
     my $map_frag  = undef;
     while( my $data = $sth->fetchrow_hashref() ) {
         unless($map_frag) {
-            $map_frag = Bio::EnsEMBL::DBSQL::MapFrag->new(
+            $map_frag = Bio::EnsEMBL::MapFrag->new(
                 1,
                 $data->{'mapfrag_id'},      
                 $data->{'type'},            $data->{'seq'},
@@ -153,7 +153,7 @@ sub fetch_by_internal_id {
     $sth->execute( $ID );
 
     while( my $data = $sth->fetchrow_arrayref() ) {
-        $map_frag->add_mapset( Bio::EnsEMBL::DBSQL::MapSet->new( $data ) )
+        $map_frag->add_mapset( Bio::EnsEMBL::MapSet->new( $data ) )
     }
     
     return $self->{'_cache'}{$key} = $map_frag;
@@ -230,7 +230,7 @@ sub get_mapsets {
     my %results = ();
     my $key = $flag eq 'mapset_id' ? 'mapset_id' : 'code'; # Key to store hash on...
     while( my $data = $sth->fetchrow_arrayref() ) {
-        $results{ $data->{$key} } = Bio::EnsEMBL::DBSQL::MapSet->new( $data );
+        $results{ $data->{$key} } = Bio::EnsEMBL::MapSet->new( $data );
     }
     return %results;
 }

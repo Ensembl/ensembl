@@ -1,8 +1,8 @@
-package Bio::EnsEMBL::DBSQL::MapFrag;
+package Bio::EnsEMBL::MapFrag;
 use strict;
 use vars qw( $AUTOLOAD );
 
-## Instantiates object of class Bio::EnsEMBL::DBSQL::MapFrag;
+## Instantiates object of class Bio::EnsEMBL::MapFrag;
 
 sub new {
     my $class = shift;

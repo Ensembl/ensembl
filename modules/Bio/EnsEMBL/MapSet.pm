@@ -1,8 +1,8 @@
-package Bio::EnsEMBL::DBSQL::MapSet;
+package Bio::EnsEMBL::MapSet;
 use strict;
 use vars qw( $AUTOLOAD );
 
-## Instantiates object of class Bio::EnsEMBL::DBSQL::MapSet;
+## Instantiates object of class Bio::EnsEMBL::MapSet;
 sub new {
     my $class = shift;
     my $self = {
