@@ -355,7 +355,6 @@ sub fetch_all_by_Slice {
 
   # move transcripts onto gene slice, and add them to genes
   foreach my $tr (@$transcripts) {
-
     if( !exists $tr_g_hash{$tr->dbID()} ) {
       next;
     }
