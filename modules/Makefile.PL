@@ -15,7 +15,7 @@ opendir(DIR,"t") || warn "No test directory. Weird!";
 shift @files;
 shift @files;
 foreach my $file (@files) {
-    $file =~ /(\w+)\.t/ || next;
+    $file =~ /(\w+)\.t$/ || next;
     $file = $1;
     $line = "test_$file :: pure_all\n\tPERL_DL_NONLAZY=1 \$(FULLPERL) -I\$(INST_ARCHLIB) -I\$(INST_LIB) -I\$(PERL_ARCHLIB) -I\$(PERL_LIB) -e \'use Test::Harness qw(&runtests \$\$verbose); \$\$verbose=\$(TEST_VERBOSE); runtests \@ARGV;\' t/$file.t\n";
     push(@tline,$line);
