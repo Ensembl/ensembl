@@ -330,12 +330,13 @@ sub get_all_RepeatFeatures {
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
-    
+    my $length=$self->length;
+
     my $statement = "SELECT rf.id,
-                 IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start),
-                        (sgp.chr_start+sgp.raw_end-rf.seq_end)) as start,                                        
-                 IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
-                        (sgp.chr_start+sgp.raw_end-rf.seq_start)), 
+                 IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_end-$glob_start)) as start,                                        
+                 IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_start-$glob_start)), 
                  IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
                         rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
                  FROM   repeat_feature rf,static_golden_path sgp
@@ -356,38 +357,57 @@ sub get_all_RepeatFeatures {
     
     my @features;
     my @distinct_features;  
-    my @glob_temp;
-    my $temp_start;
-    my $c=0;
+    my %analhash;
+    my $out;
+    
     #Loop through repeat features, and glob them (i.e. join overlapping ones)
     while( $sth->fetch ) {
-	if ($c == 0 )  {
-	    $temp_start=$start;
-	    @glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
-	    $c=1;
-	    next;
-	}
-	my $check=$start+$bp;
-	if ($check <= $glob_temp[2]) {
-	    @glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
-	    next;
-	}
-	$glob_temp[1]=$temp_start;
-
-	# create features
-	my $out=$self->_create_repeat_features(@glob_temp);
 	
-	if (defined $out){
-	    if ($self->_clip_2_vc($out)){
-		push @features,$self->_convert_2_vc($out);
-	    }
+	if (($end > $length) || ($start < 1)) {
+	    next;
 	}
-	@glob_temp=($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
-	$temp_start=$start;
+	
+	#exclude contained features
+	if(  defined $bp && defined $out && $end < $out->end ) { next; }
+	
+	#Glob overlapping and close features
+	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
+	    
+	    # reset previous guys end to end
+	    $out->end($end);
+	    next;
+	}
+
+	my $analysis;
+	
+	if (!$analhash{$analysisid}) {
+	    
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    
+	    $analhash{$analysisid} = $analysis;
+	    
+	} else {
+	    $analysis = $analhash{$analysisid};
+	}
+	
+	
+	if($hid ne '__NONE__' ) {
+	    # is a paired feature
+	    # build EnsEMBL features and make the FeaturePair
+    
+	    $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+	    $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
+				 $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+	    
+	    $out->analysis($analysis);
+	    
+	} else {
+	    $self->warn("Repeat feature does not have a hid. bad news....");
+	}
+	push(@features,$out);
     }
-    
-        return @features;
-    
+    return @features;
 }
 
 
