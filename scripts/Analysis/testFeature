@@ -1,0 +1,48 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live/");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+use strict;
+
+use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::FeaturePair;
+use Bio::EnsEMBL::Analysis::Analysis;
+use Bio::SeqFeature::Generic;
+
+my $f1 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog1",
+                                      -start   => 100,
+				      -end     => 200,
+				      -strand  => 1,
+				      -frame   => 2,
+				      -score   => 250.0,
+				      -source  => "pogsource",
+				      -primary => "pogprimary",
+				      );
+
+
+my $f2 = new Bio::EnsEMBL::SeqFeature(-seqname => "pog2",
+                                      -start   => 150,
+				      -end     => 250,
+				      -strand  => -1,
+				      -frame   => 1,
+				      -score   => 350.0,
+				      -source  => "pogsource2",
+				      -primary => "pogprimary2",
+				      );
+
+
+my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db => 'pogdb',
+						    -db_version => 1.0,
+						    -program => "pogprog",
+						    -program_version => 2.0,
+						    -gff_source => 'anasource',
+						    -gff_feature => 'anafeature',
+						    );
+
+print("GFF 1 " . $f1->gff_string . "\n");
+print("GFF 2 " . $f1->gff_string . "\n");
+
+
