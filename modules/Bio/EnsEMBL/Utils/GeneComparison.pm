@@ -1,41 +1,74 @@
-
-
-=head1 NAME
-
-GeneComparison
-
-=head1 SYNOPSIS
-
+=head1 NAME - Bio::EnsEMBL::Utils::GeneComparison
 
 =head1 DESCRIPTION
 
 Perl Class for comparison of two sets of genes.
 It can read two references to two arrays of genes, e.g. EnsEMBL built genes and human annotated genes,
-and it compares them using methods...
+and it compares them using different methods (see Synopsis):
 
-  cluster_Genes (ready)
-  get_unmatched_Genes (ready)
-  get_fragmented_Genes (ready)
-  cluster_Trasncripts_by_Gene  (ready)
-    (first cluster all genes and then cluster the transcripts within each gene)   
-  cluster_Transcripts  (ready)
-    (cluster all transcripts without going through gene-clustering)
-  get_Exon_Statistics (ready)
-  get_Coding_Exon_Statistics (ready)
-  
+  cluster_Genes 
+  get_unmatched_Genes
+  get_fragmented_Genes
+  cluster_Transcripts_by_Gene
+  cluster_Transcripts 
+  get_Exon_Statistics
+  get_Coding_Exon_Statistics
 
- compare()
- get_exon_overlaps()
- get_3prime_overlaps()
- get_5prime_overlaps()
+  get_3prime_overlaps() (under development)
+  get_5prime_overlaps() (under development)
 
 The object can be created without passing any genes. The genes to be compared can instead be passed to the
 appropriate methods (see below), however, this may lose (in the current version) some info about the gene
 types involved in the comparison when there are more than three.
 
 Each GeneComparison object can contain data fields specifying the arrays of genes to be compared.
-There are also data fields in the form of two arrays and 
-associated to the gene types present in those both arrays.
+There are also data fields in the form of two arrays, which contain 
+the gene types present in those both gene arrays.
+
+=head1 SYNOPSIS
+
+  my $gene_comparison = Bio::EnsEMBL::Utils::GeneComparison->new(\@genes1,\@genes2);
+
+  my @clusters = $gene_comparison->cluster_Genes;
+
+get the list of unmatched genes, this returns two array references of GeneCluster objects as well, 
+but only containing the unmatched ones:
+
+  my ($ens_unmatched,$hum_unmatched) = $gene_comparison->get_unmatched_Genes;
+
+get the list of fragmented genes:
+
+  my @fragmented = $gene_comparison->get_fragmented_Genes (@clusters);
+
+cluster the transcripts using the gene clusters obtained above
+(first cluster all genes and then cluster the transcripts within each gene):
+   
+  my @transcript_clusters = $gene_comparison->cluster_Transcripts_by_Gene(@clusters);
+
+Also, one can cluster the transcripts of the genes in _gene_array1 and gene_array2 directly
+(cluster all transcripts without going through gene-clustering)
+
+  my @same_transcript_clusters = $gene_comparison->cluster_Transcripts;
+
+One can get the number of exons per percentage overlap using whole exons
+  
+  my %statistics = $gene_comparison->get_Exon_Statistics;
+
+Or only coding exons
+
+  my %coding_statistics =  $gene_comparison->get_Coding_Exon_Statistics;
+
+The hashes hold the number of occurences as values and integer percentage overlap as keys
+and can be used to produce a histogram:
+ 
+  for (my $i=1; $i<= 100; $i++){
+    if ( $statistics{$i} ){
+      print $i." :\t".$statistics{$i}."\n";
+    }
+    else{
+      print $i." :\n";
+    }
+  }
 
 =head1 CONTACT
 
@@ -48,9 +81,13 @@ eae@sanger.ac.uk
 package Bio::EnsEMBL::Utils::GeneComparison;
 
 use strict;
-use GeneCluster;
-use TranscriptCluster;
-use lib '/nfs/acari/eae/ensembl/modules/';
+use vars qw(@ISA);
+
+use Bio::EnsEMBL::Utils::GeneCluster;
+use Bio::EnsEMBL::Utils::TranscriptCluster;
+use Bio::Root::RootI;
+
+@ISA = qw(Bio::Root::RootI);
 
 ####################################################################################
 
@@ -107,7 +144,7 @@ sub new {
 =head2 gene_Types()
 
 this function sets labels to the arrays of genes passed to new().
-It can also be used to retrieve the gene types
+It can also be used to retrieve the gene types. 
 
 =cut
 
@@ -175,7 +212,7 @@ sub cluster_Genes {
     }
     
     if ($found==0){
-      my $new_cluster=GeneCluster->new($gene);   # create a GeneCluser object
+      my $new_cluster=Bio::EnsEMBL::Utils::GeneCluster->new($gene);   # create a GeneCluser object
       push(@clusters,$new_cluster);
     }
   }
@@ -300,7 +337,8 @@ sub cluster_Transcripts {
     }
     
     if ($found==0){
-      my $new_cluster=TranscriptCluster->new($transcript);   # create a new TranscriptCluser object
+      my $new_cluster=Bio::EnsEMBL::Utils::TranscriptCluster->new($transcript);   
+                                                  # create a new TranscriptCluser object
       push(@transcript_clusters,$new_cluster);
     }
   }
@@ -678,14 +716,14 @@ sub get_unmatched_Genes {
   my @unmatched1;
   foreach my $gene1 ( @{ $self->{'_gene_array1'} } ){
     unless ( $found1{$gene1->id} ){
-      my $new_cluster = GeneCluster->new( $gene1 );
+      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new( $gene1 );
       push (@unmatched1, $new_cluster);
     }
   }
   my @unmatched2;
   foreach my $gene2 ( @{ $self->{'_gene_array2'} } ){
     unless ( $found2{$gene2->id} ){
-      my $new_cluster = GeneCluster->new( $gene2 );
+      my $new_cluster = Bio::EnsEMBL::Utils::GeneCluster->new( $gene2 );
       push (@unmatched2, $new_cluster);
     }
   }
