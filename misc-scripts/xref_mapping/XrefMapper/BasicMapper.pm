@@ -244,7 +244,7 @@ sub dump_xref{
 
   $i=0;
   foreach my $list (@lists){
-    print "method->".@$list[0]."\n";
+#    print "method->".@$list[0]."\n";
     $method[$i] = shift @$list;
     my $j = 1;
     my @source_id=();
@@ -265,13 +265,13 @@ sub dump_xref{
 	else{
 	  $source_id[$j] = -1;
 	}
-	print $j."\t".$source. "\t".$source_id[$j] ."\n";
-	print $j."\t".$species."\t".$species_id[$j]."\n";
+#	print $j."\t".$source. "\t".$source_id[$j] ."\n";
+#	print $j."\t".$species."\t".$species_id[$j]."\n";
 	$j++;
       }
     }
     #method data fully defined now
-    dump_subset($xref,\@species_id,\@source_id,$i);    
+    $self->dump_subset($xref,\@species_id,\@source_id,$i);    
     $i++;
   }
   
@@ -297,7 +297,7 @@ sub dump_xref{
 
 
 sub dump_subset{
-  my ($xref,$rspecies_id,$rsource_id,$index) = @_;
+  my ($self,$xref,$rspecies_id,$rsource_id,$index) = @_;
   
   open(XDNA,">".$xref->dir()."/xref_".$index."_dna.fasta") 
     || die "Could not open xref_".$index."_dna.fasta";
@@ -306,16 +306,17 @@ sub dump_subset{
   $sql   .= "  from primary_xref p, xref x ";
   $sql   .= "  where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='dna' ";
-  
-  
-  for (my $j =1; $j<scalar(@$rspecies_id); $j++){
-    print $j."\t".$$rspecies_id[$j]."\t".$$rsource_id[$j]."\n";
+  if(defined($self->maxdump())){
+    $sql .= "limit ".$self->maxdump()." ";
   }
+  
+#  for (my $j =1; $j<scalar(@$rspecies_id); $j++){
+#    print $j."\t".$$rspecies_id[$j]."\t".$$rsource_id[$j]."\n";
+#  }
   #  return $xref->dir."/xref_".$i."_dna.fasta";
   
   my $sth = $xref->dbi()->prepare($sql);
   $sth->execute();
-  my $i = 0;
   while(my @row = $sth->fetchrow_array()){
     my $pass = 0;
     for (my $j =1; $j<scalar(@$rspecies_id); $j++){
@@ -326,15 +327,10 @@ sub dump_subset{
       }
     }
     if($pass){
-      $i++;
       $row[1] =~ s/(.{60})/$1\n/g;
       print XDNA ">".$row[0]."\n".$row[1]."\n";
-      if($i > 10){
-	goto ENDDNA;
-      }
     }
   }
- ENDDNA:
   close XDNA;
 
 
@@ -344,11 +340,13 @@ sub dump_subset{
   $sql   .= "  from primary_xref p, xref x ";
   $sql   .= "  where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='peptide' ";
+  if(defined($self->maxdump())){
+    $sql .= "limit ".$self->maxdump()." ";
+  }
   
   
   $sth = $xref->dbi()->prepare($sql);
   $sth->execute();
-  $i = 0;
   while(my @row = $sth->fetchrow_array()){
     my $pass = 0;
     for (my $j =1; $j<scalar(@$rspecies_id); $j++){
@@ -359,15 +357,10 @@ sub dump_subset{
       }
     }
     if($pass){
-      $i++;
       $row[1] =~ s/(.{60})/$1\n/g;
       print XPRO ">".$row[0]."\n".$row[1]."\n";
-      if($i > 10){
-	goto ENDPRO;
-      }
     }
   }
- ENDPRO:
   $sth->finish();
   close XPRO;
 
@@ -434,23 +427,27 @@ sub fetch_and_dump_seq{
 
   my $gene_adap = $db->get_GeneAdaptor();
   my @gene_ids = @{$gene_adap->list_dbIDs()};
+  my $max = undef;
+  if(defined($self->maxdump())){
+    $max = $self->maxdump();
+  }
   my $i =0;
   foreach my $gene_id (@gene_ids){
-    $i++;
     my $gene = $gene_adap->fetch_by_dbID($gene_id);
-#    print "gene ".$gene."\n";
     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+      $i++;
       my $seq = $transcript->spliced_seq(); 
       $seq =~ s/(.{60})/$1\n/g;
       print DNA ">" . $transcript->dbID() . "\n" .$seq."\n";
       my $trans = $transcript->translation();
       my $translation = $transcript->translate();
-#      print "tranlation ".$translation."\n";
-      my $pep_seq = $translation->seq();
-      $pep_seq =~ s/(.{60})/$1\n/g;
-      print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+      if(defined($translation)){
+	my $pep_seq = $translation->seq();
+	$pep_seq =~ s/(.{60})/$1\n/g;
+	print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
+      }
     }
-    if($i > 10){
+    if(defined($max) and $i > $max){
       goto FIN;
     }
   }
@@ -963,6 +960,7 @@ sub dump_xrefs {
 
   my $source_sql = "SELECT name, release FROM source WHERE source_id $source_id_str";
   my $source_sth = $xref_dbi->prepare($source_sql);
+  print STDERR $source_sql."\n";
   $source_sth->execute();
 
   my ($source_name, $release);
