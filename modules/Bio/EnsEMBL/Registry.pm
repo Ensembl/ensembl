@@ -606,7 +606,7 @@ sub add_alias{
 =cut
 
 sub get_alias{
-  my ($class, $key, $no_throw) = @_;
+  my ($class, $key) = @_;
 
   if(!defined($registry_register{'_ALIAS'}{$key})){
     return $key;
@@ -710,51 +710,12 @@ sub add_new_tracks{
 	$pars{'db_alias'} = $dba->group();
 #	print STDERR "Adding new track for ".$dba->species."\t".$dba->group."\n";
 	$conf->add_new_track_generictranscript('',$dba->group(), "black",$pos,%pars);
-	  #  my( $self, $code, $text_label, $colour, $pos, %pars ) = @_;
 	$pos++;
       }
     }
   }
   return $pos;
 
-}
-
-
-=head2 _add_new_track
- 
-  Arg [1]    : hash of the configuration  
-  Arg [2]    : dbadaptor to use to get track info from
-  Arg [3]    : start index to place track in the right place
-  Returntype : none
-  Exceptions : none
-  Called by  : add_new_tracks
-
-=cut
-
-sub _add_new_track{
-  my ($class, $conf, $config, $dba, $start ) = @_;
-
-
-  my $KEY = $dba->group();
-
-  $config->{$KEY} ={
-		    'on'    => "on",
-		    'compact' => 'yes',
-		    'pos'     => $start,
-		    'str'     => 'b',
-		    'src'     => 'all', # 'ens' or 'all'
-		    'available'=> 'species '.$dba->species(),
-		    'dba'  => $dba,		   
-#		    'colours' => {$config->{'_colourmap'}->colourSet( 'vega_gene' )},
-		    'glyphset' => 'generic_transcript',
-		    'dep'      => 6,
-		   };
-
-  push @{ $config->{'_artefacts'} }, $KEY;
-  push @{ $config->{'_settings'}->{'features'}}, [$KEY => $KEY] ;
-  
-# [ 'transcript_lite'      => "Ensembl Trans."  ],  
-  return;
 }
 
 
