@@ -4,11 +4,11 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 39;
+	plan tests => 42;
 }
 
 use MultiTestDB;
-use TestUtils qw ( debug test_getter_setter );
+use TestUtils qw ( debug test_getter_setter count_rows );
 
 use Bio::EnsEMBL::DBEntry;
 
@@ -130,11 +130,7 @@ $dbEntryAdaptor->store( $ident_xref, $tr, "Transcript" );
 
 my ( $oxr_count, $go_count );
 
-$sth = $db->prepare( "select count(*) from object_xref" );
-$sth->execute();
-
-( $oxr_count ) = $sth->fetchrow_array();
-$sth->finish();
+$oxr_count = count_rows($db, 'object_xref');
 
 #
 # 6 right number of object xrefs in db
@@ -143,10 +139,7 @@ debug( "object_xref_count = $oxr_count" );
 ok( $oxr_count == 5 );
 
 
-$sth = $db->prepare( "select count(*) from xref" );
-$sth->execute();
-
-( $xref_count ) = $sth->fetchrow_array();
+$xref_count = count_rows($db, 'xref');
 $sth->finish();
 
 #
@@ -155,29 +148,19 @@ $sth->finish();
 debug( "Number of xrefs = $xref_count" );
 ok( $xref_count == 3 );
 
-$sth = $db->prepare( "select count(*) from go_xref" );
-$sth->execute();
-
-( $go_count ) = $sth->fetchrow_array();
-$sth->finish();
 
 #
 # 8 number of go entries right
 #
+$go_count = count_rows($db, 'go_xref');
 debug( "Number of go_xrefs = $go_count" );
 ok( $go_count == 1 );
-
-$sth = $db->prepare( "select count(*) from identity_xref" );
-$sth->execute();
-
-( $ident_count ) = $sth->fetchrow_array();
-$sth->finish();
-
 
 #
 # 9 identity xrefs right
 #
 
+$ident_count = count_rows($db, 'identity_xref');
 # the identity (query/target)values are not normalized ...
 debug( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
@@ -314,3 +297,58 @@ ok($xref);
 ok($xref->primary_id() eq 'IPR000010');
 
 $multi->restore('core', 'xref');
+
+$multi->save('core', 'object_xref', 'identity_xref', 'go_xref');
+
+#
+# test the removal of dbentry associations
+#
+
+$translation = $ta->fetch_by_dbID(21723)->translation;
+
+my $dbes = $translation->get_all_DBEntries();
+
+my $all_count = @$dbes;
+$go_count  = grep {$_->isa('Bio::EnsEMBL::GoXref')} @$dbes;
+my $id_count  = grep {$_->isa('Bio::EnsEMBL::IdentityXref')} @$dbes;
+
+my $all_total = count_rows($db, 'object_xref');
+my $go_total  = count_rows($db, 'go_xref');
+my $id_total  = count_rows($db, 'identity_xref');
+
+print_dbEntries($dbes);
+
+
+foreach my $dbe (@$dbes) {
+  $dbEntryAdaptor->remove_from_object($dbe, $translation, 'Translation');
+}
+
+# make sure the appropriate rows were deleted
+
+ok($all_total - $all_count == count_rows($db, 'object_xref'));
+ok($go_total - $go_count   == count_rows($db, 'go_xref'));
+ok($id_total - $id_count   == count_rows($db, 'identity_xref'));
+
+$multi->restore('core', 'object_xref', 'identity_xref', 'go_xref');
+
+
+sub print_dbEntries {
+  my $dbes = shift;
+
+  foreach my $dbe (@$dbes) {
+    if($dbe->isa('Bio::EnsEMBL::IdentityXref')) {
+      debug("IDXref");
+    } elsif($dbe->isa('Bio::EnsEMBL::GoXref')) {
+      debug("GOXref");
+    } elsif($dbe->isa('Bio::EnsEMBL::DBEntry')) {
+      debug("DBEntry");
+    } else {
+      debug("UNKNOWN dbentry type");
+    }
+
+    debug(" ".$dbe->dbname()."-".$dbe->display_id()."\n");
+  }
+
+  debug(scalar(@$dbes). " total");
+
+}
