@@ -526,6 +526,16 @@ sub exists_Analysis {
         
     my $query;
 
+    # remove leading components of path from db and program
+    # to prevent lines in 'analysis' table with explicit directories
+    # quick fix only: this ought to be done somewhere like Analysis.pm, not here
+    my $db = $anal->db;
+    $db =~ s!.*/!!;
+    $anal->db($db);
+    my $prog = $anal->program;
+    $prog =~ s!.*/!!;
+    $anal->program($prog);
+
     if ($anal->has_database == 1) {
             $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
                 " db_version = \""      . $anal->db_version      . "\" and " .
