@@ -875,4 +875,38 @@ sub temporary_id {
 }
 
 
+
+
+=head2 species
+
+  Arg [1]    : optional Bio::Species $species
+  Example    : none
+  Description: You can set the species for this gene if you want to use species 
+               specific behaviour. Otherwise species is retrieved from attached 
+               database.
+  Returntype : Bio::EnsEMBL::Species
+  Exceptions : none
+  Caller     : external_name, external_db, general for setting
+
+=cut
+
+
+sub species {
+  my ( $self, $species ) = @_;
+
+  if( defined $species ) {
+    $self->{species} = $species;
+  } else {
+    if( ! exists $self->{species} ) {
+      if( defined $self->adaptor() ) {
+	$self->{species} = $self->adaptor()->db->get_MetaContainer()
+	  ->get_Species();
+      }
+    }
+  }
+  
+  return $self->{species};
+}
+
+
 1;
