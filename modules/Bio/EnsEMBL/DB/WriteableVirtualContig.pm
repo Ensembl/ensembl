@@ -128,13 +128,19 @@ sub write_Gene{
    $clonedgene->version($gene->version);
    $clonedgene->created($gene->created);
    $clonedgene->modified($gene->modified);
-   
+   foreach my $dbl ( $gene->each_DBLink() ) {
+       $clonedgene->add_DBLink($dbl);
+   }
+
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
        $clonedtrans->id($trans->id);
        $clonedtrans->version($trans->version);
        $clonedtrans->created($trans->created);
        $clonedtrans->modified($trans->modified);
+       foreach my $dbl ( $trans->each_DBLink() ) {
+	   $clonedtrans->add_DBLink($dbl);
+       }
 
        $clonedgene->add_Transcript($clonedtrans);
 
