@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..12\n"; 
+BEGIN { $| = 1; print "1..11\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -89,7 +89,7 @@ if ($@){print "ok 9\n";}
 else { print "not ok 9\n";}
 
 
-my $contig=$db->get_Contig("AC021078.00069");
+my $contig=$db->get_Contig('AC021078.00006');
 
 if ($contig->isa ("Bio::EnsEMBL::DB::ContigI"))
 {print  "ok 10\n";}
@@ -99,22 +99,10 @@ else { print "not ok 10\n";}
 
 
 
-my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
-                                              -focusposition => 1,
-                                              -ori => 100,
-                                              -left => 20000,
-                                              -right => 20000
-                                              );
-
-
-if ($vc->isa ("Bio::EnsEMBL::DB::VirtualContig"))
-{print  "ok 11\n";}
-else { print "not ok 11\n";}
-
 
 my ($transcript,$seq);
 
-foreach my $ft ($vc->get_all_PredictionFeatures_as_Transcripts){
+foreach my $ft ($contig->get_all_PredictionFeatures_as_Transcripts){
 if ($ft->isa(Bio::EnsEMBL::Transcript)){$transcript=1;}
 else {$transcript=0;last;}
 #if($ft->translate->seq->isa(Bio::Seq)){$seq=1;}
@@ -123,8 +111,8 @@ else {$transcript=0;last;}
 }
 
 if ($transcript==1)
-{print  "ok 12\n";}
-else { print "not ok 12\n";} 
+{print  "ok 11\n";}
+else { print "not ok 11\n";} 
 
 
 #if ($seq==1)

@@ -903,6 +903,35 @@ sub mask_features {
     return $dnastr;
 }
 
+
+=head2 get_all_PredictionFeatures_as_Transcripts
+
+ Title   : get_all_PredictionFeatures_as_Transcripts
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+    
+
+
+sub get_all_PredictionFeatures_as_Transcripts {
+    my ($self) = @_;
+	
+    my @transcripts;
+	
+    foreach my $ft ($self->get_all_PredictionFeatures())
+    {
+	
+	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$self);
+	    
+    }
+
+    return @transcripts;		
+}
+
     
 
 1;
