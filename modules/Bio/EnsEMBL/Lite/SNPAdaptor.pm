@@ -101,6 +101,7 @@ sub fetch_all_by_Slice {
                     '_ambiguity_code' => $arrayref->[10],
                     '_snpclass'   => $arrayref->[8],
                     '_mapweight'  => $arrayref->[9],
+		    '_source' => $arrayref->[11],
 		    '_source_tag' => $arrayref->[11],
 		    'link'        => \@links });
     push @snps, $snp;
