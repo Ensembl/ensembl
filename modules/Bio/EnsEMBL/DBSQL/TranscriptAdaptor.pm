@@ -48,57 +48,6 @@ use Bio::EnsEMBL::Translation;
 
 
 
-=head2 _store_exons_in_transcript
-
- Title   : _store_exons_in_transcript
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _store_exons_in_transcript{
-   my ($self,$trans,@exons) = @_;
-
-   if( !ref $trans || !$trans->isa('Bio::EnsEMBL::Transcript') ) {
-       $self->throw(" $trans is not a transcript");
-   }
-   #print STDERR "Got ",scalar(@exons),"to store...\n";
-
-   my $exon;
-   while ( ($exon = shift @exons)) {
-       #print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
-
-       if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
-        
-	   # sticky exons.
-	   my @sticky_exons;
-	   push(@sticky_exons,$exon);
-	   while( my $newexon = shift @exons ) {
-	       if( $newexon->id eq $exon->id ) {
-                            
-		   push(@sticky_exons,$newexon);
-                   
-	       } else {
-               
-		   unshift(@exons,$exon);
-		   last;
-	       }
-	   }
-           
-	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
-	   #print STDERR "Added sticky exon... $sticky\n";
-	   $trans->add_Exon($sticky);
-           
-       } else {
-	   $trans->add_Exon($exon);
-       }
-   }
-
-}
 
 
 =head2 fetch_by_dbID
@@ -119,116 +68,31 @@ sub fetch_by_dbID {
 
     my $seen = 0;
     my $trans = Bio::EnsEMBL::Transcript->new();
-    my $exonAdaptor = $self->db->get_exonAdaptor();
+    my $exonAdaptor = $self->db->get_ExonAdaptor();
 
-    my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
+    my $sth = $self->prepare("select exon_id from exon_transcript where transcript_id = $transid ORDER BY rank");
     $sth->execute();
 
     while( my $rowhash = $sth->fetchrow_hashref) {
-	my $exon = $exonAdaptor->fetch_by_dbID($rowhash->{'exon'});
+	my $exon = $exonAdaptor->fetch_by_dbID($rowhash->{'exon_id'});
 	$trans->add_Exon($exon);
 	$seen = 1;
     }
-    $sth = $self->prepare("select version,translation from transcript where id = '$transid'");
-    $sth->execute();
 
-    while( my $rowhash = $sth->fetchrow_hashref) {
-	if (my $translation = $self->get_Translation($rowhash->{'translation'})) {
-	    $trans->translation($translation);
-        }
-	$trans->version($rowhash->{'version'});
-    }
     if ($seen == 0 ) {
 	$self->throw("transcript $transid is not present in db");
     }
-    $trans->id($transid);
+    $trans->dbID($transid);
+    $trans->adaptor( $self );
+
+    my $ts = $self->prepare("select translation_id from transcript where transcript_id = $transid");
+    $ts->execute;
+    my ($val) = $sth->fetchrow_array();
+    $trans->_translation_id($val);
 
     return $trans;
 }
 
-
-=head2 get_Translation
-
- Title   : get_Translation
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Translation{
-   my ($self,$translation_id) = @_;
-
-   my $sth     = $self->_db_obj->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
-   my $res     = $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref;
-
-   if( !defined $rowhash ) {
-       $self->throw("no translation of $translation_id");
-   }
-
-   my $out = Bio::EnsEMBL::Translation->new();
-
-   $out->version      ($rowhash->{'version'});
-   $out->start        ($rowhash->{'seq_start'});
-   $out->end          ($rowhash->{'seq_end'});
-   $out->start_exon_id($rowhash->{'start_exon'});
-   $out->end_exon_id  ($rowhash->{'end_exon'});
-   $out->id           ($translation_id);
-
-   return $out;
-}
-
-
-
-=head2 get_Virtual_Contig
-    
- Title   : get_Virtual_Contig
- Usage   : $gene_obj->get_Virtual_Contig($transcript,$max_length)
- Function: Gets a Bio::EnsEMBL::DB::Virtual Contig object which 
-           spans the whole sequence on which the given 
-           Bio::EnsEMBL::Transcript object lies, as long 
-           as its length does not exceed max_length. If max_length
-           is exceeded, undef is returned instead.
- Example : $gene_obj->get_Virtual_Contig($transcript,50000)
- Returns : VirtualContig Object (or undef)
- Args    : Bio::EnsEMBL::Transcript object and max_length int variable
-
-
-=cut
-
-
-# coord change to context Chromosome
-# get_context ...    
-sub get_Virtual_Contig{
-}
-
-
-
-
-=head2 get_Transcript_in_VC_coordinates
-    
- Title   : get_Transcript_in_VC_coordinates
- Usage   : $gene_obj->get_Transcript_in_VC_coordinates($transcript_id)
- Function: Gets a Bio::EnsEMBL::Transcript object in vc coordinates
- Example : $gene_obj->get_Virtual_Contig($transcript_id)
- Returns : Bio::EnsEMBL::Transcript
- Args    : transcript id
-
-
-=cut
-
-
-
-
-sub get_Transcript_in_VC_coordinates
-{
-    
-    
-}
 
 
 
@@ -246,255 +110,94 @@ sub get_Transcript_in_VC_coordinates
 =cut
 
 sub store {
-   my ($self,$trans,$gene) = @_;
-   my $old_trans;
+   my ($self,$transcript,$gene) = @_;
+   my $exonAdaptor = $self->db->get_ExonAdaptor();
 
-   if( ! $trans->isa('Bio::EnsEMBL::Transcript') ) {
-       $self->throw("$trans is not a EnsEMBL transcript - not dumping!");
+   if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+       $self->throw("$transcript is not a EnsEMBL transcript - not dumping!");
    }
 
-   if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+   if( ! ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
-   # ok - now load this line in
-   my $tst = $self->prepare("
-        insert into transcript (id, gene, translation, version) 
-        values (?, ?, ?, ?)
-        ");
-   
-   my $translation = $trans->translation;
-   my $translation_id = $translation ? $translation->id : '';
-   
-   $tst->execute(
-        $trans->id,
-        $gene->id, 
-        $translation_id,
-        $trans->version   
-        );
+   # store exons
+   # store translation
+   # then store the transcript
+   # then store the exon_transcript table
 
-   #print STDERR "Going to look at gene links\n";
-
-   foreach my $dbl ( $trans->each_DBLink ) {
-       #print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
-       my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
-					  $trans->id        . "','".
-					  $dbl->primary_id . "','".
-					  $dbl->database   . "')");
-       $sth3->execute();
-       
+   foreach my $exon ( $transcript->get_all_Exons() ) {
+     $exonAdaptor->store( $exon );
    }
 
-    # write the translation if we have one
-    if ($translation) {
-        if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
-          $self->throw("Is not a translation. Cannot write!");
-        }
+   my $translation = $transcript->translation();
+   if( defined $translation ) {
+     $self->db->get_TranslationAdaptor()->store( $translation );
+   }
+   # ok - now load this line in
+   my $tst = $self->prepare("
+        insert into transcript ( gene_id, translation_id )
+        values ( ?, ?)
+        ");
 
-        if ( !defined $translation->version  ) {
-          $self->throw("No version number on translation");
-        }
+   if( defined $translation ) {
+     $tst->execute( $gene->dbID(), $translation->dbID() );
+   } else {
+     $tst->execute( $gene->dbID(), 0 );
+   }
 
-        $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
-			         . $translation->id . "',"
-			         . $translation->version . ","
-			         . $translation->start . ",'"  
-			         . $translation->start_exon_id. "',"
-			         . $translation->end . ",'"
-			         . $translation->end_exon_id . "')");
-        $tst->execute();
-    }
-   return 1;
-}
+   $transcript->dbID( $tst->{'mysql_insertid'});
+   $transcript->adaptor( $self );
 
+   #print STDERR "Going to look at gene links\n";
+   my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-sub get_New_external_id {
-    my ($self,$table,$stub,$number) = @_;
+   foreach my $dbl ( $transcript->each_DBLink ) {
+     $dbEntryAdaptor->store( $dbl, $transcript->dbID, "Transcript" );
+   }
 
-    $table .= "_external";
-    if( !defined $number ) {
-	$number = 1;
-    }
+   my $etst = $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank) values (?,?,?)");
+   my $rank = 1;
+   foreach my $exon ( $transcript->get_all_Exons ) {
+     $etst->execute($exon->dbID,$transcript->dbID,$rank);
+     $rank++;
+   }
 
-    my @out;
-
-
-    my $lsth   = $self->_db_obj->prepare("lock table $table write");
-    $lsth->execute;
-
-    # wrap critical region in an eval so we can catch errors and release table
-
-    eval {
-
-	my $query = "select max(external_id) as id from $table where external_id like '$stub%'";
-	
-	my $sth   = $self->_db_obj->prepare($query);
-	my $res   = $sth->execute;
-	my $row   = $sth->fetchrow_hashref;
-	my $id    = $row->{id};
-	
-	if (!defined($id) || $id eq "") {
-	    $id = $stub . "00000000000";
-	}
-	
-	if ($id =~ /\D+(\d+)$/) {
-	    
-	    my $newid  = $1;
-	    my $i;
-	    
-	    foreach $i ( 1..$number ) {
-
-		$newid++;
-		
-		
-		if (length($newid) > 11) {
-		    if ($newid =~ /^0/) {
-			$newid =~ s/^0//;
-		    } else {
-			$self->throw("Can't truncate number string to generate new id [$newid]");
-		    }
-		}
-		my $c = $stub . $newid;
-		my $query = "insert into $table (internal_id,external_id) values (NULL,'$c')";
-		my $sth   = $self->_db_obj->prepare($query);
-		my $res   = $sth->execute;
-		
-		push(@out,$c);
-	    }
-	    
-	    
-	} else {
-	    $self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
-	}
-    };
-
-    my $error = undef;
-
-    if( $@ ) {
-	$error = $@;
-    }
-
-
-    my $usth   = $self->_db_obj->prepare("unlock tables");
-    $usth->execute;
-
-
-    if( defined $error ) {
-	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
-    }
-
-    return @out;
-    
-}
-
-sub get_NewId {
-    my ($self,$table,$stub) = @_;
-
-    my $query = "select max(id) as id from $table where id like '$stub%'";
-    my $sth   = $self->_db_obj->prepare($query);
-    my $res   = $sth->execute;
-    my $row   = $sth->fetchrow_hashref;
-    my $id    = $row->{id};
-
-    if (!defined($id) || $id eq "") {
-	$id = $stub . "00000000000";
-    }
-
-    if ($id =~ /\D+(\d+)$/) {
-
-	my $newid  = $1;
-
-	$newid++;
-	
-
-	if (length($newid) > 11) {
-	    if ($newid =~ /^0/) {
-		$newid =~ s/^0//;
-	    } else {
-		$self->throw("Can't truncate number string to generate new id [$newid]");
-	    }
-	}
-	$newid = $stub . $newid;
-
-	return $newid;
-    } else {
-	$self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
-    }
-    
+   return $transcript->dbID;
 
 }
 
+=head2 get_stable_entry_info
 
-
-=head2 get_new_GeneID
-
- Title   : get_new_GeneID
- Usage   : my $id = $geneobj->get_new_GeneID
- Function: 
- Example : 
- Returns : Gets the next unused gene id from the database
- Args    : none
+ Title   : get_stable_entry_info
+ Usage   : $transcriptAdptor->get_stable_entry_info($transcript)
+ Function: gets stable info for gene and places it into the hash
+ Returns : 
+ Args    : 
 
 
 =cut
 
-sub get_new_GeneID {
-    my ($self,$stub) = @_;
+sub get_stable_entry_info {
+  my ($self,$transcript) = @_;
 
-    $stub = "ENSG" unless defined($stub);
+  if( !defined $transcript || !ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
+     $self->throw("Needs a Transcript object, not a $transcript");
+  }
 
-    return $self->get_NewId("gene",$stub);
-    
-}
+  my $sth = $self->prepare("select stable_id,version from transcript_stable_id where transcript_id = ".$transcript->dbID);
+  $sth->execute();
 
-=head2 get_new_TranscriptID
+  my @array = $sth->fetchrow_array();
+  $transcript->{'_stable_id'} = $array[0];
+  $transcript->{'_version'}   = $array[1];
+  
 
- Title   : get_new_TranscriptID
- Usage   : my $id = $geneobj->get_new_TranscriptID
- Function: 
- Example : 
- Returns : Gets the next unused transcript id from the database
- Args    : none
-
-
-=cut
-
-sub get_new_TranscriptID {
-    my ($self,$stub) = @_;
-
-    $stub = "ENST" unless defined($stub);
-
-    return $self->get_NewId("transcript",$stub);
-
-}
-
-=head2 get_new_ExonID
-
- Title   : get_new_ExonID
- Usage   : my $id = $geneobj->get_new_ExonID
- Function: 
- Example : 
- Returns : Gets the next unused exon id from the database
- Args    : none
-
-
-=cut
-
-sub get_new_ExonID {
-    my ($self,$stub) = @_;
-
-    $stub = "ENSE" unless defined($stub);
-
-    return $self->get_NewId("exon",$stub);
+  return 1;
 }
 
 
-sub get_new_TranslationID {
-    my ($self,$stub) = @_;
 
-    $stub  = "ENSP" unless defined($stub);
 
-    return $self->get_NewId("translation",$stub);
-
-}
+1;
 

@@ -158,9 +158,15 @@ $trans = Bio::EnsEMBL::Transcript->new();
 $trans->id('trans-id-1');
 $trans->version(1);
 
-#$dbl = Bio::Annotation::DBLink->new();
-#$dbl->database('embl');
-#$dbl->primary_id('AC000012');
+my $analysis = Bio::EnsEMBL::Analysis->new( 
+      -program => 'genebuild',
+      -gff_source => 'genebuild',
+      -gff_feature => 'gene',
+      -logic_name => 'genebuild'
+    );
+
+$gene->analysis($analysis);
+
 $exDB = Bio::EnsEMBL::DBEntry->new
     ( -primary_id => 'AC000012',
       -display_id => 'ACC_optional',
@@ -185,16 +191,6 @@ $exDB = Bio::EnsEMBL::DBEntry->new
 
 $gene->add_DBLink($exDB);
 
-$trl = Bio::EnsEMBL::Translation->new();
-$trl->start_exon_id('exon-1');
-$trl->end_exon_id('exon-2');
-$trl->start(3);
-$trl->end(4);
-$trl->id('trl-id');
-$trl->version(1);
-$trans->translation($trl);
-$trans->created(1);
-$trans->modified(1);
 $gene->add_Transcript($trans);
 $gene->created(1);
 $gene->modified(1);
@@ -227,11 +223,12 @@ $sf->source_tag('someone');
 $sf->feature2->primary_tag('similarity');
 $sf->feature2->source_tag('someone');
 
-$analysis = Bio::EnsEMBL::FeatureFactory->new_analysis();
-$analysis->program('program');
-$analysis->program_version('version-49');
-$analysis->gff_source('source');
-$analysis->gff_feature('feature');
+my $analysis = Bio::EnsEMBL::Analysis->new( 
+      -program => 'supporting',
+      -gff_source => 'sf',
+      -gff_feature => 'yadda',
+      -logic_name => 'genewise'
+    );
 
 $sf->analysis($analysis);
 $sf->feature2->analysis($analysis);
@@ -239,6 +236,13 @@ $sf->hstrand(1);
 $sf->hscore(100);
 
 $exon->add_Supporting_Feature($sf);
+
+$trl = Bio::EnsEMBL::Translation->new();
+$trl->start_exon($exon);
+$trl->start(3);
+$trl->end(4);
+$trl->id('trl-id');
+$trl->version(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-2');
@@ -251,6 +255,11 @@ $exon->created(1);
 $exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
+$trl->end_exon($exon);
+
+$trans->translation($trl);
+$trans->created(1);
+$trans->modified(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-3');
@@ -270,19 +279,23 @@ print "ok 15\n";
 
 $db->write_Gene($newgene);
 
+$ens_test->pause;
+
 print "ok 16\n";
 
 # retrieve gene, check it is on the correct coordinates
 
-$newgene = $db->gene_Obj->get('gene-id-1');
+$newgene = $db->get_GeneAdaptor->fetch_by_dbID($newgene->dbID);
+
+
 ($trans) = $newgene->each_Transcript;
 if( !defined $trans ) { die "Didn't even get a transcript!"; }
 
 ($exon1,$exon2,$exon3) = $trans->each_Exon;
 
-if( $exon1->id ne 'exon-1' || $exon1->start != 2 ||
+if( $exon1->start != 2 ||
     $exon1->end != 7 || $exon1->strand != 1 ||
-    $exon2->id ne 'exon-2' || $exon2->start != 2 ||
+    $exon2->start != 2 ||
     $exon2->end != 8 || $exon2->strand != -1 ) {
     print "not ok 17\n";
     print STDERR "exon1 ",$exon1->start,":",$exon1->end,";",$exon1->strand," ",

@@ -242,37 +242,6 @@ sub store {
     
 }
 
-=head2 fetch_by_union
-
- Title   : fetch_by_union
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetch_by_union{
-   my ($self,$id) = @_;
-   my @out = ();
-
-   my @xg = $self->fetch_by_gene($id);
-   push(@out,@xg);
-
-   my @xrc = $self->fetch_by_rawContig($id);
-   push (@out,@xrc);
-
-   my @xtranscript = $self->fetch_by_transcript($id);
-   push(@out,@xtranscript);
-
-   my @xtranslation = $self->fetch_by_translation($id);
-   push(@out,@xtranslation);
-
-   return @out;
-}
-
 
 sub fetch_by_gene {
   my ( $self, $geneId ) = @_;

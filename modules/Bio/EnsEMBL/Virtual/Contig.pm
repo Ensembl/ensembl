@@ -1541,15 +1541,17 @@ sub convert_Gene_to_raw_contig {
 
    my $clonedgene = Bio::EnsEMBL::Gene->new();
    my %translation;
-
-   $clonedgene->id($gene->id);
-   $clonedgene->version($gene->version);
-   $clonedgene->created($gene->created);
-   $clonedgene->modified($gene->modified);
    $clonedgene->type($gene->type);
+   $clonedgene->analysis($gene->analysis);
+
    foreach my $dbl ( $gene->each_DBLink() ) {
        $clonedgene->add_DBLink($dbl);
    }
+
+   #
+   #
+   #
+
 
    # 
    # convert exons first, as unique exons. In particular this is to 
@@ -1559,7 +1561,7 @@ sub convert_Gene_to_raw_contig {
    my %convertedexon;
 
    foreach my $exon ( $gene->each_unique_Exon ) {
-       $convertedexon{$exon->id} = $self->_reverse_map_Exon($exon);
+       $convertedexon{$exon} = $self->_reverse_map_Exon($exon);
    }
 
 
@@ -1567,10 +1569,6 @@ sub convert_Gene_to_raw_contig {
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
        #print STDERR "Reverse mapping ",$trans->id,"\n";
-       $clonedtrans->id($trans->id);
-       $clonedtrans->version($trans->version);
-       $clonedtrans->created($trans->created);
-       $clonedtrans->modified($trans->modified);
        foreach my $dbl ( $trans->each_DBLink() ) {
 	   $clonedtrans->add_DBLink($dbl);
        }
@@ -1578,7 +1576,7 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_Transcript($clonedtrans);
 
        foreach my $exon ( $trans->each_Exon ) {
-	   $clonedtrans->add_Exon($convertedexon{$exon->id});
+	   $clonedtrans->add_Exon($convertedexon{$exon});
 
 	   # translations.
            # (PL: looks like a 'deep copy' is being made;
@@ -1594,9 +1592,9 @@ sub convert_Gene_to_raw_contig {
 
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
 	       $clonedtrl->id($trl->id);
-	       $clonedtrl->start_exon_id($trl->start_exon_id);
+	       $clonedtrl->start_exon($convertedexon{$trl->start_exon});
                $clonedtrl->start( $trl->start );
-	       $clonedtrl->end_exon_id($trl->end_exon_id);
+	       $clonedtrl->end_exon($convertedexon{$trl->end_exon});
                $clonedtrl->end( $trl->end );
 	       $clonedtrl->version($trl->version);
 
@@ -1876,34 +1874,23 @@ sub _sanity_check{
    my ($self,$gene) = @_;
    my $error =0;
    my $message;
-   if( !defined $gene->id ) {
-       $error = 1;
-       $message .= "Gene has no id;";
-   }
-   if( !defined $gene->version ) {
-       $error = 1;
-       $message .= "Gene has to have a version;";
+
+   if( !defined $gene->analysis ) {
+     $error = 1;
+     $message .= "Gene has no analysis object";
    }
 
    foreach my $transc ( $gene->each_Transcript ) {
 
-       if( !defined $transc->id ) {
-	   $error = 1;
-	   $message .= "Transcript has no id;";
-       }
        if( !defined $transc->translation || !ref $transc->translation) {
 	   $error = 1;
 	   $message .= "Transcript has no translation;";
        } else {
-	   if( !defined $transc->translation->id ) {
-	       $error = 1;
-	       $message .= "Translation has no id";
-	   } 
 	   if( !defined $transc->translation->start ) {
 	       $error = 1;
 	       $message .= "Translation has no start";
 	   } 
-	   if( !defined $transc->translation->start_exon_id ) {
+	   if( !defined $transc->translation->start_exon ) {
 	       $error = 1;
 	       $message .= "Translation has no start exon id";
 	   } 
@@ -1911,25 +1898,13 @@ sub _sanity_check{
 	       $error = 1;
 	       $message .= "Translation has no end";
 	   } 
-	   if( !defined $transc->translation->end_exon_id ) {
+	   if( !defined $transc->translation->end_exon ) {
 	       $error = 1;
 	       $message .= "Translation has no end exon id";
 	   } 
        }
        foreach my $exon ( $transc->each_Exon ) {
-	   if( !defined $exon->id ) {
-	       $error = 1;
-	       $message .= "Exon has no id";
-	   } 
-	   if( !defined $exon->created ) {
-	       $error = 1;
-	       $message .= "Exon has no created date";
 
-	   } 
-	   if( !defined $exon->modified ) {
-	       $error = 1;
-	       $message .= "Exon has no modified date";
-	   } 
 	   if( !defined $exon->contig_id  ) {
 	       $error = 1;
 	       $message .= "Exon has no contig id";

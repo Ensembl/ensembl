@@ -455,7 +455,8 @@ sub get {
     
 sub get_array_supporting {
     my ($self,$supporting,@geneid) = @_;
-    
+
+    $self->throw("*** ABOUT TO DIE ***");
     defined($supporting) || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
 
     #if( @geneid == 0 ) {

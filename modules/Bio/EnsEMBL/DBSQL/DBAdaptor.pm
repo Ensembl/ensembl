@@ -1613,9 +1613,10 @@ All the gene, transcript, and exon methods are now to be found in gene_Obj");
 sub write_Gene{
    my ($self,$gene) = @_;
 
-  # $self->warn("Obj->write_Gene is a deprecated method! Calling gene_Obj->write instead!");
+   my ( $p, $f, $l ) = caller;
+   $self->warn("Obj->write_Gene is a deprecated method! Calling from $p::$f::$l\n" );
 
-   return $self->gene_Obj->write($gene);
+   return $self->get_GeneAdaptor()->store( $gene );
 }
 
 =head2 write_all_Protein_features
@@ -2206,6 +2207,18 @@ sub get_TranscriptAdaptor {
         require Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 	$ta = Bio::EnsEMBL::DBSQL::TranscriptAdaptor->new($self);
         $self->{'_transcript_adaptor'} = $ta;
+    }
+    return $ta;
+}
+
+sub get_TranslationAdaptor {
+    my( $self ) = @_;
+
+    my( $ta );
+    unless ($ta = $self->{'_translation_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::TranslationAdaptor;
+	$ta = Bio::EnsEMBL::DBSQL::TranslationAdaptor->new($self);
+        $self->{'_translation_adaptor'} = $ta;
     }
     return $ta;
 }

@@ -116,7 +116,7 @@ sub get_Species {
     return undef;
   }
   my @classification = $self->list_value_by_key( 'species.classification' );
-  if( ! defined @classification ) {
+  if( scalar(@classification) == 0 ) {
     return undef;
   }
   my $species = new Bio::Species;

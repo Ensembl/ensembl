@@ -126,33 +126,43 @@ CREATE TABLE dna (
 # Table structure for table 'exon'
 #
 CREATE TABLE exon (
-  id            varchar(40) NOT NULL,
-  contig        int(10) unsigned NOT NULL,
-  version       int(10) DEFAULT '1' NOT NULL,
-  created       datetime NOT NULL,
-  modified      datetime NOT NULL,
-  stored        datetime NOT NULL,
+  exon_id       int unsigned NOT NULL auto_increment,
+  contig_id     int(10) unsigned NOT NULL,
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
-  strand        int(2) NOT NULL,
-  phase         int(11) NOT NULL,
-  end_phase     int(11) NOT NULL,
+  strand        tinyint(2) NOT NULL,
+
+  phase         tinyint(2) NOT NULL,
+  end_phase     tinyint(2) NOT NULL,
   sticky_rank   int(10) DEFAULT '1' NOT NULL,
   
-  PRIMARY KEY (id,sticky_rank),
-  KEY contig (contig)
+  PRIMARY KEY ( exon_id, sticky_rank),
+  KEY contig (contig_id)
 );
+
+CREATE TABLE exon_stable_id (
+    exon_id   int not null,
+    stable_id VARCHAR(40) not null,
+    version   int(10) DEFAULT '1' NOT NULL,
+    created   datetime NOT NULL,
+    modified  datetime NOT NULL,
+    
+    PRIMARY KEY( exon_id ),
+    UNIQUE( stable_id, version )
+);
+
+
 
 #
 # Table structure for table 'exon_transcript'
 #
 CREATE TABLE exon_transcript (
-  exon          varchar(40) NOT NULL,
-  transcript    varchar(40) NOT NULL,
+  exon_id          INT unsigned NOT NULL,
+  transcript_id    INT unsigned NOT NULL,
   rank          int(10) NOT NULL,
   
-  PRIMARY KEY (exon,transcript,rank),
-  KEY transcript (transcript)
+  PRIMARY KEY (exon_id,transcript_id,rank),
+  KEY transcript (transcript_id)
 );
 
 #
@@ -206,16 +216,23 @@ CREATE TABLE fset_feature (
 # Table structure for table 'gene'
 #
 CREATE TABLE gene (
-  id        varchar(40) NOT NULL,
-  version   int(10) DEFAULT '1' NOT NULL,
-  created   datetime NOT NULL,
-  modified  datetime NOT NULL,
-  stored    datetime NOT NULL,
+  gene_id   int unsigned not null auto_increment,
+  type VARCHAR(40) not null,
   analysisId int,
      
-  PRIMARY KEY (id)
+  PRIMARY KEY (gene_id)
 );
 
+CREATE TABLE gene_stable_id (
+    gene_id int not null,
+    stable_id VARCHAR(40) not null,
+    version   int(10) DEFAULT '1' NOT NULL,
+    created   datetime NOT NULL,
+    modified  datetime NOT NULL,
+    
+    PRIMARY KEY( gene_id ),
+    UNIQUE( stable_id, version )
+);
 
 
 #
@@ -243,8 +260,8 @@ CREATE TABLE repeat_feature (
 # Table structure for table 'supporting_feature'
 #
 CREATE TABLE supporting_feature (
-  id            int(10) unsigned NOT NULL auto_increment,
-  exon          varchar(40) NOT NULL,
+  supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
+  exon_id          int NOT NULL,
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
   score         int(10) NOT NULL,
@@ -258,10 +275,10 @@ CREATE TABLE supporting_feature (
   perc_id       int(10),
   phase         tinyint(1),
   end_phase     tinyint(1),
+  hstrand       tinyint(1),
   
-  PRIMARY KEY (id),
-  KEY id_exon (id,exon),
-  KEY exon (exon),
+  PRIMARY KEY (supporting_feature_id),
+  KEY exon (exon_id),
   KEY analysis (analysis),
   KEY hid (hid),
   KEY name (name)
@@ -271,44 +288,45 @@ CREATE TABLE supporting_feature (
 # Table structure for table 'transcript'
 #
 CREATE TABLE transcript (
-  id            varchar(40) NOT NULL,
-  version       int(10) DEFAULT '1' NOT NULL,
-  gene          varchar(40) NOT NULL,
-  translation   varchar(40) NOT NULL,
+  transcript_id    INT UNSIGNED NOT NULL auto_increment,
+  gene_id          INT UNSIGNED NOT NULL,
+  translation_id   INT UNSIGNED NOT NULL,
   
-  PRIMARY KEY (id),
-  KEY gene_index (gene),
-  KEY translation_index ( translation )		
+  PRIMARY KEY (transcript_id),
+  KEY gene_index (gene_id),
+  KEY translation_index ( translation_id )		
 );
+
+CREATE TABLE transcript_stable_id (
+    transcript_id int not null,
+    stable_id     VARCHAR(40) not null,
+    version       int(10) DEFAULT '1' NOT NULL,
+    
+    PRIMARY KEY( transcript_id ),
+    UNIQUE( stable_id, version )
+);
+
 
 #
 # Table structure for table 'translation'
 #
 CREATE TABLE translation (
-  id            varchar(40) NOT NULL,
-  version       int(10) DEFAULT '1' NOT NULL,
-  seq_start     int(10) NOT NULL,
-  start_exon    varchar(40) NOT NULL,
-  seq_end       int(10) NOT NULL,
-  end_exon      varchar(40) NOT NULL,
+  translation_id  INT UNSIGNED NOT NULL auto_increment,
+  seq_start       INT(10) NOT NULL,
+  start_exon_id   INT UNSIGNED NOT NULL,
+  seq_end         INT(10) NOT NULL,
+  end_exon_id     INT UNSIGNED NOT NULL,
   
-  PRIMARY KEY (id)
+  PRIMARY KEY (translation_id)
 );
 
-# It is important that gene_id is the PRIMARY KEY.
-# If it is not, then you can add more than one
-# entry for a gene, the SQL in the object layer
-# gets out each exon more than once, they get made
-# into sticky exons, and the transcript does not
-# translate!
-# Maybe there should just be a type column in gene?
-#   -- JGRG
-CREATE TABLE genetype (
-   gene_id      varchar(40) NOT NULL,
-   type  varchar(40) NOT NULL,
-      
-   PRIMARY KEY(gene_id),
-   KEY(type)
+CREATE TABLE translation_stable_id (
+    translation_id INT NOT NULL,
+    stable_id VARCHAR(40) NOT NULL,
+    version   INT(10) DEFAULT '1' NOT NULL,
+    
+    PRIMARY KEY( translation_id ),
+    UNIQUE( stable_id, version )
 );
 
 # this is a denormalised golden path
@@ -378,7 +396,7 @@ CREATE TABLE interpro_description (
 #
 
 CREATE TABLE gene_description (
-  gene_id varchar(40) NOT NULL,
+  gene_id     int unsigned NOT NULL,
   description varchar(255),
   PRIMARY KEY (gene_id)
 );

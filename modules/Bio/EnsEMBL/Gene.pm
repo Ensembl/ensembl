@@ -59,7 +59,6 @@ sub new {
   my $self = bless {}, $class;
 
   $self->{'_transcript_array'} = [];
-  $self->{'_clone_neighbourhood'} = [];
   $self->{'_db_link'} = [];
 # set stuff in self from @args
   return $self; # success - we hope!
@@ -90,15 +89,80 @@ sub is_known{
 	   return 1;
        }
    }
-       
+
+
+   
    return 0;
 }
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   :
+ Function: give this genes GeneAdaptor if known
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub adaptor {
+   my ($self, $arg) = @_;
+
+   if ( defined $arg ) {
+      $self->{'_adaptor'} = $arg ;
+   }
+   return $self->{'_adaptor'};
+}
+
+
+=head2 analysis
+
+ Title   : analysis
+ Usage   : $gene->analysis($analysisObject)
+ Function: get/set this genes analysis object
+ Returns : on get the analysis object
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub analysis {
+  my ($self,$value) = @_;
+  if( defined $value ) {
+    $self->{'analysis'} = $value;
+  }
+  return $self->{'analysis'};
+}
+
+=head2 dbID
+
+ Title   : dbID
+ Usage   :
+ Function: internal db id if available
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dbID {
+   my ($self, $arg) = @_;
+
+   if ( defined $arg ) {
+      $self->{'_dbID'} = $arg ;
+   }
+   return $self->{'_dbID'};
+}
+
 
 =head2 description
 
  Title   : description
  Usage   : $gene->description
- Function: get/set description
+ Function: gets the gene description line. Setting is not allowed
  Example :
  Returns : a string
  Args    : none
@@ -106,12 +170,14 @@ sub is_known{
 =cut
 
 sub description {
-    my ($self, $value) = @_;
-
-    if (defined $value) {
-        $self->{description} = $value;
+    my ($self) = @_;
+    
+    if( exists $self->{'_description'} ) {
+      return $self->{'_description'};
     }
-    $self->{description};    
+
+    $self->{'_description'} = $self->adaptor->get_description($self->dbID);
+    return $self->{'_description'};
 }
 
 =head2 each_DBLink
@@ -128,6 +194,8 @@ sub description {
 
 sub each_DBLink {
    my ($self,@args) = @_;
+
+   # This could become an on-demand call
 
    return @{$self->{'_db_link'}}
 }
@@ -157,12 +225,35 @@ sub add_DBLink{
 
 
 
-=head2 each_unique_Exon
 
- Title   : each_unique_Exon
+sub each_unique_Exon{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l each_unique_Exon deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
+
+   return $self->get_all_Exons;
+}
+
+
+sub all_Exon_objects{
+
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l all_Exon_objects deprecated. use get_all_Exons instead. Exon objects should be unique memory locations");
+
+   return $self->get_all_Exons;
+}
+
+
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
  Usage   : foreach my $exon ( $gene->each_unique_Exon )
  Function: retrieves an array of exons associated with this
-           gene, made nonredudant on the basis of $exon->id
+           gene, guarenteed to be nonredundant
  Example :
  Returns : 
  Args    :
@@ -170,27 +261,30 @@ sub add_DBLink{
 
 =cut
 
-sub each_unique_Exon{
-   my ($self) = @_;
-
-   $self->{_unique_exons}=undef;
+sub get_all_Exons {
+   my ($self,@args) = @_;
+   my %h;
 
    foreach my $trans ( $self->each_Transcript ) {
-#       print STDERR "Transcript " . $trans->id . "\n";
        foreach my $exon ( $trans->each_Exon ) {
-#	   print STDERR "Found exon $exon " . $exon->id . "\t" . $exon->start . "\t" . $exon->end . "\n";
-	   $self->{_unique_exons}{$exon->id()} = $exon;
+	   $h{"$exon"} = $exon;
        }
    }
 
-   return values %{$self->{_unique_exons}};
+   return values %h;
 }
+
+
 
 =head2 refresh
 
  Title   : refresh
  Usage   :
- Function:
+ Function: This function is for cacheing of external genes. It
+           refreshs the coordinate system of the underlying exons
+           to be what they were retrieved with
+
+           This function may be obselete with new exons. EB and Elia
  Example :
  Returns : 
  Args    :
@@ -198,10 +292,10 @@ sub each_unique_Exon{
 
 =cut
 
-sub refresh{
+sub refresh {
    my ($self) = @_;
 
-   foreach my $e ($self->all_Exon_objects) {
+   foreach my $e ($self->get_all_Exons) {
        $e->start($e->ori_start);
        $e->end($e->ori_end);
        $e->strand($e->ori_strand);
@@ -223,10 +317,14 @@ sub refresh{
 sub get_Exon_by_id {
     my ($self, $id) = @_;
 
-    if (! defined($self->{_unique_exons}) ) {
-        $self->each_unique_Exon;
+    # perhaps not ideal
+    foreach my $exon ( $self->get_all_Exons ) {
+      # should this be stable_id
+      if( $exon->dbID eq $id ) {
+	return $exon;
+      }
     }
-    return $self->{_unique_exons}{$id};
+
 }
 
 =head2 type
@@ -247,66 +345,6 @@ sub type {
       $obj->{'type'} = $value;
     }
     return $obj->{'type'};
-}
-
-=head2 all_Exon_objects
-
- Title   : all_Exon_objects
- Usage   : foreach $e ( $gene->all_Exon_objects() ) 
- Function: Gives an array of all the exon objects, with each
-           object represented only once. This is non redundant
-           on the basis of object location, not on id
-           (see each_unique_Exon for a difference)
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub all_Exon_objects{
-   my ($self,@args) = @_;
-   my %h;
-
-   foreach my $trans ( $self->each_Transcript ) {
-       foreach my $exon ( $trans->each_Exon ) {
-	   $h{"$exon"} = $exon;
-       }
-   }
-
-   return values %h;
-
-
-}
-
-=head2 unique_contig_ids
-
- Title   : unique_contig_ids
- Usage   : foreach $id ( $gene->unique_contig_ids ) 
- Function: returns an array of contig ids made unique linked
-           to this gene
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub unique_contig_ids{
-   my ($self) = @_;
-   my %h;
-
-   foreach my $exon ( $self->all_Exon_objects ) {
-       if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
-	   foreach my $se ( $exon->each_component_Exon ) {
-	       $h{$se->contig_id()} = 1;
-	   }
-       } else {
-	   $h{$exon->contig_id()} = 1;
-       }
-   }
-
-   return keys %h;
 }
 
 
@@ -368,158 +406,165 @@ sub each_Transcript {
 =cut
 
 sub id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'id'} = $value;
-    }
-    return $obj->{'id'};
+  my $self = shift;
+  my $value = shift;
 
-}
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
 
-
-=head2 each_cloneid_neighbourhood
-
- Title   : each_cloneid_neighbourhood
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
 
 
-=cut
-
-sub each_cloneid_neighbourhood{
-   my ($self) = @_;
-
-   return @{$self->{'_clone_neighbourhood'}};
-}
-
-=head2 add_cloneid_neighbourhood
-
- Title   : add_cloneid_neighbourhood
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_cloneid_neighbourhood{
-   my ($self,$value) = @_;
-
-   if( !defined $value || ref $value ) {
-       $self->throw("Value [$value] does not look good for clone neighbourhood id!");
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
    }
 
-   push(@{$self->{'_clone_neighbourhood'}},$value);
 }
+
+=head2 Stable id 
+
+Stable id information is fetched on demand from stable tables
 
 =head2 created
 
  Title   : created
- Usage   : $obj->created($newval)
+ Usage   : $obj->created()
  Function: 
  Returns : value of created
- Args    : newvalue (optional)
+ Args    :
 
 
 =cut
 
 sub created{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'created'} = $value;
+    my ($self,$value) = @_;
+
+    if(defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  created dates are loaded. Ignoring set value $value");
+      return;
     }
-    return $obj->{'created'};
+
+
+    if( exists $self->{'_created'} ) {
+      return $self->{'_created'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_created'};
 
 }
 
 =head2 modified
 
  Title   : modified
- Usage   : $obj->modified($newval)
+ Usage   : $obj->modified()
  Function: 
  Returns : value of modified
- Args    : newvalue (optional)
+ Args    : 
 
 
 =cut
 
 sub modified{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'modified'} = $value;
-    }
-    return $obj->{'modified'};
+    my ($self,$value) = @_;
+    
 
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+    if( exists $self->{'_modified'} ) {
+      return $self->{'_modified'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_modified'};
 }
 
-=head2 _stored
-
- Title   : _stored
- Usage   : $obj->_stored($newval)
- Function: Internal method should not really be needed
-           stores the time of storage of the deleted object
- Returns : value of _stored
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _stored{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_stored'} = $value;
-    }
-    return $obj->{'_stored'};
-}
 
 =head2 version
 
  Title   : version
- Usage   : $obj->version($newval)
+ Usage   : $obj->version()
  Function: 
  Returns : value of version
- Args    : newvalue (optional)
-
+ Args    : 
 
 =cut
 
 sub version{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'version'} = $value;
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
     }
-    return $obj->{'version'};
+
+    if( exists $self->{'_version'} ) {
+      return $self->{'_version'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_version'};
 
 }
 
-=head2 analysis
 
- Title   : analysis
- Usage   : $gene->analysis($analysisObject)
- Function: get/set this genes analysis object
- Returns : on get the analysis object
- Args    : newvalue (optional)
+=head2 stable_id
+
+ Title   : stable_id
+ Usage   : $obj->stable_id
+ Function: 
+ Returns : value of stable_id
+ Args    : 
 
 
 =cut
 
-sub analysis {
-  my ($self,$value) = @_;
-  if( defined $value ) {
-    $self->{'analysis'} = $value;
-  }
-  return $self->{'analysis'};
+sub stable_id{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      $self->throw("setting stable id info is not supported");
+    }
+
+    if( exists $self->{'_stable_id'} ) {
+      return $self->{'_stable_id'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_stable_id'};
+
 }
+
+sub _get_stable_entry_info {
+   my $self = shift;
+
+   if( !defined $self->adaptor ) {
+     return undef;
+   }
+
+   $self->adaptor->get_stable_entry_info($self);
+
+}
+
 
 
 =head2 _dump

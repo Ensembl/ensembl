@@ -30,7 +30,7 @@ Creation:
 
 Manipulation:
 
-     my @exons = $tran->each_Exon         # Returns an array of Exon objects
+     my @exons = $tran->get_all_Exons         # Returns an array of Exon objects
      my $pep   = $tran->translate()       # Returns the peptide translation of the exons as a Bio::Seq
      
      $tran->sort()                        # Sorts exons into order (forward for + strand, reverse fo - strand)
@@ -130,45 +130,69 @@ sub add_DBLink{
    push(@{$self->{'_db_link'}},$value);
 }
 
-=head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Returns : value of id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub id{
+sub id {
    my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'id'} = $value;
-    }
-    return $self->{'id'};
+   my $value = shift;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
+
+  # catch adaptorless genes
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
+
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
+   }
 
 }
 
-=head2 version
+sub dbID {
+   my $self = shift;
+   
+   if( @_ ) {
+      my $value = shift;
+      $self->{'dbID'} = $value;
+    }
+    return $self->{'dbID'};
 
- Title   : version
- Usage   : $obj->version($newval)
+}
+
+sub adaptor {
+   my $self = shift;
+   
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
+
+}
+
+=head2 _translation_id
+
+ Title   : _translation_id
+ Usage   : $obj->_translation_id($newval)
  Function: 
- Returns : value of version
+ Returns : translation objects dbID
  Args    : newvalue (optional)
 
 
 =cut
 
-sub version{
-   my $obj = shift;
+sub _translation_id {
+   my $self = shift;
+   
    if( @_ ) {
       my $value = shift;
-      $obj->{'version'} = $value;
+      $self->{'_translation_id'} = $value;
     }
-    return $obj->{'version'};
+    return $self->{'_translation_id'};
 
 }
 
@@ -185,17 +209,24 @@ sub version{
 =cut
 
 sub translation {
-   my $obj = shift;
+   my $self = shift;
    if( @_ ) {
       my $value = shift;
       if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
-	  $obj->throw("This [$value] is not a translation");
+	  $self->throw("This [$value] is not a translation");
       }
-      $obj->{'translation'} = $value;
+      $self->{'translation'} = $value;
+    } else {
+      if( ! defined $self->{'translation'} &&
+	  defined $self->_translation_id() ) {
+	$self->{'translation'} = $self->adaptor->db->get_TranslationAdaptor()
+	  ->fetch_by_dbID( $self->_translation_id() );
+      }
     }
-    return $obj->{'translation'};
-
+    return $self->{'translation'};
 }
+
+
 
 =head2 add_Exon
 
@@ -211,7 +242,7 @@ sub add_Exon{
    my ($self,$exon) = @_;
 
    #yup - we are going to be picky here...
-   if( ! $exon->isa("Bio::EnsEMBL::Exon") ) {
+   if( !defined $exon || ! ref $exon ||  ! $exon->isa("Bio::EnsEMBL::Exon") ) {
        $self->throw("$exon is not a Bio::EnsEMBL::Exon!");
    }
 
@@ -222,25 +253,67 @@ sub add_Exon{
    
 }
 
-=head2 each_Exon
 
- Title   : each_Exon
- Usage   : foreach $exon ( $trans->each_Exon)
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
+ Usage   : foreach $exon ( $trans->get_all_Exons)
  Function: Returns an array of exons in the transcript
            in order, ie the first exon is the 5' most exon
            in the transcript (the one closest to the 5' UTR).
- Example : my @exons = $tr->each_Exon
+ Example : my @exons = $tr->get_all_Exons
  Returns : An array of exon objects
  Args    : none
 
 
 =cut
 
-sub each_Exon{
+sub get_all_Exons {
    my ($self) = @_;
 
    return @{$self->{'_trans_exon_array'}};
 }
+
+
+sub each_Exon{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l each_Exon is deprecated. Please use get_all_Exons");
+
+   return @{$self->{'_trans_exon_array'}};
+}
+
+=head2 get_Exon_by_dbID
+
+ Title   : get_Exon_by_dbID
+ Usage   : $exon = $transcript->get_Exon_by_dbID($exonid)
+ Function: gives back Exon with this dbID - mainly used by TranscriptAdaptor
+ Returns : exon object
+ Args    : dbID of exon
+
+
+=cut
+
+sub get_Exon_by_dbID {
+   my ($self,$exonid) = @_;
+
+   if( !defined $exonid ) {
+      $self->throw("Must call with exonid");
+   }
+
+   # not nice - linear search
+   foreach my $exon ( $self->get_all_Exons() ) {
+      if( $exon->dbID eq $exonid ) {
+          return $exon;
+      }
+   }
+
+   return undef;
+}
+
+
 
 =head2 length
 
@@ -1042,6 +1115,8 @@ sub translateable_dna{
 sub exon_dna {
   my ($self,$exon) = @_;
 
+  $self->warn("You are calling exon_dna - you really don't need this method. $exon->seq->seq should work (if not, attach the contig to the exon objects correctly");
+
   my $tmpseq = $self->contig_dna->str($exon->start,$exon->end);
   
   if ($exon->strand == -1) {
@@ -1512,6 +1587,86 @@ sub strand_in_context{
 
    return $exons[0]->strand;
 }
+
+=head2 Stable id 
+
+Stable id information is fetched on demand from stable tables
+
+
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version()
+ Function: 
+ Returns : value of version
+ Args    : 
+
+=cut
+
+sub version{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+    if( exists $self->{'_version'} ) {
+      return $self->{'_version'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_version'};
+
+}
+
+
+=head2 stable_id
+
+ Title   : stable_id
+ Usage   : $obj->stable_id
+ Function: 
+ Returns : value of stable_id
+ Args    : 
+
+
+=cut
+
+sub stable_id{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      $self->throw("setting stable id info is not supported");
+    }
+
+    if( exists $self->{'_stable_id'} ) {
+      return $self->{'_stable_id'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_stable_id'};
+
+}
+
+sub _get_stable_entry_info {
+   my $self = shift;
+
+   if( !defined $self->adaptor ) {
+     return undef;
+   }
+
+   $self->adaptor->get_stable_entry_info($self);
+
+}
+
 
 
 

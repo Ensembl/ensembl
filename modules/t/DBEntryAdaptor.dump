@@ -67,15 +67,15 @@ INSERT INTO dna (id, sequence, created) VALUES (1,'CGCCGGCCTCGGCCTCCCAAAGTGCTGGG
 # Dumping data for table 'exon'
 #
 
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000657883',1,1,'2001-02-01 11:39:37','2001-02-01 11:39:37','2001-03-12 12:14:17',23823,23873,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000657884',1,1,'2001-02-01 11:39:37','2001-02-01 11:39:37','2001-03-12 12:14:17',23967,24053,1,0,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (1,1,23823,23873,1,0,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (2,1,23967,24053,1,0,0,1);
 
 #
 # Dumping data for table 'exon_transcript'
 #
 
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000657883','ENST00000216167',1);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000657884','ENST00000216167',2);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (1,2,1);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (1,2,2);
 
 #
 # Dumping data for table 'feature'
@@ -98,7 +98,7 @@ INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000657884','
 # Dumping data for table 'gene'
 #
 
-INSERT INTO gene (id,version,created,modified,stored,analysisId) VALUES ('ENSG00000100331',1,'2001-02-11 14:59:50','2002-02-11 18:59:50','2001-02-11 14:59:50',1);
+INSERT INTO gene (gene_id,analysisId) VALUES (1,1);
 
 #
 # Dumping data for table 'gene_description'
@@ -203,7 +203,7 @@ INSERT INTO static_golden_path (fpcctg_name, chr_name, raw_id, chr_start, chr_en
 # Dumping data for table 'transcript'
 #
 
-INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000216167',1,'ENSG00000100331','ENSP00000216167');
+INSERT INTO transcript (transcript_id, gene_id, translation_id) VALUES (2,1,1);
 
 
 
@@ -211,15 +211,15 @@ INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000216167
 # Dumping data for table 'translation'
 #
 
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('ENSP00000216167',1,1,'ENSE00000657883',87,'ENSE00000657884');
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (1,1,1,87,2);
 
 #
 # Dumping data for table 'objectXref'
 #
 
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENSP00000216167','Translation', 1);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSP00000216167','Translation', 2);
-INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (3, 'ENSG00000216167','Gene', 3);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 1,'Translation', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 1,'Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (3, 1,'Gene', 3);
 
 #
 #Dumping data for identityXref

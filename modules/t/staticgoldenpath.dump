@@ -29,18 +29,18 @@ INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (1,3,2,12,356,-1,'1','blastp',122,123,'SW:UBIB_ECOLI',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2,3,2,12,356,-1,'2','ePCR',122,123,'RH0000012',0.0,0);
 
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',1,2,4,1,0,1);
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',2,36,40,2,0,-1);
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-2',2,5,6,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,1,2,4,1,0,1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (1,2,36,40,2,0,-1);
+INSERT INTO exon (exon_id,contig_id,seq_start,seq_end,sticky_rank,phase,strand) VALUES (2,2,5,6,1,0,1);
 
-INSERT INTO exon_transcript (exon,transcript,rank) VALUES ('texon-1','ttranscript-1',1);
-INSERT INTO exon_transcript (exon,transcript,rank) VALUES ('texon-2','ttranscript-1',2);
+INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (1,1,1);
+INSERT INTO exon_transcript (exon_id,transcript_id,rank) VALUES (2,1,2);
 
-INSERT INTO transcript (id,gene,translation) VALUES ('ttranscript-1','tgene-id-1','trl-1');
-INSERT INTO gene (id) VALUES ('tgene-id-1');
-INSERT INTO genetype (gene_id,type) VALUES ('tgene-id-1','type');
+INSERT INTO transcript (transcript_id,gene_id,translation_id) VALUES (1,1,1);
+INSERT INTO gene (gene_id, type ) VALUES (1, 'type' );
+insert into gene_stable_id( gene_id, stable_id ) VALUES( 1, 'tgene-id-1' );
 
-INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','texon-1',2,'texon-2',1);
+INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,1);
 
 INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (1,'species.classification','sapiens');
 INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (2,'species.classification','Homo');

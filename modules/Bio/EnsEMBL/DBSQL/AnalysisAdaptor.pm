@@ -197,9 +197,19 @@ sub store {
 
   my $self = shift;
   my $analysis = shift;
+  
+  if( !defined $analysis || !ref $analysis) {
+    $self->throw("called store on AnalysisAdaptor with a [$analysis]");
+  }
+
   $analysis->dbID && return $analysis->dbID;
   my $dbID;
-  
+ 
+  if( !defined $analysis->logic_name ) {
+    $self->throw("Must have a logic name on the analysis object");
+  }
+
+ 
   if( defined $analysis->created ) {
     my $sth = $self->prepare( q{
       INSERT INTO analysisprocess

@@ -1,4 +1,5 @@
 
+
 #
 # BioPerl module for Bio::EnsEMBL::Translation
 #
@@ -75,33 +76,23 @@ sub new {
 =cut
 
 sub id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'id'} = $value;
-    }
-    return $obj->{'id'};
+   my $self = shift;
+   my $value = shift;
 
-}
-
-=head2 version
-
- Title   : version
- Usage   : $obj->version($newval)
- Function: 
- Returns : value of version
- Args    : newvalue (optional)
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
 
 
-=cut
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
 
-sub version{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'version'} = $value;
-    }
-    return $obj->{'version'};
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
+   }
 
 }
 
@@ -127,70 +118,238 @@ sub start{
 
 }
 
-=head2 start_exon_id
-
- Title   : start_exon_id
- Usage   : $obj->start_exon_id($newval)
- Function: return or assign the value of start_exon_id, which denotes the
-           exon at which translation starts (and within this exon, at the
-           position indicated by start, see above).
- Returns : value of start_exon_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub start_exon_id{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'start_exon_id'} = $value;
-    }
-    return $obj->{'start_exon_id'};
-
-}
 
 =head2 end
 
  Title   : end
  Usage   : $obj->end($newval)
  Function: return or assign the value of end, which is a position within
-           the exon given by end_exon_id. 
+           the exon given by end_exon.
  Returns : value of end
  Args    : newvalue (optional)
 
 
 =cut
 
-sub end{
-   my $obj = shift;
+sub end {
+   my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'end'} = $value;
+      $self->{'end'} = $value;
     }
-    return $obj->{'end'};
+    return $self->{'end'};
 
 }
 
-=head2 end_exon_id
 
- Title   : end_exon_id
- Usage   : $obj->end_exon_id($newval)
- Function: return or assign the value of end_exon_id, which denotes the
-           last exon of a translation (and within this exon, at the
-           position indicated by end, see above).
- Returns : value of end_exon_id
+sub start_exon_id{
+   my $self = shift;
+   my $value = shift;
+
+   if( defined $value ) {
+     $self->throw( "Please use start_exon to set the start exon in Translation object.Translation objects changed." );
+   }
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l start_exon_id is deprecated. Please use start_exon to get out the object. We have returned the dbID of the Exon object. This might not be what you want!");
+
+   return $self->start_exon->dbID;
+}
+
+
+
+=head2 start_exon
+
+ Title   : start_exon
+ Usage   : $obj->start_exon($newval)
+ Function: return or assign the value of start_exon, which denotes the
+           exon at which translation starts (and within this exon, at the
+           position indicated by start, see above).
+ Returns : value of start_exon (Exon object)
  Args    : newvalue (optional)
 
 
 =cut
 
-sub end_exon_id{
-   my $obj = shift;
+sub start_exon {
+   my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'end_exon_id'} = $value;
+      if( !ref $value || !$value->isa('Bio::EnsEMBL::Exon') ) {
+         $self->throw("Got to have an Exon object, not a $value");
+      }
+      $self->{'start_exon'} = $value;
     }
-    return $obj->{'end_exon_id'};
+    return $self->{'start_exon'};
 
 }
+
+
+sub end_exon_id{
+   my $self = shift;
+   my $value = shift;
+
+   if ( defined $value ) {
+     $self->throw( "Please use end_exon to set the end exon in Translation object.Translation objects changed." );
+   }
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l end_exon_id is deprecated. Please use end_exon to get out the object. We have returned the dbID of the Exon object. This might not be what you want!");
+
+   return $self->end_exon->dbID;
+}
+
+
+
+=head2 end_exon
+
+ Title   : end_exon
+ Usage   : $obj->end_exon($newval)
+ Function: return or assign the value of end_exon, which denotes the
+           exon at which translation ends (and within this exon, at the
+           position indicated by end, see above).
+ Returns : value of end_exon (Exon object)
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub end_exon {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      if( !ref $value || !$value->isa('Bio::EnsEMBL::Exon') ) {
+         $self->throw("Got to have an Exon object, not a $value");
+      }
+      $self->{'end_exon'} = $value;
+    }
+    return $self->{'end_exon'};
+
+}
+
+
+=head2 Stable id 
+
+Stable id information is fetched on demand from stable tables
+
+
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version()
+ Function: 
+ Returns : value of version
+ Args    : 
+
+=cut
+
+sub version{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+    if( exists $self->{'_version'} ) {
+      return $self->{'_version'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_version'};
+
+}
+
+
+=head2 stable_id
+
+ Title   : stable_id
+ Usage   : $obj->stable_id
+ Function: 
+ Returns : value of stable_id
+ Args    : 
+
+
+=cut
+
+sub stable_id{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      $self->throw("setting stable id info is not supported");
+    }
+
+    if( exists $self->{'_stable_id'} ) {
+      return $self->{'_stable_id'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_stable_id'};
+
+}
+
+sub _get_stable_entry_info {
+   my $self = shift;
+
+   if( !defined $self->adaptor ) {
+     return undef;
+   }
+
+   $self->adaptor->get_stable_entry_info($self);
+
+}
+
+
+
+=head2 dbID
+
+ Title   : dbID
+ Usage   : $obj->dbID($newval)
+ Function: 
+ Returns : value of dbID
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub dbID {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'dbID'} = $value;
+    }
+    return $self->{'dbID'};
+
+}
+
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   : $obj->adaptor($newval)
+ Function: 
+ Returns : value of adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub adaptor {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
+
+}
+
+
+1;

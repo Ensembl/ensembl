@@ -295,14 +295,14 @@ sub get_all_Genes {
    my %got;
    
    my $sth = $self->prepare("
-        SELECT t.gene
+        SELECT t.gene_id
         FROM transcript t,
              exon_transcript et,
              exon e,
              contig c
-        WHERE e.contig = c.internal_id
-          AND et.exon = e.id
-          AND t.id = et.transcript
+        WHERE e.contig_id = c.internal_id
+          AND et.exon_id = e.exon_id
+          AND t.transcript_id = et.transcript_id
           AND c.clone = $clone_id
         ");
 
@@ -310,14 +310,14 @@ sub get_all_Genes {
    
     while (my $rowhash = $sth->fetchrow_hashref) { 
             
-        if( ! exists $got{$rowhash->{'gene'}}) {  
+        if( ! exists $got{$rowhash->{'gene_id'}}) {  
             
-           my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->db);             
-	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+           my $geneAdaptor = $self->db->get_GeneAdaptor();
+	   my $gene = $geneAdaptor->fetch_by_dbID( $rowhash->{'gene_id'});
            if ($gene) {
 	        push(@out, $gene);
            }
-	   $got{$rowhash->{'gene'}} = 1;
+	   $got{$rowhash->{'gene_id'}} = 1;
         }       
     }
    
@@ -348,40 +348,6 @@ sub get_Contig {
    return $contig->fetch();
 }
 
-=head2 get_all_geneid
-
- Title   : get_all_geneid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_my_geneid {
-   my ($self,$cloneid) = @_;
-
-   my $sth = $self->prepare("select count(*),cont.clone ,ex.contig,tran.gene  " .
-			    "from   contig          as cont, ".
-			    "       transcript      as tran, " .
-			    "       exon_transcript as et, " .
-			    "       exon            as ex " .
-			    "where  ex.id            = et.exon " .
-			    "and    tran.id          = et.transcript " .
-			    "and    cont.clone       = $cloneid  " .
-			    "and    cont.internal_id = ex.contig " .
-			    "group by tran.gene");
-
-   my @out;
-
-   $sth->execute;
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'gene'});
-   }
-   return @out;
-}
 
 =head2 get_all_Contigs
 

@@ -157,33 +157,67 @@ sub _parse_args {
 
 sub id{
    my ($self) = shift;
-   if( @_ ) {
-       $self->{'id'} = shift;
+   my $value  = shift;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
+
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
+
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
    }
-   return $self->{'id'};
-   
 }
 
-=head2 version
+=head2 dbID
 
- Title   : version
- Usage   : $obj->version($newval)
+ Title   : dbID
+ Usage   : $obj->dbID($newval)
  Function: 
- Returns : value of version
+ Returns : value of dbID
  Args    : newvalue (optional)
 
 
 =cut
 
-sub version{
-   my $obj = shift;
+sub dbID {
+   my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $obj->{'version'} = $value;
+      $self->{'dbID'} = $value;
     }
-    return $obj->{'version'};
+    return $self->{'dbID'};
 
 }
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   : $obj->adaptor($newval)
+ Function: 
+ Returns : value of adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub adaptor {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
+
+}
+
+
+
 
 =head2 contig_id
 
@@ -227,68 +261,7 @@ sub clone_id{
 
 }
 
-=head2 created
 
- Title   : created
- Usage   : $obj->created($newval)
- Function: 
- Returns : value of created
- Args    : newvalue (optional)
-
-
-=cut
-
-sub created{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'created'} = $value;
-    }
-    return $self->{'created'};
-
-}
-
-=head2 modified
-
- Title   : modified
- Usage   : $obj->modified($newval)
- Function: 
- Returns : value of modified
- Args    : newvalue (optional)
-
-
-=cut
-
-sub modified{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'modified'} = $value;
-    }
-    return $self->{'modified'};
-
-}
-
-=head2 _stored
-
- Title   : _stored
- Usage   : $obj->_stored($newval)
- Function: 
- Returns : value of stored
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _stored{
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'stored'} = $value;
-    }
-    return $self->{'stored'};
-
-}
 
 =head2 pep_seq
 
@@ -401,16 +374,30 @@ sub phase {
 
 sub frame {
   my ($self,$value) = @_;
-  
-  if (defined($value)) {
-    # Value must be 0,1,2,
-    if ($value < 0 || $value > 2) {
-      $self->throw("Bad value ($value) for exon frame. Should only be 0,1,2\n");
-    } else {
-      $self->{'frame'} = $value;
-    }
+
+  if( defined $value ) {
+    $self->throw("Cannot set frame. Deduced from seq_start and phase");
   }
-  return $self->{'frame'};
+
+  # frame is mod 3 of the translation point
+
+  if( $self->phase == -1 ) {
+    return '.'; # gff convention for no frame info
+  }
+  if( $self->phase == 0 ) {
+    return $self->seq_start%3;
+  }
+
+  if( $self->phase == 1 ) {
+    return ($self->seq_start+2)%3;
+  }
+
+  if( $self->phase == 2 ) {
+    return ($self->seq_start+1)%3;
+  }
+
+  $self->throw("bad phase in exon ".$self->phase);
+
 }
 
 =pod
@@ -743,6 +730,16 @@ sub find_supporting_evidence {
       }
 }
 
+
+=head2 Ori methods
+
+The ori methods are a hack around the virtual contig system to allow
+us to cache genes in get_all_ExternalGenes via the ExternalWrapper
+class, reusing the gene objects through more than one lift of the
+virtual contig. Both Elia and Ewan understand this (vaguely) and it is
+definitely a hack waiting to be removed somehow.
+
+
 =head2 ori_start
 
  Title   : ori_start
@@ -805,6 +802,147 @@ sub ori_strand{
     return $obj->{'ori_strand'};
 
 }
+
+
+=head2 Stable id 
+
+Stable id information is fetched on demand from stable tables
+
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created()
+ Function: 
+ Returns : value of created
+ Args    :
+
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+
+    if(defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  created dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+
+    if( exists $self->{'_created'} ) {
+      return $self->{'_created'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_created'};
+
+}
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $obj->modified()
+ Function: 
+ Returns : value of modified
+ Args    : 
+
+
+=cut
+
+sub modified{
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+    if( exists $self->{'_modified'} ) {
+      return $self->{'_modified'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_modified'};
+}
+
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version()
+ Function: 
+ Returns : value of version
+ Args    : 
+
+=cut
+
+sub version{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      my ($p,$f,$l) = caller;
+      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
+      return;
+    }
+
+    if( exists $self->{'_version'} ) {
+      return $self->{'_version'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_version'};
+
+}
+
+
+=head2 stable_id
+
+ Title   : stable_id
+ Usage   : $obj->stable_id
+ Function: 
+ Returns : value of stable_id
+ Args    : 
+
+
+=cut
+
+sub stable_id{
+
+    my ($self,$value) = @_;
+    
+
+    if( defined $value ) {
+      $self->throw("setting stable id info is not supported");
+    }
+
+    if( exists $self->{'_stable_id'} ) {
+      return $self->{'_stable_id'};
+    }
+
+    $self->_get_stable_entry_info();
+
+    return $self->{'_stable_id'};
+
+}
+
+sub _get_stable_entry_info {
+   my $self = shift;
+
+   if( !defined $self->adaptor ) {
+     return undef;
+   }
+
+   $self->adaptor->get_stable_entry_info($self);
+
+}
+
 
 
 # Inherited methods

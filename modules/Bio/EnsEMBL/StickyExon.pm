@@ -168,4 +168,29 @@ sub length {
     return $len;
 }
 
+=head2 _sort_by_sticky_rank
+
+ Title   : _sort_by_sticky_rank
+ Usage   : 
+ Function: put the contained exons in the right order
+ Example :
+ Returns : 
+ Args    : 
+
+=cut
+
+
+sub _sort_by_sticky_rank {
+    my $self = shift;
+
+    my @sorted;
+
+    @sorted= sort {$a->sticky_rank <=> $b->sticky_rank } 
+      @{$self->{'component_Exons'}};
+    $self->{'component_Exons'} = \@sorted;
+    return 1;
+}
+
+
+
 1;

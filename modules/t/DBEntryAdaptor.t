@@ -46,7 +46,7 @@ my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";
 
 
-my $protein_adaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
+my $dbentry_adaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 
 my $dbentry = Bio::EnsEMBL::DBEntry->new 
     ( -primary_id => 123,
@@ -56,7 +56,7 @@ my $dbentry = Bio::EnsEMBL::DBEntry->new
       -dbname =>  'ENSDBNAME');
 
 eval {
-    $protein_adaptor->store($dbentry, 'ENSP009', 'translation');
+    $dbentry_adaptor->store($dbentry, 10, 'translation');
 };
 
 if ($@) {
@@ -70,7 +70,7 @@ else {
 my $entry1;
 
 eval {
-    ($entry1) = $protein_adaptor->fetch_by_translation('ENSP009');
+    ($entry1) = $dbentry_adaptor->fetch_by_translation(10);
 };
 
 if ($@) {
@@ -108,7 +108,7 @@ $dbentry2->target_identity(67);
 $dbentry2->query_identity(100);
 
 eval {
-    $protein_adaptor->store($dbentry2, 'ENSP0010', 'translation');
+    $dbentry_adaptor->store($dbentry2, 11, 'translation');
 };
 
 if ($@) {
@@ -122,7 +122,7 @@ else {
 my $dbentry4;
 
 eval {
-    ($entry4) = $protein_adaptor->fetch_by_translation('ENSP0010');
+    ($entry4) = $dbentry_adaptor->fetch_by_translation(11);
 };
 
 if ($@) {
@@ -149,7 +149,7 @@ else {
     print "not ok 10\n";
 }
 
-my @matches = $protein_adaptor->fetch_by_union('ENSG00000216167');
+my @matches = $dbentry_adaptor->fetch_by_gene(1);
 
 if (scalar (@matches) == 1) {
     print "ok 11\n";
@@ -167,7 +167,7 @@ else {
     print "not ok 12\n";
 }
 
-my @matches2 = $protein_adaptor->fetch_by_union('ENSP00000216167');
+my @matches2 = $dbentry_adaptor->fetch_by_translation(1);
 
 
 if (scalar (@matches2) == 2) {

@@ -31,125 +31,22 @@ INSERT INTO clone (internal_id, id, embl_id, version, embl_version, htg_phase, c
 INSERT INTO contig (internal_id, id, clone, length, offset, corder, dna, chromosomeId, international_id) VALUES (1,'id_cont_test3',3,49,1,1,1,1,'international-test3');
 
 #
-# Dumping data for table 'contig_orientation'
-#
-
-
-#
-# Dumping data for table 'contigoverlap'
-#
-
-
-#
-# Dumping data for table 'db_update'
-#
-
-
-#
-# Dumping data for table 'dna'
-#
 
 INSERT INTO dna (id, sequence, created) VALUES (1,'actgatcgatgatgttacgatta','2000-10-18 11:50:56');
 
-#
-# Dumping data for table 'exon'
-#
-
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('manu-test',1,2,'2000-10-16 14:51:30','2000-10-16 14:51:30','2000-10-16 14:51:30',3,14,2,24,26,34);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('exon_id3',1,2,'2000-10-17 10:41:06','2000-10-17 10:41:06','2000-10-17 10:41:06',25,100,1,0,0,3);
-
-#
-# Dumping data for table 'exon_transcript'
-#
-
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('exon_id3','transcript_id3',2);
-
-#
-# Dumping data for table 'feature'
-#
 
 
-#
-# Dumping data for table 'fset'
-#
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (1,1,23823,23873,1,0,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (2,1,23967,24053,1,0,0,1);
+INSERT INTO transcript (transcript_id, gene_id, translation_id) VALUES (2,1,1);
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (1,1,1,87,2);
 
 
-#
-# Dumping data for table 'fset_feature'
-#
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (1,2,1);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (2,2,2);
 
 
-#
-# Dumping data for table 'gene'
-#
+INSERT INTO gene (gene_id,analysisId) VALUES (1,1);
 
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('gene_id3',1,'2000-10-17 13:29:52','2000-10-17 13:29:52','2000-10-17 13:29:52');
-
-#
-# Dumping data for table 'genedblink'
-#
-
-
-#
-# Dumping data for table 'genetype'
-#
-
-INSERT INTO genetype (gene_id, type) VALUES ('gene_id3','test');
-
-#
-# Dumping data for table 'ghost'
-#
-
-
-#
-# Dumping data for table 'meta'
-#
-
-
-#
-# Dumping data for table 'repeat_feature'
-#
-
-
-#
-# Dumping data for table 'species'
-#
-
-
-#
-# Dumping data for table 'static_golden_path'
-#
-
-
-#
-# Dumping data for table 'supporting_feature'
-#
-
-
-#
-# Dumping data for table 'symmetric_contig_feature'
-#
-
-
-#
-# Dumping data for table 'symmetric_contig_pair_hit'
-#
-
-
-#
-# Dumping data for table 'transcript'
-#
-
-INSERT INTO transcript (id, version, gene, translation) VALUES ('transcript_id3',2,'gene_id3','translation_id3');
-
-#
-# Dumping data for table 'transcriptdblink'
-#
-
-
-#
-# Dumping data for table 'translation'
-#
-
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('translation_id3',1,25,'exon_id3',100,'exon_id3');
+insert into gene_stable_id ( gene_id, stable_id, version, created, modified ) VALUES ( 1, "gene_id3", 1, '2000-10-17 13:29:52','2000-10-17 13:29:52' );
 

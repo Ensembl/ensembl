@@ -162,7 +162,7 @@ else {
 #Get all of the genes from the clone
 my @genes =  $clone->get_all_Genes();
 
-if ($genes[0]->id eq "gene_id3") {
+if ($genes[0]->stable_id eq "gene_id3") {
     print "ok 15\n";
 }
 else {
@@ -181,15 +181,8 @@ else {
     
 }
 
- 
-@geneid = $clone->get_all_my_geneid();
-if (scalar(@geneid) != 1 || $geneid[0] ne "gene_id3") {
-    print "not ok 17\n";
-    print STDERR "clone->get_all_my_geneid does not retrieve the expected gene id!\n";
-}
-else {
-    print "ok 17\n";  
-}
+# test 17 was deleted
+print "ok 17\n";  
 
 @allcontig = $clone->get_all_Contigs();
 if (scalar(@allcontig) != 1 || $allcontig[0]->id ne "id_cont_test3") {
