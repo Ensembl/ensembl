@@ -824,10 +824,15 @@ sub _objs_from_sth {
     my $display_xref;
 
     if( $display_xref_id ) {
-      $display_xref = bless 
-	{ 'dbID' => $display_xref_id,
-	  'adaptor' => $dbEntryAdaptor
-	}, "Bio::EnsEMBL::DBEntry";
+      $display_xref = Bio::EnsEMBL::DBEntry->new_fast
+	(
+	 { 'dbID' => $display_xref_id,
+	   'adaptor' => $dbEntryAdaptor,
+	   'display_id' => $external_name,
+	   'dbname' => $external_db
+	 }
+	);
+      $display_xref->status( $external_status );
     }
 				
 
