@@ -179,7 +179,7 @@ CREATE TABLE simple_feature (
   score                       double,
 
   PRIMARY KEY ( simple_feature_id ),
-  KEY seq_region_idx( seq_region_id ),
+  KEY seq_region_idx (seq_region_id, seq_region_start ),
   KEY analysis_idx( analysis_id ),
   KEY hit_idx( display_label )
 
@@ -207,8 +207,8 @@ CREATE TABLE protein_align_feature (
   cigar_line                  text,
 
   PRIMARY KEY ( protein_align_feature_id ),
+  KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY hit_idx( hit_name ),
-  KEY dfg_idx( seq_region_id ),
   KEY ana_idx( analysis_id )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -236,8 +236,8 @@ CREATE TABLE dna_align_feature (
   cigar_line                  text,
 
   PRIMARY KEY ( dna_align_feature_id ),
+  KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY hit_idx( hit_name ),
-  KEY dfg_idx( seq_region_id ),
   KEY ana_idx( analysis_id )
 
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -281,7 +281,7 @@ CREATE TABLE repeat_feature (
   score                       double,
   
   PRIMARY KEY (	repeat_feature_id ),
-  KEY seq_region_idx( seq_region_id ),
+  KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY repeat_idx( repeat_consensus_id ),
   KEY analysis_idx( analysis_id )
 
@@ -304,6 +304,7 @@ CREATE TABLE gene (
   display_xref_id             int unsigned NOT NULL,
 
   PRIMARY KEY (gene_id),
+  KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY xref_id_index ( display_xref_id )
 
 );
@@ -355,6 +356,7 @@ CREATE TABLE transcript (
   display_xref_id             int unsigned NOT NULL,
 
   PRIMARY KEY (transcript_id),
+  KEY seq_region_idx( seq_region_id, seq_region_start ),
   KEY gene_index (gene_id),
   KEY xref_id_index ( display_xref_id )
 
@@ -729,7 +731,7 @@ CREATE TABLE marker_feature (
   map_weight                  int(10) unsigned,
 
   PRIMARY KEY (marker_feature_id),
-  KEY seq_region_idx (seq_region_id )
+  KEY seq_region_idx (seq_region_id, seq_region_start )
 
 );
    
