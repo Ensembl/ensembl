@@ -30,6 +30,7 @@ my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my %priority;
 
+$priority{'BRIGGSAE_HYBRID'} = 1000;
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
 $priority{'wormbase_transcript'} = 1000;
@@ -78,7 +79,7 @@ while(my $id = $sth->fetchrow) {
     }
     $trans->display_xref($display);
     $transadaptor->update($trans);
-    #print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
+    print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
 }
 
 if ($organism ne "elegans") {
