@@ -15,26 +15,22 @@
 
 use strict;
 use Getopt::Std;
-use vars qw($opt_h $opt_T $opt_i 
-	    $opt_U $opt_D $opt_P $opt_H $opt_p
-	    $opt_s $opt_c $opt_C $opt_l $opt_d $opt_r $opt_n);
-
-use Time::HiRes qw(gettimeofday);
+use vars qw($opt_H $opt_T
+	    $opt_u $opt_d $opt_P $opt_h $opt_p $opt_C $opt_U);
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
-getopts("hTi:U:D:P:H:p:s:cCl:dr:n:");
+getopts("u:HTd:p:P:h:CU");
 
 $|=1;
 
 # specify defaults
-my $def_U='ensadmin';
-my $def_D='testdna';
-my $def_P='3307';
-my $def_H='127.0.0.1';
-my $def_r=5;
+my $def_u='ensadmin';
+my $def_P='3306';
+my $def_h='127.0.0.1';
 
-if($opt_h){
+if($opt_H){
     &help;
 }elsif($opt_T){
     &help2;
@@ -42,23 +38,20 @@ if($opt_h){
 
 sub help {
     print <<ENDHELP;
-dna_compress.pl
 
-  -h       for help
-  -s char  string of DNA (for writing)
-  -l char  label of clone, contig (for writing)
-  -c       convert
-  -C       compare
-  -r num   number of randomisation subsequence selections [$def_r]
-  -i id    clone_dbid (for comparing, converting, extracting DNA)
-  -d       delete clone
-  -n num   process N items
+usage:
+dna_compress.pl [options]
 
-  -U user  ensembl db user [$def_U]
-  -D db    ensembl db      [$def_D]
+  -H       for help
+  -T       tutorial
+  -d       database
+  -u user  ensembl db user [$def_u]
+  -d db    ensembl db
   -P port  port of mysql   [$def_P]
-  -H host  host of mysql   [$def_H]
+  -h host  host of mysql   [$def_h]
   -p pass  passwd for mysqluser
+  -C       compress
+  -U       uncompress
 ENDHELP
 
     exit 0;
@@ -69,216 +62,147 @@ sub help2 {
 }
 
 # defaults or options
-$opt_U=$def_U unless $opt_U;
-$opt_D=$def_D unless $opt_D;
-$opt_P=$def_P unless $opt_P;
-$opt_H=$def_H unless $opt_H;
-$opt_r=$def_r unless $opt_r;
+$opt_u ||= $def_u;
+$opt_h ||= $def_h;
+$opt_P ||= $def_P unless $opt_P;
+
+
+if(!$opt_d) {
+  print STDERR "ensembl db (-d) argument is required\n";
+  help();
+}
+
+if(!$opt_C && !$opt_U) {
+  print STDERR "either compress (-C) or uncompress (-U) is required\n";
+  help();
+}
+
 
 # db connection
-my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $opt_H,
-					    -user   => $opt_U,
-					    -port   => $opt_P,
-					    -dbname => $opt_D,
-					    -pass   => $opt_p);
+my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   => $opt_h,
+                                            -user   => $opt_u,
+                                            -port   => $opt_P,
+                                            -dbname => $opt_d,
+                                            -pass   => $opt_p);
 
-my $seq_apt=$db->get_SequenceAdaptor;
-my $contig_apt=$db->get_RawContigAdaptor;
-my $clone_apt=$db->get_CloneAdaptor;
 
-if($opt_C || $opt_c){
+
+my $meta_container = $db->get_MetaContainer();
+my $comp_seq_adaptor = $db->get_CompressedSequenceAdaptor();
+
+my ($compressed) = 
+  @{$meta_container->list_value_by_key('sequence.compression')};
+
+if($opt_C) {
+  #compress the dna in the database
+  if($compressed) {
+    throw("The database meta table indicates this database already contains"
+     ." sequence compression.\nIf this is not the case do the following:\n"
+     ."   mysql>  delete from meta where meta_key = 'sequence.compression'\n");
+  }
+
+  #one more sanity check - make sure that dna table is populated and dnac table
+  #is not
+  if(get_dna_count($db) == 0) {
+    print STDERR "There is no uncompressed dna in this database to compress.";
+    exit(0);
+  }
+  if(get_dnac_count($db) != 0) {
+    throw("Unexpected: the dnac table already contains some rows.\n");
+  }
   
-  # convert dna of sequences (loop over clone->contig->dna table,
-  # inserting into dnac table when no entry is already present)
-  # OR
-  # compare raw and compressed sequences
+  print STDERR "Compressing sequence and writing to dnac table.\n";
 
-  my $clones=$clone_apt->fetch_all();
-  my $nd=0;
-  my $ns=0;
-  my $nc=0;
-  my $tc=0;
-  my $tu=0;
-  foreach my $clone (@$clones){
-    my $clone_dbid=$clone->dbID;
-    next if($opt_i && $opt_i!=$clone_dbid);
-    my $clone_id=$clone->id;
-    my $created=$clone->created();
-    print "Processing Clone $clone_id ($clone_dbid) $created\n";
-    my $contigs=$clone->get_all_Contigs();
-    foreach my $contig (@$contigs){
-      my $contig_dbid=$contig->dbID;
-      my $contig_id=$clone->id;
-      my $seq=$seq_apt->fetch_by_RawContig_start_end_strand($contig,1,-1,1);
-      my $len=length($seq);
-      
-      my $dna_id;
-      # custom sql is required to get dna_id and check if there is a compressed id
-      my $query="SELECT c.dna_id FROM contig c WHERE c.contig_id = ?";
-      my $sth=$contig_apt->prepare($query);
-      $sth->execute($contig_dbid);
-      if(my $aref=$sth->fetchrow_arrayref()){
-	($dna_id)=@$aref;
-      }else{
-	$contig_apt->thrown("No dna_id for Contig $contig_id");
-      }
-      
-      print "  Processing Contig $contig_id ($contig_dbid) [$len] $dna_id\n";
-      
-      my $flag_compressed_exists=0;
-      $query="SELECT d.dna_id FROM dnac d WHERE d.dna_id = ?";
-      $sth=$seq_apt->prepare($query);
-      $sth->execute($dna_id);
-      if(my $aref=$sth->fetchrow_arrayref()){
-	$flag_compressed_exists=1;
-      }
-      # convert
-      if($opt_c){
-	if($flag_compressed_exists){
-	  print "    Compressed DNA entry already exists for dna_id $dna_id\n";
-	  next;
-	}
-	# write compressed DNA record
-	my $id=$seq_apt->store_compressed($seq,$created,$dna_id);
-	print "    Created compressed DNA entry\n";
-      }elsif($opt_C){
-	if(!$flag_compressed_exists){
-	  print "    Compressed DNA entry missing for dna_id $dna_id\n";
-	  next;
-	}
-	my $seq2=$seq_apt->fetch_by_RawContig_start_end_strand($contig,1,-1,1,1);
-	if($seq ne $seq2){
-	  print "DIFFERENT\n";
-	  $nd++;
-	}else{
-	  print "Same\n";
-	  $ns++;
-	}
-	my $len2=length($seq2);
-	my $lenx=30;
-	if($len<$lenx){
-	  $lenx=$len;
-	  print substr($seq,0,$lenx)."\n".substr($seq2,0,$lenx)."\n\n";
-	}else{
-	  print substr($seq,0,$lenx)." .. ".substr($seq,$len-$lenx,$len)."\n";
-	  print substr($seq2,0,$lenx)." .. ".substr($seq2,$len-$lenx,$len2)."\n\n";
-	}
-
-	# now test a subsequence
-	my $lenr=$len-1;
-	for(my $i=0;$i<$opt_r;$i++){
-	  my $r=rand;
-	  my $st=int($r*$lenr)+1;
-	  $r=rand;
-	  my $ed=int($r*($lenr-$st))+$st+1;
-	  print "$lenr: $st-$ed\n";
-	  my $t1=gettimeofday;
-	  $seq=$seq_apt->fetch_by_RawContig_start_end_strand($contig,$st,$ed,1);
-	  $tu+=gettimeofday-$t1;
-	  $len=length($seq);
-	  $t1=gettimeofday;
-	  $seq2=$seq_apt->fetch_by_RawContig_start_end_strand($contig,$st,$ed,1,1);
-	  $tc+=gettimeofday-$t1;
-	  if($seq ne $seq2){
-	    print "DIFFERENT\n";
-	    $nd++;
-	  }else{
-	    print "Same\n";
-	    $ns++;
-	  }
-	  my $len2=length($seq2);
-	  my $lenx=30;
-	  if($len<$lenx){
-	    $lenx=$len;
-	    print substr($seq,0,$lenx)."\n".substr($seq2,0,$lenx)."\n\n";
-	  }else{
-	    print substr($seq,0,$lenx)." .. ".substr($seq,$len-$lenx,$len)."\n";
-	    print substr($seq2,0,$lenx)." .. ".substr($seq2,$len-$lenx,$len2)."\n\n";
-	  }
-	}
-      }
-      
-    }
-    $nc++;
-    last if($opt_n && $nc>$opt_n);
+  #get every slice that contains sequence
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  foreach my $slice (@{$slice_adaptor->fetch_all('seqlevel')}) {
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+    $comp_seq_adaptor->store($seq_region_id, $slice->seq);
+    print STDERR ".";
   }
-  print "Same: $ns; Different: $nd\n" if $opt_C;
-  my $ratio=0;
-  $ratio=$tc/$tu unless $tu==0;
-  printf "Uncompressed time: %5.1f; Compressed time: %5.1f (%5.1f)\n",$tu,$tc,$ratio;
-  exit 0;
 
-}elsif($opt_s && $opt_l){
+  print STDERR "\nSetting sequence.compression meta table entry.\n";
+  $meta_container->delete_key('sequence.compression');
+  $meta_container->store_key_value('sequence.compression', 1);
 
-  # sequence and label defined, so write into db;
+  print STDERR "Deleting uncompressed sequence.\n";
+  my $sth = $db->prepare("delete from dna");
+  $sth->execute();
 
-  my $acc=$opt_l;
-  my $seq=$opt_s;
-  my $ver=1;
-  # clone object
-  my $clone=new Bio::EnsEMBL::Clone;
-  $clone->id($acc);
-  $clone->htg_phase(4);
-  $clone->embl_id($acc);
-  $clone->version($ver);
-  $clone->embl_version($ver);
-  my $now = time;
-  $clone->created($now);
-  $clone->modified($now);
+  print STDERR "All done.\n";
 
-  # contig object
-  my $contig = new Bio::EnsEMBL::RawContig;
-  my $length = length($seq);
-  $contig->name("$acc.$ver.1.$length");
-  $contig->embl_offset(1);
-  $contig->length($length);
-  $contig->seq($seq);
-  $clone->add_Contig($contig);
-
-  my $dbclone;
-  eval {
-    $dbclone = $clone_apt->fetch_by_accession_version($acc,$ver);
-  };
-  if($dbclone){
-    #$dbclone->delete_by_dbID;
-    $clone_apt->remove($dbclone);
-    print "remove old version of clone\n";
+} else {
+  #uncompress the dna in the database
+  if(!$compressed) {
+    throw("The database meta table indicates that the sequence in this "
+     ." database is already uncompressed.\nIf this is not the case do "
+     ." the following:\n"
+     ."   mysql>  delete from meta where meta_key = 'sequence.compression';\n"
+     ."   mysql>  insert into meta (meta_key,meta_value) "
+     . "values('sequence.compression', 1);\n");
   }
-  my $id=$clone_apt->store($clone);
 
-  print "Clone '$acc' stored under dbid $id\n";
+  if(get_dnac_count($db) == 0) {
+    print STDERR "There is no compressed dna in this database to uncompress.";
+    exit(0);
+  }
+  if(get_dna_count($db) != 0) {
+    throw("Unexpected: the dna table already contains some rows.\n");
+  }
+
+  print STDERR "Setting sequence.compression meta table entry.\n";
+  $meta_container->delete_key('sequence.compression');
+  $meta_container->store_key_value('sequence.compression', 0);
+
+  print STDERR "Uncompressing sequence and writing to dna table.\n";
+
+  #get every slice that contains sequence
+  my $slice_adaptor = $db->get_SliceAdaptor();
+  my $seq_adaptor   = $db->get_SequenceAdaptor();
   
-  exit 0;
-
-}elsif($opt_d && $opt_i){
-
-  # remove clone
-
-  my $clone=$clone_apt->fetch_by_dbID($opt_i);
-  if($clone ne ''){
-    $clone_apt->remove($clone);
-    print "Clone $opt_i removed\n";
-  }else{
-    print "Clone not found\n";
+  if($seq_adaptor->isa('CompressedSequenceAdaptor')) {
+    throw("Tried to get SequenceAdaptor but got CompressedSequenceAdaptor.");
   }
 
-}elsif($opt_i){
-
-  foreach my $id (split(/,/,$opt_i)){
-    my $clone=$clone_apt->fetch_by_dbID($id);
-    my $contigs=$clone->get_all_Contigs;
-    foreach my $contig (@$contigs){
-      my $cid=$contig->dbID;
-      print "$cid: ".$contig->seq."\n";
-    }
+  foreach my $slice (@{$slice_adaptor->fetch_all('seqlevel')}) {
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+    my $seq = $comp_seq_adaptor->fetch_by_Slice_start_end_strand($slice);
+    $seq_adaptor->store($seq_region_id, $$seq);
+    print STDERR ".";
   }
-  exit 0;
 
-}else{
+  print STDERR "\nDeleting compressed sequence.\n";
+  my $sth = $db->prepare("delete from dnac");
+  $sth->execute();
 
-    print "WARN - provide a valid contig_id (reading) or sequence to write\n";
-
+  print STDERR "All done.\n";
 }
+
+
+sub get_dna_count {
+  my $db = shift;
+
+  my $sth = $db->prepare("SELECT count(*) from dna");
+  $sth->execute();
+  my ($count) = $sth->fetchrow_array();
+  $sth->finish();
+
+  return $count;
+}
+
+
+sub get_dnac_count {
+  my $db = shift;
+
+  my $sth = $db->prepare("SELECT count(*) from dnac");
+  $sth->execute();
+  my ($count) = $sth->fetchrow_array();
+  $sth->finish();
+  
+  return $count;
+}
+
+
 
 __END__
 
@@ -290,7 +214,9 @@ dna_compress.pl
 
 =head1 DESCRIPTION
 
-Populates and tests the experimental dnac (compressed dna) table of ensembl.
+Converts compressed sequence in an ensembl database to uncompressed sequence
+or converts uncompressed sequence in an ensembl database to compressed
+sequence.
 
 =head1 SYNOPSIS
 
@@ -298,39 +224,14 @@ Populates and tests the experimental dnac (compressed dna) table of ensembl.
 
 =head1 EXAMPLES
 
-Create a clone/clontig/dna entry
+Compress the contents of the dna table in an ensembl database:
 
-    dna_compress.pl -s 'ACGTTTGGAANANGCCGTTNNNNACCGNGTGCTAAGCC' -l test
+    dna_compress.pl -C -u ensadmin -p password -h host -d homo_sapiens_core_18_34 
 
-Clone 'test' stored under dbid 42
+Uncompress the contents of the dnac table in an ensembl database
 
+    dna_compress.pl -U -u ensadmin -p password -h host -d homo_sapiens_core_18_34 
 
-Create a compressed version of this entry
-
-    dna_compress.pl -c -i 42
-
-
-Compare compressed and uncompressed versions of this entry
-
-    dna_compress.pl -C -i 42
-
-(carries out a fetch of the entire contig and then 5 different random parts from it)
-
-
-Extract sequence from DB, autosensing when only compressed is present.
-
-    dna_compress.pl -i 42
-
-28: ACGTTTGGAANANGCCGTTNNNNACCGNGTGCTAAGCC
-
-    mysql> delete from dna where dna_id=42;
-
-    dna_compress.pl -i 42
-
-Switched to compressed DNA reading mode
-28: ACGTTTGGAANANGCCGTTNNNNACCGNGTGCTAAGCC
-
-    
 
 =head1 FLAGS
 
@@ -344,25 +245,29 @@ Displays short help
 
 Displays this help message
 
-=item -s <string>
-
-String of DNA to write into database
-
-=item -l <string>
-
-Label for clonename, contigname to write into database
-
-=item -c
-
-Make compressed DNA entry for all clones in DB, or just those listed by dbid (-i)
-
 =item -C
 
-Compare uncompressed and compressed DNA entries where present, and/or listed by dbid (-i)
+Compress the dna in the database
 
-=item -i <num[,num]>
+=item -U
 
-List of clone dbid
+Uncompress the dna in the database
+
+=item -h
+
+The database host
+
+=item -p
+
+The database password
+
+=item -P
+
+The database port
+
+=item -u
+
+The database user
 
 =back
 
@@ -373,6 +278,10 @@ List of clone dbid
 =item 14-Jul-2003
 
 B<th> initial release
+
+=item 08-Oct-2003
+
+B<mcvicker> rewrote for new schema and newly implemented sequence compression
 
 =back
 
