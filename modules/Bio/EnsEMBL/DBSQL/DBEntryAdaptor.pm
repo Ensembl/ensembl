@@ -114,9 +114,10 @@ sub store {
 	$sth = $self->prepare( "
        INSERT INTO externalDB 
        SET db_name = ?,
-           release = ?
+           release = ?,
+           status  = ?
      " );
-	$sth->execute( $exObj->dbname(), $exObj->release());
+	$sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
 	
 	$dbJustInserted = 1;
 	$sth = $self->prepare( "
@@ -183,6 +184,8 @@ sub store {
 	    
 	    my ($dbSyn) = $sth->fetchrow_array();
 	    
+	    #print STDERR $dbSyn[0],"\n";
+	    
 	    if( ! $dbSyn ) {
 		$sth = $self->prepare( "
         INSERT INTO externalSynonym
@@ -192,7 +195,7 @@ sub store {
 		$sth->execute();
 	    }
 	}
-    
+	
 	
 	$sth = $self->prepare( "
    INSERT INTO objectXref
@@ -200,6 +203,7 @@ sub store {
          ensembl_object_type = ?,
          ensembl_id = ?
   " );
+	
 	$sth->execute( $ensType, $ensObject );
 	
 	$exObj->dbID( $dbX );
@@ -221,11 +225,7 @@ sub store {
 	    $sth->execute( $exObj->query_identity, $exObj->target_identity );
 	    
 	}
-
-    }
-    
-    else {
-	
+    } else {
 	$sth = $self->prepare ( "
 
               SELECT xrefId
@@ -410,7 +410,7 @@ sub geneids_by_extids{
    my $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
                   FROM transcript tr, 
                        Xref x, objectXref oxr
-                  WHERE tr.translation_id = oxr.ensembl_id
+                  WHERE tr.translation_id = oxr.ensembl_id 
                     AND oxr.xrefId = x.xrefId 
                     AND x.display_id = '$name'");
    $sth->execute();
