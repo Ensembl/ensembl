@@ -346,7 +346,7 @@ sub get_array_supporting {
           , UNIX_TIMESTAMP(exon.modified)
           , exon.strand
           , exon.phase
-	  , exon.rank
+	  , exon.sticky_rank
           , transl.seq_start, transl.start_exon
           , transl.seq_end, transl.end_exon
           , transl.id

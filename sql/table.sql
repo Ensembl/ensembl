@@ -35,6 +35,7 @@ CREATE TABLE chromosome (
 # Table structure for table 'clone'
 #
 CREATE TABLE clone (
+  internal_id   int(10) unsigned NOT NULL auto_increment,
   id            varchar(40) NOT NULL,
   embl_id       varchar(40) NOT NULL,
   version       int(10) NOT NULL,
@@ -44,8 +45,9 @@ CREATE TABLE clone (
   modified      datetime NOT NULL,
   stored        datetime NOT NULL,
   
-  PRIMARY KEY (id),
-  UNIQUE embl (embl_id,embl_version)
+  PRIMARY KEY (internal_id),
+  UNIQUE embl (embl_id,embl_version),
+  UNIQUE id   (id,embl_version)
 );
 
 #
@@ -54,7 +56,7 @@ CREATE TABLE clone (
 CREATE TABLE contig (
   internal_id       int(10) unsigned NOT NULL auto_increment,
   id                varchar(40) NOT NULL,
-  clone             varchar(40) NOT NULL,
+  clone             int(10) NOT NULL,
   length            int(10) unsigned,
   offset            int(10) unsigned,
   corder            int(10) unsigned,
@@ -74,16 +76,26 @@ CREATE TABLE contig (
 CREATE TABLE contigoverlap (
   dna_a_id              int(10) unsigned NOT NULL,
   dna_b_id              int(10) unsigned  NOT NULL,
-  type                  varchar(40) NOT NULL,
+  source                varchar(40) NOT NULL,
   contig_a_position     int(10) unsigned,
   contig_b_position     int(10) unsigned,
   overlap_size          int(10) unsigned,
   overlap_type          enum('right2left','left2right','left2left','right2right'),
   
-  PRIMARY KEY (dna_a_id,dna_b_id,type),
+  PRIMARY KEY (dna_a_id,dna_b_id,source),
   KEY dna_b_dna_a(dna_b_id,dna_a_id),
-  KEY (type)
+  KEY (source)
 );
+
+
+CREATE TABLE contig_orientation (
+   dna_id      int(10) unsigned NOT NULL,
+   orientation int(2),
+   source      varchar(40) NOT NULL,
+   PRIMARY KEY (dna_id,source)
+);
+
+
 
 #
 # Table structure for table 'db_update'
@@ -135,9 +147,9 @@ CREATE TABLE exon (
   strand        int(2) NOT NULL,
   phase         int(11) NOT NULL,
   end_phase     int(11) NOT NULL,
-  rank          int(10) DEFAULT '1' NOT NULL,
+  sticky_rank   int(10) DEFAULT '1' NOT NULL,
   
-  PRIMARY KEY (id,rank),
+  PRIMARY KEY (id,sticky_rank),
   KEY id_contig (id,contig),
   KEY contig (contig)
 );
@@ -213,16 +225,6 @@ CREATE TABLE gene (
   PRIMARY KEY (id)
 );
 
-#
-# Table structure for table 'geneclone_neighbourhood'
-#
-CREATE TABLE geneclone_neighbourhood (
-  clone     varchar(40) NOT NULL,
-  gene      varchar(40) NOT NULL,
-  
-  PRIMARY KEY (clone,gene),
-  KEY gene (gene)
-);
 
 #
 # Table structure for table 'ghost'

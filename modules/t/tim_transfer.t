@@ -46,6 +46,7 @@ sub skip_tests {
     print "ok 3\n";
     print "ok 4\n";
     print "ok 5\n";
+    print "ok 6\n";
     exit(0);
 }
 

@@ -83,7 +83,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$external,$port) = 
+  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$perlonlycontigs,$external,$port) = 
       $self->_rearrange([qw(DBNAME
 			    MAPDBNAME
 			    HOST
@@ -93,6 +93,7 @@ sub _initialize {
 			    DEBUG
 			    PERLONLYFEATURES
 			    PERLONLYSEQUENCES
+			    PERLONLYCONTIGS
 			    EXTERNAL
 			    PORT
 			    )],@args);
@@ -129,6 +130,10 @@ sub _initialize {
       $perlonlysequences = 0;
   }
 
+  if( ! defined $perlonlycontigs ) {
+      $perlonlycontigs = 1;
+  }
+
   my $dsn = "DBI:$driver:database=$db;host=$host";
   
   if( $debug && $debug > 10 ) {
@@ -151,6 +156,7 @@ sub _initialize {
   }
 
   $self->perl_only_sequences($perlonlysequences);
+  $self->perl_only_contigs($perlonlycontigs);
 
   if( defined $external ){
       foreach my $external_f ( @{$external} ) {
@@ -559,7 +565,7 @@ sub write_ContigOverlap {
     $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
         if $dna_a_id == $dna_b_id;
 
-    my $type     = $overlap->source;
+    my $source     = $overlap->source;
     my $distance = $overlap->distance;
 
     #print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
@@ -569,7 +575,7 @@ sub write_ContigOverlap {
         INSERT contigoverlap(
             dna_a_id, dna_b_id
           , contig_a_position, contig_b_position
-          , type
+          , source
           , overlap_size, overlap_type)
         VALUES(?,?,?,?,?,?,?)
         });
@@ -577,7 +583,7 @@ sub write_ContigOverlap {
         $insert->execute(
             $dna_a_id, $dna_b_id
           , $contig_a_position, $contig_b_position
-          , $type
+          , $source
           , $distance, $overlap_type);
     };
     
@@ -1950,7 +1956,8 @@ sub get_Contig{
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 							  -id    => $id,
-							  -perlonlysequences => $self->perl_only_sequences() );
+							  -perlonlysequences => $self->perl_only_sequences(),
+							  -userawcontigacc => !$self->perl_only_contigs );
    
    return $contig->fetch();
 }
@@ -1989,16 +1996,18 @@ Calling Contig->get_by_Chromosome instead!");
 
 sub get_all_Clone_id{
    my ($self) = @_;
+   my @out;
 
-   #$self->warn("Obj->get_all_Clone_id is a deprecated method! Calling Clone->get_all_id instead!");
-   
+   my $sth = $self->prepare("select id from clone");
+   my $res = $sth->execute;
 
-   # FIXME. This should be in here I think.
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => 'temp',
-					       -dbobj => $self );
-   
-   return $clone->get_all_id();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
 }
+
 
 
 =head2 perl_only_sequences
@@ -2019,6 +2028,27 @@ sub perl_only_sequences{
       $obj->{'perl_only_sequences'} = $value;
     }
     return $obj->{'perl_only_sequences'};
+
+}
+
+=head2 perl_only_contigs
+
+ Title   : perl_only_contigs
+ Usage   : $obj->perl_only_contigs($newval)
+ Function: 
+ Returns : value of perl_only_contigs
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_contigs{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_contigs'} = $value;
+    }
+    return $obj->{'perl_only_contigs'};
 
 }
 

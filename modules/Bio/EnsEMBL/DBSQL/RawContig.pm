@@ -73,9 +73,10 @@ sub new {
     
     my $self = bless {}, $pkg;
 
-    my ($dbobj,$id,$perlonlysequences) = $self->_rearrange([qw(DBOBJ
+    my ($dbobj,$id,$perlonlysequences,$userawcontigacc) = $self->_rearrange([qw(DBOBJ
 					    ID
 					    PERLONLYSEQUENCES
+					    USERAWCONTIGACC
 					    )],@args);
 
     $id    || $self->throw("Cannot make contig db object without id");
@@ -87,7 +88,8 @@ sub new {
     $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
-
+    $self->use_rawcontig_acc($userawcontigacc);
+    
     return $self;
 }
 
@@ -116,12 +118,12 @@ sub fetch {
         SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
-          , contig.clone
+          , clone.id
         FROM dna
           , contig
           , clone
         WHERE contig.dna = dna.id
-          AND contig.clone = clone.id
+          AND contig.clone = clone.internal_id
           AND contig.id = ?
         ");
 
@@ -376,6 +378,12 @@ sub get_all_SimilarityFeatures_above_score{
 
    my $id     = $self->internal_id();
    my $length = $self->length();
+
+    if( $self->use_rawcontig_acc() ) {
+	my $fplist = Bio::EnsEMBL::Ext::RawContigAcc::FeaturePairList_by_Score($id,$analysis_type,$score);
+	@array = $fplist->each_FeaturePair;
+	return @array;
+    }
 
    my %analhash;
 
@@ -1420,7 +1428,7 @@ sub _got_overlaps {
           , o.contig_a_position self_pos
           , o.overlap_type
           , o.overlap_size
-          , o.type
+          , o.source
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_b_id
@@ -1431,7 +1439,7 @@ sub _got_overlaps {
           , o.contig_b_position self_pos
           , o.overlap_type
           , o.overlap_size
-          , o.type
+          , o.source
         FROM contigoverlap o
           , contig c
         WHERE c.dna = o.dna_a_id
@@ -1687,6 +1695,27 @@ sub perl_only_sequences{
       $obj->{'perl_only_sequences'} = $value;
     }
     return $obj->{'perl_only_sequences'};
+
+}
+
+=head2 use_rawcontig_acc
+
+ Title   : use_rawcontig_acc
+ Usage   : $obj->use_rawcontig_acc($newval)
+ Function: 
+ Returns : value of use_rawcontig_acc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub use_rawcontig_acc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'use_rawcontig_acc'} = $value;
+    }
+    return $obj->{'use_rawcontig_acc'};
 
 }
 

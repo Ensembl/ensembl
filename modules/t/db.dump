@@ -25,29 +25,29 @@ INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_
 # Dumping data for table 'clone'
 #
 
-INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES ('AC021078','AC021078',3,1,1,'2000-01-19 13:19:00','2000-03-07 16:13:03','2000-04-19 13:43:38');
-INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES ('AP000609','AP000609',3,1,1,'1999-10-23 22:05:52','2000-03-07 16:13:03','2000-04-19 13:44:00');
+INSERT INTO clone (id, internal_id,embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES ('AC021078',1,'AC021078',3,1,1,'2000-01-19 13:19:00','2000-03-07 16:13:03','2000-04-19 13:43:38');
+INSERT INTO clone (id, internal_id,embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES ('AP000609',2,'AP000609',3,1,1,'1999-10-23 22:05:52','2000-03-07 16:13:03','2000-04-19 13:44:00');
 
 #
 # Dumping data for table 'contig'
 #
 
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00006',1,'AC021078',1222,5301,6,1,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00007',2,'AC021078',1059,6523,7,2,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00008',3,'AC021078',1141,7582,8,3,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00017',4,'AC021078',1055,18389,17,4,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00015',5,'AC021078',1093,16247,15,5,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00016',6,'AC021078',1049,17340,16,6,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00048',7,'AC021078',1685,58690,48,7,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00045',8,'AC021078',1862,54669,45,8,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00078',9,'AC021078',1830,130938,78,9,5,'international-dummy-id');
-INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00069',10,'AC021078',2013,98405,69,10,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00006',1,1,1222,5301,6,1,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00007',2,1,1059,6523,7,2,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00008',3,1,1141,7582,8,3,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00017',4,1,1055,18389,17,4,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00015',5,1,1093,16247,15,5,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00016',6,1,1049,17340,16,6,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00048',7,1,1685,58690,48,7,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00045',8,1,1862,54669,45,8,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00078',9,1,1830,130938,78,9,5,'international-dummy-id');
+INSERT INTO contig (id, internal_id, clone, length, corder, offset, dna, chromosomeId, international_id) VALUES ('AC021078.00069',10,1,2013,98405,69,10,5,'international-dummy-id');
 
 #
 # Dumping data for table 'contigoverlap'
 #
 
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, contig_a_position, contig_b_position, type, overlap_size, overlap_type) VALUES (4,6,1055,1,'UNORDERED',800,'right2left');
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, contig_a_position, contig_b_position, source, overlap_size, overlap_type) VALUES (4,6,1055,1,'UNORDERED',800,'right2left');
 #
 # Dumping data for table 'db_update'
 #
@@ -72,7 +72,7 @@ INSERT INTO dna (sequence, created, id) VALUES ('GCATAGGGACCCGTCGTGATAACTGAACACA
 # Dumping data for table 'exon'
 #
 
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, rank) VALUES ('ENSE00000083516','3',1,'2000-01-18 01:06:47','2000-01-18 01:06:47','2000-04-19 13:43:58',464,781,-1,0,0,1);
+INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000083516','3',1,'2000-01-18 01:06:47','2000-01-18 01:06:47','2000-04-19 13:43:58',464,781,-1,0,0,1);
 
 #
 # Dumping data for table 'exon_transcript'

@@ -75,6 +75,7 @@ sub _initialize {
 
   $self->id($id);
   $self->_db_obj($dbobj);
+  $self->fetch();
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -96,42 +97,19 @@ sub fetch {
     my ($self) = @_;
  
     my $id=$self->id();   
-    my $sth = $self->_db_obj->prepare("select id from clone where id = \"$id\";");    
+    my $sth = $self->_db_obj->prepare("select internal_id,id from clone where id = \"$id\";");    
     my $res = $sth ->execute();   
-    my $rv  = $sth ->rows;    
-    if( ! $rv ) {
+    my $rowhash = $sth->fetchrow_hashref;
+    if( ! $rowhash ) {
 	# make sure we deallocate sth - keeps DBI happy!
 	$sth = 0;
 	$self->throw("Clone $id does not seem to occur in the database!");
     }   
+    
+    $self->_internal_id($rowhash->{'internal_id'});
     return $self;
 }
 
-=head2 get_all_id
-
- Title   : get_all_id
- Usage   : @cloneid = $clone->get_all_id
- Function: returns all the valid (live) Clone ids in the database
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_id {
-   my ($self) = @_;
-   my @out;
-
-   my $sth = $self->_db_obj->prepare("select id from clone");
-   my $res = $sth->execute;
-
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
-}
 
 =head2 delete
 
@@ -151,13 +129,13 @@ sub delete {
  
    #(ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
-   my $clone_id = $self->id;
+   my $internal_clone_id = $self->_internal_id;
 
    my @contigs;
    my @dnas;
 
    # get a list of contigs to zap
-   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = '$clone_id'");
+   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = '$internal_clone_id'");
    my $res = $sth->execute;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -185,7 +163,7 @@ sub delete {
 
    }
 
-   $sth = $self->_db_obj->prepare("delete from clone where id = '$clone_id'");
+   $sth = $self->_db_obj->prepare("delete from clone where internal_id = '$internal_clone_id'");
    $res = $sth->execute;
 }
 
@@ -203,244 +181,44 @@ sub delete {
 =cut
 
 sub get_all_Genes {
-   my ($self,$supporting) = @_;
+   my ($self, $supporting) = @_;
    my @out;
-   my $id = $self->id();
-   my @genes;
-   my @sup_exons;
-
-   #
-   # A quick trip to the database to pull out from the neighbourhood the genes
-   # that might be on this clone.
-   #
-
-   my $sth = $self->_db_obj->prepare("select gene from geneclone_neighbourhood where clone = '$id'");
-
-   $sth->execute();
-
-   while( (my $hash = $sth->fetchrow_hashref()) ) {
-       push(@genes,$hash->{'gene'});
-   }
-   
-   #
-   # A Gene/Clone Neighbourhood positive does not guarentee that a gene is
-   # actually on this clone. The SQL statement needs to double check this
-   #
-
-   foreach my $geneid ( @genes ) {
-       #
-       # The aim here is to get all the information for constructing the genes one
-       # juicy SQL statement, effectively removing multiple SQL statement gets from this
-       # construction.
-       #
-       
-       #
-       # I know this SQL statement is silly.
-       #
-       #  select p3.gene,
-       #      p4.id,
-       #      p3.id,
-       #      p1.exon,p1.rank,
-       #      p2.seq_start,p2.seq_end,
-       #      UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),
-       #      p2.strand,p2.phase,
-       #      p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,
-       #      p6.version,p3.version,p2.version,p5.version
-       #  from   gene as p6,
-       #      contig as p4,
-       #      transcript as p3,
-       #      exon_transcript as p1,
-       #      exon as p2,
-       #      translation as p5
-       #  where  p6.id    = '$geneid'
-       #  and    p3.gene  = '$geneid'
-       #  and    p4.clone = '$id'
-       #  and    p2.contig = p4.internal_id
-       #  and    p1.exon  = p2.id
-       #  and    p3.id    = p1.transcript
-       #  and    p5.id    = p3.translation
-       #  order by p3.gene,p3.id,p1.rank
-        
-       
-       my $query = q{
-         SELECT con.id
-              , tscript.id
-              , e_t.exon, e_t.rank
-              , exon.seq_start, exon.seq_end
-              , UNIX_TIMESTAMP(exon.created)
-              , UNIX_TIMESTAMP(exon.modified)
-              , exon.strand, exon.phase
-              , transl.seq_start, transl.start_exon
-              , transl.seq_end, transl.end_exon
-              , transl.id
-              , gene.version
-              , tscript.version
-              , exon.version
-              , transl.version
-            FROM gene
-              , contig con
-              , transcript tscript
-              , exon_transcript e_t
-              , exon
-              , translation transl
-            WHERE con.internal_id = exon.contig
-              AND exon.id = e_t.exon
-              AND e_t.transcript = tscript.id
-              AND tscript.translation = transl.id
-              AND tscript.gene = gene.id
-              AND con.clone = ?
-              AND gene.id = ?
-            ORDER BY tscript.gene
-              , tscript.id
-              , e_t.rank
-         };
-
-       my $sth = $self->_db_obj->prepare($query);
-       $sth->execute($id, $geneid);
-       my $current_gene_id       = '';
-       my $current_transcript_id = '';
-
-       my ($gene,$trans);
-
-       while( (my $arr = $sth->fetchrow_arrayref()) ) {
-           my ($contigid,
-               $transcriptid,
-               $exonid, $rank,
-               $start, $end,
-               $exoncreated,
-               $exonmodified,
-               $strand, $phase,
-               $trans_start, $trans_exon_start,
-               $trans_end, $trans_exon_end,
-               $translationid,
-               $geneversion,
-               $transcriptversion,
-               $exonversion,
-               $translationversion) = @{$arr};
-
-           if( ! defined $phase ) {
-	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
-           }
-
-           if( $geneid ne $current_gene_id ) {
-
-	       if( $transcriptid eq $current_transcript_id ) {
-	           $self->throw("Bad internal error. Switching genes without switching transcripts");
-	       } 
-
-	       $gene = Bio::EnsEMBL::Gene->new();
-	       $gene->id($geneid);
-
-	    #   $sth = $self->_db_obj->prepare("select version from gene where id='".$gene->id."'");
-	    #   $sth->execute();
-	    #   my $rowhash = $sth->fetchrow_hashref();
-
-	       $gene->version($geneversion);
-	       $gene->add_cloneid_neighbourhood($id);
-
-	       $current_gene_id = $geneid;
-	       push(@out,$gene);
-	       #print STDERR "Made new gene\n";
-           }
-
-           if( $transcriptid ne $current_transcript_id ) {
-	       $trans = Bio::EnsEMBL::Transcript->new();
-	       $trans->id($transcriptid);
-	       $trans->version($transcriptversion);
-	       $current_transcript_id = $transcriptid;
-
-	       my $translation = Bio::EnsEMBL::Translation->new();
-	       $translation->start        ($trans_start);
-	       $translation->end          ($trans_end);
-	       $translation->start_exon_id($trans_exon_start);
-	       $translation->end_exon_id  ($trans_exon_end);
-	       $translation->id           ($translationid);
-	       $translation->version      ($translationversion);
-	       $trans->translation        ($translation);
-	       $gene ->add_Transcript     ($trans);
-           }
-
-           my $exon = Bio::EnsEMBL::Exon->new();
-           #print(STDERR "Creating exon in clone  = $contigid\n");
-           $exon->clone_id ($id);
-           $exon->contig_id($contigid);
-           $exon->id       ($exonid);
-           $exon->created  ($exoncreated);
-           $exon->modified ($exonmodified);
-           $exon->start    ($start);
-           $exon->end      ($end);
-           $exon->strand   ($strand);
-           $exon->phase    ($phase);
-           $exon->version  ($exonversion);
-           #
-           # Attach the sequence, cached if necessary...
-           #
-
-           if ($supporting && $supporting eq 'evidence') {
-	       push @sup_exons, $exon;
-           }
-
-           my $seq;
-
-           if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
-	       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
-           } else {
-	       my $contig      = $self->_db_obj->get_Contig($exon->contig_id);
-	       $contig->fetch();
-
-	       $seq = $contig->primary_seq();
-	       $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
-           }
-
-           $exon ->attach_seq(new Bio::Seq(-id  => $seq->id,
-				           -seq => $seq->seq));
-           $trans->add_Exon($exon);
-       }
-    }
-
-    if ($supporting && $supporting eq 'evidence' && @sup_exons != 0) {
-
-       my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
-       $gene_obj->get_supporting_evidence(@sup_exons);
-    } 
-
-    return @out;
-
-}
-
-=head2 get_all_Genes
-
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Genes_slow {
-   my ($self,@args) = @_;
-   my @out;
-   my $id = $self->id();
+   my $clone_id = $self->_internal_id();   
    my %got;
+    # prepare the SQL statement
+   my $sth = $self->_db_obj->prepare("
+        SELECT t.gene
+        FROM transcript t,
+             exon_transcript et,
+             exon e,
+             contig c
+        WHERE e.contig = c.id
+          AND et.exon = e.id
+          AND t.id = et.transcript
+          AND c.clone = '$clone_id'
+        ");
 
-   my $sth = $self->_db_obj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2, geneclone_neighbourhood as p5 where p5.clone = '$id' and p5.gene = p3.gene and p4.clone = '$id' and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript");
+    my $res = $sth->execute();
    
-   my $res = $sth->execute();
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       if( ! exists $got{$rowhash->{'gene'}} ) {
-	   
-	   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
-	   my $gene = $gene_obj->get($rowhash->{'gene'});
-
-	   push(@out,$gene);
+    while (my $rowhash = $sth->fetchrow_hashref) { 
+            
+        if( ! exists $got{$rowhash->{'gene'}}) {  
+            
+           my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);             
+	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+           if ($gene) {
+	        push(@out, $gene);
+           }
 	   $got{$rowhash->{'gene'}} = 1;
-       }    
-   }
-   return @out;
+        }       
+    }
+   
+    if (@out) {
+        return @out;
+    }
+    return;
 }
+
 
 =head2 get_Contig
 
@@ -478,7 +256,7 @@ sub get_Contig {
 sub get_all_my_geneid {
    my ($self) = @_;
 
-   my $cloneid = $self->id;
+   my $cloneid = $self->_internal_id;
 
    my $sth = $self->_db_obj->prepare("select count(*),cont.clone ,ex.contig,tran.gene  " .
 			    "from   contig          as cont, ".
@@ -516,9 +294,9 @@ sub get_all_Contigs {
    my ($self) = @_;
    my $sth;
    my @res;
-   my $name = $self->id();
+   my $internal_id = $self->_internal_id();
 
-   my $sql = "select id,internal_id from contig where clone = \"$name\" ";
+   my $sql = "select id,internal_id from contig where clone = \"$internal_id\" ";
 
    $sth= $self->_db_obj->prepare($sql);
    my $res  = $sth->execute();
@@ -538,7 +316,7 @@ sub get_all_Contigs {
    }
 
    if( $seen == 0  ) {
-       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isn't...");
+       $self->throw("Clone [$internal_id] has no contigs in the database. Should be impossible, but clearly isn't...");
    }
 
    return @res;   
@@ -892,6 +670,27 @@ sub id {
       $obj->{'_clone_id'} = $value;
     }
     return $obj->{'_clone_id'};
+
+}
+
+=head2 _internal_id
+
+ Title   : _internal_id
+ Usage   : $obj->_internal_id($newval)
+ Function: 
+ Returns : value of _internal_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _internal_id{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_internal_id'} = $value;
+    }
+    return $obj->{'_internal_id'};
 
 }
 
