@@ -74,7 +74,7 @@ sub fset2transcript {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
-	$exon->end_phase($f->end_phase);
+	$exon->end_phase( ($exon->phase + $exon->length)%3 );
 
 	$exon->attach_seq($contig->primary_seq);
 	
