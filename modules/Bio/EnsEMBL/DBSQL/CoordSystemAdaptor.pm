@@ -204,21 +204,46 @@ sub new {
   # cumbersome
   #
 
-  my %mappings;
+  my %mapping_paths;
   my $mc = $self->db()->get_MetaContainer();
-  foreach my $map_pair (@{$mc->list_value_by_key('assembly.mapping')}) {
-    my ($asm,$cmp) = split(/\|/, $map_pair);
-    if(!$cmp || !$cmp) {
-      throw('incorrectly formatted assembly.mapping values in meta table');
+
+ MAP_PATH:
+  foreach my $map_path (@{$mc->list_value_by_key('assembly.mapping')}) {
+    my @cs_strings = split(/\|/, $map_path);
+
+    if(@cs_strings < 2) {
+      warning("Incorrectly formatted assembly.mapping value in meta " .
+              "table: $map_path");
+      next MAP_PATH;
     }
-    my($asm_name, $asm_version) = split(/:/, $asm);
-    my($cmp_name, $cmp_version) = split(/:/, $cmp);
 
-    my $cmp_cs = $self->fetch_by_name($cmp_name,$cmp_version);
-    my $asm_cs = $self->fetch_by_name($asm_name,$asm_version);
+    my @coord_systems;
+    foreach my $cs_string (@cs_strings) {
+      my($name, $version) = split(/:/, $cs_string);
+      my $cs = $self->fetch_by_name($name, $version);
+      if(!$cs) {
+        warning("Unknown coordinate system specified in meta table " .
+                " assembly.mapping:\n  $name:$version");
+        next MAP_PATH;
+      }
+      push @coord_systems, $cs;
+    }
 
-    $mappings{$asm_cs->dbID} ||= {};
-    $mappings{$asm_cs->dbID}->{$cmp_cs->dbID} = 1;
+    my $cs1 = $coord_systems[0];
+    my $cs2  = $coord_systems[$#coord_systems];
+
+    my $key1 = $cs1->name().':'.$cs1->version();
+    my $key2 = $cs2->name().':'.$cs2->version();
+
+    if(exists($mapping_paths{"$key1|$key2"})) {
+      warning("Meta table specifies multiple mapping paths between " .
+              "coord systems $key1 and $key2.\n" .
+              "Choosing shorter path arbitrarily.");
+
+      next MAPPING_PATH if(@{$mapping_paths{"$key1|$key2"}} < @coord_systems);
+    }
+
+    $mapping_paths{"$key1|$key2"} = \@coord_systems;
   }
 
   #
@@ -230,7 +255,7 @@ sub new {
                                                 -ADAPTOR   => $self);
   $self->{'_top_level'} = $toplevel;
 
-  $self->{'_mapping_paths'} = \%mappings;
+  $self->{'_mapping_paths'} = \%mapping_paths;
 
   return $self;
 }
@@ -586,47 +611,50 @@ sub fetch_sequence_level {
   Arg [2]    : Bio::EnsEMBL::CoordSystem $cs2
   Example    : foreach my $cs @{$csa->get_mapping_path($cs1,$cs2);
   Description: Given two coordinate systems this will return a mapping path
-               between them.  The path is formatted as a list of coordinate
-               systems starting with the assembled coord systems and
-               descending through component systems.  For example, if the
-               following mappings were defined in the meta table:
-               chromosome -> clone
-               clone -> contig
+               between them if one has been defined.  Allowed Mapping paths are
+               explicitly defined in the meta table.  The following is an
+               example:
 
-               And the contig and chromosome coordinate systems where
-               provided as arguments like so:
-               $csa->get_mapping_path($chr_cs,$ctg_cs);
+          mysql> select * from meta where meta_key = 'assembly.mapping';
+          +---------+------------------+--------------------------------------+
+          | meta_id | meta_key         | meta_value                           |
+          +---------+------------------+--------------------------------------+
+          |      20 | assembly.mapping | chromosome:NCBI34|contig             |
+          |      21 | assembly.mapping | clone|contig                         |
+          |      22 | assembly.mapping | supercontig|contig                   |
+          |      23 | assembly.mapping | chromosome:NCBI34|contig|clone       |
+          |      24 | assembly.mapping | chromosome:NCBI34|contig|supercontig |
+          |      25 | assembly.mapping | supercontig|contig|clone             |
+          +---------+------------------+--------------------------------------+
 
-               The return values would be:
-               [$chr_cs, $clone_cs, $contig_cs]
+               For a one-step mapping path to be valid there needs to be
+               a relationship between the two coordinate systems defined in
+               the assembly table.  Two step mapping paths work by building
+               on the one-step mapping paths which are already defined.
 
-               The return value would be the same even if the order of
-               arguments was reversed.
+               The first coordinate system in a one step mapping path must
+               be the assembled coordinate system and the second must be
+               the component.
 
-	       This becomes a bit more problematic when the relationship is
-               something like:
-               chromosome -> contig
-               clone      -> contig
+               Example of use:
+               my $cs1 = $cs_adaptor->fetch_by_name('contig');
+               my $cs2 = $cs_adaptor->fetch_by_name('chromosome');
 
-               In this case the contig coordinate system is the component
-               coordinate system for both mappings and for the following
-               request:
-               $csa->get_mappging_path($chr_cs, $cln_cs);
+               my @path = @{$cs_adaptor->get_mapping_path($cs1,$cs2)};
 
-	       Either of the following mapping paths would be valid:
-               [$chr_cs, $contig_cs, $clone_cs]
-               or
-               [$clone_cs, $contig_cs, $chr_cs]
+               if(!@path) {
+                 print "No mapping path.";
+               }
+               elsif(@path == 2) {
+                 print "2 step mapping path.";
+                 print "Assembled = " . $path[0]->name() . "\n";
+                 print "Component = " . $path[1]->name() . "\n";
+               } else {
+                 print "Multi step mapping path\n";
+               }
 
-	       Also note that the ordering of the above is not
-               assembled to component but rather
-               assembled -> component -> assembled.
+  Returntype : reference to a list of Bio::EnsEMBL::CoordSystem objects
 
-               If no mapping path exists, an reference to an empty list is
-               returned.
-
-  Returntype : listref of coord_sytem ids ordered from assembled to smaller
-               component coord_systems
   Exceptions : none
   Caller     : general
 
@@ -636,100 +664,93 @@ sub get_mapping_path {
   my $self = shift;
   my $cs1 = shift;
   my $cs2 = shift;
-  my $seen = shift || {};
 
-  $self->{'_shortest_path'} ||= {};
+  my $key1 = $cs1->name() . ":" . $cs1->version();
+  my $key2 = $cs2->name() . ":" . $cs2->version();
 
-  if(!ref($cs1) || !$cs1->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw("CoordSystem argument expected.");
-  }
-  if(!ref($cs2) || !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw("CoordSystem argument expected.");
-  }
+  my $path = $self->{'_mapping_paths'}->{"$key1|$key2"};
 
-  my $cs1_id = $cs1->dbID();
-  my $cs2_id = $cs2->dbID();
+  return $path if($path);
 
-  # if this method has already been called with the same arguments
-  # return the cached result
-  if($self->{'_shortest_path'}->{"$cs1_id:$cs2_id"}) {
-    return $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"};
-  }
+  $path = $self->{'_mapping_paths'}->{"$key2|$key1"};
 
-  #if we have already seen this pair then there is some circular logic
-  #encoded in the mappings.  This is not good.
-  if($seen->{"$cs1_id:$cs2_id"}) {
-    throw("Circular logic detected in defined assembly mappings");
-  }
+  if(!$path) {
+    # No path was explicitly defined, but we might be able to guess a
+    # suitable path.  We only guess for missing 2 step paths.
 
-  #if there is a direct mapping between this coord system and other one
-  #then path between cannot be shorter, just return the one step path
-  if($self->{'_mapping_paths'}->{$cs1_id}->{$cs2_id}) {
-    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs1,$cs2];
-    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs1,$cs2];
-    return [$cs1,$cs2];
-  }
-  if($self->{'_mapping_paths'}->{$cs2_id}->{$cs1_id}) {
-    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs2,$cs1];
-    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs2,$cs1];
-    return [$cs2,$cs1];
-  }
+    my %mid1;
+    my %mid2;
 
-  $seen->{"$cs1_id:$cs2_id"} = 1;
-  $seen->{"$cs2_id:$cs1_id"} = 1;
+    foreach my $path (values(%{$self->{'_mapping_paths'}})) {
+      next if(@$path != 2);
 
-  # There is no direct mapping available, but there may be an indirect
-  # path.  Call this method recursively on the components of both paths.
-  my $shortest;
+      my $match = undef;
 
-  #need to try both as assembled since we do not know which is the assembled
-  #coord_system and which is the component
-  foreach my $pair ([$cs1,$cs2], [$cs2,$cs1]) {
-    my ($asm_cs, $target_cs) = @$pair;
-    my $asm_cs_id = $asm_cs->dbID();
-
-    foreach my $cmp_cs_id (keys %{$self->{'_mapping_paths'}->{$asm_cs_id}}) {
-      my $cmp_cs = $self->fetch_by_dbID($cmp_cs_id);
-      my $path = $self->get_mapping_path($cmp_cs, $target_cs, $seen);
-      my $len = @$path;
-      my $shortest;
-
-      next if($len == 0);
-
-      #Check whether the component was used as an assembled
-      #or component in the next part of the path:
-      if($cmp_cs_id == $path->[0]->dbID) {
-        $path = [$asm_cs, @$path];
-      } else {
-        $path = [@$path, $asm_cs];
+      if($path->[0]->equals($cs1)) {
+        $match = 1;
+      } elsif($path->[1]->equals($cs1)) {
+        $match = 0;
       }
 
-      #shortest possible indirect, add to path so far and return
-      if($len == 2) {
-        $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = $path;
-        $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = $path;
-        return $path;
-      } elsif(!defined($shortest) || $len+1 < @$shortest) {
-        #keep track of the shortest path found so far,
-        #there may yet be shorter..
-        $shortest = $path;
+      if(defined($match)) {
+        my $mid = $path->[$match];
+        my $midkey = $mid->name() . ':' . $mid->version();
+
+        # is the same cs mapped to by other cs?
+        if($mid2{$midkey}) {
+          my $path = [$cs1,$mid,$cs2];
+          $self->{'_mapping_paths'}->{"$key1|$key2"} = $path;
+          $key1 =~ s/\:$//;
+          $key2 =~ s/\:$//;
+          $midkey =~ s/\:$//;
+          warning("Using implicit mapping path between '$key1' and '$key2' " .
+                  "coord systems.\n" .
+                  "An explicit 'assembly.mapping' entry should be added " .
+                  "to the meta table.\nExample: " .
+                  "'$key1|$midkey|$key2'\n");
+          return $path;
+        } else {
+          $mid1{$midkey} = $mid;
+        }
       }
-    }
-    #use the shortest path found so far,
-    #if no path was found continue, using the the other id as assembled
-    if(defined($shortest)) {
-      $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = $shortest;
-      $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = $shortest;
-      return $shortest;
+
+      $match = undef;
+
+      if($path->[0]->equals($cs2)) {
+        $match = 1;
+      } elsif($path->[1]->equals($cs2)) {
+        $match = 0;
+      }
+
+
+      if(defined($match)) {
+        my $mid = $path->[$match];
+        my $midkey = $mid->name() . ':' . $mid->version();
+
+        # is the same cs mapped to by other cs?
+        if($mid1{$midkey}) {
+          my $path = [$cs2,$mid,$cs1];
+          $self->{'_mapping_paths'}->{"$key2|$key1"} = $path;
+
+          $key1 =~ s/\:$//;
+          $key2 =~ s/\:$//;
+          $midkey =~ s/\:$//;
+          warning("Using implicit mapping path between '$key1' and '$key2' " .
+                  "coord systems.\n" .
+                  "An explicit 'assembly.mapping' entry should be added " .
+                  "to the meta table.\nExample: " .
+                  "'$key1|$midkey|$key2'\n");
+
+          return $path;
+        } else {
+          $mid2{$midkey} = $mid;
+        }
+      }
     }
   }
 
-  #did not find any possible path
-  $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [];
-  $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [];
-  return [];
+  return $path || [];
 }
-
 
 
 sub _fetch_by_attrib {
@@ -795,7 +816,6 @@ sub deleteObj {
   delete $self->{'_name_cache'};
   delete $self->{'_dbID_cache'};
   delete $self->{'_mapping_paths'};
-  delete $self->{'_shortest_paths'};
   delete $self->{'_top_level'};
 }
 
@@ -918,10 +938,4 @@ sub store {
 }
 
 
-
-
 1;
-
-
-
-
