@@ -862,6 +862,92 @@ sub find_supporting_evidence {
 
 
 
+
+=head2 start
+
+  Arg [1]    : int $start (optional)
+  Example    : $start = $exon->start();
+  Description: Getter/Setter for the start of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub start {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::start(@_);
+}
+
+
+=head2 end
+
+  Arg [1]    : int $end (optional)
+  Example    : $end = $exon->end();
+  Description: Getter/Setter for the end of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub end {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::end(@_);
+}
+
+
+=head2 strand
+
+  Arg [1]    : int $strand (optional)
+  Example    : $start = $exon->strand();
+  Description: Getter/Setter for the strand of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub strand {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::strand(@_);
+}
+
+=head2 contig
+
+  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig (optional)
+  Example    : $slice = $exon->contig();
+  Description: Getter/Setter for the contig of this exon.  The superclass
+               implmentation is overridden to flush the internal sequence
+               cache if this value is altered
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub contig {
+  my $self = shift;
+  #if an arg was provided, flush the internal sequence cache
+  delete $self->{'_seq_cache'} if(@_);
+  return $self->SUPER::contig(@_);
+}
+
+
+
+
 =head2 created
 
  Title   : created
