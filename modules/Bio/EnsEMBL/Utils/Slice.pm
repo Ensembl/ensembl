@@ -1,14 +1,30 @@
-# EnsEMBL module for Bio::EnsEMBL::Utils::SliceUtils
+# EnsEMBL module for Bio::EnsEMBL::Utils::Slice
 #
 #
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::SliceUtils - Utility functions for slices
+Bio::EnsEMBL::Utils::Slice - Utility functions for slices
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::Utils::SliceUtils qw(split_Slices);
+  use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
+
+  ...
+
+  # get all chromosomes in the database
+  my $slices = $slice_adaptor->fetch_all('chromosome');
+
+  # split the chromosomes into equal chunks of size less than 1MB
+  # with an overlap of 1kb
+  $slices = split_Slices($slices, 1e6, 1e3);
+
+
+=head1 CONTACT
+
+ Post questions to the ensembl development list <ensembl-dev@ebi.ac.uk>
+
+=head1 METHODS
 
 =cut
 
@@ -71,11 +87,11 @@ sub split_Slices{
       #them all similar size so that the last one isn't much shorter.
       #Divide the seq_region into the largest equal pieces that are shorter
       #than max_length
-      
+
       #calculate number of slices to create
       $number = ($length-$overlap) / ($max_length-$overlap);
       $number = ceil($number); #round up to int
-      
+
       #calculate length of created slices
       $multiple = $length / $number;
       $multiple   = floor($multiple); #round down to int
@@ -88,24 +104,25 @@ sub split_Slices{
     my $i;
     for(my $i=0; $i < $number; $i++) {
       $end = $start + $multiple + $overlap;
-      
+
       #any remainder gets added to the last slice of the seq_region
       $end = $length if($i == $number-1);
-      
-      push @out, Bio::EnsEMBL::Slice->new(-START             => $start,
-                                          -END               => $end,
-                                          -STRAND            => 1,
-                                          -SEQ_REGION_NAME   => $slice->seq_region_name,
-                                          -SEQ_REGION_LENGTH => $length,
-                                          -COORD_SYSTEM      => $slice->coord_system,
-                                          -ADAPTOR           => $slice->adaptor);
+
+      push @out, Bio::EnsEMBL::Slice->new
+        (-START             => $start,
+         -END               => $end,
+         -STRAND            => 1,
+         -SEQ_REGION_NAME   => $slice->seq_region_name,
+         -SEQ_REGION_LENGTH => $length,
+         -COORD_SYSTEM      => $slice->coord_system,
+         -ADAPTOR           => $slice->adaptor);
       $start += $multiple;
     }
   }
-    
+
   return \@out;
 }
 
 
 
-
+1;
