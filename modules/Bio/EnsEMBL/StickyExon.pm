@@ -369,18 +369,19 @@ sub transform {
     my $mapped_start = 0;
     my $mapped_end = -1;
     my $composite_exon_strand = 0;
-    my $composite_exon_phase = -1;
+    my $composite_exon_phase;
+    my $composite_exon_end_phase;
 
     my @supporting_features;
-
+    
     # sort the component exons
     $self->_sort_by_sticky_rank(); 
-
+    
     # and now retrieve them
     my $component_exons = $self->get_all_component_Exons;
 
     foreach my $c_exon ( @$component_exons ) {
-
+      
       my @mapped = $mapper->map_coordinates_to_assembly
 	(
 	 $c_exon->contig()->dbID,
@@ -388,13 +389,13 @@ sub transform {
 	 $c_exon->end(),
 	 $c_exon->strand()
 	);
-
-  #    print STDERR "\nStickyExon.pm transform method:\n"; 
-  #    print STDERR "[Mapped start  " . $mapped[0]->start . "\t";
-  #    print STDERR "Mapped end    " . $mapped[0]->end . "\t";
-  #    print STDERR "Mapped strand " . $mapped[0]->strand . "]\n";
-  #    print STDERR "Sticky rank : " . $c_exon->sticky_rank() . "\n";
-
+      
+      #    print STDERR "\nStickyExon.pm transform method:\n"; 
+      #    print STDERR "[Mapped start  " . $mapped[0]->start . "\t";
+      #    print STDERR "Mapped end    " . $mapped[0]->end . "\t";
+      #    print STDERR "Mapped strand " . $mapped[0]->strand . "]\n";
+      #    print STDERR "Sticky rank : " . $c_exon->sticky_rank() . "\n";
+      
       # exons should always transform so in theory no error check
       # necessary
       if( ! @mapped ) {
@@ -420,39 +421,48 @@ sub transform {
       # concatenate the raw sequence together
       $dna_seq .= $c_exon->seq();
 
-      #add the supporting features from the exons
+      # add the supporting features from the exons
+      # each exon has the pieces of the supporting features that fall in the corresponding contig
+      # they've been split before and at the moment they are not re-combined
       push @supporting_features, @{$c_exon->get_all_supporting_features()}; 
-
-   #   print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
+      
+      #   print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
 
       # now pull out the start and end points of the newly concatenated sequence
       # if we've got the first sticky exon, store the relevant info
-
+      
       if ($c_exon->sticky_rank == 1 ) {
 	# this assumes that the strand of the sticky exon is
 	# set by the first one - is this correct?
 	$composite_exon_strand = $mapped[0]->strand();
-
+	
 	if ( $composite_exon_strand == 1 ) {
+	  # this means that in the forward strand the first component exon at the 5'end  in the slice
 	  $mapped_start = $mapped[0]->start();
 	  $composite_exon_phase = $c_exon->phase();
 	}
 	else { # for the reverse strand case it is something different
+	  
+	  # this means that in the reverse strand the first component exon at the 5'end  in the slice
 	  $mapped_end = $mapped[0]->end();
+
+	  # phase follows te 5' -> 3' sense, in contradistinction to start-end 
+	  $composite_exon_phase = $c_exon->phase();
 	}
       }
-
+      
       # now do the end point
       # keep storing as you iterate over the component exons
       # since the exons are previously sorted based on their sticky rank
       # then the last set of stored values will be the last component exon
       else {
-	if ( $mapped[0]->strand == 1 ) {
+	if ( $mapped[0]->strand == 1 ) {	  
 	  $mapped_end = $mapped[0]->end;
+	  $composite_exon_end_phase  = $c_exon->end_phase;
 	}
 	else {
 	  $mapped_start = $mapped[0]->start;
-	  $composite_exon_phase = $c_exon->phase();
+	  $composite_exon_end_phase = $c_exon->phase();
 	}
       }
     }
@@ -465,7 +475,8 @@ sub transform {
       $newexon->start ( $mapped_start - $slice->chr_start() + 1 );
       $newexon->end   ( $mapped_end   - $slice->chr_start() + 1);
       $newexon->strand( $composite_exon_strand );
-    } else {
+    } 
+    else {
       $newexon->start  ( $slice->chr_end() - $mapped_end   + 1);
       $newexon->end    ( $slice->chr_end() - $mapped_start + 1);
       $newexon->strand( $composite_exon_strand * -1);
@@ -486,13 +497,11 @@ sub transform {
     $newexon->add_supporting_features(@feats);
 
     $newexon->phase( $composite_exon_phase );
-#SMJS Hack
-
-    $newexon->end_phase($self->end_phase);
-
-
+    $newexon->end_phase( $composite_exon_end_phase );
+   
     return $newexon;
-  } else {
+  } 
+  else {
     $self->throw( "Unexpected StickyExon in Assembly coords ..." );
   }
 }
