@@ -267,7 +267,7 @@ if (  $pep eq $expected ) {
 
 @virtualgenes = $vc->get_all_VirtualGenes() ;
 if (      @virtualgenes == @genes       # equal list length
-     and  $virtualgenes[0]->id == $genes[0]->id ) { 
+     and  $virtualgenes[0]->id eq $genes[0]->id ) { 
     print "ok 21\n"; 
 } else { 
     print "not ok 21\n"; 
