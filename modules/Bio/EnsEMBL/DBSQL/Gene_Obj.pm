@@ -440,7 +440,7 @@ sub get_array_supporting {
 	}
 	
 	# Create new transcript if the id has changed
-	if( $transcriptid ne $current_transcript_id ) {
+	#if( $transcriptid ne $current_transcript_id ) {
 
 	    # put away old exons
              if( defined $trans ) {
@@ -996,7 +996,7 @@ sub get_Virtual_Contig{
     my $first_contig=$self->_db_obj->get_Contig($first_exon->contig_id());
     my $first_ori=$first_exon->strand();
     my $vc=Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $first_contig,
-					      -focusposition => 2,
+					      -focusposition => $first_exon->start,
 					      -ori => $first_ori,
 					      -left => 5000,
 					      -right => 5000
