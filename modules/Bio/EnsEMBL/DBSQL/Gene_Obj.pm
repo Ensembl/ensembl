@@ -1077,7 +1077,7 @@ sub get_supporting_evidence {
     my $statement = "select * from feature f,contig c where c.id in (" . $instring . ")";
 
     #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
-    print STDERR "going to execute... [$statement]\n";
+    #print STDERR "going to execute... [$statement]\n";
     
     my $sth = $self->_db_obj->prepare($statement);
     $sth->execute || $self->throw("execute failed for supporting evidence get!");
@@ -1306,15 +1306,17 @@ sub get_Transcript{
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
     
-    my ($trans);
+    my $trans = undef;
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
+	
+
 	my ($transcriptid,$contigid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
-	
+
 #Creates a transcript object
 	$trans = Bio::EnsEMBL::Transcript->new();
 	
@@ -1369,11 +1371,18 @@ sub get_Transcript{
 	$exon ->attach_seq($seq);
 	push(@transcript_exons,$exon);
     }
+
+
+    if( !defined $trans ) {
+	$self->throw("transcript ".$transid." is not present in db");
+    }
+
     $self->_store_exons_in_transcript($trans,@transcript_exons);
     
     if ($supporting && $supporting eq 'evidence') {
 	$self->get_supporting_evidence_direct(@sup_exons);
     }
+
     return $trans;
 }
 

@@ -255,6 +255,12 @@ sub get_dates {
    return @{$self->{'date'}}; 
 }
 
+
+sub each_date { 
+   my ($self) = @_;
+   return $self->get_dates; 
+}
+
 =head2 species
 
  Title   : species

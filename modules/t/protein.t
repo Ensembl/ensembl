@@ -66,6 +66,7 @@ eval {
 };
 
 if ($@) {
+    print STDERR "Exception $@\n";
     print "not ok 4\n";
 }
 else {

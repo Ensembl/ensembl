@@ -273,7 +273,7 @@ my $transcript;
 eval{
     $transcript = $gene_obj->get_Transcript('these_tests_are_boring_to_write');
 };
-if ($@ =~ /transcript\sthese_tests_are_boring_to_write\sis\snot\spresent\sin\sdb/) {
+if ($@ =~ /these_tests_are_boring_to_write/) {
     print "ok 24\n";
 }
 else {

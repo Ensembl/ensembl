@@ -89,22 +89,29 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($gene,$contig,$start,$end,$strand) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND'],@args);
+  my ($gene,$contig,$start,$end,$strand,$contigid) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND','CONTIGID'],@args);
   if( !defined $gene ) {
       $self->throw("No gene in virtualgene object");
   }
-  if( !defined $contig || ! ref $contig || ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
-      $self->throw("you have to have a virtual gene on a particular contig");
-  }
+
+  #if( !defined $contig || ! ref $contig || ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+  #    $self->throw("you have to have a virtual gene on a particular contig");
+  #}
 
   $self->gene($gene);
 
   # sneaky 'only attach db if we have it'
-  if(!$contig->isa('Bio::EnsEMBL::PerlDB::Contig') ) {
+  if(defined $contig && !$contig->isa('Bio::EnsEMBL::PerlDB::Contig') ) {
       $self->dbobj($contig->dbobj);
   }
 
-  $self->contig_id($contig->id);
+  if( defined $contigid ) {
+      $self->contig_id($contigid);
+  } else {
+      $self->contig_id($contig->id);
+  }
+
+
   if( !defined $start ) {
       $self->_calculate_coordinates($gene,$contig);
   } else {
