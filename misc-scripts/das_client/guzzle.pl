@@ -50,7 +50,7 @@ my $tmpurl  = '/guzzle_tmp';
 # EXECUTABLE BY THE WEB SERVER USER!
 #
 my $tmpdir  = $htdocs . $tmpurl;
-if (! -d $tmpdir) {
+if (! (-d $tmpdir && -w $tmpdir && -x $tmpdir)) {
     die "Check value of \$tmpdir, '$tmpdir' is not a directory\n";
 }
 
@@ -68,9 +68,9 @@ my $result_page_title	= 'Guzzle result page';
 my @presets = (
     {	NAME	=> 'Sprot (using Ensembl peptide IDs) [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
-	MAPTYPE	=> 'simple',
+	MAPTYPE	=> 'align',
 	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
-		   'das_client/embl_sprot.dat',
+		   'das_client/ensembl_sprot.align_map',
 	CHECKED	=> 1 },
     {	NAME	=> 'Sprot [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
@@ -148,7 +148,7 @@ if ($use_mapping) {
     # Where you keep Ensembl modules (this is for
     # Bio::EnsEMBL::Mapper which is not part of Bioperl)
 
-    #use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
+    use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
 
     # FIXME
     # Nota bene:  Currently the only mapping supported is a
@@ -178,15 +178,14 @@ if ($use_graphics) {
 }
 
 if ($use_mapping) {
-    #FIXME
-    #require Bio::EnsEMBL::Mapper;
+    require Bio::EnsEMBL::Mapper;
 }
 
 #---------------------------------------------------------------
 
 # do_query():
 # Will perform the query.
-
+#
 sub do_query
 {
     my $cgi = shift;
@@ -207,7 +206,7 @@ sub do_query
 
     my %query;
     foreach my $source (@{ $sources }) {
-	if (!defined $source->{MAPTYPE}) {
+	if (! ($use_mapping && defined $source->{MAPTYPE})) {
 	    # Don't do mapping for this source.
 	    $query{$seqid}{SEGMENT} = $seqid . $range;
 	    push(@{ $query{$seqid}{DSN} }, $source->{DSN});
@@ -216,45 +215,147 @@ sub do_query
 
 	# Do mapping.
 
-	if ($source->{MAPTYPE} ne 'simple') {
-	    die "I only do 'simple' mappings at the moment, sorry.\n";
+	if ($source->{MAPTYPE} eq 'simple') {
+
+	    # Simple 1:N ID mapping:
+	    #
+            # Notation: The ID requested by the user is the
+            #           "query ID".  The ID actually used by
+            #           the client to perform the query is the
+            #           "target ID".
+	    #
+            # 1. Find the target ID(s) that corresponds to
+            #    the requested query ID in the map file.  The
+            #    query ID should be found in column 1, and the
+            #    corresponding target ID(s) will then be in
+            #    column 2.  The map file is a comma-delimited
+            #    file and the query IDs in column 1 need not be
+            #    unique if one query ID corresponds to more than
+            #    one target ID.
+	    #
+	    # 2. Perform the query.
+	    #
+            # 3. TODO: Replace all occurances of the target ID
+            #    in the reply with the query ID.
+	    #
+
+	    open(IN, $source->{MAPFILE}) or
+		die "Can't open map data file '" .
+		    $source->{MAPFILE} ."': " .  $!;
+
+	    while (defined(my $line = <IN>)) {
+		chomp $line;
+		my ($qi, $ti) = split /,/, $line;
+
+		last if ($qi gt $seqid);
+		next if ($qi ne $seqid);
+
+		$query{$ti}{SEGMENT} = $ti . $range;
+		push(@{ $query{$ti}{DSN} }, $source->{DSN});
+	    }
+
+	    close IN;
+	} elsif ($source->{MAPTYPE} eq 'align') {
+
+	    # Alignment mapping:
+	    #
+            # Notation: The ID requested by the user is the
+            #           "query ID".  The ID actually used by
+            #           the client to perform the query is the
+            #           "target ID".
+	    #
+            # 1. Find the target ID(s) that corresponds to
+            #    the requested query ID in the map file.  The
+            #    query ID should be found in column 1, and the
+            #    corresponding target ID(s) will then be in
+            #    column 2.  The map file is a comma-delimited
+            #    file and the query IDs in column 1 need not be
+            #    unique if one query ID corresponds to more than
+            #    one target ID.
+	    #
+            #    Column 3 and 4 should contain the start
+            #    of the alignment in the query and target
+            #    coordinate systems respecitvely.  The last
+            #    column should contain the Ensembl style cigar
+            #    string (e.g. "20MD340M2I20M" or somesuch
+            #    thing).
+	    #
+            # 2. Parse the cigar line and build a
+            #    Bio::EnsEMBL::Mapper object from it.
+	    #
+            # 3. TODO: If a range was specified, map it into the
+            #    target coordinate system.
+	    #
+	    # 4. Perform the query.
+	    #
+            # 5. TODO: Replace all occurances of the target ID
+            #    in the reply with the query ID.
+	    #
+            # 6. TODO: Map the features back to the query
+            #    coordinate system.
+	    #
+
+	    open(IN, $source->{MAPFILE}) or
+		die "Can't open map data file '" .
+		    $source->{MAPFILE} ."': " .  $!;
+
+	    while (defined(my $line = <IN>)) {
+		chomp $line;
+		my ($qi, $ti, $qab, $tab, $C) = split /,/, $line;
+
+		last if ($qi gt $seqid);
+		next if ($qi ne $seqid);
+
+		print $cgi->pre($line);
+
+		my $map = new Bio::EnsEMBL::Mapper('query', 'target');
+
+		my ($qpos, $tpos) = ($qab, $tab);
+
+		# Parse the cigar string:
+		while ($C =~ /(\d*)([MID])/g) {
+		    my ($len, $op) = ($1, $2);
+		    my ($qadd, $tadd) = (0, 0);
+
+		    if ($len eq '') {
+			$len = 1;
+		    }
+
+		    print $cgi->pre("$C, $len, $op");
+
+		    if ($op eq 'M') {
+
+			print $cgi->pre($qpos, $qpos + $len);
+			print $cgi->pre($tpos, $tpos + $len);
+
+			$map->add_map_coordinates(
+			    'query', $qpos, $qpos + $len, 1,
+			    'target', $tpos, $tpos + $len);
+
+			$qpos += $len;
+			$tpos += $len;
+
+		    } elsif ($op eq 'D') {
+			$qpos += $len;
+		    } elsif ($op eq 'I') {
+			$tpos += $len;
+		    } else {
+			die "Unknown cigar string operation '$op'\n";
+		    }
+
+		}
+
+		$query{$ti}{MAPPER} = $map;
+		$query{$ti}{SEGMENT} = $ti . $range;
+		push(@{ $query{$ti}{DSN} }, $source->{DSN});
+	    }
+
+	    close(IN);
+
+	} else {
+	    die "Unknown mapping type: " .
+		$source->{MAPTYPE} . "\n";
 	}
-
-        # Simple 1:N ID mapping:
-        #
-        # Notation: The ID requested by the user is the "query
-        #           ID".  The ID actually used by the client to
-        #           perform the query is the "target ID".
-        #
-        # 1. Find the target ID that corresponds to the
-        #    requested query ID in the map file.  The query ID
-        #    should be found in column 1, and the corresponding
-        #    target ID(s) will then be in column 2.  The map
-        #    file is a comma-delimited file and the query IDs
-        #    in column 1 need not be unique if one query ID
-        #    corresponds to more than one target ID.
-        #
-        # 2. Perform the query.
-        #
-        # 3. (this doesn't happen yet) Replace all occurances of
-        #    the target ID in the reply with the query ID.
-        #
-
-	open(IN, $source->{MAPFILE}) or
-	    die "Can't open map data file '" .
-		$source->{MAPFILE} ."': " .  $!;
-
-	while (defined(my $line = <IN>)) {
-	    chomp $line;
-	    my ($qi, $ti) = split /,/, $line;
-
-	    last if ($qi gt $seqid);
-	    next if ($qi ne $seqid);
-
-	    $query{$ti}{SEGMENT} = $ti . $range;
-	    push(@{ $query{$ti}{DSN} }, $source->{DSN});
-	}
-	close IN;
     }
 
     my $das = new Bio::Das(15);
@@ -546,7 +647,7 @@ sub query_page
 	$cgi->td({ -colspan => '2' }, $cgi->textfield(
 	    -name	=> 'ID',
 	    -size	=> '25',
-	    -default	=> 'ENSP00000244471') ),
+	    -default	=> 'ENSP00000186985') ),
 	($use_stylesheets ? $cgi->td('&nbsp;') : ''));
 
 
