@@ -906,35 +906,35 @@ sub dna_seq {
     # is not, we need to add some stuff in...
 
     if( $prev ) {
-	if( $prev->end_phase != $exon->phase ) {
-	    if( $prev->end_phase == 0 ) {
-		if( $exon->phase == 1 ) {
-		    $mrna .= 2 x "N";
-		}
+	    if( $prev->end_phase != $exon->phase ) {
+	        if( $prev->end_phase == 0 ) {
+		        if( $exon->phase == 1 ) {
+                    $mrna .= "N" x 2;
+                }
 
-		if( $exon->phase == 2 ) {
-		    $mrna .= 1 x "N";
-		}
-	    } elsif ( $prev->end_phase == 1 ) {
-		if( $exon->phase == 0 ) {
-		    $mrna .= 2 x "N";
-		}
-		
-		if( $exon->phase == 2 ) {
-		    $mrna .= 1 x "N";
-		}
-	    } elsif ( $prev->end_phase == 2 ) {
-		if( $exon->phase == 0 ) {
-		    $mrna .= 1 x "N";
-		}
-		
-		if( $exon->phase == 1 ) {
-		    $mrna .= 2 x "N";
-		}
-	    } else {
-		$self->warn("Impossible phases in calculating fixing stuff "  . $prev->end_phase . " " . $exon->phase);
+                if( $exon->phase == 2 ) {
+                    $mrna .= "N" x 1;
+                }
+            } elsif ( $prev->end_phase == 1 ) {
+                if( $exon->phase == 0 ) {
+                    $mrna .= "N" x 2;
+                }
+                
+                if( $exon->phase == 2 ) {
+                    $mrna .= "N" x 1;
+                }
+            } elsif ( $prev->end_phase == 2 ) {
+                if( $exon->phase == 0 ) {
+                    $mrna .= "N" x 1;
+                }
+                
+                if( $exon->phase == 1 ) {
+                    $mrna .= "N" x 2;
+		        }
+	        } else {
+		        $self->warn("Impossible phases in calculating fixing stuff "  . $prev->end_phase . " " . $exon->phase);
+	        }
 	    }
-	}
     } # end of if previous is there
 
     $prev = $exon;  #heikki: this line was missing!  
