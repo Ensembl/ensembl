@@ -64,9 +64,6 @@ my @features = $protein->get_all_DomainFeatures;
 
 my @f;
 
-
-#print STDERR scalar @features."\n";
-
 if (scalar @features == 3) {
     print "ok 4\n";
 }

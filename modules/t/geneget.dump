@@ -101,6 +101,9 @@ INSERT INTO identityXref (objectxrefId, query_identity, target_identity) VALUES 
 
 INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id,version, description) VALUES (1, 1, 'P000123', 'DISPLAY1',01, 'blablaou');
 INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id, version, description) VALUES (2, 2, 'AC000012', 'DISPLAY2', 02, 'tremblannot');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id, version, description) VALUES (3, 3, 'IPR000001', 'Zn-finger', 02, 'Zn-finger CCHC type');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id, version, description) VALUES (4, 3, 'IPR000002', 'petit', 02, 'petit_domain');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id, version, description) VALUES (5, 4, 'd1pbwa_', 'super_domain', 02, 'NULL');
 
 #
 # Dumping data for table 'externalSynonym'
@@ -115,7 +118,8 @@ INSERT INTO externalSynonym (xrefId, synonym) VALUES (2, 'SPTREMBL_SYNONYME2');
 
 INSERT INTO externalDB (externalDBId, db_name, release) VALUES (1, 'swissprot', 23);
 INSERT INTO externalDB (externalDBId, db_name, release) VALUES (2, 'embl', 2);
-
+INSERT INTO externalDB (externalDBId, db_name, release) VALUES (3, 'Interpro', 34);
+INSERT INTO externalDB (externalDBId, db_name, release) VALUES (4, 'Superfamily', 2);
 
 
 #
@@ -135,9 +139,6 @@ INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000002','PR00012');
 # Dumping data for table 'interpro_description'
 #
 
-INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000001','Zn-finger CCHC type','Zn-finger');
-INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000002','petit_domain','petit');
-INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('d1pbwa_','super_domain','NULL');
 
 #
 # Dumping data for table 'meta'
