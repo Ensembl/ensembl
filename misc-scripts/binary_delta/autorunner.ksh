@@ -149,9 +149,6 @@ function build_delta
 
 #-------------------------------------------------------------
 
-typeset -ft fetch_db
-typeset -ft build_delta
-
 file_list |
 while read path dbname version; do
     if [[ -n ${odbname} ]]; then
