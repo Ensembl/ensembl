@@ -53,24 +53,24 @@ use Bio::EnsEMBL::SeqFeature;
 # new() is inherieted from SeqFeature
 
 
-=head2 display_text
+=head2 display_label
 
- Title   : display_text
- Usage   : $obj->display_text($newval)
+ Title   : display_label
+ Usage   : $obj->display_label($newval)
  Function: 
  Example : 
- Returns : value of display_text
+ Returns : value of display_label
  Args    : newvalue (optional)
 
 
 =cut
 
-sub display_text{
+sub display_label{
    my ($self,$value) = @_;
    if( defined $value) {
-      $self->{'display_text'} = $value;
+      $self->{'display_label'} = $value;
     }
-    return $self->{'display_text'};
+    return $self->{'display_label'};
 
 }
 

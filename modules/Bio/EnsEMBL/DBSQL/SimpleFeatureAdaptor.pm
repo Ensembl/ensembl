@@ -81,7 +81,7 @@ sub fetch_by_dbID{
    $out->end($end);
    $out->strand($strand);
    
-   $out->display_text($display);
+   $out->display_label($display);
    $out->seqname($contig->id);
    $out->attach_seq($contig->seq);
 
@@ -130,7 +130,7 @@ sub fetch_by_contig_id{
        $out->strand($strand);
        
        $out->analysis($ana{$analysis_id});
-       $out->display_text($display);
+       $out->display_label($display);
        $out->seqname($contig->name);
        $out->attach_seq($contig->seq);
        push(@f,$out);
@@ -201,7 +201,7 @@ sub fetch_by_assembly_location{
        $out->seqname($coord_list[0]->id);
        $out->strand($coord_list[0]->strand);
        $out->analysis($ana{$analysis_id});
-       $out->display_text($display);
+       $out->display_label($display);
        
        push(@f,$out);
    }
@@ -248,7 +248,7 @@ sub store{
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
 
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->display_text,$sf->analysis->dbID,$sf->score);
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->display_label,$sf->analysis->dbID,$sf->score);
    }
 
 
