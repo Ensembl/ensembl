@@ -101,15 +101,16 @@ foreach my $clone_id ( @clone_id ) {
 	    print STDERR "\n        contig     ",$contig->id,"\n";
 	    foreach my $gene ($contig->get_all_Genes()) {
 		print STDERR "\n        gene       ",$gene->id,"\n";
-		foreach $trans ($gene->each_Transcript()) {
+		foreach my $trans ($gene->each_Transcript()) {
 		    print STDERR "\n        transcript ",$trans->id,"\n";
-		    $trans_seq = $trans->dna_seq();
+		    my $trans_seq = $trans->dna_seq();
+		    my $err;
 		    if ($trans_seq eq "") {
 			$err = "no sequence present in this contig!\n";
 		    }
 		    $trans_seq =~ s/[A,T,G,C,N,Y,R]//g;
 		    print "$trans_seq\n";
-		    if ($contig_seq ne "") {
+		    if ($trans_seq ne "") {
 			$errcount++;
 			print "Error $errcount\n";
 			print "Clone:     $clone_id\n";
@@ -121,7 +122,7 @@ foreach my $clone_id ( @clone_id ) {
 			    print $err;
 			}
 			else {
-			    print "non-DNA sequence found:\"$contig_seq\"\n\n";
+			    print "non-DNA sequence found:\"$trans_seq\"\n\n";
 			}
 		    }
 		}
