@@ -1,5 +1,7 @@
 # $Id$
-Just a little documentation on how this is supposed to work:
+Just a little documentation on how this is supposed to work. Most of this is
+written in scripted from  in all-igi.sh; this may not be entirely up-to-date,
+but you'll get the idea.
 
 - go to some igi working directory
 - get all the data files
@@ -17,8 +19,13 @@ Just a little documentation on how this is supposed to work:
   contain 'gene' features that extend from the start of the left most exon
   found in any igi up to the end of the rightmost exon in any igi. The igi's
   included are those given by the -cluster_n parameter (currently 2), which
-  says how many sources must 'report' an igi (i.e., predict something that fals
-  in this igi) before it's included in this set. The summary files are then
-  used to filter the merged/ files so that only the right cluster_n igi's are
-  listed. 
-
+  says how many sources must 'report' an igi (i.e., predict something that
+  falls in this igi) before it's included in this set. The summary files are
+  then used to filter the merged/ files so that only the right cluster_n
+  igi's are listed. They are called 'final', and this bit is done by
+  gtfsummary2gtf.pl script.
+- lastly, the peptides corresponding to the 'final' gft file are to be
+  dumped, using the original peptides produced by the different sources. 
+- run pep-collate to prepare the original peptide files for dumping. 
+- then run gtfsummary2pep.pl. 
+- gzip and ftp the stuff to the ftp site. 
