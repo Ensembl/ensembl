@@ -203,6 +203,7 @@ sub feature2 {
 		    -SEQNAME    => $self->{_hseqname},
 		    -START      => $self->{_hstart},
 		    -END        => $self->{_hend},
+                    -STRAND     => $self->{_hstrand},
 		    -SCORE      => $self->score(),
 		    -PERCENT_ID => $self->percent_id(),
 		    -P_VALUE    => $self->p_value(),
