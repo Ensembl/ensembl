@@ -70,6 +70,39 @@ sub new {
   return $self;
 }
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @gene_ids = @{$gene_adaptor->list_dbIDs()};
+  Description: Gets an array of internal ids for all genes in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("gene");
+}
+
+=head2 list_stable_ids
+
+  Arg [1]    : none
+  Example    : @stable_gene_ids = @{$gene_adaptor->list_stable_dbIDs()};
+  Description: Gets an array of stable ids for all genes in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_stable_ids {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("gene_stable_id", "stable_id");
+}
 
 =head2 list_geneIds
 
@@ -89,24 +122,6 @@ sub list_geneIds {
    return $self->list_dbIDs();
 }
 
-=head2 list_dbIDs
-
-  Arg [1]    : none
-  Example    : @gene_ids = $gene_adaptor->list_dbIDs();
-  Description: Gets an array of internal ids for all genes in the current db
-  Returntype : list of ints
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub list_dbIDs {
-   my ($self) = @_;
-
-   return $self->_list_dbIDs("gene");
-}
-
-
 =head2 list_stable_geneIds
 
   Arg [1]    : list_stable_gene_ids
@@ -122,25 +137,8 @@ sub list_stable_geneIds {
    my ($self) = @_;
 
    $self->warn("list_stable_geneIds is deprecated; use list_stable_dbIDs instead");
-   return $self->list_stable_dbIDs();
+   return $self->list_stable_ids();
 
-}
-
-=head2 list_stable_dbIDs
-
-  Arg [1]    : none
-  Example    : @stable_gene_ids = $gene_adaptor->list_stable_dbIDs();
-  Description: Gets an array of stable ids for all genes in the current db
-  Returntype : list of ints
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub list_stable_dbIDs {
-   my ($self) = @_;
-
-   return $self->_list_dbIDs("gene_stable_id", "stable_id");
 }
 
 =head2 fetch_by_dbID
