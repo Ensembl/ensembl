@@ -83,7 +83,7 @@ sub _initialize {
 sub id {
 
    my ($self) = @_;
-   my $id=$self->_get_Seq->seq->id;  
+   my $id=$self->_get_Seq->id;  
    return $id;
 }
 
@@ -104,7 +104,7 @@ sub id {
 sub embl_id {
 
    my ($self) = @_;
-   my $id=$self->_get_Seq->seq->id;  
+   my $id=$self->_get_Seq->id;  
    return $id;
 }
 
@@ -125,56 +125,9 @@ sub embl_id {
 
 
 sub get_all_Genes {
-	
     my ($self)=@_;
-    my @genes;
-    my @exons;
-    my $exon_counter;
-
-    foreach my $ft($self->_get_Seq->all_SeqFeatures){
-	if($ft->primary_tag eq 'CDS'){
-	    
-	    my $exon = Bio::EnsEMBL::Exon->new($ft->start,$ft->end,$ft->strand);
-	     $exon->phase("1");
-	    $exon->end_phase("1");
-	    $exon_counter++;
-	    $exon->id($exon_counter);	
-	    $exon->contig_id($self->id); 	   
-	    $exon->version("1");
-	    $exon->created("2000");
-	    $exon->modified("2000");
-	    $exon->attach_seq($self->_get_Seq->seq);
-
-
-	    push @exons,$exon;
-	}	
-    }
-
-    unless (scalar @exons ==0){
-	my $transcript = Bio::EnsEMBL::Transcript->new(@exons);
-	$transcript->id("transcript_id");	
-	my $translation=Bio::EnsEMBL::Translation->new();
-	$translation->id ("some_id");
-	$translation->version (2);
-	$translation->start (55);
-	$translation->start_exon_id (1);
-	$translation->end (55);
-	$translation->end_exon_id (3);
-
-
-	$transcript->translation($translation);	
-	$transcript->version(1);	
-	#$transcript->gene("new_gene_id");
-
-	my $gene = Bio::EnsEMBL::Gene->new();  
-	my $gene_id=$self->_get_Seq->seq->id;
-	$gene_id="EMBLG" . "0000" . $gene_id; 
-	$gene->id($gene_id);
-	$gene->add_Transcript($transcript);
-	
-	push @genes,$gene;
-    }
-    return @genes;
+    my ($contig) = $self->get_all_Contigs;
+    return $contig->get_all_Genes;
 }
 
 
@@ -402,6 +355,24 @@ sub get_all_Contigs {
  
    return @contigs;
 
+}
+
+=head2 get_all_ContigOverlaps
+
+ Title   : get_all_ContigOverlaps
+ Usage   : $obj->get_all_ContigOverlaps($newval)
+ Function: 
+ Example : 
+ Returns : value of get_all_ContigOverlaps
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub get_all_ContigOverlaps{
+   my ($obj,$value) = @_;
+
+   return ();
 }
 
 

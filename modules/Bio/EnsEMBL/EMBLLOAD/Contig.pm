@@ -40,11 +40,11 @@ package Bio::EnsEMBL::EMBLLOAD::Contig;
 use vars qw(@ISA);
 use strict;
 use Bio::Root::Object;
-use Bio::AnnSeq;
+
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 use Bio::EnsEMBL::EMBLLOAD::Obj;
-use Bio::EnsEMBL::Analysis::Analysis;
-use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Gene;
+
 
 sub _initialize {
     my($self,@args) = @_;
@@ -74,8 +74,30 @@ sub _initialize {
 sub id {
 
    my ($self) = @_;
-   my  $id=$self->_get_Seq->seq->id . "00001"; 
+   my  $id=$self->_get_Seq->id . ".00001"; 
    return $id;
+
+}
+
+
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : $obj->internal_id($newval)
+ Function: 
+ Example : 
+ Returns : value of internal_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub internal_id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'internal_id'} = $value;
+    }
+    return $obj->{'internal_id'};
 
 }
 
@@ -84,22 +106,41 @@ sub id {
 =head2 seq
 
  Title   : seq
- Usage   : $seq = $contig->seq();
- Function: Gets a Bio::Seq object out from the contig
+ Usage   :
+ Function:
  Example :
- Returns : Bio::Seq object
+ Returns : 
  Args    :
 
 
 =cut
 
-sub seq {
+sub seq{
+   my ($self,@args) = @_;
+
+   return $self->primary_seq->seq;
+}
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub primary_seq{
+   my ($self,@args) = @_;
+
    my ($self) = @_;
    my $seq=$self->_get_Seq;
    return $seq;
-
+   
 }
-
 
 
 
@@ -117,35 +158,7 @@ sub seq {
 
 sub get_all_SeqFeatures {
     my ($self) = @_;
-    my  @features=$self->_get_Seq->all_SeqFeatures;	
-    my @ensembl_features;
-    
-    foreach my $feature(@features){
-	
-	# Ewan to explain why do I have to copy one object to another
-
-	my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db              => 'EMBL',
-							    -db_version      => 'NULL',
-							    -program         => 'NULL',
-							    -program_version => 'NULL',
-							    -gff_source      => 'NULL',
-							    -gff_feature     => 'EMBL ann',
-							    );
-	
-	my $ensembl_feature=new Bio::EnsEMBL::SeqFeature(-seqname => $self->id,
-							 -start   => $feature->start,
-							 -end     => $feature->end,
-							 -strand  => $feature->strand,
-							 -frame   => $feature->frame,
-							 -source_tag  => $feature->source_tag,
-							 -primary_tag => $feature->primary_tag,
-							 -analysis => $analysis,
-							 -score => $feature->score
-							 );	
-	push @ensembl_features,$ensembl_feature;
-    }
-    
-    return @ensembl_features;  
+    return ();
 }
 
 
@@ -164,13 +177,8 @@ sub get_all_SeqFeatures {
 
 sub get_all_SimilarityFeatures{
    my ($self) = @_;
-   my @sim_features;
-   my @features=$self->get_all_SeqFeatures;
-   foreach my $feature (@features){
-       if ($feature->analysis->gff_feature eq 'similarity'){
-	   push @sim_features,$feature;}}
 
-       return @sim_features;
+   return ();
 }
 
 
@@ -194,53 +202,100 @@ sub get_all_Genes {
 	
     my ($self)=@_;
     my @genes;
-    my @exons;
-    my $exon_counter;    
-    foreach my $ft($self->_get_Seq->all_SeqFeatures){
-	if($ft->primary_tag eq 'CDS'){	    
-	    my $exon = Bio::EnsEMBL::Exon->new($ft->start,$ft->end,$ft->strand);
-	    $exon->phase("1");
-	    $exon->end_phase("1");
-	    $exon_counter++;
-	    $exon->id($exon_counter);	
-	    $exon->contig_id($self->id);
-	    $exon->version("1");
-	    $exon->created("2000");
-	    $exon->modified("2000");
-	    $exon->attach_seq($self->_get_Seq->seq);
-   
-	    push @exons,$exon;
-	}	
-    }
-    
-    unless (scalar @exons ==0){
-	my $transcript = Bio::EnsEMBL::Transcript->new(@exons);
-	$transcript->id("transcript_id");	
-	my $translation=Bio::EnsEMBL::Translation->new();
-	$translation->id ("some_id");
-	$translation->version (2);
-	$translation->start (55);
-	$translation->start_exon_id (1);
-	$translation->end (55);
-	$translation->end_exon_id (3);
 
-	$transcript->version(1);	
-	#$transcript->gene("new_gene_id");	
-	$transcript->translation($translation);	
-	my $gene = Bio::EnsEMBL::Gene->new();   
-	my $gene_id=$self->_get_Seq->seq->id;
-	$gene_id="EMBLG" . "0000" . $gene_id;
-	$gene->id($gene_id);
-	$gene->add_Transcript($transcript);
-	
-	push @genes,$gene;
+    my $exoncounter = 1;    
+    my $genecounter = 1;
+    
+    my $id = $self->_get_Seq->id;
+
+    my $time = time();
+
+    foreach my $ft ( $self->_get_Seq->top_SeqFeatures ) {
+	if( $ft->primary_tag eq 'CDS_span' ) {
+	    my $gene       = Bio::EnsEMBL::Gene->new();
+	    my $trans      = Bio::EnsEMBL::Transcript->new();
+	    $gene->add_Transcript($trans);
+	    $gene->id($id.".gene.".$genecounter);
+	    $gene->version(1);
+	    $trans->id($id.".trans.".$genecounter);
+	    $trans->version(1);
+
+	    # split seqfeature
+	    my $phase = 0;
+	    foreach my $sub ( $ft->sub_SeqFeature ) {
+		my $exon = Bio::EnsEMBL::Exon->new();
+		$exon->phase($phase);
+		$exon->start($sub->start);
+		$exon->end($sub->end);
+		$exon->strand($sub->strand);
+		$exon->contig_id($self->id);
+		$exon->seqname($self->id);
+		$exon->version(1);
+		$exon->created($time);
+		$exon->modified($time);
+		$exon->id($id.".exon.".$exoncounter++);
+		$trans->add_Exon($exon);
+		$phase = $exon->end_phase();
+
+	    }
+	    my @exons = $trans->each_Exon;
+	    my $first = shift @exons;
+	    my $last;
+	    if( $#exons == 0 ) {
+		$last = $first;
+	    } else {
+		$last = pop @exons;
+	    }
+
+	    my $tranl = Bio::EnsEMBL::Translation->new();
+	    $tranl->id($id.".transl.".$genecounter);
+	    $tranl->start_exon_id($first->id);
+	    $tranl->end_exon_id($last->id);
+	    $tranl->start(1);
+	    $tranl->end($last->length);
+	    $tranl->version(1);
+	    $trans->translation($tranl);
+	    
+	    $genecounter++;
+	    push(@genes,$gene);
+	} elsif ( $ft->primary_tag eq 'CDS' ) {
+	    my $gene       = Bio::EnsEMBL::Gene->new();
+	    my $trans      = Bio::EnsEMBL::Transcript->new();
+	    $gene->add_Transcript($trans);
+	    $gene->version(1);
+	    $gene->id($id.".gene.".$genecounter);
+	    $trans->id($id.".trans.".$genecounter);
+	    $trans->version(1);
+	    my $exon = Bio::EnsEMBL::Exon->new();
+	    $exon->phase(0);
+	    $exon->start($ft->start);
+	    $exon->end($ft->end);
+	    $exon->strand($ft->strand);
+	    $exon->contig_id($self->id);
+	    $exon->seqname($self->id);
+	    $exon->version(1);
+	    $exon->created($time);
+	    $exon->modified($time);
+	    $exon->id($id.".exon.".$exoncounter++);
+	    $trans->add_Exon($exon);
+
+	    my $tranl = Bio::EnsEMBL::Translation->new();
+	    $tranl->id($id.".transl.".$genecounter);
+	    $tranl->start_exon_id($exon->id);
+	    $tranl->end_exon_id($exon->id);
+	    $tranl->start(1);
+	    $tranl->end($exon->length);
+	    $trans->translation($tranl);
+	    $tranl->version(1);
+	    $genecounter++;
+	    push(@genes,$gene);
+	} else {
+	    # do nothing!
+	}
     }
+
     return @genes;
 }
-
-
-
-
 
 
 =head2 length
@@ -267,7 +322,7 @@ sub length {
 
 
 
-sub _get_AnnSeq {
+sub _get_Seq {
     my ($self,$value) = @_;
     if (defined $value){$self->{'annseq'}=$value;}
     return $self->{'annseq'};
@@ -348,6 +403,42 @@ sub seq_date{
     return $seq_date;
 }
 
+
+=head2 embl_offset
+
+ Title   : embl_offset
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_offset{
+   my ($self,@args) = @_;
+
+   return 1;
+}
+
+=head2 embl_order
+
+ Title   : embl_order
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_order{
+   my ($self,@args) = @_;
+
+   return 1;
+}
 
 
 =head2 orientation
