@@ -14,16 +14,16 @@
 # Format of output:
 #
 # Col	Value				Type
-# 1	Query sequence ID		double quoted string
+# 1	Query sequence ID		string
 # 2	Query percentage of identity	%g-type float <= 100
 # 3	Alignment start in query	integer
 # 4	Alignment end in query		integer
-# 5	Target sequence ID		double quoted string
+# 5	Target sequence ID		string
 # 6	Target percentage of identity	%g-type float <= 100
 # 7	Alignment start in target	integer
 # 8	Alignment end in target		integer
 # 9	Score				integer
-# 10	Cigar line			double quoted string
+# 10	Cigar line			string
 #
 #----------------------------------------------------------------------
 #
@@ -39,8 +39,8 @@
 #
 #----------------------------------------------------------------------
 
-q_fa='/acari/work4/mongin/anopheles_mai/qc/peptides.fa'
-t_fa='/acari/work4/mongin/anopheles_mai/qc/submitted_genes.fa'
+q_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/peptides_new.fa'
+t_fa='/acari/work4/mongin/anopheles_mai/mapping/Primary/total.fa'
 e_cmd='/acari/work2/gs2/gs2/local/OSF1/bin/exonerate'
 q_min=25
 t_min=25
@@ -212,11 +212,13 @@ perl -ne '
 		$t->{C} =~ s/([MDI])1([MDI])/$1$2/g;      # no lone 1
 		$t->{C} =~ s/^1([MDI])/$1/;               # no lone 1 at start
 
-		printf "\"%s\",%g,%d,%d,\"%s\",%g,%d,%d,%d,\"%s\"\n",
+		printf "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
 		    $t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
 		    $t->{ti}, $t->{tp}, $t->{tab}, $t->{tae},
 		    $t->{s}, $t->{C};
-	    }
+
+		    
+		    }
 	}
     } # END
 '
