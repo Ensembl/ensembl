@@ -646,9 +646,6 @@ sub get_all_SimilarityFeatures_above_pid{
 
 sub get_all_RepeatFeatures {
     my ($self,$bp) = @_;
-    
-    $bp = $bp+100;
-
 
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
@@ -1180,42 +1177,42 @@ sub get_all_ExternalFeatures{
 
    if( scalar(@das) > 0 ) {
 
-	 foreach my $extf ( @das ) {
-	   if( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {	# optimized fetch that can handle a list of contigs
-		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig_list(\@rawcontigs)) {
-		       #$sf->seqname($contig->id); # check this
-		       push(@contig_features,$sf);
-		   }
+     foreach my $extf ( @das ) {
+       if( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {    # optimized fetch that can handle a list of contigs
+           foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig_list(\@rawcontigs)) {
+               #$sf->seqname($contig->id); # check this
+               push(@contig_features,$sf);
+           }
 
-	   } else { # can't do list style contig fetches
-			foreach my $contig (@rawcontigs) {       
-				   &eprof_start("external_get_das".$extf);
+       } else { # can't do list style contig fetches
+            foreach my $contig (@rawcontigs) {       
+                   &eprof_start("external_get_das".$extf);
 
-					if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-					   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
-		    			   $sf->seqname($contig->id);
-		    			   push(@contig_features,$sf);
-					   }
-				   }
-				   if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
-					   foreach my $sf (
+                    if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+                       foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
+                           $sf->seqname($contig->id);
+                           push(@contig_features,$sf);
+                       }
+                   }
+                   if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
+                       foreach my $sf (
 
-							$extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
+                            $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
 
-							my $start = $sf->start - $contig->embl_offset+1;
-							my $end   = $sf->end   - $contig->embl_offset+1;
-							$sf->start($start);
-							$sf->end($end);
-							$sf->seqname($contig->id);
-							push(@contig_features,$sf);
-					   }
-				   }
+                            my $start = $sf->start - $contig->embl_offset+1;
+                            my $end   = $sf->end   - $contig->embl_offset+1;
+                            $sf->start($start);
+                            $sf->end($end);
+                            $sf->seqname($contig->id);
+                            push(@contig_features,$sf);
+                       }
+                   }
 
-				   &eprof_end("external_get_das".$extf);
-			   }
-		}
-	  }
-   }	    
+                   &eprof_end("external_get_das".$extf);
+               }
+        }
+      }
+   }        
 
    &eprof_end("External-feature-das");
 
