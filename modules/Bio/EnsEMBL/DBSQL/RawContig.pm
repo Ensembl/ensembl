@@ -1094,7 +1094,7 @@ sub _load_overlaps {
 
 	   my $sisterid;
 	   if ($sth2->rows == 1) {
-	       $sisterid = $sth2->fetchrow_hashref->{id};
+	       $sisterid = $sth2->fetchrow_hashref->{"id"};
 	   } else {
 	       $self->throw("ERROR: Wrong number of rows returned for dna id $sisterdnaid " . $sth->rows);
 	   }
@@ -1149,7 +1149,7 @@ sub _load_overlaps {
 
 	   my $sisterid;
 	   if ($sth2->rows == 1) {
-	       $sisterid = $sth2->fetchrow_hashref->{id};
+	       $sisterid = $sth2->fetchrow_hashref->{"id"};
 	   } else {
 	       $self->throw("ERROR: Wrong number of rows returned for dna id $sisterdnaid " . $sth->rows);
 	   }
