@@ -1389,6 +1389,159 @@ sub get_all_PredictionFeatures {
    return @array;
 }
 
+=head2 get_prediction_feature
+
+ Title   : get_Prediction_feature
+ Usage   : 
+ Function: Returns specified predictions 
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+
+sub get_PredictionFeature {
+    my ( $self, $prediction_feat ) = @_;
+
+    my @array;
+
+    my $id     = $self->internal_id();
+    my $length = $self->length();
+    my $fsetid;
+    my $previous;
+    my %analhash;
+	my $transcript_pos = -1;
+	
+
+    # make the SQL query
+    my $query =
+		"select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid " . "from feature f where contig = $id and name = ? order by f.strand*f.seq_start";
+
+    my $sth = $self->dbobj->prepare($query);
+
+    $sth->execute($prediction_feat);
+	
+		
+	my (
+        $fid,       $start,      $end,     $strand,
+        $score,     $evalue,     $perc_id, $phase,
+        $end_phase, $analysisid, $hid
+    );
+
+    # bind the columns
+    $sth->bind_columns(
+        undef,    \$fid,       \$start,      \$end,
+        \$strand, \$score,     \$evalue,     \$perc_id,
+        \$phase,  \$end_phase, \$analysisid, \$hid
+    );
+	
+    my $current_fset;
+    my $fsetstart;
+    my $count = 1;
+    my $prev;
+    while ( $sth->fetch ) {
+        my $out;
+	
+		$prev     = $out;
+        $count++;
+
+#		print "HID : ",$hid,"  Start : ",$start,"  Strand :",$strand,"  ";      
+       				
+        my $analysis;
+
+        if ( !$analhash{$analysisid} ) {
+
+            my $analysis_adp =
+              new Bio::EnsEMBL::DBSQL::AnalysisAdaptor( $self->dbobj );
+            $analysis = $analysis_adp->fetch_by_dbID($analysisid);
+            $analhash{$analysisid} = $analysis;
+
+        }
+        else {
+            $analysis = $analhash{$analysisid};
+        }
+				
+        # Oh boyoboy.  Yet another genscan hack to avoid duplicate genscans
+        if ( defined($prev) && $start == $prev->start && $end == $prev->end ) {
+            next;
+        }
+	
+        #MC.  This has been temporarily changed back to the old way of genscans
+        #if ( $initial =~ /Initial Exon/ || $initial =~ /Single Exon/ || $previous =~ /Single Exon/
+        #    || $previous =~ /Terminal Exon/ || $previous eq -1 )
+        
+		my ( $transcript_num, $exon_num ) = $hid =~/(\d+)\.(\d+)$/;
+		
+		
+		if ($transcript_num =~/(\D)/){ warn 'Transcript Number contains non digit'};
+		
+	#	print "Transcript :",$transcript_num,"\n";
+		
+		if ($transcript_num != $transcript_pos ) {
+					
+            #if( $hid ne $previous || $previous eq -1 ) {
+            $current_fset = new Bio::EnsEMBL::SeqFeature;  
+			$fsetstart = $start;
+            $current_fset->source_tag($prediction_feat);
+            $current_fset->primary_tag('prediction');
+            $current_fset->analysis($analysis);
+            $current_fset->seqname( $self->id );
+            $current_fset->id( $self->internal_id . "." . $fsetstart );
+            $current_fset->score(0.0);
+            $current_fset->raw_seqname( $self->id );
+
+            push ( @array, $current_fset );
+			
+			$transcript_pos = $transcript_num;			
+        }
+
+        $out = new Bio::EnsEMBL::SeqFeature;
+
+        $out->seqname( $self->id );
+        $out->raw_seqname( $self->id );
+        $out->start($start);
+        $out->end($end);
+        $out->strand($strand);
+        $out->score($score)         if ( defined $score );
+        $out->p_value($evalue)      if ( defined $evalue );
+        $out->percent_id($perc_id)  if ( defined $perc_id );
+        $out->phase($phase)         if ( defined $phase );
+        $out->end_phase($end_phase) if ( defined $end_phase );
+
+        #	my $query="select fset from fset_feature where feature=$fid"; 
+        #	my $sth = $self->dbobj->prepare($query);
+        #   	$sth->execute();
+        #	my $arr_ref=$sth->fetchrow_arrayref;
+        #	$fsetid=$arr_ref->[0];
+		
+        my $fsetid = $self->internal_id . "." . $fsetstart;
+        $out->id($fsetid);    # to make genscan peptide work
+            #print STDERR "\t\t===> get_pred_features fsetid: $fsetid\n";
+        $out->source_tag($prediction_feat);
+        $out->primary_tag('prediction');
+
+        if ( defined $score ) {
+            $out->score($score);
+        }
+
+        $out->analysis($analysis);
+
+        # Final check that everything is ok.
+		
+        $out->validate();
+        $current_fset->add_sub_SeqFeature( $out, 'EXPAND' );
+        $current_fset->strand($strand);
+		
+    }
+
+    return @array;
+}
+
+
+
+
 
 =head2 get_genscan_peptides
 

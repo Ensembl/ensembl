@@ -68,6 +68,8 @@ sub fset2transcript {
 	
 	my $exon  = new Bio::EnsEMBL::Exon;
 	$exon->contig_id($contig->id);
+	$exon->stable_id($f->id);
+	$exon->start    ($f->start);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);

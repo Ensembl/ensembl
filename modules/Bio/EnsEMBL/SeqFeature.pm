@@ -73,15 +73,13 @@ use Bio::Root::RootI;
 
 sub new {
   my($class,@args) = @_;
-  my $self;
-
-  $self = {};
+  
+  my $self = {};
+  bless $self,$class;
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
-
-  bless $self,$class;
 
 my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
 
@@ -449,10 +447,7 @@ sub vthrow {
     print(STDERR "   Primary_tag : [" . 
         ((defined ($self->{_primary_tag})) ? $self->{_primary_tag} : "undefined") . "]\n");
         
-    print(STDERR "   Analysis    : [" . 
-        ((defined ($self->{_analysis})) ? 
-              ((defined ($self->{_analysis}->dbID)) ? $self->{_analysis}->dbID : "undefined") :
-              "undefined") . "]\n");
+    print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
 
     $self->throw("Invalid feature - see dump on STDERR");
 }
