@@ -304,7 +304,7 @@ sub store {
  Usage   : $adaptor->exists($anal)
  Function: Tests whether this Analysis already exists in the database
  Example :
- Returns : true if this or more detailed exists.
+ Returns : analysisId or undef
  Args    : Bio::EnsEMBL::Analysis
 
 =cut
@@ -312,23 +312,26 @@ sub store {
 sub exists {
     my ($self,$anal) = @_;
 
-    
     $self->throw("Object is not a Bio::EnsEMBL::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis");
     
     # objects with already have this adaptor are store here.
     if( $anal->can("adaptor") && defined $anal->adaptor &&
       $anal->adaptor == $self ) {
-      return 1;
-    }
-
-    while(  my ( $cacheId, $cacheAna) = each %{$self->{_cache}} ) {
-      if( $cacheAna->compare( $anal ) >= 0 ) {
-        return 1;
+      if (my $id = $anal->dbID) {
+        return $id;
+      }
+      else {
+        $self->throw ("analysis does not have an analysisId");
       }
     }
-    return 0;
+
+    foreach my $cacheId (keys %{$self->{_cache}}) {
+      if ($self->{_cache}->{$cacheId}->compare($anal) >= 0) {
+        return $cacheId;
+      }
+    }
+    return undef;
 }
-    
 
 =head2 mysql2Unixtime
 
