@@ -13,5 +13,12 @@ Just a little documentation on how this is supposed to work:
 - run all-stats.sh. This will (or should) run all the statistics on each of
   the merged files. The output goes into sub-directory out/stats/. It will
   also produce file that map igi's to native ids and vice versa, in directory
-  out/mapping
+  out/mapping. It will output so-called summary files into out/summary, which
+  contain 'gene' features that extend from the start of the left most exon
+  found in any igi up to the end of the rightmost exon in any igi. The igi's
+  included are those given by the -cluster_n parameter (currently 2), which
+  says how many sources must 'report' an igi (i.e., predict something that fals
+  in this igi) before it's included in this set. The summary files are then
+  used to filter the merged/ files so that only the right cluster_n igi's are
+  listed. 
 
