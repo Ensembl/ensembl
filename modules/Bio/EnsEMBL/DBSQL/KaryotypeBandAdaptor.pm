@@ -155,7 +155,7 @@ sub fetch_all_by_chr_name {
     throw('Chromosome name argument expected') if(!$chr_name);
 
     my $slice =
-      $self->db->get_SliceAdaptor->fetch_by_region('chromosome', $chr_name);
+      $self->db->get_SliceAdaptor->fetch_by_region(undef, $chr_name);
     return $self->fetch_all_by_Slice($slice);
 }
 
@@ -184,7 +184,7 @@ sub fetch_all_by_chr_band {
   throw('Chromosome name argument expected') if(!$chr_name);
   throw('Band argument expected') if(!$band);
 
-  my $slice = $self->db->get_SliceAdaptor->fetch_by_region('chromosome',
+  my $slice = $self->db->get_SliceAdaptor->fetch_by_region(undef,
                                                            $chr_name);
 
   my $constraint = "k.band like '$band%'";
