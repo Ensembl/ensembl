@@ -58,7 +58,11 @@ my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 my $chr = 'chr21';                      # smaller than chr22
 # my $lim;
 my $mysql = 'mysql'; 
-my $mysqldump = 'mysqldump'; # in $PATH we trust
+# my $mysqldump = 'mysqldump'; # in $PATH we trust.
+
+# No we don't; the above is version 8.10, which is too strict. Use an
+# older version:
+my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 #                  /mysql/current/bin/mysqldump
 
 # satellites:
