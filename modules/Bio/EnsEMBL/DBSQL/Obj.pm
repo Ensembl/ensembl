@@ -810,6 +810,91 @@ sub write_Protein_feature {
     $sth->execute();
 }
 
+=head2 write_Feature
+
+ Title   : write_Feature
+ Usage   : $obj->write_Feature($feature)
+ Function: Writes a feature on the genomic sequence of a contig into the database
+ Example :
+ Returns : nothing
+ Args    : Bio::SeqFeature::Generic
+
+
+=cut
+
+sub write_Feature {
+    my ($self,$feature,$contig) = @_;
+
+    $self->throw("Feature is not a Bio::SeqFeature::Generic")        unless $feature->isa("Bio::SeqFeature::Generic");
+    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
+
+    my $contigid = $contig->id;
+
+    
+    my $sth = $self->prepare("insert into feature(id,contig,start,end,score,strand,name) values (NULL,\"" . 
+			     $contig ->id          . "\"," .
+			     $feature->start       . "," . 
+			     $feature->end         . "," . 
+			     $feature->score       . "," . 
+			     $feature->strand      . ",\"" . 
+			     $feature->primary_tag . "\")");
+    my $rv = $sth->execute();
+
+    return $rv;
+}
+
+=head2 write_Analysis
+
+ Title   : write_Analysis
+ Usage   : $obj->write_Analysis($anal)
+ Function: Writes analysis details to the database
+           Checks first whether this analysis entry already exists
+ Example :
+ Returns : int
+ Args    : Bio::EnsEMBL::Analysis::Analysis
+
+
+=cut
+
+sub write_Analysis {
+    my ($self,$anal) = @_;
+
+    $self->throw("Argument is not a Bio::EnsEMBL::Analysis::Analysis") unless $anal->isa("Bio::EnsEMBL::Analysis::Analysis");
+
+
+    # First check whether this entry already exists.
+    my $query = "select * from analysis where db = \""      . $anal->db              . "\" and" . 
+         	                    " db_version = \""      . $anal->db_version      . "\" and " . 
+                           	    " program =    \""      . $anal->program         . "\" and " .
+                          	    " program_version = \"" . $anal->program_version . "\" and " .
+               		            " gff_source = \""      . $anal->gff_source      . "\" and" .
+			            " gff_feature = \""     . $anal->gff_feature     . "\"";
+    my $sth = $self->prepare($query);
+
+    my $rv = $sth->execute();
+    
+    # Ony write if we have no result
+
+    # temporary id here
+    my $id = $anal->program . "." .$anal->db . "." . $anal->db_version;
+
+    if ($sth->rows == 0) {
+	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (\"$id\",\"" . 
+			      $anal->db               . "\","   . 
+			      $anal->db_version       . ",\""   . 
+			      $anal->program          . "\",\"" .
+			      $anal->program_version  . "\",\"" .
+			      $anal->gff_source       . "\",\"" . 
+			      $anal->gff_feature      . "\")";
+
+	print("Query is $query\n");
+
+	my $sth2 = $self->prepare($query);
+	my $rv   = $sth2->execute;
+    }
+			      
+    return $rv;
+}
 
 =head2 write_Transcript
 
