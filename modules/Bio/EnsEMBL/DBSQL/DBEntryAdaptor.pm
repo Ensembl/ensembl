@@ -47,61 +47,54 @@ use strict;
   Description: retrieves a dbEntry from the database via its unique identifier 
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
-  Caller     : ?
+  Caller     : general
 
 =cut
 
 sub fetch_by_dbID {
-  ## this function may need revamping in the same way as
-  ##  _fetch_by_EnsObject_type, using double outer join to get all stuff in
-  ##  one go. PL)
-
   my ($self, $dbID ) = @_;
   
   my $sth = $self->prepare( "
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
            xref.version, xref.description,
-           exDB.db_name, exDB.release
+           exDB.db_name, exDB.release,
+		   es.synonym
       FROM xref, external_db exDB
-     WHERE xref.xref_id = $dbID
-       AND xref.external_db_id = exDB.external_db_id 
+     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id
+	 WHERE xref.xref_id = ?
+		AND xref.xref_id = es.xref_id
+		AND xref.external_db_id = exDB.external_db_id 
    " );
 
-  $sth->execute();
-  my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release) =
-    $sth->fetchrow_array();
-
-  if( ! defined $refID ) {
-    return undef;
-  }
-
-  my $exDB = Bio::EnsEMBL::DBEntry->new
-    ( -adaptor => $self,
-      -dbID => $dbID,
-      -primary_id => $dbprimaryId,
-      -display_id => $displayid,
-      -version => $version,
-      -release => $release,
-      -dbname => $dbname );
+  $sth->execute($dbID);
   
-  if( $desc ) {
-    $exDB->description( $desc );
-  }
-
-  my $get_synonym = $self->prepare( "
-    SELECT synonym 
-      FROM external_synonym
-     WHERE xref_id = $dbID
-  " );
-  $get_synonym->execute();
+  my $exDB;
+  while ( my $arrayref = $sth->fetchrow_arrayref()){
+	my %duplicate;
+	my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $synonym) = @$arrayref;
+    return undef if( ! defined $refID );
+    
+	unless ($duplicate{$refID}){
+		$duplicate{$refID}++ ;
+		
+		$exDB = Bio::EnsEMBL::DBEntry->new
+    		( -adaptor => $self,
+      		-dbID => $dbID,
+      		-primary_id => $dbprimaryId,
+     		-display_id => $displayid,
+      		-version => $version,
+      		-release => $release,
+      		-dbname => $dbname );
+	
+		$exDB->description( $desc ) if ( $desc );
+	} # end duplicate
+ 
+	$exDB->add_synonym( $synonym )  if ($synonym);
   
-  while( my ($synonym) = $get_synonym->fetchrow_array() ) {
-    $exDB->add_synonym( $synonym );
-  }
+  } # end while
 
   return $exDB;
 }
-
 
 
 =head2 store
@@ -121,7 +114,7 @@ sub fetch_by_dbID {
 sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;
     my $dbJustInserted;
-    
+
     # check if db exists
     # urlPattern dbname release
     my $sth = $self->prepare( "
@@ -139,7 +132,7 @@ sub store {
     } else {
       # store it, get dbID for that
       $sth = $self->prepare( "
-       INSERT INTO external_db 
+       INSERT ignore INTO external_db 
        SET db_name = ?,
            release = ?,
            status  = ?
@@ -178,15 +171,15 @@ sub store {
     if( ! defined $dbX ) {
 	
 	$sth = $self->prepare( "
-      INSERT INTO xref 
+      INSERT ignore INTO xref 
        SET dbprimary_acc = ?,
            display_label = ?,
            version = ?,
            description = ?,
-           external_db_id = $dbRef
+           external_db_id = ?
      " );
 	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
-		       $exObj->description());
+		       $exObj->description(), $dbRef);
 	
 	$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
@@ -203,10 +196,10 @@ sub store {
      SELECT xref_id,
             synonym
        FROM external_synonym
-      WHERE xref_id = '$dbX'
-        AND synonym = '$syn'
-    " );
-	    $sth->execute;
+      WHERE xref_id = ?
+        AND synonym = ?
+        " );
+	    $sth->execute($dbX, $syn);
 	    
 	    my ($dbSyn) = $sth->fetchrow_array();
 	    
@@ -214,96 +207,88 @@ sub store {
 	    
 	    if( ! $dbSyn ) {
 		$sth = $self->prepare( "
-        INSERT INTO external_synonym
-         SET xref_id = $dbX,
-            synonym = '$syn'
-      " );
-		$sth->execute();
+        INSERT ignore INTO external_synonym
+         SET xref_id = ?,
+            synonym = ?
+        " );
+		$sth->execute($dbX, $syn);
 	    }
 	}
-	
-	
+		
 	$sth = $self->prepare( "
-   INSERT INTO object_xref
-     SET xref_id = $dbX,
+   INSERT ignore INTO object_xref
+     SET xref_id = ?,
          ensembl_object_type = ?,
          ensembl_id = ?
-  " );
+      " );
 	
-	$sth->execute( $ensType, $ensObject );
-	
+	$sth->execute( $dbX, $ensType, $ensObject );	
 	$exObj->dbID( $dbX );
 	$exObj->adaptor( $self );
 	
 	if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
 	    $sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
-    " );
+      " );
 	    $sth->execute();
 	    my ( $Xidt ) = $sth->fetchrow_array();
 	    
 	    $sth = $self->prepare( "
-             INSERT INTO identity_xref
-             SET object_xref_id = $Xidt,
+             INSERT ignore INTO identity_xref
+             SET object_xref_id = ?,
              query_identity = ?,
-             target_identity = ?
-    " );
-	    $sth->execute( $exObj->query_identity, $exObj->target_identity );
+             target_identity = ? 
+			 " );
+	    $sth->execute( $Xidt, $exObj->query_identity, $exObj->target_identity );
 	    
 	}
     } else {
 	$sth = $self->prepare ( "
-
               SELECT xref_id
               FROM object_xref
-              WHERE xref_id = $dbX
-              AND   ensembl_object_type = '$ensType'
-              AND   ensembl_id = '$ensObject'");
+              WHERE xref_id = ?
+              AND   ensembl_object_type = ?
+              AND   ensembl_id = ?
+			  ");
 	
-	$sth->execute;
+	$sth->execute($dbX, $ensType, $ensObject);
 	my ($tst) = $sth->fetchrow_array;
-
 
 	if (! defined $tst) {
 	# line is already in xref table. Need to add to object_xref
 	    $sth = $self->prepare( "
-             INSERT INTO object_xref
-               SET xref_id = $dbX,
+             INSERT ignore INTO object_xref
+               SET xref_id = ?,
                ensembl_object_type = ?,
-               ensembl_id = ?");
+               ensembl_id = ?
+			   ");
 	
-	    $sth->execute( $ensType, $ensObject );
-	
+	    $sth->execute( $dbX, $ensType, $ensObject );	
 	    $exObj->dbID( $dbX );
 	    $exObj->adaptor( $self );
-
 
 	    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
 		$sth = $self->prepare( "
       SELECT LAST_INSERT_ID()
-    " );
+      " );
+		
 		$sth->execute();
 		my ( $Xidt ) = $sth->fetchrow_array();
 		
 		$sth = $self->prepare( "
-             INSERT INTO identity_xref
-             SET object_xref_id = $Xidt,
+             INSERT ignore INTO identity_xref
+             SET object_xref_id = ?,
              query_identity = ?,
              target_identity = ?
-    " );
-		$sth->execute( $exObj->query_identity, $exObj->target_identity );
+        " );
+		$sth->execute( $Xidt, $exObj->query_identity, $exObj->target_identity );
 		
 	    }
-
-
 	}
     }
         
-    return $dbX;
-    
+    return $dbX;    
 }
-
-
 
 
 =head2 exists
@@ -320,8 +305,7 @@ sub store {
 =cut
 
 sub exists {
-  my $self = shift;
-  my $dbe = shift;
+  my ($self, $dbe) = @_ ;
 
   unless($dbe && ref $dbe && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
     $self->throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
@@ -343,12 +327,10 @@ sub exists {
 }
 
 
-
-
 =head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
-               The gene to retrienve DBEntries for
+               (The gene to retrieve DBEntries for)
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
   Description: This should be changed, it modifies the gene passed in
   Returntype : listref of Bio::EnsEMBL::DBEntries
@@ -360,14 +342,15 @@ sub exists {
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
  
-  my $query1 = "SELECT t.transcript_id, t.translation_id
+  my $sth = $self->prepare("
+  SELECT t.transcript_id, t.translation_id
                 FROM transcript t
-                WHERE t.gene_id = ?";
+                WHERE t.gene_id = ?
+  ");
+  
+  $sth->execute( $gene->dbID );
 
-  my $sth1 = $self->prepare($query1);
-  $sth1->execute( $gene->dbID );
-
-  while (my($transcript_id,$translation_id) = $sth1->fetchrow) {
+  while (my($transcript_id, $translation_id) = $sth->fetchrow) {
     if($translation_id) {
       foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) { 
         $gene->add_DBLink($translink);
@@ -386,12 +369,11 @@ sub fetch_all_by_Gene {
 }
 
 
-
 =head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_RawContig($contig)}
-  Description: Retrieves a list of RawContigs for this object
+  Description: Retrieves a list of DBentries by a contig object
   Returntype : listref of Bio::EnsEMBL::DBEntries
   Exceptions : none
   Caller     : general
@@ -407,35 +389,35 @@ sub fetch_all_by_RawContig {
 =head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript
-  Example    : 
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
   Description: This should be changed, it modifies the transcipt passed in
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Gene 
 
 =cut
 
 sub fetch_all_by_Transcript {
   my ( $self, $trans ) = @_;
 
-  my $query1 = "SELECT t.translation_id 
+  my $sth = $self->prepare("
+  SELECT t.translation_id 
                 FROM transcript t
-                WHERE t.transcript_id = ?";
-
-  my $sth1 = $self->prepare($query1);
-  $sth1->execute( $trans->dbID );
+                WHERE t.transcript_id = ?
+  ");
+  
+  $sth->execute( $trans->dbID );
 
   # 
   # Did this to be consistent with fetch_by_Gene, but don't like
   # it (filling in the object). I think returning the array would
   # be better. Oh well. EB
   #
+  # ??
   
-  while (my($translation_id) = $sth1->fetchrow) {
-    if($translation_id) {
-      foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) {
+  while (my($translation_id) = $sth->fetchrow) {
+	  foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) {
         $trans->add_DBLink($translink);
-      }
     }
   }
   foreach my $translink(@{ $self->_fetch_by_object_type( $trans->dbID, 'Transcript' )} ) {
@@ -447,10 +429,10 @@ sub fetch_all_by_Transcript {
 =head2 fetch_all_by_Translation
 
   Arg [1]    : Bio::EnsEMBL::Translation $trans
-               The translation to fetch database entries for
+               (The translation to fetch database entries for)
   Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
   Description: Retrieves external database entries for an EnsEMBL translation
-  Returntype : listref of dbEntries to obtain
+  Returntype : listref of Bio::EnsEMBL::DBEntries
   Exceptions : none
   Caller     : general
 
@@ -462,15 +444,19 @@ sub fetch_all_by_Translation {
 }
 
 
-
 =head2 fetch_by_object_type
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $ensObj
+  Arg [2]    : string $ensType
+  			   (object type to be returned) 
+  Example    : $self->_fetch_by_object_type( $translation_id, 'Translation' )
+  Description: Fetches DBEntry by Object type
+  Returntype : arrayref of DBEntry objects
+  Exceptions : none
+  Caller     : fetch_all_by_Gene
+  			   fetch_all_by_Translation
+			   fetch_all_by_Transcript
+  			   fetch_all_by_RawContig
 
 =cut
 
@@ -496,20 +482,27 @@ sub _fetch_by_object_type {
     LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
     WHERE  xref.xref_id = oxr.xref_id
       AND  xref.external_db_id = exDB.external_db_id 
-      AND  oxr.ensembl_id = '$ensObj'
-      AND  oxr.ensembl_object_type = '$ensType'
+      AND  oxr.ensembl_id = ?
+      AND  oxr.ensembl_object_type = ?
   ");
   
-  $sth->execute();
+  $sth->execute($ensObj, $ensType);
   my %seen;
   
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
 	 $desc, $dbname, $release, $exDB_status, $objid, 
          $synonym, $queryid, $targetid ) = @$arrRef;
-    
     my $exDB;
-    
+	my %obj_hash = ( 
+		_adaptor => $self,
+        _dbID => $refID,
+        _primary_id => $dbprimaryId,
+        _display_id => $displayid,
+        _version => $version,
+        _release => $release,
+        _dbname => $dbname);
+			    
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
     # original). Since there is at most one identity_xref row per xref,
@@ -518,268 +511,203 @@ sub _fetch_by_object_type {
       $seen{$refID}++;
       
       if ((defined $queryid)) {         # an xref with similarity scores
-        $exDB = Bio::EnsEMBL::IdentityXref->new
-          ( -adaptor => $self,
-            -dbID => $refID,
-            -primary_id => $dbprimaryId,
-            -display_id => $displayid,
-            -version => $version,
-            -release => $release,
-            -dbname => $dbname);
-        
-        $exDB->query_identity($queryid);
+        $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
+		$exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
         
       } else {
-        $exDB = Bio::EnsEMBL::DBEntry->new
-          ( -adaptor => $self,
-            -dbID => $refID,
-            -primary_id => $dbprimaryId,
-            -display_id => $displayid,
-            -version => $version,
-            -release => $release,
-            -dbname => $dbname );
+        $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
       
-      if( $desc ) {
-        $exDB->description( $desc );
-      }
+      $exDB->description( $desc ) if ( $desc );
       
-      if( $exDB_status ) {
-	$exDB->status( $exDB_status );
-      }
-
+	  $exDB->status( $exDB_status ) if ( $exDB_status );
+      
       push( @out, $exDB );
-    }                                   # if (!$seen{$refID})
+    } #if (!$seen{$refID})
 
-    # $exDB still points to the same xref, so we can keep adding synonyms
-    #if ($synonym) {
-    #  $exDB->add_synonym( $synonym );
-    #}
+#    $exDB still points to the same xref, so we can keep adding synonyms
+    if ($synonym) {
+    	$exDB->add_synonym( $synonym );
+    }
   }                                     # while <a row from database>
   
   return \@out;
 }
 
+=head2 list_gene_ids_by_extids
 
+  Arg [1]    : string $external_id
+  Example    : none
+  Description: Retrieve a list of geneid by an external identifier that is linked to 
+               any of the genes transcripts, translations or the gene itself 
+  Returntype : listref of strings
+  Exceptions : none
+  Caller     : unknown
+
+=cut
+
+sub list_gene_ids_by_extids{
+   my ($self,$name) = @_;
+
+   my %T = map { ($_,1) }
+       $self->_type_by_external_id( $name, 'Translation', 'gene' ),
+       $self->_type_by_external_id( $name, 'Transcript',  'gene' ),
+       $self->_type_by_external_id( $name, 'Gene' );
+   return keys %T;
+}
 
 =head2 geneids_by_extids
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $external_id
+  Example    : none
+  Description: Retrieve a list of geneid by an external identifier that is linked to 
+               any of the genes transcripts, translations or the gene itself 
+			   (please not that this call is deprecated)
+  Returntype : listref of strings
+  Exceptions : none
+  Caller     : unknown
 
 =cut
 
 sub geneids_by_extids{
    my ($self,$name) = @_;
-   my @genes;
+   warn ("This method is deprecated please use 'list_gene_ids_by_extids");
+   return $self->list_gene_ids_by_extids( $name );
+}
 
-   my $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
-                  FROM transcript tr, 
-                       xref x, object_xref oxr
-                  WHERE tr.translation_id = oxr.ensembl_id 
-                    AND oxr.xref_id = x.xref_id 
-                    AND x.display_label = '$name'");
-   $sth->execute();
+=head2 list_transcript_ids_by_extids
 
-   while( ($a) = $sth->fetchrow_array ) {
-       push(@genes,$a);
-   }
+  Arg [1]    : string $external_id
+  Example    : none
+  Description: Retrieve a list transcriptid by an external identifier that is linked to 
+               any of the genes transcripts, translations or the gene itself 
+  Returntype : listref of strings
+  Exceptions : none
+  Caller     : unknown
 
-   unless (scalar @genes){ 
-       $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
-		      FROM transcript tr, 
-			   xref x, object_xref oxr
-		      WHERE tr.translation_id = oxr.ensembl_id 
-			AND oxr.xref_id = x.xref_id 
-			AND x.dbprimary_acc='$name'");
-       $sth->execute();
-       while( ($a) = $sth->fetchrow_array ) {
-	   push(@genes,$a);
-       }
-   }
+=cut
 
-   return @genes;
+sub list_transcript_ids_by_extids{
+   my ($self,$name) = @_;
+   my @transcripts;
+
+   my %T = map { ($_,1) }
+       $self->_type_by_external_id( $name, 'Translation', 'transcript' ),
+       $self->_type_by_external_id( $name, 'Transcript' );
+   return keys %T;
 }
 
 
 =head2 transcriptids_by_extids
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $external_id
+  Example    : none
+  Description: Retrieve a list transcriptid by an external identifier that is linked to 
+               any of the genes transcripts, translations or the gene itself 
+  Returntype : listref of strings
+  Exceptions : none
+  Caller     : unknown
 
 =cut
 
 sub transcriptids_by_extids{
    my ($self,$name) = @_;
-   my @transcripts;
-   my @translations = $self->_type_by_external_id($name,'Translation');
-
-foreach my $t (@translations) {
-       my $sth = $self->prepare( "select id from transcript where translation = '$t'");
-       $sth->execute();
-       my $tr = $sth->fetchrow;
-       push (@transcripts,$tr);
-   }
-   return @transcripts;
-
+   warn ("This method is deprecated please use 'list_transcript_ids_by_extids");
+   return $self->list_transcript_ids_by_extids( $name );
 }
-
 
 
 =head2 translationids_by_extids
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    :  string $name 
+  Example    :  none
+  Description:  Gets a list of translation IDs by external display IDs 
+  				(please note that this call is deprecated)
+  Returntype :  list of Ints
+  Exceptions :  none
+  Caller     :  unknown
 
 =cut
 
 sub translationids_by_extids{
-    my ($self,$name) = @_;
-    return $self->_type_by_external_id($name,'Transcript');
+  my ($self,$name) = @_;
+  warn ("This method is deprecated please use 'list_translation_ids_by_extids");
+  return $self->list_translation_ids_by_extids( $name );
 }
 
 
-=head2 rawContigids_by_extids
+=head2 list_translation_ids_by_extids
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    :  string $name 
+  Example    :  none
+  Description:  Gets a list of translation IDs by external display IDs
+  Returntype :  list of Ints
+  Exceptions :  none
+  Caller     :  unknown
 
 =cut
 
-sub rawContigids_by_extids{
-   my ($self,$name) = @_;
-   return $self->_type_by_external_id($name,'rawContig');
+sub list_translation_ids_by_extids{
+  my ($self,$name) = @_;
+  return $self->_type_by_external_id( $name, 'Translation' );
 }
-
-
 
 =head2 _type_by_external_id
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : string $name
+  			   (dbprimary_acc)
+  Arg [2]    : string $ensType
+  			   (Object_type)
+  Arg [3]    : string $extraType
+  			   (other object type to be returned) - optional
+  Example    : $self->_type_by_external_id( $name, 'Translation' ) 
+  Description: Gets
+  Returntype : list of ensembl_IDs
+  Exceptions : none
+  Caller     : list_translation_ids_by_extids
+               translationids_by_extids
+  			   geneids_by_extids
 
 =cut
 
 sub _type_by_external_id{
-   my ($self,$name,$ensType) = @_;
+  my ($self,$name,$ensType,$extraType) = @_;
    
-my @out;
-
-
-  my $sth = $self->prepare( "
-    SELECT oxr.ensembl_id
-    FROM xref, external_db exDB, object_xref oxr, external_synonym syn 
-     WHERE (xref.dbprimary_acc = '$name'
-            AND xref.xref_id = oxr.xref_id
-            AND oxr.ensembl_object_type = '$ensType')
-     OR    (xref.display_label = '$name'
-            AND xref.xref_id = oxr.xref_id
-            AND oxr.ensembl_object_type = '$ensType')
-     OR    (syn.synonym = '$name'
-            AND syn.xref_id = oxr.xref_id
-            AND oxr.ensembl_object_type = '$ensType')
-         " );
-
-   $sth->execute();
-   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-       my ( $ensID) =
-	   @$arrRef;;
-       push (@out,$ensID);
-     }
-   
-   return @out;
-}
-
-
-
-=head2 create_tables
-
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
-
-=cut
-
-# creates all tables for this adaptor
-# if they exist they are emptied and newly created
-sub create_tables {
-  my $self = shift;
-
-  my $sth = $self->prepare( "drop table if exists object_xref, xref, externalDescription, external_synonym, external_db" );
-  $sth->execute();
-
-  $sth = $self->prepare( qq{
-    
-    CREATE TABLE object_xref(
-			     object_xref_id INT not null auto_increment,
-			     ensembl_id int unsigned not null, 
-			     ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
-			     xref_id INT unsigned not null,
-			     
-			     UNIQUE ( ensembl_object_type, ensembl_id, xref_id ),
-			     KEY xref_index( object_xref_id, xref_id, ensembl_object_type, ensembl_id )
-			    );
-  } );
-  $sth->execute();
-  $sth = $self->prepare( qq{
-    CREATE TABLE xref (
-		       xref_id INT unsigned not null auto_increment,
-		       external_db_id int not null,
-		       dbprimary_acc VARCHAR(40) not null,
-		       display_label VARCHAR(40) not null,
-		       version VARCHAR(10) DEFAULT '' NOT NULL,
-		       description VARCHAR(255),
-		       
-		       PRIMARY KEY( xref_id ),
-		       UNIQUE KEY id_index( dbprimary_acc, external_db_id ),
-		       KEY display_index ( display_label )
-		      );
-    
-   } );
-
-  $sth->execute();
-
-  $sth = $self->prepare( qq{
-     CREATE TABLE external_synonym(
-         xref_id INT not null,
-         synonym VARCHAR(40) not null,
-         PRIMARY KEY( xref_id, synonym ),
-	 KEY nameIdx( synonym )) 
-   } );
-  $sth->execute();
-
-  $sth = $self->prepare( qq{
-     CREATE TABLE external_db(
-         external_db_id INT not null auto_increment,
-         db_name VARCHAR(40) not null,
-	 release VARCHAR(40),
-         PRIMARY KEY( external_db_id ) ) 
-   } );
-  $sth->execute();
+  my $from_sql = '';
+  my $where_sql = '';
+  my $ID_sql = "oxr.ensembl_id";
+  if(defined $extraType) {
+    $ID_sql = "t.${extraType}_id";
+    $from_sql = 'transcript as t, ';
+    $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+  }
+  my @queries = (
+    "select $ID_sql
+       from $from_sql object_xref as oxr
+      where $where_sql xref.dbprimary_acc = ? and
+            xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+    "select $ID_sql 
+       from $from_sql xref, object_xref as oxr
+      where $where_sql xref.display_label = ? and
+            xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+    "select $ID_sql
+       from $from_sql object_xref as oxr, external_synonym as syn
+      where $where_sql syn.synonym = ? and
+            syn.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
+  );
+# Increase speed of query by splitting the OR in query into three separate queries. This is because the 'or' statments render the index useless because MySQL can't use any
+# fields in the index.
+  
+  my %hash = (); 
+  foreach( @queries ) {
+    my $sth = $self->prepare( $_ );
+    $sth->execute("$name", $ensType);
+    while( my $r = $sth->fetchrow_array() ) {
+      $hash{$r} = 1;
+    }
+  }
+  return keys %hash;
 }
 
 
