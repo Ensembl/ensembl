@@ -33,6 +33,7 @@ sub new {
   $self->host( $host );
   $self->password( $pass);
   $self->user($user);
+  $self->port($port);
   $self->limit($limit);
 
 
@@ -49,12 +50,12 @@ sub new {
       die("Target db $target already exists. Use -force option to overwrite.");
     }
   }
-    
+
   $dbh->do( "create database ".$self->target() );
 
   $self->debug("Building schema for $target from $schema");
   die "Cannot open $schema" if (! -e $schema);
-  my $cmd = "mysql -u $user -p$pass -h $host $target < $schema";
+  my $cmd = "mysql -u $user -p$pass -P $port -h $host $target < $schema";
   system ($cmd);
 
 
@@ -106,6 +107,12 @@ sub host {
   my $self = shift;
   $self->{'host'} = shift if(@_);
   return $self->{'host'};
+}
+
+sub port {
+  my $self = shift;
+  $self->{'port'} = shift if(@_);
+  return $self->{'port'};
 }
 
 sub password {
