@@ -219,7 +219,7 @@ sub write_acedb{
 		
 	    # acedb has coordinates relative to transcripts.
 	    
-	    print $fh "Sequence $gene_id.$trans_id.EnsEMBL\nCDS\nStart_not_found\nEnd_not_found\n";
+	    print $fh "Sequence $gene_id.$trans_id.EnsEMBL\nCDS\nStart_not_found\nEnd_not_found\nMethod EnsEMBL\n";
 	    
 	    foreach my $exon ( $trans->each_Exon ) {
 		if( $tstrand == 1 ) {
