@@ -110,7 +110,7 @@ sub new {
                registering is to reduce the overhead. Much of the work to
                check if a range is registered is the same as registering a
                region around that range.
-  Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
+  Returntype : undef or listref of [start,end] range pairs
   Exceptions : throw if rstart is greater than start
                throw if rend is less than end
                throw if end is less than start
