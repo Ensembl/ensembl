@@ -34,7 +34,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
-use Bio::EnsEMBL::Utils::Exception qw(warning throw);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -202,7 +202,7 @@ sub fetch_by_dbID{
   #get first element of _generic_fetch list
   my ($feat) = @{$self->generic_fetch($constraint)};
 
-  throw('Feature with dbID [$id] does not exist') if(!$feat);
+  throw("Feature with dbID [$id] does not exist") if(!$feat);
 
   $feat = $feat->transform($cs_name, $cs_version) if(defined($cs_name));
 
