@@ -1,11 +1,8 @@
 # raw2ensembl
 #
-# Cared for by Simon Potter
-# (C) GRL/EBI 2001
+# Author Simon Potter
 #
 # You may distribute this module under the same terms as perl itself
-#
-# POD documentation - main docs before the code
 
 
 =pod
@@ -42,7 +39,7 @@ runs of 'n' in the sequence - and loads in to the DB
 
 =head1 CONTACT
 
-Simon Potter: scp@sanger.ac.uk
+B<ensembl-dev@ebi.ac.uk>
 
 =head1 BUGS
 
@@ -57,8 +54,8 @@ use Bio::Root::RootI;
 use Bio::Seq;
 use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::PerlDB::Clone;
-use Bio::EnsEMBL::PerlDB::Contig;
+use Bio::EnsEMBL::Clone;
+use Bio::EnsEMBL::RawContig;
 
 
 my($id, $acc, $ver, $phase, $contigs);
@@ -154,12 +151,15 @@ print STDERR "description ", $seq->desc, "\n";
 
 print "Loaded dna: length ", $seq->length, "\n";
 
-my $clone = new Bio::EnsEMBL::PerlDB::Clone;
+my $clone = new Bio::EnsEMBL::Clone;
 $clone->id($acc);
 $clone->htg_phase($phase);
 $clone->embl_id($acc);
 $clone->version(1);
 $clone->embl_version($ver);
+my $now = time;
+$clone->created($now);
+$clone->modified($now);
 
 print "Clone ", $clone->id, "\n";
 if ($verbose) {
@@ -170,22 +170,18 @@ if ($verbose) {
 }
 
 if ($phase == 4) {
-    my $contig = new Bio::EnsEMBL::PerlDB::Contig;
+    my $contig = new Bio::EnsEMBL::RawContig;
     my $length = $seq->length;
-    $contig->id("$acc.$ver.1.$length");
+    $contig->name("$acc.$ver.1.$length");
     $contig->embl_offset(1);
     $contig->length($length);
     $contig->seq($seq);
-    $contig->version(1);
-    $contig->embl_order(1);
 
-    print "Contig ", $contig->id, "\n";
+    print "Contig ", $contig->name, "\n";
     if ($verbose) {
 	print "\toffset: ", $contig->embl_offset, "\n";
 	print "\tlength: ", $contig->length, "\n";
 	print "\tend:    ", ($contig->embl_offset + $contig->length - 1), "\n";
-	print "\tversion:", $contig->version, "\n";
-	print "\torder:  ", $contig->embl_order, "\n";
 	print "\tlength: ", $contig->length, "\n";
     }
 
@@ -206,22 +202,18 @@ else {
 	my $id = join '.', ($acc, $ver, $offset, $startend->[1]);
 	my $subseq = $seq->subseq($offset, $startend->[1]);
 
-	my $contig = new Bio::EnsEMBL::PerlDB::Contig;
-	$contig->id($id);
+	my $contig = new Bio::EnsEMBL::RawContig;
+	$contig->name($id);
 	$contig->embl_offset($offset);
 	$contig->length($length);
 	$contig->seq(new Bio::Seq(-id => $id, -seq =>$subseq));
-	$contig->version(1);
-	$contig->embl_order($order);
 	$order++;
 
-	print "Contig ", $contig->id, "\n";
+	print "Contig ", $contig->name, "\n";
 	if ($verbose) {
 	    print "\toffset  ", $contig->embl_offset, "\n";
 	    print "\tlength  ", $contig->length, "\n";
 	    print "\tend     ", ($contig->embl_offset + $contig->length - 1), "\n";
-	    print "\tversion ", $contig->version, "\n";
-	    print "\torder   ", $contig->embl_order, "\n";
 	}
 
         $clone->add_Contig($contig);
@@ -231,17 +223,17 @@ else {
 if ($write) {
     my $dbclone;
     eval {
-	$dbclone = $dbobj->get_Clone("$acc.$ver");
+	$dbclone = $dbobj->get_CloneAdaptor->fetch_by_accession_version("$acc.$ver");
     };
     if ($replace && $dbclone) {
 	$dbclone->delete;
-	$dbobj->write_Clone($clone);
+	$dbobj->get_CloneAdaptor->store($clone);
     }
     elsif ($dbclone) {
 	print "$acc.$ver already exists - ignoring\n";
     }
     else {
-	$dbobj->write_Clone($clone);
+	$dbobj->get_CloneAdaptor->store($clone);
     }
 }
 
