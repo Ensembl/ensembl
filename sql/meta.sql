@@ -12,6 +12,5 @@ CREATE TABLE meta (
   last_update datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   donor_database_locator varchar(40) DEFAULT '' NOT NULL,
   offset_time time(5) DEFAULT '30' NOT NULL,
-  schema_version varchar(40) DEFAULT '' NOT NULL, 
-  PRIMARY KEY (last_update_time, donor_database_locator, offset_time, schema_version)
+  schema_version varchar(40) DEFAULT '' NOT NULL
 );

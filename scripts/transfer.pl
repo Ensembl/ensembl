@@ -37,6 +37,10 @@
 
     -getall    all clones from the database [not applicable to timdb]
 
+    -update    Used to update a clone, and store the old version in the archive database
+
+    -arcpass   password for the archive database
+
     -usefile   read in on stdin a list of clones, one clone per line
 
     -start     start point in list of clones (useful with -getall)
@@ -90,8 +94,10 @@ my $use_embl = 0;
 my $cstart = 0;
 my $cend;
 my $getall = 0;
+my $update = 0;
+my $arcpass = undef;
 my $help;
-my $fmodule = 'Bio::EnsEMBL::DBOLD::Obj';
+my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBOLD::Obj';
 
 &GetOptions( 
@@ -111,8 +117,10 @@ my $tmodule = 'Bio::EnsEMBL::DBOLD::Obj';
 	     'tdbpass:s' => \$tdbpass,
 	     'tmodule:s' => \$tmodule,
 	     
-	     'embl'     => \$use_embl,
+	     'embl'      => \$use_embl,
 	     'getall'    => \$getall,
+	     'update'    => \$update,
+	     'arcpass:s' => \$arcpass,
 	     'usefile'   => \$usefile,
 	     'start:i'   => \$cstart,
 	     'end:i'     => \$cend,
@@ -123,6 +131,7 @@ my $from_db;
 my $to_db;
 my @clone;
 
+  
 
 if ($help){
     exec('perldoc', $0);
@@ -148,6 +157,7 @@ if ( $fdbtype =~ 'timdb' ) {
     $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
 } else {
     my $locator = "$fmodule/host=$fhost;port=$fport;dbname=$fdbname;user=$fdbuser;pass=$fdbpass";
+    print STDERR "LOCATOR IS: $locator\n";
     $from_db = Bio::EnsEMBL::DBLoader->new($locator); 
 }
 
@@ -162,14 +172,53 @@ if( defined $cend ) {
     @clone = @temp;
 }
 
+#This section is for the update mode, i.e. when a new version of a clone 
+#needs to be stored, some of the data from the old version gets transferred to 
+#the archive db, and the clone is deleted from the database, and the new one is written in
+
+if ($update) {
+    print STDERR "Update mode: storing old version in archivedb, deleting it from $fdbname, and storing new version in $fdbname!\n";
+    
+    my $arcname = 'archive';
+    my $arctype = 'rdb';
+    my $archost = 'localhost';
+    my $arcport = '410000';
+    my $arcuser = 'root';
+    my $arcmodule = 'Bio::EnsEMBL::DBArchive::Obj';
+    $arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
+    
+    my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$arcuser;pass=$arcpass";
+    my $arc_db = Bio::EnsEMBL::DBLoader->new($arclocator);
+    
+    
+    
+    foreach my $clone (@clone) {
+	
+	#First we need to get the information we need to store from the old version of the clone
+	#Note: we are getting the clone from to_db, where the new version will be written
+	
+	print STDERR "Loading $clone\n"; 
+		
+	#Then we need to store the information for all transcripts, exons and proteins in the archive db
+	foreach my $gene ($clone->get_all_Genes) {
+	    #Delete genes,transcipts,translations, and exons from $to_db and store partial info in archive db
+	    $to_db=archive_Gene($gene,$clone,$arc_db);
+	}
+	
+	#Delete clone from $to_db
+	my $clone = $to_db->delete_Clone($clone,$arc_db);
+    }
+
+    #Finally we proceed as normal, transferring the clone from from_db to to_db (out of the update loop)
+}
 
 foreach my $clone_id ( @clone ) {
     print STDERR "Loading $clone_id\n";
     eval {
 	my $clone = $from_db->get_Clone($clone_id);
-    
+	
 	$to_db->write_Clone($clone);
-    
+	
 	foreach my $gene ( $clone->get_all_Genes() ) {
 	    $to_db->write_Gene($gene);
 	}
@@ -181,6 +230,15 @@ foreach my $clone_id ( @clone ) {
 }
 
 close(ERROR);
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1063,13 +1063,13 @@ sub write_Clone{
 
 
    my $clone_id = $clone->id();
-   my $sv = $clone->sv();
+   my $version = $clone->version();
    my $embl_id = $clone->embl_id();
    my $htg_phase = $clone->htg_phase();
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,sv,embl_id,htg_phase) values('$clone_id','$sv','$embl_id','$htg_phase')");
+   push(@sql,"insert into clone(id,version,embl_id,htg_phase) values('$clone_id','$version','$embl_id','$htg_phase')");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {

@@ -33,8 +33,10 @@ CREATE TABLE analysis_history (
 CREATE TABLE clone (
   id varchar(40) DEFAULT '' NOT NULL,
   embl_id varchar(40) DEFAULT '' NOT NULL,
-  sv int(10) DEFAULT '0' NOT NULL,
+  version int(10) DEFAULT '0' NOT NULL,
   htg_phase int(10) DEFAULT '-1' NOT NULL,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
 );
 
@@ -73,7 +75,7 @@ CREATE TABLE contig_equiv (
 CREATE TABLE dna (
   contig varchar(40) DEFAULT '' NOT NULL,
   sequence mediumtext NOT NULL,
-  created date DEFAULT '0000-00-00' NOT NULL,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
   PRIMARY KEY (contig),
   KEY id (id),
@@ -87,8 +89,8 @@ CREATE TABLE exon (
   id varchar(40) DEFAULT '' NOT NULL,
   contig varchar(40) DEFAULT '' NOT NULL,
   version int(10) DEFAULT '1' NOT NULL,
-  created date DEFAULT '0000-00-00' NOT NULL,
-  modified date DEFAULT '0000-00-00' NOT NULL,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
   strand int (2) DEFAULT '1' NOT NULL,
@@ -157,8 +159,8 @@ CREATE TABLE fset_feature (
 CREATE TABLE gene (
   id varchar(40) DEFAULT '' NOT NULL,
   version int(10) DEFAULT '1' NOT NULL,
-  created date DEFAULT '0000-00-00' NOT NULL,
-  modified date DEFAULT '0000-00-00' NOT NULL,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
 );
 

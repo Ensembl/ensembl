@@ -74,14 +74,19 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$driver,$user,$password,$debug) = 
+  my ($db,$host,$driver,$user,$pass,$password,$debug) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
 			    USER
+			    PASS
 			    PASSWORD
 			    DEBUG
 			    )],@args);
+
+  if( !defined $password ) {
+      $password = $pass;
+  }
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -113,7 +118,7 @@ sub _initialize {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
 
-      my $dbh = DBI->connect("$dsn","$user",$password);
+      my $dbh = DBI->connect("$dsn","$user","$password");
 
       $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
       

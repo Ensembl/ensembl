@@ -119,6 +119,26 @@ sub sv {
 }
 
 
+=head2 version
+
+ Title   : version
+ Function: Schema translation
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub version {
+   my ($self,@args) = @_;
+
+   $self->warn("Called version without implementation. Probably an old object. Called sv instead");
+
+   return $self->sv();
+}
+
+
 =head2 htg_phase
 
  Title   : htg_phase

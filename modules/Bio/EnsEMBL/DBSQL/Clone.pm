@@ -244,28 +244,166 @@ sub htg_phase{
    return $rowhash->{'htg_phase'};
 }
 
+=head2 created
+
+ Title   : created
+ Usage   : $clone->created()
+ Function: Gives the unix time value of the created datetime field, which indicates
+           the first time this clone was put in ensembl
+ Example : $clone->created()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub created{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select created from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   my $datetime = $rowhash->{'created'};
+   $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_arrayref();
+   return $rowhash->[0];
+}
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $clone->modified()
+ Function: Gives the unix time value of the modified datetime field, which indicates
+           the last time this clone was modified in ensembl
+ Example : $clone->modified()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub modified{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select modified from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   my $datetime = $rowhash->{'modified'};
+   $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_arrayref();
+   return $rowhash->[0];
+}
+
+
+=head2 version
+
+ Title   : version
+ Usage   : $clone->version()
+ Function: Gives the value of version
+           (Please note: replaces old sv method!!!)
+ Example : $clone->version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub version{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select version from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'version'};
+}
+
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : $clone->embl_version()
+ Function: Gives the value of the EMBL version, i.e. the data version
+ Example : $clone->embl_version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub embl_version{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select embl_version from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'embl_version'};
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $clone->seq_date()
+ Function: loops over all $contig->seq_date, throws a warning if they are different and 
+           returns the first unix time value of the dna created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $clone->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+   my $seq_date, my $old_seq_date;
+
+   foreach my $contig ($self->get_all_Contigs) {
+       $seq_date = $contig->seq_date;
+       if ($old_seq_date) {
+	   if ($seq_date != $old_seq_date) {
+	       $self->warn ("The created date of the DNA sequence from contig $contig is different from that of the sequence from other contigs on the same clone!");
+	   }
+       }
+       $old_seq_date = $seq_date;
+   }
+   
+   return $seq_date;
+}
+
 =head2 sv
 
  Title   : sv
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $clone->sv
+ Function: old version method
+ Example : $clone->sv
+ Returns : version number
+ Args    : none
 
 
 =cut
 
 sub sv{
    my ($self) = @_;
+    
+   $self->warn("Clone::sv - deprecated method. From now on you should use the Clone::version method, which is consistent with our nomenclature");
 
-   my $self = shift;
-   my $id = $self->id();
-
-   my $sth = $self->_dbobj->prepare("select sv from clone where id = \"$id\" ");
-   $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'sv'};
+   return $self->version();
 }
 
 =head2 embl_id
