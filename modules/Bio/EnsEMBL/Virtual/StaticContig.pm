@@ -1810,7 +1810,8 @@ sub get_all_Genes_exononly{
 
 	   $current_transcript_id = $transcriptid;
 	   $current_transcript->dbID($transcriptid);
-       }
+	   $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
+	 }
 
        if( $stickyrank > 1 ) {
 	   if( !defined $previous_exon ) {
@@ -1828,6 +1829,7 @@ sub get_all_Genes_exononly{
        $exon->end($end);
        $exon->strand($strand);
        $exon->dbID($exonid);
+       $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
        $exon->seqname($self->id);
        $exon->phase($phase);
        $previous_exon = $exon;
