@@ -143,7 +143,9 @@ sub fetch_all_by_gene_id {
   }
   $self->{rchash} = {};
   my $query = qq {
-    SELECT  e.exon_id
+    SELECT 
+      STRAIGHT_JOIN 
+	e.exon_id
       , e.contig_id
       , e.contig_start
       , e.contig_end
@@ -151,9 +153,9 @@ sub fetch_all_by_gene_id {
       , e.phase
       , e.end_phase
       , e.sticky_rank
-    FROM exon e
+    FROM transcript t
       , exon_transcript et
-      , transcript t
+      , exon e
     WHERE t.gene_id = ?
       AND et.transcript_id = t.transcript_id
       AND e.exon_id = et.exon_id
