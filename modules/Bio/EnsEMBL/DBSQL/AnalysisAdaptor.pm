@@ -110,7 +110,11 @@ sub fetch_all {
 
 sub fetch_by_dbID {
   my $self = shift;
-  my $id = shift;
+  my $id   = shift;
+
+  if (!defined($id)) {
+    $self->throw("No analysis id entered. Can't fetch\n");
+  }
 
   if( defined $self->{_cache}->{$id} ) {
     return $self->{_cache}->{$id};
@@ -127,6 +131,7 @@ sub fetch_by_dbID {
     WHERE analysisId = ? } );
   
   $sth->execute( $id );
+
   my $rowHashRef = $sth->fetchrow_hashref;
   if( ! defined $rowHashRef ) {
     return undef;
