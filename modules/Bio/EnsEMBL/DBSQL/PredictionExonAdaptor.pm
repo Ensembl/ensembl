@@ -117,7 +117,7 @@ sub fetch_all_by_PredictionTranscript {
 
   my $constraint = "pe.prediction_transcript_id = ".$transcript->dbID();
 
-  my $exons = $self->SUPER::generic_fetch( $constraint );
+  my $exons = $self->generic_fetch( $constraint );
 
   if( ! @$exons ) { return [] }
 
@@ -140,9 +140,9 @@ sub fetch_all_by_PredictionTranscript {
   Example    : $pexon_adaptor->store($pexon, 1211, 2);
   Description: Stores a PredictionExon in the database
   Returntype : none
-  Exceptions : thrown if exon (or component exons) do not have a contig_id
+  Exceptions : thrown if exon does not have a slice attached
                or if $exon->start, $exon->end, $exon->strand, or $exon->phase 
-               are not defined or if $exon is not a Bio::EnsEMBL::Exon 
+               are not defined or if $exon is not a Bio::EnsEMBL::PredictionExon 
   Caller     : general
 
 =cut
