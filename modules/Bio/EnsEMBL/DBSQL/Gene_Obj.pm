@@ -155,8 +155,10 @@ sub delete {
         $exon_delete      ->execute($exon_id);
         $supporting_delete->execute($exon_id);
     }
-}   
 
+   $sth = $db->prepare("delete from genetype where gene_id = '$gene_id'");
+   $sth->execute;
+}   
 
 
 =head2 delete_Exon
@@ -442,11 +444,38 @@ sub get_array_supporting {
    
     my (@out, @sup_exons);
     
-    my $inlist = join(',', map "'$_'", @geneid);
+    my @inlist;
+
+    my $count = 0;
+    my $count2 = 0;
+
+    # The gene list is split into chunks of 11 as mysql grinds
+    # to a halt over this number
+
+    foreach my $in (@geneid) {
+        if (!defined($inlist[$count])) {
+            $inlist[$count] = [];
+        }
+
+        push(@{$inlist[$count]},$in);
+
+        $count2++;
+   
+        if ($count2 > 5) {
+           $count++;
+           $count2 = 0;
+        }
+    }
+	
     
-    # I know this SQL statement is silly.
-    #    
+   # my $inlist = join(',', map "'$_'", @geneid);
     my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
+   
+    foreach my $inarray (@inlist)   {
+        my $inlist = join(',', map "'$_'", @$inarray);
+ 
+        # I know this SQL statement is silly.
+        #    
 
     my $query = qq{
         SELECT tscript.gene
@@ -491,7 +520,7 @@ sub get_array_supporting {
           , exon.sticky_rank
         LIMIT 2500
         };
-
+    
 #    print STDERR "Query is " . $query . "\n";
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
@@ -624,14 +653,15 @@ sub get_array_supporting {
     $self->_store_exons_in_transcript($trans,@transcript_exons);
    
     if ($supporting && $supporting eq 'evidence') {
-	$self->get_supporting_evidence(@sup_exons);
+	$self->get_supporting_evidence_direct(@sup_exons);
     }
 
     foreach my $g ( @out) {
 	$self->_get_dblinks($g);
     }
+    } 
     return @out;
-}
+}                                       # get_array_supporting
 
 
 =head2 _store_exons_in_transcript
@@ -806,15 +836,58 @@ sub get_Gene_by_DBLink {
     my $external_id = shift;
     my $supporting = shift;
    
+    my @genes=$self->get_Gene_array_by_DBLink($external_id,$supporting);
+
+    my $biggest;
+    my $max=0;
+    my $size=scalar(@genes);
+    if ($size > 0) {
+	foreach my $gene (@genes) {
+	    my $size = (scalar($gene->each_unique_Exon));
+	    if ($size > $max) {
+		$biggest = $gene;
+		$max=$size;
+	    }
+	}
+	return $biggest;
+    }
+    return;
+}
+
+=head2 get_Gene_by_DBLink
+
+ Title   : get_Gene_by_DBLink
+ Usage   : $gene_obj->get_Gene_by_DBLink($ext_id, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : transcript id and supporting tag (if latter not specified,
+assumes without
+           Note that it is much faster to get genes without supp.evidence!
+
+
+=cut
+
+sub get_Gene_array_by_DBLink {
+    my $self = shift;
+    my $external_id = shift;
+    my $supporting = shift;
+
+    my @genes;
     my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
     $sth->execute;
-
-    my ($geneid) = $sth->fetchrow_array();
-    if( !defined $geneid ) {
-        return undef;
+    my $seen=0;
+    while (my ($geneid)=$sth->fetchrow_array()) {
+	push (@genes,$self->get($geneid,$supporting));
+	$seen=1;
     }
-    return $self->get($geneid,$supporting);
+    if( !$seen ) {
+	return;
+    }
+    else {
+	return @genes;
+    }
 }
+
 
 =head2 get_Exon
 
@@ -973,6 +1046,79 @@ sub get_supporting_evidence {
 
 }
 
+=head2 get_supporting_evidence_direct
+
+ Title   : get_supporting_evidence_direct
+ Usage   : $obj->get_supporting_evidence_driect
+ Function: Gets supporting evidence features from the feature table
+ Example :
+ Returns : nothing
+ Args    : array of exon objects, needed to know which exon to attach the evidence to
+
+
+=cut
+
+sub get_supporting_evidence_direct {
+    my ($self,@exons) = @_;
+
+    my %exhash;
+    my %analhash;
+    if (@exons == 0) {
+	$self->throw("No exon objects were passed on!");
+    }
+    my $list = "";
+
+    foreach my $exon (@exons) {
+	$list .= "'".$exon->id."',";
+	$exhash{$exon->id} = $exon;
+    }
+    $list =~ s/\,$//;
+    my $query = qq{
+         SELECT f.seq_start,f.seq_end,
+            f.score,f.strand,
+            f.analysis,f.name,
+            f.hstart,f.hend,f.hid,
+            f.evalue,f.perc_id,e.id,c.id 
+         FROM feature f, exon e, contig c 
+         WHERE c.internal_id = f.contig 
+            AND f.contig = e.contig 
+           AND e.id in ($list) 
+           AND !(f.seq_end < e.seq_start OR f.seq_start > e.seq_end) 
+           AND f.strand = e.strand AND
+           f.analysis < 5}; # PL: why < 5 ? 
+ # PL: query not checked thoroughly
+    my $sth2=$self->_db_obj->prepare($query);
+    $sth2->execute;
+
+    while (my $arrayref = $sth2->fetchrow_arrayref) {
+	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid,$contig) = @{$arrayref};
+	my $analysis;
+	if (!$analhash{$analysisid}) {
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    $analysis = $feature_obj->get_Analysis($analysisid);
+	    $analhash{$analysisid} = $analysis;	   
+	} 
+	else {
+	    $analysis = $analhash{$analysisid};
+	}
+	
+	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+	
+	my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	$out->analysis($analysis);
+
+	#$out->validate();
+	$exhash{$exonid}->add_Supporting_Feature($out);
+    }
+}                                       # get_supporting_evidence_direct
+
+
+
+
 =head2 get_Transcript
     
  Title   : get_Transcript
@@ -998,6 +1144,15 @@ sub get_Transcript{
 	my $exon = $self->get_Exon($rowhash->{'exon'});
 	$trans->add_Exon($exon);
 	$seen = 1;
+    }
+
+    $sth = $self->_db_obj->prepare("select version,translation from transcript where id = '$transid'");
+    $sth->execute();
+
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $translation = $self->get_Translation($rowhash->{'translation'});
+	$trans->translation($translation);
+	$trans->version($rowhash->{'version'});
     }
 
     if ($seen == 0 ) {
@@ -1273,7 +1428,6 @@ sub get_Transcript_in_VC_coordinates
 
 sub write{
    my ($self,$gene) = @_;
-   my $old_gene;
    my %done;
    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;
       
@@ -1411,18 +1565,6 @@ sub write_Exon {
         };
     
     my $contig = $self->_db_obj->get_Contig($exon->contig_id);
-
-    print STDERR $exon->id . " " . 
-	$exon->version . " " .
-	$contig->internal_id . " " . 
-	$exon->created . " " . 
-	$exon->modified . " " . 
-	$exon->start . " " . 
-	$exon->end . " " . 
-	$exon->strand . " " . 
-	$exon->phase . " " . 
-	$exon->end_phase . " " . 
-	$exon->sticky_rank . "\n";
 
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(
