@@ -1039,6 +1039,8 @@ CREATE TABLE assembly_exception (
   exc_seq_region_end          INT,
   ori                         INT,
 
+  PRIMARY KEY (assembly_exception_id),
+
   INDEX sr_idx (seq_region_id, seq_region_start),
   INDEX ex_idx (exc_seq_region_id, exc_seq_region_start)
 
