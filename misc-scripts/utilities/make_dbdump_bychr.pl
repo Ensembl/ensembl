@@ -1,3 +1,5 @@
+#!/usr/local/bin/perl
+
 #This script generates a full dump of the EnsEMBL database for 
 #a particular chromosome. Useful to create a small but fully functional
 #EnsEMBL db
@@ -27,16 +29,18 @@ EnsEMBL db (e.g. laptop mini-mirror)
 use Bio::EnsEMBL::DBLoader;
 use Getopt::Long;
 
-my $workdir = "/nfs/acari/elia/test";
+my $workdir = `pwd`; chomp($workdir);
 my $host = "localhost";
 my $port   = '';
 my $dbname = 'homo_sapiens_core_110';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
-my $chr = 'chr21';
+my $chr = 'chr22';
 my $lim;
-my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
+# my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
+#                  /mysql/current/bin/mysqldump
+my $mysqldump = 'mysqldump'; # in $PATH we trust
 
 &GetOptions( 
 	     'port:n'     => \$port,
@@ -48,6 +52,9 @@ my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 	     'workdir:s'  => \$workdir,
 	     'limit:n'    => \$lim
 	     );
+
+die "chromosome names should start with 'chr'" unless $chr =~ /^chr/;
+
 my $limit;
 if ($lim) {
     $limit = "limit $lim";
@@ -62,7 +69,8 @@ $db =  Bio::EnsEMBL::DBLoader->new($locator);
 #interpro and interpro_description in theory could be trimmed based on the hid of the protein_feature, but the join would take long, and the table is tiny!
 
 print STDERR "Dumping data from small tables needed in full\n";
-$command = "$mysqldump -u $dbuser -T $workdir $dbname analysis analysisprocess chromosome externalDB meta species interpro interpro_description";
+my $pass_arg=""; $pass_arg="-p$dbpass" if $dbpass;
+$command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname analysis analysisprocess chromosome externalDB meta species interpro interpro_description";
 system ($command);
 
 my $command = "rm $workdir/*.sql";
@@ -70,21 +78,23 @@ system ($command);
 
 #Dump schema
 print STDERR "Dumping database schema into table.sql\n";
-my $command = "$mysqldump -u $dbuser -d $dbname > $workdir/table.sql";
+$command = "$mysqldump -u $dbuser $pass_arg -d $dbname > $workdir/table.sql";
 system($command);
 
 my $sth = $db->prepare("select * from karyotype where chr_name = '$chr' $limit into outfile '$workdir/karyotype.txt'");
 $sth->execute;
 
-my $sth = $db->prepare("select chromosome_id from chromosome where name = '$chr'");
+$sth = $db->prepare("select chromosome_id from chromosome where name = '$chr'");
 $sth->execute;
 my ($chrom) = $sth->fetchrow_array;
 
-my $sth = $db->prepare("select * from map_density where chromosome_id = $chrom into outfile '$workdir/map_density.txt'");
+# my $sth = $db->prepare("select * from map_density where chromosome_id = $chrom into outfile '$workdir/map_density.txt'");
+$sth = $db->prepare("select * from map_density where chrname = '$chr' into outfile '$workdir/map_density.txt'");
 $sth->execute;
 
 print STDERR "Finding golden path contigs for chromosome $chr\n";
-my $sth = $db->prepare("select * from static_golden_path where chr_name = '$chr' $limit");
+my $golden_path_q = "select * from static_golden_path where chr_name = '$chr' $limit";
+$sth = $db->prepare($golden_path_q);
 
 $sth->execute;
 my @contig_ids;
@@ -97,6 +107,7 @@ while( (my $arr = $sth->fetchrow_arrayref()) ) {
     print FILE join("\t",@array)."\n";
 }
 close (FILE);
+die "no contigs found for ``$golden_path_q''" unless @contig_ids;
 
 my $contig_list = &get_inlist(0,@contig_ids);
 
@@ -132,7 +143,7 @@ print STDERR "Getting all features...\n";
 $sth = $db->prepare("select * from repeat_feature where contig in $contig_list into outfile '$workdir/repeat_feature.txt'");
 $sth->execute;
 
-my $sth = $db->prepare("select * from feature where contig in $contig_list");
+$sth = $db->prepare("select * from feature where contig in $contig_list");
 $sth->execute;
 
 my @feature_ids;
