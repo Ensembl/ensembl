@@ -75,6 +75,7 @@ use Bio::Annotation::DBLink;
 # We inherit a number of functions from Bio::EnsEMBL::EMBL_Dump
 use Bio::EnsEMBL::EMBL_Dump qw(
                                id_EnsEMBL
+                               sort_Indexer_function
                                sort_FTHelper_EnsEMBL
                                );
 
@@ -290,6 +291,7 @@ sub ensembl_annseq_output {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
+   $aseqstream->_index_function(\&sort_Indexer_function);
    $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
    
    # attach ensembl specific dumping functions

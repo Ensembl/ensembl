@@ -76,6 +76,7 @@ use Bio::Species;
                 kw_EnsEMBL
                 sv_EnsEMBL
                 ac_EnsEMBL
+                sort_Indexer_function
                 sort_FTHelper_EnsEMBL
                 );
 
@@ -157,7 +158,9 @@ sub ensembl_annseq_output {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
-   if( $aseqstream->can('_post_sort') ) {
+   if( $aseqstream->can('_index_function') ) {
+       $aseqstream->_index_function(\&sort_Indexer_function);
+   } elsif( $aseqstream->can('_post_sort') ) {
        $aseqstream->_post_sort(\&sort_FTHelper_EnsEMBL);
    }
 
@@ -242,6 +245,12 @@ BEGIN {
 
     # $last is one more than the largest value in %sort_order
     my $last = (sort {$b <=> $a} values %sort_order)[0] + 1;
+
+    sub sort_Indexer_function {
+        my $a = shift;
+        my ($a_5prime) = $a->loc =~ /(\d+)/;
+        return ($sort_order{$a->key} || $last)*1e9 + $a_5prime;
+    }
 
     sub sort_FTHelper_EnsEMBL {
         my $a = shift;
