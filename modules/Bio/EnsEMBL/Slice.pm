@@ -1228,7 +1228,65 @@ sub get_all_RepeatFeatures {
   return $rpfa->fetch_all_by_Slice($self, $logic_name, $repeat_type);
 }
 
+=head2 get_all_VariationFeatures
 
+    Args       : none
+    Description :returns all variation features on this slice. This function will only work 
+                correctly if the variation database has been attached to the core database.
+    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview
+
+=cut
+
+sub get_all_VariationFeatures{
+  my $self = shift;
+  my $vfa;
+  if(!$self->adaptor()) {
+    warning('Cannot get variation features without attached adaptor');
+    return [];
+  }
+
+  my $db = $self->adaptor()->db();
+  if(defined($db)){
+      $vfa = $reg->get_adaptor( $db->species(), "variation", "VariationFeature" );
+  }
+  if( $vfa ) {
+    return $vfa->fetch_all_by_Slice($self);
+  } else {
+    return [];
+  }
+}
+
+=head2 get_all_genotyped_VariationFeatures
+
+    Args       : none
+    Function   : returns all variation features on this slice that have been genotyped. This function will only work
+                correctly if the variation database has been attached to the core database.
+    ReturnType : listref of Bio::EnsEMBL::Variation::VariationFeature
+    Exceptions : none
+    Caller     : contigview, snpview, ldview
+
+=cut
+
+sub get_all_genotyped_VariationFeatures{
+  my $self = shift;
+  my $vfa;
+  if(!$self->adaptor()) {
+    warning('Cannot get variation features without attached adaptor');
+    return [];
+  }
+
+  my $db = $self->adaptor()->db();
+  if(defined($db)){
+      $vfa = $reg->get_adaptor( $db->species(), "variation", "VariationFeature" );
+  }
+  if( $vfa ) {
+    return $vfa->fetch_all_genotyped_by_Slice($self);
+  } else {
+    return [];
+  }
+}
 
 =head2 get_all_SNPs
 
@@ -1246,12 +1304,16 @@ sub get_all_RepeatFeatures {
 sub get_all_SNPs {
   my $self = shift;
 
+  my $snpa;
   if(!$self->adaptor()) {
     warning('Cannot get SNPs without attached adaptor');
     return [];
   }
 
-  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
+  my $db = $self->adaptor()->db();
+  if(defined($db)){
+      $snpa = $reg->get_adaptor( $db->species(), "snp", "SNP" );
+  }
   if( $snpa ) {
     return $snpa->fetch_all_by_Slice($self);
   } else {
