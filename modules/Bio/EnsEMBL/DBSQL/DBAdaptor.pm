@@ -94,8 +94,8 @@ sub new {
         $port,
         ) = $self->_rearrange([qw(
             DBNAME
-	    DNADB
 	    MAPDBNAME
+	    DNADB
 	    HOST
 	    DRIVER
 	    USER
