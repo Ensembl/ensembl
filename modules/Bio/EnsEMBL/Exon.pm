@@ -1527,7 +1527,7 @@ sub load_genomic_mapper {
   my ( $self, $mapper, $id, $start ) = @_;
 
   $mapper->add_map_coordinates( $id, $start, $start+$self->length()-1,
-				$self->strand(), $self->contig->dbID(),
+				$self->strand(), $self->contig,
 				$self->start(), $self->end() );
 }
 

@@ -968,11 +968,21 @@ sub pep_coords {
 
 sub convert_peptide_coordinate_to_contig {
   my ($self,$start,$end) = @_;
+  my ($p,$f,$l) = caller;
+  $self->warn("$f:$l convert_peptide_coo... is deprecated. Please use pep2genomic");
+
+  $self->pep2genomic( $start, $end );
+}
+
+sub pep2genomic {
+  my ($self,$start,$end) = @_;
 
   my $mapper;
   my @out;
-
-  # try with a mapper
+  #
+  # the mapper is loaded with OBJECTS in place of the IDs !!!!
+  #  the objects are the contigs in the exons
+  #
   if( defined $self->{'_exon_coord_mapper'} ) {
     $mapper = $self->{'_exon_coord_mapper'};
   } else {
@@ -997,8 +1007,6 @@ sub convert_peptide_coordinate_to_contig {
 
   my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
 
-  my $rca = $self->adaptor->db->get_RawContigAdaptor();
-
   for my $coord ( @mapped_coords ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Coordinate" ) ) {
       my $sf = Bio::EnsEMBL::SeqFeature->new
@@ -1006,13 +1014,15 @@ sub convert_peptide_coordinate_to_contig {
 	  -end => $coord->end(),
 	  -strand => $coord->strand()
 	);
-      $sf->contig( $rca->fetch_by_dbID( $coord->id() ));
+      $sf->contig( $coord->id() );
       push( @out, $sf );
     }
   } 
 	  
   return @out;
 }
+  
+
 
 sub find_coord {
   my ($self,$coord,$type) = @_;
