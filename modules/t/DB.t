@@ -104,7 +104,7 @@ $seqout = Bio::SeqIO->new( '-format' => 'embl',-fh => \*STDERR );
 $seqout->write_seq($contig);
 
 eval {
-    $contig = $db->get_Contig('AC008170.00001');
+    $contig = $db->get_Contig('D87012.00001');
 };
 
 if( $@ ) {
@@ -116,7 +116,7 @@ if( $@ ) {
     print "ok 9\n";
 
 
-    $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $contig,
+    $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
 						-focusposition => 10,
 						-ori => 1,
 						-left => 1000000,
@@ -124,13 +124,14 @@ if( $@ ) {
 
     $vc->_dump_map();
 
-    $seq = $vc->seq();
+    $seq = $vc->primary_seq();
     if( $seq->isa('Bio::PrimarySeqI') ) {
 	print "ok 10\n";
 	#print STDERR "Seq is ".$seq->seq."\n";
 	$eout = Bio::SeqIO->new( -format => 'EMBL', -fh => \*STDERR ) ;
-	$eout->write_seq($seq);
+	$eout->write_seq($vc);
     } else {
+	print STDERR "Could not make sequence - got a [$seq]\n";
 	print "not ok 10\n";
     }
 

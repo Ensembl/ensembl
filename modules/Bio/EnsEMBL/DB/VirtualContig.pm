@@ -428,7 +428,7 @@ sub get_all_ExternalFeatures{
 
 =cut
 
-sub get_all_Genes{
+sub get_all_Genes {
     my ($self) = @_;
     my (%gene,%trans,%exon);
 
@@ -446,7 +446,7 @@ sub get_all_Genes{
 	    
 	}
     }
-    
+
     foreach my $gene ( values %gene ) {
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave

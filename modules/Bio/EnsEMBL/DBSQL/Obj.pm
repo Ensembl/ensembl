@@ -103,6 +103,7 @@ sub _initialize {
   $self->{'_contig_seq_cnt'} = 0;
   $self->{'_lock_table_hash'} = {};
   $self->_analysis_cache({});
+  $self->{'_external_ff'} = [];
 
   if( $debug ) {
       $self->_debug($debug);
@@ -321,7 +322,7 @@ sub get_Gene_array_supporting {
 	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
-	print(STDERR "Creating exon - contig id $contigid\n");
+	#print(STDERR "Creating exon - contig id $contigid\n");
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
 	$exon->id       ($exonid);
@@ -332,6 +333,7 @@ sub get_Gene_array_supporting {
 	$exon->strand   ($strand);
 	$exon->phase    ($phase);
 	$exon->version  ($exonversion);
+	$exon->seqname  ($contigid);
 
 	#
 	# Attach the sequence, cached if necessary...
