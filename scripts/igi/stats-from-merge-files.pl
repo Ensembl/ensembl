@@ -447,7 +447,6 @@ sub print_natives {
     }
     my $n; $n++;
     foreach my $nat (sort sort_native @native_coords) { 
-#     foreach my $nat ( @native_coords ) { 
         my ($id, $start, $end) = @{$nat};
         print "        $indent$source $id [ $start\t$end ]\n";
     }
