@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 90;
+	plan tests => 93;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -432,3 +432,64 @@ ok(!defined($feature->seq_region_start));
 ok(!defined($feature->seq_region_end));
 ok(!defined($feature->seq_region_strand));
 ok(!defined($feature->seq_region_name));
+
+
+#
+# test overlaps function
+#
+
+my $chr_slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+						       '20',
+						       30_249_935,
+						       31_000_000);
+
+my $sctg_slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
+							 'NT_028392');
+
+my $ctg_slice = $db->get_SliceAdaptor->fetch_by_region('contig',
+						       'AL359765.6.1.13780',
+						       '30', '3000');
+
+
+my $f1 = new Bio::EnsEMBL::Feature( -start => 1,
+				    -end => 10,
+				    -strand => 1,
+				    -slice => $chr_slice,
+				    -analysis => $analysis
+				  );
+
+my $f2 = new Bio::EnsEMBL::Feature( -start => 10,
+				    -end => 20,
+				    -strand => -1,
+				    -slice => $chr_slice,
+				    -analysis => $analysis
+				  );
+
+#
+# simple same coord system overlap
+#
+
+
+ok( $f1->overlaps( $f2 ));
+
+$f2 = new Bio::EnsEMBL::Feature( -start => 11,
+				 -end => 20,
+				 -strand => -1,
+				 -slice => $chr_slice,
+				 -analysis => $analysis
+			       );
+
+ok( ! $f2->overlaps( $f1 ));
+
+#
+# other coord system overlaps
+#
+
+$f2 = new Bio::EnsEMBL::Feature( -start => 1,
+				 -end => 1000_000,
+				 -strand => -1,
+				 -slice => $sctg_slice,
+				 -analysis => $analysis
+			       );
+
+ok( $f1->overlaps( $f2 ));
