@@ -254,7 +254,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  $out->analysis    ($analysis);
 	  $out->id          ($hid);              
 	   
-	  $out = new Bio::EnsEMBL::SeqFeature;
+#	  $out = new Bio::EnsEMBL::SeqFeature;
 	  $out->seqname   ($self->id);
 	  $out->start     ($start);
 	  $out->end       ($end);
