@@ -25,7 +25,7 @@ if (!$user || !$host || !$dbname) {
 
 }
 
-BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources);
+XrefParser::BaseParser::run($host, $port, $dbname, $user, $pass, \@species, \@sources);
 
 # --------------------------------------------------------------------------------
 
