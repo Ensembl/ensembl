@@ -72,6 +72,14 @@ sub new {
 }
 
 
+#by name actually mean seq_region_name
+sub name {
+  my $self = shift;
+  return $self->seq_region_name(@_);
+}
+
+
+
 =head2 stats
 
   Arg [1]    : 
