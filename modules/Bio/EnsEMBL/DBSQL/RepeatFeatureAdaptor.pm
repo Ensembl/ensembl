@@ -212,6 +212,7 @@ sub fetch_by_assembly_location_constraint{
 
   #fetch the repeats from the database
   my @repeats = $self->_generic_fetch(qq{$sql});
+  my @result;
 
   #
   # Adjust each repeat so start and end are in chromosomal coordinates
@@ -220,6 +221,7 @@ sub fetch_by_assembly_location_constraint{
     my @coord_list = 
       $mapper->map_coordinates_to_assembly($r->contig_id, $r->start, 
 					   $r->end, $r->strand, "rawcontig");
+
     if(scalar(@coord_list) > 1){
       #$self->warn("this feature doesn't cleanly map skipping\n");
       next;
@@ -233,11 +235,13 @@ sub fetch_by_assembly_location_constraint{
        !($coord_list[0]->end <= $chr_end)){
       next;
     }
+
     $r->start($coord_list[0]->start());
     $r->end($coord_list[0]->end());
+    push( @result, $r );
   }
 
-  return @repeats;
+  return @result;
 }
 
 
