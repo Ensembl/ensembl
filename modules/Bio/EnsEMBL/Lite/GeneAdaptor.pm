@@ -224,8 +224,24 @@ sub fetch_by_Slice {
 
 
 
+=head2 fetch_by_stable_id
+
+  Arg [1]    : string $stable_id
+  Arg [2]    : (optional) boolean $chr_coords
+               flag set to 1 if genes should be retrieves in chromosomal coords
+               by default they are retrieved in contig coords
+  Example    : $gene = $gene_adaptor->fetch_by_stable_id('ENSG000001432');
+  Description: Retrieves a gene via its stable id.  By default genes are 
+               retrieved in contig coords, but if the chr_coords flag is set
+               then they may be retrieved in chromosomal corods. 
+  Returntype : Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : geneview, familyview, general
+
+=cut
+
 sub fetch_by_stable_id {
-  my ($self, $stable_id ) = @_;
+  my ($self, $stable_id, $chr_coords) = @_;
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
   my $sth = $self->prepare
@@ -250,9 +266,11 @@ sub fetch_by_stable_id {
 
   my ( $gene ) = @{$self->_objects_from_sth( $sth, $slice )};
 
-  #transform gene to RawContig coords:
-  $gene->transform;
-  
+  unless($chr_coords) {
+    #transform gene to RawContig coords:
+    $gene->transform;
+  }
+
   return $gene;
 }
 
@@ -305,9 +323,10 @@ sub _objects_from_sth {
   my ( $exon_id );
 
   while( my $hr = $sth->fetchrow_hashref() ) {
-    if( ! defined $slice->chr_name() ) {
-      $slice->chr_name( $hr->{'chr_name'} );
-      $slice->chr_start( 1 );
+    unless( $slice->chr_name ) {
+      #retrieve a slice for the entire chromosome
+      my $chr = $hr->{'chr_name'};
+      %$slice = %{$core_db_adaptor->get_SliceAdaptor->fetch_by_chr_name($chr)};
     }
 
     if( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
