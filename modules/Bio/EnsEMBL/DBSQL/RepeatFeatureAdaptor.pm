@@ -144,7 +144,7 @@ sub generic_fetch {
 
 =cut
 
-sub _obj_from_sth {
+sub _objs_from_sth {
   my ($self, $sth) = @_;
 
   my $rca = $self->db()->get_RepeatConsensusAdaptor();
