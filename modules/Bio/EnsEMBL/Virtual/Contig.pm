@@ -97,6 +97,8 @@ use vars qw(@ISA);
 use strict;
 # ContigI uses RootI.
 use Bio::EnsEMBL::DB::ContigI;
+use Bio::EnsEMBL::Virtual::Map;
+
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
@@ -105,7 +107,7 @@ sub new {
     my ($class,@args) = @_;
     
     my $self = {};
-    bless $class,$self;
+    bless $self,$class;
 
     # data structures for caching and coordinating
     # top_SeqFeature call with EMBL dumping (ie, repressing BLAST hits in EMBL)
@@ -145,7 +147,7 @@ sub new {
 	if (! $focuscontig->isa('Bio::EnsEMBL::DBSQL::RawContig') ) {
 	    $self->throw("$focuscontig is not a Bio::EnsEMBL::DBSQL::RawContig object, cannot make Virtual Contig!");
 	}
-	      $self->_vmap->build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
+	      $self->_vmap->build_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
       $self->_vmap->dbobj($focuscontig->dbobj);
       $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
     }

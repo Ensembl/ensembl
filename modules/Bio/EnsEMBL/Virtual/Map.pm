@@ -65,6 +65,9 @@ sub new {
   return $self;
 }
 
+
+
+
 =head2 build_map
 
  Title   : build_map
@@ -104,26 +107,60 @@ sub build_map{
        $current_left_size = $rawcontig->golden_end - $focusposition;
    }
 
+   my $left_overhang_size =0;
 
    # left walk
    while( 1 ) {
-       
+       print STDERR "Walking with $current_left_size to go compared to $left\n";
+
        
        if( $current_left_size >  $left ) {
 	   $self->throw("Bad internal error. Did not terminate left walk on an explicit conition");
        }
 
-       # go right
+       # go left
        my ($nextcontig,$start_in_contig,$contig_ori,$gap_distance) = 
-	   $self->_go_right($current_contig,$current_ori);
+	   $self->_go_left($current_contig,$current_ori);
+
+       
+
+       # if the gap pushes us over the total, we have a left overhang
+       $current_left_size += $gap_distance;
+       if( $current_left_size >= $left ) {
+	   $self->left_overhang(1);
+	   $left_overhang_size = $current_left_size + $gap_distance - $left;
+	   ####
+	   last;
+       }
+       # otherwise we want to include this contig
+       
+       # add gap distance to current_size. Remember, this could be 0
+       $current_left_size += $gap_distance;
+
+       if( $current_left_size + $nextcontig->golden_length < $total ) {
+	   # add golden length distance
+	   $current_left_size += $nextcontig->golden_length;
+	   $current_contig = $nextcontig;
+	   $current_ori    = $contig_ori;
+	   next; # back to while(1)
+       } else {
+	   # this is the leftmost contig
+	   $current_contig = $nextcontig;
+	   $
+	   $self->left_overhang(0);
+	   
+       }
 
    }
 
-   $self->throw("I haven't handled the left end condition yet");
 
    my $total = $left+$right;
-   my $current_size = 0;
-   
+   my $current_size = $left_overhang_size;
+
+   # test to see whether this is only a one contig map
+   if( $current_size 
+
+   # put in this contig as the first contig. 
 
    # main build
 
@@ -257,6 +294,49 @@ sub each_MapContig{
    return values %{$self->{'_contig_map'}};
 }
 
+=head2 right_overhang
+
+ Title   : right_overhang
+ Usage   : $obj->right_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of right_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub right_overhang{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'right_overhang'} = $value;
+    }
+    return $obj->{'right_overhang'};
+
+}
+
+=head2 left_overhang
+
+ Title   : left_overhang
+ Usage   : $obj->left_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of left_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub left_overhang{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'left_overhang'} = $value;
+    }
+    return $obj->{'left_overhang'};
+
+}
+
+
 =head2 _add_MapContig
 
  Title   : _add_MapContig
@@ -294,10 +374,10 @@ sub _go_left{
    if( $ori == 1 ) {
        my $co = $current->get_left_overlap();
        my $start_in_contig;
-       return ($co->sister,$co->sister->golden_start,$co->polarity,$co->distance);
+       return ($co->sister,$co->sister->golden_start,$co->sister_polarity,$co->distance);
    } else {
        my $co = $current->get_right_overlap();
-       my $pol = $co->polarity * -1;
+       my $pol = $co->sister_polarity * -1;
        return ($co->sister,$co->sister->golden_start,$pol,$co->distance);
    }
 
@@ -322,10 +402,10 @@ sub _go_right{
 
    if( $ori == 1 ) {
        my $co = $current->get_right_overlap();
-       return ($co->sister,$co->sister->golden_start,$co->polarity,$co->distance);
+       return ($co->sister,$co->sister->golden_start,$co->sister_polarity,$co->distance);
    } else {
        my $co = $current->get_left_overlap();
-       my $pol = $co->polarity * -1;
+       my $pol = $co->sister_polarity * -1;
        return ($co->sister,$co->sister->golden_start,$pol,$co->distance);
    }
 
