@@ -601,7 +601,7 @@ sub fetch_VirtualContig_of_gene{
    my @start;
    while ( my @row=$sth->fetchrow_array){
       ($start,$end,$chr_name)=@row;
-       print STDERR "Got $start-$end \n";
+       #print STDERR "Got $start-$end \n";
        push @start,$start;
        push @start,$end;
    }   
