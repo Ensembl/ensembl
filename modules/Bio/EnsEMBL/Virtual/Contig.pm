@@ -381,10 +381,10 @@ sub embl_accession {
 =cut
 
 sub get_all_VirtualGenes {
-    my ($self) = @_;
+    my ($self,$supporting) = @_;
     
     my @out;
-    foreach my $gene ( $self->get_all_Genes()) {
+    foreach my $gene ( $self->get_all_Genes($supporting)) {
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
 	push(@out,$vg);
     }
