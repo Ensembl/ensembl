@@ -114,17 +114,17 @@ CREATE TABLE dnac (
 
 CREATE TABLE exon (
   exon_id       int unsigned NOT NULL auto_increment,
-  dnafrag_id     int(10) unsigned NOT NULL,            # foreign key, dnafrag:dnafrag_id
-  dnafrag_start  int(10) unsigned NOT NULL,            # start of exon within dnafrag
-  dnafrag_end    int(10) unsigned NOT NULL,            # end of exon within specified dnafrag
-  dnafrag_strand tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
+  seq_region_id     int(10) unsigned NOT NULL,            # foreign key, dnafrag:seq_region_id
+  seq_region_start  int(10) unsigned NOT NULL,            # start of exon within dnafrag
+  seq_region_end    int(10) unsigned NOT NULL,            # end of exon within specified dnafrag
+  seq_region_strand tinyint(2) NOT NULL,                  # 1 or -1 depending on the strand of the exon
 
   phase         tinyint(2) NOT NULL,
   end_phase     tinyint(2) NOT NULL,
   sticky_rank   tinyint DEFAULT '1' NOT NULL,         # see note above
   
   PRIMARY KEY ( exon_id, sticky_rank),
-  KEY dnafrag_idx (dnafrag_id, dnafrag_start )
+  KEY seq_region_idx (seq_region_id, seq_region_start )
 );
 
 CREATE TABLE exon_stable_id (
@@ -159,10 +159,10 @@ CREATE TABLE exon_transcript (
 
 CREATE TABLE simple_feature (
   simple_feature_id int unsigned not null auto_increment,
-  dnafrag_id int(10) unsigned NOT NULL,
-  dnafrag_start int(10) unsigned NOT NULL,
-  dnafrag_end int(10) unsigned NOT NULL,
-  dnafrag_strand tinyint(1) NOT NULL,
+  seq_region_id int(10) unsigned NOT NULL,
+  seq_region_start int(10) unsigned NOT NULL,
+  seq_region_end int(10) unsigned NOT NULL,
+  seq_region_strand tinyint(1) NOT NULL,
   display_label varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
   analysis_id int(10) unsigned NOT NULL,
 
@@ -171,7 +171,7 @@ CREATE TABLE simple_feature (
   score double,
 
   PRIMARY KEY ( simple_feature_id ),
-  KEY dnafrag_idx( dnafrag_id ),
+  KEY seq_region_idx( seq_region_id ),
   KEY analysis_idx( analysis_id ),
   KEY hit_idx( display_label )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -179,10 +179,10 @@ CREATE TABLE simple_feature (
 
 CREATE TABLE protein_align_feature (
   protein_align_feature_id int unsigned not null auto_increment,
-  dnafrag_id int(10) unsigned NOT NULL,
-  dnafrag_start int(10) unsigned NOT NULL,
-  dnafrag_end int(10) unsigned NOT NULL,
-  dnafrag_strand tinyint(1) DEFAULT '1' NOT NULL,
+  seq_region_id int(10) unsigned NOT NULL,
+  seq_region_start int(10) unsigned NOT NULL,
+  seq_region_end int(10) unsigned NOT NULL,
+  seq_region_strand tinyint(1) DEFAULT '1' NOT NULL,
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL,
   hit_name varchar(40) NOT NULL,
@@ -197,17 +197,17 @@ CREATE TABLE protein_align_feature (
 
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY dfg_idx( dnafrag_id ),
+  KEY dfg_idx( seq_region_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 CREATE TABLE dna_align_feature (
   dna_align_feature_id int unsigned not null auto_increment,
-  dnafrag_id int(10) unsigned NOT NULL,
-  dnafrag_start int(10) unsigned NOT NULL,
-  dnafrag_end int(10) unsigned NOT NULL,
-  dnafrag_strand tinyint(1) NOT NULL,
+  seq_region_id int(10) unsigned NOT NULL,
+  seq_region_start int(10) unsigned NOT NULL,
+  seq_region_end int(10) unsigned NOT NULL,
+  seq_region_strand tinyint(1) NOT NULL,
   hit_start int NOT NULL,
   hit_end int NOT NULL,
   hit_strand tinyint(1) NOT NULL,
@@ -223,7 +223,7 @@ CREATE TABLE dna_align_feature (
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY dfg_idx( dnafrag_id ),
+  KEY dfg_idx( seq_region_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -244,10 +244,10 @@ CREATE TABLE repeat_consensus (
 
 CREATE TABLE repeat_feature (
   repeat_feature_id int unsigned NOT NULL auto_increment,
-  dnafrag_id int(10) unsigned NOT NULL,
-  dnafrag_start int(10) unsigned NOT NULL,
-  dnafrag_end int(10) unsigned NOT NULL,
-  dnafrag_strand tinyint(1) DEFAULT '1' NOT NULL,
+  seq_region_id int(10) unsigned NOT NULL,
+  seq_region_start int(10) unsigned NOT NULL,
+  seq_region_end int(10) unsigned NOT NULL,
+  seq_region_strand tinyint(1) DEFAULT '1' NOT NULL,
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
   repeat_consensus_id int(10) unsigned NOT NULL,
@@ -258,7 +258,7 @@ CREATE TABLE repeat_feature (
   score double,
   
   PRIMARY KEY (	repeat_feature_id ),
-  KEY dnafrag_idx( dnafrag_id ),
+  KEY seq_region_idx( seq_region_id ),
   KEY repeat_idx( repeat_consensus_id ),
   KEY analysis_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -270,10 +270,10 @@ CREATE TABLE gene (
   gene_id             int unsigned NOT NULL auto_increment,
   type                VARCHAR(40) NOT NULL,
   analysis_id         int,
-  dnafrag_id          int(10) unsigned NOT NULL, 
-  dnafrag_start       int(10) unsigned NOT NULL, 
-  dnafrag_end         int(10) unsigned NOT NULL, 
-  dnafrag_strand      tinyint(2) NOT NULL,       
+  seq_region_id       int(10) unsigned NOT NULL, 
+  seq_region_start    int(10) unsigned NOT NULL, 
+  seq_region_end      int(10) unsigned NOT NULL, 
+  seq_region_strand   tinyint(2) NOT NULL,       
   display_xref_id     int unsigned NOT NULL,
 
   PRIMARY KEY (gene_id),
@@ -314,9 +314,9 @@ CREATE TABLE transcript (
   transcript_id       INT UNSIGNED NOT NULL auto_increment,  
   gene_id             INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
   exon_count          int NOT NULL,
-  dnafrag_id          int(10) unsigned NOT NULL, 
-  dnafrag_start       int(10) unsigned NOT NULL, 
-  dnafrag_end         int(10) unsigned NOT NULL, 
+  seq_region_id          int(10) unsigned NOT NULL, 
+  seq_region_start       int(10) unsigned NOT NULL, 
+  seq_region_end         int(10) unsigned NOT NULL, 
   dnafrag_strand      tinyint(2) NOT NULL, 
   display_xref_id int unsigned NOT NULL,
 
@@ -806,9 +806,11 @@ CREATE TABLE assembly_exception (
 
 CREATE TABLE coord_system (
 
-    coord_system_id   INT,
+    coord_system_id   INT NOT NULL auto_increment,
     name              VARCHAR(40),
     version           VARCHAR(40),
-    attrib            SET ('top_level', 'default_version', 'sequence')
+    attrib            SET ('top_level', 'default_version', 'sequence'),
+
+    PRIMARY KEY (coord_system_id)
 
 ) TYPE=MyISAM;
