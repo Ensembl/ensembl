@@ -920,11 +920,15 @@ sub get_Virtual_Contig{
 
     EXTEND:while (){
 	foreach my $vcraw ($vc->rawcontig_ids()) {
-	    if ($last_contig->id eq $vcraw) {
+	    if ($last_contig->id eq $vcraw) {		
+		$vc=$vc->extend(-$last_contig->length,$last_contig->length);
 		last EXTEND;
 	    }
 	}
+
 	$vc=$vc->extend(-5000,5000);
+
+
 	#If virtual contig longer than max. length, exit and return undef
 	if ($vc->length > $max_length) {
 	    print STDERR "Hit max. length!\n";
@@ -939,6 +943,8 @@ sub get_Virtual_Contig{
     my @notin;
 
     foreach my $exon ($transcript->each_Exon) {
+
+	print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
 	my $contig_id=$exon->contig_id();
 	if ($contig_id ne $old_e_cont) {
 	    foreach my $vcraw ($vc->rawcontig_ids) {
