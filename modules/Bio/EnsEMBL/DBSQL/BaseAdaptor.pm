@@ -76,7 +76,7 @@ sub new {
  Title   : prepare
  Usage   : $sth = $adaptor->prepare("select yadda from blabla")
  Function: provides a DBI statement handle from the adaptor. A convience
-           function so you don't have to write $adaptor->db->prepare all the
+           function so you dont have to write $adaptor->db->prepare all the
            time
  Example :
  Returns : 
