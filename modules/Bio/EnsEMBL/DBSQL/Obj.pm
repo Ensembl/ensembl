@@ -225,9 +225,32 @@ sub get_Gene_array_supporting {
     #
     
 				  
-    my $sth = $self->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version,p4.clone 
-                              from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5,geneclone_neighbourhood as p7 
-                              where p6.id in $inlist and p3.gene = p6.id and p4.clone = p7.clone and p7.gene = p6.id and p2.contig = p4.internal_id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+    my $sth = $self->prepare("select p3.gene," .
+			             "p4.id," .
+			             "p3.id," .
+			             "p1.exon," .
+			             "p1.rank," .
+			             "p2.seq_start,p2.seq_end," .
+			             "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified)," .
+			             "p2.strand,p2.phase," .
+            			     "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
+			             "p6.version,p3.version,p2.version,p5.version,p4.clone " .
+			     "from   gene as p6," .
+			             "contig as p4, " .
+			             "transcript as p3, " .
+			             "exon_transcript as p1, " .
+			             "exon as p2," .
+			             "translation as p5," .
+			             "geneclone_neighbourhood as p7  " .
+			     "where  p6.id in $inlist " .
+			     "and    p3.gene = p6.id " .
+			     "and    p4.clone = p7.clone " .
+			     "and    p7.gene = p6.id  " .
+			     "and    p2.contig = p4.internal_id " .
+			     "and    p1.exon = p2.id " .
+			     "and    p3.id = p1.transcript " .
+			     "and    p5.id = p3.translation " .
+			     "order by p3.gene,p3.id,p1.rank");
     
     $sth->execute();
     
@@ -242,7 +265,7 @@ sub get_Gene_array_supporting {
 	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
-	
+
 	if( ! defined $phase ) {
 	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	}
@@ -2278,7 +2301,7 @@ sub write_Contig {
    $dna->id                       || $self->throw("No contig id entered.");
    $clone                         || $self->throw("No clone entered.");
 
-   my $contigid  = $dna   ->id;
+   my $contigid  = $contig->id;
    my $date      = $contig->seq_date;
    my $len       = $dna   ->length;
    my $seqstr    = $dna   ->seq;

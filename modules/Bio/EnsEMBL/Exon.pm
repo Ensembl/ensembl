@@ -106,7 +106,7 @@ sub _initialize {
 
   # Parse the input paramters (start,end,strand)
   if ($#args == 2) {
-    $self->_parse_args(@args);
+      $self->_parse_args(@args);
   }
 
   # set stuff in self from @args
@@ -701,6 +701,7 @@ sub find_supporting_evidence {
 
     foreach my $f (@$features) {
 	if (($f->seqname eq $self->contig_id) && ($f->overlaps($self))) {
+
 	    $self->add_Supporting_Feature($f);
 	}
     }

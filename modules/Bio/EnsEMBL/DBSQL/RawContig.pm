@@ -108,8 +108,6 @@ sub get_all_Genes{
    # prepare the SQL statement
    my %got;
    my $gene;
-   
-   print STDERR "Getting into get_all_Genes";
 
    my $sth = $self->_dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
 
@@ -122,8 +120,6 @@ sub get_all_Genes{
 	   else {
 	       $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
 	   }
-	   print STDERR "Got a $gene in get all Genes\n";
-
 	   push(@out,$gene);
 	   $got{$rowhash->{'gene'}} = 1;
        }
@@ -252,11 +248,16 @@ sub get_all_SimilarityFeatures{
 
    #First of all, get all features that are part of a feature set
 
-   my $sth = $self->_dbobj->prepare("select  p1.id, p1.seq_start, p1.seq_end, " . 
-				    "p1.strand,p1.score,p1.analysis,p1.name,  " .
-				    "p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank " . 
-				    "from feature as p1, fset_feature as p2 where " .
-				    "p1.contig ='$id' and p2.feature = p1.id order by p2.fset");
+   my $sth = $self->_dbobj->prepare("select  p1.id, " .
+				             "p1.seq_start, p1.seq_end, " . 
+ 				             "p1.strand,p1.score,p1.analysis,p1.name,  " .
+				             "p1.hstart,p1.hend,p1.hid,"  .
+				             "p2.fset,p2.rank " . 
+				    "from    feature as p1,  " .
+				    "        fset_feature as p2 " .
+				    "where   p1.contig ='$id' " .
+				    "and     p2.feature = p1.id " .
+				    "order by p2.fset");
    $sth->execute();
 
    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank);
@@ -297,7 +298,7 @@ sub get_all_SimilarityFeatures{
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($id);
+       $feature->seqname   ($self->id);
        $feature->start     ($start);
        $feature->end       ($end);
        $feature->strand    ($strand);
@@ -358,13 +359,13 @@ sub get_all_SimilarityFeatures{
 	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
-	   $out->set_all_fields($start,$end,$strand,$score,$self->id(),'similarity',$id,
+	   $out->set_all_fields($start,$end,$strand,$score,$self->id(),'similarity',$self->id,
 				$hstart,$hend,1,$score,$name,'similarity',$hid);
 
 	   $out->analysis    ($analysis);
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($id);
+	   $out->seqname   ($self->id);
 	   $out->start     ($start);
 	   $out->end       ($end);
 	   $out->strand    ($strand);
@@ -505,7 +506,7 @@ sub get_all_PredictionFeatures {
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
-       $out->seqname   ($id);
+       $out->seqname   ($self->id);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);

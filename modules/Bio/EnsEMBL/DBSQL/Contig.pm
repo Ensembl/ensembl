@@ -156,7 +156,7 @@ sub primary_seq {
 
    # should be a better way of doing this
    while(my $rowhash = $sth->fetchrow_hashref) {
-     my $str = $rowhash->{d.sequence};
+     my $str = $rowhash->{'d.sequence'};
 
      if( ! $str) {
        $self->throw("No DNA sequence in contig $id");
