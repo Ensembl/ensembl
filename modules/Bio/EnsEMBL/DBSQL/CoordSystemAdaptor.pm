@@ -500,7 +500,7 @@ sub add_feature_table {
   #do not use the wrong coord_system_id
   if(!$cs->is_stored($self->db())) {
     $cs = $self->fetch_by_name($cs->name(), $cs->version);
-    throw("CoordSystem not found in database.");
+    throw("CoordSystem not found in database.") if(!$cs);
   }
 
   #store the new tablename -> coord system relationship in the db
