@@ -32,36 +32,22 @@ package main;
              
              #Location of the sptr file, this file will be used as an input to grep the specific sp entries to the organism using grep_sp_entries.pl. This file is supposed to be in SP format
              #'total_sptr'  => '/work1/mongin/mapping/primary/sptr.txl',
-             'total_sptr'  => '/work1/mongin/mouse/data/old/spMouse.sp',
+             'total_sptr'  => '',
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '/work1/mongin/mouse/data/old/tmp.fa',
+	     'sptr_fa'      => '',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
-	     'sptr_swiss'      => '/work1/mongin/mouse/data/old/tmp.swiss',
+	     'sptr_swiss'      => '',
 	     
-             #Location of the Refseq (proteins) file in fasta format
-	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq'    => '',
-	     
-             #Location of the Refseq (proteins) file in Genbank format
-	     #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
-	     'refseq_gnp'    => '',
+             
 	     
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
              #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     'pmatch_input_fa'    => '',
 
-             #ens1 and ens4, location of files used for Hugo mapping (http://www.gene.ucl.ac.uk/public-files/nomen/), th             is files will be used only for human
-	     #'ens1'      => '/work1/mongin/mapping/primary/ens1.txt',
-	     'ens1'      => '',
-
-	     #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
-	     'ens4'      => '',
-
-                          
              #Output file containing the mapping of SP and refseq sequences to external databases
              #'x_map'  => '/work1/mongin/mapping/outputs/xmap_out1.txt',
              'x_map_out'  => '',
@@ -69,6 +55,45 @@ package main;
              #Output file from pmatch.pl and input file for maps2db.pl
              #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
              'pmatch_out'  => '',
+
+             ############################################
+             #Organism specific files for the X_mapping #
+             ############################################
+                  
+                  #######
+                  #Human#
+                  #######
+
+                  #ens1 and ens4, location of files used for Hugo mapping (http://www.gene.ucl.ac.uk/public-files/nomen/),                   th is files will be used only for human
+	          #'ens1'      => '/work1/mongin/mapping/primary/ens1.txt',
+	          'ens1'      => '',
+
+	          #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
+	          'ens4'      => '',
+
+                  #Location of the Refseq (proteins) file in fasta format
+	          #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
+	          'refseq'    => '',
+	     
+                  #Location of the Refseq (proteins) file in Genbank format
+	          #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
+	          'refseq_gnp'    => '',
+
+                  #######
+                  #Mouse#
+                  #######
+
+                  #The files needed for the mouse X_mapping can be obatained there: ftp://ftp.informatics.jax.org/pub/informatics/reports/   
+                  #2 files are needed MRK_SwissProt.rpt and MRK_LocusLink.rpt
+                  
+                   #File containing MGI/SP mapping (MRK_SwissProt.rpt)
+                   #'mgi_sp'  => '',
+                   'mgi_sp'  => '',
+
+                   #File containing MGI/LocusLink mapping (MRK_LocusLink.rpt)
+                   #'mgi_locus'  => '',
+                   'mgi_locus'  => '',
+
 
              ###################
              #Database handling#
