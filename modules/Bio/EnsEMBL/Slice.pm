@@ -64,11 +64,14 @@ use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
 use Bio::EnsEMBL::RawContig; #included for backwards compatibility
 use Bio::PrimarySeqI;# included only for backwards compatibility
 
+
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
+
+use Bio::EnsEMBL::ProjectionSegment;
 
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
@@ -174,7 +177,6 @@ sub new {
                 'strand'            => $strand,
                 'adaptor'           => $adaptor}, $class;
 }
-
 
 
 =head2 adaptor
@@ -430,7 +432,7 @@ sub seq {
 
   if(!$self->{'seq'}){
     my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor;
-    return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1,undef, 1 )};
+    return ${$seqAdaptor->fetch_by_Slice_start_end_strand($self,1,undef,1)};
    }
 
   return $self->{'seq'};
@@ -457,7 +459,7 @@ sub seq {
 
 sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
-  
+
   if ( $end < $start ) {
     throw("End coord is less then start coord");
   }
@@ -521,7 +523,7 @@ sub get_base_count {
 
   while($start <= $len) {
     $end = $start + $RANGE - 1;
-    
+
     $end = $len if($end > $len);
     $seq = $self->subseq($start, $end);
     $a += $seq =~ tr/Aa/Aa/;
@@ -612,12 +614,7 @@ sub project {
   #no mapping is needed if the requested coord system is the one we are in
   #but we do need to check if some of the slice is outside of defined regions
   if($slice_cs->equals($cs)) {
-    my $entire_slice = $slice_adaptor->fetch_by_region($cs->name(),
-                                                   $self->{'seq_region_name'},
-                                                   undef, undef, undef,
-                                                   $cs->version());
-
-    my $entire_len = $entire_slice->length();
+    my $entire_len = $self->seq_region_length();
 
     #if the slice has negative coordinates or coordinates exceeding the 
     #exceeding length of the sequence region we want to shrink the slice to
@@ -644,7 +641,8 @@ sub project {
       $new_slice = $self;
     }
 
-    return [bless [1-$left_contract, $self->length()+$right_contract, $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
+    return [bless [1-$left_contract, $self->length()+$right_contract, 
+                   $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
   }
 
   my @projection;
@@ -652,7 +650,7 @@ sub project {
 
   #decompose this slice into its symlinked components.
   #this allows us to handle haplotypes and PARs
-  my $normal_slice_proj = 
+  my $normal_slice_proj =
     $slice_adaptor->fetch_normalized_slice_projection($self);
   foreach my $segment (@$normal_slice_proj) {
     my $normal_slice = $segment->[2];
@@ -690,7 +688,8 @@ sub project {
 
         my $current_end = $current_start + $length - 1;
 	
-        push @projection, bless([$current_start, $current_end, $slice], "Bio::EnsEMBL::ProjectionSegment");
+        push @projection, bless([$current_start, $current_end, $slice],
+                                "Bio::EnsEMBL::ProjectionSegment");
       }
 
       $current_start += $length;
