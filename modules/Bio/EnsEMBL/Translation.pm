@@ -328,14 +328,14 @@ sub transform {
   my $start_exon = $self->start_Exon();
   my $end_exon = $self->end_Exon();
 
-  if ( exists $$href_exons{$start_exon} ) {
-    $self->start_Exon($$href_exons{$start_exon});
+  if ( exists $href_exons->{$start_exon} ) {
+    $self->start_Exon($href_exons->{$start_exon});
   } else {
     # do nothing, the start exon wasnt mapped
   }
 
-  if ( exists $$href_exons{$end_exon} ) {
-    $self->end_Exon($$href_exons{$end_exon});
+  if ( exists $href_exons->{$end_exon} ) {
+    $self->end_Exon($href_exons->{$end_exon});
   } else { 
     # do nothing, the end exon wasnt mapped
   }
