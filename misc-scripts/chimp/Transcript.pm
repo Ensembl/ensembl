@@ -34,7 +34,7 @@ sub set_iexon_phases {
 
   # If all of the CDS was deleted, then all phases are -1
 
-  if($itranscript->cdna_coding_start == $itranscript->cdna_coding_end + 1) {
+  if ($itranscript->cdna_coding_start == $itranscript->cdna_coding_end + 1) {
     foreach my $ex (@iexons) {
       $ex->start_phase(-1);
       $ex->end_phase(-1);
@@ -51,30 +51,30 @@ sub set_iexon_phases {
     my ($start_phase, $end_phase);
     my $cdna_end = $cdna_start + $iexon->length()-1;
 
-    if(defined($cur_phase)) {
-      if($cdna_start <= $itranscript->cdna_coding_end()) {
-	$start_phase = $cur_phase; #start phase is last exons end phase
+    if (defined($cur_phase)) {
+      if ($cdna_start <= $itranscript->cdna_coding_end()) {
+        $start_phase = $cur_phase; #start phase is last exons end phase
       } else {
-	#the end of the last exon was the end of the CDS
-	$start_phase = -1;
+        #the end of the last exon was the end of the CDS
+        $start_phase = -1;
       }
     } else {
       #sanity check
-      if($cdna_start > $itranscript->cdna_coding_start() &&
-	 $cdna_start < $itranscript->cdna_coding_end()) {
-	throw("Unexpected.  Start of CDS is not in exon?\n" .
-	      "  exon_cdna_start = $cdna_start\n" .
-	      "  cdna_coding_start = ".$itranscript->cdna_coding_start());
+      if ($cdna_start > $itranscript->cdna_coding_start() &&
+          $cdna_start < $itranscript->cdna_coding_end()) {
+        throw("Unexpected.  Start of CDS is not in exon?\n" .
+              "  exon_cdna_start = $cdna_start\n" .
+              "  cdna_coding_start = ".$itranscript->cdna_coding_start());
       }
-      if($cdna_start == $itranscript->cdna_coding_start()) {
-	$start_phase = 0;
+      if ($cdna_start == $itranscript->cdna_coding_start()) {
+        $start_phase = 0;
       } else {
-	$start_phase = -1;
+        $start_phase = -1;
       }
     }
 
-    if($cdna_end < $itranscript->cdna_coding_start() ||
-       $cdna_end > $itranscript->cdna_coding_end()) {
+    if ($cdna_end < $itranscript->cdna_coding_start() ||
+        $cdna_end > $itranscript->cdna_coding_end()) {
       #the end of this exon is outside the CDS
       $end_phase = -1;
     } else {
@@ -82,15 +82,15 @@ sub set_iexon_phases {
       #figure out how much coding sequence in the exon
 	
       my $coding_start;
-      if($itranscript->cdna_coding_start() > $cdna_start) {
-	$coding_start = $itranscript->cdna_coding_start();
+      if ($itranscript->cdna_coding_start() > $cdna_start) {
+        $coding_start = $itranscript->cdna_coding_start();
       } else {
-	$coding_start = $cdna_start;
+        $coding_start = $cdna_start;
       }
       my $coding_len = $cdna_end - $coding_start + 1;
 	
-      if($start_phase > 0) {
-	$coding_len += $start_phase;
+      if ($start_phase > 0) {
+        $coding_len += $start_phase;
       }
 
       $end_phase = $coding_len % 3;
@@ -127,30 +127,29 @@ sub check_iexons {
     # such as the next exon being part of the error (when split due to
     # frameshifting). Do something about this...
     #
-    if($iexon->fail() || $iexon->is_fatal()) {
+    if ($iexon->fail() || $iexon->is_fatal()) {
       debug("  failed/fatal exon, splitting transcript");
 
       # split this transcript in two, and restart the processing
       # at the beginning of the second transcript
       my $first_transcript = split_itrans($itranscript, $iexon);
 
-      if($first_transcript) {
-	$itranscript_array ||= [];
-	push @$itranscript_array, $first_transcript;
+      if ($first_transcript) {
+        $itranscript_array ||= [];
+        push @$itranscript_array, $first_transcript;
       }
       return check_iexons($itranscript, $itranscript_array);
     }
 
     # sanity check:
-    if($iexon->end() < $iexon->start()) {
+    if ($iexon->end() < $iexon->start()) {
       throw("Unexpected: exon start less than end:\n" .
             $iexon->stable_id().": ".$iexon->start().'-'.$iexon->end());
     }
 
-    if(!defined($transcript_seq_region)) {
+    if (!defined($transcript_seq_region)) {
       $transcript_seq_region = $iexon->seq_region();
-    }
-    elsif($transcript_seq_region ne $iexon->seq_region()) {
+    } elsif ($transcript_seq_region ne $iexon->seq_region()) {
 
       debug("  scaffold span, splitting transcript");
 
@@ -159,15 +158,15 @@ sub check_iexons {
 
       my $first_transcript = split_itrans($itranscript, $iexon);
 
-      if($first_transcript) {
-	$itranscript_array ||= [];
-	push @$itranscript_array, $first_transcript;
+      if ($first_transcript) {
+        $itranscript_array ||= [];
+        push @$itranscript_array, $first_transcript;
       }
       return check_iexons($itranscript, $itranscript_array);
     }
 
 
-    if($prev_end > $iexon->start()) {
+    if ($prev_end > $iexon->start()) {
       # something funny has happened, this exon starts before end of previous
       # exon
 
@@ -178,26 +177,25 @@ sub check_iexons {
 
       my $first_transcript = split_itrans($itranscript, $iexon);
 
-      if($first_transcript) {
-	$itranscript_array ||= [];
-	push @$itranscript_array, $first_transcript;
+      if ($first_transcript) {
+        $itranscript_array ||= [];
+        push @$itranscript_array, $first_transcript;
       }
       return check_iexons($itranscript, $itranscript_array);
     }
 
-    if(!defined($transcript_strand)) {
+    if (!defined($transcript_strand)) {
       $transcript_strand = $iexon->strand();
-    }
-    elsif($transcript_strand != $iexon->strand()) {
+    } elsif ($transcript_strand != $iexon->strand()) {
       debug("  strand flip, splitting transcript");
       my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::STRAND_FLIP);
       $itranscript->add_StatMsg($stat_msg);
 
       my $first_transcript = split_itrans($itranscript, $iexon);
 
-      if($first_transcript) {
-	$itranscript_array ||= [];
-	push @$itranscript_array, $first_transcript;
+      if ($first_transcript) {
+        $itranscript_array ||= [];
+        push @$itranscript_array, $first_transcript;
       }
       return check_iexons($itranscript, $itranscript_array);
     }
@@ -210,7 +208,7 @@ sub check_iexons {
   # then add this transcript to the array
   #
   my $total_exons = $itranscript->get_all_Exons;
-  if(@$total_exons > 0) {
+  if (@$total_exons > 0) {
     push @$itranscript_array, $itranscript;
   } else {
     debug("  no exons left in transcript");
@@ -235,6 +233,7 @@ sub split_itrans {
   my @first_exons;
   my @second_exons;
   my $first_trans = InterimTranscript->new();
+  $first_trans->stable_id($itrans->stable_id());
 
   my $cur_exon = shift(@all_exons);
 
@@ -301,19 +300,19 @@ sub split_itrans {
 
     if($cdna_shift) {
       foreach my $ex (@second_exons) {
-	$ex->cdna_start($ex->cdna_start() - $cdna_shift);
-	$ex->cdna_end($ex->cdna_end() - $cdna_shift);
+        $ex->cdna_start($ex->cdna_start() - $cdna_shift);
+        $ex->cdna_end($ex->cdna_end() - $cdna_shift);
       }
       $itrans->move_cdna_coding_start(-$cdna_shift);
       $itrans->move_cdna_coding_end(-$cdna_shift);
 
       if($itrans->cdna_coding_start() < 1) {
-	# transcript was split in middle of cds
-	$itrans->cdna_coding_start(1);
+        # transcript was split in middle of cds
+        $itrans->cdna_coding_start(1);
       }
       if($itrans->cdna_coding_end() < 1) {
-	#there is no coding sequence left in this transcript
-	$itrans->cdna_coding_end(0);
+        #there is no coding sequence left in this transcript
+        $itrans->cdna_coding_end(0);
       }
     }
   }
@@ -339,7 +338,7 @@ sub make_Transcript {
   my $translation;
 
   # the whole translation may have been deleted
-  if($itrans->cdna_coding_start == $itrans->cdna_coding_end + 1) {
+  if ($itrans->cdna_coding_start == $itrans->cdna_coding_end + 1) {
     $translation = undef;
   } else {
     $translation = Bio::EnsEMBL::Translation->new();
@@ -363,21 +362,21 @@ sub make_Transcript {
     # see if this exon is the start or end exon of the translation
     #
 
-    if($translation) {
-      if($iexon->cdna_start() <= $itrans->cdna_coding_start() &&
-	 $iexon->cdna_end()   >= $itrans->cdna_coding_start()) {
-	my $translation_start =
-	  $itrans->cdna_coding_start() - $iexon->cdna_start() + 1;
-	$translation->start_Exon($exon);
-	$translation->start($translation_start);
+    if ($translation) {
+      if ($iexon->cdna_start() <= $itrans->cdna_coding_start() &&
+          $iexon->cdna_end()   >= $itrans->cdna_coding_start()) {
+        my $translation_start =
+          $itrans->cdna_coding_start() - $iexon->cdna_start() + 1;
+        $translation->start_Exon($exon);
+        $translation->start($translation_start);
       }
 
-      if($iexon->cdna_start() <= $itrans->cdna_coding_end() &&
-	 $iexon->cdna_end()   >= $itrans->cdna_coding_end()) {
-	my $translation_end =
-	  $itrans->cdna_coding_end() - $iexon->cdna_start() + 1;
-	$translation->end_Exon($exon);
-	$translation->end($translation_end);
+      if ($iexon->cdna_start() <= $itrans->cdna_coding_end() &&
+          $iexon->cdna_end()   >= $itrans->cdna_coding_end()) {
+        my $translation_end =
+          $itrans->cdna_coding_end() - $iexon->cdna_start() + 1;
+        $translation->end_Exon($exon);
+        $translation->end($translation_end);
       }
     }
   }
@@ -388,9 +387,8 @@ sub make_Transcript {
 
 sub debug {
   my $msg = shift;
-  print STDERR $msg;
+  print STDERR $msg, "\n";
 }
-
 
 
 1;

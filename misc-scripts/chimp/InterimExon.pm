@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 
-use StatMsg;
 
 package InterimExon;
+
+use StatMsg;
+
 
 #
 # errors which are fatal for exons
@@ -34,6 +36,7 @@ sub is_fatal {
   foreach my $msg (@{$self->get_all_StatMsgs}) {
     foreach my $code (@FATAL) {
       if(($msg & $code) == $code) {
+        print "Fatal: ", StatMsg::code2str($code), "\n";
 	return 1;
       }
     }
@@ -51,7 +54,7 @@ sub add_StatMsg {
 
 sub get_all_StatMsgs {
   my $self = shift;
-  return @{$self->{'StatMsgs'}};
+  return $self->{'StatMsgs'};
 }
 
 sub last_StatMsg {
