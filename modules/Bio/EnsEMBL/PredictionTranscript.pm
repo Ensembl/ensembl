@@ -50,11 +50,7 @@ Manipulation:
 
 =head1 CONTACT
 
-contact EnsEMBL dev for information
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+contact EnsEMBL dev <ensembl-dev@ebi.ac.uk> for information
 
 =cut
 
@@ -146,6 +142,11 @@ sub stable_id {
               and so that it can be drawn as a Transcript. Since prediction
               transcripts do not currently have UTRs the coding start should
               return the same value as the start method.
+              By convention, the coding_start is always lower than the value
+              returned by the coding_end method.  The value returned by this
+              function is NOT the biological coding start since on the 
+              reverse strand the biological coding start would be the 
+              higher genomic value. 
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
@@ -175,6 +176,11 @@ sub coding_start {
               and so that it can be drawn as a Transcript. Since prediction
               transcripts do not currently have UTRs the coding end should
               be the same as the end of the transcript.
+              By convention, the coding_start is always lower than the value
+              returned by the coding_end method.  The value returned by this
+              function is NOT the biological coding start since on the 
+              reverse strand the biological coding start would be the 
+              higher genomic value. 
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
