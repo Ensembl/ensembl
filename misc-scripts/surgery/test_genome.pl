@@ -109,6 +109,7 @@ INSERT INTO $destDB.tmp1
 SELECT distinct(c.clone_id)
 FROM   $srcDB.contig c, $srcDB.assembly a, $srcDB.chromosome chr
 WHERE  a.contig_id = c.contig_id
+AND    a.chromosome_id = chr.chromosome_id
 AND    chr.name = '19'
 AND    chr_end > 57000000
 AND    chr_start < 58000000
