@@ -244,12 +244,12 @@ sub contigname {
     Usage   :   $ea->_get_evidence_from_transcript($transcript_obj);
                 $ea->_get_evidence_from_transcript($transcript_obj,
 		                                              $hid);
-    Function:   use SGP adaptor supplied to get supporting
-                evidence for the transcript supplied; features
-		not overlapping any exon are cut; if a list of hit
-		accession numbers are given, features not involving
-		those accession numbers are cut; duplicate features
-		are removed
+    Function:   to get "supporting evidence" (actually similarity
+                features) for the transcript supplied, by taking
+		them off a slice; features not overlapping any exon
+		are cut; if a list of hit accession numbers is
+		given, features not involving those accession
+		numbers are cut; duplicate features are removed
     Returns :   array of featurepairs
 
 =cut
