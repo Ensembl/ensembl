@@ -189,6 +189,8 @@ sub map {
   my $first_cs  = $self->{'first_cs'};
   my $last_cs  = $self->{'last_cs'};
 
+  my $is_insert = ($frm_end + 1 == $frm_start);
+
   my $frm;
   my $registry;
 
@@ -217,8 +219,13 @@ sub map {
   #use bitwise shift for fast and easy integer multiplication and division
   my ($min_start, $min_end);
 
-  $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
-  $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1 ;
+  if($is_insert) {
+    $min_start = (($frm_end >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_start >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1 ;
+  } else {
+    $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1 ;
+  }
 
   #get a list of ranges in the requested region that have not been registered,
   #and register them at the same
@@ -226,23 +233,34 @@ sub map {
   #print STDERR "frm_start=$frm_start frm_end=$frm_end" .
   #              "min_start=$min_start min_end=$min_end\n";
 
-  my $ranges =
-    $registry->check_and_register($frm_seq_region, $frm_start, $frm_end,
-				  $min_start, $min_end);
+  my $ranges;
+
+  if($is_insert) {
+    $ranges = $registry->check_and_register($frm_seq_region, $frm_end,
+                                            $frm_start, $min_start, $min_end);
+  } else {
+    $ranges = $registry->check_and_register($frm_seq_region, $frm_start,
+                                            $frm_end, $min_start, $min_end);
+  }
 
   if(defined($ranges)) {
     if( $self->size() > $MAX_PAIR_COUNT ) {
       $self->flush();
-      $ranges =
-	$registry->check_and_register($frm_seq_region, $frm_start, $frm_end,
-				      $min_start, $min_end);
+
+      if($is_insert) {
+        $ranges = $registry->check_and_register
+          ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
+      } else {
+        $ranges = $registry->check_and_register
+          ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
+      }
     }
     $self->adaptor->register_chained($self,$frm,$frm_seq_region,$ranges);
   }
 
   if($fastmap) {
     return $mapper->fastmap($frm_seq_region, $frm_start, $frm_end,
-			    $frm_strand, $frm);
+                            $frm_strand, $frm);
   }
 
   return $mapper->map_coordinates($frm_seq_region, $frm_start, $frm_end,
@@ -282,22 +300,35 @@ sub list_seq_regions {
   throw('Incorrect number of arguments.') if(@_ != 5);
   my($self, $frm_seq_region, $frm_start, $frm_end, $frm_cs) = @_;
 
+  my $is_insert = ($frm_start == $frm_end + 1);
+
   #the minimum area we want to register if registration is necessary is
   #about 1MB. Break requested ranges into chunks of 1MB and then register
   #this larger region if we have a registry miss.
 
   #use bitwise shift for fast and easy integer multiplication and division
-  my $min_start;
-  my $min_end;
+  my ($min_start, $min_end);
 
-  $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
-  $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
+  if($is_insert) {
+    $min_start = (($frm_end >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_start >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
+  } else {
+    $min_start = (($frm_start >> $CHUNKFACTOR) << $CHUNKFACTOR);
+    $min_end   = ((($frm_end >> $CHUNKFACTOR) + 1) << $CHUNKFACTOR) - 1;
+  }
 
   if($frm_cs->equals($self->{'first_cs'})) {
     my $registry = $self->{'first_registry'};
-    my $ranges =
-      $registry->check_and_register($frm_seq_region, $frm_start, $frm_end,
-				   $min_start, $min_end);
+
+    my $ranges;
+
+    if($is_insert) {
+      $ranges = $registry->check_and_register
+        ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
+    } else {
+      $ranges = $registry->check_and_register
+        ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
+    }
 
     if(defined($ranges)) {
       $self->adaptor->register_chained($self,$FIRST,$frm_seq_region,$ranges);
@@ -309,9 +340,15 @@ sub list_seq_regions {
 
   } elsif($frm_cs->equals($self->{'last_cs'})) {
     my $registry = $self->{'last_registry'};
-    my $ranges =
-      $registry->check_and_register($frm_seq_region, $frm_start, $frm_end,
-				    $min_start, $min_end);
+
+    my $ranges;
+    if($is_insert) {
+      $ranges = $registry->check_and_register
+        ($frm_seq_region, $frm_end, $frm_start, $min_start, $min_end);
+    } else {
+      $ranges = $registry->check_and_register
+        ($frm_seq_region, $frm_start, $frm_end, $min_start, $min_end);
+    }
 
     if(defined($ranges)) {
       $self->adaptor->register_chained($self,$LAST,$frm_seq_region,$ranges);

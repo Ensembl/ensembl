@@ -447,6 +447,9 @@ sub invert {
 sub seq {
   my $self = shift;
 
+  # special case for in-between (insert) coordinates
+  return '' if($self->start() == $self->end() + 1);
+
   return $self->{'seq'} if($self->{'seq'});
 
   if($self->adaptor()) {
@@ -480,9 +483,12 @@ sub seq {
 sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
 
-  if ( $end < $start ) {
-    throw("End coord is less then start coord");
+  if ( $end+1 < $start ) {
+    throw("End coord + 1 is less then start coord");
   }
+
+  # handle 'between' case for insertions
+  return '' if( $start == $end + 1);
 
   $strand = 1 unless(defined $strand);
 

@@ -303,6 +303,15 @@ sub map_coordinates{
 =head2 map_insert
 
   Arg [1]    : string $id
+  Arg [2]    : int $start - start coord. Since this is an insert should always
+               be one greater than end.
+  Arg [3]    : int $end - end coord. Since this is an insert should always
+               be one less than start.
+  Arg [4]    : int $strand (0, 1, -1)
+  Arg [5]    : string $type - the coordinate system name the coords are from.
+  Arg [6]    : boolean $fastmap - if specified, this is being called from
+               the fastmap call. The mapping done is not any faster for
+               inserts, but the return value is different.
   Example    : 
   Description: This is in internal function which handles the special mapping
                case for inserts (start = end +1).  This function will be called
@@ -315,7 +324,7 @@ sub map_coordinates{
 =cut
 
 sub map_insert {
-  my ($self, $id, $start, $end, $strand, $type) = @_;
+  my ($self, $id, $start, $end, $strand, $type, $fastmap) = @_;
 
   # swap start/end and map the resultant 2bp coordinate
   ($start, $end) =($end,$start);
@@ -362,6 +371,13 @@ sub map_insert {
     }
   }
 
+  if($fastmap) {
+    return undef if(@coords != 1);
+    my $c = $coords[0];
+    return ($c->{'id'}, $c->{'start'}, $c->{'end'},
+            $c->{'strand'}, $c->{'coord_system'});
+  }
+
   return @coords;
 }
 
@@ -395,6 +411,10 @@ sub fastmap {
    my ($self, $id, $start, $end, $strand, $type) = @_;
 
    my ($from, $to, $cs);
+
+   if($end+1 == $start) {
+     return $self->map_insert($id, $start, $end, $strand, $type, 1);
+   }
 
    if( ! $self->{'_is_sorted'} ) { $self->_sort() }
 

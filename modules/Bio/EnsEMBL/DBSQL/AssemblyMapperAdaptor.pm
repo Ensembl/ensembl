@@ -265,6 +265,12 @@ sub register_assembled {
   $start_chunk = $asm_start >> $CHUNKFACTOR;
   $end_chunk   = $asm_end   >> $CHUNKFACTOR;
 
+  # inserts have start = end + 1, on boundary condition start_chunk
+  # could be less than end chunk
+  if($asm_start == $asm_end + 1) {
+    ($start_chunk, $end_chunk) = ($end_chunk, $start_chunk);
+  }
+
   #find regions of continuous unregistered chunks
   my $i;
   my ($begin_chunk_region,$end_chunk_region);
