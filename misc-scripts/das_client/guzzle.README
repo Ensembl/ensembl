@@ -82,22 +82,32 @@
 
         Storable                    required for alignment
                                     mapping (optional)
-        Bio::EnsEMBL::Mapper        required for alignment
-                                    mapping (optional)
 
     Most of these Perl modules  have additional dependencies in themselves
     (e.g. the Bio::Graphics module depends on the Perl GD module, which in
     turn depends on the libgd C  library etc.), but they are all available
-    through CPAN, with the exception of Bio::EnsEMBL::Mapper which is part
-    of the Ensembl code base [5].
+    through CPAN.
 
 
     INSTALLATION
 
     Make  sure that  all dependencies  are met  (see above)  and copy  the
-    guzzle.pl script  into the  cgi-bin directory of  a web  server.  Make
-    sure the script has the right permissions (executable).  Configure the
-    client before running for the first time (see below).
+    guzzle.pl  script as  well as  the  entire Guzzle  directory into  the
+    cgi-bin directory of a web server.  Make sure the script has the right
+    permissions (executable).  Configure the client before running for the
+    first time (see below).
+
+    A Guzzle installation should look like this:
+
+        cgi-bin/
+            guzzle.pl
+            Guzzle/
+                Mapper.pm
+                Mapper/
+                    Coordinate.pm
+                    Gap.pm
+                    Pair.pm
+                    Unit.pm
 
 
     CONFIGURATION
@@ -150,8 +160,7 @@
         * align
             Like the  simpe mapping, but  the mapping is  dependent on
             alignment information.   This depends on  the availability
-            of the  Bio::EnsEMBL::Mapper module  which is not  part of
-            Bioperl,  and  on Storable  (which  is  standard in  later
+            of  the  Storable  module  (which  is  standard  in  later
             versions of Perl).
 
           Format of map data file:
@@ -160,7 +169,7 @@
 
           The  "queryID" is  what the  user requests  and need  not be
           unique.  The cigar line is  on the Ensembl Cigar format, see
-          [6] (at  the end  of the  document).  The  file needs  to be
+          [5] (at  the end  of the  document).  The  file needs  to be
           lexicographically sorted.
 
 
@@ -187,7 +196,6 @@
     [2] http://www.biojava.org/dazzle/
     [3] http://www.biodas.org/servers/
     [4] http://www.ensembl.org/
-    [5] http://cvsweb.sanger.ac.uk/cgi-bin/cvsweb.cgi/ensembl/modules/Bio/EnsEMBL/Mapper/
-    [6] http://www.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html
+    [5] http://www.ensembl.org/Docs/wiki/html/EnsemblDocs/CigarFormat.html
 
 // vim: et
