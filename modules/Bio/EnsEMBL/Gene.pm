@@ -380,12 +380,14 @@ sub dbID {
 
   Arg [1]    : string $external_name
   Example    : none
-  Description: get/set for attribute external_name. It could be calculated
-               from dblinks in a species dependent way. Well introduce 
-               that later.
+  Description: get/set for attribute external_name. It initially calculates
+               the longest transcript for the gene in question and then 
+               delegates the call to the external_name method on Transcript.
+               Species dependant searching is handled by this method on
+               Transcript.
   Returntype : string
   Exceptions : none
-  Caller     : Lite::GeneAdaptor knows how to set it correct
+  Caller     : general
 
 =cut
 
@@ -395,10 +397,18 @@ sub external_name {
   if( defined $arg ) {
     $self->{'_external_name'} = $arg;
   }
+  else { 
+    # find the transcript with the longest length which is 
+    # attached to this gene.  Use the longest length as the
+    # determining factor when having to select between transcripts
+    # and their external references
+    my $transcript = $self->_get_longest_Transcript;
 
-  return $self->{'_external_name'};
+    $self->{'_external_name'} = $transcript->external_name;
+  }
+
+  return $self->{'_external_name'};  
 }
-
 
 
 =head2 external_db	
@@ -406,13 +416,16 @@ sub external_name {
   Arg [1]    : string $external_db
   Example    : none
   Description: get/set for attribute external_db. The db is the one that 
-               belongs to the external_name
+               belongs to the external_name.  It initially calculates
+               the longest transcript for the gene in question and then 
+               delegates the call to the external_db method on Transcript.
+               Species dependant searching is handled by this method on
+               Transcript.
   Returntype : string
   Exceptions : none
   Caller     : general
 
 =cut
-
 
 sub external_db {
   my ($self, $arg ) = @_;
@@ -420,11 +433,56 @@ sub external_db {
   if( defined $arg ) {
     $self->{'_external_db'} = $arg;
   }
+  else {
+    # find the transcript with the longest length which is 
+    # attached to this gene.  Use the longest length as the
+    # determining factor when having to select between transcripts
+    # and their external references
+    my $transcript = $self->_get_longest_Transcript;
+
+    $self->{'_external_db'} = $transcript->external_db;
+  }
 
   return $self->{'_external_db'};
 }
 
 
+=head2 _get_longest_Transcript	
+
+  Args       : none
+  Example    : none
+  Description: An INTERNAL method which determines the longest transcript
+               for the given gene.get/set for attribute external_db. The db is the one that 
+               belongs to the external_name.  It initially calculates
+               the longest transcript for the gene in question and then 
+               delegates the call to the external_db method on Transcript.
+               Species dependant searching is handled by this method on
+               Transcript.
+  Returntype : a single Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : external_name and external_db methods on Gene.pm
+
+=cut
+
+sub _get_longest_Transcript {
+  my $self = shift;
+
+  my $transcripts = $self->get_all_Transcripts;
+
+  my $longest_index = 0;
+  my $longest_length = 0;
+  my $tran_count = 0;
+
+  foreach my $trans ( @{$transcripts} ) {
+    if ( $trans->length > $longest_length ) {
+      $longest_length = $trans->length;
+      $longest_index = $tran_count;
+    }
+    $tran_count++;
+  }
+  
+  return $transcripts->[$longest_index];
+}
 
 
 =head2 description
@@ -883,7 +941,7 @@ sub temporary_id {
   Description: You can set the species for this gene if you want to use species 
                specific behaviour. Otherwise species is retrieved from attached 
                database.
-  Returntype : Bio::EnsEMBL::Species
+  Returntype : Bio::Species
   Exceptions : none
   Caller     : external_name, external_db, general for setting
 

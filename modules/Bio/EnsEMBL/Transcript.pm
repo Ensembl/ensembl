@@ -167,6 +167,9 @@ sub external_db {
   if( defined $arg ) {
     $self->{'_external_db'} = $arg;
   }
+  else { 
+    $self->{'_external_db'} = $self->_get_external_info("db");
+  }
 
   return $self->{'_external_db'};
 }
@@ -184,13 +187,105 @@ sub external_db {
 =cut
 
 sub external_name {
-  my ($self, $arg ) = @_;
+  my ($self, $arg) = @_;
 
   if( defined $arg ) {
     $self->{'_external_name'} = $arg;
   }
+  else {
+    $self->{'_external_name'} = $self->_get_external_info("name");
+  }
 
   return $self->{'_external_name'};
+}
+
+
+=head2 _get_external_info
+
+ Title   : _get_external_info
+ Usage   : $ext_name = $obj->_get_external_info();
+ Function: external_name if available
+ Example : 
+ Returns : the external name of this transcript
+ Args    : string. Switch on whether to return a name or dbname.
+
+=cut
+
+sub _get_external_info {
+  my ($self, $required) = @_;
+
+  # find out from which species this translation comes from
+  my $species = $self->species->species;
+
+  # go and grab the list of DBLinks
+  my $dblinks = $self->get_all_DBLinks;
+
+  # set the priority of the order in which the external dbs are searched
+  # based on the species
+  # the actual order of dbs was determined by the deprecated priority column
+  # in the external_db table
+
+  my @priority_order = [];
+
+  # the kind of case statment switching is performed on the first records
+  # from the meta table of the relevant species.
+
+  # human
+  if ( $species eq 'sapiens' ) {
+    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink };
+  }
+  # anopheles
+  elsif ( $species eq 'gambiae' ) {
+    @priority_order = qw{ ANOSUB SWISSPROT SPTREMBL };
+  }
+  # zebra fish
+  elsif ( $species eq 'rerio' ) {
+    @priority_order = qw{ SWISSPROT SPTREMBL };
+  }
+  # fugu
+  elsif ( $species eq 'rubripes' ) {
+    @priority_order = qw{ SWISSPROT SPTREMBL RefSeq LocusLink HUGO };
+  }
+  # mouse
+  elsif ( $species eq 'musculus' ) {
+    @priority_order = qw{ MarkerSymbol SWISSPROT RefSeq LocusLink };
+  }
+  # default list if species is not set
+  else {
+    $self->warn("Transcript::external_name - No species set. Using default DB order.");
+    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink };
+  }
+
+  # find a match (first one) for the db with the highest available priority
+  my $name = undef;
+  my $db = undef;
+
+  # we would hope that each transcript has only a single DBLink per db but
+  # implement as a loop just in case, taking the first relevant record found
+  foreach my $curr_db ( @priority_order ) { 
+    foreach my $dbl ( @{$dblinks} ) {
+      if ( $curr_db eq $dbl->dbname ) {
+	$name = $dbl->primary_id;
+	$db = $dbl->dbname;
+	last;
+      }
+    }
+    if ( defined $name ) {
+      last;
+    }
+  }
+
+  if ( $required eq 'name' ) {
+    return $name;
+  }
+  elsif ( $required eq 'db' ) {
+    return $db;
+  }
+  else {
+    $self->warn("Transcript::_get_external_info - no xref data could be retrieved.");
+    return undef;
+  }
+    
 }
 
 
@@ -1467,6 +1562,36 @@ sub species {
 
 
 
+=head2 species
+
+  Arg [1]    : optional Bio::Species $species
+  Example    : none
+  Description: You can set the species for this gene if you want to use species 
+               specific behaviour. Otherwise species is retrieved from attached 
+               database.
+  Returntype : Bio::Species
+  Exceptions : none
+  Caller     : external_name, external_db, general for setting
+
+=cut
+
+
+sub species {
+  my ( $self, $species ) = @_;
+
+  if( defined $species ) {
+    $self->{species} = $species;
+  } else {
+    if( ! exists $self->{species} ) {
+      if( defined $self->adaptor() ) {
+	$self->{species} = $self->adaptor()->db->get_MetaContainer()
+	  ->get_Species();
+      }
+    }
+  }
+  
+  return $self->{species};
+}
 
 
 ##########################################################
