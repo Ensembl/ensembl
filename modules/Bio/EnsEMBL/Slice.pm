@@ -73,6 +73,7 @@ use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 use Bio::EnsEMBL::ProjectionSegment;
 
+use Data::Dumper;
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
@@ -1149,14 +1150,20 @@ sub get_all_SNPs {
 =cut
 
 sub get_all_Genes{
-   my ($self, $logic_name) = @_;
+   my ($self, $logic_name, $dbtype) = @_;
+   my $db;
+   if($dbtype) {
+     $db = $self->adaptor->db->get_db_adaptor($dbtype);
+     if(!$db) {
+       warning("Don't have db $dbtype returning empty list\n");
+       return [];
+     }
+   } else {
+     $db = $self->adaptor->db;
+   }
 
-   #caching is performed on a per slice basis in the GeneAdaptor
-   return $self->adaptor->db->get_GeneAdaptor->fetch_all_by_Slice($self,
-								  $logic_name);
+   return $db->get_GeneAdaptor()->fetch_all_by_Slice( $self, $logic_name );
 }
-
-
 
 =head2 get_all_Genes_by_type
 
