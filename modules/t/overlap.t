@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..12\n"; 
+BEGIN { $| = 1; print "1..13\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -144,7 +144,20 @@ if( $#sf == -1 ) {
 }
 
 @sf = $vc->get_all_PredictionFeatures();
-print "ok 12\n";
+if( $#sf == -1 ) {
+     print "not ok 12\n";
+} else {
+  print "ok 12\n";
+}
+
+
+@sf = $contig->get_all_PredictionFeatures();
+if( $#sf == -1 ) {
+     print "not ok 13\n";
+} else {
+  print "ok 13\n";
+}
+
 
 
 END {

@@ -20,7 +20,7 @@ INSERT INTO dna VALUES ('AAAAA','2000-04-27 08:31:59',5);
 INSERT INTO feature VALUES (1,1,2,3,10,1,1,'silly',100,120,'P30002');
 
 # a one exon gene prediction
-INSERT INTO feature VALUES (2,1,2,3,10,1,2,'exon',0,0,'genscan');
+INSERT INTO feature VALUES (2,1,2,3,10,1,2,'genscan',0,0,'genscan');
 INSERT INTO fset VALUES (1,100);
 INSERT INTO fset_feature VALUES (2,1,1);
 
