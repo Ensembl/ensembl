@@ -389,6 +389,7 @@ sub _new_Exon_from_hashRef {
   $exon->end( $hashRef->{'contig_end'} );
   $exon->strand( $hashRef->{'contig_strand'} );
   $exon->phase( $hashRef->{start_phase} );
+  $exon->end_phase( ($exon->end - $exon->start + 1 + $exon->phase) % 3 );
   
   $exon->contig( $contig );
   $exon->attach_seq( $contig );
