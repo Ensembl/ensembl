@@ -1,0 +1,2212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE>Ensembl </TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.0.1  (Linux)">
+	<META NAME="AUTHOR" CONTENT="Michele Clamp">
+	<META NAME="CREATED" CONTENT="19951121;19410000">
+	<META NAME="CHANGED" CONTENT="20021028;13411200">
+	<STYLE>
+	<!--
+		@page { size: 20.99cm 29.71cm; margin-left: 0.63cm; margin-right: 0.63cm; margin-top: 2.54cm; margin-bottom: 2.54cm }
+		H2 { margin-bottom: 0.11cm; color: #000000; widows: 0; orphans: 0 }
+		H2.western { font-family: "Helvetica", sans-serif; font-size: 14pt; so-language: en-GB; font-style: italic }
+		H2.cjk { font-family: "Times", serif; font-size: 14pt; font-style: italic }
+		H2.ctl { font-family: "Arial Unicode MS"; font-size: 12pt; font-weight: medium }
+		H3 { margin-bottom: 0.11cm; color: #000000; widows: 0; orphans: 0 }
+		H3.western { font-family: "Helvetica", sans-serif; font-size: 13pt; so-language: en-GB }
+		H3.cjk { font-family: "Times", serif; font-size: 13pt }
+		H3.ctl { font-family: "Arial Unicode MS"; font-size: 12pt; font-weight: medium }
+		H4 { margin-top: 0cm; margin-bottom: 0cm; color: #000000; widows: 0; orphans: 0 }
+		H4.western { font-family: "Arial", sans-serif; font-size: 16pt; so-language: en-GB; font-style: italic }
+		H4.cjk { font-family: "Times", serif; font-size: 16pt; font-style: italic }
+		H4.ctl { font-family: "Arial Unicode MS"; font-size: 12pt; font-weight: medium }
+		A:link { color: #0000ff }
+		A:visited { color: #800080 }
+		EM.ctl { font-style: normal }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" TEXT="#000000" LINK="#0000ff" VLINK="#800080">
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT SIZE=4><B>EnsEMBL
+Tutorial</B></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT SIZE=3><FONT FACE="Helvetica, sans-serif">July
+2001 Michele Clamp (</FONT></FONT><FONT COLOR="#0000ff"><U><A HREF="mailto:michele@sanger.ac.uk"><FONT SIZE=3><FONT FACE="Helvetica, sans-serif">michele@sanger.ac.uk</FONT></FONT></A></U></FONT><FONT SIZE=3><FONT FACE="Helvetica, sans-serif">)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Revisions
+:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>edited
+by Ewan Birney, Oct 2001</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>updated
+Jan 2002 MC (NCBI_26).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>updated
+Mar 2002 MC (NCBI_28).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>edited/updated
+Jul 2002 by Dan Andrews</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>major
+revision for new code Oct 2002 by Dan Andrews</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0.64cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>edited/updated
+Oct 2002 by Graham McVicker</FONT></FONT></P>
+<OL>
+	<OL>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Remote
+		Access to EnsEMBL.  Set-up.</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>EnsEMBL
+provides an internet accessible host (kaka.sanger.ac.uk) with the
+latest databases. This means you can do a lot of work from an
+internet connected host by only installing &quot;client&quot;
+software. In general, we've noticed that the best learning route for
+developers starting to use EnsEMBL is as follows:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*
+ Play around with the data on kaka.sanger.ac.uk with just a mysql
+client.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*
+ Start using the object layer API (perl based) against
+kaka.sanger.ac.uk (you will need to download EnsEMBL and bioperl
+software)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*
+ Install the database locally. You may as well install the web site
+locally while you are about it as it is pretty easy to get up and
+running</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Of
+course, you might want to jump straight to installing the EnsEMBL web
+site or the API. Take your pick.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Currently,
+a rather hard thing to do is to use the EnsEMBL software system to
+<I>generate</I> features <I>de novo</I> (ie. run the gene building
+process) from raw sequence.  This is called the &quot;pipeline&quot;.
+<SPAN STYLE="background: transparent">To illustrate this, there are
+presently numerous remote EnsEMBL web sites but only a couple of
+remote pipelines</SPAN>. We expect that documentation and
+understanding of the pipeline  will improve as more and more people
+attempt to run it remotely.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">For
+more EnsEMBL documentation have a look at the EnsEMBL web page
+(</FONT></FONT><FONT COLOR="#0000ff"><U><A HREF="http://www.ensembl.org/"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">www.ensembl.org</FONT></FONT></A></U></FONT><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">)
+and follow the &quot;Docs&quot; link. In there there are a number of
+useful &quot;big&quot; documents, including the one you are presently
+reading and web-site installation instructions. </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">For
+more detailed documents click on the &quot;Wiki&quot; link.   Some of
+the documents you can see via this link are up to date, some (most)
+are not.  Use the search button through the Wiki pages to find what
+you are looking for.</SPAN> Also, browse the archives of the
+ensembl-dev mailing list for discussions which may have already
+answered your questions.  Finally, feel free to actually post a
+question on the ensembl-dev mailing list.  We respond quickly and are
+generally nice about it, even if you just haven't bothered to read
+the documentation (where it exists).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=2>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>MySQL-only
+		access</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>You
+probably have mysql clients installed if you are running a standard
+linux distribution.  Try:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>mysql
+-u anonymous -h kaka.sanger.ac.uk</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">If
+mysql is not installed, go to </FONT></FONT><FONT COLOR="#0000ff"><U><A HREF="http://www.mysql.com/"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">www.mysql.com</FONT></FONT></A></U></FONT><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">
+to download the client.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Inside
+the mysql prompt you generally want to start with the database
+&quot;homo_sapiens_core_9_30&quot; (at time of writing this was the
+most recent build) and the database &quot;homo_sapiens_mart_9_30&quot;.
+ There are also databases for other species - you should be able to
+use these in the same way as described here for human.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Try
+the <FONT FACE="Courier, monospace">&quot;show databases&quot;</FONT>
+sql command to see all the databases that are available, followed by
+a use command similar to <FONT FACE="Courier, monospace">&quot;use&nbsp;homo_sapiens_core_9_30&quot;</FONT>
+to choose the current/most recent database.  Other databases are
+named like <FONT FACE="Courier, monospace">&quot;homo_sapiens_lite_9_30&quot;</FONT>
+- the naming scheme being species tag, database type and then release
+number.  Have a look around to see what you can use.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Starting
+with the &quot;core&quot; database (homo_sapiens_core_9_30 or the
+most recent update of this database), try some of these nice queries
+to get a taste of what is stored in the databases:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Choose
+the current human core database:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">&quot;USE
+homo_sapiens_core_9_30;&quot;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Retrieve
+the first two DDBJ/EMBL/GenBank entries stored in the database:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">&quot;SELECT
+clone_id FROM clone LIMIT 2;&quot;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Retrieve
+the first two confirmed genes in the database:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>&quot;SELECT
+* FROM gene LIMIT 2;&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Retrieve
+the DDBJ/EMBL/GenBank entries from the first 200,000 base-pairs of
+chr1. The assembly information is stored in the assembly table, hence
+we need to perform a join across the </FONT><FONT FACE="Courier, monospace">clone</FONT><FONT FACE="Helvetica, sans-serif">,
+</FONT><FONT FACE="Courier, monospace">contig</FONT><FONT FACE="Helvetica, sans-serif">,
+</FONT><FONT FACE="Courier, monospace">chromosome</FONT><FONT FACE="Helvetica, sans-serif">
+and </FONT><FONT FACE="Courier, monospace">assembly</FONT><FONT FACE="Helvetica, sans-serif">
+tables</FONT></FONT>:</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">
+&quot;</FONT><FONT FACE="Courier, monospace">SELECT
+DISTINCT(clone.name) </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+FROM   assembly, contig, clone, chromosome </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+WHERE  chromosome.name = '1'  </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    chromosome.chromosome_id = assembly.chromosome_id </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    assembly.chr_end &lt; 200000 </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    assembly.contig_id = contig.contig_id </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    clone.clone_id = contig.clone_id;&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Each
+table has a unique, consistently-named identifier which can be used
+as foreign keys in other tables.  The unique identifier column is
+always named  </FONT><FONT FACE="Courier, monospace"><B><I>tablename</I></B>_id
+</FONT><FONT FACE="Helvetica, sans-serif">and contains integer
+values.  For example, the unique identifier of the </FONT><FONT FACE="Courier, monospace">chromosome</FONT><FONT FACE="Helvetica, sans-serif">
+table is the contained in the </FONT><FONT FACE="Courier, monospace">chromosome_id</FONT><FONT FACE="Helvetica, sans-serif">
+column and the row with </FONT><FONT FACE="Courier, monospace">chromosome_id
+= 23</FONT><FONT FACE="Helvetica, sans-serif"> corresponds to the
+chromosome named 'X'.   </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Retrieve
+the exons which lie within the first 200,000 base-pairs of chr1:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>&quot;SELECT
+exon.exon_id </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+FROM   exon, assembly </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+WHERE  chromosome.name = '1' </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    chromosome.chromosome_id = assembly.chromosome_id </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    assembly.chr_end &lt; 200000 </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+AND    assembly.contig_id = exon.contig_id;&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>(Note:
+ Existing EnsEMBL users may notice that the exon.id column has been
+replaced by exon.exon_id which now contains an integer value.  To get
+the ENSE number you will need to join to exon_stable.  Be aware that
+the newest release of the EnsEMBL database represents quite a big
+shift in the schema compared to previous releases.)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>At
+this point you can see that constructing queries against the EnsEMBL
+core database in chromosomal coordinates will always mean joining to
+the assembly table. This is a bit painful. Thankfully we have
+developed a query-optimised database that is derived from this
+database (a datamart in trendy computer speak), called EnsEMBL-mart.
+This is changing rapidly, but is well worth playing around with:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Courier, monospace">&quot;</FONT><FONT FACE="Courier, monospace">US<SPAN STYLE="background: transparent">E
+ensembl_mart_8_2;</SPAN></FONT><FONT FACE="Helvetica, sans-serif">&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>To
+ genes from a particular region:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>&quot;SELECT
+gene_stable_id FROM homo_sapiens_core_gene WHERE chr_name = '1' AND
+gene_chrom_end &lt; 200000;&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Or
+from a particular band:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Courier, monospace">&quot;SELECT
+gene_stable_id FROM homo_sapiens_core_gene WHERE band LIKE 'q25.%'
+AND chr_name = '1';</FONT></FONT>&quot;</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>(notice
+the use of LIKE to truncate to the major band)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>EnsEMBL-mart
+will expand over time to allow progressively richer queries. To
+investigate more use the commands:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>&quot;SHOW
+tables&quot;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>and
+</FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>&quot;DESCRIBE
+<B><I>tablename</I></B></FONT>&quot;</FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>So,
+now you can play with the data, but where are things like the
+translations or cDNAs?  Additionally, how can I find all the BLAST
+hits which overlap exons that live in my genomic region of interest?
+To do this you will need to write code often.  Do yourself a favour
+and take advantage of our API which we use every day to wrangle this
+kind of data.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=3>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Introduction
+		to the Perl object API</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>These
+notes are from an introductory half-day course on the EnsEMBL code
+base.  They will take you through the process of connecting to an
+EnsEMBL database and accessing data contained therein.   They require
+you to have the relevant EnsEMBL and bioperl modules installed. 
+These are :</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Courier, monospace">bioperl-0.7
+</FONT><FONT FACE="Helvetica, sans-serif">  (we know this is not the
+latest version - for now, EnsEMBL is tied to this version 0.7, so
+please use it)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>ensembl</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>ensembl-external</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>ensembl-lite</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Instructions
+on how to install these perl modules are contained on the EnsEMBL
+website </FONT></FONT><FONT COLOR="#0000ff"><U><A HREF="http://www.ensembl.org/"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">www.ensembl.org</FONT></FONT></A></U></FONT><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">.
+Basically, you need to do the following steps (in both cases below we
+are using cvs to get the code, which is much better than ftp as we
+are getting the latest bug fixes. Notice the - r flag to the cvs
+commands. These indicate the branch of each repository to get out. 
+(Branches are stable versions of the code).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>
+    Bioperl (see cvs.bioperl.org for more details)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-right: 1.27cm; margin-top: 0.18cm; margin-bottom: 0.18cm">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT FACE="Courier, monospace">cvs
+-d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl login</FONT></FONT></FONT><FONT SIZE=2><FONT FACE="Courier, monospace"><BR></FONT></FONT><EM CLASS="western"><FONT SIZE=2><FONT FACE="Courier, monospace">when
+prompted, the password is 'cvs'</FONT></FONT></EM></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-right: 1.27cm; margin-top: 0.18cm; margin-bottom: 0.18cm">
+<FONT FACE="Courier New, monospace"><FONT SIZE=2><FONT FACE="Courier, monospace">cvs
+-d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl checkout -r
+branch-07 bioperl-live</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>
+    EnsEMBL </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>cvs
+-d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster login</FONT></FONT></P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>when
+prompted, the password is CVSUSER</FONT></FONT></P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>cvs
+-d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster checkout
+ensembl</FONT></FONT></P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>cvs
+-d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster checkout
+ensembl-external</FONT></FONT></P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>cvs
+-d :pserver:cvsuser@cvs.sanger.ac.uk:/cvsroot/CVSmaster checkout
+ensembl-lite</FONT></FONT></P>
+<P STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>If
+you don't have, or don't want to install, the EnsEMBL database
+locally you can point your scripts at a publically available one at
+the Sanger Centre.  Use the following fields in your scripts (where
+X_X is the latest version of the database):</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>host		kaka.sanger.ac.uk</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>dbname			homo_sapiens_core_<SPAN STYLE="background: transparent">X_X</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>user			anonymous</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><B>Companion
+script and exercises</B></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">There
+is a script called <B>tutorial.pl</B> which contains all the example
+code in this document and should run successfully if you have the
+right database and version of the code installed.  In addition there
+are <B>worked solutions</B> to the exercises included later in this
+tutorial.  When you check-out a copy of EnsEMBL from the cvs, both
+the companion script and the worked solutions will be in the
+ensembl/docs/ directory.</FONT></FONT></FONT></P>
+<OL>
+	<OL START=4>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>What
+		does the core EnsEMBL database contain?</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Clones
+(with embl accessions) - both finished and unfinished.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Each
+contiguous piece of sequence is called a contig.  These are the basic
+lengths of DNA that we analyse and annotate.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Each
+clone will contain one or more contigs.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Finished
+clones  = one contig.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Unfinished
+clones = any number of contigs.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Each
+contig (whether finished or unfinished) has certain features
+associated with it that represent the result any one of the various
+analysis programs that have been run on it (e.g. RepeatMasker, BLAST,
+genscan).  These are the basic computes used to build the genes.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*The
+raw analysis results are used to build genes which are also stored in
+the database.  Each gene contains one or more transcripts and each
+transcript will contain a translation.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Each
+gene has various information attached to it describing whether it is
+a known gene or corresponds to a SwissProt or  trEMBL protein.  Some
+genes are novel genes which have been built by inference from
+similarities to other sequences.  These novel genes won't have a
+corresponding SwissProt or trEMBL protein.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*Each
+translation has had a variety of protein analyses conducted on it and
+you can access information about the results of  these.  This
+includes information derived from pfam, prosite and prints.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>*There
+are other features accessible through non-core EnsEMBL external
+databases.   Such databases may contain information about SNPs, mouse
+trace hits or embl annotations.  You can create your own external
+databases to be incorporated into EnsEMBL, but this is a subject for
+a more advanced document.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=5>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Setup
+		</FONT>
+		</H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Before
+starting with the EnsEMBL modules you will need to set up your
+environment so Perl knows where to find them.   As EnsEMBL is built
+on top of bioperl, this includes telling it where bioperl-0.7 lives
+on your system.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+environment variable to do this is PERL5LIB.  If you are using csh 
+or tcsh you need to type in the following (changing
+/nfs/croc/michele/branch to your directory containing the perl
+modules you downloaded).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>setenv
+ENSHOME /nfs/croc/michele/branch</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>setenv
+PERL5LIB
+$ENSHOME/ensembl/modules:$ENSHOME/bioperl-0.7:$ENSHOME/ensembl-external/modules:$ENSHOME/ensembl-lite/modules</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>You
+are now ready to write your first script.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=6>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Connection</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>All
+data used and created by EnsEMBL is stored in a mySQL relational
+database.  If you want to access this database the first thing you
+have to do is to connect to it.  This is done behind the scenes by
+EnsEMBL using a Perl module called DBI.  You will need to know three
+things before you start :</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  host 	the hostname where the EnsEMBL database lives</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  dbname	the name of the EnsEMBL database</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  user	the username to access the database</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>First,
+we need to declare to Perl the modules we want to use so it can go
+and check the syntax of them.  This is done by a use statement.  This
+line has to be inserted into all your EnsEMBL scripts:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>use
+Bio::EnsEMBL::DBSQL::DBAdaptor;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+we set the all important variables telling Perl where and what your
+database is:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$host   = 'kaka.sanger.ac.uk';</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$user   = 'anonymous';</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$dbname = 'current';</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Now
+we can make a database connection:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host   =&gt; $host,</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                                           -user   =&gt; $user,</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                                           -dbname =&gt; $dbname);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">We've
+made a connection to an EnsEMBL database and passed parameters in
+using the </FONT><FONT FACE="Courier, monospace">-attribute =&gt;
+'somevalue'</FONT><FONT FACE="Helvetica, sans-serif"> syntax present
+in many of the ensembl object constructors.  Formatted correctly, it
+lets you see exactly what arguments and values you are passing.</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+$db variable now conains a reference to the newly created DBAdaptor
+object which you can start using to extract data. If, heaven forbid,
+the connection fails an error message will be returned.  </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=2>
+	<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Business
+	Objects and Object Adaptors</FONT></H2>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm; font-style: normal; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm; font-style: normal; font-weight: medium">
+<FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The EnsEMBL API
+allows manipulation of the database data through various business
+objects.  For example, there is a Gene object, a Clone object and an
+Exon object within the EnsEMBL API.  These objects are retrieved and
+stored in the database through the use of object adaptors.  The
+object adaptors have internal knowledge of the underlying database
+schema and use this knowledge to fetch, store or remove objects
+(data) from the database.  The database adaptor is a special adaptor
+which has the responsibility of maintaining the database connection
+and creating the object adaptors.  </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm; font-style: normal; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm"><FONT SIZE=2><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-style: normal"><FONT FACE="Helvetica, sans-serif">To
+obtain object adaptors from the database adaptor there is a suite of
+methods that have the following naming convention: </FONT><FONT FACE="Courier, monospace">get_</FONT></SPAN></SPAN><FONT FACE="Courier, monospace"><B><I>ObjectAdaptor</I></B></FONT><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-style: normal"><FONT FACE="Helvetica, sans-serif">.
+ To obtain a SliceAdaptor and a CloneAdaptor to use for the retrieval
+of Slice objects or Clone objects we could do the following:</FONT></SPAN></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm; font-style: normal; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm; font-style: normal; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>my $gene_adaptor =
+$db-&gt;get_GeneAdaptor();</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.76cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-style: normal"><FONT FACE="Courier, monospace">my
+$clone_adaptor = $db-&gt;get_CloneAdaptor();</FONT></SPAN></SPAN> </FONT></FONT>
+</P>
+<OL>
+	<OL>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Lists
+		and List References</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>A significant
+difference between old and new versions of the EnsEMBL API is the
+widespread use of list references (listrefs).  Some methods can
+potentially return very long lists and it is far more efficient, both
+time-wise and memory-wise, for these methods to return listrefs
+instead.  Although not all methods return large numbers of objects,
+for consistancy most methods in the API now return list references
+rather than lists.  A naming standard has also been developed which
+should enable API users to surmise which methods return a single
+value or a list reference.  Business object methods with the prefix
+<B><I><FONT FACE="Courier, monospace">get_all_</FONT></I></B> return
+a list reference as do adaptor methods with the prefix<FONT FACE="Courier, monospace">
+<B><I>fetch_all_</I></B></FONT> .  It is a simple matter to
+dereference listrefs to use them as a normal list.  The following
+examples illustrate the use of list references in the EnsEMBL API:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#get a reference to a
+list of clones</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>my $clones =
+$clone_adaptor-&gt;fetch_all;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#get the first clone
+from the list:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>my $first_clone =
+$clones-&gt;[0];</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#another way of getting
+the same thing:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="font-style: normal">($first_clone)
+= @$</SPAN>clones;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#iterate
+through all of the contigs on a clone</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $contig (@{$first_clone-&gt;get_all_Contigs}) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ print $contig-&gt;name . &ldquo;\n&rdquo;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#another way of doing
+the same thing:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>my $contigs =
+$first_clone-&gt;get_all_Contigs;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>foreach my $contig
+(@$contigs) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>  print $contig-&gt;name
+. &ldquo;\n&rdquo;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#retrieve a single Clone
+object (not a listref)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>$clone =
+$clone_adaptor-&gt;fetch_by_dbID(1);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>#no dereferencing
+needed:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-style: normal">
+<FONT FACE="Courier, monospace"><FONT SIZE=2>print $clone-&gt;id .
+&ldquo;\n&rdquo;;  </FONT></FONT>
+</P>
+<OL>
+	<OL START=2>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Let's
+		get some data</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Once
+you have a database adaptor, you are ready to retrieve data. 
+Conceptually, there are two main ways to go about retrieving and
+manipulating genome data.  Historically, data has been handled on a
+clone- by- clone basis.  The EnsEMBL API is fully capable of working
+with the clone- based data that comes out of a sequencing project,
+and fundamentally EnsEMBL works with data at a contig level. 
+However, due to the nearing completion of the first big genome
+sequencing projects it is now becoming possible to practically work
+with genomes as long stretches of gap-less sequence.  EnsEMBL also
+allows you to work with sequence information in this way.  Previous
+releases of the EnsEMBL API called these un-interrupted stretches of
+sequence virtual contigs.  From release 9 onwards these have been
+called Slices -  literally, slices of genomic sequence.  All you need
+to do to retrieve such a sequence is stipulate the chromsome number
+and the start and end coordinates -  we'll get to doing this in just
+a bit.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Most
+users of the EnsEMBL API will probably end up using both means of
+retrieving and manipulating genome sequences.  Hence, we'll introduce
+both of these here in the next two sections.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><B>Clones
+and RawContigs</B></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Clones
+and RawContigs represent two basic data-types in EnsEMBL.  Clones
+have contigs, and contigs are the elements of contiguous sequence
+information that are built up to create the full clone sequence. 
+Once a clone sequence is complete, the clone will be represented by
+one contig sequence.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>If
+you know the accession number of a clone that you are interested in,
+you can retrieve that clone directly from the CloneAdaptor in the
+following way:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$clone = $clone_adaptor-&gt;fetch_by_accession('AC005663');</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>This
+will return a Clone object.  You can check whether you have the right
+clone by calling the Clone object's id method:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Clone is &quot; . $clone-&gt;id . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>To
+get the most use out of this object we now need to ask it about its
+contigs (remember - clones have one or more contigs).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$contigs = $clone-&gt;get_all_Contigs;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>We
+now have a reference to a list of RawContig objects.  RawContig
+objects are actually bioperl sequence objects and this means they can
+be used to retrieve all sorts of useful information, </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Say
+we want to get the sequence of each contig:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $contig (@$contigs) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ my $length = $contig-&gt;length;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ my $id     = $contig-&gt;id;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ # The sequence of a contig is obtained easily:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ print $contig-&gt;seq . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+# We can get a substring of this sequence too:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+print $contig-&gt;subseq(1,100) . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ # If we want to write the sequence to a file we use bioperl again</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ # (Note: if we are creating a new object we need to include</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ # a use Bio::SeqIO line at the start of our file</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ use Bio::SeqIO;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $seqio = new Bio::SeqIO(-fh     =&gt; \*STDOUT,</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+                           -format  =&gt; 'fasta');</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ $seqio-&gt;write_seq($contig);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm; font-weight: medium">
+<FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Many
+features can be obtained from a RawContig.  One set of features that
+will prove extremely useful if you're going to do any analysis on
+them are the repeat features.  These can be used to mask the sequence
+ready for, say, a BLAST search.  For example:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$maskedseq = $contig-&gt;get_repeatmasked_seq;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Hence,
+EnsEMBL provides you with a handy call to obtain repeat-masked
+sequence without you having to rerun RepeatMasker.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Of
+course, given a whole genome sequence to play with, you are hardly
+going to be content with looking at just one clone.  Hence, to do
+genome sized analyses you will probably want to retrieve all the
+clones from the database.  Before going further it is best to point
+out that unless you have an over-riding reason to work on a
+clone-by-clone basis, this kind of analysis might be more easily done
+using Slices, which are the subject of the next section.  However, if
+you need clones, you can retrieve them in the following way.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$clones = $clone_adaptor-&gt;fetch_all;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Once
+this list of clones has been obtained you can set about getting
+useful things.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $clone (@$clones) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  my $contigs = $clone-&gt;get_all_Contigs;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  foreach my $contig (@$contigs) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+     my $sequence = $contig-&gt;seq();</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+     print $sequence . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  }</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}
+<FONT FACE="Helvetica, sans-serif"> </FONT></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Notice
+that the above script allows you to print the entire genome sequence,
+which is potentially quite slow.  Unless you have a reason to
+laboriously work through clone and contig sequences, you will be much
+better off using Slices - which we will come to just around the next
+corner.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=3>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Exercises
+		1</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>1.
+Connect to the database.  How many clones does it contain?</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">
+(Hint: Make a </FONT>$db<FONT FACE="Helvetica, sans-serif"> object
+and get a clone adaptor from it.  Use the </FONT>fetch_all()<FONT FACE="Helvetica, sans-serif">
+method of the adaptor and then take the size of returned array).</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>2.
+What is the average number of raw contigs per clone for the first 100
+clones in the database?</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">
+  (Hint: </FONT>get_all_Contigs <FONT FACE="Helvetica, sans-serif">on
+clone);</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>3.
+Print out in fasta format the repeat-masked sequence for the last 10
+clones of the genome.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>
+</FONT></FONT><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><B>Slices</B></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>If
+you have had experience with using the EnsEMBL API before, you will
+have come across the concept of virtual contigs.  A virtual contig
+was an EnsEMBL object that represented a section of a genome.  These
+virtual contigs could be created to represent any single part of the
+genome, and were created simply by making a call to the $db object
+specifying start and end coordinates  for a particular chromosome. 
+The nitty gritty of taking the actual raw contig sequences and
+stitching these together into a single sequence was done in the
+background by the EnsEMBL code.  The current incarntion of a virtual
+contig is the Slice - virtual contigs are no longer part of the
+EnsEMBL code.  Just like virtual contigs a Slice is an EnsEMBL object
+that represents any particular region of a genome.  A Slice and its
+associated methods provide a simple way to retrieve and manipulate
+sequence from a part of the genome that you are interested in.  To
+get a Slice of genome you just need to do the following.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>First,
+get a Slice adaptor from the database adaptor:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$slice_adaptor = $db-&gt;get_SliceAdaptor;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>With
+a Slice adaptor, retrieving genome sequence is as easy as specifying
+which region of which chromosome we are after:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$slice = $slice_adaptor-&gt;fetch_by_chr_start_end('1',1,100000);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+order that the arguments are passed is chromosome number, start
+coordinate and end coordinate.  Notice that this is reflected in the
+naming of the slice adaptor method.  Generally this is a good guide
+to guessing what arguments you need to provide a method call - 
+alternatively you can have a look at the documentation associated
+with a particular module.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Another
+useful way to obtain a Slice is to do it with respect to a gene it
+contains:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$slice = $slice_adaptor-&gt;fetch_by_gene_stable_id('ENSG00000099889',
+5000);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>This
+will return a Slice that contains the sequence of the gene specified
+by its stable EnsEMBL id.  It also returns 5000bp of flanking
+sequence at both the 5' and 3' ends, which is obviously very useful
+if you are interested in the environs that a gene inhabits.  You
+needn't have the flanking sequence it you don't want it -  in this
+case set the number of flanking bases to 0 or omit the second
+argument entirely.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>We
+can also retrieve Slices of actual physical contigs - and we can pad
+these at the ends with sequence from adjoining contigs:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$slice = $slice_adaptor-&gt;fetch_by_contig_name('AC005663.2.1.103122',
+10000);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>This
+returns a Slice that contains the contig that was specified by name. 
+It also includes 10000bp of flanking sequence at each end of this
+actual contig.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>We
+can also do the same with clones:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$slice = $slice_adaptor-&gt;fetch_by_clone_accession('AC005663',1000);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>So,
+once we have our Slice we can then use it to retrieve useful
+information about the region of sequence that the Slice represents.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Just
+like RawContigs mentioned previously, a Slice is a BioPerl sequence
+object and we we can get at the actual sequence information like
+thus:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$sequence = $slice-&gt;seq;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>We
+can query the Slice for information about itself:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$chr_name   = $slice-&gt;chr_name;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$chr_start  = $slice-&gt;chr_start;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$chr_end    = $slice-&gt;chr_end;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Chromosome $chr_name Start/End $chr_start $chr_end \n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+makeup of our Slice is determined by the assembly (or the golden
+tiling path) of our genome.  If we wanted to access this assembly
+information with regard to a particular Slice we can do this by:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$tiling_path = $slice-&gt;get_tiling_path();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $tile (@$tiling_path) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $tile_slice = $tile-&gt;assembled_Seq()-&gt;name;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $tile_ctg   = $tile-&gt;component_Seq()-&gt;name;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $slice_start = $tile-&gt;assembled_start();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $slice_end   = $tile-&gt;assembled_end();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $ctg_start   = $tile-&gt;component_start();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $ctg_end     = $tile-&gt;component_end();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $ctg_ori     = $tile-&gt;component_ori();</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ print &quot;[$tile_slice] $slice_start - $slice_end =&gt; &ldquo; .</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">	
+ &ldquo;[$tile_ctg] $ctg_start - $ctg_end ($ctg_ori)\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Each
+'tile' that we are returned is a Bio::EnsEMBL::Tile object
+representing the portion of a slice that maps directly onto a portion
+of the assmebly (or golden path).</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">
+</SPAN></FONT></FONT><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">A
+Slice is a good starting place for retrieving information about a
+region of a chromosome, including the genes it contains.  The next
+few sections will go into more detail about how to do this.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><B>Slices
+vs RawContigs</B></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Before
+going on to the next topics an important point needs to be made. 
+Despite the fact that Slices and RawContigs are different objects and
+don't represent exactly the same thing (one is an experimentally
+generated stretch of sequence, the other is a computationally pooled
+sequence) they can effectively be used as such.  In the rest of this
+document a distinction won't be drawn between the two - unless there
+is an actual difference between how the two objects behave (which by
+design should be few).  We will be using Slices by default though, as
+we would encourage you to do too.</FONT></FONT></P>
+<OL>
+	<OL START=4>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Exercises
+		2</FONT></H2>
+		<LI><H2 LANG="en-GB" CLASS="western"><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-style: normal"><FONT SIZE=2>1.
+		Fetch 1Mb of repeat-masked sequence from the contig of your choice 
+		(Hint: Create a  Slice using
+		<FONT FACE="Courier, monospace">fetch_Slice_by_chr_start_end($chr,$start,$end)</FONT>
+		and have a look back at how this was done with RawContigs in the
+		previous section).</FONT></SPAN></SPAN></H2>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal; font-weight: medium">
+		<FONT SIZE=2>2.  Fetch a Slice of the gene ENSG00000100259</FONT></H2>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal; font-weight: medium">
+		<FONT SIZE=2>3.  Print the last 1000 nucleotides of the Silce
+		obtained in the previous question.</FONT></H2>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal; font-weight: medium">
+		<FONT SIZE=2><SPAN STYLE="background: transparent">3.  For the
+		Slice you retrieved in the first question, print the ids of the
+		contigs that form the tiling path.  Also print the start and end
+		positions of each RawContig as it is used in the tiling path.</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=9>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Sequence
+		Features</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>So
+now we're pretty happy about retrieving DNA sequence from EnsEMBL. 
+The more interesting things associated with Slices and RawContigs are
+the features that can be retrieved from them.  These include the
+repeat features mentioned in previously and also similarity features
+(like BLAST results), prediction transcripts (such as genscan
+results) and marker features.  Not to mention genes, of course.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Sets
+of features can be retrieved from a region through a request to a
+Slice or RawContig (you're probably getting used to this by now). 
+These are returned to us as feature *objects*.  For instance:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$repeats = $slice-&gt;get_all_RepeatFeatures;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">We
+now have a reference to a list containing feature objects.  An easy
+way to print these out is to call the method </FONT>gffstring<FONT FACE="Helvetica, sans-serif">
+which returns information about the feature as a string:</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $repeat (@$repeats) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ print $repeat-&gt;gffstring . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>You
+should get a series of output lines like</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	2851	2959	+	645	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	2979	3260	-	2066	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	4008	4056	-	234	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	4080	4345	-	1768	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	4364	4450	-	549	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	4650	4736	-	252	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	5835	5972	-	413	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>22:16890204-16987127	RepeatMasker	repeat	12035	12084	-	193	-1	</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+columns that compose a gffstring have the following meaning:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>1
+	sequence name</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>2
+	feature type</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>3
+	main feature type</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>4
+	sequence start</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>5
+	sequence end</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>6
+	strand</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>7
+	score</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>8
+	phase</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Sometimes
+there are an additional three columns if the feature type posesses
+them:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>9
+	hit sequence name</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>10
+	hit start</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>11
+	hit end</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Instead
+of using </FONT>gffstring <FONT FACE="Helvetica, sans-serif"> we can
+ask the feature objects directly about their properties</FONT></FONT>:</FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $repeat (@$repeats) { </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;Name   : &quot; . $repeat-&gt;seqname . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;Start  : &quot; . $repeat-&gt;start   . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;End    : &quot; . $repeat-&gt;end     . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;Strand : &quot; . $repeat-&gt;strand . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;Score  : &quot; . $repeat-&gt;score  . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Some
+features (like CpG islands for instance) are simple features and only
+have the methods printed above.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Other
+features as well as having coordinates on a contig sequence also have
+coordinates on a hit sequence:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $repeat (@$repeats) </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>	print
+&quot;Hit start &quot; . $repeat-&gt;hstart . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>	print
+&quot;Hit end   &quot; . $repeat-&gt;hend . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Repeat
+features are an example of a feature which also stores the
+coordinates of a hit sequence.  However, the classic example is a
+feature representing a BLAST result where the query sequence is
+similar to another sequence (protein, EST, cDNA) and so we need to
+store which sequence it has hit and whereabout in that sequence it
+has hit.  These types of features have the generic name of similarity
+features.  In reality these features are members of a superclass
+called AlignFeatures (because they are features with two aligned
+sequences), and depending on whether it is DNA or protein sequence
+that we are dealing with, the objects are either a
+Bio::EnsEMBL::DnaDnaAlignFeature or a
+Bio::EnsEMBL::ProteinDnaAlignFeature</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">To
+get similarity features from a RawContig or a slice we use:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$features = $contig-&gt;get_all_SimilarityFeatures;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">To
+obtain only DnaAlignFeatures we can use the following method:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$features
+= $slice-&gt;get_all_DnaAlignFeatures('Vertrna', 0.00001);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Note
+that this method takes two optional arguments which can impose an
+additional constraint on the features we want to retreive.  The first
+argument is a 'logic name'  -   the name for the analysis which was
+conducted to obtain the feature.    For similarity features the logic
+name relates to the type of blast analysis  and there are currently
+four logic_names which correspond to dna_align_features in the<SPAN STYLE="background: transparent">
+current code (note that the logic name is CASE SENSITIVE):</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Vertrna		WU
+tblastn hits against the EMBL-vertrna database (all CDS's from the
+EMBL database).</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Swall		WU
+blastp hits against the SWALL database (protein features only).</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Unigene	WU
+tblastn hits against the UniGene database.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">dbEST		WU
+tblastn hits against the dbEST database.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Hence,
+in our call to retrieve DNA features, we have requested those that
+are hits against the EMBL vertrna database.  We have also stipulated
+a cut- off value.  This allows us to set the level of strigency of
+BLAST hits and is exactly the same as the BLAST E(0) value. </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Once
+we have these DNA features we can iterate through them and take a
+look at what they contain:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $feat (@$features) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ print &quot;Feature scores are &quot; . $feat-&gt;score      . &quot;\t&quot;
+. </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                               $feat-&gt;percent_id . &quot;\t&quot;
+.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                               $feat-&gt;p_value    . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>The
+same procedure applies to retrieving protein features, just instead
+use the method call:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>$slice-&gt;get_all_ProteinAlignFeatures('Swall',
+0.0001).</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Choose
+a logic name appropriate to proteins - so stick with 'Swall' (or
+leave the logic name out entirely).  Once these protein features have
+been returned we can look at them in the same way as we just did for
+DNA features.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>As
+an alternative approach we can go directly to the object adaptor for
+a feature type and request features from the database.  The following
+example illustrates some of the different approaches that can be used
+to obtain features:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$simple_feature_adaptor = $db-&gt;get_SimpleFeatureAdaptor;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
+all of the Eponine hits on a Contig</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+@eponine_hits =
+@{$simple_feature_adaptor-&gt;fetch_all_by_Contig($contig,
+'Eponine')};</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
+all CpG islands on a Slice with score greater than 500</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$cpg_islands  =
+$simple_feature_adaptor-&gt;fetch_all_by_Slice_and_score($slice, 500,
+'CpG);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
+the simple feature with the database identifier 1</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$simple_feature = $simple_feature_adaptor-&gt;fetch_by_dbID(1);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
+all of the simple features on a slice </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+@simple_features = @{$slice-&gt;get_all_SimpleFeatures};</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>#get
+all of the tRNAscan hits on a contig</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$trnas = $contig-&gt;get_all_SimpleFeatures('tRNAscan'); </FONT></FONT>
+</P>
+<OL>
+	<OL START=10>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Analysis
+		Objects</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">All
+features retrieved from the database have an Analysis object attached
+to them that contains information regarding the analysis/algorithm
+that created the feature.  This is a good means by which to determine
+where the feature has come from or what is actually is.  The
+</FONT>gff_source <FONT FACE="Helvetica, sans-serif">method of the
+Analysis object tells us what sort of feature we have, such as
+'genscan','repeat' or 'cpg'.  Other information can be derived from
+the Analysis object, such as the database that was used in a BLAST
+job, the parameters that were provided to the executable, and even
+the path to the executable that was used:</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$analysis = $feature-&gt;analysis;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Analysis:    &quot; . $analysis-&gt;gff_source . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Database :   &quot; . $analysis-&gt;db  . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Program :    &quot; . $analysis-&gt;program . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>print
+&quot;Parameters : &quot; . $analysis-&gt;parameters . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>For
+instance a feature that comes out of a BLAST run will have an
+analysis object that tells us it was run with 'blastx' and was run
+against database 'sptr';</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=11>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal; page-break-before: auto">
+		<FONT SIZE=2><SPAN STYLE="background: transparent">Overlaps</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">A
+useful feature of BioPerl is that it makes it easy to find whether
+one feature overlaps another.  This comes in jolly handy if you want
+to find all genscan predictions that don't overlap exons, or all SNPs
+that do overlap exons, or mouse trace hits that don't overlap exons,
+etc.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">If
+we have two features - say an exon, $exon, and a snp, $snp:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+  if ($exon-&gt;overlaps($snp)) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+     print &quot;Whey! coding snp &quot;    . $snp-&gt;gffstring .
+&quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+  } else {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+     print &quot;Boo! non coding snp &quot; . $snp-&gt;gffstring .
+&quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+  }</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">The
+</FONT>overlaps <FONT FACE="Helvetica, sans-serif">method returns
+true (1) if the two features do overlap, or false (0) if they don't.</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+</SPAN></FONT></FONT><BR>
+</P>
+<OL>
+	<OL>
+		<OL>
+			<LI><H3 LANG="en-GB" CLASS="western"><FONT SIZE=2>Exercises 3</FONT></H3>
+		</OL>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Print
+	out all the repeat features for the first 100kb of sequence of human
+	chromsome 1.  (Hint: Use the gffstring method for easy printing)</FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=2>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>What
+	proportion of DNA is repeat in the above sequence and is this what
+	you expect?  (Hint: tot up the length for each repeat feature and
+	compare to the total sequence length)</FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=3>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">For
+	clone AC00<SPAN STYLE="background: transparent">5663 retrieve all
+	the DNA features matched to EMBL vertrna.  How many different
+	sequences did this clone hit and were these hits significant? 
+	(Hint: Use the hseqname method and the p_value method)</SPAN></FONT></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=12>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2>Genes</FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>During
+the pipeline gene building process, genes are built on Slices because
+a lot of genes span  more than one contig.  Hence , it makes the most
+sense to subsequently use Slices to access them. However, having said
+that you can access genes via RawContigs if you wish.  Getting all
+the of the genes from a Slice or RawContig is as easy as:</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$genes = $slice-&gt;get_all_Genes;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>As
+usual we are returned a reference to a list of objects - Gene objects
+this time. They contain all the information about the exon/intron
+structure, DNA sequence, etc.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Genes
+have EnsEMBL identifiers which can be accessed using the </FONT>stable_id
+<FONT FACE="Helvetica, sans-serif">method:</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $gene (@$genes) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ print &quot;Gene : &quot; . $gene-&gt;stable_id . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>EnsEMBL
+identifiers don't really tell us much about the gene (and they're not
+ intended to) and some genes will have one or more more common names.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">We
+can tell immediately if a gene is a known gene (refseq or sptrembl)
+by calling the </FONT>is_known<FONT FACE="Helvetica, sans-serif">
+method.  If it is a known gene then we can call the each_DBLink
+method to find out more about it.</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $gene (@$genes) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ if ($gene-&gt;is_known) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+    foreach my $link (@{$gene-&gt;get_all_DBLinks}) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+      print &quot;Gene &quot; . $gene-&gt;stable_id . &quot; links to
+&quot; . </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+              $link-&gt;display_id . &quot; &quot; . </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+              $link-&gt;database . &quot;\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+      my @syns = @{$link-&gt;get_all_synonyms};</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+      print &quot;Synonyms for gene are @syns\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+    } </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ } else {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+   print &quot;Gene &quot; . $gene-&gt;stable_id . &quot; is not a
+known gene\n&quot;;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ }</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Other
+information about a known gene is contained in its </FONT><FONT FACE="Courier, monospace">description</FONT><FONT FACE="Helvetica, sans-serif">
+method.  This information is extracted from the relevant swissprot or
+refseq entry.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$description = $gene-&gt;description;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Genes
+are quite complicated objects and are constructed thusly.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Each
+Gene object has one or more Transcript objects (one for each
+alternatively spliced cDNA).  </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$transcripts = $gene-&gt;get_all_Transcripts();</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Each
+Transcript is made up of a series of Exons.  We can access the Exons
+and retrieve their sequence and coordinates.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $exon (@{$transcript-&gt;get_all_Exons}) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+  print &quot;Found exon &quot; . $exon-&gt;stable_id    . &quot; &quot;
+.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                        $exon-&gt;start . &quot; &quot; . </FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                        $exon-&gt;end   . &quot; &quot; .</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+                        $exon-&gt;seq-&gt;seq;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Notice
+that calling the seq method on an Exon object returns us a BioPerl
+sequence object.  We then have to call </FONT>seq<FONT FACE="Helvetica, sans-serif">
+again to get a string representation of the sequence.  Hence, we get
+the </FONT>seq-&gt;seq <FONT FACE="Helvetica, sans-serif">stutter -
+its not a typo in case you were wondering.</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">We
+can get the protein sequence of a Transcript by calling the </FONT>translate<FONT FACE="Helvetica, sans-serif">
+method.  So to get all the protein translations from a gene into a
+file we would do</FONT></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>my
+$seqio = new Bio::SeqIO-&gt;(-format =&gt; 'fasta',</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+                            -fh     =&gt; \*STDOUT);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>foreach
+my $transcript (@{$gene-&gt;get_all_Transcripts}) {</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ my $peptide = $transcript-&gt;translate;</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>
+ $seqio-&gt;write_seq($peptide);</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2>}</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>Note
+that when writing to a BioPerl SeqIO object we pass the Peptide
+object and not a string, but when writing out to the screen we have
+to stringify it first.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL>
+		<OL>
+			<LI><H3 LANG="en-GB" CLASS="western"><FONT SIZE=2>Exercises 4</FONT></H3>
+		</OL>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>1.
+ Get all the genes on  a long- ish (say 1Mb) Slice and print their
+EnsEMBL ids.</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>2.
+ Which of those genes are known genes and what is their more common
+name?  (Hint. Use the is_known method and use the
+get_all_DBLinks-&gt;display_id)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>3.
+ How many genes are alternatively spliced for the first 100 genes 
+(Hint: Count the number of transcripts using the
+$gene-&gt;each_Transcript method)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>4.
+ What is the average size and number of exons per gene  (Hint: Use
+the get_all_Exons method and remember that exons are  like features
+with $ex-&gt;start $ex-&gt;end)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2>5.
+ Translate the first 10 genes  - are there any stop codons (there
+shouldn't be!!) (Remember there may be more than one transcript per
+gene)</FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">6.
+ Print out the 200 bases of sequence that flanks each exon  (Use the
+$gene-&gt;get_all_Exons method and call $contig-&gt;subseq($start,$end)
+method to retrieve the dna)</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">7.
+ Extract all the introns from the first 10 genes and write them to a
+file (be careful about reverse strand genes).</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">8.
+ Print out all the 5' and 3' utrs for the first 10 genes.</SPAN></FONT></FONT></P>
+<OL>
+	<OL START=13>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">Supporting
+		Evidence</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">The
+information that was used to make a gene is also stored in the
+EnsEMBL database in the form of FeaturePairs.  This information can
+be retrieved easily from a Gene object.</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+evidence is attached as an array of FeaturePairs to each Exon and can
+be retrieved in the following way:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $gene (@$genes) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $transcripts = $gene-&gt;get_all_Transcripts;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+  foreach my $transcript (@$transcripts) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+    my $exons = $transcript-&gt;get_all_Exons;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+     foreach my $exon (@$exons) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2>
+        my $supporting_features = $exon-&gt;get_all<SPAN STYLE="font-weight: medium">_supporting_features;</SPAN></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+        foreach my $feature (@$supporting_features) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+           print &quot;Evidence &quot; . $feature-&gt;gffstring .
+&quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+        }</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+     }</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+  }</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+</SPAN></FONT></FONT><BR>
+</P>
+<OL>
+	<OL START=14>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">Prediction
+		Transcripts</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">EnsEMBL
+stores <I>ab initio </I>gene predictions from genscan.  These
+predictions are accesses in a similar fashion to normal EnsEMBL
+transcripts , but through PredictionTranscript objects rather than
+Transcript objects.  As with normal transcripts prediction
+transcripts are composed of a set of Exon objects.  To obtain
+prediction transcripts from a Slice or RawContig we can do the
+following (as with other EnsEMBL features  logic name or score
+constraints can be passed as optional arguments) :</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$predicted_transcripts = $slice-&gt;get_all_PredictionTranscripts;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">We
+now have a reference to a list of PredictionTranscript objects.  To
+have a look at the predicted exons for each predicted transcript we
+can use the following:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $predicted_transcript (@$predicted_transcripts) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ my $exons = $predicted_transcript-&gt;get_all_Exons;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ print &quot;Genscan prediction has &quot; . scalar @$exons . :
+exons\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ foreach my $exon (@$exons) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+   print $exon-&gt;start  . &quot; - &quot; . </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+         $exon-&gt;end    . &quot; : &quot; . </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+         $exon-&gt;strand . &quot; &quot; . </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+         $exon-&gt;phase .&quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+ }</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">As
+these predictions should translate there you can get the predicted
+peptide sequence by using the </FONT>translate <FONT FACE="Helvetica, sans-serif">method
+on a genscan prediction.</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">print
+&quot;Genscan peptide is &quot; . $predicted_transcript-&gt;translate
+. &quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=15>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">Translation</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Each
+Transcript, retrieved from a Gene object , can be split into a 5'
+untranslated region, a CDS and a 3' untranslated region.  The points
+in the cDNA where the translation starts and stops are stored in a
+Translation object which is attached to each Transcript:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$translation = $transcript-&gt;translation;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+Translation object has methods:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$translation-&gt;start_Exon;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$translation-&gt;end_Exon;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">which
+denote which exons the translation starts and ends in.  To find the
+exact coordinate of the start and stop of translation use the
+methods:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$translation-&gt;start;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$translation-&gt;end;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">The
+</FONT>start <FONT FACE="Helvetica, sans-serif">and </FONT>end<FONT FACE="Helvetica, sans-serif">
+methods refer to the exon coordinates so they should never be less
+than one or greater than the exon's length.</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=16>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">Protein</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Information
+regarding a protein can be retreived from the ProteinAdaptor via a
+Translation object identifier:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$protein_adaptor = $db-&gt;get_ProteinAdaptor;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$protein  =
+$protein_adaptor-&gt;fetch_by_translation_id($translation-&gt;dbID);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">As
+every transcript has only one translation we can fetch proteins using
+the transcript identifier as well:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$protein =
+$protein_adaptor-&gt;fetch_by_transcript_id($transcript-&gt;dbID)</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Once
+we have a Protein object we can look at its features</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$protein_features = $protein-&gt;get_all_ProteinFeatures;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">The
+features that are returned are ProteinFeatures.  To have a look at
+them you can use the </FONT>gff_string <FONT FACE="Helvetica, sans-serif">method:</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $pf (@$protein_features) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+   print $pf-&gt;gffstring . &quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<OL>
+	<OL>
+		<OL>
+			<LI><H3 LANG="en-GB" CLASS="western"><FONT SIZE=2><SPAN STYLE="background: transparent">exercises
+			5</SPAN></FONT></H3>
+		</OL>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Find
+	all the pfam domains contained in the first 100 genes on chromosome
+	1.  Which ones are most common and is this surprising?  </SPAN></FONT></FONT>
+	</P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=2>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">How
+	many of those genes have no protein features at all.</SPAN></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=3>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">How
+	many of the proteins contain WD40 domains?</SPAN></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=17>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">External
+		Databases - The General Idea</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+core EnsEMBL database (the one you've been using up to now) contains
+DNA, genes and some sequence features.  There are extra satellite
+databases that contain other features that can also be accessed.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+idea is that you take your main EnsEMBL database handle ($db - way
+back in the first section) and give it another database handle to
+look after.  This external database could contain all manner of
+things e.g. SNPs, mouse trace hits or  EMBL annotations.  You can now
+access the features in the second database as though they were all in
+the same place even though they could be sitting on a completely
+different machine. </SPAN></FONT></FONT>
+</P>
+<OL>
+	<OL>
+		<OL>
+			<OL>
+				<LI><H4 LANG="en-GB" CLASS="western"></H4>
+			</OL>
+		</OL>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Let's
+give the EST database as a first example.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">First
+we need to connect to the main EnsEMBL database:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">use
+Bio::EnsEMBL::ExternalData::ESTSQL::DBAdaptor;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$est_db = Bio::EnsEMBL::ExternalData::ESTSQL::DBAdaptor-&gt;new(</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+                                               -host   =&gt; $host,</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">							
+   -dbname =&gt; $estname,</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">							
+   -user   =&gt; $user);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">And
+then to the human EST database to our main db adaptor and vice-versa:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$db-&gt;add_db_adaptor('est',
+$est_db);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$est_db-&gt;add_db_adaptor('core',
+$db);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Now
+that we have done this we can retrieve the EST alignment features
+from this the database in the same way as we would other DNA align
+features by specifying the name of the analysis that was used to
+generate the alignments - in this case 'ex_e2g_feat'. </SPAN></FONT></FONT>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$est_features = $slice-&gt;get_all_DnaAlignFeatures('ex_e2g_feat');</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Now
+that we have these features we can have a look at them:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $est (@$est_features) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+   print &quot; &quot; . $est-&gt;gffstring . &quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=18>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">SNPS</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">SNP
+features can be readily accessed from the external database
+ensembl-lite:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">use
+Bio::EnsEMBL::Lite::DBAdaptor;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+$lite_db = Bio::EnsEMBL::Lite::DBAdaptor-&gt;new(-host   =&gt; $host,</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">						
+-user   =&gt; $user,</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">						
+-dbname =&gt; $litename);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Add
+the lite db adaptor to the main db adaptor and vice-versa like
+before:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$db-&gt;add_db_adaptor('lite',
+$lite_db);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">$lite_db-&gt;add_db_adaptor('core',
+$db);</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">Retrieve
+all the SNP features from a Slice using the </FONT>get_all_SNPs<FONT FACE="Helvetica, sans-serif">
+method:</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2>my
+$snp_features = $slice-&gt;get_all_SNPs<FONT FACE="Helvetica, sans-serif">;</FONT></FONT></SPAN></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Iterate
+through the SNP features printing the position at which they lie
+along the Slice:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">foreach
+my $snp (@$snp_features) {</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">
+   print &quot;snp &quot; . $snp-&gt;start . &quot;\n&quot;;</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">}</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<OL START=19>
+		<LI><H2 LANG="en-GB" CLASS="western" STYLE="font-style: normal"><FONT SIZE=2><SPAN STYLE="background: transparent">Marker
+		Features</SPAN></FONT></H2>
+	</OL>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">The
+lite database also contains information about markers.  Given that we
+already have a warm ensembl-lite database adaptor, it is too much to
+resist retrieving these too.</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">With
+one call we can retrieve all the marker features on our Slice:</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><BR><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><FONT FACE="Courier, monospace"><FONT SIZE=2><SPAN STYLE="background: transparent">my
+@landmark_features = @{$slice-&gt;get_all_landmark_MarkerFeatures};</SPAN></FONT></FONT></P>
+<P LANG="en-GB" STYLE="margin-left: 0.64cm; text-indent: 0cm"><BR><BR>
+</P>
+<H3 LANG="en-GB" CLASS="western" STYLE="margin-left: 0.75cm"><FONT SIZE=2><SPAN STYLE="background: transparent">Exercises
+6</SPAN></FONT></H3>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Connect
+	to the core EnsEMBL database and the SNP database.  Add the SNP
+	database to the EnsEMBL database and vice-versa.</SPAN></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=2>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">Create
+	a Slice of 1Mb of sequence from your chromosome of choice (hint -
+	remember back to the Slice exercises)</SPAN></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=3>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif"><FONT SIZE=2><SPAN STYLE="background: transparent">How
+	many SNPs are there in this region?</SPAN></FONT></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<OL START=4>
+	<LI><P LANG="en-GB" STYLE="margin-bottom: 0cm"><FONT FACE="Courier, monospace"><SPAN STYLE="background: transparent"><FONT SIZE=2><FONT FACE="Helvetica, sans-serif">How
+	many SNPs overlap exons? (Hint - get all genes from the Slice and
+	use </FONT>get_all_Exons<FONT FACE="Helvetica, sans-serif"> to get
+	the exons from the genes. Use the </FONT>overlaps<FONT FACE="Helvetica, sans-serif">
+	method to calculate the proportion of SNPs that are situated in
+	coding sequences.)</FONT></FONT></SPAN></FONT></P>
+</OL>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+<P LANG="en-GB" STYLE="margin-left: 0.75cm; margin-bottom: 0cm"><BR>
+</P>
+</BODY>
+</HTML>
