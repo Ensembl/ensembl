@@ -183,8 +183,7 @@ sub _parse {
   
   my $tmp = <IN>; $tmp = <IN>;  # Read two blank lines
   
-  my $in = Bio::SeqIO->new(-fh => \*IN, -format => 'Fasta');
-  my $count = 0;
+  my $in = Bio::SeqIO->new( '-fh' => \*IN, '-format' => 'Fasta');
   
   while (my $seq = $in->next_seq) {
     push(@{$self->{_peptides}},$seq);
@@ -323,9 +322,9 @@ sub _set_exon_phases {
   }
   
   my @pep = $self->_translate($exstr);
-  my $pep = $pep[$ex->phase]->seq;
+  my $pep_p = $pep[$ex->phase]->seq;
 
-  if (substr($pep,-1) eq "*") {
+  if (substr($pep_p,-1) eq "*") {
     if ($ex->strand == -1) {
       $ex->start($ex->start + 3);
     } else {
