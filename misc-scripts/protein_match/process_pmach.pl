@@ -21,20 +21,23 @@ birney@ebi.ac.uk
 
 use Getopt::Long;
 
-my ($ens,$sp,$refseq);
+my ($ens,$sp,$refseq,$pdb);
 
 &GetOptions(
             
             'ens:s'=>\$ens,
             'sp:s'=>\$sp,
-            'refseq:s'=>\$refseq
+            'refseq:s'=>\$refseq,
+	    'pdb:s'=>\$pdb
             );
 
 &runpmatch();
 &postprocesspmatch($sp);
 &postprocesspmatch($refseq);
+&postprocesspmatch($pdb);
 &finalprocess($sp);
 &finalprocess($refseq);
+&finalprocess($pdb);
 
 sub runpmatch {
     print STDERR "Running pmatch\n";
@@ -42,9 +45,13 @@ sub runpmatch {
 #Run pmatch and store the data in files which will be kept for debugging
     my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $sp $ens > ens_sp_rawpmatch";
     my $pmatch2 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $refseq $ens > ens_refseq_rawpmatch";
-    
+    my $pmatch3 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $pdb $ens > ens_pdb_rawpmatch";
+
+
     system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
     system($pmatch2); #== 0 or die "$0\Error running '$pmatch2' : $!";
+   system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
+
 }
 
 
@@ -61,10 +68,16 @@ sub postprocesspmatch {
 	open (PROC, "ens_sp_rawpmatch") || die "Can't open File\n";
     }
     
-    else {
+    elsif ($db eq $refseq) {
 	print STDERR "Postprocessing pmatch for REFSEQ mapping\n"; 
 	open (OUT, ">ens_refseq.processed") || die "Can't open File\n";;
 	open (PROC, "ens_refseq_rawpmatch") || die "Can't open file ens_refseq_rawpmatch\n";
+    }
+
+    elsif ($db eq $pdb) {
+	print STDERR "Postprocessing pmatch for PDB mapping\n"; 
+	open (OUT, ">ens_pdb.processed") || die "Can't open File\n";;
+	open (PROC, "ens_pdb_rawpmatch") || die "Can't open file ens_refseq_rawpmatch\n";
     }
     
     while (<PROC>) {
@@ -109,11 +122,18 @@ sub finalprocess {
 	open (OUT, ">ens_sp.final");
     }
 
-    else {
+    elsif ($db eq $refseq) {
 	print STDERR "Getting final mapping for REFSEQ mapping\n";
 	open (PROC, "ens_refseq.processed") || die "Can' open file ens_refseq.processed\n";
-	open (OUT, ">refseq.final");
+	open (OUT, ">ens_refseq.final");
     }
+
+    elsif ($db eq $pdb) {
+	print STDERR "Getting final mapping for PDB mapping\n";
+	open (PROC, "ens_refseq.processed") || die "Can' open file ens_refseq.processed\n";
+	open (OUT, ">ens_pdb.final");
+    }
+
 
     my %hash2;
     while (<PROC>) {

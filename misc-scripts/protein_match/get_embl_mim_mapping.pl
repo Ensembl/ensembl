@@ -37,7 +37,7 @@ while ( my $seq1 = $in1->next_seq() ) {
     
     
     foreach my $link(@dblink) {
-	if (($link->database eq "EMBL") || ($link->database eq "MIM") || ($link->database eq "PDB")) {
+	if (($link->database eq "EMBL") || ($link->database eq "MIM")) {
 	    
 	    if (!defined $map{$ac}) {
 		die "Can't map $ac\n";
