@@ -276,6 +276,54 @@ sub get_stable_entry_info {
   return 1;
 }
 
+=head2 get_Interpro_by_transid
+
+  Arg [1]    : string $trans
+               the stable if of the trans to obtain
+  Example    : @i = $trans_adaptor->get_Interpro_by_transid($trans->stable_id()); 
+  Description: gets interpro accession numbers by transcript stable id.
+               A hack really - we should have a much more structured 
+               system than this
+  Returntype : listref of strings 
+  Exceptions : none 
+  Caller     : domainview? , GeneView
+
+=cut
+
+sub get_Interpro_by_transid {
+   my ($self,$transid) = @_;
+   my $sql="
+	SELECT	i.interpro_ac, 
+		x.description 
+        FROM	transcript t, 
+		protein_feature pf, 
+		interpro i, 
+                xref x,
+		transcript_stable_id tsi
+	WHERE	tsi.stable_id = '$transid' 
+	    AND	t.transcript_id = tsi.transcript_id
+	    AND	t.translation_id = pf.translation_id 
+	    AND	i.id = pf.hit_id 
+	    AND	i.interpro_ac = x.dbprimary_acc";
+   
+   my $sth = $self->prepare($sql);
+   $sth->execute;
+
+   my @out;
+   my %h;
+   while( (my $arr = $sth->fetchrow_arrayref()) ) {
+       if( $h{$arr->[0]} ) { next; }
+       $h{$arr->[0]}=1;
+       my $string = $arr->[0] .":".$arr->[1];
+       push(@out,$string);
+   }
+
+
+   return \@out;
+}
+
+
+
 
 sub remove {
   my $self = shift;
