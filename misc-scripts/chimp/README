@@ -56,6 +56,32 @@ rather than typing in all of the command line arguments.  The
 ensembl/misc-scripts/chimp/run_hum2chimp.sh script is an example of
 how this can be done.
 
+*important*
+The program requires the use of the API's ChainedMapper even when there is a
+a 2-step mapping path.  This is because the ChainedMapper correctly deals
+with a component sequence regions which map to multiple assembled sequence
+regions whereas the standard AssemblyMapper does not (for speed reasons).
+
+The use of the ChainedMapper currently needs to be hardcoded. It was
+intended to make the mapper used configurable with database meta data
+but this has not been done yet. The following shows lines in the 
+Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor module that must be changed 
+prior to running the human2chimp.pl program.  The $asm_mapper variable 
+is set to a ChainedAssemblyMapper rather than a normal AssemblyMapper.  
+At the time of writing these were lines 183-192:
+
+  if(@mapping_path == 2) {
+    #1 step regular mapping
+#    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+
+#   If you want multiple pieces on two seqRegions to map to each other
+#   uncomment following. AssemblyMapper assumes only one mapped piece per contig
+   $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );
+    $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
+    return $asm_mapper;
+  }
+
+
 
 ALGORITHM
 =========
@@ -326,3 +352,4 @@ BUGS
   kept with some tricky changes to the code.
 
 * There are probably other bugs as well...
+
