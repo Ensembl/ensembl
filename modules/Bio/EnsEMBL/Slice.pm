@@ -243,14 +243,9 @@ sub length {
 
   Arg [1]    : none
   Example    : $slice->invert;
-  Description: Reverses the strandedness of this slice.  If the slice is
-               on the positive strand it will be placed on the negative
-               strand of the same region.  chr_start and chr_end remain
-               unchanged, but $slice->seq will return the reverse complement
-               of the original slice sequence.  Genes and Features will also 
-               be returned with reverse strandedness and start and end 
-               coordinates relative to the opposite end of the slice.
-  Returntype : none
+  Description: Creates a copy of this slice on the opposite strand and 
+               returns it.
+  Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
   Caller     : general
 
@@ -259,11 +254,12 @@ sub length {
 sub invert {
   my $self = shift;
   
-  my $strand = $self->strand();
+  my %s = %$self;
+  my $slice = bless \%s, ref $self;
 
-  $self->strand(-$strand);
+  $slice->strand($self->strand * -1);
 
-  return $self;
+  return $slice;
 }
 
 
