@@ -1356,12 +1356,6 @@ sub rawcontig_ids {
    return $self->_vmap->RawContig_ids;
 }
 
-sub get_all_RawContigs {
-  my ($self) = @_;
-
-  return $self->_vmap->get_all_RawContigs();
-}
-
 
 =head2 found_left_end
 
@@ -1463,16 +1457,12 @@ sub _dump_map {
 =cut
 
 sub get_all_RawContigs {
-    my ($self) = @_;
+  my ($self) = @_;
 
-    my @contigs = ();
-
-#    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-#        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
-#    }
-    
-    return $self->_vmap->get_all_RawContigs;
+  return $self->_vmap->get_all_RawContigs();
 }
+
+
 
 =head2 get_rawcontig_by_position
 
