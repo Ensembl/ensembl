@@ -429,8 +429,13 @@ sub store{
   $sth->execute;
 
   my ($id) = $sth->fetchrow();
+  $self->throw("Failed to get auto-incremented ID") unless $id;
 
   $sth->finish();
+
+  #update this clones database identifier
+  $clone->dbID($id);
+  $clone->adaptor($self);
 
   #store the contigs which were on this clone
   my $rca = $self->db->get_RawContigAdaptor();
@@ -438,9 +443,6 @@ sub store{
     $rca->store($contig, $clone);
   }
 
-  #update this clones database identifier
-  $clone->dbID($id);
-  $clone->adaptor($self);
 
   return $id;
 }
