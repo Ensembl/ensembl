@@ -48,20 +48,13 @@ use Bio::EnsEMBL::Root;
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
-# _initialize is where the heavy stuff will happen when new is called
-
 sub new {
-  my($class,@args) = @_;
+  my $caller = shift;
 
-  my $self = {};
-  bless $self,$class;
+  my $class = ref($caller) || $caller;
 
-
-
-# set stuff in self from @args
- return $self; # success - we hope!
+  return bless {},$class;
 }
-
 
 
 =head2 start
