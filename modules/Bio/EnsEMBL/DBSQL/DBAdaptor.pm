@@ -222,6 +222,27 @@ sub get_SNPAdaptor {
 }
 
 
+=head2 get_BlastAdaptor
+
+  Args       : none 
+  Example    : $blast_adaptor = $db_adaptor->get_BlastAdaptor();
+  Description: Gets a BlastAdaptor for retrieving stored blast hits
+  Returntype : Bio::EnsEMBL::External::BlastAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_BlastAdaptor {
+  my ($self)  = @_;
+
+  my $db_apt = $self->get_db_adaptor('blast');
+
+  return $self->_get_adaptor("Bio::EnsEMBL::External::BlastAdaptor",
+			     $db_apt);
+}
+
+
 =head2 get_MapFragAdaptor
 
   Args       : none 
