@@ -56,8 +56,8 @@ use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
 
 sub _tables {
   my $self = shift;
-
-  return ([ 'exon_transcript', 'et' ],[ 'exon', 'e' ], 
+  
+  return ([ 'exon', 'e' ], [ 'exon_transcript', 'et' ], 
 	  [ 'exon_stable_id', 'esi' ] );
 
 }
