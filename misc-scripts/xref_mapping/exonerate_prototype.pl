@@ -11,7 +11,7 @@ use IPC::Open3;
 my $queryfile = "xref_dna.fasta";
 my $targetfile = "ensembl_transcripts.fasta";
 
-run_mapping($queryfile, $targetfile, ".");
+#run_mapping($queryfile, $targetfile, ".");
 store($targetfile);
 
 sub run_mapping {
@@ -19,7 +19,7 @@ sub run_mapping {
   my ($queryfile, $targetfile, $root_dir) = @_;
 
   # get list of methods
-  my @methods = ("ExonerateBasic", "ExonerateBest1"); # TODO get from Ian, maybe files as well
+  my @methods = ("ExonerateBest1"); # TODO get from Ian, maybe files as well
 
   # foreach method, submit the appropriate job & keep track of the job name
   my @job_names;
@@ -117,18 +117,9 @@ sub store {
 			 "ensembl",
 			 {'RaiseError' => 1}) || die "Can't connect to database";
 
-  # get current highest internal ID from xref and object_xref
-  my $max_xref_id = 0;
-  my $sth = $dbi->prepare("SELECT MAX(xref_id) FROM xref");
-  $sth->execute();
-  my $max_xref_id = ($sth->fetchrow_array())[0];
-  if (!defined $max_xref_id) {
-    print "Can't get highest existing xref_id, using 0\n)";
-  } else {
-    print "Maximum existing xref_id = $max_xref_id\n";
-  }
+ # get current max object_xref_id
   my $max_object_xref_id = 0;
-  $sth = $dbi->prepare("SELECT MAX(object_xref_id) FROM object_xref");
+  my $sth = $dbi->prepare("SELECT MAX(object_xref_id) FROM object_xref");
   $sth->execute();
   my $max_object_xref_id = ($sth->fetchrow_array())[0];
   if (!defined $max_object_xref_id) {
@@ -149,10 +140,10 @@ sub store {
   my $total_lines = 0;
   my $total_files = 0;
 
-  my $xref_id = $max_xref_id + 1;
   my $object_xref_id = $max_object_xref_id + 1;
 
-  # TODO - store xrefs in a file as well
+  # keep a (unique) list of xref IDs that need to be written out to file as well
+  my %xref_ids;
 
   foreach my $file (glob("*.map")) {
 
@@ -174,6 +165,8 @@ sub store {
       # TODO - evalue?
       $object_xref_id++;
 
+      $xref_ids{$query_id} = $query_id;
+
       # Store in database
       # create entry in object_xref and get its object_xref_id
       #$ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
@@ -190,6 +183,9 @@ sub store {
 
   close(IDENTITY_XREF);
   close(OBJECT_XREF);
+
+  # write relevant xrefs to file
+  dump_xrefs(\%xref_ids);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
@@ -267,5 +263,122 @@ sub get_analysis_id {
   }
 
   return $analysis_id;
+
+}
+
+
+sub dump_xrefs {
+
+  my $xref_ids_hashref = shift;
+  my @xref_ids = keys %$xref_ids_hashref;
+
+  open (XREF, ">xref.txt");
+
+  # TODO - get this from config
+  my $xref_dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=glenn_test_xref",
+			      "ensro",
+			      "",
+			      {'RaiseError' => 1}) || die "Can't connect to database";
+
+  my $core_dbi = DBI->connect("dbi:mysql:host=ecs1g;port=3306;database=arne_core_20_34",
+			      "ensro",
+			      "",
+			      {'RaiseError' => 1}) || die "Can't connect to database";
+
+  # get current highest internal ID from xref
+  my $max_xref_id = 0;
+  my $core_sth = $core_dbi->prepare("SELECT MAX(xref_id) FROM xref");
+  $core_sth->execute();
+  my $max_xref_id = ($core_sth->fetchrow_array())[0];
+  if (!defined $max_xref_id) {
+    print "Can't get highest existing xref_id, using 0\n)";
+  } else {
+    print "Maximum existing xref_id = $max_xref_id\n";
+  }
+  my $core_xref_id = $max_xref_id + 1;
+
+  # keep a unique list of source IDs to build the external_db table later
+  my %source_ids;
+
+  # execute several queries with a max of 200 entries in each IN clause - more efficient
+  my $batch_size = 200;
+
+  while(@xref_ids) {
+
+    my @ids;
+    if($#xref_ids > $batch_size) {
+      @ids = splice(@xref_ids, 0, $batch_size);
+    } else {
+      @ids = splice(@xref_ids, 0);
+    }
+
+    my $id_str;
+    if(@ids > 1)  {
+      $id_str = "IN (" . join(',', @ids). ")";
+    } else {
+      $id_str = "= " . $ids[0];
+    }
+
+
+    my $sql = "SELECT * FROM xref WHERE xref_id $id_str";
+
+    my $sth = $xref_dbi->prepare($sql);
+    $sth->execute();
+
+    my ($xref_id, $accession, $label, $description, $source_id, $species_id);
+    $sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id, \$species_id);
+
+    # note the xref_id we write to the file is NOT the one we've just read 
+    # from the internal xref database as the ID may already exist in the core database
+    while (my @row = $sth->fetchrow_array()) {
+      print XREF "$core_xref_id\t$accession\t$label\t$description\n";
+      $source_ids{$source_id} = $source_id;
+      $core_xref_id++;
+    }
+
+  } # while @xref_ids
+
+  close(XREF);
+
+  # now write the exernal_db file - the %source_ids hash will contain the IDs of the
+  # sources that need to be written as external_dbs
+  open(EXTERNAL_DB, ">external_db.txt");
+
+  # get current highest internal ID from external_db
+  my $max_edb_id = 0;
+  my $core_sth = $core_dbi->prepare("SELECT MAX(external_db_id) FROM external_db");
+  $core_sth->execute();
+  my $max_edb_id = ($core_sth->fetchrow_array())[0];
+  if (!defined $max_edb_id) {
+    print "Can't get highest existing external_db_id, using 0\n)";
+  } else {
+    print "Maximum existing external_db_id = $max_edb_id\n";
+  }
+  my $edb_id = $max_edb_id + 1;
+
+  my @source_id_array = keys %source_ids;
+  my $source_id_str;
+  if(@source_id_array > 1)  {
+    $source_id_str = "IN (" . join(',', @source_id_array). ")";
+  } else {
+    $source_id_str = "= " . $source_id_array[0];
+  }
+
+  my $source_sql = "SELECT name, release FROM source WHERE source_id $source_id_str";
+  my $source_sth = $xref_dbi->prepare($source_sql);
+  $source_sth->execute();
+
+  my ($source_name, $release);
+  $source_sth->bind_columns(\$source_name, \$release);
+
+  while (my @row = $source_sth->fetchrow_array()) {
+    print EXTERNAL_DB "$edb_id\t$source_name\t$release\tXREF\n";
+    # TODO knownxref etc??
+    $edb_id++;
+  }
+
+  close(EXTERNAL_DB);
+
+  # TODO - dependent xrefs
 
 }
