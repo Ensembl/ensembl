@@ -87,15 +87,15 @@ use Bio::SeqFeature::Generic;
 use Bio::Seq; # exons have to have sequences...
 
 @ISA = qw(Bio::SeqFeature::Generic Exporter);
-# new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
-
+  my $self = Bio::SeqFeature::Generic->new(@args);
+  # rebless into this class
+  bless $self,$class;
+  
   # Array to store supporting evidence for this exon
   $self->{_supporting_evidence} = [];
 
@@ -112,7 +112,7 @@ sub _initialize {
   $self->sticky_rank(1);
 
   # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 # Parse routine called from the constructor to

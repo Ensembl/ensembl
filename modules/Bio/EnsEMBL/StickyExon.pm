@@ -62,14 +62,18 @@ use Bio::EnsEMBL::Exon;
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
+  
+  my $self = Bio::EnsEMBL::Exon->new(@args);
+  bless $self,$class;
 
-  my $make = $self->SUPER::_initialize;
+
 
   # Array to store exon tags
   $self->{_component_exons} = [];
-
+  
+  return $self;
 }
 
 

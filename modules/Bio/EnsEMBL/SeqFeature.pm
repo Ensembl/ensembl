@@ -105,7 +105,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    PHASE
 			    END_PHASE
 			    )],@args);
-};
+  };
+  
   if( $@ ) {
       my $dummy = Bio::Root::Object->new();
       $dummy->throw($@);
@@ -703,10 +704,18 @@ sub add_sub_SeqFeature{
 	   $self->end($feat->end());
 	   $self->strand($feat->strand);
        } else {
-	   my ($start,$end,$strand) = $self->union($feat);
+	   my ($start,$end);
+	   if( $feat->start < $self->start ) {
+	       $start = $feat->start;
+	   }
+
+	   if( $feat->end > $self->end ) {
+	       $end = $feat->end;
+	   }
+
 	   $self->start($start);
 	   $self->end($end);
-	   $self->strand($strand);
+
        }
    } else {
        if( !$self->contains($feat) ) {

@@ -1644,13 +1644,14 @@ sub write_Exon {
 	$self->throw("$exon is not a EnsEMBL exon - not dumping!");
     }
 
-    $exon->id() || $self->throw("Missing exon id");
-    $exon->version() || $self->throw("Missing exon version number"); 
+    $exon->id()        || $self->throw("Missing exon id");
+    $exon->version()   || $self->throw("Missing exon version number"); 
     $exon->contig_id() || $self->throw("Missing exon contig id");
-    $exon->start || $self->throw("Missing exon start position"); 
-    $exon->end || $self->throw("Missing exon end position");
-    $exon->created || $self->throw("Missing exon created time");
-    $exon->modified || $self->throw("Missing exon modified time");
+    $exon->start       || $self->throw("Missing exon start position"); 
+    $exon->end         || $self->throw("Missing exon end position");
+    $exon->created     || $self->throw("Missing exon created time");
+    $exon->modified    || $self->throw("Missing exon modified time");
+    $exon->sticky_rank || $self->throw("Missing exon sticky rank");
 
     # got to convert contig_id to internal_id
 
