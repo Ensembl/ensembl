@@ -70,21 +70,19 @@ sub _initialize {
 			    ORIENTATION
 			    LENGTH
 			    )],@args);
-  $id      || $self->throw("Cannot make contig object without id");
-  $disk_id || $self->throw("Cannot make contig object without disk_id");
-  $dbobj   || $self->throw("Cannot make contig object without db object");
+
+  $id          || $self->throw("Cannot make contig object without id");
+  $disk_id     || $self->throw("Cannot make contig object without disk_id");
+  $dbobj       || $self->throw("Cannot make contig object without db object");
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
-  $order   || $self->throw("Cannot make contig object without order");
-  $offset  || $self->throw("Cannot make contig object without offset");
+  $order       || $self->throw("Cannot make contig object without order");
+  $offset      || $self->throw("Cannot make contig object without offset");
   $orientation || $self->throw("Cannot make contig object without orientation");
-  $length  || $self->throw("Cannot make contig object without length");
+  $length      || $self->throw("Cannot make contig object without length");
   
-  # id of contig
   $self->id         ($id);
   $self->disk_id    ($disk_id);
-  # db object
   $self->_dbobj     ($dbobj);
-  # clone object
   $self->_clone_dir ($clone_dir);
   $self->order      ($order);
   $self->offset     ($offset);
@@ -93,27 +91,19 @@ sub _initialize {
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
-  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
-						$self->disk_id . ".gs",
-						$self->seq());
-  # save for later
-  $self->_gs($gs);
 
-  # we yank out each exon and build a hash on start position
-  my %exhash;
-  foreach my $t ( $gs->each_Transcript ) {
-      foreach my $ex ( $t->each_Exon ) {
-	  $exhash{$ex->start} = $ex;
-      }
-  }
+  $self->_gs;
+
+  my %exhash = $self->make_exon_hash;   # we yank out each exon and build a hash on start position
   
-  # build array of genes
-  $self->{'_gene_array'} = [];
+
+  $self->{'_gene_array'} = [];   # build array of genes
   {
       my $bioseq=$self->seq;
       # 1. loop over list of exons in this contig
       my %transcript_id;
       my %gene_id;
+
       foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
 	  my $exon_id=$exon->id;
 	  $exon->attach_seq($bioseq);
@@ -133,6 +123,7 @@ sub _initialize {
 	  $exon->phase($exhash{$exon->start()}->phase);
 
 	  # 2. build list of transcripts containing these exons
+
 	  foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
 	      $transcript_id{$transcript->id()}=$transcript;
 	      # Now deal with adding translations!
@@ -149,8 +140,9 @@ sub _initialize {
 	      }
 	      
 	      my $trans = Bio::EnsEMBL::Translation->new();
+
 	      $trans->start_exon_id($fe->id);
-	      $trans->end_exon_id($le->id);
+	      $trans->end_exon_id  ($le->id);
 	      
 	      if( $fe->strand == 1 ) {
 		  $trans->start($fe->start + (3 -$fe->phase)%3 );
@@ -188,11 +180,26 @@ sub _initialize {
   # declared here as an array, but data is parsed in
   # method call to get features
 
-  $self->{'_sf_array'} = [];
-  $self->{'_sf_repeat_array'} = [];
+  $self->{'_sf_array'}        = [];   # Sequence features
+  $self->{'_sf_repeat_array'} = [];   # Repeat features
 
   # set stuff in self from @args
   return $make; # success - we hope!
+}
+
+sub make_exon_hash {
+    my ($self) = @_;
+
+    my $gs = $self->_gs;
+
+    my %exhash;
+
+    foreach my $t ( $gs->each_Transcript ) {
+	foreach my $ex ( $t->each_Exon ) {
+	    $exhash{$ex->start} = $ex;
+	}
+    }
+    return (%exhash);
 }
 
 =head2 get_all_SeqFeatures
@@ -582,7 +589,7 @@ sub _clone_dir{
 =head2 _gs
 
  Title   : _gs
- Usage   : $obj->_gs($newval)
+ Usage   : $self->_gs
  Function: 
  Returns : value of _gs
  Args    : newvalue (optional)
@@ -591,13 +598,18 @@ sub _clone_dir{
 =cut
 
 sub _gs{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_gs'} = $value;
-    }
-    return $obj->{'_gs'};
+    my ($self) = @_;
 
+    if(!defined($self->{_gs})) {
+	my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
+						      $self->disk_id . ".gs",
+						      $self->seq());
+	
+	
+	$self->{'_gs'} = $gs;
+    }
+
+    return $self->{'_gs'};
 }
 
 

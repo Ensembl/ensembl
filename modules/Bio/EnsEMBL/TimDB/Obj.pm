@@ -365,16 +365,21 @@ sub get_updated_Clone_id{
     my @objs;
 
     # FIXME - time offset of 30mins = 30x60 seconds
-    my $offset_time=1800;
-    $last=$last-$offset_time;
+    my $offset_time = 1800;
+
+    $last = $last - $offset_time;
     
     # get list of updated clones
     my @clones;
+
     my($val,$key);
-    while(($key,$val)=each %{$self->{'_clone_update_dbm'}}){
+
+    while(($key,$val) = each %{$self->{'_clone_update_dbm'}}){
+
 	my($date2)=split(',',$val);
 	# make list of updatable clones
-	if($date2>$last && $date2<$now_offset){
+
+	if($date2 > $last && $date2 < $now_offset){
 	    push(@clones,$key);
 	}
     }
