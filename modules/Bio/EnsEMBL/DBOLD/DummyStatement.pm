@@ -37,7 +37,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::DummyStatement;
+package Bio::EnsEMBL::DBSQL::DummyStatement;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 

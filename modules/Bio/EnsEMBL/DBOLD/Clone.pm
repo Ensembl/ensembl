@@ -42,14 +42,16 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBOLD::Clone;
+package Bio::EnsEMBL::DBSQL::Clone;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DBOLD::Contig;
+use Bio::EnsEMBL::DBSQL::RawContig;
+use Bio::EnsEMBL::DBSQL::Feature_Obj;
+use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DB::CloneI;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
@@ -67,15 +69,127 @@ sub _initialize {
 					  ID
 					  )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $id    || $self->throw("Cannot make clone db object without id");
+  $dbobj || $self->throw("Cannot make clone db object without db object");
+  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make clone db object with a $dbobj object");
 
   $self->id($id);
-  $self->_dbobj($dbobj);
+  $self->_db_obj($dbobj);
 
 # set stuff in self from @args
   return $make; # success - we hope!
+}
+
+=head2 fetch
+
+ Title   : fetch
+ Usage   :
+ Function:
+ Example :
+ Returns : nothing
+ Args    :
+
+
+=cut
+
+sub fetch { 
+    my ($self) = @_;
+ 
+    my $id=$self->id();   
+    my $sth = $self->_db_obj->prepare("select id from clone where id = \"$id\";");    
+    my $res = $sth ->execute();   
+    my $rv  = $sth ->rows;    
+    if( ! $rv ) {
+	# make sure we deallocate sth - keeps DBI happy!
+	$sth = 0;
+        #print STDERR "Clone $id does not seem to occur in the database!\n";     
+	$self->throw("Clone $id does not seem to occur in the database!");
+    }   
+    return $self;
+}
+
+=head2 get_all_id
+
+ Title   : get_all_id
+ Usage   : @cloneid = $clone->get_all_id
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_id {
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->_db_obj->prepare("select id from clone");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
+
+=head2 delete
+
+ Title   : delete
+ Usage   : $clone->delete()
+ Function: Deletes clone (itself), including contigs and features, but not its genes
+ Example : 
+ Returns : nothing
+ Args    : none
+
+
+=cut
+
+sub delete {
+   my ($self) = @_;
+   
+ 
+   #(ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
+
+   my $clone_id = $self->id;
+
+   my @contigs;
+   my @dnas;
+
+   # get a list of contigs to zap
+   my $sth = $self->_db_obj->prepare("select internal_id,dna from contig where clone = '$clone_id'");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@contigs,$rowhash->{'internal_id'});
+       push(@dnas,$rowhash->{'dna'});
+   }
+   
+   # Delete from DNA table, Contig table, Clone table
+   
+   foreach my $contig ( @contigs ) {
+       my $sth = $self->_db_obj->prepare("delete from contig where internal_id = '$contig'");
+       my $res = $sth->execute;
+
+       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+       $feature_obj->delete($contig);
+   }
+
+
+   foreach my $dna (@dnas) {
+       $sth = $self->_db_obj->prepare("delete from dna where id = $dna");
+       $res = $sth->execute;
+
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna;");
+       $res = $sth ->execute;
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna;");
+       $res = $sth ->execute;
+
+   }
+
+   $sth = $self->_db_obj->prepare("delete from clone where id = '$clone_id'");
+   $res = $sth->execute;
 }
 
 
@@ -91,71 +205,45 @@ sub _initialize {
 
 =cut
 
-sub get_all_Genes{
-   my ($self,@args) = @_;
+sub get_all_Genes {
+   my ($self, $supporting) = @_;
    my @out;
-   my $id = $self->id();
+   my $clone_id = $self->id();   
    my %got;
-
-   my $sth = $self->_dbobj->prepare("select p3.gene from geneclone_neighbourhood as p5,contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p5.clone = '$id' and p3.gene = p5.gene and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
-
-#   my $sth = $self->_dbobj->prepare("select p3.gene from contig as p4, transcript as p3, exon_transcript as p1, exon as p2 where p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript");
-
-   my $res = $sth->execute();
+    # prepare the SQL statement
+   my $sth = $self->_db_obj->prepare("
+        SELECT t.gene
+        FROM transcript t,
+             exon_transcript et,
+             exon e,
+             contig c
+        WHERE e.contig = c.internal_id
+          AND et.exon = e.id
+          AND t.id = et.transcript
+          AND c.clone = '$clone_id'
+        ");
+ 
+    my $res = $sth->execute();
    
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       if( ! exists $got{$rowhash->{'gene'}} ) {
-          my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
-	  push(@out,$gene);
-	  $got{$rowhash->{'gene'}} = 1;
-       }
-
-   }
+    while (my $rowhash = $sth->fetchrow_hashref) { 
+            
+        if( ! exists $got{$rowhash->{'gene'}}) {  
+            
+           my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);             
+	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+           if ($gene) {
+	        push(@out, $gene);
+           }
+	   $got{$rowhash->{'gene'}} = 1;
+        }       
+    }
    
-
-   return @out;
-
-
+    if (@out) {
+        return @out;
+    }
+    return;
 }
 
-# Alternative get_all_Genes. Does not use large joins, but does it in Perl.
-#     # prepare the SQL statement
-#     # try this differently:
-#     my %exon;
-#     my %trans;
-#     my %gene;
-#     my @contigs = $self->get_all_Contigs();
-#     foreach my $contig ( @contigs ) {
-#         my $sth = $self->_dbobj->prepare("select id from exon where contig = '". $contig->id ."'");
-#         my $res = $sth->execute();
-#         while( my $rowhash = $sth->fetchrow_hashref) {
-#  	   $exon{$rowhash->{'id'}} = 1;
-#         }
-#     }
-#     # if we have no exons - bomb out!
-#     if( scalar keys %exon == 0 ) {
-#         return;
-#     }
-#     # yank out genes from exons
-#     foreach my $exon_id ( keys %exon ) { 
-#         my $sth = $self->_dbobj->prepare("select transcript from exon_transcript where exon = '$exon_id'");
-#         my $res = $sth->execute();
-#         while( my $rowhash = $sth->fetchrow_hashref) {
-#  	   $trans{$rowhash->{'transcript'}} = 1;
-#         }
-#     }
-#     foreach my $trans_id ( keys %trans ) {
-#         my $sth = $self->_dbobj->prepare("select gene from transcript where id = '$trans_id'");
-#         my $res = $sth->execute();
-#         while( my $rowhash = $sth->fetchrow_hashref) {
-#  	   $gene{$rowhash->{'gene'}} = 1;
-#         }
-#     }
-#     foreach my $gene_id ( keys %gene ) {
-#         my $gene = $self->_dbobj->get_Gene($gene_id);
-#         push(@out,$gene);
-#     }
-#     return @out;
 
 =head2 get_Contig
 
@@ -169,11 +257,50 @@ sub get_all_Genes{
 
 =cut
 
-sub get_Contig{
+sub get_Contig {
    my ($self,$contigid) = @_;
 
    # should check this contig is in this clone?
-   return $self->_dbobj->get_Contig($contigid);
+   my $contig = $self->_db_obj->get_Contig($contigid);
+   
+   return $contig->fetch();
+}
+
+=head2 get_all_geneid
+
+ Title   : get_all_geneid
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_my_geneid {
+   my ($self) = @_;
+
+   my $cloneid = $self->id;
+
+   my $sth = $self->_db_obj->prepare("select count(*),cont.clone ,ex.contig,tran.gene  " .
+			    "from   contig          as cont, ".
+			    "       transcript      as tran, " .
+			    "       exon_transcript as et, " .
+			    "       exon            as ex " .
+			    "where  ex.id            = et.exon " .
+			    "and    tran.id          = et.transcript " .
+			    "and    cont.clone       = '$cloneid'  " .
+			    "and    cont.internal_id = ex.contig " .
+			    "group by tran.gene");
+
+   my @out;
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'gene'});
+   }
+   return @out;
 }
 
 =head2 get_all_Contigs
@@ -188,39 +315,126 @@ sub get_Contig{
 
 =cut
 
-sub get_all_Contigs{
+sub get_all_Contigs {
    my ($self) = @_;
    my $sth;
    my @res;
    my $name = $self->id();
 
-   my $sql = "select id from contig where clone = \"$name\" ";
-#   print STDERR "Looking at $name. [$sql]\n";
-   $sth= $self->_dbobj->prepare($sql);
-   my $res = $sth->execute();
+   my $sql = "select id,internal_id from contig where clone = \"$name\" ";
+   $sth= $self->_db_obj->prepare($sql);
+   my $res  = $sth->execute();
    my $seen = 0;
 
-   my $count = 0;
-   my $total = 0;
+   my $count   = 0;
+   my $total   = 0;
+   my $version = $self->embl_version();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
-       my $contig = new Bio::EnsEMBL::DBOLD::Contig ( -dbobj => $self->_dbobj,
-						   -id => $rowhash->{'id'} );
-       $contig->order($count++);
-       #$contig->offset($total);
-       
-       #$total += $contig->length();
-       #$total += 400;
+       my $contig = $self->_db_obj->get_Contig( $rowhash->{'id'});
+       $contig->internal_id($rowhash->{internal_id});
+       $contig->seq_version($version);
 
        push(@res,$contig);
        $seen = 1;
    }
+
    if( $seen == 0  ) {
-       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isnt...");
+       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isn't...");
    }
 
    return @res;   
 }
+
+=head2 get_all_RawContigs
+
+ Title   : get_rawcontig_by_position
+ Usage   : $obj->get_rawcontig_by_position($position)
+ Function: 
+ Example : 
+ Returns : returns a raw contig object or undef on error
+ Args    : a position (basepair) in clone
+
+
+=cut
+
+sub get_rawcontig_by_position {
+
+    my ($self, $pos) = @_;
+
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::CloneI') ) {
+        $self->throw("Must supply a clone to get_all_RawContigs: Bailing out...");
+    }
+
+    if ($pos < 1 ){
+        $self->throw("get_rawcontig_by_position error: Position must be > 0");
+    }
+    
+    my @contigs =  $self->get_all_Contigs();
+    @contigs = sort { $a->embl_offset <=> $b->embl_offset } @contigs;
+    
+    foreach my $c (reverse @contigs ) {
+        if ($pos > $c->embl_offset) {
+            my $size = $c->embl_offset + $c->length;
+            return $c;
+        } else {
+            my $size = $c->embl_offset + $c->length;
+            next;
+        }
+    }
+    
+    return (undef);
+}
+
+
+=head2 get_all_ContigOverlaps 
+
+ Title   : get_all_ContigOverlaps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ContigOverlaps {
+    my ($self) = @_;
+    
+    
+    my( %overlap );
+    foreach my $contig ($self->get_all_Contigs) {
+	foreach my $lap ($contig->get_all_Overlaps) {
+            $overlap{$lap->hash_string} = $lap;
+        }
+    }
+    return values %overlap;
+}
+
+=head2 is_golden
+
+ Title   : is_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_golden{
+   my ($self,@args) = @_;
+   
+   foreach my $contig ($self->get_all_Contigs) {
+       if ($contig->is_golden) {
+	   return 1;
+       }
+   }
+   return 0;
+}
+
 
 =head2 htg_phase
 
@@ -234,36 +448,187 @@ sub get_all_Contigs{
 
 =cut
 
-sub htg_phase{
+sub htg_phase {
    my $self = shift;
+
    my $id = $self->id();
 
-   my $sth = $self->_dbobj->prepare("select htg_phase from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select htg_phase from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'htg_phase'};
 }
 
+=head2 created
+
+ Title   : created
+ Usage   : $clone->created()
+ Function: Gives the unix time value of the created datetime field, which indicates
+           the first time this clone was put in ensembl
+ Example : $clone->created()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub created {
+   my ($self) = @_;
+
+   my $id = $self->id();
+
+   my $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP(created) from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'UNIX_TIMESTAMP(created)'};
+}
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $clone->modified()
+ Function: Gives the unix time value of the modified datetime field, which indicates
+           the last time this clone was modified in ensembl
+ Example : $clone->modified()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub modified {
+   my ($self) = @_;
+
+   my $id = $self->id();
+
+   my $sth = $self->_db_obj->prepare("select modified from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   my $datetime = $rowhash->{'modified'};
+   $sth = $self->_db_obj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+   $sth->execute();
+   $rowhash = $sth->fetchrow_arrayref();
+   return $rowhash->[0];
+}
+
+
+=head2 version
+
+ Title   : version
+ Usage   : $clone->version()
+ Function: Gives the value of version
+           (Please note: replaces old sv method!!!)
+ Example : $clone->version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub version {
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_db_obj->prepare("select version from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'version'};
+}
+
+=head2 _stored
+
+ Title   : _stored
+ Usage   : $obj->_stored($newval)
+ Function: Internal method should not really be needed
+           stores the time of storage of the deleted object
+ Returns : value of stored
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _stored {
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_stored'} = $value;
+    }
+    return $obj->{'_stored'};
+}
+
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : $clone->embl_version()
+ Function: Gives the value of the EMBL version, i.e. the data version
+ Example : $clone->embl_version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub embl_version {
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_db_obj->prepare("select embl_version from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'embl_version'};
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $clone->seq_date()
+ Function: loops over all $contig->seq_date, throws a warning if they are different and 
+           returns the first unix time value of the dna created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $clone->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date {
+   my ($self) = @_;
+
+   my $id = $self->id();
+   my ($seq_date,$old_seq_date);
+
+   foreach my $contig ($self->get_all_Contigs) {
+       $seq_date = $contig->seq_date;
+       if ($old_seq_date) {
+	   if ($seq_date != $old_seq_date) {
+	       $self->warn ("The created date of the DNA sequence from contig $contig is different from that of the sequence from other contigs on the same clone!");
+	   }
+       }
+       $old_seq_date = $seq_date;
+   }
+   
+   return $seq_date;
+}
+
 =head2 sv
 
  Title   : sv
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $clone->sv
+ Function: old version method
+ Example : $clone->sv
+ Returns : version number
+ Args    : none
 
 
 =cut
 
 sub sv{
-   my $self = shift;
-   my $id = $self->id();
+   my ($self) = @_;
+    
+   $self->warn("Clone::sv - deprecated method. From now on you should use the Clone::version method, which is consistent with our nomenclature");
 
-   my $sth = $self->_dbobj->prepare("select sv from clone where id = \"$id\" ");
-   $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'sv'};
+   return $self->embl_version();
 }
 
 =head2 embl_id
@@ -278,11 +643,12 @@ sub sv{
 
 =cut
 
-sub embl_id{
-   my $self = shift;
+sub embl_id {
+   my ($self) = @_;
+
    my $id = $self->id();
 
-   my $sth = $self->_dbobj->prepare("select embl_id from clone where id = \"$id\" ");
+   my $sth = $self->_db_obj->prepare("select embl_id from clone where id = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'embl_id'};
@@ -310,24 +676,24 @@ sub id {
 }
 
 
-=head2 _dbobj
+=head2 _db_obj
 
- Title   : _dbobj
- Usage   : $obj->_dbobj($newval)
+ Title   : _db_obj
+ Usage   : $obj->_db_obj($newval)
  Function: 
  Example : 
- Returns : value of _dbobj
+ Returns : value of _db_obj
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _dbobj{
+sub _db_obj {
    my ($obj,$value) = @_;
    if( defined $value) {
-      $obj->{'_dbobj'} = $value;
+      $obj->{'_db_obj'} = $value;
     }
-    return $obj->{'_dbobj'};
+    return $obj->{'_db_obj'};
 
 }
 
