@@ -80,6 +80,7 @@ sub fetch_by_dbID {
 
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
+    $self->{'_chr_name_cache'} = {};
   }
 
   #
@@ -90,8 +91,8 @@ sub fetch_by_dbID {
     my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, 
                                       snps, length
                                FROM chromosome
-                               WHERE chromosome_id = $id" );
-    $sth->execute();
+                               WHERE chromosome_id = ?" );
+    $sth->execute( $id );
     
     my($name, $known_genes, $unknown_genes, $snps, $length);
     $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$snps,\$length); 
@@ -108,14 +109,16 @@ sub fetch_by_dbID {
     }
 
     $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
+                                         -dbID => $id,
 					 -chr_name => $name,
-					 -chromosome_id => $id,
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
 					 '-length' => $length );
 
     $self->{'_chr_cache'}->{$id} = $chr;
+    $self->{'_chr_name_cache'}->{$name} = $chr;
+    
   }
 
   return $chr;
@@ -137,15 +140,46 @@ sub fetch_by_dbID {
 sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
 
-   #Convert the name to the dbID
-   my $dbID = $self->get_dbID_by_chr_name($chr_name);
+  my $chr = (); 
 
-   unless(defined $dbID) {
-     $self->warn("chromosome with name $chr_name not in database");
-     return undef;
-   } 
-   
-   return $self->fetch_by_dbID($dbID);
+  unless(defined $chr_name) {
+    $self->throw("Chromosome name argument required\n");
+  }
+
+  unless(defined $self->{'_chr_cache'} ) {
+    $self->{'_chr_cache'} = {};
+    $self->{'_chr_name_cache'} = {};
+  }
+
+  #
+  # If there is not already a cached version of this chromosome pull it
+  # from the database and add it to the cache.
+  #
+  unless($chr = $self->{'_chr_name_cache'}->{$chr_name}) {
+    my $sth = $self->prepare( "SELECT chromosome_id, known_genes, unknown_genes, 
+                                      snps, length
+                               FROM chromosome
+                               WHERE name = ?" );
+    $sth->execute( $chr_name );
+    
+    my($dbID, $known_genes, $unknown_genes, $snps, $length);
+    $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$snps,\$length); 
+    $sth->fetch();
+
+    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
+					 -dbID => $dbID,
+					 -chr_name => $chr_name,
+					 -known_genes => $known_genes,
+					 -unknown_genes => $unknown_genes,
+					 -snps => $snps,
+					 '-length' => $length );
+
+    $self->{'_chr_cache'}->{$dbID} = $chr;
+    $self->{'_chr_name_cache'}->{$chr_name} = $chr;
+    
+  }
+
+  return $chr;
 }
 
 
@@ -179,13 +213,14 @@ sub fetch_all {
    
     my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
 					 -chr_name => $name,
-					 -chromosome_id => $chromosome_id,
+					 -dbID => $chromosome_id,
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
 					 -snps => $snps,
 					 '-length' => $length );
 
     $self->{'_chr_cache'}->{$chromosome_id} = $chr;
+    $self->{'_chr_name_cache'}->{$name} = $chr;
     push @chrs, $chr;
   }
 

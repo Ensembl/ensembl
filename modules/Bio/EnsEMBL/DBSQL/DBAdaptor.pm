@@ -734,7 +734,6 @@ sub assembly_type{
       $obj->{'assembly'} = $value;
     }
     if (! defined $obj->{'assembly'}) {
-      print STDERR "DBAdaptor.pm: using default assembly type\n";
       my $ass;
       eval {
         $ass = $obj->get_MetaContainer()->get_default_assembly();

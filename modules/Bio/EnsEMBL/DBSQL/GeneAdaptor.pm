@@ -123,6 +123,8 @@ sub list_stable_geneIds {
 
   Arg [1]    : int $geneId 
                the unique internal database id of the Gene to be retrieved
+  Arg [2]    : int $chromosomal_coordinates (optional)
+               if defined, try to return chromosomal coordinates.
   Example    : $gene = $gene_adaptor->fetch_by_dbID
   Description: Retrieves a gene object from the database using its unique
                internal identifier.
@@ -133,7 +135,7 @@ sub list_stable_geneIds {
 =cut
 
 sub fetch_by_dbID {
-  my ( $self, $geneId ) = @_;
+  my ( $self, $geneId, $chr_coordinates ) = @_;
 
   my $exonAdaptor = $self->db->get_ExonAdaptor();
   my @exons = @{$exonAdaptor->fetch_all_by_gene_id( $geneId )};
@@ -223,6 +225,18 @@ sub fetch_by_dbID {
     $gene->add_Transcript( $transcript );
   }
   
+  # if chromosomal coordinates are needed, transform with empty slice
+
+  if( defined $chr_coordinates ) {
+    my $sa = $self->db->get_SliceAdaptor();
+    my $empty_slice = Bio::EnsEMBL::Slice->new
+      ( 
+       -empty => 1,
+       -adaptor => $sa 
+      );
+    $gene->transform( $empty_slice );
+  }
+
   return $gene;
 }
 

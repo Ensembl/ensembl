@@ -106,7 +106,7 @@ sub fetch_by_chr_start_end {
           -chr_start     => $start,
           -chr_end       => $end,
           -assembly_type => $type,
-          -adaptor       => $self->db->get_SliceAdaptor()
+          -adaptor       => $self
 	 );
 
     return $slice;
@@ -177,8 +177,14 @@ sub fetch_by_fpc_name {
 
     my $slice;
 
-    $slice = new Bio::EnsEMBL::Slice($chr,$slice_start,$slice_end,
-                                     $strand,$type);
+    $slice = new Bio::EnsEMBL::Slice
+      (
+       -chr_name => $chr,
+       -chr_start =>$slice_start,
+       -chr_end => $slice_end,
+       -strand => $strand,
+       -assembly_type => $type
+      );
 
     return $slice;
 }
@@ -394,7 +400,18 @@ sub fetch_by_chr_name{
    my $chromosome = $ca->fetch_by_chr_name($chr_name);
    my $chr_end = $chromosome->length();
 
-   return $self->fetch_by_chr_start_end($chr_name, $chr_start, $chr_end);
+   my $type = $self->db->assembly_type();
+
+   my $slice = Bio::EnsEMBL::Slice->new
+     (
+      -chr_name      => $chr_name,
+      -chr_start     => 1,
+      -chr_end       => $chr_end,
+      -assembly_type => $type,
+      -adaptor       => $self
+     );
+
+   return $slice;
 }
 
 
