@@ -967,7 +967,7 @@ sub translate {
 	        my $fphase = $first_exon->phase;
 	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
 	    }
-	    my $fillerseq = Bio::Seq->new( -seq => $filler, -alphabet => 'dna');
+	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
 	    my $tfillerseq = $fillerseq->translate();
 	    $seqstr .= $tfillerseq->seq;
         } 
@@ -1182,7 +1182,7 @@ sub _translate_coherent{
        print STDERR "Bstr is $tstr\n";
        print STDERR "Exon phase is " . $exon_start->phase . "\n";
        my @trans;
-       my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -alphabet => 'dna');
+       my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
 
 	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
@@ -1212,7 +1212,7 @@ sub _translate_coherent{
    # phase 0 - no need.
 
    #print "sequence = ".$tstr."\n";
-   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -alphabet => 'dna' );
+   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
    #print "transcript seq ".$temp_seq->seq."\n";
    return $temp_seq->translate();
 }
@@ -1250,9 +1250,9 @@ sub translateable_dna{
 
        # warn about non DNA passed in. 
 
-       if( $exon->entire_seq()->alphabet ne 'dna' ) {
+       if( $exon->entire_seq()->moltype ne 'dna' ) {
 	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
-	   $exon->entire_seq()->alphabet('dna');
+	   $exon->entire_seq()->moltype('dna');
        }
 #       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
 #       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
@@ -1274,7 +1274,7 @@ sub translateable_dna{
        $tstr = substr $tstr, 1;
    } 
 
-   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -alphabet => 'dna' );
+   my $temp_seq = Bio::Seq->new( -SEQ => $tstr , '-id' => 'temp', -moltype => 'dna' );
    return $temp_seq;
 }
 
