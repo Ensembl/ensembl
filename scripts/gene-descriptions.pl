@@ -75,7 +75,15 @@ while (<MAP>) {
 #  now dump the stuff to stdout.
 foreach $ensg ( keys %gene_desc )  { 
     ($db, $desc)   = @{$gene_desc{$ensg}};
-    print STDOUT "$ensg\t$desc\n";
+
+    ### get rid of the Rik mess:
+    $_ = $desc;
+    if (s/[0-9A-Z]{10}Rik protein[ \.]//g) {
+        warn "throwing away: $desc\n";
+    }
+    s/^\s*\(Fragment\)\s*$//g;
+    s/^\s*\(\s*\)\s*$//g;
+    print STDOUT "$ensg\t$_\n" if $_ =~ /[a-z]/;
 }
 
 #### following taken from ensembl-external/scripts/family-input.pl
