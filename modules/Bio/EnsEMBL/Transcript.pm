@@ -185,11 +185,29 @@ sub add_Exon{
 
 sub each_Exon{
    my ($self) = @_;
-   my @sub;
-   my @ret;
 
    return @{$self->{'_trans_exon_array'}};
 }
+
+=head2 number
+
+ Title   : number
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub number{
+   my ($self,@args) = @_;
+
+
+   return scalar(@{$self->{'_trans_exon_array'}});   
+}
+
 
 
 =head2 flush_Exon

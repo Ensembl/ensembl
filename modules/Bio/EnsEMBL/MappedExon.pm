@@ -35,6 +35,8 @@ new method
 
   my $changed = $exon->has_identical_sequence
 
+  # also has
+  $exon->has_changed_version(1);
 
 =head1 CONTACT
 
@@ -91,6 +93,32 @@ sub has_identical_sequence {
     }
 
     return $self->{_identical_sequence};
+
+}
+
+=head2 has_changed_version
+
+  Title   : has_changed_version
+  Usage   : my $changed = $exon->has_changed_version
+  Function: Get/set flag for whether the exon\'s version has changed
+  Returns : 0,1
+  Args    : 0,1
+
+=cut
+
+
+sub has_changed_version {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+
+	if ($arg != 0 && $arg != 1) {
+	    $self->throw("Argument to has_identical_sequence should be 0,1 [$arg]");
+	}
+	$self->{_changed_version} = $arg;
+    }
+
+    return $self->{_changed_version};
 
 }
 
