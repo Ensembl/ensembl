@@ -61,16 +61,15 @@ sub contig_image_components
 {
     my $components={
 	sequence=>{color=>'red',factor=>0,height=>1,legend=>'contig'},
-	exon=>{color=>'black',factor=>1,height=>6,link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',legend=>'Ensembl gene',},
+	exon=>{color=>'black',factor=>1,height=>9,link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',legend=>'Ensembl gene',},
 	intron=>{color=>'black',factor=>1,height=>1,link=>'http://www.ensembl.org/cgi-bin/geneview.pl?gene=',legend=>'Ensembl gene',},
 	RepeatMasker=>{color=>'darkgreen',factor=>7,height=>6,legend=>'repeat'},
 	swir=>{color=>'darkorange',factor=>3,height=>6,link=>'http://www.ebi.ac.uk/cgi-bin/swissfetch?',legend=>'swissprot',},
-	PfamFrag=>{color=>'black',factor=>4,height=>6,legend=>'pfam',
-		   link=>'http://www.sanger.ac.uk/cgi-bin/Pfam/querypfam.pl?loc=http%3A%2F%2Fwww.sanger.ac.uk%2Fcgi-bin%2FPfam&db=pfam&db=prosite&terms=',},
-	genscan=>{color=>'blue',factor=>2,height=>6,legend=>'genscan',},
+	PfamFrag=>{color=>'flora',factor=>4,height=>6,legend=>'pfam',link=>'http://www.ensembl.org/cgi-bin/getpfamacc?pfamentry=',},
+	genscan=>{color=>'blue2',factor=>2,height=>6,legend=>'genscan',},
 	dbest=>{color=>'red',factor=>5,height=>6,legend=>'dbEST',
 		link=>"http://www.ncbi.nlm.nih.gov/htbin-post/Entrez/query?form=6&dopt=g&db=n&uid=",},
-	vert=>{color=>'black',factor=>6,height=>6,link=>'http://www.ebi.ac.uk/cgi-bin/emblfetch?',legend=>'vert',},
+	vert=>{color=>'pine',factor=>6,height=>6,link=>'http://www.ebi.ac.uk/cgi-bin/emblfetch?',legend=>'vert',},
 	scale=>{color=>'black',factor=>8, height=>0,legend=>'scale (bp)',length=>1000,step=>10,times=>5,},		       
 		   };   
     
