@@ -161,7 +161,7 @@ sub fetch_all_by_Transcript {
   #fetch exons, remap them to the transcripts slice, and
   # keep even exons which fall off end of slice
   my $keep_all = 1;
-  my $exons = $self->generic_fetch( $constraint, undef, 
+  my $exons = $self->generic_fetch( $constraint, undef,
                                     $transcript->slice(), $keep_all);
 
   #un-override the table definition
@@ -498,25 +498,26 @@ sub _objs_from_sth {
     # If a destination slice was provided convert the coords
     # If the dest_slice starts at 1 and is foward strand, nothing needs doing
     #
-    if($dest_slice && ($dest_slice_start != 1 || $dest_slice_strand != 1)) {
-      if($dest_slice_strand == 1) {
-        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-        $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-      } else {
-        my $tmp_seq_region_start = $seq_region_start;
-        $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-        $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-        $seq_region_strand *= -1;
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+	if($dest_slice_strand == 1) {
+	  $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+	  $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+	} else {
+	  my $tmp_seq_region_start = $seq_region_start;
+	  $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+	  $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+	  $seq_region_strand *= -1;
+	}
+
+	#throw away features off the end of the requested slice
+	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+	  next FEATURE if(!$keep_all);
+	}
       }
 
       $slice = $dest_slice;
-
-      #throw away features off the end of the requested slice
-      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-        next FEATURE if(!$keep_all);
-      }
     }
-
 
     #finally, create the new repeat feature
     push @exons, Bio::EnsEMBL::Exon->new

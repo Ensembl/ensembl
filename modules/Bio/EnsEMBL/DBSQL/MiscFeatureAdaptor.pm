@@ -397,25 +397,26 @@ sub _objs_from_sth {
       # If a destination slice was provided convert the coords
       # If the dest_slice starts at 1 and is foward strand, nothing needs doing
       #
-      if($dest_slice && ($dest_slice_start != 1 || $dest_slice_strand != 1)) {
-        if($dest_slice_strand == 1) {
-          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-        } else {
-          my $tmp_seq_region_start = $seq_region_start;
-          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-          $seq_region_strand *= -1;
-        }
+      if($dest_slice) {
+	if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+	  if($dest_slice_strand == 1) {
+	    $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+	    $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+	  } else {
+	    my $tmp_seq_region_start = $seq_region_start;
+	    $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+	    $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+	    $seq_region_strand *= -1;
+	  }
 
+	  #throw away features off the end of the requested slice
+	  if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+	    #flag this feature as one to throw away
+	    $throw_away = $misc_feature_id;
+	    next FEATURE;
+	  }
+	}
         $slice = $dest_slice;
-
-        #throw away features off the end of the requested slice
-        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-          #flag this feature as one to throw away
-          $throw_away = $misc_feature_id;
-          next FEATURE;
-        }
       }
 
       if($misc_set_id) {
