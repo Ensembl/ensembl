@@ -1,12 +1,13 @@
 
+module Ensembl {
 
-module artemis {
- 
+  module artemis {
+    
     interface Sequence {
-	string getSubSequence(in long start,in long end);
-	long length();
+      string getSubSequence(in long start,in long end);
+      long length();
     };
-
+    
     struct Qualifier {
 	string name;
 	sequence<string> values;
@@ -28,7 +29,13 @@ module artemis {
 	FeatureList getAllFeatures();
 	Sequence getSequence();
     };
+  };
 };
+
+
+
+
+
 
 
 
