@@ -1,8 +1,6 @@
 #
 #
-# BioPerl module for SimilarityXref.pl
-#
-# Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
+# EnsEMBL module for IdentityXref
 #
 # Copyright Emmanuel Mongin
 #
@@ -16,20 +14,31 @@ Bio::EnsEMBL::IdentiyXref
 
 =head1 SYNOPSIS
 
-my $xref = Bio::EnsEMBL::IdentityXref->new;
+my $xref = Bio::EnsEMBL::IdentityXref->new
+                               (-QUERY_IDENTITY  => 80.4,
+                                -TARGET_IDENTITY => 90.1,
+                                -SCORE           => 90,
+                                -EVALUE          => 12,
+                                -CIGAR_LINE      => '23MD3M2I40M',
+                                -QUERY_START     => 1,
+                                -QUERY_END       => 68,
+                                -TRANSLATION_START => 10,
+                                -TRANSLATION_END   => 77,
+                                -ANALYSIS        => $analysis,
+                                -ADAPTOR         => $adaptor,
+                                -PRIMARY_ID      => $primary_id,
+                                -DBNAME          => 'SwissProt');
+                                
+                                         
 
 =head1 CONTACT
 
 Post questions to the ensembl development list: <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
-
-# Let the code begin...
 package Bio::EnsEMBL::IdentityXref;
 use vars qw(@ISA $AUTOLOAD);
 use strict;
@@ -37,9 +46,15 @@ use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBEntry );
 
+
 =head2 new
-  
-  See Bio::EnsEMBL::DBEntry::new
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -52,7 +67,7 @@ sub new {
         [qw(QUERY_IDENTITY TARGET_IDENTITY SCORE EVALUE CIGAR_LINE 
             QUERY_START QUERY_END TRANSLATION_START TRANSLATION_END
             ANALYSIS)], @args);
-    
+
     $self->{'query_identity'} = $query_identity;
     $self->{'target_identity'} = $target_identity;
     $self->{'score'} = $score;
@@ -262,9 +277,9 @@ sub analysis {
 
   Args       : none
   Example    : none
-  Description: produces a mapper object that takes coordinates from one side of 
-               the alignment to the other side. "ensembl" and "external" are the 
-               two coordinate systems contained. 
+  Description: produces a mapper object that takes coordinates from one side 
+               of the alignment to the other side. "ensembl" and "external" 
+               are the two coordinate systems contained.
   Returntype : Bio::EnsEMBL::Mapper
   Exceptions : none
   Caller     : general, ProteinDAS subsystem
@@ -278,7 +293,7 @@ sub get_mapper {
   if( exists $self->{'_cached_mapper'} ) {
     return $self->{'_cached_mapper'};
   }
-  
+
   my ( @lens, @chars );
 
   # if there is no cigar line, nothing is going to be loaded
@@ -286,36 +301,37 @@ sub get_mapper {
     my @pre_lens = split( '[DMI]', $self->cigar_line() );
     @lens = map { if( ! $_ ) { 1 } else { $_ }} @pre_lens;
     @chars = grep { /[DMI]/ } split( //, $self->cigar_line() );
-  }    
+  }
   my $translation_start = $self->translation_start();
   my $translation_end = $self->translation_end();
   my $query_start = $self->query_start();
   my $query_end = $self->query_end();
 
   #  my $hit_id = $self->display_id();
-  my $hit_id = "external_id";
-  my $translation_id = "translation_id";
+  my $ensembl_id = "ensembl_id";
+  my $external_id = "external_id";
   # now build the mapper
-  my $mapper = Bio::EnsEMBL::Mapper->new( "ensembl", "external" );
+  my $mapper = Bio::EnsEMBL::Mapper->new( "external", "ensembl" );
 
 
   for( my $i=0; $i<=$#lens; $i++ ) {
     my $length = $lens[$i];
     my $char = $chars[$i];
     if( $char eq "M" ) {
-      $mapper->add_map_coordinates( $translation_id, $translation_start,
-				    $translation_start + $length - 1,
-				    1, $hit_id, $query_start, $query_start + $length - 1 );
+      $mapper->add_map_coordinates( $external_id, $query_start,
+                                    $query_start + $length - 1, 1,
+                                    $ensembl_id, $translation_start,
+                                    $translation_start + $length - 1);
       $query_start += $length;
       $translation_start += $length;
 
     } elsif( $char eq "D" ) {
-      $query_start += $length;
-    } elsif( $char eq "I" ) {
       $translation_start += $length;
+    } elsif( $char eq "I" ) {
+      $query_start += $length;
     }
   }
-  
+
   $self->{'_cached_mapper'} = $mapper;
 
   return $mapper;
@@ -326,12 +342,13 @@ sub get_mapper {
 =head2 transform_feature
 
   Arg [1]    : a feature type with start and end $feature
-               This doesnt need to be a Bio::EnsEMBL::Feature as it doesnt 
+               This doesnt need to be a Bio::EnsEMBL::Feature as it doesnt
                need an attached slice. We may have to introduce an appropriate
                object type.
-  Example    : my $ens_prot_feature_list = $ident_xref->
-                         transform_feature( $swiss_prot_feature ); 
-  Description: a list of potential partial features which represent all mappable places
+  Example    : my $ens_prot_feature_list = 
+                    $ident_xref->transform_feature( $swiss_prot_feature );
+  Description: a list of potential partial features which represent all 
+               mappable places
                of the original feature in ensembl translation coordinates.
   Returntype : listref of whatever was put in
   Exceptions : none
@@ -346,12 +363,13 @@ sub transform_feature {
 
   my $fstart = $feature->start();
   my $fend = $feature->end();
-  
+
   my $mapper = $self->get_mapper();
   my @result;
 
-  my @coords = $mapper->map_coordinates( "external_id", $fstart, $fend, 1, "external" );
-  
+  my @coords = $mapper->map_coordinates( "external_id", $fstart, $fend, 
+                                           1, "external" );
+
   for my $coord ( @coords ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Coordinate" )) {
       my $new_feature;
@@ -359,7 +377,7 @@ sub transform_feature {
       bless $new_feature, ref( $feature );
       $new_feature->start( $coord->start() );
       $new_feature->end( $coord->end() );
-      
+
       push( @result, $new_feature );
     }
   }
@@ -387,16 +405,13 @@ sub map_feature {
 
   my $fstart = $feature->start();
   my $fend = $feature->end();
-  
+
   my $mapper = $self->get_mapper();
-  my @coords = $mapper->map_coordinates( "external_id", $fstart, $fend, 1, "external" );
-  
+  my @coords = $mapper->map_coordinates( "external_id", $fstart, $fend, 1,
+                                         "external" );
+
   return @coords;
 }
-
-
-
-
 
 
 
