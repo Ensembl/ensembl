@@ -938,16 +938,23 @@ sub get_all_DASFactories {
 =cut
 
 sub get_all_DASFeatures{
-    my ($self,@args) = @_;
-    my %das_features;
-    foreach my $dasfact( @{$self->get_all_DASFactories} ){
-      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
-      $das_features{$dasfact->_dsn} = [@featref];
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->_dsn;
+    if( $self->{_das_features}->{$dsn} ){ # Use cached
+      $das_features{$dsn} = $self->{_das_features}->{$dsn};
+      next;
     }
-    return \%das_features;
+    else{ # Get fresh data
+      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+      $self->{_das_features}->{$dsn} = [@featref];
+      $das_features{$dsn} = [@featref];
+    }
+  }
+  return \%das_features;
 }
-
-
 
 1;
 
