@@ -689,8 +689,6 @@ sub accession_number {
     return $acc;
 }
 
-
-
 sub get_KaryotypeBands() {
   my ($self) = @_;
   
@@ -707,51 +705,107 @@ sub get_Chromosome {
   return $ca->fetch_by_chr_name($self->chr_name());
 }
 
+=head2 get_repeatmasked_seq
+
+  Arg [1]    : string $logic_name (optional)
+  Arg [2]    : int $soft_masking_enable (optional)
+  Example    : $slice->get_repeatmasked_seq or $slice->get_repeatmasked_seq('RepeatMask',1)
+  Description: Returns Bio::PrimarySeq containing the masked (repeat replaced by N) 
+               or soft-masked (when Arg[2]=1, repeat in lower case while non repeat
+               in upper case) sequence corresponding to the Slice object.
+               Will only work with database connection to get repeat features.
+  Returntype : Bio::PrimarySeq
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_repeatmasked_seq {
-    my ($self, $logic_name) = @_;
+    my ($self,$logic_name,$soft_mask) = @_;
 
     if(!$logic_name){
       $logic_name = 'RepeatMask';
     }
-    #$self->warn("Slice: get_repeatmasked_seq\n");
 
-    my @repeats = $self->get_all_RepeatFeatures();
+    unless (defined $soft_mask) {
+      $soft_mask = 0;
+    }
+
+    #$self->warn("Slice: get_repeatmasked_seq\n");      
+
+    my @repeats = $self->get_all_RepeatFeatures($logic_name);
     my $dna = $self->seq();
-    my $masked_dna = $self->mask_features($dna, @repeats);
-    my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
-                                             '-display_id' => $self->id,
-                                             '-primary_id' => $self->id,
-                                             '-moltype' => 'dna',
-					     );
+    my $masked_dna = $self->_mask_features($dna,\@repeats,$soft_mask);
+    my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
+					  '-display_id' => $self->id,
+					  '-primary_id' => $self->id,
+					  '-moltype'    => 'dna'
+					 );
     return $masked_seq;
 }
 
+=head2 _mask_features
 
-sub mask_features {
-    my ($self, $dnastr,@repeats) = @_;
+  Arg [1]    : string $dna_string
+  Arg [2]    : array_ref \@repeats
+               reference to a list Bio::EnsEMBL::RepeatFeature
+               give the list of coordinates to replace with N or with lower case
+  Arg [3]    : int $soft_masking_enable (optional)
+  Example    : 
+  Description: replaces string positions described in the RepeatFeatures
+               with Ns (default setting), or with the lower case equivalent (soft masking)
+  Returntype : string 
+  Exceptions : none
+  Caller     : get_repeatmasked_seq
 
-#   $self->warn("Slice: mask_features\n");
+=cut
 
-    my $dnalen = length($dnastr);
-    #print "there are ".@repeats."\n";
-  REP:foreach my $f (@repeats) {
-      #print $f->start." ".$f->end." ".$f->repeat_id."\n";
-      my $start    = $f->start;
-      my $end	   = $f->end;
-      my $length = ($end - $start) + 1;
-      
-      if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
-	  print STDERR "Eeek! Coordinate mismatch - start $start or  end $end not within $dnalen\n";
-	  next REP;
-      }
-      
-      $start--;
-      
-      my $padstr = 'N' x $length;
-      
-      substr ($dnastr,$start,$length) = $padstr;
+sub _mask_features {
+  my ($self,$dnastr,$repeats,$soft_mask) = @_;
+  
+  # explicit CORE::length call, to avoid any confusion with the Slice length method
+  my $dnalen = CORE::length($dnastr);
+
+ REP:foreach my $f (@{$repeats}) {
+#    print STDERR $f->dbID." ".$f->start." ".$f->end."\n";
+    my $start  = $f->start;
+    my $end    = $f->end;
+    my $length = ($end - $start) + 1;
+    
+    # check if we get repeat completely outside of expected slice range
+    if ($end < 1 || $start > $dnalen) {
+      warn "Repeat completely outside slice coordinates!!! That should not happen!!
+repeat_start $start or repeat_end $end not within [1-$dnalen] slice range coordinates\n";
+      next REP;
+    }
+    
+    # repeat partly outside slice range, so correct
+    # the repeat start and length to the slice size if needed
+    if ($start < 1) { 
+      $start = 1;
+      $length = ($end - $start) + 1;
+    }
+    
+    # repeat partly outside slice range, so correct
+    # the repeat end and length to the slice size if needed
+    if ($end > $dnalen) {
+      $end = $dnalen;
+      $length = ($end - $start) + 1;
+    }
+
+    $start--;
+    
+    my $padstr;
+    
+    if ($soft_mask) {
+      $padstr = lc substr ($dnastr,$start,$length);
+    } else {
+      $padstr = 'N' x $length;
+    }
+    substr ($dnastr,$start,$length) = $padstr;
+
   }
-    return $dnastr;
+  return $dnastr;
 } 
 
 
