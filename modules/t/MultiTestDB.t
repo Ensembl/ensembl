@@ -20,7 +20,7 @@ ok($dba);
 my $sth = $dba->db->prepare("select * from gene");
 $sth->execute;
 
-ok(scalar($sth->rows) == 19);
+ok(scalar($sth->rows) == 20);
 
 
 # now hide the gene table i.e. make an empty version of it
@@ -32,13 +32,13 @@ ok($sth->rows == 0);
 # restore the gene table
 $ens_test->restore();
 $sth->execute;
-ok(scalar($sth->rows) == 19);
+ok(scalar($sth->rows) == 20);
 
 
 # now save the gene table i.e. make a copy of it
 $ens_test->save("core","gene");
 $sth->execute;
-ok(scalar($sth->rows) == 19);
+ok(scalar($sth->rows) == 20);
 
 
 # delete 9 genes from the db
@@ -54,7 +54,7 @@ ok(scalar($sth->rows) == 10);
 # check to see whether the restore works again
 $ens_test->restore();
 $sth->execute;
-ok(scalar($sth->rows) == 19);
+ok(scalar($sth->rows) == 20);
 
 
 $sth->finish;
