@@ -268,11 +268,13 @@ sub _transform_between_Slices {
 		 "to chr " . $to_slice->chr_name());
   }
   
-  my $new_exon = new Bio::EnsEMBL::Exon();
-  
+  my $new_exon = new Bio::EnsEMBL::Exon;
   %$new_exon = %$self;
 
   my $shift = $from_slice->chr_start() - $to_slice->chr_start();
+
+  #unset the new exons supporting features
+  $new_exon->{'_supporting_evidence'} = [];
 
   #shift the start and end of the exon accordingly
   #negative coordinates are permitted, as are coords past slice boundary
@@ -280,6 +282,16 @@ sub _transform_between_Slices {
   $new_exon->end($self->end() + $shift);
 
   $new_exon->contig($to_slice);
+
+  #copy the attached supporting features and transform them
+  my @feats;
+  foreach my $sf ($self->get_all_supporting_features()) {
+    #my $f = $sf->new();
+    #%$f = %$sf;
+    ###(mcvicker) this would be better if the feature was copied
+    push @feats, $sf->transform($to_slice);
+  }
+  $new_exon->add_supporting_features(@feats);
 
   return $new_exon;
 }
@@ -315,10 +327,9 @@ sub _transform_to_Slice {
      $self->strand()
     );
 
-  # exons should always transform so in theory no error check
-  # necessary
-  # actually we could have exons inside and outside the Slice because of db design
-  # and the query that produces them
+  # exons should always transform so in theory no error check necessary
+  # actually we could have exons inside and outside the Slice 
+  # because of db design and the query that produces them
   if( ! @mapped ) {
     $self->throw( "Exon couldnt map" );
   }
@@ -337,8 +348,11 @@ sub _transform_to_Slice {
     %$slice = %{$sa->fetch_by_chr_name( $mapped[0]->id() )};
   } 
 
-  my $newexon = Bio::EnsEMBL::Exon->new();
+  my $newexon = new Bio::EnsEMBL::Exon();
   %$newexon = %$self;
+
+  #unset supporting features of new exon
+  $newexon->{'_supporting_evidence'} = [];
   
   if ($slice->strand == 1) {
     $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
@@ -351,6 +365,16 @@ sub _transform_to_Slice {
   $newexon->strand( $mapped[0]->strand() * $slice->strand() );
   $newexon->contig( $slice );
 
+  #copy the attached supporting features and transform them
+  my @feats;
+  foreach my $sf ($self->get_all_supporting_features()) {
+   #my $f = $sf->new();
+   #%$f = %$sf;
+    #(mcvicker) this would be better if the feature was copied
+   push @feats, $sf->transform($slice);
+  }
+  $newexon->add_supporting_features(@feats);
+    
   return $newexon;
 }
 
@@ -372,15 +396,14 @@ sub _transform_to_Slice {
 sub _transform_to_RawContig {
   my $self = shift;
 
-  my $mapper = $self->contig()->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-    ( $self->contig()->assembly_type() );
+  my $asma = $self->contig()->adaptor()->db->get_AssemblyMapperAdaptor();
+
+  my $mapper = $asma->fetch_by_type( $self->contig()->assembly_type() );
   my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
   my $slice_chr_start = $self->contig->chr_start();
   my $slice_chr_end = $self->contig->chr_end();
 
   
-  $self->_transform_features_to_rawcontig();
-
   my ($exon_chr_start,$exon_chr_end);
 
   if ($self->contig()->strand() == 1) {
@@ -404,10 +427,21 @@ sub _transform_to_RawContig {
     return $self;
   }
 
+  #transform the supporting features to raw contig coords (hashed on contig)
+  my %sf_hash;
+  foreach my $sf ($self->get_all_supporting_features()) {
+    foreach my $mapped_feat ($sf->transform()) {
+      unless(exists $sf_hash{$mapped_feat->contig->name}) {
+	$sf_hash{$mapped_feat->contig->name} = [];
+      }
+      push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
+    }
+  }
+      
   if( scalar( @mapped ) > 1 ) {
     # sticky exons
     # bjeacchh
-   
+
     my $stickyExon = Bio::EnsEMBL::StickyExon->new();
     $stickyExon->phase( $self->phase() );
     $stickyExon->adaptor( $self->adaptor() );
@@ -433,6 +467,13 @@ sub _transform_to_RawContig {
       $componentExon->end_phase($self->end_phase);
       $componentExon->dbID( $self->dbID() );
       $componentExon->adaptor( $self->adaptor() );
+
+      #add the supporting features on this contig to the component exon
+      if(exists $sf_hash{$rawContig->name()}) {
+	
+	$componentExon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
+      }
+
       $stickyExon->add_component_Exon( $componentExon );
       $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
     }
@@ -462,43 +503,25 @@ sub _transform_to_RawContig {
 		   " lies on a gap cannot be mapped\n");
     }
     my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
-    $self->start( $mapped[0]->start() );
-    $self->end( $mapped[0]->end() );
-    $self->strand( $mapped[0]->strand() );
-    # attaching seq ?
-    $self->contig( $rawContig );
-    return $self;
-  }
-}
-
-
-
-# this should definatly happen inside the features ...
-sub _transform_features_to_rawcontig {
-  my ( $self ) = @_;
-
-  if( ! defined $self->{'_supporting_evidence'} ) {
-    return;
-  }
-  #print STDERR "TRANSFORMING SUPPORTING FEATURES\n";
-  my @supporting_features = $self->each_Supporting_Feature;
-  my @remapped_sf;
-  foreach my $sf(@supporting_features) {
-    #print "transforming ".$sf."\n";
-    my @new_sf = $sf->transform();
-    #print STDERR "have ".@new_sf." supporting features from transform\n";
-    #foreach my $f(@new_sf){
-    #  print "have ".$f." from transformation\n";
-    #}
-    push(@remapped_sf, @new_sf);
+    my $new_exon = new Bio::EnsEMBL::Exon();
     
+    #copy this exon
+    %$new_exon = %$self;
+
+    #unset supporting evidence of new exon
+    $new_exon->{'_supporting_evidence'} = undef;
+
+    $new_exon->start( $mapped[0]->start() );
+    $new_exon->end( $mapped[0]->end() );
+    $new_exon->strand( $mapped[0]->strand() );
+    # attach raw contig
+    $new_exon->contig( $rawContig );
+    
+    #replace old supporting feats with transformed supporting feats
+    $new_exon->add_supporting_features($sf_hash{$rawContig->name()});
+    
+    return $new_exon;
   }
-  $self->{'_supporting_evidence'} = undef;
-  foreach my $f(@remapped_sf){
-   # print "adding ".$f." to supporting feature\n";
-    $self->add_Supporting_Feature($f);
-  }
-  
 }
 
 
@@ -913,7 +936,9 @@ sub _genscan_peptide{
                get_all_supporting_features call will not retrieve supporting
                features from the database.
   Returntype : none
-  Exceptions : thrown if any of the features are not SeqFeatureIs
+  Exceptions : throw if any of the features are not SeqFeatureIs
+               throw if any of the features are not in the same coordinate
+               system as the exon
   Caller     : general
 
 =cut
@@ -923,11 +948,19 @@ sub add_supporting_features {
   
   $self->{_supporting_evidence} = [] 
     unless defined($self->{_supporting_evidence});
-
+  
   # check whether this feature object has been added already
-  FEATURE: foreach my $feature (@features) {
-    $self->throw("Supporting feat [$feature] not a Bio::EnsEMBL::SeqFeatureI") 
-      unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI"));
+ FEATURE: foreach my $feature (@features) {
+    unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI")) {
+      $self->throw("Supporting feat [$feature] not a " . 
+		   "Bio::EnsEMBL::SeqFeatureI");
+    } 
+    
+    unless($self->contig()->name() eq $feature->contig->name()) {
+      $self->throw("Supporting feat not in same coord system as exon\n" .
+		   "exon is attached to [".$self->contig->name()."]\n" .
+		   "feat is attached to [".$feature->contig->name()."]");
+    }
 
     foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
       # compare objects
@@ -936,7 +969,7 @@ sub add_supporting_features {
 	next FEATURE;
       }
     }
-  
+    
     #no duplicate was found, add the feature
     push(@{$self->{_supporting_evidence}},$feature);
   }

@@ -191,63 +191,6 @@ sub ungapped_features {
 }
 
 
-
-=head2 transform
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-  Example    : none
-  Description: if argument is given, transforms this feature into the slice
-               coordinate system, invalidating this one.
-               if no argument is given, transforms this feature into raw contig
-               coordinates, invalidating this one.
-               The process can produce more than one feature so we return an array. 
-  Returntype : list of Bio::EnsEMBL::BaseAlignFeature
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub transform{
-  my ($self, $slice) = @_;
-  #print "transforming ".$self." to ".$slice." coords\n";
-  if( ! defined $slice ) {
-    #Since slice arg is not defined -  we want raw contig coords
-    if(( defined  $self->contig ) && 
-       ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
-   #   print STDERR "BaseAlignFeature::transform, you are already apparently in rawcontig coords so why try to transform to them\n";
-      #we are already in rawcontig coords, nothing needs to be done
-      return $self;
-    } else {
-      #transform to raw_contig coords from Slice coords
-      my @array =  $self->_transform_to_rawcontig();
-    #  print "transform to  rawcontig has returned ".@array." features\n";
-    #  foreach my $a(@array){
-#	print "feature is ".$a."\n";
-#      }
-      return @array;
-    }
-  }
-
-  if( defined $self->contig ) {  
-    if($self->contig->isa( "Bio::EnsEMBL::RawContig" ))  {
-      #transform to slice coords from raw contig coords
-      return $self->_transform_to_slice( $slice );
-    } elsif($self->contig->isa( "Bio::EnsEMBL::Slice" )) {
-      #transform to slice coords from other slice coords
-      return $self->_transform_between_slices( $slice );
-    } else {
-      #Unknown contig type - throw an exception
-      return $self->throw("Exon's 'contig' is of unknown type " 
-		   . $self->contig() . " - cannot transform to Slice coords");
-    }
-  } else {
-    #Can't convert to slice coords without a contig to work with
-    return $self->throw("Exon's contig is not defined - cannot transform to " .
-			"Slice coords");
-  }
-}
-
 =head2 dbID
 
   Arg [1]    : int $dbID
@@ -796,22 +739,16 @@ sub _parse_features {
 
 
 
-sub _transform_to_slice{
-  my ($self, $slice ) = @_;
-  $self->throw( "implented soon :-)" );
-}
-
-
-
-sub _transform_to_rawcontig{
+sub _transform_to_RawContig {
   my ($self) = @_;
   #print STDERR "transforming to raw contig coord\n\n";
   if(!$self->contig){
-    $self->throw("can't transform coordinates of ".$self." without some sort of contig defined");
+    $self->throw("can't transform coordinates of " . $self . 
+		 " without some sort of contig defined");
   }
   #my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
  
-  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
   #my $global_start = $self->contig->chr_start();
   my @out;
 
@@ -820,7 +757,7 @@ sub _transform_to_rawcontig{
   my %rc_features;
 
   foreach my $f(@features){
-    my @new_features = $self->_transform_feature_to_rawcontig($f);
+    my @new_features = $self->_transform_feature_to_RawContig($f);
     push(@mapped_features, @new_features);
   }
 
@@ -839,19 +776,12 @@ sub _transform_to_rawcontig{
     $outputf->score( $self->score() );
     $outputf->percent_id( $self->percent_id() );
     $outputf->p_value( $self->p_value() );
+    $outputf->contig($rcAdaptor->fetch_by_dbID($contig_id));
     push(@out, $outputf);
   }
   return @out;
 
 }
-
-
-
-sub _transform_between_slices {
-  my ( $self, $to_slice ) = @_;
-}
-
-
 
 
 
@@ -890,7 +820,7 @@ sub _query_unit {
 }
 
 
-sub _transform_feature_to_rawcontig{
+sub _transform_feature_to_RawContig{
   my($self, $feature) =  @_;
 
   my $verbose = 0;
@@ -903,7 +833,7 @@ sub _transform_feature_to_rawcontig{
   }
   my $mapper = $self->contig->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type( $self->contig()->assembly_type() );
   
-  my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+  my $rcAdaptor = $self->contig->adaptor()->db()->get_RawContigAdaptor();
   my $global_start = $self->contig->chr_start();
   my @out;
   my @mapped = $mapper->map_coordinates_to_rawcontig
@@ -974,7 +904,7 @@ sub _transform_feature_to_rawcontig{
       $new_feature->hseqname($feature->hseqname);
       #$new_feature->hscore($feature->score);
       $new_feature->analysis($feature->analysis);
-      $new_feature->attach_seq($rawContig);
+      $new_feature->contig($rawContig);
       #print STDERR "FEATURE: ",join( " ", ( $new_feature->start(), $new_feature->end(), $new_feature->seqname,
 	#			$new_feature->contig(), $new_feature->hstart(), $new_feature->hend() )),"\n";
       #print STDERR "split feature ".$new_feature->gffstring."\n";
@@ -1008,17 +938,11 @@ sub _transform_feature_to_rawcontig{
     $new_feature->hseqname($feature->hseqname);
     #$new_feature->hscore($feature->score);
     $new_feature->analysis($feature->analysis);
-    $new_feature->attach_seq($rawContig);
-
+    $new_feature->contig($rawContig);
     push(@out, $new_feature);
   }
 
-  foreach my $sf(@out){
-    #print STDERR "gff ".$sf->gffstring."\n";
-  }
-
   return @out;
-
 }
 
 1;

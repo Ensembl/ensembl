@@ -1077,8 +1077,8 @@ sub _transform_to_Slice {
 
   my $dbh = $self->contig->adaptor->db;
 
-  my $mapper = $dbh->get_AssemblyMapperAdaptor->
-   fetch_by_type($slice->assembly_type);
+  my $mapper = 
+    $dbh->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
   my $rca = $dbh->get_RawContigAdaptor;
 
   my @mapped = $mapper->map_coordinates_to_assembly(
@@ -1093,7 +1093,8 @@ sub _transform_to_Slice {
   }
 
   unless (@mapped == 1) {
-    $self->throw("$self should only map to one chromosome - something bad has happened ...");
+    $self->throw("$self should only map to one chromosome - " .
+		 "something bad has happened ...");
   }
 
   if ($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
@@ -1108,6 +1109,9 @@ sub _transform_to_Slice {
   $self->end    ($mapped[0]->end   - $global_start + 1);
   $self->strand ($mapped[0]->strand);
   $self->seqname($mapped[0]->id);
+
+  #set the contig to the slice
+  $self->contig($slice);
 
   return $self;
 }
@@ -1175,7 +1179,7 @@ sub _transform_to_RawContig {
     $self->end       ($mapped[0]->end);
     $self->strand    ($mapped[0]->strand);
     $self->seqname   ($mapped[0]->id);
-    $self->attach_seq($rca->fetch_by_dbID($mapped[0]->id));
+    $self->contig($rca->fetch_by_dbID($mapped[0]->id));
 
     return $self;
   }
@@ -1199,11 +1203,11 @@ sub _transform_to_RawContig {
     # case where only one RawContig maps
     if (@coords == 1) {
 
-        $self->start     ($coords[0]->start);
-        $self->end       ($coords[0]->end);
-        $self->strand    ($coords[0]->strand);
-        $self->seqname   ($coords[0]->id);
-        $self->attach_seq($rca->fetch_by_dbID($coords[0]->id));
+        $self->start  ($coords[0]->start);
+        $self->end    ($coords[0]->end);
+        $self->strand ($coords[0]->strand);
+        $self->seqname($coords[0]->id);
+        $self->contig ($rca->fetch_by_dbID($coords[0]->id));
 
 	$self->warn("Feature [$self] truncated as lies partially on a gap");
         return $self;
@@ -1226,10 +1230,11 @@ sub _transform_to_RawContig {
 
       my $feat = $obj->new;
 
-      $feat->start     ($map->start);
-      $feat->end       ($map->end);
-      $feat->strand    ($map->strand);
-      $feat->attach_seq($rca->fetch_by_dbID($map->id));
+      $feat->start  ($map->start);
+      $feat->end    ($map->end);
+      $feat->strand ($map->strand);
+      $feat->contig ($rca->fetch_by_dbID($map->id));
+      $feat->adaptor($self->adaptor) if $self->adaptor();
 
       push @out, $feat;
     }

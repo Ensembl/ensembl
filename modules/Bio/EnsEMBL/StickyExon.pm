@@ -458,7 +458,17 @@ sub transform {
     $newexon->adaptor($component_exons[0]->adaptor);
 
     $newexon->contig( $slice );
-    $newexon->add_supporting_features(@supporting_features);
+    
+    #copy each of the supporting features and transform them
+    my @feats;
+    foreach my $sf (@supporting_features) {
+      #my $f;
+      #%$f = %$sf;
+      #(mcvicker) this would be better as a copy
+      push @feats, $sf->transform($slice);
+    }
+    $newexon->add_supporting_features(@feats);
+
     $newexon->phase( $composite_exon_phase );
 #SMJS Hack
 
