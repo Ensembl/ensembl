@@ -383,18 +383,11 @@ sub get_all_Genes{
 
 sub get_Genes_by_source{
    my ($self,$source) = @_;
-   
-   # Possibly this can be improved by selecting genes a query,
-   # we expect that most times there will not be many genes in a region
-   # however
    my @genes = $self->get_all_Genes();
    
    my @out = ();
 
-   print STDERR "Slice : Getting genes of source $source \n";
-
    foreach my $gene (@genes) {
-     print STDERR "Slice : Got gene of source " . $gene->source();
      if($gene->source() eq $source) {
        push @out, $gene;
      }

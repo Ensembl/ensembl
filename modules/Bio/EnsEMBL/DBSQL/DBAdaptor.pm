@@ -539,8 +539,6 @@ sub lite_DBAdaptor {
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    print STDERR "**Getting Proxy GeneAdaptor: \n";
-
     #use a proxy gene adaptor, capable of making decisions with regards to the
     #database that it uses
     return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor");
