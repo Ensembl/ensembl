@@ -8,7 +8,7 @@ use vars '@ISA';
 
 sub get_set_lists{
 
-  return [["ExonerateGappedBest1", ["xenopus_tropicalis","*"]]];
+  return [["ExonerateGappedBest_90_perc_id", ["xenopus_tropicalis","*"]]];
 
 }
 
