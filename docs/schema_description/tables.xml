@@ -105,6 +105,22 @@
       </see>
 
     </table>
+
+    <!-- ============================================================ -->
+
+    <table> 
+      
+      <name>dnac</name>
+
+      <description>Stores compressed DNA sequence.</description>
+      
+      <used></used>
+
+      <see>
+
+      </see>
+
+    </table>
     
     <!-- ============================================================ -->
 
@@ -661,6 +677,72 @@
       </see>
 
     </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>misc_feature</name>
+
+      <description>Alllows for storage of arbitrary features.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="misc_attrib" reason="Allows storage of arbitrary attributes for the misc_features."/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>misc_attrib</name>
+
+      <description>Stores arbitrary attributes about the features in the misc_feature table.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="misc_feature" reason=""/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>misc_set</name>
+
+      <description>Defines "sets" that the features held in the misc_feature table can be grouped into.</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="misc_feature_misc_set" reason="Defines which features are in which set"/>
+      </see>
+
+    </table>
+
+    <!-- ============================================================ -->
+
+    <table>
+      
+      <name>misc_feature_misc_set</name>
+
+      <description>Defines which of the features in misc_feature are in which of the sets defined in misc_set</description>
+      
+      <used></used>
+      
+      <see>
+	<tableref name="misc_feature" reason=""/>
+	<tableref name="misc_set" reason=""/>
+      </see>
+
+    </table>
+
 
   </tablegroup> <!-- Features and analyses-->
 
