@@ -66,7 +66,18 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
-  my $ian_count=0;
+  my $type;
+  if($file =~ /protein/){
+    $type = 'peptide';
+  }
+  elsif($file =~ /rna/){
+    $type = 'dna';
+  }
+  else{
+    die "could not work out type of sequences for fiel $file\n";
+  }
+
+
   while (<REFSEQ>) {
     
     my $xref;
@@ -116,7 +127,7 @@ sub create_xrefs {
       $xref->{DESCRIPTION} = $description;
       $xref->{SOURCE_ID} = $source_id;
       $xref->{SEQUENCE} = $parsed_seq;
-      $xref->{SEQUENCE_TYPE} = 'peptide';
+      $xref->{SEQUENCE_TYPE} = $type;
       $xref->{SPECIES_ID} = $species_id;
 
       # TODO experimental/predicted
