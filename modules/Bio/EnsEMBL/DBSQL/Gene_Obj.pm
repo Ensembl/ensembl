@@ -372,7 +372,7 @@ sub get_array_supporting {
           AND exon.contig = con.internal_id
           AND tscript.translation = transl.id
           AND gene.id IN ($inlist)
-
+          AND genetype.gene_id = gene.id
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
@@ -380,47 +380,6 @@ sub get_array_supporting {
         };
 
     #print STDERR "query [$query]\n"; 
-
-    # This should work as but I couldn't test it because
-    # the exon.contig was the wrong column type.
-    # (NOTE: geneclone_neighbourhood table not needed)
-    #
-    #                       JGRG
-    #
-    #my $query = qq{
-    #    SELECT tscript.gene
-    #      , con.id
-    #      , tscript.id
-    #      , e_t.exon, e_t.rank
-    #      , exon.seq_start, exon.seq_end
-    #      , UNIX_TIMESTAMP(exon.created)
-    #      , UNIX_TIMESTAMP(exon.modified)
-    #      , exon.strand
-    #      , exon.phase
-    #      , transl.seq_start, transl.start_exon
-    #      , transl.seq_end, transl.end_exon
-    #      , transl.id
-    #      , gene.version
-    #      , tscript.version
-    #      , exon.version
-    #      , transl.version
-    #      , con.clone
-    #    FROM contig con
-    #      , gene
-    #      , transcript tscript
-    #      , exon_transcript e_t
-    #      , exon
-    #      , translation transl
-    #    WHERE con.internal_id = exon.contig
-    #      AND exon.id = e_t.exon
-    #      AND e_t.transcript = tscript.id
-    #      AND tscript.translation = transl.id
-    #      AND tscript.gene = gene.id
-    #      AND gene.id IN ('ENSG00000019144','ENSG00000019009','ENSG00000019031','ENSG00000019032','ENSG00000019123')
-    #    ORDER BY tscript.gene
-    #      , tscript.id
-    #      , e_t.rank
-    #    };
 
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
