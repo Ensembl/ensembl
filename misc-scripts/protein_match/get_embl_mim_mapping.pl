@@ -2,6 +2,8 @@ use strict;
 
 #Some doc will come ...
 
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/get_embl_mim_mapping.pl -sp ../primary/hum_sp_sptrembl.pep -dbmap mapdb.map -output sp_embl_mim.map
+
 use Getopt::Long;
 use Bio::SeqIO;
 
