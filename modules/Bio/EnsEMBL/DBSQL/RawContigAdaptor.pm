@@ -86,62 +86,6 @@ sub new {
 
 
 
-=head2 get_internal_id_by_id
-
-  Arg [1]    : string $id
-               The string name of the contig.
-  Example    : $contig_id = $raw_contig_adaptor->get_internal_id_by_id($name);
-  Description: It is not recommended that this method be used since 
-               should probably be deprecated. A much better approach would be:
-               $contig_id = $raw_contig_adaptor->fetch_by_name($name)->dbID();
-  Returntype : int
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub get_internal_id_by_id {
-    my ($self, $id) = @_;
-    my $sth = $self->db->prepare
-    (
-         "SELECT contig_id FROM contig WHERE name = '$id'"
-    );
-    my $res = $sth->execute;
-    if(my $rowhash = $sth->fetchrow_hashref) {
-	return $rowhash->{contig_id};
-    } else {
-	$self->warn("Could not find contig with id $id");
-    }
-}
-
-
-=head2 get_id_by_contig_id
-
-  Arg [1]    : int $contig_id
-               The unique database identifier of the desired contig
-  Example    : $contig_name = $raw_contig_adaptor->get_id_by_contig_id($id);
-  Description: It is not recommended that this method be used since it
-               should probably be deprecated.  A much better approach would be:
-               $contig_name = $raw_contig_adaptor->fetch_by_dbID($id)->name();
-  Returntype : string
-  Exceptions : none 
-  Caller     : ?
-
-=cut
-
-sub get_id_by_contig_id {
-    my ($self, $contig_id) = @_;
-    my $sth = $self->db->prepare
-    (
-         "SELECT name FROM contig WHERE contig_id = '$contig_id'"
-    );
-    my $res = $sth->execute;
-    if(my $rowhash = $sth->fetchrow_hashref) {
-	return $rowhash->{name};
-    } else {
-	$self->warn("Could not find contig with contig_id $contig_id");
-    }
-}
 
 
 =head2 fetch_by_dbID
@@ -555,18 +499,14 @@ sub remove {
   my ($self, $contig) = @_;
 
   # The list of feature adaptors to be looped over
-  my @adaptor_list = qw( SimpleFeature RepeatFeature PredictionTranscript
-			 ProteinAlignFeature DnaAlignFeature);
+  my @adaptor_list = ($self->db()->get_SimpleFeatureAdaptor(),
+		      $self->db()->get_RepeatFeatureAdaptor(), 
+		      $self->db()->get_PredictionTranscriptAdaptor(),
+		      $self->db()->get_ProteinAlignFeatureAdaptor(),
+		      $self->db()->get_DnaAlignFeatureAdaptor());
   
   foreach my $adaptor ( @adaptor_list ) {
-
-    my $adaptor_type = "get_" . $adaptor . "Adaptor";
-    my $fa = $self->db->$adaptor_type;
-
-    if ( ! $fa ) {
-      $self->throw("Couldn't get a '$adaptor'Adaptor");
-    }
-    $fa->remove_by_RawContig($contig);
+    $adaptor->remove_by_RawContig($contig);
   }
 
   # Delete DNA as long as we aren't using a remote DNA database.
