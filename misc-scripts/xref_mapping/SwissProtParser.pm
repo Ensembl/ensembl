@@ -85,6 +85,8 @@ sub create_xrefs {
 
   my ($source_id, $species_id, $file) = @_;
 
+  my %dependent_sources = BaseParser->get_dependent_xref_sources(); # name-id hash
+
   open(SWISSPROT, $file) || die "Can't open Swissprot file $file\n";
 
   my @xrefs;
@@ -145,7 +147,6 @@ sub create_xrefs {
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
 	my ($source, $acc, @dummy) = split /;\s*/, $1;
-	my %dependent_sources = BaseParser->get_dependent_xref_sources(); # name-id hash
 	if (exists $dependent_sources{$source}) {
 	  # create dependent xref structure & store it
 	  my %dep;
@@ -157,6 +158,26 @@ sub create_xrefs {
       }
     }
 
+    # store PUBMED and MEDLINE dependent xrefs too
+    my ($medline) = $_ =~ /RX\s+MEDLINE=(\d+);/;
+    if (defined $medline) {
+
+      my %medline_dep;
+      $medline_dep{SOURCE_ID} = $dependent_sources{PUBMED};
+      $medline_dep{ACCESSION} = $medline;
+      push @{$xref->{DEPENDENT_XREFS}}, \%medline_dep;
+
+    }
+
+    my ($pubmed) = $_ =~ /RX\s+PubMed=(\d+);/;
+    if (defined $pubmed) {
+
+      my %pubmed_dep;
+      $pubmed_dep{SOURCE_ID} = $dependent_sources{PUBMED};
+      $pubmed_dep{ACCESSION} = $pubmed;
+      push @{$xref->{DEPENDENT_XREFS}}, \%pubmed_dep;
+
+    }
 
     push @xrefs, $xref;
 
