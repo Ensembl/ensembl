@@ -60,8 +60,8 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensembl';
-my $dbuser = 'ensro';
+my $dbname = 'matloob_freeze17';
+my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 

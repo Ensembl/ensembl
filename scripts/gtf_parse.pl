@@ -94,15 +94,19 @@ else {
     my $db =  Bio::EnsEMBL::DBLoader->new($locator);
     my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($db);
     foreach my $gene (@genes) {
+	print STDERR "Gene id: ".$gene->id."\n";
 	my @exons=$gene->each_unique_Exon;
 	my $fpc=$exons[0]->contig_id;
 	print STDERR "Got seqname $fpc\n";
 	$db->static_golden_path_type('UCSC');
 	my $sgp_adaptor = $db->get_StaticGoldenPathAdaptor();
 	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
+	foreach my $exon ($gene->each_unique_Exon) {
+	    $exon->contig_id($vc->id);
+	}
 	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
-	print STDERR "Writing gene $gene\n";
-	$gene_obj->write($gene);
+	print STDERR "Writing gene ".$gene->id."\n";
+	$gene_obj->write($newgene);
     }
 }
 

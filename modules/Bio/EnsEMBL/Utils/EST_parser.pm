@@ -1,5 +1,5 @@
 #
-# BioPerl module for Bio::EnsEMBL::Utils::EST_handler
+# BioPerl module for Bio::EnsEMBL::Utils::EST_parser
 #
 # Cared for by Elia Stupka <elia@sanger.ac.uk>
 #
@@ -11,14 +11,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::EST_handler 
+Bio::EnsEMBL::Utils::EST_parser 
 
 =head1 SYNOPSIS
 
-    EST_handler->new();
+    EST_parser->new();
 
     #To parse a EST file, build feature pairs:
-    my @features=EST_handler->parse_file($file_handle);
+    my @features=EST_parser->parse_file($file_handle);
 
 =head1 DESCRIPTION
 
@@ -44,7 +44,7 @@ use Bio::EnsEMBL::FeaturePair;
 =head2 new
 
  Title   : new
- Usage   : EST_handler->new()
+ Usage   : EST_parser->new()
  Function: Constructor
  Example : 
  Returns : Reference to an object
@@ -63,9 +63,9 @@ sub new {
 =head2 parse_file
 
  Title   : parse_file
- Usage   : EST_handler->parse_file(filename)
+ Usage   : EST_parser->parse_file(filename)
  Function: Parses a EST file, reading in features
- Example : EST_handler->parse_file(gens.EST)
+ Example : EST_parser->parse_file(gens.EST)
  Returns : array of Bio::EnsEMBL::Gene objects
  Args    : name of the file
 
@@ -85,8 +85,13 @@ sub parse_file {
 	my $mismatch=$array[1];
 
 	#Not sure about this figure...
-	my $id=($match-$mismatch)/$match*100;
-	my $id=sprintf("%.2f",$id);
+	if ($match == 0 && $mismatch == 0) {
+	    print STDERR "Could not determine score for line $_\n";
+	    print STDERR "Skipping!\n";
+	    next;
+	}
+	my $id=($match/($match+$mismatch))*100;
+	my $id=sprintf("%.4f",$id);
         #Then we get rid of the first 8 columns
 	@array = splice(@array,8);
 
@@ -148,7 +153,8 @@ sub parse_file {
 						  -source_tag  =>'0-0greedy',
 						  -primary_tag =>'similarity',
 						  -strand      => 1,
-						  -analysis    => $analysis
+						  -analysis    => $analysis,
+						  -percent_id     => $id
 						  );
 	    
 	    my $f2 = new Bio::EnsEMBL::SeqFeature(-seqname => $hseqname,
@@ -158,7 +164,8 @@ sub parse_file {
 						  -source_tag  =>'est',
 						  -primary_tag =>'similarity',
 						  -strand      => $strand,
-						  -analysis    => $analysis
+						  -analysis    => $analysis,
+						  -percent_id     => $id
 						  );
 	    
 	    print STDERR "Feature Pair ".($c+1).":\n";
@@ -168,15 +175,19 @@ sub parse_file {
 	    print STDERR "Identity: $id\n";
 	    print STDERR " Genomic: start $g_start, end $g_end\n";
 	    print STDERR "     EST: start $e_start, end $e_end\n\n";
-	    $f1->validate();
-	    $f2->validate();
-	    
+	    eval {
+		$f1->validate();
+		$f2->validate();
+	    };
+	    if ($@) {
+		print STDERR "Could not validate $@\n";
+		next;
+	    }
+	    	    
 	    my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
 						   -feature2 => $f2);
 	    push @{$self->{'_feature_array'}},$fp;
 	}
-	print "\n";
-	
     }
     return  @{$self->{'_feature_array'}};
 }
@@ -184,7 +195,7 @@ sub parse_file {
 =head2 print_ests
 
  Title   : print_genes
- Usage   : EST_handler->print_genes(@genes)
+ Usage   : EST_parser->print_genes(@genes)
  Function: Prints gene structures to STDOUT (for tests)
  Example : 
  Returns : nothing

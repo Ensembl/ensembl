@@ -149,12 +149,12 @@ sub parse_file {
 
 	if (/exon_number (\d)/) { $exon_num = $1;}
 	
-	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
 	if ($flag == 1) {
 	    $oldtrans = $transcript_id;
 	    $oldgene = $gene_id;
 	    $flag=0;
 	}
+
 	#When new gene components start, do the gene building 
 	#with all the exons found up to now, start_codon and end_codon
 	
@@ -185,6 +185,9 @@ sub parse_file {
 	    $exon->contig_id($contig);
 	    $exon->seqname($contig);
 	    $exon->sticky_rank(1);
+	    my $time = time; chomp($time);
+	    $exon->created($time);
+	    $exon->modified($time);
 	    $exons{$exon_num}=$exon;
 	}
 	elsif ($feature eq 'start_codon') {
@@ -224,7 +227,7 @@ sub _build_gene {
     #Only build genes if there are transcripts in the trans array
     #If translation start/end were not found, no transcript would be built!
     if ($trans_number > 1) {
-	#print STDERR "Wow! Got multiple transcripts! Gene: $oldgene\n";
+	#print STDERR "Got multiple transcripts for gene $oldgene\n";
     }
     if ($trans_number) {
 	my $gene=Bio::EnsEMBL::Gene->new();
@@ -234,7 +237,7 @@ sub _build_gene {
 	$gene->created($time);
 	$gene->modified($time);
 	#This is for the main trunk only!
-	$gene->type('neomorphic');
+	$gene->type('known-neomorphic');
 	foreach my $transcript (@{$self->{'_transcript_array'}}) {
 	    $gene->add_Transcript($transcript);
 	}
@@ -258,49 +261,126 @@ sub _build_gene {
 
 sub _build_transcript {
     my ($self,$trans_start,$trans_end,$oldtrans,%exons)=@_;
-    
+
+    #Create transcript, translation, and assign phases to exons
+
     my $trans = Bio::EnsEMBL::Transcript->new;
     my $translation = Bio::EnsEMBL::Translation->new;
+    $translation->id($oldtrans);
+    $translation->version(1);
     $trans->id($oldtrans);
     $trans->version(1);
     my $time = time; chomp($time);
     $trans->created($time);
     $trans->modified($time);
-    foreach my $num (keys%exons) {
-	#print STDERR "Adding exon ".$exons{$num}->id." to transcript\n";
-	$trans->add_Exon($exons{$num});
-	if ($exons{$num}->strand == 1) {
-	    
-	    if ($trans_start == $exons{$num}->start) {
-		$translation->start_exon_id($exons{$num}->id);
-	    }
-	    my $end=$exons{$num}->end-3;
-	    if ($trans_end == $end) {
-		$translation->end_exon_id($exons{$num}->id);
-	    }
-	}
-	else {
-	    if ($trans_start == $exons{$num}->end) {
-		$translation->start_exon_id($exons{$num}->id);
-	    }
-	    if ($trans_end == ($exons{$num}->start-3)) {
-		$translation->end_exon_id($exons{$num}->id);
-	    }
-	}
-    }
-	
     if (!defined($trans_start)) {
 	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
 	return;
     }
-    #print STDERR "Adding translation start $trans_start\n";
+
     $translation->start($trans_start);
     
     if (!defined($trans_end)) {
 	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
 	return;
     }
-    #print STDERR "Adding translation end $trans_end\n";
+    print STDERR "Translation start: $trans_start\n";
+    print STDERR "Translation end  : $trans_end\n";
+    my $phase=0;
+    my $end_phase;
+    foreach my $num (keys%exons) {
+
+	print STDERR "Exon    ".$exons{$num}->id."\n";
+	print STDERR "Strand: ".$exons{$num}->strand."\n";
+	print STDERR "Start:  ".$exons{$num}->start."\n";
+	print STDERR "End:    ".$exons{$num}->end."\n";
+
+	#Positive strand
+	if ($exons{$num}->strand == 1) {
+
+	    #Start exon
+	    if (($trans_start >= $exons{$num}->start)&&($trans_start<= $exons{$num}->end)) {
+		#Assign start exon id
+		$translation->start_exon_id($exons{$num}->id);
+
+		#Phase for start exons is always zero (irrelevant)
+		$phase=0;
+		
+		#Now calculate end_phase, used for next exon
+		$end_phase=($exons{$num}->end-$trans_start+1)%3;
+	    }
+
+	    #All other exons
+	    else {
+		#Calculate the end_phase for all other exons
+		my $mod_phase;
+		
+		if ($phase != 0){
+		    $mod_phase=3-$phase;
+		}
+		$end_phase=($exons{$num}->length-$mod_phase)%3;
+	    }
+
+	    #Find the end exon id
+	    if (($trans_end >= $exons{$num}->start)&&($trans_end <= $exons{$num}->end)) {
+		$translation->end_exon_id($exons{$num}->id);
+	    }
+	}
+	
+	#Negative strand
+	else {
+
+	    #Start exon
+	    if (($trans_start >= $exons{$num}->start)&&($trans_start <= $exons{$num}->end)) {
+		#Assign the start_exon_id
+		$translation->start_exon_id($exons{$num}->id);
+		
+		#Phase for start exons is always zero (irrelevant)
+		$phase=0;
+		
+		#Calculate the end_phase, used for next exon
+		$end_phase=($trans_start-$exons{$num}->start+1)%3;
+	    }
+	    
+	    #All other exons
+	    else {
+		
+		#Calculate end_phase
+		my $mod_phase;
+		if ($phase != 0){
+		    $mod_phase=3-$phase;
+		}
+		$end_phase=($exons{$num}->length-$mod_phase)%3;
+	    }
+
+	    #Find the end exon id
+	    if (($trans_end >= $exons{$num}->start)&&($trans_end <= $exons{$num}->end)) {
+		$translation->end_exon_id($exons{$num}->id);
+	    }
+
+	}
+	print STDERR "Phase:   $phase\n";
+
+	#Assign phase to exon
+	$exons{$num}->phase($phase);
+
+	#Add exon to transcript
+	$trans->add_Exon($exons{$num});
+
+	#Assign its end_phase to the next exon's phase
+	$phase=$end_phase;
+    }
+
+    if (!defined($translation->start_exon_id)) {
+	$self->warn("Could not find translation exon start for transcript $oldtrans, skipping");
+	return;
+    }
+    
+    if (!defined($translation->end_exon_id)) {
+	$self->warn("Could not find translation exon end for transcript $oldtrans, skipping");
+	return;
+    }
+   
     $translation->end($trans_end);
     $trans->translation($translation);
     push(@{$self->{'_transcript_array'}},$trans);

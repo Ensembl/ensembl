@@ -1210,6 +1210,7 @@ sub convert_Gene_to_raw_contig {
    $clonedgene->version($gene->version);
    $clonedgene->created($gene->created);
    $clonedgene->modified($gene->modified);
+   $clonedgene->type($gene->type);
    foreach my $dbl ( $gene->each_DBLink() ) {
        $clonedgene->add_DBLink($dbl);
    }
@@ -1486,11 +1487,11 @@ sub _sanity_check{
 	   } 
 	   if( !defined $exon->created ) {
 	       $error = 1;
-	       $message .= "Exon has no id";
+	       $message .= "Exon has no created date";
 	   } 
 	   if( !defined $exon->modified ) {
 	       $error = 1;
-	       $message .= "Exon has no id";
+	       $message .= "Exon has no modified date";
 	   } 
 	   if( !defined $exon->contig_id  ) {
 	       $error = 1;
@@ -1501,10 +1502,19 @@ sub _sanity_check{
 		   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
 	       }
 	   }
-	   if( !defined $exon->start || !defined $exon->end || !defined $exon->strand || !defined $exon->phase ) {
+	   if( !defined $exon->start || !defined $exon->end) {
 	       $error = 1;
-	       $message .= "Exon has error in start/end/strand/phase";
+	       $message .= "Exon has error in start/end";
 	   } 
+	   if (!defined $exon->strand) {
+	       $error = 1;
+	       $message .= "Exon does not have a strand";
+	   } 
+	   if (!defined $exon->phase) {
+	       $error = 1;
+	       $message .= "Exon does not have a phase";
+	   }
+
        }
    }
 
