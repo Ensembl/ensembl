@@ -157,7 +157,7 @@ if ($phase == 4) {
     $contig->id("$acc.$ver.1.$length");
     $contig->embl_offset(1);
     $contig->length($length);
-    $contig->seq($seq->seq);
+    $contig->seq($seq);
     $contig->version(1);
     $contig->embl_order(1);
 
