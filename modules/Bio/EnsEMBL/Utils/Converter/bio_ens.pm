@@ -136,6 +136,12 @@ sub _guess_module {
         $tail = 'bio_ens_predictionGene';
     }elsif($in eq 'Bio::Tools::Prediction::Exon'){
         $tail = 'bio_ens_predictionExon';
+    }elsif($in eq 'Bio::SeqFeature::Gene::GeneStructur'){
+        $tail = 'bio_ens_gene';
+    }elsif($in eq 'Bio::SeqFeature::Gene::Transcript'){
+        $tail = 'bio_ens_transcript';
+    }elsif($in eq 'Bio::SeqFeature::Gene::Exon'){
+        $tail = 'bio_ens_exon';
     }else{
         $self->throw("[$in] to [$out], not supported");
     }
@@ -144,11 +150,13 @@ sub _guess_module {
 
 
 =head2 analysis
+
   Title   : analysis
   Usage   : $self->analysis
   Function: get and set for analysis
   Return  : L<Bio::EnsEMBL::Analysis>
   Args    : L<Bio::EnsEMBL::Analysis>   
+
 =cut
 
 sub analysis {
@@ -174,31 +182,42 @@ sub analysis {
 
 
 =head2 contig
+
   Title   : contig
   Usage   : $self->contig
   Function: get and set for contig
   Return  : 
   Args    :    
+
 =cut
 
 sub contig {
     my ($self, $arg) = @_;
     if(defined($arg)){
-        $self->throw("a Bio::EnsEMBL::RawContig needed")
-            unless($arg->isa('Bio::EnsEMBL::RawContig'));
+        if($arg->isa('Bio::EnsEMBL::RawContig')){
+            $self->{_contig_dbid} = $arg->dbID;
+            $self->{_contig_name} = $arg->name;
+        }elsif($arg->isa('Bio::EnsEMBL::Slice')){
+                $self->{_slice_dbid} = $arg->dbID;
+        }elsif($arg->isa('Bio::PrimarySeqI')){
+            ;
+        }else{
+            $self->throw("a Bio::EnsEMBL::RawContig needed");
+        }
         $self->{_contig} = $arg;
-        $self->{_contig_dbid} = $arg->dbID;
-        $self->{_contig_name} = $arg->name;
+        
     }
     return $self->{_contig};
 }
     
 =head2 dbadaptor
+
   Title   : dbadaptor
   Usage   : $self->dbadaptor
   Function: get and set for dbadaptor
   Return  : L<Bio::EnsEMBL::DBSQL::DBAdaptor>
   Args    : L<Bio::EnsEMBL::DBSQL::DBAdaptor>   
+
 =cut
 
 sub dbadaptor {
@@ -211,11 +230,13 @@ sub dbadaptor {
 }
 
 =head2 ensembl_db
+
   Title   : ensembl_db
   Usage   : 
   Function: 
   Return  :
   Args    :
+
 =cut
 
 sub ensembl_db {
@@ -236,11 +257,13 @@ sub ensembl_db {
 }
 
 =head2 analysis_dbID
+
   Title   : analysis_dbID
   Usage   : 
   Function: 
   Return  :
   Args    :
+
 =cut
 
 sub analysis_dbID {
@@ -259,11 +282,13 @@ sub analysis_dbID {
 
 
 =head2 analysis_logic_name
+
   Title   : analysis_logic_name
   Usage   : 
   Function: 
   Return  :
   Args    :
+
 =cut
 
 sub analysis_logic_name {
@@ -282,11 +307,13 @@ sub analysis_logic_name {
 }
 
 =head2 contig_dbID
+
   Title   : contig_dbID
   Usage   : $self->contig_dbID
   Function: get and set for contig_dbID
   Return  : 
   Args    :    
+
 =cut
 
 sub contig_dbID {
@@ -294,7 +321,8 @@ sub contig_dbID {
     if(defined($arg)){
         my $contig;
         eval{
-            $contig = $self->dbadaptor->get_RawContigAdaptor->fetch_by_dbID($arg);
+            $contig = 
+                $self->dbadaptor->get_RawContigAdaptor->fetch_by_dbID($arg);
         };
         $self->throw("Failed during fetching contig by dbID\n$@") if($@);
         $self->contig($contig);
@@ -315,7 +343,8 @@ sub contig_name {
     if(defined($arg)){
         my $contig;
         eval{
-            $contig = $self->dbadaptor->get_RawContigAdaptor->fetch_by_name($arg);
+            $contig = 
+                $self->dbadaptor->get_RawContigAdaptor->fetch_by_name($arg);
         };
         $self->throw("Failed during fetching contig by dbID\n$@") if($@);
         $self->contig($contig);
@@ -323,4 +352,49 @@ sub contig_name {
     return $self->{_contig_name};
 }
 
+=head2 slice
+  Title   : slice
+  Usage   : $self->slice
+  Function: get and set for slice
+  Return  : L<Bio::EnsEMBL::Slice>
+  Args    : L<Bio::EnsEMBL::Slice>   
+=cut
+
+sub slice_dbID {
+    my ($self, $arg) = @_;
+    if(defined($arg)){
+        my $slice;
+        $self->throw("undefined dbadpator") unless defined $self->dbadpaotr;
+
+        eval{
+            my $sliceAdaptor = $self->dbadaptor->get_SliceAdaptor;
+            $slice = $sliceAdaptor->fetch_by_dbID($arg);
+        };
+            
+        $self->throw("Failed to fetch slice by dbID\n$@") if($@);
+        $self->contig($slice);
+    }
+}
+
+=head2 slice_chr_start_end
+  Title   : slice_chr_start_end
+  Usage   : my $slice = $self->slice_chr_start_end($chr, $start, $end);
+  Function: get and set for slice_chr_start_end
+  Return  : 
+  Args    :    
+=cut
+
+sub slice_chr_start_end {
+    my ($self, $chr, $start, $end) = @_;
+    if(defined($chr) && defined($start) && defined($end)){
+        my $slice;
+        eval{
+            my $sliceAdaptor = $self->dbadaptor->get_SliceAdaptor;
+            $slice = $sliceAdaptor->fetch_by_chr_start_end($chr, $start, $end);
+        };
+        $self->throw("Failed to fetch slice by chr start end\n$@") if($@);
+        $self->contig($slice);
+    }
+}
+ 
 1;

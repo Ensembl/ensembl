@@ -1,6 +1,6 @@
 # Bio::EnsEMBL::Utils::Converter::bio_ens_seqFeature
 #
-# Created and cared for by Juguang Xiao <juguang@fugu-sg.org>
+# Created and cared for by Juguang Xiao <juguang@tll.org.sg>
 # Created date: 5/3/2003
 # 
 # Copyright Juguang Xiao
@@ -30,7 +30,7 @@ Please read Bio::EnsEMBL::Utils::Converter
 
 =head1 AUTHOR Juguang Xiao
 
-Juguang Xiao <juguang@fugu-sg.org>
+Juguang Xiao <juguang@tll.org.sg>
 
 =head1 APPENDIX
 
@@ -45,6 +45,9 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens_seqFeature;
 
 use strict;
 use vars qw(@ISA);
+use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::SimpleFeature;
+use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Converter::bio_ens;
 @ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
 
@@ -54,7 +57,9 @@ sub _convert_single {
     unless($in && defined($in) && ref($in) && $in->isa('Bio::SeqFeature::Generic')){
         $self->throw("a Bio::SeqFeature::Generic object needed");
     }
-
+    
+    my $seqFeature = $in;
+    
     my $ens_seqFeature;
     my @args = (
         -start => $in->start,
@@ -75,6 +80,11 @@ sub _convert_single {
         $ens_seqFeature = new Bio::EnsEMBL::SimpleFeature(@args);
         # The field that there is in SimpleFeature, but not in SeqFeature.
         $ens_seqFeature->display_label('__NONE__');
+    }elsif($self->out eq 'Bio::EnsEMBL::Exon'){
+        $ens_seqFeature = Bio::EnsEMBL::Exon->new_fast(
+            $self->contig, $seqFeature->start, $seqFeature->end, 
+            $seqFeature->strand);
+        
     }else{
         $self->throw("[$output_module] as -out, not supported");
     }
