@@ -8,6 +8,7 @@ my %go_map;
 my $iprgo = shift(@ARGV);
 open (IPRGO,"<$iprgo");
 while (<IPRGO>) {
+    chomp();
     my ($ipr,$go) = split (/\t/);
     $go_map{$ipr}=$go;
 }
@@ -34,7 +35,7 @@ while (my $row= $sth->fetchrow_array) {
 #    print STDERR "Getting $row\n";
     push (@domains,$row);
 }
-
+print STDERR "Getting genes for each domain\n";
 foreach my $domain (@domains) {
     my @genes;
     
@@ -46,7 +47,14 @@ foreach my $domain (@domains) {
     my $exnum;
     while (my $rowhash = $sth->fetchrow_hashref) {
 	my $geneid = $rowhash->{'gene'};
-	print "$geneid\tGO\t".$go_mapping{$ipr}."\n";
+	if ($go_map{$domain}) {
+	    print "$geneid\tGO\t".$go_map{$domain}."\n";
+	}
     }
 }
+
+
+
+
+
 
