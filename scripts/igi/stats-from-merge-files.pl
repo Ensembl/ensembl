@@ -8,10 +8,14 @@ my $usage = "$0 options < merged-file.gtf  > outputfile\n";
 my $help;
 my $all_stats;  
 my $chaining = undef;
+my $i2nmapping;
+my $n2imapping;
 
 &GetOptions( 
             'stats'  => \$all_stats,
             'chaining:s'  => \$chaining,
+	     'igi2native:s'     => \$i2nmapping, 
+	     'native2igi:s'     => \$n2imapping, 
 	     'h|help'     => \$help
 	     );
 die $usage if $help;
@@ -121,7 +125,7 @@ my @argv_copy = @ARGV; # may get gobbled up by the <> construct.
 
 my %igis_of_source; # $igis_of_source_{$source}{$igi} = [nfeats, start,
                     # end, nexons ]
-my %natives_of_source; # $natives_of_source_{$source}{$native_id} =
+my %natives_of_source; # $natives_of_source{$source}{$native_id} =
                        # [ nfeats, start, end, nexons ]
 my %natives_of_igi; # $natives_of_igi{$source}{$igi}{$native_id} => 1
 
@@ -161,10 +165,12 @@ while (<>) {
     # keep track of marginals by looping over current one as well
     # as fictional source 'ALL':
     foreach my $s ($source, 'ALL') {
-        #get previous record of this igi, if any:
 
+        # keep track of number of features, exons, start and end of this igi:
         track_extents(\%igis_of_source, $s, $igi,
                       $seq_name, $start, $end, $strand, $exon_num);
+
+        # as well as this native_id:
         track_extents(\%natives_of_source, $s, $native_id,
                       $seq_name, $start, $end, $strand, $exon_num);
 
@@ -205,6 +211,25 @@ if ($chaining) {
     print "----\n";
 }
 
+if ($i2nmapping) {
+    foreach my $s (@all_sources) { 
+        my $file = "> $i2nmapping.$s";
+        open(I2N, $file) || die "can't open $file: $!";
+        print_igi_to_native(\*I2N, $s);
+        close(I2N);
+    }
+}
+
+if ($n2imapping) {
+    foreach my $s (@all_sources) {
+        my $file = "> $n2imapping.$s";
+        open(N2I, $file) || die "can't open $file: $!";
+        print_native_to_igi(\*N2I, $s);
+        close(N2I);
+    }
+}
+
+
 sub blurp {
     print '### $Id$  ', "\n";
     my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
@@ -220,14 +245,14 @@ sub blurp {
 ### higest end of any of the features. This is used both for igi's and
 ### native id's
 sub track_extents {
-    my ($extents, $source, $igi, 
+    my ($extents, $source, $id, 
         $seq_name, $start, $end, $strand, $exon_num) = @_;
     my ($nfeats, $min, $max, $nexons);
     
-    # keep track of number of features, exons, start and end of this igi:
-    if (defined $ {$extents}{$source}{$igi}) {
+    #get previous record of this igi, if any:
+    if (defined $ {$extents}{$source}{$id}) {
         ($nfeats, $min, $max, $nexons) = 
-          @{$ {$extents}{$source}{$igi}}[0,1,2,3];
+          @{$ {$extents}{$source}{$id}}[0,1,2,3];
     } else { 
         ($nfeats, $min, $max, $nexons)= (0, $start, $end, 0);
     }
@@ -238,7 +263,7 @@ sub track_extents {
     $nexons = $exon_num if $exon_num > $nexons;
     
     # add record back in:
-    $ {$extents}{$source}{$igi} = [$nfeats, $min, $max, $nexons, 
+    $ {$extents}{$source}{$id} = [$nfeats, $min, $max, $nexons, 
                                  $seq_name, $strand ];
 }
 
@@ -420,9 +445,9 @@ sub print_natives {
         my ($start,$end) = @{$natives_of_source{$source}{$nat}}[1,2];
         push @native_coords, [$nat, $start, $end];
     }
-
-#     foreach my $nat (sort sort_native @native_coords) { 
-    foreach my $nat ( @native_coords ) { 
+    my $n; $n++;
+    foreach my $nat (sort sort_native @native_coords) { 
+#     foreach my $nat ( @native_coords ) { 
         my ($id, $start, $end) = @{$nat};
         print "        $indent$source $id [ $start\t$end ]\n";
     }
@@ -431,8 +456,6 @@ sub print_natives {
 # for sorting id's by start/stop coords. This is a bit hairy, to get the
 # start exon's first, and end exons last ... 
 sub sort_native {
-    my ($a,$b) = @_;
-
     my ($starta, $enda) = @{$a}[1,2];
     my ($startb, $endb) = @{$b}[1,2];
 
@@ -445,10 +468,29 @@ sub sort_native {
 }
 
 
+## print file that maps igi to native
+sub print_igi_to_native {
+    my($OUT, $source) = @_;
+    foreach my $igi (sort keys %{$igis_of_source{$source}}) {
+        print $OUT "$igi "
+          , join(' ', (sort keys %{$natives_of_igi{$source}{$igi}}))
+            , "\n";
+    }
+}
 
+## print file that maps native to igi:
+sub print_native_to_igi {
+    my($OUT, $source) = @_;
 
-sub start_end_of_igi  { 
-    my ($igi)= @_;
+    my %igis_of_native = undef;         # have to invert first:
 
-    
+    foreach my $igi (sort keys %{$igis_of_source{$source}}) {
+        foreach my $nat (keys %{$natives_of_igi{$source}{$igi}}) {
+            $igis_of_native{$nat}=$igi;
+        }
+    }
+
+    foreach my $nat (sort keys %igis_of_native) {
+        print $OUT "$nat $igis_of_native{$nat}\n";
+    }
 }
