@@ -225,9 +225,23 @@ CREATE TABLE meta (
 # Table structure for table 'supporting_feature'
 #
 CREATE TABLE supporting_feature (
-  feature varchar(40),
-  exon varchar(40)
+  id int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  exon varchar(40) DEFAULT '' NOT NULL,
+  contig varchar(40) DEFAULT '' NOT NULL,
+  seq_start int(10) DEFAULT '0' NOT NULL,
+  seq_end int(10) DEFAULT '0' NOT NULL,
+  score int(10) DEFAULT '0' NOT NULL,
+  strand int(1) DEFAULT 1 NOT NULL,
+  analysis varchar(40) DEFAULT '' NOT NULL,
+  name varchar(40),
+  hstart int(11) DEFAULT '0' NOT NULL,
+  hend int(11) DEFAULT '0' NOT NULL,
+  hid varchar(40) DEFAULT '' NOT NULL,
+  KEY overlap (id,contig,seq_start,seq_end,analysis),
+  KEY exon_id (id,exon),
+  PRIMARY KEY(id)
 );
+
 
 #
 # Table structure for table 'transcript'
