@@ -49,10 +49,9 @@ Insert list of bugs here!
 use strict;
 use Getopt::Long;
 use FileHandle;
-use Bio::EnsEMBL::PerlDB::Contig;
+use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::Root::RootI;
-use Bio::EnsEMBL::PerlDB::Clone;
+use Bio::EnsEMBL::Clone;
 use Bio::Seq;
 use Bio::SeqIO;
 
@@ -141,7 +140,7 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
     # write the clone if this contig is from a different clone
     if (defined $clone && $acc ne $clone->id && !defined $written_clone{$clone->id}) {
 	if ($write) {
-	    $dbobj->write_Clone($clone);
+	    $dbobj->get_CloneAdaptor->store($clone);
 	    $written_clone{$clone->id} = 1;
 	    print STDERR "Written clone $acc.$ver\n";
 	}
@@ -166,11 +165,11 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
     print STDERR "\tend    $end\n";
     print STDERR "\tlen    ", length($seqobj->seq), "\n";
 
-    $contig = new Bio::EnsEMBL::PerlDB::Contig;
+    $contig = new Bio::EnsEMBL::RawContig;
     $contig->embl_offset($offset);
     $contig->id($contigid);
     $contig->length($length);
-    $contig->seq(new Bio::Seq('-id' => $acc, '-seq' => $seqobj->seq));
+    $contig->seq($seqobj->seq);
     $contig->version(1);
     $contig->embl_order($count);
 
@@ -192,12 +191,13 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
 	my $dbclone;
 	# first check to see if we have already written that clone
 	eval {
-	    $dbclone = $dbobj->get_Clone_by_version($acc, $ver);
+	    $dbclone = 
+              $dbobj->get_CloneAdaptor->fetch_by_accession_version($acc, $ver);
 	};
 	if (defined $dbclone) {
 	    if ($clobber) {
 		print STDERR "Overwriting $acc.$ver\n";
-		$dbclone->delete;
+		$dbobj->get_CloneAdaptor->remove($clone);
 	    }
 	    else {
 		print STDERR "Already have $acc.$ver - skip\n";
@@ -206,7 +206,7 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
 		next SEQ;
 	    }
 	}
-	$clone = new Bio::EnsEMBL::PerlDB::Clone;
+	$clone = new Bio::EnsEMBL::Clone;
 	$clone->id($acc);
 	$clone->embl_id($acc);
 	$clone->version(1);
