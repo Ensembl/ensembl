@@ -167,9 +167,6 @@ sub create_xrefs {
       push @xrefs, $xref;
 
     }# if defined species
-    else{ #### REMOVE after TESTING
-      print "not correct $species $species_id  NE $species_id_check\n";
-    }
 
   } # while <REFSEQ>
 

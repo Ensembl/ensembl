@@ -114,9 +114,6 @@ sub create_xrefs {
       push @xrefs, $xref;
 
     }
-    else{
-      print "not correct species $species_id  NE $species_id_check\n";
-    }
 
   }
 
