@@ -2027,17 +2027,9 @@ sub get_Clone_by_version {
 sub get_Contig {
     my ($self,$id) = @_;
 
-    #$self->warn("Obj->get_Contig is a deprecated method! 
-#Calling Contig->fetch instead!");
-    
-    require Bio::EnsEMBL::DBSQL::RawContig;
-    my $contig = Bio::EnsEMBL::DBSQL::RawContig->new(
-        -dbobj              => $self,
-        -id                 => $id,
-        -perlonlysequences  => $self->perl_only_sequences(),
-        -userawcontigacc    => ! $self->perl_only_contigs,
-        );
-    return $contig->fetch();
+    $self->warn("Obj->get_Contig is a deprecated method!"); 
+
+    return $self->get_RawContigAdaptor->fetch_by_name($id);
 }
 
 sub get_Contig_by_internal_id {

@@ -47,7 +47,7 @@ use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Clone;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
+
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 

@@ -49,7 +49,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::RootI
 
 use Bio::Root::RootI;
-use Bio::EnsEMBL::DBSQL::RawContig;
+
 use Bio::EnsEMBL::DB::CloneI;
 
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);

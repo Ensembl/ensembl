@@ -99,7 +99,7 @@ sub fetch_by_dbID {
                    WHERE contig_id = $dbID" );
   $sth->execute();
   
-  my ( $contig ) = _contig_from_sth( $sth );
+  my ( $contig ) = $self->_contig_from_sth( $sth );
 
   return $contig;
 }
@@ -115,7 +115,7 @@ sub fetch_by_name {
                    WHERE name = '$name'" );
   $sth->execute();
   
-  my ( $contig ) = _contig_from_sth( $sth );
+  my ( $contig ) = $self->_contig_from_sth( $sth );
 
   return $contig;
 }
@@ -133,7 +133,7 @@ sub fetch_by_clone {
                    FROM contig
                    WHERE clone_id = $clone_id" );
 
-  my @res = _contig_from_sth( $sth );
+  my @res = $self->_contig_from_sth( $sth );
   return \@res;
 }
 
@@ -155,7 +155,7 @@ sub fetch {
   
   my $aref = $sth->fetchrow_arrayref();
   if( defined $aref ) {
-    _contig_from_arrayref( $contig, $aref );
+    $self->_contig_from_arrayref( $contig, $aref );
   } else {
     $self->throw( "Couldnt fetch contig, unexpected .." );
   }
@@ -166,13 +166,17 @@ sub _contig_from_sth {
   my $self = shift;
   my $sth = shift;
 
+  if( !defined $sth ) {
+      $self->throw("Bad internal error - no statement!");
+  }
+
   my @res = ();
 
   $sth->execute();
   while( my $aref = $sth->fetchrow_arrayref() ) {
     
     my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
-    _contig_from_arrayref( $contig, $aref );
+    $self->_contig_from_arrayref( $contig, $aref );
 
     push( @res, $contig );
   }
@@ -183,9 +187,13 @@ sub _contig_from_sth {
 
 
 sub _contig_from_arrayref {
-  my $self;
-  my $contig;
-  my $aref;
+  my $self   = shift;
+  my $contig = shift;
+  my $aref   = shift;
+
+  if( !defined $aref ) {
+      $self->throw("Bad internal error - no array ref");
+  }
 
   my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
        $international_name ) = @$aref;
@@ -194,7 +202,8 @@ sub _contig_from_arrayref {
   my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
     ( $dna_id, $self->db() ); # ?
     
-  my $clone = Bio::EnsEMBL::Clone->new( $self, $clone_id );
+  my $clone = $self->db->get_CloneAdaptor->fetch_by_dbID($clone_id);
+
 
   $contig->clone( $clone );
   $contig->sequence( $dbPrimarySeq );

@@ -59,15 +59,14 @@ sub fetch_by_dbID {
   my $query = qq {
     SELECT  e.exon_id
       , e.contig_id
-      , e.seq_start
-      , e.seq_end
-      , e.strand
+      , e.contig_start
+      , e.contig_end
+      , e.contig_strand
       , e.phase
       , e.end_phase
       , e.sticky_rank
-      , c.id cid
-    FROM exon e,contig c
-    WHERE e.exon_id = $dbID and c.internal_id = e.contig_id 
+    FROM exon e
+    WHERE e.exon_id = $dbID
     ORDER BY e.sticky_rank DESC  };
 
   my $sth = $self->prepare($query);
@@ -129,9 +128,9 @@ sub fetch_by_geneId {
   my $query = qq {
     SELECT  e.exon_id
       , e.contig_id
-      , e.seq_start
-      , e.seq_end
-      , e.strand
+      , e.contig_start
+      , e.contig_end
+      , e.contig_strand
       , e.phase
       , e.end_phase
       , e.sticky_rank
@@ -232,9 +231,9 @@ sub _new_Exon_from_hashRef {
    my $hashRef = shift;
 
    my $exon = Bio::EnsEMBL::Exon->new();
-   $exon->start( $hashRef->{'seq_start'} );
-   $exon->end( $hashRef->{'seq_end'} );
-   $exon->strand( $hashRef->{'strand'} );
+   $exon->start( $hashRef->{'contig_start'} );
+   $exon->end( $hashRef->{'contig_end'} );
+   $exon->strand( $hashRef->{'contig_strand'} );
    $exon->phase( $hashRef->{phase} );
 #    $exon->end_phase( $hashRef->{end_phase} );
    $exon->dbID($hashRef->{'exon_id'});
@@ -242,7 +241,10 @@ sub _new_Exon_from_hashRef {
    $exon->adaptor($self);
 
    if( !exists $self->{rchash}{$hashRef->{'contig_id'}} ) {
-     $self->{rchash}{$hashRef->{contig_id}} = $self->db->get_Contig($hashRef->{'cid'});
+     $self->{rchash}{$hashRef->{contig_id}} = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
+     if ( !defined $self->{rchash}{$hashRef->{contig_id}} ) {
+	 $self->throw("No contig for ".$hashRef->{'contig_id'});
+     }
    }
 
    $exon->attach_seq($self->{rchash}{$hashRef->{'contig_id'}}->primary_seq);
@@ -343,9 +345,7 @@ sub fetch_evidence_by_Exon {
 sub store {
   my ( $self, $exon ) = @_;
 
-<<<<<<< ExonAdaptor.pm
 
-=======
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
@@ -355,10 +355,18 @@ sub store {
       return $exon->dbID();
   }
 
+  if( !defined $exon->start || !defined $exon->end || !defined $exon->strand || !defined $exon->phase ) {
+      $self->throw("Exon does not have all attributes to store");
+  }
 
->>>>>>> 1.26
+  # trap contig_id separately as it is likely to be a common mistake
+
+  if( !defined $exon->contig_id ) {
+      $self->throw("Exon does not have a contig_id set. Needs to have one set");
+  }
+
   my $exon_sql = q{
-       INSERT into exon ( exon_id, contig_id, seq_start, seq_end, strand, phase, 
+       INSERT into exon ( exon_id, contig_id, contig_start, contig_end, contig_strand, phase, 
 			  end_phase, sticky_rank)
 		 VALUES ( ?, ?, ?, ?, ?, ?, ?,? )
 		};
