@@ -18,11 +18,11 @@ Bio::EnsEMBL::Mapper - DESCRIPTION of Object
 =head1 SYNOPSIS
 
 
-    $map->add_map_coordinates( $contig_start, $contig_end, $contig_id, 
-			       $chr_start, $chr_end, $chr_name, $contig_ori );
+    $map->add_map_coordinates( $contig_id, $contig_start, $contig_end, $conitg_ori,
+			       $chr_name, chr_start, $chr_end);
 
 
-    my @coordlist = $mapper->map_coordinates(2,5,-1,627012,"rawcontig");
+    my @coordlist = $mapper->map_coordinates(627012, 2, 5, -1, "rawcontig");
 
 Give standard usage here
 
@@ -101,7 +101,7 @@ sub new {
 =cut
 
 sub map_coordinates{
-   my ($self,$start,$end,$strand,$id,$type) = @_;
+   my ($self, $id, $start, $end, $strand, $type) = @_;
 
    if( !defined $type ) {
        $self->throw("Must start,end,strand,id,type as coordinates");
@@ -123,8 +123,8 @@ sub map_coordinates{
        $self->throw("Type $type is neither to or from coordinate systems");
    }
 
-   if( $self->_is_frozen == 0 ) {
-       $self->_freeze();
+   if( $self->_is_sorted == 0 ) {
+       $self->_sort();
    }
    
    if( !defined $hash->{$id} ) {
@@ -163,6 +163,7 @@ sub map_coordinates{
 	   $gap->start($start);
 	   $gap->end($self_coord->start-1);
 	   push(@result,$gap);
+           $start = $gap->end+1;
        }
        
        my ($target_start,$target_end,$target_ori);
@@ -241,7 +242,7 @@ sub map_coordinates{
 =cut
 
 sub add_map_coordinates{
-   my ($self,$contig_start,$contig_end,$contig_id,$chr_start,$chr_end,$chr_name,$contig_ori) = @_;
+   my ($self, $contig_id, $contig_start, $contig_end, $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
 
    if( !defined $contig_ori ) {
        $self->throw("Need 7 arguments!");
@@ -284,7 +285,7 @@ sub add_map_coordinates{
    }
    push(@{$self->{'_pair_hash_from'}->{$contig_id}},$pair);
 
-   $self->_is_frozen(0);
+   $self->_is_sorted(0);
 }
 
 =head2 list_pairs
@@ -307,8 +308,8 @@ sub list_pairs{
    }
 
    # perhaps a little paranoid/excessive
-   if( $self->_is_frozen == 0 ) {
-       $self->_freeze();
+   if( $self->_is_sorted == 0 ) {
+       $self->_sort();
    }
 
 
@@ -417,9 +418,9 @@ sub _dump{
 }
 
 
-=head2 _freeze
+=head2 _sort
 
- Title   : _freeze
+ Title   : _sort
  Usage   :
  Function:
  Example :
@@ -429,7 +430,7 @@ sub _dump{
 
 =cut
 
-sub _freeze{
+sub _sort{
    my ($self) = @_;
 
    foreach my $id ( keys %{$self->{'_pair_hash_from'}} ) {
@@ -440,30 +441,30 @@ sub _freeze{
        @{$self->{'_pair_hash_to'}->{$id}} = sort { $a->to->start <=> $b->to->start } @{$self->{'_pair_hash_to'}->{$id}};
    }
    
-   $self->_is_frozen(1);
+   $self->_is_sorted(1);
 
 }
 
 
 
-=head2 _is_frozen
+=head2 _is_sorted
 
- Title   : _is_frozen
- Usage   : $obj->_is_frozen($newval)
+ Title   : _is_sorted
+ Usage   : $obj->_is_sorted($newval)
  Function: 
  Example : 
- Returns : value of _is_frozen
+ Returns : value of _is_sorted
  Args    : newvalue (optional)
 
 
 =cut
 
-sub _is_frozen{
+sub _is_sorted{
    my ($self,$value) = @_;
    if( defined $value) {
-      $self->{'_is_frozen'} = $value;
+      $self->{'_is_sorted'} = $value;
     }
-    return $self->{'_is_frozen'};
+    return $self->{'_is_sorted'};
 
 }
 
