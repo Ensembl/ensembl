@@ -47,7 +47,7 @@ my $tmpurl  = '/guzzle_tmp';
 #
 my $tmpdir  = $htdocs . $tmpurl;
 if (! (-d $tmpdir && -w $tmpdir && -x $tmpdir)) {
-   # die "Check value of \$tmpdir, '$tmpdir' is not a writable directory\n";
+    die "Check value of \$tmpdir, '$tmpdir' is not a writable directory\n";
 }
 
 # $query_page_title and $result_page_title:
@@ -62,28 +62,19 @@ my $result_page_title	= 'Guzzle result page';
 # default.
 #
 my @presets = (
-    {	NAME	=> 'Sprot (using Ensembl peptide IDs and ' .
-		   'simple ID mapping) [test]',
-	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
-	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
-		   'das_client/ensembl_sprot.simple_map',
-	MAPTYPE	=> 'simple',
-	CHECKED	=> 1 },
-    {	NAME	=> 'Sprot1 (using Ensembl peptide IDs and ' .
-		   'alignment mapping) [test]',
-	DSN	=> 'http://uhuru/cgi-bin/das/sprot1',
-	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
-		   'das_client/ensembl_sprot.align_map',
-	MAPTYPE	=> 'align',
-	CHECKED	=> 1 },
-    {	NAME	=> 'Sprot [test]',
-	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
+    {	NAME	=> 'UniProt',
+	DSN	=> 'http://www.ebi.ac.uk/das-srv/uniprot/das/aristotle',
 	MAPTYPE	=> 'none',
-	CHECKED	=> 0 },
-    {	NAME	=> 'Pfam-A [test]',
-	DSN	=> 'http://uhuru/cgi-bin/das/pfam',
-	MAPTYPE	=> 'none',
-	CHECKED	=> 0 } );
+	CHECKED	=> 1,
+    },
+#    {
+#	NAME	=> 'Some name',
+#	DSN	=> 'Some specific DSN',
+#	MAPTYPE	=> 'simple', # or "none"
+#	MAPFILE	=> 'Some file that holds the mapping',
+#	CHECKED	=> 0, # or 1
+#    },
+ );
 
 # $nblanks:
 # The number of blank/empty fields to present on the query page
@@ -105,7 +96,7 @@ my @colours = qw( red green blue magenta cyan yellow gray black );
 my $stylesheet = <<EOT;
 body {
     color:	    #000;
-    background:	    #6a6;
+    background:	    #a5bace;
     margin:	    5%;
     font-family:    helvetica, arial, sans-serif;
 }
@@ -117,14 +108,14 @@ h1 {
 }
 address {
     font-family:    times, serif;
-    color:	    #666;
+    color:	    #336666;
     font-size:	    small;
 }
 tt {
     font-family:    courier, monospace;
 }
 .thetable {
-    background:	    #9c9;
+    background:	    #ccc;
 }
 EOT
 
@@ -141,7 +132,7 @@ my $use_stylesheets = 1;
 # $be_nice
 # Whether to be nice to DAS servers or not.
 #
-my $be_nice = 1;
+my $be_nice = 0;
 
 # $use_graphics
 # Whether to generate and use graphics or not.
@@ -186,6 +177,7 @@ sub do_query
     my $cgi = shift;
     my $sources = shift;
 
+    # Get range specified by user.
     my $start = $cgi->param('START') || undef;
     my $stop  = $cgi->param('STOP')  || undef;
     my $segment;
@@ -199,6 +191,7 @@ sub do_query
 	$range = '';
     }
 
+    # Cycle through the sources, querying each one in turn.
     my @replies;
     foreach my $source (@{ $sources }) {
 	my %query;
@@ -237,13 +230,13 @@ sub do_query
 
 	    while (defined(my $line = <IN>)) {
 		chomp $line;
-		my ($qi, $ti) = split /,/, $line;
+		my ($queryid, $targetid) = split /,/, $line;
 
-		last if ($qi gt $seqid);
-		next if ($qi ne $seqid);
+		last if ($queryid gt $seqid);
+		next if ($queryid ne $seqid);
 
-		$query{$ti}{SEGMENT} = $ti . $range;
-		push(@{ $query{$ti}{DSN} }, $source->{DSN});
+		$query{$targetid}{SEGMENT} = $targetid . $range;
+		push(@{ $query{$targetid}{DSN} }, $source->{DSN});
 	    }
 
 	    close IN;
@@ -252,6 +245,8 @@ sub do_query
 		$source->{MAPTYPE} . "\n";
 	}
 
+	# Now we have the query.
+	# Execute query through Bio::Das API.
 	my $das = new Bio::Das(15);
 
 	foreach my $query (values %query) {
@@ -544,7 +539,7 @@ sub query_page
 	$cgi->td({ -colspan => '2' }, $cgi->textfield(
 	    -name	=> 'ID',
 	    -size	=> '25',
-	    -default	=> 'ENSP00000186985') ),
+	    -default	=> 'P51587') ),
 	($use_stylesheets ? $cgi->td('&nbsp;') : ''));
 
 
