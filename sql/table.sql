@@ -217,7 +217,7 @@ CREATE TABLE simple_feature (
   score double,
 
   PRIMARY KEY ( simple_feature_id ),
-  KEY contig_idx( contig_id, contig_start ),
+  KEY contig_idx( contig_id ),
   KEY analysis_idx( analysis_id ),
   KEY hit_idx( display_label )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
@@ -243,7 +243,7 @@ CREATE TABLE protein_align_feature (
 
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY ctg_idx( contig_id, contig_start ),
+  KEY ctg_idx( contig_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -269,7 +269,7 @@ CREATE TABLE dna_align_feature (
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY hit_idx( hit_name ),
-  KEY ctg_idx( contig_id, contig_start ),
+  KEY ctg_idx( contig_id ),
   KEY ana_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -304,8 +304,8 @@ CREATE TABLE repeat_feature (
   score double,
   
   PRIMARY KEY (	repeat_feature_id ),
-  KEY contig_idx( contig_id, contig_start ),
-  KEY repeat_idx( repeat_consensus_id, contig_id, contig_start ),
+  KEY contig_idx( contig_id ),
+  KEY repeat_idx( repeat_consensus_id ),
   KEY analysis_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
@@ -598,7 +598,7 @@ CREATE TABLE prediction_transcript (
     analysis_id int,
 
     PRIMARY KEY( prediction_transcript_id, exon_rank ),
-    KEY contig_idx( contig_id, contig_start )
+    KEY (contig_id)
 );
 
 
@@ -639,7 +639,7 @@ CREATE TABLE marker_feature (
     map_weight                int(10) unsigned,
 
     PRIMARY KEY (marker_feature_id),
-    KEY contig_idx (contig_id, contig_start)
+    KEY contig_idx (contig_id )
 );
     
 CREATE TABLE marker_map_location (
