@@ -2360,6 +2360,27 @@ sub deleteObj {
   }
 }
 
+=head2 _crossdb
+
+ Title   : _crossdb
+ Usage   : $obj->_crossdb($newval)
+ Function: 
+ Returns : value of _crossdb
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _crossdb{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_crossdb'} = $value;
+    }
+    return $obj->{'_crossdb'};
+
+}
+
 
 =head2 diff_fh
 

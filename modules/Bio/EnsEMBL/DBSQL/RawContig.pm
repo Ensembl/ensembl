@@ -169,7 +169,207 @@ my $query="
    return  $self->_gene_query($query,$supporting);
 }
 
+=head2 get_old_Genes
 
+ Title   : get_old_Genes
+ Usage   : my @mapped_Genes=$rc->get_old_Genes 
+ Function: Used to get out old Genes (not modifying coordinates)
+ Returns : an array of Bio::EnsEMBL::Exon objects
+ Args    : none
+
+
+=cut
+
+sub get_old_Genes {
+    my ($self) = @_;
+
+    #This method requires a connection to a crossmatch database
+    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_Genes!");}
+    my $crossdb = $self->_crossdb;
+
+    
+    #The crossdb should be holding onto old and new dbs, we need the old one here...
+    my $old_db;
+    eval {
+	$old_db=$self->_crossdb->old_dbobj;
+    }; 
+    if ($@) {
+	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_Genes! $@");
+    }
+    my $oldcontig;
+    eval {
+	$oldcontig = $old_db->get_Contig($self->id);
+    };
+
+    #If the clone does not exist, these are really new Genes
+    if ($@) {
+	#print STDERR "Contig ".$self->id." doesn't exist in old db, returning empty array...\n";
+	return ();
+    }
+   
+    my @genes=$oldcontig->get_all_Genes();
+    my $size=scalar (@genes);
+    #print STDERR "Returning $size old Genes as they are for contig ".$self->id."\n"; 
+    return @genes;
+}
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
+ Usage   :
+ Function: returns all exons for this contig
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub get_all_Exons {
+
+    my ($self)=@_;
+
+
+    my $contig_id=$self->id;
+
+
+    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
+               FROM   exon e,contig c 
+               WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
+
+    my $sth = $self->dbobj->prepare ($query);
+    $sth->execute;
+
+    my ($id,$start,$end,$strand,$phase,$created,$modified);
+    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified);
+    
+    my @exons;
+    while ($sth->fetch){
+	my $exon=Bio::EnsEMBL::Exon->new;
+	
+	$exon->id($id);
+	$exon->start($start);
+	$exon->end($end);
+	$exon->strand($strand);
+	$exon->seqname($self->id);
+	$exon->contig_id($self->id);
+	$exon->phase($phase);
+	$exon->created($created);
+	$exon->modified($modified);
+	$exon->sticky_rank(1);
+
+	push @exons,$exon;
+    }
+    return @exons;
+}
+
+=head2 get_old_Exons
+
+ Title   : get_old_Exons
+ Usage   : my @mapped_exons=$rc->get_old_Exons 
+ Function: Used to get out exons in new coordinates
+ Returns : an array of Bio::EnsEMBL::Exon objects
+ Args    : none
+
+
+=cut
+
+sub get_old_Exons {
+    my ($self) = @_;
+
+    #This method requires a connection to a crossmatch database
+    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
+    my $crossdb = $self->_crossdb;
+
+    
+    #The crossdb should be holding onto old and new dbs, we need the old one here...
+    my $old_db;
+    eval {
+	$old_db=$self->_crossdb->old_dbobj;
+    }; 
+    if ($@) {
+	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
+    }
+    my $oldclone;
+    my $oldcontig;
+    eval {
+	$oldclone = $old_db->get_Clone($self->cloneid);
+    };
+
+    #If the clone does not exist, these are really new exons
+    if ($@) {
+	return ();
+    }
+   
+    my $newclone= $self->dbobj->get_Clone($self->cloneid);
+    #If the clones have the same version, the underlying dna hasn't changed,
+    #therefore we just return the old exons...
+    if ($oldclone->embl_version == $newclone->embl_version) {
+	my $oldcontig;
+	eval {
+	    $oldcontig = $oldclone->get_Contig($self->id);
+	};
+	if ($@) {
+	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
+	    return ();
+	}
+	my @exons=$oldcontig->get_all_Exons();
+	my $size=scalar (@exons);
+	#print STDERR "Returning $size old exons as they are for contig ".$self->id." on clone ".$oldclone->id."\n"; 
+	return @exons; 
+    }
+    #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
+    my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
+    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id,$newclone->embl_version);
+    my @sorted_fp= sort { $a->start <=> $b->start} @fp;
+    
+    my %validoldcontigs;
+    my %fphash;
+    my @old_exons;
+    foreach my $fp ( @sorted_fp ) {
+	my $contigid = $fp->hseqname;
+	my $oldcontig=$old_db->get_Contig($contigid);
+	push @old_exons, $oldcontig->get_all_Exons;
+	$validoldcontigs{$contigid} = $fp->hseqname;
+	if( !exists $fphash{$fp->hseqname} ) {
+	    $fphash{$fp->hseqname} = [];
+	}
+	push(@{$fphash{$fp->hseqname}},$fp);
+    }
+
+
+    #We now need to get all the Genes for this clone on the old case
+    # now perform the mapping
+
+    my @mapped_exons;
+  EXON:
+    
+    foreach my $exon (@old_exons) {
+	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
+	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
+		if( $fp->strand == $fp->hstrand ) {
+		    # straightforward mapping
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
+		    $exon->start($fp->start + $exon->start - $fp->hstart);
+		    $exon->end($fp->start + $exon->end - $fp->hstart);
+		} else {
+		    # Grrr strand hell.
+		    my $oldstart = $exon->start;
+		    my $oldend   = $exon->end;
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
+		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
+		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
+		    $exon->strand( -1 * $exon->strand);
+		}
+		push (@mapped_exons,$exon);
+		next EXON;
+	    }
+	}
+    }
+    my $size=scalar(@mapped_exons);
+    return @mapped_exons;		
+}
 
 
 =head2 get_Genes_by_Type
@@ -2367,7 +2567,7 @@ sub use_rawcontig_acc{
 
  Title   : get_repeatmasked_seq
  Usage   : $seq = $obj->get_repeatmasked_seq()
- Function: Masks DNA sequence by replacing repeats with N's
+ Function: Masks DNA sequence by replacing repeats with Ns
  Returns : Bio::PrimarySeq
  Args    : none
 
@@ -2423,5 +2623,24 @@ sub _mask_features {
 
     return $dnastr;
 }
+
+=head2 _crossdb
+
+ Title   : _crossdb
+ Usage   :
+ Function:
+ Example :
+ Returns : The Bio::EnsEMBL::DBSQL::CrossMatchAdaptor object
+ Args    :
+
+
+=cut
+
+sub _crossdb {
+   my ($self,$arg) = @_;
+
+   return $self->dbobj->_crossdb;
+}
+	
 
 1;
