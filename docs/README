@@ -1,0 +1,12 @@
+
+
+Not much in this directory yet. Probably best to
+read the web site http://ensembl.ebi.ac.uk/ and
+also go
+
+perldoc <perl-module/perl-script>
+
+Places to start are modules/Bio/Ensembl/DB/ObjI.pm,
+                    modules/Bio/Ensembl/DBSQL/Obj.pm
+
+
