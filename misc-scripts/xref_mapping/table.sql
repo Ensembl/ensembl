@@ -77,10 +77,12 @@ CREATE TABLE source (
 
 CREATE TABLE species (
 
+  species_id                  int unsigned not null auto_increment,
   taxonomy_id                 int unsigned not null,
   name                        varchar(255) not null,
 
-  PRIMARY KEY(taxonomy_id),
+  PRIMARY KEY(species_id),
+  KEY taxonomy_idx(taxonomy_id),
   KEY name_idx(name)
 
 );
