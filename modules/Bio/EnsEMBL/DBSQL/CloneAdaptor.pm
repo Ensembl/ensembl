@@ -68,8 +68,8 @@ sub _generic_sql_fetch {
     
     my $sql = q{
         SELECT clone_id
-          , embl_acc
           , name
+          , embl_acc
           , version
           , embl_version
           , htg_phase
