@@ -351,7 +351,7 @@ sub do_query
 			'queryCOORD');
 
 		    foreach my $mapped (@mapped) {
-			next if ($mapped->isa('Gap'));
+			next if ($mapped->isa('Guzzle::Mapper::Gap'));
 			$range = ':' . $mapped->start . ',' .  $mapped->end;
 			push(@{ $query{$ti}{SEGMENT} }, $ti . $range);
 		    }
@@ -423,9 +423,10 @@ sub do_query
 				$resultcopy->{segment} = $result->{segment};
 
 				if ($mapped[$i]->
-					isa('Gap')) {
+					isa('Guzzle::Mapper::Gap')) {
 				    $resultcopy->{type}{label} .=
-					" [fragment " .  (1 + $i) . " (GAP)]";
+					" [fragment " .  (1 + $i) .
+					" (not mapped)]";
 				} else {
 				    $resultcopy->{type}{label} .=
 					" [fragment " .  (1 + $i) . "]";
@@ -436,7 +437,7 @@ sub do_query
 			    # Will take it off the display
 			    $result->group('NOSHOW');
 
-			} elsif ($mapped[0]->isa('Gap')) {
+			} elsif ($mapped[0]->isa('Guzzle::Mapper::Gap')) {
 			    $result->group($result->group .
 				" [unmappable in $seqid]");
 			} else {
