@@ -45,9 +45,10 @@ print "ok 2\n";
 
 
  my $protein_adaptor=Bio::EnsEMBL::DBSQL::Protein_Adaptor2->new($db);
-#eval {
+
+eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid('ENSP00000216167');
-#};
+};
 
 if ($@) {
     print "not ok 3\n";
