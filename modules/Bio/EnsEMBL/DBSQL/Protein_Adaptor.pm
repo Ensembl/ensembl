@@ -62,7 +62,9 @@ use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
-use Bio::EnsEMBL::ExternalData::GeneSNP;
+
+# this is required at the right point if needed
+#use Bio::EnsEMBL::ExternalData::GeneSNP;
 
 #use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
@@ -694,11 +696,56 @@ sub get_snps {
     my @genes = $vc->get_all_Genes();
     
 #Get which virtual transcript holds the transcript we want to study   
+<<<<<<< Protein_Adaptor.pm
+   foreach my $gen (@genes) {
+       if ($gen->id eq $geneid) {
+	   $gene = $gen;
+       }
+   }
+
+   my @transcripts = $gene->each_Transcript();
+
+   foreach my $trans  (@transcripts) {
+       if ($trans->id eq $transid) {
+	   $transcript = $trans;
+       }
+   }
+   my $genesnp;
+   eval {
+       require Bio::EnsEMBL::ExternalData::GeneSNP;
+       $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
+	   (-gene => $gene,
+	    -contig => $vc
+	    );
+   };
+   if( $@ ) {
+       $self->throw("Unable to build GeneSNP object. Probably don't have ensembl-external code in your PERL5LIB. Download ensembl-external and either install or move to PERL5LIB\n\nReal Exception $@");
+   }
+       
+
+   $genesnp->transcript($transcript);
+   
+   my @seq_diff = $genesnp->snps2transcript(@snips);
+       
+   foreach my $diff (@seq_diff) {
+       foreach my $var ($diff->each_Variant) {
+	   if($var->isa('Bio::Variation::AAChange') ) {
+	   print STDERR $var->label, "\n";
+	   print STDERR $var->trivname, "\n";
+	   print STDERR $var->allele_ori->seq, "\n";
+	   print STDERR $var->allele_mut->seq, "\n";
+	   foreach my $all ($var->each_Allele) {
+	       print STDERR $all->seq, "\n";
+	   }
+       }
+   }
+
     foreach my $gen (@genes) {
 	if ($gen->id eq $geneid) {
 	    $gene = $gen;
 	}
-   }
+
+    }
     
     my @transcripts = $gene->each_Transcript();
     
