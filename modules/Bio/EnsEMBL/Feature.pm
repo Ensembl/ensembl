@@ -843,7 +843,7 @@ sub get_all_alt_locations {
   my (@haps, @alt);
 
   foreach my $axf (@$axfs) {
-    warn $axf->type;
+    #warn $axf->type;
     if(uc($axf->type()) eq 'HAP') {
       push @haps, $axf;
     } elsif(uc($axf->type()) =~ 'PAR') {
@@ -856,7 +856,7 @@ sub get_all_alt_locations {
     }
   }
 
-  warn "@{[ map { $_->type() } @haps ]}";
+  #warn "@{[ map { $_->type() } @haps ]}";
   # regions surrounding hap are those of interest, not hap itself
   # convert hap alt. exc. features to regions around haps instead
   foreach my $h (@haps) {
