@@ -29,6 +29,7 @@ use strict;
 package Bio::EnsEMBL::Container;
 
 use vars ('@ISA', '$AUTOLOAD');
+use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
