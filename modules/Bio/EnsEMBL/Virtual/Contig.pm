@@ -1035,7 +1035,7 @@ sub _gene_query{
                 foreach my $sticky ( @stickies ) {
 		    #print STDERR "Mapping sticky $sticky ",$sticky->start," ",$sticky->end,"\n";
                     unless ( $self->_convert_seqfeature_to_vc_coords($sticky) ) {
-			print STDERR "Unmappable!\n";
+			#print STDERR "Unmappable sticky exon " . $sticky->dbID . "\n";
                         # unmappable component exon, abort.
                         $mapped_sticky = 0;
                         last;
@@ -1218,6 +1218,7 @@ sub _convert_seqfeature_to_vc_coords {
 	    $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@ || !ref $mc) { 
+            # print STDERR "Unable to map $cid\n";
 	    return undef;
     }
 
@@ -1272,11 +1273,11 @@ sub _convert_seqfeature_to_vc_coords {
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
     # Could be clipped on ANY contig  
     if ($sf->start < $mc->rawcontig_start) {
-#         print STDERR "Binning $cid\n";
+#           print STDERR "Binning $cid\n";
 	    return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-#         print STDERR "Binning $cid\n";
+#           print STDERR "Binning $cid\n";
 	    return undef;              
     }
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);

@@ -2338,7 +2338,8 @@ sub get_all_Genes {
     my $idlist  = $self->_raw_contig_id_list();
     
     if( $idlist !~ /\w/ ) { 
-        return ();
+       &eprof_end("total-static-gene-get");
+       return ();
     }
 
     my $query = "
@@ -2831,7 +2832,7 @@ sub top_SeqFeatures{
 sub _raw_contig_id_list {
    my ($self,@args) = @_;
     
-   my $string;
+   my $string = "";
 
    if( defined $self->{'_raw_contig_id_list'} ) {
        return $self->{'_raw_contig_id_list'};
