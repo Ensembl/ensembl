@@ -478,6 +478,11 @@ sub length {
 sub seq {
   my $self = shift;
 
+  if(@_) {
+    $self->{'seq'} = shift;
+    return $self->{'seq'};
+  }
+
   return $self->{'seq'} if($self->{'seq'});
 
   my $adaptor = $self->{'adaptor'};
@@ -487,7 +492,7 @@ sub seq {
 
   my $dbID = $self->{'dbID'};
   if(!$dbID) {
-    warning("Cannot retrieve sequence from Translation - adaptor is not set.");
+    warning("Cannot retrieve sequence from Translation - dbID is not set.");
   }
   
   my $tr_adaptor = $self->{'adaptor'}->db()->get_TranscriptAdaptor;

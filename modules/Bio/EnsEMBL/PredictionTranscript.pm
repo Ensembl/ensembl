@@ -222,11 +222,22 @@ sub translation {
     $end_exon = $exons[0];
   }
 
-  return
-    Bio::EnsEMBL::Translation->new(-START_EXON => $start_exon,
-                                   -END_EXON   => $end_exon,
-                                   -SEQ_START  => 1,
-                                   -SEQ_END    => $end_exon->length());
+  my $pta;
+
+  if($self->adaptor()) {
+    $pta = $self->adaptor()->db()->get_TranslationAdaptor();
+  } else {
+    warning("PredictionTranscript has no adaptor, may not be able to obtain " .
+            "translation");
+  }
+
+  return Bio::EnsEMBL::Translation->new
+    (-ADAPTOR    => $pta,
+     -START_EXON => $start_exon,
+     -END_EXON   => $end_exon,
+     -SEQ_START  => 1,
+     -SEQ_END    => $end_exon->length(),
+     -SEQ        => $self->translate()->seq());
 }
 
 
