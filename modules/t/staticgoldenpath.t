@@ -276,10 +276,13 @@ $trans->add_Exon($exon);
 
 $newgene = $vc2->convert_Gene_to_raw_contig($gene);
 print "ok 15\n";
+for $ex ( $newgene->get_all_Exons() ) {
+	print STDERR "Exon ",$exon->contig_id,"\n";
+}
 
 $db->write_Gene($newgene);
 
-$ens_test->pause;
+#$ens_test->pause;
 
 print "ok 16\n";
 
@@ -305,6 +308,8 @@ if( $exon1->start != 2 ||
 }
 
 # exon3 is a sticky exon, starting 1 ending 8 on a sticky-wicket
+print STDERR "Exon 3 has ",$exon3->start," ",$exon3->end,"\n";
+
 if( $exon3->start != 1 || $exon3->end != 8 || $exon3->seq->seq ne 'GGTTTTTT' ) {
     print "not ok 18\n";
     print STDERR "Exon3 ",$exon3->seqname,"  ",$exon3->start,":",$exon3->end,";",$exon3->strand," ",$exon3->seq->seq,"\n";

@@ -80,7 +80,7 @@ sub fetch_by_geneId {
       , exon_transcript et
       , transcript t
       , contig c
-    WHERE t.gene_id = '$geneId'
+    WHERE t.gene_id = $geneId
       AND et.transcript_id = t.transcript_id
       AND e.exon_id = et.exon_id
       AND e.contig_id = c.internal_id
@@ -115,6 +115,10 @@ sub fetch_by_geneId {
 	}
 
 	$sticky->_sort_by_sticky_rank();
+	# set start = 1 and end = length of sticky exon
+
+	# build a minature sequence representing the sticky region and
+	# attach
 
         $exons{$sticky->dbID} = $sticky;
       } else {
@@ -141,7 +145,7 @@ sub _new_Exon_from_hashRef {
 #    $exon->end_phase( $hashRef->{end_phase} );
    $exon->dbID($hashRef->{'exon_id'});
    $exon->sticky_rank($hashRef->{'sticky_rank'});
-
+   $exon->contig_id( $hashRef->{'contig_id'} );
   return $exon;
 }
 

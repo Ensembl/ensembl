@@ -1717,7 +1717,7 @@ sub _reverse_map_Exon {
 	   $rmexon->end($start);
        }
        $rmexon->strand($sstrand);
-       $rmexon->contig_id($scontig->id);
+       $rmexon->contig_id($scontig->internal_id);
        $rmexon->seqname($scontig->id);
        $rmexon->attach_seq($scontig->primary_seq);
        return ($rmexon);
@@ -1792,7 +1792,7 @@ sub _reverse_map_Exon {
 	   }
 
 	   $rmexon->strand($isstrand);
-	   $rmexon->contig_id($c->contig->id);
+	   $rmexon->contig_id($c->contig->internal_id);
 	   $rmexon->seqname($c->contig->id);
 	   push(@exported_exons,$rmexon);
 

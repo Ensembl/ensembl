@@ -186,8 +186,8 @@ sub _sort_by_sticky_rank {
     my @sorted;
 
     @sorted= sort {$a->sticky_rank <=> $b->sticky_rank } 
-      @{$self->{'component_Exons'}};
-    $self->{'component_Exons'} = \@sorted;
+      @{$self->{'_component_exons'}};
+    $self->{'_component_exons'} = \@sorted;
     return 1;
 }
 
