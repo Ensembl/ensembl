@@ -156,8 +156,9 @@ my $clone_list = &get_inlist(0,@clone_ids);
 $sth = $db->prepare("select * from dna where id in $dna_list into outfile '$workdir/dna.txt'");
 $sth->execute;
 
-$sth = $db->prepare("select * from contig_landmarkMarker where contig in $contig_list into outfile '$workdir/contig_landmarkMarker.txt'");
-$sth->execute;
+# $sth = $db->prepare("select * from contig_landmarkMarker where contig in
+# $contig_list into outfile '$workdir/contig_landmarkMarker.txt'");
+# $sth->execute;
 
 $sth = $db->prepare("select * from clone where internal_id in $clone_list into outfile '$workdir/clone.txt'");
 $sth->execute;
@@ -248,7 +249,7 @@ $sth = $db->prepare("select * from transcript where id in $transcript_list");
 $sth->execute;
 my @gene_ids;
 my @translation_ids;
-open (FILE,">transcript.txt") || die $!;
+open (FILE,">$workdir/transcript.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -281,7 +282,7 @@ $sth = $db->prepare("select * from objectXref where ensembl_id in $translation_l
 $sth->execute;
 my @oxref_ids;
 my @xref_ids;
-open (FILE,">objectXref.txt") || die $!;
+open (FILE,">$workdir/objectXref.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
