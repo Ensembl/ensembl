@@ -348,7 +348,7 @@ sub _get_hits {
 	  }
 	}
 	for (my $i = 1; $i < @tofetch; $i++) {
-	  if ($tofetch[$i] =~ /|/) {	# pipe would make trouble
+	  if ($tofetch[$i] =~ /\|/) {	# pipe would make trouble
 	    splice @tofetch, $i, 1;
 	    $i--;
 	  }
@@ -379,7 +379,7 @@ sub _get_hits {
       }
     }
     for (my $i = 1; $i < @tofetch; $i++) {
-      if ($tofetch[$i] =~ /|/) {	# pipe would make trouble
+      if ($tofetch[$i] =~ /\|/) {	# pipe would make trouble
         splice @tofetch, $i, 1;
         $i--;
       }
