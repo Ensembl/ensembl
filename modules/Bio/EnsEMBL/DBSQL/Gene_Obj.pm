@@ -658,6 +658,7 @@ sub get_array_supporting {
 
     foreach my $g ( @out) {
 	$self->_get_dblinks($g);
+        $self->_get_description($g);
     }
     } 
     return @out;
@@ -767,7 +768,7 @@ sub _make_sticky_exon{
    $sticky->attach_seq($seq);
    return $sticky;
 
-}
+}                                       # _make_sticky_exon
 
 =head2 _get_dblinks
 
@@ -813,11 +814,48 @@ sub _get_dblinks{
 	   $trans->add_DBLink($dblink);
        }
    }
+}                                       # _get_dblinks
 
+=head2 _get_description
 
+ Title   : _get_description
+ Usage   :
+ Function: add description from the gene_description table
+           (otherwise, $unknown_string used). This table has been populated 
+           by an external script.
+ Example :
+ Returns : undef
+ Args    : the gene that needs to get its annotation
 
-}
+=cut
 
+sub _get_description { 
+   my ($self,$gene) = @_;
+
+   my $unknown_string ='unknown';
+
+   if( !defined $gene || ! ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("no gene passed to _get_description");
+   }
+
+   my $geneid = $gene->id;
+
+   my $q = 
+     "SELECT description
+      FROM gene_description
+      WHERE gene_id = '$geneid'";
+
+   $q = $self->_db_obj->prepare($q) || $self->throw($q->errstr);
+   my ($desc) = $q->fetchrow;
+   $self->throw($q->errstr) if $q->err;
+
+   if (defined($desc) && $desc ne '')  {                  # found
+       $gene->description( $desc );
+   }else { 
+       $gene->description( $unknown_string );
+   }
+   undef;
+}                                       # _get_description
 
 
 =head2 get_Gene_by_DBLink
