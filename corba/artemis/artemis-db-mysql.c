@@ -50,8 +50,6 @@ static POA_Ensembl_artemis_DB__epv impl_Ensembl_artemis_DB_epv = {
    (gpointer) & impl_Ensembl_artemis_DB_getEntry,
    (gpointer) & impl_Ensembl_artemis_DB_getallEntryNames,
    (gpointer) & impl_Ensembl_artemis_DB_getFeatureDefinitionList,
-   (gpointer) & impl_Ensembl_artemis_DB_max_sequence_length
-
 };
 
 /*** vepv structures ***/
@@ -230,15 +228,6 @@ impl_Ensembl_artemis_DB_getFeatureDefinitionList(impl_POA_Ensembl_artemis_DB *
    return retval;
 }
 
-
-static CORBA_long
-impl_Ensembl_artemis_DB_max_sequence_length(impl_POA_Ensembl_artemis_DB *
-					    servant, CORBA_Environment * ev)
-{
-   CORBA_long retval;
-   retval = ARTEMIS_MAX_SEQLENGTH;
-   return retval;
-}
 
 
 

@@ -5,9 +5,10 @@ module Ensembl {
     exception RequestedSequenceTooLong { };
     exception NoEntry { string reason; };
 
-    interface Sequence {
+    interface BioSequence {
       string getSubSequence(in long start,in long end) raises (RequestedSequenceTooLong);
       long length();
+      long max_sequence_request(); 
     };
     
     struct Qualifier {
@@ -29,13 +30,13 @@ module Ensembl {
 	string getName(); // accession number usually.
 	long getFeatureCount(); 
 	FeatureList getAllFeatures();
-	Sequence getSequence();
+	BioSequence getSequence();
     };
 
-    typedef sequence<string> QualiferDefinitionList;
+    typedef sequence<string> QualifierDefinitionList;
     struct FeatureDefinition {
       string key;
-      QualiferDefinitionList qualifiers;
+      QualifierDefinitionList qualifiers;
     };
     typedef sequence<FeatureDefinition> FeatureDefinitionList;
 

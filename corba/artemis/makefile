@@ -1,7 +1,7 @@
 
 IFLAGS = -I/usr/local/lib/glib/include -I/usr/local/include -I../popt -I. -I../simpleobjectman
 
-LFLAGS = -L/usr/lib/mysql -Llib -L../timetolease
+LFLAGS = -L/usr/lib/mysql -Llib -L../simpleobjectman
 
 test-artseq-server : test-artseq-server.o artemis-mysql-impl.o artemis-exon-impl.o artemis-skels.o artemis-common.o
 	$(CC) -o test-artseq-server test-artseq-server.o artemis-mysql-impl.o artemis-skels.o artemis-common.o $(LFLAGS) -lIIOP -lORBit -lORBitutil -lglib -lm -lresolv -lmysqlclient -lsom

@@ -13,13 +13,13 @@
 
 /*** App-specific servant structures ***/
 typedef struct {
-  POA_Ensembl_artemis_Sequence servant;
+  POA_Ensembl_artemis_BioSequence servant;
   PortableServer_POA poa;
   MYSQL * connection; /* database connection */
   char * contig_id;   /* need this to retrieve the data */
   long length;        /* we store this in memory as it is cheap */
   SimpleObjectManagerAdaptor soma;
-} impl_POA_Ensembl_artemis_Sequence;
+} impl_POA_Ensembl_artemis_BioSequence;
 
 /*
  * This is an implementation only of Transcripts, not of anything else
@@ -52,15 +52,15 @@ typedef struct {
 
 /*** Implementation stub prototypes ***/
 static void
-impl_Ensembl_artemis_Sequence__destroy(impl_POA_Ensembl_artemis_Sequence *
+impl_Ensembl_artemis_BioSequence__destroy(impl_POA_Ensembl_artemis_BioSequence *
 				       servant, CORBA_Environment * ev);
 static CORBA_char
-   *impl_Ensembl_artemis_Sequence_getSubSequence
-   (impl_POA_Ensembl_artemis_Sequence * servant, CORBA_long start,
+   *impl_Ensembl_artemis_BioSequence_getSubSequence
+   (impl_POA_Ensembl_artemis_BioSequence * servant, CORBA_long start,
     CORBA_long end, CORBA_Environment * ev);
 
 static CORBA_long
-impl_Ensembl_artemis_Sequence_length(impl_POA_Ensembl_artemis_Sequence *
+impl_Ensembl_artemis_BioSequence_length(impl_POA_Ensembl_artemis_BioSequence *
 				     servant, CORBA_Environment * ev);
 
 static void
@@ -98,22 +98,22 @@ static Ensembl_artemis_FeatureList
 
 					      CORBA_Environment * ev);
 
-static Ensembl_artemis_Sequence
+static Ensembl_artemis_BioSequence
 impl_Ensembl_artemis_Entry_getSequence(impl_POA_Ensembl_artemis_Entry *
 				       servant, CORBA_Environment * ev);
 
 /*** epv structures ***/
-static PortableServer_ServantBase__epv impl_Ensembl_artemis_Sequence_base_epv
+static PortableServer_ServantBase__epv impl_Ensembl_artemis_BioSequence_base_epv
    = {
    NULL,			/* _private data */
    NULL,			/* finalize routine */
    NULL,			/* default_POA routine */
 };
-static POA_Ensembl_artemis_Sequence__epv impl_Ensembl_artemis_Sequence_epv = {
+static POA_Ensembl_artemis_BioSequence__epv impl_Ensembl_artemis_BioSequence_epv = {
    NULL,			/* _private */
-   (gpointer) & impl_Ensembl_artemis_Sequence_getSubSequence,
+   (gpointer) & impl_Ensembl_artemis_BioSequence_getSubSequence,
 
-   (gpointer) & impl_Ensembl_artemis_Sequence_length,
+   (gpointer) & impl_Ensembl_artemis_BioSequence_length,
 
 };
 
@@ -150,9 +150,9 @@ static POA_Ensembl_artemis_Entry__epv impl_Ensembl_artemis_Entry_epv = {
 };
 
 /*** vepv structures ***/
-static POA_Ensembl_artemis_Sequence__vepv impl_Ensembl_artemis_Sequence_vepv = {
-   &impl_Ensembl_artemis_Sequence_base_epv,
-   &impl_Ensembl_artemis_Sequence_epv,
+static POA_Ensembl_artemis_BioSequence__vepv impl_Ensembl_artemis_BioSequence_vepv = {
+   &impl_Ensembl_artemis_BioSequence_base_epv,
+   &impl_Ensembl_artemis_BioSequence_epv,
 };
 
 static POA_Ensembl_artemis_Feature__vepv impl_Ensembl_artemis_Feature_vepv = {
@@ -166,18 +166,18 @@ static POA_Ensembl_artemis_Entry__vepv impl_Ensembl_artemis_Entry_vepv = {
 };
 
 /*** Stub implementations ***/
-static Ensembl_artemis_Sequence
-impl_Ensembl_artemis_Sequence__create(PortableServer_POA poa,
+static Ensembl_artemis_BioSequence
+impl_Ensembl_artemis_BioSequence__create(PortableServer_POA poa,
 				      CORBA_Environment * ev)
 {
-   Ensembl_artemis_Sequence retval;
-   impl_POA_Ensembl_artemis_Sequence *newservant;
+   Ensembl_artemis_BioSequence retval;
+   impl_POA_Ensembl_artemis_BioSequence *newservant;
    PortableServer_ObjectId *objid;
 
-   newservant = g_new0(impl_POA_Ensembl_artemis_Sequence, 1);
-   newservant->servant.vepv = &impl_Ensembl_artemis_Sequence_vepv;
+   newservant = g_new0(impl_POA_Ensembl_artemis_BioSequence, 1);
+   newservant->servant.vepv = &impl_Ensembl_artemis_BioSequence_vepv;
    newservant->poa = poa;
-   POA_Ensembl_artemis_Sequence__init((PortableServer_Servant) newservant,
+   POA_Ensembl_artemis_BioSequence__init((PortableServer_Servant) newservant,
 				      ev);
    objid = PortableServer_POA_activate_object(poa, newservant, ev);
    CORBA_free(objid);
@@ -187,12 +187,12 @@ impl_Ensembl_artemis_Sequence__create(PortableServer_POA poa,
 }
   
 
-impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,MYSQL * c,char * c_id,SimpleObjectManagerAdaptor soma)
+impl_POA_Ensembl_artemis_BioSequence * new_impl_EA_BioSequence(PortableServer_POA poa,MYSQL * c,char * c_id,SimpleObjectManagerAdaptor soma)
 {
-   impl_POA_Ensembl_artemis_Sequence *newservant;
+   impl_POA_Ensembl_artemis_BioSequence *newservant;
 
-   newservant = g_new0(impl_POA_Ensembl_artemis_Sequence, 1);
-   newservant->servant.vepv = &impl_Ensembl_artemis_Sequence_vepv;
+   newservant = g_new0(impl_POA_Ensembl_artemis_BioSequence, 1);
+   newservant->servant.vepv = &impl_Ensembl_artemis_BioSequence_vepv;
    newservant->poa = poa;
    newservant->connection =c ;
    newservant->soma = soma;
@@ -201,19 +201,19 @@ impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,
    return newservant;
 }
 
-int remove_Sequence_func(gpointer data)
+int remove_BioSequence_func(gpointer data)
 {
-  impl_POA_Ensembl_artemis_Sequence * servant;
-  servant = (impl_POA_Ensembl_artemis_Sequence*) data;
-  SimpleObjectManagerAdaptor_log_message(&servant->soma,G_LOG_LEVEL_MESSAGE,"Removing Sequence %s",servant->contig_id);
-  impl_Ensembl_artemis_Sequence__destroy(servant,servant->soma.ev);
+  impl_POA_Ensembl_artemis_BioSequence * servant;
+  servant = (impl_POA_Ensembl_artemis_BioSequence*) data;
+  SimpleObjectManagerAdaptor_log_message(&servant->soma,G_LOG_LEVEL_MESSAGE,"Removing BioSequence %s",servant->contig_id);
+  impl_Ensembl_artemis_BioSequence__destroy(servant,servant->soma.ev);
   return 0;
 }
 
-Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYSQL *c,char * c_id,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev)
+Ensembl_artemis_BioSequence new_Ensembl_artemis_BioSequence(PortableServer_POA poa,MYSQL *c,char * c_id,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev)
 {
-  Ensembl_artemis_Sequence retval;
-  impl_POA_Ensembl_artemis_Sequence *newservant;
+  Ensembl_artemis_BioSequence retval;
+  impl_POA_Ensembl_artemis_BioSequence *newservant;
   PortableServer_ObjectId *objid;
   
   /* MySQL stuff */
@@ -260,7 +260,7 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
     }
         
     row = mysql_fetch_row(result);
-    newservant = new_impl_EA_Sequence(poa,c,g_strdup(c_id),soma);
+    newservant = new_impl_EA_BioSequence(poa,c,g_strdup(c_id),soma);
     newservant->length = atol(row[0]);
     
     SimpleObjectManagerAdaptor_log_message(&soma,G_LOG_LEVEL_DEBUG,"Made sequence %s with length %d",c_id,newservant->length);
@@ -270,18 +270,18 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
     /*
      * ok. We can rock and roll now 
      */
-    POA_Ensembl_artemis_Sequence__init((PortableServer_Servant) newservant, ev);
+    POA_Ensembl_artemis_BioSequence__init((PortableServer_Servant) newservant, ev);
     objid = PortableServer_POA_activate_object(poa, newservant, ev);
     CORBA_free(objid);
     retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
-    SimpleObjectManagerAdaptor_activate(&newservant->soma,"EASequence",c_id,retval,(gpointer)newservant,remove_Sequence_func);
+    SimpleObjectManagerAdaptor_activate(&newservant->soma,"EASequence",c_id,retval,(gpointer)newservant,remove_BioSequence_func);
     return retval;
   }
 }
 
 
 static void
-impl_Ensembl_artemis_Sequence__destroy(impl_POA_Ensembl_artemis_Sequence *
+impl_Ensembl_artemis_BioSequence__destroy(impl_POA_Ensembl_artemis_BioSequence *
 				       servant, CORBA_Environment * ev)
 {
    PortableServer_ObjectId *objid;
@@ -290,12 +290,12 @@ impl_Ensembl_artemis_Sequence__destroy(impl_POA_Ensembl_artemis_Sequence *
    PortableServer_POA_deactivate_object(servant->poa, objid, ev);
    CORBA_free(objid);
    g_free(servant->contig_id);
-   POA_Ensembl_artemis_Sequence__fini((PortableServer_Servant) servant, ev);
+   POA_Ensembl_artemis_BioSequence__fini((PortableServer_Servant) servant, ev);
    g_free(servant);
 }
 
 static CORBA_char *
-impl_Ensembl_artemis_Sequence_getSubSequence(impl_POA_Ensembl_artemis_Sequence
+impl_Ensembl_artemis_BioSequence_getSubSequence(impl_POA_Ensembl_artemis_BioSequence
 					     * servant, CORBA_long start,
 					     CORBA_long end,
 					     CORBA_Environment * ev)
@@ -338,11 +338,21 @@ impl_Ensembl_artemis_Sequence_getSubSequence(impl_POA_Ensembl_artemis_Sequence
 }
 
 static CORBA_long
-impl_Ensembl_artemis_Sequence_length(impl_POA_Ensembl_artemis_Sequence *
+impl_Ensembl_artemis_BioSequence_length(impl_POA_Ensembl_artemis_BioSequence *
 				     servant, CORBA_Environment * ev)
 {
    CORBA_long retval;
    retval = servant->length;
+   return retval;
+}
+
+
+static CORBA_long
+impl_Ensembl_artemis_BioSequence_max_sequence_length(impl_POA_Ensembl_artemis_BioSequence *
+					    servant, CORBA_Environment * ev)
+{
+   CORBA_long retval;
+   retval = ARTEMIS_MAX_SEQLENGTH;
    return retval;
 }
 
@@ -804,11 +814,11 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
   return retval;
 }
 
-static Ensembl_artemis_Sequence
+static Ensembl_artemis_BioSequence
 impl_Ensembl_artemis_Entry_getSequence(impl_POA_Ensembl_artemis_Entry *
 				       servant, CORBA_Environment * ev)
 {
-   Ensembl_artemis_Sequence retval;
+   Ensembl_artemis_BioSequence retval;
 
    char sqlbuffer[1024];
    MYSQL_RES * result;
@@ -821,7 +831,7 @@ impl_Ensembl_artemis_Entry_getSequence(impl_POA_Ensembl_artemis_Entry *
    state = mysql_query(servant->connection,sqlbuffer);
    result = mysql_store_result(servant->connection);
    mysql_free_result(result);
-   retval = new_Ensembl_artemis_Sequence(servant->poa,servant->connection,servant->contig_id,servant->soma,ev);
+   retval = new_Ensembl_artemis_BioSequence(servant->poa,servant->connection,servant->contig_id,servant->soma,ev);
    return retval;
 }
 

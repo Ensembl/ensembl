@@ -34,7 +34,7 @@ int main (int argc,char ** argv)
 
   Ensembl_artemis_DB db;
   Ensembl_artemis_Entry entry;
-  Ensembl_artemis_Sequence seq;
+  Ensembl_artemis_BioSequence seq;
   Ensembl_artemis_FeatureList * ftl;
   Ensembl_artemis_QualifierList * ql;
 
@@ -149,8 +149,8 @@ int main (int argc,char ** argv)
     fprintf(stderr,"Out...\n",i);
     
     seq = Ensembl_artemis_Entry_getSequence(entry,&ev);
-    len = Ensembl_artemis_Sequence_length(seq,&ev);
-    seqchar = Ensembl_artemis_Sequence_getSubSequence(seq,1,1000,&ev);
+    len = Ensembl_artemis_BioSequence_length(seq,&ev);
+    seqchar = Ensembl_artemis_BioSequence_getSubSequence(seq,1,1000,&ev);
     if( ev._major != CORBA_NO_EXCEPTION ) {
       fprintf(stderr,"No sequence provided for %s. Exception \n",arg);
       CORBA_free(seq);
