@@ -543,24 +543,26 @@ sub get_old_Exons{
     my @exons;
     
     foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_old_Exons);}
+    
+    my @vcexons = ();
+    foreach my $exon ( @exons ) {
 	
-	my @vcexons = ();
-	my $count = 0;
-	foreach my $exon ( @exons ) {
-	    
-	    my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
-	       
-
-	    
-
+	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	
+	if( !defined $st ) {next;}        
+	if (($st < 0 ) || ($en >$self->length)) {next;}
+	
+	else 
+	{
 	    $exon->start($st);
 	    $exon->end($en);
 	    $exon->($str);   
-	
+	    
 	    push @vcexons;
 	}
-		
-  return @vcexons;	  
+    }
+    
+    return @vcexons;	  
 }
 
 
