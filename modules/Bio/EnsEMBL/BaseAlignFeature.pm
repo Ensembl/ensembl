@@ -88,7 +88,7 @@ use Bio::EnsEMBL::SeqFeature;
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw(Bio::EnsEMBL::FeaturePair);
+@ISA = qw(Bio::EnsEMBL::FeaturePairI);
 
 sub new {
     my ($class,@args) = @_;
