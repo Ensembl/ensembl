@@ -129,8 +129,7 @@ sub fetch_by_stable_id {
   Example    : @exons = $exon_adaptor->fetch_by_geneId(); 
   Description: Retrieves all exons from the gene specified by gene_id
   Returntype : list of Bio::EnsEMBL::Exon in contig coordinates
-  Exceptions : thrown if $geneId is not defined
-  Caller     : general
+  Exceptions : thrown if $geneId is not defined  Caller     : general
 
 =cut
 
@@ -140,7 +139,7 @@ sub fetch_by_geneId {
   my $hashRef;
   my ( $currentId, $currentTranscript );
 
-  if( !defined $geneId ) {
+  if( !$geneId ) {
       $self->throw("Must has a geneId ... ");
   }
   $self->{rchash} = {};
@@ -411,8 +410,8 @@ sub store {
     return $exon->dbID();
   }
 
-  if( !defined $exon->start || !defined $exon->end || 
-      !defined $exon->strand || !defined $exon->phase ) {
+  if( ! $exon->start || ! $exon->end || 
+      ! $exon->strand || ! defined $exon->phase ) {
     $self->throw("Exon does not have all attributes to store");
   }
 
@@ -435,7 +434,7 @@ sub store {
     for my $componentExon ( @componentExons ) {
       my $contig = $componentExon->contig();
 
-      unless(defined $contig && ref $contig && $contig->dbID()) {
+      unless($contig && ref $contig && $contig->dbID()) {
 	$self->throw("Component Exon does not have an attached contig " .
 		     "with a valid set database id. " .
 		     "Needs to have one set");
@@ -448,7 +447,7 @@ sub store {
 			$componentExon->phase(),
 			$componentExon->end_phase(),
 			$componentExon->sticky_rank() );
-      if( ! defined $exonId ) {
+      if( ! $exonId ) {
 	$exonId = $exonst->{'mysql_insertid'};
 	$exon->dbID($exonId);
 	$exon->adaptor( $self );
@@ -460,7 +459,7 @@ sub store {
     
     my $contig = $exon->contig();
 
-    unless( defined $contig && ref $contig && $contig->dbID() ) {
+    unless( $contig && ref $contig && $contig->dbID() ) {
       $self->throw("Exon does not have an attached contig with a valid " . 
 		   "database id.  Needs to have one set");
     }
@@ -476,10 +475,11 @@ sub store {
     $exon->adaptor( $self );
   }
 
-  if (defined($exon->stable_id)) {
-    if (!defined($exon->created) || 
-        !defined($exon->modified) ||
-        !defined($exon->version)) {
+  if ($exon->stable_id) {
+    print STDERR "stable id is defined as ".$exon->stable_id."\n";
+    if (!$exon->created || 
+        !$exon->modified ||
+        !$exon->version) {
       $self->throw("Trying to store incomplete stable id information for exon");
     } 
 
@@ -491,6 +491,7 @@ sub store {
                                "'" . $exon->stable_id . "'," .
                                "FROM_UNIXTIME(".$exon->created."),".
                                "FROM_UNIXTIME(".$exon->modified."))";
+    print "preparing ".$statement."\n";
      my $sth = $self->prepare($statement);
      $sth->execute();
    }
@@ -577,10 +578,13 @@ sub store {
 sub get_stable_entry_info {
   my ($self,$exon) = @_;
 
-  if( !defined $exon || !ref $exon || !$exon->isa('Bio::EnsEMBL::Exon') ) {
+  if( !$exon || !ref $exon || !$exon->isa('Bio::EnsEMBL::Exon') ) {
      $self->throw("Needs a exon object, not a $exon");
   }
-
+  if(!$exon->dbID){
+    #$self->throw("can't fetch stable info with no dbID");
+    return;
+  }
   my $sth = $self->prepare("SELECT stable_id, UNIX_TIMESTAMP(created),
                                    UNIX_TIMESTAMP(modified), version 
                             FROM   exon_stable_id 
@@ -616,7 +620,7 @@ sub remove {
   my $self = shift;
   my $exon = shift;
   
-  if ( ! defined $exon->dbID() ) {
+  if ( ! $exon->dbID() ) {
     return;
   }
   #print "have ".$self->db."\n";
