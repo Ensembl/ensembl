@@ -50,8 +50,8 @@ my $v2 = $ARGV[2]; my $v2_dir = sprintf "%s/%s_%s", $src_prefix, $db, $v2;
 
 my $delta_dir = sprintf "%s/%s_%s_delta_%s", $dst_prefix, $db, $v1, $v2;
 
-die $! if (! -d $v1_dir);
-die $! if (! -d $v2_dir);
+die "$v1_dir: $!" if (! -d $v1_dir);
+die "$v2_dir: $!" if (! -d $v2_dir);
 
 if (! -d $delta_dir) {
     printf STDERR "Creating delta directory '%s'\n", $delta_dir;
