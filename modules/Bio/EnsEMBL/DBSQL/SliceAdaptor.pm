@@ -490,9 +490,10 @@ sub get_seq_region_attribs {
                formerly on the ChromosomeAdaptor, RawContigAdaptor and
                CloneAdaptor classes.  Slices fetched span the entire
                seq_regions and are on the forward strand.
+               If the coordinate system with the provided name and version
+               does not exist an empty list is returned.
   Returntype : listref of Bio::EnsEMBL::Slices
-  Exceptions : throw if invalid coord system is provided
-               throw if max_length < 1 is provided
+  Exceptions : throw if max_length < 1 is provided
                throw if overlap < 0 is provided
                throw if overlap is provided but max_length is not 
                throw if overlap is greater than max_length
@@ -524,36 +525,56 @@ sub fetch_all {
     }
     if($max_length <= $overlap) {
       throw("Overlap must be less than max_length.");
-    } 
+    }
   }
 
   #
   # verify existance of requested coord system and get its id
   #
-  my $csa = $self->db->get_CoordSystemAdaptor();
-  my $cs = $csa->fetch_by_name($cs_name, $cs_version);
+  my $csa       = $self->db->get_CoordSystemAdaptor();
+  my $orig_cs   = $csa->fetch_by_name($cs_name, $cs_version);
 
-  
+  return [] if(!$orig_cs);
+
+  my $sth;
+
   #
-  # Retrieve the seq_region from the database
+  # Retrieve the seq_regions from the database
   #
-  my $sth = $self->prepare('SELECT seq_region_id, name, length ' .
-                           'FROM   seq_region ' .
-                           'WHERE  coord_system_id =?');
+  if($orig_cs->is_top_level()) {
+    $sth =
+      $self->prepare("SELECT sr.seq_region_id, sr.name, sr.length, " .
+                     "       sr.coord_system_id " .
+                     "FROM seq_region sr, " .
+                     "     seq_region_attrib sra, attrib_type at " .
+                     "WHERE at.code='toplevel' " .
+                     "AND   at.attrib_type_id=sra.attrib_type_id " .
+                     "AND   sra.seq_region_id=sr.seq_region_id");
+    $sth->execute();
+  } else {
+    $sth =
+      $self->prepare('SELECT seq_region_id, name, length, coord_system_id ' .
+                     'FROM   seq_region ' .
+                     'WHERE  coord_system_id =?');
+    $sth->execute($orig_cs->dbID);
+  }
 
-  $sth->execute($cs->dbID);
-
-  my ($seq_region_id, $name, $length);
-  $sth->bind_columns(\$seq_region_id, \$name, \$length);
+  my ($seq_region_id, $name, $length, $cs_id);
+  $sth->bind_columns(\$seq_region_id, \$name, \$length, \$cs_id);
 
   my $name_cache = $self->{'_name_cache'};
   my $id_cache   = $self->{'_id_cache'};
   my $cache_count = 0;
 
-  my $cs_key = lc($cs->name().':'.$cs_version);
-
   my @out;
   while($sth->fetch()) {
+    my $cs = $csa->fetch_by_dbID($cs_id);
+
+    if(!$cs) {
+      throw("seq_region $name references non-existent coord_system $cs_id.");
+    }
+
+    my $cs_key = lc($cs->name().':'.$cs_version);
 
     #cache values for future reference, but stop adding to the cache once we
     #we know we have filled it up
@@ -608,57 +629,9 @@ sub fetch_all {
       $start += $multiple;
     }
   }
+  $sth->finish();
 
   return \@out;
-}
-
-
-=head2 fetch_all_non_redundant
-
-  Arg [1]    : none
-  Example    : @all = @{$slice_adaptor->fetch_all_non_redundant()};
-  Description: Retrieves all non-redundant slices, i.e. those which have
-               the attribute 'nonredundant' set
-  Returntype : listref of Bio::EnsEMBL::Slices
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_all_non_redundant {
-
-  my $self = shift;
-
-  my $sth = $self->prepare("SELECT s.name, s.length, c.coord_system_id " .
-			   "FROM seq_region s, coord_system c, seq_region_attrib sra, attrib_type at " .
-			   "WHERE s.coord_system_id=c.coord_system_id " .
-			   "AND at.code='nonredundant' " .
-			   "AND at.attrib_type_id=sra.attrib_type_id " .
-			   "AND sra.seq_region_id=s.seq_region_id");
-
-  $sth->execute();
-
-  my ($name, $length, $cs_id);
-  $sth->bind_columns(\$name, \$length, \$cs_id);
-
-  # Slice expects a CoordSystem object
-  my $cs_adaptor = $self->db->get_CoordSystemAdaptor();
-
-
-  my @out;
-  while($sth->fetch()) {
-    my $cs = $cs_adaptor->fetch_by_dbID($cs_id);
-    push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
-                                        -END    => $length,
-                                        -STRAND => 1,
-                                        -SEQ_REGION_NAME => $name,
-                                        -SEQ_REGION_LENGTH => $length,
-                                        -COORD_SYSTEM => $cs,
-                                        -ADAPTOR => $self);
-  }
-
-  return \@out;
-
 }
 
 
