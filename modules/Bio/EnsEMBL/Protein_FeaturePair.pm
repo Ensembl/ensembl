@@ -16,15 +16,16 @@ Protein_FeaturePair.pm - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-Give standard usage here
+my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+						    -feature2 => $feat2,);
 
 =head1 DESCRIPTION
 
-Describe the object here
+This object inherits from Bio::EnsEMBL::FeaturePair. This extension has been implemented to work with the Protein object. Each Protein Feature should be stored in a Protein_FeaturePair object.
 
 =head1 CONTACT
 
-Describe contact details here
+mongin@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -63,6 +64,7 @@ sub to_FTHelper{
    # Make new FTHelper, and fill in the key
    my $fth = Bio::SeqIO::FTHelper->new;
 
+#The key should not be always domain, its currently true because we store in Protein Features only Interpro hits but we should get the key information from the analysis table...but these is no column where this key could be stored...
    $fth->key('Domain');
    
    # Add location line

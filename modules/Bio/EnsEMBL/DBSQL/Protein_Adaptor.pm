@@ -21,14 +21,16 @@ use Bio::EnsEMBL::DBSQL::Protein_Adaptor;
 $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
 my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
 
+my $protein = $protein_adaptor->fetch_Protein_by_dbid;
 
 =head1 DESCRIPTION
 
-Describe the object here
+This Object inherit from BaseAdaptor following the new adaptor rules. It also has pointers to 3 different objects: Obj.pm, Gene_Obj.pm and FamilyAdaptor.pm (which is not currently used). This pointers allow the object to use the methods contained in these objects. SNPs db adaptor may also be added in these pointers.
+The main method may be fetch_Protein_by_dbid, which return a complete protein object. Different methods are going to be develloped in this object to allow complexe queries at the protein level in Ensembl.
 
 =head1 CONTACT
 
-Describe contact details here
+mongin@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -52,6 +54,8 @@ use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+#The pointer are defined bellow.
 
 sub _gene_obj {
     my($self) = @_;
@@ -100,11 +104,13 @@ sub _familyAdaptor {
 sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
 
+#Get the transcript id from the translation id 
    my $query = "select id from transcript where translation = '$id'";
    my $sth = $self->prepare($query);
    $sth ->execute();
    my $transid = $sth->fetchrow;
-   
+
+#Get the different dates (created and modified) for the corresponding gene   
    my $query1 = "select g.created,g.modified from gene as g, transcript as t where t.gene = g.id and t.translation = '$id'";
    my $sth1 = $self->prepare($query1);
    $sth1 ->execute();
@@ -113,19 +119,31 @@ sub fetch_Protein_by_dbid{
    my $created = $date[0];
    my $modified = $date[1];
 
-
+#Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
+
+#Get all of the Dblink for the given Transcript
    my @dblinks = $self->fetch_DBlinks_by_dbid($id);
+
+#Get all of the Protein Features for the given Protein
    my @prot_feat = $self->fetch_Protein_features_by_dbid($id);
+
+#Get all of the family (at the Transcript level), not implemented yet
    #my $family = $self->fetch_Family_by_dbid($id);
-   
+
+#Get all SNPs ?????? method which would be nice to implement
+
+
+#Get the aa sequence using the transcript object   
    my $sequence = $transcript->translate->seq;
    
+#Define the moltype
    my $moltype = "protein";
    
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
 
+#Create the Protein object
    my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					      -accession_number  => $id,
 					      -display_id => $id,
@@ -135,38 +153,59 @@ sub fetch_Protein_by_dbid{
 					      -moltype => $moltype,
 					      );
 
+#Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
 
    $protein ->annotation($ann);
    $protein->add_date($created);
    $protein->add_date($modified);
 
+#Add the DBlinks to the annotation object
    foreach my $link (@dblinks) {
        $protein->annotation->add_DBLink($link);
    }
-   my %seen;
+   my %seen1;
+   my %seen2;
+
 #Get Interpro data and make with it a dblink object
    foreach my $feat (@prot_feat) {
        
-
+#Get the the accession number of the feature matching to the given Protein
        my $pfam = $feat->hseqname;
+
+#This is supposed to 
+       my $dbdesc = $feat->analysis->db;
+
+       #Hack, waiting for the analysis table being properly loaded, will then always return     
+       $dbdesc = "Pfam";
+
+#If the Interpro signature has not been already put into DBlink, add it.       
+       if (! defined ($seen1{$pfam})) {
+	   my $newdblink = Bio::Annotation::DBLink->new();
+	   $newdblink->database($dbdesc);
+	   $newdblink->primary_id($pfam);
+	   $protein->annotation->add_DBLink($newdblink);
+	   $seen1{$pfam} = 1;
+       }
+
+	   
        my $query2 = "select interpro_ac from interpro where id = '$pfam'";
        my $sth2 = $self->prepare($query2);
        $sth2 ->execute();
        my $interpro = $sth2->fetchrow;
        
        
-
-       if (! defined ($seen{$interpro})) {
+#If the Interpro accession number has not already been put into DBlink, add it 
+       if (! defined ($seen2{$interpro})) {
 	   my $dblink = Bio::Annotation::DBLink->new();
 	   $dblink->database('InterPro');
 	   $dblink->primary_id($interpro);
 	   $protein->annotation->add_DBLink($dblink);
-	   $seen{$interpro} = 1;
+	   $seen2{$interpro} = 1;
        }
    }
 
-
+#Add eac protein features to the protein object
    foreach my $feat (@prot_feat) {
        
        $protein->add_Protein_feature($feat);
@@ -188,7 +227,8 @@ sub fetch_Protein_by_dbid{
 
 sub fetch_Transcript_by_dbid{
    my ($self,$transcript_id) = @_;
-   
+
+#Call the method get_Transcript on Gene_Obj.om   
    my $transcript = $self->_gene_obj->get_Transcript($transcript_id);
          
    return $transcript;
@@ -332,12 +372,12 @@ sub fetch_by_feature{
 
 =head2 fetch_by_array_feature
 
- Title   : fetch_by_hid_array_feature
- Usage   :
- Function:
+ Title   : fetch_by_array_feature
+ Usage   :my @proteins = $obj->fetch_by_array_feature(@domaines)
+ Function:This method allow to query proteins matching different domains, this will only return the protein which have the domain queried
  Example :
- Returns : 
- Args    :
+ Returns : An array of protein objects
+ Args    :Interpro signatures
 
 
 =cut

@@ -16,11 +16,20 @@ Protein.pm - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-Give standard usage here
+my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
+					      -accession_number  => $id,
+					      -display_id => $id,
+					      -primary_id => $id,
+					      -id => $id,
+					      -desc => $desc,
+					      -moltype => $moltype,
+					      );
 
 =head1 DESCRIPTION
 
-Describe the object here
+This object inherit from Bio::SeqI for the implementation and from PrimarySeq
+A protein object hold the basic PrimarySeq requirements, hold annotation, DBlink, protein_features object.
+It will also soon hold family and SNPs objects. The DB adaptor for this object is called Protein_Adaptor 
 
 =head1 CONTACT
 
@@ -49,10 +58,6 @@ use Bio::SeqIO;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-
-
-
-#use AutoLoader;
 @ISA = qw(Bio::PrimarySeq Bio::SeqI);
 
 
@@ -128,7 +133,7 @@ sub all_SeqFeature{
 
  Title   : family
  Usage   : $obj->family($newval)
- Function: This method contains the family object
+ Function: This method contains the family object (Not used yet)
  Returns : value of family
  Args    : newvalue (optional)
 
@@ -193,11 +198,11 @@ sub add_Protein_feature{
 =head2 length
 
  Title   : length
- Usage   :
+ Usage   :my $lenght = $protein->length
  Function:
  Example :
- Returns : 
- Args    :
+ Returns :length of the aa sequence 
+ Args    :none
 
 
 =cut
@@ -329,6 +334,7 @@ sub moltype{
 
 
 1;
+
 
 
 

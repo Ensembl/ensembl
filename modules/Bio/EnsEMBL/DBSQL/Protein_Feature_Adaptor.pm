@@ -341,6 +341,7 @@ sub _set_protein_feature{
 my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
 
 
+
    
    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
 					      -start => $rowhash->{'seq_start'},
