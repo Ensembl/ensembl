@@ -140,14 +140,14 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
 	if ($write) {
 	    $dbobj->write_Clone($clone);
 	    $written_clone{$clone->id} = 1;
-	    print STDERR "Written clone $acc.$ver";
+	    print STDERR "Written clone $acc.$ver\n";
 	}
 	undef $clone;
     }
 
     # skip unwanted clones
     unless (defined $clonelist && defined $required_clones{"$acc.$ver"}) {
-	print STDERR "Clone $acc.$ver not required - skip\n";
+	# print STDERR "Clone $acc.$ver not required - skip\n";
 	next SEQ;
     }
     if (defined $inDB{"$acc.$ver"}) {
@@ -157,7 +157,7 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
 
     my $contigid = "$acc.$ver.$offset.$end";
     print STDERR "Found contig ", $seqobj->id, " ", $seqobj->desc, "\n";
-    print STDERR "\tclone  $acc.$ver";
+    print STDERR "\tclone  $acc.$ver\n";
     print STDERR "\tid     $contigid\n";
     print STDERR "\toffset $offset\n";
     print STDERR "\tend    $end\n";
@@ -187,29 +187,27 @@ SEQ: while (my $seqobj = $seqio->next_seq) {
     unless (defined $clone) {
 	my $dbclone;
 	# first check to see if we have already written that clone
-	eval { # not tested
+	eval {
 	    $dbclone = $dbobj->get_Clone_by_version($acc, $ver);
 	};
 	if (defined $dbclone) {
 	    if ($clobber) {
-		print STDERR "Overwriting $acc.$ver";
+		print STDERR "Overwriting $acc.$ver\n";
 		$dbclone->delete;
 	    }
 	    else {
-		print STDERR "Already have $acc.$ver - skip";
+		print STDERR "Already have $acc.$ver - skip\n";
 		$inDB{"$acc.$ver"} = 1;
 		undef $contig;
 		next SEQ;
 	    }
 	}
-	else {
-	    $clone = new Bio::EnsEMBL::PerlDB::Clone;
-	    $clone->id($acc);
-	    $clone->embl_id($acc);
-	    $clone->version(1);
-	    $clone->embl_version($ver);
-	    print STDERR "Created clone $acc $ver\n";
-	}
+	$clone = new Bio::EnsEMBL::PerlDB::Clone;
+	$clone->id($acc);
+	$clone->embl_id($acc);
+	$clone->version(1);
+	$clone->embl_version($ver);
+	print STDERR "Created clone $acc $ver\n";
     }
 
     $clone->add_Contig($contig);
