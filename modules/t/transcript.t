@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 33;
+	plan tests => 35;
 }
 
 use MultiTestDB;
@@ -219,9 +219,24 @@ $multi->restore('core', 'transcript');
 
 
 
-my $interpro = $ta->get_Interpro_by_transid("ENST00000217347");
+my $interpro = $ta->get_Interpro_by_transid("ENST00000252021");
 foreach my $i (@$interpro) {
   debug($i);
 }
 ###currently no interpro info in the test db
-ok(@$interpro == 0);
+ok(@$interpro == 1);
+
+#
+# test fetch_all_by_external_name
+#
+
+($tr) = @{$ta->fetch_all_by_external_name('BAB15482')};
+ok($tr && $tr->stable_id eq 'ENST00000262651');
+
+#
+# test fetch_by_translation_id
+#
+
+$tr = $ta->fetch_by_translation_id(21734);
+
+ok($tr && $tr->stable_id eq 'ENST00000201961');
