@@ -16,7 +16,7 @@ raw2ensembl.pl
 
 =head1 SYNOPSIS
 
-raw2ensembl.pl -clone AB000381.1 -dna <file> -contigs <file>
+raw2ensembl.pl -clone AB000381.1 -fasta <file> -contigs <file>
 <db options> -write -replace
 
 =head1 DESCRIPTION
@@ -33,7 +33,8 @@ runs of 'n' in the sequence - and loads in to the DB
     -contigs file of contig start/end pairs
     -phase   clone phase
     -clone   clone accession and version (separated by '.')
-    -dna     fasta file of clone sequence
+    -fasta   fasta file of clone sequence (fasta header must contain accession)
+    -single  only one seq in fasta file (no need for header to match)
     -write   write clone
     -replace replace existing clone
     -v       print info about clones and contigs
@@ -60,7 +61,7 @@ use Bio::EnsEMBL::PerlDB::Contig;
 
 
 my($id, $acc, $ver, $phase, $contigs);
-my($dna, $seqio);
+my($fasta, $single, $seqio, $seq);
 my($dbname, $dbhost, $dbuser);
 my($help, $info, $write, $replace, $verbose);
 
@@ -71,7 +72,8 @@ $dbuser = 'ensadmin';            # default
 my $ok = &GetOptions(
     "clone=s"   => \$id,
     "phase=s"   => \$phase,
-    "dna=s"     => \$dna,
+    "fasta=s"   => \$fasta,
+    "single"    => \$single,
     "contigs=s" => \$contigs,
     "dbname=s"  => \$dbname,
     "dbhost=s"  => \$dbhost,
@@ -103,18 +105,19 @@ unless ($dbname && $dbuser && $dbhost) {
     exit 1;
 }
 
-unless ($dna) {
-    print STDERR "Must specify -dna\n";
+unless ($fasta) {
+    print STDERR "Must specify -fasta\n";
     exit 1;
 }
 
-if (! $phase || ($phase < 0 and $phase > 4)) {
+if ($phase < 0 && $phase > 4) {
     print STDERR "Phase should be 1, 2, 3 or 4\n";
     exit 1;
 }
+$phase = -1 unless defined $phase;
 
 if ($phase == 4 and defined $contigs) {
-    print "Don't need contig info for phase 4 clone - ignoring\n";
+    print STDERR "Don't need contig info for phase 4 clone - ignoring\n";
     undef $contigs;
 }
 
@@ -126,13 +129,22 @@ my $dbobj = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 ) or die "Can't connect to DB $dbname on $dbhost as $dbuser";
 
 
-open DNA, "< $dna" or die "Can't open file $dna for DNA";
-my $seqio = new Bio::SeqIO(
+open DNA, "< $fasta" or die "Can't open file $fasta for DNA";
+$seqio = new Bio::SeqIO(
     -fh     => \*DNA,
     -format => 'fasta'
 );
-my $seq = $seqio->next_seq or die "Canna get seq from file $dna";
+while ($seq = $seqio->next_seq) {
+    last if $single or $seq->display_id =~ /$id/;
+    undef $seq;
+}
 close DNA;
+die "Couldn't get $id from $fasta" unless defined $seq;
+
+print STDERR "display id  ", $seq->display_id, "\n";
+print STDERR "description ", $seq->desc, "\n";
+
+# my $seq = $seqio->next_seq or die "Canna get seq from file $fasta";
 
 print "Loaded dna: length ", $seq->length, "\n";
 
@@ -220,7 +232,7 @@ if ($write) {
 	$dbobj->write_Clone($clone);
     }
     elsif ($dbclone) {
-	print STDERR "$acc.$ver already exists - ignoring\n";
+	print "$acc.$ver already exists - ignoring\n";
     }
     else {
 	$dbobj->write_Clone($clone);
@@ -237,7 +249,8 @@ Options:
   -dbname
   -dbhost
   -dbuser
-  -dna      fasta file of clone sequence
+  -fasta    fasta file of clone sequence
+  -single   only read first seq in file
   -phase    clone phase
   -contigs  file of contig start/end pairs
   -clone    clone accession and version (separated by '.')
