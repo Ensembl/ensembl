@@ -10,7 +10,7 @@ use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 
-my ($host, $port, $user, $password, $db, $verbose);
+my ($host, $port, $user, $password, $db, $verbose, $check);
 $host = "127.0.0.1";
 $port = 5000;
 $password = "";
@@ -22,6 +22,7 @@ GetOptions ('host=s'      => \$host,
             'port=s'      => \$port,
             'db=s'        => \$db,
             'verbose'     => \$verbose,
+	    'check'       => \$check,
             'help'        => sub { &show_help(); exit 1;} );
 
 die "Host must be specified"           unless $host;
@@ -68,17 +69,59 @@ my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(-user   => $user,
 						    -driver => 'mysql' );
 
 my $slice_adaptor = $db_adaptor->get_SliceAdaptor();
-debug("Created SliceAdaptor");
 
 # Assume all entries in the top-level co-ordinate system are non-redundant
 my @toplevel = @{$slice_adaptor->fetch_all('toplevel')};
 debug("Got " . @toplevel . " sequence regions in the top-level co-ordinate system");
 set_nr_attribute($slice_adaptor, $nr_attrib_type_id, $dbi, @toplevel);
 
+# Rest of the co-ordinate systems, in "descending" order
+# TODO - smarter way of getting this
+my @coord_systems = ('contig', 'clone', 'supercontig', 'chromosome' ); # XXX clone above supercontig?
+
+debug("Starting pair-wise co-ordinate system comparison");
+
+my $cs_adaptor = $db_adaptor->get_CoordSystemAdaptor();
+
+my @nr_slices; # will store non-redundant ones for later
+
+for (my $lower_cs_idx = 0; $lower_cs_idx < @coord_systems; $lower_cs_idx++) {
+  for (my $higher_cs_idx = $lower_cs_idx+1; $higher_cs_idx < @coord_systems; $higher_cs_idx++) {
+
+    my $higher_cs = $coord_systems[$higher_cs_idx];
+    my $lower_cs = $coord_systems[$lower_cs_idx];
+
+    #debug("$lower_cs:$higher_cs");
+
+    # we are interested in the slices that do *not* project onto the "higher" coordinate system
+    my @slices = @{$slice_adaptor->fetch_all($lower_cs)};
+
+    my $projected_hit = 0;
+    my $projected_miss = 0;
+
+    foreach my $slice (@slices) {
+      my @projected = @{$slice->project($higher_cs)};
+      if (@projected > 0) {
+        $projected_hit++;
+      } else {
+        $projected_miss++;
+        push @nr_slices, $slice;
+      }
+      undef @projected;
+    }
+    debug ("Projecting " . $lower_cs . " onto " . $higher_cs . ": " .
+	   $projected_hit . " hit, " . $projected_miss . " miss out of " . @slices . " total");
+
+    undef @slices;
+
+  }
+}
+
+set_nr_attribute($slice_adaptor, $nr_attrib_type_id, $dbi, @nr_slices);
 
 #----------------------------------------
 
-check_non_redundant($slice_adaptor);
+check_non_redundant($slice_adaptor) if $check;
 
 # ----------------------------------------------------------------------
 # Misc / utility functions
@@ -92,6 +135,7 @@ sub show_help {
   print "  --password {pass} The password for user, if required.\n";
   print "  --port {folder}   The database port to use.\n";
   print "  --db {schema}     The name of the database\n";
+  print "  --check           Read back non-redundant slices from SliceAdaptor\n";
   print "  --verbose         Print extra output information\n";
 
 }
