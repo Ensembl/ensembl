@@ -188,22 +188,30 @@ the following four types:
 
 =over 4
 
-=item right2left
+=item *
+
+right2left
 
     5'--A------->3'
             5'--B------->3'
 
-=item right2right
+=item *
+
+right2right
 
     5'--A------->3'
             3'<-------B--5'
 
-=item left2left
+=item *
+
+left2left
 
     3'<-------A--5'
             5'--B------->3'
 
-=item left2right
+=item *
+
+left2right
 
     3'<-------A--5'
             3'<-------B--5'
