@@ -30,13 +30,17 @@ package main;
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
              'query'       => '',   
              
-             #Location of the sptr file in fasta format
+             #Location of the sptr file, this file will be used as an input to grep the specific sp entries to the organism using grep_sp_entries.pl. This file is supposed to be in SP format
+             #'total_sptr'  => '/work1/mongin/mapping/primary/sptr.txl',
+             'total_sptr'  => '/work1/mongin/mouse/data/old/spMouse.sp',
+
+             #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '',
+	     'sptr_fa'      => '/work1/mongin/mouse/data/old/tmp.fa',
 	     
-             #Location of the sptr file in Swiss-Prot format
+             #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
-	     'sptr_swiss'      => '',
+	     'sptr_swiss'      => '/work1/mongin/mouse/data/old/tmp.swiss',
 	     
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
@@ -98,8 +102,13 @@ package main;
 
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
-             'organism' => ''
+             #'organism' => 'human'
+             'organism' => '',
              
+
+             #OX (Organism taxonomy cross-reference) number
+             'ox' => '9606'
+             #'ox' => ''
 
  );
 
