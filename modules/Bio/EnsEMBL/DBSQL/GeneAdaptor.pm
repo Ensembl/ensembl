@@ -432,8 +432,8 @@ sub fetch_all_by_Slice {
     my $gene = $self->fetch_by_dbID( $geneid );
     my $newgene = $gene->transform( $slice );
 
-    if( $newgene->start() <= $slice->chr_end() &&
-	$newgene->end() >= $slice->chr_start() ) {
+    if( $newgene->start() <= $slice->length() &&
+	$newgene->end() >= 1 ) {
       # only take the gene if its really overlapping the Slice
       push( @out, $newgene );
     }
