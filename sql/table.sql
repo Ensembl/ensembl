@@ -58,14 +58,10 @@ CREATE TABLE analysis (
 CREATE TABLE chromosome (
   chromosome_id     int unsigned NOT NULL auto_increment,
   name              varchar(40) NOT NULL,
-  known_genes       int(11) NULL,
-  unknown_genes     int(11) NULL,
-  snps              int(11) NULL,
   length            int(11) NULL,
   
   PRIMARY KEY (chromosome_id)
 );
-# Statistics for the web site
 
 
 #
