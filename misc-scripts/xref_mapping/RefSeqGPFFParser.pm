@@ -91,7 +91,7 @@ sub create_xrefs {
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
       foreach my $x (@seq_lines) {
-        my ($seq_only) = $x =~ /\s+\d+\s+(.*)/;
+        my ($seq_only) = $x =~ /\s*\d+\s+(.*)/;
         $parsed_seq .= $seq_only;
       }
       $parsed_seq =~ s/\/\///g;   # remove trailing end-of-record character
