@@ -1023,9 +1023,9 @@ sub checksum{
 
 }
 
-=head2 get_family
+=head2 get_Family
 
- Title   : get_family
+ Title   : get_Family
  Usage   :
  Function:
  Example :
@@ -1035,10 +1035,16 @@ sub checksum{
 
 =cut
 
-sub get_family{
+sub get_Family{
    my ($self) = @_;
    my $proteinid = $self->id();
-   my $family = $self->adaptor->fetch_Family_by_dbid($proteinid);
+
+   my $family = $self->family_adaptor->get_Family_of_Ensembl_pep_id($proteinid);
+
+   if( !$family->isa('Bio::EnsEMBL::ExternalData::Family::Family') ) {
+       $self->throw(" $family is not a family object");
+   }
+
    return $family;
 }
 
@@ -1108,6 +1114,29 @@ sub dbEntry_adaptor{
     }
     return $obj->{'dbentry_adaptor'};
 }
+
+=head2 family_adaptor
+
+ Title   : family_adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub family_adaptor{
+ my $obj = shift;
+    if( @_ ) {
+	my $value = shift;
+	
+	$obj->{'family_adaptor'} = $value;
+    }
+    return $obj->{'family_adaptor'};
+}
+
 
 1;
 

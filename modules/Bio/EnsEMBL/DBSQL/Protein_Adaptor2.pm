@@ -227,13 +227,11 @@ sub fetch_Protein_by_dbid{
   
 #Define the moltype
    my $moltype = "protein";
-
+   
+   
    my $meta_obj = $self->db->get_MetaContainer();
    my $species = $meta_obj->get_Species();
-   print STDERR "SPEC: ".$species."\n";
    
-
-
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
   
@@ -253,12 +251,11 @@ sub fetch_Protein_by_dbid{
    $protein->transcriptac($transid);                                              
    $protein->geneac($geneid);
    
+#Set up the different adaptors which will be used by the protein Object
    $protein->adaptor($self);
-   
    $protein->protfeat_adaptor($self->_protfeat_obj());
-
    $protein->dbEntry_adaptor($self->_dbEntryAdaptor());
-  
+   #$protein->family_adaptor($self->_familyAdaptor());
 
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
@@ -348,61 +345,6 @@ sub fetch_Protein_features_by_dbid{
 
 }
 
-=head2 fetch_Family_by_dbid
-
- Title   : fetch_Family_by_dbid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub fetch_Family_by_dbid{
-   my ($self,$protein_id) = @_;
-   
-
-   #This call a method contained in FamilyAdaptor, perhaps we should one day put all of these objects together; a big protein object
-
-   my $family = $self->_familyAdaptor->get_Family_of_Ensembl_pep_id($protein_id);
-
-   if( !$family->isa('Bio::EnsEMBL::ExternalData::Family::Family') ) {
-       $self->throw(" $family is not a family object");
-   }
-
-   return $family;
-
-}
-
-
-
-=head2 fetch_by_DBlink
-
- Title   : fetch_by_DBlink
- Usage   :my @proteins = $obj->fetch_by_DBlink($dblinkid)
- Function:Get the proteins corresponding to the given DBlink. In most of the case only one protein will be returned
- Example :
- Returns : an array of protein objects being linked to this given DBlink
- Args    :Dblink id (external_id in transcriptdblink table)
-
-
-=cut
-
-sub fetch_by_DBlink{
-   my ($self,$dblink) = @_;
-   my @proteins;
-   my $query = "select t.translation from transcript as t, transcriptdblink as tdb where tdb.external_id = '$dblink' and tdb.transcript_id = t.id";
-    my $sth = $self->prepare($query);
-    $sth ->execute();
-    while( (my $pepid = $sth->fetchrow) ) {
-	my $pep = $self->fetch_Protein($pepid);
-
-	push(@proteins,$pep);
-    }
-   return @proteins;
-}
 
 =head2 fetch_by_feature
 
