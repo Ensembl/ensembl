@@ -16,13 +16,14 @@ ENSG....|ExternalDB|ExternalAC|Text
 
 =head2 Options
 
-    -db        dbname (dbname= in locator)
-    -host      host name (gets put as host= in locator)
-    -dbuser    what username to connect to the database (dbuser= in locator)
-    -interpro  name of the file which contains the interpro data (XML file)
-    -omim      name of the file for OMIM
-    -sp        name of the file for SP
-    -output    name of the file where the output should be written 
+    -db          dbname (dbname= in locator)
+    -host        host name (gets put as host= in locator)
+    -dbuser      what username to connect to the database (dbuser= in locator)
+    -interpro    name of the file which contains the interpro data (XML file)
+    -omim        name of the file for OMIM
+    -sp          name of the file for SP
+    -domainout   name of the file where the output for domains indexing should be written 
+    -extout      name of the file where the output for external DB indexing should be written
 
 =cut
 
@@ -34,7 +35,7 @@ use Getopt::Long;
 my $dbpass = undef;
 my $dbuser = 'ensro';
 my $ensdbname = 'ensembl080';
-my $host = 'hcs2g.sanger.ac.uk';
+my $host = 'ecs1c.sanger.ac.uk';
 my $output;
 my $interpro;
 my $omim;
@@ -48,7 +49,8 @@ my $sp;
 	    'interpro:s'=>\$interpro,
 	    'omim:s'=>\$omim,
 	    'sp:s'=>\$sp,
-	    'output:s' => \$output
+	    'domainout'=>\$domainout,
+	    'extout:s' => \$output
 	    );
 
 
@@ -58,6 +60,10 @@ my $ensdb =  Bio::EnsEMBL::DBLoader->new($enslocator);
 my %omim;
 my %sp;
 
+#In this file will be printed out the results of the parsing of Interpro flat file (domains)
+open (DOMAINOUT, "$domainout") || die "Can't open output\n";
+
+#In this file will be printed out the results of the parsing of the external DB (eg: Swiss-Prot, OMIM, ...)
 open (OUT, ">$output") || die "Can't open output\n";
 
 ####################
@@ -315,7 +321,7 @@ while (my @row5 = $sth5->fetchrow) {
     my $ke = "$row5[1]:$hash{$row5[1]}";
     if ($hash{$row5[1]}) {
 	if (!defined $saw{$ke}){
-	    print OUT "$row5[0]\|INTERPRO\|$row5[1]|$hash{$row5[1]}\n";
+	    print DOMAINOUT "$row5[0]\|INTERPRO\|$row5[1]|$hash{$row5[1]}\n";
 	    $saw{$ke}=1;
 	}
     }
