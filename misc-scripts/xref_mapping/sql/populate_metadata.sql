@@ -24,8 +24,8 @@ INSERT INTO species (species_id, taxonomy_id, name, aliases) VALUES (9615, 9615,
 
 # "High level" sources that we will also download from (via source_url)
 
-INSERT INTO source VALUES (1, "UniProtSwissProt", 1, 'Y',1);
-INSERT INTO source VALUES (2, "UniProtSPTrEMBL", 1, 'Y',1);
+INSERT INTO source VALUES (1, "Uniprot/SWISSPROT", 1, 'Y',1);
+INSERT INTO source VALUES (2, "Uniprot/SPTREMBL", 1, 'Y',1);
 INSERT INTO source VALUES (3, "RefSeq", 1, 'Y',1);
 
 # Other sources - used to create dependent xrefs, but not to upload from
