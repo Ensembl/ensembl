@@ -329,7 +329,7 @@ sub slice {
 }
 
 
-=head2 slice
+=head2 transform
 
   Arg [1]    : string $coord_system
                The coord system to transform this feature to.
@@ -378,7 +378,7 @@ sub transform {
 
   #convert this features coords to absolute coords (i.e. relative to the start
   #of the seq_region, not to the slice)
-  my $slice_adaptor = $db->get_SliceAdaptor->fetch_by_region();
+  my $slice_adaptor = $db->get_SliceAdaptor;
   $slice = $slice_adaptor->fetch_by_region($current_cs->name(),
                                            $slice->seq_region(),
                                            undef, #start
