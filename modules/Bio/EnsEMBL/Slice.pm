@@ -119,12 +119,12 @@ are the methods to implement
 
 =head2 get_all_SimilarityFeatures_above_score
 
- Title   : get_all_SimilarityFeatures_above_score
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+  Args      : $logic_name, $score
+  Function  : Retrieves all of the DnaDnaAlignFeatures and all of the
+              ProteinDnaAlignFeatures on this slice.
+  Returntype: @Bio::EnsEMBL::BaseAlignFeature
+  Exceptions: none
+  Caller    : general
 
 =cut
 
@@ -155,7 +155,7 @@ sub get_all_SimilarityFeatures_above_score {
 
   Args      : $logic_name, $score
   Function  : returns all DnaAlignFeatures of type logic_name and above score
-  Returntype: list of Bio::EnsEMBL::DnaDnaAlignFeature objects
+  Returntype: @Bio::EnsEMBL::DnaDnaAlignFeature
   Exceptions: none
   Caller    : GlyphSet_feature inherited objects
 
@@ -173,11 +173,12 @@ sub get_all_DnaAlignFeatures_above_score{
    return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
 }
 
+
 =head2 get_all_ProteinAlignFeatures_above_score
 
   Args      : $logic_name, $score
   Function  : getss all ProteinAlignFeatures of type logic_name and above score
-  Returntype: list of Bio::EnsEMBL::DnaPepAlignFeature objects
+  Returntype: @Bio::EnsEMBL::DnaPepAlignFeature
   Exceptions: none
   Caller    : GlyphSet_feature inherited objects
   
@@ -189,6 +190,26 @@ sub get_all_ProteinAlignFeatures_above_score {
   my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
 
   return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
+}
+
+
+=head2 get_all_SimpleFeatures_above_score
+
+  Args      : $logic_name, $score
+  Function  : retrieves all SimpleFeatures on this Slice of type logic_name 
+              and above score
+  Returntype: @Bio::EnsEMBL::SimpleFeature
+  Exceptions: none
+  Caller    : GlyphSet_feature inherited objects
+  
+=cut
+
+sub get_all_SimpleFeatures_above_score {
+  my ($self, $logic_name, $score) = @_;
+
+  my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
+
+  return $sfa->fetch_by_Slice_and_score($self, $logic_name, $score);
 }
 
 
@@ -264,6 +285,11 @@ sub get_all_SimilarityFeatures_above_pid{
 
    $self->throw("Ewan has not implemented this function! Complain!!!!");
 }
+
+
+
+
+  
 
 
 =head2 get_all_RepeatFeatures

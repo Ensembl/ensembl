@@ -65,10 +65,15 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.simple_feature_id = $id");
+   my $sth = $self->prepare("SELECT s.contig_id, s.contig_start, s.contig_end,
+                                    s.contig_strand, s.display_label,
+                                    s.analysis_id 
+                             FROM simple_feature s 
+                             WHERE s.simple_feature_id = $id");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$display,$analysis_id) = $sth->fetchrow_array();
+   my ($contig_id,$start,$end,$strand,$display,$analysis_id) = 
+     $sth->fetchrow_array();
 
    if( !defined $contig_id ) {
        $self->throw("No simple feature with id $id");
@@ -76,10 +81,16 @@ sub fetch_by_dbID{
 
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($contig_id); 
    my $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-   my $out = $self->_new_feature($start, $end, $strand, $display, $ana, $contig->id, $contig->seq);
+
+   unless(defined $ana && $ana->dbID()) {
+     $self->warn("No Analysis exists with analysis_id=$analysis_id\n");
+     return ();
+   }
+
+   my $out = $self->_new_feature($start, $end, $strand, $display, $ana, 
+				 $contig->id, $contig->seq);
    
    return $out;
-
 }
 
 =head2 fetch_by_contig_id_constraint
@@ -101,7 +112,11 @@ sub fetch_by_contig_id_constraint{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sql = "select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.contig_id = $cid";
+   my $sql = "SELECT s.contig_id, s.contig_start, s.contig_end, 
+                     s.contig_strand, s.display_label, s.analysis_id 
+              FROM simple_feature s 
+              WHERE s.contig_id = $cid";
+
    if($constraint){
      $sql .= " and $constraint";
    }
@@ -109,21 +124,24 @@ sub fetch_by_contig_id_constraint{
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$display,$analysis_id);
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$display,\$analysis_id);
+   $sth->bind_columns(undef, \$contig_id, \$start, \$end, \$strand,
+                      \$display,\$analysis_id);
 
-   my @f;
+   my @f = ();
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
-   my %ana;
+   
+   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
    while( $sth->fetch ) {
+     # caching of analysis objects performed internally by analysis adaptor
+     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
 
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
+     next unless( defined $analysis && $analysis->dbId() );
 
-       my $out = $self->_new_feature($start, $end, $strand, $display, $ana{$analysis_id}, $contig->dbID, $contig);
+     my $out = $self->_new_feature($start, $end, $strand, $display, $analysis,
+				   $contig->dbID, $contig);
       
-       push(@f,$out);
+     push(@f,$out);
    }
    
    return @f;
@@ -135,7 +153,14 @@ sub fetch_by_contig_id{
   my $constraint;
 
   if($logic_name){
-    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    my $analysis = 
+      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+
+   unless(defined $analysis && $analysis->dbID()) {
+     $self->warn("No Analysis exists with logic_name=$logic_name\n");
+     return ();
+   }
+
     $constraint .= " s.analysis_id = ".$analysis->dbID;
   }
   
@@ -176,52 +201,61 @@ sub fetch_by_assembly_location_constraint{
    
    # build the SQL
    my $cid_list = join(',',@cids);
-   my $sql = "select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,s.display_label,s.analysis_id from simple_feature s where s.contig_id in ($cid_list)";
+   my $sql = "SELECT s.contig_id, s.contig_start, s.contig_end, 
+                     s.contig_strand, s.display_label, s.analysis_id, s.score 
+              FROM simple_feature s 
+              WHERE s.contig_id IN ($cid_list)";
    if($constraint){
      $sql .= " AND $constraint";
    }
    my $sth = $self->prepare($sql);
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$display,$analysis_id);
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$display,\$analysis_id);
+   my ($contig_id,$start,$end,$strand,$display,$analysis_id, $score);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,
+		      \$display,\$analysis_id, \$score);
 
-   my @f;
-   my %ana;
+   my @f = ();
+
+   my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
 
    while( $sth->fetch ) {
-       # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($contig_id, $start,$end,$strand);
+     # we whether this is sensible to use or not
+     my @coord_list = 
+       $mapper->map_coordinates_to_assembly($contig_id, $start,$end,$strand);
        
-       # coord list > 1 - means does not cleanly map. At the moment, skip
-       if( scalar(@coord_list) > 1 ) {
-	   next;
-       }
+     # coord list > 1 - means does not cleanly map. At the moment, skip
+     if( scalar(@coord_list) > 1 ) {
+       next;
+     }
+       
+     #caching handled internally by AnalysisAdaptor
+     my $analysis = $analysis_adaptor->fetch_by_dbID($analysis_id);
+     next unless(defined $analysis && $analysis->dbID());
 
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-       if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
-	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
-	 #$counter++;
-	 next;
-       }
-       if(!($coord_list[0]->start >= $chr_start) ||
-	  !($coord_list[0]->end <= $chr_end)) {
-	 next;
-       }
-       # ok, ready to build a sequence feature: do we want this relative or not?
-       my $slice_a = $self->db->get_SliceAdaptor;
-       my $slice = $slice_a->new_slice($chr, $chr_start, $chr_end, $type);
-       my $out = $self->_new_feature($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $display, $ana{$analysis_id}, $coord_list[0]->id, undef);
+     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+       $self->warn("feature is on a piece of contig not on golden path"
+		   . " or in a gap skipping as not needed\n");
+       next;
+     }
+
+     if(!($coord_list[0]->start >= $chr_start) ||
+	!($coord_list[0]->end <= $chr_end)) {
+       next;
+     }
+
+     my $out = $self->_new_feature($coord_list[0]->start, 
+				   $coord_list[0]->end, 
+				   $coord_list[0]->strand, 
+				   $display, $analysis, 
+				   $coord_list[0]->id, undef,
+				   $score);
      
        
-       push(@f,$out);
+     push(@f,$out);
    }
 
    return @f;
-
 }
 
 sub fetch_by_assembly_location{
@@ -233,10 +267,19 @@ sub fetch_by_assembly_location{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
+   unless(defined $analysis && $analysis->dbID()) {
+     $self->warn("No Analysis exists for logic_name=$logic_name");
+     return ();
+   }
    $constraint .= " s.analysis_id = ".$analysis->dbID(); 
   }
   
-  my @results = $self->fetch_by_assembly_location_constraint($chr_start,$chr_end,$chr,$type, $constraint);
+  my @results = 
+    $self->fetch_by_assembly_location_constraint($chr_start,
+						 $chr_end,
+						 $chr,
+						 $type, 
+						 $constraint);
 
 
   return @results;
@@ -244,28 +287,66 @@ sub fetch_by_assembly_location{
 
 sub fetch_by_Slice{
   my($self, $slice, $logic_name) = @_;
- 
-  my $constraint;
-  my $analysis;
+
+  #chain to fetch by Slice and score, but without score defined
+  return $self->fetch_by_Slice_and_score($slice, $logic_name, undef);  
+}
+
+
+
+=head2 fetch_by_Slice_and_score
+
+  Args      : $slice, $logic_name, $score
+  Function  : retrieves all SimpleFeatures on a slice of type logic_name 
+              and above score
+  Returntype: @Bio::EnsEMBL::SimpleFeature
+  Exceptions: none
+  Caller    : Bio::EnsEMBL::Slice::get_all_SimpleFeatures_above_score
   
+=cut
+
+sub fetch_by_Slice_and_score {
+  my($self, $slice, $logic_name, $score) = @_;
+  
+  my $constraint = '';
+  my $analysis = undef;
+  
+  # determine the analysis id constraint if the logic_name is defined
   if($logic_name){
-   my $aa = $self->db->get_AnalysisAdaptor();
-   $analysis = $aa->fetch_by_logic_name($logic_name);
-   $constraint .= " s.analysis_id = ".$analysis->dbID(); 
+    my $aa = $self->db->get_AnalysisAdaptor();
+    $analysis = $aa->fetch_by_logic_name($logic_name);
+    unless(defined $analysis && $analysis->dbID()) {
+      $self->warn("No Analysis exists for logic_name=$logic_name");
+      return ();
+    }   
+    $constraint .= " s.analysis_id = ".$analysis->dbID(); 
   }
+
+  #add a score constraint if score is defined
+  if($score) {
+    if($constraint) {
+      $constraint .= " AND";
+    }
+    $constraint .= " s.score > $score";
+  }
+
+  # fetch the simple features on this slice, with the above constraints
+  my @results = 
+    $self->fetch_by_assembly_location_constraint($slice->chr_start,
+						 $slice->chr_end,
+						 $slice->chr_name,
+						 $slice->assembly_type, 
+						 $constraint);
   
-  my @results = $self->fetch_by_assembly_location_constraint($slice->chr_start,$slice->chr_end,$slice->chr_name,$slice->assembly_type, $constraint);
-
-  my @out;
-
+  #alter the simple feature coordinates by putting them in slice coords
   foreach my $s(@results){
     my $start = ($s->start - ($slice->chr_start - 1));
     my $end = ($s->end - ($slice->chr_start - 1));
-    my $simple = $self->_new_feature($start, $end, $s->strand, $s->display_label, $s->analysis, $s->seqname, undef);
-    push(@out, $simple);
+    $s->start($start);
+    $s->end($end);
   }
 
-  return @out;
+  return @results;
 }
 
 
@@ -316,7 +397,8 @@ sub store{
 
 
 sub _new_feature{
-  my ($self, $start, $end, $strand, $display, $analysis, $seqname, $seq) = @_;
+  my ($self, $start, $end, $strand, $display, $analysis, $seqname, $seq, 
+      $score) = @_;
 
   my $out = Bio::EnsEMBL::SimpleFeature->new();
   $out->start($start);
@@ -326,10 +408,13 @@ sub _new_feature{
   $out->display_label($display);
   $out->seqname($seqname);
   if($seq){
-  $out->attach_seq($seq); 
-}
-  return $out;
+    $out->attach_seq($seq); 
+  }
+  if($score) {
+    $out->score($score);
+  }
 
+  return $out;
 }
 
 1;
