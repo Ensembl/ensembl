@@ -23,7 +23,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
  $ea->transcriptid($other_tr_stable_id);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
  my $short_alignment_arr_ref = $ea->fetch_alignment($hid);
- $ea->contigid($contig_stable_id);
+ $ea->contigname($contig_name);
  my $contig_based_alignment_arr_ref = $ea->fetch_alignment;
 
 =head1 DESCRIPTION
@@ -67,11 +67,11 @@ use Bio::Root::RootI;
 				-PFETCH       => '/path/to/pfetch');
 		my $cont_ea = Bio::EnsEMBL::EvidenceAlignment->new(
                                 -DBADAPTOR => $dba,
-                                -CONTIGID  => $contig_stable_id);
+                                -CONTIGNAME  => $contig_name);
     Function:   Initialises EvidenceAlignment object
     Returns :   An EvidenceAlignment object
-    Args    :   Database adaptor object and an ID string (-CONTIGID
-                with contig ID or -TRANSCRIPTID with transcript
+    Args    :   Database adaptor object and an ID string (-CONTIGNAME
+                with contig name or -TRANSCRIPTID with transcript
 		stable ID); optional full path of pfetch binary
 		(-PFETCH), defaulting to whatever is in the user's
 		search path.
@@ -82,20 +82,20 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $pfetch) = $self->_rearrange(
+  my ($transcriptid, $contigname, $dbadaptor, $pfetch) = $self->_rearrange(
                                                          ['TRANSCRIPTID',
-						          'CONTIGID',
+						          'CONTIGNAME',
                                                           'DBADAPTOR',
 						          'PFETCH'],
 						         @args);
-  if (defined $transcriptid and defined $contigid) {
-    $self->throw("may have a transcript ID or a contig ID but not both");
+  if (defined $transcriptid and defined $contigname) {
+    $self->throw("may have a transcript ID or a contig name but not both");
   }
   if ($transcriptid) {
     $self->transcriptid($transcriptid);
   }
-  if ($contigid) {
-    $self->contigid($contigid);
+  if ($contigname) {
+    $self->contigname($contigname);
   }
   if (! $pfetch) {
     $pfetch = 'pfetch';
@@ -146,7 +146,7 @@ sub pfetch {
     Title   :   transcriptid
     Usage   :   $ea->transcriptid($transcript_stable_id);
     Function:   get/set for transcript stable id string (setting
-                this also unsets contigid)
+                this also unsets contigname)
 
 =cut
 
@@ -155,28 +155,28 @@ sub transcriptid {
   if( @_ ) {
     my $value = shift;
     $obj->{evidencealignment_transcript_id} = $value;
-    undef $obj->{evidencealignment_contig_id};
+    undef $obj->{evidencealignment_contig_name};
   }
   return $obj->{evidencealignment_transcript_id};
 }
 
-=head2 contigid
+=head2 contigname
 
-    Title   :   contigid
-    Usage   :   $ea->contigid($contig_stable_id);
-    Function:   get/set for contig stable id string (setting this
+    Title   :   contigname
+    Usage   :   $ea->contigname($contig_name);
+    Function:   get/set for contig name string (setting this
                 also unsets transcriptid)
 
 =cut
 
-sub contigid {
+sub contigname {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{evidencealignment_contig_id} = $value;
+    $obj->{evidencealignment_contig_name} = $value;
     undef $obj->{evidencealignment_transcript_id};
   }
-  return $obj->{evidencealignment_contig_id};
+  return $obj->{evidencealignment_contig_name};
 }
 
 =head2 _get_features_from_transcript
@@ -271,10 +271,24 @@ sub _get_features_from_transcript {
 =cut
 
 sub _get_features_from_rawcontig {
-  my ($self, $rawcontig_obj, $strand) = @_;
-  $self->throw('interface fault') if (@_ != 3);
+  my ($self, $rawcontig_obj, $strand, $db) = @_;
+  $self->throw('interface fault') if (@_ != 4);
 
-  my @all_features = $rawcontig_obj->get_all_SimilarityFeatures;
+  my $rca = $db->get_RawContigAdaptor;
+  my $contig_id = $rawcontig_obj->dbID;
+
+  # keeping protein and DNA together for simplified porting
+  # from branch-ensembl-6
+  my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
+  my @gapped_features = $pfadp->fetch_by_contig_id($contig_id);
+  my $dfadp = $db->get_DnaAlignFeatureAdaptor;
+  push @gapped_features, $dfadp->fetch_by_contig_id($contig_id);
+
+  my @all_features = ();
+  foreach my $gapped_feature (@gapped_features) {
+    push @all_features, $gapped_feature->_parse_cigar;
+  }
+
   my @features = ();
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
@@ -310,7 +324,7 @@ sub _get_features_from_rawcontig {
 sub _get_Seqs_by_accs {
   my ($self, @acc) = @_;
 
-  if (!defined(@acc) || scalar(@acc < 1)) {
+  if (! @acc || scalar(@acc < 1)) {
     $self->throw("No accession input");
   }
 
@@ -398,16 +412,18 @@ sub fetch_alignment {
   my ($self) = shift;
   $self->throw('interface fault') if (! $self);
   $self->throw('must have a stable ID and a DB adaptor object')
-    unless (($self->transcriptid || $self->contigid) && $self->dbadaptor);
+    unless (($self->transcriptid || $self->contigname) && $self->dbadaptor);
 
   if ($self->transcriptid) {
     return $self->_get_aligned_evidence_for_transcript($self->transcriptid,
                                                        $self->dbadaptor, @_);
-  } elsif ($self->contigid) {
+  } elsif ($self->contigname) {
+  my $rca = $self->dbadaptor->get_RawContigAdaptor;
+  my $contig = $rca->fetch_by_name($self->contigname);
     my $plus_strand_alignment  = $self->_get_aligned_features_for_contig(
-                                 $self->contigid, $self->dbadaptor, 1);
+                                 $contig, $self->dbadaptor, 1);
     my $minus_strand_alignment = $self->_get_aligned_features_for_contig(
-                                 $self->contigid, $self->dbadaptor, -1);
+                                 $contig, $self->dbadaptor, -1);
     my $all_alignments = $plus_strand_alignment;
     foreach my $line (@$minus_strand_alignment) {
       push @$all_alignments, $line;
@@ -560,25 +576,26 @@ sub _get_per_hid_effective_scores {
   return \%per_hid_effective_scores;
 }
 
-# _get_aligned_features_for_contig: takes a contig ID, a DB adaptor
+# _get_aligned_features_for_contig: takes a contig object, a DB adaptor
 # and strand
 # returns ref to an array of Bio::PrimarySeq
 
 sub _get_aligned_features_for_contig {
-  my ($self, $contig_id, $db, $strand) = @_;
+  my ($self, $contig_obj, $db, $strand) = @_;
   $self->throw('interface fault') if (@_ != 4);
 
   my @evidence_arr;	# a reference to this is returned
   my $evidence_obj;
 
   # get contig
-  my $contig_obj = $db->get_Contig($contig_id);
+  my $rca = $db->get_RawContigAdaptor;
 
-  my @features = $self->_get_features_from_rawcontig($contig_obj, $strand);
+  my @features = $self->_get_features_from_rawcontig($contig_obj,
+                                                     $strand, $db);
   my $per_hid_effective_scores_hash_ref
     = $self->_get_per_hid_effective_scores(\@features);
   my $hits_hash_ref = $self->_get_hits(\@features);
-  my $nucseq_obj = $contig_obj->primary_seq;
+  my $nucseq_obj = $contig_obj;
   if ($strand < 0) {
     $nucseq_obj = $nucseq_obj->revcom;
   }
@@ -609,7 +626,7 @@ sub _get_aligned_features_for_contig {
     $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
-                      -accession_number => $contig_obj->id,
+                      -accession_number => $contig_obj->name,
                       -moltype          => 'protein'
 		    );
     push @evidence_arr, $evidence_obj;
@@ -709,7 +726,7 @@ sub _get_aligned_features_for_contig {
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $nucseq_str,
                     -id               => 0,
-     		    -accession_number => $contig_obj->id,
+     		    -accession_number => $contig_obj->name,
 		    -moltype          => 'dna'
 		  );
   push @evidence_arr, $evidence_obj;
