@@ -10,12 +10,12 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 43;
+	plan tests => 11;
 }
 
 
 
-our $verbose = 1;
+our $verbose = 0;
 verbose('WARNING');
 
 my $multi_db = MultiTestDB->new;
@@ -30,15 +30,43 @@ my $slice_adaptor = $db->get_SliceAdaptor();
 my $slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1, 600);
 
 my $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity');
+ok(@$dfs);
+print_features($dfs);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'RepeatCoverage');
+ok(@$dfs);
 print_features($dfs);
 
+
 $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 10, 1);
+ok(@$dfs);
+print_features($dfs);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'RepeatCoverage', 10, 1);
+ok(@$dfs);
 print_features($dfs);
 
 $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 50, 1);
+ok(@$dfs);
+print_features($dfs);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'RepeatCoverage', 50, 1);
+ok(@$dfs);
 print_features($dfs);
 
 $dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 2, 1);
+ok(@$dfs);
+print_features($dfs);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'RepeatCoverage', 2, 1);
+ok(@$dfs);
+print_features($dfs);
+
+
+
+$slice_adaptor->fetch_by_region('chromosome', '20', 50, 600);
+
+$dfs = $dfa->fetch_all_by_Slice($slice, 'SNPDensity', 50, 1);
+ok(@$dfs);
+print_features($dfs);
+$dfs = $dfa->fetch_all_by_Slice($slice, 'RepeatCoverage', 50, 1);
+ok(@$dfs);
 print_features($dfs);
 
 
@@ -49,8 +77,11 @@ print_features($dfs);
 sub print_features {
   my $features = shift;
 
+  return if(!@$features);
+
   my $sum = 0;
   my $length = 0;
+  my $type = $features->[0]->density_value_type();
 
   debug("\n");
   foreach my $f (@$features) {
@@ -60,12 +91,12 @@ sub print_features {
     $sum += $density_value;
     $length += $f->length();
     for(my $i = 0; $i < $draw_width; $i++) {
-      debug(('*'x$draw_height));
+      debug(('*'x$draw_height) . "($density_value)");
     }
   }
   my $avg = undef;
   $avg = $sum/$length if($length < 0);
-  debug("\nSum=$sum, Length=$length, Avg/Base=$sum");
+  debug("Type=$type, Sum=$sum, Length=$length, Avg/Base=$sum");
 }
 
 
