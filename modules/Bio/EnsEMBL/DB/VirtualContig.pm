@@ -283,9 +283,9 @@ sub windowed_VirtualContig {
     
     my ($map_contig,$position,$ori) = $self->raw_contig_position($position,1);
     
-    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $map_contig->contig,
+    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $map_contig,
 					        -focusposition => $position,
-					        -ori           => $map_contig->orientation,
+					        -ori           => $ori,
 					        -left          => $left,
 					        -right         => $right
 					        );
@@ -670,21 +670,21 @@ sub length {
 =head2 vcpos_to_rcpos
 
  Title   : vcpos_to_rcpos
- Usage   : Deprecated: use raw_contig_postion instead
+ Usage   : Deprecated: use raw_contig_position instead
 
 
 =cut
 
 sub vcpos_to_rcpos {
     my $self = shift;
-    $self->warn("vcpos_to_rcpos: Deprecated name, use raw_contig_postion instead\n");
-    $self->raw_contig_postion(@_);
+    $self->warn("vcpos_to_rcpos: Deprecated name, use raw_contig_position instead\n");
+    $self->raw_contig_position(@_);
 }
 
-=head2 raw_contig_postion 
+=head2 raw_contig_position 
 
- Title   : raw_contig_postion 
- Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_postion ($vc_pos,$vc_strand)
+ Title   : raw_contig_position 
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position ($vc_pos,$vc_strand)
  Function: Maps a VirtualContig position to the RawContig Position
  Returns : Bio::EnsEMBL::DB::MapContig object, 
            position (int), strand (int)
@@ -693,10 +693,10 @@ sub vcpos_to_rcpos {
 
 =cut
 
-sub raw_contig_postion {
+sub raw_contig_position {
     my ($self, $vcpos, $vcstrand)=@_;
 
-    return $self->_vmap->raw_contig_postion($vcpos,$vcstrand);
+    return $self->_vmap->raw_contig_position($vcpos,$vcstrand);
 }
 
 =head2 embl_accession
