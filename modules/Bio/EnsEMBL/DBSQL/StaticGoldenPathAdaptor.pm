@@ -426,11 +426,8 @@ sub fetch_RawContigs_by_chr_name{
 sub fetch_RawContigs_by_chr_start_end {
    my ($self,$chr,$start,$end) = @_;
 
-
    my $type = $self->dbobj->static_golden_path_type()
     or $self->throw("No assembly type defined");
-   
-   $self->throw("I need a golden path type") unless ($type);
    
    # go for new go-faster method 
    # PL: is the query below correct? The 'NOT
