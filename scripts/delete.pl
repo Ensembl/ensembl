@@ -7,8 +7,8 @@ use Bio::EnsEMBL::DBSQL::Obj;
 
 # global defaults
 my $host = 'localhost';
-my $dbuser = 'ensembl';
-my $dbname = 'ens2';
+my $dbuser = 'ensadmin';
+my $dbname = 'ensembl';
 my $dbpass = undef;
 my $do_gene = 1;
 
@@ -20,7 +20,7 @@ my $do_gene = 1;
 	     'dbname:s'  => \$dbname,
 	     );
 
-my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname , 
+my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -dbname => $dbname , 
 					-host => $host, -password => $dbpass );
 
 
