@@ -271,43 +271,49 @@ sub extend_maximally_right {
 =cut
 
 sub windowed_VirtualContig {
-   my ($self,$position,$left,$right) = @_;
+    my ($self,$position,$left,$right) = @_;
 
-   if( $position < 0 || $position > $self->length ) {
+    if( $position < 0 || $position > $self->length ) {
        $self->throw("Attempting to build a new virtual contig out of length bounds!");
-   }
+    }
 
-   # scan along right->left until we find the first contig
-   # whoes start point is before the position
+    # scan along right->left until we find the first contig
+    # whoes start point is before the position
+    # hmm - should we presort these guys sometime?
+    # Tony: maybe - this module does 3 sorts on the same array...
 
-   # hmm - should we presort these guys sometime?
-
-   my @ids = keys %{$self->{'contighash'}};
-   @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
-   my $id;
-   foreach $id ( @ids ) {
-       if( $self->start_in_vc($id) < $position ) {
-	   last;
+    my @ids = keys %{$self->{'contighash'}};
+    @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
+    print STDERR @ids."\n\n";
+    
+    my $id = undef;
+    foreach ( @ids ) {
+       if( $self->start_in_vc($_) < $position ) {
+           print STDERR "Starting contig: $_ [". $self->start_in_vc($_). " < $position] \n";
+           $id = $_;
+           last;
        }
-   }
+    }
 
-   # $id is going to be our new focus. Now - just call 
-   # a constructor with appropiate arthmetic...
+    # $id is going to be our new focus. Now - just call 
+    # a constructor with appropriate arithmetic...
+    my $rc  = $self->{'contighash'}->{$id};
+    my $ori = $self->ori_in_vc($id);
 
-   my $vcpos;
-   my $rc = $self->{'contig'}->{$id};
-   if( $self->ori_in_vc($id) == 1 ) {
-       $vcpos = $rc->golden_left + ($position - $self->start_in_vc($id));
-   } else {
-       $vcpos = $rc->golden_right - ($position - $self->start_in_vc($id));
-   }
+    my $wvcpos;
+    if( $ori == 1 ) {
+       $wvcpos = $rc->golden_start + ($position - $self->start_in_vc($id));
+    } else {
+       $wvcpos = $rc->golden_end   - ($position - $self->start_in_vc($id));
+    }
 
-   return Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $id,
-						-focusposition => $vcpos,
-						-ori => $self->ori_in_vc($id),
-						-left => $left,
-						-right => $right
-						);
+    
+    return Bio::EnsEMBL::DB::VirtualContig->new(-focuscontig   => $rc,
+					        -focusposition => $wvcpos,
+					        -ori           => $ori,
+					        -left          => $left,
+					        -right         => $right
+					        );
 
 
 }
@@ -699,7 +705,7 @@ sub skip_SeqFeature {
 
 =cut
 
-sub rawcontig_ids{
+sub rawcontig_ids {
    my ($self,@args) = @_;
 
    return keys %{$self->{'contig'}};
@@ -717,10 +723,10 @@ sub rawcontig_ids{
 
 =cut
 
-sub start_in_vc{
+sub start_in_vc {
    my ($self,$rawcontigid) = @_;
    
-   if( !defined $rawcontigid || ! exists $self->{'contig'}->{$rawcontigid} ) {
+   if( !defined $rawcontigid || ! exists $self->{'contighash'}->{$rawcontigid} ) {
        $self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
    }
 
@@ -739,21 +745,33 @@ sub start_in_vc{
 
 =cut
 
-sub end_in_vc{
+sub end_in_vc {
    my ($self,$cid) = @_;
 
    if( $self->{'rightmostcontigid'} eq $cid ) {
        return $self->start_in_vc($cid) + $self->{'rightmostend'};
    } else {
-       return $self->start_in_vc($cid) + $self->{'contig'}->{$cid}->golden_length;
+       return $self->start_in_vc($cid) + $self->{'contighash'}->{$cid}->golden_length;
    } 
 
 }
 
+=head2 ori_in_vc
+
+ Title   : ori_in_vc
+ Usage   : $vc->ori_in_vc('rawcontigid')
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
 sub ori_in_vc {
     my ($self,$rawcontigid) = @_;
     
-    if( !defined $rawcontigid || ! exists $self->{'contig'}->{$rawcontigid} ) {
+    if( !defined $rawcontigid || ! exists $self->{'contighash'}->{$rawcontigid} ) {
 	$self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
     }
     
