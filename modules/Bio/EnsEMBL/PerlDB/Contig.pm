@@ -51,7 +51,7 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 
-# Object preamble - inheriets from Bio::Root::RootI
+# Object preamble - inheriets from Bio::Root::Root
 use Bio::Root::RootI;
 
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
@@ -62,21 +62,23 @@ use Bio::Root::RootI;
 sub new {
   my($class,@args) = @_;
 
+  print STDERR $class."\n";
+  
   my $self = bless {
-      _repeat_array  => [],
-      _gene_array    => [],
-      _id            => undef,
-      _version       => undef,
-      _internal_id   => undef,
-      _international_name   => undef,		    
-      _seq_date      => '',
-      _embl_offset   => 0,
-      _offset        => 0,
-      _orientation   => undef,
-      _order         => 1,
-      _embl_order    => 1,
-      _chromosome    => undef,
-      _species       => undef,
+		    _repeat_array  => [],
+		    _gene_array    => [],
+		    _id            => undef,
+		    _version       => undef,
+		    _internal_id   => undef,		    
+		    _seq_date      => '',
+		    _embl_offset   => 0,
+		    _offset        => 0,
+		    _orientation   => undef,
+		    _order         => 1,
+		    _embl_order    => 1,
+		    _chromosome    => undef,
+		    _species       => undef,
+		    _international => undef,
   }, $class;
 
   return $self;
@@ -260,12 +262,14 @@ sub id{
 
 
 sub international_name{
-   my($self, $arg);
+   my($self, $arg) = @_;
   
    if($arg){
-      $self->{'_international_name'} = $arg;   
-   } 
-   return $self->{'_international_name'};
+    
+      $self->{'_international'} = $arg;   
+   }
+   
+   return $self->{'_international'};
 }
 
 =head2 internal_id
