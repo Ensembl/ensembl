@@ -49,7 +49,7 @@ use Time::Local;
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw( Bio::Root::RootI );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::Root::RootI );
 
 sub new {
   my $class = shift;
@@ -284,6 +284,7 @@ sub store {
 
   if( $analysis->can( "adaptor" )) {
     $analysis->adaptor( $self );
+    $analysis->dbID( $dbID );
   }
   
   return $dbID;
@@ -364,7 +365,6 @@ sub _objFromHashref {
   return $analysis;
 }
 
-
 sub db {
   my ( $self, $arg )  = @_;
   ( defined $arg ) &&
@@ -390,5 +390,37 @@ sub deleteObj {
     }
   }
 }
+
+
+
+sub create_tables {
+  my $self = shift;
+
+  my $sth = $self->prepare( "drop table if exists analysisprocess" );
+  $sth->execute();
+
+  $sth = $self->prepare( qq{
+    CREATE TABLE analysisprocess (
+      analysisId int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+      created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+      logic_name varchar(40) not null,
+      db varchar(40),
+      db_version varchar(40),
+      db_file varchar(80),
+      program varchar(40),
+      program_version varchar(40),
+      program_file varchar(40),
+      parameters varchar(80),
+      module varchar(80),
+      module_version varchar(40),
+      gff_source varchar(40),
+      gff_feature varchar(40),
+      PRIMARY KEY (analysisId)
+    )
+  } );
+  $sth->execute();
+}
+
+1;
 
 

@@ -214,10 +214,6 @@ sub delete_by_dbID {
        $res = $sth->execute;
 
        # Mysql does not optimise or statements in where clauses
-       $sth = $self->prepare("delete from contigoverlap where dna_a_id = $dna;");
-       $res = $sth ->execute;
-       $sth = $self->prepare("delete from contigoverlap where dna_b_id = $dna;");
-       $res = $sth ->execute;
 
    }
 
@@ -377,6 +373,35 @@ sub get_all_Contigs {
    }
 
    return @res;   
+}
+
+
+# creates all tables for this adaptor
+# if they exist they are emptied and newly created
+sub create_tables {
+  my $self = shift;
+
+  my $sth = $self->prepare( "drop table if exists clone" );
+  $sth->execute();
+
+  $sth = $self->prepare( qq{
+    CREATE TABLE clone (
+      internal_id   int(10) unsigned NOT NULL auto_increment,
+      id            varchar(40) NOT NULL,
+      embl_id       varchar(40) NOT NULL,
+      version       int(10) NOT NULL,
+      embl_version  int(10) NOT NULL,
+      htg_phase     int(10) DEFAULT '-1' NOT NULL,
+      created       datetime NOT NULL,
+      modified      datetime NOT NULL,
+      stored        datetime NOT NULL,
+  
+      PRIMARY KEY (internal_id),
+      UNIQUE embl (embl_id,embl_version),
+      UNIQUE id   (id,embl_version)
+     )   
+  } );
+  $sth->execute();
 }
 
 

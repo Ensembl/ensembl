@@ -600,6 +600,8 @@ sub db_primary_seq {
     return $dbseq;
 }
 
+
+
 =head2 perl_primary_seq
 
  Title   : seq
@@ -2725,61 +2727,6 @@ sub is_golden {
    return 0;
 }
 
-=head2 set_attribute
-
- Title   : set_attribute
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub set_attribute{
-   my ($self,$tag,$value) = @_;
-
-   if( !$self->dbobj->extension_tables ) {
-       # only warn
-       $self->warn("attempting to set attribute with no extension tables. Skipping");
-   }
-   my $id = $self->internal_id;
-
-   my $sth = $self->dbobj->prepare("insert into contigext (contig_id,tag,value) VALUES ($id,'$tag','$value')");
-   $sth->execute();
-
-}
-
-=head2 get_attribute
-
- Title   : get_attribute
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub get_attribute{
-   my ($self,$tag) = @_;
-
-   if( !$self->dbobj->extension_tables ) {
-       # only warn
-       $self->warn("attempting to set attribute with no extension tables. Skipping");
-   }
-   if( !defined $tag ) {
-       $self->throw("no tag passed to get attribute");
-   }
-
-   my $id = $self->internal_id;
-   my $sth = $self->dbobj->prepare("select value from contigext where contig_id = $id and tag = '$tag'");
-   $sth->execute();
-   my ($value) = $sth->fetchrow_array();
-
-   return $value;
-}
 
 =head2 SeqI implementing functions
 
@@ -2799,6 +2746,23 @@ sub species{
    my ($self,@args) = @_;
 
    return undef;
+}
+
+
+# AS: on the way to contexts
+# we need temporarily subseq
+sub subseq {
+  my ( $self, $start, $end ) = @_;
+  my $length = $end-$start+1;
+  my $id = $self->dna_id();
+  my $sth = $self->dbobj->prepare("
+     SELECT SUBSTRING(sequence,$start,$length) 
+       FROM dna 
+      WHERE id = $id
+   ");
+  $sth->execute();
+  my ($value) = $sth->fetchrow_array();
+  return $value;
 }
 
 
