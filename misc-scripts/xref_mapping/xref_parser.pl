@@ -53,11 +53,15 @@ sub usage {
                 by genus/species (e.g. homo_sapiens) or common aliases (e.g. human).
                 Specifying an unknown species will cause a list of valid species to
                 be printed.
+                Not specifying a -species argument will result in all species being
+                used.
 
   -source       Which sources to import. Multiple -source arguments and/or comma,
                 separated lists of sources are allowed.
                 Specifying an unknown source will cause a list of valid sources to
                 be printed.
+                Not specifying a -source argument will result in all species being
+                used.
 
   -create       If specified, cause dbname to be deleted and re-created if it
                 already exists.
