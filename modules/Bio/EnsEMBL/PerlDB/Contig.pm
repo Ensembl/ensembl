@@ -177,10 +177,14 @@ sub add_RepeatFeature{
 
 sub get_all_SeqFeatures{
    my ($self,@args) = @_;
+   my @feat;
+
    if( defined $self->seq() ) {
-       return $self->seq->all_SeqFeatures();
+     push(@feat,$self->get_all_RepeatFeatures);
+     push(@feat,$self->seq->all_SeqFeatures());
+     return @feat;
    } else {
-       return ();
+     return ();
    }
 }
 
