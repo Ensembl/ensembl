@@ -63,14 +63,14 @@ sub fetch_mapset_chr_start_end {
                    left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
              where mf.seq_end >= mf.seq_start and mm.mapset_id = ? and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
                     ).
-            ( $chr_name ? "and df.dnafrag_id = ?".( $chr_start ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
+            ( $chr_name ? "and df.dnafrag_id = ?".( defined($chr_start) ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
         qq(  order by mf.mapfrag_id, mat.code )
     );
         
     $sth->execute(
         $mapset_id, (
              $dnafrag_id ?
-            ( $dnafrag_id, ( $chr_start ?
+            ( $dnafrag_id, ( defined($chr_start) ?
                            ($chr_end, $chr_start - $self->max_feature_length, $chr_start) :
                            () ) ) :
             ()
@@ -137,7 +137,7 @@ sub fetch_mapsets_chr_start_end {
                    left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
              where mm.mapset_id in (".join(',',@mapset_ids).") and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
                     ".
-            ( $dnafrag_id ? "and df.dnafrag_id = $dnafrag_id".( $chr_start ? " and mf.seq_start <= $chr_end and mf.seq_start >= ".($chr_start - $self->max_feature_length)." and mf.seq_end >= $chr_start" : "" ) : "").
+            ( $dnafrag_id ? "and df.dnafrag_id = $dnafrag_id".( defined($chr_start) ? " and mf.seq_start <= $chr_end and mf.seq_start >= ".($chr_start - $self->max_feature_length)." and mf.seq_end >= $chr_start" : "" ) : "").
         qq( group by ma.mapannotation_id
             order by seq, mf.seq_start, mf.mapfrag_id, mat.code );
     print STDERR "\n\n$key\n$QUERY\n\n";
