@@ -391,6 +391,7 @@ sub get_all_ProteinFeatures {
       my $analysis = $f->analysis();
       if($analysis) {
         $name = lc($f->analysis->logic_name());
+	#warn "$dbID has analysis $name\n";
       } else {
         warning("ProteinFeature has no attached analysis\n");
         $name = '';
