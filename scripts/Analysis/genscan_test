@@ -1,0 +1,112 @@
+#!/usr/local/bin/perl
+
+use Bio::EnsEMBL::Analysis::Genscan;
+use Bio::EnsEMBL::Analysis::PepAlign;
+use Bio::EnsEMBL::Analysis::pep_SeqFeature;
+
+use Bio::SeqFeature::Homol;
+use Bio::Seq;
+
+use strict;
+
+my $genfile  = shift;
+my $dnafile  = shift;
+my @coords   = @ARGV;
+
+my $gsdna    = new Bio::Seq(-file   => $dnafile,
+			    -format => 'Fasta');
+
+my $gs       = new Bio::EnsEMBL::Analysis::Genscan($genfile,$gsdna);
+
+my @genes    = $gs->each_Transcript;
+
+foreach my $g (@genes) {
+    print("\nTranslation " . $g->translate()->seq . "\n");
+
+    my $prev      = 0;
+    my $prevphase = 0;
+
+    my $pepaln = new Bio::EnsEMBL::Analysis::PepAlign;
+
+    foreach my $ex ($g->each_Exon) {
+
+	my $orient = $ex->strand;
+
+	# Create the dna homol (always strand 1)
+
+	my $dnah   = new Bio::SeqFeature::Homol(-start  => $ex->start,
+						-end    => $ex->end,
+						-strand => 1);
+
+	# Find the peptide coords corresponding to this exon
+	my ($pepstart,$pep_startphase,$pepend,$pep_endphase) = find_coord($ex,$prev,$prevphase);
+
+	# Create the peptide homol
+	my $peph  = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $pepstart,
+							       -end    => $pepend,
+							       -strand => $orient);
+	$peph->start_frac($pep_startphase);
+	$peph->end_frac  ($pep_endphase);
+	
+	# Add the peptide hojol to the dna homol
+	$dnah->homol_SeqFeature($peph);
+
+	# Finally add the dna homol to the align object
+	$pepaln->addHomol($dnah);
+
+	# A bit of printing
+	print("\n" . $ex->id . " coord\t" .$ex->start . "\t" . $ex->end . "\n");
+	print("Pep start\t$pepstart\t$pep_startphase\n");
+	print("Pep end  \t$pepend\t$pep_endphase\n");
+
+
+	# These store the previous coords for the peptide
+	$prevphase = $pep_endphase;
+	$prev      = $pepend;
+
+    }
+
+    # Now do some conversion
+    foreach my $c (@coords) {
+	my ($out,$frac) = $pepaln->cDNA2pep($c);
+	print("Convert $c : $out $frac\n");
+    }
+}
+
+sub find_coord {
+    my ($ex,$prev,$prevphase) = @_;
+
+    my $pepstart;
+    my $pep_startphase;
+    my $pepend;
+    my $pep_endphase;
+    
+    if ($prev == 0) {
+	
+	$pepstart = 1;
+	$pep_startphase = $ex->phase + 1;
+	
+    } else {
+	
+	my $inc = 0;
+	$pep_startphase = ++$prevphase;
+	
+	if($pep_startphase == 4) {
+	    $pep_startphase = 1;
+	    $inc = 1;
+	}
+	
+	$pepstart = $prev + $inc;
+    }
+    
+    my $exlen = abs($ex->end - $ex->start) + 1;
+    $exlen -= (4-$pep_startphase)%3;
+    
+    my $nopep = int($exlen/3);
+    my $pep_endphase = $exlen%3 + 1;
+    
+    
+    $pepend    = $nopep + $pepstart -1;
+    
+    return ($pepstart,$pep_startphase,$pepend,$pep_endphase);
+}

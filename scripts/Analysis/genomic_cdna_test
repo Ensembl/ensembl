@@ -1,0 +1,108 @@
+#!/usr/local/bin/perl
+
+use strict;
+
+=head1 NAME
+
+
+=head1 SYNOPSIS
+
+
+=head1 DESCRIPTION
+
+
+=cut
+
+use Bio::EnsEMBL::Analysis::PairAlign;
+
+use Bio::SeqFeature::Generic;
+use Bio::SeqFeature::Homol;
+
+use Getopt::Long;
+
+# Takes an msp file and a series of coords to convert as input
+
+my $file  = shift;
+
+my @coords = @ARGV;
+
+open(IN,"<$file") || die "Can't open file $file";
+my $infh = \*IN;
+
+my %pairs;
+ 
+while (my $line = <$infh>) {
+    my $homol = read_homol($line);
+    my $id    = $homol->primary_tag;
+	    
+    if (!defined($pairs{$id})) {
+	$pairs{$id} = new Bio::EnsEMBL::Analysis::PairAlign;
+    }
+
+    $pairs{$id}->addHomol($homol);
+}
+
+foreach my $key (keys %pairs) {
+    print("Key $key " . $pairs{$key} . "\n");
+
+    foreach my $pair1 ($pairs{$key}->eachHomol) {
+	my $pair2  = $pair1->homol_SeqFeature;
+;
+	print($pair1->start . " " . 
+	      $pair1->end   . " " . 
+	      $pair2->start . " " . 
+	      $pair2->end   . "\n");
+
+    }
+    foreach my $c (@coords) {
+	my $out = $pairs{$key}->genomic2cDNA($c);
+	print("Genomic $c - cDNA $out\n");
+    }
+	
+}
+
+
+sub read_homol {
+    my ($line) = @_;
+    chomp($line);
+
+    my ($score,$pid,$qstart,$qend,$id1,$hstart,$hend,$id2,$desc) = split(' ',$line.9);
+
+    my $strand1 = 1;
+    my $strand2 = 1;
+
+    if ($qstart > $qend ) {
+	my $tmp    = $qend;
+  	   $qend   = $qstart;
+	   $qstart = $tmp;
+
+	$strand1 = -1;}
+
+    if ($hstart > $hend ) {
+
+	my $tmp    = $hend;
+	   $hend   = $hstart;
+	   $hstart = $tmp;
+
+	$strand2 = -1;
+    }
+
+    my $sf1 = new Bio::SeqFeature::Homol(-start  => $qstart,
+					 -end    => $qend,
+					 -strand => $strand1);
+
+
+    my $sf2 = new Bio::SeqFeature::Generic(-start  => $hstart,
+					   -end    => $hend,
+					   -strand => $strand2);
+
+
+    $sf1->primary_tag($id1);
+    $sf2->primary_tag($id2);
+
+    $sf1->homol_SeqFeature($sf2);
+
+    return ($sf1);
+}
+
+

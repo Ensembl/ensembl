@@ -1,0 +1,98 @@
+#!/usr/local/bin/perl
+
+use strict;
+
+=head1 NAME
+
+
+=head1 SYNOPSIS
+
+
+=head1 DESCRIPTION
+
+
+=cut
+
+use Bio::EnsEMBL::Analysis::PepAlign;
+use Bio::EnsEMBL::Analysis::pep_SeqFeature;
+use Bio::EnsEMBL::Analysis::Log;
+
+use Bio::SeqFeature::Generic;
+use Bio::SeqFeature::Homol;
+
+use Getopt::Long;
+
+my ($coord,$frac) = @ARGV;
+
+ 
+my $pair      = new Bio::EnsEMBL::Analysis::PepAlign;
+
+my $dna_homol = make_test_homol(10,1,
+				2,-1,
+				1,
+				1,3);
+$pair->addHomol($dna_homol);
+
+
+my $pair1  = $dna_homol;
+my $pair2  = $dna_homol->homol_SeqFeature;
+
+print($pair1->start . " " . 
+      $pair1->end   . " " . 
+      $pair2->start . " " . 
+      $pair2->end   . "\n");
+
+
+my ($out) = $pair->pep2cDNA($coord,$frac);
+#    my ($out,$frac) = $pair->cDNA2pep($c);
+print("pep $coord ($frac) - cDNA $out\n");
+
+	
+
+sub make_test_homol {
+    my ($dnastart,$dnastrand,$pepstart,$pepstrand,$peplen,$sfrac,$efrac) = @_;
+
+    my $dnaend;
+    my $pepend;
+    
+    if ($pepstrand == 1) {
+	$dnaend = $dnastart + 3*$peplen  + $efrac - 1;
+	$pepend = $pepstart + $peplen;
+	
+	$dnastart -= (4-$sfrac);
+	$pepstart--;
+
+    } else {
+	$dnaend = $dnastart + 3*$peplen + (4-$sfrac) - 1;
+	$pepend = $pepstart + $peplen;
+
+	$dnastart -= $efrac;
+	$pepstart--;
+    }
+	
+    print("Dna start end $dnastart $dnaend\n");
+    print("Pep start end $pepstart $pepend\n");
+    print("Start/end frac $sfrac $efrac $peplen\n");
+
+    my $dna_homol = new Bio::SeqFeature::Homol      (-start => $dnastart,
+						     -end   => $dnaend,
+						     -strand => $dnastrand,
+						     );
+
+    my $pep_homol = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start => $pepstart,
+						     -end   => $pepend,
+						     -strand => $pepstrand,
+						     );
+    $pep_homol->start_frac($sfrac);
+    $pep_homol->end_frac($efrac);
+    $dna_homol->homol_SeqFeature($pep_homol);
+    
+    return $dna_homol;
+}
+
+
+
+
+
+
+
