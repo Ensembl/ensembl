@@ -668,7 +668,7 @@ CREATE TABLE external_synonym (
 CREATE TABLE external_db (
 
   external_db_id 	      INT not null,
-  db_name                     VARCHAR(100) NOT NULL,
+  db_name                     VARCHAR(27) NOT NULL,
   release                     VARCHAR(40)  NOT NULL,
   status                      ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH', 'PSEUDO') not null,
 
