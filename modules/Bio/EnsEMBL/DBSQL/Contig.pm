@@ -265,12 +265,6 @@ sub get_all_SeqFeatures{
 
        $out->analysis($analysis);
 
-       # downcast to repeat for repeats. Not pretty.
-       #
-#       if( $out->source_tag() =~ /Repeat/ ) {
-#	   bless $out, "Bio::EnsEMBL::Repeat";
-#       }
-
 
        # Final check that everything is ok.
        

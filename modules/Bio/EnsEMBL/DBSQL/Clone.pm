@@ -126,6 +126,8 @@ sub get_all_Genes{
        # I know this SQL statement is silly.
        #
        
+       #print STDERR "Using [select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank]\n";
+
        $sth = $self->_dbobj->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,p2.created,p2.modified,p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5 where p6.id = '$geneid' and p3.gene = '$geneid' and p4.clone = '$id' and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
    
        $sth->execute();
@@ -138,7 +140,7 @@ sub get_all_Genes{
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$version) = @{$arr};
 
-	#   print STDERR "Got exon $exonid\n";
+	   #print STDERR "Got exon $exonid\n";
 
 	   if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
@@ -158,7 +160,6 @@ sub get_all_Genes{
 	    #   my $rowhash = $sth->fetchrow_hashref();
 	    
 	       $gene->version($version);
-	       
 	       $gene->add_cloneid_neighbourhood($id);
 
 	       $current_gene_id = $geneid;

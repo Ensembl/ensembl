@@ -1165,6 +1165,7 @@ sub write_Gene{
    else {
        print "Got this gene with this version already, no need to write in db";
    }
+
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
        #print STDERR "Using $cloneid and ",$gene->id,"\n";
        #print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
