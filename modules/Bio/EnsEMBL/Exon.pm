@@ -1107,7 +1107,7 @@ sub peptide {
     my ($start, $end);
     $end = ($c->end > $pep->length) ? $pep->length : $c->end; 
     $start = ($c->start < $end) ? $c->start : $end;
-    $pep_str = $tr->translate->subseq($start, $end);
+    $pep_str = $pep->subseq($start, $end);
   }
     
   return Bio::Seq->new(-seq => $pep_str, 
