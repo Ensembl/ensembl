@@ -33,11 +33,12 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Translation;
+
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
@@ -87,7 +88,7 @@ sub _columns {
 
 
 sub _left_join {
-  return ( [ 'transcript_stable_id', "tsi.gene_id = t.transcript_id" ],
+  return ( [ 'transcript_stable_id', "tsi.transcript_id = t.transcript_id" ],
 	   [ 'xref', "x.xref_id = t.display_xref_id" ],
 	   [ 'external_db', "exdb.external_db_id = x.external_db_id" ] ); 
 }
@@ -185,7 +186,7 @@ sub fetch_by_Gene {
   my @new_transcripts = map { $_->transfer( $slice ) } @$transcripts;
 
 
-  return $new_transcripts;
+  return \@new_transcripts;
 }
 
 
@@ -286,18 +287,15 @@ sub store {
    # then store the transcript
    # then store the exon_transcript table
 
-   my $translation = $transcript->{'translation'};
+   my $translation = $transcript->translation();
 
-   $exons = $transcript->get_all_Exons();
+   my $exons = $transcript->get_all_Exons();
 
    my $exonAdaptor = $self->db->get_ExonAdaptor();
    foreach my $exon ( @{$exons} ) {
      $exonAdaptor->store( $exon );
    }
 
-   if( defined $translation ) {
-     $self->db->get_TranslationAdaptor()->store( $translation );
-   }
 
 
    # first store the transcript w/o a display xref
@@ -308,18 +306,17 @@ sub store {
 
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id, translation_id, 
-                                 exon_count, display_xref_id )
-        values ( ?, ?, ?, 0)
+        insert into transcript ( gene_id )
+        values ( ? )
         ");
 
-   if( defined $translation ) {
-     $tst->execute( $gene_dbID, $translation->dbID(), $exon_count );
-   } else {
-     $tst->execute( $gene_dbID, 0, $exon_count );
-   }
+   $tst->execute( $gene_dbID );
 
    my $transc_dbID = $tst->{'mysql_insertid'};
+
+   if( defined $translation ) {
+     $self->db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
+   }
 
    #store the xrefs/object xref mapping
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
@@ -368,6 +365,8 @@ sub store {
    return $transc_dbID;
 }
 
+
+
 =head2 get_stable_entry_info
 
  Title   : get_stable_entry_info
@@ -382,6 +381,8 @@ sub store {
 sub get_stable_entry_info {
   my ($self,$transcript) = @_;
 
+  deprecate( "Stable ids should be loaded directly now" );
+  
   unless( defined $transcript && ref $transcript && 
 	  $transcript->isa('Bio::EnsEMBL::Transcript') ) {
     $self->throw("Needs a Transcript object, not a $transcript");
@@ -498,56 +499,6 @@ sub remove {
 
 
 
-=head2 get_display_xref
-
-  Arg [1]    : int $dbID
-               the database identifier of the transcript for which the name 
-               of external db from which its external name is derived.
-  Example    : $external_dbname = $transcript_adaptor->get_display_xref_id(42);
-  Description: Retrieves the display_xref_id for a transcript.
-  Returntype : int
-  Exceptions : thrown if $dbId arg is not defined
-  Caller     : general
-
-=cut
-
-sub get_display_xref {
-  my ($self, $transcript) = @_;
-
-  if( !defined $transcript ) {
-      $self->throw("Must call with a Transcript object");
-  }
-
-  my $sth = $self->prepare("SELECT e.db_name,
-                                   x.display_label,
-                                   x.xref_id
-                            FROM   transcript t, 
-                                   xref x, 
-                                   external_db e
-                            WHERE  t.transcript_id = ?
-                              AND  t.display_xref_id = x.xref_id
-                              AND  x.external_db_id = e.external_db_id
-                           ");
-  $sth->execute( $transcript->dbID );
-
-
-  my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
-  if( !defined $xref_id ) {
-    return undef;
-  }
-
-  my $db_entry = Bio::EnsEMBL::DBEntry->new
-    (
-     -dbid => $xref_id,
-     -adaptor => $self->db->get_DBEntryAdaptor(),
-     -dbname => $db_name,
-     -display_id => $display_label
-    );
-
-  return $db_entry;
-}
-
-
 =head2 update
 
   Arg [1]    : Bio::EnsEMBL::Transcript
@@ -571,11 +522,14 @@ sub update {
        $self->throw("Must update a transcript object, not a $transcript");
    }
 
-   my $sth = $self->prepare("UPDATE transcript
-                          SET    display_xref_id = ?,
-                                 exon_count = ?
-                          WHERE  transcript_id = ?
-                         ");
+   my $update_transcript_sql = "
+        UPDATE transcript
+           SET display_xref_id = ?,
+               seq_region_id = ?,
+               seq_region_start = ?,
+               seq_region_end = ?,
+               seq_region_strand = ?
+         WHERE transcript_id = ?";
 
    my $display_xref = $transcript->display_xref();
    my $display_xref_id;
@@ -583,11 +537,13 @@ sub update {
    if( defined $display_xref && $display_xref->dbID() ) {
      $display_xref_id = $display_xref->dbID();
    } else {
-     $display_xref_id = 0;
+     $display_xref_id = undef;
    }
 
-   my $exon_count = scalar( @{$transcript->get_all_Exons()} );
-   $sth->execute( $display_xref_id, $exon_count, $transcript->dbID() );
+   my $sth = $self->prepare( $update_transcript_sql );
+   $sth->execute( $display_xref_id, $transcript->slice()->seq_region_id(),
+   		  $transcript->start(), $transcript->end(),
+		  $transcript->strand(), $transcript->dbID() );
  }
 
 =head2 list_dbIDs
@@ -648,7 +604,7 @@ sub _objs_from_sth {
   my $sa = $self->db()->get_SliceAdaptor();
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
 
-  my @genes;
+  my @transcripts;
   my %rc_hash;
   my %analysis_hash;
   my %slice_hash;
@@ -659,12 +615,12 @@ sub _objs_from_sth {
 
   my ( $transcript_id, $seq_region_id, $seq_region_start, $seq_region_end, 
        $seq_region_strand, $gene_id,  
-       $display_xref_id, $stable_id, $version
+       $display_xref_id, $stable_id, $version,
        $external_name, $external_db, $external_status );
 
   $sth->bind_columns( \$transcript_id, \$seq_region_id, \$seq_region_start, 
                       \$seq_region_end, \$seq_region_strand, \$gene_id,  
-                      \$display_xref_id, \$stable_id, \$version
+                      \$display_xref_id, \$stable_id, \$version,
                       \$external_name, \$external_db, \$external_status );
 
 
@@ -695,7 +651,7 @@ sub _objs_from_sth {
     $dest_slice_length = $dest_slice->length();
   }
 
-  GENE: while($sth->fetch()) {
+  FEATURE: while($sth->fetch()) {
     #get the analysis object
     my $slice = $slice_hash{$seq_region_id};
 
@@ -719,7 +675,7 @@ sub _objs_from_sth {
 			 $seq_region_strand, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
-      next GENE if(!defined($sr_name));
+      next FEATURE if(!defined($sr_name));
 
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($asm_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
@@ -767,26 +723,76 @@ sub _objs_from_sth {
 				
 
     #finally, create the new repeat feature
-    push @genes, Bio::EnsEMBL::Gene->new
-      ( '-analysis'      =>  $analysis,
-	'-start'         =>  $seq_region_start,
+    push @transcripts, Bio::EnsEMBL::Transcript->new
+      ( '-start'         =>  $seq_region_start,
 	'-end'           =>  $seq_region_end,
 	'-strand'        =>  $seq_region_strand,
 	'-adaptor'       =>  $self,
 	'-slice'         =>  $slice,
-	'-dbID'          =>  $gene_id,
+	'-dbID'          =>  $transcript_id,
         '-stable_id'     =>  $stable_id,
         '-version'       =>  $version,
-        '-description'   =>  $gene_description,
 	'-external_name' =>  $external_name,
         '-external_db'   =>  $external_db,
         '-external_status' => $external_status,
 	'-display_xref' => $display_xref );
   }
 
-  return \@genes;
+  return \@transcripts;
 }
 
+
+
+=head2 get_display_xref
+
+  Arg [1]    : int $dbID
+               the database identifier of the transcript for which the name 
+               of external db from which its external name is derived.
+  Example    : $external_dbname = $transcript_adaptor->get_display_xref_id(42);
+  Description: Retrieves the display_xref_id for a transcript.
+  Returntype : int
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : general
+
+=cut
+
+sub get_display_xref {
+  my ($self, $transcript) = @_;
+	
+  deprecate( "display_xref should be retreived from Transcript object directly." );
+  
+  if( !defined $transcript ) {
+      $self->throw("Must call with a Transcript object");
+  }
+
+  my $sth = $self->prepare("SELECT e.db_name,
+                                   x.display_label,
+                                   x.xref_id
+                            FROM   transcript t, 
+                                   xref x, 
+                                   external_db e
+                            WHERE  t.transcript_id = ?
+                              AND  t.display_xref_id = x.xref_id
+                              AND  x.external_db_id = e.external_db_id
+                           ");
+  $sth->execute( $transcript->dbID );
+
+
+  my ($db_name, $display_label, $xref_id ) = $sth->fetchrow_array();
+  if( !defined $xref_id ) {
+    return undef;
+  }
+
+  my $db_entry = Bio::EnsEMBL::DBEntry->new
+    (
+     -dbid => $xref_id,
+     -adaptor => $self->db->get_DBEntryAdaptor(),
+     -dbname => $db_name,
+     -display_id => $display_label
+    );
+
+  return $db_entry;
+}
 
 
 1;

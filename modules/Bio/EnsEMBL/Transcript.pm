@@ -45,10 +45,15 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::TranscriptI;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Translation;
 use Bio::Tools::CodonTable;
 use Bio::EnsEMBL::Mapper;
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
+use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
+
+
 
 @ISA = qw(Bio::EnsEMBL::Feature Bio::EnsEMBL::TranscriptI);
 
@@ -61,12 +66,23 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my $exons = rearrange( [ "EXONS" ], @_ );
+  my ( $exons, $stable_id, $version, $external_name, $external_db,
+       $external_status, $display_xref ) = 
+	 rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
+		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
   $self->{'_trans_exon_array'} = ( $exons || [] );
   if( $exons ) {
     $self->_recalculate_cordinates();
   }
+
+  $self->stable_id( $stable_id );
+  $self->version( $version );
+  $self->external_name( $external_name ) if( defined $external_name );
+  $self->external_db( $external_db ) if( defined $external_db );
+  $self->external_status( $external_status ) if( defined $external_status );
+  $self->display_xref( $display_xref ) if( defined $display_xref );
+
   return $self;
 }
 
@@ -358,7 +374,11 @@ sub translation {
       $self->throw("This [$value] is not a translation");
     }
     $self->{'translation'} = $value;
-  }   
+  } elsif( !exists $self->{'translation'} and defined $self->adaptor() ) {
+    $self->{'translation'} = 
+      $self->adaptor()->db()->get_TranslationAdaptor()->
+	fetch_by_Transcript( $self );
+  }
   return $self->{'translation'};
 }
 

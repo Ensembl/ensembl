@@ -36,6 +36,8 @@ package Bio::EnsEMBL::Translation;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
 use Bio::EnsEMBL::Root;
 
@@ -47,7 +49,25 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  return bless {},$class;
+  my ( $start_exon, $end_exon, $seq_start, $seq_end,
+       $stable_id, $version, $dbID, $adaptor ) = 
+    rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
+		 "STABLE_ID", "VERSION", "DBID", "ADAPTOR" ], @_ );
+  
+  
+
+  my $self = bless {
+		    'start_exon' => $start_exon,
+		    'end_exon' => $end_exon,
+		    'adaptor' => $adaptor,
+		    'dbID' => $dbID,
+		    'start' => $seq_start,
+		    'end' => $seq_end,
+		    'stable_id' => $stable_id,
+		    'version' => $version
+		   }, $class;
+
+  return $self;
 }
 
 
@@ -155,143 +175,98 @@ sub end_Exon {
 }
 
 
+
 =head2 version
 
- Title   : version
- Usage   : $obj->version()
- Function: 
- Returns : value of version
- Args    : 
+  Arg [1]    : string $version
+  Example    : none
+  Description: get/set for attribute version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub version{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_version'} = $value;    
-    }
-
-    if( exists $self->{'_version'} ) {
-      return $self->{'_version'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_version'};
-
+sub version {
+   my $self = shift;
+  $self->{'version'} = shift if( @_ );
+  return $self->{'version'};
 }
-
 
 
 =head2 stable_id
 
- Title   : stable_id
- Usage   : $obj->stable_id
- Function: 
- Returns : value of stable_id
- Args    : 
+  Arg [1]    : string $stable_id
+  Example    : none
+  Description: get/set for attribute stable_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub stable_id{
-
-    my ($self,$value) = @_;
-    
-
-    if( defined $value ) {
-      $self->{'_stable_id'} = $value;
-      return;
-    }
-
-    if( exists $self->{'_stable_id'} ) {
-      return $self->{'_stable_id'};
-    }
-
-    $self->_get_stable_entry_info();
-
-    return $self->{'_stable_id'};
-
-}
-
-
-sub _get_stable_entry_info {
+sub stable_id {
    my $self = shift;
-
-   if( !defined $self->adaptor ) {
-     return undef;
-   }
-
-   $self->adaptor->get_stable_entry_info($self);
-
+  $self->{'stable_id'} = shift if( @_ );
+  return $self->{'stable_id'};
 }
 
 
 
 =head2 temporary_id
 
- Title   : temporary_id
- Usage   : $obj->temporary_id($newval)
- Function: 
- Returns : value of temporary_id
- Args    : newvalue (optional)
+  Arg [1]    : string $temporary_id
+  Example    : none
+  Description: get/set for attribute temporary_id
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub temporary_id {
    my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'tempID'} = $value;
-    }
-    return $self->{'tempID'};
-
+  $self->{'temporary_id'} = shift if( @_ );
+  return $self->{'temporary_id'};
 }
+
 
 
 
 =head2 dbID
 
- Title   : dbID
- Usage   : $obj->dbID($newval)
- Function: 
- Returns : value of dbID
- Args    : newvalue (optional)
+  Arg [1]    : string $dbID
+  Example    : none
+  Description: get/set for attribute dbID
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub dbID {
    my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'dbID'} = $value;
-    }
-    return $self->{'dbID'};
-
+  $self->{'dbID'} = shift if( @_ );
+  return $self->{'dbID'};
 }
 
 
 
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Returns : value of adaptor
- Args    : newvalue (optional)
+  Arg [1]    : string $adaptor
+  Example    : none
+  Description: get/set for attribute adaptor
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub adaptor {
    my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
+  $self->{'adaptor'} = shift if( @_ );
+  return $self->{'adaptor'};
 }
 
 

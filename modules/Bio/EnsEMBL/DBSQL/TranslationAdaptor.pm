@@ -31,76 +31,86 @@ package Bio::EnsEMBL::DBSQL::TranslationAdaptor;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Gene;
-use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::Translation;
+use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
+
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 
-=head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
+=head2 fetch_by_Transcript
+
+  Arg [1]    : none, string, int, Bio::EnsEMBL::Example $formal_parameter_name
+    Additional description lines
+    list, listref, hashref
+  Example    :  ( optional )
+  Description: testable description
+  Returntype : none, txt, int, float, Bio::EnsEMBL::Example
+  Exceptions : none
+  Caller     : object::methodname or just methodname
 
 =cut
 
-sub fetch_by_dbID {
-   my ($self,$dbID,$transcript) = @_;
+sub fetch_by_Transcript {
+  my ( $self, $transcript ) = @_;
 
 
-   if( !defined $transcript ) {
-     $self->throw("Translations make no sense outside of their " .
-		  "parent Transcript objects. You must retrieve " .
-		  "with Transcript parent");
-   }
 
-   my $sth = $self->prepare("SELECT translation_id tlid, seq_start, 
-                                    start_exon_id, seq_end, end_exon_id 
-                             FROM   translation 
-                             WHERE  translation_id = ?");
-   $sth->execute($dbID);
-   my $rowhash = $sth->fetchrow_hashref;
+  my $sql = "
+    SELECT tl.translation_id, tl.transcript_id, tl.start_exon_id,
+           tl.end_exon_id, tl.seq_start, tl.seq_end,
+           tlsi.stable_id, tlsi.version
+      FROM translation tl
+ LEFT JOIN translation_stable_id tlsi
+        ON tl.translation_id = tlsi.translation_id
+     WHERE tl.transcript_id = ? ";
 
-   if( !defined $rowhash ) {
-     # assumme this is a translationless transcript deliberately
-     return undef;
-   }
+  my $sth = $self->prepare( $sql );
+  $sth->execute( $transcript->dbID() );
 
-   my $out = Bio::EnsEMBL::Translation->new();
+  my ( $translation_id, $transcript_id, $start_exon_id, $end_exon_id,
+       $seq_start, $seq_end, $stable_id, $version ) = 
+     $sth->fetchrow_array();
 
-   $out->start        ($rowhash->{'seq_start'});
-   $out->end          ($rowhash->{'seq_end'});
+  if( ! defined $translation_id ) {
+    return undef;
+  }
 
+  my ($start_exon, $end_exon);
 
-   #search through the transcript's exons for the start and end exons
-   my ($start_exon, $end_exon);
-   foreach my $exon (@{$transcript->get_all_Exons()}) {
-     if($exon->dbID() == $rowhash->{'start_exon_id'}) {
-       $start_exon = $exon;
-     }
+  # this will load all the exons whenever we load the translation
+  # but I guess thats ok ....
 
-     if($exon->dbID() == $rowhash->{'end_exon_id'}) {
-       $end_exon = $exon;
-     }
-   }
-   unless($start_exon && $end_exon) {
+  foreach my $exon (@{$transcript->get_all_Exons()}) {
+    if($exon->dbID() == $start_exon_id ) {
+      $start_exon = $exon;
+    }
+
+    if($exon->dbID() == $end_exon_id ) {
+      $end_exon = $exon;
+    }
+  }
+
+  unless($start_exon && $end_exon) {
      $self->throw("Could not find start or end exon in transcript\n");
-   }
+  }
 
-   $out->start_Exon($start_exon);
-   $out->end_Exon($end_exon);
-   $out->dbID($rowhash->{'tlid'});
-   $out->adaptor( $self );
-   
-   return $out;
+  my $translation = Bio::EnsEMBL::Translation->new
+   (
+     -dbID => $translation_id,
+     -adaptor => $self,
+     -seq_start => $seq_start,
+     -seq_end => $seq_end,
+     -start_exon => $start_exon,
+     -end_exon => $end_exon,
+     -stable_id => $stable_id,
+     -version => $version
+   );
+
+  return $translation;
+
 }
 
 =head2 fetch_all_by_DBEntry
@@ -120,6 +130,7 @@ sub fetch_all_by_DBEntry {
   my $self = shift;
   my $external_id = shift;
   my @trans = ();
+  warning( "Is this really usefull ???" );
 
   my $entryAdaptor = $self->db->get_DBEntryAdaptor();
   my @ids = $entryAdaptor->translationids_by_extids($external_id);
@@ -148,7 +159,7 @@ sub fetch_all_by_DBEntry {
 =cut
 
 sub store {
-  my ( $self, $translation )  = @_;
+  my ( $self, $translation, $transcript_id )  = @_;
 
   unless( defined $translation->start_Exon->dbID && 
 	  defined $translation->end_Exon->dbID ) {
@@ -162,14 +173,16 @@ sub store {
 		 $translation->start_Exon." and ".$translation->end_Exon());
   }
 
-  my $sth = $self->prepare( "INSERT INTO translation( seq_start, start_exon_id,
-                                                      seq_end, end_exon_id) 
-                             VALUES( ?,?,?,? )");
+  my $sth = $self->prepare( "
+         INSERT INTO translation( seq_start, start_exon_id,
+                                  seq_end, end_exon_id, transcript_id) 
+         VALUES ( ?,?,?,?,? )");
 
   $sth->execute( $translation->start(),
 		 $translation->start_Exon()->dbID(),
 		 $translation->end(),
-		 $translation->end_Exon()->dbID() );
+		 $translation->end_Exon()->dbID(),
+	         $transcript_id );
 
   my $transl_dbID = $sth->{'mysql_insertid'};
 
@@ -219,6 +232,8 @@ sub store {
 
 sub get_stable_entry_info {
   my ($self,$translation) = @_;
+
+  deprecate( "This method shouldnt be necessary any more" );
 
   unless(defined $translation && ref $translation && 
 	 $translation->isa('Bio::EnsEMBL::Translation') ) {
@@ -283,6 +298,71 @@ sub list_stable_ids {
    my ($self) = @_;
 
    return $self->_list_dbIDs("translation_stable_id", "stable_id");
+}
+
+
+=head2 fetch_by_dbID
+
+ Title   : fetch_by_dbID
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_by_dbID {
+   my ($self,$dbID,$transcript) = @_;
+
+   deprecate( "This call shouldnt be necessary" );
+
+   if( !defined $transcript ) {
+     $self->throw("Translations make no sense outside of their " .
+		  "parent Transcript objects. You must retrieve " .
+		  "with Transcript parent");
+   }
+
+   my $sth = $self->prepare("SELECT translation_id tlid, seq_start, 
+                                    start_exon_id, seq_end, end_exon_id 
+                             FROM   translation 
+                             WHERE  translation_id = ?");
+   $sth->execute($dbID);
+   my $rowhash = $sth->fetchrow_hashref;
+
+   if( !defined $rowhash ) {
+     # assumme this is a translationless transcript deliberately
+     return undef;
+   }
+
+   my $out = Bio::EnsEMBL::Translation->new();
+
+   $out->start        ($rowhash->{'seq_start'});
+   $out->end          ($rowhash->{'seq_end'});
+
+
+   #search through the transcript's exons for the start and end exons
+   my ($start_exon, $end_exon);
+   foreach my $exon (@{$transcript->get_all_Exons()}) {
+     if($exon->dbID() == $rowhash->{'start_exon_id'}) {
+       $start_exon = $exon;
+     }
+
+     if($exon->dbID() == $rowhash->{'end_exon_id'}) {
+       $end_exon = $exon;
+     }
+   }
+   unless($start_exon && $end_exon) {
+     $self->throw("Could not find start or end exon in transcript\n");
+   }
+
+   $out->start_Exon($start_exon);
+   $out->end_Exon($end_exon);
+   $out->dbID($rowhash->{'tlid'});
+   $out->adaptor( $self );
+   
+   return $out;
 }
 
 1;

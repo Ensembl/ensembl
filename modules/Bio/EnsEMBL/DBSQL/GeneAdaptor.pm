@@ -245,7 +245,7 @@ sub fetch_all_by_domain {
   my $genes = $self->SUPER::generic_fetch( $constraint );
   my @new_genes = map { $_->transform( $cs_name, $cs_version ) } @$genes;
 
-  return $new_genes;
+  return \@new_genes;
 }
 
 
@@ -724,11 +724,20 @@ sub update {
                seq_region_strand = ?
          WHERE gene_id = ?";
 
+   my $display_xref = $gene->display_xref();
+   my $display_xref_id;
+ 
+   if( defined $display_xref && $display_xref->dbID() ) {
+     $display_xref_id = $display_xref->dbID();
+   } else {
+     $display_xref_id = undef;
+   }
+
    my $sth = $self->prepare( $update_gene_sql );
    $sth->execute(
-		 $gene->type(), 
+	         $gene->type(), 
 		 $gene->analysis->dbID(),
-		 $gene->display_xref()->dbID(),
+		 $display_xref_id,
 		 $gene->slice->seq_region_id(),
 		 $gene->start(),
 		 $gene->end(),
@@ -736,7 +745,7 @@ sub update {
 		 
 		 $gene->dbID()
 		);
-
+   
    # maybe should update stable id or gene description ???
 }
 
@@ -811,7 +820,7 @@ sub _objs_from_sth {
     $dest_slice_length = $dest_slice->length();
   }
 
-  GENE: while($sth->fetch()) {
+  FEATURE: while($sth->fetch()) {
     #get the analysis object
     my $analysis = $aa->fetch_by_dbID($analysis_id);
 
@@ -837,7 +846,7 @@ sub _objs_from_sth {
 			 $seq_region_strand, $sr_cs);
 
       #skip features that map to gaps or coord system boundaries
-      next GENE if(!defined($sr_name));
+      next FEATURE if(!defined($sr_name));
 
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($asm_cs != $sr_cs && $asm_cs->equals($sr_cs))) {

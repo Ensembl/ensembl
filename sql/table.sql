@@ -710,7 +710,7 @@ CREATE TABLE marker_map_location (
   lod_score                   double,
   
   PRIMARY KEY (marker_id, map_id),
-  KEY map_idx( map_id, seq_region_id, position) 
+  KEY map_idx( map_id, chromosome_name, position) 
 
 );
 

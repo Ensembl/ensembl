@@ -260,11 +260,9 @@ sub release {
 =cut
 
 sub adaptor {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_adaptor} = $arg;
-  } 
-  return $self->{_adaptor};
+  my $self = shift;
+  $self->{'adaptor'} = shift if( @_ );
+  return $self->{'adaptor'};
 }
 
 
@@ -283,11 +281,9 @@ sub adaptor {
 =cut
 
 sub dbID {
-  my ( $self, $arg ) = @_;
-  if( defined $arg ) {
-    $self->{_dbID} = $arg;
-  } 
-  return $self->{_dbID};
+  my $self = shift;
+  $self->{'dbID'} = shift if( @_ );
+  return $self->{'dbID'};
 }
 
 
