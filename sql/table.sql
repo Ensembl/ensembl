@@ -213,8 +213,8 @@ CREATE TABLE simple_feature (
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
   display_label varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
+  analysis_id int(10) unsigned NOT NULL,
 
 # What scoring do we need ?
 
@@ -233,19 +233,17 @@ CREATE TABLE protein_align_feature (
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) DEFAULT '1' NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL,
   hit_name varchar(40) NOT NULL,
-  cigar_line text,
+  analysis_id int(10) unsigned NOT NULL,
 
-  # cigar might be too small
-  # - yes it was :-)
   #  What scoring do we need ?
 
+  score double,
   evalue double,
   perc_ident float,
-  score double,
+  cigar_line text,
 
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
@@ -259,19 +257,18 @@ CREATE TABLE dna_align_feature (
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
   hit_start int NOT NULL,
   hit_end int NOT NULL,
-  hit_name varchar(40) NOT NULL,
   hit_strand tinyint(1) NOT NULL,
+  hit_name varchar(40) NOT NULL,
+  analysis_id int(10) unsigned NOT NULL,
 
-  cigar_line text,
-  
 #  What scoring do we need ?
 
+  score double,
   evalue double,
   perc_ident float,
-  score double,
+  cigar_line text,
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY hit_idx( hit_name ),
@@ -299,10 +296,10 @@ CREATE TABLE repeat_feature (
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) DEFAULT '1' NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
   repeat_consensus_id int(10) unsigned NOT NULL,
+  analysis_id int(10) unsigned NOT NULL,
 
 #  What scoring do we need ?
 
@@ -455,10 +452,10 @@ CREATE TABLE protein_feature (
   translation_id int NOT NULL,	
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
-  analysis_id      int(10) unsigned NOT NULL,
   hit_start        int(10) NOT NULL,
   hit_end          int(10) NOT NULL,
   hit_id           varchar(40) NOT NULL,
+  analysis_id      int(10) unsigned NOT NULL,
   score         double NOT NULL,
   evalue        double,
   perc_ident    float,
@@ -582,6 +579,7 @@ CREATE TABLE meta (
 CREATE TABLE prediction_transcript (
     prediction_transcript_id int unsigned not null auto_increment,
     exon_rank smallint unsigned not null,
+    exon_count smallint,
     contig_id int unsigned not null,
     contig_start int unsigned not null,
     contig_end int unsigned not null,
@@ -590,7 +588,6 @@ CREATE TABLE prediction_transcript (
     score double,
     p_value double,
     analysis_id int,
-    exon_count smallint,
 
     PRIMARY KEY( prediction_transcript_id, exon_rank ),
     KEY contig_idx( contig_id, contig_start )
