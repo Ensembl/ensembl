@@ -590,7 +590,6 @@ sub _columns {
 }
 
 
-
 =head2 _obj_from_hashref
 
   Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
@@ -602,17 +601,6 @@ sub _columns {
   Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
   Exceptions : thrown if not implemented by subclass
   Caller     : BaseFeatureAdaptor::generic_fetch
-
-=cut
-
-=head2 _obj_from_hashref
-
-  Arg      : 
-  Function  : abstract protected method implemented by subclass to provide 
-              object creation from a sql DBI hashref
-  Returntype: BaseAlignFeature
-  Exceptions: thrown if not implemented by subclass
-  Caller    : Implementing AlignFeatureAdaptor subclasses
 
 =cut
 
