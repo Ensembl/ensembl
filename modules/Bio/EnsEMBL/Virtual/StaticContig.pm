@@ -1087,30 +1087,41 @@ sub get_all_DASFeatures{
    my @genomic_features;
 
    my @rawcontigs = $self->_vmap->get_all_RawContigs();
-
+   @rawcontigs = map { $_->id() } @rawcontigs;
+    
+    # need a call here to get a list of FPC contigs that overlap my VC
+    # I also need to have their VC start end in the FPV coordinates.
+    # and somehow pass all this stuff down to the DAS fetcher...eek!
+    
+   my @clones  = $self->get_all_Clones();
+   #foreach (@clones){
+   #    print STDERR "Clone: ", $_, "\n";
+   #}
+   
    foreach my $extf ( $self->dbobj->_each_DASFeatureFactory ) {
        
        if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {	# optimized fetch that can handle a list of contigs
-	   foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end,\@rawcontigs)) {
-	       if( $sf->seqname =~ /\./ ) {
-		   # raw contig feature
-		   push(@contig_features,$sf);
-	       } else {
-		   push(@genomic_features,$sf);
+	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@clones,\@rawcontigs)) {
+	           if( $sf->seqname =~ /\./ ) {
+		            # raw contig feature
+		            push(@contig_features,$sf);
+	           } else {
+		            push(@genomic_features,$sf);
+	           }
 	       }
-	   }
 	   
        } else { # can't do list style contig fetches
-	   $self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
+	        #$self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
+	        print STDERR "StaticContig: Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS\n";
        }
    }
    
 
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
-	   push(@genomic_features, $f);
+	        push(@genomic_features, $f);
        } elsif( $f->id eq '__ERROR__') { #Always push errors even if they aren't wholly within the VC
-	   push(@genomic_features, $f);
+	        push(@genomic_features, $f);
        }
    }
    
@@ -2837,6 +2848,39 @@ sub get_all_coding_Snps{
    return (\%csnp,\%genestr);
 }
 
+=head2 get_all_Clones
+
+ Title   : 
+ Usage   : $sc->get_all_Clones()
+
+ Function: Produces an array of accession IDs of the golden clones spanning 
+           the static contig
+ Example :
+ Returns : An array of accession IDs
+ Args    : 
+
+ Originator: James Smith (js5)
+=cut
+
+sub get_all_Clones {
+   	my $self = shift;
+
+   	my $sth = $self->dbobj->prepare(
+   		"select distinct cl.id
+		   from static_golden_path as sgp, contig as c, clone as cl
+		  where c.clone = cl.internal_id and c.internal_id = sgp.raw_id and
+	                sgp.type = ? and sgp.chr_start < ? and
+			sgp.chr_end > ? and sgp.chr_name = ?"
+	);
+   	$sth->execute(
+   		$self->dbobj->static_golden_path_type,
+		$self->_global_end,
+		$self->_global_start,
+		$self->_chr_name
+	);
+    my $res = $sth->fetchall_arrayref;
+    return map {$_->[0]} @$res;
+}
 
 =head2 _sgp_select
 
