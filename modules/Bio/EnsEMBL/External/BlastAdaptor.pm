@@ -482,7 +482,7 @@ sub store_hit{
   my $dbh  = $self->db->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $hit->token || '' );
-  $use_date ||= '';
+  $use_date ||= $hit->use_date() || $hit->use_date($self->use_date('HIT'));;
   #my $ticket = $hit->group_ticket || warn( "Hit $id has no ticket" );
   my $ticket = $self->ticket || warn("Hit $id BlastAdaptor has no ticket");
 
@@ -493,7 +493,6 @@ sub store_hit{
     $sth->finish;
   }
   if( $rv < 1 ){ # Insert
-    my $use_date = $hit->use_date() || $hit->use_date($self->use_date('HIT'));
     my $sth = $dbh->prepare( sprintf $SQL_HIT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
@@ -557,19 +556,19 @@ sub store_hsp{
   my $dbh  = $self->db->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
-  $use_date ||= $self->use_date('HSP');
+  $use_date ||= $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
+
   #my $ticket = $hsp->group_ticket || warn( "HSP $id has no ticket" );
   my $ticket = $self->ticket || warn( "HSP $id BlastAdaptor has no ticket" );
 
   my $chr_name  = 'NULL';
   my $chr_start = 'NULL';
   my $chr_end   = 'NULL';
-  if( my $genomic = $hsp->genomic_hit ){
-    $chr_name  = $genomic->seq_id;
+  if( my $genomic = $hsp->genomic_hit || $hsp->contig_hit ){
+    $chr_name  = $genomic->seqname;
     $chr_start = $genomic->start;
     $chr_end   = $genomic->end;
-  } 
-
+  }
   my $rv = 0;
   if( $id ){
     my $sth = $dbh->prepare( sprintf $SQL_HSP_RETRIEVE, $use_date );
@@ -669,7 +668,6 @@ AND    chr_end   >= ? );
        push @binded, $chr_end, $chr_start;
      }
    }
-   #warn( "$q: ", join( ', ',@binded ) ); 
 
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
