@@ -1318,8 +1318,20 @@ CREATE TABLE transcript_remark (
   PRIMARY KEY  (transcript_remark_id)
 ) TYPE=MyISAM;
 
+################################################################################
+#
+# Table structure for table 'clone_info'
 
-### The following three tables are used in the pipeline but probably not needed for the web display
+
+CREATE TABLE clone_info (
+  clone_info_id int(10) unsigned NOT NULL auto_increment,
+  clone_id int(10) unsigned NOT NULL default '0',
+  author_id int(10) default NULL,
+  timestamp datetime NOT NULL default '0000-00-00 00:00:00',
+  PRIMARY KEY  (clone_info_id)
+) TYPE=MyISAM;
+
+
 
 ################################################################################
 #
@@ -1357,8 +1369,33 @@ CREATE TABLE rule_goal (
   PRIMARY KEY  (rule_id)
 ) TYPE=MyISAM;
 
+################################################################################
+#
+# Table structure for table 'clone_remark'
 
-## The following five tables are empty, and probably not used, however create them anyway to be on the safe side.
+
+CREATE TABLE clone_remark (
+  clone_remark_id int(10) unsigned NOT NULL auto_increment,
+  remark text,
+  clone_info_id int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (clone_remark_id)
+) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'clone_info_keyword'
+
+
+CREATE TABLE clone_info_keyword (
+  keyword_id int(10) unsigned NOT NULL default '0',
+  clone_info_id int(10) unsigned NOT NULL default '0',
+  PRIMARY KEY  (keyword_id,clone_info_id),
+  KEY clone_info_id_idx (clone_info_id)
+) TYPE=MyISAM;
+
+
+
+## The following tables are  probably not used, however create them anyway to be on the safe side.
 
 ################################################################################
 #
@@ -1395,42 +1432,6 @@ CREATE TABLE current_clone_info (
   PRIMARY KEY  (clone_info_id)
 ) TYPE=MyISAM;
 
-################################################################################
-#
-# Table structure for table 'clone_info'
-
-
-CREATE TABLE clone_info (
-  clone_info_id int(10) unsigned NOT NULL auto_increment,
-  clone_id int(10) unsigned NOT NULL default '0',
-  author_id int(10) default NULL,
-  timestamp datetime NOT NULL default '0000-00-00 00:00:00',
-  PRIMARY KEY  (clone_info_id)
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'clone_info_keyword'
-
-
-CREATE TABLE clone_info_keyword (
-  keyword_id int(10) unsigned NOT NULL default '0',
-  clone_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (keyword_id,clone_info_id),
-  KEY clone_info_id_idx (clone_info_id)
-) TYPE=MyISAM;
-
-################################################################################
-#
-# Table structure for table 'clone_lock'
-
-
-CREATE TABLE clone_remark (
-  clone_remark_id int(10) unsigned NOT NULL auto_increment,
-  remark text,
-  clone_info_id int(10) unsigned NOT NULL default '0',
-  PRIMARY KEY  (clone_remark_id)
-) TYPE=MyISAM;
 
 
 ################################################################################
