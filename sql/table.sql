@@ -960,8 +960,10 @@ CREATE TABLE stable_id_event (
   mapping_session_id          int(11) NOT NULL default '0',
   type                        ENUM('gene', 'transcript', 'translation') NOT NULL,
 
-  UNIQUE KEY tpl_idx (old_stable_id,new_stable_id,mapping_session_id),
-  KEY new_idx (new_stable_id)
+   UNIQUE KEY uni_idx (mapping_session_id, old_stable_id, old_version, new_stable_id, new_version, type),
+
+  KEY new_idx (new_stable_id),
+  KEY old_idx (old_stable_id)
 
 ) TYPE=MyISAM;
 
