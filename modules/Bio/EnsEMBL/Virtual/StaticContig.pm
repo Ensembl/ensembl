@@ -283,7 +283,8 @@ sub get_all_RepeatFeatures {
                      WHERE  sgp.raw_id = rf.contig
                      AND    sgp.chr_end >= $glob_start 
                      AND    sgp.chr_start <=$glob_end
-		     AND    sgp.chr_name='$chr_name' order by start";
+		     AND    sgp.chr_name='$chr_name' 
+                     ORDER  by start";
     
     my $sth = $self->dbobj->prepare($statement);
     $sth->execute();
@@ -500,9 +501,8 @@ eval {
                       AND    a.db='mapprimer'
                       AND    sgp.chr_end >= $glob_start 
                       AND    sgp.chr_start <=$glob_end 
-                      AND    sgp.chr_name='$chr_name' 
-                      AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
-
+                      AND    sgp.chr_name='$chr_name'                       
+                      AND    (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM')";
     
     my $sth = $self->dbobj->prepare($statement);
     $sth->execute;
@@ -603,7 +603,7 @@ eval {
                           AND       sgp.chr_start>$start 
                           AND       sgp.chr_start <$end 
                           AND       sgp.chr_start+f.seq_start-sgp.raw_start>$start  
-                          AND       s.name regexp '^D[0-9,X,Y][0-9]?S' 
+                          AND       (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM') 
                           ORDER BY  start limit 1";
 
 
@@ -705,7 +705,7 @@ eval {
                           AND       sgp.chr_start<$start 
                           AND       sgp.chr_start>=$end 
                           AND       sgp.chr_start+f.seq_start-sgp.raw_start<$start  
-                          AND       s.name regexp '^D[0-9,X,Y][0-9]?S' 
+                          AND       (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM')  
                           ORDER BY  start limit 1";
 
 
