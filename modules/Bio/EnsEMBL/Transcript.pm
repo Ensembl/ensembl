@@ -300,7 +300,7 @@ sub translateable_exons{
        $retexon->clone_id  ($exon->clone_id);
        $retexon->strand    ($exon->strand);
        $retexon->phase     ($exon->phase);         # MC exon phase can be 0,1,2
-       $retexon->attach_seq($exon->entirej_seq);
+       $retexon->attach_seq($exon->entire_seq);
        $retexon->id($exon->id());
        
        if( $exon->strand == 1 ) {
@@ -761,7 +761,7 @@ sub _translate_coherent{
        $tstr .= $str;
    }
 
-   $debug = 1;
+   $debug = 0;
 
    if ( $debug ) {
 #       print STDERR "Bstr is $tstr\n";
