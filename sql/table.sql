@@ -489,7 +489,7 @@ CREATE TABLE landmarkMarker (
   chr_start bigint(17) DEFAULT '0' NOT NULL,
   chr_end bigint(17) DEFAULT '0' NOT NULL,
   chr_strand bigint(1) DEFAULT '0' NOT NULL,
-  chr_name char(20),
+  chr_name char(20)  NOT NULL,
   KEY chr_name (chr_name,chr_start)
 );
 
