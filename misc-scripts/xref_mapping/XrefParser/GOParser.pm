@@ -47,31 +47,35 @@ sub run {
 
   open(GO,"<".$file) || die "Could not open $file\n";
 
+  my $taxon_line = "taxon:".$species_id;
+
   while (<GO>) {
-    chomp;
-    my @array = split (/\t/,$_);
-    $array[9] =~ s/\'/\\\'/g;
-    my $master=0;
-    if($array[0] =~ /ENSEMBL/){
-      #these might be good for a check
-      # match GO to Uniprot
-      # match Uniprot to ENSEMBL
-      # check ENSEMBL's are the same.
-    }
-    elsif($array[0] =~ /RefSeq/){
-      if($refseq{$array[1]}){
-	 XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-	 $count++;
+    if(/$taxon_line/){
+      chomp;
+      my @array = split (/\t/,$_);
+      $array[9] =~ s/\'/\\\'/g;
+      my $master=0;
+      if($array[0] =~ /ENSEMBL/){
+	#these might be good for a check
+	# match GO to Uniprot
+	# match Uniprot to ENSEMBL
+	# check ENSEMBL's are the same.
       }
-    }
-    elsif($array[0] =~ /UniProt/){
-      if($swiss{$array[1]}){
-	XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
-	$count++;
+      elsif($array[0] =~ /RefSeq/){
+	if($refseq{$array[1]}){
+	  XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	  $count++;
+	}
       }
-    }
-    else{
-      print STDERR "unknown type ".$array[0]."\n";
+      elsif($array[0] =~ /UniProt/){
+	if($swiss{$array[1]}){
+	  XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	  $count++;
+	}
+      }
+      else{
+	print STDERR "unknown type ".$array[0]."\n";
+      }
     }
   }
   print "\t$count GO dependent xrefs added\n"; 

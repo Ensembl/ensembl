@@ -17,7 +17,7 @@ use vars qw(@ISA);
 if (!defined(caller())) {
 
   if (scalar(@ARGV) != 1) {
-    print "\nUsage: RefSeqGPFFParser.pm file.SPC\n\n";
+    print "\nUsage: RefSeqGPFFParser.pm file.SPC <source_id>\n\n";
     exit(1);
   }
 
@@ -32,13 +32,16 @@ sub run {
   my $self = shift if (defined(caller(1)));
   my $file = shift;
   my $source_id = shift;
+  my $species_id = shift;
 
   if ($source_id < 1) {
     $source_id =  XrefParser::BaseParser->get_source_id_for_filename(basename($file));
-    print "Source id for $file: $source_id\n";
+  }
+  if(!defined($species_id)){
+    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-   XrefParser::BaseParser->upload_xrefs(create_xrefs($source_id, $file));
+   XrefParser::BaseParser->upload_xrefs(create_xrefs($source_id, $file, $species_id));
 
 }
 
@@ -51,7 +54,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($source_id, $file) = @_;
+  my ($source_id, $file, $species_id) = @_;
 
   my %name2species_id =  XrefParser::BaseParser->name2species_id();
 
@@ -76,10 +79,10 @@ sub create_xrefs {
     $species =~ s/^\s*//g;
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
-    my $species_id = $name2species_id{$species};
-
+    my $species_id_check = $name2species_id{$species};
+    
     # skip xrefs for species that aren't in the species table
-    if (defined $species_id) {
+    if (defined ($species_id) and $species_id = $species_id_check) {
       
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
@@ -163,7 +166,10 @@ sub create_xrefs {
       }
       push @xrefs, $xref;
 
-    } # if defined species
+    }# if defined species
+    else{ #### REMOVE after TESTING
+      print "not correct $species $species_id  NE $species_id_check\n";
+    }
 
   } # while <REFSEQ>
 
