@@ -233,6 +233,13 @@ sub disconnect_count {
   return $self->{'disconnect_count'};
 }
 
+sub query_count {
+  my $self = shift;
+  return $self->{'_query_count'} = shift if(@_);
+  $self->{'_query_count'}=0 unless(defined($self->{'_query_count'}));
+  return $self->{'_query_count'};
+}
+
 =head2 equals
 
   
@@ -550,6 +557,7 @@ sub prepare {
    $sth->dbc($self);
    $sth->sql($string);
 
+   $self->query_count($self->query_count()+1);
    return $sth;
 }
 
@@ -584,7 +592,9 @@ sub do {
    if($self->disconnect_when_inactive()) {
      $self->disconnect_if_idle();
    }
-
+  
+   $self->query_count($self->query_count()+1);
+ 
    return $result;
 }
 
