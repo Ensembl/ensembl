@@ -603,6 +603,7 @@ sub get_all_PredictionFeatures {
    
    my $fsetid;
    my $previous;
+   my $previous_contig;
    my %analhash;
    my $analysis_type='genscan';
    
@@ -659,7 +660,7 @@ sub get_all_PredictionFeatures {
        }
 
        
-       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
+       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1 || $previous_contig != $contig) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
 	   $current_fset->source_tag('genscan');
@@ -715,6 +716,7 @@ sub get_all_PredictionFeatures {
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
        $previous = $hid;
+       $previous_contig = $contig;
   }
  
 
