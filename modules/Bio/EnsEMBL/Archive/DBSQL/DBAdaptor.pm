@@ -106,9 +106,27 @@ sub new {
   return $self; # success - we hope!
 }
 
-=head2 get_ArchiveSeqAdaptor
+=head2 get_SeqAdaptor
 
- Title   : get_ArchiveSeqAdaptor
+ Title   : get_SeqAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_SeqAdaptor {
+    my ($self) = @_;
+    
+    return Bio::EnsEMBL::Archive::DBSQL::SeqAdaptor->new($self);
+}
+
+=head2 get_VersionedSeqAdaptor
+
+ Title   : get_VersionedSeqAdaptor
  Usage   :
  Function:
  Example :
@@ -121,7 +139,7 @@ sub new {
 sub get_VersionedSeqAdaptor {
     my ($self) = @_;
     
-    return Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor->new($self,$self->_read_only);
+    return Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor->new($self);
 }
 
 sub dbname {

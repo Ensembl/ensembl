@@ -41,9 +41,7 @@ package Bio::EnsEMBL::Overlap::DBSQL::VersionedSeqAdaptor;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::Archive::DBSQL::ArchiveSeq;
-
-use Bio::Root::RootI;
+use Bio::EnsEMBL::Archive::VersionedSeq;
 
 #The method ->new is inherited from the BaseAdaptor
 @ISA = qw(Bio::EnsEMBL::Archive::DBSQL::BaseAdaptor);
@@ -111,16 +109,17 @@ sub store {
    my $seq_id = $seqda->store($vseq->archive_seq);
    
    if (! $self->_exists($vseq)) {
+       my $statement;
        if ($vseq->archive_seq->type ne 'gene') {
 	   (! defined $vseq->seq) && $self->warn("Trying to store a versioned seq without sequence for a ".$vseq->archive_seq->type." sequence");
 	   
-	   my $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
        }
        else {
-	   my $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_clone,start_coord,end_clone,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_clone."',".$vseq->start.",'".$vseq->end_clone."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
        }
        my $sth = $self->db->execute($statement);
-       $id = $sth->{'mysql_insertid'};
+       my $id = $sth->{'mysql_insertid'};
        $vseq->db_ID($id);
    } 
    $vseq->adaptor;
@@ -139,7 +138,7 @@ sub store {
 =cut
 
 sub _exists{
-    my ($vseq) = @_;
+    my ($self,$vseq) = @_;
 
     my $statement = "select versioned_seq_id from versioned_seq where seq_id = '".$vseq->archive_seq->db_ID."' and version = ".$vseq->version;
     my $sth = $self->db->execute($statement);

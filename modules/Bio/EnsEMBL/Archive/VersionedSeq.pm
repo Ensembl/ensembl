@@ -98,7 +98,7 @@ sub new {
       $self->db_ID($dbid);
   }
   else {
-      $seq && $self->seq($sequence);
+      $sequence && $self->seq($sequence);
   }
   $self->archive_seq($archive_seq);
   $self->version($version);
@@ -233,6 +233,8 @@ sub subseq{
 =cut
 
 sub moltype{
+    my $self = shift;
+
     my $type = $self->archive->type;
 
     if ($type =~ /exon|transcript/) {
