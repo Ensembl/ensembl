@@ -1573,6 +1573,16 @@ sub cdna2genomic {
 
 sub seq {
   my $self = shift;
+  my $arg = shift;
+
+  if( defined $arg ) {
+    $self->{'_seq_cache'} = $arg;
+  }
+
+  if( defined $self->{'_seq_cache'} ) {
+    return $self->{'_seq_cache'};
+  }
+
   my $seq;
   #print STDERR " calling exon->seq\n";
   if ( ! defined $self->contig ) {
@@ -1596,7 +1606,8 @@ sub seq {
    }
   #print STDERR "have seq ".$seq."\n";
   my $bioseq = Bio::Seq->new(-seq=> $seq);
-  #print STDERR "have object ".$bioseq."\n";
+  $self->{'_seq_cache'} = $bioseq;
+
   return $bioseq;
 }
 
