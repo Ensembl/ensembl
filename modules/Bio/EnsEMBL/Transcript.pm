@@ -228,67 +228,6 @@ sub _get_external_info {
   # the actual order of dbs was determined by the deprecated priority column
   # in the external_db table
 
-  my @priority_order = [];
-
-  # the kind of case statment switching is performed on the first records
-  # from the meta table of the relevant species.
-
-  # human
-  if ( $species eq 'sapiens' ) {
-    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink EMBL };
-  }
-  # anopheles
-  elsif ( $species eq 'gambiae' ) {
-    @priority_order = qw{ ANOSUB SWISSPROT SPTREMBL EMBL };
-  }
-  # zebra fish
-  elsif ( $species eq 'rerio' ) {
-    @priority_order = qw{ SWISSPROT SPTREMBL EMBL };
-  }
-  # fugu
-  elsif ( $species eq 'rubripes' ) {
-    @priority_order = qw{ SWISSPROT SPTREMBL RefSeq LocusLink HUGO EMBL};
-  }
-  # mouse
-  elsif ( $species eq 'musculus' ) {
-    @priority_order = qw{ MarkerSymbol SWISSPROT RefSeq LocusLink EMBL };
-  }
-  # default list if species is not set
-  else {
-    $self->warn("Transcript::external_name - No species set. Using default DB order.");
-    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink EMBL };
-  }
-
-  # find a match (first one) for the db with the highest available priority
-  my $name = undef;
-  my $db = undef;
-
-  # we would hope that each transcript has only a single DBLink per db but
-  # implement as a loop just in case, taking the first relevant record found
-  foreach my $curr_db ( @priority_order ) { 
-    foreach my $dbl ( @{$dblinks} ) {
-      if ( $curr_db eq $dbl->dbname ) {
-	$name = $dbl->display_id;
-	$db = $dbl->dbname;
-	last;
-      }
-    }
-    if ( defined $name ) {
-      last;
-    }
-  }
-
-  if ( $required eq 'name' ) {
-    return $name;
-  }
-  elsif ( $required eq 'db' ) {
-    return $db;
-  }
-  else {
-    $self->warn("Transcript::_get_external_info - no xref data could be retrieved.");
-    return undef;
-  }
-    
 }
 
 
