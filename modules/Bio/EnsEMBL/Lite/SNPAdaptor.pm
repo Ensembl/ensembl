@@ -140,24 +140,25 @@ sub fetch_all_by_Slice {
         $strand = $arrayref->[3] * -1;
       }
 
-      push @snps, Bio::EnsEMBL::SNP->new_fast
-        ({ 'dbID'       => $arrayref->[0],
-           '_gsf_start'  => $start,
-           '_gsf_end'    => $end,
-           '_snp_strand' => $strand,
-           '_gsf_score'  => 1,
-           '_type'       => $arrayref->[4],
-           '_range_type' => $arrayref->[5],
-           '_validated'  => $arrayref->[6],
-           'status'     => $status,
-           'alleles'    => $arrayref->[7],
-           '_ambiguity_code' => $arrayref->[10],
-           '_snpclass'   => $arrayref->[8],
-           '_mapweight'  => $arrayref->[9],
-           '_source' => $arrayref->[11],
-           '_source_tag' => $arrayref->[11],
-           'link'        => \@links });
-
+      push @snps, Bio::EnsEMBL::SNP->new_fast({
+        'dbID'       => $arrayref->[0],
+        '_gsf_start'  => $start,
+        '_gsf_end'    => $end,
+        '_snp_strand' => $strand,
+        '_gsf_score'  => 1,
+        '_type'       => $arrayref->[4],
+        '_range_type' => $arrayref->[5],
+        '_validated'  => $arrayref->[6],
+        'status'     => $status,
+        'alleles'    => $arrayref->[7],
+        '_ambiguity_code' => $arrayref->[10],
+        '_snpclass'   => $arrayref->[8],
+        '_mapweight'  => $arrayref->[9],
+        '_source' => $arrayref->[11],
+        '_source_tag' => $arrayref->[11],
+        'link'        => \@links,
+        '_unique_id'  => "$arrayref->[0]:$arrayref->[1]"
+      });
     }
   }
 	
@@ -182,17 +183,17 @@ sub fetch_all_by_Slice_transcript_ids {
     ));
     $sth->execute( $transid );
     while(my $a = $sth->fetchrow_arrayref()) {
-      $SNPS{$a->[6]}{$transid} = [ @$a ];
+      $SNPS{"$a->[6]:$a->[7]"}{$transid} = [ @$a ];
     }
   }
   foreach my $snp ( @$snps ) {
     $snp->{'_transcripts'} = {};
     my $snptype = '99:';
-    if( $SNPS{$snp->dbID} ) {
-      foreach my $transid ( keys %{$SNPS{$snp->dbID}} ) {
-        my $a = $SNPS{$snp->dbID}{$transid};
+    if( $SNPS{$snp->{'_unique_id'}} ) {
+      #warn ">>> $snp->{'_unique_id'}";
+      foreach my $transid ( keys %{$SNPS{$snp->{'_unique_id'}}} ) {
+        my $a = $SNPS{$snp->{'_unique_id'}}{$transid};
         $snp->{'_transcripts'}{$transid} = $a;
-        #warn $snp->dbID, $a->[1];
         $snptype = $a->[1] if $a->[1] lt $snptype;
       }
     }
@@ -251,7 +252,7 @@ sub fetch_attributes_only{
                     '_ambiguity_code' => $arrayref->[10],
                     '_snpclass'   => $arrayref->[8],
                     '_mapweight'  => $arrayref->[9],
-                    '_source' => $arrayref->[11],
+                    '_source'     => $arrayref->[11],
                     '_source_tag' => $arrayref->[11],
                     'link'        => \@links });
     return $snp;
