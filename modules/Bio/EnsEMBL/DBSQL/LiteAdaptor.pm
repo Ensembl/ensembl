@@ -93,6 +93,49 @@ sub fetch_virtualtranscripts_start_end {
     return \@transcripts
 }
 
+sub fetch_virtualtranscripts_coding_start_end {
+    my ( $self, $chr, $vc_start, $vc_end, $database ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    $database      ||= 'ensembl';
+    my $cache_name = "_$database"."_vtrans_cache_$chr"."_$vc_start"."_$vc_end";
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select transcript_id, transcript_name, translation_name, gene_name,
+                chr_start, chr_end, chr_strand, external_name, external_db,
+                exon_structure, type, coding_start, coding_end
+           from $_db_name.www_transcript
+          where chr_name = ? and chr_start <= ? and chr_start >= ? and
+                chr_end >= ? and db = ?"
+    );
+    
+    eval {
+        $sth->execute( "$chr", $vc_end, $vc_start-3000000, $vc_start, $database );
+    };
+    return [] if($@);
+    my @transcripts;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        push @transcripts, {
+            'transcript'=> $row->[0],
+            'stable_id' => $row->[1],
+            'translation'=> $row->[2],
+            'gene'      => $row->[3],
+            'chr_start' => $row->[4],
+            'chr_end'   => $row->[5],
+            'start'     => $row->[4]-$vc_start+1,
+            'end'       => $row->[5]-$vc_start+1,
+            'coding_start' => $row->[11]-$vc_start+1,
+            'coding_end'   => $row->[12]-$vc_start+1,
+            'strand'    => $row->[6],
+            'synonym'   => $row->[7],
+            'db'        => $row->[8],
+            'exon_structure' => [ split ':', $row->[9] ],
+            'type'      => $row->[10]
+        };
+    }
+    return $self->{$cache_name} = \@transcripts;
+    return \@transcripts
+}
+
 sub fetch_virtualgenscans_start_end {
     my ( $self, $chr, $vc_start, $vc_end ) =@_;
     my $_db_name = $self->{'_lite_db_name'};

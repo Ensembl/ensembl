@@ -2197,6 +2197,16 @@ sub get_all_VirtualTranscripts_startend_lite {
     );
 }
 
+sub get_all_VirtualTranscripts_startend_lite_coding {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_coding_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end,
+        @_
+    );
+}
+
 sub get_all_VirtualGenscans_startend_lite {
     my  $self = shift;
     return $self->dbobj->get_LiteAdaptor->fetch_virtualgenscans_start_end(
