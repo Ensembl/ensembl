@@ -379,10 +379,11 @@ sub get_updated_objects {
 	}
     } else {
 	eval {
-	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
+	    my $update_obj = $fromdb->get_Update_Obj;
+	    @clones = $update_obj->get_updated_Clone_id($self->fromtime,$self->totime);
 	};
 	if ($@) {
-	    print "Could not call get_updated_Clone_id from TimDB:\n$@!";
+	    print "Could not call get_updated_Clone_id from the donor database:\n$@!";
 	}
     }
     return @clones;
@@ -403,8 +404,10 @@ sub check_update_status {
     my ($self) = @_;
 
     my $tdb = $self->connect($self->tolocator);
+    
+    my $t_update_obj=$tdb->get_Update_Obj();
 
-    if ($tdb->current_update) {
+    if ($t_update_obj->current_update) {
 	$self->warn("Update already running in recipient database. Can't start update");
     }
 
@@ -415,12 +418,11 @@ sub check_update_status {
 
     if ($self->fromlocator ne "Bio::EnsEMBL::TimDB::Obj") {
 
-	if ($fdb->current_update) {
+	my $f_update_obj = $fdb->get_Update_Obj;
+	if ($f_update_obj->current_update) {
 	    $self->warn("Update running in donor database, watch out!");
 	}
     } 
-
-    
     return ($fdb,$tdb);
 }
 	    
@@ -437,11 +439,14 @@ sub check_update_status {
 sub update {
     my ($self) = @_;
 
-
     my ($fdb,$tdb) = $self->check_update_status;
-    my $id         = $tdb ->start_update($self->fromtime,$self->totime) unless $self->nowrite;
-    my @clone_id   = $self->get_updated_objects($fdb);
 
+    my $tuobj= $tdb->get_Update_Obj;
+    my $fuobj= $fdb->get_Update_Obj;
+
+    my $id         = $tuobj ->start_update($self->fromtime,$self->totime) unless $self->nowrite;
+    my @clone_id   = $self->get_updated_objects($fdb);
+    
     # test
     # @clone_id      = ('AL132766');
 
@@ -493,8 +498,9 @@ sub update {
     }
     
     if (!$self->nowrite) {
-	my $todb = $self->connect($self->tolocator);  print(STDERR  "Connected to recipient database\n");
-	$todb->replace_last_update($self->totime);
+	my $todb = $self->connect($self->tolocator);  print(STDERR  "Replacing last update time with current time\n");
+	my $tuobj = $todb->get_Update_Obj;
+	$tuobj->replace_last_update($self->totime);
     }
 }
 
@@ -511,7 +517,7 @@ sub update {
 
 sub transfer_chunk {
     my ($self,$fromdb,$todb,$arcdb,@clones) = @_;
-
+    
     foreach my $id (@clones) {
         my $object;
 	eval {
