@@ -44,6 +44,7 @@ Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 
 use strict;
 use warnings;
+no warnings 'uninitialized';
 
 package Bio::EnsEMBL::Utils::TranscriptSNPs;
 
@@ -393,14 +394,10 @@ sub get_all_cdna_SNPs {
       my $alleles;
       my $ambicode;
 
-      if ($source eq 'variation') {
-	$alleles = $snp->allele_string;
-	$ambicode = $snp->ambig_code;
-      }
-      else {
-	$alleles = $snp->{'alleles'};     # old snp API
-	$ambicode = $snp->{'_ambiguity_code'};  # old snp API
-      }
+      # get alleles and ambig_code (with fallback to old snp API)
+      $alleles = $snp->allele_string || $snp->{'alleles'};
+      $ambicode = $snp->ambig_code || $snp->{'_ambiguity_code'};
+
       #we arbitrarily put the SNP on the +ve strand because it is easier to
       #work with in the webcode
       if($coord->strand == -1) {
