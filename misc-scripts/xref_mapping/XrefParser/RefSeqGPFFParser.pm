@@ -131,7 +131,7 @@ sub create_xrefs {
       else{
          print "$acc NE $acc_no_ver\n";
       }
-      $xref->{LABEL} = $acc;
+      $xref->{LABEL} = $acc . "\." . $ver;
       $xref->{DESCRIPTION} = $description;
       $xref->{SOURCE_ID} = $source_id;
       $xref->{SEQUENCE} = $parsed_seq;
