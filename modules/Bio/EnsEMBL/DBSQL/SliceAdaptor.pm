@@ -354,15 +354,22 @@ sub fetch_by_name {
 
   my @array = split(/:/,$name);
 
-  if(@array != 6) {
+  if(scalar(@array) < 3 || scalar(@array) > 6) {
     throw("Malformed slice name [$name].  Format is " .
         "coord_system:version:name:start:end:strand");
   }
 
-  my ($cs_name, $cs_version, $seq_region, $start, $end, $strand) = @array;
+  # Rearrange arguments to suit fetch_by_region
 
-  return $self->fetch_by_region($cs_name,$seq_region, $start,
-                                $end, $strand, $cs_version);
+  my @targetarray;
+
+  $targetarray[0]=$array[0];
+  $targetarray[5]=(($array[1]&&$array[1] ne "")?$array[1]:undef);
+  $targetarray[1]=(($array[2]&&$array[2] ne "")?$array[2]:undef);
+  $targetarray[2]=(($array[3]&&$array[3] ne "")?$array[3]:undef);
+  $targetarray[3]=(($array[4]&&$array[4] ne "")?$array[4]:undef);
+  $targetarray[4]=(($array[5]&&$array[5] ne "")?$array[5]:undef);
+  return $self->fetch_by_region(@targetarray);
 }
 
 
