@@ -56,8 +56,6 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Storable);
 
 
-
-
 =head2 new
 
   Arg [1]    : int $misc_set_id
@@ -82,21 +80,21 @@ use vars qw(@ISA);
 =cut
 
 sub new {
-  my ($caller, $misc_set_id, $adaptor, $code, $name, $desc, $max_len) = @_;
+  my $caller = shift;
 
   my $class = ref($caller) || $caller;
 
-  if($adaptor && !(ref($adaptor) ||
-                   !$adaptor->isa('Bio::EnsEMBL::DBSQL::MiscSetAdaptor'))) {
-    throw('Adaptor arg must be a Bio::EnsEMBL::DBSQL::MiscSetAdaptor');
-  }
+  my $self = $class->SUPER::new(@_);
 
-  return bless {'dbID'            => $misc_set_id,
-                'adaptor'         => $adaptor,
-                'code'            => $code,
-                'name'            => $name,
-                'description'     => $desc,
-                'longest_feature' => $max_len}, $class;
+  my($code, $name, $desc, $max_len) =
+    rearrange([qw(CODE NAME DESCRIPTION LONGEST_FEATURE)], @_);
+
+  $self->{'code'} = $code;
+  $self->{'name'} = $name;
+  $self->{'description'} = $desc;
+  $self->{'longest_feature'} = $max_len;
+
+  return $self;
 }
 
 =head2 code
