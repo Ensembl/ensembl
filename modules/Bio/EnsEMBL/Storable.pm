@@ -146,7 +146,7 @@ sub is_stored {
           "Storable objects must have neither OR both.");
   }
 
-  return 0 if (!$adaptor && !dbID);
+  return 0 if (!$adaptor && !$dbID);
 
   my $cur_db = $adaptor->db();
 
