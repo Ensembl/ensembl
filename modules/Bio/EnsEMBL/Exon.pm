@@ -769,6 +769,18 @@ sub find_supporting_evidence {
  Returns : integer
  Args    : none
 
+=head2 length
+
+ Title   : length
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
 =head2 sub_SeqFeature
 
  Title   : sub_SeqFeature

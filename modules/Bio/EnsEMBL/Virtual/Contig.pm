@@ -872,7 +872,9 @@ sub get_Genes_by_Type {
 
 }
 
-
+# (PL: the naming of this function is, shall we say, a bit unobvious :-)
+# Furthermore, it's not entirely clear which coordinate system is assumed,
+# and if nothing is lost during the transfer)
 sub _gene_query{
     
     my ($self,%gene) = @_;
@@ -944,28 +946,10 @@ sub _gene_query{
             delete $gene{$gene->id};
         } 
     }
-    
-    # get out unique set of translation objects
-    foreach my $gene ( values %gene ) {
-	foreach my $transcript ( $gene->each_Transcript ) {
-	    my $translation = $transcript->translation;
-	    $trans{"$translation"} = $translation;	    
-	}
-    } 
-    
-    foreach my $t ( values %trans ) {
 
-	if( exists $exonconverted{$t->start_exon_id} ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
-	    $t->start($start);
-	}
+# PL: there used (rev. 1.17) to be code dealing with converting raw to
+# virtual coords for Translation objs; that is not needed anymore. 
 
-	if( exists $exonconverted{$t->end_exon_id}  ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
-	    $t->end($start);
-	}
-    }
-    
     return values %gene;
 }
 
@@ -1491,22 +1475,25 @@ sub convert_Gene_to_raw_contig {
        foreach my $exon ( $trans->each_Exon ) {
 	   $clonedtrans->add_Exon($convertedexon{$exon->id});
 
-
-	   # translations
+	   # translations.
+           # (PL: looks like a 'deep copy' is being made;
+           # can't we reuse the existing object, and forget about deep
+           # copying ?)
 	   if( exists $translation{$trans->translation->id} ) {
+               # (PL: looks like this is cached; should it? )
 	       $clonedtrans->translation($translation{$trans->translation->id});
 	   } else {
 	       my $trl = $trans->translation(); 
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
 	       $clonedtrl->id($trl->id);
 	       $clonedtrl->start_exon_id($trl->start_exon_id);
+               $clonedtrl->start( $trl->start );
 	       $clonedtrl->end_exon_id($trl->end_exon_id);
+               $clonedtrl->end( $trl->end );
 	       $clonedtrl->version($trl->version);
 
-	       my ($srawcontig,$start,$sstrand) = $self->_vmap->raw_contig_position($trl->start,1);
-	       $clonedtrl->start($start);
-	       my ($erawcontig,$end,$estrand) = $self->_vmap->raw_contig_position($trl->end,1);
-	       $clonedtrl->end($end);
+               ## code converting Translation obj. coordinates to VC
+               ## coords is now gone (since rev. 1.17)
 	       
 	       $translation{$trl->id} = $clonedtrl;
 	       $clonedtrans->translation($clonedtrl);
@@ -1541,8 +1528,11 @@ sub _reverse_map_Exon{
 
    print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
 
-   my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
-   my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
+   my ($scontig,$start,$sstrand) = 
+     $self->_vmap->raw_contig_position($exon->start,$exon->strand);
+
+   my ($econtig,$end,$estrand)   = 
+     $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
    print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
@@ -1561,6 +1551,7 @@ sub _reverse_map_Exon{
        $rmexon->version($exon->version);
        $rmexon->phase($exon->phase);
        $rmexon->sticky_rank(1);
+
        foreach my $se ( $exon->each_Supporting_Feature ) {
 	   my ($secontig,$sestart,$sestrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
 	   my ($sncontig,$seend,$snstrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
@@ -1786,16 +1777,30 @@ sub _sanity_check{
 	   if (!defined $exon->phase) {
 	       $error = 1;
 	       $message .= "Exon does not have a phase";
-	   }
-
+	   }           
        }
-   }
+
+       # now see if the changes (using exon coords rather than VC)
+       # have worked:
+       # start exon:
+       my $t = $trans->translation;
+       my $e = $gene->get_Exon_by_id($t->start_exon_id);
+       if ( $t->start < 1 or $t->end > $e->length) { 
+           $error =1;
+           $message .= "Transcript's start < 1 or > exon length";
+       }
+
+       # same for end exon:
+       my $e = $gene->get_Exon_by_id($t->end_exon_id);
+       if ( $t->start < 1 or $t->end > $e->length) { 
+           $error =1;
+           $message .= "Transcript's end < 1 or > exon length";
+       }
+   }                                    # each_Transcript
 
    if( $error == 1 ) {
        $self->throw("Cannot write gene due to: $message");
    }
-	   
-
 }
 
 

@@ -72,7 +72,7 @@ sub new {
     $self->{'date'} = [];
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
-    
+    print STDERR "Static Contig created from ",scalar(@contigs), " contigs.\n";    
     
 
     if( scalar(@contigs) == 0 ) {

@@ -141,4 +141,27 @@ sub add_component_Exon{
    push(@{$self->{'_component_exons'}},$exon);
 }
 
+=head2 length
+
+ Title   : length
+ Usage   : length
+ Function: calculate number of  nucleotides constituting the Exon
+ Example :
+ Returns : a number
+ Args    : none
+
+=cut
+
+
+sub length {
+    my $self = shift;
+
+    my $len =0; 
+
+    foreach my $subexon ( $self->each_component_Exon ) {
+        $len += $subexon->length;
+    }
+    return $len;
+}
+
 1;

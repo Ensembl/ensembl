@@ -152,20 +152,39 @@ sub add_DBLink{
 
 sub each_unique_Exon{
    my ($self) = @_;
-   my %h;
+
+   $self->{_unique_exons}=undef;
 
    foreach my $trans ( $self->each_Transcript ) {
 #       print STDERR "Transcript " . $trans->id . "\n";
        foreach my $exon ( $trans->each_Exon ) {
 #	   print STDERR "Found exon $exon " . $exon->id . "\t" . $exon->start . "\t" . $exon->end . "\n";
-	   $h{$exon->id()} = $exon;
+	   $self->{_unique_exons}{$exon->id()} = $exon;
        }
    }
 
-   return values %h;
-   
+   return values %{$self->{_unique_exons}};
 }
 
+=head2 get_Exon_by_id
+
+ Title   : get_Exon_by_id
+ Usage   : $gene->get_Exon($exon_id);
+ Function: resolve the id into an exon (or return undef)
+ Example :
+ Returns : an Exon or undef
+ Args    :
+
+=cut
+
+sub get_Exon_by_id {
+    my ($self, $id) = @_;
+
+    if (! defined($self->{_unique_exons}) ) {
+        $self->each_unique_Exon;
+    }
+    return $self->{_unique_exons}{$id};
+}
 
 =head2 type
 
