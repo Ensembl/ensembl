@@ -79,7 +79,6 @@ CREATE TABLE clone (
   htg_phase     int(10) DEFAULT '-1' NOT NULL,
   created       datetime NOT NULL,
   modified      datetime NOT NULL,
-  stored        datetime NOT NULL,
   
   PRIMARY KEY (clone_id),
   KEY embl (embl_acc,embl_version),
