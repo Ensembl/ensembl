@@ -78,7 +78,7 @@ sub new {
 
   if( ! defined $empty ) {
     if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
-      print "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
+      print STDERR "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
 	"End: " . $end . "\t" . "Type: " . $type . "\n";
       $self->throw("Do not have all the parameters for slice");
     }
