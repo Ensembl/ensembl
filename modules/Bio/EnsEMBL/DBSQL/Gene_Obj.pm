@@ -794,8 +794,9 @@ sub get_Gene_by_DBLink {
     my @genes=$self->get_Gene_array_by_DBLink($external_id,$supporting);
 
     my $biggest;
-    my $max;
-    if ($#genes > 0) {
+    my $max=0;
+    my $size=scalar(@genes);
+    if ($size > 0) {
 	foreach my $gene (@genes) {
 	    my $size = (scalar($gene->each_unique_Exon));
 	    if ($size > $max) {
@@ -825,6 +826,7 @@ sub get_Gene_array_by_DBLink {
     my $self = shift;
     my $external_id = shift;
     my $supporting = shift;
+
     my @genes;
     my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
     $sth->execute;
@@ -834,9 +836,11 @@ sub get_Gene_array_by_DBLink {
 	$seen=1;
     }
     if( !$seen ) {
-	return undef;
+	return;
     }
-    return @genes;
+    else {
+	return @genes;
+    }
 }
 
 =head2 get_Exon
