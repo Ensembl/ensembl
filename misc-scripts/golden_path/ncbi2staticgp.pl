@@ -23,7 +23,7 @@ my @chr_len;
 my %nt_contig;
 my %clone;
 
-my $default_ori = '+';
+my $default_ori = 1;
 my $chr_offset = 1;    # chr coordinates appear to be off by 1
 
 
@@ -37,6 +37,7 @@ open INF, "> idlist.txt" or die "Can't open idlist.txt for output";
 
 while (<CHR>) {
     my ($chr, $start, $end, $ori, $nt_ctg, $obj) = (split)[1, 2, 3, 4, 5, 7];
+
     if ($obj eq 'start') {
 	$chr_len[$chr]->[0] = $start;
 	next;
@@ -45,7 +46,12 @@ while (<CHR>) {
 	$chr_len[$chr]->[1] = $end;
 	next;
     }
-    $ori = $default_ori unless $ori =~ /^[+-]$/;
+
+    if    ($ori eq '+') { $ori = 1;  }
+    elsif ($ori eq '-') { $ori = -1; }
+    elsif ($ori eq '?') { $ori = $default_ori; }
+    else  { die "Bad NT contig orientation $ori"; }
+
     $nt_contig{$nt_ctg}->{'chr'}   = $chr;
     $nt_contig{$nt_ctg}->{'start'} = $start + $chr_offset;  # nt_ctg loc on chromosome
     $nt_contig{$nt_ctg}->{'end'}   = $end + $chr_offset;
@@ -75,17 +81,22 @@ close CTG;
 while (<AGP>) {
     my ($nt_ctg, $nt_start, $nt_end, $sv, $raw_start, $raw_end, $raw_ori) =
      (split)[0, 1, 2, 5, 6, 7, 8];
+
     next if $raw_start eq 'fragment';
     next unless $sv =~ m{^\S+\.\d+$};
+
     unless (($raw_end - $raw_start) == ($nt_end - $nt_start)) {
 	die "Raw contig and nt contig coords don't match";
     }
+    if    ($raw_ori eq '+') { $raw_ori = 1;  }
+    elsif ($raw_ori eq '-') { $raw_ori = -1; }
+    else  { die "Bad raw contig orientation $raw_ori"; }
 
     my $nt_ori = $nt_contig{$nt_ctg}->{'ori'};
     my $chr    = $nt_contig{$nt_ctg}->{'chr'};
     my ($chr_start, $chr_end);
 
-    if ($nt_ori eq '+') {
+    if ($nt_ori == 1) {
 	# forward oriented nt contig: raw contigs forward from nt contig start
 	$chr_start = $nt_contig{$nt_ctg}->{'start'} + $nt_start - 1;
 	$chr_end   = $nt_contig{$nt_ctg}->{'start'} + $nt_end   - 1;
