@@ -901,6 +901,8 @@ sub pep_coords {
     # it would be handy to have a list of the peptide start end coords
     # for each exon
   
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l  Calls to pep_coords should no longer be necessary. Please use pep2genomic");
     my @starts;
     my @ends;
   
@@ -1023,6 +1025,9 @@ sub _get_cdna_coord_mapper {
 sub find_coord {
   my ($self,$coord,$type) = @_;
  
+  my ($p,$f,$l) = caller;
+  $self->warn("$f:$l find_coord is deprecated. Use pep2genomic");
+
   my $count = 0;
   my @exons = @{$self->get_all_Exons};
   my $end   = $#exons;
