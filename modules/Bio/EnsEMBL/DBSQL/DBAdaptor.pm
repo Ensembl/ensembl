@@ -208,13 +208,13 @@ sub new {
     eval { 
         $sgp = $self->get_MetaContainer->get_default_assembly
     };
+    use Carp qw(cluck);
     if ( $@ ) {
-        use Carp qw(cluck);
-        my $hardcoded_default = 'UCSC';
         cluck "*** get_MetaContainer->get_default_assembly failed:\n$@\n"
-          ."*** Using hardcoded default: '$hardcoded_default' instead\n";
-        $self->static_golden_path_type($hardcoded_default);
-    } else { 
+          ."assembly type must be set with static_golden_path_type() first";
+    } elsif (! $sgp) {
+        cluck "No default assembly defined - must set with static_golden_path_type() first";
+    } else {
       $self->static_golden_path_type($sgp);
     }
 
@@ -2812,7 +2812,7 @@ sub extension_tables{
 
 sub static_golden_path_type{
    my ($obj,$value) = @_;
-   if( defined $value) {
+   if($value) {
       $obj->{'static_golden_path_type'} = $value;
     }
     return $obj->{'static_golden_path_type'};
