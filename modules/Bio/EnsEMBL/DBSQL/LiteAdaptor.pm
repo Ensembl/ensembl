@@ -62,7 +62,7 @@ sub fetch_virtualtranscripts_start_end {
         "select transcript_id, transcript_name, translation_name, gene_name,
                 chr_start, chr_end, chr_strand, external_name, external_db,
                 exon_structure, type
-           from $_db_name.js5_transcript
+           from $_db_name.www_transcript
           where chr_name = ? and chr_start <= ? and chr_start >= ? and
                 chr_end >= ? and db = ?"
     );
@@ -101,7 +101,7 @@ sub fetch_virtualgenscans_start_end {
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
         "select id, chr_name, chr_start, chr_end, chr_strand, exon_structure
-           from $_db_name.js5_genscan_3
+           from $_db_name.www_genscan
           where chr_name = ? and chr_start <= ? and chr_start >= ? and
                 chr_end >= ?"
     );
@@ -393,7 +393,7 @@ sub fetch_virtualfeatures {
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
         "select id, score, chr_name, chr_start, chr_end, chr_strand
-           from $_db_name.js5_$type
+           from $_db_name.www_$type
           where chr_name=? and chr_start<=? and chr_start >= ? and chr_end >= ? and
                 score >= ?"
     );
