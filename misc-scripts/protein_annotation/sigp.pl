@@ -120,9 +120,14 @@ while(<_PFAMSEQ>) {
 
     my ($ac) = $_  =~ /^\>ENSP(\d+)/;
     
-		
-    print DATABASE $_;
+    #print STDERR "$_\n\n";
 
+    #print STDERR "$ac\n";
+		
+    #print DATABASE $_;
+
+    print DATABASE ">$ac\n";
+    
   }  else {
 
     if($truncate) {
@@ -147,3 +152,7 @@ close(_PFAMSEQ);
 
 close(DATABASE);
  
+
+
+
+

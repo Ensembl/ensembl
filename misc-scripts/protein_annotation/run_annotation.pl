@@ -59,7 +59,7 @@ sub run_coils {
     closedir DIR;
     
     foreach my $fasta_chunk(@allfiles) {
-	if (($fasta_chunk ne ".") && ($fasta_chunk ne "..")) {
+	if ($fasta_chunk =~ /chunk.(\d*)/) {
 	    my $run_coils = "bsub -q acari -o tmp/$fasta_chunk.coils.out -e tmp/$fasta_chunk.coils.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/protein_annotation/coils.pl /work1/birney/mongin/prot_annotation/chunks/$fasta_chunk";
 	    
 	    system($run_coils)==0 || die "$0\Error running '$run_coils' : $!";
@@ -77,7 +77,7 @@ sub run_tmhmm {
     closedir DIR;
     
     foreach my $fasta_chunk(@allfiles) {
-	if (($fasta_chunk ne ".") && ($fasta_chunk ne "..")) {
+	if ($fasta_chunk =~ /chunk.(\d*)/) {
 	    my $run_tmhmm = "bsub -q acari -o tmp/$fasta_chunk.tmhmm.out -e tmp/$fasta_chunk.tmhmm.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/protein_annotation/tmhmm.pl /work1/birney/mongin/prot_annotation/chunks/$fasta_chunk";
 	    
 	    system($run_tmhmm)==0 || die "$0\Error running '$run_tmhmm' : $!";
@@ -86,7 +86,7 @@ sub run_tmhmm {
 }
 
 sub run_sign_pep {
-    print STDERR "Sending signal peptides jobs to the LSF queue\n";
+    print STDERR "Sending signal peptide jobs to the LSF queue\n";
     my @runfiles;
     my $dir = "chunks/";
     opendir(DIR,$dir) || die "No directory:$!";
@@ -97,6 +97,8 @@ sub run_sign_pep {
 	    
     system($sigp)==0 || die "$0\Error running '$sigp' : $!";
 
+    sleep 10;
+
     foreach my $file (@allfiles) {
 	if ($file =~ /sigp_split.(\d+)/) {
 	    my ($run) = $file =~ /(sigp_split.\d+)/;
@@ -104,7 +106,6 @@ sub run_sign_pep {
 	    push(@runfiles,$file);
 	}
     }
-
     foreach my $run (@runfiles) {
 	print STDERR "RUN2: $run\n";
 	my $run_peps = "bsub -q acari -o tmp/$run.peps.out -e tmp/$run.peps.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/protein_annotation/sigp_readsplit.pl $run";

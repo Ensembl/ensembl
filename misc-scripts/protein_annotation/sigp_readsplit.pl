@@ -196,7 +196,10 @@ sub find_sigp {
       #print STDERR "$_\n";
     
     $name = "ENSP".$1 if( $_ =~ /^>(\S+)/);
-       
+     
+      
+  #$name = $1 if( $_ =~ /^>(\S+)/);
+  
     print STDERR "$name\n";
         
     $line_store{$line_counter} = $_ if ($_ =~ /max./i);
