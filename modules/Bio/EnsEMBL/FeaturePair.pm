@@ -757,6 +757,41 @@ sub validate {
     }
 }
 
+=head2 validate_prot_feature
+
+ Title   : validate_prot_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub validate_prot_feature{
+   my ($self) = @_;
+ # First the features;
+
+    $self->throw("Empty or wrong type of feature1 object") unless defined($self->feature1)   && 
+	                                             ref($self->feature1) ne "" && 
+						     $self->feature1->isa("Bio::EnsEMBL::SeqFeatureI");
+    $self->throw("Empty or wrong type of feature1 object ") unless defined($self->feature2) &&
+	                                             ref($self->feature2) ne "" && 
+						     $self->feature2->isa("Bio::EnsEMBL::SeqFeatureI");
+
+    $self->feature1->validate_prot_feature(1);
+    $self->feature2->validate_prot_feature(2);
+
+    # Now the analysis object
+    if (defined($self->analysis)) {
+	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::AnalysisI");
+    } else {
+	$self->throw("No analysis object defined");
+    }
+
+}
+
 =head2 set_all_fields
 
  Title   : set_all_fields
@@ -867,5 +902,48 @@ sub has_tag {
     return 0;
 }
 
+=head2 percent_id
+
+ Title   : percent_id
+ Usage   : $percent_id = $featpair->percent_id
+           $featpair->percent_id($pid)
+ Function: Get/set on the percent_id of feature1
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub percent_id {
+    my ($self,$value) = @_;
+    
+    if (defined($value)) 
+    {
+	    return $self->feature1->percent_id($value);
+    }     
+	return $self->feature1->percent_id();
+
+}
+
+=head2 p_value
+
+ Title   : p_value
+ Usage   : $p_value = $featpair->p_value
+           $featpair->p_value($p_value)
+ Function: Get/set on the p_value of feature1
+ Returns : integer
+ Args    : none
+
+=cut
+
+sub p_value {
+    my ($self,$value) = @_;
+    
+    if (defined($value)) 
+    {
+	    return $self->feature1->p_value($value);
+    }     
+	return $self->feature1->p_value();
+
+}
                    
 1;

@@ -102,10 +102,10 @@ sub new {
 
   bless $self,$class;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname); 
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname,$percent_id,$p_value,$external_db); 
 
   eval {
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname,$percent_id,$p_value,$external_db) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -116,6 +116,9 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    PRIMARY_TAG
 			    SEQNAME
 			    RAW_SEQNAME
+			    PERCENT_ID
+			    P_VALUE
+			    EXTERNAL_DB
 			    )],@args);
 };
   if( $@ ) {
@@ -135,7 +138,9 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   $analysis     && $self->analysis($analysis);
   $seqname      && $self->seqname($seqname);
   $raw_seqname  && $self->raw_seqname($raw_seqname);
-
+  $percent_id   && $self->percent_id($percent_id);
+  $p_value      && $self->p_value($p_value);
+  $external_db  && $self->external_db($external_db);
   return $self; # success - we hope!
 
 }
@@ -458,6 +463,33 @@ sub vthrow {
 
     $self->throw("Invalid feature - see dump on STDERR");
 }
+
+=head2 validate_prot_feature
+
+ Title   : validate_prot_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub validate_prot_feature{
+    my ($self,$num) = @_;
+    $self->throw("Seqname not defined in feature")     unless defined($self->seqname);
+    $self->throw("start not defined in feature")       unless defined($self->start);
+    $self->throw("end not defined in feature")         unless defined($self->end);
+    if ($num == 1) {
+	$self->throw("score not defined in feature")       unless defined($self->score);
+	$self->throw("percent_id not defined in feature") unless defined($self->percent_id);
+	$self->throw("evalue not defined in feature") unless defined($self->p_value);
+    }
+    $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
+}
+
+
 # These methods are specified in the SeqFeatureI interface but we don't want
 # people to store data in them.  These are just here in order to keep
 # existing code working
@@ -747,5 +779,88 @@ sub gffstring {
 
    return $str;
 }
- 
+
+=head2 external_db
+
+ Title   : external_db
+ Usage   : $pid = $feat->external_db()
+           $feat->external_db($dbid)
+ Function: get/set for an external db accession number (e.g.: Interpro)
+ Returns : 
+ Args    : none if get, the new value if set
+
+=cut
+
+sub external_db {
+    my ($self,$value) = @_;
+    
+    if (defined($value)) 
+    {
+	    $self->{'_external_db'} = $value;
+    }
+
+    return $self->{'_external_db'};
+}
+
+=head2 percent_id
+
+ Title   : percent_id
+ Usage   : $pid = $feat->percent_id()
+           $feat->percent_id($pid)
+ Function: get/set on percentage identity information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub percent_id {
+    my ($self,$value) = @_;
+
+    if (defined($value)) 
+    {
+	    $self->{_percent_id} = $value;
+    }
+
+    return $self->{_percent_id};
+}
+
+=head2 p_value
+
+ Title   : p_value
+ Usage   : $p_val = $feat->p_value()
+           $feat->p_value($p_val)
+ Function: get/set on p value information
+ Returns : float
+ Args    : none if get, the new value if set
+
+=cut
+
+sub p_value {
+    my ($self,$value) = @_;
+
+    if (defined($value)) 
+    {
+	    $self->{_p_value} = $value;
+    }
+
+    return $self->{_p_value};
+}
+
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
