@@ -150,4 +150,4 @@ INSERT INTO translation VALUES ('test_translation_2',1,8,'test_exon_1',28,'test_
 # Dumping data for table 'genetype'
 #
 
-INSERT INTO genetype VALUES ('ENSG00000003941','ensembl');
+INSERT INTO genetype VALUES ('test_gene','ensembl');

@@ -36,6 +36,13 @@ INSERT INTO genedblink (gene_id,external_db,external_id) VALUES ('gene-id-1','sw
 INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('transcript-1','embl','AC000012');
 
 
+#
+# Dumping data for table 'genetype'
+#
+
+INSERT INTO genetype VALUES ('gene-id-1','ensembl');
+
+
 INSERT INTO dna (id, sequence, created) 
 VALUES (1, 'AAAAA', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
@@ -62,5 +69,9 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 VALUES (1, 'swissprot', 12, 'blast', 12,  'blast', 'similarity');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature)
 VALUES (2, 'genscan', 12, 'blast', 12, 'blast', 'similarity');
+
+
+
+
 
 

@@ -422,6 +422,14 @@ INSERT INTO gene VALUES ('ENSG00000008217',1,'1970-01-01 01:00:00','1970-01-01 0
 
 
 #
+# Dumping data for table 'genetype'
+#
+
+INSERT INTO genetype VALUES ('ENSG00000008215','ensembl');
+INSERT INTO genetype VALUES ('ENSG00000008216','ensembl');
+INSERT INTO genetype VALUES ('ENSG00000008217','ensembl');
+
+#
 # Dumping data for table 'ghost'
 #
 

@@ -734,6 +734,15 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 
 INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG00000019419',1,'1970-01-01 01:00:00','1970-01-01 01:00:00','2000-04-19 13:43:58');
 
+#
+# Dumping data for table 'genetype'
+#
+
+INSERT INTO genetype VALUES ('ENSG00000019419','ensembl');
+
+
+
+
 INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000021073',1,'ENSG00000019419','ENSP00000021073');
 
 #
@@ -741,4 +750,6 @@ INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000021073
 #
 
 INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('ENSP00000021073',1,781,'ENSE00000083516',464,'ENSE00000083516');
+
+
 
