@@ -1604,7 +1604,7 @@ sub get_all_ExternalFeatures {
 
 =cut
 
-sub get_generic_features() {
+sub get_generic_features {
 
   my ($self, @names) = @_;
 
