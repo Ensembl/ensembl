@@ -92,10 +92,11 @@ sub _initialize {
 =cut
 
 sub get_all_Genes{
-   my ($self,@args) = @_;
+   my ($self,$supporting) = @_;
    my @out;
    my $id = $self->id();
    my @genes;
+   my @sup_exons;
 
    #
    # A quick trip to the database to pull out from the neighbourhood the genes
@@ -200,6 +201,10 @@ sub get_all_Genes{
 	   # Attach the sequence, cached if necessary...
 	   #
 	   
+	   if ($supporting && $supporting eq 'evidence') {
+	       push @sup_exons, $exon;
+	   }
+
 	   my $seq;
 	   
 	   if( $self->_dbobj->_contig_seq_cache($exon->contig_id) ) {
@@ -214,6 +219,10 @@ sub get_all_Genes{
 	   $trans->add_Exon($exon);
        }
    }
+
+   if ($supporting && $supporting eq 'evidence' && @sup_exons != 0) {
+       $self->_dbobj->get_supporting_evidence(@sup_exons);
+   } 
 
    return @out;
 

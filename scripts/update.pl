@@ -184,7 +184,7 @@ foreach my $object (@object_array) {
     #Check if it is a clone object
     if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
 	$type = "Clone";
-	$verbose && print "CLONE LEVEL-Got clone with id ".$object->id."\n";
+	$verbose && print "Got clone with id ".$object->id."\n";
 	my $rec_clone;
 	#Check if it is already present in recipient
 	eval {
@@ -214,7 +214,7 @@ foreach my $object (@object_array) {
 		#Get all the genes from this clone
 		foreach my $gene ($object->get_all_Genes('evidence')) {
 		    $verbose &&  print "Getting all genes via clone get_all_Genes method\n";
-		    $verbose &&  print "CLONE LEVEL: Got gene ".$gene->id."\n";
+		    $verbose &&  print "Got gene ".$gene->id."\n";
 		    &_place_gene($gene,'1');
 		}
 	    }
@@ -295,7 +295,6 @@ sub _place_gene {
     #If gene not present in recipient, write it in
     if ( $@ ) {
 	$verbose && print "New Gene, writing it in the database\n";
-	$verbose &&  print "In _place_gene: Gene ".$don_gene->id." has version ".$don_gene->version."\n";
 	$nowrite || $rec_db->write_Gene($don_gene,'evidence');
     }
     #If gene present in recipient, check donor and recipient version
