@@ -856,7 +856,8 @@ ALTER TABLE tmp_contig ADD KEY(internal_id);
 ALTER TABLE tmp_contig ADD KEY(clone);
 ";
     create_tmp_db($tmpdb, $sql, 'tmp_contig');
-    
+##   die "DEBUG: I only wanted this tmptable ...";
+
     # now for the real tables:
     $sql="
 SELECT distinct cl.*
@@ -886,17 +887,27 @@ SELECT dna.*
 SELECT DISTINCT e.*
   FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e
- WHERE ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig_id
 ";
      dump_data($sql, $satdb, 'exon');
+
+    $sql="
+SELECT DISTINCT esi.*
+  FROM $tmpdb.tmp_contig ctg,
+       $satdb.exon e,
+       $satdb.exon_stable_id esi
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = esi.exon_id
+";
+     dump_data($sql, $satdb, 'exon_stable_id');
 
     $sql="
 SELECT distinct et.*
   FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
 ";
     dump_data($sql, $satdb, 'exon_transcript');
@@ -907,12 +918,28 @@ SELECT distinct tsc.*
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
-   AND et.transcript=tsc.id
+   AND et.transcript_id=tsc.transcript_id
 ";
     dump_data($sql, $satdb, 'transcript');
+
+    $sql="
+SELECT distinct tscsi.*
+  FROM $tmpdb.tmp_contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.transcript_stable_id tscsi
+WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
+   AND e.sticky_rank = 1
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.transcript_id=tscsi.transcript_id
+";
+
+    dump_data($sql, $satdb, 'transcript_stable_id');
 
     $sql="
 SELECT distinct g.*
@@ -921,13 +948,30 @@ SELECT distinct g.*
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.gene  g
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
-   AND et.transcript=tsc.id
-   AND tsc.gene=g.id
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.gene_id=g.gene_id
 ";
     dump_data($sql, $satdb, 'gene');
+
+    $sql="
+SELECT distinct gsi.*
+  FROM $tmpdb.tmp_contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.gene  g,
+       $satdb.gene_stable_id  gsi
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
+   AND e.sticky_rank = 1
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.gene_id=g.gene_id
+   AND g.gene_id=gsi.gene_id
+";
+    dump_data($sql, $satdb, 'gene_stable_id');
 
     $sql="
 SELECT distinct gt.*
@@ -935,14 +979,16 @@ SELECT distinct gt.*
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
-       $satdb.gene  g,
+       $satdb.gene  g ,
+       $satdb.gene_stable_id gsi,
        $satdb.genetype  gt
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
-   AND et.transcript=tsc.id
-   AND tsc.gene=g.id
-   AND g.id = gt.gene_id
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.gene_id=g.gene_id
+   AND g.gene_id = gsi.gene_id
+   AND gsi.stable_id = gt.gene_id
 ";
     dump_data($sql, $satdb, 'genetype');
 
@@ -953,11 +999,11 @@ SELECT distinct tl.*
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.translation tl
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
-   AND et.transcript=tsc.id
-   AND tsc.translation = tl.id
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.translation_id = tl.translation_id
 ";
     dump_data($sql, $satdb, 'translation');
 
@@ -969,12 +1015,12 @@ SELECT distinct ox.*
        $satdb.transcript tsc,
        $satdb.translation tl,
        $satdb.objectXref ox
- WHERE ctg.internal_id = e.contig
-   AND e.id = et.exon
+ WHERE ctg.internal_id = e.contig_id
+   AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
-   AND et.transcript=tsc.id
-   AND tsc.translation = tl.id
-   AND tl.id = ox.ensembl_id
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.translation_id = tl.translation_id
+   AND tl.translation_id = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
 ";
     dump_data($sql, $satdb, 'objectXref');
@@ -991,12 +1037,12 @@ FROM   $tmpdb.tmp_contig ctg,
        $satdb.translation tl,
        $satdb.objectXref ox,
        $satdb.Xref x
-WHERE  ctg.internal_id = e.contig
+WHERE  ctg.internal_id = e.contig_id
    AND e.sticky_rank = 1
-   AND e.id = et.exon
-   AND et.transcript=tsc.id
-   AND tsc.translation = tl.id
-   AND tl.id = ox.ensembl_id
+   AND e.exon_id = et.exon_id
+   AND et.transcript_id=tsc.transcript_id
+   AND tsc.translation_id = tl.translation_id
+   AND tl.translation_id = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
    AND ox.xrefId = x.xrefId
 ";
@@ -1123,14 +1169,14 @@ sub create_tmp_db {
 sub drop_tmp_db {
     my ($db)= @_;
 
-##    warn "DEBUG: NOT Dropping $db\n";
-##    return;
+#    warn "DEBUG: NOT Dropping $db\n";
+#    return;
     warn "Dropping $db\n";
 
     my ($cmd)="$mysqladmin --force -u $user -h $host $pass_arg drop $db";
     my ($out)= `$cmd 2>&1`;
-    if ( $? || $out )  {
-        warn "``$cmd'' exited with exit status $? and stdout/err: $out";
+    if ( $? || $out ne "Database \"$tmpdb\" dropped\n" )  {
+        warn "``$cmd'' exited with exit status $? and unexpected stdout/err: $out";
     }
     return;
 }                                       # drop_tmp_db
