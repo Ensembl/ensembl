@@ -312,7 +312,7 @@ sub store {
 
    if (defined($transcript->stable_id)) {
      if (!defined($transcript->version)) {
-       $self->throw("Trying to store incomplete stable id information for " ..
+       $self->throw("Trying to store incomplete stable id information for " .
                     "transcript");
      }
 
