@@ -75,14 +75,13 @@ BEGIN {
 	require EnsemblExt;
     };
     if( $@ ) {
-	$ENSEMBL_EXT_LOADED = 0;
-	$ENSEMBL_EXT_USED = 0;
+		$ENSEMBL_EXT_LOADED = 0;
+		$ENSEMBL_EXT_USED = 0;
+		print STDERR "Bypassing Ensembl SeqFeature C Extensions\n";
     } else {
-
-	$ENSEMBL_EXT_LOADED = 1;
-	$ENSEMBL_EXT_USED = 0;
-	print STDERR "Using EnsemblExt...\n";
-	print STDERR "Got $ENSEMBL_EXT_LOADED with $ENSEMBL_EXT_USED\n";
+		$ENSEMBL_EXT_LOADED = 1;
+		$ENSEMBL_EXT_USED = 0;
+		print STDERR "Loaded Ensembl SeqFeature C Extensions (ensembl-cext).\n";
     }
 }
 

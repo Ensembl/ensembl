@@ -1170,8 +1170,6 @@ sub get_MarkerFeatures {
 		
 		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	    $analysis = $feature_obj->get_Analysis($analysisid);
-
-        #$analysis = $self->dbobj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
       } else {
