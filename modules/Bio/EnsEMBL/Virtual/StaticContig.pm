@@ -343,8 +343,9 @@ sub get_all_SimilarityFeatures_above_score{
 	      $prev->end($end);
 	      next;
 	  }
+
+	  &eprof_start('similarity-obj-creation');
 	  
-	      
 	  my $analysis=$self->_get_analysis($analysisid);
 	  
 	  if( !defined $name ) {
@@ -364,6 +365,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
 	  $prev = $out;
 	  $count++;
+	  &eprof_end('similarity-obj-creation');
       }
       
       print STDERR "FEATURE: got $count in entire call\n";
@@ -1178,7 +1180,7 @@ sub get_all_ExternalFeatures{
    if( scalar(@das) > 0 ) {
 
 	 foreach my $extf ( @das ) {
-	   if( 0 && $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {	# optimized fetch that can handle a list of contigs
+	   if( $extf->can('get_Ensembl_SeqFeatures_contig_list') ) {	# optimized fetch that can handle a list of contigs
 		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig_list(\@rawcontigs)) {
 		       #$sf->seqname($contig->id); # check this
 		       push(@contig_features,$sf);
