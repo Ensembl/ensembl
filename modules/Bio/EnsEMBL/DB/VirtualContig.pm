@@ -372,7 +372,7 @@ sub primary_seq {
        my $trunc;
        my $end;
        
-       if( $self->_vmap->clone_map == 1 ) {
+       if( $self->_vmap->clone_map ) {
 	   $end = $mc->contig->length;
        } else {
 	   if($mc->rightmost_end) {
@@ -510,10 +510,10 @@ sub get_all_SeqFeatures {
 }
 
 
-=head2 get_all_FeaturesByScore
+=head2 get_all_SimilarityFeatures_above_score
 
- Title   : get_all_FeaturesByScore
- Usage   : foreach my $sf ( $contig->get_all_FeaturesByScore(score, feature_type) ) 
+ Title   : get_all_SimilarityFeatures_above_score
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures_above_score(analysis_type, score) ) 
  Function:
  Example :
  Returns : 
@@ -522,15 +522,12 @@ sub get_all_SeqFeatures {
 
 =cut
 
-sub get_all_FeaturesByScore{
-    my ($self, $score, $type) = @_;
-
-    $self->throw("Must supply score parameter") unless $score;
+sub get_all_SimilarityFeatures_above_score{
+    my ($self, $analysis_type, $score) = @_;
     
     my $sf = ();
-   
     foreach my $c ($self->_vmap->get_all_RawContigs) {
-	   push(@$sf, $c->get_all_FeaturesByScore($score, $type));
+	   push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
    }
 
    # Need to clip seq features to fit the boundaries of
