@@ -321,7 +321,7 @@ sub get_all_Contigs{
    my @res;
    my $name = $self->id();
 
-   my $sql = "select id from contig where clone = \"$name\" ";
+   my $sql = "select id,internal_id from contig where clone = \"$name\" ";
 
    $sth= $self->_dbobj->prepare($sql);
    my $res = $sth->execute();
@@ -335,6 +335,7 @@ sub get_all_Contigs{
        my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_dbobj,
 							 -id => $rowhash->{'id'} );
 
+       $contig->internal_id($rowhash->{internal_id});
        $contig->seq_version($version);
        push(@res,$contig);
        $seen = 1;

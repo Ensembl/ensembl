@@ -734,7 +734,8 @@ sub get_Contig{
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
 							  -id    => $id );
-   
+   print(STDERR "################# Contig id $id internal " . $row->[1] . "\n");
+
    $contig->internal_id($row->[1]);
    $contig->seq_version($row->[2]);
 

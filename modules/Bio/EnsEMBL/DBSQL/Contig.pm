@@ -282,7 +282,7 @@ sub get_all_SimilarityFeatures{
        
        #Build fset feature object if new fset found
        if ($fset != $seen) {
-	   print("Making new fset feature $fset\n");
+	   print(STDERR "Making new fset feature $fset\n");
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
 	   $out->analysis($analysis);
