@@ -53,7 +53,7 @@ use vars qw(@ISA);
   Example    : $repeat_consensus = $repeat_consensus_adaptor->fetch_by_dbID(4);
   Description: Obtains a RepeatConsensus object from the database via its
                primary key. 
-  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general, Bio::EnsEMBL::RepeatFeatureAdaptor
 
@@ -108,6 +108,32 @@ sub fetch_by_name_class {
     return $self->_generic_fetch(qq{
             repeat_name  = '$name'
 	AND repeat_class = '$class'
+    });
+}
+
+
+=head2 fetch_by_class_seq
+
+  Arg [1]    : string $class
+               the class of the repeat consensus to obtain
+  Arg [2]    : string $seq
+               the sequence of the repeat consensus to obtain
+  Example    : $rc = $repeat_consensus_adaptor->
+                 fetch_by_name_class('trf', 'ATGGTGTCA');
+  Description: Obtains a repeat consensus from the database
+               via its class and sequence
+  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_class_seq {
+    my( $self, $class, $seq ) = @_;
+
+    return $self->_generic_fetch(qq{
+            repeat_class     = '$class'
+        AND repeat_consensus = '$seq'
     });
 }
 
