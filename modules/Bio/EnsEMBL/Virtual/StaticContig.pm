@@ -181,8 +181,8 @@ sub get_all_SimilarityFeatures {
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
-                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)) as end , 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)) as strand,
                                 f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
 		        FROM   feature f, analysis a,static_golden_path sgp
                         WHERE  f.analysis = a.id 
@@ -1716,16 +1716,12 @@ sub get_all_Genes_exononly{
 
  Title   : get_all_VirtualGenes_startend
  Usage   :
- Function:
+ Function: return VirtualGenes lying on this virtual contig
  Example :
  Returns : 
  Args    :
 
-
 =cut
-
-
-
 
 sub get_all_VirtualGenes_startend
 {
@@ -1758,7 +1754,7 @@ sub get_all_VirtualGenes_startend
     my $query ="SELECT     STRAIGHT_JOIN t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
-                       MAX(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
             FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
             WHERE      sgp.raw_id=e.contig
@@ -1770,7 +1766,9 @@ sub get_all_VirtualGenes_startend
             AND        sgp.chr_name='$chr_name'
             AND        sgp.type = '$type'
             GROUP BY   t.gene;";
-    
+# note: without the e.contig in $idlist, the query results and the query
+# plan are identical. Scrap it ? PL
+
     my $sth = $self->dbobj->prepare($query);
     $sth->execute;
 
@@ -1812,13 +1810,11 @@ sub get_all_VirtualGenes_startend
         $gene->add_DBLink($genelink);
     }
 
-	my $query1 = "select t.id from transcript t where t.gene = '$gene_id';";
+	my $query1 = "select t.translation from transcript t where t.gene = '$gene_id';";
 	my $sth1 = $self->dbobj->prepare($query1);
 	$sth1->execute;
 	
 	while (my $transid = $sth1->fetchrow) {
-	    
-	    $transid =~ s/T/P/;
 	    
 	    my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
 	    
@@ -1851,7 +1847,7 @@ sub get_all_VirtualGenes_startend
 
     return @genes;
 
-}
+} # get_all_VirtualGenes_startend
 
 =head2 _cached_virtualgenes_startend
 
