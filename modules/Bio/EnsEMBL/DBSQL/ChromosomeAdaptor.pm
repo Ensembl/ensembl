@@ -396,3 +396,39 @@ sub get_landmark_MarkerFeatures_old{
 #   return @out;
 }
 
+
+sub store{
+  my ($self, $chromosome) = @_;
+
+  my $chr_name = $chromosome->chr_name;
+  if(!$chr_name){
+    $self->throw("can't store a chromosome without a name");
+  }
+  my $length = $chromosome->length;
+  if(!$length){
+    $self->throw("can't store a chromosome without a length");
+  }
+  my $known_genes = $chromosome->known_genes;
+  if(!$known_genes){
+    $known_genes = 0;
+  } 
+  my $unknown_genes = $chromosome->unknown_genes;
+  if(!$unknown_genes){
+    $unknown_genes = 0;
+  } 
+  my $snps = $chromosome->snps;
+  if(!$snps){
+    $snps = 0;
+  } 
+  my $sql = "INSERT into CHROMOSOME(name,
+                                    known_genes,
+                                    unknown_genes,
+                                    snps,
+                                    length)
+                             values(?, ?, ?, ?, ?)";
+
+  my $sth = $self->db->prepare($sql);
+  $sth->execute($chr_name, $known_genes, $unknown_genes, $snps, $length);
+  $chromosome->dbID($sth->{'mysql_insertid'});
+  $chromosome->adaptor($self);
+}
