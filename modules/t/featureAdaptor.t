@@ -116,7 +116,7 @@ my @f4 = eval { $fa->fetch_by_hid('IL5_HUMAN'); };
 my $sf = Bio::EnsEMBL::SeqFeature->new(-seqname => 'moos', -start => 1, -end => 100, -strand => 1, -score => 1000, -primary_tag => 'test', -source_tag => 'test', -analysis => $pf->analysis);
 $fa->store($contig, $sf);
 $debug && print "_store_single_feature\t";
-my @f3 = $fa->fetch_by_hid('__NONE__');
+@f3 = $fa->fetch_by_hid('__NONE__');
 ($f3[0]->isa("Bio::EnsEMBL::SeqFeatureI")) ? (print "ok " . $counter++ . "\n") : (print "not ok " . $counter++ . "\n");
 
 
