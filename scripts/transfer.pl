@@ -79,8 +79,8 @@ $SIG{INT} = sub {my $sig=shift;die "exited after SIG$sig";};
 my $fdbtype = 'rdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
-my $fdbname = 'ensembl';
-my $fdbuser = 'ensro';
+my $fdbname = 'ensembl08';
+my $fdbuser = 'root';
 my $fdbpass = undef;
 
 my $tdbtype = 'rdb';

@@ -41,7 +41,7 @@ use Getopt::Long;
 
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensembl07';
+my $dbname = 'ensembl08';
 my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
