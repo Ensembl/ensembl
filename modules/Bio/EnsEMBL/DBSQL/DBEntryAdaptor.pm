@@ -19,10 +19,7 @@ $dbEntry = $db_entry_adaptor->fetch_by_dbID($id);
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Ewan Birney  : birney@ebi.ac.uk
-
-=head1 APPENDIX
+Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
 
 =cut
 
@@ -110,182 +107,122 @@ sub fetch_by_dbID {
 
 
 sub store {
-    my ( $self, $exObj, $ensObject, $ensType ) = @_;
-    my $dbJustInserted;
+  my ( $self, $exObj, $ensObject, $ensType ) = @_;
+  my $dbJustInserted;
 
-    # check if db exists
-    # urlPattern dbname release
-    my $sth = $self->prepare( "
+  #
+  # Check for the existance of the external_db, throw if it does not exist
+  #
+  my $sth = $self->prepare( "
      SELECT external_db_id
        FROM external_db
       WHERE db_name = ?
-        AND release = ?
-    " );
-    $sth->execute( $exObj->dbname(), $exObj->release() );
+        AND release = ?");
+
+  $sth->execute( $exObj->dbname(), $exObj->release() );
     
-    my $dbRef;
+  my ($dbRef) =  $sth->fetchrow_array();
+
+  if(!$dbRef) {
+    $self->throw("external_db [" . $exObj->db_name . "] release [" .
+		 $exObj->release . "] does not exist");
+  }
     
-    if(  ($dbRef) =  $sth->fetchrow_array() ) {
-        $dbJustInserted = 0;
-    } else {
-      # store it, get dbID for that
-      $sth = $self->prepare( "
-       INSERT ignore INTO external_db 
-       SET db_name = ?,
-           release = ?,
-           status  = ?
-     " );
-	
-      $sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
-      
-      $dbJustInserted = 1;
-      $sth = $self->prepare( "SELECT LAST_INSERT_ID()" );
-      $sth->execute();
-      ( $dbRef ) = $sth->fetchrow_array();
-      if( ! defined $dbRef ) {
-	$self->throw( "Database entry failed." );
-      }
-    }
-    
-    my $dbX;
-    
-    if(  $dbJustInserted ) {
-      # dont have to check for existence; cannnot have been inserted at
-      # this point, so $dbX is certainly undefined
-      $dbX = undef;
-    } else {
-	$sth = $self->prepare( "
+  #
+  # Check for the existance of the external reference, add it if not present
+  #
+  $sth = $self->prepare( "
        SELECT xref_id
          FROM xref
         WHERE external_db_id = ?
           AND dbprimary_acc = ?
-          AND version = ?
-     " );
-	$sth->execute( $dbRef, $exObj->primary_id(), 
-		       $exObj->version() );
-	( $dbX ) = $sth->fetchrow_array();
-    }
+          AND version = ?" );
+
+  $sth->execute( $dbRef, $exObj->primary_id(),$exObj->version() );
+  my ($dbX) = $sth->fetchrow_array();
+  $sth->finish();
     
-    if( ! defined $dbX ) {
-	
-	$sth = $self->prepare( "
-      INSERT ignore INTO xref 
+  if(!$dbX) {
+      #
+      # store the new xref
+      #
+    $sth = $self->prepare( "
+       INSERT ignore INTO xref 
        SET dbprimary_acc = ?,
            display_label = ?,
            version = ?,
            description = ?,
-           external_db_id = ?
-     " );
-	$sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
-		       $exObj->description(), $dbRef);
+           external_db_id = ?" );
+    $sth->execute( $exObj->primary_id(), $exObj->display_id(), 
+		   $exObj->version(), $exObj->description(), $dbRef);
+    $dbX = $sth->{'mysql_insertid'};
+    $sth->finish();
 	
-	$sth = $self->prepare( "
-      SELECT LAST_INSERT_ID()
-    " );
-	$sth->execute();
-	( $dbX ) = $sth->fetchrow_array();
-	
-	# synonyms
-	my $synonyms = $exObj->get_all_synonyms();
-	foreach my $syn ( @{$synonyms} ) {
-	    
-#Check if this synonym is already in the database for the given primary id
-	    my $sth = $self->prepare( "
-     SELECT xref_id,
-            synonym
-       FROM external_synonym
-      WHERE xref_id = ?
-        AND synonym = ?
-        " );
-	    $sth->execute($dbX, $syn);
-	    
-	    my ($dbSyn) = $sth->fetchrow_array();
-	    
-	    #print STDERR $dbSyn[0],"\n";
-	    
-	    if( ! $dbSyn ) {
-		$sth = $self->prepare( "
-        INSERT ignore INTO external_synonym
-         SET xref_id = ?,
-            synonym = ?
-        " );
-		$sth->execute($dbX, $syn);
-	    }
-	}
-		
-	$sth = $self->prepare( "
-   INSERT ignore INTO object_xref
-     SET xref_id = ?,
-         ensembl_object_type = ?,
-         ensembl_id = ?
-      " );
-	
-	$sth->execute( $dbX, $ensType, $ensObject );	
-	$exObj->dbID( $dbX );
-	$exObj->adaptor( $self );
-	
-	if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
-	    $sth = $self->prepare( "
-      SELECT LAST_INSERT_ID()
-      " );
-	    $sth->execute();
-	    my ( $Xidt ) = $sth->fetchrow_array();
-	    
-	    $sth = $self->prepare( "
-             INSERT ignore INTO identity_xref
-             SET object_xref_id = ?,
-             query_identity = ?,
-             target_identity = ? 
-			 " );
-	    $sth->execute( $Xidt, $exObj->query_identity, $exObj->target_identity );
-	    
-	}
-    } else {
-	$sth = $self->prepare ( "
-              SELECT xref_id
-              FROM object_xref
-              WHERE xref_id = ?
-              AND   ensembl_object_type = ?
-              AND   ensembl_id = ?
-			  ");
-	
-	$sth->execute($dbX, $ensType, $ensObject);
-	my ($tst) = $sth->fetchrow_array;
+    #
+    # store the synonyms for the new xref
+    # 
+    my $synonym_check_sth = $self->prepare(
+              "SELECT xref_id, synonym
+               FROM external_synonym
+               WHERE xref_id = ?
+               AND synonym = ?");
 
-	if (! defined $tst) {
-	# line is already in xref table. Need to add to object_xref
-	    $sth = $self->prepare( "
-             INSERT ignore INTO object_xref
-               SET xref_id = ?,
-               ensembl_object_type = ?,
-               ensembl_id = ?
-			   ");
-	
-	    $sth->execute( $dbX, $ensType, $ensObject );	
-	    $exObj->dbID( $dbX );
-	    $exObj->adaptor( $self );
+    my $synonym_store_sth = $self->prepare(
+        "INSERT ignore INTO external_synonym
+         SET xref_id = ?, synonym = ?");     
 
-	    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
-		$sth = $self->prepare( "
-      SELECT LAST_INSERT_ID()
-      " );
-		
-		$sth->execute();
-		my ( $Xidt ) = $sth->fetchrow_array();
-		
-		$sth = $self->prepare( "
-             INSERT ignore INTO identity_xref
-             SET object_xref_id = ?,
-             query_identity = ?,
-             target_identity = ?
-        " );
-		$sth->execute( $Xidt, $exObj->query_identity, $exObj->target_identity );
-		
-	    }
-	}
+    my $synonyms = $exObj->get_all_synonyms();
+    foreach my $syn ( @$synonyms ) {	    
+      $synonym_check_sth->execute($dbX, $syn);
+      my ($dbSyn) = $sth->fetchrow_array();
+      $synonym_store_sth->execute($dbX, $syn) if(!$dbSyn);
     }
-        
-    return $dbX;    
+	
+    $synonym_check_sth->finish();
+    $synonym_store_sth->finish();
+  }
+
+  #
+  # check if the object mapping was already stored
+  #
+  $sth = $self->prepare (
+           "SELECT xref_id
+            FROM object_xref
+            WHERE xref_id = ?
+            AND   ensembl_object_type = ?
+            AND   ensembl_id = ?");
+
+  $sth->execute($dbX, $ensType, $ensObject);
+  my ($tst) = $sth->fetchrow_array;
+  $sth->finish();
+    
+  if(!$tst) {
+    #
+    # Store the reference to the internal ensembl object
+    #
+    $sth = $self->prepare(
+         "INSERT ignore INTO object_xref
+          SET xref_id = ?, ensembl_object_type = ?, ensembl_id = ?");
+	
+    $sth->execute( $dbX, $ensType, $ensObject );	
+    $exObj->dbID( $dbX );
+    $exObj->adaptor( $self );
+      
+    my $Xidt = $sth->{'mysql_insertid'};
+
+    #
+    # If this is an IdentityXref need to store in that table too
+    #
+    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+      $sth = $self->prepare( "
+             INSERT ignore INTO identity_xref
+             SET object_xref_id = ?,
+             query_identity = ?,
+             target_identity = ?" );
+      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity);
+    }
+  } 
+  return $dbX;    
 }
 
 
