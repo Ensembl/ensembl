@@ -22,7 +22,7 @@ function getdb
 	mkdir -p databases/${dbver}
 	( cd databases/${dbver}
 	  ftp -i -n -v ftp.ensembl.org <<EOT
-user anonymous ak@ebi.ac.uk
+user anonymous $(whoami)@$(hostname).$(domainname)
 cd ${path}/${dbver}
 bin
 mget *
