@@ -1,0 +1,21 @@
+INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) 
+VALUES ('pog', 'pog', 1, 1, 3, '0000-00-00 00:00:00', '0000-00-00 00:00:00', '0000-00-00 00:00:00');
+
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (1, 'contig1', 'pog', 20, 1, 0, NULL, 'chromosome1', 'international-a');
+INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
+VALUES (2, 'contig2', 'pog', 20, 2, 0, NULL, 'chromosome1', 'international-b');
+
+INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, type, overlap_size)
+VALUES (1, 2, 'right2left', 19, 1, 'TEST', 0);
+
+
+INSERT INTO dna (id, sequence, created) 
+VALUES (1, 'AAAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTTTTT', '2000-04-27 08:31:59');
+INSERT INTO dna (id, sequence, created) 
+VALUES (2, 'CCCCCCCCCCGGGGGGGGGGCCCCCCCCCCGGGGGGGGGG', '2000-04-27 08:31:59');
+
+
+
+
+

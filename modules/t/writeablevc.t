@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -71,7 +71,7 @@ print "ok 3\n";
 
 #Suck test data into db
 print STDERR "Inserting test data in test overlap db...\n";
-my $suck_data      = "$conf{mysql} -u ".$nuser." $conf{overlap} < t/overlap.dump";
+my $suck_data      = "$conf{mysql} -u ".$nuser." $conf{overlap} < t/writeablevc.dump";
 system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 
 print "ok 4\n";
@@ -87,7 +87,7 @@ die "$0\nError connecting to database : $!" unless defined($db);
 
 print "ok 5\n";
 
-my $contig = $db->get_Contig('contig1');
+my $contig = $db->get_Contig('contig2');
 
 die "$0\nError fetching contig1 : $!" unless defined ($contig);
 
@@ -96,8 +96,8 @@ print "ok 6\n";
 my $wvc     = new Bio::EnsEMBL::DB::WriteableVirtualContig(-focuscontig   => $contig,
 						 -focusposition => 1,
 						 -ori           => 1,
-						 -left          => 20,
-						 -right         => 20,
+						 -left          => 30,
+						 -right         => 30,
                                                  -gene_obj      => $db->gene_Obj);
 
 die ("$0\nCan't create virtual contig :$!") unless defined ($wvc);
@@ -128,8 +128,8 @@ $gene->modified(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-1');
-$exon->start(1);
-$exon->end(5);
+$exon->start(5);
+$exon->end(15);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
@@ -142,9 +142,9 @@ $exon->attach_seq($wvc->primary_seq);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-2');
-$exon->start(8);
-$exon->end(15);
-$exon->strand(1);
+$exon->start(25);
+$exon->end(35);
+$exon->strand(-1);
 $exon->version(1);
 $exon->phase(0);
 $exon->created(1);
@@ -163,9 +163,9 @@ $newgene = $db->get_Gene('gene-id-1');
 $error = 0;
 foreach $exon ( $newgene->each_unique_Exon ) {
     if( exists $exon{$exon->id} ) {
-	if( $exon->seq != $exon{$exon->id}->seq ) {
+	if( $exon->seq->seq ne $exon{$exon->id}->seq->seq ) {
 	    print STDERR "For exon ",$exon->id," sequences do not agree!\n";
-	    print STDERR "Exon in RC is $exon [",$exon->seq->seq,"] VC is [",$exon{$exon->id}->seq->seq,"]\n";
+	    print STDERR "RC :",$exon->seq->seq,"\nVC :",$exon{$exon->id}->seq->seq,"\n";
 	    $error =1;
 	} else {
 	    print STDERR "Got exon match for",$exon->id,"\n";
@@ -180,6 +180,97 @@ if( $error == 1 ) {
 } else {
     print "ok 9\n";
 }
+
+
+$wvc     = new Bio::EnsEMBL::DB::WriteableVirtualContig(-focuscontig   => $contig,
+						 -focusposition => 1,
+						 -ori           => -1,
+						 -left          => 30,
+						 -right         => 30,
+                                                 -gene_obj      => $db->gene_Obj);
+
+
+
+
+$gene = Bio::EnsEMBL::Gene->new();
+$gene->id('rgene-id-1');
+$gene->version(1);
+$trans = Bio::EnsEMBL::Transcript->new();
+$trans->id('rtrans-id-1');
+$trans->version(1);
+$trl = Bio::EnsEMBL::Translation->new();
+$trl->start_exon_id('rexon-1');
+$trl->end_exon_id('rexon-2');
+$trl->start(2);
+$trl->end(13);
+$trl->id('rtrl-id');
+$trl->version(1);
+$trans->translation($trl);
+$trans->created(1);
+$trans->modified(1);
+$gene->add_Transcript($trans);
+$gene->created(1);
+$gene->modified(1);
+
+$exon = Bio::EnsEMBL::Exon->new();
+$exon->id('rexon-1');
+$exon->start(5);
+$exon->end(15);
+$exon->strand(1);
+$exon->version(1);
+$exon->phase(0);
+$exon->created(1);
+$exon->modified(1);
+$exon->contig_id($wvc->id);
+$trans->add_Exon($exon);
+$exon{'rexon-1'} = $exon;
+$exon->attach_seq($wvc->primary_seq);
+
+$exon = Bio::EnsEMBL::Exon->new();
+$exon->id('rexon-2');
+$exon->start(25);
+$exon->end(35);
+$exon->strand(-1);
+$exon->version(1);
+$exon->phase(0);
+$exon->created(1);
+$exon->modified(1);
+$exon->contig_id($wvc->id);
+$trans->add_Exon($exon);
+$exon{'rexon-2'} = $exon;
+$exon->attach_seq($wvc->primary_seq);
+
+$wvc->write_Gene($gene);
+
+
+
+
+$newgene = $db->get_Gene('rgene-id-1');
+
+$error = 0;
+foreach $exon ( $newgene->each_unique_Exon ) {
+    if( exists $exon{$exon->id} ) {
+	$exon->seq->seq();
+	$exon{$exon->id}->seq->seq();
+	if( $exon->seq->seq ne $exon{$exon->id}->seq->seq ) {
+	    print STDERR "For exon ",$exon->id," sequences do not agree!\n";
+	    print STDERR "RC :",$exon->seq->seq,"\nVC :",$exon{$exon->id}->seq->seq,"\n";
+	    $error =1;
+	} else {
+	    print STDERR "Got exon match for",$exon->id,"\n";
+	}
+    } else {
+	print STDERR "Weird exon in output...\n";
+    }
+}
+
+if( $error == 1 ) {
+    print "not ok 10\n";
+} else {
+    print "ok 10\n";
+}
+
+
 
 END {
    my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";

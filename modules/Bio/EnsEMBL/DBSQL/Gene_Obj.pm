@@ -1107,11 +1107,12 @@ sub write{
 	   if( ! defined $exon->contig_id ) {
 	       $self->throw("Bad error - got an exon with no contig id!");
 	   }
-	   print STDERR "Exon has contig id ".$exon->contig_id."\n";
-
-	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
-	   $sth->execute();
-	   $c++;
+	   #print STDERR "Exon has contig id ".$exon->contig_id."\n";
+	   if( $exon->sticky_rank == 1 ) {
+	       my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
+	       $sth->execute();
+	       $c++;
+	   }
 
 	   if( $done{$exon->id().$exon->sticky_rank()} ) { next; }
 	   $done{$exon->id().$exon->sticky_rank()} = 1;
