@@ -86,7 +86,7 @@ static int remove_EA_Exon_func(gpointer data)
 {
   impl_POA_Ensembl_artemis_Feature * serv;
   serv = (impl_POA_Ensembl_artemis_Feature *) data;
-  SimpleObjectManagerAdaptor_log_message(&serv->soma,G_LOG_LEVEL_MESSAGE,"Removing exon");
+  SimpleObjectManagerAdaptor_log_message(&serv->soma,G_LOG_LEVEL_MESSAGE,"Removing exon %s",serv->id);
   impl_Ensembl_artemis_Feature__destroy(serv,serv->soma.ev);
   return 0;
 }
@@ -175,6 +175,8 @@ impl_Ensembl_artemis_Feature_getQualifiers(impl_POA_Ensembl_artemis_Feature *
   CORBA_sequence_set_release(retval,1);
   return retval;
 }
+
+
 
 
 

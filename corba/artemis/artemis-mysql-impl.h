@@ -7,7 +7,7 @@
 #include "simpleobjectmanager.h"
 
 #include "artemis-exon-impl.h"
-
+#define  ARTEMIS_MAX_SEQLENGTH 100000
 
 Ensembl_artemis_Entry new_Ensembl_artemis_Entry(PortableServer_POA poa, MYSQL * c,const char * c_id,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev);
 

@@ -1,5 +1,5 @@
 
-IFLAGS = -I/usr/local/lib/glib/include -I/usr/local/include -I../popt -I. -I../timetolease
+IFLAGS = -I/usr/local/lib/glib/include -I/usr/local/include -I../popt -I. -I../simpleobjectman
 
 LFLAGS = -L/usr/lib/mysql -Llib -L../timetolease
 

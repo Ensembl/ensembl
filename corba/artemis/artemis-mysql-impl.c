@@ -263,7 +263,7 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
     newservant = new_impl_EA_Sequence(poa,c,g_strdup(c_id),soma);
     newservant->length = atol(row[0]);
     
-    SimpleObjectManagerAdaptor_log_message(&soma,G_LOG_LEVEL_DEBUG,"Made sequence %s with length",c_id,newservant->length);
+    SimpleObjectManagerAdaptor_log_message(&soma,G_LOG_LEVEL_DEBUG,"Made sequence %s with length %d",c_id,newservant->length);
     mysql_free_result(result);
     
     
@@ -307,6 +307,15 @@ impl_Ensembl_artemis_Sequence_getSubSequence(impl_POA_Ensembl_artemis_Sequence
    MYSQL_ROW row;
    int state;
    char * str;
+   Ensembl_artemis_RequestedSequenceTooLong * toolong;
+
+
+   if( start < 0 || end < 0 || start > end || (end-start) > ARTEMIS_MAX_SEQLENGTH ) {
+     SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Requested sequence %d-%d too long or just weird",start,end);
+     toolong = Ensembl_artemis_RequestedSequenceTooLong__alloc();
+     CORBA_exception_set( ev, CORBA_USER_EXCEPTION,ex_Ensembl_artemis_RequestedSequenceTooLong,toolong);
+     return;
+   }
 
    sprintf(sqlbuffer,"SELECT sequence from dna where contig = '%s'",servant->contig_id);
    state = mysql_query(servant->connection,sqlbuffer);
@@ -341,7 +350,7 @@ int remove_Feature_func(gpointer data)
 {
   impl_POA_Ensembl_artemis_Feature * servant;
   servant = (impl_POA_Ensembl_artemis_Feature*) data;
-  SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Removing Feature");
+  SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Removing Feature %s",servant->transcript_id);
   impl_Ensembl_artemis_Feature__destroy(servant,servant->soma.ev);
   return 0;
 }
@@ -404,14 +413,11 @@ impl_Ensembl_artemis_Feature__destroy(impl_POA_Ensembl_artemis_Feature *
    objid = PortableServer_POA_servant_to_id(servant->poa, servant, ev);
    PortableServer_POA_deactivate_object(servant->poa, objid, ev);
    CORBA_free(objid);
-   fprintf(stderr,"Removing trans id\n");
    if( servant->transcript_id != NULL ) 
      g_free(servant->transcript_id);
-   fprintf(stderr,"Removing loc id\n");
    if( servant->location != NULL )
      g_free(servant->location);
    POA_Ensembl_artemis_Feature__fini((PortableServer_Servant) servant, ev);
-   fprintf(stderr,"Removing servant\n");
    g_free(servant);
 }
 
@@ -420,7 +426,7 @@ impl_Ensembl_artemis_Feature_getKey(impl_POA_Ensembl_artemis_Feature *
 				    servant, CORBA_Environment * ev)
 {
    CORBA_char *retval;
-   retval = CORBA_string_dup("CDS");
+   retval = CORBA_string_dup("mRNA");
    return retval;
 }
 
@@ -495,8 +501,6 @@ int remove_Entry_func(gpointer data)
   impl_POA_Ensembl_artemis_Entry * servant;
   servant = (impl_POA_Ensembl_artemis_Entry*) data;
   SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Removing Entry %s",servant->contig_id);
-
-  fprintf(stderr,"Jumping into destroy\n");
   impl_Ensembl_artemis_Entry__destroy(servant,servant->soma.ev);
   return 0;
 }
@@ -513,6 +517,8 @@ Ensembl_artemis_Entry new_Ensembl_artemis_Entry(PortableServer_POA poa, MYSQL * 
    MYSQL_ROW row;
    int state;
    int no;
+   Ensembl_artemis_NoEntry * ex;
+
    
    SimpleObjectManagerAdaptor * ret;
 
@@ -542,7 +548,11 @@ Ensembl_artemis_Entry new_Ensembl_artemis_Entry(PortableServer_POA poa, MYSQL * 
      
      if( no == 0 ) {
        SimpleObjectManagerAdaptor_log_message(&soma,G_LOG_LEVEL_ERROR,"No entry of this name %s",c_id);
-       CORBA_exception_set_system(ev,ex_CORBA_UNKNOWN,CORBA_COMPLETED_NO);
+       /* reuse sqlbuffer */
+       ex = Ensembl_artemis_NoEntry__alloc();
+       sprintf(sqlbuffer,"Entry name %s does not exist in database",c_id);
+       ex->reason= CORBA_string_dup(sqlbuffer);
+       CORBA_exception_set( ev, CORBA_USER_EXCEPTION,ex_Ensembl_artemis_NoEntry,ex);
        return;
      }
      
@@ -572,7 +582,6 @@ impl_Ensembl_artemis_Entry__destroy(impl_POA_Ensembl_artemis_Entry * servant,
    }
    if( servant->transcript_ids != NULL ) {
      for(ids = servant->transcript_ids;*ids != NULL;ids++) {
-       fprintf(stderr,"Removing %s\n",*ids);
        g_free(*ids);
      } 
    }
@@ -581,7 +590,6 @@ impl_Ensembl_artemis_Entry__destroy(impl_POA_Ensembl_artemis_Entry * servant,
    if( servant->exon_ids != NULL ) {
      
      for(ids = servant->exon_ids;*ids != NULL;ids++) {
-       fprintf(stderr,"Removing %s %d\n",*ids,(int)*ids);
        g_free(*ids);
      } 
    }
@@ -589,7 +597,6 @@ impl_Ensembl_artemis_Entry__destroy(impl_POA_Ensembl_artemis_Entry * servant,
    servant->exon_ids = NULL;
 
    POA_Ensembl_artemis_Entry__fini((PortableServer_Servant) servant, ev);
-   fprintf(stderr,"Going to free servant\n");
    g_free(servant);
 }
 
@@ -646,7 +653,7 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
   /*S_ASSERT(servant->soma,c);*/
 
   /* check to see if we have made this before */
-  fprintf(stderr,"Got into get all entries... %d\n",servant->has_done_transcript);
+
   i =0;
   t = 0; e= 0;
   if( servant->has_done_transcript == 1 ){
@@ -663,8 +670,6 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
     }
     if( *id == NULL ) {
       /* see if we can do the exons */
-      fprintf(stderr,"Doing the exon loop\n");
-
       for(id = servant->exon_ids;*id != NULL;id++) {
 	if( (ret=SimpleObjectManagerAdaptor_find_object(&servant->soma,"EAFeatureE",*id)) != NULL ) {
 	  temp_buffer[i++] = SimpleObjectManagerAdaptor_reactivate(ret);
@@ -738,7 +743,6 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
       
       temp_buffer[i++] = new_EA_Exon_Feature(servant->poa,row[5],row[6],row[7],atol(row[2]),atol(row[3]),strcmp(row[4],"1") == 0 ? 1 : -1,0,servant->soma,ev);
       temp_exon[e++] = g_strdup(row[5]);
-      fprintf(stderr,"Allocated %s to temp %d\n",temp_exon[e-1],(int)temp_exon[e-1]);
       if( touched == 1 ) {
 	strcat(loc,",");
       } else {

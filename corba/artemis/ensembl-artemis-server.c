@@ -7,8 +7,8 @@
 
 
 char  * host       = "localhost";
-char  * user       = "ensemblro";
-char  * pass       = "ensemblropass";
+char  * user       = "root";
+char  * pass       = "-";
 char  * db         = "ensdev";
 
 int   max_objects  = 512;
@@ -18,7 +18,7 @@ int   allow_cache  = 0;
 
 MYSQL mysql;
 
-int verbose        = 0; 
+int verbose        = 1; 
 
 static const
 struct poptOption options[] = {
@@ -46,10 +46,14 @@ MYSQL * ea_connect ( void )
     
     mysql_init(&mysql);
     if ( verbose ) {
-	fprintf(stderr,"Connecting with %s %s %s\n",host,user,db);
+	fprintf(stderr,"Connecting with %s %s %s...\n",host,user,db);
     }
     
     connection = mysql_real_connect(&mysql,host,user,pass,db,0,0,0); 
+
+    if ( verbose ) {
+	fprintf(stderr,"Connected\n",host,user,db);
+    }
 
     if( connection == NULL ) {
 	g_error("Unable to make connection to mysql with host %s, user %s, password %s and database %s",host,user,pass == NULL ? "NoPassword" : pass,db);
@@ -114,6 +118,10 @@ int main (int argc, char *argv[])
   
   som = new_SimpleObjectManager(stderr,0,0,lifetime,"ensembl-mysql",max_objects,block_size,allow_cache,&ev);
   soma = SimpleObjectManager_get_Adaptor(som);
+  
+  if( verbose ) {
+    fprintf(stderr,"Built Soma\n");
+  }
 
   eadb = new_EA_Database(poa,connection,verbose,soma,&ev);
 

@@ -32,6 +32,14 @@ static Ensembl_artemis_EntryNameList
 					     servant, CORBA_Environment * ev);
 
 
+static Ensembl_artemis_FeatureDefinitionList
+   *impl_Ensembl_artemis_DB_getFeatureDefinitionList
+   (impl_POA_Ensembl_artemis_DB * servant, CORBA_Environment * ev);
+
+static CORBA_long
+impl_Ensembl_artemis_DB_max_sequence_length(impl_POA_Ensembl_artemis_DB *
+					    servant, CORBA_Environment * ev);
+
 static PortableServer_ServantBase__epv impl_Ensembl_artemis_DB_base_epv = {
    NULL,			/* _private data */
    NULL,			/* finalize routine */
@@ -40,8 +48,9 @@ static PortableServer_ServantBase__epv impl_Ensembl_artemis_DB_base_epv = {
 static POA_Ensembl_artemis_DB__epv impl_Ensembl_artemis_DB_epv = {
    NULL,			/* _private */
    (gpointer) & impl_Ensembl_artemis_DB_getEntry,
-
    (gpointer) & impl_Ensembl_artemis_DB_getallEntryNames,
+   (gpointer) & impl_Ensembl_artemis_DB_getFeatureDefinitionList,
+   (gpointer) & impl_Ensembl_artemis_DB_max_sequence_length
 
 };
 
@@ -88,8 +97,11 @@ Ensembl_artemis_DB new_EA_Database(PortableServer_POA poa,MYSQL * connection,int
    impl_POA_Ensembl_artemis_DB *newservant;
    PortableServer_ObjectId *objid;
 
+   
 
    g_assert(connection);
+
+   fprintf(stderr,"Going to build db object\n");
 
    newservant = g_new0(impl_POA_Ensembl_artemis_DB, 1);
    newservant->servant.vepv = &impl_Ensembl_artemis_DB_vepv;
@@ -141,15 +153,14 @@ impl_Ensembl_artemis_DB_getEntry(impl_POA_Ensembl_artemis_DB * servant,
    MYSQL_ROW row;
    int state;
 
+
    retval = new_Ensembl_artemis_Entry(servant->poa,servant->connection,g_strdup(entryname),servant->soma,ev);
    if ((ev)->_major != CORBA_NO_EXCEPTION ) {
-     fprintf(stderr,"Rethrowing exception...\n");
      return;
    }
 
-   RETHROW_VOID(ev);
-
    SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Made new entry with entryname %s\n",entryname);
+   /*   show_alloc_blocks(stderr);*/
 
    return retval;
 }
@@ -189,3 +200,51 @@ impl_Ensembl_artemis_DB_getallEntryNames(impl_POA_Ensembl_artemis_DB *
 
    return retval;
 }
+
+static Ensembl_artemis_FeatureDefinitionList *
+impl_Ensembl_artemis_DB_getFeatureDefinitionList(impl_POA_Ensembl_artemis_DB *
+						 servant,
+						 CORBA_Environment * ev)
+{
+   Ensembl_artemis_FeatureDefinitionList *retval;
+
+   retval = CORBA_sequence_Ensembl_artemis_FeatureDefinition__alloc();
+   retval->_buffer = CORBA_sequence_Ensembl_artemis_FeatureDefinition_allocbuf(2);
+   retval->_length = 2;
+   retval->_maximum = 2;
+
+   retval->_buffer[0].key = CORBA_string_dup("exon");
+   retval->_buffer[0].qualifiers._buffer = CORBA_sequence_CORBA_string_allocbuf(3);
+   retval->_buffer[0].qualifiers._length = 3;
+   retval->_buffer[0].qualifiers._maximum = 3;
+   retval->_buffer[0].qualifiers._buffer[0] = CORBA_string_dup("created");
+   retval->_buffer[0].qualifiers._buffer[1] = CORBA_string_dup("modified");
+   retval->_buffer[0].qualifiers._buffer[2] = CORBA_string_dup("exon_id");
+
+   retval->_buffer[0].key = CORBA_string_dup("mRNA");
+   retval->_buffer[0].qualifiers._buffer = CORBA_sequence_CORBA_string_allocbuf(1);
+   retval->_buffer[0].qualifiers._length = 1;
+   retval->_buffer[0].qualifiers._maximum = 1;
+   retval->_buffer[0].qualifiers._buffer[0] = CORBA_string_dup("transcript_id");
+
+   return retval;
+}
+
+
+static CORBA_long
+impl_Ensembl_artemis_DB_max_sequence_length(impl_POA_Ensembl_artemis_DB *
+					    servant, CORBA_Environment * ev)
+{
+   CORBA_long retval;
+   retval = ARTEMIS_MAX_SEQLENGTH;
+   return retval;
+}
+
+
+
+
+
+
+
+
+

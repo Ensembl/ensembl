@@ -35,7 +35,7 @@ module Ensembl {
     typedef sequence<string> QualiferDefinitionList;
     struct FeatureDefinition {
       string key;
-      QualiferDefinitionList qualifers;
+      QualiferDefinitionList qualifiers;
     };
     typedef sequence<FeatureDefinition> FeatureDefinitionList;
 
