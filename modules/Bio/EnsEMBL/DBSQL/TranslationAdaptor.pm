@@ -160,6 +160,14 @@ sub store {
 
   my $transl_dbID = $sth->{'mysql_insertid'};
 
+
+  my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
+  #store each of the xrefs for this translation
+  foreach my $dbl ( @{$translation->get_all_DBLinks} ) {
+     $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
+  }
+  
+  
   if (defined($translation->stable_id)) {
     if (!defined($translation->version)) {
       $self->throw("Trying to store incomplete stable id information for translation");
@@ -171,6 +179,7 @@ sub store {
 				       "'" . $translation->stable_id . "'," .
 					 $translation->version . 
 					   ")";
+        
     my $sth = $self->prepare($statement);
     $sth->execute();
    }
