@@ -152,10 +152,10 @@ sub fetch_by_CoordSystems {
 
   if(@mapping_path > 2) {
     throw("Only explicit (1 step) coordinate system mapping is currently\n" .
-          "supported.  Mapping between \n" .
+          "supported.  Mapping between " .
           $cs1->name() . " " . $cs1->version() . " and " .
           $cs2->name() . " " . $cs2->version() .
-          "\nrequires ". (scalar(@mapping_path)-1) . " steps.");
+          " requires ". (scalar(@mapping_path)-1) . " steps.");
   }
 
   $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
