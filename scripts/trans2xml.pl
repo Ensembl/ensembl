@@ -41,10 +41,12 @@ use Getopt::Long;
 
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensdev';
-my $dbuser = 'elia';
+my $dbname = 'ensembl07';
+my $dbuser = 'root';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+my $getall;
+my $usefile;
 my $help;
 
 &GetOptions( 	     
@@ -55,6 +57,8 @@ my $help;
 	     'dbpass:s' => \$dbpass,
 	     'module:s' => \$module,
 	     'h|help'   => \$help,
+	     'getall'   => \$getall,
+	     'usefile'=> \$usefile
 	     );
 
 if ($help) {
@@ -65,7 +69,27 @@ my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$d
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 my $seqio;
 print "<game version=\"1.001\">\n";
-foreach my $clone_id ($db->get_all_Clone_id()) {
+my @clones;
+
+if ($help){
+    exec('perldoc', $0);
+}
+
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clones,$en);
+    }
+}
+elsif ($getall == 1) {
+    @clones=$db->get_all_Clone_id();
+}
+else {
+    @clones = @ARGV;
+}
+
+
+foreach my $clone_id (@clones) {
 print STDERR "\nDumping  clone  $clone_id\n";
     
 #Get clone, and print header for the whole clone
@@ -139,7 +163,7 @@ foreach my $contig ( $clone->get_all_Contigs ) {
 		if ($exon->contig_id eq $contig->id) {
 		    print "         <feature_span id=\"".$exon->id."\">\n";
 		    print "            <type>Exon</type>\n";
-		    print "            <name>".$exon->id."</exon>\n";
+		    print "            <name>".$exon->id."</name>\n";
 		    print "            <version>".$exon->version."</version>\n";
 		    print "            <creation_date>".localtime($exon->created)."</creation_date>\n";
 		    print "            <modification_date>".localtime($exon->modified)."</modification_date>\n";

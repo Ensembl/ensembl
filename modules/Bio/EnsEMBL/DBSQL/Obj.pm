@@ -1860,8 +1860,8 @@ Calling Contig->get_by_Chromosome instead!");
 sub get_all_Clone_id{
    my ($self) = @_;
 
-   $self->warn("Obj->delete_Clone is a deprecated method! 
-Calling Clone->delete instead!");
+   $self->warn("Obj->get_all_Clone_id is a deprecated method! 
+Calling Clone->get_all_id instead!");
    
    my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => 'temp',
 					       -dbobj => $self );
