@@ -659,7 +659,9 @@ sub transform {
     $transcript->transform( \%exon_transforms );
 
     # now adjust the start and end exons in the translation
-    $translation->transform( \%exon_transforms );
+    if( defined $translation ) {
+      $translation->transform( \%exon_transforms );
+    }
   }
 
   # comment in to check the translation after the transformation

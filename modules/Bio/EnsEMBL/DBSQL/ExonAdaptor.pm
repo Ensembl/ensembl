@@ -363,10 +363,6 @@ sub store {
 
   # trap contig_id separately as it is likely to be a common mistake
 
-  if( !defined $exon->contig_id ) {
-      $self->throw("Exon does not have a contig_id set. Needs to have one set");
-  }
-
   my $exon_sql = q{
        INSERT into exon ( exon_id, contig_id, contig_start, contig_end, contig_strand, phase, 
 			  end_phase, sticky_rank)
@@ -382,6 +378,11 @@ sub store {
 
     my @componentExons = $exon->each_component_Exon();
     for my $componentExon ( @componentExons ) {
+
+      if( !defined $componentExon->contig_id ) {
+	$self->throw("Component Exon does not have a contig_id set. Needs to have one set");
+      }
+
       $exonst->execute( $exonId, $componentExon->contig_id,
 			$componentExon->start(),
 			$componentExon->end(),
@@ -397,6 +398,11 @@ sub store {
     }
   } else {
     # normal storing
+
+    if( !defined $exon->contig_id ) {
+      $self->throw("Exon does not have a contig_id set. Needs to have one set");
+    }
+
     $exonst->execute( undef,$exon->contig_id,
 		      $exon->start(),
 		      $exon->end(),

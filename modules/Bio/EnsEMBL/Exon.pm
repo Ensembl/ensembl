@@ -456,10 +456,12 @@ sub _transform_to_rawcontig {
       my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
       $componentExon->contig( $rawContig );
       $componentExon->sticky_rank( $i + 1 );
+      $componentExon->phase( $self->phase );
       $stickyExon->add_component_Exon( $componentExon );
       $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
     }
     $stickyExon->end( $sticky_length );
+    $stickyExon->strand( 1 );
     return $stickyExon;
     
   } else {

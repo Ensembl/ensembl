@@ -537,8 +537,13 @@ sub store {
        $self->throw("Genes must have an analysis object!");
    }
    #print STDERR "storing analysis_object\n";
-   my $analysisId = $self->db->get_AnalysisAdaptor()->store( $gene->analysis );
-
+   my $aA = $self->db->get_AnalysisAdaptor();
+   my $analysisId = $aA->exists( $gene->analysis() );
+   if( defined $analysisId ) {
+     $gene->analysis()->dbID( $analysisId );
+   } else {
+     $analysisId = $self->db->get_AnalysisAdaptor()->store( $gene->analysis );
+   }
 
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");

@@ -53,7 +53,7 @@ use strict;
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeq);
+@ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 # new() is written here 
 
@@ -170,7 +170,8 @@ sub subseq {
   }
 
   if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
-    $self->throw("Incorrect strand information set to call on Slice subseq.");
+#    $self->throw("Incorrect strand information set to call on Slice subseq.");
+    $strand = 1;
   }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
