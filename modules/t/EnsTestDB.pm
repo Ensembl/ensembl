@@ -57,6 +57,7 @@ my $counter=0;
         port
         password
         schema_sql
+        module
         );
     
     sub new {
@@ -70,13 +71,13 @@ my $counter=0;
             'user'          => 'root',
             'port'          => '3306',
             'password'      => undef,
-            'schema_sql'    => '../sql/table.sql',
+            'schema_sql'    => ['../sql/table.sql'],
+            'module'        => 'Bio::EnsEMBL::DBSQL::Obj'
             };
         foreach my $f (keys %$self) {
             confess "Unknown config field: '$f'" unless $known_field{$f};
         }
         bless $self, $pkg;
-
         $self->create_db;
 	
         return $self;
@@ -132,7 +133,7 @@ sub schema_sql {
     my( $self, $value ) = @_;
     
     if ($value) {
-        $self->{'schema_sql'} = $value;
+        push(@{$self->{'schema_sql'}}, $value);
     }
     return $self->{'schema_sql'} || confess "schema_sql not set";
 }
@@ -142,6 +143,12 @@ sub dbname {
 
     $self->{'_dbname'} ||= $self->_create_db_name();
     return $self->{'_dbname'};
+}
+
+sub module {
+    my ($self, $value) = @_;
+    $self->{'module'} = $value if ($value);
+    return $self->{'module'};
 }
 
 sub _create_db_name {
@@ -165,7 +172,7 @@ sub create_db {
     $db->do("CREATE DATABASE $db_name");
     $db->disconnect;
     
-    $self->do_sql_file($self->schema_sql);
+    $self->do_sql_file(@{$self->schema_sql});
 }
 
 sub db_handle {
@@ -192,9 +199,9 @@ sub test_locator {
 }
 
 sub ensembl_locator {
-    my( $self, $module ) = @_;
+    my( $self) = @_;
     
-    $module ||= 'Bio::EnsEMBL::DBSQL::Obj';
+    my $module = $self->module();
     my $locator = '';
     foreach my $meth (qw{ host port dbname user }) {
         my $value = $self->$meth();
@@ -213,25 +220,28 @@ sub get_DBSQL_Obj {
 }
 
 sub do_sql_file {
-    my( $self, $file ) = @_;
-    
-    my $sql = '';
+    my( $self, @files ) = @_;
     local *SQL;
-    open SQL, $file or die "Can't read SQL file '$file' : $!";
-    while (<SQL>) {
-        s/(#|--).*//;       # Remove comments
-        next unless /\S/;   # Skip lines which are all space
-        $sql .= $_;
-        $sql .= ' ';
-    }
-    close SQL;
-    
-    my $dbh = $self->db_handle;
     my $i = 0;
-    foreach my $s (grep /\S/, split /;/, $sql) {
-        $self->validate_sql($s);
-        $dbh->do($s);
-        $i++
+    my $dbh = $self->db_handle;
+    
+    foreach my $file (@files)
+    {
+        my $sql = '';
+        open SQL, $file or die "Can't read SQL file '$file' : $!";
+        while (<SQL>) {
+            s/(#|--).*//;       # Remove comments
+            next unless /\S/;   # Skip lines which are all space
+            $sql .= $_;
+            $sql .= ' ';
+        }
+        close SQL;
+        
+        foreach my $s (grep /\S/, split /;/, $sql) {
+            $self->validate_sql($s);
+            $dbh->do($s);
+            $i++
+        }
     }
     return $i;
 }
@@ -240,9 +250,7 @@ sub validate_sql {
     my ($self, $statement) = @_;
     if ($statement =~ /insert/i)
     {
-        #print STDERR "scanning: $statement \n";
-        $statement =~ s/\n/ /g;
-        #print STDERR "altered: $statement \n";
+        $statement =~ s/\n/ /g; #remove newlines
         die ("INSERT should use explicit column names (-c switch in mysqldump)\n$statement\n")
             unless ($statement =~ /insert.+into.*\(.+\).+values.*\(.+\)/i);
     }
