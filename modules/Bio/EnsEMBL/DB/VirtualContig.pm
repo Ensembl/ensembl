@@ -1515,6 +1515,39 @@ sub _dump_map {
 }
 
 
+=head2 get_all_RawContigs
+
+ Title   : get_all_RawContigs
+ Usage   : $obj->get_all_RawContigs()
+ Function: 
+ Example : 
+ Returns : array of raw contigs sorted by starting position in vc
+ Args    : 
+
+
+=cut
+
+sub get_all_RawContigs {
+
+    my ($self) = @_;
+    my @contigs = ();
+
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
+    }
+
+    my @ids = keys %{$self->{'contighash'}};
+    @ids = sort { $self->{'start'}->{$a} <=> $self->{'start'}->{$b} } @ids;
+
+    foreach my $cid ( @ids ) {
+        push(@contigs, $self->{'contighash'}->{$cid});
+    }
+
+    return (@contigs);
+}
+
+
+
 =head2 _focus_contig
 
  Title   : _focus_contig
