@@ -389,6 +389,73 @@ sub subseq {
 
 
 
+=head2 get_base_count
+
+  Arg [1]    : none
+  Example    : $c_count = $slice->get_base_count->{'c'};
+  Description: Retrieves a hashref containing the counts of each bases in the
+               sequence spanned by this slice.  The format of the hash is :
+               { 'a' => num,
+                 'c' => num,
+                 't' => num,
+                 'g' => num,
+                 'n' => num,
+                 '%gc' => num }
+               
+               All bases which are not in the set [A,a,C,c,T,t,G,g] are 
+               included in the 'n' count.  The 'n' count could therefore be
+               inclusive of ambiguity codes such as 'y'.
+               The %gc is the ratio of GC to AT content as in:
+               total(GC)/total(ACTG) * 100
+               This function is conservative in its memory usage and scales to
+               work for entire chromosomes.
+  Returntype : hashref
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_base_count {
+  my $self = shift;
+
+  my $a = 0; my $c = 0; my $t = 0; my $g = 0;
+
+  my $start = 1;
+  my $end;
+  my $RANGE = 100_000;
+  my $len = $self->length;
+  my $seq;
+
+  while($start <= $len) {
+    $end = $start + $RANGE - 1;
+
+    $end = $len if($end > $len);
+
+    $seq = $self->subseq($start, $end);
+    
+    $a += $seq =~ tr/Aa/Aa/;
+    $c += $seq =~ tr/Cc/Cc/;
+    $t += $seq =~ tr/Tt/Tt/;
+    $g += $seq =~ tr/Gg/Gg/;
+
+    $start = $end + 1;
+  }  
+
+  my $gc_content = 0;
+  if($a || $g || $c || $t) {  #avoid divide by 0
+    $gc_content = sprintf( "%1.2f", (($g + $c)/($a + $g + $t + $c)) * 100);
+  }
+
+  return {'a' => $a,
+	  'c' => $c,
+	  't' => $t,
+	  'g' => $g,
+	  'n' => $len - $a - $c - $t - $g,
+	  '%gc' => $gc_content};
+}
+
+
+
 =head2 get_all_PredictionTranscripts
 
   Arg [1]    : (optional) string $logic_name
