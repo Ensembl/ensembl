@@ -501,29 +501,35 @@ sub _parse_features {
     
   my $string;
 
-  #determine start of the alignment on source sequence    
+  # Use strandedness info of query and hit to make sure both sets of start and end 
+  # coordinates are oriented the right way around.
   my $f1start;
   my $f1end;
-  if ( $strand == 1 ) {
+  my $f2end;
+  my $f2start;
+
+  if($strand == 1 && $hstrand == 1){
     $f1start = $f[0]->start;
-    $f1end   = $f[$#f]->end;
-  } else {
-    $f1end   = $f[0]->end;
-    $f1start = $f[$#f]->start;
+    $f1end = $f[-1]->end;
+    $f2start = $f[0]->start;
+    $f2end = $f[-1]->end;
+  }elsif($strand == -1 && $hstrand == -1){
+    $f1start = $f[-1]->start;
+    $f1end = $f[0]->end;
+    $f2start = $f[-1]->start;
+    $f2end = $f[0]->end;
+  }elsif($strand == 1 && $hstrand == -1){
+    $f1start = $f[0]->start;
+    $f1end = $f[-1]->end;
+    $f2start = $f[0]->start;
+    $f2end = $f[-1]->end;
+  }elsif($strand == -1 && $hstrand == 1){
+    $f1start = $f[-1]->start;
+    $f1end = $f[0]->end;
+    $f2start = $f[-1]->start;
+    $f2end = $f[0]->end;
   }
 
-  #determine start of alignment on hit sequence    
-  my $f2start;
-  my $f2end;
-  if ( $hstrand == 1 ) {
-   # print STDERR "hstrand forward \n" if($verbose);
-    $f2start = $f[0]->hstart;
-    $f2end   = $f[$#f]->hend;
-  } else {
-    # print STDERR "hstrand reverse \n" if($verbose);
-    $f2end = $f[0]->hend;
-    $f2start = $f[$#f]->hstart;
-  }
     
   #
   # Loop through each portion of alignment and construct cigar string
@@ -976,9 +982,5 @@ sub _transform_feature_to_rawcontig{
   return @out;
 
 }
-
-
-
-
 
 1;
