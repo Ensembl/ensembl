@@ -1,0 +1,78 @@
+
+#
+# Ensembl module for Bio::EnsEMBL::SimpleFeature
+#
+# Cared for by Ewan Birney <birney@ebi.ac.uk>
+#
+# Copyright Ewan Birney
+#
+# You may distribute this module under the same terms as perl itself
+
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::EnsEMBL::SimpleFeature - DESCRIPTION of Object
+
+=head1 SYNOPSIS
+
+Give standard usage here
+
+=head1 DESCRIPTION
+
+Describe the object here
+
+=head1 AUTHOR - Ewan Birney
+
+This modules is part of the Ensembl project http://www.ensembl.org
+
+Email birney@ebi.ac.uk
+
+Describe contact details here
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+
+=cut
+
+
+# Let the code begin...
+
+
+package Bio::EnsEMBL::SimpleFeature;
+use vars qw(@ISA);
+use strict;
+
+# Object preamble - inherits from Bio::Root::RootI
+
+use Bio::EnsEMBL::SeqFeature;
+
+@ISA = qw(Bio::EnsEMBL::SeqFeature);
+
+# new() is inherieted from SeqFeature
+
+
+=head2 display_text
+
+ Title   : display_text
+ Usage   : $obj->display_text($newval)
+ Function: 
+ Example : 
+ Returns : value of display_text
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub display_text{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'display_text'} = $value;
+    }
+    return $self->{'display_text'};
+
+}
+
+
+1;
