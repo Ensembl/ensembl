@@ -36,9 +36,9 @@ sequence.
   # construct an attribute object from a SeqEdit and add it to a translation
 
   $seq_edit = Bio::EnsEMBL::SeqEdit->new
-    (-CODE    => '_selenocystein',
-     -NAME    => 'Selenocystein',
-     -DESC    => 'Selenocystein',
+    (-CODE    => '_selenocysteine',
+     -NAME    => 'Selenocysteine',
+     -DESC    => 'Selenocysteine',
      -START   => 10,
      -END     => 10,
      -ALT_SEQ => 'U');
@@ -52,7 +52,7 @@ sequence.
 This is a class used to represent post transcriptional
 modifications to sequences.  SeqEdit objects are stored as
 ordinary Bio::EnsEMBL::Attributes with a parseable value and can be
- used to represent RNA editing, selenocysteins etc.
+ used to represent RNA editing, selenocysteines etc.
 
 Also see B<Bio::EnsEMBL::Attribute>
 
@@ -97,10 +97,9 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
                               -ALT_SEQ => 'ACG',
                               -CODE    => '_rna_edit',
                               -NAME    => 'RNA Edit',
-                              -DESCRIPTION => 'RNA edit',
-                              -VALUE   => '10 12 ACG');
+                              -DESCRIPTION => 'RNA edit');
   Description: Constructs a SeqEdit representing a single edit to a
-               sequence, such as an rna modification or a selenocystein.
+               sequence, such as an rna modification or a selenocysteine.
   Returntype : Bio::EnsEMBL::SeqEdit
   Exceptions : none
   Caller     : general
