@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..24\n"; 
+BEGIN { $| = 1; print "1..32\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -349,8 +349,46 @@ if( !defined $gene ) {
 }
 
 
-       
+my $vc = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',1,380);
+print "ok 25\n";
 
+if( $vc->length eq length($vc->seq) && $vc->length == 380) {
+    print "ok 26\n";
+} else {
+    print "not ok 26\n";
+}
+
+
+
+my $vc = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',250,350);
+
+print "ok 27\n";
+
+if( $vc->length eq length($vc->seq) && $vc->length == 101) {
+    print "ok 28\n";
+} else {
+    print "not ok 28\n";
+}
+
+my $vc = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',250,260);
+
+print "ok 29\n";
+
+if( $vc->length eq length($vc->seq) && $vc->length == 11) {
+    print "ok 30\n";
+} else {
+    print "not ok 30\n";
+}
+
+
+my $vc = $stadaptor->fetch_VirtualContig_by_clone('pog',200);
+
+print "ok 31\n";
+
+
+my $vc = $stadaptor->fetch_VirtualContig_by_contig('contig2',200);
+
+print "ok 32\n";
 
 
 

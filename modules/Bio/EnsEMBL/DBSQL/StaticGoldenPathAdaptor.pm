@@ -154,6 +154,146 @@ sub fetch_RawContigs_by_chr_name{
 }
 
 
+
+=head2 fetch_RawContigs_by_chr_start_end
+
+ Title   : fetch_RawContigs_by_chr_start_end
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_RawContigs_by_chr_start_end{
+   my ($self,$chr,$start,$end) = @_;
+
+
+   my $type = $self->dbobj->static_golden_path_type();
+   
+   # very annoying. DB obj wont make contigs by internalid. doh!
+   my $sth = $self->dbobj->prepare("select c.id from static_golden_path st,contig c where c.internal_id = st.raw_id AND st.chr_name = '$chr' AND  st.type = '$type' AND st.chr_end > $start AND st.chr_start < $end ORDER BY st.fpcctg_start");
+
+   $sth->execute;
+   my @out;
+   my $cid;
+   while( ( my $cid = $sth->fetchrow_arrayref) ) {
+       my $rc = $self->dbobj->get_Contig($cid->[0]);
+       push(@out,$rc);
+   }
+
+   return @out;
+   
+
+}
+
+=head2 fetch_VirtualContig_by_chr_start_end
+
+ Title   : fetch_VirtualContig_by_chr_start_end
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_VirtualContig_by_chr_start_end{
+   my ($self,$chr,$start,$end) = @_;
+
+   if( !defined $end ) {
+       $self->throw("must provide chr, start and end");
+   }
+
+   if( $start > $end ) {
+       $self->throw("start must be less than end");
+   }
+
+   
+   my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+
+   
+   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+
+   $vc->_chr_name($chr);
+   return $vc;
+}
+
+=head2 fetch_VirtualContig_by_clone
+
+ Title   : fetch_VirtualContig_by_clone
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012',40000);
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_VirtualContig_by_clone{
+   my ($self,$clone,$size) = @_;
+
+   if( !defined $size ) {
+       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c,clone cl where cl.id = '$clone' AND cl.internal_id = c.clone AND c.internal_id = st.raw_id AND st.type = '$type' ORDER BY st.fpcctg_start");
+   $sth->execute();
+   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+   if( !defined $contig ) {
+       $self->throw("Clone is not on the golden path. Cannot build VC");
+   }
+
+
+   my $halfsize = int($size/2);
+   if( $start > $size/2 ) {       
+       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
+   } else {
+       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
+   }
+}
+
+=head2 fetch_VirtualContig_by_contig
+
+ Title   : fetch_VirtualContig_by_contig
+ Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_VirtualContig_by_contig{
+   my ($self,$contigid,$size) = @_;
+
+   if( !defined $size ) {
+       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+   }
+
+   my $type = $self->dbobj->static_golden_path_type();
+
+   my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.id = '$contigid' AND c.internal_id = st.raw_id AND st.type = '$type'");
+   $sth->execute();
+   my ($contig,$start,$chr_name) = $sth->fetchrow_array;
+
+   my $halfsize = int($size/2);
+   if( $start > $size/2 ) {       
+       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,$start-$halfsize,$start+$size-$halfsize);
+   } else {
+       return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
+   }
+}
+
+
 =head2 fetch_VirtualContig_by_fpc_name
 
  Title   : fetch_VirtualContig_by_fpc_name

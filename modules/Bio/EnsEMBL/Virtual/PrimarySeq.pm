@@ -165,10 +165,38 @@ sub subseq{
    if( $end > $self->length ) {
        $self->throw("Cannot ask for more than length of sequence $end vs".$self->length);
    }
+
+
+   # I have no doubt that there is an easier way of writing this.
+   # believe me, I *thought* this was the easier way of writing this.
+   # remember that everything can be reversed as well. ;)
+
+   # cases to worry about are
+
+   # starting conditons:
+   # start-end in one contig (optimise this for fast retrieval), return
+   # start-end in gap, return 
+   # all-gap virtual contigs, return 
+   # start in gap, end in first contig, return
+   # start in contig, end in first gap, return
+   # start in gap, end further way - going into main loop
+
+   # main loop adds gap and contig pieces
+
+   # end conditions:
+   # end in gap before last contig
+   # end in contig
+   # end in gap after last contig
+
        
    my @mapcontigs=$self->_vmap->each_MapContig();
 
    my $start_contig=shift(@mapcontigs);
+
+   if( !defined $start_contig ) {
+       # all gap contig!
+       return 'N' x ($end - $start +1);
+   }
 
    while ($start_contig->end < $start) {
        $start_contig = shift(@mapcontigs);
@@ -209,7 +237,7 @@ sub subseq{
 
        # of course, end could be in this contig. Bugger.
        if( $end <= $start_contig->end ) {
-	   print STDERR "start in gap before: end in contig\n";
+	   #print STDERR "start in gap before: end in contig\n";
 
 	   if( $start_contig->orientation == 1 ) {
 	       $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start,$start_contig->rawcontig_start + ($end - $start_contig->start));
