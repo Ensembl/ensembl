@@ -233,7 +233,7 @@ foreach my $seg (@projection) {
 my $csa = $db->get_CoordSystemAdaptor();
 my $cs  = $csa->fetch_by_name('contig');
 
-$multi->save('core', 'seq_region', 'dna');
+$multi->save('core', 'seq_region', 'dna', 'dnac');
 
 my $len = 50;
 my $name = 'testregion';
@@ -281,4 +281,4 @@ $slice = $slice_adaptor->fetch_by_region('chromosome', $name);
 ok($slice->length eq $len);
 ok($slice->seq_region_name eq $name);
 
-$multi->restore('core', 'seq_region', 'dna');
+$multi->restore('core', 'seq_region', 'dna', 'dnac');
