@@ -871,7 +871,7 @@ sub get_repeatmasked_seq {
     my $masked_dna = $self->mask_features($dna, @repeats);
     my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
                                              '-display_id' => $self->id,
-                                             -primary_id => $self->internal_id,
+                                             '-primary_id' => $self->internal_id,
                                              '-moltype' => 'dna',
 					     );
     return $masked_seq;
@@ -961,9 +961,8 @@ sub get_gc_content {
 
    my $perc_gc = ((($num_g+$num_c)/($seq_length-$num_n))*100);
 
-   my $perc_gc = int($perc_gc+0.5);
+   $perc_gc = int($perc_gc+0.5);
    return $perc_gc;
-
 }   
 
     

@@ -523,7 +523,7 @@ if (!defined $Mb){$Mb=1000000;}
 
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
+   $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
 
@@ -620,7 +620,7 @@ if (!defined $Mb){$Mb=1000000;}
 
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
+   $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
 

@@ -530,8 +530,8 @@ sub _getMissedGene {
         }
     }
 
-    my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare(@$array1);
-    my $missed = 0;
+    $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare(@$array1);
+    $missed = 0;
     # Initialise _missedGenes to empty array
     $self->{'_other_missedGeneObjects'} = [];
     
