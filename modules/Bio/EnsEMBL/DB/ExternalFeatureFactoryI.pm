@@ -216,7 +216,7 @@ sub get_Ensembl_SeqFeatures_clone{
 sub get_Ensembl_Genes_clone {
     my $self = @_;
 
-    # silently fail if gets here.
+    return;
 }
 
 =head2 get_SeqFeature_by_id
