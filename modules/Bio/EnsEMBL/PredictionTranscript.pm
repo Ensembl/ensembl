@@ -301,7 +301,7 @@ sub add_Exon {
 		       $exon->start() < $self->{'start'})) {
     $self->start($exon->start());
   }
-  if(defined $exon && (!defined $self->{'exon'} ||
+  if(defined $exon && (!defined $self->{'end'} ||
 		       $exon->end() > $self->{'end'})) {
     $self->end($exon->end());
   }
