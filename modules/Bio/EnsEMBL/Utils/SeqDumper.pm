@@ -859,19 +859,14 @@ sub dump_fasta {
   my $slice = shift;
   my $FH   = shift;
 
-  my $species;
-  my $spec = $slice->adaptor->db->get_MetaContainer->get_Species();
-  if($spec) {
-    $species = $spec->binomial();
-  } else {
-    $species = '';
-  }
-  
-  my $name = $slice->name;
+  my $id       = $slice->seq_region_name;
+  my $seqtype  = 'dna';
+  my $idtype   = $slice->coord_system->name;
+  my $location = $slice->name;
   my $start = 1;
   my $end = $slice->length();
 
-  my $header = ">$species|$name\n";
+  my $header = ">$id $seqtype:$idtype $location\n";
   print $FH $header;
 
   #set the formatting to FASTA
