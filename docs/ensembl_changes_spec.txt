@@ -31,9 +31,9 @@ SCHEMA MODIFICATIONS
 Proposed New/Modified Tables:
 -----------------------------
 
-  dnafrag
+  seq_region
   -------
-  dnafrag_id  int
+  seq_region_id  int
   name        varchar
   type        varchar (or maybe enum)
   length      int
@@ -41,14 +41,14 @@ Proposed New/Modified Tables:
 
   dna
   ---
-  dnafrag_id  int
+  seq_region_id  int
   sequence    varchar
 
 
   assembly
   --------
-  dnafrag_id_assembled  int
-  dnafrag_id_component  int
+  seq_region_id_assembled  int
+  seq_region_id_component  int
   component_start       int
   component_end         int
   assembled_start       int
@@ -58,15 +58,15 @@ Proposed New/Modified Tables:
   gene
   ----
   For faster retrieval and retrieval independently of transcripts and 
-  exons genes will also have a dnafrag_id, dnafrag_start and dnafrag_end.
+  exons genes will also have a seq_region_id, seq_region_start and seq_region_end.
   
   gene_id          int
   type             varchar
   analysis_id      int
-  dnafrag_id       int
-  dnafrag_start    int
-  dnafrag_end      int
-  dnafrag_strand   int (or enum?)
+  seq_region_id       int
+  seq_region_start    int
+  seq_region_end      int
+  seq_region_strand   int (or enum?)
   transcript_count   - (is this necessary? - probably can go)
   display_xref_id
 
@@ -74,7 +74,7 @@ Proposed New/Modified Tables:
   transcript
   ----------
   For faster retrieval and retrieval independently of genes and exons
-  transcripts will also have a dnafrag_id, dnafrag_start and dnafrag_end.
+  transcripts will also have a seq_region_id, seq_region_start and seq_region_end.
   The translation_id will be removed, translations will point to transcripts
   instead (and pseudogenes will have no translation).  Prediction transcripts 
   will now be stored as normal transcripts without genes.  In order to 
@@ -86,10 +86,10 @@ Proposed New/Modified Tables:
   transcript_id    int
   gene_id          int (NULLABLE)
   exon_count       int   - (is this necessary?)
-  dnafrag_id       int
-  dnafrag_start    int
-  dnafrag_end      int
-  dnafrag_strand   int (or enum?)
+  seq_region_id       int
+  seq_region_start    int
+  seq_region_end      int
+  seq_region_strand   int (or enum?)
   display_xref_id  int
   analysis_id      int
 
@@ -112,8 +112,8 @@ Proposed New/Modified Tables:
 
   all feature tables
   ------------------
-  All feature tables would now have dnafrag_id, dnafrag_start, dnafrag_end,
-  dnafrag_strand instead of contig_id, contig_start, contig_end
+  All feature tables would now have seq_region_id, seq_region_start, seq_region_end,
+  seq_region_strand instead of contig_id, contig_start, contig_end
   This includes the repeat_feature, simple_feature, dna_align_feature,
   protein_align_feature, exon, marker_feature,
   and qtl_feature tables.
@@ -131,14 +131,14 @@ Removed Tables
 
   contig
   ------
-  Contigs are no longer needed.  They are stored as entries in the dnafrag
+  Contigs are no longer needed.  They are stored as entries in the seq_region
   table with type 'contig'.  The embl_offset and clone_id will not be
   necessary as their relationship to clones can be described by the 
   assembly table.
 
   clone
   -----
-  Clones are no longer needed.  Clones are stored as entries in the dnafrag 
+  Clones are no longer needed.  Clones are stored as entries in the seq_region 
   table with type 'clone'.  The htg_phase, created and modified timestamps will
   be discarded as they are no longer maintained anyway.  The embl_acc, version,
   and embl_version columns are redundant and will also be discarded.  Versions
@@ -147,7 +147,7 @@ Removed Tables
   chromosome
   ----------
   This table is no longer needed.  Chromosomes can be stored in the 
-  dnafrag table with type 'chromosome'.
+  seq_region table with type 'chromosome'.
 
 
 META INFORMATION
@@ -160,16 +160,16 @@ or it may be better to create a meta_assembly table that is more specific.
 
 This includes the following:
 
-  The dnafrag type (coordinate system) that every type of feature is stored
+  The seq_region type (coordinate system) that every type of feature is stored
   in.  This may be based on either logic_names, or upon table names.
 
-  The top-level dnafrag type (coordinate system). For human
+  The top-level seq_region type (coordinate system). For human
   this would be 'chromosome'.  For briggsae this may be something like
   'scaffold' or 'super contig'.  This information would be used to construct
   the web display and would possible be the default coordinate system when 
   a coordinate system is unspecified by a user.
 
-  The sequence dnafrag type.  This describes the dna frag type (coordinate 
+  The sequence seq_region type.  This describes the dna frag type (coordinate 
   system) at which the sequence is stored at.  For example in human this would 
   be at the contig or clone level.  
 
@@ -200,7 +200,7 @@ Slice
   A new slice method 'coord_system' will be added and will denote the type
   of dna_frag the slice is built on.
 
-  Slices will represent a region on a dnafrag as opposed to a region on a
+  Slices will represent a region on a seq_region as opposed to a region on a
   chromosome.  Slices will be immutable (i.e. their attributes will not be
   changeable).  A new slice will have to be created if the attributes are to
   be changed.
@@ -293,7 +293,7 @@ Chromosome
 ----------
   The Chromosome object is no longer necessary in the new system.  The
   Chromosome is replaced by Slices with coord_system = 'chromosome' (or
-  whatever the top level dnafrag type is for that species).  For backwards
+  whatever the top level seq_region type is for that species).  For backwards
   compatibility a minimal implementation can remain which inherits from the
   Slice object.  Statistical information (e.g. known genes, genes, snps) that 
   was on chromosomes should be possible to calculate directly from the 
@@ -606,13 +606,13 @@ Haplotypes (and the MHC region)
 
       assembly_exception
       ------------------   
-      dnafrag_id        int
-      dnafrag_start     int
-      dnafrag_end       int
+      seq_region_id        int
+      seq_region_start     int
+      seq_region_end       int
       exc_type          enum('HP', 'PAR')
-      exc_dnafrag_id    int
-      exc_dnafrag_start int
-      exc_dnafrag_end   int
+      exc_seq_region_id    int
+      exc_seq_region_start int
+      exc_seq_region_end   int
       ori               int  (may not be needed, may implicitly be 1)
      
     It is possible to retrieve a slice on a haplotype just as any other slice
@@ -703,10 +703,10 @@ TBD
 Circular Chromosomes
 --------------------
   We can handle circular chromosomes (or any arbitrary circular sequence) in
-  a similar way the the haplotypes.  The dnafrag for the circular sequence can
+  a similar way the the haplotypes.  The seq_region for the circular sequence can
   have a flag set which indicates that it is circular.  The slice would have
   an additional method is_type('circular') which would return true if the
-  slice was on a circular dnafrag.  The following is the algorithm for 
+  slice was on a circular seq_region.  The following is the algorithm for 
   retrieval of features on a circular slice:
      (a) Split the slice into 3 regions: 
          (1)     slice_start -> 0, 
