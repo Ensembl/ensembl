@@ -296,10 +296,24 @@ sub _build_gene{
 	$hack=1;
     }
     if($hack){
-	# HACK - not going to group transcripts into genes in this case
-	$product_tag="$clone_id.$$rtranscounter";
-	$gene_id=$product_tag;
-	$$rtranscounter++;
+	# see if we can derive a transcript from the gene_id (if its been set)
+	if($gene_tag){
+	    my $inc=1;
+	    {
+		$product_tag=$gene_tag.".$inc";
+		if($$rhtranscripts{$product_tag}){
+		    $inc++;
+		    redo;
+		}
+		print "created product tag from gene_tag \"$product_tag\"\n";
+	    }
+	}else{
+	    # HACK - not going to group transcripts into genes in this case
+	    $product_tag="$clone_id.$$rtranscounter";
+	    $gene_id=$product_tag;
+	    $$rtranscounter++;
+	    print "created product tag from accession and counter \"$product_tag\"\n";
+	}
     }
 
     # set gene_tag to gene_id if not set
@@ -406,7 +420,16 @@ sub _build_gene{
 	$trans=Bio::EnsEMBL::Transcript->new();
 	# get unique id
 	if($$rhtranscripts{$product_tag}){
-	    $self->throw("transcriptID not unique: \"$product_tag\"");
+	    my $inc='a';
+	    {
+		my $product_tag2=$product_tag.$inc;
+		if($$rhtranscripts{$product_tag2}){
+		    $inc++;
+		    redo;
+		}
+		print STDERR "transcriptID not unique: \"$product_tag\" - using \"$product_tag2\"\n";
+		$product_tag=$product_tag2;
+	    }
 	}
 	$trans->id($product_tag);
 	$$rhtranscripts{$product_tag}=$trans;
@@ -456,7 +479,16 @@ sub _build_gene{
 	# add this transcript to gene, or create new gene
 	if(!$flag_existing_exon){
 	    if($$rhgenes{$gene_id}){
-		$self->throw("gene $gene_id exists, but no exon overlap");
+		my $inc='a';
+		{
+		    my $gene_id2=$gene_id.$inc;
+		    if($$rhgenes{$gene_id2}){
+			$inc++;
+			redo;
+		    }
+		    print STDERR "gene $gene_id exists, but no exon overlap - using $gene_id2\n";
+		    $gene_id=$gene_id2;
+		}
 	    }
 	    $gene=Bio::EnsEMBL::Gene->new();
 	    $gene->id($gene_id);
