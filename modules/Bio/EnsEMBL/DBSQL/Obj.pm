@@ -344,7 +344,7 @@ sub get_clone_Gene {
 
     my $gene = $self->get_Gene($id);
     
-	print "We are getting $id<p><p>\n";
+#	print "We are getting $id<p><p>\n";
 
     my %contig;
     
