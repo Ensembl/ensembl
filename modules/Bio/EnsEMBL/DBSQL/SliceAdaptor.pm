@@ -803,6 +803,12 @@ sub fetch_by_Feature{
     }
   }
 
+## Size may be stored as a %age of the length of the feature
+## Size = 100% gives no context
+## Size = 200% gives context - 50% the size of the feature either side of feature
+
+  $size = int( ($1-100)/200 * ($fend-$fstart+1) ) if( $size =~/([\d+\.]+)%/ );
+
   #return a new slice covering the region of the feature
   return Bio::EnsEMBL::Slice->new(-seq_region_name => $slice->seq_region_name,
                                   -coord_system    => $slice->coord_system,
