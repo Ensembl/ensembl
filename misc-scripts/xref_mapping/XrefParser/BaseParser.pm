@@ -67,7 +67,7 @@ sub run {
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
 	  $source_sql . $species_sql .
 	  "ORDER BY s.ordered";
-print $sql . "\n";
+  #print $sql . "\n";
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
