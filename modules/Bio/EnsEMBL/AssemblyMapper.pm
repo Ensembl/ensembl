@@ -259,8 +259,11 @@ sub register_region {
       $self->throw("Expecting integer for chromosome end, but got '$end'");
    }
 
- 
-   $self->adaptor->register_region($self, $self->_type, $chr_name, $start, $end);
+   my $first_chunk = int( $start / $self->_chunksize() );
+   my $last_chunk = int( $end / $self->_chunksize() );
+   
+   $self->_chunk_register_region( $chr_name, $first_chunk, $last_chunk );
+#   $self->adaptor->register_region($self, $self->_type, $chr_name, $start, $end);
 }
 
 
@@ -301,6 +304,7 @@ sub register_region_around_contig {
       $self->throw("Expecting integer for 3 prime extension, but got '$right'");
    }
 
+   
    $self->adaptor->register_region_around_contig($self, $self->_type, $contig_id, $left, $right);
 }
 
@@ -421,6 +425,29 @@ sub adaptor {
 
 }
 
+
+# this function should be customized for the assemblies that are in 
+# EnsEMBL. (Could be a hash of assembly_type ->size )
+sub _chunksize {
+  return 1000000;
+}
+
+sub _chunk_register_region {
+  my ( $self, $chr_name, $first_chunk, $last_chunk ) = @_;
+
+  for( my $i = $first_chunk; $i <= $last_chunk; $i++ ) {
+    if( exists $self->{$chr_name}{$i} ) {
+      next;
+    } else {
+      $self->{$chr_name}{$i} = 1;
+      my $start = $i * $self->_chunksize();
+      my $end = $start + $self->_chunksize() - 1;
+      $self->adaptor->register_region
+	( $self, $self->_type, $chr_name, $start, $end);
+      
+    }
+  }
+}
 
 
 
