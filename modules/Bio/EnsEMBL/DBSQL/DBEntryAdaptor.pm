@@ -42,13 +42,11 @@ sub fetch_by_dbID {
   
   my $sth = $self->prepare( "
     SELECT Xref.xrefId, Xref.dbprimary_id,
-           Xref.version, desc.description,
+           Xref.version, Xref.description,
            exDB.db_name, exDB.release,
            exDB.url_pattern
       FROM Xref, externalDB exDB
-     LEFT JOIN  externalDescription desc,
      WHERE Xref.xrefId = $dbID
-       AND desc.xrefId = $dbID
        AND Xref.externalDBId = exDb.externalDBId 
    " );
 
@@ -92,51 +90,117 @@ sub fetch_by_dbID {
 
 
 sub store {
-  my ( $self, $exObj ) = @_;
+  my ( $self, $exObj, $ensObject, $ensType ) = @_;
 
-  $self->throw( "Sorry, store not yet supported" );
-  
+  # $self->throw( "Sorry, store not yet supported" );
+  my $dbUnknown;
+
   # check if db exists
   # urlPattern dbname release
-#   my $sth = $self->prepare( "
-#     SELECT externalDBId
-#       FROM externalDB
-#      WHERE db_name = ?
-#        AND release = ?
-#    " );
-#   $sth->execute( $exObj->dbname(), $exObj->release() );
+  my $sth = $self->prepare( "
+     SELECT externalDBId
+       FROM externalDB
+      WHERE db_name = ?
+        AND release = ?
+    " );
+  $sth->execute( $exObj->dbname(), $exObj->release() );
 
-#   if( my ($dbRef) =  $sth->fetchrow_array() ) {
-#   } else {
-#     # store it, get dbID for that
-#     $sth->prepare( "
-#       INSERT INTO externalDB 
-#       SET db_name = ?,
-#           release = ?,
-#           url_pattern = ?
-#     " );
-#     $sth->execute( $exObj->dbname(), $exObj->release(),
-# 		   $exObj->url_pattern() );
+  my $dbRef;
+
+  if(  ($dbRef) =  $sth->fetchrow_array() ) {
     
-#     $dbUnknown = 1;
-#   }
+  } else {
+    # store it, get dbID for that
+    $sth = $self->prepare( "
+       INSERT INTO externalDB 
+       SET db_name = ?,
+           release = ?,
+           url_pattern = ?
+     " );
+    $sth->execute( $exObj->dbname(), $exObj->release(),
+ 		   $exObj->url_pattern() );
+    
+    $dbUnknown = 1;
+    $sth = $self->prepare( "
+       SELECT LAST_INSERT_ID()
+     " );
+    $sth->execute();
+    ( $dbRef ) = $sth->fetchrow_array();
+    if( ! defined $dbRef ) {
+      $self->throw( "Database entry failed." );
+    }
+  }
 
-#   if( $dbUnknown ) {
-#     # dont check for existence
-#   }
+  my $dbX;
+  
+  if( ! $dbUnknown ) {
+    $sth = $self->prepare( "
+       SELECT xrefId
+         FROM Xref
+        WHERE externalDBId = ?
+          AND dbprimary_id = ?
+          AND version = ?
+     " );
+    $sth->execute( $dbRef, $exObj->primary_id(), 
+		   $exObj->version() );
+    ( $dbX ) = $sth->fetchrow_array();
+  } else {
+    # dont check for existence
+  }
 
-#   $sth = $self->prepare( "
-#     SELECT
-#       FROM
-#      WHERE
-#   " );
+  if( ! defined $dbX ) {
 
+    $sth = $self->prepare( "
+      INSERT INTO Xref 
+       SET dbprimary_id = ?,
+           version = ?,
+           description = ?,
+           externalDBId = $dbRef
+     " );
+    $sth->execute( $exObj->primary_id(), $exObj->version(),
+		   $exObj->description());
 
+    $sth = $self->prepare( "
+      SELECT LAST_INSERT_ID()
+    " );
+    $sth->execute();
+    ( $dbX ) = $sth->fetchrow_array();
+
+    # synonyms
+
+    my @synonyms = $exObj->get_synonyms();
+    foreach my $syn ( @synonyms ) {
+      $sth = $self->prepare( "
+        INSERT INTO externalSynonym
+         SET xrefId = $dbX,
+            synonym = '$syn'
+      " );
+      $sth->execute();
+    }
+  }
+  
+  $sth = $self->prepare( "
+   INSERT INTO objectXref
+     SET xrefId = $dbX,
+         ensembl_object_type = ?,
+         ensembl_id = ?
+  " );
+  $sth->execute( $ensType, $ensObject );
+
+  $exObj->dbID( $dbX );
+  $exObj->adaptor( $self );
+
+  return $dbX;
 }
 
 sub fetch_by_gene {
   my ( $self, $geneId ) = @_;
   return $self->_fetch_by_EnsObject_type( $geneId, 'Gene' );
+}
+
+sub fetch_by_rawContig {
+  my ( $self, $rawContigId ) = @_;
+  return $self->_fetch_by_EnsObject_type( $rawContigId, 'RawContig' );
 }
 
 sub fetch_by_transcript {
@@ -156,16 +220,14 @@ sub _fetch_by_EnsObject_type {
 
   my $sth = $self->prepare( "
     SELECT Xref.xrefId, Xref.dbprimary_id,
-           Xref.version, desc.description,
+           Xref.version, Xref.description,
            exDB.db_name, exDB.release,
            exDB.url_pattern
-      FROM Xref, externalDB exDB, ObjectXref oxr 
-     LEFT JOIN  externalDescription desc,
+      FROM Xref, externalDB exDB, objectXref oxr 
      WHERE Xref.xrefId = oxr.xrefId
-       AND desc.xrefId = oxr.xrefId
-       AND Xref.externalDBId = exDb.externalDBId 
-       AND oxr.ensembl_id = $ensObj
-       AND oxrensembl_object_type = $ensType
+       AND Xref.externalDBId = exDB.externalDBId 
+       AND oxr.ensembl_id = '$ensObj'
+       AND oxr.ensembl_object_type = '$ensType'
    " );
 
   $sth->execute();
@@ -230,17 +292,11 @@ sub create_tables {
          externalDBId int not null,
          dbprimary_id VARCHAR(40) not null,
          version VARCHAR(10),
+	 description VARCHAR(255),
          PRIMARY KEY( xrefId ),
          KEY idIdx( dbprimary_id ))
    } );
 
-  $sth->execute();
-  $sth = $self->prepare( qq{
-     CREATE TABLE externalDescription(
-         xrefId INT not null,
-         description VARCHAR(256) not null,
-         PRIMARY KEY( xrefId ) )
-   } );
   $sth->execute();
 
   $sth = $self->prepare( qq{
@@ -257,7 +313,7 @@ sub create_tables {
          externalDBId INT not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40),
-         url_pattern VARCHAR(256),
+         url_pattern VARCHAR(255),
          PRIMARY KEY( externalDBId ) ) 
    } );
   $sth->execute();
