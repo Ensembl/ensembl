@@ -119,21 +119,19 @@ INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_dat
 # --------------------------------------------------------------------------------
 # RefSeq - release/ and cumulative/ directories, for protein and mRNA
 # release/protein
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian1.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian2.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian3.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian4.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian5.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian6.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian7.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian8.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian9.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian10.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian11.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian12.protein.faa.gz', '', now(), now(), "RefSeqParser");
-#INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian13.protein.faa.gz', '', now(), now(), "RefSeqParser");
-
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian1.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian2.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian3.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian4.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian5.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian6.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian7.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian8.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian9.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian10.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian11.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian12.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian13.protein.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 
 # release/rna
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian1.rna.fna.gz', '', now(), now(), "RefSeqParser");
@@ -151,7 +149,7 @@ INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_dat
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/release/vertebrate_mammalian/vertebrate_mammalian13.rna.fna.gz', '', now(), now(), "RefSeqParser");
 
 # cumulative
-INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/cumulative/rscu.faa.gz', '', now(), now(), "RefSeqParser");
+INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/cumulative/rscu.gpff.gz', '', now(), now(), "RefSeqGPFFParser");
 INSERT INTO source_url (source_id, url, checksum, file_modified_date, upload_date, parser) VALUES (2, 'ftp://ftp.ncbi.nih.gov/refseq/cumulative/rscu.fna.gz', '', now(), now(), "RefSeqParser");
 
 
