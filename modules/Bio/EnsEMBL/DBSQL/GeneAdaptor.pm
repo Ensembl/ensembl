@@ -1067,13 +1067,13 @@ sub update {
      if ( $update ) {
 
        $sth = $self->prepare("UPDATE gene
-                              SET    type = '$type',
-                                     analysis_id = $analysis,
-                                     display_xref_id = $dxref_id
+                              SET    type = ?,
+                                     analysis_id = ?,
+                                     display_xref_id = ?
                               WHERE  gene_id = ?
                             ");
 
-       $sth->execute($gene->dbID);
+       $sth->execute($gene->type, $gene->analysis->dbID, $gene->display_xref, $gene->dbID);
      }
    }
    else {
