@@ -62,29 +62,35 @@ sub fset2transcript {
     $transcript->temporary_id($contig->id . "." . $genscan->raw_seqname);
         
     my @exons;
-    my $count= 1;
+    my $count= 0;
     
     foreach my $f ($genscan->sub_SeqFeature) {
-	
-	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->contig($contig);
-	$exon->stable_id($f->id);
-	$exon->start    ($f->start);
-	$exon->start    ($f->start);
-	$exon->end      ($f->end  );
-	$exon->strand   ($f->strand);
-	$exon->phase    ($f->phase);
-	$exon->end_phase( ($exon->phase + $exon->length)%3 );
-
-	$exon->attach_seq($contig->primary_seq);
-	
-	push(@exons,$exon);
-	$count++;
-	
+      
+      my $exon  = new Bio::EnsEMBL::Exon;
+      $transcript->add_Exon($exon);
+      $exon->contig($contig);
+      $exon->stable_id($f->id);
+      $exon->start    ($f->start);
+      $exon->start    ($f->start);
+      $exon->end      ($f->end  );
+      $exon->strand   ($f->strand);
+      $exon->phase    ($f->phase);
+      
+      # warning: not all features come in with an end_phase
+      # no problem as we can compute it easily:
+      $exon->end_phase( ($exon->phase + $exon->length)%3 );
+      $exon->attach_seq($contig->primary_seq);
+      
+      push(@exons,$exon);
+      $count++;
+      
     }
     
-    if( $count == 1 ) {
+    if( $count == 0 ) {
 	$genscan->throw("Got a 0 exon genscan");
+    }
+    else{
+      #print STDERR "got $count exons\n";
     }
 
     my $translation = new Bio::EnsEMBL::Translation;
@@ -107,12 +113,10 @@ sub fset2transcript {
     my $endphase = $exons[0]->end_phase;
     
     foreach my $exon (@exons) {
-	
       if ( $exon == $exons[0] ){
 	next;
       }
       $exon->phase         ($endphase);
-      $transcript->add_Exon($exon);
       $endphase = $exon->end_phase;
     }
     
