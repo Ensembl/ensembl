@@ -592,8 +592,12 @@ CREATE TABLE externalDB(
 
 CREATE TABLE contig_landmarkMarker (
        contig int(10) NOT NULL,
+       start  int(10) NOT NULL,
+       end    int(10) NOT NULL,
+       strand int(1)  NOT NULL,
        marker varchar(40) NOT NULL,
        name   varchar(40) NOT NULL,
+       chr_name varchar(40) NOT NULL,
        KEY (contig,marker),
        KEY (marker)
        );

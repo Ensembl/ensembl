@@ -10,7 +10,7 @@
 \begin{document}
 
 \title{Ensembl. Open Genome Annotation}
-\author{ensembl-dev@ebi.ac.uk\\www.ensembl.org}
+\author{ensembl-dev@ebi.ac.uk\\www.ensembl.org\\Last time seriously looked at - May 2001}
 
 
 \maketitle
@@ -47,11 +47,13 @@ example is split up across 9 and counting cvs modules and has been
 developed over 2 years (in the case of bioperl, more like 6 years)
 with currently 18 active developers on the project. There are more
 than 100 different objects in Ensembl that get combined in different
-ways.  This is not a project you will get to know within one or two
-days of playing around. That said, the next section - first steps with
-Ensembl - will get you over the first speed bump. However before we
-jump into the first steps, a quick answer of some often asked
-questions:
+ways.  It is also worth visiting the Bioperl project,
+http://bio.perl.org (which Ensembl uses as a base library) and read
+tutorial documentation there. All in all this is not a project you
+will get to know within one or two hours of playing around. That said,
+the next section - first steps with Ensembl - will get you over the
+first speed bump. However before we jump into the first steps, a quick
+answer of some often asked questions:
 
 \begin{description}
 
@@ -84,7 +86,7 @@ simple things hard.
 
 \end{description}
 
-Enough waffle! Let's get to the code
+Enough waffle! Let's get to useful code
 
 \section{Installing Ensembl}
 
@@ -537,7 +539,7 @@ foreach $gene ( $vc->get_all_Genes ) {
 
 \end{verbatim}
 
-\section{Ensembl and Bioperl objects}
+\section{Ensembl Object Bestiary}
 
 Many Ensembl objects inheriet from Bioperl Interface definitions; they
 therefore comply to those interfaces and then extend them in Ensembl
@@ -546,8 +548,9 @@ specific ways. The implementation of the objects in general is
 store everything in a Perl hash, whereas many Ensembl objects are a
 Perl hash with minimal information (mainly the primary key of object
 in the database) and also access to the underlying database. In these
-cases, methods trigger a quick trip to the database to retrieve the
-objects of interest.
+cases, methods trigger a quick (or sometimes not so quick - if you are
+asking for alot of data) trip to the database to retrieve the objects
+of interest.
 
 This section has been grouped by the type of Bioperl object the Ensembl
 object extends and gives you a quick overview of how to use the methods
@@ -555,7 +558,45 @@ object extends and gives you a quick overview of how to use the methods
 \subsection{Bio::SeqI compliant objects}
 
 Bio::SeqI is the bioperl ``heavy'' sequence object, containing the
-sequence, identifiers and 
+sequence, identifiers and seqfeatures. The main functions you want to
+call from Bio::SeqI compliant objects are the following
+
+\begin{description}
+\item[subseq(start,end)] gives back part of a sequence as a string between start and end. The main
+frustration with this method is it does not handle the reverse complement - ie you can't put end < start or 
+anything to indicate that the reverse strand is needed (this is a Bioperl aspect of the system). You have
+to use trunc followed by revcom.
+\item[seq] gives back the entire sequence as a string - please be careful only to use this when
+you need, as of course it is very easy to have truely massive sequences coming out from the
+Ensembl object layer
+\item[trunc(start,end)] gives back part of a sequence as a PrimarySeqI object, on which you
+can then call other standard methods - in particular, revcom for the reverse complement
+\item[top\_SeqFeatures] gives back all the Sequence features. Although this is a very common
+thing to do in bioperl, inside Ensembl, this triggers a massive amount of database gets, and you
+probably want to call Ensembl specific functions which have a more limited scope.
+\end{description}
+
+The other crucial thing you can do with Bio::SeqI compliant objects is write them out
+via the SeqIO system. The calls go
+
+\begin{verbatim}
+   $seqio = Bio::SeqIO->new( -format => 'embl',-file => '>/an/output/file');
+   $seqio->write_seq($BioSeqI_Compliant_Object);
+\end{verbatim}
+
+\subsubsection{VirtualContigs}
+
+One of the key Ensembl objects which inheriet from Bio::SeqI is a
+Virtual Contig, generally the class
+Bio::EnsEMBL::Virtual::StaticContig (the Static means that the golden
+path, ie, assembly information is stored in a denormalised manner in
+the database). If you are looking at for the code for StaticContig is
+split between itself and its direct base class,
+Bio::EnsEMBL::Virtual::Contig.
+
+Virtual Contigs represented a slice of a chromosome - anything from about
+
+
 
 \end{document}
 

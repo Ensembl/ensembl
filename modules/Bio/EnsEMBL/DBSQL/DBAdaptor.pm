@@ -86,7 +86,7 @@ eval {
     require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 };
 if ($@) {
-    warn "error use'ing FamilyAdaptor: $@ ignored for now\n";
+    warn "error use'ing FamilyAdaptor - that's fine\n";
 }
 
 

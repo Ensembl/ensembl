@@ -176,7 +176,7 @@ INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('test_
 # Dumping data for table 'Xref'
 #
 
-INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id,version, description) VALUES (1, 1, 'MC1R', 'DISPLAY1',01, 'blablaou');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, display_id,version, description) VALUES (1, 1, 'MC1R', 'MC1R',01, 'blablaou');
 
 #
 # Dumping data for table 'externalSynonym'
