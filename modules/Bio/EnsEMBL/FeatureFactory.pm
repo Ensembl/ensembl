@@ -75,7 +75,6 @@ use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Analysis;
 
-
 $USE_PERL_ONLY = 0;
 
 BEGIN {
