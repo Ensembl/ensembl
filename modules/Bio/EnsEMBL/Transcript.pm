@@ -238,6 +238,38 @@ sub adaptor {
 
 }
 
+
+=head2 relevant_xref
+
+  Arg [1]    : int $relevant_xref_id
+  Example    : $transcript->relevant_xref(42);
+  Description: get/set/lazy_loaded relevant_xref_id for this transcript
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub relevant_xref{
+
+    my ($self,$value) = @_;
+    
+    if( defined $value ) {
+      $self->{'relevant_xref'} = $value;
+      return;
+    }
+
+    if( exists $self->{'relevant_xref'} ) {
+      return $self->{'relevant_xref'};
+    }
+
+    $self->{'relevant_xref'} = $self->adaptor->get_relevant_xref_id($self->dbID);
+
+    return $self->{'relevant_xref'};
+}
+
+
+
 =head2 _translation_id
 
  Title   : _translation_id
