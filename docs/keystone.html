@@ -1,0 +1,77 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title>Help using keystone</title>
+</head>
+<BODY TEXT="#000000" BGCOLOR="#FFFFFF">
+<h1>Help using keystone</h1>
+
+<p>
+This page aims to describe very briefly how keystone works specifically for EnsEMBL, and how to submit and play with bugs. Most importantly, the first two sections explain the EnsEMBL specific quickslips and statuses of a bug. The third sections summarises the possible life-cycles of a bug...</p>
+<p>
+Bugs can be submitted by anybody. Bugs from external people have to be verified first that
+they are "real" (allowing us to route requests/complaints/idiots elsewhere). Bugs from internal
+people will be verified by default. People should assign bugs to themselves, which generally
+means that this bug is actively being solved or that it is dependent on another bug which is
+actively being solved. This probably means that there will be a large number of verified but
+unassigned bugs: these bugs are the ones which need to be fixed but noone is working on them.
+When there is disagreement about who should be solving which bug (for example, two people want
+to solve the same bug!) people should post a message to ensembl-dev@ebi.ac.uk.
+</p>
+
+<h2>Quickslips</h2>
+<p>
+A quickslip is just a fancy word for a bug category (mother bug).
+When a new bug is submitted, it has to be assigned by the submitter to one of the quickslips.<br>
+Three quickslips have been defined so far (please suggest if you think we should implement others):</p>
+<p>
+-<b>WEB:</b>   anything to do with the web interface, or the the web page content </p>
+<p>
+-<b>MODULES:</b>   anything to do with the ensembl code</p>
+<p>
+-<b>DATA:</b>   anything to do with the EnsEMBL data integrity, consistency, correctness, etc.</p>
+<p>
+<h2>Status</h2>
+<p>
+The status of a bug indicates the point in its life cycle, and the possible statuses have been thus redefined:
+</p>
+<p>
+-<b>UNASSIGNED:</b>   initial status of a newly submitted bug that has not been checked yet. </p>
+<p>
+-<b>VERIFIED:</b>   the "bug-master" has checked that it is a real bug, and it awaits to be picked up by somebody for debugging. Alternatively, a member of the tech team has submitted a known-to-be-real bug, which obviously gets the verified status directly</p>
+<p>
+-<b>INACTIVE:</b>   this will hopefully be a rare status, only used for those bugs that are real but cannot be solved at the moment, and are therefore kept in the inactive status, until later date.</p>
+<p>
+-<b>ASSIGNED:</b>   when a bug is picked up by somebody, the person assigns it to himself, and by doing that takes the responsiblity of working on the bug.</p>
+<p>
+-<b>CLOSED:</b>   final stage of a bug (could be called dead), self-explanatory.</p>
+
+<body>
+<h2>Bug's life</h2>
+<p>
+Just in case these status names still sound funny, this is a summary of what happens to a bug when it becomes a slip in keystone...</p>
+
+<h3>Bug submission</h3>
+<p>
+Bugs can be submitted externally by anonymous users or internally by a member of the Tech team. In both cases the bug will start its life as a <b>private</b> bug, and as a <b>child</b> of a <b>quickslip</b> chosen by the user.
+<br>
+If the bug has been submitted by an external user, it will come in with status <b>unassigned</b> and with no contact information, i.e. contact "anonymous" (although the e-mail address of the submitter will be held under open by ...)<br>
+If the bug has been submitted by a member of the Tech Team, then it will come in with the status chosen by the tech user, which should be verified, i.e. a real bug, but not yet assigned to somebody.
+</p>
+
+<h3>Bug verification</h3>
+<p>
+Once a bug is submitted, one person in charge of checking the bugs, currently myself, checks it. Checking simply means verifying wether it is a real bug, and if yes wether it can be solved at the moment. Consquently the slip status gets changed from unassigned to verified. Also, the decision is made wether the bug should be public or private. It can also be changed to inactive if the bug is known to be solvable at the moment, to assigned if the person in charge assigns it to him/herself, or to closed if the bug is already solved, not existent, or so easy it can be solved straight away.
+</p>
+
+
+<h2>The rest of it...</h2>
+<p>
+Once a bug has been checked and its status has been changed to verified, any member of the tech team can browse all verified bugs, perhaps choose one of the quickslips, and decide to take up a bug and assign it to himself. At the end of the work, the bug gets simply closed.
+</p>
+
+<hr>
+<address></address>
+<!-- hhmts start -->
+Last modified: Tue Dec  7 17:32:00 GMT 1999
+<!-- hhmts end -->
+</body> </html>
