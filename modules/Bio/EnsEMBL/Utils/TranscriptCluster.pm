@@ -24,7 +24,13 @@ eae@sanger.ac.uk
 
 package Bio::EnsEMBL::Utils::TranscriptCluster;
 use Bio::EnsEMBL::Transcript;
+use vars qw(@ISA);
 use strict;
+
+use Bio::EnsEMBL::Gene;
+use Bio::Root::RootI;
+
+@ISA = qw(Bio::Root::RootI);
 
 =head1 METHODS
 
@@ -44,24 +50,18 @@ _end
 =cut
 
 sub new {
-  my ($class,@args)=@_;
+  my ($class,$whatever)=@_;
 
   if (ref($class)){
     $class = ref($class);
   }
   my $self = {};
   bless($self,$class);
-  $self->{'_transcript_array'}= \@args;
-  $self->{'_transcriptID_array'}=();  # array that holds the IDs of the transcripts
-  $self->{'_start'}={};               # hash that holds the start position of each transcript
-  $self->{'_end'}={};                 # hash that holds the end position of each transcript
   
-  foreach my $transcript (@args){
-    my ( $start , $end)=( _get_start($transcript) , _get_end($transcript) );
-    push ( @ {$self->{'_transcriptID_array'} }, $transcript->id );
-    $self->{'_start'}->{$transcript->id}=$start;
-    $self-> {'_end'} ->{$transcript->id}=$end;
+  if ($whatever){
+    $self->throw( "Can't pass an object to new() method. Use put_Genes() to include Bio::EnsEMBL::Gene in cluster");
   }
+
   return $self;
 }
 
@@ -75,15 +75,12 @@ sub new {
 =cut
 
 sub put_Transcripts {
-  my ($self, @args)= @_;
-  my @new_transcripts = @args;
-  push ( @{ $self->{'_transcript_array'} }, @new_transcripts );
-  foreach my $new_transcript (@new_transcripts){
-    push ( @{ $self->{'_transcriptID_array'} }, $new_transcript->id );
-    my ( $start , $end)=( _get_start($new_transcript) , _get_end($new_transcript) );
-    $self->{'_start'}->{$new_transcript->id}=$start;
-    $self-> {'_end'} ->{$new_transcript->id}=$end;
+  my ($self, @new_transcripts)= @_;
+  
+  if ( !$new_transcripts[0]->isa('Bio::EnsEMBL::Transcript') ){
+    $self->throw( "Can't accept a [ $new_transcripts[0] ] instead of a Bio::EnsEMBL::Transcript");
   }
+  push ( @{ $self->{'_transcript_array'} }, @new_transcripts );
 }
 
 #########################################################################
