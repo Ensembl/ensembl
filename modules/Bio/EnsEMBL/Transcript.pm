@@ -1214,7 +1214,7 @@ sub convert_peptide_coordinate_to_contig {
 
   # move start end into translate cDNA coordinates now.
   # much easier!
-  $start = 3* $start;
+  $start = 3* $start-2;
   $end   = 3* $end;
 
   if( !defined $self->translation ) {
@@ -1241,7 +1241,7 @@ sub convert_peptide_coordinate_to_contig {
 
   my $exon;
   while( $exon = shift @exons && $start < $trans_len + $current_len_exon ) {
-      ;
+      $trans_len += $exon->length();
   }
 
   unshift(@exons,$exon);
@@ -1263,7 +1263,7 @@ sub convert_peptide_coordinate_to_contig {
     } else {
       $end_in_exon = $exon->length;
     }
-    
+    $offset_into_exon = 0;
 
     # the main reason for make this an attribute of the exon is to handle stickies
     push(@out,$exon->contig_seqfeatures_from_relative_position($start_in_exon,$end_in_exon));
