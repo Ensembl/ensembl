@@ -251,7 +251,9 @@ sub top_SeqFeatures {
 
     push(@f,$self->get_all_DomainFeatures());
     
-    push(@f,$self->get_all_IntronFeatures());
+    #push(@f,$self->get_all_IntronFeatures());
+
+    push(@f,$self->get_all_blastpFeatures());
     
     #push(@f,$self->get_all_SnpsFeatures());
     
@@ -343,7 +345,9 @@ sub get_all_DomainFeatures{
        
        push(@f,$self->get_all_SuperfamilyFeatures());
 
-       push(@f,$self->get_all_ProfileFeatures());
+#To command if we want also to retrieve profiles
+
+       #push(@f,$self->get_all_ProfileFeatures());
 
        return @f;
     }
@@ -404,7 +408,57 @@ sub add_Profile{
 
 }
 
+Title   : get_all_blastpFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
+
+=cut
+
+sub get_all_blastpFeatures{
+    my ($self) = @_;
+
+    if (defined ($self->{'_blastp'})) {
+	return @{$self->{'_blastp'}};
+    }
+   else {
+       my $proteinid = $self->id();
+       my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('blastp',$proteinid);
+       foreach my $in (@array_features) {
+	   $self->add_blastp($in);
+       }
+       return @array_features;
+
+
+   }
+
+}
+
+=head2 add_blastp
+
+ Title   : add_blastp
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_blastp{
+    my ($self,$value) = @_;
+        
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+    }
+
+   push(@{$self->{'_blastp'}},$value); 
+
+}
 
 =head2 get_all_PrintsFeatures
 
