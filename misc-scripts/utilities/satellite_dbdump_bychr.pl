@@ -66,8 +66,9 @@ my $famdb;
 my $diseaseb;
 my $mapsdb;
 my $expressiondb;
-my $estdb;
 my $snpdb;
+my $embldb;
+my $estdb;
 # end of satellites
 
 &GetOptions( 
@@ -83,8 +84,9 @@ my $snpdb;
             'disease:s' => \$diseasedb,
             'maps:s' => \$mapsdb,
             'expression:s' => \$expressiondb,
-            'est:s' => \$estdb,
             'snp:s' => \$snpdb,
+            'embl:s' => \$embldb,
+            'est:s' => \$estdb,
            );
 
 die "need a litedb; use -litedb something " unless $litedb;
@@ -101,6 +103,7 @@ if ($lim) {
 &dump_maps($mapsdb);
 &dump_expression($expressiondb);
 &dump_snp($snpdb);
+&dump_embl($embldb);
 
 &dump_est($estdb);
 
@@ -341,11 +344,213 @@ WHERE  lg.chr_name = '$chr'
 
 }                                       # snp
 
+
+sub dump_embl  {
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    dump_schema($satdb);
+    warn "This may take a while...\n";
+
+    my @small_ones = qw(externalDB);
+    foreach my $table ( @small_ones ) { 
+        $sql = "select * from $satdb.$table";
+        dump_data($sql, $satdb, $table);
+    }
+
+    my $sql;
+
+    $sql="
+SELECT cl.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+";
+    dump_data($sql, $satdb, 'clone');
+
+    $sql="
+SELECT ctg.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+";
+    dump_data($sql, $satdb, 'contig');
+    $sql ="
+SELECT dna.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.dna dna
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.dna = dna.id 
+";
+     dump_data($sql, $satdb, 'dna');
+    
+    $sql="
+SELECT DISTINCT e.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e
+ WHERE lg.chr_name = '$chr'
+   AND lg.contig like concat(cl.id, '%') 
+   AND ctg.clone = cl.internal_id
+   AND ctg.internal_id = e.contig
+";
+     dump_data($sql, $satdb, 'exon');
+
+    $sql="
+SELECT distinct et.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+";
+    dump_data($sql, $satdb, 'exon_transcript');
+
+    $sql="
+SELECT distinct tsc.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+";
+    dump_data($sql, $satdb, 'transcript');
+
+    $sql="
+SELECT distinct g.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.gene  g
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+   and tsc.gene=g.id
+";
+    dump_data($sql, $satdb, 'gene');
+
+    $sql="
+SELECT distinct gt.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.gene  g,
+       $satdb.genetype  gt
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+   and tsc.gene=g.id
+   and g.id = gt.gene_id
+";
+    dump_data($sql, $satdb, 'genetype');
+
+    $sql="
+SELECT distinct tl.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.translation tl
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+   and tsc.translation = tl.id
+";
+    dump_data($sql, $satdb, 'translation');
+
+    $sql="
+SELECT distinct ox.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.translation tl,
+       $satdb.objectXref ox
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+   and tsc.translation = tl.id
+   and tl.id = ox.ensembl_id
+   and ox.ensembl_object_type = 'Translation'
+";
+    dump_data($sql, $satdb, 'objectXref');
+
+    $sql="
+SELECT x.*
+  FROM $litedb.gene lg,
+       $satdb.clone cl, 
+       $satdb.contig ctg,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.translation tl,
+       $satdb.objectXref ox,
+       $satdb.Xref  x
+ WHERE lg.chr_name = '$chr'
+   and lg.contig like concat(cl.id, '%') 
+   and ctg.clone = cl.internal_id
+   and ctg.internal_id = e.contig
+   and e.id = et.exon
+   and et.transcript=tsc.id
+   and tsc.translation = tl.id
+   and tl.id = ox.ensembl_id
+   and ox.ensembl_object_type = 'Translation'
+   and ox.xrefId = x.xrefId
+   and x.xrefId = 7036
+";
+    dump_data($sql, $satdb, 'Xref');
+    return;
+}                                       # embl
+
+
 sub dump_est  {
     my ($satdb) = @_;
+    return unless $satdb;
     warn "no written, doing nohting";
     return undef;
-    return unless $satdb;
 }                                       # est
 
 sub dump_schema {
@@ -380,7 +585,8 @@ sub dump_data {
     $sql =~ s/\s+/ /g;
     
     my $cmd = "echo \"$sql\" | $mysql -q --batch -u $dbuser -p$dbpass $litedb > $destdir/$datfile";
-    warn "dumping: $cmd\n";
+    # warn "dumping: $cmd\n"; too verbose
+    warn "dumping $tablename ...\n";
 
     if ( system($cmd) ) { 
         die "``$cmd'' exited with exit-status $?";
