@@ -156,6 +156,10 @@ ok($sub_seq eq $invert_sub_seq);
 my $pts = $slice->get_all_PredictionTranscripts;
 ok(@$pts == 24);
 
+#
+# Test Slice::get_seq_region_id
+#
+ok($slice->get_seq_region_id());
 
 #
 # Test Slice::get_all_DnaAlignFeatures
