@@ -554,18 +554,39 @@ sub length{
 }
 
 
-=head2 order
+=head2 seq_version
 
- Title   : order
- Usage   : $obj->order($newval)
+ Title   : seq_version
+ Usage   : $obj->seq_version($newval)
  Function: 
- Returns : value of order
+ Example : 
+ Returns : value of seq_version
  Args    : newvalue (optional)
 
 
 =cut
 
-sub order{
+sub seq_version{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'seq_version'} = $value;
+    }
+    return $obj->{'seq_version'};
+
+}
+
+=head2 embl_order
+
+ Title   : order
+ Usage   : $obj->embl_order
+ Function: 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub embl_order{
    my $self = shift;
    my $id = $self->id();
    my $sth = $self->_dbobj->prepare("select corder from contig where id = \"$id\" ");
@@ -575,9 +596,9 @@ sub order{
    
 }
 
-=head2 offset
+=head2 embl_offset
 
- Title   : offset
+ Title   : embl_offset
  Usage   : 
  Returns : 
  Args    :
@@ -585,7 +606,7 @@ sub order{
 
 =cut
 
-sub offset{
+sub embl_offset{
    my $self = shift;
    my $id = $self->id();
 
@@ -594,29 +615,6 @@ sub offset{
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'offset'};
 
-}
-
-
-=head2 orientation
-
- Title   : orientation
- Usage   : 
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub orientation{
-   my ($self) = @_;
-   my $id = $self->id();
-
-   my $sth = $self->_dbobj->prepare("select orientation from contig where id = \"$id\" ");
-   $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'orientation'};
 }
 
 
@@ -744,8 +742,9 @@ sub _got_overlaps{
 sub _load_overlaps{
    my ($self,@args) = @_;
    my $id = $self->id();
+   my $version = $self->seq_version()
 
-   my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where contig_a = '$id' or contig_b = '$id'");
+   my $sth = $self->_dbobj->prepare("select contig_a,contig_b,contig_a_position,contig_b_position,overlap_type from contigoverlap where (contig_a = '$id' and contig_a_version = $version ) or (contig_b = '$id' and contig_b_version = $version )");
    
    $sth->execute();
 
@@ -761,7 +760,9 @@ sub _load_overlaps{
    #
    # Polarity indicates whether the sequence is being read in the same 
    # direction as this contig. 
-   #
+   # 
+   # The sequence has to be appropiately versioned otherwise this gets complicated
+   # in the update scheme.
 
    # 
    # start by switching on whether things are in the a or b contig

@@ -586,8 +586,10 @@ sub _get_all_SeqFeatures_type{
        $sf = []; # will be destroyed when drops out of scope
    }
 
+   print STDERR "About enter the hash call\n";
 
-   foreach my $c ( values %{$self->{'_contighash'}} ) {
+   foreach my $c ( values %{$self->{'contighash'}} ) {
+       print STDERR "Looking at ",$c->id,"\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -627,12 +629,12 @@ sub _convert_seqfeature_to_vc_coords{
    if( !exists $self->{'contighash'}->{$cid} ) {
        $self->throw("Attempting to map a sequence feature with $cid on a virtual contig with no $cid");
    }
-
+   my $seq = $self->seq();
    if( $self->{'contigori'}->{$cid} == 1 ) {
        # ok - forward with respect to vc. Only need to add offset
        my $offset = $self->{'start'}->{$cid} - $self->{'startincontig'}->{$cid};
        $sf->start($sf->start + $offset);
-       $sf->end($sf->start + $offset);
+       $sf->end($sf->end + $offset);
        # strand stays the same
    } else {
        my $offset = $self->{'start'}->{$cid} + $self->{'startincontig'}->{$cid};
@@ -647,6 +649,10 @@ sub _convert_seqfeature_to_vc_coords{
        $sf->start($offset - $tend);
        $sf->end($offset - $tstart);
 
+   }
+
+   if( $sf->can('attach_seq') ) {
+       $sf->attach_seq($seq);
    }
 
 }
@@ -913,3 +919,8 @@ sub _seq_cache{
 
 
 1;
+
+
+
+
+

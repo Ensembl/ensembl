@@ -119,7 +119,7 @@ if( $@ ) {
     $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $contig2,
 						-focusposition => 3,
 						-ori => 1,
-						-left => 15,
+						-left => 6,
 						-right => 9 );
 
     $vc->_dump_map();
@@ -133,6 +133,10 @@ if( $@ ) {
     }
 
     @sf = $vc->get_all_SeqFeatures();
+    foreach $sf ( @sf ) {
+	print STDERR "Feature starts on ",$sf->start," ends ",$sf->end, "\n";
+    }
+
 
     print "ok 11\n";
 
