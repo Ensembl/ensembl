@@ -262,16 +262,19 @@ sub _parse_exon{
 
 sub _convert_phase {
     my ($phase,$start,$end,$strand) = @_;
+
     if($strand==1){
 	$phase=((2+($start%3)-$phase)%3);
     }else{
 	$phase=((2+($end%3)-$phase)%3);
     }
-    if($phase==2){
-	$phase=1;
-    }elsif($phase==1){
-	$phase=2;
-    }
+
+    #if($phase==2){
+    #	$phase=1;
+    #}elsif($phase==1){
+    #$phase=2;
+    #}
+
     return $phase;
 }
 
