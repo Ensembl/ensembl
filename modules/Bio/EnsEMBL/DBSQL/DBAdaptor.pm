@@ -45,7 +45,6 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
-use Bio::EnsEMBL::DBSQL::DBAdaptorHolder;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
