@@ -4,7 +4,7 @@ package Bio::EnsEMBL::External::BlastAdaptor;
 use strict;
 use DBI;
 use Storable qw(freeze thaw);
-use Data::Dumper qw( Dumper );
+#use Data::Dumper qw( Dumper );
 use Time::Local;
 
 use vars qw(@ISA);
@@ -13,7 +13,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::Search::HSP::EnsemblHSP; # This is a web module
 
-@ISA = qw( Bio::EnsEMBL::DBSQL::DBAdaptor );
+@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
 #@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection );
 
 
@@ -182,6 +182,16 @@ SET     chr_name  = NULL,
 WHERE   hsp_id    = ?";
 
 
+
+
+sub new_fast{
+  my ($caller,$connection) = @_;
+  my $self = $caller->SUPER::new($connection);
+  return $self;
+}
+
+
+
 #----------------------------------------------------------------------
 
 =head2 new
@@ -198,7 +208,7 @@ WHERE   hsp_id    = ?";
 sub new {
   my $caller = shift;
   my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
-  my $self = $caller->SUPER::new_fast($connection);
+  my $self = $caller->SUPER::new($connection);
   return $self;
 }
 
