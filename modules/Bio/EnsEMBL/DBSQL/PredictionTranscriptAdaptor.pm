@@ -169,6 +169,8 @@ sub _objs_from_sth {
 
   $on_slice_flag = 0;
 
+  my $prev_exon;
+  my $already_merged;
   
   while($sth->fetch) {
     #create a new transcript for each new prediction transcript id
@@ -186,6 +188,9 @@ sub _objs_from_sth {
       $pre_trans->analysis($analysis);
       $pre_trans->set_exon_count($exon_count);
   
+      $prev_exon = undef;
+      $already_merged = 0;
+
       if(@out) {
 	#throw away last pt if no exons or introns were on the slice
 	if($slice && ( $transcript_slice_end < 1 || 
@@ -238,10 +243,23 @@ sub _objs_from_sth {
 	$exon_start  = $slice_end - $end   + 1;
 	$exon_end    = $slice_end - $start + 1;
 	$exon_strand = $strand * -1;
+
+	#merge adjacent exons into a single exon
+	if($prev_exon && $prev_exon->start == $exon->end + 1) {
+	  $exon->end($prev_exon->end);
+	  $already_merged++;
+	}
+
       } else {
 	$exon_start  = $start - $slice_start + 1;
 	$exon_end    = $end   - $slice_start   + 1;
 	$exon_strand = $strand;
+
+	#merge adjacent exons into a single exon
+	if($prev_exon && $exon->start == $prev_exon->end +1) {
+	  $exon->start($prev_exon->start);
+	  $already_merged++;
+	}
       }   
 
       if( !defined $transcript_slice_start || 
@@ -272,7 +290,8 @@ sub _objs_from_sth {
     $exon->score( $score );
     $exon->p_value( $p_value );
 
-    $pre_trans->add_Exon($exon, $exon_rank);
+    $prev_exon = $exon;
+    $pre_trans->add_Exon($exon, $exon_rank - $already_merged);
   }
   
   #throw away last  pred_transcript if it had no exons overlapping the slice
@@ -327,25 +346,34 @@ sub store {
     }
         
     my $exonId = undef;    
-    my $exons = $pre_trans->get_all_Exons();
+    my @pt_exons = @{$pre_trans->get_all_Exons()};
     my $dbID = undef;
     my $rank = 1;
     
-    for my $exon ( @$exons ) {
+    my @exons;
+    foreach my $e (@pt_exons) {
+      if($e && (!$e->contig || $e->contig->isa('Bio::EnsEMBL::Slice'))) {
+	$self->throw('PredictionTranscript must be in contig coords to store');
+      }
+      
+      if($e && $e->isa('Bio::EnsEMBL::StickyExon')) {
+	push @exons, @{$e->get_all_component_Exons};
+      } else {
+	push @exons, $e;
+      }
+    }
+
+    for my $exon ( @exons ) {
       if( ! defined $exon ) { $rank++; next; }
       
       my $contig_id = $exon->contig->dbID();
       my $contig_start = $exon->start();
       my $contig_end = $exon->end();
       my $contig_strand = $exon->strand();
-      
       my $start_phase = $exon->phase();
       my $end_phase = $exon->end_phase();
-      
-      # this is only in PredictionExon
       my $score = $exon->score();
       my $p_value = $exon->p_value();
-      
       my $analysis = $pre_trans->analysis->dbID;
       
       if( $rank == 1 ) {

@@ -808,6 +808,36 @@ sub type {
 }
 
 
+=head2 transform
+
+  Arg [1]    : (optional) $slice
+               The slice to transform this transcript to.  If not provided
+               the transcript is transformed to raw contig coords.
+  Example    : $pt->transform($slice)
+  Description: Transforms this prediction transcript to slice or chromosomal
+               coordinates
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub transform {
+  my $self = shift;
+
+  my @exons;
+
+  foreach my $exon (@{$self->get_all_Exons()}) {
+    push @exons, $exon->transform(@_);
+  }
+
+  #flush the exons and all related internal caches
+  $self->flush_Exons();
+
+  # attach the new list of exons to the transcript
+  push $self->{'exons'} = \@exons;
+}
+
 
 
 1;
