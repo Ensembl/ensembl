@@ -413,126 +413,127 @@ sub translateable_exons{
 	   my $endexon = new Bio::EnsEMBL::Exon;
 	   
 	   $endexon->contig_id($exon->contig_id);
-	   $endexon->clone_id($exon->clone_id);
-	   $endexon->strand($exon->strand);
-	   $endexon->phase($exon->phase);
-	   $endexon->attach_seq($exon->entire_seq());
-	   $endexon->id($exon->id);
+	    $endexon->clone_id($exon->clone_id);
+	    $endexon->strand($exon->strand);
+	    $endexon->phase($exon->phase);
+	    $endexon->attach_seq($exon->entire_seq());
+	    $endexon->id($exon->id);
 
-	   if( $exon->strand == 1 ) {
-	       if( $self->translation->end() > $exon->end ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
-	       }
+	    if( $exon->strand == 1 ) {
+		if( $self->translation->end() > $exon->end ) {
+		    $self->throw("Bad news. Attempting to say that this translation is inside this exon, but outside".$exon->id." ".$exon->end()." ".$self->translation->end()."\n");
+		}
 
-	       $endexon->start($exon->start());
-	       $endexon->end  ($self->translation->end());
+		$endexon->start($exon->start());
+		$endexon->end  ($self->translation->end());
 
-	   } else {
-	       if( $self->translation->end() < $exon->start ) {
-		   $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
-	       }
-	       $endexon->start($self->translation->end());
-	       $endexon->end($exon->end);
-	   }
-	   push(@out,$endexon);
-	   last;
-       } else {
-	   push(@out,$exon);
-       }
-   }
+	    } else {
+		if( $self->translation->end() < $exon->start ) {
+		    $self->throw("Bad news. Attempting to say that this translation is inside this exon (reversed), but outside".$exon->id." ".$exon->start()." ".$self->translation->end()."\n");
+		}
+		$endexon->start($self->translation->end());
+		$endexon->end($exon->end);
+	    }
+	    push(@out,$endexon);
+	    last;
+	} else {
+	    push(@out,$exon);
+	}
+    }
 
-   if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
-       $self->throw("Unable to find end translation exon");
-   }
+    if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
+	$self->throw("Unable to find end translation exon");
+    }
 
 
-   return @out;
-}
+    return @out;
+ }
 
 
 =head2 split_Transcript_to_Partial
 
- Title   : split_Transcript_to_Partial
- Usage   : @trans = $trans->split_Transcript_to_Partial
- Function: splits a transcript with potential non spliceable
-           exons into a set of partial transcripts, from start/end
-           of the Translation if the second argument is true
- Example :
- Returns : an array of Bio::EnsEMBL::Transcript objects
- Args    :
+  Title   : split_Transcript_to_Partial
+  Usage   : @trans = $trans->split_Transcript_to_Partial
+  Function: splits a transcript with potential non spliceable
+	    exons into a set of partial transcripts, from start/end
+	    of the Translation if the second argument is true
+  Example :
+  Returns : an array of Bio::EnsEMBL::Transcript objects
+  Args    :
 
 
 =cut
 
-sub split_Transcript_to_Partial{
-   my ($self,$on_translate) = @_;
+ sub split_Transcript_to_Partial{
+    my ($self,$on_translate) = @_;
 
 
-   if( $on_translate == 1 && ! defined $self->translation ) {
-       $self->throw("Attempting to split Transcript on translation, but not there...");
-   }
-   my @exons;
-   if( $on_translate == 1 ) {
-       @exons = $self->translateable_exons();
-   } else {
-       @exons = $self->each_Exon;
-   }
+    if( $on_translate == 1 && ! defined $self->translation ) {
+	$self->throw("Attempting to split Transcript on translation, but not there...");
+    }
+    my @exons;
+    if( $on_translate == 1 ) {
+	@exons = $self->translateable_exons();
+    } else {
+	@exons = $self->each_Exon;
+    }
 
-   # one exon genes - easy to handle.
-   if( $#exons == 0 ) {
-       return $self;
-   }
+    # one exon genes - easy to handle.
+    if( $#exons == 0 ) {
+	return $self;
+    }
 
-   # find the start exon;
+    # find the start exon;
 
-   my $prev;
-
-
-   $prev = shift @exons;
-   
-   my $l = $#exons;
-
-   my $t;
-   my @out;
+    my $prev;
 
 
-   TRANSCRIPT :
-   while ( $#exons >= 0 ) {
+    $prev = shift @exons;
+
+    my $l = $#exons;
+
+    my $t;
+    my @out;
 
 
-       # make a new transcript, add the old exon
-       $t = $self->new();
-       $t->id($self->id);
+    TRANSCRIPT :
+    while ( $#exons >= 0 ) {
+	# MC - we are allowing split phases within a contig now.
 
-       $t->add_Exon($prev);
-       $t->is_partial(1);
+	# make a new transcript, add the old exon
+	$t = $self->new();
+	$t->id($self->id);
 
-       push(@out,$t);
+	$t->add_Exon($prev);
+	$t->is_partial(1);
 
-       while( my $exon = shift @exons ) {
-	   if( $exon->contig_id eq $prev->contig_id && $exon->phase == $prev->end_phase) {
-	       # add it
-	       $t->add_Exon($exon);
-	       $prev = $exon;
-	   } else {
-	       if( $exon->contig_id eq $prev->contig_id ) {
-		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
-	       }
+	push(@out,$t);
 
-	       $prev = $exon;
-	       if( $#exons < 0 ) {
-		   # this was the last exon!
-		   $t = $self->new();
-		   $t->id($self->id);
-		   
-		   $t->add_Exon($prev);
-		   $t->is_partial(1);
-		   push(@out,$t);
-		   last TRANSCRIPT;
-	       } else {
-		   next TRANSCRIPT;
-	       }
-	   }
+	while( my $exon = shift @exons ) {
+	    if( $exon->contig_id eq $prev->contig_id && $exon->phase == $prev->end_phase) {
+		# add it
+		$t->add_Exon($exon);
+		$prev = $exon;
+	    } else {
+ #	       if( $exon->contig_id eq $prev->contig_id ) {
+ #		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
+ #	       }
+
+		$prev = $exon;
+
+		if( $#exons < 0 ) {
+		    # this was the last exon!
+		    $t = $self->new();
+		    $t->id($self->id);
+
+		    $t->add_Exon($prev);
+		    $t->is_partial(1);
+		    push(@out,$t);
+		    last TRANSCRIPT;
+		} else {
+		    next TRANSCRIPT;
+		}
+	    }
        }
    }
 

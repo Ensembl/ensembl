@@ -381,6 +381,7 @@ sub phase {
     if ($value < 0 || $value > 2) {
       $self->throw("Bad value ($value) for exon phase. Should only be 0,1,2\n");
     } else {
+#	print STDERR "Setting phase for " . $self->id . " to $value\n";
       $self->{'phase'} = $value;
     }
   }
