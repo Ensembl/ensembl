@@ -1197,8 +1197,9 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            ) {
 # BAC.*_C are fly contigs....
 # CRA_x are Celera mosquito contigs....
+# AA..\d+_\d+ are Celera mosquito contigs....
 #	  warn( join ' - ', $sf->das_dsn, $sf->das_id, $sf->seqname, $sf->das_start, $sf->das_end, $sf->das_strand );
-               if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*|RNOR\d+/ ) {
+               if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*|RNOR\d+|\w{4}\d+_\d+/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
                     push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) {
