@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 9;
+	plan tests => 27;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -30,8 +30,42 @@ my $csa = $db->get_CoordSystemAdaptor();
 my $ctg_cs = $csa->fetch_by_name('contig');
 my $chr_cs = $csa->fetch_by_name('chromosome');
 my $cln_cs = $csa->fetch_by_name('clone');
+my $chnk_cs = $csa->fetch_by_name('chunk');
 
-my $asm_mapper = $asma->fetch_by_CoordSystems($ctg_cs, $chr_cs);
+my $asm_mapper =  $asma->fetch_by_CoordSystems($chnk_cs, $chr_cs);
+ok( $asm_mapper && $asm_mapper->isa( "Bio::EnsEMBL::ChainedAssemblyMapper" ));
+
+#
+# Test if the multi mapping works (meta_key=assembly.mapping entry with #)
+#
+
+my @coords =  $asm_mapper->map( '1', 1, 50, 1, $chr_cs );
+ok( $coords[0]->id() eq "multimap_testregion" );
+ok( $coords[0]->start() == 10 );
+ok( $coords[0]->end() == 59 );
+ok( $coords[0]->strand() == 1 );
+
+@coords = $asm_mapper->map( "multimap_testregion", 100, 800, 1, $chnk_cs );
+
+ok( $coords[0]->id() eq "1" );
+ok( $coords[0]->start() == 91 );
+ok( $coords[0]->end() == 200 );
+ok( $coords[0]->strand() == 1 );
+
+ok( $coords[1]->isa( "Bio::EnsEMBL::Mapper::Gap" ) );
+
+ok( $coords[2]->id() eq "1" );
+ok( $coords[2]->start() == 201 );
+ok( $coords[2]->end() == 400 );
+ok( $coords[2]->strand() == -1 );
+
+ok( $coords[4]->id() eq "2" );
+ok( $coords[4]->start() == 1 );
+ok( $coords[4]->end() == 100 );
+ok( $coords[4]->strand() == -1 );
+
+
+$asm_mapper = $asma->fetch_by_CoordSystems($ctg_cs, $chr_cs);
 
 ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 
