@@ -868,47 +868,63 @@ sub _gene_query{
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
 		my @stickies = $exon->each_component_Exon();
-		# sort them by start-end
-		@stickies = sort { $a->start <=> $b->start } @stickies;
-		my $st_start;
-		my $st_end;
-		my $st_strand;
-		my $current_end;
-		my $mapped_sticky = 1;
 
-		foreach my $sticky ( @stickies ) {
-		    if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
-			$mapped_sticky = 0;
-			last;
-		    } else {
-			if( defined $current_end ) {
-			    if( $sticky->start-1 != $current_end ) {
-				$mapped_sticky = 0;
-				last; 
-			    }
-			}
-			if( !defined $st_start ) {
-			    $st_start = $sticky->start;
-			}
-			# at the end of this loop, will be the last one
-			$st_end = $sticky->end;
-			$st_strand = $sticky->strand;
-		    }
-		}
+                # walk along stickies in order. If any sticky does
+                # not convert, then abort. Otherwise remember start-end
+                # strand. If strand disagrees, abort as well.
+                # Have not implemented component exons being in sync with assembly
 
-		if( $mapped_sticky == 1 ) {
+                my $mapped_sticky = 1;
+                my $vc_start;
+                my $vc_end;
+                my $vc_strand = undef;
+
+                foreach my $sticky ( @stickies ) {
+                    if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
+                        # unmappable component exon, abort.
+                        $mapped_sticky = 0;
+                        last;
+                    } else {
+                        # handle start end points.
+                        if( !defined $vc_strand ) {
+                            $vc_start = $sticky->start;
+                            $vc_end   = $sticky->end;
+                            $vc_strand = $sticky->strand;
+                        } else {
+                            if( $vc_strand != $sticky->strand ) {
+                                $self->warn("sticky exon mappable but strand switching");
+                                $mapped_sticky = 0;
+                                last; # end of foreach my $sticky
+                            }
+                            # could test for contigous with assembly
+                            if( $vc_start > $sticky->start ) {
+                                $vc_start = $sticky->start;
+                            } 
+                            if( $vc_end  < $sticky->end ) {
+                                $vc_end   = $sticky->end;
+                            }
+                        }
+
+                    }
+                }
+
+                if( $mapped_sticky == 0 ) {
+                    # sticky was not mapped...
+                    # no need to do anything - current exon object
+                    # is valid
+                } else {
+                    # sticky exon mapped. Reset sequnece and
+                    # coordinates of the StickyExon
 		    $exon->attach_seq($self->primary_seq);
 		    $exon->seqname($self->id);
-		    $exon->start($st_start);
-		    $exon->end($st_end);
-		    $exon->strand($st_strand);
+		    $exon->start($vc_start);
+		    $exon->end($vc_end);
+		    $exon->strand($vc_strand);
 		    $exonconverted{$exon->id} = 1;
                     $internalExon = 1;
-		} else {
-		    # do nothing
-		}
+                }
 
-	    } else {
+	    } else {                    # not a Sticky
 		# soooooo much simpler
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
                     #print STDERR "Mapped a non sticky exon!\n";
@@ -916,7 +932,7 @@ sub _gene_query{
 		    $exonconverted{$exon->id} = 1;
 		}               
 	    }
-	}
+	}                               # foreach exon
         
         if ($internalExon == 0) { 
 # Utterly weird perl behaviour on acari: using unless breaks this 
@@ -925,7 +941,7 @@ sub _gene_query{
         #    my $geneid = $gene->id;
             delete $gene{$gene->id};
         } 
-    }
+    }                                   # foreach gene
 
 # PL: there used (rev. 1.17) to be code dealing with converting raw to
 # virtual coords for Translation objs; that is not needed anymore. 
@@ -1508,7 +1524,26 @@ sub _reverse_map_Exon{
        $self->throw("Must supply reverse map an exon not an [$exon]");
    }
 
-   print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
+   # 
+   # this maps a virtual contig exon to a raw contig exon
+   # for exons that do not cross contig boundaries in the golden
+   # path this is easy - we just map coordinates and transfer ids.
+   
+   # for exons which do cross boundaries, this is where the magic
+   # happens. A StickyExon object, which holds a number of component
+   # exons with ascending sticky_rank numbers holds the exon across
+   # the join coordinates.
+
+   # for stickyexons on the reverse strand, the sticky_rank ordering
+   # has to be right to left along the golden path, not left to right
+   # as the strand informaiton of the component exons do not contribute
+   # to the final strandness of the assembled sticky exon. 
+
+   # yes - this confuses us as well regularly.
+
+
+
+#   print STDERR "Reverse mapping $exon ",$exon->start,":",$exon->end,"\n";
 
    my ($scontig,$start,$sstrand) = 
      $self->_vmap->raw_contig_position($exon->start,$exon->strand);
@@ -1516,7 +1551,7 @@ sub _reverse_map_Exon{
    my ($econtig,$end,$estrand)   = 
      $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
-   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
+#   print STDERR "Got $scontig ",$start," to $econtig ",$end,"\n";
 
   
    if( $scontig->id eq $econtig->id ) {
@@ -1524,7 +1559,7 @@ sub _reverse_map_Exon{
 	   $self->throw("Bad internal error. Exon mapped to same contig but different strands!");
        }
 
-       print STDERR "Straight forward mapping\n";
+#       print STDERR "Straight forward mapping\n";
 
        my $rmexon = Bio::EnsEMBL::Exon->new();
        $rmexon->id($exon->id);
@@ -1573,7 +1608,7 @@ sub _reverse_map_Exon{
        return ($rmexon);
    } else {
        # we are in the world of sticky-ness....
-       print STDERR "Into sticky exon\n";
+#       print STDERR "Into sticky exon\n";
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
@@ -1587,7 +1622,7 @@ sub _reverse_map_Exon{
 	   my $mc;
 	   while ( $mc = shift @mapcontigs ) { 
 	       if( $mc->contig->id eq $scontig->id ) {
-		   print STDERR "Unshifting ",$mc->contig->id,"\n";
+#		   print STDERR "Unshifting ",$mc->contig->id,"\n";
 		   unshift(@mapcontigs,$mc);
 		   $found = 1;
 		   last;
@@ -1660,11 +1695,22 @@ sub _reverse_map_Exon{
        }
        my $sticky_exon = Bio::EnsEMBL::StickyExon->new();
        $sticky_exon->id($exon->id);
-
-       foreach my $e ( @exported_exons) {
-	   $sticky_exon->add_component_Exon($e);
+       # for reverse strand exons, we need to reverse the
+       # order of the components and renumber
+       if( $exon->strand == -1) {
+           @exported_exons = reverse (@exported_exons);
+           $sticky = 1;
+           foreach my $e ( @exported_exons ) {
+               $e->sticky_rank($sticky++);
+           }
        }
-
+       
+       # add exons to final StickyExon object
+       foreach my $e ( @exported_exons) {
+           $sticky_exon->add_component_Exon($e);
+       }
+       
+       # give it back
        return $sticky_exon;
    }
        
