@@ -72,6 +72,33 @@ sub _initialize {
 
 }
 
+
+=head2 id
+
+ Title   : id
+ Usage   : overrides id to get/set locally and sets all component exons
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub id{
+   my ($self,$value) = @_;
+
+   if( defined $value ) {
+       $self->{'_sticky_id'} = $value;
+       foreach my $c ( $self->each_component_Exon() ) {
+	   $c->id($value);
+       }
+   }
+
+   return $self->{'_sticky_id'};
+
+}
+
 =head2 each_component_Exon
 
  Title   : each_component_Exon
