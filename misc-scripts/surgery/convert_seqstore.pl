@@ -33,7 +33,8 @@ die "Source schema be specifed"        unless $source;
 &clean()  if $clean;
 &create() if $create;
 
-my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password") || die "Can't connect to target DB";
+my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password", {'RaiseError' => 1})
+  || die "Can't connect to target DB";
 my $sth;
 
 # ----------------------------------------------------------------------
@@ -327,7 +328,10 @@ execute($dbi,
 # dna table
 
 debug("Translating dna");
-execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna");
+execute($dbi, "INSERT INTO $target.dna " .
+              "SELECT c.contig_id as seq_region_id, d.sequence as sequence " .
+              "FROM   $source.dna d, $source.contig c " .
+              "WHERE  c.dna_id = d.dna_id");
 
 # ----------------------------------------------------------------------
 # Feature tables
@@ -487,8 +491,15 @@ sub execute {
 
   my ($dbcon, $sql) = @_;
 
-  my $stmt = $dbcon->prepare($sql);
-  $stmt->execute() || die "Unable to execute $sql";
+  my $stmt;
+
+  eval {
+    $stmt = $dbcon->prepare($sql);
+    $stmt->execute();
+  };
+  if($@) {
+    die "Unable to execute [$sql]\n$@";
+  }
   $stmt->finish();
 
 }
