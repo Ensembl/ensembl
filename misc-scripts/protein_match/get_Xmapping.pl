@@ -2,14 +2,12 @@ use strict;
 use Getopt::Long;
 use Bio::SeqIO;
 
-
-
 BEGIN {
-    unshift (@INC,"/work1/mongin/src/ensembl-live/misc-scripts/protein_match");
+    my $script_dir = $0;
+    $script_dir =~ s/(\S+\/)\S+/$1/;
+    unshift (@INC, $script_dir);
     require "mapping_conf.pl";
 }
-
-
 
 my %conf =  %::mapping_conf; # configuration options
 

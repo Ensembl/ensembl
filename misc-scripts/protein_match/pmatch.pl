@@ -15,7 +15,9 @@ use Getopt::Std;
 use vars qw($opt_q $opt_t $opt_l $opt_o $opt_p $opt_w $opt_s $opt_c $opt_d);
 
 BEGIN {
-    unshift (@INC,"/work1/mongin/src/ensembl-live/misc-scripts/protein_match");
+    my $script_dir = $0;
+    $script_dir =~ s/(\S+\/)\S+/$1/;
+    unshift (@INC, $script_dir);
     require "mapping_conf.pl";
 }
 
