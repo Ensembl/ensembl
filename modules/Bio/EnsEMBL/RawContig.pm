@@ -176,7 +176,7 @@ sub seq {
   #or retrieved from the database
   if($self->adaptor()) {
     my $sa = $self->adaptor->db->dnadb->get_SequenceAdaptor(); 
-    return $sa->fetch_by_RawContig_start_end_strand($self, 1, -1, 1);
+    return $sa->fetch_all_by_RawContig_start_end_strand($self, 1, -1, 1);
   }
   
   $self->warn("RawContig seq not set, and no db is available");
@@ -422,8 +422,8 @@ sub get_all_SimilarityFeatures {
   my @out;
   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
-  push @out, @{$dafa->fetch_by_RawContig_and_score($self, $score, $logic_name)};
-  push @out, @{$pafa->fetch_by_RawContig_and_score($self, $score, $logic_name)};
+  push @out, @{$dafa->fetch_all_by_RawContig_and_score($self, $score, $logic_name)};
+  push @out, @{$pafa->fetch_all_by_RawContig_and_score($self, $score, $logic_name)};
     
   return \@out;
 }
@@ -455,7 +455,7 @@ sub get_all_DnaAlignFeatures {
 
    my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
 
-   return $dafa->fetch_by_RawContig_and_score($self,$score, $logic_name);
+   return $dafa->fetch_all_by_RawContig_and_score($self,$score, $logic_name);
 }
 
 
@@ -486,7 +486,7 @@ sub get_all_ProteinAlignFeatures {
 
   my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
 
-  return $pafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
+  return $pafa->fetch_all_by_RawContig_and_score($self, $score, $logic_name);
 }
 
 
@@ -517,7 +517,7 @@ sub get_all_SimpleFeatures {
 
   my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
 
-  return $sfa->fetch_by_RawContig_and_score($self, $score, $logic_name);
+  return $sfa->fetch_all_by_RawContig_and_score($self, $score, $logic_name);
 }
 
 
@@ -774,9 +774,9 @@ sub get_genscan_peptides {
   
   $self->warn("Use of deprecated method " .
 	      "Bio::EnsEMBL::RawContig::get_genscan_peptides. " .
-	      "Use get_PreedictionFeatures instead\n" );
+	      "Use get_PredictionFeatures instead\n" );
 
-  return $self->get_PredictionFeatures(@args);
+  return $self->get_all_PredictionTranscripts(@args);
 }
 
 

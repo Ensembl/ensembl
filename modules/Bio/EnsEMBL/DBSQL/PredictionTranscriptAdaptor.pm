@@ -63,7 +63,6 @@ use Bio::EnsEMBL::PredictionTranscript;
 sub fetch_by_dbID {
   my ( $self, $dbID ) = @_;
   my $hashRef;
-  my @exons;
 
   if( !defined $dbID ) {
       $self->throw("Give a prediction_transcript_id");
@@ -512,9 +511,6 @@ sub _new_Exon_from_hashRef {
   
   $exon->contig( $contig );
   $exon->attach_seq( $contig );
-  $exon->ori_start( $exon->start );
-  $exon->ori_end( $exon->end );
-  $exon->ori_strand( $exon->strand );
   
   # does exon not have score?
   $exon->score( $hashRef->{'score'} );
