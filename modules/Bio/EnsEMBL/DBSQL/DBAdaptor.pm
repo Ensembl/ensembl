@@ -22,7 +22,7 @@ Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
         -driver => 'mysql',
         );
 
-    $clone  = $db->get_clone('X45667');
+    $clone  = $db->get_Clone('X45667');
 
     $contig = $db->get_Contig("dJ52N12.02793");
 
@@ -448,7 +448,7 @@ sub write_Clone {
 
     $clone || $self->throw("Trying to write a clone without a clone object!\n");
     if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
-	$self->throw("Clone must be a CloneI type, not a $clone");
+	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
     }
     
     my @sql;

@@ -151,8 +151,9 @@ sub fetch_by_dbID {
     $sth->execute();
 
     while( my $rowhash = $sth->fetchrow_hashref) {
-	my $translation = $self->get_Translation($rowhash->{'translation'});
-	$trans->translation($translation);
+	if (my $translation = $self->get_Translation($rowhash->{'translation'})) {
+	    $trans->translation($translation);
+        }
 	$trans->version($rowhash->{'version'});
     }
     if ($seen == 0 ) {
@@ -279,11 +280,14 @@ sub store {
         insert into transcript (id, gene, translation, version) 
         values (?, ?, ?, ?)
         ");
-                
+   
+   my $translation = $trans->translation;
+   my $translation_id = $translation ? $translation->id : '';
+   
    $tst->execute(
         $trans->id,
         $gene->id, 
-        $trans->translation->id,
+        $translation_id,
         $trans->version   
         );
 
@@ -298,24 +302,26 @@ sub store {
        $sth3->execute();
        
    }
-  # write the translation
 
-   if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
-     $self->throw("Is not a translation. Cannot write!");
-   }
-   
-   if ( !defined $translation->version  ) {
-     $self->throw("No version number on translation");
-   }
-    
-   $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
-			    . $translation->id . "',"
-			    . $translation->version . ","
-			    . $translation->start . ",'"  
-			    . $translation->start_exon_id. "',"
-			    . $translation->end . ",'"
-			    . $translation->end_exon_id . "')");
-   $tst->execute();
+    # write the translation if we have one
+    if ($translation) {
+        if( !$translation->isa('Bio::EnsEMBL::Translation') ) {
+          $self->throw("Is not a translation. Cannot write!");
+        }
+
+        if ( !defined $translation->version  ) {
+          $self->throw("No version number on translation");
+        }
+
+        $tst = $self->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
+			         . $translation->id . "',"
+			         . $translation->version . ","
+			         . $translation->start . ",'"  
+			         . $translation->start_exon_id. "',"
+			         . $translation->end . ",'"
+			         . $translation->end_exon_id . "')");
+        $tst->execute();
+    }
    return 1;
 }
 

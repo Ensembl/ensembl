@@ -382,7 +382,7 @@ sub embl_accession {
 
 sub get_all_VirtualGenes {
     my ($self,$supporting) = @_;
-    
+        
     my @out;
     foreach my $gene ( $self->get_all_Genes($supporting)) {
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
@@ -700,7 +700,15 @@ sub get_all_Genes {
 
     my $idlist = join(',',@internal_id);
 
-    my $sth = $self->dbobj->prepare("select distinct(t.gene) from transcript t,exon_transcript et,exon e where e.contig in ($idlist) and et.exon = e.id and et.transcript = t.id");
+    my $sth = $self->dbobj->prepare("
+        SELECT distinct(t.gene)
+        FROM transcript t
+          , exon_transcript et
+          , exon e
+        WHERE e.contig IN ($idlist)
+          AND et.exon = e.id
+          AND et.transcript = t.id
+        ");
     my $res = $sth->execute;
 
     my @geneid;
@@ -708,9 +716,9 @@ sub get_all_Genes {
 	push(@geneid,$gene);
     }
 
-	if( scalar(@geneid) == 0 ) {
-		return ();
-	}
+    if( scalar(@geneid) == 0 ) {
+	return ();
+    }
 
     my $gobj = $self->dbobj->gene_Obj();
 

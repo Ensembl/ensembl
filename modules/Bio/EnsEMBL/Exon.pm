@@ -344,21 +344,22 @@ sub sticky_rank{
 =cut
 
 sub end_phase {
-  my ($self) = @_;
-  
-  defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
-  defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
-  defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
-  
-  my $len   = $self->end() - $self->start() + 1;
-  my $phase = $self->phase();
-  my $left_overhang = (3 - $phase)%3;
-  
-  my $end_phase = ($len - $left_overhang)%3;
+    my ($self) = @_;
 
-  $self->{'end_phase'} = $end_phase;
-  
-  return $self->{'end_phase'};
+    defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
+    defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
+    defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
+
+    my $len   = $self->end() - $self->start() + 1;
+    my $phase = $self->phase();
+    my( $end_phase );
+    if ($phase == -1) {
+        $end_phase = -1;
+    } else {
+        $end_phase = ($len + $phase) % 3;
+    }
+    
+    return $end_phase;
 }
 
 =pod
@@ -377,12 +378,12 @@ sub phase {
   my ($self,$value) = @_;
   
   if (defined($value)) {
-    # Value must be 0,1,2,
-    if ($value < 0 || $value > 2) {
-      $self->throw("Bad value ($value) for exon phase. Should only be 0,1,2\n");
-    } else {
+    # Value must be 0,1,2, or -1 for non-coding
+    if ($value =~ /^(-1|0|1|2)$/) {
 #	print STDERR "Setting phase for " . $self->id . " to $value\n";
       $self->{'phase'} = $value;
+    } else {
+      $self->throw("Bad value ($value) for exon phase. Should only be -1,0,1,2\n");
     }
   }
   return $self->{'phase'};

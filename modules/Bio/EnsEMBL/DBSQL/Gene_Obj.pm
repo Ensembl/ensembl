@@ -473,29 +473,21 @@ sub get_array_supporting {
    
     my (@out, @sup_exons);
     
-    my @inlist;
 
-    my $count = 0;
-    my $count2 = 0;
-
-    # The gene list is split into chunks of 11 as mysql grinds
-    # to a halt over this number
-
-    foreach my $in (@geneid) {
-        if (!defined($inlist[$count])) {
-            $inlist[$count] = [];
-        }
-
-        push(@{$inlist[$count]},$in);
-
-        $count2++;
-   
-        if ($count2 > 5) {
-           $count++;
-           $count2 = 0;
-        }
+    # The gene list is split into chunks of 10 as
+    # mysql grinds to a halt over this number
+    my $chunk_size = 10;
+    my( @inlist );
+    for (my $i = 0; $i < @geneid; $i += $chunk_size) {
+        my $j = $i + $chunk_size - 1;
+        
+        # Set $j to the end of the array
+        # if it is beyond it
+        $j = $#geneid if $j > $#geneid;
+        
+        # Take a slice of @geneid between $i and $j
+        push(@inlist, [ @geneid[$i..$j] ]);
     }
-	
     
    # my $inlist = join(',', map "'$_'", @geneid);
     my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
@@ -532,14 +524,14 @@ sub get_array_supporting {
           , transcript tscript
           , exon_transcript e_t
           , exon
-          , translation transl
 	  , genetype
 	  , clone cl
+        LEFT JOIN translation transl
+          ON tscript.translation = transl.id
         WHERE gene.id = tscript.gene
           AND tscript.id = e_t.transcript
           AND e_t.exon = exon.id
           AND exon.contig = con.internal_id
-          AND tscript.translation = transl.id
           AND genetype.gene_id = gene.id
           AND gene.id IN ($inlist)
 	  AND cl.internal_id = con.clone
@@ -547,10 +539,9 @@ sub get_array_supporting {
           , tscript.id
           , e_t.rank
           , exon.sticky_rank
-        LIMIT 2500
         };
     
-#    print STDERR "Query is " . $query . "\n";
+    #print STDERR "Query is " . $query . "\n";
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
    
@@ -621,17 +612,19 @@ sub get_array_supporting {
 	    
 	    $current_transcript_id = $transcriptid;
 	    
-	    my $translation = Bio::EnsEMBL::Translation->new();
-	    
-	    $translation->start        ($trans_start);
-	    $translation->end          ($trans_end);
-	    $translation->start_exon_id($trans_exon_start);
-	    $translation->end_exon_id  ($trans_exon_end);
-	    $translation->id           ($translationid);
-	    $translation->version      ($translationversion);
-	    $trans->translation        ($translation);
+            # Make a translation if this transcript has one
+            if ($translationid) {
+	        my $translation = Bio::EnsEMBL::Translation->new();
+
+	        $translation->start        ($trans_start);
+	        $translation->end          ($trans_end);
+	        $translation->start_exon_id($trans_exon_start);
+	        $translation->end_exon_id  ($trans_exon_end);
+	        $translation->id           ($translationid);
+	        $translation->version      ($translationversion);
+	        $trans->translation        ($translation);
+	    }
 	    $gene ->add_Transcript     ($trans);
-	    
 	}
 	
 	
@@ -1395,7 +1388,7 @@ sub get_Transcript_by_est{
     my $seen=0;
     $est_id || $self->throw("You need to provide the accession number of the est to get a transcript!\n");
 
-    my $est = "gb|$est_id%";
+    my $est = "gb|$est_id\%";
 
     my $sth = $self->_db_obj->prepare("select distinct e_t.transcript from feature as f, exon as e,exon_transcript as e_t where f.hid like '".$est."' and e.seq_start<=f.seq_start and e.seq_end >= f.seq_end and e.contig = f.contig and e_t.exon = e.id;");
     my $res = $sth->execute();
@@ -1920,7 +1913,11 @@ sub write_Transcript{
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
-   # ok - now load this line in
+   # Do we have a translation for this transcript?
+   my $translation = $trans->translation;
+   my $translation_id = $translation ? $translation->id : '';
+   
+   # Insert the transcript
    my $tst = $self->_db_obj->prepare("
         insert into transcript (id, gene, translation, version) 
         values (?, ?, ?, ?)
@@ -1929,8 +1926,8 @@ sub write_Transcript{
    $tst->execute(
         $trans->id,
         $gene->id, 
-        $trans->translation->id,
-        $trans->version   
+        $translation_id,
+        $trans->version,  
         );
 
 #    print STDERR "Going to look at gene links\n";
@@ -1945,7 +1942,7 @@ sub write_Transcript{
        
    }
 
-   $self->write_Translation($trans->translation());
+   $self->write_Translation($translation) if $translation;
    return 1;
 }
 

@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::CloneAdapor
 
 =head1 SYNOPSIS
 
-    # $db is Bio::EnsEMBL::DB::Obj 
+    # $db is Bio::EnsEMBL::DB::DBAdaptor
 
     my $da= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($obj);
     my $clone=$da->fetch($id);
@@ -133,6 +133,32 @@ sub fetch_by_accession_version {
 }
 
 
+sub fetch_by_embl_id {
+    my ($self, $embl_id) = @_;
+
+    $self->throw("Can't fetch clone without EMBL id (got '$embl_id')")
+        unless $embl_id;
+
+    my $sth = $self->prepare(q{
+        SELECT internal_id
+          , id
+          , embl_id
+          , version
+          , embl_version
+          , htg_phase
+          , UNIX_TIMESTAMP(created)
+          , UNIX_TIMESTAMP(modified)
+          , UNIX_TIMESTAMP(stored)
+        FROM clone
+        WHERE embl_id = ?
+        });
+    $sth->execute($embl_id);
+    
+    my @fields = $sth->fetchrow
+        or $self->throw("No Clone with embl_id '$embl_id'");
+    
+    return Bio::EnsEMBL::Clone->new($self, @fields);
+}
 
 
 

@@ -47,13 +47,14 @@ Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig''s perspective
 =head1 DESCRIPTION
 
 VirtualGene provides a view of a Gene from the perspective of a
-contig. In this contig''s perspective, the gene has a start and end, being
+contig. In this contig's perspective, the gene has a start and end, being
 the first and last exon on the contig respectively. The strand is taken to
 be arbitarily the first exon it encounters on the call to each_unique_Exon
 on this contig. If the gene is jumping strand (a possibility due to software
 issues, not biologically sane of course) then this is not indicated.
 
-VirtualGene, by having a start,end,strand is-a seqfeature
+VirtualGene, by having a start, end, strand is-a
+seqfeature, and it has-a gene.
 
 =head1 CONTACT
 
@@ -331,8 +332,18 @@ sub _calculate_coordinates{
    $self->end($end);
    $self->seqname($cid);
    $self->strand($strand);
-
 }
+
+# Would be good idea to implement these
+# methods:
+
+#sub start_is_on_vc {
+#
+#}
+#
+#sub end_is_on_vc {
+#
+#}
 
 =head2 primary_tag
 
