@@ -196,7 +196,84 @@ sub get_all_SimilarityFeatures {
                         ORDER  by start";
    
     
-    print $statement;
+    
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+    
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+    
+    
+    my @features;
+    
+    my $out;
+    my %analhash;
+    my $length=$self->length;
+  FEATURE: 
+
+    while($sth->fetch) {
+
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
+	
+	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+
+	my $analysis=$self->_get_analysis($analysisid);
+	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+	
+	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+	$out->analysis($analysis);
+        $out->id      ($hid);
+	push(@features,$out);
+    }
+  
+   return @features;
+
+}
+
+
+sub get_all_SimilarityFeatures_by_analysis_id {
+   my ( $self, $ana_id ) = @_;
+
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   my $idlist  = $self->_raw_contig_id_list();
+   
+   unless ($idlist){
+       return ();
+   }
+   
+   my    $statement = "SELECT f.id, 
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start))  as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start))  as end , 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)) as strand,
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+		        FROM   feature f, analysisprocess a,static_golden_path sgp
+                        WHERE  f.analysis = a.analysisId
+                        AND    f.analysis = $ana_id
+                        AND    sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
+                        AND    sgp.chr_end >= $glob_start 
+		        AND    sgp.chr_start <=$glob_end 
+		        AND    sgp.chr_name='$chr_name' 
+                        AND    a.gff_feature = 'similarity'
+                        ORDER  by start";
+   
+    
     
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
@@ -373,7 +450,7 @@ sub get_all_SimilarityFeatures_above_score{
 # gene building]).
 
         if (defined $prev && $prev->hseqname eq $hid && 
-            $prev->end+$bp > $start ) {
+            $prev->end + $bp > $start ) {
       
           $prev->end($end);
           next;
@@ -382,7 +459,9 @@ sub get_all_SimilarityFeatures_above_score{
 
       # &eprof_start('similarity-obj-creation');
       my $analysis=$self->_get_analysis($analysisid);
-          
+       
+      #warn $analysis->logic_name;
+        
       if( !defined $name ) {
         $name = 'no_source';
       }
@@ -394,19 +473,18 @@ sub get_all_SimilarityFeatures_above_score{
 
       $out->analysis($analysis);
       $out->id      ($hid);
-
+        
       if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
         $self->{'_feature_cache'}->{$analysis->db()} = [];
       }
-
       push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
-
+        
       $prev = $out;
       $count++;
       # &eprof_end('similarity-obj-creation');
     }
       
- #   print STDERR "FEATURE: got $count in entire call\n";
+    #print STDERR "FEATURE: got $count in entire call\n";
     &eprof_end('similarity-obj');
       
   }
@@ -1029,15 +1107,12 @@ sub get_all_PredictionFeatures_by_analysis_id {
     my @array;
     #my $id     = $self->internal_id();
     my $length = $self->length();
-    
-    if( exists $self->{'_genscan_cache'} ) {
-       return @{$self->{'_genscan_cache'}};
-   }
    
-   my $glob_start=$self->_global_start;
-   my $glob_end=$self->_global_end;
-   my $chr_name=$self->_chr_name;
-   my $idlist  = $self->_raw_contig_id_list();
+   
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    my $idlist  = $self->_raw_contig_id_list();
    
    unless ($idlist){
        return ();
@@ -1058,9 +1133,9 @@ sub get_all_PredictionFeatures_by_analysis_id {
                           , f.seq_start
                           , f.seq_end
                           , IF (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start)
-                              , (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start
+                              , (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start))  as start
                           , IF (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start)
-                              , (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start))
+                              , (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start))  as end
                           , IF (sgp.raw_ori=1,f.strand,(-f.strand))
                           , f.score
                           , f.evalue
@@ -1081,6 +1156,7 @@ sub get_all_PredictionFeatures_by_analysis_id {
                         ORDER BY f.contig,f.strand*f.seq_start
                         ";
    
+   
    my $sth = $self->dbobj->prepare($query);
    
    $sth->execute();
@@ -1097,9 +1173,7 @@ sub get_all_PredictionFeatures_by_analysis_id {
    \$seqend,\$start,\$end,\$strand,\$score,
    \$evalue,\$perc_id,\$phase,\$end_phase,
    \$analysisid,\$hid,\$contig,\$name);
-   
-
-	
+   	
     my $current_fset;
     my $fsetstart;
     my $count = 1;
@@ -1123,7 +1197,6 @@ sub get_all_PredictionFeatures_by_analysis_id {
         $count++;
         my $analysis;
         
-        #print "HID : ",$hid,"  Start : ",$start,"  Strand :",$strand,"  ";      
        				
         if ( !$analhash{$analysisid} ) {
             my $analysis_adp =
@@ -1147,7 +1220,6 @@ sub get_all_PredictionFeatures_by_analysis_id {
 	#print "Transcript :",$transcript_num,"\n";
 		
 	if ($transcript_num != $transcript_pos ) {			
-        #if( $hid ne $previous || $previous eq -1 ) {
             $current_fset = Bio::EnsEMBL::SeqFeature->new();  
             $current_fset->source_tag($name);
             $current_fset->primary_tag('prediction');
@@ -1174,14 +1246,7 @@ sub get_all_PredictionFeatures_by_analysis_id {
         $out->percent_id($perc_id)  if ( defined $perc_id );
         $out->phase($phase)         if ( defined $phase );
         $out->end_phase($end_phase) if ( defined $end_phase );
-
-        #	my $query="select fset from fset_feature where feature=$fid"; 
-        #	my $sth = $self->dbobj->prepare($query);
-        #   	$sth->execute();
-        #	my $arr_ref=$sth->fetchrow_arrayref;
-        #	$fsetid=$arr_ref->[0];
-		
-        #my $fsetid = $self->internal_id . "." . $fsetstart;
+     
         $out->id($fsetid);    # to make genscan peptide work
         $out->source_tag($name);
         $out->primary_tag('prediction');
@@ -1203,7 +1268,6 @@ sub get_all_PredictionFeatures_by_analysis_id {
 		
     }
     
-    $self->{'_genscan_cache'} = \@array;
     return @array;
 }
 
@@ -1303,15 +1367,17 @@ sub _fetch_SimpleFeatures_SQL_clause {
         SELECT f.id
           , IF (sgp.raw_ori = 1
               , (sgp.chr_start + f.seq_start - sgp.raw_start - $global_start)
-              , (sgp.chr_start + sgp.raw_end - f.seq_end     - $global_start))
+              , (sgp.chr_start + sgp.raw_end - f.seq_end     - $global_start)) as start
           , IF (sgp.raw_ori = 1
               , (sgp.chr_start + f.seq_end   - sgp.raw_start - $global_start)
-              , (sgp.chr_start + sgp.raw_end - f.seq_start   - $global_start))
+              , (sgp.chr_start + sgp.raw_end - f.seq_start   - $global_start)) as end
           , sgp.raw_ori * f.strand
           , f.score
           , f.analysis
           , f.name
           , f.hid
+          , f.perc_id
+          , f.evalue
         FROM feature f
           , analysisprocess a
           , static_golden_path sgp
@@ -1340,7 +1406,8 @@ sub _fetch_SimpleFeatures_SQL_clause {
     $sth->bind_columns(undef,
         \$fid,
         \$start, \$end, \$strand,
-        \$f_score, \$analysis_id, \$name, \$hid);
+        \$f_score, \$analysis_id, \$name, \$hid
+        \$f_perc_id, \$f_evalue);
         
     my $length = $self->length;
 
@@ -1372,6 +1439,8 @@ sub _fetch_SimpleFeatures_SQL_clause {
         $feat->strand   ($strand);
         $feat->score    ($f_score);
         $feat->analysis ($analysis);
+        $feat->percent_id ($f_perc_id) if ( defined $f_perc_id );
+        $feat->evalue ($f_evalue) if ( defined $f_evalue ); 
         
         push(@features, $feat);
     }
