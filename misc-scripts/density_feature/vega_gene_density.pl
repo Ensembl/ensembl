@@ -258,19 +258,19 @@ foreach my $slice (@$top_slices){
      -DESCRIPTION => 'Total Number of Predicted transcripts');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Ig Segments',
+    (-NAME => 'Ig segments',
      -CODE => 'IgSegCount',
      -VALUE => $total{'Ig_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Ig Pseudogene Segments',
+    (-NAME => 'Ig pseudogene Segments',
      -CODE => 'IgPsSegCount',
      -VALUE => $total{'Ig_Pseudogene_Segment'} || 0,
      -DESCRIPTION => 'Total Number of Ig Pseudogene Segments');
 
     push @attribs, Bio::EnsEMBL::Attribute->new
-    (-NAME => 'Total Pseudogenes',
+    (-NAME => 'Total pseudogenes',
      -CODE => 'TotPsCount',
      -VALUE => $total{'Pseudogenes'}
                + $total{'Processed_pseudogene'}
