@@ -1,4 +1,4 @@
-# EnsEMBL Gene reading writing adaptor for mySQL
+# EnsEMB Gene reading writing adaptor for mySQL
 #
 # Copyright EMBL-EBI 2001
 #
@@ -203,6 +203,7 @@ sub fetch_all_by_Slice {
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
               t.exon_structure, t.external_name, t.external_status, 
               t.exon_ids, t.external_db, t.coding_start, t.coding_end, 
+              g.chr_start as gene_start, g.chr_end as gene_end,
               g.external_name as gene_external_name, 
               g.external_db as gene_external_db, 
               g.external_status as gene_external_status, 
@@ -221,7 +222,7 @@ sub fetch_all_by_Slice {
 
 sub fetch_by_DBEntry {
     my ($self, $db, $dbentry, $chr_coords ) = @_;
-    my $sth = $self->prepare( "select gene_name from gene_xref where external_name = ? and db= ?" );
+    my $sth = $self->prepare( "select gene_name from gene_xref where external_name = ? and db = ?" );
     $sth->execute( $dbentry, $db );
     my( $stable_id ) = $sth->fetchrow;
     return $stable_id ? $self->fetch_by_stable_id( $stable_id, $chr_coords ) : undef;
@@ -253,9 +254,10 @@ sub fetch_by_stable_id {
               t.translation_name, t.gene_id, t.type, t.gene_name, 
               t.db, t.exon_structure, t.external_name, t.external_status, t.exon_ids,
               t.external_db, t.coding_start, t.coding_end, 
+              g.chr_start as gene_start, g.chr_end as gene_end,
               g.external_name as gene_external_name, 
               g.external_status as gene_external_status, 
-              g.external_db as gene_external_db, g.type as gene_type
+              g.external_db as gene_external_db, g.type as gene_type,
               g.analysis as analysis 
         FROM  transcript t, gene g 
         WHERE g.gene_id = t.gene_id
@@ -289,6 +291,7 @@ sub fetch_by_transcript_stable_id {
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
               t.exon_structure, t.external_name, t.external_status, t.exon_ids,
               t.external_db, t.coding_start, t.coding_end, 
+              g.chr_start as gene_start, g.chr_end as gene_end,
               g.external_name as gene_external_name, 
               g.external_status as gene_external_status, 
               g.external_db as gene_external_db, g.type as gene_type,
@@ -350,8 +353,12 @@ sub _objects_from_sth {
 	Bio::EnsEMBL::Analysis->new(-logic_name => $hr->{'analysis'}); 
       $gene->analysis($analysis_cache{$hr->{'analysis'}});
 
+      $gene->chr_name( $chr );
+      $gene->start( $hr->{'gene_start'} );
+      $gene->end( $hr->{'gene_end'} );
+      $gene->strand( $hr->{'chr_strand'} );
       if( defined $hr->{'gene_type' } ) {
-        $gene->external_name( $hr->{'gene_external_status'} );
+        $gene->external_status( $hr->{'gene_external_status'} );
 	$gene->external_name( $hr->{'gene_external_name'} );
 	$gene->external_db( $hr->{'gene_external_db'} );
 	$gene->type( $hr->{'gene_type'} );
