@@ -1183,7 +1183,7 @@ sub _convert_seqfeature_to_vc_coords {
       $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@ || !ref($mc) ) { 
-      print STDERR "In Bio::EnsEMBL::Virtual::Contig, unable to map $cid\n";
+      print STDERR "In Bio::EnsEMBL::Virtual::Contig, unable to map seqfeature in contig $cid\n";
       return undef;
     }
 
