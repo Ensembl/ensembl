@@ -61,9 +61,12 @@ use vars qw( %ensConf );
 
 my $sanger_path="/nfs/disk100/humpub1a/unfinished_ana";
 my $ext_path="/nfs/disk100/humpub2a/unfinished_ana";
+my $mus_path="/nfs/disk100/humpub3a/unfinished_ana";
 my %cgp_path=map {$_,"$sanger_path/$_"} qw ( SU SF );
 $cgp_path{'EU'}="$ext_path/EU";
 $cgp_path{'EF'}="$ext_path/EF";
+$cgp_path{'MEU'}="$mus_path/MEU";
+$cgp_path{'MEF'}="$mus_path/MEF";
 
 # Hash containing config info
 %ensConf = (
