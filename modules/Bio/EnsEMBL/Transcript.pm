@@ -519,7 +519,7 @@ sub translate {
 
 	  # last exon
 	  if( $last_exon->end_phase != 0 ) {
-	      $filler = substr($last_exon->seq->str,$last_exon->seq->seq_len-$last_exon->end_phase);
+	      $filler = substr($last_exon->seq->seq,$last_exon->seq->length-$last_exon->end_phase);
 	  } 
 	  $filler .= 'N' x (3 - $last_exon->end_phase);
 
