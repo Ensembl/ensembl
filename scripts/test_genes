@@ -9,8 +9,8 @@ use Getopt::Long;
 use Time::Local;
 
 my $dbtype1 = 'rdb';
-my $host1   = 'obi-wan';
-my $dbname1 = 'ens500';
+my $host1   = 'ensrv4';
+my $dbname1 = 'ensembl_freeze15_tim';
 my $dbuser1 = 'ensro';
 my $dbpass1 = undef;
 my $port1   = 3306;
@@ -27,11 +27,11 @@ $| = 1;
 
 my ($db1) = get_db_handles();
 
-my ($clone1,$acc) = get_cloneids($infile,@ARGV);
+my ($clone1) = get_cloneids($infile,@ARGV);
 my $i = 0;
 
 for ($i = 0; $i <= $#$clone1; $i++) {
-    print("Processing clone " . $clone1->[$i] . "\t" . $acc->[$i] . "\n");
+    print("Processing clone " . $clone1->[$i] . "\n");
     eval {
     my $cl1    = $db1->get_Clone($clone1->[$i]);
 
@@ -41,10 +41,13 @@ for ($i = 0; $i <= $#$clone1; $i++) {
 
     foreach my $gene1 (@genes1) {
 
-        print("$acc->[$i]\t$clone1->[$i]\t" . $gene1->id . "\n");
+        print("$clone1->[$i]\t" . $gene1->id . "\n");
 
         foreach my $exon ($gene1->each_unique_Exon) {
                 print("Exon " . $exon->id . "\t" .$exon->start . "\t" . $exon->end . "\t" . $exon->strand . "\n");
+        }
+        foreach my $tran ($gene1->each_Transcript) {
+             print "Transcript " . $tran->translate->seq . "\n";
         }
     }
   };
@@ -56,15 +59,13 @@ sub get_cloneids {
     my ($infile,@ARGV) = @_;
 
     my @clone1;
-    my @acc;
 
     if (defined($infile)) {
 	open(IN,"<$infile");
 	while (<IN>) {
 	    chomp;
-            my ($clone,$acc) = split (' ',$_);	
+            my ($clone) = split (' ',$_);	
 	    push(@clone1,$clone);
-            push(@acc,$acc); 
 	}
 	close(IN);
     }
@@ -72,7 +73,7 @@ sub get_cloneids {
 	my $clone1 = shift @ARGV;
 	push(@clone1,$clone1);
     }
-    return (\@clone1,\@acc);
+    return (\@clone1);
 }
 
 
