@@ -220,12 +220,14 @@ $s_min /= 100.0;
 my %r;
 
 while (defined(my $line = <$in>)) {
+
     # Perl script to calculate the percentage of identity
     # and reformat cigar lines.  Takes tab-delimited list in
     # specific format from exonerate as input on stdin and
     # writes comma-separated output to stdout.
 
-    next if (($line =~ /^Message:/) || ($line =~ /^--/));
+    next if $line !~ /\S+/;
+    next if (($line =~ /^Message:/) || ($line =~ /^Command line:/) || ($line =~ /^--/));
     chomp($line);
 
     # Pick out the individual fields (variable names correspond to

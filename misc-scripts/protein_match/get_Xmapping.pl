@@ -201,6 +201,21 @@ if ($organism eq "fugu") {
 }
 
 
+if ($organism eq "tetraodon") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+
+
 #End of check
 
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
@@ -630,9 +645,9 @@ sub process_parsed_sp{
       die "you have no data tag can't decide if data is from swissprot or trembl for id ".$id." ac ".$ac." entry ".$entry."\n"
     }
     if($tag =~ /STANDARD/){
-      $db = 'SWISSPROT';
+      $db = 'Uniprot/SWISSPROT';
     }elsif($tag =~ /PRELIMINARY/){
-      $db = 'SPTREMBL';
+      $db = 'Uniprot/SPTREMBL';
     }elsif ($tag =~ /Prediction-SPTREMBL/){
 	$db = 'prediction-SPTREMBL';
     }else {

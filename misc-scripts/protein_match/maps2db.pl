@@ -66,7 +66,7 @@ my %embl2sp;
 my %errorflag;
 my %ref_map_pred;
 
-my $help = $conf{'help'};
+$help = $conf{'help'};
 
 print STDERR "$help\n";
 
@@ -419,7 +419,7 @@ MAPPING: while (<MAP>) {
 	    
 	    
 
-	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB") || $a->xDB eq 'BRIGGSAE_HYBRID') {
+	    if (($a->xDB eq "Uniprot/SPTREMBL") || ($a->xDB eq "Uniprot/SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB") || $a->xDB eq 'BRIGGSAE_HYBRID') {
 
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
@@ -431,7 +431,7 @@ MAPPING: while (<MAP>) {
 
 		$dbentry->status($a->stat);
 
-		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT"))) {
+		if (($check eq "yes") && (($a->xDB eq "Uniprot/SPTREMBL") || ($a->xDB eq "Uniprot/SWISSPROT"))) {
 
 		    if (($sp2embl{$a->xAC}) && ($ens2embl{$targetid})) {
 
@@ -521,7 +521,7 @@ MAPPING: while (<MAP>) {
 		    
 	    }
 	}
-    }
+      }
     
 	
     else  {
@@ -738,6 +738,65 @@ if ($organism eq "elegans") {
     $adaptor->store($transdbentry,$transc_dbid,"Transcript");
   }
 }
+
+
+
+if ($organism eq "tetraodon") {
+  my $adaptor = $db->get_DBEntryAdaptor();
+  
+  my $query = ("select tr.translation_id, ts.stable_id, gs.stable_id, ".
+               "g.type from transcript t, gene_stable_id gs, ".
+               "transcript_stable_id ts, gene g, translation tr ".
+               "where t.gene_id = gs.gene_id and ".
+               "t.transcript_id = ts.transcript_id and ".
+               "t.transcript_id = tr.transcript_id and ".
+               "t.gene_id = g.gene_id");
+  my $sth = $db->prepare($query);
+  $sth->execute();
+  while (my @res = $sth->fetchrow) {
+    my $transl_dbid = $res[0];
+    my $transc_stable_id = $res[1];
+    my $gene_stable_id = $res[2];
+    my $gene_type = $res[3];
+
+    my @xrefs = {
+        primary_id => $gene_stable_id, 
+        display_id => $gene_stable_id,
+    };
+
+    if ($gene_type =~ /annotated/i) {
+      $xrefs[0]->{dbname} = "Genoscope_annotated_gene";
+      $xrefs[0]->{status} = "KNOWN";
+    } else {
+      $xrefs[0]->{dbname} = "Genoscope_predicted_gene";
+      $xrefs[0]->{status} = "XREF";
+      push @xrefs, {
+        dbname => "Genoscope_predicted_transcript",
+        primary_id => $transc_stable_id, 
+        display_id => $transc_stable_id,
+        status     => "XREF"
+      }
+    }
+
+    foreach my $xref (@xrefs) {
+
+      my $dbentry = Bio::EnsEMBL::DBEntry->new
+          ( -adaptor => $adaptor,
+            -primary_id => $xref->{primary_id},
+            -display_id => $xref->{display_id},
+            -version => 1,
+            -release => 1,
+            -dbname => $xref->{dbname});
+
+      $dbentry->status($xref->{status});            
+      $adaptor->store($dbentry,$transl_dbid,"Translation");
+    }
+  }
+}
+
+
+
+
 
 
 sub usage {

@@ -27,7 +27,7 @@ my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
-my $port = $conf{'port'};
+my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
 my %priority;
 
@@ -37,9 +37,12 @@ $priority{'MarkerSymbol'} = 1000;
 $priority{'wormbase_transcript'} = 1000;
 $priority{'flybase_symbol'} = 1000;
 $priority{'Anopheles_symbol'} = 1000;
-$priority{'SWISSPROT'} = 900;
+$priority{'Genoscope_annotated_gene'} = 1000;
+$priority{'Genoscope_predicted_transcript'} = 1000;
+$priority{'Genoscope_predicted_gene'} = 999;
+$priority{'Uniprot/SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
-$priority{'SPTREMBL'} = 700;
+$priority{'Uniprot/SPTREMBL'} = 700;
 $priority{'LocusLink'} = 100;
 
 
@@ -64,6 +67,7 @@ my $transadaptor = $db->get_TranscriptAdaptor();
 my $geneadaptor  = $db->get_GeneAdaptor();
 my $xrefadaptor  = $db->get_DBEntryAdaptor();
 
+if (0) {
 my $query = "select transcript_id from transcript";
 my $sth = $db->prepare($query);
 $sth->execute();
@@ -87,12 +91,72 @@ while(my $id = $sth->fetchrow) {
     $trans->display_xref($display);
     $transadaptor->update($trans);
 }
-
+}
 print STDERR "Done\n";
 print STDERR "Getting gene display_xref_id\n";
 
 
-if ($organism ne "elegans") {
+
+#Not sure id it is really needed if wormbase_gene is put in the priority list... Laura?
+if ($organism eq "elegans") {
+    my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_gene'";
+    my $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	$gene->display_xref($xref_obj);
+	$geneadaptor->update($gene);
+     }
+    $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
+    $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
+	$gene->display_xref($xref_obj);
+	$geneadaptor->update($gene);
+     }
+
+     $query1 = "select t.transcript_id, x.xref_id from transcript_stable_id t, xref x, external_db e where t.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
+    $sth1 = $db->prepare($query1);
+    $sth1->execute();
+    
+    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
+      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
+      my $trans = $transadaptor->fetch_by_dbID($gene_id);
+	$trans->display_xref($xref_obj);
+	$transadaptor->update($trans);
+     }
+    
+}
+elsif ($organism eq "tetraodon") {
+  # switch the priorityies so that we now favour gene xrefs
+  $priority{'Genoscope_predicted_transcript'} = 999;
+  $priority{'Genoscope_predicted_gene'} = 1000;
+  
+  my $query1 = "select gene_id, type from gene";
+  my $sth1 = $db->prepare($query1);
+  $sth1->execute();
+  while (my ($gene_id, $gene_type) = $sth1->fetchrow) {
+    my $gene = $geneadaptor->fetch_by_dbID($gene_id);    
+    my $xrefs = $gene->get_all_DBLinks;
+
+    my $best_xref;
+    foreach my $xref (@$xrefs) {
+      if (not $best_xref or 
+          $priority{$xref->database} > $priority{$best_xref->database}) {
+        $best_xref = $xref;
+      }
+    }
+    
+    $gene->display_xref($best_xref);
+    $geneadaptor->update($gene);
+  }
+}
+else {
     my $query1 = "select gene_id from gene";
     my $sth1 = $db->prepare($query1);
     $sth1->execute();
@@ -116,41 +180,6 @@ if ($organism ne "elegans") {
 	$geneadaptor->update($gene);
        
     }
-}
-#Not sure id it is really needed if wormbase_gene is put in the priority list... Laura?
-elsif ($organism eq "elegans") {
-    my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_gene'";
-    my $sth1 = $db->prepare($query1);
-    $sth1->execute();
-    
-    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
-      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
-      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
-	$gene->display_xref($xref_obj);
-	$geneadaptor->update($gene);
-     }
-    my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
-    my $sth1 = $db->prepare($query1);
-    $sth1->execute();
-    
-    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
-      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
-      my $gene = $geneadaptor->fetch_by_dbID($gene_id);
-	$gene->display_xref($xref_obj);
-	$geneadaptor->update($gene);
-     }
-
-     my $query1 = "select t.transcript_id, x.xref_id from transcript_stable_id t, xref x, external_db e where t.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_pseudogene'";
-    my $sth1 = $db->prepare($query1);
-    $sth1->execute();
-    
-    while(my ($gene_id,$xref)  = $sth1->fetchrow) {
-      my $xref_obj = $db->get_DBEntryAdaptor->fetch_by_dbID($xref);
-      my $trans = $transadaptor->fetch_by_dbID($gene_id);
-	$trans->display_xref($xref_obj);
-	$transadaptor->update($trans);
-     }
-    
 }
 
 print STDERR "Done\n";
