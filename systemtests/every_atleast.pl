@@ -33,6 +33,9 @@ correct start and end exons.
 
     -help      Displays script documentation with PERLDOC
 
+    -usefile   read in on stdin a list of clones, one clone per line
+
+    -getall    get all clones
 =cut
 
 use strict;
@@ -48,6 +51,8 @@ my $dbuser = 'ensembl';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $help;
+my $usefile = 0;
+my $getall = 0;
 
 &GetOptions( 
 	     'dbtype:s'   => \$dbtype,
@@ -57,6 +62,8 @@ my $help;
 	     'dbuser:s'   => \$dbuser,
 	     'dbpass:s'   => \$dbpass,
 	     'module:s'   => \$module,
+	     'usefile'    => \$usefile,
+	     'getall'     => \$getall,
 	     'h|help'     => \$help
 	     );
 
@@ -67,10 +74,24 @@ if ($help) {
 
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-
-my @clone_id = $db->get_all_Clone_id();
 my $seqio;
 my $errcount = 0;
+my @clone_id;
+
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clone_id,$en);
+    }
+} 
+
+elsif ($getall == 1) {
+    @clone_id = $db->get_all_Clone_id();
+}
+
+else {
+    @clone_id = @ARGV;
+} 
 
 foreach my $clone_id ( @clone_id ) {
     print STDERR "\nDumping clone      $clone_id\n";
