@@ -53,6 +53,34 @@ my %bighash = undef;
 # $db->static_golden_path_type('UCSC');
 # my $stadaptor = $db->get_StaticGoldenPathAdaptor();
 
+while(<>)  {
+    chomp($_);
+    my ($chr, $source, $tag, $start, $end, $score, $strand, $frame, @rest) 
+      = split("\t");
+### depracated, much too slow (2 s per query)
+###    ($chr, $start, $end) = $stadaptor->convert_chromosome_to_fpc($chr,$start, $end);
+
+    #reformat a bit as well:
+    grep( s/ ([^ ]+)/ "$1";/ , @rest);
+    my $rest = join(' ', @rest);
+    chomp $rest;
+
+    my ($contig, $ctg_start, $ctg_end, $status) = map_coords($chr,$start, $end);
+
+    if (! $status ) {
+        print join("\t", ($contig, $source, $tag, 
+                          $ctg_start, $ctg_end, $score, 
+                          $strand, $frame, $rest)), "\n";
+    } elsif ($status eq 'init' ) {
+        warn "$chr: ignoring it, but it might lie on missing initial part of $contig: $_\n";
+    } elsif ($status eq 'missing') { 
+        warn "$chr: cannot find contig for $_; ignoring it\n";
+    } elsif ($status eq 'bug') {
+        warn "$chr: bug with $_; ignoring it\n";
+    } else {
+        die "Bugger";               # even bigger bug
+    }
+}                                       # while
 
 sub read_mapping {
     my ($db) = shift;
@@ -71,7 +99,7 @@ sub read_mapping {
 
     }
     return;
-}
+}                                       # read_mapping
 
 # return fpc_ctg_name, start and end, status, given the chromosome+start/end
 sub map_coords {
@@ -132,32 +160,3 @@ sub map_coords {
     return ('bug_ctg', -999, -999, 'bug');
 }                                       # map_coords
 
-
-while(<>)  {
-    chomp($_);
-    my ($chr, $source, $tag, $start, $end, $score, $strand, $frame, @rest) 
-      = split("\t");
-### depracated, much too slow (2 s per query)
-###    ($chr, $start, $end) = $stadaptor->convert_chromosome_to_fpc($chr,$start, $end);
-
-    #reformat a bit as well:
-    grep( s/ ([^ ]+)/ "$1";/ , @rest);
-    my $rest = join(' ', @rest);
-    chomp $rest;
-
-    my ($contig, $ctg_start, $ctg_end, $status) = map_coords($chr,$start, $end);
-
-    if (! $status ) {
-        print join("\t", ($contig, $source, $tag, 
-                          $ctg_start, $ctg_end, $score, 
-                          $strand, $frame, $rest)), "\n";
-    } elsif ($status eq 'init' ) {
-        warn "$chr: ignoring it, but it might lie on missing initial part of $contig: $_\n";
-    } elsif ($status eq 'missing') { 
-        warn "$chr: cannot find contig for $_; ignoring it\n";
-    } elsif ($status eq 'bug') {
-        warn "$chr: bug with $_; ignoring it\n";
-    } else {
-        die "Bugger";               # even bigger bug
-    }
-}                                       # while
