@@ -157,11 +157,13 @@ sub get_all_translateable_Exons {
 sub stable_id {
   my $self = shift;
 
+  my $id = $self->dbID();
+  return '' if(!$id);
+
   my $analysis = $self->analysis();
   my $logic_name = uc($analysis->logic_name()) if($analysis);
   $logic_name ||= 'PTRANS';
 
-  my $id = $self->dbID();
   my $pad = 11;
   $pad -= length($id);
 

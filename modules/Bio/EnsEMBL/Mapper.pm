@@ -79,6 +79,7 @@ sub new {
 
   $self->{"_pair_$from"} = {};
   $self->{"_pair_$to"} = {};
+  $self->{'_is_sorted'} = 0;
 
   $self->to($to);
   $self->from($from);
@@ -559,14 +560,8 @@ sub _sort{
 
 sub _is_sorted{
    my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_is_sorted'} = $value;
-    }
-    if (! defined $self->{'_is_sorted'}) {
-      $self->{'_is_sorted'} = 0;
-    }
-    return $self->{'_is_sorted'};
-
+   $self->{'_is_sorted'} = shift if(@_);
+   return $self->{'_is_sorted'};
 }
 
 
