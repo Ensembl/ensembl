@@ -77,6 +77,6 @@ $vc->id;
 my $length=$vc->length;
 print STDERR "Length of contig is $length\n";
 print "ok 4\n";
-my ($rc,$rc_pos,$rc_strand)=$vc->_vmap->vcpos_to_rcpos(40000,-1);
+my ($rc,$rc_pos,$rc_strand)=$vc->_vmap->raw_contig_postion(40000,-1);
 print STDERR "Got RawContig ".$rc->id." rc_pos=$rc_pos, rc_strand=$rc_strand\n";
 			      
