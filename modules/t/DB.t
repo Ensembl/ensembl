@@ -59,7 +59,7 @@ eval {
 };
 
 if( $@  ) {
-    print STDERR "Could not connect to database in locator [$locator]\nCompile went ok. Locator string looks incorrect\nDeliberately skipping test\n";
+    print STDERR "Could not connect to database in locator [$locator]\nCompile went ok. Locator string looks incorrect\nDeliberately skipping test [$@]\n";
     &skip_tests();
 }
 

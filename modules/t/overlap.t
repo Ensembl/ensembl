@@ -162,7 +162,7 @@ if( $#sf == -1 ) {
 
 END {
     my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
-    system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
+   system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
 }
 
 
