@@ -683,7 +683,7 @@ sub _type_by_external_id{
   }
   my @queries = (
     "select $ID_sql
-       from $from_sql object_xref as oxr
+       from $from_sql xref, object_xref as oxr
       where $where_sql xref.dbprimary_acc = ? and
             xref.xref_id = oxr.xref_id and oxr.ensembl_object_type= ?",
     "select $ID_sql 
