@@ -71,8 +71,6 @@ use Bio::Root::RootI;
 
 @ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
 
-# new is inherited from Bio::Root::Object
-
 sub new {
   my($class,@args) = @_;
   my $self;
