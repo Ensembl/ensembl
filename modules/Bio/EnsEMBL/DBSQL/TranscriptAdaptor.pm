@@ -393,16 +393,16 @@ sub get_Interpro_by_transid {
    my $sql="
 	SELECT	i.interpro_ac, 
 		x.description 
-        FROM	transcript t, 
+        FROM	transcript_stable_id tsi,
+                transcript t, 
 		protein_feature pf, 
-		interpro i, 
-                xref x,
-		transcript_stable_id tsi
+		interpro i
+     LEFT JOIN  xref x
+            ON  x.dbprimary_acc = i.interpro_ac
 	WHERE	tsi.stable_id = '$transid' 
 	    AND	t.transcript_id = tsi.transcript_id
 	    AND	t.translation_id = pf.translation_id 
-	    AND	i.id = pf.hit_id 
-	    AND	i.interpro_ac = x.dbprimary_acc";
+	    AND	i.id = pf.hit_id";
    
    my $sth = $self->prepare($sql);
    $sth->execute;
