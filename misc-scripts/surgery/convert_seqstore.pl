@@ -323,7 +323,7 @@ copy_table($dbi, "protein_feature");
 copy_table($dbi, "qtl");
 copy_table($dbi, "qtl_synonym");
 copy_table($dbi, "repeat_consensus");
-# copy_table($dbi, "stable_id_event"); type enum???
+copy_table($dbi, "stable_id_event");
 copy_table($dbi, "transcript_stable_id");
 copy_table($dbi, "translation_stable_id");
 
@@ -428,7 +428,7 @@ sub create {
     debug("Building schema for $target from $create");
     die "Can't open $create" if (! -e $create);
     my $cmd = "mysql -u $user -p$password -h $host -P $port $target < $create";
-    debug($cmd);
+    #debug($cmd);
     system ($cmd);
 
   }
