@@ -99,8 +99,8 @@ sub store{
   my $sth = $self->prepare
     ("INSERT INTO affy_feature (seq_region_id, seq_region_start, " .
      "                          seq_region_end, seq_region_strand, " .
-     "                          affy_probe_id, analysis_id, mismatches, probeset ) " .
-     "VALUES (?,?,?,?,?,?,?,?)" );
+     "                          affy_probe_id, analysis_id, mismatches ) " .
+     "VALUES (?,?,?,?,?,?,?)" );
 
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
@@ -132,8 +132,7 @@ sub store{
     ($af, $seq_region_id) = $self->_pre_store($af);
 
     $sth->execute($seq_region_id, $af->start, $af->end, $af->strand,
-                  $af->probe->dbID, $af->analysis->dbID, $af->mismatchcount,
-		  $af->probeset );
+                  $af->probe->dbID, $af->analysis->dbID, $af->mismatchcount );
 
     $original->dbID($sth->{'mysql_insertid'});
     $original->adaptor($self);
@@ -183,7 +182,7 @@ sub _columns {
   my $self = shift;
 
   return qw( af.affy_feature_id af.seq_region_id af.seq_region_start
-             af.seq_region_end af.seq_region_strand af.probeset 
+             af.seq_region_end af.seq_region_strand 
              af.mismatches af.affy_probe_id af.analysis_id
              aa.name )
 
@@ -222,11 +221,11 @@ sub _objs_from_sth {
 
 
   my($affy_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
-     $seq_region_strand, $probeset, $mismatches, $analysis_id,
+     $seq_region_strand, $mismatches, $analysis_id,
      $affy_probe_id, $array_name);
 
   $sth->bind_columns(\$affy_feature_id,\$seq_region_id, \$seq_region_start,
-                     \$seq_region_end, \$seq_region_strand, \$probeset, 
+                     \$seq_region_end, \$seq_region_strand, 
 		     \$mismatches, \$affy_probe_id, \$analysis_id,
                      \$array_name );
  
