@@ -340,7 +340,23 @@ sub _get_hits {
     {
       push @hseqnames, $hseqname;
       if ((@hseqnames % $clump_size) == 0) {
-        my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+        my @tofetch = sort { $a cmp $b } @hseqnames;
+	for (my $i = 1; $i < @tofetch; $i++) {
+          if ($tofetch[$i] eq $tofetch[$i-1]) {
+	    splice @tofetch, $i, 1;
+	    $i--;
+	  }
+	}
+	for (my $i = 1; $i < @tofetch; $i++) {
+	  if ($tofetch[$i] =~ /|/) {	# pipe would make trouble
+	    splice @tofetch, $i, 1;
+	    $i--;
+	  }
+	}
+        my @seqs;
+	if (@tofetch) {
+	  @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+	}
 	foreach my $seq_obj (@seqs) {
           $hits_hash{$seq_obj->accession_number} = $seq_obj;
 	}
@@ -355,7 +371,23 @@ sub _get_hits {
     }
   }
   if (@hseqnames) {	# fetch the non-clump-sized remainder
-    my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+    my @tofetch = sort { $a cmp $b } @hseqnames;
+    for (my $i = 1; $i < @tofetch; $i++) {
+      if ($tofetch[$i] eq $tofetch[$i-1]) {
+        splice @tofetch, $i, 1;
+        $i--;
+      }
+    }
+    for (my $i = 1; $i < @tofetch; $i++) {
+      if ($tofetch[$i] =~ /|/) {	# pipe would make trouble
+        splice @tofetch, $i, 1;
+        $i--;
+      }
+    }
+    my @seqs;
+    if (@tofetch) {
+      @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+    }
     foreach my $seq_obj (@seqs) {
       $hits_hash{$seq_obj->accession_number} = $seq_obj;
     }
