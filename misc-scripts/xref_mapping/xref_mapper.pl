@@ -23,6 +23,7 @@ my $maxdump=undef;
 my $help;
 my $upload = undef;
 my $deleteexisting;;
+my $location;
 
 GetOptions ('file=s'              => \$file,
             'verbose'             => \$verbose,
@@ -31,6 +32,7 @@ GetOptions ('file=s'              => \$file,
 	    'maxdump=n'           => \$maxdump,
 	    'upload'              => \$upload,
 	    'deleteexisting'      => \$deleteexisting,
+	    'location=s'          => \$location,
             'help'                => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
@@ -107,7 +109,7 @@ for my $species ( @all_species ) {
   $species->xref($xref); # attach xref object to species object
 
   print "\nDumping xref & Ensembl sequences" . info($i, @all_species) . "\n";
-  $species->dump_seqs();
+  $species->dump_seqs($location);
 
   print "\nRunning mapping" . info($i, @all_species) . "\n";
   $species->build_list_and_map();
@@ -148,6 +150,13 @@ options:
   -maxdump <int>        dump only <int> sequences.
 
   -dumpcheck            only dump if files do not exist.
+
+  -location             only dump a subset of the genome. Format:
+                          coord_system:version:name:start:end:strand
+                          e.g.
+                          chromosome:NCBI34:X:1000000:2000000:1
+                        start, end, strand are optional
+                        coord_system can also be 'seqlevel' or 'toplevel'
 
   -useexistingmapping   use existing *.map files
 
