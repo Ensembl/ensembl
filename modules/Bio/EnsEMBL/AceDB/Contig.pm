@@ -1,4 +1,3 @@
-REVISION 1.6 WAS LOST.  JUNK LINE INSERTED IN DELTATEXT
 
 #
 # BioPerl module for Contig

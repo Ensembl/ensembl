@@ -89,7 +89,6 @@ sub _initialize {
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_all_Genes {
@@ -102,6 +101,7 @@ sub get_all_Genes {
    return @genes;
 }
 
+
 =head2 seq
 
  Title   : seq
@@ -110,7 +110,6 @@ sub get_all_Genes {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -122,6 +121,7 @@ sub seq {
 
 }
 
+
 =head2 get_all_Contigs
 
  Title   : get_Contigs
@@ -130,7 +130,6 @@ sub seq {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -147,6 +146,7 @@ sub get_all_Contigs {
    return @res;   
 }
 
+
 =head2 get_Contig
 
  Title   : get_Contig
@@ -155,7 +155,6 @@ sub get_all_Contigs {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -170,6 +169,7 @@ sub get_Contig {
    return $c;
 }
 
+
 =head2 id
 
  Title   : id
@@ -178,7 +178,6 @@ sub get_Contig {
  Example : 
  Returns : value of id
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -200,7 +199,6 @@ sub id {
  Example : 
  Returns : value of _dbobj
  Args    : newvalue (optional)
-
 
 =cut
 

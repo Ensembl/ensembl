@@ -42,6 +42,8 @@ package Bio::EnsEMBL::TimDB::Contig;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
+use Bio::Seq;
+use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::Object;
@@ -55,9 +57,51 @@ sub _initialize {
   my($self,@args) = @_;
   
   my $make = $self->SUPER::_initialize;
+  my ($dbobj,$id,$cloneobj)=$self->_rearrange([qw(DBOBJ
+						  ID
+						  CLONEOBJ
+						  )],@args);
+  $id || $self->throw("Cannot make contig object without id");
+  $dbobj || $self->throw("Cannot make contig object without db object");
+  $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
+      $self->throw("Cannot make contig object with a $dbobj object");
+  $cloneobj->isa('Bio::EnsEMBL::TimDB::Clone') || 
+      $self->throw("Cannot make clone object with a $cloneobj object");
+  # id of contig
+  $self->id($id);
+  # db object
+  $self->_dbobj($dbobj);
+  # clone object
+  $self->_cloneobj($cloneobj);
+
+
+  # build array of genes
+  $self->{'_gene_array'} = [];
+  {
+      my $bioseq=$self->seq;
+      # 1. loop over list of exons in this contig
+      my %transcript_id;
+      my %gene_id;
+      foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
+	  my $exon_id=$exon->id;
+	  $exon->attach_seq($bioseq);
+	  # 2. build list of transcripts containing these exons
+	  foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
+	      $transcript_id{$transcript->id()}=$transcript;
+	  }
+      }
+      # 3. build list of genes containing these transcripts
+      foreach my $transcript_id (keys %transcript_id){
+	  foreach my $gene (@{$dbobj->{'_transcript2gene'}->{$transcript_id}}){
+	      $gene_id{$gene->id()}=$gene;
+	  }
+      }
+      foreach my $gene (values %gene_id){
+	  push(@{$self->{'_gene_array'}},$gene);
+      }
+  }
 
   $self->{'_sf_array'} = [];
-  $self->{'_gene_array'} = [];
  
   # set stuff in self from @args
   return $make; # success - we hope!
@@ -98,7 +142,6 @@ sub get_all_SeqFeatures{
 
 sub get_all_Genes{
     my ($self) = @_;
-   $self->throw("Tim has not reimplemented this function");
     return @{$self->{'_gene_array'}};
 }
 
@@ -132,8 +175,8 @@ sub add_SeqFeature{
 =cut
 
 sub add_Gene{
-   my ($self,$gene) = @_;
-   $self->throw("Genes cannot be added to TimDB");
+    my ($self,$gene) = @_;
+    $self->throw("Genes cannot be added to TimDB");
 }
 
 
@@ -150,13 +193,11 @@ sub add_Gene{
 sub offset{
     my $self = shift;
 
-    $self->throw("Tim has not reimplemented this function");
-    
-    if( @_ ) {
-	my $value = shift;
-	$self->{'offset'} = $value;
+    # for now this only works if there is only one contig
+    if(scalar($self->_cloneobj()->get_all_Contigs())!=1){
+	$self->throw("Tim has not reimplemented this function for >1 contig");
     }
-    return $self->{'offset'};
+    1;
 }
 
 
@@ -172,14 +213,11 @@ sub offset{
 
 sub orientation{
     my $self = shift;
-    
-    $self->throw("Tim has not reimplemented this function");
-    
-    if( @_ ) {
-	my $value = shift;
-       $self->{'orientation'} = $value;
+    # for now this only works if there is only one contig
+    if(scalar($self->_cloneobj()->get_all_Contigs())!=1){
+	$self->throw("Tim has not reimplemented this function for >1 contig");
     }
-    return $self->{'orientation'};
+    1;
 }
 
 
@@ -196,18 +234,39 @@ sub orientation{
 sub seq{
     my $self = shift;
     
-    $self->throw("Tim has not reimplemented this function");
-    
     if( @_ ) {
-	my $value = shift;
-	if(! $value->isa("Bio::Seq") ) {
-	    $self->throw("$value is not a Bio::Seq!");
-	}			
-	
-	$self->{'seq'} = $value;
+	$self->throw("Cannot set a sequence in TimDB");
+    }elsif(defined $self->{'seq'}){
+	return $self->{'seq'};
     }
+
+    my $id=$self->id;
+
+    # read from sequence file
+    my $cloneobj=$self->_cloneobj();
+    my $cloneid=$cloneobj->id;
+    my $file=$cloneobj->{'_clone_dir'}."/$cloneid.seq";
+    my $fh = new FileHandle;
+    $fh->open($file) || 
+	$self->throw("Could not open sequence file [", $file, "]");
+    my $is = $fh->input_record_separator('>');
+    my $flag;
+    while(<$fh>){
+	if(/^$id\s[^\n]+\n(.*)/s){
+	    my $dna=$1;
+	    $dna=~s/\n//g;
+	    $dna=~s/\s//g;
+	    $dna=~tr/[a-z]/[A-Z]/;
+	    $self->{'seq'}=Bio::Seq->new ( -seq => $dna , -id => $id, -type => 'DNA' );
+	    $flag=1;
+	    last;
+	}
+    }
+    unless($flag){
+	$self->throw("Could not find contig $id in sequence file");
+    }
+    $fh->input_record_separator($is);
     return $self->{'seq'};
-    
 }
 
 
@@ -219,16 +278,54 @@ sub seq{
  Returns : value of id
  Args    : newvalue (optional)
 
-
 =cut
 
 sub id{
-   my $self = shift;
-   if( @_ ) {
-       my $value = shift;
-       $self->{'id'} = $value;
-   }
-   return $self->{'id'};
+    my $self = shift;
+    if( @_ ) {
+	my $value = shift;
+	$self->{'id'} = $value;
+    }
+    return $self->{'id'};
+}
+
+
+=head2 _dbobj
+
+ Title   : _dbobj
+ Usage   : $obj->_dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of _dbobj
+ Args    : newvalue (optional)
+
+=cut
+
+sub _dbobj {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_dbobj'} = $value;
+    }
+    return $obj->{'_dbobj'};
+}
+
+=head2 _cloneobj
+
+ Title   : _cloneobj
+ Usage   : $obj->_cloneobj($newval)
+ Function: 
+ Example : 
+ Returns : value of _cloneobj
+ Args    : newvalue (optional)
+
+=cut
+
+sub _cloneobj {
+    my ($obj,$value) = @_;
+    if( defined $value) {
+	$obj->{'_cloneobj'} = $value;
+    }
+    return $obj->{'_cloneobj'};
 }
 
 1;

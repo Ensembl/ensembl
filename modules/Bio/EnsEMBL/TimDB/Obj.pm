@@ -44,6 +44,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::TimDB::Clone;
+use Bio::EnsEMBL::Analysis::LegacyParser;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ObjI);
 # new() is inherited from Bio::Root::Object
@@ -51,7 +52,13 @@ use Bio::EnsEMBL::TimDB::Clone;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,@args) = @_;
+  my($self,$clone,@args) = @_;
+
+  # DEBUG
+  # second parameter is for debugging to avoid reading entire list of objects
+  if($clone){
+      $self->warn("DEBUG: only exon/transcript/gene objects associated with $clone are read");
+  }
 
   my $make = $self->SUPER::_initialize;
 
@@ -92,24 +99,15 @@ sub _initialize {
   $self->{'_exon_file'}=$exon_file;
 
   # build mappings from these flat files
-  # FIXME - this should be moved to the pipeline so that this information
-  # is stored in DBM files.
   # (better to do it here once than each time we need the information!)
-  my %contig2exon;
-  my %exons;
-  my %exon2transcript;
-  my %transcriptExons;
-  my %transcript2gene;
-  my %geneTranscripts;
-  $self->{'_contig2exon'}=\%contig2exon;
-  $self->{'_exons'}=\%exons;
-  $self->{'_exon2transcript'}=\%exon2transcript;
-  $self->{'_transcriptExons'}=\%transcriptExons;
-  $self->{'_transcript2gene'}=\%transcript2gene;
-  $self->{'_geneTranscripts'}=\%geneTranscripts;
+  # FIXME - should this be moved to the pipeline so that this information
+  # is stored in DBM files - currently in legacy parser
+  my $p=Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file,$transcript_file,$exon_file);
+  $p->map_all($self,$clone);
 
   return $make; # success - we hope!
 }
+
 
 =head2 get_Gene
 
@@ -120,17 +118,16 @@ sub _initialize {
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_Gene{
-   my ($self,$geneid) = @_;
-
-   $self->throw("Tim has not reimplemented this function");
-
-   $self->{'_gene_hash'}->{$geneid} || $self->throw("No gene with $geneid stored in this in-memory TimDB");
-   return $self->{'_gene_hash'}->{$geneid};
+    my ($self,$geneid) = @_;
+    $self->throw("Tim has not reimplemented this function");
+    $self->{'_gene_hash'}->{$geneid} || 
+	$self->throw("No gene with $geneid stored in TimDB");
+    return $self->{'_gene_hash'}->{$geneid};
 }
+
 
 =head2 get_Clone
 
@@ -141,26 +138,25 @@ sub get_Gene{
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_Clone{
-   my ($self,$id) = @_;
+    my ($self,$id) = @_;
 
-   # check to see if clone exists, and extract relevant items from dbm record
-   # cgp is the clone category (SU, SF, EU, EF)
-   my($line,$cdate,$type,$cgp,$acc,$sv);
-   if($line=$self->{'_clone_dbm'}->{$id}){
-       ($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
-   }else{
-       $self->throw("$id is not a valid sequence in this database");
-   }
-
-   # create clone object
-   my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
-					      -dbobj => $self,
-					      -cgp => $cgp);
-   return $clone;
+    # check to see if clone exists, and extract relevant items from dbm record
+    # cgp is the clone category (SU, SF, EU, EF)
+    my($line,$cdate,$type,$cgp,$acc,$sv);
+    if($line=$self->{'_clone_dbm'}->{$id}){
+	($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+    }else{
+	$self->throw("$id is not a valid sequence in this database");
+    }
+    
+    # create clone object
+    my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
+					       -dbobj => $self,
+					       -cgp => $cgp);
+    return $clone;
 }
 
 
@@ -173,7 +169,6 @@ sub get_Clone{
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_Contig{
@@ -181,7 +176,8 @@ sub get_Contig{
 
     $self->throw("Tim has not reimplemented this function");
 
-    $self->{'_contig_hash'}->{$contigid} || $self->throw("No contig with $contigid stored in this in-memory TimDB");
+    $self->{'_contig_hash'}->{$contigid} || 
+	$self->throw("No contig with $contigid stored in this in-memory TimDB");
     return $self->{'_contig_hash'}->{$contigid};
 }
 
@@ -196,13 +192,13 @@ sub get_Contig{
  Returns : 
  Args    :
 
-
 =cut
 
 sub write_Gene{
    my ($self,$gene) = @_;
    $self->throw("Cannot write to a TimDB");
 }
+
 
 =head2 write_Contig
 
@@ -213,7 +209,6 @@ sub write_Gene{
  Returns : 
  Args    :
 
-
 =cut
 
 sub write_Contig {
@@ -221,39 +216,14 @@ sub write_Contig {
    $self->throw("Cannot write to a TimDB");
 }
 
-# simple internal methods (hardwired things that would have been done by AUTOLOAD)
-#sub _db_handle{
-#   my($self,$value)=@_;
-#   $self->{'_db_handle'}=$value if(defined $value);
-#   return $self->{'_db_handle'};
-#}
-
-#sub AUTOLOAD {
-#    my $self = shift;
-#    my $class = ref($self) || $self->throw("\'$self\' is not an object of mine!");
-#    my $name = $AUTOLOAD;
-#
-#    # don't propagate DESTROY messages...
-#
-#    $name =~ /::DESTROY/ && return;
-#
-#    unless (exists $self->{'_permitted'}->{$name}) {
-#	$self->throw("In type $class, can't access $name - probably passed a wrong variable");
-#    }
-#    if (@_) {
-#	return $self->{$name} = shift;
-#    } else {
-#	return $self->{$name}
-#    }
-#}
-
 # close the dbm clone file
+
 sub DESTROY{
-   my ($obj) = @_;
-   if( $obj->{'_clone_dbm'} ) {
-       dbmclose(%{$obj->{'_clone_dbm'}});
-       $obj->{'_clone_dbm'} = undef;
-   }
+    my ($obj) = @_;
+    if( $obj->{'_clone_dbm'} ) {
+	dbmclose(%{$obj->{'_clone_dbm'}});
+	$obj->{'_clone_dbm'} = undef;
+    }
 }
 
 

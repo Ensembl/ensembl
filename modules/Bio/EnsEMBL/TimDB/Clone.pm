@@ -111,16 +111,14 @@ sub _initialize {
   my @res;
   foreach my $contig_id (@contig_id){
       my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
+						     -cloneobj => $self,
 						     -id => $contig_id );
       push(@res,$contig);
   }
   $self->{'_contig_array'}=\@res;
 
-  # build list of genes for clone
-  # (method get_all_Genes look at this list of objects, rather than build it)
-  # FIXME
-  # THERE IS CURRENTLY NO QUICK WAY TO LOOK THIS UP!!!
-  
+  # DEBUG
+  print scalar(@{$self->{'_contig_array'}})." contigs found in clone\n";
 
   return $make; # success - we hope!
 }
@@ -149,24 +147,24 @@ sub get_all_Contigs{
  Usage   :
  Function:
  Example :
- Returns : 
- Args    :
+ Returns : contig object
+ Args    : contig_id
 
 =cut
 
 sub get_Contig {
-   my ($self,$contigid) = @_;
-   my $c;
-   foreach my $contig (@{$self->{'_contig_array'}}){
-       if( $contigid eq $contig->id()){
-	   $c=$contig;
-	   last;
-       }
-   }
-   unless($c){
-       $self->throw("contigid $contigid not found in this clone");
-   }
-   return $c;
+    my ($self,$contigid) = @_;
+    my $c;
+    foreach my $contig (@{$self->{'_contig_array'}}){
+	if( $contigid eq $contig->id()){
+	    $c=$contig;
+	    last;
+	}
+    }
+    unless($c){
+	$self->throw("contigid $contigid not found in this clone");
+    }
+    return $c;
 }
 
 
@@ -178,7 +176,6 @@ sub get_Contig {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -197,22 +194,44 @@ sub add_Contig{
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_all_Genes{
-   my ($self) = @_;
-   my %h;
+    my ($self) = @_;
+    my %h;
+    
+    # loop over contigs, then loop over genes
+    foreach my $contig ($self->get_all_Contigs) {
+	foreach my $gene ($contig->get_all_Genes){
+	    # read into a hash to make unique
+	    $h{$gene->id()} = $gene;
+       }
+    }
+    # DEBUG
+    print "Clone contains ".scalar(keys %h)." genes\n";
+    return values %h;
+}
 
-   $self->throw("Tim has not reimplemented this function");
 
-   # read into a hash to make unique
-   foreach my $gene ( $self->get_all_Contigs ) {
-       $h{$gene->id()} = $gene;
-   }
+=head2 seq
 
-   return values %h;
+ Title   : seq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
+=cut
+
+sub seq {
+    my ($self) = @_;
+    my @c;
+    @c = $self->get_all_Contigs($self->id());
+    if(scalar(@c)>1){
+	$self->throw("More than one contig: sequence processing not implemented");
+    }
+    return $c[0]->seq;
 }
 
 
@@ -244,7 +263,6 @@ sub id {
  Example : 
  Returns : value of _dbobj
  Args    : newvalue (optional)
-
 
 =cut
 

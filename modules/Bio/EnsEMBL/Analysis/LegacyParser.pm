@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::Analysis::LegacyParser
 #
@@ -16,7 +15,8 @@ Bio::EnsEMBL::Analysis::LegacyParser - Parses exons/transcripts/genes out of Tim
 
 =head1 SYNOPSIS
 
-    $p = Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file_name,$transcript_file_name,$exon_file_name);
+    $p = Bio::EnsEMBL::Analysis::LegacyParser->new($gene_file_name,
+                                                   $transcript_file_name,$exon_file_name);
 
     @genes = $p->get_Genes();
 
@@ -30,7 +30,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -62,7 +63,6 @@ use FileHandle;
 sub _initialize {
   my($self,$genef,$trf,$exonf) = @_;
   
-  
   my $make = $self->SUPER::_initialize;
 
   if( ! $exonf ) {
@@ -85,6 +85,7 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+
 =head2 get_Genes
 
  Title   : get_Genes
@@ -94,49 +95,49 @@ sub _initialize {
  Returns : 
  Args    :
 
-
 =cut
 
 sub get_Genes{
-   my ($self) = @_;
+    my ($self) = @_;
 
-   $self->_parse_gene;
-   $self->_parse_trans;
-   $self->_parse_exon;
-   
-   # put them together...
+    $self->_parse_gene;
+    $self->_parse_trans;
+    $self->_parse_exon;
+    
+    # put them together...
+    
+    my @genes;
 
-   my @genes;
-
-   foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
-       my $gene = new Bio::EnsEMBL::Gene;
-       push(@genes,$gene);
-       $g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
-       my $gid = "HG" . $1;
-       $gene->id($gid);
-
-       foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
-
-	   print STDERR "  Doing $t\n";
-	   my $trans = new Bio::EnsEMBL::Transcript;
-
-	   $t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
-	   my $tid = "HT" . $1;
-	   $trans->id($tid);
-
-	   $gene->add_Transcript($trans);
-	   foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
-	       if( ! exists $self->{'_exon_hash'}->{$e} ) {
-		   $self->warn("No exon of $e!");
-		   next;
-	       }
-
-	       $trans->add_Exon($self->{'_exon_hash'}->{$e});
-	   }
-       }
-   }
-   return @genes;
+    foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
+	my $gene = new Bio::EnsEMBL::Gene;
+	push(@genes,$gene);
+	$g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
+	my $gid = "HG" . $1;
+	$gene->id($gid);
+	
+	foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
+	    
+	    print STDERR "  Doing $t\n";
+	    my $trans = new Bio::EnsEMBL::Transcript;
+	    
+	    $t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
+	    my $tid = "HT" . $1;
+	    $trans->id($tid);
+	    
+	    $gene->add_Transcript($trans);
+	    foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
+		if( ! exists $self->{'_exon_hash'}->{$e} ) {
+		    $self->warn("No exon of $e!");
+		    next;
+		}
+		
+		$trans->add_Exon($self->{'_exon_hash'}->{$e});
+	    }
+	}
+    }
+    return @genes;
 }
+
 
 =head2 _dump
 
@@ -147,22 +148,22 @@ sub get_Genes{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _dump{
-   my ($self,$fh) = @_;
-
-   foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
-       print $fh "Gene $g\n";
-       foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
-	   print $fh "  Transcript $t: ";
-	   foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
-	       print "$e,";
-	   }
-       }
-   }
+    my ($self,$fh) = @_;
+    
+    foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
+	print $fh "Gene $g\n";
+	foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
+	    print $fh "  Transcript $t: ";
+	    foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
+		print "$e,";
+	    }
+	}
+    }
 }
+
 
 =head2 _parse_exon
 
@@ -173,61 +174,64 @@ sub _dump{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _parse_exon{
-   my ($self) = @_;
+    my ($self,$clone) = @_;
+    
+    $self->warn("Have not calculated phases yet!");
+    my $fh = new FileHandle;
+    $fh->open($self->exon_file) || $self->throw("Could not open exon file [", $self->exon_file, "]");
+    
+    my $is = $fh->input_record_separator('>');
+    my $dis = <$fh>; # skip first record (dull!)
+    while( <$fh> ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(\S*)/  ) {
+	    my $eid = $1;
+	    my $contigid = $2;
+	    my $start = $3;
+	    my $end = $4;
+	    my $phase = $5;
+	    my $created = $6;
+	    my $modified = $7;
+	    my $pep = $8;
 
-   $self->warn("Have not calculated phases yet!");
-   my $fh = new FileHandle;
-   $fh->open($self->exon_file) || $self->throw("Could not open exon file [", $self->exon_file, "]");
-   
-   my $is = $fh->input_record_separator('>');
-   my $dis = <$fh>; # skip first record (dull!)
-   while( <$fh> ) {
-       if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(\S*)/  ) {
-	   my $eid = $1;
-	   my $contigid = $2;
-	   my $start = $3;
-	   my $end = $4;
-	   my $phase = $5;
-	   my $created = $6;
-	   my $modified = $7;
-	   my $pep = $8;
+	    # skip if not from $clone (if defined)
+	    next if($clone && $contigid!~/^$clone/);
 
-	   #print STDOUT "Exon $eid - $pep\n";
-	   # ok. Get out the Dna sequence object
+	    #print STDOUT "Exon $eid - $pep\n";
+	    # ok. Get out the Dna sequence object
 
-	   # skipping this for the moment
+	    # skipping this for the moment
 
-	   my $exon = Bio::EnsEMBL::Exon->new();
-	   $exon->id($eid);
-	   $exon->contig_id($contigid);
-	  
-	   if( $end < $start ) {
-	       my $s = $end;
-	       $end = $start;
-	       $start = $s;
-	       $exon->strand(-1);
-	   } else {
-	       $exon->strand(1);
-	   }
-	   $exon->phase($phase);
-	   $exon->start($start);
-	   $exon->end($end);
-	   
-	   $exon->created($created);
-	   $exon->modified($modified);
-	   $self->{'_exon_hash'}->{$eid} = $exon;
-       } else {
-	   chomp;
-	   $self->throw("Yikes. Line with > but not parsed! [$_]");
-       }
-   }
-	   
-   $fh->input_record_separator($is);
-
+	    my $exon = Bio::EnsEMBL::Exon->new();
+	    $exon->id($eid);
+	    $exon->contig_id($contigid);
+	    my $cloneid=$contigid;
+	    $cloneid=~s/\.\d+$//;
+	    $exon->clone_id($cloneid);
+	    
+	    if( $end < $start ) {
+		my $s = $end;
+		$end = $start;
+		$start = $s;
+		$exon->strand(-1);
+	    } else {
+		$exon->strand(1);
+	    }
+	    $exon->phase($phase);
+	    $exon->start($start);
+	    $exon->end($end);
+	    
+	    $exon->created($created);
+	    $exon->modified($modified);
+	    $self->{'_exon_hash'}->{$eid} = $exon;
+	} else {
+	    chomp;
+	    $self->throw("Yikes. Line with > but not parsed! [$_]");
+	}
+    }
+    $fh->input_record_separator($is);
 }
 
 
@@ -240,29 +244,27 @@ sub _parse_exon{
  Returns : 
  Args    :
 
-
 =cut
 
 sub _parse_trans {
-   my ($self) = @_;
-   
-   my $fh = new FileHandle;
-   $fh->open($self->trans_file) || $self->throw("Could not open transcript file [", $self->trans_file, "]");
-   while( <$fh> ) {
-       my ($trans,$elist) = split;
-       if( exists $self->{'_trans_hash'}->{$trans} ) {
-	   $self->warn("$trans is already listed in transcript file!");
-       }
-       $self->{'_trans_hash'}->{$trans} = [];
-       my @exons = split(/:/,$elist);
-       foreach my $t ( @exons ) {
-	   push(@{$self->{'_trans_hash'}->{$trans}},$t);
-       }
-   }
- 
-   $fh->close();
+    my ($self) = @_;
+    
+    my $fh = new FileHandle;
+    $fh->open($self->trans_file) || 
+	$self->throw("Could not open transcript file [", $self->trans_file, "]");
+    while( <$fh> ) {
+	my ($trans,$elist) = split;
+	if( exists $self->{'_trans_hash'}->{$trans} ) {
+	    $self->warn("$trans is already listed in transcript file!");
+	}
+	$self->{'_trans_hash'}->{$trans} = [];
+	my @exons = split(/:/,$elist);
+	foreach my $t ( @exons ) {
+	    push(@{$self->{'_trans_hash'}->{$trans}},$t);
+	}
+    }
+    $fh->close();
 }
-
 
 
 =head2 _parse_gene
@@ -274,27 +276,124 @@ sub _parse_trans {
  Returns : 
  Args    :
 
-
 =cut
 
 sub _parse_gene{
-   my ($self) = @_;
+    my ($self) = @_;
 
-   my $fh = new FileHandle;
-   $fh->open($self->gene_file) || $self->throw("Could not open gene file [", $self->gene_file, "]");
-   while( <$fh> ) {
-       my ($gene,$tlist) = split;
-       if( exists $self->{'_gene_hash'}->{$gene} ) {
-	   $self->warn("$gene is already listed in gene file!");
-       }
-       $self->{'_gene_hash'}->{$gene} = [];
-       my @trans = split(/:/,$tlist);
-       foreach my $t ( @trans ) {
-	   push(@{$self->{'_gene_hash'}->{$gene}},$t);
-       }
-   }
- 
-   $fh->close();
+    my $fh = new FileHandle;
+    $fh->open($self->gene_file) || 
+	$self->throw("Could not open gene file [", $self->gene_file, "]");
+    while( <$fh> ) {
+	my ($gene,$tlist) = split;
+	if( exists $self->{'_gene_hash'}->{$gene} ) {
+	    $self->warn("$gene is already listed in gene file!");
+	}
+	$self->{'_gene_hash'}->{$gene} = [];
+	my @trans = split(/:/,$tlist);
+	foreach my $t ( @trans ) {
+	    push(@{$self->{'_gene_hash'}->{$gene}},$t);
+	}
+    }
+    
+    $fh->close();
+}
+
+
+=head2 list_exons
+
+ Title   : list_exons
+ Usage   : $self->list_exons
+ Function: 
+ Example : 
+ Returns : list of exon objects
+ Args    : 
+
+
+=cut
+
+sub list_exons{
+    my($self) = @_;
+    return values %{$self->{'_exon_hash'}};
+}
+
+
+=head2 map_all
+
+ Title   : list_exons
+ Usage   : $self->map_all(object_hash)
+ Function: 
+ Example : 
+ Returns : adds hashs to object, mapping contig2exon etc
+ Args    : 
+
+
+=cut
+
+sub map_all{
+    my($self,$obj,$clone) = @_;
+    $self->_parse_exon($clone);
+    $self->_parse_trans;
+    $self->_parse_gene;
+
+    # contig->exons
+    my %contig2exon;
+    foreach my $exon (values %{$self->{'_exon_hash'}}){
+	my $contig_id=$exon->contig_id;
+	# mapping of contig->exon(s)
+	push(@{$contig2exon{$contig_id}},$exon);
+    }
+    # DEBUG
+    print scalar(keys %contig2exon)." contigs have exons\n";
+    $obj->{'_contig2exon'}=\%contig2exon;
+
+    # exons->transcripts
+    my %exon2transcript;
+    my %transcripts;
+    my $missed_exons;
+    my $n_missed_exons;
+    foreach my $t (keys %{$self->{'_trans_hash'}}){
+	my $transcript=new Bio::EnsEMBL::Transcript;
+	$t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
+	my $transcript_id = "HT" . $1;
+	$transcript->id($transcript_id);
+	foreach my $exon_id (@{$self->{'_trans_hash'}->{$transcript_id}}){
+	    if(!exists $self->{'_exon_hash'}->{$exon_id} ) {
+		$missed_exons.=' '.$exon_id;
+		$n_missed_exons++;
+		next;
+	    }
+	    $transcripts{$transcript_id}=$transcript;
+	    $transcript->add_Exon($self->{'_exon_hash'}->{$exon_id});
+	    push(@{$exon2transcript{$exon_id}},$transcript);
+	}
+    }
+    # report missing exons
+    if($n_missed_exons && !$clone){
+	$self->warn("$n_missed_exons exons missing: $missed_exons");
+    }
+    # DEBUG
+    print scalar(keys %exon2transcript)." exons have transcripts\n";
+    $obj->{'_exon2transcript'}=\%exon2transcript;
+    
+    # transcript2gene
+    my %transcript2gene;
+    foreach my $g (keys %{$self->{'_gene_hash'}}){
+	my $gene=new Bio::EnsEMBL::Gene;
+	$g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
+	my $gene_id = "HG" . $1;
+	$gene->id($gene_id);
+	foreach my $transcript_id (@{$self->{'_gene_hash'}->{$gene_id}}){
+	    if(!exists $transcripts{$transcript_id}){
+		next;
+	    }
+	    $gene->add_Transcript($transcripts{$transcript_id});
+	    push(@{$transcript2gene{$transcript_id}},$gene);
+	}
+    }
+    # DEBUG
+    print scalar(keys %transcript2gene)." transcripts have genes\n";
+    $obj->{'_transcript2gene'}=\%transcript2gene;
 }
 
 
@@ -307,16 +406,14 @@ sub _parse_gene{
  Returns : value of gene_file
  Args    : newvalue (optional)
 
-
 =cut
 
 sub gene_file{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'gene_file'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'gene_file'} = $value;
     }
     return $self->{'gene_file'};
-
 }
 
 
@@ -329,17 +426,16 @@ sub gene_file{
  Returns : value of exon_file
  Args    : newvalue (optional)
 
-
 =cut
 
 sub exon_file{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'exon_file'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'exon_file'} = $value;
     }
     return $self->{'exon_file'};
-
 }
+
 
 =head2 trans_file
 
@@ -350,14 +446,15 @@ sub exon_file{
  Returns : value of trans_file
  Args    : newvalue (optional)
 
-
 =cut
 
 sub trans_file{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'trans_file'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'trans_file'} = $value;
     }
     return $self->{'trans_file'};
-
 }
+
+
+1;

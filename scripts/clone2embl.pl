@@ -19,7 +19,7 @@ my $port   = '410000';
 # this does have genes (finished)
 my $clone  = 'dJ271M21';
 # this does have genes (unfinished)
-# my $clone = '';
+# my $clone = '217N14';
 
 &GetOptions( 'dbtype:s' => \$dbtype,
 	     'host:s'   => \$host,
@@ -28,6 +28,9 @@ my $clone  = 'dJ271M21';
 
 my $db;
 
+my $clone_id = shift;
+$clone_id=$clone unless $clone_id;
+
 if( $dbtype =~ 'ace' ) {
     $host=$host2 unless $host;
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
@@ -35,19 +38,13 @@ if( $dbtype =~ 'ace' ) {
     $host=$host1 unless $host;
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
-    $db = Bio::EnsEMBL::TimDB::Obj->new();
+    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
 
-
-my $clone_id = shift;
-$clone_id=$clone unless $clone_id;
-
-
 my $clone = $db->get_Clone($clone_id);
 my $as = $clone->get_AnnSeq();
-
 
 $as->seq->desc("Reannotated Clone via EnsEMBL");
 my $comment = Bio::Annotation::Comment->new();
