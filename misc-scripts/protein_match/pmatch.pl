@@ -7,6 +7,7 @@
 # wrapper around Richard Durbin's pmatch code (fast protein matcher).
 
 # 06/01 Adapted for Ensembl (mongin@ebi.ac.uk)
+#For Sanger users, use this version of pmatch: /nfs/disk65/ms2/bin/pmatch
 
 
 
