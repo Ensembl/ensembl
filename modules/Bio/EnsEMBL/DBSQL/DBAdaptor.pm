@@ -2943,9 +2943,9 @@ sub get_ComparaDBAdaptor{
         my $dbhost      = $::pipeConf{'dbhost'} || undef;
 
        $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-                                                                                  -dbname =>$cpname,
-                                                                                  -user   =>$cpuser,
-                                                                                  -host   =>$dbhost
+                                                                                  '-dbname' =>$cpname,
+                                                                                  '-user'   =>$cpuser,
+                                                                                  '-host'   =>$dbhost
                                                                                   );
    }
    return $self->{'_compara_dbadaptor'};
@@ -2973,9 +2973,9 @@ sub get_SyntenyAdaptor{
         my $dbhost      = $::pipeConf{'dbhost'} || undef;
 
        $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-                                                                                  -dbname =>$saname,
-                                                                                  -user   =>$sauser,
-                                                                                  -host   =>$dbhost
+                                                                                  '-dbname' =>$saname,
+                                                                                  '-user'   =>$sauser,
+                                                                                  '-host'   =>$dbhost
                                                                                   );
    }
    return $self->{'_synteny_adaptor'};
