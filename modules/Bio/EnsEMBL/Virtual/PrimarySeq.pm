@@ -154,6 +154,8 @@ sub seq {
 sub subseq{
    my ($self,$start,$end) = @_;
    
+   #print STDERR "Looking at $start..$end\n";
+
    if( $start > $end ){
        $self->throw("in subseq, start [$start] has to be greater than end [$end]");
    }
@@ -181,7 +183,7 @@ sub subseq{
    # check to see if this is simple, start-end in one contig
    if( $start >= $start_contig->start && $end <= $start_contig->end ) {
        # map straight away.
-       print STDERR "simple map\n";
+       #print STDERR "simple map\n";
        if( $start_contig->orientation == 1 ) {
 	   return $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_start + ($end - $start_contig->start));
        } else {
@@ -196,14 +198,17 @@ sub subseq{
        
    # ok end is > than start. See if start is actually in contig
    if( $start < $start_contig->start ) {
-       print STDERR "start in gap before contig\n";
+       #print STDERR "start in gap before contig ... honest\n";
 
        #nope. Got some N's to put in
        $seqstr .= 'N' x ($start_contig->start - $start);
        # now put in the rest of this contig
 
+
+       #print STDERR "Looking at $end vs ",$start_contig->end,"\n";
+
        # of course, end could be in this contig. Bugger.
-       if( $end < $start_contig->end ) {
+       if( $end <= $start_contig->end ) {
 	   print STDERR "start in gap before: end in contig\n";
 
 	   if( $start_contig->orientation == 1 ) {
@@ -237,8 +242,9 @@ sub subseq{
    
    my $previous = $start_contig;
    my $current;
+   #print STDERR "About to enter loop...\n";
    while( ($current = shift @mapcontigs) ) {
-       
+       #print STDERR "Looking at ",$current->end," vs ",$end,"\n";
        if( $end <= $current->end ) {
 	   last;
        }
