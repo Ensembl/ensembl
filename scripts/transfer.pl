@@ -98,6 +98,7 @@ my $getall = 0;
 my $help;
 my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
+my $freeze =0;
 
 my $delete_first = 0;
 
@@ -109,7 +110,7 @@ my $delete_first = 0;
 	     'fdbuser:s' => \$fdbuser,
 	     'fdbpass:s' => \$fdbpass,
 	     'fmodule:s' => \$fmodule,
-
+	     'freeze'    => \$freeze,
 	     'tdbtype:s' => \$tdbtype,
 	     'thost:s'   => \$thost,
 	     'tport:n'   => \$tport,
@@ -150,12 +151,18 @@ if ( $tdbtype =~ 'timdb' ) {
     die "Cannot write to timdb!";
 } else {
     my $locator = "$tmodule/host=$thost;port=$tport;dbname=$tdbname;user=$tdbuser;pass=$tdbpass";
-    print STDERR "Using $locator for todb";
+    print STDERR "Using $locator for todb\n";
     $to_db =  Bio::EnsEMBL::DBLoader->new($locator);
 }
 
 if ( $fdbtype =~ 'timdb' ) {
-    $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone);
+    if ($freeze) {
+	print STDERR "Loading with freeze settings!\n";
+	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 2,-nogene =>1,\@clone,0);
+    }
+    else {
+	$from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone);
+    }
 } else {
     my $locator = "$fmodule/host=$fhost;port=$fport;dbname=$fdbname;user=$fdbuser;pass=$fdbpass";
     $from_db = Bio::EnsEMBL::DBLoader->new($locator); 

@@ -4,28 +4,43 @@ use strict;
 
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
 
 # global defaults
 my $host = 'localhost';
-my $dbuser = 'ensadmin';
+my $dbuser = 'root';
 my $dbname = 'ensembl';
 my $dbpass = undef;
 my $do_gene = 1;
-
+my $usefile = 0;
+my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+my $port   = '410000';
 
 &GetOptions( 
 	     'dbuser:s'  => \$dbuser,
 	     'dbpass:s'  => \$dbpass,
 	     'host:s'    => \$host,
 	     'dbname:s'  => \$dbname,
+	     'usefile'   => \$usefile,
+	     'port:n'    => \$port
 	     );
+my @clone;
 
-my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -dbname => $dbname , 
-					-host => $host, -password => $dbpass );
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($en) = split;
+	push(@clone,$en);
+    }
+} else {
+    @clone = @ARGV;
+}
+
+my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+print STDERR "Using $locator for todb\n";
+my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
 
-
-foreach my $clone_id ( @ARGV) {
+foreach my $clone_id ( @clone) {
     print STDERR "Deleting $clone_id\n";
     my $clone = $db->get_Clone($clone_id);
 
@@ -33,6 +48,7 @@ foreach my $clone_id ( @ARGV) {
 	my @genes = $clone->get_all_Genes();
 
 	foreach my $gene ( @genes ) {
+	    print STDERR "   Deleting gene ".$gene->id."\n";
 	    $db->delete_Gene($gene->id());
 	}
     }
