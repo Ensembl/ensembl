@@ -48,7 +48,6 @@ no warnings 'uninitialized';
 
 use Getopt::Long;
 use Text::Wrap;
-use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use FindBin qw($Bin $Script);
 use POSIX qw(strftime);
 
