@@ -59,7 +59,7 @@ sub dump_seqs{
 
   Arg[1]: xref object which holds info on method and files.
 
-  Description: runs the mapping of the list of files with specied methods
+  Description: runs the mapping of the list of files with species methods
   Returntype : none
   Exceptions : none
   Caller     : general
