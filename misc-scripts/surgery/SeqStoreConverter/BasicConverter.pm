@@ -374,7 +374,7 @@ sub supercontig_to_seq_region {
 
   my $select_sth = $dbh->prepare
     ("SELECT superctg_name, " .
-     "MAX(superctg_end)-MIN(superctg_start)+1 AS length " .
+     "MAX(superctg_end) AS length " .
      "FROM $source.assembly " .
      "GROUP BY superctg_name");
 
