@@ -177,21 +177,24 @@ my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
 
-print STDERR "version 002\n";  
+print STDERR "version 003\n";  
 
 my    $statement = "SELECT f.id, 
-                           f.seq_start+s.chr_start-s.raw_start,
-                           f.seq_end+s.chr_start-s.raw_start, 
-                           f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
-                           s.chr_start,s.chr_end,s.raw_ori
-		    FROM   feature f, analysis a,static_golden_path s
+                    IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                           (sgp.chr_start+sgp.raw_end-f.seq_end)),                                        
+                    IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                           (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                    IF     (sgp.raw_ori=1,f.strand,(-f.strand)),  
+                           f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
+                           sgp.chr_start,sgp.chr_end,sgp.raw_ori
+		    FROM   feature f, analysis a,static_golden_path sgp
                     WHERE  f.score > $score
                     AND    f.analysis = a.id 
-                    AND    s.raw_id = f.contig
+                    AND    sgp.raw_id = f.contig
 		    AND    a.db = '$analysis_type'  
-                    AND    s.chr_end >= $glob_start 
-		    AND    s.chr_start <=$glob_end 
-		    AND    s.chr_name='$chr_name'";
+                    AND    sgp.chr_end >= $glob_start 
+		    AND    sgp.chr_start <=$glob_end 
+		    AND    sgp.chr_name='$chr_name'";
     
 
 my  $sth = $self->dbobj->prepare($statement);    
@@ -213,6 +216,7 @@ my @distinct_features;
      my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,
 	       $hstart,$hend,$hid,$chr_start,$chr_end,$raw_ori,$glob_start,$glob_end);
 
+  #   print "$hid raw ori $raw_ori $strand\n";
     
      # exclude overlaping features (for the web)
      foreach my $arrayref(@distinct_features){
@@ -251,7 +255,7 @@ my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
 
 # flip coordinates 
 if ($raw_ori == -1){
-    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
+#    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
 }
 
 # create features
@@ -313,9 +317,12 @@ my $chr_name=$self->_chr_name;
   
 
 my $statement = "SELECT rf.id,
-                        rf.seq_start+sgp.chr_start-sgp.raw_start,
-                        rf.seq_end+sgp.chr_start-sgp.raw_start,
-                        rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
+                 IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_end)),                                        
+                 IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
+                        (sgp.chr_start+sgp.raw_end-rf.seq_start)), 
+                 IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
+                        rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                         sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                  FROM   repeat_feature rf,static_golden_path sgp
                  WHERE  sgp.raw_id = rf.contig
@@ -380,7 +387,7 @@ my ($fid,$start,$end,$strand,$score,$analysisid,
 
 # flip coordinates 
 if ($raw_ori == -1){
-    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
+#    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
 }
 
 
@@ -453,9 +460,14 @@ my @markers;
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
     
-    my $statement= "  SELECT f.seq_start+sgp.chr_start-sgp.raw_start, 
-                             f.seq_end+sgp.chr_start-sgp.raw_start, 
-                             f.score, f.strand, f.name, f.hstart, f.hend, 
+    my $statement= "  SELECT 
+                      IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_end)),                                        
+                      IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                             f.score, 
+                      IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
+                             f.name, f.hstart, f.hend, 
                              f.hid, f.analysis, s.name,
                              sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                       FROM   $dbname.feature f, $dbname.analysis a, 
@@ -484,12 +496,12 @@ eval {
     $sth->bind_columns
 	( undef, \$start, \$end, \$score, \$strand, \$name, 
 	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
-    
-        
+            
     while( $sth->fetch ) {
 	
 	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
 		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
+
 
 	my $out=$self->_create_Marker_features(@args);
 	if (defined $out){
@@ -743,7 +755,7 @@ my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym,
 
 if ($raw_ori == -1)
 {
-($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
+#($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
 }
 
 
@@ -808,16 +820,14 @@ sub _flip_coordinates
 {
     my ($self,$start,$end,$strand,$chr_start,$chr_end)=@_;
 
-    $self->throw ("need a start") unless $start;
-    $self->throw ("need a end") unless $end;
-    $self->throw ("need a strand") unless $strand;
-    $self->throw ("need a chromosome start") unless $chr_start;
-    $self->throw ("need a chromosome end") unless $chr_end;
+    $self->throw ("need a start") unless defined $start;
+    $self->throw ("need a end") unless defined $end;
+    $self->throw ("need a strand") unless defined $strand;
+    $self->throw ("need a chromosome start") unless defined $chr_start;
+    $self->throw ("need a chromosome end") unless defined $chr_end;
 
 
-    
-
-    my $vc_start=$chr_end+$chr_start-$end;
+    my $vc_start=$chr_end+$chr_start-$end;   
     my $vc_end=$chr_end+$chr_start-$start;
     $strand=-1*$strand;
 
