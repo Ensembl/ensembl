@@ -41,7 +41,7 @@ methods. Internal methods are usually preceded with a _
 package Bio::EnsEMBL::TimDB::Contig;
 use vars qw($AUTOLOAD @ISA);
 use strict;
-use Bio::EnsEMBL::DB::ContigI;
+use Bio::EnsEMBL::DB::RawContigI;
 use Bio::Seq;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Analysis::Genscan;
@@ -52,7 +52,7 @@ use FileHandle;
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::Object;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -581,12 +581,18 @@ sub disk_id {
 
 sub _dbobj {
     my ($obj,$value) = @_;
+
+    return $obj->dbobj($value);
+
+}
+
+sub dbobj {
+    my ($obj,$value) = @_;
     if( defined $value) {
 	$obj->{'_dbobj'} = $value;
     }
     return $obj->{'_dbobj'};
 }
-
 
 =head2 _clone_dir
 
@@ -815,5 +821,60 @@ sub checksum {
 
     return $self->{_checksum};
 }
+
+=head2 get_left_overlap
+
+ Title   : get_left_overlap
+ Usage   : $overlap_object = $contig->get_left_overlap();
+ Function: Returns the overlap object of contig to the left.
+           This could be undef, indicating no overlap
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
+ Args    : None
+
+=cut
+
+sub get_left_overlap{
+   my ($self,@args) = @_;
+
+   return;
+}
+
+
+=head2 get_right_overlap
+
+ Title   : get_right_overlap
+ Usage   : $overlap_object = $contig->get_right_overlap();
+ Function: Returns the overlap object of contig to the left.
+           This could be undef, indicating no overlap
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
+ Args    : None
+
+=cut
+
+sub get_right_overlap{
+   my ($self,@args) = @_;
+
+   return;
+}
+
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures (Abstract)
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self) = @_;
+   
+   return;
+}
+
+
 
 1;

@@ -74,6 +74,7 @@ sub _initialize {
 
   $self->_dbobj      ($dbobj);  
   $self->id          ($id);
+  $self->fetch;
   
   return $make; # success - we hope!
 }
