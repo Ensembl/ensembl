@@ -177,15 +177,6 @@ sub load_databases {
   #create a config hash which will be frozen to a file
   $self->{'conf'} = {};
 
-  #only unzip if there are non-preloaded datbases
-  UNZIP: foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
-    if( !$db_conf->{'preloaded'}->{$dbtype} ) {
-      #unzip database files
-      $self->unzip_test_dbs($self->curr_dir . $zip);
-      last UNZIP;
-    }
-  }
-
   #connect to the database
   my $locator = "DBI:".$driver.":host=".$host.";port=".$port;
   my $db = DBI->connect($locator, $user, $pass, {RaiseError => 1});
@@ -195,10 +186,22 @@ sub load_databases {
     return;
   }
 
+  #only unzip if there are non-preloaded datbases
+  UNZIP: foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
+    if(( ! exists $db_conf->{'preloaded'}->{$dbtype} ) ||
+       ( ! _db_exists( $db, $db_conf->{'preloaded'}{$dbtype}) )) {
+      #unzip database files
+      $self->unzip_test_dbs($self->curr_dir . $zip);
+      last UNZIP;
+    }
+  }
+
+
   #create a database for each database specified
   foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
     #don't create a database if there is a preloaded one specified
-    if( $db_conf->{'preloaded'}->{$dbtype} ) {
+    if(( $db_conf->{'preloaded'}->{$dbtype} ) &&
+       ( _db_exists( $db,$db_conf->{'preloaded'}->{$dbtype} ))) {
       #copy the general config into a dbtype specific config 
       $self->{'conf'}->{$dbtype} = {};
       %{$self->{'conf'}->{$dbtype}} = %$db_conf;
@@ -214,9 +217,26 @@ sub load_databases {
       $self->{'conf'}->{$dbtype}->{'preloaded'} = 1;
     } else {
 
+      $self->{'conf'}->{$dbtype} = {};
+      %{$self->{'conf'}->{$dbtype}} = %$db_conf;
+      $self->{'conf'}->{$dbtype}->{'module'} = $db_conf->{'databases'}->{$dbtype};
+
+      # it's not necessary to store the databases and zip bits of info
+      delete $self->{'conf'}->{$dbtype}->{'databases'};
+      delete $self->{'conf'}->{$dbtype}->{'zip'};
+
       #create a unique random dbname    
-      my $dbname = $self->_create_db_name($dbtype);
-      
+      my $dbname = $db_conf->{'preloaded'}->{$dbtype};
+      if( ! defined $dbname ) {
+	$dbname = $self->_create_db_name($dbtype);
+	delete $self->{'conf'}->{$dbtype}->{'preloaded'};
+      } else {
+	$self->{'conf'}->{$dbtype}->{'preloaded'} = 1;
+      }
+
+      #store the temporary database name in the dbtype specific config
+      $self->{'conf'}->{$dbtype}->{'dbname'} = $dbname;
+
       print STDERR "\nCreating db $dbname";
       
       unless($db->do("CREATE DATABASE $dbname")) {
@@ -225,18 +245,6 @@ sub load_databases {
       }
 
       #copy the general config into a dbtype specific config 
-      $self->{'conf'}->{$dbtype} = {};
-      %{$self->{'conf'}->{$dbtype}} = %$db_conf;
-      $self->{'conf'}->{$dbtype}->{'module'} = $db_conf->{'databases'}->{$dbtype};
-
-      # it's not necessary to store the databases and zip bits of info
-      delete $self->{'conf'}->{$dbtype}->{'databases'};
-      delete $self->{'conf'}->{$dbtype}->{'preloaded'};
-      delete $self->{'conf'}->{$dbtype}->{'zip'};
-
-
-      #store the temporary database name in the dbtype specific config
-      $self->{'conf'}->{$dbtype}->{'dbname'} = $dbname;
 
       $db->do("use $dbname");
     
@@ -526,6 +534,22 @@ sub save {
     }
   }
 }
+
+
+sub _db_exists {
+  my ( $db, $db_name ) = @_;
+
+  my $db_names = $db->selectall_arrayref( "show databases" );
+  for my $db_name_ref ( @$db_names ) {
+    if( $db_name_ref->[0] eq $db_name ) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+
 
 sub compare {
   my ($self, $dbtype, $table) = @_;
