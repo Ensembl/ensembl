@@ -22,6 +22,7 @@ ok(1);
 my $multi = MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
+$db->source( "core" );
 
 debug( "Test database instatiated" );
 ok( $db );
@@ -349,6 +350,16 @@ for my $gene ( @$genes ) {
 debug( "known: $known Unknown: $unknown\n" );
 
 ok( $known==17 );
+
+if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
+  debug( "Lite database available" );
+  my $lga = $lite->get_GeneAdaptor();
+  $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
+
+  $lga->store( $gene );
+  debug( "Store done" );
+}
+
 
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
