@@ -80,7 +80,7 @@ print STDERR "Reading X_map ($xmap)\n";
 while (<XMAP>) {
     
     chomp;
-    my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn) = split (/\t/,$_);
+    my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
 
     if ($check eq "yes") {
 #Get the all of the EMBL accessions for a given SP
@@ -117,6 +117,7 @@ while (<XMAP>) {
     $p->xDB($xdb);
     $p->xID($xid);
     $p->xSYN($xsyn);
+    $p->stat($status);
 
     push(@{$map{$targetid}},$p);
 }
@@ -176,6 +177,8 @@ MAPPING: while (<MAP>) {
 		      -version => 1,
 		      -release => 1,
 		      -dbname => $a->xDB);
+
+		$dbentry->status($a->stat);
 
 		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT"))) {
 

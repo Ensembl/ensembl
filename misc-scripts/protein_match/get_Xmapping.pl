@@ -25,7 +25,8 @@ my $refseq_gnp = $conf{'refseq_gnp'};
 #Get specific options for human
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
-my $refeseq_pred =$conf{'refseq_pred'};
+my $refeseq_pred = $conf{'refseq_pred'};
+my $go           = $conf{'go'}; 
 
 #Get specific options for the mouse
 my $mgi_sp     = $conf{'mgi_sp'};
@@ -189,6 +190,8 @@ if ($organism eq "human") {
 #Read the file containing the NCBI prediction in gnp format
     open (REFSEQ,"$refseq_pred") || die "Can't open $refseq_pred\n";
     
+    print STDERR "Reading Refseq file with NCBI predictions\n";
+
     $/ = "\/\/\n";
     
     while (<REFSEQ>) {
@@ -197,8 +200,8 @@ if ($organism eq "human") {
 	
 	$refseq_map{$dna_ac} = $prot_ac; 
 	
-#Its a curated Refseq, flag it as known
-	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq\t$prot_ac\t\tPRED\n";
+#Its a curated Refseq, flag it as predicted
+	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq_pred\t$prot_ac\t\tPRED\n";
        
 	my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
 	my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
@@ -206,6 +209,17 @@ if ($organism eq "human") {
     close (REFSEQ);
     
     $/ = "\n";
+
+    open (GO,"$go") || die "Can't open $go\n";
+
+    print STDERR "Reading GO file\n";
+
+    while (<GO>) {
+	chomp;
+	my @array = split (/\t/,$_);
+	
+	print OUT "$array[1]\tSPTR\t$array[3]\tGO\t$array[3]\t\tXREF"
+	}
 
 }
 

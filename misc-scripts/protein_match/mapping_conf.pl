@@ -101,6 +101,10 @@ package main;
                   #Location of the file in .gnp format for the NCBI prediction
                   #'refseq_pred' => '',
                   'refseq_pred' => '',
+
+                  #Location of the file for GO mapping (gene_association.goa)
+                  #'go' => '',
+                  'go' => '',
                   
                   #######
                   #Mouse#
