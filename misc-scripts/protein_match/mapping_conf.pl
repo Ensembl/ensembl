@@ -28,10 +28,10 @@ package main;
 	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
             
 	     #'query_idt'  => 40,
-             'query_idt'    => ,
+             'query_idt'    => 50,
 
              #'target_idt  => 10,
-             'target_idt'  => ,
+             'target_idt'  => 50,
 
              
 
@@ -47,7 +47,7 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '',   
+             'query'       => '/acari/work4/mongin/dros3_mapping/Primary/drosophila-release3-peptides.fasta',   
              
              #Location of the sptr file, this file will be used as an 
 	     #input to grep the specific sp entries to the organism 
@@ -58,32 +58,32 @@ package main;
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '',
+	     'sptr_fa'      => '/acari/work4/mongin/dros3_mapping/Primary/7227.FASTAC',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
-	     'sptr_swiss' => '',	     
+	     'sptr_swiss' => '/acari/work4/mongin/dros3_mapping/Primary/7227.SPC',	     
 
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
             
-	     'pmatch_input_fa'    => '',
+	     'pmatch_input_fa'    => '/acari/work4/mongin/dros3_mapping/Primary/total.fa',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
            
-             'x_map_out'  => '',
+             'x_map_out'  => '/acari/work4/mongin/dros3_mapping/Output/xmap.out',
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '',
+             'pmatch_out'  => '/acari/work4/mongin/dros3_mapping/Output/pmatch.out',
 
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq_fa'    => '',
+	     'refseq_fa'    => '/acari/work4/mongin/dros3_mapping/Primary/fly.faa',
 	     
              #Location of the Refseq (proteins) file in Genbank format
 	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
-	     'refseq_gnp'  => '',
+	     'refseq_gnp'  => '/acari/work4/mongin/dros3_mapping/Primary/fly.gnp',
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -147,7 +147,7 @@ package main;
                    #drosophila#
                    ############
 
-                   'dros_ext_annot' => '',
+                   'dros_ext_annot' => '/acari/work4/mongin/dros3_mapping/Primary/xrefs.txt',
 
 
 		   ##########
@@ -184,7 +184,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
+             'pmatch' => '/nfs/disk5/ms2/bin/pmatch',
 
              
 
@@ -195,7 +195,7 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => '',
+             'organism' => 'drosophila',
              
 
              #OX (Organism taxonomy cross-reference) number

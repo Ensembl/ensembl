@@ -37,7 +37,7 @@ my %query2length;
 #################################
 # run scanwisepep
 
-    my $scanwise = "/nfs/acari/birney/prog/wise2/src/models/scanwisep -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /tmp/$$.pmatch";
+    my $scanwise = "/usr/local/ensembl/bin/scanwisep-2.2.3-rc6 -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /tmp/$$.pmatch";
 
 print STDERR "Running Scanwise: $scanwise\n";
 

@@ -19,7 +19,7 @@ my $organism   = $conf{'organism'};
 my $sptr_swiss = $conf{'sptr_swiss'};
 my $out        = $conf{'x_map_out'};
 
-#Get specific options for human/mouse/rat
+#Get specific options for human/mouse/rat/drosophila
 my $refseq_gnp = $conf{'refseq_gnp'};
 
 #Get specific options for human
@@ -42,6 +42,8 @@ my $eleg_nom   = $conf{'eleg_nom'};
 my $zeb_gene    = $conf{'zeb_gene'};
 my $zeb_dblink  = $conf{'zeb_dblink'};
 
+#Get specific options for drosophila
+my $ext_annot   = $conf{'dros_ext_annot'};
 
 my $briggsae_peptides = $conf{'briggsae_hybrid'};
 
@@ -63,7 +65,7 @@ my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
 &process_parsed_sp($swiss, $ac, $id, \*OUT);
 
 
-if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat") || ($organism eq "zebrafish")) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat") || ($organism eq "zebrafish") || ($organism eq "drosophila")) {
   #Read the refseq file in gnp format
   print STDERR "Reading REFSEQ File\n";
   
