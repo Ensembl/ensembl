@@ -21,12 +21,14 @@ my $dumpcheck=undef;
 my $use_existing_mappings=undef;
 my $maxdump=undef;
 my $help;
+my $upload = undef;
 
 GetOptions ('file=s'              => \$file,
             'verbose'             => \$verbose,
 	    'dumpcheck'           => \$dumpcheck,
 	    'useexistingmappings' => \$use_existing_mappings,
 	    'maxdump=n'           => \$maxdump,
+	    'upload'              => \$upload,
             'help'                => sub { &show_help(); exit 1;} );
  
 usage("-file option is required")   if(!$file);
@@ -117,13 +119,15 @@ usage:   perl xref_mapper <options>
 options: -file <input_file>     input file with keyword pairs for  'species',
                                 'host', 'port', 'dbname' ,'user', 'password' and 'directory'
                           
-         -verbose               print out debug statements
- 
-         -maxdump <int>         dump out only int number of seqs.
+         -maxdump <int>         dump only <int> sequences.
 
          -dumpcheck             only dump if files do not exist.
 
          -useexistingmapping    use existing *.map files
+
+         -upload                upload xref, object_xref, identity_xref data, and set
+                                display_xrefs for genes and transcripts. Data is written
+                                to xref.txt etc regardless of whether this option is used.
 
          -help                  display this message
  
