@@ -630,6 +630,80 @@ sub skip_SeqFeature {
    return $self->{'feature_skip'}->{$tag};
 }
 
+=head2 rawcontig_ids
+
+ Title   : rawcontig_ids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub rawcontig_ids{
+   my ($self,@args) = @_;
+
+   return keys %{$self->{'contig'}};
+}
+
+=head2 start_in_vc
+
+ Title   : start_in_vc
+ Usage   : $vc->start_in_vc('rawcontigid');
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub start_in_vc{
+   my ($self,$rawcontigid) = @_;
+   
+   if( !defined $rawcontigid || ! exists $self->{'contig'}->{$rawcontigid} ) {
+       $self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
+   }
+
+   return $self->{'start'}->{$rawcontigid}
+}
+
+=head2 end_in_vc
+
+ Title   : end_in_vc
+ Usage   : $vc->end_in_vc('rawcontigid')
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end_in_vc{
+   my ($self,$cid) = @_;
+
+   if( $self->{'rightmostcontigid'} eq $cid ) {
+       return $self->start_in_vc($cid) + $self->{'rightmostend'};
+   } else {
+       return $self->start_in_vc($cid) + $self->{'contig'}->{$cid}->golden_length;
+   } 
+
+}
+
+sub ori_in_vc {
+    my ($self,$rawcontigid) = @_;
+    
+    if( !defined $rawcontigid || ! exists $self->{'contig'}->{$rawcontigid} ) {
+	$self->throw("No rawcontig id provided/not in vc [$rawcontigid]");
+    }
+    
+    return $self->{'contigori'}->{$rawcontigid}
+}
+
+
 
 =head2 _build_clone_map
 
