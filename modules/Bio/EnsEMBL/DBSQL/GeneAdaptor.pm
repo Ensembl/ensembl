@@ -296,6 +296,30 @@ sub fetch_by_Transcript_id {
     return $gene;
 }
 
+sub fetch_by_stable_Transcript_id{
+  my $self = shift;
+  my $transid = shift;
+
+  my $q = "
+SELECT tr.gene_id 
+FROM   transcript as tr, 
+       transcript_stable_id as trs 
+WHERE  trs.stable_id = '$transid' 
+AND    trs.transcript_id = tr.transcript_id";
+
+  warn( $q );
+  my $sth = $self->prepare($q);
+
+  $sth->execute;
+  
+  my ($geneid) = $sth->fetchrow_array();
+  if( !defined $geneid ) {
+    return undef;
+  }
+  return $self->fetch_by_dbID($geneid);
+  
+
+}
 
 
 =head2 fetch_by_Peptide_id 
