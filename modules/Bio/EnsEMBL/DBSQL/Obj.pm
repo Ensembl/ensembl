@@ -1035,7 +1035,7 @@ sub write_Ghost{
 =head2 archive_Gene
     
  Title   : archive_Gene
- Usage   : $obj->archive_gene($gene,$clone,$arcdb)
+ Usage   : $obj->archive_gene($gene,$arcdb)
  Function: Deletes a gene and all its transcripts and exons, 
            and archives partial info in the archive db passed on.
  Example : 
@@ -1352,6 +1352,8 @@ sub geneid_to_cloneid{
 
 sub cloneid_to_geneid{
    my ($self,$cloneid) = @_;
+
+   (ref($cloneid)) && $self->throw ("Passing an object reference instead of a variable\n");
 
    my $sth = $self->prepare("select count(*),cont.clone ,ex.contig,tran.gene  from contig as cont, transcript as tran, exon_transcript as et, exon as ex where ex.id = et.exon and tran.id = et.transcript and cont.clone = '$cloneid'  and cont.internal_id = ex.contig group by tran.gene");
 
