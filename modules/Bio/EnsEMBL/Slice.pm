@@ -536,7 +536,7 @@ sub project {
   foreach my $coord (@coords) {
     my $coord_start  = $coord->start();
     my $coord_end    = $coord->end();
-    my $length = $coord_end - $coord_start;
+    my $length = $coord_end - $coord_start + 1;
 
     #skip gaps
     if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
