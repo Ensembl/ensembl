@@ -864,7 +864,8 @@ eval {
                        AND    sgp.raw_id=f.contig 
                        AND    sgp.chr_end >= $glob_start 
                        AND    sgp.chr_start <=$glob_end 
-                       AND    sgp.chr_name='$chr_name'";
+                       AND    sgp.chr_name='$chr_name' 
+                       GROUP BY f.hid";
     
         $statement =~ s/\s+/ /g;
         #print STDERR "Doing Query ... $statement\n";
