@@ -67,7 +67,6 @@ my $transadaptor = $db->get_TranscriptAdaptor();
 my $geneadaptor  = $db->get_GeneAdaptor();
 my $xrefadaptor  = $db->get_DBEntryAdaptor();
 
-if (0) {
 my $query = "select transcript_id from transcript";
 my $sth = $db->prepare($query);
 $sth->execute();
@@ -90,7 +89,6 @@ while(my $id = $sth->fetchrow) {
 
     $trans->display_xref($display);
     $transadaptor->update($trans);
-}
 }
 print STDERR "Done\n";
 print STDERR "Getting gene display_xref_id\n";
