@@ -386,8 +386,8 @@ sub get_Protfeat_Adaptor {
     
     my( $pfa );
     unless ($pfa = $self->{'_protein_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
-        $pfa = Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor->new($self);
+        require Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
+        $pfa = Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor->new($self);
     }
     return $pfa;
 }

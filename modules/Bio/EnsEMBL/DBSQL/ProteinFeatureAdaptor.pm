@@ -16,10 +16,10 @@ Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
 =head1 SYNOPSIS
 
   use Bio::EnsEMBL::DBSQL::DBAdaptor;
-  use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+  use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 
   $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
-  my $feature_obj=Bio::EnsEMBL::Protein_Feature_Adaptor->new($obj);
+  my $feature_obj=Bio::EnsEMBL::ProteinFeatureAdaptor->new($obj);
 
   
 =head1 DESCRIPTION
@@ -43,7 +43,7 @@ usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+package Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 
 use vars qw(@ISA);
 use strict;

@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for Protein_Adaptor
+# BioPerl module for ProteinAdaptor
 #
 # Cared for by Emmanuel Mongin <mongin@ebi.ac.uk>
 #
@@ -12,14 +12,14 @@
 
 =head1 NAME
 
-Protein_Adaptor - DESCRIPTION of Object
+ProteinAdaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::Protein_Adaptor;
+use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 
 $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
-my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
+my $protein_adaptor=Bio::EnsEMBL::ProteinAdaptor->new($obj);
 
 my $protein = $protein_adaptor->fetch_Protein_by_dbid;
 
@@ -44,7 +44,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::Protein_Adaptor;
+package Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use vars qw(@ISA);
 use strict;
 
@@ -56,7 +56,7 @@ use Bio::EnsEMBL::Protein;
 
 
 
-use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 use Bio::Species;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
@@ -362,7 +362,7 @@ sub fetch_DBlinks_by_dbid {
 sub fetch_Protein_features_by_dbid{
    my ($self,$protein_id) = @_;
      
-#This call a method contained in Protein_Feature_Adaptor, returns feature objects for the given protein
+#This call a method contained in ProteinFeatureAdaptor, returns feature objects for the given protein
    my @features = $self->_protfeat_obj->fetch_by_translationID($protein_id);
 
    return @features;
@@ -374,7 +374,7 @@ sub fetch_Protein_features_by_dbid{
 
  Title   : fetch_by_feature
  Usage   :my @proteins = $obj->fetch_by_feature($feature_id)
- Function:This method should be in theory in the Protein_Feature_Adaptor object but has been placed here for convenience (the Protein_Feature_Adaptor object may be transfered to this Protein_Adaptor object...to be discussed). The function of this method is to retrieve all of the proteins which have a given feature (retrieved by feature id)
+ Function:This method should be in theory in the ProteinFeatureAdaptor object but has been placed here for convenience (the ProteinFeatureAdaptor object may be transfered to this ProteinAdaptor object...to be discussed). The function of this method is to retrieve all of the proteins which have a given feature (retrieved by feature id)
  Example :
  Returns : An Array of protein objects
  Args    : feature id (hid in the protein_feature table)
