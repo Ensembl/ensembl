@@ -269,6 +269,25 @@ sub coord_system {
 }
 
 
+=head2 centrepoint
+
+  Arg [1]    : none
+  Example    : $cp = $slice->centrepoint();
+  Description: Returns the mid position of this slice relative to the
+               start of the sequence region that it was created on.
+               Coordinates are inclusive and start at 1.  Negative coordinates
+               or coordinates exceeding the length of the sequence region are
+               permitted.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub centrepoint {
+  my $self = shift;
+  return ($self->{'start'}+$self->{'end'})/2;
+}
 
 =head2 start
 
@@ -851,7 +870,6 @@ sub get_seq_region_id {
     return 0;                                                            
   }
 }
-
 
 
 =head2 get_all_Attributes
@@ -1504,7 +1522,8 @@ sub get_all_MarkerFeatures {
 sub get_all_compara_DnaAlignFeatures {
   my ($self, $qy_species, $qy_assembly, $alignment_type) = @_;
 
-  unless($qy_species && $qy_assembly && $alignment_type) {
+  unless($qy_species && $alignment_type # && $qy_assembly
+  ) {
     throw("Query species and assembly and alignmemt type arguments are required");
   }
 
