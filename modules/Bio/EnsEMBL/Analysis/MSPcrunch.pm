@@ -408,6 +408,9 @@ sub swaphomols {
     $newh1->seqname    ($h1->seqname);
     $newh1->score      ($h1->score);
 
+    if ($h1->has_tag('Analysis')) {
+	$newh1->add_tag_value('Analysis',$h1->each_tag_value('Analysis'));
+    }
 
     if ($h2->isa("Bio::EnsEMBL::Analysis::pep_SeqFeature")) {
 	$newh2 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(
@@ -430,6 +433,11 @@ sub swaphomols {
     $newh2->primary_tag($h2->primary_tag);
     $newh2->seqname    ($h2->seqname);
     $newh2->score      ($h2->score);
+
+    if ($h2->has_tag('Analysis')) {
+	$newh2->add_tag_value('Analysis',$h2->each_tag_value('Analysis'));
+    }
+
 
 #    print("Setting seqnames to " . $newh1->seqname . "\t" . $newh2->seqname  . "\n");
     $newh2->homol_SeqFeature($newh1);

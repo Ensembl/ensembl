@@ -61,6 +61,7 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::Analysis::Analysis;
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
@@ -180,6 +181,7 @@ sub get_Gene{
    if( $seen == 0 ) {
        $self->throw("No gene with $geneid as a name! - Sorry!");
    }
+
    $gene->id($geneid);
 
    return $gene;
@@ -1192,7 +1194,7 @@ sub write_Protein_feature {
 =cut
 
 sub write_Feature {
-    my ($self,$feature,$analysisid,$contig) = @_;
+    my ($self,$feature,$contig) = @_;
 
     $self->throw("Wrong number of arguments entered for write_Feature") unless defined($contig);
     $self->throw("Feature is not a Bio::SeqFeature::Generic")           unless $feature->isa("Bio::SeqFeature::Generic");
@@ -1272,7 +1274,7 @@ sub write_Analysis {
                 $anal->gff_feature      . "\")";
     }
 
-    print("Query is $query\n");
+#    print("Query is $query\n");
     
     my $sth  = $self->prepare($query);
     my $rv   = $sth->execute;
@@ -1340,9 +1342,47 @@ sub exists_Homol_Feature {
 }
     
 
+=head2 get_Analysis
+
+ Title   : get_Analysis
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Analysis {
+    my ($self,$id) = @_;
+
+    my $sth = $self->prepare("select * from analysis where id = $id");
+    my $rv  = $sth->execute;
+
+    my $rh  = $sth->fetchrow_hashref;
+
+    if ($sth->rows > 0) {
+	
+	my $anal = new Bio::EnsEMBL::Analysis::Analysis(-db              => $rh->{db},
+					      -db_version      => $rh->{db_version},
+					      -program         => $rh->{program},
+					      -program_version => $rh->{program_version},
+					      -gff_source      => $rh->{gff_source},
+					      -gff_feature     => $rh->{gff_feature},
+					      -id              => $rh->{id},
+					      );
+	return $anal;
+    }  else {
+	$self->throw("Can't fetch analysis id $id\n");
+    }
+    
+}
+
+
 =head2 exists_Analysis
 
- Title   : exists_Analysis
+ Title   : get_Analysis
  Usage   : $obj->exists_Analysis($anal)
  Function: Tests whether this feature already exists in the database
  Example :
@@ -1421,7 +1461,8 @@ sub write_Homol_Feature {
 
     return 1 if $id;
 
-    my $rv = $self->write_Feature($feature,$analysisid,$contig);
+    my $rv = $self->write_Feature($feature,$contig);
+
 
     $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
 
@@ -1603,8 +1644,8 @@ sub write_Contig {
        if ($f->isa("Bio::SeqFeature::Homol")) {
 	   $rv = $self->write_Homol_Feature($f,$contig);
        } elsif ($f->isa("Bio::SeqFeature::Generic")) {
-
-	   $rv = $self->write_Feature($f,$contig);
+#	   $rv = $self->write_Feature($f,$contig);
+	   $rv = 1;
        } else {
 	   $self->throw("Can't write feature - $f is not a Bio::SeqFeature::Generic");
        }

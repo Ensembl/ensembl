@@ -93,6 +93,40 @@ sub each_Feature {
     return @{$self->{_features}};
 }
 
+=head2 validate_Feature
+
+  Title   : validate_Feature
+  Usage   : my $ok = $self->validate_Feature($feature)
+  Function: checks the data in the Feature object is all present 
+            throws an exception if a tag isn't present.
+  Returns : nothing
+  Args    : Bio::SeqFeature::Generic
+
+=cut
+
+sub validate_Feature {
+    my ($self,$feature) = @_;
+
+    $self->throw("Seqname not defined in feature") unless defined($feature->seqname);
+    $self->throw("start not defined in feature") unless defined($feature->start);
+    $self->throw("end not defined in feature") unless defined($feature->end);
+    $self->throw("strand not defined in feature") unless defined($feature->strand);
+    $self->throw("score not defined in feature") unless defined($feature->score);
+    $self->throw("source_tag not defined in feature") unless defined($feature->source_tag);
+    $self->throw("primary_tag not defined in feature") unless defined($feature->primary_tag);
+
+    if ($feature->isa("Bio::SeqFeature::Homol")) {
+	my $hfeature = $feature->homol_SeqFeature;
+    $self->throw("Seqname not defined in feature") unless defined($hfeature->seqname);
+    $self->throw("start not defined in feature") unless defined($hfeature->start);
+    $self->throw("end not defined in feature") unless defined($hfeature->end);
+    $self->throw("strand not defined in feature") unless defined($hfeature->strand);
+    $self->throw("score not defined in feature") unless defined($hfeature->score);
+    $self->throw("source_tag not defined in feature") unless defined($hfeature->source_tag);
+    $self->throw("primary_tag not defined in feature") unless defined($hfeature->primary_tag);
+
+    }
+}
 
 =head2 add_Feature {
 
@@ -110,6 +144,7 @@ sub add_Feature {
     my @f = @{$self->{_features}};
 
     if (defined($arg) && $arg->isa("Bio::SeqFeature::Generic")) {
+	$self->validate_Feature($arg);
 	push(@{$self->{_features}},$arg);
     } else {
 	$self->throw("Feature : $arg : is not a Bio::SeqFeature::Generic");
@@ -241,6 +276,12 @@ sub _parse_attrib {
 
 	my $hstart = $attrib[2];
 	my $hend   = $attrib[3];
+
+	if ($hstart < 1 || $hend < $hstart) { 
+	    $self->warn("Invalid homol coordinates $hstart - $hend. Skipping feature\n");
+	    return $feature;
+	}
+
 	my $homol;
 
 	if ($self->type eq "Repeat") {

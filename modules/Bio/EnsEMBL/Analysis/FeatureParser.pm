@@ -168,16 +168,23 @@ sub read_Repeats {
     my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
 
     if (! -e $gfffile) {
-	print(STDERR "   - No repeat file $gfffile  exists - Skipping repeats\n");
+	print( "   - No repeat file $gfffile  exists - Skipping repeats\n");
 	return;
     } else {
-	print(STDERR "   - Reading RepeatMasker file $gfffile\n");
+	print( "   - Reading RepeatMasker file $gfffile\n");
     }
+
+    my $analysis   = new Bio::EnsEMBL::Analysis::Analysis( -program         => $msp->[1],
+							   -program_version => 1,
+							   -gff_source      => 'RepeatMasker',
+							   -gff_feature     => 'repeat');
+    
 
     my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile,
 						     -type => 'Repeat');
 	    
     foreach my $f ($GFF->each_Feature) {
+	$f->add_tag_value('Analysis',$analysis);
 	$self->add_Feature($f);
     }
 }
@@ -191,14 +198,22 @@ sub read_Pfam {
     my $pfamfile  = "$clone_dir/$disk_id.$count". $pfam->[4];    
 
     if (! -e $pfamfile) {
-	print(STDERR "   - No pfam file $pfamfile exists - Skipping pfam\n");
+	print( "   - No pfam file $pfamfile exists - Skipping pfam\n");
 	return;
     } else {
-	print(STDERR "   - Reading pfam file $pfamfile\n");
+	print("   - Reading pfam file $pfamfile\n");
     }
     
     my $pfamobj = new Bio::Tools::HMMER::Results(-file => $pfamfile,
 						 -type => 'hmmpfam');
+
+    my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-db              => $pfam->[2],
+							-db_version      => 1,
+							-program         => $pfam->[1],
+							-program_version => 1,
+							-gff_source      => 'hmmpfam',
+							-gff_feature     => 'similarity');
+
 
     my @homols;
 
@@ -208,24 +223,21 @@ sub read_Pfam {
 	$dom->source_tag ('hmmpfam');
 	$dom->primary_tag('similarity');
 	$dom->strand    (1);
+	$dom->add_tag_value('Analysis',$analysis);
 
 	my $dom2 = $dom->homol_SeqFeature;
 
 	$dom2->source_tag('hmmpfam');
 	$dom2->primary_tag('similarity');
 	$dom2->strand(1);
+	$dom2->add_tag_value('Analysis',$analysis);
 
 	$genscan_peptide->add_pepHit($dom);
 
     }
 
-    my @newh = $genscan_peptide->each_Homol;
-
-    foreach my $h (@newh) {
-	$self->add_Feature($h);
-    }
-
 }
+
 sub read_Genscan {
     my ($self,$genscan) = @_;
 
@@ -243,7 +255,7 @@ sub read_Genscan {
 		$f->score($ex->score);
 	    }
 
-	    $self->add_Feature($f);
+#	    $self->add_Feature($f);
 	}
     }
 }
@@ -253,10 +265,14 @@ sub add_Feature {
 
     $self->throw("Feature must be Bio::SeqFeature::Generic in add_Feature") unless $f->isa("Bio::SeqFeature::Generic");
 
+    return unless $f->source_tag ne "GENSCAN";
+    $self->throw("Feature " . $f->seqname. " " . $f->source_tag  . " does not have an analysis tag") unless $f->has_tag('Analysis');
+
     if (!defined($self->{_features})) {
 	$self->{_features} = [];
 	$self->warn("The feature array does not exist!! Creating an empty one");
     }
+
 
     push(@{$self->{_features}},$f);
 }
@@ -296,10 +312,10 @@ sub read_MSP {
     my $type = $msp->[6];
 
     if (! -e $mspfile) {
-	print(STDERR "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
+	print( "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
 	return;
     } else {
-	print(STDERR "   - Reading MSPcrunch file $mspfile\n");
+	print( "   - Reading MSPcrunch file $mspfile\n");
     }
     
 
@@ -311,6 +327,7 @@ sub read_MSP {
     my ($type1,$type2) = $mspobj->get_types;
 
     foreach my $homol ($mspobj->each_Homol) { 
+
 	$homol->source_tag($mspobj->source_tag);
 	$homol->homol_SeqFeature->source_tag($mspobj->source_tag);
 

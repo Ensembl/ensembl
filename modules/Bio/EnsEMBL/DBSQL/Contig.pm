@@ -178,8 +178,9 @@ sub _seq_cache{
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
- Usage   : foreach my $sf ( $contig->get_all_SeqFeatures ) 
- Function:
+ Usage   : foreach my $sf ( $contig->get_all_SeqFeatures($start,$end) ) 
+ Function: Gets all the sequence features that lie between the coordinates
+           specified or on the whole contig.
  Example :
  Returns : 
  Args    :
@@ -188,26 +189,101 @@ sub _seq_cache{
 =cut
 
 sub get_all_SeqFeatures{
-   my ($self,@args) = @_;
+   my ($self,$start,$end,$filter) = @_;
+
    my @array;
 
-   my $id = $self->id();
+   my $id     = $self->id();
+   my $length = $self->length();
 
+   my %analhash;
+
+   $start  = 1       unless $start;
+   $end    = $length unless $end;
+
+   # Check the start and end coords are within the length
+   
+   $self->throw("Start-end coordinates ($start,$end) are outside the length ($length) of the contig $id\n") unless
+       ($start > 0 && $start <= $length && $end > $start && $end <= $length);
+   
+   
    # make the SQL query
 
-   my $sth = $self->_dbobj->prepare("select seq_start,seq_end,strand,score,analysis from feature where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name " . 
+				    "from feature where contig = \"$id\""                . 
+				    " and seq_start >= $start and seq_end <= $end");
    my $res = $sth->execute();
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-      my $out = new Bio::SeqFeature::Generic;
-      $out->start($rowhash->{seq_start});
-      $out->end($rowhash->{seq_end});
-      $out->strand($rowhash->{strand});
-      if( defined $rowhash->{score} ) {
-	  $out->score($rowhash->{score});
-      }
-      $out->primary_tag($rowhash->{analysis});
-      $out->source_tag('EnsEMBL');
+   FEAT: while( my $rowhash = $sth->fetchrow_hashref) {
+       next FEAT unless $rowhash->{name} !~ /Repeat/;
+
+       # Get the feature id
+       my $fid = $rowhash->{id};
+       
+       # Is this a homol feature?
+       my $sth2 = $self->_dbobj->prepare("select hstart,hend,hid from homol_feature where feature = $fid");
+       my $rv   = $sth2->execute;
+
+       my $out;
+
+       if ($sth2->rows > 0) {
+
+	   my $rh2  = $sth2->fetchrow_hashref;
+	   $out = new Bio::SeqFeature::Homol;
+	   
+	   my $homol = new Bio::SeqFeature::Homol(-start  => $rh2->{hstart},
+						  -end    => $rh2->{hend},
+						  -strand => $rh2->{strand},
+				
+						  );
+	   $homol->seqname   ($rh2->{hid});						 
+	   $homol->source_tag($rowhash->{name});
+	   $homol->primary_tag('similarity');
+	   $homol->strand    ($rowhash->{strand});
+
+	   if( defined $rowhash->{score} ) {
+	       $homol->score($rowhash->{score});
+	   }
+
+	   $out->homol_SeqFeature($homol);
+       } else {
+	   $out = new Bio::SeqFeature::Generic;
+       }
+
+      
+       $out->seqname   ($id);
+       $out->start     ($rowhash->{seq_start});
+       $out->end       ($rowhash->{seq_end});
+       $out->strand    ($rowhash->{strand});
+       $out->source_tag($rowhash->{name});
+
+       $out->primary_tag('similarity');
+
+       if( defined $rowhash->{score} ) {
+	   $out->score($rowhash->{score});
+       }
+       print("Creating feature\n");
+       # Now fetch the analysis
+       my $analysis;
+       my $analid = $rowhash->{analysis};
+
+       if (!$analhash{$analid}) {
+	   print("creating analysis " . $analid . "\n");
+
+	   $analysis = $self->_dbobj->get_Analysis($analid);
+	   
+	   $analhash{$analid} = $analysis;
+
+       } else {
+	   $analysis = $analhash{$rowhash->{analysis}};
+       }
+
+       $out->add_tag_value('Analysis',$analysis);
+
+       if ($out->isa("Bio::SeqFeature::Homol")){ 
+	   $out->homol_SeqFeature->add_tag_value('Analysis',$analysis);
+       }
+
       push(@array,$out);
   }
  
@@ -230,10 +306,17 @@ sub length{
    my ($self,@args) = @_;
    my $id= $self->id();
 
-   my $sth = $self->_dbobj->prepare("select length from contig where id = \"$id\" ");
-   $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref();
-   return $rowhash->{'length'};
+   if (!defined($self->{_length})) {
+       my $sth = $self->_dbobj->prepare("select length from contig where id = \"$id\" ");
+       $sth->execute();
+       
+       my $rowhash = $sth->fetchrow_hashref();
+       
+       $self->{_length} = $rowhash->{'length'};
+   }
+
+   return $self->{_length};
+       
 }
 
 
@@ -352,6 +435,7 @@ sub seq_date{
    return $rowhash->[0];
 }
 
+
 =head2 _dbobj
 
  Title   : _dbobj
@@ -372,4 +456,6 @@ sub _dbobj{
     return $self->{'_dbobj'};
 
 }
+
+
 

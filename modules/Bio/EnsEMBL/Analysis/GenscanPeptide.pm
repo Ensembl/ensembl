@@ -242,6 +242,9 @@ sub _find_coord {
 sub _pepHit2homol {
     my ($self,$pephit) = @_;
 
+
+
+
     my $pepaln  = $self->{_pepaln};
 
     my $pairaln = new Bio::EnsEMBL::Analysis::PairAlign;   # Make a coordinate conversion object from
@@ -257,6 +260,7 @@ sub _pepHit2homol {
 
     foreach my $pep_homol ($pairaln->eachHomol) {
 	my $pep_homol2 = $pep_homol->homol_SeqFeature;
+
 
 	# We now need to loop over each pepaln exon to see which
 	# ones the homol overlaps
@@ -378,7 +382,6 @@ sub each_Homol {
 sub _make_homol {
     my ($self,$pairaln,$gen_exon,$pep_exon,$pep_homol,$pstart,$start_frac,$pend,$end_frac) = @_;
 
-
     my $pepaln = $self->{_pepaln};
 
     my $pep_homol2 = $pep_homol->homol_SeqFeature;
@@ -411,6 +414,9 @@ sub _make_homol {
     $newh->seqname    ($pep_homol->seqname);
     $newh->score      ($pep_homol->score);
 
+    if ($pep_homol->has_tag('Analysis')) {
+	$newh->add_tag_value('Analysis',$pep_homol->each_tag_value('Analysis'));
+    }
     # Create the peptide homol
     my $peph  = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $h1,
 							   -end    => $h2,
@@ -420,6 +426,10 @@ sub _make_homol {
     $peph->seqname    ($pep_homol2->seqname);
     $peph->start_frac ($start_frac);
     $peph->end_frac   ($end_frac);
+
+    if ($pep_homol2->has_tag('Analysis')) {
+	$peph->add_tag_value('Analysis',$pep_homol2->each_tag_value('Analysis'));
+    }
     
     # Add the peptide homol to the dna homol
     $newh->homol_SeqFeature($peph);
@@ -470,6 +480,11 @@ sub _make_dna_homol {
     $newh->seqname    ($pep_homol2->seqname);
     $newh->score      ($pep_homol->score);                # This is wrong - this score is for the whole hit
 
+    if ($pep_homol2->has_tag('Analysis')) {
+	$newh->add_tag_value('Analysis',$pep_homol2->each_tag_value('Analysis'));
+    }
+
+
     # Create the peptide homol
     my $peph  = new Bio::SeqFeature::Homol  (-start  => $h1,
 					     -end    => $h2,
@@ -478,6 +493,11 @@ sub _make_dna_homol {
     $peph->primary_tag($pep_homol->primary_tag);
     $peph->source_tag ($pep_homol->source_tag);
     $peph->seqname    ($pep_homol->seqname);
+
+    if ($pep_homol->has_tag('Analysis')) {
+	$peph->add_tag_value('Analysis',$pep_homol->each_tag_value('Analysis'));
+    }
+
     
     # Add the peptide homol to the dna homol
     $newh->homol_SeqFeature($peph);

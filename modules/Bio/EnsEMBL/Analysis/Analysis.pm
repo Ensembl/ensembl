@@ -73,6 +73,14 @@ sub _initialize {
 			    GFF_FEATURE
 			    )],@args);
 
+  $self->id        ($id);
+  $self->db        ($db);
+  $self->db_version($db_version);
+  $self->program   ($program);
+  $self->program_version($program_version);
+  $self->gff_source ($gff_source);
+  $self->gff_feature($gff_feature);
+
   return $self; # success - we hope!
 }
 

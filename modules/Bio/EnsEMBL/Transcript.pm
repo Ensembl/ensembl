@@ -276,18 +276,18 @@ sub translateable_exons{
        }
 
        my $retexon = new Bio::EnsEMBL::Exon;
-       $retexon->contig_id($exon->contig_id);
-       $retexon->clone_id($exon->clone_id);
-       $retexon->strand($exon->strand);
-       $retexon->phase(0);
+       $retexon->contig_id ($exon->contig_id);
+       $retexon->clone_id  ($exon->clone_id);
+       $retexon->strand    ($exon->strand);
+       $retexon->phase     ($exon->phase);         # MC exon phase can be 0,1,2
        $retexon->attach_seq($exon->entire_seq);
        $retexon->id($exon->id());
        
        if( $exon->strand == 1 ) {
 	   $retexon->start($self->translation->start());
-	   $retexon->end($self->translation->end());
+	   $retexon->end  ($self->translation->end());
        } else {
-	   $retexon->end($self->translation->start());
+	   $retexon->end  ($self->translation->start());
 	   $retexon->start($self->translation->end());
        }
        
@@ -299,11 +299,11 @@ sub translateable_exons{
 	   
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
-	   $stexon->contig_id($exon->contig_id);
-	   $stexon->clone_id($exon->clone_id);
+	   $stexon->contig_id ($exon->contig_id);
+	   $stexon->clone_id  ($exon->clone_id);
 	   
-	   $stexon->strand($exon->strand);
-	   $stexon->phase(0);
+	   $stexon->strand    ($exon->strand);
+	   $stexon->phase     ($exon->phase);             # MC exon phase can be 0,1,2
 	   $stexon->attach_seq($exon->entire_seq());
 	   $stexon->id($exon->id());
 	   
@@ -314,6 +314,7 @@ sub translateable_exons{
 	       }
 
 	       $stexon->start($self->translation->start());
+	       $stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 	   } else {
 	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
@@ -321,6 +322,7 @@ sub translateable_exons{
 	       }
 	       $stexon->end($self->translation->start());
 	       $stexon->start($exon->start);
+	       $stexon->phase(0);             # MC translation is always phase 0.
 	   }
 	   push(@out,$stexon);
 	   last;
@@ -693,7 +695,6 @@ sub _translate_coherent{
    
    my $prev;
    my $tstr;
-#   my $debug;
 
    $self->sort();
    my @exons = $self->each_Exon;
@@ -729,6 +730,26 @@ sub _translate_coherent{
        $tstr .= $str;
    }
 
+
+   if ( $debug ) {
+       print STDERR "Bstr is $tstr\n";
+       my @trans;
+       my $exseq = new Bio::Seq(-seq => $tstr);
+       	$trans[0] = $exseq->translate();
+
+	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
+	# intron leaves one base pair.
+
+	$trans[1] = $exseq->translate('*','X',2);
+	$trans[2] = $exseq->translate('*','X',1);
+
+       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
+       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
+       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
+       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
+   }
+
+
    if( $exon_start->phase == 1 ) {
        $tstr = substr $tstr, 2;
    } elsif ( $exon_start->phase == 2 ) {
@@ -736,6 +757,7 @@ sub _translate_coherent{
    } 
 
    if ( $debug ) {
+       print STDERR "Exon start phase is " . $exon_start->phase . "\n";
        print STDERR "Tstr is $tstr\n";
    }
 
