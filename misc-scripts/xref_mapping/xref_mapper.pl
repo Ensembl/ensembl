@@ -62,6 +62,12 @@ while( my $line = <FILE> ) {
       push @all_species, $species;
       $species = undef;
     }
+
+    if ($value !~ /_/) {
+      print STDERR "\'$value\' is not a recognised species - please use full species name (e.g. homo_sapiens) in $file\n";
+      exit(1);
+    }
+
     eval "require XrefMapper::$value";
     my $module;
     if($@) {
@@ -133,7 +139,6 @@ sub info {
   return " for species $i of " . scalar(@all_species);
 
 }
-
 
 sub usage {
   my $msg = shift;
