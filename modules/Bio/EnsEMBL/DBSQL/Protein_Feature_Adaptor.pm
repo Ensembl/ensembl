@@ -87,7 +87,7 @@ sub fetch_by_translationID {
     my @features;
 
 
-    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain'");
+    my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,d.short_description from protein_feature p,interpro_description d,interpro i,analysis a where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = d.interpro_ac and p.analysis = a.id and a.gff_feature = 'domain'");
     $sth->execute();
 
 
