@@ -21,12 +21,13 @@ $gene_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Homo Sapiens","core","Gene"
 All Adaptors are stored/registered using this module. This module should then
 be used to get the adaptors needed.
 
-The registry can be loaded from a configuration file. If the enviroment
-variable ENSEMBL_REGISTRY is set then the file pointed to by it is executed.
-If not set then if the file ~/.ensembl_init exists then this will be executed.
-An example of such configuration file can be found in 
-ensembl/modules/Bio/EnsEMBL/Utils/ensembl_init.example
-For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm.
+The registry can be loaded from a configuration file using the method load_all.
+If a file is passed to load_all then this is used.
+Else if the enviroment variable ENSEMBL_REGISTRY is set then this is used
+Else if the file .ensembl_init in your home directory exist it is used.
+
+For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm, which will
+pass this on to load_all.
 
 The four types of registrys are for db adaptors, dba adaptors, dna adaptors
 and the standard type.
@@ -158,23 +159,23 @@ sub load_all{
 #  }
 }
 
-=head2 check_if_already_there
-
-  Arg [DBNAME] : string
-                 The name of the database to check for.
-  Arg [HOST] : (optional) string
-               The domain name of the database host to check for
-  Arg [PORT] : int
-               The port to check for when connecting to the database
-  Arg [DRIVER] : (optional) string
-                 The type of database driver to check for
-
-  Description: Check to see if the database is already stored.
-  Returntype : 0 if not found else the species and group.
-  Exceptions : none
-  
-
-=cut
+#=head2 check_if_already_there
+#
+#  Arg [DBNAME] : string
+#                 The name of the database to check for.
+#  Arg [HOST] : (optional) string
+#               The domain name of the database host to check for
+#  Arg [PORT] : int
+#               The port to check for when connecting to the database
+#  Arg [DRIVER] : (optional) string
+#                 The type of database driver to check for
+#
+#  Description: Check to see if the database is already stored.
+#  Returntype : 0 if not found else the species and group.
+#  Exceptions : none
+#  
+#
+#=cut
 
   
 #sub check_if_already_there{
@@ -275,6 +276,15 @@ sub get_db{
 sub get_all_db_adaptors{
   my ($class,$db) = @_;
   my %ret=();
+
+# we now also want to add all the DBAdaptors for the same species.
+# as add_db_adaptor does not add if it is from the same species.
+
+  foreach my $dba (@{$registry_register{'_DBA'}}){
+    if($dba->species() eq $db->species()){
+      $ret{$dba->group()} = $dba;
+    } 
+  }
 
  foreach my $key (keys %{$registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}}){
    $ret{$key} = $registry_register{$class->get_alias($db->species())}{$db->group()}{'_special'}{$key};
