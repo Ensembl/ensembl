@@ -56,6 +56,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
+
 use Bio::EnsEMBL::Ghost;
 use Bio::EnsEMBL::DBSQL::Contig;
 use Bio::EnsEMBL::DBSQL::Clone;
@@ -85,7 +86,8 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    )],@args);
-  $db || $self->throw("Database object must have a database name");
+
+  $db   || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
 
   #
@@ -95,22 +97,24 @@ sub _initialize {
   # 
 
   $self->{'_contig_seq_cache'} = {};
-  $self->_analysis_cache({});
   $self->{'_contig_seq_cnt'} = 0;
   $self->{'_lock_table_hash'} = {};
+  $self->_analysis_cache({});
 
   if( $debug ) {
-     $self->_debug($debug);
- } else {
-     $self->_debug(0);
- }
+      $self->_debug($debug);
+  } else {
+      $self->_debug(0);
+  }
   
   if( ! $driver ) {
       $driver = 'mysql';
   }
+
   if( ! $host ) {
       $host = 'localhost';
   }
+
   my $dsn = "DBI:$driver:database=$db;host=$host";
 
   if( $debug && $debug > 10 ) {
@@ -128,8 +132,8 @@ sub _initialize {
       $self->_db_handle($dbh);
   }
 
-# set stuff in self from @args
   return $make; # success - we hope!
+
 }
 
 =head2 get_Gene
@@ -145,14 +149,13 @@ sub _initialize {
 
 =cut
 
-sub get_Gene{
+sub get_Gene {
    my ($self,$geneid, $supporting) = @_;
    my @out;
 
    if ($supporting && $supporting eq 'evidence') {
        @out = $self->get_Gene_array_supporting('evidence',$geneid);
-   }
-   else {
+   }   else {
        @out = $self->get_Gene_array_supporting('without',$geneid);
    }
    return $out[0];
@@ -206,11 +209,11 @@ sub get_Gene_array_supporting {
     if( @geneid == 0 ) {
 	$self->throw("Attempting to create gene with no id");
     }
-
     
     my (@out, @sup_exons);
+
     my $inlist = join(',',map "'$_'", @geneid);
-    $inlist = "($inlist)";
+       $inlist = "($inlist)";
 				
     # I know this SQL statement is silly.
     #
@@ -228,14 +231,17 @@ sub get_Gene_array_supporting {
     my ($gene,$trans);
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
-	
-	#print STDERR "Got exon $exonid\n";
+
+	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
+	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
+	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
+	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
 	
 	if( ! defined $phase ) {
 	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	}
-	
+
+	# Create new gene if the id has changed
 	if( $geneid ne $current_gene_id ) {
 
 	    if( $transcriptid eq $current_transcript_id ) {
@@ -243,26 +249,28 @@ sub get_Gene_array_supporting {
 	    } 
 	    
 	    $gene = Bio::EnsEMBL::Gene->new();
-	    $gene->id($geneid);
-	    
-	    #   $sth = $self->_dbobj->prepare("select version from gene where id='".$gene->id."'");
-	    #   $sth->execute();
-	    #   my $rowhash = $sth->fetchrow_hashref();
-	    
-	    $gene->version($geneversion);
+
+	    $gene->id                       ($geneid);
+	    $gene->version                  ($geneversion);
 	    $gene->add_cloneid_neighbourhood($cloneid);
+
 	    $current_gene_id = $geneid;
 	    push(@out,$gene);
-	    #print STDERR "Made new gene\n";
+
 	}
-	
+
+	# Create new transcript if the id has changed
 	if( $transcriptid ne $current_transcript_id ) {
+
 	    $trans = Bio::EnsEMBL::Transcript->new();
-	    $trans->id($transcriptid);
+
+	    $trans->id     ($transcriptid);
 	    $trans->version($transcriptversion);
+
 	    $current_transcript_id = $transcriptid;
 	    
 	    my $translation = Bio::EnsEMBL::Translation->new();
+
 	    $translation->start        ($trans_start);
 	    $translation->end          ($trans_end);
 	    $translation->start_exon_id($trans_exon_start);
@@ -272,6 +280,7 @@ sub get_Gene_array_supporting {
 	    $trans->translation        ($translation);
 	    $gene ->add_Transcript     ($trans);
 	}
+	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
 	
@@ -309,7 +318,6 @@ sub get_Gene_array_supporting {
     }
     
     if ($supporting && $supporting eq 'evidence') {
-	#print "get_Gene: getting supporting evidence for array starting with ".@sup_exons[0]->id."\n";
 	$self->get_supporting_evidence(@sup_exons);
     }
 
@@ -329,14 +337,16 @@ sub get_Gene_array_supporting {
 
 =cut
 
-sub get_donor_locator{
+sub get_donor_locator {
     my ($self) = @_;
     
-    my $sth = $self->prepare("select donor_database_locator from meta");
-    my $res = $sth->execute();
+    my $sth     = $self->prepare("select donor_database_locator from meta");
+    my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $donor = $rowhash->{'donor_database_locator'};
+    my $donor   = $rowhash->{'donor_database_locator'};
+
     ($donor eq "") && $self->throw ("No value stored for database locator in meta table!");
+
     return $rowhash->{'donor_database_locator'};
 }
 
@@ -355,28 +365,18 @@ sub get_last_update_offset{
     my ($self) = @_;
     
     #Get the last update time
-    my $sth = $self->prepare("select last_update from meta");
-    my $res = $sth->execute();
-    my $rowhash = $sth->fetchrow_hashref;
-    my $last = $rowhash->{'last_update'};
+    my $last = $self->get_last_update;
 
     #Now get the offset time from the meta table, which is in time format
-    $sth = $self->prepare("select offset_time from meta");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_hashref();
-    my $offset = $rowhash->{'offset_time'};
+    my $sth     = $self->prepare("select UNIX_TIMESTAMP(offset_time) from meta");
+    my $res     = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref();
+    my $offset  = $rowhash->{'offset_time'};
 
-    #Perform the subtraction in mysql
-    $sth = $self->prepare("select DATE_SUB(\"$last\", INTERVAL \"$offset\" HOUR_SECOND)");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    my $datetime = $rowhash->[0];
+    my $last_offset = $last - $offset;
 
-    $sth = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    my $last_offset = $rowhash->[0];
-    ($last_offset eq "") && $self->throw ("No value stored for last_update in meta table!");
+    if ($last_offset < 0) {$last_offset = 0;}
+
     return $last_offset;
 }
 
@@ -384,7 +384,8 @@ sub get_last_update_offset{
 
  Title   : get_last_update
  Usage   : $obj->get_last_update; 
- Function: Reads the meta table of the database to get the last_update time
+ Function: Reads the db_update table of the database to get the finishing time of the
+           last complete update
  Example : get_last_update
  Returns : UNIX TIME of last update
  Args    : none
@@ -395,16 +396,18 @@ sub get_last_update{
     my ($self) = @_;
     
     #Get the last update time
-    my $sth = $self->prepare("select last_update from meta");
-    my $res = $sth->execute();
+    my $sth     = $self->prepare("select max(time_finished) from db_update where status = 'COMPLETE'");
+    my $res     = $sth ->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $last = $rowhash->{'last_update'};
+    my $last    = $rowhash->{'max(time_finished)'};
 
-    $sth = $self->prepare("select UNIX_TIMESTAMP('".$last."')");
-    $sth->execute();
+    $sth     = $self->prepare("select UNIX_TIMESTAMP('". $last ."')");
+    $res     = $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
-    $last = $rowhash->[0];
-    ($last eq "") && $self->throw ("No value stored for last_update in meta table!");
+    $last    = $rowhash->[0];
+
+    ($last eq "") && $self->throw ("No value stored for last_update in db_update table!");
+
     return $last;
 }
 
@@ -425,23 +428,23 @@ sub get_now_offset{
     my ($self) = @_;
 
     #First, get now, i.e. current time from db, in datetime format
-    my $sth = $self->prepare("select now()");
-    my $res = $sth->execute();
+    my $sth     = $self->prepare("select now()");
+    my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $now = $rowhash->{'now()'};
+    my $now     = $rowhash->{'now()'};
     
     #Now get the offset time from the meta table, which is in time format
     my $offset = $self->get_offset;
 
     #Perform the subtraction in mysql
-    $sth = $self->prepare("select DATE_SUB(\"$now\", INTERVAL \"$offset\" HOUR_SECOND)");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
+    $sth         = $self->prepare("select DATE_SUB(\"$now\", INTERVAL \"$offset\" HOUR_SECOND)");
+    $res         = $sth->execute();
+    $rowhash     = $sth->fetchrow_arrayref();
     my $datetime = $rowhash->[0];
 
-    #Trasform the result into unix time and return it
-    $sth = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
-    $sth->execute();
+    #Transform the result into unix time and return it
+    $sth     = $self->prepare("select UNIX_TIMESTAMP('".$datetime."')");
+    $res     = $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
     return $rowhash->[0];
 }
@@ -462,14 +465,14 @@ sub get_offset{
     my ($self) = @_;
 
      #Now get the offset time from the meta table, which is in time format
-    my $sth = $self->prepare("select offset_time from meta");
-    $sth->execute();
+    my $sth     = $self->prepare("select offset_time from meta");
+    my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref();
-    my $offset = $rowhash->{'offset_time'};
+    my $offset  = $rowhash->{'offset_time'};
 
-    #Trasform the result into unix time and return it
-    $sth = $self->prepare("select UNIX_TIMESTAMP('".$offset."')");
-    $sth->execute();
+    #Transform the result into unix time and return it
+    $sth     = $self->prepare("select UNIX_TIMESTAMP('".$offset."')");
+    $res     = $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
     return $rowhash->[0];
 }  
@@ -490,29 +493,37 @@ sub get_offset{
 
 sub get_Protein_annseq{
     my ($self,$ENSP) = @_;
+
     my $annseq = Bio::EnsEMBL::AnnSeq->new();
     
-    my $sth = $self->prepare("select id from transcript where translation = '$ENSP'");
-    my $res = $sth->execute();
+    my $sth     = $self->prepare("select id from transcript where translation = '$ENSP'");
+    my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
-    my $transcript = Bio::EnsEMBL::Transcript->new();
-    $transcript = $self->get_Transcript($rowhash->{'id'});
+
+    my $transcript  = Bio::EnsEMBL::Transcript->new();
+       $transcript  = $self->get_Transcript($rowhash->{'id'});
     my $translation = $self->get_Translation($ENSP);
+
     $transcript->translation($translation);
+
     my $seq = $transcript->translate();
     $annseq->seq($seq);
+
     $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
     $res = $sth->execute();
+
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $analysis = $rowhash->{'analysis'};
-	my $sth2 = $self->prepare("select * from analysis where id = '$analysis'");
-	my $res2 = $sth2->execute();
+	my $sth2     = $self->prepare("select * from analysis where id = '$analysis'");
+	my $res2     = $sth2->execute();
 	my $rowhash2 = $sth2->fetchrow_hashref;
-	my $feature = new Bio::SeqFeature::Generic ( -start => $rowhash->{'seq_start'}, 
-						     -end => $rowhash->{'seq_end'},
-						     -score =>  $rowhash->{'score'},
-						     -primary => $rowhash2->{'gff_feature'},
-						     -source => $rowhash2->{'gff_source'});
+
+	my $feature  = new Bio::SeqFeature::Generic ( -start   => $rowhash->{'seq_start'}, 
+						      -end     => $rowhash->{'seq_end'},
+						      -score   =>  $rowhash->{'score'},
+						      -primary => $rowhash2->{'gff_feature'},
+						      -source  => $rowhash2->{'gff_source'});
+
 	$annseq->add_SeqFeature($feature);
     }
     
@@ -533,21 +544,23 @@ sub get_Protein_annseq{
     
 sub get_Transcript{
     my ($self,$transid) = @_;
+
     my $seen = 0;
     my $trans = Bio::EnsEMBL::Transcript->new();
-    # go over each Transcript
+
     my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
-    
     my $res = $sth->execute();
+
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $exon = $self->get_Exon($rowhash->{'exon'});
 	$trans->add_Exon($exon);
 	$seen = 1;
     }
-    if( $seen == 0 ) {
+
+    if ($seen == 0 ) {
 	$self->throw("transcript $transid is not present in db");
     }
-
+    
     $trans->id($transid);
 
     return $trans;
@@ -568,20 +581,22 @@ sub get_Transcript{
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   my $sth = $self->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
-   my $res = $sth->execute();
+   my $sth     = $self->prepare("select version,seq_start,start_exon,seq_end,end_exon from translation where id = '$translation_id'");
+   my $res     = $sth->execute();
    my $rowhash = $sth->fetchrow_hashref;
+
    if( !defined $rowhash ) {
        $self->throw("no translation of $translation_id");
    }
 
    my $out = Bio::EnsEMBL::Translation->new();
-   $out->version($rowhash->{'version'});
-   $out->start($rowhash->{'seq_start'});
-   $out->end($rowhash->{'seq_end'});
+
+   $out->version      ($rowhash->{'version'});
+   $out->start        ($rowhash->{'seq_start'});
+   $out->end          ($rowhash->{'seq_end'});
    $out->start_exon_id($rowhash->{'start_exon'});
-   $out->end_exon_id($rowhash->{'end_exon'});
-   $out->id($translation_id);
+   $out->end_exon_id  ($rowhash->{'end_exon'});
+   $out->id           ($translation_id);
 
    return $out;
 }
@@ -601,36 +616,38 @@ sub get_Translation{
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   my $sth = $self->prepare("select id,version,contig,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),seq_start,seq_end,strand,phase from exon where id = '$exonid'");
-   $sth->execute;
+   my $sth     = $self->prepare("select id,version,contig,UNIX_TIMESTAMP(created)," . 
+				"UNIX_TIMESTAMP(modified),seq_start,seq_end,strand," . 
+				"phase from exon where id = '$exonid'");
+   my $res     = $sth->execute;
    my $rowhash = $sth->fetchrow_hashref;
+
    if( ! defined $rowhash ) {
        $self->throw("No exon of this id $exonid");
    }
 
    my $exon = Bio::EnsEMBL::Exon->new();
-   $exon->contig_id($rowhash->{'contig'});
-   $exon->version($rowhash->{'version'});
+
+      $exon->contig_id($rowhash->{'contig'});
+      $exon->version  ($rowhash->{'version'});
 
    my $contig_id = $exon->contig_id();
 
    # we have to make another trip to the database to get out the contig to clone mapping.
-   my $sth2 = $self->prepare("select clone from contig where id = '$contig_id'");
-   $sth2->execute;
+   my $sth2     = $self->prepare("select clone from contig where id = '$contig_id'");
+   my $res2     = $sth2->execute;
    my $rowhash2 = $sth2->fetchrow_hashref;
 
    $exon->clone_id($rowhash2->{'clone'});
 
-
    # rest of the attributes
-   $exon->id($rowhash->{'id'});
-   $exon->created($rowhash->{'UNIX_TIMESTAMP(created)'});
+   $exon->id      ($rowhash->{'id'});
+   $exon->created ($rowhash->{'UNIX_TIMESTAMP(created)'});
    $exon->modified($rowhash->{'UNIX_TIMESTAMP(modified)'});
-#   print STDERR "Got exon with ",$exon->created," ",$exon->modified,"\n";
-   $exon->start($rowhash->{'seq_start'});
-   $exon->end($rowhash->{'seq_end'});
-   $exon->strand($rowhash->{'strand'});
-   $exon->phase($rowhash->{'phase'});
+   $exon->start   ($rowhash->{'seq_start'});
+   $exon->end     ($rowhash->{'seq_end'});
+   $exon->strand  ($rowhash->{'strand'});
+   $exon->phase   ($rowhash->{'phase'});
    
    # we need to attach this to a sequence. For the moment, do it the stupid
    # way perhaps?
@@ -666,17 +683,18 @@ sub get_Exon{
 sub get_Clone{
    my ($self,$id) = @_;
 
-   my  $sth = $self->prepare("select id from contig where clone = \"$id\";");
-   $sth->execute();
-   my  $rv = $sth->rows;
+   my $sth = $self->prepare("select id from contig where clone = \"$id\";");
+   my $res = $sth ->execute();
+   my $rv  = $sth ->rows;
+
    if( ! $rv ) {
        # make sure we deallocate sth - keeps DBI happy!
        $sth = 0;
        $self->throw("Clone $id does not seem to occur in the database!");
    }
 
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id,
-					-dbobj => $self );
+   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $id,
+					       -dbobj => $self );
 
    return $clone;
 }
@@ -697,16 +715,16 @@ sub get_Contig{
    my ($self,$id) = @_;
 
    my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
-
-   $sth->execute;
-   my $rowa = $sth->fetchrow_arrayref;
+   my $res = $sth ->execute;
+   my $row = $sth->fetchrow_arrayref;
    
-   if( ! $rowa->[0] || ! $rowa->[1] ) {
+   if( ! $row->[0] || ! $row->[1] ) {
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
    my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self,
-					       -id => $id );
+						  -id    => $id );
+
    return $contig;
 }
 =head2 get_all_Clone_id
@@ -723,10 +741,11 @@ sub get_Contig{
 
 sub get_all_Clone_id{
    my ($self) = @_;
-   my $sth = $self->prepare("select id from clone");
    my @out;
 
-   $sth->execute;
+   my $sth = $self->prepare("select id from clone");
+   my $res = $sth->execute;
+
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@out,$rowhash->{'id'});
    }
@@ -748,15 +767,57 @@ sub get_all_Clone_id{
 
 sub get_all_Gene_id{
    my ($self) = @_;
-   my $sth = $self->prepare("select id from gene");
-   my @out;
 
-   $sth->execute;
+   my @out;
+   my $sth = $self->prepare("select id from gene");
+   my $res = $sth->execute;
+
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@out,$rowhash->{'id'});
    }
 
    return @out;
+}
+
+=head2 get_updated_Clone_id
+    
+ Title   : get_updated_Clone_id
+ Usage   : $obj->get_updated_Clone_id ($recipient_last_update, $recipient_now)
+ Function: Gets all the objects that have been updated (i.e.change in 
+ Example : $obj->get_updated_Objects (973036800,973090800)
+ Returns : database objects (clones and genes)
+ Args    : $recipient_last_update, $recipient_now
+
+=cut
+
+sub get_updated_Clone_id {
+    my ($self, $last_offset, $now_offset) = @_;
+    
+    $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
+    $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+
+    ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
+
+    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
+    my $res      = $sth->execute();
+    my $rowhash  = $sth->fetchrow_arrayref();
+    $last_offset = $rowhash->[0];               print STDERR "Last= $last_offset\n";
+
+    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $res        = $sth->execute();
+    $rowhash    = $sth->fetchrow_arrayref();
+    $now_offset = $rowhash->[0];                print STDERR "now: $now_offset\n";
+
+    $sth = $self->prepare("select id from clone where modified > '".$last_offset." - 00:30:00' and modified <= '".$now_offset."'");
+    $res = $sth->execute;
+
+    my @clones;
+
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	push(@clones,$rowhash->{'id'});
+    }
+
+    return @clones;
 }
 
 =head2 get_updated_Objects
@@ -777,41 +838,38 @@ sub get_updated_Objects{
     
     $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
     $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+
     ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
 
-    #First, let us convert the unix times now_offset and last into mysql times
-    my $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    $sth->execute();
-    my $rowhash = $sth->fetchrow_arrayref();
-    $last_offset = $rowhash->[0];
-    print STDERR "Last= $last_offset\n";
+    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
+    my $res      = $sth->execute();
+    my $rowhash  = $sth->fetchrow_arrayref();
+    $last_offset = $rowhash->[0];       print STDERR "Last: $last_offset\n";
 
-    $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
-    $now_offset = $rowhash->[0];
-    print STDERR "now: $now_offset\n";
+    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $res        = $sth->execute();
+    $rowhash    = $sth->fetchrow_arrayref();
+    $now_offset = $rowhash->[0];        print STDERR "now: $now_offset\n";
 
-    #First, get all clone ids that have been updated between last and now-offset
     $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
-   
-    $sth->execute;
+    $res = $sth->execute;
+
     my @out;
     my @clones;
+
     while( my $rowhash = $sth->fetchrow_hashref) {
 	push(@clones,$rowhash->{'id'});
     }
     
-    #Get all clone objects for the ids contained in @clones, and push them in @out
     foreach my $cloneid (@clones) {
 	push @out, $self->get_Clone ($cloneid);
     }	
     
-    #Get all gene ids that have been updated between last and now-offset
     $sth = $self->prepare("select id from gene where stored > '".$last_offset."' and stored <= '".$now_offset."'");
     $sth->execute;
 
     my @genes;
+
     while( $rowhash = $sth->fetchrow_hashref) {
 	push(@genes,$rowhash->{'id'});
     }
@@ -842,31 +900,35 @@ sub get_updated_Ghosts{
     
     $last_offset || $self->throw("Attempting to get updated objects without the recipient db last update time");
     $now_offset  || $self->throw("Attempting to get updated objects without the recipient db current time");
+
     ($last_offset>$now_offset) && $self->throw("Last update more recent than now-offset time, serious trouble");
     
-    #First, let us convert the unix times now_offset and last into mysql times
-    my $sth = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
-    $sth->execute();
-    my $rowhash = $sth->fetchrow_arrayref();
+    my $sth      = $self->prepare("select FROM_UNIXTIME(".$last_offset.")");
+    my $res      = $sth->execute();
+    my $rowhash  = $sth->fetchrow_arrayref();
     $last_offset = $rowhash->[0];
     
-    $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
-    $sth->execute();
-    $rowhash = $sth->fetchrow_arrayref();
+    $sth        = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
+    $res        = $sth->execute();
+    $rowhash    = $sth->fetchrow_arrayref();
     $now_offset = $rowhash->[0];
     
     #Get all ghosts that have deleted times between last and now-offset
     $sth = $self->prepare("select id,version,obj_type,deleted,stored from ghost where stored > '".$last_offset."' and stored <= '".$now_offset."'");
-    $sth->execute();
+    $res = $sth->execute();
+
     while(my $rowhash = $sth->fetchrow_hashref()) {
 	my $ghost = Bio::EnsEMBL::Ghost->new();
-	$ghost->id($rowhash->{'id'});
-	$ghost->version($rowhash->{'version'});
+
+	$ghost->id      ($rowhash->{'id'});
+	$ghost->version ($rowhash->{'version'});
 	$ghost->obj_type($rowhash->{'obj_type'});
-	$ghost->deleted($rowhash->{'deleted'});
-	$ghost->_stored($rowhash->{'stored'});
+	$ghost->deleted ($rowhash->{'deleted'});
+	$ghost->_stored ($rowhash->{'stored'});
+
 	push @out, $ghost;
     }
+
     return @out;
 }
 
@@ -885,20 +947,22 @@ sub get_Ghost{
     my ($self, $g_id, $g_obj_type) = @_;
     my @out;
     
-    $g_id || $self->throw("Attempting to get a ghost object without an id");
-    $g_obj_type || $self->throw("Attempting to get a ghost object without an object type");
+    $g_id                        || $self->throw("Attempting to get a ghost object without an id");
+    $g_obj_type                  || $self->throw("Attempting to get a ghost object without an object type");
 
-    my $sth = $self->prepare("select id,version,obj_type,deleted,stored from ghost where id='".$g_id."' and obj_type = '".$g_obj_type."'");
-    $sth->execute();
-    my  $rv = $sth->rows;
-    ! $rv && $self->throw("Ghost not found in database!");
+    my $sth     = $self->prepare("select id,version,obj_type,deleted,stored from ghost where id='" . $g_id . "' and obj_type = '" . $g_obj_type . "'");
+    my $res     = $sth->execute();
+    my $rv      = $sth->rows     || $self->throw("Ghost not found in database!");
     my $rowhash = $sth->fetchrow_hashref();
-    my $ghost = Bio::EnsEMBL::Ghost->new();
-    $ghost->id($rowhash->{'id'});
-    $ghost->version($rowhash->{'version'});
+
+    my $ghost   = Bio::EnsEMBL::Ghost->new();
+
+    $ghost->id      ($rowhash->{'id'});
+    $ghost->version ($rowhash->{'version'});
     $ghost->obj_type($rowhash->{'obj_type'});
-    $ghost->deleted($rowhash->{'deleted'});
-    $ghost->_stored($rowhash->{'stored'});
+    $ghost->deleted ($rowhash->{'deleted'});
+    $ghost->_stored ($rowhash->{'stored'});
+
     return $ghost;
 }
 
@@ -916,10 +980,15 @@ sub get_Ghost{
 sub write_Ghost{
     my ($self, $ghost) = @_;
     
-    $ghost || $self->throw("Attempting to write a ghost without a ghost object");
+    $ghost                             || $self->throw("Attempting to write a ghost without a ghost object");
     $ghost->isa("Bio::EnsEMBL::Ghost") || $self->throw("$ghost is not an EnsEMBL ghost - not dumping!");
     
-    my $sth = $self->prepare("insert into ghost (id, version, obj_type,deleted,stored) values('".$ghost->id."','".$ghost->version."','".$ghost->obj_type."','".$ghost->deleted."',now())");
+    my $sth = $self->prepare("insert into ghost (id, version, obj_type,deleted,stored) values('".
+			     $ghost->id          . "','" . 
+			     $ghost->version     . "','" .
+			     $ghost->obj_type    . "','" .
+			     $ghost->deleted     . "',now())");
+
     $sth->execute();
     return 1;
 }
@@ -939,36 +1008,30 @@ sub write_Ghost{
 
 sub archive_Gene {
    my ($self,$gene,$arc_db) = @_;
-   my $sth;
 
-   # get transcripts for the gene given 
-   
+   my $sth;
+   my $res;
+
    foreach my $transcript ($gene->each_Transcript) {
        
-       #Get out transcript info needed to write into archive db
        my $seq = $transcript->dna_seq;
-       $seq->id($transcript->id);
+          $seq->id($transcript->id);
        
        #Temporary, since versions not stored yet...
        !$transcript->version && $transcript->version(1);
        !$gene->version && $gene->version(1);
        
-       #Finally, write all the info to a new entry in the archive database
-       
+       # Store transcript and protein translation in the archive database
        $arc_db->write_seq($seq, $transcript->version, 'transcript', $gene->id, $gene->version);
        
-       #Get out translation to write protein into archive db
-       #Note: version is the one from transcript!
-
        $seq = $transcript->translate;
 
        $arc_db->write_seq($seq, $transcript->version, 'protein', $gene->id, $gene->version);
 
        #Delete transcript rows
-       $sth= $self->prepare("delete from transcript where id = '".$transcript->id."'");
-       $sth->execute;
+       $sth = $self->prepare("delete from transcript where id = '".$transcript->id."'");
+       $res = $sth->execute;
        
-       #First get all exons of the gene using $gene->each_unique_Exon method, to write them
        foreach my $exon ($gene->each_unique_Exon) {
 	   #Get out info needed to write into archive db
 	   $seq = $exon->seq;
@@ -981,21 +1044,20 @@ sub archive_Gene {
 	   $arc_db->write_seq($seq, $exon->version, 'exon', $gene->id, $gene->version);
        }
 
-       #Then use the each_Exon method from transcript to delete exons
        foreach my $exon ($transcript->each_Exon) {
 	   
-	   #Delete exon_transcript rows
-	   $sth= $self->prepare("delete from exon_transcript where transcript = '".$transcript->id."'");
-	   $sth->execute;
-	   #Delete exon rows
-	   $sth = $self->prepare("delete from exon where id = '".$exon->id."'");
-	   $sth->execute;
+	   #Delete exon_transcript and exon rows
+	   $sth = $self->prepare("delete from exon_transcript where transcript = '" . $transcript->id . "'");
+	   $res = $sth->execute;
+
+	   $sth = $self->prepare("delete from exon where id = '" . $exon->id . "'");
+	   $res = $sth->execute;
        }
    }
    
    # delete gene rows
    $sth = $self->prepare("delete from gene where id = '".$gene->id."'");
-   $sth->execute;
+   $res = $sth->execute;
 }   
 
 =head2 delete_Exon
@@ -1012,14 +1074,40 @@ sub archive_Gene {
 
 sub delete_Exon{
     my ($self,$exon_id) = @_;
+
     $exon_id || $self->throw ("Trying to delete an exon without an exon_id\n");
     
     #Delete exon_transcript rows
-    my $sth= $self->prepare("delete from exon_transcript where transcript = '".$exon_id."'");
-    $sth->execute;
+    my $sth = $self->prepare("delete from exon_transcript where transcript = '".$exon_id."'");
+    my $res = $sth ->execute;
+
     #Delete exon rows
     $sth = $self->prepare("delete from exon where id = '".$exon_id."'");
-    $sth->execute;
+    $res = $sth->execute;
+
+    $self->delete_Supporting_Evidence($exon_id);
+
+}
+
+=head2 delete_Supporting_Evidence
+
+ Title   : delete_Supporting_Evidence
+ Usage   : $obj->delete_Supporting_Evidence($exon_id)
+ Function: Deletes exon\'s supporting evidence entries
+ Example : $obj->delete_Supporting_Evidence(ENSE000034)
+ Returns : nothing
+ Args    : $exon_id
+
+
+=cut
+
+sub delete_Supporting_Evidence {
+    my ($self,$exon_id) = @_;
+
+    $exon_id || $self->throw ("Trying to delete supporting_evidence without an exon_id\n");
+
+    my $sth = $self->prepare("delete from supporting_feature where exon = '" . $exon_id . "'");
+    my $res = $sth->execute;
 }
 
 =head2 delete_Clone
@@ -1042,24 +1130,84 @@ sub delete_Clone{
    my @contigs;
    # get a list of contigs to zap
    my $sth = $self->prepare("select id from contig where clone = '$clone_id'");
-   
-   $sth->execute;
+   my $res = $sth->execute;
+
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@contigs,$rowhash->{'id'});
    }
-   
    
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
        my $sth = $self->prepare("delete from contig where id = '$contig'");
-       $sth->execute;
-       $sth = $self->prepare("delete from dna where contig = '$contig'");
-       $sth->execute;
+       my $res = $sth->execute;
+          $sth = $self->prepare("delete from dna where contig = '$contig'");
+          $res = $sth->execute;
+
+       $self->delete_Features($contig);
+
    }
    
    $sth = $self->prepare("delete from clone where id = '$clone_id'");
-   $sth->execute;
+   $res = $sth->execute;
+
+}
+
+
+=head2 delete_Features
+
+ Title   : delete_Features
+ Usage   :
+ Function: deletes all features from a contig;
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub delete_Features {
+    my ($self,$contig) = @_;
+
+    my $sth = $self->prepare("select fs.feature,fs.fset from fset_feature as fs, feature as f where fs.feature = f.id and f.contig = '$contig'");
+    my $res = $sth->execute;
+
+    my %fset;
+
+    while (my $rowhash = $sth->fetchrow_hashref) {
+	$fset{$rowhash->{fset}} = 1;
+    }
+    
+    my @fset = keys %fset;
+    
+    if ($#fset >= 0) {
+	my $fsstr = "";
+
+	foreach my $fs (@fset) {
+	    $fsstr .= $fs . ",";
+	}
+
+	chop($fsstr);
+	
+	print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
+	
+	$sth = $self->prepare("delete from fset where id in ($fsstr)");
+	$res = $sth->execute;
+	
+	$sth = $self->prepare("delete from fset_feature where fset in ($fsstr)");
+	$res = $sth->execute;
+    }
+    
+    print(STDERR "Deleting features for contig $contig\n");
+    
+    $sth = $self->prepare("delete from feature where contig = '$contig'");
+    $res = $sth->execute;
+    
+    print(STDERR "Deleting repeat features for contig $contig\n");
+    
+    $sth = $self->prepare("delete from repeat_feature where contig = '$contig'");
+    $res = $sth->execute;
+
 }
 
 =head2 delete_Gene
@@ -1104,6 +1252,9 @@ sub delete_Gene{
    foreach my $exon ( keys %exon ) {
        print STDERR "Got exon $exon in delete_Gene\n";
        my $sth = $self->prepare("delete from exon where id = '$exon'");
+       $sth->execute;
+
+       $sth = $self->prepare("delete from supporting_feature where exon = '$exon'");
        $sth->execute;
    }
 
@@ -1210,6 +1361,101 @@ sub replace_last_update {
  
     $sth = $self->prepare("insert into meta (last_update,donor_database_locator,offset_time) values ('".$now_offset."','".$donor."','".$offset."')");
     $sth->execute;
+}
+
+=head2 current_update
+    
+ Title   : current_update
+ Usage   : $obj->current_update
+ Function: Checks whether the database is in the middle of an update
+ Example : 
+ Returns : 0,1
+ Args    : 
+
+=cut
+
+sub current_update {
+    my ($self) = @_;
+
+    my $sth = $self->prepare("select * from db_update where status = 'STARTED'");
+    my $res = $sth ->execute;
+
+    my $id = 0;
+
+    my $rowhash = $sth->fetchrow_hashref;
+    my $id      = $rowhash->{'id'};
+
+    return $id;
+}
+
+=head2 start_update
+    
+ Title   : start_update
+ Usage   : my $id = $obj->start_update
+ Function: Enters a new updating process in the db_update table
+ Example : 
+ Returns : int
+ Args    : 
+
+=cut
+
+sub start_update {
+    my ($self,$start,$end) = @_;
+
+    my $id = $self->current_update;
+
+    $self->throw("Update already in progresss id [$id]") unless ! $id;
+    
+    
+    my $sth = $self->prepare("insert into db_update" . 
+			     "(id,time_started,status,modified_start,modified_end) " . 
+			     " values(NULL,now(),FROM_UNIXTIME($start),FROM_UNIXTIME($end))");
+
+    $sth->execute;
+    
+    $sth->prepare("select last_insert_id()");
+    $sth->execute;
+
+    my $rowhash = $sth->fetchrow_hashref;
+    my $id      = $rowhash->{'last_insert_id()'};
+    
+    return $id;
+}
+
+=head2 finish_update
+    
+ Title   : finish_update
+ Usage   : my $id = $obj->finish_update
+ Function: Completes the current update process
+ Example : 
+ Returns : nothing
+ Args    : None
+
+=cut
+
+sub finish_update {
+    my ($self) = @_;
+
+    my $id = $self->current_update;
+
+    $self->throw("No current updating process. Can't finish") unless $id;
+
+    my $sth = $self->prepare("select * from db_update where id = $id");
+    $sth->execute;
+
+    my $rowhash = $self->fetchrow_hashref;
+
+    my $id              = $rowhash->{id};
+    my $time_started    = $rowhash->{time_started};
+    my $modified_end    = $rowhash->{modified_end};
+    my $modified_start  = $rowhash->{modified_start};
+
+    # Should get stats on each table here as well.
+
+    my $sth = $self->prepare("replace into db_update(id,time_started,time_finished,modified_start,modified_end,status)".
+			     "values($id,\'$time_started\',now(),\'$modified_start\',\'$modified_end\','COMPLETE'");
+    $sth->execute;
+
 }
 
 =head2 write_Gene
@@ -1542,7 +1788,7 @@ sub write_supporting_evidence {
 
     $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
 
-     my $sth  = $self->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth  = $self->prepare("insert into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
     
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
 
@@ -1571,7 +1817,7 @@ sub write_supporting_evidence {
 			  $f->hseqname
 			  );
 	} else {
-	    $self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
+	    #$self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
 	}
     }
 }
