@@ -56,6 +56,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::Contig;
+use Bio::EnsEMBL::DB::Clone;
 use DBI;
 
 @ISA = qw(Bio::Root::Object);
@@ -80,7 +81,9 @@ sub _initialize {
   
   if( $debug ) {
      $self->_debug($debug);
-  }
+ } else {
+     $self->_debug(0);
+ }
   
   if( ! $driver ) {
       $driver = 'mysql';
@@ -105,24 +108,6 @@ sub _initialize {
 }
 
 
-=head2 get_Clone
-
- Title   : get_clone
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Clone{
-   my ($self,@args) = @_;
-
-
-}
-
 =head2 get_Gene
 
  Title   : get_Gene
@@ -138,7 +123,37 @@ sub get_Clone{
 sub get_Gene{
    my ($self,@args) = @_;
 
+   $self->throw("Not implemented yet! sorry!");
 
+}
+
+=head2 get_Clone
+
+ Title   : get_Clone
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Clone{
+   my ($self,$id) = @_;
+
+   my  $sth = $self->prepare("select id from contig where clone = \"$id\";");
+   $sth->execute();
+   my  $rv = $sth->rows;
+   print STDERR "Got $rv $id\n";
+   if( ! $rv ) {
+       $self->throw("Clone $id does not seem to occur in the database!");
+   }
+
+   my $clone = new Bio::EnsEMBL::DB::Clone( -id => $id,
+					-dbobj => $self );
+
+   return $clone;
 }
 
 =head2 get_Contig

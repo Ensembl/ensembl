@@ -18,9 +18,9 @@ Bio::EnsEMBL::DB::Clone - Object representing one clone
 
     # $db is Bio::EnsEMBL::DB::Obj 
 
-    $clone = $db->get_Clone();
+    @contig = $db->get_Contigs();
 
-    @features = $clone->get_all_Features();
+    $clone = $db->get_Clone();
 
     @genes    = $clone->get_all_Genes();
 
@@ -42,7 +42,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package EnsEMBL::DB::Clone;
+package Bio::EnsEMBL::DB::Clone;
 use vars qw(@ISA);
 use strict;
 
@@ -61,27 +61,21 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
+  my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
+					  ID
+					  )],@args);
+
+  $id || $self->throw("Cannot make contig db object without id");
+  $dbobj || $self->throw("Cannot make contig db object without db object");
+  $dbobj->isa('Bio::EnsEMBL::DB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+
+  $self->id($id);
+  $self->_dbobj($dbobj);
+
 # set stuff in self from @args
- return $make; # success - we hope!
+  return $make; # success - we hope!
 }
 
-=head2 get_all_Features
-
- Title   : get_all_Features
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Features{
-   my ($self,@args) = @_;
-
-
-}
 
 
 =head2 get_all_Genes
@@ -99,5 +93,86 @@ sub get_all_Features{
 sub get_all_Genes{
    my ($self,@args) = @_;
 
+   $self->throw("Not implemented yet!");
+}
+
+=head2 get_Contigs
+
+ Title   : get_Contigs
+ Usage   : foreach $contig ( $clone->get_Contigs ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Contigs{
+   my ($self) = @_;
+   my $sth;
+   my @res;
+   my $name = $self->id();
+
+   my $sql = "select id from contig where clone = \"$name\" ";
+   print STDERR "Looking at $name. [$sql]\n";
+   $sth= $self->_dbobj->prepare($sql);
+   my $res = $sth->execute();
+   my $seen = 0;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self->_dbobj,
+						   -id => $rowhash->{'id'} );
+       push(@res,$contig);
+       $seen = 1;
+   }
+   if( $seen == 0  ) {
+       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isnt...");
+   }
+
+   return @res;   
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_clone_id'} = $value;
+    }
+    return $obj->{'_clone_id'};
 
 }
+
+
+=head2 _dbobj
+
+ Title   : _dbobj
+ Usage   : $obj->_dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of _dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _dbobj{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_dbobj'} = $value;
+    }
+    return $obj->{'_dbobj'};
+
+}
+
+1;
