@@ -994,29 +994,29 @@ sub _get_all_SeqFeatures_type {
    # need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
 
-   my $count = 0;
-   foreach $sf ( @$sf ) {
-       #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
-       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+	my $count = 0;
+	foreach $sf ( @$sf ) {
+		#print STDERR "\n ##### Starting to convert feature " . $sf->seqname . " " . $sf->id . "\n";
+		#print STDERR "SEQNAME:" . $sf->seqname . " ID: " . $sf->id . " START: " . $sf->start . " END: " . $sf->end ."\n";
 
-       if( !defined $sf ) {      
-	   next;
-       }
+		$sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
-	
-       if($sf->start < 0 ){
-	   $count++;
-        }
-        elsif ($sf->end > $self->length){
-	    $count++;
-        }
-        else{
-	    push (@vcsf, $sf);
-        }
-   }
+		if( !defined $sf ) {      
+			next;
+		}
+		if($sf->start < 0 ){
+			$count++;
+		}
+		elsif ($sf->end > $self->length){
+			$count++;
+		}
+		else{
+			push (@vcsf, $sf);
+		}
+	}
    
-   #print STDERR "returning ",scalar(@vcsf)," for $type\n";
-   return @vcsf;
+	print STDERR "returning ",scalar(@vcsf)," $type objects\n";
+	return @vcsf;
 }
 
 

@@ -305,7 +305,7 @@ sub get_all_RepeatFeatures {
 
   my $statement = "SELECT rf.id,
                           rf.seq_start+sgp.chr_start-sgp.raw_start,
-                          rf.seq_end+sgp.chr_start-sgp_raw_start,
+                          rf.seq_end+sgp.chr_start-sgp.raw_start,
                           rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                           sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                    FROM   repeat_feature rf,static_golden_path sgp
