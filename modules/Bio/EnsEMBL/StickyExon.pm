@@ -13,7 +13,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two contigs internally
+Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two or more contigs 
+                           internally
 
 =head1 SYNOPSIS
 
@@ -24,23 +25,25 @@ Bio::EnsEMBL::StickyExon - A Confirmed Exon which spans two contigs internally
     $sticky->end();
 
     # has component_Exons
-    foreach $sub ( $sticky->each_component_Exon ) {
+    foreach $sub ( @{$sticky->get_all_component_Exons} ) {
        # $sub is an exon that ends on a contig
     }
 
 =head1 DESCRIPTION
 
-Sticky Exons represent Exons which internally span contigs. They are made during the
-write back on virtual contigs, which writes the exons that span joins into the database.
+Sticky Exons represent Exons which internally span contigs. 
+They are made during the write back on slices, which writes the exons that 
+span joins into the database.
 
 
 =head1 CONTACT
 
-Describe contact details here
+The EnsEMBL developer mailing list for questions : <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -97,7 +100,7 @@ sub id{
 
    if( defined $value ) {
        $self->{'_sticky_id'} = $value;
-       foreach my $c ( $self->each_component_Exon() ) {
+       foreach my $c ( @{$self->get_all_component_Exons} ) {
 	   $c->id($value);
        }
    }
@@ -107,27 +110,27 @@ sub id{
 }
 
 
-=head2 each_component_Exons
 
- Title   : each_component_Exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+=head2 get_all_component_Exons
 
+  Arg [1]    : 
+  Example    : @component_exons = @{$exon->get_all_component_Exons}; 
+  Description: Retrieves the component exons that comprise a sticky exon 
+  Returntype : reference to a list of Bio::EnsEMBL::Exons
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub each_component_Exon{
+sub get_all_component_Exons{
    my ($self,@args) = @_;
 
-   return @{$self->{'_component_exons'}};
+   return $self->{'_component_exons'};
 }
 
 
 
-=head1
+=Head1
 
   Arg  1   : integer start - relative to the exon
   Arg  2   : integer end   - relative to the exon
@@ -162,63 +165,61 @@ sub contig_seqfeatures_from_relative_position {
 
   my @out;
   my $sf;
-  my @exons = $self->each_component_Exon();
+  my $exons = $self->get_all_component_Exons;
   my $len = 0;
-  while( scalar(@exons) > 0 ) {
-    if( $exons[0]->length + $len > $start ) {
+  while( scalar(@$exons) > 0 ) {
+    if( $exons->[0]->length + $len > $start ) {
        last;
     } else {
-       my $discard = shift @exons;
+       my $discard = shift @$exons;
        $len += $discard;
     }
   }
 
   # handle the first component exon
 
-  if( scalar(@exons) == 0 ) {
+  if( scalar(@$exons) == 0 ) {
      return @out;
   }
   
   $sf = Bio::EnsEMBL::SeqFeature->new();
-  $sf->seqname($exons[0]->contig->id);
-  $sf->strand($exons[0]->strand);
-  $sf->start($exons[0]->start + $start - $len);
+  $sf->seqname($exons->[0]->contig->id);
+  $sf->strand($exons->[0]->strand);
+  $sf->start($exons->[0]->start + $start - $len);
 
-  if( $end < $len + $exons[0]->length ) {
-      $sf->end($exons[0]->start + $end - $len);
+  if( $end < $len + $exons->[0]->length ) {
+      $sf->end($exons->[0]->start + $end - $len);
       return $sf;
   } else {
-      $sf->end($exons[0]->end);
+      $sf->end($exons->[0]->end);
       push(@out,$sf);
   }
 
 
-  while( scalar(@exons) ) {
-     if( $exons[0]->length + $len > $end ) {
+  while( scalar(@$exons) ) {
+     if( $exons->[0]->length + $len > $end ) {
         last;
      }
      $sf = Bio::EnsEMBL::SeqFeature->new();
-     $sf->seqname($exons[0]->contig->id);
-     $sf->strand($exons[0]->strand);
-     $sf->start($exons[0]->start);
-     $sf->start($exons[0]->end);
+     $sf->seqname($exons->[0]->contig->id);
+     $sf->strand($exons->[0]->strand);
+     $sf->start($exons->[0]->start);
+     $sf->start($exons->[0]->end);
      push(@out,$sf);
-     $len += $exons[0]->length;
+     $len += $exons->[0]->length;
   }
 
-  if( scalar(@exons) == 0 ) {
+  if( scalar(@$exons) == 0 ) {
      return @out;
   }
 
   # handle the last exon
 
   $sf = Bio::EnsEMBL::SeqFeature->new();
-  $sf->seqname($exons[0]->contig->id);
-  $sf->strand($exons[0]->strand);
-  $sf->start($exons[0]->start);
-  $sf->start($exons[0]->start + $end - $len);
-
-
+  $sf->seqname($exons->[0]->contig->id);
+  $sf->strand($exons->[0]->strand);
+  $sf->start($exons->[0]->start);
+  $sf->start($exons->[0]->start + $end - $len);
 
   return @out;
 }
@@ -262,7 +263,7 @@ sub length {
 
     my $len =0; 
 
-    foreach my $subexon ( $self->each_component_Exon ) {
+    foreach my $subexon ( @{$self->get_all_component_Exons} ) {
         $len += $subexon->length;
     }
     return $len;
@@ -320,7 +321,7 @@ sub seq {
     }
   } else {
     my $seqString = "";
-    for my $cExon ( $self->each_component_Exon() ) {
+    for my $cExon ( @{$self->get_all_component_Exons} ) {
       $seqString .= $cExon->seq()->seq();
     }
     $self->{'_seq'} = $seqString;
@@ -368,9 +369,9 @@ sub transform {
     $self->_sort_by_sticky_rank(); 
 
     # and now retrieve them
-    my @component_exons = $self->each_component_Exon();
+    my $component_exons = $self->get_all_component_Exons;
 
-    foreach my $c_exon ( @component_exons ) {
+    foreach my $c_exon ( @$component_exons ) {
 
       my @mapped = $mapper->map_coordinates_to_assembly
 	(
@@ -451,11 +452,18 @@ sub transform {
 
     # now build the new composite exon
     my $newexon = Bio::EnsEMBL::Exon->new();
-    $newexon->start( $mapped_start - $slice->chr_start() + 1 );
-    $newexon->end( $mapped_end - $slice->chr_start() + 1);
-    $newexon->strand( $composite_exon_strand * $slice->strand() );
-    $newexon->dbID($component_exons[0]->dbID);
-    $newexon->adaptor($component_exons[0]->adaptor);
+
+    if($slice->strand == 1) {
+      $newexon->start ( $mapped_start - $slice->chr_start() + 1 );
+      $newexon->end   ( $mapped_end   - $slice->chr_start() + 1);
+      $newexon->strand( $composite_exon_strand );
+    } else {
+      $newexon->start  ( $slice->chr_end() - $mapped_end   + 1);
+      $newexon->end    ( $slice->chr_end() - $mapped_start + 1);
+      $newexon->strand( $composite_exon_strand * -1);
+    }
+    $newexon->dbID($component_exons->[0]->dbID);
+    $newexon->adaptor($component_exons->[0]->adaptor);
 
     $newexon->contig( $slice );
     
@@ -480,6 +488,31 @@ sub transform {
     $self->throw( "Unexpected StickyExon in Assembly coords ..." );
   }
 }
+
+
+
+
+
+=head2 each_component_Exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_component_Exons instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub each_component_Exon {
+  my ($self, @args) = @_;
+
+  $self->warn("each_component_Exon has been renamed get_all_component_Exons\n" . caller);
+
+  return @{$self->get_all_component_Exons(@args)};
+}
+
+
 
 
 1;

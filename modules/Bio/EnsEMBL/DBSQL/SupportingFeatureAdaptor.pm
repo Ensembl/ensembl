@@ -39,8 +39,6 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon 
                The exon to fetch supporting features for
-  Arg [2]    : (optional)boolean $sticky_component_flag
-               Indicates $exon is a component exon to a sticky exon
   Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Exon($exon)};
   Description: Retrieves supporting features (evidence) for a given exon. 
   Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
@@ -58,7 +56,7 @@ sub fetch_all_by_Exon {
 
   # if exon is sticky, get supporting from components
   if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
-    foreach my $component_exon ( $exon->each_component_Exon() ) {
+    foreach my $component_exon ( @{$exon->get_all_component_Exons} ) {
       push @$out, @{$self->fetch_all_by_Exon( $component_exon )};
     }
     return $out;
