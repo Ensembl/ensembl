@@ -14,7 +14,7 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::Search::HSP::EnsemblHSP; # This is a web module
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
-#@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection );
+#@ISA = qw( Bio::EnsEMBL::DBSQL::DBAdaptor );
 
 
 #----------------------------------------------------------------------
@@ -182,6 +182,25 @@ SET     chr_name  = NULL,
 WHERE   hsp_id    = ?";
 
 
+#=head2 new
+# 
+#  Arg [1]   :
+#  Function  :
+#  Returntype:
+#  Exceptions:
+#  Caller    :
+#  Example   :
+# 
+#=cut
+#                                                                           
+#
+sub new {
+  my $caller = shift;
+  my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
+  my $self = $caller->SUPER::new($connection);
+  return $self;
+}
+ 
 
 sub new_fast{
   my ($caller,$connection) = @_;
@@ -191,35 +210,11 @@ sub new_fast{
 
 #----------------------------------------------------------------------
 
-sub species{
-  return "need to fix";
-}
-
-=head2 new
-
-  Arg [1]   : 
-  Function  : 
-  Returntype: 
-  Exceptions: 
-  Caller    : 
-  Example   : 
-
-=cut
-
-sub new {
-  my $caller = shift;
-  my @tmp = @_;
-  my $con = shift;
-  my $connection;
-
-  if(ref($con) and $con->isa("Bio::EnsEMBL::DBSQL::DBConnection")){
-    $connection = new_fast  Bio::EnsEMBL::DBSQL::DBAdaptor('-con' => $con);
-  }
-  else{
-    $connection =  Bio::EnsEMBL::DBSQL::DBAdaptor->new(@tmp);
-  }
-  my $self = $caller->SUPER::new($connection);
-  return $self;
+sub species {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_species} = $arg );
+  $self->{_species};
 }
 
 #----------------------------------------------------------------------
@@ -362,7 +357,7 @@ sub store_search_multi{
 
   my $frozen = shift || $search_multi->serialise;
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
 
   my $ticket  = $search_multi->token ||
     $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
@@ -402,7 +397,7 @@ sub retrieve_search_multi {
   my $self   = shift;
   my $ticket = shift || $self->throw( "Need an EnsemblSearchMulti ticket" );  
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
   my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
   my $rv  = $sth->execute( $ticket ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $ticket not found" ) }
@@ -432,7 +427,7 @@ sub store_result{
     $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
   my $frozen = shift || $res->serialise;
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $res->token || '' );
   $use_date ||= $self->use_date('RESULT');
@@ -481,7 +476,7 @@ sub retrieve_result{
   my ( $id, $use_date ) = split( '!!',$token);
   $use_date ||= '';
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
   my $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $id not found" ) }
@@ -509,7 +504,7 @@ sub store_hit{
     $self->throw( "Need a Bio::Search::Hit::EnsemblHit obj" );
   my $frozen = shift || $hit->serialise;
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $hit->token || '' );
   $use_date ||= $hit->use_date() || $hit->use_date($self->use_date('HIT'));;
@@ -555,7 +550,7 @@ sub retrieve_hit{
   my $token  = shift || $self->throw( "Need a Hit token" );
   my ( $id, $use_date ) = split( '!!',$token);
   $use_date ||= '';
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
   my $sth = $dbh->prepare( sprintf $SQL_HIT_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
@@ -583,7 +578,7 @@ sub store_hsp{
     $self->throw( "Need a Bio::Search::HSP::EnsemblHSP obj" );
   my $frozen = shift || $hsp->serialise;
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
   $use_date ||= $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
@@ -641,7 +636,7 @@ sub retrieve_hsp{
   my $token  = shift || $self->throw( "Need an HSP token" );
   my ( $id, $use_date ) = split( '!!',$token);
   $use_date ||= '';
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
   my $sth = $dbh->prepare( sprintf $SQL_HSP_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
@@ -670,7 +665,7 @@ sub remove_hsp {
   my $hsp  = shift || 
     $self->throw( "Need a Bio::Search::HSP::EnsemblHSP obj" );
 
-  my $dbh  = $self->db->db_handle;
+  my $dbh  = $self->dbc->db_handle;
 
   my ( $id, $use_date ) = split( '!!', $hsp->token || '');
   $use_date ||= $hsp->use_date() || $hsp->use_date($self->use_date('HSP'));
@@ -730,7 +725,7 @@ AND    chr_end   >= ? );
        push @binded, $chr_end, $chr_start;
      }
    }
-   my $sth = $self->db->db_handle->prepare($q);
+   my $sth = $self->dbc->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
 
    my @hsps = ();
@@ -816,7 +811,7 @@ sub use_date {
 
   $self->{$key} ||= {};
   if( ! $self->{$key}->{$type} ){
-    my $sth = $self->db->db_handle->prepare( $SQL_SELECT_TABLE_LOG_CURRENT );
+    my $sth = $self->dbc->db_handle->prepare( $SQL_SELECT_TABLE_LOG_CURRENT );
     my $rv = $sth->execute( $type ) || ( warn( $sth->errstr ) && return );
     $rv > 0 || ( warn( "No current $type table found" ) && return );
     my $date = $sth->fetchrow_arrayref->[0];
@@ -845,7 +840,7 @@ sub clean_blast_database{
   my $self = shift;
   my $days = shift || $self->throw( "Missing arg: number of days" );
   $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
-  my $dbh = $self->db->db_handle;
+  my $dbh = $self->dbc->db_handle;
 
   # Get list of tickets > $days days old
   my $q = qq/
@@ -853,7 +848,7 @@ SELECT ticket
 FROM   blast_ticket
 WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 
-  my $sth = $self->db->db_handle->prepare($q);
+  my $sth = $self->dbc->db_handle->prepare($q);
   my $rv = $sth->execute() || $self->throw( $sth->errstr );
   my $res = $sth->fetchall_arrayref;
   $sth->finish;
@@ -936,7 +931,7 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 
 sub create_tables {
   my $self = shift;
-  my $dbh = $self->db->db_handle;
+  my $dbh = $self->dbc->db_handle;
 
   # Get list of existing tables in database
   my $q = 'show tables like ?';
@@ -984,7 +979,7 @@ sub create_tables {
 
 sub rotate_daily_tables {
   my $self = shift;
-  my $dbh = $self->db->db_handle;
+  my $dbh = $self->dbc->db_handle;
  
   # Get date
   my( $day, $month, $year ) = (localtime)[3,4,5];
