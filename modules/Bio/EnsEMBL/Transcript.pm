@@ -1081,6 +1081,18 @@ sub modified{
 
 }
 
+# sneaky web only function...
+
+sub gene_is_known {
+    my ($self,$value) = @_;
+    
+    if( defined $value ) {
+         $self->{'_web_hack_gene_is_known'} = $value;
+    }
+    
+    return $self->{'_web_hack_gene_is_known'};
+}
+
 
 
 1;
