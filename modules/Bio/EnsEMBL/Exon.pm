@@ -414,8 +414,13 @@ sub transform {
 
   # catch for old style transform calls
   if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
-    throw( "transform needs coordinate systems details now," .
-           "please use transfer" );
+      my $slice = shift;
+      deprecate( "transform needs coordinate systems details now, please use transfer" );
+      if ($slice->{'empty'}) {
+	return $self->transform('toplevel');
+      } else {
+	return $self->transfer($slice);
+      }
   }
 
   my $new_exon = $self->SUPER::transform( @_ );
@@ -726,8 +731,13 @@ sub peptide {
   }
 
   #convert exons coordinates to peptide coordinates
+  my $tmp_exon = $self->transfer($tr->slice);
+  if (!$tmp_exon) {
+    throw("Couldn't transfer exon to transcript's slice");
+  }
+
   my @coords = 
-    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->slice);
+    $tr->genomic2pep($tmp_exon->start, $tmp_exon->end, $tmp_exon->strand);
   
   #filter out gaps
   @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;

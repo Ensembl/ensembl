@@ -137,7 +137,7 @@ sub fetch_by_translation_stable_id {
   my ($self, $transl_stable_id ) = @_;
 
   my $sth = $self->prepare( "SELECT t.transcript_id " .
-                            "FROM   translation_stable_id tsi, transcript t " .
+                            "FROM   translation_stable_id tsi, translation t " .
                             "WHERE  tsi.stable_id = ? " .
                             "AND    t.translation_id = tsi.translation_id");
 
@@ -416,13 +416,15 @@ sub get_Interpro_by_transid {
 	SELECT	i.interpro_ac, 
 		x.description 
         FROM	transcript t, 
+                translation tl, 
 		protein_feature pf, 
 		interpro i, 
                 xref x,
 		transcript_stable_id tsi
 	WHERE	tsi.stable_id = '$transid' 
 	    AND	t.transcript_id = tsi.transcript_id
-	    AND	t.translation_id = pf.translation_id 
+	    AND	tl.translation_id = pf.translation_id 
+            AND tl.transcript_id = t.transcript_id 
 	    AND	i.id = pf.hit_id 
 	    AND	i.interpro_ac = x.dbprimary_acc";
    

@@ -478,7 +478,13 @@ sub transform {
 
   # catch for old style transform calls
   if( !@_ || ( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" ))) {
-    throw( "transform needs coordinate systems details now, please use transfer" );
+    my $slice = shift;
+    deprecate( "transform needs coordinate systems details now, please use transfer" );
+    if ($slice->{'empty'}) {
+      return $self->transform('toplevel');
+    } else {
+      return $self->transfer($slice);
+    }
   }
 
   my $new_gene = $self->SUPER::transform( @_ );

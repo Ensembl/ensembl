@@ -1644,8 +1644,11 @@ sub transform {
   my $self = shift;
 
   # catch for old style transform calls
-  if( ref $_[0] && $_[0]->isa( "Bio::EnsEMBL::Slice" )) {
-    throw( "transform needs coordinate systems details now, please use transfer" );
+  if( ref $_[0] eq 'HASH') {
+    deprecate("transform takes a coordinate system argument now, not a" .
+	      " hashref of old tp new exons");
+    my (undef, $new_ex) = each(%{$_[0]});
+    $self->transfer($new_ex->slice);
   }
 
   my $new_transcript = $self->SUPER::transform( @_ );

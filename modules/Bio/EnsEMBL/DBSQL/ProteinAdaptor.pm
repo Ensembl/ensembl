@@ -77,7 +77,7 @@ use Bio::EnsEMBL::Protein;
 sub fetch_by_transcript_id{
    my ($self,$transid) = @_;
    my $query = "SELECT	t.translation_id 
-		FROM    transcript as t, 
+		FROM    translation as t, 
 			transcript_stable_id as s 
 		WHERE	s.stable_id = '$transid' 
 		AND	t.transcript_id = s.transcript_id";
@@ -133,10 +133,11 @@ sub fetch_by_translation_id {
    my ($self, $translation_id) = @_;
 
    #Get the transcript id from the translation id 
-   my $query = "SELECT	transcript_id, 
-			gene_id 
-		FROM	transcript t 
-	        WHERE	translation_id = '$translation_id'";
+   my $query = "SELECT	ts.transcript_id, 
+			ts.gene_id 
+		FROM	translation tr, transcript ts  
+	        WHERE	translation_id = '$translation_id'
+                AND     tr.transcript_id = ts.transcript_id";
 
    my $sth = $self->prepare($query);
    $sth ->execute();
