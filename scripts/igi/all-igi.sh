@@ -18,7 +18,6 @@ all-merges.sh > all-merges.out 2>all-merges.log
 # file(s). Results go to  out/{stats,mapping,summary,final}
 all-stats.sh > all-stats.out 2>all-stats.log
 
-
 # do the peptide business; first, collate them:
 pep-collate.sh 2> pep-collate.log
 
