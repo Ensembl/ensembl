@@ -16,6 +16,7 @@
 # 4 Problem with an Acc without description
 
 use strict;
+use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Getopt::Long;
 
@@ -23,8 +24,8 @@ $| = 1;
 
 # db_name used in the Ensembl core database (to be checked in table externalDB) and
 # used in the protein mapping.
-my %protein_db_naming = ('swissprot' => "SWISSPROT",
-			 'sptrembl' => "SPTREMBL",
+my %protein_db_naming = ('swissprot' => "Uniprot/SWISSPROT",
+			 'sptrembl' => "Uniprot/SPTREMBL",
 			 'refseq' => "RefSeq");
 
 my @databases_used_for_guessing_descriptions;
@@ -69,6 +70,7 @@ my ($host, $port, $dbname, $dbuser, $dbpass, $gene_description_file);
 my $regexp_file;
 my $debug = 0;
 my $consortium = "";
+my $reg_conf;
 
 unless (GetOptions('help' => \$help,
 		   'host=s' => \$host,
@@ -79,7 +81,8 @@ unless (GetOptions('help' => \$help,
 		   'r=s' => \$regexp_file,
 		   'consortium' => \$consortium,
 		   'load=s' => \$gene_description_file,
-		   'debug' => \$debug)) {
+		   'debug' => \$debug,
+                   'reg_conf' => \$reg_conf)) {
   die $usage;
 }
 
@@ -120,6 +123,10 @@ if (defined $gene_description_file || defined $dbpass) {
   warn "\n Must specify an protein database input file\n";
   die $usage;
 }
+
+# Take values from ENSEMBL_REGISTRY environment variable or from ~/.ensembl_init
+# if no reg_conf file is given.
+Bio::EnsEMBL::Registry->load_all($reg_conf);
 
 ## Loading data to database if requested and exit
 
@@ -163,7 +170,7 @@ my $db_query = join ",",@databases_used_for_guessing_descriptions;
 print STDERR "Preparing query...";
 
 
-my $sth = $db->prepare("
+my $sth = $db->dbc->prepare("
 SELECT
  tsl.translation_id,tsc.gene_id,xdb.db_name,x.dbprimary_acc,ix.query_identity,ix.target_identity
 FROM
@@ -203,11 +210,17 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
 	 $db eq $protein_db_naming{'refseq'})) {
       if ($prev_qy_percid < $qy_percid) {
 	$desc = $sp_desc{"$db:$acc"};
+        if ($debug) {
+          print "debug1: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+        }
 	$gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ]; # taking better SWISSPROT/RefSeq/Consortium desc.
 	next;
       } elsif ($prev_qy_percid == $qy_percid &&
 	       $prev_tg_percid < $tg_percid) {
 	$desc = $sp_desc{"$db:$acc"};
+        if ($debug) {
+          print "debug2: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+        }
 	$gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ]; # taking better SWISSPROT/RefSeq/Consortium desc.
 	next;
       } else {
@@ -217,6 +230,9 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
 
     if ($db eq $protein_db_naming{$consortium}) { 
       $desc = $sp_desc{"$db:$acc"};
+        if ($debug) {
+          print "debug3: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+        }
       $gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ]; # kick out the SWISSPROT/RefSeq/SPTREMBL desc -> priority to consortium desc
       next;
     }
@@ -224,6 +240,9 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
     if ($db eq $protein_db_naming{'swissprot'} &&
 	$prevdb ne $protein_db_naming{$consortium}) { 
       $desc = $sp_desc{"$db:$acc"};
+        if ($debug) {
+          print "debug4: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+        }
       $gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ]; # kick out the RefSeq/SPTREMBL desc -> priority to SWISSPROT desc
       next;
     }
@@ -232,6 +251,9 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
 	$prevdb ne $protein_db_naming{'swissprot'} &&
 	$prevdb ne $protein_db_naming{$consortium}) { 
       $desc = $sp_desc{"$db:$acc"};
+      if ($debug) {
+        print "debug5: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+      }
       $gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ]; # kick out the SPTREMBL desc -> priority to RefSeq desc
       next;
     }
@@ -242,6 +264,9 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
       if (compare_desc($prev_desc,$desc) < 0) {
 	# new desc is better
 	# warn "new better: $desc (old was: $prev_desc)\n";
+        if ($debug) {
+          print "debug6: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+        }
 	$gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ];
 	next;
       } else {
@@ -252,6 +277,9 @@ while (my ($ensp, $ensg, $db, $acc, $qy_percid, $tg_percid) = $sth->fetchrow_arr
     }
   } else {
     $desc = $sp_desc{"$db:$acc"};
+    if ($debug) {
+      print "debug7: $ensg $db, $desc, $acc, $qy_percid, $tg_percid\n";
+    }
     $gene_desc{$ensg} = [ $db, $desc, $acc, $qy_percid, $tg_percid ];
   }
 }
@@ -341,7 +369,7 @@ exit 3";
 					       -user => $dbuser,
 					       -pass => $dbpass);
 
-  my $sth = $db->prepare("load data infile '$ENV{PWD}/gene_description_file.symlink' into table gene_description");
+  my $sth = $db->dbc->prepare("load data infile '$ENV{PWD}/gene_description_file.symlink' into table gene_description");
 
   unless ($sth->execute()) {
     unlink "$ENV{PWD}/gene_description_file.symlink";
@@ -417,17 +445,22 @@ sub parse_protein_database {
       
       if ($line =~ /^DEFINITION\s+(\S.*\S)$/o) {
         $desc .= $1;
+        print STDERR "desc1",$desc,"\n" if ($line =~ /^DEFINITION.*somatostatin precursor.*$/);
 	while (defined ($line = <PROTDBF>)) {
-	  last if ($line =~ /^ACCESSION\s+(\S+)\s*.*$/o);
+	  if ($line =~ /^ACCESSION\s+(\S+)\s*.*$/o) {
+            # If xrefs have only NP_ uncomment the following line
+#            $acc = $1;
+            last;
+          }
 	  if ($line =~ /^\s+(\S.*\S)$/o) {
 	    $desc .= " ". $1;
 	  }
 	}
       }
-      
+
+      # Accession Number got in this line here during protein mapping
+      # not in  ACCESSION line. If xrefs have only NP_ comment all the if
       if ($line =~ /^DBSOURCE\s+(\S+)\s*.*$/o)  {
-# Accession Number got in this line here during protein mapping
-# not in  ACCESSION line.
 	if ($line =~ /^DBSOURCE\s+REFSEQ:\s+accession\s+(\S+)\.\d+$/o)  {
 	  $acc = $1;
 	} else {
@@ -439,8 +472,8 @@ Expecting to match this regexp /^DBSOURCE\\s+REFSEQ:\\s+accession\\s+(\\S+)\\.\\
       }
       
       if ($line =~ /^\/\/$/o) {
-	$desc =~ s/\s*\[.*\]//g; 
-	$sp_desc{"$db:$acc"} = $desc; 
+	#$desc =~ s/\s*\[.*\]//g; 
+	$sp_desc{"$db:$acc"} = $desc;  
 	$db = undef;
 	$acc = undef; 
 	$desc = ""; 
