@@ -120,7 +120,7 @@ CREATE TABLE dna (
   created   datetime NOT NULL,
   
   PRIMARY KEY (id)
-) MAX_ROWS = 500000 AVG_ROW_LENGTH=100000;
+) MAX_ROWS = 750000 AVG_ROW_LENGTH = 13000;
 
 #
 # Table structure for table 'exon'
@@ -178,7 +178,7 @@ CREATE TABLE feature (
   PRIMARY KEY (id),
   KEY contig (contig),
   KEY hid (hid)
-) MAX_ROWS = 100000000 AVG_ROW_LENGTH=150;
+) MAX_ROWS = 300000000 AVG_ROW_LENGTH = 80;
 
 #
 # Table structure for table 'fset'
@@ -301,7 +301,6 @@ CREATE TABLE genetype (
    type  varchar(40) NOT NULL,
       
    PRIMARY KEY(gene_id),
-   KEY(gene_id),
    KEY(type)
 );
 
