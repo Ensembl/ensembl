@@ -71,6 +71,31 @@ sub new {
 }
 
 
+
+=head2 _straight_join
+
+  Arg [1]    : (optional) boolean $new_val
+  Example    : $self->_straight_join(1);
+               $self->generic_fetch($constraint);
+               $self->_straight_join(0);
+  Description: Getter/Setter that turns on/off the use of a straight join
+               in queries.
+  Returntype : boolean
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub _straight_join {
+  my $self = shift;
+  if(@_) {
+    $self->{'_straight_join'} = shift;
+  }
+
+  return $self->{'_straight_join'};
+}
+
+
 =head2 generic_fetch
 
   Arg [1]    : (optional) string $constraint
@@ -122,10 +147,17 @@ sub generic_fetch {
     @tables = @tabs;
   }
 
+
+  my $straight_join = '';
+
+  if($self->_straight_join()) {
+    $straight_join = "STRAIGHT_JOIN";
+  }
+
   #construct a nice table string like 'table1 t1, table2 t2'
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
-  my $sql = "SELECT $columns\n  FROM $tablenames $left_join";
+  my $sql = "SELECT $straight_join $columns\n  FROM $tablenames $left_join";
 
   my $default_where = $self->_default_where_clause;
   my $final_clause = $self->_final_clause;
@@ -143,8 +175,8 @@ sub generic_fetch {
   #append additional clauses which may have been defined
   $sql .= "\n$final_clause";
 
-  ###print STDERR "\n\n$sql\n\n";
-  
+  print STDERR "\n\n$sql\n\n";
+
   my $sth = $db->prepare($sql);
 
   $sth->execute;
