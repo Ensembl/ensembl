@@ -363,7 +363,7 @@ execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id,
 debug("Translating qtl_feature");
 
 execute($dbi,
-	     "INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) " .
+	     "INSERT INTO $target.qtl_feature(seq_region_id, seq_region_start, seq_region_end, qtl_id, analysis_id) " .
 	     "SELECT tcm.new_id, " .
 	     "       q.start, q.end, q.qtl_id, q.analysis_id " .
 	     "FROM $target.tmp_chr_map tcm, $source.qtl_feature q " .
