@@ -1,8 +1,4 @@
 #Contact: Emmanuel Mongin (mongin@ebi.ac.uk)
-#This script loads the display_xref ids in the tables gene and transcript. The priority to which xref to load is given in the priority hash. Please edit it if needed. These script can be used for any organism
-#The database connection values are taken from mapping_conf.pl
-
-
 
 use strict;
 use DBI;
@@ -11,6 +7,8 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 use Bio::EnsEMBL::DBEntry;
 use Bio::SeqIO;
+#use MultiTestDB;
+
 
 BEGIN {
     my $script_dir = $0;
@@ -22,7 +20,9 @@ BEGIN {
 my %conf =  %::mapping_conf; # configuration options
 
 
-# Database connection values
+# global vars
+
+
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -30,7 +30,6 @@ my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my %priority;
 
-#Priority set up
 $priority{'BRIGGSAE_HYBRID'} = 1000;
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
@@ -41,14 +40,16 @@ $priority{'SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
 $priority{'SPTREMBL'} = 700;
 $priority{'LocusLink'} = 100;
-$priority{'Anopheles_paper'} = 50;
-$priority{'Celera_Gene'} = 50;
+#$priority{'Anopheles_paper'} = 50;
+#$priority{'Celera_Gene'} = 50;
 
 if (!defined $organism) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
 }
 
 print STDERR "Connecting to the database...\n";
+
+#my $multi = MultiTestDB->new();
 
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
@@ -58,11 +59,12 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -driver => 'mysql',
 	);
 
+#my $db = $multi->get_DBAdaptor( 'core' );
+
 my $transadaptor = $db->get_TranscriptAdaptor();
 my $geneadaptor  = $db->get_GeneAdaptor();
 my $xrefadaptor  = $db->get_DBEntryAdaptor();
 
-#First get through all of the transcripts and set up the display xref following the priority list
 my $query = "select transcript_id from transcript";
 my $sth = $db->prepare($query);
 $sth->execute();
@@ -72,15 +74,21 @@ while(my $id = $sth->fetchrow) {
     my $xrefs = $trans->get_all_DBLinks;
     my $display;
     my $current = 0;
+    my $cdb;
     foreach my $xref(@$xrefs) {
+	
 	if ($priority{$xref->database} > $current) {
 	    $display = $xref->dbID;
+	    $cdb = $xref->database;
+	    $current = $priority{$xref->database};
 	}
     }
+
     $trans->display_xref($display);
     $transadaptor->update($trans);
+#    print STDERR "ID: $id\tDISPLAY: $display\tTEST: ".$transadaptor->get_display_xref_id($id)."\n";
+}
 
-#Then get through all of the genes and choose from the transcripts which one to use. There is currently am exeption for elegans as the display xref should be the gene and transcripts stable ids.
 if ($organism ne "elegans") {
 
     my $query1 = "select gene_id from gene";
@@ -100,11 +108,13 @@ if ($organism ne "elegans") {
 		my $xref = $xrefadaptor->fetch_by_dbID($xrefid);
 		if ($priority{$xref->database} > $current) {
 		    $display = $xref->dbID;
+		    $current = $priority{$xref->database};
 		}
 	    };
 	}
 	$gene->display_xref($display);
 	$geneadaptor->update($gene);
+#    print STDERR "GENE_ID: $gene_id\tDISPLAY: $display\tTEST: ".$geneadaptor->get_display_xref_id($gene_id)."\n";
     }
 }
 elsif ($organism eq "elegans") {
