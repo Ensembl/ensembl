@@ -104,8 +104,7 @@ sub fetch_by_type{
               This extracts the relevant data from the assembly
               table and stores it in a Bio::EnsEMBL::Mapper.
               It therefore must be called before any mapping is
-              attempted on that region. Otherwise
-              only gaps will
+              attempted on that region. Otherwise only gaps will
               be returned!
   Returntype  none
   Exceptions  none
