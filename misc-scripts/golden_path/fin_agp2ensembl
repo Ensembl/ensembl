@@ -31,9 +31,10 @@ use strict;
 
 my (@agps);
 
-my $gptype = "Human_finished";
+my $gptype = "NCBI35";
 my $raw = "e_ctg.dat";
 my $agp_dir = "./fin_agp";
+my $agp_prefix = "chr";
 
 my %clone;
 my %used_ctg_ids;
@@ -41,7 +42,7 @@ my %used_ctg_ids;
 my @chrs = qw/
      1  2  3  4  5  6  7  8  9 10
     11 12 13 14 15 16 17 18 19 20
-     X  Y
+     X  Y DR52 DR53 PAR MT
 /;
 my @chr_info;
 my $chr_id = 1;
@@ -73,7 +74,7 @@ close CTG;
 
 foreach my $chr (@chrs) {
 
-    my $agp = "$agp_dir/human_$chr.agp";
+    my $agp = "$agp_dir/$agp_prefix$chr.agp";
     my $global_end;
     my $prev_end;
 
@@ -84,7 +85,7 @@ foreach my $chr (@chrs) {
 
     open AGP, "< $agp" or die "Canna open AGP file $agp";
     while (<AGP>) {
-
+        next if /^#/;
 	my ($chr_name, $chr_start, $chr_end, $status) = (split)[0, 1, 2, 4];
 
 	die "Unexpected gap: $_" if ($prev_end && $prev_end + 1 != $chr_start);
@@ -93,7 +94,7 @@ foreach my $chr (@chrs) {
 	next if $status eq "N";
 
 	die "Unfinished seq! $_" unless $status eq "F";
-	die "Bad chr name" unless $chr_name eq "Human-chr$chr";
+	die "Bad chr name" unless $chr_name eq "$agp_prefix$chr";
 
 	$global_end = $chr_end;
 
