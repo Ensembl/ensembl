@@ -2,11 +2,7 @@
 #
 # Copyright EMBL-EBI 2001
 #
-# Author: Arne Stabenau
-# based on 
-# Elia Stupkas Gene_Obj
-# 
-# Date : 20.02.2001
+# Author: James Smith
 #
 
 =head1 NAME
@@ -29,6 +25,7 @@ package Bio::EnsEMBL::DBSQL::LiteAdaptor;
 use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::Annotation::DBLink;
 use vars '@ISA';
 
 @ISA = ( 'Bio::EnsEMBL::DBSQL::BaseAdaptor' );
@@ -167,6 +164,110 @@ sub fetch_virtualRepeatFeatures_start_end {
     return $self->{$cache_name} = \@repeats;
     return \@repeats;
 }
+
+
+sub fetch_snp_features {
+
+ my ( $self, $chr, $vc_start, $vc_end,$glob ) =@_;
+
+
+ #lists of variations to be returned
+    my @variations;
+    my %hash;
+    my $string;
+   
+
+    my $query = qq{
+
+        SELECT   snp_chrom_start,strand,chrom_strand,
+                 refsnpid,
+                 tcsid, hgbaseid,clone 
+        FROM   	 snp
+        WHERE  	 chr_name='$chr' 
+        AND      snp_chrom_start>$vc_start
+	AND      snp_chrom_start<$vc_end
+              };
+
+    &eprof_start('snp-sql-query');
+
+    my $sth = $self->prepare($query);
+    my $res = $sth->execute();
+
+    &eprof_end('snp-sql-query');
+
+    my $snp;
+    my $cl;
+
+    &eprof_start('snp-sql-object');
+
+  SNP:
+    while( (my $arr = $sth->fetchrow_arrayref()) ) {
+        
+        my ($snp_start, $strand,$chrom_strand,$snpuid,$tscid, $hgbaseid,$acc) = @{$arr};
+            
+  # globbing
+        
+        my $key=$snpuid.$acc;           # for purpose of filtering duplicates
+        my %seen;                       # likewise
+        
+        
+        if ( ! $seen{$key} )  {
+            ## we're grabbing all the necessary stuff from the db in one
+            ## SQL statement for speed purposes, so we have to do some
+            ## duplicate filtering here.
+
+            $seen{$key}++;
+            
+            #Variation
+            $snp = new Bio::EnsEMBL::ExternalData::Variation
+              (-start => $snp_start,
+               -end => $snp_start,
+               -strand => $chrom_strand,
+               -original_strand => $strand,
+               -score => 1,
+               -source_tag => 'dbSNP',
+              );
+            
+            my $link = new Bio::Annotation::DBLink;
+            $link->database('dbSNP');
+            $link->primary_id($snpuid);
+           $link->optional_id($acc);
+            #add dbXref to Variation
+            $snp->add_DBLink($link);
+	    if ($hgbaseid) {
+	      my $link2 = new Bio::Annotation::DBLink;
+	      $link2->database('HGBASE');
+	      $link2->primary_id($hgbaseid);
+	      $link2->optional_id($acc);
+	      $snp->add_DBLink($link2);
+	    }
+	    if ($tscid) {
+	      my $link3 = new Bio::Annotation::DBLink;
+	      $link3->database('TSC-CSHL');
+	      $link3->primary_id($tscid);
+	      $link3->optional_id($acc);
+	      #add dbXref to Variation
+	      $snp->add_DBLink($link3);
+	    }
+            $cl=$acc;
+            # set for compatibility to Virtual Contigs
+            $snp->seqname($acc);
+            #add SNP to the list
+            push(@variations, $snp);
+        }                               # if ! $seen{$key}
+      }                                    # while a row from select statement
+
+    &eprof_end('snp-sql-object');
+    
+    return @variations;
+
+}
+
+
+
+
+
+
 
 1;
 __END__
