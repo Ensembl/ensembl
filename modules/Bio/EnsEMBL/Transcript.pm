@@ -374,7 +374,7 @@ sub translateable_seq {
 
   my $mrna = "";
   my $prev = undef;
-  my $lastphase;
+  my $lastphase = 0;
 
   foreach my $exon (@{$self->get_all_translateable_Exons()}) {
 
@@ -382,7 +382,6 @@ sub translateable_seq {
     if (defined($exon->phase)) {
       $phase = $exon->phase;
     }
-
     if( $phase != $lastphase ) {
 
       # endpadding for the last exon
