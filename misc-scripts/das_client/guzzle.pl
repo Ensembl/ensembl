@@ -229,8 +229,8 @@ sub do_query
 	    #
 	    # 2. Perform the query.
 	    #
-            # 3. TODO: Replace all occurances of the target ID
-            #    in the reply with the query ID.
+            # 3. Tag all occurances of the target ID in the
+            #    reply with the query ID.
 	    #
 
 	    open(IN, $source->{MAPFILE}) or
@@ -277,13 +277,13 @@ sub do_query
             # 2. Parse the cigar line and build a
             #    Bio::EnsEMBL::Mapper object from it.
 	    #
-            # 3. TODO: If a range was specified, map it into the
+            # 3. If a range was specified, map it into the
             #    target coordinate system.
 	    #
 	    # 4. Perform the query.
 	    #
-            # 5. TODO: Replace all occurances of the target ID
-            #    in the reply with the query ID.
+            # 5. Tag all occurances of the target ID in the
+            #    reply with the query ID.
 	    #
             # 6. TODO: Map the features back to the query
             #    coordinate system.
@@ -368,11 +368,28 @@ sub do_query
 	next if (!$reply->is_success());
 
 	if (exists $query->{MAPPER}) {
+	    # Map results using align mapper.
+	    # Scary stuff.  If this works, I deserve a beer.
+
 	    my @results = $reply->results();
 	    foreach my $result (@results) {
-		my $group = $result->group();
-		$result->group($group . " [$seqid]");
-		#print $cgi->pre(Dumper($result));
+                # Tag the string that we later use in the tabla
+                # and graphics.
+		$result->group($result->group() . " [$seqid]");
+
+                # Do the reverse mapping from the target
+                # coodinate system into the query coordinate
+                # system.  This will yield an array of "gaps"
+                # and "coordinates".  If a range is mapped as a
+                # whole (no holes) then just change the start
+                # and stop coodinates.  Mark it as a "gap" if
+                # neccesary.  Use the undocumented add_object()
+                # method of Bio::Das::Request to add ranges that
+                # were split into two or more ranges.
+
+		my @mapped = $query->{MAPPER}->map_coordinates(
+		    'targetID', $result->start(), $result->stop(), 1,
+		    'targetCOORD');
 	    }
 	    #print $cgi->pre(Dumper($reply));
 	}
