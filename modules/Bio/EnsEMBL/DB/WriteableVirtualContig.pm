@@ -210,8 +210,16 @@ sub _reverse_map_Exon{
        $rmexon->version($exon->version);
        $rmexon->phase($exon->phase);
        $rmexon->sticky_rank(1);
-       $rmexon->start($start);
-       $rmexon->end($end);
+
+       # we could test on strand changes. This just assummes everything works
+       # as it says on the tin ;)
+       if( $start < $end ) {
+	   $rmexon->start($start);
+	   $rmexon->end($end);
+       } else {
+	   $rmexon->start($end);
+	   $rmexon->end($start);
+       }
        $rmexon->strand($sstrand);
        $rmexon->contig_id($scontig->id);
        $rmexon->seqname($scontig->id);
