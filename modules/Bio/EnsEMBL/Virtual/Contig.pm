@@ -1394,8 +1394,6 @@ sub convert_Gene_to_raw_contig {
        $self->throw("Got to write a gene, not a [$gene]");
    }
 
-   # sanity check 
-
    $self->_sanity_check($gene);
 
    # we need to map the exons back into RC coordinates.
@@ -1472,9 +1470,11 @@ sub convert_Gene_to_raw_contig {
        }
    }
 
+#    $self->_sanity_check($clonedgene);
+
    return $clonedgene;
 
-}
+}                                       # convert_Gene_to_raw_contig
 
 =head2 _reverse_map_Exon
 
@@ -1663,18 +1663,31 @@ sub _reverse_map_Exon{
 # internal function used by _sanity_check; returns undef if all OK, error
 # string otherwise
 sub _check_exon_start_end {
-    my ($transc, $exon) = @_;
+    my ($transl, $exon, $which_one) = @_;
     my $message = undef;
+    my $to_test;
 
-       if ( $transc->start < 1 ) { 
-           $message .= "Transcript's end < 1: " . $transc->start 
-             . "(transcript:". $transc->id() . ",exon:".$exon->id().")";
-       }
-       if ( $transc->end > $exon->length) { 
-           $message .= "Transcript's end (".$transc->end
-             .") > exon length (".$exon->length.") "
-             . "(transcript:". $transc->id() . ",exon:".$exon->id().")";
-       }
+    # depending on the 'which_one' arg, check beginning or end of it. 
+    # (PL: might be too slow)
+    if ($which_one eq 'start' ) { 
+        $to_test =  $transl->start;
+    } elsif ($which_one eq 'end' ) {
+        $to_test =  $transl->end;
+    } else { 
+        return "Internal error: call with 'start' or 'end'";
+    }
+
+    if ( $to_test < 1 ) { 
+        $message .= "Translation's $which_one < 1: " . $transl->start 
+          . "(translation:". $transl->id()  . ")";
+    }
+    
+    if ( $to_test > $exon->length) { 
+        $message .= "Translation's $which_one (".$transl->start
+          .") > exon length (".$exon->length.") "
+            . "(translation:". $transl->id() . ",exon:".$exon->id().")";
+    }
+
     return $message;
 }
 
@@ -1703,7 +1716,9 @@ sub _sanity_check{
        $error = 1;
        $message .= "Gene has to have a version;";
    }
+
    foreach my $trans ( $gene->each_Transcript ) {
+
        if( !defined $trans->id ) {
 	   $error = 1;
 	   $message .= "Transcript has no id;";
@@ -1775,13 +1790,13 @@ sub _sanity_check{
        # start exon:
        my $t = $trans->translation;
        my $e = $gene->get_Exon_by_id($t->start_exon_id);
-       my $m =_check_exon_start_end($t, $e);
+       my $m =_check_exon_start_end($t, $e, 'start');
 
        if ($m) { $error++;  $message .= $m;}
 
        # same for end exon:
        $e = $gene->get_Exon_by_id($t->end_exon_id);
-       $m  = _check_exon_start_end($t, $e);
+       $m  = _check_exon_start_end($t, $e, 'end');
        if ($m) { $error++;  $message .= $m;}
    }                                    # each_Transcript
 
