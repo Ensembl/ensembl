@@ -155,9 +155,7 @@ sub intron_length{
    my ($self) = @_;
    my $start = $self->feature2->start;
    my $end = $self->feature2->end;
-
-   my $length = int ((($end - $start)/3)+0.5);
-   
+   my $length = $end - $start;
    return $length;
 }
 
