@@ -521,7 +521,16 @@ sub subseq {
       ( $self, $start,
         $end, $strand )};
   } else {
-    $subseq = substr ($self->seq(), $start-1, $end - $start + 1);
+    ## check for gap at the beginning and pad it with Ns
+    if ($start < 1) {
+      $subseq = "N" x (1 - $start);
+      $start = 1;
+    }
+    $subseq .= substr ($self->seq(), $start-1, $end - $start + 1);
+    ## check for gap at the end and pad it with Ns
+    if ($end > $self->length()) {
+      $subseq .= "N" x ($end - $self->length());
+    }
     reverse_comp(\$subseq) if($strand == -1);
   }
   return $subseq;
