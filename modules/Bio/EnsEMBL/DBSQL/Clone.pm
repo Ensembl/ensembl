@@ -228,6 +228,48 @@ sub get_all_Genes{
 
 }
 
+=head2 get_all_clone_Genes
+
+ Title   : get_all_clone_Genes
+ Usage   :
+ Function: gets all the genes in clone
+           coordinates. Don't watch this ;)
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_clone_Genes{
+   my ($self) = @_;
+   my (%contig,@genes,@exons);
+
+   @genes = $self->get_all_Genes();
+
+   # this is scary. Don't look
+   # (we are using the fact that the gene objects
+   # can be written into)
+
+   foreach my $gene ( @genes) {
+       push(@exons,$gene->each_unique_Exon);
+   }
+
+   foreach my $exon ( @genes ) {
+       if( !exists $contig{$exon->contig_id} ) {
+	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
+       }
+       my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
+       
+       $exon->start($s);
+       $exon->end($e);
+       $exon->strand($str);
+   }
+
+   return @genes;
+
+}
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes
