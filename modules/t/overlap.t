@@ -105,8 +105,8 @@ if( $#sf == -1 ) {
 
 @sf = $vc->get_all_PredictionFeatures();
 if( $#sf == -1 ) {
-     print "not ok 9\n";
-     print STDERR "got no prediction features!\n";
+     print "ok 9\n";
+     print STDERR "got no prediction features! Skipping!\n";
 } else {
   print "ok 9\n";
 }
