@@ -4,9 +4,11 @@ use strict;
 
 use DBI;
 use Digest::MD5 qw(md5_hex);
+use File::Path;
 use POSIX qw(strftime);
 
 use SwissProtParser;
+use RefSeqParser;
 
 my $host = "ecs1g";
 my $port = 3306;
@@ -22,7 +24,8 @@ my %taxonomy2species_id;
 
 my %filetype2parser = (
 		       "UniProtSwissProt" => "SwissProtParser",
-		       "UniProtTrEMBL"    => "SwissProtParser"
+		       "UniProtTrEMBL"    => "SwissProtParser",
+		       "RefSeq"           => "RefSeqParser"
 		      );
 
 run() if (!defined(caller()));
@@ -33,23 +36,35 @@ run() if (!defined(caller()));
 sub run {
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT * FROM source WHERE url IS NOT NULL");
+  my $sth = $dbi->prepare("SELECT * FROM source WHERE url IS NOT NULL ORDER BY name");
   $sth->execute();
   my ($source_id, $name, $url, $checksum, $modified_date, $upload_date, $release);
   $sth->bind_columns(\$source_id, \$name, \$url, \$checksum, \$modified_date, \$upload_date, \$release);
+  my $last_type = "";
+  my $dir;
   while (my @row = $sth->fetchrow_array()) {
 
     # Download each source into the appropriate directory for parsing later
-    # Convention is that part of name up to _ is file type
-    my ($type) = $name =~ /^([^_]+)_.*/;
-    my $dir = $base_dir . "/" . $type;
+    # Also delete previous working directory if we're starting a new source type
+    my $type = $name;
+
+    $dir = $base_dir . "/" . $type;
+    rmtree $dir if ($type ne $last_type);
+    $last_type = $type;
     mkdir $dir if (!-e $dir);
 
     my ($file) = $url =~ /.*\/(.*)/;
 
     print "Downloading $url to $dir/$file\n";
-    # TODO remove --timestamping??
-    my $result = system("wget", "--quiet", "--timestamping", "--directory-prefix=$dir", $url);
+    my $result = system("wget", "--quiet","--directory-prefix=$dir", $url);
+
+    # if the file is compressed, the FTP server may or may not have automatically uncompressed it
+    # TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
+    if ($file =~ /(.*)\.gz$/) {
+      print "Uncompressing $dir/$file\n";
+      system("gunzip", "$dir/$file");
+      $file = $1;
+    }
 
     # compare checksums and parse/upload if necessary
     # need to check file size as some .SPC files can be of zero length
@@ -60,11 +75,11 @@ sub run {
 
 	print "Checksum for $file does not match, parsing\n";
 
-	#update_source($dbi, $source_id, $file_cs, $file);
+	update_source($dbi, $source_id, $file_cs, $file);
 
 	my $parserType = $filetype2parser{$type};
 	print "Parsing $file with $parserType\n";
-	#$parserType->run("$dir/$file", $source_id);
+	$parserType->run("$dir/$file", $source_id);
 
       } else {
 	
@@ -78,6 +93,10 @@ sub run {
 
     }
   }
+
+  # remove last working directory
+  # TODO reinstate after debugging
+  #rmtree $dir;
 
 }
 
@@ -93,20 +112,22 @@ sub new {
 }
 
 # --------------------------------------------------------------------------------
-# Get source ID for a particular source name
+# Get source ID for a particular file; matches end of url field
 
-sub get_source_id {
+sub get_source_id_for_filename {
 
-  my ($self, $name) = @_;
+  my ($self, $file) = @_;
 
-  my $sth = $dbi->prepare("SELECT source_id FROM source WHERE name='" . $name . "'");
+  my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "'"; 
+  print $sql . "\n";
+  my $sth = $dbi->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
   my $source_id;
   if (defined @row) {
     $source_id = $row[0];
   } else {
-    warn("Couldn't get source ID for name $name\n");
+    warn("Couldn't get source ID for file $file\n");
     $source_id = -1;
   }
 
@@ -123,72 +144,75 @@ sub upload_xrefs {
 
   my $dbi = dbi();
 
-  # remove all existing xrefs with same source ID
-  my $source_id = $xrefs[0]->{SOURCE_ID};
-  my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
-  $del_sth->execute();
+  if ($#xrefs > -1) {
+    # remove all existing xrefs with same source ID
+    my $source_id = $xrefs[0]->{SOURCE_ID};
+    my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
+    $del_sth->execute();
 
-  # upload new ones
-  my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
-  my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
-  my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
-  my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+    # upload new ones
+    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,source_id,species_id) VALUES(?,?,?,?)");
+    my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
+    my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
+    my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
 
-  foreach my $xref (@xrefs) {
+    foreach my $xref (@xrefs) {
 
-    # Create entry in xref table and note ID
-    $xref_sth->execute($xref->{ACCESSION},
-		       $xref->{LABEL},
-		       $xref->{SOURCE_ID},
-		       $xref->{SPECIES_ID}) || die $dbi->errstr;
-
-    # get ID of xref just inserted
-    my $xref_id = $xref_sth->{'mysql_insertid'};
-
-    # create entry in primary_xref table with sequence
-    # TODO experimental/predicted????
-    $pri_sth->execute($xref_id,
-		      $xref->{SEQUENCE},
-		      'peptide',
-		      'experimental',
-		      $xref->{SOURCE_ID}) || die $dbi->errstr;
-
-    # if there are synonyms, create xrefs for them and entries in the synonym table
-    foreach my $syn (@{$xref->{SYNONYMS}}) {
-
-      $xref_sth->execute($syn,
+      # Create entry in xref table and note ID
+      $xref_sth->execute($xref->{ACCESSION},
 			 $xref->{LABEL},
 			 $xref->{SOURCE_ID},
 			 $xref->{SPECIES_ID}) || die $dbi->errstr;
 
-      my $syn_xref_id = $xref_sth->{'mysql_insertid'};
-      $syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
+      # get ID of xref just inserted
+      my $xref_id = $xref_sth->{'mysql_insertid'};
 
-    } # foreach syn
+      # create entry in primary_xref table with sequence
+      # TODO experimental/predicted????
+      $pri_sth->execute($xref_id,
+			$xref->{SEQUENCE},
+			'peptide',
+			'experimental',
+			$xref->{SOURCE_ID}) || die $dbi->errstr;
 
-    # if there are dependent xrefs, add xrefs and dependent xrefs for them
-    foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
+      # if there are synonyms, create xrefs for them and entries in the synonym table
+      foreach my $syn (@{$xref->{SYNONYMS}}) {
 
-      my %dep = %$depref;
+	$xref_sth->execute($syn,
+			   $xref->{LABEL},
+			   $xref->{SOURCE_ID},
+			   $xref->{SPECIES_ID}) || die $dbi->errstr;
 
-      $xref_sth->execute($dep{ACCESSION},
-			 $xref->{LABEL},
-			 $xref->{SOURCE_ID},
-			 $xref->{SPECIES_ID}) || die $dbi->errstr;
+	my $syn_xref_id = $xref_sth->{'mysql_insertid'};
+	$syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
 
-      my $dep_xref_id = $xref_sth->{'mysql_insertid'};
+      }				# foreach syn
+
+      # if there are dependent xrefs, add xrefs and dependent xrefs for them
+      foreach my $depref (@{$xref->{DEPENDENT_XREFS}}) {
+
+	my %dep = %$depref;
+
+	$xref_sth->execute($dep{ACCESSION},
+			   $xref->{LABEL},
+			   $xref->{SOURCE_ID},
+			   $xref->{SPECIES_ID}) || die $dbi->errstr;
+
+	my $dep_xref_id = $xref_sth->{'mysql_insertid'};
 			
-      $dep_sth->execute($xref_id, $dep_xref_id, '', $dep{SOURCE_ID} ) || die $dbi->errstr;
-      # TODO linkage anntation?
+	$dep_sth->execute($xref_id, $dep_xref_id, '', $dep{SOURCE_ID} ) || die $dbi->errstr;
+	# TODO linkage anntation?
 
-    } # foreach dep
+      }				# foreach dep
 
 
-  } # foreach xref
+    }				# foreach xref
 
-  $del_sth->finish() if defined $del_sth;
-  $xref_sth->finish() if defined $xref_sth;
-  $pri_sth->finish() if defined $pri_sth;
+    $del_sth->finish() if defined $del_sth;
+    $xref_sth->finish() if defined $xref_sth;
+    $pri_sth->finish() if defined $pri_sth;
+
+  }
 
 }
 
