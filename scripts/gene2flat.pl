@@ -60,7 +60,7 @@ use Getopt::Long;
 my $dbtype = 'rdb';
 my $host   = 'localhost';
 my $port   = '410000';
-my $dbname = 'ensembl';
+my $dbname = 'ensembl07';
 my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
@@ -147,77 +147,97 @@ while ( @gene_id > 0 ) {
 
     eval {
 	
-	my @genes = $db->get_Gene_array(@chunk_list);
-	foreach my $gene ( @genes ) {
-	    my $gene_id = $gene->id();
-	    if( $format eq 'pep' ) {
-		foreach my $trans ( $gene->each_Transcript ) {
-		    # get out first exon. Tag it to clone and gene on this basis
-		    my @exon = $trans->each_Exon;
-		    my $fe = $exon[0];
-		    my $tseq = $trans->translate();
-		    if ( $tseq->seq =~ /\*/ ) {
-			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
-			next;
-		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
-		    $seqio->write_seq($tseq);
+    my @genes = $db->get_Gene_array(@chunk_list);
+
+    foreach my $gene ( @genes ) {
+	my $gene_id = $gene->id();
+	if( $format eq 'pep' ) {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		# get out first exon. Tag it to clone and gene on this basis
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
+		my $tseq = $trans->translate();
+		if ( $tseq->seq =~ /\*/ ) {
+		    print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+		    next;
 		}
-	    } elsif ( $format eq 'dump' ) {
-		foreach my $trans ( $gene->each_Transcript ) {
-		    print "Transcript ",$trans->id,"\n";
-		    foreach my $exon ( $trans->each_Exon ) {
-			print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
-			my $seq = $exon->seq();
-			my $str = $seq->str();
-			print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
-		    }
-		}
-		
-	    } 
-	    elsif ($format eq 'transcript') {
-		foreach my $trans ( $gene->each_Transcript ) {
-		    my $seq = $trans->dna_seq();
-		    $seq->id($trans->id);
-		    my @exon = $trans->each_Exon;
-		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
-		    $seqio->write_seq($seq);
+		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+		$seqio->write_seq($tseq);
+	    }
+	} elsif ( $format eq 'dump' ) {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		print "Transcript ",$trans->id,"\n";
+		foreach my $exon ( $trans->each_Exon ) {
+		    print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
+		    my $seq = $exon->seq();
+		    my $str = $seq->str();
+		    print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
 		}
 	    }
-	    elsif ($format eq 'webdump') {
-		my $trans_file = $webdir.$gene->id.".trans";
-		open (TRANS,">$trans_file");
-		foreach my $trans ( $gene->each_Transcript ) {
-		    my $seq = $trans->dna_seq();
-		    $seq->id($trans->id);
-		    my @exon = $trans->each_Exon;
-		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
-		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
-		    $seqio->write_seq($seq);
+	    
+	    } 
+	elsif ($format eq 'transcript') {
+	    foreach my $trans ( $gene->each_Transcript ) {
+		my $seq = $trans->dna_seq();
+		$seq->id($trans->id);
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
+		$seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+		$seqio->write_seq($seq);
+	    }
+	}
+	elsif ($format eq 'webdump') {
+	    my $trans_file = $webdir.$gene->id.".trans";
+	
+	    open (TRANS,">$trans_file");
+
+	    my $seqiot = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*TRANS ) ;
+
+	    foreach my $trans ( $gene->each_Transcript ) {
+		my $seq = $trans->dna_seq();
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
+
+		$seq->id($trans->id);
+		$seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+
+		#print(TRANS ">" . $trans->id . " " . $seq->desc . "\n");
+		#my $tmp = $seq->seq;
+		#$tmp =~ s/(.{72})/$1\n/g;
+		#print(TRANS "$tmp\n");
+
+		$seqiot->write_seq($seq);
+	    }
+	    close(TRANS);
+	    my $pep_file =  $webdir.$gene->id.".pep";
+	    open (PEP,">$pep_file");
+
+	    my $seqiop = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
+	    foreach my $trans ( $gene->each_Transcript ) {
+		# get out first exon. Tag it to clone and gene on this basis
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
+		my $tseq = $trans->translate();
+		if ( $tseq->seq =~ /\*/ ) {
+		    print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
+		    next;
 		}
-		my $pep_file =  $webdir.$gene->id.".pep";
-		open (PEP,">$pep_file");
-		foreach my $trans ( $gene->each_Transcript ) {
-		    # get out first exon. Tag it to clone and gene on this basis
-		    my @exon = $trans->each_Exon;
-		    my $fe = $exon[0];
-		    my $tseq = $trans->translate();
-		    if ( $tseq->seq =~ /\*/ ) {
-			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
-			next;
-		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
-		    my $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*PEP) ;
-		    $seqio->write_seq($tseq);
+		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
+
+#		print(PEP ">" . $tseq->id . " " . $tseq->desc . "\n");
+#		my $tmp = $tseq->seq;
+#		$tmp =~ s/(.{72})/$1\n/g;
+#		print(PEP "$tmp\n");
+
+		$seqiop->write_seq($tseq);
 		}
+	    close(PEP);
 	    }
 	    else {
 		die "No valid format!";
 	    }
-	}
-    };
+    }
+};
     
     if( $@ ) {
 	my $gene_id = "@chunk_list";
