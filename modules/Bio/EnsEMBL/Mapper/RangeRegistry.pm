@@ -4,8 +4,6 @@
 #
 # You may distribute this module under the same terms as perl itself
 
-# POD documentation - main docs before the code
-
 =head1 NAME
 
 Bio::EnsEMBL::Mapper::RangeRegistry
@@ -18,7 +16,7 @@ Bio::EnsEMBL::Mapper::RangeRegistry
 
    #get a fixed width chunk around the range of intereset
    #this will be used if any registration is actually necessary
-   $chunk_start = ($start >> 20) << 20;
+   $chunk_start = ($start >> 20) << 20 + 1;
    $chunk_end   = (($end >> 20) + 1) << 20;
 
   #check if any registration is necessary for the range.
@@ -85,19 +83,73 @@ sub new {
 }
 
 
+=head2 check_and_register
 
+  Arg [1]    : string $id
+               The id of the range to be checked/registered (e.g. a sequenceid)
+  Arg [2]    : int $start
+               The start of the range to be checked
+  Arg [3]    : int $end
+               The end of the range to be checked
+  Arg [4]    : (optional) int $rstart
+               The start of the range to be registered
+               if the checked range was not fully registered
+  Arg [5]    : (optional) int $rend
+               The end of the range to be registerd
+               if the checked range was not fully registered
+  Example    : $ranges=$rr->check_and_register('X',500,600, 1,1_000_000));
+  Description: Checks the range registry to see if the entire range
+               denoted by ($id : $start-$end) is already registered.  If
+               it already is, then undef is returned.  If it is not then
+               the range specified by $rstart and $rend is registered, and
+               a list of regions that were required to completely register
+               $rstart-$rend is returned.  If $rstart and $rend are not
+               defined they default to $start and $end respectively.
+
+               The reason there is a single call to do both the checking and
+               registering is to reduce the overhead. Much of the work to
+               check if a range is registered is the same as registering a
+               region around that range.
+  Returntype : Bio::EnsEMBL::Mapper::RangeRegistry
+  Exceptions : throw if rstart is greater than start
+               throw if rend is less than end
+               throw if end is less than start
+               throw if id, start, or end are not defined
+  Caller     : AssemblyMapperAdaptor
+
+=cut
+
+#"constants"
+my $START = 0;
+my $END   = 1;
 
 sub check_and_register {
   my ($self, $id, $start, $end, $rstart,$rend) = @_;
 
-  my $START = 0;
-  my $END   = 1;
-
   $rstart = $start if(!defined($rstart));
   $rend   = $end if(!defined($rend));
 
+  #
+  # Sanity checks
+  #
   if(!defined($id) || !defined($start) || !defined($end)) {
     throw("ID, start, end arguments are required");
+  }
+
+  if($start > $end) {
+    throw("start argument must be less than end argument");
+  }
+
+  if($rstart >$rend) {
+    throw("rend argument must be less than end argument");
+  }
+
+  if($rstart > $start) {
+    throw("rstart must be less than or equal to start");
+  }
+
+  if($rend < $end) {
+    throw("rend must be greater than or equal to end");
   }
 
   my $reg  = $self->{'registry'};
@@ -119,6 +171,11 @@ sub check_and_register {
 
   my $CUR;
   my $PREV;
+
+  #####
+  #loop through the list of existing ranges recording any "gaps" where the
+  #existing range does not cover part of the requested range
+  #
   for($CUR=0; $CUR < $len; $CUR++) {
     my $PREV = $CUR-1;
     my ($pstart,$pend) = @{$list->[$CUR]};
@@ -136,9 +193,10 @@ sub check_and_register {
     if(!defined($rstart_idx) && $pend >= ($rstart-1)) {
       $rstart_idx = $CUR;
 
-      if($CUR == 0 && $pstart > $rstart) {
-        #need to add a gap at the very beginning
-        push @gap_pairs, [$rstart,$pstart-1];
+      if($CUR == 0 && $pstart < $rend && $pstart > $rstart) {
+	#need to add a gap at the very beginning because this is the first
+	#range and is overlapped by requested range
+	push @gap_pairs, [$rstart,$pstart-1];
       }
     }
 
@@ -146,10 +204,11 @@ sub check_and_register {
       #this range pair is past the end of the requested region
       #add a gap range up till the end of the requested range and stop
       #searching
-      if($CUR > 1) {
+      if($CUR > 0) {
         my $gap_start = $list->[$PREV]->[$END] + 1;
         push @gap_pairs, [$gap_start,$rend];
       } else {
+	#the requested range is on its own at the beginning of the list
         push @gap_pairs, [$rstart,$rend];
       }
       last;
@@ -179,13 +238,17 @@ sub check_and_register {
       #this range overlaps with last seen exising range
       push @gap_pairs, [$list->[$CUR]->[$END]+1, $rend];
     } else {
-      #this range is fully outside of the last see exising range
+      #this range is fully outside of the last seen exising range
       push @gap_pairs, [$rstart, $rend];
     }
   }
 
   my $last_range = $list->[$CUR];
 
+  #####
+  # Add the requested range to the list of ranges merging with the
+  # existing ranges as necessary
+  #
   if(!defined($rstart_idx)) {
     #this range is on its own at the end of the list;
     push @$list, [$rstart,$rend];
