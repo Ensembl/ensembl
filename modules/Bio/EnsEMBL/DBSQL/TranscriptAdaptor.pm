@@ -557,6 +557,17 @@ sub remove {
     $translationAdaptor->remove( $transcript->translation );
   }
 
+  foreach my $exon ( @{$transcript->get_all_Exons()} ) {  
+    my $sth = $self->prepare( "SELECT count(*) 
+                               FROM   exon_transcript 
+                               WHERE  exon_id = ?" );
+    $sth->execute( $exon->dbID );
+    my ($count) = $sth->fetchrow_array;
+    if($count == 1){ 
+      $exonAdaptor->remove( $exon );
+    } 
+  }
+
   my $sth = $self->prepare( "DELETE FROM exon_transcript 
                              WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
@@ -567,20 +578,6 @@ sub remove {
                           WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
   
-  foreach my $exon ( @{$transcript->get_all_Exons()} ) {  
-    my $sth = $self->prepare( "SELECT count(*) 
-                               FROM   exon_transcript 
-                               WHERE  exon_id = ?" );
-    $sth->execute( $exon->dbID );
-    my ($count) = $sth->fetchrow_array;
-    if($count == 0){ 
-      $exonAdaptor->remove( $exon );
-    } else{
-      warning("exon " . $exon->dbID . " is not exclusive to transcript " . 
-		  $transcript->dbID . "\n");
-    }
-
-  }
 
   $transcript->dbID(undef);
   $transcript->adaptor(undef);
