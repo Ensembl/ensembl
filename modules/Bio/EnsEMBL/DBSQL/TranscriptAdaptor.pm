@@ -122,6 +122,38 @@ sub fetch_by_stable_id {
 }
 
 
+
+=head2 fetch_by_translation_stable_id
+
+  Arg [1]    : string $transl_stable_id
+               The stable identifier of the translation of the transcript to 
+               retrieve
+  Example    : $t = $tadptr->fetch_by_translation_stable_id('ENSP00000311007');
+  Description: Retrieves a Transcript object using the stable identifier of
+               its translation.
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_translation_stable_id {
+  my ($self, $transl_stable_id) = @_;
+
+  my $sth = $self->prepare( "SELECT t.transcript_id
+                             FROM   translation_stable_id tsi, transcript t
+                             WHERE  tsi.stable_id = ? 
+                             AND    t.translation_id = tsi.translation_id");
+
+  $sth->execute($transl_stable_id);
+
+  my ($id) = $sth->fetchrow_array;
+
+  return $self->fetch_by_dbID($id);
+} 
+                             
+
+
 =head2 store
 
  Title   : store
