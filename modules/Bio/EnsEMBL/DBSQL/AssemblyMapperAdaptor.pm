@@ -568,11 +568,12 @@ sub register_chained {
   my @path = @{$csa->get_mapping_path($start_cs, $mid_cs)};
   if(@path != 2) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
+    my $len  = scalar(@path) - 1;
     throw("Unexpected mapping path between start and intermediate " .
 	  "coord systems (". $start_cs->name . " " . $start_cs->version .
 	  " and " . $mid_cs->name . " " . $mid_cs->version . ")." .
-	  "\nExpected path length 1, got " . (scalar(@path)-1)) .
-	  "(path=$path)";
+	  "\nExpected path length 1, got $len. " .
+	  "(path=$path)");
   }
 
   my $sth;
@@ -640,11 +641,12 @@ sub register_chained {
   @path = @{$csa->get_mapping_path($mid_cs, $end_cs)};
   if(@path != 2) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
+    my $len = scalar(@path)-1;
     throw("Unexpected mapping path between intermediate and last" .
 	  "coord systems (". $mid_cs->name . " " . $mid_cs->version .
 	  " and " . $end_cs->name . " " . $end_cs->version . ")." .
-	  "\nExpected path length 1, got " . (scalar(@path)-1)) .
-	  "(path=$path)";
+	  "\nExpected path length 1, got $len. " .
+	  "(path=$path)");
   }
 
   ($asm_cs,$cmp_cs) = @path;
