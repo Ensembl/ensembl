@@ -92,7 +92,7 @@ sub get_all_SeqFeatures{
 
    # make the SQL query
 
-   my $sth = $self->_dbobj->prepare("select start,end,analysis from feature where contig = \"$id\"");
+   my $sth = $self->_dbobj->prepare("select start,end,strand,score,analysis from feature where contig = \"$id\"");
    my $res = $sth->execute();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -100,7 +100,7 @@ sub get_all_SeqFeatures{
       $out->start($rowhash->{start});
       $out->end($rowhash->{end});
       $out->strand($rowhash->{strand});
-      if( $rowhash->{score} ) {
+      if( defined $rowhash->{score} ) {
 	  $out->score($rowhash->{score});
       }
       $out->primary_tag($rowhash->{analysis});
