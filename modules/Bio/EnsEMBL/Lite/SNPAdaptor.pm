@@ -54,10 +54,10 @@ sub fetch_all_by_Slice {
   my $slice_start = $slice->chr_start();
   my $slice_end   = $slice->chr_end();
   
-  my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL );
+  my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL 16 ANO );
   my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type,
 		      validated, alleles, snpclass, mapweight, ambiguity, source,
-		      id_refsnp, id_wi, id_hgbase, id_tsc 
+		      id_refsnp, id_wi, id_hgbase, id_tsc, id_ano 
                  FROM snp
                 WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
