@@ -2185,6 +2185,23 @@ sub get_all_Genes_exononly{
 
 =cut
 
+sub get_all_RepeatFeatures_lite {
+   my ($self,$type,$bp) = @_;
+   return $self->dbobj->get_LiteAdaptor->fetch_virtualRepeatFeatures_start_end(
+      $self->_chr_name, $self->_global_start, $self->_global_end, $type, $bp );
+}
+ 
+ sub get_all_DnaDnaAlignFeature {
+     my  ($self, $compara_dbadaptor, $subject_species, $query_species) = @_;
+     return $compara_dbadaptor->get_GenomicAlignAdaptor->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
+         $subject_species,
+         $query_species,
+         $self->_chr_name,
+         $self->_global_start,
+         $self->_global_end,
+         'VirtualContig');
+ }
+
 sub get_all_VirtualGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
