@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor - Abstract Base class for 
+Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
 
 =head1 SYNOPSIS
 
@@ -17,8 +17,9 @@ $repeat_feature_adaptor = $database_adaptor->get_RepeatFeatureAdaptor();
 
 =head1 DESCRIPTION
 
-This is an adaptor for the rertrieval and storage of RepeatFeature objects
-from the RepeatFeature database
+This is an adaptor for the retrieval and storage of RepeatFeature objects
+from the RepeatFeature database.  Most of the implementation is in the
+superclass BaseFeatureAdaptor. 
 
 =head1 AUTHOR - James Gilbert
 
@@ -32,7 +33,8 @@ Ewan Birney - birney@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -48,12 +50,37 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
+
+=head2 _tablename
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED Implementation of abstract superclass method to 
+               provide the name of the tables to query 
+  Returntype : string
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
 sub _tablename {
   my $self = shift;
 
   return 'repeat_feature r, repeat_consensus rc';
 }
 
+
+=head2 _tablename
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED Implementation of abstract superclass method to 
+               provide the name of the columns to query 
+  Returntype : list of strings
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _columns {
   my $self = shift;
@@ -74,9 +101,21 @@ sub _columns {
 	     rc.repeat_consensus);
 }
 
-#
-# Override superclass generic_fetch
-#
+
+
+=head2 generic_fetch
+
+  Arg [1]    : string $constraint
+  Arg [2]    : string $logic_name
+  Example    : @repeats = $repeat_feature_adaptor->generic_fetch('','');
+  Description: Overrides superclass method to provide an additional 
+               table joining constraint before the SQL query is performed. 
+  Returntype : list of Bio::EnsEMBL::RepeatFeatures in contig coordinates
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
 sub generic_fetch {
   my ($self, $constraint, $logic_name) = @_;
 
@@ -90,6 +129,20 @@ sub generic_fetch {
   #invoke the super class method
   return $self->SUPER::generic_fetch($constraint, $logic_name);
 }
+
+
+=head2 _obj_from_hashref
+
+  Arg [1]    : Hashreference $hashref
+  Example    : none 
+  Description: PROTECTED implementation of abstract superclass method.  
+               responsible for the creation of RepeatFeatures from a 
+               hashref generated from an SQL query
+  Returntype : list of Bio::EnsEMBL::RepeatFeatures in contig coordinates
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _obj_from_hashref {
   my ($self, $hashref) = @_;
@@ -134,6 +187,22 @@ sub _obj_from_hashref {
   return $r;
 }
   
+
+
+=head2 store
+
+  Arg [1]    : int $contig_id
+               the database id of the contig to store this repeat_feature on
+  Arg [2]    : list of Bio::EnsEMBL::RepeatFeatures $repeat_feature_id
+               the list of repeat features to store in the database
+  Example    : $repeat_feature_adaptor->store(1234, @repeat_features);
+  Description: stores a repeat feature in the database
+  Returntype : none
+  Exceptions : thrown if $contig_id is not an int, or if repeat_consensus is
+               not used
+  Caller     : genreal
+
+=cut
 
 sub store {
   my( $self, $contig_id, @repeats ) = @_;

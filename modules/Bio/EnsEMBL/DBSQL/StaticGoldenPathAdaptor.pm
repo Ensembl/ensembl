@@ -17,7 +17,9 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
 
     # get a static golden path adaptor from the obj
 
-    $adaptor = $db->get_StaticGoldenPathAdaptor();
+    #$adaptor = $db->get_StaticGoldenPathAdaptor();
+    #should now use:
+    $slice_adaptor = $db->get_SliceAdaptor()
 
     # these return sorted lists:
 
@@ -27,14 +29,22 @@ Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor - Database adaptor for static golde
 
     #Create Virtual Contigs for fpc contigs or chromosomes
 
-    $vc = $adaptor->fetch_VirtualContig_by_fpc_name('ctg123');
+    #$vc = $adaptor->fetch_VirtualContig_by_fpc_name('ctg123');
+    # should now use:
+    $slice_adaptor->fetch_by_fpc_name('ctg123');
 
-    $vc = $adaptor->fetch_VirtualContig_by_chr_name('chr2');
+    #$vc = $adaptor->fetch_VirtualContig_by_chr_name('chr2');
+    #should now use:
+    $slice_adaptor->fetch_by_chr_name('chr2');
 
 
 =head1 DESCRIPTION
 
-Database adaptor for static golden path.  Affords access methods for retrieving virtual contigs.
+Most of this module is now deprecated.  Wherever possible the SliceAdaptor or
+AssemblyMapperAdaptor objects should be used instead.
+
+Database adaptor for static golden path.  Affords access methods for retrieving
+virtual contigs.
 
 =head1 AUTHOR - Ewan Birney
 

@@ -1,5 +1,40 @@
+#
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+#
+# Copyright EMBL/EBI
+#
+# You may distribute this module under the same terms as perl itself
 
-### Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
+# POD documentation - main docs before the code
+
+=head1 NAME
+
+Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
+
+=head1 SYNOPSIS
+
+$repeat_consensus_adaptor = $database_adaptor->get_RepeatConsensusAdaptor();
+
+=head1 DESCRIPTION
+
+This is an adaptor for the retrieval and storage of RepeatConsensus objects.
+
+=head1 AUTHOR - James Gilbert
+
+Email jgrg@ebi.ac.uk
+
+=head1 CONTACT
+
+Arne Stabenau - stabenau@ebi.ac.uk
+Graham McVicker - mcvicker@ebi.ac.uk
+Ewan Birney - birney@ebi.ac.uk
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
+
+=cut
 
 package Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
 
@@ -169,15 +204,9 @@ sub store {
         $rc->dbID($db_id);
         $rc->adaptor($self);
     }
-}
+
 
 1;
 
 __END__
-
-=head1 NAME - Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
-
-=head1 AUTHOR
-
-James Gilbert B<email> jgrg@sanger.ac.uk
 

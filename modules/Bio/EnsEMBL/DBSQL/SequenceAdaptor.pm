@@ -1,9 +1,9 @@
 #
 # EnsEMBL module for Bio::EnsEMBL::DBSQL::SequenceAdaptor
 #
-# Cared for by Elia Stupka <elia@ebi.ac.uk>
+# Cared for by Arne Stabenau <stabenau@ebi.ac.uk>
 #
-# Copyright Elia Stupka
+# Copyright EMBL/EBI
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -11,17 +11,21 @@
 
 =head1 NAME
 
-SequenceAdaptor - produce sequence strings from locations
+Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 
 =head1 SYNOPSIS
 
+$seq_adptr = $database_adaptor->get_SequenceAdaptor();
+$dna = $seq_adptr->fetch_by_contig_id_start_end_strand(1234, 1, 1000, -1);
 
 =head1 DESCRIPTION
 
+An adaptor for the retrieval of sequences of DNA from the database
 
 =head1 CONTACT
 
-e-mail: elia@ebi.ac.uk
+Arne Stabenau - stabenau@ebi.ac.uk
+Elia Stupka - elia@fugu-sg.org
 
 =head1 APPENDIX
 
@@ -43,26 +47,24 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-
 =head2 fetch_by_contig_id_start_end_strand
 
-  Arg  1    : int rawContigdbID
-  Arg  2    : int startBasePair
-  Arg  3    : int endBasePair
-    a -1 means until the end
-  Arg  4    : int strand
-              -1, 1 are possible values
-  Function  : retrieves the dna string from the database from the 
-              given RawContig internal id.
-  Returntype: txt
-  Exceptions: endBasePair should be less or equal than length of contig
-              returns undef if query fails
-  Caller    : Bio::EnsEMBL::RawContig::seq(), RawContig::subseq()
+  Arg [1]    : int rawContigdbID
+  Arg [2]    : int startBasePair
+  Arg [3]    : int endBasePair
+               a -1 means until the end
+  Arg [4]    : int strand
+               -1, 1 are possible values
+  Example    : $dna = $seq_adp->fetch_by_contig_id_start_end_strand(1234, 1, 
+                                                                    1000, -1);
+  Description: retrieves the dna string from the database from the 
+               given RawContig internal id. 
+  Returntype : string 
+  Exceptions : thrown if start < 1
+  Caller     : Bio::EnsEMBL::RawContig::seq(), RawContig::subseq()
 
 =cut
 
-
-  
 sub fetch_by_contig_id_start_end_strand {
   my ( $self, $contig_id, $start, $end, $strand ) = @_;
   my $sth;
@@ -114,27 +116,26 @@ sub fetch_by_contig_id_start_end_strand {
   }
 }
 
-  
-
 
 =head2 fetch_by_Slice_start_end_strand
 
-  Arg  1    : Bio::EnsEMBL::Slice slice
-              The slice from which you want the sequence
-  Arg  2    : int startBasePair 
-              count from 1
-  Arg  3    : int endBasePair 
-              count from 1, -1 is last one
-  Arg  4    : int strand 
-              1, -1
-  Function  : retrieves from db the sequence for this slice
-              uses AssemblyMapper to find the assembly
-  Returntype: txt
-  Exceptions: endBasePair should be less or equal to length of slice
-  Caller    : Bio::EnsEMBL::Slice::seq(), Slice::subseq()
+  Arg  [1]   : Bio::EnsEMBL::Slice slice
+               The slice from which you want the sequence
+  Arg  [2]   : int startBasePair 
+               count from 1
+  Arg  [3]   : int endBasePair 
+               count from 1, -1 is last one
+  Arg  [4]   : int strand 
+               1, -1
+  Example    : $dna = $seq_adptr->fetch_by_Slice_start_end_strand($slice, 1, 
+                                                                  1000, -1);
+  Description: retrieves from db the sequence for this slice
+               uses AssemblyMapper to find the assembly
+  Returntype : txt 
+  Exceptions : endBasePair should be less or equal to length of slice 
+  Caller     : Bio::EnsEMBL::Slice::seq(), Slice::subseq() 
 
 =cut
-
 
 sub fetch_by_Slice_start_end_strand {
    my ( $self, $slice, $start, $end, $strand ) = @_;
@@ -186,25 +187,26 @@ sub fetch_by_Slice_start_end_strand {
 
 =head2 fetch_by_assembly_location
 
-  Arg   1   : int $chrStart
-  Arg   2   : int $chrEnd
-  Arg   3   : int $strand
-  Arg   4   : txt $chrName
-  Arg   5   : txt $assemblyType
-  Function  : retrieve specified sequence from db. Using AssemblyMapper. Gaps are 
-              filled with N
-  Returntype: txt
-  Exceptions: Wrong parameters give undef as result
-  Caller    : general, fetch_by_Slice_start_end_strand
+  Arg   [1]  : int $chrStart
+  Arg   [2]  : int $chrEnd
+  Arg   [3]  : int $strand
+  Arg   [4]  : txt $chrName
+  Arg   [5]  : txt $assemblyType
+  Example    : $dna = $fetch_by_assembly_location( 1, 100, -1, 'X', NCBI30 );
+  Description: retrieve specified sequence from db. Using AssemblyMapper. Gaps
+               are filled with N 
+  Returntype : string 
+  Exceptions : Wrong parameters give undef as result 
+  Caller     : general, fetch_by_Slice_start_end_strand 
 
 =cut
-
 
 sub fetch_by_assembly_location {
    my ( $self, $chrStart, $chrEnd, 
         $strand, $chrName, $assemblyType ) = @_;
 
-   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($assemblyType);
+   my $mapper = 
+     $self->db->get_AssemblyMapperAdaptor->fetch_by_type($assemblyType);
    # $mapper->register_region($chrName,$chrStart,$chrEnd);
    
    my @coord_list = $mapper->map_coordinates_to_rawcontig

@@ -1,9 +1,9 @@
 #
-# BioPerl module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 #
 # Cared for by Ewan Birney <birney@ebi.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright EMBL/EBI
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -11,11 +11,12 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor - DESCRIPTION of Object
+Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor 
 
 =head1 SYNOPSIS
 
-Give standard usage here
+my $simple_feature_adaptor = $database_adaptor->get_SimpleFeatureAdaptor();
+@simple_features = $simple_feature_adaptor->fetch_by_Slice($slice);
 
 =head1 DESCRIPTION
 
@@ -25,11 +26,10 @@ Simple Feature Adaptor - database access for simple features
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
-
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -49,53 +49,88 @@ use Bio::EnsEMBL::SimpleFeature;
 
 =head2 store
 
- Title   : store
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : int contig_id
+               the database id of the contig these features are on
+  Arg [2]    : list of Bio::EnsEMBL::SimpleFeatures @sf
+               the simple features to store in the database
+  Example    : $simple_feature_adaptor->store(1234, @simple_feats);
+  Description: Stores a list of simple feature objects in the database
+  Returntype : none
+  Exceptions : thrown if $contig_id is not an int or if @sf is not defined
+               or if any elements of @sf are not Bio::EnsEMBL::SeqFeatures 
+  Caller     : general
 
 =cut
 
 sub store{
-   my ($self,$contig_id,@sf) = @_;
+  my ($self,$contig_id,@sf) = @_;
+  
+  if( scalar(@sf) == 0 ) {
+    $self->throw("Must call store with contig_id then sequence features");
+  }
+  
+  if( $contig_id !~ /^\d+$/ ) {
+    $self->throw("Contig_id must be a number, not [$contig_id]");
+  }
+  
+  my $sth = 
+    $self->prepare("INSERT INTO simple_feature (contig_id, contig_start,
+                                                contig_end, contig_strand,
+                                                display_label, analysis_id,
+                                                score) 
+                    VALUES (?,?,?,?,?,?,?)");
 
-   if( scalar(@sf) == 0 ) {
-       $self->throw("Must call store with contig_id then sequence features");
-   }
-
-   if( $contig_id !~ /^\d+$/ ) {
-       $self->throw("Contig_id must be a number, not [$contig_id]");
-   }
-
-   my $sth = $self->prepare("insert into simple_feature (contig_id,contig_start,contig_end,contig_strand,display_label,analysis_id,score) values (?,?,?,?,?,?,?)");
-
-   foreach my $sf ( @sf ) {
-       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
-	   $self->throw("Simple feature must be an Ensembl SimpleFeature, not a [$sf]");
-       }
-
-       if( !defined $sf->analysis ) {
-	   $self->throw("Cannot store sequence features without analysis");
-       }
-       if( !defined $sf->analysis->dbID ) {
-	   # maybe we should throw here. Shouldn't we always have an analysis from the database?
-	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
-       }
-
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->display_label,$sf->analysis->dbID,$sf->score);
-   }
-
-
+  foreach my $sf ( @sf ) {
+    if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
+      $self->throw("Simple feature must be an Ensembl SimpleFeature, " .
+		   "not a [$sf]");
+    }
+    
+    if( !defined $sf->analysis ) {
+      $self->throw("Cannot store sequence features without analysis");
+    }
+    if( !defined $sf->analysis->dbID ) {
+      $self->throw("I think we should always have an analysis object " .
+		   "which has originated from the database. No dbID, " .
+		   "not putting in!");
+    }
+    
+    $sth->execute($contig_id, $sf->start, $sf->end, $sf->strand,
+		  $sf->display_label, $sf->analysis->dbID, $sf->score);
+  } 
 }
+
+
+=head2 _tablename
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns the name of the table to use for queries
+  Returntype : string
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _tablename {
   my $self = shift;
   
   return "simple_feature";
 }
+
+
+=head2 _columns
+
+  Arg [1]    : none
+  Example    : none
+  Description: PROTECTED implementation of superclass abstract method
+               returns a list of columns to use for queries
+  Returntype : list of strings
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _columns {
   my $self = shift;
@@ -104,6 +139,19 @@ sub _columns {
 	     display_label analysis_id score );
 }
 
+
+=head2 _obj_from_hashref
+
+  Arg [1]    : hash reference $hashref
+  Example    : none
+  Description: PROTECTED implementation of superclass abstranct method.
+               creates SimpleFeatures from a SQL query result formatted as
+               a hashreference
+  Returntype : Bio::EnsEMBL::SimpleFeature
+  Exceptions : none
+  Caller     : internal
+
+=cut
 
 sub _obj_from_hashref {
   my ($self, $hashref) = @_;
