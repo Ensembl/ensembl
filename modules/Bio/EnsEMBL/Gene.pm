@@ -682,7 +682,7 @@ sub add_DBLink{
 
 sub temporary_id {
    my ($obj,$value) = @_;
-   deprecated( "I cant see what a temporary_id is good for, please use " .
+   deprecate( "I cant see what a temporary_id is good for, please use " .
                "dbID or stableID or\n try without an id." );
    if( defined $value) {
       $obj->{'temporary_id'} = $value;

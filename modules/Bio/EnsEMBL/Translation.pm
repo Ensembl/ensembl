@@ -1,5 +1,5 @@
 #
-# BioPerl module for Bio::EnsEMBL::Translation
+# EnsEMBL module for Bio::EnsEMBL::Translation
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -11,23 +11,26 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Translation - DESCRIPTION of Object
+Bio::EnsEMBL::Translation - A class representing the translation of a
+transcript
 
 =head1 SYNOPSIS
 
-Give standard usage here
+
 
 =head1 DESCRIPTION
 
-Describe the object here
+A transcript''s translation defines the CDS and UTR regions of the transcript
+through the use of start_Exon/end_Exon, and start/end attributes.
 
 =head1 CONTACT
 
-Describe contact details here
+Post questions to the EnsEMBL Developer list: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -39,9 +42,9 @@ use strict;
 use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Storable;
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Storable);
 
 
 sub new {
@@ -52,9 +55,7 @@ sub new {
   my ( $start_exon, $end_exon, $seq_start, $seq_end,
        $stable_id, $version, $dbID, $adaptor ) = 
     rearrange( [ "START_EXON", "END_EXON", "SEQ_START", "SEQ_END",
-		 "STABLE_ID", "VERSION", "DBID", "ADAPTOR" ], @_ );
-  
-  
+                 "STABLE_ID", "VERSION", "DBID", "ADAPTOR" ], @_ );
 
   my $self = bless {
 		    'start_exon' => $start_exon,
@@ -213,64 +214,6 @@ sub stable_id {
 
 
 
-=head2 temporary_id
-
-  Arg [1]    : string $temporary_id
-  Example    : none
-  Description: get/set for attribute temporary_id
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub temporary_id {
-   my $self = shift;
-  $self->{'temporary_id'} = shift if( @_ );
-  return $self->{'temporary_id'};
-}
-
-
-
-
-=head2 dbID
-
-  Arg [1]    : string $dbID
-  Example    : none
-  Description: get/set for attribute dbID
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub dbID {
-   my $self = shift;
-  $self->{'dbID'} = shift if( @_ );
-  return $self->{'dbID'};
-}
-
-
-
-=head2 adaptor
-
-  Arg [1]    : string $adaptor
-  Example    : none
-  Description: get/set for attribute adaptor
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub adaptor {
-   my $self = shift;
-  $self->{'adaptor'} = shift if( @_ );
-  return $self->{'adaptor'};
-}
-
-
-
 =head2 transform
 
   Arg  1    : hashref $old_new_exon_map
@@ -378,6 +321,22 @@ sub get_all_DBLinks {
   my $self = shift;
 
   return $self->get_all_DBEntries(@_);
+}
+
+
+=head2 temporary_id
+
+  Description: DEPRECATED This method should not be needed. Use dbID,
+               stable_id or something else.
+
+=cut
+
+sub temporary_id {
+   my $self = shift;
+   deprecate( "I cant see what a temporary_id is good for, please use " .
+               "dbID or stableID or\n try without an id." );
+  $self->{'temporary_id'} = shift if( @_ );
+  return $self->{'temporary_id'};
 }
 
 
