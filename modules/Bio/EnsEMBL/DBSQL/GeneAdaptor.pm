@@ -345,9 +345,11 @@ sub fetch_by_translation_stable_id {
     my $sth = $self->prepare
       ("SELECT	tr.gene_id " .
 			 "FROM	transcript as tr, " .
+       "      translation as tl, " .
 			 "		  translation_stable_id as trs " .
 			 "WHERE	trs.stable_id = ? " .
-			 "AND	  trs.translation_id = tr.translation_id");
+			 "AND	  trs.translation_id = tl.translation_id " .
+       "AND   tr.transcript_id = tl.transcript_id");
 
     $sth->execute("$translation_stable_id");
 
