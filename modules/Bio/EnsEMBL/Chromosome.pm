@@ -84,17 +84,19 @@ sub new {
 }
 
 
-=head2 get_landmark_MarkerFeatures
+=head2 get_lanmark_MarkerFeatures
 
- Title   : get_landmark_MarkerFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: gets landmark Marker SeqFeatures. 
+               Should be using LandmarkMarkerAdaptor
+  Returntype : list of Bio::EnsEMBL::SeqFeature
+  Exceptions : none
+  Caller     : general
 
 =cut
+
+
 
 sub get_landmark_MarkerFeatures{
    my ($self,@args) = @_;
@@ -103,18 +105,17 @@ sub get_landmark_MarkerFeatures{
 }
 
 
-
 =head2 chr_name
 
- Title   : chr_name
- Usage   : $obj->chr_name($newval)
- Function: 
- Example : 
- Returns : value of chr_name
- Args    : newvalue (optional)
-
+  Arg [1]    : string $chr_name
+  Example    : none
+  Description: get/set for attribute chromosome name
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub chr_name{
    my ($obj,$value) = @_;
@@ -127,15 +128,15 @@ sub chr_name{
 
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Example : 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::ChromsomeAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub adaptor {
    my ($obj,$value) = @_;
@@ -144,6 +145,17 @@ sub adaptor {
     }
     return $obj->{'adaptor'};
 }
+
+=head2 dbID
+
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
+=cut
 
 
 sub dbID {
@@ -157,6 +169,17 @@ sub dbID {
 }
 
 
+=head2 length
+
+  Arg [1]    : int $length
+  Example    : none
+  Description: get/set for the attribute length, the Chromosomes length in basepairs
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub length {
   my ($self, $length) = @_;
 
@@ -166,6 +189,19 @@ sub length {
 
   return $self->{'length'};
 }
+
+=head2 known_genes
+
+  Arg [1]    : int $number_of_known_genes
+  Example    : none
+  Description: get/set for the attribute known_genes, the number of known genes
+               on this chromosome
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 
 sub known_genes {
   my ($self, $known_genes) = @_;
@@ -177,6 +213,18 @@ sub known_genes {
   return $self->{'known_genes'};
 }
 
+=head2 unknown_genes
+
+  Arg [1]    : int $number_of_unknown_genes
+  Example    : none
+  Description: get/set for the attribute unknown_genes, the number of unknown genes
+               on this chromosome
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub unknown_genes {
   my ($self, $unknown_genes) = @_;
   
@@ -187,6 +235,19 @@ sub unknown_genes {
   return $self->{'unknown_genes'};
 }
 			    
+=head2 snps
+
+  Arg [1]    : int $number_of_snps
+  Example    : none
+  Description: get/set for the attribute snps. The SNP count 
+               on this chromosome
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
 sub snps {
   my($self, $snps) = @_;
 
@@ -198,6 +259,17 @@ sub snps {
 }
 
 # compiled successfull
+=head2 chromosome_id
+
+  Args       : none
+  Example    : none
+  Description: deprecated, use dbID or chr_name
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
 
 
 sub chromosome_id {
