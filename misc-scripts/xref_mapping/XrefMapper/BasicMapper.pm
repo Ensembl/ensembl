@@ -19,9 +19,9 @@ XrefMapper::BasicMapper
 
 This is the basic mapper routine. It will create the necessary fasta files for
 both the xref and ensembl sequences. These will then be matched using exonerate
-and the results written to another file. The xref database is hard coded at the
-beginning. By creating a <species>.pm file and inheriting from this base class
-different matching routines, parameters, data sets etc can be set.
+and the results written to another file. By creating a <species>.pm file and 
+inheriting from this base class different matching routines, parameters, data 
+sets etc can be set.
 
 =head1 CONTACT
 
@@ -29,17 +29,6 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 
 =cut
-
-
-#
-# Specify xref database here
-#
-my $xref_host = "ecs1g";
-my $xref_port = 3306;
-my $xref_database = "ianl_test_xref";
-my $xref_user = "ensadmin";
-my $xref_password = "ensembl";
-
 
 
 sub dump_seqs{
@@ -62,7 +51,14 @@ sub dump_xref{
   if(!defined($xref->species())){
     $xref->species($self->species);
   }
-
+  if(!defined($xref->dir())){
+    if(defined($self->species)){
+      $xref->species($self->species)
+    }
+    else{
+      $xref->species(".");
+    }
+  }
   #
   # the species specified must be in the database and hence have a species_id
   #
@@ -90,8 +86,8 @@ sub dump_xref{
   # Dump out the sequences where the species has an id of species_id
   # and the sequence type is 'dna'
   #
-  $self->xref_dna_file($self->dir."/".$xref->species."_xref_dna.fasta");
-  open(XDNA,">".$self->dir."/".$xref->species."_xref_dna.fasta") || die "Could not open xref_dna.fasta";
+  $self->xref_dna_file($xref->dir."/".$xref->species."_xref_dna.fasta");
+  open(XDNA,">".$xref->dir."/".$xref->species."_xref_dna.fasta") || die "Could not open xref_dna.fasta";
   my $sql = "select p.xref_id, p.sequence from primary_xref p, xref x ";
   $sql   .= "where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='dna' and ";
@@ -114,8 +110,8 @@ ENDDNA:
   # Dump out the sequences where the species has an id of species_id
   # and the sequence type is 'peptide'
   #
-  $self->xref_protein_file($self->dir."/".$self->species."_xref_prot.fasta");
-  open(XPEP,">".$self->dir."/".$self->species."_xref_prot.fasta") || die "Could not open xref_prot.fasta";
+  $self->xref_protein_file($xref->dir."/".$self->species."_xref_prot.fasta");
+  open(XPEP,">".$xref->dir."/".$self->species."_xref_prot.fasta") || die "Could not open xref_prot.fasta";
   $sql    = "select p.xref_id, p.sequence from primary_xref p, xref x ";
   $sql   .= "where p.xref_id = x.xref_id and ";
   $sql   .= "      p.sequence_type ='peptide' and ";
@@ -159,6 +155,11 @@ sub fetch_and_dump_seq{
   #
   # store ensembl dna file name and open it
   #
+  
+  # if no directory set then dump in the current directory.
+  if(!defined($self->dir())){
+    $self->dir(".");
+  }
   $self->ensembl_dna_file($self->dir."/".$self->species."_dna.fasta");
   open(DNA,">".$self->ensembl_dna_file()) 
     || die("Could not open dna file for writing: ".$self->ensembl_dna_file."\n");
