@@ -356,7 +356,7 @@ CREATE TABLE protein_feature (
 CREATE TABLE interpro (
   interpro_ac	varchar(40) NOT NULL,
   id		varchar(40) NOT NULL,
-  PRIMARY KEY (interpro_ac),
+  KEY (interpro_ac),
   KEY (id)
 );
 
