@@ -2,15 +2,16 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 10;
+	plan tests => 11;
 }
 
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
-
-my $verbose = 0;
 
 use MultiTestDB;
+use TestUtils qw(test_getter_setter debug);
+
+our $verbose = 0;
+
+
 
 my $multi = MultiTestDB->new();
 
@@ -70,7 +71,6 @@ $repeat_f_ad->store( $repeat_feature );
 
 ok(1);
 
-
 my $repeats = $repeat_f_ad->fetch_all_by_RawContig($contig);
 
 my $repeat = $repeats->[0];
@@ -80,9 +80,12 @@ ok($repeat);
 ok($repeat->start == 26);
 ok($repeat->hend == 45);
 
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
-  }
-}
+my $dbID = $repeat->dbID;
+
+my $r = $repeat_f_ad->fetch_by_dbID($dbID);
+
+ok($r->dbID == $dbID && $r->start == 26 && $r->hend == 45);
+
+$multi->restore('core', 'repeat_feature');
+
+
