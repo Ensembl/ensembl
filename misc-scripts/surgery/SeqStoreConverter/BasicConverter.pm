@@ -282,8 +282,6 @@ sub clone_to_seq_region {
 
   $self->debug("Transforming clones into $target_cs_name seq_regions");
 
-
-
   my $select_sth = $dbh->prepare
     ("SELECT cl.clone_id,
              CONCAT(cl.embl_acc, '.', cl.embl_version),
@@ -934,7 +932,21 @@ sub transfer_features {
     "                    value ) ". 
     "SELECT mapfrag_id, mapannotationtype_id, value " .
     "FROM $source.mapannotation" );
-  
+
+  $dbh->do
+   ("INSERT INTO $target.misc_attrib( misc_feature_id, attrib_type_id, " .
+    "                                 value) " .
+    "SELECT mf.mapfrag_id, at.attrib_type_id, mf.name " .
+    "FROM   $source.mapfrag mf, $target.attrib_type at " .
+    "WHERE  at.code = 'name'");
+
+   $dbh->do
+   ("INSERT INTO $target.misc_attrib( misc_feature_id, attrib_type_id, " .
+    "                                 value) " .
+    "SELECT mf.mapfrag_id, at.attrib_type_id, mf.type " .
+    "FROM   $source.mapfrag mf, $target.attrib_type at " .
+    "WHERE  at.code = 'type'");
+
   $self->debug( "Building misc_feature_misc_set table" );
   $dbh->do
     ("INSERT INTO $target.misc_feature_misc_set(misc_feature_id, misc_set_id)".
@@ -1034,6 +1046,10 @@ sub create_attribs {
      "                                 name, description ) " .
      "SELECT mapannotationtype_id, code, name, description " .
      "FROM $source.mapannotationtype " );
+
+  $dbh->do
+    ("INSERT INTO $target.attrib_type( code, name, description ) " .
+     "VALUES ('name', 'Name',''), ('type', 'Type of feature','')");
 
   return;
 }
