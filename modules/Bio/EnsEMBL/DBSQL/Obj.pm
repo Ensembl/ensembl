@@ -156,9 +156,12 @@ sub get_Gene{
    # paranoid.
 
    my $sth1 = $self->prepare("select p1.contig from exon as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3.exon = p1.id");
+
    $sth1->execute();
+
    while( my $rowhash = $sth1->fetchrow_hashref) {
        # get a contig object, which checks that this exists. 
+       print("'Contig is " . $rowhash->{contig} . "\n");
        my $contig = $self->get_Contig($rowhash->{'contig'});
        # if there is no exception then it is there. Get rid of it
        $contig = 0;
@@ -170,9 +173,15 @@ sub get_Gene{
 
    my $res = $sth->execute();
    my $seen =0;
+
    while( my $rowhash = $sth->fetchrow_hashref) {
-       my $trans = $self->get_Transcript($rowhash->{'id'});
+
+       print("Transcript   " . $rowhash->{id} . "\n");
+       print("Translation  " . $rowhash->{translation} . "\n");
+
+       my $trans       = $self->get_Transcript($rowhash->{'id'});
        my $translation = $self->get_Translation($rowhash->{'translation'});
+
        $trans->translation($translation);
        $gene->add_Transcript($trans);
        $seen = 1;
@@ -651,11 +660,13 @@ sub get_updated_Objects{
     my @out;
     my @clones;
     while( my $rowhash = $sth->fetchrow_hashref) {
+	print("Updated clone " . $rowhash->{id} . "\n");
 	push(@clones,$rowhash->{'id'});
     }
     
     #Get all clone objects for the ids contained in @clones, and push them in @out
     foreach my $cloneid (@clones) {
+	print("Getting clone $cloneid\n");
 	push @out, $self->get_Clone ($cloneid);
     }	
     
@@ -665,13 +676,16 @@ sub get_updated_Objects{
 
     my @genes;
     while( $rowhash = $sth->fetchrow_hashref) {
+	print("updated gene " . $rowhash->{id} . "\n");
 	push(@genes,$rowhash->{'id'});
     }
     
     #Get all gene objects for the ids contained in @clones, and push them in @out
     foreach my $geneid (@genes) {
+	print("Getting gene $geneid\n");
 	push @out, $self->get_Gene ($geneid);
     }	
+    print ("Done get_updated_objects\n");
     return @out;
 }
 
@@ -1389,8 +1403,8 @@ sub get_Analysis {
     my $rh  = $sth->fetchrow_hashref;
 
     if ($sth->rows > 0) {
-	
-	my $anal = new Bio::EnsEMBL::Analysis::Analysis(-db              => $rh->{db},
+
+	my $anal = new Bio::EnsEMBL::Analysis::Analysis(-db    => $rh->{db},
 					      -db_version      => $rh->{db_version},
 					      -program         => $rh->{program},
 					      -program_version => $rh->{program_version},
@@ -1398,6 +1412,7 @@ sub get_Analysis {
 					      -gff_feature     => $rh->{gff_feature},
 					      -id              => $rh->{id},
 					      );
+
 	return $anal;
     }  else {
 	$self->throw("Can't fetch analysis id $id\n");

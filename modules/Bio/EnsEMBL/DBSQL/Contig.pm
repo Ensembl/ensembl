@@ -214,6 +214,16 @@ sub get_all_SeqFeatures{
 
    while( $sth->fetch ) {
        my $out;
+       my $analysis;
+
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+
 
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
@@ -221,14 +231,16 @@ sub get_all_SeqFeatures{
 	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
 	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
 
-	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, -feature2 => $feature2);
+	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, 
+						  -feature2 => $feature2);
 
-	   $out->hstart     ($hstart);
+	   $out->hstart      ($hstart);
 	   $out->hend       ($hend);
 	   $out->hseqname   ($hid);
 	   $out->hsource_tag($name);
 	   $out->hprimary_tag('similarity');
-	   #$out->strand    ($strand);
+	   $out->hstrand     ($strand);
+	   $out->analysis    ($analysis);
 
 	   if( defined $score ) {
 	       $out->hscore($score);
@@ -244,32 +256,25 @@ sub get_all_SeqFeatures{
        $out->end       ($end);
        $out->strand    ($strand);
        $out->source_tag($name);
-
        $out->primary_tag('similarity');
 
        if( defined $score ) {
 	   $out->score($score);
        }
 
-       my $analysis;
-
-       if (!$analhash{$analysisid}) {
-	   $analysis = $self->_dbobj->get_Analysis($analysisid);
-	   
-	   $analhash{$analysisid} = $analysis;
-
-       } else {
-	   $analysis = $analhash{$analysisid};
-       }
 
        $out->analysis($analysis);
 
        # downcast to repeat for repeats. Not pretty.
        #
-       if( $out->source_tag() =~ /Repeat/ ) {
-	   bless $out, "Bio::EnsEMBL::Repeat";
-       }
+#       if( $out->source_tag() =~ /Repeat/ ) {
+#	   bless $out, "Bio::EnsEMBL::Repeat";
+#       }
 
+
+       # Final check that everything is ok.
+       
+       $out->validate();
 
       push(@array,$out);
   }
