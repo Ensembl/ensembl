@@ -110,36 +110,27 @@ sub fetch_all_by_mapset_chr_start_end {
         return $self->{'_cache'}{$key} = [];
     }
 
-    warn( "DNA: $dnafrag_id" );
-    my $sth = $self->prepare(
-	  qq( select mf.mapfrag_id, mf.type, mf.name,
+    my $QUERY = qq( select mf.mapfrag_id, mf.type, mf.name,
                    mf.seq_start, mf.seq_end, mf.orientation,
                    df.name as seq, df.dnafrag_type as seq_type,
                    mat.code as note_type, ma.value as note
               from mapfrag as mf, dnafrag as df, mapfrag_mapset as mm
                    left join mapannotation as ma on ma.mapfrag_id = mf.mapfrag_id
                    left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
-             where mm.mapset_id = ? and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
+             where mm.mapset_id = $mapset_id and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
                     ).
-            ( $dnafrag_id ? "and df.dnafrag_id = ?".( defined($chr_start) ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
-        qq(  order by mf.mapfrag_id, mat.code )
-    );
+            ( $dnafrag_id ? "and df.dnafrag_id = $dnafrag_id".( defined($chr_start) ? " and mf.seq_start <= $chr_end and mf.seq_start >= ".($chr_start-$max_length)." and mf.seq_end >= $chr_start" : "" ) : "").
+        qq(  order by mf.mapfrag_id, mat.code );
+    warn( $QUERY );
+    my $sth = $self->prepare( $QUERY );
         
-    $sth->execute(
-        $mapset_id, (
-             $dnafrag_id ?
-            ( $dnafrag_id, ( defined($chr_start) ?
-                           ($chr_end, $chr_start - $max_length, $chr_start) :
-                           () ) ) :
-            ()
-        )
-    );
+    $sth->execute( );
     my @map_frags = ();
     my $old_id    = 0;
     my $map_frag  = undef;
     while( my $data = $sth->fetchrow_hashref() ) {
-    if($data->{'mapfrag_id'}!=$old_id) {
-        push @map_frags, $map_frag if defined $map_frag;
+        if($data->{'mapfrag_id'}!=$old_id) {
+            push @map_frags, $map_frag if defined $map_frag;
             $map_frag = Bio::EnsEMBL::MapFrag->new(
                 $chr_start || 1,
                 $data->{'mapfrag_id'},      
@@ -159,8 +150,7 @@ sub fetch_all_by_mapset_chr_start_end {
         }
     }
     push @map_frags, $map_frag if defined $map_frag;
-    $self->{'_cache'}{$key} = \@map_frags;
-    return \@map_frags;
+    return $self->{'_cache'}{$key} = \@map_frags;
 }
 
 sub fetch_all_mapsets_by_chr_start_end {
