@@ -307,7 +307,7 @@ sub get_repeatmasked_seq {
       $logic_name = 'RepeatMask';
     }
 
-    my @repeats = $self->get_all_RepeatFeatures($logic_name);
+    my @repeats = @{$self->get_all_RepeatFeatures($logic_name)};
 
     my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna, @repeats);
@@ -381,9 +381,9 @@ sub get_all_RepeatFeatures {
    }
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
-   my @repeats = $rfa->fetch_by_Contig( $self , $logic_name);
+   my $repeats = $rfa->fetch_by_Contig( $self , $logic_name);
 
-   return @repeats;
+   return $repeats;
 }
 
 
