@@ -200,10 +200,10 @@ sub _objs_from_sth {
 			      '_gsf_sub_array' =>  [],
                               '_parse_h'       =>  {},
                               '_analysis'      =>  $analysis,
-                              '_start'         =>  $contig_start,
-                              '_end'           =>  $contig_end,
-                              '_strand'        =>  $contig_strand,
-                              '_score'         =>  $score,
+                              '_gsf_start'         =>  $contig_start,
+                              '_gsf_end'           =>  $contig_end,
+                              '_gsf_strand'        =>  $contig_strand,
+                              '_gsf_score'         =>  $score,
                               '_hstart'        =>  $repeat_start,
                               '_hend'          =>  $repeat_end,
                               '_repeat_consensus' => $rc,
@@ -211,7 +211,7 @@ sub _objs_from_sth {
 			      '_gsf_seq'       =>  $contig,
                               '_db_id'         =>  $repeat_feature_id } );
   }
-  
+
   return \@features;
 }
   

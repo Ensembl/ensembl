@@ -89,9 +89,9 @@ sub fetch_by_Slice {
 			   { '_gsf_tag_hash'  => {},
 			     '_gsf_sub_array' => [],
 			     '_parse_h'       => {},
-                             '_start'         => $start - $slice_start,
-                             '_end'           => $end - $slice_start,
-			     '_strand'        => $strand,
+                             '_gsf_start'         => $start - $slice_start,
+                             '_gsf_end'           => $end - $slice_start,
+			     '_gsf_strand'        => $strand,
 			     '_adaptor'       => $repeat_adaptor,
 			     '_repeat_consensus' => $rc,
 			     '_db_id'         => $id } );

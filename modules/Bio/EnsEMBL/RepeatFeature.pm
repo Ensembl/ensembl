@@ -24,14 +24,14 @@ sub new_fast {
 
 # Unique to RepeatFeature
 
-sub score {
-    my( $self, $score ) = @_;
+#sub score {
+#    my( $self, $score ) = @_;
     
-    if (defined $score) {
-        $self->{'_score'} = $score;
-    }
-    return $self->{'_score'};
-}
+#    if (defined $score) {
+#        $self->{'_score'} = $score;
+#    }
+#    return $self->{'_score'};
+#}
 
 sub repeat_consensus_id {
     my( $self, $repeat_consensus_id ) = @_;
@@ -108,32 +108,32 @@ sub    hp_value { return 0   }
 
 # LocationI methods
 
-sub start {
-    my( $self, $start ) = @_;
+#sub start {
+#    my( $self, $start ) = @_;
     
-    if ($start) {
-        $self->{'_start'} = $start;
-    }
-    return $self->{'_start'};
-}
+#    if ($start) {
+#        $self->{'_start'} = $start;
+#    }
+#    return $self->{'_start'};
+#}
 
-sub end {
-    my( $self, $end ) = @_;
+#sub end {
+#    my( $self, $end ) = @_;
     
-    if ($end) {
-        $self->{'_end'} = $end;
-    }
-    return $self->{'_end'};
-}
+#    if ($end) {
+#        $self->{'_end'} = $end;
+#    }
+#    return $self->{'_end'};
+#}
 
-sub strand {
-    my( $self, $strand ) = @_;
+#sub strand {
+#    my( $self, $strand ) = @_;
     
-    if (defined $strand) {
-        $self->{'_strand'} = $strand;
-    }
-    return $self->{'_strand'};
-}
+#    if (defined $strand) {
+#        $self->{'_strand'} = $strand;
+#    }
+#    return $self->{'_strand'};
+#}
 
 sub hstart {
     my( $self, $hstart ) = @_;
