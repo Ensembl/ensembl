@@ -59,7 +59,7 @@ sub new {
     my ( $chr_name, $chromosome_id, $adaptor, $length, 
 	 $known_genes, $unknown_genes, $snps) = 
 	 $self->_rearrange([qw(CHR_NAME
-			       CHROMOSOME_ID
+			       DBID
 			       ADAPTOR 
 			       LENGTH 
 			       KNOWN_GENES
