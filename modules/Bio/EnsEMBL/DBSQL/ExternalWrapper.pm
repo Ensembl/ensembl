@@ -96,7 +96,7 @@ sub get_Ensembl_Genes_clone{
        return ();
    }
 
-   my @genes=$clone->get_all_Genes();
+   #my @genes=$clone->get_all_Genes();
 
    return $clone->get_all_Genes();
 }

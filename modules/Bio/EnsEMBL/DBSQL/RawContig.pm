@@ -1307,6 +1307,14 @@ sub get_all_PredictionFeatures {
        $out->phase     ($phase)     if (defined $phase);    
        $out->end_phase ($end_phase) if (defined $end_phase);
         
+
+	my $query="select fset from fset_feature where feature=$fid"; 
+	my $sth = $self->dbobj->prepare($query);
+   	$sth->execute();
+	my $arr_ref=$sth->fetchrow_arrayref;
+
+	$fsetid=$arr_ref->[0];
+
        $out->id($fsetid); # to make genscan peptide work
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
@@ -1372,18 +1380,20 @@ sub get_all_ExternalFeatures{
    my @out;
    my $acc;
    
-
    $acc = $self->cloneid();
 
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+
+
        if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
 	   push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->internal_id,$self->seq_version,1,$self->length));
        }
        if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
 	   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
+
 	       my $start = $sf->start - $embl_offset+1;
 	       my $end   = $sf->end   - $embl_offset+1;
 	       $sf->start($start);
@@ -1416,20 +1426,15 @@ sub get_all_ExternalFeatures{
 
 sub get_all_ExternalGenes {
    my ($self) = @_;
-
-   
    my @out;
    my $acc;
-   
 
    $acc = $self->cloneid();
-
    my $embl_offset = $self->embl_offset();
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->can('get_Ensembl_Genes_clone') ) {
 	   my @genes = $extf->get_Ensembl_Genes_clone($acc);
-	
 	   foreach my $gene (@genes){
 	   foreach my $exon ( $gene->all_Exon_objects ) {
 	       $exon->start($exon->start - $embl_offset+1);

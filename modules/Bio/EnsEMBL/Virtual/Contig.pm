@@ -1043,6 +1043,7 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
+
        #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
