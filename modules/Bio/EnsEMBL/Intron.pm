@@ -59,8 +59,7 @@ to B<EnsEMBL>.
 sub new {
     my $pkg = shift;
     
-    #my $self = $pkg->SUPER::new;
-    my $self = bless {}, $pkg;
+    my $self = $pkg->SUPER::new;
     
     $self->throw("new() doesn't take any arguments") if @_;
     
