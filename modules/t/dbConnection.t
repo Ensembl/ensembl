@@ -85,14 +85,16 @@ ok($adaptor == $dbc->_get_adaptor($adaptor_name)); #verify cache is used
 #
 ok(test_getter_setter($dbc, 'db_handle', $db->db_handle));
 
-#
-# 11 prepare
-#
-my $sth = $dbc->prepare('SELECT * from gene limit 1');
-$sth->execute;
-ok($sth->rows);
-$sth->finish;
 
+{
+  #
+  # 11 prepare
+  #
+  my $sth = $dbc->prepare('SELECT * from gene limit 1');
+  $sth->execute;
+  ok($sth->rows);
+  $sth->finish;
+}
 #
 # 12 add_db_adaptor
 #
@@ -114,7 +116,6 @@ ok($dbc->get_db_adaptor('core')->isa('Bio::EnsEMBL::DBSQL::DBConnection'));
 $dbc->remove_db_adaptor('core');
 ok(!defined $dbc->get_db_adaptor('core'));
 ok(!defined $dbc->get_all_db_adaptors->{'core'});
-
 
 
 #
