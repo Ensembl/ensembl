@@ -1013,10 +1013,13 @@ sub get_Transcript_in_VC_coordinates
     my $found;
   GENE: foreach my $gene ($vc->get_all_Genes){
       foreach my $transcript($gene->each_Transcript){
+	
+	  print STDERR $transcript->id,"\n";
+
 	  if ($transcript->id eq $transcript_id){$found=$transcript;last GENE;}
       }
   }   
-    if (!defined $found ){$self->throw("There is no such transcript on this vc, impossible !")};
+    if (!defined $found ){$self->throw("Created VC around wrong transcript, sorry !")};
     return $found;    
     
 }
