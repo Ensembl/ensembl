@@ -137,7 +137,7 @@ sub get_AnnSeq{
    @genes   = $self->get_all_Genes();
 
    $seq = $self->seq();
-
+   
    $as = Bio::AnnSeq->new();
    $as->seq($seq);
    foreach my $gene ( @genes ) {

@@ -95,8 +95,7 @@ sub _initialize {
   }
   my $dsn = "DBI:$driver:database=$db;host=$host";
 
-  if( $debug > 10 ) {
-      print STDERR "Debug mode $debug means we have not connected to the database\n";
+  if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
 
@@ -216,13 +215,17 @@ sub write_Gene{
        $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
-	   my $sth = $self->prepare("insert into exon_transcript (exon,transcript,order) values ('". $exon->id()."','".$trans->id()."',".$c.")");
+	   my $sth = $self->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
 	   $sth->execute();
 	   if( $done{$exon->id()} ) { next; }
 	   $done{$exon->id()} = 1;
 	   $self->write_Exon($exon);
+	   $c++;
        }
    }
+
+   my $sth2 = $self->prepare("insert into gene (id) values ('". $gene->id(). "')");
+   $sth2->execute();
 
 }
 
@@ -251,16 +254,16 @@ sub write_Transcript{
        $self->throw("$gene is not a EnsEMBL gene - not dumping!");
    }
 
-   my $lockst = $self->prepare("lock transcript");
-   $lockst->execute;
+#   my $lockst = $self->prepare("lock transcript;");
+#   $lockst->execute;
 
    # ok - now load this line in
 
    my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "')");
    $tst->execute();
    
-   my $unlockst = $self->prepare("unlock transcript");
-   $unlockst->execute;
+#   my $unlockst = $self->prepare("unlock transcript");
+#   $unlockst->execute;
    
    return 1;
 }
@@ -285,8 +288,8 @@ sub write_Exon{
        $self->throw("$exon is not a EnsEMBL exon - not dumping!");
    }
 
-   my $lockst = $self->prepare("lock exon");
-   $lockst->execute;
+#   my $lockst = $self->prepare("lock exon");
+#   $lockst->execute;
 
    # ok - now load this line in
 
@@ -303,8 +306,8 @@ sub write_Exon{
    my $sth = $self->prepare($exonst);
    $sth->execute();
    
-   my $unlockst = $self->prepare("unlock exon");
-   $unlockst->execute;
+#   my $unlockst = $self->prepare("unlock exon");
+#   $unlockst->execute;
    
    return 1;
 }

@@ -381,10 +381,13 @@ sub _translate {
   my @pep;
   my $i;
   
+  # changed this to work with the new SeqFeature stuff. I am still not
+  # 100% happy about this. EB.
+  
   # Get the DNA sequence and create the sequence string
-  $self->dna_seq() || $self->throw("No DNA in object. Can't translate\n");
+  $self->seq() || $self->throw("No DNA in object. Can't translate\n");
 
-  my $dna = $self->dna_seq()->seq();
+  my $dna = $self->seq()->seq();
   
   # Translate in all frames - have to chop
   # off bases from the beginning of the dna sequence 

@@ -193,7 +193,7 @@ sub translate {
 
   Title   : dna_seq
   Usage   : $dna = $feat->dna_seq
-   Function: Returns the dna sequence of the gene
+  Function: Returns the dna sequence of the gene
   Returns : Bio::Seq
   Args    : none
 
@@ -207,13 +207,11 @@ sub dna_seq {
 
   
   foreach my $exon ($self->each_Exon) {
-    my $tmp = $self->contig_dna->str($exon->start,$exon->end);
 
-    if ($strand == -1) {
-      $tmp =~ tr/ATGCatgc/TACGtacg/;
-      $tmp = reverse($tmp);
-    }
+    # the seq call automatically truncates to the correct 
+    # coordinates (handily) in SeqFeature
 
+    my $tmp = $exon->seq->str();
     $mrna  .= $tmp;
   }
 
@@ -554,3 +552,6 @@ sub find_coord {
 }
 
 1;
+
+
+

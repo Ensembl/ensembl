@@ -228,6 +228,27 @@ sub _db_handle{
 
 }
 
+=head2 _exon_id_start
+
+ Title   : _exon_id_start
+ Usage   : $obj->_exon_id_start($newval)
+ Function: 
+ Returns : value of _exon_id_start
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _exon_id_start{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_exon_id_start'} = $value;
+    }
+    return $obj->{'_exon_id_start'};
+
+}
+
 =head2 DESTROY
 
  Title   : DESTROY

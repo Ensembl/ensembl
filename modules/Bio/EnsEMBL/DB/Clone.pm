@@ -93,7 +93,9 @@ sub _initialize {
 sub get_all_Genes{
    my ($self,@args) = @_;
 
-   $self->throw("Not implemented yet!");
+   # prepare the SQL statement
+
+#   my $sth = $self->_dbobj->prepare("select p1.id from gene as p1 where p1 
 }
 
 =head2 get_Contig
