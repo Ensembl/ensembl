@@ -1004,7 +1004,13 @@ sub register_all_chained {
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
 
-  my @path = @{$csa->get_mapping_path($first_cs, $mid_cs)};
+  my @path;
+
+  if( ! defined $mid_cs ) {
+    @path = @{$csa->get_mapping_path($first_cs, $last_cs)};
+  } else {
+    @path = @{$csa->get_mapping_path($first_cs, $mid_cs)};
+  }
 
   if(@path != 2) {
     my $path = join(',', map({$_->name .' '. $_->version} @path));
@@ -1018,6 +1024,7 @@ sub register_all_chained {
 
   my ($asm_cs,$cmp_cs) = @path;
 
+  $sth->{mysql_use_result} = 1;
   $sth->execute( $asm_cs->dbID(), $cmp_cs->dbID());
 
 
@@ -1025,26 +1032,35 @@ sub register_all_chained {
       $ori, $start_start, $start_end, $start_seq_region_id, $start_seq_region,
       $start_length);
 
-  if($asm_cs->equals($mid_cs)) {
+  if($asm_cs->equals($first_cs)) {
+    $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
+                       \$mid_seq_region, \$mid_length, \$ori, \$start_start,
+                       \$start_end, \$start_seq_region_id, \$start_seq_region,
+                       \$start_length);
+  } else {
     $sth->bind_columns(\$start_start, \$start_end, \$start_seq_region_id,
                        \$start_seq_region, \$start_length, \$ori,
                        \$mid_start, \$mid_end, \$mid_seq_region_id,
                        \$mid_seq_region, \$mid_length);
 
-  } else {
-    $sth->bind_columns(\$mid_start, \$mid_end, \$mid_seq_region_id,
-                       \$mid_seq_region, \$mid_length, \$ori, \$start_start,
-                       \$start_end, \$start_seq_region_id, \$start_seq_region,
-                       \$start_length);
-
   }
 
-  my $mid_cs_id = $mid_cs->dbID();
-  my $start_cs_id = $first_cs->dbID();
+  my ( $mid_cs_id, $start_cs_id, $reg, $mapper );
+  if( ! defined $mid_cs ) {
+    
+    $mid_cs_id = $last_cs->dbID();
+    $start_cs_id = $first_cs->dbID();
+    $mapper = $combined_mapper;
+  } else {
+    $mid_cs_id = $mid_cs->dbID();
+    $start_cs_id = $first_cs->dbID();
+    $mapper = $start_mid_mapper;
+  }
 
-  my $reg =     $casm_mapper->first_registry();
+  $reg =  $casm_mapper->first_registry();
+
   while($sth->fetch()) {
-    $start_mid_mapper->add_map_coordinates
+    $mapper->add_map_coordinates
       (
        $start_seq_region, $start_start, $start_end, $ori,
        $mid_seq_region, $mid_start, $mid_end
@@ -1052,6 +1068,10 @@ sub register_all_chained {
     push( @ranges, [$start_seq_region, $start_start, $start_end ] );
 
     $reg->check_and_register( $start_seq_region, 1, $start_length );
+    if( ! defined $mid_cs ) {
+      $casm_mapper->last_registry()->check_and_register
+	( $mid_seq_region, $mid_start, $mid_end );
+    }
 
     my $arr = [ $mid_seq_region_id, $mid_seq_region,
                 $mid_cs_id, $mid_length ];
@@ -1065,6 +1085,13 @@ sub register_all_chained {
     $self->{'sr_name_cache'}->{"$start_seq_region:$start_cs_id"} = $arr;
     $self->{'sr_id_cache'}->{"$start_seq_region_id"} = $arr;
   }
+  
+  if( ! defined $mid_cs ) {
+    # thats it for the simple case
+    print STDERR "Loaded the combined mapper\n";
+    return;
+  }
+
 
   @path = @{$csa->get_mapping_path($last_cs, $mid_cs)};
 
