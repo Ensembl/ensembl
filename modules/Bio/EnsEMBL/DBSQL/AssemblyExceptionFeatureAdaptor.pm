@@ -108,27 +108,28 @@ sub _objs_from_sth {
 
   while ($sth->fetch()) {
 
-    my $slice = $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
+    my $sr_slice = $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
+    my $exc_slice = $slice_adaptor->fetch_by_seq_region_id($exc_seq_region_id);
 
-    # each row creates TWO features
+    # each row creates TWO features, each of which has alternate_slice pointing to the "other" one
 
-    push @features, Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'    => $seq_region_start,
-								 '-end'      => $seq_region_end,
-								 '-strand'   => 1,
-								 '-adaptor'  => $self,
-								 '-slice'    => $slice,
-								 '-type'     => $type);
+    push @features,
+      Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'           => $seq_region_start,
+						  '-end'             => $seq_region_end,
+						  '-strand'          => 1,
+						  '-adaptor'         => $self,
+						  '-slice'           => $sr_slice,
+						  '-alternate_slice' => $exc_slice,
+						  '-type'            => $type);
 
-    $slice = $slice_adaptor->fetch_by_seq_region_id($exc_seq_region_id);
-
-    push @features, Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'    => $exc_seq_region_start,
-								'-end'      => $exc_seq_region_end,
-								'-strand'   => 1,
-								'-adaptor'  => $self,
-								'-slice'    => $slice,
-								'-type'     => $type);
-
-    # TODO - relate the two features somehow
+    push @features, 
+      Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'           => $exc_seq_region_start,
+						  '-end'             => $exc_seq_region_end,
+						  '-strand'          => 1,
+						  '-adaptor'         => $self,
+						  '-slice'           => $exc_slice,
+						  '-alternate_slice' => $sr_slice,
+						  '-type'            => $type);
 
   }
 
