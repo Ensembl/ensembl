@@ -17,15 +17,15 @@ function getdb
 
     typeset dbver=${db}_${ver}
 
-    typeset url='ftp://ftp.ensembl.org'${path}/${dbver}.tar
+    path=${path#/}
+    typeset url='ftp://ftp.ensembl.org/'${path}/${dbver}.tar
 
     if [[ ! -d databases ]]; then
 	mkdir databases
     fi
     if [[ ! -d databases/${db}_${ver} ]]; then
 	trap "rm -rf databases/${db}_${ver}; exit 1" INT
-	lynx -source $url | (cd databases; pax -r -v \
-		-s "/.*${dbver}\//${dbver}\//")
+	lynx -source $url | (cd databases; tar -x -v -f- -P"${path}/")
 	trap - INT
     fi
 }
@@ -48,9 +48,10 @@ function do_delta
     typeset apply_out=deltas/${db}_${v1}_delta_${v2}_apply.out
 
     if [[ ! -f $build_out ]]; then
-	trap "rm $build_out; exit 1" INT
 	getdb $path1 $db $v1
 	getdb $path2 $db $v2
+
+	trap "rm $build_out; exit 1" INT
 
 	/usr/bin/time perl -w ./build.pl -c ./xdelta.osf \
 	    -s databases -d deltas \
@@ -85,13 +86,19 @@ typeset -ft getdb
 typeset -ft do_delta
 typeset -ft cleandb
 
+# A regular expression that should be avoided
+avoid_re='mart'
+
+# A regular expression that should be required
+require_re='1[45]_'
+
 version_re='[0-9][0-9]*_[0-9][0-9]*'
 
 # Use ftp://ftp.ensembl.org/ls-lR.Z to figure out what files are
 # available
 lynx -source ftp://ftp.ensembl.org/ls-lR.Z | \
     sed -n 's/^\.\(.*data\/mysql\)\/\(.*\)_\('"$version_re"'\):$/\1 \2 \3/p' | \
-    sort -k2 >ls-lR
+    grep -v $avoid_re | grep $require_re | sort -k2 >ls-lR
 
 while read path db ver; do
     if [[ $db != $this_db ]]; then
