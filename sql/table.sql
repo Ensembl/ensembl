@@ -60,7 +60,8 @@ CREATE TABLE chromosome (
   name              varchar(40) NOT NULL,
   length            int(11) NULL,
   
-  PRIMARY KEY (chromosome_id)
+  PRIMARY KEY (chromosome_id),
+  unique name (name)
 );
 
 
