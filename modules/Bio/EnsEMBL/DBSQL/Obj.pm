@@ -713,7 +713,7 @@ sub prepare {
    if ($self->diffdump) {
        my $fh=$self->diff_fh;
        open (FILE,">>$fh");
-       if ($string =~/insert|delete|replace/) {
+       if ($string =~ /insert|delete|replace/i) {
 	   print FILE "$string\n";
        }
        

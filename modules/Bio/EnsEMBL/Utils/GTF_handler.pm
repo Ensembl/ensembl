@@ -17,10 +17,10 @@ Bio::EnsEMBL::Utils::GTF_handler - Comparison of two clones
 
     GTF_handler->new();
 
-    #To parse a GTF file, build genes, and write them to a db
-    GTF_handler->parse_file($file);
+    # To parse a GTF file, and create genes
+    my @genes = GTF_handler->parse_file($file);
 
-    #To dump genes in GTF format
+    # To dump genes in GTF format
     GTF_handler->dump_genes($file,@genes);
 
 =head1 DESCRIPTION
@@ -92,38 +92,52 @@ sub parse_file {
     my $oldtrans;
     my $flag=1;
     my %exons;
-    my $trans_start;
-    my $trans_end;
+    my( $trans_start, $trans_end );
     my $type;
 
     while( <$fh> ) {
 	(/^\#/) && next;
-	(/^$/) && next;
-	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame);
-	my ($gene_name, $gene_id,$transcript_id,$exon_num,$exon_id);
+	(/^$/)  && next;
+        chomp;
+        my $line_string = $_;
 
-	#First we have to be able to parse the basic feature information
-	if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
-	    $contig=$1;
-	    $type=$2;
-	    $feature=$3;
-	    $start=$4;
-	    $end=$5;
-	    $score=$6;
-	    $strand=$7;
-	    $frame=$8;
-	}
-	#This allows us to parse gtf entries starting with a rawcontig id
-	elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
-	    $contig=$1;
-	    $type=$2;
-	    $feature=$3;
-	    $start=$4;
-	    $end=$5;
-	    $score=$6;
-	    $strand=$7;
-	    $frame=$8;
-	}
+        my ($contig, $source, $feature,
+            $start,  $end,    $score,
+            $strand, $frame,  $group_field) = split /\s+/, $line_string, 9;
+        $type = $source;
+        
+        # It is isn't a legal GTF file without a group field
+        unless ($group_field) {
+            warn "Skipping unparseable line : '$line_string'";
+            next;
+        }
+        
+        # This preserves the behaviour of the first elsif below.
+        # (But probably shouldn't be in here.)
+        ($contig) = $contig =~ /^([^\.]+)/;
+
+    ##First we have to be able to parse the basic feature information
+    #if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
+    #    $contig=$1;
+    #    $type=$2;
+    #    $feature=$3;
+    #    $start=$4;
+    #    $end=$5;
+    #    $score=$6;
+    #    $strand=$7;
+    #    $frame=$8;
+    #}
+    ##This allows us to parse gtf entries starting with a rawcontig id
+    #elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
+    #    $contig=$1;
+    #    $type=$2;
+    #    $feature=$3;
+    #    $start=$4;
+    #    $end=$5;
+    #    $score=$6;
+    #    $strand=$7;
+    #    $frame=$8;
+    #}
 	#This was a sneaky patch for parsing badly formed ensembl gtf files...
 	#elsif (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(0)\s+(0)/){
 	    #$contig=$1;
@@ -148,90 +162,133 @@ sub parse_file {
 	    #$frame=$8;
 	    #$type="ENS";
 	#}
-	else {
-	    $self->warn("Could not parse line:\n$_");
-	}
-	if (/gene_name \"(\w+)\"/) { 
-	    $gene_name=$1; 
-	}
-	if (/gene_id \"(.+)\".+transcript/) { 
-	    $gene_id = $1;
-	}
-	else { 
-	    $self->warn("Cannot parse line without gene id, skipping!");
-	    next;
-	}
+    #else {
+    #    $self->warn("Could not parse line:\n$_");
+    #}
+        
+	my ($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
 
-	if (/transcript_id \"(.+)\"/) { $transcript_id = $1;}
-	else { 
-	    $self->warn("Cannot parse line without transcript id, skipping!");
-	    next;
-	}
+        # Parse the group field
+        foreach my $tag_val (split /;/, $group_field) {
+            
+            # Trim trailing and leading spaces
+            $tag_val =~ s/^\s+|\s+$//g;
+            
+            my($tag, $value) = split /\s+/, $tag_val, 2;
+            
+            # Remove quotes from the value
+            $value =~ s/^"|"$//g;
+            $tag = lc $tag;
+            
+            if ($tag eq 'gene_name') {
+                $gene_name = $value;
+            }
+            elsif ($tag eq 'gene_id') {
+                $gene_id = $value;
+            }
+            elsif ($tag eq 'transcript_id') {
+                $transcript_id = $value;
+            }
+            elsif ($tag eq 'exon_number') {
+                $exon_num = $value;
+            }
+            elsif ($tag eq 'exon_id') {
+                $exon_id = $value;
+            }
+        }
 
-	if (/exon_number (\d+)/) { $exon_num = $1;}
-	if (/Exon_id (.+)\;/) { $exon_id = $1;}
+        unless ($gene_id) {
+            $self->warn("Skipping line with no gene_id : '$_'");
+	    next;
+        }
+        unless ($transcript_id) {
+            $self->warn("Skipping line with no transcript_id : '$_'");
+	    next;
+        }
+
+    #    if (/gene_name \"(\w+)\"/) { 
+    #    $gene_name=$1; 
+    #}
+    #    if (/gene_id \"(.+)\".+transcript/) { 
+    #    $gene_id = $1;
+    #}
+    #else { 
+    #    $self->warn("Cannot parse line without gene id, skipping!");
+    #    next;
+    #}
+
+    #if (/transcript_id \"(.+)\"/) { $transcript_id = $1;}
+    #else { 
+    #    $self->warn("Cannot parse line without transcript id, skipping!");
+    #    next;
+    #}
+
+    #if (/exon_number (\d+)/) { $exon_num = $1;}
+    #if (/Exon_id (.+)\;/) { $exon_id = $1;}
 	
 	if ($flag == 1) {
 	    $oldtrans = $transcript_id;
-	    $oldgene = $gene_id;
-	    $flag=0;
+	    $oldgene  = $gene_id;
+	    $flag = 0;
 	}
 
-	#When new gene components start, do the gene building 
-	#with all the exons found up to now, start_codon and end_codon
+	# When new gene components start, do the gene building 
+	# with all the exons found up to now, start_codon and end_codon
 	
 	if ($oldtrans ne $transcript_id) {
-	    my $gene=$self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
-	    $trans_start = undef;
-	    $trans_end = undef;
+            #warn "'$oldtrans' ne '$transcript_id'\n";
+	    $self->_build_transcript($trans_start, $trans_end, $oldtrans, %exons);
+	    $trans_start      = undef;
+	    $trans_end        = undef;
 	    %exons = ();
 	}
 	if ($oldgene ne $gene_id) {
-	    $self->_build_gene($oldgene);
+	    $self->_build_gene($oldgene, $type);
 	}
 	
-	if ($feature eq 'exon') {
-	    if ($strand eq '-') {
+	if ($feature eq 'exon' || $feature eq 'CDS') {
+	    if ($strand eq '+') {
+		$strand = 1;
+	    }
+	    elsif ($strand eq '-') {
 		$strand = -1;
 	    }
-	    elsif ($strand eq '+') {
-		$strand =1;
-	    }
 	    else {
-		die("Parsing error! Exon with strand $strand");
+		die("Parsing error! Exon with strand '$strand'");
 	    }
-	    my $exon = Bio::EnsEMBL::Exon->new($start,$end,$strand);
+	    my $exon = Bio::EnsEMBL::Exon->new($start, $end, $strand);
 	    if ($exon_id) {
 		$exon->id($exon_id);
 	    }
 	    else {
 		my $id = "$type-$gene_id-$exon_num";
+                #warn "ID = $id\n";
 		$exon->id($id);
 	    }
 	    $exon->version(1);
 	    $exon->contig_id($contig);
 	    $exon->seqname($contig);
 	    $exon->sticky_rank(1);
-	    my $time = time; chomp($time);
+	    my $time = time;
 	    $exon->created($time);
 	    $exon->modified($time);
-	    $exons{$exon_num}=$exon;
+	    $exons{$exon_num} = $exon;
 	}
 	elsif ($feature eq 'start_codon') {
-	    $trans_start=$start;
+	    $trans_start = $start;
 	}
 	elsif ($feature eq 'stop_codon') {
-	    $trans_end=$end;
+	    $trans_end   = $end;
 	}
 	else {
 	    #print STDERR "Feature $feature not parsed\n";
 	}
-	$oldgene=$gene_id;
-	$oldtrans=$transcript_id;
+	$oldgene = $gene_id;
+	$oldtrans = $transcript_id;
 	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
     }
-    $self->_build_transcript($trans_start,$trans_end,$oldtrans,%exons);
-    my $gene = $self->_build_gene($oldgene,$type);
+    $self->_build_transcript($trans_start, $trans_end, $oldtrans, %exons);
+    $self->_build_gene($oldgene, $type);
     return  @{$self->{'_gene_array'}};
 }
 
@@ -289,6 +346,8 @@ sub _build_gene {
 sub _build_transcript {
     my ($self,$trans_start,$trans_end,$oldtrans,%exons)=@_;
 
+    return unless %exons;
+
     #Create transcript, translation, and assign phases to exons
 
     my $trans = Bio::EnsEMBL::Transcript->new;
@@ -300,6 +359,33 @@ sub _build_transcript {
     my $time = time; chomp($time);
     $trans->created($time);
     $trans->modified($time);
+
+    {
+        my @exon_num = sort {$a <=> $b} keys %exons;
+        #warn "Exon set = $oldtrans [@exon_num]\n";
+        unless ($trans_start) {
+            my $n = $exon_num[0];
+            use Carp;
+            my $first_exon = $exons{$n}
+                or confess "No exon";
+            if ($first_exon->strand == 1) {
+                $trans_start = $first_exon->start;
+            } else {
+                $trans_start = $first_exon->end;
+            }
+        }
+        unless ($trans_end) {
+            my $n = $exon_num[$#exon_num];
+            my $last_exon = $exons{$n};
+            if ($last_exon->strand == 1) {
+                $trans_end = $last_exon->end;
+            } else {
+                $trans_end = $last_exon->start;
+            }
+        }
+    }
+
+    
     if (!defined($trans_start)) {
 	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
 	return;
@@ -313,37 +399,39 @@ sub _build_transcript {
     }
     my $phase=0;
     my $end_phase;
-    foreach my $num (keys%exons) {
+    foreach my $num (sort keys %exons) {
+        my $exon = $exons{$num};
 
 	#Positive strand
-	if ($exons{$num}->strand == 1) {
+	if ($exon->strand == 1) {
 
 	    #Start exon
-	    if (($trans_start >= $exons{$num}->start)&&($trans_start<= $exons{$num}->end)) {
+	    if (($trans_start >= $exon->start)&&($trans_start<= $exon->end)) {
 		#Assign start exon id
-		$translation->start_exon_id($exons{$num}->id);
+		$translation->start_exon_id($exon->id);
 
 		#Phase for start exons is always zero (irrelevant)
 		$phase=0;
 		
 		#Now calculate end_phase, used for next exon
-		$end_phase=($exons{$num}->end-$trans_start+1)%3;
+		$end_phase=($exon->end-$trans_start+1)%3;
 	    }
 
 	    #All other exons
 	    else {
 		#Calculate the end_phase for all other exons
-		my $mod_phase;
+		my $mod_phase = 0;
 		
 		if ($phase != 0){
 		    $mod_phase=3-$phase;
 		}
-		$end_phase=($exons{$num}->length-$mod_phase)%3;
+                
+		$end_phase = ($exon->length - $mod_phase) % 3;
 	    }
 
 	    #Find the end exon id
-	    if (($trans_end >= $exons{$num}->start)&&($trans_end <= $exons{$num}->end)) {
-		$translation->end_exon_id($exons{$num}->id);
+	    if (($trans_end >= $exon->start)&&($trans_end <= $exon->end)) {
+		$translation->end_exon_id($exon->id);
 	    }
 	}
 	
@@ -351,15 +439,15 @@ sub _build_transcript {
 	else {
 
 	    #Start exon
-	    if (($trans_start >= $exons{$num}->start)&&($trans_start <= $exons{$num}->end)) {
+	    if (($trans_start >= $exon->start)&&($trans_start <= $exon->end)) {
 		#Assign the start_exon_id
-		$translation->start_exon_id($exons{$num}->id);
+		$translation->start_exon_id($exon->id);
 		
 		#Phase for start exons is always zero (irrelevant)
 		$phase=0;
 		
 		#Calculate the end_phase, used for next exon
-		$end_phase=($trans_start-$exons{$num}->start+1)%3;
+		$end_phase=($trans_start-$exon->start+1)%3;
 	    }
 	    
 	    #All other exons
@@ -370,22 +458,22 @@ sub _build_transcript {
 		if ($phase != 0){
 		    $mod_phase=3-$phase;
 		}
-		$end_phase=($exons{$num}->length-$mod_phase)%3;
+		$end_phase=($exon->length-$mod_phase)%3;
 	    }
 
 	    #Find the end exon id
-	    if (($trans_end >= $exons{$num}->start)&&($trans_end <= $exons{$num}->end)) {
-		$translation->end_exon_id($exons{$num}->id);
+	    if (($trans_end >= $exon->start)&&($trans_end <= $exon->end)) {
+		$translation->end_exon_id($exon->id);
 	    }
 
 	}
 	#print STDERR "Phase:   $phase\n";
 
 	#Assign phase to exon
-	$exons{$num}->phase($phase);
+	$exon->phase($phase);
 
 	#Add exon to transcript
-	$trans->add_Exon($exons{$num});
+	$trans->add_Exon($exon);
 
 	#Assign its end_phase to the next exon's phase
 	$phase=$end_phase;
@@ -427,6 +515,7 @@ sub dump_genes {
 	
         #print STDERR "Dumping gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
+            my $type = $gene->type || 'ensembl';
 	    #print STDERR "Dumping transcript ".$trans->id."\n";
 	    my $c=1;
 	    my $seen=0;
@@ -477,7 +566,7 @@ sub dump_genes {
 		if ($exon->strand == -1) {
 		    $strand="-";
 		}
-		$exon_string .= $exon->contig_id."\tensembl\texon\t".$exon->start."\t".$exon->end."\t$score\t$strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\texon_number ".$c."\n"; 
+		$exon_string .= $exon->contig_id."\t$type\texon\t".$exon->start."\t".$exon->end."\t$score\t$strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\texon_number ".$c."\n"; 
 		
 		$c++;
 		if ($exon->id eq $start_exon_id) {
@@ -507,8 +596,8 @@ sub dump_genes {
 	    }
 	    if ($seen == 2) {
 		print $fh $exon_string;
-		print $fh "$start_seqname\tensembl\tstart_codon\t$start\t$start_end\t0\t$start_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\n";
-		print $fh "$end_seqname\tensembl\tstop_codon\t$end\t$end_start\t0\t$end_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\n";
+		print $fh "$start_seqname\t$type\tstart_codon\t$start\t$start_end\t0\t$start_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\n";
+		print $fh "$end_seqname\t$type\tstop_codon\t$end\t$end_start\t0\t$end_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\n";
 	    }
 	    else {
 		$self->warn("Could not find start and/or end exon for transcript ".$trans->id.", skipping!\n[$exon_string]");

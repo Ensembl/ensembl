@@ -42,8 +42,11 @@ print "ok 2\n";
 
 my $gene_obj=$db->gene_Obj;
 
+my $diff_sql_file = "t/diff.sql";
+unlink($diff_sql_file);
+
 $db->diffdump(1);
-$db->diff_fh("t/diff.sql");
+$db->diff_fh($diff_sql_file);
 
 
 $gene = new Bio::EnsEMBL::Gene;
@@ -129,16 +132,16 @@ print "ok 6\n";
 open (FILE,"<t/diff.sql");
 my $ok=0;
 while (<FILE>) {
-    if (/delete/) {
+    if (/delete/i) {
 	$ok++;
     }
-    if (/insert/) {
+    if (/insert/i) {
 	$ok++;
     }
 }
 
-#Check if there were 28 inserts/deletes ;)
-if ($ok == 29) {
+#Check if there were "x" inserts/deletes ;)
+if ($ok == 23) {
     print "ok 7\n";
 }
 else {
@@ -148,6 +151,5 @@ else {
 
 $db = 0;
 
-unlink("t/diff.sql");
 
 

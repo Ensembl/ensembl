@@ -96,51 +96,65 @@ sub _initialize {
 
 =cut
 
-sub delete{
-   my ($self,$geneid) = @_;
-   my @trans;
-   my %exon;
-   my @translation;
-   # get out exons, transcripts for gene. 
+sub delete {
+    my ($self, $gene_id) = @_;
+    
+    my $db = $self->_db_obj;
+    
+    # Get the transcript, translation and exon IDs for this gene
+    my $sth = $db->prepare(q{
+        SELECT t.id
+          , t.translation
+          , et.exon
+        FROM gene g
+          , transcript t
+          , exon_transcript et
+          , exon e
+        WHERE g.id = t.gene
+          AND t.id = et.transcript
+          AND et.exon = e.id
+          AND g.id = ?
+        });
+    $sth->execute($gene_id);
+    
+    my( %transcript, %translation, %exon );
+    while (my $row = $sth->fetchrow_arrayref) {
+         $transcript{$row->[0]} = 1;
+        $translation{$row->[1]} = 1;
+               $exon{$row->[2]} = 1;
+    }
+    
+    # Deletes which use the gene ID
+    my $gene_delete      = $db->prepare(q{DELETE FROM gene WHERE id = ?});
+    my $gene_type_delete = $db->prepare(q{DELETE FROM genetype WHERE gene_id = ?});
 
-   my $sth = $self->_db_obj->prepare("select id,translation from transcript where gene = '$geneid'");
-   $sth->execute || $self->throw("Could not find any transcript to delete for gene $geneid!");
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@trans,$rowhash->{'id'});
-       push(@translation,$rowhash->{'translation'});
-   }
-
-   foreach my $trans ( @trans ) {
-       my $sth = $self->_db_obj->prepare("select exon from exon_transcript where transcript = '$trans'");
-       $sth->execute || $self->throw("Could not find any exon for transcript $trans!");
-       while( my $rowhash = $sth->fetchrow_hashref) {
-	   $exon{$rowhash->{'exon'}} =1;
-       }
-   }
-
-   foreach my $translation (@translation) {
-       my $sth2 = $self->_db_obj->prepare("delete from translation where id = '$translation'");
-       $sth2->execute || $self->throw("Could not delete translation $translation!");
-   }
-   # delete exons, transcripts, gene rows
-
-   foreach my $exon ( keys %exon ) {
-       my $sth = $self->_db_obj->prepare("delete from exon where id = '$exon'");
-       $sth->execute || $self->throw("Could not delete exon $exon!");
-
-       $sth = $self->_db_obj->prepare("delete from supporting_feature where exon = '$exon'");
-       $sth->execute || $self->("Could not delete supporting features for exon $exon!");
-   }
-
-   foreach my $trans ( @trans ) {
-       my $sth= $self->_db_obj->prepare("delete from transcript where id = '$trans'");
-       $sth->execute || $self->throw("Could not delete transcript $trans!");
-       $sth= $self->_db_obj->prepare("delete from exon_transcript where transcript = '$trans'");
-       $sth->execute || $self->throw("Could not delete exon_transcript rows for transcript $trans!");
-   }
-
-   $sth = $self->_db_obj->prepare("delete from gene where id = '$geneid'");
-   $sth->execute || $self->throw("Could not delete gene $geneid");
+    $gene_delete     ->execute($gene_id);
+    $gene_type_delete->execute($gene_id);
+    
+    # Deletes which use the transcript ID
+    my $transcript_delete      = $db->prepare(q{DELETE FROM transcript WHERE id = ?});
+    my $exon_transcript_delete = $db->prepare(q{DELETE FROM exon_transcript WHERE transcript = ?});
+    
+    foreach my $trans_id (keys %transcript) {
+        $transcript_delete     ->execute($trans_id);
+        $exon_transcript_delete->execute($trans_id);
+    }
+    
+    # Translation delete
+    my $translation_delete = $db->prepare(q{DELETE FROM translation WHERE id = ?});
+    
+    foreach my $transl_id (keys %translation) {
+        $translation_delete->execute($transl_id);
+    }
+    
+    # Deletes which use the exon ID
+    my $exon_delete       = $db->prepare(q{DELETE FROM exon WHERE id = ?});
+    my $supporting_delete = $db->prepare(q{DELETE FROM supporting_feature WHERE exon = ?});
+    
+    foreach my $exon_id (keys %exon) {
+        $exon_delete      ->execute($exon_id);
+        $supporting_delete->execute($exon_id);
+    }
 }   
 
 
@@ -162,12 +176,12 @@ sub delete_Exon{
     $exon_id || $self->throw ("Trying to delete an exon without an exon_id\n");
     
     #Delete exon_transcript rows
-    my $sth = $self->_db_obj->prepare("delete from exon_transcript where transcript = '".$exon_id."'");
-    my $res = $sth ->execute;
+    my $sth = $self->_db_obj->prepare("delete from exon_transcript where exon = '$exon_id'");
+    $sth->execute;
 
     #Delete exon rows
-    $sth = $self->_db_obj->prepare("delete from exon where id = '".$exon_id."'");
-    $res = $sth->execute;
+    $sth = $self->_db_obj->prepare("delete from exon where id = '$exon_id'");
+    $sth->execute;
 
     $self->delete_Supporting_Evidence($exon_id);
 }
@@ -211,8 +225,8 @@ sub get_all_Gene_id{
    my @out;
    my $sth = $self->_db_obj->prepare("select id from gene");
    my $res = $sth->execute || $self->throw("Could not get any gene ids!");
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
+   while (my ($id) = $sth->fetchrow) {
+       push(@out, $id);
    }
    return @out;
 }
@@ -1531,20 +1545,19 @@ sub get_NewId {
 
     $table || $self->throw("Need to provide a table name to get a new id!\n");
     
-    my $query = "select max(id) as id from $table";
+    my $query = "select max(id) from $table";
 
     my $sth   = $self->_db_obj->prepare($query);
-    my $res   = $sth->execute;
-    my $row   = $sth->fetchrow_hashref;
-    my $id    = $row->{id};
+    $sth->execute;
+    my ($id)   = $sth->fetchrow;
 
-    #print(STDERR "max id is $id\n");
+    #print(STDERR "max id is '$id'\n");
     
     if (!defined $id || $id eq "") {
 	$id = $stub . "00000000000";
     }
     
-    #print(STDERR "max id is $id\n");
+    #print(STDERR "max id is '$id'\n");
 
     if ($id =~ /$stub(\d+)$/) {
 	my $newid  = $1;
@@ -1554,7 +1567,7 @@ sub get_NewId {
 	    if ($newid =~ /^0/) {
 		$newid =~ s/^0//;
 	    } else {
-		$self->throw("Can't truncation number string to generate new id [$newid]");
+		$self->throw("Can't truncate number string to generate new id [$newid]");
 	    }
 	}
 	$newid = $stub . $newid;

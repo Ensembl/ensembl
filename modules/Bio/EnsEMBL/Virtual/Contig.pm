@@ -331,7 +331,9 @@ sub windowed_VirtualContig {
 =cut
 
 sub id {
-    my ($self) = @_;
+    my ($self, $id) = @_;
+
+    $self->throw("Not allowed to set id") if defined $id;
 
     return "virtual_contig_".$self->_unique_number;
 }
@@ -1513,9 +1515,11 @@ sub _sanity_check{
 	       $error = 1;
 	       $message .= "Exon has no contig id";
 	   } else {
-	       if( $exon->contig_id ne $self->id ) {
+               my $exon_contig_id = $exon->contig_id;
+               my $virtual_contig_id = $self->id;
+	       if( $exon_contig_id ne $virtual_contig_id ) {
 		   $error = 1;
-		   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
+		   $message .= "Exon [".$exon->id."] seems to be on '$exon_contig_id', not on VirtualContig '$virtual_contig_id'";
 	       }
 	   }
 	   if( !defined $exon->start || !defined $exon->end) {
