@@ -622,8 +622,13 @@ sub fetch_VirtualContig_of_clone{
 =head2 fetch_VirtualContig_of_contig
 
  Title   : fetch_VirtualContig_of_contig
- Usage   : $vc = $stadp->fetch_VirtualContig_of_contig('AC000012.00001',1000);
- Function: Creates a virtual contig of the specified object.  If a context size is given, the vc is extended by that number of basepairs on either side of the contig.  Throws if the contig is not golden.
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_contig(
+                                 'AC000012.00001',1000);
+ Function: Creates a virtual contig of the golden path portion
+           of the specified object.  If a context size is given,
+	   the vc is extended by that number of basepairs on
+	   either side of the contig.  Throws if the contig is
+	   not golden.
  Returns : Virtual Contig object 
  Args    : contig id, [context size in bp]
 
@@ -785,7 +790,7 @@ sub fetch_VirtualContig_of_transcript{
    my ($self,$transcriptid,$size) = @_;
 
    if( !defined $transcriptid ) {
-       $self->throw("Must have gene id to fetch VirtualContig of transcript");
+       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
    }
    if( !defined $size ) {$size=0;}
 
@@ -836,6 +841,72 @@ sub fetch_VirtualContig_of_transcript{
    
 }
 
+
+=head2 fetch_VirtualContig_of_transcript_by_dbID
+
+ Title   : fetch_VirtualContig_of_transcript_by_dbID
+ Usage   : $vc = $stadp->fetch_VirtualContig_of_transcript(123,1000);
+ Function: Creates a virtual contig of the specified object.  If a
+           context size is given, the vc is extended by that number of
+	   basepairs on either side of the gene.  Throws if not golden.
+ Returns : Virtual Contig object 
+ Args    : transcript id, [context size in bp]
+
+
+=cut
+
+sub fetch_VirtualContig_of_transcript_by_dbID{
+   my ($self,$transcriptid,$size) = @_;
+
+   if( !defined $transcriptid ) {
+       $self->throw("Must have transcript id to fetch VirtualContig of transcript");
+   }
+   if( !defined $size ) {$size=0;}
+
+
+   my $type = $self->db->assembly_type()
+    or $self->throw("No assembly type defined");
+
+   my $sth = $self->db->prepare("SELECT  
+   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_end)),
+   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_start)),
+     a.chromosome_id
+  
+                    FROM    exon e,
+                        exon_transcript et,
+                        assembly a
+                    WHERE et.transcript_id=$transcriptid
+                    AND e.exon_id=et.exon_id 
+                    AND a.contig_id=e.contig_id 
+                    AND a.type = '$type' 
+                    ");
+   $sth->execute();
+
+   my ($start,$end,$chr_name);
+   my @start;
+   while ( my @row=$sth->fetchrow_array){
+      ($start,$end,$chr_name)=@row;
+       push @start,$start;
+       push @start,$end;
+   }   
+   
+   my @start_sorted=sort { $a <=> $b } @start;
+
+   $start=shift @start_sorted;
+   $end=pop @start_sorted;
+
+   if( !defined $start ) {
+       $self->throw("Transcript is not on the golden path. Cannot build VC");
+   }
+     
+   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
+                            $start-$size,
+                            $end+$size
+                            );
+   
+}
 
 
 =head2 fetch_VirtualContig_by_clone
