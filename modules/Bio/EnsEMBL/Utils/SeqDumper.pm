@@ -45,7 +45,7 @@ my $DUMP_HANDLERS =
     'GENBANK'   => \&dump_genbank };
 
 my @COMMENTS = 
-  ('This sequence was reannotated via the Ensembl system. Please visit ' .
+  ('This sequence was annotated by the Ensembl system. Please visit ' .
    'the Ensembl web site, http://www.ensembl.org/ for more information.',
 
    'All feature locations are relative to the first (5\') base ' .
@@ -323,7 +323,7 @@ sub dump_embl {
   my $len = $slice->length;
 
   my $version;
-  my $id;
+  my $acc;
 
   my $cs = $slice->coord_system();
   my $name_str = $cs->name() . ' ' . $slice->seq_region_name();
@@ -342,22 +342,24 @@ sub dump_embl {
                                     $cs->version);
 
 
+  my $entry_name = $slice->seq_region_name();
+
   if($full_slice->name eq $slice->name) {
     $name_str .= ' full sequence';
-    $id = $slice->seq_region_name();
-    my @acc_ver = split(/\./, $id);
+    $acc = $slice->seq_region_name();
+    my @acc_ver = split(/\./, $acc);
     if(@acc_ver == 2) {
-      $id = $acc_ver[0];
-      $version = $acc_ver[0] . $acc_ver[1];
+      $acc = $acc_ver[0];
+      $version = $acc_ver[0] . '.'. $acc_ver[1];
     } elsif(@acc_ver == 1 && $cs->version()) {
-      $version = $id . $cs->version();
+      $version = $acc . '.'. $cs->version();
     } else {
-      $version = $id;
+      $version = $acc;
     }
   } else {
     $name_str .= ' partial sequence';
-    $id = $slice->name();
-    $version = $id;
+    $acc = $slice->name();
+    $version = $acc;
   }
 
 
@@ -377,12 +379,12 @@ sub dump_embl {
   #       and it would be hard to come up with another appropriate division
   #       that worked for all organisms (e.g. plants are in PLN but human is
   #       in HUM).
-  my $VALUE = "$id    ENSEMBL; DNA; HTG; $len BP.";
+  my $VALUE = "$entry_name    standard; DNA; HTG; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
   print $FH "XX\n";
 
   #Accession
-  $self->write($FH, $EMBL_HEADER, 'AC', $id);
+  $self->write($FH, $EMBL_HEADER, 'AC', $acc);
   print $FH "XX\n";
 
   #Version
@@ -397,7 +399,7 @@ sub dump_embl {
 
   #Description
   $self->write($FH, $EMBL_HEADER, 'DE', $species->binomial .
-               " $name_str $start..$end reannotated via EnsEMBL");
+               " $name_str $start..$end annotated by Ensembl");
   print $FH "XX\n";
 
   #key words
@@ -459,6 +461,7 @@ sub dump_embl {
 
   $self->write_embl_seq($FH, \$SEQ);
 
+
   print $FH "//\n";
 
   # Set formatting back to normal
@@ -499,7 +502,7 @@ sub dump_genbank {
 ';
 
   my $version;
-  my $id;
+  my $acc;
 
   my $cs = $slice->coord_system();
 
@@ -517,22 +520,24 @@ sub dump_genbank {
                                     $cs->version);
 
 
+  my $entry_name = $slice->seq_region_name();
+
   if($full_slice->name eq $slice->name) {
     $name_str .= ' full sequence';
-    $id = $slice->seq_region_name();
-    my @acc_ver = split(/\./, $id);
+    $acc = $slice->seq_region_name();
+    my @acc_ver = split(/\./, $acc);
     if(@acc_ver == 2) {
-      $id = $acc_ver[0];
+      $acc = $acc_ver[0];
       $version = $acc_ver[0] . $acc_ver[1];
     } elsif(@acc_ver == 1 && $cs->version()) {
-      $version = $id . $cs->version();
+      $version = $acc . $cs->version();
     } else {
-      $version = $id;
+      $version = $acc;
     }
   } else {
     $name_str .= ' partial sequence';
-    $id = $slice->name();
-    $version = $id;
+    $acc = $slice->name();
+    $version = $acc;
   }
 
   my $length = $slice->length;
@@ -545,7 +550,7 @@ sub dump_genbank {
 
   #LOCUS
   my $tag   = 'LOCUS';
-  my $value = "$id $length bp DNA HTG $date";
+  my $value = "$entry_name $length bp DNA HTG $date";
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
 
   #DEFINITION
@@ -555,7 +560,7 @@ sub dump_genbank {
   $self->write($FH, $GENBANK_HEADER, $tag, $value);
 
   #ACCESSION
-  $self->write($FH, $GENBANK_HEADER, 'ACCESSION', $id);
+  $self->write($FH, $GENBANK_HEADER, 'ACCESSION', $acc);
 
   #VERSION
   $self->write($FH, $GENBANK_HEADER, 'VERSION', $version);
@@ -648,8 +653,6 @@ sub _dump_feature_table {
   $self->write(@ff,''      , '/organism="'.$species->binomial . '"');
   $self->write(@ff,''      , '/db_xref="taxon:'.$meta->get_taxonomy_id().'"');
 
-
-
   #
   # Transcripts & Genes
   #
@@ -668,8 +671,8 @@ sub _dump_feature_table {
       if($self->is_enabled($gene_type)) {
         my $db = $self->get_database($gene_dbs->{$gene_type});
         if($db) {
-          push @gene_slices, $db->get_SliceAdaptor->fetch_by_chr_start_end
-            ($slice->chr_name, $slice->chr_start, $slice->chr_end);
+          my $sa = $db->get_SliceAdaptor();
+          push @gene_slices, $sa->fetch_by_name($slice->name());
         } else {
           warning("A [". $gene_dbs->{$gene_type} ."] database must be " .
                   "attached to this SeqDumper\n(via a call to " .
@@ -791,12 +794,15 @@ sub _dump_feature_table {
   # repeats
   #
   if($self->is_enabled('repeat')) {
-    foreach my $repeat (@{$slice->get_all_RepeatFeatures}) {
+    my $rfs = $slice->get_all_RepeatFeatures();
+
+    foreach my $repeat (@$rfs) {
       $self->write(@ff, 'repeat_region', $self->features2location([$repeat]));
       $self->write(@ff, ''    , '/note="' . $repeat->repeat_consensus->name.
 		   ' repeat: matches ' . $repeat->hstart.'..'.$repeat->hend .
 		   '('.$repeat->hstrand.') of consensus"');
     }
+
   }
 
   #
@@ -920,7 +926,6 @@ sub features2location {
     } else {
       my @fs = ();
       #this feature is outside the boundary of the dump,
-      #XXX TBD This should probably be CLONE coords but 2 step mapping is not
       # yet implemented and 'seqlevel' is guaranteed to be 1step
       my $projection = $f->project('seqlevel');
       foreach my $segment (@$projection) {
