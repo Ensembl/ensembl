@@ -500,7 +500,7 @@ sub set_seq_region_attrib {
 
   $sth->finish();
 
-  if(!defined($atid)) {
+  if( $self->db->db_handle->{'mysql_info'} == 0 ){
     # the insert failed because the code is already stored
     $sth = $self->prepare
       ("SELECT attrib_type_id FROM attrib_type " .
