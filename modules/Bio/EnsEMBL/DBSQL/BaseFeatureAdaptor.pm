@@ -424,7 +424,6 @@ sub fetch_all_by_Slice_constraint {
   }
 
   #for speed the remapping to slice may be done at the time of object creation
-  warn( "$constraint" );
   my $features = 
     $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
