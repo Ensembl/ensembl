@@ -31,7 +31,7 @@ Creation:
 Manipulation:
 
      my $sql    = $dna->sql;                # Returns sql needed for entering into the database
-     my $sql    = $dna->sql_next            # Returns the sql one sequence at a time
+     my ($contig,@sql)  = $dna->sql_next            # Returns the sql one sequence at a time
      my $result = $dna->insert($dbh)        # Inserts sql into the database whose handle is $dbh
      my $result = $dna->insert_next($dbh)   # Inserts sql into the database whose handle is $dbh
                                             # a sequence at a time
@@ -147,8 +147,8 @@ sub sql {
   
   my @outstr;
 
-  while (my ($str,$contig) = $self->sql_next) {
-    push(@outstr,$str);
+  while (my ($contig,@sql) = $self->sql_next) {
+    push(@outstr,@sql);
   }
   return @outstr;
 }
@@ -160,7 +160,7 @@ sub sql {
   Title   : sql_next
   Usage   : $dna->sql_next
   Function: Returns sql for the ensembl DNA table one sequence at a time
-  Returns : String
+  Returns : String,Array of Strings
   Args    : none
 
 =cut
@@ -176,10 +176,11 @@ sub sql_next {
     
     my $seqstr = $seq->seq;
     my $date   = `date '+%Y-%m-%d'`; chomp $date;
+    my @str; 
+    push(@str, "insert into dna(contig,sequence,created) values('$contig','$seqstr','$date')");
+    push(@str, "replace into contig(id,dna) values('$contig',LAST_INSERT_ID())");
     
-    my $str    = "insert into dna(contig,sequence,created) values('$contig','$seqstr','$date')";
-    
-    return ($str,$contig);
+    return ($contig,@str);
   } else {
     return;
   }
@@ -227,12 +228,19 @@ sub get_seq {
 sub insert {
   my ($self,$dbh) = @_;
 
+  if (!$self->locked) {
+    $self->lock($dbh);
+  }
+
   my @sql = $self->sql;
   my $rv;
   foreach my $line (@sql) {
     my $sth = $dbh->prepare($line);
        $rv  = $sth->execute;
   }
+
+  $self->unlock($dbh);
+
   return $rv;
 }
 
@@ -249,15 +257,88 @@ sub insert {
 sub insert_next {
   my ($self,$dbh) = @_;
 
-  my ($sql,$contig) = $self->sql_next;
+  my ($contig,@sql) = $self->sql_next;
 
-  if ($sql) {
-    my $sth = $dbh->prepare($sql);
-    my $rv  = $sth->execute;
+  if (!$self->locked) {
+    $self->lock($dbh);
+  }
 
+  if ($#sql >= 0) {
+    my $rv = 0;
+    foreach my $line (@sql) {
+      my $sth = $dbh->prepare($line);
+         $rv  = $sth->execute;
+    }
     return $contig if $rv;
   }
 }
+
+=head2 locked 
+
+  Title   : locked
+  Usage   : $f = $dna->locked
+  Function: Returns whether the contig and dna tables are locked
+  Returns : 0,1
+  Args    : none
+
+=cut
+
+sub locked {
+  my ($self) = @_;
+  
+  if (!defined($self->{_LOCKED})) {
+     $self->{_LOCKED} = 0;
+  }
+  print("Tables are " . $self->{_LOCKED} . "\n");
+  return $self->{_LOCKED};
+
+}
+
+=head2  lock
+
+  Title   : lock 
+  Usage   : $dna->lock($dbh)
+  Function: Locks dna and contig tables so we can update them
+  Returns : 1,0
+  Args    : $dbh = DBI->connect('DBI:mysql:pog','root','');
+
+=cut
+
+sub lock {
+  my ($self,$dbh) = @_;
+
+  my $sth = $dbh->prepare('lock tables dna write,contig write');
+  my $rv  = $sth->execute;
+  
+  if ($rv) {
+    $self->{_LOCKED} = 1;
+  } else {
+    $self->{_LOCKED} = 0;
+  }
+  return $rv;
+}
+
+=head2  unlock
+
+  Title   : unlock
+  Usage   : $dna->unlock($dbh)
+  Function: unlocks tables
+  Returns : 1,0
+  Args    : $dbh = DBI->connect('DBI:mysql:pog','root','');                     
+                                                           
+=cut                                                       
+    
+sub unlock {
+  my ($self,$dbh) = @_;
+                       
+  my $sth = $dbh->prepare('unlock tables');
+  my $rv  = $sth->execute;
+
+  return $rv;
+}                         
+   
+
+
 
 
 1;
