@@ -552,12 +552,6 @@ sub _transform_to_RawContig {
     if (defined($self->modified)) {
       $stickyExon->modified($self->modified);
     }
-    #  print STDERR "transformed sticky exon ".$stickyExon->gffstring."\n";
-    print STDERR "returning an sticky exon\n";
-    print STDERR "sticky: ".$stickyExon->gffstring."\n";
-    foreach my $component ( @{$stickyExon->get_all_component_Exons} ){
-      print STDERR "component: ".$component->gffstring."\n";
-    }
     return $stickyExon;
     
   } else {
