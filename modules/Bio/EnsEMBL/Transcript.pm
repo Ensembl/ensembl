@@ -459,7 +459,7 @@ sub translateable_exons{
     }
 
     if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
-	$self->throw("Unable to find end translation exon");
+	$self->throw("Unable to find end translation exon ".$self->translation->end_exon_id()." for transcript ".$self->id);
     }
 
 
