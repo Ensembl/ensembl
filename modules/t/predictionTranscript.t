@@ -5,13 +5,12 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 34;
+	plan tests => 32;
 }
 
 use MultiTestDB;
 use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::PredictionTranscript;
-use Bio::EnsEMBL::Exon;
 
 our $verbose = 0;
 
@@ -26,207 +25,228 @@ my $db = $multi->get_DBAdaptor( "core" );
 
 my $sa = $db->get_SliceAdaptor();
 
-my $slice = $sa->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
+my $slice = $sa->fetch_by_region("chromosome", "20", 30_252_000, 31_252_001 );
 
 my $p_transs = $slice->get_all_PredictionTranscripts();
 
 #
 # 2 Verify prediciton transcripts can be obtained
 #
+debug( "Retrieved ".scalar( @$p_transs )." PredictionTranscripts." );
 ok( scalar( @$p_transs ) );
 
 
-if($verbose) {
-  foreach my $pt (@$p_transs) {
-    print $pt->stable_id , "\n";
-  }
+foreach my $pt (@$p_transs) {
+  debug( "dbID: ".$pt->dbID()." Start: ".$pt->start." End: ".$pt->end() , "\n" );
 }
 
-my ($pt) = @$p_transs;
+my $pt = $p_transs->[0];
 
 my $exons = $pt->get_all_Exons;
 
 #
 # 3 test get all exons
 #
+debug( "First PT had ".scalar( @$exons ). " exons." );
 ok(scalar @$exons);
 
 #
 #  4 test new
 #
-my $new_pt = new Bio::EnsEMBL::PredictionTranscript(@$exons);
+my $new_pt = new Bio::EnsEMBL::PredictionTranscript( -exons => $exons);
 ok(scalar @{$new_pt->get_all_Exons});
 
 #
 # 5 test stable_id
 #
-ok($pt->stable_id =~ /(\w+\.\d+\.\d+\.\d+)\.(\d+)\.(\d+)/);
-#my ($ctg, $ctg_start, $ctg_end) = ($1, $2, $3);
+# ok($pt->stable_id =~ /.*/ );
 
 
 #
-# 6 test coding start
-#
-ok(&TestUtils::test_getter_setter($pt, 'coding_region_start', 6));
-
-#
-# 7 test coding end
-#
-ok(&TestUtils::test_getter_setter($pt, 'coding_region_end', 7));
-
-
-#
-# 8 test start
+# 6 test start
 #
 ok(&TestUtils::test_getter_setter($pt, 'start', 8));
 
 #
-# 9 test end
+# 7 test end
 #
 ok(&TestUtils::test_getter_setter($pt, 'end', 9));
 
 
 #
-# 10 test analysis 
+# 8 test analysis 
 #
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('Vertrna');
 ok(&TestUtils::test_getter_setter($pt, 'analysis', $analysis));
 
 #
-# 11 test dbID
+# 9 test dbID
 #
 ok(&TestUtils::test_getter_setter($pt, 'dbID', 11));
 
 #
-# 12 test adaptor
+# 10 test adaptor
 #
 my $pta = $db->get_PredictionTranscriptAdaptor;
 ok(&TestUtils::test_getter_setter($pt, 'adaptor', $pta));
 
 #
-# 13-17 test add Exon
+# 11-14 test add Exon
 #
+$pt = new Bio::EnsEMBL::PredictionTranscript();
+
 my $exon = new Bio::EnsEMBL::Exon;
-$exon->start($pt->start - 20);
-$exon->end($pt->end + 20);
-
-my @old_exons = @{$pt->get_all_Exons};
-my $count = scalar(@old_exons);
-
+$exon->start(40);
+$exon->end(50);
+$exon->slice( $slice );
+$exon->strand( 1 );
 $pt->add_Exon($exon);
+
+$exon = new Bio::EnsEMBL::Exon;
+$exon->start(20);
+$exon->end(30);
+$exon->slice( $slice );
+$exon->strand( 1 );
+$pt->add_Exon($exon);
+
+$exon = new Bio::EnsEMBL::Exon;
+$exon->start( 1 );
+$exon->end(10);
+$exon->slice( $slice );
+$exon->strand( 1 );
+$pt->add_Exon($exon);
+
+
 #check that transcript start + end updated
-ok($pt->start == $exon->start);
-ok($pt->end == $exon->end);
-$exons = $pt->get_all_Exons( 1 );
-#check that there is one more exon
-ok($count + 1 == scalar(@$exons)); 
-#check that the last exon is the exon added
-ok($exons->[$#$exons] eq $exon); 
+ok( $pt->end() == 50 );
+ok( $pt->start() == 1 );
 
-$pt->add_Exon($exon, 3);
-#check that third exon is exon added
-ok($exons->[2] eq $exon); 
+my $all_exons = $pt->get_all_Exons();
+ok( $all_exons->[0]->start() == 1 );
+ok( $all_exons->[2]->end() == 50 );
+
+#
+# 15-18 -1 strand checks for add_Exon
+#
+
+$pt = new Bio::EnsEMBL::PredictionTranscript();
+
+$exon = new Bio::EnsEMBL::Exon;
+$exon->start(40);
+$exon->end(50);
+$exon->slice( $slice );
+$exon->strand( -1 );
+$pt->add_Exon($exon);
+
+$exon = new Bio::EnsEMBL::Exon;
+$exon->start( 1 );
+$exon->end(10);
+$exon->slice( $slice );
+$exon->strand( -1 );
+$pt->add_Exon($exon);
+
+$exon = new Bio::EnsEMBL::Exon;
+$exon->start(20);
+$exon->end(30);
+$exon->slice( $slice );
+$exon->strand( -1 );
+$pt->add_Exon($exon);
+
+ok( $pt->end() == 50 );
+ok( $pt->start() == 1 );
+
+$all_exons = $pt->get_all_Exons();
+ok( $all_exons->[0]->start() == 40 );
+ok( $all_exons->[2]->end() == 10 );
+
+
+
+
 
 
 #
-# 18-22 test flush exons
+# 19-23 test flush exons
 #
+debug( "Flush exons effect test" );
 $pt->flush_Exons;
 ok(scalar @{$pt->get_all_Exons} == 0);
+debug( "pt->start ".($pt->start()||"undef") );
 ok(!defined $pt->start);
+debug( "pt->end ".($pt->end()||"undef") );
 ok(!defined $pt->end);
+debug( "pt->coding_start ".($pt->coding_start()||"undef") );
 ok(!defined $pt->coding_start);
+debug( "pt->coding_end ".($pt->coding_end()||"undef") );
 ok(!defined $pt->coding_end);
 
-#restore old exons
-my $pos = 0;
-while(@old_exons) {
-  $pos++;
-  my $e = shift @old_exons;
-  $pt->add_Exon($e, $pos);
-}
 
 #
-# 23 test get_all_translateable_Exons
+# 24 test get_all_translateable_Exons
 #
+$pt = $p_transs->[0];
+
 ok(scalar @{$pt->get_all_translateable_Exons} == scalar @{$pt->get_all_Exons});
 
-#
-# 24 test sort executes
-#
-ok($pt->sort || 1);
 
 #
-# 25 test get_exon_count
-#
-ok($pt->get_exon_count == scalar @{$pt->get_all_Exons});
-
-#
-# 26 test set_exon_count
-#
-$count = $pt->get_exon_count;
-$pt->set_exon_count(26);
-ok(scalar @{$pt->get_all_Exons( 1 )} == 26); # test internal exon array expansion
-$pt->set_exon_count($count);
-
-#
-# 27 test length
+# 25 test length
 #
 my $len = 0;
 foreach my $ex (@{$pt->get_all_Exons}) {
-  if( defined $ex ) { $len += $ex->length };
+  $len += $ex->length();
 }
 ok($len == $pt->length);
 
 #
-# 28 test translate
+# 26 test translate
 #
-ok(length $pt->translate->seq);
+my $translated = $pt->translate->seq();
+debug( "Translated sequence: $translated" );
+ok( $translated );
 
 #
-# 29 test get cdna
+# 27 test spliced_seq()
 #
-my $cstart = 1;
-my $cend   = $pt->length;
-ok(length $pt->get_cdna($cstart, $cend));
+my $spliced_seq = $pt->spliced_seq();
+debug( "Spliced seq: ".$spliced_seq );
+ok( $spliced_seq );
 
 #
-# 30 test pep2genomic
+# 28 test pep2genomic
 #
 my $pend = $pt->length / 3;
 my $pstart = 2;
 
 my $defined_exons_count = 0;
 foreach my $e (@{$pt->get_all_Exons}) {
-  if(defined $e) {
     $defined_exons_count++;
-  }
 }
 # should return genomic coords for each exon since covers entire peptide
 ok($defined_exons_count == $pt->pep2genomic($pstart, $pend));
 
 
 #
-# 31 test cdna2genomic
+# 29 test cdna2genomic
 #
-ok($defined_exons_count == $pt->cdna2genomic($cstart, $cend));
+
+ok($defined_exons_count == $pt->cdna2genomic( 1, $pt->length()));
 
 
 #
-# 32 test type
+# 30 test type
 #
 ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
 
 #
-# 33 test fetch_by_stable_id
+# 31 test fetch_by_stable_id
 #
 
-my $stable_id = 'AL031658.11.1.162976.122801.143660';
+#my $stable_id = 'AL031658.11.1.162976.122801.143660';
 
-$pt = $pta->fetch_by_stable_id($stable_id);
-ok($pt->stable_id eq $stable_id);
+#$pt = $pta->fetch_by_stable_id($stable_id);
+#ok($pt->stable_id eq $stable_id);
 
-# 34 list_dbIDs
+# 32 list_dbIDs
 my $ids = $pta->list_dbIDs();
 ok (@{$ids});
 
