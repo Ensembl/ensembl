@@ -1039,54 +1039,54 @@ sub get_supporting_evidence {
 	my $statement = "select * from feature where seq_start = " . $exon->start . " and seq_end = " . $exon->end;
     #my $statement = "select * from supporting_feature where exon in (" . $instring . ")";
 	print STDERR "going to execute... [$statement]\n";
-
+	
 	my $sth = $self->_db_obj->prepare($statement);
 	$sth->execute || $self->throw("execute failed for supporting evidence get!");
-
-
-
+	
+	
+	
 	while (my $rowhash = $sth->fetchrow_hashref) {
-	my $f1 = new Bio::EnsEMBL::SeqFeature;
-	my $f2 = new Bio::EnsEMBL::SeqFeature;
-	
-	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
-					      -feature2 => $f2);
-
-	my $exon = $rowhash->{exon};
-
+	    my $f1 = new Bio::EnsEMBL::SeqFeature;
+	    my $f2 = new Bio::EnsEMBL::SeqFeature;
+	    
+	    my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
+						  -feature2 => $f2);
+	    
+	    my $exon = $rowhash->{exon};
+	    
 #	$f1->seqname($rowhash->{contig});
-	$f1->seqname("Supporting_feature");
-	$f1->start  ($rowhash->{seq_start});
-	$f1->end    ($rowhash->{seq_end});
-	$f1->strand ($rowhash->{strand});
-	$f1->source_tag($rowhash->{name});
-	$f1->primary_tag('similarity');
-	$f1->score  ($rowhash->{score});
-	
-	$f2->seqname($rowhash->{hid});
-	$f2->start  ($rowhash->{hstart});
-	$f2->end    ($rowhash->{hend});
-	$f2->strand ($rowhash->{strand});
-	$f2->source_tag($rowhash->{name});
-	$f2->primary_tag('similarity');
-	$f2->score  ($rowhash->{score});
-
-	my $analysisid = $rowhash->{analysis};
-
-	if ($anahash{$analysisid}) {
-	    $f->analysis($anahash{$analysisid});
-
-	} else {
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
-	    $f->analysis($feature_obj->get_Analysis($analysisid));
-
-	    $anahash{$analysisid} = $f->analysis;
+	    $f1->seqname("Supporting_feature");
+	    $f1->start  ($rowhash->{seq_start});
+	    $f1->end    ($rowhash->{seq_end});
+	    $f1->strand ($rowhash->{strand});
+	    $f1->source_tag($rowhash->{name});
+	    $f1->primary_tag('similarity');
+	    $f1->score  ($rowhash->{score});
+	    
+	    $f2->seqname($rowhash->{hid});
+	    $f2->start  ($rowhash->{hstart});
+	    $f2->end    ($rowhash->{hend});
+	    $f2->strand ($rowhash->{strand});
+	    $f2->source_tag($rowhash->{name});
+	    $f2->primary_tag('similarity');
+	    $f2->score  ($rowhash->{score});
+	    
+	    my $analysisid = $rowhash->{analysis};
+	    
+	    if ($anahash{$analysisid}) {
+		$f->analysis($anahash{$analysisid});
+		
+	    } else {
+		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+		$f->analysis($feature_obj->get_Analysis($analysisid));
+		
+		$anahash{$analysisid} = $f->analysis;
+	    }
+	    
+	    $f->validate;
+	    
+	    $exon->add_Supporting_Feature($f);
 	}
-	
-	$f->validate;
-
-	$exhash{$exon->id}->add_Supporting_Feature($f);
-    }
     }
 
 }
