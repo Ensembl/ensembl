@@ -46,7 +46,7 @@ package Bio::EnsEMBL::AffyProbe;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange ) ;
 use Bio::EnsEMBL::Utils::Exception qw( throw warning );
-
+use Bio::EnsEMBL::Storable;
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
@@ -85,7 +85,7 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my($arrays, $probenames, $probeset, $arraynames, $arrayname, $probename, $array ) =
-      rearrange(['ARRAYS', 'NAMES', 'PROBESET', 'ARRAYNAMES', 'ARRAYNAME', 'NAME', 'ARRAY' ],
+      rearrange(['ARRAYS', 'NAMES', 'PROBESET', 'ARRAYNAMES', 'ARRAYNAME', 'NAME', 'ARRAY' ], 
 		@_);
 
   my $i;
@@ -122,6 +122,8 @@ sub new {
       throw( "Need to provide arrays or names for a probe" );
   }
   
+#  $self->dbID( $probe_id ) if $probe_id;
+#  $self->adaptor( $adaptor ) if $adaptor;
   $self->{'probeset'} = $probeset;
 
   return $self;
@@ -167,14 +169,13 @@ sub add_Array_probename {
 =cut
 
 sub get_all_AffyFeatures {
-    my $self = shift;
-    if( $self->adaptor() && $self->dbID() ) {
-	return $self->adaptor()->db()->get_AffyFeatureAdaptor()->
-	    fetch_all_by_AffyProbe( $self );
-    } else {
-	warning( "Need to have attached features or database connection for that" );
-	return [];
-    }    
+  my $self = shift;
+  if( $self->adaptor() && $self->dbID() ) {
+    return $self->adaptor()->db()->get_AffyFeatureAdaptor()->fetch_all_by_AffyProbe( $self );
+  } else {
+    warning( "Need to have attached features or database connection for that" );
+    return [];
+  }    
 }
 
 

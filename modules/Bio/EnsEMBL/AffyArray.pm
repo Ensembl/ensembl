@@ -46,6 +46,8 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning );
 
 use vars qw(@ISA);
 
+use Bio::EnsEMBL::Storable;
+
 @ISA = qw(Bio::EnsEMBL::Storable);
 
 
