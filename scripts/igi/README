@@ -4,8 +4,10 @@ Just a little documentation on how this is supposed to work:
 - go to some igi working directory
 - get all the data files
 - make subdirs for each data source, containing their data file(s)
-- run all-collates.sh. This will prepare one big gtf file foreach data source
-- run all-merges.sh. This will run all the pairwise, triple, (and higher) merges
-  on all the single-source gtf files
-- run all-stats.sh. This will run all the statistics on each of the merges .
-- more to come!
+- run all-collates.sh. This will (or should) prepare one big gtf file foreach
+  data source. The data is now ready to be merged. 
+- run all-merges.sh. This will (or should) run all the pairwise, triple, (and
+  higher) merges on all the single-source gtf files, and dump the resulting
+  merged files into sub-directory merges/
+- run all-stats.sh. This will run all the statistics on each of the
+  merges. The output goes into sub-directory stats/
