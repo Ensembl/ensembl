@@ -70,101 +70,84 @@ sub _initialize {
     my($self,@args) = @_;
   
     my $make = $self->SUPER::_initialize;
-    my ($id,$clone_dir,$disk_id,$gs,$seq,$type,$debug)=@args;
+
+    my ($id,$clone_dir,$disk_id,$gs,$seq,$debug)=@args;
 
     $id                   || $self->throw("Cannot make contig_feature object without id");
     $clone_dir            || $self->throw("Cannot make contig_feature object without clone_dir");
     $disk_id              || $self->throw("Cannot make contig_feature object without disk_id");
     $gs                   || $self->throw("Cannot make contig_feature object without gs object");
-
-    $gs->isa('Bio::EnsEMBL::Analysis::Genscan') ||   $self->throw("$gs is not a gs object in new contig_feature");
     $seq                  || $self->throw("Cannot make contig_feature object without seq object");
-    $seq->isa('Bio::Seq') || $self->throw("$seq is not a seq object in new contig_feature");
+    
+    $self->id       ($id);
+    $self->clone_dir($clone_dir);
+    $self->disk_id  ($disk_id);
+    $self->gs       ($gs);
+    $self->seq      ($seq);
 
     $self->_debug(1) if $debug;
-
-
     $self->{_features} = [];   # This stores the features.
-
-    $self->id($id);
-
-
-    # read 2 types of features
-    # 1. features aligned against contigs (no remapping required)
-    # 2. features aligned against transcripts (remapping required)
+    $self->{_repeats}  = [];   # This stores the features.
     
-
     # DEBUG
     print_genes($gs,$seq) if $self->_debug;
-  
-    # mapping of data to filenames
-    my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp' ,'PEP-PEP' ],
-		   ['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp'  ,'PEP-DNA'],
-		   ['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp'  ,'PEP-DNA' ],
-		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ,'PEP-DNA' ],
-		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ,'PEP-DNA' ],
-		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ,'PEP-PEP' ],
-		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff'  ,'DNA-DNA'],
-		   ];
+
+    return $make;
+}
+
+sub read_Similarities {
+    my ($self) = @_;
+
+    my $gs        = $self->gs;
+    my $msptype   = $self->msptype;
+    my $clone_dir = $self->clone_dir;
+    my $disk_id   = $self->disk_id;
+    my $id        = $self->id;
 
     # loop over transcripts
     my $count = 1;
 
-    if ($type eq 'repeat') {
-	$self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
-    } elsif ($type eq 'similarity') {
-
-	$self->read_Genscan($gs);
-
-	foreach my $g ($gs->each_Transcript) {
-	    my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
+    foreach my $g ($gs->each_Transcript) {
+	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
+	
+	foreach my $msp (@$msptype) {
 	    
-	    foreach my $msp (@$msptype) {
+	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
+	    my $pid            = "$id.$count";
+	    
+	    if ($msp->[5]     eq 'msp'){
+		$self->read_MSP($mspfile,$genpep,$msp);
 		
-		my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
-		my $pid            = "$id.$count";
+	    } elsif ($msp->[5] eq 'pfam'){
+		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
 		
-		if ($msp->[5]     eq 'msp'){
-		    $self->read_MSP($mspfile,$genpep,$msp);
-		    
-		} elsif ($msp->[5] eq 'pfam'){
-		    $self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
-		    
-		} elsif ($msp->[5] eq 'gff'){
-		    
-		    
-		} else {
-		    $self->throw("no parser for $$msp[5] defined");
-		}
+	    } elsif ($msp->[5] eq 'gff'){
 		
+		
+	    } else {
+		$self->throw("no parser for $$msp[5] defined");
 	    }
 	    
-	    my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
-	    
-	    foreach my $homol (@homols) {
-		$self->add_Feature($homol);
-	    }
-	    
-	    $count++;    
 	}
-    } else {
-	$self->throw("Feature type [$type] not recognized");
+	
+	my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
+	
+	foreach my $homol (@homols) {
+	    $self->add_Feature($homol);
+	}
+	
+	$count++;    
     }
-    
-    return $make;
 }
 
-sub id {
-    my ($self,$id) = @_;
 
-    if (defined($id)) {
-	$self->{_id} = $id;
-    }
-    return $self->{_id};
-}
 
 sub read_Repeats {
-    my ($self,$clone_dir,$disk_id,$msp) = @_;
+    my ($self) = @_;
+    
+    my $clone_dir = $self->clone_dir;
+    my $disk_id   = $self->disk_id;
+    my $msp       = $self->msptype->[6];
 
     my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
 
@@ -183,7 +166,8 @@ sub read_Repeats {
 
     my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile,
 						     -type => 'Repeat');
-	    
+	  
+
     foreach my $f ($GFF->each_Feature) {
 	$f->analysis($analysis);
 	$self->add_Feature($f);
@@ -266,8 +250,6 @@ sub read_Genscan {
 	    if (defined($ex->score)) {
 		$f->score($ex->score);
 	    }
-
-#	    $self->add_Feature($f);
 	}
     }
 }
@@ -278,13 +260,11 @@ sub add_Feature {
     $self->throw("Feature must be Bio::EnsEMBL::SeqFeatureI in add_Feature") 
 	unless $f->isa("Bio::EnsEMBL::SeqFeatureI");
 
-    if (!defined($self->{_features})) {
-	$self->{_features} = [];
-	$self->warn("The feature array does not exist!! Creating an empty one");
+    if ($f->isa("Bio::EnsEMBL::Repeat")) {
+	push(@{$self->{_repeats}},$f);
+    } else {
+	push(@{$self->{_features}},$f);
     }
-
-
-    push(@{$self->{_features}},$f);
 }
 
 sub each_Feature {
@@ -295,8 +275,14 @@ sub each_Feature {
     } 
 }
 
+sub each_Repeat {
+    my ($self) = @_;
+    
+    if (defined($self->{_repeats})) {
+	return @{$self->{_repeats}};
+    } 
+}
 
-		
 sub print_gene_details {
     my ($g,$count) = @_;
   
@@ -397,5 +383,139 @@ sub _debug{
     }
     return $obj->{'_debug'};
 }
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($clonedir)
+ Function: 
+ Returns : 
+ Args    : string 
+
+
+=cut
+
+sub id {
+    my ($self,$id) = @_;
+
+    if (defined($id)) {
+	$self->{_id} = $id;
+    }
+    return $self->{_id};
+}
+
+=head2 clone_dir
+
+ Title   : clone_dir
+ Usage   : $obj->clone_dir($clonedir)
+ Function: 
+ Returns : 
+ Args    : string 
+
+
+=cut
+
+sub clone_dir {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_clone_dir} = $arg;
+    }
+
+    return $self->{_clone_dir};
+}
+
+=head2 disk_id
+
+ Title   : disk_id
+ Usage   : $obj->disk_id($diskid)
+ Function: 
+ Returns : 
+ Args    : string 
+
+
+=cut
+
+sub disk_id {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_disk_id} = $arg;
+    }
+
+    return $self->{_disk_id};
+}
+
+=head2 gs
+
+ Title   : gs
+ Usage   : $obj->gs($genscan)
+ Function: 
+ Returns : 
+ Args    : Bio::EnsEMBL::Analysis::Genscan
+
+
+=cut
+
+sub gs {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$arg->isa('Bio::EnsEMBL::Analysis::Genscan') ||   $self->throw("$arg is not a gs object in new contig_feature");	
+	$self->{_gs} = $arg;
+    }
+
+    return $self->{_gs};
+}
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $obj->seq($seq)
+ Function: 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub seq {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$arg->isa('Bio::Seq') || $self->throw("$arg is not a seq object in new contig_feature");
+	$self->{_seq} = $arg;
+    }
+
+    return $self->{_seq};
+}
+
+=head2 msptype
+
+ Title   : msptype
+ Usage   : $obj->msptype
+ Function: 
+ Returns : [][]
+ Args    : 
+
+
+=cut
+
+sub msptype {
+    my ($self) = @_;
+    
+    # mapping of data to filenames
+    my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp' ,'PEP-PEP' ],
+		   ['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp'  ,'PEP-DNA'],
+		   ['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp'  ,'PEP-DNA' ],
+		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ,'PEP-DNA' ],
+		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ,'PEP-DNA' ],
+		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ,'PEP-PEP' ],
+		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff'  ,'DNA-DNA'],
+		   ];
+    return $msptype;
+
+}
+
 1;
 
