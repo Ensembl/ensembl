@@ -69,6 +69,8 @@ use Bio::EnsEMBL::ChainedAssemblyMapper;
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
+use integer; #do proper arithmetic bitshifts
+
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
@@ -243,35 +245,37 @@ sub register_assembled {
   my @chunk_regions;
   #determine span of chunks
   #bitwise shift right is fast and easy integer division
-  my $start_chunk = $asm_start >> $CHUNKFACTOR;
-  my $end_chunk   = $asm_end   >> $CHUNKFACTOR;
-  {
+ 
 
-    #find regions of continuous unregistered chunks
-    my $i;
-    my ($begin_chunk_region,$end_chunk_region);
-    for ($i = $start_chunk; $i <= $end_chunk; $i++) {
-      if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
-        if(defined($begin_chunk_region)) {
-          #this is the end of an unregistered region.
-          my $region = [($begin_chunk_region   << $CHUNKFACTOR),
-                        ($end_chunk_region     << $CHUNKFACTOR)-1];
-          push @chunk_regions, $region;
-          $begin_chunk_region = $end_chunk_region = undef;
-        }
-      } else {
-        $begin_chunk_region = $i if(!defined($begin_chunk_region));
-        $end_chunk_region   = $i+1;
-        $asm_mapper->register_assembled($asm_seq_region,$i);
+  my($start_chunk, $end_chunk);
+
+  $start_chunk = $asm_start >> $CHUNKFACTOR;
+  $end_chunk   = $asm_end   >> $CHUNKFACTOR;
+
+  #find regions of continuous unregistered chunks
+  my $i;
+  my ($begin_chunk_region,$end_chunk_region);
+  for ($i = $start_chunk; $i <= $end_chunk; $i++) {
+    if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
+      if(defined($begin_chunk_region)) {
+        #this is the end of an unregistered region.
+        my $region = [($begin_chunk_region   << $CHUNKFACTOR),
+                      ($end_chunk_region     << $CHUNKFACTOR)-1];
+        push @chunk_regions, $region;
+        $begin_chunk_region = $end_chunk_region = undef;
       }
+    } else {
+      $begin_chunk_region = $i if(!defined($begin_chunk_region));
+      $end_chunk_region   = $i+1;
+      $asm_mapper->register_assembled($asm_seq_region,$i);
     }
+  }
 
-    #the last part may have been an unregistered region too
-    if(defined($begin_chunk_region)) {
-      my $region = [($begin_chunk_region << $CHUNKFACTOR),
-                    ($end_chunk_region   << $CHUNKFACTOR) -1];
-      push @chunk_regions, $region;
-    }
+  #the last part may have been an unregistered region too
+  if(defined($begin_chunk_region)) {
+    my $region = [($begin_chunk_region << $CHUNKFACTOR),
+                  ($end_chunk_region   << $CHUNKFACTOR) -1];
+    push @chunk_regions, $region;
   }
 
   return if(!@chunk_regions);
@@ -281,8 +285,10 @@ sub register_assembled {
     $asm_mapper->flush();
     #we now have to go and register the entire requested region since we 
     #just flushed everything
+    
     @chunk_regions = ( [ ( $start_chunk << $CHUNKFACTOR)
                          , (($end_chunk+1) << $CHUNKFACTOR)-1 ] );
+
     for( my $i = $start_chunk; $i <= $end_chunk; $i++ ) {
       $asm_mapper->register_assembled( $asm_seq_region, $i );
     }

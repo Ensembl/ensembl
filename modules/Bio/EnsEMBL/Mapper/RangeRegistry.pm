@@ -63,7 +63,7 @@ use strict;
 package Bio::EnsEMBL::Mapper::RangeRegistry;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
-
+use integer;
 
 =head2 new
 
@@ -149,7 +149,7 @@ sub check_and_register {
   }
 
   if($rstart >$rend) {
-    throw("rend argument must be less than end argument");
+    throw("rend [$rstart] argument must be less than rend [$rend]  argument");
   }
 
   if($rstart > $start) {

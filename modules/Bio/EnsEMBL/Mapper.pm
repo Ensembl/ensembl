@@ -51,6 +51,7 @@ Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::Mapper;
 use strict;
+use integer;
 
 use Bio::EnsEMBL::Mapper::Pair;
 use Bio::EnsEMBL::Mapper::Unit;
