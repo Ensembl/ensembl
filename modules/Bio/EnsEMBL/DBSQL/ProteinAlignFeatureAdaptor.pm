@@ -91,7 +91,7 @@ sub store{
 
    foreach my $sf ( @sf ) {
      if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaPepAlignFeature") ) {
-       $self->throw("Feature must be a Bio::EnsEMBL::ProteinAlignFeature, " .
+       $self->throw("Feature must be a Bio::EnsEMBL::DnaPepAlignFeature, " .
 		    "not a [$sf]");
      }
      
@@ -107,6 +107,7 @@ sub store{
      }
 
      my $contig = $sf->entire_seq();
+     #print STDERR $contig."\n";
      unless(defined $contig && $contig->isa("Bio::EnsEMBL::RawContig")) { 
        $self->throw("Cannot store feature without Contig attached via " .
 		    "attach_seq\n");
@@ -200,5 +201,11 @@ sub _columns {
 	     analysis_id contig_strand hit_start hit_end hit_name cigar_line
 	     evalue perc_ident score );
 }
+
+
+
+
+
+
 
 1;

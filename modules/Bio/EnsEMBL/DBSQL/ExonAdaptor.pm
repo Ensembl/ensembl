@@ -487,13 +487,13 @@ sub store {
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
  FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
-    print STDERR "have supporting feature ".$sf." ".$sf->gffstring."\n";
+    #print STDERR "have supporting feature ".$sf." ".$sf->gffstring."\n";
     if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
       $self->throw("$sf must be an align feature" .
 		   "otherwise it can't be stored");
     }
     eval {
-      print STDERR "start ".$sf->start." end ".$sf->end." strand ".$sf->strand."\n";
+      #print STDERR "start ".$sf->start." end ".$sf->end." strand ".$sf->strand."\n";
       $sf->validate();
     };
     
@@ -597,10 +597,10 @@ sub remove {
   if ( ! defined $exon->dbID() ) {
     return;
   }
-  print "have ".$self->db."\n";
+  #print "have ".$self->db."\n";
   my $sth = $self->prepare( "delete from exon where exon_id = ?" );
   $sth->execute( $exon->dbID );
-  print "have deleted ".$exon->dbID."\n";
+  #print "have deleted ".$exon->dbID."\n";
   $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
   $sth->execute( $exon->dbID );
   
