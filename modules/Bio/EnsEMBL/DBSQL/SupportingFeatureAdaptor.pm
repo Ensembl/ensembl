@@ -28,6 +28,8 @@ package Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+
 use vars qw(@ISA);
 
 #inherits from BaseAdaptor
@@ -55,34 +57,40 @@ sub fetch_all_by_Exon {
   my $out = [];
 
   unless($exon->dbID) {
-    $self->warn("exon has no dbID can't fetch evidence from db " .
-		"no relationship exists\n");
+    warning("Cannot retrieve evidence for exon without dbID");
     return [];
   }
-
 
   my $sth = $self->prepare("SELECT sf.feature_type, sf.feature_id
                             FROM   supporting_feature sf
                             WHERE  exon_id = ?");
 
   $sth->execute($exon->dbID());
-  
+
   my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
-  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
-  
+  my $dna_adp  = $self->db->get_DnaAlignFeatureAdaptor;
+
   my $feature;
-  while(my ($type, $feature_id) = $sth->fetchrow){      
+  while(my ($type, $feature_id) = $sth->fetchrow){
     if($type eq 'protein_align_feature'){
       $feature = $prot_adp->fetch_by_dbID($feature_id);
-    }elsif($type eq 'dna_align_feature'){
+    } elsif($type eq 'dna_align_feature'){
       $feature = $dna_adp->fetch_by_dbID($feature_id);
-    }else {
-      $self->throw("Unknown feature type [$type]\n");
+    } else {
+      warning("Unknown feature type [$type]\n");
+    }
+
+    if(!$feature) {
+      warning("Supporting feature $type $feature_id does not exist in DB");
     }
 
     my $new_feature = $feature->transfer($exon->slice());
+
     push @$out, $new_feature if( $new_feature );
   }
+
+  $sth->finish();
+
   return $out;
 }
 
