@@ -451,7 +451,7 @@ eval {
                       AND    a.db='mapprimer'
                       AND    sgp.chr_end >= $glob_start 
                       AND    sgp.chr_start <=$glob_end 
-                      AND    s.name regexp '^D[0-9]'";
+                      AND    s.name regexp '^D[0-9][0-9]?S'";
 
     
     my $sth = $self->dbobj->prepare($statement);
@@ -520,7 +520,7 @@ eval {
 };
  
  
-if($@){$self->warn("Problems retrieving map data\n$@\n");}
+if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
 
 return @result;
 
