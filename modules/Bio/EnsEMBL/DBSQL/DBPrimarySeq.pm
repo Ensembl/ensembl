@@ -262,7 +262,7 @@ sub subseq{
    my $id=$self->dna_id;
    my $length= $end-$start+1;
    
-   my $sth=$self->db_handle->prepare("SELECT SUBSTRING(sequence,$start,$length) FROM dna WHERE id = $id");
+   my $sth=$self->db_handle->prepare("SELECT SUBSTRING(sequence,$start,$length) FROM dna WHERE dna_id = $id");
    $sth->execute(); 
    
    my($subseq) = $sth->fetchrow
@@ -324,7 +324,7 @@ sub  length {
 
    my $id=$self->dna_id;
    
-   my $sth=$self->db_handle->prepare("SELECT length(sequence) FROM dna WHERE id = $id");
+   my $sth=$self->db_handle->prepare("SELECT length(sequence) FROM dna WHERE dna_id = $id");
    $sth->execute(); 
    
    my($length) = $sth->fetchrow

@@ -403,7 +403,7 @@ sub store {
 		      $exon->end_phase(),
 		      $exon->sticky_rank() );
     $exon->dbID($exonst->{'mysql_insertid'});
-    print STDERR "Assigning $exon with ",$exon->dbID,"\n";
+#    print STDERR "Assigning $exon with ",$exon->dbID,"\n";
 
     $exon->adaptor( $self );
   }
