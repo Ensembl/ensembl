@@ -2177,7 +2177,7 @@ sub get_all_VirtualTranscripts_startend {
 	if (($start < 1)) {$start=1;}
 
 	my $gene=Bio::EnsEMBL::Gene->new();
-	$gene->id($transcript_id);
+	$gene->dbID($transcript_id);
 
 #	my $query = "select external_db,external_id from genedblink where gene_id = '$transcript_id'";
 #	my $sth = $self->dbobj->prepare($query);
