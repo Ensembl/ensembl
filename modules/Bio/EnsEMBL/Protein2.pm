@@ -48,6 +48,7 @@ $protein->gbrowser_adaptor($dbh);
 This object inherit from Bio::SeqI for the implementation and from PrimarySeq
 A protein object hold the basic PrimarySeq requirements, hold annotation, DBlink, protein_features object.
 It will also soon hold family and SNPs objects. The DB adaptor for this object is called Protein_Adaptor 
+Most of the calls should be done from the protein object, the protein object will then deal with calling the rigth DBadaptor (Protein_Adaptor, Protein_Feature_Adaptor, ...)
 
 =head1 CONTACT
 
@@ -386,9 +387,9 @@ sub get_all_PrintsFeatures{
 
 sub add_Prints{
     my ($self,$value) = @_;
-    
-    if (!defined $value) {
-	$self->throw("Prints is no defined");
+        
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
    push(@{$self->{'_prints'}},$value); 
@@ -438,9 +439,9 @@ sub get_all_PfamFeatures{
 
 sub add_Pfam{
  my ($self,$value) = @_;
-    
-    if (!defined $value) {
-	$self->throw("Pfam is no defined");
+        
+ if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
 
    push(@{$self->{'_pfam'}},$value); 
@@ -490,9 +491,10 @@ sub get_all_PrositeFeatures{
 sub add_Prosite{
     my ($self,$value) = @_;
     
-    if (!defined $value) {
-	$self->throw("Prosite is no defined");
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
+
    push(@{$self->{'_prosite'}},$value); 
 }
 
@@ -539,8 +541,9 @@ sub get_all_SigpFeatures{
 
 sub add_Sigp{
     my ($self,$value) = @_;
-    if (!defined $value) {
-	$self->throw("Sigp is no defined");
+    
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
     push(@{$self->{'_sigp'}},$value); 
 }
@@ -589,12 +592,12 @@ sub get_all_TransmembraneFeatures{
 =cut
 
 sub add_Transmembrane{
-my ($self,$value) = @_;
-    if (!defined $value) {
-	$self->throw("Transmembrane is no defined");
+    my ($self,$value) = @_;
+    
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
     push(@{$self->{'_transmembrane'}},$value); 
-
 }
 
 =head2 get_all_CoilsFeatures
@@ -638,9 +641,10 @@ sub get_all_CoilsFeatures{
 =cut
 
 sub add_Coils{
-my ($self,$value) = @_;
-    if (!defined $value) {
-	$self->throw("Coils is no defined");
+    my ($self,$value) = @_;
+
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
     }
     push(@{$self->{'_coils'}},$value); 
 
@@ -688,9 +692,11 @@ sub get_all_LowcomplFeatures{
 
 sub add_Lowcompl{
 my ($self,$value) = @_;
-    if (!defined $value) {
-	$self->throw("Lowcompl is no defined");
-    }
+
+if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    $self->throw("The Protein Feature added is not defined or is not a protein feature object");
+}
+
     push(@{$self->{'_lowcompl'}},$value); 
 
 }
@@ -737,9 +743,11 @@ sub get_all_SuperfamilyFeatures{
 
 sub add_Superfamily{
 my ($self,$value) = @_;
-    if (!defined $value) {
-	$self->throw("Superfamily is no defined");
-    }
+    
+if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+    $self->throw("The Protein Feature added is not defined or is not a protein feature object");
+} 
+
     push(@{$self->{'_superfamily'}},$value); 
 
 }
@@ -800,12 +808,10 @@ sub transcriptac{
 
 sub add_intron{
     my ($self,$value) = @_;
-
-    if (!defined $value) {
-	$self->throw("The intron is no defined");
-    }
-
-   push(@{$self->{'_intron'}},$value);   
+    if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::Protein_FeaturePair'))) {
+	$self->throw("The Protein Feature added is not defined or is not a protein feature object");
+    } 
+    push(@{$self->{'_intron'}},$value);   
 
 }
 
@@ -852,12 +858,11 @@ sub get_all_IntronFeatures{
 sub add_snps{
     my ($self,$value) = @_;
 
-    if (!defined $value) {
-	$self->throw("The snp is no defined");
-    }
+    if ((!defined $value)) {
+	$self->throw("Value is not defined");
+   } 
 
    push(@{$self->{'_snp'}},$value);  
-
 }
 
 
@@ -879,7 +884,9 @@ sub get_all_SnpsFeatures{
        return @{$self->{'_snp'}};
    }
    else {
-       my @snps_array = $self->adaptor->get_snps($self);
+       my $gbdb = $self->gbrowser_adaptor();
+       my $snpdb = $self->snp_adaptor();
+       my @snps_array = $self->adaptor->get_snps($self,$gbdb,$snpdb);
        foreach my $sn (@snps_array) {
 	   $self->add_snps($sn);
        }

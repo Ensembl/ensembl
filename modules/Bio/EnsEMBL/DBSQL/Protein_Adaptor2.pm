@@ -494,7 +494,7 @@ sub get_exon_global_coordinates{
 =cut
     
 sub get_snps {
-    my ($self,$protein) = @_;
+    my ($self,$protein,$sndb,$gbdb) = @_;
     my $db = $self->db;
     my $transcript;
     my @ex_snps;
