@@ -496,7 +496,7 @@ sub _gene_query{
              $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
          };
          if ($@) {
-             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?)\n");
+             $self->warn("In RawContig, tried to get gene ".$rowhash->{'gene'}." but couldn't (data bug?) $@\n");
          }
          else {
              push(@out, $gene);

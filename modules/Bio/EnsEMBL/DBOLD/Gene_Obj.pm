@@ -69,19 +69,14 @@ use Bio::EnsEMBL::DB::Gene_ObjI;
 
 @ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI);
 
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,$db_obj) = @_;
-
-  my $make = $self->SUPER::_initialize;
-  
-  $db_obj || $self->throw("Database Gene object must be passed a db obj!");
-  $self->_db_obj($db_obj);
-  $self->use_delayed_insert(1);
-  return $make; # success - we hope!
+sub new {
+    my($class,$db_obj) = @_;
+    my $self = $class->SUPER::new($db_obj);
+    
+    $db_obj || $self->throw("Database Gene object must be passed a db obj!");
+    $self->_db_obj($db_obj);
+    $self->use_delayed_insert(1);
+    return $self; # success - we hope!
 
 }
 
@@ -502,7 +497,7 @@ sub get_array_supporting {
 	
     
    # my $inlist = join(',', map "'$_'", @geneid);
-    my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
+   #my $analysisAdaptor = $self->_db_obj->get_AnalysisAdaptor;     
    
     foreach my $inarray (@inlist)   {
         my $inlist = join(',', map "'$_'", @$inarray);
@@ -600,7 +595,7 @@ sub get_array_supporting {
 	    $gene->type                     ($genetype);
 
 	    $gene->add_cloneid_neighbourhood($cloneid);
-	    $gene->analysis( $analysisAdaptor->fetch_by_dbID( $analysisId ));
+	    #$gene->analysis( $analysisAdaptor->fetch_by_dbID( $analysisId ));
 	    
 	    $current_gene_id = $geneid;
 	    push(@out,$gene);
