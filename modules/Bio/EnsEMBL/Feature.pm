@@ -718,4 +718,10 @@ sub _deprecated_transform {
   return $self;
 }
 
+sub id {
+
+  deprecate("id method is not used - use dbID instead");
+
+}
+
 1;
