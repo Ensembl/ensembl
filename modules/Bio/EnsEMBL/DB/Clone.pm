@@ -134,7 +134,7 @@ sub get_all_Contigs{
    my $name = $self->id();
 
    my $sql = "select id from contig where clone = \"$name\" ";
-   print STDERR "Looking at $name. [$sql]\n";
+#   print STDERR "Looking at $name. [$sql]\n";
    $sth= $self->_dbobj->prepare($sql);
    my $res = $sth->execute();
    my $seen = 0;

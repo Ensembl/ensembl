@@ -138,7 +138,7 @@ sub get_Gene{
 sub get_Clone {
    my ($self,$id) = @_;
    
-   #$self->fetch("Sequence => $id") || $self->throw("$id is not a valid sequence in this database");
+   $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
    my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
 					-dbobj => $self );
    return $clone;

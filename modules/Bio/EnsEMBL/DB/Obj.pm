@@ -145,8 +145,9 @@ sub get_Clone{
    my  $sth = $self->prepare("select id from contig where clone = \"$id\";");
    $sth->execute();
    my  $rv = $sth->rows;
-   print STDERR "Got $rv $id\n";
    if( ! $rv ) {
+       # make sure we deallocate sth - keeps DBI happy!
+       $sth = 0;
        $self->throw("Clone $id does not seem to occur in the database!");
    }
 
