@@ -69,7 +69,7 @@ ok( $translates );
 #
 my $supercontig = $sa->fetch_by_region('supercontig', "NT_028392");
 
-my $transcripts = $slice->get_all_Transcripts();
+my $transcripts = $supercontig->get_all_Transcripts();
 
 debug( "Checking if all transcripts on NTContig NT_028392 translate and transform" );
 
@@ -80,7 +80,7 @@ for my $trans ( @$transcripts ) {
     debug( $trans->stable_id()." does not translate." );
     last;
   }
-#  debug($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
+  debug($trans->stable_id() .  ":" . $trans->translate()->seq() . "\n");
 }
 
 ok($translates);
