@@ -605,8 +605,8 @@ sub write_Analysis {
     if ($anal->db and $anal->db_version) {
         local $^W = 0;
 	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
-                $anal->db               . "\","   .
-                $anal->db_version       . ",\""   .
+                $anal->db               . "\",\""   .
+                $anal->db_version       . "\",\""   .
 		$anal->program          . "\",\"" .
 		$anal->program_version  . "\",\"" .
                 $anal->gff_source       . "\",\"" .
