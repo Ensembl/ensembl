@@ -96,6 +96,77 @@ sub get_all_SeqFeatures{
 
 }
 
+=head2 get_all_clone_SeqFeatures
+
+ Title   : get_all_clone_SeqFeatures
+ Usage   : foreach $feat ( $contig->get_all_clone_SeqFeatures )
+ Function: returns sequence features but in the clone coordinate space.
+ Example :
+ Returns : an array of SeqFeatures
+ Args    : None
+
+ This method is common to all Contig objects, whatever the implementation.
+Implementation objects do not need to write this method
+
+=cut
+
+sub get_all_clone_SeqFeatures{
+   my ($self) = @_;
+   my @out;
+
+   foreach my $sf ( $self->get_all_SeqFeatures ) {
+       my ($start,$end,$strand) = $self->_convert_coords_contig_clone($sf->start,$sf->end,$sf->strand);
+       $sf->start($start);
+       $sf->end($end);
+       $sf->strand($strand);
+       push(@out,$sf);
+   }
+
+   return @out;
+}
+
+
+sub _convert_coords_contig_clone {
+    my $self = shift;
+    my $start = shift;
+    my $end = shift;
+    my $strand = shift;
+
+    my ($out_start,$out_end,$out_strand);
+
+    if( !defined $strand ) {
+	$self->throw("_conver_coords_contig_clone(start,end,strand)");
+    }
+
+    my $offset = $self->offset;
+
+    if( $self->orientation == 1 ) {
+       $out_strand = $strand;
+       if( $out_strand == 1 ) {
+	   $out_start = $offset + $start -1;
+	   $out_end   = $offset + $end -1;
+       } else {
+	   $out_start = $offset + $start -1;
+	   $out_end   = $offset + $end -1;
+       }
+   } else {
+       my $length = $self->length(); 
+       if( $strand == -1 ) {
+	   $out_start = $offset-1 + ($length - $end +1);
+	   $out_end   = $offset-1 + ($length - $start +1);
+	   $out_strand = 1;
+       } else {
+	   $out_start   = $offset-1 + ($length - $end +1);
+	   $out_end     = $offset-1 + ($length - $start +1);
+	   $out_strand = -1;
+       }
+   }
+
+   return ($out_start,$out_end,$out_strand);
+}
+
+    
+
 =head2 seq_date
 
  Title   : seq_date
