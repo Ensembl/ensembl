@@ -169,28 +169,24 @@ sub generic_fetch {
 
   Arg [1]    : int $id
                The unique database identifier for the feature to be obtained
-  Arg [2]    : $coord_system_name (optional)
-               The name of the coordinate system that the feature should be
-               retrieved in.
-  Arg [3]    : $coord_system_version (optional)
-               The version of the coordinate system the the feature should be
-               retrieved in.
-  Example    : $feat = $adaptor->fetch_by_dbID(1234, 'contig'));
-               $feat = $adaptor->fetch_by_dbID(1235, 'chromosome', 'NCBI33');
+  Example    : $feat = $adaptor->fetch_by_dbID(1234));
+               $feat = $feat->transform('contig');
   Description: Returns the feature created from the database defined by the
-               the id $id.  If the coordinate system argument is provided and
-               the requested feature exists but is not defined in the requested
-               coordinate system undef is returned. If the feature does not
-               exist in the database at all an exception is thrown.
-  Returntype : Bio::EnsEMBL::Feature
-  Exceptions : thrown if $id is not defined or if the requested feature
+               the id $id.  The feature will be returned in its native
+               coordinate system.  That is, the coordinate system in which it
+               is stored in the database.  In order to convert it to a
+               particular coordinate system use the transfer() or transform()
+               method.  If the feature is not found in the database then
+               undef is returned instead
+  Returntype : Bio::EnsEMBL::Feature or undef
+  Exceptions : thrown if $id arg is not provided
                does not exist
   Caller     : general
 
 =cut
 
 sub fetch_by_dbID{
-  my ($self,$id,$cs_name,$cs_version) = @_;
+  my ($self,$id) = @_;
 
   throw("id argument is required") if(!defined $id);
 
@@ -199,12 +195,10 @@ sub fetch_by_dbID{
   my ($name, $syn) = @{$tabs[0]};
   my $constraint = "${syn}.${name}_id = $id";
 
-  #get first element of _generic_fetch list
+  #Should only be one
   my ($feat) = @{$self->generic_fetch($constraint)};
 
-  throw("Feature with dbID [$id] does not exist") if(!$feat);
-
-  $feat = $feat->transform($cs_name, $cs_version) if(defined($cs_name));
+  return undef if(!$feat);
 
   return $feat;
 }
