@@ -34,7 +34,7 @@ $conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
 $conf{'mysql'} = '/mysql/current/bin/mysql';
 $conf{'user'}  = 'root';
 $conf{'database'} = 'ensembl07';
-$conf{'contig'} = 'AP000926.00058';
+$conf{'contig'} = 'AB014077.00001';
 
 if ( -e 't/trans_to_vc.conf' ) {
    print STDERR "Reading configuration from trans_to_vc.conf\n";
@@ -76,7 +76,7 @@ my $vc=Bio::EnsEMBL::DB::VirtualContig->new(
 print "ok 3\n";
 
 #Check methods on vc
-$vc->primary_seq;
+my $seq=$vc->primary_seq;
 $vc->id;
 $vc->length;
-
+print "ok 4\n";

@@ -388,7 +388,9 @@ sub primary_seq {
        if( $mc->orientation == 1 ) {
 	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
-	   $trunc = $tseq->trunc($end,$mc->start_in)->revcom->seq;
+	   $trunc = $tseq->subseq($end,$mc->start_in);
+	   $trunc =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	   my $trunc = CORE::reverse $trunc;
        }
        $seq_string .= $trunc;
        $last_point += length($trunc);

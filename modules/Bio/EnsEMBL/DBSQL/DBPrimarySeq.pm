@@ -246,13 +246,13 @@ sub subseq{
    if( $start <= 0 || $end > $self->length ) {
        $self->throw("You have to have start positive and length less than the total length of sequence");
    }
-
-   # remove one from start, and then length is end-start
    
-   $start--;
-
+   # remove one from start, and then length is end-start
+   #$start--;
+   #($start == 0) && {$start=1};
+       
    my $id=$self->dna_id;
-   my $length= $end-$start;
+   my $length= $end-$start+1;
    
    my $sth=$self->db_handle->prepare("SELECT SUBSTRING(sequence,$start,$length) FROM dna WHERE id = $id");
    $sth->execute(); 
