@@ -289,7 +289,7 @@ while (my @row2 = $sth2->fetchrow) {
 
 	#my $sth3 = $ensdb->prepare ("select external_id from genedblink where gene_id = '$row2[0]' and external_db = 'MIM'");
 
-	my $sth3 = $ensdb->prepare ("select x.dbprimary_id, t.gene from Xref as x, externalDB as e, objectXref as o, transcript as t where o.xrefId = x.xrefId and o.ensembl_id = '$row2[0]' and t.translation = '$row2[0]'");
+	my $sth3 = $ensdb->prepare ("select x.dbprimary_id, gs.stable_id from gene_stable_id gs, Xref as x, externalDB as e, objectXref as o, transcript as t where gs.gene_id=t.gene_id and o.xrefId = x.xrefId and o.ensembl_id = '$row2[0]' and t.translation_id = '$row2[0]'");
 
 	$sth3->execute;
 	my $seen3=0;
@@ -333,7 +333,7 @@ while (my @row2 = $sth2->fetchrow) {
 print STDERR "Dump for Interpro\n";
 
 #Select all of the gene ac having an intepro domain
-my $sth5 = $ensdb->prepare ("select t.gene,i.interpro_ac from protein_feature as pf, transcript as t,interpro as i where pf.translation = t.translation and pf.hid = i.id");
+my $sth5 = $ensdb->prepare ("select gs.stable_id,i.interpro_ac from protein_feature as pf, gene_stable_id gs,transcript as t,interpro as i where gs.gene_id=t.gene_id and pf.translation = t.translation_id and pf.hid = i.id");
 
 $sth5->execute;
 
