@@ -954,6 +954,35 @@ Calling Gene_Obj->get_Virtual_contig instead!");
 
 
 
+=head2 get_Transcript_in_VC_coordinates
+    
+ Title   : get_Transcript_in_VC_coordinates
+ Usage   : $obj->get_Transcript_in_VC_coordinates($transcript_id)
+ Function: Gets a Bio::EnsEMBL::Transcript object in vc coordinates
+ Example : $obj->get_Virtual_Contig($transcript_id)
+ Returns : Bio::EnsEMBL::Transcript
+ Args    : transcript id
+
+
+=cut
+
+
+
+
+sub   get_Transcript_in_VC_coordinates{
+   my ($self,$tid) = @_;
+
+   $self->warn("Obj->get_Transcript_in_VC_coordinates is a deprecated method! 
+Calling Gene_Obj->get_Virtual_contig instead!");
+
+   return my $transcript =$self->gene_Obj->get_Transcript_in_VC_coordinates($tid);
+}
+
+
+
+
+
+
 
 
 

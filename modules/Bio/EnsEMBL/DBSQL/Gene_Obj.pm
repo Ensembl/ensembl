@@ -892,7 +892,7 @@ sub get_Virtual_Contig{
     }
 
     if (!defined $max_length) {
-	$self->throw("You need to specify the max. length of the Virtual Contig!");
+	$max_length=50000;
     }
 
     my $transcript=$self->get_Transcript($trans_id);
@@ -979,10 +979,52 @@ sub get_Virtual_Contig{
     }
     print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
 
-    print STDERR "MY VC FROM GENE ",$vc,"\n";
+   
     
     return $vc;
 }
+
+
+
+
+=head2 get_Transcript_in_VC_coordinates
+    
+ Title   : get_Transcript_in_VC_coordinates
+ Usage   : $gene_obj->get_Transcript_in_VC_coordinates($transcript_id)
+ Function: Gets a Bio::EnsEMBL::Transcript object in vc coordinates
+ Example : $gene_obj->get_Virtual_Contig($transcript_id)
+ Returns : Bio::EnsEMBL::Transcript
+ Args    : transcript id
+
+
+=cut
+
+
+
+
+sub get_Transcript_in_VC_coordinates
+{
+    
+    my ($self,$transcript_id)=@_; 
+ 
+    $transcript_id || $self->throw("need a transcript id");   
+    my $vc=$self->get_Virtual_Contig($transcript_id);
+    
+    my $found;
+  GENE: foreach my $gene ($vc->get_all_Genes){
+      foreach my $transcript($gene->each_Transcript){
+	  if ($transcript->id eq $transcript_id){$found=$transcript;last GENE;}
+      }
+  }   
+    if (!defined $found ){$self->throw("There is no such transcript on this vc, impossible !")};
+    return $found;    
+    
+}
+
+
+
+
+
 
 =head2 write
 
