@@ -37,6 +37,7 @@ runs of 'n' in the sequence - and loads in to the DB
     -single  only one seq in fasta file (no need for header to match)
     -write   write clone
     -replace replace existing clone
+    -idcheck check clone names don't contain '.'
     -v       print info about clones and contigs
 
 =head1 CONTACT
@@ -63,7 +64,7 @@ use Bio::EnsEMBL::PerlDB::Contig;
 my($id, $acc, $ver, $phase, $contigs);
 my($fasta, $single, $seqio, $seq);
 my($dbname, $dbhost, $dbuser);
-my($help, $info, $write, $replace, $verbose);
+my($help, $info, $write, $replace, $verbose, $idcheck);
 
 
 $Getopt::Long::autoabbrev = 0;   # personal preference :)
@@ -82,6 +83,7 @@ my $ok = &GetOptions(
     "info"      => \$info,
     "write"     => \$write,
     "replace"   => \$replace,
+    "idcheck"   => \$idcheck,
     "v"         => \$verbose
 );
 
@@ -94,6 +96,7 @@ if ($help || not $ok) {
 
 if (defined $id && $id =~ /(\S+)\.(\d+)/) {
     ($acc, $ver) = ($1, $2);
+    die "Accession = $acc\n" if $acc =~ m!\.! && $idcheck;
 }
 else {
     print STDERR "Must specify -clone <clone.version>\n";
