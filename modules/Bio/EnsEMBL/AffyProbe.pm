@@ -84,18 +84,22 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my($arrays, $probenames, $probeset, $arraynames, $arrayname, $probename, $array ) =
-      rearrange(['ARRAYS', 'NAMES', 'PROBESET', 'ARRAYNAMES', 'ARRAYNAME', 'NAME', 'ARRAY' ], 
-		@_);
+  my(
+    $arrays, $probenames, $probeset, $arraynames, $arrayname, $name, $array ) =
+    rearrange(
+      ['ARRAYS', 'PROBENAMES', 'PROBESET', 'ARRAYNAMES', 'ARRAYNAME', 'NAME', 'ARRAY' ], 
+      @_
+    );
 
   my $i;
+  
   if( $probenames && ref( $probenames ) eq "ARRAY") {
       $i = scalar( @$probenames );
-  } elsif( defined $probename ) {
+  } elsif( defined $name ) {
     if( defined $arrayname ) {
-      $self->add_arrayname_probename( $arrayname, $probename );
+      $self->add_arrayname_probename( $arrayname, $name );
     } elsif( defined $array ) {
-      $self->add_Array_probename( $array, $probename );
+      $self->add_Array_probename( $array, $name );
     } else {
       throw( "Provide array or arrayname with probename" );
     }
@@ -118,7 +122,7 @@ sub new {
       for( $i = 0 ; $i < scalar( @$probenames ); $i++ ) {
 	  $self->add_arrayname_probename( $arraynames->[$i], $probenames->[$i] );
       }
-  } elsif( ! defined $probename ) {
+  } elsif( ! defined $name ) {
       throw( "Need to provide arrays or names for a probe" );
   }
   
@@ -254,7 +258,7 @@ sub get_complete_name {
 
     my $probename = $self->{'probenames'}->{$arrayname};
     if(  ! defined $probename ) {
-	throw( "Unknown array name" );
+      throw( "Unknown array name" );
     } 
     $probename = $arrayname.":".$self->probeset().":".$probename;
     return $probename;
@@ -298,7 +302,7 @@ sub get_probename {
     my $arrayname = shift;
     my $probename = $self->{'probenames'}->{$arrayname};
     if( ! defined $probename ) {
-	throw( "Unknown array name" );
+      throw( "Unknown array name" );
     }
     return $probename;
 }
