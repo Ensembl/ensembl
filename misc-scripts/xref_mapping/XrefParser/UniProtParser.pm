@@ -254,16 +254,16 @@ sub create_xrefs {
     }
 
     # store PUBMED and MEDLINE dependent xrefs too
-    my ($medline) = $_ =~ /RX\s+MEDLINE=(\d+);/;
-    if (defined $medline) {
-
-      my %medline_dep;
-      $medline_dep{SOURCE_ID} = $dependent_sources{PUBMED};
-      $medline_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
-      $medline_dep{ACCESSION} = $medline;
-      push @{$xref->{DEPENDENT_XREFS}}, \%medline_dep;
-
-    }
+    #my ($medline) = $_ =~ /RX\s+MEDLINE=(\d+);/;
+    #if (defined $medline) {
+    #
+    #  my %medline_dep;
+    #  $medline_dep{SOURCE_ID} = $dependent_sources{PUBMED};
+    #  $medline_dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+    #  $medline_dep{ACCESSION} = $medline;
+    #  push @{$xref->{DEPENDENT_XREFS}}, \%medline_dep;
+    #
+    #}
 
     my ($pubmed) = $_ =~ /RX\s+PubMed=(\d+);/;
     if (defined $pubmed) {
