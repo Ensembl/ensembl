@@ -100,7 +100,7 @@ if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
 } elsif ( $dbtype =~ 'rdb' ) {
     $host=$host1 unless $host;
-    $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
+    $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
     # clone_id is passed to speed things up - cuts down on parsing of flag files
     $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,1);
@@ -115,14 +115,18 @@ my $as = $clone->get_AnnSeq();
 
 
 if( $format =~ /gff/ ) {
-    
     foreach my $contig ( $clone->get_all_Contigs )  {
 	my @seqfeatures = $contig->as_seqfeatures();
 	foreach my $sf ( @seqfeatures ) {
 	    print $sf->gff_string, "\n";
 	}
     }
+} elsif ( $format =~ /fastac/ ) {
+    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
 
+    foreach my $contig ( $clone->get_all_Contigs ) {
+	$seqout->write_seq($contig->seq());
+    }
 } elsif ( $format =~ /embl/ ) {
 
     $as->seq->desc("Reannotated Clone via EnsEMBL");
