@@ -199,12 +199,24 @@ sub store {
     my ($p,$f,$l) = caller;
     $self->warn("$f:$l FeatureAdaptor store being phased out. It is better to use the new FeatureAdaptors directly (more type safe)");
 
+    my $repeat_adaptor = $self->db->get_RepeatAdaptor();
+    my $dna_align_adaptor = $self->db->get_DnaAlignFeatureAdaptor();
+    my $protein_align_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
+    my $simple_adaptor = $self->db->get_SimpleFeatureAdaptor();
+    my $prediction_adaptor = $self->db->get_PredictionFeatureAdaptor();
+
 
 
     # Check for contig
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI") 
         unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
     my $contig_internal_id = $contig->internal_id;
+
+
+    #
+    # Don't particularly like this loop, but I guess we should stick
+    # with it. EB
+    #
 
     FEATURE :
     foreach my $feature ( @features ) {	
@@ -238,19 +250,21 @@ sub store {
 	# Retarget to new adaptor scheme
 	# 
 
-	$self->throw("Ewan needs to retarget this to the new feature adaptors once the buisness objects for the features come in");
-
-
-	# What kinda feature we're dealing with?
-	if($feature->isa('Bio::EnsEMBL::RepeatI')) {
-	    $self->_store_Repeat($contig_internal_id,$analysisid,$feature);
-	} elsif ( $feature->sub_SeqFeature ) {
-	    $self->_store_PredictionFeature($contig_internal_id,$analysisid,$feature);
-	} elsif ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
-	    $self->_store_FeaturePair($contig_internal_id,$analysisid,$feature);
+	if( $feature->isa('Bio::EnsEMBL::ProteinAlignFeature') ) {
+	    $protein_align_adaptor->store($contig_internal_id,$feature);
+	} elsif ( $feature->isa('Bio::EnsEMBL::DnaAlignFeature') ) {
+	    $dna_align_adaptor->store($contig_internal_id,$feature);
+	} elsif ( $feature->isa('Bio::EnsEMBL::RepeatFeature') ) {
+	    $repeat_adaptor->store($contig_internal_id,$feature);
+	} elsif ( $feature->isa('Bio::EnsEMBL::SimpleFeature') ) {
+	    $dna_align_adaptor->store($contig_internal_id,$feature);
+	} elsif ( $feature->isa('Bio::EnsEMBL::PredictionFeature') ) {
+	    $prediction_adaptor->store($contig_internal_id,$feature);
 	} else {
-	    $self->_store_single_feature($contig_internal_id,$analysisid,$feature);
+	    $self->throw("cannot store $feature - no feature adaptor that fits it!");
 	}
+
+
     }
 }
 
