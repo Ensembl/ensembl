@@ -205,6 +205,7 @@ sub get_all_SeqFeatures{
 
    my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
 				    "from feature where contig = '$id'");
+
    $sth->execute();
 
    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid);
@@ -265,6 +266,107 @@ sub get_all_SeqFeatures{
 
        $out->analysis($analysis);
 
+       # Final check that everything is ok.
+       
+       $out->validate();
+
+      push(@array,$out);
+  }
+ 
+   # Now get the repeats
+   my @repeats = $self->get_all_Repeats;
+
+   push(@array,@repeats);
+
+   return @array;
+}
+=head2 get_all_Repeats
+
+ Title   : get_all_Repeats
+ Usage   : foreach my $sf ( $contig->get_all_Repeats )
+ Function: Gets all the repeat features on a contig.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Repeats {
+   my ($self) = @_;
+
+   my @array;
+
+   my $id     = $self->id();
+   my $length = $self->length();
+
+   my %analhash;
+
+   # make the SQL query
+
+   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
+				    "from repeat_feature where contig = '$id'");
+
+   $sth->execute();
+
+   my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid);
+
+   while( $sth->fetch ) {
+       my $out;
+       my $analysis;
+
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+
+
+       if( $hid ne '__NONE__' ) {
+	   # is a paired feature
+	   # build EnsEMBL features and make the FeaturePair
+	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
+	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
+
+	   $out = Bio::EnsEMBL::Repeat->new( -feature1 => $feature1, 
+					     -feature2 => $feature2);
+
+	   $out->hstart      ($hstart);
+	   $out->hend       ($hend);
+	   $out->hseqname   ($hid);
+	   $out->hsource_tag('Repeat');
+	   $out->hprimary_tag('similarity');
+	   $out->hstrand     ($strand);
+	   $out->analysis    ($analysis);
+
+	   if( defined $score ) {
+	       $out->hscore($score);
+	   }
+
+       } else {
+#	   $out = new Bio::EnsEMBL::SeqFeature;
+	   $self->warn("Repeat feature doesn't have hid. Skipping\n");
+       }
+
+      
+       $out->seqname   ($id);
+       $out->start     ($start);
+       $out->end       ($end);
+       $out->strand    ($strand);
+#       $out->source_tag($name);
+       $out->primary_tag('similarity');
+
+       if( defined $score ) {
+	   $out->score($score);
+       }
+
+
+       $out->analysis($analysis);
 
        # Final check that everything is ok.
        

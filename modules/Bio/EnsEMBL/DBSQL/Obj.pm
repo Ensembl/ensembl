@@ -18,11 +18,11 @@ Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
 
     $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
 
-    $clone = $db->get_clone('X45667');
+    $clone  = $db->get_clone('X45667');
 
     $contig = $db->get_Contig("dJ52N12.02793");
 
-    $gene  = $db->get_Gene('HG45501');
+    $gene   = $db->get_Gene('HG45501');
 
     
 
@@ -1266,6 +1266,9 @@ sub write_Feature {
 
     my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
 
+    # Put the repeats in a different table
+    my @repeats;
+
     FEATURE :
     foreach my $feature ( @features ) {
 	
@@ -1281,8 +1284,11 @@ sub write_Feature {
 
 	my $analysisid = $self->write_Analysis($analysis);
 
-	if( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
+	if($feature->isa('Bio::EnsEMBL::Repeat')) {
+	    push(@repeats,$feature);
+	} elsif ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 	    my $homol = $feature->feature2;
+
 	    $sth->execute('NULL',
 			  $contig->id,
 			  $feature->start,
@@ -1308,7 +1314,23 @@ sub write_Feature {
 			  "__NONE__");
 	}
     }
+    my $sth2 = $self->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
+    
+    my $analysisid = $self->write_Analysis($analysis);
 
+    foreach my $feature (@repeats) {
+	my $homol = $feature->feature2;
+	$sth2->execute('NULL',
+		       $contig->id,
+		       $feature->start,
+		       $feature->end,
+		       $feature->score,
+		       $feature->strand,
+		       $analysisid,
+		       $homol->start,
+		       $homol->end,
+		       $homol->seqname);
+    }
     return 1;
 }
 
