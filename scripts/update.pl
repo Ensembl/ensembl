@@ -147,7 +147,8 @@ foreach my $ghost (@object_array) {
 
 $verbose && print STDERR "\nTransferring updated and new objects from donor to recipient...\n";
 #Get updated and new objects (clones and genes)
-my @object_array = $don_db->get_updated_Objects($last_offset, $now_offset);
+@object_array = [];
+@object_array = $don_db->get_updated_Objects($last_offset, $now_offset);
 #Should sort with clones first! Not implemented yet!
 
 foreach my $object (@object_array) {
@@ -259,9 +260,9 @@ sub _place_gene {
     my $rec_gene;
 
     #Check if the gene is present in the recipient
-    #eval {
+    eval {
 	$rec_gene = $rec_db->get_Gene($don_gene->id);
-    #};
+    };
     
     #If gene not present in recipient, write it in
     if ( $@ ) {
