@@ -411,7 +411,7 @@ sub _get_Clone_id{
    }else{
        print STDERR " and are excluded\n";
    }
-   print STDERR "\n";
+   print STDERR "Total of ".scalar(@list)." clones are in list\n";
 
    # !! no idea why sorting is necessary !!
    return sort @list;
