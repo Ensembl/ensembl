@@ -813,6 +813,63 @@ sub seq {
 }
 
 
+
+
+=head2 hashkey
+
+  Arg [1]    : none
+  Example    : if(exists $hash{$exon->hashkey}) { do_something(); }
+  Description: Returns a unique hashkey that can be used to uniquely identify
+               this exon.  Exons are considered to be identical if they share
+               the same seq_region, start, end, strand, phase, end_phase.
+               Note that this will consider two exons on different slices
+               to be different, even if they actually are not. 
+  Returntype : string formatted as slice_name-start-end-strand-phase-end_phase
+  Exceptions : thrown if not all the necessary attributes needed to generate
+               a unique hash value are set
+               set
+  Caller     : general
+
+=cut
+
+sub hashkey {
+  my $self = shift;
+
+  my $slice      = $self->{'slice'}; 
+  my $slice_name = ($slice) ? $slice->name() : undef;
+  my $start      = $self->{'start'};
+  my $end        = $self->{'end'};
+  my $strand     = $self->{'strand'};
+  my $phase      = $self->{'phase'};
+  my $end_phase  = $self->{'end_phase'};
+
+  if(!defined($slice_name)) {
+    throw('Slice must be set to generate correct hashkey.');
+  }
+
+  if(!defined($start)) {
+    warning("start attribute must be defined to generate correct hashkey.");
+  }
+
+  if(!defined($end)) {
+    throw("end attribute must be defined to generate correct hashkey.");
+  }
+
+  if(!defined($strand)) {
+    throw("strand attribute must be defined to generate correct hashkey.");
+  }
+
+  if(!defined($phase)) {
+    throw("phase attribute must be defined to generate correct hashkey.");
+  }
+
+  if(!defined($end_phase)) {
+    throw("end_phase attribute must be defined to generate correct hashkey.");
+  }
+
+  return "$slice_name-$start-$end-$strand-$phase-$end_phase";
+}
+
 #####################
 # DEPRECATED METHODS
 #####################
