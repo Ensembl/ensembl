@@ -1193,4 +1193,113 @@ sub description{
 
 }
 
+
+
+=head2 each_Exon_in_context
+
+ Title   : each_Exon_in_context
+ Usage   : @exons = $t->each_Exon_in_context($vc->id)
+ Function: returns exons with this particular context (aka seqname)
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_Exon_in_context{
+   my ($self,$context) = @_;
+
+   my @exons;
+
+   foreach my $exon ( $self->each_Exon ) {
+       if( $exon->seqname eq $context ) {
+	   push(@exons,$exon);
+       }
+   }
+
+   return @exons;
+}
+
+=head2 is_start_exon_in_context
+
+ Title   : is_start_exon_in_context
+ Usage   : if( $t->is_start_exon_in_context($vc->id) ==0 ) {
+               # transcript runs off this VC
+ Function: returns 1 or 0 depending whether the start exon is 
+           in this context or not
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_start_exon_in_context{
+   my ($self,$context) = @_;
+
+   if( $self->start_exon->seqname eq $context ) {
+       return 1;
+   } else {
+       return 0;
+   }
+
+}
+
+
+=head2 is_end_exon_in_context
+
+ Title   : is_end_exon_in_context
+ Usage   : if( $t->is_end_exon_in_context($vc->id) ==0 ) {
+               # transcript runs off this VC
+ Function: returns 1 or 0 depending whether the end exon is 
+           in this context or not
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_end_exon_in_context{
+   my ($self,$context) = @_;
+
+   if( $self->end_exon->seqname eq $context ) {
+       return 1;
+   } else {
+       return 0;
+   }
+
+}
+
+
+=head2 strand_in_context
+
+ Title   : strand_in_context
+ Usage   : $strand = $t->strand_in_context($vc->id)
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub strand_in_context{
+   my ($self,$context) = @_;
+
+   my @exons = $self->each_Exon_in_context($context);
+
+   if( scalar(@exons) == 0 ) {
+       $self->warn("There are no exons in this context. Bad to call this - returning strand 0 from strand_in_context on Transcript");
+       return 0;
+   }
+
+   return $exons[0]->strand;
+}
+
+
+
+
 1;
