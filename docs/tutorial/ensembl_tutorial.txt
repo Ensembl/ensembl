@@ -100,10 +100,9 @@ Introduction to the Perl object API
 
 These notes are from an introductory half-day course on the EnsEMBL code base.  They will take you through the process of connecting to an EnsEMBL database and accessing data contained therein.   They require you to have the relevant EnsEMBL and bioperl modules installed.  These are :
 
-bioperl-0.7   (we know this is not the latest version - for now, EnsEMBL is tied to this version 0.7, so please use it)
+bioperl-0.7   (we know this is not the latest version - for now, EnsEMBL is tied to this version, so please use it.)
 ensembl
 ensembl-external
-ensembl-lite
 
 Instructions on how to install these perl modules are contained on the EnsEMBL website www.ensembl.org. Basically, you need to do the following steps (in both cases below we are using cvs to get the code, which is much better than ftp as we are getting the latest bug fixes. Notice the - r flag to the cvs commands. These indicate the branch of each repository to get out.  (Branches are stable versions of the code).
 
@@ -116,9 +115,8 @@ cvs -d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl checkout -r branch-
 
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster login
 when prompted, the password is CVSUSER
-cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r ensembl-branch-9 ensembl
-cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r ensembl-branch-9 ensembl-external
-cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r ensembl-branch-9 ensembl-lite
+cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-9 ensembl
+cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-9 ensembl-external
 
 If you don't have, or don't want to install, the EnsEMBL database locally you can point your scripts at a publically available one at the Sanger Centre.  Use the following fields in your scripts (where X_X is the latest version of the database):
 
@@ -127,7 +125,7 @@ dbname			homo_sapiens_core_X_X
 user			anonymous
 
 Companion script and exercises
-There is a script called tutorial.pl which contains all the example code in this document and should run successfully if you have the right database and version of the code installed.  In addition there are worked solutions to the exercises included later in this tutorial.  When you check-out a copy of EnsEMBL from the cvs, both the companion script and the worked solutions will be in the ensembl/docs/ directory.
+There is a script called tutorial.pl which contains all the example code in this document and should run successfully if you have the right database and version of the code installed.  In addition, soon there are worked solutions to the exercises included later in this tutorial.  When you check-out a copy of EnsEMBL from the cvs, both the companion script and the worked solutions will be in the ensembl/docs/ directory.
 What does the core EnsEMBL database contain?
 
 *Clones (with embl accessions) - both finished and unfinished.
@@ -154,7 +152,7 @@ Setup
 
 Before starting with the EnsEMBL modules you will need to set up your environment so Perl knows where to find them.   As EnsEMBL is built on top of bioperl, this includes telling it where bioperl-0.7 lives on your system.
 
-The environment variable to do this is PERL5LIB.  If you are using csh  or tcsh you need to type in the following (changing /nfs/croc/michele/branch to your directory containing the perl modules you downloaded).
+The environment variable to do this is PERL5LIB.  If you are using csh  or tcsh you need to type in the following (changing /nfs/croc/michele/branch to your directory containing the perl modules you downloaded).  If you are concomitantly using a version of bioperl newer than version 0.7 make sure that the older version appears in your perl library path before the newer version.
 
 setenv ENSHOME /nfs/croc/michele/branch
 
