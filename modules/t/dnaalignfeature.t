@@ -4,7 +4,7 @@
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 10;
 }
 
 my $loaded = 0;
@@ -99,5 +99,5 @@ ok( scalar($outf->ungapped_features) == 2);
 
 ($outf) = $dna_f_ad->fetch_by_assembly_location(1,400,1,'NCBI_28');
 
-#ok($outf);
-#ok( scalar($outf->ungapped_features) == 2);
+ok($outf);
+ok( scalar($outf->ungapped_features) == 2);
