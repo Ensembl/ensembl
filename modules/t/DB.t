@@ -23,7 +23,6 @@
 ## We start with some black magic to print on failure.
 BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
-
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
@@ -55,7 +54,6 @@ $locator = <FILE>;
 chomp $locator;		       
 eval {
     $db = Bio::EnsEMBL::DBLoader->new($locator);	
-
 };
 
 if( $@  ) {

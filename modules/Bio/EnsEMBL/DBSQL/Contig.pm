@@ -233,7 +233,7 @@ sub get_all_SimilarityFeatures{
 
    #First of all, get all features that are part of a feature set
 
-   my $sth = $self->_dbobj->prepare("select  p1.id,p1.seq_start,p1.seq_end,p1.strand,p1.score,p1.analysis,p1.name,p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank from feature as p1, fset_feature as p2 where p1.contig ='$id' and p2.feature = p1.id order by p2.fset");
+   my $sth = $self->_dbobj->prepare("select  p1.id, p1.seq_start, p1.seq_end,p1.strand,p1.score,p1.analysis,p1.name,p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank from feature as p1, fset_feature as p2 where p1.contig ='$id' and p2.feature = p1.id order by p2.fset");
    $sth->execute();
 
    # SQL query to get all features
@@ -246,12 +246,14 @@ sub get_all_SimilarityFeatures{
    
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank);
+
+   my $out;
    
    while($sth->fetch) {
-       my $out;
+
        my $analysis;
-       my $fset;
-       
+
+
        if (!$analhash{$analysisid}) {
 	   $analysis = $self->_dbobj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;

@@ -1402,9 +1402,9 @@ sub current_update {
 sub start_update {
     my ($self,$start,$end) = @_;
 
-    my $id = $self->current_update;
+    my $cid = $self->current_update;
 
-    $self->throw("Update already in progresss id [$id]") unless ! $id;
+    $self->throw("Update already in progresss id [$cid]") unless ! $cid;
     
     
     my $sth = $self->prepare("insert into db_update" . 
@@ -1436,12 +1436,12 @@ sub start_update {
 sub finish_update {
     my ($self) = @_;
 
-    my $id = $self->current_update;
+    my $cid = $self->current_update;
 
-    $self->throw("No current updating process. Can't finish") unless $id;
+    $self->throw("No current updating process. Can't finish") unless $cid;
 
-    my $sth = $self->prepare("select * from db_update where id = $id");
-    $sth->execute;
+    my $sth = $self->prepare("select * from db_update where id = $cid");
+    my $res = $sth->execute;
 
     my $rowhash = $self->fetchrow_hashref;
 
@@ -1452,7 +1452,7 @@ sub finish_update {
 
     # Should get stats on each table here as well.
 
-    my $sth = $self->prepare("replace into db_update(id,time_started,time_finished,modified_start,modified_end,status)".
+    $sth = $self->prepare("replace into db_update(id,time_started,time_finished,modified_start,modified_end,status)".
 			     "values($id,\'$time_started\',now(),\'$modified_start\',\'$modified_end\','COMPLETE'");
     $sth->execute;
 
@@ -1755,12 +1755,13 @@ sub write_Feature {
 	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
-	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values('NULL','".$contig->id."',"
+	    my $sth5 = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values('NULL','".$contig->id."',"
 				      .$sub->start   .","
 				      .$sub->end     . ","
 				      .$sub->score   . ","
 				      .$sub->strand  . ","
-				      .$analysisid   . ",-1,-1,'__NONE__')");
+				      .$analysisid   . ",\'" 
+				      .$sub->name    . "\',-1,-1,'__NONE__')");
 	    $sth5->execute();
 	    my $sth6 = $self->prepare("insert into fset_feature(fset,feature,rank) values ($fset_id,LAST_INSERT_ID(),$rank)");
 	    $sth6->execute();
