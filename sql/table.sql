@@ -115,9 +115,7 @@ CREATE TABLE contig (
   clone_id          int(10) NOT NULL,
   length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
   offset            int(10) unsigned,
-  corder            int(10) unsigned,
   dna_id            int(10) NOT NULL,            # foreign key dna:id
-  international_name  varchar(40),
   
   PRIMARY KEY (contig_id),
   UNIQUE name (name),
@@ -148,7 +146,7 @@ CREATE TABLE dna (
   created   datetime NOT NULL,
   
   PRIMARY KEY (dna_id)
-) MAX_ROWS = 750000 AVG_ROW_LENGTH = 13000;
+) MAX_ROWS = 750000 AVG_ROW_LENGTH = 19000;
 
 #
 # Table structure for table 'exon'
@@ -225,7 +223,7 @@ CREATE TABLE simple_feature (
   KEY contig_idx( contig_id, analysis_id, contig_start ),
   KEY analysis_idx( analysis_id, contig_id ),
   KEY hit_idx( display_label )
-) max_rows=300000000 avg_row_length=80;
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 CREATE TABLE protein_align_feature (
@@ -250,7 +248,7 @@ CREATE TABLE protein_align_feature (
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
   KEY ctg_idx( contig_id, contig_start, analysis_id )
-) max_rows=300000000 avg_row_length=80;
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 CREATE TABLE dna_align_feature (
@@ -279,7 +277,7 @@ CREATE TABLE dna_align_feature (
   PRIMARY KEY ( dna_align_feature_id ),
   KEY hit_idx( hit_name ),
   KEY ctg_idx( contig_id, analysis_id, contig_start )
-) max_rows=300000000 avg_row_length=80;
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 
 CREATE TABLE repeat_consensus (
@@ -313,7 +311,7 @@ CREATE TABLE repeat_feature (
   KEY contig_idx( contig_id, contig_start, analysis_id ),
   KEY repeat_idx( repeat_id, contig_id, contig_start ),
   KEY analysis_idx( analysis_id )
-) max_rows=300000000 avg_row_length=80;
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
 #
 # Table structure for table 'gene'
@@ -401,7 +399,7 @@ CREATE TABLE exon_feature (
   feature_type enum( "dna_align", "simple", "protein_align" ) not null,
 
   key exon_idx( exon_id, feature_id, feature_type )
-) max_rows=300000000 avg_row_length=80;
+) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
   
  
 
@@ -480,14 +478,14 @@ CREATE TABLE translation_stable_id (
  
 
 CREATE TABLE assembly (
-    superctg_name    varchar(20) NOT NULL,
     chromosome_id  tinyint unsigned  NOT NULL,
-    contig_id      int(10) unsigned NOT NULL, # foreign key contig:internal_id
     chr_start      int(10) NOT NULL,
     chr_end        int(10) NOT NULL,
+    superctg_name    varchar(20) NOT NULL,
     superctg_start   int(10) NOT NULL,
     superctg_end     int(10) NOT NULL,
     superctg_ori     tinyint(2) NOT NULL,
+    contig_id      int(10) unsigned NOT NULL, # foreign key contig:internal_id
     contig_start   int(10) NOT NULL,
     contig_end     int(10) NOT NULL,
     contig_ori     tinyint  NOT NULL, 
