@@ -109,6 +109,8 @@ sub fetch_by_Slice_start_end_strand {
    my $csa = $self->db->get_CoordSystemAdaptor();
    my $seqlevel = $csa->fetch_sequence_level();
 
+   my $slice_adaptor = $self->db()->get_SliceAdaptor();
+
    my @projection;
    if($slice->coord_system->equals($seqlevel)) {
      #create a fake projection to the entire length of the same slice
@@ -117,7 +119,7 @@ sub fetch_by_Slice_start_end_strand {
      @projection = @{$slice->project($seqlevel->name(), $seqlevel->version())};
    }
 
-   my $slice_adaptor = $self->db()->get_SliceAdaptor();
+
    my $sth = $self->prepare(
                "SELECT SUBSTRING( d.sequence, ?, ?)
                 FROM dna d
@@ -149,6 +151,7 @@ sub fetch_by_Slice_start_end_strand {
 
      $seq .= $tmp_seq;
 
+
      $total = $end;
    }
 
@@ -158,6 +161,13 @@ sub fetch_by_Slice_start_end_strand {
    my $gap = $slice->length - $total;
    if($gap) {
      $seq .= 'N' x $gap;
+   }
+
+   #if the sequence is too short it is because we came in with a seqlevel
+   #slice that was partially off of the seq_region.  Pad the end with Ns
+   #to make long enough
+   if(length($seq) != $slice->length()) {
+     $seq .= 'N' x ($slice->length() - length($seq));
    }
 
    #if they asked for the negative slice strand revcomp the whole thing
