@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for DB::VirtualPrimarySeq
+# BioPerl module for Virtual::PrimarySeq
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
