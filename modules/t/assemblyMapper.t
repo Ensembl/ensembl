@@ -30,6 +30,7 @@ ok($asma && $asma->isa('Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor'));
 my $csa = $db->get_CoordSystemAdaptor();
 my $ctg_cs = $csa->fetch_by_name('contig');
 my $chr_cs = $csa->fetch_by_name('chromosome');
+my $cln_cs = $csa->fetch_by_name('clone');
 
 my $asm_mapper = $asma->fetch_by_CoordSystems($ctg_cs, $chr_cs);
 
@@ -50,6 +51,11 @@ print_coords(@coords);
 
 
 @coords = $asm_mapper->map('AL359765.6.1.13780', 1, 13780, 1, $ctg_cs);
+
+print_coords(@coords);
+
+my $cln_mapper = $asma->fetch_by_CoordSystems($cln_cs, $ctg_cs);
+@coords = $cln_mapper->map('AL359765.6', 1, 20_000, 1, $cln_cs);
 
 print_coords(@coords);
 

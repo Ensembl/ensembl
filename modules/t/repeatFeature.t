@@ -1,93 +1,97 @@
+use strict;
+
+use Bio::EnsEMBL::RepeatFeature;
+use Bio::EnsEMBL::Slice;
+use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::RepeatConsensus;
+use Bio::EnsEMBL::CoordSystem;
+use Bio::EnsEMBL::RepeatFeature;
+
 use lib 't';
 
-BEGIN { $| = 1;  
+BEGIN { $| = 1;
 	use Test;
-	plan tests => 12;
+	plan tests => 15;
 }
 
 
-use MultiTestDB;
 use TestUtils qw(test_getter_setter debug);
 
 our $verbose = 0;
 
 
-my $multi = MultiTestDB->new();
+my $coord_system = Bio::EnsEMBL::CoordSystem->new
+  (-NAME    => 'chromosome',
+   -VERSION => 'NCBI34',
+   -DBID    => 123,
+   -TOP_LEVEL => 1);
 
-ok(1);
+my $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'test');
 
-my $db = $multi->get_DBAdaptor( 'core' );
+my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
+                                     -SEQ_REGION_NAME => 'X',
+                                     -START           => 1_000_000,
+                                     -END             => 2_000_000);
 
-$cadp = $db->get_RawContigAdaptor();
-
-$contig = $cadp->fetch_by_dbID(319456);
-
-my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("RepeatMask");
-
-debug( "ANALYSIS ".$analysis );
-
-ok($analysis);
-ok($contig);
-
-$repeat_f_ad = $db->get_RepeatFeatureAdaptor();
-$repeat_c_ad = $db->get_RepeatConsensusAdaptor();
-
-
-debug( "Analysis dbID ".$analysis->dbID );
-
-my $repeat_consensus = Bio::EnsEMBL::RepeatConsensus->new();
-
-$repeat_consensus->length(10);
-$repeat_consensus->repeat_class('dummy');
-$repeat_consensus->name('dummy');
-$repeat_consensus->repeat_consensus('ATGCATGCAT');
-
-ok($repeat_consensus);
-
-$repeat_c_ad->store($repeat_consensus);
-
-ok(1);
-
-my $repeat_feature = Bio::EnsEMBL::RepeatFeature->new();
-
-$repeat_feature->start(26);
-$repeat_feature->end(65);
-$repeat_feature->strand(1);
-$repeat_feature->hstart(6);
-$repeat_feature->hend(45);
-$repeat_feature->score(100);
-$repeat_feature->analysis($analysis);
-$repeat_feature->repeat_consensus($repeat_consensus);
-$repeat_feature->contig( $contig );
-
-ok($repeat_feature);
-$multi->hide( "core", "repeat_feature" );
-
-$repeat_f_ad->store( $repeat_feature );
+my $repeat_consensus = Bio::EnsEMBL::RepeatConsensus->new
+  (-REPEAT_CONSENSUS => 'ACTG',
+   -NAME             => 'ACTG(n)',
+   -LENGTH           => 4,
+   -REPEAT_CLASS    => 'Simple_repeat');
 
 
-ok(1);
+#
+# Test new and getters
+#
 
-my $repeats = $repeat_f_ad->fetch_all_by_RawContig($contig);
+my $start  = 10;
+my $end    = 100;
+my $strand = -1;
+my $hstart = 1;
+my $hend = 90;
+my $dbID = 123;
+my $score = 12.5;
 
-my $repeat = $repeats->[0];
-
-ok($repeat);
-
-ok($repeat->start == 26);
-ok($repeat->hend == 45);
-
-my $dbID = $repeat->dbID;
-
-my $r = $repeat_f_ad->fetch_by_dbID($dbID);
-
-ok($r->dbID == $dbID && $r->start == 26 && $r->hend == 45);
-
-
-# list_dbIDs
-my $ids = $repeat_f_ad->list_dbIDs();
-ok (@{$ids});
-
-$multi->restore('core', 'repeat_feature');
+my $rf = Bio::EnsEMBL::RepeatFeature->new
+  (-START   => $start,
+   -END     => $end,
+   -STRAND  => $strand,
+   -ANALYSIS => $analysis,
+   -SLICE   => $slice,
+   -HSTART  => $hstart,
+   -HEND    => $hend,
+   -SCORE   => $score,
+   -REPEAT_CONSENSUS => $repeat_consensus);
 
 
+ok($rf && $rf->isa('Bio::EnsEMBL::RepeatFeature'));
+
+ok($rf->start == $start);
+ok($rf->end == $end);
+ok($rf->strand == $strand);
+ok($rf->analysis == $analysis);
+ok($rf->slice == $slice);
+ok($rf->hstart == $hstart);
+ok($rf->hend == $hend);
+ok($rf->score == $score);
+ok($rf->repeat_consensus == $repeat_consensus);
+
+
+#
+# Test Getter/Setters
+#
+
+$repeat_consensus = Bio::EnsEMBL::RepeatConsensus->new
+  (-REPEAT_CONSENSUS => 'ACTG',
+   -NAME             => 'ACTG(n)',
+   -LENGTH           => 4,
+   -REPEAT_CLASS    => 'Simple_repeat');
+
+
+ok(test_getter_setter($rf, 'hstart', 120));
+ok(test_getter_setter($rf, 'hend', 200));
+ok(test_getter_setter($rf, 'repeat_consensus', $repeat_consensus));
+ok(test_getter_setter($rf, 'score', '45.5'));
+
+
+ok($rf->hstrand == 1);
