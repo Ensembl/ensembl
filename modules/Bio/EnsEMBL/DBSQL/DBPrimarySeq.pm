@@ -64,7 +64,8 @@ sub _initialize {
   my($self,@args) = @_;
 
   my($dna_id,$dbh) =
-      $self->_rearrange([qw(DNA,DB_HANDLE
+      $self->_rearrange([qw(DNA 
+                            DB_HANDLE
 			    )],
 			@args);
 
@@ -119,7 +120,7 @@ sub contig_id{
     
     my $id=$self->dna_id;
     
-    my $sth=$self->db_handle->prepare("SELECT id FROM contig WHERE dna = $id");
+    my $sth=$self->db_handle->prepare("SELECT internal_id FROM contig WHERE dna = $id");
     $sth->execute(); 
     
     my($contig_id) = $sth->fetchrow
