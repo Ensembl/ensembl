@@ -136,29 +136,6 @@ sub _parse {
 
 =head1 Methods unique to exon
 
-=head2 dna_seq
-
-  Title   : dna_seq
-  Usage   : $dna = $feat->dna_seq
-  Function: Returns the dna sequence of the exon
-  Returns : Bio::Seq
-  Args    : none
-
-=cut
-
-sub dna_seq {
-  my ($self,$seq) = @_;
-
-  # Bit more fussy on the input here.  Don't know if
-  # we have to be so conscientious.
-  if (defined($seq) && $seq->isa("Bio::Seq")) {
-    $self->{'dna_seq'} = $seq;
-  } elsif (defined($seq)) {
-    $self->throw("Input to dna_seq is not a Bio::Seq");
-  } 
-  return $self->{'dna_seq'};
-
-}
 
 =pod 
 

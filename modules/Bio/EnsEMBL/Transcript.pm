@@ -180,7 +180,7 @@ sub translate {
   my $phase = $exon[0]->phase;
   my $mrna  = $self->dna_seq->seq();
 
-  # Hackeroover as we can't ranslate in any frame apart from 0
+  # Hackeroover as we can't translate in any frame apart from 0
   $mrna = substr($mrna,$phase);
 
   my $seq = new Bio::Seq(-seq => $mrna);
@@ -191,11 +191,11 @@ sub translate {
 
 =head2 dna_seq
 
- Title   : dna_Seq
- Usage   : $dna = $feat->dna_seq
- Function: Returns the dna sequence of the gene
- Returns : Bio::Seq
- Args    : none
+  Title   : dna_seq
+  Usage   : $dna = $feat->dna_seq
+   Function: Returns the dna sequence of the gene
+  Returns : Bio::Seq
+  Args    : none
 
 =cut
 
@@ -203,14 +203,44 @@ sub dna_seq {
   my ($self) = @_;
 
   my $mrna = "";
+  my $strand = $self->{_trans_exon_array}[0]->strand;
 
+  
   foreach my $exon ($self->each_Exon) {
-    $mrna .= $exon->dna_seq()->seq();
+    my $tmp = $self->contig_dna->str($exon->start,$exon->end);
+
+    if ($strand == -1) {
+      $tmp =~ tr/ATGCatgc/TACGtacg/;
+      $tmp = reverse($tmp);
+    }
+
+    $mrna  .= $tmp;
   }
+
 
   my $seq = new Bio::Seq(-seq => $mrna);
 
   return $seq;
+}
+
+=head2 contig_dna
+
+  Title   : contig_dna
+  Usage   : $tran->contig_dna($dna);
+   Function: Sets the dna sequence of the contig
+  Returns : Bio::Seq
+  Args    : Bio::Seq
+
+=cut
+
+sub contig_dna {
+  my ($self,$dna) = @_;
+
+  if (defined($dna)) {
+    $self->{_contig_dna} = $dna;
+  }
+
+  return $self->{_contig_dna};
 }
 
 =head2 sort
@@ -247,5 +277,280 @@ sub sort {
   }
 }
 
+
+sub exon_dna {
+  my ($self,$exon) = @_;
+
+  my $tmpseq = $self->contig_dna->str($exon->start,$exon->end);
+  
+  if ($exon->strand == -1) {
+    $tmpseq =~ tr/ATGCatgc/TACGtacg/;
+    $tmpseq = reverse($tmpseq);
+  }
+  return new Bio::Seq(-seq => $tmpseq);
+}
+
+  
+sub translate_exon {
+  my ($self,$exon) = @_;
+
+  my @tran;
+  my $dnaseq = $self->exon_dna($exon);
+
+  for (my $i =0; $i < 3; $i++) {
+    my $tmp = substr($dnaseq->seq,$i);
+    my $new = new Bio::Seq(-seq => $tmp);
+    my $pep = $new->translate();
+    push(@tran,$pep);
+  }
+  return @tran;
+}
+    
+
+sub pep_coords {
+  my $self = shift;
+
+  # for mapping the peptide coords back onto the dna sequence
+  # it would be handy to have a list of the peptide start end coords
+  # for each exon
+  
+  my @starts;
+  my @ends;
+  
+  my $fullpep = $self->translate()->seq;
+
+  foreach my $ex ($self->each_Exon) {
+    
+    my @tmp = $self->translate_exon($ex);
+    my $pep = $tmp[$ex->phase]->seq;
+    
+    my $start = index($fullpep,$pep) + 1;
+    my $end = $start + length($pep) - 1;
+    
+    push(@starts,$start);
+    push(@ends,$end);
+    
+  }
+
+  return \@starts,\@ends;
+}
+
+
+sub translate_region {
+  my ($self,$start,$end) = @_;
+  
+  my $mrna = "";
+  my $count = 0;
+  
+  # Loop through the exons until we find the start
+  # We adjust the start coordinate so we translate
+  # in the right frame
+
+  my $foundstart;    # We have found the start of the region to translate
+  my $foundend;      # We have found the end of the regino to translate
+
+  my @exons  = $self->each_Exon;
+  my $strand = $exons[0]->strand;
+
+  # Separate the forward and reverse strands
+  if ($strand eq 1) {
+
+    foreach my $exon (@exons) {
+      
+      my $tmpstart;
+      my $tmpend;
+      
+      # Find the coords in the current exon that we wish to translate
+      if (!$foundstart) {
+	if ($start >= $exon->start && $start <= $exon->end) {
+	  $foundstart = 1;
+	  $tmpstart = $start;
+	  
+	  # Adjust the start coordinate so we are in the
+	  # right frame
+	  $tmpstart = $tmpstart + (3 - ($tmpstart - $exon->phase - $exon->start)%3) % 3;
+	  
+	}
+      }
+      
+      if ($foundstart && !$foundend) {
+	$tmpend   = $exon->end;
+	$tmpstart = $exon->start unless $tmpstart;
+	
+	# Check to see if we have the end coord as well
+	if ($end <= $exon->end) {
+	  $foundend = 1;
+	  $tmpend = $end;
+	} elsif  ($count < $#exons && $end <= $exons[$count+1]->start) {
+	  # Or does the end occur in the intron (shouldn't do!!!)
+	  $tmpend = $exon->end;
+	  $foundend = 1;
+	} 
+      }
+
+      
+      # Only tack on sequence to the mrna if we are in the middle of the translated region
+      
+      if (defined($tmpstart) && defined($tmpend)) {
+	
+	my $newstart = $tmpstart  - $exon->start + 1;
+	my $newend   = $tmpend    - $exon->start + 1;
+	
+	my $seq    = $self->exon_dna($exon)->seq();
+	my $tmpseq = substr($seq,$newstart-1,($newend-$newstart+1));
+	
+	$mrna = $mrna . $tmpseq;
+      }
+      $count++;
+      
+    }
+
+  } else {
+    foreach my $exon (@exons) {
+      
+      my $tmpstart;
+      my $tmpend;
+      
+      if (!$foundstart) {
+	if ($end <= $exon->end && $end >= $exon->start) {
+	  $foundstart = 1;
+	  $tmpstart = $end;
+
+	  # Adjust the start coordinate so we are in the
+	  # right frame
+
+	  $tmpstart = $tmpstart  - (3 - ($exon->end - $end - $exon->phase)%3)%3;
+#	  print("Adjusting by " . (3-($exon->end - $end - $exon->phase)%3)%3  . "\n");
+
+	}
+      }
+
+      if (!$foundend && $foundstart) {
+	$tmpend   = $exon->start;
+	$tmpstart = $exon->end  unless $tmpstart;
+
+	if ($start >= $exon->start) {
+	  $foundend = 1;
+	  $tmpend = $start;
+	} elsif  ($count < $#exons && $start >= $exons[$count+1]->end) {
+	  # Or does the end occur in the intron (shouldn't do!!!)
+	  $tmpend = $exon->start;
+	  $foundend = 1;
+	} 
+	
+	if (defined($tmpstart) && defined($tmpend)) {
+#	  print("Exon $count\t" . $exon->start . "\t" . $exon->end . "\t" .  $tmpstart . "\t" . $tmpend . "\n");
+	  
+	  my $newstart = $exon->end - $tmpstart + 1;
+	  my $newend   = $exon->end - $tmpend   + 1;
+	  
+	  my $seq    = $self->exon_dna($exon)->seq();
+	  my $tmpseq = substr($seq,$newstart-1,($newend-$newstart+1));
+	  
+	  $mrna .= $tmpseq;
+	}
+      }
+      $count++;
+    }
+  }
+
+  
+  my $seq = new Bio::Seq(-seq => $mrna);
+  my $i = 0;
+  my @out;
+  
+  for ($i=0; $i < 3; $i++) {
+    my $subseq = new Bio::Seq(-seq => substr($mrna,$i));
+    my $trans = $subseq->translate();
+    push(@out,$trans);
+  }
+
+  return \@out;
+}
+
+
+sub find_coord {
+  my ($self,$coord,$type) = @_;
+ 
+  my $count = 0;
+  my @exons = $self->each_Exon;
+  my $end   = $#exons;
+  my $dna;
+
+  my ($starts,$ends) = $self->pep_coords;
+  my $strand = $exons[0]->strand;
+
+  # $starts and $ends are array refs containing the _peptide_ coordinates
+  # of each exon. We may have 1 missing residue that spans an intron.
+  # We ignore these.
+
+  if ($strand == 1) {
+    foreach my $ex ($self->each_Exon) {
+      
+      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
+	my $dna   = $ex->start + $ex->phase;
+	my $nopep = $coord - $starts->[$count];
+	
+	$dna += 3 * $nopep;
+
+	if ($type eq "end") {
+	  $dna += 2;
+	}
+	
+	return $dna;
+	
+      } elsif ($count < $end) {
+	my $endpep = $ends->[$count]+1;
+	if ($endpep == $coord) {
+
+	  my $dna;
+
+	  if ($type eq "end") {
+	    my $end_phase = $ex->end_phase;
+	    $dna = $ex->end - 3 + $end_phase;
+	  } else {
+	    $dna = $exons[$count+1]->start + $exons[$count+1]->phase;
+	  }
+	  return $dna;
+	}
+      }
+      $count++;
+    }
+  } else {
+
+    foreach my $ex ($self->each_Exon) {
+      
+      if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
+	
+	my $dna   = $ex->end - $ex->phase;
+	my $nopep = $coord - $starts->[$count];
+
+	$dna -= 3*$nopep;
+
+	if ($type eq "end") {
+	  $dna -= 2;
+	}
+	
+	return $dna;
+	
+      } elsif ($count < $end) {
+	my $endpep = $ends->[$count]+1;
+
+	if ($endpep == $coord) {
+	  my $dna;
+
+	  if ($type eq "end") {
+	    my $end_phase = $ex->end_phase;
+	    $dna = $ex->start + 3 - $end_phase;
+	  } else {
+	    $dna = $exons[$count+1]->end - $exons[$count+1]->phase;
+	  }
+	  return $dna;
+	}
+      }
+      $count++;
+    } 
+  }
+}
 
 1;
