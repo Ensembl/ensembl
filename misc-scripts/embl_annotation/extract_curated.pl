@@ -10,16 +10,18 @@ use Getopt::Long;
 use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
+use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 # embl genes will be written to this database:
 my $ohost='ecs1b';
 my $ouser='ensadmin';
 my $odbname='tim_embl_test';
+my $pass='ensembl';
 
 # list of clones in ensembl for which an embl file should be
 # checked is read from here
 my $ihost='ecs1c';
-my $iuser='ensadmin';
+my $iuser='ensro';
 my $idbname='ensembl100';
 
 # test file
@@ -114,7 +116,7 @@ my $logging;
 my $db;
 unless($nodb){
     $db = Bio::EnsEMBL::DBLoader->new(
-       "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname");
+       "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname;pass=$pass");
 }
 
 # adaptor for xrefs
@@ -177,10 +179,10 @@ if($list){
 	my $version=$clone->embl_version;
 
 	# is clone in output database?
-	eval{
+	#eval{
 	    my $clone=$db->get_Clone($clone_id);
-	};
-	if($@){
+	#};
+	#if($@){
 	    print "[$nclone] $clone_id not yet parsed ".
 		"[$nunfin; $nnoembl; $nwrongsv; $nclonefail; ".
 		    "$nclonenogene; $nclonegene; $ngeneok]\n";
@@ -195,9 +197,11 @@ if($list){
 		$nnoembl++;
 	    }
 	    &_process_file($db,$seqio,$verbose,$clone_id,$version);
-	}else{
-	    print "$clone_id already parsed - skip\n";
-	}
+	#}
+	
+	#	else{
+	#	    print "$clone_id already parsed - skip\n";
+	# 	}
 
     }
 
