@@ -313,13 +313,12 @@ sub source_tag {
 
 BEGIN {
 
-    my @_type = ('DNA-DNA', 'DNA-PEP', 'PEP-DNA', 'PEP-PEP');
+    my @types = ('DNA-DNA', 'DNA-PEP', 'PEP-DNA', 'PEP-PEP');
 
     sub type {
         my ($self,$arg) = @_;
 
         my $type;
-        my @types = @_type;
 
         if (defined($arg)) {
 	    foreach my $t (@types) {
@@ -329,7 +328,7 @@ BEGIN {
 	        }
 	    }
 
-	    if (defined $type) {
+	    unless (defined $type) {
 	        $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @types");
 	    }
 
