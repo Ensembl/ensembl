@@ -109,7 +109,7 @@ $pt->add_Exon($exon);
 #check that transcript start + end updated
 ok($pt->start == $exon->start);
 ok($pt->end == $exon->end);
-$exons = $pt->get_all_Exons;
+$exons = $pt->get_all_Exons( 1 );
 #check that there is one more exon
 ok($count + 1 == scalar(@$exons)); 
 #check that the last exon is the exon added
@@ -158,7 +158,7 @@ ok($pt->get_exon_count == scalar @{$pt->get_all_Exons});
 #
 $count = $pt->get_exon_count;
 $pt->set_exon_count(26);
-ok(scalar @{$pt->get_all_Exons} == 26); # test internal exon array expansion
+ok(scalar @{$pt->get_all_Exons( 1 )} == 26); # test internal exon array expansion
 $pt->set_exon_count($count);
 
 #
