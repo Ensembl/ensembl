@@ -55,36 +55,55 @@ use Bio::EnsEMBL::SeqFeature;
 
 =head2 display_label
 
- Title   : display_label
- Usage   : $obj->display_label($newval)
- Function: 
- Example : 
- Returns : value of display_label
- Args    : newvalue (optional)
-
+  Title   : display_label
+  Usage   : $obj->display_label($newval)
+  Function: 
+  Example : 
+  Returns : value of display_label
+  Args    : newvalue (optional)
 
 =cut
 
 sub display_label{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'display_label'} = $value;
-    }
-    return $self->{'display_label'};
+   my ($self, $value) = @_;
 
+   if (defined $value) {
+      $self->{'display_label'} = $value;
+   }
+   return $self->{'display_label'};
 }
+
 
 sub dbID{
   my ($self, $arg) = @_;
 
-  if(defined $arg){
+  if(defined $arg) {
     $self->{_database_id} = $arg;
   }
-
   return $self->{_database_id}; 
-
 }
 
+
+=head2 adaptor
+
+  Arg [1]    : Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
+
+=cut
+
+sub adaptor {
+   my $self = shift;
+   if( @_ ) {
+      my $value = shift;
+      $self->{'adaptor'} = $value;
+   }
+   return $self->{'adaptor'};
+
+}
 
 
 1;
