@@ -70,6 +70,8 @@ sub fetch_by_RawContig_start_end_strand {
   my ( $self, $contig, $start, $end, $strand, $compressed ) = @_;
   my $sth;
   
+  $compressed ||= 0;
+
   if( $start < 1 ) {
     $self->throw( "Wrong parameters" );
   }

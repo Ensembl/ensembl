@@ -119,11 +119,11 @@ ok($db->add_GenericFeatureAdaptor("Simple", $sfa));
 
 # Check get-ing the above
 # by name ...
-my %generic_adaptors = $db->get_GenericFeatureAdaptors("Simple", "Repeat");
+my %generic_adaptors = %{$db->get_GenericFeatureAdaptors("Simple", "Repeat")};
 ok(%generic_adaptors);
 
 # no arg should return all
-%generic_adaptors = $db->get_GenericFeatureAdaptors();
+%generic_adaptors = %{$db->get_GenericFeatureAdaptors()};
 my $size = keys(%generic_adaptors);
 ok($size == 2);
 
@@ -135,5 +135,5 @@ ok($@);
 my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
 ok($slice);
 
-my %features = $slice->get_generic_features();
-ok(%features);
+my %features = %{$slice->get_generic_features()};
+ok(!%features);

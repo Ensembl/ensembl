@@ -1124,7 +1124,8 @@ sub set_adaptor() {
   Arg [1]    : List of names of feature adaptors to get. If no adaptor names are given, all the defined adaptors are returned.
   Example    : $db->get_GenericFeature("SomeFeature", "SomeOtherFeature")
   Description: Returns a hash containing the named feature adaptors (or all feature adaptors).
-  Returntype : Hash containing the named feature adaptors (or all feature adaptors).
+  Returntype : reference to a Hash containing the named 
+               feature adaptors (or all feature adaptors).
   Exceptions : If any of the the named generic feature adaptors do not exist.
   Caller     : external
 
@@ -1132,22 +1133,22 @@ sub set_adaptor() {
 
 sub get_GenericFeatureAdaptors() {
 
-	my ($self, @names) = @_;
+  my ($self, @names) = @_;
 
-  my %adaptors = {};
+  my %adaptors = ();
 
-	if (!@names) {
-		%adaptors = %{$self->{'generic_feature_adaptors'}};
-	} else {
-		foreach my $name (@names) {
-			if (!exists($self->{'generic_feature_adaptors'}->{$name})) {
-				$self->throw("No generic feature adaptor has been defined for $name" );
-			}
-			%adaptors->{$name} = $self->{'generic_feature_adaptors'}->{$name};
-		}
-	}
+  if (!@names) {
+    %adaptors = %{$self->{'generic_feature_adaptors'}};
+  } else {
+    foreach my $name (@names) {
+      if (!exists($self->{'generic_feature_adaptors'}->{$name})) {
+	$self->throw("No generic feature adaptor has been defined for $name" );
+      }
+      $adaptors{$name} = $self->{'generic_feature_adaptors'}->{$name};
+    }
+  }
 
-	return %adaptors;
+  return \%adaptors;
 
 }
 

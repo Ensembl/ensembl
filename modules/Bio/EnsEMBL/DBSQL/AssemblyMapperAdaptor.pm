@@ -129,7 +129,7 @@ sub register_region{
   $self->throw("$assmapper is not a Bio::EnsEMBL::AssemblyMapper")
     unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
 
-  my $chr = $self->db->get_ChromosomeAdaptor()->fetch_by_name( $chr_name );
+  my $chr = $self->db->get_ChromosomeAdaptor()->fetch_by_chr_name( $chr_name );
   my $chr_id = $chr->dbID();
   my $max_assembly_contig = $self->db()->get_MetaContainer->get_max_assembly_contig();
 
@@ -142,7 +142,7 @@ sub register_region{
          ass.chr_start,
          ass.chr_end
       from
-         assembly ass,
+         assembly ass
       where
          ass.chromosome_id = $chr_id and
          ? <= ass.chr_end  and
