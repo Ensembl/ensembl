@@ -29,7 +29,9 @@ CREATE TABLE analysis (
   gff_source varchar(40),
   gff_feature varchar(40),
 
-  PRIMARY KEY (analysis_id)
+  PRIMARY KEY (analysis_id),
+  UNIQUE (logic_name)
+
 );
 
 # semantics
