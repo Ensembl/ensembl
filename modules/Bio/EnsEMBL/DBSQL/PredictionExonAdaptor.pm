@@ -170,9 +170,9 @@ sub store {
   ($pexon, $seq_region_id) = $self->_pre_store($pexon);
 
   my $sth = $db->prepare
-    ("INSERT into exon (prediction_transcript_id, exon_rank, " .
+    ("INSERT into prediction_exon (prediction_transcript_id, exon_rank, " .
                        "seq_region_id, seq_region_start, seq_region_end, " .
-                       "seq_region_strand, start_phase, score, p_value)" .
+                       "seq_region_strand, start_phase, score, p_value) " .
       "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )");
 
   $sth->execute( $pt_id,
