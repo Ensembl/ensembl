@@ -53,13 +53,14 @@ use Bio::Root::Object;
 
 
 # This is by no means perfect - the data should be static for a start
-
-my $msptype =  [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp' , 1,1,'similarity'],
-		['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp' , 1,1,'similarity'],
-		['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp' , 1,1,'similarity'],
-		['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp' , 1,1,'similarity'],
-		['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp' , 1,1,'similarity'],
-		['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam', 1,1,'pfam_prediction'],
+#                           Program     database   type    extension               type   dbver progver gff_source
+my $msptype =  [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp' ,  1 ,1,'similarity'],
+		['ce_p',    'tblastn', 'ce',       'dna', '.tblastn_ce.msptmp',    'msp' ,  1 ,1,'similarity'],
+		['vert_p',  'tblastn', 'vert',     'dna', '.tblastn_vert.msptmp',  'msp' ,  1 ,1,'similarity'],
+		['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp' ,  1 ,1,'similarity'],
+		['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp' ,  1 ,1,'similarity'],
+		['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam',  1 ,1,'pfam_prediction'],
+		['repeat_n','RepeatMasker', ''   , 'dna', '.RepMask.out.gff',      'repeat','','042199','similarity'],
 		];
   
 sub _initialize {
@@ -90,6 +91,7 @@ sub extension2MSPType {
     print("Can't convert $ext\n");
     
 }
+
 
 
 

@@ -63,23 +63,28 @@ sub _initialize {
   
     my $make = $self->SUPER::_initialize;
     my ($id,$clone_dir,$disk_id,$gs,$seq,$debug)=@args;
-    $id || $self->throw("Cannot make contig_feature object without id");
-    $clone_dir || $self->throw("Cannot make contig_feature object without clone_dir");
-    $disk_id || $self->throw("Cannot make contig_feature object without disk_id");
-    $gs || $self->throw("Cannot make contig_feature object without gs object");
-    $gs->isa('Bio::EnsEMBL::Analysis::Genscan') || 
-	$self->throw("$gs is not a gs object in new contig_feature");
-    $seq || $self->throw("Cannot make contig_feature object without seq object");
-    $seq->isa('Bio::Seq') || 
-	$self->throw("$seq is not a seq object in new contig_feature");
+
+    $id                   || $self->throw("Cannot make contig_feature object without id");
+    $clone_dir            || $self->throw("Cannot make contig_feature object without clone_dir");
+    $disk_id              || $self->throw("Cannot make contig_feature object without disk_id");
+    $gs                   || $self->throw("Cannot make contig_feature object without gs object");
+
+    $gs->isa('Bio::EnsEMBL::Analysis::GenscanMC') ||   $self->throw("$gs is not a gs object in new contig_feature");
+    $seq                  || $self->throw("Cannot make contig_feature object without seq object");
+    $seq->isa('Bio::Seq') || $self->throw("$seq is not a seq object in new contig_feature");
+
     $self->_debug(1) if $debug;
+
+
+    $self->{_features} = [];   # This stores the features.
 
     # read 2 types of features
     # 1. features aligned against contigs (no remapping required)
     # 2. features aligned against transcripts (remapping required)
     
+
     # DEBUG
-    print_genes($gs,$seq) if $self->_debug;
+    print_genes($gs,$seq); if $self->_debug;
   
     # mapping of data to filenames
     my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp'  ],
@@ -88,10 +93,22 @@ sub _initialize {
 		   ['sh_p',    'tblastn', 'sh',       'dna', '.tblastn_sh.msptmp',    'msp'  ],
 		   ['dbest_p', 'tblastn', 'dbest',    'dna', '.tblastn_dbest.msptmp', 'msp'  ],
 		   ['pfam_p',  'hmmpfam', 'PfamFrag', 'pep', '.hmmpfam_frag',         'pfam' ],
+		   ['repeat',  'RepeatMasker', '',    'dna', '.RepMask.out.gff',      'gff' ],
 		   ];
+
+    # MC. I've bypassed the rest of this code as 
+    #        1. The feature reading doesn't work
+    #        2. The feature reading is being rewritten in as slightly different way
+    #        3. We're only reading repeats at the moment.
+
   
+    $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+
+    return $self;
+
     # loop over transcripts
-    my $count=1;
+    my $count = 1;
+
     foreach my $g ($gs->each_Transcript) {
 	
 	print_gene_details($g,$count) if $self->_debug;
@@ -101,49 +118,102 @@ sub _initialize {
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$$msp[4];
 	    my $pid            = "$id.$count";
 	    my @homols;
-	    if($$msp[5] eq 'msp'){
+
+	    if ($$msp[5]     eq 'msp'){
 		@homols        = $self->_read_MSP($mspfile,$seq,$pid,$msp);
-	    }elsif($$msp[5] eq 'pfam'){
+	    } elsif ($$msp[5] eq 'pfam'){
 		@homols        = $self->_read_pfam($mspfile,$seq,$pid,$msp);
-	    }else{
+	    } else {
 		$self->throw("no parser for $$msp[5] defined");
 	    }
+
 	    my $offset         = $self->_get_offset($gs,$g,$count);
       
-	    print STDERR "read MSP file $mspfile:\n  $#homols homols. Offset $offset\n" 
-		if $self->_debug;
+	    print STDERR "read MSP file $mspfile:\n  $#homols homols. Offset $offset\n"  if $self->_debug;
       
 	    # these are all matches to transcripts, so need to remap to contig coordinates
 	    foreach my $h (@homols) {
 
-		my $hsf=$h->homol_SeqFeature;
+		my $hsf  =  $h->homol_SeqFeature;
 		my $seq;
-		print STDERR $h->seqname . "\t" . $h->start . "\t" . $h->end . "\t" . 
-		    $hsf->start . "\t" . $hsf->end . "\t" . 
-			$hsf->strand . "\t" . join(',',$hsf->each_tag_value('title')) . "\t" . 
-			$seq ."\n";
 
-		# Converts peptide to dna coords
-		my @newhomols=$self->map_homols($h,$g,$offset,$seq,\*STDOUT); 
+		print STDERR $h->seqname  . "\t" . 
+		             $h->start    . "\t" . 
+		             $h->end      . "\t" . 
+		             $hsf->start  . "\t" . 
+			     $hsf->end    . "\t" . 
+			     $hsf->strand . "\t" . 
+			     join(',',$hsf->each_tag_value('title')) . "\t" . 
+			     $seq ."\n";
+
+		# Converts peptide to dna coords - MC this doesn't work.
+		my @newhomols = $self->map_homols($h,$g,$offset,$seq,\*STDOUT); 
 		
 		print STDERR "Homols mapped to dna coords are :\n" if $self->_debug;
 
 		foreach my $hh (@newhomols){
-		    my $hsf=$hh->homol_SeqFeature;
+		    my $hsf = $hh->homol_SeqFeature;
 		    my $seq;
-		    #my $tmp=$g->translate_region($hh->start,$hh->end);
-		    #$seq=$tmp->[0]->seq;
-		    print STDERR $hh->seqname . "\t" . $hh->start . "\t" . $hh->end . "\t" . 
-			$hsf->start . "\t" . $hsf->end . "\t" . $hsf->strand . "\t" . 
-			    $seq ."\n";
+
+		    print STDERR $hh->seqname . "\t" . 
+			         $hh->start   . "\t" . 
+				 $hh->end     . "\t" . 
+				 $hsf->start  . "\t" . 
+                                 $hsf->end    . "\t" . 
+				 $hsf->strand . "\t" . 
+				 $seq ."\n";
 		}	
 	    }
 	}
+
 	$count++;    
     }
+
     return $make;
 }
 
+sub read_Repeats {
+    my ($self,$clone_dir,$disk_id,$msp) = @_;
+
+    my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
+
+    if (! -e $gfffile) {
+	$self->warn("No repeat file $gfffile  exists");
+	return;
+    }
+
+    my $GFF        = new Bio::EnsEMBL::Analysis::GFF(-file => $gfffile);
+	    
+    foreach my $f ($GFF->each_Feature) {
+	$self->add_Feature($f);
+    }
+}
+
+
+sub add_Feature {
+    my ($self,$f) = @_;
+
+    $self->throw("Feature must be Bio::SeqFeature::Generic in add_Feature") unless $f->isa("Bio::SeqFeature::Generic");
+
+    if (!defined($self->{_features})) {
+	$self->{_features} = [];
+	$self->warn("The feature array does not exist!! Creating an empty one");
+    }
+    my @f = @{$self->{_features}};
+
+    push(@{$self->{_features}},$f);
+}
+
+sub each_Feature {
+    my ($self) = @_;
+
+    if (defined($self->{_features})) {
+	return @{$self->{_features}};
+    } 
+}
+
+
+		
 sub print_gene_details {
     my ($g,$count) = @_;
   

@@ -85,7 +85,7 @@ sub _initialize {
 sub addHomol {
     my ($self,$homol) = @_;
 
-    $self->throw("Not a Bio::SeqFeature::Homol object") unless (ref($homol) eq "Bio::SeqFeature::Homol");
+    $self->throw("Not a Bio::SeqFeature::Homol object") unless ($homol->isa("Bio::SeqFeature::Homol"));
 
     push(@{$self->{'_homol'}},$homol);
     

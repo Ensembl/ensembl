@@ -1,5 +1,5 @@
 #
-# Object for storing sequence analysis details
+# Object for parsing/storing GFF files
 #
 # Cared for by Michele Clamp  <michele@sanger.ac.uk>
 #
@@ -13,17 +13,12 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Analysis.pm - Stores details of an analysis run
+Bio::EnsEMBL::Analysis::GFF - Parses and stores data from GFF files
 
 =head1 SYNOPSIS
 
-    my $obj    = new Bio::EnsEMBL::Analysis::Analysis(-db              => $db,
-						      -db_version      => $db_version,
-						      -program         => $program,
-						      -program_version => $program_version,
-						      -gff_source      => $gff_source,
-						      -gff_feature     => $gff_feature,
-						      )
+    my $obj    = new Bio::EnsEMBL::Analysis::GFF(-file => $file)
+
 
 =head1 DESCRIPTION
 
@@ -41,7 +36,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-package Bio::EnsEMBL::Analysis::Analysis;
+package Bio::EnsEMBL::Analysis::GFF;
 
 use vars qw(@ISA);
 use strict;
@@ -49,6 +44,8 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
+use Bio::SeqFeature::Homol;
+use Bio::SeqFeature::Generic;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -62,154 +59,212 @@ sub _initialize {
   
   my $make = $self->SUPER::_initialize;
 
+  my ($file) = $self->_rearrange([qw(FILE)],@args);
+
+  # The array to store all the feature objects
+  $self->{_features} = [];
+
+  $self->GFFFile($file);
 
   return $self; # success - we hope!
 }
 
 
-=head2 id
+=head2 each_Feature
 
-  Title   : id
-  Usage   : $self->id
-  Function: Get/set method for the id
-  Returns : int
-  Args    : int
+  Title   : each_Feature
+  Usage   : @homols = $self->each_Feature
+  Function: Returns each GFF feature stored in the object
+  Returns : @Bio::SeqFeature::Generic
+  Args    : none
 
 =cut
 
-sub id {
-    my ($self,$arg) = @_;
+sub each_Feature {
+    my ($self) = @_;
 
-    if (defined($arg)) {
-	$self->{_id} = $arg;
-    }
-
-    return $self->{_id};
+    my @f = @{$self->{_features}};
+    return @{$self->{_features}};
 }
 
 
-=head2 db
+=head2 add_Feature {
 
-  Title   : db
-  Usage   : $self->db
-  Function: Get/set method for database
+  Title   : add_Feature
+  Usage   : $self->add_Feature
+  Function: Adds feature to the object
+  Returns : Nothing
+  Args    : Bio::SeqFeature::Generic
+
+=cut
+
+sub add_Feature {
+    my ($self,$arg) = @_;
+    
+    my @f = @{$self->{_features}};
+
+    if (defined($arg) && $arg->isa("Bio::SeqFeature::Generic")) {
+	push(@{$self->{_features}},$arg);
+    } else {
+	$self->throw("Feature : $arg : is not a Bio::SeqFeature::Generic");
+    }
+
+}
+
+
+=head2 _parse
+
+  Title   : _parse
+  Usage   : $self->_parse
+  Function: Parses the input GFF file and stores the features
+            Is called automatically when a new filename is set in
+            the object
+  Returns : nothing
+  Args    : none
+
+=cut
+
+sub _parse {
+    my ($self) = @_;
+
+    $self->throw("No GFF file input") unless $self->GFFFile;
+
+    my $file = $self->GFFFile;
+
+    open(IN,"<$file") || $self->throw("Can't open $file");
+
+    while (my $line = <IN>) {
+	if ($line !~ /^\#/) {
+	    my $feature = $self->_parse_line($line);
+	    $self->add_Feature($feature);
+	}
+    }
+    
+    close(IN);
+}
+
+
+
+=head2 _parse_line
+
+  Title   : _parse_line
+  Usage   : $self->_parse_line
+  Function: Parses one line from a GFF file and returns a feature
+  Returns : Bio::SeqFeature::Generic
+  Args    : String
+
+=cut
+
+sub _parse_line {
+    my ($self,$line) = @_;
+
+    my ($seqname,$source,$feature,$start,$end,$score,$strand,$frame,$attrib) = split(/\t/,$line);
+
+    my @attrib = split(' ',$attrib);
+
+    if ($start > $end) {
+	my $tmp = $start;
+	$start = $end;
+	$end   = $tmp;
+    }
+
+    if ($strand eq "+") { $strand = 1;}
+    if ($strand eq "-") { $strand = -1;}
+    
+    if ($frame eq ".") {  $frame = "";}
+
+    my $f = new Bio::SeqFeature::Generic(-seqname     => $seqname,
+					 -source      => $source,
+					 -primary     => $feature,
+					 -start       => $start,
+					 -end         => $end,
+					 -strand      => $strand,
+					 -frame       => $frame,
+					 -score       => $score,
+					 );
+
+    $f->seqname    ($seqname);
+    
+    if ($attrib[0] eq "Target" && $feature eq "similarity") {
+	$f = $self->_parse_attrib($f,$feature,@attrib);
+    }
+    
+    return $f;
+}
+
+    
+=head2 _parse_attrib
+
+  Title   : _parse_attrib
+  Usage   : my $f = $self->parse_attrib($feature,$feature_tag,@attrib)
+  Function: Get/set method for the GFFfile file name
   Returns : String
   Args    : String
 
 =cut
 
-sub db {
-    my ($self,$arg) = @_;
+sub _parse_attrib {
+    my ($self,$feature,$feature_tag,@attrib) = @_;
+    
+    # I am not overly sure whether this should be done here
+    if ($feature_tag eq "similarity" && $attrib[0] eq "Target") {
+	my $hname = $attrib[1];
+  	   $hname =~ s/\"//g;
 
-    if (defined($arg)) {
-	$self->{_db} = $arg;
+	my $hstart = $attrib[2];
+	my $hend   = $attrib[3];
+
+	my $homol = new Bio::SeqFeature::Homol(-start       => $feature->start,
+					       -end         => $feature->end,
+					       -strand      => $feature->strand,
+					       -frame       => $feature->frame,
+					       -primary     => $feature->primary_tag,
+					       -source      => $feature->source_tag,
+					       -score       => $feature->score,
+					       -seqname     => $feature->seqname,
+					       );
+	$homol->seqname($feature->seqname);
+
+	my $newf = new Bio::SeqFeature::Generic(-start       => $hstart,
+						-end         => $hend,
+						-strand      => $feature->strand,
+						-frame       => $feature->frame,
+						-seqname     => $hname,
+						-source      => $feature->source_tag,
+						-score       => $feature->score,
+						-primary     => $feature->primary_tag,
+						);
+	$newf->seqname($hname);
+
+	$homol->homol_SeqFeature($newf);
+	
+	return $homol;
+    }  else {
+	$self->throw("Can't make homol object from attrib tags");
     }
-
-    return $self->{_db};
 }
 
+=head2 GFFFile
 
-=head2 db_version
-
-  Title   : db_version
-  Usage   : $self->db_version
-  Function: Get/set method for the database version number
-  Returns : int
-  Args    : int
-
-=cut
-
-sub db_version {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_db_version} = $arg;
-    }
-
-    return $self->{_db_version};
-}
-
-
-=head2 program
-
-  Title   : program
-  Usage   : $self->program
-  Function: Get/set method for the program name
+  Title   : GFFFile
+  Usage   : $self->GFFfile($file)
+  Function: Get/set method for the GFFfile file name
   Returns : String
   Args    : String
 
 =cut
 
-sub program {
+sub GFFFile {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->{_program} = $arg;
+	$self->{_GFFFile} = $arg;
+	$self->_parse;
     }
 
-    return $self->{_program};
+    return $self->{_GFFFile};
 }
 
 
-=head2 program_version
-
-  Title   : program_version
-  Usage   : $self->program_version
-  Function: Get/set method for the program version number
-  Returns : int
-  Args    : int
-
-=cut
-
-sub program_version {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_program_version} = $arg;
-    }
-
-    return $self->{_program_version};
-}
-
-
-=head2 gff_source
-
-  Title   : gff_source
-  Usage   : $self->gff_source
-  Function: Get/set method for the gff_source tag
-  Returns : String
-  Args    : String
-
-=cut
-
-sub gff_source {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_gff_source} = $arg;
-    }
-
-    return $self->{_gff_source};
-}
-
-=head2 gff_feature
-
-  Title   : gff_feature
-  Usage   : $self->gff_feature
-  Function: Get/set method for the gff_feature tag
-  Returns : String
-  Args    : String
-
-=cut
-
-sub gff_feature {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_gff_feature} = $arg;
-    }
-
-    return $self->{_gff_feature};
-}
 
 1;

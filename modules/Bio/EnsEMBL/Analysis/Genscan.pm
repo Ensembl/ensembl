@@ -1,5 +1,5 @@
 #
-# BioPerl module for Genscan
+# bioperl module for Genscan
 #
 # Cared for by Michele Clamp  <michele@sanger.ac.uk>
 #
@@ -13,13 +13,13 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Genscan - Parses genscan gene prediction output
+Bio::EnsEMBL::Analysis::GenscanMC - Parses genscan gene prediction output
 
 =head1 SYNOPSIS
 
-    my $gs = new Bio::EnsEMBL::Analysis::Genscan($file);      # $file is filename
+    my $gs = new Bio::EnsEMBL::Analysis::GenscanMC($file);      # $file is filename
 or
-    my $gs = new Bio::EnsEMBL::Analysis::Genscan($file,$dna); # $dna is Bio::Seq
+    my $gs = new Bio::EnsEMBL::Analysis::GenscanMC($file,$dna); # $dna is Bio::Seq
 
 Extracting the data
 
@@ -46,7 +46,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-package Bio::EnsEMBL::Analysis::Genscan;
+package Bio::EnsEMBL::Analysis::GenscanMC;
 
 use vars qw(@ISA);
 use strict;
@@ -86,11 +86,12 @@ sub _initialize {
   
   $self->{_dna}  = $seq;
   
+  
   # Stored data:
   # ------------
   # These are the predicted genes
   @{$self->{_transcripts}}    = ();
-  
+
   # These are the peptides *as reported by genscan*
   # The translations of the genes are stored in
   # the gene objects
@@ -98,7 +99,7 @@ sub _initialize {
 
   # Now try and get some genes out
   $self->_parse($file);
-  
+
   return $self; # success - we hope!
 }
 
@@ -157,16 +158,15 @@ sub _parse {
 	   my @l = split;
 	   
 	   my ($n) = $l[0] =~ /^(\d+)\./;
-	   my $id=$n;
 	   $n--;
 	   
 	   # Get the right gene from the set
-	   my $transcript = $self->_transcript($n,$id);
+	   my $transcript = $self->_transcript( $n );
 	   
 	   # Is it an exon line?
 	   if ( $l[1] =~ /^(Sngl|Init|Intr|Term)/ ) {
 	     # Pass type,strand, start, stop, frame,phase to exons()
-	     $self->_exons($transcript, @l[0,1,2,3,4,6,7] );
+	     $self->_exons($transcript, @l[1,2,3,4,6,7] );
 	   }
 	   
 	   # or a Promoter?
@@ -194,8 +194,13 @@ sub _parse {
   #
 
   foreach my $t ( $self->each_Transcript() ) {
+  my $count = 1;
       foreach my $e ( $t->each_Exon() ) {
+#	  print($e->start . "\t" . $e->end . "\n");
+#	  print($self->{_dna}  . "\n");
 	  $e->attach_seq($self->{_dna});
+	  $e->id("Exon_$count");
+	  $count++;
       }
   }
 
@@ -219,37 +224,44 @@ sub _parse {
   my $count = 0;
   
   foreach my $transcript ($self->each_Transcript) {
-    
-    # This sequence is what genscan thinks the translation is
-    my $pep = $self->{_peptides}->[$count]->seq();
 
-    # Sort the coordinates according to strand
-    $transcript->sort();
-    
-    # Catch any exceptions where the phase can't be set for the gene
-    $transcript->dna_seq ||  $self->throw("Transcript passed into GenScan does not contain any dna!");
-    $transcript->dna_seq =~ /a-z/ &&  $self->throw("DNA sequence passed into GenScan analysis code contains lower case characters!");
+      $transcript->sort;
+      my @exons = $transcript->each_Exon;
+      
+      # This sequence is what genscan thinks the translation is
+      my $pep = $self->{_peptides}->[$count]->seq();
+      
+      # Sort the coordinates according to strand
+      $transcript->sort();
+      
+      # Catch any exceptions where the phase can't be set for the gene
 
-    if (defined($self->{_dna})) {
-      $self->_set_exon_phases($transcript,$pep);
-    }
 
-    # now we know the phases, create a real translation for each transcript
-    my $translation=Bio::EnsEMBL::Translation->new();
-    # FIXME not sure what id should be set as, or if needed
-    # $translation->id();
-    my $fe=$transcript->first_exon;
-    my $le=$transcript->last_exon;
-    $translation->start($fe->start_translation);
-    $translation->end($le->end_translation);
-    $translation->start_exon_id($fe->id);
-    $translation->end_exon_id($le->id);
-    # link translation object to transcript
-    $transcript->translation($translation);
+      if (defined($self->{_dna})) {
+	  $self->_set_exon_phases($transcript,$pep);
+      }
 
-    $count++;
+      my $translation = new Bio::EnsEMBL::Translation;
+
+      if ($exons[0]->strand == -1) {
+	  $translation->end  ($exons[$#exons]->start);
+	  $translation->start($exons[0]->end);
+
+      } else {
+	  $translation->start($exons[0]->start);
+	  $translation->end  ($exons[$#exons]->end);
+      }
+
+      $translation->start_exon_id($exons[0]->id);
+      $translation->end_exon_id  ($exons[$#exons]->id);
+
+#      print("Translation start end " . $translation->start . "\t" . $translation->end . "\n");
+      $transcript->translation($translation);
+
+
+      $count++;
   }
-
+  
   close IN;
 }
 
@@ -291,104 +303,93 @@ sub _remove_transcript {
 # all three frames and comparing the string to the full peptide sequence.
 
 sub _set_exon_phases {
-  my ($self,$tran,$pep) = @_;
-
-  my $contig_dna = $self->{_dna};
-  
-  foreach my $exon ($tran->each_Exon) {
-    my $seq   = $contig_dna->str($exon->start,$exon->end);
-
-    if ($exon->strand == -1) {
-      $seq =~ tr/ATCGatcg/TAGCtagc/;
-      $seq = reverse($seq);
-    }
-
-    my @trans;
+    my ($self,$tran,$pep) = @_;
     
-    $trans[0] = $exon->seq->translate();
-    # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
-    # intron leaves one base pair.
-    $trans[1] = $exon->seq->translate('*','X',2);
-    $trans[2] = $exon->seq->translate('*','X',1);
+    my $contig_dna = $self->{_dna};
 
-    #my @trans = $self->_translate($seq);
+    my $count = 0;
+    my $prevexon;
 
-#    for (my $i = 0; $i < 3; $i++) {
-#      print("PHASE $i : " . $trans[$i]->seq() . "\n");
-#    }
+    foreach my $exon ($tran->each_Exon) {
+	my $seq   = $contig_dna->str($exon->start,$exon->end);
 
-#    print("Genscan frame is " . $exon->frame . "\n");
+	if ($exon->strand == -1) {
+	    $seq =~ tr/ATCGatcg/TAGCtagc/;
+	    $seq = reverse($seq);
+	}
 
-    my $i = 0;
-    my $phase;
+	my $exseq = new Bio::Seq(-seq => $seq);
+	my @trans;
 
-    # Loop over all frames 0,1,2
-    for ($i=0; $i < 3; $i++) {
+	$trans[0] = $exseq->translate();
+	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
+	# intron leaves one base pair.
+	$trans[1] = $exseq->translate('*','X',2);
+	$trans[2] = $exseq->translate('*','X',1);
+	
+	my $i = 0;
+	my $phase;
+	
+	# Loop over all frames 0,1,2
+	for ($i=0; $i < 3; $i++) {
+	    
+	    # If we have a stop codon at the end of the translation
+	    # chop it off before comparing
+	    my $tmp = $trans[$i]->seq();
+	    print("Trans : $i : " . $trans[$i]->seq . "\n");
+	    
+	    if (substr($tmp,-1) eq "*") {
+		$tmp = substr($tmp,0,-1);
+	    }
+	    
+	    # if we have an X, substitute it to a .
+	    $tmp =~ s/X/\./g;
+	    
+	    # if we have a stop - forget it?
+	    
+	    $tmp =~ /\*/ && next;
+	    
+	    # Compare strings to see if the exon peptide is contained in 
+	    # the full sequence
+	    if ($pep =~ /$tmp/ ) {
+		$phase = $i;
+	    }
+	}
+	
+	# Set phase if poss.  If no phase is found the input DNA is
+	# probably wrong.
+	if (defined($phase)) {
+	    
 
-      # If we have a stop codon at the end of the translation
-      # chop it off before comparing
-      my $tmp = $trans[$i]->seq();
+	    $exon->phase($phase);
+	    if ($count == 0) {
 
-      if (substr($tmp,-1) eq "*") {
-	$tmp = substr($tmp,0,-1);
-      }
+		# If this is the first exon and the phase is not zero
+		# we need to jiggle the exon start/end points
+		# to make the phase 0.
 
-      # if we have an X, substitute it to a .
-      $tmp =~ s/X/\./g;
+		my $phase = $exon->phase;
 
-      # if we have a stop - forget it?
-
-      $tmp =~ /\*/ && next;
-      
-      # Compare strings to see if the exon peptide is contained in 
-      # the full sequence
-      if ($pep =~ /$tmp/ ) {
-	$phase = $i;
-      }
+		if ($exon->strand == 1) {
+		    $exon->start($exon->start + 3 - $phase);
+		} else {
+		    $exon->end($exon->end - 3 + $phase);
+		}
+		$exon->phase(0);
+	    }
+	} else {
+	    my $pep0 = $trans[0]->seq;
+	    my $pep1 = $trans[1]->seq;
+	    my $pep2 = $trans[2]->seq;
+	    
+	    $self->throw("Can not find frame for exon. Sequences do not match\n");
+	}
+        $prevexon = $exon;
+	$count++;
     }
 
-    # Seet phase if poss.  If no phase is found the input DNA is
-    # probably wrong.
-    if (defined($phase)) {
-	$exon->phase($phase);
-    } else {
-	my $pep0 = $trans[0]->seq;
-	my $pep1 = $trans[1]->seq;
-	my $pep2 = $trans[2]->seq;
+    return;
 
-      $self->warn("Can not find frame for exon. Sequences do not match\nInput $pep\n0     $pep0\n1     $pep1\n2     $pep2\n");
-    }
-
-  }
-
-  return;
-
-  # EB - no longer need this. Cope somewhere else.
-
-  # Genscan DNA coordinates include a stop codon at the end of the terminal exon.  We 
-  # need to remove this and change the coordinates
-  $tran->sort();
-
-  my @exons = $tran->each_Exon;
-  my $ex    = $exons[$#exons];
-
-  my $exstr = $contig_dna->str($ex->start,$ex->end);
-
-  if ($ex->strand == -1) {
-    $exstr =~ tr/ATCGatcg/TAGCtagc/;
-    $exstr = reverse($exstr);
-  }
-  
-  my @pep = $self->_translate($exstr);
-  my $pep_p = $pep[$ex->phase]->seq;
-
-  if (substr($pep_p,-1) eq "*") {
-    if ($ex->strand == -1) {
-      $ex->start($ex->start + 3);
-    } else {
-      $ex->end($ex->end()-3);
-    }
-  }
 }
 
 
@@ -414,20 +415,16 @@ sub _translate {
 # if the object doesn't exist
 
 sub _transcript { 
-  my ($self,$n,$id) = @_;
+  my ($self,$n) = @_;
 
   if ($#{$self->{_transcripts}} >= $n) {
-    $self->{_transcripts}[$n]->id($id) if $id;
     return $self->{_transcripts}[$n];
   } else {
-
     my $i;
+
     for ($i = $#{$self->{_transcripts}} +1; $i <= $n; $i++){
       $self->{_transcripts}[$i] = Bio::EnsEMBL::Transcript->new();
     }
-
-    # set name of transcript (need to map back to filenames for timdb)
-    $self->{_transcripts}[$n]->id($id) if $id;
 
     return $self->{_transcripts}[$n];
 
@@ -439,20 +436,26 @@ sub _transcript {
 # to the parent gene exon array ref.
 
 sub _exons {
-    my ($self,$tran,$name,$type,$strand,$start,$stop,$frame,$phase) = @_;
+  my ($self,$tran,$type,$strand,$start,$stop,$frame,$phase) = @_;
 
-    # Create the exon object
-    my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
-    
-    # Set the other variables
-    $exon->type     ($type);
-    $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input
-    $exon->frame    ($frame);
-    $exon->id       ($name);   # form is n.n
-    $exon->end_phase();
-    
-    # Finally add the exon to the gene
-    $tran->add_Exon ($exon);
+  # Create the exon object
+
+  if ($start > $stop) {
+      my $tmp = $stop;
+      $stop = $start;
+      $start = $tmp;
+  }
+
+  my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
+
+  # Set the other variables
+  $exon->type     ($type);
+  $exon->phase    ($phase);  # This will get overwritten if the dna seq. is input
+  $exon->frame    ($frame);
+  $exon->end_phase();		
+
+  # Finally add the exon to the gene
+  $tran->add_Exon ($exon);
 
 }
 
@@ -487,7 +490,7 @@ sub each_Transcript {
 sub each_Peptide {
   my ($self) = @_;
 
-  return (@{$self->{peptides}});
+  return (@{$self->{_peptides}});
   
 }
 
@@ -554,6 +557,7 @@ sub toSQLfeatureset {
       push(@sqllines,$tmp);
 
       # featureset sql
+
       $tmp = "insert into featureset(feature,id) values(\'" . $contig . 
         "\',\'$featureset\');\n";
       push(@sqllines,$tmp);

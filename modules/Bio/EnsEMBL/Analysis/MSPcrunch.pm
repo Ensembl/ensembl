@@ -17,7 +17,9 @@ Bio::EnsEMBL::Analysis::MSPcrunch - reads and stores output from MSPcrunch
 
 =head1 SYNOPSIS
 
-    my $msp    = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $myfile);
+    my $msp    = new Bio::EnsEMBL::Analysis::MSPcrunch(-file => $myfile,
+                                                       -type => $homol_type,
+						       )
 
 Extracting data
 
@@ -46,6 +48,9 @@ package Bio::EnsEMBL::Analysis::MSPcrunch;
 use vars qw(@ISA);
 use strict;
 
+
+my @_type = ('DNA-DNA','DNA-PEP','PEP-DNA','PEP-PEP');
+
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
@@ -65,11 +70,13 @@ sub _initialize {
   # Input variables
   # ---------------
   # Filename.
+  # Type of msp file
 
-  my $mspfile      = shift(@args);
-  
+  my ($mspfile,$type) = $self->_rearrange([qw(FILE
+					      TYPE
+					      )],@args);
   $self->mspfile($mspfile);
-
+  $self->type   ($type);
 
   # Stored data
   # -----------
@@ -146,38 +153,51 @@ sub _read_Homol {
 	$strand2 = -1;
     }
 
-    # Don't really like this - if the lengths differ by a factor of 3 then the short
-    # one is a peptide homol.
 
-    my $len1    = ($qend - $qstart)+1;
-    my $len2    = ($hend - $hstart)+1;
+    my ($type1,$type2) = $self->get_types;
+
 
     my $sf1;
+    my $sf2;
 
     
-    if (($len2/$len1) > 2) {
+    if ($type1 eq "PEP") {
 	$sf1 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $qstart,
 							  -end    => $qend,
-							  -strand => $strand1);
+							  -strand => 1);
 	$sf1->start_frac(1);
 	$sf1->end_frac(3);
 
     } else {
 	$sf1 = new Bio::SeqFeature::Homol(-start  => $qstart,
 					  -end    => $qend,
+					  -strand => 1);
+    }
+    
+    if ($type2 eq "PEP") {
+	$sf2 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $hstart,
+							  -end    => $hend,
+							  -strand => $strand1);
+	$sf2->start_frac(1);
+	$sf2->end_frac(3);
+
+    } else {
+	$sf2 = new Bio::SeqFeature::Homol(-start  => $qstart,
+					  -end    => $qend,
 					  -strand => $strand1);
     }
 
-    my $sf2 = new Bio::SeqFeature::Generic(-start  => $hstart,
-					   -end    => $hend,
-					   -strand => $strand1);
 
     $sf1->score($score);
     $sf2->score($score);
 
-    
-    $sf1->primary_tag($id1);
-    $sf2->primary_tag($id2);
+
+    $sf1->seqname($id1);
+    $sf2->seqname($id2);
+
+
+    $sf1->primary_tag('similarity');
+    $sf2->primary_tag('similarity');
 
     $sf1->homol_SeqFeature($sf2);
 
@@ -248,6 +268,61 @@ sub mspfile {
 
 
 
+=head2 type
+
+  Title   : type
+  Usage   : my $type = $msp->type;
+  Function: Get/set method for the type of MSP output we have
+  Returns : String
+  Args    : none
+
+=cut
+
+
+sub type {
+    my ($self,$arg) = @_;
+
+    my $type;
+    my @types = @_type;
+
+    if (defined($arg)) {
+	foreach my $t (@types) {
+	    if ($t eq $arg) {
+		$type = $t;
+		last;
+	    }
+	}
+	
+	if ($type eq "") {
+	    $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @types");
+	}
+	
+	$self->{_type} = $type;
+    }
+    return $self->{_type};
+}
+
+
+=head2 get_types
+
+  Title   : get_types
+  Usage   : my ($type1,$type2) = $msp->get_types
+  Function: Fetches the sequence type of the query and target sequence in the MSP hit
+  Returns : String
+  Args    : none
+
+=cut
+
+sub get_types {
+    my ($self) = @_;
+
+    my $typestring = $self->type;
+
+    my ($type1,$type2) = split(/-/,$typestring);
+
+    return ($type1,$type2);
+}
+
 =head2 swaphomols
 
   Title   : swaphomols
@@ -287,7 +362,8 @@ sub swaphomols {
 
 
     $newh1->primary_tag($h1->primary_tag);
-    $newh1->score($h1->score);
+    $newh1->seqname    ($h1->seqname);
+    $newh1->score      ($h1->score);
 
 
     if ($h2->isa("Bio::EnsEMBL::Analysis::pep_SeqFeature")) {
@@ -308,9 +384,10 @@ sub swaphomols {
     }
 
     $newh2->primary_tag($h2->primary_tag);
-    $newh2->score($h2->score);
+    $newh2->seqname    ($h2->seqname);
+    $newh2->score      ($h2->score);
 
-
+    print("Setting seqnames to " . $newh1->seqname . "\t" . $newh2->seqname  . "\n");
     $newh2->homol_SeqFeature($newh1);
 
     return $newh2;
