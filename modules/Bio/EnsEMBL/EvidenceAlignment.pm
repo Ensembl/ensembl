@@ -887,16 +887,24 @@ sub _get_aligned_evidence_for_transcript {
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       $hseq = $self->_pad_pep_str($hseq);
       if ($feature->start < $exon->start) {
-	my $delta = $exon->start - $feature->start;
+        my $old_flen = $flen;
+	$flen -= $exon->start - $feature->start;
         $feature->start($exon->start);
-	$flen += $delta;
-	$hseq =  substr $hseq, $delta;
+	if ($exon->strand > 0) {	# trim start of hit
+          $hseq = substr $hseq, $flen - $old_flen, $flen;
+	} else {			# trim end of hit
+          $hseq = substr $hseq, 0, $flen;
+	}
       }
       if ($feature->end > $exon->end) {
-	my $delta = $exon->end - $feature->end;
+        my $old_flen = $flen;
+	$flen -= $feature->end - $exon->end;
 	$feature->end($exon->end);
-	$flen += $delta;
-        $hseq = substr $hseq, 0, $flen;
+        if ($exon->strand > 0) {	# trim end of hit
+          $hseq = substr $hseq, 0, $flen;
+	} else {			# trim start of hit
+	  $hseq = substr $hseq, $old_flen - $flen, $flen;
+	}
       }
       my $hindent_bp;
       if ($exon->strand > 0) {
@@ -999,18 +1007,26 @@ sub _get_aligned_evidence_for_transcript {
         next NUC_FEATURE_LOOP;
       }
       if ($feature->start < $exon->start) {
-	my $delta = $exon->start - $feature->start;
+        my $old_flen = $flen;
+	$flen -= $exon->start - $feature->start;
+	$hlen -= $exon->start - $feature->start;
         $feature->start($exon->start);
-        $feature->hstart($feature->hstart + $delta);
-	$flen += $delta;
-	$hlen += $delta;
+	if ($exon->strand > 0) {	# trim start of hit
+	  $feature->hstart($feature->hstart + $old_flen - $flen);
+	} else {			# trim end of hit
+	  $feature->hend($feature->hend - ($old_flen - $flen));
+	}
       }
       if ($feature->end > $exon->end) {
-	my $delta = $exon->end - $feature->end;
+        my $old_flen = $flen;
+	$flen -= $feature->end - $exon->end;
+	$hlen -= $feature->end - $exon->end;
 	$feature->end($exon->end);
-	$feature->hend($feature->hend + $delta);
-	$flen += $delta;
-	$hlen += $delta;
+        if ($exon->strand > 0) {	# trim end of hit
+	  $feature->hend($feature->hend - ($old_flen - $flen));
+	} else {			# trim start of hit
+	  $feature->hstart($feature->hstart + $old_flen - $flen);
+	}
       }
       my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
       my $strand_wrt_exon = $exon->strand * $feature->strand;
