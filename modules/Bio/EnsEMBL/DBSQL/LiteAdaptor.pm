@@ -26,7 +26,7 @@ Bio::EnsEMBL::DBSQL::LiteAdaptor - MySQL Database queries to generate and store 
 
 
 package Bio::EnsEMBL::DBSQL::LiteAdaptor;
-
+use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use vars '@ISA';
@@ -51,8 +51,7 @@ sub new {
 
 sub fetch_virtualgenes_start_end {
     my ( $self, $chr, $vc_start, $vc_end ) =@_;
-    $_db_name = $self->{'_lite_db_name'};
-    print STDERR "DB NAME: $_db_name\n\n";
+    my $_db_name = $self->{'_lite_db_name'};
     my $sth = $self->prepare(
         "select g.gene, g.name, 
                 g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
@@ -69,8 +68,10 @@ sub fetch_virtualgenes_start_end {
             'gene'      => $row->[0],
             'stable_id' => $row->[1],
             'chr_name'  => $row->[2],
-            'chr_start' => $row->[3]-$vc_start,
-            'chr_end'   => $row->[4]-$vc_start,
+            'chr_start' => $row->[3],
+            'chr_end'   => $row->[4],
+            'start'     => $row->[3]-$vc_start+1,
+            'end'       => $row->[4]-$vc_start+1,
             'strand'    => $row->[5],
             'synonym'   => $row->[6],
             'db'        => $row->[7]
@@ -79,6 +80,42 @@ sub fetch_virtualgenes_start_end {
     return \@genes
 }
                 
+sub fetch_virtualRepeatFeatures_start_end {
+    my ( $self, $chr, $vc_start, $vc_end, $type, $glob_bp ) =@_;
+	my $glob_bp ||= 0;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $sth = $self->prepare(
+        "select r.id, r.hid,  r.chr_name, r.repeat_chrom_start, r.repeat_chrom_end, r.repeat_chrom_strand
+           from $_db_name.repeat as r
+          where r.chr_name = ? and r.repeat_chrom_start <= ? and r.repeat_chrom_end >= ?".
+		  	( (defined $type && $type ne '') ? " and hid like '$type\%'" : '' )
+    );
+
+    $sth->execute( $chr, $vc_end, $vc_start);
+
+	my @repeats;
+	my $old_end = -99999999999999999;
+	while( my $row = $sth->fetchrow_arrayref() ) {
+      	my $end = $row->[4];
+## Glob results! 
+    	if($end < $old_end + $glob_bp) {
+			$repeats[-1]->{'chr_end'} = $end;
+	  	}	else {
+			push @repeats, {
+				'id'        => $row->[0],
+				'hid'       => $row->[1],
+    	        'chr_name'  => $row->[2],
+        	    'chr_start' => $row->[3],
+            	'chr_end'   => $end,
+        	    'start'     => $row->[3]-$vc_start+1,
+            	'end'       => $end-$vc_start+1,
+	            'strand'    => $row->[5],
+			};
+		}
+	  	$old_end = $end;
+    }
+    return \@repeats;
+}
 
 1;
 __END__
