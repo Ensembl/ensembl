@@ -219,7 +219,7 @@ $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_25
 
 my ( $known, $unknown );
 
-my $genes = $slice->get_all_Genes();
+$genes = $slice->get_all_Genes();
 for my $gene ( @$genes ) {
   if( $gene->is_known() ) {
     $known++;
