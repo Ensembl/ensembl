@@ -22,7 +22,6 @@ ok(1);
 my $multi = MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
-$db->source( "core" );
 
 debug( "Test database instatiated" );
 ok( $db );
