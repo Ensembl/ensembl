@@ -340,54 +340,6 @@ sub write {
     return 1;
 }
 
-=head2 exists
-
- Title   : exists
- Usage   : $obj->exists($feature,$analisysid,$contig)
- Function: Tests whether this feature already exists in the database
- Example :
- Returns : nothing
- Args    : Bio::SeqFeature::Homol
-
-
-=cut
-
-sub exists {
-    my ($self,$feature,$analysisid,$contig) = @_;
-
-    $self->throw("Feature is not a Bio::SeqFeature::Homol") unless $feature->isa("Bio::SeqFeature::Homol");
-    
-    my $homol = $feature->homol_SeqFeature;
-
-    if (!defined($homol)) {
-	$self->throw("Homol feature doesn't exist");
-    }
-    
-    my $query = "select f.id  from feature as f,homol_feature as h where " .
-			     "  f.id = h.feature " . 
-			     "  and h.hstart = "    . $homol  ->start . 
-			     "  and h.hend   = "    . $homol  ->end   . 
-			     "  and h.hid    = '"   . $homol  ->seqname . 
-			     "' and f.contig = '"   . $contig ->internal_id . 
-			     "' and f.seq_start = " . $feature->start . 
-			     "  and f.seq_end = "   . $feature->end .
-			     "  and f.score = "     . $feature->score . 
-			     "  and f.name = '"     . $feature->source_tag . 
-			     "' and f.analysis = "  . $analysisid;
-
-
-    my $sth = $self->_db_obj->prepare($query);
-    my $rv  = $sth->execute;
-    my $rowhash;
-
-    if ($rv && $sth->rows > 0) {
-	my $rowhash = $sth->fetchrow_hashref;
-	return $rowhash->{'id'};
-    } else {
-	return 0;
-    }
-}
-
 =head2 get_Protein_annseq
 
  Title   : get_Protein_annseq

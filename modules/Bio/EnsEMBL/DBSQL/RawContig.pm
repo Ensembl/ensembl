@@ -791,7 +791,7 @@ sub get_all_SimilarityFeatures{
 				            $hstart,$hend,1,$f_score,$name,'similarity',$hid, $evalue, $perc_id, $phase, $end_phase);
 
 	   $out->analysis    ($analysis);
-	   
+	   $out->id($fid);
 	   # see comment below
 	   #$out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
@@ -894,7 +894,7 @@ sub get_all_RepeatFeatures {
 				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 
 	   $out->analysis($analysis);
-
+	   $out->id($fid);
        } else {
 	   $self->warn("Repeat feature does not have a hid. bad news....");
        }
