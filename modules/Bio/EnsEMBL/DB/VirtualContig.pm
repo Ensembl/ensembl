@@ -830,6 +830,7 @@ sub _build_clone_map {
        }
        
        if( $seen == 0 ) {
+	   print(STDERR "Contig is $contig\n");
 	   $self->dbobj($contig->dbobj);
 	   $seen = 1;
        }
