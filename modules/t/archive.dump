@@ -1,7 +1,0 @@
-
-#
-# Nothing at the moment!
-#
-
-
-INSERT INTO deleted_id (old_id,old_version,new_id,id_type) values ('ENSG0000018',12,'ENSG0000019','gene');

@@ -55,53 +55,6 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 # inherit new from BaseAdaptor
 
 
-=head2 fetch_by_chromosome_start_end
-
- Title   : fetch_by_chromosome_start_end
- Usage   : $band_obj = $kary_adp->fetch_by_chromosome_position('chr1',10000, 2000);
- Function: Retrieves KaryotypeBand objects by chromosome ('chrN' notation)
-           and its absolute "golden-path" start/end on that chromosome.
- Example :
- Returns : A KaryotypeBand object list
- Args    : Chromosome id (chrN notation) and start, end in absolute basepairs
-
-=cut
-
-sub fetch_by_chromosome_start_end{
-    my ($self,$chr,$start,$end) = @_;
-
-    $self->throw("Need both chromosome and start/end") unless (defined $start && defined $end);
-
-    my $sth = $self->prepare("	SELECT	chr_start,
-					chr_end,
-					band,
-					stain
-				FROM	karyotype 
-				WHERE	chr_name = '$chr'
-				AND	$start <= chr_end 
-				AND	$end > chr_start 
-			     ");
-
-    $sth->execute;
-	my @bands = ();
-	my ($chr_start,$chr_end,$band,$stain) = ();
-		
-    while (($chr_start,$chr_end,$band,$stain) = $sth->fetchrow_array()){
-    	last unless defined $band;
-    	my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    	$band_obj->name($band);
-    	$band_obj->chromosome($chr);
-    	$band_obj->start($chr_start);
-    	$band_obj->end($chr_end);
-    	$band_obj->stain($stain);
-		#print STDERR "Kary Get: $chr_start,$chr_end,$band,$stain\n";
-		push (@bands, $band_obj);
-	}
-
-    return @bands;
-}
-
-
 =head2 fetch_by_chromosome_position
 
  Title   : fetch_by_chromosome_position
@@ -130,8 +83,8 @@ sub fetch_by_chromosome_position{
 			     ");
 
     $sth->execute;
-	
-	my ($chr_start,$chr_end,$band,$stain)  = $sth->fetchrow_array();
+    my ($chr_start,$chr_end,$band,$stain) = $sth->fetchrow_array;
+
     return undef unless defined $band;
 
     my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
@@ -143,6 +96,7 @@ sub fetch_by_chromosome_position{
 
     return $band_obj;
 }
+
 
 
 
@@ -187,39 +141,6 @@ sub fetch_by_chromosome_name{
 }
 
 
-=head2 fetch_chromosome_length
-
- Title   : fetch_chromosome_length
- Usage   : 
- Function: Returns length of a chromosome ('chrN' notation)
- Example :
- Returns : SV
- Args    : Chromosome id (chrN notation) 
-
-=cut
-
-sub fetch_chromosome_length {
-    my ($self,$chr) = @_;
-
-    $self->throw("Need a chromosome") unless defined $chr;
-
-	# return a cached copy of the chromosome bands
-	if ($self->{'_karyotype_band_cache'}){
-		my @tmp = @{$self->{'_karyotype_band_cache'}};
-		return $tmp[-1]->end();
-	}
-
-    my $sth = $self->prepare("	SELECT
-											max(chr_end)
-								FROM		karyotype 
-								WHERE		chr_name = '$chr' 
-			     			");
-
-    $sth->execute;
-    my ($chr_end) = $sth->fetchrow_array();
-	return($chr_end);
-
-}
 
 
 =head2 fetch_all_by_chromosome
@@ -237,11 +158,6 @@ sub fetch_all_by_chromosome{
     my ($self,$chr) = @_;
 
     $self->throw("Need a chromosome") unless defined $chr;
-
-	# return a cached copy of the chromosome bands
-	if ($self->{'_karyotype_band_cache'}){
-		return(@{$self->{'_karyotype_band_cache'}});
-	}
 
     my $sth = $self->prepare("	SELECT	chr_start,
 					chr_end,
@@ -268,9 +184,6 @@ sub fetch_all_by_chromosome{
 
 	push @bands,$band_obj;
     }
-
-	# save a copy in the local cache
-	$self->{'_karyotype_band_cache'} = \@bands;
 
     return @bands;
 }

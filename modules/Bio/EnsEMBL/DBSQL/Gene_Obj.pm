@@ -65,7 +65,6 @@ use Bio::EnsEMBL::StickyExon;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
-use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::RootI);
 
@@ -819,45 +818,30 @@ sub _get_dblinks{
    }
    my $geneid = $gene->id;
 
-   my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
-
-   my @gene_xrefs = $entryAdaptor->fetch_by_gene($geneid);
-
-#
-#   my $query = "select external_db,external_id from genedblink where gene_id = '$geneid'";
-#   my $sth = $self->_db_obj->prepare($query);
-#   my $res = $sth ->execute();
-#   while( (my $hash = $sth->fetchrow_hashref()) ) {
-#       my $dblink = Bio::Annotation::DBLink->new();
-#       $dblink->database($hash->{'external_db'});
-#       $dblink->primary_id($hash->{'external_id'});
-   foreach my $genelink (@gene_xrefs) {
-       $gene->add_DBLink($genelink);
+   my $query = "select external_db,external_id from genedblink where gene_id = '$geneid'";
+   my $sth = $self->_db_obj->prepare($query);
+   my $res = $sth ->execute();
+   while( (my $hash = $sth->fetchrow_hashref()) ) {
+       my $dblink = Bio::Annotation::DBLink->new();
+       $dblink->database($hash->{'external_db'});
+       $dblink->primary_id($hash->{'external_id'});
+       $gene->add_DBLink($dblink);
    }
 
-
-#   }
-#
    foreach my $trans ( $gene->each_Transcript ) {
        my $transid = $trans->id;
-
-       my @transcript_xrefs = $entryAdaptor->fetch_by_transcript($transid);
        
-       foreach my $translink(@transcript_xrefs) {
-	   $trans->add_DBLink($translink);
+       $query = "select external_db,external_id from transcriptdblink where transcript_id = '$transid'";
+       $sth = $self->_db_obj->prepare($query);
+       $res = $sth ->execute();
+       while( (my $hash = $sth->fetchrow_hashref()) ) {
+	   
+	   my $dblink = Bio::Annotation::DBLink->new();
+	   $dblink->database($hash->{'external_db'});
+	   $dblink->primary_id($hash->{'external_id'});
+	   $trans->add_DBLink($dblink);
        }
    }
-#       $query = "select external_db,external_id from transcriptdblink where transcript_id = '$transid'";
-#       $sth = $self->_db_obj->prepare($query);
-#       $res = $sth ->execute();
-#       while( (my $hash = $sth->fetchrow_hashref()) ) {
-#	   
-#	   my $dblink = Bio::Annotation::DBLink->new();
-#	   $dblink->database($hash->{'external_db'});
-#	   $dblink->primary_id($hash->{'external_id'});
-#	   $trans->add_DBLink($dblink);
-#       }
-#   }
 }                                       # _get_dblinks
 
 =head2 _get_description
@@ -964,18 +948,10 @@ sub get_Gene_array_by_DBLink {
     my $supporting = shift;
 
     my @genes;
-
-    my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
-    my @ids = $entryAdaptor->geneids_by_extids($external_id);
+    my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
+    $sth->execute;
     my $seen=0;
-    foreach my $geneid(@ids) {
-	
-    
-	#my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
-	#$sth->execute;
-	
-	#while (my ($geneid)=$sth->fetchrow_array()) {
-    
+    while (my ($geneid)=$sth->fetchrow_array()) {
 	push (@genes,$self->get($geneid,$supporting));
 	$seen=1;
     }
