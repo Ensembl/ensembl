@@ -1434,19 +1434,14 @@ sub genomic2pep {
   return @out;
 }
 
-    
-  
-  
 
 
 =head2 cdna2genomic
 
   Arg [1]    : $start
-               The start position in genomic coordinates
+               The start position in cdna coordinates
   Arg [2]    : $end
-               The end position in genomic coordinates
-  Arg [3]    : (optional) $strand
-               The strand of the genomic coordinates
+               The end position in cdna coordinates
   Example    : @coords = $transcript->cdna2genomic($start, $end);
   Description: Converts cdna coordinates to genomic coordinates.  The
                return value is a list of coordinates and gaps.
