@@ -86,7 +86,11 @@ sub run_matching{
     $i++;
   }
 
-  $self->run_mapping(\@list);
+  if (!defined($self->use_existing_mappings)) {
+    $self->run_mapping(\@list);
+  } else {
+    print "Using existing mappings";
+  }
 
 }
 
@@ -149,7 +153,8 @@ sub get_set_lists{
 #	  ["method2",[$self->species,"*"]],
 #	  ["method3",["*","*"]]];
 
-  return [["ExonerateGappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
+  #return [["ExonerateGappedBest1", ["homo_sapiens","UniProtSwissProt"]]];
+return [["ExonerateGappedBest1", ["homo_sapiens","RefSeq"]]];
 #  return [["ExonerateBest1",["*","*"]]];
 
 }
@@ -622,7 +627,7 @@ sub run_mapping {
   submit_depend_job($self->dir, @job_names);
 
 
-} # run_exonerate
+} # run_mapping
 
 
 =head2 submit_depend_job
@@ -734,6 +739,14 @@ sub store {
   # also keep track of types of ensembl objects
   my %ensembl_object_types;
 
+  # and a list of mappings of ensembl objects to xrefs
+  # (primary now, dependent added in dump_xrefs)
+  # this is required for display_xref generation later
+  # format:
+  #   key: ensembl object type:ensembl object id
+  #   value: list of xref_id (with offset)
+  my %object_xref_mappings;
+
   my $dir = $self->dir();
   foreach my $file (glob("$dir/*.map")) {
 
@@ -774,6 +787,11 @@ sub store {
 
       $ensembl_object_types{$target_id} = $type;
 
+      # store mapping for later - note NON-OFFSET xref_id is used
+      my $key = $type . ":" . $target_id;
+      my $xref_id = $query_id;
+      push @{$object_xref_mappings{$key}}, $xref_id;
+
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
@@ -799,7 +817,8 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types);
+  print "passing object_xref_mappings to dump_xrefs with " . scalar (keys %object_xref_mappings) . "\n";
+  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types, \%object_xref_mappings);
 
   # write comparison info. Can be removed after development
   dump_comparison();
@@ -869,7 +888,8 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref, $object_xref_mappings) = @_;
+
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
   my %ensembl_object_types = %$ensembl_object_types_hashref;
@@ -910,8 +930,8 @@ sub dump_xrefs {
     my $xref_sth = $xref_dbi->prepare($sql);
     $xref_sth->execute();
 
-    my ($xref_id, $accession, $label, $description, $source_id, $species_id);
-    $xref_sth->bind_columns(\$xref_id, \$accession, \$label, \$description, \$source_id, \$species_id);
+    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
+    $xref_sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
     # note the xref_id we write to the file is NOT the one we've just read
     # from the internal xref database as the ID may already exist in the core database
@@ -936,6 +956,7 @@ sub dump_xrefs {
       $source_ids{$source_id} = $source_id;
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
+      # write to file and add to object_xref_mappings
       if (defined $xref_to_objects{$xref_id+$xref_id_offset}) {
 	my @objects = keys( %{$xref_to_objects{$xref_id+$xref_id_offset}} );
 	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
@@ -943,6 +964,9 @@ sub dump_xrefs {
 	  my $type = $ensembl_object_types{$object_id};
 	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "DEPENDENT\n";
 	  $object_xref_id++;
+	  # Add this mapping to the list - note NON-OFFSET xref_id is used
+	  my $key = $type . ":" . $object_id;
+	  push @{$object_xref_mappings->{$key}}, $xref_id;
 	}
       }
     }
@@ -992,13 +1016,14 @@ sub dump_xrefs {
     $source_id_str = "= " . $source_id_array[0];
   }
 
-  my $source_sql = "SELECT name, release FROM source WHERE source_id $source_id_str";
+  # get source names; 
+  my $source_sql = "SELECT name, release, source_id FROM source WHERE source_id $source_id_str";
   my $source_sth = $xref_dbi->prepare($source_sql);
   #print STDERR $source_sql."\n";
   $source_sth->execute();
 
-  my ($source_name, $release);
-  $source_sth->bind_columns(\$source_name, \$release);
+  my ($source_name, $release, $source_id);
+  $source_sth->bind_columns(\$source_name, \$release, \$source_id);
 
   while (my @row = $source_sth->fetchrow_array()) {
     print EXTERNAL_DB "$edb_id\t$source_name\t$release\tXREF\n";
@@ -1008,7 +1033,13 @@ sub dump_xrefs {
 
   close(EXTERNAL_DB);
 
+  print "Before calling display_xref, object_xref_mappings size " . scalar (keys %{$object_xref_mappings}) . "\n";
+
+  # calculate display_xref_ids for transcripts and genes
+  $self->build_transcript_display_xrefs($object_xref_mappings, $xref_id_offset);
+
 }
+
 
 # produce output for comparison with existing ensembl mappings
 # format is (with header)
@@ -1025,6 +1056,7 @@ sub dump_comparison {
   # first read all the xrefs that were dumped and get an xref_id->accession map
   my %xref_id_to_accesson;
   open (XREF, "xref.txt");
+  print XREF "xref_accession" . "\t" . "ensembl_type" . "\t" . "ensembl_id\n";
   while (<XREF>) {
     my ($xref_id,$accession,$label,$description) = split;
     $xref_id_to_accesson{$xref_id} = $accession;
@@ -1040,6 +1072,110 @@ sub dump_comparison {
 
   close (OBJECT_XREF);
   close (COMPARISON);
+
+}
+
+sub build_transcript_display_xrefs {
+
+  my ($self, $object_xref_mappings, $xref_id_offset) = @_;
+
+  # get a list of xref sources; format:
+  # key: xref_id value: source_name
+  # lots of these; if memory is a problem, just get the source ID (not the name)
+  # and look it up elsewhere
+  print "Building xref->source mapping table\n";
+  my %xref_to_source;
+  my $sql = "SELECT x.xref_id, s.name FROM source s, xref x WHERE x.source_id=s.source_id";
+  my $sth = $self->xref->dbi()->prepare($sql);
+  $sth->execute();
+
+  my ($xref_id, $source_name);
+  $sth->bind_columns(\$xref_id, \$source_name);
+
+  while (my @row = $sth->fetchrow_array()) {
+    $xref_to_source{$xref_id} = $source_name;
+  }
+
+  print "Got " . scalar(keys %xref_to_source) . " xref-source mappings\n";
+
+  print "Building transcript display_xrefs\n";
+  my @priorities = $self->transcript_display_xref_sources();
+
+  open (TRANSCRIPT_DX, ">transcript_display_xref.sql");
+
+  my $n;
+  # go through each transcript/xref mapping
+ foreach my $key (keys %{$object_xref_mappings}) {
+
+    my ($type, $obj) = split /:/, $key;
+    next if ($type !~ /Transcript/i);
+
+    # if a transcript has more than one associated xref,
+    # use the one with the highest priority, i.e. lower list position in @priorities
+    my @xrefs = @{$object_xref_mappings->{$key}};
+    my ($best_xref, $best_xref_idx);
+    $best_xref_idx = 99999;
+    foreach my $xref (@xrefs) {
+      my $source = $xref_to_source{$xref};
+      if ($source) {
+	my $i = find_in_list($source, @priorities);
+	if ($i > -1 && $i < $best_xref_idx) {
+	  $best_xref = $xref;
+	  $best_xref_idx = $i;
+	}
+      } else {
+	warn("Couldn't find a source for xref $xref \n");
+      }
+    }
+
+    if (!$best_xref) {
+      warn("Couldn't find a display xref for transcript id $obj\n");
+    } else {
+      # Write record with xref_id_offset
+      print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $obj . "\n";
+      $n++;
+    }
+  }
+
+  close(TRANSCRIPT_DX);
+
+  print "Wrote $n transcript display_xref entries to transcript_display_xref.sql\n";
+}
+
+# Display xref sources to be used for transcripts *in order of priority*
+# Source names used must be identical to those in the source table.
+
+sub transcript_display_xref_sources {
+
+  return ('HUGO',
+	  'MarkerSymbol',
+	  'wormbase_transcript',
+	  'flybase_symbol',
+	  'Anopheles_symbol',
+	  'Genoscope_annotated_gene',
+	  'Genoscope_predicted_transcript',
+	  'Genoscope_predicted_gene',
+	  'UniProtSwissProt',
+	  'RefSeq',
+	  'UniProtSPTrEMBL',
+	  'LocusLink');
+
+}
+
+
+# Find the index of an item in a list(ref), or -1 if it's not in the list
+
+sub find_in_list {
+
+  my ($item, @list) = @_;
+
+  for (my $i = 0; $i < scalar(@list); $i++) {
+    if ($list[$i] =~ /$item/) {
+      return $i;
+    }
+  }
+
+  return -1;
 
 }
 
