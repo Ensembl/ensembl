@@ -23,8 +23,8 @@ $feature = Bio::EnsEMBL::AffyArray->new
 
 =head1 DESCRIPTION
 
-AffyArray contains the informmation in the affy_array table, currently the name, the set_size of the array,
-and if there is superset array.
+AffyArray contains the informmation in the affy_array table, currently the name, 
+the set_size of the array, and if there is superset array.
 
 =head1 CONTACT
 
@@ -48,6 +48,26 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Storable);
 
+
+=head2 new
+
+  Arg  [NAME] : 
+               Name of the array
+  Arg  [INCLUDED_IN]  : 
+               A possible superset Array
+  Arg  [SETSIZE]  : 
+               How many probes per normal set on this Array
+  Arg  [PROBECOUNT]  : 
+               How many probes are on this Array
+  Example    : none
+  Description: 
+  Returntype : 
+  Exceptions : none
+  Caller     : 
+
+
+=cut
+
 sub new {
   my $caller = shift;
 
@@ -69,6 +89,20 @@ sub new {
   return $self;
 }
 
+
+=head2 get_all_AffyProbes
+
+  Args       : none 
+  Example    : my $probes = $array->get_all_AffyProbes();
+  Description: Returns all probes that are associated with this Array.
+               Only works when connected with the database.
+  Returntype : listref of Bio::EnsEMBL::AffyProbe
+  Exceptions : none
+  Caller     : general
+
+
+=cut
+
 sub get_all_AffyProbes {
   my $self = shift;
 
@@ -83,6 +117,20 @@ sub get_all_AffyProbes {
 }
 
     
+
+=head2 name
+
+  Arg [1]    : string $name
+  Example    : none
+  Description: getter / setter / lazy load of attribute name of the
+               AffyArray. The only mandatory attribute for ths object.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+
+=cut
+
 sub name {
     my $self = shift;
     $self->{'name'} = shift if( @_ );
@@ -91,6 +139,21 @@ sub name {
     }
     return $self->{'name'};
 }
+
+
+=head2 setsize
+
+  Arg [1]    : int $setsize
+  Example    : none
+  Description: getter / setter / lazy load of attribute setsize.
+               The setsize is the number of probes making up one standard probeset
+               on this Array. 
+  Returntype : listref of Bio::EnsEMBL::AffyFeature
+  Exceptions : none
+  Caller     : general
+
+
+=cut
 
 sub setsize {
     my $self = shift;
@@ -101,6 +164,20 @@ sub setsize {
     return $self->{'setsize'};
 }
 
+
+=head2 probecount
+
+  Arg [1]    : int $probecount
+  Example    : none
+  Description: getter / setter / lazy load for attribute probecount. Here you
+               can optionally provide how manny probes are there on the array.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+
+=cut
+
 sub probecount {
     my $self = shift;
     $self->{'probecount'} = shift if( @_) ;
@@ -109,6 +186,21 @@ sub probecount {
     }
     return $self->{'probecount'};
 }
+
+
+=head2 superset
+
+  Arg [1]    : Bio::EnsEMBL::AffyArray $superset
+  Example    : none
+  Description: getter / setter / lazy load for attribute superset. A superset
+               is another AffyArray that contains all the probes of this Array.
+               This is entirely optional / (bordering to superfluous). 
+  Returntype : Bio::EnsEMBL::AffyArray
+  Exceptions : none
+  Caller     : general
+
+
+=cut
 
 sub superset {
     my $self = shift;
