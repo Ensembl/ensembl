@@ -112,7 +112,7 @@ sub fetch_by_Slice_and_type {
 			     '_db_id'         => $id } );
   }
 
-  return @repeats;
+  return \@repeats;
 }
 
 
@@ -171,7 +171,7 @@ sub fetch_by_Slice {
     }
 
 
-    return @repeats;
+    return \@repeats; 
 }
 
 1;
