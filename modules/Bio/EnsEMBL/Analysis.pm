@@ -109,13 +109,15 @@ sub new {
 
 =head2 adaptor
 
-  Title   : adaptor
-  Usage   : $self->adaptor
-  Function: Get/set method for the adaptor
-  Returns : int
-  Args    : int
+  Arg [1]    : Bio::EnsEMBL::DBSQL::AnalysisAdaptor $analysis_adaptor
+  Example    : none
+  Description: get/set for thus objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub adaptor {
     my ($self,$arg) = @_;
@@ -127,15 +129,18 @@ sub adaptor {
 }
 
 
+
 =head2 dbID
 
-  Title   : dbID
-  Usage   : $self->dbID
-  Function: Get/set method for the dbID
-  Returns : int
-  Args    : int
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub dbID {
     my ($self,$arg) = @_;
@@ -147,26 +152,6 @@ sub dbID {
 }
 
 
-=head2 id
-
-  Title   : id
-  Usage   : $self->id
-  Function: Get/set method for the id
-  Returns : int
-  Args    : int
-
-=cut
-
-sub id {
-    my ($self,$arg) = @_;
-    $self->warn( "Analysis->id is deprecated. Use dbID!" );
-    print STDERR caller;
-    
-    if (defined($arg)) {
-	$self->{_dbid} = $arg;
-    }
-    return $self->{_dbid};
-}
 
 
 =head2 db
@@ -179,6 +164,20 @@ sub id {
 
 =cut
 
+
+=head2 db
+
+  Arg [1]    : string $db
+  Example    : none
+  Description: get/set for the attribute db
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+
 sub db {
     my ($self,$arg) = @_;
 
@@ -190,15 +189,19 @@ sub db {
 }
 
 
+
 =head2 db_version
 
-  Title   : db_version
-  Usage   : $self->db_version
-  Function: Get/set method for the database version number
-  Returns : int
-  Args    : int
+  Arg [1]    : string $db_version
+  Example    : none
+  Description: get/set for attribute db_version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
+
 
 sub db_version {
     my ($self,$arg) = @_;
@@ -213,13 +216,15 @@ sub db_version {
 
 =head2 db_file
 
-  Title   : db_file
-  Usage   : $self->db_file
-  Function: Get/set method for the database file
-  Returns : string
-  Args    : string
+  Arg [1]    : string $db_file
+  Example    : none
+  Description: get/set for attribute db_file
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub db_file {
     my ($self,$arg) = @_;
@@ -232,15 +237,18 @@ sub db_file {
 }
 
 
+
 =head2 program
 
-  Title   : program
-  Usage   : $self->program
-  Function: Get/set method for the program name
-  Returns : String
-  Args    : String
+  Arg [1]    : string $program
+  Example    : none
+  Description: get/set for attribute program
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub program {
     my ($self,$arg) = @_;
@@ -255,11 +263,12 @@ sub program {
 
 =head2 program_version
 
-  Title   : program_version
-  Usage   : $self->program_version
-  Function: Get/set method for the program version number
-  Returns : int
-  Args    : int
+  Arg [1]    : string $program_version
+  Example    : none
+  Description: get/set for attribute program_version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -275,13 +284,15 @@ sub program_version {
 
 =head2 program_file
 
-  Title   : program_file
-  Usage   : $self->program_file
-  Function: Get/set method for the program file
-  Returns : string
-  Args    : string
+  Arg [1]    : string $program_file
+  Example    : none
+  Description: get/set for attribute program_file
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub program_file {
     my ($self,$arg) = @_;
@@ -296,13 +307,16 @@ sub program_file {
 
 =head2 module
 
-  Title   : module
-  Usage   : $self->module
-  Function: Get/set method for the module name
-  Returns : String
-  Args    : String
+  Arg [1]    : string $module
+  Example    : none
+  Description: get/set for attribute module. Usually a RunnableDB perl 
+               module that executes this analysis job. 
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub module {
     my ($self,$arg) = @_;
@@ -314,16 +328,18 @@ sub module {
     return $self->{_module};
 }
 
-
 =head2 module_version
 
-  Title   : module_version
-  Usage   : $self->module_version
-  Function: Get/set method for the module version number
-  Returns : string
-  Args    : string
+  Arg [1]    : string $module_version
+  Example    : none
+  Description: get/set for attribute module_version
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
+
 
 sub module_version {
     my ($self,$arg) = @_;
@@ -337,13 +353,15 @@ sub module_version {
 
 =head2 gff_source
 
-  Title   : gff_source
-  Usage   : $self->gff_source
-  Function: Get/set method for the gff_source tag
-  Returns : String
-  Args    : String
+  Arg [1]    : string $gff_source
+  Example    : none
+  Description: get/set for attribute gff_source
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub gff_source {
     my ($self,$arg) = @_;
@@ -357,13 +375,15 @@ sub gff_source {
 
 =head2 gff_feature
 
-  Title   : gff_feature
-  Usage   : $self->gff_feature
-  Function: Get/set method for the gff_feature tag
-  Returns : String
-  Args    : String
+  Arg [1]    : string $gff_feature
+  Example    : none
+  Description: get/set for attribute gff_feature
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub gff_feature {
     my ($self,$arg) = @_;
@@ -375,13 +395,16 @@ sub gff_feature {
     return $self->{_gff_feature};
 }
 
+
 =head2 parameters
 
-  Title   : parameters
-  Usage   : $self->parameters
-  Function: Get/set method for the parameter string
-  Returns : String
-  Args    : String
+  Arg [1]    : string $parameters
+  Example    : none
+  Description: get/set for attribute parameters. This should be evaluated
+               by the module if given or the program that is specified.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -397,13 +420,15 @@ sub parameters {
 
 =head2 created
 
-  Title   : created
-  Usage   : $self->created
-  Function: Get/set method for the created time
-  Returns : String
-  Args    : String
+  Arg [1]    : string $created
+  Example    : none
+  Description: get/set for attribute created time.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub created {
     my ($self,$arg) = @_;
@@ -417,12 +442,13 @@ sub created {
 
 =head2 logic_name
 
-  Title   : logic_name
-  Usage   : $self->logic_name
-  Function: Get/set method for the logic_name, the name under 
-            which this typical analysis is known.
-  Returns : String
-  Args    : String
+  Arg [1]    : string $logic_name
+  Example    : none
+  Description: Get/set method for the logic_name, the name under 
+               which this typical analysis is known.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -436,15 +462,16 @@ sub logic_name {
 
 =head2 has_database
 
- Title   : has_database
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : none
+  Description: tests if the db attribute is set, returns 1 if so,
+               0 if not.
+  Returntype : int 0,1
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub has_database{
    my ($self,@args) = @_;
@@ -453,17 +480,21 @@ sub has_database{
    return 0;
 }
 
+
 =head2 compare
 
-  Title   : compare
-  Usage   : $self->compare( $analysis )
-  Function: returns 1 if this analysis is special case of given analysis
-            returns 0 if they are equal
-	    returns -1 if they are completely different
-  Returns : String
-  Args    : Bio::EnsEMBL::Analysis
+  Arg  1     : Bio::EnsEMBL::Analysis $ana
+               The analysis to compare to
+  Example    : none
+  Description: returns 1 if this analysis is special case of given analysis
+               returns 0 if they are equal
+	       returns -1 if they are completely different
+  Returntype : int -1,0,1
+  Exceptions : none
+  Caller     : unknown
 
 =cut
+
 
 
 sub compare {
@@ -494,6 +525,28 @@ sub compare {
 }
 
   
+
+=head2 id
+
+  Arg        : none
+  Example    : none
+  Description: deprecated function, use dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub id {
+    my ($self,$arg) = @_;
+    $self->warn( "Analysis->id is deprecated. Use dbID!" );
+    print STDERR caller;
+    
+    if (defined($arg)) {
+	$self->{_dbid} = $arg;
+    }
+    return $self->{_dbid};
+}
   
 
 
