@@ -106,8 +106,8 @@ lynx -source ftp://ftp.ensembl.org/ls-lR.Z | \
 
 while read path db ver; do
     if [[ $db != $this_db ]]; then
-	#cleandb $this_db $ver
-	#cleandb $this_db $old_ver
+	cleandb $this_db $ver
+	cleandb $this_db $old_ver
 	this_db=$db
 	old_ver=$ver
 	old_path=$path
@@ -115,10 +115,10 @@ while read path db ver; do
     fi
 
     do_delta $this_db $old_ver $ver $old_path $path
-    #cleandb $this_db $old_ver
+    cleandb $this_db $old_ver
 
     old_ver=$ver
     old_path=$path
 done <ls-lR
 
-#cleandb $this_db $ver
+rm -rf databases/*
