@@ -67,8 +67,7 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
 
 # _initialize is where the heavy stuff will happen when new is called
 
