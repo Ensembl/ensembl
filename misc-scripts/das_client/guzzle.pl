@@ -88,6 +88,7 @@ my @colours = qw( red green blue magenta cyan yellow gray black );
 # page.
 #
 my $stylesheet = <<EOT;
+<!--
 body {
     color:	    #000;
     background:	    #6a6;
@@ -111,6 +112,7 @@ tt {
 .thetable {
     background:	    #9c9;
 }
+-->
 EOT
 
 #
@@ -168,7 +170,7 @@ sub page_start_and_head
 
     print $cgi->start_html(
 	-title => $title,
-	-style => $stylesheet);
+	-style => { -code => $stylesheet });
 
     print $cgi->h1({ style => 'text-align:center' }, $title);
 }
