@@ -81,9 +81,9 @@ sub fetch_by_chr_start_end {
     }
 
     if( $start > $end ) {
-        $self->throw("start must be less than end: parameters $chr:$start:$end");
+      $self->throw("start must be less than end: parameters $chr:$start:$end");
     }
-
+    
     my $slice;
     my $type = $self->db->assembly_type();
 
@@ -118,9 +118,14 @@ sub fetch_by_contig_name {
 
    my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($contigid);
 
-   return $self->fetch_by_chr_start_end($chr_name,
-					$start-$size,
-					$end+$size);
+   $start -= $size;
+   $end += $size;
+
+   if($start < 1) {
+     $start  = 1;
+   }
+
+   return $self->fetch_by_chr_start_end($chr_name, $start, $end);
  }
 
 
@@ -213,9 +218,14 @@ sub fetch_by_clone_accession{
        $self->throw("Clone is not on the golden path. Cannot build Slice");
    }
      
-   my $slice = $self->fetch_by_chr_start_end( $chr_name,
-					      $first_start-$size,
-					      $end+$size );
+   $first_start -= $size;
+   $end += $size;
+
+   if($first_start < 1) {
+     $first_start = 1;
+   }
+
+   my $slice = $self->fetch_by_chr_start_end($chr_name, $first_start, $end);
    return $slice;
 }
 
@@ -280,11 +290,18 @@ sub fetch_by_transcript_id {
      $exon_transforms{ $exon } = $newExon;
    }
    $transcript_obj->transform( \%exon_transforms );
-   my $slice = $self->fetch_by_chr_start_end(
-					     $emptyslice->chr_name,
-					     $transcript_obj->start-$size,
-					     $transcript_obj->end+$size);
-   return $slice;
+
+
+  my $start = $transcript_obj->start() - $size;
+  my $end = $transcript_obj->end() + $size;
+
+  if($start < 1) {
+    $start = 1;
+  }
+
+  my $slice = $self->fetch_by_chr_start_end($emptyslice->chr_name,
+					    $start, $end);
+  return $slice;
 }
 
 
@@ -310,12 +327,19 @@ sub fetch_by_gene_stable_id{
    my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_gene($geneid);
 
    if( !defined $start ) {
-     my $type = $self->adaptor->db->assembly_type()
+     my $type = $self->db->assembly_type()
        or $self->throw("No assembly type defined");
      $self->throw("Gene is not on the golden path '$type'. Cannot build Slice.");
    }
      
-   return $self->fetch_by_chr_start_end($chr_name, $start-$size, $end+$size);
+   $start -= $size;
+   $end += $size;
+   
+   if($start < 1) {
+     $start = 1;
+   }
+
+   return $self->fetch_by_chr_start_end($chr_name, $start, $end);
 }
 
 
