@@ -189,11 +189,9 @@ sub extend {
     return $nvc;
 }
 
-
+# Hack to make Areks code display, now fixed - Elia
 sub get_MarkerFeatures {
-
-    my ($self)=@_;
-     return $self->_get_all_SeqFeatures_type('marker');
+    return ();
 }
  
 =head2 extend_maximally
@@ -350,13 +348,18 @@ sub primary_seq {
    # if there is a left overhang, add it 
    
    if( $self->_vmap->left_overhang() > 0 ) {
-       $seq_string = 'N' x $self->_vmap->left_overhang();
+       my $mc = $self->_vmap->get_leftmost_MapContig;
+       print STDERR "using leftmost ".$mc->contig->id." ".$mc->start."\n";
+
+       $seq_string = 'N' x ($mc->start);
    }
    
    #Go through each MapContig
    my $previous = undef;
    foreach my $mc ( @map_contigs ) {
-       if( defined $previous && $previous->end != $mc->start ) {
+       print STDERR "So far we have",length($seq_string)," starting at ",$mc->start,"\n";
+
+       if( defined $previous && $previous->end+1 != $mc->start ) {
 	   # then start had better be before end
 	   if( $mc->start < $previous->end ) {
 	       $self->throw("Inconsistent map contigs with start of next contig less than end of previous");
@@ -367,7 +370,7 @@ sub primary_seq {
 	   $seq_string .= $str;
        } else {
 	   # exact overlap - chew back the switch base
-	   $seq_string = substr($seq_string,0,-1);
+	   #$seq_string = substr($seq_string,0,-1);
        }
 
        # now add in the actual sequence.
@@ -376,15 +379,20 @@ sub primary_seq {
        # flip if other way around
        my $substring;
        if( $mc->orientation == -1 ) {
+	   #print STDERR "Reverse calling ",$mc->end_in,":",$mc->start_in,"\n";
 	   $substring = $mc->contig->primary_seq->subseq($mc->end_in,$mc->start_in);
 	   $substring =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
 	   $substring = CORE::reverse $substring;
        } else {
+	   #print STDERR "Calling ",$mc->end_in,":",$mc->start_in,"\n";
 	   $substring = $mc->contig->primary_seq->subseq($mc->start_in,$mc->end_in);
        }
 
        # add it
+       #print STDERR "To ",length($seq_string)," adding ",length($substring),"\n";
+
        $seq_string .= $substring;
+       $previous = $mc;
    }
    
    # if there is a right overhang, add it 
@@ -901,6 +909,8 @@ sub _get_all_SeqFeatures_type {
        return $self->_get_cache($type);
    }
 
+   print STDERR "Entering in get_all_SeqFeatures_type...$type\n";
+
    # ok - build the sequence feature list...
 
    my $sf;
@@ -912,34 +922,61 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
+       print STDERR "RawContigs... ".$c->id." $type....\n";
+
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
-	   push(@$sf,$c->get_all_SimilarityFeatures());
+	   my @tmp = $c->get_all_SimilarityFeatures();
+	   foreach my $t (@tmp) {
+	       foreach my $f ($t->sub_SeqFeature) {
+		   $f->attach_seq($c->primary_seq);
+		   #print STDERR "F " .$f->id . " " . $f->seq->seq . "\n";
+	       }
+	   }
+	   # sanity check... (!)
+	   my $duff = 0;
+	   foreach my $tempf ( $c->get_all_SimilarityFeatures() ) {
+	       if(  $tempf->seqname ne $c->id ) {
+		   #print STDERR "Warning - feature not on the contig it says it is... $tempf ...",$tempf->hseqname."!\n";
+		   $duff++
+	       } else {
+		   
+		   push(@$sf,$tempf);
+	       }
+	   }
+	   if( $duff > 0 ) {
+	       print STDERR "Warning - features not on the correct contig... ($duff)\n";
+	   }
+	   #push(@$sf,$c->get_all_SimilarityFeatures());
+	   
        } elsif ( $type eq 'prediction' ) {
 	   push(@$sf,$c->get_all_PredictionFeatures());
        } elsif ( $type eq 'external' ) {
 	   push(@$sf,$c->get_all_ExternalFeatures());
-       } elsif ( $type eq 'marker' ) {
-	   push(@$sf,$c->get_MarkerFeatures());
        } else {
 	   $self->throw("Type $type not recognised");
        }
    }
 
+   
    my @vcsf = ();
    # need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
 
    my $count = 0;
+   my $success = 0;
+   my $total;
    foreach $sf ( @$sf ) {
-       #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
+       #print STDERR "##### Starting to convert featre " . $sf->seqname . " " . $sf->start . ":".$sf->end."\n";
+       $total++;
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
        if( !defined $sf ) {      
 	   next;
        }
-
+       $success++;
+       #print STDERR "Success...\n";
 	
        if($sf->start < 0 ){
 	   $count++;
@@ -952,6 +989,8 @@ sub _get_all_SeqFeatures_type {
         }
    }
    
+   print STDERR "There were $success successful moves out of $total\n";
+
    return @vcsf;
 }
 
@@ -1125,8 +1164,8 @@ sub _convert_start_end_strand_vc {
        
         # ok - forward with respect to vc. Only need to add offset
 	my $offset = $mc->start - $mc->start_in;
-	$rstart = $start + $offset;
-	$rend   = $end + $offset;
+	$rstart = $start - $mc->start_in + $mc->start;
+	$rend   = $end  - $mc->start_in  + $mc->start;
 	$rstrand = $strand;
     } else {
 	my $offset = $mc->start+ $mc->start_in;
@@ -1137,6 +1176,9 @@ sub _convert_start_end_strand_vc {
 
 	$rstart  = $offset - $end;
 	$rend    = $offset - $start;
+	#$rstart   = $mc->end - ($end - $mc->start_in);
+	#$rend     = $mc->end - ($start - $mc->start_in);
+	
     }
     return ($rstart,$rend,$rstrand);
 }
@@ -1160,7 +1202,8 @@ sub _dump_map {
    print $fh "Contig Map Dump: \n";
    
    foreach my $mc ($self->_vmap->get_all_MapContigs) {
-       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in," orientation ",$mc->orientation,"\n";
+       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in,
+       " end in contig " . $mc->end_in . " orientation ",$mc->orientation,"\n";
    }
 }
 
