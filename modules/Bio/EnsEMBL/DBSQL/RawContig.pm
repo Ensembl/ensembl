@@ -73,8 +73,9 @@ sub new {
     
     my $self = bless {}, $pkg;
 
-    my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
+    my ($dbobj,$id,$perlonlysequences) = $self->_rearrange([qw(DBOBJ
 					    ID
+					    PERLONLYSEQUENCES
 					    )],@args);
 
     $id    || $self->throw("Cannot make contig db object without id");
@@ -85,6 +86,7 @@ sub new {
     $self->dbobj($dbobj);
     $self->_got_overlaps(0);
     $self->fetch();
+    $self->perl_only_sequences($perlonlysequences);
 
     return $self;
 }
@@ -218,7 +220,29 @@ sub has_genes{
 =head2 primary_seq
 
  Title   : primary_seq
- Usage   : $dbseq = $contig->Primary_Seq();
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub primary_seq{
+   my ($self,@args) = @_;
+
+   if( $self->perlonlysequences == 1 ) {
+       return $self->perl_primary_seq();
+   }
+   return $self->db_primary_seq();
+
+}
+
+=head2 db_primary_seq
+
+ Title   : db_primary_seq
+ Usage   : $dbseq = $contig->db_primary_seq();
  Function: Gets a Bio::EnsEMBL::DBSQL::DBPrimarySeq object out from the contig
  Example :
  Returns : Bio::EnsEMBL::DBSQL::DBPrimarySeq object
@@ -227,7 +251,7 @@ sub has_genes{
 
 =cut
 
-sub primary_seq {
+sub db_primary_seq {
     my ($self) = @_;
     
     my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
@@ -238,10 +262,10 @@ sub primary_seq {
     return $dbseq;
 }
 
-=head2 old_primary_seq
+=head2 perl_primary_seq
 
  Title   : seq
- Usage   : $seq = $contig->old_primary_seq();
+ Usage   : $seq = $contig->perl_primary_seq();
  Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
  Returns : Bio::PrimarySeqI object
@@ -250,7 +274,7 @@ sub primary_seq {
 
 =cut
 
-sub old_primary_seq {
+sub perl_primary_seq {
     my ($self) = @_;
 
     if ( $self->_seq_cache() ) {
@@ -1430,10 +1454,7 @@ sub _got_overlaps {
                 #next unless $source eq 'ucsc';
                 
                 # Make the sister contig object
-                my $sis = Bio::EnsEMBL::DBSQL::RawContig->new(
-                    '-dbobj' => $self->dbobj,
-                    '-id'    => $sister_id,
-                    );
+		my $sis = $self->dbobj->get_Contig($sister_id);
                 
                 # Get the overlap end, and sister polarity
                 # (Will cause an exception if $type is 
@@ -1631,6 +1652,27 @@ sub filter_features {
 	}
     }
     return @out;
+}
+
+=head2 perl_only_sequences
+
+ Title   : perl_only_sequences
+ Usage   : $obj->perl_only_sequences($newval)
+ Function: 
+ Returns : value of perl_only_sequences
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_sequences{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_sequences'} = $value;
+    }
+    return $obj->{'perl_only_sequences'};
+
 }
 
 

@@ -390,8 +390,7 @@ sub get_all_Genes {
 	       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
            } else {
 
-	       my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-								      -id    => $exon->contig_id);
+	       my $contig      = $self->_db_obj->get_Contig(-id => $exon->contig_id );
 	       $contig->fetch();
 
 	       $seq = $contig->primary_seq();
@@ -464,8 +463,7 @@ sub get_Contig {
    my ($self,$contigid) = @_;
 
    # should check this contig is in this clone?
-   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-							  -id    => $contigid );
+   my $contig = $self->_db_obj->get_Contig($contigid);
    
    return $contig->fetch();
 }
@@ -536,9 +534,7 @@ sub get_all_Contigs {
    my $version = $self->embl_version();
 
    while( my $rowhash = $sth->fetchrow_hashref) {
-       my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-							 -id    => $rowhash->{'id'} );
-
+       my $contig = $self->_db_obj->get_Contig( $rowhash->{'id'});
        $contig->internal_id($rowhash->{internal_id});
        $contig->seq_version($version);
 

@@ -83,7 +83,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$external,$port) = 
+  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$external,$port) = 
       $self->_rearrange([qw(DBNAME
 			    MAPDBNAME
 			    HOST
@@ -92,6 +92,7 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    PERLONLYFEATURES
+			    PERLONLYSEQUENCES
 			    EXTERNAL
 			    PORT
 			    )],@args);
@@ -124,6 +125,10 @@ sub _initialize {
       $host = 'localhost';
   }
 
+  if( ! defined $perlonlysequences ) {
+      $perlonlysequences = 0;
+  }
+
   my $dsn = "DBI:$driver:database=$db;host=$host";
   
   if( $debug && $debug > 10 ) {
@@ -144,6 +149,8 @@ sub _initialize {
   if ($perl && $perl == 1) {
       $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
   }
+
+  $self->perl_only_sequences($perlonlysequences);
 
   if( defined $external ){
       foreach my $external_f ( @{$external} ) {
@@ -1909,7 +1916,8 @@ sub get_Contig{
 #Calling Contig->fetch instead!");
 
    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
-							  -id    => $id );
+							  -id    => $id 
+							  -perlonlysequences => $self->perl_only_sequences() );
    
    return $contig->fetch();
 }
@@ -1930,14 +1938,8 @@ sub get_Contig{
 sub get_Contigs_by_Chromosome {
     my ($self,$chromosome ) = @_;
     
-    $self->warn("Obj->get_Contigs_by_Chromosome is a deprecated method! 
+    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
 Calling Contig->get_by_Chromosome instead!");
-
-    my $contig = new Bio::EnsEMBL::DBSQL::RawContig 
-	( -dbobj => $self,		
-	 -id    => 'temp');
-    
-    return $contig->get_by_Chromosome;
 }
 
 =head2 get_all_Clone_id
@@ -1964,6 +1966,27 @@ Calling Clone->get_all_id instead!");
    return $clone->get_all_id();
 }
 
+
+=head2 perl_only_sequences
+
+ Title   : perl_only_sequences
+ Usage   : $obj->perl_only_sequences($newval)
+ Function: 
+ Returns : value of perl_only_sequences
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub perl_only_sequences{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perl_only_sequences'} = $value;
+    }
+    return $obj->{'perl_only_sequences'};
+
+}
 
 =head2 delete_Clone
 

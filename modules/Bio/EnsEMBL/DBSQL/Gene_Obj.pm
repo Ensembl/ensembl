@@ -501,9 +501,7 @@ sub get_array_supporting {
 	if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
 	    $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
 	} else {
-	    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-								   -id    => $exon->contig_id() );
-   
+	    my $contig      = $self->_db_obj->get_Contig($exon->contig_id);
 	    $contig->fetch(); 
 	    $seq = $contig->primary_seq();
 	    $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
@@ -813,10 +811,7 @@ id = '$contig_id'");
    if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
        $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
    } else {
-       
-       my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-								   -id    => $exon->contig_id() );
-   
+       my $contig  = $self->_db_obj->get_Contig($exon->contig_id());
        $contig->fetch(); 
        $seq = $contig->primary_seq();
        $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
@@ -1176,9 +1171,7 @@ sub write{
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
 	   print STDERR "Getting out contig for $contig_id\n";
-	   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
-								  -id    => $contig_id );
-	   
+	   my $contig      = $self->_db_obj->get_Contig($contig_id);
 	   $contig->fetch();
 	   
 	   $contighash{$contig_id} = $contig;
