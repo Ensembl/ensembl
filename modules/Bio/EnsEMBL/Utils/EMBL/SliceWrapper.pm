@@ -386,7 +386,9 @@ sub top_SeqFeatures {
     push @sfs, @{$self->slice->get_all_ExternalFeatures()};
   }
   unless($self->skip_SeqFeature('prediction')) {
-   # push @sfs, @{$self->slice->get_all_PredictionTranscripts()};
+    foreach my $pt (@{$self->slice->get_all_PredictionTranscripts}) {
+      push @sfs, new Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper($pt);
+    }
   }
   unless($self->skip_SeqFeature('gene')) {
     foreach my $gene (@{$self->slice->get_all_Genes()}) {
