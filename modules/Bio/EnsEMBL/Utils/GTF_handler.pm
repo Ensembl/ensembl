@@ -11,7 +11,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Utils::GTF_handler - Comparison of two clones
+Bio::EnsEMBL::Utils::GTF_handler - Utilities for loading and dumping genes
+                                   from/to gtf files.
 
 =head1 SYNOPSIS
 
@@ -66,7 +67,7 @@ use Bio::EnsEMBL::Exon;
 sub new {
     my ($class, @args) = @_;
     my $self = bless {}, $class;
-    $self->reset_exon_phases(1);
+    $self->reset_exon_phases(1);        # not used, set to zero
     return $self;
 }
 
@@ -111,6 +112,7 @@ sub seq_name_parser {
 
 =cut
 
+# not used, all set to 0
 sub reset_exon_phases {
     my( $self, $flag ) = @_;
     
@@ -134,6 +136,8 @@ sub reset_exon_phases {
 sub parse_file {
     my( $self, $fh ) = @_;
     
+    $self->warn("Do not use for dumping or translating; all phases are set to 0 !\n");
+
     $self->throw("No filehandle supplied") unless $fh;
     
     my %valid_gtf_feature = map {$_, 1} qw{ exon cds start_codon stop_codon };
@@ -189,7 +193,7 @@ sub parse_file {
         # place in the monster GTF hash.
         if ($valid_gtf_feature{$feature}) {
             
-            unless (defined($exon_num)) {
+            unless (defined($exon_num)) { # typically for start/stop_codons
                 #warn("Skipping line with no exon_number: '$gtf_line'\n");
                 next GTF_LINE;
             }
@@ -200,11 +204,9 @@ sub parse_file {
             
             if ($feature    eq 'exon'
                 or $feature eq 'stop_codon'
-                or $feature eq 'start_codon') {
-                $exon->{$feature} = [$seq_name, $start, $end, $strand];
-            }
-            elsif ($feature eq 'cds') {
-                $exon->{'cds'}    = [$seq_name, $start, $end, $strand, $phase];
+                or $feature eq 'start_codon'
+                or $feature eq 'cds') {
+                $exon->{$feature} = [$seq_name, $start, $end, $strand, $phase];
             }
 
             # Record the exon_id if we have it
@@ -217,18 +219,22 @@ sub parse_file {
             next GTF_LINE;
         }
         
-        # Record the what made this gene
+        # Record the source that reported this gene
         $gene_type{$gene_id} = $source if $source;
+
+        # keep track of igi here? 
     }
     
     # Transform the ugly, great, multi-level hash we've
     # created into nice Ensembl gene objects.
     my( @genes );
     foreach my $gene_id (keys %gtf) {
-        push(@genes, $self->_make_gene_from_gtf_hash($gene_id, $gene_type{$gene_id}, $gtf{$gene_id}));
+        push(@genes, $self->_make_gene_from_gtf_hash($gene_id, 
+                                                     $gene_type{$gene_id}, 
+                                                     $gtf{$gene_id}));
     }
     return @genes;
-}
+}                                       # parse_file
 
 sub parse_group_field {
     my( $self, $group_field ) = @_;
@@ -268,7 +274,7 @@ sub parse_group_field {
     }
     
     return($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
-}
+}                                       # parse_group_field
 
 sub _make_gene_from_gtf_hash {
     my( $self, $gene_id, $source, $gene_gtf ) = @_;
@@ -294,9 +300,10 @@ sub _make_gene_from_gtf_hash {
         };
         warn $@ if $@;
     }
-    $self->throw("Failed to make any transcripts") unless $gene->each_Transcript;
+    $self->throw("Failed to make any transcripts")
+      unless $gene->each_Transcript;
     return $gene;
-}
+}                                       # _make_gene_from_gtf_hash
 
 sub _make_transcript {
     my( $self, $gene, $trans_id, $trans_gtf, $gene_exons ) = @_;
@@ -354,12 +361,15 @@ sub _make_transcript {
     }
     
     $self->_make_translation($transcript, $translation_start, $translation_end);
-    $self->_correct_exon_phases($transcript)
-        if $self->reset_exon_phases;
+
+    ## all phases are 0, now. 
+    # $self->_correct_exon_phases($transcript)
+    #    if $self->reset_exon_phases;
     
     $gene->add_Transcript($transcript);
-}
+}                                       # _make_transcript
 
+# returns a new Exon, and translation start/stop if it can find it.
 sub _make_exon {
     my( $self, $gene, $exon_num, $exon_gtf ) = @_;
         
@@ -386,11 +396,14 @@ sub _make_exon {
         last if $strand = $exon_gtf->{$feature}[3];
     }
     die "No strand" unless $strand;
-    
-    $phase = $exon_gtf->{'cds'}[4] if $exon_gtf->{'cds'};
+
+    $phase = 0; # ignore it altogether!
+#    $phase = $exon_gtf->{'cds'}[4] if $exon_gtf->{'cds'};
     
     # Make an exon object
     my $exon = Bio::EnsEMBL::Exon->new($start, $end, $strand);
+
+
     $exon->version(1);
     $exon->contig_id($seq_name);
     $exon->seqname($seq_name);  ### What is seqname for ???
@@ -429,9 +442,13 @@ sub _make_exon {
             $t_end = $exon_gtf->{'stop_codon'}[2] + 1;
         }
     }
+
+    ## HA! translation start/end is wrong; EnsEMBL code expects it 
+    ## in exon coordinates, not in the fpc coords we're given:
+    
     
     return($exon, $t_start, $t_end);
-}
+}                                       # _make_exon
 
 sub _pretty_exon_data_string {
     my( $self, $exon_num, $exon_gtf ) = @_;
@@ -510,8 +527,10 @@ sub _make_translation {
     $translation->end_exon_id($translation_end->[1]);
     
     $transcript->translation($translation);
-}
+}                                       # _make_translation
 
+
+## not used anymore ...
 sub _correct_exon_phases {
     my( $self, $transcript ) = @_;
     
@@ -565,8 +584,9 @@ sub _correct_exon_phases {
             last;
         }
     }
-}
+}                                       # _correct_exon_phases
 
+# not used anymore, all set to 0
 sub calculate_end_phase {
     my( $self, $phase, $start, $end, $strand ) = @_;
     
