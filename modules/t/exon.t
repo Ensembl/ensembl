@@ -1,41 +1,39 @@
-
-
 use lib 't';
+use strict;
 
 BEGIN { $| = 1;  
-	use Test;
+	use Test ;
 	plan tests => 10;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-use EnsTestDB;
-use Bio::EnsEMBL::DBLoader;
+use MultiTestDB;
 
+my $verbose = 1;
 
 $loaded = 1;
+my $multi = MultiTestDB->new();
 
 ok(1);
 
-# Database will be dropped when this
-# object goes out of scope
-my $ens_test = EnsTestDB->new;
+my $db = $multi->get_DBAdaptor( 'core' );
 
-$ens_test->do_sql_file("t/minidatabase.dump");
+ok($db);
 
-ok($ens_test);
-
-
-my $db = $ens_test->get_DBSQL_Obj;
 
 # Exon specific tests
 
-$exonad = $db->get_ExonAdaptor();
+my $exonad = $db->get_ExonAdaptor();
+my $rca = $db->get_RawContigAdaptor();
 
+my $contig = $rca->fetch_by_dbID( 469270 );
 ok($exonad);
 
-$exon = Bio::EnsEMBL::Exon->new();
+my $exon = Bio::EnsEMBL::Exon->new();
+
+
 
 $exon->start(10);
 ok($exon->start == 10);
@@ -49,21 +47,30 @@ ok($exon->strand == 1);
 $exon->phase(0);
 ok($exon->phase == 0);
 
-$exon->contig_id(1);
-ok($exon->contig_id == 1);
-
+$exon->contig( $contig );
 # should try to store (!)
+$exon->end_phase( -1 );
+
+$multi->hide( "core", "exon" );
 
 $exonad->store($exon);
 
-ok($exon->dbID);
+ok($exon->dbID() == 1);
 
 # now test fetch_by_dbID
 
-$newexon = $exonad->fetch_by_dbID($exon->dbID);
+my $newexon = $exonad->fetch_by_dbID($exon->dbID);
 
 ok($newexon);
 
+$multi->restore();
 
+
+sub debug {
+  my $txt = shift;
+  if( $verbose ) {
+    print STDERR $txt,"\n";
+  }
+}
 
 
