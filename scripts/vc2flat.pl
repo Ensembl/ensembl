@@ -195,8 +195,9 @@ foreach my $vc_list_ref ( @vcs ) {
 
     if ($verbose) {
 	print STDERR "Creating VirtualContig:\n";
-	foreach my $parameter ($vc_list_ref) {
-	    print STDERR "$parameter ";
+	my $c;
+	for ($c=0;$c<5;$c++) {
+	    print STDERR "VC parameter ".$vc_list_ref->[$c]."\n";
 	}
 	print STDERR "\n";
     }

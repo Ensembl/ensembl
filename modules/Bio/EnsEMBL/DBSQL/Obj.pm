@@ -618,7 +618,14 @@ sub prepare {
       $self->throw("Database object has lost its database handle! getting otta here!");
    }
       
-
+   if ($self->_diffdump) {
+       my $fh=$self->_diff_fh;
+       open (FH,"$fh");
+       if ($string =~/insert|delete|replace/) {
+	   print FH "$string\n";
+       }
+   }
+   
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
        my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
@@ -2133,3 +2140,46 @@ sub deleteObj {
 }
 
 
+=head2 diff_fh
+
+ Title   : diff_fh
+ Usage   : $obj->diff_fh($newval)
+ Function: path and name of the file to use for writing the mysql diff dump
+ Example : 
+ Returns : value of diff_fh
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub diff_fh{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'diff_fh'} = $value;
+    }
+    return $self->{'diff_fh'};
+    
+}
+
+
+=head2 _diffdump
+
+ Title   : _diffdump
+ Usage   : $obj->_diffdump($newval)
+ Function: If set to 1 sets $self->_prepare to print the diff sql 
+           statementents to the filehandle specified by $self->diff_fh
+ Example : 
+ Returns : value of _diffdump
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _diffdump{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_diffdump'} = $value;
+    }
+    return $self->{'_diffdump'};
+    
+}

@@ -642,7 +642,7 @@ sub get_all_Genes {
     my ($self) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
-    foreach my $contig ($self->_vmap->get_all_RawContigs) {   
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {
 	foreach my $gene ( $contig->get_all_Genes() ) {      
 	    $gene{$gene->id()} = $gene;
 	}

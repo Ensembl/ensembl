@@ -104,7 +104,7 @@ sub delete{
    # get out exons, transcripts for gene. 
 
    my $sth = $self->_db_obj->prepare("select id,translation from transcript where gene = '$geneid'");
-   $sth->execute;
+   $sth->execute || $self->throw("Could not find any transcript to delete for gene $geneid!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@trans,$rowhash->{'id'});
        push(@translation,$rowhash->{'translation'});
@@ -112,7 +112,7 @@ sub delete{
 
    foreach my $trans ( @trans ) {
        my $sth = $self->_db_obj->prepare("select exon from exon_transcript where transcript = '$trans'");
-       $sth->execute;
+       $sth->execute || $self->throw("Could not find any exon for transcript $trans!");
        while( my $rowhash = $sth->fetchrow_hashref) {
 	   $exon{$rowhash->{'exon'}} =1;
        }
@@ -120,27 +120,27 @@ sub delete{
 
    foreach my $translation (@translation) {
        my $sth2 = $self->_db_obj->prepare("delete from translation where id = '$translation'");
-       $sth2->execute;
+       $sth2->execute || $self->throw("Could not delete translation $translation!");
    }
    # delete exons, transcripts, gene rows
 
    foreach my $exon ( keys %exon ) {
        my $sth = $self->_db_obj->prepare("delete from exon where id = '$exon'");
-       $sth->execute;
+       $sth->execute || $self->throw("Could not delete exon $exon!");
 
        $sth = $self->_db_obj->prepare("delete from supporting_feature where exon = '$exon'");
-       $sth->execute;
+       $sth->execute || $self->("Could not delete supporting features for exon $exon!");
    }
 
    foreach my $trans ( @trans ) {
        my $sth= $self->_db_obj->prepare("delete from transcript where id = '$trans'");
-       $sth->execute;
+       $sth->execute || $self->throw("Could not delete transcript $trans!");
        $sth= $self->_db_obj->prepare("delete from exon_transcript where transcript = '$trans'");
-       $sth->execute;
+       $sth->execute || $self->throw("Could not delete exon_transcript rows for transcript $trans!");
    }
 
    $sth = $self->_db_obj->prepare("delete from gene where id = '$geneid'");
-   $sth->execute;
+   $sth->execute || $self->throw("Could not delete gene $geneid");
 }   
 
 
@@ -210,12 +210,10 @@ sub get_all_Gene_id{
 
    my @out;
    my $sth = $self->_db_obj->prepare("select id from gene");
-   my $res = $sth->execute;
-
+   my $res = $sth->execute || $self->throw("Could not get any gene ids!");
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@out,$rowhash->{'id'});
    }
-
    return @out;
 }
 
@@ -739,16 +737,6 @@ sub get_Gene_by_DBLink {
     return $self->get($geneid,$supporting);
 }
 
-
-
-
-
-
-
-
-
-
-
 =head2 get_Exon
 
  Title   : get_Exon
@@ -1135,11 +1123,6 @@ sub get_Transcript_in_VC_coordinates
     return $found;    
     
 }
-
-
-
-
-
 
 =head2 write
 
