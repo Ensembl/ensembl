@@ -43,6 +43,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name, $num_blocks, $interpolate, $max_ratio) = @_;
 
+  if(defined($num_blocks) && $num_blocks < 1) {
+    warning("Invalid number of density blocks [$num_blocks] requested.\n" .
+	   "Returning empty list.");
+    return [];
+  }
+
   $num_blocks ||= 50;
   my $length = $slice->length();
   my $wanted_block_size = int($length/$num_blocks);
@@ -51,7 +57,7 @@ sub fetch_all_by_Slice {
   my $analysis = $analysis_adaptor->fetch_by_logic_name($logic_name);
 
   if(!$analysis) {
-    warning("No Analysis with logic_name=[$logic_name] found. " .
+    warning("No Analysis with logic_name=[$logic_name] found.\n" .
             'Returning empty list.');
     return [];
   }
@@ -120,7 +126,7 @@ sub fetch_all_by_Slice {
 
     #construct a new feature using all of the old density features that
     #we overlapped
-    while($f = shift(@features) && $end > $f->{'start'}) {
+    while(($f = shift(@features)) && $end > $f->{'start'}) {
 
       #what portion of this feature are we using to construct our new block?
       $fstart = ($f->{'start'} < $start) ? $start : $f->{'start'};
