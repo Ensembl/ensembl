@@ -871,6 +871,7 @@ sub get_repeatmasked_seq {
     my $masked_dna = $self->mask_features($dna, @repeats);
     my $masked_seq = Bio::PrimarySeq->new(   '-seq'        => $masked_dna,
                                              '-display_id' => $self->id,
+                                             -primary_id => $self->internal_id,
                                              '-moltype' => 'dna',
 					     );
     return $masked_seq;
@@ -897,11 +898,14 @@ sub mask_features {
       my $padstr = 'N' x $length;
       
       substr ($dnastr,$start,$length) = $padstr;
-      
+      #PL: this may be overcautious, remove if too slow
+      if ($dnastr !~ /^[A-Za-z\-\.\*]+$/) {
+          $dnastr =~ s/[A-Za-z\-\.\*]//g;
+          $self->throw("Nonstandard characters found $dnastr\n"); 
+      }
   }
-    
     return $dnastr;
-}
+}                                       # mask_features
 
 
 =head2 get_all_PredictionFeatures_as_Transcripts
@@ -931,6 +935,36 @@ sub get_all_PredictionFeatures_as_Transcripts {
 
     return @transcripts;		
 }
+
+=head2 get_gc_content
+
+ Title   : get_gc_content
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub get_gc_content {
+   my ($self) = @_;
+
+   my $seq = $self->primary_seq->seq();
+
+   my $num_g = $seq =~ tr/G/G/;
+   my $num_c = $seq =~ tr/C/C/;
+   my $num_n = $seq =~ tr/N/N/;
+
+   my $seq_length = $self->primary_seq->length;
+
+   my $perc_gc = ((($num_g+$num_c)/($seq_length-$num_n))*100);
+
+   my $perc_gc = int($perc_gc+0.5);
+   return $perc_gc;
+
+}   
 
     
 
