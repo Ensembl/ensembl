@@ -37,6 +37,7 @@ $conf{'recipient'} = 'testrecipient';
 $conf{'mysqladmin'} = 'mysqladmin';
 $conf{'mysql'} = 'mysql';
 $conf{'user'}  = 'ensembl';
+$conf{'update'} = 'scripts/update_list_chunk.pl';
 
 if ( -e 't/transfer.conf' ) {
    print STDERR "Reading configuration from transfer.conf\n";
@@ -74,15 +75,15 @@ system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 print "ok 4\n";
 
 #Insert values in meta table of recipient
-my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=donor;user=ensembl;pass=');\" | $conf{mysql} -u $nuser $conf{recipient}";
+my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=$conf{donor};user=ensembl;pass=');\" | $conf{mysql} -u $nuser $conf{recipient}";
 system($meta) == 0 or die "$0\nError running '$meta' : $!";
 
 print "ok 5\n";
 
 #Update recipient from donor
 print STDERR "Running an update from the donor to the recipient\n";
-my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser $nuser";
-#system($update) == 0 or die "$0\nError running '$update' : $!";
+my $update="perl $conf{update} -thost localhost -tdbname $conf{recipient} -tdbuser $nuser";
+system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 6\n";
 
