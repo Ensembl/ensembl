@@ -44,7 +44,7 @@ use vars qw(@ISA);
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 sub new {
@@ -140,13 +140,15 @@ sub is_stored {
   my $dbID = $self->{'dbID'};
 
   if($dbID && !$adaptor) {
-    throw("Storable object has a dbID but not an adaptor.\n" .
+    warning("Storable object has a dbID but not an adaptor.\n" .
           'Storable objects must have neither OR both.');
+    return 0;
   }
 
   if($adaptor && !$dbID) {
-    throw("Storable object has an adaptor but not a dbID.\n".
+    warning("Storable object has an adaptor but not a dbID.\n".
           "Storable objects must have neither OR both.");
+    return 0;
   }
 
   return 0 if (!$adaptor && !$dbID);
