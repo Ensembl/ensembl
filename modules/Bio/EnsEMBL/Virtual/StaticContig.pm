@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Virtual::StaticContig - DESCRIPTION of Object
+Bio::EnsEMBL::Virtual::StaticContig - Virtual Contig specific to SQL databases with static_golden_path
 
 =head1 SYNOPSIS
 
@@ -20,11 +20,9 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-This object inherits from
-Bio::EnsEMBL::Virtual::Contig, which in turn
+This object inherits from Bio::EnsEMBL::Virtual::Contig, which in turn
 inherits from Bio::EnsEMBL::DB::ContigI.  See
-Bio::EnsEMBL::Virtual::Contig for examples of
-usage.
+Bio::EnsEMBL::Virtual::Contig for examples of usage.
 
 =head1 AUTHOR - Ewan Birney
 
@@ -179,6 +177,8 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
+    
+    my $idlist  = $self->_raw_contig_id_list();
 
     my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -191,6 +191,7 @@ sub get_all_SimilarityFeatures_above_score{
                         WHERE  f.score > $score
                         AND    f.analysis = a.id 
                         AND    sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
 		        AND    a.db = '$analysis_type'  
                         AND    sgp.chr_end >= $glob_start 
 		        AND    sgp.chr_start <=$glob_end 
@@ -271,6 +272,7 @@ sub get_all_RepeatFeatures {
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
     my $length=$self->length;
+    my $idlist  = $self->_raw_contig_id_list();
 
     my $statement = "SELECT rf.id,
                      IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -281,6 +283,7 @@ sub get_all_RepeatFeatures {
                             rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
                      FROM   repeat_feature rf,static_golden_path sgp
                      WHERE  sgp.raw_id = rf.contig
+                     AND    f.contig in $idlist
                      AND    sgp.chr_end >= $glob_start 
                      AND    sgp.chr_start <=$glob_end
 		     AND    sgp.chr_name='$chr_name' 
@@ -765,26 +768,29 @@ return $markers[0];
 
 sub get_all_VirtualGenes_startend
 {
-my ($self)=shift;
-
-my $gene;
-my @genes;
-
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
-
-$self->throw ("I need a chromsome name") unless defined $chr_name;
-$self->throw ("I need a chromosome end") unless defined $glob_end;
-$self->throw ("I need a chromsome start") unless defined $glob_start;
-
-my $query ="SELECT     t.gene,
+    my ($self)=shift;
+    
+    my $gene;
+    my @genes;
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    my $idlist  = $self->_raw_contig_id_list();
+    
+    
+    $self->throw ("I need a chromsome name") unless defined $chr_name;
+    $self->throw ("I need a chromosome end") unless defined $glob_end;
+    $self->throw ("I need a chromsome start") unless defined $glob_start;
+    
+    my $query ="SELECT     t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
                        MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
             FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
-            WHERE      sgp.raw_id=e.contig 
+            WHERE      sgp.raw_id=e.contig
+            AND        e.contig in $idlist 
             AND        e.id=et.exon 
             AND        t.id=et.transcript 
             AND        sgp.chr_end >= $glob_start   
@@ -1235,6 +1241,38 @@ sub top_SeqFeatures{
    @sf = $self->SUPER::top_SeqFeatures();
    push(@sf,@{$self->{'additional_seqf'}});
    return @sf;
+}
+
+
+=head2 _raw_contig_id_list
+
+ Title   : _raw_contig_id_list
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _raw_contig_id_list {
+   my ($self,@args) = @_;
+
+   if( defined $self->{'_raw_contig_id_list'} ) {
+       return $self->{'_raw_contig_id_list'};
+   }
+   my $string = "(";
+
+   foreach my $c ( $self->_vmap->each_RawContig ) {
+       $string .= $c->internal_id . ",";
+   }
+   $string =~ s/\,$//g;
+   $string .= ")";
+
+   $self->{'_raw_contig_id_list'} = $string;
+   return $string;
+		   
 }
 
 
