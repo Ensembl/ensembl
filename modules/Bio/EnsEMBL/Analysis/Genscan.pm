@@ -306,11 +306,13 @@ sub _set_exon_phases {
     my ($self,$tran,$pep) = @_;
     
     my $contig_dna = $self->{_dna};
-
+#    print("dna is " . $self->{_dna} . "\n");
     my $count = 0;
     my $prevexon;
+#    print("My peptide in $pep\n");
+EXON:    foreach my $exon ($tran->each_Exon) {
+#	print("Exon coords are " . $exon->start . " " . $exon->end . " " . ($exon->end - $exon->start + 1) . "\n");
 
-    foreach my $exon ($tran->each_Exon) {
 	my $seq   = $contig_dna->str($exon->start,$exon->end);
 
 	if ($exon->strand == -1) {
@@ -320,41 +322,45 @@ sub _set_exon_phases {
 
 	my $exseq = new Bio::Seq(-seq => $seq);
 	my @trans;
-
-	$trans[0] = $exseq->translate();
-	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
-	# intron leaves one base pair.
-	$trans[1] = $exseq->translate('*','X',2);
-	$trans[2] = $exseq->translate('*','X',1);
-	
-	my $i = 0;
 	my $phase;
-	
-	# Loop over all frames 0,1,2
-	for ($i=0; $i < 3; $i++) {
+#	print("Exon seq iis $seq [" . $exseq->seq . "] " . length($seq) . "\n");
+	if (length($seq) < 3) {
+	    $phase = 0;
+	} else {
+	    $trans[0] = $exseq->translate();
+	    # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
+	    # intron leaves one base pair.
+	    $trans[1] = $exseq->translate('*','X',2);
+	    $trans[2] = $exseq->translate('*','X',1);
 	    
-	    # If we have a stop codon at the end of the translation
-	    # chop it off before comparing
-	    my $tmp = $trans[$i]->seq();
-	    #print(STDERR "Trans : $i : " . $trans[$i]->seq . "\n");
-	    if (substr($tmp,-1) eq "*") {
-		$tmp = substr($tmp,0,-1);
-	    }
+	    my $i = 0;
+	    $phase;
 	    
-	    # if we have an X, substitute it to a .
-	    $tmp =~ s/X/\./g;
-	    
-	    # if we have a stop - forget it?
-	    
-	    $tmp =~ /\*/ && next;
-	    
-	    # Compare strings to see if the exon peptide is contained in 
-	    # the full sequence
-	    if ($pep =~ /$tmp/ ) {
-		$phase = $i;
+	    # Loop over all frames 0,1,2
+	    for ($i=0; $i < 3; $i++) {
+		
+		# If we have a stop codon at the end of the translation
+		# chop it off before comparing
+		my $tmp = $trans[$i]->seq();
+#		print(STDERR "Trans : $i : " . $trans[$i]->seq . "\n");
+		if (substr($tmp,-1) eq "*") {
+		    $tmp = substr($tmp,0,-1);
+		}
+		
+		# if we have an X, substitute it to a .
+		$tmp =~ s/X/\./g;
+		
+		# if we have a stop - forget it?
+		
+		$tmp =~ /\*/ && next;
+		
+		# Compare strings to see if the exon peptide is contained in 
+		# the full sequence
+		if ($pep =~ /$tmp/ ) {
+		    $phase = $i;
+		}
 	    }
 	}
-	
 	# Set phase if poss.  If no phase is found the input DNA is
 	# probably wrong.
 	if (defined($phase)) {
@@ -386,6 +392,7 @@ sub _set_exon_phases {
 	    my $pep2 = $trans[2]->seq;
 	    
 	    $self->throw("Can not find frame for exon. Sequences do not match\n");
+
 	}
         $prevexon = $exon;
 	$count++;

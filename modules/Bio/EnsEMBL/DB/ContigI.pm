@@ -175,7 +175,7 @@ sub find_supporting_evidence {
 
     foreach my $f (@features) {
 	if ($f->overlaps($exon)) {
-	    $exon->add_supporting_evidence($f);
+	    $exon->add_Supporting_Feature($f);
 	}
     }
 }

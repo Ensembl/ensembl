@@ -88,6 +88,7 @@ sub _initialize {
     $self->_debug(1) if $debug;
     $self->{_features} = [];   # This stores the features.
     $self->{_repeats}  = [];   # This stores the features.
+    $self->{_genscan}  = [];   # This stores the genscan.
     
     # DEBUG
     print_genes($gs,$seq) if $self->_debug;
@@ -237,25 +238,47 @@ sub read_Pfam {
 }
 
 sub read_Genscan {
-    my ($self,$genscan) = @_;
+    my ($self,) = @_;
 
-    foreach my $trans($genscan->each_Transcript) {
+    my $analysis = new Bio::EnsEMBL::Analysis::Analysis(-program     => "Genscan",
+							-program_version => 1,
+							-gff_source  => "genscan",
+							-gff_feature => "exon",
+							);
+		    
+    foreach my $trans ($self->gs->each_Transcript) {
+	my $gene = new Bio::EnsEMBL::SeqFeature(-primary_tag => 'prediction');
+
 	foreach my $ex ($trans->each_Exon) {
-	    my $f = new Bio::SeqFeature::Generic(-start  => $ex->start,	
+
+	    my $f = new Bio::EnsEMBL::SeqFeature(-start  => $ex->start,	
 						 -end    => $ex->end,
 						 -strand => $ex->strand);
 
 	    $f->source_tag ($ex->source_tag);
-	    $f->primary_tag($ex->primary_tag);
+	    $f->primary_tag('prediction');
 	    $f->seqname($ex->seqname);
 
 	    if (defined($ex->score)) {
 		$f->score($ex->score);
+	    } else {
+		$f->score(0);
 	    }
+	    $f->analysis($analysis);
+	    $gene->add_sub_SeqFeature($f,'EXPAND');
 	}
+	push(@{$self->{_genscan}},$gene);
     }
 }
 	
+sub each_Genscan {
+    my ($self) = @_;
+
+    if (defined($self->{_genscan})) {
+	return @{$self->{_genscan}};
+    }
+}
+
 sub add_Feature {
     my ($self,$f) = @_;
 

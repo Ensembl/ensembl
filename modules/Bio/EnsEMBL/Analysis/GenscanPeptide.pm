@@ -430,7 +430,8 @@ sub _make_homol {
     $peph->seqname    ($pep_homol2->seqname);
     $peph->start_frac ($start_frac);
     $peph->end_frac   ($end_frac);
-    
+    $peph->score      ($pep_homol->score);
+
     if ($pep_homol2->isa("Bio::EnsEMBL::SeqFeatureI") && defined($pep_homol2->analysis) && $peph->isa("Bio::EnsEMBL::SeqFeatureI")) {
 	$peph->analysis($pep_homol2->analysis);
     } else {
@@ -505,6 +506,7 @@ sub _make_dna_homol {
     $peph->primary_tag($pep_homol->primary_tag);
     $peph->source_tag ($pep_homol->source_tag);
     $peph->seqname    ($pep_homol->seqname);
+    $peph->score      ($pep_homol->score);
 
     if (defined($pep_homol->analysis)) {
 	$peph->analysis($pep_homol->analysis);
