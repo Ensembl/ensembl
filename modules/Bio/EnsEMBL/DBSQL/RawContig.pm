@@ -1201,64 +1201,174 @@ sub get_all_RepeatFeatures {
 
 
 sub get_MarkerFeatures {
-  my $self = shift;
+my ($self)=@_;
+  
+my $id = $self->internal_id;
+my @markers;
 
-  my $id = $self->internal_id;
-  my @result = ();
-  eval {
+
+eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
+    
+    my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+	                  f.hstart, f.hend, f.hid, f.analysis 
+	           FROM   feature f, analysis a 
+		   WHERE  f.contig='$id' 
+                   AND    f.analysis = a.id and a.db='mapprimer'";
+       
+    @markers=$self->_create_MarkerFeatures($statement);	
+	
+};
 
-    # features for this contig with db=mapprimer
-    my $sth = $self->dbobj->prepare
-      ( "select f.seq_start, f.seq_end, f.score, f.strand, f.name, ".
-        "f.hstart, f.hend, f.hid, f.analysis ".
-        "from feature f, analysis a ".
-        "where f.contig='$id' and ".
-        "f.analysis = a.id and a.db='mapprimer'" );
+if( $@ ) {
+    print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+}
+
+return @markers;
+
+}
+
+
+
+
+
+=head2 get_landmark_MarkerFeatures
+
+  Title   : get_landmark_MarkerFeatures 
+  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
+  Function: Gets MarkerFeatures with identifiers like D8S509. 
+            MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+
+sub get_landmark_MarkerFeatures {
+my ($self)=@_;
+
+
+my $dbname=$self->dbobj->dbname;
+my $mapsdbname=$self->dbobj->mapdbname;
+
+my $id = $self->internal_id;
+my @markers;
+
+
+eval {
+    require Bio::EnsEMBL::Map::MarkerFeature;
+    
+    my $statement="SELECT f.seq_start, f.seq_end, f.score, f.strand, f.name, 
+	                  f.hstart, f.hend, s.name, f.analysis 
+                   FROM   $dbname.feature f, $dbname.analysis a, 
+                          $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m 
+		   WHERE  f.contig='$id' 
+                   AND    f.analysis = a.id 
+                   AND    a.db='mapprimer'
+                   AND    m.marker=s.marker 
+                   AND    f.hid=m.marker 
+                   AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
+    
+    @markers=$self->_create_MarkerFeatures($statement);	
+	
+};
+
+if( $@ ) {
+    print STDERR ("Problems retrieving map data. Most likely not connected to maps db\n$@\n" );
+}
+
+return @markers;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+sub _create_MarkerFeatures
+{
+    my ($self,$statement)=@_;
+   my @result; 
+    my $analysis;
+    my %analhash;
+   
+
+    my $sth = $self->dbobj->prepare($statement);
     $sth->execute;
     
     my ($start, $end, $score, $strand, $hstart, 
         $name, $hend, $hid, $analysisid );
-    my $analysis;
-    my %analhash;
 
+    
     $sth->bind_columns
-      ( undef, \$start, \$end, \$score, \$strand, \$name, 
-        \$hstart, \$hend, \$hid, \$analysisid );
-        
-    while( $sth->fetch ) {
-      my ( $out, $seqf1, $seqf2 );
-      
-      if (!$analhash{$analysisid}) {
-		
-		my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	    $analysis = $feature_obj->get_Analysis($analysisid);
+	( undef, \$start, \$end, \$score, \$strand, \$name, 
+	  \$hstart, \$hend, \$hid, \$analysisid);
+ 
+
+ while( $sth->fetch ) {
+
+
+    my ( $out, $seqf1, $seqf2 );
+   
+    if (!$analhash{$analysisid}) {
+	
+	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	$analysis = $feature_obj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
-      } else {
+    } else {
         $analysis = $analhash{$analysisid};
-      }
+    }
     
-      $seqf1 = Bio::EnsEMBL::SeqFeature->new();
-      $seqf2 = Bio::EnsEMBL::SeqFeature->new();
-      $out = Bio::EnsEMBL::Map::MarkerFeature->new
+    $seqf1 = Bio::EnsEMBL::SeqFeature->new();
+    $seqf2 = Bio::EnsEMBL::SeqFeature->new();
+    $out = Bio::EnsEMBL::Map::MarkerFeature->new
 	( -feature1 => $seqf1, -feature2 => $seqf2 );
-      $out->set_all_fields
+    $out->set_all_fields
         ( $start,$end,$strand,$score,
           $name,'similarity',$self->id,
           $hstart,$hend,1,$score,$name,'similarity',$hid);
-          $out->analysis($analysis);
-      $out->mapdb( $self->dbobj->mapdb );
-      $out->id ($hid);
-      push( @result, $out );
-    }
-  };
-
-  if( $@ ) {
-    print STDERR ("Install the Ensembl-map package for this feature" );
-  }
-  return @result;
+    $out->analysis($analysis);
+    $out->mapdb( $self->dbobj->mapdb );
+    $out->id ($hid);
+    
+push( @result, $out );
 }
+
+    return @result;
+    
+}
+
+
+
+
+
 
 
 =head2 get_all_PredictionFeatures
