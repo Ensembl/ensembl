@@ -185,7 +185,7 @@ sub register_contig {
 
    my $sth = $self->prepare(qq{
       select
-	c.chr_name,
+	c.name,
 	a chr_start,
 	a chr_end
       from
