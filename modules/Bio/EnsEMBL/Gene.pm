@@ -285,8 +285,6 @@ sub get_all_Exons {
    return values %h;
 }
 
-
-
 =head2 refresh
 
  Title   : refresh

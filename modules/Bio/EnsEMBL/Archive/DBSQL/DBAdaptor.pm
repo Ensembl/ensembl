@@ -145,6 +145,109 @@ sub get_VersionedSeqAdaptor {
     return Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor->new($self);
 }
 
+=head2
+
+ Title   : get_new_stable_ids
+ Usage   : @ids = $obj->get_new_stable_ids('exon',6);
+ Function: 
+ Example : 
+ Returns : new id, ENS-style, as an array
+ Args    : id type, one of 'exon','transcript','gene','translation'
+
+
+=cut
+
+my %stubhash = ( 'exon' => 'ENSE', 'transcript' => 'ENST','gene' => 'ENSG','translation' => 'ENSP' );
+
+sub get_new_stable_ids {
+    my ($self,$table,$number) = @_;
+
+    if( !defined $number ) {
+	$self->throw("Must call as table,number");
+    }
+
+    if( !defined $stubhash{$table} ) {
+	$self->throw("Does not have $table as a valid stable id table");
+    }
+    
+    my $stub= $stubhash{$table};
+    $table .= "_stable";
+    my @out;
+
+    my $query="lock table $table write";
+
+    $self->_execute($query);
+
+    # wrap critical region in an eval so we can catch errors and release table
+
+    eval {
+
+	my $query = "select external_id as id from $table";
+	
+	my $sth   = $self->prepare($query);
+	my $res   = $sth->execute;
+	my $row   = $sth->fetchrow_hashref;
+	my $id    = $row->{id};
+	my $new=0;
+	if (!defined($id) || $id eq "") {
+	    $id = $stub . "00000000000";
+	    $new=1;
+	}
+	
+	if ($id =~ /\D+(\d+)$/) {
+	    
+	    my $newid  = $1;
+	    my $i;
+	    
+	    foreach $i ( 1..$number ) {
+
+		$newid++;
+		
+		
+		if (length($newid) > 11) {
+		    if ($newid =~ /^0/) {
+			$newid =~ s/^0//;
+		    } else {
+			$self->throw("Can't truncate number string to generate new id [$newid]");
+		    }
+		}
+		my $c = $stub . $newid;
+		my $query;
+		if (! $new) {
+		    $query = "update $table set external_id = '$c', created=now()";
+		}
+		else {
+		    $query = "insert into $table (internal_id,external_id,created) values (NULL,'$c',NOW())";
+		}
+		
+		$self->_execute($query);
+		
+		push(@out,$c);
+	    }
+	    
+	    
+	} else {
+	    $self->throw("[$id] does not look like an object id (e.g. ENST00000019784)");
+	}
+    };
+    
+    my $error = undef;
+
+    if( $@ ) {
+	$error = $@;
+    }
+    
+    $query = "unlock tables";
+    $self->_execute($query);
+
+    if( defined $error ) {
+	$self->throw("Problem in making IDs. Unlocked tables. \n\n Error $@");
+    }
+    
+    return @out;
+    
+}
+
 sub dbname {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&

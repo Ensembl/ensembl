@@ -128,7 +128,7 @@ sub store {
 	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_contig,start_coord,end_contig,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",'".$vseq->seq."','".$vseq->start_contig."',".$vseq->start.",'".$vseq->end_contig."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
        }
        else {
-	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_contig,start_coord,end_contig,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,'".$vseq->start_contig."',".$vseq->start.",'".$vseq->end_contig."',".$vseq->end.",'".$vseq->modified."',".$vseq->release_number.")";
+	   $statement = "INSERT INTO versioned_seq(versioned_seq_id,seq_id,version,sequence,start_contig,start_coord,end_contig,end_coord,modified,release_number) values (NULL,$seq_id,".$vseq->version.",NULL,NULL,NULL,NULL,NULL,'".$vseq->modified."',".$vseq->release_number.")";
        }
        my $sth = $self->db->execute($statement);
        my $id = $sth->{'mysql_insertid'};

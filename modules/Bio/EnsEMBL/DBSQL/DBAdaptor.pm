@@ -249,6 +249,25 @@ sub get_CloneAdaptor {
 
 # only the get part of the 3 functions should be considered public
 
+=head2 release_number
+
+ Title   : release_number
+ Usage   :
+ Function: #######SNEAKY METHOD FOR RELEASE NUMBER, VERY TEMPORAR%Y!!!!
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub release_number{
+   my ($self,@args) = @_;
+
+   return 110;
+}
+
+
 sub dbname {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&

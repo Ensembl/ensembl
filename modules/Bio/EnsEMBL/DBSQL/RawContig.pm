@@ -462,7 +462,7 @@ sub get_old_Exons {
 	    }
 	}
 	if ($mapped == 0) {
-	    push (@unmapped,$exon);
+	    push (@unmapped,$exon->id);
 	    print $logfile "LOST EXON: ".$exon->id." (In get_old_Exons)\n"; 
 	}
     }

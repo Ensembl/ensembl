@@ -88,10 +88,10 @@ sub new {
 
   ($archive_seq && $archive_seq->isa('Bio::EnsEMBL::Archive::Seq')) || $self->throw("An Archive VersionedSeq object must have an attached Bio::EnsEMBL::Archive::Seq [got $archive_seq]");
   $version || $self->throw("An Archive VersionedSeq object must have a version");
-  $start_contig || $self->throw("An Archive VersionedSeq object must have a start_contig");
-  $seq_start || $self->throw("An Archive VersionedSeq object must have a seq_start");
-  $end_contig || $self->throw("An Archive VersionedSeq object must have an end_contig");
-  $seq_end || $self->throw("An Archive VersionedSeq object must have a seq_end");
+  #$start_contig || $self->throw("An Archive VersionedSeq object must have a start_contig");
+  #$seq_start || $self->throw("An Archive VersionedSeq object must have a seq_start");
+  #$end_contig || $self->throw("An Archive VersionedSeq object must have an end_contig");
+  #$seq_end || $self->throw("An Archive VersionedSeq object must have a seq_end");
   $release || $self->throw("An Archive VersionedSeq object must have a release number");
 
   #If the adaptor is attached, no need to set the sequence in memory
