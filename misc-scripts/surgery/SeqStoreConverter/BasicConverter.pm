@@ -51,6 +51,24 @@ sub new {
   my $cmd = "mysql -u $user -p$pass -h $host $target < $schema";
   system ($cmd);
 
+
+  $self->debug("Creating temporary tables");
+  #create a temporary table to store the mapping of old ids to new ids
+  $dbh->do
+    ("CREATE TEMPORARY TABLE $target.tmp_cln_map (" .
+     "old_id INT, new_id INT, INDEX new_idx (new_id))");
+
+  #create a temp table which will store the mapping of old chromosome
+  #identifiers to new identifiers
+  $dbh->do("CREATE TEMPORARY TABLE $target.tmp_chr_map (" .
+           "  old_id INT, new_id INT,".
+           "  INDEX new_idx (new_id))");
+
+  #create a temporary table to hold old supercontig name -> new id mappings
+  $dbh->do("CREATE TEMPORARY TABLE $target.tmp_superctg_map (" .
+           "name VARCHAR(255), new_id INT, ".
+           "INDEX new_idx (new_id))");
+
   return $self;
 }
 
@@ -214,9 +232,9 @@ sub contig_to_seq_region {
   my $source = $self->source();
   my $dbh     = $self->dbh();
 
-  $self->debug("Transforming contig table into seq_region");
-
   $target_cs_name ||= 'contig';
+
+  $self->debug("Transforming contigs into $target_cs_name seq_regions");
 
   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
@@ -239,20 +257,13 @@ sub clone_to_seq_region {
   my $source = $self->source();
   my $dbh    = $self->dbh();
 
-  $self->debug("Transforming clone table into seq_region");
-
   # target coord_system will have a different ID
   $target_cs_name ||= "clone";
   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
-  #
-  #create a temporary table to store the mapping of old ids to new ids
-  #
-  my $sth = $dbh->prepare
-    ("CREATE TEMPORARY TABLE $target.tmp_cln_map (" .
-     "old_id INT, new_id INT, INDEX new_idx (new_id))");
-  $sth->execute();
-  $sth->finish();
+  $self->debug("Transforming clones into $target_cs_name seq_regions");
+
+
 
   my $select_sth = $dbh->prepare
     ("SELECT cl.clone_id,
@@ -296,16 +307,11 @@ sub chromosome_to_seq_region {
   my $source = $self->source();
   my $dbh    = $self->dbh();
 
-  $self->debug("Transforming chromosome table into seq_region");
-
   $target_cs_name ||= "chromosome";
   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
-  #create a temp table which will store the mapping of old chromosome
-  #identifiers to new identifiers
-  $dbh->do("CREATE TEMPORARY TABLE $target.tmp_chr_map (" .
-           "  old_id INT, new_id INT,".
-           "  INDEX new_idx (new_id))");
+  $self->debug("Transforming chromosomes into $target_cs_name seq_regions");
+
 
   my $select_sth = $dbh->prepare
     ("SELECT chromosome_id, name, length FROM $source.chromosome");
@@ -346,14 +352,9 @@ sub supercontig_to_seq_region {
   my $source = $self->source();
   my $dbh    = $self->dbh();
 
-  $self->debug("Transforming supercontigs into seq_region");
+  $self->debug("Transforming supercontigs into $target_cs_name seq_regions");
 
   my $cs_id = $self->get_coord_system_id($target_cs_name);
-
-  #create a temporary table to hold old supercontig name -> new id mappings
-  $dbh->do("CREATE TEMPORARY TABLE $target.tmp_superctg_map (" .
-           "name VARCHAR(255), new_id INT, ".
-           "INDEX new_idx (new_id))");
 
   my $select_sth = $dbh->prepare
     ("SELECT superctg_name, " .
@@ -385,7 +386,7 @@ sub supercontig_to_seq_region {
 }
 
 
-sub assembly_contig_chromosome() {
+sub assembly_contig_chromosome {
   my $self = shift;
 
   $self->debug("Building assembly table - contig/chromosome");
@@ -411,7 +412,7 @@ sub assembly_contig_chromosome() {
 
 }
 
-sub assembly_contig_clone() {
+sub assembly_contig_clone {
   my $self = shift;
   
   $self->debug("Building assembly table - contig/clone");
@@ -437,7 +438,7 @@ sub assembly_contig_clone() {
 }
 
 
-sub assembly_contig_supercontig() {
+sub assembly_contig_supercontig {
   my $self = shift;
 
   $self->debug("Building assembly table - contig/supercontig");
@@ -465,6 +466,34 @@ sub assembly_contig_supercontig() {
 
 
 
+sub assembly_supercontig_chromosome {
+  my $self = shift;
+
+  $self->debug("Building assembly table - supercontig/chromosome");
+
+  my $source = $self->source();
+  my $target = $self->target();
+  my $dbh    = $self->dbh();
+
+  $dbh->do(
+	  "INSERT INTO $target.assembly " .
+	  "SELECT tcm.new_id, " .	# asm_seq_region_id (chr id)
+	  "tsm.new_id, " .	# cmp_seq_region_id (supercontig id)
+	  "min(a.chr_start), " .	# asm_start
+	  "max(a.chr_end), " .	# asm_end
+	  "min(a.superctg_start), " .	# cmp_start
+	  "max(a.superctg_end), " .	# cmp_end
+	  "a.superctg_ori " .	# ori
+	  "FROM $target.tmp_superctg_map tsm, $target.tmp_chr_map tcm, " .
+    "     $source.assembly a ".
+	  "WHERE tsm.name = a.superctg_name " .
+    "AND   tcm.old_id = a.chromosome_id " .
+    "GROUP BY superctg_name");
+
+}
+
+
+
 ###############################################################################
 # Base class implementations of transfer methods. Can be overridden to
 # create species specific behaviour
@@ -483,7 +512,7 @@ sub create_coord_systems {
     (["chromosome" , $ass_def, "top_level,default_version"     ],
      ["supercontig", undef   , "default_version"               ],
      ["clone"      , undef   , "default_version"               ],
-     ["contig"     , undef   , "default_version,sequence_level"]);
+     ["contig", undef   , "default_version,sequence_level"]);
 
   my @assembly_mappings =  ("chromosome:$ass_def|contig",
                             "clone|contig",
@@ -491,7 +520,7 @@ sub create_coord_systems {
 
   my %cs = (gene                  => 'chromosome',
             transcript            => 'chromosome',
-            exon               	 => 'chromosome',
+            exon                  => 'chromosome',
             dna_align_feature     => 'contig',
             protein_align_feature => 'contig',
             marker_feature        => 'contig',
@@ -542,7 +571,7 @@ sub create_seq_regions {
 
   #default behaviour is to simply copy all tables as they come
 
-  $self->contig_to_seq_region();
+  $self->contig_to_seq_region('contig');
   $self->chromosome_to_seq_region();
   $self->supercontig_to_seq_region();
   $self->clone_to_seq_region();
@@ -967,9 +996,6 @@ sub create_attribs {
 
   return;
 }
-
-
-
 
 
 1;
