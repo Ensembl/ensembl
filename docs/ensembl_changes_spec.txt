@@ -313,7 +313,9 @@ Root
     because constructors traverse an additional level of inheritance.
 
   A better approach would be to make the methods static and create a static
-  utility class that exported the methods.  They could then be used as follows:
+  utility class that exported the methods.  Note, however, that warn is builtin
+  perl function and it may be better if we renamed this method.
+  They could then be used as follows:
 
   #
   # OLD STYLE
@@ -328,9 +330,7 @@ Root
     my $caller = shift;
     my $class = ref($caller) || $caller;
 
-    my $self = bless {}, $class;
-
-    $self = $self->SUPER::new(@_);
+    $self = $class->SUPER::new(@_);
     
     my ($start, $end) = $self->_rearrange(['START', 'END'], @_);
 
