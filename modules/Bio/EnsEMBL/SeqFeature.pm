@@ -449,7 +449,10 @@ sub vthrow {
     print(STDERR "   Primary_tag : [" . 
         ((defined ($self->{_primary_tag})) ? $self->{_primary_tag} : "undefined") . "]\n");
         
-    print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
+    print(STDERR "   Analysis    : [" . 
+        ((defined ($self->{_analysis})) ? 
+              ((defined ($self->{_analysis}->dbID)) ? $self->{_analysis}->dbID : "undefined") :
+              "undefined") . "]\n");
 
     $self->throw("Invalid feature - see dump on STDERR");
 }
