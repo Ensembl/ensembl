@@ -1862,7 +1862,6 @@ sub exists_Analysis {
     }
 }
     
-
 =head2 write_Transcript
 
  Title   : write_Transcript
@@ -2331,12 +2330,6 @@ sub DESTROY{
        $obj->{'_db_handle'} = undef;
    }
 }
-
-
-				# 
-
-
-
 
 
 
