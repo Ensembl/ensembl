@@ -138,6 +138,10 @@ sub fetch_by_Slice_start_end_strand {
        $self->throw("$slice isn't a slice");
      }
    
+   if( $end == -1 ) {
+     $end = $slice->chr_end() - $slice->chr_start() + 1;
+   }
+
    $self->fetch_by_assembly_location
      (
       $slice->chr_start()+$start-1,
@@ -156,9 +160,10 @@ sub fetch_by_Slice_start_end_strand {
   Arg   1   : int $chrStart
   Arg   2   : int $chrEnd
   Arg   3   : int $strand
-  Arg   3   : txt $chrName
-  Arg   4   : txt $assemblyType
-  Function  : retrieve speciefied sequence from db. Using AssemblyMapper.
+  Arg   4   : txt $chrName
+  Arg   5   : txt $assemblyType
+  Function  : retrieve specified sequence from db. Using AssemblyMapper. Gaps are 
+              filled with N
   Returntype: txt
   Exceptions: Wrong parameters give undef as result
   Caller    : general, fetch_by_Slice_start_end_strand
@@ -174,7 +179,7 @@ sub fetch_by_assembly_location {
    $mapper->register_region($chrName,$chrStart,$chrEnd);
    
    my @coord_list = $mapper->map_coordinates_to_rawcontig
-     ( $chrStart, $chrEnd, $chrName, $strand );
+     ( $chrName, $chrStart, $chrEnd, $strand );
    
    # for each of the pieces get sequence
    my $seq = "";
