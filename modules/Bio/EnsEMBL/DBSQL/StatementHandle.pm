@@ -119,13 +119,11 @@ sub DESTROY {
   # The count for the number of kids is decremented only after this
   # function is complete. Disconnect if there is 1 kid (this one) remaining.
   if($dbc  && $dbc->disconnect_when_inactive() &&
-     $dbc->db_handle->{Kids} == 1) {
-     if($dbc->db_handle->{ActiveKids} == 0) { $dbc->db_handle->disconnect(); }
-     else {
-       warn("Problem disconnect $obj : kids=",$dbc->db_handle->{Kids},
-            " activekids=",$dbc->db_handle->{ActiveKids},"\n",
-            "  around sql = $sql\n");
-     }
+     $dbc->connected && ($dbc->db_handle->{Kids} == 1))
+  {
+    if($dbc->disconnect_if_idle()) {
+       warn("Problem disconnect $obj around sql = $sql\n");
+    }
   }
 }
 

@@ -125,9 +125,6 @@ sub new {
     if($dbconn->disconnect_when_inactive()) {
       $self->disconnect_when_inactive(1);
     }
-    else{
-      $self->connect();
-    }
   } else {
 
 
@@ -168,9 +165,6 @@ sub new {
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
     }
-    else{
-      $self->connect();
-    }
 
   }
 
@@ -195,6 +189,13 @@ sub new {
 sub connect {
   my $self = shift;
 
+  return if($self->connected);
+  $self->connected(1);
+
+  if(defined($self->db_handle()) and $self->db_handle()->ping()) {
+    warning("unconnected db_handle is still pingable, reseting connected boolean\n");
+  }
+
   my $dsn = "DBI:" . $self->driver() .
             ":database=". $self->dbname() .
             ";host=" . $self->host() .
@@ -208,7 +209,7 @@ sub connect {
                         {'RaiseError' => 1});
   };
 
-  if(!$dbh || $@) {
+  if(!$dbh || $@ || !$dbh->ping()) {
     warn("Could not connect to database " . $self->dbname() .
           " as user " . $self->username() .
           " using [$dsn] as a locator:\n" . $DBI::errstr);
@@ -218,8 +219,30 @@ sub connect {
   }
 
   $self->db_handle($dbh);
+  #print("CONNECT\n");
+}
 
-  return;
+
+=head2 connected
+  Example    : $dbcon->connected()
+  Description: Boolean which tells if DBConnection is connected or not.
+               State is set internally, and external processes should not alter state.
+  Returntype : undef or 1
+  Exceptions : none
+  Caller     : db_handle, connect, disconnect_if_idle, user processes
+=cut
+
+sub connected {
+  my $self = shift;
+  $self->{'connected'.$$} = shift if(@_);
+  return $self->{'connected'.$$};
+}
+
+sub disconnect_count {
+  my $self = shift;
+  return $self->{'disconnect_count'} = shift if(@_);
+  $self->{'disconnect_count'}=0 unless(defined($self->{'disconnect_count'}));
+  return $self->{'disconnect_count'};
 }
 
 =head2 equals
@@ -450,15 +473,8 @@ sub disconnect_when_inactive {
     if($val) {
       $self->disconnect_if_idle();
     }
-    elsif(!defined($self->db_handle)){
-      $self->connect();      
-    }elsif(!$self->db_handle->ping()) {
-      # reconnect if the connect went away
-      $self->connect();
-    }
   }
-
-
+  
   return $self->{'disconnect_when_inactive'};
 }
 
@@ -502,11 +518,12 @@ sub locator {
 sub db_handle {
    my $self = shift;
 
-   $self->{'db_handle'} = shift if(@_);
+   return $self->{'db_handle'.$$} = shift if(@_);
+   return $self->{'db_handle'.$$} if($self->connected);
 
-   return $self->{'db_handle'};
+   $self->connect();
+   return $self->{'db_handle'.$$};
 }
-
 
 
 =head2 prepare
@@ -528,17 +545,6 @@ sub prepare {
 
    if( ! $string ) {
      throw("Attempting to prepare an empty SQL query.");
-   }
-   if( ! defined($self->db_handle) ) { # No connection to star with now so need to try again.
-     $self->connect();
-     if( ! defined($self->db_handle) ) {
-       throw("Database object has lost its database handle.");
-     }
-   }
-
-   if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
-     # reconnect if we have been disconnected
-     $self->connect();
    }
 
   # print STDERR  "SQL(".$self->dbname."):$string\n";
@@ -574,17 +580,6 @@ sub do {
    if( ! $string ) {
      throw("Attempting to do an empty SQL query.");
    }
-   if( ! defined($self->db_handle) ) {
-     $self->connect();
-     if( ! defined($self->db_handle) ) {
-       throw("Database object has lost its database handle.");
-     }
-   }
-
-   if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
-     # reconnect if we have been disconnected
-     $self->connect();
-   }
 
    #info("SQL(".$self->dbname."):$string");
 
@@ -607,11 +602,14 @@ sub do {
   Arg [1]    : none
   Example    : $dbc->disconnect_if_idle();
   Description: Disconnects from the database if there are no currently active
-               statement handles.  You should not call this method directly.
+               statement handles. 
                It is called automatically by the DESTROY method of the
                Bio::EnsEMBL::DBSQL::SQL::StatementHandle if the
                disconect_when_inactive flag is set.
-  Returntype : none
+               Users may call it whenever they want to disconnect. Connection will
+               reestablish on next access to db_handle()
+  Returntype : 0,1
+               1=problem trying to disconnect while a statement handle was still active
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::SQL::StatementHandle::DESTROY
                Bio::EnsEMBL::DBSQL::DBConnection::do
@@ -621,12 +619,32 @@ sub do {
 sub disconnect_if_idle {
   my $self = shift;
 
-  if(defined($self->db_handle())){
-    if($self->db_handle()->{'Kids'} == 0 &&
-       !$self->db_handle()->{'InactiveDestroy'}) {
-      $self->db_handle->disconnect();
-    }
+  return 0 if(!$self->connected());
+  my $db_handle = $self->db_handle();
+  return 0 unless(defined($db_handle));
+
+  #printf("disconnect_if_idle : kids=%d activekids=%d\n",
+  #       $db_handle->{Kids}, $db_handle->{ActiveKids});
+
+  #If InactiveDestroy is set, don't disconnect.
+  #To comply with DBI specification
+  return 0 if($db_handle->{InactiveDestroy});
+
+  #If any statement handles are still active, don't allow disconnection
+  #In this case it is being called before a query has been fully processed
+  #either by not reading all rows of data returned, or not calling ->finish
+  #on the statement handle.  Don't disconnect, send warning
+  if($db_handle->{ActiveKids} != 0) {
+     warn("Problem disconnect : kids=",$db_handle->{Kids},
+            " activekids=",$db_handle->{ActiveKids},"\n");
+     return 1;
   }
+  
+  $db_handle->disconnect();
+  $self->connected(undef);
+  $self->disconnect_count($self->disconnect_count()+1);
+  #print("DISCONNECT\n");
+  return 0;
 }
 
 
