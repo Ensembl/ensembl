@@ -73,6 +73,7 @@ sub start{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
+      
       $obj->{'start'} = $value;
     }
     return $obj->{'start'};
@@ -96,6 +97,7 @@ sub end {
    my $self = shift;
    if( @_ ) {
       my $value = shift;
+      
       $self->{'end'} = $value;
     }
     return $self->{'end'};
@@ -175,9 +177,7 @@ sub version{
     
 
     if( defined $value ) {
-      my ($p,$f,$l) = caller;
-      $self->warn("$f $l  modified dates are loaded. Ignoring set value $value");
-      return;
+      $self->{'_version'} = $value;    
     }
 
     if( exists $self->{'_version'} ) {
