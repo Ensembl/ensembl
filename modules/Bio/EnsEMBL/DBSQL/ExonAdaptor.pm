@@ -156,11 +156,8 @@ sub fetch_all_by_Transcript {
     throw("Transcript must have attached slice to retrieve exons.");
   }
 
-  if($transcript->start < 1 || $transcript->end > $tslice->length()) {
-    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
-  } else {
-    $slice = $tslice;
-  }
+  # use a small slice the same size as the transcript
+  $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
 
   # override the tables definition to provide an additional join to
   # the exon_transcript table.  For efficiency we cannot afford to have
@@ -182,7 +179,7 @@ sub fetch_all_by_Transcript {
   $self->{'final_clause'} = undef;
 
   # remap exon coordinates if necessary
-  if($slice != $tslice) {
+  if($slice->name() ne $tslice->name()) {
     my @out;
     foreach my $ex (@$exons) {
       push @out, $ex->transfer($tslice);
