@@ -170,7 +170,7 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth = $self->_db_obj->prepare("insert DELAYED into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
