@@ -784,7 +784,6 @@ sub _build_clone_map {
    
    #print STDERR "Making clone map\n";
    foreach my $contig ( $clone->get_all_Contigs ) {
-       print(STDERR "Contig is " . ref($contig) . "\n");
        $self->{'start'}        ->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}    ->{$contig->id} = 1;
