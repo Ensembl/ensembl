@@ -15,7 +15,10 @@ Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
 
 =head1 SYNOPSIS
 
-Give standard usage here
+my $kary_adaptor = $db_adaptor->get_KaryotypeBandAdaptor();
+foreach $band ( $kary_adaptor->fetch_by_Slice($slice) ) {
+  #do something with band
+}
 
 =head1 DESCRIPTION
 
@@ -33,7 +36,8 @@ Email jws@sanger.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
 
@@ -46,239 +50,152 @@ use vars qw(@ISA);
 use Bio::EnsEMBL::KaryotypeBand;
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
+# Object preamble - inherits from Bio::EnsEMBL::BaseAdaptor
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+
 # inherit new from BaseAdaptor
 
+=head2 fetch_by_Slice
 
-=head2 fetch_by_chromosome_start_end
-
- Title   : fetch_by_chromosome_start_end
- Usage   : $band_obj = $kary_adp->fetch_by_chromosome_position('1',10000, 2000);
- Function: Retrieves KaryotypeBand objects by chromosome name
-           and its absolute "golden-path" start/end on that chromosome.
- Example :
- Returns : A KaryotypeBand object list
- Args    : Chromosome name and start, end in absolute basepairs
+  Arg  1    : Bio::EnsEMBL::Slice $slice
+              The slice object covering the region to retrieve bands from
+  Function  : Fetches karyotype band object from the database for the
+              region given by the slice.
+  Returntype: list of Bio::EnsEMBL::KaryotypeBand objects in Slice coordinates
+  Exceptions: none
+  Caller    : Bio::EnsEMBL::Slice::get_KarytypeBands
 
 =cut
 
-sub fetch_by_chromosome_start_end{
-    my ($self,$chr,$start,$end) = @_;
+sub fetch_by_Slice {
+  my ($self,$slice) = @_;
+  
+  my $start = $slice->chr_start();
+  my $end = $slice->chr_end();
+  my $chr_name = $slice->chr_name();
 
-    $self->throw("Need both chromosome and start/end") 
-      unless (defined $chr && defined $start && defined $end);
+  my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
+  my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
 
-    my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
-
-    my $sth = $self->prepare("	SELECT	chr_start,
+  my $sth = $self->prepare("	SELECT	chr_start,
 					chr_end,
 					band,
 					stain
 				FROM	karyotype 
-				WHERE	chromosome_id = $chromosome_id
+				WHERE	chromosome_id = $chr_id
 				AND	$start <= chr_end 
 				AND	$end > chr_start 
 			     ");
 
-    $sth->execute;
-	my @bands = ();
-	my ($chr_start,$chr_end,$band,$stain) = ();
-		
-    while (($chr_start,$chr_end,$band,$stain) = $sth->fetchrow_array()){
-    	last unless defined $band;
-    	my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    	$band_obj->name($band);
-    	$band_obj->chromosome($chr);
-    	$band_obj->start($chr_start);
-    	$band_obj->end($chr_end);
-    	$band_obj->stain($stain);
-	#print STDERR "Kary Get: $chr_start,$chr_end,$band,$stain\n";
-	push (@bands, $band_obj);
-	}
-
-    return @bands;
-}
-
-
-=head2 fetch_by_chromosome_position
-
- Title   : fetch_by_chromosome_position
- Usage   : $band_obj = $kary_adp->fetch_by_chromosome_position('1',10000);
- Function: Retrieves a KaryotypeBand obj by its chromosome name
-           and its absolute "golden-path" position on that chromosome.
- Example :
- Returns : A KaryotypeBand object
- Args    : Chromosome name and position in absolute basepairs
-
-=cut
-
-sub fetch_by_chromosome_position{
-    my ($self,$chr,$position) = @_;
-
-    $self->throw("Need both chromosome and position") 
-      unless (defined $position && defined $chr);
-
-    my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
-    
-    my $sth = $self->prepare("	SELECT	chr_start,
-					chr_end,
-					band,
-					stain
-				FROM	karyotype 
-				WHERE	chromosome_id = $chromosome_id
-				AND	$position <= chr_end 
-				AND	$position > chr_start 
-			     ");
-
-    $sth->execute;
-	
-    my ($chr_start,$chr_end,$band,$stain)  = $sth->fetchrow_array();
-    return undef unless defined $band;
-
+  $sth->execute;
+  my @bands = ();
+  my ($chr_start,$chr_end,$band,$stain) = ();
+  
+  while (($chr_start,$chr_end,$band,$stain) = $sth->fetchrow_array()){
+    last unless defined $band;
     my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
     $band_obj->name($band);
-    $band_obj->chromosome($chr);
-    $band_obj->start($chr_start);
-    $band_obj->end($chr_end);
-    $band_obj->stain($stain);
+    $band_obj->chr_name($chr_name);
 
-    return $band_obj;
+    #convert to slice coordinates
+    $band_obj->start($chr_start - $start + 1);
+    $band_obj->end($chr_end - $start + 1);
+
+    $band_obj->stain($stain);
+    push (@bands, $band_obj);
+  }
+
+  return @bands;
 }
 
 
+=head2 fetch_by_chr_name
 
-=head2 fetch_by_chromosome_name
-
- Title   : fetch_by_chromosome_name
- Usage   : $band_obj = $kary_adp->fetch_by_chromosome_name('1','q23.1');
- Function: Retrieves a KaryotypeBand obj by its chromosome ('chrN' notation)
-           and its band name (e.g. 'q23.1').
- Example :
- Returns : A KaryotypeBand object
- Args    : Chromosome id (chrN notation) and band name 
+  Arg  1    : string $chr_name
+              Name of the chromosome from which to retrieve band objects
+  Function  : Fetches all the karyotype band objects from the database for the
+              given chromosome.
+  Returntype: list of Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) 
+              coordinates
+  Exceptions: none
+  Caller    : general
 
 =cut
 
-sub fetch_by_chromosome_name{
-    my ($self,$chr,$name) = @_;
+sub fetch_by_chr_name {
+    my ($self,$chr_name) = @_;
 
-    $self->throw("Need both chromosome and band name") 
-      unless (defined $chr && defined $name);
+    my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
+    my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
 
-    my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
+    my $sth = $self->prepare(
+        "SELECT	chr_start, chr_end, stain, band
+         FROM karyotype 
+         WHERE chromosome_id = ?"
+    );
+    $sth->execute( $chr_id );
+    
+    my ($chr_start,$chr_end,$stain, $band) = ();
+    my @out = ();
+
+    while(($chr_start, $chr_end, $stain, $band) = $sth->fetchrow_array()) {
+      last unless defined $chr_start;
+      
+      my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
+      $band_obj->name($band);
+      $band_obj->chr_name($chr_name);
+      $band_obj->start($chr_start);
+      $band_obj->end($chr_end);
+      $band_obj->stain($stain);
+      
+      push @out, $band_obj;
+    }
+    
+    return @out;
+}
+
+
+=head2 fetch_by_chr_band
+
+  Arg  1    : string $chr_name
+              Name of the chromosome from which to retrieve the band
+  Arg  2    : string $band
+              The name of the band to retrieve from the specified chromosome
+  Function  : Fetches all the karyotype band objects from the database for the
+              given chromosome.
+  Returntype: Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) coordinates
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub fetch_by_chr_band {
+    my ($self,$chr_name, $band) = @_;
+
+    $self->throw("Need band name") unless defined $band;
+
+    my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
+   
+    my $chr_id = $chr_adaptor->fetch_by_chr_name($chr_name)->dbID();
 
     my $sth = $self->prepare(
         "SELECT	chr_start, chr_end, stain
          FROM karyotype 
-         WHERE chromosome_id = ? and band = ?"
-    );
-    $sth->execute( $chromosome_id, $name );
+         WHERE band = ? AND chromosome_id = ?");
 
-    my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
-
-    return undef unless defined $chr_start;
-
-    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($name);
-    $band_obj->chromosome($chr);
-    $band_obj->start($chr_start);
-    $band_obj->end($chr_end);
-    $band_obj->stain($stain);
-
-    return $band_obj;
-}
-
-=head2 fetch_by_chromosome_name_virtual
-
- Title   : fetch_by_chromosome_name_virtual
- Usage   : $band_obj = $kary_adp->fetch_by_chromosome_name('chr1','q23.1');
- Function: Retrieves a KaryotypeBand obj by its chromosome ('chrN' notation)
-           and its band name (e.g. 'q23.1'). { can also use a non-fully declared band:
-	   e.g. q23, q23.3
- Example :
- Returns : A KaryotypeBand object BUT DOES NOT RETURN STAIN INFORMATION!!!!!
-         : (as we can not get this from the information we retrieve)
- Args    : Chromosome id (chrN notation) and (partial?) band name 
-
-=cut
-
-sub fetch_by_chromosome_name_virtual {
-    my ($self,$chr,$name) = @_;
-
-    $self->throw("Need both chromosome and name") 
-      unless (defined $name && defined $chr);
-
-    my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
-
-    my $sth;
-    $sth = $self->prepare( "SELECT chr_start, chr_end
-                            FROM karyotype 
-                            WHERE chromosome_id = ? and band = ?");
-
-    $sth->execute( $chromosome_id, $name );
-    my ( $chr_start, $chr_end ) = $sth->fetchrow_array;
-    
-    unless($chr_start) {
-      $sth = $self->prepare("SELECT min(chr_start), max(chr_end)
-                             FROM karyotype 
-                             WHERE chromosome_id = $chromosome_id 
-                             AND band LIKE '$name\%'");
-      $sth->execute;
-      ( $chr_start, $chr_end ) = $sth->fetchrow_array;
-    }
-
-    return undef unless defined $chr_start;
-
-    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($name);
-    $band_obj->chromosome($chr);
-    $band_obj->start($chr_start);
-    $band_obj->end($chr_end);
-    $band_obj->stain('white');
-
-    return $band_obj;
-}
-
-=head2 fetch_by_name
-
- Title   : fetch_by_name
- Usage   : $band_obj = $kary_adp->fetch_by_name('q23.1');
- Function: Retrieves a KaryotypeBand obj by its band name (e.g. 'q23.1').
- Example :
- Returns : A KaryotypeBand object
- Args    : Band name 
-
-=cut
-
-
-sub fetch_by_name{
-    my ($self,$name) = @_;
-
-    $self->throw("Need band name") unless defined $name;
-
-    my $sth = $self->prepare(
-        "SELECT	chr_name, chr_start, chr_end, stain
-         FROM karyotype 
-         WHERE band = ?");
-
-    $sth->execute( $name );
+    $sth->execute( $band, $chr_id );
 
     my ($chr, $chr_start,$chr_end,$stain) = $sth->fetchrow_array;
 
     return undef unless defined $chr_start;
 
     my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($name);
-    $band_obj->chromosome($chr);
+    $band_obj->name($band);
+    $band_obj->chr_name($chr_name);
     $band_obj->start($chr_start);
     $band_obj->end($chr_end);
     $band_obj->stain($stain);
@@ -286,147 +203,5 @@ sub fetch_by_name{
     return $band_obj;
 }
 
-=head2 fetch_by_name_virtual
-
- Title   : fetch_by_name_virtual
- Usage   : $band_obj = $kary_adp->fetch_by_name_virtual('q23.1');
- Function: Retrieves a KaryotypeBand obj by its 
-           and its band name (e.g. 'q23.1'). { can also 
-	   use a non-fully declared band: e.g. q23, q23.3 }
- Example :
- Returns : A KaryotypeBand object BUT DOES NOT RETURN STAIN INFORMATION!!!!!
-         : (as we can not get this from the information we retrieve)
- Args    : (partial?) band name 
-
-=cut
-
-sub fetch_by_name_virtual {
-    my ($self,$name) = @_;
-
-    $self->throw("Need band name") unless defined $name;
-
-    my $sth;
-    $sth = $self->prepare(
-        "select	chr_name, chr_name, chr_start, chr_end
-           from karyotype 
-          where band = ?"
-    );
-    $sth->execute( $name );
-    my ( $chr, $chr_start, $chr_end ) = $sth->fetchrow_array;
-
-	unless($chr_start) {
-	    $sth = $self->prepare(
-            "select chr_name, min(chr_start), max(chr_end)
-               from karyotype 
-              where band like '$name\%'"
-        );
-	    $sth->execute;
-	    ( $chr, $chr_start, $chr_end ) = $sth->fetchrow_array;
-	}
-
-    return undef unless defined $chr_start;
-
-    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-    $band_obj->name($name);
-    $band_obj->chromosome($chr);
-    $band_obj->start($chr_start);
-    $band_obj->end($chr_end);
-    $band_obj->stain('white');
-
-    return $band_obj;
-}
-
-=head2 fetch_chromosome_length
-
- Title   : fetch_chromosome_length
- Usage   : 
- Function: Returns length of a chromosome
- Example :
- Returns : SV
- Args    : Chromosome name 
-
-=cut
-
-sub fetch_chromosome_length {
-    my ($self,$chr) = @_;
-
-    $self->throw("Need a chromosome") unless defined $chr;
-
-    # return a cached copy of the chromosome bands
-    if (exists $self->{"_karyotype_band_cache_$chr"}){
-      my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
-      return $tmp[-1]->end();
-    }
-
-    my $chromosome_id = 
-      $self->db->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
-
-    my $sth = $self->prepare("	SELECT max(chr_end)
-				FROM   karyotype 
-				WHERE  chromosome_id = $chromosome_id 
-			    ");
-
-    $sth->execute;
-    my ($chr_end) = $sth->fetchrow_array();
-	return($chr_end);
-
-}
-
-
-=head2 fetch_all_by_chromosome
-
- Title   : fetch_all_by_chromosome
- Usage   : @band_obj = $kary_adp->fetch_all_by_chromosome('1');
- Function: Retrieves all KaryotypeBand objects on a chromosome
- Example :
- Returns : An array of KaryotypeBand objects
- Args    : Chromosome name
-
-=cut
-
-sub fetch_all_by_chromosome{
-    my ($self, $chr) = @_;
-
-    $self->throw("Need a chromosome") unless defined $chr;
-
-    # return a cached copy of the chromosome bands
-    if (exists $self->{"_karyotype_band_cache_$chr"}){
- 	return(@{$self->{"_karyotype_band_cache_$chr"}});
-    }
-
-    my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
-
-    my $sth = $self->prepare("	SELECT	chr_start,
-					chr_end,
-					band,
-					stain
-				FROM	karyotype 
-				WHERE	chromosome_id = $chromosome_id 
-				ORDER BY chr_start
-			     ");
-
-    $sth->execute;
-    my ($chr_start,$chr_end,$band,$stain);
-    $sth->bind_columns(undef,\$chr_start,\$chr_end,\$band,\$stain);
-    
-    my @bands;
-
-    while ($sth->fetch()){
-	my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-	$band_obj->name($band);
-	$band_obj->chromosome($chr);
-	$band_obj->start($chr_start);
-	$band_obj->end($chr_end);
-	$band_obj->stain($stain);
-
-	push @bands,$band_obj;
-    }
-
-	# save a copy in the local cache
-	$self->{"_karyotype_band_cache_$chr"} = \@bands;
-
-    return @bands;
-}
 
 1;

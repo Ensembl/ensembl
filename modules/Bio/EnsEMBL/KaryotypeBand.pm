@@ -60,6 +60,7 @@ sub new {
 
 =cut
 
+
 sub name{
    my $self = shift;
    if( @_ ) {
@@ -70,25 +71,25 @@ sub name{
 }
 
 
+=head2 chr_name
 
-=head2 chromosome
-
- Title   : chromosome
- Usage   : my $band_chromosome = $band->chromosome();
-           $band->chromosome($newvalue);
- Function: get/set for the band chromosome (e.g.'chr1') 
- Returns : band chromosome
- Args    : newvalue (optional)
+  Arg  1    : (optional) string $chr_name
+              Name of the chromosome this Karyotype band is on
+  Function  : Getter/Setter for the name of the chromosome this band is on
+  Returntype: string 
+              the name of the chromosome this band is on 
+  Exceptions: none
+  Caller    : general
 
 =cut
 
-sub chromosome{
+sub chr_name {
    my $self = shift;
    if( @_ ) {
       my $value = shift;
-      $self->{'chromosome'} = $value;
+      $self->{'_chr_name'} = $value;
     }
-    return $self->{'chromosome'};
+    return $self->{'_chr_name'};
 }
 
 

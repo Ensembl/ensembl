@@ -74,7 +74,7 @@ sub new {
 
     $self->adaptor($adaptor);
     $self->chr_name($chr_name);
-    $self->chromosome_id($chromosome_id);
+    $self->dbID($chromosome_id);
     $self->unknown_genes($unknown_genes);
     $self->length($length);
     $self->known_genes($known_genes);
@@ -146,15 +146,16 @@ sub adaptor {
 }
 
 
-sub chromosome_id {
-  my ($self, $id ) = @_;
+sub dbID {
+  my ($self, $value) = @_;
 
-  if(defined $id) {
-    $self->{'chromosome_id'} = $id;
+  if(defined $value) {
+    $self->{'_dbID'} = $value;
   }
 
-  return $self->{'chromosome_id'};
+  return $self->{'_dbID'};
 }
+
 
 sub length {
   my ($self, $length) = @_;
@@ -197,6 +198,18 @@ sub snps {
 }
 
 # compiled successfull
+
+
+sub chromosome_id {
+  my ($self, $id ) = @_;
+
+  my ($package, $filename, $line) = caller();
+
+  $self->warn("Chromosome::chromosome_id is deprecated, use Chromosome::dbID 
+              instead\n line:$line package:$package filename:$filename");
+
+  return $self->dbID($id);
+}
 
 1;
 

@@ -677,10 +677,7 @@ sub get_KaryotypeBands() {
   my ($self) = @_;
   
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
-  my @bands = $kadp->fetch_by_chromosome_start_end($self->chr_name(),
-						   $self->chr_start(),
-						   $self->chr_end());
-  return @bands; 
+  return $kadp->fetch_by_Slice($self);
 }
 
 
