@@ -609,9 +609,20 @@ sub _type_by_external_id{
   my $where_sql = '';
   my $ID_sql = "oxr.ensembl_id";
   if(defined $extraType) {
-    $ID_sql = "t.${extraType}_id";
-    $from_sql = 'transcript as t, ';
-    $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+    if(lc($extraType) eq 'translation') {
+      $ID_sql = "tl.translation_id";
+    } else {
+      $ID_sql = "t.${extraType}_id";
+    }
+
+    if(lc($ensType) eq 'translation') {
+      $from_sql = 'transcript as t, translation as tl, ';
+      $where_sql = 't.transcript_id = tl.transcript_id and ' .
+                'tl.translation_id = oxr.ensembl_id and ';
+    } else {
+      $from_sql = 'transcript as t, ';
+      $where_sql = 't.'.lc($ensType).'_id = oxr.ensembl_id and ';
+    }
   }
   my @queries = (
     "select $ID_sql
