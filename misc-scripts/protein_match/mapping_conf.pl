@@ -25,29 +25,19 @@ package main;
              #General options#
              #################
 
-             #'check'      => 'yes',
-             'check'      => '',
-
-
-             #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes             
-
-             #'query_idt'  => 40,
+	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
+            
+	     #'query_idt'  => 40,
              'query_idt'    => ,
 
              #'target_idt  => 10,
              'target_idt'  => ,
 
-             #For the mapping to predicted gene, the mapping is better to be more or less symetrical (the values given are indication on what should be used)
-
-             #'query_idt'  => 40,
-             'pred_query_idt'  => ,
-
-             #'target_idt  => 50,
-             'pred_target_idt' => ,
+             
 
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
-             'statistic_file'  => '',        
+             'statistic_file'  => ,        
 
 
              ################################ 
@@ -57,40 +47,43 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '',   
+             'query'       => ,   
              
-             #Location of the sptr file, this file will be used as an input to grep the specific sp entries to the organism using grep_sp_entries.pl. This file is supposed to be in SP format
-             #'total_sptr'  => '/work1/mongin/mapping/primary/sptr.txl',
-             'total_sptr'  => '',
+             #Location of the sptr file, this file will be used as an 
+	     #input to grep the specific sp entries to the organism 
+	     #using grep_sp_entries.pl. This file is supposed to be 
+	     #in SP format
+	   
+	      'total_sptr'  => ,
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '',
+	     'sptr_fa'      => ,
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
-	     #'sptr_swiss'      => '/work1/mongin/mapping/primary/HS.SPTR',
 	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
-	     'sptr_swiss' => '',	     
-             #Location of the file containing all refseq and all SP in fasta format (This file will be produced by runni             ng prepare_proteome.pl)
-             #'human_fa'    => '/work1/mongin/mapping/kate/refseq_p.fa',
-	     'pmatch_input_fa'    => '',
+	     'sptr_swiss' => ,	     
+
+             #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
+            
+	     'pmatch_input_fa'    => ,
 
              #Output file containing the mapping of SP and refseq sequences to external databases
-             #'x_map'  => '/work1/mongin/mapping/outputs/xmap_out1.txt',
-             'x_map_out'  => '',
+           
+             'x_map_out'  => ,
 
              #Output file from pmatch.pl and input file for maps2db.pl
-             #'human_map'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '',
+             #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
+             'pmatch_out'  => ,
 
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq_fa'    => '',
+	     'refseq_fa'    => ,
 	     
              #Location of the Refseq (proteins) file in Genbank format
 	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
-	     'refseq_gnp'  => '',
+	     'refseq_gnp'  => ,
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -119,16 +112,16 @@ package main;
                   #Mouse#
                   #######
 
-                  #The files needed for the mouse X_mapping can be obatained there: ftp://ftp.informatics.jax.org/pub/informatics/reports/   
+                  #The files needed for the mouse X_mapping can be obatained there: ftp://ftp.informatics.jax.org/pub/reports/   
                   #2 files are needed MRK_SwissProt.rpt and MRK_LocusLink.rpt
                   
                    #File containing MGI/SP mapping (MRK_SwissProt.rpt)
                    #'mgi_sp'  => '/work1/mongin/mouse/mapping/primary/MRK_SwissProt.rpt',                 
-                   'mgi_sp'  => '',
+                   'mgi_sp'  => ,
                   
                    #File containing MGI/LocusLink mapping (MRK_LocusLink.rpt)
                    #'mgi_locus'  => '/work1/mongin/mouse/mapping/primary/MRK_LocusLink.rpt',                   
-                   'mgi_locus'  => '',
+                   'mgi_locus'  => ,
                                       
 
                    ###########
@@ -173,17 +166,17 @@ package main;
 
              #DB name
              #'db' => 'proteintest',
-             'db' => 'briggsae_protein',
+             'db' => '',
 
              #Host name
              #'host' => 'ecs1d',
-             'host' => 'ecs1f',
+             'host' => '',
 
              #User
-             'dbuser' => 'ensadmin',
+             'dbuser' => '',
 
              #Password
-             'password' => 'ensembl',
+             'password' => '',
              
              #Port
              'port' => '',
@@ -194,7 +187,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => 'pmatch',
+             'pmatch' => '',
 
              
 
@@ -205,17 +198,30 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'briggsae',
+             'organism' => '',
              
 
              #OX (Organism taxonomy cross-reference) number
-             #'ox' => '9606'
-             #'ox' => '10090'
-             #'ox' => '7227'
+             #'ox' => '9606', human
+             #'ox' => '10090', mouse
+             #'ox' => '7227',elegans
 	     #'ox' => '6238' briggsae 	 
-             'ox'  => '6238'
+             'ox'  => '',
 
+	     
+             
+
+
+                  
+
+             
+	     ##################	 
+	     #obslete options# 
+             ##################
+
+	     'check'      => '', #obslete option? 	 
  );
+
 
 
 }
