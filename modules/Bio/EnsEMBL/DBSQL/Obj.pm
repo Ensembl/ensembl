@@ -70,22 +70,17 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
+
 use DBI;
-use Bio::EnsEMBL::DB::ObjI;
-
-# who put this in? And why?
-#use Bio::EnsEMBL::Pipeline::DB::ObjI;
-
+use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw( Bio::EnsEMBL::DB::ObjI Bio::Root::Object);
+@ISA = qw( Bio::EnsEMBL::DB::ObjI Bio::Root::RootI );
 
-# _initialize is where the heavy stuff will happen when new is called
+sub new {
+  my($pkg, @args) = @_;
 
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize;
+  my $self = bless {}, $pkg;
 
   my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$perlonlycontigs,$external,$port) = 
       $self->_rearrange([qw(DBNAME
@@ -144,9 +139,9 @@ sub _initialize {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
 
-      my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-
-      $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
+      #my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+      my $sql_module = "Bio::EnsEMBL::DBSQL::SQL::\L$driver";
+      my $dbh = $sql_module->new($dsn, $user, $password);
       
       if( $self->_debug > 3 ) {
 	  $self->warn("Using connection $dbh");
@@ -185,10 +180,7 @@ sub _initialize {
         };
   }
 
-  return $make; # success - we hope!
-
-
-
+  return $self;
 }
 
 # only the get part of the 3 functions should be considered public

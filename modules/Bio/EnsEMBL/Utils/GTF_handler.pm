@@ -66,9 +66,58 @@ use Bio::EnsEMBL::Exon;
 sub new {
     my ($class, @args) = @_;
     my $self = bless {}, $class;
-    $self->{'_gene_array'} = [];
-    $self->{'_transcript_array'} = [];
+    $self->reset_exon_phases(1);
     return $self;
+}
+
+=head2 seq_name_parser
+
+ Title   : seq_name_parser
+ Usage   : GTF_handler->seq_name_parser(CODE)
+ Function: Get or set a custom parser for the sequence name field.
+           The value returned from the subroutine will be used as
+           the contig_id in the Ensembl genes created by parse_file.
+           This subroutine could do complicated lookups in an Ensembl
+           db to get the correct contig ID.
+           The default is to keep the sequence name as is.
+ Example : GTF_handler->seq_name_parser(\&my_parser)
+ Returns : A ref to a subroutine, or undef
+ Args    : Ref to a subrotine
+
+=cut
+
+sub seq_name_parser {
+    my( $self, $parser ) = @_;
+    
+    if ($parser) {
+        $self->throw("Not a code reference '$parser'")
+            unless ref($parser) eq 'CODE';
+        $self->{'_seq_name_parser'} = $parser;
+    }
+    return $self->{'_seq_name_parser'};
+}
+
+=head2 reset_exon_phases
+
+ Title   : reset_exon_phases
+ Usage   : GTF_handler->reset_exon_phases(BOOLEAN)
+ Function: Flags whether to reset the phases of exons
+           given in the CDS lines in the GTF file, or
+           to trust them.
+           Defaults to TRUE.
+ Example : GTF_handler->reset_exon_phases(0); # Keep the values in the GTF file
+ Returns : TRUE or FALSE
+ Args    : TRUE or FALSE
+
+=cut
+
+sub reset_exon_phases {
+    my( $self, $flag ) = @_;
+    
+    if (defined $flag) {
+        $self->{'_reset_exon_phases'} = $flag;
+    }
+    return $self->{'_reset_exon_phases'};
 }
 
 =head2 parse_file
@@ -83,416 +132,430 @@ sub new {
 =cut
 
 sub parse_file {
-    my ($self,$fh) = @_;
-
-    $fh || $self->throw("You have to pass a filehandle in order to parse a file!");
+    my( $self, $fh ) = @_;
     
-    my @genes;
-    my $oldgene;
-    my $oldtrans;
-    my $flag=1;
-    my %exons;
-    my( $trans_start, $trans_end );
-    my $type;
-
-    while( <$fh> ) {
-	(/^\#/) && next;
-	(/^$/)  && next;
+    $self->throw("No filehandle supplied") unless $fh;
+    
+    my %valid_gtf_feature = map {$_, 1} qw{ exon cds start_codon stop_codon };
+    my( %gtf, %gene_type );
+    my $seq_name_parser = $self->seq_name_parser;
+    
+  GTF_LINE: while (<$fh>) {
+        next if /^#/;
+        next if /^\s*$/;
         chomp;
-        my $line_string = $_;
-
-        my ($contig, $source, $feature,
+        
+        my $gtf_line = $_;
+        my ($seq_name,    $source, $feature,
             $start,  $end,    $score,
-            $strand, $frame,  $group_field) = split /\s+/, $line_string, 9;
-        $type = $source;
+            $strand, $phase,  $group_field) = split /\s+/, $gtf_line, 9;
+        
+        $feature = lc $feature;
+        $seq_name = &$seq_name_parser($seq_name) if $seq_name_parser;
+        
+        # Convert strand to Ensembl convention
+        if ($strand eq '+') {
+            $strand = 1;
+        }
+        elsif ($strand eq '-') {
+            $strand = -1;
+        }
+        else {
+            $strand = 0;
+        }
         
         # It is isn't a legal GTF file without a group field
         unless ($group_field) {
-            warn "Skipping unparseable line : '$line_string'";
+            warn "Skipping unparseable line : '$gtf_line'\n";
+            next;
+        }
+
+        # Extract the extra information from the final field of the GTF line.
+        my ($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id) =
+            $self->parse_group_field($group_field);
+
+        unless ($gene_id) {
+            warn("Skipping line with no gene_id: '$_'\n");
+	    next GTF_LINE;
+        }
+        unless ($transcript_id) {
+            warn("Skipping line with no transcript_id: '$_'\n");
+	    next GTF_LINE;
+        }
+        
+        # Put information from the feature into the appropriate
+        # place in the monster GTF hash.
+        if ($valid_gtf_feature{$feature}) {
+            
+            unless (defined($exon_num)) {
+                warn("Skipping line with no exon_number: '$gtf_line'\n");
+                next GTF_LINE;
+            }
+            
+            # Create an entry in the %gtf hash if isn't there already
+            $gtf{$gene_id}{$transcript_id}{$exon_num} ||= {};
+            my $exon = $gtf{$gene_id}{$transcript_id}{$exon_num};
+            
+            if ($feature    eq 'exon'
+                or $feature eq 'stop_codon'
+                or $feature eq 'start_codon') {
+                $exon->{$feature} = [$seq_name, $start, $end, $strand];
+            }
+            elsif ($feature eq 'cds') {
+                $exon->{'cds'}    = [$seq_name, $start, $end, $strand, $phase];
+            }
+
+            # Record the exon_id if we have it
+            if ($exon_id and defined($exon_num)) {
+                $exon->{'exon_id'} = $exon_id;
+            }
+        }
+        else {
+            warn "Ignoring '$feature' feature: '$gtf_line'\n";
+            next GTF_LINE;
+        }
+        
+        # Record the what made this gene
+        $gene_type{$gene_id} = $source if $source;
+    }
+    
+    # Transform the ugly, great, multi-level hash we've
+    # created into nice Ensembl gene objects.
+    my( @genes );
+    foreach my $gene_id (keys %gtf) {
+        push(@genes, $self->_make_gene_from_gtf_hash($gene_id, $gene_type{$gene_id}, $gtf{$gene_id}));
+    }
+    return @genes;
+}
+
+sub parse_group_field {
+    my( $self, $group_field ) = @_;
+    
+    my ($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
+
+    # Parse the group field
+    foreach my $tag_val (split /;/, $group_field) {
+
+        # Trim trailing and leading spaces
+        $tag_val =~ s/^\s+|\s+$//g;
+
+        my($tag, $value) = split /\s+/, $tag_val, 2;
+
+        # Remove quotes from the value
+        $value =~ s/^"|"$//g;
+        $tag = lc $tag;
+
+        if ($tag eq 'gene_name') {
+            $gene_name = $value;
+        }
+        elsif ($tag eq 'gene_id') {
+            $gene_id = $value;
+        }
+        elsif ($tag eq 'transcript_id') {
+            $transcript_id = $value;
+        }
+        elsif ($tag eq 'exon_number') {
+            $exon_num = $value;
+        }
+        elsif ($tag eq 'exon_id') {
+            $exon_id = $value;
+        }
+        else {
+            warn "Ignoring group field element: '$tag_val'\n";
+        }
+    }
+    
+    return($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
+}
+
+sub _make_gene_from_gtf_hash {
+    my( $self, $gene_id, $source, $gene_gtf ) = @_;
+    
+    # Make a new gene object
+    my $gene = Bio::EnsEMBL::Gene->new();
+    $gene->id($gene_id);
+    $gene->version(1);
+    $gene->type($source);
+    
+    my $time = time;
+    $gene->created($time);
+    $gene->modified($time);
+    
+    # The %gene_exons hash is used so each exon is only made once,
+    # even if it occurs in multiple transcripts.  The keys of the
+    # hash are "<seqname>-<start>-<end>-<strand>".
+    my( %gene_exons );
+    foreach my $trans_id (keys %$gene_gtf) {
+        my $trans_gtf = $gene_gtf->{$trans_id};
+        eval {
+            $self->_make_transcript($gene, $trans_id, $trans_gtf, \%gene_exons);
+        };
+        warn $@ if $@;
+    }
+    $self->throw("Failed to make any transcripts") unless $gene->each_Transcript;
+    return $gene;
+}
+
+sub _make_transcript {
+    my( $self, $gene, $trans_id, $trans_gtf, $gene_exons ) = @_;
+    
+    # Make a new transcript object
+    my $transcript = Bio::EnsEMBL::Transcript->new;
+    $transcript->id($trans_id);
+    $transcript->version(1);
+
+    my $time = time;
+    $transcript->created($time);
+    $transcript->modified($time);
+
+    my @exon_num = sort {$a <=> $b} keys %$trans_gtf;
+    my $translation_start = []; # For recording the exon number and sequence
+    my $translation_end   = []; # position of the start and end coordinates.
+    foreach my $n (@exon_num) {
+
+        # Try to make a new exon
+        my( $exon, $t_start, $t_end );
+        eval {
+            ($exon, $t_start, $t_end) =
+                $self->_make_exon($gene, $n, $trans_gtf->{$n});
+        };
+        if ($@) {
+            # Provide a nice exception if something is wrong with the data
+            my $exon_error_string = "$@\nError making exon in transcript '$trans_id' from data:\n";
+            $exon_error_string .= $self->_pretty_exon_data_string($n, $trans_gtf->{$n});
+            $self->throw($exon_error_string);
+        }
+
+        # Use an existing exon instead if we already have it
+        my $exon_hash_key = join('-',
+            $exon->contig_id,
+            $exon->start,
+            $exon->end,
+            $exon->strand,
+            );
+        if ($gene_exons->{$exon_hash_key}) {
+            $exon = $gene_exons->{$exon_hash_key};
+        } else {
+            $gene_exons->{$exon_hash_key} = $exon;
+        }
+        
+        # Record translation starts and ends if they are in this exon
+        if ($t_start) {
+            $translation_start = [$t_start, $exon->id];
+        }
+        if ($t_end) {
+            $translation_end = [$t_end, $exon->id];
+        }
+
+        # Add this exon to the transcript
+        $transcript->add_Exon($exon);
+    }
+    
+    $self->_make_translation($transcript, $translation_start, $translation_end);
+    $self->_correct_exon_phases($transcript)
+        if $self->reset_exon_phases;
+    
+    $gene->add_Transcript($transcript);
+}
+
+sub _make_exon {
+    my( $self, $gene, $exon_num, $exon_gtf ) = @_;
+        
+    my( $seq_name, $start, $end, $strand, $phase );
+
+    # Could check that the sequence names are all the same
+    foreach my $feature (qw{ exon cds }) {
+        last if $seq_name = $exon_gtf->{$feature}[0];
+    }
+    die "No sequence name" unless $seq_name;
+    
+    foreach my $feature (qw{ exon cds }) {
+        last if $start = $exon_gtf->{$feature}[1];
+    }
+    die "No exon start" unless $start;
+
+    foreach my $feature (qw{ exon cds }) {
+        last if $end = $exon_gtf->{$feature}[2];
+    }
+    die "No exon end" unless $end;
+    
+    # Could check that all the strands are the same here
+    foreach my $feature (qw{ exon cds }) {
+        last if $strand = $exon_gtf->{$feature}[3];
+    }
+    die "No strand" unless $strand;
+    
+    $phase = $exon_gtf->{'cds'}[4] if $exon_gtf->{'cds'};
+    
+    # Make an exon object
+    my $exon = Bio::EnsEMBL::Exon->new($start, $end, $strand);
+    $exon->version(1);
+    $exon->contig_id($seq_name);
+    $exon->seqname($seq_name);  ### What is seqname for ???
+    $exon->phase($phase);
+    $exon->sticky_rank(1);
+
+    my $time = time;
+    $exon->created($time);
+    $exon->modified($time);
+    
+    my $exon_id = $exon_gtf->{'exon_id'};
+    # Make a, hopefull unique, exon ID, it there wasn't one in the file
+    unless ($exon_id) {
+        my $gene_id = $gene->id;
+        my $type    = $gene->type;
+        $exon_id = "$type-$gene_id-$exon_num";
+    }
+    $exon->id($exon_id);
+    
+    # Fill in the translation start and ends if we have them
+    my( $t_start, $t_end );
+    if ($exon_gtf->{'start_codon'}) {
+        if ($strand == 1) {
+            $t_start = $exon_gtf->{'start_codon'}[1];
+        } else {
+            # Strand is -1
+            $t_start = $exon_gtf->{'start_codon'}[2];
+        }
+    }
+    
+    if ($exon_gtf->{'stop_codon'}) {
+        if ($strand == 1) {
+            $t_end = $exon_gtf->{'stop_codon'}[2];
+        } else {
+            # Strand is -1
+            $t_end = $exon_gtf->{'stop_codon'}[1];
+        }
+    }
+    
+    return($exon, $t_start, $t_end);
+}
+
+sub _pretty_exon_data_string {
+    my( $self, $exon_num, $exon_gtf ) = @_;
+    
+    my $pretty_string = "$exon_num => {\n";
+    foreach my $key (sort keys %$exon_gtf) {
+        my $field = $exon_gtf->{$key};
+        if (ref($field) eq 'ARRAY') {
+            $pretty_string .= "  $key => [";
+            $pretty_string .= join(', ', map "'$_'", @{$field});
+            $pretty_string .= "]\n";
+        } else {
+            $pretty_string .= "  $key => '$field'\n";
+        }
+    }
+    $pretty_string .= "}\n";
+}
+
+sub _make_translation {
+    my( $self, $transcript, $translation_start, $translation_end ) = @_;
+
+    # Set the translation start to the start of the first exon
+    # if it isn't explicitly stated
+    if (@$translation_start == 0) {
+        my $exon = $transcript->start_exon;
+        my( $start );
+        if ($exon->strand == 1) {
+            $start = $exon->start;
+        } else {
+            $start = $exon->end;
+        }
+        $translation_start = [$start, $exon->id];
+    }
+
+    # Set the translation end to the end of the last exon
+    # if it isn't explicitly stated
+    if (@$translation_end == 0) {
+        my $exon = $transcript->end_exon;
+        my( $end );
+        if ($exon->strand == 1) {
+            $end = $exon->end;
+        } else {
+            $end = $exon->start;
+        }
+        $translation_end = [$end, $exon->id];
+    }
+
+    # New translation object
+    my $translation = Bio::EnsEMBL::Translation->new;
+    $translation->id($transcript->id);
+    $translation->version(1);
+    
+    # Translation start
+    $translation->start        ($translation_start->[0]);
+    $translation->start_exon_id($translation_start->[1]);
+
+    # Translation end
+    $translation->end        ($translation_end->[0]);
+    $translation->end_exon_id($translation_end->[1]);
+    
+    $transcript->translation($translation);
+}
+
+sub _correct_exon_phases {
+    my( $self, $transcript ) = @_;
+    
+    my $trans_id = $transcript->id;
+    my $translation = $transcript->translation;
+    my $t_start       = $translation->start;
+    my $start_exon_id = $translation->start_exon_id;
+    my $t_end         = $translation->end;
+    my $end_exon_id   = $translation->end_exon_id;
+    
+    my( $phase );
+    foreach my $exon ($transcript->each_Exon) {
+        my $exon_id    = $exon->id;
+        my $exon_phase = $exon->phase;
+        if ($exon_id eq $start_exon_id) {
+            # First coding exon
+            if (defined($exon_phase) and $exon_phase != 0) {
+                warn "Resetting phase for first coding exon '$exon_id' from '$exon_phase' to '0'\n";
+            }
+            $phase = 0;
+            $exon->phase($phase);
+            if ($exon->strand == 1) {
+                $phase = $self->calculate_end_phase($phase, $t_start, $exon->end, $exon->strand);
+            } else {
+                $phase = $self->calculate_end_phase($phase, $exon->start, $t_start, $exon->strand);
+            }
+        }
+        elsif (defined $phase) {
+            if (defined($exon_phase) and $exon_phase != $phase) {
+                warn "Resetting phase for exon '$exon_id' from '$exon_phase' to '$phase'\n";
+            }
+            $exon->phase($phase);
+            $phase = $self->calculate_end_phase($phase, $exon->start, $exon->end, $exon->strand);
+        }
+        else {
+            # We haven't got to the first coding exon yet
             next;
         }
         
-        # This preserves the behaviour of the first elsif below.
-        # (But probably shouldn't be in here.)
-        ($contig) = $contig =~ /^([^\.]+)/;
-
-    ##First we have to be able to parse the basic feature information
-    #if (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
-    #    $contig=$1;
-    #    $type=$2;
-    #    $feature=$3;
-    #    $start=$4;
-    #    $end=$5;
-    #    $score=$6;
-    #    $strand=$7;
-    #    $frame=$8;
-    #}
-    ##This allows us to parse gtf entries starting with a rawcontig id
-    #elsif (/^(\w+\.\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.)/){
-    #    $contig=$1;
-    #    $type=$2;
-    #    $feature=$3;
-    #    $start=$4;
-    #    $end=$5;
-    #    $score=$6;
-    #    $strand=$7;
-    #    $frame=$8;
-    #}
-	#This was a sneaky patch for parsing badly formed ensembl gtf files...
-	#elsif (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(0)\s+(0)/){
-	    #$contig=$1;
-	    #$source=$2;
-	    #$feature=$3;
-	    #$start=$end-3;
-	    #$end=$5;
-	    #$score=$6;
-	    #$strand='+';
-	    #$frame=$8;
-	    #$type="ENS";
-	#}
-	#Another very sneaky patch!
-	#elsif (/^\s+(\w+)\s+(\w+)\s+(\d+)\s+(0)\s+(0)/){
-	    #$contig='xxx';
-	    #$source=$2;
-	    #$feature=$3;
-	    #$start=$end-3;
-	    #$end=$5;
-	    #$score=$6;
-	    #$strand='+';
-	    #$frame=$8;
-	    #$type="ENS";
-	#}
-    #else {
-    #    $self->warn("Could not parse line:\n$_");
-    #}
-        
-	my ($gene_name, $gene_id, $transcript_id, $exon_num, $exon_id);
-
-        # Parse the group field
-        foreach my $tag_val (split /;/, $group_field) {
+        if ($exon->id eq $end_exon_id) {
+            # Check that we end in frame
+            if ($exon->strand == 1) {
+                $phase = $self->calculate_end_phase($phase, $exon->start, $t_end, $exon->strand);
+            } else {
+                $phase = $self->calculate_end_phase($phase, $t_start, $exon->end, $exon->strand);
+            }
+            warn "Transcript '$trans_id' ends in phase '$phase', not '0' in exon '$exon_id'\n"
+                unless $phase == 0;
             
-            # Trim trailing and leading spaces
-            $tag_val =~ s/^\s+|\s+$//g;
-            
-            my($tag, $value) = split /\s+/, $tag_val, 2;
-            
-            # Remove quotes from the value
-            $value =~ s/^"|"$//g;
-            $tag = lc $tag;
-            
-            if ($tag eq 'gene_name') {
-                $gene_name = $value;
-            }
-            elsif ($tag eq 'gene_id') {
-                $gene_id = $value;
-            }
-            elsif ($tag eq 'transcript_id') {
-                $transcript_id = $value;
-            }
-            elsif ($tag eq 'exon_number') {
-                $exon_num = $value;
-            }
-            elsif ($tag eq 'exon_id') {
-                $exon_id = $value;
-            }
+            # We've reached the last coding exon
+            last;
         }
-
-        unless ($gene_id) {
-            $self->warn("Skipping line with no gene_id : '$_'");
-	    next;
-        }
-        unless ($transcript_id) {
-            $self->warn("Skipping line with no transcript_id : '$_'");
-	    next;
-        }
-
-    #    if (/gene_name \"(\w+)\"/) { 
-    #    $gene_name=$1; 
-    #}
-    #    if (/gene_id \"(.+)\".+transcript/) { 
-    #    $gene_id = $1;
-    #}
-    #else { 
-    #    $self->warn("Cannot parse line without gene id, skipping!");
-    #    next;
-    #}
-
-    #if (/transcript_id \"(.+)\"/) { $transcript_id = $1;}
-    #else { 
-    #    $self->warn("Cannot parse line without transcript id, skipping!");
-    #    next;
-    #}
-
-    #if (/exon_number (\d+)/) { $exon_num = $1;}
-    #if (/Exon_id (.+)\;/) { $exon_id = $1;}
-	
-	if ($flag == 1) {
-	    $oldtrans = $transcript_id;
-	    $oldgene  = $gene_id;
-	    $flag = 0;
-	}
-
-	# When new gene components start, do the gene building 
-	# with all the exons found up to now, start_codon and end_codon
-	
-	if ($oldtrans ne $transcript_id) {
-            #warn "'$oldtrans' ne '$transcript_id'\n";
-	    $self->_build_transcript($trans_start, $trans_end, $oldtrans, %exons);
-	    $trans_start      = undef;
-	    $trans_end        = undef;
-	    %exons = ();
-	}
-	if ($oldgene ne $gene_id) {
-	    $self->_build_gene($oldgene, $type);
-	}
-	
-	if ($feature eq 'exon' || $feature eq 'CDS') {
-	    if ($strand eq '+') {
-		$strand = 1;
-	    }
-	    elsif ($strand eq '-') {
-		$strand = -1;
-	    }
-	    else {
-		die("Parsing error! Exon with strand '$strand'");
-	    }
-	    my $exon = Bio::EnsEMBL::Exon->new($start, $end, $strand);
-	    if ($exon_id) {
-		$exon->id($exon_id);
-	    }
-	    else {
-		my $id = "$type-$gene_id-$exon_num";
-                #warn "ID = $id\n";
-		$exon->id($id);
-	    }
-	    $exon->version(1);
-	    $exon->contig_id($contig);
-	    $exon->seqname($contig);
-	    $exon->sticky_rank(1);
-	    my $time = time;
-	    $exon->created($time);
-	    $exon->modified($time);
-	    $exons{$exon_num} = $exon;
-	}
-	elsif ($feature eq 'start_codon') {
-	    $trans_start = $start;
-	}
-	elsif ($feature eq 'stop_codon') {
-	    $trans_end   = $end;
-	}
-	else {
-	    #print STDERR "Feature $feature not parsed\n";
-	}
-	$oldgene = $gene_id;
-	$oldtrans = $transcript_id;
-	#print STDERR "Contig: $contig\nSource: $source\nFeature: $feature\nStart: $start\nEnd: $end\nScore: $score\nStrand: $strand\nGene name: $gene_name\nGene id: $gene_id\nExon number: $exon_num\n\n";
-    }
-    $self->_build_transcript($trans_start, $trans_end, $oldtrans, %exons);
-    $self->_build_gene($oldgene, $type);
-    return  @{$self->{'_gene_array'}};
-}
-
-=head2 _build_gene
-
- Title   : _build_gene
- Usage   : GTF_handler->_build_gene()
- Function: Internal method used to build a gene using an internal array
-           of transcripts
- Example : 
- Returns : a Bio::EnsEMBL::Gene object
- Args    : hash of exons, int translation start, int translation end, 
-           old gene id
-=cut
-
-sub _build_gene {
-    my ($self,$oldgene,$type) = @_;
-
-    my $trans_number= scalar(@{$self->{'_transcript_array'}});
-
-    #Only build genes if there are transcripts in the trans array
-    #If translation start/end were not found, no transcript would be built!
-    if ($trans_number > 1) {
-	#print STDERR "Got multiple transcripts for gene $oldgene\n";
-    }
-    if ($trans_number) {
-	my $gene=Bio::EnsEMBL::Gene->new();
-	$gene->id($oldgene);
-	$gene->version(1);
-	my $time = time; chomp($time);
-	$gene->created($time);
-	$gene->modified($time);
-	$gene->type($type);
-	foreach my $transcript (@{$self->{'_transcript_array'}}) {
-	    $gene->add_Transcript($transcript);
-	}
-	$self->{'_transcript_array'}=[];
-	$gene && push(@{$self->{'_gene_array'}},$gene);
     }
 }
 
-=head2 _build_transcript
-
- Title   : _build_transcript
- Usage   : GTF_handler->_build_transcript($trans_start,$trans_end,
-           $oldtrans,%exons)
- Function: Internal method used to build a transcript using a hash of 
-           exons, translation start and translation end
- Example : 
- Returns : a Bio::EnsEMBL::Transcript object
- Args    : hash of exons, int translation start, int translation end, 
-           old gene id
-=cut
-
-sub _build_transcript {
-    my ($self,$trans_start,$trans_end,$oldtrans,%exons)=@_;
-
-    return unless %exons;
-
-    #Create transcript, translation, and assign phases to exons
-
-    my $trans = Bio::EnsEMBL::Transcript->new;
-    my $translation = Bio::EnsEMBL::Translation->new;
-    $translation->id($oldtrans);
-    $translation->version(1);
-    $trans->id($oldtrans);
-    $trans->version(1);
-    my $time = time; chomp($time);
-    $trans->created($time);
-    $trans->modified($time);
-
-    {
-        my @exon_num = sort {$a <=> $b} keys %exons;
-        #warn "Exon set = $oldtrans [@exon_num]\n";
-        unless ($trans_start) {
-            my $n = $exon_num[0];
-            use Carp;
-            my $first_exon = $exons{$n}
-                or confess "No exon";
-            if ($first_exon->strand == 1) {
-                $trans_start = $first_exon->start;
-            } else {
-                $trans_start = $first_exon->end;
-            }
-        }
-        unless ($trans_end) {
-            my $n = $exon_num[$#exon_num];
-            my $last_exon = $exons{$n};
-            if ($last_exon->strand == 1) {
-                $trans_end = $last_exon->end;
-            } else {
-                $trans_end = $last_exon->start;
-            }
-        }
-    }
-
+sub calculate_end_phase {
+    my( $self, $phase, $start, $end, $strand ) = @_;
     
-    if (!defined($trans_start)) {
-	$self->warn("Could not find translation start for transcript $oldtrans, skipping");
-	return;
+    if ($strand == -1) {
+        ($start, $end) = ($end, $start);
     }
-    
-    $translation->start($trans_start);
-    
-    if (!defined($trans_end)) {
-	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
-	return;
-    }
-    my $phase=0;
-    my $end_phase;
-    foreach my $num (sort keys %exons) {
-        my $exon = $exons{$num};
-
-	#Positive strand
-	if ($exon->strand == 1) {
-
-	    #Start exon
-	    if (($trans_start >= $exon->start)&&($trans_start<= $exon->end)) {
-		#Assign start exon id
-		$translation->start_exon_id($exon->id);
-
-		#Phase for start exons is always zero (irrelevant)
-		$phase=0;
-		
-		#Now calculate end_phase, used for next exon
-		$end_phase=($exon->end-$trans_start+1)%3;
-	    }
-
-	    #All other exons
-	    else {
-		#Calculate the end_phase for all other exons
-		my $mod_phase = 0;
-		
-		if ($phase != 0){
-		    $mod_phase=3-$phase;
-		}
-                
-		$end_phase = ($exon->length - $mod_phase) % 3;
-	    }
-
-	    #Find the end exon id
-	    if (($trans_end >= $exon->start)&&($trans_end <= $exon->end)) {
-		$translation->end_exon_id($exon->id);
-	    }
-	}
-	
-	#Negative strand
-	else {
-
-	    #Start exon
-	    if (($trans_start >= $exon->start)&&($trans_start <= $exon->end)) {
-		#Assign the start_exon_id
-		$translation->start_exon_id($exon->id);
-		
-		#Phase for start exons is always zero (irrelevant)
-		$phase=0;
-		
-		#Calculate the end_phase, used for next exon
-		$end_phase=($trans_start-$exon->start+1)%3;
-	    }
-	    
-	    #All other exons
-	    else {
-		
-		#Calculate end_phase
-		my $mod_phase;
-		if ($phase != 0){
-		    $mod_phase=3-$phase;
-		}
-		$end_phase=($exon->length-$mod_phase)%3;
-	    }
-
-	    #Find the end exon id
-	    if (($trans_end >= $exon->start)&&($trans_end <= $exon->end)) {
-		$translation->end_exon_id($exon->id);
-	    }
-
-	}
-	#print STDERR "Phase:   $phase\n";
-
-	#Assign phase to exon
-	$exon->phase($phase);
-
-	#Add exon to transcript
-	$trans->add_Exon($exon);
-
-	#Assign its end_phase to the next exon's phase
-	$phase=$end_phase;
-    }
-
-    #This is somehow tight, but finds buggy gtf files!
-    if (!defined($translation->start_exon_id)) {
-	$self->warn("Could not find translation exon start for transcript $oldtrans, skipping");
-	return;
-    }
-    
-    if (!defined($translation->end_exon_id)) {
-	$self->warn("Could not find translation exon end for transcript $oldtrans, skipping");
-	return;
-    }
-   
-    $translation->end($trans_end);
-    $trans->translation($translation);
-    push(@{$self->{'_transcript_array'}},$trans);
+    my $length = $end - $start + 1;
+    return ($phase + $length) % 3;
 }
 
 =head2 dump_genes
@@ -507,130 +570,152 @@ sub _build_transcript {
 =cut
 
 sub dump_genes {
-    my ($self,$fh,@genes) = @_;
+    my ($self, $fh, @genes) = @_;
     
-    print $fh "##gff-version 2\n##source-version EnsEMBL-Gff 1.0\n";
-    print $fh "##date ".time()."\n";
-    foreach my $gene (@genes) {
+    print $fh 
+        "##gff-version 2\n",
+        "##source-version EnsEMBL-Gff 1.0\n",
+        "##date ".gff_date()."\n";
+
+  GENE: foreach my $gene (@genes) {
+        my $gene_id = $gene->id;
+        #print STDERR "Dumping gene '$gene_id'\n";
+        
+        my $type = $gene->type || 'ensembl';
 	
-        #print STDERR "Dumping gene ".$gene->id."\n";
-	foreach my $trans ($gene->each_Transcript) {
-            my $type = $gene->type || 'ensembl';
-	    #print STDERR "Dumping transcript ".$trans->id."\n";
-	    my $c=1;
-	    my $seen=0;
-	    my $exon_string;
+      TRANSCRIPT: foreach my $trans ($gene->each_Transcript) {
+            my $trans_id = $trans->id;
+	    #print STDERR "Dumping transcript '$trans_id'\n";
+            
+            # Extract the data needed from the translation object
+            my $skipping_string = "Skipping transcript '$trans' : no translation";
+            
+            my $translation = $trans->translation
+                or $self->warn("$skipping_string object")
+                and next TRANSCRIPT;
 	    
-	    my ($start,$start_end,$start_seqname,$start_strand,$start_exon_id);
-	    if ($trans->translation->start) {
-		$start=$trans->translation->start;
-	    }
-	    else {
-		$self->warn("Translation does not have start for transcript ".$trans->id.", skipping!");
-		next;
-	    }
-	    
-	    if ($trans->translation->start_exon_id) {
-		$start_exon_id=$trans->translation->start_exon_id;
-	    }
-	    else {
-		$self->warn("Translation does not have start exon id for transcript ".$trans->id.", skipping!");
-		next;
-	    }
+            my $translation_start = $translation->start
+		or $self->warn("$skipping_string start")
+		and next TRANSCRIPT;
 
-	    my ($end,$end_start,$end_seqname,$end_strand,$end_exon_id);
-	    if ($trans->translation->end) {
-		$end_start=$trans->translation->end;
-	    }
-	    else {
-		$self->warn("Translation does not have end for transcript ".$trans->id.", skipping!");
-		next;
-	    }
-	    
-	    if ($trans->translation->end_exon_id) {
-		$end_exon_id=$trans->translation->end_exon_id;
-	    }
-	    else {
-		$self->warn("Translation does not have end exon id for transcript ".$trans->id.", skipping!");
-		next;
-	    }
+            my $start_exon_id = $translation->start_exon_id
+		or $self->warn("$skipping_string start_exon_id")
+		and next TRANSCRIPT;
 
-	    #Loop through all exons to find start and end 
-	    foreach my $exon ($trans->each_Exon) {
-		my $score = "0";
-		if ($exon->score) {
-		    $score=$exon->score;
-		}
-		
-		my $strand="+";
-		if ($exon->strand == -1) {
-		    $strand="-";
-		}
-		$exon_string .= $exon->contig_id."\t$type\texon\t".$exon->start."\t".$exon->end."\t$score\t$strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\texon_number ".$c."\n"; 
-		
-		$c++;
-		if ($exon->id eq $start_exon_id) {
-		    if ($exon->strand == -1) {
-			$start_strand = "-";
-			$start_end=$start-3;
-		    }
-		    else {
-			$start_strand = "+";
-			$start_end=$start+3;
-		    }
-		    $start_seqname=$exon->contig_id;
-		    $seen++;
-		}
-		if ($exon->id eq $end_exon_id) {
-		    if ($exon->strand == -1) {
-			$end_strand = "-";
-			$end=$end_start+3;
-		    }
-		    else {
-			$end=$end_start-3;
-			$end_strand="+";
-		    }
-		    $end_seqname=$exon->contig_id;
-		    $seen++;
-		}
-	    }
-	    if ($seen == 2) {
-		print $fh $exon_string;
-		print $fh "$start_seqname\t$type\tstart_codon\t$start\t$start_end\t0\t$start_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\n";
-		print $fh "$end_seqname\t$type\tstop_codon\t$end\t$end_start\t0\t$end_strand\t0\tgene_id \"".$gene->id."\"\;\ttranscript_id \"".$trans->id."\"\;\n";
-	    }
-	    else {
-		$self->warn("Could not find start and/or end exon for transcript ".$trans->id.", skipping!\n[$exon_string]");
-	    }
-	}
-    }
-}
-=head2 print_genes
+            my $translation_end = $translation->end
+		or $self->warn("$skipping_string end")
+		and next TRANSCRIPT;
 
- Title   : print_genes
- Usage   : GTF_handler->print_genes(@genes)
- Function: Prints gene structures to STDOUT (for tests)
- Example : 
- Returns : nothing
- Args    : 
+            my $end_exon_id = $translation->end_exon_id
+		or $self->warn("$skipping_string end_exon_id")
+		and next TRANSCRIPT;
 
-=cut
+            my @exons = $trans->each_Exon;
+            
+            # Find the start and end exons
+            my( $start_exon, $end_exon );
+            foreach my $ex (@exons) {
+                $start_exon = $ex if $ex->id eq $start_exon_id;
+                $end_exon   = $ex if $ex->id eq $end_exon_id;
+            }
 
-sub print_genes {
-    my ($self) = @_;
-    
-    my @genes= @{$self->{'_gene_array'}};
+	    my $transcript_string = '';
+            my @group_fields = (
+                qq{gene_id "$gene_id"}, 
+                qq{transcript_id "$trans_id"}
+                );
+	    #Loop through all exons to find start and end
+            my $exon_num = 0;
+            my( $seen_start, $seen_end );
+	    foreach my $exon (@exons) {
+                my $exon_id    = $exon->id;
+                my $exon_start = $exon->start;
+                my $exon_end   = $exon->end;
+                my $seq_name   = $exon->contig_id;
+                my $phase      = $exon->phase;
+                my $score      = $exon->score || 0;
+                my $strand    = ($exon->strand == 1) ? '+' : '-';
 
-    foreach my $gene (@genes) {
-	print STDOUT "Gene ".$gene->id."\n";
-	foreach my $trans ($gene->each_Transcript) {
-	    print STDOUT "  Transcript ".$trans->id."\n";
-	    foreach my $exon ($gene->each_unique_Exon) {
-		print STDOUT "   exon ".$exon->id."\n";
+                # Make the group field for this exon
+                $exon_num++;
+                my $exon_num_field = qq{exon_number $exon_num};
+                my $exon_id_field  = qq{exon_id "$exon_id"};
+                my $group = join('; ', (@group_fields, $exon_num_field, $exon_id_field));
+                
+                # Is the start codon here?
+                if ($exon_id eq $start_exon_id) {
+                    $seen_start = 1;
+                    my( $x, $y );
+                    if ($strand eq '+') {
+                        ($x, $y) = ($translation_start, $translation_start + 2);
+                    } else {
+                        ($x, $y) = ($translation_start - 2, $translation_start);
+                    }
+                    $transcript_string .= join("\t",
+                        $seq_name, $type, 'start_codon',
+                        $x, $y, $score, $strand,
+                        '.', # phase
+                        $group) ."\n";
+                }
+                
+                # Add strings for the exon and CDS lines
+                $transcript_string .= join("\t",
+                    $seq_name, $type, 'exon',
+                    $exon_start, $exon_end, $score, $strand,
+                    '.', # exon lines don't have phase
+                    $group) ."\n";
+                
+                $transcript_string .= join("\t",
+                    $seq_name, $type, 'CDS',
+                    $exon_start, $exon_end, $score, $strand,
+                    $phase, # CDS lines do have phases
+                    $group) ."\n";
+                
+                # Is the end codon here?
+                if ($exon_id eq $end_exon_id) {
+                    $seen_end = 1;
+                    my( $x, $y );
+                    if ($strand eq '+') {
+                        ($x, $y) = ($translation_end - 2, $translation_end);
+                    } else {
+                        ($x, $y) = ($translation_end, $translation_end + 2);
+                    }
+                    $transcript_string .= join("\t",
+                        $seq_name, $type, 'stop_codon',
+                        $x, $y, $score, $strand,
+                        '.', # phase
+                        $group) ."\n";
+                }
 	    }
-	    print STDOUT "   translation start ".$trans->translation->start."\n";
-	    print STDOUT "   translation end ".$trans->translation->end."\n";
+            if ( ! $seen_start ) {
+                $self->warn("Could not find start exon for transcript '$trans_id'");
+            }
+            elsif ( ! $seen_end ) {
+                $self->warn("Could not find start end for transcript '$trans_id'");
+            }
+            else {
+                print $fh $transcript_string
+            }
 	}
     }
 }
 
+sub gff_date {
+    my $time = shift || time;
+
+    # Get time info
+    my ($mday, $mon, $year) = (localtime($time))[3,4,5];
+
+    # Change numbers to double-digit format
+    ($mon, $mday) = ('00'..'31')[($mon + 1), $mday];
+
+    # Make year
+    $year += 1900;
+
+    return "$year-$mon-$mday";
+
+}
+
+1;
+
+__END__
