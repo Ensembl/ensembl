@@ -83,10 +83,9 @@ sub new {
 =cut
 
 sub parse_file {
-    my ($self,$file) = @_;
+    my ($self,$fh) = @_;
 
-    $file || $self->throw("You have to pass a file name in order to parse a file!");
-    open (FILE,$file) || $self->throw("Could not open $file for Fasta stream reading $!");
+    $fh || $self->throw("You have to pass a filehandle in order to parse a file!");
     
     my @genes;
     my $oldgene;
@@ -96,7 +95,7 @@ sub parse_file {
     my $trans_start;
     my $trans_end;
     my $type;
-    while( <FILE> ) {
+    while( <$fh> ) {
 	(/^\#/) && next;
 	(/^$/) && next;
 	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame);
@@ -235,7 +234,7 @@ sub _build_gene {
 	$gene->created($time);
 	$gene->modified($time);
 	#This is for the main trunk only!
-	#$gene->type('neomorphic');
+	$gene->type('neomorphic');
 	foreach my $transcript (@{$self->{'_transcript_array'}}) {
 	    $gene->add_Transcript($transcript);
 	}
@@ -319,13 +318,10 @@ sub _build_transcript {
 =cut
 
 sub dump_genes {
-    my ($self,$file,@genes) = @_;
+    my ($self,$fh,@genes) = @_;
 
-    print STDERR "Dumping to file $file\n";
-    open (FILE,">$file");
-
-    print FILE "##gff-version 2\n##source-version EnsEMBL-Gff 1.0\n";
-    print FILE "##date ".time()."\n";
+    print $fh "##gff-version 2\n##source-version EnsEMBL-Gff 1.0\n";
+    print $fh "##date ".time()."\n";
     foreach my $gene (@genes) {
 	print STDERR "Dumping gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
@@ -353,7 +349,8 @@ sub dump_genes {
 		     $strand="-";
 		 }
 
-		print FILE $exon->contig_id."   ensembl   exon   ".$exon->start."   ".$exon->end."   $score   $strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;   exon_number ".$c."\n"; 
+		print $fh $exon->contig_id."   ensembl   exon   ".$exon->start."   ".$exon->end."   $score   $strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;   exon_number ".$c."\n"; 
+		 
 		$c++;
 		if ($exon->id eq $start_exon_id) {
 		    $start_strand = "+";
@@ -370,8 +367,8 @@ sub dump_genes {
 		    $end_seqname=$exon->contig_id;
 		}
 	    }
-	    print FILE $start_seqname."   ensembl   start_codon   $start   $start_end   0   $start_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\n";
-	    print FILE $end_seqname."   ensembl   stop_codon   $end   $end_start   0   $end_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;\n";
+	    print $fh $start_seqname."   ensembl   start_codon   $start   $start_end   0   $start_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\n";
+	    print $fh $end_seqname."   ensembl   stop_codon   $end   $end_start   0   $end_strand   0   gene_id \"".$gene->id."\"\;   transcript_id \"".$trans->id."\"\;\n";
 	}
     }
 }

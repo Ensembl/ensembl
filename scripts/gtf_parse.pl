@@ -77,7 +77,9 @@ my $help;
 
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 
-my @genes=$gtfh->parse_file($parsefile);
+open (PARSE,"$parsefile") || die("Could not open $parsefile for gtf reading$!");
+    
+my @genes=$gtfh->parse_file(\*PARSE);
 
 if ($print) {
     $gtfh->print_genes;
