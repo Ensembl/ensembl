@@ -203,9 +203,9 @@ sub ensembl_locator {
     
     my $module = ($self->module() || 'Bio::EnsEMBL::DBSQL::Obj');
     my $locator = '';
-    foreach my $meth (qw{ host port dbname user }) {
+    foreach my $meth (qw{ host port dbname user password }) {
         my $value = $self->$meth();
-	if( !defined $value ) { next; }
+	next unless defined $value;
         $locator .= ';' if $locator;
         $locator .= "$meth=$value";
     }
