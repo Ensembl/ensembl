@@ -23,6 +23,8 @@ use Bio::EnsEMBL::BaseAlignFeature;
 
 use vars qw(@ISA);
 use strict;
+use Bio::SimpleAlign;
+use Bio::LocatableSeq;
 
 @ISA = qw( Bio::EnsEMBL::BaseAlignFeature );
 
@@ -253,6 +255,41 @@ sub alignment_strings {
     }
   }
   return [ $rseq,$rhseq ];
+}
+sub get_SimpleAlign {
+  my $ddaf = shift;
+
+  my $sa = Bio::SimpleAlign->new();
+
+  #Hack to try to work with both bioperl 0.7 and 1.2:
+  #Check to see if the method is called 'addSeq' or 'add_seq'
+  my $bio07 = 0;
+  if(!$sa->can('add_seq')) {
+    $bio07 = 1;
+  }
+
+  my ($sb_seq,$qy_seq) = @{$ddaf->alignment_strings};
+
+  my $loc_sb_seq = Bio::LocatableSeq->new(-SEQ    => $sb_seq,
+                                          -START  => $ddaf->seq_region_start,
+                                          -END    => $ddaf->seq_region_end,
+                                          -ID     => $ddaf->seqname,
+                                          -STRAND => $ddaf->strand);
+
+  my $loc_qy_seq = Bio::LocatableSeq->new(-SEQ    => $qy_seq,
+                                          -START  => $ddaf->hseq_region_start,
+                                          -END    => $ddaf->hseq_region_end,
+                                          -ID     => $ddaf->hseqname,
+                                          -STRAND => $ddaf->hstrand);
+  if($bio07) {
+    $sa->addSeq($loc_sb_seq);
+    $sa->addSeq($loc_qy_seq);
+  } else {
+    $sa->add_seq($loc_sb_seq);
+    $sa->add_seq($loc_qy_seq);
+  }
+
+  return $sa;
 }
 
 1;
