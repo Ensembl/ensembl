@@ -397,7 +397,7 @@ sub build_contig_map {
     %seen_hash = ();
     
     while( $current_length < $total ) {
-	print "Looking on right move $current_length vs $total\n";
+	print STDERR "Looking on right move $current_length vs $total\n";
 
 	# move onto the next contig.
 	
