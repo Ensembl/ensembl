@@ -35,7 +35,7 @@ use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
 use Bio::RangeI;
 
-@ISA = qw(Bio::Root::RootI,Bio::RangeI);
+@ISA = qw(Bio::Root::RootI Bio::RangeI);
 
 =head1 METHODS
 
@@ -243,110 +243,108 @@ want them to return a new TranscriptCluster object.
 =cut
 
 sub intersection{
-my ($self, $cluster) = @_;
+  my ($self, $cluster) = @_;
 
-# if either is empty, return an empty cluster
-if ( scalar( $self->get_Transcripts) == 0 
-  $self->warn( "cluster $self is empty, returning an empty TranscriptCluster");
-  my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
-  return $empty_cluster;
-}
+  # if either is empty, return an empty cluster
+  if ( scalar( $self->get_Transcripts) == 0 ){
+    $self->warn( "cluster $self is empty, returning an empty TranscriptCluster");
+    my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+    return $empty_cluster;
+  }
 
-if ( scalar( $cluster->get_Transcripts ) == 0 ){
-  $self->warn( "cluster $cluster is empty, returning an empty TranscriptCluster");
-  my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
-  return $empty_cluster;
-}
+  if ( scalar( $cluster->get_Transcripts ) == 0 ){
+    $self->warn( "cluster $cluster is empty, returning an empty TranscriptCluster");
+    my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+    return $empty_cluster;
+  }
 
-my @transcripts = $self->get_Transcripts;
-push( @transcripts, $cluster->get_Transcripts);
+  my @transcripts = $self->get_Transcripts;
+  push( @transcripts, $cluster->get_Transcripts);
 
-# make an unique list of transcripts, in case they are repeated
-my %list;
-foreach my $transcript (@transcripts){
-  $list{$transcript} = $transcript;
-}
-@transcripts = values( %list );
+  # make an unique list of transcripts, in case they are repeated
+  my %list;
+  foreach my $transcript (@transcripts){
+    $list{$transcript} = $transcript;
+  }
+  @transcripts = values( %list );
 
-my ($inter_start,$inter_end);
-my ($start1,$end1) = ($self->start   ,   $self->end);
-my ($start2,$end2) = ($cluster->start,$cluster->end);
+  my ($inter_start,$inter_end);
+  my ($start1,$end1) = ($self->start   ,   $self->end);
+  my ($start2,$end2) = ($cluster->start,$cluster->end);
 
-my $strand = $cluster->strand;
+  my $strand = $cluster->strand;
 
-# if clusters overlap, calculate the intersection
-if ( $self->overlaps( $cluster ) ){
-  if ( $start2 >= $start1 && $end2 >= $end1 ){
-    if ( $strand == 1){
-      $inter_start = $start2;
-      $inter_end   = $end1;
+  # if clusters overlap, calculate the intersection
+  if ( $self->overlaps( $cluster ) ){
+    if ( $start2 >= $start1 && $end2 >= $end1 ){
+      if ( $strand == 1){
+        $inter_start = $start2;
+        $inter_end   = $end1;
+      }
+      else{
+        $inter_start = $start1;
+        $inter_end   = $end2;
+      }
     }
-    else{
-      $inter_start = $start1;
-      $inter_end   = $end2;
+    if ( $start2 >= $start1 && $end2 < $end1){
+      if ( $strand == 1){
+        $inter_start = $start2;
+        $inter_end   = $end2;
+      }
+      else{
+        $inter_start = $start1;
+        $inter_end   = $end1;
+      }
+    }
+    if ( $start2 < $start1 && $end2 < $end1 ){
+      if ( $strand == 1){
+        $inter_start = $start1;
+        $inter_end   = $end2;
+      }
+      else{
+        $inter_start = $start2;
+        $inter_end   = $end1;
+      }
+    }
+    if ( $start2 < $start1 && $end2 >= $end1 ){
+      if ( $strand == 1){
+        $inter_start = $start1;
+        $inter_end   = $end1;
+      }
+      else{
+        $inter_start = $start2;
+        $inter_end   = $end2;
+      }
     }
   }
-  if ( $start2 >= $start1 && $end2 < $end1){
-    if ( $strand == 1){
-      $inter_start = $start2;
-      $inter_end   = $end2;
+  else{
+    $self->warn( "clusters $self and $cluster do not intersect range-wise, returning an empty TranscriptCluster");
+    my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+    return $empty_cluster;
+  }
+
+  my $inter_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+  my @inter_transcripts;
+
+  # see whether any transcript falls within this intersection
+  foreach my $transcript ( @transcripts ){
+    my ($start,$end) = ($self->_get_start($transcript), $self->_get_end($transcript));
+    if ($strand == 1 &&  $start >= $inter_start && $end <= $inter_end ){
+       $inter_cluster->put_Transcripts( $transcript );
     }
-    else{
-      $inter_start = $start1;
-      $inter_end   = $end1;
+    elsif ( $strand == -1 && $start <= $inter_start && $end >= $inter_end ){
+      $inter_cluster->put_Transcripts( $transcript );
     }
   }
-  if ( $start2 < $start1 && $end2 < $end1 ){
-    if ( $strand == 1){
-      $inter_start = $start1;
-      $inter_end   = $end2;
-    }
-    else{
-      $inter_start = $start2;
-      $inter_end   = $end1;
-    }
+
+  if ( scalar( $inter_cluster->get_Transcripts ) == 0 ){
+     $self->warn( "cluster $inter_cluster is empty, returning an empty TranscriptCluster");
+     return $inter_cluster;
   }
-  if ( $start2 < $start1 && $end2 >= $end1 ){
-    if ( $strand == 1){
-      $inter_start = $start1;
-      $inter_end   = $end1;
-    }
-    else{
-      $inter_start = $start2;
-      $inter_end   = $end2;
-    }
+  else{
+    return $inter_cluster;
   }
 }
-else{
-  $self->warn( "clusters $self and $cluster do not intersect range-wise, returning an empty TranscriptCluster");
-  my $empty_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
-  return $empty_cluster;
-}
-
-my $inter_cluster = Bio::EnsEMBL::Utils::TranscriptCluster->new();
-my @inter_transcripts;
-
-# see whether any transcript falls within this intersection
-foreach my $transcript ( @transcripts ){
-  my ($start,$end) = ($self->_get_start($transcript), $self->_get_end($transcript));
-  if ($strand == 1 &&  $start >= $inter_start && $end <= $inter_end ){
-     $inter_cluster->put_Transcripts( $transcript );
-  }
-  elsif ( $strand == -1 && $start <= $inter_start && $end >= $inter_end ){
-     $inter_cluster->put_Transcripts( $transcript );
-  }
-}
-
-if ( scalar( $inter_cluster->get_Transcripts ) == 0 ){
-   $self->warn( "cluster $inter_cluster is empty, returning an empty TranscriptCluster");
-   return $inter_cluster;
-}
-else{
- 
-return $inter_cluster;
-
-}
-
 
 ############################################################
 
@@ -382,6 +380,7 @@ foreach my $cluster (@clusters){
 
 return $union_cluster;
 
+
 }
 
 ############################################################
@@ -410,7 +409,7 @@ sub put_Transcripts {
       $self->strand( $exons[0]->strand );
     }
     if ( $self->strand != $exons[0]->strand ){
-      $self->warn( "You're trying to put $tran in a cluster of opposite strand");
+      $self->warn( "You're trying to put $transcript in a cluster of opposite strand");
     }
   }
 
