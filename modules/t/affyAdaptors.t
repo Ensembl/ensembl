@@ -16,7 +16,7 @@ use Bio::EnsEMBL::Test::TestUtils qw( test_getter_setter debug count_rows);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 18;
+	plan tests => 19;
 }
 
 
@@ -155,3 +155,5 @@ ok( @$arrays == 2 );
 $arrays = $probe->get_all_AffyArrays();
 
 ok( @$arrays == 2 );
+
+$multi->restore();
