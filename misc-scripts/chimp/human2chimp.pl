@@ -9,88 +9,138 @@ use Bio::EnsEMBL::Exon;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-my $MAX_CODING_INDEL     = 12; #max allowed coding indel in exon
-my $MAX_FRAMESHIFT_INDEL = 5; #max allowed frameshifting indel in exon
+use ErrCode qw(get_err set_err ec2str);
+
+my $MAX_CODING_INDEL     = 18; #max allowed coding indel in exon
+my $MAX_FRAMESHIFT_INDEL = 8; #max allowed frameshifting indel in exon
+
+my $verbose;
+
+{  #block to avoid namespace pollution
+
+  my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly,  #human vars
+      $hchromosome,
+      $chost, $cdbname, $cuser, $cpass, $cport, $cassembly,  #chimp vars
+      $help);
+
+  GetOptions('hhost=s'   => \$hhost,
+             'hdbname=s' => \$hdbname,
+             'huser=s'   => \$huser,
+             'hpass=s'   => \$hpass,
+             'hport=i'   => \$hport,
+             'hassembly=s' => \$hassembly,
+             'hchromosome=s' => \$hchromosome,
+             'chost=s'   => \$chost,
+             'cdbname=s' => \$cdbname,
+             'cuser=s'   => \$cuser,
+             'cpass=s'   => \$cpass,
+             'cport=i'   => \$cport,
+             'cassembly=s' => \$cassembly,
+             'help'      => \$help,
+             'verbose'   => \$verbose);
 
 
-my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly,  #human vars
-    $chost, $cdbname, $cuser, $cpass, $cport, $cassembly,  #chimp vars
-    $help,  $verbose);
+  usage() if($help);
+  usage("-hdbname option is required") if (!$hdbname);
+  usage("-cdbname option is required") if (!$cdbname);
 
-GetOptions('hhost=s'   => \$hhost,
-           'hdbname=s' => \$hdbname,
-           'huser=s'   => \$huser,
-           'hpass=s'   => \$hpass,
-           'hport=i'   => \$hport,
-           'hassembly=s' => \$hassembly,
-           'chost=s'   => \$chost,
-           'cdbname=s' => \$cdbname,
-           'cuser=s'   => \$cuser,
-           'cpass=s'   => \$cpass,
-           'cport=i'   => \$cport,
-           'cassembly=s' => \$cassembly,
-           'help'      => \$help,
-           'verbose'   => \$verbose);
+  $hport ||= 3306;
+  $cport ||= 3306;
 
+  $hdbname ||= 'localhost';
+  $cdbname ||= 'localhost';
 
-usage() if($help);
-usage("-hdbname option is required") if (!$hdbname);
-usage("-cdbname option is required") if (!$cdbname);
+  $hassembly ||= 'NCBI34';
+  $cassembly ||= 'BROAD1';
 
-$hport ||= 3306;
-$cport ||= 3306;
+  debug("Connecting to human database");
 
-$hdbname ||= 'localhost';
-$cdbname ||= 'localhost';
+  my $human_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+    (-host    => $hhost,
+     -dbname => $hdbname,
+     -pass   => $hpass,
+     -user   => $huser,
+     -port   => $hport);
 
-$hassembly ||= 'NCBI34';
-$cassembly ||= 'BROAD1';
+  debug("Connecting to chimp database");
 
-debug("Connecting to human database");
-
-my $human_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-  (-host    => $hhost,
-   -dbname => $hdbname,
-   -pass   => $hpass,
-   -user   => $huser,
-   -port   => $hport);
-
-debug("Connecting to chimp database");
-
-my $chimp_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
-  (-host    => $chost,
-   -dbname  => $cdbname,
-   -pass    => $cpass,
-   -user    => $cuser,
-   -port    => $cport);
+  my $chimp_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
+    (-host    => $chost,
+     -dbname  => $cdbname,
+     -pass    => $cpass,
+     -user    => $cuser,
+     -port    => $cport);
 
 
-$human_db->dnadb($chimp_db);
+  $human_db->dnadb($chimp_db);
 
-my $slice_adaptor   = $human_db->get_SliceAdaptor();
-my $gene_adaptor    = $human_db->get_GeneAdaptor();
+  my $slice_adaptor   = $human_db->get_SliceAdaptor();
+  my $gene_adaptor    = $human_db->get_GeneAdaptor();
 
 
-debug("Fetching chromosomes");
+  debug("Fetching chromosomes");
 
-my $slices = $slice_adaptor->fetch_all('chromosome', $hassembly);
+  my $slices;
 
-foreach my $slice (@$slices) {
-
-  debug("Chromosome: " . $slice->seq_region_name());
-  debug("Fetching Genes");
-
-  my $genes = $gene_adaptor->fetch_all_by_Slice($slice);
-
-  foreach my $gene (reverse @$genes) {
-    debug("Gene: ".$gene->stable_id);
-    my $transcripts = $gene->get_all_Transcripts();
-
-    foreach my $transcript (@$transcripts) {
-
-      my @transcripts = transfer_transcript($human_db,$chimp_db,$transcript);
-
+  if($hchromosome) {
+    my $slice = $slice_adaptor->fetch_by_region('chromosome',
+                                                $hchromosome,
+                                                undef, undef, undef,
+                                                $hassembly);
+    if(!$slice) {
+      throw("unknown chromosome $hchromosome");
     }
+
+    $slices = [$slice];
+  } else {
+    $slices = $slice_adaptor->fetch_all('chromosome', $hassembly);
+  }
+
+  my %err_hash;
+  my $total_transcripts = 0;
+  my $mapped_transcripts = 0;
+
+  foreach my $slice (@$slices) {
+
+    debug("Chromosome: " . $slice->seq_region_name());
+    debug("Fetching Genes");
+
+    my $genes = $gene_adaptor->fetch_all_by_Slice($slice);
+
+    foreach my $gene (reverse @$genes) {
+      debug("Gene: ".$gene->stable_id);
+      my $transcripts = $gene->get_all_Transcripts();
+
+      foreach my $transcript (@$transcripts) {
+        next if(!$transcript->translation);
+
+        $total_transcripts++;
+
+        my @transcripts = transfer_transcript($human_db,$chimp_db,$transcript,
+                                             $hassembly, $cassembly);
+
+        if(@transcripts) {
+          foreach my $transcript (@transcripts) {
+            debug("\nTranslation:" . $transcript->translate()->seq() . "\n\n");
+          }
+          $mapped_transcripts++;
+        } else {
+          $err_hash{get_err()}++ if(!@transcripts);
+        }
+
+        print STDERR "Mapped/Total Transcripts: " .
+          "$mapped_transcripts/$total_transcripts\n";
+
+      }
+    }
+  }
+
+  print STDERR "==Error Report==\n";
+  print STDERR "#Occurances\tCode:Description\n";
+  print STDERR "-----------\t----------------\n";
+
+  foreach my $ec (sort {$a <=> $b} keys %err_hash) {
+    print STDERR $err_hash{$ec}, "\t\t$ec:", ec2str($ec), "\n";
   }
 }
 
@@ -105,6 +155,8 @@ sub transfer_transcript {
   my $human_db   = shift;
   my $chimp_db   = shift;
   my $transcript = shift;
+  my $hassembly  = shift;
+  my $cassembly  = shift;
 
   debug("Transcript: " . $transcript->stable_id());
 
@@ -159,7 +211,8 @@ sub transfer_transcript {
 
         } else {
           ### TBD: can do more sensible checking and maybe split transcript
-          debug('entire coding exon deletion - discarding transcript');
+          set_err(ErrCode::EXON_DELETE_CODING);
+
           return ();
         }
       } else {
@@ -174,12 +227,6 @@ sub transfer_transcript {
         $chimp_cdna_pos += $c->length();
         $cdna_exon_start += $c->length();
 
-      #debug("exon mapped - incrementing chimp_cdna_pos and cdna_exon_start\n" .
-      #        "  exon_len = " . $c->length() . "\n" .
-      #        "  chimp_cdna_pos  = $chimp_cdna_pos\n" .
-      #        "  cdna_exon_start = $cdna_exon_start"); 
-
-
         push @chimp_exons, [$c->start(), $c->end(), $c->strand(), $c->id()];
       }
     } else {
@@ -190,7 +237,7 @@ sub transfer_transcript {
       if(!$result) {
         #failed to obtain extent of coords due to scaffold spanning
         #strand flipping, or exon inversion
-	
+
         ### TBD - fix this, may be ok to drop exon and continue esp. if exon
         ###       is entirely UTR
         return ();
@@ -241,7 +288,8 @@ sub transfer_transcript {
 
             #sanity check:
             if($insert_len < 0) {
-              throw("Unexpected - negative insert - undetected exon inversion?");
+              throw("Unexpected - negative insert " .
+                    "- undetected exon inversion?");
             }
 
             if($insert_len > 0) {
@@ -249,8 +297,6 @@ sub transfer_transcript {
               #
               # insert in chimp, deletion in human
               #
-              #debug("before insertion processing\n" .
-              #      "  cdna_exon_start = $cdna_exon_start");
 
               my $result = 
                 process_insertion(\$chimp_cdna_pos, $insert_len,
@@ -258,9 +304,6 @@ sub transfer_transcript {
                                   \$cdna_exon_start,
                                   \$cdna_coding_start, \$cdna_coding_end,
                                  $exon_seq_region);
-
-              #debug("after insertion processing\n" .
-              #      "  cdna_exon_start = $cdna_exon_start");
 
               return () if(!defined($result));
 
@@ -272,19 +315,10 @@ sub transfer_transcript {
 
           $chimp_cdna_pos += $c->length();
 
-          #debug("match - incremented chimp_cdna_pos\n" .
-          #      "  match_len = " . $c->length() . "\n" .
-          #      "  chimp_cdna_pos = $chimp_cdna_pos");
-
         }
       }  # foreach coord
 
       $cdna_exon_start += $exon_end - $exon_start + 1;
-
-      #debug("exon complete - incremented cdna_exon_start\n" .
-      #      "  exon_len = " . ($exon_end - $exon_start + 1) .
-      #      "  cdna_exon_start = $cdna_exon_start\n");
-
 
       push @chimp_exons, [$exon_start, $exon_end, $exon_strand,
                           $exon_seq_region];
@@ -293,13 +327,10 @@ sub transfer_transcript {
 
   my $slice_adaptor = $chimp_db->get_SliceAdaptor();
 
-  my @transcripts = create_transcripts(\@chimp_exons,
-                                       $cdna_coding_start, $cdna_coding_end,
-                                       $slice_adaptor);
+  return create_transcripts(\@chimp_exons,
+                            $cdna_coding_start, $cdna_coding_end,
+                            $slice_adaptor);
 
-  foreach my $transcript (@transcripts) {
-    debug("\nTranslation:" . $transcript->translate()->seq() . "\n\n");
-  }
 
 }
 
@@ -339,11 +370,8 @@ sub process_deletion {
   my $exon_len = $$exon_end_ref - $$exon_start_ref + 1;
   my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
 
-  #debug("processing deletion");
-  #debug("  del_start = $del_start");
-  #debug("  del_end   = $del_end");
-
-  #sanity check, deletion should be completely in or adjacent to exon boundaries
+  # sanity check, deletion should be completely in
+  # or adjacent to exon boundaries
   if($del_start < $$cdna_exon_start_ref - 1 ||
      $del_start > $cdna_exon_end + 1) {
 
@@ -362,7 +390,7 @@ sub process_deletion {
      $del_end >= $$cdna_coding_end_ref) {
 
     # nothing can be done with this exon since entire CDS is deleted
-    debug("entire cds deleted - discarding transcript");
+    set_err(ErrCode::PART_EXON_CDS_DELETE_ENTIRE);
     return undef;
   }
 
@@ -379,8 +407,7 @@ sub process_deletion {
 
     if($cds_del_len > $MAX_CODING_INDEL) {
       # too much coding sequence has been deleted
-      debug("cds deletion is too long ($cds_del_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
       return undef;
     }
 
@@ -396,8 +423,7 @@ sub process_deletion {
     if($frameshift) {
       if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
         # frameshift deletion is too long
-        debug("frameshift deletion is too long ($cds_del_len) " .
-              "- discarding transcript");
+        set_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
         return undef;
       }
 
@@ -406,7 +432,7 @@ sub process_deletion {
       $$cdna_coding_start_ref += 3 - $frameshift;
 
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
-        debug("no cds left after shift - discarding transcript");
+        set_err(ErrCode::NO_CDS_LEFT);
         return undef;
       }
     }
@@ -425,8 +451,7 @@ sub process_deletion {
 
     if($cds_del_len > $MAX_CODING_INDEL) {
       # too much coding sequence has been deleted
-      debug("cds deletion is too long ($cds_del_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
       return undef;
     }
 
@@ -437,9 +462,8 @@ sub process_deletion {
 
     if($frameshift) {
       if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
-        debug("frameshift deletion is too long ($cds_del_len) " .
-              "- discarding transcript");
-      return undef;
+        set_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
+        return undef;
       }
 
       #move up CDS end to put reading frame back (shrink CDS)
@@ -447,7 +471,7 @@ sub process_deletion {
       $$cdna_coding_end_ref -= 3 - $frameshift;
 
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
-        debug("no cds left after shift - discarding transcript");
+        set_err(ErrCode::NO_CDS_LEFT);
         return undef;
       }
     }
@@ -461,8 +485,7 @@ sub process_deletion {
 
     if($del_len > $MAX_CODING_INDEL) {
       # too much coding sequence has been deleted
-      debug("cds deletion is too long ($del_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
       return undef;
     }
 
@@ -473,8 +496,7 @@ sub process_deletion {
 
     if($frameshift) {
       if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        debug("frameshift deletion is too long ($del_len) " .
-              "- discarding transcript");
+        set_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
         return undef;
       }
 
@@ -483,7 +505,7 @@ sub process_deletion {
       $$cdna_coding_start_ref += 3 - $frameshift;
 
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
-        debug("no cds left after shift - discarding transcript");
+        set_err(ErrCode::NO_CDS_LEFT);
         return undef;
       }
     }
@@ -497,8 +519,7 @@ sub process_deletion {
 
     if($del_len > $MAX_CODING_INDEL) {
       # too much coding sequence has been deleted
-      debug("cds deletion is too long ($del_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
       return undef;
     }
 
@@ -509,8 +530,7 @@ sub process_deletion {
 
     if($frameshift) {
       if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        debug("frameshift deletion is too long ($del_len) " .
-              "- discarding transcript");
+        set_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
         return undef;
       }
 
@@ -518,7 +538,7 @@ sub process_deletion {
       $$cdna_coding_end_ref -= 3 - $frameshift;
 
       if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
-        debug("no cds left after shift - discarding transcript");
+        set_err(ErrCode::NO_CDS_LEFT);
         return undef;
       }
     }
@@ -532,9 +552,7 @@ sub process_deletion {
     debug("delete ($del_len) in middle of cds");
 
     if($del_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been deleted
-      debug("cds deletion is too long ($del_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
       return undef;
     }
 
@@ -545,8 +563,7 @@ sub process_deletion {
 
     if($frameshift) {
       if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        debug("frameshift deletion is too long ($del_len) " .
-              " - discarding transcript");
+        set_err(ErrCode::PART_EXON_CDS_DELETE_TOO_LONG);
         return undef;
       }
 
@@ -673,9 +690,6 @@ sub process_insertion {
   my $exon_len      = $$exon_end_ref - $$exon_start_ref + 1;
   my $cdna_exon_end = $$cdna_exon_start_ref + $exon_len - 1;
 
-  #debug("processing insertion");
-  #debug("  ins_left = $$cdna_ins_pos_ref");
-  #debug("  ins_len  = $insert_len");
 
   # sanity check, insert should be completely in exon boundaries
   if($$cdna_ins_pos_ref < $$cdna_exon_start_ref ||
@@ -688,8 +702,8 @@ sub process_insertion {
     if($$cdna_ins_pos_ref < $$cdna_exon_start_ref  &&
        $$cdna_ins_pos_ref + 3 >= $$cdna_exon_start_ref  ) {
       ### TBD not sure what should be done with this situation
-      debug("insert following the introduction of a frameshift intron" .
-            "and a very small match - confused and bailing on transcript");
+      set_err(ErrCode::PART_EXON_CONFUSED);
+
       return ();
     }
 
@@ -712,8 +726,7 @@ sub process_insertion {
 
     if($insert_len > $MAX_CODING_INDEL) {
       # too much coding sequence has been inserted
-      debug("cds insertion is too long ($insert_len) - " .
-            "discarding transcript");
+      set_err(ErrCode::PART_EXON_CDS_INSERT_TOO_LONG);
       return undef;
     }
 
@@ -724,8 +737,7 @@ sub process_insertion {
 
     if($frameshift) {
       if($insert_len > $MAX_FRAMESHIFT_INDEL) {
-        debug("frameshift insertion is too long ($insert_len) - " .
-              "discarding transcript");
+        set_err(ErrCode::PART_EXON_CDS_FRAMESHIFT_INSERT_TOO_LONG);
         return undef;
       }
 
@@ -818,21 +830,14 @@ sub get_coords_extent {
 
   my($start, $end, $strand, $seq_region);
 
-  #debug("calculating coord span");
-
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
-
-    #debug(" coord_start  = " . $c->start );
-    #debug(" coord_end    = " . $c->end   );
-    #debug(" coord_strand = " . $c->strand );
-    #debug(" coord_id     = " . $c->id);
 
     if(!defined($seq_region)) {
       $seq_region = $c->id();
     }
     elsif($seq_region ne $c->id()) {
-      debug("coords spans multiple scaffolds - unable to get extent");
+      set_err(ErrCode::EXON_SCAFFOLD_SPAN);
       return undef;
     }
 
@@ -840,8 +845,7 @@ sub get_coords_extent {
       $strand = $c->strand();
     }
     elsif($strand != $c->strand()) {
-      debug("coords flip strands - unable to get extent");
-
+      set_err(ErrCode::EXON_STRAND_FLIP);
       return undef;
     }
 
@@ -849,11 +853,11 @@ sub get_coords_extent {
       $start = $c->start if(!defined($start));
     } else {
       if($strand == 1 && $start > $c->start()) {
-        debug("coord inversion - unable to get extent");
+        set_err(ErrCode::EXON_INVERT);
         return undef;
       }
       if($strand == -1 && $start < $c->start()) {
-        debug("coord inversion - unable to get extent");
+        set_err(ErrCode::EXON_INVERT);
         return undef;
       }
 
@@ -866,11 +870,11 @@ sub get_coords_extent {
       $end = $c->end();
     } else {
       if($strand == 1 && $end > $c->end()) {
-        debug("coord inversion - unable to get extent");
+        set_err(ErrCode::EXON_INVERT);
         return undef;
       }
       if($strand == -1 && $end < $c->end()) {
-        debug("coord inversion - unable to get extent");
+        set_err(ErrCode::EXON_INVERT);
         return undef;
       }
       if($c->end > $end) {
@@ -878,9 +882,6 @@ sub get_coords_extent {
       }
     }
   }
-
-  #debug("  calculated span = $start-$end($strand)\n" .
-  #      "  length = " . ($end - $start + 1));
 
   return [$start, $end, $strand, $seq_region];
 }
@@ -929,7 +930,7 @@ sub create_transcripts {
       $transcript_seq_region = $seq_region;
     }
     elsif($transcript_seq_region ne $seq_region) {
-      debug("transcript exons on different scaffolds - discarding transcript");
+      set_err(ErrCode::TRANSCRIPT_SCAFFOLD_SPAN);
       ### TBD can probably split transcript rather than discarding
       return ();
     }
@@ -938,7 +939,7 @@ sub create_transcripts {
       $transcript_strand = $exon_strand;
     }
     elsif($transcript_strand != $exon_strand) {
-      debug("transcript exons on different strands - discarding transcript");
+      set_err(ErrCode::TRANSCRIPT_STRAND_FLIP);
       ### TBD can probably split transcript rather than discarding
       return ();
     }
