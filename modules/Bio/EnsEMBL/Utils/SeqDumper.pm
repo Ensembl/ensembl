@@ -373,7 +373,11 @@ sub dump_embl {
 ';
 
   #ID and moltype
-  my $VALUE = "$id    ENSEMBL; DNA; PLN; $len BP.";
+  # HTG = High Throughput Genome division, probably most suitable
+  #       and it would be hard to come up with another appropriate division
+  #       that worked for all organisms (e.g. plants are in PLN but human is
+  #       in HUM).
+  my $VALUE = "$id    ENSEMBL; DNA; HTG; $len BP.";
   $self->write($FH, $EMBL_HEADER, 'ID', $VALUE);  
   print $FH "XX\n";
 
