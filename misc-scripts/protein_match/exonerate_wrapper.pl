@@ -139,13 +139,27 @@ if (defined $opts{d} && $opts{d} == 1) {
     our %mapping_conf;
     require 'mapping_conf.pl';
 
-    $e_cmd = $mapping_conf{exonerate}  if (exists $mapping_conf{exonerate});
-    $q_fa  = $mapping_conf{ensembl_predictions}      if (exists $mapping_conf{ensembl_predictions});
-    $t_fa  = $mapping_conf{total_known_fa}
+    # EXONERATE EXECUTABLE
+    $e_cmd = $mapping_conf{exonerate}
+	if (exists $mapping_conf{exonerate});
+
+    # OUTPUT
+    $fout  = $mapping_conf{mapping_out}
+	if (exists $mapping_conf{mapping_out});
+
+    # TARGET
+    $t_fa  = $mapping_conf{ensembl_predictions}
+	if (exists $mapping_conf{ensembl_predictions});
+
+    $t_min = $mapping_conf{min_ensembl_idt}
+	if (exists $mapping_conf{min_ensembl_idt});
+
+    # QUERY
+    $q_fa  = $mapping_conf{total_known_fa}
 	if (exists $mapping_conf{total_known_fa});
-    $fout  = $mapping_conf{mapping_out} if (exists $mapping_conf{mapping_out});
-    $q_min = $mapping_conf{min_known_idt}  if (exists $mapping_conf{min_known_idt});
-    $t_min = $mapping_conf{min_ensembl_idt} if (exists $mapping_conf{min_ensembl_idt});
+
+    $q_min = $mapping_conf{min_known_idt}
+	if (exists $mapping_conf{min_known_idt});
 }
 
 if (defined($fin) && length($fin) != 0 &&
