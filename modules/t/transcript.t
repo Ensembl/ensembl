@@ -40,8 +40,8 @@ for my $gene ( @$genes ) {
       debug( $trans->stable_id()." does not translate." );
       last;
     }
-    if( $trans->coding_start() != $trans->start() &&
-	$trans->coding_end() != $trans->end() ) {
+    if( $trans->coding_region_start() != $trans->start() &&
+	$trans->coding_region_end() != $trans->end() ) {
       $utr_trans = $trans->stable_id();
     }
   }
@@ -100,11 +100,11 @@ ok( substr( $tr->spliced_seq(), 0, 10 ) eq "ACGAGACGAA" );
 debug( "translateable_seq->substr == \"".substr( $tr->translateable_seq(),0,10 )."\"" );
 ok( substr( $tr->translateable_seq(),0,10 ) eq "ATGGCAGTGA" );
 
-debug( "coding_start() == ".$tr->coding_start() );
-ok( $tr->coding_start() == 85834 );
+debug( "coding_region_start() == ".$tr->coding_region_start() );
+ok( $tr->coding_region_start() == 85834 );
 
-debug( "coding_end() == ".$tr->coding_end() );
-ok( $tr->coding_end() == 108631 );
+debug( "coding_region_end() == ".$tr->coding_region_end() );
+ok( $tr->coding_region_end() == 108631 );
 
 debug( "pep2genomic: ".($tr->pep2genomic( 10,20 ))[0]->start());
 my @pepcoords = $tr->pep2genomic( 10, 20 );
@@ -116,11 +116,11 @@ my $t_strand = $tr->get_all_Exons->[0]->strand;
 my $pep_len = ($tr->cdna_coding_end - $tr->cdna_coding_start + 1) / 3;
 
 my $coord_num = 0;
-my $coding_start = $tr->coding_start;
-my $coding_end   = $tr->coding_end;
+my $coding_region_start = $tr->coding_region_start;
+my $coding_region_end   = $tr->coding_region_end;
 #expect coordinate for each exon with coding sequence 
 foreach my $e (@{$tr->get_all_Exons}) {
-  if($e->end > $coding_start && $e->start < $coding_end) {
+  if($e->end > $coding_region_start && $e->start < $coding_region_end) {
     $coord_num++;
   }
 }

@@ -133,7 +133,7 @@ sub stable_id {
 
 
 
-=head2 coding_start
+=head2 coding_region_start
 
   Arg [1]  :  The new coding start of this prediction transcript in slice 
               coords.
@@ -142,32 +142,32 @@ sub stable_id {
               and so that it can be drawn as a Transcript. Since prediction
               transcripts do not currently have UTRs the coding start should
               return the same value as the start method.
-              By convention, the coding_start is always lower than the value
-              returned by the coding_end method.  The value returned by this
-              function is NOT the biological coding start since on the 
-              reverse strand the biological coding start would be the 
-              higher genomic value. 
+              By convention, the coding_region_start is always lower than the 
+              value returned by the coding_region_end method.  The value 
+              returned by this function is NOT the biological coding start 
+              since on the reverse strand the biological coding start would 
+              be the higher genomic value. 
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
 
 =cut
 
-sub coding_start {
+sub coding_region_start {
   my ($self, $arg) = @_;
 
   if(defined $arg) {
-    $self->{'coding_start'} = $arg;
-  } elsif(!defined $self->{'coding_start'}) {
+    $self->{'coding_region_start'} = $arg;
+  } elsif(!defined $self->{'coding_region_start'}) {
     #if the coding start is not defined, use the start of the transcript
     return $self->start();
   }
 
-  return $self->{'coding_start'};
+  return $self->{'coding_region_start'};
 }
 
 
-=head2 coding_end
+=head2 coding_region_end
 
   Arg [1]  :  (optional) The new coding end of this prediction transcript 
               in slice coords.
@@ -176,27 +176,27 @@ sub coding_start {
               and so that it can be drawn as a Transcript. Since prediction
               transcripts do not currently have UTRs the coding end should
               be the same as the end of the transcript.
-              By convention, the coding_start is always lower than the value
-              returned by the coding_end method.  The value returned by this
-              function is NOT the biological coding start since on the 
-              reverse strand the biological coding start would be the 
-              higher genomic value. 
+              By convention, the coding_region_start is always lower than the 
+              value returned by the coding_region_end method.  The value 
+              returned by this function is NOT the biological coding start 
+              since on the reverse strand the biological coding start would 
+              be the higher genomic value. 
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
 
 =cut
 
-sub coding_end {
+sub coding_region_end {
   my ($self, $arg) = @_;
 
   if(defined $arg) {
-    $self->{'coding_end'} = $arg;
-  } elsif(!defined $self->{'coding_end'}) {
+    $self->{'coding_region_end'} = $arg;
+  } elsif(!defined $self->{'coding_region_end'}) {
     #if the coding end is not defined, use the end of the transcript
     return $self->end();
   }
-  return $self->{'coding_end'};
+  return $self->{'coding_region_end'};
 }
 
 
@@ -351,7 +351,7 @@ sub get_all_Exons {
                thus all exons are entirely translateable.
   Returntype : listref of Bio::EnsEMBL::Exon
   Exceptions : none
-  Caller     : Embl_Dumper
+  Caller     : general
 
 =cut
 
@@ -782,22 +782,6 @@ sub _get_cdna_coord_mapper {
   return $mapper;
 }
 
-
-# debug helper
-sub _dump {
-  my $self = shift;
-  my $res = "";
-  if( ! defined $self->{'_exon_align'} ) {
-    $self->get_cdna();
-  }
-
-  for my $ex ( @{$self->{'_exon_align'}} ) {
-    $res .= "pep: ".$ex->{'pep_start'}." ".$ex->{pep_end}."\n";
-    $res .= "exon: ".$ex->{'exon'}->start()." ".$ex->{'exon'}->end().
-      " ".$ex->{'exon'}->strand()."\n";
-  }
-  return $res;
-}
 
 
 =head2 type

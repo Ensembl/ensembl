@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 33;
+	plan tests => 32;
 }
 
 use MultiTestDB;
@@ -59,12 +59,12 @@ ok($pt->stable_id =~ /(\w+\.\d+\.\d+\.\d+)\.(\d+)\.(\d+)/);
 #
 # 6 test coding start
 #
-ok(&TestUtils::test_getter_setter($pt, 'coding_start', 6));
+ok(&TestUtils::test_getter_setter($pt, 'coding_region_start', 6));
 
 #
 # 7 test coding end
 #
-ok(&TestUtils::test_getter_setter($pt, 'coding_end', 7));
+ok(&TestUtils::test_getter_setter($pt, 'coding_region_end', 7));
 
 
 #
@@ -205,12 +205,7 @@ ok($defined_exons_count == $pt->cdna2genomic($cstart, $cend));
 
 
 #
-# 32 test _dump executes
-#
-ok($pt->_dump || 1);
-
-#
-# 33 test type
+# 32 test type
 #
 ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
 

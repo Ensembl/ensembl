@@ -38,11 +38,6 @@ Manipulation:
 
 Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. 
-Internal methods are usually preceded with a _
-
 =cut
 
 
@@ -537,7 +532,7 @@ sub cdna_coding_start {
 =head2 cdna_coding_end
 
   Arg [1]    : (optional) $value
-  Example    : $cdna_coding_end = $transcript->coding_end;
+  Example    : $cdna_coding_end = $transcript->cdna_coding_end;
   Description: Retrieves the end of the coding region of this transcript in
                cdna coordinates (relative to the five prime end of the
                transcript, excluding introns, including utrs).
@@ -575,29 +570,30 @@ sub cdna_coding_end {
 
 
 
-=head2 coding_start
+=head2 coding_region_start
 
   Arg [1]    : (optional) $value
-  Example    : $coding_start = $transcript->coding_start
+  Example    : $coding_region_start = $transcript->coding_region_start
   Description: Retrieves the start of the coding region of this transcript
                in genomic coordinates (i.e. in either slice or contig coords).
-               By convention, the coding_start is always lower than the value
-               returned by the coding_end method.  The value returned by this
-               function is NOT the biological coding start since on the 
-               reverse strand the biological coding start would be the 
-               higher genomic value. 
+               By convention, the coding_region_start is always lower than 
+               the value returned by the coding_end method.  
+               The value returned by this function is NOT the biological 
+               coding start since on the reverse strand the biological coding 
+               start would be the higher genomic value. 
   Returntype : int
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub coding_start {
+sub coding_region_start {
   my ($self, $value) = @_;
 
   if( defined $value ) {
-    $self->{'coding_start'} = $value;
-  } elsif(!defined $self->{'coding_start'} && defined $self->translation) {
+    $self->{'coding_region_start'} = $value;
+  } elsif(!defined $self->{'coding_region_start'} && 
+	  defined $self->translation) {
     #calculate the coding start from the translation
     my $start;
     my $strand = $self->translation()->start_Exon->strand();
@@ -608,40 +604,41 @@ sub coding_start {
       $start = $self->translation()->end_Exon->end();
       $start -= ( $self->translation()->end() - 1 );
     }
-    $self->{'coding_start'} = $start;
+    $self->{'coding_region_start'} = $start;
   }
 
-  return $self->{'coding_start'};
+  return $self->{'coding_region_start'};
 }
 
 
 
-=head2 coding_end
+=head2 coding_region_end
 
   Arg [1]    : (optional) $value
-  Example    : $coding_end = $transcript->coding_end
+  Example    : $coding_region_end = $transcript->coding_region_end
   Description: Retrieves the start of the coding region of this transcript
                in genomic coordinates (i.e. in either slice or contig coords).
-               By convention, the coding_end is always higher than the value
-               returned by the coding_start method.  The value returned by this
-               function is NOT the biological coding start since on the 
-               reverse strand the biological coding end would be the 
-               lower genomic value.
+               By convention, the coding_region_end is always higher than the 
+               value returned by the coding_region_start method.  
+               The value returned by this function is NOT the biological 
+               coding start since on the reverse strand the biological coding 
+               end would be the lower genomic value.
   Returntype : int
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub coding_end {
+sub coding_region_end {
   my ($self, $value ) = @_;
 
   my $strand;
   my $end;
 
   if( defined $value ) {
-    $self->{'coding_end'} = $value;
-  } elsif( ! defined $self->{'coding_end'} && defined $self->translation() ) {
+    $self->{'coding_region_end'} = $value;
+  } elsif( ! defined $self->{'coding_region_end'} 
+	   && defined $self->translation() ) {
     $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
       $end = $self->translation()->end_Exon->start();
@@ -650,10 +647,10 @@ sub coding_end {
       $end = $self->translation()->start_Exon->end();
       $end -= ( $self->translation()->start() - 1 );
     }
-    $self->{'coding_end'} = $end;
+    $self->{'coding_region_end'} = $end;
   }
 
-  return $self->{'coding_end'};
+  return $self->{'coding_region_end'};
 }
 
 
@@ -956,14 +953,18 @@ sub get_all_SNPs {
 	if($snp->end >= $e->start && $snp->start <= $e->end) {
 	  #this snp is in an exon
 
-	  if(($trans_strand == 1 && $snp->end < $transcript->coding_start) ||
-	  ($trans_strand == -1 && $snp->start > $transcript->coding_end)) {
+	  if(($trans_strand == 1 && 
+	      $snp->end < $transcript->coding_region_start) ||
+	     ($trans_strand == -1 && 
+	      $snp->start > $transcript->coding_region_end)) {
 	    #this snp is in the 5' UTR
 	    $key = 'five prime UTR';
 	  }
 
-	  elsif(($trans_strand == 1 && $snp->start > $transcript->coding_end)||
-	     ($trans_strand == -1 && $snp->end < $transcript->coding_start)) {
+	  elsif(($trans_strand == 1 && 
+		 $snp->start > $transcript->coding_region_end)||
+		($trans_strand == -1 && 
+		 $snp->end < $transcript->coding_region_start)) {
 	    #this snp is in the 3' UTR
 	    $key = 'three prime UTR';
 	  }
@@ -1093,8 +1094,8 @@ sub get_all_cdna_SNPs {
 sub flush_Exons{
    my ($self,@args) = @_;
    $self->{'_exon_coord_mapper'} = undef;
-   $self->{'coding_start'} = undef;
-   $self->{'coding_end'} = undef;
+   $self->{'coding_region_start'} = undef;
+   $self->{'coding_region_end'} = undef;
    $self->{'_start'} = undef;
    $self->{'_end'} = undef;
    $self->{'_strand'} = undef;
@@ -1866,6 +1867,50 @@ sub species {
   
   return $self->{species};
 }
+
+
+
+=head2 coding_start
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use coding_region_start instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub coding_start {
+  my ($self, @args) = @_;
+
+  $self->warn("coding_start has been renamed coding_region_start\n" . 
+	      join(':'. caller));
+
+  return $self->coding_region_start(@args);
+}
+
+
+=head2 coding_end
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use coding_region_end instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub coding_end {
+  my ($self, @args) = @_;
+
+  $self->warn("coding_end has been renamed coding_region_end\n" . 
+	      join(':',caller));
+
+  return $self->coding_region_end(@args);
+}
+
 
 
 1;

@@ -491,8 +491,8 @@ sub _objects_from_sth {
     my $transcript = Bio::EnsEMBL::Transcript->new();
     $transcript->adaptor( $core_db_adaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
-    $transcript->coding_start( $coding_start );
-    $transcript->coding_end( $coding_end );
+    $transcript->coding_region_start( $coding_start );
+    $transcript->coding_region_end( $coding_end );
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->type( $hr->{ 'type' } );
     $transcript->external_status( $hr->{'external_status'} );
@@ -831,8 +831,8 @@ sub store {
 
     $sth->execute( $gene->source(), $gene->analysis()->logic_name(),
 		   $gene->type, $tr->dbID(), $tr->stable_id, $gene->chr_name,
-		   $tr->start(), $tr->end(), $gene->strand(), $tr->coding_start(),
-		   $tr->coding_end(), $tr->translation->dbID(), 
+		   $tr->start(), $tr->end(), $gene->strand(), $tr->coding_region_start(),
+		   $tr->coding_region_end(), $tr->translation->dbID(), 
 		   $tr->translation->stable_id(), $gene->dbID(), $gene->stable_id(),
 		   $exon_structure, $exon_ids, $tr->external_db(), $tr->external_status(),
 		   $tr->external_name() );
