@@ -43,7 +43,7 @@ my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
+
 use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 #use vars qw(@ISA @EXPORT_OK);
 #@ISA = qw(Exporter);
@@ -215,7 +215,7 @@ sub load_core{
 		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
 		 'ProteinAlignFeature'  =>
 		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+		 'SNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
 		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
 		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
 		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
@@ -242,34 +242,19 @@ sub load_core{
 
 
 sub load_lite{
-  my ($dba) = @_;
-
-#  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
-
-  eval "require Bio::EnsEMBL::Lite::SNPAdaptor";
-
-  my $adap = Bio::EnsEMBL::Lite::SNPAdaptor->new($dba);
-
-  my $prim_adap = Bio::EnsEMBL::DBSQL::ProxySNPAdaptor->new($dba,$adap);
-
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $dba->group, $adap);
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "ProxySNP", $prim_adap);
-
+    my ($dba) = @_;
+  
+  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
+    
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", "Bio::EnsEMBL::Lite::SNPAdaptor" );
 }
 
 sub load_SNP{
   my ($dba) = @_;
-#  require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor;
-  require Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor;
-
-#  eval "require Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor";
-  my $adap = Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor->new($dba);
-  my $prim_adap = Bio::EnsEMBL::DBSQL::ProxySNPAdaptor->new($dba,$adap);
-
-
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", $adap);
-
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "ProxySNP", $prim_adap);
+  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
+    
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, "SNP", 
+				      "Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor" );
 }
 
 sub attach_database{
@@ -296,13 +281,11 @@ sub attach_dna{
 
 
 sub load_blast{
-  my ($dba) = @_;
+    my ($dba) = @_;
 
-  eval "require Bio::EnsEMBL::External::BlastAdaptor";
-
-  my $objadap = Bio::EnsEMBL::External::BlastAdaptor->new($dba);
-
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', $objadap);
+  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
+  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', 
+				      "Bio::EnsEMBL::External::BlastAdaptor");
 }
 
 
@@ -540,17 +523,9 @@ sub load_hive{
 
 sub load_go{
 
- my ($class, @args) = @_;
+ my ($class, $dba) = @_;
 
- my ($species) = rearrange([qw(SPECIES)],@args);
-
- require Bio::EnsEMBL::ExternalData::GO::GOAdaptor;
- 
- my $adap = new Bio::EnsEMBL::ExternalData::GO::GOAdaptor(@args);
- Bio::EnsEMBL::Registry->add_alias($species,$species);
-
- #not a dba adaptor but stored as one
- Bio::EnsEMBL::Registry->add_DBAdaptor($species,"go",$adap );
+ # shouldnt go into the registry ... sorry
 }
 
 

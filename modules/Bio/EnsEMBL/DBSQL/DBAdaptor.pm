@@ -259,52 +259,6 @@ sub get_db_adaptor {
   return Bio::EnsEMBL::Registry->get_db($self, $name);
 }
 
-sub get_SNPAdaptor {
-  my ($self)  = @_;
- 
-  my $primary_adaptor;
-  # try new method
-  my $new = 0;
-  $primary_adaptor = $reg->get_adaptor($self->species(),'lite','SNP');
-  if(defined($primary_adaptor)){
-    $new = 1;
-  }
-  else{
-    $primary_adaptor = $reg->get_adaptor($self->species(),'SNP','SNP');
-    if(defined($primary_adaptor)){
-      $new = 1;
-      $primary_adaptor->ensembl_db( $self );
-    }
-  }
-  if($new){ # found a primary adaptor
-    my $ret = $self->get_adaptor("ProxySNP");
-    $ret->set_primary($primary_adaptor);
-    return $ret;
- }
-
-  my $lite = $self->get_db_adaptor('lite'); #### use register directly here
-
-
-  if($lite) {
-    $primary_adaptor = $lite->get_SNPAdaptor();
-  } else {
-    my $snp = $self->get_db_adaptor('SNP');
-  
-    unless($snp) {
-      warn("No lite or SNP database, cannot get snp adaptor");
-      return undef;
-    }
-
-    $primary_adaptor = $snp->get_SNPAdaptor();
-    $primary_adaptor->ensembl_db( $self );
-  }
-
-  #return a proxy adaptor which can use the lite or the core database
-  my $ret = $self->get_adaptor("ProxySNP");
-  $ret->set_primary($primary_adaptor);
-  return $ret;
-#  return $self->get_adaptor("ProxySNP", $primary_adaptor);
-}
 
 
 ###########################################################

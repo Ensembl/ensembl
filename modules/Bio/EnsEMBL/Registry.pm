@@ -125,38 +125,34 @@ $registry_register{'_WARN'} = 0;
 =cut
  
 sub load_all{
-  my $class = shift;
-  my $web_reg = shift;
+    my $class = shift;
+    my $web_reg = shift;
 
-  #$registry_register{'_WARN'} = 0; # default report overwriting
-  if(!defined($registry_register{'seen'})){
-    $registry_register{'seen'}=1;
-    if(defined($web_reg)){
-#      print STDERR  "Loading conf from site defs file ".$web_reg."\n";
-      if(-e $web_reg){
-	unless (my $return = do $web_reg ){
-	  throw "Error in Configuration\n $!\n";
+    #$registry_register{'_WARN'} = 0; # default report overwriting
+    if(!defined($registry_register{'seen'})){
+	$registry_register{'seen'}=1;
+	if(defined($web_reg)){
+	    print STDERR  "Loading conf from site defs file ".$web_reg."\n";
+	    if(-e $web_reg){
+		unless (my $return = do $web_reg ){
+		    throw "Error in Configuration\n $!\n";
+		}
+		# other wise it gets done again by the web initialisation stuff
+		delete $INC{$web_reg}; 
+	    }
 	}
-	# other wise it gets done again by the web initialisation stuff
-	delete $INC{$web_reg}; 
-      }
+	elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
+	    print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
+	    unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
+		throw "Error in Configuration\n $!\n";
+	    }
+	}
+	elsif(-e $ENV{HOME}."/.ensembl_init"){
+	    do($ENV{HOME}."/.ensembl_init");
+	}
+	print STDERR "NO default configuration to load\n";
     }
-    elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-#      print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
-      unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
-	throw "Error in Configuration\n $!\n";
-      }
-    }
-    elsif(-e $ENV{HOME}."/.ensembl_init"){
-      do($ENV{HOME}."/.ensembl_init");
-    }
-#    else{
-#      print STDERR "NO default configuration to load\n";
-#    }
-  }
-#  else{
-#    print STDERR "Already configured???\n";
-#  }
+    print STDERR "Already configured???\n";
 }
 
 #=head2 check_if_already_there

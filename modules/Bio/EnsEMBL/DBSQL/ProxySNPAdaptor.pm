@@ -2,9 +2,6 @@
 #
 # Copyright EMBL-EBI 2002
 #
-# Author: Graham McVicker
-# 
-# Date : 05.08.2002
 #
 
 =head1 NAME
@@ -21,110 +18,73 @@ need for this class.
 
 =head1 CONTACT
 
-  Arne Stabenau: stabenau@ebi.ac.uk
-  Ewan Birney  : birney@ebi.ac.uk
-  Graham McVicker : mcvicker@ebi.ac.uk
+  Post questions to the Ensembl development list <ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
+=head1 METHODS
 
 =cut
 
 use strict;
 
 package Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
-use Bio::EnsEMBL::DBSQL::ProxyAdaptor;
 
-use vars '@ISA';
+use vars ('@ISA', '$AUTOLOAD');
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::ProxyAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-sub set_primary{
-  my ($self, $primary_adaptor) = @_;
 
-#
-# For old style code i will have to add primary db later when get is called
-#
-  unless($primary_adaptor) {
-    throw("The primary_adaptor argument is required\n");
-    return undef;
-  }
-#  
-#  #determine the type of adaptor the proxy is filling in for
-  $self->{'_proxy_type'} = ref($primary_adaptor);
-#  
-  #strip out fully qualified package name
-  $self->{'_proxy_type'} =~ s/.*:://;
 
-  $self->{'_primary_adaptor'} = $primary_adaptor;
-#
-}
+=head2 AUTOLOAD
 
-=head2 fetch_by_Slice
-
-  Arg [1]    : list of arbitrary args @args
-  Example    : none
-  Description: Forwards request to the Lite database if it is available
-               If the lite database is not available the request is 
-               forwarded to the SNP database. 
-  Returntype : listref of Bio::EnsEMBL::ExternalData::Variation
-  Exceptions : thrown if neither the SNP nor Lite databases are available
-  Caller     : snpview
+  Arg [1]    : list of arbitrary values @args
+               a list of arguments to pass to the request method
+  Example    : -
+  Description: AUTOLOAD method should not be called directly.  It is called
+               implicitly when a method requested from this class cannot be
+               found. This method first tries to execute the requested method
+               in the primary adaptor.  If the method cannot be found then 
+               it searches the other attached databases for equivalent adaptors
+               and tries then one at a time.
+  Returntype : arbitrary
+  Exceptions : thrown if the requested method cannot be found on the primary
+               adaptor or on any of the attached databases.
+  Caller     : called implicitly by perl
 
 =cut
 
-sub fetch_all_by_Slice {
-  my ($self, @args) = @_;
+sub AUTOLOAD {
+  my ($self, @args) =  @_;
+  
+  #determine the method which was called
+  my $method = $AUTOLOAD;
+  
+  #strip out fully qualified method name
+  $method =~ s/.*:://;
 
-  my $lite_db = Bio::EnsEMBL::Registry->get_db($self->db(),'lite');#$self->db()->get_db_adaptor('lite');
-  my $snp_db = Bio::EnsEMBL::Registry->get_db($self->db(),'SNP'); #$self->db()->get_db_adaptor('SNP');
 
-  if(defined $lite_db) {
-    #use the Lite database if it is available
-    my $lite_adaptor =  Bio::EnsEMBL::Registry->get_adaptor( 
-                          $lite_db->species, $lite_db->group ,"lite");
-    return $lite_adaptor->fetch_all_by_Slice(@args);
-  } elsif(defined $snp_db) {
-    #use the snp database if it is available
-    my $snp_adaptor =  Bio::EnsEMBL::Registry->get_adaptor( 
-			  $snp_db->species, $snp_db->group ,"SNP");   
-    return $snp_adaptor->fetch_all_by_Slice(@args);
+  my $lite_db = Bio::EnsEMBL::Registry->get_db($self->db(),'lite');
+  my $snp_db = Bio::EnsEMBL::Registry->get_db($self->db(),'SNP');
+  
+  #
+  # First try the primary adaptor
+  #
+  if( defined $lite_db ) {
+      my $snp_adaptor = $lite_db->get_SNPAdaptor();
+      if($snp_adaptor->can($method)) {
+	  return $snp_adaptor->$method(@args);
+      } 
+  }
+  
+  my $snp_adaptor = $snp_db->get_SNPAdaptor();
+  if($snp_adaptor->can($method)) {
+      return $snp_adaptor->$method(@args);
   }
 
-  #There is no core SNPAdaptor so throw an exception if lite and SNP
-  #databases are unavailable
-  $self->throw("Lite and SNP databases are unavailable. " .
-	       "Unable to create SNP adaptor");
 
-  return undef;
+  throw("The requested method $method could not be found in lite or snp" );
 }
-
-
-=head2 fetch_by_SNP_id
-
-  Arg [1]    : list of arbitrary args @args
-  Example    : none
-  Description: Forwards request to the Lite database if it is available
-               If the lite database is not available the request is 
-               forwarded to the SNP database. 
-  Returntype : Bio::EnsEMBL::ExternalData::Variation
-  Exceptions : thrown if neither the SNP nor Lite databases are available
-  Caller     : snpview
-
-=cut
-
-sub fetch_by_SNP_id {
-  my ($self, @args) = @_;
-
-  my $snp_db = $self->db()->get_db_adaptor('SNP');
-
-  if(defined $snp_db) {
-    return $snp_db->get_SNPAdaptor()->fetch_by_SNP_id(@args);
-  }
-
-  $self->throw("SNP database unavailable. Unable to create SNP adaptor");
-}
-
 
 
 1;
