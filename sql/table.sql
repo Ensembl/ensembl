@@ -81,6 +81,7 @@ CREATE TABLE contigoverlap (
   overlap_type          enum('right2left','left2right','left2left','right2right'),
   
   PRIMARY KEY (dna_a_id,dna_b_id,type),
+  KEY dna_b_dna_a(dna_b_id,dna_a_id),
   KEY (type)
 );
 
