@@ -167,6 +167,10 @@ sub _initialize {
 	  $self->add_ExternalFeatureFactory($external_f);
       }
   }
+
+  $self->dbname( $db );
+  $self->username( $user );
+  $self->host( $host );
   
   # Store info for connecting to a mapdb.
   {
@@ -186,6 +190,30 @@ sub _initialize {
 
 
 }
+
+# only the get part of the 3 functions should be considered public
+
+sub dbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    $self->{_dbname} = $arg;
+  $self->{_dbname};
+}
+
+sub username {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    $self->{_username} = $arg;
+  $self->{_username};
+}
+
+sub host {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    $self->{_host} = $arg;
+  $self->{_host};
+}
+
 
 =head2 get_Update_Obj
 
@@ -2231,11 +2259,12 @@ sub deleteObj {
   $self->DESTROY;
   
   foreach my $name ( keys %{$self} ) {
-    eval {$dummy = $self->{$name}; 
-          $dummy->deleteObj;
+    eval {
+      $dummy = $self->{$name}; 
+      $self->{$name}  = undef;
+      $dummy->deleteObj;
     };
-    delete $self->{$name};
-   }
+  }
 }
 
 
