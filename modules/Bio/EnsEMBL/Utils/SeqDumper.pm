@@ -333,7 +333,15 @@ sub dump_genbank {
   $: = " \t\n-,";
 
   my $GENBANK_HEADER = 
-'^<<<<<<<<<  ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~~
+'^<<<<<<<<<  ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~~
+';
+
+  my $GENBANK_SUBHEADER =
+'  ^<<<<<<<  ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~~
+';
+
+  my $GENBANK_FT =
+'     ^<<<<<<<<<<<<<< ^<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<~~
 ';
 
   my $id = $slice->name;
@@ -341,13 +349,13 @@ sub dump_genbank {
 
   my ($name_str, $start, $end);
   if($slice->isa('Bio::EnsEMBL::Slice')) {
-    my $name_str  = "chromosome " . $slice->chr_name;
-    my $start = $slice->chr_start;
-    my $end  = $slice->chr_end;
+    $name_str  = "chromosome " . $slice->chr_name;
+    $start = $slice->chr_start;
+    $end  = $slice->chr_end;
   } else {
-    my $name_str = $slice->name;
-    my $start = 1;
-    my $end   = $slice->length();
+    $name_str = $slice->name;
+    $start = 1;
+    $end   = $slice->length();
   }
 
   my $date = $self->_date_string;
@@ -382,8 +390,8 @@ sub dump_genbank {
   #organism
   my @cls = $species->classification();
   shift @cls;
-  $self->write($FH, $GENBANK_HEADER, 'ORGANISM', $species->binomial);
-  $self->write($FH, $GENBANK_HEADER, '', join('; ', reverse @cls) . ".");
+  $self->write($FH, $GENBANK_SUBHEADER, 'ORGANISM', $species->binomial);
+  $self->write($FH, $GENBANK_SUBHEADER, '', join('; ', reverse @cls) . ".");
 
   #refereneces
 
@@ -396,9 +404,8 @@ sub dump_genbank {
   ####################
   # DUMP FEATURE TABLE
   ####################
-  $self->write($FH, $GENBANK_HEADER, 'FEATURES', 'LOCATION/QUALIFIERS');
-
-  $self->_dump_feature_table($slice, $FH, $GENBANK_HEADER);
+  print $FH "FEATURES             Location/Qualifiers\n";
+  $self->_dump_feature_table($slice, $FH, $GENBANK_FT);
 
 
   ####################
@@ -531,7 +538,7 @@ sub _dump_feature_table {
 
       $self->write(@ff, 'variation', "$ss..$se");
       $self->write(@ff, ''         , '/replace="'.$snp->alleles.'"'); 
-      $self->write(@ff, ''         , '/evidence="'.$snp->status.'"'); 
+      #$self->write(@ff, ''         , '/evidence="'.$snp->status.'"'); 
       foreach my $link ($snp->each_DBLink) {
 	my $id = $link->primary_id;
 	my $db = $link->database;
