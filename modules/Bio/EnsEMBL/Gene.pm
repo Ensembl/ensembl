@@ -563,7 +563,7 @@ sub display_xref {
 }
 
 
-=head2 recalculate_cordinates
+=head2 recalculate_coordinates
 
   Args       : none
   Example    : none
@@ -575,11 +575,9 @@ sub display_xref {
 
 =cut
 
-
-
-sub recalculate_cordinates {
+sub recalculate_coordinates {
   my $self = shift;
-  
+
   if( ! defined $self->{'_transcript_array'} ) {
     warning( "Cant recalculate position without transcripts" );
     return;
