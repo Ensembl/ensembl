@@ -88,8 +88,13 @@ sub _initialize {
   $self->_dbobj($dbobj);
 
   # construct and test the directory of the clone
-  my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$disk_id";
-  my $contig_dbm_file=$dbobj->{'_unfinished_root'}."/$cgp/unfinished_ana.dbm";
+  # slow (depricated - goes via links)
+  #my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$disk_id";
+  # fast (direct)
+  my $cgp_dir=$dbobj->{'_unfin_data_root_cgp'}->{$cgp};
+  my $clone_dir="$cgp_dir/data/$disk_id";
+  my $contig_dbm_file="$cgp_dir/unfinished_ana.dbm";
+
   unless(-d $clone_dir){
       $self->throw("Cannot find directory for $disk_id");
   }
