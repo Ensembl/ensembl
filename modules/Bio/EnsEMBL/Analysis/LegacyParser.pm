@@ -448,9 +448,9 @@ sub map_all{
 	    $transcript->add_Exon($self->{'_exon_hash'}->{$exon_id});
 	    push(@{$exon2transcript{$exon_id}},$transcript);
 	}
-	if(scalar($transcript->each_Exon())){
-	    $transcript->sort();
-	}
+	#if(scalar($transcript->each_Exon())){
+	#    $transcript->sort();
+	#}
     }
     # report missing exons, provided $clone not specified for speed.
     if($n_missed_exons && !$raclones){
