@@ -3,8 +3,9 @@
 # Creator: Arne Stabenau <stabenau@ebi.ac.uk>
 # Date of creation: 07.04.2000
 # Last modified : 09.04.2000 by Arne Stabenau
+# Last modified : 16.02.2003 by James Smith
 #
-# Copyright EMBL-EBI 2000
+# Copyright EMBL-EBI/WTSI 2000
 #
 # You may distribute this module under the same terms as perl itself
 # POD documentation - main docs before the code
@@ -15,14 +16,12 @@ Bio::EnsEMBL::Chromosome
 
 =head1 SYNOPSIS
 
-
 =head1 DESCRIPTION
 
 Contains very basic information of a chromosome and access methods
 for global features of a chromosome. It does not have the sequence or
 more detailed information - check out SliceAdaptor for that (you will
 want to make a slice of the chromosome)
-
     
 =head1 CONTACT 
 
@@ -34,7 +33,6 @@ The rest of the documentation details each of the object methods. Internal metho
     
 =cut
 
-
 # Let the code begin...
 
 package Bio::EnsEMBL::Chromosome;
@@ -44,18 +42,15 @@ use Bio::EnsEMBL::Root;
 
 @ISA = qw( Bio::EnsEMBL::Root );
 
-
+## Changes to new by James Smith - no longer takes statistics
+## on creation.. these get added later.
 =head2 new
 
   Args [...] : List of named arguments 
   Example    : $chr = new Chromosome(-chr_name      => $name,
                                      -dbID          => $dbID,
                                      -adaptor       => $adaptor,
-                                     -length        => $length,
-                                     -known_genes   => $known_genes,
-                                     -xref_genes    => $xref_genes,
-                                     -unknown_genes => $unknown_genes,
-                                     -snps          => $snps);
+                                     -length        => $length);
   Description: Creates a new chromosome object
   Returntype : Bio::EnsEMBL::Chromosome
   Exceptions : thrown if the adaptor or chr_name argument is not supplied
@@ -64,41 +59,23 @@ use Bio::EnsEMBL::Root;
 =cut
 
 sub new {
-    my ($class,@args) = @_;
-    
-    my $self = {};
+  my ($class,@args) = @_;
+  my $self = {};
+  bless($self, $class);
+   
+  my ( $chr_name, $chromosome_id, $adaptor, $length ) =
+    $self->_rearrange([qw(CHR_NAME DBID ADAPTOR LENGTH)], @args);
 
-    bless($self, $class);
-	 
-    my ( $chr_name, $chromosome_id, $adaptor, $length, 
-	 $known_genes, $xref_genes, $unknown_genes, $snps) = 
-	 $self->_rearrange([qw(CHR_NAME
-			       DBID
-			       ADAPTOR 
-			       LENGTH 
-			       KNOWN_GENES
-			       XREF_GENES
-			       UNKNOWN_GENES
-			       SNPS)], 
-			   @args);
+  $self->throw("Badly formed chromosome")
+    unless defined $chr_name && defined $adaptor;
 
-    if( !defined $chr_name || !defined $adaptor ) {
-      $self->throw("Badly formed chromosome");
-    }
-
-    $self->adaptor($adaptor);
-    $self->chr_name($chr_name);
-    $self->dbID($chromosome_id);
-    $self->unknown_genes($unknown_genes);
-    $self->length($length);
-    $self->xref_genes($xref_genes);
-    $self->known_genes($known_genes);
-    $self->snps($snps);
-
-    return $self;
+  $self->adaptor(  $adaptor       );
+  $self->chr_name( $chr_name      );
+  $self->dbID(     $chromosome_id );
+  $self->length(   $length        );
+  $self->{'stats'} ={};
+  return $self;
 }
-
-
 
 =head2 chr_name
 
@@ -112,15 +89,44 @@ sub new {
 =cut
 
 sub chr_name{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'chr_name'} = $value;
-    }
-    return $obj->{'chr_name'};
-
+  my( $self,$value ) = @_;
+         $self->{'chr_name'} = $value if  defined $value;
+  return $self->{'chr_name'};
 }
 
+=head2 stats
 
+  Arg [1]    : 
+  Example    : $obj->stats()
+  Description: returns hashref of additional statistics stored in Chromosome table
+  Returntype : hashref
+  Exceptions : none
+  Caller     : mapview
+
+=cut
+
+sub stats {
+   my $self = shift;
+   return %{$self->{'stats'}};
+}
+
+=head2 stat
+
+  Arg [1]    : Name of attribute to set
+  Arg [2]    : Optional value to set to...
+  Example    : $obj->stat( $value)
+  Description: get/set for a statistic...
+  Returntype : number
+  Exceptions : none
+  Caller     : mapview
+
+=cut
+
+sub stat {
+  my( $self, $key, $value ) = @_;
+         $self->{'stats'}{$key} = $value if defined $value;
+  return $self->{'stats'}{$key};
+}
 
 =head2 adaptor
 
@@ -134,11 +140,9 @@ sub chr_name{
 =cut
 
 sub adaptor {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'adaptor'} = $value;
-    }
-    return $obj->{'adaptor'};
+  my( $self,$value ) = @_;
+         $self->{'adaptor'} = $value if defined $value;
+  return $self->{'adaptor'};
 }
 
 
@@ -156,11 +160,7 @@ sub adaptor {
 
 sub dbID {
   my ($self, $value) = @_;
-
-  if(defined $value) {
-    $self->{'_dbID'} = $value;
-  }
-
+         $self->{'_dbID'} = $value if defined $value;
   return $self->{'_dbID'};
 }
 
@@ -180,109 +180,15 @@ sub dbID {
 
 sub length {
   my ($self, $length) = @_;
-
-  if(defined $length) {
-    $self->{'length'} = $length;
-  }
-
+         $self->{'length'} = $length if defined $length;
   return $self->{'length'};
 }
 
-
-
-=head2 xref_genes
-
-  Arg [1]    : int $number_of_xref_genes
-  Example    : none
-  Description: get/set for the attribute xref_genes, the number of xref genes
-               on this chromosome
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub xref_genes {
-  my ($self, $xref_genes) = @_;
-
-  if(defined $xref_genes) {
-    $self->{'xref_genes'} = $xref_genes;
-  }
-
-  return $self->{'xref_genes'};
-}
-
-=head2 known_genes
-
-  Arg [1]    : int $number_of_known_genes
-  Example    : none
-  Description: get/set for the attribute known_genes, the number of known genes
-               on this chromosome
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub known_genes {
-  my ($self, $known_genes) = @_;
-
-  if(defined $known_genes) {
-    $self->{'known_genes'} = $known_genes;
-  }
-
-  return $self->{'known_genes'};
-}
-
-
-
-=head2 unknown_genes
-
-  Arg [1]    : int $number_of_unknown_genes
-  Example    : none
-  Description: get/set for the attribute unknown_genes, the number of unknown 
-               genes on this chromosome
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub unknown_genes {
-  my ($self, $unknown_genes) = @_;
-  
-  if(defined $unknown_genes) {
-    $self->{'unknown_genes'} = $unknown_genes;
-  }
-
-  return $self->{'unknown_genes'};
-}
-
-			    
-
-=head2 snps
-
-  Arg [1]    : int $number_of_snps
-  Example    : none
-  Description: get/set for the attribute snps. The SNP count 
-               on this chromosome
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub snps {
-  my($self, $snps) = @_;
-
-  if(defined $snps) {
-    $self->{'snps'} = $snps;
-  }
-
-  return $self->{'snps'}
-}
-
-
+## Deprecated calls - these should now use "stat"
+sub xref_genes    { return $_[0]->stat('xref_genes'); }
+sub known_genes   { return $_[0]->stat('known_genes'); }
+sub unknown_genes { return $_[0]->stat('unknown_genes'); }
+sub snps          { return $_[0]->stat('snps'); }
 
 =head2 chromosome_id
 
@@ -297,16 +203,11 @@ sub snps {
 
 sub chromosome_id {
   my ($self, $id ) = @_;
-
   my ($package, $filename, $line) = caller();
-
-  $self->warn("Chromosome::chromosome_id is deprecated, use Chromosome::dbID 
-              instead\n line:$line package:$package filename:$filename");
-
+  $self->warn(qq(Chromosome::chromosome_id is deprecated, use Chromosome::dbID instead\n
+    line:$line package:$package filename:$filename));
   return $self->dbID($id);
 }
-
-
 
 =head2 get_landmark_MarkerFeatures
 
@@ -321,16 +222,15 @@ sub chromosome_id {
 =cut
 
 sub get_landmark_MarkerFeatures{
-   my ($self,@args) = @_;
-
-   $self->warn("Chromosome::get_landmark_MarkerFeatures is deprecated. \n" .
-	       "Use Slice::get_landmark_MarkerFeatures instead\n");
-
-   return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
+  my ($self,@args) = @_;
+  $self->warn(qq(Chromosome::get_landmark_MarkerFeatures is deprecated. 
+    Use Slice::get_landmark_MarkerFeatures instead));
+  return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
 }
 
 
 1;
+
 
 
 

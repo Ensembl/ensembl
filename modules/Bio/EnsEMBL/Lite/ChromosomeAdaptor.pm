@@ -35,9 +35,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::EnsEMBL::Lite::ChromosomeAdaptor;
 use vars qw(@ISA);
@@ -51,8 +49,6 @@ use Bio::EnsEMBL::Chromosome;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 # new inherited from BaseAdaptor
-
-
 
 =head2 fetch_by_dbID
 
@@ -72,57 +68,28 @@ use Bio::EnsEMBL::Chromosome;
 sub fetch_by_dbID {
   my ($self,$id) = @_;
 
-  my $chr = (); 
-
-  unless(defined $id) {
-    $self->throw("Chromosome dbID argument required\n");
-  }
+  $self->throw("Chromosome dbID argument required\n") unless defined $id;
 
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
     $self->{'_chr_name_cache'} = {};
   }
 
-  #
   # If there is not already a cached version of this chromosome pull it
-  # from the database and add it to the cache.
-  #
-  unless($chr = $self->{'_chr_cache'}->{$id}) {
-    my $sth = $self->prepare( "SELECT name, known_genes, unknown_genes, xref_genes, 
-                                      snps, length
-                               FROM chromosome
-                               WHERE chromosome_id = ?" );
-    $sth->execute( $id );
-    
-    my($name, $known_genes, $unknown_genes, $snps, $length, $xref_genes);
-    $sth->bind_columns(\$name,\$known_genes,\$unknown_genes,\$xref_genes, \$snps,\$length); 
-    $sth->fetch();
-   
-
-    if($@) {
-      $self->throw("Could not create chromosome from dbID $id\n" .
-		   "Exception: $@\n");
-    }
-
-    unless($name) {
-      $self->throw("Could determine chromosome name from dbID $id\n");
-    }
-
-    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-                                         -dbID => $id,
-					 -chr_name => $name,
-					 -known_genes => $known_genes,
-					 -xref_genes => $xref_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
-
-    $self->{'_chr_cache'}->{$id} = $chr;
-    $self->{'_chr_name_cache'}->{$name} = $chr;
-    
+  #     from the database and add it to the cache.
+  unless( $self->{'_chr_cache'}->{$id} ) {
+    my $sth;
+    eval {
+      $sth = $self->prepare( "SELECT * FROM chromosome WHERE chromosome_id = ?" );
+      $sth->execute( $id );
+    };
+    $self->throw("Could not create chromosome from dbID $id\nException: $@\n") if $@;
+    my $h = $sth->fetchrow_hashref();
+    $self->throw("Could determine chromosome name from dbID $id\n") unless $h;
+    $self->_create_object_from_hashref( $h );
   }
 
-  return $chr;
+  return $self->{'_chr_cache'}->{$id};
 }
 
 
@@ -139,50 +106,25 @@ sub fetch_by_dbID {
 =cut
 
 sub fetch_by_chr_name{
-   my ($self,$chr_name) = @_;
-
-  my $chr = undef; 
-
-  unless(defined $chr_name) {
-    $self->throw("Chromosome name argument required\n");
-  }
+  my ($self,$chr_name) = @_;
 
   unless(defined $self->{'_chr_cache'} ) {
     $self->{'_chr_cache'} = {};
     $self->{'_chr_name_cache'} = {};
   }
 
-  #
-  # If there is not already a cached version of this chromosome pull it
-  # from the database and add it to the cache.
-  #
-  unless($chr = $self->{'_chr_name_cache'}->{$chr_name}) {
-    my $sth = $self->prepare( "SELECT chromosome_id, known_genes, unknown_genes, xref_genes,
-                                      snps, length
-                               FROM chromosome
-                               WHERE name = ?" );
-    $sth->execute( $chr_name );
-    
-    my($name, $known_genes, $unknown_genes, $snps, $length, $xref_genes, $dbID);
-    $sth->bind_columns(\$dbID,\$known_genes,\$unknown_genes,\$xref_genes, \$snps,\$length); 
-
-    if ($sth->rows > 0) {
-    $sth->fetch();
-
-    $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -dbID => $dbID,
-					 -chr_name => $chr_name,
-					 -known_genes => $known_genes,
-					 -xref_genes => $xref_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
-
-    $self->{'_chr_cache'}->{$dbID} = $chr;
-    $self->{'_chr_name_cache'}->{$chr_name} = $chr;
+  unless($self->{'_chr_name_cache'}->{$chr_name}) {
+    my $sth;
+    eval {
+      $sth = $self->prepare( "SELECT * FROM chromosome WHERE name = ?" );
+      $sth->execute( $chr_name );
+    };
+    $self->throw("Could not create chromosome from chr $chr_name\nException: $@\n") if $@;
+    my $h = $sth->fetchrow_hashref();
+    $self->throw("Do not recognise chromosome $chr_name\n") unless $h;
+    $self->_create_object_from_hashref( $h );
   }
-  }
-  return $chr;
+  return $self->{'_chr_name_cache'}->{$chr_name};
 }
 
 
@@ -199,38 +141,27 @@ sub fetch_by_chr_name{
 
 sub fetch_all {
   my($self) = @_;
-  
   my @chrs = (); 
-
-
-    my $sth = $self->prepare( "SELECT chromosome_id, name, known_genes, xref_genes,
-                                      unknown_genes, snps, length
-                               FROM chromosome" );
-    $sth->execute();
-    
-    my($chromosome_id, $name, $known_genes, $unknown_genes, $xref_genes, $snps, $length);
-    $sth->bind_columns(\$chromosome_id,\$name,\$known_genes,\$xref_genes,
-                       \$unknown_genes,\$snps,\$length); 
-
-    while($sth->fetch()) {
-   
-    my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -chr_name => $name,
-					 -dbID => $chromosome_id,
-					 -known_genes => $known_genes,
-					 -xref_genes => $xref_genes,
-					 -unknown_genes => $unknown_genes,
-					 -snps => $snps,
-					 '-length' => $length );
-
-    $self->{'_chr_cache'}->{$chromosome_id} = $chr;
-    $self->{'_chr_name_cache'}->{$name} = $chr;
-    push @chrs, $chr;
-  }
-
+  my $sth = $self->prepare( "SELECT * from chromosome");
+     $sth->execute();
+  while( my $h = $sth->fetchrow_hashref() ) {
+    push @chrs, $self->_create_object_from_hashref( $h );
+  } 
   return \@chrs;
 }
 
+sub _create_object_from_hashref {
+  my( $self,$h ) =@_;
+  local $_;
+  my $chr = new Bio::EnsEMBL::Chromosome(
+    -adaptor  => $self,        -dbID   => $h->{'chromosome_id'},
+    -chr_name => $h->{'name'}, -length => $h->{'length'},
+  );
+  $chr->stat( $_, $h->{$_} ) foreach
+    ( grep { $_ ne 'chromosome_id' && $_ ne 'name' && $_ ne 'length' } keys %$h);
+  return $self->{'_chr_cache'     }->{$h->{'chromosome_id'}} = 
+         $self->{'_chr_name_cache'}->{$h->{'name'}         } = $chr ;
+}
 
 =head2 get_dbID_by_chr_name
 
@@ -258,19 +189,14 @@ sub get_dbID_by_chr_name {
     #get the chromo names and ids from the database
     my $sth = $self->prepare('SELECT name, chromosome_id FROM chromosome');
     $sth->execute();
-    
     #Construct the mapping of chromosome name to id
-    while(my $a = $sth->fetchrow_arrayref()) {
-      $self->{_chr_name_mapping}->{$a->[0]} = $a->[1];
+    while( my $a=fetchrow_arrayref() ) {
+      $self->{_chr_name_mapping}->{$a->[0]} = $a->[1] 
     }
   }
 
   return $self->{_chr_name_mapping}->{$chr_name};
 }    
-
-
-
-
 
 =head2 get_landmark_MarkerFeatures
 
@@ -284,54 +210,37 @@ sub get_dbID_by_chr_name {
 =cut
 
 sub get_landmark_MarkerFeatures{
-   my ($self,$chr_name,$glob) = @_;
+  my ($self,$chr_name,$glob) = @_;
+  $self->warn( qq(ChromosomeAdaptor::get_landmark_MarkerFeatures is deprecated use Slice::get_landmark_MarkerFeatures instead\n) );
 
-   $self->warn("ChromosomeAdaptor::get_landmark_MarkerFeatures is deprecated " 
-	       . "use Slice::get_landmark_MarkerFeatures instead\n");
+  $glob = 500000  unless defined $glob;
 
-   if( !defined $glob ) {
-       $glob = 500000;
-   }
-
-   my $statement= " SELECT  chr_start,
-			    chr_end,
-			    chr_strand,
-			    name 
-		    FROM    landmark_marker 
-		    WHERE   chr_name = '$chr_name'
-		    ORDER BY chr_start
-		";
+  my $statement= qq(
+    SELECT chr_start, chr_end, chr_strand, name
+      FROM landmark_marker 
+     WHERE chr_name = '$chr_name'
+     ORDER BY chr_start
+  );
    
-   $statement =~ s/\s+/ /g;
+  $statement =~ s/\s+/ /g;
    
-   my $sth = $self->prepare($statement);
-   $sth->execute;
+  my ($start, $end, $strand, $name);
+  my $sth = $self->prepare($statement);
+     $sth->execute;
+     $sth->bind_columns( undef, \$start, \$end,  \$strand, \$name);
    
-   my ($start, $end, $strand, $name);
-   
-   my $analysis;
-   my %analhash;
-   
-   $sth->bind_columns
-       ( undef, \$start, \$end,  \$strand, \$name);
-   
-   my @out;
-   my $prev;
-   while( $sth->fetch ) {
-       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {
-           next;
-       }
-
-       my $sf = Bio::EnsEMBL::SeqFeature->new();
-       $sf->start($start);
-       $sf->end($end);
-       $sf->strand($strand);
-       $sf->id($name);
-       push(@out,$sf);
-       $prev = $sf;
-   } 
-
-   return @out;
+  my @out;
+  my $sf;
+  while( $sth->fetch ) {
+    next if defined $sf && $sf->end + $glob > $end && $sf->id eq $name;
+    $sf = Bio::EnsEMBL::SeqFeature->new();
+    $sf->start(  $start  );
+    $sf->end(    $end    );
+    $sf->strand( $strand );
+    $sf->id(     $name   );
+    push @out, $sf;
+  } 
+  return @out;
 }
 
 
@@ -348,55 +257,9 @@ sub get_landmark_MarkerFeatures{
 
 sub get_landmark_MarkerFeatures_old{
    my ($self,$chr_name) = @_;
-
    my $glob = 1000;
    $self->throw( "Method deprecated. " );
-
    return ();
-
-#   my $statement= "   SELECT 
-#                       IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-1),
-#                              (sgp.chr_start+sgp.raw_end-f.seq_end-1)),                                        
-#                       IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-1),
-#                              (sgp.chr_start+sgp.raw_end-f.seq_start-1)), 
-#                              f.score, 
-#                       IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
-#                              f.name, f.hstart, f.hend, 
-#                              f.hid, f.analysis, c.name 
-#                       FROM   contig_landmarkMarker c,
-#                              static_golden_path sgp,
-#                              feature f
-#                       WHERE  f.contig = c.contig
-#                       AND    f.hid=c.marker  
-#                       AND    sgp.raw_id=f.contig 
-#                       AND    sgp.chr_name='$chr_name'";
-   
-#   $statement =~ s/\s+/ /g;
-   
-#   my $sth = $self->prepare($statement);
-#   $sth->execute;
-   
-#   my ($start, $end, $score, $strand, $hstart, 
-#       $name, $hend, $hid, $analysisid,$synonym);
-   
-#   my $analysis;
-#   my %analhash;
-   
-#   $sth->bind_columns
-#       ( undef, \$start, \$end, \$score, \$strand, \$name, 
-#	 \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
-   
-#   my @out;
-#   while( $sth->fetch ) {
-#       my $sf = Bio::EnsEMBL::SeqFeature->new();
-#       $sf->start($start);
-#       $sf->end($end);
-#       $sf->strand($strand);
-#       $sf->id($synonym);
-#       push(@out,$sf);
-#   } 
-
-#   return @out;
 }
 
 1;
