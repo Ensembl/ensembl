@@ -32,29 +32,37 @@ Proposed New/Modified Tables:
 -----------------------------
 
   seq_region
-  -------
+  ----------
   seq_region_id  int
   name           varchar
   coord_system   varchar (or maybe enum)
-  version	 varchar
-  default	 enum(true, false)
+  version	       varchar
+  default	       enum(true, false)
   length         int
+
+
+  seq_region_annotation
+  ---------------------
+  seq_region_id   int
+  attrib          enum(htg_phase)   (possibly varchar, more values needed)
+  value           varchar
+
 
   dna
   ---
   seq_region_id  int
-  sequence    varchar
+  sequence       varchar
 
 
   assembly
   --------
-  seq_region_id_assembled  int
-  seq_region_id_component  int
-  component_start          int
-  component_end            int
-  assembled_start          int
-  assembly_end             int
-  orientation              tinyint (or enum?)
+  asm_seq_region_id  int
+  asm_start          int
+  asm_end            int
+  cmp_seq_region_id  int
+  cmp_start          int
+  cmp_end            int
+  ori                tinyint (or enum?)
 
   gene
   ----
