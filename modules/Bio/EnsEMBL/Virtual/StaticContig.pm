@@ -275,6 +275,8 @@ sub get_all_SimilarityFeatures_above_score{
 
     if( ! defined $self->{'_feature_cache'} ) {
       &eprof_start('similarity-query');
+      print STDERR "STATIC SIM GET - doing query with $analysis_type\n";
+
 
       my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -289,8 +291,13 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name = '$chr_name'
                         AND    a.id = f.analysis
-                        ORDER  by start";
-    
+                        AND    f.score > $score
+                        AND    a.db in ('unigene.seq','sptr','embl_vertrna')
+                        ORDER  by f.hid,start";
+      #open(T,">>/tmp/stat.sql");
+      #print T $statement,"\n";
+      #close(T);
+
       my  $sth = $self->dbobj->prepare($statement);    
       $sth->execute(); 
     
@@ -310,52 +317,63 @@ sub get_all_SimilarityFeatures_above_score{
       my $out;
       my $length=$self->length;
   FEATURE: 
+      my $prev = undef;
+      
+      while($sth->fetch) {
+	  
+	  
+	  my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+	  
+	  if (($end > $length) || ($start < 1)) {
+	      next;
+	  }
 
-    while($sth->fetch) {
-
-	
-	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
-
-	if (($end > $length) || ($start < 1)) {
-	    next;
-	}
-	
-	
-	my $analysis=$self->_get_analysis($analysisid);
-	
-	if( !defined $name ) {
-	    $name = 'no_source';
-	}
-	
-	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
-
-	$out->analysis($analysis);
-        $out->id      ($hid);
-	if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
-	    $self->{'_feature_cache'}->{$analysis->db()} = [];
-	}
-
-	push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
-	$count++;
+	  if( defined $prev && $prev->hseqname eq $hid && $prev->end+$bp > $start ) {
+	      $prev->end($end);
+	      next;
+	  }
+	  
+	      
+	  my $analysis=$self->_get_analysis($analysisid);
+	  
+	  if( !defined $name ) {
+	      $name = 'no_source';
+	  }
+	  
+	  $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	  $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+			       $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+	  
+	  $out->analysis($analysis);
+	  $out->id      ($hid);
+	  if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
+	      $self->{'_feature_cache'}->{$analysis->db()} = [];
+	  }
+	  
+	  push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
+	  $prev = $out;
+	  $count++;
       }
-
+      
       &eprof_end('similarity-obj');
-
+      print STDERR "FEATURE COUNT $count ",$Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY," ", $Bio::EnsEMBL::FeatureFactory::ENSEMBL_EXT_LOADED,"\n";
+      
   }
-    # now extract requested features
-    print STDERR "FEATURE COUNT $count ",$Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY," ", $Bio::EnsEMBL::FeatureFactory::ENSEMBL_EXT_LOADED,"\n";
 
+    # now extract requested features
+    
     my @features;
     foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
-      
-      if( $feature->score() > $score ) {
-	push( @features, $feature );
-      } 
-    }
+	
+	if( $feature->score() > $score ) {
+	    push( @features, $feature );
+	} 
+   }
     
     return @features;
+
+   #return @{$self->{_feature_cache}->{$analysis_type}};
+
 }
 
 
@@ -1800,7 +1818,8 @@ sub get_all_VirtualGenes_startend
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
                        MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
+                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end, 
+                       IF (sgp.raw_ori=1,e.strand,(-e.strand)) 
             FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
             WHERE      sgp.raw_id=e.contig
             AND        e.contig in $idlist 
@@ -1823,8 +1842,8 @@ sub get_all_VirtualGenes_startend
     &eprof_start("virtualgene-build");
 
 				# 
-    my ($gene_id,$start,$end);	# 
-    $sth->bind_columns(undef,\$gene_id,\$start,\$end);
+    my ($gene_id,$start,$end,$strand);	# 
+    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand);
 
     while ($sth->fetch){
 	if( $end < 1 ) { 
@@ -1873,12 +1892,11 @@ sub get_all_VirtualGenes_startend
 
 	&eprof_end("virtualgene-externaldb");
 
-	my $genestr=1;
 	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,
 						-contig => $self, 
 						-start => $start, 
 						-end => $end, 
-						-strand => $genestr
+						-strand => $strand
 						);
 
 	push @genes,$vg;
