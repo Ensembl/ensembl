@@ -429,14 +429,38 @@ SELECT trlsi.*
 ### bug here: joining  int(10) to varchar(40), works but looses index : slow
 ### therefore, create a tmp table containing the mapping and indexes. 
 
+#     $sql="
+# SELECT distinct pf.*
+#   FROM $litedb.gene lg,
+#        $litedb.gene_prot lgp,
+#        $satdb.protein_feature pf
+#  WHERE lg.chr_name = '$chr'
+#    AND lg.gene = lgp.gene
+#    AND lgp.translation_id = pf.translation
+# ";
+
+    my $translidid = 'tmp_transl_id_string2int';
+    $sql="
+CREATE TABLE $translidid (as_string CHAR(40), as_int INT(10) unsigned);
+INSERT INTO $translidid(as_string) 
+  SELECT DISTINCT(translation) 
+  FROM protein_feature;
+UPDATE $translidid set as_int = as_string;
+ALTER TABLE $translidid ADD KEY(as_int);
+ALTER TABLE $translidid ADD KEY(as_string);
+";
+    create_tmp_table($sql, $translidid);
+
     $sql="
 SELECT distinct pf.*
   FROM $litedb.gene lg,
        $litedb.gene_prot lgp,
-       $satdb.protein_feature pf
+       $satdb.protein_feature pf,
+       $tmpdb.$translidid idid
  WHERE lg.chr_name = '$chr'
    AND lg.gene = lgp.gene
-   AND lgp.translation_id = pf.translation
+   AND lgp.translation_id = idid.as_int 
+   AND idid.as_string = pf.translation
 ";
     dump_data($sql, $satdb, 'protein_feature');
 
@@ -1145,7 +1169,7 @@ sub dump_schema {
 
 
 sub make_tmp_name { 
-    return "__embl_dump_tmpdb_$$";
+    return "__dump_by_chr_tmpdb_$$";
 }
 
 sub create_tmp_db {
