@@ -322,7 +322,8 @@ CREATE TABLE gene (
   gene_id   int unsigned not null auto_increment,
   type VARCHAR(40) not null,
   analysis_id int,
-     
+  transcript_count int not null,
+
   PRIMARY KEY (gene_id)
 );
 
@@ -413,7 +414,8 @@ CREATE TABLE transcript (
   transcript_id    INT UNSIGNED NOT NULL auto_increment,  
   gene_id          INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
   translation_id   INT UNSIGNED NOT NULL,          # foreign key translation:translation_id
-  
+  exon_count int not null,
+
   PRIMARY KEY (transcript_id),
   KEY gene_index (gene_id),
   KEY translation_index ( translation_id )		
