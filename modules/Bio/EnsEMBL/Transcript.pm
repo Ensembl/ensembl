@@ -897,11 +897,11 @@ sub get_all_SNPs {
   my $trans_start  = $flanking + 1;
   my $trans_end    = $slice->length - $flanking;
   my $trans_strand = $transcript->get_all_Exons->[0]->strand;
-warn ("TRANS_S:$trans_strand \t TRANS_ST:".$transcript->coding_region_start ."\t TRANS_EN:".$transcript->coding_region_end ."\n");
+
   #classify each snp
   foreach my $snp (@$snps) {
     my $key;
-warn ("SNP_ST:". $snp->start ." \tSNP_EN:". $snp->end ."\n");
+
     if(($trans_strand == 1 && $snp->end < $trans_start) ||
        ($trans_strand == -1 && $snp->start > $trans_end)) {
       #this snp is upstream from the transcript

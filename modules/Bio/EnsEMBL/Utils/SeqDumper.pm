@@ -644,6 +644,7 @@ sub _dump_feature_table {
       foreach my $exon (@{$gene->get_all_Exons}) {
 	$self->write(@ff,'exon', $self->features2location([$exon]));
 	$self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
+	
       }
     }
   }
