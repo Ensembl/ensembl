@@ -247,6 +247,9 @@ sub process_cds_delete {
     $transcript->move_cdna_coding_end(-$del_len);
 
     if($frameshift && !$entire_delete) {
+      print STDERR "BEFORE CDS INSERT:\n";
+      print_exon($exon, $transcript);
+
       $code |= StatMsg::FRAMESHIFT if($frameshift);
 
       # this is going to require splitting the exon
@@ -269,6 +272,14 @@ sub process_cds_delete {
 
       # very short exons can be entirely consumed by the intron 
       if($intron_len == $exon->length()) {
+        # still adjust this 0 length intron, because its length
+        # is used in transcript splitting calculations
+        $exon->cdna_end($exon->cdna_end - $intron_len);
+        if($exon->strand() == 1) {
+          $exon->end($exon->end - $intron_len);
+        } else {
+          $exon->start($exon->start + $intron_len);
+        }
         $code |= StatMsg::ALL_INTRON;
         $exon->fail(1);
       } 
@@ -304,6 +315,9 @@ sub process_cds_delete {
             $first_exon->end($first_exon->start() + $first_len - 1);
             $transcript->add_Exon($first_exon);
 
+            print STDERR "FIRST EXON:\n";
+            print_exon($first_exon, $transcript);
+
             $exon->cdna_start($first_exon->cdna_end() + 1);
             $exon->flush_StatMsgs();
           }
@@ -321,6 +335,9 @@ sub process_cds_delete {
             $first_exon->start($exon->end() - $first_len + 1);
             $transcript->add_Exon($first_exon);
 
+            print STDERR "FIRST EXON:\n";
+            print_exon($first_exon, $transcript);
+
             $exon->cdna_start($first_exon->cdna_end() + 1);
             $exon->flush_StatMsgs();
           }
@@ -330,6 +347,9 @@ sub process_cds_delete {
           $exon->cdna_end($exon->cdna_end - $intron_len);
         }
       }
+
+      print STDERR "AFTER CDS INSERT:\n";
+      print_exon($exon, $transcript);
     }
   }
 
@@ -348,18 +368,30 @@ sub process_cds_delete {
 }
 
 
+sub print_exon {
+  my $exon = shift;
+  my $tr = shift;
 
-#sub print_exon {
-  #my $exon = shift;
-#
-  #print "EXON:\n";
-  #print "cdna_start = ". $exon->cdna_start() . "\n";
-  #print "cdna_end   = ". $exon->cdna_end() . "\n";
-  #print "start             = ". $exon->start() . "\n";
-  #print "end               = ". $exon->end() . "\n";
-  #print "strand            = ". $exon->strand() . "\n\n";
+  if (!$exon) {
+    throw("Exon undefined");
+  }
 
-  #return;
-#}
+  print STDERR "EXON:\n";
+  print STDERR "  cdna_start = ". $exon->cdna_start() . "\n";
+  print STDERR "  cdna_end   = ". $exon->cdna_end() . "\n";
+  print STDERR "  start             = ". $exon->start() . "\n";
+  print STDERR "  end               = ". $exon->end() . "\n";
+  print STDERR "  strand            = ". $exon->strand() . "\n\n";
+
+  if($tr) {
+    print STDERR "TRANSCRIPT:\n";
+    print STDERR "  cdna_coding_start = ". $tr->cdna_coding_start() . "\n";
+    print STDERR "  cdna_coding_end   = ". $tr->cdna_coding_end(). "\n";
+  }
+
+  return;
+}
+
+
 
 1;

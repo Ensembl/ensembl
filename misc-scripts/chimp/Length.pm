@@ -8,6 +8,7 @@ use warnings;
 package Length;
 
 use StatMsg;
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use constant MEDIUM => 9;  # 8 or less is short
 use constant LONG   => 19; # 9-18 is medium, >18 is long
@@ -44,7 +45,9 @@ sub length2code {
   my $length = shift;
   return StatMsg::SHORT  if(is_short($length));
   return StatMsg::MEDIUM if(is_medium($length));
-  return StatMsg::LONG   if(is_medium($length));
+  return StatMsg::LONG   if(is_long($length));
+
+  throw("Could not resolve length code for length=$length");
 }
 
 

@@ -3,6 +3,10 @@ use warnings;
 
 package InterimTranscript;
 
+use Bio::EnsEMBL::Utils::Exception qw(warning);
+
+
+
 sub new {
   my $class = shift;
 
@@ -33,7 +37,9 @@ sub last_StatMsg {
 
 sub add_Exon {
   my $self = shift;
-  push @{$self->{'exons'}}, shift;
+  my $exon = shift;
+
+  push @{$self->{'exons'}}, $exon;
 }
 
 sub get_all_Exons {

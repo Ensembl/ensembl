@@ -4,7 +4,7 @@ use warnings;
 
 package InterimExon;
 
-use Bio::EnsEMBL::Utils::Exception qw(info);
+use Bio::EnsEMBL::Utils::Exception qw(info warning);
 
 use StatMsg;
 
@@ -143,7 +143,13 @@ sub end_phase {
 
 sub fail {
   my $self = shift;
-  $self->{'fail'} = shift if(@_);
+
+  if(@_) {
+    my $fail = shift;
+    warning("Setting ".$self->stable_id." to failed.\n") if($fail);
+    $self->{'fail'} = $fail;
+  }
+
   return $self->{'fail'};
 }
 

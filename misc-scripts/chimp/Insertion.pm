@@ -52,8 +52,8 @@ sub process_insert {
      $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
 
     info("insertion in cds ($insert_len)");
-    #print "BEFORE CDS INSERT:\n";
-    #print_exon($exon, $transcript);
+    print "BEFORE CDS INSERT:\n";
+    print_exon($exon, $transcript);
 
     $code |= StatMsg::CDS;
 
@@ -108,10 +108,12 @@ sub process_insert {
         # start the next exon after the frameshift intron
         $exon->end($exon->end() - ($first_len + $frameshift));
       }
+
+      $transcript->add_Exon($first_exon);
     }
 
-    #print "AFTER CDS INSERT:\n";
-    #print_exon($exon, $transcript);
+    print STDERR "AFTER CDS INSERT:\n";
+    print_exon($exon, $transcript);
 
   }
 
