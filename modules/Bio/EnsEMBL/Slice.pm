@@ -1230,9 +1230,10 @@ sub get_all_RepeatFeatures {
 
 =head2 get_all_LD_values
 
-    Args        : none
-    Description : returns all LD values on this slice. This fucntion will only work correctly if the variation
-                  database has been attached to the core database
+    Arg [1]     : (optional) int $population_id
+    Description : returns all LD values on this slice. This function will only work correctly if the variation
+                  database has been attached to the core database. If the argument is passed, will return the LD information
+                  in that population
     ReturnType  : Bio::EnsEMBL::Variation::LDFeatureContainer
     Exceptions  : none
     Caller      : contigview, snpview
@@ -1241,6 +1242,7 @@ sub get_all_RepeatFeatures {
 
 sub get_all_LD_values{
     my $self = shift;
+    my $population_id = shift;
     
     if(!$self->adaptor()) {
 	warning('Cannot get LDFeatureContainer without attached adaptor');
@@ -1258,7 +1260,7 @@ sub get_all_LD_values{
     my $ld_adaptor = $variation_db->get_LDFeatureContainerAdaptor;
 
   if( $ld_adaptor ) {
-    return $ld_adaptor->fetch_by_Slice($self);
+    return $ld_adaptor->fetch_by_Slice($self,$population_id);
 } else {
     return [];
 }
@@ -1369,6 +1371,7 @@ sub get_all_SNPs {
 }
 
 =head2 get_all_genotyped_SNPs
+
   Args      : none
   Function  : returns all genotyped SNPs on this slice. This function will 
               only work correctly if the SNP database or the lite database has
