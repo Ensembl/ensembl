@@ -175,7 +175,7 @@ if ($phase == 4) {
     $contig->name("$acc.$ver.1.$length");
     $contig->embl_offset(1);
     $contig->length($length);
-    $contig->seq($seq);
+    $contig->seq($seq->seq);
 
     print "Contig ", $contig->name, "\n";
     if ($verbose) {
@@ -206,7 +206,7 @@ else {
 	$contig->name($id);
 	$contig->embl_offset($offset);
 	$contig->length($length);
-	$contig->seq(new Bio::Seq(-id => $id, -seq =>$subseq));
+	$contig->seq($subseq);
 	$order++;
 
 	print "Contig ", $contig->name, "\n";
