@@ -615,13 +615,9 @@ sub attach_seq{
 
 =head2 seq
 
- Title   : seq
- Usage   : $tseq = $sf->seq()
- Function: returns the truncated sequence (if there) for this
- Example :
- Returns :
- Args    :
-
+ Example : $tseq = $sf->seq()
+ Function: returns the sequence (if any ) for this feature truncated to the range spanning the feature
+ Returns : a Bio::PrimarySeq object (I reckon)
 
 =cut
 
