@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..28\n"; 
+BEGIN { $| = 1; print "1..29\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -56,7 +56,7 @@ else {
 eval{
 my $gene = $gene_obj->get('blabla');
 };
-if ($@) {
+if ($@ =~ /Error\sretrieving\sgene\swith\sID\:\sblabla/) {
     print "ok 4\n";
 }
 else {
@@ -227,7 +227,7 @@ eval{
 
 my $exon = $gene_obj->get_Exon('these_tests_are_boring_to_write');
 };
-if ($@) {
+if ($@ =~ /No\sexon\sof\sthis\sid\sthese_tests_are_boring_to_write/) {
     print "ok 20\n";
 }
 else {
@@ -256,10 +256,11 @@ foreach my $feature ($exon->each_Supporting_Feature){
     }
 }
 
+my $transcript;
 eval{
-my $trans = $gene_obj->get_Transcript('these_tests_are_boring_to_write');
+    $transcript = $gene_obj->get_Transcript('these_tests_are_boring_to_write');
 };
-if ($@) {
+if ($@ =~ /transcript\sthese_tests_are_boring_to_write\sis\snot\spresent\sin\sdb/) {
     print "ok 23\n";
 }
 else {
@@ -269,8 +270,8 @@ gene_obj->get_Transcript did not throw an exception!\n";
 } 
 
 #Checking get method (correct use)
-my $gene = $gene_obj->get_Transcript('test_transcript_1');
-if ($gene->isa('Bio::EnsEMBL::Transcript')) {
+$transcript = $gene_obj->get_Transcript('test_transcript_1');
+if ($transcript->isa('Bio::EnsEMBL::Transcript')) {
     print "ok 24\n";
 }
 else {
@@ -278,10 +279,11 @@ else {
     print STDERR "Could not get the test transcript from the database!\n";
 }
 
+my $translation;
 eval{
-    my $translation = $gene_obj->get_Translation('these_tests_are_boring_to_write');
+    $translation = $gene_obj->get_Translation('these_tests_are_boring_to_write');
 };
-if ($@) {
+if ($@ =~ /no\stranslation\sof\sthese_tests_are_boring_to_write/) {
     print "ok 25\n";
 }
 else {
@@ -291,8 +293,8 @@ gene_obj->get_Transcript did not throw an exception!\n";
 } 
 
 #Checking get method (correct use)
-my $gene = $gene_obj->get_Translation('test_translation_1');
-if ($gene->isa('Bio::EnsEMBL::Translation')) {
+$translation = $gene_obj->get_Translation('test_translation_1');
+if ($translation->isa('Bio::EnsEMBL::Translation')) {
     print "ok 26\n";
 }
 else {
@@ -302,35 +304,46 @@ else {
 
 $gene_obj->delete_Exon('test_exon_1');
 #Checking if the exon has been really deleted
+my $exon;
 eval {
-    my $gene = $gene_obj->get_Exon('test_exon_1');
+    $exon = $gene_obj->get_Exon('test_exon_1');
 };
-if ($@) {
+if ($@ =~ /No\sexon\sof\sthis\sid\stest_exon_1/) {
     print "ok 27\n";
 }
 else {
     print "not ok 27\n";
     print STDERR "Exon still present after deleting!\n";
-} 
+}
 
-$gene_obj->delete($gene->id);
-#Checking if the gene has been really deleted
-eval {
-    my $gene = $gene_obj->get_Gene('test_gene');
-};
-
-if ($@) {
+$gene_obj->delete_Supporting_Evidence('test_exon_2');
+$exon=$gene_obj->get_Exon('test_exon_2');
+$gene_obj->get_supporting_evidence($exon);
+if (scalar $exon->each_Supporting_Feature == 0) {
     print "ok 28\n";
 }
 else {
     print "not ok 28\n";
+    print STDERR "Exon supporting evidence still present after deleting!\n";
+}
+$gene_obj->delete('test_gene');
+
+$gene = undef;
+#Checking if the gene has been really deleted
+eval {
+    $gene = $gene_obj->get('test_gene');
+};
+
+if ($@ =~ /Error\sretrieving\sgene\swith\sID\:\stest_gene/) {
+    print "ok 29\n";
+}
+else {
+    print "not ok 29\n";
     print STDERR "Gene still present after deleting!\n";
 } 
 
-
 #Methods still needed to test:
 
-#$gene_obj->delete_Exon;
 #$gene_obj->delete_Supporting_Evidence;
 
 #$gene_obj->get_geneids_by_hids;
