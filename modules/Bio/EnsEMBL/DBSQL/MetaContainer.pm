@@ -115,7 +115,7 @@ sub get_Species {
   } else {
     return undef;
   }
-  my @classification = list_value_by_key( 'species.classification' );
+  my @classification = $self->list_value_by_key( 'species.classification' );
   if( ! defined @classification ) {
     return undef;
   }
