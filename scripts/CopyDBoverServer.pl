@@ -67,13 +67,13 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs4:3350' => "/mysql-3350/databases",
 			       'ecs4:3351' => "/mysql-3351/databases",
 			       'ecs4:3352' => "/mysql-3352/databases",
-			       'ecs4:3353' => "/mysql-3353/databases");
+			       'ecs4:3353' => "/mysql-3353/databases",
+			       'ia64e:3306' => "/mysql/data_3306/databases");
 
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
 $generic_working_host =~ s/(ecs[1234]).*/$1/;
 my $working_dir = $ENV{'PWD'};
-my $copy_executable = "/usr/bin/cp";
 my %already_flushed;
 
 # parsing/checking the input file
@@ -132,6 +132,12 @@ close F;
 
 # starting copy processes
 foreach my $db_to_copy (@dbs_to_copy) {
+  my $copy_executable;
+  if (-e "/usr/bin/cp") {
+    $copy_executable = "/usr/bin/cp";
+  } elsif (-e "/bin/cp") {
+    $copy_executable = "/bin/cp";
+  }
   print STDERR "//
 // Starting new copy process
 //\n";
@@ -190,7 +196,7 @@ skipped copy of ".$db_to_copy->{src_db}." from ".$db_to_copy->{src_srv}." to ". 
 
   # cp the db to $destination_tmp_directory in the destination server
   my $copy_cmd;
-  if ($copy_executable eq "/usr/bin/cp") {
+  if ($copy_executable =~ /\/bin\/cp$/) {
     print STDERR "// cp Copying $db_to_copy->{src_srv}:$source_db...";
     $copy_cmd = "$copy_executable -r $source_db $destination_tmp_directory/$db_to_copy->{dest_db}";
     
