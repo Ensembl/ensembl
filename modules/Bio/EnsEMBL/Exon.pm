@@ -350,13 +350,13 @@ sub transform {
   my $slice = shift;
   my $mapper;
   if(( ! defined $slice ) &&
-     ( defined  $self->{'contig'}) &&
-     ( $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" )) ) {
+     ( defined  $self->contig ) &&
+     ( $self->contig->isa( "Bio::EnsEMBL::RawContig" )) ) {
     return $self;
   }
 
-  if( defined $self->{'contig'} and 
-      $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
+  if( defined $self->contig and 
+      $self->contig->isa( "Bio::EnsEMBL::RawContig" ) )  {
     $self->_transform_to_slice( $slice );
   } else {
     $self->_transform_to_rawcontig();
@@ -1539,7 +1539,7 @@ sub seq {
   my $self = shift;
   my $seq;
   #print STDERR " calling exon->seq\n";
-  if ( ! defined $self->{'contig'} ) {
+  if ( ! defined $self->contig ) {
     $self->warn(" this exon doesn't have a contig you won't get a seq \n");
     return undef;
   }
