@@ -67,7 +67,6 @@ while (defined(my $line = <PMATCH>)) {
 	}
 
 	push(@{ $hits{$qid}{$tid}{HITS} }, {
-		LENGTH	=> $length,
 		QSTART	=> $qstart,
 		QEND	=> $qend,
 		TSTART	=> $tstart,
@@ -81,54 +80,56 @@ unlink($pmatch_out);	# Get rid of pmatch output file
 foreach my $query (values(%hits)) {
 	foreach my $target (values(%{ $query })) {
 
-		# Sort the %hits hash on QSTART, then on TSTART.
-		@{ $target->{HITS} } =
-			sort { $a->{QSTART} <=> $b->{QSTART}  ||
-			       $a->{TSTART} <=> $b->{TSTART} }
-					@{ $target->{HITS} };
+		foreach my $c ('Q', 'T') {
 
-		# Figure out how long the query and target overlaps
-		# are.   This loop also calculates the total length of
-		# the hits and the overlaps.
+			my $overlap = 0;	# Total query overlap length
+			my $totlen = 0;		# Total hit length
 
-		my $qoverlap = 0;	# Total query overlap length
-		my $toverlap = 0;	# Total target overlap length
-		my $totlen = 0;		# Total hit length
+			my $gaps = 0;	# Number of gaps in the query
+					# Are these interesting?
 
-		my $qgaps = 0;	# Number of gaps in the query
-		my $tgaps = 0;	# Number of gaps in the target
-				# Are these interesting?
+			my @pair;
+			foreach my $hit (
+				sort { $a->{$c . 'START'} <=>
+				       $b->{$c . 'START'} }
+				@{ $target->{HITS} }) {
 
-		my @pair;
-		foreach my $hit (@{ $target->{HITS} }) {
-			$totlen += $hit->{LENGTH};
+				$totlen += $hit->{$c . 'END'} -
+					   $hit->{$c . 'START'} + 1;
 
-			shift(@pair) if (scalar(@pair) == 2);
-			push(@pair, $hit);
-			next if (scalar(@pair) != 2);
+				shift(@pair) if (scalar(@pair) == 2);
+				push(@pair, $hit);
+				next if (scalar(@pair) != 2);
 
-			my $overlap;
+				my $o = overlap([$pair[0]{$c . 'START'},
+						 $pair[0]{$c . 'END'}],
+						[$pair[1]{$c . 'START'},
+						 $pair[1]{$c . 'END'}]);
+				$overlap += $o;
 
-			$overlap =
-				overlap([$pair[0]{QSTART}, $pair[0]{QEND}],
-					[$pair[1]{QSTART}, $pair[1]{QEND}]);
-			$qoverlap += $overlap;
-			++$qgaps if ($overlap == 0); # ($overlap <= 1  ???)
+				++$gaps if ($o == 0); # ($o <= 1  ???)
+			}
 
-			$overlap =
-				overlap([$pair[0]{TSTART}, $pair[0]{TEND}],
-					[$pair[1]{TSTART}, $pair[1]{TEND}]);
-			$toverlap += $overlap;
-			++$tgaps if ($overlap == 0); # ($overlap <= 1  ???)
+			# Calculate the query and target identities
+			$target->{$c . 'IDENT'} =
+				100*($totlen - $overlap)/$target->{$c . 'LEN'};
+			$target->{$c . 'GAPS'}  = $gaps;
 		}
-
-		# Calculate the query and target identities
-		$target->{QIDENT} = 100*($totlen - $qoverlap)/$target->{QLEN};
-		$target->{TIDENT} = 100*($totlen - $toverlap)/$target->{TLEN};
-
-		$target->{QGAPS}  = $qgaps;
-		$target->{TGAPS}  = $tgaps;
 	}
 }
 
-print Dumper(\%hits);	# Produce debugging output
+printf("%8s%8s%8s%8s%8s%8s%8s%8s\n",
+	'QID', 'QLEN', 'QIDENT', 'QGAPS',
+	'TID', 'TLEN', 'TIDENT', 'TGAPS');
+
+while (my ($qid, $query) = each %hits) {
+	while (my ($tid, $target)  = each %{ $query }) {
+		printf("%8s%8d%8.3f%8d%8s%8d%8.3f%8d\n",
+			$qid, $target->{QLEN},
+			$target->{QIDENT}, $target->{QGAPS},
+			$tid, $target->{TLEN},
+			$target->{TIDENT}, $target->{TGAPS});
+	}
+}
+
+#print Dumper(\%hits);	# Produce debugging output
