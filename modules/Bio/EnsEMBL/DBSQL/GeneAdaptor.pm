@@ -55,7 +55,7 @@ my  $SLICE_GENE_CACHE_SIZE = 3;
 sub new {
   my($class, @args) = @_;
 
-  my $class = ref $class || $class;
+  $class = ref $class || $class;
 
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
