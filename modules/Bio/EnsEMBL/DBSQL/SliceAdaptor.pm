@@ -82,57 +82,39 @@ sub fetch_by_region {
   my ($self, $coord_system, $seq_region_name,
       $start, $end, $strand, $version) = @_;
 
-  #validate that this coordinate system exists
-  my $mc = $self->db->get_MetaContainer();
-  if(!$mc->is_valid_coord_system($coord_system)) {
-    throw("[$coord_system] is not a valid coord_system for this database. " .
-          "A coord_system key/value pair must be added to " .
-          "the meta table for this system to be valid");
-  }
+  my $csa = $self->db()->get_CoordSystemAdaptor();
 
   throw('seq_region_name argument is required') if(!$seq_region_name);
 
+  my $coord_sys_id;
+
+  # Validate that the coordsystem exists,
+  # Set the version to default if it was not provided
+  # Correct the case of the coord_system name/version:
+  ($coord_sys_id, $coord_system, $version) =
+    $csa->fetch_by_name($coord_system, $version);
+
   $self->{'_slice_cache'} ||= {};
 
-  my $sth = $self->prepare("SELECT length, version, default " .
+  my $sth = $self->prepare("SELECT length " .
                            "FROM seq_region " .
-                           "WHERE name = ? AND coord_system = ?");
+                           "WHERE name = ? AND coord_system_id = ?");
 
-  #force cast to string so mysql cannot treat as int
-  $sth->execute("$seq_region_name", "$coord_system");
+  #force seq_region_name cast to string so mysql cannot treat as int
+  $sth->execute("$seq_region_name", $coord_sys_id);
 
-  #
-  # Pick out a seqregion which is the default if no version was asked for
-  # or the one that matches the version if one was requested
-  #
-  my($length, $default, $v);
-  while(($length, $v, $default) = $sth->fetchrow_array()) {
-    if(defined($version)) {
-      last if($v eq $version);
-    } elsif($default) {
-      $version = $v;
-      last;
-    }
+  if($sth->rows() != 1) {
+    throw("Cannot create slice on non-existant or ambigous seq_region:" .
+          "  coord_system=[$coord_system],\n" .
+          "  name=[$seq_region_name],\n" .
+          "  version=[$version]");
   }
 
-  #throw if the row we were looking for didn't exist
-  if($v ne $version) {
-    if(defined($version)) {
-      throw("Cannot create slice on non-existant seq_region:\n" .
-            "  coord_system=[$coord_system],\n" .
-            "  name=[$seq_region_name],\n" .
-            "  version=[$version]");
-    } else {
-      throw("Cannot create slice.  No version was specified and default " .
-            "version does not exist for seq_region:\n" .
-            "  coord_system=[$coord_system],\n" .
-            "  name=[$seq_region_name]");
-    }
-  }
+  my ($length) = $sth->fetchrow_array();
 
   $start = 1 if(!defined($start));
   $strand = 1 if(!defined($strand));
-  $end = $length if(!defined($length));
+  $end = $length if(!defined($end));
 
   if($end < $start) {
     throw('start [$start] must be less than or equal to end [$end]');
@@ -157,16 +139,15 @@ sub fetch_by_region {
 =cut
 
 sub fetch_by_chr_start_end {
-    my ($self,$chr,$start,$end) = @_;
-    deprecate('Use fetch_by_region() instead');
+  my ($self,$chr,$start,$end) = @_;
+  deprecate('Use fetch_by_region() instead');
 
-    #assume that by chromosome the user actually meant top-level coord
-    #system since this is the old behaviour of this deprecated method
+  #assume that by chromosome the user actually meant top-level coord
+  #system since this is the old behaviour of this deprecated method
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my ($cs_id, $cs_name, $version) = $csa->get_top_coord_system();
 
-    my $mc = $self->db->get_MetaContainer();
-    my $top_level_cs = $mc->get_top_coord_system();
-
-    return $self->fetch_by_region($top_level_cs, $chr,$start,$end);
+  return $self->fetch_by_region($cs_name, $chr, $start, $end, 1, $version);
 }
 
 
