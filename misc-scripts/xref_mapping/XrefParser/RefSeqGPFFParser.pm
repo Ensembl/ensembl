@@ -41,7 +41,11 @@ sub run {
     $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
   }
 
-   XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($source_id, $file, $species_id));
+  my $peptide_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_peptide');
+  my $dna_source_id = XrefParser::BaseParser->get_source_id_for_source_name('RefSeq_dna');
+  print "RefSeq_peptide source ID = $peptide_source_id; RefSeq_dna source ID = $dna_source_id\n";
+
+   XrefParser::BaseParser->upload_xref_object_graphs(create_xrefs($peptide_source_id, $dna_source_id, $file, $species_id));
 
 }
 
@@ -54,7 +58,7 @@ sub run {
 
 sub create_xrefs {
 
-  my ($source_id, $file, $species_id) = @_;
+  my ($peptide_source_id, $dna_source_id, $file, $species_id) = @_;
 
   my %name2species_id =  XrefParser::BaseParser->name2species_id();
 
@@ -66,35 +70,39 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
-  my $type;
-  if($file =~ /protein/){
+  my ($type, $source_id);
+  if ($file =~ /protein/) {
+
     $type = 'peptide';
-  }
-  elsif($file =~ /rna/){
+    $source_id = $peptide_source_id;
+
+  } elsif ($file =~ /rna/) {
+
     $type = 'dna';
-  }
-  else{
-    die "Could not work out sequence type of sequences for $file\n";
+    $source_id = $dna_source_id;
+
+  } else{
+    die "Could not work out sequence type & source for $file\n";
   }
 
 
   while (<REFSEQ>) {
-    
+
     my $xref;
-    
+
     my $entry = $_;
     chomp $entry;
-    
+
     my ($species) = $entry =~ /\s+ORGANISM\s+(.*)\n/;
     $species = lc $species;
     $species =~ s/^\s*//g;
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
     my $species_id_check = $name2species_id{$species};
-    
+
     # skip xrefs for species that aren't in the species table
     if (defined ($species_id) and $species_id = $species_id_check) {
-      
+
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
       my ($ver) = $entry =~ /VERSION\s+(\S+)/;
       my ($description) = $entry =~ /DEFINITION\s+([^[]+)/s;
@@ -103,7 +111,7 @@ sub create_xrefs {
       $description =~ s/\n//g;
       $description =~ s/\s+/ /g;
       $description = substr($description, 0, 255) if (length($description) > 255);
-      
+
       my ($seq) = $_ =~ /ORIGIN\s+(.+)/s; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
       my $parsed_seq = "";
@@ -168,18 +176,20 @@ sub create_xrefs {
       }
 
       # Find associated mRNA
-      my ($mrna) = $entry =~ /DBSOURCE\s+REFSEQ:\s+accession (.*)\n/;
+      #my ($mrna) = $entry =~ /DBSOURCE\s+REFSEQ:\s+accession (.*)\n/;
+      #
+      #if($mrna){
+      #	 my %mrna_dep;
+      #	 $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
+      #	 $mrna_dep{LINKAGE_SOURCE_ID} = $source_id;
+      #	 my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
+      #
+      #	 $mrna_dep{ACCESSION} = $mrna_acc;
+      #	 $mrna_dep{VERSION} = $mrna_ver;
+      #	 push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
+      #}
 
-      if($mrna){
-        my %mrna_dep;
-        $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
-	$mrna_dep{LINKAGE_SOURCE_ID} = $source_id;
-        my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
 
-        $mrna_dep{ACCESSION} = $mrna_acc;
-        $mrna_dep{VERSION} = $mrna_ver;
-        push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
-      }
       push @xrefs, $xref;
 
     }# if defined species
