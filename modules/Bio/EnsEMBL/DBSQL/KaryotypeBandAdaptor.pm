@@ -156,6 +156,10 @@ sub fetch_all_by_chr_name {
 
     my $slice =
       $self->db->get_SliceAdaptor->fetch_by_region(undef, $chr_name);
+    unless ($slice){
+        warning("Cannot retrieve chromosome $chr_name");
+        return;
+    }
     return $self->fetch_all_by_Slice($slice);
 }
 
