@@ -1196,18 +1196,13 @@ sub write{
 			     $gene->modified . "),now())");
    $sth2->execute();
 
-   foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-       my $sth = $self->_db_obj->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
-       $sth->execute();
-       my $rowhash =  $sth->fetchrow_arrayref();
-       my  $rv = $sth->rows;
-       if( ! $rv ) {
-	   $sth = $self->_db_obj->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . 
-				 $gene->id . "','". 
-				 $cloneid ."')");
-	   $sth->execute();
-       }
+   foreach my $dbl ( $gene->each_DBLink ) {
+       my $sth3 = $self->_db_obj->prepare("insert into genedblink (gene_id,external_id,external_db) values ('". 
+			     $gene->id        . "','".
+			     $dbl->primary_id . "','".
+			     $dbl->database   . "')");
    }
+       
    return 1;
 }
 
@@ -1343,7 +1338,14 @@ sub write_Transcript{
         $trans->translation->id,
         $trans->version   
         );
-   
+
+   foreach my $dbl ( $trans->each_DBLink ) {
+       my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
+					  $trans->id        . "','".
+					  $dbl->primary_id . "','".
+					  $dbl->database   . "')");
+   }
+
    $self->write_Translation($trans->translation());
    return 1;
 }

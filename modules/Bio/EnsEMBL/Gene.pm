@@ -45,6 +45,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
+use Bio::Annotation::DBLink;
 
 
 @ISA = qw(Bio::Root::Object Bio::DBLinkContainerI);
@@ -63,6 +64,35 @@ sub _initialize {
 
 # set stuff in self from @args
   return $make; # success - we hope!
+}
+
+=head2 is_known
+
+ Title   : is_known
+ Usage   : if( $gene->is_known ) 
+ Function: returns true if there are any dblinks on the gene or transcript objects
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_known{
+   my ($self) = @_;
+   my @array;
+   @array = $self->each_DBLink();
+   if( scalar(@array) > 0 ) {
+       return 1;
+   }
+   foreach my $trans ( $self->each_Transcript ) {
+       @array = $trans->each_DBLink();
+       if( scalar(@array) > 0 ) {
+	   return 1;
+       }
+   }
+       
+   return 0;
 }
 
 

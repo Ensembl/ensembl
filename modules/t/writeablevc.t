@@ -104,6 +104,7 @@ die ("$0\nCan't create virtual contig :$!") unless defined ($wvc);
 
 $wvc->_dump_map(\*STDERR);
 
+
 print "ok 7\n";
 
 $gene = Bio::EnsEMBL::Gene->new();
@@ -112,6 +113,17 @@ $gene->version(1);
 $trans = Bio::EnsEMBL::Transcript->new();
 $trans->id('trans-id-1');
 $trans->version(1);
+
+$dbl = Bio::Annotation::DBLink->new();
+$dbl->database('embl');
+$dbl->primary_id('AC000012');
+$trans->add_DBLink($dbl);
+
+$dbl = Bio::Annotation::DBLink->new();
+$dbl->database('swissprot');
+$dbl->primary_id('P000012');
+$gene->add_DBLink($dbl);
+
 $trl = Bio::EnsEMBL::Translation->new();
 $trl->start_exon_id('exon-1');
 $trl->end_exon_id('exon-2');
@@ -174,6 +186,8 @@ foreach $exon ( $newgene->each_unique_Exon ) {
 	print STDERR "Weird exon in output...\n";
     }
 }
+
+$savedgene = $newgene;
 
 if( $error == 1 ) {
     print "not ok 9\n";
@@ -268,6 +282,28 @@ if( $error == 1 ) {
     print "not ok 10\n";
 } else {
     print "ok 10\n";
+}
+
+@dblink = $savedgene->each_DBLink();
+$dbl = shift @dblink;
+
+if( !defined $dbl || $dbl->database ne 'swissprot' ) {
+    print "not ok 11\n";
+} else {
+  print "ok 11\n";
+}
+
+@trans = $savedgene->each_Transcript();
+$trans = shift @trans;
+
+
+@dblink = $trans->each_DBLink();
+$dbl = shift @dblink;
+
+if( !defined $dbl || $dbl->database ne 'embl' ) {
+    print "not ok 12\n";
+}    else {
+  print "ok 12\n";
 }
 
 
