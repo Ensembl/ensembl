@@ -41,7 +41,7 @@ use vars qw(@ISA);
 @ISA = qw(Bio::Root::Object);
 
 my $tdbtype = 'rdb';
-my $thost   = 'cgi-srv4.sanger.ac.uk';
+my $thost   = 'localhost';
 my $tport   = '410000';
 my $tdbname = 'ensembl';
 my $tdbuser = 'ensro';
