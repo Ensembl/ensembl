@@ -332,6 +332,7 @@ sub fetch_by_transcript_stable_id {
     $sth->execute("$trans_stable_id");
 
     my ($geneid) = $sth->fetchrow_array();
+    $sth->finish;
     if( !defined $geneid ) {
         return undef;
     }
@@ -373,6 +374,7 @@ sub fetch_by_translation_stable_id {
     $sth->execute("$translation_stable_id");
 
     my ($geneid) = $sth->fetchrow_array();
+    $sth->finish;
     if( !defined $geneid ) {
         return undef;
     }
