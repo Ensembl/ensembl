@@ -880,7 +880,7 @@ sub get_all_PredictionFeatures {
 		        AND    f.name in $analysis_types 
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
-                        ORDER BY f.contig,f.strand*f.seq_start
+                        ORDER BY f.contig,f.hid, f.strand*f.seq_start
                         ";
 
    my $sth = $self->dbobj->prepare($query);
@@ -925,8 +925,8 @@ sub get_all_PredictionFeatures {
        }
 
        # MC. Temporarily changed back the genscan fetching for a build.
-       if( $hid =~ /Initial/ || $hid =~ /Single/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 || $previous_contig != $contig) {
-#       if( $hid ne $previous|| $previous eq -1 || $previous_contig != $contig) {
+#       if( $hid =~ /Initial/ || $hid =~ /Single/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 || $previous_contig != $contig) {
+       if( $hid ne $previous|| $previous eq -1 || $previous_contig != $contig) {
 #        if($phase != $previous || $previous_contig != $contig $previous == -1) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();

@@ -1169,9 +1169,6 @@ sub _get_all_SeqFeatures_type {
 
 sub _convert_seqfeature_to_vc_coords {
     my ($self,$sf) = @_;
-    print STDERR ( "_conv_sf: ".ref($sf)."\n" );
-    print STDERR join( "\n", map {("$_: ".$sf->{$_})} ( keys %$sf ));
-    print STDERR "\n";
 
     #print STDERR "In Contig._convert_seqfeature_to_vc_coords() has a $sf\n";
     my $cid = $sf->seqname();
@@ -1281,6 +1278,10 @@ sub _convert_seqfeature_to_vc_coords {
     
     # Finally, convert the coordinates of the feature
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
+
+    if( $rstart < 1 || $rend > $self->length ) {
+      return undef;
+    }
 
     if( $sf->can('attach_seq') ) {
       if (!$self->noseq) {
