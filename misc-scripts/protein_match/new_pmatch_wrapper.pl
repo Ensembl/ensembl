@@ -37,7 +37,7 @@ sub overlap
 	return ($first->[1] - $second->[0] + 1) if ($first->[1] < $second->[1]);
 
 	# Full overlap
-	return ($first->[1] - $first->[0] + 1);
+	return ($second->[1] - $second->[0] + 1);
 }
 
 my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
@@ -48,6 +48,9 @@ my ($unused_fh, $pmatch_out) = tempfile("pmatch_XXXXX",
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
 my $target	= $datadir . '/final.fa';
 my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
+
+#my $target = $datadir . '/O62615.fa';
+#my $query  = $datadir . '/13361.fa';
 
 # Set defaults
 my %opts = (
@@ -224,8 +227,10 @@ if ($opts{'d'} == 1) {
 	    my $qperc = sprintf ("%.1f" , $target->{'QIDENT'});
 	    my $tperc = sprintf ("%.1f" , $target->{'TIDENT'});
 	    
-	    print $target->{'QID'}."\t".$target->{'TID'}."\t$qperc\t$tperc\n";
-	    
+	    if (($qperc >= 50)&&($tperc >= 50)) {
+
+		print $target->{'QID'}."\t".$target->{'TID'}."\t$qperc\t$tperc\n";
+	    }
 
 	}
     }
