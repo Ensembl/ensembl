@@ -60,8 +60,10 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Virtual::StaticContig;
-use Bio::EnsEMBL::DBSQL::RawContig;
+#use Bio::EnsEMBL::DBSQL::RawContig;
+use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
+use Bio::EnsEMBL::Slice;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -105,21 +107,21 @@ sub get_Gene_chr_bp {
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
-     sgp.chr_name
+   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_end)),
+   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_start)),
+     a.chromosome_id
   
                     FROM    exon e,
                         transcript tr,
                         exon_transcript et,
-                        static_golden_path sgp,
+                        assembly a,
                         gene_stable_id gsi
                     WHERE e.exon_id=et.exon_id 
                     AND et.transcript_id =tr.transcript_id 
-                    AND sgp.raw_id=e.contig_id 
-                    AND sgp.type = '$type' 
+                    AND a.contig_id=e.contig_id 
+                    AND a.type = '$type' 
                     AND tr.gene_id = gsi.gene_id
                     AND gsi.stable_id = '$geneid';" 
                     );
@@ -165,13 +167,13 @@ sub get_chr_start_end_of_contig {
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
-                        st.chr_start,
-                        st.chr_end,
-                        st.chr_name 
-                                    FROM static_golden_path st,contig c 
+                        a.chr_start,
+                        a.chr_end,
+                        a.chromosome_id 
+                    FROM assembly a, contig c 
                     WHERE c.id = '$contigid' 
-                                    AND c.internal_id = st.raw_id 
-                    AND st.type = '$type'"
+                    AND c.internal_id = a.contig_id 
+                    AND a.type = '$type'"
                     );
    $sth->execute();
    my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
@@ -205,12 +207,11 @@ sub fetch_RawContigs_by_fpc_name {
 
    # very annoying. DB obj wont make contigs by internalid. doh!
    my $sth = $self->dbobj->prepare("SELECT  c.id 
-                    FROM    static_golden_path st,
-                        contig c 
-                    WHERE c.internal_id = st.raw_id 
-                    AND st.fpcctg_name = '$fpc' 
-                    AND  st.type = '$type' 
-                    ORDER BY st.fpcctg_start"
+                    FROM    assembly a, contig c 
+                    WHERE c.internal_id = a.contig_id 
+                    AND a.superctg_name = '$fpc' 
+                    AND  a.type = '$type' 
+                    ORDER BY a.superctg_start"
                     );
    $sth->execute;
    my @out;
@@ -244,11 +245,10 @@ sub convert_chromosome_to_fpc {
      or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
-        SELECT fpcctg_name
-          , chr_start
-        FROM static_golden_path
-        WHERE chr_name = '$chr'
-          AND fpcctg_start = 1
+        SELECT superctg_name, chr_start
+        FROM assembly
+        WHERE chromosome_id = '$chr'
+          AND superctg_start = 1
           AND chr_start <= $start
           AND type = '$type'
         ORDER BY chr_start DESC
@@ -277,12 +277,11 @@ sub convert_fpc_to_chromosome {
      or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
-        SELECT chr_name
-          , chr_start
-        FROM static_golden_path
-        WHERE fpcctg_name = '$fpc'
+        SELECT chromosome_id, chr_start
+        FROM assembly
+        WHERE superctg_name = '$fpc'
             AND type = '$type'
-        ORDER BY fpcctg_start LIMIT 1
+        ORDER BY superctg_start LIMIT 1
         ");
     $sth->execute;
     my ($chr,$startpos) = $sth->fetchrow_array;
@@ -314,15 +313,15 @@ sub convert_rawcontig_to_fpc{
      or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
-        SELECT st.fpcctg_name
-          , st.fpcctg_start
-          , st.raw_start
-          , st.raw_ori
-          , st.raw_end
-        FROM static_golden_path st
+        SELECT a.superctg_name
+          , a.superctg_start
+          , a.contig_start
+          , a.contig_ori
+          , a.contig_end
+        FROM assembly a
           , contig c
-        WHERE c.internal_id = st.raw_id
-          AND st.type = '$type'
+        WHERE c.internal_id = a.contig_id
+          AND a.type = '$type'
           AND c.id = '$rc'
         ");
    $sth->execute;
@@ -362,20 +361,20 @@ sub fetch_RawContigs_by_chr_name{
           , c.dna
           , cl.id
           , cl.embl_version
-          , st.chr_start
-          , st.chr_end
-          , st.raw_start
-          , st.raw_end
-          , st.raw_ori
+          , a.chr_start
+          , a.chr_end
+          , a.contig_start
+          , a.contig_end
+          , a.contig_ori
           , c.offset
           , c.length
-        FROM static_golden_path st
+        FROM assembly a
           , contig c
           , clone cl
         WHERE cl.internal_id = c.clone
-          AND c.internal_id = st.raw_id
-          AND st.chr_name = '$chr'
-          AND st.type = '$type'
+          AND c.internal_id = a.contig_id
+          AND a.chromosome_id = '$chr'
+          AND a.type = '$type'
         ");
 #### fix this; should also return raw start/end, ori, offset and length
 ### see how done later on in this file
@@ -454,22 +453,22 @@ sub fetch_RawContigs_by_chr_start_end {
           , c.dna
           , cl.id
           , cl.embl_version
-          , st.chr_start
-          , st.chr_end
-          , st.raw_start
-          , st.raw_end
-          , st.raw_ori
+          , a.chr_start
+          , a.chr_end
+          , a.contig_start
+          , a.contig_end
+          , a.contig_ori
           , c.offset
           , c.length
-        FROM static_golden_path st
+        FROM assembly a
           , contig c
           , clone cl
         WHERE cl.internal_id = c.clone
-          AND c.internal_id = st.raw_id
-          AND st.chr_name = '$chr'
-          AND st.type = '$type'
-          AND NOT (st.chr_start > $end) 
-          AND NOT (st.chr_end < $start) 
+          AND c.internal_id = a.contig_id
+          AND a.chromosome_id = '$chr'
+          AND a.type = '$type'
+          AND NOT (a.chr_start > $end) 
+          AND NOT (a.chr_end < $start) 
         ");
    $sth->execute;
    &eprof_end('VC: fetch_rc_get');
@@ -580,17 +579,17 @@ sub fetch_VirtualContig_of_clone{
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
-                        st.chr_start,
-                        st.chr_end,
-                        st.chr_name 
-                    FROM    static_golden_path st, 
+                        a.chr_start,
+                        a.chr_end,
+                        a.chromosome_id 
+                    FROM    assembly a, 
                         contig c, 
-                                            clone  cl
+                        clone  cl
                     WHERE c.clone = cl.internal_id
-                                    AND cl.id = '$clone'  
-                                    AND c.internal_id = st.raw_id 
-                    AND st.type = '$type' 
-                                    ORDER BY st.chr_start"
+                    AND cl.id = '$clone'  
+                    AND c.internal_id = ass.contig_id 
+                    AND a.type = '$type' 
+                    ORDER BY a.chr_start"
                     );
    $sth->execute();
  
@@ -704,16 +703,16 @@ sub fetch_VirtualContig_of_exon{
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
-     sgp.chr_name
+   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_end)),
+   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_start)),
+     a.chromosome_id
                     FROM    exon e,
-			    static_golden_path sgp 
+			    assembly a 
                     WHERE e.id='$exonid' 
-                    AND sgp.raw_id=e.contig 
-                    AND sgp.type = '$type' 
+                    AND a.contig_id=e.contig 
+                    AND a.type = '$type' 
                     ");
    $sth->execute();
 
@@ -777,21 +776,21 @@ sub get_location_of_feature {
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
-			if(sgp.raw_ori=1,
-			    ($seq_start-sgp.raw_start+sgp.chr_start),
-			    (sgp.chr_start+sgp.raw_end-$seq_end)),
+			if(a.contig_ori=1,
+			    ($seq_start-a.contig_start+a.chr_start),
+			    (a.chr_start+a.contig_end-$seq_end)),
    
-			if(sgp.raw_ori=1,
-			    ($seq_end-sgp.raw_start+sgp.chr_start),
-			    (sgp.chr_start+sgp.raw_end-$seq_start)),
+			if(a.contig_ori=1,
+			    ($seq_end-a.contig_start+a.chr_start),
+			    (a.chr_start+a.contig_end-$seq_start)),
 
-			    sgp.raw_ori,
-			    sgp.chr_name
+			    a.contig_ori,
+			    a.chromosome_id
                     FROM    contig c, 
-			    static_golden_path sgp 
+			    assembly a 
                     WHERE   c.id = '$contigid' 
-			    AND c.internal_id = sgp.raw_id
-                            AND sgp.type = '$type' 
+			    AND c.internal_id = a.contig_id
+                            AND a.type = '$type' 
                     ");
    $sth->execute();
 
@@ -829,21 +828,21 @@ sub fetch_VirtualContig_of_transcript{
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_end)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
-                    (sgp.chr_start+sgp.raw_end-e.seq_start)),
-     sgp.chr_name
+   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_end)),
+   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.seq_start)),
+     a.chromosome_id
   
                     FROM    exon e,
                         exon_transcript et,
-                        static_golden_path sgp,
+                        assembly a,
                         transcript_stable_id tsi
                     WHERE tsi.stable_id = '$transcriptid'  
                     AND et.transcript_id = tsi.transcript_id
                     AND e.exon_id=et.exon_id 
-                    AND sgp.raw_id=e.contig_id 
-                    AND sgp.type = '$type' 
+                    AND a.contig_id=e.contig_id 
+                    AND a.type = '$type' 
                     ");
    $sth->execute();
 
@@ -898,14 +897,14 @@ sub fetch_VirtualContig_by_clone {
 
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
-                        st.chr_start,
-                        st.chr_name 
-                    FROM static_golden_path st,contig c,clone cl 
+                        a.chr_start,
+                        a.chromosome_id 
+                    FROM assembly a,contig c,clone cl 
                     WHERE c.clone = cl.internal_id
-                                    AND cl.id = '$clone' 
+                    AND cl.id = '$clone' 
                     AND c.internal_id = st.raw_id 
-                    AND st.type = '$type' 
-                    ORDER BY st.chr_start"
+                    AND a.type = '$type' 
+                    ORDER BY a.chr_start"
                     );
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
@@ -949,12 +948,12 @@ sub fetch_VirtualContig_by_contig {
     or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
-                        st.chr_start,
-                        st.chr_name 
-                    FROM static_golden_path st,contig c 
+                        a.chr_start,
+                        a.chromosome_id 
+                    FROM assembly a,contig c 
                     WHERE c.id = '$contigid' 
-                    AND c.internal_id = st.raw_id 
-                    AND st.type = '$type'"
+                    AND c.internal_id = a.contig_id 
+                    AND a.type = '$type'"
                     );
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
@@ -1212,8 +1211,8 @@ sub get_all_fpc_ids {
 
    my $type = $self->dbobj->static_golden_path_type()
     or $self->throw("No assembly type defined");
-   my $sth = $self->dbobj->prepare("SELECT DISTINCT(fpcctg_name) 
-                    FROM static_golden_path 
+   my $sth = $self->dbobj->prepare("SELECT DISTINCT(superctg_name) 
+                    FROM assembly 
                     WHERE type = '$type'"
                 );
    $sth->execute();
@@ -1238,8 +1237,8 @@ sub get_chromosome_length {
     
     my $sth = $self->dbobj->prepare("
         SELECT MAX(chr_end)
-        FROM static_golden_path
-        WHERE chr_name = '$chrname'
+        FROM assembly
+        WHERE chromosome_id = '$chrname'
           AND type = '$type'
         ");
 
@@ -1281,11 +1280,11 @@ sub is_golden_static_contig {
      or $self->throw("No assembly type defined");
 
     my $query = "
-     SELECT c.id,p.raw_start,p.raw_end 
-     FROM contig c, static_golden_path p 
+     SELECT c.id, a.contig_start, a.contig_end 
+     FROM contig c, assembly a 
      WHERE c.id = '$cid' 
-     AND p.raw_id = c.internal_id
-     AND p.type = '$type'";
+     AND a.contig_id = c.internal_id
+     AND a.type = '$type'";
 
     my $sth = $self->dbobj->prepare($query);
     $sth->execute;
@@ -1311,11 +1310,11 @@ sub is_golden_static_clone {
      or $self->throw("No assembly type defined");
 
     my $query = "   SELECT co.id 
-            FROM contig co, clone cl, static_golden_path p 
+            FROM contig co, clone cl, assembly a 
             WHERE cl.id = '$clone' 
             AND co.clone = cl.internal_id 
-            AND p.raw_id = co.internal_id
-            AND p.type = '$type'
+            AND a.contig_id = co.internal_id
+            AND a.type = '$type'
         ";
        
     my $sth = $self->dbobj->prepare($query);
