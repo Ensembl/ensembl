@@ -46,18 +46,18 @@ insert into translation_stable_id( translation_id, stable_id ) VALUES( 1, 'trans
 
 INSERT INTO translation (translation_id,start_exon_id,seq_start,end_exon_id,seq_end) VALUES (1,1,2,2,1);
 
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (1,'species.classification','sapiens');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (2,'species.classification','Homo');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (3,'species.classification','Hominidae');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (4,'species.classification','Catarrhini');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (5,'species.classification','Primates');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (6,'species.classification','Eutheria');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (7,'species.classification','Mammalia');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (8,'species.classification','Vertebrata');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (9,'species.classification','Chordata');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (10,'species.classification','Metazoa');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (11,'species.classification','Eukaryota');
-INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (12,'species.common_name','Human');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','sapiens');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Homo');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Hominidae');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Catarrhini');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Primates');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Eutheria');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Mammalia');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Vertebrata');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Chordata');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Metazoa');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.classification','Eukaryota');
+INSERT INTO meta (meta_id, meta_key, meta_value) VALUES (NULL,'species.common_name','Human');
 
 
 

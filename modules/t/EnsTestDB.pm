@@ -313,7 +313,7 @@ sub do_sql_file {
         foreach my $s (grep /\S/, split /;[ \t]*\n/, $sql) {
             $self->validate_sql($s);
             $dbh->do($s);
-            $i++
+            $i++;
         }
     }
     return $i;
