@@ -1156,8 +1156,6 @@ sub write_Gene{
        }
    }
 
-   print "Got gene version ".$gene->version." in write_Gene";
-
     eval {
        $old_gene=$self->get_Gene($gene->id);
    };
