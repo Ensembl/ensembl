@@ -24,7 +24,9 @@ my %nt_contig;
 my %clone;
 
 my $default_ori = 1;
-my $chr_offset = 1;    # chr coordinates appear to be off by 1
+my $chr_offset = 0;    # chr coordinates may be off by 1
+                       # but depends on the assembly version...
+my $gptype = 'NCBI_26';
 
 
 open CHR, "< $chrom" or die "Can't open chromosome file $chrom";
@@ -95,6 +97,7 @@ while (<AGP>) {
     my $nt_ori = $nt_contig{$nt_ctg}->{'ori'};
     my $chr    = $nt_contig{$nt_ctg}->{'chr'};
     my ($chr_start, $chr_end);
+    $chr =~ s!^(\d+|X|Y)!chr\1!;	# Oh, the joy of regex ...
 
     if ($nt_ori == 1) {
 	# forward oriented nt contig: raw contigs forward from nt contig start
@@ -128,7 +131,7 @@ while (<AGP>) {
 
 		print SGP "$nt_ctg\t$chr\t", $raw_ctg->{'iid'};
 		print SGP "\t$chr_start\t$chr_end\t$nt_start\t$nt_end";
-		print SGP "\t$raw_start\t$raw_end\t$raw_ori\tNCBI\n";
+		print SGP "\t$raw_start\t$raw_end\t$raw_ori\t$gptype\n";
 
 		print INF $raw_ctg->{'id'}, "\t", $raw_ctg->{'iid'}, "\n";
 
