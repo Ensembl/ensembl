@@ -86,14 +86,15 @@ sub new {
     $self->chr_name($chr);
     $self->chr_start($start);
     $self->chr_end($end);
-    $self->id("$chr.$start-$end");
-    
-    #set strand to a default of 1 if it is not set
-    if ( defined $strand) {
-      $self->strand($strand);
+
+    if(!defined $strand) {
+      $strand = 1; #default slice strand is 1
     } else {
-      $self->strand('1');
+      unless($strand == 1 || $strand == -1) {
+	$self->throw("Slice strand must be either -1 or 1 not [$strand].");
+      }
     }
+    $self->strand($strand);
   } else {
     $self->strand( 1 );
     $self->chr_start( 1 );
@@ -135,7 +136,6 @@ sub adaptor{
       $self->{'adaptor'} = $value;
     }
     return $self->{'adaptor'};
-
 }
 
 
@@ -185,9 +185,17 @@ sub dbID {
 sub name {
   my $self = shift;
 
-  return join( '', $self->chr_name(), ':', $self->chr_start(), 
-	       '-', $self->chr_end());
+  my $string = join '', $self->chr_name, ':', 
+                        $self->chr_start, '-', $self->chr_end();
+
+  if($self->strand == -1) {
+    return "reverse($string)";
+  }
+
+  return $string;
 }
+
+
 
 
 
@@ -231,11 +239,40 @@ sub length {
 
 
 
+=head2 invert
+
+  Arg [1]    : none
+  Example    : $slice->invert;
+  Description: Reverses the strandedness of this slice.  If the slice is
+               on the positive strand it will be placed on the negative
+               strand of the same region.  chr_start and chr_end remain
+               unchanged, but $slice->seq will return the reverse complement
+               of the original slice sequence.  Genes and Features will also 
+               be returned with reverse strandedness and start and end 
+               coordinates relative to the opposite end of the slice.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub invert {
+  my $self = shift;
+  
+  my $strand = $self->strand();
+
+  $self->strand(-$strand);
+}
+
+
 =head2 seq
 
   Args      : none
-  Function  : returns the entire sequence string for this Slice
-              needs the adaptor to be set.
+  Function  : Returns the entire sequence string for this Slice.  This method
+              will return the reverse complement of the sequence of another 
+              slice on the same region but on the opposite strand.
+              Note that the slice needs the adaptor to be set to obtain the 
+              sequence.
   Returntype: txt
   Exceptions: none
   Caller    : general
@@ -245,9 +282,7 @@ sub length {
 sub seq {
   my $self = shift;
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 );
-
-  return $seq;
+  return $seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 );
 }
 
 
@@ -258,7 +293,9 @@ sub seq {
               relative to start of slice, which is 1.
   Arg  2    : int $endBasePair
               relative to start of slice.
-  Arg  3    : int $strand
+  Arg  3    : (optional) int $strand
+              The strand of the slice to obtain sequence from. Default value is
+              1.
   Function  : returns string of dna sequence
   Returntype: txt
   Exceptions: end should be at least as big as start
@@ -274,9 +311,10 @@ sub subseq {
     $self->throw("End coord is less then start coord");
   }
 
-  if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
-#    $self->throw("Incorrect strand information set to call on Slice subseq.");
-    $strand = 1;
+  $strand = 1 unless(defined $strand);
+
+  if ( $strand != -1 && $strand != 1 ) {
+    $self->throw("Invalid strand [$strand] in call to Slice::subseq.");
   }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();

@@ -366,7 +366,8 @@ sub fetch_all_by_contig_list{
 
 sub fetch_all_by_Slice {
   my ( $self, $slice, $type ) = @_;
-  my @out;
+
+  my @out = ();
 
   #check the cache which uses the slice name as it key
   if($self->{'_slice_gene_cache'}{$slice->name()}) {
@@ -408,7 +409,7 @@ sub fetch_all_by_Slice {
  }
 
   #place the results in an LRU cache
-  #$self->{'_slice_gene_cache'}{$slice->name} = \@out;
+  return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
 
   return \@out;
 }
@@ -510,25 +511,25 @@ sub fetch_by_Peptide_id {
 =cut
 
 sub fetch_by_maximum_DBLink {
-    my $self = shift;
-    my $external_id = shift;
+  my $self = shift;
+  my $external_id = shift;
 
-    my @genes=$self->fetch_by_DBEntry( $external_id );
+  my $genes = $self->fetch_by_DBEntry( $external_id );
 
-    my $biggest;
-    my $max=0;
-    my $size=scalar(@genes);
-    if ($size > 0) {
-	foreach my $gene (@genes) {
-	    my $size = (scalar(@{$gene->get_all_Exons}));
-	    if ($size > $max) {
-		$biggest = $gene;
-		$max=$size;
-	    }
-	}
-	return $biggest;
+  my $biggest;
+  my $max=0;
+  my $size=scalar(@genes);
+  if ($size > 0) {
+    foreach my $gene (@$genes) {
+      my $size = (scalar(@{$gene->get_all_Exons}));
+      if ($size > $max) {
+	$biggest = $gene;
+	$max=$size;
+      }
     }
-    return;
+    return $biggest;
+    }
+  return;
 }
 
 
@@ -569,7 +570,7 @@ sub get_stable_entry_info {
 }
 
 
-=head2 fetch_by_DBEntry
+=head2 fetch_all_by_DBEntry
 
   Arg [1]    : in $external_id
                the external identifier for the gene to be obtained

@@ -156,7 +156,7 @@ sub fetch_by_dbID{
 }
 
 
-=head2 fetch_all_by_Contig_constraint
+=head2 fetch_all_by_RawContig_constraint
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
                The contig object from which features are to be obtained
@@ -175,7 +175,7 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_all_by_Contig_constraint {
+sub fetch_all_by_RawContig_constraint {
   my ($self, $contig, $constraint, $logic_name) = @_;
   
   unless( defined $contig ) {
@@ -204,7 +204,7 @@ sub fetch_all_by_Contig_constraint {
                the contig from which features should be obtained
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_all_by_Contig($contig, 'wall');
+  Example    : @fts = $a->fetch_all_by_RawContig($contig, 'wall');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid If logic name is defined, 
                only features with an analysis of type $logic_name will be 
@@ -218,31 +218,20 @@ sub fetch_all_by_Contig_constraint {
 sub fetch_all_by_RawContig {
   my ( $self, $contig, $logic_name ) = @_;
 
-  return $self->fetch_all_by_Contig_constraint($contig, '',$logic_name);
-}
-
-# old naming convention, replace calls to this.
-sub fetch_all_by_Contig{
-  my ($self, $contig, $logic_name) = @_;
-
-  $self->warn( "Please use ...by_RawContig instead of ...by_Contig" );
-  #fetch by contig id constraint with empty constraint
-  return $self->fetch_all_by_Contig_constraint($contig, '',$logic_name);
+  return $self->fetch_all_by_RawContig_constraint($contig, '',$logic_name);
 }
 
 
-
-=head2 fetch_all_by_Contig_and_score
-
+=head2 fetch_all_by_RawContig_and_score
   Arg [1]    : Bio::EnsEMBL::RawContig $contig 
                the contig from which features should be obtained
   Arg [2]    : (optional) float $score
                the lower bound of the score of the features to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Contig_and_score(1, 50.0, 'Swall');
+  Example    : @fts = $a->fetch_by_RawContig_and_score(1, 50.0, 'Swall');
   Description: Returns a list of features created from the database which are 
-               are on the contig defined by $cid and which have score greater
+               are on the contig defined by $cid and which have score greater  
                than score.  If logic name is defined, only features with an 
                analysis of type $logic_name will be returned. 
   Returntype : listref of Bio::EnsEMBL::*Feature in contig coordinates
@@ -251,7 +240,7 @@ sub fetch_all_by_Contig{
 
 =cut
 
-sub fetch_all_by_Contig_and_score{
+sub fetch_all_by_RawContig_and_score{
   my($self, $contig, $score, $logic_name) = @_;
 
   my $constraint;
@@ -260,7 +249,7 @@ sub fetch_all_by_Contig_and_score{
     $constraint = "score > $score";
   }
     
-  return $self->fetch_all_by_Contig_constraint($contig, $constraint, 
+  return $self->fetch_all_by_RawContig_constraint($contig, $constraint, 
 					       $logic_name);
 }
 
@@ -357,15 +346,16 @@ sub fetch_all_by_Slice_constraint {
   return $self->{'_slice_feature_cache'}{$key} 
     if $self->{'_slice_feature_cache'}{$key};
     
-  my $chr_start = $slice->chr_start();
-  my $chr_end   = $slice->chr_end();
-  				 
+  my $slice_start  = $slice->chr_start();
+  my $slice_end    = $slice->chr_end();
+  my $slice_strand = $slice->strand();
+		 
   my $mapper = 
     $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
 
   #get the list of contigs this slice is on
   my @cids = 
-    $mapper->list_contig_ids( $slice->chr_name, $chr_start ,$chr_end );
+    $mapper->list_contig_ids( $slice->chr_name, $slice_start ,$slice_end );
   
   return [] unless scalar(@cids);
 
@@ -378,6 +368,7 @@ sub fetch_all_by_Slice_constraint {
     $constraint = "contig_id IN ($cid_list)";
   }
 
+  #for speed the remapping to slice may be done at the time of object creation
   my $features = 
     $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
@@ -386,9 +377,13 @@ sub fetch_all_by_Slice_constraint {
     return $self->{'_slice_feature_cache'}{$key} = $features;
   }
 
+  #remapping has not been done, we have to do our own
+
   my @out = ();
   
   #convert the features to slice coordinates from raw contig coordinates
+
+  my ($feat_start, $feat_end, $feat_strand); 
 
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
@@ -398,13 +393,19 @@ sub fetch_all_by_Slice_constraint {
       $mapper->fast_to_assembly($contig_id, $f->start(), 
 				$f->end(),$f->strand(),"rawcontig");
 
-    # not defined start means gap
+    # undefined start means gap
     next unless defined $start;     
+
     # maps to region outside desired area 
-    next if ($start > $chr_end) || ($end <= $chr_start);  
+    next if ($start > $slice_end) || ($end < $slice_start);  
     
     #shift the feature start, end and strand in one call
-    $f->move( $start - $chr_start, $end - $chr_start, $strand );
+    if($slice_strand == -1) {
+      $f->move( $slice_end - $end + 1, $slice_end - $start + 1, -$strand );
+    } else {
+      $f->move( $start - $slice_start + 1, $end - $slice_start + 1, $strand );
+    }
+    
     $f->contig($slice);
     
     push @out,$f;
@@ -624,6 +625,69 @@ sub fetch_by_Contig_and_score {
 
   return $self->fetch_all_by_RawContig_and_score(@args);
 }
+
+
+
+=head2 fetch_all_by_Contig
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_all_by_Contig {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_all_by_Contig has been renamed fetch_all_by_RawContig\n" . caller);
+
+  return $self->fetch_all_by_RawContig(@args);
+}
+
+
+=head2 fetch_all_by_Contig_and_score
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig_and_score instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_all_by_Contig_and_score {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_all_by_Contig_and_score has been renamed fetch_all_by_RawContig_and_score\n" . caller);
+
+  return $self->fetch_all_by_RawContig_and_score(@args);
+}
+
+
+=head2 fetch_all_by_Contig_constraint
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig_constraint instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_all_by_Contig_constraint {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_all_by_Contig_constraint has been renamed fetch_all_by_RawContig_constraint\n" . caller);
+
+  return $self->fetch_all_by_RawContig_constraint(@args);
+}
+
+
 
 
 =head2 fetch_by_Slice_and_score

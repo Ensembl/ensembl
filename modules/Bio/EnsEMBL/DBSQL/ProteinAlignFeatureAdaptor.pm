@@ -160,9 +160,13 @@ sub _objs_from_sth {
 
   if($slice) {
     my ($chr, $start, $end, $strand);
-    my $slice_start = $slice->chr_start() - 1;
-    my $slice_name = $slice->name();
-    
+    my $slice_start   = $slice->chr_start();
+    my $slice_end     = $slice->chr_end();
+    my $slice_name    = $slice->name();
+    my $slice_strand = $slice->strand();
+
+    my($feat_start, $feat_end, $feat_strand);
+
     while($row = shift @$row_cache) {
       ($protein_align_feature_id, $contig_id, $contig_start, $contig_end,
       $analysis_id, $contig_strand, $hit_start, $hit_end, $hit_name, 
@@ -173,10 +177,23 @@ sub _objs_from_sth {
 	$mapper->fast_to_assembly($contig_id, $contig_start, 
 				  $contig_end, $contig_strand);
       
-      unless(defined $start) {
-	next;
+      #skip if feature maps to gap
+      next unless(defined $start);
+
+      #skip if feature outside of slice area
+      next if ($start > $slice_end) || ($end < $slice_start);
+
+      #convert assembly coordinates to slice coordinates
+      if($slice_strand == -1) {
+	$feat_start  = $slice_end - $end + 1;
+	$feat_end    = $slice_end - $start + 1;
+	$feat_strand = -$strand;
+      } else {
+	$feat_start  = $start - $slice_start + 1;
+	$feat_end    = $end   - $slice_start + 1;
+	$feat_strand = $strand;
       }
-      
+
       #use a very fast (hack) constructor - normal object construction is too
       #slow for the number of features we are potentially dealing with
       push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast(
@@ -184,9 +201,9 @@ sub _objs_from_sth {
 		 '_gsf_sub_array' =>  [],
 		 '_parse_h'       =>  {},
 		 '_analysis'      =>  $analysis,
-		 '_gsf_start'     =>  $start - $slice_start,
-		 '_gsf_end'       =>  $end - $slice_start,
-		 '_gsf_strand'    =>  $strand,
+		 '_gsf_start'     =>  $feat_start,
+		 '_gsf_end'       =>  $feat_end,
+		 '_gsf_strand'    =>  $feat_strand,
 		 '_gsf_score'     =>  $score,
 		 '_seqname'       =>  $slice_name,
 		 '_percent_id'    =>  $perc_ident,

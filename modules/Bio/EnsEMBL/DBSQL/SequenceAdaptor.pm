@@ -16,7 +16,7 @@ Bio::EnsEMBL::DBSQL::SequenceAdaptor - produce sequence strings from locations
 =head1 SYNOPSIS
 
 $seq_adptr = $database_adaptor->get_SequenceAdaptor();
-$dna = $seq_adptr->fetch_by_Contig_start_end_strand($contig, 1, 1000, -1);
+$dna = $seq_adptr->fetch_by_RawContig_start_end_strand($contig, 1, 1000, -1);
 
 =head1 DESCRIPTION
 
@@ -98,6 +98,7 @@ sub fetch_by_RawContig_start_end_strand {
                  AND c.contig_id = ?";    
   }
 
+  #use the dna db if defined
   if( defined $self->db()->dnadb() ) {
     $sth = $self->db()->dnadb()->prepare( $query );
   } else {
@@ -177,7 +178,7 @@ sub fetch_by_Slice_start_end_strand {
        (
 	$slice->chr_end()-$end+1,
 	$slice->chr_end()-$start+1,
-	$strand,
+	$strand * -1, #have to make strand relative to slice's strand
 	$slice->chr_name(),
 	$slice->assembly_type() 
        );

@@ -195,7 +195,6 @@ sub fetch_by_fpc_name {
  Returns : Slice object 
  Args    : clone id, [context size in bp]
 
-
 =cut
 
 sub fetch_by_clone_accession{
