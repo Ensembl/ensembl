@@ -75,13 +75,15 @@ sub _convert_single {
     my $score = $in->score || 0;
     my $percent_id;
     if($in->has_tag('percent_id')){
-        ($percent_id) = @{$in->get_tag_values('percent_id')};
+        ($percent_id) = $in->get_tag_values('percent_id');
     }else{
         $percent_id ||= 0;
     }
     my $p_value;
     if($in->has_tag('p_value')){
-        ($p_value) = @{$in->get_tag_values('p_value')};
+        ($p_value) = $in->get_tag_values('p_value');
+    }elsif($in->has_tag('evalue')){
+        ($p_value) = $in->get_tag_values('evalue');
     }else{
         $p_value ||= 1;
     }
