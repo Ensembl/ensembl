@@ -46,6 +46,7 @@ my %object_xref_mappings;
 my %object_xref_identities;
 my %xref_descriptions;
 my %xref_accessions;
+my %source_to_external_db;
 
 =head2 dump_seqs
 
@@ -835,8 +836,73 @@ sub parse_mappings {
   # write relevant xrefs to file
   $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
 
+  # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
+  $self->dump_orphan_xrefs($xref_id_offset);
+
+  # dump interpro table as well
+  $self->dump_interpro();
+
   # write comparison info. Can be removed after development
   $self->dump_comparison();
+
+}
+
+# dump xrefs that don't appear in either the primary_xref or dependent_xref tables
+# e.g. Interpro xrefs
+
+sub dump_orphan_xrefs() {
+
+  my ($self, $xref_id_offset) = @_;
+
+  my $count;
+
+  open (XREF, ">>" . $self->dir() . "/xref.txt");
+
+  # need a double left-join
+  my $sql = "SELECT x.xref_id, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM xref x LEFT JOIN primary_xref px ON px.xref_id=x.xref_id LEFT JOIN dependent_xref dx ON dx.dependent_xref_id=x.xref_id WHERE px.xref_id IS NULL AND dx.dependent_xref_id IS NULL";
+
+  my $sth = $self->xref()->dbi()->prepare($sql);
+  $sth->execute();
+
+  my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id);
+  $sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
+
+  while ($sth->fetch()) {
+
+    my $external_db_id = $source_to_external_db{$source_id};
+    if ($external_db_id) { # skip "unknown" sources
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+      $count++;
+    }
+
+  }
+  $sth->finish();
+
+  close(XREF);
+
+  print "Wrote $count xrefs that are neither primary nor dependent\n";
+
+}
+
+
+# Dump the interpro table from the xref database
+sub dump_interpro {
+
+  my $self = shift;
+
+  open (INTERPRO, ">" .  $self->dir() . "/interpro.txt");
+
+  my $sth = $self->xref()->dbi()->prepare("SELECT * FROM interpro");
+  $sth->execute();
+
+  my ($interpro, $pfam);
+  $sth->bind_columns(\$interpro, \$pfam);
+  while ($sth->fetch()) {
+    print INTERPRO $interpro . "\t" . $pfam . "\n";
+  }
+  $sth->finish();
+
+  close (INTERPRO);
 
 }
 
@@ -935,8 +1001,8 @@ sub dump_core_xrefs {
 
   my $object_xref_id = $start_object_xref_id;
 
-  # build cache of source id -> external_db id
-  my %source_to_external_db = $self->map_source_to_external_db();
+  # build cache of source id -> external_db id; note %source_to_external_db is global
+  %source_to_external_db = $self->map_source_to_external_db();
 
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
@@ -1458,7 +1524,7 @@ sub do_upload {
 
   # TODO warn if table not empty
 
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref", "interpro") {
 
     my $file = $self->dir() . "/" . $table . ".txt";
     my $sth;
