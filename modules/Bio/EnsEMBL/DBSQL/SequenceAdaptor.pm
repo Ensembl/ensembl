@@ -86,8 +86,7 @@ sub fetch_by_contig_id_start_end_strand {
     $sth = $self->prepare( "SELECT c.length, SUBSTRING( d.sequence, $start, $length )
                             FROM dna d, contig c 
                             WHERE d.dna_id = c.dna_id 
-                            AND c.contig_id = $contig_id" );
-    
+                            AND c.contig_id = $contig_id" );    
   }
 
   $sth->execute();
@@ -129,6 +128,8 @@ sub fetch_by_contig_id_start_end_strand {
 sub fetch_by_Slice_start_end_strand {
    my ( $self, $slice, $start, $end, $strand ) = @_;
 
+   my $seq= "";
+
    if( !$slice ){
      $self->throw("need a slice to work\n");
    }
@@ -145,7 +146,7 @@ sub fetch_by_Slice_start_end_strand {
    # need to check the strand'edness of the slice as this
    # affects the direction in which the dna seq is grabbed
    if ( $slice->strand == 1 ) {
-     $self->fetch_by_assembly_location
+     $seq = $self->fetch_by_assembly_location
        (
 	$slice->chr_start()+$start-1,
 	$slice->chr_start()+$end-1,
@@ -155,7 +156,7 @@ sub fetch_by_Slice_start_end_strand {
        );
    }
    elsif ( $slice->strand == -1 ) {
-     $self->fetch_by_assembly_location
+     $seq = $self->fetch_by_assembly_location
        (
 	$slice->chr_end()-$end+1,
 	$slice->chr_end()-$start+1,
@@ -167,6 +168,7 @@ sub fetch_by_Slice_start_end_strand {
    else {
      $self->throw("Incorrect strand set on slice $slice");
    }
+   return $seq;
 }
 
 

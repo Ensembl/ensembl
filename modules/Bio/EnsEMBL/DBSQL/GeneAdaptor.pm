@@ -245,7 +245,6 @@ sub fetch_by_contig_list{
    $str =~ s/\,$//g;
    $str = "($str)";
 
-
    # 
    # this is non-optimised, because we are going to make multiple
    # trips to the database. should fix here
@@ -292,18 +291,30 @@ sub fetch_by_Slice {
   my @cids = $mapper->list_contig_ids( $slice->chr_name(),
 				       $slice->chr_start(),
 				       $slice->chr_end());
-  
+
+  # no genes found so return
+  if ( scalar (@cids) == 0 ) {
+    return undef;
+  }
+
   my $str = "(".join( ",",@cids ).")";
 
-  my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e where e.contig_id in $str and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+  my $sth = $self->prepare("
+     SELECT distinct(t.gene_id) 
+     FROM   transcript t,exon_transcript et,exon e 
+     WHERE  e.contig_id in $str 
+     AND    et.exon_id = e.exon_id 
+     AND    et.transcript_id = t.transcript_id");
+
   $sth->execute;
   
-  while( my $arref = $sth->fetchrow_arrayref() ) {
-    my $gene = $self->fetch_by_dbID( $$arref );
-    my $newgene = $gene->transform( $slice );
-    
+  while( my ($geneid) = $sth->fetchrow ) {
+    my $gene = $self->fetch_by_dbID( $geneid );
+    my $newgene = $gene->transform( $slice );    
     push( @out, $newgene );
   }
+
+  return @out;
 }
 
 

@@ -181,10 +181,10 @@ sub _exon_from_sth {
     $exon->dbID($hashRef->{'exon_id'});
     # make first component exon
     my $component = $self->_new_Exon_from_hashRef($hashRef);
-
+    
     $exon->add_component_Exon($component);
     $sticky_length += $component->length;
-    $sticky_str    .= $component->seq->seq;
+    $sticky_str    .= $component->seq;
 
     $exon->phase($component->phase);
     $exon->adaptor($self);
@@ -195,7 +195,7 @@ sub _exon_from_sth {
 
       $exon->add_component_Exon($component);
       $sticky_length += $component->length;
-      $sticky_str     = $component->seq->seq . $sticky_str;
+      $sticky_str     = $component->seq . $sticky_str;
 
       if( $component->sticky_rank == 1 ) {
 	$exon->contig( $component->contig );
