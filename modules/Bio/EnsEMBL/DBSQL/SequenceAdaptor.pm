@@ -298,10 +298,11 @@ sub store {
 sub _reverse_comp {
   my $self = shift;
   my $seq = shift;
-  
-  $_ = reverse( $seq );
-  tr/CGTAcgta/GCATgcat/;
-  return $_;
+
+  $seq = reverse( $seq );
+  $seq =~
+    tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+  return $seq;
 }
 
 
