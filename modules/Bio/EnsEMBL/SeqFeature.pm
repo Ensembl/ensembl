@@ -377,7 +377,7 @@ sub analysis {
 
 sub validate {
     my ($self) = @_;
-
+    #print STDERR "SeqFeature  Validate ".$self->strand."\n";
     $self->vthrow("Seqname not defined in feature")     unless defined($self->seqname);
     $self->vthrow("start not defined in feature")       unless defined($self->start);
     $self->vthrow("end not defined in feature")         unless defined($self->end);
@@ -663,8 +663,11 @@ sub entire_seq{
 sub sub_SeqFeature{
    my ($self) = @_;
 
-
-   return @{$self->{'_gsf_sub_array'}};
+   if($self->{'_gsf_sub_array'}){
+     return @{$self->{'_gsf_sub_array'}};
+   }else{
+     return;
+   }
 }
 
 =head2 add_sub_SeqFeature

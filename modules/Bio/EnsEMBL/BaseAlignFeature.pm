@@ -485,7 +485,7 @@ sub _parse_features {
   } else {
     @f = sort { $b->start <=> $a->start} @$features;
   }
-    
+  #print STDERR $f[0]->gffstring."\n";  
   my $hstrand     = $f[0]->hstrand;
   my $name        = $f[0]->seqname;
   my $hname       = $f[0]->hseqname;
@@ -494,7 +494,7 @@ sub _parse_features {
   my $pvalue      = $f[0]->p_value;
   my $analysis    = $f[0]->analysis;
   my $phase       = $f[0]->phase;
-    
+ 
   # implicit strand 1 for peptide sequences
   ( defined $strand ) || ( $strand = 1 );
   ( defined $hstrand ) || ( $hstrand = 1 );
@@ -718,7 +718,11 @@ sub _parse_features {
     }
     $string .= $matchlength."M";
   }
-
+#  print STDERR "creating align feature start ".$f1start." end ".$f1end." strand ".$strand." score ".$score." percent id ".$percent." pvalue ".$pvalue." seqname ".$name." phase ".$phase." analysis ".$analysis." hstart ".$f2start," hend ".$f2end." hstrand ".$hstrand." hid ".$hname."\n"; 
+  if(!$score){
+    $self->warn("score is not set assume its 1");
+    $score = 1;
+  } 
   my $feature1 = new Bio::EnsEMBL::SeqFeature();
   
   $feature1->start($f1start);
@@ -906,7 +910,7 @@ sub _transform_feature_to_rawcontig{
       $new_feature->hend($hit_end);
       $new_feature->hstrand($feature->hstrand);
       $new_feature->hseqname($feature->hseqname);
-      $new_feature->hscore($feature->score);
+      #$new_feature->hscore($feature->score);
       $new_feature->analysis($feature->analysis);
       $new_feature->attach_seq($rawContig);
       #print STDERR "split feature ".$new_feature->gffstring."\n";
@@ -934,7 +938,7 @@ sub _transform_feature_to_rawcontig{
     $new_feature->hend($feature->hend);
     $new_feature->hstrand($feature->hstrand);
     $new_feature->hseqname($feature->hseqname);
-    $new_feature->hscore($feature->score);
+    #$new_feature->hscore($feature->score);
     $new_feature->analysis($feature->analysis);
     $new_feature->attach_seq($rawContig);
 

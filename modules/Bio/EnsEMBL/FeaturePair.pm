@@ -152,6 +152,7 @@ sub feature1 {
   my ($self,$arg) = @_;
 
   if($arg) {
+    #print STDERR "have ".$arg." for feature1 and it has ".$arg->entire_seq."\n";
       $self->start($arg->start());
       $self->end($arg->end());
       $self->strand($arg->strand());
@@ -163,7 +164,9 @@ sub feature1 {
       $self->phase($arg->phase());
       $self->end_phase($arg->end_phase());
       $self->analysis($arg->analysis);
-      $self->attach_seq($arg->entire_seq);
+      if($arg->entire_seq){
+	$self->attach_seq($arg->entire_seq);
+      }
     }
 
   return $self;
@@ -183,19 +186,19 @@ sub feature1 {
 
 sub feature2 {
     my ($self,$arg) = @_;
-
+    #print "passing ".$arg." into feature2\n";
     if (defined($arg)) {
       unless(ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI")) {
 	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI");
       }
 
-      $self->{_hstart}      = $arg->start();
-      $self->{_hend}        = $arg->end();
-      $self->{_hstrand}     = $arg->strand();
-      $self->{_hseqname}    = $arg->seqname();
-      $self->{_hphase}      = $arg->phase();
-      $self->{_hend_phase}  = $arg->end_phase();
-      $self->{_hentire_seq} = $arg->entire_seq();
+      $self->hstart($arg->start());
+      $self->hend($arg->end());
+      $self->hstrand($arg->strand());
+      $self->hseqname($arg->seqname());
+      $self->hphase($arg->phase());
+      $self->hend_phase($arg->end_phase());
+     
       return $arg;
     } 
     
@@ -207,14 +210,11 @@ sub feature2 {
 		    -SCORE      => $self->score(),
 		    -PERCENT_ID => $self->percent_id(),
 		    -P_VALUE    => $self->p_value(),
-		    -PHASE      => $self->{_hphase},
-		    -END_PHASE  => $self->{_hend_phase},
+		    -PHASE      => $self->hphase,
+		    -END_PHASE  => $self->hend_phase,
 		    -ANALYSIS   => $self->analysis);
 
-    if($self->{_hentire_seq}) {
-      $seq->attach_seq($self->{_hentire_seq});
-    }
-
+   
     return $seq;
 }
 
@@ -233,8 +233,9 @@ sub feature2 {
 
 sub hseqname {
     my ($self,$arg) = @_;
-
+    
     if (defined($arg)) {
+     # print STDERR "hseqname being set ".$arg."\n";
       $self->{_hseqname} = $arg;
     }
 
@@ -257,6 +258,7 @@ sub hstart {
   my ($self,$value) = @_;
   
   if (defined($value)) {
+    #print STDERR "htart being set to ".$value,"\n";
     $self->{_hstart} = $value;
   }
   
@@ -278,6 +280,7 @@ sub hend{
     my ($self,$value) = @_;
 
     if (defined($value)) {
+      #print STDERR "hend being set to ".$value."\n"; 
       $self->{_hend} = $value;
     }
 
@@ -299,6 +302,7 @@ sub hstrand{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
+      #print "hstrand = ".$arg."\n";
       $self->{_hstrand} = $arg;
     } 
     
@@ -346,8 +350,10 @@ sub invert {
 sub validate {
   my ($self) = @_;
   
+  #print STDERR "Feature Pair validate strand ".$self->strand." hstrand ".$self->hstrand."\n";
   $self->SUPER::validate();
-  $self->feature2->validate();
+  $self->feature2->validate;
+  #$f2->validate();
   
   # Now the analysis object
   if (defined($self->analysis)) {
@@ -711,6 +717,7 @@ sub hp_value {
 
   return $self->{_hp_value};
 }
+
 
 
 1;
