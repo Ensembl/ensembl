@@ -173,8 +173,8 @@ sub new {
                 'seq'               => $seq,
                 'seq_region_name'   => $seq_region_name,
                 'seq_region_length' => $seq_region_length,
-                'start'             => $start,
-                'end'               => $end,
+                'start'             => int($start),
+                'end'               => int($end),
                 'strand'            => $strand,
                 'adaptor'           => $adaptor}, $class;
 }
@@ -776,8 +776,8 @@ sub expand {
 
   #fastest way to copy a slice is to do a shallow hash copy
   my %new_slice = %$self;
-  $new_slice{'start'} = $new_start;
-  $new_slice{'end'}   = $new_end;
+  $new_slice{'start'} = int($new_start);
+  $new_slice{'end'}   = int($new_end);
 
   return bless \%new_slice, ref($self);
 }
@@ -831,8 +831,8 @@ sub sub_Slice {
 
   #fastest way to copy a slice is to do a shallow hash copy
   my %new_slice = %$self;
-  $new_slice{'start'} = $new_start;
-  $new_slice{'end'}   = $new_end;
+  $new_slice{'start'} = int($new_start);
+  $new_slice{'end'}   = int($new_end);
   $new_slice{'strand'} = $new_strand;
   if( $new_seq ) {
     $new_slice{'seq'} = $new_seq;
