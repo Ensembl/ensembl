@@ -246,12 +246,21 @@ sub fetch_all {
 =head2 fetch_by_name
 
   Arg [1]    : string $name
-               The name of the coordinate system to retrieve
+               The name of the coordinate system to retrieve.  Alternatively
+               this may be an alias for a real coordinate system.  Valid
+               aliases are 'toplevel' and 'seqlevel'.
   Arg [2]    : string $version (optional)
                The version of the coordinate system to retrieve.  If not
                specified the default version will be used.
   Example    : $coord_sys = $csa->fetch_by_name('clone');
                $coord_sys = $csa->fetch_by_name('chromosome', 'NCBI33');
+               #toplevel is an alias for the highest coordinate system
+               #such as the chromosome coordinate system
+               $coord_sys = $csa->fetch_by_name('toplevel');
+               $coord_sys = $csa->fetch_by_name('toplevel', 'NCBI31');
+               #seqlevel is an alias for the sequence level coordinate system
+               #such as the clone or contig coordinate system
+               $coord_sys = $csa->fetch_by_name('seqlevel');
   Description: Retrieves a coordinate system by its name
   Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : throw if the requested coordinate system does not exist
@@ -270,8 +279,21 @@ sub fetch_by_name {
 
   $version = lc($version) if($version);
 
+
+  if($name eq 'seqlevel') {
+    return $self->fetch_sequence_level();
+  } elsif($name eq 'toplevel') {
+    return $self->fetch_top_level($version);
+  }
+
   if(!exists($self->{'_name_cache'}->{$name})) {
-    throw("Coord_system with name [$name] does not exist.");
+    my $guess = '';
+    if($name =~ /top/) {
+      $guess = "\nDid you mean 'toplevel' instead of '$name'?";
+    } elsif($name =~ /seq/) {
+      $guess = "\nDid you mean 'seqlevel' instead of '$name'?";
+    }
+    throw("Coord_system with name [$name] does not exist.$guess");
   }
 
   my @coord_systems = @{$self->{'_name_cache'}->{$name}};
@@ -303,7 +325,9 @@ sub fetch_by_name {
 =head2 fetch_all_by_name
 
   Arg [1]    : string $name
-               The name of the coordinate system to retrieve
+               The name of the coordinate system to retrieve.  This can be
+               the name of an actual coordinate system or an alias for a
+               coordinate system.  Valid aliases are 'toplevel' and 'seqlevel'.
   Example    : foreach my $cs (@{$csa->fetch_all_by_name('chromosome')}){
                  print $cs->name(), ' ', $cs->version();
                }
@@ -319,6 +343,12 @@ sub fetch_all_by_name {
   my $name = lc(shift); #case insensitive matching
 
   throw('Name argument is required') if(!$name);
+
+  if($name eq 'seqlevel') {
+    return [$self->fetch_sequence_level()];
+  } elsif($name eq 'toplevel') {
+    return $self->fetch_all_top_level();
+  }
 
   return $self->{'_name_cache'}->{$name} || [];
 }
