@@ -340,22 +340,23 @@ sub exists {
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
  
-  my $sth = $self->prepare("
-  SELECT t.transcript_id, t.translation_id
-                FROM transcript t
-                WHERE t.gene_id = ?
-  ");
+  my $sth = $self->prepare(
+      "SELECT t.transcript_id, t.translation_id
+       FROM   transcript t
+       WHERE  t.gene_id = ?");
   
   $sth->execute( $gene->dbID );
-
+  
   while (my($transcript_id, $translation_id) = $sth->fetchrow) {
     if($translation_id) {
-      foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) { 
+      foreach my $translink (@{$self->_fetch_by_object_type($translation_id, 
+							    'Translation')} ){ 
         $gene->add_DBLink($translink);
       }
     }
-    foreach my $translink(@{ $self->_fetch_by_object_type( $transcript_id, 'Transcript' )} ) { 
-        $gene->add_DBLink($translink);
+    foreach my $translink(@{ $self->_fetch_by_object_type( $transcript_id, 
+							   'Transcript' )} ) { 
+      $gene->add_DBLink($translink);
     }
   }
   if($gene->stable_id){
@@ -491,43 +492,41 @@ sub _fetch_by_object_type {
     my ( $refID, $dbprimaryId, $displayid, $version, 
 	 $desc, $dbname, $release, $exDB_status, $objid, 
          $synonym, $queryid, $targetid ) = @$arrRef;
-    my $exDB;
-	my %obj_hash = ( 
-		_adaptor => $self,
-        _dbID => $refID,
+
+    my %obj_hash = ( 
+	_adaptor    => $self,
+        _dbID       => $refID,
         _primary_id => $dbprimaryId,
         _display_id => $displayid,
-        _version => $version,
-        _release => $release,
-        _dbname => $dbname);
+        _version    => $version,
+        _release    => $release,
+        _dbname     => $dbname);
 			    
     # using an outer join on the synonyms as well as on identity_xref, we
     # now have to filter out the duplicates (see v.1.18 for
     # original). Since there is at most one identity_xref row per xref,
     # this is easy enough; all the 'extra' bits are synonyms
     if ( !$seen{$refID} )  {
-      $seen{$refID}++;
-      
+      my $exDB;
+
       if ((defined $queryid)) {         # an xref with similarity scores
         $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
-		$exDB->query_identity($queryid);
+	$exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
-        
       } else {
         $exDB = Bio::EnsEMBL::DBEntry->new_fast(\%obj_hash);
       }
       
-      $exDB->description( $desc ) if ( $desc eq defined);
-      
-	  $exDB->status( $exDB_status ) if ( $exDB_status eq defined);
+      $exDB->description($desc)   if(defined($desc));
+      $exDB->status($exDB_status) if(defined($exDB_status));
       
       push( @out, $exDB );
-    } #if (!$seen{$refID})
+      $seen{$refID} = $exDB;
+    } 
 
-#    $exDB still points to the same xref, so we can keep adding synonyms
-     
-    	$exDB->add_synonym( $synonym ) if ($synonym eq defined);    
-  }                                     # while <a row from database>
+    # $exDB still points to the same xref, so we can keep adding synonyms
+    $seen{$refID}->add_synonym($synonym) if(defined($synonym));
+  }
   
   return \@out;
 }
