@@ -4,6 +4,7 @@
 
 use strict;
 use Getopt::Std;
+use Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher;
 
 BEGIN {
     my $script_dir = $0;
@@ -11,7 +12,6 @@ BEGIN {
     unshift (@INC, $script_dir);
     require "mapping_conf.pl";
 }
-
 
 my %conf =  %::mapping_conf;
 
@@ -29,21 +29,27 @@ my $opt_o = $conf{'pmatch_out'};
 my %target2length;
 my %query2length;
 
-$target = "/acari/work4/mongin/mouse_5.3/mapping/Primary/target_test.fa";
-$query = "/acari/work4/mongin/mouse_5.3/mapping/Primary/t.fa";
+#$t_thr = 40;
+#$q_thr = 40;
+#$target = "/acari/work4/mongin/final_build/release_mapping/Primary/final.fa";
+#$query = "/acari/work4/mongin/final_build/release_mapping/Primary/sptr_ano_gambiae_19_11_02_formated.fa";
 
 #################################
 # run scanwisepep
 
-    my $scanwise = "/acari/work4/mongin/tmp/scanwisep -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /acari/work4/mongin/mouse_5.3/mapping/Output/$$.pmatch";
+    my $scanwise = "/nfs/acari/birney/prog/wise2/src/models/scanwisep -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /tmp/$$.pmatch";
 
 print STDERR "Running Scanwise: $scanwise\n";
 
 system "$scanwise";
 
-open (PMATCH , "/acari/work4/mongin/mouse_5.3/mapping/Output/$$.pmatch") || die "cannot read $$.pmatch\n";
+open (PMATCH , "/tmp/$$.pmatch") || die "cannot read /tmp/$$.pmatch\n";
 
-#open (PMATCH , "/acari/work4/mongin/mouse_5.3/mapping/Primary/scanwise_test.out");
+open (OUT,"$opt_o") || die "cannot open $opt_o\n";
+
+#open (PMATCH , "/acari/work4/mongin/final_build/release_mapping/Primary/t.pmatch") || die "cannot read $$.pmatch\n";
+
+#open (PMATCH , "/tmp/4367756.pmatch");
 
 print STDERR "Parsing Output\n";
 
@@ -56,8 +62,19 @@ my $count = 0;
 
 my %match2desc;
 
-my $getseqs = "/usr/local/ensembl/bin/getseqs";
+my $format = "fasta";
+my @targetdb = "/acari/work4/mongin/final_build/release_mapping/pred_index";
+my @querydb = "/acari/work4/mongin/final_build/release_mapping/index";
 
+    my $tfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher->new(
+										-db     => \@targetdb,
+										-format => $format,
+										);
+
+    my $qfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher->new(
+										-db     => \@querydb,
+										-format => $format,
+										);
 while (<PMATCH>) {
     $count++;
     chomp;
@@ -76,54 +93,39 @@ while (<PMATCH>) {
     my $match = join(":",@matches);
 
     if (! defined $match2desc{$match}->{'tlength'}){
+
+	my $seq = $tfetcher->get_Seq_by_acc($tid);
 	
-	my $cmd = "$getseqs '$tid' $target";
-	
-	 open(IN,"$cmd 2>/dev/null |") || die "Can't get $tid\n";
-	my $seqstr;
-	 while(<IN>){
-	     chomp;
-	     $seqstr .= $_;
-	 }
-	my $length = length($seqstr);
-	#print STDERR "LENGTH: $length\n";
+	my $length = length($seq->seq);
 	$match2desc{$match}->{'tlength'} = $length;
     }
-
     
     if (! defined $match2desc{$match}->{'qlength'}){
-	my $cmd = "$getseqs '$qid' $query";
+	my $seq = $qfetcher->get_Seq_by_acc($qid);
 
-	open(IN,"$cmd 2>/dev/null |") || die "Can't get $qid\n";
-	 my $seqstr;
-	while(<IN>){
-	    chomp;
-	    $seqstr .= $_;
-	}
-	my $length = length($seqstr);
+	my $length = length($seq->seq);
 	
 	$match2desc{$match}->{'qlength'} = $length;
     }
 
-    my $matchlength = $tend - $tstart + 1;
-        
-    $match2desc{$match}->{'matchlength'} += $matchlength;
+    my $tmatchlength = $tend - $tstart + 1;
+    my $qmatchlength = $qend - $qstart + 1;
+
+    $match2desc{$match}->{'tmatchlength'} += $tmatchlength;
+    $match2desc{$match}->{'qmatchlength'} += $qmatchlength;
     $match2desc{$match}->{'status'} = $status;
 }
 
 foreach my $key(keys %match2desc) {
-    print STDERR "$key\t";
-
-    my ($query,$target) = split($key,':');
-
-    my $targetperc =   $match2desc{$key}->{'matchlength'} * 100 / $match2desc{$key}->{'tlength'}; 
-    
-    my $queryperc =  $match2desc{$key}->{'matchlength'} * 100 / $match2desc{$key}->{'qlength'}; 
-
-    my $st = $match2desc{$key}->{'status'};
-
-    print STDERR "$query\t$queryperc\t$target\t$targetperc\t$status\n";
-
+    my ($query,$target) = split(/:/,$key);
+    my $targetperc =   $match2desc{$key}->{'tmatchlength'} * 100 / $match2desc{$key}->{'tlength'}; 
+    my $queryperc =  $match2desc{$key}->{'qmatchlength'} * 100 / $match2desc{$key}->{'qlength'}; 
+    my $status = $match2desc{$key}->{'status'};
+    if (($targetperc >= $t_thr)&&($queryperc >= $q_thr)) {
+	
+	print OUT "$query\t$queryperc\t$target\t$targetperc\t$status\n";
+	
+    }
 }
 
 
