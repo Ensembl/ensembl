@@ -59,8 +59,6 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::Root; # included for backwards compatibility
-use Bio::EnsEMBL::Chromosome; # included for backwards compatibility
-use Bio::EnsEMBL::RawContig; # included for backwards compatibility
 
 use Bio::PrimarySeqI;
 
@@ -2147,12 +2145,10 @@ sub get_Chromosome {
   my $csa = $self->adaptor->db->get_CoordSystemAdaptor();
   my ($top_cs) = @{$csa->fetch_all()};
 
-  my $chr = $self->adaptor->fetch_by_region($top_cs->name(),
-                                            $self->seq_region_name(),
-                                           undef,undef,undef,
-                                            $top_cs->version());
-
-  return bless($chr, 'Bio::EnsEMBL::Chromosome');
+  return $self->adaptor->fetch_by_region($top_cs->name(),
+                                         $self->seq_region_name(),
+                                         undef,undef,undef,
+                                         $top_cs->version());
 }
 
 

@@ -11,8 +11,8 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor
 
 =head 1 SUMMARY
 
-Allows features created externally from EnsEMBL in a single coordinate system 
-to be retrieved in several other (EnsEMBL-style) coordinate systems. This is 
+Allows features created externally from Ensembl in a single coordinate system
+to be retrieved in several other (Ensembl-style) coordinate systems. This is
 intended to be a replacement for the old 
 Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
 
@@ -25,10 +25,10 @@ Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
 
   $xf_adaptor = new ExternalFeatureAdaptorSubClass;
 
-  #Connect the EnsEMBL core database:
+  #Connect the Ensembl core database:
   $xf_adaptor->db($database_adaptor);
 
-  #get some features in RawContig coords
+  #get some features in vontig coords
   @feats = @{$xf_adaptor->fetch_all_by_contig_name('AC000087.2.1.42071')};
 
   #get some features in assembly coords
@@ -191,7 +191,7 @@ sub coordinate_systems {
                'External features' but you are encouraged to override this 
                method and provide your own meaningful name for the features
                your adaptor provides.  This also allows you to distinguish the
-               type of features retrieved from RawContigs or Slices.  See
+               type of features retrieved from Slices.  See
                the PODs for Bio::EnsEMBL::Slice::get_all_ExternalFeatures and 
                Bio::EnsEMBL::DBSQL::DBAdaptor::add_ExternalFeatureAdaptor 
                methods. 
@@ -422,39 +422,6 @@ sub _guess_slice_setter {
 }
 
 
-
-=head2 fetch_all_by_RawContig
-
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig
-  Example    : @features = @{$self->fetch_all_by_RawContig($contig)};
-  Description: You should use the fetch_all_by_Slice method instead of this
-               method now.  RawContigs have been effectively replaced by
-               Slices.
-
-               If this method is overridden then it is also necessary to 
-               override the fetch_all_by_contig_name method due to 
-               interdependencies.  As well, if this method is overridden then 
-               the coordinate_systems method must return 'CONTIG' as one of 
-               its values.  
-
-               It is probably more useful to only override the 
-               fetch_all_by_contig_name instead of both methods. This method 
-               will work as is - providing at least one other fetch method has 
-               been overridden.               
-  Returntype : reference to a list of Bio::SeqFeature objects in the RawContig
-               coordinate system.
-  Exceptions : thrown if the input argument is incorrect
-  Caller     : general, fetch_all_by_contig_name, 
-               fetch_all_by_Clone, fetch_all_by_chr_start_end
-
-=cut
-
-sub fetch_all_by_RawContig {
-  my $self = shift;
-  return $self->fetch_all_by_Slice(@_);
-}
-
-
 =head2 fetch_all_by_contig_name
 
   Arg [1]    : string $contig_name
@@ -466,7 +433,7 @@ sub fetch_all_by_RawContig {
                if not specified the whole of the contig is used.
   Example    : @fs = @{$self->fetch_all_by_contig_name('AB00879.1.1.39436')};
   Description: Retrieves features on the contig defined by the name 
-               $contig_name in RawContig coordinates.
+               $contig_name in contig coordinates.
 
                If this method is overridden then the coordinate_systems 
                method must return 'CONTIG' as one of its values. 
@@ -474,7 +441,7 @@ sub fetch_all_by_RawContig {
                This method will work as is (i.e. without being overridden) 
                providing at least one other fetch method has 
                been overridden.               
-  Returntype : reference to a list of Bio::SeqFeature objects in the RawContig
+  Returntype : reference to a list of Bio::SeqFeature objects in the contig
                coordinate system.
   Exceptions : thrown if the input argument is incorrect
                thrown if the coordinate_systems method returns the value 
@@ -524,13 +491,13 @@ sub fetch_all_by_contig_name {
                If this method is overridden then the coordinate_systems 
                method must return 'SUPERCONTIG' as one of its values. 
 
-               This method will work as is (i.e. without being overridden) 
+               This method will work as is (i.e. without being overridden)
                providing at least one other fetch method has 
-               been overridden.               
-  Returntype : reference to a list of Bio::SeqFeature objects in the RawContig
+               been overridden.
+  Returntype : reference to a list of Bio::SeqFeature objects in the contig
                coordinate system.
   Exceptions : thrown if the input argument is incorrect
-               thrown if the coordinate_systems method returns the value 
+               thrown if the coordinate_systems method returns the value
                'SUPERCONTIG' and this method has not been overridden.
   Caller     : general, fetch_all_by_Slice
 
@@ -561,41 +528,6 @@ sub fetch_all_by_supercontig_name {
 }
 
 
-=head2 fetch_all_by_Clone
-
-  Arg [1]    : Bio::EnsEMBL::Clone $clone
-  Example    : @features = @{$self->fetch_all_by_Clone($clone)};
-  Description: You should not use this method anymore. Use the 
-               fetch_all_by_Slice method instead. Clones have effectively been
-               replaced by Slices on the 'clone' coordinate system.
-               
-               If this method is overridden then it is also necessary to 
-               override the fetch_all_by_clone_accession method due to 
-               interdependencies.  As well, if this method is overridden then 
-               the coordinate_systems method must return 'CLONE' as one of its
-               values.  
-              
-               It is probably more useful to override only the 
-               fetch_all_by_clone_accession method rather than both of these 
-               methods. This method will work as is - providing at least one 
-               other fetch method has been overridden.               
-  Returntype : reference to a list of Bio::SeqFeature objects in the Clone
-               coordinate system
-  Exceptions : thrown if the input argument is incorrect
-               thrown if the coordinate systems method does not return any 
-               valid values.
-  Caller     : general, fetch_all_by_clone_accession, 
-               fetch_all_by_RawContig
-
-=cut
-
-sub fetch_all_by_Clone {
-  my $self = shift;
-  return $self->fetch_all_by_Slice(@_);
-}
-
-
-
 =head2 fetch_all_by_clone_accession
 
   Arg [1]    : string $acc
@@ -603,23 +535,19 @@ sub fetch_all_by_Clone {
   Arg [2]    : (optional) string $ver
   Arg [3]    : (optional) int $start
   Arg [4]    : (optional) int $end
- 
+
   Example    : @fs = @{$self->fetch_all_by_clone_accession('AC000093')};
   Description: Retrieves features on the clone defined by the $acc arg in 
                Clone coordinates. 
-               
+
                If this method is overridden then the coordinate_systems method
                must return 'CLONE' as one of its values. The arguments 
                start, end, version are passed if this method is overridden and
                can optionally be used to reduce the scope of the query and 
-               improve performance.  
+               improve performance.
 
-               If the fetch_all_by_Clone method has been overridden then this
-               method must also be overridden to chain calls to that method
-               (and avoid throwing an exception).
-               This method will work as is - providing at least one other 
-               fetch method has been overridden and the fetch_all_by_Clone 
-               method has not been overridden.
+               This method will work as is - providing at least one other
+               fetch method has been overridden.
   Returntype : reference to a list of Bio::SeqFeature objects in the Clone
                coordinate system
   Exceptions : thrown if the input argument is incorrect
@@ -627,8 +555,7 @@ sub fetch_all_by_Clone {
                and this method is not overridden.
                thrown if the coordinate systems method does not return any 
                valid values.
-  Caller     : general, fetch_all_by_clone_accession, 
-               fetch_all_by_RawContig
+  Caller     : general, fetch_all_by_clone_accession
 
 =cut
 
@@ -687,7 +614,7 @@ sub fetch_all_by_clone_accession {
   Exceptions : Thrown if the coordinate_systems method returns ASSEMBLY as a 
                value and this method is not overridden.  
                Thrown if any of the input arguments are incorrect
-  Caller     : general, fetch_all_by_Slice, fetch_all_by_RawContig
+  Caller     : general, fetch_all_by_Slice
 
 =cut
 

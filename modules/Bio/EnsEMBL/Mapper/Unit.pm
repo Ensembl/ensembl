@@ -47,8 +47,7 @@ sub new {
 =head2 id
 
   Arg  1      int|char $id
-	      the id of the object (e.g. chromosome
-	      or RawContig) which is mapped
+	      the id of the object (e.g. seq_region_name) which is mapped
   Function    accessor method
   Returntype  int|char
   Exceptions  none

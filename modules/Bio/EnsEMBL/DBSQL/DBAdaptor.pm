@@ -118,36 +118,6 @@ sub new {
   return $self;
 }
 
-#=head2 new_fast
-
-#  Arg [-CON]: Bio::EnsEMBL::DBSQL::DBConnection
-
-#  Exmaple    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -con => $dbc);
-#  Description: Constructor for DBAdaptor.
-#  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
-#  Exceptions : none
-#  Caller     : general
-
-#=cut
-
-#sub new_fast{
-#  my($class, @args) = @_;
-#  my ( $con ) = rearrange([qw(CON)],@args);
-
-#  #call superclass constructor
-#  my $self ={};
-#  bless $self,$class;
-#  unless($con && ref $con &&
-#	 $con->isa('Bio::EnsEMBL::DBSQL::DBConnection')) {
-#    throw("$con passed is not of type Bio::EnsEMBL::DBSQL::DBConnection");
-#  }
-#  $self->dbc($con);
-#  $self->species($con->species());
-#  $self->group($con->group());
-
-#  return $self;
-#}
-
 
 sub new_merged{
   my($class, $species, @args) = @_;
@@ -265,19 +235,7 @@ sub remove_db_adaptor {
 
 sub get_all_db_adaptors {
   my ($self) = @_;
-
-  my %ret = %{Bio::EnsEMBL::Registry->get_all_db_adaptors($self)};
-
-#  foreach my $key (%ret){
-#    print $key."\n";
-#  }
-#  print %ret."\n";
-  return \%ret;
-#  unless(defined $self->{'_db_adaptors'}) {
-#    return {};
-#  }
-
-#  return $self->{'_db_adaptors'};
+  return Bio::EnsEMBL::Registry->get_all_db_adaptors($self);
 }
 
 
@@ -524,66 +482,6 @@ sub get_adaptor {
 
 
 
-sub prepare{
-  my ($self, @args) = @_;
-
- deprecate("prepare Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->prepare(@args);
-}
-
-sub dbname{
-  my ($self, @args) = @_;
-
- deprecate("dbname Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->dbname(@args);
-}
-
-sub disconnect_when_inactive{
-  my ($self, @args) = @_;
-
- deprecate("disconnect_when_inactive Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->disconnect_when_inactive(@args);
-}
-
-sub host{
-  my ($self, @args) = @_;
-
- deprecate("host Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->host(@args);
-}
-sub username{
-  my ($self, @args) = @_;
-
- deprecate("username Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->username(@args);
-}
-sub password{
-  my ($self, @args) = @_;
-
- deprecate("password Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->password(@args);
-}
-sub driver{
-  my ($self, @args) = @_;
-
- deprecate("driver Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->driver(@args);
-}
-sub port{
-  my ($self, @args) = @_;
-
- deprecate("port Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->port(@args);
-}
-
-sub db_handle{
-  my ($self, @args) = @_;
-
-
- deprecate("db_handle Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
-  $self->dbc->db_handle(@args);
-}
-
 =head2 set_adaptor
 
   Arg [1]    : Canonical data type for new adaptor.
@@ -812,47 +710,7 @@ sub DESTROY {} # required due to AUTOLOAD
 # sub DEPRECATED METHODS
 #########################
 
-
-=head2 get_CloneAdaptor
-
-  Description: CloneAdaptor is deprecated.  Use SliceAdaptor instead.
-
-=cut
-
-sub get_CloneAdaptor {
-  my( $self ) = @_;
-
-  return $self->dnadb->get_adaptor("Clone");
-}
-
-=head2 get_ChromosomeAdaptor
-
-  Description: ChromosomeAdaptor is deprecated.  Use SliceAdaptor instead.
-
-=cut
-
-sub get_ChromosomeAdaptor {
-    my( $self ) = @_;
-
-    return 
-      $self->dnadb->get_adaptor("Chromosome");
-}
-
-=head2 get_RawContigAdaptor
-
-  Description: RawContigAdaptor is deprecated. Use SliceAdaptor instead.
-
-=cut
-
-sub get_RawContigAdaptor {
-    my( $self ) = @_;
-
-    return $self->dnadb->get_adaptor("RawContig");
-}
-
-sub source {
-  deprecate('Do not use - this method does nothing');
-}
+sub source { deprecate('Do not use - this method does nothing'); }
 
 
 =head2 assembly_type
@@ -865,14 +723,11 @@ sub source {
 sub assembly_type{
   my $self = shift;
 
-  deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
+  deprecate('Use CoordSystemAdaptor $csa->fetch_all->[0]->version() instead');
 
   my $csa = $self->get_CoordSystemAdaptor();
-
-  #get the default top-level coord system
-  my ($dbID,$name,$version) = $csa->fetch_top_level();
-
-  return $version;
+  my ($cs) = @{$csa->fetch_all()};
+  return ($cs) ? $cs->version() : undef;
 }
 
 
@@ -886,15 +741,76 @@ sub assembly_type{
 
 sub list_supported_assemblies {
   my($self) = @_;
-  deprecate('Use CoordSystemAdaptor::fetch_all_top_level instead');
+  deprecate('Use CoordSystemAdaptor::fetch_all instead');
 
   my $csa = $self->get_CoordSystemAdaptor();
-  my @versions;
-  foreach my $cs (@{$csa->fetch_all_top_level()}) {
-    my ($dbID, $name, $version) = @$csa;
-    push @versions, $version;
+  my %versions;
+  foreach my $cs (@{$csa->fetch_all()}) {
+    $versions{$cs->version()} = 1;
   }
-  return @versions;
+
+  return keys %versions;
+}
+
+
+sub prepare{
+  my ($self, @args) = @_;
+
+ deprecate("prepare Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->prepare(@args);
+}
+
+sub dbname{
+  my ($self, @args) = @_;
+
+ deprecate("dbname Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->dbname(@args);
+}
+
+sub disconnect_when_inactive{
+  my ($self, @args) = @_;
+
+ deprecate("disconnect_when_inactive Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->disconnect_when_inactive(@args);
+}
+
+sub host{
+  my ($self, @args) = @_;
+
+ deprecate("host Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->host(@args);
+}
+sub username{
+  my ($self, @args) = @_;
+
+ deprecate("username Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->username(@args);
+}
+sub password{
+  my ($self, @args) = @_;
+
+ deprecate("password Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->password(@args);
+}
+sub driver{
+  my ($self, @args) = @_;
+
+ deprecate("driver Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->driver(@args);
+}
+sub port{
+  my ($self, @args) = @_;
+
+ deprecate("port Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->port(@args);
+}
+
+sub db_handle{
+  my ($self, @args) = @_;
+
+
+ deprecate("db_handle Should no longer be called from the DBAdaptor. DBConnection should now be used OR preferably the object adaptor itself\n");
+  $self->dbc->db_handle(@args);
 }
 
 

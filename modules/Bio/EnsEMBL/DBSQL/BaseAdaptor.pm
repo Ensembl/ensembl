@@ -69,7 +69,7 @@ method, sometimes an individual object. For example
 
 or
 
-    @fp  = @{$simple_feature_adaptor->fetch_all_by_RawContig($contig)};
+    @fp  = @{$simple_feature_adaptor->fetch_all_by_Slice($slice)};
 
 
 Occassionally adaptors need to provide access to lists of ids. In this case the

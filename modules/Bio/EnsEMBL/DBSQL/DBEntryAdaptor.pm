@@ -574,7 +574,6 @@ sub remove_from_object {
   Caller     : fetch_all_by_Gene
                fetch_all_by_Translation
                fetch_all_by_Transcript
-               fetch_all_by_RawContig
 
 =cut
 

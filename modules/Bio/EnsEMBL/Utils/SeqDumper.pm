@@ -12,20 +12,20 @@
   $seq_dumper->dump($slice, 'EMBL');
 
   #dump GENBANK format to a file
-  $seq_dumper->dump($contig, 'GENBANK', 'out.genbank');
+  $seq_dumper->dump($slice, 'GENBANK', 'out.genbank');
 
   #dump FASTA format to a file
   $seq_dumper->dump($slice, 'FASTA', 'out.fasta');
 
 =head1 DESCRIPTION
 
-  A relatively simple and lite-weight flat file dumper for EnsEMBL slice or
-  RawContigs.  The memory efficiency could be improved and this is currently
+  A relatively simple and lite-weight flat file dumper for Ensembl slices.
+  The memory efficiency could be improved and this is currently
   not very good for dumping very large sequences such as whole chromosomes.
 
 =head1 CONTACT
 
-  Contact the EnsEMBL development list with questions: <ensembl-dev@ebi.ac.uk>
+  Contact the Ensembl development list with questions: <ensembl-dev@ebi.ac.uk>
 
 =cut
 
@@ -305,7 +305,7 @@ sub dump {
 
 =head2 dump_embl
 
-  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [1]    : Bio::EnsEMBL::Slice
   Arg [2]    : IO::File $FH
   Example    : $seq_dumper->dump_embl($slice, $FH);
   Description: Dumps an EMBL flat file to an open file handle
@@ -473,7 +473,7 @@ sub dump_embl {
 
 =head2 dump_genbank
 
-  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [1]    : Bio::EnsEMBL::Slice
   Arg [2]    : IO::File $FH
   Example    : $seq_dumper->dump_genbank($slice, $FH);
   Description: Dumps a GENBANK flat file to an open file handle
@@ -657,27 +657,25 @@ sub _dump_feature_table {
   # Transcripts & Genes
   #
   my @gene_slices;
-  if($slice->isa('Bio::EnsEMBL::Slice')) { #can't dump genes from RawContigs
-    if($self->is_enabled('gene')) {
-      push @gene_slices, $slice;
-    }
+  if($self->is_enabled('gene')) {
+    push @gene_slices, $slice;
+  }
 
-    # Retrieve slices of other database where we need to pull genes from
+  # Retrieve slices of other database where we need to pull genes from
 
-    my $gene_dbs = {'vegagene' => 'vega',
-                    'estgene'  => 'estgene'};
+  my $gene_dbs = {'vegagene' => 'vega',
+                  'estgene'  => 'estgene'};
 
-    foreach my $gene_type (keys %$gene_dbs) {
-      if($self->is_enabled($gene_type)) {
-        my $db = $self->get_database($gene_dbs->{$gene_type});
-        if($db) {
-          my $sa = $db->get_SliceAdaptor();
-          push @gene_slices, $sa->fetch_by_name($slice->name());
-        } else {
-          warning("A [". $gene_dbs->{$gene_type} ."] database must be " .
-                  "attached to this SeqDumper\n(via a call to " .
-                  "attach_database) to retrieve genes of type [$gene_type]");
-        }
+  foreach my $gene_type (keys %$gene_dbs) {
+    if($self->is_enabled($gene_type)) {
+      my $db = $self->get_database($gene_dbs->{$gene_type});
+      if($db) {
+        my $sa = $db->get_SliceAdaptor();
+        push @gene_slices, $sa->fetch_by_name($slice->name());
+      } else {
+        warning("A [". $gene_dbs->{$gene_type} ."] database must be " .
+                "attached to this SeqDumper\n(via a call to " .
+                "attach_database) to retrieve genes of type [$gene_type]");
       }
     }
   }
@@ -850,7 +848,7 @@ sub _dump_feature_table {
 
 =head2 dump_fasta
 
-  Arg [1]    : Bio::EnsEMBL::Slice or Bio::EnsEMBL::RawContig
+  Arg [1]    : Bio::EnsEMBL::Slice
   Arg [2]    : IO::File $FH
   Example    : $seq_dumper->dump_fasta($slice, $FH);
   Description: Dumps an FASTA flat file to an open file handle

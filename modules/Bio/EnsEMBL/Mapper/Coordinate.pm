@@ -104,7 +104,7 @@ sub strand{
 
   Arg  1      char|int $id
               id of object in mapped region
-	      e.g. RawContig ID/chromosome name
+	      e.g. seq_region_id / seq_region_name
   Function    accessor method
   Returntype  char|int
   Exceptions  none
