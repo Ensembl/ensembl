@@ -467,16 +467,22 @@ Features
       spans a boundary in the coordinate system, undef is returned by the
       method instead.
 
-    translate(slice)
+    transfer(slice)
     ----------------
       Shifts a feature from one slice to another.  If the new slice is in the
       same coordinate system but different frag_name (e.g. both chromosomal but
       different chromosomes) an exception is thrown.  If the new slice is
       in a different coordinate system then the transform method is called 
       first.  If the feature would be split accross a boundary undef is
-      returned instead.  As with transform no features are changed in place,
-      rather a new copy of the feature is returned instead.
+      returned instead.  After the transform there follows a potentially 
+      move, if the slice does not cover the full fragment.
+      If there is no transform call necessary, the feature is copied and then
+      moved.
 
+    move( start, end, strand )
+    --------------------------
+      In place change of the coordinates of the feature. It will stay on the same
+      slice.
 
     map(coord_system)
     -----------------
