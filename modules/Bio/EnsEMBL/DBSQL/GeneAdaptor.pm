@@ -263,11 +263,40 @@ sub fetch_by_contig_list{
 	    
 }
 
+=head2 get_Type_by_Transcript_id
+
+ Title   : get_Type_by_Transcript_id
+ Usage   : $gene_adaptor->get_Type_by_Transcript_id($transid);
+ Function: gets the gene type from the gene table using only the transcript internal id
+ Returns : a string
+ Args    : transcript internal_id
+
+=cut
+
+sub get_Type_by_Transcript_id {
+  my ($self,$transid) = @_;
+
+  # this is a cheap SQL call
+  #select g.type from gene g, transcript t where t.gene_id=g.gene_id and t.transcript_id=5422;
+  my $sth = $self->prepare("	SELECT	g.type 
+				FROM	gene g, transcript t
+				WHERE	where t.gene_id = g.gene.id
+                                  AND   t.transcript_id = '$transid'");
+  $sth->execute;
+  
+  my ($gene_type) = $sth->fetchrow_array();
+  if( !defined $gene_type ) {
+    return undef;
+  }
+  return $gene_type;
+}
+
+
 
 =head2 fetch_by_Transcript_id
 
  Title   : fetch_by_Transcript_id
- Usage   : $gene_obj->get_Gene_by_Transcript_id($transid, $supporting)
+ Usage   : $gene_adaptor->fetch_by_Transcript_id($transid, $supporting)
  Function: gets one gene out of the db with or without supporting evidence
  Returns : gene object (with transcripts, exons and supp.evidence if wanted)
  Args    : transcript id and supporting tag (if latter not specified,
