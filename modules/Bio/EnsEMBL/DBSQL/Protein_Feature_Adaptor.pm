@@ -90,6 +90,15 @@ sub fetch_by_translationID {
 
     while (my $rowhash = $sth->fetchrow_hashref) {   
 	my $feature = $self->_set_protein_feature($rowhash);
+
+	if ($feature->analysis->gff_feature() eq "domain") {
+	    my $sign_id = $feature->feature2->seqname;
+	    
+	    my $sth1 = $self->prepare ("select id.description from interpro_description as id, interpro as i where i.interpro_ac = id.interpro_ac and i.id = '$sign_id'");
+	    $sth1->execute;
+	    my $desc = $sth1->fetchrow;
+	    $feature->idesc($desc);
+	}
  
 	push(@features,$feature);
 	

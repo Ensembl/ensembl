@@ -118,3 +118,23 @@ sub hdbname{
 
 }
 
+=head2 idesc
+
+ Title   : idesc
+ Usage   : $obj->idesc($newval)
+ Function: 
+ Returns : value of idesc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub idesc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'idesc'} = $value;
+    }
+    return $obj->{'idesc'};
+
+}
