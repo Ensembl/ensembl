@@ -398,8 +398,6 @@ sub fetch_by_Slice {
     AND    et.exon_id = e.exon_id 
     AND    et.transcript_id = t.transcript_id";
     
-  my @out;
-
   my $sth = $self->db->prepare($sql);
   $sth->execute;
   

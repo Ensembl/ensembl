@@ -973,7 +973,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
                     push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y|2L|2R|3L|3R)$/o) {  # breaks on mouse
-!
+
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
                     push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) {
