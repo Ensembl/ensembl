@@ -510,12 +510,12 @@ sub translateable_exons{
 	push(@out,$t);
 
 	while( my $exon = shift @exons ) {
-	    if( $exon->contig_id eq $prev->contig_id && $exon->phase == $prev->end_phase) {
+	    if( $exon->seqname eq $prev->seqname && $exon->phase == $prev->end_phase) {
 		# add it
 		$t->add_Exon($exon);
 		$prev = $exon;
 	    } else {
- #	       if( $exon->contig_id eq $prev->contig_id ) {
+ #	       if( $exon->seqname eq $prev->seqname ) {
  #		   $self->warn("Got two exons, ".$prev->id. "[".$prev->contig_id."]".$prev->start."/".$prev->phase .":". $exon->id ."[".$exon->contig_id."]: same contigs but incompatible phases!");
  #	       }
 

@@ -102,6 +102,55 @@ sub new {
     return $self;
 }
 
+
+sub direct_new {
+    my( $pkg, @args ) = @_;
+    my $self = bless {}, $pkg;
+
+    my (
+        $dbobj,
+        $id,
+        $perlonlysequences,
+        $contig_overlap_source,
+        $overlap_distance_cutoff,
+	$internal_id,
+	$dna_id,
+	$seq_version,
+	$cloneid
+        ) = $self->_rearrange([qw(
+				  DBOBJ
+				  ID
+				  PERLONLYSEQUENCES
+				  CONTIG_OVERLAP_SOURCE
+				  OVERLAP_DISTANCE_CUTOFF
+				  INTERNAL_ID
+				  DNA_ID
+				  SEQ_VERSION
+				  CLONEID
+	    )], @args);
+
+    $id    || $self->throw("Cannot make contig db object without id");
+    $dbobj || $self->throw("Cannot make contig db object without db object");
+    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    if( !$internal_id || !$dna_id || !$seq_version || !$cloneid ) {
+	$self->throw("you don't have all the data to make a direct new!");
+    }
+
+    $self->id($id);
+    $self->dbobj($dbobj);
+    $self->_got_overlaps(0);
+    $self->internal_id($internal_id);
+    $self->dna_id($dna_id);
+    $self->seq_version($seq_version);
+    $self->cloneid    ($cloneid);
+    $self->perl_only_sequences($perlonlysequences);
+    $self->contig_overlap_source($contig_overlap_source);
+    $self->overlap_distance_cutoff($overlap_distance_cutoff);
+
+    return $self;
+}
+
+
 =head2 fetch
 
  Title   : fetch
