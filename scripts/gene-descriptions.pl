@@ -86,7 +86,7 @@ foreach $ensg ( keys %gene_desc )  {
     s/^\s*\(\s*\)\s*$//g;
     ### add more as appropriate
 
-    print STDOUT "$ensg\t$_\n" if $_ =~ /[a-z]/;
+    print STDOUT "$ensg\t$_\n" if $_; #  =~ /[a-z]/;???
 }
 
 #### following taken from ensembl-external/scripts/family-input.pl
