@@ -548,11 +548,11 @@ CREATE TABLE identity_xref(
 	hit_end int,
 	translation_start int,
 	translation_end int,
-	cigar_line text not null,
+	cigar_line text,
 	
 	score double,
 	evalue double,
-	analysis_id int not null,
+	analysis_id int,
 
         PRIMARY KEY (object_xref_id)
 );
