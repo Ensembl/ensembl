@@ -42,7 +42,7 @@ print_features($features);
 $features = $mfa->fetch_all_by_Slice_and_set_code($chr_slice,'ntctgs');
 debug('--- chr 20 ntcontigs set---');
 debug("Got " . scalar(@$features));
-ok(@$features == 7);
+ok(@$features == 3);
 print_features($features);
 
 $features = $mfa->fetch_all_by_Slice_and_set_code($chr_slice,'cloneset');
@@ -51,9 +51,9 @@ debug("Got " . scalar(@$features));
 ok(@$features == 0);
 print_features($features);
 
-my $feature = $mfa->fetch_by_dbID(741);
+my $feature = $mfa->fetch_by_dbID(1);
 debug('--- fetch_by_dbID ---');
-ok($feature->dbID() == 741);
+ok($feature->dbID() == 1);
 ok($feature->start() == 29307627);
 ok($feature->end() == 29541965);
 ok($feature->strand() == 1);
