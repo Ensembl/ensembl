@@ -260,6 +260,64 @@ sub get_all_Genes{
 }
 
 
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
+ Usage   :
+ Function: returns all exons for this contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+sub get_all_Exons {
+
+    my ($self)=@_;
+
+    my $contig_id=$self->id;
+  
+    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
+               FROM   exon e,contig c 
+               WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
+
+    my $sth = $self->dbobj->prepare ($query);
+    $sth->execute;
+
+    my ($id,$start,$end,$strand,$phase,$created,$modified);
+    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified);
+    
+    my @exons;
+    while ($sth->fetch){
+	my $exon=Bio::EnsEMBL::Exon->new;
+	
+	$exon->id($id);
+	$exon->start($start);
+	$exon->end($end);
+	$exon->strand($strand);
+	$exon->seqname($self->id);
+	$exon->contig_id($self->id);
+	$exon->phase($phase);
+	$exon->created($created);
+	$exon->modified($modified);
+	$exon->sticky_rank(1);
+
+	push @exons,$exon;
+    }
+    return @exons;
+}
+
+
+
+
+
+
+
+
 =head2 has_genes
 
  Title   : has_genes
@@ -271,6 +329,9 @@ sub get_all_Genes{
 
 
 =cut
+
+
+
 
 sub has_genes{
    my ($self,@args) = @_;
