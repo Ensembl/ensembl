@@ -36,16 +36,16 @@ print STDERR "Please insert read/write user (not password protected, e.g. ensemb
 $nuser=<STDIN>;
 chop $nuser;
 
-my $create_donor = "mysqladmin -u ".$nuser." create donor";
-my $create_recipient = "mysqladmin -u ".$nuser." create recipient";
+my $create_donor = "/mysql/current/bin/mysqladmin -u ".$nuser." create donor";
+my $create_recipient = "/mysql/current/bin/mysqladmin -u ".$nuser." create recipient";
 system($create_donor) == 0 or die "$0\nError running '$create_donor' : $!";
 system($create_recipient) == 0 or die "$0\nError running '$create_recipient' : $!";
 
 print "ok 2\n";    #Databases created successfuly
 
 #Initialising databases
-my $init_donor = "mysql -u ".$nuser." donor < ../sql/table.sql";
-my $init_recipient = "mysql -u ".$nuser." recipient < ../sql/table.sql";
+my $init_donor = "/mysql/current/bin/mysql -u ".$nuser." donor < ../../sql/table.sql";
+my $init_recipient = "/mysql/current/bin/mysql -u ".$nuser." recipient < ../../sql/table.sql";
 system($init_donor) == 0 or die "$0\nError running '$init_donor' : $!";
 system($init_recipient) == 0 or die "$0\nError running '$init_recipient' : $!";
 
@@ -53,25 +53,26 @@ print "ok 3\n";
 
 #Suck test data into donor
 print STDERR "Inserting test data in test donor db... this will take a while...\n";
-my $suck_data = "mysql -u ".$nuser." donor < donor.dump";
+my $suck_data = "/mysql/current/bin/mysql -u ".$nuser." donor < donor.dump";
 system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 
 print "ok 4\n";
 
 #Insert values in meta table of recipient
-my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=donor;user=ensembl;pass=');\" | mysql -u $nuser recipient";
+my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=donor;user=ensembl;pass=');\" | /mysql/current/bin/mysql -u $nuser recipient";
 system($meta) == 0 or die "$0\nError running '$meta' : $!";
 
 print "ok 5\n";
 
 #Update recipient from donor
+print STDERR "Running an update from the donor to the recipient\n";
 my $update="perl ../../scripts/update_list_chunk.pl -thost localhost -tdbname recipient -tdbuser $nuser";
 #system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 6\n";
 
-my $drop_donor = "echo \"y\" | mysqladmin -u ".$nuser." drop donor";
-my $drop_recipient = "echo \"y\" | mysqladmin -u ".$nuser." drop recipient";
+my $drop_donor = "echo \"y\" | /mysql/current/bin/mysqladmin -u ".$nuser." drop donor";
+my $drop_recipient = "echo \"y\" | /mysql/current/bin/mysqladmin -u ".$nuser." drop recipient";
 system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
 system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
 print "ok 7\n";
