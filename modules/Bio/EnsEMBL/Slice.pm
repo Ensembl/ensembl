@@ -993,21 +993,8 @@ sub get_all_compara_DnaAlignFeatures {
   return $features;
 }
 
-### This is a hacky little function which gets the name of the contig
-### from a finished clone - or returns undef otherwise.
-### A finised clone is a clone with only one contig which starts at bp 1
-### (So grab the last contig of the clone, and see if it starts at 1 <g>)
-sub contig_from_clone {
-    my ($self,$clone) = @_;
-    my $sth = $self->adaptor->db->prepare(
-            "select co.name, co.embl_offset from clone as cl, contig as co
-              where co.clone_id = cl.clone_id and cl.name = '$clone'
-              order by embl_offset desc limit 1"
-    );
-    $sth->execute();
-    my ($contig,$offset) = $sth->fetchrow_array();
-    return $offset==1 ? $contig : undef;
-}
+
+
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
@@ -1085,11 +1072,17 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                     push(@contig_features, $sf);
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) {
 #                    print STDERR "CLONE >".$sf->seqname()."<\n";
-                    if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
-#                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
-                         $sf->seqname($contig_from_clone);
-                         push(@contig_features, $sf);
-                    }
+		 my $clone_adaptor = $self->adaptor->db->get_CloneAdaptor;
+		 my $clone = $clone_adaptor->fetch_by_accession;
+
+		 #we only use finished clones. finished means there is only
+                 #one contig on the clone and it has an offset of 1
+		 my @contigs = @{$clone->get_all_Contigs};
+		 if(scalar(@contigs) == 1 && $contigs[0]->embl_offset == 1) {
+		#print STDERR "CONTIG NAME FROM CLONE >".contig[0]->name."<\n";
+		   $sf->seqname($contigs[0]->name);
+		   push(@contig_features, $sf);
+		 }
 #                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
                } elsif( $sf->das_type_id() eq '__ERROR__') {
 #                    Always push errors even if they aren't wholly within the VC
