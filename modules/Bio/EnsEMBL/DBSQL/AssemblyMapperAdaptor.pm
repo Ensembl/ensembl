@@ -119,25 +119,6 @@ sub register_region{
       unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
 
 
-   # This is to reassure people that I've got this piece of
-   # SQL correct ;) EB
-   #
-   # JGRG: The NOT clauses are slightly counterintuitive,
-   # but fetch every contig that overlaps start and end.
-   # We search for every contig that doesn't begin after
-   # our end (doesn't overlap) and doesn't end before
-   # our start (doesn't overlap), and therefore get every
-   # contig that overlaps.  This takes care of the condition
-   # where our start and end lie within a contig.
-   #
-   # SCP: Those not clauses are a bit confusing, so I've
-   # ditched them :-)  "NOT a > b" equiv to "a <= b"
-
-   # No. SCP - not right! The NOT has a bracket'd AND and so
-   # one can't just expand it like this EB. Replaced it and
-   # if *anyone* wants to change this, talk to me or James G first!
-
-
    my $select = qq{
       select
          ass.contig_start,
@@ -153,9 +134,8 @@ sub register_region{
       where
          chr.name = '$chr_name' and
          ass.chromosome_id = chr.chromosome_id and
-         NOT (
-         $start >= ass.chr_end  and
-         $end <= ass.chr_start)  and
+         $start <= ass.chr_end  and
+         $end >= ass.chr_start  and
          ass.type = '$type'
    };
 
