@@ -186,6 +186,55 @@ sub fetch_by_chromosome_name{
     return $band_obj;
 }
 
+=head2 fetch_by_chromosome_name_virtual
+
+ Title   : fetch_by_chromosome_name_virtual
+ Usage   : $band_obj = $kary_adp->fetch_by_chromosome_name('chr1','q23.1');
+ Function: Retrieves a KaryotypeBand obj by its chromosome ('chrN' notation)
+           and its band name (e.g. 'q23.1'). { can also use a non-fully declared band:
+	   e.g. q23
+ Example :
+ Returns : A KaryotypeBand object DOES NOT RETURN STAIN INFORMATION!!!!!
+ Args    : Chromosome id (chrN notation) and band name 
+
+=cut
+
+sub fetch_by_chromosome_name_virtual{
+    my ($self,$chr,$name) = @_;
+
+    $self->throw("Need both chromosome and name") unless defined $name;
+
+    my $sth;
+    $sth = $self->prepare("	SELECT	chr_start,
+					chr_end
+				FROM	karyotype 
+				WHERE	chr_name = '$chr' 
+				AND	band = '$name' ");
+    $sth->execute;
+    my ($chr_start,$chr_end) = $sth->fetchrow_array;
+
+	unless($chr_start) {
+	    $sth = $self->prepare("	SELECT	min(chr_start),
+					max(chr_end)
+					FROM	karyotype 
+					WHERE	chr_name = '$chr' 
+					AND	band like '$name.\%' ");
+	    $sth->execute;
+	    ($chr_start,$chr_end) = $sth->fetchrow_array;
+	}
+
+    return undef unless defined $chr_start;
+
+    my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
+    $band_obj->name($name);
+    $band_obj->chromosome($chr);
+    $band_obj->start($chr_start);
+    $band_obj->end($chr_end);
+    $band_obj->stain('white');
+
+    return $band_obj;
+}
+
 
 =head2 fetch_chromosome_length
 
