@@ -73,7 +73,7 @@ sub new {
     
 
     if( $version == 0 ) {
-	$self->warn("seq version $version and embl version $embl_version are 0 - this will not play nicely with external feature factories!");
+         #$self->warn("seq version $version and embl version $embl_version are 0 - this will not play nicely with external feature factories!");
     }
 
     # HACK htg_phase is NOT set correctly for many clones (th, 7/01)

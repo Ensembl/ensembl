@@ -1033,7 +1033,7 @@ sub _gene_query{
                 my $vc_strand = undef;
 
                 foreach my $sticky ( @stickies ) {
-		    print STDERR "Mapping sticky $sticky ",$sticky->start," ",$sticky->end,"\n";
+		    #print STDERR "Mapping sticky $sticky ",$sticky->start," ",$sticky->end,"\n";
                     unless ( $self->_convert_seqfeature_to_vc_coords($sticky) ) {
 			print STDERR "Unmappable!\n";
                         # unmappable component exon, abort.
@@ -1041,14 +1041,14 @@ sub _gene_query{
                         last;
                     } else {
                         # handle start end points.
-			print STDERR "In sticky, seen ",$sticky->start," ",$sticky->end,"\n";
+			#print STDERR "In sticky, seen ",$sticky->start," ",$sticky->end,"\n";
 			if( !defined $vc_strand ) {
                             $vc_start = $sticky->start;
                             $vc_end   = $sticky->end;
                             $vc_strand = $sticky->strand;
                         } else {
                             if( $vc_strand != $sticky->strand ) {
-                                $self->warn("sticky exon mappable but strand switching");
+                                #$self->warn("sticky exon mappable but strand switching");
                                 $mapped_sticky = 0;
                                 last; # end of foreach my $sticky
                             }
