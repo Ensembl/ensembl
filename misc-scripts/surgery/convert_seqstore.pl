@@ -129,7 +129,7 @@ debug("Transforming clone table into seq_region");
 my %clone_id_old_new;
 $cs_id = $coord_system_ids{"clone"};
 $sth = $dbi->prepare("SELECT cl.clone_id, " .
-		     "CONCAT(cl.name, '.', cl.version) AS name, " .
+		     "CONCAT(cl.name, '.', cl.embl_version) AS name, " .
 		     "$cs_id, " .
 		     "MAX(ctg.embl_offset)+ctg.length-1 AS length " .
 		     "FROM $source.clone cl, $source.contig ctg " .
@@ -185,6 +185,39 @@ while (my ($name, $new_id) = each %superctg_name_id) {
   $sth->execute($name, $new_id) || die "Error writing to tmp_superctg_map";
   #print "$name\t$new_id\n";
 }
+
+
+#-----------------------------------------------------------------------------------------------
+# seq_region_attrib
+# Place the clones HTG phase into seq_region attrib.
+# Presently nothing else needs to go in here
+
+
+debug( "Translating mappannotationtype" );
+
+#
+# first copy the old map annotation types into the attrib type table
+#
+execute( $dbi,
+	 "INSERT INTO $target.attrib_type( attrib_type_id, code, name, description ) " .
+	 "SELECT mapannotationtype_id, code, name, description " .
+	 "FROM $source.mapannotationtype " );
+
+debug( "Populating seq_region_attrib table" );
+
+# now add a new attrib type for HTG phase
+
+execute( $dbi,
+   "INSERT INTO $target.attrib_type( code, name, description ) " .
+   " VALUES ('htg_phase', 'HTG Phase', 'High Throughput Genome Phase')");
+
+#insert the htg phase values for the clones into seq_region_attrib
+execute( $dbi,
+   "INSERT INTO $target.seq_region_attrib( seq_region_id, attrib_type_id, value) " .
+   "SELECT tmp_cln.new_id, attrib_type.attrib_type_id, cln.htg_phase " .
+   "FROM   $target.tmp_cln_map tmp_cln, $target.attrib_type attrib_type, $source.clone cln " .
+   "WHERE  cln.clone_id = tmp_cln.old_id " .
+   "AND    attrib_type.code = 'htg_phase'");
 
 
 # ----------------------------------------------------------------------
@@ -418,16 +451,12 @@ execute( $dbi,
 	 "SELECT mapset_id, code, name, description, max_length " . 
 	 "FROM $source.mapset ms " );
 
-debug( "Translating mapannotationtype" );
-execute( $dbi,
-	 "INSERT INTO $target.misc_attrib_type( misc_attrib_type_id, code, name, description ) " .
-	 "SELECT mapannotationtype_id, code, name, description " .
-	 "FROM $source.mapannotationtype " );
+
 
 
 debug( "Translating mapannotation" );
 execute( $dbi,
-	 "INSERT INTO $target.misc_attrib( misc_feature_id, misc_attrib_type_id, " . 
+	 "INSERT INTO $target.misc_attrib( misc_feature_id, attrib_type_id, " . 
 	 "                    value ) ". 
 	 "SELECT mapfrag_id, mapannotationtype_id, value " .
 	 "FROM $source.mapannotation" );
