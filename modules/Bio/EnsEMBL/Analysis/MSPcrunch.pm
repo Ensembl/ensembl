@@ -107,7 +107,7 @@ sub _parse {
 
     open(IN,"<$file");
 
-    while (my $line = <IN>) {
+    while (defined(my $line = <IN>)) {
 	my $homol = $self->_read_Homol($line);
 	$self->add_Homol($homol);
     }
