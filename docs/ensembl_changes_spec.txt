@@ -1,17 +1,29 @@
 ENSEMBL - API Change Specification
 ==================================
 
+INTRODUCTION
+------------
+
+This document is intended as an outline of possible changes to the current 
+incarnation of the EnsEMBL database schema and Perl API. This document is 
+evolving and will hopefully enable us to develop a plan for the progression 
+of the EnsEMBL API. Nothing is finalized and everything is open to change.
+Many of the proposed alterations may need to be phased in over time or may 
+never occur at all.
+
+
 REVISION HISTORY
 ----------------
 
-Graham Mcvicker - July 9, 2003 - Created
+Graham Mcvicker - July  9, 2003 - Created
+Graham McVicker - July 22, 2003 - Added Haplotype Spec.
 
 GOALS
 -----
 -A cleaner, more intuitive API
 -A more general schema able to better capture divergent assembly types
--More flexibility with regards to assembly related data such as haplotypes
- MHC regions etc.
+-More flexibility with regards to assembly related data such as haplotypes,
+ PARs, WGS assemblies etc.
 
 SCHEMA MODIFICATIONS
 --------------------
@@ -113,7 +125,8 @@ Removed Tables
   prediction_transcript
   ---------------------
   PTs are now stored as ordinary transcripts without genes.  They should 
-  probably be computed in chromosomal coordinates instead of contig coordinates.
+  probably be computed in chromosomal coordinates instead of contig 
+  coordinates.
   
 
   contig
@@ -207,8 +220,8 @@ Slice
   The concept of an 'empty' slice will no longer exist.
 
   The get_tiling_path method will have to be implemented differently for the
-  new system.  It will take a coord_system string as an argument and rather than
-  returning a list of Tile objects it will return a listref of triplets 
+  new system.  It will take a coord_system string as an argument and rather 
+  than returning a list of Tile objects it will return a listref of triplets 
   containing a start int, and end int, and a 'to' slice object.  The following 
   is an example of how this method would be used ($clone is a reference to a 
   slice object in the clone coordinate system):
@@ -234,14 +247,20 @@ SliceAdaptor
   system, frag_name, start, end, and strand.  The old, commonly used method
   fetch_by_chr_start_end can be altered to simply chain to this new method
   as can most other SliceAdaptor methods.
-  fetch_by_coord_system_frag_start_end_strand ? 
+
   Another method which will be necessary with the disapearence of the Clone,
   RawContig and Chromosome adaptors is the one which allows for all slices
   of a certain type to be retrieved.  For example it is often necessary to 
   retrieve all chromosomes, or clones for a species.  This method could be
   named fetch_all_by_coord_system or something similar.
 
-
+  Proposed Method Names and Signatures
+  ------------------------------------
+    Slice fetch_by_region(coord_system, name)
+    Slice fetch_by_region(coord_system, name, start)
+    Slice fetch_by_region(coord_system, name, start, end)
+    Slice fetch_by_region(coord_system, name, start, end, strand)
+    listref of Slices fetch_all(coord_system)
   
 RawContig
 ---------
@@ -370,7 +389,7 @@ Root
 
 Storable Base Class
 -------------------
-  Almost all business objects in the EnsEMBL system are storable in the database
+  Almost all business objects in the EnsEMBL system are storable in the db
   and the ones which are always require 2 methods: dbID and adaptor.  It would
   make sense in order to reduce code duplication to have all storable objects
   inherit from a Storable base class which implemented these.
@@ -543,9 +562,9 @@ FeatureAdaptors
 
 Bio::Seq
 --------
-  Bio::Seq objects are not useful and inconsistant with some of the API methods.
-  Some methods return a string while others return a Bio::Seq.  In the 
-  instances where a Bio::Seq is returned the most common usage is to simply
+  Bio::Seq objects are not useful and inconsistant with some of the API 
+  methods. Some methods return a string while others return a Bio::Seq.  In 
+  the instances where a Bio::Seq is returned the most common usage is to simply
   extract the sequence with a call like: $seq = $obj->seq->seq;  For 
   consistancy Bio::Seq usage will be removed in favour of simple string usage.
   *Note: This change can be done independently of the other changes.  It may be
@@ -554,11 +573,143 @@ Bio::Seq
    once)
 
 
-Haplotypes
-----------
-  TBD
+
+NEW FEATURES
+------------
 
 
+Haplotypes (and the MHC region)
+-------------------------------
+  There are several requirements related to haplotypes:
+    - Must be able to determine which haplotypes overlap a slice
+    - Must be able to run genebuild/raw computes over the haplotypes
+    - Must be able to retrieve a slice on a haplotype and its flanking
+      regions (i.e. the regions of the default assembly bordering the 
+      haplotype).
+
+   Proposal:
+    Store haplotypes as features in a haplotype feature table, but also as
+    a single entry in the dnafrag table.  The dnafrag table will contain an 
+    extra column 'flags' of type set which will allow additional properties
+    to be associated with a dnafrag.  If the haplotype dnafrag is assembled 
+    from smaller dnafrags then this will be described by the assembly table
+    as usual (actually it may be necessary to do this if dna is not associated
+    directly with the haplotype coordinate system).  
+
+    The haplotype table will look similar to the assembly table, but can be
+    viewed as a feature table that describes haplotypes:
+
+      haplo_feature
+      -------------   
+      haplo_feature_id  int
+      dnafrag_id        int
+      dnafrag_start     int
+      dnafrag_end       int
+      dnafrag_strand    int  (may not be needed, may implicitly be 1)
+      haplo_dnafrag_id  int  (this references the dnafrag that is a haplotype)
+     
+    With the addition of a HaplotypeFeatureAdaptor it will be possible to
+    retrieve haplotypes which overlap a slice.  A HaplotypeFeature will inherit
+    from the Feature class and will have the basic 'start', 'end', 'strand', 
+    'slice', attributes, but also a 'name' and 'length' retrieved from the
+    associated dnafrag.
+
+    It is possible to retrieve a slice on a haplotype just as any other slice
+    is retrieved from the SliceAdaptor.  For example: 
+    $slice = $slice_adaptor->fetch_by_region('chromosome', '6_DR52');
+
+    The slice will have an additional method is_type('haplotype') which
+    will return true or false depending on whether the slice is a haplotype
+    slice or not.  This method will have to query the dnfrag table and 
+    cache the result.
+
+    A slice created on a haplotype will have coordinates relative to the
+    start of the haplotype region NOT the start of the entire chromosome
+    as a normal slice.  Furthermore creating a slice that extends past the
+    the boundaries of the slice (i.e. start < 1 or end > length) will 
+    allow the user to retrieve flanking features and sequence from the 
+    default region.  The feature adaptors fetch_by_Slice method will have to
+    be altered to check whether a slice is a haplotype slice.  If it is a
+    haplotype slice then the following algorithm will apply:
+     (a) Split the slice into 3 slices on the following regions: 
+         (1)     slice_start -> 0, 
+         (2)               1 -> frag_length, 
+         (3) frag_length + 1 -> slice_end
+        
+         Slices that would be of length < 1 are not created or used.  
+         Slices (1) and (3) are normal non-haplotype slices that are created
+         on the default chromosome which will be determined by querying the 
+         haplo_feature table.  Slice (2) is a haplotype slice.
+         The case in which it is not necessary to create slices (1) and (3) is
+         the degenerative case: it is not necessary to create any new slices 
+         and the features for this slice can be returned right away.
+     (b) Retrieve features by recursively calling fetch_by_Slice on each of
+         the slices created.
+     (c) Adjust the start/end of features from slice (2) by adding the
+         the length of slice (1).  
+     (d) Adjust the start/end of features from slice (3) by adding the
+         combined lengths of slice (1) and slice (2)
+     (e) Return all of the features retrieved
+
+    The SequenceAdaptor will also need to take haplotype slices into account.
+    A similar algorithm to above will need to apply in which up to 3 seperate
+    slices are created, seperate sequence for all three obtained and the
+    sequence from each of them obtained, spliced together and returned. 
+
+
+Pseudo Autosomal Regions (PARs)
+-------------------------------
+
+TBD
+
+Multiple Assemblies
+-------------------
+
+TBD
+
+
+Circular Chromosomes
+--------------------
+  We can handle circular chromosomes (or any arbitrary circular sequence) in
+  a similar way the the haplotypes.  The dnafrag for the circular sequence can
+  have a flag set which indicates that it is circular.  The slice would have
+  an additional method is_type('circular') which would return true if the
+  slice was on a circular dnafrag.  The following is the algorithm for 
+  retrieval of features on a circular slice:
+     (a) Split the slice into 3 regions: 
+         (1)     slice_start -> 0, 
+         (2)               1 -> frag_length, 
+         (3) frag_length + 1 -> slice_end
+        
+     (b) Create slices on each of the regions.
+         Region (1) becomes a circular slice with: 
+           start = frag_length - region_length + 1
+             end = frag_length
+           
+         Region (2) just creates a circular slice of that region
+         Region (3) becomes a circular slice with:
+           start = 1 - region_length
+             end = 0
+
+         Slices that would be of length < 1 are not created or used.  
+         The case in which it is not necessary to create slices (1) and (3) 
+         is the degenerative case: it is not necessary to create any new 
+         slices and the features for this slice can be returned right away.
+     (c) Retrieve features by recursively calling fetch_by_Slice on each of
+         the slices created.
+     (d) Adjust the start/end of features from slice (2) by adding the
+         the length of slice (1).  
+     (e) Adjust the start/end of features from slice (3) by adding the
+         combined lengths of slice (1) and slice (2)
+     (f) Return all of the features retrieved
+
+  A very similar algorithm would be applied with regards to sequence retrieval.
+
+
+Comparative Sequence (Chimp)
+----------------------------
+
+TBD
 
 
 OTHER CONSIDERATIONS
@@ -572,11 +723,4 @@ Feature Transfer Accross Assemblies
   features across from the previous assembly, only rebuilding in areas of 
   change.  We will supply a mechanism via which features from a previous 
   assembly may be transfered to a new assembly.
-
-
-TBD
-
-MHC Regions
-Circular Chromosomes
-Multiple Assemblies
 
