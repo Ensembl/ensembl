@@ -189,11 +189,11 @@ sub load_databases {
   }
 
   #create a database for each database specified
-  foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
+  foreach my $dbtype (keys %{$db_conf->{'databases'}->{$self->{'species'}}}) {
     #create a unique random dbname
     my $dbname = $self->_create_db_name($dbtype);
 
-    print STDERR "\nCreating db $dbname";
+    print STDERR "\nCreating [$dbtype] db [$dbname]";
 
     unless($db->do("CREATE DATABASE $dbname")) {
       $self->warn("Could not create database [$dbname]");
@@ -203,7 +203,7 @@ sub load_databases {
     #copy the general config into a dbtype specific config 
     $self->{'conf'}->{$dbtype} = {};
     %{$self->{'conf'}->{$dbtype}} = %$db_conf;
-    $self->{'conf'}->{$dbtype}->{'module'} = $db_conf->{'databases'}->{$dbtype};
+    $self->{'conf'}->{$dbtype}->{'module'} = $db_conf->{'databases'}->{$self->{'species'}}->{$dbtype};
 
     # it's not necessary to store the databases and zip bits of info
     delete $self->{'conf'}->{$dbtype}->{'databases'};
