@@ -355,10 +355,6 @@ sub transfer_genes {
      "AND    a.chromosome_id = toplev.old_id " .
      "GROUP BY e.exon_id");
 
-
-  $self->debug("DanioRerio Specific: Building exon table " .
-               "(superctg exons)");
-
   #
   # Transfer translation table
   #
