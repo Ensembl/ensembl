@@ -633,9 +633,9 @@ sub _deprecated_transform {
 }
 
 sub id {
-
+  my $self = shift;
   deprecate("id method is not used - use dbID instead");
-
+  return ($self->{'hseqname'}) ? $self->{'hseqname'} : $self->{'dbID'};
 }
 
 1;
