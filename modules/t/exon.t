@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 10;
+	plan tests => 9;
 }
 
 my $loaded = 0;

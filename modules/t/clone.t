@@ -13,14 +13,14 @@ ok(1);
 
 # Database will be dropped when this
 # object goes out of scope
-my $ens_test = MultiTestDB->new;
+my $multi = MultiTestDB->new;
 
-ok($ens_test);
+ok($multi);
 
 #
 # get a core DBAdaptor
 #
-my $dba = $ens_test->get_DBAdaptor("core");
+my $dba = $multi->get_DBAdaptor("core");
 ok($dba);
 
 
@@ -31,6 +31,7 @@ ok($clone);
 #
 # load the clone with some data
 #
+
 $clone->id('dummy_clone');
 $clone->dbID(24);
 $clone->embl_id('dummy_clone');
@@ -118,8 +119,8 @@ ok(scalar(@$genes) == 5);
 # to test the delete method we need to save the tables that we delete from
 #
 
-$ens_test->save("core","contig","clone","dna","repeat_feature","simple_feature",
-                "prediction_transcript","protein_align_feature","dna_align_feature");
+$multi->save("core","contig","clone","dna","repeat_feature","simple_feature",
+	     "prediction_transcript","protein_align_feature","dna_align_feature");
 
 #
 # do the deletion
@@ -192,8 +193,8 @@ ok(scalar($sth->rows) == 11);
 
 
 # restore the tables for the next test
-$ens_test->restore("core","contig","clone","dna","repeat_feature","simple_feature",
-                   "prediction_transcript","protein_align_feature","dna_align_feature");
+$multi->restore("core","contig","clone","dna","repeat_feature","simple_feature",
+		"prediction_transcript","protein_align_feature","dna_align_feature");
 
 
 #

@@ -2,7 +2,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 11;
+	plan tests => 10;
 }
 
 my $loaded = 0;
@@ -21,7 +21,8 @@ ok(1);
 my $db = $multi->get_DBAdaptor( 'core' );
 
 $cadp = $db->get_RawContigAdaptor();
-$contig = $cadp->fetch_by_dbID(1);
+
+$contig = $cadp->fetch_by_dbID(319456);
 
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("RepeatMask");
 
