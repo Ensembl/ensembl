@@ -82,6 +82,7 @@
 
 package Bio::EnsEMBL::BaseAlignFeature;
 
+use Bio::EnsEMBL::FeaturePairI;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
