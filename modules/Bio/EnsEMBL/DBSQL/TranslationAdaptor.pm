@@ -94,7 +94,7 @@ sub fetch_by_Transcript {
   my ( $translation_id, $start_exon_id, $end_exon_id,
        $seq_start, $seq_end, $stable_id, $version ) = 
   $sth->fetchrow_array();
-
+  $sth->finish;
   if( ! defined $translation_id ) {
     return undef;
   }
