@@ -27,15 +27,13 @@ Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   my $clone_cs   = $csa->fetch_by_name('clone');
 
   my $chr_ctg_mapper =
-    $asma->fetch_by_coord_systems($chr33_cs, $ctg_cs);
+    $asma->fetch_by_CoordSystems($chr33_cs, $ctg_cs);
 
   my $ncbi33_ncbi34_mapper =
-    $asm_adptr->fetch_by_coord_systems($chr33,$chr34);
+    $asm_adptr->fetch_by_CoordSystems($chr33,$chr34);
 
-  my $ctg_clone_mapper = 
-    $asm_adptr->fetch_by_coord_systems($ctg_cs,$clone_cs);
-
-  $asm_adptr->register($chr_ctg_mapper, $chr_slice);
+  my $ctg_clone_mapper =
+    $asm_adptr->fetch_by_CoordSystems($ctg_cs,$clone_cs);
 
 
 =head1 DESCRIPTION
@@ -91,6 +89,7 @@ sub new {
   my $self = $class->SUPER::new($dbadaptor);
 
   $self->{'_asm_mapper_cache'} = {};
+  $self->{'_sr_id_cache'} = {};
 
   return $self;
 }
@@ -130,16 +129,18 @@ sub fetch_by_CoordSystems {
   }
 
   if($cs1->equals($cs2)) {
-    throw("Cannot create mapper between same coord systems " :
+    throw("Cannot create mapper between same coord systems: " .
           $cs1->name . " " . $cs1->version);
   }
+
+  my $csa = $self->db->get_CoordSystemAdaptor();
 
   #retrieve the shortest possible mapping path between these systems
   my @mapping_path = @{$csa->get_mapping_path($cs1,$cs2)};
 
   if(!@mapping_path) {
     throw("There is no mapping defined between these coord systems:\n" .
-          $cs1->name() . " " . $cs2->version() . " and " $cs1->name() . " " .
+          $cs1->name() . " " . $cs1->version() . " and " . $cs1->name() . " " .
           $cs2->version());
   }
 
@@ -166,15 +167,300 @@ sub fetch_by_CoordSystems {
 
 
 
+=head2 register_assembled
+
+  Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
+	       A valid AssemblyMapper object
+  Arg [2]    : string $asm_seq_region
+               The name of the seq_region to be registered
+  Arg [3]    : int $asm_start
+               The start of the region to be registered
+  Arg [4]    : int $asm_end
+               The end of the region to be registered
+  Description: Declares an assembled region to the AssemblyMapper.
+               This extracts the relevant data from the assembly
+               table and stores it in Mapper internal to the $asm_mapper.
+               It therefore must be called before any mapping is
+               attempted on that region. Otherwise only gaps will
+               be returned.  Note that the AssemblyMapper automatically
+               calls this method when the need arises.
+  Returntype : none
+  Exceptions : throw if the seq_region to be registered does not exist
+               or if it associated with multiple assembled pieces (bad data
+               in assembly table)
+  Caller     : Bio::EnsEMBL::AssemblyMapper
+
+=cut
+
+my $CHUNKFACTOR = 20;  # 2^20 = approx. 10^6
+
+sub register_assembled {
+  my $self = shift;
+  my $asm_mapper = shift;
+  my $asm_seq_region = shift;
+  my $asm_start      = shift;
+  my $asm_end        = shift;
+
+
+  #split up the region to be registered into fixed chunks
+  #this allows us to keep track of regions that have already been
+  #registered and also works under the assumption that if a small region
+  #is requested it is likely that other requests will be made in the
+  #vicinity (the minimum size registered the chunksize (2^chunkfactor)
+
+  my @chunk_regions;
+  {
+    #determine span of chunks
+    #bitwise shift right is fast and easy integer division
+    my $start_chunk = $asm_start >> $CHUNKFACTOR;
+    my $end_chunk   = $asm_end   >> $CHUNKFACTOR;
+
+    #find regions of continuous unregistered chunks
+    my $i;
+    my ($begin_chunk_region,$end_chunk_region);
+    for ($i = $start_chunk; $i <= $end_chunk; $i++) {
+      if($asm_mapper->have_registered_assembled($asm_seq_region, $i)) {
+        if(defined($begin_chunk_region)) {
+          #this is the end of an unregistered region.
+          my $region = [$begin_chunk_region << $CHUNKFACTOR,
+                        $end_chunk_region   << $CHUNKFACTOR];
+          push @chunk_regions, $region;
+          $begin_chunk_region = $end_chunk_region = undef;
+        }
+      } else {
+        $begin_chunk_region = $i if(!defined($begin_chunk_region));
+        $end_chunk_region   = $i;
+        $asm_mapper->register_assembled($asm_seq_region,$i);
+      }
+    }
+
+    #the last part may have been an unregistered region too
+    if(defined($begin_chunk_region)) {
+      my $region = [$begin_chunk_region << $CHUNKFACTOR,
+                    $end_chunk_region   << $CHUNKFACTOR];
+      push @chunk_regions, $region;
+    }
+  }
+
+  return if(!@chunk_regions);
+
+  my $asm_seq_region_id = $self->{'_sr_id_cache'}->{$asm_seq_region};
+
+  if(!$asm_seq_region_id) {
+    # Get the seq_region_id via the name.  This would be quicker if we just
+    # used internal ids instead but stored but then we lose the ability
+    # the transform accross databases with different internal ids
+    my $cs = $asm_mapper->assembled_CoordSystem();
+
+    my $sth = $self->prepare("SELECT seq_region_id" .
+                             "FROM   seq_region" .
+                             "WHERE  name = ? AND coord_system_id = ?");
+
+    $sth->execute($asm_seq_region, $cs->dbID);
+
+    if(!$sth->rows() == 1) {
+      throw("Ambiguous or non-existant seq_region [$asm_seq_region]" .
+            "in coord system " . $cs->name . " " . $cs->version);
+    }
+
+    ($asm_seq_region_id) = $sth->fetchrow_array();
+    $self->{'_sr_id_cache'}->{$asm_seq_region} = $asm_seq_region_id;
+
+    $sth->finish();
+  }
+
+  # Retrieve the description of how the assembled region is made from
+  # component regions for each of the continuous blocks of unregistered,
+  # chunked regions
+
+  my $q = qq{
+      SELECT
+         asm.cmp_start,
+         asm.cmp_end,
+         asm.cmp_seq_region_name,
+         sr.name,
+         asm.ori,
+         asm.asm_start,
+         asm.asm_end
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.asm_seq_region_id = ? AND
+         ? <= asm.asm_end AND
+         ? >= asm.asm_start AND
+         asm.cmp_seq_region_id = sr.seq_region_id
+   };
+
+  my $sth = $self->prepare($q);
+
+  foreach my $region (@chunk_regions) {
+    my($region_start, $region_end) = @$region;
+    $sth->execute($asm_seq_region_id, $region_start, $region_end);
+
+    my($cmp_start, $cmp_end, $cmp_seq_region_id, $cmp_seq_region, $ori);
+    $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id,
+                       \$cmp_seq_region, \$ori);
+
+    #
+    # Load the unregistered regions of the mapper
+    #
+    while($sth->fetch()) {
+      next if($asm_mapper->have_registered_component($cmp_seq_region));
+      $asm_mapper->register_component($cmp_seq_region);
+      $asm_mapper->mapper->add_map_coordinates(
+                 $cmp_seq_region, $cmp_start, $cmp_end,
+                 $ori,
+                 $asm_seq_region, $region_start, $region_end);
+      $self->{'_sr_id_cache'}->{$cmp_seq_region} = $cmp_seq_region_id;
+    }
+  }
+
+  $sth->finish();
+}
+
+
+=head2 register_component
+
+  Arg [1]    : Bio::EnsEMBL::AssemblyMapper $asm_mapper
+	       A valid AssemblyMapper object
+  Arg [2]    : string $cmp_seq_region
+               The name of the seq_region to be registered
+  Description: Declares a component region to the AssemblyMapper.
+               This extracts the relevant data from the assembly
+               table and stores it in Mapper internal to the $asm_mapper.
+               It therefore must be called before any mapping is
+               attempted on that region. Otherwise only gaps will
+               be returned.  Note that the AssemblyMapper automatically
+               calls this method when the need arises.
+  Returntype : none
+  Exceptions : throw if the seq_region to be registered does not exist
+               or if it associated with multiple assembled pieces (bad data
+               in assembly table)
+  Caller     : Bio::EnsEMBL::AssemblyMapper
+
+=cut
+
+sub register_component {
+  my $self = shift;
+  my $asm_mapper = shift;
+  my $cmp_seq_region = shift;
+
+  #do nothing if this region is already registered
+  return if($asm_mapper->have_registered_component($cmp_seq_region));
+
+
+  my $cmp_seq_region_id = $self->{'_sr_id_cache'}->{$cmp_seq_region};
+
+
+  if(!$cmp_seq_region_id) {
+    # Get the seq_region id of the slice.  This would be quicker if we just
+    # stored it one the slice,  but then we lose the ability
+    # the transform accross databases with different internal ids
+    my $cs = $asm_mapper->component_CoordSystem();
+
+    my $sth = $self->prepare("SELECT seq_region_id" .
+                             "FROM   seq_region" .
+                             "WHERE  name = ? AND coord_system_id = ?");
+
+    $sth->execute($cmp_seq_region, $cs->dbID);
+
+    if(!$sth->rows() == 1) {
+      throw("Ambiguous or non-existant seq_region [$cmp_seq_region] " .
+            "in coord system" . $cs->name . " " . $cs->version);
+    }
+
+    ($cmp_seq_region_id) = $sth->fetchrow_array();
+    $self->{'_sr_id_cache'}->{$cmp_seq_region} = $cmp_seq_region_id;
+
+    $sth->finish();
+  }
+
+  # Determine what part of the assembled region this component region makes up
+
+  my $q = qq{
+      SELECT
+         asm.asm_start,
+         asm.asm_end,
+         asm.seq_region_id,
+         sr.name
+      FROM
+         assembly asm, seq_region sr
+      WHERE
+         asm.cmp_seq_region_id = ? AND
+         asm.asm_seq_region_id = sr.seq_region_id
+   };
+
+  my $sth = $self->prepare($q);
+  $sth->execute($cmp_seq_region_id);
+
+  if($sth->rows() == 0) {
+    #this component is not used in the assembled part i.e. gap
+    $asm_mapper->register_component($cmp_seq_region_id);
+    return;
+  }
+
+  #something is wonky if there are multiple assembled regions for a component
+  if($sth->rows() != 1) {
+    throw("Multiple assembled regions for single " .
+          "component region cmp_seq_region_id=[$cmp_seq_region_id]");
+  }
+
+  my ($asm_start, $asm_end, $asm_seq_region_id, $asm_seq_region) =
+    $sth->fetchrow_array();
+
+  $self->{'_sr_id_cache'}->{$asm_seq_region} = $asm_seq_region_id;
+
+  $sth->finish();
+
+  # Register the corresponding assembled region. This allows a us to
+  # register things in assembled chunks which allows us to:
+  # (1) Keep track of what assembled regions are registered
+  # (2) Use locality of reference (if they want something in same general
+  #     region it will already be registered).
+
+  $self->register_assembled($asm_mapper,$asm_seq_region,$asm_start,$asm_end);
+}
+
+
+
+
+
+
+=head2 register_region
+
+  Description: DEPRECATED use register_assembled instead
+
+=cut
+
+sub register_region{
+  my ($self, $assmapper, $type, $chr_name, $start, $end) = @_;
+
+  deprecate('Use register_assembled instead');
+
+  $self->register_assembled($assmapper, $chr_name, $start, $end);
+}
+
+
+=head2 register_contig
+
+  Description: DEPRECATED use register_component instead
+
+=cut
+
+sub register_contig {
+   my ($self, $assmapper, $type, $contig_id ) = @_;
+
+   deprecate('Use register_component instead');
+
+   #not sure if the use is passing in a seq_region_name or a
+   #seq_region_id...
+   register_component($assmapper, $contig_id);
+}
+
+
 =head2 fetch_by_type
 
-  Arg [1]    : char $type 
-  Description: Fetches a Bio::EnsEMBL::AssemblyMapper object from the adaptor 
-               for a particular assembly (golden path) type (e.g. NCBI_xx). 
-               The result is cached for a particular assembly type. 
-  Returntype : Bio::EnsEMBL::AssemblyMapper 
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor 
+  Description: DEPRECATED use fetch_by_CoordSystems instead
 
 =cut
 
@@ -193,298 +479,6 @@ sub fetch_by_type{
 
   return $self->fetch_by_coord_systems($cs1,$cs2);
 }
-
-
-
-
-sub register_Slice {
-  my $self = shift;
-  my $asm_mapper = shift;
-  my $slice = shift;
-
-  if(!$asm_mapper || !ref($asm_mapper) ||
-     !$asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper')) {
-    throw('AssemblyMapper argument required');
-  }
-
-  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-    throw('Slice argument required');
-  }
-
-  my $cmp_cs = $asm_mapper->component_CoordSystem();
-  my $asm_cs = $asm_mapper->assembled_CoordSystem();
-  my $slice_cs = $slice->coord_system();
-
-  # Get the seq_region id of the slice.  This is probably better stored
-  # right on the slice when it is retrieved.
-  my $sth = $self->prepare(
-    "SELECT seq_region_id" .
-    "FROM   seq_region" .
-    "WHERE  name = ? AND coord_system_id = ?");
-
-  $sth->execute($slice->seq_region_name, $slice_cs->dbID());
-
-  if($sth->rows() != 1) {
-    throw("Seq_region name=[$name],coord_system_id=[$cs_id] not found");
-  }
-
-  my ($seq_region_id) = $sth->fetchrow_array();
-
-  $sth->finish();
-
-  my $start = $slice->start();
-  my $end   = $slice->end();
-
-  if($cmp_cs->equals($slice_cs)) {
-    $self->register_component($asm_mapper, $seq_region_id);
-  } elsif($asm_cs->equals($slice_cs)) {
-    $self->register_assembled($asm_mapper, $seq_region_id, $start, $end);
-  } else {
-    my $name = $slice->name();
-    throw("Slice [$slice] is not in one of the coordinate systems ".
-          "defined in the provided assembly mapper");
-  }
-}
-
-
-sub register_assembled {
-  my $self = shift;
-  my $asm_mapper = shift;
-  my $asm_seq_region_id = shift;
-  my $asm_start         = shift;
-  my $asm_end           = shift;
-
-
-  #
-  # TBD: somehow chunk assembled regions up and register the chunks
-  #
-
-  # Retrieve the description of how the assembled region is made from
-  # component regions
-
-  my $q = qq{
-      SELECT
-         asm.cmp_start,
-         asm.cmp_end,
-         asm.cmp_seq_region_id,
-         asm.ori,
-         asm.asm_start,
-         asm.asm_end
-      FROM
-         assembly asm
-      WHERE
-         asm.asm_seq_region_id = ? AND
-         ? <= asm.asm_end AND
-         ? >= asm.asm_start
-   };
-
-  my $sth = $self->prepare($q);
-  $sth->execute($asm_seq_region_id, $asm_start, $asm_end);
-
-  my($cmp_start, $cmp_end, $cmp_seq_region_id, $ori);
-  $sth->bind_columns(\$cmp_start, \$cmp_end, \$cmp_seq_region_id, \$ori);
-
-  #
-  # Load the unregistered regions of the mapper
-  #
-  while($sth->fetch()) {
-    next if($asm_mapper->have_registered_component($cmp_seq_region_id));
-
-    $asm_mapper->register_component($cmp_seq_region_id);
-    $asm_mapper->mapper->add_map_coordinates(
-					       $cmp_seq_region_id, $cmp_start, $cmp_end,
-                 $ori,
-					       $asm_seq_region_id, $asm_start, $asm_end);
-  }
-
-  $sth->finish();
-}
-
-
-sub register_component {
-  my $self = shift;
-  my $asm_mapper = shift;
-  my $cmp_seq_region_id = shift;
-
-  #do nothing if this region is already registered
-  return if($asm_mapper->have_registered_component($cmp_seq_region_id));
-
-  # Determine what part of the assembled region this component region makes up
-
-  my $q = qq{
-      SELECT
-         asm.asm_start,
-         asm.asm_end,
-         asm.asm_seq_region_id
-      FROM
-         assembly asm
-      WHERE
-         asm.cmp_seq_region_id = ?
-   };
-
-  my $sth = $self->prepare($q);
-  $sth->execute($cmp_seq_region_id);
-
-  if($sth->rows() == 0) {
-    #this component is not used in the assembled part i.e. gap
-    $asm_mapper->register_component($cmp_seq_region_id);
-    return;
-  }
-
-  #something is wonky if there are multiple assembled regions for a component
-  if($sth->rows() != 1) {
-    throw("Multiple assembled regions for single " .
-          "component region cmp_seq_region_id=[$cmp_seq_region_id]");
-  }
-
-  my ($asm_start, $asm_end, $asm_seq_region_id)= $sth->fetchrow_array();
-
-  $sth->finish();
-
-  # Register the corresponding assembled region. This allows a us to
-  # register things in assembled chunks which allows us to:
-  # (1) Keep track of what assembled regions are registered
-  # (2) Use locality of reference (if they want something in same general
-  #     region it will already be registered).
-
-  $self->register_assembled($asm_mapper,$asm_seq_region_id,$start,$end);
-}
-
-
-=head2 register_region
-
-  Arg [1]    : Bio::EnsEMBL::AssemblyMapper $assmapper
-	       A valid AssemblyMapper object
-  Arg [2]    : char $type
-	       golden path type (e.g. NCBI_xx)
-  Arg [3]    : char $chr_name
-	       chromosome name (e.g. '2', 'X')
-  Arg [4]    : int $start
-	       chromosome start coordinate
-  Arg [5]    : int $end
-	       chromosome end coordinate
-  Description: Declares a chromosomal region to the AssemblyMapper.
-               This extracts the relevant data from the assembly
-               table and stores it in a Bio::EnsEMBL::Mapper.
-               It therefore must be called before any mapping is
-               attempted on that region. Otherwise only gaps will
-               be returned!
-  Returntype : none
-  Exceptions : thrown if $assmapper arg is not a Bio::EnsEMBL::AssemblyMapper
-  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
-
-=cut
-
-sub register_region{
-  my ($self, $assmapper, $type, $chr_name, $start, $end) = @_;
-
-  $self->throw("$assmapper is not a Bio::EnsEMBL::AssemblyMapper")
-    unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
-
-  my $chr = $self->db->get_ChromosomeAdaptor()->fetch_by_chr_name( $chr_name );
-  my $chr_id = $chr->dbID();
-  my $max_assembly_contig = $self->db()->get_MetaContainer->get_max_assembly_contig();
-
-  my $select = qq{
-      select
-         ass.contig_start,
-         ass.contig_end,
-         ass.contig_id,
-         ass.contig_ori,
-         ass.chr_start,
-         ass.chr_end
-      from
-         assembly ass
-      where
-         ass.chromosome_id = $chr_id and
-         ? <= ass.chr_end  and
-         ? >= ass.chr_start  and
-	 ? <= ass.chr_start and
-         ass.type = '$type'
-   };
-
-  my $sth = $self->prepare($select);
-   
-  $sth->execute( $start, $end, $start-$max_assembly_contig );
-   
-  while( my $arrayref = $sth->fetchrow_arrayref ) {
-    my ($contig_start, $contig_end, $contig_id, $contig_ori,
-        $chr_start, $chr_end) = @$arrayref;
-    if( $assmapper->_have_registered_contig($contig_id) == 0 ) {
-      $assmapper->_register_contig($contig_id);
-      $assmapper->_mapper->add_map_coordinates(
-					       $contig_id, $contig_start, 
-					       $contig_end, $contig_ori,
-					       $chr_name, $chr_start, $chr_end
-					      );
-    }
-  } 
-}
-
-
-=head2 register_contig
-
-  Arg  [1]   : Bio::EnsEMBL::AssemblyMapper $assmapper
-	       A valid AssemblyMapper object
-  Arg  [2]   : char $type
-	       golden path type (e.g. NCBI_xx)
-  Arg  [3]   : int $contig_id
-	       RawContig internal ID
-
-  Description: Declares a chromosomal region to the AssemblyMapper.
-               This extracts the relevant data from the assembly
-               table and stores it in a Bio::EnsEMBL::Mapper.
-               It therefore must be called before any mapping is
-               attempted on that region. Otherwise only gaps will be returned!
-  Returntype : 1 if the contig is present in assembly, 
-               0 if the contig is absent
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
-
-=cut
-
-sub register_contig {
-   my ($self, $assmapper, $type, $contig_id ) = @_;
-
-   my $sth = $self->prepare(qq{
-      select
-	c.name,
-	a.chr_start,
-	a.chr_end
-      from
-	assembly a,
-	chromosome c
-      where
-	 contig_id = '$contig_id' and
-	 type = '$type' and
-	 c.chromosome_id = a.chromosome_id
-   });
-
-   $sth->execute();
-
-   my @ctg_list;
-
-   while (my $row = $sth->fetchrow_arrayref) {
-       push @ctg_list, $row;
-   }
-
-   if (@ctg_list == 0) {
-     #$self->warn("Not found contig $contig_id");
-     return ();
-   }
-
-   if (@ctg_list > 1) {
-     $self->warn("Contig $contig_id is ambiguous in assembly type $type");
-     return ();
-   }
-
-   my $chr_name = $ctg_list[0]->[0];
-   my $chr_start = $ctg_list[0]->[1];
-   my $chr_end = $ctg_list[0]->[2];
-
-   return ($chr_name, $chr_start, $chr_end);
-}
-
 
 
 

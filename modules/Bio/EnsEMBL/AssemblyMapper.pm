@@ -21,22 +21,22 @@ the assembly table
     $asma = $db->get_AssemblyMapperAdaptor();
     $csa  = $db->get_CoordSystemAdaptor();
 
-    my $clone_cs = $cs_adaptor->fetch_by_name('chromosome', 'NCBI33');
+    my $chr_cs = $cs_adaptor->fetch_by_name('chromosome', 'NCBI33');
     my $ctg_cs   = $cs_adaptor->fetch_by_name('contig');
 
     $asm_mapper = $map_adaptor->fetch_by_CoordSystems($cs1, $cs2);
 
     #map to contig coordinate system from chromosomal
-    @ctg_coord_list = $asm_mapper->map(23142,1_000_000,2_000_000, 1, $ctg_cs);
+    @ctg_coords = $asm_mapper->map('X', 1_000_000, 2_000_000, 1, $ctg_cs);
 
     #map to chromosome coordinate system from contig
-    @chr_coord_list = $asm_mapper->map(5431, 1000, 10_000, -1, $chr_cs);
+    @chr_coords = $asm_mapper->map('AL30421.1.200.92341',100,10000,-1,$chr_cs);
 
-    #list contig ids for a region of chromsome with seq_region_id 23142
-    @ctg_ids = $asm_mapper->list_ids(23142, 1_000_000, 1, $chr_cs);
+    #list contig names for a region of chromsome
+    @ctg_ids = $asm_mapper->list_ids('13', 1_000_000, 1, $chr_cs);
 
-    #list chromosome ids for a contig
-    @chr_ids = $asm_mapper->list_ids(5431, 10_000, -1, $ctg_cs);
+    #list chromosome names for a contig region
+    @chr_ids = $asm_mapper->list_ids('AL30421.1.200.92341',1,1000,-1,$ctg_cs);
 
 =head1 DESCRIPTION
 
@@ -60,19 +60,16 @@ Internal methods are usually preceded with a _
 =cut
 
 
-
 package Bio::EnsEMBL::AssemblyMapper;
-use vars qw(@ISA);
+
 use strict;
+use warnings;
 
-use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Mapper;
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
-@ISA = qw(Bio::EnsEMBL::Root);
-
-
-my $CHUNKFACTOR = 20;
-my $CHUNKSIZE   = 2**$CHUNKFACTOR;
+my $ASSEMBLED = 'assembled';
+my $COMPONENT = 'component';
 
 =head2 new
 
@@ -83,7 +80,7 @@ my $CHUNKSIZE   = 2**$CHUNKFACTOR;
   Description: Creates a new AssemblyMapper
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
   Exceptions : thrown if multiple coord_systems are provided
-  Caller     : 
+  Caller     : AssemblyMapperAdaptor
 
 =cut
 
@@ -98,310 +95,188 @@ sub new {
   $self->adaptor($adaptor);
 
   if(@coord_systems != 2) {
-    throw('Can currently only map between 2 coordinate systems. ' .
+    throw('Can only map between 2 coordinate systems. ' .
           scalar(@coord_systems) . ' were provided');
   }
 
-  $self->{'asm_cs'} = $coord_system[0];
-  $self->{'cmp_cs'} = $coord_system[1];
+  # Set the component and assembled coordinate systems
+  $self->{'asm_cs'} = $coord_systems[0];
+  $self->{'cmp_cs'} = $coord_systems[1];
 
-  my $mapper = Bio::EnsEMBL::Mapper->new($coord_system[0]->dbID,
-                                         $coord_system[1]->dbID);
-
-  $self->{'mapper'} = $mapper;
+  $self->{'mapper'} = Bio::EnsEMBL::Mapper->new($ASSEMBLED, $COMPONENT);
 
   return $self;
 }
 
 
+=head2 map
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region to transform FROM
+  Arg [2]    : int $frm_start
+               The start of the region to transform FROM
+  Arg [3]    : int $frm_end
+               The end of the region to transform FROM
+  Arg [4]    : int $strand
+               The strand of the region to transform FROM
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to transform TO
+  Example    : @coords = $asm_mapper->map('X', 1_000_000, 2_000_000,
+                                            1, $ctg_cs);
+  Description: Transforms coordinates from one coordinate system
+               to another.
+  Returntype : List of Bio::EnsEMBL::Mapper::Coordinate and/or
+               Bio::EnsEMBL::Mapper:Gap objects
+  Exceptions : thrown if if the specified TO coordinat system is not one
+               of the coordinate systems associated with this assembly mapper
+  Caller     : general
+
+=cut
 
 sub map {
-  my ($self, $frm_id, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
 
-  #
-  # Function calls are slow and this method is used in several
-  # tight loops when mapping large numbers of features.
-  # First just check pointer equality to see if it same coord system object
-  # is used. This will work most of the time because the CoordSystemAdaptor
-  # only creates a single CoordSystem object for each coord system.
-  # If it doesn't work go with the slow approach of a function call
-  #
-  if($to_cs == $self->{'asm_cs'}) {
-    if(!$self->{'cmp_register'}->{$id}) {
-      $self->{'adaptor'}->register_component($self,$frm_id);
+  my $mapper  = $self->{'mapper'};
+  my $asm_cs  = $self->{'asm_cs'};
+  my $cmp_cs  = $self->{'cmp_cs'};
+  my $adaptor = $self->{'adaptor'};
+  my $to;
+
+  #speed critical section:
+  #try to do simple pointer equality comparisons of the coord system objects
+  #first since this is likely to work most of the time and is much faster
+  #than a function call
+
+  if($to_cs == $cmp_cs || ($to_cs != $asm_cs && $to_cs->equals($cmp_cs))) {
+
+    if(!$self->{'cmp_register'}->{$frm_seq_region}) {
+      $adaptor->register_component($self,$frm_seq_region);
     }
-    $self->{'mapper'}->map($frm_id, $frm_start,$frm_end,$frm_strand,
-                           $to_cs->dbID());
-  }
+    $to = $ASSEMBLED;
 
-
-  } elsif($to_cs == $self->{'cmp_cs'} || $to_cs->equals($self->{'cmp_cs'})) {
-    #
+  } elsif($to_cs == $asm_cs || $to_cs->equals($asm_cs)) {
+   
     # This can be probably be sped up some by only calling registered
     # assembled if needed
-    #
-    $self->{'adaptor'}->register_assembled($self,$frm_id,$frm_start,$frm_end);
-    $self->{'mapper'}->map($frm_id,$frm_start,$frm_end,$frm_strand,
-                           $to_cs->dbID());
+    $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
+    $to = $COMPONENT;
+
+  } else {
+
+    throw("Coordinate system " . $to_cs->name . " " . $to_cs->version .
+          " is neither the assembled nor the component coordinate system " .
+          " of this AssemblyMapper");
   }
 
-  #ptr test failed, do slow comparison
-  elsif($to_cs->equals($self->{'asm_cs'})) {
-    if(!$self->{'_cmp_register'}->{$id}) {
-      $self->{'adaptor'}->register_component($self,$from_id);
+  return $mapper->map($frm_seq_region, $frm_start, $frm_end, $frm_strand, $to);
+}
+
+
+
+=head2 list_ids
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region of interest
+  Arg [2]    : int $frm_start
+               The start of the region of interest
+  Arg [3]    : int $frm_end
+               The end of the region to transform of interest
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to obtain overlapping ids of
+  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
+  Description: Retrieves a list of overlapping seq_region names of another
+               coordinate system.
+  Returntype : List of strings
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub list_ids {
+  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+
+  my $to;
+
+  if($to_cs->equals($self->assembled_CoordSystem())) {
+
+    if(!$self->have_registered_component($frm_seq_region)) {
+      $self->adaptor->register_component($frm_seq_region);
     }
-    $self->{'mapper'}->map($frm_id, $frm_start, $frm_end, $frm_strand,
-                           $to_cs->dbID());
+    $to = $ASSEMBLED;
+
+  } elsif($to_cs->equals($self->component_CoordSystem())) {
+
+    $self->adaptor->register_assembled($frm_seq_region,$frm_start,$frm_end);
+    $to = $COMPONENT;
 
   } else {
     throw("Coordinate system " . $to_cs->name . " " . $to_cs->version .
           " is neither the assembled nor the component coordinate system " .
           " of this AssemblyMapper");
   }
+
+  return $self->mapper()->list_ids($frm_seq_region, $frm_start, $frm_end,
+                                   $frm_strand, $to);
 }
 
 
 
-sub list_ids {
-  my($self, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
 
-  if($to_cs->equals($self->assembled_CoordSystem())) {
-    
-  } elsif
-}
+=head2 have_registered_component
 
-
-=head2 map_coordinates_to_assembly
-
-  Arg  1     : int $contig_id
-               raw contig internal ID
-  Arg  2     : int $start
-               start position on raw contig
-  Arg  3     : int $end
-               end position on raw contig
-  Arg  4     : int $strand
-               raw contig orientation (+/- 1)
-  Example    : none
-  Description: takes RawContig coordinates and remaps it
-               to Assembly coordinates. Areas that dont map produce 
-               Gap objects.
-  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate,
-               Bio::EnsEMBL::Mapper::Gap
-  Exceptions : throws if args are not numeric
-  Caller     : general
+  Arg [1]    : string $cmp_seq_region
+               The name of the sequence region to check for registration
+  Example    : if($asm_mapper->have_registered_component('AL240214.1')) {...}
+  Description: Returns true if a given component region has been registered
+               with this assembly mapper.  This should really only be called
+               by this class or the AssemblyMapperAdaptor.
+  Returntype : 0 or 1
+  Exceptions : throw on incorrect arguments
+  Caller     : internal, AssemblyMapperAdaptor
 
 =cut
-
-
-sub map_coordinates_to_assembly {
-    my ($self, $contig_id, $start, $end, $strand) = @_;
-
-    if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
-      $self->register_region_around_contig( $contig_id, 0, 0 );
-    }
-
-    return $self->{'_mapper'}->map_coordinates($contig_id, $start, 
-					       $end, $strand, 'rawcontig');
-}
-
-=head2 fast_to_assembly
-
-  Arg  1     : int $contig_id
-               raw contig internal ID
-  Arg  2     : int $start
-               start position on raw contig
-  Arg  3     : int $end
-               end position on raw contig
-  Arg  4     : int $strand
-               raw contig orientation (+/- 1)
-  Example    : none
-  Description: takes RawContig coordinates and remaps it
-               to Assembly coordinates. This is a fast simple version
-               that only maps when there are no gaps and no splits.
-               It will just return id, start, end, strand
-  Returntype : list of results
-  Exceptions : throws if args are not numeric
-  Caller     : general
-
-=cut
-
-
-sub fast_to_assembly {
-    my ($self, $contig_id, $start, $end, $strand) = @_;
-
-    if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
-      $self->register_region_around_contig( $contig_id, 0, 0 );
-    }
-    return $self->{'_mapper'}->fastmap($contig_id, $start, $end, 
-				       $strand, 'rawcontig');
-}
-
-
-=head2 map_coordinates_to_rawcontig
-
-  Arg  1     : string $chr_name
-  Arg  2     : int $chr_start
-  Arg  3     : int $chr_end
-  Arg  4     : int $chr_strand
-               From p to q is 1 reverse is -1
-  Example    : ( "X", 10000, 20000, -1 )
-  Description: takes region in Assembly coordinates and
-               remaps it to RawContig coordinates.
-  Returntype : list of Bio::EnsEMBL::Mapper::Gap
-               and/or   Bio::EnsEMBL::Mapper::Coordinate
-	       The id method of each Coordinate object
-	       is the numeric contig_id of the RawContig
-	       it maps to
-  Exceptions : argument type is checked where appropriat
-  Caller     : general
-
-=cut
-
-
-sub map_coordinates_to_rawcontig {
-  my ($self, $chr_name, $start, $end, $strand) = @_;
-  
-  $self->register_region($chr_name, $start, $end);
-  
-  return $self->_mapper->map_coordinates($chr_name, $start, $end, 
-					 $strand, 'assembly');
-}
-
-
-
-=head2 list_contig_ids
-
-  Arg  1     : string $chr_name
-  Arg  2     : int $chr_start
-  Arg  3     : int $chr_end
-  Example    : ( "X", 1, 1000000 )
-  Description: Returns a list of RawContig internal IDs
-               which overlap the given chromosome region
-  Returntype : list of int
-  Exceptions : arguments are type checked
-  Caller     : general, used for SQL query generation
-
-=cut
-
-
-sub list_contig_ids {
-  my ($self, $chr_name, $start, $end) = @_;
-  
-  # may not have registered this region yet
-  
-  $self->register_region($chr_name, $start, $end);
-  
-  my @pairs = $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
-  
-  my @ids;
-  
-  foreach my $pair ( @pairs ) {    
-    push(@ids,$pair->from->id);
-  }
-  
-  return @ids;
-}
-
-
-
-=head2 register_region
-
-  Arg  1     : string $chr_name
-  Arg  2     : int $chr_start
-  Arg  3     : int $chr_end
-  Example    : ( "X", 1, 1000000 )
-  Description: Declares a chromosomal region to the AssemblyMapper.
-               This extracts the relevant data from the assembly
-               table and stores it in a Bio::EnsEMBL::Mapper.
-               It therefore must be called before any mapping is
-               attempted on that region. Otherwise only gaps will
-               be returned! Is done automatically before mapping.
-  Returntype : none
-  Exceptions : arguments are checked
-  Caller     : internal
-
-=cut
-
-
-sub register_region {
-  my ($self, $chr_name, $start, $end) = @_;
-  
-  my $first_chunk = int( $start / $self->_chunksize() );
-  my $last_chunk = int( $end / $self->_chunksize() );
-  
-  $self->_chunk_register_region( $chr_name, $first_chunk, $last_chunk );
-}
-
-
-
-=head2 register_region_around_contig
-
-  Arg  1     : int $contig_id
-  Arg  2     : int $upstream_bases
-  Arg  3     : int $downstream_bases
-  Example    : ( 2000, 0, 0 )
-  Description: Declares a region around a given RawContig to this
-               AssemblyMapper. Is done automatically before a mapping
-               is attempted. The registering is cached, so registering 
-               multiple times is cheap.
-               With 0 as up and downstream tests if given contig is mappable.
-               returns 1 if its is and 0 if it isnt. 
-  Returntype : int 0,1
-  Exceptions : all Args must be ints
-  Caller     : internal
-
-=cut
-
-
-sub register_region_around_contig {
-   my ($self, $contig_id, $left, $right) = @_;
-
-   if( $self->_have_registered_contig( $contig_id ) 
-       && $left == 0 && $right==0 ) {
-     if( $self->_mapper->list_pairs( $contig_id, -1, -1, "rawcontig" )) {
-       return 1;
-     } else {
-       return 0;
-     }
-   }
-   
-   my ( $chr_name, $chr_start, $chr_end ) = 
-     $self->adaptor()->register_contig( $self, $self->_type, $contig_id );
-
-   if( defined $chr_name ) {
-     $self->register_region( $chr_name, $chr_start-$left, $chr_end+$right );
-     return 1;
-   } else {
-     return 0;
-   }
-}
-
-
-=head2 Internal functions
-
-Internal functions
-
-=cut
-
-
 
 sub have_registered_component {
   my $self = shift;
-  my $id = shift;
+  my $cmp_seq_region = shift;
 
-  if($self->{'cmp_register'}->{$id}) {
+  throw('cmp_seq_region argument is required') if(!$cmp_seq_region);
+
+  if($self->{'cmp_register'}->{$cmp_seq_region}) {
     return 1;
   }
 
   return 0;
 }
 
+
+
+=head2 have_registered_assembled
+
+  Arg [1]    : string $asm_seq_region
+               The name of the sequence region to check for registration
+  Arg [2]    : int $chunk_id
+               The chunk number of the provided seq_region to check for
+               registration.
+  Example    : if($asm_mapper->have_registered_component('X',9)) {...}
+  Description: Returns true if a given assembled region chunk has been 
+               registered with this assembly mapper.  This should really only 
+               be called by this class or the AssemblyMapperAdaptor.
+  Returntype : 0 or 1
+  Exceptions : throw on incorrect arguments
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
 
 sub have_registered_assembled {
   my $self = shift;
-  my $id   = shift;
+  my $asm_seq_region = shift;
+  my $chunk_id   = shift;
 
-  if($self->{'_assembled_register'}->{$id}) {
+  throw('asm_seq_region argument is required') if(!$asm_seq_region);
+  throw('chunk_id is required') if(!defined($chunk_id));
+
+  if($self->{'asm_register'}->{$asm_seq_region}->{$chunk_id}) {
     return 1;
   }
 
@@ -409,28 +284,88 @@ sub have_registered_assembled {
 }
 
 
+=head2 register_component
+
+  Arg [1]    : string $cmp_seq_region
+               The name of the component sequence region to register
+  Example    : $asm_mapper->register_component('AL312341.1');
+  Description: Flags a given component sequence region as registered in this
+               assembly mapper.  This should only be called by this class
+               or the AssemblyMapperAdaptor.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
 
 sub register_component {
   my $self = shift;
-  my $id = shift;
+  my $cmp_seq_region = shift;
 
-  $self->{'cmp_register'}->{$id} = 1;
+  throw('cmp_seq_region argument is required') if(!$cmp_seq_region);
+
+  $self->{'cmp_register'}->{$cmp_seq_region} = 1;
 }
 
+
+=head2 register_assembled
+
+  Arg [1]    : string $asm_seq_region
+               The name of the sequence region to register
+  Arg [2]    : int $chunk_id
+               The chunk number of the provided seq_region to register.
+  Example    : $asm_mapper->register_assembled('X', 4);
+  Description: Flags a given assembled region as registered in this assembly
+               mapper.  This should only be called by this class or the
+               AssemblyMapperAdaptor.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
 
 sub register_assembled {
   my $self = shift;
-  my $id = shift;
+  my $asm_seq_region = shift;
+  my $chunk_id = shift;
 
-  $self->{'cmp_register'}->{$id} = 1;
+  throw('asm_seq_region argument is required') if(!$asm_seq_region);
+  throw('chunk_id srgument is required') if(!defined($chunk_id));
+
+  $self->{'asm_register'}->{$asm_seq_region}->{$chunk_id} = 1;
 }
 
 
+
+=head2 mapper
+
+  Arg [1]    : none
+  Example    : $mapper = $asm_mapper->mapper();
+  Description: Retrieves the internal mapper used by this Assembly Mapper.
+               This is unlikely to be useful unless you _really_ know what you
+               are doing.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
 
 sub mapper {
   my $self = shift;
   return $self->{'mapper'};
 }
+
+
+=head2 assembled_CoordSystem
+
+  Arg [1]    : none
+  Example    : $cs = $asm_mapper->assembled_CoordSystem
+  Description: Retrieves the assembled CoordSystem from this assembly mapper
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
 
 sub assembled_CoordSystem {
   my $self = shift;
@@ -438,19 +373,22 @@ sub assembled_CoordSystem {
 }
 
 
+=head2 component_CoordSystem
+
+  Arg [1]    : none
+  Example    : $cs = $asm_mapper->component_CoordSystem
+  Description: Retrieves the component CoordSystem from this assembly mapper
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : internal, AssemblyMapperAdaptor
+
+=cut
+
 sub component_CoordSystem {
   my $self = shift;
   return $self->{'cmp_cs'};
 }
 
-
-sub chunk_size {
-  return $CHUNKSIZE;
-}
-
-sub chunk_factor {
-  return $CHUNKFACTOR;
-}
 
 =head2 adaptor
 
@@ -471,86 +409,97 @@ sub adaptor {
 }
 
 
-
-=head2 _chunk_register_region
-
-  Arg  1     : string $chr_name
-  Arg  2     : int $first_chunk
-  Arg  3     : int $last_chunk
-  Example    : none
-  Description: registers the region on given chromosome from
-               $first_chunk*chunksize until ($last_chunk+1)*chunksize-1
-  Returntype : none
-  Exceptions : none
-  Caller     : register_region
-
-=cut
-
-
-sub _chunk_register_region {
-  my ( $self, $chr_name, $first_chunk, $last_chunk ) = @_;
-
-  for( my $i = $first_chunk; $i <= $last_chunk; $i++ ) {
-    if( exists $self->{$chr_name}{$i} ) {
-      next;
-    } else {
-      $self->{$chr_name}{$i} = 1;
-      my $start = $i * $self->_chunksize();
-      my $end = $start + $self->_chunksize() - 1;
-      $self->adaptor->register_region
-	( $self, $self->_type, $chr_name, $start, $end);
-      
-    }
-  }
-}
-
-
 =head2 in_assembly
 
-  Arg  1     : Bio::EnsEMBL::Clone or
-               Bio::EnsEMBL::RawContig $object_in_assembly
-                
-  Example    : none
-  Description: tests if the given Clone or RawContig object is in the 
-               assembly
-  Returntype : int 0,1
-  Exceptions : argument type is checked
-  Caller     : general
+  Description: Deprecated. Use map() or list_ids() instead
 
 =cut
-
 
 sub in_assembly {
   my ($self, $object) = @_;
 
-  my @contigs;
+  deprecate('Use map() or list_ids() instead.');
 
-  unless(ref $object) {
-    $self->throw("$object is not an object reference");
-  }
+  my $csa = $self->db->get_CoordSystemAdaptor();
 
-  if($object->isa("Bio::EnsEMBL::Clone")) {
-    #get contigs from this clone
-    @contigs = @{$object->get_all_Contigs()}; 
-  } elsif ($object->isa("Bio::EnsEMBL::RawContig")) {
-    #we already have the contig we need
-    @contigs = ($object);
-  } else {
-    #object is not a clone or a raw contig
-    $self->throw("$object is not a RawContig or Clone object");
-  }
+  my $top_level = $csa->fetch_top_level();
 
-  #verify at least one of these contigs is mapped to the assembly
-  foreach my $contig (@contigs) {
-    if($self->register_region_around_contig( $contig->dbID(),
-					     0, 0)) {
-      return 1;
-    }
-  }
+  my $asma = $self->adaptor->fetch_by_CoordSystems($object->coord_system(),
+                                                   $top_level);
 
-  #none of the contigs was in the assembly (golden path)
-  return 0;
+  my @list = $asma->list_ids($object->seq_region(), $object->start(),
+                             $object->end(), $top_level);
+
+  return (@list > 0);
 }
+
+
+=head2 map_coordinates_to_assembly
+
+  Description: DEPRECATED use map() instead
+
+=cut
+
+sub map_coordinates_to_assembly {
+  my ($self, $contig_id, $start, $end, $strand) = @_;
+
+  deprecate('Use map() instead.');
+
+  #not sure if contig_id is seq_region_id or name...
+  return $self->map($contig_id, $start, $end, $strand,
+                   $self->assembled_CoordSystem());
+
+}
+
+
+=head2 fast_to_assembly
+
+  Description: DEPRECATED use map() instead
+
+=cut
+
+sub fast_to_assembly {
+  my ($self, $contig_id, $start, $end, $strand) = @_;
+
+  deprecate('Use map() instead.');
+
+  #not sure if contig_id is seq_region_id or name...
+  return $self->map($contig_id, $start, $end, $strand,
+                    $self->assembled_CoordSystem());
+}
+
+
+=head2 map_coordinates_to_rawcontig
+
+  Description: DEPRECATED use map() instead
+
+=cut
+
+sub map_coordinates_to_rawcontig {
+  my ($self, $chr_name, $start, $end, $strand) = @_;
+
+  deprecate('Use map() instead.');
+
+  return $self->map($chr_name, $start, $end, $strand,
+                    $self->component_CoordSystem());
+
+}
+
+=head2 list_contig_ids
+
+  Description: DEPRECATED Use list_ids instead
+
+=cut
+
+sub list_contig_ids {
+  my ($self, $chr_name, $start, $end) = @_;
+
+  deprecate('Use list_ids() instead.');
+
+  return $self->list_ids($chr_name, $start, $end, 
+                         $self->component_CoordSystem());
+}
+
 
 
 1;
