@@ -106,7 +106,8 @@ sub version{
 
  Title   : start
  Usage   : $obj->start($newval)
- Function: 
+ Function: return or assign the value of start, which is a position within
+           the exon given by start_exon_id.
  Returns : value of start
  Args    : newvalue (optional)
 
@@ -127,7 +128,9 @@ sub start{
 
  Title   : start_exon_id
  Usage   : $obj->start_exon_id($newval)
- Function: 
+ Function: return or assign the value of start_exon_id, which denotes the
+           exon at which translation starts (and within this exon, at the
+           position indicated by start, see above).
  Returns : value of start_exon_id
  Args    : newvalue (optional)
 
@@ -148,7 +151,8 @@ sub start_exon_id{
 
  Title   : end
  Usage   : $obj->end($newval)
- Function: 
+ Function: return or assign the value of end, which is a position within
+           the exon given by end_exon_id. 
  Returns : value of end
  Args    : newvalue (optional)
 
@@ -169,7 +173,9 @@ sub end{
 
  Title   : end_exon_id
  Usage   : $obj->end_exon_id($newval)
- Function: 
+ Function: return or assign the value of end_exon_id, which denotes the
+           last exon of a translation (and within this exon, at the
+           position indicated by end, see above).
  Returns : value of end_exon_id
  Args    : newvalue (optional)
 
