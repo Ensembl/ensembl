@@ -28,10 +28,10 @@ package main;
 	     #The mapping to known genes is assymetrical. This is due to the fact that's our gene prediction is quite fragmented compared to the manually curated genes       	 
             
 	     #'query_idt'  => 40,
-             'query_idt'    => ,
+             'known_idt'    => ,
 
              #'target_idt  => 10,
-             'target_idt'  => ,
+             'ensembl_idt'  => ,
 
              
 
