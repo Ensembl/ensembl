@@ -15,6 +15,8 @@ use Data::Dumper;	# For debugging output
 use Getopt::Std;
 use File::Temp qw(tempfile);
 
+use Bio::EnsEMBL::Mapper;
+
 sub overlap
 {
 	# Returns the length of the overlap of the two ranges
@@ -52,23 +54,32 @@ my %opts = (
 	'b'	=> '0',
 	'c'	=> $pmatch_cmd,
 	'k'	=> '0',
+	'p'	=> '2',
 	'q'	=> $query,
 	't'	=> $target );
 
-if (!getopts('bc:kq:t:', \%opts)) {
-	print(STDERR "Usage: $0 [-b] [-c path] [-k] [-q path] [-t path]\n\n");
-	print(STDERR "-b\tDisplay header\n\n");
-	print(STDERR "-c path\tUse the pmatch executable located " .
-		"at 'path' rather than at\n");
-	print(STDERR "\t$pmatch_cmd\n\n");
-	print(STDERR "-k\tKeep the pmatch output file\n");
-	print(STDERR "\t(the name of the file will be printed on stderr)\n\n");
-	print(STDERR "-q path\tTake query FastA file from 'path' rather " .
-		"than from\n");
-	print(STDERR "\t$query\n\n");
-	print(STDERR "-t path\tTake target FastA file from 'path' rather " .
-		"than from\n");
-	print(STDERR "\t$target\n\n");
+if (!getopts('bc:kp:q:t:', \%opts)) {
+	print STDERR <<EOT;
+Usage: $0 [-b] [-c path] [-k] [-p num] [-q path] [-t path]
+
+-b	Display header for each column.
+
+-c path	Use the pmatch executable located at 'path' rather than at
+	'$pmatch_cmd'.
+
+-p num	Report the targets that are 'num' percent within the best
+	matching target.  Default is 2%.
+
+-k	Keep the pmatch output file.
+	The name of the file will be printed on stderr.
+
+-q path	Take query FastA file from 'path' rather than from
+	'$query'.
+
+-t path	Take target FastA file from 'path' rather than from
+	'$target'.
+
+EOT
 	die;
 }
 
@@ -94,6 +105,8 @@ while (defined(my $line = <PMATCH>)) {
 
 	if (!exists($hits{$qid}{$tid})) {
 		$hits{$qid}{$tid} = {
+			QID	=> $qid,
+			TID	=> $tid,
 			QLEN	=> $qlen,
 			TLEN 	=> $tlen,
 			HITS	=> [ ]
@@ -150,18 +163,26 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-if ($opts{'b'}) {
+if ($opts{'b'}) {	# Display header
 	printf("%8s%8s%8s%8s%8s%8s\n",
 		'QID', 'QLEN', 'QIDENT',
 		'TID', 'TLEN', 'TIDENT');
 }
 
-while (my ($qid, $query) = each %hits) {
-	while (my ($tid, $target)  = each %{ $query }) {
+foreach my $query (values(%hits)) {
+	my $best;
+	foreach my $target (
+		sort { $b->{QIDENT} <=> $a->{QIDENT} } values %{ $query }) {
+
+		$best = $target->{QIDENT} if (!defined($best));
+
+		last if ($target->{QIDENT} < $best - $opts{'p'});
+
+
 		printf("%8s%8d%8.3f%8s%8d%8.3f\n",
-			$qid, $target->{QLEN},
+			$target->{QID}, $target->{QLEN},
 			$target->{QIDENT},
-			$tid, $target->{TLEN},
+			$target->{TID}, $target->{TLEN},
 			$target->{TIDENT});
 	}
 }
