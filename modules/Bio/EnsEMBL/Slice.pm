@@ -712,12 +712,19 @@ sub get_all_Genes{
 
 =head2 get_all_Genes_by_type
 
+
   Arg [1]    : string $type 
-  Arg [2]    : (optional) boolean $empty_flag
-  Example    : @genes = @{$slice->get_all_Genes_by_type('ensembl')};
+  Arg [2]    : (optional) string $logic_name
+  Arg [3]    : (optional) boolean $empty_flag
+  Example    : @genes = @{$slice->get_all_Genes_by_type($type, 
+							'ensembl')};
   Description: Retrieves genes that overlap this slice of type $type.  
                This is primarily used by the genebuilding code when several 
                types of genes are used.
+               
+               The logic name is the analysis of the genes that are retrieved.
+               If not provided all genes will be retrieved instead.
+  
                The empty flag indicates light weight genes that only have a 
                start, end and strand should be used (only works if lite db is 
                available). If the lite database has 
@@ -730,9 +737,10 @@ sub get_all_Genes{
 =cut
 
 sub get_all_Genes_by_type{
-  my ($self, $type, $empty_flag) = @_;
+  my ($self, $type, $logic_name, $empty_flag) = @_;
   
-  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($empty_flag)};
+  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($logic_name,
+							       $empty_flag)};
   
   return \@out;
 }
