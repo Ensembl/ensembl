@@ -53,7 +53,10 @@ sub new {
 
   if($chr_name) {
     if($adaptor) {
-      my $chr = $adaptor->fetch_by_region('toplevel',$chr_name);
+      my $csa = $adaptor->db->get_CoordSystemAdaptor();
+      my ($top_cs) = @{$csa->fetch_all()};
+      my $chr = $adaptor->fetch_by_region($top_cs->name(),$chr_name,
+                                         undef,undef,undef,$top_cs->version());
       bless $chr, 'Bio::EnsEMBL::Chromosome';
       return $chr;
     } else {

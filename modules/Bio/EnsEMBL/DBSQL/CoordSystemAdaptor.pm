@@ -36,22 +36,22 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   }
 
   #
-  # Fetching by top level:
+  # Fetching by rank:
+  #
+  $cs = $csa->fetch_by_rank(2);
+
+  #
+  # Fetching the pseudo coord system 'toplevel'
   #
 
   #Get the default top_level coord system:
   $cs = $csa->fetch_top_level();
 
-  #Get a particular version of a top_level coord system:
-  $cs = $csa->fetch_top_level('NCBI34');
-
-  #Get all top level coord systems:
-  foreach $cs (@{$csa->fetch_all_top_level()}) {
-    print $cs->name(), ' ', $cs->version, "\n";
-  }
-
   #can also use an alias in fetch_by_name:
   $cs = $csa->fetch_by_name('toplevel');
+
+  #can also request toplevel using rank=0
+  $cs = $csa->fetch_by_rank(0);
 
   #
   # Fetching by sequence level:
@@ -87,10 +87,7 @@ not have a version an empty string ('') is used instead.
 
 Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object
-methods. Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -102,7 +99,6 @@ package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::CoordSystem;
-use DBI;
 
 use vars qw(@ISA);
 
@@ -140,30 +136,29 @@ sub new {
   #keyed on id, coord_system value
   $self->{'_dbID_cache'} = {};
 
+  #keyed on rank
+  $self->{'_rank_cache'} = {};
+
   #keyed on id, 1/undef values
   $self->{'_is_sequence_level'} = {};
-  $self->{'_is_top_level'} = {};
   $self->{'_is_default_version'} = {};
 
-  my $sth = $self->prepare('SELECT coord_system_id, name, version, attrib ' .
-                           'FROM coord_system');
-
+  my $sth = $self->prepare(
+    'SELECT coord_system_id, name, rank, version, attrib ' .
+    'FROM coord_system');
   $sth->execute();
 
-  my ($dbID, $name, $version, $attrib);
-  $sth->bind_columns(\$dbID, \$name, \$version, \$attrib);
+  my ($dbID, $name, $rank, $version, $attrib);
+  $sth->bind_columns(\$dbID, \$name, \$rank, \$version, \$attrib);
 
   while($sth->fetch()) {
     my $seq_lvl = 0;
-    my $top_lvl = 0;
     my $default = 0;
     if($attrib) {
       foreach my $attrib (split(',', $attrib)) {
         $self->{"_is_$attrib"}->{$dbID} = 1;
         if($attrib eq 'sequence_level') {
           $seq_lvl = 1;
-        } elsif($attrib eq 'top_level') {
-          $top_lvl = 1;
         } elsif($attrib eq 'default_version') {
           $default = 1;
         }
@@ -175,13 +170,14 @@ sub new {
        -ADAPTOR        => $self,
        -NAME           => $name,
        -VERSION        => $version,
-       -TOP_LEVEL      => $top_lvl,
+       -RANK           => $rank,
        -SEQUENCE_LEVEL => $seq_lvl,
        -DEFAULT        => $default);
 
     $self->{'_dbID_cache'}->{$dbID} = $cs;
 
     $self->{'_name_cache'}->{lc($name)} ||= [];
+    $self->{'_rank_cache'}->{$rank} = $cs;
     push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
   }
   $sth->finish();
@@ -225,6 +221,15 @@ sub new {
     $mappings{$asm_cs->dbID}->{$cmp_cs->dbID} = 1;
   }
 
+  #
+  # Create the pseudo coord system 'toplevel' and cache it so that
+  # only one of these is created for each db...
+  #
+  my $toplevel = Bio::EnsEMBL::CoordSystem->new(-TOP_LEVEL => 1,
+                                                -NAME      => 'toplevel',
+                                                -ADAPTOR   => $self);
+  $self->{'_top_level'} = $toplevel;
+
   $self->{'_mapping_paths'} = \%mappings;
 
   return $self;
@@ -238,7 +243,10 @@ sub new {
   Example    : foreach my $cs (@{$csa->fetch_all()}) {
                  print $cs->name(), ' ', $cs->version(), "\n";
                }
-  Description: Retrieves every coordinate system defined in the DB
+  Description: Retrieves every coordinate system defined in the DB.
+               These will be returned in ascending order of rank. I.e.
+               The highest coordinate system with rank=1 would be first in the
+               array.
   Returntype : listref of Bio::EnsEMBL::CoordSystems
   Exceptions : none
   Caller     : general
@@ -248,11 +256,45 @@ sub new {
 sub fetch_all {
   my $self = shift;
 
-  my @coord_systems = values %{$self->{'_dbID_cache'}};
+  my @coord_systems;
+
+  #order the array by rank in ascending order
+  foreach my $rank (sort {$a <=> $b} keys %{$self->{'_rank_cache'}}) {
+    push @coord_systems, $self->{'_rank_cache'}->{$rank};
+  }
 
   return \@coord_systems;
 }
 
+
+
+=head2 fetch_by_rank
+
+  Arg [1]    : int $rank
+  Example    : my $cs = $coord_sys_adaptor->fetch_by_rank(1);
+  Description: Retrieves a CoordinateSystem via its rank. 0 is a special
+               rank reserved for the pseudo coordinate system 'toplevel'.
+               undef is returned if no coordinate system of the specified rank
+               exists.
+  Returntype : Bio::EnsEMBL::CoordSystem
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_rank {
+  my $self = shift;
+  my $rank = shift;
+
+  throw("Rank argument must be defined.") if(!defined($rank));
+  throw("Rank argument must be a non-negative integer.") if($rank !~ /^\d+$/);
+
+  if($rank == 0) {
+    return $self->fetch_top_level();
+  }
+
+  return $self->{'_rank_cache'}->{$rank};
+}
 
 
 =head2 fetch_by_name
@@ -266,17 +308,16 @@ sub fetch_all {
                specified the default version will be used.
   Example    : $coord_sys = $csa->fetch_by_name('clone');
                $coord_sys = $csa->fetch_by_name('chromosome', 'NCBI33');
-               #toplevel is an alias for the highest coordinate system
-               #such as the chromosome coordinate system
+               # toplevel is an pseudo coord system representing the highest
+               # coord system in a given region
+               # such as the chromosome coordinate system
                $coord_sys = $csa->fetch_by_name('toplevel');
-               $coord_sys = $csa->fetch_by_name('toplevel', 'NCBI31');
                #seqlevel is an alias for the sequence level coordinate system
                #such as the clone or contig coordinate system
                $coord_sys = $csa->fetch_by_name('seqlevel');
   Description: Retrieves a coordinate system by its name
   Returntype : Bio::EnsEMBL::CoordSystem
-  Exceptions : throw if the requested coordinate system does not exist
-               throw if no name argument provided
+  Exceptions : throw if no name argument provided
                warning if no version provided and default does not exist
   Caller     : general
 
@@ -299,18 +340,15 @@ sub fetch_by_name {
   }
 
   if(!exists($self->{'_name_cache'}->{$name})) {
-    my $guess = '';
     if($name =~ /top/) {
-      $guess = "\nDid you mean 'toplevel' instead of '$name'?";
+      warning("Did you mean 'toplevel' coord system instead of '$name'?");
     } elsif($name =~ /seq/) {
-      $guess = "\nDid you mean 'seqlevel' instead of '$name'?";
+      warning("Did you mean 'seqlevel' coord system instead of '$name'?");
     }
-    throw("Coord_system with name [$name] does not exist.$guess");
+    return undef;
   }
 
   my @coord_systems = @{$self->{'_name_cache'}->{$name}};
-
-  throw("Coord_system with name [$name] does not exist.") if(!@coord_systems);
 
   foreach my $cs (@coord_systems) {
     if($version) {
@@ -321,7 +359,8 @@ sub fetch_by_name {
   }
 
   if($version) {
-    throw("Coord_system [$name] does not exist with version [$version]");
+    #the specific version we were looking for was not found
+    return undef;
   }
 
   #didn't find a default, just take first one
@@ -359,7 +398,7 @@ sub fetch_all_by_name {
   if($name eq 'seqlevel') {
     return [$self->fetch_sequence_level()];
   } elsif($name eq 'toplevel') {
-    return $self->fetch_all_top_level();
+    return [$self->fetch_top_level()];
   }
 
   return $self->{'_name_cache'}->{$name} || [];
@@ -469,8 +508,9 @@ sub add_feature_table {
   Arg [1]    : int dbID
   Example    : $cs = $csa->fetch_by_dbID(4);
   Description: Retrieves a coord_system via its internal
-               identifier.
-  Returntype : Bio::EnsEMBL::CoordSystem
+               identifier, or undef if no coordinate system with the provided
+               id exists.
+  Returntype : Bio::EnsEMBL::CoordSystem or undef
   Exceptions : thrown if no coord_system exists for specified dbID
   Caller     : general
 
@@ -484,7 +524,7 @@ sub fetch_by_dbID {
 
   my $cs = $self->{'_dbID_cache'}->{$dbID};
 
-  throw("Coord_system with dbID [$dbID] does not exist")  if(!$cs);
+  return undef if(!$cs);
 
   return $cs;
 }
@@ -493,26 +533,11 @@ sub fetch_by_dbID {
 
 =head2 fetch_top_level
 
-  Arg [1]    : string $version (optional)
-               The version of the top-level to obtain. If not provided
-               the default version top-level will be returned.
+  Arg [1]    : none
   Example    : $cs = $csa->fetch_top_level();
-               $cs = $csa->fetch_top_level('NCBI34');
-  Description: Retrieves the top level coordinate system.  It is possible
-               to have multiple top-level coordinate systems if there is
-               more than one version of the top-level system.  For
-               example the top level of a homo_sapiens database could
-               be 'chromosome' but this might have 'NCBI33', 'NCBI31',
-               and 'NCBI34' versions. One of these will be defined as
-               the default and will be returned if no specific version
-               is requested. If a specific version is requested then it
-               will be returned.
+  Description: Retrieves the toplevel pseudo coordinate system.
   Returntype : a Bio::EnsEMBL::CoordSystem object
-  Exceptions : throw if no top-level coord_system exists for specified
-               version
-               throw if no top-level coord_system exists at all
-               warning if no version specified and no default version
-               exists
+  Exceptions : none
   Caller     : general
 
 =cut
@@ -520,34 +545,8 @@ sub fetch_by_dbID {
 sub fetch_top_level {
   my $self = shift;
 
-  return $self->_fetch_by_attrib('top_level', @_);
+  return $self->{'_top_level'};
 }
-
-
-=head2 fetch_all_top_level
-
-  Arg [1]    : none
-  Example    : foreach my $cs (@{$csa->fetch_all_top_level()}) {
-                 my ($id, $name, $version) = @$cs;
-               }
-  Description: Retrieves all top level coordinate systems defined in
-               the DB. It is possible to have multiple top-level 
-               coordinate systems if there is more than one version
-               of the top-level system. For example the top level of a
-               homo_sapiens database could be 'chromosome' but this
-               might have 'NCBI33', 'NCBI31', and 'NCBI34' versions.
-  Returntype : listref of Bio::EnsEMBL::CoordSystem objects
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_all_top_level {
-  my $self = shift;
-
-  return $self->_fetch_all_by_attrib('top_level', @_);
-}
-
 
 
 =head2 fetch_sequence_level
@@ -797,6 +796,7 @@ sub deleteObj {
   delete $self->{'_dbID_cache'};
   delete $self->{'_mapping_paths'};
   delete $self->{'_shortest_paths'};
+  delete $self->{'_top_level'};
 }
 
 
@@ -822,10 +822,17 @@ sub store {
   my $db = $self->db();
   my $name = $cs->name();
   my $version = $cs->version();
-  my $toplevel = $cs->is_top_level();
+  my $rank    = $cs->rank();
+
   my $seqlevel = $cs->is_sequence_level();
   my $default  = $cs->is_default();
-  
+
+  my $toplevel = $cs->is_top_level();
+
+  if($toplevel) {
+    throw("The toplevel CoordSystem cannot be stored");
+  }
+
   #
   # Do lots of sanity checking to prevent bad data from being entered
   #
@@ -856,9 +863,19 @@ sub store {
     }
   }
 
+  if($rank !~ /^\d+$/) {
+    throw("Rank attribute must be a positive integer not [$rank]");
+  }
+  if($rank == 0) {
+    throw("Only toplevel CoordSystem may have rank of 0.");
+  }
+
+  if(defined($self->{'_rank_cache'}->{$rank})) {
+    throw("CoordSystem with rank [$rank] already exists.");
+  }
+
   my @attrib;
 
-  push @attrib, 'top_level' if($toplevel);
   push @attrib, 'default_version' if($default);
   push @attrib, 'sequence_level' if($seqlevel);
 
@@ -871,9 +888,10 @@ sub store {
   my $sth = $db->prepare('INSERT INTO coord_system ' .
                          'SET name    = ?, ' .
                              'version = ?, ' .
-                             'attrib  = ?');
+                             'attrib  = ?,' .
+                             'rank    = ?');
 
-  $sth->execute($name, $version, $attrib_str);
+  $sth->execute($name, $version, $attrib_str, $rank);
   my $dbID = $sth->{'mysql_insertid'};
   $sth->finish();
 
@@ -889,12 +907,12 @@ sub store {
   #
   $self->{'_is_default_version'}->{$dbID} = 1 if($default);
   $self->{'_is_sequence_level'}->{$dbID} = 1 if($seqlevel);
-  $self->{'_is_top_level'}->{$dbID} = 1 if($toplevel);
 
   $self->{'_name_cache'}->{lc($name)} ||= [];
   push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
 
   $self->{'_dbID_cache'}->{$dbID} = $cs;
+  $self->{'_rank_cache'}->{$rank} = $cs;
 
   return $cs;
 }

@@ -102,7 +102,9 @@ sub new {
 
   #we load the mapper calling the 'ASSEMBLED' the 'from' coord system
   #and the 'COMPONENT' the 'to' coord system
-  $self->{'mapper'} = Bio::EnsEMBL::Mapper->new($ASSEMBLED, $COMPONENT);
+  $self->{'mapper'} = Bio::EnsEMBL::Mapper->new($ASSEMBLED, $COMPONENT,
+                                               $coord_systems[0],
+                                               $coord_systems[1]);
 
   return $self;
 }
@@ -186,8 +188,6 @@ sub map {
 
 =cut
 
-
-
 sub flush {
   my $self = shift;
 
@@ -258,7 +258,7 @@ sub fastmap {
   Arg [5]    : Bio::EnsEMBL::CoordSystem $frm_cs
                The coordinate system to obtain overlapping ids of
   Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
-  Description: Retrieves a list of overlapping seq_region internal identifiers
+  Description: Retrieves a list of overlapping seq_region names
                of another coordinate system.  This is the same as the 
                list_ids method but uses seq_region names rather internal ids
   Returntype : List of strings

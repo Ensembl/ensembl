@@ -55,7 +55,8 @@ package Bio::EnsEMBL::CoordSystem;
 
 use Bio::EnsEMBL::Storable;
 
-use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Argument  qw(rearrange);
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use vars qw(@ISA);
 
@@ -67,24 +68,32 @@ use vars qw(@ISA);
   Arg [..]   : List of named arguments:
                -NAME      - The name of the coordinate system
                -VERSION   - (optional) The version of the coordinate system
+               -RANK      - The rank of the coordinate system. The highest
+                            level coordinate system should have rank 1, the
+                            second highest rank 2 and so on.  An example of
+                            a high level coordinate system is 'chromosome' an
+                            example of a lower level coordinate system is
+                            'clone'.
                -TOP_LEVEL - (optional) Sets whether this is a top-level coord
-                            system. Default = 0
+                            system. Default = 0. This should only be set to
+                            true if you are creating an artificial toplevel
+                            coordsystem by the name of 'toplevel'
                -SEQUENCE_LEVEL - (optional) Sets whether this is a sequence
                             level coordinate system. Default = 0
-               -DEFAULT   - (optional) 
+               -DEFAULT   - (optional)
                             Whether this is the default version of the 
                             coordinate systems of this name. Default = 0
                -DBID      - (optional) The internal identifier of this
                              coordinate system
                -ADAPTOR   - (optional) The adaptor which provides database
                             interaction for this object
-  Example    : $cs = Bio::EnsEMBL::CoordSystem->new(-NAME => 'chromosome',
+  Example    : $cs = Bio::EnsEMBL::CoordSystem->new(-NAME    => 'chromosome',
                                                     -VERSION => 'NCBI33',
+                                                    -RANK    => 1,
                                                     -DBID    => 1,
                                                     -ADAPTOR => adaptor,
                                                     -DEFAULT => 1,
-                                                    -SEQUENCE_LEVEL => 0,
-                                                    -TOP_LEVEL => 1);
+                                                    -SEQUENCE_LEVEL => 0);
   Description: Creates a new CoordSystem object representing a coordinate
                system.
   Returntype : Bio::EnsEMBL::CoordSystem
@@ -99,23 +108,57 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
-  my ($name,$version, $top_level, $sequence_level, $default) =
+  my ($name,$version, $top_level, $sequence_level, $default, $rank) =
     rearrange(['NAME','VERSION','TOP_LEVEL', 'SEQUENCE_LEVEL',
-               'DEFAULT'], @_);
+               'DEFAULT', 'RANK'], @_);
 
   throw('The NAME argument is required') if(!$name);
 
   $version = '' if(!defined($version));
 
-  $top_level ||= 0;
-  $sequence_level ||= 0;
-  $default ||= 0;
+  $top_level       = ($top_level)      ? 1 : 0;
+  $sequence_level  = ($sequence_level) ? 1 : 0;
+  $default         = ($default)        ? 1 : 0;
+  $rank ||= 0;
+
+  if($top_level) {
+    if($rank) {
+      throw('RANK argument must be 0 if TOP_LEVEL is 1');
+    }
+
+    if($name) {
+      if($name ne 'toplevel') {
+        throw('The NAME argument must be "toplevel" if TOP_LEVEL is 1')
+      }
+    } else {
+      $name = 'toplevel';
+    }
+
+    if($sequence_level) {
+      throw("SEQUENCE_LEVEL argument must be 0 if TOP_LEVEL is 1");
+    }
+
+    $default = 0;
+
+  } else {
+    if(!$rank) {
+      throw("RANK argument must be non-zero if not toplevel CoordSystem");
+    }
+    if($name eq 'toplevel') {
+      throw("Cannot name coord system 'toplevel' unless TOP_LEVEL is 1");
+    }
+  }
+
+  if($rank !~ /^\d+$/) {
+    throw('The RANK argument must be a positive integer');
+  }
 
   $self->{'version'} = $version;
   $self->{'name'} = $name;
   $self->{'top_level'} = $top_level;
   $self->{'sequence_level'} = $sequence_level;
   $self->{'default'} = $default;
+  $self->{'rank'}    = $rank;
 
   return $self;
 }
@@ -196,7 +239,11 @@ sub equals {
 
   Arg [1]    : none
   Example    : if($coord_sys->is_top_level()) { ... }
-  Description: Returns true if this is a top level coordinate system
+  Description: Returns true if this is the toplevel pseudo coordinate system.
+               The toplevel coordinate system is not a real coordinate system
+               which is stored in the database, but it is a placeholder that
+               can be used to request transformations or retrievals to/from
+               the highest defined coordinate system in a given region.
   Returntype : 0 or 1
   Exceptions : none
   Caller     : general
@@ -243,5 +290,29 @@ sub is_default {
   return $self->{'default'};
 }
 
+
+
+
+=head2 rank
+
+  Arg [1]    : none
+  Example    : if($cs1->rank() < $cs2->rank()) {
+                 print $cs1->name(), " is a higher level coord system than",
+                       $cs2->name(), "\n";
+               }
+  Description: Returns the rank of this coordinate system.  A lower number
+               is a higher coordinate system.  The highest level coordinate
+               system has a rank of 1 (e.g. 'chromosome').  The toplevel
+               pseudo coordinate system has a rank of 0.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub rank {
+  my $self = shift;
+  return $self->{'rank'};
+}
 
 1;

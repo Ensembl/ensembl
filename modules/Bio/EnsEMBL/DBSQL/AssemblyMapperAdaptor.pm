@@ -65,6 +65,7 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::AssemblyMapper;
 use Bio::EnsEMBL::ChainedAssemblyMapper;
+use Bio::EnsEMBL::TopLevelAssemblyMapper;
 
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
@@ -144,6 +145,13 @@ sub fetch_by_CoordSystems {
   if($cs1->equals($cs2)) {
     throw("Cannot create mapper between same coord systems: " .
           $cs1->name . " " . $cs1->version);
+  }
+
+  if($cs1->is_top_level()) {
+    return Bio::EnsEMBL::TopLevelAssemblyMapper->new($self, $cs1, $cs2);
+  }
+  if($cs2->is_top_level()) {
+    return Bio::EnsEMBL::TopLevelAssemblyMapper->new($self, $cs2, $cs1);
   }
 
   my $csa = $self->db->get_CoordSystemAdaptor();

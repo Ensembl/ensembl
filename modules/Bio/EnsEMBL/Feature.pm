@@ -392,8 +392,10 @@ sub transform {
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
 
-  # self is already in the requested coordinate system, so we can just return a copy
-  if( $cs->equals( $current_cs ) && $slice->start() == 1 && $slice->strand() == 1 ) {
+  # if feature is already in the requested coordinate system, we can just
+  # return a copy
+  if( $cs->equals( $current_cs ) && $slice->start() == 1 &&
+      $slice->strand() == 1 ) {
     my $new_feature;
     %$new_feature = %$self;
     bless $new_feature, ref $self;
@@ -418,7 +420,8 @@ sub transform {
     bless $new_feature, ref $self;
     $new_feature->{'start'}  = $p_slice->start();
     $new_feature->{'end'}    = $p_slice->end();
-    $new_feature->{'strand'} = ($self->{'strand'} == 0) ? 0 : $p_slice->strand();
+    $new_feature->{'strand'} =
+      ($self->{'strand'} == 0) ? 0 : $p_slice->strand();
     $new_feature->{'slice'}  = $slice;
     return $new_feature;
   }

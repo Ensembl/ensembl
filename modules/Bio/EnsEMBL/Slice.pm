@@ -148,7 +148,9 @@ sub new {
   }
   if(!$coord_system || !ref($coord_system) ||
      !$coord_system->isa('Bio::EnsEMBL::CoordSystem')) {
-    throw('COORD_SYSTEM argment must be a Bio::EnsEMBL::CoordSystem');
+    throw('COORD_SYSTEM argument must be a Bio::EnsEMBL::CoordSystem');
+  } elsif($coord_system->is_top_level()) {
+    throw('Cannot create slice on toplevel CoordSystem.');
   }
 
   #strand defaults to 1 if not defined
@@ -615,7 +617,7 @@ sub project {
     #if the slice has negative coordinates or coordinates exceeding the 
     #exceeding length of the sequence region we want to shrink the slice to
     #the defined region
-    
+
     if($self->{'start'} > $entire_len || $self->{'end'} < 1) {
       #none of this slice is in a defined region
       return [];
@@ -642,8 +644,8 @@ sub project {
 
   my @projection;
   my $current_start = 1;
-  
-  #decompose this slice into its symlinked components.  
+
+  #decompose this slice into its symlinked components.
   #this allows us to handle haplotypes and PARs
   my $normal_slice_proj = 
     $slice_adaptor->fetch_normalized_slice_projection($self);
@@ -651,12 +653,12 @@ sub project {
     my $normal_slice = $segment->[2];
 
     $slice_cs = $normal_slice->coord_system();
-    
+
     my $asma = $db->get_AssemblyMapperAdaptor();
     my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
     # perform the mapping between this slice and the requested system
-    my @coords = $asm_mapper->map($normal_slice->seq_region_name(), 
+    my @coords = $asm_mapper->map($normal_slice->seq_region_name(),
 				  $normal_slice->start(),
 				  $normal_slice->end(),
 				  $normal_slice->strand(),
@@ -667,17 +669,19 @@ sub project {
     foreach my $coord (@coords) {
       my $coord_start  = $coord->start();
       my $coord_end    = $coord->end();
-      my $length = $coord_end - $coord_start + 1;
+      my $length       = $coord_end - $coord_start + 1;
 
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+        my $coord_cs     = $coord->coord_system();
+
         #create slices for the mapped-to coord system
-        my $slice = $slice_adaptor->fetch_by_region($cs->name(),
+        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
                                                     $coord->id(),
                                                     $coord_start,
                                                     $coord_end,
                                                     $coord->strand(),
-                                                    $cs->version());
+                                                    $coord_cs->version());
 
         my $current_end = $current_start + $length - 1;
 	
@@ -1775,8 +1779,13 @@ sub get_Chromosome {
   deprecate("Use SliceAdaptor::fetch_by_region('chromosome'," .
             '$slice->seq_region_name) instead');
 
-  my $chr = $self->adaptor->fetch_by_region('toplevel',
-                                            $self->seq_region_name());
+  my $csa = $self->adaptor->db->get_CoordSystemAdaptor();
+  my ($top_cs) = @{$csa->fetch_all()};
+
+  my $chr = $self->adaptor->fetch_by_region($top_cs->name(),
+                                            $self->seq_region_name(),
+                                           undef,undef,undef,
+                                            $top_cs->version());
 
   return bless($chr, 'Bio::EnsEMBL::Chromosome');
 }

@@ -119,7 +119,9 @@ sub new {
 
   #mapper that is actually used and is loaded by the mappings generated
   #by the other two mappers
-  $self->{'first_last_mapper'} = Bio::EnsEMBL::Mapper->new($FIRST, $LAST);
+  $self->{'first_last_mapper'} = Bio::EnsEMBL::Mapper->new($FIRST, $LAST,
+                                                           $coord_systems[0],
+                                                           $coord_systems[2]);
 
   #need registries to keep track of what regions are registered in source
   #and destination coordinate systems
@@ -246,7 +248,7 @@ sub map {
 
 sub fastmap {
   my $self = shift;
-  $self->map(@_,1);
+  return $self->map(@_,1);
 }
 
 

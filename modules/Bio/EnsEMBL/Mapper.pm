@@ -56,11 +56,30 @@ use Bio::EnsEMBL::Mapper::Gap;
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 
-sub new {
-  my($class,@args) = @_;
 
-  my $from = shift @args;
-  my $to   = shift @args;
+=head2 new
+
+  Arg [1]    : string $from
+               The name of the 'from' coordinate system
+  Arg [2]    : string $to
+               The name of the 'to' coordinate system
+  Arg [3]    : (optional) Bio::EnsEMBL::CoordSystem $from_cs
+               The 'from' coordinate system
+  Arg [4]    : (optional) Bio::EnsEMBL::CoordSystem $to_cs
+  Example    : my $mapper = Bio::EnsEMBL::Mapper->new('FROM', 'TO');
+  Description: Constructor.  Creates a new Bio::EnsEMBL::Mapper object.
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub new {
+  my $class = shift;
+  my $from  = shift;
+  my $to    = shift;
+  my $from_cs = shift;
+  my $to_cs   = shift;
 
   my $self = {};
   bless $self,$class;
@@ -76,7 +95,10 @@ sub new {
   $self->from($from);
 
   $self->{'pair_count'} = 0;
-# set stuff in self from @args
+
+  $self->{'from_cs'} = $from_cs;
+  $self->{'to_cs'}   = $to_cs;
+
   return $self;
 }
 
@@ -130,8 +152,6 @@ sub flush {
 sub map_coordinates{
    my ($self, $id, $start, $end, $strand, $type) = @_;
 
-   #&eprof_start('map_coordinates');
-
    unless(defined($id) && defined($start) && defined($end) && 
 	  defined($strand) && defined($type) ) {
        throw("Must start,end,strand,id,type as coordinates");
@@ -142,14 +162,16 @@ sub map_coordinates{
 
    my $hash = $self->{"_pair_$type"};
 
-   my ($from, $to);
+   my ($from, $to, $cs);
 
    if($type eq $self->{'to'}) {
      $from = 'to';
      $to = 'from';
+     $cs = $self->{'from_cs'};
    } else {
      $from = 'from';
      $to = 'to';
+     $cs = $self->{'to_cs'};
    }
 
    unless(defined $hash) {
@@ -244,7 +266,8 @@ sub map_coordinates{
      my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
 						     $target_start,
 						     $target_end,
-						     $pair->{'ori'} * $strand);
+						     $pair->{'ori'} * $strand,
+                 $cs);
      push(@result,$res);
      
      $last_used_pair = $pair;
@@ -266,8 +289,6 @@ sub map_coordinates{
    if ( $strand == -1 ) {
        @result = reverse ( @result);
    }
-
-   #&eprof_end('map_coordinates');
 
    return @result;
 }
@@ -296,16 +317,18 @@ sub map_coordinates{
 sub fastmap {
    my ($self, $id, $start, $end, $strand, $type) = @_;
 
-   my ($from, $to);
+   my ($from, $to, $cs);
 
    if( ! $self->{'_is_sorted'} ) { $self->_sort() }
 
    if($type eq $self->{'to'}) {
      $from = 'to';
      $to = 'from';
+     $cs = $self->{'from_cs'};
    } else {
      $from = 'from';
      $to = 'to';
+     $cs = $self->{'to_cs'};
    }
 
    my $hash = $self->{"_pair_$type"} or
@@ -317,25 +340,24 @@ sub fastmap {
    foreach my $pair (@$pairs) {
      my $self_coord   = $pair->{$from};
      my $target_coord = $pair->{$to};
-   
+
      # only super easy mapping is done 
      if( $start < $self_coord->{'start'} ||
-	 $end > $self_coord->{'end'} ) {
+         $end > $self_coord->{'end'} ) {
        next;
      }
-     
+
      if( $pair->{'ori'} == 1 ) {
        return ( $target_coord->{'id'},
-		$target_coord->{'start'}+$start-$self_coord->{'start'},
-		$target_coord->{'start'}+$end-$self_coord->{'start'},
-		$strand );
+                $target_coord->{'start'}+$start-$self_coord->{'start'},
+                $target_coord->{'start'}+$end-$self_coord->{'start'},
+                $strand, $cs );
      } else {
        return ( $target_coord->{'id'},
-		$target_coord->{'end'} - ($end - $self_coord->{'start'}),
-		$target_coord->{'end'} - ($start - $self_coord->{'start'}),
-		-$strand );
+                $target_coord->{'end'} - ($end - $self_coord->{'start'}),
+                $target_coord->{'end'} - ($start - $self_coord->{'start'}),
+                -$strand, $cs );
      }
-     
    }
 
    return ();

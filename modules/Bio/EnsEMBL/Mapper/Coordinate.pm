@@ -36,12 +36,13 @@ use vars qw(@ISA);
 use strict;
 
 sub new {
-  my($class, $id, $start, $end, $strand) = @_;
+  my($class, $id, $start, $end, $strand, $coord_system) = @_;
 
   return bless { 'id' => $id,
-		 'start' => $start,
-		 'end'   => $end,
-		 'strand' => $strand }, $class;
+                 'start' => $start,
+                 'end'   => $end,
+                 'strand' => $strand,
+                 'coord_system' => $coord_system}, $class;
 }
 
 
@@ -57,13 +58,9 @@ sub new {
 =cut
 
 sub start{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'start'} = $value;
-    }
-    return $obj->{'start'};
-
+  my $self = shift;
+  $self->{'start'} = shift if(@_);
+  return $self->{'start'};
 }
 
 
@@ -79,13 +76,9 @@ sub start{
 =cut
 
 sub end{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'end'} = $value;
-    }
-    return $obj->{'end'};
-
+  my $self = shift;
+  $self->{'end'} = shift if(@_);
+  return $self->{'end'};
 }
 
 
@@ -101,13 +94,9 @@ sub end{
 =cut
 
 sub strand{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'strand'} = $value;
-    }
-    return $obj->{'strand'};
-
+  my $self = shift;
+  $self->{'strand'} = shift if(@_);
+  return $self->{'strand'};
 }
 
 
@@ -124,12 +113,16 @@ sub strand{
 =cut
 
 sub id{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'id'} = $value;
-    }
-    return $self->{'id'};
+  my $self = shift;
+  $self->{'id'} = shift if(@_);
+  return $self->{'id'};
+}
 
+
+sub coord_system {
+  my $self = shift;
+  $self->{'coord_system'} = shift if(@_);
+  return $self->{'coord_system'};
 }
 
 sub length {

@@ -267,10 +267,13 @@ sub fetch_by_assembly_location {
 
    deprecate('Use fetch_by_Slice_start_end_strand() instead');
 
+   my $csa = $self->db->get_CoordSystem();
+   my $top_cs = @{$csa->fetch_all};
+
    my $slice_adaptor = $self->db->get_SliceAdaptor();
-   my $slice = $slice_adaptor->fetch_by_region('toplevel', $chrName,
+   my $slice = $slice_adaptor->fetch_by_region($top_cs->name(), $chrName,
                                                $chrStart, $chrEnd,
-                                               $strand);
+                                               $strand, $top_cs->version);
 
    return $self->fetch_by_Slice_start_end_strand($slice,1, $slice->length,1);
 }

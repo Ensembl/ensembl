@@ -1446,7 +1446,12 @@ sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
    deprecate('Use fetch_by_region() instead.');
 
-   return $self->fetch_by_region('toplevel',$chr_name);
+   my $csa = $self->db->get_CoordSystemAdaptor();
+
+   my $top_cs = @{$csa->fetch_all()};
+
+   return $self->fetch_by_region($top_cs->name(),$chr_name,
+                                 undef,undef,undef,$top_cs->version);
 }
 
 
