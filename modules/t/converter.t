@@ -4,10 +4,8 @@ use strict;
 BEGIN {
     $| = 1;
     use Test;
-    plan tests => 22;
+    plan tests => 36;
 }
-
-use Bio::EnsEMBL::Utils::Converter;
 
 END {
 
@@ -48,6 +46,8 @@ my $featurePair1 = new Bio::SeqFeature::FeaturePair(
     -feature1 => $seqFeature1,
     -feature2 => $seqFeature2
 );
+
+use Bio::EnsEMBL::Utils::Converter;
 
 &test_SeqFeature;
 &test_FeaturePair;
@@ -125,9 +125,48 @@ sub test_FeaturePair{
         
 }
 
-
+# 14 OKs
 sub test_hit {
+    my $converter = new Bio::EnsEMBL::Utils::Converter(
+        -in => 'Bio::Search::HSP::GenericHSP',
+        -out => 'Bio::EnsEMBL::BaseAlignFeature',
+        -analysis => $ens_analysis,
+        -contig => $ens_contig
+    );
 
+    use Bio::SearchIO;
+    my $searchio = new Bio::SearchIO(
+        -format => 'blast',
+        -file => 't/converter.blast'
+    );
 
+    my @hsps = ();
+    while(my $result = $searchio->next_result){
+        while(my $hit = $result->next_hit){
+            while(my $hsp = $hit->next_hsp){
+                push @hsps, $hsp;
+            }
+        }
+    }
+
+    my @align_features = @{$converter->convert(\@hsps)};
+    my $align_feature = shift @align_features;
+    ok $align_feature->isa('Bio::EnsEMBL::BaseAlignFeature');
+    ok $align_feature->start, 1;
+    ok $align_feature->end, 504;
+    ok $align_feature->strand, 0;
+    ok $align_feature->hstart, 21;
+    ok $align_feature->hend, 1532;
+    ok $align_feature->cigar_string, '504M';
+
+    $align_feature = shift @align_features;
+    ok $align_feature->isa('Bio::EnsEMBL::BaseAlignFeature');
+    ok $align_feature->start, 64;
+    ok $align_feature->end, 324;
+    ok $align_feature->strand, 0;
+    ok $align_feature->hstart, 182;
+    ok $align_feature->hend, 844;
+    ok $align_feature->cigar_string, '29M18I22M11I20MD33M4I22M3I25M5I21MI33MD14M';
+    
 }
 
