@@ -523,6 +523,54 @@ sub add_map_coordinates{
 
 
 
+=head2 add_Mapper
+
+    Arg  1      Bio::EnsEMBL::Mapper $mapper2
+    Example     $mapper->add_Mapper($mapper2)
+    Function    add all the map coordinates from $mapper to this mapper.
+                This object will contain mapping pairs from both the old
+                object and $mapper2.
+    Returntype  int 0,1
+    Exceptions  throw if 'to' and 'from' from both Bio::EnsEMBL::Mappers
+                are incompatible
+    Caller      $mapper->methodname()
+
+=cut
+
+sub add_Mapper{
+  my ($self, $mapper) = @_;
+
+  my $mapper_to = $mapper->{'to'};
+  my $mapper_from = $mapper->{'from'};
+  if ($mapper_to ne $self->{'to'} or $mapper_from ne $self->{'from'}) {
+    throw("Trying to add an incompatible Mapper");
+  }
+
+  my $count_a = 0;
+  foreach my $seq_name (keys %{$mapper->{"_pair_$mapper_to"}}) {
+    push(@{$self->{"_pair_$mapper_to"}->{$seq_name}},
+        @{$mapper->{"_pair_$mapper_to"}->{$seq_name}});
+    $count_a += scalar(@{$mapper->{"_pair_$mapper_to"}->{$seq_name}});
+  }
+  my $count_b = 0;
+  foreach my $seq_name (keys %{$mapper->{"_pair_$mapper_from"}}) {
+    push(@{$self->{"_pair_$mapper_from"}->{$seq_name}},
+        @{$mapper->{"_pair_$mapper_from"}->{$seq_name}});
+    $count_b += scalar(@{$mapper->{"_pair_$mapper_from"}->{$seq_name}});
+  }
+
+  if ($count_a == $count_b) {
+    $self->{'pair_count'} += $count_a;
+  } else {
+    throw("Trying to add a funny Mapper");
+  }
+
+  $self->{'_is_sorted'} = 0;
+  return 1;
+}
+
+
+
 =head2 list_pairs
 
     Arg  1      int $id
