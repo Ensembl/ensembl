@@ -47,7 +47,7 @@ function file_list
 	EOT
 
     gunzip -c ls-lR.Z |
-    grep 'data/mysql/.*[0-9][0-9]*_[0-9][0-9]*' |
+    grep 'data/mysql/.*[0-9][0-9]*_[0-9][0-9]*' | grep -v 'pub/NEW' |
     sed -n 's/^\(.*\)\/\([^\/]*\)_\([0-9][0-9]*_[0-9][0-9]*.*\):$/\1 \2 \3/p' |
     sort -k2,2 -k3,3
 }
@@ -123,6 +123,7 @@ function build_delta
     typeset version=$5
 
     typeset outdir=${deltadir}/to_${version%_*[0-9]*}
+    mkdir -p ${outdir}
 
     typeset bout=${outdir}/${dbname}_${oversion}_delta_${version}_build.out
     typeset aout=${outdir}/${dbname}_${oversion}_delta_${version}_apply.out
