@@ -95,6 +95,7 @@ sub parse_file {
     my $trans_end;
     while( <FILE> ) {
 	(/^\#/) && next;
+	(/^$/) && next;
 	my ($contig,$source,$feature,$start,$end,$score,$strand,$frame,$gene_name, $gene_id,$exon_num);
 	if ((/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.).+gene_name \"(\w+)\".+gene_id \"(\w+\.\w+\-\d+\.\d+)\".+exon_number (\d)/) || (/^(\w+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(.)\s+(.).+gene_name \"(\w+)\".+gene_id \"(\w+\.\w+\-\d+\.\d+)\"/)){
 	    $contig=$1;
@@ -158,7 +159,7 @@ sub parse_file {
     }
     my $gene=$self->_build_gene($trans_start,$trans_end,$oldgene,%exons);
     $gene && push(@{$self->{'_gene_array'}},$gene);
-    return @genes;
+    return  @{$self->{'_gene_array'}};
 }
 
 =head2 _build_gene
@@ -181,7 +182,6 @@ sub _build_gene {
     my $translation = Bio::EnsEMBL::Translation->new;
     $gene->id($oldgene);
     $gene->version(1);
-    $gene->type('neomorphic');
     my $time = time; chomp($time);
     $gene->created($time);
     $gene->modified($time);
@@ -220,11 +220,13 @@ sub _build_gene {
 sub dump_genes {
     my ($self,$file,@genes) = @_;
 
+    print STDERR "Dumping to file $file\n";
     open (FILE,">$file");
 
     print FILE "##gff-version 2\n##source-version EnsEMBL-Gff 1.0\n";
     print FILE "##date ".time()."\n";
     foreach my $gene (@genes) {
+	print STDERR "Dumping gene ".$gene->id."\n";
 	foreach my $trans ($gene->each_Transcript) {
 	    my $c=1;
 	    my $start=$trans->translation->start;
