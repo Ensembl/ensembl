@@ -85,6 +85,76 @@ sub fetch_by_stable_id {
 }
 
 
+=head2 fetch_by_stable_id_version
+
+  Arg [1]    : string $stable_id
+  Arg [2]    : int $version
+  Example    : none
+  Description: Create an archiveStableId with given version and stableId
+               No lookup is done in the database.
+  Returntype : Bio::EnsEMBL::ArchiveStableId 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+
+sub fetch_by_stable_id_version {
+  my $self = shift;
+  my $stable_id = shift;
+  my $version = shift;
+
+  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new
+    ( 
+     -adaptor => $self,
+     -version => $version,
+     -stable_id => $stable_id
+    );
+  
+  _resolve_type( $arch_id );
+
+  return $arch_id;
+}
+
+
+
+=head2 fetch_by_stable_id_dbname
+
+  Arg [1]    : string $stable_id
+  Arg [2]    : string $db_name
+  Example    : none
+  Description: create an ArchiveStableId from given arguments.
+               No database lookup is done.
+  Returntype : Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+
+sub fetch_by_stable_id_dbname {
+  my $self = shift;
+  my $stable_id = shift;
+  my $db_name = shift;
+
+  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new
+    ( 
+     -adaptor => $self,
+     -db_name => $db_name,
+     -stable_id => $stable_id
+    );
+  
+  _resolve_type( $arch_id );
+
+  if( ! $self->_lookup_version( $arch_id ) ) {
+    return undef;
+  }
+
+  return $arch_id;
+}
+
 
 =head2 fetch_all_by_gene_archive_id
 
@@ -193,72 +263,6 @@ sub fetch_by_transcript_archive_id {
 
 
 
-=head2 fetch_by_stable_id_version
-
-  Arg [1]    : string $stable_id
-  Arg [2]    : int $version
-  Example    : none
-  Description: Create an archiveStableId with given version and stableId
-               No lookup is done in the database.
-  Returntype : Bio::EnsEMBL::ArchiveStableId 
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-
-sub fetch_by_stable_id_version {
-  my $self = shift;
-  my $stable_id = shift;
-  my $version = shift;
-
-  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new
-    ( 
-     -adaptor => $self,
-     -version => $version,
-     -stable_id => $stable_id
-    );
-  
-  _resolve_type( $arch_id );
-
-  return $arch_id;
-}
-
-
-
-=head2 fetch_by_stable_id_dbname
-
-  Arg [1]    : string $stable_id
-  Arg [2]    : string $db_name
-  Example    : none
-  Description: create an ArchiveStableId from given arguments.
-               No database lookup is done.
-  Returntype : Bio::EnsEMBL::ArchiveStableId
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-
-sub fetch_by_stable_id_dbname {
-  my $self = shift;
-  my $stable_id = shift;
-  my $db_name = shift;
-
-  my $arch_id = Bio::EnsEMBL::ArchiveStableId->new
-    ( 
-     -adaptor => $self,
-     -db_name => $db_name,
-     -stable_id => $stable_id
-    );
-  
-  _resolve_type( $arch_id );
-
-
-  return $arch_id;
-}
 
 
 =head2 fetch_pre_by_arch_id
@@ -566,7 +570,7 @@ sub _lookup_version {
   my ( $db_name, $version ) = $sth->fetchrow_array();
   $sth->finish();
   
-  if( ! defined $version ) {
+  if( ! defined $db_name ) {
     return 0;
   } else {
     $arch_id->version( $version );
