@@ -71,7 +71,7 @@ sub _initialize {
       !defined $positiona || !defined $positionb || 
       !defined($overlap_type) || !defined($source)) {
 
-      $self->throw("You have to construct ContigOverlap objects with all five arguments, contiga,contigb,positiona,positionb,overlap_type");
+      $self->throw("You have to construct ContigOverlap objects with all five arguments, contiga,contigb,positiona,positionb,overlap_type [@args]");
   }
 
   $self->contiga     ($contiga);

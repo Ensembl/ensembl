@@ -59,20 +59,25 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($sister,$sisterpos,$sisterpolarity,$selfposition) = $self->_rearrange([qw( SISTER
-										 SISTERPOSITION
-										 SISTERPOLARITY
-										 SELFPOSITION
-										 )], @args);
-  if( !defined $sister || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
-      $self->throw("You have to construct ContigOverlapHelper objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
-  }
+  my ($sister,$sisterpos,$sisterpolarity,$selfposition,$distance,$source) = $self->_rearrange([qw( SISTER
+											 SISTERPOSITION
+											 SISTERPOLARITY
+											 SELFPOSITION
+											 DISTANCE
+											 SOURCE
+											 )], @args);
+  $self->throw("No sister input")                 unless defined($sister);
+  $self->throw("No sister position input")        unless defined($sisterpos);
+  $self->throw("No sister polarity input")        unless defined($sisterpolarity);
+  $self->throw("No source input")                 unless defined($source);
+  $self->throw("No self position input")          unless defined($selfposition);
 
-  $self->sister($sister);
+  $self->sister         ($sister);
   $self->sister_position($sisterpos);
   $self->sister_polarity($sisterpolarity);
-  $self->self_position($selfposition);
-
+  $self->self_position  ($selfposition);
+  $self->distance       ($distance);
+  $self->source         ($source);
   # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -186,6 +191,29 @@ sub distance{
     return $obj->{'distance'};
 
 }
+
+
+=head2 source
+
+ Title   : source
+ Usage   : $obj->source
+ Function: 
+ Example : 
+ Returns : source tag for oeverlap
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub source {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{source} = $value;
+    }
+    return $obj->{source};
+
+}
+
 
 
 1;
