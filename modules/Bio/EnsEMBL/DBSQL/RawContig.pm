@@ -689,7 +689,7 @@ sub seq_date{
 
    my $id = $self->internal_id();
 
-   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from dna where contig = \"$id\" ");
+   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from dna where sequence = \"$id\" ");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref(); 
    return $rowhash->{'UNIX_TIMESTAMP(created)'};
