@@ -157,8 +157,8 @@ if ($id->feature1->start == $transl[0]->feature1->start) {
 else {
     print "not ok 16\n";
 }
+my $analysis = $db->get_AnalysisAdaptor->fetch_by_dbID(1);
 
-my $analysis = $protfeat->_feature_obj->get_Analysis(1);
 
 my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => 1,                   
 					   -end => 4,        
