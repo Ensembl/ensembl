@@ -105,7 +105,8 @@ sub new {
   if( defined $adaptor ) { $self->adaptor( $adaptor )}
   if( defined $dbID ) { $self->dbID( $dbID ) }
   if( defined $primary_id ) { $self->primary_id( $primary_id ) }
-  if( defined $version ) { $self->version( $version ) }
+  if( defined $version ) { $self->version( $version ) } else
+    { $self->version( "" ); }
   if( defined $dbname ) { $self->dbname( $dbname ) }
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }

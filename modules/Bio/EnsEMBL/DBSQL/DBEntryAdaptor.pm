@@ -125,7 +125,7 @@ sub store {
   my ($dbRef) =  $sth->fetchrow_array();
 
   if(!$dbRef) {
-    $self->throw("external_db [" . $exObj->db_name . "] release [" .
+    $self->throw("external_db [" . $exObj->dbname . "] release [" .
 		 $exObj->release . "] does not exist");
   }
 

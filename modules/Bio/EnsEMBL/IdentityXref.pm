@@ -1,4 +1,4 @@
-
+#
 #
 # BioPerl module for SimilarityXref.pl
 #
