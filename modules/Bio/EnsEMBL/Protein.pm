@@ -422,6 +422,7 @@ sub get_all_PfamFeatures{
     }
    else {
        my $proteinid = $self->id();
+       
        my @array_features = $self->db->get_Protfeat_Adaptor->fetch_by_feature_and_dbID('Pfam',$proteinid);
        
        foreach my $in (@array_features) {

@@ -457,12 +457,12 @@ sub five_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_exon_id;
+    my $start_exon_id   = $translation->start_exon->stable_id;
     my $t_start         = $translation->start;
     
     my $seq_string = '';
     foreach my $ex ($self->get_all_Exons) {
-        if ($ex->id eq $start_exon_id) {
+        if ($ex->stable_id eq $start_exon_id) {
             my $start   = $ex->start;
             my $end     = $ex->end;
             my $strand  = $ex->strand;
@@ -489,7 +489,7 @@ sub five_prime_utr {
     
     if ($seq_string) {
         my $seq = Bio::Seq->new;
-        $seq->id($self->id . '-five_prime_UTR');
+        $seq->id($self->stable_id . '-five_prime_UTR');
         $seq->seq($seq_string);
         return $seq;
     } else {
@@ -502,7 +502,7 @@ sub three_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $end_exon_id   = $translation->end_exon_id;
+    my $end_exon_id   = $translation->end_exon->stable_id;
     my $t_end         = $translation->end;
     
     my $seq_string = '';
@@ -511,7 +511,7 @@ sub three_prime_utr {
         if ($in_utr) {
             $seq_string .= $ex->seq->seq;
         }
-        elsif ($ex->id eq $end_exon_id) {
+        elsif ($ex->stable_id eq $end_exon_id) {
             $in_utr = 1;
             my $start   = $ex->start;
             my $end     = $ex->end;
@@ -536,7 +536,7 @@ sub three_prime_utr {
     
     if ($seq_string) {
         my $seq = Bio::Seq->new;
-        $seq->id($self->id . '-three_prime_UTR');
+        $seq->id($self->stable_id . '-three_prime_UTR');
         $seq->seq($seq_string);
         return $seq;
     } else {
