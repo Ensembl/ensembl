@@ -2291,7 +2291,7 @@ sub get_all_Genes {
    while ($sth->fetch){
        push(@gene_ids,$gene_id);
    }
-    print "@gene_ids\n";
+    #print "@gene_ids\n";
    if( scalar(@gene_ids) == 0 ) {
        &eprof_end("total-static-gene-get");
        return ();
