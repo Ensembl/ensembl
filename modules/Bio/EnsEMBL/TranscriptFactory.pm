@@ -53,7 +53,7 @@ sub fset2transcript {
     {print "$genscan must be Bio::EnsEMBL::SeqFeatureI\n";}
      
     my $transcript = new Bio::EnsEMBL::Transcript;
-    $transcript->temporary_id($contig->id . "." . $genscan->raw_seqname);
+    $transcript->temporary_id($contig->id . "." . $genscan->seqname);
         
     my @exons;
     my $count= 1;
@@ -284,7 +284,7 @@ sub fset2transcript_with_seq {
 
     #print STDERR "running fset2transcript\n";
     my $transcript = new Bio::EnsEMBL::Transcript;
-    $transcript->temporary_id($seq->id . "." . $genscan->raw_seqname);
+    $transcript->temporary_id($seq->id . "." . $genscan->seqname);
         
     my @exons;
     my $count= 1;
