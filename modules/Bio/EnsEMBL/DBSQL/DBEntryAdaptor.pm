@@ -301,7 +301,15 @@ sub _fetch_by_EnsObject_type {
 
 sub geneids_by_extids{
    my ($self,$name) = @_;
-   return $self->_type_by_external_id($name,'Gene');
+   my @genes;
+   my @peps = $self->_type_by_external_id($name,'Translation');
+   foreach my $p (@peps) {
+       my $sth = $self->prepare( "select gene from transcript where translation = '$p'");
+       $sth->execute();
+       my $g = $sth->fetchrow;
+       push (@genes,$g);
+   }
+   return @genes;
 }
 
 =head2 transcriptids_by_extids
@@ -318,7 +326,17 @@ sub geneids_by_extids{
 
 sub transcriptids_by_extids{
    my ($self,$name) = @_;
-   return $self->_type_by_external_id($name,'Transcript');
+   my @transcripts;
+   my @translations = $self->_type_by_external_id($name,'Translation');
+
+foreach my $t (@translations) {
+       my $sth = $self->prepare( "select id from transcript where translation = '$t'");
+       $sth->execute();
+       my $tr = $sth->fetchrow;
+       push (@transcripts,$tr);
+   }
+   return @transcripts;
+
 }
 
 =head2 translationids_by_extids
