@@ -61,7 +61,7 @@ sub fetch_by_Slice {
               t.transcript_name, t.translation_id, t.translation_name, t.gene_id,
               t.type, t.gene_name, t.db, t.exon_structure, t.external_name,
               t.external_db, t.coding_start, t.coding_end, g.external_name as gene_external_name, 
-              g.external_db as gene_external_db, g.db as gene_source, g.type as gene_type 
+              g.external_db as gene_external_db, g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
            ON g.gene_id = t.gene_id
@@ -85,20 +85,17 @@ sub fetch_by_Slice {
   my ( $gene, $transcript, $translation ); 
 
   while( my $hr = $sth->fetchrow_hashref() ) {
-    if( !defined $hr->{'gene_type'}) {
-      # no gene for the transcript
-      $gene = Bio::EnsEMBL::Gene->new();
-      $gene->source( $hr->{'db'} );
-      $gene_cache{ $hr->{'db'}."-".$hr->{'gene_id'} } = $gene;
-    } elsif( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
+    if( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
-      $gene->source( $hr->{'gene_source'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
-      $gene->external_name( $hr->{'gene_external_name'} );
-      $gene->external_db( $hr->{'gene_external_db'} );
-      $gene->type( $hr->{'gene_type'} );
+      $gene->source( $hr->{'db'} );
+      if( defined $hr->{'gene_type' } ) {
+	$gene->external_name( $hr->{'gene_external_name'} );
+	$gene->external_db( $hr->{'gene_external_db'} );
+	$gene->type( $hr->{'gene_type'} );
+      }
       $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } = $gene;
     } else {
       $gene = $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} };
