@@ -2374,6 +2374,28 @@ sub get_TranscriptAdaptor {
 }
 
 
+sub get_FeatureAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_featureAdaptor})) {
+	$self->{_featureAdaptor} = Bio::EnsEMBL::DBSQL::FeatureAdaptor->new($self);    
+    }
+
+    return $self->{_featureAdaptor};
+}
+
+
+sub get_RawContigAdaptor {
+    my ($self) = @_;
+
+    unless (defined($self->{_rawContigAdaptor})) {
+	$self->{_rawContigAdaptor} = Bio::EnsEMBL::DBSQL::RawContigAdaptor->new($self);    
+    }
+
+    return $self->{_rawContigAdaptor};
+}
+
+
 =head2 feature_Obj
     
  Title   : feature_Obj
