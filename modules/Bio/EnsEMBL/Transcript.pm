@@ -978,6 +978,50 @@ sub end_exon{
 }
 
 
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created($newval)
+ Function: 
+ Returns : value of created
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub created{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'created'} = $value;
+    }
+    return $obj->{'created'};
+
+}
+
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $obj->modified($newval)
+ Function: 
+ Returns : value of modified
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub modified{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'modified'} = $value;
+    }
+    return $obj->{'modified'};
+
+}
+
+
 1;
 
 
