@@ -196,19 +196,19 @@ sub dump_core {
         $sql = "
 SELECT distinct t.*
 FROM $satdb.$table t 
-WHERE chr_name = $chr"
+WHERE chr_name = '$chr'"
           ;
         dump_data($sql, $satdb, $table);
     }
 
     # ... or chrname (sigh);
 
-    @tables = qw(mapd_ensity);
+    @tables = qw(map_density);
     foreach my $table ( @tables ) { 
         $sql = "
 SELECT distinct t.*
 FROM $satdb.$table t 
-WHERE chrname = $chr";
+WHERE chrname = '$chr'";
         dump_data($sql, $satdb, $table);
     }
 
@@ -286,9 +286,9 @@ SELECT distinct fs.*
 
     $sql="
 SELECT distinct e.*
-  FROM $satdb.static_golden_path sgp,
-       $satdb.exon e
- WHERE sgp.chr_name = '$chr'
+  FROM homo_sapiens_core_110.static_golden_path sgp,
+       homo_sapiens_core_110.exon e
+ WHERE sgp.chr_name = 'chr21'
    AND sgp.type = 'UCSC'
    AND sgp.raw_id = e.contig
 ";
@@ -296,61 +296,42 @@ SELECT distinct e.*
 
     $sql="
 SELECT distinct et.*
-  FROM $satdb.static_golden_path sgp,
+  FROM $litedb.gene_exon ge,
        $satdb.exon e,
        $satdb.exon_transcript et
- WHERE sgp.chr_name = '$chr'
-   AND sgp.type = 'UCSC'
-   AND sgp.raw_id = e.contig
-   AND e.id = et.exon
+ WHERE ge.chr_name = '$chr'
+   AND ge.exon = et.exon
 ";
-
     dump_data($sql, $satdb, 'exon_transcript');
-    
+
     $sql="
 SELECT distinct tsc.*
-  FROM $satdb.static_golden_path sgp,
-       $satdb.exon e,
+  FROM $litedb.gene_exon ge,
        $satdb.exon_transcript et,
        $satdb.transcript tsc
- WHERE sgp.chr_name = '$chr' 
-   AND sgp.type = 'UCSC'
-   AND sgp.raw_id = e.contig
-   AND e.id = et.exon
+ WHERE ge.exon = et.exon
    and et.transcript = tsc.id
 ";
     dump_data($sql, $satdb, 'transcript');
 
     $sql="
 SELECT distinct g.*
-  FROM $satdb.static_golden_path sgp,
-       $satdb.exon e,
-       $satdb.exon_transcript et,
-       $satdb.transcript tsc,
+  FROM $litedb.gene lg,
        $satdb.gene g
- WHERE sgp.chr_name = '$chr' 
-   AND sgp.type = 'UCSC'
-   AND sgp.raw_id = e.contig
-   AND e.id = et.exon
-   and et.transcript = tsc.id
-   and et.rank = 1
-   and tsc.gene = g.id
+ WHERE lg.chr_name = '$chr' 
+   AND lg.name = g.id
 ";
     dump_data($sql, $satdb, 'gene');
 
     $sql="
 SELECT distinct trl.*
-  FROM homo_sapiens_core_110.static_golden_path sgp,
-       homo_sapiens_core_110.exon e,
-       homo_sapiens_core_110.exon_transcript et,
-       homo_sapiens_core_110.transcript tsc,
+  FROM homo_sapiens_lite_110.gene lg,
+       homo_sapiens_lite_110.gene_prot lgp,
        homo_sapiens_core_110.translation trl
- WHERE sgp.chr_name = 'chr21' 
-   AND sgp.type = 'UCSC'
-   AND sgp.raw_id = e.contig
-   AND e.id = et.exon
-   and et.transcript = tsc.id
-   and tsc.translation = trl.id
+ WHERE lg.chr_name = 'chr21'
+   AND lg.gene = lgp.gene
+   AND lgp.translation = trl.id
+
 ";
     dump_data($sql, $satdb, 'translation');
     
@@ -838,7 +819,7 @@ SELECT distinct x.*
 ";
     dump_data($sql, $satdb, 'Xref');
     return;
-}                                       # embl
+}                                       # dump_embl
 
 
 sub dump_est  {
@@ -898,12 +879,18 @@ sub dump_schema {
     if ( system($command) ) {
         die "Error: ``$command'' ended with exit status $?";
     }
-}
+}                                       # dump_schema
 
 sub dump_data {
     my($sql, $satdb, $tablename) = @_;
     my ($destdir) = "$workdir/$satdb";
     my ($datfile)=  "$tablename.txt";
+
+    if ($check_indexes) { 
+        warn "checking SQL and indices for dumping $tablename; not dumping\n"; 
+        check_indices($sql);
+        return
+    }
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
