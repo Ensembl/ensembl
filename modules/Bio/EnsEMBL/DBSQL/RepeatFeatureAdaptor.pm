@@ -257,13 +257,26 @@ sub store {
     # already. consensus has name and class set to 'trf'
 
     if ($cons->repeat_class eq 'trf') {
+
       $rca->store($cons);
+
     } elsif ($cons->repeat_class eq 'Simple_repeat') {
+
       my $rcon = $cons->name;
       $rcon =~ s/\((\S+)\)n/$1/;   # get repeat element
       $cons->repeat_consensus($rcon);
-      $rca->store($cons);
+
+      # Look for matches already stored
+      my @match = ($rca->fetch_by_name_class($cons->name, 'Simple_repeat')); 
+      if (@match) {
+	  $cons->dbID($match[0]->dbID());
+      }
+      else {
+	  $rca->store($cons);
+      }
+
     } else {
+
       # for other repeats - need to see if a consensus is stored already
       unless ($cons->dbID) {
 	my @match = ($rca->fetch_by_name($cons->name));
