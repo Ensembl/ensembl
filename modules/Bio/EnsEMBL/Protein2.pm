@@ -1137,8 +1137,52 @@ sub family_adaptor{
     return $obj->{'family_adaptor'};
 }
 
+=head2 gbrowser_adaptor
+
+ Title   : gbrowser_adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub gbrowser_adaptor{
+ my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'gb'} = $value;
+    }
+    return $obj->{'gb'};
+}
+
+
+=head2 snp_adaptor
+
+ Title   : snp_adaptor
+ Usage   : $obj->snp_adaptor($newval)
+ Function: 
+ Returns : value of snp_adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub snp_adaptor{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'snp_adaptor'} = $value;
+    }
+    return $obj->{'snp_adaptor'};
+
+}
+
 
 1;
+
 
 
 

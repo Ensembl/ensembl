@@ -83,26 +83,6 @@ sub _gene_obj {
     return $self->{'gene_obj'};
 }
 
-=head2 snp_obj
-
- Title   : snp_obj
- Usage   : $obj->snp_obj($newval)
- Function: 
- Returns : value of snp_obj
- Args    : newvalue (optional)
-
-
-=cut
-
-sub snp_obj{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'snp_obj'} = $value;
-    }
-    return $obj->{'snp_obj'};
-
-}
 
 =head2 fetch_Protein_by_transcriptId
 
