@@ -88,12 +88,12 @@ sub gene_name_2_xref_from_hugo{
 
   my @source_list=();
 
-  $sth2->execute('Refseq') || die $dbi->errstr;
+  $sth2->execute('Refseq%') || die $dbi->errstr;
   while(my @row = $sth2->fetchrow_array()) {
     push  @source_list, $row[0];
   }
 
-  $sth2->execute('Uniprot') || die $dbi->errstr;
+  $sth2->execute('Uniprot%') || die $dbi->errstr;
   while(my @row = $sth2->fetchrow_array()) {
     push  @source_list, $row[0];
   }
