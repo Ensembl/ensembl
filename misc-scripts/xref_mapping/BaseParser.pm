@@ -141,13 +141,18 @@ sub upload_xrefs {
 
   if ($#xrefs > -1) {
     # remove all existing xrefs with same source ID
+
+    # TODO re-instate deletion
+
+
     my $source_id = $xrefs[0]->{SOURCE_ID};
     my $del_sth = $dbi->prepare("DELETE FROM xref WHERE source_id=$source_id");
-    $del_sth->execute();
+    #$del_sth->execute();
 
     # upload new ones
     my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
-    my $pri_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
+    my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
+    my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
 
@@ -167,13 +172,20 @@ sub upload_xrefs {
       # If so, find its ID, otherwise get ID of xref just inserted
       my $xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
 
-      # create entry in primary_xref table with sequence
-      # TODO experimental/predicted????
-      $pri_sth->execute($xref_id,
-			$xref->{SEQUENCE},
-			$xref->{SEQUENCE_TYPE},
-			$xref->{STATUS},
-			$xref->{SOURCE_ID}) || die $dbi->errstr;
+      # create entry in primary_xref table with sequence; if this is a "cumulative"
+      # entry it may already exist, and require an UPDATE rather than an INSERT
+      if (primary_xref_id_exists($xref_id)) {
+	
+	$pri_update_sth->execute($xref->{SEQUENCE}, $xref_id) || die $dbi->errstr;
+	
+      } else {
+	
+	$pri_insert_sth->execute($xref_id,
+				 $xref->{SEQUENCE},
+				 $xref->{SEQUENCE_TYPE},
+				 $xref->{STATUS},
+				 $xref->{SOURCE_ID}) || die $dbi->errstr;
+      }
 
       # if there are synonyms, create xrefs for them and entries in the synonym table
       foreach my $syn (@{$xref->{SYNONYMS}}) {
@@ -213,7 +225,8 @@ sub upload_xrefs {
 
     $del_sth->finish() if defined $del_sth;
     $xref_sth->finish() if defined $xref_sth;
-    $pri_sth->finish() if defined $pri_sth;
+    $pri_insert_sth->finish() if defined $pri_insert_sth;
+    $pri_update_sth->finish() if defined $pri_update_sth;
 
   }
 
@@ -376,6 +389,25 @@ sub insert_or_select {
   }
 
   return $id;
+
+}
+
+# --------------------------------------------------------------------------------
+
+sub primary_xref_id_exists {
+
+  my $xref_id = shift;
+
+  my $exists = 0;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT xref_id FROM primary_xref WHERE xref_id=?");
+  $sth->execute($xref_id) || die $dbi->errstr;
+  my @row = $sth->fetchrow_array();
+  my $result = $row[0];
+  $exists = 1 if (defined $result);
+
+  return $exists;
 
 }
 
