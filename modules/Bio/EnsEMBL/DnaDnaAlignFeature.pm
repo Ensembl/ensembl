@@ -156,6 +156,12 @@ sub restrict_between_positions {
 
   if (scalar @restricted_features) {
     my $DnaDnaAlignFeature = new Bio::EnsEMBL::DnaDnaAlignFeature('-features' =>\@restricted_features);
+    if (defined $self->slice) {
+      $DnaDnaAlignFeature->slice($self->slice);
+    }
+    if (defined $self->hslice) {
+      $DnaDnaAlignFeature->hslice($self->hslice);
+    }
     return $DnaDnaAlignFeature;
   } else {
     return undef;
