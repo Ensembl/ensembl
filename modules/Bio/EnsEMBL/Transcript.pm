@@ -298,7 +298,8 @@ sub last_exon {
 
  Title   : translatable_exons
  Usage   : @exons = $transcript->translateable_exons
- Function:
+ Function: return list of exons that translate with the start- and
+           end-exons truncated to the CDS regions.
  Example :
  Returns : 
  Args    :
@@ -732,10 +733,13 @@ sub sort {
 =head2 _translate_coherent
 
  Title   : _translate_coherent
- Usage   : <internal function> translates a coherent transcript.
-           Uncoherent transcripts need to be broken up with
-           split to partial first.
- Function:
+
+ Usage : <internal function> translates a coherent transcript.  Uncoherent
+           transcripts need to be broken up with split to partial first.
+           (coherent means: having the same intron phase, i.e., all
+           contiguous exon pairs that don not have phase differences).
+
+ Function: 
  Example :
  Returns : 
  Args    :
@@ -768,7 +772,7 @@ sub _translate_coherent{
 	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
 	   $exon->entire_seq()->moltype('dna');
        }
-#       print STDERR "Exon phase " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . "\n";
+#       print STDERR "Exon phase " . $exon->id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
 #       print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
 
        my $seq = $exon->seq();
