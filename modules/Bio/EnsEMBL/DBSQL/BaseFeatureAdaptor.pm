@@ -526,7 +526,8 @@ sub remove {
                 "feature could not be removed");
   }
 
-  my $table = $self->_tablename();
+  my @tabs = $self->_tables;
+  my ($table) = @{$tabs[0]};
 
   my $sth = $self->prepare("DELETE FROM $table WHERE ${table}_id = ?");
   $sth->execute($feature->dbID());
