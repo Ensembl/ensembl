@@ -74,7 +74,7 @@ sub create_xrefs {
     $type = 'dna';
   }
   else{
-    die "could not work out type of sequences for fiel $file\n";
+    die "Could not work out sequence type of sequences for $file\n";
   }
 
 
