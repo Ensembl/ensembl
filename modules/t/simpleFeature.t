@@ -1,5 +1,7 @@
+use strict;
+
 use lib 't';
-use TestUtils qw(test_getter_setter);
+use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
@@ -8,9 +10,9 @@ BEGIN { $| = 1;
 
 use MultiTestDB;
 use Bio::EnsEMBL::SimpleFeature;
-use Bio::EnsEMBL::RawContig;
-use Bio::Seq;
 
+
+our $verbose = 1;
 
 my $multi = MultiTestDB->new;
  
@@ -22,7 +24,7 @@ my $sfa = $dba->get_SimpleFeatureAdaptor;
 #
 # 1 create a new Simplefeature
 #
-$sf = new Bio::EnsEMBL::SimpleFeature;
+my $sf = new Bio::EnsEMBL::SimpleFeature;
 ok($sf);
 
 
@@ -49,27 +51,6 @@ ok(test_getter_setter($sf,'display_label','dummy_label'));
 ok(test_getter_setter($sf,'dbID',42));
 
 
-#
-# 8 attach a contig
-#
-# create a dummy seq and contig
-#
-my $seq  = Bio::Seq->new(-seq => 'ATGCAGCTAGCATCGATGACATCG',
-                         -id => 'dummy_contig',
-                         -accession => 'dummy_contig');
-  
-my $contig = Bio::EnsEMBL::RawContig->new();
- 
-my $name =  'dummy_contig';
-$contig->id($name);
-$contig->embl_offset(0);
-$contig->seq($seq);
-
-# now attach the contig
-
-$sf->contig($contig);
-ok($sf);
-
 
 #
 # 9 check adaptor attaching
@@ -77,6 +58,19 @@ ok($sf);
 $sf->adaptor($sfa);
 ok($sf->adaptor->isa('Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor'));
 
-# list_dbIDs
+
+my $slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20');
+
+my $features = $sfa->fetch_all_by_Slice($slice);
+
+foreach my $feature (@$features) {
+  debug("\n\nfeature start = " . $feature->start());
+  debug("feature end = " . $feature->end());
+  debug("feature strand = " . $feature->strand());
+  debug("feature display_label = " . $feature->display_label());
+  debug("feature score = " . $feature->score());
+}
+
+# List_dbidx
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
