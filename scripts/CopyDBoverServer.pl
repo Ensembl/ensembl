@@ -68,7 +68,8 @@ my %mysql_directory_per_svr = ('ecs1a:3306' => "/mysql1a/current/var",
 			       'ecs4:3351' => "/mysql-3351/databases",
 			       'ecs4:3352' => "/mysql-3352/databases",
 			       'ecs4:3353' => "/mysql-3353/databases",
-			       'ia64e:3306' => "/mysql/data_3306/databases");
+			       'ia64e:3306' => "/mysql/data_3306/databases",
+                               'ia64f:3306' => "/mysql/data_3306/databases");
 
 my $working_host = $ENV{'HOST'};
 my $generic_working_host = $working_host;
