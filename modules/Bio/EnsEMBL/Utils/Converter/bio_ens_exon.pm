@@ -77,6 +77,9 @@ sub _initialize {
 
 sub _attach_supporting_feature {
     my ($self, $exon, $ens_exon) = @_;
+    unless($exon->has_tag('supporting_feature')){
+        return;
+    }
     my ($sf) = $exon->each_tag_value('supporting_feature');
     unless(defined $sf){
         $self->warn("no supporting feature is attached in exon");

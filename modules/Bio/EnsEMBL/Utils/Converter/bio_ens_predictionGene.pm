@@ -53,14 +53,14 @@ use Bio::EnsEMBL::Utils::Converter::bio_ens;
 sub _initialize {
     my ($self, @args) = @_;
 
-    $self->SUPER::_initialize(@args);
-
     $self->{_predictionExonConverter} = new Bio::EnsEMBL::Utils::Converter(
-        -in => 'Bio::Tools::Prediction::Exon',
+        -in => 'Bio::SeqFeature::Gene::Exon',
         -out => 'Bio::EnsEMBL::Exon',
-        -contig => $self->contig
     );
-
+    $self->SUPER::_initialize(@args);
+    
+    $self->{_predictionExonConverter}->contig($self->contig);
+    $self->{_predictionExonConverter}->analysis($self->analysis);
 }
 
 sub _convert_single {
