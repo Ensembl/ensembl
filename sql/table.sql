@@ -387,16 +387,18 @@ CREATE TABLE translation_stable_id (
  
 
 CREATE TABLE assembly (
-    dnafrag_id_assembled   int unsigned NOT NULL,
-    dnafrag_id_component   int(10) unsigned NOT NULL, 
-    assembled_start        int(10) NOT NULL,
-    assembled_end          int(10) NOT NULL,
-    component_start        int(10) NOT NULL,
-    component_end          int(10) NOT NULL,
-    orientation            tinyint  NOT NULL, 
+
+    asm_seq_region_id   int unsigned NOT NULL,
+    cmp_seq_region_id   int(10) unsigned NOT NULL, 
+    asm_start        int(10) NOT NULL,
+    asm_end          int(10) NOT NULL,
+    cmp_start        int(10) NOT NULL,
+    cmp_end          int(10) NOT NULL,
+    ori            tinyint  NOT NULL, 
     
-    PRIMARY KEY(dnafrag_id_assembled),
-    KEY(dnafrag_id_component,assembled_start) 
+    KEY(cmp_seq_region_id),
+    KEY(asm_seq_region_id, asm_start)
+
 );
 
 
