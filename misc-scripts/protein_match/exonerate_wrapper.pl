@@ -274,3 +274,5 @@ foreach my $q (values %r) {
 	    $t->{s}, $t->{C};
     }
 }
+
+close(OUT);
