@@ -21,8 +21,6 @@
 
 =head1 OPTIONS
 
-    -dbtype    database type (only needed for TimDB)
-
     -host      host name for the database (gets put as host= in locator) 
 
     -port      for RDBs, what port to connect to for the "to" database (port= in locator)
@@ -58,11 +56,10 @@ use Getopt::Long;
 use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
 
 #Database options
-my $dbtype = 'rdb';
-my $host   = 'localhost';
-my $port   = '410000';
-my $dbname = 'ensembl_freeze17_michele';
-my $dbuser = 'root';
+my $host   = undef;
+my $port   = undef;
+my $dbname = undef;
+my $dbuser = undef;
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -77,7 +74,6 @@ my $compare;
 my $longest;
 
 &GetOptions( 
-	     'dbtype:s'   => \$dbtype,
 	     'host:s'     => \$host,
 	     'port:n'     => \$port,
 	     'dbname:s'   => \$dbname, 
@@ -106,7 +102,8 @@ if ($print) {
 #DB writing option not yet implemented
 #Mapping of coordinates still needs to be done
 elsif ($check) {
-    my $inputstream = Bio::SeqIO->new(-file => "ctg12382.fa",-format => 'Fasta');
+    my $inputstream = Bio::SeqIO->new('-file' => "ctg12382.fa",
+                                      '-format' => 'Fasta');
     my $seq = $inputstream->next_seq();
     
     foreach my $gene (@gtf_genes) {
@@ -115,8 +112,8 @@ elsif ($check) {
 	    print STDERR "Translation end is ".$trans->translation->end." in exon ".$trans->translation->end_exon_id."\n";
 		
 	    foreach my $exon ($trans->each_Exon) {
-		my $start=$exon->start;
-		my $end=$exon->end;
+		# my $start=$exon->start;
+		# my $end=$exon->end;
 		$exon->attach_seq($seq);
 		my $eseq=$exon->seq;
 		
@@ -193,8 +190,8 @@ elsif ($longest) {
     
     open (PEP_FILE,"ens_sept25.pep") || die("Could not open ens_sept25.pep for ensembl pep length reading$!");
     print STDERR "Reading ensembl pep file\n";
-    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
-    my $out = Bio::SeqIO->new(-fh => \*STDERR, -format => 'Fasta');
+    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, '-format' => 'Fasta');
+    my $out = Bio::SeqIO->new(-fh => \*STDERR, '-format' => 'Fasta');
     while ( my $seq = $in->next_seq() ) {
 	my $seqid=$seq->id;
 	$seqid =~ s/TMPP\_/SEPT20T\./g;
@@ -211,10 +208,11 @@ elsif ($longest) {
 	}
     }
 
+    # messy, does nearly same as thing above
     open (PEP_FILE,"neo_pred.pep") || die("Could not open neo_pred.pep for ensembl pep length reading$!");
     print STDERR "Reading neomorphic pep file\n";
-    my $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, -format=> 'Fasta');
-    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format => 'Fasta');
+    $in = Bio::SeqIO->new(-fh   => \*PEP_FILE, '-format'=> 'Fasta');
+    $out = Bio::SeqIO->new(-fh => \*STDOUT, '-format' => 'Fasta');
     while ( my $seq = $in->next_seq() ) {
 	foreach my $trans_id (keys (%neo_long)) {
 	    #print STDERR "Seq id: ".$seq->id." trans_id: $trans_id\n";
