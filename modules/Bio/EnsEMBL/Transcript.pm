@@ -230,7 +230,15 @@ sub is_known {
 }
 
 
+sub type {
+  my ($self, $type) = @_;
 
+  if(defined $type) {
+    $self->{'_type'} = $type;
+  }
+
+  return $self->{'_type'};
+}
 
 sub adaptor {
    my $self = shift;

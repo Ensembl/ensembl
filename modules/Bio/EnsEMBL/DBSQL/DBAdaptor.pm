@@ -82,19 +82,23 @@ sub new {
       $mapdbname,
       $litedbname,
       $dnadb,
-      $external
+      $source
     ) = $self->_rearrange([qw(
       MAPDBNAME
       LITEDBNAME
       DNADB
+      SOURCE
     )],@args);  
-  
 
   $self->dnadb($dnadb);
 
   # following was added on branch; unclear if it is needed:
   $self->mapdbname( $mapdbname );
   #    $self->litedbname( $litedbname );
+
+  if(defined $source) {
+    $self->source($source);
+  }
 
   #
   # [mcvicker] We are no longer using the FeatureFactory for feature creation.
@@ -111,11 +115,11 @@ sub new {
   #    }
   #    $self->perl_only_sequences($perlonlysequences);
   
-  if( defined $external ){
-    foreach my $external_f ( @{$external} ) {
-      $self->add_ExternalFeatureFactory($external_f);
-    }
-  }
+#  if( defined $external ){
+#    foreach my $external_f ( @{$external} ) {
+#      $self->add_ExternalFeatureFactory($external_f);
+#    }
+#  }
 
   # Store info for connecting to a mapdb.
   {
@@ -182,6 +186,27 @@ sub release_number{
 }
 
 
+
+=head2 source
+  Arg  1    : scalar string $source
+              The source of info in the database connected to (e.g. 'embl')
+  Function  : Sets/Gets the source or human readable name of the genes in 
+              the connected database. For example for the sanger db the source
+              would be 'sanger'.
+  Returntype: scalar string
+  Exceptions: none
+  Caller    : Bio::EnsEMBL::GeneAdaptor  Bio::EnsEMBL::LiteGeneAdaptor EnsWeb
+
+=cut
+sub source {
+  my ($self, $source) = @_;
+
+  if(defined $source) {
+    $self->{'_source'} = $source;
+  }
+
+  return $self->{'_source'};
+}
 
 
 =head2 get_MetaContainer
@@ -500,9 +525,13 @@ sub get_SequenceAdaptor {
 
 sub lite_DBAdaptor {
   my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_liteDB} = $arg );
-  $self->{_liteDB};
+  if ( defined $arg ) {
+    $self->{_liteDB} = $arg;
+   print STDERR "DBAdaptor->lite_DBAdaptor lite db defined\n"; 
+
+  }
+
+  return $self->{_liteDB};
 }
 
 
@@ -510,7 +539,7 @@ sub lite_DBAdaptor {
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    print STDERR "**Getting GeneAdaptor: \n";
+    print STDERR "**Getting Proxy GeneAdaptor: \n";
 
     #use a proxy gene adaptor, capable of making decisions with regards to the
     #database that it uses
@@ -1058,6 +1087,35 @@ sub feature_Obj {
 
 }
 
+
+
+
+sub add_db_adaptor {
+  my ($self, $name, $adaptor) = @_;
+
+  $self->{'_db_adaptors'}->{$name} = $adaptor;
+}
+
+sub remove_db_adaptor {
+  my ($self, $name) = @_;
+
+  my $adaptor = $self->{'_db_adaptors'}->{$name};
+  delete $self->{'_db_adaptors'}->{$name};
+
+  return $adaptor;
+}
+
+sub get_all_db_adaptors {
+  my ($self, $name) = @_;   
+
+  return $self->{'_db_adaptors'};
+}
+
+sub get_db_adaptor {
+  my ($self, $name) = @_;
+
+  return $self->{'_db_adaptors'}->{$name};
+}
 
 
 =head2 get_Gene

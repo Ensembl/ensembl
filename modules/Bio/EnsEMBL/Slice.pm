@@ -360,9 +360,9 @@ sub get_all_Genes{
 }
 
 
-=head2 get_Genes_by_type
+=head2 get_Genes_by_source
 
- Title   : get_Genes_by_type
+ Title   : get_Genes_by_source
  Usage   :
  Function:
  Example :
@@ -372,8 +372,8 @@ sub get_all_Genes{
 
 =cut
 
-sub get_Genes_by_type{
-   my ($self,$type) = @_;
+sub get_Genes_by_source{
+   my ($self,$source) = @_;
    
    # Possibly this can be improved by selecting genes a query,
    # we expect that most times there will not be many genes in a region
@@ -382,8 +382,11 @@ sub get_Genes_by_type{
    
    my @out = ();
 
+   print STDERR "Slice : Getting genes of source $source \n";
+
    foreach my $gene (@genes) {
-     if($gene->type() eq $type) {
+     print STDERR "Slice : Got gene of source " . $gene->source();
+     if($gene->source() eq $source) {
        push @out, $gene;
      }
    }

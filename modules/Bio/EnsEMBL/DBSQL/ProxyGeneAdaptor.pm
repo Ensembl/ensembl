@@ -43,20 +43,18 @@ use vars '@ISA';
 #use inherited superclass constructor
 
 
-sub fetch_by_slice {
+sub fetch_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->lite_DBAdaptor();
  
   if(defined $lite_db) {
     #use the Lite database if it is available
-    print STDERR "Using LiteGeneAdaptor";
-    return $lite_db->get_GeneAdaptor()->fetch_by_slice(@args);
+    return $lite_db->get_GeneAdaptor()->fetch_by_Slice(@args);
   }
 
   #otherwise use the core database
-  print STDERR "ProxyGeneAdaptor: Using Core GeneAdaptor\n";
-  return $self->SUPER::fetch_by_slice(@args);
+  return $self->SUPER::fetch_by_Slice(@args);
 }
 
 

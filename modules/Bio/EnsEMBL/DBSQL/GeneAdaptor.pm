@@ -162,6 +162,7 @@ sub fetch_by_dbID {
       my $ana = $self->db->get_AnalysisAdaptor->fetch_by_dbID($arr[4]);
       $gene->analysis($ana);
       $gene->type($arr[5]);
+      $gene->source($self->db->source());
       $first = 0;
     }
 
@@ -281,7 +282,7 @@ sub fetch_by_Slice {
   my ( $self, $slice, $type ) = @_;
   my @out;
 
- my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
+  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
    ( $slice->assembly_type() );
   
  $mapper->register_region( $slice->chr_name(),

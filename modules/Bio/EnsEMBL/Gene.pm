@@ -155,6 +155,16 @@ sub end {
 }
 
 
+sub source {
+  my ($self, $source) = @_;
+
+  if(defined $source) {
+    $self->{'_source'} = $source;
+  }
+
+  return $self->{'_source'};
+}
+
 
 =head2 is_known
 

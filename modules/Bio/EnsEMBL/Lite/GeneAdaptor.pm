@@ -63,7 +63,7 @@ sub fetch_by_Slice {
               external_db, coding_start, coding_end 
         FROM  transcript
         WHERE chr_name = ? and chr_start <= ? and chr_start >= ? and
-                chr_end >= ?"
+              chr_end >= ?"
     );
     
   eval {
@@ -85,14 +85,18 @@ sub fetch_by_Slice {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
+      $gene->source( $hr->{'db'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
       $gene_cache{ $hr->{gene_id} } = $gene;
+
+      print STDERR "Created Gene\n";
+
     } else {
       $gene = $gene_cache{ $hr->{gene_id} };
     }
 
     # create exons from exon_structure entry
-    my @exons;
+    my @exons = ();
     my @lengths = split( ":", $hr->{'exon_structure'} );
     my ( $start, $end );
 
@@ -107,7 +111,10 @@ sub fetch_by_Slice {
 	( $start, $end, $hr->{'chr_strand'}*$slice->strand());
       #  we need dbIDs for Exons !!!
       #   $exon->dbID( );
+      $exon->contig( $slice );
       $exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
+      $exon_cache{"$start-$end"} = $exon;
+      print STDERR "\tCreated Exon\n";
     } else {
       $exon = $exon_cache{"$start-$end"};
     }
@@ -125,10 +132,14 @@ sub fetch_by_Slice {
       if( ! exists $exon_cache{ "$start-$end" } ) {
 	$exon = Bio::EnsEMBL::Exon->new
 	  ( $start, $end, $hr->{'chr_strand'});
+	$exon->contig( $slice );
+	$exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
+	$exon_cache{"$start-$end"} = $exon;
+	print STDERR "\tCreated Exon\n";
       } else {
 	$exon = $exon_cache{"$start-$end"};
       }
-      $exon->contig( $slice );
+
       push( @exons, $exon );
     }
     
@@ -141,6 +152,7 @@ sub fetch_by_Slice {
 
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
+    $transcript->type( $hr->{ 'transcript_type' } );
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
       
@@ -160,8 +172,10 @@ sub fetch_by_Slice {
     $translation->dbID( $hr->{'translation_id'} );
     $transcript->translation( $translation ); 
 
+    $gene->add_Transcript($transcript);
+
     # we need start and end Exon
-    # hope they are lazy loaded ...
+    # hope they are lazy loaded ... nope they are not!!!
   }
 
   my @out = values( %gene_cache );
