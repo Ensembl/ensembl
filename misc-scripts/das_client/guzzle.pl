@@ -82,9 +82,11 @@ my @presets = (
 	CHECKED	=> 1 },
     {	NAME	=> 'Sprot [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
+	MAPTYPE	=> 'none',
 	CHECKED	=> 0 },
     {	NAME	=> 'Pfam-A [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/pfam',
+	MAPTYPE	=> 'none',
 	CHECKED	=> 0 } );
 
 # $nblanks:
@@ -212,18 +214,11 @@ sub do_query
     foreach my $source (@{ $sources }) {
 	my %query;
 
-	if (! ($use_mapping && exists $source->{MAPTYPE} &&
-	       ($source->{MAPTYPE} eq 'simple' ||
-	        $source->{MAPTYPE} eq 'align'))) {
+	if ($source->{MAPTYPE} eq 'none') {
 	    # Don't do mapping for this source.
 	    $query{$seqid}{SEGMENT} = $seqid . $range;
 	    push(@{ $query{$seqid}{DSN} }, $source->{DSN});
-	    next;
-	}
-
-	# Do mapping.
-
-	if ($source->{MAPTYPE} eq 'simple') {
+	} elsif ($source->{MAPTYPE} eq 'simple') {
 
 	    # Simple 1:N ID mapping:
 	    #
