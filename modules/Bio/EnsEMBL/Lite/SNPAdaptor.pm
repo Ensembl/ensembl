@@ -106,9 +106,10 @@ sub fetch_all_by_Slice {
 
         if(!$link) {
           $link = Bio::EnsEMBL::DBEntry->new_fast
-            ({'_dbname' => $link_db,
-              '_primary_id' => $link_id});
-          $self->{'link_cache'}->{"$link_db:$link_id"};
+            ({'dbname' => $link_db,
+              'primary_id' => $link_id,
+              'display_id' => $link_id});
+          $self->{'link_cache'}->{"$link_db:$link_id"} = $link;
         }
 
         push @links, $link;
