@@ -435,8 +435,8 @@ sub get_Protein_Adaptor {
     
     my( $pa );
     unless ($pa = $self->{'_protein_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::Protein_Adaptor;
-        $pa = Bio::EnsEMBL::DBSQL::Protein_Adaptor->new($self);
+        require Bio::EnsEMBL::DBSQL::ProteinAdaptor;
+        $pa = Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($self);
     }
     return $pa;
 }
