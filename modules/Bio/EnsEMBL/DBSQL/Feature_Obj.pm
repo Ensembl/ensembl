@@ -170,7 +170,8 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue) ".
+                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
@@ -212,28 +213,30 @@ sub write {
 		my $homol = $feature->feature2;
 	    
 		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      $homol->start,
-			      $homol->end,
-			      $homol->seqname);
+			          $contig->internal_id,
+			          $feature->start,
+			          $feature->end,
+			          $feature->score,
+			          $feature->strand,
+			          $feature->source_tag,
+			          $analysisid,
+			          $homol->start,
+			          $homol->end,
+			          $homol->seqname,
+                      $feature->percent_id,
+                      $feature->p_value);
 	    } else {
 		$sth->execute('NULL',
-			      $contig->internal_id,
-			      $feature->start,
-			      $feature->end,
-			      $feature->score,
-			      $feature->strand,
-			      $feature->source_tag,
-			      $analysisid,
-			      -1,
-			      -1,
-			      "__NONE__");
+			          $contig->internal_id,
+			          $feature->start,
+			          $feature->end,
+			          $feature->score,
+			          $feature->strand,
+			          $feature->source_tag,
+			          $analysisid,
+			          -1,
+			          -1,
+			          "__NONE__");
 	    }
 	}
     }
