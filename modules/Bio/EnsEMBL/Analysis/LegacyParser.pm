@@ -52,6 +52,8 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Analysis::ensConf qw(TRANSCRIPT_ID_SUBSCRIPT 
+				       GENE_ID_SUBSCRIPT);
 use FileHandle;
 
 @ISA = qw(Bio::Root::Object);
@@ -111,8 +113,8 @@ sub get_Genes{
     foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
 	my $gene = new Bio::EnsEMBL::Gene;
 	push(@genes,$gene);
-	$g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
-	my $gid = "HG" . $1;
+	$g =~ /$GENE_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
+	my $gid = $GENE_ID_SUBSCRIPT . $1;
 	$gene->id($gid);
 	
 	foreach my $t ( @{$self->{'_gene_hash'}->{$g}} ) {
@@ -120,8 +122,8 @@ sub get_Genes{
 	    print STDERR "  Doing $t\n";
 	    my $trans = new Bio::EnsEMBL::Transcript;
 	    
-	    $t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
-	    my $tid = "HT" . $1;
+	    $t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
+	    my $tid = $TRANSCRIPT_ID_SUBSCRIPT . $1;
 	    $trans->id($tid);
 	    
 	    $gene->add_Transcript($trans);
@@ -406,8 +408,8 @@ sub map_all{
     my $n_missed_exons;
     foreach my $t (keys %{$self->{'_trans_hash'}}){
 	my $transcript=new Bio::EnsEMBL::Transcript;
-	$t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
-	my $transcript_id = "HT" . $1;
+	$t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
+	my $transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
 	$transcript->id($transcript_id);
 	foreach my $exon_id (@{$self->{'_trans_hash'}->{$transcript_id}}){
 	    if(!exists $self->{'_exon_hash'}->{$exon_id} ) {
@@ -436,8 +438,8 @@ sub map_all{
     my %transcript2gene;
     foreach my $g (keys %{$self->{'_gene_hash'}}){
 	my $gene=new Bio::EnsEMBL::Gene;
-	$g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
-	my $gene_id = "HG" . $1;
+	$g =~ /$GENE_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
+	my $gene_id = $GENE_ID_SUBSCRIPT . $1;
 	$gene->id($gene_id);
 	foreach my $transcript_id (@{$self->{'_gene_hash'}->{$gene_id}}){
 	    if(!exists $transcripts{$transcript_id}){
