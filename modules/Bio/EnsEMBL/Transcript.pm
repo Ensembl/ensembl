@@ -1633,9 +1633,13 @@ sub swap_exons {
 
   Arg  1     : String $coordinate_system_name
   Arg [2]    : String $coordinate_system_version
-  Description: moves this Transcript to the given coordinate system. 
+  Example    : $transcript = $transcript->transform('contig');
+               $transcript = $transcript->transform('chromosome', 'NCBI33');
+  Description: Moves this Transcript to the given coordinate system.
                If this Transcript has Exons attached, they move as well.
-               A new Transcript is returned.
+               A new Transcript is returned. If the transcript cannot be
+               transformed to the destination coordinate system undef is
+               returned instead.
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : wrong parameters
   Caller     : general
@@ -1684,8 +1688,9 @@ sub transform {
 =head2 transfer
 
   Arg  1     : Bio::EnsEMBL::Slice $destination_slice
-  Description: moves this transcript to the given slice. If this Transcripts has
-               Exons attached, they move as well.
+  Example    : $transcript = $transcript->transfer($slice);
+  Description: Moves this transcript to the given slice.
+               If this Transcripts has Exons attached, they move as well.
   Returntype : Bio::EnsEMBL::Transcript
   Exceptions : none
   Caller     : general
