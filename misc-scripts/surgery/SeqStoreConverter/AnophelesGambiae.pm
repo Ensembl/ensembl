@@ -136,7 +136,7 @@ sub transfer_prediction_transcripts {
   my $prev_end   = undef;
   my $prev_start = undef;
   my $prev_id    = undef;
-  my $rank       = 0;
+  my $rank       = undef;
 
   my %prev_exon = ();
 
@@ -182,7 +182,7 @@ sub transfer_prediction_transcripts {
       $self->store_pexon(\%prev_exon) if(%prev_exon);
 
       #new ptranscript
-      $rank      = 0;
+      $rank      = 1;
       $prev_id   = $pt_id;
       $prev_end  = $sr_end;
       $prev_start = $sr_start;
