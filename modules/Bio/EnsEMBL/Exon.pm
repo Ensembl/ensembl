@@ -152,45 +152,15 @@ sub _parse_args {
 
 =pod 
 
-=head2 id
-
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub id{
-   my ($self) = shift;
-   my $value  = shift;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
-
-  if( defined $value ) {
-    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
-    return;
-  }
-
-   if( defined $self->stable_id ) {
-     return $self->stable_id();
-   } else {
-     return $self->dbID;
-   }
-}
 
 =head2 dbID
 
- Title   : dbID
- Usage   : $obj->dbID($newval)
- Function: 
- Returns : value of dbID
- Args    : newvalue (optional)
-
+  Arg [1]    : int $dbID
+  Example    : none
+  Description: get/set for the database internal id
+  Returntype : int
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
 
@@ -204,16 +174,19 @@ sub dbID {
 
 }
 
+
 =head2 temporary_id
 
- Title   : temporary_id
- Usage   : $obj->temporary_id($newval)
- Function: 
- Returns : value of temporary_id
- Args    : newvalue (optional)
-
+  Arg [1]    : string $temporary_id
+  Example    : none
+  Description: get/set for attribute temporary_id
+               was invented from genebuild and shouldnt be necessary   
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub temporary_id {
    my $self = shift;
@@ -225,16 +198,18 @@ sub temporary_id {
 
 }
 
+
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects Adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general, set from adaptor on store
 
 =cut
+
 
 sub adaptor {
    my $self = shift;
@@ -247,18 +222,20 @@ sub adaptor {
 }
 
 
-
-
 =head2 contig_id
 
- Title   : contig_id
- Usage   : $obj->contig_id($newval)
- Function: 
- Returns : value of contig_id
- Args    : newvalue (optional)
-
+  Arg [1]    : string $contig_dbID
+               You could set a contig ID in the Exon. Generally its a better
+               idea to attach a complete contig to the exon.
+  Example    : none
+  Description: set a contig id (dbID or eventually others). The get part goes to the
+               attached contig if there is nothing explicitly set.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub contig_id{
   my $self = shift;
@@ -276,47 +253,20 @@ sub contig_id{
   }
 }
 
-=head2 clone_id
 
- Title   : clone_id
- Usage   : $obj->clone_id($newval)
- Function: 
- Returns : value of clone_id
- Args    : newvalue (optional)
-
-
-=cut
-
-sub clone_id{
-   my $self = shift;
-
-   $self->warn("Exon->clone_id method deprecated\n");
-   return undef;
-
-   if( @_ ) {
-     my $value = shift;
-     $self->{'clone_id'} = $value;
-   }
-
-   if( defined $self->{'clone_id'} ) {
-     return $self->{'clone_id'};
-   } elsif( defined $self->contig() ) {
-     return $self->contig->cloneid();
-   } else {
-     return undef;
-   }
-}
 
 =head2 contig
 
- Title   : contig
- Usage   : 
- Function: stores a RawContig or Slice
- Returns : 
- Args    : 
-
+  Arg [1]    : Bio::EnsEMBL::RawContig/Slice $contig
+  Example    : none
+  Description: get/set for attribute contig. Is channeled to the bioperl
+               comliant entire_seq/attach_seq calls.
+  Returntype : Bio::EnsEMBL::RawContig/Slice
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub contig {
   my $self = shift;
@@ -382,6 +332,21 @@ sub transform {
 }
 
 
+
+=head2 _transform_between_slices
+
+  Arg  1     : Bio::EnsEMBL::Slice $new_slice
+  Example    : none
+  Description: Transforms the exons from one Slice to the given Slice, that needs to be
+               on the same Chromosome
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : Checks if Slice is attached and argument is Slice on same chromosome
+  Caller     : transform
+
+=cut
+
+
+
 sub _transform_between_slices {
   my ($self, $to_slice) = @_;
 
@@ -428,6 +393,18 @@ sub _transform_between_slices {
   return $new_exon;
 }
 
+
+
+=head2 _transform_to_slice
+
+  Arg  1     : Bio::EnsEMBL::Slice $slice
+  Example    : none
+  Description: Transforms this Exon from RawContig coord to given Slice coord
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : If the RawContig coords dont map
+  Caller     : transform
+
+=cut
 
 
 
@@ -481,17 +458,25 @@ sub _transform_to_slice {
   $newexon->contig( $slice );
   $newexon->attach_seq( $slice );
   
-  #print "Exon start " . $self->start . "\n";
-  #print "Exon end   " . $self->end . "\n";
-  #print "Mapped start " . $newexon->start . "\n";
-  #print "Mapped end   " . $newexon->end . "\n";
-
-  #    print "Mapped seq: " . $newexon->seq(). "\n";
-  #    print "Original:   " . $self->seq() . "\n";
 
 
   return $newexon;
 }
+
+
+
+=head2 _transform_to_rawcontig
+
+  Args       : none
+  Example    : none
+  Description: Transform this Exon from Slice to RawContig coords
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : Exon cant lie on Gap
+  Caller     : transform
+
+=cut
+
+
 
 sub _transform_to_rawcontig {
   my $self = shift;
@@ -660,22 +645,6 @@ sub end_phase {
   return $self->{_end_phase};
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 
 
 
@@ -1751,5 +1720,70 @@ triplets (start, stop, strand) from which new ranges could be built.
   Returns : the range containing all of the ranges
 
 =cut
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+   my ($self) = shift;
+   my $value  = shift;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID");
+
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
+
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } else {
+     return $self->dbID;
+   }
+}
+
+
+
+=head2 clone_id
+
+  Args       : none
+  Example    : none
+  Description: deprecated, exons can have more than one clone.
+               StickyExons dont support this call
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub clone_id{
+   my $self = shift;
+
+   $self->warn("Exon->clone_id method deprecated\n");
+   return undef;
+
+   if( @_ ) {
+     my $value = shift;
+     $self->{'clone_id'} = $value;
+   }
+
+   if( defined $self->{'clone_id'} ) {
+     return $self->{'clone_id'};
+   } elsif( defined $self->contig() ) {
+     return $self->contig->cloneid();
+   } else {
+     return undef;
+   }
+}
 
 1;
