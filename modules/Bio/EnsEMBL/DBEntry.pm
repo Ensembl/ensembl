@@ -62,8 +62,9 @@ use strict;
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
-
-  return bless $hashref, $class;
+  bless $hashref, $class;
+  
+  return $hashref ;
 }
 
 
