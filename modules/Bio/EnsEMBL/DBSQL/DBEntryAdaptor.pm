@@ -260,7 +260,7 @@ sub exists {
                             AND    x.display_label = ? 
                             AND    xdb.db_name = ?');
 
-  $sth->execute($dbe->display_id, $dbe->external_db);
+  $sth->execute($dbe->display_id, $dbe->dbname);
 
   my ($dbID) = $sth->fetchrow_array;
 
@@ -305,7 +305,7 @@ sub fetch_all_by_Gene {
     }
   }
   if($gene->stable_id){
-    my $genelinks = $self->_fetch_by_object_type( $gene->stable_id, 'Gene' );
+    my $genelinks = $self->_fetch_by_object_type( $gene->dbID, 'Gene' );
     foreach my $genelink ( @$genelinks ) {
       $gene->add_DBLink( $genelink );
     }
