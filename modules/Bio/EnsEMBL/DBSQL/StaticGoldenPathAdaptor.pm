@@ -688,7 +688,7 @@ sub fetch_VirtualContig_of_exon{
 
    $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_of_exon is deprecated.");
 
-   return NULL;
+   return undef;
 }
 
 
@@ -707,7 +707,7 @@ sub fetch_VirtualContig_of_feature {
 
    $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_of_feature is deprecated.");
 
-   return NULL;
+   return undef;
 }
 
 
@@ -981,7 +981,7 @@ sub fetch_VirtualContig_by_fpc_name{
     my $type = $self->dbobj->static_golden_path_type();
 
     my $sth = $self->dbobj->prepare("
-        SELECT $chromosome_id, $superctg_ori, MIN(chr_start), MAX(chr_end)
+        SELECT chromosome_id, superctg_ori, MIN(chr_start), MAX(chr_end)
         FROM assembly
         WHERE superctg_name = '$fpc_name'
         AND type = '$type'
@@ -1000,7 +1000,7 @@ sub fetch_VirtualContig_by_fpc_name{
       $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$strand,$type);
     } ;
     if( $@ ) {
-      $self->throw("Unable to build a slice using its fpc_name for for $chr, $start,$end\n\nUnderlying exception $@\n");
+      $self->throw("Unable to build a slice using its fpc_name for for $chr, $slice_start,$slice_end\n\nUnderlying exception $@\n");
     }
     &eprof_end('Slice: staticcontig build');
 
@@ -1029,7 +1029,7 @@ sub fetch_VirtualContig_list_sized {
 
    $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_list_sized is deprecated.");
 
-   return NULL;
+   return undef;
 }
 
 
