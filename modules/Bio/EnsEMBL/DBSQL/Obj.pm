@@ -132,7 +132,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-
 =head2 get_Gene
 
  Title   : get_Gene
@@ -146,70 +145,131 @@ sub _initialize {
 =cut
 
 sub get_Gene{
-    my ($self,$geneid) = @_;
-
-    $geneid || $self->throw("Attempting to create gene with no id");
-    
-    my $gene = Bio::EnsEMBL::Gene->new();
-    
-    # check the database is sensible before we yank out this gene. Yes this is
-    # paranoid.
-    
-    my $sth1 = $self->prepare("select p1.contig from exon as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3.exon = p1.id");
-
-    $sth1->execute();
-
-    while( my $rowhash = $sth1->fetchrow_hashref) {
-	# get a contig object, which checks that this exists. 
-	#print("Contig is " . $rowhash->{contig} . "\n");
-	my $contig = $self->get_Contig($rowhash->{'contig'});
-	# if there is no exception then it is there. Get rid of it
-	$contig = 0;
-    }
+   my ($self,$geneid) = @_;
    
-    my $sth2 = $self->prepare("select version,UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified) from gene where id = '$geneid'");
-    $sth2->execute();
-    my $rowhash= $sth2->fetchrow_hashref;
-    $gene->version($rowhash->{'version'});
-    $gene->created($rowhash->{'UNIX_TIMESTAMP(created)'});
-    $gene->modified($rowhash->{'UNIXTIMESTAMP(modified)'});
-
-   # go over each Transcript
-    my $sth = $self->prepare("select id,translation,version from transcript where gene = '$geneid'");
-
-    my $res = $sth->execute();
-    my $seen =0;
+   my @out = $self->get_Gene_array($geneid);
+   return $out[0];
+}
 
 
-    while( my $rowhash = $sth->fetchrow_hashref) {
+=head2 get_Gene_array
 
-	my $trans       = $self->get_Transcript($rowhash->{'id'});
-	my $translation = $self->get_Translation($rowhash->{'translation'});
+ Title   : get_Gene
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Gene_array {
+    my ($self,@geneid) = @_;
+
+    if( @geneid == 0 ) {
+	$self->throw("Attempting to create gene with no id");
+    }
+    
+    my @out;
+    my $inlist = join(',',map "'$_'", @geneid);
+    $inlist = "($inlist)";
+    #
+    # I know this SQL statement is silly.
+    #
+    
+				  
+    my $sth = $self->prepare("select p3.gene,p4.id,p3.id,p1.exon,p1.rank,p2.seq_start,p2.seq_end,UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),p2.strand,p2.phase,p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,p6.version,p3.version,p2.version,p5.version,p4.clone 
+                              from gene as p6,contig as p4, transcript as p3, exon_transcript as p1, exon as p2,translation as p5,geneclone_neighbourhood as p7 
+                              where p6.id in $inlist and p3.gene = p6.id and p4.clone = p7.clone and p7.gene = p6.id and p2.contig = p4.id and p1.exon = p2.id and p3.id = p1.transcript and p5.id = p3.translation order by p3.gene,p3.id,p1.rank");
+    
+    $sth->execute();
+    
+    my $current_gene_id       = '';
+    my $current_transcript_id = '';
+    
+    my ($gene,$trans);
+    
+    while( (my $arr = $sth->fetchrow_arrayref()) ) {
+	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
 	
-	$trans->translation($translation);
-	$trans->version($rowhash->{'version'});
-	$gene->add_Transcript($trans);
-	$seen = 1;
+	#print STDERR "Got exon $exonid\n";
+	
+	if( ! defined $phase ) {
+	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
+	}
+	
+	if( $geneid ne $current_gene_id ) {
+	    
+	    if( $transcriptid eq $current_transcript_id ) {
+		$self->throw("Bad internal error. Switching genes without switching transcripts");
+	    } 
+	    
+	    $gene = Bio::EnsEMBL::Gene->new();
+	    $gene->id($geneid);
+	    
+	    #   $sth = $self->_dbobj->prepare("select version from gene where id='".$gene->id."'");
+	    #   $sth->execute();
+	    #   my $rowhash = $sth->fetchrow_hashref();
+	    
+	    $gene->version($geneversion);
+	    $gene->add_cloneid_neighbourhood($cloneid);
+	    $current_gene_id = $geneid;
+	    push(@out,$gene);
+	    #print STDERR "Made new gene\n";
+	}
+	
+	if( $transcriptid ne $current_transcript_id ) {
+	    $trans = Bio::EnsEMBL::Transcript->new();
+	    $trans->id($transcriptid);
+	    $trans->version($transcriptversion);
+	    $current_transcript_id = $transcriptid;
+	    
+	    my $translation = Bio::EnsEMBL::Translation->new();
+	    $translation->start        ($trans_start);
+	    $translation->end          ($trans_end);
+	    $translation->start_exon_id($trans_exon_start);
+	    $translation->end_exon_id  ($trans_exon_end);
+	    $translation->id           ($translationid);
+	    $translation->version      ($translationversion);
+	    $trans->translation        ($translation);
+	    $gene ->add_Transcript     ($trans);
+	}
+	
+	my $exon = Bio::EnsEMBL::Exon->new();
+	
+	$exon->clone_id ($cloneid);
+	$exon->contig_id($contigid);
+	$exon->id       ($exonid);
+	$exon->created  ($exoncreated);
+	$exon->modified ($exonmodified);
+	$exon->start    ($start);
+	$exon->end      ($end);
+	$exon->strand   ($strand);
+	$exon->phase    ($phase);
+	$exon->version  ($exonversion);
+
+	#
+	# Attach the sequence, cached if necessary...
+	#
+	
+	my $seq;
+	
+	if( $self->_contig_seq_cache($exon->contig_id) ) {
+	    $seq = $self->_contig_seq_cache($exon->contig_id);
+	} else {
+	    my $contig = $self->get_Contig($exon->contig_id());
+	    $seq = $contig->seq();
+	    $self->_contig_seq_cache($exon->contig_id,$seq);
+	}
+	
+	$exon ->attach_seq($seq);
+	$trans->add_Exon($exon);
+
     }
-   
-    if( $seen == 0 ) {
-	$self->throw("No gene with $geneid as a name! - Sorry!");
-    }
+    
 
-   # Fetch the geneclone_neighbourhood
-
-   $sth = $self->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
-   $res = $sth->execute();
-
-   while (my $rowhash = $sth->fetchrow_hashref) {
-
-       my $clone = $rowhash->{clone};
-       $gene->add_cloneid_neighbourhood($clone);
-   }
-
-   $gene->id($geneid);
-
-   return $gene;
+    return @out;
 }
 
 =head2 donor_locator

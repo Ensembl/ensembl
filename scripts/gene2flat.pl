@@ -44,6 +44,8 @@ in particular the protein translation
 
     -help      displays this documentation with PERLDOC
 
+    -chunk     chunk size to array (only use if know what this means)
+
 =cut
 
 use strict;
@@ -71,6 +73,7 @@ my $noacc   = 0;
 my $test    = 0;
 my $logerror = undef;
 my $help;
+my $chunk   = 1;
 
 &GetOptions( 
 	     'dbtype:s'   => \$dbtype,
@@ -80,7 +83,7 @@ my $help;
 	     'dbuser:s'   => \$dbuser,
 	     'dbpass:s'   => \$dbpass,
 	     'module:s'   => \$module,
-
+	     'chunk:i'    => \$chunk,
 	     'usefile'    => \$usefile,
 	     'format:s'   => \$format,
 	     'getall'     => \$getall,
@@ -122,58 +125,63 @@ if( $format eq 'pep' || $format eq 'transcript' ) {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
-foreach my $gene_id ( @gene_id ) {
+while ( @gene_id > 0 ) {
+    my @chunk_list = splice(@gene_id,0,$chunk);
+
     if( $verbose ) {
-	print STDERR "Dumping $gene_id\n";
+	print STDERR "Fetching @chunk_list\n";
     }
 
     eval {
-
-	my $gene = $db->get_Gene($gene_id);
-
-	if( $format eq 'pep' ) {
-	    foreach my $trans ( $gene->each_Transcript ) {
-		# get out first exon. Tag it to clone and gene on this basis
-		my @exon = $trans->each_Exon;
-		my $fe = $exon[0];
-		my $tseq = $trans->translate();
-		if ( $tseq->seq =~ /\*/ ) {
-		    print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
-		    next;
+	
+	my @genes = $db->get_Gene_array(@chunk_list);
+	foreach my $gene ( @genes ) {
+	    my $gene_id = $gene->id();
+	    if( $format eq 'pep' ) {
+		foreach my $trans ( $gene->each_Transcript ) {
+		    # get out first exon. Tag it to clone and gene on this basis
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    my $tseq = $trans->translate();
+		    if ( $tseq->seq =~ /\*/ ) {
+			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+			next;
+		    }
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seqio->write_seq($tseq);
 		}
-		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
-		$seqio->write_seq($tseq);
-	    }
-	} elsif ( $format eq 'dump' ) {
-	    foreach my $trans ( $gene->each_Transcript ) {
-		print "Transcript ",$trans->id,"\n";
-		foreach my $exon ( $trans->each_Exon ) {
-		    print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
-		    my $seq = $exon->seq();
-		    my $str = $seq->str();
-		    print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
+	    } elsif ( $format eq 'dump' ) {
+		foreach my $trans ( $gene->each_Transcript ) {
+		    print "Transcript ",$trans->id,"\n";
+		    foreach my $exon ( $trans->each_Exon ) {
+			print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
+			my $seq = $exon->seq();
+			my $str = $seq->str();
+			print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
+		    }
+		}
+		
+	    } 
+	    elsif ($format eq 'transcript') {
+		foreach my $trans ( $gene->each_Transcript ) {
+		    my $seq = $trans->dna_seq();
+		    $seq->id($trans->id);
+		    my @exon = $trans->each_Exon;
+		    my $fe = $exon[0];
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		    $seqio->write_seq($seq);
 		}
 	    }
-
-	} 
-	elsif ($format eq 'transcript') {
-	    foreach my $trans ( $gene->each_Transcript ) {
-		my $seq = $trans->dna_seq();
-		$seq->id($trans->id);
-		my @exon = $trans->each_Exon;
-		my $fe = $exon[0];
-		$seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
-		$seqio->write_seq($seq);
+	    else {
+		die "No valid format!";
 	    }
-	}
-	else {
-	    die "No valid format!";
 	}
     };
-
+    
     if( $@ ) {
-	print STDERR "Unable to process $gene_id due to \n$@\n";
+	print STDERR "Unable to process @chunk_list due to \n$@\n";
     }
+    
 }
 
 
