@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 8;
+	plan tests => 11;
 }
 
 use MultiTestDB;
@@ -58,6 +58,28 @@ ok($feature->start() == 61140848);
 ok($feature->end()   == 62842997);
 ok($feature->strand() == 1);
 print_features([$feature]);
+
+
+#
+# Test fetching by attribute
+#
+
+debug("--- fetch by attribute (superctg) ---");
+$features = $mfa->fetch_all_by_attribute_type_value('superctg');
+
+ok(@$features == 7);
+print_features($features);
+
+debug("--- fetch by attribute (superctg, NT_035608) ---");
+$features = $mfa->fetch_all_by_attribute_type_value('superctg','NT_035608');
+
+ok(@$features == 1);
+print_features($features);
+
+debug("--- fetch by attribute (embl_acc) ---");
+$features = $mfa->fetch_all_by_attribute_type_value('embl_acc');
+ok(@$features == 1);
+print_features($features);
 
 
 
