@@ -301,7 +301,7 @@ if ($organism eq "human") {
 	chomp;
 	my @array = split (/\t/,$_);
 	$array[9] =~ s/\'/\\\'/g;
-	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t$array[9]\tXREF\n";	
+	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[6]\t$array[9]\tXREF\n";	
 	}
     
     close (GO);
