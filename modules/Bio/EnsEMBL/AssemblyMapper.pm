@@ -205,7 +205,7 @@ sub list_contig_ids {
 
    unless ($start =~ /^\d+$/) {
      unless ($start =~ /^-\d+$/) {
-       self->throw("Expecting integer for chromosome start, but got '$start'");
+       $self->throw("Expecting integer for chromosome start, but got '$start'");
      }
    }
 
