@@ -814,7 +814,7 @@ sub _get_dblinks{
     
     
 #Get the DBlinks for the given gene
-    my $entryAdaptor = $self->_dbobj->get_DBEntryAdaptor();
+    my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
     my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
     
     foreach my $genelink (@gene_xrefs) {
@@ -822,7 +822,7 @@ sub _get_dblinks{
     }
     
     my $query1 = "select t.translation from transcript t where t.gene = '$gene_id';";
-    my $sth1 = $self->_dbobj->prepare($query1);
+    my $sth1 = $self->_db_obj->prepare($query1);
     $sth1->execute;
     
     while (my $transid = $sth1->fetchrow) {
