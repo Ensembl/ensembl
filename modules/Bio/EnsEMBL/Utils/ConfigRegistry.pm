@@ -128,6 +128,7 @@ sub load_core{
 		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
 		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
 		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
+		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
 		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
 		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
 		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
@@ -163,25 +164,18 @@ sub load_core{
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor');
 
   foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    my $adap = "$module"->new($dba);
-
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+#    my $module = $pairs{$key};
+#    eval "require $module";
+#
+#    if($@) {
+#      warning("$module cannot be found.\nException $@\n");
+#      return undef;
+#    }
+#    my $adap = "$module"->new($dba);
+#
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 
-# Blast is a special case!!! Very special
-#  eval "require Bio::EnsEMBL::External::BlastAdaptor";
-
-#  my $adap = Bio::EnsEMBL::External::BlastAdaptor->new_fast($dbc);
-#  my $key = 'Blast';
-#
-#  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
 
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
     Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($species,$type);

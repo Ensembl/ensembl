@@ -106,7 +106,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 our %register = ();
 
 
-$register{'_WARN'} = 0; # default report overwriting
+#$register{'_WARN'} = 0; # default report overwriting
 
 if(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
 #  print "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
@@ -122,23 +122,23 @@ else{
 #  print "NO default configuration to load\n";
 }
 
-=head2 warn_on_duplicates
+#=head2 warn_on_duplicates
+#
+#  Arg [1]    : (optional) string $arg
+#  Example    : Bio::EnsEMBL::Registry->warn_on_duplicates(1);
+#  Description: Getter / Setter for the production of error 
+#               messages on overwriting values.
+#  Returntype : string
+#  Exceptions : none
+#
+#=cut
 
-  Arg [1]    : (optional) string $arg
-  Example    : Bio::EnsEMBL::Registry->warn_on_duplicates(1);
-  Description: Getter / Setter for the production of error 
-               messages on overwriting values.
-  Returntype : string
-  Exceptions : none
-
-=cut
-
-sub warn_on_duplicates{
-  my ($class) = shift;
-
-  $register{'_WARN'} = shift if(@_);
-  return $register{'_WARN'};
-}
+#sub warn_on_duplicates{
+#  my ($class) = shift;
+#
+#  $register{'_WARN'} = shift if(@_);
+#  return $register{'_WARN'};
+#}
 
 sub check_if_already_there{
   my ($class) = shift;
@@ -256,9 +256,9 @@ sub add_DBAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
   $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
-  if(defined($register{$species}{$group}{'_DB'}) && warn_on_duplicates()){
-    warning("Overwriting DBAdaptor in Registry for $species $group $adap\n");
-  }
+#  if(defined($register{$species}{$group}{'_DB'}) && warn_on_duplicates()){
+#    warning("Overwriting DBAdaptor in Registry for $species $group $adap\n");
+#  }
 
   $register{$species}{$group}{'_DB'} = $adap;
 
@@ -331,9 +331,9 @@ sub add_DNAAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
   $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
-  if(defined($register{$species}{$group}{'_DNA'}) && warn_on_duplicates()){
-    warning("Overwriting DNAAdaptor in Registry for $species $group $adap\n");
-  }
+#  if(defined($register{$species}{$group}{'_DNA'}) && warn_on_duplicates()){
+#    warning("Overwriting DNAAdaptor in Registry for $species $group $adap\n");
+#  }
 
   $register{$species}{$group}{'_DNA'} = $adap;
 
@@ -377,9 +377,9 @@ sub add_adaptor{
 
   $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
 
-  if(defined($register{$species}{$group}{$type}) && warn_on_duplicates()){
-    warning("Overwriting Adaptor in Registry for $species $group $type\n");
-  }
+#  if(defined($register{$species}{$group}{$type}) && warn_on_duplicates()){
+#    warning("Overwriting Adaptor in Registry for $species $group $type\n");
+#  }
   $register{$species}{$group}{$type} = $adap;
 
 
@@ -439,13 +439,27 @@ sub get_adaptor{
     print STDERR caller();
     print STDERR "\nfin\n";;
   }
+  if(!ref($ret)){ # not instantiated yet
+    my $dba = $register{$species}{$group}{'_DB'};
+    my $module = $ret;
+    eval "require $module";
+
+    if($@) {
+      warning("$module cannot be found.\nException $@\n");
+      return undef;
+    }
+    my $adap = "$module"->new($dba);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $type, $adap);
+    $ret = $adap;
+  }
+
   return $ret;
 }
 
 =head2 get_all_adaptors
 
   Arg [1]    : name of the species to get the adaptors for.
-  Example    : @adaps = @{Bio::EnsEMBL::Registry->get_all_adaptor()};
+  Example    : @adaps = @{Bio::EnsEMBL::Registry->get_all_adaptors()};
   Returntype : list of adaptors
   Exceptions : none
 
