@@ -239,69 +239,115 @@ sub get_all_Genes {
        #
        # I know this SQL statement is silly.
        #
+       #  select p3.gene,
+       #      p4.id,
+       #      p3.id,
+       #      p1.exon,p1.rank,
+       #      p2.seq_start,p2.seq_end,
+       #      UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified),
+       #      p2.strand,p2.phase,
+       #      p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id,
+       #      p6.version,p3.version,p2.version,p5.version
+       #  from   gene as p6,
+       #      contig as p4,
+       #      transcript as p3,
+       #      exon_transcript as p1,
+       #      exon as p2,
+       #      translation as p5
+       #  where  p6.id    = '$geneid'
+       #  and    p3.gene  = '$geneid'
+       #  and    p4.clone = '$id'
+       #  and    p2.contig = p4.internal_id
+       #  and    p1.exon  = p2.id
+       #  and    p3.id    = p1.transcript
+       #  and    p5.id    = p3.translation
+       #  order by p3.gene,p3.id,p1.rank
+        
        
-       my $query =                   "select p3.gene," .
-	                                     "p4.id,   " .
-			                     "p3.id,   " .
-				             "p1.exon,p1.rank, " .
-				             "p2.seq_start,p2.seq_end," .
-				             "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified), " .
-				             "p2.strand,p2.phase, " .
-				             "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
-				             "p6.version,p3.version,p2.version,p5.version " .
-				     "from   gene as p6," .
-				             "contig as p4, " .
-				             "transcript as p3, " .
-				             "exon_transcript as p1, " .
-				             "exon as p2," .
-				             "translation as p5 " . 
-				     "where  p6.id    = '$geneid' " .
-				     "and    p3.gene  = '$geneid' " .
-				     "and    p4.clone = '$id' " .
-				     "and    p2.contig = p4.internal_id " .
-				     "and    p1.exon  = p2.id " .
-				     "and    p3.id    = p1.transcript " .
-				     "and    p5.id    = p3.translation " .
-				     "order by p3.gene,p3.id,p1.rank";
-   
+       my $query = q{
+         SELECT con.id
+              , tscript.id
+              , e_t.exon, e_t.rank
+              , exon.seq_start, exon.seq_end
+              , UNIX_TIMESTAMP(exon.created)
+              , UNIX_TIMESTAMP(exon.modified)
+              , exon.strand, exon.phase
+              , transl.seq_start, transl.start_exon
+              , transl.seq_end, transl.end_exon
+              , transl.id
+              , gene.version
+              , tscript.version
+              , exon.version
+              , transl.version
+            FROM gene
+              , contig con
+              , transcript tscript
+              , exon_transcript e_t
+              , exon
+              , translation transl
+            WHERE con.internal_id = exon.contig
+              AND exon.id = e_t.exon
+              AND e_t.transcript = tscript.id
+              AND tscript.translation = transl.id
+              AND tscript.gene = gene.id
+              AND con.clone = ?
+              AND gene.id = ?
+            ORDER BY tscript.gene
+              , tscript.id
+              , e_t.rank
+         };
+            
        my $sth = $self->_db_obj->prepare($query);
-       $sth->execute();
+       $sth->execute($id, $geneid);
        my $current_gene_id       = '';
        my $current_transcript_id = '';
 
        my ($gene,$trans);
 
        while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	   my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exoncreated,$exonmodified,$strand,$phase,$trans_start,$trans_exon_start,$trans_end,$trans_exon_end,$translationid,$geneversion,$transcriptversion,$exonversion,$translationversion) = @{$arr};
+           my ($contigid,
+               $transcriptid,
+               $exonid, $rank,
+               $start, $end,
+               $exoncreated,
+               $exonmodified,
+               $strand, $phase,
+               $trans_start, $trans_exon_start,
+               $trans_end, $trans_exon_end,
+               $translationid,
+               $geneversion,
+               $transcriptversion,
+               $exonversion,
+               $translationversion) = @{$arr};
 
-	   print STDERR "Got exon $exonid\n";
-	   
-	   if( ! defined $phase ) {
+           print STDERR "Got exon $exonid\n";
+
+           if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
-	   }
+           }
 
-	   if( $geneid ne $current_gene_id ) {
+           if( $geneid ne $current_gene_id ) {
 
 	       if( $transcriptid eq $current_transcript_id ) {
-		   $self->throw("Bad internal error. Switching genes without switching transcripts");
+	           $self->throw("Bad internal error. Switching genes without switching transcripts");
 	       } 
 
 	       $gene = Bio::EnsEMBL::Gene->new();
 	       $gene->id($geneid);
-	       
+
 	    #   $sth = $self->_db_obj->prepare("select version from gene where id='".$gene->id."'");
 	    #   $sth->execute();
 	    #   my $rowhash = $sth->fetchrow_hashref();
-	    
+
 	       $gene->version($geneversion);
 	       $gene->add_cloneid_neighbourhood($id);
 
 	       $current_gene_id = $geneid;
 	       push(@out,$gene);
 	       #print STDERR "Made new gene\n";
-	   }
+           }
 
-	   if( $transcriptid ne $current_transcript_id ) {
+           if( $transcriptid ne $current_transcript_id ) {
 	       $trans = Bio::EnsEMBL::Transcript->new();
 	       $trans->id($transcriptid);
 	       $trans->version($transcriptversion);
@@ -316,55 +362,55 @@ sub get_all_Genes {
 	       $translation->version      ($translationversion);
 	       $trans->translation        ($translation);
 	       $gene ->add_Transcript     ($trans);
-	   }
+           }
 
-	   my $exon = Bio::EnsEMBL::Exon->new();
-	   #print(STDERR "Creating exon in clone  = $contigid\n");
-	   $exon->clone_id ($id);
-	   $exon->contig_id($contigid);
-	   $exon->id       ($exonid);
-	   $exon->created  ($exoncreated);
-	   $exon->modified ($exonmodified);
-	   $exon->start    ($start);
-	   $exon->end      ($end);
-	   $exon->strand   ($strand);
-	   $exon->phase    ($phase);
-	   $exon->version  ($exonversion);
-	   #
-	   # Attach the sequence, cached if necessary...
-	   #
-	   
-	   if ($supporting && $supporting eq 'evidence') {
+           my $exon = Bio::EnsEMBL::Exon->new();
+           #print(STDERR "Creating exon in clone  = $contigid\n");
+           $exon->clone_id ($id);
+           $exon->contig_id($contigid);
+           $exon->id       ($exonid);
+           $exon->created  ($exoncreated);
+           $exon->modified ($exonmodified);
+           $exon->start    ($start);
+           $exon->end      ($end);
+           $exon->strand   ($strand);
+           $exon->phase    ($phase);
+           $exon->version  ($exonversion);
+           #
+           # Attach the sequence, cached if necessary...
+           #
+
+           if ($supporting && $supporting eq 'evidence') {
 	       push @sup_exons, $exon;
-	   }
+           }
 
-	   my $seq;
+           my $seq;
 
-	   if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
+           if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
 	       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
-	   } else {
+           } else {
 
 	       my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
 								      -id    => $exon->contig_id);
 	       $contig->fetch();
-	       
+
 	       $seq = $contig->primary_seq();
 	       $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
-	   }
-	   
-	   $exon ->attach_seq(new Bio::Seq(-id  => $seq->id,
-					   -seq => $seq->seq));
-	   $trans->add_Exon($exon);
-       }
-   }
+           }
 
-   if ($supporting && $supporting eq 'evidence' && @sup_exons != 0) {
+           $exon ->attach_seq(new Bio::Seq(-id  => $seq->id,
+				           -seq => $seq->seq));
+           $trans->add_Exon($exon);
+       }
+    }
+
+    if ($supporting && $supporting eq 'evidence' && @sup_exons != 0) {
 
        my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
        $gene_obj->get_supporting_evidence(@sup_exons);
-   } 
+    } 
 
-   return @out;
+    return @out;
 
 }
 
