@@ -159,47 +159,6 @@ sub load_all{
     }
 }
 
-#=head2 check_if_already_there
-#
-#  Arg [DBNAME] : string
-#                 The name of the database to check for.
-#  Arg [HOST] : (optional) string
-#               The domain name of the database host to check for
-#  Arg [PORT] : int
-#               The port to check for when connecting to the database
-#  Arg [DRIVER] : (optional) string
-#                 The type of database driver to check for
-#
-#  Description: Check to see if the database is already stored.
-#  Returntype : 0 if not found else the species and group.
-#  Exceptions : none
-#  
-#
-#=cut
-
-  
-#sub check_if_already_there{
-#  my ($class) = shift;
-#
-#  my ($dbname,$host,$driver,$port,$species, $group ) =
-#    rearrange([qw(DBNAME HOST DRIVER PORT SPECIES GROUP)], @_);
-#
-#  if(defined($registry_register{'_DBA'})){
-#    foreach my $db (@{$registry_register{'_DBA'}}){
-#      my $dbc= $db->db();
-#      if($dbc->host() eq $host and $dbc->dbname() eq $dbname
-#	 and $dbc->driver() eq $driver and $dbc->port() eq $port){
-#	if(defined($species) and defined($group) and 
-#	   $db->species eq $species and $db->group eq $group){
-#	  return ($db->species(),$db->group());
-#	}
-#      }
-#    }
-#  }
-#  return 0;
-#}
-
-
 #
 # add ons.
 #
@@ -382,16 +341,15 @@ sub get_all_DBAdaptors{
 =cut
 
 sub add_DNAAdaptor{
-  my ($class, $species, $group, $dnadb_group) = @_;
+  my ($class, $species, $group, $dnadb_species, $dnadb_group) = @_;
 
   $species = $class->get_alias($species);
   if($dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
-#    print STDERR "AHHH ".caller()."\n";
-    $registry_register{$species}{$group}{'_DNA'} = $dnadb_group->group();
+    deprecated("");
   }
   else{
-#    print STDERR "AHHH MEN ".caller()."\n";
     $registry_register{$species}{$group}{'_DNA'} = $dnadb_group;
+    $registry_register{$species}{$group}{'_DNA2'} = $dnadb_species;
   }
 }
 
@@ -410,8 +368,9 @@ sub get_DNAAdaptor{
 
   $species = $class->get_alias($species);
   my $new_group = $registry_register{$species}{$group}{'_DNA'};
+  my $new_species = $registry_register{$species}{$group}{'_DNA2'};
   if( defined $new_group ) {
-    return  $class->get_DBAdaptor($species,$new_group);
+    return  $class->get_DBAdaptor($new_species,$new_group);
   } else {
     return undef;
   }
@@ -525,25 +484,12 @@ sub get_adaptor{
   my $dnadb_group =  $registry_register{$species}{$group}{_DNA};
 
   if( defined($dnadb_group) && defined($dnadb_adaptors{$type}) ) {
-#      print STDERR "new### $group  $dnadb_group \n";
       $group = $dnadb_group;
   }
-#  else{
-#    if (defined($dnadb_adaptors{$type}) ) {
-#      print STDERR "old### $species $group $type no dnadb \n";    
-#    }
-#  }
-#throw in a check to see if we should get the dnadb one and not the normal
-#  if(defined($registry_register{$species}{$type}{'DNADB'}) && $class->get_DNAAdaptor($species,$group)){
-#    my $dna = $class->get_DNAAdaptor($species,$group);
-#    $species = $dna->species();
-#    $group = $dna->group();
-#  }
 
   my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
     return undef;
-#    throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
   }
   if(!ref($ret)){ # not instantiated yet
     my $dba = $registry_register{$species}{$group}{'_DB'};

@@ -52,6 +52,15 @@ use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump)
 
 =cut
 
+#
+# 1) core. no need to add dnadb
+# 2) not core add dnadb
+# 3) 
+#
+
+
+
+
 sub gen_load{
   my ($dba) = @_;
   my $config_sub;
@@ -102,6 +111,9 @@ sub gen_load{
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_haplotype;    
   }
   elsif($dba->isa('Bio::EnsEMBL::Variation::DBSQL::DBAdaptor')){
+    if(!defined($dba->group())){
+      $dba->group('variation');
+    }
     $config_sub =  \&Bio::EnsEMBL::Utils::ConfigRegistry::load_variation;
   }
   elsif($dba->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
@@ -203,7 +215,7 @@ sub load_and_attach_dnadb_to_core{
 
   load_adaptors($dba);
   
-  $reg->add_DNAAdaptor($dba->species,$dba->group,"core"); 
+  $reg->add_DNAAdaptor($dba->species,$dba->group,$dba->species,"core"); 
 }
 
 # those that do not need to attach to core:-#
@@ -258,62 +270,6 @@ sub load_vega{
 
 
 
-#special cases;-
-
-
-
-
-sub load_blast{
-    my ($dba) = @_;
-}
-
-
-sub add_blast_link{
-  my ($class, $species, $group) = @_;
-  my $dba =undef;
-  my $blast = undef;
-  print STDERR " add_blast_link called\n";
-
-  if($dba = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group)){
-  }
-  else{
-    throw("Cannot find $species $group in the registry\n");
-  }
-
-  if($blast = Bio::EnsEMBL::Registry->get_adaptor("NONE", "blast", "Blast")){
-    $dba->add_db_adaptor("Blast",$blast);
-  }
-  else{
-    throw("Sorry no Blast database has been set up to link to.\n");
-  }
-}
-
-
-
-sub load_go{
-
- my ($class, $dba) = @_;
-
- # shouldnt go into the registry ... sorry
-}
-
-
-
-
-
-#sub dnadb_add{
-#  my $class = shift;
-#  my ($dnaspecies, $dnagroup, $species, $group) = @_;
-#
-#  print STDERR "dnadb_add CALLED\n";
-#
-#  my $dnadb =  Bio::EnsEMBL::Registry->get_DBAdaptor($dnaspecies, $dnagroup);
-#  my $featdb = Bio::EnsEMBL::Registry->get_DBAdaptor($species, $group);
-#
-#  $featdb->dnadb($dnadb);
-#}
-#
-#
 sub add_alias{
   my ($class, @args) = @_;
   my ($species, $aliases) = rearrange([qw(SPECIES ALIAS)],@args);
@@ -329,46 +285,11 @@ sub add_alias{
 
 }
 #
-#
-#sub get_alias{
-#  my ($class, $key) = @_;
-#  return Bio::EnsEMBL::Registry->get_alias($key);
-#}
-#
-#
-#
-#sub attach_database{
-#  my ($class, $species, $core, $name1) = @_;
-#
-#
-#  print STDERR " attach_databse called\n";
-#
-#  my $first =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$name1);
-#  my $coredb = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$core);
-#
-#  Bio::EnsEMBL::Registry->add_db($coredb,$name1, $first);
-#
-#}
-#
-#sub attach_dna{
-#  my ($class, $species, $main, $attach) = @_; 
-#  print STDERR " attach_dna called\n";
-#
-#  my $no_seq =  Bio::EnsEMBL::Registry->get_DBAdaptor($species,$main);
-#  my $seq = Bio::EnsEMBL::Registry->get_DBAdaptor($species,$attach);
-#
-#  Bio::EnsEMBL::Registry->add_DNAAdaptor($species,$no_seq->group,$attach);
-#}
-
-
-
-#
 # overwrite/load new types. Done this way to enable no changes to CVS for
 # external users. External users should add there own "GROUPS" in the file
 # User_defined_load.
 #
 
 eval{ require Bio::EnsEMBL::Utils::User_defined_load };
-#if ($@){ print STDERR  "No user defined loads\n"; }
 
 1;
