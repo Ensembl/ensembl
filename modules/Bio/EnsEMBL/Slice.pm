@@ -1025,9 +1025,7 @@ sub get_all_PredictionTranscripts {
      warning('Cannot get PredictionTranscripts without attached adaptor');
      return [];
    }
-
    my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
-
    return $pta->fetch_all_by_Slice($self, $logic_name, $load_exons);
 }
 
@@ -1259,6 +1257,28 @@ sub get_all_SNPs {
   }
 }
 
+=head2 get_all_genotyped_SNPs
+  Args      : none
+  Function  : returns all genotyped SNPs on this slice. This function will 
+              only work correctly if the SNP database or the lite database has
+              been attached to the core database.  This can been done through
+              a call to DBAdaptor::add_db_adaptor.
+  Returntype: listref of Bio::EnsEMBL::External::Variation
+  Exceptions: none
+  Caller    : contigview, snpview, ldview
+
+=cut
+
+sub get_all_genotyped_SNPs {
+  my $self = shift;
+
+  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
+  if( $snpa ) {
+    return $snpa->fetch_genotyped_by_Slice($self);
+  } else {
+    return [];
+  }
+}
 
 sub get_all_SNPs_transcripts {
   my $self = shift;
@@ -1275,6 +1295,7 @@ sub get_all_SNPs_transcripts {
     return [];
   }
 }
+
 
 
 =head2 get_all_Genes
