@@ -303,7 +303,7 @@ sub fetch_by_feature_and_dbID{
 						   -start => $start,
 						   -end => $end,
 						   -score => $score, 
-						   -analysis => $analysisid,
+						   -analysis => $analysis,
 						   -percent_id => $perc_id,
 						   -p_value => $evalue);
 	    
