@@ -742,9 +742,11 @@ sub store {
    my $xref_id = 0;
 
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
-                                               transcript_count, display_xref_id) 
-                              VALUES('$type', $analysisId, $trans_count, $xref_id)" );
-   $sth2->execute();
+                                               transcript_count, 
+                                               display_xref_id) 
+                              VALUES(?,?,?,?)
+                                     $trans_count, $xref_id)" );
+   $sth2->execute("$type", $analysisId, $trans_count, $xref_id);
 
    my $gene_dbID = $sth2->{'mysql_insertid'};
 
@@ -772,8 +774,8 @@ sub store {
    #
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-   foreach my $dbl ( @{$gene->get_all_DBLinks} ) {
-     $dbEntryAdaptor->store( $dbl, $gene_dbID, "Gene" );
+   foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
+     $dbEntryAdaptor->store( $dbe, $gene_dbID, "Gene" );
    }
 
    #
@@ -788,9 +790,7 @@ sub store {
      }
    }
        
-
    # write exons transcripts and exon_transcript table
-
    my $trans = $gene->get_all_Transcripts;
 
    #force lazy loading of translations before new exon dbIDs are set

@@ -134,6 +134,19 @@ sub fetch_all_by_DBEntry {
 }
 
 
+
+=head2 store
+
+  Arg [1]    : Bio::EnsEMBL::Translation $translation
+               The translation object to be stored in the database 
+  Example    : $transl_id = $translation_adaptor->store($translation);
+  Description: Stores a translation object in the database
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub store {
   my ( $self, $translation )  = @_;
 
@@ -161,9 +174,11 @@ sub store {
   my $transl_dbID = $sth->{'mysql_insertid'};
 
 
+  #store object xref mappings to translations
+
   my $dbEntryAdaptor = $self->db()->get_DBEntryAdaptor();
   #store each of the xrefs for this translation
-  foreach my $dbl ( @{$translation->get_all_DBLinks} ) {
+  foreach my $dbl ( @{$translation->get_all_DBEntries} ) {
      $dbEntryAdaptor->store( $dbl, $transl_dbID, "Translation" );
   }
   

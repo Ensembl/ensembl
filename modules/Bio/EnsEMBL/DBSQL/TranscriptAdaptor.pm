@@ -220,13 +220,17 @@ sub fetch_all_by_exon_stable_id {
 
 =head2 store
 
- Title   : store
- Usage   : $transcriptAdaptor->store( $transcript )
- Function: writes a particular transcript *but not the exons* into
-           the database
- Example :
- Returns : 
- Args    : needs a gene ...
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+               The transcript to be written to the database
+  Arg [2]    : int $gene_dbID
+               The identifier of the gene that this transcript is associated 
+               with
+  Example    : $transID = $transcriptAdaptor->store($transcript, $gene->dbID);
+  Description: Stores a transcript in the database and returns the new
+               internal identifier for the stored transcript.
+  Returntype : int 
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -256,15 +260,16 @@ sub store {
    }
 
 
-   # assuming that the store is used during the Genebuil process, set
-   # the display_xref_id to 0.  This ought to get re-set during the protein
-   # pipeline run.  This probably update to the gene table has yet to be
-   # implemented.
+   # first store the transcript w/o a display xref
+   # the display xref needs to be set after xrefs are stored which needs to 
+   # happen after transcript is stored...
+
    my $xref_id = 0;
 
    # ok - now load this line in
    my $tst = $self->prepare("
-        insert into transcript ( gene_id, translation_id, exon_count, display_xref_id )
+        insert into transcript ( gene_id, translation_id, 
+                                 exon_count, display_xref_id )
         values ( ?, ?, ?, 0)
         ");
 
@@ -276,12 +281,11 @@ sub store {
 
    my $transc_dbID = $tst->{'mysql_insertid'};
 
-   #print STDERR "Going to look at gene links\n";
+   #store the xrefs/object xref mapping
    my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
 
-   foreach my $dbl ( @{$transcript->get_all_DBLinks} ) {
-     $dbEntryAdaptor->store( $dbl, $transc_dbID, "Transcript" );
-
+   foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
+     $dbEntryAdaptor->store( $dbe, $transc_dbID, "Transcript" );
    }
 
    #
@@ -289,16 +293,17 @@ sub store {
    #
    if(my $dxref = $transcript->display_xref) {
      if(my $dxref_id = $dbEntryAdaptor->exists($dxref)) {
-       my $sth = $self->prepare( "update transcript set display_xref_id = ".
-		   $dxref_id . " where transcript_id = ".$transc_dbID);
-       $sth->execute();
+       my $sth = $self->prepare( "update transcript set display_xref_id = ?".
+                                 " where transcript_id = ?");
+       $sth->execute($dxref_id, $transc_dbID);
        $dxref->dbID($dxref_id);
        $dxref->adaptor($dbEntryAdaptor);
      }
    }
 
-
-   my $etst = $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank) values (?,?,?)");
+   my $etst = 
+     $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank)"
+                    ." values (?,?,?)");
    my $rank = 1;
    foreach my $exon ( @{$transcript->get_all_Exons} ) {
      $etst->execute($exon->dbID,$transc_dbID,$rank);
@@ -307,17 +312,15 @@ sub store {
 
    if (defined($transcript->stable_id)) {
      if (!defined($transcript->version)) {
-       $self->throw("Trying to store incomplete stable id information for transcript");
+       $self->throw("Trying to store incomplete stable id information for " ..
+                    "transcript");
      }
 
-     my $statement = "INSERT INTO transcript_stable_id(transcript_id," .
-                                   "stable_id,version)".
-                      " VALUES(" . $transc_dbID . "," .
-                               "'" . $transcript->stable_id . "'," .
-                               $transcript->version . 
-                               ")";
+     my $statement = 
+       "INSERT INTO transcript_stable_id(transcript_id,stable_id,version)" .
+         " VALUES(?, ?, ?)";
      my $sth = $self->prepare($statement);
-     $sth->execute();
+     $sth->execute($transc_dbID, $transcript->stable_id, $transcript->version);
    }
 
    $transcript->dbID( $transc_dbID );
