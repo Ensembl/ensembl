@@ -25,9 +25,9 @@ my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my $file       = $conf{'statistic_file'};
-my $t_idt      = $conf{'target_idt'};
-my $q_idt      = $conf{'query_idt'};
-
+my $t_idt      = $conf{'min_ensembl_idt'};
+my $q_idt      = $conf{'min_known_idt'};
+#print STDERR "have query identity ".$q_idt."\n";
 my $unique = undef;
 my $refid  = undef;
 
@@ -35,7 +35,7 @@ my $refid  = undef;
 my %dbid2name;
 
 #open (STDOUT,'>$file') or die "couldn't open ".$file;
-print STDERR "have opened ".$file."\n";
+#print STDERR "have opened ".$file."\n";
 #Get the DB object
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
@@ -106,5 +106,5 @@ while ($q_idt < 100) {
 	$q_idt = 100;
     }
 }
-
+$sth->finish;
 #close(OUT);
