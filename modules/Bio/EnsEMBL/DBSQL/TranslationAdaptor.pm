@@ -93,7 +93,7 @@ sub fetch_by_Transcript {
   }
 
   unless($start_exon && $end_exon) {
-     $self->throw("Could not find start or end exon in transcript\n");
+     throw("Could not find start or end exon in transcript\n");
   }
 
   my $translation = Bio::EnsEMBL::Translation->new
@@ -161,7 +161,7 @@ sub store {
 
   unless( defined $translation->start_Exon->dbID && 
 	  defined $translation->end_Exon->dbID ) {
-    $self->throw("Attempting to write a translation where the dbIDs of the " .
+    throw("Attempting to write a translation where the dbIDs of the " .
 		 "start and exons are not set. This is most likely to be " .
 		 "because you assigned the exons for translation start_exon " .
 		 "and translation end_exon to be different in memory " .
@@ -196,7 +196,7 @@ sub store {
   
   if (defined($translation->stable_id)) {
     if (!defined($translation->version)) {
-      $self->throw("Trying to store incomplete stable id information for translation");
+     throw("Trying to store incomplete stable id information for translation");
     }
     
     my $statement = "INSERT INTO translation_stable_id(translation_id," .
@@ -235,7 +235,7 @@ sub get_stable_entry_info {
 
   unless(defined $translation && ref $translation && 
 	 $translation->isa('Bio::EnsEMBL::Translation') ) {
-    $self->throw("Needs a Translation object, not a [$translation]");
+    throw("Needs a Translation object, not a [$translation]");
   }
 
   my $sth = $self->prepare("SELECT stable_id, version 
@@ -318,7 +318,7 @@ sub fetch_by_dbID {
    deprecate( "This call shouldnt be necessary" );
 
    if( !defined $transcript ) {
-     $self->throw("Translations make no sense outside of their " .
+     throw("Translations make no sense outside of their " .
 		  "parent Transcript objects. You must retrieve " .
 		  "with Transcript parent");
    }
@@ -353,7 +353,7 @@ sub fetch_by_dbID {
      }
    }
    unless($start_exon && $end_exon) {
-     $self->throw("Could not find start or end exon in transcript\n");
+     throw("Could not find start or end exon in transcript\n");
    }
 
    $out->start_Exon($start_exon);
