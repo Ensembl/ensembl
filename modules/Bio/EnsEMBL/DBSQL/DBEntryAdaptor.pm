@@ -15,21 +15,30 @@ MySQL Database queries to load and store external object references.
 =head1 SYNOPSIS
 
 $db_entry_adaptor = $db_adaptor->get_DBEntryAdaptor();
-$dbEntry = $db_entry_adaptor->fetch_by_dbID($id);
+$db_entry = $db_entry_adaptor->fetch_by_dbID($id);
+
+my $gene = $db_adaptor->get_GeneAdaptor->fetch_by_stable_id('ENSG00000101367');
+@db_entries = @{$db_entry_adaptor->fetch_all_by_Gene($gene)};
+@gene_ids = $db_entry_adaptor->list_gene_ids_by_extids('BAB15482');
+
 
 =head1 CONTACT
 
 Post questions to the EnsEMBL developer list <ensembl-dev@ebi.ac.uk>
+
+=head1 METHODS
 
 =cut
 
 package Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
+
 use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::IdentityXref;
 use Bio::EnsEMBL::GoXref;
+
+use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
 use vars qw(@ISA);
 use strict;
@@ -95,14 +104,21 @@ sub fetch_by_dbID {
 
 =head2 store
 
-  Arg [1]    : ?? $exObj
-  Arg [2]    : ?? $ensObject
-  Arg [3]    : ?? $ensType
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::DBEntry $exObj
+               The DBEntry (xref) to be stored
+  Arg [2]    : Bio::EnsEMBL::Transcript, Bio::EnsEMBL::Gene or 
+               Bio::EnsEMBL::Translation $ensObject
+               An EnsEMBL object to associate with this external database entry
+  Arg [3]    : string $ensType ('Transcript', 'Translation', 'Gene');
+               The type of EnsEMBL object that this external database entry is
+               being associated with.
+  Example    : $dbea->store($db_entry, $transcript, 'Transcript');
+  Description: Stores a reference to an external database (if it is not stored
+               already) and associates an EnsEMBL object of a specified type
+               with the external identifier.
+  Returntype : int  - the identifier of the newly created external refernce
+  Exceptions : none
+  Caller     : scripts which load Xrefs and ObjectXrefs, etc. into EnsEMBL.
 
 =cut
 
@@ -125,7 +141,7 @@ sub store {
   my ($dbRef) =  $sth->fetchrow_array();
 
   if(!$dbRef) {
-    $self->throw("external_db [" . $exObj->dbname . "] release [" .
+    throw("external_db [" . $exObj->dbname . "] release [" .
 		 $exObj->release . "] does not exist");
   }
 
@@ -253,7 +269,7 @@ sub exists {
   my ($self, $dbe) = @_ ;
 
   unless($dbe && ref $dbe && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
+    throw("arg must be a Bio::EnsEMBL::DBEntry not [$dbe]");
   }
 
   my $sth = $self->prepare('SELECT x.xref_id 
@@ -380,10 +396,10 @@ sub _fetch_by_object_type {
   my @out;
 
   if (!defined($ensObj)) {
-    $self->throw("Can't fetch_by_EnsObject_type without an object");
+    throw("Can't fetch_by_EnsObject_type without an object");
   }
   if (!defined($ensType)) {
-    $self->throw("Can't fetch_by_EnsObject_type without a type");
+    throw("Can't fetch_by_EnsObject_type without a type");
   }
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
@@ -469,10 +485,11 @@ sub _fetch_by_object_type {
 =head2 list_gene_ids_by_extids
 
   Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list of geneid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
+  Example    : @gene_ids = $dbea->list_gene_ids_by_extids('ARSE');
+  Description: Retrieve a list of geneid by an external identifier that is 
+               linked to  any of the genes transcripts, translations or the 
+               gene itself 
+  Returntype : list of ints
   Exceptions : none
   Caller     : unknown
 
@@ -488,32 +505,16 @@ sub list_gene_ids_by_extids{
    return keys %T;
 }
 
-=head2 geneids_by_extids
 
-  Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list of geneid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-			   (please not that this call is deprecated)
-  Returntype : listref of strings
-  Exceptions : none
-  Caller     : unknown
-
-=cut
-
-sub geneids_by_extids{
-   my ($self,$name) = @_;
-   warn ("This method is deprecated please use 'list_gene_ids_by_extids");
-   return $self->list_gene_ids_by_extids( $name );
-}
 
 =head2 list_transcript_ids_by_extids
 
   Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list transcriptid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
+  Example    : @tr_ids = $dbea->list_gene_ids_by_extids('BCRA2');
+  Description: Retrieve a list transcript ids by an external identifier that 
+               is linked to any of the genes transcripts, translations or the 
+               gene itself 
+  Returntype : list of ints
   Exceptions : none
   Caller     : unknown
 
@@ -530,48 +531,10 @@ sub list_transcript_ids_by_extids{
 }
 
 
-=head2 transcriptids_by_extids
-
-  Arg [1]    : string $external_id
-  Example    : none
-  Description: Retrieve a list transcriptid by an external identifier that is linked to 
-               any of the genes transcripts, translations or the gene itself 
-  Returntype : listref of strings
-  Exceptions : none
-  Caller     : unknown
-
-=cut
-
-sub transcriptids_by_extids{
-   my ($self,$name) = @_;
-   warn ("This method is deprecated please use 'list_transcript_ids_by_extids");
-   return $self->list_transcript_ids_by_extids( $name );
-}
-
-
-=head2 translationids_by_extids
-
-  Arg [1]    :  string $name 
-  Example    :  none
-  Description:  Gets a list of translation IDs by external display IDs 
-  				(please note that this call is deprecated)
-  Returntype :  list of Ints
-  Exceptions :  none
-  Caller     :  unknown
-
-=cut
-
-sub translationids_by_extids{
-  my ($self,$name) = @_;
-  warn ("This method is deprecated please use 'list_translation_ids_by_extids");
-  return $self->list_translation_ids_by_extids( $name );
-}
-
-
 =head2 list_translation_ids_by_extids
 
   Arg [1]    :  string $name 
-  Example    :  none
+  Example    :  @tr_ids = $dbea->list_gene_ids_by_extids('GO:0004835');
   Description:  Gets a list of translation IDs by external display IDs
   Returntype :  list of Ints
   Exceptions :  none
@@ -652,6 +615,47 @@ sub _type_by_external_id{
     }
   }
   return keys %hash;
+}
+
+
+
+
+=head2 geneids_by_extids
+
+  Description: DEPRECATED use list_gene_ids_by_extids instead
+
+=cut
+
+sub geneids_by_extids{
+   my ($self,$name) = @_;
+   deprecate(" use 'list_gene_ids_by_extids instead");
+   return $self->list_gene_ids_by_extids( $name );
+}
+
+
+=head2 translationids_by_extids
+
+  Description:  DEPRECATED use list_translation_ids_by_extids instead
+
+=cut
+
+sub translationids_by_extids{
+  my ($self,$name) = @_;
+  deprecate("Use list_translation_ids_by_extids instead");
+  return $self->list_translation_ids_by_extids( $name );
+}
+
+
+=head2 transcriptids_by_extids
+
+  Description: DEPRECATED use transcriptids_by_extids instead
+
+=cut
+
+sub transcriptids_by_extids{
+   my ($self,$name) = @_;
+   deprecate("Use list_transcript_ids_by_extids instead.");
+   return $self->list_transcript_ids_by_extids( $name );
 }
 
 
