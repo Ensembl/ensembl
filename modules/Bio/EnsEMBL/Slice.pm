@@ -666,52 +666,42 @@ sub project {
   my @projection;
   my $current_start = 1;
 
-  #decompose this slice into its symlinked components.
-  #this allows us to handle haplotypes and PARs
-  my $normal_slice_proj =
-    $slice_adaptor->fetch_normalized_slice_projection($self);
-  foreach my $segment (@$normal_slice_proj) {
-    my $normal_slice = $segment->[2];
-
-    $slice_cs = $normal_slice->coord_system();
-
-    my $asma = $db->get_AssemblyMapperAdaptor();
-    my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
     # perform the mapping between this slice and the requested system
-    my @coords = $asm_mapper->map($normal_slice->seq_region_name(),
-				  $normal_slice->start(),
-				  $normal_slice->end(),
-				  $normal_slice->strand(),
-				  $slice_cs);
+  my @coords = $asm_mapper->map($self->seq_region_name(),
+                                $self->start(),
+                                $self->end(),
+                                $self->strand(),
+                                $slice_cs);
 
-    #construct a projection from the mapping results and return it
+  #construct a projection from the mapping results and return it
 
-    foreach my $coord (@coords) {
-      my $coord_start  = $coord->start();
-      my $coord_end    = $coord->end();
-      my $length       = $coord_end - $coord_start + 1;
+  foreach my $coord (@coords) {
+    my $coord_start  = $coord->start();
+    my $coord_end    = $coord->end();
+    my $length       = $coord_end - $coord_start + 1;
 
-      #skip gaps
-      if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-        my $coord_cs     = $coord->coord_system();
+    #skip gaps
+    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      my $coord_cs     = $coord->coord_system();
 
-        #create slices for the mapped-to coord system
-        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
-                                                    $coord->id(),
-                                                    $coord_start,
-                                                    $coord_end,
-                                                    $coord->strand(),
-                                                    $coord_cs->version());
+      #create slices for the mapped-to coord system
+      my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+                                                  $coord->id(),
+                                                  $coord_start,
+                                                  $coord_end,
+                                                  $coord->strand(),
+                                                  $coord_cs->version());
 
-        my $current_end = $current_start + $length - 1;
+      my $current_end = $current_start + $length - 1;
 	
-        push @projection, bless([$current_start, $current_end, $slice],
-                                "Bio::EnsEMBL::ProjectionSegment");
-      }
-
-      $current_start += $length;
+      push @projection, bless([$current_start, $current_end, $slice],
+                              "Bio::EnsEMBL::ProjectionSegment");
     }
+
+    $current_start += $length;
   }
 
   return \@projection;
