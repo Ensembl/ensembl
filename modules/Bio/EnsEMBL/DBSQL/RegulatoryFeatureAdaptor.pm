@@ -123,7 +123,7 @@ sub _columns {
 # _default_where_clause
 #  Arg [1]    : none
 #  Example    : none
-#  Description: Overrides superclass method to provide an additional 
+#  Description: Overrides superclass method to provide an additional
 #               table joining constraint before the SQL query is performed.
 #  Returntype : string
 #  Exceptions : none
@@ -383,7 +383,7 @@ sub store {
 sub list_dbIDs {
    my ($self) = @_;
 
-   return $self->_list_dbIDs("repeat_feature");
+   return $self->_list_dbIDs("regulatory_feature");
 }
 
 =head2 fetch_all_by_ensembl_object_type
@@ -518,8 +518,5 @@ sub fetch_all_by_gene {
 }
 
 1;
-
-
-
 
 
