@@ -57,7 +57,7 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
-use Bio::EnsEMBL::PepDnaAlignFeature;
+use Bio::EnsEMBL::DnaPepAlignFeature;
 use Bio::EnsEMBL::SeqFeature;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
@@ -179,7 +179,7 @@ sub _objs_from_sth {
       
       #use a very fast (hack) constructor - normal object construction is too
       #slow for the number of features we are potentially dealing with
-      push @features, Bio::EnsEMBL::PepDnaAlignFeature->new_fast(
+      push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast(
                 {'_gsf_tag_hash'  =>  {},
 		 '_gsf_sub_array' =>  [],
 		 '_parse_h'       =>  {},
@@ -193,6 +193,7 @@ sub _objs_from_sth {
 		 '_p_value'       =>  $evalue,
                  '_hstart'        =>  $hit_start,
                  '_hend'          =>  $hit_end,
+		 '_hstrand'       =>  1, #strand is always one for pep hits
                  '_hseqname'      =>  $hit_name,
 		 '_gsf_seq'       =>  $slice,
 		 '_cigar_string'  =>  $cigar_line,
@@ -211,7 +212,7 @@ sub _objs_from_sth {
       
       #use a very fast (hack) constructor - normal object construction is too
       #slow for the number of features we are potentially dealing with
-      push @features, Bio::EnsEMBL::PepDnaAlignFeature->new_fast(
+      push @features, Bio::EnsEMBL::DnaPepAlignFeature->new_fast(
                 {'_gsf_tag_hash'  =>  {},
 		 '_gsf_sub_array' =>  [],
 		 '_parse_h'       =>  {},
@@ -225,6 +226,7 @@ sub _objs_from_sth {
 		 '_p_value'       =>  $evalue,
                  '_hstart'        =>  $hit_start,
                  '_hend'          =>  $hit_end,
+		 '_hstrand'       =>  1,  #strand is always 1 for pep hits
                  '_hseqname'      =>  $hit_name,
 		 '_gsf_seq'       =>  $contig,
 		 '_cigar_string'  =>  $cigar_line,
