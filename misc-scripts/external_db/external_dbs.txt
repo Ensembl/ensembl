@@ -42,6 +42,7 @@
 2400	wormbase_gene	1	KNOWN
 2410	wormbase_transcript	1	KNOWN
 2420	wormpep_id	1	KNOWN
+2430	wormbase_pseudogene	1	PSEUDO
 2500	ZFIN	1	KNOWNXREF
 2510	ZFIN_ID	1	KNOWNXREF
 2520	ZFIN_AC	1	KNOWNXREF
