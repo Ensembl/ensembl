@@ -470,7 +470,7 @@ sub transfer {
   bless $feature, ref($self);
 
   my $cur_cs = $current_slice->coord_system();
-  my $dest_cs = $current_slice->coord_system();
+  my $dest_cs = $slice->coord_system();
 
   #if we are not in the same coord system a transformation step is needed first
   if(!$dest_cs->equals($cur_cs)) {
@@ -488,24 +488,30 @@ sub transfer {
   my $cur_slice_start  = $current_slice->start();
   my $cur_slice_strand = $current_slice->strand();
   if($cur_slice_start != 1 || $cur_slice_strand != 1) {
+    my $fstart = $feature->{'start'};
+    my $fend   = $feature->{'end'};
+
     if($cur_slice_strand == 1) {
-      $feature->{'start'} = $feature->{'start'} + $cur_slice_start - 1;
-      $feature->{'end'}   = $feature->{'end'}   + $cur_slice_start - 1;
+      $feature->{'start'} = $fstart + $cur_slice_start - 1;
+      $feature->{'end'}   = $fend   + $cur_slice_start - 1;
     } else {
       my $cur_slice_end = $current_slice->end();
-      $feature->{'start'}  = $cur_slice_end - $feature->{'end'}   + 1;
-      $feature->{'end'}    = $cur_slice_end - $feature->{'start'} + 1;
+      $feature->{'start'}  = $cur_slice_end - $fend   + 1;
+      $feature->{'end'}    = $cur_slice_end - $fstart + 1;
       $feature->{'strand'} *= -1;
     }
   }
 
+  my $fstart = $feature->{'start'};
+  my $fend   = $feature->{'end'};
+
   #convert to destination slice coords
   if($slice->strand == 1) {
-    $feature->{'start'} = $feature->{'start'} - $slice->start() + 1;
-    $feature->{'end'}   = $feature->{'end'}   - $slice->start() + 1;
+    $feature->{'start'} = $fstart - $slice->start() + 1;
+    $feature->{'end'}   = $fend   - $slice->start() + 1;
   } else {
-    $feature->{'start'} = $slice->end() - $feature->{'end'}   + 1;
-    $feature->{'end'}   = $slice->end() - $feature->{'start'} + 1;
+    $feature->{'start'} = $slice->end() - $fend   + 1;
+    $feature->{'end'}   = $slice->end() - $fstart + 1;
     $feature->{'strand'} *= -1;
   }
 
