@@ -49,6 +49,8 @@ use Bio::Root::RootI;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::EMBLLOAD::Contig;
+use Bio::EnsEMBL::DB::CloneI;
+
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::CloneI);
 use Bio::EnsEMBL::Translation;
 

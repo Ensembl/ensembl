@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..4\n"; 
+BEGIN { $| = 1; print "1..6\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -30,13 +30,16 @@ use lib 't';
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
-    
+
+use Bio::EnsEMBL::Mapper;    
 
 # testing the Bio::EnsEMBL::Mapper module
 
-$map = Bio::EnsEMBL::Mapper->new( "virtualcontig", "rawcontig" );
-load_sgp_dump( $map );
+$mapper = Bio::EnsEMBL::Mapper->new( "virtualcontig", "rawcontig" );
+load_sgp_dump( $mapper );
+$mapper->_freeze;
 
+#$mapper->_dump;
 # loading done successfully
 print "ok 2\n";
 
@@ -50,27 +53,35 @@ if( @coordlist == 1 ) {
   print "not ok 3\n";
 }
 
-if( $coordlist[0]->{'start'} == 2 &&
-    $coordlist[0]->{'end' } == 5 &&
-    $coordlist[0]->{'strand' } == -1 ) {
+if( $coordlist[0]->start == 2 &&
+    $coordlist[0]->end == 5 &&
+    $coordlist[0]->strand == -1 ) {
   print "ok 4\n";
 } else {
   print "not ok 4\n";
-  print STDERR %$coordlist[0];
 }
 
 # now a split coord
 
-@coordlist = $map->map_coordinates( 383700, 444000, 1, "chr1", "virtualcontig" );
+@coordlist = $mapper->map_coordinates( 383700, 444000, 1, "chr1", "virtualcontig" );
 
 # should be ( 56072, 56092, -1, 314696 )
 # (about:-) ( 126, 59773, -1, 341 )
 #           ( 5332, 5963, -1, 315843)
 
-if( @coordlist = 3 ) {
+if( scalar(@coordlist) == 3 ) {
   print "ok 5\n";
 } else {
   print "not ok 5\n";
+}
+
+if( $coordlist[0]->start == 31917 &&
+    $coordlist[0]->end == 31937 &&
+    $coordlist[0]->id == 314696 &&
+    $coordlist[0]->strand == -1 ) {
+  print "ok 6\n";
+} else {
+  print "not ok 6\n";
 }
 
 
@@ -79,8 +90,8 @@ if( @coordlist = 3 ) {
 sub load_sgp_dump {
 	my $map = shift;
 
+#chr_name	raw_id	chr_start	chr_end	raw_start	raw_end	raw_ori
 	my @sgp_dump = split ( /\n/, qq {
-chr_name	raw_id	chr_start	chr_end	raw_start	raw_end	raw_ori
 chr1	627012	1	31276	1	31276	1
 chr1	627010	31377	42949	72250	83822	-1
 chr1	2768	42950	180950	251	138251	1
@@ -196,5 +207,6 @@ chr1	625359	1214016	1216330	1	2315	1
 	  
 	}
 }
+
 
 
