@@ -496,6 +496,28 @@ sub top_SeqFeatures {
    return @f;
 }
 
+=head2 get_all_VirtualGenes
+
+ Title   : get_all_VirtualGenes
+ Usage   : foreach my $virtualgene ( $contig->get_all_VirtualGenes ) 
+ Function: Gets all the genes on this contig as VirtualGene objects
+ Example : 
+ Returns : array of Bio::EnsEMBL::VirtualGene objects
+ Args    : none
+
+
+=cut
+
+sub get_all_VirtualGenes {
+    my ($self) = @_;
+
+    foreach my $gene ( $self->get_all_Genes()) {
+	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+	push(@out,$vg);
+    }
+    return @out;
+}
+
 
 =head2 get_all_SeqFeatures
 
