@@ -1188,7 +1188,7 @@ sub translate {
 
   # remove final stop codon from the mrna if it is present
   # produced peptides will not have '*' at end
-  # if terminal stop codon is desired call translatable_seq directly 
+  # if terminal stop codon is desired call translatable_seq directly
   # and produce a translation from it
 
   if( CORE::length( $mrna ) % 3 == 0 ) {
@@ -1200,7 +1200,19 @@ sub translate {
                                -alphabet => 'dna',
                                -id       => $display_id );
 
-  my $translation = $peptide->translate();
+  # Alternative codon tables (such as the mitochondrial codon table) can
+  # be sepcified for a sequence region via the seq_region_attrib table.
+  # A list of codon tables and their codes is at:
+  # http://www.ncbi.nlm.nih.gov/htbin-post/Taxonomy/wprintgc?mode=c
+
+  my $codon_table;
+  if($self->slice()) {
+    ($codon_table) = @{$self->slice()->get_all_Attributes('codon_table')};
+  }
+
+  $codon_table ||= 1; # default vertebrate codon table
+
+  my $translation = $peptide->translate(undef,undef,undef,$codon_table);
 
   if($self->edits_enabled()) {
     $self->translation()->modify_translation( $translation );
