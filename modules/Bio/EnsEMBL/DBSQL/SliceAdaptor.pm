@@ -405,7 +405,7 @@ sub fetch_all {
   Arg [1]    : none
   Example    : @all = @{$slice_adaptor->fetch_all_non_redundant()};
   Description: Retrieves all non-redundant slices, i.e. those which have
-               the attribute XXX set
+               the attribute 'nonredundant' set
   Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : none
   Caller     : general
@@ -415,21 +415,26 @@ sub fetch_all {
 sub fetch_all_non_redundant {
 
   my $self = shift;
-  # XXX attrib name
-  my $sth = $self->prepare('SELECT s.name, s.length, c.name ' .
-			   'FROM seq_region s, coord_system c ' .
-			   'WHERE s.coord_system_id=c.coord_system_id ' .
-			   'AND at.name=\'nonredundant\' ' .
-			   'AND at.attrib_type_id=sra.attrib_type_id ' .
-			   'AND sra.seq_region_id=s.seq_region_id');
+
+  my $sth = $self->prepare("SELECT s.name, s.length, c.coord_system_id " .
+			   "FROM seq_region s, coord_system c, seq_region_attrib sra, attrib_type at " .
+			   "WHERE s.coord_system_id=c.coord_system_id " .
+			   "AND at.code='nonredundant' " .
+			   "AND at.attrib_type_id=sra.attrib_type_id " .
+			   "AND sra.seq_region_id=s.seq_region_id");
 
   $sth->execute();
 
-  my ($name, $length, $cs);
-  $sth->bind_columns(\$name, \$length, \$cs);
+  my ($name, $length, $cs_id);
+  $sth->bind_columns(\$name, \$length, \$cs_id);
+
+  # Slice expects a CoordSystem object
+  my $cs_adaptor = $self->db->get_CoordSystemAdaptor();
+
 
   my @out;
   while($sth->fetch()) {
+    my $cs = $cs_adaptor->fetch_by_dbID($cs_id);
     push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
                                         -END    => $length,
                                         -STRAND => 1,
