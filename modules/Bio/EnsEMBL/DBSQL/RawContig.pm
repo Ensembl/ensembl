@@ -1313,7 +1313,7 @@ sub get_all_PredictionFeatures {
 	   $analysis = $analhash{$analysisid};
        }
        # Oh boyoboy.  Yet another genscan hack to avoid duplicate genscans
-       if (defined($prev) && $start == $prev->start && $end = $prev->end) {
+       if (defined($prev) && $start == $prev->start && $end == $prev->end) {
 	 next;
        }
        #MC.  This has been temporarily changed back to the old way of genscans
