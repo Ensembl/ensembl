@@ -140,11 +140,11 @@ sub to_FTHelper {
 
   my $exon_key;
   if($trans->isa('Bio::EnsEMBL::PredictionTranscript')) {
+      $ft->key('CDS_' . lc($trans->analysis->logic_name));
+      $exon_key = 'exon_' . lc($trans->analysis->logic_name);
+  } else {
       $ft->key('CDS');
       $exon_key = 'exon';
-  } else {
-      $ft->key('CDS_' . $trans->analysis->logic_name);
-      $exon_key = 'exon_' . $trans->analysis->logic_name;
   }
   
   $ft->add_field('translation', $trans->translate()->seq());

@@ -389,7 +389,7 @@ sub top_SeqFeatures {
   #filter out features overlapping slice boundary
   my @out = ();
   my $slice_end   = $self->slice->chr_end;
-  while($f = shift @sfs) {
+  while(my $f = shift @sfs) {
     push(@out, $f) unless($f->start < 1 || $f->end > $slice_end);    
   }
 
