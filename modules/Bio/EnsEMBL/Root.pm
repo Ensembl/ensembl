@@ -1,3 +1,14 @@
+
+=head1 DESCRIPTION
+
+This package provides a bare-bones root class for Ensembl objects to
+inheriet from. In particular it allows us to put some magic in here
+to make sure we can manage 1.0 <-> 0.7 transitions for bioperl
+
+=cut
+
+
+
 package Bio::EnsEMBL::Root;
 
 use Bio::Root::RootI;

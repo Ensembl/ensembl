@@ -1017,13 +1017,6 @@ sub _translate_coherent{
 
        # warn about non DNA passed in. 
 
-       if( $exon->entire_seq()->alphabet ne 'dna' ) {
-	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
-	   $exon->entire_seq()->alphabet('dna');
-       }
-#       print STDERR "Exon phase " . $exon->temporary_id ." " . $exon->phase . "\t" . $exon->start . "\t" . $exon->end . " " .$exon->strand. " ".$exon->entire_seq->id ."\n";
- #      print STDERR "Exon sequence is " . $exon->seq->seq . "\n";
-
        my $seq = $exon->seq();
        my $str = $seq->seq();
        
