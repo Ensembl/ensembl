@@ -57,13 +57,13 @@ CREATE TABLE analysis (
 # Table structure for table 'map_density'
 #
 CREATE TABLE map_density (
-   chromosome_id    int unsigned NOT NULL,
-   chr_start	    int(10) NOT NULL,
-   chr_end	    int(10) NOT NULL,
-   type		    varchar(20) NOT NULL,
-   value	    int(10) NOT NULL,
+   seq_region_id      int unsigned NOT NULL,
+   seq_region_start   int(10) NOT NULL,
+   seq_region_end     int(10) NOT NULL,
+   type		      varchar(20) NOT NULL,
+   value	      int(10) NOT NULL,
     
-   PRIMARY KEY(type,chromosome_id,chr_start) 
+   PRIMARY KEY(type,seq_region_id,seq_region_start) 
 );
 
 
@@ -439,12 +439,12 @@ CREATE TABLE gene_description (
 );
 
 CREATE TABLE karyotype (
-   chromosome_id  int unsigned NOT NULL,
-   chr_start      int(10)     NOT NULL,
-   chr_end        int(10)     NOT NULL,
-   band           varchar(40) NOT NULL,
-   stain          varchar(40) NOT NULL,
-   PRIMARY KEY (chromosome_id,band)
+   seq_region_id    int unsigned NOT NULL,
+   seq_region_start int(10)     NOT NULL,
+   seq_region_end   int(10)     NOT NULL,
+   band             varchar(40) NOT NULL,
+   stain            varchar(40) NOT NULL,
+   PRIMARY KEY (seq_region_id,band)
 );
 
 
@@ -584,13 +584,13 @@ CREATE TABLE marker_feature (
 CREATE TABLE marker_map_location (
     marker_id                int unsigned not null, #foreign key marker:marker_id
     map_id                   int unsigned not null, #foreign key map:map_id
-    chromosome_id            int unsigned not null, #foreign key chromosome:chromosome_id
+    seq_region_id            int unsigned not null, #foreign key 
     marker_synonym_id        int unsigned not null, #foreign key marker_synonym:marker_synonym_id
     position                 varchar(15) not null,
     lod_score                double,
     
     PRIMARY KEY (marker_id, map_id),
-    KEY map_idx( map_id, chromosome_id, position) 
+    KEY map_idx( map_id, seq_region_id, position) 
 );
 
 CREATE TABLE map (
