@@ -69,13 +69,13 @@ sub fetch_by_dbID {
   unless( $self->{'_chr_cache'}->{$id} ) {
     my $sth;
     eval {
-      $sth = $self->prepare( "SELECT * FROM chromosome WHERE chromosome_id = ?" );
+      $sth = $self->prepare( "SELECT chromosome_id, name, length FROM chromosome WHERE chromosome_id = ?" );
       $sth->execute( $id );
     };
     $self->throw("Could not create chromosome from dbID $id\nException: $@\n") if $@;
-    my $h = $sth->fetchrow_hashref();
-    $self->throw("Could determine chromosome name from dbID $id\n") unless $h;
-    $self->_create_object_from_hashref( $h );
+    my $a = $sth->fetchrow_arrayref();
+    $self->throw("Could determine chromosome name from dbID $id\n") unless $a;
+    $self->_create_object_from_arrayref( $a );
   }
 
   return $self->{'_chr_cache'}->{$id};
@@ -105,13 +105,13 @@ sub fetch_by_chr_name{
   unless($self->{'_chr_name_cache'}->{$chr_name}) {
     my $sth;
     eval {
-      $sth = $self->prepare( "SELECT * FROM chromosome WHERE name = ?" );
+      $sth = $self->prepare( "SELECT chromosome_id, name, length  FROM chromosome WHERE name = ?" );
       $sth->execute( $chr_name );
     };
     $self->throw("Could not create chromosome from chr $chr_name\nException: $@\n") if $@;
-    my $h = $sth->fetchrow_hashref();
-    $self->throw("Do not recognise chromosome $chr_name\n") unless $h;
-    $self->_create_object_from_hashref( $h );
+    my $a = $sth->fetchrow_arrayref();
+    $self->throw("Do not recognise chromosome $chr_name\n") unless $a;
+    $self->_create_object_from_arrayref( $a );
   }
   return $self->{'_chr_name_cache'}->{$chr_name};
 }
@@ -132,33 +132,33 @@ sub fetch_all {
   my($self) = @_;
   my @chrs = (); 
 
-  my $sth = $self->prepare( "SELECT * from chromosome");
+  my $sth = $self->prepare( "SELECT chromosome_id, name, length from chromosome");
      $sth->execute();
-  while( my $h = $sth->fetchrow_hashref() ) {
-    push @chrs, $self->_create_object_from_hashref( $h );
+  while( my $a = $sth->fetchrow_arrayref() ) {
+    push @chrs, $self->_create_object_from_arrayref( $a );
   } 
   return \@chrs;
 }
 
-=head2 _create_object_from_hashref
+=head2 _create_object_from_arrayref
 
-  Args       : hash ref containing a row of the chromosome table
-  Example    : $self->_create_object_from_hashref
-  Description: Creates object from hash reference
+  Args       : array ref containing a row of the chromosome table
+  Example    : $self->_create_object_from_arrayref
+  Description: Creates object from array reference
   Returntype : Bio::Chromosome object
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub _create_object_from_hashref {
-  my( $self,$h ) =@_;
+sub _create_object_from_arrayref {
+  my( $self,$a ) =@_;
   my $chr = new Bio::EnsEMBL::Chromosome(
-    -adaptor  => $self,        -dbID   => $h->{'chromosome_id'},
-    -chr_name => $h->{'name'}, -length => $h->{'length'},
+    -adaptor  => $self,   -dbID   => $a->[0],
+    -chr_name => $a->[1], -length => $a->[2]
   );
-  return $self->{'_chr_cache'     }->{$h->{'chromosome_id'}} = 
-         $self->{'_chr_name_cache'}->{$h->{'name'}         } = $chr ;
+  return $self->{'_chr_cache'     }->{$a->[0]} = 
+         $self->{'_chr_name_cache'}->{$a->[1]} = $chr ;
 }
 
 sub store{
