@@ -2559,6 +2559,43 @@ sub _fill_cext_SimilarityFeature_cache{
 
 }
 
+=head2 get_all_coding_Snps
+
+ Title   : get_all_coding_Snps
+ Usage   : $vc->get_all_coding_Snps
+ Function: get all coding SNPs for the given virual contig
+ Example :
+ Returns : 
+ Args    : Nothing
+
+
+=cut
+
+sub get_all_coding_Snps{
+   my ($self) = @;
+   my @snps;
+   
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   
+   my $query = "select e.exon, s.refsnpid, s.snp_chrom_start from ensembl_lite100.gene_exon as e, ensembl_lite100.gene_snp as s where e.gene_chrom_start >= $blob_start and e.gene_chrom_end <= $glob_end and e.chr_name = '$chr_name' and e.gene = s.gene and s.snp_chrom_start>e.exon_chrom_start and s.snp_chrom_start<e.exon_chrom_end";
+
+   my $sth = $self->dbobj->prepare($query);
+   $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       my $ex_id = $rowhash->{'exon'};
+       my $start = $rowhash->{'snp_chrom_start'};
+       my $sn_id = $rowhash->{'refsnpid'};
+       
+       $$sn_id->{pos} = $start;
+       $$sn_id->{exon} = $ex_id;
+       
+       push(@snps,$$ex_id);
+   } 
+
+}
 
 
 
