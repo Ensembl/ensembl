@@ -179,6 +179,48 @@ sub map {
 
 
 
+sub fastmap {
+  throw('Incorrect number of arguments.') if(@_ != 6);
+
+  my ($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $frm_cs) = @_;
+
+  my $mapper  = $self->{'mapper'};
+  my $asm_cs  = $self->{'asm_cs'};
+  my $cmp_cs  = $self->{'cmp_cs'};
+  my $adaptor = $self->{'adaptor'};
+  my $frm;
+
+  #speed critical section:
+  #try to do simple pointer equality comparisons of the coord system objects
+  #first since this is likely to work most of the time and is much faster
+  #than a function call
+
+  if($frm_cs == $cmp_cs || ($frm_cs != $asm_cs && $frm_cs->equals($cmp_cs))) {
+
+    if(!$self->{'cmp_register'}->{$frm_seq_region}) {
+      $adaptor->register_component($self,$frm_seq_region);
+    }
+    $frm = $COMPONENT;
+
+  } elsif($frm_cs == $asm_cs || $frm_cs->equals($asm_cs)) {
+
+    # This can be probably be sped up some by only calling registered
+    # assembled if needed
+    $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
+    $frm = $ASSEMBLED;
+
+  } else {
+
+    throw("Coordinate system " . $frm_cs->name . " " . $frm_cs->version .
+          " is neither the assembled nor the component coordinate system " .
+          " of this AssemblyMapper");
+  }
+
+  return $mapper->fastmap($frm_seq_region, $frm_start, $frm_end,
+                          $frm_strand, $frm);
+}
+
+
 
 =head2 list_seq_regions
 
