@@ -250,6 +250,7 @@ sub fetch_by_chr_band {
 
     my $type = $self->db->assembly_type();
 
+    warn( "XX>" ,$chr, "--", $band );
     my $sth = $self->db->prepare("
         select min(k.chr_start), max(k.chr_end)
           from chromosome as c, karyotype as k
@@ -258,6 +259,7 @@ sub fetch_by_chr_band {
     $sth->execute( $chr, "$band%" );
     my ( $slice_start, $slice_end) = $sth->fetchrow_array;
 
+    warn( $chr, "--", $band );
     unless( defined($slice_start) ) {
        my $sth = $self->db->prepare("
            select min(k.chr_start), max(k.chr_end)

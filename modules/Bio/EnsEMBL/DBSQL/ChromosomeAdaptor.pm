@@ -103,7 +103,7 @@ sub fetch_by_chr_name{
     $self->{'_chr_name_cache'} = {};
   }
 
-  unless($self->{'_chr_name_cache'}->{$chr_name}) {
+  unless($self->{'_chr_name_cache'}->{lc($chr_name)}) {
     my $sth;
 
     $sth = $self->prepare( "SELECT chromosome_id, name, length  
@@ -116,7 +116,7 @@ sub fetch_by_chr_name{
 
     $self->_create_object_from_arrayref( $a );
   }
-  return $self->{'_chr_name_cache'}->{$chr_name};
+  return $self->{'_chr_name_cache'}->{lc($chr_name)};
 }
 
 
@@ -162,7 +162,7 @@ sub _create_object_from_arrayref {
     -chr_name => $a->[1], -length => $a->[2]
   );
   return $self->{'_chr_cache'     }->{$a->[0]} = 
-         $self->{'_chr_name_cache'}->{$a->[1]} = $chr ;
+         $self->{'_chr_name_cache'}->{lc($a->[1])} = $chr ;
 }
 
 sub store{
