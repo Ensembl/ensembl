@@ -950,13 +950,18 @@ sub dump_core_xrefs {
     my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id);
     $xref_sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
+    # keep track of what xref_ids have been written to prevent duplicates; e.g. several dependent
+    # xrefs my be dependent on the same master xref.
+    my %xrefs_written;
+
     # note the xref_id we write to the file is NOT the one we've just read
-    # from the internal xref database as the ID may already exist in the core database
-    # so we add on $xref_id_offset
+    # from the internal xref database as the ID may already exist in the
+    # core database so we add on $xref_id_offset
     while ($xref_sth->fetch()) {
 
       my $external_db_id = $source_to_external_db{$source_id};
       print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+      $xrefs_written{$xref_id} = 1;
       $source_ids{$source_id} = $source_id;
 
     }
@@ -972,8 +977,11 @@ sub dump_core_xrefs {
 
       my $external_db_id = $source_to_external_db{$source_id};
 
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
-      $source_ids{$source_id} = $source_id;
+      if (!$xrefs_written{$xref_id}) {
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
+	$xrefs_written{$xref_id} = 1;
+	$source_ids{$source_id} = $source_id;
+      }
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
       # write to file and add to object_xref_mappings
@@ -1215,13 +1223,22 @@ sub build_gene_display_xrefs {
       }
       my ($xref_id, $priority) = split (/:/, $transcript_display_xrefs->{$transcript_id});
       #print "gene $gene_id orig:" . $transcript_display_xrefs->{$transcript_id} . " xref id: " . $xref_id . " pri " . $priority . "\n";
-      my $transcript = $ta->fetch_by_dbID($transcript_id);
-      my $transcript_length = $transcript->length();
-      if (($priority lt $best_xref_priority_idx) ||
-	  ($priority eq $best_xref_priority_idx && $transcript_length gt $best_transcript_length)) {
-	$best_transcript_length = $transcript_length;
+      # 2 separate if clauses to avoid having to fetch transcripts unnecessarily
+      if (($priority lt $best_xref_priority_idx)) {
+
 	$best_xref_priority_idx = $priority;
 	$best_xref = $xref_id;
+
+      } elsif ($priority eq $best_xref_priority_idx) {
+
+	# compare transcript lengths and use longest
+	my $transcript = $ta->fetch_by_dbID($transcript_id);
+	my $transcript_length = $transcript->length();
+	if ($transcript_length > $best_transcript_length) {
+	  $best_transcript_length = $transcript_length;
+	  $best_xref_priority_idx = $priority;
+	  $best_xref = $xref_id;
+	}
       }
     }
 
