@@ -352,8 +352,16 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 # Dumping data for table 'objectXref'
 #
 
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 1);
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENSP00000216167','Translation', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSP00000216167','Translation', 2);
+
+
+#
+#Dumping data for identityXref
+#
+
+INSERT INTO identityXref (objectxrefId, query_identity, target_identity) VALUES (1,98,99);
+
 #
 # Dumping data for table 'Xref'
 #

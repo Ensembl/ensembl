@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..30\n"; 
+BEGIN { $| = 1; print "1..32\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -45,9 +45,9 @@ print "ok 2\n";
 
 
  my $protein_adaptor=Bio::EnsEMBL::DBSQL::Protein_Adaptor2->new($db);
-eval {
+#eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid('ENSP00000216167');
-};
+#};
 
 if ($@) {
     print "not ok 3\n";
@@ -288,6 +288,19 @@ else {
     print "not ok 30\n";
 }
 
+if ($dblinks[0]->query_identity == 98) {
+    print "ok 31\n";
+}
+else {
+    print "not ok 31\n";
+}
+
+if ($dblinks[0]->target_identity == 99) {
+    print "ok 32\n";
+}
+else {
+    print "not ok 32\n";
+}
 
 
 
