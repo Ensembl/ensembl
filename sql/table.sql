@@ -572,14 +572,14 @@ CREATE TABLE marker (
 CREATE TABLE marker_feature (
     marker_feature_id         int unsigned not null auto_increment,
     marker_id                 int unsigned not null,     #foreign key marker:marker_id
-    dnafrag_id                 int(10) unsigned NOT NULL, #foreign key contig:dnafrag_id
-    dnafrag_start              int(10) unsigned NOT NULL,
-    dnafrag_end                int(10) unsigned NOT NULL,
+    seq_region_id                 int(10) unsigned NOT NULL, #foreign key contig:seq_region_id
+    seq_region_start              int(10) unsigned NOT NULL,
+    seq_region_end                int(10) unsigned NOT NULL,
     analysis_id               int(10) unsigned NOT NULL, #foreign key analysis:analysis_id
     map_weight                int(10) unsigned,
 
     PRIMARY KEY (marker_feature_id),
-    KEY dnafrag_idx (dnafrag_id )
+    KEY seq_region_idx (seq_region_id )
 );
     
 CREATE TABLE marker_map_location (
