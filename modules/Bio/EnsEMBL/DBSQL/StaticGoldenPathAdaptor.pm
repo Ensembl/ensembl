@@ -465,7 +465,7 @@ sub convert_chromosome_to_fpc{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpc_start = 1 AND chr_start <= $start AND chr_end >= $start");
+   my $sth = $self->prepare("select fpcctg_name,chr_start from static_golden_path where chr_name = '$chr' AND fpc_start = 1 AND chr_start <= $start ORDER BY DESC chr_start");
    $sth->execute;
    my ($fpc,$startpos) = $sth->fetchrow_array;
 
