@@ -1051,7 +1051,7 @@ sub get_all_SearchFeatures {
     my $offset = $self->chr_start-1;
 
     my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->chr_start, $self->chr_end) : [];
-    warn join(', ', @$features );
+    #warn join(', ', @$features );
     foreach( @$features ) { 
       $_->start( $_->start-$offset );
       $_->end(   $_->end-$offset );
