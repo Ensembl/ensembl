@@ -575,7 +575,7 @@ sub get_updated_Objects{
     
 
     #First, get all clone ids that have been updated between last and now-offset
-    my $sth = $self->prepare("select id from clone where modified > '".$last." - 00:30:00' and modified <= '".$now_offset."'");
+    my $sth = $self->prepare("select id from clone where stored > '".$last." - 00:30:00' and stored <= '".$now_offset."'");
    
     $sth->execute;
     my @out;
@@ -590,7 +590,7 @@ sub get_updated_Objects{
     }	
     
     #Get all gene ids that have been updated between last and now-offset
-    $sth = $self->prepare("select id from gene where modified > '".$last."' and modified <= '".$now_offset."'");
+    $sth = $self->prepare("select id from gene where stored > '".$last."' and stored <= '".$now_offset."'");
     $sth->execute;
 
     my @genes;
@@ -605,20 +605,20 @@ sub get_updated_Objects{
     return @out;
 }
 
-=head2 get_Ghosts_by_deleted
+=head2 get_updated_Ghosts
     
- Title   : get_Ghosts_by_deleted
- Usage   : $obj->get_Ghosts_by_deleted ($recipient_last_update, $recipient_now_offset)
+ Title   : get_updated_Ghosts
+ Usage   : $obj->get_updated_Ghosts ($recipient_last_update, $recipient_now_offset)
  Function: Gets all the ghosts for objects that have been deleted (i.e.permanently from 
 	   the donor db) between the current time - offset time given by
            the recipient database and the last update time stored in its meta table 
- Example : $obj->get_Ghosts_by_deleted (973036800,973090800)
+ Example : $obj->get_updated_Ghosts (973036800,973090800)
  Returns : ghost objects
  Args    : $recipient_last_update, $recipient_now_offset
 
 =cut
 
-sub get_Ghosts_by_deleted{
+sub get_updated_Ghosts{
     my ($self, $last, $now_offset) = @_;
     my @out;
     
@@ -637,14 +637,15 @@ sub get_Ghosts_by_deleted{
     $now_offset = $rowhash->[0];
     
     #Get all ghosts that have deleted times between last and now-offset
-    $sth = $self->prepare("select id,version,seq_type,deleted_time from ghost where deleted_time > '".$last."' and deleted_time <= '".$now_offset."'");
+    $sth = $self->prepare("select id,version,seq_type,deleted,stored from ghost where stored > '".$last."' and stored <= '".$now_offset."'");
     $sth->execute();
     while(my $rowhash = $sth->fetchrow_hashref()) {
 	my $ghost = Bio::EnsEMBL::Ghost->new();
 	$ghost->id($rowhash->{'id'});
 	$ghost->version($rowhash->{'version'});
-	$ghost->obj_type($rowhash->{'seq_type'});
-	$ghost->deleted_time($rowhash->{'deleted_time'});
+	$ghost->obj_type($rowhash->{'obj_type'});
+	$ghost->deleted($rowhash->{'deleted'});
+	$ghost->stored($rowhash->{'stored'});
 	push @out, $ghost;
     }
     return @out;
@@ -669,7 +670,7 @@ sub get_Ghost{
     $g_version || $self->throw("Attempting to get a ghost object without a version");
     $g_obj_type || $self->throw("Attempting to get a ghost object without an object type");
 
-    my $sth = $self->prepare("select id, version, seq_type from ghost where id='".$g_id."' and version = '".$g_version."' and seq_type = '".$g_obj_type."'");
+    my $sth = $self->prepare("select id, version, seq_type,deleted,stored from ghost where id='".$g_id."' and version = '".$g_version."' and obj_type = '".$g_obj_type."'");
     $sth->execute();
     my  $rv = $sth->rows;
     ! $rv && $self->throw("Ghost not found in database!");
@@ -677,8 +678,8 @@ sub get_Ghost{
     my $ghost = Bio::EnsEMBL::Ghost->new();
     $ghost->id($rowhash->{'id'});
     $ghost->version($rowhash->{'version'});
-    $ghost->obj_type($rowhash->{'seq_type'});
-    $ghost->deleted_time($rowhash->{'deleted_time'});
+    $ghost->obj_type($rowhash->{'obj_type'});
+    $ghost->deleted($rowhash->{'deleted'});
     return $ghost;
 }
 
@@ -699,7 +700,7 @@ sub write_Ghost{
     $ghost || $self->throw("Attempting to write a ghost without a ghost object");
     $ghost->isa("Bio::EnsEMBL::Ghost") || $self->throw("$ghost is not an EnsEMBL ghost - not dumping!");
     
-    my $sth = $self->prepare("insert into ghost (id, version, seq_type,deleted_time) values('".$ghost->id."','".$ghost->version."','".$ghost->obj_type."','".$ghost->deleted_time."')");
+    my $sth = $self->prepare("insert into ghost (id, version, obj_type,deleted,stored) values('".$ghost->id."','".$ghost->version."','".$ghost->obj_type."','".$ghost->deleted."',now())");
     $sth->execute();
     return 1;
 }
@@ -1014,7 +1015,7 @@ sub write_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("insert into gene (id,version,created,modified) values ('". $gene->id()."','".$gene->version."','".$gene->created."','".$gene->modified."')");
+   my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". $gene->id()."','".$gene->version."','".$gene->created."','".$gene->modified."',now())");
    $sth2->execute();
 
    foreach my $cloneid ( $gene->each_cloneid_neighbourhood ) {
@@ -1230,8 +1231,8 @@ sub write_Homol_Feature {
 
     my $contigid = $contig->id;
     my $homol    = $feature->homol_SeqFeature;
-    print("Writing homol feature\n");
-    my $rv = $self->write_Feature($feature,$contig);
+
+    my $rv = $self->write_Feature($feature,$analysisid,$contig);
 
     $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
 
@@ -1449,7 +1450,7 @@ sub write_Clone{
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."')");
+   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."',now())");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {

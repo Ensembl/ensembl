@@ -238,7 +238,7 @@ sub get_donor_locator{
 
 =cut
 
-sub get_Ghosts_by_deleted{
+sub get_updated_Ghosts{
     my ($self) = @_;
     
     $self->throw("Not implemented in the object!");

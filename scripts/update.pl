@@ -190,7 +190,7 @@ foreach my $object (@object_array) {
 
 $verbose && print STDERR "\nTransferring new ghosts from donor to recipient...\n";
 
-my @object_array = $don_db->get_Ghosts_by_deleted($last, $now);
+my @object_array = $don_db->get_updated_Ghosts($last, $now);
 foreach my $ghost (@object_array) {
     $verbose && print STDERR "Got ghost with id ".$ghost->id."\n";
     

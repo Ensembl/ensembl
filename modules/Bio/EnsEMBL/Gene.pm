@@ -263,6 +263,26 @@ sub modified{
 
 }
 
+=head2 _stored
+
+ Title   : _stored
+ Usage   : $obj->_stored($newval)
+ Function: Internal method should not really be needed
+           stores the time of storage of the deleted object
+ Returns : value of _stored
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _stored{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_stored'} = $value;
+    }
+    return $obj->{'_stored'};
+}
 
 =head2 version
 

@@ -37,6 +37,7 @@ CREATE TABLE clone (
   htg_phase int(10) DEFAULT '-1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,	
   PRIMARY KEY (id)
 );
 
@@ -161,6 +162,7 @@ CREATE TABLE gene (
   version int(10) DEFAULT '1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
 );
 
@@ -170,8 +172,9 @@ CREATE TABLE gene (
 CREATE TABLE ghost (
   id varchar(40) DEFAULT '' NOT NULL,
   version varchar(5) DEFAULT '' NOT NULL,
-  seq_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
-  deleted_time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  obj_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
+  deleted datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id,version,seq_type)
 );
 

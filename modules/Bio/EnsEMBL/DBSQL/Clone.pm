@@ -233,9 +233,8 @@ sub get_all_Contigs{
 =cut
 
 sub htg_phase{
-   my ($self) = @_;
-
    my $self = shift;
+
    my $id = $self->id();
 
    my $sth = $self->_dbobj->prepare("select htg_phase from clone where id = \"$id\" ");
@@ -260,7 +259,6 @@ sub htg_phase{
 sub created{
    my ($self) = @_;
 
-   my $self = shift;
    my $id = $self->id();
 
    my $sth = $self->_dbobj->prepare("select created from clone where id = \"$id\" ");
@@ -289,7 +287,6 @@ sub created{
 sub modified{
    my ($self) = @_;
 
-   my $self = shift;
    my $id = $self->id();
 
    my $sth = $self->_dbobj->prepare("select modified from clone where id = \"$id\" ");
@@ -317,8 +314,6 @@ sub modified{
 =cut
 
 sub version{
-   my ($self) = @_;
-
    my $self = shift;
    my $id = $self->id();
 
@@ -326,6 +321,27 @@ sub version{
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref();
    return $rowhash->{'version'};
+}
+
+=head2 _stored
+
+ Title   : _stored
+ Usage   : $obj->_stored($newval)
+ Function: Internal method should not really be needed
+           stores the time of storage of the deleted object
+ Returns : value of stored
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _stored{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_stored'} = $value;
+    }
+    return $obj->{'_stored'};
 }
 
 =head2 embl_version
@@ -341,8 +357,6 @@ sub version{
 =cut
 
 sub embl_version{
-   my ($self) = @_;
-
    my $self = shift;
    my $id = $self->id();
 
@@ -369,7 +383,6 @@ sub embl_version{
 sub seq_date{
    my ($self) = @_;
 
-   my $self = shift;
    my $id = $self->id();
    my $seq_date, my $old_seq_date;
 
@@ -421,7 +434,6 @@ sub sv{
 sub embl_id{
    my ($self) = @_;
 
-   my $self = shift;
    my $id = $self->id();
 
    my $sth = $self->_dbobj->prepare("select embl_id from clone where id = \"$id\" ");

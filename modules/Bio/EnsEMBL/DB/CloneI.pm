@@ -234,6 +234,26 @@ sub modified{
     $self->warn("Base class has not implemented modified yet!");
 }
 
+=head2 stored
+
+ Title   : stored
+ Usage   : $clone->stored()
+ Function: Gives the unix time value of the stored datetime field, which indicates
+           the last time this clone was stored in ensembl
+ Example : $clone->stored()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub stored{
+    my ($self,@args) = @_;
+
+    $self->warn("Base class has not implemented stored yet!");
+}
+
+
 =head2 get_Contig
 
  Title   : get_Contig

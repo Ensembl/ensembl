@@ -340,7 +340,6 @@ sub id{
 sub seq_date{
    my ($self) = @_;
 
-   my $self = shift;
    my $id = $self->id();
 
    my $sth = $self->_dbobj->prepare("select created from dna where contig = \"$id\" ");
