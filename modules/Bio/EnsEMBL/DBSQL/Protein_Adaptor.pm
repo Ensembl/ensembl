@@ -229,20 +229,20 @@ sub fetch_Protein_by_dbid{
 
        #But we currently need a hack here, waiting for the analysis table being properly loaded, will then always return    
        #print "PF: $pfam\n";
-       if ($featid =~ /^PF\w+/) {
-	   $dbdesc = "Pfam";
-	   $feat->hdbname($dbdesc);
-       }
+       #if ($featid =~ /^PF\w+/) {
+	#   $dbdesc = "Pfam";
+	 #  $feat->hdbname($dbdesc);
+       #}
 
-       if ($featid =~ /^PR\w+/) {
-	   $dbdesc = "PRINTS";
-	   $feat->hdbname($dbdesc);
-       }
+       #if ($featid =~ /^PR\w+/) {
+	#   $dbdesc = "PRINTS";
+	 #  $feat->hdbname($dbdesc);
+       #}
 
-       if ($featid =~ /^PS\w+/) {
-	   $dbdesc = "PROSITE";
-	   $feat->hdbname($dbdesc);
-       }
+       #if ($featid =~ /^PS\w+/) {
+	#   $dbdesc = "PROSITE";
+	 #  $feat->hdbname($dbdesc);
+       #}
 
 ###########################################################
 

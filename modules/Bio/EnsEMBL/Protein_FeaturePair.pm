@@ -65,7 +65,13 @@ sub to_FTHelper{
    my $fth = Bio::SeqIO::FTHelper->new;
 
 #The key should not be always domain, its currently true because we store in Protein Features only Interpro hits but we should get the key information from the analysis table...but these is no column where this key could be stored...
-   $fth->key('Domain');
+  
+#This information (description of the protein feature, eg: Domain, exon, ...) is stored in gff_feature. Obviously shouldn't be but here waiting for a new schema.
+ 
+   my $desc = $self->analysis->gff_feature;
+  
+   
+   $fth->key($desc);
    
    # Add location line
    my $g_start = $self->start;
