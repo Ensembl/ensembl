@@ -104,7 +104,7 @@ sub new {
 
   if(defined($slice)) {
     if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-      throw('-SLICE argument must be a Bio::EnsEMBL::Slice');
+      throw('-SLICE argument must be a Bio::EnsEMBL::Slice not '.$slice);
     }
   }
 
