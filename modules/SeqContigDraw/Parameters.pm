@@ -66,8 +66,8 @@ sub contig_image_components
 	swir        =>{color=>'darkorange',factor=>3,height=>6,legend=>'swissprot',   link=>'http://www.ebi.ac.uk/cgi-bin/swissfetch?',},
 	dbest       =>{color=>'red',       factor=>5,height=>6,legend=>'dbEST',       link=>"http://www.ncbi.nlm.nih.gov/htbin-post/Entrez/query?form=6&dopt=g&db=n&uid=",},
 	vert        =>{color=>'pine',      factor=>6,height=>6,legend=>'vert',        link=>'http://www.ebi.ac.uk/cgi-bin/emblfetch?',},
-	PfamFrag    =>{color=>'flora',     factor=>4,height=>6,legend=>'pfam',        link=>'http://www.ensembl.org/cgi-bin/getpfamacc?pfamentry=',}
-	RepeatMasker=>{color=>'darkgreen', factor=>7,height=>6,legend=>'repeat'},
+	PfamFrag    =>{color=>'flora',     factor=>4,height=>6,legend=>'pfam',        link=>'http://www.ensembl.org/cgi-bin/getpfamacc?pfamentry=',},
+	RepeatMasker=>{color=>'darkgreen', factor=>7,height=>6,legend=>'repeat',},
 	genscan     =>{color=>'blue2',     factor=>2,height=>6,legend=>'genscan',},
 	scale       =>{color=>'black',     factor=>8,height=>0,legend=>'scale (bp)',length=>1000,step=>10,times=>5,},		       
     };   
