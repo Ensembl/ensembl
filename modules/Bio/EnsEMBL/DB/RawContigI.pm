@@ -93,7 +93,7 @@ sub seq_date{
  Usage   : $overlap_object = $contig->get_left_overlap();
  Function: Returns the overlap object of contig to the left.
            This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
  Args    : None
 
 =cut
@@ -111,7 +111,7 @@ sub get_left_overlap{
  Usage   : $overlap_object = $contig->get_right_overlap();
  Function: Returns the overlap object of contig to the left.
            This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlap object
+ Returns : A Bio::EnsEMBL::ContigOverlapHelper object
  Args    : None
 
 =cut
