@@ -61,6 +61,58 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 each_unique_Exon
+
+ Title   : each_unique_Exon
+ Usage   : foreach my $exon ( $gene->each_unique_Exon )
+ Function: retrieves an array of exons associated with this
+           gene, made nonredudant
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_unique_Exon{
+   my ($self) = @_;
+   my %h;
+
+   foreach my $trans ( $self->each_Transcript ) {
+       foreach my $exon ( $trans->each_Exon ) {
+	   $h{$exon->id()} = $exon;
+       }
+   }
+
+   return values %h;
+   
+}
+
+=head2 unique_contig_ids
+
+ Title   : unique_contig_ids
+ Usage   : foreach $id ( $gene->unique_contig_ids ) 
+ Function: returns an array of contig ids made unique linked
+           to this gene
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub unique_contig_ids{
+   my ($self) = @_;
+   my %h;
+
+   foreach my $exon ( $self->each_unique_Exon() ) {
+       $h{$exon->contig_id()} = 1;
+   }
+
+   return keys %h;
+}
+
+
 =head2 add_Transcript
 
  Title   : add_Transcript
