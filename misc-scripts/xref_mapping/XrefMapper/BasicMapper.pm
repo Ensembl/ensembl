@@ -150,6 +150,7 @@ sub get_set_lists{
 #	  ["method3",["*","*"]]];
 
   return [["ExonerateBest1",["homo_sapiens","RefSeq"]]];
+#  return [["ExonerateBest1",["*","*"]]];
 
 }
 
@@ -566,6 +567,10 @@ sub run_mapping {
 
   my ($self, $lists) = @_;
 
+  # delete old output files in target directory
+  my $dir = $self->dir();
+  unlink (<$dir/*.map $dir/*.out $dir/*.err>);
+
   # foreach method, submit the appropriate job & keep track of the job name
   my @job_names;
 
@@ -689,7 +694,8 @@ sub store {
   my $object_xref_id = $max_object_xref_id + 1;
 
   # keep a (unique) list of xref IDs that need to be written out to file as well
-  my %primary_xref_ids;
+  # this is a hash of lists, keyed on xref id that relates xrefs to e! objects (may be 1-many)
+  my %primary_xref_ids = ();
 
   my $dir = $self->dir();
   foreach my $file (glob("$dir/*.map")) {
@@ -720,7 +726,8 @@ sub store {
       # TODO - evalue?
       $object_xref_id++;
 
-      $primary_xref_ids{$query_id} = $query_id;
+      #push @{$primary_xref_ids{$query_id}}, $target_id;
+      $primary_xref_ids{$query_id}{$target_id} = $target_id;
 
       # Store in database
       # create entry in object_xref and get its object_xref_id
@@ -742,7 +749,7 @@ sub store {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_xrefs(\%primary_xref_ids);
+  $self->dump_xrefs(\%primary_xref_ids, $object_xref_id+1);
 
 }
 
@@ -809,10 +816,12 @@ sub get_analysis_id {
 
 sub dump_xrefs {
 
-  my ($self, $xref_ids_hashref) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id) = @_;
   my @xref_ids = keys %$xref_ids_hashref;
+  my %xref_to_objects = %$xref_ids_hashref;
 
   open (XREF, ">xref.txt");
+  open (OBJECT_XREF, ">>object_xref.txt");
 
   my $xref_dbi = $self->xref()->dbi();
   my $core_dbi = $self->dbi();
@@ -831,6 +840,8 @@ sub dump_xrefs {
 
   # keep a unique list of source IDs to build the external_db table later
   my %source_ids;
+
+  my $object_xref_id = $start_object_xref_id;
 
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
@@ -879,12 +890,25 @@ sub dump_xrefs {
       print XREF "$core_xref_id\t$accession\t$label\t$description\tDEPENDENT\n";
       $source_ids{$source_id} = $source_id;
       $core_xref_id++;
+      # create an object_xref linking this (dependent) xref with any objects it maps to
+      if (defined $xref_to_objects{$xref_id}) {
+	my @objects = keys( %{$xref_to_objects{$xref_id}} );
+	print "xref $accession has " . scalar(@objects) . " associated ensembl objects\n";
+	# TODO type - keep hash in store method?
+	my $type = "xxx";
+	foreach my $object_id (@objects) {
+	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t$core_xref_id DEPENDENT\n";
+	  $object_xref_id++;
+	}
+      }
     }
+
     #print "source_ids: " . join(" ", keys(%source_ids)) . "\n";
 
   } # while @xref_ids
 
   close(XREF);
+  close(OBJECT_XREF);
 
   # now write the exernal_db file - the %source_ids hash will contain the IDs of the
   # sources that need to be written as external_dbs
