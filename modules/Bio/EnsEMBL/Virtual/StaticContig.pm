@@ -996,6 +996,101 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
 
 
 
+=head2 get_all_VirtualTranscripts_startend
+
+ Title   : get_all_VirtualTranscripts_startend
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+
+sub get_all_VirtualTranscripts_startend
+{
+my ($self)=shift;
+
+my $transcript;
+my @transcripts;
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $idlist  = $self->_raw_contig_id_list();
+    
+
+unless ($idlist){
+    return ();
+}
+
+$self->throw ("I need a chromosome name") unless defined $chr_name;
+$self->throw ("I need a chromosome end") unless defined $glob_end;
+$self->throw ("I need a chromosome start") unless defined $glob_start;
+
+my $query ="SELECT     STRAIGHT_JOIN t.id,
+                       MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
+                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
+            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
+            WHERE      sgp.raw_id=e.contig
+            AND        e.contig in $idlist 
+            AND        e.id=et.exon 
+            AND        t.id=et.transcript 
+            AND        sgp.chr_end >= $glob_start   
+            AND        sgp.chr_start <=$glob_end 
+            AND        sgp.chr_name='$chr_name' 
+            GROUP BY   t.id;";
+
+
+    my $sth = $self->dbobj->prepare($query);
+    $sth->execute;
+    
+    my ($transcript_id,$start,$end);
+    $sth->bind_columns(undef,\$transcript_id,\$start,\$end);
+
+    while ($sth->fetch){
+
+	if (($end > $self->length)) {$end=$self->length;}
+	if (($start < 1)) {$start=1;}
+
+	my $gene=Bio::EnsEMBL::Gene->new();
+	$gene->id($transcript_id);
+
+#	my $query = "select external_db,external_id from genedblink where gene_id = '$transcript_id'";
+#	my $sth = $self->dbobj->prepare($query);
+#	my $res = $sth ->execute();
+#	while( (my $hash = $sth->fetchrow_hashref()) ) {
+#	    my $dblink = Bio::Annotation::DBLink->new();
+#	    $dblink->database($hash->{'external_db'});
+#	    $dblink->primary_id($hash->{'external_id'});
+#	    $transcript->add_DBLink($dblink);
+#	}
+
+	my $transcriptstr=1;
+# I don't think we need virtual transcript object :-)
+	my $tr = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,
+						-contig => $self, 
+						-start => $start, 
+						-end => $end, 
+						-strand => $transcriptstr
+						);
+	push @transcripts,$tr;
+    }
+
+    return @transcripts;
+
+}
+
+
+
+
+
 
 
 =head2 fetch_karyotype_band
