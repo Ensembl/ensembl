@@ -237,7 +237,7 @@ sub delete_by_dbID {
    
    my @contigs;
    my @dnas;
-   my $fadaptor = $self->get_FeatureAdaptor;
+   my $fadaptor = $self->db->get_FeatureAdaptor;
 
    # get a list of contigs to zap
 
