@@ -390,28 +390,182 @@ sub get_all_SimilarityFeatures_above_score{
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
     
-    my @sf = ();
-        
-    #if (!defined $type) {
-    #        # If the type isn't defined get all types of feature 
-    #        push(@sf, $self->get_all_RepeatFeatures($score));
-    #        push(@sf, $self->get_all_SimilarityFeatures($score));
-    #        push(@sf, $self->get_all_PredictionFeatures($score));
-    #  
-    #} elsif( $type eq 'repeat' ) {
-    #   push(@sf, $self->get_all_RepeatFeatures($score));
-    #   
-    #} elsif ( $type eq 'similarity' ) {
-    #   push(@sf, $self->get_all_SimilarityFeatures($score));
-    #   
-    #} elsif ( $type eq 'prediction' ) {
-    #   push(@sf, $self->get_all_PredictionFeatures($score));
-    #   
-    #} else {
-    #   $self->throw("Type $type not recognised");
-    #}
+   my @array;
+
+   my $id     = $self->internal_id();
+   my $length = $self->length();
+
+   my %analhash;
+
+   #First of all, get all features that are part of a feature set with high enough score and have the right type
+
+    my $statement = "SELECT feature.id, seq_start, seq_end, strand, feature.score, analysis, name, " .
+		             "hstart, hend, hid, fset, rank, fset.score " .
+		     "FROM   feature, fset_feature, fset, analysis " .
+		     "WHERE  feature.contig ='$id' " .
+		     "AND    fset_feature.feature = feature.id " .
+		     "AND    fset.id = fset_feature.fset " .
+                     "AND    feature.score > '$score' " .
+                     "AND    feature.analysis = analysis.id " .
+                     "AND    analysis.db = '$analysis_type' " .
+                     "ORDER BY fset";
+		     
+   my $sth = $self->dbobj->prepare($statement);                                                                       
+   $sth->execute();
    
-   return @sf;
+   my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score);
+   my $seen = 0;
+   
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank,\$fset_score);
+   
+   my $out;
+   
+   my $fset_id_str = "";
+
+   while($sth->fetch) {
+
+       my $analysis;
+
+       if (!$analhash{$analysisid}) {
+	   
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   $analysis = $feature_obj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+       
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+       
+       if( !defined $name ) {
+	   $name = 'no_source';
+       }
+       
+       #Build fset feature object if new fset found
+       if ($fset != $seen) {
+#	   print(STDERR "Making new fset feature $fset\n");
+	   $out =  new Bio::EnsEMBL::SeqFeature;
+	   $out->id($fset);
+	   $out->analysis($analysis);
+	   $out->seqname ($self->id);
+	   $out->score($fset_score);
+	   $out->source_tag($name);
+	   $out->primary_tag("FSET");
+
+	   $seen = $fset;
+	   push(@array,$out);
+       }
+       $fset_id_str = $fset_id_str . $fid . ",";       
+       #Build Feature Object
+       my $feature = new Bio::EnsEMBL::SeqFeature;
+       $feature->seqname   ($self->id);
+       $feature->start     ($start);
+       $feature->end       ($end);
+       $feature->strand    ($strand);
+       $feature->source_tag($name);
+       $feature->primary_tag('similarity');
+       $feature->id         ($fid);
+       
+       if( defined $f_score ) {
+	   $feature->score($f_score);
+       }
+       
+       $feature->analysis($analysis);
+       
+       # Final check that everything is ok.
+       $feature->validate();
+
+       #Add this feature to the fset
+       $out->add_sub_SeqFeature($feature,'EXPAND');
+
+   }
+   
+   #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
+   $fset_id_str =~ s/\,$//;
+
+   if ($fset_id_str) {
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+		     "FROM   feature, analysis " .
+                     "WHERE  id not in (" . $fset_id_str . ") " .
+                     "AND    feature.score > '$score' " . 
+                     "AND    feature.analysis = analysis.id " .
+                     "AND    analysis.db = '$analysis_type' " .
+                     "AND    contig = '$id' ";
+                                     
+       $sth = $self->dbobj->prepare($statement);
+       
+   } else {
+        $statement = "SELECT feature.id, seq_start, seq_end, strand, score, analysis, name, hstart, hend, hid " .
+		     "FROM   feature, analysis " .
+                     "WHERE  feature.score > '$score' " . 
+                     "AND    feature.analysis = analysis.id " .
+                     "AND    analysis.db = '$analysis_type' " .
+                     "AND    contig = '$id' ";
+                     
+                     
+                     
+       $sth = $self->dbobj->prepare($statement);
+   }
+
+   $sth->execute();
+
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
+   
+   while($sth->fetch) {
+       my $out;
+       my $analysis;
+              
+       if (!$analhash{$analysisid}) {
+	   
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   $analysis = $feature_obj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+	   
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+       
+       if( !defined $name ) {
+	   $name = 'no_source';
+       }
+       
+       if( $hid ne '__NONE__' ) {
+	   # is a paired feature
+	   # build EnsEMBL features and make the FeaturePair
+	 
+	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+
+	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
+				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+	   $out->analysis    ($analysis);
+	   $out->id          ($hid);              # MC This is for Arek - but I don't
+	                                          #    really know where this method has come from.
+       } else {
+	   $out = new Bio::EnsEMBL::SeqFeature;
+	   $out->seqname   ($self->id);
+	   $out->start     ($start);
+	   $out->end       ($end);
+	   $out->strand    ($strand);
+	   $out->source_tag($name);
+	   $out->primary_tag('similarity');
+	   $out->id         ($fid);
+
+	   if( defined $f_score ) {
+	       $out->score($f_score);
+	   }
+	   $out->analysis($analysis);
+       }
+       # Final check that everything is ok.
+       $out->validate();
+       
+      push(@array,$out);
+      
+   }
+   
+   return @array;
 }
 
 
