@@ -8,7 +8,7 @@ use Bio::EnsEMBL::ChromosomeStats;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-sub get_stats_per_chromosome_type
+sub get_stats_per_chromosome
 {
 
     my ($self,$chromosome)=@_;
