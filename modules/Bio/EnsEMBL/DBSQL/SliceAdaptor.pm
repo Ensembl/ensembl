@@ -408,6 +408,7 @@ sub deleteObj {
 
   $self->{'_id_cache'} = {};
   $self->{'_name_cache'} = {};
+  $self->{'_exc_cache'} = {};
 }
 
 
