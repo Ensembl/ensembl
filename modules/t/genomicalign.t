@@ -8,7 +8,7 @@ BEGIN { plan tests => 5 }
 use lib './t';
 use EnsTestDB;
 use Bio::EnsEMBL::DBSQL::GenomicAlignAdaptor;
-use Bio::AlignIO;
+#use Bio::AlignIO;
 
 ok 1;
 
@@ -37,8 +37,7 @@ $alignblockset = $align->get_AlignBlockSet(1);
 ok ($alignblock->start == 25 && $alignblock->end == 30 && $alignblock->align_start == 15 
 	&& $alignblock->align_end == 20);
 
-$alignout = Bio::AlignIO->new( -format => 'fasta',-fh => \*STDERR );
-
-$alignout->write_aln($align);
+#$alignout = Bio::AlignIO->new( -format => 'fasta',-fh => \*STDERR );
+#$alignout->write_aln($align);
 
 
