@@ -32,7 +32,7 @@ use warnings;
 use Getopt::Std;
 
 my %opts;
-if (!getopts('ab')) {
+if (!getopts('ab', \%opts)) {
     die "Options are -a and -b.  See head of script.\n";
 }
 if (!$opts{'a'} && !$opts{'b'}) {
