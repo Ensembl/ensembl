@@ -195,6 +195,12 @@ sub write {
 sub store {
     my ($self,$contig,@features) = @_;
 
+
+    my ($p,$f,$l) = caller;
+    $self->warn("$f:$l FeatureAdaptor store being phased out. It is better to use the new FeatureAdaptors directly (more type safe)");
+
+
+
     # Check for contig
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI") 
         unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
@@ -227,6 +233,13 @@ sub store {
 	    }
 	    $analysisid = $feature->analysis->adaptor->store($feature->analysis);
 	}
+
+	#
+	# Retarget to new adaptor scheme
+	# 
+
+	$self->throw("Ewan needs to retarget this to the new feature adaptors once the buisness objects for the features come in");
+
 
 	# What kinda feature we're dealing with?
 	if($feature->isa('Bio::EnsEMBL::RepeatI')) {
