@@ -1249,6 +1249,8 @@ sub store {
     $seq_adaptor->store($seq_region_id, $$seqref);
   }
 
+  $slice->adaptor($self);
+
   return $seq_region_id;
 }
 
