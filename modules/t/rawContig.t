@@ -72,7 +72,7 @@ my $repseq  = $contig->get_repeatmasked_seq( );
 debug( "Repeatmasked: ".substr( $repseq->seq(), 0, 50 ) );
 debug( "  isa ".ref( $repseq ));
 
-ok( $repseq->isa( "Bio::PrimarySeq" ));
+ok( $repseq->isa( "Bio::EnsEMBL::RepeatMaskedSlice" ));
 
 
 my $sFeatures = $contig->get_all_SimilarityFeatures( "swall" );
