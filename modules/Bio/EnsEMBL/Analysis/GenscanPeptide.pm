@@ -361,7 +361,6 @@ sub each_Homol {
 	my @newh = $self->_dnaHit2homol($dna);
 	push(@homols,@newh);
     }
-#    print("number of homols is $#homols\n");
     return @homols;
 }
 
@@ -408,7 +407,7 @@ sub _make_homol {
 					    -strand => 1);
 
     $newh->primary_tag($pep_homol->primary_tag);
-    $newh->source_tag($pep_homol->source_tag);
+    $newh->source_tag ($pep_homol->source_tag);
     $newh->seqname    ($pep_homol->seqname);
     $newh->score      ($pep_homol->score);
 
@@ -417,7 +416,7 @@ sub _make_homol {
 							   -end    => $h2,
 							   -strand => $pep_exon->strand);
     $peph->primary_tag($pep_homol2->primary_tag);
-    $peph->source_tag($pep_homol2->source_tag);
+    $peph->source_tag ($pep_homol2->source_tag);
     $peph->seqname    ($pep_homol2->seqname);
     $peph->start_frac ($start_frac);
     $peph->end_frac   ($end_frac);
@@ -441,25 +440,15 @@ sub _make_homol {
 
 sub _make_dna_homol {
     my ($self,$pairaln,$gen_exon,$pep_exon,$pep_homol,$pep_homol2,$pstart,$start_frac,$pend,$end_frac) = @_;
-    my $debug = 0;
 
-    if ($debug) {
-#	print("DEBUG: in make_dna_homol with $pstart:$start_frac $pend:$end_frac\n");
-    }
     my $pepaln = $self->{_pepaln};
 
-#    print("DEBUG: converting peptide2genomic\n");
     my $g1  = $pepaln->pep2cDNA($pstart,$start_frac);
     my $g2  = $pepaln->pep2cDNA($pend,  $end_frac);
     
-#    print("DEBUG: converting peptide to homol\n");
     my $h1 = $pairaln->pep2cDNA($pstart,$start_frac);
     my $h2 = $pairaln->pep2cDNA($pend,  $end_frac);
 
-    if ($debug) {
-#	print("DEBUG: new homol coords are $h1 $h2\n");
-    }
-       
     if ($g1 > $g2) {
 	my $tmp = $g1;
 	$g1 = $g2;
@@ -472,13 +461,12 @@ sub _make_dna_homol {
 	$h2 = $tmp;
     }
 
-    
     my $newh   = new Bio::SeqFeature::Homol(-start  => $g1,
 					    -end    => $g2,
 					    -strand => 1);
 
     $newh->primary_tag($pep_homol2->primary_tag);
-    $newh->source_tag($pep_homol2->source_tag);
+    $newh->source_tag ($pep_homol2->source_tag);
     $newh->seqname    ($pep_homol2->seqname);
     $newh->score      ($pep_homol->score);                # This is wrong - this score is for the whole hit
 
@@ -488,7 +476,7 @@ sub _make_dna_homol {
 					     -strand => $pep_exon->strand * $pep_homol2->strand);
 
     $peph->primary_tag($pep_homol->primary_tag);
-    $peph->source_tag($pep_homol->source_tag);
+    $peph->source_tag ($pep_homol->source_tag);
     $peph->seqname    ($pep_homol->seqname);
     
     # Add the peptide homol to the dna homol

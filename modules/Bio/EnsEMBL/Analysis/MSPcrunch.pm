@@ -88,7 +88,8 @@ sub _initialize {
   $self->type      ($type);
   $self->mspfile   ($mspfile);
 
-  
+  $self->_parse;
+
   return $self; # success - we hope!
 }
 
@@ -134,8 +135,6 @@ sub _read_Homol {
     my ($self,$line) = @_;
 
     #chomp($line);  # Unnecessary because of split
-
-    
 
     my ($score, $pid,
         $qstart, $qend, $id1,
