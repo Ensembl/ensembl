@@ -361,7 +361,7 @@ sub get_all_ExternalFeatures{
    
 
    if (! defined $glob) {
-       $glob=0;
+       $glob=50;
    }
 
    
@@ -414,9 +414,11 @@ sub get_all_ExternalFeatures{
 	   my @features = sort { $a->start <=> $b->start } @{$featureh{$clone}};
 	   my @contigs  = sort { $a->embl_offset <=> $b->embl_offset } @{$cloneh{$clone}};
 	   my $current_contig = shift @contigs;
+          FEATURE :
 	   foreach my $f ( @features ) {
 	       while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
 		   $current_contig = shift @contigs;
+                   if( !defined $current_contig ) { last FEATURE; }
 	       }
 	       if( $f->end < $current_contig->embl_offset ) {
 		   next; # not on a contig on this golden path presumably
@@ -433,7 +435,10 @@ sub get_all_ExternalFeatures{
        foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
 	   foreach my $extf ( @std ) {
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-		   push(@contig_features,$extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length));
+		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length)) {
+			$sf->seqname($contig->id);
+			push(@contig_features,$sf);
+		   }
 	       }
 	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
@@ -506,7 +511,8 @@ eval {
                       AND    sgp.chr_end >= $glob_start 
                       AND    sgp.chr_start <=$glob_end 
                       AND    sgp.chr_name='$chr_name'                       
-                      AND    (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM')";
+                      AND    (s.name regexp '^D[0-9,X,Y][0-9]?S')";
+ #                     AND    (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM')";
     
     my $sth = $self->dbobj->prepare($statement);
     $sth->execute;
@@ -769,22 +775,21 @@ return $markers[0];
 
 sub get_all_VirtualGenes_startend
 {
-    my ($self)=shift;
-    
-    my $gene;
-    my @genes;
-    
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    my $idlist  = $self->_raw_contig_id_list();
-    
-    
-    $self->throw ("I need a chromsome name") unless defined $chr_name;
-    $self->throw ("I need a chromosome end") unless defined $glob_end;
-    $self->throw ("I need a chromsome start") unless defined $glob_start;
-    
-    my $query ="SELECT     t.gene,
+my ($self)=shift;
+
+my $gene;
+my @genes;
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+my $idlist  = $self->_raw_contig_id_list();
+
+$self->throw ("I need a chromsome name") unless defined $chr_name;
+$self->throw ("I need a chromosome end") unless defined $glob_end;
+$self->throw ("I need a chromsome start") unless defined $glob_start;
+
+my $query ="SELECT     STRAIGHT_JOIN t.gene,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
                        MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
