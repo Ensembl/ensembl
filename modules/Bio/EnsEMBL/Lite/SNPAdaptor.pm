@@ -61,8 +61,12 @@ sub fetch_all_by_Slice {
                  FROM snp
                 WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
-  my $sth = $self->prepare( $QUERY ); 
-  $sth->execute($slice->chr_name(), $slice_start - 500 , $slice_end, $slice_start);
+  my $sth;
+  eval {
+    $sth = $self->prepare( $QUERY );
+    $sth->execute($slice->chr_name(), $slice_start - 500 , $slice_end, $slice_start);
+  };
+  return [] if($@ || !$sth);
   
   my @snps = ();  
 
