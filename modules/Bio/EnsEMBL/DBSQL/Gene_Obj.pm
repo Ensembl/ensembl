@@ -140,7 +140,7 @@ sub delete{
        }
    }
 
-   foreach my $translation (@tranlsation) {
+   foreach my $translation (@translation) {
        my $sth2 = $self->_db_obj->prepare("delete from translation where id = '$translation'");
        $sth2->execute;
    }
