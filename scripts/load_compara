@@ -1,0 +1,109 @@
+#!/usr/local/bin/perl
+
+use strict;
+
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::FeaturePair;
+
+use Getopt::Long;
+
+my $host      = 'ecs1d';
+my $dbname1   = 'homo_sapiens_core_130',
+my $dbname2   = 'mus_musculus_core_1_3',
+my $dbuser    = 'ensadmin';
+my $pass      = 'ensembl';
+my $infile;
+
+$| = 1;
+
+&GetOptions( 'host:s'     => \$host,
+             'dbuser:s'   => \$dbuser,
+             'dbname1:s'  => \$dbname1,
+             'dbname2:s'  => \$dbname2,
+             'pass:s'     => \$pass,
+	     'infile:s'   => \$infile,
+             );
+
+print STDERR "Time in dumpgff " . time . "\n";
+
+my $humandb = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host             => $host,
+						 -user             => $dbuser,
+						 -dbname           => $dbname1,
+						 -pass             => $pass,
+						 -perlonlyfeatures => 0);
+
+my $mousedb = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host             => $host,
+						 -user             => $dbuser,
+						 -dbname           => $dbname2,
+						 -pass             => $pass,
+						 -perlonlyfeatures => 0);
+
+
+print STDERR "Time after db  " . time . "\n";
+
+open(IN,"<$infile") || die "Can't open [$infile]";
+
+my %contig;
+
+open(MUS,">mouse_human.sql");
+open(HUM,">human_mouse.sql");
+
+while (<IN>) {
+  eval {
+  chomp;
+
+  my @f = split(' ',$_);
+
+  my $h_contig  = $f[0];
+  my $h_start   = $f[1];
+  my $h_end     = $f[2];
+  my $hstrand   = $f[3];
+  my $m_contig  = $f[4];
+  my $m_start   = $f[5];
+  my $m_end     = $f[6];
+  my $m_ori     = $f[7];
+
+#  print STDERR "$h_contig:$h_start:$h_end:$m_contig:$m_start\n";
+
+  if (!defined($contig{$h_contig})) {
+    my $tmp = $humandb->get_Contig($h_contig);
+    $contig{$h_contig} = $tmp;
+  }
+
+  if (!defined($contig{$m_contig})) {
+    my $tmp = $mousedb->get_Contig($m_contig);
+    $contig{$m_contig} = $tmp;
+  }
+  
+  my $hcontigid = $contig{$h_contig}->internal_id;
+  my $mcontigid = $contig{$m_contig}->internal_id;
+
+  #my $h_rawori = get_orientation($contig{$h_contig},$humandb);
+  #my $m_rawori = get_orientation($contig{$m_contig},$mousedb);
+  
+  print HUM "\\N\t$hcontigid\t$h_start\t$h_end\t100\t$m_ori\t1\texonerate\t$m_start\t$m_end\t$m_contig\tNULL\t0\t0\t0\n";
+  print MUS "\\N\t$mcontigid\t$m_start\t$m_end\t100\t$m_ori\t1\texonerate\t$h_start\t$h_end\t$h_contig\tNULL\t0\t0\t0\n";
+};
+  if ($@) {
+    print STDERR "Couldn't parse $_\n[$@]\n";
+  }
+}
+
+sub get_orientation {
+  my ($contig,$db) = @_;
+
+  my $query = "select raw_ori from static_golden_path where raw_id = " . $contig->internal_id;
+
+  my $sth = $db->prepare($query);
+  my $res = $sth->execute;
+
+  my $ref = $sth->fetchrow_hashref;
+
+  return $ref->{raw_ori};
+}
+  
+close(IN);
+close(HUM);
+close(MUS);
+  
+  
