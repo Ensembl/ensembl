@@ -1495,7 +1495,61 @@ sub get_rawcontig_by_position {
     return (undef);
 }
 
+=head2 start_in_vc
 
+ Title   : start_in_vc
+ Usage   : $vc->start_in_vc('rawcontigid');
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub start_in_vc {
+   my ($self,$cid) = @_;
+
+   my $mc=$self->_vmap->get_MapContig($cid);
+   return $mc->start;
+}
+
+=head2 end_in_vc
+
+ Title   : end_in_vc
+ Usage   : $vc->end_in_vc('rawcontigid')
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end_in_vc {
+   my ($self,$cid) = @_;
+
+   my $mc=$self->_vmap->get_MapContig($cid);
+   return $mc->end;   
+}
+
+=head2 ori_in_vc
+
+ Title   : ori_in_vc
+ Usage   : $vc->ori_in_vc('rawcontigid')
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+sub ori_in_vc {
+    my ($self,$rawcontigid) = @_;
+    
+    my $mc=$self->_vmap->get_MapContig($cid);
+    return $mc->orientation;   
+}
 
 =head2 _focus_contig
 
