@@ -36,7 +36,6 @@ sub _generic_fetch {
           , f.repeat_end
           , f.analysis_id
         FROM repeat_feature f
-          , repeat r
         WHERE f.repeat_id = r.repeat_id
         }. $where_clause);
     $sth->execute;
