@@ -7,7 +7,7 @@
 
 mysql=mysql
 
-outname=mapping
+outname=ens-sptr-mapping
 outfile=`pwd`/$outname.dat
 logfile=$outname.log
 
