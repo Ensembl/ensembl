@@ -736,7 +736,7 @@ sub _translate_coherent{
    if ( $debug ) {
        print STDERR "Bstr is $tstr\n";
        my @trans;
-       my $exseq = new Bio::PrimarySeq(-seq => $tstr , -id => 'dummy' , -moltype => 'dna');
+       my $exseq = new Bio::PrimarySeq(-seq => $tstr , '-id' => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
 
 	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
