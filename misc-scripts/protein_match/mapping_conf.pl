@@ -104,6 +104,11 @@ package main;
                   #ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz
                   #'go' => '',
                   'go' => '',
+
+                  #Location of the file for GKB (Genome Knowledge Base) mapping.
+                  #Contacts: Imre Vastrik <vastrik@ebi.ac.uk>, Hester <eschmidt@ebi.ac.uk>
+ 
+                  'gkb' => '',
                   
                   #######
                   #Mouse#

@@ -355,13 +355,7 @@ if ($organism eq "drosophila") {
 
 }
 
-if ($organism eq "drosophila") {
-    my $query = "select distinct(stable_id) from gene_stable_id";
-    my $sth = $db->prepare($query);
 
-    
-    
-}
 
 if ($organism eq "elegans") {
   #print STDERR " parsing wormbase information\n";

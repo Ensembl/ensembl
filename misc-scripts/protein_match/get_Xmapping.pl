@@ -26,7 +26,8 @@ my $refseq_gnp = $conf{'refseq_gnp'};
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
-my $go           = $conf{'go'}; 
+my $go          = $conf{'go'}; 
+my $gkb         = $conf{'gkb'}; 
 
 #Get specific options for the mouse
 my $mgi_sp     = $conf{'mgi_sp'};
@@ -159,7 +160,19 @@ if ($organism eq "human") {
 	$array[9] =~ s/\'/\\\'/g;
 	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t$array[9]\tXREF\n";	
 	}
+    
+    close (GO);
 
+#Get the GKB (Genome Knowledge Database) mapping
+#Contacts: Imre Vastrik <vastrik@ebi.ac.uk>, Hester <eschmidt@ebi.ac.uk>
+
+    open (GKB,"$gkb") || die "Can't open GKB data: $gkb";
+
+    while (<GKB>) {
+	chomp;
+	my ($sp,$id) = split;
+	print OUT "$sp\tSPTR\t$id\tGKB\t$id\t\tXREF\n";
+    }
 }
 
 #Get Xref mapping specifically for mouse.
@@ -301,6 +314,7 @@ if($organism eq 'briggsae'){
 
 close(OUT);
 print STDERR "The output has been written there: $out\n";
+
 
 sub parse_sp_file{
   my ($file) = @_;
@@ -473,3 +487,4 @@ sub process_parsed_sp{
     }
   }
 }
+
