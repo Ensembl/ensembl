@@ -417,9 +417,9 @@ sub get_all_ProteinAlignFeatures {
 sub get_all_SimilarityFeatures {
   my ($self, $logic_name, $score) = @_;
 
-  my @out;
-  push ( @out, @{ $self->get_all_ProteinAlignFeatures($logic_name, $score) }  );
-  push ( @out, @{ $self->get_all_DnaAlignFeatures($logic_name, $score) }  );
+  my @out = 
+      @{ $self->get_all_ProteinAlignFeatures($logic_name, $score) },
+      @{ $self->get_all_DnaAlignFeatures($logic_name, $score) };
 
   return \@out;
 }
@@ -470,8 +470,6 @@ sub get_all_RepeatFeatures {
 
    return $rpfa->fetch_all_by_Slice($self, $logic_name);
 }
-
-
 
 =head2 get_all_SNPs
 
@@ -1001,7 +999,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            my @clone_features;
            my $dsn = $extf->_dsn();
 
-     warn("Fetching features from $dsn!!!" );
+   #  warn("Fetching features from $dsn!!!" );
           foreach my $sf (
               @{ $extf->get_Ensembl_SeqFeatures_DAS(
                     $self->chr_name,$self->chr_start,$self->chr_end,
@@ -1009,7 +1007,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            ) {
 # BAC.*_C are fly contigs....
 # CRA_x are Celera mosquito contigs....
-	  warn( join ' - ', $sf->das_dsn, $sf->das_id, $sf->seqname, $sf->das_start, $sf->das_end, $sf->das_strand );
+#	  warn( join ' - ', $sf->das_dsn, $sf->das_id, $sf->seqname, $sf->das_start, $sf->das_end, $sf->das_strand );
                if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
                     push(@contig_features,$sf);
@@ -1030,7 +1028,6 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                     if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
 #                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
                          $sf->seqname($contig_from_clone);
-                         warn( $contig_from_clone );
                          push(@contig_features, $sf);
                     }
 #                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
@@ -1064,7 +1061,6 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            }
        } else {
            warn "Slice: Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS\n";
-           #$self->throw("Got a DAS feature factory that can't do get_Ensembl_SeqFeatures_DAS");
        }
   
    }
