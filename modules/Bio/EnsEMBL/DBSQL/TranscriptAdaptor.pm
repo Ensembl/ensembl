@@ -262,8 +262,8 @@ sub remove {
       $exonAdaptor->remove( $exon );
     }
     else{
-      $self->warn("exon " . $exon->dbID . " is not exclusive to transcript " . 
-                   $transcript->dbID . "\n");
+      #$self->warn("exon " . $exon->dbID . " is not exclusive to transcript " . 
+      #             $transcript->dbID . "\n");
     }
 
   }
