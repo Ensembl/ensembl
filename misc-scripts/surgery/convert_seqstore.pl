@@ -22,7 +22,7 @@ GetOptions ('file=s'      => \$file,
             'password=s'  => \$password,
             'verbose'     => \$verbose,
             'force'       => \$force,
-            'limit'       => \$limit,
+            'limit=s'     => \$limit,
             'help'        => sub { &show_help(); exit 1;} );
 
 usage("-file option is required")   if(!$file);
