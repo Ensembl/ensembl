@@ -26,37 +26,70 @@ usage() if($help);
 open(FILE, $file) or die("Could not open input file '$file'");
  
 my  @all_species;
-
+my $xref;
+my $new=undef;
+my $type;
 while( my $line = <FILE> ) {
   chomp($line);
   next if $line =~ /^#/;
   next if !$line;
- 
-  my ( $species, $host, $port, $dbname, $user, $password ,$dir) =
-    split( "\t", $line );
- 
-  my $map;
-  eval "require XrefMapper::$species";
-  if($@) {
-    warn("Could not require mapper module XrefMapper::$species\n" .
-	 "Using XrefMapper::BasicMapper instead:\n$@");
-    require XrefMapper::BasicMapper;
-    $species = "BasicMapper";
-  }
- 
-  {
-    no strict 'refs';
-    $map = "XrefMapper::$species"->new
-      ( $species, $host, $port, $dbname, $user, $password ,$dir); 
 
+  print $line."\n";
+  my ($key, $value) = split("=",$line);
+
+  if($key eq "species" || $key eq "xref"){
+    if(defined($new)){ #save old one
+      if($type eq "species"){
+	push @all_species, $new;
+      }
+      else{
+	$xref = $new;
+      }
+      $new = undef;
+    }
+    if($key eq "species"){
+      $type = "species";
+      eval "require XrefMapper::$value";
+      my $module;
+      if($@) {
+	warn("Could not require mapper module XrefMapper::$value\n" .
+	     "Using XrefMapper::BasicMapper instead:\n$@");
+	require XrefMapper::BasicMapper;
+	$module = "BasicMapper";
+      }
+      else{
+	$module = $value;
+      }
+      {
+	no strict 'refs';
+	$new = "XrefMapper::$module"->new();
+	$new->species($value);
+      }
+    }
+    else{
+      my $module = "db";
+      use XrefMapper::db;
+      $type= "xref";
+      $new = new XrefMapper::db();
+    }
   }
- 
-  push @all_species, $map;
- 
+  else{
+    $new->$key($value);
+  }
 }
- 
+
+if(defined($new)){ #save last one
+  if($type eq "species"){
+    push @all_species, $new;
+  }
+  else{
+    $xref = $new;
+  }
+  $new = undef;
+}
+
 for my $species ( @all_species ) {
-  $species->dump_seqs();
+  $species->dump_seqs($xref);
   $species->run_matching();
   $species->store();
 }
