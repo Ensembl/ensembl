@@ -74,14 +74,16 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
+  print "Got",join(',',@args),"\n";
   my ($db,$host,$driver,$user,$password,$debug) = 
-      $self->_rearrange([qw(DB
+      $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
 			    USER
-			    PASSWORD
+			    PASS
 			    DEBUG
 			    )],@args);
+  print "Got $db is db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");

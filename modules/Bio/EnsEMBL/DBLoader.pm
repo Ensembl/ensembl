@@ -69,7 +69,7 @@ use strict;
 =cut
 
 sub new{
-   my ($string) = @_;
+   my ($class,$string) = @_;
    my ($module,%hash);
 
    $string =~ /(\S+?)\/(\S+)/ || die "Could not parse [$string] as a ensembl database locator. Needs database_module/params";
@@ -85,8 +85,10 @@ sub new{
        my $key = $1;
        my $value = $2;
 
-       $hash{$key} = $value;
+       $hash{"-$key"} = $value;
    }
+
+   my @kv = %hash;
 
    return "$module"->new(%hash);
 }
@@ -95,9 +97,10 @@ sub new{
 sub _load_module{
   my ($modulein) = @_;
   my ($module,$load,$m);
-  
-  $module = "_<$modulein";
-  $load = "$modulein";
+
+  $module = "_<$modulein.pm";
+  $load = "$modulein.pm";
+  $load =~ s/::/\//g;
   
   return 1 if $main::{$module};
   eval {
@@ -114,3 +117,5 @@ END
   }
   return 1;
 }
+
+1;

@@ -22,15 +22,17 @@
 
     -verbose   print to STDERR on each clone to dump
 
-    -dbtype    database type (rdb, ace, timdb)
+    -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -dbhost    host name for database
+    -usetimdb  Overrides Module name for using Flat file Sanger system.
 
-    -dbname    For RDBs, what name to connect to
+    -dbhost    host name for database (gets put as host= in locator)
 
-    -dbuser    For RDBs, what username to connect as
+    -dbname    For RDBs, what name to connect to (dbname= in locator)
 
-    -dbpass    For RDBs, what password to use
+    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+
+    -dbpass    For RDBs, what password to use (dbpass= in locator)
 
     -nodna     don't write dna part of embl file (for testing)
 
@@ -79,12 +81,11 @@
 
 use strict;
 
-# comment out ace as most people don't have aceperl.
-# need a run-time loader really.
-#use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DBSQL::Obj;
-use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::DBLoader;
+
 use Bio::EnsEMBL::EMBL_Dump;
+use Bio::EnsEMBL::TimDB::Obj;
+
 use Bio::AnnSeqIO;
 use Bio::SeqIO;
 
@@ -92,7 +93,9 @@ use Getopt::Long;
 
 # global defaults
 my $host;
-# default is for msql
+
+my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
+
 my $dbtype    = 'rdb';
 my $format    = 'embl';
 my $nodna     = 0;
@@ -109,6 +112,7 @@ my $cstart    = 0;
 my $cend      = undef;
 my $outfile;
 my $oldstyle = 0;
+my $usetimdb = 0;
 
 # defaults for msql (rdb) access
 # msql was 'croc'
@@ -130,7 +134,8 @@ my $port      = '410000';
 # this does have genes (unfinished)
 # my $clone = '217N14';
 
-&GetOptions( 'dbtype:s'  => \$dbtype,
+&GetOptions( 'module:s'  => \$module,
+	     'usetimdb'  => \$usetimdb,
 	     'dbuser:s'  => \$dbuser,
 	     'dbpass:s'  => \$dbpass,
 	     'host:s'    => \$host,
@@ -171,14 +176,8 @@ if( $fromfile == 1 ) {
     @clones = @ARGV;
 }
 
-if( $dbtype =~ 'ace' ) {
-    $host=$host2 unless $host;
-    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
-} elsif ( $dbtype =~ 'rdb' ) {
-    $host=$host1 unless $host;
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname , 
-					 -host => $host, -password => $dbpass );
-} elsif ( $dbtype =~ 'timdb' ) {
+
+if ( $usetimdb == 1 ) {
 
     # EWAN: no more - you should be able to load as many clones as you like!
     if( $#ARGV == -1 ) {
@@ -194,7 +193,11 @@ if( $dbtype =~ 'ace' ) {
     # clones required are passed to speed things up - cuts down on parsing of flat files
     $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
 } else {
-    die("$dbtype is not a good type (should be ace, rdb or timdb)");
+    
+    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+   # print "locator $locator\n";
+    $db = Bio::EnsEMBL::DBLoader->new($locator);
+
 }
 
 # test report number of clones in db

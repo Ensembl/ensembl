@@ -75,7 +75,7 @@ sub _initialize {
   my $make = $self->SUPER::_initialize;
 
   my ($db,$host,$driver,$user,$password,$debug) = 
-      $self->_rearrange([qw(DB
+      $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
 			    USER
@@ -322,7 +322,7 @@ sub get_Clone{
        $self->throw("Clone $id does not seem to occur in the database!");
    }
 
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id,
+   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id => $id,
 					-dbobj => $self );
 
    return $clone;
@@ -352,7 +352,7 @@ sub get_Contig{
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
-   my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self,
+   my $contig = new Bio::EnsEMBL::DBOLD::Contig ( -dbobj => $self,
 					       -id => $id );
    return $contig;
 }
@@ -841,7 +841,7 @@ sub prepare{
 
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
+       my $st = Bio::EnsEMBL::DBOLD::DummyStatement->new();
        $st->_fileh(\*STDERR);
        $st->_statement($string);
        return $st;

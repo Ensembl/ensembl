@@ -69,7 +69,7 @@ sub _initialize {
 
   $id || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->id($id);
   $self->_dbobj($dbobj);
@@ -202,7 +202,7 @@ sub get_all_Contigs{
    my $total = 0;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
-       my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self->_dbobj,
+       my $contig = new Bio::EnsEMBL::DBOLD::Contig ( -dbobj => $self->_dbobj,
 						   -id => $rowhash->{'id'} );
        $contig->order($count++);
        #$contig->offset($total);
