@@ -503,7 +503,6 @@ sub map_all{
     
     # transcript2gene
     my %transcript2gene;
-    my %clone_neighbourhood;
     foreach my $g (keys %{$self->{'_gene_hash'}}){
 	my $gene=new Bio::EnsEMBL::Gene;
 
@@ -517,6 +516,7 @@ sub map_all{
 	}
 
 	$gene->id($gene_id);
+	my %clone_neighbourhood;
 	foreach my $t (@{$self->{'_gene_hash'}->{$g}}){
 
 	    # FIXME FIXME
@@ -552,6 +552,7 @@ sub map_all{
 	# save neighbourhood of a gene
 	# (will only be a subset when loading a subset of TimDB)
 	if(keys %clone_neighbourhood){
+	    # print "CN".join(',',(keys %clone_neighbourhood))."\n";
 	    $gene->add_cloneid_neighbourhood((keys %clone_neighbourhood));
 	}
 
