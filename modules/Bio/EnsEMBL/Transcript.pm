@@ -362,7 +362,7 @@ sub translateable_exons{
 
    while( my $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) {
-	   print STDERR "New start exon " . $exon->id . "\n";
+	   #print STDERR "New start exon " . $exon->id . "\n";
 	   my $stexon = new Bio::EnsEMBL::Exon;
 
 	   $stexon->contig_id ($exon->contig_id);
@@ -390,8 +390,8 @@ sub translateable_exons{
 	       $stexon->phase(0);             # MC translation is always phase 0.
 	       $stexon->end($exon->end);
 
-	       print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
-	       print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
+	       #print STDERR "Setting start end to " . $stexon->start   . "\t" . $stexon->end  ."\n";
+	       #print (STDERR "Exon sequence is "    . $stexon->seq->seq . "\n");	       
 	   } else {
 	       if( $self->translation->start < $exon->start || $self->translation->start > $exon->end ) {
 		   $self->throw("For start exon ".$exon->id." translation start not within exon bounds. Start ". 
@@ -441,7 +441,7 @@ sub translateable_exons{
        }
    }
 
-   if( $exon->id ne $self->translation->end_exon_id()) {
+   if( !defined $exon || $exon->id ne $self->translation->end_exon_id()) {
        $self->throw("Unable to find end translation exon");
    }
 

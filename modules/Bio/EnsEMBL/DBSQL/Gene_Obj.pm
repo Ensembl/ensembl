@@ -402,7 +402,7 @@ sub get_array_supporting {
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	print STDERR "Getting into this row now....\n";
+	#print STDERR "Getting into this row now....\n";
 
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
@@ -444,7 +444,7 @@ sub get_array_supporting {
 
 	    # put away old exons
              if( defined $trans ) {
-		 print "Storing\n";
+		#print "Storing\n";
 	        $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
 	    # put in new exons
@@ -472,7 +472,7 @@ sub get_array_supporting {
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
 
-	print(STDERR "Creating exon - contig id $contigid\n");
+	#print(STDERR "Creating exon - contig id $contigid\n");
 
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
@@ -546,11 +546,11 @@ sub _store_exons_in_transcript{
    if( !ref $trans || !$trans->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw(" $trans is not a transcript");
    }
-   print STDERR "Got ",scalar(@exons),"to store...\n";
+   #print STDERR "Got ",scalar(@exons),"to store...\n";
 
    my $exon;
    while ( ($exon = shift @exons)) {
-       print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
+       #print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
 
        if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
         
@@ -570,7 +570,7 @@ sub _store_exons_in_transcript{
 	   }
            
 	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
-	   print STDERR "Added sticky exon... $sticky\n";
+	   #print STDERR "Added sticky exon... $sticky\n";
 	   $trans->add_Exon($sticky);
            
        } else {
@@ -614,7 +614,7 @@ sub _make_sticky_exon{
 
    foreach my $exon ( @exons ) {
        $seqstr .= $exon->seq->seq();
-       print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
+       #print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
 
        $sticky->add_component_Exon($exon);
    }
@@ -1038,7 +1038,7 @@ sub get_Virtual_Contig{
 
     foreach my $exon ($transcript->each_Exon) {
 
-	print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
+	#print STDERR "EXON ",$exon->id," transcript ",$transcript->id,"\n";
 	my $contig_id=$exon->contig_id();
 	if ($contig_id ne $old_e_cont) {
 	    foreach my $vcraw ($vc->rawcontig_ids) {
@@ -1077,7 +1077,7 @@ sub get_Virtual_Contig{
 	  }
       }
     }
-    print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
+    #print STDERR "Length of virtual contig for transcript ".$transcript->id." is ".$vc->length()."\n";
 
    
     
@@ -1114,7 +1114,7 @@ sub get_Transcript_in_VC_coordinates
   GENE: foreach my $gene ($vc->get_all_Genes){
       foreach my $transcript($gene->each_Transcript){
 	
-	  print STDERR $transcript->id,"\n";
+	  #print STDERR $transcript->id,"\n";
 
 	  if ($transcript->id eq $transcript_id){$found=$transcript;last GENE;}
       }
@@ -1153,7 +1153,7 @@ sub write{
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
-	   print STDERR "Getting out contig for $contig_id\n";
+	   #print STDERR "Getting out contig for $contig_id\n";
 	   my $contig      = $self->_db_obj->get_Contig($contig_id);
 	   $contig->fetch();
 	   

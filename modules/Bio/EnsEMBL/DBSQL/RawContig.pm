@@ -918,12 +918,13 @@ sub get_all_PredictionFeatures {
 
    my $id     = $self->internal_id();
    my $length = $self->length();
-
+   my $fsetid;
+   my $previous;
    my %analhash;
 
    # make the SQL query
-   my $query = "select id,seq_start,seq_end,strand,score,analysis " . 
-       "from feature where contig = $id and name = 'genscan'";
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id " . 
+       "from feature f, fset fset,fset_feature ff where ff.feature = f.id and fset.id = ff.fset and contig = $id and name = 'genscan'";
     
    my $sth = $self->dbobj->prepare($query);
    
@@ -932,12 +933,15 @@ sub get_all_PredictionFeatures {
    my ($fid,$start,$end,$strand,$score,$analysisid);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid);
    
+   $previous = '';
+   my $current_fset;
    while( $sth->fetch ) {
        my $out;
-       my $analysis;
        
+       my $analysis;
+	   
        if (!$analhash{$analysisid}) {
 
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -949,6 +953,15 @@ sub get_all_PredictionFeatures {
 	   $analysis = $analhash{$analysisid};
        }
 
+
+       if( $fsetid != $previous ) {
+	   $current_fset = new Bio::EnsEMBL::SeqFeature;
+	   $current_fset->source_tag('genscan');
+	   $current_fset->primary_tag('prediction');
+	   $current_fset->analysis($analysis);
+	   $current_fset->seqname($fsetid);
+	   push(@array,$current_fset);
+       }
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
@@ -969,8 +982,9 @@ sub get_all_PredictionFeatures {
        # Final check that everything is ok.
        
        $out->validate();
-
-      push(@array,$out);
+       $current_fset->add_sub_SeqFeature($out,'EXPAND');
+       $current_fset->strand($strand);
+       $previous = $fsetid;
   }
  
    return @array;

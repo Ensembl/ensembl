@@ -8,7 +8,7 @@ BEGIN{
 use strict;
 
 
-use EnsWeb;
+#use EnsWeb;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::AceDB::Obj;
@@ -21,6 +21,7 @@ my $dbname = 'ensembl';
 my $dbuser = 'root';
 my $mask   = 0;
 my $dbpass = undef;
+my $dbuser = 'ensro';
 my $port   = 3306;
 my $all    = 0;
 
@@ -33,6 +34,7 @@ $| = 1;
 	     'port:n'    => \$port,
 	     'dbname:s'  => \$dbname,
 	     'dbpass:s'  => \$dbpass,
+             'dbuser:s'  => \$dbuser,
 	     'infile=s'  => \$infile,
 	     'all'       => \$all,
 	     );
@@ -112,24 +114,29 @@ sub get_genscan_peptides {
     my ($contig,$fh) = @_;
 
     my @genscan = $contig->get_all_PredictionFeatures();
+     
     my $trancount = 1;
       
     foreach my $genscan (@genscan) {
+	print STDERR "Got a genscan with ".$genscan->seqname."\n";
+
+
 	my $transcript = new Bio::EnsEMBL::Transcript;
-	$transcript->id($contig->id . "." . $genscan->id);
+	$transcript->id($contig->id . "." . $genscan->seqname);
 	$trancount++;
 
 	my @exons;
 	my $count    = 1;
 
 	foreach my $f ($genscan->sub_SeqFeature) {
+	    #print STDERR "A sub seq feature found..\n";
 	    my $exon  = new Bio::EnsEMBL::Exon;
 	    $exon->id       ($contig->id . ".$count");
 	    $exon->contig_id($contig->id);
 	    $exon->start    ($f->start);
 	    $exon->end      ($f->end  );
 	    $exon->strand   ($f->strand);
-	    $exon->attach_seq($contig->seq);
+	    $exon->attach_seq($contig->primary_seq);
 	    
 	    push(@exons,$exon);
 	    $count++;
@@ -137,7 +144,7 @@ sub get_genscan_peptides {
 	}
 	
 	my $translation = new Bio::EnsEMBL::Translation;
-	$translation->id($contig->id);
+	$translation->id($contig->id.".".$genscan->seqname);
 	
 	if ($exons[0]->strand == 1) {
 	    @exons = sort {$a->start <=> $b->start} @exons;
