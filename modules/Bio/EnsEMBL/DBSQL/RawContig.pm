@@ -1457,8 +1457,6 @@ sub get_all_PredictionFeatures_by_analysis_id {
           AND analysis = $ana_id
         ORDER BY strand * seq_start";
 
-    warn $query;
-
     my $sth = $self->dbobj->prepare($query);
 
     $sth->execute;

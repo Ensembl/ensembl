@@ -611,7 +611,7 @@ sub fetch_VirtualContig_of_clone{
    if( !defined $contig ) {
        $self->throw("Clone is not on the golden path. Cannot build VC");
    }
-     
+     print STDERR "$chr_name, $first_start, $end ($size)\n";
    my $vc = $self->fetch_VirtualContig_by_chr_start_end(    $chr_name,
                             $first_start-$size,
                             $last_end+$size

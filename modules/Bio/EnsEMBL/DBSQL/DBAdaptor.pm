@@ -169,7 +169,7 @@ sub new {
     $self->password( $password);
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
-#    $self->litedbname( $litedbname );
+#   $self->litedbname( $litedbname );
 
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;

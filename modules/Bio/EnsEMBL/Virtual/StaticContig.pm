@@ -247,9 +247,11 @@ sub get_all_SimilarityFeatures_by_analysis_id {
    my ( $self, $ana_id ) = @_;
 
    my $glob_start=$self->_global_start;
-   my $glob_end=$self->_global_end;
-   my $chr_name=$self->_chr_name;
-   my $idlist  = $self->_raw_contig_id_list();
+   my $glob_end  =$self->_global_end;
+   my $chr_name  =$self->_chr_name;
+   my $idlist    = $self->_raw_contig_id_list();
+   my $type      = $self->dbobj->static_golden_path_type;
+
    
    unless ($idlist){
        return ();
@@ -269,7 +271,8 @@ sub get_all_SimilarityFeatures_by_analysis_id {
                         AND    f.contig in $idlist
                         AND    sgp.chr_end >= $glob_start 
 		        AND    sgp.chr_start <=$glob_end 
-		        AND    sgp.chr_name='$chr_name' 
+		        AND    sgp.chr_name ='$chr_name' 
+                        AND    sgp.type = '$type'
                         AND    a.gff_feature = 'similarity'
                         ORDER  by start";
    

@@ -307,8 +307,8 @@ sub _store_single_feature
 	 -1,
 	 -1,
 	 "__NONE__",
-	 'NULL',
-	 'NULL',
+        ((defined $feature->p_value)      ? $feature->p_value     : 'NULL'),
+        ((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL'),
 	 'NULL',
 	 'NULL' 
    )
