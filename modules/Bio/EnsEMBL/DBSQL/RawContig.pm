@@ -2148,7 +2148,7 @@ sub chr_start{
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
-    $self->_chromosome($value);
+    $self->_chr_start($value);
     return $value;
 
 
@@ -2246,7 +2246,7 @@ sub fpc_contig_start {
     $sth->execute;
     my ($value) = $sth->fetchrow_array();
     if( !defined $value) { return undef; }
-    $self->_chromosome($value);
+    $self->_fpc_contig_start($value);
     return $value;
 
 
@@ -2425,6 +2425,40 @@ sub static_golden_ori{
    return $self->{'_static_golden_ori'};
 }
 
+=head2 chromosome_position
+
+ Title   : chromosome_position
+ Usage   : $self->chromosome_position($raw_contig_position[,$raw_contig_strand])
+ Function: 
+ Returns : position and strand in the corresponding chromosome
+ Args    :
+
+=cut 
+
+sub chromosome_position {
+  my ($self,$position,$strand) = @_;
+  
+  my ($position_on_chr,$strand_on_chr);
+  
+  if ($position < $self->static_golden_start ||
+      $position > $self->static_golden_end) {
+    return [$position_on_chr,$strand_on_chr];
+  }
+
+  $strand = 1 unless (defined $strand);
+  if ($strand == 1) {
+    $strand_on_chr = $self->static_golden_ori;
+  } elsif ($strand == -1) {
+    $strand_on_chr = -$self->static_golden_ori;
+  }
+  
+  if ($self->static_golden_ori == 1) {
+    $position_on_chr = $self->chr_start + ($position - $self->static_golden_start);
+  } elsif ($self->static_golden_ori == -1) {
+    $position_on_chr = $self->chr_end - ($self->static_golden_end - $position)
+  }
+  return ($position_on_chr,$strand_on_chr);
+}
 
 =head2 static_golden_type
 
