@@ -1021,7 +1021,7 @@ sub dump_core_xrefs {
     }
 
     # Now get the synonyms for each of these xrefs and write them to the external_synonym table
-    $sql = "SELECT xref_id, synonym FROM synonym WHERE xref_id $id_str";
+    $sql = "SELECT DISTINCT xref_id, synonym FROM synonym WHERE xref_id $id_str";
 
     my $syn_sth = $xref_dbi->prepare($sql);
     $syn_sth->execute();
@@ -1182,12 +1182,14 @@ sub build_transcript_display_xrefs {
   foreach my $key (keys %obj_to_best_xref) {
 
     my ($type, $object_id) = split /\|/, $key;
-    my ($best_xref, $best_xref_priority_idx) = split /\|/, $obj_to_best_xref{$object_id};
+
+    my ($best_xref, $best_xref_priority_idx) = split /\|/, $obj_to_best_xref{$key};
 
     # If transcript has a translation, use the best xref out of the transcript & translation
     if ($type =~ /Transcript/i) {
       my $transcript_id = $object_id;
       my $translation_id = $transcript_to_translation{$transcript_id};
+
       if ($translation_id) {
 	my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
 	my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
@@ -1436,7 +1438,7 @@ sub do_upload {
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
 
-    my $file = getcwd() . "/" . $table . "_display_xref.txt";
+    my $file = $self->dir() . "/" . $table . "_display_xref.txt";
     my $sth;
 
     if ($deleteexisting) {
