@@ -2023,7 +2023,6 @@ sub get_all_Genes_exononly{
             $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
             $exon->seqname($self->id);
             $exon->phase($phase);
-	    $exon_already_seen{$exonid} = 1;
             $previous_exon = $exon;
 	    $exons{$exonid} = $exon;
         }
