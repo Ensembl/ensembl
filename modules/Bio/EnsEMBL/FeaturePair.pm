@@ -1042,4 +1042,9 @@ sub hend_phase {
     return $self->feature2->end_phase();
 }
 
+
+sub has_tag {
+    return 0;
+}
+
 1;
