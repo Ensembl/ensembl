@@ -243,9 +243,10 @@ sub subseq {
 
 =head2 get_repeatmasked_seq
 
-  Arg [1]    : string $logic_name (optional)
+  Arg [1]    : string \@logic_names (optional)
   Arg [2]    : int $soft_masking_enable (optional)
-  Example    : $slice->get_repeatmasked_seq or $slice->get_repeatmasked_seq('RepeatMask',1)
+  Example    : $slice->get_repeatmasked_seq or
+               $slice->get_repeatmasked_seq(['RepeatMask'],1)
   Description: Returns Bio::PrimarySeq containing the masked (repeat replaced by N) 
                or soft-masked (when Arg[2]=1, repeat in lower case while non repeat
                in upper case) sequence corresponding to the Slice object.
@@ -257,17 +258,20 @@ sub subseq {
 =cut
 
 sub get_repeatmasked_seq {
-    my ($self,$logic_name,$soft_mask) = @_;
+    my ($self, $logic_names, $soft_mask) = @_;
     
-    if(!$logic_name){
-      $logic_name = 'RepeatMask';
+    unless ($logic_names) {
+        $logic_names = [ undef ];
     }
 
     unless (defined $soft_mask) {
       $soft_mask = 0;
     }
 
-    my $repeats = $self->get_all_RepeatFeatures($logic_name);
+    my $repeats;
+    foreach my $l (@$logic_names) {
+	push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
+    }
 
     my $dna = $self->seq();
     my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
@@ -278,7 +282,6 @@ sub get_repeatmasked_seq {
 					 );
     return $masked_seq;
 }
-
 
 
 =head2 _mask_features
