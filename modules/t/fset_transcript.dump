@@ -2675,7 +2675,7 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2260,'89',740,827,170,-1,'4','tblastn',453,538,'gb|AI098838|AI098838',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2261,'89',740,827,161,-1,'4','tblastn',131,216,'gb|AA646114|AA646114',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2262,'89',740,827,162,-1,'4','tblastn',402,487,'gb|AA529753|AA529753',0.0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2263,'89',740,827,-1000,-1,'5','genscan',-1,-1,'__NONE__',0.0,0);
+INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id,phase) VALUES (2263,'89',740,827,-1000,-1,'5','genscan',-1,-1,'__NONE__',0.0,0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2264,'90',3790,3893,42,1,'1','blastp',163,197,'TR:Q9ZUW4',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2265,'90',3976,4106,44,1,'1','blastp',220,263,'TR:Q9ZUW4',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2266,'90',3744,4148,658,1,'4','tblastn',2,406,'gb|AA773922|AA773922',0.0,0);
@@ -2705,7 +2705,7 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2290,'90',4164,4220,91,1,'4','tblastn',10,61,'gb|AA496658|AA496658',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2291,'90',3771,4028,76,1,'4','tblastn',19,276,'gb|W62811|W62811',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2292,'90',6205,5896,100,-1,'7','blastn',1,310,'G38753',0.0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2293,'90',3646,4220,-1000,1,'5','genscan',-1,-1,'__NONE__',0.0,0);
+INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id,phase) VALUES (2293,'90',3646,4220,-1000,1,'5','genscan',-1,-1,'__NONE__',0.0,0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2294,'92',1815,1161,99,-1,'7','blastn',4,658,'G60832',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2295,'94',4520,4550,42,1,'1','blastp',95,104,'SW:TPCS_RANES',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2296,'94',6083,6123,42,1,'1','blastp',104,117,'SW:TPCS_RANES',0.0,0);

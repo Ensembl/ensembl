@@ -60,7 +60,6 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-  my $make = $self->SUPER::_initialize(@args);
   $self->{'_pointer_array'} = [];
 # set stuff in self from @args
   return $self; # success - we hope!

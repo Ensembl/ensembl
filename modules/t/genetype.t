@@ -42,8 +42,9 @@ print "ok 2\n";
 
 
 
+my $gene_obj = $db->gene_Obj;
 
-my $gene=$db->get_Gene('ENSG00000003941');
+my $gene=$gene_obj->get('ENSG00000003941');
 
 
 if ($gene){print "ok 3\n";}

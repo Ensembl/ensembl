@@ -520,3 +520,14 @@ create table genomic_align_block (
        KEY (raw_id,raw_start,raw_end),
        KEY (raw_id,raw_end)
        );
+
+
+create table gene_denormalised_location (
+       gene_id   varchar(40) NOT NULL,
+       chr_start integer(10) NOT NULL,
+       chr_end   integer(10) NOT NULL,
+       chr_name  varchar(40) NOT NULL,
+       PRIMARY KEY(gene_id),
+       KEY (chr_name,chr_start,chr_end)
+);
+

@@ -1300,6 +1300,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
 	   $current_fset->id($count);
+	   $current_fset->score(0.0);
            $count++;
 	   $current_fset->raw_seqname($self->id);
 	   push(@array,$current_fset);
@@ -1313,6 +1314,7 @@ sub get_all_PredictionFeatures {
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
+       $out->score     ($score)     if (defined $score);
        $out->p_value   ($evalue)    if (defined $evalue);
        $out->percent_id($perc_id)   if (defined $perc_id); 
        $out->phase     ($phase)     if (defined $phase);    

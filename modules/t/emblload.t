@@ -53,6 +53,8 @@ $clone = $db->get_Clone('HSHNRNPA');
 
 print "ok 3\n";
 
-$gene = $db->get_Gene('HSHNRNPA.gene.1');
+$gene_obj =$db->gene_Obj();
+
+$gene = $gene_obj->get('HSHNRNPA.gene.1');
 
 print "ok 4\n";

@@ -62,7 +62,9 @@ $feature_obj->get_PredictionFeature_by_id("wrong_id");
 if ($@){print "ok 5\n";}
 else { print "not ok 5\n";}
 
-if ($feature_obj->get_PredictionFeature_as_Transcript(40)->isa ("Bio::EnsEMBL::Transcript"))
+my $feat = $feature_obj->get_PredictionFeature_as_Transcript(40);
+
+if ( $feat->isa("Bio::EnsEMBL::Transcript"))
 {print  "ok 6\n";}
 else { print "not ok 6\n";}
 

@@ -77,35 +77,35 @@ if ($bandobj){
 	print "not ok 9\n";
 }
 
-my $bandname = $bandobj->name;
+$bandname = $bandobj->name;
 if( $bandname eq 'p36.33') {
 	print "ok 10\n";
 } else {
 	print "not ok 10\n";
 }
 
-my $bandchr = $bandobj->chromosome;
+$bandchr = $bandobj->chromosome;
 if( $bandchr eq 'chr1') {
 	print "ok 11\n";
 } else {
 	print "not ok 11\n";
 }
 
-my $bandstart = $bandobj->start;
+$bandstart = $bandobj->start;
 if( $bandstart == 0) {
 	print "ok 12\n";
 } else {
 	print "not ok 12\n";
 }
 
-my $bandend = $bandobj->end;
+$bandend = $bandobj->end;
 if( $bandend == 2300000) {
 	print "ok 13\n";
 } else {
 	print "not ok 13\n";
 }
 
-my $bandstain = $bandobj->stain;
+$bandstain = $bandobj->stain;
 if( $bandstain eq 'gneg') {
 	print "ok 14\n";
 } else {
@@ -113,7 +113,7 @@ if( $bandstain eq 'gneg') {
 }
 
 
-my @band = $kadp->fetch_all_by_chromosome('chr1');
+@band = $kadp->fetch_all_by_chromosome('chr1');
 
 if (scalar(@band)==2){
 	print "ok 15\n";

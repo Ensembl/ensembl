@@ -718,7 +718,7 @@ sub get_PredictionFeature_by_id {
    my $fsetid;
    my %analhash;
   
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id " .
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id,f.phase " .
        "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
         " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
  
@@ -727,14 +727,13 @@ sub get_PredictionFeature_by_id {
         
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$analysisid,$contig);
+   my ($fid,$start,$end,$strand,$score,$analysisid,$contig,$phase);
            
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig,\$phase);
 
    my $current_fset;
    if( $sth->fetch ) {
        my $out;
-
        my $analysis;
 
        if (!$analhash{$analysisid}) {
@@ -747,22 +746,23 @@ sub get_PredictionFeature_by_id {
        } else {
            $analysis = $analhash{$analysisid};
        }
-          
-           $current_fset = new Bio::EnsEMBL::SeqFeature;
-           $current_fset->source_tag('genscan');
-           $current_fset->primary_tag('prediction');
-           $current_fset->analysis($analysis);
-           $current_fset->seqname($contig);
-           $current_fset->id($fsetid);
+       
+       $current_fset = new Bio::EnsEMBL::SeqFeature;
+       $current_fset->source_tag('genscan');
+       $current_fset->primary_tag('prediction');
+       $current_fset->analysis($analysis);
+       $current_fset->seqname($contig);
+       $current_fset->raw_seqname($contig);
+       $current_fset->id($fsetid);
         
 
-   $out = new Bio::EnsEMBL::SeqFeature;
+       $out = new Bio::EnsEMBL::SeqFeature;
  
        $out->seqname   ($contig);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);  
- 
+       $out->phase     ($phase);
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
  
@@ -775,14 +775,15 @@ sub get_PredictionFeature_by_id {
        # Final check that everything is ok.
            
        $out->validate();
+
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
+   } else { 
+       $self->throw("Fset $genscan_id does not exist in the database");
    }
-   
-     else { $self->throw("Fset $genscan_id does not exist in the database");}
 
 
-return $current_fset;
+   return $current_fset;
 
 }
 
@@ -812,9 +813,7 @@ sub get_PredictionFeature_as_Transcript{
     my $ft=$self->get_PredictionFeature_by_id($genscan_id);
     my $contig=$self->_db_obj->get_Contig($ft->seqname);
  
-    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
-
-
+    return &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
 }
 
 

@@ -43,8 +43,9 @@ my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";    
 
 
+$gene_obj = $db->gene_Obj();
 
-$gene = $db->get_Gene('gene-id-1');
+$gene = $gene_obj->get('gene-id-1');
 
 print "ok 3\n";
 
