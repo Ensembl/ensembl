@@ -485,6 +485,152 @@ sub get_all_RepeatFeatures {
 }
 
 
+
+=head2 get_all_PredictionFeatures
+
+ Title   : get_all_PredictionFeatures
+ Usage   : foreach my $sf ( $contig->get_all_PredictionFeatures )
+ Function: Gets all the repeat features on a contig.
+ Example :
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub get_all_PredictionFeatures {
+   my ($self) = @_;
+
+   my @array;
+
+#   my $id     = $self->internal_id();
+   my $length = $self->length();
+
+
+
+
+  my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    my $idlist  = $self->_raw_contig_id_list();
+    
+    unless ($idlist){
+	return ();
+    }
+
+
+
+   my $fsetid;
+   my $previous;
+   my %analhash;
+   my $analysis_type='genscan';
+
+   my $query = "SELECT f.id, 
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
+                        f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid  
+                        FROM   feature f, analysis a,static_golden_path sgp 
+                        WHERE    f.analysis = a.id 
+                        AND    sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
+		        AND    a.gff_source = '$analysis_type'  
+                        AND    sgp.chr_end >= $glob_start 
+		        AND    sgp.chr_start <=$glob_end 
+		        AND    sgp.chr_name='$chr_name' 
+                        ORDER  by start";
+
+   my $sth = $self->dbobj->prepare($query);
+   
+   $sth->execute();
+   
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
+   
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
+  
+   $previous = -1;
+   my $current_fset;
+   my $count;
+
+   while( $sth->fetch ) {
+       my $out;
+       
+       my $analysis;
+	   
+       if (!$analhash{$analysisid}) {
+
+	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   $analysis = $feature_obj->get_Analysis($analysisid);
+
+	   $analhash{$analysisid} = $analysis;
+	   
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+
+
+       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
+	   $current_fset = new Bio::EnsEMBL::SeqFeature;
+	   $current_fset->source_tag('genscan');
+	   $current_fset->primary_tag('prediction');
+	   $current_fset->analysis($analysis);
+	   $current_fset->seqname($self->id);
+	   $current_fset->id($count);
+	   $current_fset->score(0.0);
+           $count++;
+	   $current_fset->raw_seqname($self->id);
+	   push(@array,$current_fset);
+       }
+
+       $out = new Bio::EnsEMBL::SeqFeature;
+       
+       $out->seqname   ($self->id);
+       $out->raw_seqname($self->id);
+
+       $out->start     ($start);
+       $out->end       ($end);
+       $out->strand    ($strand);
+       $out->score     ($score)     if (defined $score);
+       $out->p_value   ($evalue)    if (defined $evalue);
+       $out->percent_id($perc_id)   if (defined $perc_id); 
+       $out->phase     ($phase)     if (defined $phase);    
+       $out->end_phase ($end_phase) if (defined $end_phase);
+        
+
+	my $query="select fset from fset_feature where feature=$fid"; 
+	my $sth = $self->dbobj->prepare($query);
+   	$sth->execute();
+	my $arr_ref=$sth->fetchrow_arrayref;
+
+	$fsetid=$arr_ref->[0];
+
+       $out->id($fsetid); # to make genscan peptide work
+       $out->source_tag('genscan');
+       $out->primary_tag('prediction');
+       
+       if( defined $score ) {
+	   $out->score($score);
+       }
+
+       $out->analysis($analysis);
+
+       # Final check that everything is ok.
+       
+       $out->validate();
+       $current_fset->add_sub_SeqFeature($out,'EXPAND');
+       $current_fset->strand($strand);
+       $previous = $hid;
+  }
+ 
+   return @array;
+}
+
+
+
+
 =head2 get_all_ExternalFeatures
 
  Title   : get_all_ExternalFeatures
