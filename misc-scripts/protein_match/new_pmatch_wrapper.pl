@@ -90,8 +90,8 @@ if ($opts{'d'} == 1) {
 	$target = $conf{'pmatch_input_fa'};
 	$output = $conf{'mapping_out'};
 
-	$t_thr = $conf{'target_idt'};
-	$q_thr = $conf{'query_idt'};
+	$t_thr = $conf{'min_ensembl_idt'};
+	$q_thr = $conf{'min_known_idt'};
 
 	$pmatch_cmd = $conf{'pmatch'};
 }

@@ -35,8 +35,8 @@ my $opt_q = $conf{'ensembl_predictions'};
 my $opt_t = $conf{'total_known_fa'};
 my $opt_o = $conf{'mapping_out'};
 
-my $t_thr = $conf{'target_idt'};
-my $q_thr = $conf{'query_idt'};
+my $t_thr = $conf{'min_ensembl_idt'};
+my $q_thr = $conf{'min_known_idt'};
 my $pmatch_bin = $conf{'pmatch'};
 my ($opt_w,$opt_l,$opt_d);
 my $help;
@@ -56,8 +56,8 @@ my %check;
 $check{'ensembl_predictions'} = $conf{'ensembl_predictions'};
 $check{'total_known_fa'} = $conf{'total_known_fa'};
 $check{'mapping_out'} = $conf{'mapping_out'};
-$check{'target_id'} = $conf{'target_idt'};
-$check{'query_idt'} = $conf{'query_idt'};
+$check{'target_id'} = $conf{'min_ensembl_idt'};
+$check{'min_known_idt'} = $conf{'min_known_idt'};
 $check{'pmatch'} = $conf{'pmatch'};
 
 foreach my $k (keys %check) {
