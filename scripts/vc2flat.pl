@@ -43,6 +43,8 @@
 
     -help      displays this documentation with PERLDOC
 
+    -genetype  type of gene to get out of the database
+
 =cut
 
 use strict;
@@ -73,6 +75,7 @@ my $species='';
 my $freeze=0;
 my $nogene=0;
 my $nosecure=0;
+my $genetype = undef;
 
 # defaults for msql (rdb) access
 my $host     = 'ensrv4.sanger.ac.uk';
@@ -121,7 +124,8 @@ my $static = 0;
 	     'fposition:i' => \$focusposition,
 	     'ori:i'     => \$ori,
 	     'left:i'    => \$left,
-	     'right:i'   => \$right
+	     'right:i'   => \$right,
+	     'genetype:s' => \$genetype
 	     ) or exec('perldoc', $0);
 
 if ($help){
@@ -201,9 +205,17 @@ foreach my $vcstring ( @vcstrings ) {
 	} elsif ( $format =~ /genbank/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($vc);
 	    $seqout->write_seq($vc);
-	} elsif ( $format =~ /pep/ ) {
+	} elsif ( $format =~ /pep/ || $format =~ /gtf/ ) {
+	    my @genes;
+	    if( defined $genetype ) {
+		@genes = $vc->get_Genes_by_Type($genetype);
+	    } else {
+		@genes = $vc->get_all_Genes();
+	    }
+
 	    my $vcid = $vc->id();
-	    foreach my $gene ( $vc->get_all_Genes() ) {
+
+	    if( $format =~ /pep/ ) {
 		my $geneid = $gene->id();
 		foreach my $trans ( $gene->each_Transcript ) {
 		    my $tseq = $trans->translate();
@@ -213,6 +225,8 @@ foreach my $vcstring ( @vcstrings ) {
 		    $tseq->desc("VirtualContig:$vcid Gene:$geneid");
 		    $seqout->write_seq($tseq);
 		}
+	    } elsif ( $format =~ /gtf/ ) {
+	      Bio::EnsEMBL::Utils::GTF_handler->dump_genes($OUT,@genes);
 	    }
 	} elsif ( $format =~ /ace/ ) {
 	    $vc->write_acedb($OUT,$aceseq);
