@@ -510,8 +510,7 @@ sub get_all_Genes{
    my ($self, $empty_flag) = @_;
 
    #caching is performed on a per slice basis in the GeneAdaptor
-   my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
-   return $gene_adaptor->fetch_all_by_Slice($self, $empty_flag);
+   return $self->adaptor->db->get_GeneAdaptor()->fetch_all_by_Slice($self, $empty_flag);
 }
 
 
@@ -527,18 +526,15 @@ sub get_all_Genes{
 
 =cut
 
-sub get_Genes_by_source{
+sub get_Genes_by_source {
+  my $self = shift; 
+  warn( "\$Slice->get_Genes_by_source(\$source): You don't want to do it like that!.\nYou want to do it like this \$Slice->get_all_Genes_by_source(\$source)");
+  return $self->get_all_Genes_by_source( @_ );
+}
+
+sub get_all_Genes_by_source{
    my ($self, $source, $empty_flag) = @_;
-   my $genes = $self->get_all_Genes($empty_flag);
-   
-   my @out = ();
-
-   foreach my $gene (@$genes) {
-     if($gene->source() eq $source) {
-       push @out, $gene;
-     }
-   }
-
+   my @out = grep { $_->source eq $source } @{$self->get_all_Genes($empty_flag)};
    return \@out;
 }
 
@@ -556,18 +552,16 @@ sub get_Genes_by_source{
 
 =cut
 
-sub get_Genes_by_type{
+sub get_Genes_by_type {
+  my $self = shift; 
+  warn( "\$Slice->get_Genes_by_type(\$type): You don't want to do it like that!.\nYou want to do it like this \$Slice->get_all_Genes_by_type(\$type)");
+  return $self->get_all_Genes_by_type( @_ );
+}
+
+sub get_all_Genes_by_type{
    my ($self, $type, $empty_flag) = @_;
    
-   my $genes = $self->get_all_Genes($empty_flag);
-   
-   my @out = ();
-
-   foreach my $gene (@$genes) {
-     if($gene->type() eq $type) {
-       push @out, $gene;
-     }
-   }
+   my @out = grep { $_->type eq $type } $self->get_all_Genes($empty_flag);
 
    return \@out;
 }
@@ -683,7 +677,7 @@ sub assembly_type{
 }
 
 
-sub get_KaryotypeBands {
+sub get_all_KaryotypeBands {
   my ($self) = @_;
   
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
@@ -939,7 +933,6 @@ sub contig_from_clone {
     );
     $sth->execute();
     my ($contig,$offset) = $sth->fetchrow_array();
-    warn( "Clone: $clone -> $contig ($offset)") ;
     return $offset==1 ? $contig : undef;
 }
 
@@ -952,8 +945,7 @@ sub get_all_DASFeatures{
 
    my %genomic_features;
 
-   my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->
-     fetch_by_type($self->assembly_type());
+   my $mapper = $self->adaptor()->db->get_AssemblyMapperAdaptor()->fetch_by_type($self->assembly_type());
 
    my @raw_contig_ids = $mapper->list_contig_ids( $self->chr_name,
                                                   $self->chr_start,
@@ -994,6 +986,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            my @clone_features;
            my $dsn = $extf->_dsn();
 
+     warn("Fetching features from $dsn!!!" );
           foreach my $sf (
               @{ $extf->get_Ensembl_SeqFeatures_DAS(
                     $self->chr_name,$self->chr_start,$self->chr_end,
@@ -1001,6 +994,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
            ) {
 # BAC.*_C are fly contigs....
 # CRA_x are Celera mosquito contigs....
+	  warn( join ' - ', $sf->das_dsn, $sf->das_id, $sf->seqname, $sf->das_start, $sf->das_end, $sf->das_strand );
                if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
                     push(@contig_features,$sf);
@@ -1021,6 +1015,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                     if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
 #                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
                          $sf->seqname($contig_from_clone);
+                         warn( $contig_from_clone );
                          push(@contig_features, $sf);
                     }
 #                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
@@ -1035,26 +1030,20 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                }
            }
            foreach my $sf ( @contig_features ) {
-         #printf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n",
-         $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id;
+#warn( sprintf "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n", $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id );
      # map to a chromosomal coordinate
-               my @coord_list = $mapper->map_coordinates_to_assembly
-                   ( $contig_name_hash{ $sf->seqname() }->dbID(), $sf->das_start, $sf->das_end, $sf->das_strand );
-     # this should work with one coordinate
-               my $coord = shift( @coord_list );
+               my( $coord ) = $mapper->map_coordinates_to_assembly( $contig_name_hash{ $sf->seqname() }->dbID(), $sf->das_start, $sf->das_end, $sf->das_strand );
+#warn( join ' - ',  $sf->das_id, $contig_name_hash{ $sf->seqname() }->dbID(), $sf->das_start, $sf->das_end, $sf->das_strand );
      # if its not mappable than ignore the feature
                next if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" ));
 
                $sf->das_move( $coord->{'start'}+$offset, $coord->{'end'}+$offset, $coord->{'strand'} );
-         #warn( "---------------------------------------------------" );
-         #printf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n",
-         $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id;
-
+#warn( sprintf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n", $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id );
                next if $sf->das_start > $length || $sf->das_end < 1;
                push @{$genomic_features{$dsn}}, $sf
            }
            foreach my $sf ( @chr_features ) {
-               $sf->das_move( $offset, $chr_strand );
+               $sf->das_shift( $offset );
                next if $sf->das_start > $length || $sf->das_end < 1; # skip anything thats fallen off the end
                push @{$genomic_features{$dsn}}, $sf
            }
