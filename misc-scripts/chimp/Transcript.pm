@@ -277,7 +277,7 @@ sub split_itrans {
     throw("unexpected: could not find bad exon in transcript");
   }
 
-   debug("==BAD EXON: (keep = $keep_exon)\n");
+   debug("==BAD EXON: ". (($keep_exon) ? 'keeping' : 'discarding'));
    print_exon($bad_exon);
 
   # keep the 'bad exon' if the flag was set
@@ -311,7 +311,7 @@ sub split_itrans {
       $first_trans->cdna_coding_start(1);
       $first_trans->cdna_coding_end(0);
     }
-    elsif($last_ex->cdna_end() > $first_trans->cdna_coding_start() &&
+    elsif($last_ex->cdna_end() >= $first_trans->cdna_coding_start() &&
           $last_ex->cdna_end() < $first_trans->cdna_coding_end()) {
       # coding sequence is cut by coding end
       $first_trans->cdna_coding_end($last_ex->cdna_end());
@@ -384,7 +384,8 @@ sub make_Transcript {
   my $translation;
 
   # the whole translation may have been deleted
-  if ($itrans->cdna_coding_start == $itrans->cdna_coding_end + 1) {
+  # discard translation if mrna is less than a codon in length
+  if($itrans->cdna_coding_end - $itrans->cdna_coding_start + 1 < 3) {
     $translation = undef;
   } else {
     $translation = Bio::EnsEMBL::Translation->new();
@@ -442,6 +443,7 @@ sub make_Transcript {
     print_exon($itrans->get_all_Exons->[0]);
     print STDERR "LAST EXON:\n";
     print_exon($itrans->get_all_Exons->[-1], $itrans);
+    throw("Unexpected: Could not find translation start exon in transcript\n");
   }
   if($translation && !$translation->end_Exon()) {
     print STDERR "Could not find translation end exon in transcript.\n";
@@ -449,6 +451,7 @@ sub make_Transcript {
     print_exon($itrans->get_all_Exons->[0]);
     print STDERR "LAST EXON:\n";
     print_exon($itrans->get_all_Exons->[-1], $itrans);
+    throw("Unexpected: Could not find translation end exon in transcript\n");
   }
 
   return $transcript;
