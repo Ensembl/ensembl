@@ -10,13 +10,12 @@
         );
 
 
-   You should use this as a base class for all objects (DBAdaptor) that connect to
-   database. 
+   You should use this as a base class for all objects (DBAdaptor) that 
+   connect to a database. 
 
    $sth = $db->prepare( "SELECT something FROM yourtable" );
 
    If you go through prepare you could log all your select statements.
-    
 
 =head1 DESCRIPTION
 
@@ -36,7 +35,6 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-
 package Bio::EnsEMBL::DBSQL::DBConnection;
 
 use vars qw(@ISA);
@@ -48,6 +46,37 @@ use DBI;
 
 
 @ISA = qw(Bio::EnsEMBL::Root);
+
+
+=head2 new
+
+  Arg [DBNAME] : string
+                 The name of the database to connect to.
+  Arg [HOST] : (optional) string
+               The domain name of the database host to connect to.  
+               'localhost' by default. 
+  Arg [USER] : string
+               The name of the database user to connect with 
+  Arg [PASS] : (optional) string
+               The password to be used to connect to the database
+  Arg [PORT] : int
+               The port to use when connecting to the database
+               3306 by default.
+  Arg [DRIVER] : (optional) string
+                 The type of database driver to use to connect to the DB
+                 mysql by default.
+  Example    :$dbc = new Bio::EnsEMBL::DBSQL::DBConnection(-user=> 'anonymous',
+                                                           -dbname => 'pog',
+							   -host   => 'caldy',
+							   -driver => 'mysql');
+  Description: Constructor for a DatabaseConenction. Any adaptors that require
+               database connectivity should inherit from this class.
+  Returntype : Bio::EnsEMBL::DBSQL::DBConnection 
+  Exceptions : thrown if USER or DBNAME are not specified, or if the database
+               cannot be connected to.
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
 
 sub new {
   my $class = shift;
@@ -106,6 +135,20 @@ sub new {
 }
 
 
+=head2 driver
+
+  Arg [1]    : (optional) string $arg
+               the name of the driver to use to connect to the database
+  Example    : $driver = $db_connection->driver()
+  Description: Getter / Setter for the driver this connection uses.
+               Right now there is no point to setting this value after a
+               connection has already been established in the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
 sub driver {
   my($self, $arg ) = @_;
 
@@ -113,6 +156,22 @@ sub driver {
     ($self->{_driver} = $arg );
   return $self->{_driver};
 }
+
+
+=head2 port
+
+  Arg [1]    : (optional) int $arg
+               the TCP or UDP port to use to connect to the database
+  Example    : $port = $db_connection->port();
+  Description: Getter / Setter for the port this connection uses to communicate
+               to the database daemon.  There currently is no point in 
+               setting this value after the connection has already been 
+               established by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
 
 sub port {
   my ($self, $arg) = @_;
@@ -122,12 +181,44 @@ sub port {
   return $self->{_port};
 }
 
+
+=head2 dbname
+
+  Arg [1]    : (optional) string $arg
+               The new value of the database name used by this connection. 
+  Example    : $dbname = $db_connection->dbname()
+  Description: Getter/Setter for the name of the database used by this 
+               connection.  There is currently no point in setting this value
+               after the connection has already been established by the 
+               constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
 sub dbname {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_dbname} = $arg );
   $self->{_dbname};
 }
+
+
+=head2 username
+
+  Arg [1]    : (optional) string $arg
+               The new value of the username used by this connection. 
+  Example    : $username = $db_connection->username()
+  Description: Getter/Setter for the username used by this 
+               connection.  There is currently no point in setting this value
+               after the connection has already been established by the 
+               constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
 
 sub username {
   my ($self, $arg ) = @_;
@@ -136,12 +227,44 @@ sub username {
   $self->{_username};
 }
 
+
+=head2 username
+
+  Arg [1]    : (optional) string $arg
+               The new value of the host used by this connection. 
+  Example    : $host = $db_connection->host()
+  Description: Getter/Setter for the domain name of the database host use by 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
+               by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
+
 sub host {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ( $self->{_host} = $arg );
   $self->{_host};
 }
+
+
+=head2 username
+
+  Arg [1]    : (optional) string $arg
+               The new value of the password used by this connection. 
+  Example    : $host = $db_connection->password()
+  Description: Getter/Setter for the password of to use for 
+               this connection.  There is currently no point in setting 
+               this value after the connection has already been established 
+               by the constructor.
+  Returntype : string
+  Exceptions : none
+  Caller     : new
+
+=cut
 
 sub password {
   my ($self, $arg ) = @_;
@@ -153,11 +276,19 @@ sub password {
 
 =head2 _get_adaptor
 
-  Title   : _get_adaptor
-  Usage   : $obj->get_adaptor("full::module::name", )
-  Returns : An already existing, or a new instance of the specified DB adaptor 
-  Args : the fully qualified name of the adaptor module to retrieve
-         (optional) special additional args for the adaptors constructor
+  Arg [1]    : string $module
+               the fully qualified of the adaptor module to be retrieved
+  Arg [2..n] : (optional) arbitrary list @args
+               list of arguments to be passed to adaptors constructor
+  Example    : $adaptor = $self->_get_adaptor("full::adaptor::name");
+  Description: PROTECTED Used by subclasses to obtain adaptor objects
+               for this database connection using the fully qualified
+               module name of the adaptor. If the adaptor has not been 
+               retrieved before it is created, otherwise it is retreived
+               from the adaptor cache.
+  Returntype : Adaptor Object of arbitrary type
+  Exceptions : thrown if $module can not be instantiated
+  Caller     : Bio::EnsEMBL::DBAdaptor
 
 =cut
 
@@ -183,11 +314,6 @@ sub _get_adaptor {
       
     $adaptor = "$module"->new($self, @args);
 
-    unless($adaptor->isa('Bio::EnsEMBL::DBSQL::BaseAdaptor')) {
-      $self->throw("$module is not a Bio::EnsEMBL::DBSQL::BaseAdaptor\n");
-      return undef;
-    }
-
     $self->{'_adaptors'}{$internal_name} = $adaptor;
   }
 
@@ -197,12 +323,13 @@ sub _get_adaptor {
 
 =head2 db_handle
 
- Title   : _db_handle
- Usage   : $obj->_db_handle($newval)
- Function: 
- Example : 
- Returns : value of db_handle
- Args    : newvalue (optional)
+  Arg [1]    : DBI Database Handle $value
+  Example    : $dbh = $db_connection->db_handle() 
+  Description: Getter / Setter for the Database handle used by this
+               database connection.
+  Returntype : DBI Database Handle
+  Exceptions : none
+  Caller     : new, DESTROY
 
 =cut
 
@@ -216,17 +343,18 @@ sub db_handle {
 }
 
 
+
 =head2 prepare
 
- Title   : prepare
- Usage   : $sth = $dbobj->prepare("select seq_start,seq_end from feature where analysis = \" \" ");
- Function: prepares a SQL statement on the DBI handle
-
-           If the debug level is greater than 10, provides information into the
-           DummyStatement object
- Example :
- Returns : A DBI statement handle object
- Args    : a SQL string
+  Arg [1]    : string $string
+               the SQL statement to prepare
+  Example    : $sth = $db_connection->prepare("SELECT column FROM table");
+  Description: Prepares a SQL statement using the internal DBI database handle
+               and returns the DBI statement handle.
+  Returntype : DBI statement handle
+  Exceptions : thrown if the SQL statement is empty, or if the internal
+               database handle is not present
+  Caller     : Adaptor modules
 
 =cut
 
@@ -247,12 +375,14 @@ sub prepare {
 
 =head2 DESTROY
 
- Title   : DESTROY
- Usage   : Called automatically by garbage collector
- Function: Disconnects any active database connections
- Example : -
- Returns : -
- Args    : -
+  Arg [1]    : none
+  Example    : none
+  Description: Called automatically by garbage collector.  Should
+               never be explicitly called.  The purpose of this destructor
+               is to disconnect any active database connections.
+  Returntype : none 
+  Exceptions : none
+  Caller     : Garbage Collector
 
 =cut
 

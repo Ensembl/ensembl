@@ -232,7 +232,12 @@ sub get_dbID_by_chr_name {
 
 =head2 get_landmark_MarkerFeatures
 
+  Arg [1]    : none
+  Example    : none
   Description: DEPRECATED use Slice::get_landmark_MarkerFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -290,7 +295,12 @@ sub get_landmark_MarkerFeatures{
 
 =head2 get_landmark_MarkerFeatures_old
 
+  Arg [1]    : none
+  Example    : none
   Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 

@@ -14,6 +14,9 @@ MySQL Database queries to load and store external object references.
 
 =head1 SYNOPSIS
 
+$db_entry_adaptor = $db_adaptor->get_DBEntryAdaptor();
+$dbEntry = $db_entry_adaptor->fetch_by_dbID($id);
+
 =head1 CONTACT
 
   Arne Stabenau: stabenau@ebi.ac.uk
@@ -22,8 +25,6 @@ MySQL Database queries to load and store external object references.
 =head1 APPENDIX
 
 =cut
-
-;
 
 package Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
@@ -36,6 +37,19 @@ use vars qw(@ISA);
 use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+
+
+=head2 fetch_by_dbID
+
+  Arg [1]    : int $dbID
+               the unique database identifier for the DBEntry to retrieve
+  Example    : my $db_entry = $db_entry_adaptor->fetch_by_dbID($dbID);
+  Description: retrieves a dbEntry from the database via its unique identifier 
+  Returntype : Bio::EnsEMBL::DBEntry
+  Exceptions : none
+  Caller     : ?
+
+=cut
 
 sub fetch_by_dbID {
   ## this function may need revamping in the same way as
@@ -89,10 +103,21 @@ sub fetch_by_dbID {
 }
 
 
+=head2 store
+
+  Arg [1]    : ?? $exObj
+  Arg [2]    : ?? $ensObject
+  Arg [3]    : ?? $ensType
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;
-    #print STDERR"storing DBEntryAdaptor\n";
-    # $self->throw( "Sorry, store not yet supported" );
     my $dbJustInserted;
     
     # check if db exists
@@ -110,34 +135,31 @@ sub store {
     if(  ($dbRef) =  $sth->fetchrow_array() ) {
         $dbJustInserted = 0;
     } else {
-	# store it, get dbID for that
-	$sth = $self->prepare( "
+      # store it, get dbID for that
+      $sth = $self->prepare( "
        INSERT INTO external_db 
        SET db_name = ?,
            release = ?,
            status  = ?
      " );
-	print STDERR "STATUS DBE: ".$exObj->status."\n";
-
-	$sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
 	
-	$dbJustInserted = 1;
-	$sth = $self->prepare( "
-       SELECT LAST_INSERT_ID()
-     " );
-	$sth->execute();
-	( $dbRef ) = $sth->fetchrow_array();
-	if( ! defined $dbRef ) {
-	    $self->throw( "Database entry failed." );
-	}
+      $sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
+      
+      $dbJustInserted = 1;
+      $sth = $self->prepare( "SELECT LAST_INSERT_ID()" );
+      $sth->execute();
+      ( $dbRef ) = $sth->fetchrow_array();
+      if( ! defined $dbRef ) {
+	$self->throw( "Database entry failed." );
+      }
     }
     
     my $dbX;
     
     if(  $dbJustInserted ) {
-	# dont have to check for existence; cannnot have been inserted at
-	# this point, so $dbX is certainly undefined
-        $dbX = undef;
+      # dont have to check for existence; cannnot have been inserted at
+      # this point, so $dbX is certainly undefined
+      $dbX = undef;
     } else {
 	$sth = $self->prepare( "
        SELECT xref_id
@@ -280,6 +302,18 @@ sub store {
 }
 
 
+
+=head2 fetch_by_gene
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub fetch_by_gene {
   my ( $self, $gene ) = @_;
   my $query1 = "SELECT t.translation_id 
@@ -302,10 +336,35 @@ sub fetch_by_gene {
   }
 }
 
+
+
+=head2 fetch_by_rawContig
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub fetch_by_rawContig {
   my ( $self, $rawContigId ) = @_;
   return $self->_fetch_by_EnsObject_type( $rawContigId, 'RawContig' );
 }
+
+
+=head2 fetch_by_transcript
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
 
 sub fetch_by_transcript {
   my ( $self, $trans ) = @_;
@@ -333,11 +392,34 @@ sub fetch_by_transcript {
 
 }
 
+
+=head2 fetch_by_translation
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
 sub fetch_by_translation {
   my ( $self, $trslId ) = @_;
   return $self->_fetch_by_EnsObject_type( $trslId, 'Translation' );
 }
 
+
+=head2 fetch_by_EnsObject_type
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
 
 sub _fetch_by_EnsObject_type {
   my ( $self, $ensObj, $ensType ) = @_;
@@ -414,15 +496,16 @@ sub _fetch_by_EnsObject_type {
   return @out;
 }
 
+
+
 =head2 geneids_by_extids
 
-  Title   : geneids_by_extids
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -458,15 +541,15 @@ sub geneids_by_extids{
    return @genes;
 }
 
+
 =head2 transcriptids_by_extids
 
- Title   : transcriptids_by_extids
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -485,15 +568,16 @@ foreach my $t (@translations) {
 
 }
 
+
+
 =head2 translationids_by_extids
 
- Title   : translationids_by_extids
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -502,15 +586,15 @@ sub translationids_by_extids{
     return $self->_type_by_external_id($name,'Transcript');
 }
 
+
 =head2 rawContigids_by_extids
 
- Title   : rawContigids_by_extids
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -523,13 +607,12 @@ sub rawContigids_by_extids{
 
 =head2 _type_by_external_id
 
- Title   : _fetch_type_by_external_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
@@ -563,6 +646,18 @@ my @out;
    return @out;
 }
 
+
+
+=head2 create_tables
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
 
 # creates all tables for this adaptor
 # if they exist they are emptied and newly created

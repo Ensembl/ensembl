@@ -15,6 +15,9 @@ Bio::EnsEMBL::DBSQL::ExonAdaptor - MySQL Database queries to generate and store 
 
 =head1 SYNOPSIS
 
+$exon_adaptor = $database_adaptor->get_ExonAdaptor();
+$exons = $exon_adaptor->fetch_by
+
 =head1 CONTACT
 
   Arne Stabenau: stabenau@ebi.ac.uk
