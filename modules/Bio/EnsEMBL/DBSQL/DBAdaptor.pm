@@ -16,13 +16,15 @@
 
     $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
 
-    
 =head1 DESCRIPTION
 
-This object represents a database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object). Once created you can retrieve
-database adaptors specific to various database objects that allow the
-retrieval and creation of objects from the database,
+This is the primary interface to an EnsEMBL database. It maintains an active
+connection to the database and allows for the retrieval of ObjectAdaptors,
+via a set of get_XxxxAdaptor methods (where Xxxx is the type of adaptor).
+
+ObjectAdaptors can then be used to obtain objects and actual information
+from the database.
+
 
 =head1 CONTACT
 
@@ -30,12 +32,11 @@ Post questions to the EnsEMBL development list <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal
+methods are usually preceded with a _
 
 =cut
 
-
-# Let the code begin...
 
 package Bio::EnsEMBL::DBSQL::DBAdaptor;
 
@@ -44,6 +45,9 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
@@ -56,8 +60,8 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
   Arg [-DNADB]: (optional) Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
                All sequence, assembly, contig information etc, will be
-                retrieved from this database instead.              
-  Arg [..]   : Other args are passed to superclass 
+               retrieved from this database instead.
+  Arg [..]   : Other args are passed to superclass
                Bio::EnsEMBL::DBSQL::DBConnection
   Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 						    -user   => 'root',
@@ -73,11 +77,11 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 sub new {
   my($class, @args) = @_;
-    
+
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
-  
-  my ( $dnadb ) = $self->_rearrange([qw(DNADB)],@args);  
+
+  my ( $dnadb ) = rearrange([qw(DNADB)],@args);
 
   if(defined $dnadb) {
     $self->dnadb($dnadb);
@@ -85,42 +89,50 @@ sub new {
 
 	# $self here is actually a Container object
 	# so need to call _obj to get the DBAdaptor
-	$self->_obj->{'default_module'} =  { 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
-																			 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
-																			 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
-																			 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
-																			 'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
-																			 'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
-																			 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
-																			 'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
-																			 'PredictionTranscript' => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
-																			 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
-																			 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
-																			 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
-																			 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-																			 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
-																			 'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
-																			 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
-																			 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
-																			 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
-																			 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
-																			 'ProteinAlignFeature'  => 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-																			 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-																			 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
-																			 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
-																			 'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
-																			 'SupportingFeature'    => 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
-																			 'MarkerFeature'        => 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
-																			 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
-																			 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
-																			 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
-																			 'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
-																			 'ProxyRepeatFeature'   => 'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
-																			 'ProxyDnaAlignFeature' => 'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
-																			 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor' };
+	$self->_obj->{'default_module'} =
+    { 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+      'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
+      'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
+      'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+      'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
+      'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
+      'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+      'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
+      'PredictionTranscript' =>
+           'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
+      'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
+      'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
+      'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+      'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
+      'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
+      'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
+      'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
+      'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
+      'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
+      'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
+      'ProteinAlignFeature'  =>
+           'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+      'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
+      'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
+      'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+      'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
+      'SupportingFeature'    =>
+          'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
+      'MarkerFeature'        => 
+          'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+      'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+      'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+      'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+      'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
+      'ProxyRepeatFeature'   =>
+          'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
+      'ProxyDnaAlignFeature' =>
+          'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
+      'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
+      'CoordSystemAdaptor'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor'};
 
 	# initialise storage for hash of names of current modules
-	%{$self->_obj->{'current_module'}} = %{$self->_obj->{'default_module'}}; 
+	%{$self->_obj->{'current_module'}} = %{$self->_obj->{'default_module'}};
 
 	# keep a hash of objects representing objects of each adaptor type
 	# instantiated as required in get adaptor
@@ -139,7 +151,7 @@ sub new {
   Args       : none 
   Example    : none
   Description: ...
-  Returntype : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor 
+  Returntype : Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor
   Exceptions : none
   Caller     : general
 
@@ -147,7 +159,7 @@ sub new {
 
 sub get_ArchiveStableIdAdaptor {
     my( $self ) = @_;
-    
+
     return 
       $self->get_adaptor("ArchiveStableId");
 }
@@ -158,7 +170,7 @@ sub get_ArchiveStableIdAdaptor {
   Args       : none 
   Example    : none
   Description: ...
-  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor 
+  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor
   Exceptions : none
   Caller     : general
 
@@ -166,8 +178,8 @@ sub get_ArchiveStableIdAdaptor {
 
 sub get_QtlFeatureAdaptor {
     my( $self ) = @_;
-    
-    return 
+
+    return
       $self->get_adaptor("QtlFeature");
 }
 
@@ -176,7 +188,7 @@ sub get_QtlFeatureAdaptor {
   Args       : none 
   Example    : none
   Description: ...
-  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlAdaptor 
+  Returntype : Bio::EnsEMBL::Map::DBSQL::QtlAdaptor
   Exceptions : none
   Caller     : general
 
@@ -184,8 +196,8 @@ sub get_QtlFeatureAdaptor {
 
 sub get_QtlAdaptor {
     my( $self ) = @_;
-    
-    return 
+
+    return
       $self->get_adaptor("Qtl");
 }
 
@@ -202,7 +214,7 @@ sub get_QtlAdaptor {
 
 sub get_MetaContainer {
     my( $self ) = @_;
-    
+
     my( $mc );
     unless ($mc = $self->{'_meta_container'}) {
         require Bio::EnsEMBL::DBSQL::MetaContainer;
@@ -228,7 +240,7 @@ sub get_MetaContainer {
 
 sub get_ProteinFeatureAdaptor {
     my( $self ) = @_;
-    
+
     return 
       $self->get_adaptor("ProteinFeature");
 }
@@ -237,10 +249,10 @@ sub get_ProteinFeatureAdaptor {
 =head2 get_ProteinAdaptor
 
   Args       : none 
-  Example    : $pa = $database_adaptor->get_ProteinAdaptor();  
-  Description: Gets a ProteinAdaptor for this database.  
-               Formerly named get_Protein_Adaptor() 
-  Returntype : Bio::EnsEMBL::DBSQL::ProteinAdaptor 
+  Example    : $pa = $database_adaptor->get_ProteinAdaptor();
+  Description: Gets a ProteinAdaptor for this database.
+               Formerly named get_Protein_Adaptor()
+  Returntype : Bio::EnsEMBL::DBSQL::ProteinAdaptor
   Exceptions : none 
   Caller     : general
 
@@ -248,7 +260,7 @@ sub get_ProteinFeatureAdaptor {
 
 sub get_ProteinAdaptor {
     my( $self ) = @_;
- 
+
     return $self->get_adaptor("Protein");
 }
 
@@ -274,19 +286,19 @@ sub get_SNPAdaptor {
     $primary_adaptor = $lite->get_SNPAdaptor();
   } else {
     my $snp = $self->get_db_adaptor('SNP');
-    
+
     unless($snp) {
-      warn("No lite or SNP database, cannot get snp adaptor\n");
+      warning("No lite or SNP database, cannot get snp adaptor\n");
       return undef;
     }
 
     $primary_adaptor = $snp->get_SNPAdaptor();
     $primary_adaptor->ensembl_db( $self );
   }
-  
+
   #return a proxy adaptor which can use the lite or the core database
   return $self->get_adaptor("ProxySNP",
-			     $primary_adaptor);
+                            $primary_adaptor);
 }
 
 
@@ -342,7 +354,7 @@ sub get_MapFragAdaptor {
 
 sub get_CloneAdaptor {
   my( $self ) = @_;
-  
+
   return $self->dnadb->get_adaptor("Clone");
 }
 
@@ -607,8 +619,8 @@ sub get_ProteinAlignFeatureAdaptor {
 
 sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
-  
-  my $core_adaptor = 
+
+  my $core_adaptor =
     $self->get_adaptor("DnaAlignFeature");
 
   #return a proxy adaptor which can choose between the core and est DBs
@@ -750,74 +762,24 @@ sub get_MarkerAdaptor {
 }
 
 
-=head2 list_supported_assemblies
 
-  Args       : none
-  Example    : my @supported = $database_adaptor->list_supported_assemblies);
-  Description: Returns a list of assemblies supported by this database.
-  Returntype : list of strings
-  Exceptions : thrown if SQL query fails
-  Caller     : ?
+=head2 get_CoordSystemAdaptor
 
-=cut
-
-sub list_supported_assemblies {
-    my($self) = @_;
-    my @out;
-
-    my $query = q{
-        SELECT distinct type
-        FROM   assembly
-    };
-
-    my $sth = $self->prepare($query) ||
-     $self->throw("Error in list_supported_assemblies");
-    my $res = $sth->execute ||
-     $self->throw("Error in list_supported_assemblies");
-
-    while (my($type) = $sth->fetchrow_array) {
-       push(@out, $type);
-    }
-    return @out;
-}
-
-
-=head2 assembly_type
-
-  Arg [1]    : (optional) string $value
-                the new assembly type value
-  Example    : $db_adaptor->assembly_type($newval);
-  Description: Getter / Setter for the type of assembly used by
-               this database.  If the value is not set then the 
-               default value is obtained from the MetaContainer
-  Returntype : string
-  Exceptions : thrown if there is no defined assembly type, and the default
-               assembly type cannot be obtained from the MetaContainer 
-  Caller     : ?
+  Arg [1]    : none
+  Example    : $csa = $db_adaptor->get_CoordSystemAdaptor();
+  Description: Gets a CoordSystemAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::CoordSystem
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub assembly_type{
-   my ($obj,$value) = @_;
-   if($value) {
-      $obj->{'assembly'} = $value;
-    }
-    if (! defined $obj->{'assembly'}) {
-      my $ass;
-      eval {
-        $ass = $obj->dnadb->get_MetaContainer()->get_default_assembly();
-      };
-      if ( $@ ) {
-        $obj->throw("*** get_MetaContainer->get_default_assembly failed:\n$@\n"
-          ."assembly type must be set with assembly_type() first");
-      } elsif (! $ass) {
-        $obj->throw("No default assembly defined in ".$obj->dnadb->dbname. " - must set with assembly_type() first");
-      }
-      $obj->{'assembly'} = $ass;
-    }
-    return $obj->{'assembly'};
+sub get_CoordSystemAdaptor {
+  my $self = shift;
 
+  return $self->get_adaptor('CoordSystem');
 }
+
 
 
 =head2 dnadb
@@ -973,8 +935,8 @@ sub add_ExternalFeatureAdaptor {
 
   unless($adaptor && ref $adaptor && 
 	 $adaptor->isa('Bio::EnsEMBL::External::ExternalFeatureAdaptor')) {
-    $self->throw("[$adaptor] is not a " .
-                 "Bio::EnsEMBL::External::ExternalFeatureAdaptor");
+     throw("[$adaptor] is not a " .
+           "Bio::EnsEMBL::External::ExternalFeatureAdaptor");
   }
 
   unless(exists $self->{'_xf_adaptors'}) {
@@ -1068,14 +1030,16 @@ sub get_adaptor() {
 	my ($self, $canonical_name, @other_args) = @_;
 
 	# throw if module for $canonical_name does not exist
-	$self->throw("No such data type $canonical_name") if (!exists($self->{'current_module'}->{$canonical_name}));
+	throw("No such data type $canonical_name") 
+    if (!exists($self->{'current_module'}->{$canonical_name}));
 
 	# get module name for $canonical_name
 	my $module_name = $self->{'default_module'}->{$canonical_name};
 
 	# create and store a new one if necessary
 	if (!exists($self->{'current_objects'}->{$canonical_name})) {
-	  $self->{'current_objects'}->{$canonical_name} = $self->_get_adaptor($module_name, @other_args);
+	  $self->{'current_objects'}->{$canonical_name} =
+      $self->_get_adaptor($module_name, @other_args);
 	}
 
 	return $self->{'current_objects'}->{$canonical_name};
@@ -1089,9 +1053,11 @@ sub get_adaptor() {
 	Arg [2]    : Object defining the adaptor for arg1.
   Example    : $pa = Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($db_adaptor);
              : $db_adaptor->set_adaptor("Protein", $pa)
-  Description: Stores the object which represents the adaptor for the arg1 data type.
+  Description: Stores the object which represents the adaptor for the
+               arg1 data type.
   Returntype : none
-  Exceptions : If arg2 is not a subclass of the default module for this data type.
+  Exceptions : If arg2 is not a subclass of the default module for this
+               data type.
   Caller     : external
 
 =cut
@@ -1101,18 +1067,18 @@ sub set_adaptor() {
 	my ($self, $canonical_name, $new_object) = @_;
 
   # throw if an unrecognised canonical_name is used
-	$self->throw("No such data type $canonical_name") if (!exists($self->{'default_module'}->{$canonical_name}));
+	throw("No such data type $canonical_name") 
+    if(!exists($self->{'default_module'}->{$canonical_name}));
 
 	my $default_module = $self->{'default_module'}->{$canonical_name};
 	
 	# Check that $new_module is a subclass of $default_module	
 	if (!$new_object->isa($default_module)) {  # polymorphism should work
-		$self->throw("ref($new_object) is not a subclass of $default_module");
+		throw("ref($new_object) is not a subclass of $default_module");
 	}
 
 	# set the value in current_module
 	$self->{'current_objects'}->{$canonical_name} = $new_object;
-
 }
 
 #
@@ -1121,10 +1087,12 @@ sub set_adaptor() {
 
 =head2 get_GenericFeatureAdaptors
 
-  Arg [1]    : List of names of feature adaptors to get. If no adaptor names are given, all the defined adaptors are returned.
+  Arg [1]    : List of names of feature adaptors to get. If no
+               adaptor names are given, all the defined adaptors are returned.
   Example    : $db->get_GenericFeature("SomeFeature", "SomeOtherFeature")
-  Description: Returns a hash containing the named feature adaptors (or all feature adaptors).
-  Returntype : reference to a Hash containing the named 
+  Description: Returns a hash containing the named feature adaptors (or
+               all feature adaptors).
+  Returntype : reference to a Hash containing the named
                feature adaptors (or all feature adaptors).
   Exceptions : If any of the the named generic feature adaptors do not exist.
   Caller     : external
@@ -1142,22 +1110,24 @@ sub get_GenericFeatureAdaptors() {
   } else {
     foreach my $name (@names) {
       if (!exists($self->{'generic_feature_adaptors'}->{$name})) {
-	$self->throw("No generic feature adaptor has been defined for $name" );
+        throw("No generic feature adaptor has been defined for $name" );
       }
       $adaptors{$name} = $self->{'generic_feature_adaptors'}->{$name};
     }
   }
 
   return \%adaptors;
-
 }
+
 
 =head2 add_GenericFeatureAdaptor
 
   Arg [1]    : The name of the feature.
   Arg [2]    : Adaptor object for a generic feature.
-  Example    : $db->add_GenericFeatureAdaptor("SomeFeature", "Bio::EnsEMBL::DBSQL::SomeFeatureAdaptor")
-  Description: Stores the object which represents the adaptor for the named feature type.
+  Example    : $db->add_GenericFeatureAdaptor("SomeFeature",
+                              "Bio::EnsEMBL::DBSQL::SomeFeatureAdaptor")
+  Description: Stores the object which represents the adaptor for the
+               named feature type.
   Returntype : none
   Exceptions :
   Caller     : external
@@ -1170,24 +1140,66 @@ sub add_GenericFeatureAdaptor() {
 	
 	# check that $adaptor is an object that subclasses BaseFeatureAdaptor	
 	if (!$adaptor_obj->isa("Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor")) {
-	  $self->throw("$name is a " . ref($adaptor_obj) . " which is not a subclass of Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor" );
+	  throw("$name is a " . ref($adaptor_obj) . "which is not a " .
+          "subclass of Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor" );
 	}
 
 	$self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
-
 }
 
-#
+
+
+
+#########################
 # sub DEPRECATED METHODS
-#
-#
+#########################
 
 sub source {
+  deprecate('Do not use - this method does nothing');
+}
+
+
+=head2 assembly_type
+
+  Description: DEPRECATED - Use CoordSystemAdaptor to obtain default coordinate
+               system instead.
+
+=cut
+
+sub assembly_type{
   my $self = shift;
 
-  $self->warn("DBAdaptor::source method is deprecated - do not use" .
-	     $self->stack_trace_dump);
-  
+  deprecate('Use CoordSystemAdaptor::fetch_top_level instead');
+
+  my $csa = $self->get_CoordSystemAdaptor();
+
+  #get the default top-level coord system
+  my ($dbID,$name,$version) = $csa->fetch_top_level();
+
+  return $version;
 }
+
+
+
+=head2 list_supported_assemblies
+
+  Description: DEPRECATED - Use CoordSystemAdaptor to obtain list of top-level
+               coordinate systems instead
+
+=cut
+
+sub list_supported_assemblies {
+  my($self) = @_;
+  deprecate('Use CoordSystemAdaptor::fetch_all_top_level instead');
+
+  my $csa = $self->get_CoordSystemAdaptor();
+  my @versions;
+  foreach my $cs (@{$csa->fetch_all_top_level()}) {
+    my ($dbID, $name, $version) = @$csa;
+    push @versions, $version;
+  }
+  return @versions;
+}
+
 
 1;
