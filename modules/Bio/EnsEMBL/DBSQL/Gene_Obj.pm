@@ -214,29 +214,6 @@ sub delete_Supporting_Evidence {
     my $res = $sth->execute;
 }
 
-=head2 get
-
- Title   : get
- Usage   : $geneobj->get($geneid, $supporting)
- Function: gets one gene out of the db with or without supporting evidence
- Example : $obj->get('ENSG00000009151','evidence')
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag (if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
-
-=cut
-
-sub get {
-   my ($self,$geneid, $supporting) = @_;
-   my @out;
-
-   if ($supporting && $supporting eq 'evidence') {
-       @out = $self->get_array_supporting('evidence',$geneid);
-   }   else {
-       @out = $self->get_array_supporting('without',$geneid);
-   }
-   return $out[0];
-}
 
 =head2 get_all_Gene_id
 
@@ -263,6 +240,37 @@ sub get_all_Gene_id{
    return @out;
 }
 
+
+=head2 get
+
+ Title   : get
+ Usage   : $geneobj->get($geneid, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Example : $obj->get('ENSG00000009151','evidence')
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : gene id and supporting tag (if latter not specified, assumes without
+	   Note that it is much faster to get genes without supp.evidence!
+
+=cut
+
+sub get {
+    my ($self,$geneid, $supporting) = @_;
+    
+    my @out;
+    
+    if (!$supporting) {
+        @out = $self->get_array_supporting('without', $geneid);
+    }
+    else {
+        @out = $self->get_array_supporting($supporting, $geneid);
+    }
+    
+    $self->throw("Error retrieving gene with ID: $geneid") unless $out[0]; 
+    
+    return $out[0];
+}
+
+
 =head2 get_array_supporting
 
     Title   : get_Gene_array_supporting
@@ -285,46 +293,45 @@ sub get_array_supporting {
     if( @geneid == 0 ) {
 	$self->throw("Attempting to create gene with no id");
     }
-    
+   
     my (@out, @sup_exons);
     
     my $inlist = join(',',map "'$_'", @geneid);
     $inlist = "($inlist)";
     
     # I know this SQL statement is silly.
-    #
-    
-    
-    my $query =              "select p3.gene," .
-	                             "p4.id," .
-			             "p3.id," .
-			             "p1.exon," .
-			             "p1.rank," .
-			             "p2.seq_start,p2.seq_end," .
-			             "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified)," .
-			             "p2.strand,p2.phase," .
-            			     "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
-			             "p6.version,p3.version,p2.version,p5.version,p4.clone " .
-			     "from   gene as p6," .
-			             "contig as p4, " .
-			             "transcript as p3, " .
-			             "exon_transcript as p1, " .
-			             "exon as p2," .
-			             "translation as p5," .
-			             "geneclone_neighbourhood as p7  " .
-			     "where  p6.id in $inlist " .
-			     "and    p3.gene = p6.id " .
-			     "and    p4.clone = p7.clone " .
-			     "and    p7.gene = p6.id  " .
-			     "and    p2.contig = p4.internal_id " .
-			     "and    p1.exon = p2.id " .
-			     "and    p3.id = p1.transcript " .
-			     "and    p5.id = p3.translation " .
-			     "order by p3.gene,p3.id,p1.rank";
+    #    
+     
+    my $query =  "select  p3.gene," .
+                         "p4.id," .
+                         "p3.id," .
+                         "p1.exon," .
+                         "p1.rank," .
+                         "p2.seq_start,p2.seq_end," .
+                         "UNIX_TIMESTAMP(p2.created),UNIX_TIMESTAMP(p2.modified)," .
+                         "p2.strand,p2.phase," .
+                             "p5.seq_start,p5.start_exon,p5.seq_end,p5.end_exon,p5.id," .
+                         "p6.version,p3.version,p2.version,p5.version,p4.clone " .
+                 "from   gene as p6," .
+                         "contig as p4, " .
+                         "transcript as p3, " .
+                         "exon_transcript as p1, " .
+                         "exon as p2," .
+                         "translation as p5," .
+                         "geneclone_neighbourhood as p7  " .
+                 "where  p6.id in $inlist " .
+                 "and    p3.gene = p6.id " .
+                 "and    p4.clone = p7.clone " .
+                 "and    p7.gene = p6.id  " .
+                 "and    p2.contig = p4.internal_id " .
+                 "and    p1.exon = p2.id " .
+                 "and    p3.id = p1.transcript " .
+                 "and    p5.id = p3.translation " .
+                 "order by p3.gene,p3.id,p1.rank";
     
     my $sth = $self->_db_obj->prepare($query);
     my $res = $sth ->execute();
-    
+   
     my $current_gene_id       = '';
     my $current_transcript_id = '';
     
@@ -336,7 +343,7 @@ sub get_array_supporting {
 	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
-	
+ 	
 	if( ! defined $phase ) {
 	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	}
@@ -383,7 +390,7 @@ sub get_array_supporting {
 	
 	
 	my $exon = Bio::EnsEMBL::Exon->new();
-	#print(STDERR "Creating exon - contig id $contigid\n");
+	print(STDERR "Creating exon - contig id $contigid\n");
 	$exon->clone_id ($cloneid);
 	$exon->contig_id($contigid);
 	$exon->id       ($exonid);
@@ -396,6 +403,7 @@ sub get_array_supporting {
 	$exon->version  ($exonversion);
 	$exon->seqname  ($contigid);
 	
+        
 	#
 	# Attach the sequence, cached if necessary...
 	#
@@ -671,7 +679,7 @@ sub write{
    my ($self,$gene) = @_;
    my $old_gene;
    my %done;
-
+   
    if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
        $self->throw("$gene is not a EnsEMBL gene - not writing!");
    }
@@ -680,6 +688,7 @@ sub write{
    # database.
 
    my %contighash;
+
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
@@ -702,7 +711,6 @@ sub write{
 
    # gene is big daddy object
 
-   
    foreach my $trans ( $gene->each_Transcript() ) {
        $self->write_Transcript($trans,$gene);
        my $c = 1;
@@ -728,7 +736,7 @@ sub write{
 
    !$gene->created() && $gene->created(0);
    !$gene->modified() && $gene->modified(0);
-   
+ 
    my $sth2 = $self->_db_obj->prepare("insert into gene (id,version,created,modified,stored) values ('". 
 			     $gene->id       . "','".
 			     $gene->version  . "',FROM_UNIXTIME(".
@@ -737,7 +745,6 @@ sub write{
    $sth2->execute();
 
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-
        my $sth = $self->_db_obj->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
        $sth->execute();
        my $rowhash =  $sth->fetchrow_arrayref();

@@ -180,35 +180,40 @@ sub get_by_Chromosome {
 =cut
 
 sub get_all_Genes{
-   my ($self,$supporting) = @_;
+   my ($self, $supporting) = @_;
    my @out;
-   my $contig_id = $self->internal_id();
-   # prepare the SQL statement
+   my $contig_id = $self->internal_id();   
    my %got;
-   my $gene;
+    # prepare the SQL statement
+   my $sth = $self->dbobj->prepare("
+        SELECT t.gene
+        FROM transcript t,
+             exon_transcript et,
+             exon e
+        WHERE e.contig = '$contig_id'
+          AND et.exon = e.id
+          AND t.id = et.transcript
+        ");
 
-   my $sth = $self->dbobj->prepare("select p3.gene from transcript as p3, exon_transcript as p1, exon as p2 where p2.contig = '$contig_id' and p1.exon = p2.id and p3.id = p1.transcript");
-
-   my $res = $sth->execute();
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       if( ! exists $got{$rowhash->{'gene'}}  ) {
-	   if ($supporting && $supporting eq 'evidence') {
-	       my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
-	       $gene = $gene_obj->get($rowhash->{'gene'},'evidence');
-	   }
-	   else {
-	       my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
-	       $gene = $gene_obj->get($rowhash->{'gene'}); 
-	   }
-	   push(@out,$gene);
-	   $got{$rowhash->{'gene'}} = 1;
-       }
-       
-   }
+    my $res = $sth->execute();
    
-
-   return @out;
-
+    while (my $rowhash = $sth->fetchrow_hashref) { 
+            
+        if( ! exists $got{$rowhash->{'gene'}}) {  
+            
+           my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);             
+	   my $gene = $gene_obj->get($rowhash->{'gene'}, $supporting);
+           if ($gene) {
+	        push(@out, $gene);
+           }
+	   $got{$rowhash->{'gene'}} = 1;
+        }       
+    }
+   
+    if (@out) {
+        return @out;
+    }
+    return;
 }
 
 
