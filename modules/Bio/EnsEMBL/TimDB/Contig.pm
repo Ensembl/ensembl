@@ -192,6 +192,25 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub created{
+   my ($self) = @_;
+
+   $self->warn("In Contig TimDB, faking a creation date...");
+   return (time() - 3600);
+}
+
 
 =head2 get_all_SeqFeatures
 

@@ -211,6 +211,45 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub created{
+   my ($self) = @_;
+
+   $self->warn("In Clone TimDB, faking a creation date...");
+   return (time() - 3600);
+}
+
+
+=head2 modified
+
+ Title   : modified
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub modified {
+   my ($self) = @_;
+
+   $self->warn("In Clone TimDB, faking a modification date...");
+   return (time() - 3600);
+}
+
 
 =head2 get_all_Contigs
 

@@ -43,6 +43,24 @@ use vars qw(@ISA);
 use strict;
 use Bio::AnnSeq;
 
+
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub created{
+   my ($self) = @_;
+   $self->throw("Class [$self] has not implemented the created method");
+}
+
 =head2 seq
 
  Title   : seq

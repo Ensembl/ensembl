@@ -95,7 +95,7 @@ sub id {
 sub embl_id {
    my ($self,@args) = @_;
 
-   $self->warn("Base class has not implemented this yet!");
+   $self->warn("Base class has not implemented embl_id yet!");
 
 }
 
@@ -133,7 +133,7 @@ sub sv {
 sub embl_version{
     my ($self,@args) = @_;
 
-    $self->warn("Base class has not implemented this yet!");
+    $self->warn("Base class has not implemented embl_version yet!");
 
 }
 
@@ -154,7 +154,7 @@ sub embl_version{
 sub seq_date{
     my ($self,@args) = @_;
 
-    $self->warn("Base class has not implemented this yet!");
+    $self->warn("Base class has not implemented seq_date yet!");
 }
 
 
@@ -193,7 +193,7 @@ sub version {
 sub htg_phase {
    my ($self,@args) = @_;
 
-   $self->warn("Base class has not implemented this yet!");
+   $self->warn("Base class has not implemented htg_phase yet!");
 
 }
 
@@ -213,7 +213,7 @@ sub htg_phase {
 sub created{
     my ($self,@args) = @_;
     
-    $self->warn("Base class has not implemented this yet!");
+    $self->warn("Base class has not implemented created  yet!");
 }
 =head2 modified
 
@@ -231,7 +231,7 @@ sub created{
 sub modified{
     my ($self,@args) = @_;
 
-    $self->warn("Base class has not implemented this yet!");
+    $self->warn("Base class has not implemented modified yet!");
 }
 
 =head2 get_Contig
@@ -249,7 +249,7 @@ sub modified{
 sub get_Contig {
    my ($self,@args) = @_;
 
-   $self->warn("Base class has not implemented this yet!");
+   $self->warn("Base class has not implemented get_Contig yet!");
 
 }
 
@@ -269,7 +269,7 @@ sub get_Contig {
 sub get_all_Contigs {
    my ($self) = @_;
 
-   $self->warn("Base class has not implemented this yet!");
+   $self->warn("Base class has not implemented get_all_Contigs yet!");
 
 }
 
@@ -288,7 +288,7 @@ sub get_all_Contigs {
 sub get_all_Genes {
    my ($self) = @_;
 
-   $self->warn("Base class has not implemented this yet!");
+   $self->warn("Base class has not implemented get_all_Genes yet!");
 }
 
 

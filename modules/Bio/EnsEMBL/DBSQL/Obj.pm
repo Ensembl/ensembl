@@ -1423,11 +1423,12 @@ sub write_Clone{
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified.")");
+   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."')");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
      my $sth =  $self->prepare($sql);
+     #print STDERR "Executing $sql\n";
      my $rv  =  $sth->execute();
      $self->throw("Failed to insert clone $clone_id") unless $rv;
    }

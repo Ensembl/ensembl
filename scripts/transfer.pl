@@ -147,14 +147,15 @@ if( $usefile == 1 ) {
 }
 
 if ( $tdbtype =~ 'timdb' ) {
-    $to_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
+    die "Cannot write to timdb!";
 } else {
     my $locator = "$tmodule/host=$thost;port=$tport;dbname=$tdbname;user=$tdbuser;pass=$tdbpass";
+    print STDERR "Using $locator for todb";
     $to_db =  Bio::EnsEMBL::DBLoader->new($locator);
 }
 
 if ( $fdbtype =~ 'timdb' ) {
-    $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone,0,0,1);
+    $from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone);
 } else {
     my $locator = "$fmodule/host=$fhost;port=$fport;dbname=$fdbname;user=$fdbuser;pass=$fdbpass";
     print STDERR "LOCATOR IS: $locator\n";
