@@ -76,13 +76,13 @@ CREATE TABLE source (
 
 # Sources to fetch data from
 # Note currently now UniProt/SwissProt data for fugu, anopheles, c.briggsae or chicken.
-INSERT INTO source VALUES (1, 'UniProt_SwissProt_homo_sapiens', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (2, 'UniProt_SwissProt_mus_musculus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (3, 'UniProt_SwissProt_rattus_norvegicus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (4, 'UniProt_SwissProt_drosophilla_melanogaster', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (5, 'UniProt_SwissProt_caenorhabditis_elegans', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (6, 'UniProt_SwissProt_gallus_gallus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), 1);
-INSERT INTO source VALUES (7, 'UniProt_SwissProt_pan_troglodytes', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (1, 'UniProtSwissProt_homo_sapiens', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9606.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (2, 'UniProtSwissProt_mus_musculus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10090.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (3, 'UniProtSwissProt_rattus_norvegicus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/10116.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (4, 'UniProtSwissProt_drosophilla_melanogaster', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/7227.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (5, 'UniProtSwissProt_caenorhabditis_elegans', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now(), 1);
+#INSERT INTO source VALUES (6, 'UniProtSwissProt_gallus_gallus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), 1);
+INSERT INTO source VALUES (7, 'UniProtSwissProt_pan_troglodytes', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now(), 1);
 
 # Other sources - used to create dependent xrefs, but not to upload from
 INSERT INTO source VALUES (100, 'EMBL', null, null, null, null, null);
