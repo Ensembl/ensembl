@@ -102,7 +102,6 @@ sub fetch {
     if( ! $rv ) {
 	# make sure we deallocate sth - keeps DBI happy!
 	$sth = 0;
-        print STDERR "Clone $id does not seem to occur in the database!\n";     
 	$self->throw("Clone $id does not seem to occur in the database!");
     }   
     return $self;
@@ -229,7 +228,6 @@ sub get_all_Genes {
    #
 
    foreach my $geneid ( @genes ) {
-       print(STDERR "Finding gene $geneid\n");
        #
        # The aim here is to get all the information for constructing the genes one
        # juicy SQL statement, effectively removing multiple SQL statement gets from this
@@ -320,8 +318,6 @@ sub get_all_Genes {
                $exonversion,
                $translationversion) = @{$arr};
 
-           print STDERR "Got exon $exonid\n";
-
            if( ! defined $phase ) {
 	       $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
            }
@@ -389,7 +385,6 @@ sub get_all_Genes {
            if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
 	       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
            } else {
-	       print STDERR "Exon ".$exon->id." contig id ".$exon->contig_id."\n";
 	       my $contig      = $self->_db_obj->get_Contig($exon->contig_id);
 	       $contig->fetch();
 

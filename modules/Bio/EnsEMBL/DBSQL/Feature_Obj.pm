@@ -123,7 +123,7 @@ sub delete {
 
 	chop($fsstr);
 	
-	print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
+	#print STDERR "Deleting feature sets for contig $contig : $fsstr\n";
 	
 	$sth = $self->_db_obj->prepare("delete from fset where id in ($fsstr)");
 	$res = $sth->execute;
@@ -132,12 +132,12 @@ sub delete {
 	$res = $sth->execute;
     }
     
-    print(STDERR "Deleting features for contig $contig\n");
+    #print(STDERR "Deleting features for contig $contig\n");
     
     $sth = $self->_db_obj->prepare("delete from feature where contig = '$contig'");
     $res = $sth->execute;
     
-    print(STDERR "Deleting repeat features for contig $contig\n");
+    #print(STDERR "Deleting repeat features for contig $contig\n");
     
     $sth = $self->_db_obj->prepare("delete from repeat_feature where contig = '$contig'");
     $res = $sth->execute;

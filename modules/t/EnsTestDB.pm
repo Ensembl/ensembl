@@ -44,6 +44,8 @@ use Bio::EnsEMBL::DBLoader;
 use DBI;
 use Carp;
 
+my $counter=0;
+
 {
     # This is a list of possible entries in the config
     # file "EnsTestDB.conf"
@@ -58,7 +60,8 @@ use Carp;
     
     sub new {
         my( $pkg ) = @_;
-        
+
+        $counter++;
         # Get config from file, or use default values
         my $self = do 'EnsTestDB.conf' || {
             'driver'        => 'mysql',
@@ -74,7 +77,7 @@ use Carp;
         bless $self, $pkg;
 
         $self->create_db;
-
+	
         return $self;
     }
 }
@@ -144,7 +147,7 @@ sub _create_db_name {
     my( $self ) = @_;
 
     my $host = hostname();
-    my $db_name = "test_db_${host}_$$";
+    my $db_name = "_test_db_${host}_$$".$counter;
     $db_name =~ s{\W}{_}g;
     return $db_name;
 }

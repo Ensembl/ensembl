@@ -315,7 +315,7 @@ sub write_Contig {
     
     my $id  = $row->{'last_insert_id()'};
     
-    print(STDERR "Contig $contigid - $id\n");
+    #print(STDERR "Contig $contigid - $id\n");
     
     $contig->internal_id($id);
     

@@ -1415,7 +1415,7 @@ sub write_Transcript{
    #print STDERR "Going to look at gene links\n";
 
    foreach my $dbl ( $trans->each_DBLink ) {
-       print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
+       #print STDERR "Going to insert for",$trans->id," ",$dbl->primary_id," ",$dbl->database,"\n";
        my $sth3 = $self->_db_obj->prepare("insert into transcriptdblink (transcript_id,external_id,external_db) values ('". 
 					  $trans->id        . "','".
 					  $dbl->primary_id . "','".

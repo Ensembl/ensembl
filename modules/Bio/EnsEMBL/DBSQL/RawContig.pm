@@ -1659,10 +1659,10 @@ sub filter_features {
 
     foreach my $newid (keys %newids) {
 	if ($newids{$newid} > $oldids{$newid}) {
-	    print(STDERR "Using new features for $newid\n");
+	    #print(STDERR "Using new features for $newid\n");
 	    push(@out,@{$newfeatures{$newid}});
 	} else {
-	    print(STDERR "Using old features for $newid\n");
+	    #print(STDERR "Using old features for $newid\n");
 	    push(@out,@{$oldfeatures{$newid}});
 	}
     }
