@@ -39,6 +39,7 @@ print "ok 2\n";
 my $clone  = $db->get_Clone("dJ382I10");
 print "ok 3\n";
 
+
 my @contigs = $clone->get_all_Contigs();
 
 my $contig = $db->get_Contig($contigs[0]->id);
