@@ -26,7 +26,8 @@ done
 cd $indir
 
 
-for m in $allmerges ; do
+# for m in $allmerges ; do
+for m in $fullmergeonly ; do
     name=`basename $m .merge`
     stats-from-merge-files.pl < $m -stats -chaining 5  \
          -igi2native $mappingoutdir/$name-i2n           \
