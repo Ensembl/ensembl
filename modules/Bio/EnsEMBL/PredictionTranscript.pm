@@ -684,5 +684,17 @@ sub _dump {
   return $res;
 }
 
+sub type {
+  my ($self, $type) = @_;
+
+  if(defined $type) {
+    $self->{'_type'} = $type;
+  }
+
+  return $self->{'_type'};
+}
+
+
+
 
 1;
