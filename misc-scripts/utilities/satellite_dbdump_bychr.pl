@@ -576,7 +576,7 @@ sub dump_schema {
 sub dump_data {
     my($sql, $satdb, $tablename) = @_;
     my ($destdir) = "$workdir/$satdb";
-    my ($datfile)=  "$tablename.dat";
+    my ($datfile)=  "$tablename.txt";
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
