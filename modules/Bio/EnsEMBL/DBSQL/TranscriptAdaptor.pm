@@ -289,9 +289,9 @@ sub store {
    #
    if(my $dxref = $transcript->display_xref) {
      if(my $dxref_id = $dbEntryAdaptor->exists($dxref)) {
-       $self->prepare( "update transcript set display_xref_id = ".
+       my $sth = $self->prepare( "update transcript set display_xref_id = ".
 		   $dxref_id . " where transcript_id = ".$transc_dbID);
-       $self->execute();
+       $sth->execute();
        $dxref->dbID($dxref_id);
        $dxref->adaptor($dbEntryAdaptor);
      }
