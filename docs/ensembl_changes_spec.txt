@@ -58,11 +58,12 @@ Proposed New/Modified Tables:
   gene
   ----
   For faster retrieval and retrieval independently of transcripts and 
-  exons genes will also have a seq_region_id, seq_region_start and seq_region_end.
+  exons genes will also have a seq_region_id, seq_region_start and 
+  seq_region_end.
   
-  gene_id          int
-  type             varchar
-  analysis_id      int
+  gene_id             int
+  type                varchar
+  analysis_id         int
   seq_region_id       int
   seq_region_start    int
   seq_region_end      int
@@ -74,24 +75,25 @@ Proposed New/Modified Tables:
   transcript
   ----------
   For faster retrieval and retrieval independently of genes and exons
-  transcripts will also have a seq_region_id, seq_region_start and seq_region_end.
-  The translation_id will be removed, translations will point to transcripts
-  instead (and pseudogenes will have no translation).  Prediction transcripts 
-  will now be stored as normal transcripts without genes.  In order to 
-  distinguish between transcript types an analysis id will be necessary.
-  Transcripts which do not have an associated gene will have a NULL value for
-  the gene_id.  An alternative solution would be to construct a gene_transcript
-  table in a similar style as the existing exon_transcript table.
+  transcripts will also have a seq_region_id, seq_region_start and 
+  seq_region_end. The translation_id will be removed, translations will point 
+  to transcripts instead (and pseudogenes will have no translation).  
+  Prediction transcripts  will now be stored as normal transcripts without 
+  genes.  In order to distinguish between transcript types an analysis id will
+  be necessary. Transcripts which do not have an associated gene will have a 
+  NULL value for the gene_id.  An alternative solution would be to construct 
+  a gene_transcript table in a similar style as the existing exon_transcript 
+  table.
 
-  transcript_id    int
-  gene_id          int (NULLABLE)
-  exon_count       int   - (is this necessary?)
-  seq_region_id       int
-  seq_region_start    int
-  seq_region_end      int
-  seq_region_strand   int (or enum?)
-  display_xref_id  int
-  analysis_id      int
+  transcript_id      int
+  gene_id            int (NULLABLE)
+  exon_count         int   - (is this necessary?)
+  seq_region_id      int
+  seq_region_start   int
+  seq_region_end     int
+  seq_region_strand  int (or enum?)
+  display_xref_id    int
+  analysis_id        int
 
   
   translation
@@ -112,10 +114,10 @@ Proposed New/Modified Tables:
 
   all feature tables
   ------------------
-  All feature tables would now have seq_region_id, seq_region_start, seq_region_end,
-  seq_region_strand instead of contig_id, contig_start, contig_end
-  This includes the repeat_feature, simple_feature, dna_align_feature,
-  protein_align_feature, exon, marker_feature,
+  All feature tables would now have seq_region_id, seq_region_start, 
+  seq_region_end, seq_region_strand instead of contig_id, contig_start,
+  contig_end.  This includes the repeat_feature, simple_feature, 
+  dna_align_feature, protein_align_feature, exon, marker_feature,
   and qtl_feature tables.
 
   
@@ -169,13 +171,12 @@ This includes the following:
   the web display and would possible be the default coordinate system when 
   a coordinate system is unspecified by a user.
 
-  The sequence seq_region type.  This describes the dna frag type (coordinate 
-  system) at which the sequence is stored at.  For example in human this would 
-  be at the contig or clone level.  
+  The coordinate system where the sequence is actually stored. For example in 
+  human this would be at the contig or clone level.  
 
   The assembly relationships between coordinate systems.  For example  
-  the clone, chromosome and nt_contig coordinate systems may all be constructed 
-  from the contig coordinate system:
+  the clone, chromosome and nt_contig coordinate systems may all be 
+  constructed from the contig coordinate system:
     contig -> clone
     contig -> chromosome
     contig -> nt_contig
@@ -195,10 +196,11 @@ API CHANGES
 Slice
 -----
   Slice methods chr_start, chr_end, chr_name will be renamed start, end, 
-  frag_name.
+  seq_region_name.  For backwards compatibility it should be possible to 
+  keep the old methods and chain them to the new methods.
 
   A new slice method 'coord_system' will be added and will denote the type
-  of dna_frag the slice is built on.
+  of seq_region the slice is built on.
 
   Slices will represent a region on a seq_region as opposed to a region on a
   chromosome.  Slices will be immutable (i.e. their attributes will not be
@@ -206,11 +208,11 @@ Slice
   be changed.
 
   The following attributes will therefore define a unique slice:
-  coord_system  (e.g. 'chromosome' or 'clone')
-  frag_name     (e.g. 'X' or 'AL035554.1')
-  start         (e.g. 1000000 or 1)
-  end           (e.g. 2000001 or 800)
-  strand        (e.g. 1 or -1)
+  coord_system    (e.g. 'chromosome' or 'clone')
+  seq_region_name (e.g. 'X' or 'AL035554.1')
+  start           (e.g. 1000000 or 1)
+  end             (e.g. 2000001 or 800)
+  strand          (e.g. 1 or -1)
 
   The name method will return the above values joined by a ':' delimiter, and
   will not be settable:
@@ -230,8 +232,8 @@ Slice
 
     foreach my $tile (@$clone_path) {
       my ($start, $end, $clone) = @$tile;
-      print $slice->frag_name, ':', $start, '-', $end , ' -> ',
-            $clone->frag_name, ':', $clone->start, '-', $clone->end, 
+      print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
+            $clone->seq_region_name, ':', $clone->start, '-', $clone->end, 
             $clone->strand, "\n";
     }
 
@@ -244,15 +246,17 @@ Tile
 SliceAdaptor
 ------------
   The Slice adaptor must provide a method to fetch a slice via its coordinate
-  system, frag_name, start, end, and strand.  The old, commonly used method
-  fetch_by_chr_start_end can be altered to simply chain to this new method
-  as can most other SliceAdaptor methods.
+  system, seq_region_name, start, end, and strand.  
+  The old, commonly used method fetch_by_chr_start_end can be altered to 
+  simply chain to this new method as can most other SliceAdaptor methods.
 
   Another method which will be necessary with the disapearence of the Clone,
   RawContig and Chromosome adaptors is the one which allows for all slices
   of a certain type to be retrieved.  For example it is often necessary to 
   retrieve all chromosomes, or clones for a species.  This method could be
-  named fetch_all_by_coord_system or something similar.
+  named fetch_all_by_coord_system or something similar.  The old fetch_all
+  methods on the ChromosomeAdaptor, RawContigAdaptor, CloneAdaptor, etc. can
+  chain to the new method for backwards compatibility.
 
   Proposed Method Names and Signatures
   ------------------------------------
@@ -287,7 +291,7 @@ CloneAdaptor
 ------------
   The CloneAdaptor object is no longer necessary in the new system.  The
   CloneAdaptor is replaced by the SliceAdaptor.  For backwards compatibility
-  a minimal implementation can remain which inherits from the Slice object.
+  a minimal implementation can remain which inherits from the SliceAdaptor.
 
 Chromosome
 ----------
@@ -368,7 +372,7 @@ Root
   #
   package New;
 
-  use Bio::EnsEMBL::Util::Exception qw(throw warn);
+  use Bio::EnsEMBL::Util::Exception qw(throw warning);
   use Bio::EnsEMBL::Util::Argument  qw(rearrange);
 
   sub new {
@@ -398,8 +402,8 @@ Features
 --------
   All features should inherit from a base class that implements common feature
   functionality.  Presently this role is filled by the bloated SeqFeature class
-  which inherits from Bio::SeqFeature and Bio::SeqFeatureI etc.  I think that
-  this class can be ditched in favour of a smaller, less complicated 
+  which inherits from Bio::SeqFeature and Bio::SeqFeatureI etc.
+  This class can be ditched in favour of a smaller, less complicated 
   implementation named Feature.  To make classes more polymorphic in general,
   the gene, and transcript objects should now also inherit from the Feature
   class.  This class should implement the following
@@ -420,9 +424,8 @@ Features
     dbID
 
   The signature and behaviour of the transform method will be changed.  The
-  existing method works differently depending on the arguments passed.  The 
-  existing method behaves in the manor described for each of the different
-  method signatures:
+  existing method works differently depending on the arguments passed as 
+  described below: 
 
     OLD transform(no arguments)
     -----------------------
@@ -470,14 +473,14 @@ Features
     transfer(slice)
     ----------------
       Shifts a feature from one slice to another.  If the new slice is in the
-      same coordinate system but different frag_name (e.g. both chromosomal but
-      different chromosomes) an exception is thrown.  If the new slice is
-      in a different coordinate system then the transform method is called 
-      first.  If the feature would be split accross a boundary undef is
-      returned instead.  After the transform there follows a potentially 
-      move, if the slice does not cover the full fragment.
-      If there is no transform call necessary, the feature is copied and then
-      moved.
+      same coordinate system but different seq_region_name (e.g. both 
+      chromosomal but different chromosomes) an exception is thrown.  
+      If the new slice is in a different coordinate system then the 
+      transform method is called first.  If the feature would be split 
+      accross a boundary undef is returned instead.  After the transform 
+      there follows a potential move, if the slice does not cover the full 
+      seq_region. If there is no transform call necessary, the feature is 
+      copied and then moved.
 
     move( start, end, strand )
     --------------------------
@@ -524,7 +527,9 @@ AssemblyMapper
 
   As an intermediate implementation step it would be possible to leave the
   AssemblyMapper almost as is and to require explicit mappings between all 
-  coordinate systems of intereset to be present in the assembly table.
+  coordinate systems of intereset to be present in the assembly table.  The
+  AssemblyMapper would only support 1 step mappings and the more complex
+  2 step mappings could be introduced at a later date.
 
 
 FeatureAdaptors
@@ -560,8 +565,8 @@ FeatureAdaptors
   (2) Check which coord system features are in
   (3) Dynamically construct mapper between coord systems (or get cached one)
   (4) Cache mapper just created
-  (5) Retrieve features in their native coord system using list_dnfrags style
-      call on mapper object.
+  (5) Retrieve features in their native coord system using list_seq_regionss 
+      style call on mapper object.
   (6) Remap features to the requested coord system using the mapper
   (7) Return the features
 
@@ -583,7 +588,63 @@ Bio::Seq
 NEW FEATURES
 ------------
 
+Assembly Exceptions (Symbolic Sequence Links)
+---------------------------------------------
 
+  It is sometimes desirable to have multiple regions refer to the same 
+  sequence.
+
+  In much the same way a symlinked file acts as a pointer to a real file, 
+  a symlinked region can point to another region of sequence.
+
+  This can be described in the database through the addition of a table which 
+  has a structure that mirrors that of the assembly table. The assembly table
+  does not define the structure underlying this seq_region, and it does not
+  have sequence of its own.  By means of the assembly_exception table this 
+  seq_region points to another seq_region where the underlying sequence is 
+  defined:
+
+      assembly_exception
+      ------------------   
+      seq_region_id        int
+      seq_region_start     int
+      seq_region_end       int
+      exc_type             enum('HAP', 'PAR')
+      exc_seq_region_id    int
+      exc_seq_region_start int
+      exc_seq_region_end   int
+      ori                  int  (may not be needed, may implicitly be 1)
+
+   When fetching features and sequence from a slice that overlaps a symlinked
+   region, the features and sequence from the symlinked region are returned.  
+   This may be implemented by altering fetch by slice calls and adding a 
+   SliceAdaptor method with splits a slice into non-symlinked components.  
+   The following algorithm would apply to sequence and feature fetches:
+      (1) Split the slice into non-symlinked component slices
+      (2) Recursively call the method with the component slices
+      (3) Adjust the start and end of the returned features and place them
+          back on the original slice (or splice the sequence together if this
+          is a sequence fetch)
+      (4) Return the features or sequence
+   
+   Consider a slice which overlaps regions (A), (B), and (C) on chromosome Y:
+
+             ===============  (chrX)
+               ^^^^^^^^^^^
+     ========   symlink     =========  (chrY)
+      (A)          (B)         (C)
+
+   Regions (A) and (C) are described by the assembly table, but region (B)
+   is described in the assembly_exception table and points to a region of
+   chromosome Y.  When features or sequence are retrieved the slice is split
+   into 3 component slices which have no symlinks:  region (A) and (C) are
+   slices on chromosome Y but region (B) is made into a slice on chromsome (X).
+   All of the features are fetched from the individual slices adjusted by
+   some addition and placed on back on the original Slice before being
+   returned. 
+  
+   
+    
 Haplotypes (and the MHC region)
 -------------------------------
   There are several requirements related to haplotypes:
@@ -596,68 +657,32 @@ Haplotypes (and the MHC region)
       onto the haplotype
 
    Proposal:
-    Create a new table assembly_exception to describe unusual assembly 
-    regions such as haplotypes and PARs.
-    The haplotype will be present as a full length 'chromosome' in the dnfrag 
-    table (or other appropriate coordinate system) but only the region which
-    differs from the the default assembly will be described in the chromosome
-    table.  The regions which are identical will be described by the 
-    assembly_exception table. 
-
-      assembly_exception
-      ------------------   
-      seq_region_id        int
-      seq_region_start     int
-      seq_region_end       int
-      exc_type          enum('HP', 'PAR')
-      exc_seq_region_id    int
-      exc_seq_region_start int
-      exc_seq_region_end   int
-      ori               int  (may not be needed, may implicitly be 1)
-     
+    The haplotype will be present as a full length 'chromosome' in the 
+    seq_region table (or other appropriate coordinate system) but only the 
+    region which differs from the the default assembly will be described in 
+    the chromosome table.  The regions which are identical will be described 
+    by the assembly_exception table. 
+  
     It is possible to retrieve a slice on a haplotype just as any other slice
     is retrieved from the SliceAdaptor.  For example: 
     $slice = $slice_adaptor->fetch_by_region('chromosome', '6_DR52');
-
-    The slice will have an additional method has_exceptions('haplotype') which
-    will return true or false depending on whether the slice overlaps any
-    regions of assembly exception of type 'haplotype'.
-    This method will have to query the dnfrag table and cache the result.
     
-    Another new slice method get_all_exceptions will return a listref of the
-    assembly exceptions overlapping the slice.
-
     A slice created on a haplotype will have coordinates relative to the
     start of the chromosome NOT relative to the start of the haplotype
     region. For all intents and purposes a haplotype slice will behave as
     a normal slice.
 
-    The feature adaptor fetch_all_by_Slice method will have to
-    be altered to check whether a slice overlaps haplotype assembly
-    exceptions.  If it does the following algorithm will apply:
-     (a) Split the slice into regions of exception and non-exception.
-         The regions of exception should be used to create slices on the 
-         default chromosome not the haplotype chromosome.
-     (b) Retrieve features by recursively calling fetch_by_Slice on each of
-         the slices created.
-     (c) Adjust the start/end of the features retrieved fromeach of the slices 
-         so that they are relative to the start of the original slice, and
-         place them on the original slice.
-     (d) Return all of the features retrieved
-
-    The SequenceAdaptor will also need to take haplotype slices into account.
-    A similar algorithm to above will need to apply in which sequence for 
-    seperate component slices is retrieved, spliced together and returned.
-
     For example, the assembly table could define the composition of the 
     divergent region of chromosome 6_DR52 (C), but leave the remainder of the
-    chromosomal composition undefined (A,B).  However the remainder of the 
-    chromosome composition would be accounted for is by 2 rows in the 
+    chromosomal composition undefined.  The remainder of the 
+    chromosome composition would be accounted for by 2 rows in the 
     assembly_exception table which described the synonymous regions in terms 
     of chromosome 6:
  
-      A______________         B_______________ (6)
-                   C ==========                (6_DR52)
+       ==============  6       ==============  6
+            ^                         ^
+       _____|________          _______|______  
+                   C ==========               6_DR52
 
 
 
@@ -677,20 +702,21 @@ Pseudo Autosomal Regions (PARs)
     - The genebuild should run over the region, but only once.
 
   Proposal:
-    Use the same assembly_exception table as described in the Haplotype section
-    above. Chromosome X can be the 'default' chromosome for the PAR
-    and Chromosome Y can be described by the assembly table except in the 
-    PAR.  The PAR on chromosome Y can be defined by the assembly_exception
-    table and refer to the corresponding sequence on chromosome X.  The same
-    algorithm as used for haplotypes can then be used when retrieving sequence
-    or features from slices which overlap this exception on chromosome Y.
+    Use the assembly_exception table in a similar fashion as it is used
+    for the haplotypes described above. Chromosome X can be the 'default' 
+    chromosome for the PAR and Chromosome Y can be described by the assembly 
+    table except in the PAR.  The PAR on chromosome Y can be defined by the 
+    assembly_exception table and refer to the corresponding sequence on 
+    chromosome X.  The same algorithm as used for haplotypes can then be used 
+    when retrieving sequence or features from slices which overlap this 
+    exception on chromosome Y.
 
-    The following diagram illustrates how chromsome X and chromosome Y would
+    The following diagram illustrates how chromsome X and chromosome Y could
     be defined:
 
     ========================================== X
            ^                 ^ 
-          _|_            ____|____ (X)
+          _|_            ____|____ 
     ======   ============         ============= Y
 
 
@@ -699,43 +725,10 @@ Multiple Assemblies
 
 TBD
 
-
 Circular Chromosomes
 --------------------
-  We can handle circular chromosomes (or any arbitrary circular sequence) in
-  a similar way the the haplotypes.  The seq_region for the circular sequence can
-  have a flag set which indicates that it is circular.  The slice would have
-  an additional method is_type('circular') which would return true if the
-  slice was on a circular seq_region.  The following is the algorithm for 
-  retrieval of features on a circular slice:
-     (a) Split the slice into 3 regions: 
-         (1)     slice_start -> 0, 
-         (2)               1 -> frag_length, 
-         (3) frag_length + 1 -> slice_end
-        
-     (b) Create slices on each of the regions.
-         Region (1) becomes a circular slice with: 
-           start = frag_length - region_length + 1
-             end = frag_length
-           
-         Region (2) just creates a circular slice of that region
-         Region (3) becomes a circular slice with:
-           start = 1 - region_length
-             end = 0
 
-         Slices that would be of length < 1 are not created or used.  
-         The case in which it is not necessary to create slices (1) and (3) 
-         is the degenerative case: it is not necessary to create any new 
-         slices and the features for this slice can be returned right away.
-     (c) Retrieve features by recursively calling fetch_by_Slice on each of
-         the slices created.
-     (d) Adjust the start/end of features from slice (2) by adding the
-         the length of slice (1).  
-     (e) Adjust the start/end of features from slice (3) by adding the
-         combined lengths of slice (1) and slice (2)
-     (f) Return all of the features retrieved
-
-  A very similar algorithm would be applied with regards to sequence retrieval.
+TBD
 
 
 Comparative Sequence (Chimp)
