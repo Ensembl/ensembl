@@ -76,7 +76,7 @@ $| = 1;
 # signal handler
 $SIG{INT} = sub {my $sig=shift;die "exited after SIG$sig";};
 
-my $fdbtype = 'rdb';
+my $fdbtype = 'timdb';
 my $fhost   = 'localhost';
 my $fport   = '410000';
 my $fdbname = 'ensembl';
@@ -86,8 +86,8 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'test100';
-my $tdbuser = 'ensro';
+my $tdbname = 'ensembl';
+my $tdbuser = 'ensdev';
 my $tdbpass = undef;
 
 my $usefile = 0;

@@ -101,7 +101,7 @@ if($from){
 }else{
     $last_offset=$tdb->get_last_update_offset;
 }
-my $now_offset       = $tdb->get_now_offset;    # This should be something different
+my $now_offset       = $tdb->get_now_offset;
 
 print STDERR "From/to times $last_offset $now_offset\n";
 
@@ -141,5 +141,6 @@ sub make_locator_string {
 	die "Database type [$type] not recognised\n";
     }
 }
+
 
 
