@@ -1120,18 +1120,14 @@ sub _mask_features {
     }
     
     if ($masking_type) {
-      print STDERR "LowerCase Masking: ",$repeat_consensus->repeat_class," ",$repeat_consensus->name,"\n";
       $padstr = lc substr ($dnastr,$start,$length);
     } else {
-      print STDERR "Hard Masking: ",$repeat_consensus->repeat_class," ",$repeat_consensus->name,"\n";
       $padstr = 'N' x $length;
     }
     substr ($dnastr,$start,$length) = $padstr;
 
   }
-  unless (scalar @{$repeats}) {
-    print STDERR "No Repeat Features\n";
-  }
+
   return $dnastr;
 } 
 
