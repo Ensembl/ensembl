@@ -16,7 +16,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..4\n"; 
+BEGIN { $| = 1; print "1..8\n"; 
 	use vars qw($loaded); }
 
 END { print "not ok 1\n" unless $loaded; }
@@ -56,10 +56,22 @@ my $crossdb = Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new( -host => $host, -db
 print "ok 4\n"; 
 system ('rm t/crossmatch.dump');
 
-my $crossmap = Bio::EnsEMBL::Pipeline::RunnableDB::CrossCloneMap->new($crossdb);
+my $crossmap = Bio::EnsEMBL::Pipeline::RunnableDB::CrossCloneMap->new(-crossdb=>$crossdb, -score =>50);
 print "ok 5\n";
-$crossmap->fetch_input('crosstest_1');
+$crossmap->fetch_input('crosstest1');
 print "ok 6\n";
 $crossmap->run;
 print "ok 7\n";
+$crossmap->write_output;
+print "ok 8\n";
+my $sfc=$crossdb->get_SymmetricContigFeatureContainer;
+my @fp=$sfc->get_FeaturePair_list_by_rawcontig_id('crosstest1.1');
+my $size= scalar(@fp);
+if ($size == 3) {
+    print "ok 9\n";
+}
+else {
+    print "not ok 9\n";
+    print STDERR "Got $size features instead of 3\n";
+}
 
