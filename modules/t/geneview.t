@@ -27,11 +27,12 @@ my $db = $multi->get_DBAdaptor( "core" );
 
 my $gene = $db->get_GeneAdaptor->fetch_by_transcript_stable_id( "ENST00000217347" );
 my $geneid = $gene->stable_id;
+ok( $geneid );
 
 $gene = $db->get_GeneAdaptor->fetch_by_Peptide_id( "ENSP00000278995" );
 $geneid = $gene->stable_id;
 
 $gene = $db->get_GeneAdaptor()->fetch_by_stable_id( "ENSG00000101321" );
+ok( $gene );
 
-ok( 1);
 
