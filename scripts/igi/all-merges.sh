@@ -10,18 +10,26 @@
 ## collated file (called all.gtf). These files (must) have been created first
 ## by all-collate.sh.
 
-ens=ensembl/all.gtf
-affy=affymetrix/all.gtf
-fgenesh=fgenesh/chr_gff/all.gtf 
-outdir=merges
-[ -d $outdir ]  && echo "Found dir $outdir, not merging" >&2  && exit 1
-mkdir $outdir
+igihome=$HOME/proj/igi                  # change to needs
+resultdir=$igihome/out
+outdir=$resultdir/merged
+indir=$resultdir/collated
+
 prefix=igi3
 
-gtf_merge.pl -p $prefix $ens $affy > $outdir/ens_affy.merge  2> ens_affy.log
-gtf_merge.pl -p $prefix $ens $fgenesh > $outdir/ens_fgenesh.merge 2> ens_fgenesh.log
-gtf_merge.pl -p $prefix $affy $fgenesh > $outdir/affy_fgenesh.merge 2> affy_fgenesh.log
-gtf_merge.pl -p $prefix $ens $affy $fgenesh > $outdir/ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
+[ -d $outdir ]  && echo "Found dir $outdir, not merging" >&2  && exit 1
+mkdir $outdir
+[ ! -d $indir ] && echo "$indir: not found" >&2 && exit 1
+
+ens=ensembl.all
+affy=affymetrix.all
+fgenesh=fgenesh.all
+
+cd $outdir
+gtf_merge.pl -p $prefix $indir/$ens $indir/$affy > ens_affy.merge  2> ens_affy.log
+gtf_merge.pl -p $prefix $indir/$ens $indir/$fgenesh > ens_fgenesh.merge 2> ens_fgenesh.log
+gtf_merge.pl -p $prefix $indir/$affy $indir/$fgenesh > affy_fgenesh.merge 2> affy_fgenesh.log
+gtf_merge.pl -p $prefix $indir/$ens $indir/$affy $indir/$fgenesh > ens_affy_fgenesh.merge 2>ens_affy_fgenesh.log
 
 cd $outdir
 for i in *.merge; do

@@ -5,9 +5,13 @@ Just a little documentation on how this is supposed to work:
 - get all the data files
 - make subdirs for each data source, containing their data file(s)
 - run all-collates.sh. This will (or should) prepare one big gtf file foreach
-  data source. The data is now ready to be merged. 
+  data source in a new subdirectory out/collated/*.all
+  The data is now ready to be merged. 
 - run all-merges.sh. This will (or should) run all the pairwise, triple, (and
   higher) merges on all the single-source gtf files, and dump the resulting
-  merged files into sub-directory merges/
+  merged files into sub-directory out/merged/
 - run all-stats.sh. This will (or should) run all the statistics on each of
-  the merged files. The output goes into sub-directory stats/
+  the merged files. The output goes into sub-directory out/stats/. It will
+  also produce file that map igi's to native ids and vice versa, in directory
+  out/mapping
+
