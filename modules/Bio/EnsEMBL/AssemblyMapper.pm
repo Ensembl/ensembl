@@ -155,7 +155,7 @@ sub map {
     $to = $ASSEMBLED;
 
   } elsif($to_cs == $asm_cs || $to_cs->equals($asm_cs)) {
-   
+
     # This can be probably be sped up some by only calling registered
     # assembled if needed
     $adaptor->register_assembled($self,$frm_seq_region,$frm_start,$frm_end);
@@ -173,7 +173,9 @@ sub map {
 
 
 
-=head2 list_ids
+
+
+=head2 list_seq_regions
 
   Arg [1]    : string $frm_seq_region
                The name of the sequence region of interest
@@ -184,15 +186,17 @@ sub map {
   Arg [5]    : Bio::EnsEMBL::CoordSystem
                The coordinate system to obtain overlapping ids of
   Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
-  Description: Retrieves a list of overlapping seq_region names of another
-               coordinate system.
+  Description: Retrieves a list of overlapping seq_region internal identifiers
+               of another coordinate system.  This is the same as the 
+               list_ids method but uses seq_region names rather internal ids
   Returntype : List of strings
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub list_ids {
+
+sub list_seq_regions {
   my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
 
   my $to;
@@ -217,6 +221,39 @@ sub list_ids {
 
   return $self->mapper()->list_ids($frm_seq_region, $frm_start, $frm_end,
                                    $frm_strand, $to);
+}
+
+
+=head2 list_ids
+
+  Arg [1]    : string $frm_seq_region
+               The name of the sequence region of interest
+  Arg [2]    : int $frm_start
+               The start of the region of interest
+  Arg [3]    : int $frm_end
+               The end of the region to transform of interest
+  Arg [5]    : Bio::EnsEMBL::CoordSystem
+               The coordinate system to obtain overlapping ids of
+  Example    : foreach $id ($asm_mapper->list_ids('X',1,1000,$ctg_cs)) {...}
+  Description: Retrieves a list of overlapping seq_region internal identifiers
+               of another coordinate system.  This is the same as the
+               list_seq_regions method but uses internal identfiers rather 
+               than seq_region strings
+  Returntype : List of ints
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub list_ids {
+  my($self, $frm_seq_region, $frm_start, $frm_end, $frm_strand, $to_cs) = @_;
+
+  #retrieve the seq_region names
+  my @seq_regs = $self->list_seq_regions($frm_seq_region, $frm_start, $frm_end,
+                                    $frm_strand, $to_cs);
+
+  #convert them to ids
+  return @{$self->adaptor()->seq_regions_to_ids($to_cs, \@seq_regs)};
 }
 
 
