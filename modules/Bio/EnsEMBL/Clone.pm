@@ -186,11 +186,16 @@ sub get_all_my_geneid
 
 
 
-sub get_all_Contigs
-{
-    my ($self)=shift;
+sub get_all_Contigs {
+    my( $self ) = @_;
 
-    return $self->adaptor->get_all_Contigs($self->dbID,$self->version);
+    my( $c_list );
+    unless ($c_list = $self->{'_contig_list'}) {
+        my $ra = $self->adaptor->db->get_RawContigAdaptor;
+        $c_list = $ra->fetch_by_clone($self);
+        $self->{'_contig_list'} = $c_list;
+    }
+    return @$c_list;
 }
 
 

@@ -92,7 +92,6 @@ sub _generic_sql_fetch {
 
 sub fetch_by_accession { 
     my ($self,$acc) = @_;
-
     
     unless ($acc) {
         $self->throw("Accession not given");
@@ -330,41 +329,6 @@ sub get_Contig {
    my $contig = $self->db->get_Contig($contigid);
    
    return $contig->fetch();
-}
-
-
-=head2 get_all_Contigs
-
- Title   : get_Contigs
- Usage   : foreach $contig ( $clone->get_all_Contigs ) 
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Contigs {
-   my ($self, $clone_id, $version) = @_;
-
-   my $sth = $self->prepare("SELECT contig_id FROM contig WHERE clone_id = $clone_id");
-   $sth->execute();
-
-   my( @contigs );
-   while( my ($contig_id) = $sth->fetchrow_hashref) {
-       my $c = $self->db->get_Contig($contig_id);
-       $c->internal_id($contig_id);
-       $c->seq_version($version);
-
-       push(@contigs, $c);
-   }
-
-   if (@contigs) {
-       return @contigs;
-   } else {
-       $self->throw("Failed to find any contigs for clone_id '$clone_id'");
-   }
 }
 
 

@@ -72,7 +72,7 @@ sub new {
 
     # EMBL dumping support
     $self->{'date'} = [];
-    $self->{_anal_hash}=();
+    $self->{_anal_hash}={};
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
    

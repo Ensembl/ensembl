@@ -72,6 +72,7 @@ use DBI;
 use Bio::EnsEMBL::DBSQL::SQL;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
+### Should not be an ObjI!
 @ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
 
 sub new {
