@@ -90,14 +90,16 @@ methods. Internal methods are usually preceded with a _
 # Let the code begin...
 
 
-package EnsEMBL::Exon2Gene;
+package Bio::EnsEMBL::Analysis::Exon2Gene;
 use vars qw(@ISA);
 use strict;
+
+
+# since this is not currently OO following part is not used at present
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-
 
 @ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
@@ -114,3 +116,6 @@ sub _initialize {
 }
 
 
+sub exon2gene{
+    my($raexons,$rhpairs,$rhtranscripts,$rhgenes,$logobj)=@_;
+}
