@@ -13,7 +13,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::Search::HSP::EnsemblHSP; # This is a web module
 
-@ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor );
+@ISA = qw( Bio::EnsEMBL::DBSQL::DBAdaptor );
 #@ISA = qw( Bio::EnsEMBL::DBSQL::DBConnection );
 
 
@@ -198,7 +198,7 @@ WHERE   hsp_id    = ?";
 sub new {
   my $caller = shift;
   my $connection = Bio::EnsEMBL::DBSQL::DBConnection->new(@_);
-  my $self = $caller->SUPER::new($connection);
+  my $self = $caller->SUPER::new_fast($connection);
   return $self;
 }
 
