@@ -463,7 +463,7 @@ sub _transform_to_RawContig {
     # thats a simple exon
     if($mapped[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
       
-      $self->throw(" exon ". $self->start().
+      $self->throw(" exon [". $self->stable_id ."]". $self->start().
 		   " ". $self->end(). " ".
 		   $self->contig()->chr_name().
 		   " lies on a gap cannot be mapped\n");
