@@ -70,7 +70,7 @@ use strict;
 use Bio::SeqFeatureI;
 use Bio::Root::Object;
 
-@ISA = qw(Bio::Root::Object Bio::SeqFeatureI);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::SeqFeatureI);
 
 # new is inherited from Bio::Root::Object
 

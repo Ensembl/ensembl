@@ -108,43 +108,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-=head2 feature1
-    
- Title   : feature1
- Usage   : $feat->feature1($feat);
- Function: Get/set method for the first feature in the pair
- Example :
- Returns : Bio::EnsEMBL::SeqFeatureI
- Args    : Bio::EnsEMBL::SeqFeatureI
-
-
-=cut
-
-#sub feature1 {
-#    my ($self,$arg) = @_;
-#    print("arg is $arg\n");
-#    return $self->SUPER::feature1($arg);
-#}
-
-=head2 feature2
-
- Title   : feature2
- Usage   : $feat->feature2($feat);
- Function: Get/set method for the second feature in the pair
- Example :
- Returns : Bio::EnsEMBL::SeqFeatureI
- Args    : Bio::EnsEMBL::SeqFeatureI
-
-
-=cut
-
-#sub feature2 {
-#    my ($self,$arg) = @_;
-
-#    return $self->SUPER::feature2($arg);
-
-#}
-
 
 =head2 analysis
 
