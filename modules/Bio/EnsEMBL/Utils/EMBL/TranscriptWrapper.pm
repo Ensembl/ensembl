@@ -46,10 +46,11 @@ use strict;
 package Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper;
 
 use Bio::SeqIO::FTHelper;
+use Bio::EnsEMBL::Utils::EMBL::Misc qw(features2join_string);
 use Bio::EnsEMBL::Root;
 use vars qw(@ISA);
 
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::Exon);
 
 
 =head2 new
@@ -132,22 +133,19 @@ sub to_FTHelper {
     @dblinks = @{$trans->get_all_DBLinks()};
   }
 
-  my $join = "";
-  
-  my $exons;
-   
-  foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
-    $join .= ',' if($join); #append a comma to the last coord set
-    if($exon->strand() == 1) {
-      $join .= $exon->start()."..".$exon->end();
-    } else {
-      $join .= "complement(".$exon->start()."..".$exon->end().")";
-    }
-  }
+  my $loc = features2join_string($trans->get_all_translateable_Exons());
 
   my $ft = Bio::SeqIO::FTHelper->new();
-  $ft->loc("join(".$join.")");
-  $ft->key('CDS');
+  $ft->loc($loc);
+
+  my $exon_key;
+  if($trans->isa('Bio::EnsEMBL::PredictionTranscript')) {
+      $ft->key('CDS_' . lc($trans->analysis->logic_name));
+      $exon_key = 'exon_' . lc($trans->analysis->logic_name);
+  } else {
+      $ft->key('CDS');
+      $exon_key = 'exon';
+  }
   
   $ft->add_field('translation', $trans->translate()->seq());
   if($trans->can('translation')) {
@@ -161,14 +159,9 @@ sub to_FTHelper {
 
   foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
     my $ft = Bio::SeqIO::FTHelper->new();
-    
-    if( $exon->strand() == 1 ) {
-      $ft->loc($exon->start."..".$exon->end());
-    } else {
-      $ft->loc("complement(".$exon->start()."..".$exon->end().")");
-    }
 
-    $ft->key("exon");
+    $ft->loc(features2join_string([$exon]));
+    $ft->key($exon_key);
     
     if( $self->strict_EMBL_dumping()) {
       $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'.$exon->stable_id());
@@ -183,6 +176,7 @@ sub to_FTHelper {
   
   return @out;
 }
+
 
   
 =head2 strict_EMBL_dumping

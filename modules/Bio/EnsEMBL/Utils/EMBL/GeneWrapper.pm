@@ -48,6 +48,7 @@ package Bio::EnsEMBL::Utils::EMBL::GeneWrapper;
 
 use Bio::SeqIO::FTHelper;
 use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::EMBL::Misc qw(features2join_string);
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::Root);
@@ -129,20 +130,10 @@ sub to_FTHelper {
   my @dblinks = @{$self->gene->get_all_DBLinks()};
 
   foreach my $trans (@{$self->gene->get_all_Transcripts()}) {
-    my $join = "";
-    
-    foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
-      $join .= ',' if($join); #append a comma to the last coord set
-
-      if($exon->strand() == 1) {
-	$join .= $exon->start()."..".$exon->end();
-      } else {
-	$join .= "complement(".$exon->start()."..".$exon->end().")";
-      }
-    }
+    my $loc = features2join_string($trans->get_all_translateable_Exons);
 
     my $ft = Bio::SeqIO::FTHelper->new();
-    $ft->loc("join(".$join.")");
+    $ft->loc($loc);
     $ft->key('CDS');
 
     $ft->add_field('translation', $trans->translate()->seq());
@@ -158,12 +149,8 @@ sub to_FTHelper {
   foreach my $exon (@{$self->gene->get_all_Exons()}) {
     my $ft = Bio::SeqIO::FTHelper->new();
 
-    if( $exon->strand() == 1 ) {
-      $ft->loc($exon->start."..".$exon->end());
-    } else {
-      $ft->loc("complement(".$exon->start()."..".$exon->end().")");
-    }
-
+    my $loc = features2join_string([$exon]);
+    $ft->loc($loc);
     $ft->key("exon");
     
     if( $self->strict_EMBL_dumping()) {

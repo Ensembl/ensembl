@@ -111,24 +111,22 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The reference, comment, description and feature table of the original entry can be found in the DDBJ/EMBL/GenBank database with the identical accession number.");
+   $comment->text("All feature locations are relative to the first (5') base" .
+		  " of the sequence in this file.  The sequence presented is ".
+		  "always the forward strand of the assembly. Features " .
+		  "that lie outside of the sequence contained in this file " .
+		  "have clonal location coordinates in the format: " .
+		  "<clone accession>.<version>:<start>..<end>");
    $aseq->annotation->add_Comment($comment);
-   
+
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The /gene indicates a unique id for a gene, /cds a unique id for a translation and a /exon a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://www.ensembl.org/Docs/embl.html.");
+   $comment->text("The /gene indicates a unique id for a gene, /cds a unique id for a translation and a /exon a unique id for an exon. These ids are maintained wherever possible between versions.");
 
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
    $comment->text("All the exons and transcripts in Ensembl are confirmed by similarity to either protein or cDNA sequences.");
    $aseq->annotation->add_Comment($comment); 
-
-   $comment = Bio::Annotation::Comment->new();
-   $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the International Nucleotide Sequence Databases DDBJ/EMBL/GenBank.");
-
-   $aseq->annotation->add_Comment($comment); 
-  
-   # done!
 }
 
 =head2 ensembl_annseq_output
@@ -179,7 +177,8 @@ sub id_EnsEMBL {
     #return $annseq->id;
 
     # JGRG - is this correct?  I thought phase 3 was HUM.
-    my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
+    #my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
+    my $division = '';
     my $length = $annseq->length();
     my $id = $annseq->id();
 
@@ -227,7 +226,7 @@ sub sv_EnsEMBL {
 sub ac_EnsEMBL {
    my ($annseq) = @_;
 
-   return $annseq->id();
+   return $annseq->ac();
 }
 
 
@@ -237,9 +236,11 @@ BEGIN {
         source          => 1,
         CDS             => 2,
         exon            => 3,
-        repeat   => 4,
-        similarity   => 5,
-        variation   => 6,
+	CDS_genscan     => 4,
+        exon_genscan    => 5,
+        repeat   => 6,
+        similarity   => 7,
+        variation   => 8,
     );
 
     # $last is one more than the largest value in %sort_order
