@@ -87,8 +87,18 @@ sub new {
   return $self;
 }
 
-
 sub get_Gene_chr_MB {
+    my ($self,$gene) = @_;
+
+    my ($chr,$bp) = $self->get_Gene_chr_bp($gene);
+    my $mbase = $bp/1000000;
+    my $round = sprintf("%.1f",$mbase);   
+
+    return ($chr,$round);
+}
+    
+
+sub get_Gene_chr_bp {
     my ($self,$gene) =  @_;
 
     my $sth = $self->dbobj->prepare("select STRAIGHT_JOIN p.chr_name,p.chr_start from transcript tr,translation t,exon e,static_golden_path p where tr.gene = '$gene' and t.id = tr.translation and t.start_exon = e.id and e.contig = p.raw_id");
@@ -97,11 +107,8 @@ sub get_Gene_chr_MB {
 
     my ($chr,$mbase) = $sth->fetchrow_array;
 
-    $mbase = $mbase / 1000000;
-      
-    my $round = sprintf("%.1f",$mbase);   
 
-    return ($chr,$round); 
+    return ($chr,$mbase); 
         
 }
 
@@ -177,7 +184,7 @@ sub convert_chromosome_to_fpc{
 
 =head2 convert_fpc_to_chromosome
  
-  Title   : convert_chromosome_to_fpc
+  Title   : convert_fpc_to_chromosome
   Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
   Function:
   Returns : 
@@ -205,6 +212,45 @@ sub convert_fpc_to_chromosome {
     }
     return ($chr,$start+$startpos,$end+$startpos) ;
 }
+
+
+=head2 convert_rawcontig_to_fpc
+
+ Title   : convert_rawcontig_to_fpc
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub convert_rawcontig_to_fpc{
+   my ($self,$rc,$start,$end,$strand) = @_;
+
+
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("SELECT st.fpcctg_name,
+					    st.fpcctg_start,
+                                            st.raw_start,
+                                            st.raw_ori,
+                                            st.raw_end
+				    FROM static_golden_path st,contig c 
+				    WHERE c.id = '$rc' AND c.internal_id = st.raw_id"
+				    );
+   $sth->execute;
+   my ($fpc,$fpcstart,$rawstart,$rawori,$rawend) = $sth->fetchrow_array;
+   
+   if( $rawori == 1 ) {
+       return ($fpc,$fpcstart+$start-$rawstart,$fpcstart+$end-$rawend,$strand);
+   } else {
+       return ($fpc,$fpcstart+($rawend - $end),$fpcstart+($rawend - $start),$strand*-1);
+   }
+
+}
+
 
 
 =head2 fetch_RawContigs_by_chr_name
