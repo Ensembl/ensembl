@@ -540,7 +540,8 @@ sub cdna_coding_start {
   Example    : $cdna_coding_end = $transcript->coding_end;
   Description: Retrieves the end of the coding region of this transcript in
                cdna coordinates (relative to the five prime end of the
-               transcript, excluding introns, including utrs)
+               transcript, excluding introns, including utrs).
+               Note 
   Returntype : none
   Exceptions : none
   Caller     : general
@@ -580,7 +581,12 @@ sub cdna_coding_end {
   Example    : $coding_start = $transcript->coding_start
   Description: Retrieves the start of the coding region of this transcript
                in genomic coordinates (i.e. in either slice or contig coords).
-  Returntype : none
+               By convention, the coding_start is always lower than the value
+               returned by the coding_end method.  The value returned by this
+               function is NOT the biological coding start since on the 
+               reverse strand the biological coding start would be the 
+               higher genomic value. 
+  Returntype : int
   Exceptions : none
   Caller     : general
 
@@ -612,12 +618,18 @@ sub coding_start {
 
 =head2 coding_end
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : (optional) $value
+  Example    : $coding_end = $transcript->coding_end
+  Description: Retrieves the start of the coding region of this transcript
+               in genomic coordinates (i.e. in either slice or contig coords).
+               By convention, the coding_end is always higher than the value
+               returned by the coding_start method.  The value returned by this
+               function is NOT the biological coding start since on the 
+               reverse strand the biological coding end would be the 
+               lower genomic value.
+  Returntype : int
+  Exceptions : none
+  Caller     : general
 
 =cut
 
