@@ -1,5 +1,7 @@
 #include "ensembl-seq-server.h"
 
+#include <stdio.h>
+
 /*** App-specific servant structures ***/
 
 typedef struct
@@ -139,8 +141,6 @@ static impl_POA_BioSource_Seq * new_impl_BioSource_Seq(PortableServer_POA poa,
 {
    impl_POA_BioSource_Seq *newservant;
 
-   assert(c);
-   assert(id);
 
    newservant = g_new0(impl_POA_BioSource_Seq, 1);
    newservant->servant.vepv = &impl_BioSource_Seq_vepv;
@@ -164,12 +164,12 @@ BioSource_Seq   new_EnsEMBL_BioSource_Seq(PortableServer_POA poa,MYSQL * connect
 
 
   if( connection == NULL ) {
-    g_warn("Passed in NULL connection. Cannot build sequence object on null connection");
+    /*g_warn("Passed in NULL connection. Cannot build sequence object on null connection");*/
     /* yikes- should do something!*/
   }
 
   if( dna_database_id == NULL ) {
-    g_warn("Passed in NULL dna database id - horrifying!");
+    /*g_warn("Passed in NULL dna database id - horrifying!");*/
     /* do something */
   }
 
@@ -177,23 +177,31 @@ BioSource_Seq   new_EnsEMBL_BioSource_Seq(PortableServer_POA poa,MYSQL * connect
    * Check in exists in database *now* not later!
    */
   
-  sprintf(sqlbuffer,"SELECT id from dna where id = '%s'",dna_database_id);
+  fprintf(stderr,"About to make connection!\n");
+  sprintf(sqlbuffer,"SELECT contig from dna where contig = '%s'",dna_database_id);
   state = mysql_query(connection,sqlbuffer);
   result = mysql_store_result(connection);
+  fprintf(stderr,"Made and stored!\n");
   if( mysql_num_rows(result) != 1 ) {
-    g_warn("Bad news - in asking for dna_id %s - no rows %d!",dna_database_id,mysql_num_rows(result));
+    fprintf(stderr,"No sequences!\n");
+    /*g_warn("Bad news - in asking for dna_id %s - no rows %d!",dna_database_id,mysql_num_rows(result));*/
   }
-
+  fprintf(stderr,"About to free!\n");
   mysql_free_result(result);
+  fprintf(stderr,"Freed!\n");
 
+  newservant = new_impl_BioSource_Seq(poa,connection,dna_database_id);
+  
   /*
    * ok. We can rock and roll now 
    */
    POA_BioSource_Seq__init((PortableServer_Servant) newservant, ev);
+   fprintf(stderr,"Freed!\n");
    objid = PortableServer_POA_activate_object(poa, newservant, ev);
    CORBA_free(objid);
+   fprintf(stderr,"Freed!\n");
    retval = PortableServer_POA_servant_to_reference(poa, newservant, ev);
-
+   fprintf(stderr,"About to return!\n");
    return retval;
 }
 
@@ -237,12 +245,23 @@ impl_BioSource_Seq_seq(impl_POA_BioSource_Seq * servant,
    CORBA_char *retval;
    char sqlbuffer[1024];
    MYSQL_RES * result;
+   MYSQL_ROW row;
    int state;
+   char * str;
 
-   sprintf(sqlbuffer,"SELECT sequence from dna where id = '%s'",servant->dna_database_id);
+   sprintf(sqlbuffer,"SELECT sequence from dna where contig = '%s'",servant->database_dna_id);
    state = mysql_query(servant->connection,sqlbuffer);
    result = mysql_store_result(servant->connection);
-   
+   /* FIXME: error trapping here */
+
+   row = mysql_fetch_row(result);
+
+   str = row[0];
+   /* fprintf(stderr,"Returned %s",str); */
+
+   /** check for DNA sequences in here? **/
+
+   retval = CORBA_string_dup(str);
    return retval;
 }
 
@@ -288,8 +307,7 @@ impl_BioSource_Seq_type(impl_POA_BioSource_Seq * servant,
 			CORBA_Environment * ev)
 {
    BioSource_seqtype retval;
-
-   return retval;
+   return BioSource_DNA;
 }
 
 static void

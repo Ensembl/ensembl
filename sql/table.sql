@@ -95,9 +95,7 @@ CREATE TABLE exon (
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
   KEY idx1 (id,contig),
-  PRIMARY KEY (id),
-  KEY id_contig (id,contig),
-  KEY idx2 (id,contig)
+  PRIMARY KEY (id)
 );
 
 #
@@ -115,9 +113,8 @@ CREATE TABLE exon_transcript (
   exon varchar(40) DEFAULT '' NOT NULL,
   transcript varchar(40) DEFAULT '' NOT NULL,
   rank int(10) DEFAULT '0' NOT NULL,
-  KEY idx1 (exon,transcript),
-  KEY exon_transcript (exon,transcript),
-  KEY idx2 (exon,transcript)
+  PRIMARY KEY(exon,transcript,rank),	
+  KEY idx1 (exon,transcript)
 );
 
 #
@@ -132,7 +129,8 @@ CREATE TABLE feature (
   strand int(1) DEFAULT 1 NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
-  KEY overlap (id,contig,start,end,analysis)
+  KEY overlap (id,contig,start,end,analysis),
+  PRIMARY KEY(id)
 );
 
 #
