@@ -17,6 +17,7 @@ BEGIN {
 
 my %conf =  %::mapping_conf; # configuration options
 
+
 # global vars
 
 my $refseq_gnp = $conf{'refseq_gnp'};
@@ -27,9 +28,16 @@ my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
+my $check      = $conf{'check'};
+my $query_pep  = $conf{'query'};
+
 
 my %map;
 my %ref_map;
+my %sp2embl;
+my %ens2embl;
+my %embl2sp;
+my %errorflag;
 
 if ((!defined $organism) || (!defined $xmap) || (!defined $map) || (!defined $dbname) || (!defined $host)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
@@ -48,7 +56,8 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 
 my $adaptor = $db->get_DBEntryAdaptor();
 
-if ($organism eq "human") {
+if (($organism eq "human") || ($organism eq "mouse")) {
+    print STDERR "Reading Refseq file\n";
     open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
     $/ = "\/\/\n";
@@ -66,9 +75,19 @@ if ($organism eq "human") {
 
 open (XMAP,"$xmap") || die "Can't open $xmap\n";
 
+print STDERR "Reading X_map ($xmap)\n";
+
 while (<XMAP>) {
+    
     chomp;
     my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn) = split (/\t/,$_);
+
+    if ($check eq "yes") {
+#Get the all of the EMBL accessions for a given SP
+	if (($targetdb eq "SPTR") && ($xdb eq "EMBL")) {
+	    push(@{$sp2embl{$targetid}},$xac);
+	}
+    }
 
     if ($targetid =~ /^NP_\d+/) {
 	
@@ -89,6 +108,9 @@ while (<XMAP>) {
 	$xid = $ref_map{$xid};
     }
 
+        #print STDERR "TARGETID: $targetid\t$xdb\n";
+    
+
     my $p= Desc->new;
     $p->targetDB($targetdb);
     $p->xAC($xac);
@@ -101,15 +123,28 @@ while (<XMAP>) {
 
 close (XMAP);
 
-
+if ($check eq "yes") {
+    open (QUERY,"$query_pep");
+    while (<QUERY>) {
+	if ($_ =~ /^>\S+\s*\S+\s* Clone:\S+/) {
+	    my ($pepac,$cloneac) = $_ =~ /^>(\S+)\s*\S+\s* Clone:(\S+)/; 
+	    $ens2embl{$pepac} = $cloneac;
+	    $embl2sp{$cloneac} = $pepac;
+	}
+    }
+    close (QUERY);
+}
 
 open (MAP,"$map") || die "Can't open $map\n";
 
-while (<MAP>) {
+print STDERR "Reading pmatch output\n";
+MAPPING: while (<MAP>) {
     my $target;
     chomp;
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     
+    print "HERE1\n";
+
     my $m = $tid; 
 
     if ($tid =~ /^NP_\d+/) {
@@ -128,8 +163,14 @@ while (<MAP>) {
 	
 	my @array = @{$map{$tid}};
 	
+	
+	
+
+
 	foreach my $a(@array) {
 #If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
+	    print "HERE2\n";
+
 	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
@@ -139,7 +180,25 @@ while (<MAP>) {
 		      -release => 1,
 		      -dbname => $a->xDB);
 
-		print STDERR $a->xAC,"\t",$a->xID,"\t",$a->xDB,"\n";
+		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT"))) {
+
+		    if (($sp2embl{$a->xAC}) && ($ens2embl{$queryid})) {
+
+			if ($ens2embl{$queryid} =~ @{$sp2embl{$a->xAC}}) {
+
+			}
+			else {
+			    foreach my $a(@{$sp2embl{$a->xAC}}) {
+				if ($embl2sp{$a}) {
+				    print "DODGY: $queryid\n";
+				    next MAPPING;
+				}
+			    }
+			}
+		    }
+		}
+
+		#print STDERR $a->xAC,"\t",$a->xID,"\t",$a->xDB,"\n";
 
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
@@ -153,8 +212,8 @@ while (<MAP>) {
 		    }
 			}
 
-		print STDERR "Calling store on $queryid\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#print STDERR "Calling store on $queryid\n";
+		#$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
 	    
@@ -177,8 +236,8 @@ while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
-		print STDERR "Calling store1 on $queryid\n";
-		$adaptor->store($dbentry,$queryid,"Translation");
+		#print STDERR "Calling store1 on $queryid\n";
+		#$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
 	}
@@ -186,10 +245,14 @@ while (<MAP>) {
     
 	
     else  {
-	#print STDERR " $tid not defined in x_map...hum, not good\n";
+	 print STDERR " $tid not defined in x_map...hum, not good\n";
     }  
 }
 
+
+###############
+#Some OO stuff#
+###############
 
 package Desc;
 
@@ -316,5 +379,6 @@ sub xSYN{
     return $obj->{'xSYN'};
 
 }
+
 
 
