@@ -50,9 +50,12 @@ use vars qw(@ISA);
 use strict;
 
 
+my @_type = ('DNA-DNA','DNA-PEP','PEP-DNA','PEP-PEP');
+
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
+use Bio::EnsEMBL::Analysis::MSPType;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -309,33 +312,29 @@ sub source_tag {
 =cut
 
 
-BEGIN {
-    
-    my @_type = ('DNA-DNA','DNA-PEP','PEP-DNA','PEP-PEP');
+sub type {
+    my ($self,$arg) = @_;
 
-    sub type {
-        my ($self,$arg) = @_;
+    my $type;
+    my @types = @_type;
 
-        my $type;
-        my @types = @_type;
-
-        if (defined($arg)) {
-	    foreach my $t (@types) {
-	        if ($t eq $arg) {
-		    $type = $t;
-		    last;
-	        }
+    if (defined($arg)) {
+	foreach my $t (@types) {
+	    if ($t eq $arg) {
+		$type = $t;
+		last;
 	    }
-
-	    unless (defined $type) {
-	        $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @_type");
-	    }
-
-	    $self->{_type} = $type;
-        }
-        return $self->{_type};
+	}
+	
+	if ($type eq "") {
+	    $self->throw("Wrong type for MSPcrunch entered - $arg : allowed values are @types");
+	}
+	
+	$self->{_type} = $type;
     }
+    return $self->{_type};
 }
+
 
 =head2 get_types
 
