@@ -269,8 +269,6 @@ if (  $pep eq $expected ) {
 if (      @virtualgenes == @genes       # equal list length
      and  $virtualgenes[0]->id == $genes[0]->id ) { 
     print "ok 21\n"; 
-    warn "genes and virtualgenes should have same id; got: ".
-      $virtualgenes[0]->id . " <->" . $genes[0]->id, "\n";
 } else { 
     print "not ok 21\n"; 
     warn "should be one gene, one virtualgene, and should have same id; got: ".
