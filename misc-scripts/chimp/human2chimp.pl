@@ -10,15 +10,16 @@ use InterimExon;
 use StatMsg;
 use Deletion;
 use Insertion;
+use Transcript;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
 
-{  #block to avoid namespace pollution
+{                               #block to avoid namespace pollution
 
-  my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly,  #human vars
+  my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly, #human vars
       $hchromosome, $hstart, $hend,
-      $chost, $cdbname, $cuser, $cpass, $cport, $cassembly,  #chimp vars
+      $chost, $cdbname, $cuser, $cpass, $cport, $cassembly, #chimp vars
       $help, $verbose);
 
   GetOptions('hhost=s'   => \$hhost,
@@ -83,12 +84,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
   my $slices;
 
-  if($hchromosome) {
+  if ($hchromosome) {
     my $slice = $slice_adaptor->fetch_by_region('chromosome',
                                                 $hchromosome,
                                                 $hstart, $hend, undef,
                                                 $hassembly);
-    if(!$slice) {
+    if (!$slice) {
       throw("unknown chromosome $hchromosome");
     }
 
@@ -123,9 +124,17 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
         next if(!$transcript->translation); #skip pseudo genes
 
         my $interim_transcript = transfer_transcript($transcript, $mapper,
-						    $human_cs);
-	my @transcripts = 
-	  create_transcripts($interim_transcript, $slice_adaptor);
+                                                     $human_cs);
+        my $finished_transcripts = 
+          create_transcripts($interim_transcript, $slice_adaptor);
+
+        foreach my $ftrans (@$finished_transcripts) {
+          if($transcript->translation()) {
+            print STDERR "\n\n", $transcript->translate->seq(), "\n\n";
+          } else {
+            print STDERR "NO TRANSLATION LEFT\n";
+          }
+        }
       }
     }
   }
@@ -147,7 +156,7 @@ sub transfer_transcript {
 
   my $human_exons = $transcript->get_all_Exons();
 
-  if(!$transcript->translation()) { # watch out for pseudogenes
+  if (!$transcript->translation()) { # watch out for pseudogenes
     info("pseudogene - discarding");
     return;
   }
@@ -167,32 +176,34 @@ sub transfer_transcript {
     info("Exon: " . $human_exon->stable_id() . " chr=" . 
          $human_exon->slice->seq_region_name() . " start=". 
          $human_exon->seq_region_start());
+    # info("  cdna_pos = $chimp_cdna_pos\n  cdna_exon_start=$cdna_exon_start");
+
     my $chimp_exon = InterimExon->new();
     $chimp_exon->stable_id($human_exon->stable_id());
     $chimp_exon->cdna_start($cdna_exon_start);
 
     my @coords = $mapper->map($human_exon->seq_region_name(),
-			      $human_exon->seq_region_start(),
+                              $human_exon->seq_region_start(),
                               $human_exon->seq_region_end(),
-			      $human_exon->seq_region_strand(),
+                              $human_exon->seq_region_strand(),
                               $human_cs);
 
-    if(@coords == 1) {
+    if (@coords == 1) {
       my $c = $coords[0];
 
-      if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      if ($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
         #
         # Case 1: Complete failure to map exon
         #
 
-	my $entire_delete = 1;
+        my $entire_delete = 1;
 
-	Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
-			         $chimp_exon,
-				 $chimp_transcript, $entire_delete);
+        Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
+                                 $chimp_exon,
+                                 $chimp_transcript, $entire_delete);
 
-	$chimp_exon->fail(1);
-	$chimp_transcript->add_Exon($chimp_exon);
+        $chimp_exon->fail(1);
+        $chimp_transcript->add_Exon($chimp_exon);
 
       } else {
         #
@@ -218,82 +229,82 @@ sub transfer_transcript {
 
       get_coords_extent(\@coords, $chimp_exon);
 
-      if($chimp_exon->fail()) {
+      if ($chimp_exon->fail()) {
         # Failed to obtain extent of coords due to scaffold spanning
         # strand flipping, or exon inversion.
-	# Treat this as if the exon did not map at all.
+        # Treat this as if the exon did not map at all.
 
-	my $entire_delete = 1;
+        my $entire_delete = 1;
 
-	Deletion::process_delete(\$chimp_cdna_pos,
-					$human_exon->length(),
-					$chimp_exon,
-					$chimp_transcript, $entire_delete);
+        Deletion::process_delete(\$chimp_cdna_pos,
+                                 $human_exon->length(),
+                                 $chimp_exon,
+                                 $chimp_transcript, $entire_delete);
 
       } else {
 
-	my $num = scalar(@coords);
+        my $num = scalar(@coords);
 
-	for(my $i=0; $i < $num; $i++) {
-	  my $c = $coords[$i];
+        # save exon length before we go splitting exons etc.:
+       
+        for (my $i=0; $i < $num; $i++) {
+          my $c = $coords[$i];
 
-	  if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+          if ($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
 
-	    #
-	    # deletion in chimp, insert in human
-	    #
-	    Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
-				     $chimp_exon, $chimp_transcript);
+            #
+            # deletion in chimp, insert in human
+            #
+            Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
+                                     $chimp_exon, $chimp_transcript);
 
-	  } else {
-	    # can end up with adjacent inserts and deletions so need
-	    # to take previous coordinate, skipping over gaps
-	    my $prev_c = undef;
+          } else {
+            # can end up with adjacent inserts and deletions so need
+            # to take previous coordinate, skipping over gaps
+            my $prev_c = undef;
 
-	    for(my $j = $i-1; $j >= 0 && !defined($prev_c); $j--) {
-	      if($coords[$j]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-		$prev_c = $coords[$j];
-	      }
-	    }
+            for (my $j = $i-1; $j >= 0 && !defined($prev_c); $j--) {
+              if ($coords[$j]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+                $prev_c = $coords[$j];
+              }
+            }
 
-	    if($prev_c) {
+            if ($prev_c) {
 
-	      my $insert_len;
-	      if($chimp_exon->strand() == 1) {
-		$insert_len = $c->start() - $prev_c->end() - 1;
-	      } else {
-		$insert_len = $prev_c->start() - $c->end() - 1;
-	      }
+              my $insert_len;
+              if ($chimp_exon->strand() == 1) {
+                $insert_len = $c->start() - $prev_c->end() - 1;
+              } else {
+                $insert_len = $prev_c->start() - $c->end() - 1;
+              }
 
-	      #sanity check:
-	      if($insert_len < 0) {
-		throw("Unexpected - negative insert " .
-		      "- undetected exon inversion?");
-	      }
+              #sanity check:
+              if ($insert_len < 0) {
+                throw("Unexpected - negative insert " .
+                      "- undetected exon inversion?");
+              }
 
-	      if($insert_len > 0) {
+              if ($insert_len > 0) {
 
-		#
-		# insert in chimp, deletion in human
-		#
+                #
+                # insert in chimp, deletion in human
+                #
 
-		Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
-					  $chimp_exon, $chimp_transcript);
+                Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
+                                          $chimp_exon, $chimp_transcript);
 
-		$chimp_cdna_pos += $insert_len;
-	      }
-	    }
+                $chimp_cdna_pos += $insert_len;
+              }
+            }
 
-	    $chimp_cdna_pos += $c->length();
-	  }
-	}
-      }  # foreach coord
-
-      $cdna_exon_start += $chimp_exon->length();
+            $chimp_cdna_pos += $c->length();
+          }
+        }  # foreach coord
+      } 
     }
 
+    $cdna_exon_start = $chimp_cdna_pos + 1; 
     $chimp_transcript->add_Exon($chimp_exon);
-
   } # foreach exon
 
   return $chimp_transcript;
@@ -324,63 +335,61 @@ sub get_coords_extent {
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
 
-    if(!defined($seq_region)) {
+    if (!defined($seq_region)) {
       $seq_region = $c->id();
-    }
-    elsif($seq_region ne $c->id()) {
+    } elsif ($seq_region ne $c->id()) {
       $chimp_exon->fail(1);
       $stat_code |= StatMsg::SCAFFOLD_SPAN;
       $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
       return;
     }
 
-    if(!defined($strand)) {
+    if (!defined($strand)) {
       $strand = $c->strand();
-    }
-    elsif($strand != $c->strand()) {
+    } elsif ($strand != $c->strand()) {
       $chimp_exon->fail(1);
       $stat_code |= StatMsg::STRAND_FLIP;
       $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
       return;
     }
 
-    if(!defined($start)) {
+    if (!defined($start)) {
       $start = $c->start if(!defined($start));
     } else {
-      if($strand == 1 && $start > $c->start()) {
+      if ($strand == 1 && $start > $c->start()) {
         $chimp_exon->fail(1);
-	$stat_code |= StatMsg::INVERT;
+        $stat_code |= StatMsg::INVERT;
         $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
-      if($strand == -1 && $start < $c->start()) {
+      if ($strand == -1 && $start < $c->start()) {
         $chimp_exon->fail(1);
-	$stat_code |= StatMsg::INVERT;
+        $stat_code |= StatMsg::INVERT;
         $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
 
-      if($start > $c->start()) {
+      if ($start > $c->start()) {
         $start = $c->start();
       }
     }
 	
-    if(!defined($end)) {
+    if (!defined($end)) {
       $end = $c->end();
     } else {
-      if($strand == 1 && $end > $c->end()) {
+      if ($strand == 1 && $end > $c->end()) {
         $chimp_exon->fail(1);
-	$stat_code |= StatMsg::INVERT;
+        $stat_code |= StatMsg::INVERT;
         $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
-      if($strand == -1 && $end < $c->end()) {
+      if ($strand == -1 && $end < $c->end()) {
         $chimp_exon->fail(1);
-	$stat_code |= StatMsg::INVERT;
+        $stat_code |= StatMsg::INVERT;
         $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
-      if($c->end > $end) {
+      if ($c->end > $end) {
         $end = $c->end();
       }
     }
@@ -399,25 +408,25 @@ sub get_coords_extent {
 ################################################################################
 
 sub create_transcripts {
-  my $itranscript   = shift; # interim transcript
+  my $itranscript   = shift;    # interim transcript
   my $slice_adaptor = shift;
 
   # set the phases of the interim exons
   Transcript::set_iexon_phases($itranscript);
 
   # check the exons and split transcripts where exons are bad
-  my $itranscripts = Transcript::check_iexons();
+  my $itranscripts = Transcript::check_iexons($itranscript);
 
   # if there are any exons left in this transcript add it to the list
-  if(@{$itranscript->get_all_Exons()}) {
-   push @$itranscripts, $itranscript;
+  if (@{$itranscript->get_all_Exons()}) {
+    push @$itranscripts, $itranscript;
   }
 
   my @finished_transcripts;
 
   foreach my $itrans (@$itranscripts) {
     push @finished_transcripts, Transcript::make_Transcript($itrans,
-							    $slice_adaptor);
+                                                            $slice_adaptor);
   }
 
   return \@finished_transcripts;
