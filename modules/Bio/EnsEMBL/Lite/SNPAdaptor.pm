@@ -56,6 +56,7 @@ sub fetch_all_by_Slice {
 
   my $from_strand = $slice->strand();
 
+  # warn "LITE snps....";
   # wherever this slice is, it needs to be converted to
   # a toplevel slices since all snps in the lite database 
   # are stored on toplevel seqregions
