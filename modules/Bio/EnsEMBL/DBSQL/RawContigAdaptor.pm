@@ -576,5 +576,66 @@ sub fetch_by_Clone {
 }
 
 
+=head2 remove
+
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+  Example    : $rawcontig_adaptor->remove($contig)
+  Description: This removes a contig (itself) plus any attached features and dna.
+               The method loops over available 5 available feature adaptors and
+               removes features on them individually.
+  Returntype : none
+  Exceptions : Throw if unable to get one of the feature adaptors.
+               Throw if unable to identify the dna to remove.
+               Throw if unable to remove record from dna table.
+               Throw if unable to remove contig.
+  Caller     : Bio::EnsEMBL::DBSQL::CloneAdaptor
+
+=cut
+
+sub remove {
+  my ($self, $contig) = @_;
+
+  # The list of feature adaptors to be looped over
+  my @adaptor_list = qw( SimpleFeature RepeatFeature PredictionTranscript
+			 ProteinAlignFeature DnaAlignFeature);
+  
+  foreach my $adaptor ( @adaptor_list ) {
+
+    my $adaptor_type = "get_" . $adaptor . "Adaptor";
+    my $fa = $self->db->$adaptor_type;
+
+    if ( ! $fa ) {
+      $self->throw("Couldn't get a '$adaptor'Adaptor");
+    }
+    $fa->remove_RawContig($contig);
+  }
+
+  # Delete DNA as long as we aren't using a remote DNA database.
+  if ($self->db ne $self->db->dnadb) {
+    $self->warn("Using a remote dna database - not deleting dna\n");
+  } else {
+
+    # Get the dna_id for the delete
+    my $sth = $self->prepare("SELECT dna_id FROM contig where contig_id = ?");
+    $sth->execute($contig->dbID);
+    $self->throw("Failed to find any dna for dna_id '$contig->dbID'")
+      unless $sth->rows;
+
+    # Do the delete
+    my $dna_id = $sth->fetchrow_array;
+    $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
+    $sth->execute;
+    $self->throw("Failed to delete dna for dna_id '$dna_id'")
+      unless $sth->rows;
+  }
+
+  # Remove the contig
+  my $sth = $self->prepare("DELETE FROM contig WHERE contig_id = ?");
+  $sth->execute($contig->dbID);
+  $self->throw("Failed to delete contigs for contig_id '$contig->dbID'")
+    unless $sth->rows;
+
+}
+
 
 1;
