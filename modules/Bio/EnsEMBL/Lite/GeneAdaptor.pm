@@ -62,9 +62,11 @@ sub fetch_by_Slice {
               t.type, t.gene_name, t.db, t.exon_structure, t.external_name,
               t.external_db, t.coding_start, t.coding_end, g.external_name as gene_external_name, 
               g.external_db as gene_external_db, g.db as gene_source, g.type as gene_type 
-        FROM  transcript t, gene g
-        WHERE g.gene_id = t.gene_id 
-          AND t.chr_name = ? and t.chr_start <= ? and t.chr_start >= ? and
+        FROM  transcript t 
+    LEFT JOIN gene g 
+           ON g.gene_id = t.gene_id
+          AND g.db = t.db 
+        WHERE t.chr_name = ? and t.chr_start <= ? and t.chr_start >= ? and
               t.chr_end >= ?"
     );
     
@@ -82,8 +84,12 @@ sub fetch_by_Slice {
   my ( $gene, $transcript, $translation ); 
 
   while( my $hr = $sth->fetchrow_hashref() ) {
+    if( $! defined hr->{'gene_type'} {
+      # no gene for the transcript
+      $gene = Bio::EnsEMBL::Gene->new();
+      $gene->source( $hr->{'db'} );
 
-    if( !exists $gene_cache{ $hr->{gene_id} } ) {
+    } elsif( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
@@ -92,9 +98,9 @@ sub fetch_by_Slice {
       $gene->external_name( $hr->{'gene_external_name'} );
       $gene->external_db( $hr->{'gene_external_db'} );
       $gene->type( $hr->{'gene_type'} );
-      $gene_cache{ $hr->{gene_id} } = $gene;
+      $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } = $gene;
     } else {
-      $gene = $gene_cache{ $hr->{gene_id} };
+      $gene = $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} };
     }
 
     # create exons from exon_structure entry
