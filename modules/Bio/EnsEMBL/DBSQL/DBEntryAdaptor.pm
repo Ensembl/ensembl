@@ -407,10 +407,9 @@ sub geneids_by_extids{
    my @genes;
 
    my $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
-                  FROM transcript tr, translation_stable_id tlsi, 
+                  FROM transcript tr, 
                        Xref x, objectXref oxr
-                  WHERE tr.translation_id = tlsi.translation_id 
-                    AND tlsi.stable_id = oxr.ensembl_id 
+                  WHERE tr.translation_id = oxr.ensembl_id 
                     AND oxr.xrefId = x.xrefId 
                     AND x.display_id = '$name'");
    $sth->execute();
