@@ -319,6 +319,103 @@ sub get_all_MapContigs {
 }
 
 
+=head2 raw_contig_position
+
+ Title   : raw_contig_position
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position($vc_pos,$vc_strand)
+ Function: Maps a VirtualContig position to the RawContig Position
+ Returns : Bio::EnsEMBL::Virtual::MapContig object, 
+           position (int), strand (int)
+ Args    : position (int), strand (int)
+
+
+=cut
+
+sub raw_contig_position {
+    my ($self, $vcpos, $vcstrand)=@_;
+ 
+    my $rc;
+    my $rc_pos;
+    my $rc_strand;
+    
+    #my $length=$self->length;
+    #if ($vcpos >$length) {
+    #	$self->throw("Asked to map vc position outside vc coordinates!\n");
+    #}
+    #print STDERR "Looking for $vcpos....\n";
+    #Go through all Contigs and find out where vcpos lies
+
+    foreach my $mc ($self->each_MapContig) {
+	
+	#If we are still on a RawContig which finished vcpos, 
+        #move to next contig
+	if ($mc->end < $vcpos) {
+	    next;
+	}
+	
+	#If vcpos is within the start and enf of this Contig, we found it!
+	#And we get out of the loop...
+	if (($vcpos >= $mc->start)&&($vcpos <= $mc->end)) {
+	    #print STDERR "Found contig!\n ".$mc->contig->id." with start ".$mc->start." and end ".$mc->end."\n"; 
+	    $rc=$mc->contig;
+	    if ($mc->orientation == 1) {
+		# the contig starts at startin
+		$rc_pos = $mc->rawcontig_start + ($vcpos - $mc->start);
+	    }
+	    else {
+		$rc_pos=$mc->rawcontig_end - ( $vcpos-$mc->start );
+	    }
+	    
+	    #If strand passed to the method, sort out the strand
+	    if ($vcstrand) {
+		if ($vcstrand == 1) {
+		    $rc_strand = $mc->orientation;
+		}
+		else {
+		    $rc_strand = -$mc->orientation;
+		}
+	    }
+	    last;
+	}
+
+	#If we are not out of the loop at this stage it means that
+	#our Contig lies in a gap
+	if ($mc->start > $vcpos) {
+	    $rc='N';
+	    $rc_pos=-1;
+	    $rc_strand=-2;
+	    last;
+	}
+    }
+    
+    
+    $vcstrand && return $rc,$rc_pos,$rc_strand;
+    return $rc,$rc_pos;
+}
+
+=head2 length
+
+ Title   : length
+ Usage   : $obj->length($newval)
+ Function: 
+ Example : 
+ Returns : value of length
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub length{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'length'} = $value;
+    }
+    return $obj->{'length'};
+
+}
+
+
+
 =head2 right_overhang
 
  Title   : right_overhang
