@@ -122,8 +122,9 @@ package main;
                   #The files needed for the mouse X_mapping can be obatained there: ftp://ftp.informatics.jax.org/pub/reports/   
                   #2 files are needed MRK_SwissProt.rpt and MRK_LocusLink.rpt
                   
-                   #File containing MGI/SP mapping (MRK_SwissProt.rpt)
-                   #'mgi_sp'  => '/work1/mongin/mouse/mapping/primary/MRK_SwissProt.rpt',                 
+                   #File containing MGI/SP mapping (MRK_SwissProt_TrEMBL.rpt)
+		   #(20/02/04:th: file format changed, so get_Xmapping.pl changed at this point)
+                   #'mgi_sp'  => '/work1/mongin/mouse/mapping/primary/MRK_SwissProt_TrEMBL.rpt',                 
                    'mgi_sp'  => '',
                   
                    #File containing MGI/LocusLink mapping (MRK_LocusLink.rpt)

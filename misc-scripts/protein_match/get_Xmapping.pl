@@ -321,17 +321,17 @@ if ($organism eq "human") {
 #Get Xref mapping specifically for mouse.
 if ($organism eq "mouse") {
     my %mgi2sp;
+    # 20/02/04:th MGI changed files for MGI to SP mappings.  File format also changed
+    # moving $sps from 6th to 7th column.
     open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
     while (<MGISP>) {
-	chomp;
-	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
-      	
-	my @sp = split(/\s/,$sps);
-	
-	#put in hash all of the SP entries which correspond to an MGI (this will be used later)
-	$mgi2sp{$mgi} = $sps;
-	
+      chomp;
+      my ($mgi,$rik,$a,$b,$c,$d,$sps) = split (/\t/,$_);
+      my @sp = split(/\s/,$sps);
+      #put in hash all of the SP entries which correspond to an MGI (this will be used later)
+      $mgi2sp{$mgi} = $sps;
     }
+    close MGISP;
     open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
     my %mgi_got;
     my %mgi_syns;
@@ -348,9 +348,9 @@ if ($organism eq "mouse") {
 	}	    
       }else{
 	$mgi_got{$mgi} = $locus;
-      }
-      
+      }      
     }
+    close MGILOC;
 	
     my @mgi_ids = keys(%mgi_got);
     foreach my $mgi(@mgi_ids){
