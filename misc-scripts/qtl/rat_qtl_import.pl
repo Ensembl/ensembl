@@ -27,6 +27,7 @@ if( !$host ) {
   usage();
 }
 
+
 my $dsn = "DBI:mysql:host=$host;dbname=$dbname";
 if( $port ) {
   $dsn .= ";port=$port";
@@ -48,57 +49,92 @@ while( <FH> ) {
   }
 
   my @cols = split( "\t", $_ );
-  
+
   push( @all_qtl, \@cols );
 }
 
-my %rat_marker_hash;
-
-for my $qtl ( @all_qtl ) {
-  $rat_marker_hash{ $qtl->[2] } = 0;
-  $rat_marker_hash{ $qtl->[3] } = 0;
-  $rat_marker_hash{ $qtl->[4] } = 0;
-}
 
 # the rgd to ensembl table
-my $rgd_ens_map = $db->selectall_arrayref( "select name, marker_id from marker_synonym where source = 'rgd' or source = 'rgdgene'" );
+my $rgd_ens_map = $db->selectall_arrayref
+     ("select name, marker_id from marker_synonym " .
+      "where source = 'rgd' or source = 'rgdgene'" );
 
 my %rgd_ens_map = map { $_->[0], $_->[1] } @$rgd_ens_map;
 
-
 # need source_database, source_primary, trait, lod, flank1, flank2, peak
+
+my $qtl_id = 0;
+my $qtl_syn_id = 0;
+
 QTL:
 for my $qtl ( @all_qtl ) {
-  my @ens_marker_ids = ();
-  my $tmp;
+  my ($qtl_rgd_id, $qtl_symbol,$qtl_name,
+      $peak_offset, $chromosome, $lod_score, $p_value, $variance,
+      $fmark1_rgd_id, $fmark1_symbol, $fmark2_rgd_id, $fmark2_symbol,
+      $pmark_rgd_id, $pmark_symbol, $trait_name, $subtrait_name,
+      $trait_desc, $curated_ref_rgd_id, $curated_ref_pubmed_id,
+      $uncurated_ref_pubmed_id, $ratmap_id, $locus_link_id, @other) =
+        @$qtl;
 
-  for my $i ( 2,3,4 ) {
-    if( $qtl->[$i] ) {
-      if( ! exists $rgd_ens_map{ $qtl->[$i] } ) {
-#	next QTL;
-	debug("Marker RGD:".$qtl->[$i]." not found for Qtl ".$qtl->[ );
-	push( @ens_marker_ids, "\\N" );
-      } else {
-	push( @ens_marker_ids, $rgd_ens_map{ $qtl->[$i] } );
-      }
-    } else {
-      push( @ens_marker_ids, "\\N" );
-    }
+  my $fmark1_id = $rgd_ens_map{$fmark1_rgd_id};
+  my $fmark2_id = $rgd_ens_map{$fmark2_rgd_id};
+  my $pmark_id = $rgd_ens_map{$pmark_rgd_id};
+
+  if(!$fmark1_id) {
+    debug("Flanking Marker1 RGD:$fmark1_rgd_id not found for Qtl $qtl_symbol");
+    $fmark1_id = 'null';
   }
 
-  print join( "\t", "rat genome database", $qtl->[0], $qtl->[5], $qtl->[1]?$qtl->[1]:"\\N",
-	      @ens_marker_ids ),"\n";
-	      
+  if(!$fmark2_id) {
+    debug("Flanking Marker2 RGD:$fmark2_rgd_id not found for Qtl $qtl_symbol");
+    $fmark2_id = 'null';
+  }
+
+  if(!$pmark_id) {
+    debug("Peak Marker RGD:$pmark_rgd_id not found for Qtl $qtl_symbol");
+    $pmark_id = 'null';
+  }
+
+  $lod_score ||= 'null';
+
+  $qtl_id++;
+
+  $qtl_name    = $db->quote($qtl_name);
+  $qtl_symbol  = $db->quote($qtl_symbol);
+
+  print "INSERT INTO qtl (qtl_id, trait, lod_score, flank_marker_id_1,"
+                       . "flank_marker_id_2, peak_marker_id)\n" .
+        "     VALUES ($qtl_id, $qtl_name, $lod_score, $fmark1_id, $fmark2_id, "
+     .  "$pmark_id);\n";
+
+  $qtl_syn_id++;
+  print "INSERT INTO qtl_synonym (qtl_synonym_id, qtl_id, source_database, " .
+                                 "source_primary_id)\n" .
+   "     VALUES ($qtl_syn_id, $qtl_id, 'rat genome database', $qtl_rgd_id);\n";
+
+  if($ratmap_id) {
+    $ratmap_id   = $db->quote($ratmap_id);
+    $qtl_syn_id++;
+    print "INSERT INTO qtl_synonym (qtl_synonym_id, qtl_id, source_database,"
+                                 ."  source_primary_id)\n" .
+          "     VALUES ($qtl_syn_id, $qtl_id, 'ratmap', $ratmap_id);\n";
+  }
+
 }
+
+$db->disconnect();
 
 sub debug {
   my $message = shift;
   print STDERR ( $message,"\n" ) if $verbose;
 }
 
- 
-
 
 sub usage {
+  print STDERR "usage:\n" .
+               "  perl rat_qtl_import.pl -host <host> -user <user> " .
+               "-dbname <dbname> -qtlfile <qtlfile> [-pass <pass>] " .
+               "[-port <port>] [-verbose] > qtl.sql\n" .
+               "  cat qtl.sql | mysql ...\n";
   exit;
 }

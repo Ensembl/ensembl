@@ -37,6 +37,13 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
 
 
 
+my $analysis_adaptor = $db->get_AnalysisAdaptor();
+my $analysis = $analysis_adaptor->fetch_by_logic_name('qtl');
+if(!$analysis) {
+  die("Analysis with logic name 'qtl' must be in database\n");
+}
+
+my $analysis_id = $analysis->dbID();
 
 my $qtlAdaptor = $db->get_QtlAdaptor();
 my $qtls = $qtlAdaptor->fetch_all;
@@ -163,7 +170,8 @@ for my $qtl ( @$qtls ) {
       debug( "Qtl $id covers more than 100MB ($span MB)" );
       next;
     }
-    print join( "\t", ($chromo->dbID, $chr_start, $chr_end, $qtl->dbID(), 50 )),"\n";
+    print join( "\t", ($chromo->dbID, $chr_start, $chr_end, $qtl->dbID(),
+                      $analysis_id)),"\n";
   }
 }
 
