@@ -1102,7 +1102,6 @@ sub three_prime_utr {
   Example    : none
   Description: Returns a list of exons that translate with the
                start and end exons truncated to the CDS regions.
-               Will not work correctly if Exons are Sticky. 
   Returntype : listref Bio::EnsEMBL::Exon
   Exceptions : If there is no Translation object
   Caller     : Genebuild, $self->translate()
@@ -1172,9 +1171,9 @@ sub get_all_translateable_Exons {
 
   Args       : none
   Example    : none
-  Description: return the peptide (plus eventuel stop codon) for this transcript.
-               Does N padding of non phase matching exons. It uses translateable_seq
-               internally. 
+  Description: return the peptide (plus eventuel stop codon) for this 
+               transcript. Does N padding of non phase matching exons. 
+               It uses translateable_seq internally. 
   Returntype : Bio::Seq
   Exceptions : If no Translation is set in this Transcript
   Caller     : general
