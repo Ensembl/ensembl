@@ -218,6 +218,33 @@ sub get_all_Gene_id{
 }
 
 
+=head2 get_all_Transcript_id
+
+ Title   : get_all_Transcript_id
+ Usage   : $geneobj->get_all_Transcript_id
+ Function: Gets an array of ids for all genes in the current db
+ Example : $geneobj->get_all_Transcript_id
+ Returns : array of ids
+ Args    : none
+
+=cut
+
+sub get_all_Transcript_id{
+   my ($self) = @_;
+
+   my @out;
+   my $sth = $self->_db_obj->prepare("select id from transcript");
+   my $res = $sth->execute || $self->throw("Could not get any transcript ids!");
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+   return @out;
+}
+
+
+
+
+
 =head2 get_geneids_by_hids
 
  Title   : get_geneids_by_hids

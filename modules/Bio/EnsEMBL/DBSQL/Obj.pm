@@ -1268,6 +1268,31 @@ Calling gene_Obj->get_all_Gene_id instead!");
    return $self->gene_Obj->get_all_Gene_id();
 }
 
+
+
+=head2 get_all_Transcript_id
+
+ Title   : get_all_Transcript_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Transcript_id{
+   my ($self) = @_;
+
+   $self->warn("Obj->get_all_Transcript_id is a deprecated method! 
+Calling gene_Obj->get_all_Gene_id instead!");
+
+   return $self->gene_Obj->get_all_Transcript_id();
+}
+
+
+
 =head2 get_updated_Clone_id
     
  Title   : get_updated_Clone_id
