@@ -993,12 +993,16 @@ my $length     = $self->length;
    my @out;
    my $prev;
    while( $sth->fetch ) {
+	
+       #############################
+       # change to local coordinates
+       #############################
+       $start=$start-$glob_start;
+       $end=$end-$glob_start;
+       
        if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {           
            next;
        }
-       #clipping 
-       $start=$start-$glob_start;
-       $end=$end-$glob_start;
 
 #       print STDERR "fetching $start\n";
        my $sf = Bio::EnsEMBL::SeqFeature->new();
@@ -1759,7 +1763,7 @@ sub fetch_chromosome_length {
    }
    my $kba = $self->dbobj->get_KaryotypeBandAdaptor();
    my $len = $kba->fetch_chromosome_length($chr);
-	return($len);
+   return($len);
 }
 
 
