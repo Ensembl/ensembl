@@ -13,6 +13,8 @@
 
 ### sources="ensembl affymetrix fgenesh"
 
+echo "not tested, check thoroughly!" >&2
+
 source=ensembl
 cd $source
 origfile=$source.pep.orig
@@ -47,6 +49,3 @@ for i in   chr_pro/*.sgp.pro chr_r_pro/*.sgp.pro; do
 done  | sed '/^>C/s/^>FGENH:C/>S.C/' > $pepfile
 # (replaces ">C1000004 chr1  ..."  with ">S.C1000004 chr1  ..." everywhere;
 # the gtf files have 'S.C...', the pep files 'C....'. Easiest to change here.
-
-
-
