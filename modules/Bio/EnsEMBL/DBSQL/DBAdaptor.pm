@@ -822,6 +822,7 @@ sub assembly_type{
         $obj->throw("No default assembly defined"
           . " - must set with assembly_type() first");
       }
+      $obj->{'assembly'} = $ass;
     }
     return $obj->{'assembly'};
 
