@@ -1013,9 +1013,10 @@ sub _get_aligned_features_for_contig {
 
 sub _get_aligned_evidence_for_transcript {
   my ($self, $transcript_id, $db) = splice @_, 0, 3;
-  $self->throw('interface fault') if (!$self or !$transcript_id or !$db);
+  $self->throw('interface fault')
+    if (!$self or !$transcript_id or !$db);
 
-  my $sgp = $db->get_StaticGoldenPathAdaptor;
+  my $sa = $db->get_SliceAdaptor;
   my @evidence_arr;	# a reference to this is returned
   my $evidence_obj;
 
@@ -1034,13 +1035,13 @@ sub _get_aligned_evidence_for_transcript {
     $transcript_dbID = $transcript_id;
     $transcript_obj_nonvc = $ta->fetch_by_dbID($transcript_dbID);
   }
-  my $vc = $sgp->fetch_VirtualContig_of_transcript_by_dbID($transcript_dbID,
-                                                          1000);
+  my $vc = $sa->fetch_Slice_by_transcript_dbID( $transcript_dbID, 1000);
+  
   my $transcript_obj;   # VC version
   my @genes = $vc->get_all_Genes;
   GENE_LOOP:
   foreach my $gene (@genes) {
-    my @transcripts = $gene->each_Transcript;
+    my @transcripts = $gene->get_all_Transcripts;
     foreach my $transcript (@transcripts) {
       if ($transcript->dbID eq $transcript_dbID) {
         $transcript_obj = $transcript;
