@@ -170,6 +170,7 @@ sub annseq{
 
  Title   : write_acedb
  Usage   : $contig->write_acedb(\*FILEHANDLE);
+           $contig->write_acedb(\*FILEHANDLE,$ace_seq_name);
  Function: Dumps exon, transcript and gene objects in acedb format
  Returns : 
  Args    :
@@ -177,9 +178,60 @@ sub annseq{
 =cut
 
 sub write_acedb{
-    my ($self) = @_;
+    my ($self,$fh,$seqname) = @_;
+
+    my $contig_id=$self->id();
+
+    $seqname ||= $contig_id;
     
-    $self->throw("To be implemented");
+    foreach my $gene ($self->get_all_Genes()){
+	my $gene_id=$gene->id;
+	TRANSCRIPT :
+	foreach my $trans ( $gene->each_Transcript ) {
+	    my $trans_id=$trans->id;
+	    
+	    # check this transcript has exons on this contig
+	    foreach my $exon ( $trans->each_Exon ) {
+		if( $exon->contig_id ne $contig_id ) {
+		    $self->warn("Could not ace dump transcript " . $trans->id . "as exons across contigs");
+		    next TRANSCRIPT;
+		}
+	    }
+	    
+	    # exons are in order.
+
+	    my @exons = $trans->each_Exon;
+
+	    my $tstrand = $exons[0]->strand;
+	    my ($tstart,$tend);
+	    if( $tstrand == 1 ) {
+		$tstart = $exons[0]->start;
+		$tend   = $exons[$#exons]->end;
+	    } else {
+		$tstart = $exons[0]->end;
+		$tend   = $exons[$#exons]->start;
+	    }
+
+	    # print starting stuff...
+
+	    print $fh "Sequence $seqname\n";
+	    print $fh "subsequence $gene_id.$trans_id.EnsEMBL $tstart $tend\n\n";
+		
+	    # acedb has coordinates relative to transcripts.
+	    
+	    print $fh "Sequence $gene_id.$trans_id.EnsEMBL\nCDS\nStart_not_found\nEnd_not_found\n";
+	    
+	    foreach my $exon ( $trans->each_Exon ) {
+		if( $tstrand == 1 ) {
+		    print $fh "source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
+		} else {
+		    print $fh "source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
+		}
+	    }
+
+	    print $fh "\n\n";
+	}
+    }
 
 }
 

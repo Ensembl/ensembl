@@ -23,7 +23,7 @@
 
     -nodna     don't write dna part of embl file (for testing)
 
-    -gff       dump in gff format instead of EMBL
+    -format   [gff/ace] dump in gff/ace format, not EMBL
 
     -byacc     can specify an accession for a sanger clone and dump as accession
                or specify sanger clone and will still dump as accession
@@ -51,10 +51,11 @@ my $host;
 my $host1  = 'croc';
 my $host2  = 'humsrv1';
 my $port   = '410000';
-my $gff;
+my $format = 'embl';
 my $nodna = 0;
 my $help;
 my $byacc;
+my $aceseq;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -66,10 +67,11 @@ my $clone  = 'dJ271M21';
 &GetOptions( 'dbtype:s' => \$dbtype,
 	     'host:s'   => \$host,
 	     'port:n'   => \$port,
-	     'gff'      => \$gff,
+	     'format:s'   => \$format,
 	     'nodna'    => \$nodna,
 	     'h|help'   => \$help,
 	     'byacc'    => \$byacc,
+	     'aceseq'   => \$aceseq,
 	     );
 
 if($help){
@@ -99,7 +101,8 @@ my $as = $clone->get_AnnSeq();
 
 # choose output mode
 
-if($gff){
+
+if( $format =~ /gff/ ) {
     
     # only works with one contig for now
     if(scalar($clone->get_all_Contigs)!=1){
@@ -109,7 +112,7 @@ if($gff){
     my $gff=$contig->gff;
     $gff->dump;
 
-}else{
+} elsif ( $format =~ /embl/ ) {
 
     $as->seq->desc("Reannotated Clone via EnsEMBL");
     my $comment = Bio::Annotation::Comment->new();
@@ -129,10 +132,17 @@ if($gff){
 	$emblout->_show_dna(0);
     }
 
-    
-
     $emblout->write_annseq($as);
+} elsif ( $format =~ /ace/ ) {
+    foreach my $contig ( $clone->get_all_Contigs() ) {
+	$contig->write_acedb(\*STDOUT,$aceseq);
+    }
 }
+
+
+#########################
+# sub routines
+#########################
 
 sub id_EnsEMBL {
     my $annseq = shift;
