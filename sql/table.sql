@@ -141,7 +141,7 @@ CREATE TABLE exon (
 );
 
 CREATE TABLE exon_stable_id (
-    exon_id   int not null,
+    exon_id   int unsigned not null,
     stable_id VARCHAR(40) not null,
     version   int(10) DEFAULT '1' NOT NULL,
     created   datetime NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE gene (
 );
 
 CREATE TABLE gene_stable_id (
-    gene_id int not null,
+    gene_id int unsigned not null,
     stable_id VARCHAR(40) not null,
     version   int(10) DEFAULT '1' NOT NULL,
     created   datetime NOT NULL,
@@ -300,7 +300,7 @@ CREATE TABLE transcript (
 );
 
 CREATE TABLE transcript_stable_id (
-    transcript_id int not null,
+    transcript_id int unsigned not null,
     stable_id     VARCHAR(40) not null,
     version       int(10) DEFAULT '1' NOT NULL,
     
@@ -323,7 +323,7 @@ CREATE TABLE translation (
 );
 
 CREATE TABLE translation_stable_id (
-    translation_id INT NOT NULL,
+    translation_id INT unsigned NOT NULL,
     stable_id VARCHAR(40) NOT NULL,
     version   INT(10) DEFAULT '1' NOT NULL,
     
@@ -508,4 +508,6 @@ CREATE TABLE meta (
 	);
 
 # Auto add schema version to database
-insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");     
+insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
+
+
