@@ -190,7 +190,7 @@ sub parse_file {
         if ($valid_gtf_feature{$feature}) {
             
             unless (defined($exon_num)) {
-                warn("Skipping line with no exon_number: '$gtf_line'\n");
+                #warn("Skipping line with no exon_number: '$gtf_line'\n");
                 next GTF_LINE;
             }
             
