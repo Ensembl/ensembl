@@ -378,6 +378,33 @@ ok(!defined($slice));
 print_slices([$slice]);
 
 
+#
+# Test the attribute getter/setter methods
+#
+
+$multi->hide('core', 'seq_region_attrib', 'attrib_type');
+
+$slice = $slice_adaptor->fetch_by_region( "chromosome", "20" );
+$slice_adaptor->set_seq_region_attrib( $slice, "GeneCount", 23322 );
+
+my ($gene_count) = $slice->get_attribute('GeneCount');
+ok($gene_count == 23322);
+
+#
+# try to store another attrib of the same name
+#
+$slice_adaptor->set_seq_region_attrib($slice, "GeneCount", 199);
+
+## make sure the attrib type is only stored once
+my $count =
+  $db->db_handle->selectall_arrayref("SELECT count(*) FROM attrib_type")->[0]->[0];
+ok($count == 1);
+
+my @gene_counts = $slice->get_attribute('GeneCount');
+ok(@gene_counts == 2); 
+
+$multi->restore('core', 'seq_region_attrib', 'attrib_type');
+
 sub print_slices {
   my $slices = shift;
   foreach my $slice (@$slices) {
