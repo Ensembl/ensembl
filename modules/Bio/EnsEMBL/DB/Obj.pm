@@ -180,6 +180,116 @@ sub get_Contig{
    return $contig;
 }
 
+=head2 write_Gene
+
+ Title   : write_Gene
+ Usage   : $obj->write_Gene($gene)
+ Function: writes a particular gene into the database
+           
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Gene{
+   my ($self,$gene) = @_;
+
+   my %done;
+
+   if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("$gene is not a EnsEMBL gene - not dumping!");
+   }
+
+   # gene is big daddy object
+
+}
+
+=head2 write_Transcript
+
+ Title   : write_Transcript
+ Usage   : $obj->write_Transcript($trans,$gene)
+ Function: writes a particular transcript *but not the exons* into
+           the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Transcript{
+   my ($self,$trans,$gene) = @_;
+   
+
+   if( ! $trans->isa('Bio::EnsEMBL::Transcript') ) {
+       $self->throw("$trans is not a EnsEMBL transcript - not dumping!");
+   }
+
+   if( ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("$gene is not a EnsEMBL gene - not dumping!");
+   }
+
+   my $lockst = $self->prepare("lock transcript");
+   $lockst->execute;
+
+   # ok - now load this line in
+
+   my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "'");
+   $tst->execute();
+   
+   my $unlockst = $self->prepare("unlock transcript");
+   $unlockst->execute;
+   
+   return 1;
+}
+   
+
+=head2 write_Exon
+
+ Title   : write_Exon
+ Usage   : $obj->write_Exon($exon)
+ Function: writes a particular exon into the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Exon{
+   my ($self,$exon) = @_;
+   
+   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
+       $self->throw("$exon is not a EnsEMBL exon - not dumping!");
+   }
+
+   my $lockst = $self->prepare("lock exon");
+   $lockst->execute;
+
+   # ok - now load this line in
+
+   my $exonst = "insert into exon (id,contig,created,modified,start,end,strand,phase) values ('" .
+       $exon->id() . "','" .
+	   $exon->contig_id() . "','" .
+	       $exon->created(). "','" .
+		   $exon->modified . "'," .
+		       $exon->start . ",".
+			   $exon->end . ",".
+			       $exon->strand . ",".
+				   $exon->phase . ",";
+   
+   my $sth = $self->prepare($exonst);
+   $sth->execute();
+   
+   my $unlockst = $self->prepare("unlock exon");
+   $unlockst->execute;
+   
+   return 1;
+}
+
+
 =head2 prepare
 
  Title   : prepare

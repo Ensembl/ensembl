@@ -33,13 +33,13 @@ use Bio::EnsEMBL::DB::Contig;
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
 
-my $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' );
+my $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'croc' );
 
 print "ok 2\n";
 my $clone  = $db->get_Clone("dJ382I10");
 print "ok 3\n";
 
-my @contigs = $clone->get_Contigs();
+my @contigs = $clone->get_all_Contigs();
 
 my $contig = $db->get_Contig($contigs[0]->id);
 print "ok 4\n";

@@ -111,7 +111,7 @@ sub get_Genes{
    foreach my $g ( keys %{$self->{'_gene_hash'}} ) {
        my $gene = new Bio::EnsEMBL::Gene;
        push(@genes,$gene);
-       $g =~ /HGC(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
+       $g =~ /HG(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
        my $gid = "HG" . $1;
        $gene->id($gid);
 
@@ -120,14 +120,15 @@ sub get_Genes{
 	   print STDERR "  Doing $t\n";
 	   my $trans = new Bio::EnsEMBL::Transcript;
 
-	   $t =~ /HG(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
+	   $t =~ /HT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
 	   my $tid = "HT" . $1;
 	   $trans->id($tid);
 
 	   $gene->add_Transcript($trans);
 	   foreach my $e ( @{$self->{'_trans_hash'}->{$t}} ) {
 	       if( ! exists $self->{'_exon_hash'}->{$e} ) {
-		   $self->throw("No exon of $e!");
+		   $self->warn("No exon of $e!");
+		   next;
 	       }
 
 	       $trans->add_Exon($self->{'_exon_hash'}->{$e});
@@ -201,7 +202,7 @@ sub _parse_exon{
 
 	   my $exon = Bio::EnsEMBL::Exon->new();
 	   $exon->id($eid);
-	   $exon->contigid($contigid);
+	   $exon->contig_id($contigid);
 	   $exon->start($start);
 	   $exon->end($start);
 	   $exon->created($created);
