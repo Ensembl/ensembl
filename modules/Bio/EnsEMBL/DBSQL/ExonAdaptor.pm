@@ -588,12 +588,13 @@ sub get_stable_entry_info {
 
   $sth->execute();
 
-  my @array = $sth->fetchrow_array();
-  $exon->{'_stable_id'} = $array[0];
-  $exon->{'_created'}   = $array[1];
-  $exon->{'_modified'}  = $array[2];
-  $exon->{'_version'}   = $array[3];
-  
+  # my @array = $sth->fetchrow_array();
+  if( my $aref = $sth->fetchrow_arrayref() ) {
+    $exon->{'_stable_id'} = $aref->[0];
+    $exon->{'_created'}   = $aref->[1];
+    $exon->{'_modified'}  = $aref->[2];
+    $exon->{'_version'}   = $aref->[3];
+  }
 
   return 1;
 }

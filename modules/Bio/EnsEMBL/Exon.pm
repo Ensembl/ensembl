@@ -500,10 +500,18 @@ sub _transform_to_rawcontig {
     }
     $stickyExon->end( $sticky_length );
     $stickyExon->strand( 1 );
-    $stickyExon->stable_id($self->stable_id);
-    $stickyExon->version($self->version);
-    $stickyExon->created($self->created);
-    $stickyExon->modified($self->modified);
+    if (defined($self->stable_id)) {
+      $stickyExon->stable_id($self->stable_id); 
+    }
+    if (defined($self->version)) {
+      $stickyExon->version($self->version);
+    }
+    if (defined($self->created)) {
+      $stickyExon->created($self->created);
+    }
+    if (defined($self->modified)) {
+      $stickyExon->modified($self->modified);
+    }
     return $stickyExon;
     
   } else {
@@ -1245,7 +1253,6 @@ sub stable_id{
 
     if( defined $value ) {
       $self->{'_stable_id'} = $value;
-      return;
     }
 
     if( exists $self->{'_stable_id'} ) {
