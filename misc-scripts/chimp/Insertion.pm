@@ -15,7 +15,7 @@ sub process_insert {
   my $exon             = shift;
   my $transcript       = shift;
 
-  info("insert ($insert_len)");
+  info("insert ($insert_len) at " .$$cdna_ins_pos_ref);
 
   my $code = StatMsg::EXON | StatMsg::INSERT |
              Length::length2code($insert_len);
@@ -92,6 +92,9 @@ sub process_insert {
       # decrease the length of the CDS by the length of new intron
       $transcript->move_cdna_coding_end(-$frameshift);
 
+      $first_exon->set_split_phases($exon, $transcript);
+
+
       # the insert length will be added to the cdna_position
       # but part of the insert was used to create the intron and is not cdna
       # anymore, so adjust the cdna_position to compensate
@@ -153,6 +156,8 @@ sub process_insert {
 
 
   $exon->add_StatMsg(StatMsg->new($code));
+
+  $exon->fix_phase($transcript);
 
   return;
 }

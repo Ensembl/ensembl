@@ -17,93 +17,6 @@ use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Exception qw(throw info);
 
-#
-# Sets the phases of the interim exons in an interim transcript
-# failed exons are skipped completely.
-#
-# Note that the phases of the original exon are ignored, so there is a
-# possibility of bad translations when the original start exon had a non-zero
-# start phase.
-#
-
-sub set_iexon_phases {
-  my $itranscript = shift;
-
-  info("setting exon phases for : " . $itranscript->stable_id());
-
-  my @iexons = @{$itranscript->get_all_Exons()};
-
-  # If all of the CDS was deleted, then all phases are -1
-
-  if ($itranscript->cdna_coding_start == $itranscript->cdna_coding_end + 1) {
-    foreach my $ex (@iexons) {
-      $ex->start_phase(-1);
-      $ex->end_phase(-1);
-    }
-    return;
-  }
-
-  my $cdna_start = 1;
-  my $cur_phase  = undef;
-
-  foreach my $iexon (@iexons) {
-    next if($iexon->fail());
-
-    my ($start_phase, $end_phase);
-    my $cdna_end = $cdna_start + $iexon->length()-1;
-
-    if (defined($cur_phase)) {
-      if ($cdna_start <= $itranscript->cdna_coding_end()) {
-        $start_phase = $cur_phase; #start phase is last exons end phase
-      } else {
-        #the end of the last exon was the end of the CDS
-        $start_phase = -1;
-      }
-    } else {
-      #sanity check
-      if ($cdna_start > $itranscript->cdna_coding_start() &&
-          $cdna_start < $itranscript->cdna_coding_end()) {
-        throw("Unexpected.  Start of CDS is not in exon?\n" .
-              "  exon_cdna_start = $cdna_start\n" .
-              "  cdna_coding_start = ".$itranscript->cdna_coding_start());
-      }
-      if ($cdna_start == $itranscript->cdna_coding_start()) {
-        $start_phase = 0;
-      } else {
-        $start_phase = -1;
-      }
-    }
-
-    if ($cdna_end < $itranscript->cdna_coding_start() ||
-        $cdna_end > $itranscript->cdna_coding_end()) {
-      #the end of this exon is outside the CDS
-      $end_phase = -1;
-    } else {
-      #the end of this exon is in the CDS
-      #figure out how much coding sequence in the exon
-	
-      my $coding_start;
-      if ($itranscript->cdna_coding_start() > $cdna_start) {
-        $coding_start = $itranscript->cdna_coding_start();
-      } else {
-        $coding_start = $cdna_start;
-      }
-      my $coding_len = $cdna_end - $coding_start + 1;
-	
-      if ($start_phase > 0) {
-        $coding_len += $start_phase;
-      }
-
-      $end_phase = $coding_len % 3;
-    }
-
-    $iexon->start_phase($start_phase);
-    $iexon->end_phase($end_phase);
-
-    $cdna_start = $cdna_end + 1;
-    $cur_phase = ($end_phase >= 0) ? $end_phase : undef;
-  }
-}
 
 
 #
@@ -126,13 +39,6 @@ sub check_iexons {
 
   foreach my $iexon (@{$itranscript->get_all_Exons}) {
 
-    #
-    # TBD being 'fatal' can have some knockon effects
-    # such as the next exon being part of the error (when split due to
-    # frameshifting). Do something about this...
-    # Maybe we should throw out all exons with same human stable identifier
-    # when one of them is fatal?
-    #
     if ($iexon->fail() || $iexon->is_fatal()) {
       info("  failed/fatal exon, splitting transcript");
 
@@ -401,7 +307,8 @@ sub make_Transcript {
 
   foreach my $iexon (@{$itrans->get_all_Exons}) {
     my $slice =
-      $slice_adaptor->fetch_by_region('scaffold', $iexon->seq_region);
+      $slice_adaptor->fetch_by_region('chromosome', $iexon->seq_region,
+                                     undef, undef,undef, 'BROAD1');
 
     my $exon = Bio::EnsEMBL::Exon->new
       (-START     => $iexon->start(),

@@ -27,7 +27,8 @@ sub process_delete {
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
 
-  info((($entire_delete) ? 'entire ' : '')."delete ($del_len)");
+  info((($entire_delete) ? 'entire ' : '')."delete ($del_len) at " .
+       $$cdna_del_pos_ref);
   info("BEFORE cds: ". $transcript->cdna_coding_start().'-'.
        $transcript->cdna_coding_end());
   info("BEFORE del_start = $del_start");
@@ -66,7 +67,11 @@ sub process_delete {
     $del_end   = $del_start + $del_len - 1;
   }
 
-  return if($del_len == 0); # no deletion left
+  if($del_len == 0) {
+    # no deletion left
+    $exon->fix_phase($transcript) if(!$entire_delete);
+    return;
+  }
 
   #
   # deal with CDS portion of delete
@@ -92,7 +97,11 @@ sub process_delete {
     $del_end   = $del_start + $del_len - 1;
   }
 
-  return if($del_len == 0); # no deletion left
+  if($del_len == 0) {
+    # no deletion left
+    $exon->fix_phase($transcript) if(!$entire_delete);;
+    return;
+  }
 
   #
   # deal with 3prime portion of delete
@@ -105,6 +114,8 @@ sub process_delete {
 
   process_three_prime_utr_delete($cdna_del_pos_ref, $del_len, $exon,
 				 $transcript);
+
+  $exon->fix_phase($transcript) if(!$entire_delete);
 
   return;
 }
@@ -333,6 +344,7 @@ sub process_cds_delete {
             $exon->add_StatMsg(StatMsg->new(StatMsg::EXON | StatMsg::SPLIT));
 
             $exon->cdna_start($first_exon->cdna_end() + 1);
+            $first_exon->set_split_phases($exon, $transcript);
           }
 
           # start next exon after new intron
@@ -354,6 +366,8 @@ sub process_cds_delete {
             $exon->add_StatMsg(StatMsg->new(StatMsg::EXON | StatMsg::SPLIT));
 
             $exon->cdna_start($first_exon->cdna_end() + 1);
+
+            $first_exon->set_split_phases($exon, $transcript);
           }
 
           # start next exon after new intron
@@ -380,6 +394,8 @@ sub process_cds_delete {
 
   return;
 }
+
+
 
 
 

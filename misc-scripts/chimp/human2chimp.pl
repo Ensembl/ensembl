@@ -103,7 +103,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
        -dnadb  => $chimp_db,
        -port   => $dport);
 
-    my $analysis = Bio::EnsEMBL::Analysis->new(-logic_name => 'human2chimp');
+    my $analysis = Bio::EnsEMBL::Analysis->new(-logic_name => 'ensembl');
     $dest_db->get_AnalysisAdaptor->store($analysis);
   }
 
@@ -134,12 +134,10 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
   my $cs_adaptor      = $human_db->get_CoordSystemAdaptor();
   my $asmap_adaptor   = $human_db->get_AssemblyMapperAdaptor();
 
-  my $chimp_cs = $cs_adaptor->fetch_by_name('scaffold',  $cassembly);
-  my $chimp_ctg_cs = $cs_adaptor->fetch_by_name('contig');
+  my $chimp_cs = $cs_adaptor->fetch_by_name('chromosome',  $cassembly);
   my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
 
   my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
-
 
   my $total_transcripts = 0;
 
@@ -225,6 +223,10 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
           }
         }
 
+#         foreach my $ftr (@$finished_transcripts) {
+#           print_three_phase_translation($ftr);
+#         }
+
         if($store) {
           store_gene($dest_db, $gene, $finished_transcripts);
         }
@@ -232,6 +234,25 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose warning);
       }
     }
   }
+}
+
+
+sub print_three_phase_translation {
+  my $transcript = shift;
+
+  return if(!$transcript->translation());
+
+  my $orig_phase = $transcript->start_Exon->phase();
+
+  foreach my $phase (0,1,2) {
+    info("======== Phase $phase translation: ");
+    $transcript->start_Exon->phase($phase);
+    info("Peptide: " . $transcript->translate->seq() . "\n\n===============");
+  }
+
+  $transcript->start_Exon->phase($orig_phase);
+
+  return;
 }
 
 
@@ -276,6 +297,8 @@ sub transfer_transcript {
     my $chimp_exon = InterimExon->new();
     $chimp_exon->stable_id($human_exon->stable_id());
     $chimp_exon->cdna_start($cdna_exon_start);
+    $chimp_exon->start_phase($human_exon->phase);
+    $chimp_exon->end_phase($human_exon->end_phase());
 
     my @coords = $mapper->map($human_exon->seq_region_name(),
                               $human_exon->seq_region_start(),
@@ -504,7 +527,7 @@ sub create_transcripts {
   my $slice_adaptor = shift;
 
   # set the phases of the interim exons
-  Transcript::set_iexon_phases($itranscript);
+  # Transcript::set_iexon_phases($itranscript);
 
   # check the exons and split transcripts where exons are bad
   my $itranscripts = Transcript::check_iexons($itranscript);
@@ -543,7 +566,7 @@ sub store_gene {
   my $MIN_AA_LEN = 15;
   my $MIN_NT_LEN = 600;
 
-  my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('human2chimp');
+  my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('ensembl');
 
   # Look at the translations and convert any transcripts with stop codons
   # into pseudogenes
@@ -631,7 +654,11 @@ sub store_gene {
 
     $cgene->display_xref($display_xref) if($display_xref);
 
-    my $name = ($display_xref)?$display_xref->display_id():$cgene->stable_id();
+    my $name = $cgene->stable_id();
+
+    $name .= '/'.$display_xref->display_id() if($display_xref);
+
+    $cgene->type('ensembl');
 
     # store the bloody thing
     print STDERR "Storing gene: $name\n";
