@@ -106,6 +106,14 @@ sub _initialize {
       $self->{'_accession_dbm'}=\%unfin_accession;
   }
 
+  # clone update file access
+  my $clone_update_dbm_file="$unfinished_root/unfinished_clone_update.dbm";
+  my %unfin_clone_update;
+  unless(dbmopen(%unfin_clone_update,$clone_update_dbm_file,0666)){
+      $self->throw("Error opening clone update dbm file");
+  }
+  $self->{'_clone_update_dbm'}=\%unfin_clone_update;
+
   # define a few other important files
   my $file_root;
   if($part){
@@ -124,6 +132,9 @@ sub _initialize {
   }
   if(!-e $gene_file){
       $self->throw("Could not access gene file");
+  }
+  if(!-e $contig_order_file){
+      $self->throw("Could not access contig order file");
   }
   # only exon file needs to be saved as it contains more information than in following mappings
   $self->{'_exon_file'}=$exon_file;
@@ -196,11 +207,11 @@ sub get_Clone{
 =head2 get_all_Clone_id
 
  Title   : get_all_Clone_id
- Usage   : @cloneid = $obj->get_all_Clone_id
+ Usage   : @cloneid = $obj->get_all_Clone_id($flag)
  Function: returns all the valid (live) Clone ids in the database
  Example :
  Returns : 
- Args    :
+ Args    : if $flag set, returns all clones regardless of invalid SV
 
 Note: for speed this does not return the ensembl_id but the disk_id
 
@@ -209,24 +220,75 @@ Note: for speed this does not return the ensembl_id but the disk_id
 
 sub get_all_Clone_id{
    my ($self,$fall) = @_;
+   return &_get_Clone_id($self,$fall);
+}
+
+
+=head2 get_updated_Clone_id
+
+ Title   : get_updated_Clone_id
+ Usage   : @cloneid = $obj->get_updated_Clone_id($date,$flag)
+ Function: returns all the valid (live) Clone ids in the database
+ Example :
+ Returns : 
+ Args    : if $flag set, returns all clones regardless of invalid SV
+
+Note: for speed this does not return the ensembl_id but the disk_id
+
+
+=cut
+
+sub get_updated_Clone_id{
+   my ($self,$date,$fall) = @_;
+   my @clones;
+   my($val,$key);
+   while(($key,$val)=each %{$self->{'_clone_update_dbm'}}){
+       if($val>$date){
+	   push(@clones,$key);
+       }
+   }
+   return &_get_Clone_id($self,$fall,\@clones);
+}
+
+
+=head2 _get_Clone_id, _check_clone_entry
+
+ Title   : get_Clone_id, _check_clone_entry
+ Usage   : private methods
+ Function: 
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_Clone_id{
+   my ($self,$fall,$ralist) = @_;
    my($key,$val);
    my @list;
    my $nc=0;
    my $nisv=0;
    my $nsid=0;
-   while(($key,$val)=each %{$self->{'_clone_dbm'}}){
-       $nc++;
-       my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
-       if($key ne $acc){
-	   $nsid++;
+   if($ralist){
+       foreach my $key (@$ralist){
+	   my $val;
+	   if($val=$self->{'_clone_dbm'}->{$key}){
+	       &_check_clone_entry($key,$val,$fall,\@list,\$nc,\$nsid,\$nisv);
+	   }else{
+	       $self->warn("WARN: $key not in clone DBM");
+	   }
        }
-       if($sv!~/^[1234]$/){
-	   $nisv++;
-	   next unless $fall;
+   }else{
+       while(($key,$val)=each %{$self->{'_clone_dbm'}}){
+	   &_check_clone_entry($key,$val,$fall,\@list,\$nc,\$nsid,\$nisv);
        }
-       push(@list,$key);
    }
-   print STDERR "$nc clones in database\n";
+   if($ralist){
+       print STDERR "$nc clones have been updated\n";
+   }else{
+       print STDERR "$nc clones in database\n";
+   }
    print STDERR "$nsid have cloneid rather than accession numbers\n";
    print STDERR "$nisv have invalid SV numbers";
    if($fall){
@@ -235,6 +297,20 @@ sub get_all_Clone_id{
        print STDERR " and are excluded\n";
    }
    return @list;
+}
+
+sub _check_clone_entry{
+    my($key,$val,$fall,$ralist,$rnc,$rnsid,$rnisv)=@_;
+    $$rnc++;
+    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+    if($key ne $acc){
+	$$rnsid++;
+    }
+    if($sv!~/^[1234]$/){
+	$$rnisv++;
+	next unless $fall;
+    }
+    push(@$ralist,$key);
 }
 
 
@@ -354,6 +430,10 @@ sub DESTROY{
     if( $obj->{'_accession_dbm'} ) {
 	dbmclose(%{$obj->{'_accession_dbm'}});
 	$obj->{'_accession_dbm'} = undef;
+    }
+    if( $obj->{'_clone_update_dbm'} ) {
+	dbmclose(%{$obj->{'_clone_update_dbm'}});
+	$obj->{'_clone_update_dbm'} = undef;
     }
 }
 
