@@ -89,7 +89,10 @@ while ( my $seq = $in->next_seq() ) {
 	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\n";
 	}
     }
+
+
 }
+
 
 #Read the refseq file in gnp format
     print STDERR "Reading REFSEQ File\n";
@@ -208,6 +211,20 @@ if ($organism eq "mouse") {
     }
 }
 
+#Get Xref mapping specifically for drosophila
+
+if ($organism eq "drosophila") {
+    #Get the gene name, especially useful to replace Hugo name when these don't exist.
+    my @gene_names = $seq->annotation->each_gene_name;
+    foreach my $g(@gene_names) {
+	print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\n";
+    }
+}
+
 print STDERR "The output has been written there: $out\n";
+
+
+
+
 
 
