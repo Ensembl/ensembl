@@ -163,7 +163,7 @@ sub gene_image_par
         
     my $image_param_ref={};
     
-    $image_param_ref->{x_img_len}     = 550;
+    $image_param_ref->{x_img_len}     = 200;
     $image_param_ref->{y_img_len}     = 100;
     $image_param_ref->{left_margin}   = 30;
     $image_param_ref->{right_margin}  = 30;
