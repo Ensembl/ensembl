@@ -1,0 +1,572 @@
+ENSEMBL - API Change Specification
+==================================
+
+REVISION HISTORY
+----------------
+
+Graham Mcvicker - July 9, 2003 - Created
+
+
+GOALS
+-----
+-A cleaner, more intuitive API
+-A more general schema able to better capture divergent assembly types
+-More flexibility with regards to assembly related data such as haplotypes
+ MHC regions etc.
+
+SCHEMA MODIFICATIONS
+--------------------
+
+Proposed New/Modified Tables:
+-----------------------------
+
+  dnafrag
+  -------
+  dnafrag_id  int
+  name        varchar
+  type        varchar (or maybe enum)
+  length      int
+
+
+  dna
+  ---
+  dnafrag_id  int
+  sequence    varchar
+
+
+  assembly
+  --------
+  dnafrag_id_assembled  int
+  dnafrag_id_component  int
+  component_start       int
+  component_end         int
+  assembled_start       int
+  assembly_end          int
+  orientation           tinyint (or enum?)
+
+  gene
+  ----
+  For faster retrieval and retrieval independently of transcripts and 
+  exons genes will also have a dnafrag_id, dnafrag_start and dnafrag_end.
+  
+  gene_id          int
+  type             varchar
+  analysis_id      int
+  dnafrag_id       int
+  dnafrag_start    int
+  dnafrag_end      int
+  dnafrag_strand   int (or enum?)
+  transcript_count   - (is this necessary? - probably can go)
+  display_xref_id
+
+
+  transcript
+  ----------
+  For faster retrieval and retrieval independently of genes and exons
+  transcripts will also have a dnafrag_id, dnafrag_start and dnafrag_end.
+  The translation_id will be removed, translations will point to transcripts
+  instead (and pseudogenes will have no translation).  Prediction transcripts 
+  will now be stored as normal transcripts without genes.  In order to 
+  distinguish between transcript types an analysis id will be necessary.
+  Transcripts which do not have an associated gene will have a NULL value for
+  the gene_id.  An alternative solution would be to construct a gene_transcript
+  table in a similar style as the existing exon_transcript table.
+
+  transcript_id    int
+  gene_id          int (NULLABLE)
+  exon_count       int   - (is this necessary?)
+  dnafrag_id       int
+  dnafrag_start    int
+  dnafrag_end      int
+  dnafrag_strand   int (or enum?)
+  display_xref_id  int
+  analysis_id      int
+
+  
+  translation
+  ------------
+  translation_id   int
+  transcript_id    int
+  start_exon_id    int
+  end_exon_id      int
+  seq_start        int
+  seq_end          int
+
+
+
+  all feature tables
+  ------------------
+  All feature tables would now have dnafrag_id, dnafrag_start, dnafrag_end,
+  dnafrag_strand instead of contig_id, contig_start, contig_end
+  This includes the repeat_feature, simple_feature, dna_align_feature,
+  protein_align_feature, exon, marker_feature,
+  and qtl_feature tables.
+
+  
+Removed Tables
+--------------
+
+  prediction_transcript
+  ---------------------
+  PTs are now stored as ordinary transcripts without genes.  They should 
+  probably be computed in chromosomal coordinates instead of contig coordinates.
+  
+
+  contig
+  ------
+  Contigs are no longer needed.  They are stored as entries in the dnafrag
+  table with type 'contig'.  The embl_offset and clone_id will not be
+  necessary as their relationship to clones can be described by the 
+  assembly table.
+
+  clone
+  -----
+  Clones are no longer needed.  Clones are stored as entries in the dnafrag 
+  table with type 'clone'.  The htg_phase, created and modified timestamps will
+  be discarded as they are no longer maintained anyway.  The embl_acc, version,
+  and embl_version columns are redundant and will also be discarded.  Versions
+  can simply be appended onto the end of the name with a '.'.
+
+  mapfrag
+  -------
+  Anything which is stored in the mapfrag table should be possible to store 
+  in just the dnafrag and/or assembly table.
+
+  mapannotation
+  -------------
+  Don't think that this table should be necessary.
+
+  mapset
+  ------
+  Don't think that this table is necessary.
+
+  mapfrag_mapset
+  --------------
+  Don't think that this table is necessary.
+
+  map_density
+  -----------
+  Don't think that this table is necessary.
+
+  chromosome
+  ----------
+  This table is no longer needed.  Chromosomes can be stored in the 
+  dnafrag table with type 'chromosome'.
+
+
+META INFORMATION
+----------------
+
+Considerable more meta information will have to be stored in the core
+databases in order for the general approach to be maintained.  It may 
+be satisfactory to store this information in the existing meta table, 
+or it may be better to create a meta_assembly table that is more specific.
+
+This includes the following:
+
+  The dnafrag type (coordinate system) that every type of feature is stored
+  in.  This may be based on either logic_names, or upon table names.
+
+  The top-level dnafrag type (coordinate system). For human
+  this would be 'chromosome'.  For briggsae this may be something like
+  'scaffold' or 'super contig'.  This information would be used to construct
+  the web display and would possible be the default coordinate system when 
+  a coordinate system is unspecified by a user.
+
+  The sequence dnafrag type.  This describes the dna frag type (coordinate 
+  system) at which the sequence is stored at.  For example in human this would 
+  be at the contig or clone level.  
+
+  The assembly relationships between coordinate systems.  For example  
+  the clone, chromosome and nt_contig coordinate systems may all be constructed 
+  from the contig coordinate system:
+    contig -> clone
+    contig -> chromosome
+    contig -> nt_contig
+  Or there may be a more hierarchical approach:
+    contig    -> clone
+    clone     -> nt_contig
+    nt_contig -> chromosome
+
+  The names of the allowable coordinate systems.  This would allow for 
+  quick validation of API requests and provide a list that could be used
+  by the website for coordinate system selection.
+
+
+API CHANGES
+-----------
+
+Slice
+-----
+  Slice methods chr_start, chr_end, chr_name will be renamed start, end, 
+  frag_name.
+
+  A new slice method 'coord_system' will be added and will denote the type
+  of dna_frag the slice is built on.
+
+  Slices will represent a region on a dnafrag as opposed to a region on a
+  chromosome.  Slices will be immutable (i.e. their attributes will not be
+  changeable).  A new slice will have to be created if the attributes are to
+  be changed.
+
+  The following attributes will therefore define a unique slice:
+  coord_system  (e.g. 'chromosome' or 'clone')
+  frag_name     (e.g. 'X' or 'AL035554.1')
+  start         (e.g. 1000000 or 1)
+  end           (e.g. 2000001 or 800)
+  strand        (e.g. 1 or -1)
+
+  The name method will return the above values joined by a ':' delimiter, and
+  will not be settable:
+  e.g.  'chromosome:X:1000000:2000001:1' or 'clone:AL035554.1:1:800:-1'
+  This value can be used as a hashvalue that uniquely defines a slice.
+
+  The concept of an 'empty' slice will no longer exist.
+
+  Should we remove all of the get_all_FeatureTypeX methods from Slice?  These
+  methods are not strictly needed and they are annoying because they result in
+  a duplication of coding effort.  Everytime a new feature is added, a new
+  feature adaptor needs to be added AND a new method needs to be added to the
+  slice.  Would it not make everything simpler if features could still be
+  fetched by slice from adaptors but not from slices as well?  This also 
+  results in slices being smaller objects and makes the code more distributed.
+  *probably can't get away with this change since much code depends on it,
+   and it is not a huge flaw in the design anyway
+
+
+
+SliceAdaptor
+------------
+  The Slice adaptor must provide a method to fetch a slice via its coordinate
+  system, frag_name, start, end, and strand.  The old, commonly used method
+  fetch_by_chr_start_end can be altered to simply chain to this new method
+  as can most other SliceAdaptor methods.
+  fetch_by_coord_system_frag_start_end_strand ? 
+  Another method which will be necessary with the disapearence of the Clone,
+  RawContig and Chromosome adaptors is the one which allows for all slices
+  of a certain type to be retrieved.  For example it is often necessary to 
+  retrieve all chromosomes, or clones for a species.  This method could be
+  named fetch_all_by_coord_system or something similar.
+
+
+  
+RawContig
+---------
+  The RawContig object is no longer necessary with the new system.  RawContigs
+  are replaced by Slices with coord_system = 'contig'. In the interests of 
+  backwards compatibility the RawContig class can stick around for a while,
+  as a minimal implmentation inheriting from the Slice class.
+
+
+RawContigAdaptor
+----------------
+  The RawContigAdaptor is no longer necessary.  The RawContigAdaptor is replaced
+  by the SliceAdaptor.  For backwards compatibility a minimal implementation
+  of the RawContigAdaptor can remain which inherits from the SliceAdaptor.
+
+Clone
+-----
+  The Clone object is no longer necessary in the new system.  Clones are 
+  replaced by Slices with coord_system = 'clone'. For backwards compatibility
+  a minimal implementation can remain which inherits from the Slice object.
+
+CloneAdaptor
+------------
+  The CloneAdaptor object is no longer necessary in the new system.  The
+  CloneAdaptor is replaced by the SliceAdaptor.  For backwards compatibility
+  a minimal implementation can remain which inherits from the Slice object.
+
+Chromosome
+----------
+  The Chromosome object is no longer necessary in the new system.  The
+  Chromosome is replaced by Slices with coord_system = 'chromosome' (or
+  whatever the top level dnafrag type is for that species).  For backwards
+  compatibility a minimal implementation can remain which inherits from the
+  Slice object.  Statistical information (e.g. known genes, genes, snps) that 
+  was on chromosomes can be moved to a statistics class (or somewhere lite 
+  specific for now, this is afterall not even in the core db).
+
+ChromosomeAdaptor
+-----------------
+  The Chromosome object is no longer necessary in the new system. The 
+  ChromosomeAdaptor is replaced by the SliceAdaptor.  For backwards 
+  compatibility a minimal implementation which inherits from the SliceAdaptor
+  can remain.
+
+
+Root
+----
+  Every class in the current EnsEMBL perl API inherits directly or indirectly
+  from Bio::EnsEMBL::Root.  This inheritance is almost exclusively for the
+  following following three methods:
+    throw
+    warn
+    _rearrange
+
+  Nothing is gained by implementing this relationship as inheritance, and there
+  are several disadvantages:
+    (1) Everything must inherit from this class to use those 3 object methods.
+    This can result in patterns of multiple inheritance which are generally
+    considered to be a bad thing.
+
+    (2) It is not possible to use the throw, warn or rearrange method within
+    the constructor until the object is blessed.  Blessing the object first
+    and then calling rearrange to extract named arguments is slower because
+    the blessed hash needs to be expanded as more keys are added and several
+    key access/value assignements may need to be performed.
+
+    (3) Objects become larger and object construction becomes slightly slower
+    because constructors traverse an additional level of inheritance.
+
+  A better approach would be to make the methods static and create a static
+  utility class that exported the methods.  They could then be used as follows:
+
+  #
+  # OLD STYLE
+  #
+  package Old;
+
+  use Bio::EnsEMBL::Root;
+
+  @ISA = qw(Bio::EnsEMBL::Root);
+
+  sub new {
+    my $caller = shift;
+    my $class = ref($caller) || $caller;
+
+    my $self = bless {}, $class;
+
+    $self = $self->SUPER::new(@_);
+    
+    my ($start, $end) = $self->_rearrange(['START', 'END'], @_);
+
+    if(!defined($start) || !$defined($end)) {
+      $self->throw('-START and -END arguments are required');
+    }
+
+    $self->{'start'} = $start;
+    $self->{'end'}   = $end;
+
+    return $self;
+  }
+
+  #
+  # NEW STYLE
+  #
+  package New;
+
+  use Bio::EnsEMBL::Util::Exception qw(throw warn);
+  use Bio::EnsEMBL::Util::Argument  qw(rearrange);
+
+  sub new {
+    my $caller = shift;
+
+    my $class = ref($caller) || $caller;
+
+    my ($start, $end) = rearrange(['START', 'END'], @_);
+
+    if(!defined($start) || !defined($end)) {
+      throw('-START and -END arguments are required');
+    }
+
+    return bless {'start' => $start, 'end' => $end}, $class;
+  }
+
+
+
+Storable Base Class
+-------------------
+  Almost all business objects in the EnsEMBL system are storable in the database
+  and the ones which are always require 2 methods: dbID and adaptor.  It would
+  make sense in order to reduce code duplication to have all storable objects
+  inherit from a Storable base class which implemented these.
+
+Features
+--------
+  All features should inherit from a base class that implements common feature
+  functionality.  Presently this role is filled by the bloated SeqFeature class
+  which inherits from Bio::SeqFeature and Bio::SeqFeatureI etc.  I think that
+  this class can be ditched in favour of a smaller, less complicated 
+  implementation named Feature.  To make classes more polymorphic in general,
+  the gene, and transcript objects should now also inherit from the Feature
+  class.  This class should implement the following
+  core methods common to all features:
+
+    start
+    end
+    strand
+    slice (formerly named contig/entire_seq/etc.)
+    transform
+    transfer
+    map
+    
+  The feature class would likely inherit from the Storable base class and
+  thereby inherit the following methods:
+
+    adaptor
+    dbID
+
+  The signature and behaviour of the transform method will be changed.  The
+  existing method works differently depending on the arguments passed.  The 
+  existing method behaves in the manor described for each of the different
+  method signatures:
+
+    OLD transform(no arguments)
+    -----------------------
+      Transforms from slice coordinates to contig coordinates.  The feature
+      is changed in place and returned.  If the feature already is in contig
+      coordinates an exception is thrown.  The feature may be split into two
+      features in which case both features are returned (not sure if one of
+      them is transformed in place).  Some features are not permitted to be
+      split in two in which case an exception is thrown? (not sure) if it is
+      to be split accross contigs.
+
+    OLD transform(slice)
+    ----------------
+      If the feature is already in slice coordinates and the slice is on the
+      same chromosome the features coordinates are simply shifted.  If the
+      feature is already in slice coordinates but on a different chromosome
+      an exception is thrown.
+      It the feature is in contig coordinates and the slice is not empty then
+      it is transformed onto the new slice (or an exception is thrown if the 
+      transform would cause the feature to end up on a different chromosome
+      than the slice).  If the feature is in contig coordinates and the
+      slice is an empty slice the feature is transformed into chromosomal
+      coordinates and placed on a newly created slice of the entire chromosome.
+
+    The new transformation will have only a single valid signature and will
+    split it's responsibilities with the new transfer method.  The transfer 
+    method will transfer a feature onto another slice, whereas the transform
+    method will simply convert coordinate systems.  As well transform will 
+    NOT transform features in place but will rather return the newly 
+    transformed feature as a new object:
+    
+    transform(coord_system)
+    -----------------------
+      Takes a single string specifying the new coord system. If the coord
+	    system is not valid an exception is thrown. If the coord system is the
+	    same coord system as the feature is currently in a new feature that is
+	    a copy of the old one will still be returned.  This will also retrieve
+	    a slice which is the entire span of the region of the coordinate system
+	    that this feature is being transformed to.  For example transforming
+	    an exon in raw contig coordinates to one in chromosomal coodinates
+	    will place the exon on a slice of an entire chromosome.  If a feature
+	    spans a boundary in the coordinate system, undef is returned by the
+	    method instead.
+
+    translate(slice)
+    ----------------
+      Shifts a feature from one slice to another.  If the new slice is in the
+      same coordinate system but different frag_name (e.g. both chromosomal but
+      different chromosomes) an exception is thrown.  If the new slice is
+      in a different coordinate system then the transform method is called 
+      first.  If the feature would be split accross a boundary undef is
+      returned instead.  As with transform no features are changed in place,
+      rather a new copy of the feature is returned instead.
+
+
+    map(coord_system)
+    -----------------
+      Performs the mapping of a feature from one coordinate system to another
+      but rather than returning a feature a list of coordinate/gap objects is
+      returned. This enables people to construct their own mappings even if
+      the feature is split accross boundaries in a lower level coordinate
+      system.
+ 
+
+StickyExon
+----------
+  The sticky exon object will not be present in the new system.  It does not
+  make sense to define features in a coordinate system where they are simply 
+  not present.  Exons are calculated in chromosomal coordinates and they
+  will generally be retrieved in the same coordinates system.  It will
+  of course be possible to still retrieve exons in contig coordinates but only
+  is they are fully defined on the contigs of interest.
+  The split coordinates can be obtained through a call to the base feature 
+  method map().
+
+
+AssemblyMapper
+--------------
+  The assembly mapper object will have to become more clever.  It must be
+  able to load a mapper with using 'coordinate system chaining'.  Currently
+  the mapper is loaded with coordinates read directly from the assembly table
+  but this will not always be possible.  For example to map from the NT contig
+  coordinate system to the clone coordinate system the mapper will have to 
+  do the following:
+  NTContig -> Contig -> Clone
+
+  This should simply be a matter of offsetting values in a stepwise matter when
+  loading the mapper.  The mapper will have a table of conversions between the
+  NTContig and Clone systems which is constructed by the assembly mapper 
+  (rather than read directly from the assembly table).
+
+
+FeatureAdaptors
+---------------
+  Most FeatureAdaptors should inherit from the BaseFeature adaptor.  As a 
+  minimum feature adaptors should have fetch_all_by_Slice and fetch_by_dbID.
+  The fetch by slice method will provide the same return types and require
+  the same arguments as before, but will require some internal changes.
+
+  The method fetch_all_by_RawContig will be made obsolete (it is equivalent to
+  fetching by a slice of a contig) but may be left in as an alias for the
+  fetch all by slice method for backwards compatibility.
+
+  In the old system methods which return features fetched by non-locational
+  means (i.e. neither by slice or contig) generally returned features in the
+  same coordinate system that they were stored (native coordinate system).
+  The new system will force the API user to be explicit about the coordinate
+  system they wish to retrieve the feature in.  For backwards compatibility
+  a 'default' coordinate system may be assumed if one is not provided.
+
+  For example the usage of fetch_by_dbID and fetch_by_stable_id style methods
+  would become the following:
+
+  $f = $feature_adaptor->fetch_by_dbID($id, 'chromosome');
+  $f = $feature_adaptor->fetch_by_stable_id($stable_id, 'clone');
+
+  If the feature was not defined in that system undef would be returned.  If
+  the feature did not exist at all, an exception would be thrown.
+
+  The algorithm for fetching features becomes something like:
+
+  (1) Check with coord system is requested or that slice is in.
+  (2) Check which coord system features are in
+  (3) Dynamically construct mapper between coord systems (or get cached one)
+  (4) Cache mapper just created
+  (5) Retrieve features in their native coord system using list_dnfrags style
+      call on mapper object.
+  (6) Remap features to the requested coord system using the mapper
+  (7) Return the features
+
+
+Bio::Seq
+--------
+  Bio::Seq objects are not useful and inconsistant with some of the API methods.
+  Some methods return a string while others return a Bio::Seq.  In the 
+  instances where a Bio::Seq is returned the most common usage is to simply
+  extract the sequence with a call like: $seq = $obj->seq->seq;  For 
+  consistancy Bio::Seq usage will be removed in favour of simple string usage.
+  *Note: This change can be done independently of the other changes.  It may be
+   better to do this change seperately to avoid breaking everyones code at once
+   (or maybe it would be better to do all the major code-breaking changes at
+   once)
+
+
+Haplotypes
+----------
+  TBD
+
+
+
+
+OTHER CONSIDERATIONS
+--------------------
+
+TBD
+
+MHC Regions
+Circular Chromosomes
+Multiple Chromosomes
+
