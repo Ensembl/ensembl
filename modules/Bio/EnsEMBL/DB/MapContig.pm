@@ -149,8 +149,17 @@ sub end{
     
     if(my $end=$self->rightmost_end) {
 	return $self->start + $end;
+    } elsif ( $self->leftmost ) {
+	print STDERR "Using leftmost for ",$self->contig->id,"\n";
+
+	# not the entire golden length used here (!)
+	if( $self->orientation == 1 ) {
+	    return $self->start + ($self->contig->golden_end - $self->start_in);
+	} else {
+	    return $self->start + ($self->start_in - $self->contig->golden_start);
+	}
     } else {
-	return $self->start + $self->contig->golden_length;
+	return $self->start + $self->contig->golden_length-1;
     } 
 }
 

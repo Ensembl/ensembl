@@ -273,6 +273,8 @@ sub build_contig_map {
     GOING_LEFT :
     
 	while( $current_left_size < $left ) {
+	    print STDERR "Current contig ".$current_contig->id." current left $current_left_size vs $left\n";
+
 	    if( exists $seen_hash{$current_contig->id} ) {
 		$self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
 	    } else {
