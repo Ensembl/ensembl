@@ -327,8 +327,8 @@ sub length{
 
 =head2 order
 
- Title   : order
- Usage   : $obj->order($newval)
+ Title   : embl_order
+ Usage   : $obj->embl_order($newval)
  Function: 
  Returns : value of order
  Args    : newvalue (optional)
@@ -336,15 +336,23 @@ sub length{
 
 =cut
 
-sub order{
-    my $self = shift;
-    if( @_ ) {
-	my $value = shift;
-	$self->{'_order'} = $value;
+sub embl_order{
+    my ($self,$arg) = @_;
+
+    if( defined($arg) ) {
+	$self->{'_order'} = $arg;
     }
+
     return $self->{'_order'};
 }
 
+sub order {
+    my ($self,$arg) = @_;
+
+    $self->warn("Contig->order is deprecated in Bio::EnsEMBL::DB::ContigI. Use Contig->embl_order instead");
+
+    return $self->embl_order($arg);
+}
 
 =head2 offset
 
@@ -356,7 +364,7 @@ sub order{
 
 =cut
 
-sub offset{
+sub embl_offset{
     my $self = shift;
     if( @_ ) {
 	my $value = shift;
@@ -365,6 +373,13 @@ sub offset{
     return $self->{'_offset'};
 }
 
+sub offset {
+    my $self = shift;
+
+    $self->warn("Contig->offset is deprecated in Bio::EnsEMBL::DB::ContigI. Use Contig->embl_offset instead\n");
+
+    return $self->embl_offset(@_);
+}
 
 =head2 orientation
 
@@ -385,30 +400,37 @@ sub orientation{
     return $self->{'_orientation'};
 }
 
+sub seq {
+    my ($self,$arg) = @_;
 
-=head2 seq
+    $self->warn("Contig::seq is deprecated. Use primary_seq instead");
 
- Title   : seq
- Usage   : $self->seq($newval)
+    return $self->primary_seq($arg);
+}
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   : $self->seq
  Function: 
  Returns : value of seq
- Args    : newvalue (optional)
+ Args    : none
 
 =cut
 
-sub seq{
-    my $self = shift;
+sub primary_seq {
+    my ($self,$arg) = @_;
     
-    if( @_ ) {
-	$self->throw("Cannot set a sequence in TimDB");
-    }elsif(defined $self->{'seq'}){
+    if(defined($arg)) {
+	$self->throw("Cannot set a sequence in TimDB [$arg]");
+    } elsif(defined $self->{'seq'}){
 	return $self->{'seq'};
     }
 
-    my $id=$self->id;
-    my $disk_id=$self->disk_id;
-    my $clonediskid=$disk_id;
-    $clonediskid=~s/\.\d+$//;
+    my $id          = $self->id;
+    my $disk_id     = $self->disk_id;
+    my $clonediskid = $disk_id;
+    $clonediskid    =~s/\.\d+$//;
 
     # read from sequence file
     my $file=$self->_clone_dir . "/$clonediskid.seq";
@@ -460,7 +482,26 @@ sub id{
     return $self->{'id'};
 }
 
-sub disk_id{
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : $self->internal_id($newval)
+ Function: 
+ Returns : value of internal_id
+ Args    : newvalue (optional)
+
+=cut
+
+sub internal_id {
+    my $self = shift;
+    if( @_ ) {
+	my $value = shift;
+	$self->{'internal_id'} = $value;
+    }
+    return $self->{'internal_id'};
+}
+
+sub disk_id {
     my $self = shift;
     if( @_ ) {
 	my $value = shift;
