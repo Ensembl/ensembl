@@ -58,32 +58,41 @@ use Fcntl qw( O_RDONLY );
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$raclones,$noacc,$test,$part,$live,@args) = @_;
+    my($self,@args)=@_;
 
-  # DEFAULT IS NOW LIVE
-  $live=1;
+    # attempt to use _rearrange - if can't use old method and warn
+    my($raclones,$noacc,$test,$part,$species);
+    if(grep{/^\-/}@args){
+	($raclones,$noacc,$test,$part,$species)=
+	    $self->_rearrange([qw(CLONES
+				  NOACC
+				  TEST
+				  PART
+				  SPECIES
+				  )],@args);
+    }else{
+	$self->warn("old parameter style deprecated - update to use \'-clones\' etc");
+	($raclones,$noacc,$test,$part,@args)=@args;
+    }
 
-  # if we have a list of clones and live not test, write a lock file
-  if($live && !$test && $raclones){
-      $self->_write_lockfile($raclones);
-  }
+    if(!$species){$species='human';}
+    $self->{'_species'}=$species;
 
-  # DEBUG
-  # second parameter is for debugging to avoid reading entire list of objects
-  #if($raclones){
-  #    $self->warn("DEBUG: only exon/transcript/gene objects associated with clone list are read");
-  #}
+    # if we have a list of clones and not test, write a lock file
+    if(!$test && $raclones){
+	$self->_write_lockfile($raclones);
+    }
 
-  my $make = $self->SUPER::_initialize;
+    my $make = $self->SUPER::_initialize;
 
-  $self->{'_gene_hash'} = {};
-  $self->{'_contig_hash'} = {};
+    $self->{'_gene_hash'} = {};
+    $self->{'_contig_hash'} = {};
 
-  # clone->acc translation for all timdb operations, unless $noacc
-  $self->{'_byacc'}=1 unless $noacc;
+    # clone->acc translation for all timdb operations, unless $noacc
+    $self->{'_byacc'}=1 unless $noacc;
 
-  # set stuff in self from @args
-  # (nothing)
+    # set stuff in self from @args
+    # (nothing)
 
   # in order to access the flat file db, check that we can see the master dbm file
   # that will tell us where the relevant directory is
@@ -150,14 +159,8 @@ sub _initialize {
   }elsif($part){
       $self->warn("Using -part: to take g/t/co files from test_gtc/ [development option]");
       $file_root="$unfinished_root/test_gtc";
-  }elsif($live){
-      # this is now default behaviour - warning turned off
-      #$self->warn("Using -live to access live version: may be data inconsistencies");
-      $file_root="$unfinished_root";
   }else{
-      $self->warn("Using current stable release version of e/t/g/co files");
-      $file_root="$unfinished_root/release/current";
-      $exon_file="$unfinished_root/release/current/confirmed_exon";
+      $file_root="$unfinished_root";
   }
 
   my $transcript_file="$file_root/unfinished_ana.transcript.lis";
@@ -419,6 +422,7 @@ sub _get_Clone_id{
    my $nisv=0;
    my $nsid=0;
    my $nlock=0;
+   my $nwspecies=0;
    if($ralist){
        # loop over list of clones supplied [unknown]
        foreach my $id (@$ralist){
@@ -430,8 +434,14 @@ sub _get_Clone_id{
 	   # in cases where nacc flag set to return ensembl_id and emsembl_id missing
 	   next if $id eq 'unk';
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
-							   \$nisv,\$nlock);
+	   my($flock,$fsv,$facc,$species1)=
+	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
+					 \$nisv,\$nlock);
+	   # species check (1=ok, 0=reject)
+	   unless($self->_check_species($species1)){
+	       $nwspecies++;
+	       next;
+	   }
 	   if(!$flock && ($fall || !$fsv) && !$facc){
 	       push(@list,$id);
 	   }
@@ -441,8 +451,14 @@ sub _get_Clone_id{
        my($id,$val,$disk_id);
        while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
 
-	   my($flock,$fsv,$facc)=$self->_check_clone_entry($disk_id,\$nc,\$nsid,
-							   \$nisv,\$nlock);
+	   my($flock,$fsv,$facc,$species1)=
+	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
+					 \$nisv,\$nlock);
+	   # species check (1=ok, 0=reject)
+	   unless($self->_check_species($species1)){
+	       $nwspecies++;
+	       next;
+	   }
 	   if(!$flock && ($fall || !$fsv) && !$facc){
 
 	       # translate incoming disk_id to ensembl_id, taking into account nacc flag
@@ -463,17 +479,32 @@ sub _get_Clone_id{
    }
    print STDERR "    $nsid have cloneid rather than accession numbers [Sanger]\n";
 
-   print STDERR "    $nlock clones are locked for reading and are excluded\n";
+   print STDERR "    $nwspecies clones have wrong species - excluded\n";
+   print STDERR "    $nlock clones are locked for reading - excluded\n";
    print STDERR "    $nisv have invalid SV numbers";
    if($fall){
-       print STDERR " and are included\n";
+       print STDERR " - included\n";
    }else{
-       print STDERR " and are excluded\n";
+       print STDERR " - excluded\n";
    }
    print STDERR "  Total of ".scalar(@list)." clones are in final list\n";
 
    # !! no idea why sorting is necessary !!
    return sort @list;
+}
+
+# compares species of clone, with backwards compatibility
+sub _check_species{
+    my($self,$species1)=@_;
+    my $species=$self->{'_species'};
+    if(!$species1){$species1='human';}
+    if($species eq $species1){
+	# accept if same species, allowing for missing human data
+	return 1;
+    }else{
+	# mismatch species - escape;
+	return 0;
+    }
 }
 
 # checks a clone entry in TimDB
@@ -482,7 +513,9 @@ sub _get_Clone_id{
 # - clone has SV/no SV
 # - clone has no ACC
 # - clone different from accession (information only)
-# returns lock and sv state to allow external decision about accepting clone
+# returns 
+# - lock, sv, acc states; species
+# to allow external decision about accepting clone
 # can increment counters
 sub _check_clone_entry{
     my($self,$disk_id,$rnc,$rnsid,$rnisv,$rnlock)=@_;
@@ -492,7 +525,8 @@ sub _check_clone_entry{
     }
     $$rnc++;
 
-    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$val);
+    my($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=
+	split(/,/,$val);
     # count cases where cloneid is not accession (for information purposes)
     if($disk_id ne $acc){
 	$$rnsid++;
@@ -521,7 +555,7 @@ sub _check_clone_entry{
 	    $flock=1;
 	}
     }
-    return($flock,$fsv,$facc);
+    return($flock,$fsv,$facc,$species);
 }
 
 

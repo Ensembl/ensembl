@@ -65,6 +65,8 @@ my $mus_path="/nfs/disk100/humpub3a/unfinished_ana";
 my %cgp_path=map {$_,"$sanger_path/$_"} qw ( SU SF );
 $cgp_path{'EU'}="$ext_path/EU";
 $cgp_path{'EF'}="$ext_path/EF";
+$cgp_path{'MSU'}="$mus_path/MSU";
+$cgp_path{'MSF'}="$mus_path/MSF";
 $cgp_path{'MEU'}="$mus_path/MEU";
 $cgp_path{'MEF'}="$mus_path/MEF";
 
