@@ -400,8 +400,8 @@ to call seq again to get a string.
 We can get the protein sequence of a transcript by calling the translate method.  So to get all the 
 protein translations from a gene into a file we would do
 
-my $seqio = new Bio::SeqIO->(-format => 'fasta',
-                             -fh     => \*STDOUT);
+my $seqio = new Bio::SeqIO(-format => 'fasta',
+                           -fh     => \*STDOUT);
 
 foreach my $transcript ($gene->each_Transcript) {
   my $peptide = $transcript->translate;
