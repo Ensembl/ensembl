@@ -64,12 +64,13 @@ use Bio::EnsEMBL::Root; #included for backwards compatibility
 use Bio::EnsEMBL::Tile; #included for backwards compatibility
 use Bio::EnsEMBL::Chromosome; #included for backwards compatibility
 use Bio::EnsEMBL::RawContig; #included for backwards compatibility
+#use Bio::PrimarySeqI;# included only for backwards compatibility
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
-@ISA = qw(Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::Root);# Bio::PrimarySeqI);
 
 
 =head2 new
@@ -542,22 +543,62 @@ sub project {
   #obtain a mapper between this coordinate system and the requested one
 
   my $slice_adaptor = $self->adaptor();
+
+  if(!$slice_adaptor) {
+    warning("Cannot project slice without an attached SliceAdaptor");
+    return [];
+  }
+
   my $db = $slice_adaptor->db();
   my $csa = $db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
   my $slice_cs = $self->coord_system();
 
   #no mapping is needed if the requested coord system is the one we are in
+  #but we do need to check if some of the slice is outside of defined regions
   if($slice_cs->equals($cs)) {
-    return [[1, $self->length(), $self]];
+    my $entire_slice = $slice_adaptor->fetch_by_region($cs->name(),
+                                                   $self->{'seq_region_name'},
+                                                   undef, undef, undef,
+                                                   $cs->version());
+
+    my $entire_len = $entire_slice->length();
+
+    #if the slice has negative coordinates or coordinates exceeding the 
+    #exceeding length of the sequence region we want to shrink the slice to
+    #the defined region
+    
+    if($self->{'start'} > $entire_len || $self->{'end'} < 1) {
+      #none of this slice is in a defined region
+      return [];
+    }
+
+    my $right_contract = 0;
+    my $left_contract  = 0;
+    if($self->{'end'} > $entire_len) {
+      $right_contract = $entire_len - $self->{'end'};
+    }
+    if($self->{'start'} < 1) {
+      $left_contract = $self->{'start'} - 1;
+    }
+
+    my $new_slice;
+    if($left_contract || $right_contract) {
+      $new_slice = $self->expand($left_contract, $right_contract);
+    } else {
+      $new_slice = $self;
+    }
+
+    return [[1-$left_contract, $self->length()+$right_contract, $new_slice]];
   }
 
   my @projection;
   my $current_start = 1;
-
+  
   #decompose this slice into its symlinked components.  
   #this allows us to handle haplotypes and PARs
-  my $normal_slice_proj = $slice_adaptor->fetch_normalized_slice_projection($self);
+  my $normal_slice_proj = 
+    $slice_adaptor->fetch_normalized_slice_projection($self);
   foreach my $segment (@$normal_slice_proj) {
     my $normal_slice = $segment->[2];
 
@@ -582,18 +623,18 @@ sub project {
 
       #skip gaps
       if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-	#create slices for the mapped-to coord system
-	my $slice = $self->new
-	  (-COORD_SYSTEM    => $cs,
-	   -START           => $coord_start,
-	   -END             => $coord_end,
-	   -STRAND          => $coord->strand(),
-	   -SEQ_REGION_NAME => $coord->id(),
-	   -ADAPTOR         => $self->adaptor());
+        #create slices for the mapped-to coord system
+        my $slice = $self->new
+          (-COORD_SYSTEM    => $cs,
+           -START           => $coord_start,
+           -END             => $coord_end,
+           -STRAND          => $coord->strand(),
+           -SEQ_REGION_NAME => $coord->id(),
+           -ADAPTOR         => $self->adaptor());
 
-	my $current_end = $current_start + $length - 1;
+        my $current_end = $current_start + $length - 1;
 	
-	push @projection, [$current_start, $current_end, $slice];
+        push @projection, [$current_start, $current_end, $slice];
       }
 
       $current_start += $length;
