@@ -179,6 +179,47 @@ sub fetch_by_region {
 
 
 
+=head2 fetch_by_name
+
+  Arg [1]    : string $name
+  Example    : $name  = 'chromosome:NCBI34:X:1000000:2000000:1';
+               $slice = $slice_adaptor->fetch_by_name($name);
+               $slice2 = $slice_adaptor->fetch_by_name($slice3->name());
+  Description: Fetches a slice using a slice name (i.e. the value returned by
+               the Slice::name method).  This is useful if you wish to 
+               store a unique identifier for a slice in a file or database or
+               pass a slice over a network.
+               Slice::name allows you to serialise/marshall a slice and this
+               method allows you to deserialise/unmarshal it.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : throw if incorrent arg provided
+  Caller     : Pipeline
+
+=cut
+
+sub fetch_by_name {
+  my $self = shift;
+  my $name = shift;
+
+  if(!$name) {
+    throw("name argument is required");
+  }
+
+  my @array = split(/:/,$name);
+
+  if(@array != 6) {
+    throw("Malformed slice name [$name].  Format is " .
+        "coord_system:version:start:end:strand");
+  }
+
+  my ($cs_name, $cs_version, $seq_region, $start, $end, $strand) = @array;
+
+
+  return $self->fetch_by_region($cs_name,$seq_region, $start,
+                               $end, $strand, $cs_version);
+}
+
+
 
 =head2 fetch_by_seq_region_id
 
@@ -368,15 +409,35 @@ sub get_seq_region_attribs {
                'toplevel'.
   Arg [2]    : string $coord_system_version (optional)
                The version of the coordinate system to retrieve slices of
+  Arg [3]    : int $max_length (optional)
+               The maximum length of slices to be returned.  Seq_regions which
+               are larger than $max_length will be split into multiple slices.
+               If this argument is not provided then slices will not be 
+               split.  If this argument is less than 1 a warning will occur and
+               the slices will not be split.
+  Arg [4]    : int $overlap (optional)
+               The amount that the returned slices should overlap. By default
+               this value is 0.  If no max_length value is provided but an 
+               overlap which is not zero is provided this argument will be
+               ignored and a warning will occur. 
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
+
+               #create chunks of size 100k with 10k overlap
+               @fixed_chunks = @{$slice_adaptor->fetch_all('chromosome', undef,
+                                                           1e5, 1e4);
+
   Description: Retrieves slices of all seq_regions for a given coordinate
                system.  This is analagous to the methods fetch_all which were
                formerly on the ChromosomeAdaptor, RawContigAdaptor and
                CloneAdaptor classes.  Slices fetched span the entire
                seq_regions and are on the forward strand.
   Returntype : listref of Bio::EnsEMBL::Slices
-  Exceptions : thrown if invalid coord system is provided
+  Exceptions : throw if invalid coord system is provided
+               throw if max_length < 1 is provided
+               throw if overlap < 0 is provided
+               throw if overlap is provided but max_length is not 
+               throw if overlap is greater than max_length
   Caller     : general
 
 =cut
@@ -386,12 +447,41 @@ sub fetch_all {
   my $cs_name = shift;
   my $cs_version = shift || '';
 
+  my ($max_length, $overlap) = @_;
+
+  #
+  # sanity checking of the overlap / maxlength arguments
+  #
+  if(defined($max_length) && $max_length < 1) {
+    throw("Invalid max length [$max_length] provided.");
+  }
+
+  $overlap ||= 0;
+  if($overlap != 0) {
+    if(!defined($max_length)) {
+      throw("Cannot define overlap without defining valid max_length.");
+    }
+    if($overlap < 0) {
+      throw("Cannot define overlap that is less than 0.");
+    }
+    if($max_length <= $overlap) {
+      throw("Overlap must be less than max_length.");
+    } 
+  }
+
+  #
+  # verify existance of requested coord system and get its id
+  #
   my $csa = $self->db->get_CoordSystemAdaptor();
   my $cs = $csa->fetch_by_name($cs_name, $cs_version);
 
+  
+  #
+  # Retrieve the seq_region from the database
+  #
   my $sth = $self->prepare('SELECT seq_region_id, name, length ' .
-                        'FROM   seq_region ' .
-                        'WHERE  coord_system_id =?');
+                           'FROM   seq_region ' .
+                           'WHERE  coord_system_id =?');
 
   $sth->execute($cs->dbID);
 
@@ -409,12 +499,49 @@ sub fetch_all {
     my $key = lc($name) . ':'. $cs_key;
     $name_cache->{$key} = [$seq_region_id, $length];
     $id_cache->{$seq_region_id} = [$name, $length, $cs];
-    push @out, Bio::EnsEMBL::Slice->new(-START  => 1,
-                                        -END    => $length,
-                                        -STRAND => 1,
-                                        -SEQ_REGION_NAME => $name,
-                                        -COORD_SYSTEM => $cs,
-                                        -ADAPTOR => $self);
+    
+    #
+    # split the seq regions into appropriately sized chunks
+    #
+    my $start = 1;
+    my $end;
+    my $multiple;
+    my $number;
+
+    if($max_length && ($length > $overlap)) {
+      #No seq region may be longer than max_length but we want to make
+      #them all similar size so that the last one isn't much shorter.
+      #Divide the seq_region into the largest equal pieces that are shorter
+      #than max_length
+
+      #calculate number of slices to create
+      $number = ($length-$overlap) / ($max_length-$overlap);
+      $number = int($number + 1.0); #round up to int (ceiling) 
+      
+      #calculate length of created slices
+      $multiple = $length / $number;
+      $multiple   = int($multiple); #round down to int (floor)
+    } else {
+      #just one slice of the whole seq_region
+      $number = 1;
+      $multiple = $length;
+    }
+
+    my $i;
+    for(my $i=0; $i < $number; $i++) {
+      $end = $start + $multiple + $overlap;
+
+      #any remainder gets added to the last slice of the seq_region
+      $end = $length if($i == $number-1);
+      
+      push @out, Bio::EnsEMBL::Slice->new(-START           => $start,
+                                          -END             => $end,
+                                          -STRAND          => 1,
+                                          -SEQ_REGION_NAME => $name,
+                                          -COORD_SYSTEM    => $cs,
+                                          -ADAPTOR         => $self);
+      $start += $multiple;
+    }
   }
 
   return \@out;
