@@ -44,6 +44,7 @@ use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
 use Bio::SeqIO::Fasta;
+use Bio::EnsEMBL::Analysis::Genscan;
 use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
@@ -58,10 +59,11 @@ sub _initialize {
   my($self,@args) = @_;
   
   my $make = $self->SUPER::_initialize;
-  my ($dbobj,$id,$disk_id,$cloneobj)=$self->_rearrange([qw(DBOBJ
+  my ($dbobj,$id,$disk_id,$cloneobj,$clone_dir)=$self->_rearrange([qw(DBOBJ
 							   ID
 							   DISK_ID
 							   CLONEOBJ
+							   CLONE_DIR
 							   )],@args);
   $id || $self->throw("Cannot make contig object without id");
   $disk_id || $self->throw("Cannot make contig object without disk_id");
@@ -77,7 +79,25 @@ sub _initialize {
   $self->_dbobj($dbobj);
   # clone object
   $self->_cloneobj($cloneobj);
+  $self->_clone_dir($clone_dir);
 
+
+
+  # ok. Hell. We open the Genscan file using the Genscan object.
+  # this is needed to remap the exons lower down
+
+  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . $self->disk_id . ".gs",$self->seq());
+
+  # we yank out each exon and build a hash on start position
+
+  my %exhash;
+
+  foreach my $t ( $gs->each_Transcript ) {
+      foreach my $ex ( $t->each_Exon ) {
+	  $exhash{$ex->start} = $ex;
+      }
+  }
+  
 
   # build array of genes
   $self->{'_gene_array'} = [];
@@ -89,6 +109,17 @@ sub _initialize {
       foreach my $exon (@{$dbobj->{'_contig2exon'}->{$id}}){
 	  my $exon_id=$exon->id;
 	  $exon->attach_seq($bioseq);
+	  
+	  if( ! defined $exhash{$exon->start()} ) {
+	      $self->warn("No exon in in genscan file. Ugh");
+	      next;
+	  } 
+	  if( $exhash{$exon->start()}->end != $exon->end() ) {
+	      $self->throw("Exons with same start but different end!");
+	  }
+
+	  $exon->phase($exhash{$exon->start()}->phase);
+
 	  # 2. build list of transcripts containing these exons
 	  foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
 	      $transcript_id{$transcript->id()}=$transcript;
@@ -331,6 +362,27 @@ sub _cloneobj {
 	$obj->{'_cloneobj'} = $value;
     }
     return $obj->{'_cloneobj'};
+}
+
+=head2 _clone_dir
+
+ Title   : _clone_dir
+ Usage   : $obj->_clone_dir($newval)
+ Function: 
+ Returns : value of _clone_dir
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _clone_dir{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_clone_dir'} = $value;
+    }
+    return $obj->{'_clone_dir'};
+
 }
 
 1;

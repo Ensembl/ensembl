@@ -128,6 +128,7 @@ sub _initialize {
 						     -cloneobj => $self,
 						     -id => $contig_id,
 						     -disk_id => $disk_contig_id,
+						     -clone_dir => $self->{'_clone_dir'}
 						     );
       push(@res,$contig);
   }
