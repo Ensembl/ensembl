@@ -126,8 +126,6 @@ sub _make_datastructures {
 
 =cut
 
-# PL: should this be called 'clone' ? 
-# PL: doesn't seem to be used anywhere
 sub new_from_one {
     my ($class,$contig) = @_;
 
