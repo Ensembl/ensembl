@@ -802,9 +802,10 @@ sub get_Exon{
    }
    my $exon = Bio::EnsEMBL::Exon->new();
 
-      $exon->contig_id($rowhash->{'contigid'});
-      $exon->version  ($rowhash->{'version'});
-
+   $exon->contig_id($rowhash->{'contigid'});
+   $exon->seqname($rowhash->{'contigid'});
+   $exon->version  ($rowhash->{'version'});
+   
    my $contig_id = $exon->contig_id();
 
    # we have to make another trip to the database to get out the contig to clone mapping.

@@ -340,7 +340,7 @@ sub primary_seq {
    if( defined $seq ) {
        return $seq;
    }
-   
+
    # we have to move across the map, picking up the sequences,
    # truncating them and then adding them into the final product.
 
@@ -373,7 +373,7 @@ sub primary_seq {
 	   #$seq_string = substr($seq_string,0,-1);
 	   # chew back no longer required...
        }
-
+       
        # now add in the actual sequence.
        #print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
        #print STDERR "adding to",length($seq_string),"\n";
@@ -655,12 +655,10 @@ sub get_all_Genes {
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
-                
 	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
                 $internalExon = 1;
 		$exonconverted{$exon->id} = 1;
             }                           
-	    
 	}
         
         unless ($internalExon) {    
@@ -985,7 +983,7 @@ sub _convert_seqfeature_to_vc_coords {
     eval {
 	$mc=$self->_vmap->get_MapContig($cid);
     };
-    if ($@) { print STDERR $@,"\n";   
+    if ($@) { #print STDERR $@,"\n";   
 	return undef;
     }
 
@@ -1092,13 +1090,11 @@ sub _convert_seqfeature_to_vc_coords {
     $sf->end   ($rend);
     $sf->strand($rstrand);
     
-    #if( $sf->can('attach_seq') ) {
-#	$sf->attach_seq($self->primary_seq);
-#    }
+    if( $sf->can('attach_seq') ) {
+	$sf->attach_seq($self->primary_seq);
+    }
     
     $sf->seqname($self->id);
-    
-
     return $sf;
 }
 
@@ -1166,7 +1162,7 @@ sub _dump_map {
    print $fh "Contig Map Dump: \n";
    
    foreach my $mc ($self->_vmap->get_all_MapContigs) {
-       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in," orientation ",$mc->orientation,"\n";
+       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in," end in contig ".$mc->end_in." orientation ",$mc->orientation,"\n";
    }
 }
 
