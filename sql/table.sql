@@ -300,7 +300,7 @@ CREATE TABLE repeat_feature (
   analysis_id int(10) unsigned NOT NULL,
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
-  repeat_id int(10) unsigned NOT NULL,
+  repeat_consensus_id int(10) unsigned NOT NULL,
 
 #  What scoring do we need ?
 
@@ -308,7 +308,7 @@ CREATE TABLE repeat_feature (
   
   PRIMARY KEY (	repeat_feature_id ),
   KEY contig_idx( contig_id, contig_start, analysis_id ),
-  KEY repeat_idx( repeat_id, contig_id, contig_start ),
+  KEY repeat_idx( repeat_consensus_id, contig_id, contig_start ),
   KEY analysis_idx( analysis_id )
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
