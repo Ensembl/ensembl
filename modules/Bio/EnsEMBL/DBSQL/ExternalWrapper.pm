@@ -101,6 +101,40 @@ sub get_Ensembl_Genes_clone{
    return $clone->get_all_Genes();
 }
 
+=head2 get_Ensembl_Genes_contig_list
+
+ Title   : get_Ensembl_Genes_contig_list
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Ensembl_Genes_contig_list{
+   my ($self,@contigs) = @_;
+
+   if( scalar @contigs == 0 ) {
+       return ();
+   }
+
+   my $list = join(',',@contigs);
+   $list = "($list)";
+
+   my $sth = $self->dbobj->prepare("select distinct(trans.gene) from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
+   
+   $sth->execute();
+   my @genes;
+
+   while( my ($id) = $sth->fetchrow_array ) {
+       push(@genes,$id);
+   }
+
+   return $self->gene_Obj->get_array_supporting('none',@genes);
+}
+
 
 
 =head2 get_Ensembl_SeqFeatures_contig

@@ -765,13 +765,27 @@ sub get_all_Genes {
 
 sub get_all_ExternalGenes {
    my ($self) = @_;
-    my (%gene);
-    
-    foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_all_ExternalGenes() ) {
-	    $gene{$gene->id()} = $gene;
-	}
-    }
+   my (%gene);
+   
+   my @rawids;
+
+   foreach my $rc ( $self->_vmap->get_all_RawContigs ) {
+       push(@rawids,$rc->id);
+   }
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+       if( $extf->can('get_Ensembl_Genes_contig_list')) {
+	   foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
+	       $gene{$gene->id()} = $gene;
+	   }
+       }
+   }
+   
+   # foreach my $contig ($self->_vmap->get_all_RawContigs) {
+   # foreach my $gene ( $contig->get_all_ExternalGenes() ) {
+   #    $gene{$gene->id()} = $gene;
+   #}
+   #}
 
     return $self->_gene_query(%gene);
 }
