@@ -9,6 +9,7 @@ CREATE TABLE xref (
 
   xref_id                     int unsigned not null auto_increment,
   accession                   varchar(255) not null,
+  version                     int unsigned,
   label                       varchar(255),
   description                 varchar(255),
   source_id                   int unsigned not null,

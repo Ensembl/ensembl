@@ -63,6 +63,7 @@ sub create_xrefs {
 
   local $/ = "\/\/\n";
 
+  my $ian_count=0;
   while (<REFSEQ>) {
     
     my $xref;
@@ -76,11 +77,12 @@ sub create_xrefs {
     $species =~ s/\s+/_/g;
     $species =~ s/\n//g;
     my $species_id = $name2species_id{$species};
-    
+
     # skip xrefs for species that aren't in the species table
     if (defined $species_id) {
       
       my ($acc) = $entry =~ /ACCESSION\s+(\S+)/;
+      my ($ver) = $entry =~ /VERSION\s+(\S+)/;
       my ($description) = $entry =~ /DEFINITION\s+([^[]*)/s;
       print $entry if (length($description) == 0);
       $description =~ s/\n//g;
@@ -97,7 +99,15 @@ sub create_xrefs {
       $parsed_seq =~ s/\/\///g;   # remove trailing end-of-record character
       $parsed_seq =~ s/\s//g;     # remove whitespace
 
+      my ($acc_no_ver,$ver) = split (/\./,$ver);
+
       $xref->{ACCESSION} = $acc;
+      if($acc eq $acc_no_ver){
+         $xref->{VERSION} = $ver;
+      }
+      else{
+         print "$acc NE $acc_no_ver\n";
+      }
       $xref->{LABEL} = $acc;
       $xref->{DESCRIPTION} = $description;
       $xref->{SOURCE_ID} = $source_id;
@@ -143,7 +153,10 @@ sub create_xrefs {
 
       my %mrna_dep;
       $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
-      $mrna_dep{ACCESSION} = $mrna;
+      my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
+
+      $mrna_dep{ACCESSION} = $mrna_acc;
+      $mrna_dep{VERSION} = $mrna_ver;
       push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
 
       push @xrefs, $xref;

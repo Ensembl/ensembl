@@ -59,7 +59,7 @@ sub run {
     my @sp = split(/\s/,$sps); 
     foreach my $value (@sp){
       if(defined($value) and $value and defined($swiss{$value})){
-	XrefParser::BaseParser->add_to_xrefs($swiss{$value},$key,$label,"",$source_id,$species_id);
+	XrefParser::BaseParser->add_to_xrefs($swiss{$value},$key,'',$label,"",$source_id,$species_id);
 	$count++;
       }
       elsif(defined($value) and $value and defined($refseq{$value})){

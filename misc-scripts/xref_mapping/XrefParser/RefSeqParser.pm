@@ -97,7 +97,9 @@ sub create_xrefs {
     # skip xrefs for species that aren't in the species table
     if (defined $species_id) {
 
-      $xref->{ACCESSION} = $acc;
+      my ($acc_no_ver,$ver) = split (/\./,$acc);
+      $xref->{ACCESSION} = $acc_no_ver;
+      $xref->{VERSION} = $ver;
       $xref->{LABEL} = $acc;
       $xref->{DESCRIPTION} = $description;
       $xref->{SOURCE_ID} = $source_id;

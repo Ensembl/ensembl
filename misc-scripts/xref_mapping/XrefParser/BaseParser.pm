@@ -282,27 +282,34 @@ sub upload_xrefs {
 
     # upload new ones
     print "Uploading xrefs\n";
-    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
+    my $xref_sth = $dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
     my $pri_insert_sth = $dbi->prepare("INSERT INTO primary_xref VALUES(?,?,?,?,?)");
     my $pri_update_sth = $dbi->prepare("UPDATE primary_xref SET sequence=? WHERE xref_id=?");
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+    my $xref_update_label_sth = $dbi->prepare("UPDATE xref SET label=? WHERE xref_id=?");
+    my $xref_update_descr_sth = $dbi->prepare("UPDATE xref SET description=? WHERE xref_id=?");
 
     local $xref_sth->{RaiseError}; # disable error handling here as we'll do it ourselves
     local $xref_sth->{PrintError};
 
     foreach my $xref (@xrefs) {
-
+       my $xref_id;
       # Create entry in xref table and note ID
-      $xref_sth->execute($xref->{ACCESSION},
+      if(! $xref_sth->execute($xref->{ACCESSION},
+			 $xref->{VERSION},
 			 $xref->{LABEL},
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
-			 $xref->{SPECIES_ID});
+			 $xref->{SPECIES_ID})){
+	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
+	$xref_update_label_sth->execute($xref->{LABEL},$xref_id) if (defined($xref->{LABEL}));
+	$xref_update_descr_sth->execute($xref->{DESCRIPTION},$xref_id,) if (defined($xref->{DESCRIPTION}));
+      }
+      else{
+	$xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
+      }		   
 
-      # If there was an error, an xref with the same acc & source already exists.
-      # If so, find its ID, otherwise get ID of xref just inserted
-      my $xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
 
       # create entry in primary_xref table with sequence; if this is a "cumulative"
       # entry it may already exist, and require an UPDATE rather than an INSERT
@@ -328,6 +335,7 @@ sub upload_xrefs {
 	$xref_sth->execute($syn,
 			   "",
 			   "",
+			   "",
 			   $xref->{SOURCE_ID},
 			   $xref->{SPECIES_ID});
 
@@ -343,6 +351,7 @@ sub upload_xrefs {
 	my %dep = %$depref;
 
 	$xref_sth->execute($dep{ACCESSION},
+			   $dep{VERSION},
 			   $dep{LABEL},
 			   "",
 			   $dep{SOURCE_ID},
@@ -701,16 +710,16 @@ sub get_xref{
 }
 
 sub add_to_xrefs{
-  my ($self,$master_xref,$acc,$label,$linkage,$source_id,$species_id) = @_;
+  my ($self,$master_xref,$acc,$version,$label,$linkage,$source_id,$species_id) = @_;
 
   if(!defined($add_xref_sth)){
-    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
+    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,version,label,description,source_id,species_id) VALUES(?,?,?,?,?,?)");
     $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
   }
 
   my $dependent_id = get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    $add_xref_sth->execute($acc,$label,"",$source_id,$species_id) || die "$acc\t$label\t\t$source_id\t$species_id\n";
+    $add_xref_sth->execute($acc,$version,$label,"",$source_id,$species_id) || die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
   $dependent_id = get_xref($acc, $source_id);
   $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
