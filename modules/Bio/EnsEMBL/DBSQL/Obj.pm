@@ -25,7 +25,7 @@ Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
     $gene   = $db->get_Gene('HG45501');
 
     
-
+ 
 =head1 DESCRIPTION
 
 This object represents a database that is implemented somehow (you shouldn\'t
