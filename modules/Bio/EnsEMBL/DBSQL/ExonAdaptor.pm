@@ -37,7 +37,6 @@ use strict;
 
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::StickyExon;
 
@@ -152,15 +151,12 @@ sub fetch_all_by_gene_id {
       , e.phase
       , e.end_phase
       , e.sticky_rank
-      , c.name cid
     FROM exon e
       , exon_transcript et
       , transcript t
-      , contig c
     WHERE t.gene_id = ?
       AND et.transcript_id = t.transcript_id
       AND e.exon_id = et.exon_id
-      AND e.contig_id = c.contig_id
     ORDER BY t.transcript_id,e.exon_id
       , e.sticky_rank DESC
   };
@@ -293,8 +289,6 @@ sub _new_Exon_from_hashRef {
      $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
 
    $exon->contig( $rc );
-   $exon->seqname($hashRef->{'cid'});
-
    
   return $exon;
 }

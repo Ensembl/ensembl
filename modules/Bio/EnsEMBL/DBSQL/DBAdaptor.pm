@@ -217,7 +217,7 @@ sub get_MapFragAdaptor {
 sub get_CloneAdaptor {
   my( $self ) = @_;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
+  return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
 }
 
 
@@ -350,7 +350,7 @@ sub get_TranslationAdaptor {
 sub get_RawContigAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
+    return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
 }
 
 
@@ -506,7 +506,8 @@ sub get_DnaAlignFeatureAdaptor {
 sub get_AssemblyMapperAdaptor {
   my( $self ) = @_;
 
-  return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
+  return 
+    $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
 }
 
 
@@ -543,7 +544,8 @@ sub get_DBEntryAdaptor {
 sub get_KaryotypeBandAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
+    return 
+      $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
 }
 
 
@@ -561,7 +563,8 @@ sub get_KaryotypeBandAdaptor {
 sub get_ChromosomeAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
+    return 
+      $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
 }
 
 

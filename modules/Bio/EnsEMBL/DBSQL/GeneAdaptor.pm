@@ -393,47 +393,6 @@ sub fetch_all_by_domain {
 
 
   
-
-=head2 fetch_all_by_contig_list
-
-  Arg [1]    : list of ints @list
-               the contigs to retrieve genes from
-  Example    : @genes = @{$gene_adaptor->fetch_all_by_contig_list(1, 2, 3, 4)};
-  Description: Retrieves all genes which are present on list of contigs
-               denoted by their unique database ids
-  Returntype : listref of Bio::EnsEMBL::Genes in contig coordinates
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_all_by_contig_list{
-   my ($self,@list) = @_;
-
-   my $str = "('". join( "','", @list ). "')";
-
-   # this is non-optimised, because we are going to make multiple
-   # trips to the database. should fix here
-
-   my $sth = $self->prepare("SELECT distinct(t.gene_id) 
-                             FROM transcript t,exon_transcript et,
-                                  exon e,contig c 
-                             WHERE c.name IN $str 
-                             AND c.contig_id = e.contig_id 
-                             AND et.exon_id = e.exon_id 
-                             AND et.transcript_id = t.transcript_id");
-   $sth->execute;
-
-   my @out;
-
-   while( my ($gid) = $sth->fetchrow_array() ) {
-       push(@out,$self->fetch_by_dbID($gid));
-   }
-
-   return \@out;
-}
-
-
 =head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -621,19 +580,6 @@ sub fetch_by_Peptide_id {
     return $self->fetch_by_dbID($geneid);
 }
 
-
-=head2 fetch_by_maximum_DBLink
-
-  Arg [1]    : int $external_id
-               the unique identifier of the DBEntry of the gene to retrieve
-  Example    : my $gene = $gene_adaptor->fetch_by_maximum_DBLink($ext_id);
-  Description: retrieves the gene with the  most most exons with the external 
-               database link identified by $external_id
-  Returntype : Bio::EnsEMBL::Gene in contig coordinates
-  Exceptions : none
-  Caller     : ?
-
-=cut
 
 
 =head2 fetch_by_maximum_DBLink
