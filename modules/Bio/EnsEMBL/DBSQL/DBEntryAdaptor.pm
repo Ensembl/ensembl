@@ -258,8 +258,26 @@ sub store {
 
 
 sub fetch_by_gene {
-  my ( $self, $geneId ) = @_;
-  return $self->_fetch_by_EnsObject_type( $geneId, 'Gene' );
+  my ( $self, $gene ) = @_;
+  my $query1 = "SELECT tlsi.stable_id 
+                  FROM transcript t, translation_stable_id 
+                 WHERE t.gene_id = ?
+                   AND t.translation_id = tlsi.translation_id";
+
+  my $sth1 = $self->prepare($query1);
+  $sth1->execute( $gene->dbID );
+
+  while (my $transid = $sth1->fetchrow) {
+
+    my @translation_xrefs = $self->_fetch_by_EnsObject_type( $transid, 'Translation' ));
+    foreach my $translink(@translation_xrefs) {
+      $gene->add_DBLink($translink);
+    }
+  }
+  my @genelinks = $self->_fetch_by_EnsObject_type( $gene->stable_id, 'Gene' );
+  foreach my $genelink ( @genelinks ) {
+    $gene->add_DBLink( $genelink );
+  }
 }
 
 sub fetch_by_rawContig {
