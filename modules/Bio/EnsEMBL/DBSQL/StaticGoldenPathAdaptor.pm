@@ -104,7 +104,8 @@ sub get_Gene_chr_MB {
 sub get_Gene_chr_bp {
     my ($self,$geneid) =  @_;
    
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
    if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
@@ -163,7 +164,8 @@ sub get_chr_start_end_of_contig {
        $self->throw("Must have contig id to fetch VirtualContig of contig");
    }
    
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
                         st.chr_start,
@@ -201,7 +203,8 @@ sub get_chr_start_end_of_contig {
 sub fetch_RawContigs_by_fpc_name {
    my ($self,$fpc) = @_;
    
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    # very annoying. DB obj wont make contigs by internalid. doh!
    my $sth = $self->dbobj->prepare("SELECT  c.id 
@@ -240,7 +243,8 @@ sub fetch_RawContigs_by_fpc_name {
 sub convert_chromosome_to_fpc {
     my ($self,$chr,$start,$end) = @_;
  
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
         SELECT fpcctg_name
@@ -272,7 +276,8 @@ sub convert_chromosome_to_fpc {
 sub convert_fpc_to_chromosome {
     my ($self,$fpc,$start,$end) = @_;
  
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
         SELECT chr_name
@@ -308,7 +313,8 @@ sub convert_rawcontig_to_fpc{
     my ($self,$rc,$start,$end,$strand) = @_;
 
 
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
  
     my $sth = $self->dbobj->prepare("
         SELECT st.fpcctg_name
@@ -350,7 +356,8 @@ sub convert_rawcontig_to_fpc{
 sub fetch_RawContigs_by_chr_name{
    my ($self,$chr) = @_;
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("
         SELECT c.id
@@ -424,7 +431,8 @@ sub fetch_RawContigs_by_chr_start_end {
    my ($self,$chr,$start,$end) = @_;
 
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
    
    $self->throw("I need a golden path type") unless ($type);
    
@@ -571,7 +579,8 @@ sub fetch_VirtualContig_of_clone{
    }
    if( !defined $size ) {$size=0;}
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
                         st.chr_start,
@@ -662,7 +671,8 @@ sub fetch_VirtualContig_of_gene{
    my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
-        my $type = $self->dbobj->static_golden_path_type();
+       my $type = $self->dbobj->static_golden_path_type()
+        or $self->throw("No assembly type defined");
        $self->throw("Gene is not on the golden path '$type'. Cannot build VC");
    }
      
@@ -693,7 +703,8 @@ sub fetch_VirtualContig_of_exon{
    }
    if( !defined $size ) {$size=0;}
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
    if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
@@ -765,7 +776,8 @@ sub get_location_of_feature {
        $self->throw("Must have feature details to get location of it");
    }
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
 			if(sgp.raw_ori=1,
@@ -816,7 +828,8 @@ sub fetch_VirtualContig_of_transcript{
    if( !defined $size ) {$size=0;}
 
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  
    if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),
@@ -883,7 +896,8 @@ sub fetch_VirtualContig_by_clone {
        $self->throw("Must have clone and size to fetch VirtualContig by clone");
    }
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
@@ -934,7 +948,8 @@ sub fetch_VirtualContig_by_contig {
        $self->throw("Must have contig id and size to fetch VirtualContig by contig");
    }
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
 
    my $sth = $self->dbobj->prepare("SELECT  c.id,
                         st.chr_start,
@@ -1198,7 +1213,8 @@ sub fetch_VirtualContig_by_chr_name{
 sub get_all_fpc_ids {
    my ($self,@args) = @_;
 
-   my $type = $self->dbobj->static_golden_path_type();
+   my $type = $self->dbobj->static_golden_path_type()
+    or $self->throw("No assembly type defined");
    my $sth = $self->dbobj->prepare("SELECT DISTINCT(fpcctg_name) 
                     FROM static_golden_path 
                     WHERE type = '$type'"
@@ -1220,7 +1236,8 @@ sub get_chromosome_length {
 
     $self->throw("No chromosome name entered") unless defined($chrname);
 
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
     
     my $sth = $self->dbobj->prepare("
         SELECT MAX(chr_end)
@@ -1263,7 +1280,8 @@ sub dbobj{
 
 sub is_golden_static_contig {
     my ($self,$cid,$pos) = @_;
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
 
     my $query = "
      SELECT c.id,p.raw_start,p.raw_end 
@@ -1292,7 +1310,8 @@ sub is_golden_static_contig {
 
 sub is_golden_static_clone {
     my ($self,$clone) = @_;
-    my $type = $self->dbobj->static_golden_path_type();
+    my $type = $self->dbobj->static_golden_path_type()
+     or $self->throw("No assembly type defined");
 
     my $query = "   SELECT co.id 
             FROM contig co, clone cl, static_golden_path p 
