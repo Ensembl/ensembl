@@ -158,7 +158,6 @@ sub get_all_Genes{
 	    #   my $rowhash = $sth->fetchrow_hashref();
 	    
 	       $gene->version($version);
-	       $self->warn("Got gene version ".$gene->version." in Clone->get_all_Genes()");
 	       
 	       $gene->add_cloneid_neighbourhood($id);
 
