@@ -147,6 +147,9 @@ sub get_new_id_from_old_id{
    my $sth = $self->prepare("select old_id,new_id from deleted_id where old_id = '$old_id' and id_type = '$type'");
    my $res = $sth->execute();
    my ($old,$new) = $sth->fetchrow_array();
+   if (! defined $old) {
+       return undef;
+   }
    
    if( !defined $new || $new eq "" ) {
        return "__DELETED__";
