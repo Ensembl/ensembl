@@ -58,23 +58,29 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($contiga,$contigb,$positiona,$positionb,$overlap_type) = $self->_rearrange([qw( CONTIGA
-										      CONTIGB
-										      POSITIONA
-										      POSITIONB
-										      OVERLAP_TYPE
-										      )], @args);
+  my ($contiga,$contigb,$positiona,$positionb,$overlap_type,$source,$distance) 
+      = $self->_rearrange([qw( CONTIGA
+			       CONTIGB
+			       POSITIONA
+			       POSITIONB
+			       OVERLAP_TYPE
+			       SOURCE
+			       DISTANCE
+									      )], @args);
   if( !defined $contiga   || !defined $contigb   || 
-      !defined $positiona || !defined $positionb || !defined($overlap_type)) {
+      !defined $positiona || !defined $positionb || 
+      !defined($overlap_type) || !defined($source)) {
 
       $self->throw("You have to construct ContigOverlap objects with all five arguments, contiga,contigb,positiona,positionb,overlap_type");
   }
 
-  $self->contiga($contiga);
-  $self->contigb($contigb);
-  $self->positiona($positiona);
-  $self->positionb($positionb);
+  $self->contiga     ($contiga);
+  $self->contigb     ($contigb);
+  $self->positiona   ($positiona);
+  $self->positionb   ($positionb);
   $self->overlap_type($overlap_type);
+  $self->source      ($source);
+  $self->distance    ($distance);
 
   # set stuff in self from @args
   return $make; # success - we hope!
@@ -191,6 +197,49 @@ sub overlap_type {
    }
     return $obj->{'overlap_type'};
     
+}
+
+=head2 type
+
+ Title   : source
+ Usage   : $obj->source
+ Function: String describing the source of the overlap
+ Returns : value of source
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub source {
+    my $obj = shift;
+   if( @_ ) {
+       my $value = shift;
+       $obj->{'source'} = $value;
+   }
+    return $obj->{'source'};
+    
+}
+
+=head2 distance
+
+ Title   : distance
+ Usage   : $obj->distance($dis)
+ Function: 
+ Returns : int
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub distance {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_distance} = $arg;
+    }
+
+    return $self->{_distance};
+
 }
 
 =head2 invert

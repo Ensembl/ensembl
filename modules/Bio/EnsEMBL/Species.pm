@@ -174,6 +174,7 @@ sub chromosome_by_id {
     }
     return undef;
 }
+
 =head2 chromosome_by_name
     
     Title   : chromosome_by_name
