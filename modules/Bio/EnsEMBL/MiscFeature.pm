@@ -102,11 +102,24 @@ use vars qw(@ISA);
 
 
 
-# new is inherited from superclass
+sub new {
+  my $class = shift;
+
+  my $self = $class->SUPER::new(@_);
+
+  $self->{'attributes'} = [];
+
+  return $self;
+}
+
+
 
 sub new_fast {
   my $class = shift;
   my $hashref = shift;
+
+  $hashref->{'attributes'} ||= [];
+
   return bless($hashref, $class);
 }
 
