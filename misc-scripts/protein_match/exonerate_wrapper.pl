@@ -21,14 +21,14 @@ use Getopt::Std;
 # Format of output:
 #
 # Col	Value				Type
-# 1	Query sequence ID		string
-# 2	Query percentage of identity	%g-type float <= 100
-# 3	Alignment start in query	integer
-# 4	Alignment end in query		integer
-# 5	Target sequence ID		string
-# 6	Target percentage of identity	%g-type float <= 100
-# 7	Alignment start in target	integer
-# 8	Alignment end in target		integer
+# 1	Target sequence ID		string
+# 2	Target percentage of identity	%g-type float <= 100
+# 3	Alignment start in target	integer
+# 4	Alignment end in target		integer
+# 5	Query sequence ID		string
+# 6	Query percentage of identity	%g-type float <= 100
+# 7	Alignment start in query	integer
+# 8	Alignment end in query		integer
 # 9	Score				integer
 # 10	Cigar line			string
 #
@@ -286,9 +286,9 @@ foreach my $q (values %r) {
 	$t->{C} =~ s/^1([MDI])/$1/;               # no lone 1 at start
 
 	printf OUT "%s,%g,%d,%d,%s,%g,%d,%d,%d,%s\n",
-	    $t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
-	    $t->{ti}, $t->{tp}, $t->{tab}, $t->{tae},
-	    $t->{s}, $t->{C};
+	$t->{ti}, $t->{tp}, $t->{tab}, $t->{tae},
+	$t->{qi}, $t->{qp}, $t->{qab}, $t->{qae},
+	$t->{s}, $t->{C};
     }
 }
 
