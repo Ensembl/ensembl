@@ -237,7 +237,9 @@ sub do_sql_file {
         }
         close SQL;
         
-        foreach my $s (grep /\S/, split /;/, $sql) {
+	#Modified split statement, only semicolumns before end of line,
+	#so we can have them inside a string in the statement
+        foreach my $s (grep /\S/, split /;\n/, $sql) {
             $self->validate_sql($s);
             $dbh->do($s);
             $i++
