@@ -422,6 +422,26 @@ sub get_all_Transcripts {
 
 
 
+=head2 get_all_alt_alleles
+
+  Arg [1]    : none
+  Example    :  ( optional )
+  Description: Return a listref of Gene objects that represent this Gene on
+               an alternative haplotype. Empty list if there is no such
+               Gene. (eg there is no overlapping haplotype)
+  Returntype : listref of Bio::EnsEMBL::Gene
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_alt_alleles {
+  my $self = shift;
+  my $result = $self->adaptor()->fetch_all_alt_alleles( $self );
+  return $result;
+}
+
+
 
 =head2 version
 
