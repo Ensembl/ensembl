@@ -371,7 +371,7 @@ sub invert {
 sub seq {
   my $self = shift;
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 )};
+  return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1,undef, 1 )};
 }
 
 
