@@ -429,7 +429,7 @@ sub start_exon {
 sub end_exon {
   my ($self, @args) = @_;
 
-  $self->warn("end_exon has been renamed start_Exon " . caller);
+  $self->warn("end_exon has been renamed end_Exon " . caller);
 
   $self->end_Exon(@args);
 }
