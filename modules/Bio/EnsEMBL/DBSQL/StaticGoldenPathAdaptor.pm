@@ -214,9 +214,15 @@ sub fetch_VirtualContig_by_chr_start_end{
 
    
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+   my $vc;
+   print STDERR "calling $chr,$start,$end\n";
 
-   
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+   eval {
+     $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start,1,$end,@rc);
+   } ;
+   if( $@ ) {
+     $self->throw("Unable to build a virtual contig at $chr, $start,$end\n\nUnderlying exception $@\n");
+   }
 
    $vc->_chr_name($chr);
    $vc->dbobj($self->dbobj);
