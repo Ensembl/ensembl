@@ -20,9 +20,8 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-The contig overlap object is directional - you pick it up from a particular
-contig and it tells you what position on that contig is equivalent to what
-position on the other contig.
+The contig overlap object is symmetrical.  It describes the overlap between two 
+contigs.
 
 http://www.ncbi.nlm.nih.gov/genome/seq/Hs_Data/contig.xml
 
@@ -59,132 +58,176 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($sister,$sisterpos,$sisterpolarity,$selfposition) = $self->_rearrange([qw( SISTER
-										   SISTERPOSITION
-										   SISTERPOLARITY
-										   SELFPOSITION
-										   )], @args);
-  if( !defined $sister || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
-      $self->throw("You have to construct ContigOverlap objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
+  my ($contiga,$contigb,$positiona,$positionb,$overlap_type) = $self->_rearrange([qw( CONTIGA
+										      CONTIGB
+										      POSITIONA
+										      POSITIONB
+										      OVERLAP_TYPE
+										      )], @args);
+  if( !defined $contiga   || !defined $contigb   || 
+      !defined $positiona || !defined $positionb || !defined($overlap_type)) {
+
+      $self->throw("You have to construct ContigOverlap objects with all five arguments, contiga,contigb,positiona,positionb,overlap_type");
   }
 
-  $self->sister($sister);
-  $self->sister_position($sisterpos);
-  $self->sister_polarity($sisterpolarity);
-  $self->self_position($selfposition);
+  $self->contiga($contiga);
+  $self->contigb($contigb);
+  $self->positiona($positiona);
+  $self->positionb($positionb);
+  $self->overlap_type($overlap_type);
 
   # set stuff in self from @args
   return $make; # success - we hope!
 }
 
-=head2 sister
+=head2 contiga
 
- Title   : sister
- Usage   : $obj->sister($newval)
- Function: Returns the RawContigI implementing object of the sister
-           contig. ie the id of the sister object is
-           $obj->sister->id();
- Returns : value of sister
+ Title   : contiga
+ Usage   : $obj->contiga($contig)
+ Function: Get/Set for the 1st contig in the overlap
+ Returns : Bio::EnsEMBL::DB::RawContigI
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister{
+sub contiga {
    my $obj = shift;
+
    if( @_ ) {
        my $value = shift;
-       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::RawContigI') ) {
+       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::ContigI') ) {
 	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
        }
-       $obj->{'sister_contig'} = $value;
+       $obj->{'contiga'} = $value;
    }
-   return $obj->{'sister_contig'};
+   return $obj->{'contiga'};
    
 }
 
-=head2 sister_position
+=head2 contigb
+
+ Title   : contigb
+ Usage   : $obj->contigb($contig)
+ Function: Get/Set for the 2nd contig in the overlap
+ Returns : Bio::EnsEMBL::DB::RawContigI
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub contigb {
+   my $obj = shift;
+
+   if( @_ ) {
+       my $value = shift;
+       if( !ref $value || ! $value->isa('Bio::EnsEMBL::DB::ContigI') ) {
+	   $obj->throw("Value [$value] is not a RawContigI. Problemo...");
+       }
+       $obj->{'contigb'} = $value;
+   }
+   return $obj->{'contigb'};
+   
+}
+
+=head2 positiona
     
- Title   : sister_position
- Usage   : $obj->sister_position($newval)
+ Title   : positiona
+ Usage   : $obj->positiona($newval)
  Function: 
- Returns : value of sister_position
+ Returns : value of positiona
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_position{
+sub positiona {
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'sister_position'} = $value;
+       $obj->{'positiona'} = $value;
    }
-   return $obj->{'sister_position'};
+   return $obj->{'positiona'};
    
 }
 
-=head2 sister_polarity
-
- Title   : sister_polarity
- Usage   : $obj->sister_polarity($newval)
+=head2 positionb
+    
+ Title   : positionb
+ Usage   : $obj->positionb($newval)
  Function: 
- Returns : value of sister_polarity
+ Returns : value of positionb
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_polarity {
+sub positionb {
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'sister_contig_polarity'} = $value;
+       $obj->{'positionb'} = $value;
    }
-   return $obj->{'sister_contig_polarity'};
+   return $obj->{'positionb'};
    
 }
 
-=head2 self_position
+=head2 overlap_type
 
- Title   : self_position
- Usage   : $obj->self_position($newval)
+ Title   : overlap_type
+ Usage   : $obj->overlap_type
  Function: 
- Returns : value of self_position
+ Returns : value of overlap_type
  Args    : newvalue (optional)
 
 
 =cut
 
-sub self_position{
-   my $obj = shift;
+sub overlap_type {
+    my $obj = shift;
    if( @_ ) {
-      my $value = shift;
-      $obj->{'self_contig_position'} = $value;
-  }
-   return $obj->{'self_contig_position'};
-   
+       my $value = shift;
+       $obj->{'overlap_type'} = $value;
+   }
+    return $obj->{'overlap_type'};
+    
 }
 
-=head2 distance
+=head2 invert
 
- Title   : distance
- Usage   : $obj->distance($newval)
+ Title   : invert
+ Usage   : $obj->invert
  Function: 
- Example : 
- Returns : value of distance
+ Returns : Reverses the sense of the overlap
  Args    : newvalue (optional)
 
 
 =cut
 
-sub distance{
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'distance'} = $value;
+sub invert {
+    my $self = shift;
+
+    my $tmp = $self->contiga;
+    $self->contiga($self->contigb);
+    $self->contigb($tmp);
+    
+    $tmp = $self->positiona;
+    $self->positiona($self->positionb);
+    $self->positionb($tmp);
+
+    my $oldtype = $self->overlap_type;
+
+    if ($oldtype eq 'right2left') {
+	$self->overlap_type('left2right');
+    } elsif ($oldtype eq 'left2right') {
+	$self->overlap_type('right2left');
+    } elsif ($oldtype eq 'left2left') {
+	$self->overlap_type('right2right');
+    } elsif ($oldtype eq 'right2right') {
+	$self->overlap_type('left2left');
+    } else {
+	$self->throw("Unknown overlap type [" . $self->overlap_type . "]");
     }
-    return $obj->{'distance'};
-
 }
 
 
