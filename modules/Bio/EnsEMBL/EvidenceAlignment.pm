@@ -25,7 +25,7 @@ Bio::EnsEMBL::EvidenceAlignment.pm
 =head1 DESCRIPTION
 
 Gives a transcript and its evidence as an alignment, with padding with
-"-" as required. Proteins are given before DNA. Coordinates in the
+'-' as required. Proteins are given before DNA. Coordinates in the
 database are used to recreate the alignment, and must be correct or some
 data may not be displayed.
 
@@ -45,7 +45,6 @@ package Bio::EnsEMBL::EvidenceAlignment;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::Pipeline::SeqFetcher;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
@@ -90,9 +89,9 @@ sub dbadaptor {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{'db_adaptor'} = $value;
+    $obj->{db_adaptor} = $value;
   }
-  return $obj->{'db_adaptor'};
+  return $obj->{db_adaptor};
 }
 
 =head2 transcriptid
@@ -107,44 +106,65 @@ sub transcriptid {
   my $obj = shift;
   if( @_ ) {
     my $value = shift;
-    $obj->{'transcript_id'} = $value;
+    $obj->{transcript_id} = $value;
   }
-  return $obj->{'transcript_id'};
+  return $obj->{transcript_id};
 }
 
 =head2 get_features
 
     Title   :   get_features
     Usage   :   $ea->get_features($transcript_obj, $vc);
-    Function:   use SGP adaptor supplied to get evidence off a VC of
-		the transcript supplied; return an array
-		of featurepairs; cache, so data gets reused if
-		$transcript_obj has the same stable_id last time
-=cut
-{
-  my @last_features;
-  my $last_transcript_id = -1;
+    Function:   use SGP adaptor supplied to get evidence off a VC
+		of the transcript supplied; return an array
+		of featurepairs; features not falling witin exons
+		are cut
 
-  sub get_features {
-    my ($self, $transcript_obj, $vc) = @_;
-    $self->throw("interface fault") if (@_ != 3);
+=cut
+
+sub get_features {
+  my ($self, $transcript_obj, $vc) = @_;
+  $self->throw('interface fault') if (@_ != 3);
     
-    my @exons = $transcript_obj->get_all_Exons;
-    my $strand = $exons[0]->strand;
-    my @features;
-    if ($transcript_obj->stable_id eq $last_transcript_id) {
-      @features = @last_features;
-    } else {
-      my @all_features = $vc->get_all_SimilarityFeatures;
-      foreach my $feature (@all_features) {
-        push @features, $feature if $feature->strand == $strand;
+  my @exons = $transcript_obj->get_all_Exons;
+  my $strand = $exons[0]->strand;
+  my @all_features = $vc->get_all_SimilarityFeatures;
+  my @features = ();
+  FEATURE_LOOP:
+  foreach my $feature (@all_features) {
+    if ($feature->strand == $strand) {
+      foreach my $exon (@exons) {
+        if ($feature->start >= $exon->start and $feature->end <= $exon->end) {
+	  push @features, $feature;
+	  next FEATURE_LOOP;
+	}
       }
-      @last_features = ();
-      @last_features = @features;
     }
-    $last_transcript_id = $transcript_obj->stable_id;
-    return @features;
   }
+  return @features;
+}
+
+=head2 pad_pep_str
+
+    Title   :   pad_pep_str
+    Usage   :   $padded_pep_seq = $ea->pad_pep_str($pep_str);
+    Function:   make a protein sequence the same length as the
+                corresponding DNA sequence by adding '--' after
+		each amino acid
+    Returns :   string
+
+=cut
+
+sub pad_pep_str {
+  my ($self, $original) = @_;
+  $self->throw('interface fault') if (@_ != 2);
+
+  my @amino_acids = split //, $original;
+  my $padded = '';
+  foreach my $amino_acid (@amino_acids) {
+    $padded .= $amino_acid . '--';
+  }
+  return $padded;
 }
 
 =head2 fetch_alignment
@@ -158,33 +178,32 @@ sub transcriptid {
 
 sub fetch_alignment {
   my ($self) = @_;
-  $self->throw("must have a transcript stable ID and a DB adaptor object")
+  $self->throw('interface fault') if (@_ != 1);
+  $self->throw('must have a transcript stable ID and a DB adaptor object')
     unless ($self->transcriptid && $self->dbadaptor);
   return $self->_get_aligned_evidence($self->transcriptid, $self->dbadaptor);
 }
 
-# get a sequence from cache if we have it, otherwise from seqfetcher
-sub _get_seq {
-  my ($self, $seqfetcher, $cache_arr_ref, $name) = @_;
-  $self->throw("interface fault") if (@_ != 4);
+# sort an evidence array
+sub _evidence_sort {
+  my ($self, $evidence_arr_ref) = @_;
+  $self->throw('interface fault') if (@_ != 2);
 
-  foreach my $cache_entry (@$cache_arr_ref) {
-    if ($$cache_entry{'name'} eq $name) {
-      return $$cache_entry{'seqobj'};
-    }
-  }
-  my %new_entry = ();
-  $new_entry{'seqobj'} = $seqfetcher->run_pfetch($name);
-  $new_entry{'name'} = $name;
-  push @$cache_arr_ref, \%new_entry;
-  return $new_entry{'seqobj'};
+  # ENST... first. Then alphabetically by name, followed by indent
+  my @sorted_evidence_arr = sort {    ( $$a{hseqname} =~ /^ENST/ ? -1 : 0 )
+			           || ( $$b{hseqname} =~ /^ENST/ ?  1 : 0 )
+				   || ( $$a{hseqname} cmp $$b{hseqname} )
+				   || ( $$a{hindent}  <=> $$b{hindent} )
+ 			         } @$evidence_arr_ref;
+  return \@sorted_evidence_arr;
 }
 
+# get cDNA
 sub _get_transcript_nuc {
   my ($self, $exon_arr_ref) = @_;
-  $self->throw("interface fault") if (@_ != 2);
+  $self->throw('interface fault') if (@_ != 2);
 
-  my $retval = "";
+  my $retval = '';
   my $seq_str;
   for (my $i = 0; $i <= $#$exon_arr_ref; $i++) {
     my $exon_seq = $$exon_arr_ref[$i]->seq->seq;
@@ -198,22 +217,42 @@ sub _get_transcript_nuc {
   return $retval;
 }
 
-sub _get_transcript_pep {
-  my ($self, $exon_pep_arr_ref) = @_;
-  $self->throw("interface fault") if (@_ != 2);
-  
-  my $retval = "";
-  my $seq_str;
-  for (my $i = 0; $i <= $#$exon_pep_arr_ref; $i++) {
-    my $pep = $$exon_pep_arr_ref[$i];
-    if ($i & 1) {
-      $seq_str = "\L$pep";
-    } else {
-      $seq_str = "\U$pep";
+# get all hit sequences by aggregated use of pfetch
+sub _get_hits {
+  my ($self, $features_arr_ref) = @_;
+  $self->throw('interface fault') if (@_ != 2);
+
+  my $pfetch = '/usr/local/pubseq/bin/pfetch';	# executable
+  my $clump_size = 1000;	# number of sequences to fetch at once
+  my %hits_hash = ();
+  my $command = "$pfetch -q";
+  my @hseqnames = ();
+  for (my $i = 0; $i < @$features_arr_ref; $i++) {
+    push @hseqnames, $$features_arr_ref[$i]->hseqname;
+    if (($i % $clump_size) == 0) {
+      open (PFETCH_IN, "$pfetch @hseqnames |")
+        or $self->throw("error running $command");
+      my $seq_no = 0;
+      my $stream = Bio::SeqIO->new(-fh => \*PFETCH_IN, -format => 'Fasta');
+      while (my $seq_obj = $stream->next_seq) {
+	$hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+	$seq_no++;
+      }
+      @hseqnames = ();
     }
-    $retval .= $seq_str;
   }
-  return $retval;
+
+  # fetch the non-clump-sized list remaining
+  open (PFETCH_IN, "$pfetch @hseqnames |")
+    or $self->throw("error running $command");
+  my $seq_no = 0;
+  my $stream = Bio::SeqIO->new(-fh => \*PFETCH_IN, -format => 'Fasta');
+  while (my $seq_obj = $stream->next_seq) {
+    $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+    $seq_no++;
+  }
+
+  return \%hits_hash;
 }
 
 # _get_aligned_evidence: takes a transcript ID and a DB adaptor
@@ -221,7 +260,7 @@ sub _get_transcript_pep {
 
 sub _get_aligned_evidence {
   my ($self, $transcript_id, $db) = @_;
-  $self->throw("interface fault") if (@_ != 3);
+  $self->throw('interface fault') if (@_ != 3);
 
   my $sgp = $db->get_StaticGoldenPathAdaptor;
   my @evidence_arr;	# a reference to this is returned
@@ -230,8 +269,6 @@ sub _get_aligned_evidence {
   my $ta = $db->get_TranscriptAdaptor;
   my $ga = $db->get_GeneAdaptor;
   my $ea = $db->get_ExonAdaptor;
-  my $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher->new();
-  $seqfetcher->pfetch("/usr/local/pubseq/bin/pfetch");
 
   # get all exons off a VC
   my $gene = $ga->fetch_by_transcript_stable_id($transcript_id);
@@ -252,33 +289,24 @@ sub _get_aligned_evidence {
     }
   }
 
-  # get transcript start and end on VC
   my @all_exons = $transcript_obj->get_all_Exons;
-  my $transcript_start = 100000000;	# v. large value
-  my $transcript_end = 0;
-  foreach my $exon (@all_exons) {
-    if ($exon->start < $transcript_start) {
-      $transcript_start = $exon->start;
-    }
-    if ($exon->end > $transcript_end) {
-      $transcript_end = $exon->end;
-    }
-  }
+  my @features = $self->get_features($transcript_obj, $vc);
+  my $hits_hash_ref = $self->_get_hits(\@features);
+  my $translation = $transcript_obj->translate->seq;
+  my $nucseq = $self->_get_transcript_nuc(\@all_exons);
+  my $cdna_len_bp = length $nucseq;
 
   # protein evidence
 
   my @utr_free_exons = $transcript_obj->translateable_exons;
-  my $translation = $transcript_obj->translate->seq;
-  my $nucseq = $self->_get_transcript_nuc(\@all_exons);
-  my $nuc_tran_len = length $nucseq;
 
   # record whether each exon is totally UTR, simply a frameshift (hence
   # not to be translated), or at least partly translating
   my @exon_status = ();
-  for (my $i = 0; $i <= $#all_exons; $i++) {
+  for (my $i = 0; $i < @all_exons; $i++) {
     $exon_status[$i] = 'utr';
   }
-  for (my $i = 0; $i <= $#all_exons; $i++) {
+  for (my $i = 0; $i < @all_exons; $i++) {
     if (($all_exons[$i]->end - $all_exons[$i]->start + 1) < 3) {
       $exon_status[$i] = 'frameshift';
     } else {
@@ -294,212 +322,138 @@ sub _get_aligned_evidence {
   # get length of the UTR witin the first exon (excludes length of any
   # exons that fall entirely within the 5' UTR)
   # and also get the total 5' UTR length
-  my $total_utr_len = 0;
-  my $utr_region_in_first_exon = 0;
+  my $total_5prime_utr_len = 0;
+  my $fiveprime_utr_in_first_exon = 0;
   UTR_OUTER:
-  for (my $i = 0; $i <= $#all_exons; $i++) {
-    if ($exon_status[$i] eq 'translating') {
+  for (my $i = 0; $i < @all_exons; $i++) {
+    my $exon_i = $all_exons[$i];
+    if ($exon_status[$i] ne 'translating') {
+      $total_5prime_utr_len += $exon_i->end - $exon_i->start + 1;
+    } else {	# 1st translating exon, could contain part of 5' UTR
       foreach my $utr_free_exon (@utr_free_exons) {
-        if ($utr_free_exon->overlaps($all_exons[$i])) {
-          if ($all_exons[$i]->strand > 0) {	# fwd gene
-  	    if ($utr_free_exon->start != $all_exons[$i]->start) {
-	      $utr_region_in_first_exon = $utr_free_exon->start
-	                                  - $all_exons[$i]->start;
-	      last UTR_OUTER;
-	    }
-	  } else {	# rev gene
-	    if ($utr_free_exon->end != $all_exons[$i]->end) {
-	      $utr_region_in_first_exon = $all_exons[$i]->end
-	                                  - $utr_free_exon->end;
-	      last UTR_OUTER;
-	    }
-	  }
-        }
+        if (($utr_free_exon->start >= $exon_i->start) 
+        && ($utr_free_exon->end <= $exon_i->end))
+	{
+	  if ($exon_i->strand > 0) {
+            $fiveprime_utr_in_first_exon =  $utr_free_exon->start
+	                                  - $exon_i->start;
+          } else {
+	    $fiveprime_utr_in_first_exon = $exon_i->end - $utr_free_exon->end;
+          }
+	  last UTR_OUTER;
+	}
       }
-    } else {
-      $total_utr_len += $all_exons[$i]->end - $all_exons[$i]->start + 1;
     }
   }
-  $total_utr_len += $utr_region_in_first_exon;
-
-  # create an array of all exons that at least partly translate
-  my @exons_to_display = ();
-  for (my $i = 0; $i <= $#all_exons; $i++) {
-    if ($exon_status[$i] eq 'translating') {
-      push @exons_to_display, $all_exons[$i];
-    } else {	# ??
-    }
+  if ($fiveprime_utr_in_first_exon < 0) {
+    $fiveprime_utr_in_first_exon = 0;	# disaster recovery
   }
+  $total_5prime_utr_len += $fiveprime_utr_in_first_exon;
 
+  # translation itself forms our first row of 'evidence'
   my $evidence_line = $translation;
-  my $prot_tran_len = length $translation;
-  # pad between residues, for comparability with codons
-  my $space_free_length = length $evidence_line;
-    my $padded_evidence_line = "";
-    for (my $i = 0; $i < $space_free_length; $i++) {
-      $padded_evidence_line .= substr $evidence_line, $i, 1;
-      $padded_evidence_line .= "--";
-    }
-    # adjust for 3' and 5' UTRs
-    $evidence_line = ('-' x $total_utr_len) . $padded_evidence_line;
-    while (length($evidence_line) < $nuc_tran_len) {
-      $evidence_line .= '-';
-    }
-
+  $evidence_line = $self->pad_pep_str($evidence_line);
+  # adjust for 5' and 3' UTRs
+  $evidence_line = ('-' x $total_5prime_utr_len) . $evidence_line;
+  while (length($evidence_line) < $cdna_len_bp) {
+    $evidence_line .= '-';
+  }
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $evidence_line,
                     -id               => 0,
-     		    -accession_number => $transcript_obj->stable_id,
+                    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'protein'
 		  );
-
   push @evidence_arr, $evidence_obj;
 
   my @seqcache = ();
-
-  #my $total_exon_len = $utr_region_in_first_exon;
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
-  my @features = $self->get_features($transcript_obj, $vc);
-  for (my $i = 0; $i <= $#exons_to_display; $i++) {
-    my $start = $exons_to_display[$i]->start;
-
-    my $last_feat = undef;
+  my $last_feat = undef;
+  foreach my $exon (@all_exons) {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
-      next PEP_FEATURE_LOOP unless ($exons_to_display[$i]->overlaps($feature));
-      next PEP_FEATURE_LOOP
-        if (($feature->start < $exons_to_display[$i]->start)
-	|| ($feature->end > $exons_to_display[$i]->end));
-      next PEP_FEATURE_LOOP if ($last_feat
-      && ($last_feat->start == $feature->start)
-      && ($last_feat->end == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
-      my $fstart = $feature->start;
-      my $hit_seq_obj = $self->_get_seq($seqfetcher, \@seqcache,
-                                        $feature->hseqname);
-      next PEP_FEATURE_LOOP if (! $hit_seq_obj);
-      if ($hit_seq_obj->moltype eq "protein") {
-        my $hlen = $feature->hend - $feature->hstart + 1;
-        my $length = $feature->end - $feature->start + 1;
-        next PEP_FEATURE_LOOP unless ($length == (3 * $hlen));
-	if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
-	 > length $hit_seq_obj->seq))
-	{
-	  print STDERR "XXX pep hit coords out of range for ",
-	  $feature->hseqname, ", hstart ", $feature->hstart, ", hend ",
-	  $feature->hend, ", max length ", length $hit_seq_obj->seq, "\n";
-	  next PEP_FEATURE_LOOP;
-	}
-        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
-        my $hindent;
-        if ($exons_to_display[$i]->strand > 0) {
-          $hindent = ($total_exon_len + $fstart - $start) / 3;
-        } else {
-          $hindent = ($total_exon_len + $exons_to_display[$i]->end
-	             - $feature->end) / 3;
-        }
-        $hindent = int $hindent;
-        if ($i == 0) {
-          $hindent -= $utr_region_in_first_exon;
-        }
-	if ($hindent < 0) {
-	  $hindent = 0;
-	}
-        my %hit_details = ( 'hseqname'    => $feature->hseqname,
-                            'hstart'      => $feature->hstart,
-		            'hend'        => $feature->hend,
-			    'hlength'     => $hlen,
-			    'hseq'        => $hseq,
-			    'hindent'     => $hindent,
-			    'score'       => $feature->score,
-			    'start'       => $start,
-			    'end'         => $feature->end,
-			    'exon_strand' => $exons_to_display[$i]->strand,
-			    'exon_length' => $exons_to_display[$i]->end
-			                     - $start + 1,
-  			    'exon'        => $exons_to_display[$i]
-			  );
-        push @pep_evidence_arr, \%hit_details;
+      next PEP_FEATURE_LOOP	# unless feature falls within this exon
+        unless (($feature->start >= $exon->start)
+	     && ($feature->end <= $exon->end));
+      next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
+        if ($last_feat
+        && ($last_feat->start  == $feature->start)
+        && ($last_feat->end    == $feature->end)
+        && ($last_feat->hstart == $feature->hstart)
+        && ($last_feat->hseqname eq $feature->hseqname));
+      my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
+      next PEP_FEATURE_LOOP 
+        unless ($hit_seq_obj && ($hit_seq_obj->moltype eq 'protein'));
+      my $hlen = $feature->hend - $feature->hstart + 1;
+      my $flen = $feature->end - $feature->start + 1;
+      next PEP_FEATURE_LOOP unless ($flen == 3 * $hlen);
+      if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+	  > length $hit_seq_obj->seq))
+      {
+        print STDERR 'XXX pep hit coords out of range for ',
+          $feature->hseqname, ': hstart ', $feature->hstart, ', hend ',
+          $feature->hend, ', max length ', length $hit_seq_obj->seq, "\n";
+        next PEP_FEATURE_LOOP;
       }
+      my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
+      $hseq = $self->pad_pep_str($hseq);
+      my $hindent_bp;
+      if ($exon->strand > 0) {
+        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
+      } else {
+        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
+      }
+      if ($hindent_bp < 0) {
+        $hindent_bp = 0;	# disaster recovery
+      }
+      my %hit_details = ( 'moltype'  => $hit_seq_obj->moltype,
+                          'hseqname' => $feature->hseqname,
+			  'hseq'     => $hseq,
+			  'hindent'  => $hindent_bp,
+                          'exon'     => $exon
+			);
+      push @pep_evidence_arr, \%hit_details;
       $last_feat = $feature;
     }
-    $total_exon_len += $exons_to_display[$i]->end
-    - $exons_to_display[$i]->start + 1; # 3 * length($exon_peps[$i]);
+    $total_exon_len += $exon->end - $exon->start + 1;
   }
 
-  my @sorted_pep_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
-                                           ? -1 : 0 )
-			              || ( $$b{'hseqname'} =~ /^ENST/
-                                           ? 1 : 0 )
-				      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
-				      || ( $$a{'hindent'} <=> $$b{'hindent'} )
- 			        } @pep_evidence_arr;
+  my @sorted_pep_evidence_arr = @{$self->_evidence_sort(\@pep_evidence_arr)};
 
-  $evidence_line = "";
-  my $uppercase = 1;	# case of sequence for output
-  my $hit = $sorted_pep_evidence_arr[0];
-  my $prev_exon = $$hit{'exon'};
-  my $prev_hseqname = "-" x 1000;	# fake initial ID
-  for (my $i = 0; $i <= $#sorted_pep_evidence_arr; $i++) {
+  $evidence_line = '';
+  my $prev_hseqname = '?' x 1000;	# fake initial ID
+  for (my $i = 0; $i < @sorted_pep_evidence_arr; $i++) {
     my $hit = $sorted_pep_evidence_arr[$i];
-    if ($$hit{'exon'} ne $prev_exon) {
-      $uppercase = ! $uppercase;
-    }
-    my $seq_str = $$hit{'hseq'};
-    if ($uppercase) {
-      $seq_str = "\U$seq_str";
-    } else {
-      $seq_str = "\U$seq_str";
-      # $seq_str = "\L$seq_str";
-    }
-    
-    if ($$hit{'hseqname'} ne $prev_hseqname) {	# make new evidence line
-      $evidence_line = "-" x $prot_tran_len;
+    if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = '-' x $cdna_len_bp;
     }
 
     # splice in the evidence fragment
-    if ($$hit{hindent} + length $seq_str > length $evidence_line) {
-      next;
-    }
-    substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
+    my $hseqlen = length $$hit{hseq};
+    next if (($$hit{hindent} < $total_5prime_utr_len)
+          || ($$hit{hindent} + $hseqlen > $cdna_len_bp));
+
+    substr $evidence_line, $$hit{hindent}, $hseqlen, $$hit{hseq};
 
     # store if end of evidence line
-
-    if (($i == $#sorted_pep_evidence_arr) ||
-        ($sorted_pep_evidence_arr[$i+1]{'hseqname'} ne $$hit{'hseqname'}))
+    if (($i == $#sorted_pep_evidence_arr)
+     || ($sorted_pep_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
     {
-      $evidence_line = substr $evidence_line, 0, $prot_tran_len;
-
-      # pad between residues, for comparability with codons
-      my $space_free_length = length $evidence_line;
-      my $padded_evidence_line = "";
-      for (my $i = 0; $i < $space_free_length; $i++) {
-        $padded_evidence_line .= substr $evidence_line, $i, 1;
-	$padded_evidence_line .= "--";
-      }
-
-      # adjust for 3' and 5' UTRs
-      $evidence_line = ('-' x $total_utr_len) . $padded_evidence_line;
-      while (length($evidence_line) < $nuc_tran_len) {
-        $evidence_line .= '-';
-      }
       $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
-  		      -accession_number => $$hit{'hseqname'},
-		      -moltype          => $$hit{'moltype'}
+  		      -accession_number => $$hit{hseqname},
+		      -moltype          => $$hit{moltype}
 		    );
       push @evidence_arr, $evidence_obj;
-      $uppercase = 0;	# force next line to start uppercase
     }
-    $prev_hseqname = $$hit{'hseqname'};
-    $prev_exon = $$hit{'exon'};
+    $prev_hseqname = $$hit{hseqname};
   }
 
   # nucleic acid evidence
 
+  # cDNA itself forms first row of nucleic acid evidence
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              => $nucseq,
                     -id               => 0,
@@ -510,131 +464,117 @@ sub _get_aligned_evidence {
 
   $total_exon_len = 0;
   my @nuc_evidence_arr = ();
-  @features = ();
-  @features = $self->get_features($transcript_obj, $vc);
-  for (my $i = 0; $i <= $#all_exons; $i++) {
-    my $start = $all_exons[$i]->start;
-    my $last_feat = undef;
+  $last_feat = undef;
+  foreach my $exon (@all_exons) {
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
-      next NUC_FEATURE_LOOP unless ($all_exons[$i]->overlaps($feature));
-      next NUC_FEATURE_LOOP
-        if (($feature->start < $all_exons[$i]->start)
-	|| ($feature->end > $all_exons[$i]->end));
-      next NUC_FEATURE_LOOP if ($last_feat
-      && ($last_feat->start == $feature->start)
-      && ($last_feat->end == $feature->end)
-      && ($last_feat->hstart == $feature->hstart)
-      && ($last_feat->hseqname eq $feature->hseqname));
-      my $fstart = $feature->start;
-      my $flen = $feature->end - $fstart + 1;
-      my $hlen = $feature->hend -$feature->hstart + 1;
+      next NUC_FEATURE_LOOP	# unless feature falls within this exon
+        unless (($feature->start >= $exon->start)
+	     && ($feature->end <= $exon->end));
+      next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
+        if ($last_feat
+        && ($last_feat->start  == $feature->start)
+        && ($last_feat->end    == $feature->end)
+        && ($last_feat->hstart == $feature->hstart)
+        && ($last_feat->hseqname eq $feature->hseqname));
+      my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
+      next NUC_FEATURE_LOOP 
+        unless ($hit_seq_obj && ($hit_seq_obj->moltype ne 'protein'));
+      my $hlen = $feature->hend - $feature->hstart + 1;
+      my $flen = $feature->end - $feature->start + 1;
       next NUC_FEATURE_LOOP unless ($flen == $hlen);
-      my $hindent;
-      my $hit_seq_obj = $self->_get_seq($seqfetcher, \@seqcache,
-                                        $feature->hseqname);
-      next NUC_FEATURE_LOOP if (! $hit_seq_obj);
-      if ($hit_seq_obj->moltype ne "protein") {
-	if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
-	 > length $hit_seq_obj->seq))
-	{
-	  print STDERR "XXX nuc hit coords out of range for ",
-	  $feature->hseqname, ", hstart ", $feature->hstart, ", hend ",
-	  $feature->hend, ", max length ", length $hit_seq_obj->seq, "\n";
-	  next NUC_FEATURE_LOOP;
-	}
-        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
-        my $strand_wrt_exon = $all_exons[$i]->strand * $feature->strand;
-        if ($strand_wrt_exon < 0) {
-          my $hseq_obj = Bio::PrimarySeq->new( -seq => $hseq,
-                                               -id => 'fake_id',
- 		  			       -accession_number => '0',
-                                               -moltype => $hit_seq_obj->moltype
-                                             );
-          $hseq = $hseq_obj->revcom->seq;
-        }
-        if ($all_exons[$i]->strand > 0) {
-          $hindent = $total_exon_len + $fstart - $start;
-        } else{
-          $hindent = $total_exon_len + $all_exons[$i]->end - $feature->end;
-        }
-	if ($hindent < 0) {
-	  $hindent = 0;
-	}
-        my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
-                            'hseqname'    => $feature->hseqname,
-                            'hstart'      => $feature->hstart,
-                            'hend'        => $feature->hend,
-	  		    'hlength'     => $hlen,
-			    'hseq'        => $hseq,
-			    'hindent'     => $hindent,
-			    'hstrand'     => $feature->hstrand,
-		            'score'       => $feature->score,
-			    'start'       => $start,
-			    'end'         => $feature->end,
-			    'exon_strand' => $all_exons[$i]->strand,
-			    'exon_length' => $all_exons[$i]->end
-			                     - $start + 1,
-			    'exon'        => $all_exons[$i]
-		          );
-        push @nuc_evidence_arr, \%hit_details;
+      if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+	  > length $hit_seq_obj->seq))
+      {
+        print STDERR 'XXX nuc hit coords out of range for ',
+          $feature->hseqname, ': hstart ', $feature->hstart, ', hend ',
+          $feature->hend, ', max length ', length $hit_seq_obj->seq, "\n";
+        next NUC_FEATURE_LOOP;
       }
+      my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
+      my $strand_wrt_exon = $exon->strand * $feature->strand;
+      if ($strand_wrt_exon < 0) {	# reverse-compliment the hit
+        my $hseq_obj_tmp = Bio::PrimarySeq->new(
+	                                    -seq => $hseq,
+                                            -id => 'fake_id',
+                                            -accession_number => '0',
+                                            -moltype => $hit_seq_obj->moltype
+                                           );
+        $hseq = $hseq_obj_tmp->revcom->seq;
+      }
+      my $hindent_bp;
+      if ($exon->strand > 0) {
+        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
+      } else{
+        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
+      }
+      if ($hindent_bp < 0) {
+        $hindent_bp = 0;	# disaster recovery
+      }
+      my %hit_details = ( 'moltype'     => $hit_seq_obj->moltype,
+                          'hseqname'    => $feature->hseqname,
+			  'hseq'        => $hseq,
+			  'hindent'     => $hindent_bp,
+			  'exon'        => $exon
+		          );
+      push @nuc_evidence_arr, \%hit_details;
       $last_feat = $feature;
     }
-    $total_exon_len += $all_exons[$i]->end - $start + 1;
+    $total_exon_len += $exon->end - $exon->start + 1;
   }
 
-  my @sorted_nuc_evidence_arr = sort {   ( $$a{'hseqname'} =~ /^ENST/
-                                           ? -1 : 0 )
-			              || ( $$b{'hseqname'} =~ /^ENST/
-                                           ? 1 : 0 )
-				      || ( $$a{'hseqname'} cmp $$b{'hseqname'} )
-				      || ( $$a{'hindent'} <=> $$b{'hindent'} )
- 			        } @nuc_evidence_arr;
+  my @sorted_nuc_evidence_arr = @{$self->_evidence_sort(\@nuc_evidence_arr)};
 
-  $evidence_line = "";
-  $uppercase = 1;	# case of sequence for output
-  $hit = $sorted_nuc_evidence_arr[0];
-  $prev_exon = $$hit{'exon'};
-  $prev_hseqname = "-" x 1000;	# fake initial ID
-  for (my $i = 0; $i <= $#sorted_nuc_evidence_arr; $i++) {
+  $evidence_line = '';
+  my $uppercase = 1;	# case of sequence for output
+  my $hit = $sorted_nuc_evidence_arr[0];
+  my $prev_exon = $$hit{exon};
+  $prev_hseqname = '-' x 1000;	# fake initial ID
+  for (my $i = 0; $i < @sorted_nuc_evidence_arr; $i++) {
     my $hit = $sorted_nuc_evidence_arr[$i];
-    if ($$hit{'exon'} ne $prev_exon) {
+    if ($$hit{exon} ne $prev_exon) {
       $uppercase = ! $uppercase;
     }
-    my $seq_str = $$hit{'hseq'};
+    my $hseq_str = $$hit{hseq};
     if ($uppercase) {
-      $seq_str = "\U$seq_str";
+      $hseq_str = "\U$hseq_str";
     } else {
-      $seq_str = "\L$seq_str";
+      $hseq_str = "\L$hseq_str";
     }
-    
-    if ($$hit{'hseqname'} ne $prev_hseqname) {	# make new evidence line
-      $evidence_line = "-" x $nuc_tran_len;
+    if ($$hit{hseqname} ne $prev_hseqname) {	# make new evidence line
+      $evidence_line = '-' x $cdna_len_bp;
     }
 
     # splice in the evidence fragment
-    substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
+    my $hseqlen = length $$hit{hseq};
+    next unless ($$hit{hindent} + $hseqlen <= $cdna_len_bp);
+    substr $evidence_line, $$hit{hindent}, $hseqlen, $hseq_str;
 
     # store if end of evidence line
-    if (($i == $#sorted_nuc_evidence_arr) ||
-        ($sorted_nuc_evidence_arr[$i+1]{'hseqname'} ne $$hit{'hseqname'}))
+    if (($i == $#sorted_nuc_evidence_arr)
+     || ($sorted_nuc_evidence_arr[$i+1]{hseqname} ne $$hit{hseqname}))
     {
-      $evidence_line = substr $evidence_line, 0, $nuc_tran_len;
       $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
-  		      -accession_number => $$hit{'hseqname'},
-		      -moltype          => $$hit{'moltype'}
+  		      -accession_number => $$hit{hseqname},
+		      -moltype          => $$hit{moltype}
 		    );
       push @evidence_arr, $evidence_obj;
-      $uppercase = 0;	# force next line to start uppercase
+      $uppercase = 0;	# so next line starts uppercase
     }
-    $prev_hseqname = $$hit{'hseqname'};
-    $prev_exon = $$hit{'exon'};
+    $prev_hseqname = $$hit{hseqname};
+    $prev_exon = $$hit{exon};
   }
 
-  return \@evidence_arr;
+  # remove blank evidence lines
+  my @filtered_evidence_arr = ();
+  foreach my $evidence_line (@evidence_arr) {
+    push @filtered_evidence_arr, $evidence_line
+      if ($$evidence_line{seq} =~ /[^-]/);
+  }
+  
+  return \@filtered_evidence_arr;
 
 }
 
