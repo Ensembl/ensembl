@@ -36,11 +36,14 @@ my $getall  = 0;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;
+my $user    = 'ensembl';
+my $logerror = undef;
 
 &GetOptions( 
 	     'dbtype:s'   => \$tdbtype,
 	     'host:s'     => \$thost,
 	     'port:n'     => \$tport,
+	     'user:s'     => \$user,
 	     'usefile'    => \$usefile,
 	     'dbname:s'   => \$tdbname,
 	     'format:s'   => \$format,
@@ -48,13 +51,21 @@ my $test    = 0;
 	     'verbose'    => \$verbose,
 	     'test'       => \$test,
 	     'noacc'      => \$noacc,
+	     'logerror:s'   => \$logerror,
 	     );
 my $db;
+
+if( defined $logerror ) {
+    open(ERROR,">$logerror") || die "Could not open $logerror $!";
+} else {
+    open(ERROR,">&STDERR") || die "Could not dup STDERR";
+}
+
 
 if( $tdbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $thost, -port => $tport);
 } elsif ( $tdbtype =~ 'rdb' ) {
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $tdbname , -host => $thost );
+    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
 } elsif ( $tdbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
@@ -96,7 +107,7 @@ foreach my $gene_id ( @gene_id ) {
 		my $fe = $exon[0];
 		my $tseq = $trans->translate();
 		if ( $tseq->seq =~ /\*/ ) {
-		    print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+		    print ERROR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
 		    next;
 		}
 		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
@@ -119,6 +130,6 @@ foreach my $gene_id ( @gene_id ) {
     };
 
     if( $@ ) {
-	print STDERR "Unable to process $gene_id due to \n$@\n";
+	print ERROR "Unable to process $gene_id due to \n$@\n";
     }
 }
