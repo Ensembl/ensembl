@@ -565,7 +565,7 @@ CREATE TABLE external_synonym(
 
 CREATE TABLE external_db(
          external_db_id INT not null auto_increment,
-         db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily','Anopheles_symbol','Anopheles_paper','wormbase_gene','wormbase_transcript','wormpep_id','flybase_gene','flybase_transcript','flybase_symbol','drosophila_gene_id','GKB', 'BRIGGSAE_HYBRID','AFFY_HG_U133','AFFY_HG_U95','sanger_probe','Vega') not null,
+         db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily','Anopheles_symbol','Anopheles_paper','wormbase_gene','wormbase_transcript','wormpep_id','flybase_gene','flybase_transcript','flybase_symbol','drosophila_gene_id','GKB', 'BRIGGSAE_HYBRID','AFFY_HG_U133','AFFY_HG_U95','sanger_probe','Vega','Sanger_Mver1_1_1','AFFY_MG_U74','AFFY_MG_U74v2','AFFY_Mu11Ksub') not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
 	 status  ENUM ('KNOWN','XREF','PRED') not null,
          PRIMARY KEY( external_db_id ) 
