@@ -1312,8 +1312,9 @@ sub get_all_PredictionFeatures {
 	   $analysis = $analhash{$analysisid};
        }
 
-
-       if( $hid ne $previous || $previous eq -1 ) {
+       #MC.  This has been temporarily changed back to the old way of genscans
+       if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
+#       if( $hid ne $previous || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
