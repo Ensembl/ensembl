@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 55;
+	plan tests => 57;
 }
 
 use MultiTestDB;
@@ -350,6 +350,17 @@ $slices = $slice_adaptor->fetch_all('contig', undef, 50000);
 ok(@$slices == 26);
 
 print_slices($slices);
+
+
+$slices = $slice_adaptor->fetch_all('toplevel');
+
+ok(@$slices == 1 && $slices->[0]->seq_region_name() eq '20');
+print_slices($slices);
+
+$slices = $slice_adaptor->fetch_all('toplevel', undef, 1e6, 1e4);
+ok(@$slices == 64);
+print_slices($slices);
+
 
 #
 # test the fuzzy matching of clone accessions
