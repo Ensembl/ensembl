@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Analysis::LegacyParser;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$clone,$byacc,@args) = @_;
+  my($self,$clone,$noacc,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
@@ -65,8 +65,8 @@ sub _initialize {
   $self->{'_gene_hash'} = {};
   $self->{'_contig_hash'} = {};
 
-  # byacc specifies an clone->acc translation for all timdb operations
-  $self->{'_byacc'}=$byacc;
+  # clone->acc translation for all timdb operations, unless $noacc
+  $self->{'_byacc'}=1 unless $noacc;
 
   # set stuff in self from @args
   # (nothing)
@@ -91,8 +91,8 @@ sub _initialize {
   }
   $self->{'_clone_dbm'}=\%unfin_clone;
 
-  # if going to do things $byacc then need to open this dbm file too
-  if($byacc){
+  # if going to do things !$noacc then need to open this dbm file too
+  if(!$noacc){
       my $accession_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_accession.dbm";
       my %unfin_accession;
       unless(dbmopen(%unfin_accession,$accession_dbm_file,0666)){

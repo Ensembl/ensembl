@@ -14,8 +14,9 @@
 
     clone2embl -dbtype rdb -host mysql.server.somewhere dJ271M21
 
-    clone2embl -dbtype timdb -byacc dJ718J7
-    clone2embl -dbtype timdb -byacc AL035541
+    clone2embl -dbtype timdb AL035541           # dump as accession
+    clone2embl -dbtype timdb dJ718J7            # dump as accession
+    clone2embl -dbtype timdb -noacc dJ718J7     # dump as clone
 
 =head1 OPTIONS
 
@@ -25,8 +26,9 @@
 
     -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
 
-    -byacc     can specify an accession for a sanger clone and dump as accession
-               or specify sanger clone and will still dump as accession
+    -noacc     by default, regardless of specifing the accession for a sanger clone 
+               or its clonename, it will dump as its accession.  Use -noacc to 
+               dump by clonename
 
 =head1 EXAMPLE CLONES
 
@@ -61,9 +63,9 @@ my $host1  = 'croc';
 my $host2  = 'humsrv1';
 my $port   = '410000';
 my $format = 'embl';
-my $nodna = 0;
+my $nodna  = 0;
 my $help;
-my $noacc =0;
+my $noacc  = 0;
 my $aceseq;
 
 my $pepformat = 'Fasta';
@@ -75,14 +77,14 @@ my $clone  = 'dJ271M21';
 # this does have genes (unfinished)
 # my $clone = '217N14';
 
-&GetOptions( 'dbtype:s' => \$dbtype,
-	     'host:s'   => \$host,
-	     'port:n'   => \$port,
-	     'format:s'   => \$format,
-	     'nodna'    => \$nodna,
-	     'h|help'   => \$help,
-	     'noacc'    => \$noacc,
-	     'aceseq:s'   => \$aceseq,
+&GetOptions( 'dbtype:s'  => \$dbtype,
+	     'host:s'    => \$host,
+	     'port:n'    => \$port,
+	     'format:s'  => \$format,
+	     'nodna'     => \$nodna,
+	     'h|help'    => \$help,
+	     'noacc'     => \$noacc,
+	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
 	     );
 
@@ -103,7 +105,7 @@ if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'ensdev' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
     # clone_id is passed to speed things up - cuts down on parsing of flag files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,1);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($clone_id,$noacc);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
