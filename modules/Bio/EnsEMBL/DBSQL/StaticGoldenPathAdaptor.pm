@@ -207,6 +207,44 @@ sub convert_fpc_to_chromosome {
 }
 
 
+=head2 convert_rawcontig_to_fpc
+
+ Title   : convert_rawcontig_to_fpc
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub convert_rawcontig_to_fpc{
+   my ($self,$rc,$start,$end,$strand) = @_;
+
+
+    my $type = $self->dbobj->static_golden_path_type();
+ 
+    my $sth = $self->dbobj->prepare("SELECT st.fpcctg_name,
+					    st.fpcctg_start,
+                                            st.raw_start,
+                                            st.raw_ori,
+                                            st.raw_end
+				    FROM static_golden_path st,contig c 
+				    WHERE c.id = '$rc' AND c.internal_id = st.raw_id"
+				    );
+   $sth->execute;
+   my ($fpc,$fpcstart,$rawstart,$rawori,$rawend) = $sth->fetchrow_array;
+   
+   if( $rawori == 1 ) {
+       return ($fpc,$fpcstart+$start-$rawstart,$fpcstart+$end-$rawend,$strand);
+   } else {
+       return ($fpc,$fpcstart+($rawend - $end),$fpcstart+($rawend - $start),$strand*-1);
+   }
+
+}
+
+
 =head2 fetch_RawContigs_by_chr_name
 
  Title   : fetch_RawContigs_by_chr_name
