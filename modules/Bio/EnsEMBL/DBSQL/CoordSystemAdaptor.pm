@@ -597,6 +597,25 @@ sub fetch_sequence_level {
                The return value would be the same even if the order of
                arguments was reversed.
 
+	       This becomes a bit more problematic when the relationship is
+               something like:
+               chromosome -> contig
+               clone      -> contig
+
+               In this case the contig coordinate system is the component
+               coordinate system for both mappings and for the following
+               request:
+               $csa->get_mappging_path($chr_cs, $cln_cs);
+
+	       Either of the following mapping paths would be valid:
+               [$chr_cs, $contig_cs, $clone_cs]
+               or
+               [$clone_cs, $contig_cs, $chr_cs]
+
+	       Also note that the ordering of the above is not
+               assembled to component but rather
+               assembled -> component -> assembled.
+
                If no mapping path exists, an reference to an empty list is
                returned.
 

@@ -52,10 +52,7 @@ mapper object between disjoint coordinate systems.
 
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -330,8 +327,9 @@ sub list_ids {
                The name of the sequence region to check for registration
   Example    : if($asm_mapper->have_registered_component('AL240214.1')) {...}
   Description: Returns true if a given component region has been registered
-               with this assembly mapper.  This should really only be called
-               by this class or the AssemblyMapperAdaptor.
+               with this assembly mapper.  This should only be called
+               by this class or the AssemblyMapperAdaptor.  Anotherwards, do
+               not use this method unless you really know what you are doing.
   Returntype : 0 or 1
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
@@ -361,9 +359,11 @@ sub have_registered_component {
                The chunk number of the provided seq_region to check for
                registration.
   Example    : if($asm_mapper->have_registered_component('X',9)) {...}
-  Description: Returns true if a given assembled region chunk has been 
-               registered with this assembly mapper.  This should really only 
+  Description: Returns true if a given assembled region chunk has been
+               registered with this assembly mapper.  This should only
                be called by this class or the AssemblyMapperAdaptor.
+               Anotherwards do not use this method unless you really know what
+               you are doing.
   Returntype : 0 or 1
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
@@ -419,7 +419,8 @@ sub register_component {
   Example    : $asm_mapper->register_assembled('X', 4);
   Description: Flags a given assembled region as registered in this assembly
                mapper.  This should only be called by this class or the
-               AssemblyMapperAdaptor.
+               AssemblyMapperAdaptor. Do not call this method unless you
+               really know what you are doing.
   Returntype : none
   Exceptions : throw on incorrect arguments
   Caller     : internal, AssemblyMapperAdaptor
