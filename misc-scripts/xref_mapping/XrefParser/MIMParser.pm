@@ -1,0 +1,123 @@
+package XrefParser::MIMParser;
+
+use strict;
+use POSIX qw(strftime);
+use File::Basename;
+
+use XrefParser::BaseParser;
+
+use vars qw(@ISA);
+@ISA = qw(XrefParser::BaseParser);
+
+
+
+# --------------------------------------------------------------------------------
+# Parse command line and run if being run directly
+
+if (!defined(caller())) {
+
+  if (scalar(@ARGV) != 1) {
+    print "\nUsage: MIMParser.pm file\n\n";
+    exit(1);
+  }
+
+  run($ARGV[0]);
+
+}
+
+sub run {
+
+  my $self = shift if (defined(caller(1)));
+  my $file = shift;
+  my $source_id = shift;
+  my $species_id = shift;
+
+  if(!defined($source_id)){
+    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
+    print "source id is $source_id \n";
+  }
+  if(!defined($species_id)){
+    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
+    print "species id is $species_id \n";
+  }
+
+
+  my (%genename2xref) = gene_name_2_xref_from_hugo();
+
+  my $count =0;
+  my $mismatch=0;
+
+  open(MIM,"<".$file) || die "Could not open $file\n";
+
+  while (<MIM>) {
+    chomp;
+    my ($desc, $gene_names, $mim_number, $loc) = split (/\|/,$_);
+
+    my $xref =0;
+    foreach my $gene (split(/\, */,$gene_names)){
+      if(defined($genename2xref{$gene})){
+	$xref = $genename2xref{$gene};
+      }
+    }
+    if($xref){
+#      print "OKAY $gene_names  ->  $xref \n";
+      XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$mim_number,$desc,$source_id,$species_id,$count);  
+      $count++;
+    }
+    else{
+#      print "FAILED $gene_names\n";
+      $mismatch++;
+    }
+  }
+  print "$count succesfull xrefs loaded\n";
+  print "$mismatch FAILED xrefs\n";
+#  die "ahhh!";
+}
+
+sub gene_name_2_xref_from_hugo{
+  my %gene_name2xref;
+  
+  my $dbi = XrefParser::BaseParser->dbi();
+
+
+  my $source_id_for_hugo=0;
+  my $sth2 = $dbi->prepare("select * from source where name like 'HUGO'");
+  $sth2->execute() || die $dbi->errstr;
+  while(my @row = $sth2->fetchrow_array()) {
+    $source_id_for_hugo = $row[0];
+  }
+  $sth2->finish;
+
+  if(! $source_id_for_hugo){
+    die "Could not find source id for HUGO.\n";
+  }
+
+  my $sql = "select y.label, x.xref_id ";
+  $sql   .= "  from dependent_xref d, xref x, xref y ";
+  $sql   .= "  where d.source_id=1090 and ";
+  $sql   .= "        x.xref_id = d.master_xref_id and ";
+  $sql   .= "        y.xref_id = d.dependent_xref_id and ";
+  $sql   .= "        x.source_id = 1";
+
+  my $sth = $dbi->prepare($sql);
+  $sth->execute() || die $dbi->errstr;
+  while(my @row = $sth->fetchrow_array()) {
+    my $gene_name = $row[0];
+    my $xref = $row[1];
+    $gene_name2xref{$gene_name} = $xref;
+  }
+  $sth->finish;
+  return %gene_name2xref;
+}
+  
+
+
+sub new {
+
+  my $self = {};
+  bless $self, "XrefParser::MIMParser";
+  return $self;
+
+}
+ 
+1;
