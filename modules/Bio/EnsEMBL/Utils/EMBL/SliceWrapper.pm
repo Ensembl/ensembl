@@ -383,6 +383,8 @@ sub top_SeqFeatures {
   }
   unless($self->skip_SeqFeature('external')) {
     push @sfs, @{$self->slice->get_all_ExternalFeatures()};
+  }
+  unless($self->skip_SeqFeature('snp')) {
     push @sfs, @{$self->slice->get_all_SNPs};
   }
 
