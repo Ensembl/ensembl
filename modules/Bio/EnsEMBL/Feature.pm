@@ -353,7 +353,7 @@ sub slice {
   Returntype : Bio::EnsEMBL::Feature (or undef)
   Exceptions : thrown if an invalid coordinate system is provided
                thrown if this feature is not already on a slice
-  Caller     : general
+  Caller     : general, transfer()
 
 =cut
 
@@ -372,7 +372,8 @@ sub transform {
     throw('Feature is not associated with a slice and may not be transformed');
   }
 
-  my $db = $self->adaptor->db();
+  #use db from slice since this feature may not yet be stored in a database
+  my $db = $slice->adaptor->db();
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
 
@@ -427,9 +428,90 @@ sub transform {
 }
 
 
-sub transfer {
-  
 
+=head2 transfer
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to transfer this feature to
+  Example    : $feature = $feature->transfer($slice);
+               next if(!defined($feature));
+  Description: Returns a copy of this feature which has been shifted onto
+               another slice.
+
+               If the new slice is in a different coordinate system the
+               feature is transformed first and then placed on the slice.
+               If the feature would be split across a coordinate system
+               boundary or mapped to a gap undef is returned instead.
+  Returntype : Bio::EnsEMBL::Feature (or undef)
+  Exceptions : Thrown if the feature cannot be placed on the the same
+               seq_region as the slice.
+  Caller     : general, transform()
+
+=cut
+
+
+sub transfer {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $current_slice = $self->{'slice'};
+
+  if(!$current_slice) {
+    throw('Feature must be on a slice to be transfered.');
+  }
+
+  #make a shallow copy of the feature to be transfered
+  my $feature;
+  %{$feature} = %{$self};
+  bless $feature, ref($self);
+
+  my $cur_cs = $current_slice->coord_system();
+  my $dest_cs = $current_slice->coord_system();
+
+  #if we are not in the same coord system a transformation step is needed first
+  if(!$dest_cs->equals($cur_cs)) {
+    $feature = $feature->transform($dest_cs->name, $dest_cs->version);
+    return undef if(!defined($feature));
+    $current_slice = $feature->{'slice'};
+  }
+
+  if($current_slice->seq_region() ne $slice->seq_region()) {
+    throw('Feature is not on the seq_region of the slice to transfer to');
+  }
+
+  #if the current feature positions are not relative to the start of the
+  #seq region, convert them so they are
+  my $cur_slice_start  = $current_slice->start();
+  my $cur_slice_strand = $current_slice->strand();
+  if($cur_slice_start != 1 || $cur_slice_strand != 1) {
+    if($cur_slice_strand == 1) {
+      $feature->{'start'} = $feature->{'start'} + $cur_slice_start - 1;
+      $feature->{'end'}   = $feature->{'end'}   + $cur_slice_start - 1;
+    } else {
+      my $cur_slice_end = $current_slice->end();
+      $feature->{'start'}  = $cur_slice_end - $feature->{'end'}   + 1;
+      $feature->{'end'}    = $cur_slice_end - $feature->{'start'} + 1;
+      $feature->{'strand'} *= -1;
+    }
+  }
+
+  #convert to destination slice coords
+  if($slice->strand == 1) {
+    $feature->{'start'} = $feature->{'start'} - $slice->start() + 1;
+    $feature->{'end'}   = $feature->{'end'}   - $slice->start() + 1;
+  } else {
+    $feature->{'start'} = $slice->end() - $feature->{'end'}   + 1;
+    $feature->{'end'}   = $slice->end() - $feature->{'start'} + 1;
+    $feature->{'strand'} *= -1;
+  }
+
+  $feature->{'slice'} = $slice;
+
+  return $feature;
 }
 
 
