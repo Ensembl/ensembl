@@ -1,10 +1,7 @@
-
 #
 # BioPerl module for Transcript
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -30,18 +27,21 @@ Creation:
 
 Manipulation:
 
-     my @exons = $tran->get_all_Exons         # Returns an array of Exon objects
-     my $pep   = $tran->translate()       # Returns the peptide translation of the exons as a Bio::Seq
-     
-     $tran->sort()                        # Sorts exons into order (forward for + strand, reverse for - strand)
+     # Returns an array of Exon objects
+     my @exons = @{$tran->get_all_Exons}     
+     # Returns the peptide translation of the exons as a Bio::Seq
+     my $pep   = $tran->translate()       
+     # Sorts exons into order (forward for + strand, reverse for - strand)
+     $tran->sort()                        
 
 =head1 CONTACT
 
-Describe contact details here
+Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -87,21 +87,20 @@ sub new {
 }
 
 
-=head2 each_DBLink
 
- Title   : each_DBLink
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+=head2 get_all_DBLinks
 
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
-sub each_DBLink {
-   my ($self,@args) = @_;
-
+sub get_all_DBLinks {
+  my $self = shift;
 
    if( !defined $self->{'_db_link'} ) {
        $self->{'_db_link'} = [];
@@ -110,9 +109,9 @@ sub each_DBLink {
        }
    } 
 
-
-   return @{$self->{'_db_link'}}
+   return $self->{'_db_link'};
 }
+
 
 =head2 add_DBLink
 
@@ -123,46 +122,24 @@ sub each_DBLink {
  Returns : 
  Args    :
 
-
 =cut
 
 sub add_DBLink{
    my ($self,$value) = @_;
 
-   if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
-       $self->throw("This [$value] is not a DBLink");
+   unless(defined $value && ref $value && 
+	  $value->isa('Bio::Annotation::DBLink') ) {
+     $self->throw("This [$value] is not a DBLink");
    }
 
    if( !defined $self->{'_db_link'} ) {
-       $self->{'_db_link'} = [];
+     $self->{'_db_link'} = [];
    }
 
    push(@{$self->{'_db_link'}},$value);
 }
 
 
-sub id {
-   my $self = shift;
-   my $value = shift;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID, or, for predictions, temporary id");
-
-  # catch adaptorless genes
-  if( defined $value ) {
-    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
-    return;
-  }
-
-   if( defined $self->stable_id ) {
-     return $self->stable_id();
-   } elsif ( defined $self->temporary_id ) {
-     return $self->temporary_id; 
-   } else {
-     return $self->dbID;
-   }
-
-}
 
 sub dbID {
    my $self = shift;
@@ -312,11 +289,11 @@ sub start {
     $self->{'_start'} = $arg;
   } elsif(!  defined $self->{'_start'} ) {
 
-    $strand = $self->start_exon->strand();
+    $strand = $self->start_Exon->strand();
     if( $strand == 1 ) {
-      $start = $self->start_exon->start();
+      $start = $self->start_Exon->start();
     } else {
-      $start = $self->end_exon->start();
+      $start = $self->end_Exon->start();
     }
     $self->{'_start'} = $start;
   }
@@ -335,11 +312,11 @@ sub end {
   if( defined $arg ) {
     $self->{'_end'} = $arg;
   } elsif( ! defined $self->{'_end'} ) {
-    $strand = $self->start_exon->strand();
+    $strand = $self->start_Exon->strand();
     if( $strand == 1 ) {
-      $end = $self->end_exon->end();
+      $end = $self->end_Exon->end();
     } else {
-      $end = $self->start_exon->end();
+      $end = $self->start_Exon->end();
     }
     $self->{'_end'} = $end;
   }
@@ -362,12 +339,12 @@ sub coding_start {
     $self->{'coding_start'} = $arg;
   } elsif( ! defined $self->{'coding_start'} && 
 	   defined $self->translation() ) {
-    $strand = $self->translation()->start_exon->strand();
+    $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
-      $start = $self->translation()->start_exon->start();
+      $start = $self->translation()->start_Exon->start();
       $start += ( $self->translation()->start() - 1 );
     } else {
-      $start = $self->translation()->end_exon->end();
+      $start = $self->translation()->end_Exon->end();
       $start -= ( $self->translation()->end() - 1 );
     }
     $self->{'coding_start'} = $start;
@@ -388,12 +365,12 @@ sub coding_end {
     $self->{'coding_end'} = $arg;
   } elsif( ! defined $self->{'coding_end'} && 
 	   defined $self->translation() ) {
-    $strand = $self->translation()->start_exon->strand();
+    $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
-      $end = $self->translation()->end_exon->start();
+      $end = $self->translation()->end_Exon->start();
       $end += ( $self->translation()->end() - 1 );
     } else {
-      $end = $self->translation()->start_exon->end();
+      $end = $self->translation()->start_Exon->end();
       $end -= ( $self->translation()->start() - 1 );
     }
     $self->{'coding_end'} = $end;
@@ -412,15 +389,14 @@ sub coding_end {
  Returns : Nothing
  Args    :
 
-
 =cut
 
 sub add_Exon{
    my ($self,$exon) = @_;
 
    #yup - we are going to be picky here...
-   if( !defined $exon || ! ref $exon ||  ! $exon->isa("Bio::EnsEMBL::Exon") ) {
-       $self->throw("$exon is not a Bio::EnsEMBL::Exon!");
+   unless(defined $exon && ref $exon && $exon->isa("Bio::EnsEMBL::Exon") ) {
+     $self->throw("[$exon] is not a Bio::EnsEMBL::Exon!");
    }
 
    #invalidate the start, end and strand - they may need to be recalculated
@@ -435,52 +411,21 @@ sub add_Exon{
 
 =head2 get_all_Exons
 
- Title   : get_all_Exons
- Usage   : foreach $exon ( $trans->get_all_Exons)
- Function: Returns an array of exons in the transcript
-           in order, ie the first exon is the 5' most exon
-           in the transcript (the one closest to the 5' UTR).
- Example : my @exons = $tr->get_all_Exons
- Returns : An array of exon objects
- Args    : none
-
+  Arg [1]    : none
+  Example    : my @exons = @{$transcript->get_all_Exons()};
+  Description: Returns an listref of the exons in this transcipr in order.
+               i.e. the first exon in the listref is the 5' most exon in 
+               the transcript.
+  Returntype : a list reference to Bio::EnsEMBL::Exon objects
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_all_Exons {
    my ($self) = @_;
-   
-   return @{$self->{'_trans_exon_array'}};
-}
 
-
-=head2 get_Exon_by_dbID
-
- Title   : get_Exon_by_dbID
- Usage   : $exon = $transcript->get_Exon_by_dbID($exonid)
- Function: gives back Exon with this dbID - mainly used by TranscriptAdaptor
- Returns : exon object
- Args    : dbID of exon
-
-
-=cut
-
-sub get_Exon_by_dbID {
-   my ($self,$exonid) = @_;
-
-   if( !defined $exonid ) {
-      $self->throw("Must call with exonid");
-   }
-
-   # not nice - linear search
-   foreach my $exon ( $self->get_all_Exons() ) {
-
-      if( $exon->dbID eq $exonid ) {
-          return $exon;
-      }
-   }
-
-   return undef;
+   return $self->{'_trans_exon_array'};
 }
 
 
@@ -498,28 +443,32 @@ sub length {
     my( $self ) = @_;
     
     my $length = 0;
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
         $length += $ex->length;
     }
     return $length;
 }
 
-=head2 each_Intron
 
-    my @introns = $transcript->each_Intron;
 
-Returns an array of Bio::EnsEMBL::Intron
-objects.  The result is not cached in any way, so
-calling each_Intron multiple times will create
-new Intron objects (although they will, of
-course, have the same properties).
+=head2 get_all_Introns
+
+  Arg [1]    : none
+  Example    : @introns = @{$transcript->get_all_Introns()};
+  Description: Returns an listref of Bio::EnsEMBL::Intron objects.  The result 
+               is not cached in any way, so calling each_Intron multiple times
+               will create new Intron objects (although they will, of course, 
+               have the same properties).
+  Returntype : list reference to Bio::EnsEMBL::Intron objects
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub each_Intron {
+sub get_all_Introns {
     my( $self ) = @_;
     
-    my @exons = $self->get_all_Exons;
+    my @exons = @{$self->get_all_Exons};
     my $last = @exons - 1;
     my( @int );
     for (my $i = 0; $i < $last; $i++) {
@@ -528,26 +477,10 @@ sub each_Intron {
         $intron->downstream_Exon($exons[$i + 1]);
         push(@int, $intron);
     }
-    return @int;
+    return \@int;
 }
 
-=head2 number
 
- Title   : number
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub number{
-   my ($self,@args) = @_;
-
-   return scalar(@{$self->{'_trans_exon_array'}});   
-}
 
 
 
@@ -573,27 +506,7 @@ sub flush_Exon{
    $self->{'_trans_exon_array'} = [];
 }
 
-sub first_exon {
-    my ($self) = @_;
-    {
-        my($pkg, $file, $line) = caller(0);
-        $self->warn("In file '$file', package '$pkg' line $line\n".
-             "please switch your code to call 'start_exon'\n".
-             "'first_exon' is now deprecated\n");
-    }
-    return $self->start_exon;
-}
 
-sub last_exon {
-    my ($self) = @_;
-    {
-        my($pkg, $file, $line) = caller(0);
-         $self->warn("In file '$file', package '$pkg' line $line\n".
-             "please switch your code to call 'end_exon'\n".
-             "'last_exon' is now deprecated\n");
-    }
-    return $self->end_exon;
-}
 
 =head2 five_prime_utr and three_prime_utr
 
@@ -616,11 +529,11 @@ sub five_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_exon->stable_id;
+    my $start_exon_id   = $translation->start_Exon->stable_id;
     my $t_start         = $translation->start;
     
     my $seq_string = '';
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
         if ($ex->stable_id eq $start_exon_id) {
             my $start   = $ex->start;
             my $end     = $ex->end;
@@ -661,12 +574,12 @@ sub three_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $end_exon_id   = $translation->end_exon->stable_id;
+    my $end_exon_id   = $translation->end_Exon->stable_id;
     my $t_end         = $translation->end;
     
     my $seq_string = '';
     my $in_utr = 0;
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
         if ($in_utr) {
             $seq_string .= $ex->seq->seq;
         }
@@ -720,13 +633,13 @@ sub translateable_exons {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon      = $translation->start_exon;
-    my $end_exon        = $translation->end_exon;
+    my $start_exon      = $translation->start_Exon;
+    my $end_exon        = $translation->end_Exon;
     my $t_start         = $translation->start;
     my $t_end           = $translation->end;
 
     my( @translateable );
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
         my $ex_id   = $ex->dbID;
 
 #	print STDERR $ex->contig() . "\n";
@@ -824,7 +737,7 @@ sub split_Transcript_to_Partial {
    if( $on_translate == 1 ) {
        @exons = $self->translateable_exons();
    } else {
-       @exons = $self->get_all_Exons;
+       @exons = @{$self->get_all_Exons};
    }
 
    # one exon genes - easy to handle. (unless of course they have UTRs ...)
@@ -937,8 +850,8 @@ sub translate {
         # that there is some filler.
 
         if( defined $prevtrans ) {
-	    my $last_exon  = $prevtrans->end_exon();
-	    my $first_exon = $ptrans   ->start_exon();
+	    my $last_exon  = $prevtrans->end_Exon();
+	    my $first_exon = $ptrans   ->start_Exon();
 	    my $filler;
 
 	    # last exon
@@ -1001,7 +914,7 @@ sub seq {
     my( $self ) = @_;
     
     my $transcript_seq_string = '';
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
 #        $transcript_seq_string .= $ex->seq;
         $transcript_seq_string .= $ex->seq->seq;
     }
@@ -1037,7 +950,7 @@ sub dna_seq {
   #my $strand = $self->{_trans_exon_array}[0]->strand;
 
   my $prev = undef;
-  foreach my $exon ($self->get_all_Exons) {
+  foreach my $exon (@{$self->get_all_Exons}) {
 
     # the seq call automatically truncates to the correct 
     # coordinates (handily) in SeqFeature
@@ -1105,7 +1018,7 @@ sub sort {
   my $self = shift;
 
   # Fetch all the features
-  my @exons = $self->get_all_Exons();
+  my @exons = @{$self->get_all_Exons()};
 
   # Empty the feature table
   $self->flush_Exon();
@@ -1148,7 +1061,7 @@ sub _translate_coherent{
    my $tstr;
 
    #$self->sort();
-   my @exons = $self->get_all_Exons;
+   my @exons = @{$self->get_all_Exons};
    my $exon_start = $exons[0];
    #print "there are ".@exons." exons\n";
    foreach my $exon ( @exons ) {
@@ -1232,7 +1145,7 @@ sub translateable_dna{
    my $tstr;
 
    #$self->sort();
-   my @exons = $self->get_all_Exons;
+   my @exons = @{$self->get_all_Exons};
    my $exon_start = $exons[0];
 
 
@@ -1275,20 +1188,6 @@ sub translateable_dna{
 }
 
 
-
-sub exon_dna {
-  my ($self,$exon) = @_;
-
-  $self->warn("You are calling exon_dna - you really don't need this method. $exon->seq->seq should work (if not, attach the contig to the exon objects correctly");
-
-  my $tmpseq = $self->contig_dna->str($exon->start,$exon->end);
-  
-  if ($exon->strand == -1) {
-    $tmpseq =~ tr/ATGCatgc/TACGtacg/;
-    $tmpseq = reverse($tmpseq);
-  }
-  return new Bio::Seq(-SEQ => $tmpseq);
-}
 
   
 sub pep_coords {
@@ -1359,9 +1258,9 @@ sub convert_peptide_coordinate_to_contig {
   # calculate remaining distance.
 
   my $start_exon;
-  my @exons = $self->get_all_Exons;
+  my @exons = @{$self->get_all_Exons};
   while( my $exon = shift  @exons ) {
-    if( $exon = $self->translation->start_exon ) { # in memory reliance
+    if( $exon = $self->translation->start_Exon ) { # in memory reliance
       my $start_exon = $exon;
       last;
     }
@@ -1410,7 +1309,7 @@ sub find_coord {
   my ($self,$coord,$type) = @_;
  
   my $count = 0;
-  my @exons = $self->get_all_Exons;
+  my @exons = @{$self->get_all_Exons};
   my $end   = $#exons;
   my $dna;
 
@@ -1422,7 +1321,7 @@ sub find_coord {
   # We ignore these.
 
   if ($strand == 1) {
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
       
       if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
 	my $dna   = $ex->start + $ex->phase;
@@ -1455,7 +1354,7 @@ sub find_coord {
     }
   } else {
 
-    foreach my $ex ($self->get_all_Exons) {
+    foreach my $ex (@{$self->get_all_Exons}) {
       
       if ($coord >= $starts->[$count] && $coord <= $ends->[$count]) {
 	
@@ -1512,35 +1411,33 @@ sub is_partial{
 
 }
 
-=head2 start_exon
+=head2 start_Exon
 
- Title   : start_exon
- Usage   : $start_exon = $transcript->start_exon;
+ Title   : start_Exon
+ Usage   : $start_exon = $transcript->start_Exon;
  Returns : The first exon in the transcript.
  Args    : NONE
 
-
 =cut
 
-sub start_exon{
+sub start_Exon{
    my ($self,@args) = @_;
 
    return ${$self->{'_trans_exon_array'}}[0];
-
 }
 
-=head2 end_exon
+=head2 end_Exon
 
  Title   : end_exon
- Usage   : $end_exon = $transcript->end_exon;
+ Usage   : $end_exon = $transcript->end_Exon;
  Returns : The last exon in the transcript.
  Args    : NONE
 
-
 =cut
 
-sub end_exon{
+sub end_Exon{
    my ($self,@args) = @_;
+
    return ${$self->{'_trans_exon_array'}}[$#{$self->{'_trans_exon_array'}}];
 }
 
@@ -1604,12 +1501,12 @@ sub rna_pos {
     my $start = $self->start_exon->start;
     #test that loc is within  mRNA
     return undef if $loc < $start;
-    return undef if $loc >= $self->end_exon->end;
+    return undef if $loc >= $self->end_Exon->end;
 
     my $mrna = 1;
 
     my $prev = undef;
-    foreach my $exon ($self->get_all_Exons) {
+    foreach my $exon (@{$self->get_all_Exons}) {
 	
 	my $tmp = CORE::length( $exon->seq->seq());
 	#$tmp -= $exon->phase if not $prev;
@@ -1658,7 +1555,7 @@ sub rna_pos {
     #return $mrna;
 }
 
-=head2 dn_length
+=head2 dna_length
 
   Title   : dna_length
   Usage   : $loc = $feat->dna_length;
@@ -1683,15 +1580,8 @@ sub dna_length {
      return $self->{'_dna_length'};
 }
 
-sub gene_name {
-     my ($self,$value) = @_;
-     
-     if( defined $value ) {
-          $self->{'_web_hack_gene_name'} = $value;
-     }
-     
-     return $self->{'_web_hack_gene_name'};
-}
+
+
 
 =head2 description
 
@@ -1713,12 +1603,6 @@ sub description{
     return $obj->{'description'};
 
 }
-
-
-=head2 Stable id 
-
-Stable id information is fetched on demand from stable tables
-
 
 
 =head2 version
@@ -1829,7 +1713,7 @@ sub finex_string {
 
    $finex .= " ";
 
-   my @exons = $self->get_all_Exons;
+   my @exons = @{$self->get_all_Exons};
 
    $finex .= scalar(@exons) . " ";
 
@@ -1847,8 +1731,8 @@ sub finex_string {
      my $length = $exon->length;
 
      
-     if ($exon == $self->translation->start_exon &&
-	 $exon == $self->translation->end_exon) {
+     if ($exon == $self->translation->start_Exon &&
+	 $exon == $self->translation->end_Exon) {
        $length = $self->translation->end - $self->translation->start + 1;
 
        $found_start = 1;
@@ -1856,13 +1740,13 @@ sub finex_string {
 
        $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
 
-     } elsif ($exon == $self->translation->start_exon) {
+     } elsif ($exon == $self->translation->start_Exon) {
        $length = $exon->length - $self->translation->start + 1;
        $found_start = 1;
 
        $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
 
-     } elsif ($exon == $self->translation->end_exon) {
+     } elsif ($exon == $self->translation->end_Exon) {
        $length = $self->translation->end;
        $found_end = 1;
 
@@ -1899,7 +1783,7 @@ sub transform {
   my $href_exons = shift;
   my @mapped_list_of_exons;
 
-  foreach my $exon ($self->get_all_Exons()) {
+  foreach my $exon (@{$self->get_all_Exons()}) {
     # the old exon was successfully remapped then store the new exon
     if ( exists $$href_exons{$exon} ) {
       push @mapped_list_of_exons, $$href_exons{$exon};
@@ -1936,6 +1820,60 @@ sub transform {
 ##########################################################
 
 
+=head2 id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use stable_id or dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub id {
+   my $self = shift;
+   my $value = shift;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l id deprecated. Please choose from stable_id or dbID, or, for predictions, temporary id");
+
+  # catch adaptorless genes
+  if( defined $value ) {
+    $self->warn("$f:$l stable ids are loaded separately and dbIDs are generated on writing. Ignoring set value $value");
+    return;
+  }
+
+   if( defined $self->stable_id ) {
+     return $self->stable_id();
+   } elsif ( defined $self->temporary_id ) {
+     return $self->temporary_id; 
+   } else {
+     return $self->dbID;
+   }
+
+}
+
+
+=head2 each_DBLink
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_DBLinks instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub each_DBLink {
+   my ($self,@args) = @_;
+
+   $self->warn("each_DBLink has been renamed get_all_DBLinks");
+   return $self->get_all_DBLinks(@args);
+}
+
+
 =head2 contig_dna
 
   Title   : DEPRECATED contig_dna
@@ -1960,6 +1898,16 @@ sub contig_dna {
 }
 
 
+=head2 gene_is_known
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
 # sneaky web only function...
 sub gene_is_known {
     my ($self,$value) = @_;
@@ -1972,6 +1920,19 @@ sub gene_is_known {
     
     return $self->{'_web_hack_gene_is_known'};
 }
+
+
+
+=head2 each_Exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Exons instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
 
 sub each_Exon{
    my ($self) = @_;
@@ -1986,13 +1947,12 @@ sub each_Exon{
 
 =head2 each_Exon_in_context
 
- Title   : each_Exon_in_context
- Usage   : @exons = $t->each_Exon_in_context($vc->id)
- Function: returns exons with this particular context (aka seqname)
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2003,7 +1963,7 @@ sub each_Exon_in_context{
 
    my @exons;
 
-   foreach my $exon ( $self->get_all_Exons ) {
+   foreach my $exon ( @{$self->get_all_Exons} ) {
        if( $exon->seqname eq $context ) {
 	   push(@exons,$exon);
        }
@@ -2012,17 +1972,16 @@ sub each_Exon_in_context{
    return @exons;
 }
 
+
+
 =head2 is_start_exon_in_context
 
- Title   : is_start_exon_in_context
- Usage   : if( $t->is_start_exon_in_context($vc->id) ==0 ) {
-               # transcript runs off this VC
- Function: returns 1 or 0 depending whether the start exon is 
-           in this context or not
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2040,18 +1999,15 @@ sub is_start_exon_in_context{
 }
 
 
+
 =head2 is_end_exon_in_context
 
- Title   : is_end_exon_in_context
- Usage   : if( $t->is_end_exon_in_context($vc->id) ==0 ) {
-               # transcript runs off this VC
- Function: returns 1 or 0 depending whether the end exon is 
-           in this context or not
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2068,15 +2024,15 @@ sub is_end_exon_in_context{
 
 }
 
+
 =head2 strand_in_context
 
- Title   : strand_in_context
- Usage   : $strand = $t->strand_in_context($vc->id)
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2095,6 +2051,217 @@ sub strand_in_context{
    }
 
    return $exons[0]->strand;
+}
+
+
+
+=head2 exon_dna
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use $exon->seq->seq instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub exon_dna {
+  my ($self,$exon) = @_;
+
+  $self->warn("You are calling exon_dna - you really don't need this method.".
+	      "\$exon->seq->seq should work (if not, attach the contig to the".
+	      "exon objects correctly");
+
+  my $tmpseq = $self->contig_dna->str($exon->start,$exon->end);
+  
+  if ($exon->strand == -1) {
+    $tmpseq =~ tr/ATGCatgc/TACGtacg/;
+    $tmpseq = reverse($tmpseq);
+  }
+  return new Bio::Seq(-SEQ => $tmpseq);
+}
+
+
+=head2 first_exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use start_exon instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub first_exon {
+    my ($self) = @_;
+    {
+        my($pkg, $file, $line) = caller(0);
+        $self->warn("In file '$file', package '$pkg' line $line\n".
+             "please switch your code to call 'start_exon'\n".
+             "'first_exon' is now deprecated\n");
+    }
+    return $self->start_exon;
+}
+
+
+=head2 last_exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use end_exon instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub last_exon {
+    my ($self) = @_;
+    {
+        my($pkg, $file, $line) = caller(0);
+         $self->warn("In file '$file', package '$pkg' line $line\n".
+             "please switch your code to call 'end_exon'\n".
+             "'last_exon' is now deprecated\n");
+    }
+    return $self->end_exon;
+}
+
+=head2 get_Exon_by_dbID
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Exons instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_Exon_by_dbID {
+   my ($self,$exonid) = @_;
+
+   $self->warn("get_Exon_by_dbID is deprecated. Search through the exons " .
+	       "returned from get_all_Exons yourself\n");
+
+   if( !defined $exonid ) {
+      $self->throw("Must call with exonid");
+   }
+
+   # not nice - linear search
+   foreach my $exon ( @{$self->get_all_Exons()} ) {
+
+      if( $exon->dbID eq $exonid ) {
+          return $exon;
+      }
+   }
+
+   return undef;
+}
+
+
+=head2 each_Intron
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Introns instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub each_Intron {
+  my $self = shift;
+  $self->warn('each_Intron has been renamed get_all_Introns');
+  return $self->get_all_Introns();
+}
+
+
+
+=head2 number
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use scalar @{transcript->get_all_Exons}; instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub number{
+   my ($self,@args) = @_;
+
+   $self->warn("number is deprecated use: " .
+	       "scalar @{transcript->get_all_Exons}; \n");
+
+   return scalar(@{$self->{'_trans_exon_array'}});   
+}
+
+
+
+=head2 gene_name
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub gene_name {
+     my ($self,$value) = @_;
+     
+     $self->warn("Bio::EnsEMBL::Transcript::gene_name is deprecated do not use"
+		 . "\n" . caller);
+
+     if( defined $value ) {
+          $self->{'_web_hack_gene_name'} = $value;
+     }
+     
+     return $self->{'_web_hack_gene_name'};
+}
+
+
+=head2 start_exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use start_Exon instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub start_exon {
+  my ($self, @args) = @_;
+
+  $self->warn("start_exon has been renamed start_Exon\n");
+  return $self->start_Exon(@args);
+}
+
+
+=head2 end_exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use end_Exon instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub end_exon {
+  my ($self, @args) = @_;
+
+  $self->warn("end_exon has been renamed end_Exon\n");
+  return $self->end_Exon(@args);
 }
 
 1;

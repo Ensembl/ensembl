@@ -109,7 +109,7 @@ sub _columns {
   Example    : @repeats = $repeat_feature_adaptor->generic_fetch('','');
   Description: Overrides superclass method to provide an additional 
                table joining constraint before the SQL query is performed. 
-  Returntype : list of Bio::EnsEMBL::RepeatFeatures in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::RepeatFeatures in contig coordinates
   Exceptions : none
   Caller     : internal
 
@@ -137,7 +137,7 @@ sub generic_fetch {
   Description: PROTECTED implementation of abstract superclass method.  
                responsible for the creation of RepeatFeatures from a 
                hashref generated from an SQL query
-  Returntype : list of Bio::EnsEMBL::RepeatFeatures in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::RepeatFeatures in contig coordinates
   Exceptions : none
   Caller     : internal
 

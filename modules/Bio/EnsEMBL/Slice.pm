@@ -296,7 +296,7 @@ sub subseq {
   Example    : @transcripts = $slice->get_all_PredictionTranscripts();
   Description: Retrieves the list of prediction transcripts which overlap
                this slice.
-  Returntype : list of Bio::EnsEMBL::PredictionTranscript
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscript
   Exceptions : none
   Caller     : none
 
@@ -321,7 +321,7 @@ sub get_all_PredictionTranscripts {
                The mimimum score of the features to retrieve
   Example    : @dna_align_feats = $slice->get_all_DnaAlignFeatures()
   Description: Retrieves the DnaDnaAlignFeatures which overlap this slice
-  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeatures
+  Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeatures
   Exceptions : none
   Caller     :general
 
@@ -346,7 +346,7 @@ sub get_all_DnaAlignFeatures {
                The mimimum score of the features to retrieve
   Example    : @pep_align_feats = $slice->get_all_ProteinAlignFeatures()
   Description: Retrieves the PepDnaAlignFeatures which overlap this slice.
-  Returntype : list of Bio::EnsEMBL::PepDnaAlignFeatures
+  Returntype : listref of Bio::EnsEMBL::PepDnaAlignFeatures
   Exceptions : none
   Caller     : general
 
@@ -373,7 +373,7 @@ sub get_all_ProteinAlignFeatures {
                with analysis named $logic_name and with score above $score.
                It is probably faster to use get_all_ProteinAlignFeatures or
                get_all_DnaAlignFeatures if a sepcific feature type is desired.
-  Returntype : list of Bio::EnsEMBL::BaseAlignFeatures
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures
   Exceptions : none
   Caller     : general
 
@@ -399,7 +399,7 @@ sub get_all_SimilarityFeatures {
                The mimimum score of the features to retrieve
   Example    : @simple_feats = $slice->get_all_SimpleFeatures()
   Description: Retrieves the SimpleFeatures which overlap this slice.
-  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeature
+  Returntype : listref of Bio::EnsEMBL::DnaDnaAlignFeature
   Exceptions : none
   Caller     : general
 
@@ -422,7 +422,7 @@ sub get_all_SimpleFeatures {
                to obtain.
   Example    : @repeat_feats = $slice->get_all_RepeatFeatures()
   Description: Retrieves the RepeatFeatures which overlap this slice.
-  Returntype : list of Bio::EnsEMBL::RepeatFeatures
+  Returntype : listref of Bio::EnsEMBL::RepeatFeatures
   Exceptions : none
   Caller     : general
 
@@ -442,7 +442,7 @@ sub get_all_RepeatFeatures {
 
   Args      : none
   Function  : returns all SNPs on this slice
-  Returntype: @Bio::EnsEMBL::External::Variation
+  Returntype: listref of Bio::EnsEMBL::External::Variation
   Exceptions: none
   Caller    : GlyphSet_feature inherited objects
 
@@ -493,17 +493,17 @@ sub get_all_Genes{
 
 sub get_Genes_by_source{
    my ($self, $source, $empty_flag) = @_;
-   my @genes = $self->get_all_Genes($empty_flag);
+   my $genes = $self->get_all_Genes($empty_flag);
    
    my @out = ();
 
-   foreach my $gene (@genes) {
+   foreach my $gene (@$genes) {
      if($gene->source() eq $source) {
        push @out, $gene;
      }
    }
 
-   return @out;
+   return \@out;
 }
 
 
@@ -523,17 +523,17 @@ sub get_Genes_by_source{
 sub get_Genes_by_type{
    my ($self, $type, $empty_flag) = @_;
    
-   my @genes = $self->get_all_Genes($empty_flag);
+   my $genes = $self->get_all_Genes($empty_flag);
    
    my @out = ();
 
-   foreach my $gene (@genes) {
+   foreach my $gene (@$genes) {
      if($gene->type() eq $type) {
        push @out, $gene;
      }
    }
 
-   return @out;
+   return \@out;
 }
 
 
@@ -647,7 +647,7 @@ sub assembly_type{
 }
 
 
-sub get_KaryotypeBands() {
+sub get_KaryotypeBands {
   my ($self) = @_;
   
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
@@ -695,9 +695,9 @@ sub get_repeatmasked_seq {
 
     #$self->warn("Slice: get_repeatmasked_seq\n");      
 
-    my @repeats = $self->get_all_RepeatFeatures($logic_name);
+    my $repeats = $self->get_all_RepeatFeatures($logic_name);
     my $dna = $self->seq();
-    my $masked_dna = $self->_mask_features($dna,\@repeats,$soft_mask);
+    my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
     my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
 					  '-display_id' => $self->id,
 					  '-primary_id' => $self->id,
@@ -709,13 +709,15 @@ sub get_repeatmasked_seq {
 =head2 _mask_features
 
   Arg [1]    : string $dna_string
-  Arg [2]    : array_ref \@repeats
+  Arg [2]    : array_ref $repeats
                reference to a list Bio::EnsEMBL::RepeatFeature
-               give the list of coordinates to replace with N or with lower case
+               give the list of coordinates to replace with N or with 
+               lower case
   Arg [3]    : int $soft_masking_enable (optional)
   Example    : 
   Description: replaces string positions described in the RepeatFeatures
-               with Ns (default setting), or with the lower case equivalent (soft masking)
+               with Ns (default setting), or with the lower case equivalent 
+               (soft masking)
   Returntype : string 
   Exceptions : none
   Caller     : get_repeatmasked_seq
@@ -796,6 +798,18 @@ sub has_MapSet {
 
 
 
+=head2 get_tiling_path
+
+  Arg [1]    : none
+  Example    : @tiles = @{$slice->get_tiling_path()};
+  Description: Retrieve a listref of Bio::EnsEMBL::Tile objects representing
+               the tiling path used to construct the contiguous slice sequence.
+  Returntype : list reference of Bio::EnsEMBL::Tile objects
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_tiling_path {
   my ($self) = @_;
 
@@ -824,7 +838,7 @@ sub get_tiling_path {
   my $rca = $self->adaptor->db->get_RawContigAdaptor();
   my $raw_contigs = $rca->fetch_filled_by_dbIDs(@raw_contig_ids);
 
-  my @tiling_path;
+  my @tiling_path = ();
   my $current_start = 1;
 
   my($length, $slice_start, $slice_end, 
@@ -858,7 +872,7 @@ sub get_tiling_path {
       $current_start += $length;
     }
   }
-  return @tiling_path;
+  return \@tiling_path;
 }
   
 
@@ -868,7 +882,7 @@ sub get_landmark_MarkerFeatures {
 
   my $lma = $self->adaptor()->db()->get_LandmarkMarkerAdaptor();
   if( ! defined $lma ) {
-    return ();
+    return [];
   } else {
     return $lma->fetch_by_Slice( $self );
   }
@@ -1024,7 +1038,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
   Description: retrieves features generated by external feature factories
                attached to this database which are on this Slice.  
                See Bio::EnsEMBL::DB::ExternalFeatureFactoryI for details.
-  Returntype : list of Bio::SeqFeatureI implementing objects 
+  Returntype : listref of Bio::SeqFeatureI implementing objects 
   Exceptions : none
   Caller     : external
 
@@ -1082,7 +1096,7 @@ sub _get_all_SeqFeatures_type {
      }
    }
 
-   return @vcsf;
+   return \@vcsf;
 }
 
 

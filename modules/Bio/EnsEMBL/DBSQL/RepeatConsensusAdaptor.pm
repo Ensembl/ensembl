@@ -62,7 +62,9 @@ use vars qw(@ISA);
 sub fetch_by_dbID {
     my( $self, $db_id ) = @_;
 
-    return $self->_generic_fetch("repeat_consensus_id = $db_id");   
+    my ($rc) = @{$self->_generic_fetch("repeat_consensus_id = $db_id")}; 
+
+    return $rc;   
 }
 
 
@@ -73,7 +75,7 @@ sub fetch_by_dbID {
                the name of the repeat consensus to obtain
   Example    : $rc = $repeat_consensus_adaptor->fetch_by_name('AluSx');
   Description: Obtains a repeat consensus from the database via its name
-  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
 
@@ -82,7 +84,9 @@ sub fetch_by_dbID {
 sub fetch_by_name {
     my( $self, $name ) = @_;
 
-    return $self->_generic_fetch("repeat_name = '$name'");   
+    my ($rc) = @{$self->_generic_fetch("repeat_name = '$name'")};   
+
+    return $rc;
 }
 
 
@@ -96,7 +100,7 @@ sub fetch_by_name {
                  fetch_by_name_class('AluSx', 'SINE/Alu');
   Description: Obtains a repeat consensus from the database
                via its name and class
-  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Returntype : Bio::EnsEMBL::RepeatConsensus
   Exceptions : none
   Caller     : general
 
@@ -105,10 +109,13 @@ sub fetch_by_name {
 sub fetch_by_name_class {
     my( $self, $name, $class ) = @_;
 
-    return $self->_generic_fetch(qq{
-            repeat_name  = '$name'
-	AND repeat_class = '$class'
-    });
+
+    my ($rc) = @{$self->_generic_fetch(qq{
+      repeat_name  = '$name'
+      AND repeat_class = '$class'
+    })};
+
+    return $rc;
 }
 
 
@@ -144,7 +151,7 @@ sub fetch_by_class_seq {
   Example    : none
   Description: PRIVATE used to create RepeatConsensus features from an 
                SQL constraint
-  Returntype : list of Bio::EnsEMBL::RepeatConsensus
+  Returntype : list reference of Bio::EnsEMBL::RepeatConsensus objects
   Exceptions : none
   Caller     : internal
 
@@ -184,37 +191,7 @@ sub _generic_fetch {
         $rc->adaptor($self);
         push(@consensi, $rc);
     }
-    return @consensi;
-}
-
-
-=head2 fetch_seq_string_for_dbID
-
-  Arg [1]    : int $db_id
-  Example    : none
-  Description: Should probably be deprecated or renamed since it does not 
-               return an object and it is a fetch method - not consistent.
-               Retrieves the repeat_consensus string of a feature.  Looking
-               at the database this always apears to be 'N' anyway.  
-  Returntype : string
-  Exceptions : thrown if the RepeatConsensus with $db_id cannot be found
-  Caller     : ?
-
-=cut
-
-sub fetch_seq_string_for_dbID {
-    my( $self, $db_id ) = @_;
-    
-    my $sth = $self->prepare(qq{
-        SELECT repeat_consensus
-        FROM repeat_consensus
-        WHERE repeat_consensus_id = $db_id
-        });
-    $sth->execute;
-    
-    my ($seq) = $sth->fetchrow  
-        or $self->throw("Can't fetch repeat_consensus for repeat_consensus_id = '$db_id'");
-    return $seq;
+    return \@consensi;
 }
 
 

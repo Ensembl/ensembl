@@ -52,7 +52,7 @@ my $MAX_FEATURE_LENGTH = 5000;
   Arg  1    : Bio::EnsEMBL::Slice $slice
               the area you want to retrieve features from
   Function  : retrieve Landmark MarkerFeatures from lite database
-  Returntype: list Bio::EnsEMBL::MarkerFeature
+  Returntype: listref of Bio::EnsEMBL::MarkerFeature objects
   Exceptions: none
   Caller    : Bio::EnsEMBL::Slice
 
@@ -72,7 +72,7 @@ sub fetch_by_Slice {
   $sth->execute( $slice->chr_name(), $slice->chr_start()-$MAX_FEATURE_LENGTH, 
 		 $slice->chr_end(), $slice->chr_start() );
 
-  my @result;
+  my @result = ();
   while( my $hr = $sth->fetchrow_hashref() ) {
     my $start = $hr->{'chr_start'} - $slice->chr_start() + 1;
     my $end = $hr->{'chr_end'} - $slice->chr_start() + 1;
@@ -89,7 +89,7 @@ sub fetch_by_Slice {
 
     push( @result, $mfeature );
   }
-  return @result;
+  return \@result;
 }
 
 
@@ -99,7 +99,7 @@ sub fetch_by_Marker {
   my $self = shift;
   my $marker = shift;
 
-  my @result;
+  my @result = ();
 
   # bark if not a Bio::EnsEMBL::Map::Marker
   $self->throw

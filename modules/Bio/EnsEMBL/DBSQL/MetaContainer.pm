@@ -55,7 +55,7 @@ use Bio::Species;
                the key to obtain values from the meta table with
   Example    : my @values = $meta_container->list_value_by_key($key);
   Description: gets a value for a key. Can be anything 
-  Returntype : list of strings 
+  Returntype : listref of strings 
   Exceptions : none
   Caller     : ?
 
@@ -73,7 +73,7 @@ sub list_value_by_key {
     push( @result, $arrRef->[0] );
   }
   
-  return @result;
+  return \@result;
 }
 
 

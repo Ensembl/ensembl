@@ -41,7 +41,7 @@ use vars qw(@ISA);
                The exon to fetch supporting features for
   Arg [2]    : (optional)boolean $sticky_component_flag
                Indicates $exon is a component exon to a sticky exon
-  Example    : @supporting = $supporting_feature_adaptor->fetch_by_Exon($exon);
+  Example    : @supporting = @{$supporting_feat_adaptor->fetch_by_Exon($exon)};
   Description: Retrieves supporting features (evidence) for a given exon. 
   Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
                system as the $exon argument
@@ -52,22 +52,22 @@ use vars qw(@ISA);
 =cut
 
 sub fetch_by_Exon {
-  my ( $self, $exon, $sticky_component_flag )  = @_;
+  my ( $self, $exon )  = @_;
 
-  my @out;
+  my $out = [];
 
   # if exon is sticky, get supporting from components
   if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
     foreach my $component_exon ( $exon->each_component_Exon() ) {
-      push @out, $self->fetch_by_Exon( $component_exon, 1 );
+      push @$out, @{$self->fetch_by_Exon( $component_exon )};
     }
-    return @out;
+    return $out;
   }
 
   unless($exon->dbID) {
     $self->warn("exon has no dbID can't fetch evidence from db" .
 		"no relationship exists\n");
-    return 0;
+    return [];
   }
 
 
@@ -101,9 +101,9 @@ sub fetch_by_Exon {
 	next;
       }
     }
-    push @out, $feature;
+    push @$out, $feature;
   }
-  return @out;
+  return $out;
 }
 
 

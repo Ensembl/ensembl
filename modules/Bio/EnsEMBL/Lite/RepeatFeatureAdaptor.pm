@@ -49,7 +49,7 @@ my $MAX_REPEAT_LENGTH = 100000;
   Example    : @rfs = $rf_adaptor->fetch_by_Slice_and_type($slice, 'Alu'); 
   Description: Obtains a list of repeat features of a given repeat type on
                the region defined by slice
-  Returntype : list of Bio::EnsEMBL::RepeatFeatures
+  Returntype : listreference of Bio::EnsEMBL::RepeatFeatures
   Exceptions : none
   Caller     : contigview
 
@@ -68,7 +68,7 @@ sub fetch_by_Slice_and_type {
 		 $slice->chr_start() - $MAX_REPEAT_LENGTH, 
 		 $slice->chr_start(), $type );
 
-  my @repeats;
+  my @repeats = ();
 
   my ($rc, $core, $repeat_adaptor, $rc_adaptor);
   my @repeats;
@@ -129,7 +129,7 @@ sub fetch_by_Slice {
 		   $slice->chr_start() - $MAX_REPEAT_LENGTH, 
 		   $slice->chr_start() );
     
-    my @repeats;
+    my @repeats = ();
     my($rc, $core, $repeat_adaptor, $rc_adaptor);
     my $slice_start = $slice->chr_start + 1;
     my %rc_hash;

@@ -9,7 +9,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::GeneLiteAdaptor - MySQL Database queries to retrieve genes quickly from denormalized tables.
+Bio::EnsEMBL::DBSQL::GeneLiteAdaptor - 
+MySQL Database queries to retrieve genes quickly from denormalized tables.
 
 =head1 SYNOPSIS
 
@@ -41,7 +42,7 @@ use vars '@ISA';
               The slice we want SNPs on
   Function  : retrieve all the SNPs on this slice. 
               uses Lite databases transcript to get info
-  Returntype: list of Bio::EnsEMBL::ExternalData::Variation
+  Returntype: listreference of Bio::EnsEMBL::ExternalData::Variation
   Exceptions: none
   Caller    : Bio::EnsEMBL::Slice
 
@@ -66,7 +67,7 @@ sub fetch_by_Slice {
   $sth->bind_columns(\$chr_start, \$chr_strand, \$refsnpid, 
 		     \$tscid, \$hgbaseid, \$type);
 
-  my @snps;  
+  my @snps = ();  
 
   my %link_hash;
   my $link;
@@ -116,7 +117,7 @@ sub fetch_by_Slice {
     push @snps, $snp;
   }
 	
-  return @snps;
+  return \@snps;
 }
     
     

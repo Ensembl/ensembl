@@ -121,26 +121,26 @@ sub fetch_by_stable_id {
 
 
 
-=head2 fetch_by_geneId
+=head2 fetch_by_gene_id
 
-  Arg [1]    : int $geneId 
-               the unique internal identifier for the gene whose exons will be
-               retrieved 
-  Example    : @exons = $exon_adaptor->fetch_by_geneId(); 
-  Description: Retrieves all exons from the gene specified by gene_id
-  Returntype : list of Bio::EnsEMBL::Exon in contig coordinates
-  Exceptions : thrown if $geneId is not defined  Caller     : general
+  Arg [1]    : int $id
+               The identifier of the gene whose exons will be retrieved 
+  Example    : @exons = $exon_adaptor->fetch_by_gene_id(1234); 
+  Description: Retrieves all exons from the gene specified by $geneId
+  Returntype : listref of Bio::EnsEMBL::Exon in contig coordinates
+  Exceptions : thrown if $geneId is not defined  
+  Caller     : general
 
 =cut
 
-sub fetch_by_geneId {
-  my ( $self, $geneId ) = @_;
+sub fetch_by_gene_id {
+  my ( $self, $gene_id ) = @_;
   my %exons;
   my $hashRef;
   my ( $currentId, $currentTranscript );
 
-  if( !$geneId ) {
-      $self->throw("Must has a geneId ... ");
+  if( !$gene_id ) {
+      $self->throw("Gene dbID not defined");
   }
   $self->{rchash} = {};
 
@@ -158,27 +158,32 @@ sub fetch_by_geneId {
       , exon_transcript et
       , transcript t
       , contig c
-    WHERE t.gene_id = $geneId
+    WHERE t.gene_id = ?
       AND et.transcript_id = t.transcript_id
       AND e.exon_id = et.exon_id
       AND e.contig_id = c.contig_id
     ORDER BY t.transcript_id,e.exon_id
       , e.sticky_rank DESC
   };
-  #print STDERR $query."\n ".$self->db->dbname."\n";
+
   my $sth = $self->prepare( $query );
-  $sth->execute();
+  $sth->execute($gene_id);
 
   while( $hashRef = $sth->fetchrow_hashref() ) {
     if( ! exists $exons{ $hashRef->{exon_id} } ) {
 
       my $exon = $self->_exon_from_sth( $sth, $hashRef );
-   #   print STDERR "have exon coords ".$exon->start."-".$exon->end."\n";
+
       $exons{$exon->dbID} = $exon;
     }
   }
   delete $self->{rchash};
-  return values %exons;
+  
+  my @out = ();
+
+  push @out, values %exons;
+
+  return \@out;
 }
 
 
@@ -601,6 +606,25 @@ sub remove {
   $exon->{dbID} = undef;
 }
 
+
+=head2 fetch_by_geneId
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_by_gene_id instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_geneId {
+  my ($self, $gene_id) = @_;
+
+  $self->warn("fetch_by_geneId has been renamed fetch_by_gene_id\n" . caller);
+
+  return $self->fetch_by_gene_id($gene_id);
+}
 
 
 =head2 fetch_frameshifts

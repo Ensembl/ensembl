@@ -189,10 +189,10 @@ sub fetch_by_dbID {
 =head2 fetch_all
 
   Arg [1]    : none
-  Example    : @contigs = $raw_contig_adaptor->fetch_all();
+  Example    : @contigs = @{$raw_contig_adaptor->fetch_all()};
   Description: Retrieves all of the contig objects in the database.  This will
                be a very slow request on a full-sized database
-  Returntype : list of Bio::EnsEMBL::RawContig
+  Returntype : listref of Bio::EnsEMBL::RawContig
   Exceptions : none
   Caller     : general
 
@@ -233,7 +233,7 @@ sub fetch_by_name {
                              WHERE name = '$name'" );
   $sth->execute();
   
-  my ( $contig ) = $self->_contig_from_sth( $sth );
+  my ( $contig ) = @{$self->_contig_from_sth( $sth )};
 
   return $contig;
 }
@@ -316,7 +316,7 @@ sub fetch_filled_by_dbIDs {
 
 =cut
 
-sub fetch_by_clone {
+sub fetch_by_Clone {
   my $self = shift;
   my $clone = shift;
 
@@ -327,8 +327,7 @@ sub fetch_by_clone {
                              FROM contig
                              WHERE clone_id = $clone_id" );
 
-  my @res = $self->_contig_from_sth( $sth );
-  return \@res;
+  return $self->_contig_from_sth( $sth );
 }
 
 
@@ -440,7 +439,7 @@ sub store {
   Arg [1]    : DBI Statementhandle $sth
   Example    : @contigs = $self->_contig_from_sth($sth);
   Description: PRIVATE creates a contig from an executed  DBI statement handle.
-  Returntype : list of Bio::EnsEMBL::RawContig
+  Returntype : listref of Bio::EnsEMBL::RawContig
   Exceptions : thrown if the statement handle is not defined
   Caller     : internal
 
@@ -465,7 +464,7 @@ sub _contig_from_sth {
     push( @res, $contig );
   }
 
-  return @res;
+  return \@res;
 }
 
 
@@ -532,5 +531,28 @@ sub deleteObj {
   #flush internal cache
   %{$self->{'_raw_contig_cache'}} = ();
 }
+
+
+
+
+=head2 fetch_by_clone
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_by_Clone instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_clone {
+  my ($self, @args) = @_;
+  
+  print STDERR "fetch_by_clone has been renamed fetch_by_Clone\n" . caller;
+
+  return $self->fetch_by_Clone(@args);
+}
+
 
 1;

@@ -57,7 +57,7 @@ sub new {
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
 
-  #initialize tie hash cache
+  #initialize tied hash cache
   tie (%{$self->{'_slice_gene_cache'}}, 
        'Bio::EnsEMBL::Utils::Cache', 
        $SLICE_GENE_CACHE_SIZE,);
@@ -134,9 +134,9 @@ sub list_stable_geneIds {
 
 sub fetch_by_dbID {
   my ( $self, $geneId ) = @_;
-  my $exonAdaptor = $self->db->get_ExonAdaptor();
-  my @exons = $exonAdaptor->fetch_by_geneId( $geneId );
 
+  my $exonAdaptor = $self->db->get_ExonAdaptor();
+  my @exons = @{$exonAdaptor->fetch_by_gene_id( $geneId )};
   my %exonIds;
 
   #
@@ -145,7 +145,6 @@ sub fetch_by_dbID {
   if( scalar( @exons ) == 0 ) {
     $self->throw("No exons for gene $geneId, assumming no gene");
   }
-
 
   foreach my $exon ( @exons ) {
     $exonIds{$exon->dbID} = $exon;
@@ -264,7 +263,7 @@ sub fetch_by_stable_id{
   Arg [2]    : (optional) boolean $empty_flag
                true if lightweight genes are desired (for speed purposes)
   Example    : my @genes = $gene_adaptor->fetch_by_domain($domain);
-  Description: retrieves a list of genes whose translation contain interpro
+  Description: retrieves a listref of genes whose translation contain interpro
                domain $domain.
   Returntype : list of Bio::EnsEMBL::Genes
   Exceptions : none
@@ -312,7 +311,7 @@ sub fetch_by_domain {
   Example    : @genes = $gene_adaptor->fetch_by_contig_list(1, 2, 3, 4);
   Description: Retrieves all genes which are present on list of contigs
                denoted by their unique database ids
-  Returntype : list of Bio::EnsEMBL::Genes in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::Genes in contig coordinates
   Exceptions : none
   Caller     : general
 
@@ -349,7 +348,7 @@ sub fetch_by_contig_list{
        push(@out,$self->fetch_by_dbID($gid));
    }
 
-   return @out;
+   return \@out;
 }
 
 
@@ -359,8 +358,8 @@ sub fetch_by_contig_list{
                the slice to fetch genes from
   Example    : $genes = $gene_adaptor->fetch_by_slice($slice);
   Description: Retrieves all genes which are present on a slice
-  Returntype : list of Bio::EnsEMBL::Genes in slice coordinates
-  Exceptions : nonetail -
+  Returntype : listref of Bio::EnsEMBL::Genes in slice coordinates
+  Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
@@ -410,7 +409,7 @@ sub fetch_by_Slice {
   #place the results in an LRU cache
   $self->{'_slice_gene_cache'}{$slice->name} = \@out;
 
-  return @out;
+  return \@out;
 }
 
 
@@ -576,7 +575,7 @@ sub get_stable_entry_info {
   Example    : @genes = $gene_adaptor->fetch_by_DBEntry($ext_id)
   Description: retrieves a list of genes with an external database 
                idenitifier $external_id
-  Returntype : list of Bio::EnsEMBL::DBSQL::Gene in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::DBSQL::Gene in contig coordinates
   Exceptions : none
   Caller     : ?
 
@@ -597,7 +596,7 @@ sub fetch_by_DBEntry {
       push( @genes, $gene );
     }
   }
-  return @genes;
+  return \@genes;
 }
 
 
@@ -733,7 +732,7 @@ sub remove {
   Description: gets interpro accession numbers by gene stable id.
                A hack really - we should have a much more structured 
                system than this
-  Returntype : list of strings 
+  Returntype : listref of strings 
   Exceptions : none 
   Caller     : domainview?
 
@@ -769,7 +768,7 @@ sub get_Interpro_by_geneid {
    }
 
 
-   return @out;
+   return \@out;
 }
 
 

@@ -412,7 +412,7 @@ sub transform {
       $dna_seq .= $c_exon->seq();
 
       #add the supporting features from the exons
-      push @supporting_features, $c_exon->get_all_supporting_features(); 
+      push @supporting_features, @{$c_exon->get_all_supporting_features()}; 
 
    #   print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
 

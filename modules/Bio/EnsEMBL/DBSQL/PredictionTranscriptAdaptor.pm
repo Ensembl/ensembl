@@ -90,8 +90,7 @@ sub fetch_by_dbID {
   my $sth = $self->prepare( $query );
   $sth->execute( $dbID );
 
-  my @res = $self->_ptrans_from_sth( $sth );
-  return $res[0];
+  return $self->_ptrans_from_sth( $sth )->[0];
 }
 
 
@@ -184,8 +183,7 @@ sub fetch_by_Contig_constraint {
   my $sth = $self->prepare( $query );
   $sth->execute( $contig->dbID() );
 
-  my @res = $self->_ptrans_from_sth( $sth );
-  return @res;
+  return $self->_ptrans_from_sth( $sth );
 }
 
 
@@ -376,21 +374,21 @@ sub fetch_by_assembly_location_constraint{
   my $sth = $self->prepare($sql);
   $sth->execute;
 
-  my @results = $self->_ptrans_from_sth($sth);
+  my $results = $self->_ptrans_from_sth($sth);
   my @out;
-  GENE: foreach my $transcript(@results){
+  GENE: foreach my $transcript(@$results){
       my $exon_count = 1;
       my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
       $pred_t->dbID($transcript->dbID);
       $pred_t->adaptor($self);
       $pred_t->analysis($transcript->analysis);
       $pred_t->set_exon_count($transcript->get_exon_count);
-      my @exons = $transcript->get_all_Exons;
+      my $exons = $transcript->get_all_Exons;
       my @sorted_exons;
-      if($exons[0]->strand == 1){
-	@sorted_exons = sort{$a->start <=> $b->start} @exons;
+      if($exons->[0]->strand == 1){
+	@sorted_exons = sort{$a->start <=> $b->start} @$exons;
       }else{
-	@sorted_exons = sort{$b->start <=> $a->start} @exons;
+	@sorted_exons = sort{$b->start <=> $a->start} @$exons;
       }
       my $contig = $sorted_exons[0]->contig;
     EXON:foreach my $e(@sorted_exons){
@@ -423,7 +421,7 @@ sub fetch_by_assembly_location_constraint{
       push(@out, $pred_t);
     }
 
-  return @out;
+  return \@out;
 }
 
 
@@ -472,7 +470,7 @@ sub _ptrans_from_sth {
     $exon_count++;
   }
   #print "have created ".$count." transcripts and ".$exon_count." exons\n";
-  return @result;
+  return \@result;
 }
 
 
@@ -595,11 +593,11 @@ sub store {
 
   my $exonId = undef;
 
-  my @exons = $pre_trans->get_all_Exons();
+  my $exons = $pre_trans->get_all_Exons();
   my $dbID = undef;
   my $rank = 1;
   
-  for my $exon ( @exons ) {
+  for my $exon ( @$exons ) {
     if( ! defined $exon ) { $rank++; next; }
     
     my $contig_id = $exon->contig->dbID();

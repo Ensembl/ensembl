@@ -154,7 +154,7 @@ sub fetch_by_chr_name{
   Args       : none
   Example    : @chromosomes = $chromosome_adaptor->fetch_all(); 
   Description: Retrieves every chromosome object from the database.
-  Returntype : list of Bio::EnsEMBL::Chromosome
+  Returntype : listref of Bio::EnsEMBL::Chromosome
   Exceptions : none
   Caller     : general
 
@@ -189,7 +189,7 @@ sub fetch_all {
     push @chrs, $chr;
   }
 
-  return @chrs;
+  return \@chrs;
 }
 
 
@@ -228,6 +228,9 @@ sub get_dbID_by_chr_name {
 
   return $self->{_chr_name_mapping}->{$chr_name};
 }    
+
+
+
 
 
 =head2 get_landmark_MarkerFeatures

@@ -137,7 +137,7 @@ sub get_all_Genes {
   Example    : none
   Description: get RawContig objects from this Clone (either manually added
                or from the database).
-  Returntype : list of Bio::EnsEMBL::RawContig
+  Returntype : listref of Bio::EnsEMBL::RawContig
   Exceptions : none
   Caller     : general
 
@@ -153,11 +153,11 @@ sub get_all_Contigs {
   #from the database
   unless ($c_list = $self->{'_contig_list'}) {
     my $ra = $self->adaptor->db->get_RawContigAdaptor;
-    $c_list = $ra->fetch_by_clone($self);
+    $c_list = $ra->fetch_by_Clone($self);
     $self->{'_contig_list'} = $c_list;
   }
 
-  return @$c_list;
+  return $c_list;
 }
 
 
@@ -230,10 +230,11 @@ sub get_rawcontig_by_position {
         $self->throw("get_rawcontig_by_position error: Position must be > 0");
     }
     
-    my @contigs =  $self->get_all_Contigs();
-    @contigs = sort { $b->embl_offset <=> $a->embl_offset } @contigs;
+    my $contigs =  $self->get_all_Contigs();
+    my @sorted_contigs = 
+      sort { $b->embl_offset <=> $a->embl_offset } @$contigs;
     
-    foreach my $c ( @contigs ) {
+    foreach my $c ( @sorted_contigs ) {
         if ($pos > $c->embl_offset) {
              return $c;
         } 

@@ -117,9 +117,11 @@ sub fetch_by_chr_start_end {
 =head2 fetch_by_contig_name
 
  Title   : fetch_by_contig_name
- Usage   : $slice = $slice_adaptor->fetch_by_contig_name('AC000012.00001',1000);
- Function: Creates a slice of the specified slice adaptor object.  If a context size is given, the slice is extended by that number of basepairs on either side of the contig.  Throws if the contig is not golden.
- Returns : Slice object 
+ Usage   : $slice = $slice_adptr->fetch_by_contig_name('AC000012.00001',1000);
+ Function: Creates a slice around the the specified contig.  If a context 
+           size is given, the slice is extended by that number of basepairs 
+           on either side of the contig.
+ Returns : Bio::EnsEMBL::Slice object 
  Args    : contig id, [context size in bp]
 
 
@@ -187,7 +189,9 @@ sub fetch_by_fpc_name {
 
  Title   : fetch_by_clone_accession
  Usage   : $slice = $slice_adaptor->fetch_by_clone_accession('AC000012',1000);
- Function: Creates a Slice of the specified object.  If a context size is given, the Slice is extended by that number of basepairs on either side of the clone.  Throws if the clone is not golden.
+ Function: Creates a Slice around the specified clone.  If a context size is 
+           given, the Slice is extended by that number of basepairs on either 
+           side of the clone.  Throws if the clone is not golden.
  Returns : Slice object 
  Args    : clone id, [context size in bp]
 
@@ -290,30 +294,31 @@ sub fetch_by_transcript_stable_id{
 
 sub fetch_by_transcript_id {
   my ($self,$transcriptid,$size) = @_;
-     if( !defined $transcriptid ) {
-       $self->throw("Must have transcriptid id to fetch Slice of transcript");
-   }
-   if( !defined $size ) {$size=0;}
-
-   my $ta = $self->db->get_TranscriptAdaptor;
-   my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
-
-   my %exon_transforms;
-
+  if( !defined $transcriptid ) {
+    $self->throw("Must have transcriptid id to fetch Slice of transcript");
+  }
+  if( !defined $size ) {$size=0;}
+  
+  my $ta = $self->db->get_TranscriptAdaptor;
+  my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
+  
+  my %exon_transforms;
+  
   my $emptyslice;
-   for my $exon ( $transcript_obj->get_all_Exons() ) {
-     $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
-						'-adaptor' => $self,
-						'-ASSEMBLY_TYPE' =>
-						$self->db->assembly_type);     
-     my $newExon = $exon->transform( $emptyslice );
-     $exon_transforms{ $exon } = $newExon;
-   }
-   $transcript_obj->transform( \%exon_transforms );
-
+  for my $exon ( @{$transcript_obj->get_all_Exons()} ) {
+    $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
+					    '-adaptor' => $self,
+					    '-ASSEMBLY_TYPE' =>
+					    $self->db->assembly_type);     
+    my $newExon = $exon->transform( $emptyslice );
+    $exon_transforms{ $exon } = $newExon;
+  }
+  
+  $transcript_obj->transform( \%exon_transforms );
+  
   my $start = $transcript_obj->start() - $size;
   my $end = $transcript_obj->end() + $size;
-
+  
   if($start < 1) {
     $start = 1;
   }
@@ -327,8 +332,10 @@ sub fetch_by_transcript_id {
 =head2 fetch_by_gene_stable_id
 
  Title   : fetch_by_gene_stable_id
- Usage   : $slice = $slice_adaptor->fetch_by_gene_stable_id('ENSG00000012123',1000);
- Function: Creates a slice of the specified object.  If a context size is given, the slice is extended by that number of basepairs on either side of the gene.  Throws if the gene is not golden.
+ Usage   : $slice = $slc_adptr->fetch_by_gene_stable_id('ENSG00000012123',100);
+ Function: Creates a slice around the specified gene.  If a context size is 
+           given, the slice is extended by that number of basepairs on either 
+           side of the gene.  Throws if the gene is not golden.
  Returns : Slice object 
  Args    : gene id, [context size in bp]
 
@@ -348,7 +355,8 @@ sub fetch_by_gene_stable_id{
    if( !defined $start ) {
      my $type = $self->db->assembly_type()
        or $self->throw("No assembly type defined");
-     $self->throw("Gene is not on the golden path '$type'. Cannot build Slice.");
+     $self->throw("Gene is not on the golden path '$type'. " .
+		  "Cannot build Slice.");
    }
      
    $start -= $size;

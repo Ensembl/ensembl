@@ -67,7 +67,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
                are on the contig defined by $cid and with a percentage id 
                greater than $pid.  If logic name is defined, only features
                with an analysis of type $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*AlignFeature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::*AlignFeature in contig coordinates
   Exceptions : thrown if $pid is not defined
   Caller     : general
 
@@ -82,10 +82,7 @@ sub fetch_by_Contig_and_pid {
     $constraint = "perc_ident > $pid";
   }
 
-  my @features = 
-    $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
-  
-  return @features;
+  return $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
 }
 
 
@@ -102,7 +99,7 @@ sub fetch_by_Contig_and_pid {
                are on the Slice $slice and with a percentage id 
                greater than $pid.  If logic name is defined, only features
                with an analysis of type $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*AlignFeature in Slice coordinates
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeatures in Slice coordinates
   Exceptions : thrown if pid is not defined
   Caller     : general
 

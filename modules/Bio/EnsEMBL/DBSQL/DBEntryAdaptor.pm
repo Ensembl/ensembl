@@ -303,14 +303,15 @@ sub store {
 
 
 
-=head2 fetch_by_gene
+=head2 fetch_by_Gene
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::Gene $gene 
+               The gene to retrienve DBEntries for
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
+  Description: This should be changed, it modifies the gene passed in
+  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::Gene
 
 =cut
 
@@ -324,49 +325,49 @@ sub fetch_by_Gene {
   $sth1->execute( $gene->dbID );
 
   while (my $transid = $sth1->fetchrow) {
-
-    my @translation_xrefs = $self->_fetch_by_EnsObject_type( $transid, 'Translation' );
-    foreach my $translink(@translation_xrefs) {
+    my $translation_xrefs = 
+      $self->_fetch_by_object_type( $transid, 'Translation' );
+    foreach my $translink(@$translation_xrefs) {
       $gene->add_DBLink($translink);
     }
   }
-  my @genelinks = $self->_fetch_by_EnsObject_type( $gene->stable_id, 'Gene' );
-  foreach my $genelink ( @genelinks ) {
+  my $genelinks = $self->_fetch_by_object_type( $gene->stable_id, 'Gene' );
+  foreach my $genelink ( @$genelinks ) {
     $gene->add_DBLink( $genelink );
   }
 }
 
 
 
-=head2 fetch_by_rawContig
+=head2 fetch_by_RawContig
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_RawContig($contig)}
+  Description: Retrieves a list of RawContigs for this object
+  Returntype : listref of Bio::EnsEMBL::DBEntries
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub fetch_by_rawContig {
-  my ( $self, $rawContigId ) = @_;
-  return $self->_fetch_by_EnsObject_type( $rawContigId, 'RawContig' );
+sub fetch_by_RawContig {
+  my ( $self, $contig ) = @_;
+  return $self->_fetch_by_object_type( $rawContigId, 'RawContig' );
 }
 
 
-=head2 fetch_by_transcript
+=head2 fetch_by_Transcript
 
-  Arg [1]    : 
+  Arg [1]    : Bio::EnsEMBL::Transcript
   Example    : 
-  Description: 
+  Description: This should be changed, it modifies the transcipt passed in
   Returntype : 
   Exceptions : 
   Caller     : 
 
 =cut
 
-sub fetch_by_transcript {
+sub fetch_by_Transcript {
   my ( $self, $trans ) = @_;
 
   my $query1 = "SELECT t.translation_id 
@@ -383,17 +384,35 @@ sub fetch_by_transcript {
   #
   
   while (my $transid = $sth1->fetchrow) {
-      my @translation_xrefs = $self->_fetch_by_EnsObject_type( $transid, 'Translation' );
-      foreach my $translink(@translation_xrefs) {
-	  $trans->add_DBLink($translink);
-      }
+    my $translation_xrefs = $self->_fetch_by_object_type( $transid, 
+							  'Translation' );
+    foreach my $translink(@$translation_xrefs) {
+      $trans->add_DBLink($translink);
+    }
   }
-
-
 }
 
 
-=head2 fetch_by_translation
+=head2 fetch_by_Translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation $trans
+               The translation to fetch database entries for
+  Example    : @db_entries = @{$db_entry_adptr->fetch_by_Translation($trans)};
+  Description: Retrieves external database entries for an EnsEMBL translation
+  Returntype : listref of dbEntries to obtain
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_by_Translation {
+  my ( $self, $trans ) = @_;
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
+}
+
+
+
+=head2 fetch_by_object_type
 
   Arg [1]    : 
   Example    : 
@@ -404,37 +423,24 @@ sub fetch_by_transcript {
 
 =cut
 
-sub fetch_by_translation {
-  my ( $self, $trslId ) = @_;
-  return $self->_fetch_by_EnsObject_type( $trslId, 'Translation' );
-}
-
-
-=head2 fetch_by_EnsObject_type
-
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
-
-=cut
-
-sub _fetch_by_EnsObject_type {
+sub _fetch_by_object_type {
   my ( $self, $ensObj, $ensType ) = @_;
   my @out;
   
   my $sth = $self->prepare("
-    SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label,
-          xref.version, xref.description,
-          exDB.db_name, exDB.release, oxr.object_xref_id, es.synonym, idt.query_identity, idt.target_identity
-    FROM xref, external_db exDB, object_xref oxr LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
-                                               LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
-    WHERE xref.xref_id = oxr.xref_id
-      AND xref.external_db_id = exDB.external_db_id 
-      AND oxr.ensembl_id = '$ensObj'
-      AND oxr.ensembl_object_type = '$ensType'
+    SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
+           xref.description,
+           exDB.db_name, exDB.release, 
+           oxr.object_xref_id, 
+           es.synonym, 
+           idt.query_identity, idt.target_identity
+    FROM   xref xref, external_db exDB, object_xref oxr 
+    LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
+    LEFT JOIN identity_xref idt on idt.object_xref_id = oxr.object_xref_id
+    WHERE  xref.xref_id = oxr.xref_id
+      AND  xref.external_db_id = exDB.external_db_id 
+      AND  oxr.ensembl_id = '$ensObj'
+      AND  oxr.ensembl_object_type = '$ensType'
   ");
   
   $sth->execute();
@@ -443,9 +449,9 @@ sub _fetch_by_EnsObject_type {
   my %seen;
   
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $objid, 
-         $synonym, $queryid, $targetid ) =
-      @$arrRef;
+    my ( $refID, $dbprimaryId, $displayid, $version, 
+	 $desc, $dbname, $release, $objid, 
+         $synonym, $queryid, $targetid ) = @$arrRef;
     
     my $exDB;
     
@@ -493,7 +499,7 @@ sub _fetch_by_EnsObject_type {
     #}
   }                                     # while <a row from database>
   
-  return @out;
+  return \out;
 }
 
 
@@ -718,19 +724,77 @@ sub create_tables {
 }
 
 
+
+=head2 fetch_by_translation
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_by_Translation instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_translation {
+  my ($self, $trans_id) = @_;
+
+  $self->warn("fetch_by_translation has been renamed fetch_by_Translation");
+  my $trans = $self->db->get_TranslationAdaptor->fetch_by_dbID($trans_id);
+
+  return $self->fetch_by_Translation($trans);
+}
+
+
+
+=head2 fetch_by_rawContig
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::fetch_by_rawContig instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_rawContig {
+  my ( $self, $rawContigId ) = @_;
+  
+  $self->warn("fetch_by_rawContig has been renamed fetch_by_RawContig");
+  my $contig = 
+    $self->db->get_RawContigAdaptor->fetch_by_dbID($rawContigID);
+
+  return $self->fetch_by_RawContig( $contig );
+}
+
+
+
+=head2 fetch_by_transcript
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED fetch_by_Transcript instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_transcript {
+  my ( $self, $trans ) = @_;
+
+  $self->warn("fetch_by_transcript has been renamed fetch_by_Transcript");
+
+  return $self->fetch_by_Transcript($trans);
+}
+
+
 1;
 
 
 __END__
 
-
-# remove the tables from database
-sub delete_tables {
-}
-
-# check if tables exist
-sub exists_tables {
-}
 
 Objectxref
 =============

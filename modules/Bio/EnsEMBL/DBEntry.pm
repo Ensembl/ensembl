@@ -295,17 +295,17 @@ sub add_synonym {
 =head2 get_synonyms
 
   Args       : none
-  Example    : none
+  Example    : @synonyms = @{$db_entry->get_all_synonyms()};
   Description: get a list of synonym added to this object
-  Returntype : list of string 
+  Returntype : list reference of strings 
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub get_synonyms {
+sub get_all_synonyms {
   my $self = shift;
-  return @{$self->{_synonyms}};
+  return $self->{_synonyms};
 }
 
 
@@ -365,6 +365,26 @@ sub comment {
     if ($self) {
 	return $self->description();
     }
+}
+
+
+
+=head2 get_synonyms
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_synonyms instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_synonyms {
+  my $self = shift;
+
+  $self->warn("get_synonyms has been rename get_all_synonyms\n" . caller);
+  return $self->get_all_synonyms;
 }
 
 1;

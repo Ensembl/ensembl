@@ -84,7 +84,7 @@ sub new {
   Example    : my @analysis = $analysis_adaptor->fetch_all()
   Description: fetches all of the Analysis objects from the database and caches
                them internally.
-  Returntype : list of Bio::EnsEMBL::Analysis retrieved from the database
+  Returntype : listref of Bio::EnsEMBL::Analysis retrieved from the database
   Exceptions : none
   Caller     : AnalysisAdaptor::new
 
@@ -114,7 +114,7 @@ sub fetch_all {
     $self->{_logic_name_cache}->{$analysis->logic_name()} = $analysis;
   }
 
-  return values %{$self->{_cache}};
+  return \{values %{$self->{_cache}}};
 }
 
 

@@ -88,7 +88,7 @@ sub start {
 
     # calculate the start of this gene
     $self->{start} = -1;
-    foreach my $exon ($self->get_all_Exons()) {
+    foreach my $exon (@{$self->get_all_Exons()}) {
       
       unless(defined $exon->contig() && 
              $exon->contig()->isa('Bio::EnsEMBL::Slice')) {
@@ -132,7 +132,7 @@ sub end {
 
     # calculate the end of this gene
     $self->{end} = -1;
-    foreach my $exon ($self->get_all_Exons()) {
+    foreach my $exon (@{$self->get_all_Exons()}) {
       
       unless(defined $exon->contig() && 
              $exon->contig()->isa('Bio::EnsEMBL::Slice')) {
@@ -162,9 +162,9 @@ sub strand {
   if( defined $arg ) {
     $self->{'strand'} = $arg;
   } elsif( ! defined $self->{strand} ) {
-    my @exons = $self->get_all_Exons();
-    if(@exons) {
-      $self->{'strand'} = $exons[0]->strand();
+    my $exons = $self->get_all_Exons();
+    if(@$exons) {
+      $self->{'strand'} = $exons->[0]->strand();
     }      
     #$self->warn( "Gene strand not set, difficult to calculate..." );
   }
@@ -197,7 +197,7 @@ sub chr_name {
   } elsif(!defined $self->{'_chr_name'}) {
     #attempt to get the chr_name from the contig attached to the exons
     my ($exon, $contig);
-    ($exon) = $self->get_all_Exons();
+    ($exon) = @{$self->get_all_Exons()};
     if($exon && ($contig = $exon->contig())) {
       if(ref $contig && $contig->isa('Bio::EnsEMBL::Slice')) {
         $self->{'_chr_name'} = $contig->chr_name();
@@ -224,7 +224,8 @@ sub source {
 
  Title   : is_known
  Usage   : if( $gene->is_known ) 
- Function: returns true if there are any dblinks on the gene or transcript objects
+ Function: returns true if there are any dblinks on the gene or 
+           transcript objects
  Example :
  Returns : 
  Args    :
@@ -238,7 +239,7 @@ sub is_known{
   if( scalar(@array) > 0 ) {
     return 1;
   }
-  foreach my $trans ( $self->get_all_Transcripts ) {
+  foreach my $trans ( @{$self->get_all_Transcripts} ) {
     @array = $trans->each_DBLink();
     if( scalar(@array) > 0 ) {
       return 1;
@@ -248,6 +249,7 @@ sub is_known{
   return 0;
 }
 
+
 =head2 adaptor
 
  Title   : adaptor
@@ -256,7 +258,6 @@ sub is_known{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -270,6 +271,7 @@ sub adaptor {
 }
 
 
+
 =head2 analysis
 
  Title   : analysis
@@ -277,7 +279,6 @@ sub adaptor {
  Function: get/set this genes analysis object
  Returns : on get the analysis object
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -289,6 +290,8 @@ sub analysis {
   return $self->{'analysis'};
 }
 
+
+
 =head2 dbID
 
  Title   : dbID
@@ -297,7 +300,6 @@ sub analysis {
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -309,6 +311,7 @@ sub dbID {
    }
    return $self->{'_dbID'};
 }
+
 
 
 =head2 external_name
@@ -342,6 +345,8 @@ sub external_db {
   return $self->{'_external_db'};
 }
 
+
+
 =head2 description
 
  Title   : description
@@ -368,9 +373,9 @@ sub description {
 =head2 get_all_DBLinks
 
   Arg [1]    : none
-  Example    : @dblinks = $gene->get_all_DBLinks();
-  Description: retrieves a list of DBLinks for this gene
-  Returntype : Bio::EnsEMBL::DBEntry
+  Example    : @dblinks = @{$gene->get_all_DBLinks()};
+  Description: retrieves a listref of DBLinks for this gene
+  Returntype : list reference to Bio::EnsEMBL::DBEntry objects
   Exceptions : none
   Caller     : general
 
@@ -380,13 +385,13 @@ sub get_all_DBLinks {
    my $self = shift;
 
    if( !defined $self->{'_db_link'} ) {
-       $self->{'_db_link'} = [];
-       if( defined $self->adaptor ) {
-	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Gene($self);
-       }
+     $self->{'_db_link'} = [];
+     if( defined $self->adaptor ) {
+       $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Gene($self);
+     }
    } 
 
-   return @{$self->{'_db_link'}}
+   return $self->{'_db_link'};
 }
 
 
@@ -426,11 +431,11 @@ sub add_DBLink{
 
  Title   : get_all_Exons
  Usage   : foreach my $exon ( $gene->each_unique_Exon )
- Function: retrieves an array of exons associated with this
+ Function: retrieves a listref of exons associated with this
            gene, guaranteed to be nonredundant
- Example :
- Returns : 
- Args    :
+ Example : @exons = @{$gene->get_all_Exons()};
+ Returns : listref of Bio::EnsEMBL::Exon objects
+ Args    : none
 
 
 =cut
@@ -439,16 +444,18 @@ sub get_all_Exons {
    my ($self,@args) = @_;
    my %h;
 
-   foreach my $trans ( $self->get_all_Transcripts ) {
-       foreach my $exon ( $trans->get_all_Exons ) {
+   my @out = ();
+
+   foreach my $trans ( @{$self->get_all_Transcripts} ) {
+       foreach my $exon ( @{$trans->get_all_Exons} ) {
 	   $h{"$exon"} = $exon;
        }
    }
 
-   return values %h;
+   push @out, values %h;
+
+   return \@out;
 }
-
-
 
 
 =head2 get_Exon_by_id
@@ -462,18 +469,8 @@ sub get_all_Exons {
 
 =cut
 
-sub get_Exon_by_id {
-    my ($self, $id) = @_;
 
-    # perhaps not ideal
-    foreach my $exon ( $self->get_all_Exons ) {
-      # should this be stable_id
-      if( $exon->dbID eq $id ) {
-	return $exon;
-      }
-    }
 
-}
 
 =head2 type
 
@@ -527,10 +524,10 @@ sub add_Transcript{
 =head2 get_all_Transcripts
 
  Title   : get_all_Transcripts
- Usage   : foreach $trans ( $gene->get_all_Transcripts)
+ Usage   : foreach $trans ( @{$gene->get_all_Transcripts})
  Function:
  Example :
- Returns : An array of Transcript objects
+ Returns : A listref of Transcript objects
  Args    :
 
 =cut
@@ -538,14 +535,10 @@ sub add_Transcript{
 sub get_all_Transcripts {
   my ($self) = @_;
 
-  return @{$self->{'_transcript_array'}};
+  return $self->{'_transcript_array'};
 }
 
 
-
-=head2 Stable id 
-
-Stable id information is fetched on demand from stable tables
 
 =head2 created
 
@@ -699,9 +692,9 @@ sub _dump{
    }
 
    print $fh "Gene ", $self->dbID(), "\n";
-   foreach my $t ( $self->get_all_Transcripts() ) {
+   foreach my $t ( @{$self->get_all_Transcripts()} ) {
        print $fh "  Trans ", $t->dbID(), " :";
-       foreach my $e ( $t->get_all_Exons ) {
+       foreach my $e ( @{$t->get_all_Exons} ) {
 	   print $fh " ",$e->dbID(),",";
        }
        print "\n";
@@ -732,7 +725,7 @@ sub transform {
   my %exon_transforms;
 
   # transform Exons
-  for my $exon ( $self->get_all_Exons() ) {
+  for my $exon ( @{$self->get_all_Exons()} ) {
     my $newExon = $exon->transform( $slice );
     $exon_transforms{ $exon } = $newExon;
   }
@@ -740,7 +733,7 @@ sub transform {
   # now need to re-jiggle the transcripts and their
   # translations to account for the re-mapping process
 
-  for my $transcript ( $self->get_all_Transcripts() ) {
+  for my $transcript ( @{$self->get_all_Transcripts()} ) {
 
     # need to grab the translation before starting to 
     # re-jiggle the exons
@@ -913,6 +906,33 @@ sub each_DBLink {
 	      caller);
 
   return $self->get_all_DBLinks();
+}
+
+
+=head2 get_Exon_by_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Exons instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_Exon_by_id {
+    my ($self, $id) = @_;
+
+    $self->warn("Get Exon by id is deprecated use get_all_Exons and " .
+		"sort through them yourself\n");
+
+    # perhaps not ideal
+    foreach my $exon ( $self->get_all_Exons ) {
+      # should this be stable_id
+      if( $exon->dbID eq $id ) {
+	return $exon;
+      }
+    }
 }
 
 1;

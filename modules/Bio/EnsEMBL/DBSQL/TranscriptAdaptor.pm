@@ -29,8 +29,6 @@ accepts them (at the moment) in a transcript.
 
 =cut
 
-;
-
 package Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
 
 use vars qw(@ISA);
@@ -47,31 +45,30 @@ use Bio::EnsEMBL::Translation;
 
 
 
-
-
-
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   : $transcriptobj->fetch_by_dbID( $dbid )
- Function: 
- Example : $obj->get( .. )
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
+  Arg [1]    : int $transid
+               The unique database id for the transcript to be retrieved.
+  Example    : $transcript = $transcript_adaptor->fetch_by_dbID(1234);
+  Description: Retreives a transcript from the database via its dbID
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
 
 =cut
-
     
 sub fetch_by_dbID {
-    my ($self,$transid) = @_;
+    my ($self, $transid) = @_;
 
     my $seen = 0;
     my $trans = Bio::EnsEMBL::Transcript->new();
     my $exonAdaptor = $self->db->get_ExonAdaptor();
 
-    my $sth = $self->prepare("select exon_id from exon_transcript where transcript_id = $transid ORDER BY rank");
-    $sth->execute();
+    my $sth = $self->prepare("SELECT exon_id 
+                              FROM   exon_transcript 
+                              WHERE  transcript_id = ?
+                              ORDER BY rank");
+    $sth->execute($transid);
 
     while( my $rowhash = $sth->fetchrow_hashref) {
 	my $exon = $exonAdaptor->fetch_by_dbID($rowhash->{'exon_id'});
@@ -85,8 +82,10 @@ sub fetch_by_dbID {
     $trans->dbID($transid);
     $trans->adaptor( $self );
 
-    my $ts = $self->prepare("select translation_id from transcript where transcript_id = $transid");
-    $ts->execute;
+    my $ts = $self->prepare("SELECT translation_id translation_id 
+                             FROM   transcript 
+                             WHERE  transcript_id = ?");
+    $ts->execute($transid);
     my ($val) = $ts->fetchrow_array();
     $trans->_translation_id($val);
 
@@ -94,9 +93,23 @@ sub fetch_by_dbID {
 }
 
 
+=head2 fetch_by_stable_id
+
+  Arg [1]    : string $stable_id 
+               The stable id of the transcript to retrieve
+  Example    : $trans = $trans_adptr->fetch_by_stable_id('ENST00000309301');
+  Description: Retrieves a transcript via its stable id
+  Returntype : Bio::EnsEMBL::Transcript
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_stable_id {
   my ($self, $stable_id) = @_;
-  my $sth = $self->prepare( "select transcript_id from transcript_stable_id where stable_id = ?" );
+  my $sth = $self->prepare( "SELECT transcript_id 
+                             FROM   transcript_stable_id 
+                             WHERE  stable_id = ?" );
   $sth->execute( $stable_id );
 
   if( my $arr = $sth->fetchrow_arrayref ) {
@@ -214,12 +227,15 @@ sub store {
 sub get_stable_entry_info {
   my ($self,$transcript) = @_;
 
-  if( !defined $transcript || !ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-     $self->throw("Needs a Transcript object, not a $transcript");
+  unless( defined $transcript && ref $transcript && 
+	  $transcript->isa('Bio::EnsEMBL::Transcript') ) {
+    $self->throw("Needs a Transcript object, not a $transcript");
   }
 
-  my $sth = $self->prepare("select stable_id,version from transcript_stable_id where transcript_id = ".$transcript->dbID);
-  $sth->execute();
+  my $sth = $self->prepare("SELECT stable_id, version 
+                            FROM   transcript_stable_id 
+                            WHERE  transcript_id = ?");
+  $sth->execute($transcript->dbID());
 
   my @array = $sth->fetchrow_array();
   $transcript->{'_stable_id'} = $array[0];
@@ -246,29 +262,31 @@ sub remove {
     $translationAdaptor->remove( $transcript->translation );
   }
 
-  my $sth = $self->prepare( "delete from exon_transcript where transcript_id = ?" );
+  my $sth = $self->prepare( "DELETE FROM exon_transcript 
+                             WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-  $sth = $self->prepare( "delete from transcript_stable_id where transcript_id = ?" );
+  $sth = $self->prepare( "DELETE FROM transcript_stable_id 
+                          WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-  $sth = $self->prepare( "delete from transcript where transcript_id = ?" );
+  $sth = $self->prepare( "DELETE FROM transcript 
+                          WHERE transcript_id = ?" );
   $sth->execute( $transcript->dbID );
-
-  foreach my $exon ( $transcript->get_all_Exons() ) {
-    
-    my $sth = $self->prepare( "select count(*) from exon_transcript where exon_id = ?" );
+  
+  foreach my $exon ( $transcript->get_all_Exons() ) {  
+    my $sth = $self->prepare( "SELECT count(*) 
+                               FROM   exon_transcript 
+                               WHERE  exon_id = ?" );
     $sth->execute( $exon->dbID );
     my ($count) = $sth->fetchrow_array;
     if($count == 0){ 
       $exonAdaptor->remove( $exon );
-    }
-    else{
+    } else{
       $self->warn("exon " . $exon->dbID . " is not exclusive to transcript " . 
-                   $transcript->dbID . "\n");
+		  $transcript->dbID . "\n");
     }
 
   }
   
-
   $transcript->{'dbID'} = undef;
 }
 

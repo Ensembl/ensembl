@@ -134,7 +134,7 @@ sub fetch_by_Contig_start_end_strand {
                                                                   1000, -1);
   Description: retrieves from db the sequence for this slice
                uses AssemblyMapper to find the assembly
-  Returntype : txt 
+  Returntype : string 
   Exceptions : endBasePair should be less or equal to length of slice 
   Caller     : Bio::EnsEMBL::Slice::seq(), Slice::subseq() 
 

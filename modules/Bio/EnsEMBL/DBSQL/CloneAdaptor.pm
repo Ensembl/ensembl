@@ -223,7 +223,7 @@ sub fetch_by_dbID {
   Arg [1]    : none
   Example    : @clones = $clone_adaptor->fetch_all();
   Description: Retrieves every clone from the database.  
-  Returntype : Bio::EnsEMBL::Clone
+  Returntype : listref of Bio::EnsEMBL::Clone
   Exceptions : none
   Caller     : none
 
@@ -253,7 +253,7 @@ sub fetch_all {
 					  $created, $modified);
   }
 
-  return @clones;
+  return \@clones;
 }
 
 
@@ -264,7 +264,7 @@ sub fetch_all {
                the EMBL accession of the clone versions to retrieve
   Example    : @vers = $clone->list_embl_version_by_accession($accession) 
   Description: Returns a list of versions for a given EMBL accession
-  Returntype : list of ints
+  Returntype : listref of ints
   Exceptions : thrown if $id arg is not defined or if no clone with accession
                $id exists in the database
   Caller     : general
@@ -291,7 +291,7 @@ sub list_embl_version_by_accession {
 
     $self->throw("no clone $id") unless scalar @vers > 0;
     
-    return @vers;
+    return \@vers;
 }
 
 
@@ -364,9 +364,9 @@ sub delete_by_dbID {
                retrieved
   Example    : my @genes = $clone_adaptor->get_all_Genes('AC011082');
   Description: Retrieves a list of Gene objects which are present on a clone.
-               It might be better to have this on the gene adaptor but 
+               It would be better to have this on the gene adaptor but 
                for now it will stay here.
-  Returntype : list of Bio::EnsEMBL::Genes
+  Returntype : listref of Bio::EnsEMBL::Genes
   Exceptions : thrown if $clone_id is not defined
   Caller     : Clone::get_all_Genes
 
@@ -400,7 +400,7 @@ sub get_all_Genes {
             $got{$gene_id} = 1;
         }
     }
-    return @genes;
+    return \@genes;
 }
 
 

@@ -24,47 +24,49 @@ Bio::EnsEMBL::Exon - Confirmed Exon
 
 Examples of creating an exon
 
-    $ex = new Bio::EnsEMBL::Exon(1208,1506,1) # start = 1208, end = 1506, forward strand
+    # start = 1208, end = 1506, forward strand
+    $ex = new Bio::EnsEMBL::Exon(1208,1506,1) 
     
-    Start and end coordinates are always stored with start < end.  If they are input
-    in the reverse order they will be swapped over.  The value for the strand will
-    be kept as its input value;
+    Start and end coordinates are always stored with start < end. If they are 
+    input in the reverse order they will be swapped over.  The value for the 
+    strand will be kept as its input value;
 
     Strand values:  + or  1 = forward strand
                     - or -1 = reverse strand
                     . or  0 = unknown strand
 
-    $ex->attach_seq($dna);                    # $dna is a Bio::Seq
-    $ex->phase(0);                            # Sets the phase of the exon
-    $ex->end_phase();                         # Calculates the end_phase of the exon from the
-                                              # Length of the dna and the starting phase
+    $ex->contig($dna);     # $dna is a Bio::Seq
+    $ex->phase(0);         # Sets the phase of the exon
+    $ex->end_phase();      # Calculates the end_phase of the exon from the
+                           # Length of the dna and the starting phase
 
     Phase values  are 0,1,2
 
-    $trans = $ex->translate();                # Translates the exon. Returns a Bio::Seq
+    $trans = $ex->translate(); # Translates the exon. Returns a Bio::Seq
 
 
     Frameshifts
 
-    Frameshifts in the exon are stored as a multi-dimensional array of coordinates and lengths
-    [start_position, length]
+    Frameshifts in the exon are stored as a multi-dimensional array of 
+    coordinates and lengths [start_position, length]
 
-    my @fshifts =  $ex->get frameshifts();   # A multi-dim array of start coordinates and lengths
+    # A multi-dim array of start coordinates and lengths
+    my @fshifts =  $ex->get frameshifts();   
 
     Setting frameshifts
     
-    $ex->add_frameshift(5,2);                # Adds a frameshift at position 5 and it
-                                             # is an insertion of 2 bases
-                                             # e.g CCCCAATTTT becomes cdna CCCCTTTT
+    $ex->add_frameshift(5,2);  # Adds a frameshift at position 5 and it
+                               # is an insertion of 2 bases
+                               # e.g CCCCAATTTT becomes cdna CCCCTTTT
 
-    $ex->add_frameshift(5,-2);               # Adds a frameshift at position 5 and it
-                                             # is a deletion of 2 bases
-                                             # e.g CCCCAATTTT becomes cdna CCCCANNATTTT
+    $ex->add_frameshift(5,-2); # Adds a frameshift at position 5 and it
+                               # is a deletion of 2 bases
+                               # e.g CCCCAATTTT becomes cdna CCCCANNATTTT
                                              
     Retrieving cdna
 
-    $dna = $ex->get_cdna();                  # Get a frameshift modified dna sequence
-                                             # and return it in a Bio::Seq
+    $dna = $ex->get_cdna();    # Get a frameshift modified dna sequence
+                               # and return it in a Bio::Seq
 
 
 =head1 DESCRIPTION
@@ -77,7 +79,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a_
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a_
 
 =cut
 
@@ -285,7 +288,7 @@ sub _transform_between_Slices {
 
   #copy the attached supporting features and transform them
   my @feats;
-  foreach my $sf ($self->get_all_supporting_features()) {
+  foreach my $sf (@{$self->get_all_supporting_features()}) {
     #my $f = $sf->new();
     #%$f = %$sf;
     ###(mcvicker) this would be better if the feature was copied
@@ -303,15 +306,12 @@ sub _transform_between_Slices {
   Arg [1]    : Bio::EnsEMBL::Slice $slice
   Example    : none
   Description: Transforms this Exon from RawContig coord to given Slice coord. 
-               The method overwrites the same method in Bio::EnsEMBL::SeqFeature
+               The method overrides the same method in Bio::EnsEMBL::SeqFeature
   Returntype : Bio::EnsEMBL::Exon
   Exceptions : If the RawContig coords dont map
   Caller     : transform
 
 =cut
-
-
-
 
 sub _transform_to_Slice {
   my ($self,$slice) = @_;
@@ -367,7 +367,7 @@ sub _transform_to_Slice {
 
   #copy the attached supporting features and transform them
   my @feats;
-  foreach my $sf ($self->get_all_supporting_features()) {
+  foreach my $sf (@{$self->get_all_supporting_features()}) {
    #my $f = $sf->new();
    #%$f = %$sf;
     #(mcvicker) this would be better if the feature was copied
@@ -429,8 +429,8 @@ sub _transform_to_RawContig {
 
   #transform the supporting features to raw contig coords (hashed on contig)
   my %sf_hash;
-  my @sfs = $self->get_all_supporting_features();
-  foreach my $sf (@sfs) {
+  my $sfs = $self->get_all_supporting_features();
+  foreach my $sf (@$sfs) {
     foreach my $mapped_feat ($sf->transform()) {
       unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	$sf_hash{$mapped_feat->contig->name} = [];
@@ -474,7 +474,7 @@ sub _transform_to_RawContig {
       #add the supporting features on this contig to the component exon
       if(exists $sf_hash{$rawContig->name()}) {
 	
-	$componentExon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
+        $componentExon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
       }
 
       $stickyExon->add_component_Exon( $componentExon );
@@ -983,9 +983,9 @@ sub add_supporting_features {
   Description: Retreives any supporting features added manually by 
                calls to add_supporting_features. If no features have been
                added manually and this exon is in a database (i.e. it h
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Returntype : listreference of Bio::EnsEMBL::BaseAlignFeature objects 
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -995,15 +995,15 @@ sub get_all_supporting_features {
   if( !defined( $self->{_supporting_evidence} ) 
       || scalar @{$self->{_supporting_evidence}} == 0) {
 
-    $self->{_supporting_evidence} = [];
-
     if($self->adaptor) {
       my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
-      push @{$self->{_supporting_evidence}}, $sfa->fetch_by_Exon($self);
+      $self->{_supporting_evidence} = $sfa->fetch_by_Exon($self);
+    } else {
+      $self->{_supporting_evidence} = [];
     }
   }
 
-  return @{$self->{_supporting_evidence}};
+  return $self->{_supporting_evidence};
 }
 
 
@@ -1605,7 +1605,7 @@ triplets (start, stop, strand) from which new ranges could be built.
 
 =head1 Deprecated Methods
 =cut
-
+###############################################################################
 =head2 id
 
   Arg [1]    : none

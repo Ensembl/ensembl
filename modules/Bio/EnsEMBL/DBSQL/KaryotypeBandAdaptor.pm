@@ -67,7 +67,8 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
   Example    : @bands = $karyotype_band_adaptor->fetch_by_Slice($slice);
   Description: Fetches karyotype band object from the database for the
                region given by the slice.
-  Returntype : list of Bio::EnsEMBL::KaryotypeBand objects in Slice coordinates
+  Returntype : listref of Bio::EnsEMBL::KaryotypeBand objects in 
+               Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice::get_KarytypeBands 
 
@@ -111,7 +112,7 @@ sub fetch_by_Slice {
     push (@bands, $band_obj);
   }
 
-  return @bands;
+  return \@bands;
 }
 
 
@@ -122,8 +123,8 @@ sub fetch_by_Slice {
   Example    : @bands = $karyotype_band_adaptor->fetch_by_chr_name('X'); 
   Description: Fetches all the karyotype band objects from the database for the
                given chromosome. 
-  Returntype : list of Bio::EnsEMBL::KaryotypeBand in chromosomal (assembly) 
-               coordinates 
+  Returntype : listref of Bio::EnsEMBL::KaryotypeBand in chromosomal 
+               (assembly) coordinates 
   Exceptions : none 
   Caller     : general 
 
@@ -158,7 +159,7 @@ sub fetch_by_chr_name {
       push @out, $band_obj;
     }
     
-    return @out;
+    return \@out;
 }
 
 

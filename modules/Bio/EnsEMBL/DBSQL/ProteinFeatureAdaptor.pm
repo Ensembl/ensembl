@@ -72,7 +72,7 @@ use Bio::EnsEMBL::SeqFeature;
                whose features are desired 
   Example    : @prot_feats = $prot_feat_adaptor->fetch_by_translation_id(1234);
   Description: Get all of the protein feature objects of a peptide             
-  Returntype : list of Bio::EnsEMBL::ProteinFeatures
+  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
   Caller     : ?
 
@@ -166,7 +166,7 @@ sub fetch_by_translation_id {
 	}
     }
     
-    return @features;    
+    return \@features;    
 }
 
 
@@ -213,7 +213,7 @@ sub fetch_by_dbID{
   Description: Retrieves protein features of a protein using the dbID of the
                corresponding translation, and the analysis gff_source for 
                the feature
-  Returntype : Bio::EnsEMBL::ProteinFeature
+  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
   Exceptions : none
   Caller     : ?
 
@@ -368,7 +368,7 @@ sub fetch_by_feature_and_dbID{
       }
     }	
     
-    return @features;
+    return \@features;
   }
 
 

@@ -147,7 +147,7 @@ sub _columns {
   Example    : none
   Description: PROTECTED implementation of superclass abstract method.
                creates SimpleFeatures from an executed DBI statement handle.
-  Returntype : Bio::EnsEMBL::SimpleFeature
+  Returntype : list reference to Bio::EnsEMBL::SimpleFeature objects
   Exceptions : none
   Caller     : internal
 

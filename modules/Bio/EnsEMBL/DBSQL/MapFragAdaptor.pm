@@ -90,10 +90,10 @@ sub _get_mapset_id {
                The start of the region to obtain map_frags from
   Arg [4]    : int $chr_end (optional)
                The end of the region to obtain map_frags from
-  Example    : @mfs = $mf_adaptor->fetch_by_mapset_chr_start_end('Tilepath');
+  Example    : @mfs = @{$mf_adptr->fetch_by_mapset_chr_start_end('Tilepath')};
   Description: Retrieves a list of MapFragments from a given mapset within an
                optionally specified region of the assembly 
-  Returntype : Bio::EnsEMBL::MapFrag
+  Returntype : listref of Bio::EnsEMBL::MapFrag
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
@@ -164,7 +164,7 @@ sub fetch_by_mapset_chr_start_end {
     }
     push @map_frags, $map_frag if defined $map_frag;
     $self->{'_cache'}{$key} = \@map_frags;
-    return @map_frags;
+    return \@map_frags;
 }
 
 
@@ -358,7 +358,7 @@ sub max_feature_length {
   Example    : %mapsets = $map_frag_adaptor->get_mapsets();
   Description: Retrieves a list of mapsets hashed on either their code 
                (default) or mapset_id. 
-  Returntype : hash of Bio::EnsEMBL::MapSets
+  Returntype : hashref of Bio::EnsEMBL::MapSets
   Exceptions : none
   Caller     : general
 
@@ -377,7 +377,7 @@ sub get_mapsets {
     while( my $data = $sth->fetchrow_arrayref() ) {
         $results{ $data->{$key} } = Bio::EnsEMBL::MapSet->new( $data );
     }
-    return %results;
+    return \%results;
 }
 
 

@@ -72,12 +72,12 @@ sub new {
 
 
 
-=head2 fetch_by_gene_id_list
+=head2 fetch_by_gene_idlist
 
   Arg [1]    : arrayref $gene_ids  
   Example    : 
   Description: 
-  Returntype : 
+  Returntype : listref of Gene objects
   Exceptions : 
   Caller     : 
 
@@ -116,12 +116,12 @@ sub fetch_by_gene_id_list {
       push @genes, $gene;
     }
 
-    return @genes;
+    return \@genes;
   }
 
   $self->warn("fetch_by_gene_id_list for non-empty genes not yet implemented");
 
-  return ();
+  return [];
 }
   
 
@@ -135,7 +135,7 @@ sub fetch_by_gene_id_list {
                contain the start, end, source, and name of the gene object
   Function   : retrieve all the genes on this slice. 
               uses www_transcript to get info
-  Returntype : list of Bio::EnsEMBL::Gene
+  Returntype : listref of Bio::EnsEMBL::Gene objects
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
@@ -143,7 +143,7 @@ sub fetch_by_gene_id_list {
 
 sub fetch_by_Slice {
   my ( $self, $slice, $empty_flag ) = @_;
-  my @out;
+  my $out;
 
   if($empty_flag) {
     #check cache of empty genes
@@ -151,14 +151,14 @@ sub fetch_by_Slice {
       return @{$self->{'_slice_empty_gene_cache'}{$slice->name()}};
     }
     
-    @out = $self->_get_empty_Genes($slice);
-    $self->{'_slice_empty_gene_cache'}{$slice->name()} = \@out;
-    return @out;
+    $out = $self->_get_empty_Genes($slice);
+    $self->{'_slice_empty_gene_cache'}{$slice->name()} = $out;
+    return $out;
   }
 
   #check the cache which uses the slice name as it key
   if($self->{'_slice_gene_cache'}{$slice->name()}) {
-    return @{$self->{'_slice_gene_cache'}{$slice->name()}};
+    return $self->{'_slice_gene_cache'}{$slice->name()};
   }
 
   my $sth = $self->prepare
@@ -181,26 +181,26 @@ sub fetch_by_Slice {
 		   $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
 		   $slice->chr_start );
  
-  @out = $self->_objects_from_sth( $sth, $slice );
+  $out = $self->_objects_from_sth( $sth, $slice );
 
   #place the results in an LRU cache
-  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+  $self->{'_slice_gene_cache'}{$slice->name} = $out;
 
-  return @out;
+  return $out;
 }
 
 
 sub fetch_by_stable_id {
   my ($self, $stable_id ) = @_;
-  my $core_DBAdaptor = $self->db->get_db_adaptor('core');
-
+  my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
   my $sth = $self->prepare
-    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, t.chr_strand,
-              t.transcript_name, t.translation_id, t.translation_name, t.gene_id,
-              t.type, t.gene_name, t.db, t.exon_structure, t.external_name,
-              t.exon_ids,
-              t.external_db, t.coding_start, t.coding_end, g.external_name as gene_external_name, 
+    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
+              t.chr_strand, t.transcript_name, t.translation_id, 
+              t.translation_name, t.gene_id, t.type, t.gene_name, 
+              t.db, t.exon_structure, t.external_name, t.exon_ids,
+              t.external_db, t.coding_start, t.coding_end, 
+              g.external_name as gene_external_name, 
               g.external_db as gene_external_db, g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
@@ -210,28 +210,24 @@ sub fetch_by_stable_id {
 
   my $slice = Bio::EnsEMBL::Slice->new
     ( '-empty' => 1,
-      '-adaptor' => $core_DBAdaptor->get_SliceAdaptor());
+      '-adaptor' => $core_db_adaptor->get_SliceAdaptor());
   
-  eval {
-    $sth->execute( $stable_id );
-  };
-  
-  return () if($@);
+  $sth->execute( $stable_id );
 
-  my ( $gene ) = $self->_objects_from_sth( $sth, $slice );
+  my ( $gene ) = @{$self->_objects_from_sth( $sth, $slice )};
   return $gene;
 }
 
 
 sub fetch_by_transcript_stable_id {
   my ($self, $stable_id ) = @_;
-  my $core_DBAdaptor = $self->db->get_db_adaptor('core');
+  my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
   my $sth = $self->prepare
-    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, t.chr_strand,
-              t.transcript_name, t.translation_id, t.translation_name, t.gene_id,
-              t.type, t.gene_name, t.db, t.exon_structure, 
-              t.external_name, t.exon_ids,
+    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
+              t.chr_strand, t.transcript_name, t.translation_id, 
+              t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
+              t.exon_structure, t.external_name, t.exon_ids,
               t.external_db, t.coding_start, t.coding_end, 
               g.external_name as gene_external_name, 
               g.external_db as gene_external_db, g.type as gene_type 
@@ -243,16 +239,12 @@ sub fetch_by_transcript_stable_id {
 
   my $slice = Bio::EnsEMBL::Slice->new
     ( '-empty' => 1,
-      '-adaptor' => $core_DBAdaptor->get_SliceAdaptor());
+      '-adaptor' => $core_db_adaptor->get_SliceAdaptor());
   
-
-  eval {
     $sth->execute( $stable_id );
-  };
   
-  return () if($@);
+  my ( $gene ) = @{$self->_objects_from_sth( $sth, $slice )};
 
-  my ( $gene ) = $self->_objects_from_sth( $sth, $slice );
   return $gene;
 }
 
@@ -263,9 +255,9 @@ sub _objects_from_sth {
 
   # have to make gene, transcripts, translation, db_link for gene and exons
 
-  my %exon_cache = ();
-  my %gene_cache = ();
-  my $core_DBAdaptor = $self->db->get_db_adaptor('core');
+  my %exon_cache;
+  my %gene_cache;
+  my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
 
   my ( $gene, $transcript, $translation ); 
@@ -281,7 +273,7 @@ sub _objects_from_sth {
       $gene = Bio::EnsEMBL::Gene->new();
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
-      $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
+      $gene->adaptor( $core_db_adaptor->get_GeneAdaptor() );
       $gene->source( $hr->{'db'} );
       $gene->strand( $hr->{'chr_strand'} );
 
@@ -310,11 +302,12 @@ sub _objects_from_sth {
 
     my $exon;
     if( ! exists $exon_cache{ "$exon_id" } ) {
-      $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $hr->{'chr_strand'}*$slice->strand());
+      $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, 
+					 $hr->{'chr_strand'}*$slice->strand());
       #  we need dbIDs for Exons !!!
       #   $exon->dbID( );
       # this is not right for source != core ...
-      $exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
+      $exon->adaptor( $core_db_adaptor->get_ExonAdaptor() );
       $exon_cache{"$exon_id"} = $exon;
       $exon->dbID( $exon_id );
     } else {
@@ -333,8 +326,9 @@ sub _objects_from_sth {
       $end = $start + $exon_length - 1;
 
       if( ! exists $exon_cache{ "$exon_id" } ) {
-	$exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $hr->{'chr_strand'});
-	$exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
+	$exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, 
+					      $hr->{'chr_strand'});
+	$exon->adaptor( $core_db_adaptor->get_ExonAdaptor() );
 	$exon_cache{"$exon_id"} = $exon;
 	$exon->dbID( $exon_id );
 	if( ! $exon_id ) {
@@ -349,7 +343,7 @@ sub _objects_from_sth {
     
     # create the transcript 
     my $transcript = Bio::EnsEMBL::Transcript->new();
-    $transcript->adaptor( $core_DBAdaptor->get_TranscriptAdaptor() );
+    $transcript->adaptor( $core_db_adaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
     $transcript->coding_start( $hr->{'coding_start'} -$slice->chr_start() + 1);
     $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() + 1);
@@ -369,26 +363,26 @@ sub _objects_from_sth {
 
     # translation ..
     my $translation = Bio::EnsEMBL::Translation->new();
-    $translation->adaptor( $core_DBAdaptor->get_TranslationAdaptor() );
+    $translation->adaptor( $core_db_adaptor->get_TranslationAdaptor() );
     $translation->stable_id( $hr->{'translation_name'} );
     $translation->dbID( $hr->{'translation_id'} );
     $transcript->translation( $translation ); 
 
     $gene->add_Transcript($transcript);
-
   }
 
-  my @out = values( %gene_cache );
+  my @out = ();
+  push @out, values( %gene_cache );
   
-  for my $gene ( @out ) {
-    for my $exon ( $gene->get_all_Exons() ) {
-      if( ! $exon->dbID() ) {
-	print STDERR "Exon $exon has no dbID.\n";
-      }
-    }
-  }
+#  for my $gene ( @out ) {
+#    for my $exon ( $gene->get_all_Exons() ) {
+#      if( ! $exon->dbID() ) {
+#	print STDERR "Exon $exon has no dbID.\n";
+#      }
+#    }
+#  }
 
-  return @out;
+  return \@out;
 }
 
 
@@ -399,7 +393,7 @@ sub _objects_from_sth {
   Description: PRIVATE retrieves a list of 'empty' (partially populated) gene
                objects from the lite database.  Designed for swift retrieval
                for the web.
-  Returntype : list of Bio::EnsEMBL::Gene objects
+  Returntype : listref of Bio::EnsEMBL::Gene objects
   Exceptions : none
   Caller     : fetch_by_Slice
 
@@ -407,8 +401,6 @@ sub _objects_from_sth {
 
 sub _get_empty_Genes {
   my ($self, $slice) = @_;
-
-  
 
   my $chr_start = $slice->chr_start();
   my $chr_end = $slice->chr_end();
@@ -425,7 +417,7 @@ sub _get_empty_Genes {
 		 $chr_start - $MAX_TRANSCRIPT_LENGTH,
 		 $chr_start );
   
-  my @out;
+  my @out = ();
 
   my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
 
@@ -449,7 +441,7 @@ sub _get_empty_Genes {
     push @out, $gene;
   }
 
-  return @out;
+  return \@out;
 }
      
 
