@@ -324,8 +324,8 @@ sub genomic2cds {
    throw("start, end and strand arguments are required");
  }
 
- if($start > $end) {
-   throw("start arg must be less than or equal to end arg");
+ if($start > $end + 1) {
+   throw("start arg must be less than or equal to end arg + 1");
  }
 
  my $cdna_cstart = $self->{'cdna_coding_start'};
