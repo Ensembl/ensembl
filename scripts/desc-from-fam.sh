@@ -2,12 +2,16 @@
 # -*- mode: sh; -*-
 # $Id$
 
-# Usage: desc-from-fam.sh homo_sapiens_core_110 -h ensrv3 -u ensadmin family110
-
 # Script to merge existing gene_descriptions with those from the families
 # (where known) into a new table called $new_gene_description, which is a
 # complete replacement for the old table.  The script assumes that the family
 # and ensembl-core database live in the same server (so you can do joins).
+
+usage="Usage: $0 ens_core_database -h host -u user family_database"
+if [ $# -lt 6 ] ; then
+    echo $usage
+    exit 1
+fi
 
 # where mysql lives (or how it can be found, provided PATH is ok):
 mysql=mysql
