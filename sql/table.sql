@@ -541,6 +541,7 @@ CREATE TABLE Xref(
          xrefId INT not null auto_increment,
          externalDBId int not null,
          dbprimary_id VARCHAR(40) not null,
+	 display_id VARCHAR(40) not null,
          version VARCHAR(10),
 	 description VARCHAR(255),
          PRIMARY KEY( xrefId ),
