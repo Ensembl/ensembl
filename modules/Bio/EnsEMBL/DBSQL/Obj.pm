@@ -199,33 +199,38 @@ sub get_Gene{
 =cut
 
 sub get_Protein_annseq{
-   my ($self,$ENSP) = @_;
-   my $annseq = Bio::EnsEMBL::annseq->new();
-
-   my $rowhash = $sth->fetchrow_hashref;
-   my $sth = $self->prepare("select id from transcript where translation = '$ENSP'");
-   my $res = $sth->execute();
-   my $rowhash = $sth->fetchrow_hashref;
-   my $transcript = Bio::EnsEMBL::Transcript->new();
-   $transcript = $self->get_Transcript($rowhash->{'id'});
-   my $translation = $transcript->translate();
-   $annseq->seq($translation);
-   $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
-   $res = $sth->execute();
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       my $feature = new Bio::SeqFeature::Generic ( -start => $rowhash->{'seq_start'}, 
-						    -end => $rowhash->{'seq_end'},
-						    -score  =>  $rowhash->{'score'},
-						    -primary_tag    => $rowhash->{'name'});
-       $annseq->add_Seq_Feature($feature);
-   }
-
-   return $annseq;   
+    my ($self,$ENSP) = @_;
+    my $annseq = Bio::EnsEMBL::AnnSeq->new();
+    
+    my $sth = $self->prepare("select id from transcript where translation = '$ENSP'");
+    my $res = $sth->execute();
+    my $rowhash = $sth->fetchrow_hashref;
+    my $transcript = Bio::EnsEMBL::Transcript->new();
+    $transcript = $self->get_Transcript($rowhash->{'id'});
+    my $translation = $self->get_Translation($ENSP);
+    $transcript->translation($translation);
+    my $seq = $transcript->translate();
+    $annseq->seq($seq);
+    $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
+    $res = $sth->execute();
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $analysis = $rowhash->{'analysis'};
+	my $sth2 = $self->prepare("select * from analysis where id = '$analysis'");
+	my $res2 = $sth2->execute();
+	my $rowhash2 = $sth2->fetchrow_hashref;
+	my $feature = new Bio::SeqFeature::Generic ( -start => $rowhash->{'seq_start'}, 
+						     -end => $rowhash->{'seq_end'},
+						     -score =>  $rowhash->{'score'},
+						     -primary => $rowhash2->{'gff_feature'},
+						     -source => $rowhash2->{'gff_source'});
+	$annseq->add_SeqFeature($feature);
+    }
+    
+    return $annseq;   
 }
 
-
 =head2 get_Transcript
-
+    
  Title   : get_Transcript
  Usage   :
  Function:
@@ -235,13 +240,13 @@ sub get_Protein_annseq{
 
 
 =cut
-
+    
 sub get_Transcript{
-   my ($self,$transid) = @_;
-   
-   my $trans = Bio::EnsEMBL::Transcript->new();
-   # go over each Transcript
-   my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
+    my ($self,$transid) = @_;
+    
+    my $trans = Bio::EnsEMBL::Transcript->new();
+    # go over each Transcript
+    my $sth = $self->prepare("select exon from exon_transcript where transcript = '$transid'");
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
@@ -539,19 +544,6 @@ sub delete_Gene{
 }   
        
 
-=head2 write_Gene
-
- Title   : write_Gene
- Usage   : $obj->write_Gene($gene)
- Function: writes a particular gene into the database
-           
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
 =head2 geneid_to_cloneid
 
  Title   : geneid_to_cloneid
@@ -603,8 +595,18 @@ sub cloneid_to_geneid{
    return @out;
 }
 
+=head2 write_Gene
+
+ Title   : write_Gene
+ Usage   : $obj->write_Gene($gene)
+ Function: writes a particular gene into the database
+           
+ Example :
+ Returns : 
+ Args    :
 
 
+=cut
 
 
 sub write_Gene{
@@ -673,19 +675,19 @@ sub write_Gene{
 =cut
 
 sub write_all_Protein_features {
-   my ($self,$ENSP) = @_;
-
-   my $prot_annseq = $self->get_Protein_annseq($ENSP);
-   foreach $feature ($prot_annseq->all_SeqFeatures()) {
-       my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
-				.$feature->start()." ,"
-				.$feature->end()." ,'"
-				.$feature->primary_tag()."' ,"
-				.$feature->score()." ,'"
-				.$ENSP."'
+    my ($self,$ENSP) = @_;
+    
+    my $prot_annseq = $self->get_Protein_annseq($ENSP);
+    foreach my $feature ($prot_annseq->all_SeqFeatures()) {
+	my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
+				 .$feature->start()." ,"
+				 .$feature->end()." ,'"
+				 .$feature->primary_tag()."' ,"
+				 .$feature->score()." ,'"
+				 .$ENSP."'
 				)");
-       $sth->execute();
-   }
+	$sth->execute();
+    }
 }
 
 =head2 write_Protein_feature
@@ -701,17 +703,15 @@ sub write_all_Protein_features {
 =cut
 
 sub write_Protein_feature {
-   my ($self,$ENSP,$feature) = @_;
-
-   my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
-				.$feature->start()." ,"
-				.$feature->end()." ,'"
-				.$feature->primary_tag()."' ,"
-				.$feature->score()." ,'"
-				.$ENSP."'
+    my ($self,$ENSP,$feature) = @_;
+    
+    my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, score, translation) values ("
+			     .$feature->start()." ,"
+			     .$feature->end()." ,'"
+			     .$feature->score()." ,'"
+			     .$ENSP."'
 				)");
-       $sth->execute();
-   }
+    $sth->execute();
 }
 
 
