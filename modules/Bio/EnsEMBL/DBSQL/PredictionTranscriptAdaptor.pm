@@ -153,8 +153,7 @@ sub fetch_by_Contig_constraint {
   my $contig = shift;
   my $constraint = shift;
 
-  unless(defined $contig && ref $contig && 
-	 $contig->isa('Bio::EnsEMBL::Contig')){
+  unless(defined $contig && $contig->isa('Bio::EnsEMBL::RawContig')){
     $self->throw("contig arg must be a Bio::EnsEMBL::RawContig");
     return undef;
   }
