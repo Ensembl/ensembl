@@ -680,7 +680,7 @@ sub _dump_feature_table {
   }
 
   foreach my $gene_slice (@gene_slices) {
-    foreach my $gene (@{$gene_slice->get_all_Genes}) {
+    foreach my $gene (@{$gene_slice->get_all_Genes(undef,undef, 1)}) {
       foreach my $transcript (@{$gene->get_all_Transcripts}) {
         my $translation = $transcript->translation;
 
@@ -726,7 +726,7 @@ sub _dump_feature_table {
     }
 
     # exons
-    foreach my $gene (@{$gene_slice->get_all_Genes}) {
+    foreach my $gene (@{$gene_slice->get_all_Genes(undef,undef,1)}) {
       foreach my $exon (@{$gene->get_all_Exons}) {
         $self->write(@ff,'exon', $self->features2location([$exon]));
         $self->write(@ff,''    , '/note="exon_id='.$exon->stable_id().'"');
