@@ -138,10 +138,16 @@ sub get_all_SeqFeatures {
 
     my @out;
     
-    push(@out,$self->get_all_SimilarityFeatures);
-    push(@out,$self->get_all_RepeatFeatures);
-    push(@out,$self->get_all_GenePredictions);
-    push( @out, $self->get_all_StsFeatures );
+    eval {
+	push(@out,$self->get_all_SimilarityFeatures);
+	push(@out,$self->get_all_RepeatFeatures);
+	push(@out,$self->get_all_GenePredictions);
+	push( @out, $self->get_all_StsFeatures );
+    };
+    if( $@ ) {
+	print STDERR "FAILED: get all sequence features Contig ",$self->id," disk ",$self->disk_id," dir ",$self->_clone_dir,"\n";
+	print STDERR "Actual exception\n\n$@\n";
+    }
 
     return @out;
 }
@@ -678,10 +684,11 @@ sub _gs{
     if(!defined($self->{'_gs'})) {
 	print STDERR "Passing in ",$self->primary_seq," to genscan\n";
 	my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
-						      $self->disk_id . ".gs",
+						       $self->disk_id . ".gs",
 						      $self->primary_seq());
-	
-	
+	    
+
+ 
 	$self->{'_gs'} = $gs;
     }
 

@@ -446,8 +446,7 @@ sub get_array_supporting {
 
 	    # put away old exons
              if( defined $trans ) {
-		 print "Storing\n";
-	        $self->_store_exons_in_transcript($trans,@transcript_exons);
+		 $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
 	    # put in new exons
 	    
