@@ -58,23 +58,6 @@ use Bio::EnsEMBL::SeqFeature;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-sub _feature_obj {
-    my($self,$dbobj) = @_;
-    if( !defined $self->{'feature_obj'}) {
-	my $feat_obj = $self->db->get_Feature_Obj;
-	$self->{'feature_obj'} = $feat_obj;
-    }
-    return $self->{'feature_obj'};
-}
-
-sub analysis_adaptor {
-    my($self,$dbobj) = @_;
-    if( !defined $self->{'analysis_adaptor'}) {
-	my $anal_adapt = $self->db->get_AnalysisAdaptor();
-	$self->{'analysis_adaptor'} = $anal_adapt;
-    }
-    return $self->{'analysis_adaptor'};
-}
 
 =head2 fetch_by_translationID
 
@@ -107,7 +90,7 @@ sub fetch_by_translationID {
     
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
+	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -143,7 +126,7 @@ sub fetch_by_translationID {
 	my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
+	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -233,7 +216,7 @@ sub fetch_by_feature_and_dbID{
 
 
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
+	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -271,7 +254,7 @@ sub fetch_by_feature_and_dbID{
 	    
 	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid,$desc) = @{$arrayref};
 	if( !defined $anahash{$analysisid} ) {
-	    my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
+	    my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 	    $anahash{$analysisid} = $analysis;
 	}
 
@@ -312,7 +295,7 @@ sub fetch_by_feature_and_dbID{
 	    my ($start,$end,$analysisid,$score,$perc_id,$evalue,$hstart,$hend,$hid) = @{$arrayref};
 
 	    if( !defined $anahash{$analysisid} ) {
-		my $analysis = $self->analysis_adaptor->fetch_by_dbID($analysisid);
+		my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysisid);
 		$anahash{$analysisid} = $analysis;
 	    }
 	    
@@ -375,7 +358,7 @@ sub write_Protein_feature{
     }
     
     
-    my $analysisid = $self->_feature_obj->write_Analysis($analysis);
+    my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
   
     my $homol = $feature->feature2;
       
@@ -445,7 +428,7 @@ sub write_Protein_feature_by_translationID {
 		$analysis = $features->analysis;
 	    }
 	    
-	    my $analysisid = $self->_feature_obj->write_Analysis($analysis);
+	    my $analysisid = $self->db->get_AnalysisAdaptor->store($analysis);
 	    
 	    if ( $features->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $features->feature2;
@@ -551,7 +534,7 @@ sub get_interproac_by_signature_id{
 sub _set_protein_feature{
    my ($self,$rowhash) = @_;
 
-my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
+my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($rowhash->{'analysis'});
    
    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $rowhash->{'translation'},
 					      -start => $rowhash->{'seq_start'},
@@ -571,6 +554,8 @@ my $analysis = $self->_feature_obj->get_Analysis($rowhash->{'analysis'});
    return $feature;
 
 }
+
+
 
 
 
