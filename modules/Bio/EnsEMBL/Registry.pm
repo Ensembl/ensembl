@@ -702,14 +702,14 @@ sub add_new_tracks{
   my $reg = $class;
   my $species_reg = $reg->get_alias($conf->{'species'},"nothrow");
   my %pars;
-  print STDERR "Species $species_reg check for default tracks\n";
+#  print STDERR "Species $species_reg check for default tracks\n";
   if(defined($species_reg)){
     foreach my $dba ($reg->get_all_DBAdaptors()){
       if(!$reg->default_track($dba->species,$dba->group)){
 	$pars{'available'} = "species ".$reg->get_alias($dba->species());
 	$pars{'db_alias'} = $dba->group();
 #	print STDERR "Adding new track for ".$dba->species."\t".$dba->group."\n";
-	$conf->add_new_track_generictranscript('',$dba->group()."_yo","black",$pos,%pars);
+	$conf->add_new_track_generictranscript('',$dba->group(), "black",$pos,%pars);
 	  #  my( $self, $code, $text_label, $colour, $pos, %pars ) = @_;
 	$pos++;
       }
