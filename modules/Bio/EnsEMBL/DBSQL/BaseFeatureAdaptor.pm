@@ -182,7 +182,7 @@ sub fetch_by_dbID{
   my ($self,$id) = @_;
   
   unless(defined $id) {
-    $self->throw("fetch_by_dbID must have an id");
+    throw("fetch_by_dbID must have an id");
   }
 
   my @tabs = $self->_tables;
@@ -328,7 +328,7 @@ sub fetch_all_by_Slice_constraint {
       ### obtain seq_region_id of this slice from db somehow
 
     } else {
-      my $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
+      $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
 
       # Get a list of coordinates and corresponding internal ids for the
       # regions we are interested in
@@ -367,9 +367,10 @@ sub fetch_all_by_Slice_constraint {
       my $len = @coords;
       for(my $i = 0; $i < $len; $i++) {
         $constraint .= " AND " if($constraint);
-        $constraint .= "${tab_syn}.seq_region_id = " . $ids[$i] ." AND " .
-                    "${tab_syn}.seq_region_start <= " . $coords[$i]->end() .
-                    "AND ${tab_syn}.seq_region_end >= " . $coords[$i]->start();
+        $constraint .= 
+          "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
+          "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
+          "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
         my $fs = $self->generic_fetch($constraint,$logic_name,$mapper,$slice);
 
         $fs = $self->_remap($fs, $mapper, $slice);
@@ -465,7 +466,7 @@ sub _remap {
 sub store{
   my $self = @_;
 
-  $self->throw("Abstract method store not defined by implementing subclass\n");
+  throw("Abstract method store not defined by implementing subclass\n");
 }
 
 
@@ -481,8 +482,8 @@ sub store{
                feature to be removed from the database a dbID value must
                be returned.
   Returntype : none
-  Exceptions : thrown if $feature arg does not implement dbID(), or if 
-               $feature->dbID is not a true value               
+  Exceptions : thrown if $feature arg does not implement dbID(), or if
+               $feature->dbID is not a true value
   Caller     : general
 
 =cut
@@ -533,7 +534,7 @@ sub remove_by_RawContig {
   my ($self, $contig) = @_;
 
   unless($contig) {
-    $self->throw("BaseFeatureAdaptor::remove - no contig supplied: ".
+    throw("BaseFeatureAdaptor::remove - no contig supplied: ".
 		 "Deletion of features failed.");
   }
 
@@ -572,7 +573,7 @@ sub remove_by_RawContig {
 sub _tables {
   my $self = shift;
 
-  $self->throw("abstract method _tables not defined by implementing" .
+  throw("abstract method _tables not defined by implementing" .
                " subclass of BaseFeatureAdaptor");
   return undef;
 }
@@ -594,7 +595,7 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  $self->throw("abstract method _columns not defined by implementing" .
+  throw("abstract method _columns not defined by implementing" .
                " subclass of BaseFeatureAdaptor");
 }
 
@@ -695,7 +696,7 @@ sub _final_clause {
 sub _objs_from_sth {
   my $self = shift;
 
-  $self->throw("abstract method _obj_from_sth not defined by implementing"
+  throw("abstract method _obj_from_sth not defined by implementing"
              . " subclass of BaseFeatureAdaptor");
 } 
 
