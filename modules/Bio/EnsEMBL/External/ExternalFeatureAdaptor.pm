@@ -290,7 +290,7 @@ sub fetch_all_by_Slice {
     };
     $from_coord_system = $csa->fetch_by_name('clone');
   } elsif($self->_supported('ASSEMBLY')) {
-    $from_coord_system = $csa->fetch_by_name('toplevel');
+    $from_coord_system = $csa->fetch_by_name('chromosome');
     $fetch_method = $self->can('fetch_all_by_chr_start_end');
   } elsif($self->_supported('CONTIG')) {
     $from_coord_system = $csa->fetch_by_name('contig');
