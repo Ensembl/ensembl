@@ -57,6 +57,13 @@ sub new {
 }
 
 
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+  return bless $hashref, $class;
+}
+
+
 =head2 name
 
   Arg [1]    : string $name (optional)
