@@ -116,14 +116,26 @@ sub read_Similarities {
 	    next MSP if ($msp->[0] eq "ce_p" || $msp->[0] eq "sh_p");
 
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
+	    my $pfamfile       = "$clone_dir/$disk_id.$count".$msp->[4];
+
 	    my $pid            = "$id.$count";
 	    
 	    if ($msp->[5]     eq 'msp'){
-		$self->read_MSP($mspfile,$genpep,$msp);
+		eval {
+		    $self->read_MSP($mspfile,$genpep,$msp);
+		};
+		if ($@) {
+		    $self->warn("Error reading MSPFile $mspfile\n");
+		}
 		
 	    } elsif ($msp->[5] eq 'pfam'){
-		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
-		
+		eval {
+		    $self->read_Pfam($pfamfile,$genpep,$msp);
+		};
+		if ($@) {
+		    $self->warn("Error reading Pfam file\n");
+		}
+
 	    } elsif ($msp->[5] eq 'gff'){
 		
 		
@@ -157,6 +169,9 @@ sub read_Repeats {
     if (! -e $gfffile) {
 	print(STDERR "   - No repeat file $gfffile  exists - Skipping repeats\n");
 	return;
+    } elsif (! -r $gfffile) {
+	print(STDERR "   - Repeat file $gfffile unreadable - Skipping repeats\n");
+	return;
     } else {
 	print(STDERR "   - Reading RepeatMasker file $gfffile\n");
     }
@@ -181,12 +196,13 @@ sub read_Repeats {
 
 
 sub read_Pfam {
-    my ($self,$genscan_peptide,$clone_dir,$disk_id,$count,$pfam) = @_;
-
-    my $pfamfile  = "$clone_dir/$disk_id.$count". $pfam->[4];    
+    my ($self,$pfamfile,$genscan_peptide,$pfam) = @_;
 
     if (! -e $pfamfile) {
 	print(STDERR  "   - No pfam file $pfamfile exists - Skipping pfam\n");
+	return;
+    } elsif (! -r $pfamfile) {
+	print(STDERR  "   - Pfam file $pfamfile unreadable - Skipping pfam\n");
 	return;
     } else {
 	print(STDERR "   - Reading pfam file $pfamfile\n");
@@ -295,14 +311,16 @@ sub each_Genscan {
 sub add_Feature {
     my ($self,$f) = @_;
 
+
     $self->throw("Feature must be Bio::EnsEMBL::SeqFeatureI in add_Feature") 
 	unless $f->isa("Bio::EnsEMBL::SeqFeatureI");
-
+    
     if ($f->isa("Bio::EnsEMBL::Repeat")) {
 	push(@{$self->{_repeats}},$f);
     } else {
 	push(@{$self->{_features}},$f);
     }
+
 }
 
 sub each_Feature {
@@ -347,6 +365,9 @@ sub read_MSP {
 
     if (! -e $mspfile) {
 	print(STDERR "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
+	return;
+    } elsif (! -r $mspfile) {
+	print(STDERR "   - MSPcrunch file $mspfile unreadable. Skipping\n");
 	return;
     } else {
 	print(STDERR "   - Reading MSPcrunch file $mspfile\n");
