@@ -76,7 +76,7 @@ sub new {
 
 =cut
 
-sub is_known{
+sub is_known {
    my ($self) = @_;
    my @array;
    @array = $self->each_DBLink();

@@ -1184,8 +1184,8 @@ sub _convert_seqfeature_to_vc_coords {
 	    $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@ || !ref $mc) { 
-             print STDERR "Unable to map $cid\n";
-	    return undef;
+      print STDERR "Unable to map $cid\n";
+      return undef;
     }
 
     # if this is something with subfeatures, then this is much more complex
