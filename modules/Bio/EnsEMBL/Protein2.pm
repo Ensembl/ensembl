@@ -368,7 +368,9 @@ sub get_all_PrintsFeatures{
        foreach my $in (@array_features) {
 	   $self->add_Prints($in);
        }
-       return @{$self->{'_prints'}};
+       return @array_features;
+
+
    }
 
 }
@@ -420,7 +422,7 @@ sub get_all_PfamFeatures{
        foreach my $in (@array_features) {
 	   $self->add_Pfam($in);
        }
-       return @{$self->{'_pfam'}};
+       return @array_features;
    }
 
 }
@@ -839,7 +841,7 @@ sub get_all_IntronFeatures{
        foreach my $in (@array_introns) {
 	   $self->add_intron($in);
        }
-       return @{$self->{'_intron'}};
+       return @array_introns;
    }
 }
 
@@ -890,7 +892,7 @@ sub get_all_SnpsFeatures{
        foreach my $sn (@snps_array) {
 	   $self->add_snps($sn);
        }
-       return @{$self->{'_snp'}};
+       return @snps_array;
    }
 
 }
