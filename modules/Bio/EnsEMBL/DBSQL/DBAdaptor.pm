@@ -2600,7 +2600,8 @@ sub diffdump{
 sub get_PredictionFeature_as_Transcript{
    my ($self,$genscan_id) = @_;
 
-   return $self->get_Feature_Obj->get_PredictionFeature_as_Transcript($genscan_id);
+   $self->warn("Deprecated method : use FeatureAdaptor->fetch_PredictionFeature_as_Transcript");
+   return $self->get_FeatureAdaptor->fetch_PredictionFeature_as_Transcript($genscan_id);
 
 }
 

@@ -43,25 +43,26 @@ my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";
 
 #Get a new feature_obj object
-my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($db);
+my $feature_adp=Bio::EnsEMBL::DBSQL::FeatureAdaptor->new($db);
 print "ok 3\n";
 
 
 
-if ($feature_obj->get_PredictionFeature_by_id("41")->isa ("Bio::EnsEMBL::SeqFeatureI"))
+if ($feature_adp->fetch_PredictionFeature_by_id("41")->isa ("Bio::EnsEMBL::SeqFeatureI"))
+
 {print "ok 4\n";}
 else {
     print "not ok 4\n";
 }
 
 eval {
-$feature_obj->get_PredictionFeature_by_id("wrong_id");
+$feature_adp->fetch_PredictionFeature_by_id("wrong_id");
 };
 
 if ($@){print "ok 5\n";}
 else { print "not ok 5\n";}
 
-my $feat = $feature_obj->get_PredictionFeature_as_Transcript(40);
+my $feat = $feature_adp->fetch_PredictionFeature_as_Transcript(40);
 
 if ( $feat->isa("Bio::EnsEMBL::Transcript"))
 {print  "ok 6\n";}
@@ -69,7 +70,7 @@ else { print "not ok 6\n";}
 
 
 eval {
-$feature_obj->get_PredictionFeature_as_Transcript("wrong_id");
+$feature_adp->fetch_PredictionFeature_as_Transcript("wrong_id");
 };
 
 if ($@){print "ok 7\n";}

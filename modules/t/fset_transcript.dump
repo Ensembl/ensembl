@@ -8,13 +8,13 @@
 # Dumping data for table 'analysis'
 #
 
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('swir','1','blastp','1','blastp','similarity',1);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('PfamFrag','1','hmmpfam','1','hmmpfam','similarity',2);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('vert','1','tblastn','1','tblastn','similarity',3);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('dbest','1','tblastn','1','tblastn','similarity',4);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES (NULL,NULL,'Genscan','1','genscan','exon',5);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES (NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat',6);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('dbsts','1','blastn','1','blastn','similarity',7);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'swir','swir','1','blastp','1','blastp','similarity',1);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'pfam','PfamFrag','1','hmmpfam','1','hmmpfam','similarity',2);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'vert','vert','1','tblastn','1','tblastn','similarity',3);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'dbest','dbest','1','tblastn','1','tblastn','similarity',4);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'genscan',NULL,NULL,'Genscan','1','genscan','exon',5);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'repeat',NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat',6);
+INSERT INTO analysisprocess(created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'dbsts','dbsts','1','blastn','1','blastn','similarity',7);
 
 #
 # Dumping data for table 'chromosome'
