@@ -364,11 +364,10 @@ CREATE TABLE gene_stable_id (
 #
 
 CREATE TABLE supporting_feature (
-  ensembl_type enum('transcript','exon') DEFAULT 'transcript' NOT NULL,
-  ensembl_id int(11) DEFAULT '0' NOT NULL,
+  exon_id int(11) DEFAULT '0' NOT NULL,
   feature_type enum('dna_align_feature','protein_align_feature'),
   feature_id int(11) DEFAULT '0' NOT NULL,
-  UNIQUE all_idx (ensembl_type,ensembl_id,feature_type,feature_id),
+  UNIQUE all_idx (exon_id,feature_type,feature_id),
   KEY feature_idx (feature_type,feature_id)
 ) MAX_ROWS=100000000 AVG_ROW_LENGTH=80;
 
