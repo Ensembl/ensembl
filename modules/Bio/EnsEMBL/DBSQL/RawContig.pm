@@ -688,11 +688,10 @@ sub seq_date{
    my ($self) = @_; 
 
    my $id = $self->internal_id();
-
-   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(created) from dna where sequence = \"$id\" ");
+   my $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP(d.created) from dna as d,contig as c where c.internal_id = $id and c.dna = d.id");
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref(); 
-   return $rowhash->{'UNIX_TIMESTAMP(created)'};
+   return $rowhash->{'UNIX_TIMESTAMP(d.created)'};
 }
 
 
