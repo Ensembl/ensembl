@@ -226,7 +226,8 @@ sub fetch_all_by_Slice {
 
   my @out = ();
 
- GENE: foreach my $transcript(@$results) {
+ GENE: 
+  foreach my $transcript(@$results) {
     my $exon_count = 1;
     my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
     $pred_t->dbID($transcript->dbID);
@@ -237,23 +238,26 @@ sub fetch_all_by_Slice {
     my @sorted_exons;
     if($exons->[0]->strand == 1){
       @sorted_exons = sort{$a->start <=> $b->start} @$exons;
-    }else{
+    }
+    else{
       @sorted_exons = sort{$b->start <=> $a->start} @$exons;
     }
     my $contig = $sorted_exons[0]->contig;
-  EXON:foreach my $e(@sorted_exons){ 
+  EXON:
+    foreach my $e(@sorted_exons){ 
       my ( $start, $end, $exon );
-
+      
       if( $slice->strand == 1 ) {
 	$start = ($e->start - ($slice->chr_start - 1));
-	$end = ($e->end - ($slice->chr_start - 1));
-	$exon = $self->_new_Exon($start, $end, $e->strand, 
-				    $e->phase, $e->score, $e->p_value, $contig);
-      } else {
+	$end   = ($e->end - ($slice->chr_start - 1));
+	$exon  = $self->_new_Exon($start, $end, $e->strand, 
+				 $e->phase, $e->score, $e->p_value, $contig);
+      } 
+      else {
 	$start = $slice->chr_end() - $e->end() + 1;
-	$end = $slice->chr_end() - $e->start() + 1;
-	$exon = $self->_new_Exon($start, $end, -$e->strand, 
-				    $e->phase, $e->score, $e->p_value, $contig);
+	$end   = $slice->chr_end() - $e->start() + 1;
+	$exon  = $self->_new_Exon($start, $end, -$e->strand, 
+				 $e->phase, $e->score, $e->p_value, $contig);
       }      
       $pred_t->add_Exon( $exon, $exon_count );
       $exon_count++;
@@ -546,6 +550,7 @@ sub _new_Exon{
   $exon->end( $end );
   $exon->strand( $strand );
   $exon->phase( $phase );
+  $exon->end_phase( ( $exon->phase + ($exon->end - $exon->start + 1 ) )%3 );
   
   $exon->contig( $contig );
   $exon->attach_seq( $contig );
