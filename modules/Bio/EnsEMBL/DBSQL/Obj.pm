@@ -2282,7 +2282,7 @@ sub _default_contig_overlap_source {
            is greater than the cutoff, then the overlap will
            not be returned.
  Returns : value of overlap_distance_cutoff, or -1 if it isn't set
- Args    : ref to a subroutine
+ Args    : positive integer
 
 
 =cut
@@ -2291,12 +2291,17 @@ sub _default_contig_overlap_source {
 sub overlap_distance_cutoff {
     my( $self, $cutoff ) = @_;
     
-    if ($cutoff) {
+    if (defined $cutoff) {
         $self->throw("'$cutoff' is not an positive integer")
             unless $cutoff =~ /^\d+$/;
         $self->{'_overlap_distance_cutoff'} = $cutoff;
     }
-    return $self->{'_overlap_distance_cutoff'} || -1;
+    my $ret = $self->{'_overlap_distance_cutoff'};
+    if (defined($ret)) {
+        return $ret;
+    } else {
+        return -1;
+    }
 }
 
 

@@ -78,11 +78,13 @@ sub new {
         $id,
         $perlonlysequences,
         $contig_overlap_source,
+        $overlap_distance_cutoff,
         ) = $self->_rearrange([qw(
             DBOBJ
 	    ID
 	    PERLONLYSEQUENCES
             CONTIG_OVERLAP_SOURCE
+            OVERLAP_DISTANCE_CUTOFF
 	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
@@ -95,6 +97,7 @@ sub new {
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
     $self->contig_overlap_source($contig_overlap_source);
+    $self->overlap_distance_cutoff($overlap_distance_cutoff);
 
     return $self;
 }
@@ -1480,8 +1483,8 @@ sub _load_overlaps {
                 next unless &$overlap_source_sub($source);
                 
                 # Skip overlaps with distances larger than the cutoff
-                if ($overlap_cutoff > -1) {
-                    next if $distance > $overlap_cutoff;
+                if ($overlap_cutoff > -1 and $distance > $overlap_cutoff) {
+                    next;
                 }
                 
                 # Make the other contig of the overlap
@@ -1732,8 +1735,8 @@ sub contig_overlap_source {
            VirtualContigs.  If the distance in a contig overlap
            is greater than the cutoff, then the overlap will
            not be returned.
- Returns : value of overlap_distance_cutoff, or -1 if it isn't set
- Args    : ref to a subroutine
+ Returns : value of overlap_distance_cutoff
+ Args    : positive integer
 
 
 =cut
@@ -1742,13 +1745,14 @@ sub contig_overlap_source {
 sub overlap_distance_cutoff {
     my( $self, $cutoff ) = @_;
     
-    if ($cutoff) {
+    if (defined $cutoff) {
         $self->throw("'$cutoff' is not an positive integer")
             unless $cutoff =~ /^\d+$/;
         $self->{'_overlap_distance_cutoff'} = $cutoff;
     }
-    return $self->{'_overlap_distance_cutoff'} || -1;
+    return $self->{'_overlap_distance_cutoff'};
 }
+
 
 1;
 
