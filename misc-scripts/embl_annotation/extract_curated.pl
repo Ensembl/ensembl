@@ -112,6 +112,17 @@ my $ngeneok=0;
 my %processed;
 my $logging;
 
+my $gene_map_file=">txt/gene_stable_id.txt";
+my $transcript_map_file=">txt/transcript_stable_id.txt";
+my $exon_map_file=">txt/exon_stable_id.txt";
+my $translation_map_file=">txt/translation_stable_id.txt";
+
+system("mkdir txt");
+open(GENE_MAP,$gene_map_file) || die "cant open $gene_map_file";
+open(TRANSCRIPT_MAP,$transcript_map_file) || die "cant open $transcript_map_file";
+open(EXON_MAP,$exon_map_file) || die "cant open $exon_map_file";
+open(TRANSLATION_MAP,$translation_map_file) || die "cant open $translation_map_file";
+
 # connect to db for writing
 my $db;
 unless($nodb){
@@ -303,7 +314,7 @@ sub _process_file{
 	    @genes=($contig->get_all_Genes);
 	};
 	if($@){
-	    print "Problems processing clone $clone_id\n";
+	    print "Problems processing clone $clone_id\n\n$@\n\n";
 	    if($logging){
 		print LOG "$clone_id\n$@\n\n";
 	    }else{
@@ -340,11 +351,11 @@ sub _process_file{
 	    
 	    # writeout information about gene
 	    if($verbose){
-		my $gene_id=$gene->id;
-		print "$gene_id\n";
+		my $gene_id=$gene->stable_id;
+		
 		foreach my $transcript ($gene->each_Transcript){
-		    my $transcript_id=$transcript->id;
-		    print "  $transcript_id\n";
+		    my $transcript_id=$transcript->stable_id;
+		   
 		}
 	    }
 	    
@@ -352,18 +363,25 @@ sub _process_file{
 	    if($write){
 		eval{
 		    $db->write_Gene($gene);
+		    print GENE_MAP $gene->dbID,"\t",$gene->stable_id,"\n";
 		    foreach  my $transcript ($gene->each_Transcript){
-			my $transcript_id=$transcript->id;
+			print TRANSCRIPT_MAP $transcript->dbID,"\t",$transcript->stable_id,"\n";
+                        print TRANSLATION_MAP $transcript->translation->dbID,"\t",$transcript->translation->stable_id,"\n";
+
+			foreach my $exon ($transcript->get_all_Exons){
+			    print EXON_MAP $exon->dbID,"\t",$exon->stable_id,"\n";
+			}
+
 			foreach my $dbentry ($transcript->each_DBLink){
 			    # attach adapter
 			    $dbentry->adaptor($adx);
-			    print STDERR "Storing ",$transcript_id," ",$dbentry->primary_id,"\n";
-			    $adx->store($dbentry,$transcript_id,'Transcript');
+			    print STDERR "Storing ",$transcript->stable_id," ",$dbentry->primary_id,"\n";
+			    $adx->store($dbentry,$transcript->stable_id,'Transcript');
 			}
 		    }
 		};
 		if($@){
-		    print "Failed to write gene ".$gene->id."\n";
+		    print "Failed to write gene ".$gene->stable_id."\n\n".$@."\n";
 		}
 	    }
 	}
