@@ -1634,7 +1634,7 @@ sub get_landmark_MarkerFeatures{
        $start=$start-$glob_start;
        $end=$end-$glob_start;
        
-       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {           
+       if( defined $prev && $prev->end + $glob > $start  && uc($prev->id) eq uc($name) ) {           
            next;
        }
 
