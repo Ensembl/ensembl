@@ -258,7 +258,7 @@ sub store {
   }
 
  
-  if( defined $analysis->created ) {
+  if($analysis->created ) {
     my $sth = $self->prepare( q{
       INSERT INTO analysis
       SET created = ?,
@@ -325,7 +325,7 @@ sub store {
 
     $dbID = $sth->{'mysql_insertid'};
 
-    if( defined $dbID ) {
+    if( $dbID ) {
       $sth = $self->prepare( q{
 	SELECT created 
 	FROM   analysis
