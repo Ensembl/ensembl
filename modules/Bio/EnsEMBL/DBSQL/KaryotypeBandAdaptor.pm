@@ -204,8 +204,8 @@ sub fetch_chromosome_length {
     $self->throw("Need a chromosome") unless defined $chr;
 
 	# return a cached copy of the chromosome bands
-	if ($self->{'_karyotype_band_cache_$chr'}){
-		my @tmp = @{$self->{'_karyotype_band_cache_$chr'}};
+	if (exists $self->{"_karyotype_band_cache_$chr"}){
+		my @tmp = @{$self->{"_karyotype_band_cache_$chr"}};
 		return $tmp[-1]->end();
 	}
 
@@ -239,8 +239,8 @@ sub fetch_all_by_chromosome{
     $self->throw("Need a chromosome") unless defined $chr;
 
     # return a cached copy of the chromosome bands
-    if ($self->{'_karyotype_band_cache_$chr'}){
- 	return(@{$self->{'_karyotype_band_cache_$chr'}});
+    if (exists $self->{"_karyotype_band_cache_$chr"}){
+ 	return(@{$self->{"_karyotype_band_cache_$chr"}});
     }
 
     my $sth = $self->prepare("	SELECT	chr_start,
@@ -270,7 +270,7 @@ sub fetch_all_by_chromosome{
     }
 
 	# save a copy in the local cache
-	$self->{'_karyotype_band_cache_$chr'} = \@bands;
+	$self->{"_karyotype_band_cache_$chr"} = \@bands;
 
     return @bands;
 }
