@@ -204,6 +204,7 @@ sub get_Gene_array {
 sub get_Gene_array_supporting {
     my ($self,$supporting,@geneid) = @_;
 
+    my $inloop=0;
     $supporting || $self->throw("You need to specify whether to retrieve supporting evidence or not!");
 
     if( @geneid == 0 ) {
@@ -214,6 +215,7 @@ sub get_Gene_array_supporting {
 
     my $inlist = join(',',map "'$_'", @geneid);
        $inlist = "($inlist)";
+    
 				
     # I know this SQL statement is silly.
     #
@@ -231,13 +233,14 @@ sub get_Gene_array_supporting {
     my ($gene,$trans);
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-
+	
+	$inloop = 1;
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
 	
-	if( ! defined $phase ) {
+	if( ! defined $cloneid ) {
 	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	}
 
@@ -316,7 +319,9 @@ sub get_Gene_array_supporting {
 	$trans->add_Exon($exon);
 
     }
-    
+    if ($inloop == 0) {
+	$self->throw("Gene $geneid[0] not found in the database!\n");
+    }
     if ($supporting && $supporting eq 'evidence') {
 	$self->get_supporting_evidence(@sup_exons);
     }
@@ -605,7 +610,15 @@ sub get_Transcript{
 	$trans->add_Exon($exon);
 	$seen = 1;
     }
-
+    
+    my $sth2 = $self->prepare("select version, translation from transcript where id='$transid'"); 
+    $sth2->execute();
+    
+    while(my $rowhash = $sth2->fetchrow_hashref) {
+	$trans->version($rowhash->{'version'});
+	$trans->translation($rowhash->{'translation'});
+    }
+    
     if ($seen == 0 ) {
 	$self->throw("transcript $transid is not present in db");
     }
@@ -1056,7 +1069,7 @@ sub write_Ghost{
 =cut
 
 sub archive_Gene {
-   my ($self,$gene,$clone,$arc_db) = @_;
+   my ($self,$gene,$arc_db) = @_;
 
    my $sth;
    my $res;
@@ -1079,6 +1092,9 @@ sub archive_Gene {
        #Delete transcript rows
        $sth = $self->prepare("delete from transcript where id = '".$transcript->id."'");
        $res = $sth->execute;
+
+       $sth = $self->prepare("delete from translation where id ='".$transcript->translation.".'");
+       $sth->execute;
        
        foreach my $exon ($gene->each_unique_Exon) {
 	   #Get out info needed to write into archive db
@@ -1559,9 +1575,11 @@ sub write_Gene{
        }
    }
 
-   $old_gene = $self->get_Gene($gene->id);
-   
-   if ( !defined($old_gene) || ($gene->version > $old_gene->version)) {
+   eval {
+       $old_gene = $self->get_Gene($gene->id);
+   };
+
+   if ( $@ || ($gene->version > $old_gene->version)) {
 
        !$gene->created() && $gene->created(0);
        !$gene->modified() && $gene->modified(0);
@@ -2180,16 +2198,15 @@ sub write_Transcript{
    eval {
        $old_trans=$self->get_Transcript($trans->id);
    };
-    
-
-   if ( $@ || ($trans->version > $old_trans->version)) {
+   
+   if ($@) {
 
        my $tst = $self->prepare("insert into transcript (id,gene,translation,version) values ('" . $trans->id . "','" . $gene->id . "','" . $trans->translation->id() . "',".$trans->version.")");
        $tst->execute();
        $self->write_Translation($trans->translation());
    }
    else {
-       print "Transcript already present in the database with the same version number $old_trans [",$old_trans->version,"], no need to write it in\n";
+       $self->warn ("Transcript already present in the database");
    }
    return 1;
 }
@@ -2233,7 +2250,7 @@ sub write_Translation{
 	$tst->execute();
     }
     else {
-	print "Translation already present in the database with the same version number, no need to write it in\n";
+	$self->warn("Translation already present in the database");
     }
 }
 
@@ -2268,8 +2285,7 @@ sub write_Exon{
        $old_exon=$self->get_Exon($exon->id);
    };
    
-   if  ( $@ || ($exon->version > $old_exon->version)) {
-#       print(STDERR "Inserting " . $exon->created . " " . $exon->modified . "\n");
+   if  ($@) {
        my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) values ('" .
 	   $exon->id() . "'," .
 	   $exon->version() . ",'".
@@ -2290,7 +2306,7 @@ sub write_Exon{
        $self->write_supporting_evidence($exon);
    }
    else {
-       print "Exon with the same version number already present, no need to write it in";
+       $self->warn("Exon already present in the database");
    }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
@@ -2414,6 +2430,15 @@ sub prepare{
        $self->throw("Attempting to prepare an empty SQL query!");
    }
 
+   
+   if ($self->_diffdump) {
+       my $fh=$self->_diff_fh;
+       open (FH,"$fh");
+       if ($string =~/insert|delete|replace/) {
+	   print FH "$string\n";
+       }
+   }
+
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
        my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
@@ -2426,6 +2451,51 @@ sub prepare{
 
    return $self->_db_handle->prepare($string);
 }
+
+=head2 diff_fh
+
+ Title   : diff_fh
+ Usage   : $obj->diff_fh($newval)
+ Function: path and name of the file to use for writing the mysql diff dump
+ Example : 
+ Returns : value of diff_fh
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub diff_fh{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'diff_fh'} = $value;
+    }
+    return $self->{'diff_fh'};
+    
+}
+
+
+=head2 _diffdump
+
+ Title   : _diffdump
+ Usage   : $obj->_diffdump($newval)
+ Function: If set to 1 sets $self->_prepare to print the diff sql 
+           statementents to the filehandle specified by $self->diff_fh
+ Example : 
+ Returns : value of _diffdump
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _diffdump{
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_diffdump'} = $value;
+    }
+    return $self->{'_diffdump'};
+    
+}
+
 
 =head2 _analysis_cache
 

@@ -47,7 +47,9 @@ my $tdbname = 'ensembl';
 my $tdbuser = 'root';
 my $tpass = undef;
 my $adbname = 'ens_archive';
+my $arcpass = undef;
 my $module = "Bio::EnsEMBL::DBSQL::Obj";
+my $archive = 0;
 
 my $help;
 my $nowrite;
@@ -60,10 +62,12 @@ my $from;
 &GetOptions( 
 	     'tdbtype:s'  => \$tdbtype,
 	     'thost:s'    => \$thost,
+	     'archive'    => \$archive,
 	     'tport:n'    => \$tport,
 	     'tdbname:s'  => \$tdbname,
 	     'tdbuser=s'  => \$tdbuser,
 	     'tpass:s'    => \$tpass,
+	     'arcpass:s'  => \$arcpass,
              'adbname:s'  => \$adbname,
 	     'module=s'  => \$module,
 	     'usefile=s' => \$usefile,
@@ -81,7 +85,13 @@ if ($help) {
 my $to_locator       = make_locator_string($tdbtype,$module,$thost,$tport,$tdbname,$tdbuser,$tpass);
 my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
 my $from_locator     = $tdb->get_donor_locator;
-my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$tpass";
+my $arc_locator;
+if ($archive) {
+    $arc_locator = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$arcpass";
+}
+else {
+    $arc_locator = "none";
+}
 
 my $last_offset;
 if($from){
@@ -113,7 +123,7 @@ print "USEFILE = $usefile\n";
 $update_manager->nowrite  ($nowrite);
 $update_manager->verbose  ($verbose);
 $update_manager->usefile ($usefile);
-$update_manager->chunksize(20);
+$update_manager->chunksize(10);
 $update_manager->update;
 
 
