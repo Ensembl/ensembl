@@ -160,7 +160,7 @@ sub standard_table_transfer {
   
   my $sourcedb = $self->source_dbh();
   my $targetdb = $self->target_dbh();
-_
+
   # look for custom select
   my $select = "";
   if( exists $self->{targetdb}{tables}{$targettable}{select} ) {
@@ -236,7 +236,7 @@ sub read_dbs {
 
   my $dbh;
 
-  for $db_name ('targetdb', 'sourcedb' ) {
+  for my $db_name ('targetdb', 'sourcedb' ) {
     if( $db_name eq 'targetdb' ) {
       $dbh = $self->target_dbh();
     } else {
@@ -255,7 +255,7 @@ sub read_dbs {
       $sth = $dbh->prepare( "show columns from $table" );
       $sth->execute();
       while( my $arref = $sth->fetchrow_arrayref () ) {
-	push( @{self->{$db_name}{tables}{$table}{columns}}, $arref->[0] );
+	push( @{$self->{$db_name}{tables}{$table}{columns}}, $arref->[0] );
       }
     }
   }
@@ -300,4 +300,4 @@ sub clear_target {
 }
 
 
-
+1;
