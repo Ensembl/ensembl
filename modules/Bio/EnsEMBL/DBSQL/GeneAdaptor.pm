@@ -628,7 +628,7 @@ sub get_Interpro_by_geneid {
 		gene_stable_id gsi
 	WHERE	gsi.stable_id = '$gene' 
 	    AND	t.gene_id = gsi.gene_id
-	    AND	t.translation_id = pf.translation 
+	    AND	t.translation_id = pf.translation_id 
 	    AND	i.id = pf.hit_id 
 	    AND	i.interpro_ac = x.dbprimary_acc";
    
