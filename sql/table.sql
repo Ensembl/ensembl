@@ -583,6 +583,11 @@ CREATE TABLE meta (
     KEY meta_value_index ( meta_value )
 );
 
+
+# Auto add schema version to database
+insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
+
+
 CREATE TABLE prediction_transcript (
     prediction_transcript_id int unsigned not null auto_increment,
     exon_rank smallint unsigned not null,
@@ -600,17 +605,64 @@ CREATE TABLE prediction_transcript (
     KEY contig_idx( contig_id, contig_start )
 );
 
+
+CREATE TABLE marker_synonym (
+    marker_synonym_id int unsigned not null auto_increment,
+    marker_id         int unsigned not null,  #foreign key marker:marker_id
+    source            varchar(20),
+    name              varchar(30),    
+
+    PRIMARY KEY (marker_synonym_id),
+    KEY marker_synonym_idx (marker_synonym_id, name)
+);
+
+CREATE TABLE marker (
+    marker_id                  int unsigned not null auto_increment,
+    display_marker_synonym_id  int unsigned, #foreign key marker_synonym:marker_synonym_id
+    left_primer                varchar(100) not null,
+    right_primer               varchar(100) not null,
+    min_primer_dist            int(10) unsigned not null,
+    max_primer_dist            int(10) unsigned not null,
+    priority                   int,
     
+    PRIMARY KEY (marker_id),
+    KEY marker_idx (marker_id, priority)
+);
 
-# Auto add schema version to database
-insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
 
+CREATE TABLE marker_feature (
+    marker_feature_id         int unsigned not null auto_increment,
+    marker_id                 int unsigned not null,     #foreign key marker:marker_id
+    contig_id                 int(10) unsigned NOT NULL, #foreign key contig:contig_id
+    contig_start              int(10) unsigned NOT NULL,
+    contig_end                int(10) unsigned NOT NULL,
+    contig_strand             tinyint(1) NOT NULL,
+    analysis_id               int(10) unsigned NOT NULL, #foreign key analysis:analysis_id
+    map_weight                int(10) unsigned,
 
-# MySQL dump 8.12
-#
-# Host: localhost    Database: mus_musculus_core_5_2
-#--------------------------------------------------------
-# Server version	3.23.32-log
+    PRIMARY KEY (marker_feature_id),
+    KEY contig_idx (contig_id, contig_start)
+);
+    
+CREATE TABLE marker_map_location (
+    marker_id                int unsigned not null, #foreign key marker:marker_id
+    map_id                   int unsigned not null, #foreign key map:map_id
+    chromosome_id            int unsigned not null, #foreign key chromosome:chromosome_id
+    marker_synonym_id        int unsigned not null, #foreign key marker_synonym:marker_synonym_id
+    position                 varchar(15) not null,
+    lod_score                double,
+    
+    PRIMARY KEY (marker_id, map_id),
+    KEY map_idx( map_id, chromosome_id, position) 
+);
+
+CREATE TABLE map (
+    map_id                   int unsigned not null auto_increment, 
+    map_name                 varchar(30) not null,
+
+    PRIMARY KEY (map_id)
+);
+    
 
 #
 # Table structure for table 'mapfrag'
