@@ -26,10 +26,11 @@ my $dump = shift;
 
 
 open(L,">parse.log");
+open(C,">idlist.txt");
 open(D,$dump) || die "Could not open $dump\n";
 while(<D>) {
     ($id,$internal_id,$start,$end) = split;
-    $id =~ /([^.]+)\./ || die "Bad id $id";
+    $id =~ /([^.]+\.[^.]+)\./ || die "Bad id $id";
     $clone = $1;
     if( !defined $h{$clone} ) {
 	$h{$clone} = [];
@@ -38,9 +39,11 @@ while(<D>) {
     push(@{$h{$clone}},$internal_id);
     $start{$internal_id} = $start;
     $end{$internal_id} = $start+$end-1;
+    $contig_id{$internal_id} = $id;
 }
 
 print STDERR "Hash is loaded\n";
+1;
 
 foreach my $f ( @ARGV ) {
     open(F,$f) || die "could not open $f\n";
@@ -52,7 +55,7 @@ foreach my $f ( @ARGV ) {
 	    die "on $_\n";
 	}
 
-	($clone) = $id =~ /(\S+)\./;
+	($clone) = $id =~ /(\S+\.\d+)/;
 	#print STDERR "Looking at $clone $id\n";
 	$seen = 0;
 	if( !exists $h{$clone} ) {
@@ -77,6 +80,7 @@ foreach my $f ( @ARGV ) {
 
 
 		    print "$fpc\t$chr\t$iid\t$start\t$end\t$fstart\t$fend\t$rstart\t$rend\t$orit\tUCSC\n";
+		    print C $contig_id{$iid}, "\t$iid\n";
 		    last;
 		}
 	    }
