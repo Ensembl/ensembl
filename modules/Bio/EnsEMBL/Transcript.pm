@@ -1871,12 +1871,13 @@ sub finex_string {
 
 =head2 transform
 
-  Arg  1    : Bio::EnsEMBL::Transcript $Slice
-              
-  Function  : make slice coords from raw contig coords or vice versa
-  Returntype: Bio::EnsEMBL::Transcript
+  Arg  1    : hashref $old_new_exon_map
+              a hash that maps old to new exons for a whole gene
+  Function  : maps transcript in place to different coordinate system,
+              It does so by replacing its old exons with new ones.
+  Returntype: none
   Exceptions: none
-  Caller    : object::methodname or just methodname
+  Caller    : Gene->transform()
 
 =cut
 
@@ -1904,6 +1905,9 @@ sub transform {
   # attach the new list of exons to the transcript
   push @{$self->{'_trans_exon_array'}},@mapped_list_of_exons;
 
+  if( defined $self->translation() ) {
+    $self->translation->transform( $href_exons );
+  }
 }
 
 

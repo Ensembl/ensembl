@@ -374,12 +374,13 @@ sub adaptor {
 
 =head2 transform
 
-  Arg  1    : Bio::EnsEMBL::Transcript $slice
-              
-  Function  : make slice coords from raw contig coords or vice versa
-  Returntype: Bio::EnsEMBL::Transcript
+  Arg  1    : hashref $old_new_exon_map
+              a hash that maps old to new exons for a whole gene
+  Function  : maps start end end exon according to mapping table
+              if an exon is not mapped, just keep the old one
+  Returntype: none
   Exceptions: none
-  Caller    : object::methodname or just methodname
+  Caller    : Transcript->transform() 
 
 =cut
 
@@ -387,23 +388,20 @@ sub adaptor {
 sub transform {
   my $self = shift;
   my $href_exons = shift;
-  my @mapped_list_of_exons;
 
   my $start_exon = $self->start_exon();
   my $end_exon = $self->end_exon();
 
   if ( exists $$href_exons{$start_exon} ) {
     $self->start_exon($$href_exons{$start_exon});
-    }
-  else { 
-    $self->throw("Unable to map a transformed start exon");
+  } else {
+    # do nothing, the start exon wasnt mapped
   }
 
   if ( exists $$href_exons{$end_exon} ) {
-      $self->end_exon($$href_exons{$end_exon});
-    }
-  else { 
-    $self->throw("Unable to map a transformed end exon");
+    $self->end_exon($$href_exons{$end_exon});
+  } else { 
+    # do nothing, the end exon wasnt mapped
   }
 }
 

@@ -613,6 +613,7 @@ sub _dump{
               make this Gene slice coords
               Without a $slice, transform to rawContig Coords
   Function  : make slice coords from raw contig coords or vice versa
+              changes gene in place and returns itself.
   Returntype: Bio::EnsEMBL::Gene
   Exceptions: none
   Caller    : object::methodname or just methodname
@@ -626,19 +627,6 @@ sub transform {
 
   # hash arrray to store the refs of transformed exons
   my %exon_transforms;
-
-  #print STDERR "*******************************\n";
-  #print STDERR "Gene id : " . $self->dbID . "\n";
-  #print STDERR "*******************************\n";
-
-  # comment in to check the original translation before the transformation
-  #for my $transcript ( $self->each_Transcript() ) {
-  #  my $pep = $transcript->translate();
-  #  print STDERR "\n--Before transform--\n";
-  #  print STDERR "Orig Peptide: " . $pep->seq . "\n";
-  #  print STDERR "[Start exon: " . $transcript->start_exon . "]\n";
-  #  print STDERR "[End exon:   " . $transcript->end_exon . "]\n\n";
-  #}
 
   # transform Exons
   for my $exon ( $self->get_all_Exons() ) {
@@ -654,29 +642,37 @@ sub transform {
     # need to grab the translation before starting to 
     # re-jiggle the exons
 
-    my $translation = $transcript->translation();
-
     $transcript->transform( \%exon_transforms );
-
-    # now adjust the start and end exons in the translation
-    if( defined $translation ) {
-      $translation->transform( \%exon_transforms );
-    }
+    
   }
-
-  # comment in to check the translation after the transformation
-  #  for my $transcript ( $self->each_Transcript() ) {
-  #    my $pep = $transcript->translate();
-  #    print STDERR "\n--After transform--\n";
-  #    print STDERR "Tran Peptide: " . $pep->seq . "\n";
-  #    print STDERR "[Start exon: " . $transcript->start_exon . "]\n";
-  #    print STDERR "[End exon:   " . $transcript->end_exon . "]\n\n";
-  #  }
-
   return $self;
 }
 
 
+=head2 _set_adaptors
+
+  Arg  1    : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Function  : Set adaptors for Genes and Exons, so they can transform
+
+  Returntype: Bio::EnsEMBL::Gene
+  Exceptions: none
+  Caller    : object::methodname or just methodname
+
+=cut
+
+sub _set_adaptors {
+  my $self = shift;
+  my $dba = shift;
+
+  if( defined $self->adaptor() ) {
+    return;
+  }
+
+  # set geneadaptor and exonadaptors,
+  # this is to get mappers otherwise where should they come from
+  # ? maybe we could get them from the slice
+
+}
 
 
 =head2 temporary_id
