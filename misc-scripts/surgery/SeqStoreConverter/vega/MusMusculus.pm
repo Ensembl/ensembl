@@ -82,4 +82,8 @@ sub remove_supercontigs {
 	     "WHERE coord_system_id = 2");
 }
 
+sub copy_internal_clone_names {
+    return;
+}
+
 1;

@@ -103,6 +103,7 @@ for my $converter ( @all_species_converters ) {
   if ($vega_schema) {
       $converter->update_clone_info();
       $converter->remove_supercontigs();
+      $converter->copy_internal_clone_names();
   }
 }
 

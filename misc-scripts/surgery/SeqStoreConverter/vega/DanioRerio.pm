@@ -141,4 +141,44 @@ sub remove_supercontigs {
 	     "WHERE coord_system_id = 2");
 }
 
+sub copy_internal_clone_names {
+    my $self = shift;
+
+    my $target = $self->target();
+    my $source = $self->source();
+    my $dbh    = $self->dbh();
+    $self->debug("Vega Danio specific - copying internal clone names to seq_region_attrib");
+#get id for 'name' attribute
+    my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'name'");
+    warn "No attrib id found\n" unless defined($attrib_id);
+
+#get clone details
+    my $select1_sth = $dbh->prepare
+        ("SELECT seq_region_id, name from $target.seq_region where coord_system_id = 3;");
+    $select1_sth->execute();
+    my ($seq_region_id, $embl_name);
+    $select1_sth->bind_columns(\$seq_region_id, \$embl_name);
+
+    my $clone_name;
+    my $select2_sth = $dbh->prepare("select name from $source.clone where embl_acc= ?");
+
+    my $insert_sth = $dbh->prepare("insert into $target.seq_region_attrib values (?,$attrib_id,?)");
+
+    while ($select1_sth->fetch()) {
+	$embl_name =~ s/([\d\w]+).*/$1/;
+	$select2_sth->bind_param(1,$embl_name);
+	$select2_sth->execute;
+	$insert_sth->bind_param(1,$seq_region_id);
+	while (my ($clone_name) = $select2_sth->fetchrow_array()) {
+	    $insert_sth->bind_param(2,$clone_name);
+#	    print "$seq_region_id\t$attrib_id\t$clone_name\n";
+	    $insert_sth->execute();
+	}
+    }
+}
+
+
+
+
+
 1;
