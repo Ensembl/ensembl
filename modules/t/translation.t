@@ -8,7 +8,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 26;
+	plan tests => 29;
 }
 
 my $loaded = 0;
@@ -152,6 +152,60 @@ ok(count_rows($db, 'translation') == $tl_count - 1);
 ok(count_rows($db, 'translation_stable_id') == $tlstable_count - 1);
 ok(count_rows($db, 'protein_feature') == $pfeat_count - $pfeat_minus);
 
+#
+# Attribute handling for selenocystein
+#
 
+my $tr = $tra->fetch_by_stable_id( "ENST00000217347" );
+
+my $attrib = Bio::EnsEMBL::Attribute->new
+    ( 
+      -code => '_selenocystein',
+      -value => 2,
+      -name => "Selenocystein positions"
+      );
+
+$tr->translation->add_Attributes( $attrib );
+
+$attrib = Bio::EnsEMBL::Attribute->new
+    ( 
+      -code => '_selenocystein',
+      -value => 3,
+      -name => "Selenocystein positions"
+      );
+$tr->translation->add_Attributes( $attrib );
+
+$tr->translation->add_selenocystein_position( 4 );
+
+my $tlseq = $tr->translate->seq();
+
+debug( "UUU inserted: ".$tlseq );
+ok( $tlseq =~ /^.UUU/ );
+
+#
+# store and retrieve by lazy load
+#
+
+$multi->hide( "core", "translation_attrib" );
+
+my $tl = $tr->translation();
+my $attrAdaptor = $db->get_AttributeAdaptor();
+
+$attrAdaptor->store_on_Translation( $tl, $tl->get_all_Attributes() );
+
+$tr = $tra->fetch_by_stable_id( "ENST00000217347" );
+
+$tlseq = $tr->translate->seq();
+ok( $tlseq =~ /^.UUU/ );
 
 $multi->restore();
+
+
+#
+# Check if this was not caching artefact
+#  No selenos should occur here
+#
+$tr = $tra->fetch_by_stable_id( "ENST00000217347" );
+
+$tlseq = $tr->translate->seq();
+ok( $tlseq !~ /^.UUU/ );

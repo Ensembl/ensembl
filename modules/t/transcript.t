@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 46;
+	plan tests => 53;
 }
 
 use MultiTestDB;
@@ -305,6 +305,8 @@ my $trstable_count = count_rows($db, "transcript_stable_id");
 
 my $ex_tr_minus = @{$tr->get_all_Exons()};
 
+
+
 $multi->save("core", "transcript", "transcript_stable_id", "translation",
              "translation_stable_id", "protein_feature", "exon",
              "exon_stable_id", "exon_transcript", "object_xref",
@@ -320,5 +322,68 @@ ok( count_rows( $db, "transcript") == ($tr_count - 1));
 ok( count_rows( $db, "translation") == ($tl_count - 1));
 ok( count_rows( $db, "exon_transcript") == ($ex_tr_count - $ex_tr_minus));
 ok( count_rows( $db, "transcript_stable_id") == ($trstable_count - 1));
+
+#
+# test _rna_edit for transcripts
+#
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+
+#
+# 5 prime UTR editing
+#
+
+my $seq1 = $tr->edited_seq();
+my $tlseq1 = $tr->translateable_seq();
+
+my $attrib = Bio::EnsEMBL::Attribute->new
+    ( 
+      -code => '_rna_edit',
+      -value => "0 6 GATTACA",
+      -name => "RNA editing"
+      );
+
+$tr->add_Attributes( $attrib );
+
+my $seq2 = $tr->edited_seq();
+
+ok( $seq1 ne $seq2 );
+ok( $seq2 =~ /^GATTACA/ );
+
+
+#
+# insert just at the start of the translation
+# makes it longer. (For non phase zero start exons)
+# cdna_coding_start for this transcript is 65, 64 is just before that
+#
+
+$attrib = Bio::EnsEMBL::Attribute->new
+    ( 
+      -code => '_rna_edit',
+      -value => "64 64 NNN",
+      -name => "RNA editing"
+      );
+
+$tr->add_Attributes( $attrib );
+
+my $tlseq2 = $tr->translateable_seq();
+
+ok( $tlseq1 ne $tlseq2 );
+ok( $tlseq2 =~ /^NNNATG/ );
+ok( $tlseq1 eq substr( $tlseq2,3 ));
+
+#
+# try save and retrieve by lazy load
+#
+
+$multi->hide( "core", "transcript_attrib" );
+my $attribAdaptor = $db->get_AttributeAdaptor();
+
+$attribAdaptor->store_on_Transcript( $tr, $tr->get_all_Attributes() );
+
+$tr = $ta->fetch_by_stable_id( "ENST00000217347" );
+
+ok( $tr->translateable_seq() eq $tlseq2 );
+ok( $tr->edited_seq() =~ /^GATTACA/ );
 
 $multi->restore();
