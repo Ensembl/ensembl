@@ -1,5 +1,5 @@
 #
-# BioPerl module for Transcript
+# BioPerl module for PairAlign object
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -23,18 +23,20 @@ Contains list of sub alignments making up a dna-dna alignment
 
 Creation:
    
-    my $genomic = new Bio::SeqFeature::Homol  (-start  => $qstart,
+    my $genomic = new Bio::EnsEMBL::SeqFeature(-start  => $qstart,
 					       -end    => $qend,
 					       -strand => $qstrand);
 
-    my $cdna     = new Bio::SeqFeature::Generic(-start => $hstart,
+    my $cdna     = new Bio::EnsEMBL::SeqFeature(-start => $hstart,
 						-end   => $hend,
 						-strand => $hstrand);
 
-       $genomic->homol_SeqFeature($cdna);
+    my $pair     = new Bio::EnsEMBL::FeaturePair(-feature1 => $genomic,
+						 -feature2 => $cdna,
+						 );
 
-    my $pair   = new Bio::EnsEMBL::Analysis::PairAlign;
-       $pair->addPair($genomic);
+    my $pairaln   = new Bio::EnsEMBL::Analysis::PairAlign;
+       $pairaln->addFeaturePair($pair);
 
 Any number of pair alignments can be added to the PairAlign object
 
@@ -82,33 +84,33 @@ sub _initialize {
     return $self; # success - we hope!
 }
 
-sub addHomol {
-    my ($self,$homol) = @_;
+sub addFeaturePair {
+    my ($self,$pair) = @_;
 
-    $self->throw("Not a Bio::SeqFeature::Homol object") unless ($homol->isa("Bio::SeqFeature::Homol"));
+    $self->throw("Not a Bio::SeqFeature::FeaturePair object") unless ($pair->isa("Bio::SeqFeature::FeaturePair"));
 
-    push(@{$self->{'_homol'}},$homol);
+    push(@{$self->{'_pairs'}},$pair);
     
 }
 
 
-=head2 eachHomol
+=head2 eachFeaturePair
 
- Title   : eachHomol
- Usage   : my @homols = $pair->eachHomol
+ Title   : eachFeaturePait
+ Usage   : my @pairs = $pair->eachFeaturePair
  Function: 
  Example : 
- Returns : Array of Bio::SeqFeature::Homol
+ Returns : Array of Bio::SeqFeature::FeaturePair
  Args    : none
 
 
 =cut
 
-sub eachHomol {
+sub eachFeaturePair {
     my ($self) = @_;
 
-    if (defined($self->{'_homol'})) {
-	return @{$self->{'_homol'}};
+    if (defined($self->{'_pairs'})) {
+	return @{$self->{'_pairs'}};
     }
 }
 
@@ -126,28 +128,25 @@ sub eachHomol {
 
 sub genomic2cDNA {
     my ($self,$coord) = @_;
-    my @homols = $self->eachHomol;
+    my @pairs = $self->eachFeaturePair;
 
-    @homols = sort {$a->start <=> $b->start} @homols;
+    @pairs = sort {$a->start <=> $b->start} @pairs;
 
-  HOMOL: while (my $sf1 = shift(@homols)) {
+  HOMOL: while (my $sf1 = shift(@pairs)) {
       next HOMOL unless ($coord >= $sf1->start && $coord <= $sf1->end);
       
-      my $sf2 = $sf1->homol_SeqFeature();
-
-      if ($sf1->strand == 1 && $sf2->strand == 1) {
-	  return ($sf2->start + ($coord - $sf1->start));
-      } elsif ($sf1->strand == 1 && $sf2->strand == -1) {
-	  return ($sf2->end   - ($coord - $sf1->start));
-      } elsif ($sf1->strand == -1 && $sf2->strand == 1) {
-	  return ($sf2->start + ($sf1->end - $coord));
-      } elsif ($sf1->strand == -1 && $sf2->strand == -1) {
-	  return ($sf2->end   - ($sf1->end - $coord));
+      if ($sf1->strand == 1 && $sf1->hstrand == 1) {
+	  return ($sf1->hstart + ($coord - $sf1->start));
+      } elsif ($sf1->strand == 1 && $sf1->hstrand == -1) {
+	  return ($sf1->hend   - ($coord - $sf1->start));
+      } elsif ($sf1->strand == -1 && $sf1->hstrand == 1) {
+	  return ($sf1->hstart + ($sf1->end - $coord));
+      } elsif ($sf1->strand == -1 && $sf1->hstrand == -1) {
+	  return ($sf1->hend   - ($sf1->end - $coord));
       } else {
-	  $self->throw("ERROR: Wrong strand value in homol (" . $sf1->strand . "/" . $sf2->strand . "\n");
+	  $self->throw("ERROR: Wrong strand value in FeaturePair (" . $sf1->strand . "/" . $sf1->hstrand . "\n");
       }
-  }
-
+  }    
 }
 
 =head2 cDNA2genomic
@@ -165,23 +164,22 @@ sub genomic2cDNA {
 sub cDNA2genomic {
     my ($self,$coord) = @_;
 
-    my @homols = $self->eachHomol;
+    my @pairs = $self->eachFeaturePair;
 
-  HOMOL: while (my $sf1 = shift(@homols)) {
+  HOMOL: while (my $sf1 = shift(@pairs)) {
 
-      my $sf2 = $sf1->homol_SeqFeature();
-      next HOMOL unless ($coord >= $sf2->start && $coord <= $sf2->end);
+      next HOMOL unless ($coord >= $sf1->hstart && $coord <= $sf1->hend);
 
-      if ($sf1->strand == 1 && $sf2->strand == 1) {
-	  return ($sf1->start + ($coord - $sf2->start));
-      } elsif ($sf1->strand == 1 && $sf2->strand == -1) {
-	  return ($sf1->start + ($sf2->end -$coord));
-      } elsif ($sf1->strand == -1 && $sf2->strand == 1) {
-	  return ($sf1->end   - ($coord - $sf2->start));
-      } elsif ($sf1->strand == -1 && $sf2->strand == -1) {
-	  return ($sf1->end   - ($sf2->end - $coord));
+      if ($sf1->strand == 1 && $sf1->hstrand == 1) {
+	  return ($sf1->start + ($coord - $sf1->hstart));
+      } elsif ($sf1->strand == 1 && $sf1->hstrand == -1) {
+	  return ($sf1->start + ($sf1->hend -$coord));
+      } elsif ($sf1->strand == -1 && $sf1->hstrand == 1) {
+	  return ($sf1->end   - ($coord - $sf1->hstart));
+      } elsif ($sf1->strand == -1 && $sf1->hstrand == -1) {
+	  return ($sf1->end   - ($sf1->hend - $coord));
       } else {
-	  $self->throw("ERROR: Wrong strand value in homol (" . $sf1->strand . "/" . $sf2->strand . "\n");
+	  $self->throw("ERROR: Wrong strand value in homol (" . $sf1->strand . "/" . $sf1->hstrand . "\n");
       }
   }
     

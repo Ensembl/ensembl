@@ -1,5 +1,5 @@
 #
-# BioPerl module for Transcript
+# BioPerl module for PepAlign
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -23,20 +23,23 @@ Contains list of sub alignments making up a peptide-dna alignment
 
 Creation:
    
-    my $cdna     = new Bio::SeqFeature::Homol      (-start  => $qstart,
-						    -end    => $qend,
-						    -strand => $qstrand);
+    my $cdna     = new Bio::EnsEMBL::SeqFeature  (-start  => $qstart,
+						  -end    => $qend,
+						  -strand => $qstrand,
+						  );
 
-    my $pep      = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start => $hstart,
-						    -end   => $hend,
-						    -strand => $hstrand);
-       $pep->start_frac(2);
-       $pep->end_frac(3);
+    my $pep      = new Bio::EnsEMBL::PepSeqFeature(-start      => $hstart,
+						   -end        => $hend,
+						   -strand     => $hstrand,
+						   -start_frac => 2,
+						   -end_frac   => 3);
 
-       $cdna->homol_SeqFeature($pep);
+    my $pair = new Bio::EnsEMBL::FeaturePair(-feature1 => $cdna,
+					     -feature2 => $pep,
+					     );
 
-    my $pair   = new Bio::EnsEMBL::Analysis::PepAlign;
-       $pair->addHomol($cdna);
+    my $pepaln   = new Bio::EnsEMBL::Analysis::PepAlign;
+       $pepaln->addFeaturePair($pair);
 
 Any number of pair alignments can be added to the PepAlign object
 
@@ -45,12 +48,12 @@ Manipulation:
 
 To convert between coordinates : 
 
-    my $cdna_coord         = $pair->pep2cDNA($cdna_coord);
-    my ($pep_coord,$frac)  = $pair->cDNA2pep($cdna_coord);
+    my $cdna_coord         = $pepaln->pep2cDNA($cdna_coord);
+    my ($pep_coord,$frac)  = $pepaln->cDNA2pep($cdna_coord);
   
 To access the homols
 
-    my @homols = $pair->eachHomol;
+    my @pairs = $pepaln->eachFeaturePair
 
 =head1 CONTACT
 
@@ -82,7 +85,7 @@ use Bio::Root::Object;
 sub _initialize {
     my($self,@args) = @_;
     
-    $self->{'_homol'} = [];
+    $self->{'_pairs'} = [];
     my $make = $self->SUPER::_initialize;
     
     return $self; # success - we hope!
@@ -95,44 +98,44 @@ sub _initialize {
 
 =pod 
 
-=head2 addHomol
+=head2 addFeaturePair
 
- Title   : addHomol
- Usage   : $pair->addHomol($homol)
- Function: Adds a homol feature to the alignment object
+ Title   : addFeaturePair
+ Usage   : $pair->addFeaturePair($fp)
+ Function: Adds a FeaturePair to the alignment object
  Example : 
  Returns : nothing
- Args    : Bio::SeqFeature::Homol
+ Args    : Bio::SeqFeature::FeaturePair
 
 
 =cut
 
-sub addHomol {
-    my ($self,$homol) = @_;
+sub addFeaturePair {
+    my ($self,$pair) = @_;
 
-    $self->throw("Not a Bio::SeqFeature::Homol object") unless ($homol->isa( "Bio::SeqFeature::Homol"));
+    $self->throw("Not a Bio::SeqFeature::FeaturePair object") unless ($pair->isa( "Bio::SeqFeature::FeaturePair"));
 
-    push(@{$self->{'_homol'}},$homol);
+    push(@{$self->{'_pairs'}},$pair);
     
 }
 
-=head2 eachHomol
+=head2 eachFeaturePair
 
- Title   : eachHomol
- Usage   : $pair->eachHomol
- Function: Returns an array of all the homols in the alignment object
+ Title   : eachFeaturePair
+ Usage   : $pair->eachFeaturePair
+ Function: Returns an array of all the FeaturePairs in the alignment object
  Example : 
- Returns : @Bio::SeqFeature::Homol
+ Returns : @Bio::SeqFeature::FeaturePair
  Args    : none
 
 
 =cut
 
-sub eachHomol {
+sub eachFeaturePair {
     my ($self) = @_;
 
-    if (defined($self->{'_homol'})) {
-	return @{$self->{'_homol'}};
+    if (defined($self->{'_pairs'})) {
+	return @{$self->{'_pairs'}};
     }
 }
 
@@ -151,15 +154,15 @@ sub eachHomol {
 
 sub cDNA2pep {
     my ($self,$coord) = @_;
-    my @homols = $self->eachHomol;
+    my @pairs = $self->eachFeaturePair;
 
-       @homols = sort {$a->start <=> $b->start} @homols;
+       @pairs = sort {$a->start <=> $b->start} @pairs;
 
 
     # We loop through all the homols to see whether our cDNA coordinate
     # is contained therein
 
-  HOMOL: while (my $sf1 = shift(@homols)) {
+  HOMOL: while (my $sf1 = shift(@pairs)) {
 
       next HOMOL unless ($coord >= $sf1->start && $coord <= $sf1->end);
       
@@ -167,9 +170,7 @@ sub cDNA2pep {
       # We have found the homol our coordinate is in - we need
       # to now find the peptide coord corresponding to our cDNA
 
-      # This is the peptide homol
-      my $sf2 = $sf1->homol_SeqFeature();
-
+      my $sf2 = $sf1->feature2;
 
       # We now have four different combinations of strands
       # to cope with
@@ -300,15 +301,15 @@ sub cDNA2pep {
 sub pep2cDNA {
     my ($self,$coord,$frac) = @_;
 
-    my @homols = $self->eachHomol;
+    my @pairs = $self->eachFeaturePair;
     my $debug = 1;
 
     $frac = 1 unless $frac;
 
 
-  HOMOL: while (my $sf1 = shift(@homols)) {
+  HOMOL: while (my $sf1 = shift(@pairs)) {
       # This is the peptide homol
-      my $sf2 = $sf1->homol_SeqFeature();
+      my $sf2 = $sf1->feature2;
 
 #      print("Homol is " . $sf2->start . " " . $sf2->end . " " . $sf2->seqname . "\n");
 #      print("Pep   is " . $sf1->start . " " . $sf1->end . " " . $sf1->seqname ."\n");

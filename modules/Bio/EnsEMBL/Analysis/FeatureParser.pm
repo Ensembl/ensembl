@@ -45,11 +45,11 @@ package Bio::EnsEMBL::Analysis::FeatureParser;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 
-use Bio::SeqFeature::Generic;
-use Bio::SeqFeature::Homol;
+
 
 use Bio::Tools::HMMER::Results;
 
+use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
 use Bio::EnsEMBL::Analysis::Repeat;
@@ -168,10 +168,10 @@ sub read_Repeats {
     my $gfffile    = "$clone_dir/$disk_id".$msp->[4];    
 
     if (! -e $gfffile) {
-	print( "   - No repeat file $gfffile  exists - Skipping repeats\n");
+	print(STDERR "   - No repeat file $gfffile  exists - Skipping repeats\n");
 	return;
     } else {
-	print( "   - Reading RepeatMasker file $gfffile\n");
+	print(STDERR "   - Reading RepeatMasker file $gfffile\n");
     }
 
     my $analysis   = new Bio::EnsEMBL::Analysis::Analysis( -program         => $msp->[1],
@@ -184,7 +184,7 @@ sub read_Repeats {
 						     -type => 'Repeat');
 	    
     foreach my $f ($GFF->each_Feature) {
-	$f->add_tag_value('Analysis',$analysis);
+	$f->analysis($analysis);
 	$self->add_Feature($f);
     }
 }
@@ -225,7 +225,7 @@ sub read_Pfam {
 	$dom->strand    (1);
 	$dom->add_tag_value('Analysis',$analysis);
 
-	my $dom2 = $dom->homol_SeqFeature;
+	my $dom2 = $dom->feature2;
 
 	$dom2->source_tag('hmmpfam');
 	$dom2->primary_tag('similarity');
@@ -243,9 +243,9 @@ sub read_Genscan {
 
     foreach my $trans($genscan->each_Transcript) {
 	foreach my $ex ($trans->each_Exon) {
-	    my $f = new Bio::SeqFeature::Homol(-start  => $ex->start,
-					       -end    => $ex->end,
-					       -strand => $ex->strand);
+	    my $f = new Bio::SeqFeature::Generic(-start  => $ex->start,	
+						 -end    => $ex->end,
+						 -strand => $ex->strand);
 
 	    $f->source_tag ($ex->source_tag);
 	    $f->primary_tag($ex->primary_tag);
@@ -263,10 +263,8 @@ sub read_Genscan {
 sub add_Feature {
     my ($self,$f) = @_;
 
-    $self->throw("Feature must be Bio::SeqFeature::Generic in add_Feature") unless $f->isa("Bio::SeqFeature::Generic");
-
-    return unless $f->source_tag ne "GENSCAN";
-    $self->throw("Feature " . $f->seqname. " " . $f->source_tag  . " does not have an analysis tag") unless $f->has_tag('Analysis');
+    $self->throw("Feature must be Bio::EnsEMBL::SeqFeatureI in add_Feature") 
+	unless $f->isa("Bio::EnsEMBL::SeqFeatureI");
 
     if (!defined($self->{_features})) {
 	$self->{_features} = [];
@@ -329,7 +327,7 @@ sub read_MSP {
     foreach my $homol ($mspobj->each_Homol) { 
 
 	$homol->source_tag($mspobj->source_tag);
-	$homol->homol_SeqFeature->source_tag($mspobj->source_tag);
+	$homol->feature2->source_tag($mspobj->source_tag);
 
 	if ($type1 eq "PEP") {
 	    if ($type2 eq "DNA") {

@@ -44,10 +44,11 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
-use Bio::SeqFeature::Homol;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::Analysis::Repeat;
 use FileHandle;
+
+use Bio::EnsEMBL::FeaturePair;
 
 # Inherits from the base bioperl object
 @ISA = qw(Bio::Root::Object);
@@ -90,42 +91,8 @@ sub each_Feature {
     my ($self) = @_;
 
     my @f = @{$self->{_features}};
+
     return @{$self->{_features}};
-}
-
-=head2 validate_Feature
-
-  Title   : validate_Feature
-  Usage   : my $ok = $self->validate_Feature($feature)
-  Function: checks the data in the Feature object is all present 
-            throws an exception if a tag isn't present.
-  Returns : nothing
-  Args    : Bio::SeqFeature::Generic
-
-=cut
-
-sub validate_Feature {
-    my ($self,$feature) = @_;
-
-    $self->throw("Seqname not defined in feature") unless defined($feature->seqname);
-    $self->throw("start not defined in feature") unless defined($feature->start);
-    $self->throw("end not defined in feature") unless defined($feature->end);
-    $self->throw("strand not defined in feature") unless defined($feature->strand);
-    $self->throw("score not defined in feature") unless defined($feature->score);
-    $self->throw("source_tag not defined in feature") unless defined($feature->source_tag);
-    $self->throw("primary_tag not defined in feature") unless defined($feature->primary_tag);
-
-    if ($feature->isa("Bio::SeqFeature::Homol")) {
-	my $hfeature = $feature->homol_SeqFeature;
-    $self->throw("Seqname not defined in feature") unless defined($hfeature->seqname);
-    $self->throw("start not defined in feature") unless defined($hfeature->start);
-    $self->throw("end not defined in feature") unless defined($hfeature->end);
-    $self->throw("strand not defined in feature") unless defined($hfeature->strand);
-    $self->throw("score not defined in feature") unless defined($hfeature->score);
-    $self->throw("source_tag not defined in feature") unless defined($hfeature->source_tag);
-    $self->throw("primary_tag not defined in feature") unless defined($hfeature->primary_tag);
-
-    }
 }
 
 =head2 add_Feature {
@@ -143,11 +110,11 @@ sub add_Feature {
     
     my @f = @{$self->{_features}};
 
-    if (defined($arg) && $arg->isa("Bio::SeqFeature::Generic")) {
-	$self->validate_Feature($arg);
+    if (defined($arg) && $arg->isa("Bio::EnsEMBL::SeqFeatureI")) {
+	$arg->validate;
 	push(@{$self->{_features}},$arg);
     } else {
-	$self->throw("Feature : $arg : is not a Bio::SeqFeature::Generic");
+	$self->throw("Feature : $arg : is not a Bio::EnsEMBL::SeqFeatureI");
     }
 
 }
@@ -235,9 +202,9 @@ sub _parse_line {
     
     if ($frame eq ".") {  $frame = "";}
 
-    my $f = new Bio::SeqFeature::Generic(-seqname     => $seqname,
-					 -source      => $source,
-					 -primary     => $feature,
+    my $f = new Bio::EnsEMBL::SeqFeature(-seqname     => $seqname,
+					 -source_tag  => $source,
+					 -primary_tag => $feature,
 					 -start       => $start,
 					 -end         => $end,
 					 -strand      => $strand,
@@ -245,8 +212,8 @@ sub _parse_line {
 					 -score       => $score,
 					 );
 
-    $f->seqname    ($seqname);
-    $f->add_tag_value('Analysis',$self->analysis);
+    $f->seqname ($seqname);
+    $f->analysis($self->analysis);
 
     if ($attrib[0] eq "Target" && $feature eq "similarity") {
 	$f = $self->_parse_attrib($f,$feature,@attrib);
@@ -282,46 +249,45 @@ sub _parse_attrib {
 	    return $feature;
 	}
 
-	my $homol;
-
-	if ($self->type eq "Repeat") {
-	    $homol = new Bio::EnsEMBL::Analysis::Repeat(-start       => $feature->start,
+	my $homol = new Bio::EnsEMBL::SeqFeature(-start       => $feature->start,
 						 -end         => $feature->end,
 						 -strand      => $feature->strand,
 						 -frame       => $feature->frame,
-						 -primary     => $feature->primary_tag,
-						 -source      => $feature->source_tag,
+						 -primary_tag => $feature->primary_tag,
+						 -source_tag  => $feature->source_tag,
 						 -score       => $feature->score,
 						 -seqname     => $feature->seqname,
 						 );
-	} else {
-	    $homol = new Bio::SeqFeature::Homol(-start       => $feature->start,
-						-end         => $feature->end,
-						-strand      => $feature->strand,
-						-frame       => $feature->frame,
-						-primary     => $feature->primary_tag,
-						-source      => $feature->source_tag,
-						-score       => $feature->score,
-						-seqname     => $feature->seqname,
-						);
-	}
-
+	
 	$homol->seqname($feature->seqname);
 	
-	my $newf = new Bio::SeqFeature::Homol  (-start       => $hstart,
-						-end         => $hend,
-						-strand      => $feature->strand,
-						-frame       => $feature->frame,
-						-seqname     => $hname,
-						-source      => $feature->source_tag,
-						-score       => $feature->score,
-						-primary     => $feature->primary_tag,
-						);
-	$newf->seqname($hname);
+	my $newf = new Bio::EnsEMBL::SeqFeature  (-start       => $hstart,
+						  -end         => $hend,
+						  -strand      => $feature->strand,
+						  -frame       => $feature->frame,
+						  -seqname     => $hname,
+						  -source_tag  => $feature->source_tag,
+						  -score       => $feature->score,
+						  -primary_tag => $feature->primary_tag,
+						  );
+	$newf ->seqname($hname);
+	$newf ->analysis($self->analysis);
+	$homol->analysis($self->analysis);
 
-	$homol->homol_SeqFeature($newf);
-	
-	return $homol;
+	my $fp;
+
+	if ($self->type eq "Repeat") {
+	    $fp = new Bio::EnsEMBL::Repeat(-feature1 => $homol,
+					   -feature2 => $newf,
+					   );
+
+	} else {
+	    $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $homol,
+						-feature2 => $newf,
+						);
+	}
+	$fp->analysis($self->analysis);
+	return $fp;
     }  else {
 	$self->throw("Can't make homol object from attrib tags");
     }

@@ -11,32 +11,32 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Repeat
+Bio::EnsEMBL::Repeat
 
 =head1 SYNOPSIS
 
 =head1 DESCRIPTION
 
-Extends the bioperl Bio::SeqFeature::Homol to store
+Extends Bio::EnsEMBL::FeaturePair to store
 genomic repeat features.  
 
 Creation:
 
-    my $rep = new Bio::EnsEMBL::Analysis::Repeat(-start => $start,
-						 -end    => $end,
-						 -strand => $strand,
-						 -source => $source,
-						 -primary=> $primary,
-						 );
+    my $rep = new Bio::EnsEMBL::Repeat(-start => $start,
+				       -end    => $end,
+				       -strand => $strand,
+				       -source => $source,
+				       -primary=> $primary,
+				       );
 
 Manipulation:
 
     my $start = $rep->start;
     my $end   = $rep->end;
 
-    my $repname  = $rep->homol_SeqFeature->seqname;
-    my $repstart = $rep->homol_SeqFeature->start;
-    my $repend   = $rep->homol_SeqFeature->end;
+    my $repname  = $rep->hseqname;
+    my $repstart = $rep->hstart;
+    my $repend   = $rep->hend;
 
 
 =head1 CONTACT
@@ -53,7 +53,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Analysis::Repeat;
+package Bio::EnsEMBL::Repeat;
 
 use vars qw(@ISA);
 use strict;
@@ -61,10 +61,10 @@ use strict;
 # Object preamble - inherits from Bio::SeqFeature::Homol
 
 use Bio::AnnSeqIO::FTHelper;
-use Bio::SeqFeature::Homol;
+use Bio::EnsEMBL::FeaturePair;
 
 
-@ISA = qw(Bio::SeqFeature::Homol);
+@ISA = qw(Bio::EnsEMBL::FeaturePair);
 
 # new() is inherited from Bio::SeqFeature::Generic
 
@@ -95,22 +95,25 @@ sub to_FTHelper {
     
     # Make new FTHelper, and fill in the key
     my $fth = Bio::AnnSeqIO::FTHelper->new;
-    $fth->key('repeat_region');
+       $fth->key('repeat_region');
     
     # Add location line
     my $g_start = $rep->start;
     my $g_end   = $rep->end;
-    my $loc = "$g_start..$g_end";
+    my $loc     = "$g_start..$g_end";
+
     if ($rep->strand == -1) {
         $loc = "complement($loc)";
     }
+
     $fth->loc($loc);
     
     # Add note describing repeat
-    my $type    = $rep->homol_SeqFeature->seqname;
-    $type =~ s/^Motif://;
-    my $r_start = $rep->homol_SeqFeature->start;
-    my $r_end   = $rep->homol_SeqFeature->end;
+    my $type    = $rep->hseqname;
+       $type =~ s/^Motif://;
+    my $r_start = $rep->hstart;
+    my $r_end   = $rep->hend;
+
     $fth->add_field('note', "$type: matches $r_start to $r_end of consensus");
     
     return $fth;

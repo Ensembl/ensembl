@@ -26,7 +26,7 @@ Extracting data
 
     my @homols = $msp->each_Homol;
 
-Returns an array of Bio::SeqFeature::Homol;
+Returns an array of Bio::EnsEMBL::FeaturePair;
 
 =head1 DESCRIPTION
 
@@ -125,7 +125,7 @@ sub _parse {
 
   Title   : _read_Homol
   Usage   : $self->_read_Homol($line);
-  Function: Converts a line from a MSPcrunch output file to a Bio::SeqFeature::Homol
+  Function: Converts a line from a MSPcrunch output file to a Bio::EnsEMBL::FeaturePair
   Returns : Nothing
   Args    : Bio::SeqFeature::String
 
@@ -171,29 +171,30 @@ sub _read_Homol {
 
     if ($type1 eq "PEP") {
 
-	$sf1 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $qstart,
-							  -end    => $qend,
-							  -strand => 1);
+	$sf1 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $qstart,
+						-end    => $qend,
+						-strand => 1
+						);
 	$sf1->start_frac(1);
 	$sf1->end_frac  (3);
-
+	
     } else {
-	$sf1 = new Bio::SeqFeature::Homol(-start  => $qstart,
-					  -end    => $qend,
-					  -strand => 1);
+	$sf1 = new Bio::EnsEMBL::SeqFeature(-start  => $qstart,
+					    -end    => $qend,
+					    -strand => 1);
     }
     
     if ($type2 eq "PEP") {
-	$sf2 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(-start  => $hstart,
-							  -end    => $hend,
-							  -strand => $strand1);
+	$sf2 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $hstart,
+						-end    => $hend,
+						-strand => $strand1);
 	$sf2->start_frac(1);
 	$sf2->end_frac  (3);
 
     } else {
-	$sf2 = new Bio::SeqFeature::Homol(-start  => $hstart,
-					  -end    => $hend,
-					  -strand => $strand1);
+	$sf2 = new Bio::EnsEMBL::SeqFeature(-start  => $hstart,
+					    -end    => $hend,
+					    -strand => $strand1);
     }
 
 
@@ -216,14 +217,17 @@ sub _read_Homol {
 
 
 
-    $sf1->homol_SeqFeature($sf2);
-
+    my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $sf1,
+					   -feature2 => $sf2,
+					   );
+	
     my $anal = $self->analysis;
 
-    $sf1->add_tag_value('Analysis',$anal);
-    $sf2->add_tag_value('Analysis',$anal);
+    $sf1->analysis($anal);
+    $sf2->analysis($anal);
+    $fp->analysis($anal);
 
-    return ($sf1);
+    return ($fp);
 }
 	
 =head2 each_Homol
@@ -257,7 +261,7 @@ sub each_Homol {
 sub add_Homol {
     my ($self,$homol) = @_;
     
-    $self->throw("Argument to Bio::EnsEMBL::Analysis::MSPcrunch->add_Homol is not a Bio::SeqFeature::Homol") unless $homol->isa("Bio::SeqFeature::Homol");
+    $self->throw("Argument to Bio::EnsEMBL::Analysis::MSPcrunch->add_Homol is not a Bio::EnsEMBL::FeaturePair") unless $homol->isa("Bio::EnsEMBL::FeaturePair");
     
     push(@{$self->{_homols}},$homol);
 
@@ -365,85 +369,6 @@ sub get_types {
     return ($type1,$type2);
 }
 
-=head2 swaphomols
-
-  Title   : swaphomols
-  Usage   : Bio::EnsEMBL::Analysis::MSPcrunch->swaphomols($homol);
-  Function: changes the parent/child relationship in a homol object
-  Returns : Bio::SeqFeature::Homol
-  Args    : Bio::SeqFeature::Homol
-
-=cut
-
-sub swaphomols {
-    my ($self,$h1) = @_;
-
-    my $h2 = $h1->homol_SeqFeature;
-
-    my $newh1;
-    my $newh2;
-
-    if ($h1->isa("Bio::EnsEMBL::Analysis::pep_SeqFeature")) {
-
-	$newh1 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(
-							    -start       => $h1->start,
-							    -end         => $h1->end,
-							    -strand      => $h1->strand,
-							    );
-	$newh1->start_frac($h1->start_frac);
-	$newh1->end_frac  ($h1->end_frac);
-
-    } else {
-
-	$newh1 = new Bio::SeqFeature::Homol (
-					     -start       => $h1->start,
-					     -end         => $h1->end,
-					     -strand      => $h1->strand,
-					    );
-    }
-
-
-    $newh1->primary_tag($h1->primary_tag);
-    $newh1->source_tag($h1->source_tag);
-    $newh1->seqname    ($h1->seqname);
-    $newh1->score      ($h1->score);
-
-    if ($h1->has_tag('Analysis')) {
-	$newh1->add_tag_value('Analysis',$h1->each_tag_value('Analysis'));
-    }
-
-    if ($h2->isa("Bio::EnsEMBL::Analysis::pep_SeqFeature")) {
-	$newh2 = new Bio::EnsEMBL::Analysis::pep_SeqFeature(
-							   -start => $h2->start,
-							   -end   => $h2->end,
-							   -strand => $h2->strand,
-							   );
-	$newh2->start_frac($h2->start_frac);
-	$newh2->end_frac  ($h2->end_frac);
-
-    } else {
-	$newh2 = new Bio::SeqFeature::Homol (
-					    -start => $h2->start,
-					    -end   => $h2->end,
-					    -strand => $h2->strand,
-					    );
-    }
-
-    $newh2->source_tag ($h2->source_tag);
-    $newh2->primary_tag($h2->primary_tag);
-    $newh2->seqname    ($h2->seqname);
-    $newh2->score      ($h2->score);
-
-    if ($h2->has_tag('Analysis')) {
-	$newh2->add_tag_value('Analysis',$h2->each_tag_value('Analysis'));
-    }
-
-
-#    print("Setting seqnames to " . $newh1->seqname . "\t" . $newh2->seqname  . "\n");
-    $newh2->homol_SeqFeature($newh1);
-
-    return $newh2;
-}
 
 sub analysis {
     my ($self,$arg) = @_;
