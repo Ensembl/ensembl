@@ -63,7 +63,7 @@ CREATE TABLE contig (
   international_id  varchar(40),
   
   PRIMARY KEY (internal_id),
-  KEY id (id),
+  UNIQUE id (id),
   KEY clone (clone),
   KEY dna (dna)
 );
