@@ -117,7 +117,7 @@ if ( $getall) {
     if ($clones) {
         @ids = $db->get_all_Clone_id();
     } else {
-        @ids = $db->get_all_fpcctg_ids();  
+        @ids = $db->get_all_fpcctg_ids('UCSC');  
     }
     warn scalar(@ids)." ids found in DB\n";
 } elsif ( @ARGV > 0 ) {
