@@ -557,9 +557,6 @@ CREATE TABLE landmark_marker (
 );
 
 
-
-
-
 CREATE TABLE meta (
     meta_id INT unsigned not null auto_increment,
     meta_key varchar( 40 ) not null,
@@ -573,3 +570,29 @@ CREATE TABLE meta (
 # Auto add schema version to database
 insert into meta (meta_key, meta_value) values (
 	"schema_version", "$Revision$");
+
+
+# This table stores the full tiling path for whole genome
+# shotgun data.  This is used when the contigs in
+# the contig table are partially denormalized (typically to
+# 5Mb) enabling the code and the web site to be as
+# fast as possible without losing any of the assembly
+# information
+
+CREATE TABLE assembly_contig (
+    assembly_contig_id INT unsigned not null auto_increment,
+    assembly_contig_name           varchar(20) NOT NULL,
+    assembly_contig_chr_name       varchar(20)  NOT NULL,
+    assembly_contig_start          int(10) NOT NULL,
+    assembly_contig_end            int(10) NOT NULL,
+    assembly_contig_chr_start      int(10) NOT NULL,
+    assembly_contig_chr_end        int(10) NOT NULL,
+    assembly_contig_orientation    tinyint(2)  NOT NULL,
+    assembly_contig_type           varchar(20) NOT NULL,
+
+    PRIMARY KEY (assembly_contig_id),
+    KEY(assembly_contig_name,assembly_contig_type),
+    KEY(assembly_contig_chr_name,assembly_contig_chr_start,assembly_contig_type)
+);
+
+
