@@ -627,7 +627,7 @@ CREATE TABLE marker (
     priority                   int,
     
     PRIMARY KEY (marker_id),
-    KEY marker_idx (marker_id, priority),
+    KEY marker_idx (marker_id, priority)
 );
 
 
