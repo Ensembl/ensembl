@@ -171,9 +171,9 @@ sub fetch_by_contig_id{
 }
 
 
-=head2 fetch_by_assembly_location
+=head2 fetch_by_assembly_location_constraint
 
- Title   : fetch_by_assembly_location
+ Title   : fetch_by_assembly_location_constraint
  Usage   :
  Function:
  Example :
@@ -208,6 +208,7 @@ sub fetch_by_assembly_location_constraint{
    if($constraint){
      $sql .= " AND $constraint";
    }
+
    my $sth = $self->prepare($sql);
    $sth->execute();
 
