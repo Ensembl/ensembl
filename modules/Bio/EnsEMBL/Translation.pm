@@ -354,6 +354,8 @@ sub get_all_DBEntries {
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
   }
 
+  $self->{'dbentries'} ||= [];
+
   return $self->{'dbentries'};
 }
 
