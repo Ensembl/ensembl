@@ -536,8 +536,8 @@ sub fetch_VirtualContig_of_gene{
    my $type = $self->dbobj->static_golden_path_type();
 
    my $sth = $self->dbobj->prepare("SELECT  
-   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_start)),
-   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_start-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_end)),
+   if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),(sgp.chr_start+sgp.raw_end-e.seq_start)),
      sgp.chr_name
   
 				    FROM    exon e,
