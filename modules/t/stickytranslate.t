@@ -3,7 +3,7 @@
 # based on staticgoldenpath.t and staticgoldenpath.dump
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..7\n";  warn "there'(ll be more tests than this)";
+BEGIN { $| = 1; print "1..24\n";
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -14,6 +14,8 @@ use lib 't';
 use EnsTestDB;
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
+
+$" = $, = ", ";                          # for easier list-printing
     
 my $ens_test = EnsTestDB->new();
     
@@ -55,7 +57,7 @@ if ($pep eq $expected) {
     warn "expected $expected\ngot $pep\n";
 }
 
-### ok, following (exons with different strandedness) doen'st make
+### Following (exons with different strandedness) doen'st make
 ### biological sense, but it works (or should the code guard against this? )
 
 # exon of 5 aa's, last three of RawContig10, first 2 of RawContig20
@@ -177,54 +179,109 @@ $gene->add_Transcript($transc);
 $gene->created(1);
 $gene->modified(1);
 
-# try to store it; this should create Sticky Exons, or not? 
-$geneObj = $db->gene_Obj;
-$geneObj->write($gene);
-print "ok 10\n";
 
-warn  "sticky translate is not completely ready; more to follow; exiting now";
-# exit;
-
-# use PLens;
-# PLens::dbstop($ens_test->dbname);
-
-# now translate the transcript: 
-
-@genes = $vc->get_all_Genes();
-if ( @genes == 1 and defined( $genes[0]) ) { 
-    print "ok n\n";
+@transc = $gene->each_Transcript;
+if (@transc  ==1 ) {
+    print "ok 10\n";
 } else { 
-    print "not ok n\n";
-    warn "not exactly 1 gene, or it is undefined\n";
+    print "not ok 10\n";
+    warn "expected 1 transcript, got this:@transc\n";
 }
 
-@genes = $vc->get_all_VirtualGenes();
-if ( @genes == 1 and defined( $genes[0]) ) { 
-    print "ok n\n";
-} else { 
-    print "not ok n\n";
-    warn "not exactly 1 VirtualGene, or it is undefined\n";
-}
-
-$gene = $genes[0];
-$expected = '????';
-$pep = $gene->tranlation->seq;
-
-if (  $pep eq $expected ) {
-    print "ok n\n"; 
-} else { 
-    print "not ok n\n";
+# check if all is intact after this:
+$seq = $transc->translate; $pep = $seq->seq;
+$expected = 'G' x 1 . 'P' x 3 . 'A' x 2 . 'V' x 5 . 'G' x 1;
+if ($pep eq $expected) { 
+    print "ok 11\n";
+} else {
+    print "not ok 11\n";
     warn "expected $expected\ngot $pep\n";
 }
 
-
-# make a new gene, this time using raw coords
+# can we convert the coords:
 $newgene = $vc->convert_Gene_to_raw_contig($gene);
-print "ok n\n";
+print "ok 12\n";
 
+# is all still OK with these transcripts? 
+@transc = $gene->each_Transcript;
+if (@transc  ==1 ) {
+    print "ok 13\n";
+} else { 
+    print "not ok 13\n";
+    warn "expected 1 transcript, got this:@transc\n";
+}
 
-# PLens::dbstop($ens_test->dbname);
+# check if all is intact after this:
+$seq = $transc->translate; $pep = $seq->seq;
+$expected = 'G' x 1 . 'P' x 3 . 'A' x 2 . 'V' x 5 . 'G' x 1;
+if ($pep eq $expected) { 
+    print "ok 14\n";
+} else {
+    print "not ok 14\n";
+    warn "expected $expected\ngot $pep\n";
+}
 
-# and get it back out:
+# try to store it; this will create Sticky Exons:
+$geneObj = $db->gene_Obj;
+$geneObj->write($newgene);
+print "ok 15\n";
 
+# see if we can find all genes them back from original chr3 Virtual Contig:
+@genes = $vc->get_all_Genes(); # no !?!
+if ( @genes == 1 and defined( $genes[0]) ) { 
+    print "ok 16\n";
+} else { 
+    print "not ok 16\n";
+    $, = $" = ':';
+    warn "not exactly 1 gene, or it is undefined:\n@genes\n";
+}
 
+$gene = $genes[0];
+@transc = $gene->each_Transcript;
+if (@transc  ==1 ) {
+    print "ok 17\n";
+} else { 
+    print "not ok 17\n";
+    warn "expected 1 transcript, got this:@transc\n";
+}
+
+$expected = 'G' x 1 . 'P' x 3 . 'A' x 2 . 'V' x 5 . 'G' x 1;
+$pep = $gene->tranlation->seq;
+print "ok 19\n";
+
+if (  $pep eq $expected ) {
+    print "ok 20\n"; 
+} else { 
+    print "not ok 20\n";
+    warn "expected $expected\ngot $pep\n";
+}
+
+@virtualgenes = $vc->get_all_VirtualGenes() ;
+if ( $virtualgenes[0] == $genes[0] ) { 
+    print "ok 21\n"; 
+} else { 
+    print "not ok 21\n"; 
+}
+
+# try read it back in
+$gene2 = $db->gene_Obj->get('gene-id-1s');
+print "ok 22\n";
+
+# is all still OK with gene and  transcripts? 
+@transc = $gene2->each_Transcript;
+if (@transc  ==1 ) {
+    print "ok 23\n";
+} else { 
+    print "not ok 23\n";
+    warn "expected 1 transcript, got this:@transc\n";
+}
+
+# check if all is intact after this:
+$seq = $transc->translate; $pep = $seq->seq;
+$expected = 'G' x 1 . 'P' x 3 . 'A' x 2 . 'V' x 5 . 'G' x 1;
+if ($pep eq $expected) { 
+    print "ok 24\n";
+} else {
+    print "not ok 24\n";
+    warn "expected $expected\ngot $pep\n";
+}
