@@ -826,6 +826,7 @@ CREATE TABLE stable_id_event (
   new_stable_id varchar(40),
   new_version smallint,
   mapping_session_id int(11) NOT NULL default '0',
+  type ENUM('gene', 'transcript', 'translation') NOT NULL,
   UNIQUE KEY tpl_idx (old_stable_id,new_stable_id,mapping_session_id),
   KEY new_idx (new_stable_id)
 ) TYPE=MyISAM;
