@@ -109,17 +109,25 @@ sub new {
 			    FEATURE2
 			    )],@args);
 
-  $self->SUPER::new(-ANALYSIS => $feature1->analysis(),
-		    -SEQNAME  => $feature1->seqname(),
-		    -START    => $feature1->start(),
-		    -END      => $feature1->end(),
-		    -FRAME    => $feature1->frame(),
-		    -SCORE    => $feature1->score(),
-		    -PERCENT_ID => $feature1->percent_id(),
-		    -P_VALUE => $feature1->p_value(),
-		    -PHASE => $feature1->phase(),
-		    -END_PHASE => $feature1->end_phase());
+  if($feature1) {
+    $self = $self->SUPER::new(-ANALYSIS => $feature1->analysis(),
+		      -SEQNAME  => $feature1->seqname(),
+		      -START    => $feature1->start(),
+		      -END      => $feature1->end(),
+		      -STRAND   => $feature1->strand(),
+		      -FRAME    => $feature1->frame(),
+		      -SCORE    => $feature1->score(),
+		      -PERCENT_ID => $feature1->percent_id(),
+		      -P_VALUE => $feature1->p_value(),
+		      -PHASE => $feature1->phase(),
+		      -END_PHASE => $feature1->end_phase());
 
+    if($feature1->entire_seq()) {
+      $self->attach_seq($feature1->entire_seq());
+    }
+  } else {
+    $self->SUPER::new();
+  }
 
   $feature2 && $self->feature2($feature2);
 
