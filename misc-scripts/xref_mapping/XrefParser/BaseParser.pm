@@ -8,11 +8,11 @@ use File::Path;
 use POSIX qw(strftime);
 use Getopt::Long;
 
-use XrefParser::UniProtParser;
-use XrefParser::RefSeqParser;
-use XrefParser::RefSeqGPFFParser;
-
 my $base_dir = ".";
+
+my $add_xref_sth = undef;
+my $add_dependent_xref_sth = undef;
+my $get_xref_sth = undef;
 
 my $dbi;
 my %dependent_sources;
@@ -103,9 +103,15 @@ sub run {
       }
 
     }
+    else{
+      if ($file =~ /(.*)\.gz$/) {
+	$file = $1;
+      }
+    }
 
     # compare checksums and parse/upload if necessary
     # need to check file size as some .SPC files can be of zero length
+    print "HELLO: $dir/$file\n";
     my $file_cs = md5sum("$dir/$file");
     if (!defined $checksum || $checksum ne $file_cs) {
 
@@ -666,6 +672,39 @@ sub show_valid_species() {
   while (my @row = $sth->fetchrow_array()) {
     print @row[0] . " (aliases: " . $row[1] . ")\n";
   }
+
+}
+
+
+sub get_xref{
+  my ($acc,$source) = @_;
+
+  if(!defined($get_xref_sth)){
+    my $sql = "select xref_id from xref where accession = ? and source_id = ?";
+    $get_xref_sth = $dbi->prepare($sql);  
+  }
+  
+  $get_xref_sth->execute($acc, $source) || die $dbi->errstr;
+  if(my @row = $get_xref_sth->fetchrow_array()) {
+    return $row[0];
+  }   
+  return undef;
+}
+
+sub add_to_xrefs{
+  my ($master_xref,$acc,$label,$linkage,$source_id,$species_id) = @_;
+
+  if(!defined($add_xref_sth)){
+    $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
+    $add_dependent_xref_sth = dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
+  }
+
+  my $dependent_id = get_xref($acc, $source_id);
+  if(!defined($dependent_id)){
+    $add_xref_sth->execute($acc,$label,"",$source_id,$species_id);
+  }
+  $dependent_id = get_xref($acc, $source_id);
+  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id);
 
 }
 
