@@ -32,17 +32,13 @@ print "ok \n";    # 1st test passed, loaded needed modules
 
 #Creating test donor and recipient databases
 
-print STDERR "Please insert user for mysqladmin commands (usually password protected, e.g. root): ";
-$user=<STDIN>;
-chop $user;
-
 print STDERR "Please insert read/write user (not password protected, e.g. ensembl): ";
 $nuser=<STDIN>;
 chop $nuser;
 
 print STDERR "\nCREATING TEST DATABASES: please insert password when prompted (twice)...\n";
-my $create_donor = "mysqladmin -u ".$user." -p create donor";
-my $create_recipient = "mysqladmin -u ".$user." -p create recipient";
+my $create_donor = "mysqladmin -u ".$nuser." create donor";
+my $create_recipient = "mysqladmin -u ".$nuser." create recipient";
 system($create_donor) == 0 or die "$0\nError running '$create_donor' : $!";
 system($create_recipient) == 0 or die "$0\nError running '$create_recipient' : $!";
 
@@ -76,8 +72,8 @@ system($update) == 0 or die "$0\nError running '$meta' : $!";
 print "ok 6\n";
 
 print STDERR "\nDROPPING TEST DATABASES: please insert password when prompted (twice)...\n";
-my $drop_donor = "mysqladmin -u ".$user." -p drop donor";
-my $drop_recipient = "mysqladmin -u ".$user." -p drop recipient";
+my $drop_donor = "echo \"y\" | mysqladmin -u ".$nuser." drop donor";
+my $drop_recipient = "echo \"y\" | mysqladmin -u ".$nuser." drop recipient";
 system($drop_donor) == 0 or die "$0\nError running '$drop_donor' : $!";
 system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
 print "ok 7\n";
