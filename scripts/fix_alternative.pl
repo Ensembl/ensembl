@@ -17,7 +17,7 @@ my %exons;
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
-my $sth = $db->prepare("select exon,transcript,rank from exon_transcript");
+my $sth = $db->prepare("select exon,transcript,rank from exon_transcript where transcript='ENST00000043895'");
 $sth->execute;
 my @out;
 
@@ -32,9 +32,12 @@ while (my $rowhash = $sth->fetchrow_hashref) {
     push @out, $temp;
 }
 @out=sort {$b->transcript <=> $a->transcript} @out;
-open (FILE,">bad_clones.list") || die("Could not open bad_clones.list");
+
 my $oldtranscript=$out[0]->transcript;
 my @ranks;
+my $old_clone="";
+my @clones;
+
 foreach my $exon (@out) {
     #print STDERR "Got exon ".$exon->id." on trans ".$exon->transcript." and rank ".$exon->rank."\n";
     eval {
@@ -42,7 +45,11 @@ foreach my $exon (@out) {
 	foreach my $rank (@ranks) {
 	    if ($exon->rank eq $rank) {
 		my $real_exon=$db->get_Exon($exon->id);
-		print FILE $real_exon->clone_id."\n";
+		my $clone = $real_exon->clone_id;
+		if ($clone ne $old_clone) {
+		    push @clones,$clone;
+		}
+		$old_clone=$clone;
 	    }
 	}
 	push @ranks,$exon->rank;
@@ -56,3 +63,9 @@ foreach my $exon (@out) {
 	print STDERR "Could not process ".$exon->id>" because of $@\n";
     }
 }
+
+open (FILE,">bad_clones.list") || die("Could not open bad_clones.list");
+foreach my $clone (@clones) {
+    print FILE $clone."\n";
+}
+close FILE;
