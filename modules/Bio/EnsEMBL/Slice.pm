@@ -52,6 +52,7 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::PrimarySeqI;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
