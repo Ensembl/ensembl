@@ -238,8 +238,8 @@ sub _initialize {
 		    # see if maps via a translation
 		    my $clone2;
 		    eval {
-		    ($clone2)=$self->get_id_acc($clone,1);
-		};
+			($clone2)=$self->get_id_acc($clone,1);
+		    };
 		    if ($@) {
 			$self->warn("Clone $clone is not recognised or locked");
 		    }
@@ -457,6 +457,16 @@ sub _get_Clone_id{
        my($id,$val,$disk_id);
        while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
 
+	   # shouldn't be looking at this disk_id if its in accession
+	   # (alias mapping dbm)
+	   # and points to a different disk_id
+	   my $tid;
+	   if($tid=$self->{'_accession_dbm'}->{$disk_id}){
+	       if($tid ne $id){
+		   next;
+	       }
+	   }
+
 	   my($flock,$fsv,$facc,$species1,$freeze1,$fdlock)=
 	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
 					 \$nisv,\$nlock,\$ndlock);
@@ -470,6 +480,7 @@ sub _get_Clone_id{
 	       $nwspecies++;
 	       next;
 	   }
+
 	   # either unlocked or if nogene set and dna not locked
 	   if((!$flock || ($self->{'_nogene'} && !$fdlock)) && 
 	      ($fall || !$fsv) && !$facc){
@@ -510,7 +521,12 @@ sub _get_Clone_id{
    }else{
        print STDERR " and are excluded\n";
    }
-   print STDERR "  Total of ".scalar(@list)." clones are in final list\n";
+   my $nc=scalar(@list);
+   if($nc==1){
+       print STDERR "  Total of $nc clone is in final list\n";
+   }else{
+       print STDERR "  Total of $nc clones are in final list\n";
+   }
    if(scalar(@list)<10){
        print STDERR "  ".join(',',@list)."\n";
    }

@@ -110,7 +110,6 @@ use Getopt::Long;
 $SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
 
 # global defaults
-my $host = 'localhost';
 
 my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
 
@@ -140,15 +139,10 @@ my $nogene=0;
 my $nosecure=0;
 
 # defaults for msql (rdb) access
-# msql was 'croc'
-my $host1     = 'obi-wan';
-# msql was 'ensdev'
-my $dbname    = 'ensembl';
+my $host      = 'ensrv4';
+my $dbname    = 'ensembl_freeze17';
 my $dbuser    = 'ensro';
-my $dbpass = undef;
-
-# defaults for acedb (humace)
-my $host2     = 'humsrv1';
+my $dbpass    = undef;
 my $port      = '410000';
 
 # this doesn't have genes (finished)
