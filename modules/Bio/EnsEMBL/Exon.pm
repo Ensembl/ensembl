@@ -402,7 +402,11 @@ sub _transform_to_slice {
   $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
   $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
   $newexon->strand( $mapped[0]->strand() * $slice->strand() );
-  
+ 
+
+
+
+
   $newexon->contig( $slice );
   $newexon->attach_seq( $slice );
   
@@ -653,24 +657,24 @@ sub end_phase {
   return $self->{_end_phase};
 }
 
-#sub end_phase {
-#    my ($self) = @_;
 
-#    defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
-#    defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
-#    defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
 
-#    my $len   = $self->end() - $self->start() + 1;
-#    my $phase = $self->phase();
-#    my( $end_phase );
-#    if ($phase == -1) {
-#        $end_phase = -1;
-#    } else {
-#        $end_phase = ($len + $phase) % 3;
-#    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     
-#    return $end_phase;
-#}
+
+
 
 =pod
 
@@ -1059,8 +1063,10 @@ sub each_Supporting_Feature {
     my ($self) = @_;
     if ( !defined ( $self->{_supporting_evidence} ) || 
 	 (scalar @{$self->{_supporting_evidence}} == 0)) {
-      $self->{_supporting_evidence} = [];  
-      $self->adaptor->fetch_evidence_by_Exon( $self );
+      $self->{_supporting_evidence} = [];
+      if ( $self->adaptor ){
+	$self->adaptor->fetch_evidence_by_Exon( $self );
+      }
     }
 
     return @{$self->{_supporting_evidence}};
