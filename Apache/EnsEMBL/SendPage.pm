@@ -118,7 +118,7 @@ User feedback is an integral part of the evolution of this and other
 EnsEMBL modules. Send your comments and suggestions to one of the
 EnsEMBL mailing lists.  Your participation is much appreciated.
 
-  http://emsembl.ebi.ac.uk/?     - About the mailing lists
+  http://ensembl.ebi.ac.uk/?     - About the mailing lists
 
 =head2 Reporting Bugs
 
@@ -126,8 +126,8 @@ Report bugs to the EnsEMBL bug tracking system to help us keep track
 the bugs and their resolution.  Bug reports can be submitted via
 email or the web:
 
-  ?@emsembl.ebi.ac.uk
-  http://emsembl.ebi.ac.uk/?
+  ?@ensembl.ebi.ac.uk
+  http://ensembl.ebi.ac.uk/?
 
 =head1 AUTHOR - Tony Cox
 
@@ -135,6 +135,3 @@ Email - avc@sanger.ac.uk
 
 
 =cut
-
-
-# Let the code begin...
