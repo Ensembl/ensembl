@@ -408,7 +408,9 @@ sub add_Profile{
 
 }
 
-Title   : get_all_blastpFeatures
+=head2 get_all_blastpFeatures 
+
+ Title   : get_all_blastpFeatures
  Usage   :
  Function:
  Example :
