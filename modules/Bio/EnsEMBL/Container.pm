@@ -190,7 +190,7 @@ sub AUTOLOAD {
 sub DESTROY {
   my $self = shift;
 
-  print STDERR "Container::DESTROY : Breaking circular references:\n";
+ # print STDERR "Container::DESTROY : Breaking circular references:\n";
 
   my $obj = $self->_obj;
 
