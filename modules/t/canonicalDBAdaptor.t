@@ -68,7 +68,7 @@ ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor"));
 $test_adaptor = $db->get_ProteinAlignFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor"));
 $test_adaptor = $db->get_DnaAlignFeatureAdaptor();
-ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor"));
+ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor"));
 $test_adaptor = $db->get_AssemblyMapperAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor"));
 $test_adaptor = $db->get_DBEntryAdaptor();
