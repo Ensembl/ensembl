@@ -15,7 +15,7 @@ my ( %contig, %clones );
 
 sub reading_clone_info {
   my $db = DBI->connect
-    ( "DBI:mysql:database=homo_sapiens_maps_130;host=ecs1d.sanger.ac.uk",
+    ( "DBI:mysql:database=homo_sapiens_maps_4_28;host=ecs1d.sanger.ac.uk",
       "ensadmin","ensembl" );
 
   my $sth = $db->prepare( "
@@ -34,7 +34,7 @@ sub reading_clone_info {
 
 sub reading_assembly {
   my $db = DBI->connect
-    ( "DBI:mysql:database=homo_sapiens_core_130;host=ecs1d.sanger.ac.uk",
+    ( "DBI:mysql:database=arne_ens4_28_help;host=ecs1f.sanger.ac.uk",
       "ensro", "" );
   my $sth = $db->prepare( "
     SELECT sgp.fpcctg_name, sgp.chr_name, sgp.chr_start, sgp.chr_end, sgp.raw_start,
@@ -78,9 +78,9 @@ sub all_clones_info {
   }
 
   for my $clone ( keys %cloneinfo_missing ) {
-    print "$clone has no info.\n";
+    print STDERR "$clone has no info.\n";
   }
-  print scalar( keys( %cloneinfo_missing )), " clones have no info.\n";
+  print STDERR scalar( keys( %cloneinfo_missing )), " clones have no info.\n";
 
 }
 

@@ -350,6 +350,7 @@ sub _generic_parse_features {
     $self->throw("No features in the array to parse");
   }
   my $hstrand     = $f[0]->hstrand;
+  my $strand     = $f[0]->strand;
   my $name        = $f[0]->seqname;
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;
@@ -386,9 +387,15 @@ sub _generic_parse_features {
     }
 
     print STDERR "Processing " . $f->gffstring . "\n";
-
-    if ($f->strand != $hstrand) {
-      $self->throw("Inconsistent strands in feature array");
+    if( defined $hstrand ) {
+      if ($f->hstrand != $hstrand) {
+	$self->throw("Inconsistent hstrands in feature array");
+      }
+    }
+    if( defined $strand ) {
+      if ($f->strand != $strand) {
+	$self->throw("Inconsistent strands in feature array");
+      }
     }
 
     if ($name ne $f->seqname) {
@@ -458,7 +465,7 @@ sub _generic_parse_features {
  
   $feature1->start($f1start);
   $feature1->end  ($f1end);
-  $feature1->strand($hstrand);
+  $feature1->strand($strand);
   $feature1->score($score);
   $feature1->percent_id($percent);
   $feature1->p_value($pvalue);

@@ -327,6 +327,8 @@ sub get_cdna {
   $cdna_start = 1;
   $pep_start = 1;
 
+  $self->{'_exon_align'} = [];
+
   for my $exon ( @exons ) {
     my $exon_align = {};
     if( ! defined $exon ) {
@@ -337,10 +339,6 @@ sub get_cdna {
       }
     } 
 
-    if( ! defined $self->{'_exon_align'} ) {
-      $self->{'_exon_align'} = [];
-    }
-    
     push( @{$self->{'_exon_align'}}, $exon_align );
 
     if( $exon->phase() != $lastphase ) {
@@ -370,11 +368,11 @@ sub get_cdna {
     $pep_end = $pep_start + $pep_count - 1; 
     $lastphase = $exon->end_phase();
       
-    $exon_align->{ cdna_start => $cdna_start,
-		   cdna_end => $cdna_end,
-		   pep_start => $pep_start,
-		   pep_end => $pep_end,
-		   exon => $exon };
+    $exon_align->{ 'cdna_start' } = $cdna_start;
+    $exon_align->{ 'cdna_end' } =  $cdna_end;
+    $exon_align->{ 'pep_start' } = $pep_start;
+    $exon_align->{ 'pep_end' } = $pep_end;
+    $exon_align->{ 'exon' } = $exon;
 
     if( $lastphase == 0 ) { 
       $pep_start = $pep_end + 1;
@@ -397,24 +395,80 @@ sub pep_coords {
 }
 
 
-=head2 find_coord
+=head2 pep2genomic
 
   Arg  1    : int $start_amino
   Arg  2    : int $end_amino
   Function  : computes a list of genomic location covering the given range 
               of amino_acids. Exons do part of calculation. 
-  Returntype: list [ start, end, strand, Contig_object ]
+  Returntype: list [ start, end, strand, Contig_object, Exon, pep_start, pep_end ]
   Exceptions: none
   Caller    : Runnables mapping blast hits to genomic coords
 
 =cut
 
-sub find_coord {
+sub pep2genomic {
    my $self = shift;
    my $start_amino = shift;
    my $end_amino = shift;
+   my @result = ();
+
+   my $start_cdna = $start_amino * 3 - 2;
+   my $end_cdna = $end_amino * 3;
+
+   my ( $ov_start, $ov_end );
+   my ( $pep_start, $pep_end );
+
+   print ::LOG "pep2genomic: ",$start_amino, " ", $end_amino,"\n";
+
+   if( ! defined $self->{'_exon_align'} ) {
+     $self->get_cdna();
+   }
+
+   for my $ex_align ( @{$self->{'_exon_align'}} ) {
+
+     # calculate overlap of cdna region with each exon
+     $ov_start = ( $start_cdna >= $ex_align->{cdna_start} ) ? $start_cdna : $ex_align->{cdna_start};
+     $ov_end = ( $end_cdna <= $ex_align->{cdna_end} ) ? $end_cdna : $ex_align->{cdna_end};
+     
+     $pep_start = int(( $start_cdna+2)/3 );
+
+     if( $ov_end >= $ov_start ) {
+       my @ires = $ex_align->{exon}->cdna2genomic
+	 ( $ov_start - $ex_align->{cdna_start} + 1,
+	   $ov_end - $ex_align->{cdna_start} + 1 );
+       for my $cdnaCoord ( @ires ) {
+	 
+	 push( @result, [ $cdnaCoord->[0], $cdnaCoord->[1], $cdnaCoord->[2],
+			  $cdnaCoord->[3], $ex_align->{exon},
+			  $cdnaCoord->[4] + $ex_align->{pep_start} - 1,
+			  $cdnaCoord->[5] + $ex_align->{pep_start} - 1 ] );
+       }
+     }
+   }
+   for my $tmp ( @result ) {
+     print ::LOG join ( " ", @$tmp ),"\n";
+   }
+
+   return @result;
 }
 
+
+# debug helper
+sub _dump {
+  my $self = shift;
+  my $res = "";
+  if( ! defined $self->{'_exon_align'} ) {
+    $self->get_cdna();
+  }
+
+  for my $ex ( @{$self->{'_exon_align'}} ) {
+    $res .= "pep: ".$ex->{'pep_start'}." ".$ex->{pep_end}."\n";
+    $res .= "exon: ".$ex->{'exon'}->start()." ".$ex->{'exon'}->end().
+      " ".$ex->{'exon'}->strand()."\n";
+  }
+  return $res;
+}
 
 
 1;

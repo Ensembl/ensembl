@@ -1224,47 +1224,52 @@ sub get_cdna {
   return $temp_seq;
 }
 
-=head1
 
-  Arg  1   : integer start - relative to the exon
-  Arg  2   : integer end   - relative to the exon
 
-  Function : Provides a list of Bio::EnsEMBL::SeqFeatures which
-             is the genomic coordinates of this start/end on the exon
-             For simple exons this is one feature - for Stickies this
-             is overridden
+=head2 cdna2genomic
 
-  Returns  : list of Bio::EnsEMBL::SeqFeature
-
+  Arg  1    : int $start_cdna
+  Arg  2    : int $end_cdna
+              relative to first nucleotide in this exon which is 1.
+  Function  : calculates genomic coordinate for this range of cdna
+              returns a list of [ $start, $end, $strand, $contig, start_pep, end_pep ]
+  Returntype: list
+  Exceptions: none
+  Caller    : Transcript, PredictionTranscript
 
 =cut
 
-sub contig_seqfeatures_from_relative_position {
-  my ($self,$start,$end) = @_;
+sub cdna2genomic {
+  my $self = shift;
+  my $start_cdna = shift;
+  my $end_cdna = shift;
+  
+  my $phase_start_cdna = $start_cdna + $self->phase();
+  my $phase_end_cdna = $end_cdna + $self->phase();
 
-  if( !defined $end ) {
-    $self->throw("Have not defined all the methods!");
+  my $pep_start = int(($phase_start_cdna+2)/3);
+  my $pep_end = int (($phase_end_cdna+2)/3);
+
+  if( $self->strand == 1 ) {
+    return ([ $self->start + $start_cdna - 1,
+	     $self->start + $end_cdna - 1,
+	     $self->strand,
+	     $self->contig,
+	     $pep_start,
+	     $pep_end ] );
+  } else {
+    return ( [ $self->end()- $end_cdna + 1,
+	     $self->end() - $start_cdna + 1 ,
+	     $self->strand(),
+	     $self->contig,
+	     $pep_start,  
+	     $pep_end ] );
   }
-
-  # easy
-  if( $start < 1 ) {
-    $self->warn("Attempting to fetch start less than 1 ($start)");
-    $start = 1;
-  }
-
-  if( $end > $self->length ) {
-    $self->warn("Attempting to fetch end greater than end of exon ($end)");
-    $end = $self->length;
-  }
-
-  my $sf = Bio::EnsEMBL::SeqFeature->new();
-  $sf->start($self->start + $start -1);
-  $sf->end($self->start + $end -1 );
-  $sf->strand($self->strand);
-  $sf->seqname($self->contig->id);
-
-  return ($sf);
 }
+
+
+
+
 
 
 # Inherited methods
