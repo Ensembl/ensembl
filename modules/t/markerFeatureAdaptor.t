@@ -38,7 +38,7 @@ ok($mf->contig->dbID == 339816 &&
    $mf->analysis->dbID == 10 &&
    $mf->start == 5769 &&
    $mf->end == 5959 &&
-   $mf->strand == 1 &&
+   $mf->strand == 0 &&
    $mf->map_weight == 1);
 
 
@@ -100,7 +100,6 @@ my $marker_feature = Bio::EnsEMBL::Map::MarkerFeature->new;
 $marker_feature->contig($contig);
 $marker_feature->start(123);
 $marker_feature->end(200);
-$marker_feature->strand(-1);
 $marker_feature->marker($marker);
 $marker_feature->analysis($analysis);
 
