@@ -400,7 +400,7 @@ sub store_result{
   my $self = shift;
   my $res  = shift || 
     $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
-  my $frozen = shift || $res->serialised;
+  my $frozen = shift || $res->serialise;
 
   my $dbh  = $self->db->db_handle;
 
@@ -526,7 +526,6 @@ sub retrieve_hit{
   my $token  = shift || $self->throw( "Need a Hit token" );
   my ( $id, $use_date ) = split( '!!',$token);
   $use_date ||= '';
-  
   my $dbh  = $self->db->db_handle;
   my $sth = $dbh->prepare( sprintf $SQL_HIT_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
@@ -613,7 +612,6 @@ sub retrieve_hsp{
   my $token  = shift || $self->throw( "Need an HSP token" );
   my ( $id, $use_date ) = split( '!!',$token);
   $use_date ||= '';
-
   my $dbh  = $self->db->db_handle;
   my $sth = $dbh->prepare( sprintf $SQL_HSP_RETRIEVE, $use_date );
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
