@@ -1007,7 +1007,7 @@ sub _gene_query{
 
 	foreach my $exon ( $gene->get_all_Exons() ) {
 	    # hack to get things to behave
-	    $exon->seqname($exon->contig_id);
+	    $exon->seqname($exon->contig->id);
 	    $exon{$exon->dbID} = $exon;
 	    
      #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
