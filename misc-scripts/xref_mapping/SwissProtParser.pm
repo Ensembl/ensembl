@@ -117,7 +117,7 @@ sub create_xrefs {
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS} = 'experimental';
 
-    my ($description) = $_ =~ /DE\s(.*)\n/;
+    my ($description) = $_ =~ /DE\s+(.*)\n/;
     $xref->{DESCRIPTION} = $description;
 
     # set accession (and synonyms if more than one)
