@@ -588,6 +588,7 @@ sub sticky_rank{
   Title   : end_phase
   Usage   : $end_phase = $feat->end_phase
   Function: Returns the end phase of the exon
+            end_phase = number of bases from the last incomplete codon of this exon.
             Usually, end_phase = (phase + exon_length)%3
             but end_phase could be -1 if the exon is half-coding and its 3prime end is UTR.
   Returns : int
@@ -601,7 +602,7 @@ sub end_phase {
     $self->{_end_phase} = $endphase;
   }
   if ( !defined( $self->{_end_phase} ) ){
-    $self->warn("No end phase set in Exon. You must set it explicitly");
+    $self->warn("No end phase set in Exon. You must set it explicitly. Caller: ".caller);
   }
   return $self->{_end_phase};
 }
