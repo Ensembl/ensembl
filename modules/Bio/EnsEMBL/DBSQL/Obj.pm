@@ -1198,7 +1198,7 @@ sub write_Protein_feature {
  Function: Writes a feature on the genomic sequence of a contig into the database
  Example :
  Returns : nothing
- Args    : Bio::SeqFeature::Generic
+ Args    : Bio::EnsEMBL::SeqFeatureI
 
 
 =cut
@@ -1216,7 +1216,7 @@ sub write_Feature {
 
     FEATURE :
     foreach my $feature ( @features ) {
-	if( ! $feature->isa('Bio::SeqFeatureI') ) {
+	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
 
@@ -1234,8 +1234,8 @@ sub write_Feature {
 
 	my $analysisid = $self->write_Analysis($analysis);
 
-	if( $feature->isa('Bio::SeqFeature::Homol') ) {
-	    my $homol = $feature->homol_SeqFeature;
+	if( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
+	    my $homol = $feature->feature2;
 	    $sth->execute('NULL',
 			  $contig->id,
 			  $feature->start,
@@ -1612,7 +1612,7 @@ sub write_Contig {
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
-   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation,order) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation,$order)");
+   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation,corder) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation,$order)");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
