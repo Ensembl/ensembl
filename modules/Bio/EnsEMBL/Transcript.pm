@@ -264,7 +264,8 @@ sub translate {
   my $seqstr;
   foreach my $ptrans ( @trans ) {
       my $tseq = $ptrans->_translate_coherent($debug);
-      if( defined $seqstr ) { $seqstr .= 'X'; } 
+      # to be consistent with our EMBL dumping, we need a double X here.
+      if( defined $seqstr ) { $seqstr .= 'XX'; } 
       $seqstr .= $tseq->str;
   }
   

@@ -218,8 +218,13 @@ sub _process_Transcript{
    # we want to know whether the last exon is forward or backward first.
    my $loc_comp; 
    my $prev;
+   print STDERR "Looking at this transcript ",$trans->id(),"\n";
+
    foreach my $exon ( $trans->each_Exon() ) {
        # get out the clone
+
+       print STDERR "Looking at exon ",$exon->id,"\n";
+
        if( $exon->clone_id() ne $self->clone->id() ) {
 	   $self->throw("Cannot currently dump exons across clones");
        }
@@ -260,6 +265,10 @@ sub _process_Transcript{
 						 $self->clone->get_Contig($exon->contig_id),
 						 (3-$prev->phase) + (3-(3-$exon->phase)%3),$exon->strand); 
 	   # generate missing exon now, in CDS line
+
+	   print STDERR "Adding $loc_exon\n";
+
+	   $trans_loc .= ",$loc_exon";
        }
 
 
@@ -369,12 +378,16 @@ sub _generate_missing_exon{
        $isc = 1;
    }
    
+   my $ret;
    if( $isc == 0 ) {
-       return "$start..$end";
+       $ret = "$start..$end";
    } else {
-       return "complement($start..$end)";
+       $ret = "complement($start..$end)";
    }
 
+   print STDERR "Generating $ret\n";
+
+   return $ret;
 }
 
 =head2 _deduce_exon_location
