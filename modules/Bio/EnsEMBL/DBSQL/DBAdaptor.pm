@@ -1562,9 +1562,9 @@ sub get_all_Gene_id{
    my ($self) = @_;
 
    $self->warn("Obj->get_all_Gene_id is a deprecated method! 
-Calling gene_Obj->get_all_Gene_id instead!");
+Calling gene_Adaptor->get_all_Gene_id instead!");
 
-   return $self->gene_Obj->get_all_Gene_id();
+   return $self->gene_Adaptor->get_all_Gene_id();
 }
 
 
