@@ -86,20 +86,204 @@ simple things hard.
 
 \end{description}
 
-Enough waffle! Let's get to useful code
+Enough waffle! Let's do something useful
 
-\section{Installing Ensembl}
+\section{Using Ensembl as a datasource}
 
-Before you can code with Ensembl you need to download and install the
-following packages (the order listed is the best order to download them in).
+You can treat Ensembl mainly as a source of well structured genomic data, and not
+get involved with the software that builds it nor the software which allows easy 
+biological interpretation. Main people find this data-only access one of the most
+useful things Ensembl offers.
+
+There is a mysql instance which we keep open to the internet (outside
+the firewall), called kaka.sanger.ac.uk.  (It is unclear whether the
+association of kaka - mean ``shit'' in many countries was deliberate
+or just a happy coincidence. It does give you an idea of the quality
+of this machine). If you have the myql client - available on all modern
+linux distributions - if you don't have it go to www.mysql.com you can open
+a terminal to it, username anonymous
+
+\begin{verbatim}
+birney@monkey> mysql -u anonymous -h kaka.sanger.ac.uk
+\end{verbatim}
+
+
+
+The most current database release is called ``current''. Using the
+mysql command ``show databases'' should give you all the databases to
+look at.
+
+
+if you start running large queries or downloads, you may well want to
+bring the MySQL instance local. MySQL files are found on the ftp site
+which can be uploaded by following the instructions there (basically
+use all.sql to initialise the database followed by mysqlimport)
+
+To understand how to probe the data you need to have a working
+knowledge of SQL, a working knowledge of basic genomic data types and
+also our schema. Sadly we do not (yet) keep a nice entity relationship
+style diagram in sync with our schema and also the schema has
+accummulated a certain amount of cruft over time. To see our current
+schema, view the DDL statements in ensembl/sql/table.sql (go via
+WebCVS or anonymous CVS) or use the ``show tables'' and ``describe
+XXXX'' syntax in the mysql client. The core part of the schema has
+basically remained constant over the last year and is as follows:
+
+\subsection{Clone, Contig and DNA tables}
+
+These tables hold the underlying DNA sequences and container accession numbers.
 
 \begin{description}
-\item[MySQL] Fetch from www.mysql.com. Unpack and do the standard ``./configure'',
-``make'' (become root) ``make install''. Use --prefix on the configure script
-to install somewhere other than the ``standard'' places. Start the mysql daemon by
-going ``mysql\_install\_db'' (you only do this once to initalise the mysql installation) followed
-by ``safe\_mysqld'' to start the mysql daemon. Read more in the Mysql docs to get an
-understand of what this means.
+\item[clone] The Clone table represents one entry from the
+EMBL/GenBank databanks (ie, one accession number). The id column is
+the accession number. The internal\_id column is a unique id which 
+other tables refer to
+\item[contig] The Contig table represents a single assembled (usually by
+Phrap) piece of DNA. For finished clones there is one contig per clone. For
+unfinished (HTGS) clones there are multiple contigs per clone - in the EMBL/GenBank
+entry these are usually separated by a ``standard'' number of Ns. The id column
+is an entirely Ensembl generated text id for this contig. The internal\_id is a
+unique integer referred to by other tables. The clone column is an integer referring
+back to the clone column. The offset column indicates where in the EMBL/GenBank
+coordinate system this contig starts. Many other tables link to contig via its
+internal\_id. Finally in software the information here is called ``RawContig'' to 
+differentiate itself from the the in-software assembled ``VirtualContig''
+\item[dna] The DNA table represents the DNA sequence for the contig. There is a
+one to one relationship with contig - the separation is because one can imagine updating
+contig information without updating the DNA table (though we never do this) and 
+one can imagine in the future running a more space efficient or across-network storage
+of DNA.
+\end{description}
+
+\subsection{Feature,Fset,Fset\_Feature,RepeatFeature,Analysis tables}
+
+These table hold the ``Raw Computes'' which are the assembly insensitive computes,
+such as GenScan, BLAST and RepeatMasker. 
+
+There were some bad design decisions here made about 2 years ago which
+we have yet to unpick. Firstly the Feature table and the RepeatFeature
+table should be merged.  Secondly I think we would prefer to drop the
+Fset/Fset\_Feature (indeed very little active code uses these tables)
+and move Genscan computes across into the Gene tables (detailed next).
+
+\begin{description}
+\item[Feature] This is the main table for the computes. The two main tables this
+links out to is contig via the contig.interal\_id and analysis via the analysis
+link. Analysis has one row per compute type and its columns are pretty self
+explanatory. The position in the contig coorindates of this feature is given
+by seq\_start,seq\_end and strand. Where sensible the position in the sequence
+it is being compared to is in hstart,hend,hstrand with hid being the identifier
+(we try hard to use accession numbers in this field, but do not always succeed).
+\item[RepeatFeature] just like above but only for repeats. hid is repeatmasker repeat
+type
+\item[Fset,Fset\_Feature] This was meant to model GenScan features,
+which were treated as an ordered list of features. However this
+rapidly became impractical as the join from fset through fset\_feature
+took too long. As the Genscan order was also implicitly in the
+ordering of the features in the DNA, it was deduced by that (take a look
+at get\_all\_PredictionFeatures in RawContig.pm to get an idea of this). 
+\end{description}
+
+\subsection{Gene,Transcript,Exon tables}
+
+The Gene,Transcript,Exon tables hold information about predicted genes. When the
+Ensembl analysis pipeline is running, these tables hold the intermeadaite 
+GeneWise and other gene build results. On a finished datasource however only
+the final ``GeneBuilder'' genes are present.
+
+Again a bad design decision was made (which we are now regretting) not have true
+internal ids here. The varchar ids are our own assigned but external visible ids.
+
+\begin{description}
+\item[exon] Exons are the only gene centric objects which connect to
+sequence.  They do this via the contig column and
+seq\_start,seq\_end,strand. The sticky\_rank is for single exons which
+cross rawcontig boundaries - we should explain this better somewhere 
+I guess.
+\item[transcript] Transcripts have an ordered list of exons: however, one
+exon can be in more than one Transcript. The Exon\_Transcript table holds
+the ordered join from transcript to exon using the rank column. Transcripts
+have a translation object which is how start and end translation points
+are held.
+\item[gene] Genes have an unordered set of Transcripts. This is managed by
+the gene column in Transcript
+\item[translation] The Translation table holds the start codon exon and
+position in that exon of the start codon, and similarly for the stop codon.
+The positions are relative to the exon, not in any absolute or contig relative
+coordinate system (this is important for sticky exons)
+\end{description}
+
+\subsection{Assembly information - StaticGoldenPath table}
+
+The static\_golden\_path table holds the assembly information. Ensembl
+can store (but rarely does) multiple assemblies at the same time. The
+assembly information is stored as a way to fit together raw contigs
+into the final assembly. This is stored a list of segments in the
+table, with raw\_id pointing to contig table and raw\_start, raw\_end
+and raw\_ori indicating which part and which orientation that raw part
+should fit.
+
+The other columns deal with two other assembly coordinate systems -
+chromosome and fpc contig. FPC contig has now become an entirely
+artifical intermedaite coordinate system with a number of contigs
+forming a chromosome. There is alot of redundancy amongst the
+different coordinate systems here - for example, fpc contigs can be
+described as offsets into chromosomes.
+
+You may have noticed that nothing inside Ensembl is stored in
+chromosomal coordinates directly, but always in RawContig coordinates.
+To map things to chromosomal coordinates you need to have SQL like:
+
+\begin{verbatim}
+  SELECT rf.id,
+  IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+         (sgp.chr_start+sgp.raw_end-rf.seq_end-$glob_start)) as start,                                        
+  IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+         (sgp.chr_start+sgp.raw_end-rf.seq_start-$glob_start)), 
+  IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
+         rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
+  FROM   repeat_feature rf,static_golden_path sgp
+  WHERE  sgp.raw_id = rf.contig
+  AND    sgp.chr_end >= $glob_start 
+  AND    sgp.chr_start <=$glob_end
+  AND    sgp.chr_name='$chr_name' 
+  ORDER  by start";
+\end{verbatim}
+
+We are investigating easy denormalisation steps and hope to offer denormalised
+query ability in the future.
+
+\subsection{Other tables}
+
+There are a number of other tables. Some are useful - others are vestigal tables
+which we haven't decrufted. We should decruft tables no doubt!
+
+
+\section{Installing Ensembl Software}
+
+Using Ensembl as a data source is one thing, but pretty soon you will
+want to join the data up into sensible results - things like protein
+translation or masked DNA sequence or some other manipulation. Rather
+than writing this software yourself you can use ours which we have
+built up over the years.  Nearly everything inside Ensembl uses this
+software layer (if you have a corporate IT background, you can think
+of this as our business objects).
+
+
+To use the Ensembl software you need to download and install the
+following packages (the order listed is the best order to download
+them in).
+
+\begin{description}
+\item[MySQL] Fetch from www.mysql.com. Unpack and do the standard
+``./configure'', ``make'' (become root) ``make install''. Use --prefix
+on the configure script to install somewhere other than the
+``standard'' places. If you want to run your own local copy of Ensembl
+you will need to initialise the databases and start the mysql
+daemon. Start the mysql daemon by going ``mysql\_install\_db'' (you
+only do this once to initalise the mysql installation) followed by
+``safe\_mysqld'' to start the mysql daemon. Read more in the Mysql
+docs to get an understand of what this means.
 \item[DBI] DBI is the perl bindings to relational databases. The easiest way to install
 this is using the in-build installation system in Perl, called
 CPAN. Become root, go ``perl -MCPAN -e shell'', at the cpan prompt go ``install DBI''.
@@ -174,28 +358,8 @@ will be confident that Ensembl actually works on your system as you embark on mo
 \section{First script}
 
 The first script we'll write is to dump the underlying DNA fragments
-which make an assembly out as fasta format. What we'll use as a
-database is one of the mini-tests databases used by the testing
-system. The good thing about this is that (a) they are small (b) they
-are present in the source distribution - no need to worry about
-downloading additional information and (c) they are guarenteed to be
-working with the source code you have.
-
-First we need to build the database, which we will call test\_ensembl
-
-\begin{description}
-\item[create a test database]. Either go ``mysqladmin -u user\_who\_can\_create create test\_ensembl'' or open
-a mysql terminal window with ``mysql -u user\_who\_can\_create'' and go ``create database test\_ensembl''
-in the terminal window
-\item[load the schema]. The schema is kept in sql/table.sql. View the file if you are interested:
-these SQL ``create table'' syntax is called the DDL of the database, or the schema, and provides the 
-definition of the structure of the database. Go ``mysql -u user\_who\_can\_write test\_ensembl < sql/table.sql''
-\item[load the database]. We'll use the staticgoldenpath.dump mini-database found in modules/t directory.
-Again view the file if you are interested. The ``insert'' statements here put data into the database. Go
-``mysql -u user\_who\_can\_write test\_ensembl < modules/t/staticgoldenpath.dump''
-\end{description}
-
-We are now ready for our first script (finally!)
+which make an assembly out as fasta format. The database to use is
+the internet accessible kaka.sanger.ac.uk 
 
 \begin{verbatim}
 
@@ -206,7 +370,7 @@ use Bio::SeqIO;
 
 
 # this will die if if can't load this database
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
 
 # build seqio output stream
 
@@ -217,13 +381,17 @@ $seqout = Bio::SeqIO->new( '-format' => fasta, '-fh' => \*STDOUT);
 
 @clones = $db->get_all_Clone_id();
 
-
+my $index = 0;
 # for each clone_id, get the clone
 foreach $clone_id ( @clones ) {
 	$clone = $db->get_Clone($clone_id);
 	foreach $fragment ( $clone->get_all_Contigs() ) {
 		$seqout->write_seq($fragment);
    	}
+	$index++;
+	if( $index > 10 ) {
+		last; # to prevent the entire database being shipped across
+	}
 }
 
 \end{verbatim}
@@ -244,7 +412,7 @@ DBLoader will at run time load up the modules required for loading the database 
 
 \begin{verbatim}
 # this will die if if can't load this database
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::Obj/host=localhost;user=read_only_user;dbname=test_ensembl');
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
 \end{verbatim}
 
 This connects to the actual database. The string used for DBLoader is
@@ -308,7 +476,11 @@ Nearly all scripts follow the same basic pattern
 use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+
+# this will die if if can't load this database
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
+
 
 # build seqio output stream
 
@@ -359,7 +531,8 @@ use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 
 
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
 
 # set the assembly type. Ensembl can store multiple assemblies
 # concurrently, although in general the gene prediction data will
@@ -421,7 +594,10 @@ assemblies). We have to get a gene out in the context of an assembly.
 
 
 \begin{verbatim}
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
+
 
 # we expect a gene id as the argument to this script
 my $geneid = shift;
@@ -502,7 +678,10 @@ foreach $trans ( $found_gene->each_Transcript ) {
 \subsection{Dump rich tab delimited format for one chromosome}
 
 \begin{verbatim}
-$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=localhost;user=read_only_user;dbname=test_ensembl');
+
+
+$db = Bio::EnsEMBL::DBLoader->new('Bio::EnsEMBL::DBSQL::DBAdaptor/host=kaka.sanger.ac.uk;user=anonymous;dbname=current');
+
 
 # set the assembly type. Ensembl can store multiple assemblies
 # concurrently, although in general the gene prediction data will
