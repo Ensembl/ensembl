@@ -22,7 +22,7 @@ my $regulatory_feature = $rfa->fetch_by_dbID(1234);
 This is an adaptor for the retrieval and storage of RegulatoryFeature objects
 from the database.  Most of the implementation is in the superclass BaseFeatureAdaptor.
 
-=head1 AUTHOR - glenn Proctor
+=head1 AUTHOR - Glenn Proctor
 
 =head1 CONTACT
 
@@ -312,7 +312,7 @@ sub fetch_all_by_motif {
 
   Arg [1]    : list of Bio::EnsEMBL::RegulatoryFeatures
                the regulatory features to store in the database
-  Example    : $regulatory_feature_adaptor->store("regulatory_feature);
+  Example    : $regulatory_feature_adaptor->store($regulatory_feature);
   Description: stores regulatory features in the database
   Returntype : none
   Exceptions :
@@ -323,7 +323,7 @@ sub fetch_all_by_motif {
 sub store {
   my( $self, @features ) = @_;
 
-  my $sth = $self->prepare("INSERT into regulatory_feature 
+  my $sth = $self->prepare(qq {INSERT into regulatory_feature 
                            (name,
                             seq_region_id,
                             seq_region_start,
@@ -332,12 +332,12 @@ sub store {
                             analysis_id,
                             regulatory_motif_id,
                             influence) 
-                            VALUES (?,?,?,?,?,?,?,?)");
+                            VALUES (?,?,?,?,?,?,?,?)});
 
   foreach my $rf (@features) {
 
     if(!ref($rf) || !$rf->isa('Bio::EnsEMBL::RegulatoryFeature')) {
-      throw('Expected RegulatorytFeature argument not [' . ref($rf) .'].');
+      throw('Expected RegulatoryFeature argument not [' . ref($rf) .'].');
     }
 
     my $name = $rf->name() or throw("name not set");
@@ -384,6 +384,137 @@ sub list_dbIDs {
    my ($self) = @_;
 
    return $self->_list_dbIDs("repeat_feature");
+}
+
+=head2 fetch_all_by_ensembl_object_type
+
+  Arg [1]    : string $type - one of 'Gene', 'Transcript', 'Translation'
+  Arg [2]    : dbID of gene/transcript/translation
+  Example    : @features = @{$regulatory_feature_adaptor->
+                      fetch_all_by_ensembl_object_type('Transcript', 21050)};
+  Description: Gets all the regulatory features associated with a particular
+               gene, transcript or translation. Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub fetch_all_by_ensembl_object_type {
+
+   my ($self, $type, $id) = @_;
+
+   my $sth = $self->prepare("SELECT regulatory_feature_id FROM regulatory_feature_object WHERE ensembl_object_type=? AND ensembl_object_id=?");
+
+   $sth->execute($type, $id);
+
+   my $dbID;
+   my %regulatory_features;
+   while (($dbID) = $sth->fetchrow_array()) {
+     my $feature = $self->fetch_by_dbID($dbID);
+     if (!exists($regulatory_features{$feature->dbID()})) {
+       $regulatory_features{$feature->dbID()} = $feature;
+     }
+   }
+
+   my @features = values %regulatory_features;
+
+   return \@features;
+
+}
+
+=head2 fetch_all_by_transcript
+
+  Arg [1]    : Bio::EnsEMBL::Transcript
+  Example    : @features = @{$regulatory_feature_adaptor->
+                      fetch_all_by_transcript($transcript)};
+  Description: Gets all the regulatory features associated with a
+               particular transcript. Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+
+=cut
+
+sub fetch_all_by_transcript {
+
+   my ($self, $transcript) = @_;
+
+   if(!ref($transcript) || !$transcript->isa('Bio::EnsEMBL::Transcript')) {
+     throw('Expected Bio::EnsEMBL::Transcript argument not [' . ref($transcript) .'].');
+   }
+
+   my $features = $self->fetch_all_by_ensembl_object_type('Transcript', $transcript->dbID());
+
+   return $features;
+
+}
+
+=head2 fetch_all_by_Translation
+
+  Arg [1]    : Bio::EnsEMBL::Translation
+  Example    : @features = @{$regulatory_feature_adaptor->
+                      fetch_all_by_Translation($Translation)};
+  Description: Gets all the regulatory features associated with a
+               particular Translation. Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+
+=cut
+
+sub fetch_all_by_translation {
+
+   my ($self, $translation) = @_;
+
+   if(!ref($translation) || !$translation->isa('Bio::EnsEMBL::Translation')) {
+      throw('Expected Bio::EnsEMBL::translation argument not [' . ref($translation) .'].');
+    }
+
+   my $features = $self->fetch_all_by_ensembl_object_type('Translation', $translation->dbID());
+
+   return $features;
+
+}
+
+=head2 fetch_all_by_gene
+
+  Arg [1]    : Bio::EnsEMBL::Gene
+  Arg [2]    : if set, return regulatory features associated with the 
+               transcripts of the gene as well.
+  Example    : @features = @{$regulatory_feature_adaptor->
+                      fetch_all_by_gene($gene, 1)};
+  Description: Gets all the regulatory features associated with a
+               particular gene, and (optionally) its transcripts.
+               Each feature only appears once.
+  Returntype : Listref of Bio::EnsEMBL::RegulatoryFeature
+  Exceptions : If arg is not of correct type.
+  Caller     : ?
+
+=cut
+
+sub fetch_all_by_gene {
+
+   my ($self, $gene, $recursive) = @_;
+
+   if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+      throw('Expected Bio::EnsEMBL::Gene argument not [' . ref($gene) .'].');
+    }
+
+   my @features = @{$self->fetch_all_by_ensembl_object_type('Gene', $gene->dbID())};
+
+   # optionally add transcripts' features as well
+   if ($recursive) {
+
+     foreach my $transcript (@{$gene->get_all_Transcripts()}) {
+       push @features, @{$self->fetch_all_by_transcript($transcript)};
+     }
+
+   }
+
+
+   return \@features;
+
 }
 
 1;
