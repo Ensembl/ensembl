@@ -11,16 +11,12 @@ use vars qw(@ISA);
 # IPI file format: fasta, e.g.
 # >IPI:IPI00000005.1|SWISS-PROT:P01111|TREMBL:Q15104|REFSEQ_NP:NP_002515|ENSEMBL:ENSP00000261444 Tax_Id=9606 Transforming protein N-Ras
 # MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTAG
-# QEEYSAMRDQYMRTGEGFLCVFAINNSKSFADINLYREQIKRVKDSDDVPMVLVGNKCDL
 # PTRTVDTKQAHELAKSYGIPFIETSAKTRQGVEDAFYTLVREIRQYRMKKLNSSDDGTQG
 # CMGLPCVVM
 
 sub run {
 
-  my $self = shift;
-  my $file = shift;
-  my $source_id = shift;
-  my $species_id = shift;
+  my ($self, $file, $source_id, $species_id) = @_;
 
   my @xrefs;
 
@@ -43,10 +39,10 @@ sub run {
 
     my ($tax_id, $description) = $header[-1] =~ /.*Tax_Id=(\d+)\s+(.*)/;
 
+    # note currently we ignore all the other cross-references in the IPI file
+
     # only interested in species with the taxonomy ID were looking for
     next if ($tax_id != $species_tax_id);
-
-    # note currently we ignore all the other cross-references in the IPI file
 
     # make sequence into one long string
     $sequence =~ s/\n//g;
@@ -62,8 +58,6 @@ sub run {
     $xref->{SEQUENCE_TYPE} = 'peptide';
     $xref->{STATUS}        = 'experimental';
 
-    #print "IPI: $ipi tax: $tax_id desc: $description\n";
-
     push @xrefs, $xref;
 
   }
@@ -71,6 +65,7 @@ sub run {
   print scalar(@xrefs) . " IPI xrefs succesfully parsed\n";
 
   XrefParser::BaseParser->upload_xref_object_graphs(\@xrefs);
+
   print "Done\n";
 
 }
