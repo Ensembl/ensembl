@@ -175,10 +175,10 @@ debug( "pt->start ".($pt->start()||"undef") );
 ok(!defined $pt->start);
 debug( "pt->end ".($pt->end()||"undef") );
 ok(!defined $pt->end);
-debug( "pt->coding_start ".($pt->coding_start()||"undef") );
-ok(!defined $pt->coding_start);
-debug( "pt->coding_end ".($pt->coding_end()||"undef") );
-ok(!defined $pt->coding_end);
+debug( "pt->coding_start ".($pt->coding_region_start()||"undef") );
+ok(!defined $pt->coding_region_start);
+debug( "pt->coding_end ".($pt->coding_region_end()||"undef") );
+ok(!defined $pt->coding_region_end);
 
 
 #
