@@ -251,6 +251,37 @@ sub get_geneids_by_hids{
    return keys %gene;
 }
 
+=head2 get_Interpro_by_geneid
+
+ Title   : get_Interpro_by_geneid
+ Usage   : @interproid = $gene_obj->get_Interpro_by_geneid($gene->id);
+ Function: gets interpro accession numbers by geneid. A hack really -
+           we should have a much more structured system than this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Interpro_by_geneid{
+   my ($self,$gene) = @_;
+
+
+   my $sth = $self->_db_obj->prepare("select i.interpro_acc from interpro i,transcript t,protein_feature pf where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid");
+   $sth->execute;
+
+   my @out;
+
+   while( (my $arr = $sth->fetchrow_arrayref()) ) {
+       push(@out,@{$arr});
+   }
+
+
+   return @out;
+}
+
+
 =head2 get
 
  Title   : get
