@@ -1,0 +1,22 @@
+use ensembl;
+
+load data infile './analysis.table' into table analysis;
+load data infile './clone.table' into table clone;
+load data infile './contig.table' into table contig;
+load data infile './contig_equiv.table' into table contig_equiv;
+load data infile './db_update.table' into table db_update;
+load data infile './dna.table' into table dna;
+load data infile './exon.table' into table exon;
+load data infile './exon_transcript.table' into table exon_transcript;
+load data infile './feature.table' into table feature;
+load data infile './fset.table' into table fset;
+load data infile './fset_feature.table' into table fset_feature;
+load data infile './gene.table' into table gene;
+load data infile './geneclone_neighbourhood.table' into table geneclone_neighbourhood;
+load data infile './ghost.table' into table ghost;
+load data infile './mapbin.table' into table mapbin;
+load data infile './meta.table' into table meta;
+load data infile './repeat_feature.table' into table repeat_feature;
+load data infile './supporting_feature.table' into table supporting_feature;
+load data infile './transcript.table' into table transcript;
+load data infile './translation.table' into table translation;
