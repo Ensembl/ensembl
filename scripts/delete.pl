@@ -48,7 +48,7 @@ foreach my $clone_id ( @clone) {
 	$clone = $db->get_Clone($clone_id);
     };
     if ($@) {
-	print STDERR "Skipping clone $clone_id, not present in db!\n";
+	print STDERR "Skipping clone $clone_id, not present in db!$@\n";
 	next;
     }
     if( $do_gene == 1 ) {

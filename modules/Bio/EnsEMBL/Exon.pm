@@ -429,7 +429,7 @@ sub type {
   my ($self,$value) = @_;
   
   if (defined($value)) {
-    $self->{'typ'} = $value;
+    $self->{'type'} = $value;
   }
   return $self->{'type'};
 }

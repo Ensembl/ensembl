@@ -130,13 +130,13 @@ $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -right         => 30);
 
 
-
+print "VC sequence: ".$vc->primary_seq->seq."\n";
 @sf = $vc->get_all_SimilarityFeatures();
 $sf = shift @sf;
 @sf = $sf->sub_SeqFeature();
 $sf = shift @sf;
-
-print "On vc, sequence is ",$sf->seq->seq,"\n";
+print STDERR "start: ".$sf->start." end: ".$sf->end." seqname: ".$sf->seqname."\n";
+print STDERR "sequence: ".$sf->seq->seq."\n";
 
 @sf = $contig2->get_all_SimilarityFeatures();
 $sf = shift @sf;
