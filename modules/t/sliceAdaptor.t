@@ -385,10 +385,16 @@ print_slices([$slice]);
 $multi->hide('core', 'seq_region_attrib', 'attrib_type');
 
 $slice = $slice_adaptor->fetch_by_region( "chromosome", "20" );
-$slice_adaptor->set_seq_region_attrib( $slice, "GeneCount", 23322 );
 
-my ($gene_count) = $slice->get_attribute('GeneCount');
-ok($gene_count == 23322);
+my $attribute_adaptor = $db->get_AttributeAdaptor();
+my $attrib = Bio::EnsEMBL::Attribute->new( '-code' => "GeneCount",
+	                                   '-name' => "GeneCount",
+					   '-value' => 23322 );
+
+$attribute_adaptor->store_on_Slice( $slice, [$attrib] );
+
+my ($gene_count_attrib) = @{$slice->get_all_Attributes('GeneCount')};
+ok($gene_count_attrib->value() == 23322);
 
 #
 # try to store another attrib of the same name
@@ -400,7 +406,7 @@ my $count =
   $db->db_handle->selectall_arrayref("SELECT count(*) FROM attrib_type")->[0]->[0];
 ok($count == 1);
 
-my @gene_counts = $slice->get_attribute('GeneCount');
+my @gene_counts = @{$slice->get_all_Attributes('GeneCount')};
 ok(@gene_counts == 2); 
 
 $multi->restore('core', 'seq_region_attrib', 'attrib_type');
