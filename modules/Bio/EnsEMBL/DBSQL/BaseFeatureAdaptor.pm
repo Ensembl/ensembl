@@ -113,7 +113,7 @@ sub generic_fetch {
       if( exists $left_join_hash{ $t->[0] } ) {
         my $condition = $left_join_hash{ $t->[0] };
         my $syn = $t->[1];
-        $left_join .=  "LEFT JOIN ".$t->[0]." $syn ON $condition ";
+        $left_join .=  "LEFT JOIN\n       ".$t->[0]." $syn ON $condition ";
       } else {
         push @tables, $t;
       }
@@ -125,26 +125,28 @@ sub generic_fetch {
   #construct a nice table string like 'table1 t1, table2 t2'
   my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
 
-  my $sql = "SELECT $columns FROM $tablenames $left_join";
+  my $sql = "SELECT $columns\n  FROM $tablenames $left_join";
 
   my $default_where = $self->_default_where_clause;
   my $final_clause = $self->_final_clause;
 
   #append a where clause if it was defined
   if($constraint) {
-    $sql .= " where $constraint ";
+    $sql .= "\n WHERE $constraint ";
     if($default_where) {
-      $sql .= " and $default_where ";
+      $sql .= " AND\n       $default_where ";
     }
   } elsif($default_where) {
-    $sql .= " where $default_where ";
+    $sql .= "\n WHERE $default_where ";
   }
 
   #append additional clauses which may have been defined
-  $sql .= " $final_clause";
+  $sql .= "\n$final_clause";
 
   ###print STDERR "\n\n$sql\n\n";
 
+  warn "JS5 misc set queries======================\n$sql\n ";
+  
   my $sth = $db->prepare($sql);
 
   $sth->execute;

@@ -250,7 +250,7 @@ sub _left_join {
 sub _final_clause {
   my $self = shift;
 
-  return "order by mf.misc_feature_id";
+  return " ORDER BY mf.misc_feature_id";
 }
 
 
