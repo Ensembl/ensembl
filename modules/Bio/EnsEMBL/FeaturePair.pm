@@ -126,7 +126,7 @@ sub new {
       $self->contig($feature1->contig);
     }
   } else {
-    $self->SUPER::new();
+    $self = $self->SUPER::new( @args );
   }
 
   $feature2 && $self->feature2($feature2);
