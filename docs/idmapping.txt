@@ -19,4 +19,12 @@ insert into dblocation values('Bio::EnsEMBL::DBOLD::Obj/host=ecs1c;port=410000;d
 
 8)When all jobs are finished, check for failed jobs, rerun if necessary
 
+9)Copy over to the new database the following tables&contents:
+static_golden_path,gene,transcript,translation,exon,exon_transcript,genetype, supporting_feature;
+10)Copy over the table structure of these tables (for later):
+Xref chromosome externalDB externalSynonym gene_description genedblink identityXref interpro interpro_description karyotype map_density objectXref protein_feature species transcriptdblink
+
+11)When feasible, copy over feature tables:
+analysis feature fset fset_feature repeat_feature
+
 9)Run map_genes.pl

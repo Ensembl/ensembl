@@ -12,7 +12,7 @@ $| = 1;
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
 my $port   = '410000';
-my $dbname = 'cross100';
+my $dbname = 'cross110_bis';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
@@ -38,6 +38,6 @@ foreach my $clone (@clones) {
     print STDERR "Command: $command\n";
     system($command);
 }
-
+$crossdb->DESTROY;
 
 
