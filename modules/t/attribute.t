@@ -28,12 +28,12 @@ my $value = 'testval';
 my $attrib = Bio::EnsEMBL::Attribute->new
   (-CODE => $code,
    -NAME => $name,
-   -DESC => $desc,
+   -DESCRIPTION => $desc,
    -VALUE => $value);
 
 ok($attrib->code()  eq $code);
 ok($attrib->name()  eq $name);
-ok($attrib->desc()  eq $desc);
+ok($attrib->description()  eq $desc);
 ok($attrib->value() eq $value);
 
 #
@@ -41,6 +41,6 @@ ok($attrib->value() eq $value);
 #
 ok(test_getter_setter($attrib, 'name', 'newname'));
 ok(test_getter_setter($attrib, 'code', 'newcode'));
-ok(test_getter_setter($attrib, 'desc', 'newdesc'));
+ok(test_getter_setter($attrib, 'description', 'newdesc'));
 ok(test_getter_setter($attrib, 'value', 'newvalue'));
 
