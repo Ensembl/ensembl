@@ -2207,7 +2207,7 @@ sub write_Chromosome {
   
 #  my $query = "select chromosome_id " .
 #              "from   chromosome " .
-#              "where  name       = '" . $chromosome->chrname . "' " .
+#              "where  name       = '" . $chromosome->chr_name . "' " .
 #	      " and    known_genes = "  . $known_genes . 
 #	      " and    unknown_genes = ".$unknown_genes .
 #	      " and    snps = ".$snps.
@@ -2222,7 +2222,7 @@ sub write_Chromosome {
 #	return $chromosome_id;
 #    } 
 
-#    $query =  "insert into chromosome(chromosome_id,name,known_genes,unknown_genes,snps,length) values(null,'" . $chromosome->chrname . "',".$known_genes.",".$unknown_genes.",".$snps.",".$length.")";
+#    $query =  "insert into chromosome(chromosome_id,name,known_genes,unknown_genes,snps,length) values(null,'" . $chromosome->chr_name . "',".$known_genes.",".$unknown_genes.",".$snps.",".$length.")";
 	
 #  print $query."\n";
 #    $sth = $self->prepare($query);

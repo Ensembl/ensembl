@@ -22,7 +22,7 @@ my $genewise = 0;
 my $repeat   = 0;
 my $chunk    = 5000000;
 my $threshold = 0;
-my $chrname;
+my $chr_name;
 
 $| = 1;
 
@@ -36,7 +36,7 @@ $| = 1;
              'pass:s'    => \$pass,
 	     'chunk:n'   => \$chunk,
 	     'threshold:n' => \$threshold,
-	     'chrname:s'   => \$chrname,
+	     'chrname:s'   => \$chr_name,
              );
 
 print STDERR "Time in dumpgff " . time . "\n";
@@ -67,7 +67,7 @@ my @chr   = $stadp->get_all_chromosome_name;
 my %analysis;
 
 CHR: foreach my $chr (@chr) {
-  next CHR unless $chr eq $chrname;
+  next CHR unless $chr eq $chr_name;
 
   my $length = $stadp->get_chromosome_length($chr);
   print STDERR "Chromosome $chr length $length\n";

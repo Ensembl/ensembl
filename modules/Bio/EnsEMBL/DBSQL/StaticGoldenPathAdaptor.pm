@@ -275,7 +275,7 @@ sub convert_chromosome_to_fpc {
 =head2 convert_fpc_to_chromosome
 
   Title   : convert_fpc_to_chromosome
-  Usage   : ($chrname,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
+  Usage   : ($chr_name,$start,$end) = $stadp->convert_fpc_to_chromosome('ctg1234',10000,10020)
   Function:
   Returns : 
   Args    :
@@ -1251,9 +1251,9 @@ sub get_all_fpc_ids {
 }
 
 sub get_chromosome_length {
-    my ($self,$chrname) = @_;
+    my ($self,$chr_name) = @_;
 
-    $self->throw("No chromosome name entered") unless defined($chrname);
+    $self->throw("No chromosome name entered") unless defined($chr_name);
 
     my $type = $self->db->assembly_type()
      or $self->throw("No assembly type defined");
@@ -1261,7 +1261,7 @@ sub get_chromosome_length {
     my $sth = $self->db->prepare("
         SELECT MAX(chr_end)
         FROM assembly
-        WHERE chromosome_id = '$chrname'
+        WHERE chromosome_id = '$chr_name'
           AND type = '$type'
         ");
 

@@ -693,7 +693,7 @@ sub get_Chromosome {
   my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
 
 
-  return $ca->fetch_by_chrname($self->chr_name());
+  return $ca->fetch_by_chr_name($self->chr_name());
 }
 
 sub get_repeatmasked_seq {

@@ -178,7 +178,7 @@ sub chromosome_by_id {
 =head2 chromosome_by_name
     
     Title   : chromosome_by_name
-    Usage   : $chr = $species->chromosome_by_name( $nickname, $chrname )
+    Usage   : $chr = $species->chromosome_by_name( $nickname, $chr_name )
     Function: get a chromosome-object by species and chromosome name.
     Example : -
 
@@ -190,12 +190,12 @@ sub chromosome_by_id {
 sub chromosome_by_name {
     my $self = shift;
     my $nickname = shift;
-    my $chrname = shift;
+    my $chr_name = shift;
 
     for my $species (@SpeciesList) {
 	next, if(( $species->[0] cmp $nickname ) != 0 );
 	for my $idx (0..$#{$species->[3]}) {
-	    if(( $species->[2]->[$idx] cmp $chrname ) == 0 ) {
+	    if(( $species->[2]->[$idx] cmp $chr_name ) == 0 ) {
 		my $chr = Bio::EnsEMBL::Chromosome->new
 		    ( $species->[0],
 		      $species->[2]->[$idx],

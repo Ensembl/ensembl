@@ -99,7 +99,7 @@ sub fetch_by_dbID {
     }
 
     $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -chrname => $name,
+					 -chr_name => $name,
 					 -chromosome_id => $id,
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
@@ -113,7 +113,7 @@ sub fetch_by_dbID {
 }
 
 
-=head2 fetch_by_chrname
+=head2 fetch_by_chr_name
 
   Arg  1    : txt $chromosome_name
   Function  : chains to fetch_by_dbID
@@ -124,11 +124,11 @@ sub fetch_by_dbID {
 =cut
 
 
-sub fetch_by_chrname{
+sub fetch_by_chr_name{
    my ($self,$chr_name) = @_;
 
    #Convert the name to the dbID
-   my $dbID = $self->get_dbID_by_chrname($chr_name);
+   my $dbID = $self->get_dbID_by_chr_name($chr_name);
    
    return $self->fetch_by_dbID($dbID);
 }
@@ -151,7 +151,7 @@ sub fetch_all {
     while($sth->fetch()) {
    
     my $chr = new Bio::EnsEMBL::Chromosome( -adaptor => $self,
-					 -chrname => $name,
+					 -chr_name => $name,
 					 -chromosome_id => $chromosome_id,
 					 -known_genes => $known_genes,
 					 -unknown_genes => $unknown_genes,
@@ -295,7 +295,7 @@ sub get_landmark_MarkerFeatures{
 }
 
 
-=head2 get_dbID_from_chrname
+=head2 get_dbID_from_chr_name
 
   Arg  1    : txt $chr_name
   Function  : Given a chromosome name of the format 'chrN' returns the dbID
@@ -306,11 +306,11 @@ sub get_landmark_MarkerFeatures{
 
 =cut
 
-sub get_dbID_by_chrname {
+sub get_dbID_by_chr_name {
   my ($self, $chr_name) = @_;
 
-  unless (defined $self->{_chrname_mapping}) {
-    $self->{_chrname_mapping} = {};
+  unless (defined $self->{_chr_name_mapping}) {
+    $self->{_chr_name_mapping} = {};
 
     #get the chromo names and ids from the database
     my $sth = $self->prepare('SELECT name, chromosome_id FROM chromosome');
@@ -318,11 +318,11 @@ sub get_dbID_by_chrname {
     
     #Construct the mapping of chromosome name to id
     while(my $a = $sth->fetchrow_arrayref()) {
-      $self->{_chrname_mapping}->{$a->[0]} = $a->[1];
+      $self->{_chr_name_mapping}->{$a->[0]} = $a->[1];
     }
   }
 
-  return $self->{_chrname_mapping}->{$chr_name};
+  return $self->{_chr_name_mapping}->{$chr_name};
 }    
 
 

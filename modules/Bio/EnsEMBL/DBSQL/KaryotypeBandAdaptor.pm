@@ -74,7 +74,7 @@ sub fetch_by_chromosome_start_end{
       unless (defined $chr && defined $start && defined $end);
 
     my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
 
     my $sth = $self->prepare("	SELECT	chr_start,
 					chr_end,
@@ -125,7 +125,7 @@ sub fetch_by_chromosome_position{
       unless (defined $position && defined $chr);
 
     my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
     
     my $sth = $self->prepare("	SELECT	chr_start,
 					chr_end,
@@ -173,7 +173,7 @@ sub fetch_by_chromosome_name{
       unless (defined $chr && defined $name);
 
     my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
 
     my $sth = $self->prepare(
         "SELECT	chr_start, chr_end, stain
@@ -217,7 +217,7 @@ sub fetch_by_chromosome_name_virtual {
       unless (defined $name && defined $chr);
 
     my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
 
     my $sth;
     $sth = $self->prepare( "SELECT chr_start, chr_end
@@ -359,7 +359,7 @@ sub fetch_chromosome_length {
     }
 
     my $chromosome_id = 
-      $self->db->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->db->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
 
     my $sth = $self->prepare("	SELECT max(chr_end)
 				FROM   karyotype 
@@ -395,7 +395,7 @@ sub fetch_all_by_chromosome{
     }
 
     my $chromosome_id = 
-      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chrname($chr);
+      $self->{db}->get_ChromosomeAdaptor()->get_dbID_by_chr_name($chr);
 
     my $sth = $self->prepare("	SELECT	chr_start,
 					chr_end,

@@ -365,7 +365,7 @@ sub fetch_by_chr_name{
    
    #set the end of the slice to the end of the chromosome
    my $ca = $self->db()->get_ChromosomeAdaptor();
-   my $chromosome = $ca->fetch_by_chrname($chr_name);
+   my $chromosome = $ca->fetch_by_chr_name($chr_name);
    my $chr_end = $chromosome->length();
 
    return $self->fetch_by_chr_start_end($chr_name, $chr_start, $chr_end);

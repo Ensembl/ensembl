@@ -57,9 +57,9 @@ sub new {
 
     bless($self, $class);
 	 
-    my ( $chrname, $chromosome_id, $adaptor, $length, 
+    my ( $chr_name, $chromosome_id, $adaptor, $length, 
 	 $known_genes, $unknown_genes, $snps) = 
-	 $self->_rearrange([qw(CHRNAME
+	 $self->_rearrange([qw(CHR_NAME
 			       CHROMOSOME_ID
 			       ADAPTOR 
 			       LENGTH 
@@ -68,12 +68,12 @@ sub new {
 			       SNPS)], 
 			   @args);
 
-    if( !defined $chrname || !defined $adaptor ) {
+    if( !defined $chr_name || !defined $adaptor ) {
       $self->throw("Badly formed chromosome");
     }
 
     $self->adaptor($adaptor);
-    $self->chrname($chrname);
+    $self->chr_name($chr_name);
     $self->chromosome_id($chromosome_id);
     $self->unknown_genes($unknown_genes);
     $self->length($length);
@@ -99,29 +99,29 @@ sub new {
 sub get_landmark_MarkerFeatures{
    my ($self,@args) = @_;
 
-   return $self->adaptor->get_landmark_MarkerFeatures($self->chrname);
+   return $self->adaptor->get_landmark_MarkerFeatures($self->chr_name);
 }
 
 
 
-=head2 chrname
+=head2 chr_name
 
- Title   : chrname
- Usage   : $obj->chrname($newval)
+ Title   : chr_name
+ Usage   : $obj->chr_name($newval)
  Function: 
  Example : 
- Returns : value of chrname
+ Returns : value of chr_name
  Args    : newvalue (optional)
 
 
 =cut
 
-sub chrname{
+sub chr_name{
    my ($obj,$value) = @_;
    if( defined $value) {
-      $obj->{'chrname'} = $value;
+      $obj->{'chr_name'} = $value;
     }
-    return $obj->{'chrname'};
+    return $obj->{'chr_name'};
 
 }
 
