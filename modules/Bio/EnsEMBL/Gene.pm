@@ -380,11 +380,7 @@ sub dbID {
 
   Arg [1]    : string $external_name
   Example    : none
-  Description: get/set for attribute external_name. It initially calculates
-               the longest transcript for the gene in question and then 
-               delegates the call to the external_name method on Transcript.
-               Species dependant searching is handled by this method on
-               Transcript.
+  Description: get/set for attribute external_name.
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -392,6 +388,18 @@ sub dbID {
 =cut
 
 sub external_name {
+  my ($self, $ext_name) = @_;
+
+  if(defined $ext_name) { 
+    $self->{'_ext_name'} = $ext_name;
+  } 
+
+  if( exists $self->{'_ext_name'} ) {
+    return $self->{'_ext_name'};
+  }
+
+  $self->{'_ext_name'} = $self->adaptor->get_external_name($self->dbID);
+  return $self->{'_ext_name'};
 
 }
 
@@ -401,11 +409,7 @@ sub external_name {
   Arg [1]    : string $external_db
   Example    : none
   Description: get/set for attribute external_db. The db is the one that 
-               belongs to the external_name.  It initially calculates
-               the longest transcript for the gene in question and then 
-               delegates the call to the external_db method on Transcript.
-               Species dependant searching is handled by this method on
-               Transcript.
+               belongs to the external_name.  
   Returntype : string
   Exceptions : none
   Caller     : general
@@ -413,7 +417,18 @@ sub external_name {
 =cut
 
 sub external_db {
-  my ($self, $arg ) = @_;
+  my ($self, $ext_dbname) = @_;
+
+  if(defined $ext_dbname) { 
+    $self->{'_ext_dbname'} = $ext_dbname;
+  } 
+
+  if( exists $self->{'_ext_dbname'} ) {
+    return $self->{'_ext_dbname'};
+  }
+
+  $self->{'_ext_dbname'} = $self->adaptor->get_external_dbname($self->dbID);
+  return $self->{'_ext_dbname'};
 
 }
 

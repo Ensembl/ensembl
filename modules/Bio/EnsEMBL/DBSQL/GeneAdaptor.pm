@@ -901,6 +901,85 @@ sub deleteObj {
   #flush the cache
   %{$self->{'_slice_gene_cache'}} = ();
 }
+
+
+=head2 get_external_name
+
+  Arg [1]    : int $dbID
+               the database identifier of the gene whose external name is 
+               sought
+  Example    : $external_name = $gene_adaptor->get_external_name(42);
+  Description: Retrieves the external name for a gene.  This is implemented
+               by joining across the xref and gene tables, using the 
+               relevant_xref_id column.
+  Returntype : string
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : general
+
+=cut
+
+sub get_external_name {
+  my ($self, $dbID) = @_;
+
+  if( !defined $dbID ) {
+      $self->throw("Must call with a dbID");
+  }
+
+  my $sth = $self->prepare("SELECT x.display_label 
+                            FROM   gene g, 
+                                   xref x 
+                            WHERE  g.gene_id = ?
+                              AND  g.relevant_xref_id = x.xref_id
+                           ");
+  $sth->execute($dbID);
+
+  my ($xref) = $sth->fetchrow_array();
+  if( !defined $xref ) {
+    return undef;
+  }
+
+  return $xref;
+}
+
+=head2 get_external_dbname
+
+  Arg [1]    : int $dbID
+               the database identifier of the gene for which the name of
+               external db from which its external name is derived.
+  Example    : $external_dbname = $gene_adaptor->get_external_dbname(42);
+  Description: Retrieves the external db name for a gene from which its external
+               name is derived..  This is implemented by joining across the xref, 
+               gene and external_db tables, using the relevant_xref_id column.
+  Returntype : string
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : general
+
+=cut
+
+sub get_external_dbname {
+  my ($self, $dbID) = @_;
+
+  if( !defined $dbID ) {
+      $self->throw("Must call with a dbID");
+  }
+
+  my $sth = $self->prepare("SELECT e.db_name 
+                            FROM   gene g, 
+                                   xref x, 
+                                   external_db e
+                            WHERE  g.gene_id = ?
+                              AND  g.relevant_xref_id = x.xref_id
+                              AND  x.external_db_id = e.external_db_id
+                           ");
+  $sth->execute($dbID);
+
+  my ($db_name) = $sth->fetchrow_array();
+  if( !defined $db_name ) {
+    return undef;
+  }
+
+  return $db_name;
+}
 							
 
 
