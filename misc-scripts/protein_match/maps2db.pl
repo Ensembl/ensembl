@@ -39,7 +39,7 @@ my %ens2embl;
 my %embl2sp;
 my %errorflag;
 
-if ((!defined $organism) || (!defined $xmap) || (!defined $map) || (!defined $dbname) || (!defined $host)) {
+if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
 }
 
@@ -80,7 +80,7 @@ print STDERR "Reading X_map ($xmap)\n";
 while (<XMAP>) {
     
     chomp;
-    my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn) = split (/\t/,$_);
+    my ($targetid,$targetdb,$xac,$xdb,$xid,$xsyn,$status) = split (/\t/,$_);
 
     if ($check eq "yes") {
 #Get the all of the EMBL accessions for a given SP
@@ -117,6 +117,7 @@ while (<XMAP>) {
     $p->xDB($xdb);
     $p->xID($xid);
     $p->xSYN($xsyn);
+    $p->stat($status);
 
     push(@{$map{$targetid}},$p);
 }
@@ -177,17 +178,20 @@ MAPPING: while (<MAP>) {
 		      -release => 1,
 		      -dbname => $a->xDB);
 
+		$dbentry->status($a->stat);
+
 		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT"))) {
 
 		    if (($sp2embl{$a->xAC}) && ($ens2embl{$queryid})) {
 
-			if ($ens2embl{$queryid} =~ @{$sp2embl{$a->xAC}}) {
+			if (grep($ens2embl{$queryid}=~ /$_/,@{$sp2embl{$a->xAC}})) {
+		       
 
 			}
 			else {
-			    foreach my $a(@{$sp2embl{$a->xAC}}) {
-				if ($embl2sp{$a}) {
-				    print "DODGY: $queryid\n";
+			    foreach my $b(@{$sp2embl{$a->xAC}}) {
+				if ($embl2sp{$b}) {
+				    print "DODGY: ".$a->xAC."\n";
 				    next MAPPING;
 				}
 			    }

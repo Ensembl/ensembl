@@ -4,7 +4,7 @@
 
 This script gives the basic configuration needed by the mapping. This configuration script will be used by each script of the mapping. 
 
-For some documentation, see below and the file call protein_mapping.txt in the Ensembl-doc cvs repository.
+For some documentatio, see below.
 
 =head2 Contact
 
@@ -25,21 +25,19 @@ package main;
              #General options#
              #################
 
-             #This option allows to check for dodgy matched ensembl peptides and don't load them into the database (see pmatch code for more details)
              #'check'      => 'yes',
              'check'      => '',
 
-             #This option sets up the threshold for the query identity (in that case we don't take any match where the query identity (in our case Ensembl identity) is below 50%
              #'query_idt'  => 50,
              'query_idt'    => ,
 
-             #IDEM for the target identity
              #'target_idt  => 50,
              'target_idt'  => ,
- 
+
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
-             'statistic'  => '',
+             'statistic_file'  => '',        
+
 
              ################################ 
 	     # Files location (Input/Output)#
@@ -79,11 +77,11 @@ package main;
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq'    => '',
+	     'refseq_fa'    => '',
 	     
              #Location of the Refseq (proteins) file in Genbank format
-	     #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
-	     'refseq_gnp'    => '',
+	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
+	     'refseq_gnp'  => '',
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -100,6 +98,14 @@ package main;
 	          #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
 	          'ens4'      => '',
 
+                  #Location of the file in .gnp format for the NCBI prediction
+                  #'refseq_pred' => '',
+                  'refseq_pred' => '',
+
+                  #Location of the file for GO mapping (gene_association.goa)
+                  #'go' => '',
+                  'go' => '',
+                  
                   #######
                   #Mouse#
                   #######
@@ -108,14 +114,13 @@ package main;
                   #2 files are needed MRK_SwissProt.rpt and MRK_LocusLink.rpt
                   
                    #File containing MGI/SP mapping (MRK_SwissProt.rpt)
-                   #'mgi_sp'  => '',
+                   #'mgi_sp'  => '/work1/mongin/mouse/mapping/primary/MRK_SwissProt.rpt',                 
                    'mgi_sp'  => '',
-
+                  
                    #File containing MGI/LocusLink mapping (MRK_LocusLink.rpt)
-                   #'mgi_locus'  => '',
+                   #'mgi_locus'  => '/work1/mongin/mouse/mapping/primary/MRK_LocusLink.rpt',                   
                    'mgi_locus'  => '',
-
-                   
+                                      
 
 
              ###################
@@ -142,7 +147,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '',
+             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
 
              ##############################
              #Organism related information#
@@ -151,12 +156,14 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => '',
+             'organism' => 'human',
              
 
              #OX (Organism taxonomy cross-reference) number
              #'ox' => '9606'
-             'ox' => ''
+             #'ox' => '10090'
+             #'ox' => '7227'
+             'ox'  => ''
 
  );
 
@@ -164,3 +171,8 @@ package main;
 }
 
 1;
+
+
+
+
+
