@@ -102,31 +102,22 @@ sub _columns {
 
 
 
-=head2 generic_fetch
+=head2 _default_where_clause
 
-  Arg [1]    : string $constraint
-  Arg [2]    : string $logic_name
-  Example    : @repeats = $repeat_feature_adaptor->generic_fetch('','');
+  Arg [1]    : none
+  Example    : none
   Description: Overrides superclass method to provide an additional 
                table joining constraint before the SQL query is performed. 
-  Returntype : listref of Bio::EnsEMBL::RepeatFeatures in contig coordinates
+  Returntype : string
   Exceptions : none
-  Caller     : internal
+  Caller     : generic_fetch
 
 =cut
 
-sub generic_fetch {
-  my ($self, $constraint, $logic_name) = @_;
+sub _default_where_clause {
+  my $self = shift;
 
-  #modify the constraint to join the repeat and repeat_consensus tables
-  if($constraint) {
-    $constraint .= ' AND r.repeat_consensus_id = rc.repeat_consensus_id';
-  } else {
-    $constraint = 'r.repeat_consensus_id = rc.repeat_consensus_id';
-  }
-
-  #invoke the super class method
-  return $self->SUPER::generic_fetch($constraint, $logic_name);
+  return 'r.repeat_consensus_id = rc.repeat_consensus_id';
 }
 
 

@@ -118,11 +118,29 @@ sub generic_fetch {
       $constraint = " analysis_id = $analysis_id";
     }
   } 
-      
-  my $sql = "SELECT $columns FROM $tablename " . 
-    ($constraint ? " where $constraint " : '' );
+  
+  my $sql = "SELECT $columns FROM $tablename ";
+
+  my $default_where = $self->_default_where_clause;
+  my $final_clause = $self->_final_clause;
+
+  #append a where clause if it was defined
+  if($constraint) { 
+    $sql .= " where $constraint ";
+    if($default_where) {
+      $sql .= " and $default_where ";
+    }
+  } elsif($default_where) {
+    $sql .= " where $default_where ";
+  }
+
+  #append additional clauses which may have been defined
+  $sql .= " $final_clause";
+
   my $sth = $self->prepare($sql);
-  $sth->execute;
+  
+  $sth->execute;  
+
   return $self->_objs_from_sth($sth, $mapper, $slice);
 }
 
@@ -372,7 +390,8 @@ sub fetch_all_by_Slice_constraint {
   my $features = 
     $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
-  if(@$features && $features->[0]->contig == $slice) {
+  if(@$features && (!$features->[0]->can('contig') || 
+		    $features->[0]->contig == $slice)) {
     #features have been converted to slice coords already, cache and return
     return $self->{'_slice_feature_cache'}{$key} = $features;
   }
@@ -520,6 +539,47 @@ sub _columns {
                " subclass of AlignFeatureAdaptor");
 }
 
+
+=head2 _default_where_clause
+
+  Arg [1]    : none
+  Example    : none
+  Description: May be overridden to provide an additional where constraint to 
+               the SQL query which is generated to fetch feature records.
+               This constraint is always appended to the end of the generated
+               where clause and thus may be used to add a join between tables
+  Returntype : string
+  Exceptions : none
+  Caller     : generic_fetch
+
+=cut
+
+sub _default_where_clause {
+  my $self = shift;
+
+  return '';
+}
+
+
+=head2 _final_clause
+
+  Arg [1]    : none
+  Example    : none
+  Description: May be overriden to provide an additional clause to the end
+               of the SQL query used to fetch feature records.  
+               This is useful to add a required ORDER BY clause to the 
+               query for example.
+  Returntype : string
+  Exceptions : none
+  Caller     : generic_fetch
+
+=cut
+
+sub _final_clause {
+  my $self = shift;
+
+  return '';
+}
 
 =head2 _objs_from_sth
 
