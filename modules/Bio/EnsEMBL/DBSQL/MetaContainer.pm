@@ -40,6 +40,8 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::Species;
+
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
