@@ -11,8 +11,8 @@ $| = 1;
 
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
-my $port   = '410000';
-my $dbname = 'cross100';
+my $port   = '';
+my $dbname = 'cross110';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
@@ -31,10 +31,9 @@ my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$d
 print STDERR "Using $locator for crossmatch db\n";
 my $crossdb =  Bio::EnsEMBL::DBLoader->new($locator);
 my @clones=$crossdb->get_clonelist();
-
 foreach my $clone (@clones) {
     print STDERR "Sending crossclonemap job for clone $clone to LSF queue\n";
-    my $command = "bsub -o $clone.out -e $clone.err -E /work2/elia/src/scripts/echeck.pl /work2/elia/src/ensembl/scripts/clonemap.pl $clone";
+    my $command = "bsub -o $clone.out -e $clone.err -E /work2/elia/src/scripts/echeck.pl /work2/elia/src/ensembl100/scripts/clonemap.pl $clone";
     print STDERR "Command: $command\n";
     system($command);
 }

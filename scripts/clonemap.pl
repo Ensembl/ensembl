@@ -11,8 +11,8 @@ $| = 1;
 
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
-my $port   = '410000';
-my $dbname = 'cross100';
+my $port   = '';
+my $dbname = 'cross110';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
