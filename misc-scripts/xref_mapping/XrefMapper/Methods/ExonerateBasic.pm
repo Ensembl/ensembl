@@ -88,7 +88,9 @@ sub submit_exonerate {
   my $prefix = $root_dir . "/" . basename($query);
   $prefix =~ s/\.\w+$//;
 
-  my $output = $self->get_class_name() . "_\$LSB_JOBINDEX.map";
+  my ($ensembl_type) = $prefix =~ /.*_(dna|prot)$/; # dna or prot
+
+  my $output = $self->get_class_name() . "_" . $ensembl_type . "_" . "\$LSB_JOBINDEX.map";
 
   my @main_bsub = ( 'bsub', '-J', $unique_name . "[1-$num_jobs]", '-o', "$prefix.%I.out", '-e', "$prefix.%I.err");
 
