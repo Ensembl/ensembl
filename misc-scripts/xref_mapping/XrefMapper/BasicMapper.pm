@@ -729,6 +729,8 @@ sub parse_mappings {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
     $max_object_xref_id = 1;
   }
+  my $object_xref_id_offset = $max_object_xref_id + 1;
+  my $object_xref_id = $object_xref_id_offset;
 
   $row = @{$self->dbi->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
@@ -736,13 +738,9 @@ sub parse_mappings {
     print "Can't get highest existing xref_id, using 0\n)";
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
-    $max_object_xref_id = 1;
+    $object_xref_id_offset = 1;
   }
   my $xref_id_offset = $max_xref_id + 1;
-
-  #my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
-
-  #my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
 
   # files to write table data to
   open (OBJECT_XREF,   ">$dir/object_xref.txt");
@@ -751,8 +749,6 @@ sub parse_mappings {
   my $total_lines = 0;
   my $last_lines = 0;
   my $total_files = 0;
-
-  my $object_xref_id = $max_object_xref_id + 1;
 
   # keep a (unique) list of xref IDs that need to be written out to file as well
   # this is a hash of hashes, keyed on xref id that relates xrefs to e! objects (may be 1-many)
@@ -837,7 +833,7 @@ sub parse_mappings {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, \%ensembl_object_types);
+  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
 
   # write comparison info. Can be removed after development
   $self->dump_comparison();
@@ -918,7 +914,7 @@ sub get_analysis_id {
 
 sub dump_core_xrefs {
 
-  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $ensembl_object_types_hashref) = @_;
+  my ($self, $xref_ids_hashref, $start_object_xref_id, $xref_id_offset, $object_xref_id_offset,  $ensembl_object_types_hashref) = @_;
 
   my @xref_ids = keys %$xref_ids_hashref;
   my %xref_to_objects = %$xref_ids_hashref;
@@ -929,6 +925,7 @@ sub dump_core_xrefs {
   open (XREF, ">$dir/xref.txt");
   open (OBJECT_XREF, ">>$dir/object_xref.txt");
   open (EXTERNAL_SYNONYM, ">$dir/external_synonym.txt");
+  open (GO_XREF, ">$dir/go_xref.txt");
 
   my $xref_dbi = $self->xref()->dbi();
   my $core_dbi = $self->dbi();
@@ -970,7 +967,7 @@ sub dump_core_xrefs {
     my $xref_sth = $xref_dbi->prepare($sql);
     $xref_sth->execute();
 
-    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id);
+    my ($xref_id, $accession, $version, $label, $description, $source_id, $species_id, $master_xref_id, $linkage_annotation);
     $xref_sth->bind_columns(\$xref_id, \$accession, \$version, \$label, \$description, \$source_id, \$species_id);
 
     # note the xref_id we write to the file is NOT the one we've just read
@@ -992,12 +989,15 @@ sub dump_core_xrefs {
     }
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
-    $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
+    # Store the go_linkage_annotations as we go along (need for dumping go_xref)
+    my $go_source_id = get_source_id_from_source_name($self->xref, "GO");
+
+    $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version, dx.linkage_annotation FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
 
     my $dep_sth = $xref_dbi->prepare($sql);
     $dep_sth->execute();
 
-    $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version);
+    $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version, \$linkage_annotation);
     while ($dep_sth->fetch()) {
 
       my $external_db_id = $source_to_external_db{$source_id};
@@ -1021,11 +1021,16 @@ sub dump_core_xrefs {
 	  my $full_key = $type."|".$object_id."|".$xref_id;
 	  if (!$object_xrefs_written{$full_key}) {
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
-	    $object_xref_id++;
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
 	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
+
+	    # write a go_xref with the appropriate linkage type
+	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
+
+	    $object_xref_id++;
+
 	  }
 	}
       }
@@ -1051,6 +1056,7 @@ sub dump_core_xrefs {
   close(XREF);
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
+  close(GO_XREF);
 
   print "Before calling display_xref, object_xref_mappings size " . scalar (keys %object_xref_mappings) . "\n";
 
@@ -1452,7 +1458,7 @@ sub do_upload {
 
   # TODO warn if table not empty
 
-  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description") {
+  foreach my $table ("xref", "object_xref", "identity_xref", "external_synonym", "gene_description", "go_xref") {
 
     my $file = $self->dir() . "/" . $table . ".txt";
     my $sth;
