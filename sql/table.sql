@@ -562,6 +562,8 @@ CREATE TABLE Xref(
 	 description VARCHAR(255),
          PRIMARY KEY( xrefId ),
          KEY idIdx( dbprimary_id )
+         KEY displayIdx ( display_id )
+
    	);
 
 

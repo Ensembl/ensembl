@@ -302,13 +302,14 @@ sub _fetch_by_EnsObject_type {
 sub geneids_by_extids{
    my ($self,$name) = @_;
    my @genes;
-   my @peps = $self->_type_by_external_id($name,'Translation');
-   foreach my $p (@peps) {
-       my $sth = $self->prepare( "select gene from transcript where translation = '$p'");
-       $sth->execute();
-       my $g = $sth->fetchrow;
-       push (@genes,$g);
+
+   my $sth = $self->prepare("select tr.gene from transcript tr,Xref x, objectXref oxr where tr.translation = oxr.ensembl_id and oxr.xrefId = x.xrefId and x.display_id = '$name'");
+   $sth->execute();
+
+   while( ($a) = $sth->fetchrow_array ) {
+       push(@genes,$a);
    }
+
    return @genes;
 }
 
@@ -374,6 +375,7 @@ sub rawContigids_by_extids{
 }
 
 
+
 =head2 _type_by_external_id
 
  Title   : _fetch_type_by_external_id
@@ -390,6 +392,7 @@ sub _type_by_external_id{
    my ($self,$name,$ensType) = @_;
    
 my @out;
+
 
   my $sth = $self->prepare( "
     SELECT oxr.ensembl_id

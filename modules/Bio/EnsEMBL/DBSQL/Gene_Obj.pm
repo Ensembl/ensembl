@@ -944,25 +944,19 @@ sub get_Gene_array_by_DBLink {
     my @genes;
 
     my $entryAdaptor = $self->_db_obj->get_DBEntryAdaptor();
+
+
     my @ids = $entryAdaptor->geneids_by_extids($external_id);
+
+    
     my $seen=0;
-    foreach my $geneid(@ids) {
-	
-    
-	#my $sth = $self->_db_obj->prepare("select gene_id from genedblink where external_id = '$external_id'");
-	#$sth->execute;
-	
-	#while (my ($geneid)=$sth->fetchrow_array()) {
-    
-	push (@genes,$self->get($geneid,$supporting));
-	$seen=1;
+
+    if( scalar(@ids) > 0 ) {
+	return $self->get_array_supporting('without', @ids);
+    } else {
+	return ();
     }
-    if( !$seen ) {
-	return;
-    }
-    else {
-	return @genes;
-    }
+
 }
 
 
