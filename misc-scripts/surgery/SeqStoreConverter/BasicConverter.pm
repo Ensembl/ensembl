@@ -1021,8 +1021,7 @@ sub copy_other_tables {
                     "exon_transcript",
                     "interpro",
                     "gene_description",
-                    "protein_feature",
-                    "repeat_consensus");
+                    "protein_feature");
 }
 
 
