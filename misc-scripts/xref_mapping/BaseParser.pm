@@ -181,6 +181,7 @@ sub upload_xrefs {
 
 	$xref_sth->execute($syn,
 			   $xref->{LABEL},
+			   $xref->{DESCRIPTION},
 			   $xref->{SOURCE_ID},
 			   $xref->{SPECIES_ID}) || die $dbi->errstr;
 
@@ -196,6 +197,7 @@ sub upload_xrefs {
 
 	$xref_sth->execute($dep{ACCESSION},
 			   $xref->{LABEL},
+			   $xref->{DESCRIPTION},
 			   $xref->{SOURCE_ID},
 			   $xref->{SPECIES_ID}) || die $dbi->errstr;
 
