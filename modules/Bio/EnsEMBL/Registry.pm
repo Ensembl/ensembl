@@ -567,11 +567,10 @@ sub add_alias{
 =head2 get_alias
 
   Arg [1]    : name of the possible alias to get species for
-  Arg [2]    : if set will not throw if not found.
   Example    : Bio::EnsEMBL::Registry->get_alias("Human");
   Description: get proper species name.
   Returntype : species name
-  Exceptions : if not found and second argument
+  Exceptions : none
 
 =cut
 
@@ -582,6 +581,26 @@ sub get_alias{
     return $key;
   }
   return $registry_register{'_ALIAS'}{$key};
+}
+
+=head2 alias_exists
+
+  Arg [1]    : name of the possible alias to get species for
+  Arg [2]    : if set will not throw if not found.
+  Example    : Bio::EnsEMBL::Registry->get_alias("Human");
+  Description: does the species name exist.
+  Returntype : 1 if exists else 0
+  Exceptions : none
+
+=cut
+
+sub alias_exists{
+  my ($class, $key) = @_;
+
+  if(defined($registry_register{'_ALIAS'}{$key})){
+    return 1;
+  }
+  return 0;
 }
 
 =head2 change_access
