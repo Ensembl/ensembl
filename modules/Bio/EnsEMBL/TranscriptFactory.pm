@@ -62,7 +62,6 @@ sub fset2transcript {
   
 	my $exon  = new Bio::EnsEMBL::Exon;
 	$transcript->add_Exon($exon);
-	$exon->contig_id($contig->id);
         $exon->contig   ($contig);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
@@ -129,7 +128,6 @@ sub fset2transcript_guess_phases {
     foreach my $f ($fset->sub_SeqFeature) {
 
 	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->contig_id($contig->id);
         $exon->contig   ($contig);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
@@ -230,7 +228,6 @@ sub fset2transcript_3frame {
       push(@exons,$exon);
       $exon->seqname($f->seqname);
       $exon->temporary_id ($contig->id . ".$count");
-      $exon->contig_id($contig->id);
       $exon->contig   ($contig);
       $exon->start    ($f->start);
       $exon->end      ($f->end  );
@@ -295,7 +292,6 @@ sub fset2transcript_with_seq {
     foreach my $f ($genscan->sub_SeqFeature) {
   
 	my $exon  = new Bio::EnsEMBL::Exon;
-	$exon->contig_id($seq->id);
         $exon->contig   ($seq);
 	$exon->start    ($f->start);
 	$exon->end      ($f->end  );
