@@ -751,7 +751,7 @@ sub _translate {
     # only translates in one frame. Pah!
   
     for ($i = 0; $i < 3; $i++) {
-	my $tmp = new Bio::Seq(-seq => substr($dna,$i));
+	my $tmp = new Bio::Seq(-seq => substr($dna->seq,$i));
 	$pep->[$i] = $tmp->translate();
     }
     return $pep;
@@ -1501,7 +1501,7 @@ sub seq {
 
       
     $seq = $self->contig()->subseq($self->start, $self->end);
-	 
+
     if($self->strand == -1){
       $seq =~ tr/ATGCatgc/TACGtacg/;
       $seq = reverse($seq);
