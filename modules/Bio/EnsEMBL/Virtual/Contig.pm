@@ -1791,7 +1791,7 @@ sub _sanity_check{
        }
 
        # same for end exon:
-       my $e = $gene->get_Exon_by_id($t->end_exon_id);
+       $e = $gene->get_Exon_by_id($t->end_exon_id);
        if ( $t->start < 1 or $t->end > $e->length) { 
            $error =1;
            $message .= "Transcript's end < 1 or > exon length";
