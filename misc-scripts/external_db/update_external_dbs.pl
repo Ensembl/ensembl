@@ -61,8 +61,10 @@ if($input ne 'yes') {
 my $fh = IO::File->new();
 $fh->open($file) or die("could not open input file $file");
 my @rows;
-while(<$fh>) {
-  my @a = split(/\t/);
+my $row;
+while($row = <$fh>) {
+  chomp($row);
+  my @a = split(/\t/, $row);
   push @rows, {'external_db_id' => $a[0],
                'db_name' => $a[1],
                'release' => $a[2],
