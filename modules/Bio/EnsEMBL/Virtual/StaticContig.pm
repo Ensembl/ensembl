@@ -1148,7 +1148,6 @@ sub get_all_DASFeatures{
        
        if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
 	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@fpccontigs, \@clones,\@rawcontigs)) {
-
 	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
                     #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
@@ -1190,17 +1189,30 @@ sub get_all_DASFeatures{
        }
    }
    
+#   foreach my $sf ( @clone_features ) {
+#       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
+            #print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+            #print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+            #print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+            #print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+            #print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+#	        push(@genomic_features, $sf);
+#       }
+#   }
    my $xx = 1;
    foreach my $sf ( @chr_features ) {
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
-       #print STDERR "FEATURE START: ",  $sf->start() , "\t";
+       #print STDERR "B FEATURE START: ",  $sf->start() , "\t";
        #print STDERR "FEATURE END: ",    $sf->end() , "\t";
+       #print STDERR "DAS START: ",  $sf->das_start() , "\t";
+       #print STDERR "DAS END: ",    $sf->das_end() , "\t";
        #print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
        #print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
        if( defined $self->_convert_chrfeature_to_vc_coords($sf) ) {
        		#print STDERR "$xx AFTER: ", $sf->seqname() , "\t";
-            #print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "A FEATURE START: ",  $sf->das_start(), "\t";
             #print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
             #print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
        		#print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
@@ -1239,7 +1251,7 @@ sub _convert_chrfeature_to_vc_coords{
         print STDERR " START: ",  $f->das_start(), "\t";
         print STDERR " END: ",    $f->das_end(), "\t";
         print STDERR " STRAND: ", $f->das_strand(), "\t";
-       	print STDERR " ID: ",   $f->das_feature_id(), "\n";	
+       	print STDERR " ID: ",     $f->das_feature_id(), "\n";	
 		return();
 	}
     $f->start($f->start() - $chr_start + 1);
@@ -1481,6 +1493,28 @@ sub get_all_FPCClones {
     return @fpcclones;
 }
 
+sub get_cloneset_on_chromosome {
+    my $self = shift;
+    my $cloneset = shift;
+    my $chr_name      = shift; 
+
+    my $mapdb;
+    eval {
+        $mapdb = $self->dbobj->mapdb();
+    };
+    if( $@ || !defined $mapdb ) {
+	    $self->warn("in get_all_clones_in_cloneset, unable to get mapdb. Returning empty list [$@]");
+	    return ();
+    }
+    my $fpcmap = $mapdb->get_Map('FPC');
+    $chr_name =~ s/chr//g;
+    my $chr_name_X = $self->_chr_name;
+    $chr_name_X =~ s/chr//g; 
+
+    my $chr = $fpcmap->get_ChromosomeMap($chr_name||$chr_name_X);
+    my $cloneset = $chr->get_cloneset_on_chromosome($cloneset, $chr_name);
+    return @$cloneset;
+}
 sub get_all_clones_in_cloneset {
     my $self = shift;
     my $cloneset = shift;
