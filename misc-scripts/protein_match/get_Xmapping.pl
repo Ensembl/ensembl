@@ -62,9 +62,9 @@ print STDERR "Reading SPTR file\n";
 
 
 
-#print STDERR "parseing sp file\n";
+print STDERR "parseing sp file\n";
 my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
-#print STDERR "processing sp lines\n";
+print STDERR "processing sp lines\n";
 &process_parsed_sp($swiss, $ac, $id, \*OUT);
 
 
@@ -275,6 +275,7 @@ print STDERR "The output has been written there: $out\n";
 
 sub parse_sp_file{
   my ($file) = @_;
+  #print STDERR "opening file ".$file."\n";
   open(FH, $file) or die("couldn't open file ".$file." $!");
   my $counter = 0;
   my %swiss;
@@ -415,7 +416,7 @@ sub process_parsed_sp{
     }
     
     if(!$tag){
-      die "you have no data tag can't decide if data is from swissprot or trembl for ".$id." ".$ac." ".$entry."\n"
+      die "you have no data tag can't decide if data is from swissprot or trembl for id ".$id." ac ".$ac." entry ".$entry."\n"
     }
     if($tag =~ /STANDARD/){
       $db = 'SWISSPROT';
@@ -427,16 +428,16 @@ sub process_parsed_sp{
     my $ac_syns = join(';',@ac_syns);
     print $out $ac."\tSPTR\t".$ac."\t".$db."\t".$id."\t".$ac_syns."\tKNOWN\n";
     foreach my $embl_acc(@embl_ids){
-      print $out $ac."\tSPTR\t".$embl_acc."\tEMBL\t".$embl_acc."\tXREF\n";
+      print $out $ac."\tSPTR\t".$embl_acc."\tEMBL\t".$embl_acc."\t\tXREF\n";
     }
     foreach my $protein(@protein_ids){
-      print $out $ac."\tSPTR\t".$protein."\tprotein_id\t".$protein."\tXREF\n";
+      print $out $ac."\tSPTR\t".$protein."\tprotein_id\t".$protein."\t\tXREF\n";
     }
     foreach my $mim(@mims){
-      print $out $ac."\tSPTR\t".$mim."\tMIM\t".$mim."\tXREF\n";
+      print $out $ac."\tSPTR\t".$mim."\tMIM\t".$mim."\t\tXREF\n";
     }
     foreach my $mim(@pdbs){
-      print $out $ac."\tSPTR\t".$mim."\tPDB\t".$mim."\tXREF\n";
+      print $out $ac."\tSPTR\t".$mim."\tPDB\t".$mim."\t\tXREF\n";
     }
     foreach my $mim(@genenames){
       print $out $ac."\tSPTR\t".$mim."\tFlyBase\t".$mim."\t\tXREF\n";
