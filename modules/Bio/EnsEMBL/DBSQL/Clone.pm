@@ -358,7 +358,7 @@ sub get_all_Contigs {
 =cut
 
 sub get_all_ContigOverlaps {
-    my ($self) = @;
+    my ($self) = @_;
 
     # Not written yet
 }
