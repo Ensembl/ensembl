@@ -139,7 +139,7 @@ sub start_Exon {
    if( @_ ) {
       my $value = shift;
       if( !ref $value || !$value->isa('Bio::EnsEMBL::Exon') ) {
-         $self->throw("Got to have an Exon object, not a $value");
+         throw("Got to have an Exon object, not a $value");
       }
       $self->{'start_exon'} = $value;
     }
@@ -167,7 +167,7 @@ sub end_Exon {
    if( @_ ) {
       my $value = shift;
       if( !ref $value || !$value->isa('Bio::EnsEMBL::Exon') ) {
-         $self->throw("Got to have an Exon object, not a $value");
+         throw("Got to have an Exon object, not a $value");
       }
       $self->{'end_exon'} = $value;
     } 
@@ -297,7 +297,7 @@ sub add_DBEntry {
   my $dbe = shift;
 
   unless($dbe && ref($dbe) && $dbe->isa('Bio::EnsEMBL::DBEntry')) {
-    $self->throw('Expected DBEntry argument');
+    throw('Expected DBEntry argument');
   }
 
   $self->{'dbentries'} ||= [];

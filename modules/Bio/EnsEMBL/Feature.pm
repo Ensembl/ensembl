@@ -38,16 +38,13 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
 
 This is the Base feature class from which all EnsEMBL features inherit.  It
 provides a bare minimum functionality that all features require.  It basically
-describes a location on a sequence of in an arbitrary coordinate system.
+describes a location on a sequence in an arbitrary coordinate system.
 
 =head1 CONTACT
 
 Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -588,17 +585,88 @@ sub project {
 }
 
 
+##############################################
+# Methods included for backwards compatibility
+##############################################
 
+
+# contig
+#
+# This method is included for backwards compatibility.
+# Use slice() instead
+#
 sub contig {
   deprecate('Use slice() instead');
   slice(@_);
 }
 
+# seqname
+#
+# This method is included for backwards compatibility
+# Try to use something like $feat->slice->seq_region_name instead
+#
 sub seqname {
   my $self = shift;
   deprecate('Use $feat->slice->name or $feat->slice->seq_region_name instead');
   return '' if(!$self->slice());
   return $self->slice->seq_region_name();
+}
+
+# sub_SeqFeature
+#
+# This method is only for genebuild backwards compatibility.
+# Avoid using it if possible
+#
+sub sub_SeqFeature{
+  my ($self) = @_;
+  return @{$self->{'_gsf_sub_array'}} if($self->{'_gsf_sub_array'});
+}
+
+# add_sub_SeqFeature
+#
+# This method is only for genebuild backwards compatibility.
+# Avoid using it if possible
+#
+sub add_sub_SeqFeature{
+  my ($self,$feat,$expand) = @_;
+
+  if( $expand eq 'EXPAND' ) {
+    # if this doesn't have start/end set - forget it!
+    if( !defined $self->start && !defined $self->end ) {
+      $self->start($feat->start());
+      $self->end($feat->end());
+      $self->strand($feat->strand);
+    } else {
+      my ($start,$end);
+      if( $feat->start < $self->start ) {
+        $start = $feat->start;
+      }
+
+      if( $feat->end > $self->end ) {
+        $end = $feat->end;
+      }
+
+      $self->start($start);
+      $self->end($end);
+    }
+   } else {
+     if($self->start > $feat->start || $self->end < $feat->end) {
+       throw("$feat is not contained within parent feature, " .
+             "and expansion is not valid");
+     }
+   }
+
+   push(@{$self->{'_gsf_sub_array'}},$feat);
+}
+
+# flush_sub_SeqFeature
+#
+# This method is only for genebuild backwards compatibility.
+# Avoid using it isf possible
+#
+sub flush_sub_SeqFeature {
+  my ($self) = @_;
+  $self->{'_gsf_sub_array'} = [];
 }
 
 
@@ -632,6 +700,11 @@ sub _deprecated_transform {
   return $self;
 }
 
+# id
+#
+# This method is included for backwards compatibility only.
+# Use hseqname or dbID or stable_id instead
+#
 sub id {
   my $self = shift;
   deprecate("id method is not used - use dbID instead");

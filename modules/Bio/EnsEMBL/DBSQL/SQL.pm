@@ -9,38 +9,37 @@ use Bio::EnsEMBL::DBSQL::SQL::mysql;
 use Bio::EnsEMBL::DBSQL::SQL::oracle;
 use Bio::EnsEMBL::DBSQL::SQL::sybase;
 use Bio::EnsEMBL::DBSQL::SQL::StatementHandle;
-use Bio::EnsEMBL::Root;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+
 use vars '@ISA';
 
-@ISA = qw{ DBI::db Bio::EnsEMBL::Root };
+@ISA = qw{ DBI::db };
 
 sub new {
-    my( $pkg, $dsn, $user, $password ) = @_;
+  my( $pkg, $dsn, $user, $password ) = @_;
     
-    my $dbh = DBI->connect($dsn, $user, $password, {RaiseError => 0, PrintError => 0});
-    if ($dbh) {
-        return bless($dbh, $pkg);
-    } else {
-        # Create a BioPerl object in order to throw an exception
-        my $self = bless {}, $pkg;
-        $self->throw("Can't connect to SQL database with:\n"
-            . "       dsn = '$dsn'\n"
-            . "      user = '$user'\n"
-            . "  password = '$password'\n"
-            );
-    }
+  my $dbh = DBI->connect($dsn, $user, $password, 
+                         {RaiseError => 0, PrintError => 0});
+
+  return bless($dbh, $pkg) if($dbh);
+
+  throw("Can't connect to SQL database with:\n"
+        . "       dsn = '$dsn'\n"
+        . "      user = '$user'\n"
+        . "  password = '$password'\n");
 }
 
 sub prepare {
-    my( $dbh, @args ) = @_;
+  my( $dbh, @args ) = @_;
     
-    my $sth = $dbh->SUPER::prepare(@args);
-    if ($sth) {
-        bless($sth, 'Bio::EnsEMBL::DBSQL::SQL::StatementHandle');
-        return $sth;
-    } else {
-        $dbh->throw("prepare failed: '$DBI::errstr'");
-    }
+  my $sth = $dbh->SUPER::prepare(@args);
+  if ($sth) {
+    bless($sth, 'Bio::EnsEMBL::DBSQL::SQL::StatementHandle');
+    return $sth;
+  }
+
+  throw("prepare failed: '$DBI::errstr'");
 }
 
 1;

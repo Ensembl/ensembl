@@ -5,21 +5,36 @@ package Bio::EnsEMBL::DBSQL::SQL::StatementHandle;
 
 use strict;
 use DBI;
-use Bio::EnsEMBL::Root;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw);
+
+BEGIN {
+ eval {
+ require Time::HiRes;
+ Time::HiRes->import('time');
+ };
+};
+
+
 use vars '@ISA';
 
-@ISA = qw{ DBI::st Bio::EnsEMBL::Root };
-
+@ISA = qw{ DBI::st };
 
 sub execute {
-    my( $sth, @args ) = @_;
-    
-    my $result = $sth->SUPER::execute(@args);
-    if ($result) {
-        return $result;
-    } else {
-        $sth->throw("execute failed : '$DBI::errstr'");
-    }
+  my( $sth, @args ) = @_;
+  
+  my $time = time;
+  my $result = $sth->SUPER::execute(@args);
+  
+  $time = time - $time;
+  
+  print STDERR "query time: $time\n";
+  
+  if ($result) {
+    return $result;
+  }
+  
+  throw("execute failed : '$DBI::errstr'");
 }
 
 1;
