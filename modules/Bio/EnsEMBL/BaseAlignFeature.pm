@@ -292,6 +292,36 @@ sub adaptor {
 
 }
 
+=head2 reverse_complement
+
+  Args       : none
+  Example    : none
+  Description: reverse complement the FeaturePair,
+               modifing strand, hstrand and cigar_string in consequence
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub reverse_complement {
+  my ($self) = @_;
+
+  # reverse strand in both sequences
+  $self->strand($self->strand * -1);
+  $self->hstrand($self->hstrand * -1);
+  
+  # reverse cigar_string as consequence
+  my $cigar_string = $self->cigar_string;
+  $cigar_string =~ s/(D|I|M)/$1 /g;
+  my @cigar_pieces = split / /,$cigar_string;
+  $cigar_string = "";
+  while (my $piece = pop @cigar_pieces) {
+    $cigar_string .= $piece;
+  }
+
+  $self->cigar_string($cigar_string);
+}
 
 =head2 _parse_cigar
 
@@ -508,29 +538,22 @@ sub _parse_features {
   my $f2end;
   my $f2start;
 
-  if($strand == 1 && $hstrand == 1){
+  if ($strand == 1) {
     $f1start = $f[0]->start;
     $f1end = $f[-1]->end;
-    $f2start = $f[0]->start;
-    $f2end = $f[-1]->end;
-  }elsif($strand == -1 && $hstrand == -1){
+  } else {
     $f1start = $f[-1]->start;
     $f1end = $f[0]->end;
-    $f2start = $f[-1]->start;
-    $f2end = $f[0]->end;
-  }elsif($strand == 1 && $hstrand == -1){
-    $f1start = $f[0]->start;
-    $f1end = $f[-1]->end;
-    $f2start = $f[0]->start;
-    $f2end = $f[-1]->end;
-  }elsif($strand == -1 && $hstrand == 1){
-    $f1start = $f[-1]->start;
-    $f1end = $f[0]->end;
-    $f2start = $f[-1]->start;
-    $f2end = $f[0]->end;
   }
 
-    
+  if ($hstrand == 1) {
+    $f2start = $f[0]->hstart;
+    $f2end = $f[-1]->hend;
+  } else {
+    $f2start = $f[-1]->hstart;
+    $f2end = $f[0]->hend;
+  }
+
   #
   # Loop through each portion of alignment and construct cigar string
   #
