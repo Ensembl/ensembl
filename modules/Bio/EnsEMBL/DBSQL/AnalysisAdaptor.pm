@@ -110,11 +110,14 @@ sub fetch_all {
 
   while( $rowHashRef = $sth->fetchrow_hashref ) {
     my $analysis = $self->_objFromHashref( $rowHashRef  );
-    $self->{_cache}->{$analysis->dbID} = $analysis;
+
+    $self->{_cache}->{$analysis->dbID}                    = $analysis;
     $self->{_logic_name_cache}->{$analysis->logic_name()} = $analysis;
   }
 
-  return \{values %{$self->{_cache}}};
+  my @ana = values %{$self->{_cache}};
+
+  return \@ana;
 }
 
 
