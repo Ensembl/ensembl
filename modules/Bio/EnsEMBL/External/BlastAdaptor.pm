@@ -213,8 +213,7 @@ sub store_search_multi{
 
   my $dbh  = $self->db->db_handle;
 
-  my $store_obj = $search_multi->_prepare_storable;
-  my $frozen  = freeze( $store_obj );
+  my $frozen  = $search_multi->serialise;
   my $ticket  = $search_multi->token ||
     $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
 
@@ -290,8 +289,7 @@ sub store_result{
 
   my $dbh  = $self->db->db_handle;
 
-  my $store_obj = $res->_prepare_storable;
-  my $frozen = freeze( $store_obj );
+  my $frozen = $res->serialise;
   my $ticket = $res->group_ticket;
   my ( $id, $use_date ) = split( '!!', $res->token);
   $use_date ||= $self->use_date('RESULT');
@@ -373,8 +371,7 @@ sub store_hit{
 
   my $dbh  = $self->db->db_handle;
 
-  my $store_obj = $hit->_prepare_storable;
-  my $frozen = freeze( $store_obj );
+  my $frozen = $hit->serialise;
   my $ticket = $hit->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hit->token);
   $use_date ||= '';
@@ -454,8 +451,7 @@ sub store_hsp{
     $self->throw( "Need a Bio::Search::HSP::EnsemblHSP obj" );
   my $dbh  = $self->db->db_handle;
 
-  my $store_obj = $hsp->_prepare_storable;
-  my $frozen = freeze( $store_obj );
+  my $frozen = $hsp->serialise;
   my $ticket = $hsp->group_ticket;
   my ( $id, $use_date ) = split( '!!', $hsp->token);
   $use_date ||= '';
