@@ -168,32 +168,42 @@ sub generic_fetch {
 =head2 fetch_by_dbID
 
   Arg [1]    : int $id
-               the unique database identifier for the feature to be obtained 
-  Example    : $feat = $adaptor->fetch_by_dbID(1234);
+               The unique database identifier for the feature to be obtained
+  Arg [2]    : $coord_system_name (optional)
+               The name of the coordinate system that the feature should be
+               retrieved in.
+  Arg [3]    : $coord_system_version (optional)
+               The version of the coordinate system the the feature should be
+               retrieved in.
+  Example    : $feat = $adaptor->fetch_by_dbID(1234, 'contig'));
+               $feat = $adaptor->fetch_by_dbID(1235, 'chromosome', 'NCBI33');
   Description: Returns the feature created from the database defined by the
-               the id $id. 
-  Returntype : Bio::EnsEMBL::SeqFeature
-  Exceptions : thrown if $id is not defined
+               the id $id.  If the coordinate system argument is provided and
+               the requested feature exists but is not defined in the requested
+               coordinate system undef is returned. If the feature does not
+               exist in the database at all an exception is thrown.
+  Returntype : Bio::EnsEMBL::Feature
+  Exceptions : thrown if $id is not defined or if the requested feature
+               does not exist
   Caller     : general
 
 =cut
 
 sub fetch_by_dbID{
-  my ($self,$id) = @_;
-  
-  unless(defined $id) {
-    throw("fetch_by_dbID must have an id");
-  }
+  my ($self,$id,$cs_name,$cs_version) = @_;
 
+  throw("id argument is required") if(!defined $id);
+
+  #construct a constraint like 't1.table1_id = 123'
   my @tabs = $self->_tables;
-
   my ($name, $syn) = @{$tabs[0]};
-
-  #construct a constraint like 't1.table1_id = 1'
   my $constraint = "${syn}.${name}_id = $id";
 
-  #return first element of _generic_fetch list
-  my ($feat) = @{$self->generic_fetch($constraint)}; 
+  #get first element of _generic_fetch list
+  my ($feat) = @{$self->generic_fetch($constraint)};
+
+  $feat = $feat->transform($cs_name, $cs_version) if(defined($cs_name));
+
   return $feat;
 }
 
@@ -220,7 +230,7 @@ sub fetch_by_dbID{
 
 sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name) = @_;
-  
+
   #fetch by constraint with empty constraint
   return $self->fetch_all_by_Slice_constraint($slice, '', $logic_name);
 }
@@ -259,7 +269,7 @@ sub fetch_all_by_Slice_and_score {
 
   return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
 					      $logic_name);
-}  
+}
 
 
 =head2 fetch_all_by_Slice_constraint
@@ -613,21 +623,6 @@ sub _columns {
 
 
 
-=head2 _left_join
-
-  Arg [1]    : none
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
-
-=cut
-
-
-
-
-
 =head2 _default_where_clause
 
   Arg [1]    : none
@@ -710,8 +705,7 @@ sub _objs_from_sth {
 
   throw("abstract method _obj_from_sth not defined by implementing"
              . " subclass of BaseFeatureAdaptor");
-} 
-
+}
 
 =head2 deleteObj
 
@@ -735,6 +729,7 @@ sub deleteObj {
 
 
 
+
 =head2 fetch_all_by_RawContig_constraint
 
   Description: DEPRECATED use fetch_all_by_RawContig_constraint instead
@@ -747,7 +742,6 @@ sub fetch_all_by_RawContig_constraint {
   return $self->fetch_all_by_slice_constraint(@_);
 }
 
-
 =head2 fetch_all_by_RawContig
 
   Description: DEPRECATED use fetch_all_by_Slice instead
@@ -759,7 +753,6 @@ sub fetch_all_by_RawContig {
   deprecate('Use fetch_all_by_Slice() instead.');
   return $self->fetch_all_by_Slice(@_);
 }
-
 
 =head2 fetch_all_by_RawContig_and_score
 
