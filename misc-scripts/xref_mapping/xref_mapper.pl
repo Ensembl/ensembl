@@ -132,7 +132,7 @@ sub info {
 
   my ($i, @all_species) = @_;
 
-  return "($i of " . scalar(@all_species) . ")";
+  return "(species $i of " . scalar(@all_species) . ")";
 
 }
 
