@@ -60,7 +60,7 @@ sub new {
     my ($class,$global_start,$vc_start_position,$global_end,@contigs) = @_;
     
     my $self = {};
-    bless $self,$class;
+    bless ($self,$class);
     $self->_make_datastructures(); # back to virtual contig
 
 
