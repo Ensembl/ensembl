@@ -192,16 +192,23 @@ sub contigid {
 sub _get_features_from_transcript {
   my ($self, $transcript_obj, $vc) = @_;
   $self->throw('interface fault') if (@_ != 3);
-    
+
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
+  my $hack_shift_bp;
+  if ($strand < 0) {
+    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
+  } else {
+    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
+  }
   my @all_features = $vc->get_all_SimilarityFeatures;
   my @features = ();
   FEATURE_LOOP:
   foreach my $feature (@all_features) {
     if ($feature->strand == $strand) {
       foreach my $exon (@exons) {
-        if ($feature->start >= $exon->start and $feature->end <= $exon->end) {
+        if ( $feature->start + $hack_shift_bp >= $exon->start
+	  and $feature->end  + $hack_shift_bp <= $exon->end) {
 	  push @features, $feature;
 	  next FEATURE_LOOP;
 	}
@@ -340,7 +347,23 @@ sub _get_hits {
     {
       push @hseqnames, $hseqname;
       if ((@hseqnames % $clump_size) == 0) {
-        my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+        my @tofetch = sort { $a cmp $b } @hseqnames;
+	for (my $i = 1; $i < @tofetch; $i++) {
+          if ($tofetch[$i] eq $tofetch[$i-1]) {
+	    splice @tofetch, $i, 1;
+	    $i--;
+	  }
+	}
+	for (my $i = 1; $i < @tofetch; $i++) {
+	  if ($tofetch[$i] =~ /\|/) {	# pipe would make trouble
+	    splice @tofetch, $i, 1;
+	    $i--;
+	  }
+	}
+        my @seqs;
+	if (@tofetch) {
+	  @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+	}
 	foreach my $seq_obj (@seqs) {
           $hits_hash{$seq_obj->accession_number} = $seq_obj;
 	}
@@ -355,7 +378,23 @@ sub _get_hits {
     }
   }
   if (@hseqnames) {	# fetch the non-clump-sized remainder
-    my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+    my @tofetch = sort { $a cmp $b } @hseqnames;
+    for (my $i = 1; $i < @tofetch; $i++) {
+      if ($tofetch[$i] eq $tofetch[$i-1]) {
+        splice @tofetch, $i, 1;
+        $i--;
+      }
+    }
+    for (my $i = 1; $i < @tofetch; $i++) {
+      if ($tofetch[$i] =~ /\|/) {	# pipe would make trouble
+        splice @tofetch, $i, 1;
+        $i--;
+      }
+    }
+    my @seqs;
+    if (@tofetch) {
+      @seqs = $self->seqfetcher->get_Seqs_by_accs(@tofetch);
+    }
     foreach my $seq_obj (@seqs) {
       $hits_hash{$seq_obj->accession_number} = $seq_obj;
     }
@@ -749,6 +788,13 @@ sub _get_aligned_evidence_for_transcript {
 		  );
   push @evidence_arr, $evidence_obj;
 
+  my $hack_shift_bp;
+  if ($all_exons[0]->strand < 0) {
+    $hack_shift_bp = VC_MINUS_STRAND_HACK_BP;
+  } else {
+    $hack_shift_bp = VC_PLUS_STRAND_HACK_BP;
+  }
+
   my @seqcache = ();
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
@@ -757,8 +803,8 @@ sub _get_aligned_evidence_for_transcript {
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
       next PEP_FEATURE_LOOP	# unless feature falls within this exon
-        unless (($feature->start >= $exon->start)
-	     && ($feature->end <= $exon->end));
+        unless ($feature->start + $hack_shift_bp >= $exon->start
+	    and $feature->end   + $hack_shift_bp <= $exon->end);
       next PEP_FEATURE_LOOP	# if feature is a duplicate of the last
         if ($last_feat
         && ($last_feat->start  == $feature->start)
@@ -860,8 +906,8 @@ sub _get_aligned_evidence_for_transcript {
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP	# unless feature falls within this exon
-        unless (($feature->start >= $exon->start)
-	     && ($feature->end <= $exon->end));
+        unless ($feature->start + $hack_shift_bp >= $exon->start
+	    and $feature->end   + $hack_shift_bp <= $exon->end);
       next NUC_FEATURE_LOOP	# if feature is a duplicate of the last
         if ($last_feat
         && ($last_feat->start  == $feature->start)
@@ -976,10 +1022,10 @@ sub _get_aligned_evidence_for_transcript {
     for (my $i = 0; $i < @exon_lengths; $i++) {
       my $replacement = substr $seq_str, $total_exon_len,
                                $exon_lengths[$i];
-      if (! ($i & 2)) {
-        $replacement = uc $replacement;
-      } else {
+      if ($i % 2) {
         $replacement = lc $replacement;
+      } else {
+        $replacement = uc $replacement;
       }
       substr $seq_str, $total_exon_len, $exon_lengths[$i], $replacement;
       $total_exon_len += $exon_lengths[$i];
