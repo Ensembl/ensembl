@@ -489,6 +489,7 @@ sub write_Clone {
     $sth = $self->prepare("select last_insert_id()");
     my $res = $sth->execute;
     my $row = $sth->fetchrow_hashref;
+    $sth->finish;
     my $id  = $row->{'last_insert_id()'};
     #print(STDERR "Clone $clone_id - $id\n");
     
@@ -2194,6 +2195,26 @@ sub get_Clone {
 
 }
   
+=head2 list_embl_version_by_Clone
+
+ Title   : list_embl_version_by_Clone
+ Usage   :
+ Function: retrieve list of embl_versions of a clone from the database
+ Example : @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
+ Returns : @versions
+ Args    : $accession
+
+
+=cut
+
+sub list_embl_version_by_Clone { 
+    my ($self,$accession) = @_;
+
+    my $ca = Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
+
+    return $ca->list_embl_version_by_accession($accession);
+}
+
 =head2 get_Clone_by_version
 
  Title   : get_Clone_by_version

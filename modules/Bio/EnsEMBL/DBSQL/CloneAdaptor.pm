@@ -94,6 +94,41 @@ sub fetch_by_accession {
 
 
 
+=head2 list_embl_version_by_accession
+
+ Title   : list_embl_version_by_accession
+ Usage   : @vers = $obj->list_embl_version_by_accession($accession)
+ Function:
+ Example :
+ Returns : @vers
+ Args    : $accession
+
+
+=cut
+
+sub list_embl_version_by_accession {
+    my ($self,$id) = @_;
+    my (@vers);
+
+    if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
+
+    my $sth = $self->prepare(qq{
+	SELECT distinct embl_version
+	FROM   clone
+	WHERE  id = '$id'
+    });
+    my $res = $sth ->execute();
+
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	push @vers, $rowhash->{'embl_version'};
+    }
+    $sth->finish;
+
+    $self->throw("no clone $id") unless scalar @vers > 0;
+    
+    return @vers;
+}
+
 =head2 fetch_by_accession_version
 
  Title   : fetch_by_accession_version
