@@ -1274,8 +1274,11 @@ sub get_all_Haplotypes {
 
   Arg [1]    : none
   Example    : $features = $slice->get_all_DASFeatures;
-  Description: Retreives a hash reference to the DAS features which overlap 
-               this slice
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
@@ -1285,11 +1288,10 @@ sub get_all_Haplotypes {
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
   
- my %genomic_features =
-      map { ( $_->_dsn => $_->fetch_all_by_Slice($self) ) }
+  my %genomic_features =
+      map { ( $_->_dsn => [ $_->fetch_all_by_Slice($self) ]  ) }
          $self->adaptor()->db()->_each_DASFeatureFactory;
-   
-return \%genomic_features;
+  return \%genomic_features;
 
 }
 
