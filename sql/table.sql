@@ -614,7 +614,7 @@ CREATE TABLE external_synonym(
 
 CREATE TABLE external_db(
          external_db_id INT not null auto_increment,
-         db_name VARCHAR(40) not null,
+         db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily') not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
 	 status  ENUM ('KNOWN','XREF','PRED') not null,
          PRIMARY KEY( external_db_id ) 
