@@ -497,7 +497,7 @@ sub get_all_VirtualGenes_startend{
        }
    }
    
-   print STDERR "tt 9\n";
+   print STDERR "version 10\n";
    
  GENE:
    foreach my $gene ( values %gene ) {
@@ -508,12 +508,6 @@ sub get_all_VirtualGenes_startend{
        my $genestr;
        foreach my $trans ( $gene->each_Transcript ) {
 	   foreach my $exon ( $trans->each_Exon ) {
-
-	       my $mc = $self->_vmap->get_MapContig_by_id($exon->contig_id);
-	       if( !defined $mc ) {
-		   next;
-	       }
-	       
 	       
 	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
 	       if( $st < $genestart ) {
@@ -1294,8 +1288,10 @@ sub _convert_start_end_strand_vc {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($contig);
     };
-    if($@ || !ref $mc ) {
-	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig or unable to retrieve it [$mc]\n$@\n");
+ 
+
+    if ($@ || !ref $mc) { 
+	return undef;
     }
 
 
