@@ -23,7 +23,7 @@ up a gene transcript.
 Creation:
 
      my $tran = new Bio::EnsEMBL::Transcript();
-     my $tran = new Bio::EnsEMBL::Transcript(@exons);
+     my $tran = new Bio::EnsEMBL::Transcript(-EXONS => \@exons);
 
 Manipulation:
 
@@ -64,10 +64,22 @@ sub new {
   my $self = $class->SUPER::new(@_);
 
   my ( $exons, $stable_id, $version, $external_name, $external_db,
-       $external_status, $display_xref ) = 
-	 rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
-		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
-  
+       $external_status, $display_xref );
+
+  #catch for old style constructor calling:
+  if((@_ > 0) && ref($_[0])) {
+    $exons = [@_];
+    deprecate("Transcript constructor should use named arguments.\n" .
+              'Use Bio::EnsEMBL::Transcript->new(-EXONS => \@exons);' .
+              "\ninstead of Bio::EnsEMBL::Transcript->new(\@exons);");
+  }
+  else {
+    ( $exons, $stable_id, $version, $external_name, $external_db,
+      $external_status, $display_xref ) = 
+        rearrange( [ "EXONS", 'STABLE_ID', 'VERSION', 'EXTERNAL_NAME', 
+                     'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
+  }
+
   if( $exons ) {
     $self->{'_trans_exon_array'} = $exons;
     $self->recalculate_coordinates();
@@ -1792,7 +1804,7 @@ sub recalculate_coordinates {
       $end = $e->end();
     }
   
-    if( $e->slice()->name() ne $slice->name() ) {
+    if( $slice && $e->slice() && $e->slice()->name() ne $slice->name() ) {
       throw( "Exons with different slices not allowed on one Transcript" );
     }
     
