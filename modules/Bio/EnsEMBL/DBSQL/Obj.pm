@@ -1163,7 +1163,7 @@ sub write_Gene{
        $sth2->execute();
    }
    else {
-       print "Got this gene with this version already, no need to write in db");
+       print "Got this gene with this version already, no need to write in db";
    }
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
        #print STDERR "Using $cloneid and ",$gene->id,"\n";

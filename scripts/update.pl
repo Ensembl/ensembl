@@ -157,8 +157,7 @@ foreach my $object (@object_array) {
     #Check if it is a clone object
     if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
 	$type = "Clone";
-	$verbose && print "Got clone with id ".$object->id."\n";
-	
+	$verbose && print "CLONE LEVEL-Got clone with id ".$object->id."\n";
 	my $rec_clone;
 	#Check if it is already present in recipient
 	eval {
@@ -172,8 +171,7 @@ foreach my $object (@object_array) {
 	    
 	    #Get all the genes from this clone and check them, write them, archive them accordingly
 	    foreach my $gene ($object->get_all_Genes()) {
-		$verbose &&  print "Getting all genes via clone method\n";
-		$verbose &&  print "Gene ".$gene->id." has version ".$gene->version."\n";
+		$verbose &&  print "Getting all genes via clone get_all_Genes method\n";
 		&_place_gene($gene,'1');
 	    }
 	}
@@ -188,6 +186,8 @@ foreach my $object (@object_array) {
 		$rec_db->write_Clone($object);
 		#Get all the genes from this clone
 		foreach my $gene ($object->get_all_Genes()) {
+		    $verbose &&  print "Getting all genes via clone get_all_Genes method\n";
+		    $verbose &&  print "CLONE LEVEL: Got gene ".$gene->id."\n";
 		    &_place_gene($gene,'1');
 		}
 	    }
@@ -208,7 +208,7 @@ foreach my $object (@object_array) {
 
     #Check if it is a gene
     elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-	$verbose && print "In get_updated objects, gene level: got gene with id ".$object->id.", and version ".$object->version."\n";
+	$verbose && print "Gene level: got gene with id ".$object->id.", and version ".$object->version."\n";
 	$type = "Gene";
 	&_place_gene($object);
     }
@@ -228,24 +228,24 @@ foreach my $object (@object_array) {
 	    $rec_db->write_Exon($object);
 	}
 	#If exon present in recipient, check donor and recipient version
-    else {
-	#If donor exon version greater than recipient exon version, update
-	if ($object->version > $rec_exon->version) {
-	    $verbose && print "Exon with new version, updating the database\n";
-	    $rec_db->delete_Exon($object->id);
-	    $rec_db->write_Exon($object);
-	}
-	
-	#If donor gene version is less than the recipient gene version, error 
-	#NOTE: Better catching to be implemented
-	elsif ($rec_exon->version > $object->version) {
-	    print "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
-	}
-	#If versions equal, nothing needs to be done
 	else {
-	    $verbose && print "Genes with the same version, databases kept unchanged\n";
+	#If donor exon version greater than recipient exon version, update
+	    if ($object->version > $rec_exon->version) {
+		$verbose && print "Exon with new version, updating the database\n";
+		$rec_db->delete_Exon($object->id);
+		$rec_db->write_Exon($object);
+	    }
+	
+	    #If donor gene version is less than the recipient gene version, error 
+	    #NOTE: Better catching to be implemented
+	    elsif ($rec_exon->version > $object->version) {
+		print "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
+	    }
+	    #If versions equal, nothing needs to be done
+	    else {
+		$verbose && print "Exons with the same version, databases kept unchanged\n";
+	    }
 	}
-    }
 	
     }
     else {
@@ -285,12 +285,15 @@ sub _place_gene {
 	elsif ($rec_gene->version > $don_gene->version) {
 	    print "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
 	}
-	#If versions equal, nothing needs to be done
+	#If versions equal, nothing needs to be done at gene level, deleting/writing at clone level
 	else {
 	    if ($clone_level) {
 		$verbose && print "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 		$rec_db->delete_Gene($rec_gene->id);
 		$rec_db->write_gene($don_gene);
+	    }
+	    else {
+		$verbose && print "Genes with the same version, nothing needs to be done\n"; 
 	    }
 	}
     }
