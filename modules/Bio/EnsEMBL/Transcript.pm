@@ -770,6 +770,104 @@ sub get_all_Introns {
 }
 
 
+
+=head2 get_all_SNPs
+
+  Arg [1]    : (optional) int $flanking
+               The number of basepairs of transcript flanking sequence to 
+               retrieve snps from 
+  Example    : $snp_hashref = $transcript->get_all_SNPs;
+  Description: Retrieves a hasref of SNPs in the cdna coords of this
+               transcript.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_SNPs {
+  my $self = shift;
+  my $flanking = shift;
+
+  my %snp_hash;
+  my $sa = $self->adaptor->db->get_SliceAdaptor;
+
+  #retrieve a slice in the region of the transcript
+  my $slice = $sa->fetch_by_transcript_id($self->dbID);
+
+  #copy this transcript, so we can work in coord system we are interested in
+  my $transcript = Bio::EnsEMBL::Transcript->new;
+  %$transcript = %$self;
+
+  #transform transcript same coord system we will get snps in
+  my %exon_transforms;
+  foreach my $exon ($transcript->get_all_Exons) {
+    my $new_exon = $exon->transform($slice);
+    $exon_transforms{$exon} = $new_exon;
+  }
+  $transcript->transform(\%exon_transforms);
+
+  #get all of the snps in the transcript region
+  my $snps = $slice->get_all_SNPs;
+
+  my $trans_start  = $flanking + 1;
+  my $trans_end    = $slice->length - $flanking;
+  my $trans_strand = $transcript->get_all_Exons->[0]->strand;
+
+  #classify each snp
+  foreach my $snp ($snps) {
+    my $key;
+
+    if(($trans_strand == 1 && $snp->end < $trans_start) ||
+       ($trans_strand == -1 && $snp->start > $trans_end)) {
+      #this snp is upstream from the transcript
+      $key = 'five prime flanking';
+    }
+
+    elsif(($trans_strand == 1 && $snp->start > $trans_end) ||
+	  ($trans_strand == -1 && $snp->start < $trans_start)) {
+      #this snp is downstream from the transcript
+      $key = 'three prime flanking';
+    }
+
+    elsif(($trans_strand == 1 && $snp->end < $transcript->coding_start) ||
+	  ($trans_strand == -1 && $snp->start > $transcript->coding_end)) {
+      #this snp is in the 5' UTR
+      $key = 'five prime UTR';
+    }
+
+    elsif(($trans_strand == 1 && $snp->start > $transcript->coding_end) ||
+	  ($trans_strand == -1 && $snp->end < $transcript->coding_start)) {
+      #this snp is in the 3' UTR
+      $key = 'three prime UTR';
+    }
+
+    else {
+      #check if the snp overlaps an exon
+      foreach my $e (@{$transcript->get_all_Exons}) {
+	if($snp->end >= $e->start && $snp->start <= $e->end) {
+	  #snp overlaps an exon - it is coding
+	  $key = 'coding';
+	}
+      }
+      unless($key) {
+	#snp is intronic
+	$key = 'intronic';
+      }
+    }
+
+    unless($key) {
+      $self->warn('SNP could not be mapped. In/Dels not supported yet...');
+      next;
+    }
+
+    $snp_hash{$key} = $snp;
+  }
+
+  return \%snp_hash;
+}
+
+
 =head2 flush_Exons
 
  Title   : flush_Exons
