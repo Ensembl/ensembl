@@ -1,0 +1,14 @@
+# this file is intended to hold all valid attrib_type
+# table entries for all ensembl databases that we release
+#
+# If you use the provided upload script, commentlines and 
+# emptry lines should be automatically removed, all
+# other lines should contain tab delimited database entries
+# for the attrib_type table
+
+# each attribute type should be preceeded with a comment that
+# describes its uses.
+
+
+
+
