@@ -254,7 +254,7 @@ sub remove {
 =head2 list_dbIDs
 
   Arg [1]    : none
-  Example    : @g_ids = $translation_adaptor->list_dbIDs();
+  Example    : @translation_ids = @{$translation_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all translations in the current db
   Returntype : list of ints
   Exceptions : none
@@ -271,7 +271,7 @@ sub list_dbIDs {
 =head2 list_stable_dbIDs
 
   Arg [1]    : none
-  Example    : @stable_translation_ids = $translation_adaptor->list_stable_dbIDs();
+  Example    : @stable_translation_ids = @{$translation_adaptor->list_stable_dbIDs()};
   Description: Gets an array of stable ids for all translations in the current db
   Returntype : list of ints
   Exceptions : none
@@ -279,7 +279,7 @@ sub list_dbIDs {
 
 =cut
 
-sub list_stable_dbIDs {
+sub list_stable_ids {
    my ($self) = @_;
 
    return $self->_list_dbIDs("translation_stable_id", "stable_id");

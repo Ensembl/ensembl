@@ -552,7 +552,7 @@ sub update {
 =head2 list_dbIDs
 
   Arg [1]    : none
-  Example    : @g_ids = $transcript_adaptor->list_dbIDs();
+  Example    : @transcript_ids = @{$transcript_adaptor->list_dbIDs()};
   Description: Gets an array of internal ids for all transcripts in the current db
   Returntype : list of ints
   Exceptions : none
@@ -569,7 +569,7 @@ sub list_dbIDs {
 =head2 list_stable_dbIDs
 
   Arg [1]    : none
-  Example    : @stable_transcript_ids = $transcript_adaptor->list_stable_dbIDs();
+  Example    : @stable_transcript_ids = @{$transcript_adaptor->list_stable_dbIDs()};
   Description: Gets an array of stable ids for all transcripts in the current db
   Returntype : list of ints
   Exceptions : none
@@ -577,7 +577,7 @@ sub list_dbIDs {
 
 =cut
 
-sub list_stable_dbIDs {
+sub list_stable_ids {
    my ($self) = @_;
 
    return $self->_list_dbIDs("transcript_stable_id", "stable_id");
