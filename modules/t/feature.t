@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 100;
+	plan tests => 102;
 }
 
 use TestUtils qw( debug test_getter_setter );
