@@ -393,8 +393,8 @@ CREATE TABLE translation (
   seq_end                     INT(10) NOT NULL,       # relative to exon start
   end_exon_id                 INT UNSIGNED NOT NULL,  # foreign key exon:exon_id
   
-  PRIMARY KEY (translation_id)
-
+  PRIMARY KEY (translation_id),
+  KEY (transcript_id)
 );
 
 
