@@ -274,19 +274,17 @@ sub end_in{
 
 }
 
-=head2 _actual_sequence_as_string
+=head2 seq
 
- Title   : _actual_sequence_as_string
+ Title   : seq
  Usage   :
- Function:
+ Function: the sequence of the raw contig as a string
  Example :
  Returns : 
  Args    :
-
-
 =cut
 
-sub _actual_sequence_as_string{
+sub  seq {
    my ($self) = @_;
 
    my $temp = $self->contig->primary_seq->subseq($self->rawcontig_start,$self->rawcontig_end);
@@ -297,6 +295,15 @@ sub _actual_sequence_as_string{
    $temp = reverse $temp;
    return $temp;
 }
+
+sub _actual_sequence_as_string  { 
+   my ($self,$name) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l:_actual_sequence_as_string is a deprecated method, use seq instead");
+   return $self->seq;
+}
+
 
 =head2 _length
 

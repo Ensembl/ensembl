@@ -93,7 +93,7 @@ if( $mc->start != 400 ||
 
 # raw contig seq  is:
 # AAAAAAAAAACCCCCCCCCCGGGGGGGGGGTTTTTTTTTT
-$str = $mc->_actual_sequence_as_string;
+$str = $mc->seq;
 $shouldbe='AAAAAAAACCCCCCCCCCGGG';
 # if( $str ne 'AAAAAAAATTTTTTTTTAAAA' ) {
   if( $str ne $shouldbe ) {
@@ -113,7 +113,7 @@ $mc = Bio::EnsEMBL::Virtual::MapContig->new(
 	);
 # raw contig seq  is:
 # AAAAAAAAAACCCCCCCCCCGGGGGGGGGGTTTTTTTTTT
-$str=$mc->_actual_sequence_as_string ;
+$str=$mc->seq;
 $shouldbe='GGGGGGGTTT';
 if ($str eq $shouldbe )  {
   print "ok 8\n";

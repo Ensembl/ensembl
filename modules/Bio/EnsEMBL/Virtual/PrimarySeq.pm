@@ -250,7 +250,7 @@ sub subseq{
 	       return $seqstr;
 	   }
        } else {
-	   $seqstr .= $start_contig->_actual_sequence_as_string;
+	   $seqstr .= $start_contig->seq;
        }
    } else {
        # start is in the middle of a contig
@@ -283,7 +283,7 @@ sub subseq{
        }
        
        # add sequence
-       $seqstr .= $current->_actual_sequence_as_string;
+       $seqstr .= $current->seq;
        $previous = $current;
    }
    # end of sequence
