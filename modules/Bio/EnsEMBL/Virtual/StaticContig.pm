@@ -2014,18 +2014,20 @@ sub get_all_Genes_exononly{
 #        }
 
 	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
+        
         my $exon = Bio::EnsEMBL::Exon->new();
-            $exon->start($start);
-            $exon->end($end);
-            $exon->strand($strand);
-            $exon->dbID($exonid);
-            $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
-            $exon->seqname($self->id);
-            $exon->phase($phase);
-            $previous_exon = $exon;
-            $current_transcript->add_Exon($exon);
-            $current_transcript->end_exon_rank($rank);
-            $exon_already_seen{$exonid} = 1;
+        $exon->start($start);
+        $exon->end($end);
+        $exon->strand($strand);
+        $exon->dbID($exonid);
+        $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
+        $exon->seqname($self->id);
+        $exon->phase($phase);
+        $previous_exon = $exon;
+        $current_transcript->add_Exon($exon);
+        $current_transcript->end_exon_rank($rank);
+        
+        $exon_already_seen{$exonid} = 1;
    }
 
    #
