@@ -296,7 +296,7 @@ foreach my $slice (@$top_slices){
      -VALUE => $total{'Unprocessed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unprocessed pseudogenes');
 
-#    $attrib_adaptor->store_on_Slice($slice, \@attribs) unless $dry;
+    $attrib_adaptor->store_on_Slice($slice, \@attribs) unless $dry;
 
     print STDERR "Total for chr $chr:\n";
     print STDERR map { "\t$_ => $total{$_}\n" } sort keys %total;
