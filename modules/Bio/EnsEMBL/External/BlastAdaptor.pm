@@ -291,7 +291,7 @@ sub store_result{
 
   my $frozen = $res->serialise;
   my $ticket = $res->group_ticket;
-  my ( $id, $use_date ) = split( '!!', $res->token);
+  my ( $id, $use_date ) = split( '!!', $res->token || '' );
   $use_date ||= $self->use_date('RESULT');
 
   my $rv = 0;
@@ -373,7 +373,7 @@ sub store_hit{
 
   my $frozen = $hit->serialise;
   my $ticket = $hit->group_ticket;
-  my ( $id, $use_date ) = split( '!!', $hit->token);
+  my ( $id, $use_date ) = split( '!!', $hit->token || '' );
   $use_date ||= '';
 
   my $rv = 0;
@@ -453,7 +453,7 @@ sub store_hsp{
 
   my $frozen = $hsp->serialise;
   my $ticket = $hsp->group_ticket;
-  my ( $id, $use_date ) = split( '!!', $hsp->token);
+  my ( $id, $use_date ) = split( '!!', $hsp->token || '');
   $use_date ||= '';
 
   my $chr_name  = 'NULL';
@@ -465,7 +465,7 @@ sub store_hsp{
     $chr_end   = $genomic->end;
   } 
 
-  my( $rv );
+  my $rv = 0;
   if( $id ){
     my $sth = $dbh->prepare( sprintf $SQL_HSP_RETRIEVE, $use_date );
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
