@@ -140,7 +140,7 @@ while (<FILE>) {
     }
 }
 
-#Check if there were 28 inserts/deletes
+#Check if there were 28 inserts/deletes ;)
 if ($ok == 28) {
     print "ok 7\n";
 }
