@@ -564,7 +564,7 @@ sub create_graphics
     # Populate the panel.
     foreach my $source (values %all) {
 	foreach my $tag (keys %{ $source }) {
-	    if (defined $do_descr) {
+	    if (defined $do_descr && $do_descr == 1) {
 		$panel->add_track($source->{$tag},
 		    -key	    => $tag,
 		    -description    => sub { $_[0]->source_tag },
