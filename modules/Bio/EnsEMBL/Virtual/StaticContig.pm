@@ -548,7 +548,8 @@ sub get_all_PredictionFeatures {
                         AND    sgp.chr_end >= $glob_start 
 		        AND    sgp.chr_start <=$glob_end 
 		        AND    sgp.chr_name='$chr_name' 
-                        ORDER  by start";
+                        ";
+   #removed ordering by start to get genscan sets to work
 
    my $sth = $self->dbobj->prepare($query);
    
