@@ -28,7 +28,7 @@ INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, na
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2,3,2,12,356,-1,'2','ePCR',122,123,'RH0000012',0.0,0);
 
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',1,2,4,1,0,1);
-INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',2,2,4,2,0,1);
+INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-1',2,36,40,2,0,-1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('texon-2',2,5,6,1,0,1);
 
 INSERT INTO exon_transcript (exon,transcript,rank) VALUES ('texon-1','ttranscript-1',1);
@@ -40,6 +40,4 @@ INSERT INTO genetype (gene_id,type) VALUES ('tgene-id-1','type');
 
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','texon-1',2,'texon-2',1);
 
-
-INSERT INTO genetype (gene_id, type) VALUES ('tgene-id-1','ensembl');
 

@@ -300,7 +300,7 @@ CREATE TABLE genetype (
    gene_id      varchar(40) NOT NULL,
    type  varchar(40) NOT NULL,
       
-   PRIMARY KEY(gene_id,type),
+   PRIMARY KEY(gene_id),
    KEY(gene_id),
    KEY(type)
 );
