@@ -170,6 +170,7 @@ if ($organism eq "human") {
 
 #Get Xref mapping specifically for mouse.
 if ($organism eq "mouse") {
+    my %mgi2sp;
     print STDERR "Getting Xrefs specifically for mouse\n";
     open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
     while (<MGISP>) {
@@ -177,6 +178,8 @@ if ($organism eq "mouse") {
 	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
       	
 	my @sp = split(/\s/,$sps);
+	$mgi2sp{$mgi} = $sps;
+	
 	foreach my $s(@sp) {
 	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\n";
 	}
@@ -186,8 +189,14 @@ if ($organism eq "mouse") {
     while (<MGILOC>) {
 	chomp;
 	my ($mgi,$hugo) = split (/\t/,$_);
-	print OUT "$mgi\tMGI\t$hugo\tHUGO\t$hugo\t\n";
-    }
+	
+	if ($mgi2sp{$mgi}) {
+	 my @swiss = split (/\s/,$mgi2sp{$mgi}); 
+	 
+	 foreach my $sw(@swiss) {
+	     print OUT "$sw\tSPTR\t$mgi\tLOCUS\t$mgi\t\n";
+	}
+     }
 }
 
 print STDERR "The output has been written there: $out\n";
