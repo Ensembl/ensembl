@@ -1,0 +1,488 @@
+#!/usr/local/bin/perl
+
+
+BEGIN {
+  my $rootdir = "/nfs/disk89/michele/pogdir/";
+  my $humpub  = "/nfs/disk100/humpub/modules";
+
+  unshift (@INC,"$rootdir/PerlModules");
+  unshift (@INC,"$rootdir/ensembl/modules");
+  unshift (@INC,"$rootdir/bioperl-live/");
+}
+
+use strict;
+
+use Bio::SeqIO;
+use Bio::Root::Object;
+
+use Spangle::Homol;
+
+use Bio::EnsEMBL::Analysis::Genscan;
+use Bio::EnsEMBL::Analysis::DNAparse;
+use Bio::EnsEMBL::DB::Obj;
+
+use DBI;
+
+# Input options are the genscan file and the dna file
+
+my $clonedir = $ARGV[0];
+
+my $clone    = $clonedir;
+   $clone    =~ s/.*\/(.*)$/$1/;
+
+my $dnafile  = $clonedir . "/" . $clone . ".seq";
+
+my @contigs  = read_fasta($dnafile);
+
+my $dbobj      = new Bio::EnsEMBL::DB::Obj(-user => 'root', 
+					   -db   => 'pog',
+					   -host => 'localhost');
+
+
+foreach my $contseq (@contigs) {
+  my $contig     = $dbobj->get_Contig($contseq->id);
+  my $contig_id  = $contseq->id;
+  my $contig_seq = $contig->seq;
+  my $seq        = $contseq;
+
+  if ($contig_seq) {
+    print("Contig  sequence length " . length($contig_seq->seq) . "\n");
+  } else {
+    print("No contig dna in database\n");
+  }
+  
+  if ($contig_seq && $seq->seq() eq $contig_seq->seq()) {
+    print("DNA is identical - no update\n");
+  } else {
+    print("Updating DNA\n");
+    my $dna        = new Bio::EnsEMBL::Analysis::DNAparse($seq);   
+    my $res        = $dna->insert_next($dbobj->_db_handle);
+    
+    $dna->unlock($dbobj->_db_handle); # This should unlock at end of seq file?
+    
+    if ($res) {
+      print("Inserted dna\n");
+    } else {
+      die "Problem updating DNA for $contig_id\n";
+    }
+  }
+  
+  my $file = $clonedir . "/" . $contseq->id . ".gs";
+  my $gs      = new Bio::EnsEMBL::Analysis::Genscan($file,$seq);
+  
+  $gs->toSql($dbobj,$contig);
+  
+  print_genes($gs,$seq);
+  
+
+  my $msphash = { blastp        => ".blastp_swir.msptmp",
+		  tblastn       => ".tblastn.msptmp",
+		  tblastn_ce    => ".tblastn_ce.msptmp",
+		  tblastn_vert  => ".tblastn_vert.msptmp",
+		  tblastn_sh    => ".tblastn_sh.msptmp",
+		  tblastn_dbest => ".tblastn_dbest.msptmp"};
+  
+  my $count = 1;
+  foreach my $g ($gs->each_Transcript) {
+    
+    print_gene_details($g,$count);
+    
+    foreach my $msp (keys %$msphash) {
+      
+      my $mspfile        = "$clonedir/$contig_id.$count" . $msphash->{$msp} ;
+      my @homols         = read_MSP  ($mspfile);    
+      my $offset         = get_offset($gs,$g,$count);
+      
+      print("read MSP file $mspfile: $#homols homols. Offset $offset\n");
+      
+      
+      foreach my $h (@homols) {
+	my @newhomols =  map_homols($h,$g,$offset,$seq,\*STDOUT); # Converts peptide to dna coords
+	
+	print("Homols mapped to dna coords are :\n");
+	foreach my $hh (@newhomols) {
+	  homol2sql($hh,$contig,$dbobj,$msp);
+	  
+	  my $tmp = $g->translate_region($hh->start,$hh->end);
+	  
+	  print($hh->id . "\t" . $hh->start . "\t" . $hh->end . "\t" . $hh->hstart . "\t" . $hh->hend . "\t" . $hh->frame . "\t" . $tmp->[0]->seq ."\n");
+	}
+	
+      }
+    }
+    $count++;
+    
+  }
+}
+sub read_fasta {
+  my ($dnafile) = @_;
+
+  my $in = new Bio::SeqIO(-file    => $dnafile,
+			  -format  => 'Fasta');
+
+  my @contigs;
+
+  while (my $seq = $in->next_seq) {
+    push(@contigs,$seq);
+  }
+
+  return @contigs;
+}
+
+
+sub homol2sql {
+  my ($homol,$contig,$dbobj,$type) = @_;
+  my $strand;
+
+  if ($homol->strand == -1) {
+    $strand = "-";
+  } else {
+    $strand = "+";
+  }
+  my $sql0 = "lock tables feature write,homol_feature write";
+  my $sql1 = "insert into feature(name,contig,start,end,score,strand,analysis) values('" . $homol->id    . "','" . 
+                                       $contig->id   . "',"  .
+				       $homol->start . ","   .
+				       $homol->end   . ","  .
+				       $homol->score . ",'" .
+                 		       $strand       . "','" .
+				       $type         . "')";
+
+  my $sql2 = "insert into homol_feature(feature,hstart,hend) values(last_insert_id()," .
+                                       $homol->hstart . "," . 
+				       $homol->hend   . ")";
+
+  my $sql3 = "unlock tables";
+
+  print("SQL $sql1\n");
+  print("SQL $sql2\n");
+
+  my $sth  = $dbobj->_db_handle->prepare($sql0);
+  my $rv   = $sth->execute;
+
+  $sth  = $dbobj->_db_handle->prepare($sql1);
+  $rv   = $sth->execute;
+
+  $sth  = $dbobj->_db_handle->prepare($sql2);
+  $rv   = $sth->execute;
+
+  $sth = $dbobj->_db_handle->prepare($sql3);
+  $rv  = $sth->execute;
+}
+
+
+sub print_gene_details {
+  my ($g,$count) = shift;
+  
+  print("Genscan predicted gene number $count\n");
+  print("DNA exon coordinates (phase,peptide coords, exon peptide seq) are :\n");
+
+  my ($starts,$ends) = $g->pep_coords;
+  my $c = 0;
+  
+  foreach my $ex ($g->each_Exon) {
+    my @seq = $g->translate_exon($ex);
+    
+    print($ex->start . "\t" . $ex->end . "\t" . $ex->phase . "\t" . $starts->[$c] . "\t" . $ends->[$c] . "\t" . $seq[$ex->phase]->seq . "\n");
+    $c++;
+  }
+
+  print("\n");
+}
+
+sub map_coords {
+  my ($gene,$homol,$start,$end,$realseq) = @_;
+  
+  my @homols;
+  
+  my $foundstart = 0;
+  my $foundend   = 0;
+
+  my @exons = $gene->each_Exon ; 
+  my $strand = $exons[0]->strand;
+  my $count = 0;
+
+  my ($starts,$ends) = $gene->pep_coords;
+
+  my $hoffset;
+
+  # We have the start and end points for the peptide on the DNA
+  # We now have to return exon sized chunks that make up
+  # the peptide homology
+  
+
+  if ($strand == 1) {
+    foreach my $ex ($gene->each_Exon) {
+      my $tmpstart;
+      my $tmpend;
+      
+      if ($foundstart == 0 ) {
+	if ($start >= $ex->start && $start <= $ex->end) {
+	  $foundstart = 1;
+	  $tmpstart = $start;
+	  
+	  
+	}
+      }
+      
+      if (!$foundend && $foundstart) {
+	$tmpstart = $ex->start unless $tmpstart;
+	
+	# Adjust to be in the right frame
+	$tmpstart +=  (3 - ($start - $ex->phase - $ex->start)%3 ) % 3;
+	
+	$tmpend   = $ex->end;
+	
+	# Before making a new exon check we haven't also
+	# Got the end point in the same exon
+	
+	if ($end <= $ex->end) {
+	  $tmpend = $end;
+	  $foundend = 1;
+	}
+	
+	# Make sure the end coordinate is in the right frame.
+	$tmpend -= ($tmpend - $ex->phase - 2 - $ex->start)%3;
+      }
+      
+      if (defined($tmpstart) && defined($tmpend)) {
+	
+	# Find the peptide coord
+	my $pstart = int(($tmpstart - $ex->start - $ex->phase)/3 + $starts->[$count]);
+	my $pend   = int(($tmpend   - $ex->start - $ex->phase)/3 + $starts->[$count]);
+	
+	$hoffset = $pstart unless $hoffset;
+	
+#	print "hoffset = $hoffset\n";
+#	print("pstart $pstart : $start " . $ex->start . " " . $ex->phase . " " . $starts->[$count] . " " . $ends->[$count] . "\n");
+	
+	# Now make new homol and add to the array
+	my $h = Spangle::Homol->new();
+	
+	$h->id    ($homol->id);
+	$h->score ($homol->score);
+	
+	$h->start ($tmpstart);
+	$h->end   ($tmpend);
+	
+	$h->hstart($homol->hstart - $hoffset + $pstart);
+	$h->hend  ($h->hstart     + $pend    - $pstart);
+	
+	$h->strand($homol->strand);
+	
+	push(@homols,$h);
+	
+      }
+      $count++;
+    }
+    return @homols;
+  } else {
+
+    foreach my $ex ($gene->each_Exon) {
+      my $tmpstart;
+      my $tmpend;
+      
+      if ($foundstart == 0 ) {
+	if ($end <=  $ex->end && $end >= $ex->start) {
+	  $foundstart = 1;
+	  $tmpstart   = $end;
+	  
+	}
+      }
+      
+      if (!$foundend && $foundstart) {
+	$tmpstart = $ex->end unless $tmpstart;
+	$tmpend   = $ex->start;
+	
+	# Adjust tmpstart to be in the right frame
+	$tmpstart -=  (3 - ($ex->end - $end - $ex->phase)%3 ) % 3;
+
+	# Before making a new exon check we haven't also
+	# Got the end point in the same exon
+      
+	if ($start >= $ex->start) {
+	  $tmpend = $start;
+	  $foundend = 1;
+	} elsif ($count < $#exons && $start >= $exons[$count+1]->end) {
+	  $tmpend = $ex->start;
+	  $foundend = 1;
+	}
+	# Make sure the end coordinate is in the right frame.
+	$tmpend += ($tmpend - $ex->phase - 2 - $ex->end)%3;
+      }
+      
+
+      if (defined($tmpstart) && defined($tmpend)) {
+#	print("Exon $count : " . $ex->start . "\t" . $ex->end . "\t" . $tmpstart . "\t" . $tmpend . "\n");
+	# Find the peptide coord
+
+	my $pstart = int(($ex->end - $tmpstart  - $ex->phase)/3 + $starts->[$count]);
+	my $pend   = int(($ex->end - $tmpend    - $ex->phase)/3 + $starts->[$count]);
+	
+	$hoffset = $pstart unless $hoffset;
+	
+#	print "hoffset = $hoffset\n";
+#	print("pstart $pstart : $tmpstart " . $ex->end . " " . $ex->phase . " " . $starts->[$count] . " " . $ends->[$count] . "\n");
+	
+	# Now make new homol and add to the array
+	my $h = Spangle::Homol->new();
+	
+	$h->id    ($homol->id);
+	$h->score ($homol->score);
+	
+	$h->start ($tmpend);
+	$h->end   ($tmpstart);
+	
+	$h->hend  ($homol->hstart - $hoffset + $pstart);
+	$h->hstart($h->hend     + $pend    - $pstart);
+	
+	$h->strand($homol->strand);
+	
+	push(@homols,$h);
+	
+      }
+      $count++;
+    }
+    return @homols;
+  }
+}
+
+sub map_homols {
+  my ($h,$g,$offset,$seq,$fh) = @_;
+
+  # The start and end coords we have in the homol objects
+  # are genscan peptide start and end points
+  
+  # First convert them using $offset into transcript peptide
+  # coordinates
+
+  my @exon   = $g->each_Exon;
+  my $strand = $exon[0]->strand;
+
+  my $wholeseq = $g->translate->seq;
+
+  $h->start ($h->start  - $offset);
+  $h->end   ($h->end    - $offset);
+  
+  # Adjust the strand
+  if ($strand == -1) {
+    print("Strand is -1 " . $h->strand . "\n");
+    if ($h->strand ==  1) {
+      $h->strand(-1);
+    } elsif ($h->strand == -1) {
+      $h->strand( 1);
+    }
+  }
+
+  print("New strand is " . $h->strand . "\n");
+  # Now we need to convert the 'true' peptide coords into 
+  # genomic dna coords.
+
+  my $startdna;
+  my $enddna;
+
+
+  print("Finding dna coords for ". $h->start . "\t" . $h->end . "\n");
+  if ($strand == 1) {
+    $startdna = $g->find_coord($h->start,"start");
+    $enddna   = $g->find_coord($h->end,"end");
+  } else {
+    $enddna   = $g->find_coord($h->start,"start");
+    $startdna = $g->find_coord($h->end  ,"end");
+  }
+
+  print("Translating region $startdna $enddna\n");
+  my $wholetr = $g->translate_region($startdna,$enddna);
+
+  for (my $i = 0; $i < 1; $i++) {
+    print("Whole peptide is " . $wholetr->[$i]->seq . "\n");
+  }
+
+#  print("Real seq is      " . $realseq   . "\n");
+#  print("Real start end   " . $realstart . " " . $realend .  "\n");  
+
+  # Translate this match into a peptide for each exon
+  my @newh = map_coords($g,$h,$startdna,$enddna,$seq);
+  return @newh;
+}
+
+
+sub get_offset {
+  my ($gs,$g,$count) = @_;
+
+  my $pep    = $g->translate()->seq;
+  my $peps   = $gs->{_peptides}[$count-1]->seq;
+  my $offset = index($peps,$pep);
+
+#  print("PEP " . $peps . " " . (length($peps)) . "\n\n");
+  
+  return $offset;
+}  
+
+sub read_MSP {
+
+  my ($mspfile) = @_;
+  my @homols;
+
+  open(MSP,"<$mspfile") || die ("Couldn't open $mspfile");
+
+  while (my $line = <MSP>) {
+    unless ($line =~ /^\#/) {
+      my ($score,$pid,$start,$end,$id,$hstart,$hend,$hid,$title) = split(' ',$line,9);
+      my $strand;
+
+      if ($hstart > $hend) {
+	$strand = -1;
+      } else {
+	$strand = 1;
+      }
+      
+      my $homol = Spangle::Homol->new(-start  => $start,
+				      -end    => $end,
+				      -strand => $strand,
+				      -id     => $hid,
+				      -hstart => $hstart,
+				      -hend   => $hend,
+				      -score  => $score);
+      $homol->title($title);
+      push(@homols,$homol);
+    }
+  }
+  return @homols;
+}
+
+sub print_genes {
+  my ($gs,$seq) = @_;
+
+  print("\nSequence id : " . $seq->id() . "\n");
+  
+  my $count = 1;
+  foreach my $gene ($gs->each_Transcript) {
+    $gene->contig_dna($seq);
+    print("\nGene number  $count\n");
+    my $trans = $gene->translate();
+    print("GENE $count " . $seq->id() . " " . $trans->seq() . "\n");
+
+    $count++;
+  }
+
+}
+
+
+sub read_seq {
+  my $dnafile = shift;
+  my $seq;
+  eval {
+    my $in = Bio::SeqIO->new(-file    => $dnafile ,
+			     -format  => 'Fasta');
+    $seq = $in->next_seq();
+  };
+  
+  
+  if ($@) {
+    die ("Can't open fasta file $dnafile\n");
+  }
+  return $seq;
+}
+
+
