@@ -311,8 +311,10 @@ sub list_embl_version_by_accession {
 sub delete_by_dbID {
   my ($self, $clone_id) = @_;
   
-  my $fadaptor = $self->db->get_FeatureAdaptor;
-  
+  # a list of feature adaptors to be looped over
+  my @adaptor_list = qw( SimpleFeature RepeatFeature PredictionTranscript 
+			 ProteinAlignFeature DnaAlignFeature);
+
   # Make a list of all contig and dna entries to delete
   my $sth = $self->prepare(qq{
         SELECT contig_id, dna_id
@@ -322,14 +324,27 @@ sub delete_by_dbID {
   $sth->execute;
   
   my( @contigs, @dnas );
-  while( my ($c, $d) = $sth->fetchrow_hashref) {
+  while( my ($c, $d) = $sth->fetchrow_array) {
     push(@contigs, $c);
     push(@dnas,    $d);
   }
 
   # Delete features for each contig, and each contig
   foreach my $contig_id ( @contigs ) {
-    $fadaptor->delete_by_RawContig_internal_id($contig_id);
+
+    # grab each feature adaptor in turn
+    # admittedly not the most efficient way..
+    foreach my $adaptor ( @adaptor_list ) {
+
+      my $adaptor_type = "get_" . $adaptor . "Adaptor";
+      my $fa = $self->db->$adaptor_type;
+
+      if ( ! $fa ) {
+	$self->throw("Couldn't get a '$adaptor'Adaptor");
+      }
+      $fa->delete_by_RawContig_id($contig_id);
+    }
+
     my $sth = 
       $self->prepare("DELETE FROM contig WHERE contig_id = $contig_id");
     $sth->execute;
