@@ -127,7 +127,7 @@ sub fpc_output_format {
   for my $clone ( @sortClones ) {
     if( $ctgName ne $clone->[1] ) {
       # new contig
-      if( defined $ctgName ) {
+       if( defined $ctgName ) {
 	print join( "\t", ( "ctg", $ctgNo, $ctgName, $ctgStart, $ctgEnd-$ctgStart+1, $chr )),"\n";
 	$contigCrash{$ctgName} = 1;
       }
@@ -138,7 +138,8 @@ sub fpc_output_format {
       $chr = $clone->[0];
       if( exists $contigCrash{$ctgName} ) {
 	print STDERR "CRASH: $ctgName overlapped with another contig\n";
-      }
+ 
+     }
     }
     
     my ( $cloneName, $org, $embl );
