@@ -6,15 +6,15 @@
 
 =head1 SYNOPSIS - 
 
-    vc2flat -fcontig -fposition -ori -left -right
+    vc2flat chr1:10000-110000
+  
+    vc2flat -format fasta chr1:10000-11000
 
-    vc2flat.pl -fcontig 'AC007997.00004' -fposition 1 -left 10000 -right 10000 -ori 1
+    vc2flat chr1
 
-    vc2flat -format gff 
-   
-    vc2flat -dbtype ace 
+    vc2flat ctg1234
 
-    vc2flat -dbtype rdb -host mysql.server.somewhere 
+    vc2flat -format gff chr1
 
 =head1 OPTIONS
 
@@ -22,17 +22,6 @@
 
     -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::Obj)
     
-    -species   Species other than human (e.g. 'mouse' - if not set, only loads human)
-
-    -freeze    Loads only clones in current frozen set (number)
-
-    -nogene    Allows clones to be read if dna has been updated successfully
-               and searches completed, but before genes have been built and clone unlocked
-
-    -nosecure
-
-    -dbtype    Database type (valid types are rdb, ace)
-
     -host      host name for database (gets put as host= in locator)
 			      
     -dbname    For RDBs, what name to connect to (dbname= in locator)
@@ -48,7 +37,7 @@
     -pepformat What format output to dump to. NB gene2flat is a better
                script now for dumping translations.
 
-    -usefile   read in on stdin a list of vc parameters, one set per line
+    -usefile   read in on stdin a list of vc parameters, one per line
 
     -outfile   write output into file instead of to STDOUT
 
@@ -60,16 +49,9 @@ use strict;
 
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::EMBL_Dump;
-use Bio::EnsEMBL::DB::VirtualContig;
-use Bio::EnsEMBL::DB::EmblVirtualContig;
-
-
 use Bio::SeqIO;
 
 use Getopt::Long;
-
-# signal handler
-$SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
 
 # global defaults
 my $host = 'localhost';
@@ -147,48 +129,23 @@ if ($help){
     exec('perldoc', $0);
 }
 
-# set module if dbtype set and recognised
 
-
+# build database
 my $db;
-
-my @vcs;
-
-if( $usefile == 1 ) {
-    while( <> ) {
-	my ($focus_contig,$focus_position,$ori,$left,$right);
-	if (/(.+)\,(.+)\,(.+)\,(.+)\,(.+)/) { 
-	    $focus_contig=$1;
-	    $focus_position=$2;
-	    $ori=$3;
-	    $left=$4;
-	    $right=$5;
-	}
-	else {
-	    print STDERR "Got $focus_contig and $focus_position and $ori and $left and $right\n";
-	    die ("Could not read vc parameter file!\n The format should be one vc 
-per line, ith vc parameters separated by commas!");
-	}
-	my @list=($focus_contig,$focus_position,$ori,$left,$right);
-	push(@vcs,\@list);
-    }
-} elsif ( $static ) {
-    # subvert this list thang
-    @vcs = @ARGV;
-} else {
-    $focuscontig || die ("Need to supply a rawcontig id to use as a focus contig!\n");
-    $focusposition || die ("Need to supply a focus position!\n");
-    $ori || die ("Need to supply an orientation!\n");
-    $left || die ("Need to supply left size!\n"); 
-    $right || die ("Need to supply right size!");
-    
-    my @list=($focuscontig,$focusposition,$ori,$left,$right);
-    push(@vcs,\@list);
-}
-
-
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $db = Bio::EnsEMBL::DBLoader->new($locator);
+my $stadp = $db->get_StaticGoldenPathAdaptor();
+
+#get input strings
+my @vcstrings;
+if( $usefile == 1 ) {
+    while( <> ) {
+	my ($string) = split;
+	push(@vcstrings);
+    }
+} else {
+    @vcstrings = @ARGV;
+}
 
 # set output file
 my $OUT;
@@ -200,71 +157,51 @@ if($outfile){
 }
 
 
-# Main loop over clone ids...
-foreach my $vc_list_ref ( @vcs ) {
-
-    if ($verbose) {
-	print STDERR "Creating VirtualContig:\n";
-	my $c;
-	for ($c=0;$c<5;$c++) {
-	    print STDERR "VC parameter ".$vc_list_ref->[$c]."\n";
-	}
-	print STDERR "\n";
+# sequence output files opened only once. Notice monkeying around
+# with embl/genbank. Needs smarts to handle issues in there.
+my $seqout;
+if( $format =~ /embl|genbank/ ) {
+    $seqout = Bio::SeqIO->new( '-format' => $format, -fh => $OUT);
+    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($seqout);
+    if( $nodna == 1 ) {
+	$seqout->_show_dna(0);
     }
+} elsif ( $format =~ /fasta/ ) {
+    $seqout = Bio::SeqIO->new( '-format' => 'Fasta' , -fh => $OUT);
+} 
+
+# Main loop over strings
+foreach my $vcstring ( @vcstrings ) {
 
     eval {
 	my $vc;
-	if( $static == 1 ) {
-	    $vc = $db->get_StaticGoldenPathAdaptor->fetch_VirtualContig_by_fpc_name($vc_list_ref);
-	} else {
-	    my $focuscontig=$db->get_Contig($vc_list_ref->[0]);
-	    $vc=Bio::EnsEMBL::DB::EmblVirtualContig->new(
-							 -focuscontig => $focuscontig,
-							 -focusposition => $vc_list_ref->[1],
-							 -ori => $vc_list_ref->[2],
-							 -left => $vc_list_ref->[3], 
-							 -right => $vc_list_ref->[4] 
-							 );
-	    $vc->id( "virtual_contig_".$vc->_unique_number);
-	    $vc->sv(1);
-	    my $date=localtime()." (created on the fly by the EnsEMBL system)";
-	    $vc->add_date($date);
+	if( $vcstring =~ /(chr\S+):(\d+)-(\d+)/ ) {
+	    my $chr   = $1;
+	    my $start = $2;
+	    my $end   = $3;
+	    $vc = $stadp->fetch_VirtualContig_by_chr_start_end($chr,$start,$end);
+	} elsif ( $vcstring =~ /^(chr\S+)$/ ) {
+	    my $chr   = $1;
+	    $vc = $stadp->fetch_VirtualContig_by_chr_name($chr);
+	} elsif ( $vcstring =~ /^(ctg\S+)$/ ) {
+	    my $ctg   = $1;
+	    $vc = $stadp->fetch_VirtualContig_by_fpcctg_name($ctg);
 	}
 
-
-	# debug tests by contig
-	print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
 	    my @seqfeatures = $vc->top_SeqFeatures();
 	    foreach my $sf (@seqfeatures ) {
 		print $OUT $sf->gff_string, "\n";
 	    }
 	} elsif ( $format =~ /fasta/ ) {
-	    my $seqout = Bio::SeqIO->new( '-format' => 'Fasta' , -fh => $OUT);
 	    $seqout->write_seq($vc->primary_seq());
 	} elsif ( $format =~ /embl/ ) {
-	    print(STDERR "Dumping embl\n");
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($vc);
-	    print(STDERR "making new seq\n");
-	    my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => $OUT);
-	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
-	    if( $nodna == 1 ) {
-		$emblout->_show_dna(0);
-	    }
-	    $emblout->write_seq($vc);
+	    $seqout->write_seq($vc);
 	} elsif ( $format =~ /genbank/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($vc);
-	    my $gbout = Bio::SeqIO->new( '-format' => 'GenBank', -fh => $OUT);
-	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($gbout);
-	    # genbank format - the ID line is wrong. Fall back to locus
-	    $gbout->_id_generation_func(undef);
-	    $gbout->_ac_generation_func(undef);
-	    if( $nodna == 1 ) {
-		$gbout->_show_dna(0);
-	    }
-	    $gbout->write_seq($vc);
+	    $seqout->write_seq($vc);
 	} elsif ( $format =~ /pep/ ) {
-	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => $OUT ) ;
 	    my $vcid = $vc->id();
 	    foreach my $gene ( $vc->get_all_Genes() ) {
 		my $geneid = $gene->id();
@@ -282,12 +219,9 @@ foreach my $vc_list_ref ( @vcs ) {
 	}
     };
     if( $@ ) {
-	if( $static == 0 ) {
-	    print STDERR "Dumping Error! Cannot dump ".$vc_list_ref->[0]."\n$@\n";
-	} else {
-	    print STDERR "Dumping Error! Cannot dump ".$vc_list_ref."\n$@\n";
-	}
+	print STDERR "Dumping Error! Cannot dump ".$vcstring."\n$@\n";
     }
 }
+
 
 
