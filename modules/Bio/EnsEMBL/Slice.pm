@@ -896,16 +896,15 @@ sub get_landmark_MarkerFeatures {
 ### (So grab the last contig of the clone, and see if it starts at 1 <g>)
 sub contig_from_clone {
     my ($self,$clone) = @_;
-    warn("CLONE: $clone" );
-    my $sth = $self->dbobj->prepare(
-            "select co.contig_id from clone as cl, contig as co
-              where co.clone_id = cl.clone_id and cl.clone_name = '$clone'
-              order by offset desc limit 1"
+    my $sth = $self->adaptor->db->prepare(
+            "select co.name, co.embl_offset from clone as cl, contig as co
+              where co.clone_id = cl.clone_id and cl.name = '$clone'
+              order by embl_offset desc limit 1"
     );
     $sth->execute();
-    my ($contig) = $sth->fetchrow_array();
-    warn("CONTIG: $contig" );
-    return $contig=~/^[^\.]+\.\d+\.1\./ ? $contig : undef;
+    my ($contig,$offset) = $sth->fetchrow_array();
+    warn( "Clone: $clone -> $contig ($offset)") ;
+    return $offset==1 ? $contig : undef;
 }
 
 sub get_all_DASFeatures{
@@ -972,8 +971,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) {
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
                     push(@chr_features, $sf);
-               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y|2L|2R|3L|3R)$/o) {  # breaks on mouse
-
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y|2L|2R|3L|3R)$/o) {  # breaks on mouse!
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
                     push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) {
@@ -1001,8 +999,8 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                }
            }
            foreach my $sf ( @contig_features ) {
-#         printf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n",
-#         $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id;
+         #printf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n",
+         $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id;
      # map to a chromosomal coordinate
                my @coord_list = $mapper->map_coordinates_to_assembly
                    ( $contig_name_hash{ $sf->seqname() }->dbID(), $sf->das_start, $sf->das_end, $sf->das_strand );
@@ -1011,7 +1009,11 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
      # if its not mappable than ignore the feature
                next if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" ));
 
-               $sf->das_move( $offset, $chr_strand );
+               $sf->das_move( $coord->{'start'}+$offset, $coord->{'end'}+$offset, $coord->{'strand'} );
+         #warn( "---------------------------------------------------" );
+         #printf STDERR "SEG ID: %s\tID: %s\t DSN %s\t (%s-%s) STRAND: %s\tTYPE: %s\n",
+         $sf->seqname, $sf->das_id, $sf->das_dsn, $sf->das_start, $sf->das_end, $sf->das_strand, $sf->das_type_id;
+
                next if $sf->das_start > $length || $sf->das_end < 1;
                push @{$genomic_features{$dsn}}, $sf
            }
