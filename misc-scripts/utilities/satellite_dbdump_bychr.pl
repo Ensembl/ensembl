@@ -213,7 +213,7 @@ SELECT * FROM $satdb.$table WHERE chromosome = '$chr_short'
     # less simple ones that can both use the RHMaps table
     foreach my $table ( qw(Marker MarkerSynonym) ) {              
         $sql = "
-SELECT t.* 
+SELECT distinct t.* 
 FROM $satdb.$table t,
      $satdb.RHMaps r
 WHERE t.marker=r.marker 
@@ -224,7 +224,7 @@ WHERE t.marker=r.marker
 
     # this one needs a join 
     $sql="
-SELECT cl.*
+SELECT distinct cl.*
 FROM $satdb.Fpc_Clone cl,
      $satdb.Fpc_Contig cg
 WHERE cg.chromosome = '$chr_short'
