@@ -277,11 +277,10 @@ sub get_Type_by_Transcript_id {
   my ($self,$transid) = @_;
 
   # this is a cheap SQL call
-  #select g.type from gene g, transcript t where t.gene_id=g.gene_id and t.transcript_id=5422;
   my $sth = $self->prepare("	SELECT	g.type 
-				FROM	gene g, transcript t
-				WHERE	where t.gene_id = g.gene.id
-                                  AND   t.transcript_id = '$transid'");
+				  FROM	gene g, transcript t
+				 WHERE	t.gene_id = g.gene_id
+                                   AND  t.transcript_id = '$transid'");
   $sth->execute;
   
   my ($gene_type) = $sth->fetchrow_array();
