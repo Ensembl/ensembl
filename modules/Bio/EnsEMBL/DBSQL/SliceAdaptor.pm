@@ -751,8 +751,6 @@ sub fetch_normalized_slice_projection {
       my $seq_reg_slice = $self->fetch_by_seq_region_id( $slice_seq_region_id );
       my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
 
-      my $hap = $haps[0];
-
       push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
       push( @syms, [ $hap->[1]+1, $seq_reg_slice->length(), 
 		     $hap->[2], $hap->[4] + 1, $exc_slice->length() ] );
