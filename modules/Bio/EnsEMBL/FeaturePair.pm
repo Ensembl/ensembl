@@ -89,11 +89,12 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::EnsEMBL::SeqFeatureI;
+
+use Bio::EnsEMBL::FeaturePairI;
 use Bio::Root::RootI;
 
 
-@ISA = qw(Bio::EnsEMBL::SeqFeatureI Bio::Root::RootI );
+@ISA = qw(Bio::EnsEMBL::FeaturePairI Bio::Root::RootI );
 
 
 sub new {
