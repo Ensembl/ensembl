@@ -266,15 +266,17 @@ sub _convert_phase {
     if($strand==1){
 	$phase=((2+($start%3)-$phase)%3);
     }else{
+	# dJ271M21
+	#$phase=((2+((134292-$end+1)%3)-$phase)%3);
+	# dJ718J7
+	#$phase=((2+((130435-$end+1)%3)-$phase)%3);
 	$phase=(2-((3+($end%3)-$phase)%3));
+	#if($phase==2){
+	#    $phase=1;
+	#}elsif($phase==1){
+	#    $phase=2;
+        #}
     }
-
-    #if($phase==2){
-    #	$phase=1;
-    #}elsif($phase==1){
-    #$phase=2;
-    #}
-
     return $phase;
 }
 
