@@ -111,19 +111,19 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
-  if ( defined ($start) && $start ne "" )        { $self->start($start)};
-  if ( defined ($end )  && $end   ne "" )        { $self->end($end)}
-  if ( defined $strand )       { $self->strand($strand)}
-  if ( defined $primary_tag )  { $self->primary_tag($primary_tag)}
-  if ( defined $source_tag )   { $self->source_tag($source_tag)}
-  if ( defined $frame  && $frame ne "")        { $self->frame($frame)}
-  if ( defined $score  && $score ne "")        { $self->score($score)}
-  if ( defined $analysis  && $analysis ne "")  { $self->analysis($analysis)};
-  ( defined $seqname )      && $self->seqname($seqname);
-  ( defined $percent_id )   && $self->percent_id($percent_id);
-  ( defined $p_value )      && $self->p_value($p_value);
-  ( defined $phase )       && $self->phase($phase);
-  ( defined $end_phase )    && $self->end_phase($end_phase);
+  if ( defined ($start) && $start ne "" )       { $self->start($start)};
+  if ( defined ($end )  && $end   ne "" )       { $self->end($end)}
+  if ( defined $strand  && $strand ne "")       { $self->strand($strand)}
+  if ( defined $primary_tag && $primary_tag ne "")  { $self->primary_tag($primary_tag)}
+  if ( defined $source_tag && $source_tag ne ""){ $self->source_tag($source_tag)}
+  if ( defined $frame  && $frame ne "")         { $self->frame($frame)}
+  if ( defined $score  && $score ne "")         { $self->score($score)}
+  if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
+  if ( defined $seqname && $seqname ne "")      { $self->seqname($seqname)};
+  if ( defined $percent_id && $percent_id ne ""){ $self->percent_id($percent_id)};
+  if ( defined $p_value && $p_value ne "")      { $self->p_value($p_value)};
+  if ( defined $phase && $phase ne "")          { $self->phase($phase)};
+  if ( defined $end_phase && $end_phase ne "")  { $self->end_phase($end_phase)};
   return $self; # success - we hope!
 
 }
