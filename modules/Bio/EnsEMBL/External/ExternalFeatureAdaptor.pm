@@ -543,7 +543,8 @@ sub fetch_all_by_Clone {
   }
 
   if($self->_supported('CLONE')) {
-    return $self->fetch_all_by_clone_accession($clone->id);
+    return $self->fetch_all_by_clone_accession($clone->id, $clone->embl_acc,
+					       $clone_start, $clone_end);
   }
   
   unless($self->_supported('CONTIG') || 
@@ -577,12 +578,19 @@ sub fetch_all_by_Clone {
 
   Arg [1]    : string $acc
                The EMBL accession number of the clone to fetch features from.
+  Arg [2]    : (optional) string $ver
+  Arg [3]    : (optional) int $start
+  Arg [4]    : (optional) int $end
+ 
   Example    : @fs = @{$self->fetch_all_by_clone_accession('AC000093')};
   Description: Retrieves features on the clone defined by the $acc arg in 
                Clone coordinates. 
                
                If this method is overridden then the coordinate_systems method
-               must return 'CLONE' as one of its values.  
+               must return 'CLONE' as one of its values. The arguments 
+               start, end, version are passed if this method is overridden and
+               can optionally be used to reduce the scope of the query and 
+               improve performance.  
 
                If the fetch_all_by_Clone method has been overridden then this
                method must also be overridden to chain calls to that method
@@ -603,7 +611,7 @@ sub fetch_all_by_Clone {
 =cut
 
 sub fetch_all_by_clone_accession {
-  my ($self, $acc) = @_;
+  my ($self, $acc, $version, $start, $end) = @_;
 
   unless($acc) {
     $self->throw("clone accession argument not defined");
