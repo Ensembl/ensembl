@@ -141,11 +141,15 @@ sub _find_polyA{
     # we start with 3 bases
     my ($piece, $count ) = (3,0);
     
+    # count also the number of Ns, consider the Ns as potential As
+    my $n_count = 0;
+
     # take 3 by 3 bases from the end
     while( $length_to_mask < $length ){
       my $chunk  = substr( $seq, ($length - ($length_to_mask + 3)), $piece);
-      $count = $chunk =~ tr/Aa//;
-      if ( $count >= 2*( $piece )/3 ){
+      $count   = $chunk =~ tr/Aa//;
+      $n_count = $chunk =~ tr/Nn//;
+      if ( ($count + $n_count) >= 2*( $piece )/3 ){
 	$length_to_mask += 3;
       }
       else{
@@ -189,13 +193,17 @@ sub _find_polyA{
     # we start with 3 bases:
     my ($piece, $count) = (3,3);
     
+    # count also the number of Ns, consider the Ns as potential As
+    my $n_count = 0;
+    
     # take 3 by 3 bases from the beginning
     while ( $length_to_mask < $length ){
       my $chunk = substr( $seq, $length_to_mask + 3, $piece );
       #print STDERR "length to mask: $length_to_mask\n";
       #print "chunk: $chunk\n";
       $count = $chunk =~ tr/Tt//;
-      if ( $count >= 2*( $piece )/3 ){
+       $n_count = $chunk =~ tr/Nn//;
+      if ( ($count+$n_count)  >= 2*( $piece )/3 ){
 	$length_to_mask +=3;
       }
       else{
