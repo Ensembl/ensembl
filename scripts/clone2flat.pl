@@ -276,10 +276,12 @@ foreach my $clone_id ( @clones ) {
     eval {
 	my $clone = $db->get_Clone($clone_id);
 	my $as;
-	if( $format ne 'pep' ) {
-	    my $as = $clone->get_AnnSeq();
+	if( $format eq 'pep' ) {
+	    # do nothing
+	} else {
+	    $as = $clone->get_AnnSeq();
 	}
-
+	
 	# choose output mode
 	
 	# test clone check call
