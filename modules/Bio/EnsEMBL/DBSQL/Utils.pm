@@ -24,7 +24,6 @@ Bio::EnsEMBL::DBSQL::Utils - Module having the fset2transcript subroutines
 Module containing the sub routine fset2transcript, 
 which creates transcripts from features
 
-
 =head1 CONTACT
 
 Ensembl - ensembl-dev@ebi.ac.uk
@@ -65,7 +64,7 @@ sub fset2transcript {
     my $count= 1;
     
     foreach my $f ($genscan->sub_SeqFeature) {
-	
+  
 	my $exon  = new Bio::EnsEMBL::Exon;
 	$exon->contig_id($contig->id);
 	$exon->start    ($f->start);
@@ -197,7 +196,7 @@ sub fset2transcript_3frame {
   my ($fset,$contig) = @_;
 
   my @f = $fset->sub_SeqFeature;
-
+  
   if ($f[0]->strand == 1) {
     @f = sort {$a->start <=> $b->start} @f;
   } else {
@@ -222,11 +221,11 @@ sub fset2transcript_3frame {
 
    
     foreach my $f (@f) {
-
+      #print "exon seqname = ".$f->seqname."\n";
       my $exon  = new Bio::EnsEMBL::Exon;
 
       push(@exons,$exon);
-
+      $exon->seqname($f->seqname);
       $exon->temporary_id ($contig->id . ".$count");
       $exon->contig_id($contig->id);
       $exon->start    ($f->start);
@@ -245,7 +244,7 @@ sub fset2transcript_3frame {
     }
        
     my $translation = new Bio::EnsEMBL::Translation;
-
+    #print "contig id = ".$contig->id."\n";
     $translation->temporary_id($contig->id . "." . $fset->id);
     $translation->start        (1);
     $translation->end          ($exons[$#exons]->end - $exons[$#exons]->start + 1);
@@ -257,9 +256,13 @@ sub fset2transcript_3frame {
 
     $startphase++;
   }
+  #print "finshed  fset2transcript_3frame\n";
   return @transcripts;
 }
 
 
 1;
+
+
+
 
