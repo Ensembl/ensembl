@@ -72,6 +72,7 @@ sub fetch_by_contig_id_start_end_strand {
   }
 
   if( $end == -1 ) { 
+
     $sth = $self->prepare( "SELECT c.length, SUBSTRING( d.sequence, $start )
                             FROM dna d, contig c 
                             WHERE d.dna_id = c.dna_id 
@@ -194,7 +195,7 @@ sub fetch_by_assembly_location {
         $strand, $chrName, $assemblyType ) = @_;
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($assemblyType);
-   $mapper->register_region($chrName,$chrStart,$chrEnd);
+   # $mapper->register_region($chrName,$chrStart,$chrEnd);
    
    my @coord_list = $mapper->map_coordinates_to_rawcontig
      ( $chrName, $chrStart, $chrEnd, $strand );

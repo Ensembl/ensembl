@@ -105,13 +105,17 @@ sub transfer {
     $tmpdir = $self->tmp_dir();
   }
 
+  # first we should check if all standard trnasfers can go
+  # otherwise testing this is a pain
+  $self->check_possible_transfer();
+
   for my $tablename ( keys %{$self->{targetdb}{tables}} ) {
     my $skip = 0;
     print STDERR "Transfer $tablename ";
 
     open( FH, ">$tmpdir/$tablename.txt" ) or die "cant open dumpfile";
     
-    if( exists $self->{tragetdb}{tables}{$tablename}{transfer} ) {
+    if( exists $self->{targetdb}{tables}{$tablename}{transfer} ) {
       my $transfunc = $self->{targetdb}{tables}{$tablename}{transfer};
       &$transfunc( $self->source_dbh(), $self->target_dbh(), $tablename, \*FH );
     } else {
@@ -155,6 +159,80 @@ sub transfer {
 
   # close databases
   
+}
+
+
+# this function checks if a standard transfer is possible.
+# custom selects and custom transfer functions are not checked
+# it will only return if it can do the transfer otherwise die
+
+sub check_possible_transfer {
+  my $self = shift;
+
+  for my $tablename ( keys %{$self->{targetdb}{tables}} ) {
+    my $sourcetable;
+
+    if( exists $self->{targetdb}{tables}{$tablename}{transfer} ) {
+      next;
+    }
+
+    if( exists $self->{targetdb}{tables}{$tablename}{link} ) {
+      $sourcetable = $self->{targetdb}{tables}{$tablename}{link};
+      if( $sourcetable eq "" ) {
+	# skip this table
+	next;
+      }
+    } else {
+      # find the sourcetable
+      if( exists $self->{targetdb}{tables}{$tablename}{select} ) {
+
+	# custom select, no check
+	next;
+      } elsif( ! exists $self->{sourcedb}{tables}{$tablename} ) {
+
+	die "Couldnt find source for $tablename. Enter empty sourcetable.";
+
+      } else {
+	$sourcetable = $tablename;
+      }
+    }
+
+    my @newcols = @{$self->{targetdb}{tables}{$tablename}{columns}};
+    my @oldcols = @{$self->{sourcedb}{tables}{$sourcetable}{columns}};
+    
+    my %rename;
+
+    if( exists $self->{targetdb}{tables}{$tablename}{columnrename} ) {
+      %rename = %{$self->{targetdb}{tables}{$tablename}{columnrename}};
+    } else {
+      %rename = ();
+    }
+
+    # find all source columns and build select statement 
+
+    for my $colname ( @newcols ) {
+      my $selname;
+      
+      if( exists $rename{$colname} ) {
+	$selname = $rename{$colname};
+	if( $selname eq "" ) {
+	  $selname = "NULL";
+	}
+      } else {
+	my $colExists = 0;
+	for my $oldcol ( @oldcols ) {
+	  if(  $oldcol eq $colname ) {
+	    $selname = $colname;
+	    $colExists = 1;
+	    last;
+	  }
+	}
+	if( ! $colExists ) {
+	  die "Couldnt fill $tablename.$colname\n";
+	}
+      }
+    }
+  }
 }
 
 

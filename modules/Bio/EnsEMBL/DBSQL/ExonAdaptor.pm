@@ -124,6 +124,7 @@ sub fetch_by_geneId {
   if( !defined $geneId ) {
       $self->throw("Must has a geneId ... ");
   }
+  $self->{rchash} = {};
 
   my $query = qq {
     SELECT  e.exon_id
@@ -240,15 +241,15 @@ sub _new_Exon_from_hashRef {
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->adaptor($self);
 
-   if( !exists $self->{rchash}{$hashRef->{'contig_id'}} ) {
-     $self->{rchash}{$hashRef->{contig_id}} = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
-     if ( !defined $self->{rchash}{$hashRef->{contig_id}} ) {
+   if( !exists $self->{rchash}->{$hashRef->{'contig_id'}} ) {
+     $self->{rchash}->{$hashRef->{'contig_id'}} = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
+     if ( !defined $self->{rchash}->{$hashRef->{'contig_id'}} ) {
 	 $self->throw("No contig for ".$hashRef->{'contig_id'});
      }
    }
 
-   $exon->attach_seq($self->{rchash}{$hashRef->{'contig_id'}}->primary_seq);
-   $exon->contig( $self->{rchash}{$hashRef->{'contig_id'}} );
+   $exon->attach_seq($self->{rchash}->{$hashRef->{'contig_id'}});
+   $exon->contig( $self->{rchash}->{$hashRef->{'contig_id'}} );
    $exon->seqname($hashRef->{'cid'});
    $exon->ori_start( $exon->start );
    $exon->ori_end( $exon->end );

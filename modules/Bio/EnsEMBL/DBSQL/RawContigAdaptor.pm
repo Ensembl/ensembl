@@ -117,7 +117,6 @@ sub fetch_all {
       ( $aref->[1], $self->db() ); # ?
     
     my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
-    $contig->seq( $dbPrimarySeq );
     push( @res, $contig );
   }
   return @res;
@@ -149,7 +148,7 @@ sub fetch_by_clone {
   my $clone_id = $clone->dbID;
   
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                             offset, corder, dna_id, chromosome_id, 
+                             offset, corder, dna_id, 
                              international_name
                              FROM contig
                              WHERE clone_id = $clone_id" );
@@ -220,13 +219,6 @@ sub _fill_contig_from_arrayref {
        $international_name ) = @$aref;
 
     
-  my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
-    ( $dna_id, $self->db() ); # ?
-
-  # my $contig = Bio::EnsEMBL::RawContig->new($contig_id,$self);
-
-
-  (defined $dbPrimarySeq) && $contig->sequence( $dbPrimarySeq );
   (defined $length) && $contig->length( $length );
   (defined $name) && $contig->name( $name );
   (defined $offset) && $contig->offset( $offset );

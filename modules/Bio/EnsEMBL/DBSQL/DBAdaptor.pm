@@ -937,7 +937,6 @@ sub prepare {
    }
 
    # should we try to verify the string?
-
    return $self->_db_handle->prepare($string);
 }
 

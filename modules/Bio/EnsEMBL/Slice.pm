@@ -281,6 +281,8 @@ sub get_all_Genes{
 
    my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
    my @genes = $gene_adaptor->fetch_by_Slice($self);
+
+   return @genes;
 }
 
 
