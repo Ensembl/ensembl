@@ -250,7 +250,7 @@ sub store {
       } elsif ($cons->repeat_class eq 'Simple_repeat') {
 
         my $rcon = $cons->name;
-        $rcon =~ s/\((\S+)\)n/\1/;   # get repeat element
+        $rcon =~ s/\((\S+)\)n/$1/;   # get repeat element
 	$cons->repeat_consensus($rcon);
 	$rca->store($cons);
 	$rf->repeat_id($cons->dbID);
