@@ -391,17 +391,93 @@ sub spliced_seq {
 }
 
 
+=head2 edited_seq
+
+  Args       : none
+  Example    : none
+  Description: Retrieves the spliced_seq and applies all _rna_edit attributes
+               to it. It will adjust cdna_coding_start and cdna_coding_end.
+               These will be used by translateable_seq to extract the sequence that is 
+               to translate.
+
+               The format of _rna_edit attribute value is "start end alt_sequence"
+               start and end are zero based in_between coords to describe the location
+               in the cdna of the alt_sequence. Inserts have the same start and end.
+               Deletes have no alt_sequence.
+
+               WARNING! This function has to modify the start and end position of the 
+               translation!
+  Returntype : txt
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub edited_seq {
+  my ( $self ) = @_;
+
+  my $attribs = $self->get_all_Attributes( "_rna_edit" );
+  my $seq = $self->spliced_seq();
+
+  my $cdna_coding_start = $self->cdna_coding_start( undef );
+  my $cdna_coding_end = $self->cdna_coding_end( undef );
+  
+  my $translation;
+  if( $cdna_coding_start && $cdna_coding_end ) {
+    $translation = 1;
+  } else {
+    $translation = 0;
+  }
+
+  my @edits;
+
+  for my $attrib ( @$attribs ) {
+    my ( $start, $end, $alt_seq ) = split( " ", $attrib->value());
+    # length diff is the adjustment to do on cdna_coding_start/end
+    my $length_diff = ( CORE::length( $alt_seq ) - ( $end - $start));
+    push( @edits, [ $start, $end, $alt_seq, $length_diff ] );
+  }
+
+  @edits = sort { $b->[0] <=> $a->[0] } @edits;
+
+  for my $edit ( @edits ) {
+    # applying the edit
+    substr( $seq, $edit->[0], $edit->[1]-$edit->[0] ) = $edit->[2];
+    
+    my $diff = $edit->[3];
+    if( $diff != 0 ) {
+      # possibly adjust cdna start/end
+      if( $edit->[0]+1 <= $cdna_coding_end ) {
+        $cdna_coding_end += $diff;
+      }
+      if( $edit->[0]+1 < $cdna_coding_start ) {
+        $cdna_coding_start += $diff;
+      }
+    }
+  }
+
+  if( $translation ) {
+    $self->cdna_coding_start( $cdna_coding_start );
+    $self->cdna_coding_end( $cdna_coding_end );
+  }
+
+  return $seq;
+}
+
+
+
+
 =head2 translateable_seq
 
   Args       : none
   Example    : print $transcript->translateable_seq(), "\n";
   Description: Returns a sequence string which is the the translateable part 
-               of the transcripts sequence.  This is formed by concatenating
-               the coding portion of the exons sequence together (UTRs are not
-               included in the sequence).  Exon phase information is ignored 
-               unless the MONKEY_EXONS environment variable is set with a true 
-               value.  If MONKEY_EXONS is true the sequence may be padded with 
-               Ns in order to acheive correct exon phases.
+               of the transcripts sequence.  This is formed by splicing all
+               Exon sequences together and apply all defined RNA edits. Then the
+               coding part of the sequence is extracted and returned.
+
+               The code will not support monkey exons any more. If you want to have
+               non phase matching exons, defined appropriate _rna_edit attributes!
   Returntype : txt
   Exceptions : none
   Caller     : general
@@ -411,47 +487,19 @@ sub spliced_seq {
 sub translateable_seq {
   my ( $self ) = @_;
 
-  my $mrna = "";
-  my $lastphase = 0;
-  my $first = 1;
-
-  foreach my $exon (@{$self->get_all_translateable_Exons()}) {
-
-    my $phase = 0;
-    if (defined($exon->phase)) {
-      $phase = $exon->phase;
-    }
-
-    # startpadding is needed if MONKEY_EXONS are on
-    if( $first && (! defined $ENV{'MONKEY_EXONS'}) ) {
-      $mrna .= 'N' x $phase;
-      $first = 0;
-    }
-
-    if( $phase != $lastphase && ( defined $ENV{'MONKEY_EXONS'})) {
-      # endpadding for the last exon
-      if( $lastphase == 1 ) {
-        $mrna .= 'NN';
-      } elsif( $lastphase == 2 ) {
-        $mrna .= 'N';
-      }
-      #startpadding for this exon
-      $mrna .= 'N' x $phase;
-    }
-    my $seq = $exon->seq();
-
-    # if there is an error in the exon (e.g. strand not set or no slice)
-    # no seq object will be returned by exon->seq
-    if(!$seq) {
-      warning("Could not get exon sequence. Resultant translation may be" .
-              " incorrect.");
-      $mrna .= 'N' x $exon->length();
-    } else {
-      $mrna .= $seq->seq();
-    }
-    $lastphase = $exon->end_phase();
+  # IMPORTANT: first extract the sequence, then the cdna start/end
+  # because editing may modify this positions.
+  my $mrna = $self->edited_seq();
+  my $start = $self->cdna_coding_start();
+  my $end = $self->cdna_coding_end();
+  
+  if( ! $start || ! $end ) {
+    return "";
   }
-  return $mrna;
+
+  my $seq = substr( $mrna, $start-1, $end-$start+1 );
+
+  return $seq;
 }
 
 
@@ -470,11 +518,13 @@ sub translateable_seq {
 =cut
 
 sub cdna_coding_start {
-  my ($self, $value) = @_;
+  my $self = shift;
 
-  if(defined $value) {
-    $self->{'cdna_coding_start'} = $value;
-  } elsif(!defined $self->{'cdna_coding_start'} && defined $self->translation){
+  if( @_ ) {
+    $self->{'cdna_coding_start'} = shift;
+  } 
+
+  if(!defined $self->{'cdna_coding_start'} && defined $self->translation){
     #
     #calculate the coding start relative from the start of the
     #translation (in cdna coords)
@@ -517,11 +567,13 @@ sub cdna_coding_start {
 =cut
 
 sub cdna_coding_end {
-  my ($self, $value) = @_;
+  my $self = shift;
 
-  if($value) {
-    $self->{'cdna_coding_end'} = $value;
-  } elsif(!defined $self->{'cdna_coding_end'} && defined $self->translation) {
+  if( @_ ) {
+    $self->{'cdna_coding_end'} = shift;
+  } 
+  
+  if(!defined $self->{'cdna_coding_end'} && defined $self->translation) {
     my @exons = @{$self->get_all_Exons};
 
     my $end = 0;
@@ -627,6 +679,74 @@ sub coding_region_end {
 }
 
 
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $attrib_code
+               The code of the attribute type to retrieve values for.
+  Example    : ($rna_edits) = @{$transcript->get_all_Attributes('_rna_edit')};
+               @transcript_attributes    = @{$transcript->get_all_Attributes()};
+  Description: Gets a list of Attributes of this transcript.
+               Optionally just get Attrubutes for given code.
+  Returntype : listref Bio::EnsEMBL::Attribute
+  Exceptions : warning if transcript does not have attached adaptor and 
+               attempts lazy load.
+  Caller     : general
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+  my $attrib_code = shift;
+
+  if( ! exists $self->{'attributes' } ) {
+    if(!$self->adaptor() ) {
+#      warning('Cannot get attributes without an adaptor.');
+      return [];
+    }
+
+    my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Transcript( $self );
+  }
+
+  if( defined $attrib_code ) {
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }  
+    @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
+}
+
+
+=head2 add_Attributes
+
+  Arg [1...] : Bio::EnsEMBL::Attribute $attribute
+               You can have more Attributes as arguments, all will be added.
+  Example    : $transcript->add_Attributes($rna_edit_attribute);
+  Description: Adds an Attribute to the Transcript. Usefull to do _rna_edits.
+               If you add an attribute before you retrieve any from database, lazy load
+               will be disabled.
+  Returntype : none
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+sub add_Attributes {
+  my $self = shift;
+  my @attribs = @_;
+
+  if( ! exists $self->{'attributes'} ) {
+    $self->{'attributes'} = [];
+  }
+
+  for my $attrib ( @attribs ) {
+    if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
+      throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+    }
+    push( @{$self->{'attributes'}}, $attrib );
+  }
+}
 
 
 =head2 add_Exon
@@ -1238,7 +1358,9 @@ sub get_all_translateable_Exons {
 
 
 
-
+# needs selenocystein - U
+# use attributes from Translation
+# maybe API call ?
 
 =head2 translate
 
@@ -1281,7 +1403,7 @@ sub translate {
                                -alphabet => 'dna',
                                -id => $display_id );
 
-  return $peptide->translate();
+  return $self->translation->modify_translation( $peptide->translate() );
 }
 
 =head2 seq
