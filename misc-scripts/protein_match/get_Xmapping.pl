@@ -217,8 +217,7 @@ if ($organism eq "human") {
     while (<GO>) {
 	chomp;
 	my @array = split (/\t/,$_);
-	
-	print OUT "$array[1]\tSPTR\t$array[3]\tGO\t$array[3]\t\tXREF"
+	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t\tXREF\n";	
 	}
 
 }
