@@ -1450,15 +1450,15 @@ sub _reverse_map_Exon{
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
+       my $found;
        # walk to find scontig. If it is a gap, simply move on
        if( $scontig eq 'gapcontig' ) {
 	   $scontig = $self->dbobj->get_Contig('gapcontig');
-       } else {
-	   
-	   my $found = 0;
+       } 
+       else {
+	   $found = 0;
 	   my $mc;
 	   while ( $mc = shift @mapcontigs ) { 
-	       
 	       if( $mc->contig->id eq $scontig->id ) {
 		   print STDERR "Unshifting ",$mc->contig->id,"\n";
 		   unshift(@mapcontigs,$mc);
