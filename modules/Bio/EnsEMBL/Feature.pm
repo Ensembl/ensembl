@@ -792,6 +792,129 @@ sub seq {
 
 
 
+
+=head2 get_all_alt_locations
+
+  Arg [1]    : none
+  Example    : @features = @{$feature->get_all_alt_locations()};
+               foreach $f (@features) {
+                 print $f->slice->seq_region_name,' ',$f->start, $f->end,"\n";
+               }
+
+  Description: Retrieves shallow copies of this feature in its alternate
+               locations.  A feature can be considered to have multiple
+               locations when it sits on a alternative structural haplotype
+               or when it is on a pseudo autosomal region.  Most features will
+               just return a reference to an empty list though.
+               The features returned by this method will be on a slice which
+               covers the entire alternate region.
+
+               Currently this method does not take into account alternate
+               locations on the alternate locations (e.g. a reference
+               sequence may have multiple alternate haplotypes.  Asking
+               for alternate locations of a feature on one of the alternate
+               haplotypes will give you back the reference location, but not
+               locations on the other alternate haplotypes).
+
+  Returntype : reference to list of features of the same type of this feature.
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_alt_locations {
+  my $self = shift;
+
+  my $slice = $self->{'slice'} or return [];
+  my $sa = $slice->adaptor() or return [];
+
+  # get slice of entire region
+  $slice = $sa->fetch_by_seq_region_id($slice->get_seq_region_id);
+
+  my $axfa = $sa->db->get_AssemblyExceptionFeatureAdaptor();
+  my $axfs = $axfa->fetch_all_by_Slice($slice);
+
+  my (@haps, @alt);
+
+  foreach my $axf (@$axfs) {
+    if(uc($axf->type()) eq 'HAP') {
+      push @haps, $axf;
+    } elsif(uc($axf->type()) eq 'PAR') {
+      push @alt, $axf;
+    } else {
+      warning("Unknown exception feature type ". $axf->type()."- ignoring.");
+    }
+  }
+
+  # regions surrounding hap are those of interest, not hap itself
+  # convert hap alt. exc. features to regions around haps instead
+  foreach my $h (@haps) {
+    my $haslice = $h->alternate_slice();
+    my $hacs    = $haslice->coord_system();
+
+    if($h->start() > 1 && $haslice->start() > 1) {
+      my $aslice = $sa->fetch_by_region($hacs->name(),
+                                        $haslice->seq_region_name(),
+                                        1,
+                                        $haslice->start()-1,
+                                        $haslice->strand(),
+                                        $hacs->version());
+
+      push @alt, Bio::EnsEMBL::AssemblyExceptionFeature->new
+        (-start  => 1,
+         -end    => $h->start()-1,
+         -alternate_slice => $aslice);
+    }
+
+    if($h->end() < $slice->seq_region_length() &&
+       $haslice->end < $haslice->seq_region_length()) {
+      my $aslice = $sa->fetch_by_region($hacs->name(),
+                                        $haslice->seq_region_name(),
+                                        $haslice->end()+1,
+                                        $haslice->seq_region_length(),
+                                        $haslice->strand(),
+                                        $hacs->version());
+
+      push @alt, Bio::EnsEMBL::AssemblyExceptionFeature->new
+        (-start  => $h->end() + 1,
+         -end    => $slice->seq_region_length(),
+         -alternate_slice => $aslice);
+    }
+  }
+
+
+  # check if exception regions contain our feature
+
+  my @features;
+
+  foreach my $axf (@alt) {
+    # ignore other region if feature is not entirely on it
+    next if($self->seq_region_start() < $axf->start() ||
+            $self->seq_region_end()   > $axf->end());
+
+    # quick shallow copy of the feature
+    my $f;
+    %$f = %$self;
+    bless $f, ref($self);
+
+    my $aslice = $axf->alternate_slice();
+
+    # position feature on entire slice of other region
+    $f->{'start'}  = $f->seq_region_start() - $axf->start() + $aslice->start();
+    $f->{'end'}    = $f->seq_region_end()   - $axf->start() + $aslice->start();
+    $f->{'strand'} *= $aslice->strand();
+
+    $f->{'slice'} = $sa->fetch_by_seq_region_id($aslice->get_seq_region_id());
+
+    push @features, $f;
+  }
+
+  return \@features;
+}
+
+
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
