@@ -3,6 +3,9 @@
 # The coord system used is raw contigs. Exons on more than 1 contig
 # (sticky) get the contig name of theier first part and the size of all 
 # partly exons together.
+
+# This one dumps CDS, meaning it throws away all non coding exons and 
+# non coding parts of mixed exons.
  
 use DBI;
 
@@ -85,9 +88,16 @@ while( $colsRef = $sth->fetchrow_arrayref() ) {
 
     if( $e->{strand} == 1 ) {
       $e->{seqend} += $addLength;
+      if( $cds ) {
+	$e->{cdsend} += $addLength;
+      }
     } else {
       $e->{seqstart} -= $addLength;
+      if( $cds ) {
+	$e->{cdsstart} += $addLength;
+      }
     }
+
 
   } else {
     
@@ -101,17 +111,44 @@ while( $colsRef = $sth->fetchrow_arrayref() ) {
     # exon rank up
     $er++;
 
-    if( $cols[13] eq $e->{name} ) {
-      $e->{startcodon} = $cols[14];
-    }
-    if( $cols[15] eq $e->{name} ) {
-      $e->{stopcodon} = $cols[16];
-    }
-
     $e->{strand} = $cols[5];
 
     $e->{seqstart} = $cols[3];
     $e->{seqend} = $cols[4];
+
+    if( $cds ) {
+      $e->{cdsstart} = $e->{seqstart};
+      $e->{cdsend} = $e->{seqend};
+      $e->{cds} = 1;
+    }
+
+    # exon with the start codon
+    if( $cols[13] eq $e->{name} ) {
+      $e->{startcodon} = $cols[14];
+      if( $e->{strand} == 1 ) {
+	$e->{cdsstart} = $e->{seqstart} + $cols[14] - 1 ;
+	$e->{cdsend} = $e->{seqend}; 
+      } else {
+	$e->{cdsend} = $e->{seqend} - $cols[14] + 1;
+	$e->{cdsstart} = $e->{seqstart};
+      }
+      $e->{cds} = 1;
+      $cds = 1;
+    }
+
+    # exon with the stop codon
+    if( $cols[15] eq $e->{name} ) {
+      $e->{stopcodon} = $cols[16];
+      if( $e->{strand} == 1 ) {
+	$e->{cdsend} = $e->{seqstart} + $cols[16] -1 ;
+	$e->{cdsstart} =  $e->{seqstart};
+      } else {
+	$e->{cdsstart} = $e->{seqend} - $cols[16] + 1;
+	$e->{cdsend} = $e->{seqend};
+      }
+      $cds = 0;
+    }
+
 
   }
 }
@@ -161,8 +198,22 @@ sub print_genes {
 	  "exon_id \"", $e->{name},"\"",
 	  "\n";
 	}
+	if( $e->{cds} ) {
+	  print FH $e->{contig},"\t",
+	  "ENSEMBL\tCDS\t", 
+	  $e->{cdsstart},"\t",
+	  $e->{cdsend},"\t",
+	  ".\t",
+	  ($e->{strand}==1?"+":"-"),"\t",$e->{phase},"\t",
+	  "gene_id \"",$g->{name},"\"; ",
+	  "transcript_id \"", $t->{name}, "\"; ",
+	  "exon_number ", $e->{rank},"; ",
+	  "exon_id \"", $e->{name},"\"",
+	  "\n";
+	}
+
 	print FH $e->{contig},"\t",
-	"ENSEMBL\tCDS\t", 
+	"ENSEMBL\texon\t", 
 	$e->{seqstart},"\t",
 	$e->{seqend},"\t",
 	".\t",
