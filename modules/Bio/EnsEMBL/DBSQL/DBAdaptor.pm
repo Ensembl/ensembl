@@ -536,16 +536,37 @@ sub get_SequenceAdaptor {
    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
 }
 
+=head2 lite_DBAdaptor
+
+  Arg    [1]: Bio::EnsEMBL::Lite::DBAdaptor $liteDBConnection
+              From there you get the denormalized GeneAdaptor.
+  Function  : The liteDB is set in EnsWEB to get denormalized access to
+              EnsEMBL data. It provides a GeneAdaptor that makes half
+              filled Genes.
+  Returntype: Bio::EnsEMBL::Lite::DBAdaptor
+  Exceptions: 
+  Caller    : set in EnsWEB, get internal
+
+=cut
+
+
+sub lite_DBAdaptor {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_liteDB} = $arg );
+  $self->{_liteDB};
+}
+
 
 
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    if($self->db_mode_web()) {
-      return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneLiteAdaptor");
+    if( $self->db_mode_web() && defined $self->liteDB() ) {
+      return $self->liteDB()->get_GeneAdaptor();
+    } else {
+      return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
     }
-
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
 }
 
 =head2 get_LiteAdaptor

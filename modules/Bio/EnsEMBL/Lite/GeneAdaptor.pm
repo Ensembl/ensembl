@@ -69,7 +69,7 @@ sub fetch_by_Slice {
     $sth->execute( $slice->chr_name, $slice->chr_end, $slice->chr_start-3000000, $slice->chr_start );
   };
 
-  return [] if($@);
+  return () if($@);
 
   # have to make gene, transcripts, translation, db_link for gene and exons
 
@@ -85,7 +85,6 @@ sub fetch_by_Slice {
       $gene->stable_id( $hr->{'gene_name'} );
       $gene->dbID( $hr->{'gene_id'} );
       $gene->adaptor( $core_DBAdaptor->get_GeneAdaptor() );
-      $gene->external_name( $hr->{'external_name'} )
     } else {
       $gene = $gene_cache{ $hr->{gene_id} };
     }
@@ -137,7 +136,9 @@ sub fetch_by_Slice {
     $transcript->dbID( $hr->{'transcript_id'});
 
     $transcript->stable_id( $hr->{ 'transcript_name' });
-
+    $transcript->external_name( $hr->{'external_name'} );
+    $transcript->external_db( $hr->{'external_db' } );
+      
     # Add the exons
     if( $hr->{'chr_strand'} != 1 ) {
       @exons = reverse( @exons );
@@ -151,8 +152,9 @@ sub fetch_by_Slice {
     my $translation = Bio::EnsEMBL::Translation->new();
     $translation->adaptor( $core_DBAdaptor->get_TranslationAdaptor() );
     $translation->stable_id( $hr->{'translation_name'} );
-    $translation->dbID( $he->{'translation_id'} );
+    $translation->dbID( $hr->{'translation_id'} );
     $transcript->translation( $translation ); 
+
     # we need start and end Exon
     # hope they are lazy loaded ...
   }
