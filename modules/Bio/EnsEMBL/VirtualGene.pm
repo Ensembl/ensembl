@@ -108,6 +108,7 @@ sub _initialize {
       $self->strand($strand);
   }
 
+
   return $make; # success - we hope!
 }
 
@@ -302,10 +303,14 @@ sub _calculate_coordinates{
 	   $outside_exon = 1;
        }
    }
+   print STDERR "now with exception\n";
 
    if( $inside_exon == 0 ) {
        $self->throw("trying to make a virtualgene on a contig which does not contain the gene. Not possible");
    }
+ 
+ 
+
 
    if( $outside_exon == 0 ) {
        $self->is_complete(1);

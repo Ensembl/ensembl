@@ -133,7 +133,7 @@ sub new_from_one {
 
 sub new {
     my ($class,@args) = @_;
-    
+   
     my $self = {};
     bless $self,$class;
     $self->_make_datastructures();
@@ -486,28 +486,28 @@ sub get_all_VirtualGenes {
 sub get_all_VirtualGenes_startend{
    my ($self,@args) = @_;
 
+   my (%trans,%exon,%exonconverted);
+   
    my %gene;
    my @ret;
-
+   
    foreach my $contig ($self->_vmap->get_all_RawContigs) {
        foreach my $gene ( $contig->get_all_Genes() ) {      
 	   $gene{$gene->id()} = $gene;
        }
    }
    
+   print STDERR "tt 9\n";
+   
  GENE:
    foreach my $gene ( values %gene ) {
+       
+       my $internalExon=0;
        my $genestart = $self->length;
        my $geneend   = 1;
        my $genestr;
        foreach my $trans ( $gene->each_Transcript ) {
 	   foreach my $exon ( $trans->each_Exon ) {
-
-	       my $mc = $self->_vmap->get_MapContig_by_id($exon->contig_id);
-	       if( !defined $mc ) {
-		   next;
-	       }
-	       
 	       
 	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
 	       if( $st < $genestart ) {
@@ -517,15 +517,72 @@ sub get_all_VirtualGenes_startend{
 		   $geneend = $en;
 	       }
 	       $genestr = $str;
+	       
+
+	       # hack to get things to behave
+	       $exon->seqname($exon->contig_id);
+	       $exon{$exon->id} = $exon;
+	       
+	       ### got to treat sticky exons separately.
+	       if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
+		   my @stickies = $exon->each_component_Exon();
+		   # sort them by start-end
+		   @stickies = sort { $a->start <=> $b->start } @stickies;
+		   my $st_start;
+		   my $st_end;
+		   my $st_strand;
+		   my $current_end;
+		   my $mapped_sticky = 1;
+		   
+		   foreach my $sticky ( @stickies ) {
+		       if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
+			   $mapped_sticky = 0;
+			   last;
+		       } else {
+			   if( defined $current_end ) {
+			       if( $sticky->start-1 != $current_end ) {
+				   $mapped_sticky = 0;
+				   last; 
+			       }
+			}
+			   if( !defined $st_start ) {
+			       $st_start = $sticky->start;
+			   }
+			   # at the end of this loop, will be the last one
+			   $st_end = $sticky->end;
+			   $st_strand = $sticky->strand;
+		       }
+		   }
+		   
+		   if( $mapped_sticky == 1 ) {	
+		    $exonconverted{$exon->id} = 1;
+		    $internalExon = 1;
+		} else {
+		    # do nothing
+		}
+		   
+	       } else {
+		   if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+		       $internalExon = 1;
+		       $exonconverted{$exon->id} = 1;
+		   } else {$internalExon=0;}               
+		   
+	       }   
 	   }
        }
        
-       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, -start => $genestart, -end => $geneend, -strand => $genestr);
-       push(@ret,$vg);
+       if ($internalExon) {    
+	   my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, 
+						   -start => $genestart, -end => $geneend, 
+						   -strand => $genestr);
+	   push(@ret,$vg);
+ 
+       }
    }
-
+   
    return @ret;
 }
+
 
 
 =head2 get_all_Exons
@@ -879,6 +936,7 @@ sub _gene_query{
     my ($self,%gene) = @_;
     my (%trans,%exon,%exonconverted);
         
+    
 
     foreach my $gene ( values %gene ) {
 
@@ -928,6 +986,7 @@ sub _gene_query{
 		    $exon->end($st_end);
 		    $exon->strand($st_strand);
 		    $exonconverted{$exon->id} = 1;
+		    $internalExon = 1;
 		} else {
 		    # do nothing
 		}
@@ -935,17 +994,31 @@ sub _gene_query{
 	    } else {
 		# soooooo much simpler
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+
 		    $internalExon = 1;
 		    $exonconverted{$exon->id} = 1;
-		}               
+		} else {$internalExon=0;}               
+	    
 	    }
+	 
+
+
+
+
+
+
+   
 	}
         
         unless ($internalExon) {    
             delete $gene{$gene->id};
         } 
     }
-    
+ 
+
+   
+
+   
     # get out unique set of translation objects
     foreach my $gene ( values %gene ) {
 	foreach my $transcript ( $gene->each_Transcript ) {
@@ -1083,9 +1156,12 @@ sub _convert_seqfeature_to_vc_coords {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($cid);
     };
+
     if ($@ || !ref $mc) { 
 	return undef;
     }
+
+
     
     #print STDERR "starting $sf ",$sf->seqname,":",$sf->start,":",$sf->end,":",$sf->strand,"\n";
     # if this is something with subfeatures, then this is much more complex
@@ -1184,9 +1260,16 @@ sub _convert_start_end_strand_vc {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($contig);
     };
-    if($@) {
-	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig\n$@\n");
+   # if($@) {
+#	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig\n$@\n");
+#    }
+
+    if ($@ || !ref $mc) { 
+	return undef;
     }
+
+
+
 
     if( $mc->orientation == 1 ) {
        

@@ -333,7 +333,19 @@ sub fetch_VirtualContig_by_chr_start_end{
    }
 
    
+
+
+
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+
+
+   print STDERR "size ".$#rc."\n";
+
+
+   foreach my $rc(@rc){
+#       print STDERR "got rc ", $rc->id,"\n";
+   }
+
   
 
    my $vc;
@@ -608,7 +620,16 @@ sub fetch_VirtualContig_by_contig{
      $self->throw("Contig $contigid is not on the golden path of type $type");
    }
 
+
+ 
+
    my $halfsize = int($size/2);
+
+
+  print STDERR "start param ",$start-$halfsize," end ",$start+$size-$halfsize," chr ",$chr_name,"\n";
+
+
+
        return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
 	   						    $start-$halfsize,
 							$start+$size-$halfsize
