@@ -100,30 +100,10 @@ sub delete_by_RawContig_internal_id {
     my ($self,$contig_internal_id) = @_;
     $contig_internal_id || $self->throw("I need contig internal id");
     $contig_internal_id =~ /^\d+$/ or $self->warn("[$contig_internal_id] does not look like internal id.");
-    my $sth = $self->db->prepare("select fs.fset " .
-			     "from   fset_feature as fs, " .
-			     "       feature as f " .
-			     "where  fs.feature = f.id " .
-			     "and    f.contig = '$contig_internal_id'");
-    my $res = $sth->execute;
-
-    my $fsstr = "";
-    while (my $rowhash = $sth->fetchrow_hashref) {
-	$fsstr .= $rowhash->{fset} . ",";
-    }
-
-    if ($fsstr) {
-	chop($fsstr);
-	$sth = $self->db->prepare("delete from fset where id in ($fsstr)");
-	$res = $sth->execute;
-	
-	$sth = $self->db->prepare("delete from fset_feature where fset in ($fsstr)");
-	$res = $sth->execute;
-    }
     
     #print(STDERR "Deleting features for contig $contig\n");
-    $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
-    $res = $sth->execute;
+    my $sth = $self->db->prepare("delete from feature where contig = '$contig_internal_id'");
+    my $res = $sth->execute;
     
     #print(STDERR "Deleting repeat features for contig $contig\n");
     $sth = $self->db->prepare("delete from repeat_feature where contig = '$contig_internal_id'");
@@ -355,13 +335,7 @@ sub _store_PredictionFeature {
     my ($self,$contig_internal_id,$analysisid,@features) = @_;
     foreach my $feature ( @features ) {
 
-	my $score = defined($feature->score) ? $feature->score : "-1000";
-	my $sth = $self->db->prepare("insert into fset(id,score) values ('NULL',$score)");
-	$sth->execute();
-	my $fset_id = $sth->{mysql_insertid};
-
 	# now write each sub feature
-	my $rank = 1;
 
 	foreach my $sub ( $feature->sub_SeqFeature ) {
 	    my $last_insert_id = $self->_store
@@ -376,16 +350,12 @@ sub _store_PredictionFeature {
 		 $sub->source_tag,
 		 -1,
 		 -1,
-		 ($sub->primary_tag || "__NONE__"),
+		 ($sub->raw_seqname || "__NONE__"),
 		 ((defined $sub->p_value)     ?   &exponent($sub->p_value) : 'NULL'),
                  ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL'),
                  ((defined $sub->phase)       ?   $sub->phase         : 'NULL'),
                  ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')
 	    );
-	    my $query = "insert into fset_feature(fset,feature,rank) values ($fset_id,$last_insert_id,$rank)";
-	    my $sth2 = $self->db->prepare($query);
-	    $sth2->execute();
-	    $rank++;
 	}
     }
 }
@@ -757,16 +727,4 @@ sub fetch_RepeatFeatures_by_RawContig {
 }                                       # get_all_RepeatFeatures
 
 
-
 1;
-
-
-
-
-
-
-
-
-
-
-
