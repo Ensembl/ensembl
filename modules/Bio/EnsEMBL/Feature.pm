@@ -829,6 +829,7 @@ sub seq {
 
 sub get_all_alt_locations {
   my $self = shift;
+  my $return_all = shift || 0;
 
   my $slice = $self->{'slice'} or return [];
   my $sa = $slice->adaptor() or return [];
@@ -842,17 +843,20 @@ sub get_all_alt_locations {
   my (@haps, @alt);
 
   foreach my $axf (@$axfs) {
+    warn $axf->type;
     if(uc($axf->type()) eq 'HAP') {
       push @haps, $axf;
     } elsif(uc($axf->type()) =~ 'PAR') {
       push @alt, $axf;
     } elsif( $axf->type() eq "HAP REF" ) {
+      push @haps, $axf if $return_all > 0 ;
       # do nothing when you are on REF
     } else {
       warning("Unknown exception feature type ". $axf->type()."- ignoring.");
     }
   }
 
+  warn "@{[ map { $_->type() } @haps ]}";
   # regions surrounding hap are those of interest, not hap itself
   # convert hap alt. exc. features to regions around haps instead
   foreach my $h (@haps) {
