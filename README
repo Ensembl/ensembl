@@ -22,4 +22,4 @@ e) make sure you have the ensembl/modules in your PERL5LIB
 f) load data in database from the dump.
 g) run clone2embl -getall -start 0 -end 1 
 
-
+ 
