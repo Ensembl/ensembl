@@ -12,10 +12,12 @@
 #  from a renamed source table
 #  from the same name source table   
 
-# configure the transfer with
+# configure the transfer (and the order) with
 
 # table_rename( "oldname", "newname" ) 
 # table_skip( "tablename" )
+# do_first( "newtable1", "newtable2", "newtable3" )
+
 
 # Each standard table transfer 
 #  Either do a custom select statement
@@ -108,8 +110,16 @@ sub transfer {
   # first we should check if all standard trnasfers can go
   # otherwise testing this is a pain
   $self->check_possible_transfer();
+  my @ordered_tables = $self->{targetdb}{dofirst};
+  my %all_tables = %{$self->{targetdb}{tables}};
+  for my $tablename ( @ordered_tables ) {
+    delete $all_tables{$tablename};
+  }
+  for my $tablename ( keys %all_tables ) {
+    push( @ordered_tables, $tablename );
+  }
 
-  for my $tablename ( keys %{$self->{targetdb}{tables}} ) {
+  for my $tablename ( @ordered_tables ) {
     my $skip = 0;
     print STDERR "Transfer $tablename ";
 
@@ -395,5 +405,11 @@ sub big_table {
   $self->{targetdb}{tables}{$table}{its_a_big_un} = 1;
 }
 
+
+sub do_first {
+  my $self = shift;
+  my @ordered_table_list= @_;
+  $self->{targetdb}{dofirst} = \@ordered_table_list;
+}
 
 1;
