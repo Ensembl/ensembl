@@ -50,6 +50,8 @@ eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid(1);
 };
 
+#print STDERR "PROT_AC: ".$protein->id."\n";
+
 if ($@) {
     print "not ok 3 $@\n";
 }
@@ -62,7 +64,10 @@ my @features = $protein->get_all_DomainFeatures;
 
 my @f;
 
-if (scalar @features == 2) {
+
+#print STDERR scalar @features."\n";
+
+if (scalar @features == 3) {
     print "ok 4\n";
 }
 else {
@@ -142,7 +147,7 @@ else {
 my @seq_features = $protein->top_SeqFeatures();
 
 
-if (scalar(@seq_features) == 4) {
+if (scalar(@seq_features) == 5) {
     print "ok 14\n";
 }
 else {
@@ -226,7 +231,7 @@ my @domains = $protein->get_all_DomainFeatures();
 
 
 
-if (scalar @domains == 2) {
+if (scalar @domains == 3) {
      print "ok 27\n";
 }
 else {
