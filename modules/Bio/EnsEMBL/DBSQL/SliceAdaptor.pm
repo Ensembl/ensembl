@@ -647,6 +647,36 @@ sub deleteObj {
 
 
 
+=head2 fetch_by_band
+
+ Title   : fetch_by_band
+ Usage   :
+ Function: create a Slice representing a series of bands
+ Example :
+ Returns :
+ Args    : the band name
+
+=cut
+
+sub fetch_by_band {
+  my ($self,$band) = @_;
+
+  my $sth = $self->db->prepare
+        ("select s.name,max(k.seq_region_id)-min(k.seq_region_id, min(k.seq_region_start), max(k.seq_region_id) " .
+         "from karyotype as k " .
+         "where k.band like ? and k.seq_region_id = s.seq_region_id");
+
+  $sth->execute( "$band%" );
+  my ( $seq_region_name, $discrepancy, $seq_region_start, $seq_region_end) = $sth->fetchrow_array;
+
+  if($seq_region_name && $discrepancy>0) {
+    throw("Band maps to multiple seq_regions");
+  } else {
+    return $self->fetch_by_region('toplevel',$seq_region_name,$seq_region_start,$seq_region_end);
+  }
+  throw("Band not recognised in database");
+}
+
 =head2 fetch_by_chr_band
 
  Title   : fetch_by_chr_band
@@ -661,12 +691,12 @@ sub deleteObj {
 sub fetch_by_chr_band {
   my ($self,$chr,$band) = @_;
 
-  my $chr_slice = $self->fetch_by_region('chromosome', $chr);
+  my $chr_slice = $self->fetch_by_region('toplevel', $chr);
 
   my $seq_region_id = $self->get_seq_region_id($chr_slice);
 
   my $sth = $self->db->prepare
-        ("select min(k.chr_start), max(k.chr_end) " .
+        ("select min(k.seq_region_start), max(k.seq_region_end) " .
          "from karyotype as k " .
          "where k.seq_region_id = ? and k.band like ?");
 
@@ -674,13 +704,45 @@ sub fetch_by_chr_band {
   my ( $slice_start, $slice_end) = $sth->fetchrow_array;
 
   if(defined $slice_start) {
-    return $self->fetch_by_region('chromosome',$chr,$slice_start,$slice_end);
+    return $self->fetch_by_region('toplevel',$chr,$slice_start,$slice_end);
   }
 
   throw("Band not recognised in database");
 }
 
 
+
+=head2 fetch_by_exon_stable_id
+
+  Arg [1]    : string $exonid
+               The stable id of the exon around which the slice is 
+               desired
+  Arg [2]    : (optional) int $size
+               The length of the flanking regions the slice should encompass 
+               on either side of the exon (0 by default)
+  Example    : $slc = $sa->fetch_by_exon_stable_id('ENSE00000302930',10);
+  Description: Creates a slice around the region of the specified exon. 
+               If a context size is given, the slice is extended by that 
+               number of basepairs on either side of the
+               transcript.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : Thrown if the exon is not in the database.
+  Caller     : general
+
+=cut
+
+sub fetch_by_exon_stable_id{
+  my ($self,$exonid,$size) = @_;
+
+  throw('Exon argument is required.') if(!$exonid);
+
+  my $ea = $self->db->get_ExonAdaptor;
+  my $exon = $ea->fetch_by_stable_id($exonid);
+
+  throw("Exon [$exonid] does not exist in DB.") if(!$exon);
+
+  return $self->fetch_by_Feature($exon, $size);
+}
 
 =head2 fetch_by_transcript_stable_id
 
@@ -911,7 +973,6 @@ sub fetch_by_misc_feature_attribute {
 
   return $self->fetch_by_Feature($feat, $size);
 }
-
 
 =head2 fetch_normalized_slice_projection
 
