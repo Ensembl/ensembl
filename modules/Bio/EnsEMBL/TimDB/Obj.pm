@@ -62,9 +62,9 @@ sub _initialize {
     my($self,@args)=@_;
 
     # attempt to use _rearrange - if can't use old method and warn
-    my($raclones,$noacc,$test,$part,$species,$freeze,$nogene);
+    my($raclones,$noacc,$test,$part,$species,$freeze,$nogene,$nosecure);
     if(grep{/^\-/}@args){
-	($raclones,$noacc,$test,$part,$species,$freeze,$nogene)=
+	($raclones,$noacc,$test,$part,$species,$freeze,$nogene,$nosecure)=
 	    $self->_rearrange([qw(CLONES
 				  NOACC
 				  TEST
@@ -72,6 +72,7 @@ sub _initialize {
 				  SPECIES
 				  FREEZE
 				  NOGENE
+				  NOSECURE
 				  )],@args);
     }else{
 	$self->warn("old parameter style deprecated - update to use \'-clones\' etc");
@@ -84,6 +85,8 @@ sub _initialize {
     $self->{'_freeze'}=$freeze;
     if(!$nogene){$nogene=0;}
     $self->{'_nogene'}=$nogene;
+    if(!$nosecure){$nosecure=0;}
+    $self->{'_nosecure'}=$nosecure;
 
     # if we have a list of clones and not test, write a lock file
     if(!$test && $raclones){
@@ -207,44 +210,63 @@ sub _initialize {
   # but also need to check clones in list provided to see if they are valid
   # list needs to include ones with invalid SV's as might be called
   # for dumping before having accession numbers
-  my @clones=$self->get_all_Clone_id(1);
-  if(!$raclones){
-      $raclones=\@clones;
-  }else{
-      my %clones=map {$_,1} @clones;
-      my @okclones;
-      foreach my $clone (@$raclones){
-	  next unless $clone;
-	  my $fok;
-	  if($clones{$clone}){
-	      # see if maps directly
-	      push(@okclones,$clone);
-	      $fok=1;
-	  }else{
-	      # see if maps via a translation
-	      my($clone2)=$self->get_id_acc($clone,1);
-	      next if $clone2 eq 'unk';
-	      if($clones{$clone2}){
-		  push(@okclones,$clone2);
-		  $fok=1;
-	      }
-	  }
-	  if(!$fok){
-	      $self->warn("Clone $clone is not recognised or locked");
-	  }
-      }
-      $raclones=\@okclones;
-  }
+    if($self->{'_nosecure'} && $raclones){
+	$self->warn("SOME CLONE CHECKING IS OFF - I hope you know what you are doing");
+	my @okclones;
+	foreach my $clone (@$raclones){
+	    next unless $clone;
+	    my($clone2)=$self->get_id_acc($clone,1);
+	    next if $clone2 eq 'unk';
+	    push(@okclones,$clone2);
+	}
+	$raclones=\@okclones;
+    }else{
+	my @clones=$self->get_all_Clone_id(1);
+	if(!$raclones){
+	    $raclones=\@clones;
+	}else{
+	    my %clones=map {$_,1} @clones;
+	    my @okclones;
+	    foreach my $clone (@$raclones){
+		next unless $clone;
+		my $fok;
+		if($clones{$clone}){
+		    # see if maps directly
+		    push(@okclones,$clone);
+		    $fok=1;
+		}else{
+		    # see if maps via a translation
+		    my($clone2)=$self->get_id_acc($clone,1);
+		    next if $clone2 eq 'unk';
+		    if($clones{$clone2}){
+			push(@okclones,$clone2);
+			$fok=1;
+		    }
+		}
+		if(!$fok){
+		    $self->warn("Clone $clone is not recognised or locked");
+		}
+	    }
+	    $raclones=\@okclones;
+	}
 
-  # keep a record of which clones have been loaded
-  %{$self->{'_active_clones'}}=map{$_,1} @$raclones;
+    }
 
-  # doing conversion acc->id->acc or id->acc, need it here too
-  $p->map_contigorder($self,\@clones);
+    # keep a record of which clones have been loaded
+    %{$self->{'_active_clones'}}=map{$_,1} @$raclones;
 
-  #$self->map_etg;
+    # doing conversion acc->id->acc or id->acc, need it here too
+    if($self->{'_nosecure'}){
+	$self->warn("Contigorder reading is OFF");
+    }else{
+	# ok?? previously was loading everything here
+	# was \@clones;
+	$p->map_contigorder($self,$raclones);
+    }
 
-  return $make; # success - we hope!
+    #$self->map_etg;
+    
+    return $make; # success - we hope!
 }
 
 

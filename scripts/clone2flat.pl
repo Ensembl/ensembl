@@ -35,6 +35,8 @@
     -nogene    Allows clones to be read if dna has been updated successfully
                and searches completed, but before genes have been built and clone unlocked
 
+    -nosecure
+
     -dbtype    Database type (valid types are timdb, ace)
 
     -host      host name for database (gets put as host= in locator)
@@ -135,6 +137,7 @@ my $oldtimdb=0;
 my $species='';
 my $freeze=0;
 my $nogene=0;
+my $nosecure=0;
 
 # defaults for msql (rdb) access
 # msql was 'croc'
@@ -184,6 +187,7 @@ my $port      = '410000';
 	     'oldtimdb'  => \$oldtimdb,
 	     'freeze:n'  => \$freeze,
 	     'nogene'    => \$nogene,
+	     'nosecure'  => \$nosecure,
 	     ) or exec('perldoc', $0);
 
 if ($help){
@@ -244,6 +248,7 @@ if ( $usetimdb == 1 ) {
 					    -species => $species,
 					    -freeze => $freeze,
 					    -nogene => $nogene,
+					    -nosecure => $nosecure,
 					    );
     }else{
 	$db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
