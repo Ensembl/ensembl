@@ -28,11 +28,10 @@ Creation:
 Manipulation:
 
      # Returns an array of Exon objects
-     my @exons = @{$tran->get_all_Exons}     
+     my @exons = @{$tran->get_all_Exons};
      # Returns the peptide translation of the exons as a Bio::Seq
-     my $pep   = $tran->translate()       
-     # Sorts exons into order (forward for + strand, reverse for - strand)
-     $tran->sort()                        
+     my $pep   = $tran->translate();
+
 
 =head1 CONTACT
 
@@ -275,12 +274,20 @@ sub external_name {
 }
 
 
+=head2 is_known
+
+  Args       : none
+  Example    : none
+  Description: returns true if this transcript has a display_xref
+  Returntype : 0,1
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub is_known {
   my $self = shift;
-  for my $entry ( @{$self->get_all_DBLinks()} ) {
-    return 1 if $entry->status =~ /KNOWN/ ;
-  }
-  return 0;
+  return ($self->{'display_xref'}) ? 1 : 0;
 }
 
 
@@ -290,7 +297,6 @@ sub type {
   $self->{'type'} = shift if( @_ );
   return $self->{'type'};
 }
-
 
 
 =head2 display_xref
@@ -305,18 +311,10 @@ sub type {
 =cut
 
 sub display_xref {
-
-    my $self = shift;
-    if( @_ ) {
-      $self->{'display_xref'} = shift;
-    } elsif( exists $self->{'display_xref'} ) {
-      return $self->{'display_xref'};
-    } 
-    return $self->{'display_xref'};
+  my $self = shift;
+  $self->{'display_xref'} = shift if(@_);
+  return $self->{'display_xref'};
 }
-
-
-
 
 
 =head2 translation
@@ -1745,13 +1743,10 @@ sub transfer {
 
 sub recalculate_coordinates {
   my $self = shift;
-  
-  if( ! defined $self->{'_trans_exon_array'} ) {
-    warning( "Cant recalculate position without exons" );
-    return;
-  }
-  
-  my $exons = $self->{'_trans_exon_array'};
+
+  my $exons = $self->get_all_Exons();
+
+  return if(!$exons || !@$exons);
 
   my ( $slice, $start, $end, $strand );
   $slice = $exons->[0]->slice();
