@@ -21,8 +21,8 @@ Bio::EnsEMBL::Chromosome
 
 Contains very basic information of a chromosome and access methods
 for global features of a chromosome. It does not have the sequence or
-more detailed information - check out StaticGoldenPathAdaptor for that
-(you will want to make a virtual contig of the chromosome)
+more detailed information - check out SliceAdaptor for that (you will
+want to make a slice of the chromosome)
 
     
 =head1 CONTACT
