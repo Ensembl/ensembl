@@ -117,8 +117,8 @@ sub fetch_by_stable_id {
 
 sub fetch_by_geneId {
   my ( $self, $geneId ) = @_;
-  my $hashRef;
   my %exons;
+  my $hashRef;
   my ( $currentId, $currentTranscript );
 
   if( !defined $geneId ) {
@@ -149,8 +149,6 @@ sub fetch_by_geneId {
 
   my $sth = $self->prepare( $query );
   $sth->execute();
-
-  my %exons;
 
   while( $hashRef = $sth->fetchrow_hashref() ) {
     if( ! exists $exons{ $hashRef->{exon_id} } ) {
