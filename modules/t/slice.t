@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 48;
+	plan tests => 49;
 }
 
 use TestUtils qw( debug );
@@ -285,3 +285,24 @@ ok( $super_slices->[0]->chr_start() == 29591966 );
 debug( "Supercontig name ".$super_slices->[0]->name() );
 
 ok( $super_slices->[0]->name() eq "NT_028392" );
+
+#
+# 49 get_base_count
+#
+my $hash = $slice->get_base_count;
+my $a = $hash->{'a'};
+my $c = $hash->{'c'};
+my $t = $hash->{'t'};
+my $g = $hash->{'g'};
+my $n = $hash->{'n'};
+my $gc_content = $hash->{'%gc'};
+
+debug( "Base count: a=$a c=$c t=$t g=$g n=$n \%gc=$gc_content");
+ok($a == 234371 
+   && $c == 224761 
+   && $t == 243734 
+   && $g == 227135 
+   && $n == 0 
+   && $gc_content == 48.59 
+   && $a+$c+$t+$g+$n == $slice->length);
+
