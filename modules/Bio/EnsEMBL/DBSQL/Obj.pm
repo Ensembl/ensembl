@@ -64,6 +64,7 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use DBI;
+use Bio::EnsEMBL::DB::ObjI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
