@@ -152,7 +152,7 @@ sub fetch_by_stable_id {
    my $constraint = "gsi.stable_id = \"$id\"";
 
    # should be only one :-)
-   my ($gene) = @{$self->SUPER::generic_fetch( $constraint )};
+   my ($gene) = @{$self->generic_fetch( $constraint )};
 
    if( !$gene ) { return undef }
 
@@ -244,7 +244,7 @@ sub fetch_all_by_domain {
   }
 
   my $constraint = "g.gene_id in (".join( ",", @gene_ids ).")";
-  return $self->SUPER::generic_fetch( $constraint );
+  return $self->generic_fetch( $constraint );
 }
 
 
@@ -407,62 +407,58 @@ sub fetch_all_by_DBEntry {
 =cut
 
 sub store {
-   my ( $self, $gene ) = @_;
-   my %done;
+  my ( $self, $gene ) = @_;
 
-   my $transcriptAdaptor = $self->db->get_TranscriptAdaptor();
+  if(!ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
+    throw("Must store a gene object, not a $gene");
+  }
 
-   if( !defined $gene || !ref $gene || !$gene->isa('Bio::EnsEMBL::Gene') ) {
-       throw("Must store a gene object, not a $gene");
-   }
-   if( !defined $gene->analysis ) {
-       throw("Genes must have an analysis object!");
-   }
+  my $db = $self->db();
 
-   my $aA = $self->db->get_AnalysisAdaptor();
-   my $analysisId = $aA->exists( $gene->analysis() );
+  if($gene->is_stored($db)) {
+    return $gene->dbID();
+  }
 
-   if( defined $analysisId ) {
-     $gene->analysis()->dbID( $analysisId );
-   } else {
-     $analysisId = $self->db->get_AnalysisAdaptor()->store( $gene->analysis );
-   }
+  #force lazy-loading of transcripts and exons, and ensure coords are correct
+  $gene->recalculate_coordinates();
 
-   if ( !defined $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
-       throw("$gene is not a EnsEMBL gene - not writing!");
-   }
- 
-   my $type = "";
+  my $analysis = $gene->analysis();
+  throw("Genes must have an analysis object.") if(!defined($analysis));
 
-   if (defined($gene->type)) {
-       $type = $gene->type;
-   }
-   my $seq_region_id = $self->db()->get_SliceAdaptor()->
-     get_seq_region_id( $gene->slice() );
-   if( ! $seq_region_id ) {
-     throw( "Attached slice is not valid in database" );
-   }
+  my $analysis_id;
+  if($analysis->is_stored($db)) {
+    $analysis_id = $analysis->dbID();
+  } else {
+    $analysis_id = $db->get_AnalysisAdaptor->store($analysis);
+  }
 
-   my $store_gene_sql = "
-        INSERT INTO gene
-           SET type = ?,
-               analysis_id = ?,
-               seq_region_id = ?,
-               seq_region_start = ?,
-               seq_region_end = ?,
-               seq_region_strand = ? ";
+  my $type = $gene->type || "";
 
-   my $sth2 = $self->prepare( $store_gene_sql );
-   $sth2->execute(
-		  "$type", 
-		  $analysisId, 
+  my $original = $gene;
+  my $seq_region_id;
+  ($gene, $seq_region_id) = $self->_pre_store($gene);
+
+  my $store_gene_sql =
+        "INSERT INTO gene " .
+           "SET type = ?, " .
+               "analysis_id = ?, " .
+               "seq_region_id = ?, " .
+               "seq_region_start = ?, " .
+               "seq_region_end = ?, " .
+               "seq_region_strand = ? ";
+
+  my $sth = $self->prepare( $store_gene_sql );
+   $sth->execute(
+		  "$type",
+		  $analysis_id,
 		  $seq_region_id,
 		  $gene->start(),
 		  $gene->end(),
 		  $gene->strand()
-		  );
+		 );
+  $sth->finish();
 
-   my $gene_dbID = $sth2->{'mysql_insertid'};
+   my $gene_dbID = $sth->{'mysql_insertid'};
 
    #
    # store stable ids if they are available
@@ -472,26 +468,39 @@ sub store {
      my $statement = "INSERT INTO gene_stable_id
                          SET gene_id = ?,
                              stable_id = ?,
-                             version = ?,
-                             created = NOW(),
-                             modified = NOW()";
-     my $sth = $self->prepare($statement);
+                             version = ?";
+
+     $sth = $self->prepare($statement);
      $sth->execute( $gene_dbID, $gene->stable_id(), $gene->version() );
+     $sth->finish();
    }
 
+
+  #
+  # store the gene description associated with this gene if there is one
+  #
+  my $desc = $gene->description();
+  if(defined($desc)) {
+    $sth = $self->prepare("INSERT INTO gene_description " .
+                            " SET gene_id = ?, " .
+                            " description = ?" );
+    $sth->execute($gene_dbID, $desc);
+    $sth->finish();
+  }
 
    #
    # store the dbentries associated with this gene
    #
-   my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
+   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
    foreach my $dbe ( @{$gene->get_all_DBEntries} ) {
      $dbEntryAdaptor->store( $dbe, $gene_dbID, "Gene" );
    }
 
+
    # we allow transcripts not to share equal exons and instead have copies
    # For the database we still want sharing though, to have easier time with
-   # stable ids. So we need to have a step to merge exons together before store.
+   # stable ids. So we need to have a step to merge exons together before store
    my %exons;
 
    foreach my $trans ( @{$gene->get_all_Transcripts} ) {
@@ -499,25 +508,25 @@ sub store {
        my $key = $e->start()."-".$e->end()."-".$e->strand()."-".$e->phase()."-".$e->end_phase();
 
        if( exists $exons{ $key } ) {
-	 $trans->swap_exons( $e, $exons{$key} );
+         $trans->swap_exons( $e, $exons{$key} );
        } else {
-	 $exons{$key} = $e;
+         $exons{$key} = $e;
        }
      }
    }
 
-   foreach my $t ( @{$gene->get_all_Transcripts()} ) {
-     $transcriptAdaptor->store($t,$gene_dbID );
-   }
+  my $transcript_adaptor = $db->get_TranscriptAdaptor();
 
-   $gene->adaptor( $self );
-   $gene->dbID( $gene_dbID );
+  foreach my $t ( @{$gene->get_all_Transcripts()} ) {
+    $transcript_adaptor->store($t,$gene_dbID );
+  }
 
-   # should we store gene description? Not strictly necessary, as its later 
-   # added to the database. But maybe just for completeness and it should 
-   # definatly go into update.
+   #set the adaptor and dbID on the original passed in gene not the transfered
+   #copy
+   $original->adaptor( $self );
+   $original->dbID( $gene_dbID );
 
-   return $gene->dbID;
+   return $gene_dbID;
 }
 
 

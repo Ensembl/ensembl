@@ -393,32 +393,8 @@ sub store {
     }
 
     my $original = $rf;
-
-    #move the feature so that its coords are relative to the start
-    #of the seq_region prior to storing.
-    if($slice->start != 1 || $slice->strand != 1) {
-      #get a slice of the entire seq_region
-      $slice = $sa->fetch_by_region($slice->coord_system->name(),
-                                    $slice->seq_region_name(),
-                                    undef, #start
-                                    undef, #end
-                                    undef, #strand
-                                    $slice->coord_system->version());
-
-      $rf = $rf->transfer($slice);
-
-      if(!$rf) {
-        throw('Could not transfer RepeatFeature to slice of ' .
-              'entire seq_region prior to storing');
-      }
-    }
-
-    my $seq_region_id = $sa->get_seq_region_id($slice);
-
-    if(!$seq_region_id) {
-      throw("RepeatFeature cannot be stored because attached slice is on a " .
-            "seq_region not present in this database");
-    }
+    my $seq_region_id;
+    ($rf, $seq_region_id) = $self->_pre_store($rf);
 
     $sth->execute($seq_region_id,
                   $rf->start,

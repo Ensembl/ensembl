@@ -272,69 +272,90 @@ sub store {
    my ($self,$transcript,$gene_dbID) = @_;
 
    if( ! ref $transcript || !$transcript->isa('Bio::EnsEMBL::Transcript') ) {
-       throw("$transcript is not a EnsEMBL transcript - not dumping!");
+     throw("$transcript is not a EnsEMBL transcript - not storing");
    }
 
-   # store translation
-   # then store the transcript
-   # then store the exon_transcript table
+   my $db = $self->db();
 
-   my $translation = $transcript->translation();
+   if($transcript->is_stored($db)) {
+     return $transcript->dbID();
+   }
+
+   #force lazy-loading of exons and ensure coords are correct
+   $transcript->recalculate_coordinates();
+
+   #
+   # Store exons - this needs to be done before the possible transfer
+   # of the transcript to another slice (in _prestore()).Transfering results
+   # in copies  being made of the exons and we need to preserve the object
+   # identity of the exons so that they are not stored twice by different
+   # transcripts.
+   #
    my $exons = $transcript->get_all_Exons();
-   my $exonAdaptor = $self->db->get_ExonAdaptor();
+   my $exonAdaptor = $db->get_ExonAdaptor();
    foreach my $exon ( @{$exons} ) {
      $exonAdaptor->store( $exon );
    }
 
-   my $seq_region_id = $self->db()->get_SliceAdaptor()->
-     get_seq_region_id( $transcript->slice() );
-   if( ! $seq_region_id ) {
-     throw( "Attached slice is not valid in database" );
-   }
+   my $original = $transcript;
+   my $seq_region_id;
+   ($transcript, $seq_region_id) = $self->_pre_store($transcript);
 
    # first store the transcript w/o a display xref
-   # the display xref needs to be set after xrefs are stored which needs to 
+   # the display xref needs to be set after xrefs are stored which needs to
    # happen after transcript is stored...
 
    my $xref_id = 0;
 
-   # ok - now load this line in
-   my $tst = $self->prepare("
-        insert into transcript ( gene_id, seq_region_id, seq_region_start,
-                                 seq_region_end, seq_region_strand )
-        values ( ?, ?, ?, ?, ? )
-        ");
+   #
+   #store transcript
+   #
+   my $tst = $self->prepare(
+        "insert into transcript ( gene_id, seq_region_id, seq_region_start, " .
+                                 "seq_region_end, seq_region_strand ) " .
+        "values ( ?, ?, ?, ?, ? )");
 
-   $tst->execute( $gene_dbID, $seq_region_id, $transcript->start(), 
-		  $transcript->end(), $transcript->strand() );
+   $tst->execute( $gene_dbID, $seq_region_id, $transcript->start(),
+                  $transcript->end(), $transcript->strand() );
+   $tst->finish();
 
    my $transc_dbID = $tst->{'mysql_insertid'};
 
+   #
+   # store translation
+   #
+   my $translation = $transcript->translation();
    if( defined $translation ) {
-     $self->db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
+     $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
    }
 
-   #store the xrefs/object xref mapping
-   my $dbEntryAdaptor = $self->db->get_DBEntryAdaptor();
+   #
+   # store the xrefs/object xref mapping
+   #
+   my $dbEntryAdaptor = $db->get_DBEntryAdaptor();
 
    foreach my $dbe ( @{$transcript->get_all_DBEntries} ) {
      $dbEntryAdaptor->store( $dbe, $transc_dbID, "Transcript" );
    }
 
    #
-   # Update transcript to point to display xref if it is set 
+   # Update transcript to point to display xref if it is set
    #
    if(my $dxref = $transcript->display_xref) {
      if(my $dxref_id = $dbEntryAdaptor->exists($dxref)) {
        my $sth = $self->prepare( "update transcript set display_xref_id = ?".
                                  " where transcript_id = ?");
        $sth->execute($dxref_id, $transc_dbID);
+       $sth->finish();
        $dxref->dbID($dxref_id);
        $dxref->adaptor($dbEntryAdaptor);
      }
    }
 
-   my $etst = 
+   #
+   # Link transcript to exons in exon_transcript table
+   #
+   my $etst =
      $self->prepare("insert into exon_transcript (exon_id,transcript_id,rank)"
                     ." values (?,?,?)");
    my $rank = 1;
@@ -343,6 +364,11 @@ sub store {
      $rank++;
    }
 
+   $etst->finish();
+
+   #
+   # Store stable_id
+   #
    if (defined($transcript->stable_id)) {
      if (!defined($transcript->version)) {
        throw("Trying to store incomplete stable id information for " ..
@@ -354,10 +380,14 @@ sub store {
          " VALUES(?, ?, ?)";
      my $sth = $self->prepare($statement);
      $sth->execute($transc_dbID, $transcript->stable_id, $transcript->version);
+     $sth->finish();
    }
 
-   $transcript->dbID( $transc_dbID );
-   $transcript->adaptor( $self );
+   #update the original transcript object - not the transfered copy that
+   #we might have created
+   $original->dbID( $transc_dbID );
+   $original->adaptor( $self );
+
    return $transc_dbID;
 }
 

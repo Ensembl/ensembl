@@ -240,7 +240,6 @@ sub store {
   my ($self, @mfs) = @_;
 
   my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
-  my $slice_adaptor = $self->db->get_SliceAdaptor();
 
   foreach my $mf (@mfs) {
 
@@ -278,40 +277,9 @@ sub store {
 
     my $analysis_id = $analysis->dbID;
 
-    my $slice = $mf->slice;
-
-    if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-      throw('MarkerFeature must have a slice to be stored');
-    }
-
-    # make sure that the feature coordinates are relative to
-    # the start of the seq_region that the prediction transcript is on
-    if($slice->start != 1 || $slice->strand != 1) {
-      #move the feature onto a slice of the entire seq_region
-      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
-                                               $slice->seq_region_name(),
-                                               undef, #start
-                                               undef, #end
-                                               undef, #strand
-                                              $slice->coord_system->version());
-
-      $mf = $mf->transfer($slice);
-
-      if(!$mf) {
-        throw('Could not transfer MarkerFeature to slice of ' .
-              'entire seq_region prior to storing');
-      }
-    }
-
-    my $seq_region_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
-
-    if(!$seq_region_id) {
-      throw('Attached slice\'s seq_region is not in database.');
-    }
-
-    #
-    # Everything looks ok so store
-    #
+    my $original = $mf;
+    my $seq_region_id;
+    ($mf, $seq_region_id) = $self->_pre_store($mf);
 
     my $sth =
       $self->prepare("INSERT INTO marker_feature (marker_id,
@@ -324,8 +292,8 @@ sub store {
 
     my $dbID = $sth->{'mysql_insertid'};
 
-    $mf->dbID($dbID);
-    $mf->adaptor($self);
+    $original->dbID($dbID);
+    $original->adaptor($self);
   }
 }
 

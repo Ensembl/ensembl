@@ -119,32 +119,8 @@ sub store{
     }
 
     my $original = $feat;
-
-    # make sure that the feature coordinates are relative to
-    # the start of the seq_region that the prediction transcript is on
-    if($slice->start != 1 || $slice->strand != 1) {
-      #move the feature onto a slice of the entire seq_region
-      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
-                                               $slice->seq_region_name(),
-                                               undef, #start
-                                               undef, #end
-                                               undef, #strand
-                                              $slice->coord_system->version());
-
-      $feat = $feat->transfer($slice);
-
-      if(!$feat) {
-        throw('Could not transfer DnaDnaAlignFeature to slice of ' .
-              'entire seq_region prior to storing');
-      }
-    }
-
-    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
-
-    if(!$seq_region_id) {
-      throw('Feature is on seq_region which is not in this database: ' .
-            $slice->name() . " and may not be stored.");
-    }
+    my $seq_region_id;
+    ($feat, $seq_region_id) = $self->_pre_store($feat);
 
     $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
 		   $feat->hstart, $feat->hend, $feat->hseqname,

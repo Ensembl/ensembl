@@ -396,6 +396,74 @@ sub fetch_all_by_Slice_constraint {
 
 
 #
+# Helper function containing some common feature storing functionality
+#
+# Given a Feature this will return a copy (or the same feature if no changes 
+# to the feature are needed) of the feature which is relative to the start
+# of the seq_region it is on. The seq_region_id of the seq_region it is on
+# is also returned.
+#
+# This method will also ensure that the database knows which coordinate
+# systems that this feature is stored in.
+#
+
+sub _pre_store {
+  my $self    = shift;
+  my $feature = shift;
+
+  if(!ref($feature) || !$feature->isa('Bio::EnsEMBL::Feature')) {
+    throw('Expected Feature argument.');
+  }
+
+  my $slice_adaptor = $self->db->get_SliceAdaptor();
+  my $slice = $feature->slice();
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Feature must be attached to Slice to be stored.');
+  }
+
+  # make sure that the feature coordinates are relative to
+  # the start of the entire seq_region
+  if($slice->start != 1 || $slice->strand != 1) {
+    #move the feature onto a slice of the entire seq_region
+    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                             $slice->seq_region_name(),
+                                             undef, #start
+                                             undef, #end
+                                             undef, #strand
+                                             $slice->coord_system->version());
+
+    $feature = $feature->transfer($slice);
+
+    if(!$feature) {
+      throw('Could not transfer Feature to slice of ' .
+            'entire seq_region prior to storing');
+    }
+  }
+
+  #
+  # Ensure that this type of feature is known to be stored in this coord
+  # system.
+  #
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $cs = $slice->coord_system;
+
+  my ($tab) = $self->_tables();
+  my $tabname = $tab->[0];
+
+  $csa->add_feature_table($cs, $tabname);
+
+  my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+
+  if(!$seq_region_id) {
+    throw('Feature is associated with seq_region which is not in this DB.');
+  }
+
+  return ($feature, $seq_region_id);
+}
+
+
+#
 # Given a list of features checks if they are in the correct coord system
 # by looking at the first features slice.  If they are not then they are
 # converted and placed on the slice.
@@ -620,23 +688,22 @@ sub remove_by_Slice {
 
 
 
-=head2 _tables
-
-  Args       : none
-  Example    : $tablename = $self->_table_name()
-  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
-               this method.  It should list of [tablename, alias] pairs.  
-               Additionally the primary table (with the dbID, analysis_id, and
-               score) should be the first table in the list.
-               e.g:
-               ( ['repeat_feature',   'rf'],
-                 ['repeat_consensus', 'rc']);
-               used to obtain features.  
-  Returntype : list of [tablename, alias] pairs
-  Exceptions : thrown if not implemented by subclass
-  Caller     : BaseFeatureAdaptor::generic_fetch
-
-=cut
+#_tables
+#
+#  Args       : none
+#  Example    : $tablename = $self->_table_name()
+#  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
+#               this method.  It should list of [tablename, alias] pairs.  
+#               Additionally the primary table (with the dbID, analysis_id, and
+#               score) should be the first table in the list.
+#               e.g:
+#               ( ['repeat_feature',   'rf'],
+#                 ['repeat_consensus', 'rc']);
+#               used to obtain features.  
+#  Returntype : list of [tablename, alias] pairs
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
+#
 
 sub _tables {
   my $self = shift;
@@ -647,18 +714,17 @@ sub _tables {
 }
 
 
-=head2 _columns
-
-  Args       : none
-  Example    : $tablename = $self->_columns()
-  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
-               this method.  It should return a list of columns to be used
-               for feature creation
-  Returntype : list of strings
-  Exceptions : thrown if not implemented by subclass
-  Caller     : BaseFeatureAdaptor::generic_fetch
-
-=cut
+#_columns
+#
+#  Args       : none
+#  Example    : $tablename = $self->_columns()
+#  Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
+#               this method.  It should return a list of columns to be used
+#               for feature creation
+#  Returntype : list of strings
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
+#
 
 sub _columns {
   my $self = shift;
@@ -669,19 +735,18 @@ sub _columns {
 
 
 
-=head2 _default_where_clause
-
-  Arg [1]    : none
-  Example    : none
-  Description: May be overridden to provide an additional where constraint to 
-               the SQL query which is generated to fetch feature records.
-               This constraint is always appended to the end of the generated
-               where clause
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+# _default_where_clause
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: May be overridden to provide an additional where constraint to 
+#               the SQL query which is generated to fetch feature records.
+#               This constraint is always appended to the end of the generated
+#               where clause
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
+#
 
 sub _default_where_clause {
   my $self = shift;
@@ -691,18 +756,17 @@ sub _default_where_clause {
 
 
 
-=head2 _left_join
+# _left_join
 
-  Arg [1]    : none
-  Example    : none
-  Description: Can be overridden by a subclass to specify any left joins
-               which should occur. The table name specigfied in the join
-               must still be present in the return values of
-  Returntype : a {'tablename' => 'join condition'} pair
-  Exceptions : none
-  Caller     : general
-
-=cut
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Can be overridden by a subclass to specify any left joins
+#               which should occur. The table name specigfied in the join
+#               must still be present in the return values of
+#  Returntype : a {'tablename' => 'join condition'} pair
+#  Exceptions : none
+#  Caller     : general
+#
 
 sub _left_join {
   my $self = shift;
@@ -712,19 +776,17 @@ sub _left_join {
 
 
 
-=head2 _final_clause
+#_final_clause
 
-  Arg [1]    : none
-  Example    : none
-  Description: May be overriden to provide an additional clause to the end
-               of the SQL query used to fetch feature records.  
-               This is useful to add a required ORDER BY clause to the 
-               query for example.
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+#  Arg [1]    : none
+#  Example    : none
+#  Description: May be overriden to provide an additional clause to the end
+#               of the SQL query used to fetch feature records.  
+#               This is useful to add a required ORDER BY clause to the 
+#               query for example.
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
 
 sub _final_clause {
   my $self = shift;
@@ -732,19 +794,18 @@ sub _final_clause {
   return '';
 }
 
-=head2 _objs_from_sth
 
-  Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
-               for each of the columns specified by the _columns method
-  Example    : my @feats = $self->_obj_from_hashref
-  Description: ABSTRACT PROTECTED The subclass is responsible for implementing
-               this method.  It should take in a DBI row hash reference and
-               return a list of created features in contig coordinates.
-  Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
-  Exceptions : thrown if not implemented by subclass
-  Caller     : BaseFeatureAdaptor::generic_fetch
+#_objs_from_sth
 
-=cut
+#  Arg [1]    : DBI::row_hashref $hashref containing key-value pairs 
+#               for each of the columns specified by the _columns method
+#  Example    : my @feats = $self->_obj_from_hashref
+#  Description: ABSTRACT PROTECTED The subclass is responsible for implementing
+#               this method.  It should take in a DBI row hash reference and
+#               return a list of created features in contig coordinates.
+#  Returntype : list of Bio::EnsEMBL::*Features in contig coordinates
+#  Exceptions : thrown if not implemented by subclass
+#  Caller     : BaseFeatureAdaptor::generic_fetch
 
 sub _objs_from_sth {
   my $self = shift;
@@ -753,17 +814,16 @@ sub _objs_from_sth {
              . " subclass of BaseFeatureAdaptor");
 }
 
-=head2 deleteObj
+# deleteObj
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Cleans up internal caches and references to other objects so
+#               that correct garbage collection may occur.
+#  Returntype : none
+#  Exceptions : none
+#  Caller     : Bio::EnsEMBL::DBConnection::deleteObj
 
-  Arg [1]    : none
-  Example    : none
-  Description: Cleans up internal caches and references to other objects so
-               that correct garbage collection may occur.
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBConnection::deleteObj
-
-=cut
 
 sub deleteObj {
   my $self = shift;

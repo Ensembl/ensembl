@@ -160,8 +160,6 @@ sub fetch_all_by_Transcript {
 
 
 
-
-
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon
@@ -180,7 +178,7 @@ sub store {
   my ( $self, $exon ) = @_;
 
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
-    throw("$exon is not a EnsEMBL exon - not dumping!");
+    throw("$exon is not a EnsEMBL exon - not storing.");
   }
 
   my $db = $self->db();
@@ -204,38 +202,10 @@ sub store {
   my $exonst = $self->prepare($exon_sql);
 
   my $exonId = undef;
-  # normal storing
-
-  my $slice = $exon->slice();
-
-  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice') ) {
-    throw("Exon does not have an attached slice to be stored.");
-  }
-
-  my $slice_adaptor = $db->get_SliceAdaptor();
 
   my $original = $exon;
-
-
-  #exon coordinates need to be relative to the start of the seq_region
-  if($slice->start != 1 || $slice->strand != 1) {
-    #get slice of entire seq region
-    $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
-                                             $slice->seq_region_name(),
-                                             undef, undef, undef,
-                                             $slice->coord_system->version());
-    $exon = $exon->transfer($slice);
-
-    if(!$exon) {
-      throw('Exon could not be transfered to slice of entire seq_region.');
-    }
-  }
-
-  my $seq_region_id = $slice_adaptor->get_seq_region_id( $slice );
-
-  if( ! $seq_region_id ) {
-    throw( "Attached slice is not valid in database." );
-  }
+  my $seq_region_id;
+  ($exon, $seq_region_id) = $self->_pre_store($exon);
 
   #store the exon
   $exonst->execute( $seq_region_id,

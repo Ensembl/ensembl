@@ -297,7 +297,6 @@ sub store {
 
   my $db = $self->db();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
-  my $slice_adaptor = $db->get_SliceAdaptor();
   my $pexon_adaptor = $db->get_PredictionExonAdaptor();
 
   FEATURE: foreach my $pt (@pre_transcripts) {
@@ -320,41 +319,14 @@ sub store {
       $analysis_adaptor->store($analysis);
     }
 
-    my $original = $pt;
-
-    # make sure that the prediction transcript coordinates are relative to
-    # the start of the seq_region that the prediction transcript is on
-    my $slice = $pt->slice();
-    if(!$slice) {
-      throw('Prediction transcript must have slice to be stored.');
-    }
-    if($slice->start != 1 || $slice->strand != 1) {
-      #move the prediction transcript onto a slice of the entire seq_region
-      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
-                                               $slice->seq_region_name(),
-                                               undef, #start
-                                               undef, #end
-                                               undef, #strand
-                                              $slice->coord_system->version());
-
-      $pt = $pt->transfer($slice);
-
-      if(!$pt) {
-        throw('Could not transfer prediction transcript to slice of ' .
-              'entire seq_region prior to storing');
-      }
-    }
-
     #ensure that the transcript coordinates are correct, they may not be,
     #if somebody has done some exon coordinate juggling and not recalculated
     #the transcript coords.
     $pt->recalculate_coordinates();
 
-    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
-
-    if(!$seq_region_id) {
-      throw('The attached slice is not on a seq_region in this database');
-    }
+    my $original = $pt;
+    my $seq_region_id;
+    ($pt, $seq_region_id) = $self->_pre_store($pt);
 
     #store the prediction transcript
     $ptstore_sth->execute($seq_region_id,

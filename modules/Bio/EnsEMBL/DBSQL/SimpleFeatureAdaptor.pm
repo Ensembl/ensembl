@@ -72,7 +72,6 @@ sub store{
      "VALUES (?,?,?,?,?,?,?)");
 
   my $db = $self->db();
-  my $slice_adaptor = $db->get_SliceAdaptor();
   my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
  FEATURE: foreach my $sf ( @sf ) {
@@ -97,33 +96,9 @@ sub store{
       $analysis_adaptor->store($sf->analysis());
     }
 
-    my $slice = $sf->slice();
-    if(!ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
-      throw("A slice must be attached to the features to be stored.");
-    }
-
     my $original = $sf;
-
-    # make sure that the feature coordinates are relative to
-    # the start of the seq_region that the prediction transcript is on
-    if($slice->start != 1 || $slice->strand != 1) {
-      #move the feature onto a slice of the entire seq_region
-      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
-                                               $slice->seq_region_name(),
-                                               undef, #start
-                                               undef, #end
-                                               undef, #strand
-                                              $slice->coord_system->version());
-
-      $sf = $sf->transfer($slice);
-
-      if(!$sf) {
-        throw('Could not transfer SimpleFeature to slice of ' .
-              'entire seq_region prior to storing');
-      }
-    }
-
-    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+    my $seq_region_id;
+    ($sf, $seq_region_id) = $self->_pre_store($sf);
 
     $sth->execute($seq_region_id, $sf->start, $sf->end, $sf->strand,
                   $sf->display_label, $sf->analysis->dbID, $sf->score);

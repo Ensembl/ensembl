@@ -393,6 +393,70 @@ sub fetch_all_by_feature_table {
 }
 
 
+=head2 add_feature_table
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs
+               The coordinate system to associate with a feature table
+  Arg [2]    : string $table - the name of the table in which features of
+               a given coordinate system will be stored in
+  Example    : $csa->add_feature_table($chr_coord_system, 'gene');
+  Description: This function tells the coordinate system adaptor that
+               features from a specified table will be stored in a certain
+               coordinate system.  If this information is not already stored
+               in the database it will be added.
+  Returntype : none
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+
+sub add_feature_table {
+  my $self = shift;
+  my $cs   = shift;
+  my $table = lc(shift);
+
+  if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('CoordSystem argument is required.');
+  }
+
+  if(!$table) {
+    throw('Table argument is required.');
+  }
+
+  my $coord_systems = $self->{'_feature_cache'}->{$table};
+
+  my ($exists) = grep {$_->equals($cs)} @$coord_systems;
+
+  #do not do anything if this feature table is already associated with the
+  #coord system
+  return if($exists);
+
+  #make sure to use a coord system stored in this database so that we
+  #do not use the wrong coord_system_id
+  if(!$cs->is_stored($self->db())) {
+    $cs = $self->fetch_by_name($cs->name(), $cs->version);
+    throw("CoordSystem not found in database.");
+  }
+
+  #store the new tablename -> coord system relationship in the db
+  #ignore failures b/c during the pipeline multiple processes may try
+  #to update this table and only the first will be successful
+  my $sth = $self->prepare('INSERT IGNORE INTO meta_coord ' .
+                              'SET coord_system_id = ?, ' .
+                                  'table_name = ?');
+
+  $sth->execute($cs->dbID, $table);
+
+  #update the internal cache
+  $self->{'_feature_cache'}->{$table} ||= [];
+  push @{$self->{'_feature_cache'}->{$table}}, $cs;
+
+  return;
+}
+
+
+
 =head2 fetch_by_dbID
 
   Arg [1]    : int dbID
