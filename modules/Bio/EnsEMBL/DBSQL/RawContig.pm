@@ -959,7 +959,8 @@ sub get_all_PredictionFeatures {
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
-	   $current_fset->seqname($fsetid);
+	   $current_fset->seqname($self->id);
+	   $current_fset->id($fsetid);
 	   push(@array,$current_fset);
        }
 

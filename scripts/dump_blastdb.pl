@@ -118,7 +118,7 @@ sub get_genscan_peptides {
     my $trancount = 1;
       
     foreach my $genscan (@genscan) {
-	print STDERR "Got a genscan with ".$genscan->seqname."\n";
+	print STDERR "Got a genscan with ".$genscan->id."\n";
 
 
 	my $transcript = new Bio::EnsEMBL::Transcript;
