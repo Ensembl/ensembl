@@ -55,19 +55,20 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 use DBI;
 use Bio::Seq;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::Root::RootI);
 
-# _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($class,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $self = {};
+  bless $self,$class;
+
+
 
   #print "Got",join(',',@args),"\n";
   my ($db,$host,$driver,$user,$password,$debug) = 
@@ -111,8 +112,7 @@ sub _initialize {
       $self->_db_handle($dbh);
   }
 
-# set stuff in self from @args
-  return $make; # success - we hope!
+  return $self; # success - we hope!
 }
 
 =head2 get_new_id_from_old_id
