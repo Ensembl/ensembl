@@ -1,5 +1,5 @@
 
-=head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
+=Head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
 
 =head1 SYNOPSIS
 
@@ -2374,7 +2374,7 @@ sub get_RepeatFeatureAdaptor {
 sub get_ProteinAlignFeatureAdaptor {
   my( $self ) = @_;
     
-  return $self->("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
 }
 
 
