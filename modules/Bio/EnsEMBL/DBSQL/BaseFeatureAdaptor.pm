@@ -440,7 +440,7 @@ sub _pre_store {
 
   my $mcc = $db->get_MetaCoordContainer();
 
-  $mcc->add_feature_type($cs, $tabname);
+  $mcc->add_feature_type($cs, $tabname, $feature->length);
 
   my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
 
