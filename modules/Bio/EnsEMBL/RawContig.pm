@@ -176,7 +176,7 @@ sub seq {
   #or retrieved from the database
   if($self->adaptor()) {
     my $sa = $self->adaptor->db->dnadb->get_SequenceAdaptor(); 
-    return $sa->fetch_all_by_RawContig_start_end_strand($self, 1, -1, 1);
+    return $sa->fetch_by_RawContig_start_end_strand($self, 1, -1, 1);
   }
   
   $self->warn("RawContig seq not set, and no db is available");
