@@ -24,12 +24,13 @@ sub new {
   # and cache them
   #
   my $sth = $self->prepare
-    ('SELECT table_name, coord_system_id  FROM meta_coord');
+    ('SELECT table_name, coord_system_id, max_length  FROM meta_coord');
   $sth->execute();
 
-  while(my ($table_name, $cs_id) = $sth->fetchrow_array()) {
+  while(my ($table_name, $cs_id, $max_length) = $sth->fetchrow_array()) {
     $self->{'_feature_cache'}->{lc($table_name)} ||= [];
     push @{$self->{'_feature_cache'}->{lc($table_name)}}, $cs_id;
+    $self->{'_max_len_cache'}->{$cs_id}->{lc($table_name)} = $max_length;
   }
   $sth->finish();
 
@@ -49,7 +50,7 @@ sub new {
                the API to perform queries to these tables and to ensure that
                features are only stored in appropriate coordinate systems.
   Returntype : listref of Bio::EnsEMBL::CoordSystem objects
-  Exceptions : none
+  Exceptions : throw if name argument not provided
   Caller     : BaseFeatureAdaptor
 
 =cut
@@ -82,6 +83,36 @@ sub fetch_all_CoordSystems_by_feature_type {
   return \@coord_systems;
 }
 
+
+
+=head2 fetch_max_length_by_CoordSystem_feature_type
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs
+  Arg [2]    : string $table
+  Example    : $max_len = 
+                $mcc->fetch_max_length_by_CoordSystem_feature_type($cs,'gene');
+  Description: Returns the maximum length of features of a given type in
+               a given coordinate system.
+  Returntype : int or undef
+  Exceptions : throw on incorrect argument
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+
+sub fetch_max_length_by_CoordSystem_feature_type {
+  my $self = shift;
+  my $cs = shift;
+  my $table = shift;
+
+  if(!ref($cs) || !$cs->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('Bio::EnsEMBL::CoordSystem argument expected');
+  }
+
+  throw("Table name argument is required") unless $table;
+
+  return $self->{'_max_len_cache'}->{$cs->dbID()}->{lc($table)};
+}
 
 
 

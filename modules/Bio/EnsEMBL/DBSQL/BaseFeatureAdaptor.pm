@@ -491,6 +491,10 @@ sub _slice_fetch {
 
     if($feat_cs->equals($slice_cs)) {
       # no mapping is required if this is the same coord system
+
+      my $max_len =
+        $mcc->fetch_max_length_by_CoordSystem_feature_type($feat_cs,$tab_name);
+
       my $constraint = $orig_constraint;
 
       my $sr_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
@@ -499,6 +503,13 @@ sub _slice_fetch {
           "${tab_syn}.seq_region_id = $sr_id AND " .
           "${tab_syn}.seq_region_start <= $slice_end AND " .
           "${tab_syn}.seq_region_end >= $slice_start";
+
+      if($max_len) {
+        my $min_start = $slice_start - $max_len;
+        $constraint .=
+          " AND ${tab_syn}.seq_region_start >= $min_start";
+      }
+
       my $fs = $self->generic_fetch($constraint,undef,$slice);
 
       # features may still have to have coordinates made relative to slice
@@ -540,6 +551,10 @@ sub _slice_fetch {
 
       } else {
         # do multiple split queries using start / end constraints
+
+        my $max_len =
+          $mcc->fetch_max_length_by_CoordSystem_feature_type($feat_cs,
+                                                             $tab_name);
         my $len = @coords;
         for(my $i = 0; $i < $len; $i++) {
           my $constraint = $orig_constraint;
@@ -548,6 +563,13 @@ sub _slice_fetch {
               "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
               "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND ".
               "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
+
+          if($max_len) {
+            my $min_start = $coords[$i]->start() - $max_len;
+            $constraint .=
+              " AND ${tab_syn}.seq_region_start >= $min_start";
+          }
+
           my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
           $fs = _remap($fs, $mapper, $slice);
