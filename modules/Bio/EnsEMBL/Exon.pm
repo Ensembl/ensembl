@@ -78,14 +78,14 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::Exon;
-use vars qw(@ISA);
+use vars qw(@ISA $AUTOLOAD);
 use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
 use Bio::SeqFeature::Generic;
 
-@ISA = qw(Bio::SeqFeature::Generic);
+@ISA = qw(Bio::SeqFeature::Generic Exporter);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

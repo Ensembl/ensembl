@@ -159,7 +159,7 @@ sub each_Exon{
 sub flush_Exon{
    my ($self,@args) = @_;
 
-   @{$self->{'_trans_exon_array'}} = [];
+   $self->{'_trans_exon_array'} = [];
 }
 
 =head2 translate
