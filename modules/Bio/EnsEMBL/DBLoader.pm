@@ -57,7 +57,7 @@ package Bio::EnsEMBL::DBLoader;
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBOLD::Obj;
-use Bio::EnsEMBL::TimDB::Obj;
+# use Bio::EnsEMBL::TimDB::Obj;
 use strict;
 
 =head2 new
