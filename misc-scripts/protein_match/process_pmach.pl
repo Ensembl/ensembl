@@ -47,12 +47,12 @@ sub runpmatch {
 #Run pmatch and store the data in files which will be kept for debugging
     my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $sp $ens > ens_sp_rawpmatch";
     my $pmatch2 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $refseq $ens > ens_refseq_rawpmatch";
-    my $pmatch3 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $pdb $ens > ens_pdb_rawpmatch";
+    #my $pmatch3 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $pdb $ens > ens_pdb_rawpmatch";
 
 
     system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
     system($pmatch2); #== 0 or die "$0\Error running '$pmatch2' : $!";
-    system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
+    #system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
 
 }
 
