@@ -227,6 +227,7 @@ if ($feature) {
 		    my @features=$contig->get_all_SeqFeatures;
 		    my $nf=scalar(@features);
 		    print STDERR "Writing $nf features for contig ".$contig->id."\n";
+		    exit;
 		    if ($nf) {
 			my $oldcontig = $to_db->get_Contig($contig->id);
 			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);

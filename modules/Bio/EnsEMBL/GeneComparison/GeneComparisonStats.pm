@@ -125,6 +125,9 @@ sub new {
     
     my @standard = @{$self->{'_standardGenes'}}; 
     my $ns = scalar @standard; 
+    if ($ns == 0) {
+	$self->throw("No standard genes given!\n");
+    }
     print STDERR "Got $ns standard genes\n";
     if (!$standard[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Standard genes are not Bio::EnsEMBL::Gene objects\n");
@@ -132,6 +135,9 @@ sub new {
 
     my @predictor = @{$self->{'_predictorGenes'}};
     my $np = scalar @predictor;
+    if ($np == 0) {
+	$self->throw("No standard genes given!\n");
+    }
     print STDERR "Got $np predictor genes\n";
     
     if (!$predictor[0]->isa('Bio::EnsEMBL::Gene')) {
@@ -271,8 +277,7 @@ sub _genePredictions {
     
     # If there are no true positives we don't need to calculate the false positives
     if ($truePositive == 0) {     
-	print STDERR "There are no true positives, skipping false positives!\n";
-        $self->{'_geneSpecificity'} = 0;  
+	$self->{'_geneSpecificity'} = 0;  
         $self->{'_geneSensitivity'} = 0;
         return;
     }
@@ -314,9 +319,7 @@ sub get_OverlapMap{
        $comparer->setStandardGene($standardGene);
        $genes{$standardGene->id}=$comparer->getGeneOverlapids();
    }
-   
-   
-   
+      
    return %genes;
 }
 
@@ -417,6 +420,27 @@ sub getExactlyMatchedPredictorGenes {
     return @{$self->{'_exactlyMatchedPredictorGenes'}};
 }
 
+
+=head2 getOverlapStats
+
+ Title   : getOverlapStats
+ Usage   : $obj->getOverlapStats()
+ Function: 
+ Example : 
+ Returns : An array of the IDs of the predictor genes that are exactly matched 
+ Args    : None
+
+=cut
+
+sub getOverlapStats {
+    my ($self) = @_;
+    
+    unless ($self->{'_overlapStats'}) { 
+        $self->_getMissedGenes();
+    }
+        
+    return %{$self->{'_overlapStats'}};
+}
 =head2 getWrongGeneScore
 
  Title   : getWrongGeneScore
@@ -433,10 +457,18 @@ sub getExactlyMatchedPredictorGenes {
 sub getWrongGeneScore {
     my ($self) = @_;
     
-    unless ($self->{'_wrongGeneScore'}) { 
-        my @array1 = $self->_getPredictorGenes;
-        my @array2 = $self->_getStandardGenes;                  
-        ($self->{'_wrongGeneScore'}) = $self->_getMissedGene(\@array1, \@array2);
+    unless ($self->{'_wrongGeneScore'}) {         
+        my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare($self->_getStandardGenes);
+        my $missed = 0;
+    
+        foreach my $gene ($self->_getPredictorGenes) {  
+            $comparer->setStandardGene($gene);
+            if ($comparer->isMissed()) {
+                $missed++;
+            }
+        }
+             
+        $self->{'_wrongGeneScore'} = $missed / $self->_getPredictorGenes;
     }
     
     return $self->{'_wrongGeneScore'};
@@ -462,17 +494,39 @@ sub _getMissedGene {
     
     my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare(@$array2);
     my $missed = 0;
-    # Initialise property to empty array
-    $self->{'_missedGenes'} = [];   
+    # Initialise _missedGenes to empty array
+    $self->{'_missedGenes'} = [];  
+    my %stats; 
     
     foreach my $gene (@$array1) {  
         $comparer->setStandardGene($gene);
+        
         if ($comparer->isMissed()) {
             push @{$self->{'_missedGenes'}}, $gene->id;
             $missed++;
         }
+ 
+        else {
+            # Get all the predictor genes that are overlapped
+            my @overlaps = $comparer->getGeneOverlaps();
+            
+            # Loop through each predictor gene
+            foreach my $overlap (@overlaps) {
+                my @exons = $overlap->each_unique_Exon();
+                
+                my ($tP, $fP, $fN) = $comparer->getBaseOverlaps(\@exons); 
+                my $statID = $gene->id. " - ". $overlap->id; 
+                # Add the proportion of the standard that was predicted
+                # The total length of the standard is $tP + $fN
+                my $proportion = $tP / ($tP + $fN);   
+                $stats{$statID} = $proportion;  
+            }    
+        }
     }
-             
+    
+    # Initialise _overlapStats to %stats
+    %{$self->{'_overlapStats'}} = %stats; 
+               
     if (@$array1) {
         return $missed / @$array1;
     }
