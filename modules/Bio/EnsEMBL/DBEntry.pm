@@ -78,7 +78,8 @@ sub new_fast {
 						       -version => $version,
 						       -dbname  => $dbname,
 						       -release => $release,
-						       -display_id => $did);
+						       -display_id => $did,
+                               -description => $description);
   Description: Creates a new DBEntry object
   Returntype : Bio::EnsEMBL::DBEntry
   Exceptions : none
@@ -92,7 +93,7 @@ sub new {
   my $self = bless {},$class;
 
   my ( $adaptor, $dbID, $primary_id, $version,
-       $dbname, $release, $display_id  ) = $self->_rearrange
+       $dbname, $release, $display_id, $description ) = $self->_rearrange
 	 ( [ qw { ADAPTOR
 		DBID
 		PRIMARY_ID
@@ -100,6 +101,7 @@ sub new {
 		DBNAME
 		RELEASE
 		DISPLAY_ID
+        DESCRIPTION
 	      }], @args );
 
   if( defined $adaptor ) { $self->adaptor( $adaptor )}
@@ -110,6 +112,7 @@ sub new {
   if( defined $dbname ) { $self->dbname( $dbname ) }
   if( defined $release) { $self->release( $release ) }
   if( defined $display_id) { $self->display_id( $display_id ) }
+  if( defined $description) { $self->description($description) }
   $self->{_synonyms} = [];;
 
   return $self;
