@@ -210,7 +210,7 @@ sub fetch_all_by_Slice {
 
     #if we did not completely overlap the last feature, put it back on so
     #it can be partially used by the next block
-    if($fend < $f->{'end'}) {
+    if(defined($f) && (!defined($fend) || $fend < $f->{'end'})) {
       unshift(@features, $f);
     }
 
