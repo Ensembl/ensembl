@@ -60,7 +60,6 @@ sub new {
   my $self = {};
   bless $self,$class;
 
-
   if( !defined $dbobj  ) {
       $self->throw("No dbobj or not a dbobj [$dbobj]");
   }
@@ -126,7 +125,8 @@ sub get_Ensembl_Genes_contig_list{
    if( scalar @contigs == 0 ) {
        return ();
    }
-
+   #Hash of contigs by gene id
+   my %gc;
    my $list;
    foreach my $c ( @contigs ) {
        $list .= "'$c',";
@@ -137,19 +137,62 @@ sub get_Ensembl_Genes_contig_list{
    my $sth = $self->dbobj->prepare("select t.gene,c.id from transcript t,exon_transcript et,exon e,contig c where c.id in $list and c.internal_id = e.contig and e.id = et.exon and t.id = et.transcript");
    
    $sth->execute();
+   my @geneids;
+
+   my %seen;
+   while( my ($id,$contig) = $sth->fetchrow_array ) {
+       if (!$seen{$id}) {
+	   push (@{$gc{$id}},$contig);
+	   $seen{$id}++;
+       }
+   }
+   push(@geneids,keys(%gc));
+   if( scalar(@geneids) == 0 ) {
+     return();
+   }
    my @genes;
 
-   my %uniq;
-
-   while( my ($id,$contig) = $sth->fetchrow_array ) {
-       $uniq{$id} =1;
+   #Hash of array of gene objects by contig
+   my %cg;
+   if (my $cgr = $self->cg) {
+       #Get them from the cache
+       my %cg = %$cgr;
+       foreach my $c (@contigs) {
+	   push (@genes,$cg{$c});
+       }
    }
-   push(@genes,keys %uniq);
-
-   return $self->dbobj->gene_Obj->get_array_supporting('none',@genes);
+   else {
+       @genes = $self->dbobj->gene_Obj->get_array_supporting('none',@genes);
+       foreach my $gene (@genes) {
+	   if (my $contig = $gc{$gene->id}) {
+	       push(@{$cg{$contig}},$gene);
+	   }
+       }
+       $self->cg(\%cg);
+   }
+   return @genes;
 }
 
+=head2 cg
 
+ Title   : cg
+ Usage   : $obj->cg($newval)
+ Function: Getset for cg value
+ Returns : value of cg
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub cg{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'cg'} = $value;
+    }
+    return $obj->{'cg'};
+
+}
 
 =head2 get_Ensembl_SeqFeatures_contig
 
