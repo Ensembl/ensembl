@@ -8,7 +8,7 @@
 
     clone2embl dJ271M21
 
-    clone2embl -gff dJ271M21
+    clone2embl -format gff dJ271M21
    
     clone2embl -dbtype ace dJ271M21
 
@@ -26,10 +26,10 @@
 
     -usetimdb  Overrides Module name for using Flat file Sanger system
     
-    -dbtype    Database type (only used for TimDB)
+    -dbtype    Database type (valid types are timdb, ace)
 
     -dbhost    host name for database (gets put as host= in locator)
-
+			      
     -dbname    For RDBs, what name to connect to (dbname= in locator)
 
     -dbuser    For RDBs, what username to connect as (dbuser= in locator)
@@ -99,7 +99,7 @@ my $host = 'localhost';
 
 my $module    = 'Bio::EnsEMBL::DBOLD::Obj';
 
-my $dbtype    = 'rdb';
+my $dbtype;
 my $format    = 'embl';
 my $nodna     = 0;
 my $help;
@@ -139,6 +139,7 @@ my $port      = '410000';
 
 &GetOptions( 'module:s'  => \$module,
 	     'usetimdb'  => \$usetimdb,
+	     'dbtype:s'  => \$dbtype,
 	     'dbuser:s'  => \$dbuser,
 	     'dbpass:s'  => \$dbpass,
 	     'host:s'    => \$host,
@@ -164,6 +165,15 @@ my $port      = '410000';
 
 if ($help){
     exec('perldoc', $0);
+}
+
+# set module if dbtype set and recognised
+if($dbtype eq 'timdb'){
+    $usetimdb=1;
+}elsif($dbtype eq 'ace'){
+    $module='Bio::EnsEMBL::AceDB::Obj';
+}elsif($dbtype){
+    die "-dbtype $dbtype not recognised";
 }
 
 my $db;

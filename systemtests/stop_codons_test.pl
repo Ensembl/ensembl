@@ -31,14 +31,23 @@ my $thost   = 'sol28';
 my $tport   = '410000';
 my $tdbname = 'ensdev';
 my $user    = 'ensembl';
+my $usetimdb;
+my $test;
 
 &GetOptions( 
 	     'host:s'     => \$thost,
 	     'port:n'     => \$tport,
 	     'user:s'     => \$user,
 	     'dbname:s'   => \$tdbname,
+	     'usetimdb'   => \$usetimdb,
+	     'test'       => \$test,
 	     );
-my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
+my $db;
+if($usetimdb){
+    $db = Bio::EnsEMBL::TimDB::Obj->new('','',$test);
+}else{
+    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
+}
 my @gene_id = $db->get_all_Gene_id();
 my $seqio;
 my $errcount = 0;
