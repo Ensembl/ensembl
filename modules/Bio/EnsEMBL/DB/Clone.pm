@@ -182,6 +182,78 @@ sub get_all_Contigs{
    return @res;   
 }
 
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub htg_phase{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select htg_phase from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'htg_phase'};
+}
+
+=head2 sv
+
+ Title   : sv
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub sv{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select sv from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'sv'};
+}
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub embl_id{
+   my ($self) = @_;
+
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select embl_id from clone where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'embl_id'};
+}
+
 =head2 id
 
  Title   : id

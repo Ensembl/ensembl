@@ -96,10 +96,10 @@ sub get_all_Genes{
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
-       if( $got{$rowhash->{'id'}} != 1 ) {
-          my $gene = $self->_dbobj->get_Gene($rowhash->{'id'});
+       if( $got{$rowhash->{'gene'}} != 1 ) {
+          my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
 	  push(@out,$gene);
-	  $got{$rowhash->{'id'}} = 1;
+	  $got{$rowhash->{'gene'}} = 1;
        }
        
    }
@@ -249,40 +249,41 @@ sub length{
 =cut
 
 sub order{
-   my $obj = shift;
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'order'} = $value;
-   }
-   return $obj->{'order'};
+   my $self = shift;
+   my $id = $self->id();
+   my $sth = $self->_dbobj->prepare("select corder from contig where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'corder'};
    
 }
 
 =head2 offset
 
  Title   : offset
- Usage   : $obj->offset($newval)
- Function: FIXME: this is a hack to provide a way of setting this
- Returns : value of offset
- Args    : newvalue (optional)
+ Usage   : 
+ Returns : 
+ Args    :
 
 
 =cut
 
 sub offset{
-   my $obj = shift;
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'offset'} = $value;
-   }
-   return $obj->{'offset'};
+   my $self = shift;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select offset from contig where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'offset'};
+
 }
 
 
 =head2 orientation
 
  Title   : orientation
- Usage   : FIXME: this is a hack for the moment
+ Usage   : 
  Function:
  Example :
  Returns : 
@@ -292,9 +293,13 @@ sub offset{
 =cut
 
 sub orientation{
-   my ($self,@args) = @_;
+   my ($self) = @_;
+   my $id = $self->id();
 
-   return 1;
+   my $sth = $self->_dbobj->prepare("select orientation from contig where id = \"$id\" ");
+   $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref();
+   return $rowhash->{'orientation'};
 }
 
 

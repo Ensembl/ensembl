@@ -245,11 +245,7 @@ sub get_Exon{
    $exon->start($rowhash->{'start'});
    $exon->end($rowhash->{'end'});
    $exon->strand($rowhash->{'strand'});
-   if( $exon->strand == 1 ) {
-       $exon->phase(($rowhash->{'phase'}+2)%3);
-   } else {
-       $exon->phase(($rowhash->{'phase'}+$exon->length+2)%3);
-   }
+   $exon->phase($rowhash->{'phase'});
    
    # we need to attach this to a sequence. For the moment, do it the stupid
    # way perhaps?
@@ -387,8 +383,6 @@ sub write_Gene{
        }
    }
 
-#   my $sth2 = $self->prepare("insert into gene (id,created,modified) values ('". $gene->id(). "','" . $gene->created . "','" . $gene->modified . "')");
-   
    my $sth2 = $self->prepare("insert into gene (id) values ('". $gene->id(). "')");
    $sth2->execute();
 
@@ -503,11 +497,13 @@ sub write_Contig {
    my $date      = `date '+%Y-%m-%d'`; chomp $date;
    my $len       = $dna->seq_len;
    my $seqstr    = $dna->seq;
+   my $offset    = $contig->offset();
+   my $orientation    = $contig->orientation();
    my @sql;
 
    push(@sql,"lock tables contig write,dna write");
    push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
-   push(@sql,"replace into contig(id,dna,length,clone) values('$contigid',LAST_INSERT_ID(),$len,'$clone')");
+   push(@sql,"replace into contig(id,dna,length,clone,offset,orientation) values('$contigid',LAST_INSERT_ID(),$len,'$clone',$offset,$orientation)");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
@@ -542,13 +538,24 @@ sub write_Clone{
    my $clone_id = $clone->id();
    my $sv = $clone->sv();
    my $embl_id = $clone->embl_id();
+   my $htg_phase = $clone->htg_phase();
+   my @sql;
 
-   #push(@sql,"lock tables contig write,dna write");
-   #push(@sql,"insert into dna(contig,sequence,created) values('$contigid','$seqstr','$date')");
-   #push(@sql,"replace into contig(id,dna,length,clone) values('$contigid',LAST_INSERT_ID(),$len,'$clone')");
-   #push(@sql,"unlock tables");   
+   push(@sql,"lock tables clone write");
+   push(@sql,"insert into clone(id,sv,embl_id,htg_phase) values('$clone_id','$sv','$embl_id','$htg_phase')");
+   push(@sql,"unlock tables");   
 
+   foreach my $sql (@sql) {
+     my $sth =  $self->prepare($sql);
+     my $rv  =  $sth->execute();
+     $self->throw("Failed to insert clone $clone_id") unless $rv;
+   }
 
+   foreach my $contig ( $clone->get_all_Contigs() ) {
+       $self->write_Contig($contig,$clone_id);
+   }
+
+   
 }
 
 
@@ -667,17 +674,21 @@ sub _db_handle{
 
 sub _lock_tables{
    my ($self,@tables) = @_;
-
+   
+   my $state;
    foreach my $table ( @tables ) {
        if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
 	   $self->warn("$table already locked. Relock request ignored");
        } else {
-	   my $sth = $self->prepare("lock tables $table write");
-	   my $rv = $sth->execute();
-	   $self->throw("Failed to lock table $table") unless $rv;
+	   if( $state ) { $state .= ","; } 
+	   $state .= "$table write";
 	   $self->{'_lock_table_hash'}->{$table} = 1;
        }
    }
+
+   my $sth = $self->prepare("lock tables $state");
+   my $rv = $sth->execute();
+   $self->throw("Failed to lock tables $state") unless $rv;
 
 }
 

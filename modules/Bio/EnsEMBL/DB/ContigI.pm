@@ -274,6 +274,7 @@ sub as_seqfeatures {
 		$sf->add_tag_value('ensembl_exon_id',$exon->id);
 		$sf->add_tag_value('ensembl_transcript_id',$transcript_id);
 		$sf->add_tag_value('ensembl_gene_id',$gene_id);
+		$sf->add_tag_value('contig_id',$contig_id);
 		push(@sf,$sf);
 	    }
 	}
