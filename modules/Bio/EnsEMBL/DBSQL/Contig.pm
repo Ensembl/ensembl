@@ -197,7 +197,9 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
+#    push(@out,$self->get_all_PredictionFeatures);
 
+    print(STDERR "Fetched all features\n");
     return @out;
 }
 
@@ -273,13 +275,13 @@ sub get_all_SimilarityFeatures{
 	   $out = new Bio::EnsEMBL::SeqFeature;
        }
 
-      
        $out->seqname   ($id);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
        $out->source_tag($name);
        $out->primary_tag('similarity');
+       $out->id         ($fid);
 
        if( defined $score ) {
 	   $out->score($score);
@@ -383,6 +385,78 @@ sub get_all_RepeatFeatures {
 	   $out->score($score);
        }
 
+
+       $out->analysis($analysis);
+
+       # Final check that everything is ok.
+       
+       $out->validate();
+
+      push(@array,$out);
+  }
+ 
+   return @array;
+}
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures )
+ Function: Gets all the repeat features on a contig.
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_PredictionFeatures {
+   my ($self) = @_;
+
+   my @array;
+
+   my $id     = $self->id();
+   my $length = $self->length();
+
+   my %analhash;
+
+   # make the SQL query
+
+   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis" . 
+				    "from feature where contig = '$id' and name = 'genscan'");
+   
+   $sth->execute();
+   
+   my ($fid,$start,$end,$strand,$score,$analysisid);
+   
+   # bind the columns
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid);
+   
+   while( $sth->fetch ) {
+       my $out;
+       my $analysis;
+       
+       if (!$analhash{$analysisid}) {
+	   $analysis = $self->_dbobj->get_Analysis($analysisid);
+	   $analhash{$analysisid} = $analysis;
+	   
+       } else {
+	   $analysis = $analhash{$analysisid};
+       }
+
+
+       $out = new Bio::EnsEMBL::SeqFeature;
+       
+       $out->seqname   ($id);
+       $out->start     ($start);
+       $out->end       ($end);
+       $out->strand    ($strand);
+
+       $out->source_tag('genscan');
+       $out->primary_tag('prediction');
+       
+       if( defined $score ) {
+	   $out->score($score);
+       }
 
        $out->analysis($analysis);
 

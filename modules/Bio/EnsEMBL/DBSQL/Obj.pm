@@ -174,7 +174,7 @@ sub get_Gene_array {
     my @out;
     my $inlist = join(',',map "'$_'", @geneid);
     $inlist = "($inlist)";
-    #
+				
     # I know this SQL statement is silly.
     #
     
@@ -200,7 +200,7 @@ sub get_Gene_array {
 	}
 	
 	if( $geneid ne $current_gene_id ) {
-	    
+
 	    if( $transcriptid eq $current_transcript_id ) {
 		$self->throw("Bad internal error. Switching genes without switching transcripts");
 	    } 
@@ -1208,8 +1208,6 @@ sub write_Gene{
        
    }
 
-  # $self->_lock_tables('gene','exon','transcript','exon_transcript');
-
    # gene is big daddy object
 
    
@@ -1226,18 +1224,15 @@ sub write_Gene{
        }
    }
 
-    eval {
-       $old_gene=$self->get_Gene($gene->id);
-   };
-    
-
-   if ( $@ || ($gene->version > $old_gene->version)) {
+   $old_gene = $self->get_Gene($gene->id);
+   
+   if ( !defined($old_gene) || ($gene->version > $old_gene->version)) {
 
        !$gene->created() && $gene->created(0);
        !$gene->modified() && $gene->modified(0);
 
        my $sth2 = $self->prepare("insert into gene (id,version,created,modified,stored) values ('". 
-				 $gene->id()     . "','".
+				 $gene->id       . "','".
 				 $gene->version  . "',FROM_UNIXTIME(".
 				 $gene->created  . "),FROM_UNIXTIME(".
 				 $gene->modified . "),now())");
@@ -1248,10 +1243,6 @@ sub write_Gene{
    }
 
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
-       #print STDERR "Using $cloneid and ",$gene->id,"\n";
-       #print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . 
-	   #$gene->id ."','" . 
-	   #$cloneid  . "')","\n";
 
        my $sth = $self->prepare("select gene,clone from geneclone_neighbourhood where gene='".$gene->id."' && clone='$cloneid'");
        $sth->execute();
@@ -1348,13 +1339,23 @@ sub write_Feature {
     
     # Put the repeats in a different table
     my @repeats;
-    
+
     FEATURE :
     foreach my $feature ( @features ) {
 	
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
+
+	eval {
+	    $feature->validate();
+	};
+
+	if ($@) {
+	    print(STDERR "Feature invalid. Skipping feature\n");
+	    next FEATURE;
+	}
+
 
 	if($feature->isa('Bio::EnsEMBL::Repeat')) {
 	    push(@repeats,$feature);
@@ -1421,6 +1422,9 @@ sub write_Feature {
 		       $homol->end,
 		       $homol->seqname);
     }
+
+    # Now the predictions
+
     return 1;
 }
 
@@ -1435,6 +1439,117 @@ sub write_Feature {
 
 
 =cut
+
+sub write_supporting_evidence {
+    my ($self,$exon) = @_;
+
+    $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
+
+     my $sth  = $self->prepare("insert into supporting_feature(id,exon,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?,?)");
+    
+    FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
+
+	eval {
+	    $f->validate();
+	};
+
+	if ($@) {
+	    print(STDERR "Supporting feature invalid. Skipping feature\n");
+	    next FEATURE;
+	}
+
+	my $analysisid = $self->write_Analysis($f->analysis);
+	
+	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
+	    $sth->execute('NULL',
+			  $exon->id,
+			  $f->seqname,
+			  $f->start,
+			  $f->end,
+			  $f->score,
+			  $f->strand,
+			  $analysisid,
+			  $f->source_tag,
+			  $f->hstart,
+			  $f->hend,
+			  $f->hseqname
+			  );
+	} else {
+	    $self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
+	}
+    }
+}
+
+
+=head2 get_supporting_evidence
+
+ Title   : get_supporting_evidence
+ Usage   : $obj->get_supporting_evidence
+ Function: Writes supporting evidence features to the database
+ Example :
+ Returns : nothing
+ Args    : None
+
+
+=cut
+
+sub get_supporting_evidence {
+    my ($self,$exon) = @_;
+
+    $self->throw("Argument must be Bio::EnsEMBL::Exon. You entered [$exon]\n") unless $exon->isa("Bio::EnsEMBL::Exon");
+    $self->throw("No exon id defined\n") unless defined($exon->id);
+
+    my $id  = $exon->id;
+#    my $sth = $self->prepare("select f.* from feature as f,supporting_feature as sf,exon as ex where ex.id = '$id' and sf.exon = '$id' and sf.feature = f.id");
+
+    my $sth  = $self->prepare("select * from supporting_feature where exon = '$id'");
+
+    $sth->execute;
+
+    my %anahash;
+
+    while (my $rowhash = $sth->fetchrow_hashref) {
+	
+	my $f1 = new Bio::EnsEMBL::SeqFeature;
+	my $f2 = new Bio::EnsEMBL::SeqFeature;
+	
+	my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
+					      -feature2 => $f2);
+
+	$f1->seqname($rowhash->{contig});
+	$f1->start  ($rowhash->{seq_start});
+	$f1->end    ($rowhash->{seq_end});
+	$f1->strand ($rowhash->{strand});
+	$f1->source_tag($rowhash->{name});
+	$f1->primary_tag('similarity');
+	$f1->score  ($rowhash->{score});
+	
+	$f2->seqname($rowhash->{hid});
+	$f2->start  ($rowhash->{hstart});
+	$f2->end    ($rowhash->{hend});
+	$f2->strand ($rowhash->{strand});
+	$f2->source_tag($rowhash->{name});
+	$f2->primary_tag('similarity');
+	$f2->score  ($rowhash->{score});
+
+	my $analysisid = $rowhash->{analysis};
+
+	if ($anahash{$analysisid}) {
+	    $f->analysis($anahash{$analysisid});
+
+	} else {
+	    $f->analysis($self->get_Analysis($analysisid));
+	    $anahash{$analysisid} = $f->analysis;
+	}
+	
+	$f->validate;
+
+	print($exon->id . " " . $f->seqname . "\n");
+	$exon->add_Supporting_Feature($f);
+    }
+
+}
+
 
 =head2 write_Analysis
 
@@ -1560,10 +1675,9 @@ sub get_Analysis {
 
     my $sth = $self->prepare("select * from analysis where id = $id");
     my $rv  = $sth->execute;
-
     my $rh  = $sth->fetchrow_hashref;
 
-    if ($sth->rows > 0) {
+    if ($sth->rows) {
 
 	my $anal = new Bio::EnsEMBL::Analysis::Analysis(-db    => $rh->{db},
 					      -db_version      => $rh->{db_version},
@@ -1772,6 +1886,9 @@ sub write_Exon{
        
        my $sth = $self->prepare($exonst);
        $sth->execute();
+
+       # Now the supporting evidence
+       $self->write_supporting_evidence($exon);
    }
    else {
        print "Exon with the same version number already present, no need to write it in";
@@ -2074,7 +2191,7 @@ sub _unlock_tables{
    my ($self,@tables) = @_;
 
    my $sth = $self->prepare("unlock tables");
-   my $rv = $sth->execute();
+   my $rv  = $sth->execute();
    $self->throw("Failed to unlock tables") unless $rv;
    %{$self->{'_lock_table_hash'}} = ();
 }

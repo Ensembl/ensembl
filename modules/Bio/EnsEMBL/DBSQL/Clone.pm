@@ -288,7 +288,7 @@ sub get_all_Contigs{
    my $name = $self->id();
 
    my $sql = "select id from contig where clone = \"$name\" ";
-#   print STDERR "Looking at $name. [$sql]\n";
+
    $sth= $self->_dbobj->prepare($sql);
    my $res = $sth->execute();
    my $seen = 0;
@@ -298,18 +298,15 @@ sub get_all_Contigs{
 
    while( my $rowhash = $sth->fetchrow_hashref) {
        my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self->_dbobj,
-						   -id => $rowhash->{'id'} );
+						      -id => $rowhash->{'id'} );
        $contig->order($count++);
-       #$contig->offset($total);
-       
-       #$total += $contig->length();
-       #$total += 400;
 
        push(@res,$contig);
        $seen = 1;
    }
+
    if( $seen == 0  ) {
-       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isnt...");
+       $self->throw("Clone $name has no contigs in the database. Should be impossible, but clearly isn't...");
    }
 
    return @res;   
