@@ -1211,12 +1211,16 @@ sub get_all_DASFeatures{
 
    my @rawcontigs = $self->_vmap->get_all_RawContigs();
    @rawcontigs = map { $_->id() } @rawcontigs;
+   #foreach (@rawcontigs){
+   #    print STDERR "Raw contig: ", $_, "\n";
+   #}
     
     # need a call here to get a list of FPC contigs that overlap my VC
     # I also need to have their VC start end in the FPC coordinates.
     # and somehow pass all this stuff down to the DAS fetcher...eek!
    my @fpccontigs = (undef);
     
+   print STDERR "DAS ", $self->_chr_name,$self->_global_start,$self->_global_end, "\n";
    my @clones  = $self->get_all_Clones();
    #foreach (@clones){
    #    print STDERR "Clone: ", $_, "\n";
@@ -1231,14 +1235,17 @@ sub get_all_DASFeatures{
                     \@fpccontigs, \@clones,\@rawcontigs, $chr_length)
             ) {
 
+
 # BAC.*_C are fly contigs....
-	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)/ ) {
+# CRA_x are Celera mosquito contigs....
+
+	           if( $sf->seqname() =~ /(\w+\.\d+\.\d+.\d+|BAC.*_C)|CRA_.*/ ) {
 #                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
  	                push(@chr_features, $sf);
-               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y)$/o) {  # breaks on mouse!
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y|2L|2R|3L|3R)$/o) {  # breaks on mouse!
 #                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
  	                push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) { 
@@ -3284,4 +3291,39 @@ sub has_MapSet {
     my( $self, $mapset_name ) = @_;
     return $self->dbobj->get_MapFragAdaptor->has_mapset( $mapset_name );
 }
+
+=head2 get_Haplotypes_start_end
+
+ Title   : get_Haplotypes_start_end
+ Usage   : foreach my $hap ( $contig->get_Haplotypes_start_end ) 
+ Function: Returns "shallow" haplotype objects suitable for drawing
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Haplotypes_start_end {
+  my ($self,$adaptor) = @_;
+  
+  my @haps = $adaptor->fetch_Haplotype_by_chr_start_end(
+                         $self->_chr_name, 
+                         $self->_global_start, 
+                         $self->_global_end,
+                        );
+                        
+    # reset haplotype object  global coordinated to be vc-based...
+    # to keep the drawing code happy
+    
+  foreach my $h (@haps){
+      $h->start($h->start() - $self->_global_start + 1 );
+      $h->end($h->end() - $self->_global_start + 1 );
+  }
+  
+  return (@haps);
+}
+
+
+
 1;
