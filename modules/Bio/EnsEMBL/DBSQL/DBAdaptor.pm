@@ -2139,7 +2139,15 @@ sub get_Clone {
 
     my $ca= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
 
-    return $ca->fetch_by_accession($accession);
+    if ($accession =~ /(.+?)\.(\d+)/) {
+	$accession = $1;
+	my $version   = $2;
+	return $ca->fetch_by_accession($accession, $version);
+    }
+    else {
+	return $ca->fetch_by_accession($accession);
+    }
+
 }
   
 =head2 get_Clone_by_version
