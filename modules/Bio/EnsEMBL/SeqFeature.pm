@@ -102,7 +102,6 @@ sub new {
 
   bless $self,$class;
 
-  print STDERR "self is $self with class $class\n";
 my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname); 
 
   eval {

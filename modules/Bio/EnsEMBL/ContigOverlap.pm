@@ -211,12 +211,12 @@ sub overlap_type {
 =cut
 
 sub source {
-    my $obj = shift;
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'source'} = $value;
+    my ($obj,$arg) = @_;
+
+   if (defined($arg)) {
+       $obj->{_source} = $arg;
    }
-    return $obj->{'source'};
+    return $obj->{_source};
     
 }
 
@@ -238,7 +238,7 @@ sub distance {
 	$self->{_distance} = $arg;
     }
 
-    return $self->{_distance};
+    return $self->{_distance} || 1; 
 
 }
 
