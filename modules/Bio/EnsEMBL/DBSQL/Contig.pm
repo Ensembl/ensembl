@@ -267,10 +267,11 @@ sub get_all_SimilarityFeatures{
        
        #Build fset feature object if new fset found
        if ($fset != $seen) {
+	   print("Making new fset feature $fset\n");
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
 	   $seen = $fset;
-
+	   push(@array,$out);
        }
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
@@ -294,12 +295,12 @@ sub get_all_SimilarityFeatures{
 
        #Add this feature to the fset
        $out->add_sub_SeqFeature($feature,'EXPAND');
-       push(@array,$out);
+
    }
    
    #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
    $fset_id_str =~ s/\,$//;
-#   print(STDERR "fset ids :" . $fset_id_str . "\n");
+
    if ($fset_id_str) {
        $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " .
 				     "from feature where id not in (" . $fset_id_str . ") and contig = \"$id\"");
@@ -329,8 +330,6 @@ sub get_all_SimilarityFeatures{
 	   $name = 'no_source';
        }
        
-#       print(STDERR "Feature id : " . $fid . "\n");
-
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
@@ -340,7 +339,7 @@ sub get_all_SimilarityFeatures{
 	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, 
 						  -feature2 => $feature2);
 
-	   $out->hstart      ($hstart);
+	   $out->hstart     ($hstart);
 	   $out->hend       ($hend);
 	   $out->hseqname   ($hid);
 	   $out->hsource_tag($name);
