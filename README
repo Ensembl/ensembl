@@ -1,3 +1,25 @@
 24th May 1999
 
 Root directory for ensembl.
+
+6th October
+
+Gearing up for a real release. Read LICENSE for copying
+restrictions, and the web site
+
+http://ensembl.ebi.ac.uk/
+
+which also has installation instructions.
+
+
+Installation in a nutshell:
+
+a) make sure you have an SQL db somewhere
+b) make sure your DBI interface works with it
+c) if it is not MySQL, change DBSQL so that the driver is your db
+d) make sure you have the bioperl 0.6 tree in your PERL5LIB (and before any other bioperl)
+e) make sure you have the ensembl/modules in your PERL5LIB
+f) load data in database from the dump.
+g) run clone2embl -getall -start 0 -end 1 
+
+
