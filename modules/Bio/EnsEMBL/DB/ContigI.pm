@@ -16,16 +16,50 @@ Bio::EnsEMBL::DB::ContigI.pm - Abstract Interface for Contig
 
 =head1 SYNOPSIS
 
-This is the abstract definition of a Contig, along with 'decorator'
-functions
+
+    # contigs can be made in a number of different ways
+    $contig = $obj->get_Contig($contigid);
+ 
+    # contigs objects have an extend method. This gives back
+    # a new contig object which is longer to the 5' and 3' end
+    # If it runs out of sequence, it truncates silently.
+    $virtual_contig = $contig->extend(1000,1000);
+
+    # contigs have special feature extraction functions
+    @repeats = $contig->get_all_RepeatFeatures();
+    @sim     = $contig->get_all_SimilarityFeatures();
+
+    # you can get genes attached to this contig. This does not
+    # mean that all the gene is on this contig, just one exon
+    @genes   = $contig->get_all_Genes();
+
+    # ContigI is-a Bio::SeqI which is-a PrimarySeqI. This means
+    # that the normal bioperl functions work ok. For example:
+
+    $string = $contig->seq(); # the entire sequence
+    $string = $contig->subseq(100,120);  # a sub sequence
+
+    $seqout = Bio::SeqIO->new( '-format' => 'embl', -fh => \*STDOUT );
+    $seqout->write_seq($contig);
+
 
 =head1 DESCRIPTION
 
-Describe the object here
+The contig interface defines a single continuous piece of DNA with both
+features and genes on it. It is-a Bio::SeqI interface, meaning that it
+can be used in any function call which takes bioperl Bio::SeqI objects.
+
+It has additional methods, in particular the ability to only get a 
+subset of features out and genes.
+
+The contig interface just defines a number of functions which have to provided 
+by implementations. Two good implementations are the RawContig implementation
+found in Bio::EnsEMBL::DBSQL::RawContig and the generic VirtualContig interface
+in Bio::EnsEMBL::DB::VirtualContig
 
 =head1 CONTACT
 
-Describe contact details here
+Ewan Birney, <birney@ebi.ac.uk>
 
 =head1 APPENDIX
 
@@ -39,8 +73,13 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DB::ContigI;
 
+use vars ('@ISA');
 use strict;
+use Bio::EnsEMBL::VirtualGene;
+use Bio::SeqI;
+use Bio::Root::RootI
 
+@ISA = qw( Bio::SeqI Bio::Root::RootI );
 
 =head2 primary_seq
 
@@ -54,7 +93,7 @@ use strict;
 
 =cut
 
-sub pimary_seq {
+sub primary_seq {
    my ($self) = @_;
    $self->throw("Object did not provide the primary_seq method on a contig interface");
 }
@@ -75,6 +114,7 @@ sub id{
     my ($self) = @_;
     $self->throw("Object did not provide the id method on a contig interface");
 }
+
 
 =head2 get_all_SeqFeatures
 
@@ -174,6 +214,239 @@ sub length {
 
 }
 
+=head2 extend
+
+ Title   : extend
+ Usage   : $newcontig = $contig->extend(1000,-1000)
+ Function: Makes a new contig shifted along by the base pairs to the
+           5' and the 3'. 
+ Example :
+ Returns : A ContigI implementing object
+ Args    :
+
+
+=cut
+
+sub extend{
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the extend method on Contig interface!");
+}
+
+
+=head2 SeqI implementing methods
+
+As ContigI is-a SeqI, we need to implement some sequence
+feature methods. It is in these calls where the "magic" happens
+by calling VirtualGene for genes to map genes to contigs.
+
+You do not need to implement this methods
+
+=cut
+
+=head2 top_SeqFeatures
+
+ Title   : top_SeqFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub top_SeqFeatures{
+   my ($self,@args) = @_;
+   my (@f);
+   push(@f,$self->get_all_SeqFeatures());
+   foreach my $gene ( $self->get_all_Genes()) {
+       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+       push(@f,$vg);
+   }
+
+   return @f;
+}
+
+
+
+=head2 all_SeqFeatures
+
+ Title   : all_SeqFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub all_SeqFeatures {
+   my ($self) = @_;
+   my (@array);
+   foreach my $feat ( $self->top_SeqFeatures() ){
+       push(@array,$feat);
+       &_retrieve_subSeqFeature(\@array,$feat);
+   }
+
+   return @array;
+}
+
+
+sub _retrieve_subSeqFeature {
+    my ($arrayref,$feat) = @_;
+
+    foreach my $sub ( $feat->sub_SeqFeature() ) {
+	push(@$arrayref,$sub);
+	&_retrieve_subSeqFeature($arrayref,$sub);
+    }
+
+}
+
+=head2 annotation
+
+ Title   : annotation
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub annotation{
+   my ($self,@args) = @_;
+
+   if( $self->can('get_annotation_hook') ) {
+       return $self->get_annotation_hook();
+   }
+   return ();
+}
+
+
+=head2 PrimarySeqI implementing methods
+
+As Bio::SeqI is-a PrimarySeqI, we need to implement these methods.
+They can all be delegated to PrimarySeq. You do not need to implement
+these methods
+
+=cut
+
+=head2 seq
+
+ Title   : seq
+ Usage   : $string = $contig->seq();
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self,@args) = @_;
+
+   return $self->primary_seq->seq();
+}
+
+=head2 subseq
+
+ Title   : subseq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub subseq{
+   my ($self,$start,$end) = @_;
+
+   return $self->primary_seq->subseq($start,$end);
+
+}
+
+=head2 display_id
+
+ Title   : display_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub display_id{
+   my ($self,@args) = @_;
+
+   return $self->id();
+}
+
+=head2 primary_id
+
+ Title   : primary_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub primary_id{
+   my ($self,@args) = @_;
+
+   return "$self";
+}
+
+=head2 accession_number
+
+ Title   : accession_number
+ Usage   : $obj->accession_number($newval)
+ Function: 
+ Returns : value of accession_number
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub accession_number{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'accession_number'} = $value;
+    }
+    return $obj->{'accession_number'};
+
+}
+
+=head2 desc
+
+ Title   : desc
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub desc{
+   my ($self,@args) = @_;
+
+   return "Ensembl Contig";
+}
+
+
 =head1 Decorating methods
 
 These methods do not have to implemented by the derived object.
@@ -181,94 +454,6 @@ They are work on top of the interface defined above
 
 =cut
 
-
-=head2 seq
-
- Title   : seq
- Usage   : $annseq = $contig->seq();
- Function: Gets a Bio::Seq which can be used as standard a
-           Bio::Seq object complete with sequence features (eg genes)
- Example :
- Returns : 
- Args    : Has ref can have a number of attributes to control
-           how this call is used.
-
-           $hash->{'strict_EMBL'} = 1; #
-
-           causes EMBL dumping with only EMBL-
-           allowed feature qualfiers if true.  Set when
-           generating files for submission to the EMBL database.
-
-           $hash->{'seqfeature_filter'} = \&feature_filter_function;
-
-           provides a filter on the sequence features which are attached
-
-=cut
-
-my $global_warn = 0;
-
-sub seq {
-    my ($self, $hash_ref) = @_;
-    my (@contigs,@genes,$as,$seq);
-
-    if( $global_warn == 1 ) {
-	$self->throw("Bad - reentering seq call");
-    }
-
-    $global_warn = 1;
-
-    if( defined $hash_ref && ! ref $hash_ref ) {
-	$self->throw("Semantics to parameterisation of get_AnnSeq has changed - now pass in a hash");
-    }
-
-    if( ! defined $hash_ref ) {
-	$hash_ref = {};
-    }
-
-    #print STDERR "Starting on the annseq build\n";
-
-    @genes = $self->get_all_Genes();
-
-    #print STDERR "Built genes\n";
-    
-    $seq = $self->primary_seq();
-    
-    $as = Bio::Seq->new();
-    $as->primary_seq($seq);
-    
-    # we expect the contigI object to know what id to give ;)
-    $as->id($self->id());
-    if( $self->can('embl_version') && defined $self->embl_verison ) {
-	$as->sv($self->embl_version());
-    }
-    if( $self->can('htg_phase') && defined $self->htg_phase ) {
-	$as->htg_phase($self->htg_phase());
-    }
-
-    if( $self->can('seq_date') && defined $self->seq_date ) {
-	my $str = POSIX::strftime( "%d-%B-%Y", gmtime($self->seq_date) );
-	$as->add_date($str);
-    }
-
-
-
-    foreach my $gene ( @genes ) {
-	print STDERR "got a $gene\n";
-        my $gh = new Bio::EnsEMBL::GeneHandler( -gene => $gene,
-                                                -strict_embl => $hash_ref->{'strict_EMBL'},
-                                                );
-        $as->add_SeqFeature($gh);
-    }
-
-    #print STDERR "Attached genes\n";
-
-    foreach my $feature ($self->get_all_RepeatFeatures ) {
-	$as->add_SeqFeature( $feature );
-    }
-
-    return $as;
-
-}
 
 
 sub get_AnnSeq {

@@ -721,7 +721,7 @@ sub to_FTHelper{
    my ($self) = @_;
 
    # Make new FTHelper, and fill in the key
-   my $fth = Bio::AnnSeqIO::FTHelper->new;
+   my $fth = Bio::SeqIO::FTHelper->new;
    $fth->key('similarity');
    
    # Add location line

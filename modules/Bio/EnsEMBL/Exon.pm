@@ -106,7 +106,7 @@ sub _initialize {
 
   # Parse the input paramters (start,end,strand)
   if ($#args == 2) {
-    $self->_parse(@args);
+    $self->_parse_args(@args);
   }
 
   # set stuff in self from @args
@@ -116,7 +116,7 @@ sub _initialize {
 # Parse routine called from the constructor to
 # set the basic variables start,end and strand
 
-sub _parse {
+sub _parse_args {
 
   my ($self,$start,$end,$strand) = @_;
 

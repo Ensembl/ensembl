@@ -97,6 +97,10 @@ foreach $gene ( $clone->get_all_Genes() ) {
 
 print "ok 7\n";
 
+$seqout = Bio::SeqIO->new( '-format' => 'embl',-fh => \*STDERR );
+$seqout->write_seq($contig);
+
+
 
 eval {
     $contig = $db->get_Contig('AC008170.00001');

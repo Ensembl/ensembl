@@ -12,19 +12,52 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::VirtualGene - DESCRIPTION of Object
+Bio::EnsEMBL::VirtualGene - A Gene viewed from one Contig's perspective
 
 =head1 SYNOPSIS
 
-Give standard usage here
+   $vg = Bio::EnsEMBL::VirtualGene->new( -gene => $gene, -contig => $contig );
+ 
+   print "The gene ",$vg->gene->id," has it is first exon at ", $vg->start," and last at ",$vg->end,
+         "from the perspective of ",$contig->id,"\n";
+
+   # valid methods - this is a Bio::SeqFeatureI compliant object
+   $vg->start();
+   $vg->end();
+   $vg->strand(); 
+   $vg->primary_tag(); # returns 'genefragment';
+   $vg->source_tag();  # returns 'ensembl'
+
+   # you can get out GFF if you really want to
+   print $vg->gff_string,"\n";
+
+   # you can add it to Bio::Seq objects  
+   $seq->add_SeqFeature($vg);
+
+   # you can get the original gene object
+   $vg->gene
+
+   # test whether there are exons elsewhere or not
+   if( $vg->is_complete ) {
+      print "The entire gene",$vg->gene->id," is on ",$contig->id,"\n";
+   }
+
+
 
 =head1 DESCRIPTION
 
-Describe the object here
+VirtualGene provides a view of a Gene from the perspective of a
+contig. In this contig's perspective, the gene has a start and end, being
+the first and last exon on the contig respectively. The strand is taken to
+be arbitarily the first exon it encounters on the call to each_unique_Exon
+on this contig. If the gene is jumping strand (a possibility due to software
+issues, not biologically sane of course) then this is not indicated.
+
+VirtualGene, by having a start,end,strand is-a seqfeature
 
 =head1 CONTACT
 
-Describe contact details here
+Ewan Birney
 
 =head1 APPENDIX
 
@@ -64,8 +97,9 @@ sub _initialize {
       $self->throw("you have to have a virtual gene on a particular contig");
   }
 
-
   $self->gene($gene);
+
+  $self->_calculate_coordinates($gene,$contig);
 
   return $make; # success - we hope!
 }
@@ -154,7 +188,199 @@ sub seqname{
 
 }
 
+=head2 score
 
+ Title   : score
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub score{
+   my ($self,@args) = @_;
+   return undef;
+}
+
+=head2 frame
+
+ Title   : frame
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub frame{
+   my ($self,@args) = @_;
+
+   return undef;
+}
+
+=head2 _calculate_coordinates
+
+ Title   : _calculate_coordinates
+ Usage   : internal function to fill in start,end,strand,seqname
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _calculate_coordinates{
+   my ($self,$gene,$contig) = @_;
+
+   if( !defined $contig || ! ref $contig || ! $contig->isa('Bio::EnsEMBL::DB::ContigI') ) {
+       $self->throw("_calculate_coordinates(gene,contig)");
+   }
+
+   if( ! ref $gene || ! $gene->isa('Bio::EnsEMBL::Gene') ) {
+       $self->throw("_calculate_coordinates(gene,contig)");
+   }
+
+   my @exons = $gene->each_unique_Exon();
+   my $cid = $contig->id;
+   my $outside_exon = 0;
+   my $inside_exon = 0;
+   my ($start,$end,$strand);
+   foreach my $exon ( @exons ) {
+       if( $cid = $exon->contig_id ) {
+	   if( $inside_exon == 0 ) {
+	       $start = $exon->start();
+	       $end   = $exon->end();
+	       $strand = $exon->strand();
+	       $inside_exon = 1;
+	   } else {
+	       if( $start > $exon->start ) {
+		   $start = $exon->start;
+	       } 
+	       if( $end <  $exon->end ) {
+		   $end = $exon->end;
+	       } 
+	   }
+
+	   $self->add_contained_Exon($exon);
+       } else {
+	   $outside_exon = 1;
+       }
+   }
+
+   if( $inside_exon == 0 ) {
+       $self->throw("trying to make a virtualgene on a contig which does not contain the gene. Not possible");
+   }
+
+   if( $outside_exon == 0 ) {
+       $self->is_complete(1);
+   } else {
+       $self->is_complete(0);
+   }
+
+   $self->start($start);
+   $self->end($end);
+   $self->seqname($cid);
+   $self->strand($strand);
+
+}
+
+=head2 primary_tag
+
+ Title   : primary_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub primary_tag{
+   my ($self,@args) = @_;
+
+   return "genefragment";
+}
+
+=head2 source_tag
+
+ Title   : source_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub source_tag{
+   my ($self,@args) = @_;
+
+   return "ensembl";
+}
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_tag{
+   my ($self,@args) = @_;
+   
+   return 0;
+}
+
+=head2 all_tags
+
+ Title   : all_tags
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub all_tags{
+   my ($self,@args) = @_;
+
+   return;
+}
+
+
+=head2 each_tag_value
+
+ Title   : each_tag_value
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_tag_value{
+   my ($self,@args) = @_;
+
+   $self->throw("Calling each tag value on a VirtualGene. Not possible");
+
+}
 
 =head2 gene
 
@@ -172,7 +398,7 @@ sub gene{
    if( @_ ) {
       my $value = shift;
       if( ! ref $value || ! $value->isa("Bio::EnsEMBL::Gene") ) {
-	  $self->throw("Gene object must inheriet from Gene...");
+	  $obj->throw("Gene object must inheriet from Gene...");
       }
 
       $obj->{'gene'} = $value;
@@ -181,4 +407,89 @@ sub gene{
 
 }
 
+=head2 is_complete
+
+ Title   : is_complete
+ Usage   : $obj->is_complete($newval)
+ Function: 
+ Returns : value of is_complete
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub is_complete{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'is_complete'} = $value;
+    }
+    return $obj->{'is_complete'};
+
+}
+
+=head2 add_contained_Exon
+
+ Title   : add_contained_Exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_contained_Exon{
+   my ($self,$exon) = @_;
+
+   if( !ref $exon || !$exon->isa("Bio::EnsEMBL::Exon") ) {
+       $self->throw("add_contained_Exon $exon");
+   }
+
+   push(@{$self->{'_contained_exon'}},$exon);
+}
+
+=head2 all_contained_Exons
+
+ Title   : all_contained_Exons
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub all_contained_Exons {
+   my ($self) = @_;
+
+   return @{$self->{'_contained_exon'}};
+}
+
+=head2 sub_SeqFeature
+
+ Title   : sub_SeqFeature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub sub_SeqFeature{
+   my ($self) = @_;
+
+   return $self->all_contained_Exons();
+}
+
+
 1;
+
+
+
+
+
