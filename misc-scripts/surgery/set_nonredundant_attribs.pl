@@ -7,6 +7,9 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Bio::EnsEMBL::DBSQL::SliceAdaptor;
+
 my ($host, $port, $user, $password, $db, $verbose);
 $host = "127.0.0.1";
 $port = 5000;
@@ -25,6 +28,8 @@ die "Host must be specified"           unless $host;
 die "Database must be specified"       unless $db;
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$db", "$user", "$password", {'RaiseError' => 1})  || die "Can't connect to target DB";
+
+# ----------------------------------------
 
 # check that there is an entry in the attrib_type table for nonredundant
 # if there is, cache the ID for later; if not, make one
@@ -53,6 +58,27 @@ if ($nr_attrib_type_id) {
 
 }
 
+# ----------------------------------------
+
+my $db_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(-user   => $user,
+						    -dbname => $db,
+						    -host   => $host,
+						    -port   => $port,
+						    -pass   => $password,
+						    -driver => 'mysql' );
+
+my $slice_adaptor = $db_adaptor->get_SliceAdaptor();
+debug("Created SliceAdaptor");
+
+# Assume all entries in the top-level co-ordinate system are non-redundant
+my @toplevel = @{$slice_adaptor->fetch_all('toplevel')};
+debug("Got " . @toplevel . " sequence regions in the top-level co-ordinate system");
+set_nr_attribute($slice_adaptor, $nr_attrib_type_id, $dbi, @toplevel);
+
+
+#----------------------------------------
+
+check_non_redundant($slice_adaptor);
 
 # ----------------------------------------------------------------------
 # Misc / utility functions
@@ -79,3 +105,44 @@ sub debug {
   print $str . "\n" if $verbose;
 
 }
+
+# ----------------------------------------------------------------------
+
+# Set the "nonredundant" attribute on a Slice or group of Slices
+# arg 1: SliceAdaptor
+# arg 2: internal ID of 'nonredundant' attrib_type
+# arg 3: DB connection
+# arg 3..n: Slices
+
+sub set_nr_attribute {
+
+  my ($slice_adaptor, $nr_attrib_type_id, $dbi, @targets) = @_;
+
+  debug("Setting nonredundant attribute on " . @targets . " sequence regions");
+
+  my $sth = $dbi->prepare("INSERT INTO seq_region_attrib (seq_region_id, attrib_type_id) VALUES (?,?)");
+
+  foreach my $slice (@targets) {
+
+    my $seq_region_id = $slice_adaptor->get_seq_region_id($slice);
+
+    $sth->execute($seq_region_id, $nr_attrib_type_id);
+
+  }
+
+  $sth->finish();
+
+}
+
+# ----------------------------------------------------------------------
+
+sub check_non_redundant {
+
+  my $slice_adaptor = shift;
+
+  my @all = @{$slice_adaptor->fetch_all_non_redundant()};
+
+  print "Got " . @all . " non-redundant seq_regions from SliceAdaptor\n";
+
+}
+
