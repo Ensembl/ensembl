@@ -675,18 +675,23 @@ sub write_Gene{
 =cut
 
 sub write_all_Protein_features {
-    my ($self,$ENSP) = @_;
+    my ($self,$prot_annseq,$ENSP) = @_;
     
-    my $prot_annseq = $self->get_Protein_annseq($ENSP);
+    my $c=0;
     foreach my $feature ($prot_annseq->all_SeqFeatures()) {
-	my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
-				 .$feature->start()." ,"
-				 .$feature->end()." ,'"
-				 .$feature->primary_tag()."' ,"
-				 .$feature->score()." ,'"
-				 .$ENSP."'
-				)");
+	my $sth = $self->prepare("insert into proteinfeature (id,seq_start, seq_end, score, analysis, translation) values (NULL,"
+				 .$feature->start().","
+				 .$feature->end().","
+				 .$feature->score().",'"
+				 .$c."','"
+				 .$ENSP."')");
 	$sth->execute();
+	
+	my $sth2 = $self->prepare("insert into analysis (id,db,db_version,program,program_version,gff_source,gff_feature) values ('$c','testens',1,'elia_program',1,'"
+				  .$feature->source_tag()."','"
+				  .$feature->primary_tag()."')");
+	 $sth2->execute();
+	$c++;
     }
 }
 
