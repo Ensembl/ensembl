@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 97;
+	plan tests => 100;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -507,6 +507,38 @@ $f2 = new Bio::EnsEMBL::Feature( -start => 11,
 
 ok( ! $f2->overlaps( $f1 ));
 
+
+
+
+#
+# test get_all_alt_locations
+#
+$chr_slice = $slice_adaptor->fetch_by_region('chromosome', 'Y', 10000000,
+                                             10500000);
+
+$f1 = new Bio::EnsEMBL::Feature(-start => 10, -end => 20, -strand => 1,
+                                -slice => $chr_slice);
+
+my @alt = @{$f1->get_all_alt_locations()};
+
+ok(@alt == 1);
+ok($alt[0]->slice->seq_region_name eq '20' &&
+   $alt[0]->start == 30300009 && $alt[0]->end == 30300019);
+
+print_locations($f1);
+
+
+print_locations($alt[0]);
+
+@alt = @{$alt[0]->get_all_alt_locations()};
+ok($alt[0]->slice->seq_region_name eq 'Y' &&
+   $alt[0]->start == 10000009 && $alt[0]->end == 10000019);
+
+
+
+
+
+
 #
 # other coord system overlaps
 #
@@ -540,3 +572,17 @@ ok( ! $f2->overlaps( $f1 ));
 
 # debug( "seqname f1<->f2 overlap = ".($f1->overlaps( $f2 )));
 # ok( ($f1->overlaps( $f2 )));
+
+
+
+sub print_locations {
+  my $f = shift;
+
+  debug("* ". $f->slice->seq_region_name(). " ".
+        $f->seq_region_start. "-". $f->seq_region_end(). "\n");
+
+  foreach my $af (@{$f->get_all_alt_locations()}) {
+    debug("  ". $af->slice->seq_region_name(). " ".
+        $af->seq_region_start. "-". $af->seq_region_end(). "\n");
+  }
+}
