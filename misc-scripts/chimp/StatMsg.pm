@@ -40,6 +40,8 @@ use constant FIVE_PRIME             => 0x00010000;
 use constant THREE_PRIME            => 0x00020000;
 use constant MIDDLE                 => 0x00040000;
 
+use constant CONFUSED               => 0x00080000;
+
 use vars qw(@EXPORT_OK @ISA);
 
 @ISA = qw(Exporter);

@@ -1,11 +1,14 @@
 use strict;
 use warnings;
 
+package Deletion;
+
 use InterimExon;
 use StatMsg;
 use Length;
 
-package Deletion;
+use Bio::EnsEMBL::Utils::Exception qw(throw info);
+
 
 ###############################################################################
 # process_delete
@@ -18,14 +21,15 @@ sub process_delete {
   my $del_len           = shift;
   my $exon        = shift;
   my $transcript  = shift;
+  my $entire_delete = shift;
 
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
 
   # sanity check, deletion should be completely in
   # or adjacent to exon boundaries
-  if($del_start < $exon->cdna_start() - 1 ||
-     $del_start > $exon->cdna_end() + 1) {
+  if(!$entire_delete && ($del_start < $exon->cdna_start() - 1 ||
+			 $del_start > $exon->cdna_end() + 1)) {
 
     throw("Unexpected: deletion is outside of exon boundary\n" .
           "     del_start       = $del_start\n" .
@@ -71,7 +75,8 @@ sub process_delete {
       $cds_del_len = $del_len;
     }
 
-    process_cds_delete($cdna_del_pos_ref, $cds_del_len, $exon, $transcript);
+    process_cds_delete($cdna_del_pos_ref, $cds_del_len, $exon, $transcript,
+		      $entire_delete);
 
     # take away the processed part of the deletion
     $del_start += $cds_del_len;
@@ -142,7 +147,7 @@ sub process_three_prime_utr_deletion {
 }
 
 ###############################################################################
-# process_cds_deletion
+# process_cds_delete
 #
 # processes a deletion in the cds of a transcript
 ###############################################################################
@@ -152,6 +157,7 @@ sub process_cds_deletion {
   my $del_len          = shift;
   my $exon             = shift;
   my $transcript       = shift;
+  my $entire_delete    = shift;
 
   my $del_start = $$cdna_del_pos_ref + 1;
   my $del_end   = $del_start + $del_len - 1;
@@ -169,7 +175,7 @@ sub process_cds_deletion {
   #
   if($del_start == $transcript->cdna_coding_start() &&
      $del_end   == $transcript->cdna_coding_end()) {
-    debug("delete ($del_len) is all of cds");
+    info("delete ($del_len) is all of cds");
 
     $code |= StatMsg::ENTIRE;
   }
@@ -178,7 +184,7 @@ sub process_cds_deletion {
   # case 2: delete is at start of CDS
   #
   elsif($del_start == $transcript->cdna_coding_start()) {
-    debug("delete ($del_len) at start of cds");
+    info("delete ($del_len) at start of cds");
 
     $code |= StatMsg::FIVE_PRIME;
 
@@ -186,7 +192,7 @@ sub process_cds_deletion {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
 
       # move down CDS start to put reading frame back (shrink CDS)
-      debug("shifting cds start to restore reading frame");
+      info("shifting cds start to restore reading frame");
       $transcript->move_cdna_coding_start(3 - $frameshift);
     }
   }
@@ -195,7 +201,7 @@ sub process_cds_deletion {
   # case 3: delete is at end of CDS
   #
   elsif($del_end == $transcript->cdna_coding_end()) {
-    debug("delete ($del_len) at end of cds");
+    info("delete ($del_len) at end of cds");
 
     $code |= StatMsg::THREE_PRIME;
 
@@ -203,7 +209,7 @@ sub process_cds_deletion {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
 
       # move up CDS end to put reading frame back (shrink CDS)
-      debug("shifting cds end to restore reading frame");
+      info("shifting cds end to restore reading frame");
       $transcript->move_cdna_coding_end(3 - $frameshift);
     }
   }
@@ -213,11 +219,11 @@ sub process_cds_deletion {
   #
   elsif($del_end   > $transcript->cdna_coding_start() &&
         $del_start < $transcript->cdna_coding_end()) {
-    debug("delete ($del_len) in middle of cds");
+    info("delete ($del_len) in middle of cds");
 
     $code |= StatMsg::MIDDLE;
 
-    if($frameshift) {
+    if($frameshift && !$entire_delete) {
       $code |= StatMsg::FRAMESHIFT if($frameshift);
 
       # this is going to require splitting the exon
@@ -235,7 +241,7 @@ sub process_cds_deletion {
       # intron, compensate by reducing cdna position by intron len
       $$cdna_del_pos_ref -= $intron_len;
 
-      debug("introducing frameshift intron ($intron_len) " .
+      info("introducing frameshift intron ($intron_len) " .
             "to maintain reading frame");
 
       if($first_len + $intron_len >= $exon->length()) {
@@ -302,11 +308,6 @@ sub process_cds_deletion {
 
   return;
 }
-
-
-
-
-
 
 
 1;

@@ -11,19 +11,17 @@ use InterimTranscript;
 use InterimExon;
 use StatMsg;
 use Deletion;
+use Insertion;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
-
-
-my $verbose;
 
 {  #block to avoid namespace pollution
 
   my ($hhost, $hdbname, $huser, $hpass, $hport, $hassembly,  #human vars
       $hchromosome, $hstart, $hend,
       $chost, $cdbname, $cuser, $cpass, $cport, $cassembly,  #chimp vars
-      $help);
+      $help, $verbose);
 
   GetOptions('hhost=s'   => \$hhost,
              'hdbname=s' => \$hdbname,
@@ -43,6 +41,7 @@ my $verbose;
              'help'      => \$help,
              'verbose'   => \$verbose);
 
+  verbose('INFO') if($verbose); # turn on prints of info statements
 
   usage() if($help);
   usage("-hdbname option is required") if (!$hdbname);
@@ -57,7 +56,7 @@ my $verbose;
   $hassembly ||= 'NCBI34';
   $cassembly ||= 'BROAD1';
 
-  debug("Connecting to human database");
+  info("Connecting to human database");
 
   my $human_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
     (-host    => $hhost,
@@ -66,7 +65,7 @@ my $verbose;
      -user   => $huser,
      -port   => $hport);
 
-  debug("Connecting to chimp database");
+  info("Connecting to chimp database");
 
   my $chimp_db = Bio::EnsEMBL::DBSQL::DBAdaptor->new
     (-host    => $chost,
@@ -82,7 +81,7 @@ my $verbose;
   my $gene_adaptor    = $human_db->get_GeneAdaptor();
 
 
-  debug("Fetching chromosomes");
+  info("Fetching chromosomes");
 
   my $slices;
 
@@ -100,85 +99,38 @@ my $verbose;
     $slices = $slice_adaptor->fetch_all('chromosome', $hassembly);
   }
 
-  my %err_count;
-  my %err_descs;
-  my %ok_err_count;
 
-  my $total_transcripts = 0;
-  my $mapped_transcripts = 0;
-  my $total_known   = 0;
-  my $mapped_known  = 0;
+  my $cs_adaptor      = $human_db->get_CoordSystemAdaptor();
+  my $asmap_adaptor   = $human_db->get_AssemblyMapperAdaptor();
+
+  my $chimp_cs = $cs_adaptor->fetch_by_name('scaffold',  $cassembly);
+  my $chimp_ctg_cs = $cs_adaptor->fetch_by_name('contig');
+  my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
+
+  my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
+
 
   foreach my $slice (@$slices) {
 
-    debug("Chromosome: " . $slice->seq_region_name());
-    debug("Fetching Genes");
+    info("Chromosome: " . $slice->seq_region_name());
+    info("Fetching Genes");
 
     my $genes = $gene_adaptor->fetch_all_by_Slice($slice);
 
     foreach my $gene (reverse @$genes) {
-      debug("Gene: ".$gene->stable_id);
+      info("Gene: ".$gene->stable_id);
       my $transcripts = $gene->get_all_Transcripts();
 
       foreach my $transcript (@$transcripts) {
         next if(!$transcript->translation); #skip pseudo genes
 
-        $total_transcripts++;
-        $total_known++ if($transcript->is_known);
-
-        my @mapped_trans = transfer_transcript($human_db,$chimp_db,$transcript,
-                                             $hassembly, $cassembly);
-
-        if(@mapped_trans) {
-          foreach my $mapped_trans (@mapped_trans) {
-            debug("\nTranslation:" . $mapped_trans->translate()->seq()."\n\n");
-          }
-          $mapped_known++ if($transcript->is_known());
-          $mapped_transcripts++;
-
-          while(my ($ec, $edesc) = pop_err()) {
-            $ok_err_count{$ec}++;
-          }
-
-        } else {
-          debug("Transcript failed to map\n");
-          while(my ($ec, $edesc) = pop_err()) {
-            next if($ec == ErrCode::SHORT_FRAMESHIFT_DELETE);
-            next if($ec == ErrCode::SHORT_FRAMESHIFT_INSERT);
-            $err_count{$ec}++;
-            if($edesc) {
-              $err_descs{$ec} ||= [];
-              push @{$err_descs{$ec}}, $edesc;
-            }
-          }
-        }
-
-        print STDERR "Total Transcripts : $total_transcripts\n";
-        print STDERR "Known  Transcripts: $total_known\n";
-        print STDERR "Mapped Transcripts: $mapped_transcripts\n";
-        print STDERR "Known Mapped Transcripts: $mapped_known\n";
-
+        my $interim_transcript = transfer_transcript($transcript, $mapper,
+						    $human_cs);
+	my @transcripts = 
+	  create_transcripts($interim_transcript, $slice_adaptor);
       }
     }
   }
-
-  print STDERR "Mapping Failure Summary\n";
-  print STDERR "#Occurances\tDescription\n";
-  print STDERR "-----------\t----------------\n";
-
-  foreach my $ec (sort {$err_count{$a} <=> $err_count{$b}} keys %err_count) {
-    print STDERR $err_count{$ec}, "\t\t", ec2str($ec), "\n";
-    #foreach my $desc (@{$err_descs{$ec}}) {
-    #  print STDERR "\t\t  ", $desc, "\n";
-    #}
-  }
-
-  print STDERR "Other Info\n";
-    foreach my $ec (sort {$ok_err_count{$a} <=> $ok_err_count{$b}} 
-                    keys %ok_err_count) {
-    print STDERR $ok_err_count{$ec}, "\t\t", ec2str($ec), "\n";
-  }
-
 }
 
 
@@ -189,33 +141,18 @@ my $verbose;
 ###############################################################################
 
 sub transfer_transcript {
-  my $human_db   = shift;
-  my $chimp_db   = shift;
   my $transcript = shift;
-  my $hassembly  = shift;
-  my $cassembly  = shift;
+  my $mapper = shift;
+  my $human_cs = shift;
 
-  debug("Transcript: " . $transcript->stable_id());
-
-  my $cs_adaptor      = $human_db->get_CoordSystemAdaptor();
-  my $asmap_adaptor   = $human_db->get_AssemblyMapperAdaptor();
-
-  my $chimp_cs = $cs_adaptor->fetch_by_name('scaffold',  $cassembly);
-  my $chimp_ctg_cs = $cs_adaptor->fetch_by_name('contig');
-  my $human_cs = $cs_adaptor->fetch_by_name('chromosome', $hassembly);
-
-  my $mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs, $human_cs);
-  my $scaf2ctg_mapper = $asmap_adaptor->fetch_by_CoordSystems($chimp_cs,
-                                                              $chimp_ctg_cs);
+  info("Transcript: " . $transcript->stable_id());
 
   my $human_exons = $transcript->get_all_Exons();
 
-  if(!$transcript->translation()) { #watch out for pseudogenes
-    debug("pseudogene - discarding");
-    return ();
+  if(!$transcript->translation()) { # watch out for pseudogenes
+    info("pseudogene - discarding");
+    return;
   }
-
-  my $trans_mapper = $transcript->get_TranscriptMapper();
 
   my $chimp_cdna_pos = 0;
   my $cdna_exon_start = 1;
@@ -231,11 +168,13 @@ sub transfer_transcript {
   foreach my $human_exon (@$human_exons) {
 
     my $chimp_exon = InterimExon->new();
-    $chimp_exon->stable_id($stable_id);
+    $chimp_exon->stable_id($human_exon->stable_id());
     $chimp_exon->cdna_start($cdna_exon_start);
 
-    my @coords = $mapper->map($exon->seq_region_name, $exon->seq_region_start,
-                              $exon->seq_region_end, $exon->seq_region_strand,
+    my @coords = $mapper->map($human_exon->seq_region_name(),
+			      $human_exon->seq_region_start(),
+                              $human_exon->seq_region_end(),
+			      $human_exon->seq_region_strand(),
                               $human_cs);
 
     if(@coords == 1) {
@@ -243,43 +182,21 @@ sub transfer_transcript {
 
       if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
         #
-        # complete failure to map exon
+        # Case 1: Complete failure to map exon
         #
-	my $stat_code = StatMsg::EXON | StatMsg::DELETE | StatMsg::ENTIRE;
 
-        $chimp_exon->fail(1);
+	my $entire_delete = 1;
+
+	Deletion::process_entire_delete(\$chimp_cdna_pos, $c->length(),
+					$chimp_exon,
+					$chimp_transcript, $entire_delete);
+
+	$chimp_exon->fail(1);
 	$chimp_transcript->add_Exon($chimp_exon);
 
-        #if this is a UTR exon, this is ok
-        my @cds_coords = $trans_mapper->genomic2cds($c->start(),$c->end(),
-                                                    $exon->strand);
-
-        #check if this exon was entirely UTR
-        if(@cds_coords == 1 &&
-           $cds_coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-          debug('entire utr exon deletion - ok');
-
-	  $stat_code |= StatMsg::UTR;
-
-	  $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
-
-          # we can simply throw out this exon, it was all UTR
-        } else {
-          ### TBD: can do more sensible checking and maybe split transcript
-	  $stat_code |= StatMsg::CDS;
-
-	  if(@cds_coords > 1) {
-	    # some UTR was deleted too
-	    $stat_code |= StatMsg::UTR;
-	  }
-
-          $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
-
-          return ();
-        }
       } else {
         #
-        # exon mapped completely
+        # Case 2: Exon mapped perfectly
         #
 
         $chimp_exon->start($c->start());
@@ -295,236 +212,95 @@ sub transfer_transcript {
         $chimp_transcript->add_Exon($chimp_exon);
       }
     } else {
-      my $num = scalar(@coords);
+      #
+      # Case 3 : Exon mapped partially
+      #
 
       get_coords_extent(\@coords, $chimp_exon);
 
       if($chimp_exon->fail()) {
-        #failed to obtain extent of coords due to scaffold spanning
-        #strand flipping, or exon inversion
+        # Failed to obtain extent of coords due to scaffold spanning
+        # strand flipping, or exon inversion.
+	# Treat this as if the exon did not map at all.
 
-	$transcript->add_Exon($chimp_exon);
+	my $entire_delete = 1;
 
-        ### TBD - fix this, may be ok to drop exon and continue esp. if exon
-        ###       is entirely UTR
-        return ();
-      }
+	Deletion::process_delete(\$chimp_cdna_pos,
+					$human_exon->length(),
+					$chimp_exon,
+					$chimp_transcript, $entire_delete);
 
-      for(my $i=0; $i < $num; $i++) {
-        my $c = $coords[$i];
+      } else {
 
-        if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+	my $num = scalar(@coords);
 
-          #
-          # deletion in chimp, insert in human
-          #
-          Deletion::process_deletion(\$chimp_cdna_pos, $c->length(),
+	for(my $i=0; $i < $num; $i++) {
+	  my $c = $coords[$i];
+
+	  if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
+
+	    #
+	    # deletion in chimp, insert in human
+	    #
+	    Deletion::process_delete(\$chimp_cdna_pos, $c->length(),
 				     $chimp_exon, $chimp_transcript);
 
-        } else {
-          # can actually end up with adjacent inserts and deletions so we need
-          # to take the previous coordinate skipping over gaps that may have
-          # been first
+	  } else {
+	    # can end up with adjacent inserts and deletions so need
+	    # to take previous coordinate, skipping over gaps
+	    my $prev_c = undef;
 
-          my $prev_c = undef;
+	    for(my $j = $i-1; $j >= 0 && !defined($prev_c); $j--) {
+	      if($coords[$j]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+		$prev_c = $coords[$j];
+	      }
+	    }
 
-          for(my $j = $i-1; $j >= 0 && !defined($prev_c); $j--) {
-            if($coords[$j]->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-              $prev_c = $coords[$j];
-            }
-          }
+	    if($prev_c) {
 
-          if($prev_c) {
+	      my $insert_len;
+	      if($chimp_exon->strand() == 1) {
+		$insert_len = $c->start() - $prev_c->end() - 1;
+	      } else {
+		$insert_len = $prev_c->start() - $c->end() - 1;
+	      }
 
-            my $insert_len;
-            if($exon_strand == 1) {
-              $insert_len = $c->start() - $prev_c->end() - 1;
-            } else {
-              $insert_len = $prev_c->start() - $c->end() - 1;
-            }
+	      #sanity check:
+	      if($insert_len < 0) {
+		throw("Unexpected - negative insert " .
+		      "- undetected exon inversion?");
+	      }
 
-            #sanity check:
-            if($insert_len < 0) {
-              throw("Unexpected - negative insert " .
-                    "- undetected exon inversion?");
-            }
+	      if($insert_len > 0) {
 
-            if($insert_len > 0) {
+		#
+		# insert in chimp, deletion in human
+		#
 
-              #
-              # insert in chimp, deletion in human
-              #
+		Insertion::process_insert(\$chimp_cdna_pos, $insert_len,
+					  $chimp_exon, $chimp_transcript);
 
-              process_insertion(\$chimp_cdna_pos, $insert_len,
-                                $chimp_exon, $chimp_transcript);
+		$chimp_cdna_pos += $insert_len;
+	      }
+	    }
 
-              $chimp_cdna_pos += $insert_len;
-            }
-          }
-
-          $chimp_cdna_pos += $c->length();
-        }
+	    $chimp_cdna_pos += $c->length();
+	  }
+	}
       }  # foreach coord
 
       $cdna_exon_start += $chimp_exon->length();
-
-      $chimp_transcript->add_Exon($chimp_exon);
     }
+
+    $chimp_transcript->add_Exon($chimp_exon);
+
   } # foreach exon
 
-  my $slice_adaptor = $chimp_db->get_SliceAdaptor();
-
-  return create_transcripts(\@chimp_exons,
-                            $cdna_coding_start, $cdna_coding_end,
-                            $slice_adaptor);
+  return $chimp_transcript;
 }
 
 
-###############################################################################
-# process_insertion
-#
-###############################################################################
 
-sub process_insertion {
-  my $cdna_ins_pos_ref = shift;   #basepair to left of insert
-  my $insert_len       = shift;
-  my $exon             = shift;
-  my $transcript       = shift;
-
-  # sanity check, insert should be completely in exon boundaries
-  if($$cdna_ins_pos_ref <  $exon->cdna_start() ||
-     $$cdna_ins_pos_ref >= $exon->cdna_end()) {
-
-    # because some small (<3bp) matches can be completely eaten away by the
-    # introduction of frameshift introns it is possible to get an insert
-    # immediately before a newly created (i.e.) split intron
-
-    if($$cdna_ins_pos_ref < $exon->cdna_start  &&
-       $$cdna_ins_pos_ref + 3 >= $exon->cdna_start  ) {
-      ### TBD not sure what should be done with this situation
-
-      $exon->add_StatMsg(StatMsg->new(StatMsg::PART_EXON_CONFUSED));
-      $exon->fail(1);
-      $transcript->fail(1);
-      return;
-    }
-
-    throw("Unexpected: insertion is outside of exon boundary\n" .
-          "     ins_left       = $$cdna_ins_pos_ref\n" .
-          "     ins_right      = " . ($$cdna_ins_pos_ref+1) . "\n" .
-          "     cdna_exon_start = ". $exon->cdna_start()."\n" .
-          "     cdna_exon_end   = ". $exon->cdna_end()."\n";);
-  }
-
-
-  #
-  # case 1: insert in CDS
-  #
-  if($$cdna_ins_pos_ref >= $transcript->cdna_coding_start() &&
-     $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
-
-    debug("insertion in cds ($insert_len)");
-
-    if($insert_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been inserted
-
-      my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_INSERT_TOO_LONG);
-      $exon->add_StatMsg($sm);
-      $exon->fail(1);
-      $transcript->fail(1);
-      return;
-    }
-
-    # adjust CDS end accordingly
-    $transcript->move_cdna_coding_end($insert_len);
-
-    my $frameshift = $insert_len % 3;
-
-    if($frameshift) {
-      if($insert_len > $MAX_FRAMESHIFT_INDEL) {
-        my $sm=StatMsg->new(StatMsg::PART_EXON_CDS_FRAMESHIFT_INSERT_TOO_LONG);
-        $exon->add_StatMsg($sm);
-        $exon->fail(1);
-        $transcript->fail(1);
-        return;
-      }
-
-      $exon->add_StatMsg(StatMsg->new(StatMsg::SHORT_FRAMESHIFT_INSERT));
-
-      # need to create frameshift intron to get reading frame back on track
-      # exon needs to be split into two
-
-      debug("introducing frameshift intron to maintain reading frame");
-
-      # first exon ends right before insert
-      my $first_len  = $$cdna_ins_pos_ref - $exon->cdna_start() + 1;
-
-      # copy the original exon and adjust coords of each to perform 'split'
-      my $first_exon = InterimExon->new();
-      %{$first_exon} = %{$exon};
-      $exon->flush_StatMsgs();
-
-      # frame shift intron eats into start of inserted region
-      # second exon is going to start right after 'frameshift intron'
-      # which in cdna coords is immediately after last exon
-      $first_exon->cdna_end($first_exon->cdna_start + $first_len - 1);
-      $exon->cdna_start($first_exon->cdna_end + 1);
-
-      # decrease the length of the CDS by the length of new intron
-      $transcript->move_cdna_coding_end(-$frameshift);
-
-      # the insert length will be added to the cdna_position
-      # but part of the insert was used to create the intron and is not cdna
-      # anymore, so adjust the cdna_position to compensate
-      $$cdna_ins_pos_ref -= $frameshift;
-
-      ### TBD may have to check we have not run up to end of CDS here
-
-      if($exon->strand() == 1) {
-        # end the first exon at the beginning of the insert
-        $first_exon->end($first_exon->start() + $first_len -1 );
-
-        # start the next exon after the frameshift intron
-        $exon->start($exon->start() + $first_len + $frameshift);
-      } else {
-        $first_exon->start($first_exon->end() - $first_len + 1);
-
-        # start the next exon after the frameshift intron
-        $exon->end($exon->end() - ($first_len + $frameshift));
-      }
-      return;
-    }
-  }
-
-  #
-  # case 2: insert in 5 prime UTR (or between 5prime UTR and CDS)
-  #
-  elsif($$cdna_ins_pos_ref < $$cdna_coding_start_ref) {
-    debug("insertion ($insert_len) in 5' utr");
-
-    #shift the coding region down as result of insert
-    $transcript->move_cdna_coding_start($insert_len);
-    $transcript->move_cdna_coding_end($insert_len);
-  }
-
-  #
-  # case 3: insert in 3 prime UTR (or between 3prime UTR and CDS)
-  #
-  elsif($$cdna_ins_pos_ref >= $$cdna_coding_end_ref) {
-    debug("insert ($insert_len) in 3' utr");
-
-    #do not have to do anything
-  }
-
-  #
-  # default: sanity check
-  #
-  else {
-    throw("Unexpected insert case encountered");
-  }
-
-  return [];
-}
 
 ###############################################################################
 # get_coords_extent
@@ -623,10 +399,8 @@ sub get_coords_extent {
 ################################################################################
 
 sub create_transcripts {
-  my $exon_coords       = shift;
-  my $cdna_coding_start = shift;
-  my $cdna_coding_end   = shift;
-  my $slice_adaptor     = shift;
+  my $itranscript   = shift; # interim transcript
+  my $slice_adaptor = shift;
 
   my $transcript_strand = undef;
   my $transcript_seq_region = undef;
@@ -639,40 +413,47 @@ sub create_transcripts {
   my $cdna_start = 1;
   my $cur_phase  = undef;
 
-  foreach my $exon_coord (@$exon_coords) {
-    my($exon_start, $exon_end, $exon_strand, $seq_region) = @$exon_coord;
+  #
+  # If all of the CDS was deleted, then we do not want to create a translation
+  #
+  my $has_translation = 1;
+  if($itranscript->cdna_coding_start == $itranscript->cdna_coding_end + 1) {
+    my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::NO_CDS_LEFT);
+    $itranscript->add_StatMsg($stat_msg);
+    $has_translation = 0;
+  }
+
+  foreach my $iexon (@{$itranscript->get_all_Exons()}) {
+
+    ### TBD do something with failed exons, maybe split transcript here?
+    next if($iexon->fail());
 
     #sanity check:
-    if($exon_end < $exon_start) {
-      my $exon_dump = '';
-      foreach my $ex (@$exon_coords) {
-        if($ex->[0] > $ex->[1]) {
-          $exon_dump .= '*';
-        }
-        $exon_dump .= '  [' . join(' ', @$ex) . "]\n";
-      }
-      throw("Unexpected: received exon start less than end:\n$exon_dump\n");
+    if($iexon->end() < $iexon->start()) {
+      throw("Unexpected: exon start less than end.");
     }
 
-    my $exon_len = $exon_end - $exon_start + 1;
-    my $cdna_end = $cdna_start + $exon_len - 1;
+    my $cdna_end = $cdna_start + $iexon->length() - 1;
 
     if(!defined($transcript_seq_region)) {
-      $transcript_seq_region = $seq_region;
+      $transcript_seq_region = $iexon->seq_region();
     }
-    elsif($transcript_seq_region ne $seq_region) {
-      push_err(ErrCode::TRANSCRIPT_SCAFFOLD_SPAN);
+    elsif($transcript_seq_region ne $iexon->seq_region()) {
+      my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::SCAFFOLD_SPAN);
+      $itranscript->add_StatMsg($stat_msg);
       ### TBD can probably split transcript rather than discarding
-      return ();
+      $itranscript->fail(1);
+      return;
     }
 
     if(!defined($transcript_strand)) {
-      $transcript_strand = $exon_strand;
+      $transcript_strand = $iexon->strand();
     }
-    elsif($transcript_strand != $exon_strand) {
-      push_err(ErrCode::TRANSCRIPT_STRAND_FLIP);
+    elsif($transcript_strand != $iexon->strand()) {
+      my $stat_msg = StatMsg->new(StatMsg::TRANSCRIPT | StatMsg::STRAND_FLIP);
+      $itranscript->add_StatMsg($stat_msg);
       ### TBD can probably split transcript rather than discarding
-      return ();
+      return;
     }
 
     #
@@ -681,51 +462,65 @@ sub create_transcripts {
 
     my ($start_phase, $end_phase);
 
-    if(defined($cur_phase)) {
-      if($cdna_start <= $cdna_coding_end) {
-        $start_phase = $cur_phase; #start phase is last exons end phase
+    if($has_translation) {
+
+      if(defined($cur_phase)) {
+	if($cdna_start <= $itranscript->cdna_coding_end()) {
+	  $start_phase = $cur_phase; #start phase is last exons end phase
+	} else {
+	  #the end of the last exon was the end of the CDS
+	  $start_phase = -1;
+	}
       } else {
-        #the end of the last exon was the end of the CDS
-        $start_phase = -1;
+	#sanity check
+	if($cdna_start > $itranscript->cdna_coding_start() &&
+	   $cdna_start < $itranscript->cdna_coding_end()) {
+	  throw("Unexpected.  Start of CDS is not in exon?\n" .
+		"  exon_cdna_start = $cdna_start\n" .
+		"  cdna_coding_start = ".$itranscript->cdna_coding_start());
+	}
+	if($cdna_start == $itranscript->cdna_coding_start()) {
+	  $start_phase = 0;
+	} else {
+	  $start_phase = -1;
+	}
+      }
+
+      if($cdna_end < $itranscript->cdna_coding_start() ||
+	 $cdna_end > $itranscript->cdna_coding_end()) {
+	#the end of this exon is outside the CDS
+	$end_phase = -1;
+      } else {
+	#the end of this exon is in the CDS
+	#figure out how much coding sequence in the exon
+	
+	my $coding_start;
+	if($itranscript->cdna_coding_start() > $cdna_start) {
+	  $coding_start = $itranscript->cdna_coding_start();
+	} else {
+	  $coding_start = $cdna_start;
+	}
+	my $coding_len = $cdna_end - $cdna_start + 1;
+	
+	if($start_phase > 0) {
+	  $coding_len += $start_phase;
+	}
+
+	$end_phase = $coding_len % 3;
       }
     } else {
-      #sanity check
-      if($cdna_start > $cdna_coding_start && $cdna_start < $cdna_coding_end) {
-        throw("Unexpected.  Start of CDS is not in exon?\n" .
-              "  exon_cdna_start = $cdna_start\n" .
-              "  cdna_coding_start = $cdna_coding_start");
-      }
-      if($cdna_coding_start == $cdna_coding_start) {
-        $start_phase = 0;
-      } else {
-        $start_phase = -1;
-      }
+      #if there is no translation, all phases should be -1
+      $start_phase = -1;
+      $end_phase   = -1;
     }
 
-    if($cdna_end < $cdna_coding_start ||
-       $cdna_end > $cdna_coding_end) {
-      #the end of this exon is outside the CDS
-      $end_phase = -1;
-    } else {
-      #the end of this exon is in the CDS
-      #figure out how much coding sequence in the exon
-      my $coding_start =
-        ($cdna_coding_start > $cdna_start) ? $cdna_coding_start : $cdna_start;
-      my $coding_len = $cdna_end - $cdna_start + 1;
-
-      if($start_phase > 0) {
-        $coding_len += $start_phase;
-      }
-
-      $end_phase = $coding_len % 3;
-    }
-
-    my $slice = $slice_adaptor->fetch_by_region('scaffold', $seq_region);
+    my $slice =
+      $slice_adaptor->fetch_by_region('scaffold', $iexon->seq_region);
 
     my $exon = Bio::EnsEMBL::Exon->new
-      (-START     => $exon_start,
-       -END       => $exon_end,
-       -STRAND    => $exon_strand,
+      (-START     => $iexon->start(),
+       -END       => $iexon->end(),
+       -STRAND    => $iexon->strand(),
        -PHASE     => $start_phase,
        -END_PHASE => $end_phase,
        -SLICE     => $slice);
@@ -736,40 +531,34 @@ sub create_transcripts {
     # see if this exon is the start or end exon of the translation
     #
 
-    if($cdna_start <= $cdna_coding_start &&
-       $cdna_end   >= $cdna_coding_start) {
-      my $translation_start = $cdna_coding_start - $cdna_start + 1;
-      $translation->start_Exon($exon);
-      $translation->start($translation_start);
-    }
-    if($cdna_start <= $cdna_coding_end &&
-       $cdna_end   >= $cdna_coding_end) {
-      my $translation_end = $cdna_coding_end - $cdna_start + 1;
-      $translation->end_Exon($exon);
-      $translation->end($translation_end);
-    }
+    if($has_translation) {
+      if($cdna_start <= $itranscript->cdna_coding_start() &&
+	 $cdna_end   >= $itranscript->cdna_coding_start()) {
+	my $translation_start =
+	  $itranscript->cdna_coding_start - $cdna_start + 1;
+	$translation->start_Exon($exon);
+	$translation->start($translation_start);
+      }
+      if($cdna_start <= $itranscript->cdna_coding_end() &&
+	 $cdna_end   >= $itranscript->cdna_coding_end()) {
+	my $translation_end = $itranscript->cdna_coding_end() - $cdna_start + 1;
+	$translation->end_Exon($exon);
+	$translation->end($translation_end);
+      }
 
-    $cdna_start = $cdna_end + 1;
-    $cur_phase = ($end_phase >= 0) ? $end_phase : undef;
+      $cdna_start = $cdna_end + 1;
+      $cur_phase = ($end_phase >= 0) ? $end_phase : undef;
+    }
   }
 
-  $transcript->translation($translation);
+
+  if($has_translation) {
+    $transcript->translation($translation);
+  }
   push @chimp_transcripts, $transcript;
 
   return @chimp_transcripts;
 }
-
-
-###############################################################################
-# debug
-#
-###############################################################################
-
-sub debug {
-  my $msg  = shift;
-  print STDERR "$msg\n" if($verbose);
-}
-
 
 
 
