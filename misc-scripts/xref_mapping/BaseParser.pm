@@ -19,11 +19,11 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my $host = "ecs4";
-my $port = 3350;
-my $dbname = "ianl_xref_test";
-my $user = "ensadmin";
-my $pass = "ensembl";
+my $host;
+my $port;
+my $dbname;
+my $user;
+my $pass;
 my @species;
 my @sources;
 
@@ -49,6 +49,13 @@ sub get_options {
 
   @species = split(/,/,join(',',@species));
   @sources  = split(/,/,join(',',@sources));
+
+  if (!$user || !$host || !$dbname) {
+
+    usage();
+    exit(1);
+
+  }
 
 }
 
@@ -668,6 +675,7 @@ sub validate_species {
   return @species_ids;
 
 }
+
 # --------------------------------------------------------------------------------
 
 1;
