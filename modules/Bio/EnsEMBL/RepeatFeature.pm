@@ -26,13 +26,13 @@ sub score {
     return $self->{'_score'};
 }
 
-sub repeat_id {
-    my( $self, $repeat_id ) = @_;
+sub repeat_consensus_id {
+    my( $self, $repeat_consensus_id ) = @_;
     
-    if ($repeat_id) {
-        $self->{'_repeat_id'} = $repeat_id;
+    if ($repeat_consensus_id) {
+        $self->{'_repeat_consensus_id'} = $repeat_consensus_id;
     }
-    return $self->{'_repeat_id'};
+    return $self->{'_repeat_consensus_id'};
 }
 
 sub contig_id {
@@ -70,8 +70,8 @@ sub repeat_consensus {
 sub get_RepeatConsensus {
     my( $self ) = @_;
     
-    my $repeat_id = $self->repeat_id;
-    return $self->repeat_consensus_adaptor->fetch_by_dbID($repeat_id);
+    my $repeat_consensus_id = $self->repeat_consensus_id;
+    return $self->repeat_consensus_adaptor->fetch_by_dbID($repeat_consensus_id);
 }
 
 
