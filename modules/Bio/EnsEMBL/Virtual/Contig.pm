@@ -488,8 +488,10 @@ sub get_all_VirtualGenes_startend{
        }
        
        if ($internalExon) {    
-	   my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, 
-						   -start => $genestart, -end => $geneend, 
+	   my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,
+                                                   -contig => $self, 
+						   -start => $genestart, 
+                                                   -end => $geneend, 
 						   -strand => $genestr);
 	   push(@ret,$vg);
  
@@ -677,11 +679,11 @@ sub get_MarkerFeatures {
 =cut
 
 sub get_all_Genes {
-    my ($self) = @_;
+    my ($self, $supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_all_Genes() ) {      
+	foreach my $gene ( $contig->get_all_Genes($supporting) ) {
 	    $gene{$gene->id()} = $gene;
 	}
     }
@@ -851,14 +853,15 @@ sub _gene_query{
     my ($self,%gene) = @_;
     my (%trans,%exon,%exonconverted);
         
+    my $internalExon = 0;
 
     foreach my $gene ( values %gene ) {
 
-	my $internalExon = 0;
-
+        $internalExon =0;
 
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
+            # print STDERR "Internal exon is...",$internalExon,"\n";
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
 
@@ -900,6 +903,7 @@ sub _gene_query{
 		    $exon->end($st_end);
 		    $exon->strand($st_strand);
 		    $exonconverted{$exon->id} = 1;
+                    $internalExon = 1;
 		} else {
 		    # do nothing
 		}
@@ -907,13 +911,18 @@ sub _gene_query{
 	    } else {
 		# soooooo much simpler
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+                    #print STDERR "Mapped a non sticky exon!\n";
 		    $internalExon = 1;
 		    $exonconverted{$exon->id} = 1;
 		}               
 	    }
 	}
         
-        unless ($internalExon) {    
+        if ($internalExon == 0) { 
+# Utterly weird perl behaviour on acari: using unless breaks this 
+#        unless  ($internalExon) {
+       #     print STDERR "Deleting ",$gene->id,"\n";
+        #    my $geneid = $gene->id;
             delete $gene{$gene->id};
         } 
     }
@@ -921,6 +930,7 @@ sub _gene_query{
 # PL: there used (rev. 1.17) to be code dealing with converting raw to
 # virtual coords for Translation objs; that is not needed anymore. 
 
+    
     return values %gene;
 }
 
@@ -1136,8 +1146,9 @@ sub _convert_start_end_strand_vc {
     eval {
 	$mc=$self->_vmap->get_MapContig_by_id($contig);
     };
-    if($@) {
-	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig\n$@\n");
+ 
+    if ($@ || !ref $mc) { 
+	return undef;
     }
 
     if( $mc->orientation == 1 ) {
