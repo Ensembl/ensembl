@@ -157,6 +157,9 @@ sub upload_xrefs {
     my $syn_sth = $dbi->prepare("INSERT INTO synonym VALUES(?,?,?)");
     my $dep_sth = $dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
 
+    local $xref_sth->{RaiseError}; # disable error handling here as we'll do it ourselves
+    local $xref_sth->{PrintError};
+
     foreach my $xref (@xrefs) {
 
       # Create entry in xref table and note ID
@@ -164,10 +167,11 @@ sub upload_xrefs {
 			 $xref->{LABEL},
 			 $xref->{DESCRIPTION},
 			 $xref->{SOURCE_ID},
-			 $xref->{SPECIES_ID}) || die $dbi->errstr;
+			 $xref->{SPECIES_ID});
 
-      # get ID of xref just inserted
-      my $xref_id = $xref_sth->{'mysql_insertid'};
+      # If there was an error, an xref with the same acc & source already exists.
+      # If so, find its ID, otherwise get ID of xref just inserted
+      my $xref_id = insert_or_select($xref_sth, $dbi->err, $xref->{ACCESSION}, $xref->{SOURCE_ID});
 
       # create entry in primary_xref table with sequence
       # TODO experimental/predicted????
@@ -184,9 +188,10 @@ sub upload_xrefs {
 			   $xref->{LABEL},
 			   $xref->{DESCRIPTION},
 			   $xref->{SOURCE_ID},
-			   $xref->{SPECIES_ID}) || die $dbi->errstr;
+			   $xref->{SPECIES_ID});
 
-	my $syn_xref_id = $xref_sth->{'mysql_insertid'};
+	my $syn_xref_id = insert_or_select($xref_sth, $dbi->err, $syn, $xref->{SOURCE_ID});
+
 	$syn_sth->execute($xref_id, $syn_xref_id, $xref->{SOURCE_ID} ) || die $dbi->errstr;
 
       }				# foreach syn
@@ -339,6 +344,46 @@ sub md5sum {
 
 }
 
+# --------------------------------------------------------------------------------
+
+sub get_xref_id_by_accession_and_source {
+
+  my ($acc, $source_id) = @_;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT xref_id FROM xref WHERE accession=? AND source_id=?");
+  $sth->execute($acc, $source_id) || die $dbi->errstr;
+  my @row = $sth->fetchrow_array();
+  my $xref_id = $row[0];
+
+  return $xref_id;
+
+}
+
+# --------------------------------------------------------------------------------
+# If there was an error, an xref with the same acc & source already exists.
+# If so, find its ID, otherwise get ID of xref just inserted
+
+sub insert_or_select {
+
+  my ($sth, $error, $acc, $source) = @_;
+
+  my $id;
+
+  if ($error) {
+
+    $id = get_xref_id_by_accession_and_source($acc, $source);
+    print "Got existing xref id " . $id . " for " . $acc . " " . $source . "\n";
+
+  } else {
+	
+    $id = $sth->{'mysql_insertid'};
+
+  }
+
+  return $id;
+
+}
 
 # --------------------------------------------------------------------------------
 
