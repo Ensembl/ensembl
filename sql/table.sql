@@ -97,7 +97,7 @@ CREATE TABLE clone (
 # Table structure for table 'map_density'
 #
 CREATE TABLE map_density (
-   chromosome_id    tinyint unsigned NOT NULL,
+   chromosome_id    int unsigned NOT NULL,
    chr_start	    int(10) NOT NULL,
    chr_end	    int(10) NOT NULL,
    type		    varchar(20) NOT NULL,
@@ -490,7 +490,7 @@ CREATE TABLE gene_description (
 );
 
 CREATE TABLE karyotype (
-   chromosome_id  tinyint unsigned NOT NULL,
+   chromosome_id  int unsigned NOT NULL,
    chr_start      int(10)     NOT NULL,
    chr_end        int(10)     NOT NULL,
    band           varchar(40) NOT NULL,
