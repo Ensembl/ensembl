@@ -41,7 +41,7 @@ while(<>){
 }
 if(!defined($acc)){
   for(my $i=0;$i<=100; $i++){
-    print $i."\t".$q_bin[$i]."\t".$t_bin[$i]."\t".$m_bin[$i]."\n";
+    print $i.",".$q_bin[$i].",".$t_bin[$i].",".$m_bin[$i]."\n";
   }
   exit;
 }
