@@ -37,11 +37,11 @@ INSERT INTO source VALUES (1040, 'protein_id', 1, 'N', 2);
 INSERT INTO source VALUES (1050, 'PUBMED', 1, 'N', 2);
 INSERT INTO source VALUES (1060, 'MEDLINE', 1, 'N', 2);
 INSERT INTO source VALUES (1100, 'LocusLink', 1, 'N', 2);
-INSERT INTO source VALUES (1110, 'MIM', 1, 'N', 2);
 
 INSERT INTO source VALUES (1070, 'GO', 1, 'Y',2);
 INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
+
 
 ################################################################################
 # Files to fetch data from
@@ -66,7 +66,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 1,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/HUMAN/gene_association.goa_human.gz', '', now(), now(), "GOParser");
 
 ##       HUGO
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 1,'http://www.gene.ucl.ac.uk/public-files/nomen/ens1.txt', '', now(), now(), "HUGOParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 1,'http://www.gene.ucl.ac.uk/public-files/nomen/ens4.txt http://www.gene.ucl.ac.uk/public-files/nomen/ens1.txt', '', now(), now(), "HUGOParser");
+
 
 
 
