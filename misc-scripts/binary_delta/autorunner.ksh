@@ -23,8 +23,10 @@ function getdb
 	mkdir databases
     fi
     if [[ ! -d databases/${db}_${ver} ]]; then
+	trap "rm -rf databases/${db}_${ver}; exit 1" INT
 	lynx -source $url | (cd databases; pax -r -v \
 		-s "/.*${dbver}\//${dbver}\//")
+	trap - INT
     fi
 }
 
@@ -46,17 +48,21 @@ function do_delta
     typeset apply_out=deltas/${db}_${v1}_delta_${v2}_apply.out
 
     if [[ ! -f $build_out ]]; then
+	trap "rm $build_out; exit 1" INT
 	getdb $path1 $db $v1
 	getdb $path2 $db $v2
 
 	/usr/bin/time perl -w ./build.pl -c ./xdelta.osf \
 	    -s databases -d deltas \
 	    $db $v1 $v2 2>&1 | tee $build_out
+	trap - INT
     fi
     if [[ ! -f $apply_out ]]; then
+	trap "rm $apply_out; exit 1" INT
 	/usr/bin/time perl -w ./apply.pl -c ./xdelta.osf \
 	    -d databases -s deltas \
 	    $db $v1 $v2 2>&1 | tee $apply_out
+	trap - INT
     fi
 }
 
