@@ -277,20 +277,22 @@ sub fetch_by_transcript_id {
        $self->throw("Must have transcriptid id to fetch Slice of transcript");
    }
    if( !defined $size ) {$size=0;}
-   my $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
-                                              '-adaptor' => $self,
-					      '-ASSEMBLY_TYPE' =>
-					      $self->db->assembly_type);
+
    my $ta = $self->db->get_TranscriptAdaptor;
    my $transcript_obj = $ta->fetch_by_dbID($transcriptid);
 
    my %exon_transforms;
+
+  my $emptyslice;
    for my $exon ( $transcript_obj->get_all_Exons() ) {
+     $emptyslice = Bio::EnsEMBL::Slice->new( '-empty'   => 1,
+						'-adaptor' => $self,
+						'-ASSEMBLY_TYPE' =>
+						$self->db->assembly_type);     
      my $newExon = $exon->transform( $emptyslice );
      $exon_transforms{ $exon } = $newExon;
    }
    $transcript_obj->transform( \%exon_transforms );
-
 
   my $start = $transcript_obj->start() - $size;
   my $end = $transcript_obj->end() + $size;
@@ -298,7 +300,7 @@ sub fetch_by_transcript_id {
   if($start < 1) {
     $start = 1;
   }
-
+  
   my $slice = $self->fetch_by_chr_start_end($emptyslice->chr_name,
 					    $start, $end);
   return $slice;
@@ -436,19 +438,21 @@ sub _get_chr_start_end_of_gene {
                     (a.chr_start+a.contig_end-e.contig_end)),
    if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
                     (a.chr_start+a.contig_end-e.contig_start)),
-     a.chromosome_id
+     c.name
   
                     FROM    exon e,
                         transcript tr,
                         exon_transcript et,
                         assembly a,
-                        gene_stable_id gsi
+                        gene_stable_id gsi,
+                        chromosome c
                     WHERE e.exon_id=et.exon_id 
                     AND et.transcript_id =tr.transcript_id 
                     AND a.contig_id=e.contig_id 
                     AND a.type = '$type' 
                     AND tr.gene_id = gsi.gene_id
-                    AND gsi.stable_id = '$geneid';" 
+                    AND gsi.stable_id = '$geneid'
+                    AND a.chromosome_id = c.chromosome_id" 
                     );
    $sth->execute();
 
