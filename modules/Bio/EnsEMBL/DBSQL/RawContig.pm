@@ -453,7 +453,8 @@ sub get_old_Exons {
 
     my $oldclone = $old_db->get_Clone($self->cloneid);
 
-    @genes = $oldclone->get_all_Genes();
+    my @genes = $oldclone->get_all_Genes();
+    my @exons;
 
     foreach my $gene ( @genes ) {
 	foreach my $exon ( $gene->each_unique_Exon ) {
@@ -466,11 +467,12 @@ sub get_old_Exons {
 
     # now perform the mapping
 
+    my @mapped_exons;
   EXON:
-
+    
     foreach my $exon (@exons) {
 	
-	foreach $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
+	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
 		if( $fp->strand == $fp->hstrand ) {
 		    # straightforward mapping
@@ -485,7 +487,7 @@ sub get_old_Exons {
 		    $exon->end  ($fp->hend - ($oldstart - $fp->hstart));
 		    $exon->strand( -1 * $exon->strand);
 		}
-		push (@mapped_exons,$new_exon);
+		push (@mapped_exons,$exon);
 		next EXON;
 	    }
 	}
