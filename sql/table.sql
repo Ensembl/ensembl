@@ -767,7 +767,7 @@ CREATE TABLE qtl_synonym (
   qtl_id int unsigned not null,
   source_database enum("rat genome database", "ratmap") not null,
   source_primary_id varchar(255) not null,
-  primary key (qtl_synonym_id);
+  primary key (qtl_synonym_id),
   key qtl_idx(qtl_id)
 );
 
