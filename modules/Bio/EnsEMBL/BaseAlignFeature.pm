@@ -758,7 +758,7 @@ sub _transform_to_RawContig{
 
   foreach my $mf(@mapped_features){
 
-    my $contig_id = $mf->seqname;
+    my $contig_id = $mf->contig->dbID;
     if(!$rc_features{$contig_id}){
       $rc_features{$contig_id} = [];
     }
