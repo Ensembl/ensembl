@@ -398,6 +398,47 @@ execute($dbi,
 	     "FROM $target.tmp_chr_map tcm, $source.map_density md " .
 	     "WHERE tcm.old_id = md.chromosome_id");
 
+
+debug( "Translating mapfrag" );
+execute( $dbi,
+	 "INSERT INTO $target.misc_feature( misc_feature_id, seq_region_id, " . 
+	 "            seq_region_start, seq_region_end, seq_region_strand ) " .
+	 "SELECT m.mapfrag_id, sr.seq_region_id, m.seq_start, m.seq_end, m.orientation " .
+	 "FROM   $source.mapfrag m, $target.seq_region sr, $source.dnafrag d " . 
+	 "WHERE  m.dnafrag_id = d.dnafrag_id " .
+	 "AND    d.name = sr.name " );
+
+debug( "Translating mapset" );
+execute( $dbi,
+	 "INSERT INTO $target.misc_set( misc_set_id, code, name, description, " .
+	 "                              max_length ) " .
+	 "SELECT mapset_id, code, name, description, max_length " . 
+	 "FROM $source.mapset ms " );
+
+debug( "Translating mapannotationtype" );
+execute( $dbi,
+	 "INSERT INTO $target.misc_attrib_type( misc_attrib_type_id, code, name, description ) " .
+	 "SELECT mapannotationtype_id, code, name, description " .
+	 "FROM $source.mapannotationtype " );
+
+
+debug( "Translating mapannotation" );
+execute( $dbi,
+	 "INSERT INTO $target.misc_attrib( misc_feature_id, misc_attrib_type_id, " . 
+	 "                    value ) ". 
+	 "SELECT mapfrag_id, mapannotationtype_id, value " .
+	 "FROM $source.mapannotation" );
+
+debug( "Translating mapfrag_mapset" );
+execute( $dbi,
+	 "INSERT INTO $target.misc_feature_misc_set( misc_feature_id, misc_set_id ) ".
+	 "SELECT mapfrag_id, mapset_id ".
+	 "FROM $source.mapfrag_mapset " );
+
+
+
+
+
 # ----------------------------------------------------------------------
 # These tables are copied as-is
 
@@ -405,7 +446,6 @@ copy_table($dbi, "supporting_feature");
 copy_table($dbi, "map");
 copy_table($dbi, "meta");
 copy_table($dbi, "analysis");
-copy_table($dbi, "dnafrag");
 copy_table($dbi, "exon_stable_id");
 copy_table($dbi, "exon_transcript");
 copy_table($dbi, "external_db");
@@ -417,12 +457,7 @@ copy_table($dbi, "go_xref");
 copy_table($dbi, "identity_xref");
 copy_table($dbi, "interpro");
 copy_table($dbi, "map");
-copy_table($dbi, "mapannotation");
-copy_table($dbi, "mapannotationtype");
-copy_table($dbi, "mapfrag");
-copy_table($dbi, "mapfrag_mapset");
 copy_table($dbi, "mapping_session");
-copy_table($dbi, "mapset");
 copy_table($dbi, "marker");
 copy_table($dbi, "marker_feature");
 copy_table($dbi, "marker_synonym");
