@@ -1661,6 +1661,8 @@ sub transform {
   $self->{'_end'} = undef;
   $self->{'_strand'} = undef;
   $self->{'_exon_coord_mapper'} = undef;
+  $self->{'coding_start'} = undef;
+  $self->{'coding_end'} = undef;
 }
 
 
