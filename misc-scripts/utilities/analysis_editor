@@ -1,0 +1,379 @@
+use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Getopt::Std;
+
+use Tk;
+use Tk::ROText;
+use Tk::Dialog;
+
+use strict;
+
+
+my($dbname, $dbuser, $dbhost, $dbpass, $expert);
+my(%db_par, %opts);
+
+our($DONE, $MAIN, $DB, $UNSAVED, $MAX_DBID);
+our(%defined_logic_name, %new_analyses, @deleted_analyses, @analyses);
+# ^ these should be in caps
+our($ANAL_BOX);
+
+# array of methods to preserver order when displayed
+
+my @analysis_methods = qw/
+    logic_name   dbID             created
+    db           db_version       db_file         
+    program      program_version  program_file    
+    module       module_version   parameters      
+    gff_source   gff_feature     
+/;
+
+my %method_alias = (
+    'logic_name'      , 'Logic name'      ,
+    'dbID'            , 'dbID'            ,
+    'created'         , 'Created'         ,
+    'db'              , 'DB'              ,
+    'db_version'      , 'DB version'      ,
+    'db_file'         , 'DB file'         ,
+    'program'         , 'Program'         ,
+    'program_version' , 'Program version' ,
+    'program_file'    , 'Program file'    ,
+    'module'          , 'Module'          ,
+    'module_version'  , 'Module version'  ,
+    'parameters'      , 'Parameters'      ,
+    'gff_source'      , 'Gff source'      ,
+    'gff_feature'     , 'Gff feature'
+);
+
+getopt('hnupe', \%opts);
+
+$dbname = $opts{'n'} || $ENV{'ENS_DB'};
+$dbuser = $opts{'u'} || $ENV{'ENS_USER'};
+$dbhost = $opts{'h'} || $ENV{'ENS_HOST'};
+$dbpass = $opts{'p'} || $ENV{'ENS_PASS'};
+$expert = $opts{'e'};   # allowed to change dbIDs, etc.
+
+
+%db_par = (
+    -host   => $dbhost,
+    -dbname => $dbname,
+    -user   => $dbuser
+);
+$db_par{-pass} = $dbpass if $dbpass;
+
+$DB = Bio::EnsEMBL::DBSQL::DBAdaptor->new(%db_par);
+
+$MAIN = MainWindow->new();
+$MAIN->configure(-title => "Analysis Editor: $dbname\@$dbhost");
+
+$ANAL_BOX = $MAIN->Scrolled(qw/
+    Listbox
+    -scrollbars oe
+    -width     -1
+    -height    14
+    -setgrid    1
+    -selectmode 'single'
+/)->pack;
+
+my $button_box = $MAIN->Frame(-width => 400);
+
+$button_box->Button(
+    -text => 'Reset',
+    -command => [ \&init ]
+)->pack(-fill => 'both');
+my $d = $button_box->Button(
+    -text => 'Display',
+    -command => sub {
+        &display();
+    }
+)->pack(-fill => 'both');
+# $d->bind('B1', 'display');
+$button_box->Button(
+    -text => 'Edit',
+    -command => sub {
+	my $a = &selected_analysis;
+	return unless defined $a;
+        &edit($analyses[$a]);
+    }
+)->pack(-fill => 'both');
+$button_box->Button(
+    -text => 'Clone',
+    -command => sub {
+	my $i = selected_analysis();
+	return unless defined $i;
+	my $a = $analyses[$i];
+        my $new = &clone_analysis($a);
+	splice @analyses, selected_analysis() + 1, 0, $new;
+	&edit($new);
+	$MAIN->waitVariable(\$DONE);
+        $ANAL_BOX->insert(selected_analysis() + 1, $new->logic_name);
+	my $this = &selected_analysis;
+	$ANAL_BOX->selectionClear($this);
+	$ANAL_BOX->selectionSet($this + 1);
+	$ANAL_BOX->see($this + 1);
+    }
+)->pack(-fill => 'both');
+$button_box->Button(
+    -text => 'Insert new',
+    -command => sub {
+        my $new = &new_analysis();
+	push @analyses, $new;
+	&edit($new);
+	$MAIN->waitVariable(\$DONE);
+        $ANAL_BOX->insert('end', $new->logic_name);
+	$ANAL_BOX->selectionClear(0, 'end');
+	$ANAL_BOX->selectionSet('end');
+	$ANAL_BOX->see('end');
+    }
+)->pack(-fill => 'both');
+$button_box->Button(
+    -text => 'Delete',
+    -command => [ \&delete ]
+)->pack(-fill => 'both');
+$button_box->Button(
+    -text => 'Save',
+    -command => [ \&save_changes ]
+)->pack(-fill => 'both');
+$button_box->Button(
+    -text => 'Quit',
+    -command => sub {
+	if ($UNSAVED) {
+	    my $ans;
+	    my $popup = $MAIN->Dialog(
+		-title => 'You have unsaved changes?',
+		-text  => 'Save?',
+		-buttons => [qw/Save Cancel Quit/]
+	    );
+	    $ans = $popup->Show;
+	    if ($ans eq 'Save') {
+		&save_changes;
+		&quit;
+	    }
+	    elsif ($ans eq 'Quit') {
+		&quit;
+	    }
+	}
+	else
+	{
+	    &quit;
+	}
+    }
+)->pack(-fill => 'both');
+
+init();
+
+$ANAL_BOX->pack(-side => 'left', -fill => 'none', -expand => 1);
+$button_box->pack(-fill => 'both');
+
+
+MainLoop;
+
+
+sub display {
+    my ($i, $t);
+    $i = 0;
+
+    my $a = &selected_analysis;
+    return unless defined $a;
+    my $analysis = $analyses[$a];
+
+    my $view = $MAIN->Toplevel;
+    $view->configure(-title => $analysis->logic_name);
+    $view->grab;
+    my $grid = $view->Frame;
+
+    my $close = $view->Button(
+        -text => 'Close',
+        -command => sub {
+            $view->grabRelease;
+	    $view->destroy;
+	}
+    );
+
+    foreach my $v (obj2vars($analysis)) { 
+	no strict 'refs';
+	my ($prop, $alias, $value) = @{$v};
+
+	$t = $grid->Label(-text => $alias);
+	$t->grid(-row => $i, -column => 0, -sticky => 'e');
+	$t = $grid->ROText(-height => 1);
+	$t->insert('end', $value);
+	$t->pack;
+	$t->grid(-row => $i, -column => 1, -sticky => 'w');
+	$i++;
+    }
+
+    $grid->pack;
+    $close->pack;
+}
+
+sub new_analysis {
+    my $new = Bio::EnsEMBL::Analysis->new;
+    my $suffix = 1;
+    while (defined $defined_logic_name{'New' . '~' . $suffix}) {
+        $suffix++;
+    }
+    my $l = 'New' . '~' . $suffix;
+    $new->logic_name($l);
+    $defined_logic_name{$l} = 1;
+    $MAX_DBID++;
+    $new->dbID($MAX_DBID);
+    $new_analyses{$MAX_DBID} = 1;
+    return $new;
+}
+
+sub clone_analysis {
+    my ($analysis) = @_;
+
+    my $new = Bio::EnsEMBL::Analysis->new;
+    foreach my $m (@analysis_methods) {
+        $new->$m($analysis->$m);
+    }
+    my $l = $analysis->logic_name;
+    $l =~ s/~\d+//;
+    my $suffix = 1;
+    while (defined $defined_logic_name{$l . '~' . $suffix}) {
+        $suffix++;
+    }
+    $l .= '~' . $suffix;
+    $new->logic_name($l);
+    $defined_logic_name{$l} = 1;
+    $MAX_DBID++;
+    $new->dbID($MAX_DBID);
+    $new_analyses{$MAX_DBID} = 1;
+    return $new;
+}
+
+sub delete {
+    my $a = &selected_analysis;
+    return unless defined $a;
+
+    my $analysis = $analyses[$a];
+    $ANAL_BOX->delete($a);
+    push @deleted_analyses, $analysis;
+    splice @analyses, $a, 1;
+    $UNSAVED++;
+}
+
+sub quit {
+    $MAIN->destroy;
+}
+
+sub init {
+    $ANAL_BOX->delete(0, $ANAL_BOX->size);
+    $MAX_DBID = 0;
+
+    @analyses = ();
+    @deleted_analyses = ();
+    %new_analyses = ();
+
+    foreach my $a (@{$DB->get_AnalysisAdaptor->fetch_all}) {
+        push @analyses, $a;
+        $ANAL_BOX->insert('end', $a->logic_name);
+	$defined_logic_name{$a->logic_name} = 1;
+	$MAX_DBID = ($a->dbID > $MAX_DBID) ? $a->dbID : $MAX_DBID;
+    }
+}
+
+sub edit {
+    my ($analysis) = @_;
+
+    $DONE = 0;
+    my ($s, %t, $i);
+    $i = 0;
+
+    my $view = $MAIN->Toplevel;
+    $view->configure(-title => $analysis->logic_name . ' [edit]');
+    $view->grab;
+    my $grid = $view->Frame;
+    my $buttons = $view->Frame;
+    $grid->pack;
+    $buttons->pack;
+
+    my $save = $buttons->Button(
+        -text => 'Exit & save',
+        -command => sub { 
+	    foreach my $k (keys %t) {
+		my $str = $t{$k}->get('0.1', '0.1 lineend');
+		$analysis->$k($str);
+	    }
+	    $UNSAVED++;
+            $view->grab;
+	    $DONE = 1;
+	    $view->destroy;
+        }
+    );
+
+    my $close = $buttons->Button(
+        -text => 'Close',
+        -command => sub {
+	    $DONE = 1;
+	    $view->destroy;
+	    return $analysis;
+	}
+    );
+
+    foreach my $v (obj2vars($analysis)) {
+	my ($prop, $alias, $value) = @{$v};
+
+	$s = $grid->Label(-text => $alias);
+	$s->grid(-row => $i, -column => 0, -sticky => 'e');
+
+	if ($alias eq 'dbID') {
+	    $s = $grid->ROText(-height => 1);
+	}
+	else {
+	    $s = $grid->Text(-height => 1);
+	}
+	$s->insert('end', $value);
+	$s->pack;
+	$s->grid(-row => $i, -column => 1, -sticky => 'w');
+	$t{$prop} = $s;
+
+	$i++;
+    }
+    $save->pack(-side => 'left');
+    $close->pack(-side => 'right');
+}
+
+sub selected_analysis {
+    my @hi = $ANAL_BOX->curselection;
+    return undef if @hi != 1;
+    return $hi[0];
+}
+
+
+sub obj2vars {
+    my ($obj) = @_;
+    my @vars;
+
+    foreach my $m (@analysis_methods) {
+	push @vars, [ $m, $method_alias{$m}, $obj->$m ];
+    }
+    return @vars;
+}
+
+sub save_changes {
+    my $aa = $DB->get_AnalysisAdaptor;
+    return unless $UNSAVED;
+
+    foreach my $a (@deleted_analyses) {
+	my $dbID = $a->dbID;
+	$aa->remove($a);
+    }
+
+    foreach my $a (@analyses) {
+	my $dbID = $a->dbID;
+	if ($new_analyses{$dbID}) {
+	    $aa->store($a);
+	}
+	else
+	{
+	    $aa->update($a);
+	}
+    }
+    $UNSAVED = 0;
+    %new_analyses = ();
+    @deleted_analyses = ();
+    &init;
+}
+
