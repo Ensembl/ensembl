@@ -63,6 +63,8 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Mapper;
 
+use POSIX qw(ceil floor);
+
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
@@ -579,11 +581,11 @@ sub fetch_all {
 
       #calculate number of slices to create
       $number = ($length-$overlap) / ($max_length-$overlap);
-      $number = int($number + 1.0); #round up to int (ceiling) 
+      $number = ceil($number); #round up to int
 
       #calculate length of created slices
       $multiple = $length / $number;
-      $multiple   = int($multiple); #round down to int (floor)
+      $multiple   = floor($multiple); #round down to int
     } else {
       #just one slice of the whole seq_region
       $number = 1;
