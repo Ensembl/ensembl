@@ -50,12 +50,18 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
     print $cs->name(), ' ', $cs->version, "\n";
   }
 
+  #can also use an alias in fetch_by_name:
+  $cs = $csa->fetch_by_name('toplevel');
+
   #
   # Fetching by sequence level:
   #
 
   #Get the coord system which is used to store sequence:
   $cs = $csa->fetch_sequence_level();
+
+  #can also use an alias in fetch_by_name:
+  $cs = $csa->fetch_by_name('seqlevel');
 
   #
   # Fetching by id
@@ -226,8 +232,7 @@ sub new {
                  print $cs->name(), ' ', $cs->version(), "\n";
                }
   Description: Retrieves every coordinate system defined in the DB
-               formatted as a listref of [dbID,name,version] triplets.
-  Returntype : listref of [dbID,name,version] triplets
+  Returntype : listref of Bio::EnsEMBL::CoordSystems
   Exceptions : none
   Caller     : general
 
@@ -679,6 +684,23 @@ sub _fetch_all_by_attrib {
   return \@coord_systems;
 }
 
+
+#
+# Called during db destruction to clean up internal cache structures etc.
+#
+sub deleteObj {
+  my $self = shift;
+
+  #break circular adaptor <-> db references
+  $self->SUPER::deleteObj();
+
+  #breack circular object <-> adaptor references
+  delete $self->{'_feature_cache'};
+  delete $self->{'_name_cache'};
+  delete $self->{'_dbID_cache'};
+  delete $self->{'_mapping_paths'};
+  delete $self->{'_shortest_paths'};
+}
 
 1;
 
