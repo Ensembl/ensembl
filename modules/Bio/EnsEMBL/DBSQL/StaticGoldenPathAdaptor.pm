@@ -329,6 +329,14 @@ sub fetch_RawContigs_by_chr_start_end {
    # PL: is the query below correct? The 'NOT
    # <' looks odd, the join is different from e.g. the branch version
    # (e.g., look at 1.3.2.41). We'll keep it for now :-)
+   #
+   # JGRG: The NOT clauses are slightly counterintuitive,
+   # but fetch every contig that overlaps start and end.
+   # We search for every contig that doesn't begin after
+   # our end (doesn't overlap) and doesn't end before
+   # our start (doesn't overlap), and therefore get every
+   # contig that overlaps.  This takes care of the condition
+   # where our start and end lie within a contig.
    my $sth = $self->dbobj->prepare("
         SELECT c.id
           , c.internal_id
