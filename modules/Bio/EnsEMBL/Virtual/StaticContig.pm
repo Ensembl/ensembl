@@ -631,6 +631,33 @@ sub get_all_SimilarityFeatures_above_pid{
     return @array;
 }
 
+=head2 get_all_SNPFeatures
+
+ Title   : get_all_SNPFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SNPFeatures ) 
+ Function: Returns snp features from lite adaptor
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+sub get_all_SNPFeatures {
+  my ($self,$bp) = @_;
+  my @snps = $self->dbobj->get_LiteAdaptor->fetch_snp_features
+    (
+     $self->_chr_name, 
+     $self->_global_start, 
+     $self->_global_end,
+     $bp
+    );
+  return @snps;
+}
+
+
 
 
 =head2 get_all_RepeatFeatures
