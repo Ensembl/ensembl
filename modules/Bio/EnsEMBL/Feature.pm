@@ -102,15 +102,16 @@ sub new {
     rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
                'DBID', 'ADAPTOR'], @_);
 
-  if(defined($slice)) {
+  if($slice) {
     if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
       throw('-SLICE argument must be a Bio::EnsEMBL::Slice not '.$slice);
     }
   }
 
-  if(defined($analysis)) {
+  if($analysis) {
     if(!ref($analysis) || !$analysis->isa('Bio::EnsEMBL::Analysis')) {
-      throw('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis');
+      throw('-ANALYSIS argument must be a Bio::EnsEMBL::Analysis not '.
+            $analysis);
     }
   }
 
@@ -608,7 +609,7 @@ sub project {
 
 sub seqname {
   my $self = shift;
-
+  
   if(@_) {
     $self->{'seqname'} = shift;
   }
