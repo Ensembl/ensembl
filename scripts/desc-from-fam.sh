@@ -9,6 +9,10 @@
 # complete replacement for the old table.  The script assumes that the family
 # and ensembl-core database live in the same server (so you can do joins).
 
+# where mysql lives (or how it can be found, provided PATH is ok):
+mysql=mysql
+mysql_extra_flags='--batch'
+
 # Database to read existing descriptions from:
 read_database=$1; shift
 
@@ -77,4 +81,4 @@ insert into $new_gene_description
 select count(*) as all_new_descriptions
 from $new_gene_description;
 EOF
-) | mysql --batch "$@"
+) | $mysql $mysql_extra_flags "$@"
