@@ -14,15 +14,16 @@ use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
 
 # embl genes will be written to this database:
 my $ohost='localhost';
-my $ouser='ecs1dadmin';
+my $ouser;
 my $odbname='embl_test';
-my $pass='TyhRv';
+my $opass;
 
 # list of clones in ensembl for which an embl file should be
 # checked is read from here
-my $ihost='localhost';
-my $iuser='ecs1dadmin';
+my $ihost;;
+my $iuser;
 my $idbname='';
+my $ipass=undef;
 
 # test file
 my $emblfile='AL109928.embl';
@@ -41,11 +42,11 @@ my $help;
 	    'ohost:s'=>\$ohost,
 	    'ouser:s'=>\$ouser,
 	    'odbname:s'=>\$odbname,
-
+            'opass:s'=>\$opass,
 	    'ihost:s'=>\$ihost,
 	    'iuser:s'=>\$iuser,
 	    'idbname:s'=>\$idbname,
-
+            'ipass:s'=>\$ipass,
 	    'emblfile:s'=>\$emblfile,
 
 	    'w'=>\$write,
@@ -128,7 +129,7 @@ my $db;
 my $adx;
 unless($nodb){
     $db = Bio::EnsEMBL::DBLoader->new(
-       "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname;pass=$pass");
+       "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname;pass=$opass");
     # adaptor for xrefs
     $adx = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 }
@@ -158,7 +159,7 @@ if($list){
     }
 
     $dbi=Bio::EnsEMBL::DBLoader->new(
-    "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ihost;user=$iuser;dbname=$idbname;pass=$pass");
+    "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ihost;user=$iuser;dbname=$idbname;pass=$ipass");
 
     my $nclone=0;
     foreach my $clone_id ($dbi->get_all_Clone_id){
@@ -203,7 +204,7 @@ if($list){
 	    my $seqio;
 	    eval{
 		$seqio = Bio::SeqIO->new(-format => 'EMBL', -file => 
-		    "/usr/local/pubseq/bin/efetch emnew:$clone_id |");
+		    "/usr/local/pubseq/bin/pfetch -F -d emnew $clone_id |");
 	    };
 	    if($@){
 		print "$clone_id could not be fetched from EMBL - warn\n";
