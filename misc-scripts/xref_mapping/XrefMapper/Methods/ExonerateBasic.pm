@@ -36,9 +36,9 @@ sub new {
 
 sub run() {
 
-  my ($self, $query, $target) = @_;
+  my ($self, $query, $target, $dir) = @_;
 
-  my $name = $self->submit_exonerate($query, $target, options());
+  my $name = $self->submit_exonerate($query, $target, $dir, options());
 
   return $name;
 
@@ -74,12 +74,9 @@ sub options() {
 
 sub submit_exonerate {
 
-  my ($self, $query, $target, @options) = @_;
+  my ($self, $query, $target, $root_dir, @options) = @_;
 
   my $num_jobs = calculate_num_jobs($query);
-
-  # TODO - get root_dir from config
-  my $root_dir = "/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping";
 
   my $options_str = join(" ", @options);
 
@@ -96,7 +93,7 @@ sub submit_exonerate {
 
   # Use IPC::Open3 to open the process so that we can read and write from/to its stdout/stderr
   my ($wtr, $rtr, $etr, $pid);
-  $pid = open3($wtr, $rtr, $etr, @main_bsub);
+  $pid = open3($wtr, $rtr, $etr, @main_bsub) || die "Cannot call bsub command";
 
   # Create actual execute script to be executed with LSF, and write to pipe
   my $main_job = <<EOF;
@@ -159,7 +156,7 @@ sub calculate_num_jobs {
 
   my $size = (stat $query)[7];
 
-  return int($size/$bytes_per_job);
+  return int($size/$bytes_per_job) || 1;
 
 }
 
