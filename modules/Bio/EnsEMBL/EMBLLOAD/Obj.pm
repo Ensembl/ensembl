@@ -63,7 +63,7 @@ sub new {
     if( ! defined $seq ) {
 	$file   || $self->throw("no file");
 	$format || $self->throw("no format");
-	my $stream= Bio::SeqIO->new( -format => $format, -file => $file);
+	my $stream= Bio::SeqIO->new( '-format' => $format, -file => $file);
 	$seq=$stream->next_seq();
     }
     $self->get_Seq($seq);
