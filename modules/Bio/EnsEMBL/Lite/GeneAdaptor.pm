@@ -224,6 +224,13 @@ sub fetch_by_Slice {
 }
 
 
+sub fetch_by_DBEntry {
+    my ($self, $db, $dbentry, $chr_coords ) = @_;
+    my $sth = $self->prepare( "select gene_name from gene_xref where external_name = ? and db= ?" );
+    $sth->execute( $dbentry, $db );
+    my( $stable_id ) = $sth->fetchrow;
+    return $self->fetch_by_stable_id( $stable_id, $chr_coords );
+}
 
 =head2 fetch_by_stable_id
 
@@ -244,6 +251,8 @@ sub fetch_by_Slice {
 sub fetch_by_stable_id {
   my ($self, $stable_id, $chr_coords) = @_;
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
+
+  warn( $stable_id );
 
   my $sth = $self->prepare
     ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
