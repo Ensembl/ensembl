@@ -1,6 +1,9 @@
 # regexp used for filter out useless description for Homo sapiens
 # add more as appropriate, line begining with # are supposed to be comments
 
+^LOC\d+\s*(PROTEIN)?\.?
+^ORF.*
+^PROTEIN C\d+ORF\d+\.*
 \(CLONE \S+\)\s+
 ^BC\d+\_\d+\.?
 ^CGI\-\d+ PROTEIN\.?\;?
@@ -28,8 +31,9 @@ RIKEN CDNA [0-9A-Z]{10}[ \.]
 ^SIMILAR TO (KIAA|LOC).*
 ^SIMILAR TO\s+$
 ^WUGSC:H_.*
-^\s*\(FRAGMENT\)\.?\s*$
-^\s*\(GENE\)\.?\s*$
+^\s*\(?PROTEIN\)?\.?\s*$
+^\s*\(?FRAGMENT\)?\.?\s*$
+^\s*\(?GENE\)?\.?\s*$
 ^\s*\(\s*\)\s*$
 ^\s*\(\d*\)\s*[ \.]$
 

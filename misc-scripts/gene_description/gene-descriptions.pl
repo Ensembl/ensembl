@@ -50,7 +50,7 @@ my $usage = "
                                    RefSeq entries in gnp-like format.
                                    and/or
                                    \"consortium\" description file, which format should
-                                   match this regexp /^(\S+)\\t(.*)\$/, making sure that
+                                   match this regexp /^(\\S+)\\t(.*)\$/, making sure that
                                    the mapping includes populating identity_xref table.
 
  OR to load the data from gene-descriptions.tab file to \'gene-description\' table

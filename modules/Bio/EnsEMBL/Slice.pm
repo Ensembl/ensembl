@@ -967,7 +967,7 @@ sub get_Chromosome {
   Arg [2]    : int $default_masking_type (optional, default is 0)
                0 hard mask, repeats are replaced by Ns
                1 soft mask, repeats are transformed in lower case  
-  Arg [3]    : hash reference $not_default_masking_cases (optional)
+  Arg [3]    : hash reference $not_default_masking_cases (optional, default is {})
                The values are 0 or 1 with same definition as in Arg [2]
                The keys of the hash should be of 2 forms
                "repeat_class_" . $repeat_consensus->repeat_class,
