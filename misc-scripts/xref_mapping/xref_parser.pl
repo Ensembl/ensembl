@@ -34,7 +34,7 @@ sub usage {
 
   print << "EOF";
 
-  BaseParser.pm -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -skipdownload
+  xref_parser.pm -user {user} -pass {password} -host {host} -port {port} -dbname {database} -species {species1,species2} -source {source1,source2} -skipdownload
 
 EOF
 
