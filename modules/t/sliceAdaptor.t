@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 56;
+	plan tests => 63;
 }
 
 use MultiTestDB;
@@ -377,6 +377,30 @@ $slice = $slice_adaptor->fetch_by_region('contig', $clone_name);
 ok(!defined($slice));
 print_slices([$slice]);
 
+#make sure that you can fetch a seq_region without knowing its version
+$slice = $slice_adaptor->fetch_by_region(undef, '20');
+ok(defined($slice) && $slice->seq_region_name eq '20');
+
+$slice = $slice_adaptor->fetch_by_region('toplevel', '20');
+ok(defined($slice) && $slice->seq_region_name eq '20');
+
+$slice = $slice_adaptor->fetch_by_region('toplevel', '20', 10, 20);
+ok(defined($slice) && $slice->start == 10 && $slice->end == 20);
+
+$slice = $slice_adaptor->fetch_by_region(undef, '20', 10, 20, 1, 'NCBI33');
+ok(defined($slice) && $slice->seq_region_name eq '20');
+
+$slice = $slice_adaptor->fetch_by_region(undef, '20', 10, 20, 1, 'bogus');
+ok(!defined($slice));
+
+
+$slice = $slice_adaptor->fetch_by_region('toplevel', '20', 10, 20, 1, 'bogus');
+ok(defined($slice) && $slice->seq_region_name eq '20');
+
+# try fuzzy matching in conjunction with coord system guessing
+$clone_name = 'AL031658';
+$slice = $slice_adaptor->fetch_by_region(undef, $clone_name);
+ok($slice->seq_region_name =~ /$clone_name\.\d+/);
 
 sub print_slices {
   my $slices = shift;
