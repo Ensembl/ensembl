@@ -588,8 +588,8 @@ sub db_handle{
 
   Arg [1]    : Canonical data type for new adaptor.
 	Arg [2]    : Object defining the adaptor for arg1.
-  Example    : $pa = Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($db_adaptor);
-             : $db_adaptor->set_adaptor("Protein", $pa)
+  Example    : $aa = Bio::EnsEMBL::DBSQL::GeneAdaptor->new($db_adaptor);
+             : $db_adaptor->set_adaptor("Gene", $ga)
   Description: Stores the object which represents the adaptor for the
                arg1 data type.
   Returntype : none
@@ -601,51 +601,10 @@ sub db_handle{
 sub set_adaptor {
   my ($self, $canonical_name, $module) = @_;
 
-  my $adaptor = $self->_get_adaptor($module);
+  $reg->add_adaptor($self->species(),$self->group(),$canonical_name,$module);
 
-  $reg->add_adaptor($self->species(), $self->group(), $canonical_name, $adaptor);
-
-  return $adaptor;
+  return $module;
 }
-
-=head2 _get_adaptor
-
-  Arg [1]    : string $module
-               the fully qualified of the adaptor module to be retrieved
-  Arg [2..n] : (optional) arbitrary list @args
-               list of arguments to be passed to adaptors constructor
-  Example    : $adaptor = $self->_get_adaptor("full::adaptor::name");
-  Description: PROTECTED Used by subclasses to obtain adaptor objects
-               for this database connection using the fully qualified
-               module name of the adaptor. If the adaptor has not been 
-               retrieved before it is created, otherwise it is retreived
-               from the adaptor cache.
-  Returntype : Adaptor Object of arbitrary type
-  Exceptions : thrown if $module can not be instantiated
-  Caller     : Bio::EnsEMBL::DBAdaptor
-
-=cut
-
-sub _get_adaptor {
-  my( $self, $module) = @_;
-
-  my( $adaptor);
-
-  eval "require $module";
-
-  if($@) {
-    warning("$module cannot be found.\nException $@\n");
-    return undef;
-  }
-
-  $adaptor = "$module"->new($self);
-
-  return $adaptor;
-}
-
-
-
-
 
 
 #
@@ -890,22 +849,6 @@ sub get_RawContigAdaptor {
 
     return $self->dnadb->get_adaptor("RawContig");
 }
-
-
-=head2 get_ProteinAdaptor
-
-  Description: ProteinAdaptor is deprecated. Use TranslationAdaptor instead
-
-=cut
-
-sub get_ProteinAdaptor {
-    my $self  = shift;
-    deprecate("The ProteinAdaptor is deprecated. Use the TranslationAdaptor " .
-              "instead of the ProteinAdaptor and Translation instead of " .
-              "Protein.");
-    return $self->get_adaptor("Protein");
-}
-
 
 sub source {
   deprecate('Do not use - this method does nothing');

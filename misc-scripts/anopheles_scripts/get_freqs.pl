@@ -1,7 +1,6 @@
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 
 use Bio::EnsEMBL::Utils::Eprof('eprof_start','eprof_end','eprof_dump');
 

@@ -1,7 +1,6 @@
 use strict;
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 
 my $host      = 'ecs1b';
 my $dbuser    = 'ensro';

@@ -24,7 +24,6 @@
 
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use Getopt::Long;
 
 my $host      = '';

@@ -21,7 +21,6 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 
 my $host = 'ecs2d';
 my $dbuser = 'ensro';

@@ -7,7 +7,6 @@ use strict;
 use Getopt::Long;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
-use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
 use Bio::EnsEMBL::Exon;
 
 
