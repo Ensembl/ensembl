@@ -65,6 +65,128 @@ sub new {
   return $self;
 }
 
+=head2 build_map
+
+ Title   : build_map
+ Usage   : $map->build_map($rawcontig,$focusposition,$ori,$left,$right)
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub build_map{
+   my ($self,$rawcontig,$focusposition,$ori,$left,$right) = @_;
+
+
+   # pseudo-code
+   # 1) calculate first offset
+   # 2) walk left until left end condition met
+   # 3) find last contig. Add to map
+   # 4) walk right, added contigs to the map
+
+
+   my $current_contig = $rawcontig;
+   my $current_ori    = $ori;
+   my $current_left_size = 0;
+   
+
+   if( $focusposition < $rawcontig->golden_start || $focusposition > $rawcontig->golden_end ) {
+       $self->throw("Focus position is outside golden/start end on rawcontig. Ugh!");
+   }
+
+
+   if( $ori == 1 ) {
+       $current_left_size = $focusposition - $rawcontig->golden_start;
+   } else {
+       $current_left_size = $rawcontig->golden_end - $focusposition;
+   }
+
+
+   # left walk
+   while( 1 ) {
+       
+       
+       if( $current_left_size >  $left ) {
+	   $self->throw("Bad internal error. Did not terminate left walk on an explicit conition");
+       }
+
+       # go right
+       my ($nextcontig,$start_in_contig,$contig_ori,$gap_distance) = 
+	   $self->_go_right($current_contig,$current_ori);
+
+   }
+
+   $self->throw("I haven't handled the left end condition yet");
+
+   my $total = $left+$right;
+   my $current_size = 0;
+   
+
+   # main build
+
+   while( 1 ) {
+
+       # paranoia check - we should always exit on a defined condition
+       if( $current_size >= $total ) {
+	   $self->throw("Bad internal error: in right walk on vc build, got over distance without triggering a defined end condition");
+       }
+
+       # go right
+       my ($nextcontig,$start_in_contig,$contig_ori,$gap_distance) = 
+	   $self->_go_right($current_contig,$current_ori);
+       
+       # if the gap pushes us over the total, we have a right overhang
+       $current_size += $gap_distance;
+       if( $current_size >= $total ) {
+	   $self->right_overhang(1);
+	   last;
+       }
+       # otherwise we want to include this contig
+       
+       # add gap distance to current_size. Remember, this could be 0
+       $current_size += $gap_distance;
+
+       if( $current_size + $nextcontig->golden_length < $total ) {
+	   # we want to include the entire contig
+	   $self->create_MapContig($nextcontig,
+				   $current_size+1,
+				   $current_size+$nextcontig->golden_length,
+				   $start_in_contig,
+				   $contig_ori);
+	   # add golden length distance
+	   $current_size += $nextcontig->golden_length;
+	   $current_contig = $nextcontig;
+	   $current_ori    = $contig_ori;
+	   next; # back to while(1)
+       } else {
+	   # this is the rightmost contig
+	   my $length = $total - $current_size;
+
+	   my $start;
+	   if( $contig_ori == 1 ) {
+	       $start = $start_in_contig;
+	   } else {
+	       # start has to move to right end - length
+	       $start = $start_in_contig + $nextcontig->golden_length - $length;
+	   }
+
+	   $self->create_MapContig($nextcontig,
+				   $current_size+1,
+				   $current_size+$length,
+				   $start,
+				   $contig_ori);
+
+	   $self->right_overhang(0);
+	   last;
+       }
+   }
+	   
+}
+
+
 =head2 create_MapContig
 
  Title   : create_MapContig
@@ -153,7 +275,64 @@ sub _add_MapContig{
    $self->{'_contig_map'}->{$mc->contig->id} = $mc;
 }
 
+=head2 _go_left
+
+ Title   : _go_left
+ Usage   : ($nextcontig,$nextcontigpos,$orientation,$distance) = $mc->_go_left($current_contig,$ori)
+ Function: A helper function for traversing rawcontig chains. Should only
+           be used by people who know what they are doing
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _go_left{
+   my ($self,$current,$ori) = @_;
+
+   if( $ori == 1 ) {
+       my $co = $current->get_left_overlap();
+       my $start_in_contig;
+       return ($co->sister,$co->sister->golden_start,$co->polarity,$co->distance);
+   } else {
+       my $co = $current->get_right_overlap();
+       my $pol = $co->polarity * -1;
+       return ($co->sister,$co->sister->golden_start,$pol,$co->distance);
+   }
+
+}
+
+=head2 _go_right
+
+ Title   : _go_right
+ Usage   : ($nextcontig,$nextcontigpos,$orientation,$distance) = $mc->_go_right($current_contig,$ori)
+ Function: A helper function for traversing rawcontig chains. Should only
+           be used by people who know what they are doing
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _go_right{
+
+   my ($self,$current,$ori) = @_;
+
+   if( $ori == 1 ) {
+       my $co = $current->get_right_overlap();
+       return ($co->sister,$co->sister->golden_start,$co->polarity,$co->distance);
+   } else {
+       my $co = $current->get_left_overlap();
+       my $pol = $co->polarity * -1;
+       return ($co->sister,$co->sister->golden_start,$pol,$co->distance);
+   }
+
+}
+
 
 1;
+
 
 
