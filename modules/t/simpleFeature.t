@@ -69,7 +69,7 @@ print_features($features);
 my $cln_slice = $dba->get_SliceAdaptor->fetch_by_region('clone','AL031658.11');
 $features = $sfa->fetch_all_by_Slice($cln_slice);
 
-debug('-- cln AL359765.11 simple features ---');
+debug('-- cln AL031658.11 simple features ---');
 print_features($features);
 
 my $sprctg_slice = $dba->get_SliceAdaptor->fetch_by_region('supercontig',
@@ -79,6 +79,15 @@ $features = $sfa->fetch_all_by_Slice($sprctg_slice);
 debug('-- sprctg NT_028392 simple features ---');
 print_features($features);
 
+my $ctg_slice = $dba->get_SliceAdaptor->fetch_by_region('contig',
+                                                       'AL031658.11.1.162976');
+
+$features = $sfa->fetch_all_by_Slice($ctg_slice);
+
+debug('--- contig AL031658.11.1.162976 simple features ---');
+print_features($features);
+
+
 # List_dbidx
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
@@ -87,11 +96,9 @@ ok (@{$ids});
 
 sub print_features {
   my $features = shift;
-  foreach my $feature (@$features) {
-    debug("\n\nfeature start = " . $feature->start());
-    debug("feature end = " . $feature->end());
-    debug("feature strand = " . $feature->strand());
-    debug("feature display_label = " . $feature->display_label());
-    debug("feature score = " . $feature->score());
+  foreach my $f (@$features) {
+    my $analysis = $f->analysis->logic_name();
+    debug($f->start().'-'.$f->end().'('.$f->strand().') '.
+          $f->display_label.' '.$f->score() . " ($analysis)");
   }
 }
