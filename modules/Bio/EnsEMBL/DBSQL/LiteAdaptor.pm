@@ -83,6 +83,45 @@ sub fetch_virtualgenes_start_end {
     return \@genes
 }
                 
+sub fetch_SangerGenes_start_end {
+    my ( $self, $chr, $vc_start, $vc_end ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_sangergenes_cache_$chr"."_$vc_start"."_$vc_end";
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select g.gene, g.name, 
+                g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
+                g.chrom_strand, gx.display_id, gx.db_name, g.type
+           from $_db_name.sanger_gene as g, $_db_name.sanger_gene_xref as gx
+          where g.gene = gx.gene and
+                g.chr_name = ? and g.gene_chrom_start <= ? and
+                g.gene_chrom_end >= ?"
+    );
+    eval {
+        $sth->execute( $chr, $vc_end, $vc_start );
+    };
+    return [] if($@);
+    my @genes;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        next unless $row->[8]=~/HUMACE/;
+        push @genes, {
+            'gene'      => $row->[0],
+            'stable_id' => $row->[1],
+            'chr_name'  => $row->[2],
+            'chr_start' => $row->[3],
+            'chr_end'   => $row->[4],
+            'start'     => $row->[3]-$vc_start+1,
+            'end'       => $row->[4]-$vc_start+1,
+            'strand'    => $row->[5],
+            'synonym'   => $row->[6],
+            'db'        => $row->[7],
+            'type'      => $row->[8]
+        };
+    }
+    return $self->{$cache_name} = \@genes;
+    return \@genes
+}
+
 sub fetch_EMBLgenes_start_end {
     my ( $self, $chr, $vc_start, $vc_end ) =@_;
     my $_db_name = $self->{'_lite_db_name'};
