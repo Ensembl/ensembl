@@ -51,7 +51,7 @@ print "ok 2\n";
 
 $seq = Bio::Seq->new( -id => 'silly',-seq => 'ATTCGTTGGGTGGCCCGTGGGTG');
 
-$archive->write_seq($seq,1,'exon','ENSG000000012',1);
+$archive->write_seq($seq,1,'exon','ENSG000000012',1,'AC00012',2);
 
 print "ok 3\n";
 
