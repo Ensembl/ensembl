@@ -115,6 +115,7 @@ my $mousedb;
 # this one is not settable (used during embl dump and may elsewhere). 
 # There is at most one $tmpdb.
 my $tmpdb = undef;
+my $translidid = undef; 
 # (yes, global, naughtynaughty ...)
 
 # sorry, but this has to be on the production server, otherwise I can't do
@@ -185,6 +186,7 @@ if ($template) {                        #
     &dump_mouse($mousedb);
 }
 
+&drop_tmp_db();
 warn "done\n";
 exit(0);
 
@@ -442,17 +444,8 @@ SELECT trlsi.*
 # ";
 
 # replaced by:
-    my $translidid = 'tmp_transl_id_string2int';
-    $sql="
-CREATE TABLE $translidid (as_string CHAR(40), as_int INT(10) unsigned);
-INSERT INTO $translidid(as_string) 
-  SELECT DISTINCT(translation) 
-  FROM $satdb.protein_feature;
-UPDATE $translidid set as_int = as_string;
-ALTER TABLE $translidid ADD KEY(as_int);
-ALTER TABLE $translidid ADD KEY(as_string);
-";
-    create_tmp_table($sql, $translidid);
+
+    &create_tmp_translidid();
 
     $sql="
 SELECT distinct pf.*
@@ -680,7 +673,12 @@ WHERE g.chr_name = '$chr'
   $limit
 ";
     dump_data($sql, $satdb, 'family_members' );
-}                                       # family
+
+    # there's also fm_gene fm_gene_db fm_pep fm_pep_db, looks like they
+    # should be ignored
+
+    # gene_description: should not be there, ignore
+}
 
 sub dump_disease {
     my ($satdb) = @_;
@@ -710,7 +708,7 @@ FROM  $satdb.gene dg,
 WHERE lg.chr_name = '$chr' 
   AND lg.gene = lgx.gene 
   AND lgx.display_id = dg.gene_symbol
-  AND dd.id = dg.id;
+  AND dd.id = dg.id
 ";
     dump_data($sql, $satdb, 'disease' );
 
@@ -728,7 +726,7 @@ WHERE lg.chr_name = '$chr'
 #   AND ddl.id  = dg.id
 # ";
 
-    foreach my $w ( qw(doc stop vector word) ) {
+    foreach my $w ( qw(doc vector word) ) { # *stoplist is empty
         my $table = "disease_index_${w}list";
         $sql = "
 SELECT distinct complete_table.* 
@@ -919,8 +917,7 @@ WHERE  lg.chr_name = '$chr'
 
 }                                       # snp
 
-
-sub dump_embl  {
+sub dump_embl {
 ### the mapping for this database is strange, so it's more efficient to
 ### first create a temporary database that has a table containing the
 ### right contig id's.
@@ -928,6 +925,8 @@ sub dump_embl  {
     return unless $satdb;
 
     dump_schema($satdb);
+
+
     warn "This may take a while...\n";
 
     my $sql;
@@ -951,6 +950,7 @@ SELECT distinct ctg.internal_id as internal_id, ctg.clone as clone, dna as dna
    AND lg.contig like concat(cl.id, '%') 
    AND cl.internal_id = ctg.clone;
 
+ALTER TABLE tmp_contig ADD KEY(dna);
 ALTER TABLE tmp_contig ADD KEY(internal_id);
 ALTER TABLE tmp_contig ADD KEY(clone);
 ";
@@ -1073,25 +1073,6 @@ SELECT distinct gsi.*
     dump_data($sql, $satdb, 'gene_stable_id');
 
     $sql="
-SELECT distinct gt.*
-  FROM $tmpdb.tmp_contig ctg,
-       $satdb.exon e,
-       $satdb.exon_transcript et,
-       $satdb.transcript tsc,
-       $satdb.gene  g ,
-       $satdb.gene_stable_id gsi,
-       $satdb.genetype  gt
- WHERE ctg.internal_id = e.contig_id
-   AND e.exon_id = et.exon_id
-   AND e.sticky_rank = 1
-   AND et.transcript_id=tsc.transcript_id
-   AND tsc.gene_id=g.gene_id
-   AND g.gene_id = gsi.gene_id
-   AND gsi.stable_id = gt.gene_id
-";
-    dump_data($sql, $satdb, 'genetype');
-
-    $sql="
 SELECT distinct tl.*
   FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
@@ -1106,6 +1087,30 @@ SELECT distinct tl.*
 ";
     dump_data($sql, $satdb, 'translation');
 
+    &create_tmp_translidid();
+
+    warn "*** work-around for failing index join on objectXref, due to type mismatch ...";
+
+# Original:
+#     $sql="
+# SELECT distinct ox.*
+#   FROM $tmpdb.tmp_contig ctg,
+#        $satdb.exon e,
+#        $satdb.exon_transcript et,
+#        $satdb.transcript tsc,
+#        $satdb.translation tl,
+#        $satdb.objectXref ox
+#  WHERE ctg.internal_id = e.contig_id
+#    AND e.exon_id = et.exon_id
+#    AND e.sticky_rank = 1
+#    AND et.transcript_id=tsc.transcript_id
+#    AND tsc.translation_id = tl.translation_id
+#    AND tl.translation_id = ox.ensembl_id
+#    AND ox.ensembl_object_type = 'Translation'
+# ";
+# 
+
+# replacement:
     $sql="
 SELECT distinct ox.*
   FROM $tmpdb.tmp_contig ctg,
@@ -1113,20 +1118,48 @@ SELECT distinct ox.*
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.translation tl,
-       $satdb.objectXref ox
+       $satdb.objectXref ox,
+       $tmpdb.$translidid idid
  WHERE ctg.internal_id = e.contig_id
    AND e.exon_id = et.exon_id
    AND e.sticky_rank = 1
    AND et.transcript_id=tsc.transcript_id
    AND tsc.translation_id = tl.translation_id
-   AND tl.translation_id = ox.ensembl_id
+   AND tl.translation_id = idid.as_int
+   AND idid.as_string = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
 ";
+# end replacement
     dump_data($sql, $satdb, 'objectXref');
+
 
     # this one was a total dog (see rev. 1.3.2.2) I need the LIKE
     # statement, given the strange embl id mapping. Now solved with a
     # temporary table. 
+
+    warn "*** work-around for failing index join on Xref, due to type mismatch ...";
+# orgininal:
+# $sql="
+# SELECT DISTINCT x.*
+# FROM   $tmpdb.tmp_contig ctg, 
+#        $satdb.exon e,
+#        $satdb.exon_transcript et,
+#        $satdb.transcript tsc,
+#        $satdb.translation tl,
+#        $satdb.objectXref ox,
+#        $satdb.Xref x
+# WHERE  ctg.internal_id = e.contig_id
+#    AND e.sticky_rank = 1
+#    AND e.exon_id = et.exon_id
+#    AND et.transcript_id=tsc.transcript_id
+#    AND tsc.translation_id = tl.translation_id
+#    AND tl.translation_id = ox.ensembl_id
+#    AND ox.ensembl_object_type = 'Translation'
+#    AND ox.xrefId = x.xrefId
+# ";
+# 
+
+# replacement:
     $sql="
 SELECT DISTINCT x.*
 FROM   $tmpdb.tmp_contig ctg, 
@@ -1135,19 +1168,22 @@ FROM   $tmpdb.tmp_contig ctg,
        $satdb.transcript tsc,
        $satdb.translation tl,
        $satdb.objectXref ox,
-       $satdb.Xref x
+       $satdb.Xref x,
+       $tmpdb.$translidid idid
 WHERE  ctg.internal_id = e.contig_id
    AND e.sticky_rank = 1
    AND e.exon_id = et.exon_id
    AND et.transcript_id=tsc.transcript_id
    AND tsc.translation_id = tl.translation_id
-   AND tl.translation_id = ox.ensembl_id
+   AND tl.translation_id = idid.as_int
+   AND idid.as_string = ox.ensembl_id
    AND ox.ensembl_object_type = 'Translation'
    AND ox.xrefId = x.xrefId
 ";
+#end replacment
     dump_data($sql, $satdb, 'Xref');
 
-    &drop_tmp_db();
+#    &drop_tmp_db();
     return;
 }                                       # dump_embl
 
@@ -1158,7 +1194,7 @@ sub dump_est  {
     my $sql;
 
     # small tables:
-    foreach my $table ( qw(analysis analysisprocess) )  {
+    foreach my $table ( qw(analysisprocess) )  {
         $sql="
 SELECT complete_table.* 
 FROM $satdb.$table complete_table
@@ -1312,6 +1348,25 @@ sub create_tmp_table {
     return;
 }                                       # create_tmp_table
 
+# set up temp table to map strings to ints, so proper indexes are used:
+sub create_tmp_translidid {
+    if ( defined($translidid))  {           # already done, reuse
+        return;
+    }
+    
+    $translidid = 'tmp_transl_id_string2int'; # global
+    my $sql="
+CREATE TABLE $translidid (as_string CHAR(40), as_int INT(10) unsigned);
+INSERT INTO $translidid(as_int) 
+  SELECT DISTINCT(translation_id) 
+  FROM $litedb.gene_prot;
+UPDATE $translidid set as_string = as_int;
+ALTER TABLE $translidid ADD KEY(as_int);
+ALTER TABLE $translidid ADD KEY(as_string);
+";
+    create_tmp_table($sql, $translidid);
+}
+
 sub drop_tmp_table {
     my ($table)= @_;
 
@@ -1378,7 +1433,7 @@ sub check_sql {
         return;
     }
 
-    if ( $out =~ /\bALL\b/ ) {
+    if ( $out =~ /\bALL\b/ && $out !~ /complete_table/  ) {
         carp "$sql: missing/not using index:\n$out\n";
     } else { 
         warn "query for $tablename OK\n";
