@@ -715,9 +715,9 @@ sub _parse_features {
 
         #sanity check,  Should not be an insertion and deletion
         if($insertion_flag) {
-          throw("Should not be an deletion and insertion on the " .
-                "same alignment region. prev2 = $prev2; f->hend() = " .
-                $f->hend() . "; cigar_line = $string;\n");
+          warning("Should not be an deletion and insertion on the " .
+                  "same alignment region. prev2 = $prev2; f->hend() = " .
+                  $f->hend() . "; cigar_line = $string;\n");
         }
       }
       #shift our position in the hit seq alignment
