@@ -5,7 +5,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 9;
+	plan tests => 11;
 }
 
 my $loaded = 0;
@@ -47,3 +47,11 @@ ok($t);
 
 $t->end_Exon($exon);
 ok($t);
+
+my $ta = $db->get_TranslationAdaptor();
+my $ids = $ta->list_dbIDs();
+ok (@{$ids});
+
+my $stable_ids = $ta->list_stable_dbIDs();
+ok (@{$stable_ids});
+
