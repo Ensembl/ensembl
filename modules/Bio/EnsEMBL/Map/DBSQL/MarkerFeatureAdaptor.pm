@@ -151,8 +151,7 @@ sub _default_where_clause {
 }
 
 sub _objs_from_sth {
-  my $self = shift;
-  my $sth  = shift;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
   my ($marker_feature_id, $marker_id, 
       $seq_region_id, $seq_region_start, $seq_region_end,
@@ -170,13 +169,41 @@ sub _objs_from_sth {
   my @out = ();
 
   my %marker_cache;
-  my %slice_cache;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
   my %analysis_cache;
   my $marker_adp = $self->db->get_MarkerAdaptor;
-  my $slice_adp  = $self->db->get_SliceAdaptor;
+  my $sa  = $self->db->get_SliceAdaptor;
   my $analysis_adp = $self->db->get_AnalysisAdaptor;
 
-  while($sth->fetch) {
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
+  }
+
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
+
+  FEATURE: while($sth->fetch) {
     #create a new marker unless this one has been seen already
     my $marker;
     if(!($marker = $marker_cache{$marker_id})) {
@@ -195,11 +222,14 @@ sub _objs_from_sth {
       $marker_cache{$marker_id} = $marker;
     }
 
-    #retrieve the slice from the database
-    my $slice;
-    if(!($slice = $slice_cache{$seq_region_id})) {
-      $slice = $slice_adp->fetch_by_seq_region_id($seq_region_id);
-      $slice_cache{$seq_region_id} = $slice;
+    #get the slice object
+    my $slice = $slice_hash{"ID:".$seq_region_id};
+
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
     }
 
     #retrieve analysis
@@ -207,6 +237,55 @@ sub _objs_from_sth {
     unless($analysis = $analysis_cache{$analysis_id}) {
       $analysis = $analysis_adp->fetch_by_dbID($analysis_id);
       $analysis_cache{$analysis_id} = $analysis;
+    }
+
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
+      ($sr_name,$seq_region_start,$seq_region_end) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+                         0, $sr_cs);
+
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if(!defined($sr_name));
+
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
+      } else {
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
+
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice && ($dest_slice_start != 1 || $dest_slice_strand != 1)) {
+      if($dest_slice_strand == 1) {
+        $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+        $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+      } else {
+        my $tmp_seq_region_start = $seq_region_start;
+        $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+        $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+      }
+
+      $slice = $dest_slice;
+
+      #throw away features off the end of the requested slice
+      if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+        next FEATURE;
+      }
     }
 
     #now create a new marker_feature using the marker
