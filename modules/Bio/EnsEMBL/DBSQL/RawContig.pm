@@ -328,8 +328,10 @@ sub get_all_Exons {
 
     my ($self)=@_;
 
+
     my $contig_id=$self->id;
-  
+
+
     my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
                FROM   exon e,contig c 
                WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
@@ -547,7 +549,7 @@ sub get_old_Exons {
 	print STDERR "Clone doesn't exist, returning empty array...\n";
 	return ();
     }
-    print STDERR "Gets here....\n\n";
+   
     my $newclone= $self->dbobj->get_Clone($self->cloneid);
     #If the clones have the same version, the underlying dna hasn't changed,
     #therefore we just return the old exons...

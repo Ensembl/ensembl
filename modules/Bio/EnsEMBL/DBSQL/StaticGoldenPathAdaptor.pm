@@ -120,7 +120,7 @@ sub fetch_RawContigs_by_fpc_name{
    my ($self,$fpc) = @_;
    
    my $type = $self->dbobj->static_golden_path_type();
-   
+
    # very annoying. DB obj wont make contigs by internalid. doh!
    my $sth = $self->dbobj->prepare("SELECT  c.id 
 				    FROM    static_golden_path st,
@@ -263,6 +263,9 @@ sub fetch_RawContigs_by_chr_start_end{
 
    my $type = $self->dbobj->static_golden_path_type();
    
+   $self->throw("I need a golden path type") unless ($type);
+   
+
    # go for new go-faster method
    my $sth = $self->dbobj->prepare("SELECT  c.id,
                                             c.internal_id,
@@ -275,8 +278,8 @@ sub fetch_RawContigs_by_chr_start_end{
 				    WHERE c.internal_id = st.raw_id 
 				    AND st.chr_name = '$chr' 
 				    AND  st.type = '$type' 
-				    AND st.chr_end > $start 
-				    AND st.chr_start < $end
+				    AND st.chr_start < $end 
+				    AND st.chr_end > $start
                                     AND cl.id = c.clone 
 				    ORDER BY st.fpcctg_start"
 				    );
@@ -285,6 +288,7 @@ sub fetch_RawContigs_by_chr_start_end{
    my @out;
    my $cid;
    while( ( my $array = $sth->fetchrow_arrayref) ) {
+
        my ($id,$internalid,$dna,$clone,$seq_version) = @{$array};
        my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
 	   ( 
@@ -330,6 +334,8 @@ sub fetch_VirtualContig_by_chr_start_end{
 
    
    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+  
+
    my $vc;
 
    eval {

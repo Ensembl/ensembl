@@ -94,8 +94,6 @@ sub new {
 	my $chr_start;
 	my $chr_end;
 
-
-
 	if( $rc->chr_start < $global_start ) {
 	    if( $rc->static_golden_ori ==1 ) {
 		# move start
