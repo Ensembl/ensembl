@@ -135,16 +135,30 @@ sub store {
     foreach my $rf (@repeats) {
 
         unless ($rf->repeat_id) {
+
+	    # need to get the consensus seq object for this repeat
+
             $self->throw("Must have a RepeatConsensus attached")
 	     unless defined ($cons = $rf->repeat_consensus);
 
             unless ($cons->dbID) {
-	        $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
-	        $cons->dbID($db_id);
+	        my @match = ($rca->fetch_by_name($cons->name));
+
+		if (@match > 1) {
+		    $self->warn(@match . " consensi for " . $cons->name . "\n");
+		}
 		# FIXME - need to take some action here if we don't
 		# match a consensus seq already stored
+		elsif (@match == 0) {
+		    $self->warn("Can't find " . $cons->name . "\n");
+		    $cons->repeat_consensus("N");
+		    $rca->store($cons);
+		}
+	        $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
+
+	        $cons->dbID($db_id);
 	    }
-	    $rf->repeat_id($db_id);
+	    $rf->repeat_id($cons->dbID);
 	}
 
         $sth->execute(
