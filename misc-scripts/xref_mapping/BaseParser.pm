@@ -52,7 +52,6 @@ sub get_options {
 
 }
 
-
 # --------------------------------------------------------------------------------
 # Get info about files to be parsed from the database
 
@@ -61,7 +60,11 @@ sub run {
   my $dbi = dbi();
 
   # TODO specify species
-  # TODO error checking of source name
+
+  # validate source names
+  exit(1) if (!validate_sources(@sources));
+
+  # build SQL
   my $source_sql = "";
   if (@sources) {
     $source_sql .= " AND s.name IN (";
@@ -539,6 +542,34 @@ sub usage {
 EOF
 
 }
+
+# --------------------------------------------------------------------------------
+
+sub validate_sources {
+
+  my @sources = @_;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT * FROM source WHERE name=?");
+
+  foreach my $source (@sources) {
+
+    $sth->execute($source);
+    if ($sth->fetchrow_array()) {
+      print "Source $source is valid\n";
+    } else {
+      print "Source $source is not valid, exiting\n";
+      return 0;
+    }
+
+  }
+
+  return 1;
+
+}
+
+
+# --------------------------------------------------------------------------------
 
 1;
 
