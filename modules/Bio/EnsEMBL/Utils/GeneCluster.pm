@@ -125,6 +125,7 @@ sub get_Genes {
   return @genes;
 }
 
+#########################################################################
 
 =head2 get_separated_Genes()
 
@@ -201,7 +202,218 @@ sub gene_Types {
     }
     return @selected_genes;
   }
+
+#########################################################################
+
+=head2 pair_Transcripts()
+
+  Title   : pair_Transcripts()
+  Usage   : my @array_of_pairs = $gene_cluster->pair_Transcripts
+  Function: This method make pairs of transcripts according to maximum reciprocal exon overlap. 
+            Transcripts can eventually be repeated because the maximum exon_overlap may coincide 
+            in two different pairs. 
+  Example : look for instance in the method find_missing_Exons
+  Returns : three arrayrefs =  
+            1.- a list of Bio::EnsEMBL::Utils::Transcripts, each holding a pair of transcripts, 
+            2.- a list with the unpaired transcripts, and 
+            3.- a list those transcripts which have been paired up twice or more
+  Args    : nothing
+
+=cut
+  
+sub pair_Transcripts {
+  my ($self) = @_;
+  
+  # get the genes separated by type list 'benchmark'-like or 'prediction'-like
+  my ( $genes2, $genes1 ) = $self->get_separated_Genes;
+  my (@transcripts1,@transcripts2);
+  my (@trans1,@trans2);
+  foreach my $gene ( @$genes1 ){
+    push( @trans1, $gene->each_Transcript );
+  }
+  foreach my $gene ( @$genes2 ){
+    push( @trans2, $gene->each_Transcript );
+  }
+  
+  # first sort the transcripts by their start position coordinate
+  my %start_table1;
+  my %start_table2;
+  my $i=0;
+  foreach my $tran ( @trans1 ) {
+    $start_table1{$i} = $tran->start_exon->start;
+    $i++;
+  }
+  my $j=0;
+  foreach my $tra ( @trans2  ) {
+    $start_table2{$j} = $tra->start_exon->start;
+    $j++;
+  }
+  foreach my $pos ( sort { $start_table1{$a} <=> $start_table1{$b} } keys %start_table1 ){
+    push (@transcripts1, $trans1[$pos]);
+  }
+  foreach my $pos ( sort { $start_table2{$a} <=> $start_table2{$b} } keys %start_table2 ){
+    push (@transcripts2, $trans2[$pos]);
+  }
+
+  # pair the transcripts, but first, some variable definition
+
+  my %seen1;           # these keep track of those transcript linked and with how much overlap
+  my %seen2;           # ditto, for @transcripts2
+  my @pairs;           # list of (Bio::EnsEMBL::Utils::TranscriptCluster) transcript-pairs being created 
+  my @unpaired;        # list of Bio::EnsEMBL::Transcript which are left unpaired
+  my @doubled;         # those which have been paired up twice
+  my $overlap_matrix;  # matrix holding the number of exon overaps for each pair of transcripts
+  my $link;            # matrix with 1 for the pairs linked and undef otherwise 
+  my @overlap_pairs;   # each entry holds an array with the overlap and the two transcripts being compared
+  my %repeated;        # to keep track of repeated transcripts
+
+  # first calculate all possible overlaps
+  foreach my $tran1 ( @transcripts1 ){
+    foreach my $tran2 ( @transcripts2 ){
+      $$overlap_matrix{ $tran1 }{ $tran2 } = _compare_Transcripts( $tran1, $tran2 );
+      my @list = ( $$overlap_matrix{ $tran1 }{ $tran2 }, $tran1, $tran2 );
+      push ( @overlap_pairs, \@list );
+      print STDERR "Overlap( ".$tran1->id.",".$tran2->id." ) = ".$$overlap_matrix{ $tran1 }{ $tran2 }."\n";
+    }
+  }
+  # sort the list of @overlap_pairs on the overlap
+  my @sorted_pairs = sort { $$b[0] <=> $$a[0] } @overlap_pairs;
+ 
+  # take the first pair of the list
+  my $first = shift @sorted_pairs;
+  my ($max_overlap,$tran1,$tran2) =  @$first;
+  $seen1{ $tran1 } = $max_overlap;
+  $seen2{ $tran2 } = $max_overlap;
+  $$link{ $tran1 }{ $tran2 } = 1;
+  
+  # scan through each overlap
+ PAIR:
+  foreach my $list ( @sorted_pairs ){
+    # each list contains @$list = ( overlap, transcript1, transcript2 )
     
+    # if we've seen both transcripts already reject them
+    if ( $$link{ $$list[1] }{ $$list[2] } && defined( $seen1{ $$list[1] } ) && defined( $seen2{ $$list[2] } ) ){
+      next PAIR;
+    }
+
+    # if the same score...
+    if ( $$list[0] == $max_overlap ) {
+      
+      # if we've seen both transcripts already, check they have the highest score
+      if ( defined( $seen1{ $$list[1] } ) && defined( $seen2{ $$list[2] } ) ){
+	if ( $$list[0] == $seen1{ $$list[1] } && $$list[0] == $seen2{ $$list[2] } ){
+	  $$link{ $$list[1] }{ $$list[2] } = 1;
+	}
+	 next PAIR;
+      }
+	
+      # if the pair is entirely new, we accept it
+      if ( !defined( $seen1{ $$list[1] } ) && !defined( $seen2{ $$list[2] } ) ){
+	$$link{ $$list[1] }{ $$list[2] } = 1;
+	$seen1{ $$list[1] } = $$list[0];
+	$seen2{ $$list[2] } = $$list[0];
+	next PAIR;
+      }
+
+      # we accept repeats only if this is their maximum overlap as well
+      if ( !defined( $seen2{$$list[2]} ) && defined( $seen1{$$list[1]} ) && $$list[0] == $seen1{$$list[1]} ){
+	$$link{ $$list[1] }{ $$list[2] } = 1;
+	$seen2{ $$list[2] } = $$list[0];
+	if ( !defined( $repeated{ $$list[1] } ) ){
+	  push( @doubled, $$list[1] );
+	  $repeated{ $$list[1] } = 1;
+	}
+	next PAIR;
+      }
+      if ( !defined( $seen1{$$list[1]} ) && defined( $seen2{$$list[2]} ) && ($$list[0] == $seen2{$$list[2]}) ){ 
+	$$link{ $$list[1] }{ $$list[2] } = 1;
+	$seen1{ $$list[1] } = $$list[0];
+	if ( !defined( $repeated{ $$list[2] } ) ){
+	  push( @doubled, $$list[2] );
+	  $repeated{ $$list[2] } = 1;
+	}
+	next PAIR;
+      }
+    }
+
+    # if the score is lower, only accept if the pair is completely new
+    if ( $$list[0] < $max_overlap ){
+      if ( !defined( $seen1{ $$list[1] } ) && !defined( $seen2{ $$list[2] } ) ){
+	$$link{ $$list[1] }{ $$list[2] } = 1;
+	$seen1{ $$list[1] } = $$list[0];
+	$seen2{ $$list[2] } = $$list[0];
+	$max_overlap = $$list[0];
+	next PAIR;
+      }
+    }
+  }
+  
+  # create a new cluster for each pair linked
+  foreach my $tran1 ( @transcripts1 ){
+    foreach my $tran2 ( @transcripts2 ){
+      if ( $$link{ $tran1 }{ $tran2} && $$link{ $tran1 }{ $tran2 } == 1 ){
+	my $pair = Bio::EnsEMBL::Utils::TranscriptCluster->new();
+	$pair->put_Transcripts( $tran1, $tran2 );
+	push( @pairs, $pair );
+      }
+    }
+  }
+
+  # finally, check for the unseen ones
+  foreach my $tran1 ( @transcripts1 ){
+    if ( !defined( $seen1{ $tran1 } ) ){
+      push( @unpaired, $tran1 );
+    }
+  }
+  foreach my $tran2 ( @transcripts2 ){
+    if ( !defined( $seen2{ $tran2 } ) ){
+      push( @unpaired, $tran2 );
+    }
+  }
+
+  print STDERR scalar(@pairs)." transcript pairs created\n";
+  #my $count2=1;
+  #foreach my $pair ( @pairs ){
+  #  print STDERR "pair $count2:\n".$pair->to_String;
+  #  $count2++;
+  #}
+  #$count2=1;
+  #print STDERR scalar(@unpaired)." unpaired transcripts\n";
+  #foreach my $unpaired ( @unpaired ){
+  #  print STDERR "unpaired $count2: ".$unpaired->id."\n";
+  #}
+  # return the pairs, the unpaired transcripts, and those transcript which have been taken twice or more
+  return (\@pairs,\@unpaired,\@doubled);
+}
+
+#########################################################################
+   
+
+=head2 _compare_Transcripts()
+
+ Title: _compare_Transcripts()
+ Usage: this internal function compares the exons of two transcripts according to overlap
+        and returns the number of overlaps
+=cut
+
+sub _compare_Transcripts {         
+  my ($transcript1,$transcript2) = @_;
+  my @exons1   = $transcript1->each_Exon;
+  my @exons2   = $transcript2->each_Exon;
+  my $overlaps = 0;
+  
+  foreach my $exon1 (@exons1){
+    
+    foreach my $exon2 (@exons2){
+
+      if ( ($exon1->overlaps($exon2)) && ($exon1->strand == $exon2->strand) ){
+	$overlaps++;
+      }
+    }
+  }
+  return $overlaps;  # we keep track of the number of overlaps to be able to choose the best match
+}    
+
 
 
 #########################################################################
@@ -289,6 +501,7 @@ sub _get_end {
   }                                                 # which is here the last of the list @exons
   return $end;
 }
+
 #########################################################################
 #Adding new methods to calculate the prediction accuracies of the genes in this cluster
 #########################################################################
