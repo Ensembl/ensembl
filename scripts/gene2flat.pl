@@ -193,7 +193,8 @@ while ( @gene_id > 0 ) {
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+		    my ($chr,$bp) = $stgp->get_Gene_chr_bp($gene_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr:".$chr." basepair:".$bp);
 		    $seqio->write_seq($seq);
 		}
 	    }
@@ -207,7 +208,8 @@ while ( @gene_id > 0 ) {
 		    $seq->display_id($trans->id);
 		    my @exon = $trans->each_Exon;
 		    my $fe = $exon[0];
-		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
+		    my ($chr,$bp) = $stgp->get_Gene_chr_bp($gene_id);
+		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr:".$chr." basepair:".$bp);
 		    $seqiot->write_seq($seq);
 		    $seqiot=undef;
 		    close (TRANS);
@@ -220,7 +222,8 @@ while ( @gene_id > 0 ) {
 			print STDERR "Skipping peptide dumping of ".$gene->id.", translation has stop codons. (in clone ". $fe->clone_id .")\n\n";
 			next;
 		    }
-		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig: " . $fe->contig_id);
+		    my ($chr,$bp) = $stgp->get_Gene_chr_bp($gene_id);
+		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id . " Chr:".$chr." basepair:".$bp);
 		    $seqiop->write_seq($tseq);
 		    $seqiop=undef;
 		    close(PEP);
