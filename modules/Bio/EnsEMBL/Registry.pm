@@ -68,7 +68,7 @@ my  $exon_adaptor = Bio::EnsEMBL::Registry->get_adaptor("Human","core","Exon");
 =head2 DNA
 
 This is an internal Registry and allows the configuration of a dnadb. 
-An example here is to set the est database to get it's dna data from the core database.
+An example here is to set the est database to get its dna data from the core database.
 
 ## set the est db to use the core for getting dna data.
 #Bio::EnsEMBL::Utils::ConfigRegistry->
@@ -604,7 +604,7 @@ sub alias_exists{
 }
 
 sub set_disconnect_when_inactive{
-  foreach my $dba ( @{get_all_DBAdaptors()}){
+  foreach my $dba ( @{$registry_register{'_DBA'}}){
     my $dbc = $dba->dbc;
     #disconnect if connected
     $dbc->disconnect_if_idle() if $dbc->connected();
@@ -642,24 +642,23 @@ sub disconnect_all {
 =cut
 
 sub change_access{
-  my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
-
-  foreach my $dba ( @{get_all_DBAdaptors()}){
-    my $dbc = $dba->dbc;
-    if((!defined($host) or $host eq $dbc->host) and
-      (!defined($port) or $port eq $dbc->port) and
-      (!defined($user) or $user eq $dbc->username) and
-	(!defined($dbname) or $host eq $dbc->dbname)){
-      #disconnect if connected
-      if($dbc->connected()){
-	$dbc->disconnect();
-	$dbc->connected(undef);
-      }
-      # over write the username and password
-      $dbc->username($new_user);
-      $dbc->password($new_pass);
+my $self = shift;
+    my ($host,$port,$user,$dbname,$new_user,$new_pass) = @_;
+    foreach my $dba ( @{$registry_register{'_DBA'}}){
+	my $dbc = $dba->dbc;
+	if((!defined($host) or $host eq $dbc->host) and
+	   (!defined($port) or $port eq $dbc->port) and
+	   (!defined($user) or $user eq $dbc->username) and
+	   (!defined($dbname) or $dbname eq $dbc->dbname)){
+	    if($dbc->connected()){
+		$dbc->db_handle->disconnect();
+		$dbc->connected(undef);
+	    }
+	    # over write the username and password
+	    $dbc->username($new_user);
+	    $dbc->password($new_pass);
+	}
     }
-  }
 }
 
 #
