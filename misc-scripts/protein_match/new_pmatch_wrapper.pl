@@ -48,9 +48,9 @@ my ($unused_fh, $pmatch_out) = tempfile("pmatch_XXXXX",
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
 my $target	= $datadir . '/final.fa';
 my $query	= $datadir . '/sptr_ano_gambiae_19_11_02_formated.fa';
-
-#my $target = $datadir . '/O62615.fa';
-#my $query  = $datadir . '/13361.fa';
+my $q_idt;
+my $t_idt;
+my $output;
 
 # Set defaults
 my %opts = (
@@ -67,7 +67,7 @@ if (!getopts('c:kdp:q:t:', \%opts)) {
 Usage: $0 [-c path] [-k] [-d] [-p num] [-q path] [-t path]
 
 -c path	Use the pmatch executable located at 'path' rather than at
-	'$pmatch_cmd'.
+]	'$pmatch_cmd'.
 
 -p num	Report the targets that are 'num' percent within the best
 	matching target.  Default is 2%.
@@ -91,6 +91,31 @@ EOT
 $pmatch_cmd	= $opts{'c'};
 $query		= $opts{'q'};
 $target		= $opts{'t'};
+
+# In that case the know gene mapping is used thus the option from the conf file ovveride the ones from the command line
+if ($opts{'d'} == 1) {
+print STDERR "Warning: Any values given to the command line option will be overideen by the values stored in mapping_conf.pm";    
+
+    BEGIN {
+	my $script_dir = $0;
+	$script_dir =~ s/(\S+\/)\S+/$1/;
+	unshift (@INC, $script_dir);
+	require "mapping_conf.pl";
+    }
+
+
+my %conf =  %::mapping_conf;
+
+$query = $conf{'query'};
+$target = $conf{'pmatch_input_fa'};
+$output = $conf{'pmatch_out'};
+
+$t_thr = $conf{'target_idt'};
+$q_thr = $conf{'query_idt'};
+
+$pmatch_cmd = $conf{'pmatch'};
+}
+
 
 if (system("$pmatch_cmd $pmatch_opt $target $query >$pmatch_out") != 0) {
 	# Failed to run pmatch command
@@ -212,6 +237,9 @@ foreach my $query (values(%hits)) {
 }
 
 if ($opts{'d'} == 1) {
+    if ((! defined $q_idt) || (!defined $t_idt) || (! defined $output)) {
+	die "You need to define:\nquery pert idt: $q_idt\ntargett perc idt: $t_idt\nOutput file: $output\n";
+    }
 
     foreach my $query (values(%goodhits)) {
 	foreach my $target (values(%{ $query })) {
