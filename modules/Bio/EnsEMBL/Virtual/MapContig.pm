@@ -61,8 +61,9 @@ package Bio::EnsEMBL::Virtual::MapContig;
 use vars qw(@ISA);
 use strict;
 use Bio::Root::RootI;
+use Bio::SeqFeatureI;
 
-@ISA = qw(Bio::Root::RootI);
+@ISA = qw(Bio::SeqFeatureI Bio::Root::RootI);
 
 sub new {
     my ($class,@args) = @_;
@@ -141,6 +142,7 @@ sub end{
     return $obj->{'end'};
 
 }
+
 
 =head2 rawcontig_start
 
@@ -313,7 +315,157 @@ sub _length{
 
    return $self->end - $self->start +1;
 }
+
+=head2 SeqFeature methods
+
+These methods are here for seqfeature I compliance
+
+=cut
+
+
+=head2 strand
+
+ Title   : strand
+ Usage   : this is for seqfeatureI compliance
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub strand{
+   my ($self) = @_;
+
+   return $self->orientation;
+}
+
+=head2 source_tag
+
+ Title   : source_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub source_tag {
+   my ($self,@args) = @_;
+
+   return 'ensembl';
+}
     
+
+=head2 primary_tag
+
+ Title   : primary_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub primary_tag{
+   my ($self) = @_;
+
+   return 'fragment';
+}
+
+=head2 has_tag_value
+
+ Title   : has_tag_value
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_tag_value{
+   my ($self,@args) = @_;
+
+   return 0;
+}
+
+=head2 each_tag_value
+
+ Title   : each_tag_value
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_tag_value{
+   my ($self,@args) = @_;
+
+   return ();
+
+}
+
+
+=head2 all_tags
+
+ Title   : all_tags
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub all_tags{
+   my ($self) = @_;
+
+   return ();
+}
+
+
+=head2 to_FTHelper
+
+ Title   : to_FTHelper
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub to_FTHelper{
+   my ($self,@args) = @_;
+
+   my $ft = Bio::SeqIO::FTHelper->new();
+
+   my $loc = $self->start."..".$self->end;
+   $ft->loc($loc);
+   $ft->key('misc');
+   $ft->add_field('note','Component DNA fragment');
+   # grrr. So frustrating. Have to get clone version
+   my $clone = $self->contig->dbobj->get_Clone($self->contig->cloneid);
+   $ft->add_field('note',"accession=".$self->contig->cloneid.".".$clone->embl_version);
+   $ft->add_field('note',"start=".($self->rawcontig_start+$self->contig->embl_offset));
+   $ft->add_field('note',"end=".($self->rawcontig_end+$self->contig->embl_offset));
+   $ft->add_field('note',"orientation=".$self->orientation);
+   
+   return $ft;
+}
+
 
 1;
 

@@ -387,10 +387,17 @@ sub top_SeqFeatures {
 	push(@f,$self->get_all_ExternalFeatures());
     } 
     
-    foreach my $gene ( $self->get_all_Genes()) {
-	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
-	push(@f,$vg);
+    if( !$self->skip_SeqFeature('gene') ) {
+	foreach my $gene ( $self->get_all_Genes()) {
+	    my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
+	    push(@f,$vg);
+	}
     }
+
+    if( !$self->skip_SeqFeature('contig') ) {
+	push(@f,$self->_vmap->each_MapContig);
+    }
+
     
     return @f;
 }

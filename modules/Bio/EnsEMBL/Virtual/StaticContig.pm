@@ -68,8 +68,8 @@ sub new {
     $self->{'date'} = [];
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
-
-
+    
+    
 
     if( scalar(@contigs) == 0 ) {
 	if( $global_end == -1 ) {
@@ -84,6 +84,8 @@ sub new {
 	}
     }
 
+    my $c = $contigs[0];
+    $self->dbobj($c->dbobj);
 
     # this loop is no longer easy because it has to deal with
     # right and left truncations now <sigh>
