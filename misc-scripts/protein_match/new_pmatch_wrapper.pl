@@ -16,29 +16,7 @@ use Getopt::Std;
 use File::Temp qw(tempfile);
 
 use Bio::EnsEMBL::Mapper;
-
-sub overlap
-{
-	# Returns the length of the overlap of the two ranges
-	# passed as argument.  A range is a two element array.
-
-	my $first  = shift;
-	my $second = shift;
-
-	# Order them so that $first starts first.
-	if ($first->[0] > $second->[0]) {
-		($first, $second) = ($second, $first);
-	}
-
-	# No overlap
-	return 0 if ($first->[1] < $second->[0]);
-
-	# Partial overlap
-	return ($first->[1] - $second->[0] + 1) if ($first->[1] < $second->[1]);
-
-	# Full overlap
-	return ($second->[1] - $second->[0] + 1);
-}
+use Bio::Range;
 
 my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
 my $pmatch_opt	= '-T 14';
@@ -159,6 +137,10 @@ if (!$opts{'k'}) {
 	print(STDERR "$pmatch_out\n");
 }
 
+
+my $r1 = new Bio::Range();  # Outside loop to avoid unnecessary object creation.
+my $r2 = new Bio::Range();
+
 foreach my $query (values(%hits)) {
 	foreach my $target (values(%{ $query })) {
 
@@ -180,11 +162,13 @@ foreach my $query (values(%hits)) {
 				push(@pair, $hit);
 				next if (scalar(@pair) != 2);
 
-				my $o = overlap([$pair[0]{$c . 'START'},
-						 $pair[0]{$c . 'END'}],
-						[$pair[1]{$c . 'START'},
-						 $pair[1]{$c . 'END'}]);
-				$overlap += $o;
+				$r1->start($pair[0]{$c . 'START'});
+				$r1->end($pair[0]{$c . 'END'});
+
+				$r2->start($pair[1]{$c . 'START'});
+				$r2->end($pair[1]{$c . 'END'});
+
+				my $overlap += $r1->intersection($r2);
 			}
 
 			# Calculate the query and target identities
