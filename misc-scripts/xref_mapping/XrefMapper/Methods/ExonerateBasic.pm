@@ -38,7 +38,7 @@ sub run() {
 
   my ($self, $query, $target, $dir) = @_;
 
-  my $name = $self->submit_exonerate($query, $target, $dir, options());
+  my $name = $self->submit_exonerate($query, $target, $dir, $self->options());
 
   return $name;
 
