@@ -118,6 +118,7 @@ sub get_landmark_MarkerFeatures_old{
    my ($self,$chr_name) = @_;
 
    my $glob = 1000;
+   $self->throw( "Method deprecated. " );
 
    my $statement= "   SELECT 
                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-1),
@@ -188,11 +189,11 @@ sub get_landmark_MarkerFeatures{
        $glob = 500000;
    }
 
-   my $statement= " SELECT  start,
-			    end,
-			    strand,
+   my $statement= " SELECT  chr_start,
+			    chr_end,
+			    chr_strand,
 			    name 
-		    FROM    contig_landmarkMarker 
+		    FROM    landmarkMarker 
 		    WHERE   chr_name = '$chr_name'
 		    ORDER BY start
 		";
