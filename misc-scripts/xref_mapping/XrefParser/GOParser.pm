@@ -1,4 +1,4 @@
-package GoParser;
+package XrefParser::GOParser;
 
 use strict;
 use POSIX qw(strftime);
@@ -9,8 +9,6 @@ use XrefParser::BaseParser;
 use vars qw(@ISA);
 @ISA = qw(XrefParser::BaseParser);
 
-my $xref_sth ;
-my $dep_sth;
 
 
 # --------------------------------------------------------------------------------
@@ -33,11 +31,6 @@ sub run {
   my $file = shift;
   my $source_id = shift;
   my $species_id = shift;
-  $xref_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
-
-  $dep_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)");
-
-
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -67,46 +60,19 @@ sub run {
     }
     elsif($array[0] =~ /RefSeq/){
       if($refseq{$array[1]}){
-	add_to_xrefs($refseq{$array[1]},$array[4],$array[6],$source_id,$species_id);
+	 XrefParser::BaseParser->add_to_xrefs($refseq{$array[1]},$array[4],$array[4],$array[6],$source_id,$species_id);
 #	print "$array[1]\tSPTR\t$array[4]\tGO\t$array[6]\t$array[9]\tXREF\n";
       }
     }
     elsif($array[0] =~ /UniProt/){
       if($swiss{$array[1]}){
-	add_to_xrefs($swiss{$array[1]},$array[4],$array[6],$source_id,$species_id);
-#	print "$array[1]\tSPTR\t$array[4]\tGO\t$array[6]\t$array[9]\tXREF\n";
+	XrefParser::BaseParser->add_to_xrefs($swiss{$array[1]},$array[4],$array[4],$array[6],$source_id,$species_id);
       }
     }
     else{
       print STDERR "unknown type ".$array[0]."\n";
     }
   }
-}
-
-sub get_xref{
-  my ($acc,$source) = @_;
-
-  my $dbi =XrefParser::BaseParser->dbi;
-  my $sql = "select xref_id from xref where accession = '".$acc."' and source_id = $source";
-  my $sth = $dbi->prepare($sql);  
-  
-  $sth->execute() || die $dbi->errstr;
-  if(my @row = $sth->fetchrow_array()) {
-    return $row[0];
-  }   
-  return undef;
-}
-
-sub add_to_xrefs{
-  my ($master_xref,$go,$linkage,$source_id,$species_id) = @_;
-
-  my $dependent_id = get_xref($go, $source_id);
-  if(!defined($dependent_id)){
-    $xref_sth->execute($go,$go,"",$source_id,$species_id);
-  }
-  $dependent_id = get_xref($go, $source_id);
-  $dep_sth->execute($master_xref, $dependent_id,  $linkage, $source_id);
-
 }
 
 sub new {

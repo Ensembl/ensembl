@@ -47,12 +47,6 @@ sub run {
 
   my $dir = dirname($file);
  
-#  print STDERR $dir."\n";
-  
-  $xref_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
-  $dep_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)"); # xref1,xref2,"",hugo
-    
-
   my %hugo;
     
   open (ENS4, $dir."/ens4.txt") || die "Can't open hugo ens4 $dir/ens4.txt\n";
@@ -66,18 +60,17 @@ sub run {
     my $hgnc = $array[0];
     my $label = $array[1];
     
-    my $id = get_xref($hgnc, $source_id);
-    if(!defined($id)){
-      $xref_sth->execute($hgnc,$label,"",$source_id,$species_id);
-    }
-    $hugo{$hgnc} = get_xref($hgnc, $source_id);;
+    $hugo{$hgnc} = $label
   }
   close ENS4;
 
   
   my (%swiss)  = BaseParser->get_valid_codes("uniprot",$species_id);
   my (%refseq) = BaseParser->get_valid_codes("refseq",$species_id);
-  
+ 
+
+  my $count = 0;
+  my $mismatch = 0;
   open (ENS1, $dir."/ens1.txt") || die "Can't open hugo ens1  $dir/ens1.txt\n";
   #HGNC    SWISSPROT       Ref Seq
   #5       P04217  NM_130786
@@ -95,9 +88,12 @@ sub run {
 	print STDERR $_."\n"; 
 	print STDERR "swiss prot $array[1] -> xref $master \n";
 	print STDERR "hugo number $hgnc -> xref $dep \n";
+	$mismatch++;
       }
       else{
-	$dep_sth->execute($master, $dep,  "", $source_id);
+	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,$hugo{hgnc},"",$source_id,$species_id);
+	$count++;
+#	$dep_sth->execute($master, $dep,  "", $source_id);
       }
       #	print "$array[1]\tSPTR\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
@@ -109,33 +105,20 @@ sub run {
 	print STDERR $_."\n"; 
 	print STDERR "ref seq $array[2] -> xref $master \n";
 	print STDERR "hugo number $hgnc -> xref $dep \n";
+	$mismatch++;
       }
       else{
-#	$dep_sth->execute($master, $dep,  "", $source_id);
+	XrefParser::BaseParser->add_to_xrefs($master,$hgnc,$hugo{hgnc},"",$source_id,$species_id);
+	$count++;
       }
-      #	print "$array[2]\tRefSeq\t$hgnc\tHUGO\t$hugo_id{$hgnc}\t$hugo_syn{$hgnc}\tXREF\n";
     }
   }
   close (ENS1);
-  
-    
-}
-
-
-sub get_xref{
-  my ($acc,$source) = @_;
-  
-  my $dbi = XrefParser::BaseParser->dbi;
-  my $sql = "select xref_id from xref where accession = '".$acc."' and source_id = $source";
-  my $sth = $dbi->prepare($sql);
-    
-  $sth->execute() || die $dbi->errstr;
-  if(my @row = $sth->fetchrow_array()) {
-    return $row[0];
-  }
-  return undef;
+  print "$count xrefs succesfully loaded\n";
+  print "$mismatch xrefs failed to load\n";
 }
   
+      
 sub new {
 
   my $self = {};
