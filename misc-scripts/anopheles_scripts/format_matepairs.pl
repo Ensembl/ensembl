@@ -92,7 +92,8 @@ while (<MATE>) {
 	    $seen{$cra_id} = $dna_id;
 	}
 	
-	print "$seen{$cra_id}\t$start\t$end\t1\t$tag\n";
+	print "$seen{$cra_id}\t$chr_start\t$chr_end\t1\t$tag\n";
+    
     }
 
     
@@ -102,10 +103,9 @@ while (<MATE>) {
 
 sub fpc2chr {
     my ($cra_id,$start,$end) = @_;
-
-#select f.id,f.hid,IF(sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start), (sgp.chr_start+sgp.raw_end-f.seq_end)) as repeat_chrom_start,IF(sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),  (sgp.chr_start+sgp.raw_end-f.seq_start)
     
-#    my $command = "select chr_start,fpcctg_ori from static_golden_path where fpcctg_name = '$cra_id' and fpcctg_start = 1";
+    $start = $start + 1;
+    $end = $end;
 
     my $command = "select fpcctg_ori,IF(fpcctg_ori=1,($start+chr_start-fpcctg_start), (chr_start+fpcctg_end-$end)) as chrom_start, IF(fpcctg_ori=1,($end+chr_start-fpcctg_start),  (chr_start+fpcctg_end-$start)) as chrom_end from static_golden_path where fpcctg_name = '$cra_id' and fpcctg_start <= $start and fpcctg_end >= $start";
 
@@ -114,7 +114,10 @@ sub fpc2chr {
     
     my ($ori,$chr_start,$chr_end) = $sth->fetchrow;
 
-    
+    if ($chr_start == 0) {
+	print "ID: $cra_id\tSTART: $start\tEND: $end\tCHR_START: $chr_start\tCHR_END: $chr_end\n";
+	print "$command\n";
+    }
     return($chr_start,$chr_end,$ori);
 
 }
