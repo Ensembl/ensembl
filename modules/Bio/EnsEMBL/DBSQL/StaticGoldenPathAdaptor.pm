@@ -655,7 +655,7 @@ sub fetch_VirtualContig_by_gene{
        ($start,$chr_name)=@row;
 
        push @start,$start;
-   }   
+   }
    
    my @start_sorted=sort @start;
 

@@ -533,59 +533,93 @@ sub get_AnnSeq {
 sub write_acedb {
     my ($self,$fh,$seqname) = @_;
 
-    my $contig_id=$self->id();
+    my $contig_id = $self->id();
 
     $seqname ||= $contig_id;
     
-    foreach my $gene ($self->get_all_Genes()){
-	my $gene_id=$gene->id;
-	TRANSCRIPT :
-	foreach my $trans ( $gene->each_Transcript ) {
-	    my $trans_id=$trans->id;
-	    
-	    # check this transcript has exons on this contig
-	    foreach my $exon ( $trans->each_Exon ) {
-		if( $exon->contig_id ne $contig_id ) {
-		    $self->warn("Could not ace dump transcript " . $trans->id . "as exons across contigs");
-		    next TRANSCRIPT;
-		}
-	    }
-	    
-	    # exons are in order.
+    # get all the genes of this contig and analyze each of them    
+    foreach my $gene ($self->get_Genes_by_Type('ensembl',1)){
+	
+        my $gene_id=$gene->id;
+	
+	#get all the transcripts of a particular gene. 
+        my @transcripts_in_gene = $gene->each_Transcript;
+        
+        #Get all exons for every transcript
+        foreach my $trans ( @transcripts_in_gene ) {
+	   
+            my $trans_id=$trans->id;	                           
+            my @exons = $trans->each_Exon;                        
+            my $number_of_exons = @exons;
+                        
+            my @exons_in_contig;
+            my @exon_number_in_contig; 
+            my $exon_number_in_transcript=0;
+            
+            
+            # check if the transcript have exons in ohter contigs 
+            EXON:foreach my $exon ( @exons ) {
+              
+               $exon_number_in_transcript++;   
+               
+               if ( $exon->contig_id eq $contig_id ) {
+               
+                  push ( @exons_in_contig,$exon );
+                  
+                  push ( @exon_number_in_contig,$exon_number_in_transcript);
+                             
+               } else { next EXON; }
 
-	    my @exons = $trans->each_Exon;
+            }  
+            
+            my $number_of_exons_in_transcript = $exon_number_in_transcript;
+            
 
-	    my $tstrand = $exons[0]->strand;
-	    my ($tstart,$tend);
-	    if( $tstrand == 1 ) {
-		$tstart = $exons[0]->start;
-		$tend   = $exons[$#exons]->end;
-	    } else {
-		$tstart = $exons[0]->end;
-		$tend   = $exons[$#exons]->start;
-	    }
+            # check the strand of the transcript ($tsrand == 1 means sense strand) 
+            # and get the coordinates of the transcript in the contig       
+            
+            my $tstrand = $exons_in_contig[0]->strand;
+            my ($tstart,$tend);
+            if( $tstrand == 1 ) {
+            $tstart = $exons_in_contig[0]->start;
+            $tend   = $exons_in_contig[$#exons_in_contig]->end;
+            } else {
+            $tstart = $exons_in_contig[0]->end;
+            $tend   = $exons_in_contig[$#exons_in_contig]->start;
+            }
+           
 
-	    # print starting stuff...
-
+	    # start .ace file printing...
 	    print $fh "Sequence $seqname\n";
-	    print $fh "subsequence $gene_id.$trans_id.EnsEMBL $tstart $tend\n\n";
-		
-	    # acedb has coordinates relative to transcripts.
-	    
-	    print $fh "Sequence $gene_id.$trans_id.EnsEMBL\nCDS\nStart_not_found\nEnd_not_found\nMethod EnsEMBL\n";
-	    
-	    foreach my $exon ( $trans->each_Exon ) {
-		if( $tstrand == 1 ) {
-		    print $fh "source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
-		} else {
-		    print $fh "source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
-		}
-	    }
+	    print $fh "Subsequence $trans_id $tstart $tend\n\n";
+
+	    # print coordinates of the transcript relative to the contig
+	    print $fh "Sequence $trans_id\nSource $seqname\nCDS\nCDS_predicted_by EnsEMBL\nMethod EnsEMBL\n";
+                
+            #print coordinates of each exon relative to the transcript   
+            foreach my $exon ( @exons_in_contig ) {
+                if( $tstrand == 1 ) {
+                    print $fh "Source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
+                } else {
+                    print $fh "Source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
+                }                      
+            }
+            
+            #if the transcript possesses exons in other contigs, indicate which end is missing
+            my $number_of_first_exon_in_contig = $exon_number_in_contig[0];
+            my $number_of_last_exon_in_contig = $exon_number_in_contig[$#exon_number_in_contig];
+           
+            if ( $number_of_first_exon_in_contig != 1) {
+                print $fh "Start_not_found\n";
+            } 
+            
+            if ( $number_of_last_exon_in_contig != $number_of_exons_in_transcript ) {
+                print $fh "End_not_found\n";
+            }     
 
 	    print $fh "\n\n";
-	}
+	 }         
     }
-
 }
 
 
