@@ -234,6 +234,8 @@ while ( @gene_id > 0 ) {
 	}
 	print STDERR "unable to process @chunk_list, due to \n$@\n";
     }
+    $db->DESTROY;
+    $db=undef;
     
 }
 
