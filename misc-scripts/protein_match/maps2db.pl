@@ -226,6 +226,24 @@ if ($organism eq "zebrafish") {
 
 }
 
+
+if ($organism eq "fugu") {
+  $check{'sptr_swiss'}  = $conf{'sptr_swiss'};
+  $check{'x_map_out'}   = $conf{'x_map_out'};
+  $check{'mapping_out'} = $conf{'mapping_out'};
+  $check{'db'}          = $conf{'db'};
+  $check{'host'}        = $conf{'host'};
+  $check{'dbuser'}      = $conf{'dbuser'};
+  $check{'password'}    = $conf{'password'};
+  
+  foreach my $k (keys %check) {
+    print STDERR $check{$k}."\n";
+    if ($check{$k} !~ /(\S+)/) {
+      usage();
+    }
+  } 
+}
+
 #End of checks
 
 print STDERR "Connecting to the database... $dbname:$host\n";

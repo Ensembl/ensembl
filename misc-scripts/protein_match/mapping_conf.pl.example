@@ -217,7 +217,7 @@ package main;
              'organism' => 'anopheles',
              
              #List of authorised organisms, don't forget to add a new organism to this list
-             'organism_list' => ['human','drosophila','mouse','elegans','anopheles','zebrafish','rat'],
+             'organism_list' => ['human','drosophila','mouse','elegans','anopheles','zebrafish','rat','fugu'],
              
 
              #OX (Organism taxonomy cross-reference) number
@@ -226,6 +226,7 @@ package main;
              #'ox' => '7227', drosophila
 	     #'ox' => '6239' elegans
 	     #'ox' => '6238' briggsae 	 
+	     #'ox' => '31033' fugu
              'ox'  => '',
 
 	    
