@@ -149,7 +149,20 @@ sub fetch_by_stable_id {
 sub fetch_all_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-  ##override the tables definition to provide an additional join to
+  my $tslice = $transcript->slice();
+  my $slice;
+
+  if(!$tslice) {
+    throw("Transcript must have attached slice to retrieve exons.");
+  }
+
+  if($transcript->start < 1 || $transcript->end > $tslice->length()) {
+    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
+  } else {
+    $slice = $tslice;
+  }
+
+  # override the tables definition to provide an additional join to
   # the exon_transcript table.  For efficiency we cannot afford to have
   # this in as a left join every time.
   my @tables = $self->_tables();
@@ -161,15 +174,21 @@ sub fetch_all_by_Transcript {
   my $constraint = "et.transcript_id = ".$transcript->dbID() .
                    " AND e.exon_id = et.exon_id";
 
-  #fetch exons, remap them to the transcripts slice, and
-  # keep even exons which fall off end of slice
-  my $keep_all = 1;
-  my $exons = $self->generic_fetch( $constraint, undef,
-                                    $transcript->slice(), $keep_all);
+  # fetch all of the exons
+  my $exons = $self->fetch_all_by_Slice_constraint($slice,$constraint);
 
   #un-override the table definition
   $self->{'tables'} = undef;
   $self->{'final_clause'} = undef;
+
+  # remap exon coordinates if necessary
+  if($slice != $tslice) {
+    my @out;
+    foreach my $ex (@$exons) {
+      push @out, $ex->transfer($tslice);
+    }
+    $exons = \@out;
+  }
 
   return $exons;
 }
@@ -418,7 +437,7 @@ sub list_stable_ids {
 #  Caller     : internal
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice, $keep_all) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
   #
   # This code is ugly because an attempt has been made to remove as many
@@ -541,7 +560,7 @@ sub _objs_from_sth {
 
 	#throw away features off the end of the requested slice
 	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE if(!$keep_all);
+	  next FEATURE;
 	}
       }
 
