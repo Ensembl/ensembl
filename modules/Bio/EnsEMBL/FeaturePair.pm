@@ -267,8 +267,28 @@ sub score {
     if (defined($arg)) {
 	return $self->feature1->score($arg);
     } else {
-	return $self->feature1->score;
+	return $self->feature1->score || 0;
     }
+}
+
+sub percent_id {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_percent_id} = $arg;
+    }
+
+    return $self->{_percent_id} || 0;
+}
+
+sub p_value {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_p_value} = $arg;
+    }
+
+    return $self->{_p_value} || 0;
 }
 
 =head2 frame
