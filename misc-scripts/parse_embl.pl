@@ -18,8 +18,6 @@ loading bacterial and small eukaryotic genomes published by the
 Pathogen Sequencing Unit at the Sanger Institue, but should be able to
 load most suitable pre-processed EMBL files.
 
-Be aware that the script creates gene objects for tRNA, and rRNA genes
-which is not the typical mode of storage.
 
 Certain assumptions are made about the format of the EMBL file such
 that it may require pre-processing before loading - these are listed
@@ -42,10 +40,6 @@ names. See EMBL feature table definition for 'chromosome' and
 =item *
 
 Protein coding genes are annotated as CDS features.
-
-=item *
-
-RNA coding genes are annotated as tRNA, rRNA or misc_RNA features.
 
 =item *
 
@@ -148,7 +142,7 @@ throw("-emblfile argument required") if(!defined($emblfile));
 ###
 ### Get Ensembl DB adaptor
 ###
-my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host   => $host,
+my $dba = Bio::EnsEMBL::DBSQL::DBAdaptor->new(-host   => $host,
                                              -user   => $user,
                                              -pass   => $pass,
                                              -port   => $port,
@@ -170,11 +164,11 @@ my $seqi = Bio::SeqIO->new(-file   => $emblfile,
 ###
 while (my $seq = $seqi->next_seq) {
   # Split sequence and return a slice
-  my $slice = load_sequence($db, $seq);
+  my $slice = load_sequence($dba, $seq);
 
   foreach my $f ($seq->get_SeqFeatures) {
-    if ($f->primary_tag =~ /CDS|RNA/) {
-      store_gene($f, $slice);
+    if ($f->primary_tag =~ /CDS/) {
+      store_gene($dba, $f, $slice);
     }
 
     if ($f->primary_tag =~ /repeat/) {
@@ -194,7 +188,7 @@ while (my $seq = $seqi->next_seq) {
 =cut
 
 sub store_gene {
-  my ($f, $slice) = @_;
+  my ($db, $f, $slice) = @_;
 
   my $gene_stable_id = get_gene_stable_id($f);
 
