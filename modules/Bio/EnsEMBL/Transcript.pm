@@ -33,7 +33,7 @@ Manipulation:
      my @exons = $tran->get_all_Exons         # Returns an array of Exon objects
      my $pep   = $tran->translate()       # Returns the peptide translation of the exons as a Bio::Seq
      
-     $tran->sort()                        # Sorts exons into order (forward for + strand, reverse fo - strand)
+     $tran->sort()                        # Sorts exons into order (forward for + strand, reverse for - strand)
 
 =head1 CONTACT
 
@@ -987,7 +987,7 @@ sub sort {
  Usage : <internal function> translates a coherent transcript.  Uncoherent
            transcripts need to be broken up with split to partial first.
            (coherent means: having the same intron phase, i.e., all
-           contiguous exon pairs that don not have phase differences).
+           contiguous exon pairs that do not have phase differences).
 
  Function: 
  Example :
