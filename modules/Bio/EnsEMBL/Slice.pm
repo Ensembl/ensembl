@@ -361,7 +361,7 @@ sub invert {
 sub seq {
   my $self = shift;
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  return $seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 );
+  return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1, -1, 1 )};
 }
 
 
@@ -397,10 +397,10 @@ sub subseq {
   }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start,
+  my $seqref = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start,
                                                           $end, $strand );
 
-  return $seq;
+  return $$seqref;
 }
 
 
@@ -447,7 +447,7 @@ sub get_base_count {
 
     $end = $len if($end > $len);
 
-    $seq = $self->subseq($start, $end);
+    $seq = ${$self->subseq($start, $end)};
 
     $a += $seq =~ tr/Aa/Aa/;
     $c += $seq =~ tr/Cc/Cc/;

@@ -146,10 +146,10 @@ sub fetch_by_Slice_start_end_strand {
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {
-       $seq .= $self->_reverse_comp($tmp_seq);
-     } else {
-       $seq .= $tmp_seq;
+       $self->_reverse_comp(\$tmp_seq);
      }
+
+     $seq .= $tmp_seq;
 
      $total = $end;
    }
@@ -163,9 +163,9 @@ sub fetch_by_Slice_start_end_strand {
    }
 
    #if they asked for the negative slice strand revcomp the whole thing
-   $seq = $self->_reverse_compliment($seq) if($strand == -1);
+   $self->_reverse_compliment(\$seq) if($strand == -1);
 
-   return $seq;
+   return \$seq;
 }
 
 
@@ -231,24 +231,29 @@ sub store {
 
 
 
+
 =head2 _reverse_comp
 
-  Arg  1    : txt $dna_sequence
-  Function  : build reverse complement string
-  Returntype: txt
-  Exceptions: none
-  Caller    : private to this module
+  Arg [1]    : reference to a string $seqref
+  Example    : $self->_reverse_comp(\$seqref);
+  Description: Does an in place reverse compliment of a passed in string
+               reference.  The string is passed by reference
+               rather than by value for memory efficiency.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
 
 =cut
 
 sub _reverse_comp {
   my $self = shift;
-  my $seq = shift;
+  my $seqref = shift;
 
-  $seq = reverse( $seq );
-  $seq =~
+  $$seqref = reverse( $$seqref );
+  $$seqref =~
     tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-  return $seq;
+
+  return undef;
 }
 
 
