@@ -137,7 +137,7 @@ sub get_Gene{
 
 sub get_Clone {
    my ($self,$id) = @_;
-   
+ 
    $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
    my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id,
 					-dbobj => $self );
@@ -185,6 +185,7 @@ sub fetch{
 }
 
 
+
 =head2 _debug
 
  Title   : _debug
@@ -220,7 +221,7 @@ sub _debug{
 =cut
 
 sub _db_handle{
-   my ($self,$value) = @_;
+   my ($self,$value) = @_;  
    if( defined $value) {
       $self->{'_db_handle'} = $value;
     }

@@ -79,29 +79,6 @@ sub _initialize {
 }
 
 
-
-=head2 get_all_Genes
-
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub get_all_Genes {
-   my ($self,@args) = @_;
-   my (@genes);
-
-   foreach my $contig ( $self->get_all_Contigs ) {
-       push(@genes,$contig->get_all_Genes());
-   }
-   return @genes;
-}
-
-
 =head2 seq
 
  Title   : seq
@@ -116,9 +93,188 @@ sub get_all_Genes {
 sub seq {
    my ($self) = @_;
 
-   my ($c) = $self->get_Contig($self->id());
-   return $c->seq;
+   my ($contig) = $self->get_Contig($self->id());
+   return $contig->seq();
+}
 
+
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub created {
+    my ($self) = @_;
+    my ($contig) = $self->get_Contig($self->id()); 
+    if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
+        return $date;
+    }
+    return;   
+}
+
+
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub embl_version {
+   my ($self) = @_;
+   my ($contig) = $self->get_Contig($self->id());
+   if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {
+        return $version->name;
+   }
+   return;
+}
+
+
+=head2 embl_id
+
+ Title   : embl_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub embl_id {
+   my ($self) = @_;
+   my ($contig) = $self->get_Contig($self->id());
+   if (my $database = $contig->ace_seq->at('DB_info.Database[1]')) {
+        if ($database eq "EMBL") {
+            return $contig->ace_seq->at('DB_info.Database[2]');
+        }
+   }
+   return;
+}
+
+
+=head2 htg_phase
+
+ Title   : htg_phase
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+=cut
+
+sub htg_phase {
+   my ($obj) = @_;
+    return 3;
+}
+
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+=cut
+
+sub id {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_clone_id'} = $value;
+    }
+    return $obj->{'_clone_id'};
+
+}
+
+
+=head2 modified
+
+ Title   : modified
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub modified {
+    my ($self) = @_;
+    my ($contig) = $self->get_Contig($self->id()); 
+    if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
+        return $date;
+    }
+    return;   
+}
+
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub seq_date {
+    my ($self) = @_;
+    my ($contig) = $self->get_Contig($self->id()); 
+    return $contig->seq_date();   
+}
+
+
+=head2 sv
+
+ Title   : sv
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub sv {
+    my ($self) = @_;
+    return 1;  
+}
+
+
+=head2 version
+
+ Title   : version
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub version {
+   my ($self) = @_;
+   my ($contig) = $self->get_Contig($self->id());
+   if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {
+        return $version->name;
+   }
+   return;
 }
 
 
@@ -140,7 +296,7 @@ sub get_all_Contigs {
    my $name = $self->id();
 
    my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self->_dbobj,
-						   -id => $self->id() );
+						   '-id' => $self->id() );
    push(@res,$contig);
 
    return @res;   
@@ -170,24 +326,25 @@ sub get_Contig {
 }
 
 
-=head2 id
+=head2 get_all_Genes
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
+ Title   : get_all_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
 =cut
 
-sub id {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_clone_id'} = $value;
-    }
-    return $obj->{'_clone_id'};
+sub get_all_Genes {
+   my ($self,@args) = @_;
+   my (@genes);
 
+   foreach my $contig ( $self->get_all_Contigs ) {
+       push(@genes,$contig->get_all_Genes());
+   }
+   return @genes;
 }
 
 

@@ -83,6 +83,17 @@
 # to find more things in TimDB use:
 #~humpub/scripts.devel/set_dbm.pl -f ~/th/unfinished_ana/unfinished_clone -l 10
 
+BEGIN
+{
+  my $rootdir = "/nfs/disk65/sjk/perl";
+
+  unshift (@INC,"$rootdir/ensembl/modules");
+  unshift (@INC,"$rootdir/PerlModules");
+
+}
+
+use lib qw(/nfs/disk100/humpub/modules/bioperl-0.6);
+
 use strict;
 
 use Bio::EnsEMBL::DBLoader;
@@ -129,7 +140,7 @@ my $host1     = 'obi-wan';
 # msql was 'ensdev'
 my $dbname    = 'ensdev';
 my $dbuser    = 'ensembl';
-my $dbpass = undef;
+my $dbpass = 'pass';
 
 # defaults for acedb (humace)
 my $host2     = 'humsrv1';
@@ -277,7 +288,7 @@ foreach my $clone_id ( @clones ) {
     eval {
 	my $clone = $db->get_Clone($clone_id);
 	my $as    = $clone->virtualcontig;
-	$as->skip_SeqFeature('similarity',1);
+#	$as->skip_SeqFeature('similarity',1);
 	# choose output mode
 	
 	# test clone check call

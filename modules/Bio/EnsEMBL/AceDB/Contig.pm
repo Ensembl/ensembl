@@ -20,7 +20,7 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-Describe the object here
+Handle onto a database stored contig for use with camace.
 
 =head1 CONTACT
 
@@ -40,14 +40,18 @@ package Bio::EnsEMBL::AceDB::Contig;
 use vars qw(@ISA);
 use strict;
 
+use Bio::Seq;
+use Bio::Root::Object;
+use Bio::EnsEMBL::AceDB::Obj;
+use Bio::EnsEMBL::FeatureFactory;
+use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::Repeat;
+use Bio::EnsEMBL::DB::RawContigI;
+use Bio::SeqFeature::Generic;
+
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
-use Bio::SeqFeature::Generic;
-use Bio::EnsEMBL::AceDB::Obj;
-use Bio::EnsEMBL::DB::RawContigI;
-use Bio::Seq;
-use Bio::EnsEMBL::Gene;
+
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
 # new() is inherited from Bio::Root::Object
@@ -68,86 +72,52 @@ sub _initialize {
   $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->id($id);
-  $self->_dbobj($dbobj);
+  $self->dbobj($dbobj);
 
 # set stuff in self from @args
   return $make; # success - we hope!
 }
 
-=head2 seq
 
- Title   : seq
- Usage   : $seq = $contig->seq();
- Function: Gets a Bio::Seq object out from the contig
- Example :
- Returns : Bio::Seq object
- Args    :
+=head2 dbobj
+
+ Title   : dbobj
+ Usage   : $obj->dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of _dbobj
+ Args    : newvalue (optional)
 
 
 =cut
 
-sub seq {
+sub dbobj {
+   my ($self,$value) = @_;
+   if (defined $value) {
+      $self->{'_dbobj'} = $value;
+    }
+    return $self->{'_dbobj'};
+}
+
+
+=head2 embl_offset
+
+ Title   : embl_offset
+ Usage   : $offset = $contig->embl_offset()
+ Function: Returns the embl offset which is always 1 for AceDB cotigs
+ Example :
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub embl_offset {
    my ($self) = @_;
-   my $id = $self->id();
 
-   my $seq = $self->_dbobj->fetch('Sequence',$id) || 
-       $self->throw("Could not retrieve $id from acedb" . Ace->error());
-  
-   my $dna = $seq->asDNA || $self->throw("Could not retrieve DNA from $id");
-
-   $dna =~ s/^>.*\n//g;
-   $dna =~ s/\s//g;
-   $dna =~ tr/[a-z]/[A-Z]/;
-   my $out = Bio::Seq->new ( -seq => $dna , -id => $id, -type => 'DNA' ) ;
-   return $out;
+   return 1;
 }
 
-=head2 get_all_SeqFeatures
-
- Title   : get_all_SeqFeatures
- Usage   : foreach my $sf ( $contig->get_all_SeqFeatures ) 
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_SeqFeatures {
-   my ($self,@args) = @_;
-   my @array;
-
-   my $id = $self->id();
-   my $seq;
-
-   ($seq) = $self->_dbobj->fetch( 'Sequence', $id) || $self->throw("Could not retrieve sequence object $id");
-
-   # FIXME - should be a subroutine perhaps?
-
-   # The maps convert the ACeDB objects into start/end
-   # values
-
-   foreach my $pep ($seq->at('Homol.Pep_homol[1]')) { 
-       foreach my $hit ($pep->at('BLASTX[1]')) {
-	   my $sf = &_from_ace_seqfeature(map "$_",$hit->row());
-	   $sf->primary_tag('BLASTX');
-	   $sf->source_tag('EnsEMBL');
-	   push(@array,$sf);
-       }
-   }
-
-   foreach my $est ($seq->at('Homol.EST_homol[1]')) { 
-       foreach my $hit ($est->at('EST_eg[1]')) {
-	   my $sf = &_from_ace_seqfeature(map "$_",$hit->row());
-	   $sf->primary_tag('TBLASTX_ESTGENOME');
-	   $sf->source_tag('EnsEMBL');
-	   push(@array,$sf);
-       }
-   }
-
-   return @array;
-}
 
 =head2 embl_order
 
@@ -156,8 +126,8 @@ sub get_all_SeqFeatures {
  Function: Provides the order of the contig, starting at
          : zero.
  Example :
- Returns : 
- Args    :
+ Returns : integer
+ Args    : none
 
 
 =cut
@@ -166,32 +136,86 @@ sub embl_order {
    my ($self) = @_;
 
    # All AceDB contigs are single contigs in a single clone.
-   # easy!
    return 0; 
 
+}   
+
+
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures
+ Usage   : foreach my $sf ( $contig->get_all_ExternalFeatures )
+ Function: Gets all the external features on a contig which is just an 
+            empty list for AceDB 
+ Example :
+ Returns : Array of Bio::EnsEMBL::FeaturePair objects
+ Args    : none
+
+
+=cut
+
+
+sub get_all_ExternalFeatures {
+    my ($self, @args) = @_;
+    return;     
 }
 
 
-=head2 length
+=head2 get_all_RepeatFeatures
 
- Title   : length
- Usage   : $len = $contig->length
- Function: Provides the length of the contig
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures )
+ Function: Gets all the motif homols found by the RepeatMaster and RepeatMaster_SINE methods
+            and the tandem repeat features for the contig.
  Example :
- Returns : 
+ Returns : Array of Bio::EnsEMBL::FeaturePair objects
+ Args    : none
+
+
+=cut
+
+sub get_all_RepeatFeatures {
+    my ($self) = @_;
+
+    # Get tandem features
+    my @repeat_features = $self->_get_tandems();
+    
+    # Append motif_homols with RepeatMaster and RepeatMaster_SINE methods
+    my @methods = qw/RepeatMaster RepeatMaster_SINE/;
+    push(@repeat_features, $self->_get_homols('Homol.Motif_homol[1]', @methods));
+     
+    # Return all the sequence features 
+    return @repeat_features;
+}
+      
+             
+=head2 get_all_SeqFeatures
+
+ Title   : get_all_SeqFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SeqFeatures ) 
+ Function: Finds all the sequence features for the contig by calling get_all_RepeatFeatures(), 
+            get_all_ExternalFeatures() and get_all_SimilarityFeatures().
+ Example :
+ Returns : Array of Bio::EnsEMBL::FeaturePair objects
  Args    :
 
 
 =cut
 
-sub length {
-    my ($self) = @_;
-
-    my $seq = $self->seq;
-
-    return $seq->length;
-}
+sub get_all_SeqFeatures {
+    my ($self,@args) = @_;
+           
+    # Get repeat, external and similarity features
+    my @seq_features = $self->get_all_RepeatFeatures();
+    push(@seq_features, $self->get_all_ExternalFeatures());
+    push(@seq_features, $self->get_all_SimilarityFeatures());
+    print(STDERR "Fetched all features\n");
     
+    # Return all the sequence features
+    return @seq_features; 
+}
+
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -199,113 +223,396 @@ sub length {
  Function:
  Example : 
  Returns : 
- Args    :
+ Args    : none
  Note    : WARNING. At the moment this just
            gets genes from the Sequence object, not
            any potential genes in link objects above
            this sequence object. To be fixed!
 
-=cut
+=cut  
 
 sub get_all_Genes {
-   my ($self) = @_;
+    my ($self) = @_;
+    # here we don't look at Locus objects to determine whether
+    # things are transcripts or not
+    
+    my @genes;
+    my $id = $self->id();        
+    # Create hash of methods we're interested in
+    my %methods = map{$_, 1} ('supported_CDS', 'curated');
+    # Get the sequence object
+    my $seq = $self->ace_seq();
+    # Start the phase at whatever it's defined as -1 or 0 if it's not defined
+    my $phase = $seq->at('Properties.Coding.CDS[1]') || 1;
+    $phase--;
+    
+    # Loop through the subsequences
+    foreach my $sub ($seq->at('Structure.Subsequence')) {
+                
+        # Fetch the method and check we're interested in it            
+        if ($methods{$sub->fetch->at("Method[1]")}) {
+             
+            my $genename = "$sub";                                  
+            my ($start,$end) = $sub->row(1);
+            my $strand = 1;
+            if ( $start > $end ) {
+	        $strand = -1;
+            } 
+            my $subseq = $sub->fetch();             
+            my @exons;
+            my $index = 1;
+            
+            # Fetch all the exons            
+            foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {  
+                                         
+	        my ($starte, $ende) = map("$_", $hit->row());                              	                        
+                my $exon = $self->_create_exon($id, $strand, $start, 
+                    $starte, $end, $ende, $genename, $index, $phase);
+                
+                # Set index and phase for the next exon
+                $index++;                
+	        $phase = $exon->end_phase();                	                        
+                push(@exons, $exon);
+            }            
+            
+            # Create a new Translation object with the start and end exon IDs
+            my $translation = new Bio::EnsEMBL::Translation();
+ 	    $translation->start($start);
+	    $translation->end($end);
+            $translation->id($genename); 
+            $translation->version(1);
+            
+            if ($strand) {                   
+	        $translation->start_exon_id($exons[0]->id());
+	        $translation->end_exon_id($exons[$#exons]->id());
+            }
+            else {            
+                $translation->start_exon_id($exons[$#exons]->id());
+	        $translation->end_exon_id($exons[0]->id());
+            }  
+             
+	    # Create a new Transcript object from the exons and the Translation
+            my $transcript = new Bio::EnsEMBL::Transcript(@exons);    
+	    $transcript->translation($translation);
 
-   my @out;
-   my $id = $self->id();
-   my $seq;
-   my $bioseq = $self->seq();
+            # Create a new Gene object and add the Transcript 
+            my $gene = new Bio::EnsEMBL::Gene();
+            $gene->id($genename); 
+            $gene->add_Transcript($transcript);
+            
+            # Add the gene to the genes array
+            push(@genes, $gene);
+        }
+    }
 
-   ($seq) = $self->_dbobj->fetch( 'Sequence', $id) || $self->throw("Could not find sequence object $id");
-
-   # here we don't look at Locus objects to determine whether
-   # things are transcripts or not
-
-   foreach my $sub ($seq->at('Structure.Subsequence')) {
-       my $genename = "$sub";
-
-       if( $sub->fetch->at("Method[1]") ne 'supported_CDS' ) {
-	   next;
-       }
-
-       my ($start,$end) = $sub->row(1);
-       my $strand;
-       if( $start > $end ) {
-	   $strand = -1;
-       } else {
-	   $strand = 1;
-       }
-
-       my $gene = new Bio::EnsEMBL::Gene;
-       push(@out,$gene);
-       my $trans = new Bio::EnsEMBL::Transcript;
-       
-       $gene->add_Transcript($trans);
-       my $subseq = $sub->fetch();
-       my $tag = $sub->fetch("Properties.Start_not_found[1]");
-       my $total;
-       if( $tag ) {
-	   $total = $tag -1;
-       } else {
-	   $total = 0;
-       }
-
-       
-       my $index=1;
-       foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {
-
-	   # we have to map acedb coordinates which are relative to the
-	   # start/end in the subsequence to the exon coordinates, which
-	   # are absolute.
-
-	   my ($starte,$ende) = map("$_",$hit->row());
-	   my $exon = new Bio::EnsEMBL::Exon;
-	   print STDERR "Exon with $start and $starte and $end\n";
-	   if( $strand == 1 ) {
-	       $exon->start($start+$starte-1);
-	       $exon->end($start+$ende-1);
-	   } else {
-	       $exon->start($start-$ende+1);
-	       $exon->end($start-$starte+1);
-	   }
-
-	   # calculate phase - ensembl thinks of exons as being
-	   # independent from other exons, so phase is important.
-	   $exon->strand($strand);
-	   $exon->phase($total % 3);
-	   $total += ($end-$start+1);
-
-	   # random bits and bobs
-
-	   $exon->clone_id($id);
-	   $exon->contig_id($id);
-	   $exon->attach_seq($bioseq);
-
-	   my $exonid;
-
-	   if( $self->_dbobj->_exon_id_start() ) {
-	       $exonid = $self->_dbobj->_exon_id_start();
-	       my $nexte = $exonid++;
-	       $self->_dbobj->_exon_id_start($exonid);
-	   } else {
-	       $exonid = "dummy_exon_id.$genename.$index";
-	   }
-
-	   $exon->id($exonid);
-	   $exon->created("1999-07-12");
-	   $exon->modified("1999-07-12");
-	   $index++;
-	   $trans->add_Exon($exon);
-       }
-   }
-
-   return @out;
+    # Return all the genes
+    return @genes;
 }
+
+
+sub _create_exon {
+    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase) = @_;
+     
+    my $bioseq = $self->primary_seq();
+       
+    my $exon = new Bio::EnsEMBL::Exon();        
+    $exon->clone_id($id);
+    $exon->contig_id($id);
+    $exon->attach_seq($bioseq);
+    $exon->strand($strand);
+    $exon->phase($phase);
+    $exon->seqname($genename);
+ #   $exon->created("1999-07-12");
+ #   $exon->modified("1999-07-12");
+    
+    # We have to map acedb coordinates which are relative to the
+    # start/end in the subsequence to the exon coordinates, which
+    # are absolute.
+    if( $strand == 1 ) {
+            $exon->start($start+$starte-1);
+            $exon->end($start+$ende-1);
+    }
+    else {
+	    $exon->start($start-$ende+1);
+	    $exon->end($start-$starte+1);
+    } 
+    
+    my $exonid;
+    if( $self->dbobj->_exon_id_start() ) {
+	     $exonid = $self->dbobj->_exon_id_start();
+	     my $nexte = $exonid++;
+	     $self->dbobj->_exon_id_start($exonid);
+    } 
+    else {
+	     $exonid = "dummy_exon_id.$genename.$index";
+    }
+    $exon->id($exonid);
+    
+    print STDERR "Exon: ID: $exonid seqname: $genename start: $start end: $end phase: $phase\n";            
+    return $exon;
+}
+
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures )
+ Function: Gets all the DNA and Pep homols for the contig.
+ Example :
+ Returns : Array of Bio::EnsEMBL::FeaturePair objects
+ Args    : none
+
+
+=cut
+
+sub get_all_SimilarityFeatures {
+     my ($self) = @_;
    
+    # Get DNA and Pep homols
+    my @similarity_features = $self->_get_homols('Homol.DNA_homol');
+    push (@similarity_features, $self->_get_homols('Homol.Pep_homol'));
+    push (@similarity_features, $self->_get_homols('Homol.EST_homol'));
+    push (@similarity_features, $self->_get_homols('Homol.STS_homol'));
+     
+    # Return all the sequence features 
+    return @similarity_features;    
+}
+
+
+=head2 get_left_overlap
+
+ Title   : get_left_overlap
+ Usage   : $overlap = $contig->get_left_overlap()
+ Function: just returns undef for now
+ Example :
+ Returns : undef
+ Args    : none
+
+
+=cut
+
+sub get_left_overlap {
+   my ($self,@args) = @_;
+   # Just return undef for now as it's not important to know this overlap
+   return undef;
+}
+
+
+=head2 get_right_overlap
+
+ Title   : get_right_overlap
+ Usage   :  $overlap = $contig->get_right_overlap()
+ Function: just returns undef for now
+ Example :
+ Returns : undef
+ Args    : none
+
+
+=cut
+
+sub get_right_overlap {
+   my ($self,@args) = @_;
+   # Just return undef for now as it's not important to know this overlap
+   return undef;
+}
+
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id {
+    my ($self,$value) = @_;
+    if (defined $value) {
+	$self->{'id'} = $value;
+    }
+    return $self->{'id'};
+}
+
+  
+=head2 length
+
+ Title   : length
+ Usage   : $len = $contig->length
+ Function: Provides the length of the contig
+ Example :
+ Returns : integer
+ Args    : none
+
+
+=cut
+
+sub length {
+    my ($self) = @_;
+    return $self->primary_seq->length;
+}
+
+
+=head2 orientation
+
+ Title   : orientation
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub orientation {
+   my ($self,@args) = @_;   
+   return 1;
+}
+
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   : $seq = $contig->primary_seq();
+ Function: Gets a Bio::PrimarySeq object out from the contig
+ Example :
+ Returns : Bio::PrimarySeq object
+ Args    : None
+
+
+=cut
+
+sub primary_seq {
+   my ($self) = @_;
+   my $id = $self->id();
+
+    unless ($self->{'_primary_seq'}) {
+       my $seq = $self->ace_seq;
+
+       my $dna = $seq->asDNA || $self->throw("Could not retrieve DNA from $id");
+
+       $dna =~ s/^>.*\n//g;
+       $dna =~ s/\s//g;
+       $dna =~ tr/[a-z]/[A-Z]/;
+       $self->{'_primary_seq'} = Bio::PrimarySeq->new ( -seq => $dna , '-id' => $id, -type => 'DNA' ) ;
+    }
+   return $self->{'_primary_seq'};
+}
+
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub seq_date {
+    my ($self) = @_;
+    if (my $date = $self->ace_seq->at('Properties.Status.Finished[1]')) {
+        return $date;
+    }
+    return; 
+}
+
+
+=head2 ace_seq
+
+ Title   : ace_seq
+ Usage   : $seq = $contig->acce_seq();
+ Function: 
+ Example :
+ Returns : The Ace::Object for this sequence
+ Args    : None
+
+=cut
+
+sub ace_seq {
+   my ($self) = @_;
+   
+   unless($self->{'_ace_seq'}) {
+        my $id = $self->id();
+        $self->{'_ace_seq'} = $self->dbobj->fetch('Sequence', $id) || 
+           $self->throw("Could not retrieve $id from acedb" . Ace->error());
+   }
+   return $self->{'_ace_seq'};
+}
+
+
+=head2_create_feature_pair
+
+ Title   : _create_feature_pair
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _create_feature_pair {
+    my ($self, $meth, $score, $start, $end, $hstart, $hend, $hid) = @_;    
+    my $strand = 1;
+    
+    if ($start > $end) {
+        $strand = -1;
+        ($start, $end) = ($end, $start); 
+    }
+    
+    if ($hstart > $hend) {
+        $self->throw("HStart '$hstart' greater than HEnd '$hend' in '$hid' \n");        
+    }
+    
+    # Create a new Bio::EnsEMBL::Repeat with a pair of SeqFeatures
+    my $repeat = Bio::EnsEMBL::FeatureFactory->new_repeat();
+   
+    # Set the Repeat features with the set_all_fields method of FeaturePair 
+    $repeat->set_all_fields($start,       # start
+                            $end,         # end,
+                            $strand,      # strand,
+                            $score,       # score,
+                            'repeat',     # source is just 'repeat'
+                            $meth,        # primary,
+                            $self->id,    # seqname,
+                            $hstart,      # hstart,
+                            $hend,        # hend,
+                            1,            # hstrand is always 1
+                            $score,       # hscore is the same as score
+                            'repeat',     # hsource is just 'repeat'
+                            $meth,        # hprimary,
+                            $hid);        # hseqname
+                            
+    my $analysis = new Bio::EnsEMBL::Analysis();
+    $repeat->analysis($analysis);                            
+    $repeat->validate();
+    return $repeat;
+}
+
+
+=head2 _from_ace_seqfeature
+
+ Title   : _from_ace_seqfeature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
 
 sub _from_ace_seqfeature {
     my ($score,$start,$end,$tstart,$tend) = @_;
     my $strand;
-    my $out;
 
     if( $start !~ /^\d+$/ || $end !~ /^\d+$/ || $score !~ /^\d+\.?\d*$/ ) {
 	&Bio::Root::Object::throw("start $start, end $end and score $score look dodgy");
@@ -329,29 +636,10 @@ sub _from_ace_seqfeature {
     return $out;
 }
 
-=head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
+=head2 _get_homols
 
-
-=cut
-
-sub id{
-    my ($self,$value) = @_;
-    if( defined $value) {
-	$self->{'id'} = $value;
-    }
-    return $self->{'id'};
-}
-
-=head2 embl_offset
-
- Title   : embl_offset
+ Title   : _get_homols
  Usage   :
  Function:
  Example :
@@ -361,78 +649,75 @@ sub id{
 
 =cut
 
-sub embl_offset {
-   my ($self,@args) = @_;
-
-   return 1;
-}
-
-=head2 orientation
-
- Title   : orientation
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub orientation{
-   my ($self,@args) = @_;
+sub _get_homols {
+    my ($self, $type, @test_methods) = @_;        
+    my %reqired_methods = map {$_, 1} @test_methods;
+    my @seq_features;
    
-   return 1;
+    # Loop through the homols of the appropriate type
+    my @homols = $self->ace_seq->at($type);    
+    foreach my $hid (@homols) {
 
+        # Loop through the different methods
+        my @methods = $hid->col(1);        
+        foreach my $meth (@methods) {
+        
+            # Test if the no test methods were given as parameters 
+            # or if they were whether this is one of them.           
+            if ((! @test_methods) || ($reqired_methods{$meth})) {
+            
+                # Loop through the scores
+                foreach my $score ($meth->col(1)) {
+                
+                    # Loop through the column to the right of $score
+                    foreach my $pos ($score->col(1)) {
+                    
+                        # Inialise $start etc from the row of data
+                        my ($start, $end, $hstart, $hend) = $pos->row(); 
+                        # Create a new repeat and add it to the array                       
+                        push(@seq_features, $self->_create_feature_pair
+                            ($meth, $score, $start, $end, $hstart, $hend, $hid));
+                    }
+                }
+            }
+        }
+    }
+    
+    # Return all the sequence features
+    return @seq_features;
 }
 
-=head2 dbobj
 
- Title   : dbobj
+=head2 _get_tandems
+
+ Title   : _get_tandems
  Usage   :
  Function:
  Example :
- Returns : The Bio::EnsEMBL::DBSQL::ObjI object
- Args    :
+ Returns : array of Bio::EnsEMBL::Features
+ Args    : 
 
 
 =cut
 
-sub dbobj{
-   my ($self,@args) = @_;
-
-   return $self->_dbobj(@args);
-}
-
-
-=head2 _dbobj
-
- Title   : _dbobj
- Usage   : $obj->_dbobj($newval)
- Function: 
- Example : 
- Returns : value of _dbobj
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _dbobj{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_dbobj'} = $value;
+sub _get_tandems {
+    my ($self) = @_;
+    my @seq_features;
+    my @tandems = $self->ace_seq->at('Feature.Tandem[1]');
+    
+    # Create a new feature object for each of the tandems found
+    foreach my $tandem (@tandems) {
+        my($start, $end, $score, $remark) = $tandem->row(1);        
+        my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
+        $feature->start($start);
+        $feature->end($end);
+        $feature->score($score);
+        $feature->seqname($self->id);
+        push(@seq_features, $feature);
     }
-    return $self->{'_dbobj'};
+    
+    # Return all the sequence features
+    return @seq_features;
+} 
 
-}
-
-sub seq_date {
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	$self->{_seq_date} = $arg;
-    }
-
-    return $self->{_seq_date};
-}
 1;
