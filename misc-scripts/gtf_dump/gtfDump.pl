@@ -8,8 +8,8 @@
 use DBI;
 use Getopt::Long;
 
-my $host   = "ecs1d.sanger.ac.uk";
-my $dbname = "mus_musculus_core_5_3";
+my $host   = "ecs1f.sanger.ac.uk";
+my $dbname = "mouse_5_3_estgene_build";
 my $dbuser = "ensro";
 my $dbpass = undef;
 
@@ -234,7 +234,7 @@ sub print_genes {
 	  }
 	} elsif( $coding == 1 ) {
 	  if( exists $e->{stopcodon} ) {
-	    $coding = 4;
+	    $coding = 3;
 	  } else {
 	    $coding = 2;
 	  }
