@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..28\n"; 
+BEGIN { $| = 1; print "1..29\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -72,7 +72,7 @@ else {
 
 my @features = $protein->each_Protein_feature;
 
-if (scalar @features == 2) {
+if (scalar @features == 3) {
     print "ok 5\n";
 }
 else {
@@ -176,10 +176,6 @@ else {
 
 my @features2 = $protein->each_Protein_feature();
 
-print STDERR scalar (@features2), "\n";
-
-
-
 if (scalar @features2 == 3) {
     print "ok 18\n";
 }
@@ -219,6 +215,8 @@ if ($seq_features[0]->feature2->seqname eq "PF00098") {
 else {
     print "not ok 22\n";
 }
+
+
 
 if ($seq_features[0]->feature1->seqname eq "ENSP00000216167") {
     print "ok 23\n";
@@ -269,6 +267,14 @@ if ($protein->checksum() eq "D5C2BBEAA77A0FB6") {
 else {
     print "not ok 28\n";
 }
+
+if ($seq_features[0]->idesc eq "Zn-finger") {
+    print "ok 29\n";
+}
+else {
+    print "not ok 29\n";
+}
+
 
 my $rm = "rm seq_temp.swiss";
 

@@ -16,7 +16,7 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','transmembrane','transmembrane');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transm',3,'hmm','1','transm','transm');
 
 #
 # Dumping data for table 'analysisprocess'
@@ -194,8 +194,8 @@ INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000002','PR00012');
 # Dumping data for table 'interpro_description'
 #
 
-INSERT INTO interpro_description (interpro_ac,description) VALUES ('IPR000001','Zn-finger CCHC type');
-INSERT INTO interpro_description (interpro_ac,description) VALUES ('IPR000002','petit_domain');
+INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000001','Zn-finger CCHC type','Zn-finger');
+INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000002','petit_domain','petit');
 
 #
 # Dumping data for table 'karyotype'
