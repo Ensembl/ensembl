@@ -954,7 +954,7 @@ sub pep_coords {
 
 
 
-=head1
+=head1 pep2genomic
 
   Arg  1   : integer start - relative to peptide
   Arg  2   : integer end   - relative to peptide
@@ -977,25 +977,6 @@ sub convert_peptide_coordinate_to_contig {
 sub pep2genomic {
   my ($self,$start,$end) = @_;
 
-  my $mapper;
-  my @out;
-  #
-  # the mapper is loaded with OBJECTS in place of the IDs !!!!
-  #  the objects are the contigs in the exons
-  #
-  if( defined $self->{'_exon_coord_mapper'} ) {
-    $mapper = $self->{'_exon_coord_mapper'};
-  } else {
-    $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
-    my @exons = @{$self->get_all_translateable_Exons() };
-    my $start = 1;
-    for my $exon ( @exons ) {
-      $exon->load_genomic_mapper( $mapper, $self, $start );
-      $start += $exon->length;
-    }
-    $self->{'_exon_coord_mapper'} = $mapper;
-  }
-
   if( !defined $end ) {
     $self->throw("Must call with start/end");
   }
@@ -1005,6 +986,22 @@ sub pep2genomic {
   $start = 3* $start-2;
   $end   = 3* $end;
 
+  return $self->cdna2genomic( $start, $end );
+}
+
+
+sub cdna2genomic {
+  my ($self,$start,$end) = @_;
+
+  my $mapper;
+  my @out;
+
+  if( !defined $end ) {
+    $self->throw("Must call with start/end");
+  }
+
+  $mapper = $self->_get_cdna_coord_mapper();
+  
   my @mapped_coords = $mapper->map_coordinates( $self, $start, $end, 1, "cdna" );
 
   for my $coord ( @mapped_coords ) {
@@ -1022,7 +1019,31 @@ sub pep2genomic {
   return @out;
 }
   
+sub _get_cdna_coord_mapper {
+  my ( $self ) = @_;
 
+  if( defined $self->{'_exon_coord_mapper'} ) {
+    return $self->{'_exon_coord_mapper'};
+  } 
+  
+  #
+  # the mapper is loaded with OBJECTS in place of the IDs !!!!
+  #  the objects are the contigs in the exons
+  #
+
+  my $mapper;
+  $mapper = Bio::EnsEMBL::Mapper->new( "cdna", "genomic" );
+  my @exons = @{$self->get_all_translateable_Exons() };
+  my $start = 1;
+  for my $exon ( @exons ) {
+    $exon->load_genomic_mapper( $mapper, $self, $start );
+    $start += $exon->length;
+  }
+  $self->{'_exon_coord_mapper'} = $mapper;
+  return $mapper;
+}
+
+  
 
 sub find_coord {
   my ($self,$coord,$type) = @_;
