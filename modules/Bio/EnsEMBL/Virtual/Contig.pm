@@ -1554,7 +1554,7 @@ sub _reverse_map_Exon{
 
        foreach my $se ( $exon->each_Supporting_Feature ) {
 	   my ($secontig,$sestart,$sestrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
-	   my ($sncontig,$seend,$snstrand) = $self->_vmap->raw_contig_position($se->start,$se->strand);
+	   my ($sncontig,$seend,$snstrand) = $self->_vmap->raw_contig_position($se->end,$se->strand);
 	   if( !ref $secontig || !ref $sncontig || $secontig->id ne $sncontig->id ) {
 	       $self->warn("supporting evidence spanning contigs. Cannot write");
 	       next;
