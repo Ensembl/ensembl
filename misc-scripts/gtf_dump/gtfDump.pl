@@ -1,11 +1,27 @@
-# This script uses the hardcoded db connection and makes a 
-# gene gtf dump using fpc coordinate system.
-# Output is one gtf file per fpc contig.
+#!/usr/local/bin/perl
+
+
+
+
+
 
 use DBI;
+use Getopt::Long;
 
-$dsn = "dbi:mysql:host=ensrv4.sanger.ac.uk;database=ensembl100";
-$db = DBI->connect( $dsn, "ensro" );
+my $host   = "kaka.sanger.ac.uk";
+my $dbname = "current";
+my $dbuser = "anonymous";
+my $dbpass = undef;
+
+&GetOptions( 
+	     'host:s'   => \$host,
+	     'dbname:s' => \$dbname,
+	     'dbuser:s' => \$dbuser,
+	     'dbpass:s' => \$dbpass );
+
+
+$dsn = "dbi:mysql:host=$host;database=$dbname";
+$db = DBI->connect( $dsn, $dbuser , $dbpass );
 
 $sth = $db->prepare( "
             SELECT t.gene, t.id, e.id, e.seq_start, 
