@@ -24,7 +24,7 @@ print STDERR "Connecting to $host, $dbname\n";
 
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
-					    '-host'   => $host,
+					    '-host'   => $dbhost,
 					    '-user'   => $dbuser,
 					    '-dbname' => $dbname,
 					    '-pass'   => $dbpass,
