@@ -1365,62 +1365,12 @@ sub get_genscan_peptides {
     my ($self) = @_;
     my @transcripts;
     
-    foreach my $gene ($self->get_all_PredictionFeatures)
-    {
-        #print STDERR "Processing genscan gene: ".$gene->id."\n";
-        my $transcript  = Bio::EnsEMBL::Transcript->new();
-        my $translation = Bio::EnsEMBL::Translation->new();
-        $transcript->id($self->id.".".$gene->id);
-        
-        my @predictions = $gene->sub_SeqFeature;
-        
-        my $count = 1;
-        my (@exons);        
-        foreach my $feature (@predictions)
-        {
-            #print STDERR "Processing predicted exon $count\n";
-            #print STDERR "START ".$feature->start." \tEND ".$feature->end."\tPHASE ".$feature->phase."\tENDPHASE ".$feature->end_phase."\n";
-            my $exon = Bio::EnsEMBL::Exon->new();
-            $exon->id       ($transcript->id.".$count");
-            $exon->start    ($feature->start);
-            $exon->end      ($feature->end);
-            $exon->strand   ($feature->strand);
-            $exon->phase    ($feature->phase);
-            $exon->contig_id($self->id);
-            #$exon->end_phase($feat->end_phase);
-            $exon->attach_seq($self->primary_seq);
-            push (@exons, $exon);    
-            $count ++;
-        }
-        
-        if ($exons[0]->strand == 1)
-        {
-            @exons = sort {$a->start <=> $b->start} @exons;
-            $translation->start($exons[0]->start);
-            $translation->end($exons[scalar(@exons)-1]->end);
-        }
-        else
-        {
-            @exons = sort {$b->start <=> $a->start} @exons;
-            $translation->start($exons[0]->end);
-            $translation->end($exons[$#exons]->start);
-        }
-        
-        $translation->start_exon_id($exons[0]->id);
-        $translation->end_exon_id($exons[scalar(@exons)-1]->id);
-        
-        foreach my $exon (@exons)
-        {
-            $transcript->add_Exon($exon);
-        }
-           
-        #print STDERR "gene ".$gene->id." \tstart_exon ".$translation->start_exon_id." \tstart ".$translation->start.
-        #             " \tend_exon ".$translation->end_exon_id." \tend ".$translation->end."\n";
-        
-        $transcript->translation($translation);
-        push (@transcripts, $transcript);
+    foreach my $fset ($self->get_all_PredictionFeatures) {
+	my $trans = &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset,$self);
+	push(@transcripts,$trans);
     }
-    return (@transcripts)
+
+    return @transcripts;
 }
 
 =head2 get_all_ExternalFeatures

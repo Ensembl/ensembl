@@ -81,18 +81,31 @@ sub fset2transcript {
     
     my $translation = new Bio::EnsEMBL::Translation;
     $translation->id($contig->id.".".$genscan->raw_seqname);
+
+    #
+    # This code got changed due to Translation convention changing. Should work...
+    #
     
     if ($exons[0]->strand == 1) {
 	@exons = sort {$a->start <=> $b->start} @exons;
-	$translation->start        ($exons[0]->start);
-	$translation->end          ($exons[$#exons]->end);
-	
     } else {
 	@exons = sort {$b->start <=> $a->start} @exons;
-	$translation->start        ($exons[0]->end);
-	$translation->end          ($exons[$#exons]->start);
-	
     }
+    
+    
+    if( $exons[0]->phase == 0 ) {
+	$translation->start(1);
+    } elsif ( $exons[0]->phase == 1 ) {
+	$translation->start(3);
+    } elsif ( $exons[0]->phase == 2 ) {
+	$translation->start(2);
+    } else {
+	$genscan->throw("Nasty exon phase".$exons[0]->phase);
+    }
+    
+    # this doesn't really 
+    $translation->end($exons[scalar(@exons)-1]->end);
+    
     
     $translation->start_exon_id($exons[0]->id);
     $translation->end_exon_id  ($exons[$#exons]->id);
