@@ -47,8 +47,8 @@ use strict;
 # Object preamble - inherits from Bio::Root::RootI
 
 use Bio::Root::RootI;
-use Bio::EnsEMBL::Virtual::Contig
-    use Bio::Annotation;
+use Bio::EnsEMBL::Virtual::Contig;
+use Bio::Annotation;
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
