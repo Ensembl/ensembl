@@ -175,13 +175,13 @@ sub load_core{
     Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
   }
 
-# Blast is a special case!!!
-  eval "require Bio::EnsEMBL::External::BlastAdaptor";
+# Blast is a special case!!! Very special
+#  eval "require Bio::EnsEMBL::External::BlastAdaptor";
 
-  my $adap = Bio::EnsEMBL::External::BlastAdaptor->new_fast($dbc);
-  my $key = 'Blast';
-
-  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+#  my $adap = Bio::EnsEMBL::External::BlastAdaptor->new_fast($dbc);
+#  my $key = 'Blast';
+#
+#  Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
 
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
     Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($species,$type);
@@ -482,22 +482,26 @@ sub load_compara{
   }
 
   %pairs =  ( 'SyntenyRegion'   => 'Bio::EnsEMBL::Compara::DBSQL::SyntenyRegionAdaptor',
-		 "DnaAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::DnaAlignFeatureAdaptor",
-		 "Synteny"         => "Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor",
-		 "GenomeDB"        => "Bio::EnsEMBL::Compara::DBSQL::GenomeDBAdaptor",
-		 "DnaFrag" => "Bio::EnsEMBL::Compara::DBSQL::DnaFragAdaptor",
-		 "GenomicAlign" => "Bio::EnsEMBL::Compara::DBSQL::GenomicAlignAdaptor",
-		 "Homology" => "Bio::EnsEMBL::Compara::DBSQL::HomologyAdaptor",
-		 "Family" => "Bio::EnsEMBL::Compara::DBSQL::FamilyAdaptor",
-		 "Domain" => "Bio::EnsEMBL::Compara::DBSQL::DomainAdaptor",
-		 "Subset" => "Bio::EnsEMBL::Compara::DBSQL::SubsetAdaptor",
-		 "Member" => "Bio::EnsEMBL::Compara::DBSQL::MemberAdaptor",
-		 "Attribute" => "Bio::EnsEMBL::Compara::DBSQL::AttributeAdaptor",
-		 "Taxon" => "Bio::EnsEMBL::Compara::DBSQL::TaxonAdaptor",
-		 "PeptideAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::PeptideAlignFeatureAdaptor"
-#		 "AnalysisAdaptor" => "Bio::EnsEMBL::Pipeline::DBSQL::AnalysisAdaptor"
-#		 "HiveAdaptor" => "Bio::EnsEMBL::Compara::Hive::HiveAdaptor");
-);
+	      "DnaAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::DnaAlignFeatureAdaptor",
+	      "Synteny"         => "Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor",
+	      "GenomeDB"        => "Bio::EnsEMBL::Compara::DBSQL::GenomeDBAdaptor",
+	      "DnaFrag" => "Bio::EnsEMBL::Compara::DBSQL::DnaFragAdaptor",
+	      "GenomicAlign" => "Bio::EnsEMBL::Compara::DBSQL::GenomicAlignAdaptor",
+	      "Homology" => "Bio::EnsEMBL::Compara::DBSQL::HomologyAdaptor",
+	      "Family" => "Bio::EnsEMBL::Compara::DBSQL::FamilyAdaptor",
+	      "Domain" => "Bio::EnsEMBL::Compara::DBSQL::DomainAdaptor",
+	      "Subset" => "Bio::EnsEMBL::Compara::DBSQL::SubsetAdaptor",
+	      "Member" => "Bio::EnsEMBL::Compara::DBSQL::MemberAdaptor",
+	      "Attribute" => "Bio::EnsEMBL::Compara::DBSQL::AttributeAdaptor",
+	      "Taxon" => "Bio::EnsEMBL::Compara::DBSQL::TaxonAdaptor",
+	      "PeptideAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::PeptideAlignFeatureAdaptor",
+	      "AnalysisAdaptor" => "Bio::EnsEMBL::DBSQL::AnalysisAdaptor",
+	      "Queen"           => "Bio::EnsEMBL::Hive::Queen",
+	      "AnalysisJob"     => "Bio::EnsEMBL::Hive::DBSQL::AnalysisJobAdaptor",
+	      "AnalysisStats"   => "Bio::EnsEMBL::Hive::DBSQL::AnalysisStatsAdaptor",
+	      "DataflowRule"    => "Bio::EnsEMBL::Hive::DBSQL::DataflowRuleAdaptor",
+	      "SimpleRule"      => "Bio::EnsEMBL::Hive::DBSQL::SimpleRuleAdaptor");
+
   foreach my $key (keys %pairs){
     my $module = $pairs{$key};
     eval "require $module";
