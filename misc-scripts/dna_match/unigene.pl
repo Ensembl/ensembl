@@ -85,7 +85,7 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
 
     # LSF launch: first 500 all at once, then with 1 sec delay
     my $command = "bsub -q " . QUEUENAME . " -C0 "
-      . \"-f $chunk_fnam > /tmp/$chunk_fnam\" "
+      . "\"-f $chunk_fnam > /tmp/$chunk_fnam\" "
       . "-o ./$chunk_fnam" . "_mapping -e /dev/null "
       . "$0 SLAVE /tmp/$chunk_fnam";
     print STDERR "$0 master: about to launch: $command\n";
