@@ -10,39 +10,19 @@
         -driver => 'mysql',
         );
 
-    $clone  = $db->get_Clone('X45667');
+    $gene_adaptor = $db->get_GeneAdaptor();
 
-    $contig = $db->get_Contig("dJ52N12.02793");
+    $gene = $gene_adaptor()->fetch_by_stable_id($stable_id);
 
-    $gene   = $db->get_Gene('HG45501');
+    $slice = $db->get_SliceAdaptor()->fetch_by_dbID($slice_id);
 
     
-If you want to access the dna from another location you can give a dna database handle
-
-  my $dnadb = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -user   => 'ensro',
-        -dbname => 'ensembl_dna',
-        -host   => 'ensrv3',
-        );
-
-
-   my  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
-        -user   => 'root',
-        -dbname => 'pog',
-        -host   => 'caldy',
-	-dnadb  => $dnadb
-        );
-
-When sequences are fetched they will be got from the dna database.  Any deletes from the
-dna table are forbidden and an error message is printed.
-
 =head1 DESCRIPTION
 
 This object represents a database that is implemented somehow (you shouldn\'t
-care much as long as you can get the object). From the object you can pull
-out other objects by their stable identifier, such as Clone (accession number),
-Exons, Genes and Transcripts. The clone gives you a DB::Clone object, from
-which you can pull out associated genes and features. 
+care much as long as you can get the object). Once created you can retrieve
+database adaptors specific to various database objects that allow the
+retrieval and creation of objects from the database,
 
 =head1 CONTACT
 
@@ -66,14 +46,10 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
-my $instantiated = undef;
-
-
 #Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
 sub new {
   my($class, @args) = @_;
     
-
   #call superclass constructor
   my $self = $class->SUPER::new(@args);
   
@@ -91,58 +67,8 @@ sub new {
   if(defined $source) {
     $self->source($source);
   }
-
-  #
-  # [mcvicker] We are no longer using the FeatureFactory for feature creation.
-  # C objects are no longer being implemented, and if need necessitates the
-  # creation of C Objects then they will be created in a decentralized 
-  # manner and be the responsibility of the individual objects.  
-  # If the FeatureFactory was to be used conceptually correctly, the creation
-  # of every object would have to be managed by the factory rather than
-  # by the new constructors.  It is simply to much work to perform this 
-  # migration right now and not necessary anyway.
-  # 
-  #    if ($perl && $perl == 1) {
-  #        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
-  #    }
-  #    $self->perl_only_sequences($perlonlysequences);
-  
-#  if( defined $external ){
-#    foreach my $external_f ( @{$external} ) {
-#      $self->add_ExternalFeatureFactory($external_f);
-#    }
-#  }
-
-
-  
-  my $sgp = undef;
  
-  $instantiated = $self;
-
   return $self; # success - we hope!
-}
-
-
-
-
-# only the get part of the 3 functions should be considered public
-
-=head2 release_number
-
- Title   : release_number
- Usage   :
- Function: #######SNEAKY METHOD FOR RELEASE NUMBER, VERY TEMPORAR%Y!!!!
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub release_number{
-   my ($self,@args) = @_;
-
-   return 110;
 }
 
 
@@ -195,45 +121,6 @@ sub get_MetaContainer {
 
 
 
-=head2 add_ExternalFeatureFactory
-
- Title   : add_ExternalFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_ExternalFeatureFactory{
-   my ($self,$value) = @_;
-
-   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
-       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
-   }
-
-   push(@{$self->{'_external_ff'}},$value);
-}
-
-=head2 _each_ExternalFeatureFactory
-
- Title   : _each_ExternalFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _each_ExternalFeatureFactory{
-   my ($self) = @_;
-
-   return @{$self->{'_external_ff'}}
-}
 
 
 
@@ -723,23 +610,6 @@ sub list_supported_assemblies {
 
 
 
-=head2 find_GenomeHits
-    
- Title   : find_GenomeHits
- Usage   : my @features = $self->find_GenomeHits($hid)
- Function: Finds all features in the db that
-           are hits to a sequence with id $hid
- Example : 
- Returns : @ Bio::EnsEMBL::FeaturePair
- Args    : string
-
-=cut
- 
-sub find_GenomeHits {
-    my ($self,$arg) = @_;
-
-    return $self->feature_Obj->find_GenomeHits($arg);
-}
 			     
 
 =head2 deleteObj
@@ -828,6 +698,159 @@ sub assembly_type{
 }
 
 
+
+
+
+################################################################## 
+# 
+# SUPPORT FOR EXTERNAL ADAPTORS & FEATURE FACTORIES 
+# 
+# These are not implemented on the new main trunk and at this
+# point it is not clear if they ever will be.
+#
+##################################################################
+
+=head2 list_ExternalAdaptors
+
+ Title   : list_ExternalAdaptors
+ Usage   : $obj->list_ExternalAdaptors
+ Function: returns all the names of installed external adaptors
+ Returns : a (possibly empty) list of name of external adaptors
+ Args    : none
+
+=cut
+
+sub list_ExternalAdaptors {
+    my ($self) = @_;
+
+    $self->warn("DBAdaptor::list_ExternalAdaptors is not implmented. It will "
+		. "either be implemented or deprecated at a later date\n");
+
+    return undef;
+
+    #return keys % {$self->{_ext_adaptors}};
+}
+
+=head2 add_ExternalAdaptor
+
+ Title   : add_ExternalAdaptor
+ Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
+ Function: adds the external adaptor the internal hash of known 
+           external adaptors. If an adaptor of the same name is installed, 
+           it will be overwritten.
+ Returns : undef
+ Args    : a name and a adaptor object. 
+
+=cut
+
+sub add_ExternalAdaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+
+    $self->warn("DBAdaptor::add_ExternalAdaptor is not implemented. It will "
+		. "either be implemented or deprecated at a later date\n");
+
+    #$self->_ext_adaptor($adtor_name, $adtor_obj);
+    #undef;
+}
+
+=head2 get_ExternalAdaptor
+
+ Title   : get_ExternalAdaptor
+ Usage   : $obj->get_ExternalAdaptor('family');
+ Function: retrieve external adaptor by name
+ Returns : an adaptor (sub-type of BaseAdaptor) or undef
+ Args    : the name 
+
+=cut
+
+sub get_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+    
+    $self->warn("DBAdaptor::get_ExternalAdaptor is not implemented. It will "
+		. "either be implemented or deprecated at a later date\n");
+
+    return undef;
+
+    #$self->_ext_adaptor($adtor_name);
+}
+
+
+=head2 remove_ExternalAdaptor
+
+ Title   : remove_ExternalAdaptor
+ Usage   : $obj->remove_ExternalAdaptor('family')
+ Function: removes the named external adaptor from the internal hash of known 
+           external adaptors. If the adaptor name is not known, nothing 
+           happens. 
+ Returns : undef
+ Args    : a name
+
+=cut
+
+sub remove_ExternalAdaptor {
+    my ($self, $adtor_name) = @_;
+
+    $self->warn("remove_ExternalAdaptor is not implemented.  It will either "
+               . "be implemented, or deprecated at a later date\n");
+
+    return undef;
+
+    #$self->_ext_adaptor($adtor_name, 'DELETE');
+    #undef;
+}
+
+
+
+=head2 add_ExternalFeatureFactory
+
+ Title   : add_ExternalFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_ExternalFeatureFactory{
+   my ($self,$value) = @_;
+
+   $self->warn("DBAdaptor::add_ExternalFeatureFactory is not yet implemented."
+	    . " it will either be implemented or deprecated at a later date");
+
+#   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+#       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
+#   }
+
+#   push(@{$self->{'_external_ff'}},$value);
+}
+
+=head2 _each_ExternalFeatureFactory
+
+ Title   : _each_ExternalFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _each_ExternalFeatureFactory{
+   my ($self) = @_;
+
+
+   $self->warn("DBAdaptor::_each_ExternalFeatureFactory is not yet implemented"
+	     . "it will either be implemented or deprecated at a later date");
+
+   return undef;
+
+   #return @{$self->{'_external_ff'}}
+}
+
+
 ## internal stuff for external adaptors
 
 =head2 _ext_adaptor
@@ -871,107 +894,37 @@ sub _ext_adaptor {
 sub dnadb {
   my ($self,$arg) = @_;
 
-  if (defined($arg)) {
-    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
-      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
-    }
-    $self->{_dnadb} = $arg;
-  }
-  return $self->{_dnadb} || $self;
-}
+  $self->warn("DBAdaptor::dnadb is not currently implemented."
+	  . "It will either be implemented or deprecated in the near future");
 
-## support for external adaptors
-=head2 list_ExternalAdaptors
+  return undef;
 
- Title   : list_ExternalAdaptors
- Usage   : $obj->list_ExternalAdaptors
- Function: returns all the names of installed external adaptors
- Returns : a (possibly empty) list of name of external adaptors
- Args    : none
-
-=cut
-
-sub list_ExternalAdaptors {
-    my ($self) = @_;
-    return keys % {$self->{_ext_adaptors}};
-}
-
-=head2 add_ExternalAdaptor
-
- Title   : add_ExternalAdaptor
- Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
- Function: adds the external adaptor the internal hash of known 
-           external adaptors. If an adaptor of the same name is installed, 
-           it will be overwritten.
- Returns : undef
- Args    : a name and a adaptor object. 
-
-=cut
-
-sub add_ExternalAdaptor {
-    my ($self, $adtor_name, $adtor_obj) = @_;
-    $self->_ext_adaptor($adtor_name, $adtor_obj);
-    undef;
-}
-
-=head2 get_ExternalAdaptor
-
- Title   : get_ExternalAdaptor
- Usage   : $obj->get_ExternalAdaptor('family');
- Function: retrieve external adaptor by name
- Returns : an adaptor (sub-type of BaseAdaptor) or undef
- Args    : the name 
-
-=cut
-
-sub get_ExternalAdaptor {
-    my ($self, $adtor_name) = @_;
-    $self->_ext_adaptor($adtor_name);
+#  if (defined($arg)) {
+#    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
+#      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
+#    }
+#    $self->{_dnadb} = $arg;
+#  }
+#  return $self->{_dnadb} || $self;
 }
 
 
-=head2 remove_ExternalAdaptor
-
- Title   : remove_ExternalAdaptor
- Usage   : $obj->remove_ExternalAdaptor('family')
- Function: removes the named external adaptor from the internal hash of known 
-           external adaptors. If the adaptor name is not known, nothing 
-           happens. 
- Returns : undef
- Args    : a name
-
-=cut
-
-sub remove_ExternalAdaptor {
-    my ($self, $adtor_name) = @_;
-    $self->_ext_adaptor($adtor_name, 'DELETE');
-    undef;
-}
-
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-##################DEPRECATED METHODS######################
-#                                                        #
-#All the methods below are deprecated methods,           #
-#only kept here to allow old scripts to work             #
-#They all send a warning and call the new method instead #
-#                                                        #
-##########################################################
 
 
-=head1 Old Functions 
+
+
+##############################################################
+###################DEPRECATED METHODS#########################
+##                                                          ##
+##  All the methods below are deprecated methods,           ##
+##  only kept here to allow old scripts to work             ##
+##  They all send a warning and call the new method instead ##
+##                                                          ##
+##############################################################
+##############################################################
+
+
+=head1 Old Deprecated Functions 
 
 Functions which are completely deprecated 
 
@@ -2784,6 +2737,49 @@ sub get_FamilyAdaptor {
         $self->{'_externaldata_family_familyadaptor'} = $fa;
     }
     return $fa;
+}
+
+
+
+=head2 find_GenomeHits
+    
+ Title   : find_GenomeHits
+ Usage   : DEPRECATED my @features = $self->find_GenomeHits($hid)
+ Function: DEPRECATED Finds all features in the db that
+           are hits to a sequence with id $hid
+ Example : DEPRECATED
+ Returns : DEPRECATED @ Bio::EnsEMBL::FeaturePair
+ Args    : DEPRECATED string
+
+=cut
+ 
+sub find_GenomeHits {
+    my ($self,$arg) = @_;
+    $self->throw("Bio::EnsEMBL::DBSQL::DBAdaptor::find_GenomeHits is deprecated");
+    return ();
+    #    return $self->feature_Obj->find_GenomeHits($arg);
+}
+
+
+=head2 release_number
+
+ Title   : DEPRECATED release_number
+ Usage   : DEPRECATED 
+ Function: DEPRECATED 
+  #######SNEAKY METHOD FOR RELEASE NUMBER, VERY TEMPORAR%Y!!!!
+ Example : DEPRECATED
+ Returns : DEPRECATED
+ Args    : DEPRECATED
+
+
+=cut
+
+sub release_number{
+   my ($self,@args) = @_;
+
+   $self->throw("DBAdaptor::release_number is deprecated\n"); 
+
+   return 110;
 }
 
 1;
