@@ -8,6 +8,8 @@
 
 use strict;
 
+warn "\n*** This script is deprecated. It has been integrated in gene-descriptions.pl ***\n";
+
 my $swissprot_db_name = "SWISSPROT";
 my $sptrembl_db_name = "SPTREMBL";
 my $refseq_db_name = "RefSeq";
