@@ -253,23 +253,11 @@ sub ticket{
 sub store {
   my $self = shift;
   my $obj = shift;
-  my $ret;
-  if( $obj->isa("Bio::Tools::Run::SearchMulti") ){
-    $ret = $self->store_search_multi( $obj, @_ );
-  }
-  elsif( $obj->isa("Bio::Search::Result::ResultI") ){
-    $ret = $self->store_result( $obj, @_ );
-  }
-  elsif( $obj->isa("Bio::Search::Hit::HitI") ){
-    $ret =$self->store_hit( $obj, @_ );
-  }
-  elsif( $obj->isa("Bio::Search::HSP::HSPI") ){
-    $ret = $self->store_hsp( $obj, @_ );
-  }
-  else{
-    $self->throw( "Do not know how to store objects of type ".ref($obj) );
-  }
-  return $ret;
+  return $self->store_search_multi( $obj, @_ ) if $obj->isa("Bio::Tools::Run::SearchMulti");
+  return $self->store_result(       $obj, @_ ) if $obj->isa("Bio::Search::Result::ResultI");
+  return $self->store_hit(          $obj, @_ ) if $obj->isa("Bio::Search::Hit::HitI"      );
+  return $self->store_hsp(          $obj, @_ ) if $obj->isa("Bio::Search::HSP::HSPI"      );
+  $self->throw( "Do not know how to store objects of type ".ref($obj) );
 }
 
 #----------------------------------------------------------------------
@@ -288,20 +276,11 @@ sub store {
 sub retrieve {
   my $self = shift;
   my $caller = shift;
-  if( $caller->isa("Bio::Tools::Run::EnsemblSearchMulti") ){
-    return $self->retrieve_search_multi( @_ );
-  }
-  elsif( $caller->isa("Bio::Search::Result::ResultI") ){
-    return $self->retrieve_result( @_ );
-  }
-  elsif( $caller->isa("Bio::Search::Hit::HitI") ){
-    return $self->retrieve_hit( @_ );
-  }
-  elsif( $caller->isa("Bio::Search::HSP::HSPI") ){
-    return $self->retrieve_hsp( @_ );
-  }
-  $self->throw( "Do not know how to retrieve objects of type ".
-		ref($caller)? ref($caller) : $caller );
+  return $self->retrieve_search_multi( @_ ) if $caller->isa("Bio::Tools::Run::EnsemblSearchMulti");
+  return $self->retrieve_result(       @_ ) if $caller->isa("Bio::Search::Result::ResultI"       );
+  return $self->retrieve_hit(          @_ ) if $caller->isa("Bio::Search::Hit:HitI"              );
+  return $self->retrieve_hsp(          @_ ) if $caller->isa("Bio::Search::HSP:HSPI"              );
+  $self->throw( "Do not know how to retrieve objects of type ". ref($caller)? ref($caller) : $caller );
 }
 
 #----------------------------------------------------------------------
@@ -320,23 +299,11 @@ sub retrieve {
 sub remove {
   my $self = shift;
   my $obj = shift;
-  if( $obj->isa("Bio::Tools::Run::EnsemblSearchMulti") ){
-    return 1; # Nothing to do here
-    #return $self->remove_search_multi( @_ );
-  }
-  elsif( $obj->isa("Bio::Search::Result::ResultI") ){
-    return 1; # Nothing to do here
-    #return $self->remove_result( @_ );
-  }
-  elsif( $obj->isa("Bio::Search::Hit::HitI") ){
-    return 1; # Nothing to do here
-    #return $self->remove_hit( @_ );
-  }
-  elsif( $obj->isa("Bio::Search::HSP::HSPI") ){
-    return $self->remove_hsp( $obj ); # Run HSP-specific code
-  }
-  #$self->warn( "Do not know how to remove objects of type ".ref($obj) );
-  return undef();
+  return 1 if $obj->isa("Bio::Tools::Run::EnsemblSearchMulti"); # Nothing to do here { return $self->remove_search_multi( @_ ); }
+  return 1 if $obj->isa("Bio::Search::Result::ResultI");        # Nothing to do here { return $self->remove_result( @_ ); }
+  return 1 if $obj->isa("Bio::Search::Hit::HitI");              # Nothing to do here { return $self->remove_hit( @_ ); }
+  return $self->remove_hsp( $obj ) if $obj->isa("Bio::Search::HSP::HSPI");
+  return undef(); # Do not know how to remove objects of this type 
 }
 #----------------------------------------------------------------------
 =head2 store_search_multi
@@ -359,8 +326,7 @@ sub store_search_multi{
 
   my $dbh  = $self->dbc->db_handle;
 
-  my $ticket  = $search_multi->token ||
-    $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
+  my $ticket  = $search_multi->token || $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
 
   my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
   my $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
@@ -422,35 +388,32 @@ sub retrieve_search_multi {
 =cut
 
 sub store_result{
-  my $self = shift;
-  my $res  = shift || 
-    $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
+  my $self   = shift;
+  my $res    = shift || $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
   my $frozen = shift || $res->serialise;
-
-  my $dbh  = $self->dbc->db_handle;
+  my $dbh    = $self->dbc->db_handle;
+  my $sth;
 
   my ( $id, $use_date ) = split( '!!', $res->token || '' );
-  $use_date ||= $self->use_date('RESULT');
-  #my $ticket = $res->group_ticket || warn( "Result $id has no ticket" );
-  my $ticket = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
+  $use_date ||= $self->use_date( 'RESULT' );
+          #my $ticket = $res->group_ticket || warn( "Result $id has no ticket" );
+  my $ticket  = $self->ticket || warn("Result $id BlastAdaptor has no ticket");
 
   my $rv = 0;
   if( $id ){
-    my $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_RETRIEVE, $use_date );
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv < 1 ){# Insert
-    my $use_date = $res->use_date() || 
-      $res->use_date($self->use_date('RESULT'));
-    my $sth = $dbh->prepare( sprintf $SQL_RESULT_STORE, $use_date );
+  if( $rv < 1 ){ # We have no result with this token string Insert
+    my $use_date = $res->use_date() || $res->use_date($self->use_date('RESULT'));
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_STORE, $use_date );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     my $id = $dbh->{mysql_insertid};
     $res->token( join( '!!', $id, $use_date ) );
     $sth->finish;
-  }
-  else{  # Update
-    my $sth = $dbh->prepare( sprintf $SQL_RESULT_UPDATE, $use_date );
+  } else {  # Update
+    $sth = $dbh->prepare( sprintf $SQL_RESULT_UPDATE, $use_date );
     $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
