@@ -171,7 +171,23 @@ sub new {
     $self->{'_name_cache'}->{lc($name)} ||= [];
     push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
   }
+  $sth->finish();
 
+  #
+  # Retrieve the list of the coordinate systems that features are stored in
+  # and cache them
+  #
+  $sth = $self->prepare('SELECT table_name, coord_system_id FROM meta_coord');
+  $sth->execute();
+  while(my ($table_name, $dbID) = $sth->fetchrow_array()) {
+    $self->{'_feature_cache'}->{lc($table_name)} ||= [];
+    my $cs = $self->{'_dbID_cache'}->{$dbID};
+    if(!$cs) {
+      throw("meta_coord table refers to non-existant coord_system id=[$dbID]");
+    }
+    push @{$self->{'_feature_cache'}->{lc($table_name)}}, $cs;
+  }
+  $sth->finish();
 
   #
   # Retrieve a list of available mappings from the meta table.
@@ -303,6 +319,39 @@ sub fetch_all_by_name {
   return $self->{'_name_cache'}->{$name} || [];
 }
 
+
+
+
+=head2 fetch_all_by_feature_table
+
+  Arg [1]    : string $table - the name of the table to retrieve coord systems
+               for
+  Example    : my @coord_systems = $csa->fetch_by_feature_table('gene')
+  Description: This retrieves the list of coordinate systems that features
+               in a particular table are stored.  It is used internally by
+               the API to perform queries to these tables and to ensure that
+               features are only stored in appropriate coordinate systems.
+  Returntype : listref of Bio::EnsEMBL::CoordSystem objects
+  Exceptions : none
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub fetch_all_by_feature_table {
+  my $self = shift;
+  my $table = lc(shift); #case insensitive matching
+
+  throw('Name argument is required') unless $table;
+
+  my $result = $self->{'_feature_cache'}->{$table};
+
+  if(!$result) {
+    throw("Feature table [$table] does not have a defined coordinate system" .
+          " in the meta_coord table");
+  }
+
+  return $result;
+}
 
 
 =head2 fetch_by_dbID
