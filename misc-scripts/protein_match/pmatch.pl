@@ -12,7 +12,7 @@
 
 use strict;
 use Getopt::Std;
-use vars qw($opt_q $opt_t $opt_l $opt_o $opt_p $opt_w $opt_s $opt_c $opt_d);
+#use vars qw($opt_q $opt_t $opt_l $opt_o $t_thr $q_thr $opt_w $opt_s $opt_c $opt_d);
 
 BEGIN {
     my $script_dir = $0;
@@ -25,35 +25,24 @@ BEGIN {
 
 my %conf =  %::mapping_conf;
 
-my $sptr_fa = $conf{'sptr_fa'};
+my $sptr_fa   = $conf{'sptr_fa'};
 my $refseq_fa = $conf{'refseq_fa'};
 
+
 #Set the default percentage of idt
-$opt_p = 66;
+#$opt_p = 66;
 
 my $organism = $conf{'organism'};
 
-$opt_q = $conf{'query'};
-$opt_t = $conf{'pmatch_input_fa'};
-$opt_o = $conf{'pmatch_out'};
+my $opt_q = $conf{'query'};
+my $opt_t = $conf{'pmatch_input_fa'};
+my $opt_o = $conf{'pmatch_out'};
 
+my $t_thr = $conf{'target_idt'};
+my $q_thr = $conf{'query_idt'};
 
-getopts ("q:t:l:o:p:wsc:d");
+my ($opt_w,$opt_l,$opt_d);
 
-my $usage = "pmatch.pl\n";
-$usage .= "-q [query fasta db]\n";
-$usage .= "-t [target fasta db] OR -l [file listing target fasta db's] OR -w to create tmp file of all worm pep's from SWALL\n";
-$usage .= "-o [out file]\n";
-$usage .= "-s to calculate the best path of non-overlapping pmatch matches for each query-target pair  OPTIONAL\n";
-$usage .= "-c to classify the matches (relative to the query sequence)   OPTIONAL\n";
-$usage .= "-d to keep the intermediate tmp files   OPTIONAL\n";
-$usage .= "-p minimum percentage off identity accepted OPTIONAL (default value 66%)\n";
-
-#unless ($opt_q && ($opt_t || $opt_l || $opt_w) && $opt_o) {
-#    die "$usage";
-#}
-
-print STDERR "\nRunning $opt_q against $opt_t.\n The output will be there: $opt_o\n\n"; 
 
 #################################
 
@@ -120,134 +109,122 @@ close TMP;
 rename ("$$.sort" , "$$.pmatch");
 
 #################################
-# determine the best path of non-overlapping matching substrings (if $opt_s)
+# determine the best path of non-overlapping matching substrings 
 
-if ($opt_s) {
-    print STDERR "stitch pmatch substrings...\n";
-    open (STITCH , ">$$.stitch") || die "cannot create $$.stitch\n";
-    my @match_list = ();
-    my $old_query;
-    my $old_target;
-    my $old_qlen;
-    my $old_tlen;
-    my $previous_line;
-    open (PMATCH , "$$.pmatch") || die "cannot read $$.pmatch\n";
-    while (<PMATCH>) {
-        chomp;
-        my @a = split /\t/;
-        my $query = $a[1];
-        my $qstart = $a[2];
-        my $qend = $a[3];
-        my $qlen = $a[5];
-        my $target = $a[6];
-        my $tstart = $a[7];
-        my $tend = $a[8];
-        my $tlen = $a[10];
-
-        # new set of query/target 
-        if (($query ne $old_query || $target ne $old_target) && @match_list) {
-            if (@match_list == 1) {
-                print STITCH "$previous_line\n";
-            }
-            else {
-                my ($max , $trace) = stitch_matches (@match_list);
-                my $qperc = sprintf ("%.1f" , ($max/$old_qlen)*100);
-                my $tperc = sprintf ("%.1f" , ($max/$old_tlen)*100);
-                my $num = @$trace-1;
-                print STITCH "$max\t$old_query\t$trace->[1]->{QSTART}\t$trace->[$num]->{QEND}\t$qperc\t$old_qlen\t";
-                print STITCH "$old_target\t$trace->[1]->{TSTART}\t$trace->[$num]->{TEND}\t$tperc\t$old_tlen\t($num)\n";
+print STDERR "stitch pmatch substrings...\n";
+open (STITCH , ">$$.stitch") || die "cannot create $$.stitch\n";
+my @match_list = ();
+my $old_query;
+my $old_target;
+my $old_qlen;
+my $old_tlen;
+my $previous_line;
+open (PMATCH , "$$.pmatch") || die "cannot read $$.pmatch\n";
+while (<PMATCH>) {
+    chomp;
+    my @a = split /\t/;
+    my $query = $a[1];
+    my $qstart = $a[2];
+    my $qend = $a[3];
+    my $qlen = $a[5];
+    my $target = $a[6];
+    my $tstart = $a[7];
+    my $tend = $a[8];
+    my $tlen = $a[10];
+    
+    # new set of query/target 
+    if (($query ne $old_query || $target ne $old_target) && @match_list) {
+	if (@match_list == 1) {
+	    print STITCH "$previous_line\n";
+	}
+	else {
+	    my ($max , $trace) = stitch_matches (@match_list);
+	    my $qperc = sprintf ("%.1f" , ($max/$old_qlen)*100);
+	    my $tperc = sprintf ("%.1f" , ($max/$old_tlen)*100);
+	    my $num = @$trace-1;
+	    print STITCH "$max\t$old_query\t$trace->[1]->{QSTART}\t$trace->[$num]->{QEND}\t$qperc\t$old_qlen\t";
+	    print STITCH "$old_target\t$trace->[1]->{TSTART}\t$trace->[$num]->{TEND}\t$tperc\t$old_tlen\t($num)\n";
 	    }
-            @match_list = ();
-            my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
-            push (@match_list , $match);
-            $old_query = $query;
-            $old_target = $target;
-            $old_qlen = $qlen;
-            $old_tlen = $tlen;
-            $previous_line = $_;
-        }
-        # last line 
-        elsif (eof) {
-            unless (@match_list) {
-                $old_query = $query;
-                $old_target = $target;
-                $old_qlen = $qlen;
-                $old_tlen = $tlen;
-            }
-            my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
-            push (@match_list , $match);
-            my ($max , $trace) = stitch_matches (@match_list);
-            my $num = @$trace-1;
-            my $qperc = sprintf ("%.1f" , ($max/$old_qlen)*100);
-            my $tperc = sprintf ("%.1f" , ($max/$old_tlen)*100);
-            print STITCH "$max\t$old_query\t$trace->[1]->{QSTART}\t$trace->[$num]->{QEND}\t$qperc\t$old_qlen\t"; 
-            print STITCH "$old_target\t$trace->[1]->{TSTART}\t$trace->[$num]->{TEND}\t$tperc\t$old_tlen\t($num)\n";
-        }
-        # else
-        else {
-            my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
-            push (@match_list , $match);
-            $old_query = $query;
-            $old_target = $target;
-            $old_qlen = $qlen;
-            $old_tlen = $tlen;
-            $previous_line = $_;
-        }
+	@match_list = ();
+	my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
+	push (@match_list , $match);
+	$old_query = $query;
+	$old_target = $target;
+	$old_qlen = $qlen;
+	$old_tlen = $tlen;
+	$previous_line = $_;
     }
-    close PMATCH;
-    close STITCH;
+    # last line 
+    elsif (eof) {
+	unless (@match_list) {
+	    $old_query = $query;
+	    $old_target = $target;
+	    $old_qlen = $qlen;
+	    $old_tlen = $tlen;
+	}
+	my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
+	push (@match_list , $match);
+	my ($max , $trace) = stitch_matches (@match_list);
+	my $num = @$trace-1;
+	my $qperc = sprintf ("%.1f" , ($max/$old_qlen)*100);
+	my $tperc = sprintf ("%.1f" , ($max/$old_tlen)*100);
+	print STITCH "$max\t$old_query\t$trace->[1]->{QSTART}\t$trace->[$num]->{QEND}\t$qperc\t$old_qlen\t"; 
+	print STITCH "$old_target\t$trace->[1]->{TSTART}\t$trace->[$num]->{TEND}\t$tperc\t$old_tlen\t($num)\n";
+    }
+        # else
+    else {
+	my $match = Pmatch->new('QSTART'=>$qstart,'QEND'=>$qend,'TSTART'=>$tstart,'TEND'=>$tend);
+	push (@match_list , $match);
+	$old_query = $query;
+            $old_target = $target;
+	$old_qlen = $qlen;
+	$old_tlen = $tlen;
+	$previous_line = $_;
+    }
 }
+close PMATCH;
+close STITCH;
+
 
 ##########################################
 # process the matches, classifying them into several categories
 
-if ($opt_c) {
-    print STDERR "process matches...\n";
-    # get first a list of all query id's
-    my @queries;
-    open (ID , "$query") || die "cannot read $query\n";
-    while (<ID>) {
-        chomp;
-        if (/^\>(\S+)/) {
-            push (@queries , $1);
-        }
-    }
-    close ID;
 
-    # process the matches
-    my $input;
-    if ($opt_s) {
-        $input = "$$.stitch";
+print STDERR "process matches...\n";
+# get first a list of all query id's
+my @queries;
+    open (ID , "$query") || die "cannot read $query\n";
+while (<ID>) {
+    chomp;
+    if (/^\>(\S+)/) {
+	push (@queries , $1);
     }
-    else {
-        $input = "$$.pmatch";
-    }
-    open (PROCESS , ">$$.process") || die "cannot create $$.process\n";
-    open (IN , "$input") || die "cannot read $input\n";
-    process_matches (*IN , *PROCESS , \@queries);
-    close IN;
-    close PROCESS;
 }
+close ID;
+
+# process the matches
+my $input;
+#if ($opt_s) {
+$input = "$$.stitch";
+    #}
+#else {
+#   $input = "$$.pmatch";
+#}
+open (PROCESS , ">$$.process") || die "cannot create $$.process\n";
+open (IN , "$input") || die "cannot read $input\n";
+process_matches (*IN , *PROCESS , \@queries);
+close IN;
+close PROCESS;
 
 #########################################
 # delete some tmp files, and move the appropriate results to the out file unless ($opt_d)
 
-unless ($opt_d) {
-    if ($opt_c) {
-        rename ("$$.process" , "$opt_o");
-        unlink "$$.pmatch";
-        if ($opt_s) {
-            unlink "$$.stitch";
-	}
-    }
-    elsif ($opt_s) {
-        rename ("$$.stitch" , "$opt_o");
-        unlink "$$.pmatch";        
-    }
-    else {
-        rename ("$$.pmatch" , "$opt_o");
-    }
-}
+rename ("$$.process" , "$opt_o");
+unlink "$$.pmatch";
+unlink "$$.stitch";
+
+rename ("$$.stitch" , "$opt_o");
+unlink "$$.pmatch";        
 
 ########################
 # subroutines
@@ -415,7 +392,7 @@ sub process_matches {
         foreach my $target_id (sort {$percent{$query_id}{$b} <=> $percent{$query_id}{$a}} keys %{$percent{$query_id}}) {
             my ($qperc , $tperc) = split (/\t/ , $percent{$query_id}->{$target_id});
 
-            if ($qperc > $opt_p && $tperc > $opt_p) {
+            if ($qperc > $q_thr && $tperc > $t_thr) {
                 
 		if( !defined $hash2{$target_id} ) {
 		    $hash2{$target_id} = [];
@@ -453,6 +430,7 @@ sub process_matches {
 	}
     }
 }
+
 
 
 ##########################################
