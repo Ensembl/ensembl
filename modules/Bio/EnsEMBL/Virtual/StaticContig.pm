@@ -254,6 +254,7 @@ sub get_all_SimilarityFeatures {
 
 sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score, $bp) = @_;
+
     
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
     $self->throw("Must supply score parameter") unless $score;
@@ -271,7 +272,9 @@ sub get_all_SimilarityFeatures_above_score{
 	return ();
     }
 
-    my    $statement = "SELECT f.id, 
+    if( ! defined $self->{_feature_cache} ) {
+      
+      my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -279,51 +282,36 @@ sub get_all_SimilarityFeatures_above_score{
                         IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
                                 f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
 		        FROM   feature f, analysis a,static_golden_path sgp
-                        WHERE  f.score > $score
-                        AND    f.analysis = a.id 
-                        AND    sgp.raw_id = f.contig
+                        WHERE  sgp.raw_id = f.contig
                         AND    f.contig in $idlist
-		        AND    a.db = '$analysis_type'  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name = '$chr_name' 
                         ORDER  by start";
     
-    my  $sth = $self->dbobj->prepare($statement);    
-    $sth->execute(); 
+      my  $sth = $self->dbobj->prepare($statement);    
+      $sth->execute(); 
     
     
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+      my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	  $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
     
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
-                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+      $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+			 \$analysisid,\$name,\$hstart,\$hend,\$hid);
     
     
-    my @features;
-    
-    my $out;
-    my $length=$self->length;
+      
+      my $out;
+      my $length=$self->length;
   FEATURE: 
 
-    while($sth->fetch) {
-
+      while($sth->fetch) {
+	
 	if (($end > $length) || ($start < 1)) {
-	    next;
+	  next;
 	}
 	
 	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
 	
-	#exclude contained features
-	if(  defined $bp && defined $out && $end < $out->end ) { next; }
-
-	#Glob overlapping and close features
-	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
-		
-	    # reset previous guys end to end
-	    $out->end($end);
-	    next;
-	}
-
 	
 	my $analysis=$self->_get_analysis($analysisid);
 	
@@ -337,8 +325,19 @@ sub get_all_SimilarityFeatures_above_score{
 
 	$out->analysis($analysis);
         $out->id      ($hid);
-	push(@features,$out);
+	push( @{$self->{_feature_cache}{$analysis->db()}}, $out );
+      }
+    } 
+    # now extract requested features
+    
+    my @features;
+    foreach my $feature ( @{$self->{_feature_cache}{$analysis_type}} ) {
+      
+      if( $feature->score() > $score ) {
+	push( @features, $feature );
+      } 
     }
+    
     return @features;
 }
 
