@@ -8,7 +8,7 @@ BEGIN {
 }
 
 use CGI;
-use Bio::EnsEMBL::DB::Obj;
+use Bio::EnsEMBL::DBSQL::Obj;
 use strict;
 
 my $q = new CGI;
@@ -19,9 +19,9 @@ my $contigid = $q->param('contig');
 my @features;
 
 eval {
-    my $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'caldy.sanger.ac.uk');
+    my $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'ensdev' , -host => 'croc.sanger.ac.uk');
     my $contig = $db->get_Contig($contigid);
-    @features = $contig->get_all_SeqFeatures;
+    @features = $contig->as_seqfeatures();
 };
 
 if( $@ ) {

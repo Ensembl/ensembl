@@ -59,6 +59,7 @@ use strict;
 #use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DB::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::EMBL_Dump;
 use Bio::AnnSeqIO;
 use Bio::SeqIO;
 
@@ -163,32 +164,9 @@ foreach my $clone_id ( @clones ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
-	    
-	    $as->seq->desc("Reannotated sequence via EnsEMBL");
-	    my $comment = Bio::Annotation::Comment->new();
-	    
-	    $comment->text("This sequence was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
-	    $as->annotation->add_Comment($comment);
-	    
-	    $comment = Bio::Annotation::Comment->new();
-	    $comment->text("The /gene_id indicates a unique id for a gene, /transcript_id a unique id for a transcript and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html");
-	    $as->annotation->add_Comment($comment);
-	    
-	    my $sf = Bio::SeqFeature::Generic->new();
-	    $sf->start(1);
-	    $sf->end($as->seq->seq_len());
-	    $sf->primary_tag('source');
-	    $sf->add_tag_value('organism','Homo sapiens');
-	    $as->add_SeqFeature($sf);
+	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
 	    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
-	    $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
-	    
-	    # attach ensembl specific dumping functions
-	    $emblout->_id_generation_func(\&id_EnsEMBL);
-	    $emblout->_kw_generation_func(\&kw_EnsEMBL);
-	    $emblout->_sv_generation_func(\&sv_EnsEMBL);
-	    $emblout->_ac_generation_func(\&ac_EnsEMBL);
-	    
+	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
 		$emblout->_show_dna(0);
 	    }
@@ -214,66 +192,4 @@ foreach my $clone_id ( @clones ) {
     }
 }
     
-#########################
-# sub routines
-#########################
-
-sub id_EnsEMBL {
-    my $annseq = shift;
-
-    return sprintf("%-11s standard; DNA; %s; %d BP.",$annseq->embl_id(),$annseq->htg_phase == 4 ? 'HUM' : 'HTG',$annseq->seq->seq_len() );
-}
-
-
-sub kw_EnsEMBL{
-   my ($annseq) = @_;
-
-   if( $annseq->htg_phase == 4 ) {
-       return "HTG.";
-   }
-
-   return "HTG; HTG_PHASE" . $annseq->htg_phase() . ".";
-}
-
-sub sv_EnsEMBL {
-   my ($annseq) = @_;
-
-   if( ! $annseq->sv ) {
-       return "NO_SV_NUMBER";
-   }
-   if( $annseq->sv == -1 ) {
-       return undef;
-   }
-
-   return $annseq->seq->id() . "." . $annseq->sv
-}
-
-sub ac_EnsEMBL {
-   my ($annseq) = @_;
-
-   return $annseq->seq->id() . ";";
-}
-
-
-sub sort_FTHelper_EnsEMBL {
-    my $a = shift;
-    my $b = shift;
-
-    if( $a->key eq $b->key ) {
-	return ($a->loc cmp $b->loc);
-    }
-
-    if( $a->key eq 'source' ) {
-	return -1;
-    }
-    if( $b->key eq 'source' ) {
-	return 1;
-    }
-
-    if( $a->key eq 'CDS' ) {
-	return -1;
-    }
-
-    return 1;
-}
 

@@ -48,21 +48,21 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DB::Obj;
+package Bio::EnsEMBL::DBSQL::Obj;
 use vars qw(@ISA);
 use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DB::Contig;
-use Bio::EnsEMBL::DB::Clone;
+use Bio::EnsEMBL::DBSQL::Contig;
+use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use DBI;
 
-use Bio::EnsEMBL::DB::DummyStatement;
+use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 @ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
@@ -290,7 +290,7 @@ sub get_Clone{
        $self->throw("Clone $id does not seem to occur in the database!");
    }
 
-   my $clone = new Bio::EnsEMBL::DB::Clone( -id => $id,
+   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id,
 					-dbobj => $self );
 
    return $clone;
@@ -320,7 +320,7 @@ sub get_Contig{
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
-   my $contig = new Bio::EnsEMBL::DB::Contig ( -dbobj => $self,
+   my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self,
 					       -id => $id );
    return $contig;
 }
@@ -361,6 +361,31 @@ sub get_all_Clone_id{
 
 
 =cut
+
+=head2 geneid_to_cloneid
+
+ Title   : geneid_to_cloneid
+ Usage   : @cloneid = $db->geneid_to_cloneid($geneid);
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub geneid_to_cloneid{
+   my ($self,$geneid) = @_;
+
+   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
+   my @out;
+
+   $sth->execute;
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+}
 
 sub write_Gene{
    my ($self,$gene) = @_;
@@ -607,7 +632,7 @@ sub prepare{
 
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DB::DummyStatement->new();
+       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
        $st->_fileh(\*STDERR);
        $st->_statement($string);
        return $st;

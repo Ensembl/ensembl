@@ -36,7 +36,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DB::Contig;
+package Bio::EnsEMBL::DBSQL::Contig;
 use vars qw(@ISA);
 use strict;
 
@@ -44,7 +44,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
-use Bio::EnsEMBL::DB::Obj;
+use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
 
 
@@ -64,7 +64,7 @@ sub _initialize {
 
   $id || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->id($id);
   $self->_dbobj($dbobj);
