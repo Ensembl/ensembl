@@ -32,18 +32,20 @@ my $chaining = undef;
 my $i2nmapping;
 my $n2imapping;
 my $gtf_summary;
-my $gtf_dump;
+my $cluster_n;
 &GetOptions( 
             'stats'  => \$all_stats,
             'chaining:s'  => \$chaining,
 	     'igi2native:s'     => \$i2nmapping, 
 	     'native2igi:s'     => \$n2imapping, 
              'gtfsummary:s' => \$gtf_summary,
-             'gtfdump:s' => \$gtf_dump
+             'cluster_n:d'  => \$cluster_n,
 	     'h|help'     => \$help,
 	     );
 die $usage if $help;
 
+die "need both cluster_n and gtf_summary or neither"
+  unless ( defined($gtf_summary) == defined($cluster_n));
 
 
 my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
@@ -54,13 +56,14 @@ my %natives_of_source; # $natives_of_source{$source}{$native_id} =
                        # [ nfeats, start, end, nexons ]
 my %natives_of_igi; # $natives_of_igi{$source}{$igi}{$native_id} => 1
 
+my $blurp = blurp();
 
 ### just read the complete file into the relevant hashes
 GTF_LINE:
 while (<>) {
     # taken largely from Bio::EnsEMBL::Utils::GTF_handler:
-    next GTF_LINE if /^                 #/;
-      next GTF_LINE if /^\s*$/;
+    next GTF_LINE if /^#/;
+    next GTF_LINE if /^\s*$/;
     chomp;
     
     my @fields = split "\t", $_;
@@ -156,44 +159,47 @@ if ($n2imapping) {
 
 if ($gtf_summary) {
 #    for(my $i= int(@all_sources); $i>0; $i--) {
-## for now, only do it for n==2, forget about loop
-    for(my $i= 2; $i==2; $i--) {
+## for now, only do it for n==cluster_n, forget about loop
+    for(my $i= $cluster_n; $i==$cluster_n; $i--) {
 #        my $file = "$gtf_dump-n=$i.gtf";
         my $file = "$gtf_summary";
         open(OUT, "> $file" ) || die die "$file: $!";
 
         my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
         foreach (@stuff) {chomp};
-        print OUT "## run ", join(' ',@stuff), "\n";
-        print OUT "## for EnsEMBL (http://www.ensembl.org)\n";
-        print OUT <<BLURP
+        print OUT $blurp;
+        print OUT <<MOREBLURP
+## 
 ## GTF summary file in gff format. The source is 'igi3', and only gene
 ## features are given. Only genes predicted by $i or more gene predictions
 ## have been included. The original gene id's have been prefixed with
-## <source-name>. The output is sorted by fpc contig id, strand, and start
-BLURP
+## <source-name>. The output is sorted by fpc contig id, strand, and start.
+## This is not the final IGI3 file
+MOREBLURP
   ;
         close(OUT);
         my $sortcmd="sort -k1,1 -k7,7 -k4,4n ";
         open(OUT, "| $sortcmd >> $file") || die "$file: $!";
         gtf_for_igis_predicted_by_n(\*OUT, $i);
-    }
-}
+    }                                   # for ($i)
+}                                       # if gtf_summary
 
-
+### simple log message
 sub blurp {
-    print '### $Id$  ', "\n";
     my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
     foreach (@stuff) {chomp};
-    print "### run ", join(' ',@stuff), "\n";
-    print "### for EnsEMBL (http://www.ensembl.org)\n";
-    print "### argument(s): ", join(' ', @argv_copy), "\n";
-    foreach (@argv_copy) {   print "### ", `ls -l $_`; }
-    
-    print "Sources: " , join( ' ', @all_sources), "\n";
+    my $s =  '### Produced by $Id$  ' . "\n" 
+      . "### run " . join(' ',@stuff) .  "\n"
+      . "### for EnsEMBL (http://www.ensembl.org)\n"
+      . "### argument(s): ". join(' ', @argv_copy) . "\n";
+    foreach (@argv_copy) {   $s .= "### ", `ls -l $_`; }
+    $s .= "###\n";
+    $s;
 }
 
 
+# will have to be factored out into a igi-utils.pm at some point, since
+# also used by 
 sub parse_group_field {
     my( $group_field ) = @_;
     
@@ -367,7 +373,8 @@ sub find_chaining {
 }
 
 sub print_stats {
-    blurp;
+    print $blurp;                       # log comment
+    print "Sources: " , join( ' ', @all_sources), "\n";
 
     my $n_sources = int(@all_sources);
 
