@@ -154,17 +154,14 @@ sub new {
     if( $debug && $debug > 10 ) {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
     } else {
-
         my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-
         $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
-
         if( $self->_debug > 3 ) {
-	    $self->warn("Using connection $dbh");
+	    	$self->warn("Using connection $dbh");
         }
-
         $self->_db_handle($dbh);
     }
+  	print STDERR "Connected to ensembl database \"$db\" on server \"$host\" as user \"$user\".\n";
 
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
