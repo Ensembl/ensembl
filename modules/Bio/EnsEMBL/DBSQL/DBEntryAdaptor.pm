@@ -93,7 +93,7 @@ sub store {
     my ( $self, $exObj, $ensObject, $ensType ) = @_;
     
     # $self->throw( "Sorry, store not yet supported" );
-    my $dbUnknown;
+    my $dbJustInserted;
     
     # check if db exists
     # urlPattern dbname release
@@ -108,7 +108,7 @@ sub store {
     my $dbRef;
     
     if(  ($dbRef) =  $sth->fetchrow_array() ) {
-    
+        $dbJustInserted = 0;
     } else {
 	# store it, get dbID for that
 	$sth = $self->prepare( "
@@ -118,7 +118,7 @@ sub store {
      " );
 	$sth->execute( $exObj->dbname(), $exObj->release());
 	
-	$dbUnknown = 1;
+	$dbJustInserted = 1;
 	$sth = $self->prepare( "
        SELECT LAST_INSERT_ID()
      " );
@@ -131,7 +131,11 @@ sub store {
     
     my $dbX;
     
-    if( ! $dbUnknown ) {
+    if(  $dbJustInserted ) {
+	# dont have to check for existence; cannnot have been inserted at
+	# this point, so $dbX is certainly undefined
+        $dbX = undef;
+    } else {
 	$sth = $self->prepare( "
        SELECT xrefId
          FROM Xref
@@ -142,8 +146,6 @@ sub store {
 	$sth->execute( $dbRef, $exObj->primary_id(), 
 		       $exObj->version() );
 	( $dbX ) = $sth->fetchrow_array();
-    } else {
-	# dont check for existence
     }
     
     if( ! defined $dbX ) {
@@ -166,9 +168,6 @@ sub store {
 	( $dbX ) = $sth->fetchrow_array();
 	
 	# synonyms
-	
-	
-	
 	my @synonyms = $exObj->get_synonyms();
 	foreach my $syn ( @synonyms ) {
 	    
@@ -187,8 +186,6 @@ sub store {
 	    #print STDERR $dbSyn[0],"\n";
 	    
 	    if( ! @dbSyn ) {
-		
-		
 		$sth = $self->prepare( "
         INSERT INTO externalSynonym
          SET xrefId = $dbX,
