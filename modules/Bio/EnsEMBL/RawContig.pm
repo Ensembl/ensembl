@@ -76,6 +76,8 @@ sub new {
   return $self;
 }
 
+
+
 sub adaptor {
   my $self = shift;
   my $arg = shift;
@@ -85,6 +87,7 @@ sub adaptor {
 
   return $self->{_adaptor};
 }
+
 
 
 sub dbID {
@@ -127,59 +130,7 @@ sub id {
   return $self->name || $self->dbID;
 }
 
-sub display_id {
-  my $self = shift;
-  $self->id();
-}
 
-
-
-sub embl_offset {
-  my $self = shift;
-  my $arg = shift;
-  
-  if( defined $arg ) {
-    $self->{_embl_offset} = $arg ;
-  } else {
-    if( ! defined $self->{_embl_offset} &&
-      defined $self->adaptor() ) {
-      $self->adaptor->fetch_attributes( $self );
-    }
-  }
-  
-  return $self->{_embl_offset};
-}
-
-sub clone {
-  my $self = shift;
-  my $arg = shift;
-  
-  if( defined $arg ) {
-    $self->{_clone} = $arg ;
-  } else {
-    if( ! defined $self->{_clone} &&
-      defined $self->adaptor() ) {
-      if( !defined $self->_clone_id() ) {
-	$self->adaptor->fetch_attributes($self);
-      }
-      $self->{_clone} = 
-       $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
-    }
-  }
-  
-  return $self->{_clone};
-}
-
-sub _clone_id {
-  my $self = shift;
-  my $arg = shift;
-  
-  if( defined $arg ) {
-    $self->{_clone_id} = $arg ;
-  }
-
-  return $self->{_clone_id};
-}
 
 sub length {
   my $self = shift;
@@ -189,7 +140,7 @@ sub length {
     $self->{_length} = $arg ;
   } else {
     if( ! defined $self->{_length} &&
-      defined $self->adaptor() ) {
+	defined $self->adaptor() ) {
       $self->adaptor->fetch_attributes( $self );
     }
   }
@@ -231,6 +182,7 @@ sub seq {
   $self->warn("RawContig seq not set, and no db is available");
   return '';
 }
+
 
 
 =head2 subseq
@@ -328,6 +280,7 @@ sub get_repeatmasked_seq {
 }
 
 
+
 =head2 _mask_features
 
   Arg [1]    : string $dna_string
@@ -391,6 +344,35 @@ repeat_start $start or repeat_end $end not within [1-$dnalen] RawContig range co
   return $dnastr;
 }
 
+
+=head2 get_all_PredictionTranscripts
+
+  Args      : none
+  Function  : connect to database through set adaptor and retrieve the 
+              PredictionFeatures for this contig.
+  Returntype: list Bio::EnsEMBL::PredictionTranscript 
+              (previously this returned a SeqFeature)
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_all_PredictionTranscripts {
+  my $self = shift;
+  my $logic_name = shift;
+  
+  if( ! defined $self->adaptor() ) {
+    $self->warn( "Need db connection for get_all_PredictionFeatures()" );
+    return ();
+  }
+  
+  my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
+    
+  return $pta->fetch_by_Contig($self, $logic_name);
+}
+
+
+
 =head2 get_all_RepeatFeatures
 
   Args      : none
@@ -412,10 +394,10 @@ sub get_all_RepeatFeatures {
    }
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
-   my @repeats = $rfa->fetch_by_Contig( $self , $logic_name);
 
-   return @repeats;
+   return $rfa->fetch_by_Contig( $self , $logic_name);
 }
+
 
 
 =head2 get_all_SimilarityFeatures
@@ -430,7 +412,7 @@ sub get_all_RepeatFeatures {
 =cut
 
 sub get_all_SimilarityFeatures {
-  my ($self, $logic_name) = @_;
+  my ($self, $logic_name, $score) = @_;
   
   if( ! defined $self->adaptor() ) {
     $self->warn( "Need db connection for get_all_SimilarityFeatures()" );
@@ -440,58 +422,153 @@ sub get_all_SimilarityFeatures {
   my @out;
   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
-      
-
-  my @dnaalign = $dafa->fetch_by_Contig($self, $logic_name);
-  my @pepalign = $pafa->fetch_by_Contig($self, $logic_name);
+  push @out, $dafa->fetch_by_Contig_and_score($self, $score, $logic_name);
+  push @out, $pafa->fetch_by_Contig_and_score($self, $score, $logic_name);
     
-  push(@out, @dnaalign);
-  push(@out, @pepalign);
-
   return @out;
 }
 
 
-=head2 get_all_PredictionFeatures
+=head2 get_all_DnaAlignFeatures
 
-  Args      : none
-  Function  : connect to database through set adaptor and retrieve the 
-              PredictionFeatures for this contig.
-  Returntype: list Bio::EnsEMBL::PredictionTranscript 
-              (previously this returned a SeqFeature)
-  Exceptions: none
-  Caller    : general
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the dna align features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @dna_align_feats = $contig->get_all_DnaAlignFeatures()
+  Description: Retrieves the DnaDnaAlignFeatures which overlap this contig
+  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeatures
+  Exceptions : none
+  Caller     :general
 
 =cut
 
-sub get_all_PredictionFeatures {
-  my $self = shift;
-  
+sub get_all_DnaAlignFeatures {
+   my ($self, $logic_name, $score) = @_;
+
+
+   if( ! defined $self->adaptor() ) {
+     $self->warn( "Need db connection for get_all_DnaAlignFeatures()" );
+     return ();
+   }
+
+   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+
+   return $dafa->fetch_by_Contig_and_score($self,$score, $logic_name);
+}
+
+
+
+=head2 get_all_ProteinAlignFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the protein align features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @pep_align_feats = $contig->get_all_ProteinAlignFeatures()
+  Description: Retrieves the PepDnaAlignFeatures which overlap this contig.
+  Returntype : list of Bio::EnsEMBL::PepDnaAlignFeatures
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_ProteinAlignFeatures {
+  my ($self, $logic_name, $score) = @_;
+
+
   if( ! defined $self->adaptor() ) {
-    $self->warn( "Need db connection for get_all_PredictionFeatures()" );
+    $self->warn( "Need db connection for get_all_ProteinAlignFeatures()" );
     return ();
   }
-  
-  my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
-    
-  my @pred_feat = $pta->fetch_by_Contig($self);
 
-  return @pred_feat;
+  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
+
+  return $pafa->fetch_by_Contig_and_score($self, $score, $logic_name);
 }
 
-sub accession_number {
+
+
+=head2 get_all_SimpleFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the simple features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @simple_feats = $contig->get_all_SimpleFeatures()
+  Description: Retrieves the SimpleFeatures which overlap this contig.
+  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeature
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_SimpleFeatures {
+  my ($self, $logic_name, $score) = @_;
+
+
+  if( ! defined $self->adaptor() ) {
+    $self->warn( "Need db connection for get_all_SimpleFeatures()" );
+    return ();
+  }
+
+  my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
+
+  return $sfa->fetch_by_Contig_and_score($self, $score, $logic_name);
+}
+
+
+sub embl_offset {
   my $self = shift;
+  my $arg = shift;
   
-  $self->dbID();
+  if( defined $arg ) {
+    $self->{_embl_offset} = $arg ;
+  } else {
+    if( ! defined $self->{_embl_offset} &&
+      defined $self->adaptor() ) {
+      $self->adaptor->fetch_attributes( $self );
+    }
+  }
+  
+  return $self->{_embl_offset};
 }
 
-sub moltype {
-  return "DNA";
+
+sub clone {
+  my $self = shift;
+  my $arg = shift;
+  
+  if( defined $arg ) {
+    $self->{_clone} = $arg ;
+  } else {
+    if( ! defined $self->{_clone} &&
+      defined $self->adaptor() ) {
+      if( !defined $self->_clone_id() ) {
+	$self->adaptor->fetch_attributes($self);
+      }
+      $self->{_clone} = 
+       $self->adaptor->db->get_CloneAdaptor->fetch_by_dbID($self->_clone_id());
+    }
+  }
+  
+  return $self->{_clone};
 }
 
-sub desc {
-  return "Contig, no description";
+sub _clone_id {
+  my $self = shift;
+  my $arg = shift;
+  
+  if( defined $arg ) {
+    $self->{_clone_id} = $arg ;
+  }
+
+  return $self->{_clone_id};
 }
+
 
 
 =head2 get_all_ExternalFeatures
@@ -566,6 +643,81 @@ sub get_all_ExternalFeatures {
 }
 
 
+=head2 Methods included only for BioPerl compliance
+=cut
+###############################################################################
+
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance.
+  Returntype : string
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub display_id{
+  my $self = shift;
+
+  return $self->id();
+}
+
+=head2 desc
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub desc{
+  my $self = shift;
+  return "Slice, no descrtipion";
+}
+
+=head2 moltype
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub moltype {
+  my $self = shift;
+  return 'DNA';
+}
+
+=head2 accession_number
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub accession_number {
+  my $self = shift;
+  return $self->dbID();
+}
+
+
+=head2 DEPRECATED methods
+=cut
+###############################################################################
+
+
 =head2 sequence
 
   Arg [1]    : none
@@ -610,7 +762,7 @@ sub dbobj {
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED use get_PredictionFeatures instead
+  Description: DEPRECATED use get_all_PredictionTranscripts instead
   Returntype : none
   Exceptions : none
   Caller     : none

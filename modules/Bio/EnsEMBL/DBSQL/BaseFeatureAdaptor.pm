@@ -48,7 +48,6 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-#use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -236,7 +235,7 @@ sub fetch_by_Contig{
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig 
                the contig from which features should be obtained
-  Arg [2]    : float $score
+  Arg [2]    : (optional) float $score
                the lower bound of the score of the features to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
@@ -256,9 +255,7 @@ sub fetch_by_Contig_and_score{
 
   my $constraint;
 
-  if(!defined $score){
-    $self->throw("need a score even if its 0\n");
-  } else{
+  if(defined $score){
     $constraint = "score > $score";
   }
     
@@ -295,7 +292,7 @@ sub fetch_by_Slice {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice from which to obtain features
-  Arg [2]    : float $score
+  Arg [2]    : (optional) float $score
                lower bound of the the score of the features retrieved
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
@@ -315,14 +312,12 @@ sub fetch_by_Slice_and_score {
   my ($self, $slice, $score, $logic_name) = @_;
   my $constraint;
 
-  if(!defined $score) {
-    $self->throw("need a score even if its 0\n");
-  } else {
+  if(defined $score) {
     $constraint = "score > $score";
   }
 
   my @res = $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
-  #&eprof_end('transform');
+
   return @res;
 }  
 
@@ -394,16 +389,13 @@ sub fetch_by_Slice_constraint {
 
   my @out;
   
-  #&eprof_start('transform');
   #convert the features to slice coordinates from raw contig coordinates
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $contig_id = $f->contig->dbID();
 
-    #&eprof_start('rawcontig2assembly CALL');
     my ($chr_name, $start, $end, $strand) = 
       $mapper->fast_to_assembly($contig_id, $f->start(), $f->end(),$f->strand(),"rawcontig");
-    #&eprof_end('rawcontig2assembly CALL');
 
     #not defined start means gap
     unless(defined $start) { 
@@ -422,8 +414,6 @@ sub fetch_by_Slice_constraint {
     push(@out,$f);
   }
   
-  #&eprof_end('rawcontig2assembly transform');
-
   #update the cache
   $self->{'_slice_feature_cache'}{$key} = \@out;
   

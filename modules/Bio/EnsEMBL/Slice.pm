@@ -24,15 +24,16 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 DESCRIPTION
 
-Describe the object here
+
 
 =head1 AUTHOR - Ewan Birney
 
+=head1 CONTACT
+
 This modules is part of the Ensembl project http://www.ensembl.org
 
-Email ensembl-dev@ebi.ac.uk
-
-Describe contact details here
+Questions can be posted to the ensembl-dev mailing list:
+ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
@@ -57,7 +58,6 @@ use Bio::PrimarySeqI;
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
 
 
-# new() is written here 
 
 sub new {
   my($class,@args) = @_;
@@ -115,120 +115,119 @@ sub new {
 }
 
 
-=head2 First pass implementation
 
-The first pass implementation tries to mimic precisely the important
-parts of the old VirtualContig system for the pipeline. These
-are the methods to implement
+=head2 adaptor
 
-=cut
-
-
-
-=head2 get_all_PredictionTranscripts
-
- Title   : get_all_PredictionTranscripts
- Usage   : $obj->get_all_PredictionTranscripts
- Function: Use to derive a list of prediction transcripts specific to the analysis type specified by the logic name.
- Example : my @pred_rm_trans = $obj->get_all_PredictionTranscripts('RepeatMasker');
- Returns : a list of Bio::EnsEMBL::PredictionTranscript objects
- Args    : a logic name - the name of the analysis that created or returned the prediction feature.
-
+  Arg [1]    : (optional) Bio::EnsEMBL::DBSQL::SliceAdaptor $adaptor
+  Example    : $adaptor = $slice->adaptor();
+  Description: Getter/Setter for the slice object adaptor used
+               by this slice for database interaction.
+  Returntype : Bio::EnsEMBL::DBSQL::SliceAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub get_all_PredictionTranscripts{
-   my ($self,$logic_name) = @_;
+sub adaptor{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
 
-   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
-
-   return $pta->fetch_by_Slice($self, $logic_name);
 }
 
 
 
-  
+=head2 dbID
 
-=head2 get_all_SNPs
-
-  Args      : none
-  Function  : returns all SNPs on this slice
-  Returntype: @Bio::EnsEMBL::External::Variation
-  Exceptions: none
-  Caller    : GlyphSet_feature inherited objects
+  Arg [1]    : (optioanl) int $value
+  Example    : none
+  Description: Getter/Setter for the unique database identifier for this 
+               slice. This is not currently useful since slices are 
+               abstractions and not actually stored in a database.  This 
+               function is present to mirror RawContigs dbID method and
+               because it could in theory be used one day.
+  Returntype : int
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_SNPs {
+sub dbID {
+   my ( $self, $value ) = @_;
+   if( defined $value ) {
+     $self->{'dbID'} = $value;
+   }
+   return $self->{'dbID'};
+}
+
+
+
+=head2 name
+
+  Arg [1]    : none
+  Example    : $name = $slice->name();
+  Description: Returns the name of this slice. The name is formatted as a 
+               the following string: "$chr_name:$chr_start-$chr_end". 
+               (e.g. 'X:10000-20000')
+               This essentially allows slices to be easily compared and 
+               can also act as a hash value. This is similar to the name 
+               method in RawContig so for exons which can have either type 
+               of sequence attached it provides a more common interface.
+  Returntype : string
+  Exceptions : none
+  Caller     : 
+
+=cut
+
+sub name {
   my $self = shift;
 
-  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
-
-  return $snpa->fetch_by_Slice($self);
+  return join( '', $self->chr_name(), ':', $self->chr_start(), 
+	       '-', $self->chr_end());
 }
 
 
 
-=head2 get_all_DnaAlignFeatures_above_score
+=head2 id
 
-  Args      : $logic_name, $score
-  Function  : returns all DnaAlignFeatures of type logic_name and above score
-  Returntype: @Bio::EnsEMBL::DnaDnaAlignFeature
-  Exceptions: none
-  Caller    : GlyphSet_feature inherited objects
+  Arg [1]    : none 
+  Example    : none
+  Description: Here to mirror same method in RawContig.  Simply returns 
+               the same thing as $slice->name() and generally name should be
+               used instead.
+  Returntype : string
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_DnaAlignFeatures_above_score{
-   my ($self,$logic_name, $score) = @_;
+sub id {
+   my $self = shift;
 
-   if( !defined $score ) {
-     $self->throw("No defined score.");
-   }
-
-   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
-
-   return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
+   return $self->name() || $self->dbID();
 }
 
 
-=head2 get_all_ProteinAlignFeatures_above_score
 
-  Args      : $logic_name, $score
-  Function  : getss all ProteinAlignFeatures of type logic_name and above score
-  Returntype: @Bio::EnsEMBL::DnaPepAlignFeature
-  Exceptions: none
-  Caller    : GlyphSet_feature inherited objects
-  
+=head2 length
+
+  Arg [1]    : none
+  Example    : $length = $slice->length();
+  Description: Returns the length of this slice
+  Returntype : int
+  Exceptions : none
+  Caller     : general
+
 =cut
 
-sub get_all_ProteinAlignFeatures_above_score {
-  my ($self, $logic_name, $score) = @_;
+sub length {
+  my ($self) = @_;
 
-  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
-
-  return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
+  return $self->chr_end() - $self->chr_start() + 1;
 }
 
-
-=head2 get_all_SimpleFeatures_above_score
-
-  Args      : $logic_name, $score
-  Function  : retrieves all SimpleFeatures on this Slice of type logic_name 
-              and above score
-  Returntype: @Bio::EnsEMBL::SimpleFeature
-  Exceptions: none
-  Caller    : GlyphSet_feature inherited objects
-  
-=cut
-
-sub get_all_SimpleFeatures_above_score {
-  my ($self, $logic_name, $score) = @_;
-
-  my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
-
-  return $sfa->fetch_by_Slice_and_score($self, $score, $logic_name);
-}
 
 
 =head2 seq
@@ -251,6 +250,7 @@ sub seq {
 }
 
 
+
 =head2 subseq
 
   Arg  1    : int $startBasePair
@@ -270,7 +270,7 @@ sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
 
   if ( $end < $start ) {
-    $self->throw("End coord is less then start coord to call on Slice subseq.");
+    $self->throw("End coord is less then start coord");
   }
 
   if ( !defined $strand || ( $strand != -1 && $strand != 1 )) {
@@ -279,47 +279,155 @@ sub subseq {
   }
 
   my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, $end, $strand );
+  my $seq = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start, 
+                                                          $end, $strand );
 
   return $seq;
 }
 
 
 
-=head2 get_all_SimilarityFeatures_above_pid
+=head2 get_all_PredictionTranscripts
 
- Title   : get_all_SimilarityFeatures_above_pid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis used to generate the prediction
+               transcripts obtained.
+  Example    : @transcripts = $slice->get_all_PredictionTranscripts();
+  Description: Retrieves the list of prediction transcripts which overlap
+               this slice.
+  Returntype : list of Bio::EnsEMBL::PredictionTranscript
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_SimilarityFeatures_above_pid{
-   my ($self,@args) = @_;
+sub get_all_PredictionTranscripts {
+   my ($self,$logic_name) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
+
+   return $pta->fetch_by_Slice($self, $logic_name);
 }
 
+
+
+=head2 get_all_DnaAlignFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the dna align features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @dna_align_feats = $slice->get_all_DnaAlignFeatures()
+  Description: Retrieves the DnaDnaAlignFeatures which overlap this slice
+  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeatures
+  Exceptions : none
+  Caller     :general
+
+=cut
+
+sub get_all_DnaAlignFeatures {
+   my ($self, $logic_name, $score) = @_;
+
+   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+
+   return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
+}
+
+
+
+=head2 get_all_ProteinAlignFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the protein align features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @pep_align_feats = $slice->get_all_ProteinAlignFeatures()
+  Description: Retrieves the PepDnaAlignFeatures which overlap this slice.
+  Returntype : list of Bio::EnsEMBL::PepDnaAlignFeatures
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_ProteinAlignFeatures {
+  my ($self, $logic_name, $score) = @_;
+
+  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
+
+  return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
+}
+
+
+
+=head2 get_all_SimilarityFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               the name of the analysis performed on the features to retrieve
+  Arg [2]    : (optional) float $score
+               the lower bound of the score of the features to be retrieved
+  Example    : @feats = $slice->get_all_SimilarityFeatures()
+  Description: Retrieves all dna_align_features and protein_align_features
+               with analysis named $logic_name and with score above $score.
+               It is probably faster to use get_all_ProteinAlignFeatures or
+               get_all_DnaAlignFeatures if a sepcific feature type is desired.
+  Returntype : list of Bio::EnsEMBL::BaseAlignFeatures
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_SimilarityFeatures {
+  my ($self, $logic_name, $score) = @_;
+
+  my @out;
+  push @out, $self->get_all_ProteinAlignFeatures($logic_name, $score);
+  push @out, $self->get_all_DnaAlignFeatures($logic_name, $score);
+
+  return @out;
+}
+
+
+=head2 get_all_SimpleFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the simple features
+               to obtain.
+  Arg [2]    : (optional) float $score
+               The mimimum score of the features to retrieve
+  Example    : @simple_feats = $slice->get_all_SimpleFeatures()
+  Description: Retrieves the SimpleFeatures which overlap this slice.
+  Returntype : list of Bio::EnsEMBL::DnaDnaAlignFeature
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_SimpleFeatures {
+  my ($self, $logic_name, $score) = @_;
+
+  my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
+
+  return $sfa->fetch_by_Slice_and_score($self, $score, $logic_name);
+}
 
 
 
 =head2 get_all_RepeatFeatures
 
- Title   : get_all_RepeatFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : (optional) string $logic_name
+               The name of the analysis performed on the repeat features
+               to obtain.
+  Example    : @repeat_feats = $slice->get_all_RepeatFeatures()
+  Description: Retrieves the RepeatFeatures which overlap this slice.
+  Returntype : list of Bio::EnsEMBL::RepeatFeatures
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub get_all_RepeatFeatures{
+sub get_all_RepeatFeatures {
    my ($self, $logic_name) = @_;
 
    my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
@@ -328,6 +436,24 @@ sub get_all_RepeatFeatures{
 }
 
 
+
+=head2 get_all_SNPs
+
+  Args      : none
+  Function  : returns all SNPs on this slice
+  Returntype: @Bio::EnsEMBL::External::Variation
+  Exceptions: none
+  Caller    : GlyphSet_feature inherited objects
+
+=cut
+
+sub get_all_SNPs {
+  my $self = shift;
+
+  my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
+
+  return $snpa->fetch_by_Slice($self);
+}
 
 
 
@@ -352,6 +478,7 @@ sub get_all_Genes{
 }
 
 
+
 =head2 get_Genes_by_source
 
  Title   : get_Genes_by_source
@@ -360,7 +487,6 @@ sub get_all_Genes{
  Example :
  Returns : 
  Args    :
-
 
 =cut
 
@@ -379,6 +505,8 @@ sub get_Genes_by_source{
    return @out;
 }
 
+
+
 =head2 get_Genes_by_type
 
  Title   : get_Genes_by_type
@@ -394,9 +522,6 @@ sub get_Genes_by_source{
 sub get_Genes_by_type{
    my ($self, $type, $empty_flag) = @_;
    
-   # Possibly this can be improved by selecting genes a query,
-   # we expect that most times there will not be many genes in a region
-   # however
    my @genes = $self->get_all_Genes($empty_flag);
    
    my @out = ();
@@ -410,69 +535,6 @@ sub get_Genes_by_type{
    return @out;
 }
 
-
-=head2 invert
-
- Title   : invert
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub invert{
-   my ($self,@args) = @_;
-
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
-
-}
-
-
-=head2 primary_seq
-
- Title   : primary_seq
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub primary_seq{
-   my ($self,@args) = @_;
-
-    return $self;
-}
-
-
-=head2 convert_Gene_to_raw_contig
-
- Title   : convert_Gene_to_raw_contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub convert_Gene_to_raw_contig{
-  my ($self,$gene) = @_;
-
-  if(!$gene->isa("Bio::EnsEMBL::Gene")){
-    $self->throw("trying to use the wrong method can called convert gene to RawContig coords on ".$gene."\n");
-  }
-     
-  $gene->transform;
-  
-  return $gene;
-}
 
 
 =head2 chr_name
@@ -516,6 +578,8 @@ sub chr_start{
   return $self->{'chr_start'};
 }
 
+
+
 =head2 chr_end
 
  Title   : chr_end
@@ -524,7 +588,6 @@ sub chr_start{
  Example : 
  Returns : value of chr_end
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -536,6 +599,8 @@ sub chr_end{
   return $self->{'chr_end'};
 }
 
+
+
 =head2 strand
 
  Title   : strand
@@ -544,7 +609,6 @@ sub chr_end{
  Example : 
  Returns : value of strand
  Args    : newvalue (optional)
-
 
 =cut
 
@@ -557,6 +621,7 @@ sub strand{
     return $self->{'strand'};
 
 }
+
 
 
 =head2 assembly_type
@@ -581,114 +646,6 @@ sub assembly_type{
 }
 
 
-=head2 adaptor
-
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function: 
- Example : 
- Returns : value of adaptor
- Args    : newvalue (optional)
-
-
-=cut
-
-sub adaptor{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'adaptor'} = $value;
-    }
-    return $self->{'adaptor'};
-
-}
-
-
-=head2 dbID
-
-  Arg [1]   : int databaseInternalId
-              A slice might exist in the database and will than have this
-              internal id.
-  Function  : attribute function
-  Returntype: int
-  Exceptions: none
-  Caller    : DBSQL::SliceAdaptor
-
-=cut
-
-sub dbID {
-   my ( $self, $value ) = @_;
-   if( defined $value ) {
-     $self->{'dbID'} = $value;
-   }
-   return $self->{'dbID'};
-}
-
-sub id {
-   my ( $self, $value ) = @_;
-   if( defined $value ) {
-     $self->{'id'} = $value;
-   }
-   return $self->{'id'};
-}
-
-
-=head2 name
-
-  Arg [1]    : none
-  Example    : $name = $slice->name();
-  Description: Returns the name of this slice. The name is formatted as a 
-               the following string: "$chr_name:$chr_start-$chr_end". 
-               (e.g. 'X:10000-20000')
-               This essentially allows slices to be easily compared and 
-               can also act as a hash value. This is similar to the name 
-               method in RawContig so for exons which can have either type 
-               of sequence attached it provides a more common interface.
-  Returntype : string
-  Exceptions : none
-  Caller     : 
-
-=cut
-
-sub name {
-  my $self = shift;
-
-  return join( '', $self->chr_name(), ':', $self->chr_start(), 
-	       '-', $self->chr_end());
-}
-
-sub display_id{
-  my ( $self, $value ) = @_;
-  if( defined $value ) {
-    $self->{'display_id'} = $value;
-  }
-  return $self->{'display_id'} || $self->{'id'};
-}
-
-sub desc{
-  my ( $self, $value ) = @_;
-  if( defined $value ) {
-    $self->{'desc'} = $value;
-  }
-  return $self->{'desc'};
-}
-
-sub moltype {
-    my ($obj) = @_;
-    return 'dna';
-}
-
-sub accession_number {
-    my( $obj, $acc ) = @_;
-
-    if (defined $acc) {
-        $obj->{'accession_number'} = $acc;
-    } else {
-        $acc = $obj->{'accession_number'};
-        $acc = 'unknown' unless defined $acc;
-    }
-    return $acc;
-}
-
 sub get_KaryotypeBands() {
   my ($self) = @_;
   
@@ -705,14 +662,18 @@ sub get_Chromosome {
   return $ca->fetch_by_chr_name($self->chr_name());
 }
 
+
 =head2 get_repeatmasked_seq
 
   Arg [1]    : string $logic_name (optional)
   Arg [2]    : int $soft_masking_enable (optional)
-  Example    : $slice->get_repeatmasked_seq or $slice->get_repeatmasked_seq('RepeatMask',1)
-  Description: Returns Bio::PrimarySeq containing the masked (repeat replaced by N) 
-               or soft-masked (when Arg[2]=1, repeat in lower case while non repeat
-               in upper case) sequence corresponding to the Slice object.
+  Example    : $slice->get_repeatmasked_seq 
+               or $slice->get_repeatmasked_seq('RepeatMask',1)
+  Description: Returns Bio::PrimarySeq containing the masked (repeat replaced 
+               by N) 
+               or soft-masked (when Arg[2]=1, repeat in lower case while non
+               repeat in upper case) sequence corresponding to the Slice 
+               object.
                Will only work with database connection to get repeat features.
   Returntype : Bio::PrimarySeq
   Exceptions : none
@@ -763,19 +724,20 @@ sub get_repeatmasked_seq {
 sub _mask_features {
   my ($self,$dnastr,$repeats,$soft_mask) = @_;
   
-  # explicit CORE::length call, to avoid any confusion with the Slice length method
+  # explicit CORE::length call, to avoid any confusion with the Slice 
+  # length method
   my $dnalen = CORE::length($dnastr);
 
  REP:foreach my $f (@{$repeats}) {
-#    print STDERR $f->dbID." ".$f->start." ".$f->end."\n";
     my $start  = $f->start;
     my $end    = $f->end;
     my $length = ($end - $start) + 1;
     
     # check if we get repeat completely outside of expected slice range
     if ($end < 1 || $start > $dnalen) {
-      warn "Repeat completely outside slice coordinates!!! That should not happen!!
-repeat_start $start or repeat_end $end not within [1-$dnalen] slice range coordinates\n";
+      warn "Repeat completely outside slice coordinates! " .
+	"That should not happen! repeat_start $start or repeat_end $end not" .
+	"within [1-$dnalen] slice range coordinates\n";
       next REP;
     }
     
@@ -809,25 +771,28 @@ repeat_start $start or repeat_end $end not within [1-$dnalen] slice range coordi
 } 
 
 
-sub length {
-  my ($self) = @_;
-
-  return $self->chr_end() - $self->chr_start() + 1;
-}
-
-
 sub get_all_MapFrags {
     my $self = shift;
     my $mapset = shift;
-    return $self->adaptor->db->get_MapFragAdaptor->fetch_by_mapset_chr_start_end( 
-        $mapset, $self->chr_name, $self->chr_start, $self->chr_end
-    );
+
+    my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
+
+    return $mfa->fetch_by_mapset_chr_start_end($mapset, 
+					       $self->chr_name,
+					       $self->chr_start, 
+					       $self->chr_end);
 }    
 
+
+
 sub has_MapSet {
-    my( $self, $mapset_name ) = @_;
-    return $self->adaptor()->db()->get_MapFragAdaptor->has_mapset( $mapset_name );
+  my( $self, $mapset_name ) = @_;
+    
+  my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
+
+  return $mfa->has_mapset($mapset_name);
 }
+
 
 
 sub get_tiling_path {
@@ -886,6 +851,7 @@ sub get_tiling_path {
   return @tiling_path;
 }
   
+
 
 sub get_landmark_MarkerFeatures {
   my $self = shift;
@@ -1051,102 +1017,16 @@ sub get_all_DASFeatures{
 
 
 
-
-
-
-
-
-
-=head2 Backward Compatibility functions
-
-=cut
-
-=head2 get_all_Genes_exononly
-
- Title   : get_all_Genes_exononly
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_all_Genes_exononly{
-   my ($self) = @_;
-
-   my ($p,$f,$l) = caller;
-   $self->warn("$f:$l get_all_Genes_exononly has been deprecated. get_all_Genes called");
-
-   return $self->get_all_Genes();
-}
-
-
-sub get_all_SangerGenes_startend_lite {
-  my $self = shift;
-
-  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated" . 
-	      " use get_allGenes() instead\n");
-  
-  return $self->get_Genes_by_source('sanger');
-}
-  
-sub get_all_VirtualGenes_startend_lite {
-  my $self = shift;
-
-  $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated" .
-	      " use get_all_Genes() instead\n");
-
-  return $self->get_all_Genes();
-}
-
-
-sub get_all_EMBLGenes_startend_lite {
-  my $self = shift;
-
-  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated" .
-	      " use get_Genes_by_source() instead\n");
-
-  return $self->get_Genes_by_source('embl');
-}
-
-
-
-sub fetch_chromosome_length {
-  my ($self) = @_;
-
-  $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
-	       "use \$slice->get_Chromosome()->length(); instead.\n" .
-	       $self->stack_trace_dump());
-
-  return $self->get_Chromosome()->length();
-}
-
-
-        
-sub fetch_karyotype_band_start_end {
-   my ($self,@args) = @_;
-
-   $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
-		"use \$slice->get_KaryotypeBands(); instead.\n" .
-	       $self->stack_trace_dump());
-
-   return $self->get_KaryotypeBands();
-}
-
-
-
-
 =head2 get_all_ExternalFeatures
 
- Title   : get_all_ExternalFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : @external = $slice->get_all_ExternalFeatures
+  Description: retrieves features generated by external feature factories
+               attached to this database which are on this Slice.  
+               See Bio::EnsEMBL::DB::ExternalFeatureFactoryI for details.
+  Returntype : list of Bio::SeqFeatureI implementing objects 
+  Exceptions : none
+  Caller     : external
 
 =cut
 
@@ -1155,20 +1035,6 @@ sub get_all_ExternalFeatures{
 
    return $self->_get_all_SeqFeatures_type('external');
 }
-
-=head2 _get_all_SeqFeatures_type
-
- Title   : _get_all_SeqFeatures_type
- Usage   : Internal function which encapsulates getting
-           features of a particular type and returning
-           them in the slice coordinates.
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
 
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
@@ -1221,38 +1087,280 @@ sub _get_all_SeqFeatures_type {
 
 
 
-=head2 get_all_SimilarityFeatures_above_score
+=head2 Methods included only for BioPerl compliance
+=cut
+###############################################################################
 
-  Args      : $logic_name, $score
-  Function  : Retrieves all of the DnaDnaAlignFeatures and all of the
-              ProteinDnaAlignFeatures on this slice.
-  Returntype: @Bio::EnsEMBL::BaseAlignFeature
-  Exceptions: none
-  Caller    : general
+=head2 display_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance.
+  Returntype : string
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_SimilarityFeatures_above_score {
-  my ($self, $logic_name, $score) = @_;
+sub display_id{
+  my $self = shift;
 
-  #
-  # To deprecate, or not deprecate...
-  # It seems to me that this function isn't very useful in that it's task
-  # could be performed much faster through a call to either
-  # get_DnaAlignFeatures_above_score or
-  # get_ProteinAlignFeatures_above_score.  
-  # Reminder Warning follows:
-  #
-  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score." .
-	     "logic name = $logic_name.  Should this be deprecated??");
-
-  my @prot_feats = 
-    $self->get_all_ProteinAlignFeatures_above_score($logic_name, $score);
-  my @dna_feats = 
-    $self->get_all_DnaAlignFeatures_above_score($logic_name, $score);
-
-  return (@prot_feats, @dna_feats);
+  return $self->id();
 }
 
+=head2 desc
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub desc{
+  my $self = shift;
+  return "Slice, no descrtipion";
+}
+
+=head2 moltype
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub moltype {
+  my $self = shift;
+  return 'DNA';
+}
+
+=head2 accession_number
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub accession_number {
+  my $self = shift;
+  return $self->dbID();
+}
+
+
+=head2 DEPRECATED methods
+=cut
+###############################################################################
+
+
+
+=head2 primary_seq
+
+ Title   : primary_seq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+=head2 primary_seq
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL:: instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub primary_seq{
+   my ($self,@args) = @_;
+   $self->warn("Call to deprecated method Bio::EnsEMBL::Slice::primary_seq" .
+               "Slice is now a PrimarySeq and can be used directly as such\n");
+
+   return $self;
+}
+
+=head2 get_all_Genes_exononly
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_Genes instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_Genes_exononly{
+   my ($self) = @_;
+
+   my ($p,$f,$l) = caller;
+   $self->warn("$f:$l get_all_Genes_exononly has been deprecated. get_all_Genes called");
+
+   return $self->get_all_Genes();
+}
+
+
+=head2 get_all_SangerGenes_startend_lite
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_Genes_by_source instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_SangerGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_SangerGenes_startend_lite deprecated" . 
+	      " use get_allGenes() instead\n");
+  
+  return $self->get_Genes_by_source('sanger');
+}
+
+
+=head2 get_all_VirtualGenes_startend_lite
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_Genes_by_source instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+  
+sub get_all_VirtualGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_VirtualGenes_startend_lite deprecated" .
+	      " use get_all_Genes() instead\n");
+
+  return $self->get_all_Genes();
+}
+
+
+=head2 get_all_EMBLGenes_startend_lite
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_Genes_by_source instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_EMBLGenes_startend_lite {
+  my $self = shift;
+
+  $self->warn("Slice->get_all_EMBLGenes_startend_lite deprecated" .
+	      " use get_Genes_by_source() instead\n");
+
+  return $self->get_Genes_by_source('embl');
+}
+
+
+
+=head2 fetch_chromosome_length
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_Chromosome()->length() instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_chromosome_length {
+  my ($self) = @_;
+
+  $self->warn( "Call to deprecated method fetch_chromosome_length\n" .
+	       "use \$slice->get_Chromosome()->length(); instead.\n" .
+	       $self->stack_trace_dump());
+
+  return $self->get_Chromosome()->length();
+}
+
+
+
+=head2 fetch_karyotype_band_start_end
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_KaryotypeBands instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+        
+sub fetch_karyotype_band_start_end {
+   my ($self,@args) = @_;
+
+   $self->warn( "Call to deprecated method fetch_karyotype_band_start_end\n" .
+		"use \$slice->get_KaryotypeBands(); instead.\n" .
+	       $self->stack_trace_dump());
+
+   return $self->get_KaryotypeBands();
+}
+
+
+
+=head2 convert_Gene_to_raw_contig
+
+ Title   : convert_Gene_to_raw_contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+=cut
+
+
+
+=head2 convert_Gene_to_raw_contig
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::Gene::transform instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub convert_Gene_to_raw_contig{
+  my ($self,$gene) = @_;
+
+  $self->warn("Call to deprecated method convert_Gene_to_raw_contig" . 
+	      "use the gene's transform method directly\n");
+
+  if(!$gene->isa("Bio::EnsEMBL::Gene")){
+    $self->throw("trying to use the wrong method can called convert gene to RawContig coords on ".$gene."\n");
+  }
+     
+  $gene->transform;
+  
+  return $gene;
+}
 
 1;

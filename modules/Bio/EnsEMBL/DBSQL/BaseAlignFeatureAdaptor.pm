@@ -78,9 +78,7 @@ sub fetch_by_Contig_and_pid {
 
   my $constraint;
 
-  if(!defined $pid) {
-    $self->throw("need a pid even if its 0\n");
-  } else {
+  if(defined $pid) {
     $constraint = "perc_ident > $pid";
   }
 
@@ -95,7 +93,7 @@ sub fetch_by_Contig_and_pid {
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice from which to obtain align features.
-  Arg [2]    : float $pid 
+  Arg [2]    : (optional) float $pid 
                a lower bound for the percentage identifier of feats to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
@@ -114,9 +112,7 @@ sub fetch_by_Slice_and_pid {
   my ($self,$slice,$pid, $logic_name) = @_;
   my $constraint;
 
-  if(!defined $pid){
-    $self->throw("need a pid even if its 0\n");
-  }else{
+  if(defined $pid){
     $constraint = "perc_ident > $pid";
   }
 
@@ -124,51 +120,7 @@ sub fetch_by_Slice_and_pid {
 }  
 
 
-=head2 fetch_by_assembly_location_and_pid
 
-  Arg [1]    : int $start
-               the start of the assembly region from which to obtain align
-               features (in chromosomal coords).
-  Arg [2]    : int $end
-               the end of the assembly region from which to obtain align 
-               features (in chromosomal coords).
-  Arg [3]    : string $chr
-               the name of the chromosome from which to obtain align features.
-  Arg [4]    : string $type
-               the type of assembly to be used
-  Arg [4]    : float $pid
-               a lower bound for the percentage identifier of feats to obtain
-  Arg [5]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @f = $a->fetch_by_assembly_location_and_pid(1,10000,'9','NCBI30',50.0);
-  Description: Returns a list of features created from the database which are 
-               are in the assembly region defined by $start, $end, and $chr, 
-               and with a percentage identity greater than $pid.  If 
-               $logic_name is defined, only features with an analysis of type 
-               $logic_name will be returned. 
-  Returntype : listref of 
-               Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
-  Exceptions : thrown if $pid is not defined
-  Caller     : general
-
-=cut
-
-sub fetch_by_assembly_location_and_pid{
-  my ($self,$start,$end,$chr,$type, $pid, $logic_name) = @_;
-  my $constraint;
-
-  if(!defined $pid){
-    $self->throw("need a pid even if its 0\n");
-  }else{
-    $constraint = "perc_ident > $pid";
-  }
-
-  return $self->fetch_by_assembly_location_constraint($start, $end, $chr,$type,
-						     $constraint, $logic_name);
-
-}
-
-##Abstract methods inherited from BaseFeatureAdaptor must still be
 ##implemented by subclasses:
 # store
 # _tablename
