@@ -68,7 +68,7 @@ sub fetch_by_dbID {
                              WHERE  translation_id = ?");
    $sth->execute($dbID);
    my $rowhash = $sth->fetchrow_hashref;
-
+   $sth->finish;
    if( !defined $rowhash ) {
      # assumme this is a translationless transcript deliberately
      return undef;
