@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 9;
+	plan tests => 12;
 }
 
 use MultiTestDB;
@@ -50,7 +50,7 @@ $sth->finish();
 
 my $ga = $db->get_GeneAdaptor();
 
-my $all_gene_ids = $ga->list_geneIds();
+my $all_gene_ids = $ga->list_dbIDs();
 for my $gene_id ( @$all_gene_ids ) {
   my $gene = $ga->fetch_by_dbID( $gene_id );
 
@@ -99,7 +99,7 @@ my $goref = Bio::EnsEMBL::GoXref->new
    -release => "1",
    -display_id => "Ens related GO"
    );
-$goref->linkage_type( "experimental" );
+$goref->add_linkage_type( "IC" );
 
 my $ident_xref = Bio::EnsEMBL::IdentityXref->new
   (
@@ -183,9 +183,48 @@ debug( "Number of identity_xrefs = $ident_count" );
 ok( $ident_count == 2 );
 
 
+$multi->restore();
+
+
+#
+# 10-12 Test that external synonyms and go evidence tags are retrieved
+#
+my $ta = $db->get_TranscriptAdaptor();
+my $translation = $ta->fetch_by_dbID(21737)->translation;
+
+#pull out an xref that should 2 external synonyms
+my $xrefs = $dbEntryAdaptor->fetch_all_by_Translation($translation);
+($xref) = grep {$_->dbID == 315} @$xrefs;
+my @syns = grep {$_ eq 'syn1' || $_ eq 'syn2'} @{$xref->get_all_synonyms};
+ok(@syns == 2);
+
+#and also 2 evidence tags
+if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
+  my @evtags = 
+    grep {$_ eq 'IEA' || $_ eq 'IC'} @{$xref->get_all_linkage_types()};
+  ok(@evtags == 2);
+} else {
+  ok(0);
+}
+
+
+$translation = $ta->fetch_by_dbID(21723)->translation;
+
+$xrefs = $dbEntryAdaptor->fetch_all_by_Translation($translation);
+($xref) = grep {$_->dbID == 257} @$xrefs;
+
+if($xref && $xref->isa('Bio::EnsEMBL::GoXref')) {
+  my ($evtag) = @{$xref->get_all_linkage_types()};
+  ok($evtag eq 'IC');
+} else {
+  ok(0);
+}
+
+
 #
 # Need more tests here ...
 #
 
 
-$multi->restore();
+
+ 
