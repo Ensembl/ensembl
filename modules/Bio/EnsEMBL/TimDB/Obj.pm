@@ -43,6 +43,7 @@ use strict;
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::TimDB::Clone;
+use Bio::EnsEMBL::TimDB::Update_Obj;
 use Bio::EnsEMBL::Analysis::LegacyParser;
 use Bio::EnsEMBL::Analysis::ensConf qw(UNFIN_ROOT
 				       UNFIN_DATA_ROOT
