@@ -479,21 +479,22 @@ CREATE TABLE externalDB(
          PRIMARY KEY( externalDBId ) 
    	);
 
-#
-#Table structure for table contig_landmarkMarker
-#
 
-CREATE TABLE contig_landmarkMarker(
-        contig int(10) NOT NULL,
-        start  int(10) NOT NULL,
-        end    int(10) NOT NULL,
-        strand int(1)  NOT NULL,
-        marker varchar(40) NOT NULL,
-        name   varchar(40) NOT NULL,
-        chr_name varchar(40) NOT NULL,
-        KEY (contig,marker),
-        KEY (marker)
-        );
+#
+# Table structure for table 'landmarkMarker'
+#
+CREATE TABLE landmarkMarker (
+  marker char(40) DEFAULT '' NOT NULL,
+  name char(40) DEFAULT '' NOT NULL,
+  chr_start bigint(17) DEFAULT '0' NOT NULL,
+  chr_end bigint(17) DEFAULT '0' NOT NULL,
+  chr_strand bigint(1) DEFAULT '0' NOT NULL,
+  chr_name char(20),
+  KEY chr_name (chr_name,chr_start)
+);
+
+
+
 
 
 CREATE TABLE meta (
