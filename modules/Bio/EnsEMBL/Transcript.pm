@@ -56,6 +56,7 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
 use Bio::DBLinkContainerI;
 
@@ -239,6 +240,33 @@ sub each_Exon{
    my ($self) = @_;
 
    return @{$self->{'_trans_exon_array'}};
+}
+
+=head2 each_Intron
+
+    my @introns = $transcript->each_Intron;
+
+Returns an array of Bio::EnsEMBL::Intron
+objects.  The result is not cached in any way, so
+calling each_Intron multiple times will create
+new Intron objects (although they will, of
+course, have the same properties).
+
+=cut
+
+sub each_Intron {
+    my( $self ) = @_;
+    
+    my @exons = $self->each_Exon;
+    my $last = @exons - 1;
+    my( @int );
+    for (my $i = 0; $i < $last; $i++) {
+        my $intron = Bio::EnsEMBL::Intron->new;
+        $intron->upstream_Exon  ($exons[$i]    );
+        $intron->downstream_Exon($exons[$i + 1]);
+        push(@int, $intron);
+    }
+    return @int;
 }
 
 =head2 number

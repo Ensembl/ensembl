@@ -168,6 +168,24 @@ sub end{
 
 }
 
+=head2 length
+
+    my $l = $gene->length;
+
+Returns the length of the VirtualGene, which is
+derived from the start and end values.  You can't
+set the length.
+
+=cut
+
+sub length {
+    my $self = shift;
+    
+    $self->throw("Can't set length") if @_;
+    
+    return $self->end - $self->start + 1;
+}
+
 =head2 strand
 
  Title   : strand

@@ -34,7 +34,7 @@ Examples of creating an exon
                     - or -1 = reverse strand
                     . or  0 = unknown strand
 
-    $ex->dna_seq($dna);                       # $dna is a Bio::Seq
+    $ex->attach_seq($dna);                    # $dna is a Bio::Seq
     $ex->phase(0);                            # Sets the phase of the exon
     $ex->end_phase();                         # Calculates the end_phase of the exon from the
                                               # Length of the dna and the starting phase

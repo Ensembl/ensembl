@@ -947,7 +947,7 @@ sub _gene_query{
                 my $vc_strand = undef;
 
                 foreach my $sticky ( @stickies ) {
-                    if( $self->_convert_seqfeature_to_vc_coords($sticky) == 0 ) {
+                    unless ( $self->_convert_seqfeature_to_vc_coords($sticky) ) {
                         # unmappable component exon, abort.
                         $mapped_sticky = 0;
                         last;

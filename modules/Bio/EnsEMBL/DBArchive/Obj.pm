@@ -608,7 +608,7 @@ sub get_new_stable_ids {
 	$error = $@;
     }
 
-    my $query="unlock tables";
+    $query = "unlock tables";
     if($self->_readonly){
 	$self->warn("READONLY: $query");
     }else{

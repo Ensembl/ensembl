@@ -113,11 +113,11 @@ sub delete {
         });
     $sth->execute($gene_id);
     
-    my( %transcript, %translation, %exon );
+    my( @transcript, @translation, @exon );
     while (my $row = $sth->fetchrow_arrayref) {
-         $transcript{$row->[0]} = 1;
-        $translation{$row->[1]} = 1;
-               $exon{$row->[2]} = 1;
+        push(@transcript,  $row->[0]);
+        push(@translation, $row->[1]);
+        push(@exon,        $row->[2]);
     }
     
     # Deletes which use the gene ID
@@ -131,7 +131,7 @@ sub delete {
     my $transcript_delete      = $db->prepare(q{DELETE FROM transcript WHERE id = ?});
     my $exon_transcript_delete = $db->prepare(q{DELETE FROM exon_transcript WHERE transcript = ?});
     
-    foreach my $trans_id (keys %transcript) {
+    foreach my $trans_id (@transcript) {
         $transcript_delete     ->execute($trans_id);
         $exon_transcript_delete->execute($trans_id);
     }
@@ -139,7 +139,7 @@ sub delete {
     # Translation delete
     my $translation_delete = $db->prepare(q{DELETE FROM translation WHERE id = ?});
     
-    foreach my $transl_id (keys %translation) {
+    foreach my $transl_id (@translation) {
         $translation_delete->execute($transl_id);
     }
     
@@ -147,13 +147,10 @@ sub delete {
     my $exon_delete       = $db->prepare(q{DELETE FROM exon WHERE id = ?});
     my $supporting_delete = $db->prepare(q{DELETE FROM supporting_feature WHERE exon = ?});
     
-    foreach my $exon_id (keys %exon) {
+    foreach my $exon_id (@exon) {
         $exon_delete      ->execute($exon_id);
         $supporting_delete->execute($exon_id);
     }
-
-   $sth = $db->prepare("delete from genetype where gene_id = '$gene_id'");
-   $sth->execute;
 }   
 
 
@@ -432,16 +429,10 @@ sub get_Interpro_by_keyword{
 =cut
 
 sub get {
-    my ($self,$geneid, $supporting) = @_;
+    my ($self, $geneid, $supporting) = @_;
     
-    my @out;
-    
-    if (!$supporting) {
-        @out = $self->get_array_supporting('without', $geneid);
-    }
-    else {
-        @out = $self->get_array_supporting($supporting, $geneid);
-    }
+    $supporting ||= 'without';
+    my @out = $self->get_array_supporting($supporting, $geneid);
     
     $self->throw("Error retrieving gene with ID: $geneid") unless $out[0]; 
     

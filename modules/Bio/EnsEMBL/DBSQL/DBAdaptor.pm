@@ -564,9 +564,9 @@ sub write_Contig {
        
     
     $sth = $self->prepare("select last_insert_id()");
-    my $res = $sth->execute;
-    my $row = $sth->fetchrow_hashref;
-    my $id  = $row->{'last_insert_id()'};
+    $sth->execute;
+    my ($id) = $sth->fetchrow
+        or $self->throw("Failed to get last insert id");
 
     # this is a nasty hack. We should have a cleaner way to do this.
     my @features = $contig->get_all_SeqFeatures;
