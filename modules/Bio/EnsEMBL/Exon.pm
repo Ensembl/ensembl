@@ -378,22 +378,31 @@ sub sticky_rank{
 =cut
 
 sub end_phase {
-    my ($self) = @_;
-
-    defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
-    defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
-    defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
-
-    my $len   = $self->end() - $self->start() + 1;
-    my $phase = $self->phase();
-    my( $end_phase );
-    if ($phase == -1) {
-        $end_phase = -1;
-    } else {
-        $end_phase = ($len + $phase) % 3;
+    my ($self,$endphase) = @_;
+    if ( defined($endphase) ){
+      $self->{_end_phase} = $endphase;
+      return $self->{_end_phase};
     }
+    elsif ( !defined($endphase) && defined($self->{_end_phase}) ){
+      return $self->{_end_phase};
+    }
+    else{
+      $self->warn("You need to provide an end_phase as this exon has none, possible sticky?");
+    }
+  #  defined($self->phase()) || $self->throw("Can't return end_phase if phase is not set");
+#    defined($self->start()) || $self->throw("Can't return end_phase if start coordinate is not set");
+#    defined($self->end())   || $self->throw("Can't return end_phase if end coordinate is not set");
+
+#    my $len   = $self->end() - $self->start() + 1;
+#    my $phase = $self->phase();
+#    my( $end_phase );
+#    if ($phase == -1) {
+#        $end_phase = -1;
+#    } else {
+#        $end_phase = ($len + $phase) % 3;
+#    }
     
-    return $end_phase;
+#    return $end_phase;
 }
 
 =pod

@@ -188,6 +188,7 @@ sub _exon_from_sth {
     $sticky_str    .= $component->seq->seq;
 
     $exon->phase($component->phase);
+    $exon->end_phase($component->end_phase);
     $exon->adaptor($self);
 
     # continue while loop until we hit sticky_rank 1
@@ -236,7 +237,7 @@ sub _new_Exon_from_hashRef {
    $exon->end( $hashRef->{'seq_end'} );
    $exon->strand( $hashRef->{'strand'} );
    $exon->phase( $hashRef->{phase} );
-#    $exon->end_phase( $hashRef->{end_phase} );
+   $exon->end_phase( $hashRef->{end_phase} );
    $exon->dbID($hashRef->{'exon_id'});
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->adaptor($self);

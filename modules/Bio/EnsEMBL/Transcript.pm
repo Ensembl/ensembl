@@ -601,7 +601,8 @@ sub translateable_exons {
         my $end     = $ex->end;
         my $length  = $ex->length;
         my $strand  = $ex->strand;
-        
+        my $endphase = $ex->end_phase;
+
         my $trunc_start = $start;
         my $trunc_end   = $end;
         
@@ -643,7 +644,8 @@ sub translateable_exons {
             $new_exon->clone_id($ex->clone_id);
             $new_exon->contig_id($ex->contig_id);
             $new_exon->phase($ex->phase);
-            $new_exon->attach_seq($ex->entire_seq);
+            $new_exon->end_phase($endphase);
+	    $new_exon->attach_seq($ex->entire_seq);
             push(@translateable, $new_exon);
         } else {
             # It's just an ordinary internal exon

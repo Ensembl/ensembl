@@ -1781,6 +1781,7 @@ sub _reverse_map_Exon {
        $rmexon->modified($exon->modified);
        $rmexon->version($exon->version);
        $rmexon->phase($exon->phase);
+       $rmexon->end_phase($exon->end_phase);
        $rmexon->sticky_rank(1);
 
 
@@ -1854,6 +1855,7 @@ sub _reverse_map_Exon {
 	   $rmexon->modified($exon->modified);
 	   $rmexon->version($exon->version);
 	   $rmexon->phase($exon->phase);
+	   $rmexon->end_phase($exon->end_phase);
 	   $rmexon->sticky_rank($sticky++);
 	   $rmexon->attach_seq($c->contig->primary_seq);
 
