@@ -1657,6 +1657,7 @@ sub get_all_Genes_exononly{
 
 sub get_all_VirtualGenes_startend
 {
+
     my $self = shift;
     
     my $gene;
@@ -1730,6 +1731,7 @@ sub get_all_VirtualGenes_startend
 
 	&eprof_start("virtualgene-externaldb");
 
+	
 #Get the DBlinks for the given gene
     my $entryAdaptor = $self->dbobj->get_DBEntryAdaptor();
     my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
@@ -1738,8 +1740,11 @@ sub get_all_VirtualGenes_startend
         $gene->add_DBLink($genelink);
     }
 
-	foreach my $trans ( $gene->each_Transcript ) {
-	    my $transid = $trans->id;
+	my $query1 = "select t.id from transcript t where t.gene = '$gene_id';";
+	my $sth1 = $self->dbobj->prepare($query1);
+	$sth1->execute;
+	
+	while (my $transid = $sth1->fetchrow) {
 	    
 	    $transid =~ s/T/P/;
 	    
@@ -1747,8 +1752,6 @@ sub get_all_VirtualGenes_startend
 	    
 	    foreach my $translink(@transcript_xrefs) {
 		
-		
-		$trans->add_DBLink($translink);
 		$gene->add_DBLink($translink);
 	    }
 	}
