@@ -19,7 +19,8 @@ PredictionTranscript
 =head1 DESCRIPTION
 
 Container for single transcript ab initio gene prediction ala GenScan.
-. Is directly storable/retrievable in EnsEMBL using PredictionTranscript Adaptor. 
+Is directly storable/retrievable in EnsEMBL using PredictionTranscript Adaptor.
+ 
 
 Creation:
    
@@ -31,18 +32,25 @@ Creation:
      The order of the exons has to be right, as PT cant judge how to sort them.
      ( no sort as in Bio::EnsEMBL::Transcript )
 
-     PredictionTranscript is geared towards the partial retrieve case from db. Exons can be missing in the middle. For storage though its necessary to have them all and in contig coord system. 
+     PredictionTranscript is geared towards the partial retrieve case from db.
+     Exons can be missing in the middle. For storage though its necessary to 
+     have them all and in contig coord system. 
 
 Manipulation:
 
-     my @exons = @{$tran->get_all_Exons}         # Returns an array of Exon objects, might contain undef instead of exon.
-     my $pep   = $tran->translate()       # Returns the peptide translation as string
-     my $cdna = $trans->get_cdna() # phase padded Exons cdna sequence.Padding might not often occur, phases usually match.
+     # Returns an array of Exon objects, might contain undef instead of exon.
+     my @exons = @{$tran->get_all_Exons};  
+
+     # Returns the peptide translation as string 
+     my $pep   = $tran->translate;
+
+     # phase padded Exons cdna sequence. Phases usually match.
+     my $cdna = $trans->get_cdna() 
 
 
 =head1 CONTACT
 
-Describe contact details here
+contact EnsEMBL dev for information
 
 =head1 APPENDIX
 
@@ -77,8 +85,6 @@ use Bio::Seq;
 
 =cut
 
-
-
 sub new {
   my($class,@optional_exons) = @_;
 
@@ -101,6 +107,35 @@ sub new {
   
   return $self;
 }
+
+
+
+=head2 stable_id
+
+  Arg [1]    : (optional) $stable_id 
+  Example    : my $pt_id = $prediction_transcript->stable_id;
+  Description: Retrieves the stable id fro this prediction transcript.  
+               Prediction transcripts do not maintain stable ids as real 
+               transcripts do - the id is constructed from the name of the
+               contig the prediction transcript was pulled off of, and the
+               start and end of the transcript on the contig.
+               i.e. the stable id is:  "$contig_name.$contig_start.$contig_end"
+  Returntype : string
+  Exceptions : none
+  Caller     : general, PredictionTranscriptAdaptor
+
+=cut
+
+sub stable_id {
+  my ($self, $value) = @_;
+
+  if($value) {
+    $self->{'_stable_id'} = $value;
+  }
+
+  return $self->{'_stable_id'};
+}
+
 
 
 =head2 coding_start

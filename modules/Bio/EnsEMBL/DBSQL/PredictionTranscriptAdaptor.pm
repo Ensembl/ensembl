@@ -156,7 +156,8 @@ sub _objs_from_sth {
   my ($analysis, $contig, $pre_trans, $ptid, $on_slice_flag, $last_end,
       $chr, $start, $end, $strand, 
       $slice_start, $slice_end, $slice_strand,
-      $exon, $exon_start, $exon_end, $exon_strand);
+      $exon, $exon_start, $exon_end, $exon_strand,
+      $stable_start, $stable_end, $stable_ctg);
   my (%analysis_hash, %contig_hash);
 
   if($slice) {
@@ -167,6 +168,7 @@ sub _objs_from_sth {
 
   $on_slice_flag = 0;
 
+  
   while($sth->fetch) {
     #create a new transcript for each new prediction transcript id
     unless(defined $pre_trans && $ptid == $prediction_transcript_id) {
@@ -183,16 +185,38 @@ sub _objs_from_sth {
       $pre_trans->analysis($analysis);
       $pre_trans->set_exon_count($exon_count);
   
-      #throw away last pred_transcript if none of the exons were on the slice
-      if(@out && $slice && $on_slice_flag == 0) {
-	pop @out;
+      if(@out) {
+	#throw away last pred_transcript if none of the exons were on the slice
+	if(@out && $slice && $on_slice_flag == 0) {
+	  pop @out;
+	} else {
+	  #set the stable_id of the previous prediction
+	  $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
+	}
       }
       
       push( @out, $pre_trans );
 
+      #reset values used for last predtrans
       $on_slice_flag = 0;
       $last_end = undef;
+      $stable_start = -1;
+      $stable_end   = -1;
+      $stable_ctg = '';
     }
+
+    #recalculate stable id values
+    if($stable_start == -1 || $contig_start < $stable_start) {
+      $stable_start = $contig_start;
+    }
+    if($contig_end > $stable_end) {
+      $stable_end = $contig_end;
+    }
+    unless($contig = $contig_hash{$contig_id}) {
+      $contig = $rca->fetch_by_dbID($contig_id);
+      $contig_hash{$contig_id} = $contig;
+    }
+    $stable_ctg = $contig->name;
 
     if($slice) {
       #a slice was passed in so we want slice coords
@@ -225,17 +249,13 @@ sub _objs_from_sth {
 	$exon_strand = $strand;
       }   
       
+      #use slice as the contig instead of the raw contig
       $contig = $slice;
     } else {
       #we just want plain old contig coords
       $exon_start =  $contig_start;
       $exon_end   =  $contig_end;
       $exon_strand = $contig_strand;
-      
-      unless($contig = $contig_hash{$contig_id}) {
-	$contig = $rca->fetch_by_dbID($contig_id);
-	$contig_hash{$contig_id} = $contig;
-      }
     }
 
     #create an exon and add it to the prediction transcript
@@ -254,6 +274,9 @@ sub _objs_from_sth {
   #throw away last  pred_transcript if it had no exons overlapping the slice
   if(@out && $slice && $on_slice_flag == 0) {
     pop @out;
+  } else {
+    #set the stable id of the last prediction transcript
+    $out[$#out]->stable_id("$stable_ctg.stable_start.$stable_end");
   }
 
   return \@out;
