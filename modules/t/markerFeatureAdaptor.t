@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 5
+	plan tests => 7
 }
 
 use MultiTestDB;
@@ -82,4 +82,41 @@ $feats = $mfa->fetch_all_by_Marker($marker);
 ok(scalar(@$feats) == 1 && $feats->[0]->start==12671 &&
    $feats->[0]->dbID() == 2);
 
+#######
+# 6-7 #
+#######
+
+# test store
+
+#hide the contents of the marker_feature table
+$multi->hide('core', 'marker_feature');
+
+$marker = $db->get_MarkerAdaptor->fetch_by_dbID(80);
+my $contig = $db->get_RawContigAdaptor->fetch_by_dbID(317101);
+my $analysis = $db->get_AnalysisAdaptor->fetch_by_dbID(10);
+
+my $marker_feature = Bio::EnsEMBL::Map::MarkerFeature->new;
+
+$marker_feature->contig($contig);
+$marker_feature->start(123);
+$marker_feature->end(200);
+$marker_feature->strand(-1);
+$marker_feature->marker($marker);
+$marker_feature->analysis($analysis);
+
+$mfa->store($marker_feature);
+
+ok($marker_feature->dbID && 
+   $marker_feature->adaptor == $mfa);
+
+
+my $sth = $db->prepare('SELECT count(*) from marker_feature');
+$sth->execute;
+my ($count) = $sth->fetchrow_array;
+
+ok($count == 1);
+
+
+#restore the marker feature table to its original state
+$multi->restore('core', 'marker_feature');
 
