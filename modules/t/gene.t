@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 27;
+	plan tests => 29;
 }
 
 use MultiTestDB;
@@ -54,6 +54,13 @@ ok( $gene->end() == 30815178 );
 my $species = $gene->species()->binomial();
 debug( "Species: ".$species );
 ok( $species eq "Homo sapiens" );
+
+debug( "Gene external name: " . $gene->external_name );
+ok( $gene->external_name eq "Q9H466");
+
+debug( "Gene external dbname: " . $gene->external_db );
+ok( $gene->external_db eq "SPTREMBL");
+
 
 my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));
