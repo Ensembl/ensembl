@@ -31,8 +31,8 @@ Bio::EnsEMBL::DB::VirtualContig - A virtual contig implementation
   # usual contig methods applicable:
 
   @features = $virtualcontig->get_all_SimilarityFeatures();
-  @genes    = $virtualcontig->get_all_Genes();
-  $seq      = $virtualcontig->seq();
+  @genes     = $virtualcontig->get_all_Genes();
+  $seq          = $virtualcontig->primary_seq();
 
   # extend methods
 
@@ -45,12 +45,12 @@ Bio::EnsEMBL::DB::VirtualContig - A virtual contig implementation
 =head1 DESCRIPTION
 
 A virtual contig gives a contig interface that is built up
-of RawContigs, and in which the features/genes which come
+of RawContigs where the features/genes that come
 off them are in a single coordinate system. (genes may have
 exons that occur outside the virtual contig).
 
 This implementation is of the VirtualContig interface but is
-a puer-perl implementation that can sit ontop of any 
+a pure-perl implementation that can sit atop any 
 RawContigI compliant object. For that reason I have put it
 in Bio::EnsEMBL::DB scope, indicating that other database
 implementations can use this object if they so wish.
@@ -82,7 +82,7 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 
 my $VC_UNIQUE_NUMBER = 0;
-
+# ouch - nightmare on mod_perl street! (need to generate a  per-instance uniqe id)
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI);
 
@@ -120,6 +120,7 @@ sub _initialize {
       if( !defined $focus || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
 	  $self->throw("Have to provide all arguments to virtualcontig, focus, focusposition, ori, left, right");
       }
+      
       
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
