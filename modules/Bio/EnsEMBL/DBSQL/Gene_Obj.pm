@@ -846,6 +846,7 @@ sub _get_description {
       WHERE gene_id = '$geneid'";
 
    $q = $self->_db_obj->prepare($q) || $self->throw($q->errstr);
+   $q ->execute();
    my ($desc) = $q->fetchrow;
    $self->throw($q->errstr) if $q->err;
 
