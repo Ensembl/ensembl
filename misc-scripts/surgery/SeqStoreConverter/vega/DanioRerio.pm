@@ -496,7 +496,7 @@ sub update_clone_info {
       "CHANGE clone_id seq_region_id int(10) not null";
     my $alter_struct_2 = 
       "ALTER table $target.$table_name " .
-      "modify seq_region_id int(10) not null";
+      "add unique index (seq_region_id)";
     $dbh->do($alter_struct_1);
     $dbh->do($alter_struct_2);
 
