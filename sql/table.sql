@@ -636,6 +636,7 @@ CREATE TABLE prediction_exon (
     p_value double,
 
     PRIMARY KEY( prediction_exon_id ),
+    KEY (prediction_transcript_id),
     KEY ( seq_region_id, seq_region_start )
 );
 
