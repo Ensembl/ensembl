@@ -186,7 +186,7 @@ ok(length $pt->get_cdna($cstart, $cend));
 # 30 test pep2genomic
 #
 my $pend = $pt->length / 3;
-my $pstart = 1;
+my $pstart = 2;
 
 my $defined_exons_count = 0;
 foreach my $e (@{$pt->get_all_Exons}) {
