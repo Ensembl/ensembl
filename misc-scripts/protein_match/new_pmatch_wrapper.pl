@@ -223,6 +223,7 @@ foreach my $query (values(%hits)) {
 }
 
 if ($opts{'d'} == 1) {
+    open (OUT,">$output") || die "Can't open output file: $output\n";
 	if (!defined($q_thr) || !defined($t_thr) || !defined($output)) {
 		die "You need to define:\n" .
 		    "query perc idt: $q_thr\n" .
@@ -236,7 +237,7 @@ if ($opts{'d'} == 1) {
 			if ($target->{'QIDENT'} >= $q_thr &&
 			    $target->{'TIDENT'} >= $t_thr) {
 
-				printf "%s\t%s\t%.1f\t%.1f\n",
+				printf OUT "%s\t%s\t%.1f\t%.1f\n",
 					$target->{'QID'},
 					$target->{'TID'},
 					$target->{'QIDENT'},
