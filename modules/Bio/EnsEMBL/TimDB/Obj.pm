@@ -620,7 +620,17 @@ sub get_id_acc{
     # cgp is the clone category (SU, SF, EU, EF)
     my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp,$chr,$species);
 
-    if($line=$self->{'_clone_dbm'}->{$id}){
+    if(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
+	# lookup by accession number, if valid
+	if($line=$self->{'_clone_dbm'}->{$id2}){
+	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
+	    if($acc ne $id){
+		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
+	    }else{
+		$fok=1;
+	    }
+	}
+    }elsif($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
 	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
 	# translate to $acc if output requires this
@@ -636,16 +646,6 @@ sub get_id_acc{
 	    $id2=$id;
 	}
 	$fok=1;
-    }elsif(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
-	# lookup by accession number, if valid
-	if($line=$self->{'_clone_dbm'}->{$id2}){
-	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
-	    if($acc ne $id){
-		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
-	    }else{
-		$fok=1;
-	    }
-	}
     }
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");

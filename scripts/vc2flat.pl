@@ -56,6 +56,8 @@
 
     -limit     limits the number of seconds that can be spent on single vc
 
+    -skip      set things to skip, like 'similarity'
+
 =cut
 
 use strict;
@@ -93,6 +95,7 @@ my $freeze=0;
 my $nogene=0;
 my $nosecure=0;
 my $limit=0;
+my $skip='';
 
 # defaults for msql (rdb) access
 my $host1     = 'localhost';
@@ -140,6 +143,7 @@ my $right;
 	     'left:i'    => \$left,
 	     'right:i'   => \$right,
 	     'limit:i'   => \$limit,
+	     'skip:s'    => \$skip,
 	     ) or exec('perldoc', $0);
 
 if ($help){
@@ -223,6 +227,14 @@ foreach my $vc_list_ref ( @vcs ) {
 				-left => $vc_list_ref->[3], 
 				-right => $vc_list_ref->[4],
 							);
+
+	# set to skip things
+	if($skip){
+	    foreach my $skipthing (split(/,/,$skip)){
+		$vc->skip_SeqFeature($skipthing,1);
+	    }
+	}
+
 	$vc->id( "virtual_contig_".$vc->_unique_number);
 	$vc->sv(1);
 	my $date=localtime()." (created on the fly by the EnsEMBL system)";
