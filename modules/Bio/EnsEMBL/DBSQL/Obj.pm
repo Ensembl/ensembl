@@ -1009,7 +1009,7 @@ sub _unlock_tables{
 sub DESTROY {
    my ($obj) = @_;
 
-   $obj->_unlock_tables();
+   #$obj->_unlock_tables();
 
    if( $obj->{'_db_handle'} ) {
        $obj->{'_db_handle'}->disconnect;

@@ -135,6 +135,15 @@ INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, ana
 INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (2,'test_exon_2',18,23,1000,1,4,'blastp',118,123,'TR:P78310');
 INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (3,'test_exon_3',26,28,1000,1,4,'blastp',126,128,'TR:P78310');
 
+
+#
+# Dumping data for table 'feature'
+#
+
+INSERT INTO feature (contig,seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (1,8,13,1000,1,4,'blastp',8,13,'TR:P78310');
+INSERT INTO feature (contig,seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (2,18,23,1000,1,4,'blastp',118,123,'TR:P78310');
+INSERT INTO feature (contig,seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid) VALUES (2,26,28,1000,1,4,'blastp',126,128,'TR:P78310');
+
 #
 # Dumping data for table 'transcript'
 #
