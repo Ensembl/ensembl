@@ -9,7 +9,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::::Utils::ConfigRegistry;
+Bio::EnsEMBL::Utils::ConfigRegistry;
 
 =head1 SYNOPSIS
 
@@ -50,14 +50,9 @@ package Bio::EnsEMBL::Utils::ConfigRegistry;
 
 use Exporter;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-#use Bio::EnsEMBL::Registry;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-#use Bio::EnsEMBL::Lite::DBAdaptor;
-#use Bio::EnsEMBL::Compara::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::ProxySNPAdaptor;
-#use Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor;
-#use Bio::EnsEMBL::ExternalData::SNPSQL::SNPAdaptor;
 use vars qw(@ISA @EXPORT_OK);
 @ISA = qw(Exporter);
 
@@ -374,7 +369,7 @@ sub load_vega{
 		 'Attribute'            => 'Bio::EnsEMBL::DBSQL::AttributeAdaptor',
 		 'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor',
 		 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
-		 #      'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
+		 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
 		 'MetaContainer'        => 'Bio::EnsEMBL::DBSQL::MetaContainer',
 		 'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
 		 'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
@@ -397,7 +392,7 @@ sub load_vega{
 		 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
 		 'ProteinAlignFeature'  =>
 		 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
-		 #      'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+		 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
 		 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
 		 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
 		 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
@@ -432,23 +427,8 @@ sub load_compara{
 
   Bio::EnsEMBL::Registry->add_DBAdaptor($species, $group, $dba);
 
-# add the ones that others depend on first.
-  my %pairs =  ( "MetaContainer" => "Bio::EnsEMBL::DBSQL::MetaContainer");
-
-  foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-    my $adap = "$module"->new($dba);
-
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
-  }
-
-  %pairs =  ( 'SyntenyRegion'   => 'Bio::EnsEMBL::Compara::DBSQL::SyntenyRegionAdaptor',
+  my %pairs =  ( "MetaContainer" => "Bio::EnsEMBL::DBSQL::MetaContainer",
+	      'SyntenyRegion'   => 'Bio::EnsEMBL::Compara::DBSQL::SyntenyRegionAdaptor',
 	      "DnaAlignFeature" => "Bio::EnsEMBL::Compara::DBSQL::DnaAlignFeatureAdaptor",
 	      "Synteny"         => "Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor",
 	      "GenomeDB"        => "Bio::EnsEMBL::Compara::DBSQL::GenomeDBAdaptor",
@@ -539,17 +519,7 @@ sub load_pipeline{
 		 'StateInfoContainer' => 'Bio::EnsEMBL::Pipeline::DBSQL::StateInfoContainer');
 
   foreach my $key (keys %pairs){
-    my $module = $pairs{$key};
-    eval "require $module";
-
-    if($@) {
-      warning("$module cannot be found.\nException $@\n");
-      return undef;
-    }
-
-    my $adap = "$module"->new($dba);
-
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $adap);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $key, $pairs{$key});
   }
 
 }
