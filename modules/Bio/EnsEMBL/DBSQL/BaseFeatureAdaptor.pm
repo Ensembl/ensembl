@@ -243,7 +243,7 @@ sub fetch_all_by_dbID_list {
   my ($self,$id_list) = @_;
 
   if(!defined($id_list) || ref($id_list) ne 'ARRAY') {
-    throw("id_list list reference argument is required") if(!defined $id_list);
+    throw("id_list list reference argument is required");
   }
 
   return [] if(!@$id_list);
