@@ -150,6 +150,26 @@ sub species{
 
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+=cut
+
+sub id{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'id'} = $value;
+    }
+    return $obj->{'id'};
+
+}
+
 =head2 htg_phase
 
  Title   : htg_phase
