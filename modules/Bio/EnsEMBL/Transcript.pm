@@ -897,11 +897,11 @@ sub get_all_SNPs {
   my $trans_start  = $flanking + 1;
   my $trans_end    = $slice->length - $flanking;
   my $trans_strand = $transcript->get_all_Exons->[0]->strand;
-
+warn ("TRANS_S:$trans_strand \t TRANS_ST:".$transcript->coding_region_start ."\t TRANS_EN:".$transcript->coding_region_end ."\n");
   #classify each snp
   foreach my $snp (@$snps) {
     my $key;
-
+warn ("SNP_ST:". $snp->start ." \tSNP_EN:". $snp->end ."\n");
     if(($trans_strand == 1 && $snp->end < $trans_start) ||
        ($trans_strand == -1 && $snp->start > $trans_end)) {
       #this snp is upstream from the transcript
@@ -1012,7 +1012,7 @@ sub get_all_cdna_SNPs {
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
-      my @coords = 
+	  my @coords = 
 	$transcript->genomic2cdna($snp->start, 
 				  $snp->end, 
 				  $snp->strand, 
@@ -1068,6 +1068,7 @@ sub flush_Exons{
    $self->{'_start'} = undef;
    $self->{'_end'} = undef;
    $self->{'_strand'} = undef;
+   $self->{'_exon_coord_mapper'} = undef;
 
    $self->{'_trans_exon_array'} = [];
 }
@@ -1780,8 +1781,8 @@ sub transform {
     }
   }
 
-  # flush the old list of exons
-  $self->{'_trans_exon_array'} = [];
+  #flush the exons and all related internal caches
+  $self->flush_Exons();
 
   # attach the new list of exons to the transcript
   push @{$self->{'_trans_exon_array'}},@mapped_list_of_exons;
@@ -1789,14 +1790,6 @@ sub transform {
   if( defined $self->{'translation'} ) {
     $self->translation->transform( $href_exons );
   }
-
-  #invalidate the current start, end, strand - they need to be recalculated
-  $self->{'_start'} = undef;
-  $self->{'_end'} = undef;
-  $self->{'_strand'} = undef;
-  $self->{'_exon_coord_mapper'} = undef;
-  $self->{'coding_start'} = undef;
-  $self->{'coding_end'} = undef;
 }
 
 
@@ -1840,6 +1833,7 @@ sub coding_end {
 
   return $self->coding_region_end(@args);
 }
+
 
 
 
