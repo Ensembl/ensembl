@@ -675,7 +675,7 @@ sub clean_blast_database{
   $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
   my $dbh = $self->db->db_handle;
 
-  # Rotate daily Hit and HSP tables
+  # Rotate daily Result, Hit and HSP tables
   $self->rotate_daily_tables;
 
   # Get list of tickets > $days days old
@@ -690,37 +690,39 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
   $sth->finish;
   
   # Delete result and ticket rows associated with old tickets
-  my $q_del_tmpl = qq/
-DELETE
-FROM   blast_%s
-WHERE  ticket like "%s" /;
+#  my $q_del_tmpl = qq/
+#DELETE
+#FROM   blast_%s
+#WHERE  ticket like "%s" /;
+#
+#  my @types = ( 'result','ticket' );
+#  my %num_deleted = map{ $_=>0 } @types;
+#
+#  foreach my $row( @$res ){
+#    my $ticket = $row->[0];
+#
+#    foreach my $type( @types ){
+#      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
+#      my $sth = $self->db->db_handle->prepare($q_del);
+#      my $rv = $sth->execute() || $self->throw( $sth->errstr );
+#      $num_deleted{$type} += $rv;
+#    }
+#  }
+#  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
+#  keys %num_deleted;
 
-  my @types = ( 'result','ticket' );
-  my %num_deleted = map{ $_=>0 } @types;
-
-  foreach my $row( @$res ){
-    my $ticket = $row->[0];
-
-    foreach my $type( @types ){
-      my $q_del = sprintf( $q_del_tmpl, $type, $ticket );
-      my $sth = $self->db->db_handle->prepare($q_del);
-      my $rv = $sth->execute() || $self->throw( $sth->errstr );
-      $num_deleted{$type} += $rv;
-    }
-  }
-  map{ warn("Purging $days days: Deleted $num_deleted{$_} rows of type $_\n") }
-  keys %num_deleted;
-
-  # Drop daily Hit and HSP tables not updated within $days days
+  # Drop daily Result, Hit and HSP tables not updated within $days days
   my $q_find = 'show table status like ?';
   my $sth2 = $dbh->prepare( $q_find );
+  $sth2->execute( "blast_result%" ) || $self->throw( $sth2->errstr );
+  my $res_res = $sth2->fetchall_arrayref();
   $sth2->execute( "blast_hit%" ) || $self->throw( $sth2->errstr );
   my $hit_res = $sth2->fetchall_arrayref();
   $sth2->execute( "blast_hsp%" ) || $self->throw( $sth2->errstr );
   my $hsp_res = $sth2->fetchall_arrayref();
 
   my @deletable_hit_tables;
-  foreach my $row( @$hit_res, @$hsp_res ){
+  foreach my $row( @$res_res, @$hit_res, @$hsp_res ){
     my $table_name  = $row->[0];
     my $num_rows    = $row->[3];
     my $update_time = $row->[11]; # Should be a string like 2003-08-15 10:36:56
@@ -735,10 +737,10 @@ WHERE  ticket like "%s" /;
       warn( "Dropping table $table_name: $num_rows rows\n" );
       my $sth_drop = $dbh->prepare( "DROP table $table_name" );
       my $sth_log  = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
-      $sth_drop->execute || $self->throw( $sth_drop->errstr );
-      $sth_log->execute
-	('DELETED','NOW()',$num_rows,$table_name) ||
-	  $self->throw( $sth_log->errstr );;
+      #$sth_drop->execute || $self->throw( $sth_drop->errstr );
+      #$sth_log->execute
+        #('DELETED','NOW()',$num_rows,$table_name) ||
+	  #  $self->throw( $sth_log->errstr );;
       
     }
   }
@@ -771,7 +773,6 @@ sub create_tables {
   my $sth = $dbh->prepare( $q );
 
   my $rv_tck = $sth->execute("blast_ticket")    || $self->throw($sth->errstr);
-  my $rv_res = $sth->execute("blast_result")    || $self->throw($sth->errstr);
   my $rv_log = $sth->execute("blast_table_log" )|| $self->throw($sth->errstr);
 
   if( $rv_tck == 0 ){
