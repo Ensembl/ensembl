@@ -1,16 +1,15 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 53;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
 
@@ -28,7 +27,7 @@ my $END           = 31_200_000;
 my $STRAND        = 1;
 my $SEQ_REGION_LENGTH = 50e6;
 
-my $multi_db = MultiTestDB->new;
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
 
 #

@@ -1,10 +1,9 @@
-use lib 't';
 use Test;
 use strict;
 
 BEGIN { $| = 1; plan tests => 6;}
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::Seq;
 use Bio::EnsEMBL::RawContig;
 use Bio::EnsEMBL::Clone;
@@ -25,7 +24,7 @@ ok(1);
 
 # Database will be dropped when this
 # object goes out of scope
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 
 ok($multi);
 

@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 
 BEGIN { $| = 1;
@@ -6,14 +5,14 @@ BEGIN { $| = 1;
 	plan tests => 21
 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::MiscSet;
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
 
-my $multi_db = MultiTestDB->new;
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
 
 

@@ -1,14 +1,13 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 17;
 }
 
-use TestUtils qw( debug test_getter_setter );
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::ProteinFeature;
 use Bio::EnsEMBL::Analysis;

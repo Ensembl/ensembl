@@ -1,15 +1,14 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 39;
 }
 
-use MultiTestDB;
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::PredictionTranscript;
 
 our $verbose = 0;
@@ -19,7 +18,7 @@ our $verbose = 0;
 #
 ok(1);
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 
@@ -66,30 +65,30 @@ ok($pt->stable_id =~ /.*/ );
 #
 # 6 test start
 #
-ok(&TestUtils::test_getter_setter($pt, 'start', 8));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'start', 8));
 
 #
 # 7 test end
 #
-ok(&TestUtils::test_getter_setter($pt, 'end', 9));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'end', 9));
 
 
 #
 # 8 test analysis 
 #
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('Vertrna');
-ok(&TestUtils::test_getter_setter($pt, 'analysis', $analysis));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'analysis', $analysis));
 
 #
 # 9 test dbID
 #
-ok(&TestUtils::test_getter_setter($pt, 'dbID', 11));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'dbID', 11));
 
 #
 # 10 test adaptor
 #
 my $pta = $db->get_PredictionTranscriptAdaptor;
-ok(&TestUtils::test_getter_setter($pt, 'adaptor', $pta));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'adaptor', $pta));
 
 #
 # 11-14 test add Exon
@@ -236,7 +235,7 @@ ok($defined_exons_count == $pt->cdna2genomic( 1, $pt->length()));
 #
 # 30 test type
 #
-ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
+ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'type', 'test'));
 
 #
 # 31 test fetch_by_stable_id

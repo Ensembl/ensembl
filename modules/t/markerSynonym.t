@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 
 BEGIN { $| = 1;  
@@ -8,7 +7,7 @@ BEGIN { $| = 1;
 
 use Bio::EnsEMBL::Map::MarkerSynonym;
 
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 

@@ -1,4 +1,3 @@
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
@@ -7,7 +6,7 @@ BEGIN { $| = 1;
 
 use Bio::EnsEMBL::SeqEdit;
 use Bio::EnsEMBL::Attribute;
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 my $code  = 'rna edit';
 my $desc  = 'Post transcriptional RNA edit';

@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
@@ -9,7 +8,7 @@ BEGIN { $| = 1;
 }
 
 
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::KaryotypeBand;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::CoordSystem;

@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 use vars qw( $verbose );
@@ -9,14 +8,14 @@ BEGIN { $| = 1;
 }
 
 
-use MultiTestDB;
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 
 $verbose = 0;
 
 ok(1);
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 ok($multi);
 

@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;

@@ -1,19 +1,18 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 7;
 }
 
-use TestUtils qw( debug count_rows);
+use Bio::EnsEMBL::Test::TestUtils;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor('core');
 
 $multi->save('core', 'meta_coord');

@@ -1,16 +1,15 @@
-use lib 't';
 use Test;
 use strict;
 
 BEGIN { $| = 1; plan tests => 9 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 ok(1);
 
 # Database will be dropped when this
 # object goes out of scope
-my $ens_test = MultiTestDB->new;
+my $ens_test = Bio::EnsEMBL::Test::MultiTestDB->new;
 
 ok($ens_test);
 

@@ -1,8 +1,7 @@
 use strict;
-use lib 't';
-use TestUtils qw(test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 
 BEGIN { $| = 1;
@@ -10,7 +9,7 @@ BEGIN { $| = 1;
 	plan tests => 24;
 }
 
-my $multi_db = MultiTestDB->new;
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
 
 my $verbose = 0;

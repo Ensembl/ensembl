@@ -1,10 +1,9 @@
 use strict;
 use warnings;
 
-use lib 't';
 use Bio::EnsEMBL::CoordSystem;
 
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 

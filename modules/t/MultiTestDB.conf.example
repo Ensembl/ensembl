@@ -5,11 +5,14 @@
  'pass'   => 'ensembl',
  'host'   => 'ecs1d',
  'zip'    => 'test_genome.zip',
-  
   #add a line with the dbname and module
-  'databases'   => { 'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor'},
+  'databases'   => { 
+      'homo_sapiens' => {'core' => 'Bio::EnsEMBL::DBSQL::DBAdaptor'}
+        }
 
 #uncomment to use preloaded databases (useful when doing lots of testing)
-#  'preloaded'   => { 'core' => 'mcvicker_new_schema' }	
+#  ,'preloaded'   => { 
+#        'homo_sapiens' => {'core' => 'mcvicker_new_schema' }
+#        }       	
   	
 }

@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 use vars qw( $verbose );
@@ -8,13 +7,13 @@ BEGIN { $| = 1;
 	plan tests => 131;
 }
 
-use MultiTestDB;
-use TestUtils qw( debug test_getter_setter count_rows);
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Intron;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 $verbose = 0; #set to true to turn on debug print outs
 

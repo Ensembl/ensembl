@@ -1,13 +1,12 @@
-use lib 't';
 
 use strict;
 use warnings;
 
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::Analysis;
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
@@ -18,7 +17,7 @@ BEGIN { $| = 1;
 	plan tests => 9;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
 
 

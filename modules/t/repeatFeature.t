@@ -7,7 +7,6 @@ use Bio::EnsEMBL::RepeatConsensus;
 use Bio::EnsEMBL::CoordSystem;
 use Bio::EnsEMBL::RepeatFeature;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
@@ -15,7 +14,7 @@ BEGIN { $| = 1;
 }
 
 
-use TestUtils qw(test_getter_setter debug);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 

@@ -1,21 +1,20 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 3;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Slice;
 
 our $verbose= 0;
 
-my $multi_db = MultiTestDB->new;
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
 
 #

@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 
@@ -11,8 +10,8 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
 use Bio::EnsEMBL::DensityFeature;
-use TestUtils qw( debug );
-use MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 BEGIN { $| = 1;
 	use Test;
@@ -24,7 +23,7 @@ BEGIN { $| = 1;
 our $verbose = 0;
 verbose('WARNING');
 
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi->get_DBAdaptor('core');
 
 

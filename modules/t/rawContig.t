@@ -1,12 +1,11 @@
-use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
 	plan tests => 19;
 }
 
-use MultiTestDB;
-use TestUtils qw(debug);
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Utils::Exception qw(verbose);
 
@@ -24,7 +23,7 @@ our $verbose = 0; #set to 1 for debug printing
 
 ok(1);
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 ok($multi);
 

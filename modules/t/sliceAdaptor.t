@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 
@@ -8,10 +7,10 @@ BEGIN { $| = 1;
 	plan tests => 65;
 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Slice;
-use TestUtils qw(test_getter_setter debug);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 
@@ -22,7 +21,7 @@ my ($CHR, $START, $END, $FLANKING) = ("20", 30_252_000, 31_252_001, 1000);
 #
 ok(1);
 
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db    = $multi->get_DBAdaptor('core');
 
 

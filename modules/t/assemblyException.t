@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 
 BEGIN { $| = 1;
@@ -7,14 +6,14 @@ BEGIN { $| = 1;
 }
 
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::DnaDnaAlignFeature;
-use TestUtils qw(test_getter_setter debug);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok(1);
 
 my $db = $multi->get_DBAdaptor('core');

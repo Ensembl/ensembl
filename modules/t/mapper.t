@@ -29,7 +29,6 @@ BEGIN { $| = 1;
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
-use lib 't';
 
 $loaded = 1;
 # $n_test = 0;

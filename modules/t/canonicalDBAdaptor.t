@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
@@ -9,15 +8,15 @@ BEGIN { $| = 1;
 }
 
 
-use TestUtils qw(debug test_getter_setter);
-use MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
 
 # Get a DBAdaptor to from the test system
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 ok($multi);
 my $db = $multi->get_DBAdaptor("core");
 ok($db);
@@ -85,7 +84,7 @@ $test_adaptor = $db->get_MarkerAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor"));
 
 # Note get_BlastAdaptor() and get_SNPAdaptor() require DBs of type
-# 'blast' and 'lite' respectively - these are not available via MultiTestDB
+# 'blast' and 'lite' respectively - these are not available via Bio::EnsEMBL::Test::MultiTestDB
 #my $blast_db = $multi->get_DBAdaptor("lite");
 #ok($blast_db);
 #$test_adaptor = $blast_db->get_BlastAdaptor();

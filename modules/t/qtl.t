@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 
@@ -7,7 +6,7 @@ BEGIN { $| = 1;
 	plan tests => 6;
 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::Map::Marker;
 use Bio::EnsEMBL::Map::MarkerSynonym;
 
@@ -15,11 +14,11 @@ use Bio::EnsEMBL::Map::DBSQL::QtlAdaptor;
 use Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor;
 use Bio::EnsEMBL::Slice;
 
-use TestUtils qw(debug test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor( 'core' );
 my $sa = $db->get_SliceAdaptor();
 

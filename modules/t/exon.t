@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 
 BEGIN { $| = 1;
@@ -9,13 +8,13 @@ BEGIN { $| = 1;
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-use MultiTestDB;
-use TestUtils qw(debug test_getter_setter count_rows);
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0; #set to 1 to turn on debug printouts
 
 $loaded = 1;
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 ok(1);
 

@@ -1,4 +1,3 @@
-use lib 't';
 
 use strict;
 
@@ -7,15 +6,15 @@ BEGIN { $| = 1;
 	plan tests => 20;
 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::DensityType;
-use TestUtils qw(count_rows);
+use Bio::EnsEMBL::Test::TestUtils;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok( $multi );
 
 my $db = $multi->get_DBAdaptor( "core" );

@@ -1,14 +1,13 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 21;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Mapper::RangeRegistry;
 

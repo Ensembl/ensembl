@@ -1,4 +1,3 @@
-use lib 't';
 use strict;
 use warnings;
 
@@ -7,8 +6,8 @@ BEGIN { $| = 1;
 	plan tests => 59;
 }
 
-use MultiTestDB;
-use TestUtils qw ( debug test_getter_setter count_rows);
+use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Transcript;
@@ -22,7 +21,7 @@ our $verbose = 0;
 debug( "Startup test" );
 ok(1);
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 

@@ -1,20 +1,19 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 34;
 }
 
-use TestUtils qw( debug test_getter_setter );
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::CoordSystem;
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 our $verbose= 0; #turn on or off debug statements
 

@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 
 BEGIN { $| = 1;
@@ -9,15 +8,15 @@ BEGIN { $| = 1;
 	plan tests => 6;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::RepeatMaskedSlice;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db    = $multi->get_DBAdaptor('core');
 
 

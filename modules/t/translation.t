@@ -1,8 +1,7 @@
 use strict;
 use warnings;
 
-use lib 't';
-use TestUtils qw(debug test_getter_setter count_rows);
+use Bio::EnsEMBL::Test::TestUtils;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
@@ -17,9 +16,9 @@ END {print "not ok 1\n" unless $loaded;}
 #turn on/off debug prints:
 our $verbose = 0;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 $loaded = 1;
 

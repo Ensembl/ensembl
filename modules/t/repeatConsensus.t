@@ -1,6 +1,5 @@
 use strict;
-use lib 't';
-use TestUtils qw(test_getter_setter);
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::RepeatConsensus;
 

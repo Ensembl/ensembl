@@ -1,4 +1,3 @@
-use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
@@ -8,7 +7,7 @@ BEGIN { $| = 1;
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 our $verbose = 0;
 
@@ -16,7 +15,7 @@ $loaded = 1;
 
 ok(1);
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 ok( $multi );
 $multi->hide( "core", "analysis" );
 

@@ -1,14 +1,13 @@
 use strict;
 use warnings;
 
-use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
 	plan tests => 9;
 }
 
-use TestUtils qw( debug );
+use Bio::EnsEMBL::Test::TestUtils;
 
 use Bio::EnsEMBL::Utils::Exception qw(warning verbose throw info
                                       deprecate stack_trace_dump stack_trace);

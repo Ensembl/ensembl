@@ -1,10 +1,9 @@
-use lib 't';
 use strict;
 use warnings;
 
 use Bio::EnsEMBL::Utils::SeqDumper;
-use TestUtils qw ( debug test_getter_setter );
-use MultiTestDB;
+use Bio::EnsEMBL::Test::TestUtils;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 BEGIN { $| = 1;
 	use Test;
@@ -14,7 +13,7 @@ BEGIN { $| = 1;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new();
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 
 my $db = $multi->get_DBAdaptor( "core" );
 

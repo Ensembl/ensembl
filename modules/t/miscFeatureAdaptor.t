@@ -1,14 +1,13 @@
 use strict;
 
-use lib 't';
-use TestUtils qw(test_getter_setter debug);
+use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;
 	use Test;
 	plan tests => 18;
 }
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 
 use Bio::EnsEMBL::Attribute;
 use Bio::EnsEMBL::MiscSet;
@@ -16,7 +15,7 @@ use Bio::EnsEMBL::MiscSet;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 
 # get a core DBAdaptor
 my $dba = $multi->get_DBAdaptor("core");

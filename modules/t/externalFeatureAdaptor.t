@@ -2,11 +2,11 @@ use strict;
 
 our $verbose = 0;
 
-my $multi = MultiTestDB->new;
+my $multi = Bio::EnsEMBL::Test::MultiTestDB->new;
 
 package ExternalFF1;
   use Bio::EnsEMBL::External::ExternalFeatureAdaptor;
-  use MultiTestDB;
+  use Bio::EnsEMBL::Test::MultiTestDB;
   use Bio::EnsEMBL::Feature;
 
   use vars qw(@ISA);
@@ -41,7 +41,7 @@ package ExternalFF1;
 
 package ExternalFF2;
   use Bio::EnsEMBL::External::ExternalFeatureAdaptor;
-  use MultiTestDB;
+  use Bio::EnsEMBL::Test::MultiTestDB;
   use Bio::EnsEMBL::Feature;
 
   use vars qw(@ISA);
@@ -77,8 +77,7 @@ package ExternalFF2;
 
 package Test;
 
-use lib 't';
-use TestUtils qw(test_getter_setter debug);
+use Bio::EnsEMBL::Test::TestUtils;
 
 BEGIN { $| = 1;  
 	use Test;

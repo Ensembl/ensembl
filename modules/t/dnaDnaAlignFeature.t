@@ -1,5 +1,4 @@
 
-use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
@@ -8,7 +7,7 @@ BEGIN { $| = 1;
 
 use strict;
 
-use MultiTestDB;
+use Bio::EnsEMBL::Test::MultiTestDB;
 use Bio::EnsEMBL::DnaDnaAlignFeature;
 use Bio::EnsEMBL::FeaturePair;
 
@@ -21,7 +20,7 @@ my $CTG_BOUNDARY       =  62877;
 #
 ok(1);
 
-my $multi_db = MultiTestDB->new;
+my $multi_db = Bio::EnsEMBL::Test::MultiTestDB->new;
 my $db = $multi_db->get_DBAdaptor('core');
 
 
