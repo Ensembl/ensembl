@@ -143,6 +143,23 @@ sub store {
       next FEATURE;
     }
 
+    my $hstart = $feat->hstart();
+    my $hend   = $feat->hend();
+    my $hstrand = $feat->hstrand();
+    $self->_check_start_end_strand($hstart,$hend, $hstrand);
+
+    my $cigar_string = $feat->cigar_string();
+    if(!$cigar_string) {
+      $cigar_string = $feat->length() . 'M';
+      warning("DnaDnaAlignFeature does not define a cigar_string.\n" .
+              "Assuming ungapped block with cigar_line=$cigar_string .");
+    }
+
+    my $hseqname = $feat->hseqname();
+    if(!$hseqname) {
+      throw("DnaDnaAlignFeature must define an hseqname.");
+    }
+
     if(!defined($feat->analysis)) {
       throw("An analysis must be attached to the features to be stored.");
     }
@@ -157,8 +174,8 @@ sub store {
     ($feat, $seq_region_id) = $self->_pre_store($feat);
 
     $sth->execute( $seq_region_id, $feat->start, $feat->end, $feat->strand,
-		   $feat->hstart, $feat->hend, $feat->hstrand, $feat->hseqname,
-		   $feat->cigar_string, $feat->analysis->dbID, $feat->score,
+		   $hstart, $hend, $hstrand, $hseqname,
+		   $cigar_string, $feat->analysis->dbID, $feat->score,
 		   $feat->p_value, $feat->percent_id);
 
     $original->dbID($sth->{'mysql_insertid'});
