@@ -234,7 +234,7 @@ sub ac {
 sub id {
   my $self = shift;
 
-  return $self->ac;
+  return $self->slice->name;
 }
 
 
@@ -389,24 +389,23 @@ sub top_SeqFeatures {
   #filter out features overlapping slice boundary
   my @out = ();
   my $slice_end   = $self->slice->chr_end;
-  foreach my $f (@sfs) {
-    next if($f->start < 1 || $f->end > $slice_end);
-    push @out, $f;
+  while($f = shift @sfs) {
+    push(@out, $f) unless($f->start < 1 || $f->end > $slice_end);    
   }
 
   #transcripts and genes are allowed to overlap boundary
   unless($self->skip_SeqFeature('prediction')) {
     foreach my $pt (@{$self->slice->get_all_PredictionTranscripts}) {
-      push @sfs, new Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper($pt);
+      push @out, new Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper($pt);
     }
   }
   unless($self->skip_SeqFeature('gene')) {
     foreach my $gene (@{$self->slice->get_all_Genes()}) {
-      push @sfs, new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($gene);
+      push @out, new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($gene);
     }
   }
-  
-  return @sfs;
+
+  return @out;
 }
 
 

@@ -137,7 +137,15 @@ sub to_FTHelper {
 
   my $ft = Bio::SeqIO::FTHelper->new();
   $ft->loc($loc);
-  $ft->key('CDS');
+
+  my $exon_key;
+  if($trans->isa('Bio::EnsEMBL::PredictionTranscript')) {
+      $ft->key('CDS');
+      $exon_key = 'exon';
+  } else {
+      $ft->key('CDS_' . $trans->analysis->logic_name);
+      $exon_key = 'exon_' . $trans->analysis->logic_name;
+  }
   
   $ft->add_field('translation', $trans->translate()->seq());
   if($trans->can('translation')) {
@@ -148,12 +156,12 @@ sub to_FTHelper {
     $ft->add_field('db_xref', $dbl->database().":".$dbl->primary_id());
   }
   push(@out, $ft);
-  
+
   foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
     my $ft = Bio::SeqIO::FTHelper->new();
 
     $ft->loc(features2join_string([$exon]));
-    $ft->key("exon");
+    $ft->key($exon_key);
     
     if( $self->strict_EMBL_dumping()) {
       $ft->add_field('db_xref', 'ENSEMBL:HUMAN-Exon-'.$exon->stable_id());
