@@ -9,10 +9,15 @@ print STDERR "got db object\n";
 
 $db->static_golden_path_type('UCSC');
 
-@vclist = $db->get_StaticGoldenPathAdaptor->fetch_VirtualContig_list_sized('ctg12824',2000000,100000,4000000,100);
+@vclist = $db->get_StaticGoldenPathAdaptor->fetch_VirtualContig_list_sized('ctg12824',2000000,50000,4000000,100);
 
 
 foreach $vc ( @vclist ) {
     print "length is ",$vc->length,"\n";
+}
+
+foreach $vc ( @vclist ) {
+    print "####\n";
+    $vc->_dump_map(\*STDOUT);
 }
 
