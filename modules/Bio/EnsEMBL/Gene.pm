@@ -198,8 +198,7 @@ sub each_DBLink {
    if( !defined $self->{'_db_link'} ) {
        $self->{'_db_link'} = [];
        if( defined $self->adaptor ) {
-	   my @array = $self->adaptor->db->get_DBEntryAdaptor->fetch_by_gene($self->dbID);
-	   push(@{$self->{'_db_link'}},@array);
+	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_gene($self);
        }
    } 
 
