@@ -338,18 +338,22 @@ sub fetch_all_currently_related {
   my $current_db_name = $self->list_dbnames()->[0];
   my $dbname = $arch_id->db_name;
 
-  my ($old, $new) ;
+  my $old = [];
+
   if( $dbname eq $current_db_name ) {
     return [ $arch_id ];
   }
 
-  while( $dbname != $current_db_name ) {
+  push( @$old, $arch_id );
+
+  while( $dbname ne $current_db_name ) {
+    my $new = [];
     while( my $asi = ( shift @$old )) {
       push( @$new, @{$asi->get_all_successors()});
     }
 
     if( @$new ) {
-      $dbname = $new->[0]->dbname();
+      $dbname = $new->[0]->db_name();
     } else {
       last;
     }
@@ -358,7 +362,7 @@ sub fetch_all_currently_related {
 
   my %stable_ids;
   my @result;
-  while( my $arch_id = ( shift @$new )) {
+  while( my $arch_id = ( shift @$old )) {
     if( exists $stable_ids{ $arch_id->stable_id } ) {
       next;
     } else {
@@ -461,10 +465,12 @@ sub list_dbnames {
       }
       if( $first ) {
 	$self->{'dbnames'} = [];
+	push( @{$self->{'dbnames'}}, $new_db_name );
 	push( @{$self->{'dbnames'}}, $old_db_name );
 	$first = 0;
+      } else {
+	push( @{$self->{'dbnames'}}, $new_db_name );
       }
-      push( @{$self->{'dbnames'}}, $new_db_name );
     }
     $sth->finish();
   }
