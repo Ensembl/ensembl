@@ -144,7 +144,7 @@ sub fetch_by_Slice_start_end_strand {
      my $seq_region_id = $slice_adaptor->get_seq_region_id($seq_slice);
 
      $tmp_seq = ${$self->_fetch_seq($seq_region_id,
-                                    seq_slice->start, $seq_slice->length())};
+                                    $seq_slice->start, $seq_slice->length())};
 
      #reverse compliment on negatively oriented slices
      if($seq_slice->strand == -1) {
@@ -155,8 +155,6 @@ sub fetch_by_Slice_start_end_strand {
 
      $total = $end;
    }
-
-   $sth->finish();
 
    #check for any remaining gaps at the end
    my $gap = $slice->length - $total;
