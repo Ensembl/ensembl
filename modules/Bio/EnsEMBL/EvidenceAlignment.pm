@@ -112,6 +112,47 @@ sub transcriptid {
   return $obj->{'transcript_id'};
 }
 
+=head2 get_features
+
+    Title   :   get_features
+    Usage   :   $ea->get_features($transcript_obj, $vc);
+    Function:   use SGP adaptor supplied to get evidence off a VC of
+		the transcript supplied; return reference to an array
+		of featurepairs; cache so data gets reused if
+		$transcript_obj is same as last time
+=cut
+{
+  my @last_features;
+  my $last_transcript_id = -1;
+
+  sub get_features {
+    my ($self, $transcript_obj, $vc) = @_;
+    $self->throw("interface fault") if (@_ != 3);
+    
+    my @exons = $transcript_obj->get_all_Exons;
+    my $strand = $exons[0]->strand;
+    my @features;
+    if ($transcript_obj->stable_id eq $last_transcript_id) {
+      print STDERR "XXX reusing features\n";
+      @features = @last_features;
+    } else {
+      my @all_features = $vc->get_all_SimilarityFeatures;
+      foreach my $feature (@all_features) {
+        push @features, $feature if $feature->strand == $strand;
+      }
+      @last_features = ();
+      @last_features = @features;
+    }
+    print STDERR "XXX feature count: ", scalar(@features),"\n";
+    foreach my $feature (@features) {
+      print STDERR "fstrand ", $feature->strand, " hstrand ",
+      $feature->hstrand, "\n";
+    }
+    $last_transcript_id = $transcript_obj->stable_id;
+    return @features;
+  }
+}
+
 =head2 fetch_alignment
 
     Title   :   fetch_alignment
@@ -200,6 +241,7 @@ sub _get_aligned_evidence {
 
   # get all exons off a VC
   my $gene = $ga->fetch_by_transcript_stable_id($transcript_id);
+  print STDERR "about to fetch gene VC\n";
   my $vc = $sgp->fetch_VirtualContig_of_gene($gene->stable_id, 100);
   my @genes_in_vc = $vc->get_Genes_by_Type('ensembl');
   my $transcript_obj;
@@ -332,12 +374,22 @@ sub _get_aligned_evidence {
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
   for (my $i = 0; $i <= $#exons_to_display; $i++) {
+    my @features = $self->get_features($transcript_obj, $vc);
     my $start = $exons_to_display[$i]->start;
-    my @features = $exons_to_display[$i]->each_Supporting_Feature;
+    #my @features = $exons_to_display[$i]->each_Supporting_Feature;
 
     my $last_feat = undef;
     PEP_FEATURE_LOOP:
     foreach my $feature(@features) {
+      next PEP_FEATURE_LOOP unless ($exons_to_display[$i]->overlaps($feature));
+      print STDERR "XXX start $start\n";
+      { my $exon = $exons_to_display[$i]; #XXX
+      print STDERR "XXX fstart ",$feature->start, " fend ",
+      $feature->end, " fstrand ", $feature->strand, " estart ",
+      $exon->start, " eend ",$exon->end, " estrand ", $exon->strand,
+      "\n";
+      }#XXX
+      next PEP_FEATURE_LOOP if (($feature->start < $exons_to_display[$i]->start) || ($feature->end > $exons_to_display[$i]->end));
       next PEP_FEATURE_LOOP if ($last_feat
       && ($last_feat->start == $feature->start)
       && ($last_feat->end == $feature->end)
@@ -425,6 +477,13 @@ sub _get_aligned_evidence {
     }
 
     # splice in the evidence fragment
+    print "length evidence_line ", length $evidence_line, ", hit{hindent} ", $$hit{hindent}, ", length seq_str ",
+    length $seq_str, ", seq_str $seq_str\n";
+    if ($$hit{hindent} + length $seq_str > length $evidence_line) {
+      print STDERR "XXX IGNORING: ", $$hit{hindent} + length $seq_str,
+      " TOO BIG\n";
+      next;
+    }
     substr $evidence_line, $$hit{hindent}, length $seq_str, $seq_str;
 
     # store if end of evidence line
@@ -474,11 +533,16 @@ sub _get_aligned_evidence {
   my @nuc_evidence_arr = ();
   for (my $i = 0; $i <= $#all_exons; $i++) {
     my $start = $all_exons[$i]->start;
-    my @features = $all_exons[$i]->each_Supporting_Feature;
+    #my @features = $all_exons[$i]->each_Supporting_Feature;
 
     my $last_feat = undef;
+    my @features = $self->get_features($transcript_obj, $vc);
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
+    print STDERR "XXX SIZE:: ",scalar(@features),"\n";
+      print STDERR "XXX XXX XXX \n";
+      next NUC_FEATURE_LOOP unless ($all_exons[$i]->overlaps($feature));
+      next NUC_FEATURE_LOOP if (($feature->start < $all_exons[$i]->start) || ($feature->end > $all_exons[$i]->end));
       next NUC_FEATURE_LOOP if ($last_feat
       && ($last_feat->start == $feature->start)
       && ($last_feat->end == $feature->end)
