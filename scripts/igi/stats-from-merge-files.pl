@@ -145,7 +145,7 @@ print "----\n";
 # compare igi's per source
 print "pairwise overlaps:\n";
 my %h = undef;
-print "\t", join("\t", @all_sources) ,"\n";
+print "\t", join("\t\t", @all_sources) ,"\n";
 SOURCE1:
 foreach my $source1 (@all_sources) {
     my @igis_of_source1 = keys %{$igis_of_source{$source1}};
@@ -155,7 +155,7 @@ foreach my $source1 (@all_sources) {
   SOURCE2:
     foreach $source2 (@all_sources) {
         ## uncomment the undef for smaller output
-        if ( undef && $source2 lt $source1) { 
+        if ( $source2 gt $source1) { 
             print "-\t";
             next SOURCE2;
         }
@@ -208,8 +208,8 @@ foreach my $igi (@all_igis) {
 
 #     ${$igis_of_n_sources[$n]}{$igi} = $loc this is for those that are in
 # exactly two groups, but you want to know the  cumulation: simply add it 
-# to all the clusterings:
-    for (my $i=$n; $i<$n_sources; $i++) {
+# to all the clusterings. 
+    for (my $i=$n; $i>=0; $i--) {
         ${$igis_of_n_sources[$i]}{$igi} = $loc
     }
 }
@@ -217,7 +217,7 @@ foreach my $igi (@all_igis) {
 # warn @igis_of_n_sources;
 print "overlap totals (histogram)\n" ;
 for(my $i = 0; $i<=$n_sources; $i++) {
-    print "numbers of igis in $i/$n_sources or more sources: ",
+    print "numbers of igis in at least $i sources: ",
       int(keys %{$igis_of_n_sources[$i]}), "/$n_igis\n";
 }
 
@@ -227,7 +227,7 @@ for(my $i = 1; $i<=$n_sources; $i++) {
     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
         gene_stats($igis_of_n_sources[$i]) ;
 
-    print "those in $i or more sources: ";
+    print "those in at least $i sources: ";
     print "minl=$min, maxl=$max, avgl=$avg, ";
     print "minf=$minfeats, maxf=$maxfeats, avgf=$avgfeats\n";
 }
