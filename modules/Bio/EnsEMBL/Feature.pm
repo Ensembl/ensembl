@@ -733,6 +733,27 @@ sub seq_region_name {
 }
 
 
+=head2 seq_region_length
+
+  Arg [1]    : none
+  Example    : print $feature->seq_region_length();
+  Description: Returns the length of the seq_region which this feature is on 
+               Returns undef if this Feature is not on a slice.
+  Returntype : unsigned int or undef
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub seq_region_length {
+  my $self = shift;
+  my $slice = $self->{'slice'};
+
+  return ($slice) ? $slice->seq_region_length() : undef;
+}
+
+
 =head2 seq_region_strand
 
   Arg [1]    : none
