@@ -2,7 +2,7 @@ EnsEMBL Perl API Tutorial
 
 By Michele Clamp.  Updated, revised, and rewritten by Michele Clamp, Ewan Birney, Graham McVicker and Dan Andrews.
 
-Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct 02, DA Feb 03, GM Jan 04
+Revisions: EB Oct 01, MC Jan 02, MC Mar 02, DA Jul 02, DA Oct 02, GM Oct 02, DA Feb 03, GM Feb 04
 
 
 Introduction
@@ -319,7 +319,7 @@ foreach my $gene (@{$slice->get_all_Genes()}) {
   print "$gstring\n";
   
   foreach my $trans (@{$gene->get_all_Transcripts()}) {
-    my $tstring = feature2string($transcript);
+    my $tstring = feature2string($trans);
     print "  $tstring\n";
 
     foreach my $exon (@{$trans->get_all_Exons()}) {
@@ -351,7 +351,7 @@ my $protein_feats = $translation->get_all_ProteinFeatures();
 
 foreach my $pf (@$protein_feats) {
   my $logic_name = $pf->analysis()->logic_name();
-  print $pf->start(), '-', $pf->end(), ' ', $logic_name(), ' ',
+  print $pf->start(), '-', $pf->end(), ' ', $logic_name, ' ',
         $pf->interpro_ac(), ' ', $pf->idesc(), "\n";
 }
 
@@ -401,8 +401,8 @@ foreach my $trans(@{$gene->get_all_Transcripts()}){
   print_DBEntries($trans->get_all_DBEntries());
   #watch out: pseudogenes have no translation
   if($trans->translation()) {
-    my $transl = $transcript->translation();
-    print "TRANSLATION ",$transl()->stable_id(),"\n";
+    my $transl = $trans->translation();
+    print "TRANSLATION ",$transl->stable_id(),"\n";
     print_DBEntries($transl->get_all_DBEntries());
   }
 }
@@ -444,7 +444,7 @@ Coordinate Systems
 Sequences stored in Ensembl are associated with coordinate systems.  What the coordinate systems are varies from species to species. For example, the homo_sapiens database has the following coordinate systems: contig, clone, supercontig, chromosome.  Sequence and features may be retrieved from any coordinate system despite the fact they are only stored internally in a single coordinate system.  The database stores the relationship between these coordinate systems and the API provides means to convert between them.  The API has a CoordSystem object and and object adaptor, however, these are most often used internally.  The following example fetches a 'chromosome' coordinate system object from the database:
 
 my $csa = $db->get_CoordSystemAdaptor();
-my $cs = $csa->fetch_by_name($cs);
+my $cs = $csa->fetch_by_name('chromosome');
 
 print "Coord system: " . $cs->name()." ".$cs->version."\n";
 
@@ -462,10 +462,10 @@ Sometimes it is useful to obtain full Slices of every sequence in a given coordi
 @clones = @{$slice_adaptor->fetch_all('clone')};
 
 
-Now suppose that you wish to write code which is independent of the species used.  Not all species have the same coordinate systems; the available coordinate systems depends on the style of assembly used for that species (WGS, clone-based, etc.).  You can obtain the list of available coordinate systems for a species using the CoordSystemAdaptor and there are also two coordinate system synonyms that can be used.  The synonym toplevel refers to the coordinate system that is the most assembled for a given species, and the synonym seqlevel refers to the coordinate system in which the sequence is actually stored within the database.  It is unlikely that you will have need to the seqlevel synonym, but the toplevel synonym can be quite useful.
+Now suppose that you wish to write code which is independent of the species used.  Not all species have the same coordinate systems; the available coordinate systems depends on the style of assembly used for that species (WGS, clone-based, etc.).  You can obtain the list of available coordinate systems for a species using the CoordSystemAdaptor and there is also a special pseudo-coordinate system named 'toplevel'.  The 'toplevel' coordinate system is not a real coordinate system, but is used to refer to the highest level coordinate system in a given region.  The 'toplevel' coordinate system is particulary useful in genomes that are incompletely assembled.  For example, the latest zebrafish genome consists of a set of assembled chromosomes, and a set of supercontigs that are not part of any chromosome.  In this example, the 'toplevel' coordinate system sometimes refers to the chromosome coordinate system and sometimes to the supercontig coordinate system depending on the region it is used in.
 
 #list all coordinate systems in this database:
-my @coord_systems = @{$coord_system_adaptor->fetch_all()};
+my @coord_systems = @{$csa->fetch_all()};
 foreach $cs (@coord_systems) {
   print "Coord system: ".$cs->name()." ".$cs->version."\n"; 
 }
@@ -476,7 +476,7 @@ my @slices = @{$slice_adaptor->fetch_all('toplevel')};
 
 Transform
 
-Features on a Slice in a given coordinate system may be moved to another slice in the same coordinate system or to another coordinate system entirely.  This is useful if you are working in on system but you are interested in obtaining the features coordinates in another coordinate system.  
+Features on a Slice in a given coordinate system may be moved to another slice in the same coordinate system or to another coordinate system entirely.  This is useful if you are working with a particular coordinate system but you are interested in obtaining the features coordinates in another coordinate system.  
 
 The method transform can be used to move a feature to any coordinate system which is in the database.  The feature will be placed on a Slice which spans the entire sequence that the feature is on in the requested coordinate system.
 
@@ -500,6 +500,18 @@ The transform method returns a copy of the original feature in the new coordinat
 
 
 Both Feature A and Feature B are defined in the chromosomal coordinate system  described by the tiling path of contigs.  However, Feature A is not be defined in the contig coordinate system because it spans both Contig 1 and Contig 2.  Feature B, on the other hand, is still defined in the contig coordinate sytem.
+
+The special 'toplevel' coordinate system can also be used in this instance to move the feature to the highest possible coordinate system in a given region:
+
+if(my $new_feature = $feature->transform('toplevel')) {
+  print "Feature's toplevel position is:",
+        $new_feature->slice->coord_system->name(), ' ',
+        $new_feature->slice->seq_region_name(), ' ',
+        $new_feature->start(),'-',$feature->end(),' (',
+        $new_feature->strand(), ")\n";
+} else {
+  print "Feature is not defined in toplevel coordinate system\n";
+}
 
 
 Transfer
@@ -529,7 +541,7 @@ Project
 
 When moving features between coordinate systems it is usually sufficient to use the transfer or transform methods.  Sometimes, however, it is necessary to obtain coordinates in a another coordinate system even when a coordinate system boundary is crossed.  Even though the feature is considered to be undefined in this case, the feature's coordinates in can still be obtained in the requested coordinate system using the project method.
 
-Both Slices and features have their own project methods, which take the same arguments and have the same return values.  The project method takes a coordinate system name as an argument and returns a reference to a list of [start,end,slice] triplets.   The start and end represent the part of the feature or Slice that is used to form that part of the projection.  The Slice represents part of the region that the slice or feature was projected to.  The following example illustrates the use of the project method on a feature.  The project method on a Slice can be used in the same way. 
+Both Slices and features have their own project methods, which take the same arguments and have the same return values.  The project method takes a coordinate system name as an argument and returns a reference to a list of [start,end,slice] triplets.   The start and end represent the part of the feature or Slice that is used to form that part of the projection.  The Slice represents part of the region that the slice or feature was projected to.  The following example illustrates the use of the project method on a feature.  The project method on a Slice can be used in the same way.  As with the Feature transform method the pseudo coordinate system 'toplevel' can be used to indicate you wish to project to the highest possible level.
  
 $projection = $feature->project('clone');
 
