@@ -99,9 +99,8 @@ CREATE TABLE map_density (
 CREATE TABLE contig (
   internal_id       int(10) unsigned NOT NULL auto_increment,
   id                varchar(40) NOT NULL,
-  clone             int(10) unsigned NOT NULL,
-  length            int(10) unsigned NOT NULL, # foreign key clone:internal_id
-  length            int(10) unsigned NOT NULL,   
+  clone             int(10) unsigned NOT NULL, # foreign key clone:internal_id
+  length            int(10) unsigned NOT NULL, 
   offset            int(10) unsigned,
   corder            int(10) unsigned,
   dna               int(10) unsigned NOT NULL, # foreign key dna:id
@@ -337,7 +336,6 @@ CREATE TABLE transcript (
 );
 
 CREATE TABLE transcript_stable_id (
-    transcript_id int unsigned not null,
     transcript_id int unsigned not null,  # foreign key transcript:transcript_id
     stable_id     VARCHAR(40) not null,
     version       int(10) DEFAULT '1' NOT NULL,
@@ -376,7 +374,6 @@ CREATE TABLE translation_stable_id (
 );
 
 # this is a denormalised golden path
-
 #
 # The data in this table defines the "static golden path", i.e. the
 # best effort draft full genome sequence as determined by the UCSC or NCBI
