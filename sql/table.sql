@@ -14,7 +14,7 @@ CREATE TABLE analysisprocess (
   db varchar(40),
   db_version varchar(40),
   db_file varchar(80),
-  program varchar(40),
+  program varchar(80),
   program_version varchar(40),
   program_file varchar(40),
   parameters varchar(80),
