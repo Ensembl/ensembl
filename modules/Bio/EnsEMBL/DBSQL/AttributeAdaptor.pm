@@ -22,11 +22,9 @@ Bio::EnsEMBL::Attribute objects.
 
   $attributes = $attribute_adaptor->fetch_all_by_Slice( $slice );
 
-  $attribute_types = $attribute_adaptor->fetch_all_types();
+  $attribute_adaptor->store_on_Slice( $slice, \@attributes );
 
-  $attribute_adaptor->store_on_Slice( $slice, $attributes );
-
-  $attribute_adaptor->store_on_MiscFeature( $misc_feature, $attributes )
+  $attribute_adaptor->store_on_MiscFeature( $misc_feature, \@attributes )
 
 
 =head1 DESCRIPTION
@@ -70,6 +68,7 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
+
   # cache creation could go here
   return $self;
 }
@@ -91,6 +90,30 @@ sub new {
 sub fetch_all_by_MiscFeature {
   my $self = shift;
   my $mf   = shift;
+
+  if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::MiscFeature')) {
+    throw('MiscFeature argument is required.');
+  }
+
+  my $mfid = $mf->dbID();
+
+  if(!defined($mfid)) {
+    throw("MiscFeature must have dbID.");
+  }
+
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       ma.value " .
+                           "FROM misc_attrib ma, attrib_type at " .
+                           "WHERE ma.misc_feature_id = ? " .
+                           "AND   at.attrib_type_id = ma.attrib_type_id");
+
+  $sth->execute($mfid);
+
+  my $results = $self->_obj_from_sth($sth);
+
+  $sth->finish();
+
+  return $results;
 }
 
 
@@ -110,27 +133,31 @@ sub fetch_all_by_MiscFeature {
 sub fetch_all_by_Slice {
   my $self = shift;
   my $slice = shift;
-}
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required.');
+  }
+
+  my $seq_region_id = $slice->get_seq_region_id();
 
 
+  if(!defined($seq_region_id)) {
+    throw("Could not get seq_region_id for provided slice: ".$slice->name());
+  }
 
-=head2 fetch_all_types
+  my $sth = $self->prepare("SELECT at.code, at.name, at.description, " .
+                           "       sra.value " .
+                           "FROM seq_region_attrib sra, attrib_type at " .
+                           "WHERE sra.seq_region_id = ? " .
+                           "AND   at.attrib_type_id = sra.attrib_type_id");
 
-  Arg [1]    : none, string, int, Bio::EnsEMBL::Example $formal_parameter_name
-    Additional description lines
-    list, listref, hashref
-  Example    :  ( optional )
-  Description: testable description
-  Returntype : none, txt, int, float, Bio::EnsEMBL::Example
-  Exceptions : none
-  Caller     : object::methodname or just methodname
+  $sth->execute($seq_region_id);
 
-=cut
+  my $results = $self->_obj_from_sth($sth);
 
-sub fetch_all_types {
-  my $self = shift;
+  $sth->finish();
 
-  return $all_types;
+  return $results;
 }
 
 
@@ -166,7 +193,7 @@ sub store_on_Slice {
   my $seq_region_id = $slice->get_seq_region_id();
 
   if(!$seq_region_id) {
-    throw("Could not get seq_region_id for provided slice: " $slice->name());
+    throw("Could not get seq_region_id for provided slice: ".$slice->name());
   }
 
   my $sth = $self->prepare( "INSERT into seq_region_attrib ".
@@ -179,7 +206,7 @@ sub store_on_Slice {
             "argument expected.");
     }
     my $atid = $self->_store_type( $at );
-    $sth->execute( $seq_region_id, $attrib_id, $attrib->value() );
+    $sth->execute( $seq_region_id, $atid, $at->value() );
   }
 
   return;
@@ -228,7 +255,7 @@ sub store_on_MiscFeature {
 			    "value = ? " );
 
   for my $attrib ( @$attributes ) {
-    if(!ref($at) && $at->isa('Bio::EnsEMBL::Attribute')) {
+    if(!ref($attrib) && $attrib->isa('Bio::EnsEMBL::Attribute')) {
       throw("Reference to list of Bio::EnsEMBL::Attribute objects " .
             "argument expected.");
     }
@@ -241,50 +268,143 @@ sub store_on_MiscFeature {
 
 
 
-# _store_type 
+
+=head2 remove_from_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The Slice to remove attributes from
+  Example    : $attribute_adaptor->remove_from_Slice($slice);
+  Description: Removes all attributes which are stored in the database on
+               the provided Slice.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if cannot obtain seq_region_id from provided Slice
+  Caller     : general
+
+=cut
+
+sub remove_from_Slice {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw("Bio::EnsEMBL::Slice argument expected.");
+  }
+
+  my $srid = $slice->get_seq_region_id();
+
+  if(!$srid) {
+    throw("Could not get seq_region_id for provided slice: ".$slice->name());
+  }
+
+  my $sth = $self->prepare("DELETE FROM seq_region_attrib " .
+                           "WHERE seq_region_id = ?");
+
+  $sth->execute($srid);
+
+  $sth->finish();
+
+  return;
+}
+
+
+=head2 remove_from_MiscFeature
+
+  Arg [1]    : Bio::EnsEMBL::MiscFeature $mf
+               The MiscFeature to remove attributes from
+  Example    : $attribute_adaptor->remove_from_MiscFeature($mf);
+  Description: Removes all attributes which are stored in the database on
+               the provided MiscFeature.
+  Returntype : none
+  Exceptions : throw on incorrect arguments
+               throw if MiscFeature is not stored in this database
+  Caller     : general
+
+=cut
+
+sub remove_from_MiscFeature {
+  my $self = shift;
+  my $mf   = shift;
+
+  if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::MiscFeature')) {
+    throw("Bio::EnsEMBL::MiscFeature argument is required.");
+  }
+
+  my $db = $self->db();
+
+  if(!$mf->is_stored($db)) {
+    throw("MiscFeature is not stored in this database.");
+  }
+
+  my $sth = $db->prepare("DELETE FROM misc_attrib " .
+                         "WHERE misc_feature_id = ?");
+
+  $sth->execute($mf->dbID());
+
+  $sth->finish();
+
+  return;
+}
+
+
+
+# _store_type
 
 sub _store_type {
   my $self = shift;
   my $attrib = shift;
 
-  my $sth = $self->prepare
+  my $sth1 = $self->prepare
     ("INSERT IGNORE INTO attrib_type set code = ?, name = ?, ".
      "description = ?" );
 
-  $sth->execute($attrib->code(), $attrib->name(), $attrib->description() );
+  my $rows_inserted =
+    $sth1->execute($attrib->code(), $attrib->name(), $attrib->desc() );
 
-  my $atid = $sth->{'mysql_insertid'};
+  my $atid = $sth1->{'mysql_insertid'};
 
-  $sth->finish();
-
-  if( $self->db->db_handle->{'mysql_info'} == 0 ) {
+  if($rows_inserted == 0) {
     # the insert failed because the code is already stored
-    $sth = $self->prepare
+    my $sth2 = $self->prepare
       ("SELECT attrib_type_id FROM attrib_type " .
        "WHERE code = ?");
-    $sth->execute($code);
-    ($atid) = $sth->fetchrow_array();
+    $sth2->execute($attrib->code());
+    ($atid) = $sth2->fetchrow_array();
 
-    $sth->finish();
+    $sth2->finish();
 
     if(!$atid) {
-      throw("Could not store or fetch attrib_type code [$code]\n" .
+      throw("Could not store or fetch attrib_type code [".$attrib->code."]\n" .
 	    "Wrong database user/permissions?");
     }
   }
 
+  $sth1->finish();
+
+
   return $atid;
 }
+
+
 
 
 sub _obj_from_sth {
   my $self = shift;
   my $sth = shift;
 
-  return $results;
+  my ($code, $name, $desc, $value);
+  $sth->bind_columns(\$code, \$name, \$desc, \$value);
+
+  my @results;
+  while($sth->fetch()) {
+    push @results, Bio::EnsEMBL::Attribute->new(-CODE => $code,
+                                                -NAME => $name,
+                                                -DESC => $desc,
+                                                -VALUE => $value);
+  }
+
+  return \@results;
 }
-
-
 
 
 #
