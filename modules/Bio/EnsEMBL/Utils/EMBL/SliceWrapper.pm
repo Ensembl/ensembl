@@ -405,7 +405,10 @@ sub top_SeqFeatures {
   }
 
   unless($self->skip_SeqFeature('snp')) {
-    push @sfs, @{$self->slice->get_all_SNPs};
+  	eval {
+      push @sfs, @{$self->slice->get_all_SNPs};
+	  };
+	  $self->warn("could not retrieve snps: $@") if ($@);
   }
 
   #filter out features overlapping slice boundary
