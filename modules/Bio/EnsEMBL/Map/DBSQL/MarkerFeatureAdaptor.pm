@@ -34,7 +34,7 @@ use Bio::EnsEMBL::Map::Marker;
 use Bio::EnsEMBL::Map::MarkerSynonym;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
-use Bio::EnsEMBL::Utils::Exception qw(throw);
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 use vars qw(@ISA);
 
@@ -239,18 +239,23 @@ sub _objs_from_sth {
 sub store {
   my ($self, @mfs) = @_;
 
+  my $analysis_adaptor = $self->db->get_AnalysisAdaptor();
+  my $slice_adaptor = $self->db->get_SliceAdapor();
+
   foreach my $mf (@mfs) {
 
     #
     # Sanity checking!
     #
-    unless($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
+    if(!ref($mf) || !$mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
       $self->throw('Incorrect argument [$mf] to store.  Expected ' .
-		   'Bio::EnsEMBL::Map::MarkerFeature');
+                   'Bio::EnsEMBL::Map::MarkerFeature');
     }
 
     #don't store this feature if it has already been stored
-    next if($mf->is_stored($self->db()));
+    if($mf->is_stored($self->db())) {
+      warning('MarkerFeature ['.$mf->dbID.'] is already stored in this DB.');
+    }
 
     my $marker = $mf->marker;
 
@@ -266,27 +271,42 @@ sub store {
 
     my $analysis = $mf->analysis;
 
-    if(!$analysis || !ref($analysis) ||
-       !$analysis->isa('Bio::EnsEMBL::Analysis')) {
-      throw('Cannot store MarkerFeature without associated Analysis');
+    #store the analysis if it has not been stored yet
+    if(!$analysis->is_stored($self->db())) {
+      $analysis_adaptor->store($mf->analysis());
     }
 
     my $analysis_id = $analysis->dbID;
 
-    if(!$analysis_id) {
-      throw('Associated analysis must have dbID to store MarkerFeature');
-    }
-
     my $slice = $mf->slice;
 
-    if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
-      throw('Cannot store MarkerFeature that is not in contig coords');
+    if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+      throw('MarkerFeature must have a slice to be stored');
+    }
+
+    # make sure that the feature coordinates are relative to
+    # the start of the seq_region that the prediction transcript is on
+    if($slice->start != 1 || $slice->strand != 1) {
+      #move the feature onto a slice of the entire seq_region
+      $slice = $slice_adaptor->fetch_by_region($slice->coord_system->name(),
+                                               $slice->seq_region_name(),
+                                               undef, #start
+                                               undef, #end
+                                               undef, #strand
+                                              $slice->coord_system->version());
+
+      $mf = $mf->transfer($slice);
+
+      if(!$mf) {
+        throw('Could not transfer MarkerFeature to slice of ' .
+              'entire seq_region prior to storing');
+      }
     }
 
     my $seq_region_id = $self->db->get_SliceAdaptor->get_seq_region_id($slice);
 
     if(!$seq_region_id) {
-      throw('Attached slice\'s seq_region is not in database');
+      throw('Attached slice\'s seq_region is not in database.');
     }
 
     #
