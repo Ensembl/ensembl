@@ -310,6 +310,7 @@ while(my $row = $sth->fetchrow_hashref()) {
 
 copy_table($dbi, "supporting_feature");
 copy_table($dbi, "map");
+copy_table($dbi, "meta");
 copy_table($dbi, "analysis");
 copy_table($dbi, "dnafrag");
 copy_table($dbi, "exon_stable_id");
