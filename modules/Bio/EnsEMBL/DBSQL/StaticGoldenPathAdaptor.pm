@@ -284,8 +284,8 @@ sub fetch_RawContigs_by_chr_start_end {
           AND c.internal_id = st.raw_id
           AND st.chr_name = '$chr'
           AND st.type = '$type'
-          AND NOT (st.chr_start > $end)
-          AND NOT (st.chr_end < $start)
+          AND NOT (st.chr_start > $end) 
+          AND NOT (st.chr_end < $start) 
         ");
    $sth->execute;
 
@@ -339,8 +339,9 @@ sub fetch_VirtualContig_by_chr_start_end {
     }
 
 
-    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end)
-        or $self->throw("Got zero rawcontigs");
+    my @rc = $self->fetch_RawContigs_by_chr_start_end($chr,$start,$end);
+	# Ewan's note - We can have zero rawcontigs - when there is a gap
+        #or $self->throw("Got zero rawcontigs");
 
 
     my $vc;
