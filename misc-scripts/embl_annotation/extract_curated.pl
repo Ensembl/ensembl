@@ -267,6 +267,7 @@ sub _process_file{
 	# check SV
 	my $sv=$seq->seq_version;
 	if($sv=~/^(\d+)$/){
+	    $sv=$1;
 	    if($version && $1!=$version){
 		print "Sequence versions are different: Ensembl:$version; EMBL:$1\n";
 		$processed{$clone_id}="embl_version:ENSEMBL:$version:EMBL:$1";

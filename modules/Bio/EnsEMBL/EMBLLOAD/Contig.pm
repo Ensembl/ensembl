@@ -56,10 +56,15 @@ sub new {
     my ($annseq,$id)=$self->_rearrange([qw(ANNSEQ)],@args);
 
     $self->_get_Seq($annseq);
+    my $sv=$annseq->seq_version;
+    my $len=$annseq->length;
 
     # HACK by th, for ensembl100:
     # inherit id from clone NOT annseq
-    $id="$id.00001";
+    # old (ensembl100 format)
+    #$id="$id.00001";
+    # new (ensembl110 format)
+    $id="$id.$sv.1.$len";
     $self->{'_id'} = $self->id($id);
 
     return $self; 

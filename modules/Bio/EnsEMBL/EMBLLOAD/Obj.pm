@@ -53,7 +53,7 @@ sub new {
     bless $self,$class;
 
 
-    my ($file,$format,$seq)=$self->_rearrange([qw(FILE FORMAT SEQ)],@args);        
+    my ($file,$format,$seq)=$self->_rearrange([qw(FILE FORMAT SEQ)],@args);
 # my $file='data/newentry';
 # my$format='EMBL';  
 
@@ -67,7 +67,6 @@ sub new {
 	$seq=$stream->next_seq();
     }
     $self->get_Seq($seq);
-
     return $self;     
 }
 
@@ -109,7 +108,6 @@ sub get_Clone {
 =cut
 
 sub get_Contig {
-
    my ($self) = @_;
    my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->get_Seq);    
    return $contig;  
@@ -375,47 +373,16 @@ sub archive_Gene {
 
 sub replace_last_update {
     my ($self) = @_;
- 
     $self->throw("Not implemented in the object!");
 }
  
 
 
 
-
 sub get_Seq {
-
     my ($obj,$value) = @_;
     if( defined $value) {$obj->{'annseq'} = $value;}
     return $obj->{'annseq'};    
 }
 
-
-
-
-
-
-
-
-
 1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
