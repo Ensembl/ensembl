@@ -447,6 +447,61 @@ sub get_all_VirtualGenes {
     return @out;
 }
 
+=head2 get_all_VirtualGenes_startend
+
+ Title   : get_all_VirtualGenes_startend
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_VirtualGenes_startend{
+   my ($self,@args) = @_;
+
+   my %gene;
+   my @ret;
+
+   foreach my $contig ($self->_vmap->get_all_RawContigs) {
+       foreach my $gene ( $contig->get_all_Genes() ) {      
+	   $gene{$gene->id()} = $gene;
+       }
+   }
+   
+ GENE:
+   foreach my $gene ( values %gene ) {
+       my $genestart = $self->length;
+       my $geneend   = 1;
+       my $genestr;
+       foreach my $trans ( $gene->each_Transcript ) {
+	   foreach my $exon ( $trans->each_Exon ) {
+
+	       my $mc = $self->_vmap->get_MapContig($exon->contig_id);
+	       if( !defined $mc ) {
+		   next;
+	       }
+	       
+	       
+	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	       if( $st < $genestart ) {
+		   $genestart = $st;
+	       }
+	       if( $en > $geneend ) {
+		   $geneend = $en;
+	       }
+	       $genestr = $str;
+	   }
+       }
+       
+       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, -start => $genestart, -end => $geneend, -strand => $genestr);
+       push(@ret,$vg);
+   }
+
+   return @ret;
+}
 
 =head2 get_all_SeqFeatures
 
@@ -1315,9 +1370,6 @@ sub _reverse_map_Exon{
    my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
    my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
-   if( !ref $scontig || !ref $econtig || !$scontig->isa('Bio::EnsEMBL::DB::RawContigI') || !$econtig->isa('Bio::EnsEMBL::DB::RawContigI') ) {
-       $self->throw("Exon on vc ".$exon->id." [".$exon->start.":".$exon->end."] is unmappable to rawcontig positions, probably being in a gap. Can't write");
-   }
 
   
    if( $scontig->id eq $econtig->id ) {
@@ -1375,22 +1427,26 @@ sub _reverse_map_Exon{
 
        my @mapcontigs = $self->_vmap->each_MapContig();
 
-       # walk to find scontig
-       my $found = 0;
-       my $mc;
-       while ( $mc = shift @mapcontigs ) { 
- 
-	   if( $mc->contig->id eq $scontig->id ) {
-	       print STDERR "Unshifting ",$mc->contig->id,"\n";
-	       unshift(@mapcontigs,$mc);
-	       $found = 1;
-	       last;
+       # walk to find scontig. If it is a gap, simply move on
+       if( $scontig eq 'gapcontig' ) {
+	   $scontig = $self->dbobj->get_Contig('gapcontig');
+       } else {
+	   
+	   my $found = 0;
+	   my $mc;
+	   while ( $mc = shift @mapcontigs ) { 
+	       
+	       if( $mc->contig->id eq $scontig->id ) {
+		   print STDERR "Unshifting ",$mc->contig->id,"\n";
+		   unshift(@mapcontigs,$mc);
+		   $found = 1;
+		   last;
+	       }
+	   }
+	   if( $found == 0 ) {
+	       $self->throw("Internal error - unable to find map contig with this id");
 	   }
        }
-       if( $found == 0 ) {
-	   $self->throw("Internal error - unable to find map contig with this id");
-       }
-
 
        my $vcstart = $exon->start;
        #print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";

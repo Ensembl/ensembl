@@ -66,6 +66,8 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DBSQL::Update_Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Bio::EnsEMBL::DBSQL::RawContig;
+use Bio::EnsEMBL::DBSQL::GapContig;
+
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
@@ -2024,6 +2026,11 @@ sub get_Contig{
 
     #$self->warn("Obj->get_Contig is a deprecated method! 
  #Calling Contig->fetch instead!");
+
+    if( $id eq 'gapcontig' ) {
+	my $contig = new Bio::EnsEMBL::DBSQL::GapContig;
+	return $contig;
+    }
 
     my $contig = new Bio::EnsEMBL::DBSQL::RawContig(
         -id                         => $id,
