@@ -1,10 +1,8 @@
 #!/usr/local/bin/perl
 
-#This script generates a full dump of the EnsEMBL database for 
-#a particular chromosome. Useful to create a small but fully functional
-#EnsEMBL db
-
-#!/usr/local/bin/perl
+# This script generates a full dump of an EnsEMBL core database for 
+# a particular chromosome. Useful to create a small but fully functional
+# EnsEMBL db
 
 =head1 NAME
 
@@ -32,11 +30,11 @@ use Getopt::Long;
 my $workdir = `pwd`; chomp($workdir);
 my $host = "localhost";
 my $port   = '';
-my $dbname = 'homo_sapiens_core_110';
+my $dbname = undef; # force users to specify e.g. 'homo_sapiens_core_110';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
-my $chr = 'chr22';
+my $chr = 'chr21';                      # smaller than chr22
 my $lim;
 # my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 #                  /mysql/current/bin/mysqldump
@@ -53,7 +51,12 @@ my $mysqldump = 'mysqldump'; # in $PATH we trust
 	     'limit:n'    => \$lim
 	     );
 
+die "no database specified; use -dbname a-core(like)-database" unless $dbname;
 die "chromosome names should start with 'chr'" unless $chr =~ /^chr/;
+
+my $pass_arg=""; $pass_arg="-p$dbpass" if $dbpass;
+
+$workdir= "$workdir/$dbname";           # following the import scheme
 
 my $limit;
 if ($lim) {
@@ -62,24 +65,29 @@ if ($lim) {
 
 my $locator = "$module/host=$host;port=;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $db =  Bio::EnsEMBL::DBLoader->new($locator);
+$db->{RaiseError}++;                    # carp as soon as something wrong
 
-#Dump data from tables that are needed in full regardless of
-#dump size: analysis,analysisprocess,chromosome,externalDB,meta,species
+unless (-d $workdir) {
+    my $cmd = "mkdir -p $workdir";
+    system($cmd) && die "``$cmd'' exited with exit status $?";
+}
+
+print STDERR "Dumping data from small tables needed full:\n";
 
 #interpro and interpro_description in theory could be trimmed based on the hid of the protein_feature, but the join would take long, and the table is tiny!
-
-print STDERR "Dumping data from small tables needed in full\n";
-my $pass_arg=""; $pass_arg="-p$dbpass" if $dbpass;
-$command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname analysis analysisprocess chromosome externalDB meta species interpro interpro_description";
-system ($command);
+my @small_tables =  qw(analysis analysisprocess chromosome externalDB meta
+                       species interpro interpro_description);
+$"=' ';
+$command = "$mysqldump -u $dbuser $pass_arg -T $workdir $dbname @small_tables";
+system ($command) && die "``$command'' exited with exit status $?";
 
 my $command = "rm $workdir/*.sql";
-system ($command);
+system ($command) && die "``$command'' exited with exit status $?";
 
 #Dump schema
-print STDERR "Dumping database schema into table.sql\n";
-$command = "$mysqldump -u $dbuser $pass_arg -d $dbname > $workdir/table.sql";
-system($command);
+print STDERR "Dumping database schema to $workdir/$dbname.sql\n";
+$command = "$mysqldump -u $dbuser $pass_arg -d $dbname > $workdir/$dbname.sql";
+system($command) && die "``$command'' exited with exit status $?";
 
 my $sth = $db->prepare("select * from karyotype where chr_name = '$chr' $limit into outfile '$workdir/karyotype.txt'");
 $sth->execute;
@@ -110,6 +118,7 @@ close (FILE);
 die "no contigs found for ``$golden_path_q''" unless @contig_ids;
 
 my $contig_list = &get_inlist(0,@contig_ids);
+$contig_list = &get_inlist(0,@contig_ids) if @contigs;
 
 $sth = $db->prepare("select * from contig where internal_id in $contig_list");
 $sth->execute;
@@ -164,7 +173,7 @@ my $feature_list = &get_inlist(0,@feature_ids);
 #my $sth = $db->prepare("select * from fset_feature where feature in $feature_list");
 #$sth->execute;
 my @fset_ids;
-open (FILE,">$workdir/fset_feature.txt");
+open (FILE,">$workdir/fset_feature.txt") || die $!;
 foreach my $feature (@feature_ids) {
     
     my $sth = $db->prepare("select * from fset_feature where feature = $feature");
@@ -194,7 +203,7 @@ print STDERR "Dumping gene data from chromosome $chr\n";
 $sth = $db->prepare("select * from exon where contig in $contig_list");
 $sth->execute;
 my @exon_ids;
-open (FILE,">$workdir/exon.txt");
+open (FILE,">$workdir/exon.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -209,7 +218,7 @@ my $exon_list = &get_inlist(1,@exon_ids);
 $sth = $db->prepare("select * from exon_transcript where exon in $exon_list");
 $sth->execute;
 my @transcript_ids;
-open (FILE,">$workdir/exon_transcript.txt");
+open (FILE,">$workdir/exon_transcript.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -225,7 +234,7 @@ $sth = $db->prepare("select * from transcript where id in $transcript_list");
 $sth->execute;
 my @gene_ids;
 my @translation_ids;
-open (FILE,">transcript.txt");
+open (FILE,">transcript.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
@@ -258,7 +267,7 @@ $sth = $db->prepare("select * from objectXref where ensembl_id in $translation_l
 $sth->execute;
 my @oxref_ids;
 my @xref_ids;
-open (FILE,">objectXref.txt");
+open (FILE,">objectXref.txt") || die $!;
 while( (my $arr = $sth->fetchrow_arrayref()) ) {
     my @array = @$arr;
     
