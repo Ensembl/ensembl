@@ -35,7 +35,7 @@ $stadaptor = $db->get_StaticGoldenPathAdaptor();
 
 $vc2 = $stadaptor->fetch_VirtualContig_by_chr_name('chr2');
 
-$seqout = Bio::SeqIO->new(-file => '>t/vc2embl.out' , -format => 'embl' );
+$seqout = Bio::SeqIO->new(-file => '>t/vc2embl.out' , '-format' => 'embl' );
 
 $seqout->write_seq($vc2);
 
