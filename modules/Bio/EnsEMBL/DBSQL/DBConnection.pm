@@ -564,9 +564,16 @@ sub DESTROY {
 
    #print STDERR "DESTROYING DBConnection\n";
 
-   if( $obj->{'_db_handle'} ) {
-       $obj->{'_db_handle'}->disconnect;
-       $obj->{'_db_handle'} = undef;
+   my $dbh = $obj->{'_db_handle'};
+
+   if( $dbh ) {
+     #don't disconnect if the InactiveDestroy flag has been set
+     #this can really screw up forked processes
+     if(!$dbh->{'InactiveDestroy'}) {
+       $dbh->disconnect;
+     } 
+
+     $obj->{'_db_handle'} = undef;
    }
 }
 
