@@ -428,7 +428,7 @@ sub each_tag_value{
 
 =cut
 
-sub gene{
+sub gene {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -440,6 +440,20 @@ sub gene{
     }
     return $obj->{'gene'};
 
+}
+
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id
+ Function: Convenience function to return the id of the underlying real gene
+ Returns : value of id
+
+=cut
+
+sub id {
+   my $obj = shift;
+   return $obj->gene->id;
 }
 
 =head2 is_complete
