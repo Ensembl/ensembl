@@ -30,8 +30,9 @@ close SEQ_REGION_IN;
 
 
 my $is_header_line = 1;
-my ($asm_sr_id, $cmp_sr_id, $asm_start, $cmp_start, $asm_strand, $cmp_strand, $ori);
-my ($match, $insert, $delete, $asm_begin, $asm_end, $cmp_begin, $cmp_end, $align_id);
+my ($asm_sr_id, $cmp_sr_id, $asm_start, $cmp_start, $asm_strand, $cmp_strand,
+    $ori, $match, $insert, $delete, $asm_begin, $asm_end, $cmp_begin,
+    $cmp_end, $align_id, $asm_sr_len, $cmp_sr_len);
 
 LINE:
 while(<CHAIN_IN>) {
@@ -58,19 +59,21 @@ while(<CHAIN_IN>) {
       next LINE;
     }
 
+    $asm_sr_len = $header[3];
+    $cmp_sr_len = $header[8];
+
     $asm_strand = ($header[4] eq '+') ? 1 : -1;
     $cmp_strand = ($header[9] eq '+') ? 1 : -1;
     $ori        = $asm_strand * $cmp_strand;
 
-    #start is end if we are on negative strand
+    #start is (length-start) if we are on negative strand
     #start coordinates in file start at 0 not 1
-    $asm_start = ($asm_strand == 1) ? $header[5] +1 : $header[6];
-    $cmp_start = ($cmp_strand == 1) ? $header[10]+1 : $header[11]; 
+    $asm_start = ($asm_strand == 1) ? $header[5]+1  : $asm_sr_len-$header[5];
+    $cmp_start = ($cmp_strand == 1) ? $header[10]+1 : $cmp_sr_len-$header[10];
 
     $is_header_line = 0;
 
     $align_id = $header[12];
-    
   } else {
     if($_) {
       next LINE if(/^\#/); #skip comments
