@@ -1302,8 +1302,6 @@ sub write_Analysis {
                 $anal->gff_feature      . "\")";
     }
 
-#    print("Query is $query\n");
-    
     my $sth  = $self->prepare($query);
     my $rv   = $sth->execute;
     

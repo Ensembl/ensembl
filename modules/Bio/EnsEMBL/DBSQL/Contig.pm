@@ -205,7 +205,9 @@ sub get_all_SeqFeatures{
    my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
 				    "from feature where contig = '$id'");
    $sth->execute();
+
    my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid);
+
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid);
 
@@ -219,15 +221,18 @@ sub get_all_SeqFeatures{
 	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
 
 	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, -feature2 => $feature2);
-	   $out->hstart($hstart);
-	   $out->hend($hend);
-	   $out->hseqname($hid);
+
+	   $out->hstart     ($hstart);
+	   $out->hend       ($hend);
+	   $out->hseqname   ($hid);
 	   $out->hsource_tag($name);
 	   $out->hprimary_tag('similarity');
 	   #$out->strand    ($strand);
+
 	   if( defined $score ) {
 	       $out->hscore($score);
 	   }
+
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
        }
@@ -260,9 +265,9 @@ sub get_all_SeqFeatures{
 
        # downcast to repeat for repeats. Not pretty.
        #
-       #if( $out->source_tag() =~ /Repeat/ ) {
-       #bless $out, "Bio::EnsEMBL::Analysis::Repeat";
-       #}
+       if( $out->source_tag() =~ /Repeat/ ) {
+	   bless $out, "Bio::EnsEMBL::Repeat";
+       }
 
 
       push(@array,$out);
