@@ -49,7 +49,7 @@ sub new {
 
   $class = ref $class || $class;
 
-  my $self = $class->SUPER::new( $class );
+  my $self = $class->SUPER::new();
 
   if($e1->strand == -1){
     $self->{'end'} = ($e1->start)-1;
