@@ -246,6 +246,14 @@ sub add_component_Exon{
    push(@{$self->{'_component_exons'}},$exon);
 }
 
+
+sub contig {
+  my ( $self ) = @_;
+
+  return $self->{'_component_exons'}->[0]->contig();
+}
+  
+
 =head2 length
 
  Title   : length
