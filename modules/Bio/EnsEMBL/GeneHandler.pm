@@ -370,12 +370,12 @@ sub _generate_missing_exon{
 
    # figure out whether conitga is before or after contigb
    my $corder;
-   if( $contiga->order < $contigb ) {
+   if( $contiga->order < $contigb->order ) {
        $corder = 1;
    } else {
        $corder = -1;
    }
-
+   print STDERR "Corder $corder\n";
 #   if( ($strand == 1 && $contigb->orientation == 1) || ($strand == -1 && $contigb->orientation == -1) ) {
    if( $corder == 1 ) {
        $start = $contigb->offset - ($Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING/2);
