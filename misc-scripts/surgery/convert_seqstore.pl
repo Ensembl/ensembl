@@ -14,7 +14,7 @@ $dir = join('/', @d);
 unshift @INC, $dir;
 
 
-my ($file, $user, $password, $verbose, $force, $help, $schema);
+my ($file, $user, $password, $verbose, $force, $help, $schema, $limit);
 
 GetOptions ('file=s'      => \$file,
             'schema=s'    => \$schema,
@@ -22,6 +22,7 @@ GetOptions ('file=s'      => \$file,
             'password=s'  => \$password,
             'verbose'     => \$verbose,
             'force'       => \$force,
+            'limit'       => \$limit,
             'help'        => sub { &show_help(); exit 1;} );
 
 usage("-file option is required")   if(!$file);
@@ -59,7 +60,7 @@ while( my $line = <FILE> ) {
     
     $converter = "SeqStoreConverter::$species"->new
       ( $user, $password, $host, $source_db_name, $target_db_name, 
-        $schema, $force, $verbose );
+        $schema, $force, $verbose, $limit );
   }
 
   push @all_species_converters, $converter;
@@ -107,7 +108,15 @@ options: -file <input_file>     input file with tab delimited 'species',
 
          -force                 replace any target dbs that already exists
 
+         -limit <num_rows>      limit the number of features transfered to
+                                speed up testing
+
          -help                  display this message
+
+example: perl convert_seqstore.pl -file converter.input \\
+              -schema ../../sql/table.sql -user ensadmin -password secret \\
+              -force -verbose
+
 EOF
 #'
 

@@ -12,7 +12,7 @@ package SeqStoreConverter::BasicConverter;
 
 sub new {
   my ( $class, $user, $pass, $host, $source, $target, $schema, $force, 
-       $verbose ) = @_;
+       $verbose, $limit ) = @_;
 
   my $self = bless {}, $class;
 
@@ -28,6 +28,7 @@ sub new {
   $self->host( $host );
   $self->password( $pass);
   $self->user($user);
+  $self->limit($limit);
 
 
   #check to see if the destination and source databases exist already.
@@ -133,6 +134,12 @@ sub target {
   my $self = shift;
   $self->{'target'} = shift if(@_);
   return $self->{'target'};
+}
+
+sub limit {
+  my $self = shift;
+  $self->{'limit'} = shift if(@_);
+  return $self->{'limit'};
 }
 
 
@@ -744,6 +751,12 @@ sub transfer_features {
   my $source = $self->source();
   my $dbh    = $self->dbh();
 
+  my $limit = '';
+  if($self->limit()) {
+    $limit = ' limit ' . $self->limit();
+  }
+
+
   #
   # Feature tables
   # Note that we can just rename contig_* to set_region_* since the
@@ -762,7 +775,7 @@ sub transfer_features {
      "       display_label, analysis_id, score) " .
      "SELECT simple_feature_id, contig_id, contig_start, contig_end, " .
      "       contig_strand, display_label, analysis_id, score " .
-     "FROM $source.simple_feature");
+     "FROM $source.simple_feature $limit");
   
   # repeat_feature
   $self->debug("Dropping indexes on repeat_feature");
@@ -777,7 +790,7 @@ sub transfer_features {
      "    repeat_start, repeat_end, repeat_consensus_id, score) " .
      "SELECT repeat_feature_id, contig_id, contig_start, contig_end, " .
      "       contig_strand, analysis_id, repeat_start, repeat_end, " .
-     "       repeat_consensus_id, score FROM $source.repeat_feature");
+     "       repeat_consensus_id, score FROM $source.repeat_feature $limit");
 
   $self->debug("Readding indexes on repeat_feature");
   $dbh->do("ALTER TABLE $target.repeat_feature " .
@@ -801,7 +814,7 @@ sub transfer_features {
             "SELECT protein_align_feature_id, contig_id, contig_start, " .
             "       contig_end, contig_strand, analysis_id, hit_start, " .
             "       hit_end, hit_name, cigar_line, evalue, perc_ident, score ".
-            "FROM $source.protein_align_feature");
+            "FROM $source.protein_align_feature $limit");
 
   $self->debug("Readding indexes on protein_align_feature");
   $dbh->do( "ALTER TABLE $target.protein_align_feature " .
@@ -824,7 +837,7 @@ sub transfer_features {
             "SELECT dna_align_feature_id, contig_id, contig_start, " .
             "       contig_end, contig_strand, analysis_id, hit_start, " .
             "       hit_end, hit_name, hit_strand, cigar_line, evalue, " .
-            "       perc_ident, score FROM $source.dna_align_feature");
+            "       perc_ident, score FROM $source.dna_align_feature $limit");
 
 
   $self->debug("Readding indexes on dna_align_feature");
@@ -842,7 +855,7 @@ sub transfer_features {
             "        map_weight) " .
             "SELECT marker_feature_id, marker_id, contig_id, contig_start, ".
             "       contig_end, analysis_id, map_weight " .
-            "FROM   $source.marker_feature");
+            "FROM   $source.marker_feature $limit");
   
   # qtl_feature
   # Note this uses chromosome coords so we have to join with tmp_chr_map to 
@@ -855,7 +868,7 @@ sub transfer_features {
      "SELECT tcm.new_id, " .
      "       q.start, q.end, q.qtl_id, q.analysis_id " .
      "FROM $target.tmp_chr_map tcm, $source.qtl_feature q " .
-     "WHERE tcm.old_id = q.chromosome_id");
+     "WHERE tcm.old_id = q.chromosome_id $limit");
   
   # These tables now have seq_region_* instead of chromosome_*
   
@@ -865,7 +878,7 @@ sub transfer_features {
            "SELECT null, tcm.new_id, " .
            "       k.chr_start, k.chr_end, k.band, k.stain " .
            "FROM $target.tmp_chr_map tcm, $source.karyotype k " .
-           "WHERE tcm.old_id = k.chromosome_id");
+           "WHERE tcm.old_id = k.chromosome_id $limit");
 
 
   $self->debug("Building marker_map_location table");
@@ -875,7 +888,7 @@ sub transfer_features {
            "       c.name, " .
            "       mml.marker_synonym_id, mml.position, mml.lod_score " .
            "FROM $source.chromosome c, $source.marker_map_location mml " .
-           "WHERE c.chromosome_id = mml.chromosome_id");
+           "WHERE c.chromosome_id = mml.chromosome_id $limit");
 
   $self->debug("Building map_density table");
   $dbh->do(
@@ -883,10 +896,10 @@ sub transfer_features {
            "SELECT tcm.new_id, ".
            "       md.chr_start, md.chr_end, md.type, md.value " .
            "FROM $target.tmp_chr_map tcm, $source.map_density md " .
-           "WHERE tcm.old_id = md.chromosome_id");
+           "WHERE tcm.old_id = md.chromosome_id $limit");
 
 
-  $self->debug( "Building mapfrag table" );
+  $self->debug( "Building misc_feature table" );
   $dbh->do
     ("INSERT INTO $target.misc_feature( misc_feature_id, seq_region_id, " . 
      "            seq_region_start, seq_region_end, seq_region_strand ) " .
@@ -894,27 +907,27 @@ sub transfer_features {
      "       m.orientation " .
      "FROM   $source.mapfrag m, $target.seq_region sr, $source.dnafrag d " . 
      "WHERE  m.dnafrag_id = d.dnafrag_id " .
-     "AND    d.name = sr.name " );
+     "AND    d.name = sr.name $limit" );
 
-  $self->debug( "Building mapset table" );
+  $self->debug( "Building misc_set table" );
   $dbh->do
     ("INSERT INTO $target.misc_set( misc_set_id, code, name, description, " .
      "                              max_length ) " .
      "SELECT mapset_id, code, name, description, max_length " . 
-     "FROM $source.mapset ms " );
+     "FROM $source.mapset ms" );
 
-  $self->debug( "Building mapannotation table" );
+  $self->debug( "Building misc_attrib table" );
   $dbh->do
 	 ("INSERT INTO $target.misc_attrib( misc_feature_id, attrib_type_id, " . 
     "                    value ) ". 
     "SELECT mapfrag_id, mapannotationtype_id, value " .
     "FROM $source.mapannotation" );
   
-  $self->debug( "Building mapfrag_mapset table" );
+  $self->debug( "Building misc_feature_misc_set table" );
   $dbh->do
     ("INSERT INTO $target.misc_feature_misc_set(misc_feature_id, misc_set_id)".
      "SELECT mapfrag_id, mapset_id ".
-     "FROM $source.mapfrag_mapset " );
+     "FROM $source.mapfrag_mapset $limit" );
 
   return;
 }
