@@ -9,7 +9,7 @@ use File::Basename;
 use XrefParser::BaseParser;
 
 use vars qw(@ISA);
-@ISA = qw(BaseParser);
+@ISA = qw( XrefParser::BaseParser);
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -34,11 +34,11 @@ sub run {
   my $source_id = shift;
 
   if ($source_id < 1) {
-    $source_id = BaseParser->get_source_id_for_filename(basename($file));
+    $source_id =  XrefParser::BaseParser->get_source_id_for_filename(basename($file));
     print "Source id for $file: $source_id\n";
   }
 
-  BaseParser->upload_xrefs(create_xrefs($source_id, $file));
+   XrefParser::BaseParser->upload_xrefs(create_xrefs($source_id, $file));
 
 }
 
@@ -53,9 +53,9 @@ sub create_xrefs {
 
   my ($source_id, $file) = @_;
 
-  my %name2species_id = BaseParser->name2species_id();
+  my %name2species_id =  XrefParser::BaseParser->name2species_id();
 
-  my %dependent_sources = BaseParser->get_dependent_xref_sources();
+  my %dependent_sources =  XrefParser::BaseParser->get_dependent_xref_sources();
 
   open(REFSEQ, $file) || die "Can't open RefSeqGPFF file $file\n";
 
@@ -165,7 +165,7 @@ sub create_xrefs {
 sub new {
 
   my $self = {};
-  bless $self, "RefSeqGPFFParser";
+  bless $self, "XrefParser::RefSeqGPFFParser";
   return $self;
 
 }

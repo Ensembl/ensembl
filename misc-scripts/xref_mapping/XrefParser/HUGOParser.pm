@@ -7,7 +7,7 @@ use File::Basename;
 use XrefParser::BaseParser;
   
 use vars qw(@ISA);
-@ISA = qw(BaseParser);
+@ISA = qw(XrefParser::BaseParser);
  
 my $xref_sth ;
 my $dep_sth;
@@ -37,20 +37,20 @@ sub run {
 
   print STDERR $file."\n";
   if(!defined($source_id)){
-    $source_id = BaseParser->get_source_id_for_filename($file);
+    $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
     print "source id is $source_id \n";
   }
   if(!defined($species_id)){
-    $species_id = BaseParser->get_species_id_for_filename($file);
+    $species_id = XrefParser::BaseParser->get_species_id_for_filename($file);
     print "species id is $species_id \n";
   }
 
   my $dir = dirname($file);
  
-  print STDERR $dir."\n";
+#  print STDERR $dir."\n";
   
-  $xref_sth = BaseParser->dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
-  $dep_sth = BaseParser->dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)"); # xref1,xref2,"",hugo
+  $xref_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
+  $dep_sth = XrefParser::BaseParser->dbi->prepare("INSERT INTO dependent_xref VALUES(?,?,?,?)"); # xref1,xref2,"",hugo
     
 
   my %hugo;
@@ -125,7 +125,7 @@ sub run {
 sub get_xref{
   my ($acc,$source) = @_;
   
-  my $dbi =BaseParser->dbi;
+  my $dbi = XrefParser::BaseParser->dbi;
   my $sql = "select xref_id from xref where accession = '".$acc."' and source_id = $source";
   my $sth = $dbi->prepare($sql);
     
@@ -136,5 +136,14 @@ sub get_xref{
   return undef;
 }
   
+sub new {
+
+  my $self = {};
+  bless $self, "XrefParser::HUGOParser";
+  return $self;
+
+}
+ 
+1;
     
 

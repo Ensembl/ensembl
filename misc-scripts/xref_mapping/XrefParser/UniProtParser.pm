@@ -14,7 +14,7 @@ use File::Basename;
 use XrefParser::BaseParser;
 
 use vars qw(@ISA);
-@ISA = qw(BaseParser);
+@ISA = qw(XrefParser::BaseParser);
 
 # --------------------------------------------------------------------------------
 # Parse command line and run if being run directly
@@ -42,8 +42,8 @@ sub run {
 
   my ($species_id, $species_name) = get_species($file);
 
-  $sp_source_id = BaseParser->get_source_id_for_source_name('UniProtSwissProt');
-  $sptr_source_id = BaseParser->get_source_id_for_source_name('UniProtSPTrEMBL');
+  $sp_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniProtSwissProt');
+  $sptr_source_id = XrefParser::BaseParser->get_source_id_for_source_name('UniProtSPTrEMBL');
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
 
@@ -52,11 +52,11 @@ sub run {
   # delete previous if running directly rather than via BaseParser
   if (!defined(caller(1))) {
     print "Deleting previous xrefs for these sources\n";
-    BaseParser->delete_by_source(\@xrefs);
+    XrefParser::BaseParser->delete_by_source(\@xrefs);
   }
 
   # upload
-  BaseParser->upload_xrefs(@xrefs);
+  XrefParser::BaseParser->upload_xrefs(@xrefs);
 
 }
 
@@ -70,7 +70,7 @@ sub get_species {
 
   my ($taxonomy_id, $extension) = split(/\./, basename($file));
 
-  my $sth = BaseParser->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
+  my $sth = XrefParser::BaseParser->dbi()->prepare("SELECT species_id,name FROM species WHERE taxonomy_id=?");
   $sth->execute($taxonomy_id);
   my ($species_id, $species_name);
   while(my @row = $sth->fetchrow_array()) {
@@ -103,7 +103,7 @@ sub create_xrefs {
 
   my ($num_sp, $num_sptr) = 0;
 
-  my %dependent_sources = BaseParser->get_dependent_xref_sources(); # name-id hash
+  my %dependent_sources = XrefParser::BaseParser->get_dependent_xref_sources(); # name-id hash
 
   open(UNIPROT, $file) || die "Can't open Swissprot file $file\n";
 
@@ -118,7 +118,7 @@ sub create_xrefs {
     my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=(\d+);/;
     if (defined $ox) {
       my $taxon = $1;
-      my %taxonomy2species_id = BaseParser->taxonomy2species_id();
+      my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
       if (!exists $taxonomy2species_id{$taxon}) {
 	print "Skipping xref for species with taxonomy ID $taxon\n";
 	next;
@@ -247,7 +247,7 @@ sub create_xrefs {
 sub new {
 
   my $self = {};
-  bless $self, "SwissProtParser";
+  bless $self, "XrefParser::UniProtParser";
   return $self;
 
 }
