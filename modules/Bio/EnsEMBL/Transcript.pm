@@ -774,7 +774,7 @@ sub get_all_peptide_variations {
     my $codon = substr($cdna, $start - $codon_pos-1, $codon_length);
 
     #store each alternative allele by its location in the peptide
-    my @alleles = split(/(\/|\|)/, lc($snp->alleles));
+    my @alleles = split(/\/|\|/, lc($snp->alleles));
     foreach my $allele (@alleles) {
       next if $allele eq '-';       #skip deletions
       next if CORE::length($allele) != 1; #skip insertions
