@@ -76,6 +76,9 @@ use vars qw(@ISA);
                 the slice it is sitting on.  Coordinates start at 1 and are
                 inclusive.
   Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
+  Arg [-SEQNAME] : A seqname to be used instead of the default name of the 
+                of the slice.  Useful for features that do not have an 
+                attached slice such as protein features.
   Example    : $feature = Bio::EnsEMBL::Feature->new(-start    => 1, 
                                                      -end      => 100,
                                                      -strand   => 1,
@@ -95,8 +98,8 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my($start, $end, $strand, $slice, $analysis, $dbID, $adaptor) =
-    rearrange(['START','END','STRAND','SLICE','ANALYSIS',
+  my($start, $end, $strand, $slice, $analysis,$seqname, $dbID, $adaptor) =
+    rearrange(['START','END','STRAND','SLICE','ANALYSIS', 'SEQNAME',
                'DBID', 'ADAPTOR'], @_);
 
   if(defined($slice)) {
@@ -129,6 +132,7 @@ sub new {
                 'slice'    => $slice,
                 'analysis' => $analysis,
                 'adaptor'  => $adaptor,
+                'seqname'  => $seqname,
                 'dbID'     => $dbID}, $class);
 }
 
@@ -585,6 +589,38 @@ sub project {
 }
 
 
+
+=head2 seqname
+
+  Arg [1]    : (optional) $seqname
+  Example    : $seqname = $feat->seqname();
+  Description: Getter/Setter for the name of the sequence that this feature
+               is on. Normally you can get away with not setting this value
+               and it will default to the name of the slice on which this
+               feature is on.  It is useful to set this value on features which
+               do not ordinarily sit on features such as ProteinFeatures which
+               sit on peptides.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seqname {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'seqname'} = shift;
+  }
+
+  if(!$self->{'seqname'} && $self->slice()) {
+    return $self->slice->name();
+  }
+
+  return $self->{'seqname'};
+}
+
+
 ##############################################
 # Methods included for backwards compatibility
 ##############################################
@@ -600,17 +636,7 @@ sub contig {
   slice(@_);
 }
 
-# seqname
-#
-# This method is included for backwards compatibility
-# Try to use something like $feat->slice->seq_region_name instead
-#
-sub seqname {
-  my $self = shift;
-  deprecate('Use $feat->slice->name or $feat->slice->seq_region_name instead');
-  return '' if(!$self->slice());
-  return $self->slice->seq_region_name();
-}
+
 
 # sub_SeqFeature
 #
@@ -707,8 +733,10 @@ sub _deprecated_transform {
 #
 sub id {
   my $self = shift;
-  deprecate("id method is not used - use dbID instead");
-  return ($self->{'hseqname'}) ? $self->{'hseqname'} : $self->{'dbID'};
+  deprecate("id method is not used - use dbID or hseqname instead");
+  return $self->{'hseqname'} if($self->{'hseqname'});
+  return $self->{'seqname'}  if($self->{'seqname'});
+  return $self->{'dbID'};
 }
 
 1;
