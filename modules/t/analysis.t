@@ -10,7 +10,7 @@ END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
 
-our $verbose = 1;
+our $verbose = 0;
 
 $loaded = 1;
 
