@@ -179,6 +179,7 @@ sub featureParser {
     my $debug = 0;
 
     if (!defined($self->{_featureParser})) {
+	print STDERR "Looking at [",$self->primary_seq,"]\n";
 	my $sfobj=Bio::EnsEMBL::Analysis::FeatureParser->new($self->id,
 							     $self->_clone_dir,
 							     $self->disk_id,
@@ -675,6 +676,7 @@ sub _gs{
     my ($self) = @_;
 
     if(!defined($self->{'_gs'})) {
+	print STDERR "Passing in ",$self->primary_seq," to genscan\n";
 	my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
 						      $self->disk_id . ".gs",
 						      $self->primary_seq());

@@ -720,7 +720,7 @@ sub seq {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$arg->isa('Bio::Seq') || $self->throw("$arg is not a seq object in new contig_feature");
+	$arg->isa('Bio::PrimarySeqI') || $self->throw("$arg is not a seq object in new contig_feature");
 	$self->{_seq} = $arg;
     }
 

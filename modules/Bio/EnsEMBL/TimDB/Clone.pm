@@ -242,7 +242,7 @@ sub build_contigs {
 
     }
 
-    $self->_make_ContigOverlaps;
+    #$self->_make_ContigOverlaps;
     
     print STDERR scalar($self->get_all_Contigs) . " contigs found in clone\n";
 }
@@ -254,7 +254,8 @@ sub _make_ContigOverlaps {
     my $spacing     = $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
     
     return unless defined($clone_order);
-    
+    return;
+ 
     my @pieces = split(/:/,$clone_order);
 
     # Each contig is in the $clone_order string separated by either a colon or

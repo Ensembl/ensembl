@@ -81,7 +81,7 @@ sub _initialize {
 
   # The DNA Bio::Seq object 
   my $seq = shift(@args);
-  $seq->isa("Bio::Seq") || $self->throw("No DNA sequence passed into GenScan analysis code.");
+  $seq->isa("Bio::PrimarySeqI") || $self->throw("No DNA sequence passed into GenScan analysis code.");
 
   
   $self->{_dna}  = $seq;

@@ -79,7 +79,7 @@ sub _initialize {
     if (ref($args[0]) =~ /Bio::SeqIO/) {
       $self->seqIO($args[0]);
 
-    } elsif ($args[0]->isa("Bio::Seq")) {
+    } elsif ($args[0]->isa("Bio::PrimarySeqI")) {
       $self->seq($args[0]);
 
     } else {
