@@ -17,38 +17,31 @@ PredictionTranscript
 
 =head1 DESCRIPTION
 
-Container for single transcript ab initio gene prediction ala GenScan or SNAP.
-Is directly storable/retrievable in EnsEMBL using PredictionTranscript Adaptor.
+Container for single transcript ab initio gene prediction such as GenScan or
+SNAP. Is directly storable/retrievable in Ensembl using
+PredictionTranscriptAdaptor.
 
 Creation:
 
      my $tran = new Bio::EnsEMBL::PredictionTranscript();
-     $tran->add_Exon( $exon );
+     $tran->add_Exon( $pred_exon );
 
-     my $tran = new Bio::EnsEMBL::PredictionTranscript(@exons);
-
-     The order of the exons has to be right, as PT cant judge how to sort them.
-     ( no sort as in Bio::EnsEMBL::Transcript )
-
-     PredictionTranscript is geared towards the partial retrieve case from db.
-     Exons can be missing in the middle. For storage though its necessary to 
-     have them all and in contig coord system. 
+     my $tran = new Bio::EnsEMBL::PredictionTranscript(-EXONS => @pred_exons);
 
 Manipulation:
 
-     # Returns an array of Exon objects, might contain undef instead of exon.
-     my @exons = @{$tran->get_all_Exons};  
+     # Returns an array of PredictionExon objects
+     my @pred_exons = @{$tran->get_all_Exons};
 
-     # Returns the peptide translation as string 
-     my $pep   = $tran->translate;
+     # Returns the peptide translation as string
+     my $pep   = $tran->translate()->seq();
 
-     # phase padded Exons cdna sequence. Phases usually match.
-     my $cdna = $trans->get_cdna() 
-
+     # Get the exon cdna sequence.
+     my $cdna = $trans->spliced_seq();
 
 =head1 CONTACT
 
-contact EnsEMBL dev <ensembl-dev@ebi.ac.uk> for information
+Contact the Ensembl development list <ensembl-dev@ebi.ac.uk> for information
 
 =cut
 
