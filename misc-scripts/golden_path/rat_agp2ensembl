@@ -1,0 +1,136 @@
+# rat agp -> ensembl assembly, clone, contig, chromosome, dna tables
+# scp - correct for main trunk as on 26.11.02
+
+use strict;
+use Bio::SeqIO;
+use FileHandle;
+
+$| = 1;
+
+# chromosomes 1--20 should have chromosome_id's 1--20
+# random chromosomes after
+
+my @chr = qw(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 X Un);
+my @random = map { "$_.random" } @chr;
+push @chr, @random;
+
+my $dir = ".";
+my $ass_type = 'Rat_Nov02';
+
+open DNA, "> $dir/dna.dat" or die "Can't open dna";
+open CONTIG, "> $dir/contig.dat" or die "Can't open contig";
+open CLONE, "> $dir/clone.dat" or die "Can't open clone";
+open ASSEMBLY, "> $dir/assembly.dat" or die "Can't open assembly";
+open CHROMOSOME, "> $dir/chromosome.dat" or die "Can't open chromosome";
+
+my $internal_id = 1;
+my $chr_id = 1;
+
+my ($sec, $min, $hour, $mday, $mon, $year) = (gmtime(time))[0, 1, 2, 3, 4, 5];
+$mon++;
+$year += 1900;
+my $now = "$year-$mon-$mday $hour:$min:$sec";
+
+my %contig_id;
+my %contig_len;
+
+
+CHR: foreach my $chr (@chr) {
+
+    my $agp = "chr$chr.agp";
+    my $seq = glob "chr$chr.contig.fa*";
+
+    unless (-e $agp && -e $seq) {
+	print STDERR "Can't do $chr - wrong files\n";
+	next CHR;
+    }
+
+    open AGP, "< $agp";
+
+    my $global_chr_start;
+    my $global_chr_end;
+
+    AGP: while (<AGP>) {
+
+        chomp;
+
+        my($chr, $chr_start, $chr_end, $status,
+	   $ctg_name, $ctg_start, $ctg_end, $ctg_ori) =
+	   (split)[0,1,2,4,5,6,7,8];
+
+        next AGP if $status eq "N";
+
+	unless ($ctg_ori =~ /[+-]/) {
+	    print STDERR "Not standard strand $ctg_ori; set to '+'";
+	    $ctg_ori = '+';
+	}
+	$ctg_ori = $ctg_ori eq '-' ? -1 : 1;
+
+        print ASSEMBLY join("\t",
+	 $chr_id, $chr_start, $chr_end,
+	 $ctg_name, $ctg_start, $ctg_end, 1,
+	 $internal_id, $ctg_start, $ctg_end, $ctg_ori, $ass_type), "\n";
+
+	$global_chr_start ||= $chr_start;
+	$global_chr_end     = $chr_end;
+
+	$contig_id{$ctg_name}  = $internal_id;
+	$contig_len{$ctg_name} = $ctg_end - $ctg_start + 1;
+
+        $internal_id++;
+
+    } # AGP;
+
+    close AGP;
+
+    my $chr_len = $global_chr_end - $global_chr_start + 1;
+    print CHROMOSOME join("\t", $chr_id, $chr, 0, 0, 0, $chr_len), "\n";
+
+    my $fh;
+
+    if ($seq =~ /\.gz$/) {
+	open $fh, "gzcat $seq |";
+    }
+    else {
+	open $fh, "< $seq";
+    }
+
+    my $fasta = Bio::SeqIO->new(
+	-format => 'fasta',
+	-fh     => $fh
+    );
+
+    FASTA: while (my $contig = $fasta->next_seq) {
+
+	my $name = $contig->id;
+	my $ctg_length = $contig->length;
+
+	if ($contig_len{$name} != $ctg_length) {
+	    print STDERR "Error with length of $name: $ctg_length vs ", $contig_len{$name}, "\n";
+	}
+
+	my $internal_id = $contig_id{$name};   # NB override value in outer loop
+
+	print CLONE join("\t",
+         $internal_id, $name, $name, 1, 1, -1, $now, $now), "\n";
+
+        print CONTIG join("\t",
+	 $internal_id, $name, $internal_id, $ctg_length, 1, $internal_id), "\n";
+
+        print DNA join("\t",
+	 $internal_id, $contig->seq, $now), "\n";
+
+    } # FASTA
+
+    close $fh;
+
+    $chr_id++;
+
+} # CHR
+
+close DNA, "> dna.dat" or die "Can't close dna";
+close CONTIG, "> contig.dat" or die "Can't close contig";
+close CLONE, "> clone.dat" or die "Can't close clone";
+close ASSEMBLY, "> assembly.dat" or die "Can't close assembly";
+close CHROMOSOME, "> chromosome.dat" or die "Can't close chromosome";
+
