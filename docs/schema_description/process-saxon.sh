@@ -1,5 +1,5 @@
 #!/bin/sh
 
-java -jar /scratch/saxon/saxon7.jar tables.xml xml2html.xsl > tables.html 
+java -jar "C:/Program Files/saxon/saxon7.jar" tables.xml xml2html.xsl > schema_description.html 
 
-java -jar /scratch/saxon/saxon7.jar tables.xml xml2wiki.xsl > tables.txt
+java -jar "C:/Program Files/saxon/saxon7.jar" tables.xml xml2wiki.xsl > schema_description.txt
