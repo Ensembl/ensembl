@@ -12,11 +12,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DB::Obj - Object representing an instance of an EnsEMBL DB
+Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = new Bio::EnsEMBL::DB::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+    $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
 
     $clone = $db->get_clone('X45667');
 
@@ -49,6 +49,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::DBSQL::Obj;
+
 use vars qw(@ISA);
 use strict;
 
@@ -1216,20 +1217,15 @@ sub write_Feature {
 
     FEATURE :
     foreach my $feature ( @features ) {
+	
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
 
-	if (! $feature->has_tag('Analysis')) {
-	    $self->throw("Feature " . $feature->seqname . " doesn't have analysis. Can't write to database");
+	if (!defined($feature->analysis)) {
+	    $self->throw("Feature " . $feature->seqname . " " . $feature->source_tag ." doesn't have analysis. Can't write to database");
 	} else {
-	    my @res = $feature->each_tag_value('Analysis');
-	    if ($#res == 0 && $res[0]->isa("Bio::EnsEMBL::Analysis::Analysis")) {
-		$analysis = $res[0];
-	    } else {
-		$self->warn("Can't write feature as >1 Analysis tag or not present in ". $feature->start ." to ".$feature->end. " on contig ".$contig->id);
-		next;
-	    }
+	    $analysis = $feature->analysis;
 	}
 
 	my $analysisid = $self->write_Analysis($analysis);

@@ -45,7 +45,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
-use Bio::EnsEMBL::Analysis::Repeat;
+use Bio::EnsEMBL::Repeat;
 use FileHandle;
 
 use Bio::EnsEMBL::FeaturePair;
