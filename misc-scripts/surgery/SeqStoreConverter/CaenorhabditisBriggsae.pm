@@ -156,50 +156,50 @@ sub create_assembly {
 # briggsae specific behaviour
 #
 
-sub contig_to_seq_region {
-  my $self = shift;
-  my $target_cs_name = shift;
+# sub contig_to_seq_region {
+#   my $self = shift;
+#   my $target_cs_name = shift;
 
-  my $target = $self->target();
-  my $source = $self->source();
-  my $dbh     = $self->dbh();
+#   my $target = $self->target();
+#   my $source = $self->source();
+#   my $dbh     = $self->dbh();
 
-  $target_cs_name ||= 'contig';
+#   $target_cs_name ||= 'contig';
 
-  $self->debug("Caenorhabditis Specific: Transforming contigs into " .
-               "$target_cs_name seq_regions");
+#   $self->debug("CaenorhabditisBriggsae Specific: Transforming contigs into " .
+#                "$target_cs_name seq_regions");
 
-  my $cs_id = $self->get_coord_system_id($target_cs_name);
+#   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
-  #There are two types of contigs in briggsae:
+#   #There are two types of contigs in briggsae:
 
-  #
-  # cosmids/clones
-  #
-  my $sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region " .
-     "SELECT contig_id, name, $cs_id, length " .
-     "FROM $source.contig " .
-     "WHERE  name not like 'c%'");
+#   #
+#   # cosmids/clones
+#   #
+#   my $sth = $dbh->prepare
+#     ("INSERT INTO $target.seq_region " .
+#      "SELECT contig_id, name, $cs_id, length " .
+#      "FROM $source.contig " .
+#      "WHERE  name not like 'c%'");
 
-  $sth->execute();
-  $sth->finish();
+#   $sth->execute();
+#   $sth->finish();
 
-  #
-  # WGS contigs
-  #
-  $sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region " .
-     "SELECT ctg.contig_id, cln.name, $cs_id, length " .
-     "FROM   $source.contig ctg, $source.clone cln " .
-     "WHERE  ctg.clone_id = cln.clone_id " .
-     "AND    ctg.name like 'c%'");
+#   #
+#   # WGS contigs
+#   #
+#   $sth = $dbh->prepare
+#     ("INSERT INTO $target.seq_region " .
+#      "SELECT ctg.contig_id, cln.name, $cs_id, length " .
+#      "FROM   $source.contig ctg, $source.clone cln " .
+#      "WHERE  ctg.clone_id = cln.clone_id " .
+#      "AND    ctg.name like 'c%'");
 
-  $sth->execute();
-  $sth->finish();
+#   $sth->execute();
+#   $sth->finish();
 
-  return;
-}
+#   return;
+# }
 
 
 
@@ -215,7 +215,7 @@ sub clone_to_seq_region {
   $target_cs_name ||= "clone";
   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
-  $self->debug("Caenorhabditis Specific:Transforming clones " .
+  $self->debug("CaenorhabditisBriggsae Specific:Transforming clones " .
                "into $target_cs_name seq_regions");
 
   #

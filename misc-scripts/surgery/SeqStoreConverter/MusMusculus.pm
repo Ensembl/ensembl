@@ -106,50 +106,50 @@ sub create_assembly {
 # mouse specific behaviour
 #
 
-sub contig_to_seq_region {
-  my $self = shift;
-  my $target_cs_name = shift;
+# sub contig_to_seq_region {
+#   my $self = shift;
+#   my $target_cs_name = shift;
 
-  my $target = $self->target();
-  my $source = $self->source();
-  my $dbh     = $self->dbh();
+#   my $target = $self->target();
+#   my $source = $self->source();
+#   my $dbh     = $self->dbh();
 
-  $target_cs_name ||= 'contig';
+#   $target_cs_name ||= 'contig';
 
-  $self->debug("MusMusculus Specific: Transforming contigs into " .
-               "$target_cs_name seq_regions");
+#   $self->debug("MusMusculus Specific: Transforming contigs into " .
+#                "$target_cs_name seq_regions");
 
-  my $cs_id = $self->get_coord_system_id($target_cs_name);
+#   my $cs_id = $self->get_coord_system_id($target_cs_name);
 
-  #There are two types of contigs in mouse:
+#   #There are two types of contigs in mouse:
 
-  #
-  # Contigs which form BAC clones
-  #
-  my $sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region " .
-     "SELECT contig_id, name, $cs_id, length " .
-     "FROM $source.contig " .
-     "WHERE  name not like 'C%'");
+#   #
+#   # Contigs which form BAC clones
+#   #
+#   my $sth = $dbh->prepare
+#     ("INSERT INTO $target.seq_region " .
+#      "SELECT contig_id, name, $cs_id, length " .
+#      "FROM $source.contig " .
+#      "WHERE  name not like 'C%'");
 
-  $sth->execute();
-  $sth->finish();
+#   $sth->execute();
+#   $sth->finish();
 
-  #
-  # Contigs which were created from whole genome shotgun
-  #
-  $sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region " .
-     "SELECT ctg.contig_id, cln.name, $cs_id, length " .
-     "FROM   $source.contig ctg, $source.clone cln " .
-     "WHERE  ctg.clone_id = cln.clone_id " .
-     "AND    ctg.name like 'C%'");
+#   #
+#   # Contigs which were created from whole genome shotgun
+#   #
+#   $sth = $dbh->prepare
+#     ("INSERT INTO $target.seq_region " .
+#      "SELECT ctg.contig_id, cln.name, $cs_id, length " .
+#      "FROM   $source.contig ctg, $source.clone cln " .
+#      "WHERE  ctg.clone_id = cln.clone_id " .
+#      "AND    ctg.name like 'C%'");
 
-  $sth->execute();
-  $sth->finish();
+#   $sth->execute();
+#   $sth->finish();
 
-  return;
-}
+#   return;
+# }
 
 
 
