@@ -392,23 +392,7 @@ sub dbID {
 =cut
 
 sub external_name {
-  my ($self, $arg ) = @_;
 
-  if( defined $arg ) {
-    $self->{'_external_name'} = $arg;
-  }
-  # if not already set, go off and set it
-  elsif ( !defined $self->{'_external_name'} ) {
-    # find the transcript with the longest length which is 
-    # attached to this gene.  Use the longest length as the
-    # determining factor when having to select between transcripts
-    # and their external references
-    my $transcript = $self->_get_longest_Transcript;
-
-    $self->{'_external_name'} = $transcript->external_name;
-  }
-
-  return $self->{'_external_name'};  
 }
 
 
@@ -431,59 +415,6 @@ sub external_name {
 sub external_db {
   my ($self, $arg ) = @_;
 
-  if( defined $arg ) {
-    $self->{'_external_db'} = $arg;
-  }
-  # if not already set, go off and set it
-  elsif ( !defined $self->{'_external_db'} ) {
-    # find the transcript with the longest length which is 
-    # attached to this gene.  Use the longest length as the
-    # determining factor when having to select between transcripts
-    # and their external references
-    my $transcript = $self->_get_longest_Transcript;
-
-    $self->{'_external_db'} = $transcript->external_db;
-  }
-
-  return $self->{'_external_db'};
-}
-
-
-=head2 _get_longest_Transcript	
-
-  Args       : none
-  Example    : none
-  Description: An INTERNAL method which determines the longest transcript
-               for the given gene.get/set for attribute external_db. The db is the one that 
-               belongs to the external_name.  It initially calculates
-               the longest transcript for the gene in question and then 
-               delegates the call to the external_db method on Transcript.
-               Species dependant searching is handled by this method on
-               Transcript.
-  Returntype : a single Bio::EnsEMBL::Transcript
-  Exceptions : none
-  Caller     : external_name and external_db methods on Gene.pm
-
-=cut
-
-sub _get_longest_Transcript {
-  my $self = shift;
-
-  my $transcripts = $self->get_all_Transcripts;
-
-  my $longest_index = 0;
-  my $longest_length = 0;
-  my $tran_count = 0;
-
-  foreach my $trans ( @{$transcripts} ) {
-    if ( $trans->length > $longest_length ) {
-      $longest_length = $trans->length;
-      $longest_index = $tran_count;
-    }
-    $tran_count++;
-  }
-  
-  return $transcripts->[$longest_index];
 }
 
 
