@@ -289,7 +289,7 @@ sub subseq{
    }
        
    #If the start and end RawContig are different, then it gets a bit more complicated...
-   else {
+   #else {
 
        #First of all we get the seq from the start in the start RawContig to its golden_end
        #Again, if the orientation is negative we do it the other way around and revcom it!
