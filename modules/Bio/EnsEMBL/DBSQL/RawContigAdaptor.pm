@@ -318,5 +318,107 @@ sub _insertSequence{
 }
 
 
+sub fetch_all_repeat_features{
+  my($self, $contig, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all repeat features if con't have a contig to fetch them for\n");
+  }
+
+  my @repeats = $self->db->get_RepeatFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
+
+  return @repeats;
+
+}
+
+sub fetch_all_simple_features{
+  my($self, $contig, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
+  }
+
+  my @simple = $self->db->get_SimpleFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
+
+  return @simple;
+
+}
+
+sub fetch_all_prediction_transcripts{
+  my($self, $contig, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
+  }
+
+  my @prediction = $self->db->get_PredictionTranscriptAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
+
+  return @prediction;
+
+}
+
+
+
+
+
+sub fetch_all_similarity_features{
+  my($self, $contig, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
+  }
+  
+  my @out;
+
+  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
+  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id($contig->dbID, $logic_name);
+
+  push(@out, @dnaalign);
+  push(@out, @pepalign);
+
+  return @out;
+}
+
+sub fetch_all_similarity_features_above_score{
+  my($self, $contig, $score, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
+  }
+  if(!$score){
+    $self->throw("need score even if it 0\n");
+  }
+  my @out;
+
+  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id_and_score($contig->dbID, $score, $logic_name);
+  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id_and_score($contig->dbID, $score, $logic_name);
+
+  push(@out, @dnaalign);
+  push(@out, @pepalign);
+
+  return @out;
+}
+
+
+sub fetch_all_similarity_features_above_pid{
+  my($self, $contig, $pid, $logic_name) = @_;
+
+  if(!$contig){
+    $self->throw("can't fetch all simple features if con't have a contig to fetch them for\n");
+  }
+  if(!$pid){
+    $self->throw("need percent_id even if it 0\n");
+  }
+  my @out;
+
+  my @dnaalign = $self->db->get_DnaAlignFeatureAdaptor->fetch_by_contig_id_and_pid($contig->dbID, $pid, $logic_name);
+  my @pepalign = $self->db->get_ProteinAlignFeatureAdaptor->fetch_by_contig_id_and_pid($contig->dbID, $pid, $logic_name);
+
+  push(@out, @dnaalign);
+  push(@out, @pepalign);
+
+  return @out;
+}
+
 
 1;

@@ -58,18 +58,20 @@ sub _generic_fetch {
         $repeat_start,
         $repeat_end,
         $analysis_id,
+	$score
         );
 
     my $sth = $self->prepare(qq{
-        SELECT repeat_feature_id
-          , contig_id
-          , contig_start
-          , contig_end
-          , contig_strand
-          , repeat_id
-          , repeat_start
-          , repeat_end
-          , analysis_id
+      SELECT repeat_feature_id
+	, contig_id
+	, contig_start
+        , contig_end
+        , contig_strand
+ 	, repeat_id
+        , repeat_start
+        , repeat_end
+        , analysis_id
+	, score
         FROM repeat_feature f
         WHERE }. $where_clause);
 
@@ -84,6 +86,7 @@ sub _generic_fetch {
         \$repeat_start,
         \$repeat_end,
         \$analysis_id,
+	\$score	       
         );
 
     my $rca = $self->db->get_RepeatConsensusAdaptor;
@@ -99,7 +102,7 @@ sub _generic_fetch {
 	$analysis_cache{$analysis_id} = $ana_obj;
       }
         
-      my $r = $self->_new_repeat($contig_start, $contig_end, $contig_strand, $repeat_start, $repeat_end, $ana_obj, $contig_id, $repeat_id, $rca, $repeat_feature_id);
+      my $r = $self->_new_repeat($contig_start, $contig_end, $contig_strand, $repeat_start, $repeat_end, $score, $ana_obj, $contig_id, $repeat_id, $rca, $repeat_feature_id);
       push(@repeats, $r);
     }
     return( @repeats );
@@ -143,7 +146,7 @@ sub fetch_by_Slice{
    
     my $start = ($r->start - ($slice->chr_start - 1));
     my $end = ($r->end - ($slice->chr_start - 1));
-    my $repeat = $self->_new_repeat($start, $end, $r->strand, $r->hstart, $r->hend, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID);
+    my $repeat = $self->_new_repeat($start, $end, $r->strand, $r->hstart, $r->hend, $r->score, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID);
     push(@out, $repeat);
    
   }
@@ -192,7 +195,7 @@ sub fetch_by_assembly_location_constraint{
       next;
     }
    
-    my $repeat = $self->_new_repeat($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $r->hstart, $r->hend, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID); 
+    my $repeat = $self->_new_repeat($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $r->hstart, $r->hend, $r->score, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID); 
     
     push(@out, $repeat);
       
@@ -294,7 +297,7 @@ sub store {
 
 
 sub _new_repeat{
-  my($self, $start, $end, $strand, $hstart, $hend, $analysis, $contig_id, $repeat_id, $rca, $dbID) = @_;
+  my($self, $start, $end, $strand, $hstart, $hend, $score, $analysis, $contig_id, $repeat_id, $rca, $dbID) = @_;
   
   my $r = Bio::EnsEMBL::RepeatFeature->new;
   $r->dbID($dbID);
@@ -309,6 +312,7 @@ sub _new_repeat{
   if($strand == -0){
     $strand = 0;
   }
+  $r->score($score);
   $r->strand   ( $strand );  
   $r->hstart   ( $hstart  );
   $r->hend     ( $hend    );
