@@ -350,30 +350,33 @@ sub fetch_evidence_by_Exon {
     return;
   }
 
-  
+  if($exon->dbID){
   #
   # This looks broken...
   #
-  my $sql = "select type, feature_id from supporting feature where exon_id = ".$exon->dbID;
+    my $sql = "select type, feature_id from supporting feature where exon_id = ".$exon->dbID;
 
-  my $sth->prepare($sql);
+    my $sth->prepare($sql);
 
-  $sth->execute;
+    $sth->execute;
 
-  my $prot_adp = $self->db->fetch_ProteinAlignFeatureAdaptor;
-  my $dna_adp = $self->db->fetch_DnaAlignFeatureAdaptor;
-  
-  while(my ($type, $feature_id) = $sth->fetchrow){
-  
-    if($type eq 'protein_align_feature'){
-      my $f = $prot_adp->fetch_by_dbID($feature_id);
-       $exon->add_Supporting_Feature($f);
-    }elsif($type eq 'dna_align_feature'){
-      my $f = $dna_adp->fetch_by_dbID($feature_id);
-      $exon->add_Supporting_Feature($f);
+    my $prot_adp = $self->db->fetch_ProteinAlignFeatureAdaptor;
+    my $dna_adp = $self->db->fetch_DnaAlignFeatureAdaptor;
+    
+    while(my ($type, $feature_id) = $sth->fetchrow){
+      
+      if($type eq 'protein_align_feature'){
+	my $f = $prot_adp->fetch_by_dbID($feature_id);
+	$exon->add_Supporting_Feature($f);
+      }elsif($type eq 'dna_align_feature'){
+	my $f = $dna_adp->fetch_by_dbID($feature_id);
+	$exon->add_Supporting_Feature($f);
+      }
     }
+  }else{
+    print STDERR "exon has no dbID can't fetch evidence from db no relationship exists\n";
   }
-  return 1;
+    return 1;
 }
 
 
@@ -477,6 +480,7 @@ sub store {
   my $pep_adaptor = $self->db->get_ProteinAlignFeatureAdaptor();
   my $type;
  FEATURE: foreach my $sf ($exon->each_Supporting_Feature) {
+    #print STDERR "have supporting feature ".$sf."\n";
     if(!$sf->isa("Bio::EnsEMBL::BaseAlignFeature")){
       $self->throw("$sf must be an align feature" .
 		   "otherwise it can't be stored");
@@ -589,7 +593,7 @@ sub remove {
 
   $sth = $self->prepare( "delete from exon_stable_id where exon_id = ?" );
   $sth->execute( $exon->dbID );
-
+  
   $sth = $self->prepare( "delete from supporting_feature where exon_id = ?" );
   $sth->execute( $exon->dbID );
 
