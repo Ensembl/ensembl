@@ -1,4 +1,4 @@
-#
+
 # BioPerl module for Bio::EnsEMBL::TimDB::Clone
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
@@ -71,191 +71,205 @@ sub _initialize {
 			    CHR
 			    SPECIES
 			    )],@args);
-  $id || $self->throw("Cannot make contig db object without id");
+
+  $id      || $self->throw("Cannot make contig db object without id");
   $disk_id || $self->throw("Cannot make contig db object without disk_id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
+  $dbobj   || $self->throw("Cannot make contig db object without db object");
+  $cgp     || $self->throw("Cannot make contig db object without location data");
+
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
       $self->throw("Cannot make contig db object with a $dbobj object");
-  $cgp || $self->throw("Cannot make a contig db object without location data");
 
-  # id of clone
-  $self->id($id);
-  
-  $self->disk_id($disk_id);
+  $self->_dbobj      ($dbobj);  
+  $self->id          ($id);
+  $self->disk_id     ($disk_id);
   $self->embl_version($sv);
-  $self->embl_id($emblid);
-  $self->htg_phase($htgsp);
-  $self->byacc($byacc);
-  # db object
-  $self->_dbobj($dbobj);
-
-  # chr, species is only provided at contig level, so just save it in hash so it can be passed
-  $self->{'_chr'}=$chr;
-  $self->{'_species'}=$species;
+  $self->embl_id     ($emblid);
+  $self->chromosome  ($chr);
+  $self->species     ($species);
+  $self->htg_phase   ($htgsp);
+  $self->byacc       ($byacc);
 
   # construct and test the directory of the clone
-  # slow (depricated - goes via links)
-  #my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$disk_id";
   # fast (direct)
-  my $cgp_dir=$dbobj->{'_unfin_data_root_cgp'}->{$cgp};
-  my $clone_dir="$cgp_dir/data/$disk_id";
-  my $contig_dbm_file="$cgp_dir/unfinished_ana.dbm";
+  my $cgp_dir         = $dbobj->{'_unfin_data_root_cgp'}->{$cgp};
+  my $clone_dir       = "$cgp_dir/data/$disk_id";
+  my $contig_dbm_file = "$cgp_dir/unfinished_ana.dbm";
 
-  unless(-d $clone_dir){
-      $self->throw("Cannot find directory for $disk_id");
-  }
-  $self->{'_clone_dir'}=$clone_dir;
-
-  # check for sequence file
-  if(!-e "$clone_dir/$disk_id.seq"){
-      $self->throw("Error: no sequence file for entry $id ($disk_id)");
-  }
-
-  # build list of contigs for clone
-  # (methods get_all_Contigs and get_Contig look at this list of objects, 
-  # rather than build it)
-  # FIXME
-  # THERE IS CURRENTLY NO QUICK WAY TO LOOK THIS UP!!!
-  # getting a list of contigs is currently horrible.  There is a list in the
-  # relevant dbm file, however this has to be stepped though.  There
-  # is a list in the relevant clone.seq file (headers) except when this file is 
-  # absent.  There should be a .gs file for each contig.
-
-  # open dbm for this clone (to check contigs are listed there)
-  # NOTE: data stored here, is by disk_id
-  my %unfin_contig;
-  unless(tie(%unfin_contig,'NDBM_File',$contig_dbm_file,O_RDONLY,0644)){
-  #unless(dbmopen(%unfin_contig,$contig_dbm_file,0666)){
-      $self->throw("Error opening contig dbm file");
-  }
-  my($key,$val);
-  my %contig_len;
-  my %contig_embl_offset;
-  my %contig_embl_order;
-  my %id2disk;
-  my $t_offset=1;
-  my $t_order=1;
-  while(($key,$val)=each %unfin_contig){
-      if($key=~/^$disk_id/){
-	  my($len,$checksum,$acc,$embl_offset,$embl_order)=split(/,/,$val);
-
-	  # FIXME FIXME - give tmp values while real ones being added
-	  $embl_offset=$t_offset;
-	  $embl_order=$t_order;
-	  $t_offset+=$len+100;
-	  $t_order++;
-
-	  # FIXME - currently field 3 is accession - will remove this
-	  if($acc=~/^\d+$/){$embl_order=$embl_offset;$embl_offset=$acc;}
-	  
-	  # all of these values should be positive, non zero
-	  $self->throw("Error: invalid length [$len] for contig $key") 
-	      if !$len || $len<1;
-	  $self->throw("Error: invalid checksum [$checksum] for contig $key") 
-	      if !$checksum || $checksum<1;
-	  $self->throw("Error: invalid embl_offset [$embl_offset] for contig $key") 
-	      if !$embl_offset || $embl_offset<1;
-	  $self->throw("Error: invalid embl_order [$embl_order] for contig $key")
-	      if !$embl_order || $embl_order<1;
-
-	  my $disk_key=$key;
-	  $key=~s/^$disk_id/$id/;
-	  # save by id rather than disk_id, but keep mapping
-	  $contig_len{$key}=$len;
-	  $contig_embl_offset{$key}=$embl_offset;
-	  $contig_embl_order{$key}=$embl_order;
-	  $self->{'_contig_dna_checksum'}->{$key}=$checksum;
-	  $id2disk{$key}=$disk_key;
-	  # check for gs file
-	  if(!-e "$clone_dir/$disk_key.gs"){
-	      $self->throw("Error: no gs file for contig $key");
-	  }
-      }
-  }
-
-  # now build order/orientation information and create @contig_id
-  # ordered correctly for next step
-  # NOTE: data stored in '_contig_order_hash' has already been converted to id
-  my @contig_id;
-  my $clone_order=$dbobj->{'_contig_order_hash'}->{$id};
-  print STDERR "Order string for $id is: $clone_order\n";
-  my $spacing=$Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
-  my %order;
-  my %offset;
-  my %orientation;
-  my $offset=1;
-  if($clone_order){
-      # have order information, so use thi
-      # (checking that all contigs exist and are used)
-      my $ncontig=scalar(keys %contig_len);
-      my $ncontig2;
-      foreach my $ocontig (split(/[:;]/,$clone_order)){
-	  $ncontig2++;
-	  my($contig,$fr)=($ocontig=~/(.*)\.([FR])$/);
-	  $order{$contig}=$ncontig2;
-	  $offset{$contig}=$offset;
-	  # forward or reverse
-	  if($fr eq 'F'){
-	      $orientation{$contig}=1;
-	  }else{
-	      $orientation{$contig}=-1;
-	  }
-	  # offset is length + separation
-	  if($contig_len{$contig}){
-	      $offset+=$contig_len{$contig}+$spacing;
-	  }else{
-	      $self->throw("Contig in contigorder \'$contig\' not in DBM file [\'$id\',\'$ocontig\']");
-	  }
-	  push(@contig_id,$contig);
-      }
-      if($ncontig!=$ncontig2){
-	  $self->throw("More contigs in DBM file ($ncontig) than in contigorder file ($ncontig2)");
-      }
-  }else{
-      # no order information, order contigs by length
-      # FIXME?
-      # (perhaps should keep EMBL order in such cases, but don't have that data
-      #  unless order by contig number (ok for non sanger clones))
-      my $ncontig2;
-      foreach my $contig (sort {$contig_len{$a}<=>$contig_len{$b}} keys %contig_len){
-	  $ncontig2++;
-	  $order{$contig}=$ncontig2;
-	  $offset{$contig}=$offset;
-	  # always forward
-	  $orientation{$contig}=1;
-	  # offset is length + separation
-	  $offset+=$contig_len{$contig}+$spacing;
-	  push(@contig_id,$contig);
-      }
-  }
-
-  my @res;
-  foreach my $contig_id (@contig_id){
-      my $disk_contig_id=$id2disk{$contig_id};
-      print STDERR "Attempting to retrieve contig with $disk_contig_id [$contig_id]\n";
-      my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
-						     -id => $contig_id,
-						     -disk_id => $disk_contig_id,
-						     -clone_dir => $self->{'_clone_dir'},
-						     -order => $order{$contig_id},
-						     -offset => $offset{$contig_id},
-						     -orientation => $orientation{$contig_id},
-						     '-length' => $contig_len{$contig_id},
-						     '-chr' => $self->{'_chr'},
-						     '-species' => $self->{'_species'},
-						     '-embl_offset' => $contig_embl_offset{$contig_id},
-						     '-embl_order' => $contig_embl_order{$contig_id},
-						     );
-      push(@res,$contig);
-  }
-  $self->{'_contig_array'}=\@res;
-
-  # DEBUG
-  print STDERR scalar(@{$self->{'_contig_array'}})." contigs found in clone\n";
+  
+  $self->clone_dir     ($clone_dir,$disk_id);
+  $self->build_contigs ($contig_dbm_file);
 
   return $make; # success - we hope!
 }
 
+sub build_contigs {
+    my ($self,$contig_dbm_file) = @_;
+
+    # build list of contigs for clone
+    # (methods get_all_Contigs and get_Contig look at this list of objects, 
+    # rather than build it)
+    
+    my %unfin_contig;
+
+    unless(tie(%unfin_contig,'NDBM_File',$contig_dbm_file,O_RDONLY,0644)){
+	$self->throw("Error opening contig dbm file");
+    }
+
+    my ($key,$val);
+
+    my $disk_id = $self->disk_id;
+    my $id      = $self->id;
+
+    while (($key,$val) = each %unfin_contig) {
+
+#	print(STDERR "[$key][$val]\n");
+
+	if($key=~/^$disk_id/){
+	    
+	    my($len,$checksum,$acc,$embl_offset,$embl_order) = split(/,/,$val);
+	  
+	    # all of these values should be positive, non zero
+	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
+	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
+#	    $self->throw("Error: invalid embl_offset [$embl_offset] for contig $key") 	if !$embl_offset || $embl_offset<1;
+#	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
+	    
+	    my $disk_key = $key;
+	    $key =~ s/^$disk_id/$id/;
+
+	    print STDERR "Attempting to retrieve contig with $disk_key [$key]\n";
+	    
+	    my $tmpcontig = new Bio::EnsEMBL::TimDB::Contig( -dbobj => $self->_dbobj,
+							     -id    => $key);
+
+	    $tmpcontig->length     ($len);
+	    $tmpcontig->disk_id    ($disk_key);
+	    $tmpcontig->_clone_dir  ($self->clone_dir);
+	    $tmpcontig->chromosome ($self->chromosome,$self->species);
+	    $tmpcontig->checksum   ($checksum);
+
+	    # These should be set somehow
+	    $tmpcontig->order      (1);
+	    $tmpcontig->offset     (1);
+	    $tmpcontig->orientation(1);
+	    $tmpcontig->embl_offset(1);
+	    $tmpcontig->embl_order (1);
+
+	    $self->add_Contig($tmpcontig);
+
+	}
+    }
+    
+    $self->_make_ContigOverlaps;
+    
+    print STDERR scalar($self->get_all_Contigs) . " contigs found in clone\n";
+}
+
+sub _make_ContigOverlaps {
+    my ($self) = @_;
+
+    my $clone_order = $self->_dbobj->{'_contig_order_hash'}->{$self->id};
+    my $spacing     = $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
+    
+    return unless defined($clone_order);
+    
+    my @pieces = split(/:/,$clone_order);
+
+    foreach my $piece (@pieces) {
+	if ($piece =~ /;/) {
+
+	    my @joins      = split(/;/,$piece);
+	    my $numcontigs = scalar(@joins);
+	    
+	    for (my $i = 0; $i < ($numcontigs-1); $i++) {
+		# Split the pieces into id and orientation (D89885.00001.F)
+		my ($contig1,$fr1)= ($joins[$i] =~ /(.*)\.([FR])$/);
+		my ($contig2,$fr2)= ($joins[$i+1] =~ /(.*)\.([FR])$/);
+
+		my $contiga = $self->get_Contig($contig1) || $self->throw("No contig with id [$contig1]");
+		my $contigb = $self->get_Contig($contig2) || $self->throw("No contig with id [$contig2]");
+
+		my $type;
+		my $positiona;
+		my $positionb;
+
+		if ($fr1 eq 'F' && $fr2 eq 'F') {
+		    $type = 'right2left';
+		    $positiona = $contiga->length;
+		    $positionb = 1;
+
+		} elsif ($fr1 eq 'F' && $fr2 eq 'R') {
+		    $type = 'right2right';
+		    $positiona = $contiga->length;
+		    $positionb = $contigb->length;
+
+		} elsif ($fr1 eq 'R' && $fr2 eq 'F') {
+		    $type = 'left2left';
+		    $positiona = 1;
+		    $positionb = 1;
+
+		} elsif ($fr1 eq 'R' && $fr2 eq 'R') {
+		    $type = 'left2right';
+		    $positiona = 1;
+		    $positionb = $contigb->length;
+		}
+		
+		my $overlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $contiga,
+							      -contigb   => $contigb,
+							      -positiona => $positiona,
+							      -positionb => $positionb,
+							      -type      => 'CLONE'
+							      -overlap_type => $type);
+		
+		$self->add_ContigOverlap($overlap);
+	    }
+	}
+    }
+}
+
+						      
+=head2 add_ContigOverlap
+
+ Title   : add_ContigOverlap
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub add_ContigOverlap {
+    my ($self,$overlap) = @_;
+
+    if (!defined($overlap) || !($overlap->isa("Bio::EnsEMBL::ContigOverlap"))) {
+	$self->throw("Argument [$overlap] is not a Bio::EnsEMBL::ContigOverlap");
+    }
+
+    if (!defined($self->{_overlaps})) {
+	$self->{_overlaps} = [];
+    }
+
+    push(@{$self->{_overlaps}},$overlap);
+}
+
+=head2 get_all_ContigOverlaps
+
+ Title   : get_all_ContigOverlaps
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub get_all_ContigOverlaps {
+    my ($self) = @_;
+
+    return @{$self->{_overlaps}};
+}
 
 =head2 get_all_Contigs
 
@@ -268,55 +282,13 @@ sub _initialize {
 
 =cut
 
-sub get_all_Contigs{
+sub get_all_Contigs {
    my ($self) = @_;
-   return @{$self->{'_contig_array'}};
+
+   return @{$self->{_contigs}};
 }
 
-
-=head2 get_Contig
-
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : contig object
- Args    : contig_id
-
-=cut
-
-sub get_Contig {
-    my ($self,$contigid) = @_;
-    my $c;
-    foreach my $contig (@{$self->{'_contig_array'}}){
-	if( $contigid eq $contig->id()){
-	    $c=$contig;
-	    last;
-	}
-    }
-    unless($c){
-	$self->throw("contigid $contigid not found in this clone");
-    }
-    return $c;
-}
-
-
-=head2 add_Contig
-
- Title   : add_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub add_Contig{
-   my ($self,$contig) = @_;
-   $self->throw("Cannot add items to TimDB");
-}
-
+=pod
 
 =head2 get_all_Genes
 
@@ -328,6 +300,7 @@ sub add_Contig{
  Args    :
 
 =cut
+
 
 sub get_all_Genes{
     my ($self,$evidence) = @_;
@@ -387,6 +360,16 @@ sub id {
     return $obj->{'_clone_id'};
 }
 
+=head2 disk_id
+
+ Title   : disk_id
+ Usage   : $obj->disk_id($newval)
+  Function:
+ Example :
+ Returns : value of disk_id
+ Args    : newvalue (optional)
+
+=cut
 
 sub disk_id {
     my ($obj,$value) = @_;
@@ -518,37 +501,47 @@ sub byacc{
 
 =cut
 
-sub compare_dna{
+sub compare_dna {
     my $self = shift;
     my $file = shift;
+
     print "Comparing with $file\n";
+
     my $seqio=Bio::SeqIO->new( '-format' => 'Fasta', -file => $file);
+
     my $fseq;
     my %contigs;
-    my $checksum2;
     my $eflag=0;
-    my $id=$self->id;
-    my $disk_id=$self->disk_id;
-    while($fseq=$seqio->next_seq()){
-	my $seqid=$fseq->id;
-	$seqid=~s/^$disk_id/$id/;
-	my $seqlen=$fseq->seq_len;
-	my $seq=$fseq->seq;
-	my $checksum=unpack("%32C*",$seq) % 32767;
-	if($checksum2=$self->{'_contig_dna_checksum'}->{$seqid}){
-	    $contigs{$seqid}=1;
-	    if($checksum==$checksum2){
+
+    my $id      = $self->id;
+    my $disk_id = $self->disk_id;
+
+    while ($fseq=$seqio->next_seq()){
+	my $seqid = $fseq->id; 
+	$seqid =~ s/^$disk_id/$id/;
+	my $seqlen   = $fseq->seq_len;
+	my $seq      = $fseq->seq;
+	my $checksum = unpack("%32C*",$seq) % 32767;
+
+	my $contig = $self->get_Contig($seqid);
+
+	if (defined($contig)) {
+	    my $checksum2 = $contig->checksum;
+	    $contigs{$seqid} = 1;
+	    
+	    if ($checksum == $checksum2){
 		print STDERR "Contig $seqid same in Ensembl: $checksum $checksum2\n";
-	    }else{
+	    } else {
 		print STDERR "ERROR: Contig $seqid different in Ensembl: $checksum $checksum2\n";
 		$eflag=1;
 	    }
-	}else{
+	} else {
 	    print STDERR "ERROR: Contig $seqid not in Ensembl\n";
 	    $eflag=1;
 	}
     }
-    foreach my $contig (keys %{$self->{'_contig_dna_checksum'}}){
+    
+    foreach my $contig ($self->get_all_ContigIds){
 	if(!$contigs{$contig}){
 	    print STDERR "ERROR: Contig $contig only in Ensembl\n";
 	}
@@ -596,7 +589,7 @@ sub embl_version {
 
 sub seq_date {
     my ($self) = @_;
-    my $dnafile=$self->{'_clone_dir'}."/".$self->disk_id.".seq";
+    my $dnafile=$self->clone_dir . "/" . $self->disk_id . ".seq";
     my $dnafiledate=(stat($dnafile))[9];
     return $dnafiledate;
 }
@@ -671,4 +664,127 @@ sub _clone_status{
     return $fields[$field];
 }
 
+sub chromosome {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_chromosome} = $arg;
+    }
+    return $self->{_chromosome};
+}
+
+sub species {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_species} = $arg;
+    }
+
+    return $self->{_species};
+}
+
+sub clone_dir {
+    my ($self,$arg,$disk_id) = @_;
+
+    if (defined($arg)) {
+
+	# Check the argument is a directory
+	unless(-d $arg){
+	    $self->throw("Cannot find directory for $disk_id");
+	}
+
+	# check for sequence file
+	if (!-e "$arg/$disk_id.seq"){
+	    $self->throw("Error: no sequence file for entry " . $self->id . " ($disk_id)");
+	}
+
+	$self->{_clone_dir} = $arg;
+    } 
+    
+    return $self->{_clone_dir};
+}
+
+
+=head2 add_Contig
+
+ Title   : add_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub add_Contig {
+    my ($self,$contig) = @_;
+    
+    if (!defined($contig) || !$contig->isa("Bio::EnsEMBL::TimDB::Contig")) {
+	$self->throw("[$contig] is not a Bio::EnsEMBL::TimDB::Contig");
+    }
+
+    if (!defined($self->{_contigs})) {
+	$self->{_contigs} = [];
+    }
+
+    $contig->validate();
+
+    # check for gs file
+    my $gsfile = $self->clone_dir . "/" . $contig->disk_id . ".gs";
+    print(STDERR "Genscan file [$gsfile]\n");
+
+    if(!-e $gsfile){
+	$self->throw("Error: no gs file [$gsfile] for contig " . $contig->id);
+    }
+
+    push(@{$self->{_contigs}},$contig); 
+
+    # Also add to the contig hash so we can retrieve it by name
+
+    my $id = $contig->id;
+    $self->{_contighash}{$id} = $contig;
+    
+}
+
+
+=head2 get_Contig
+
+ Title   : get_Contig
+ Usage   :
+ Function:
+ Example :
+ Returns : contig object
+ Args    : contig_id
+
+=cut
+
+sub get_Contig {
+    my ($self,$arg) = @_;
+
+    $self->throw("No id input") unless defined($arg);
+
+    return $self->{_contighash}{$arg};
+}
+
+
+=head2 get_all_ContigIds
+
+ Title   : get_all_ContigIds
+ Usage   :
+ Function:
+ Example :
+ Returns : Array of strings
+ Args    : none
+
+=cut
+
+sub get_all_ContigIds {
+    my ($self) = @_;
+
+    return (keys %{$self->{_contighash}});
+}
+
 1;
+
+
+

@@ -78,13 +78,8 @@ sub _initialize {
 			      )],@args);
     
     $id          || $self->throw("Cannot make contig object without id");
-    $disk_id     || $self->throw("Cannot make contig object without disk_id");
     $dbobj       || $self->throw("Cannot make contig object without db object");
     $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a $dbobj object");
-    $order       || $self->throw("Cannot make contig object without order");
-    $offset      || $self->throw("Cannot make contig object without offset");
-    $orientation || $self->throw("Cannot make contig object without orientation");
-    $length      || $self->throw("Cannot make contig object without length");
     
     $self->id         ($id);
     $self->disk_id    ($disk_id);
@@ -106,6 +101,25 @@ sub _initialize {
     
     # set stuff in self from @args
     return $make; # success - we hope!
+}
+
+sub validate {
+
+    my ($self) = @_;
+
+    $self->id          || $self->throw("Cannot make contig object without id");
+    $self->disk_id     || $self->throw("Cannot make contig object without disk_id");
+    $self->_dbobj       || $self->throw("Cannot make contig object without db object");
+    $self->order       || $self->throw("Cannot make contig object without order");
+    $self->offset      || $self->throw("Cannot make contig object without offset");
+    $self->orientation || $self->throw("Cannot make contig object without orientation");
+    $self->length      || $self->throw("Cannot make contig object without length");
+    $self->chromosome  || $self->throw("Cannot make contig object without chromosome");
+    $self->_clone_dir   || $self->throw("Cannot make contig object without clone_dir");
+    $self->embl_offset || $self->throw("Cannot make contig object without embl offset");
+    $self->embl_order  || $self->throw("Cannot make contig object without embl order");
+
+    $self->_dbobj->isa('Bio::EnsEMBL::TimDB::Obj') ||   $self->throw("Cannot make contig object with a [" . $self->_dbobj ."] object");
 }
 
 =head2 get_all_SeqFeatures
@@ -503,14 +517,13 @@ sub id{
 =cut
 
 sub chromosome {
-    my $self = shift;
-    if( @_ ){
-	my $chr = shift;
-	my $species = shift;
-	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new
-	    ($species,$chr);
-    }
-    $self->{_chromosome};
+    my ($self,$chr,$species) = @_;
+
+    if (defined($chr) && defined($species)) {
+	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new($species,$chr);
+    } 
+
+    return $self->{_chromosome};
 }
 
 
@@ -779,6 +792,16 @@ sub _make_exon_hash {
 	}
     }
     return (%exhash);
+}
+
+sub checksum {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_checksum} = $arg;
+    }
+
+    return $self->{_checksum};
 }
 
 1;
