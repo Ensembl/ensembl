@@ -11,6 +11,7 @@ $host = "127.0.0.1";
 $port = 5000;
 $password = "";
 $user = "ensro";
+my $copyonly = 0;
 
 GetOptions ('host=s'      => \$host,
             'user=s'      => \$user,
@@ -30,12 +31,13 @@ die "Source schema be specifed"        unless $source;
 
 # clean and create need to be done in a specific order
 # they create their own db connections as necessary
-&clean()  if $clean;
-&create() if $create;
+&clean()  if $clean && !$copyonly;
+&create() if $create && !$copyonly;
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password", {'RaiseError' => 1})
   || die "Can't connect to target DB";
 my $sth;
+
 
 # ----------------------------------------------------------------------
 # The coord_system table needs to be filled first
@@ -374,21 +376,68 @@ execute($dbi, "INSERT INTO $target.dna " .
 # Note that we can just rename contig_* to set_region_* since the
 # contig IDs were copied verbatim into seq_region
 
+#For some reason mysql refuses to use the index on large tables sometimes
+#following copies like the following.
+#So: drop the indexes first and then re-add them after
+#It is probably faster this way anyway
+
+
 # simple_feature
 debug("Translating simple_feature");
 execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, display_label, analysis_id, score FROM $source.simple_feature");
 
 # repeat_feature
+
+
+debug("Dropping indexes on repeat_feature");
+execute($dbi, "ALTER TABLE $target.repeat_feature DROP INDEX seq_region_idx");
+execute($dbi, "ALTER TABLE $target.repeat_feature DROP INDEX repeat_idx");
+execute($dbi, "ALTER TABLE $target.repeat_feature DROP INDEX analysis_idx");
+
 debug("Translating repeat_feature");
 execute($dbi, "INSERT INTO $target.repeat_feature (repeat_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score) SELECT repeat_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score FROM $source.repeat_feature");
 
+debug("Readding indexes on repeat_feature");
+execute($dbi, "ALTER TABLE $target.repeat_feature ADD INDEX seq_region_idx( seq_region_id, seq_region_start) ");
+execute($dbi, "ALTER TABLE $target.repeat_feature ADD INDEX repeat_idx( repeat_consensus_id )");
+execute($dbi, "ALTER TABLE $target.repeat_feature ADD INDEX analysis_idx(analysis_id)");
+
 # protein_align_feature
+
+debug("Dropping indexes on protein_align_feature");
+
+execute($dbi, "ALTER TABLE $target.protein_align_feature DROP INDEX seq_region_idx");
+execute($dbi, "ALTER TABLE $target.protein_align_feature DROP INDEX hit_idx");
+execute($dbi, "ALTER TABLE $target.protein_align_feature DROP INDEX ana_idx");
+execute($dbi, "ALTER TABLE $target.protein_align_feature DROP INDEX score_idx");
+
 debug("Translating protein_align_feature");
 execute($dbi, "INSERT INTO $target.protein_align_feature (protein_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score) SELECT protein_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score FROM $source.protein_align_feature");
 
+debug("Readding indexes on protein_align_feature");
+execute($dbi, "ALTER TABLE $target.protein_align_feature ADD index seq_region_idx(seq_region_id, seq_region_start)");
+execute($dbi, "ALTER TABLE $target.protein_align_feature ADD index hit_idx(hit_name)");
+execute($dbi, "ALTER TABLE $target.protein_align_feature ADD index ana_idx(analysis_id)");
+execute($dbi, "ALTER TABLE $target.protein_align_feature ADD index score_idx(score)");
+
+
 # dna_align_feature
+
+debug("Dropping indexes on dna_align_feature");
+
+execute($dbi, "ALTER TABLE $target.dna_align_feature DROP INDEX seq_region_idx");
+execute($dbi, "ALTER TABLE $target.dna_align_feature DROP INDEX hit_idx");
+execute($dbi, "ALTER TABLE $target.dna_align_feature DROP INDEX ana_idx");
+execute($dbi, "ALTER TABLE $target.dna_align_feature DROP INDEX score_idx");
+
 debug("Translating dna_align_feature");
 execute($dbi, "INSERT INTO $target.dna_align_feature (dna_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score) SELECT dna_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score FROM $source.dna_align_feature");
+
+debug("Readding indexes on dna_align_feature");
+execute($dbi, "ALTER TABLE $target.dna_align_feature ADD index seq_region_idx(seq_region_id, seq_region_start)");
+execute($dbi, "ALTER TABLE $target.dna_align_feature ADD index hit_idx(hit_name)");
+execute($dbi, "ALTER TABLE $target.dna_align_feature ADD index ana_idx(analysis_id)");
+execute($dbi, "ALTER TABLE $target.dna_align_feature ADD index score_idx(score)");
 
 # marker_feature
 debug("Translating marker_feature");
@@ -469,8 +518,8 @@ execute( $dbi,
 
 
 
-warn( "Prediction transcript conversion doesnt work for anopheles database. ".
-      "Convert SNAP predicitons to chromsomal coordinates first" );
+warn( "WARNING: Prediction transcript conversion doesnt work for anopheles database\n".
+      "         Convert SNAP predicitons to chromsomal coordinates first\n" );
 debug( "Translating prediction_transcript" );
 execute( $dbi, "INSERT INTO prediction_exon ".
 	 "( prediction_transcript_id, seq_region_id, seq_region_start, seq_region_end, " .
@@ -506,6 +555,7 @@ execute( $dbi, "INSERT INTO gene_stable_id " .
 
 # ----------------------------------------------------------------------
 # These tables are copied as-is
+
 
 copy_table($dbi, "supporting_feature");
 copy_table($dbi, "map");
@@ -594,24 +644,27 @@ sub execute {
   eval {
     $stmt = $dbcon->prepare($sql);
     $stmt->execute();
+    $stmt->finish();
   };
-  if($@) {
-    die "Unable to execute [$sql]\n$@";
-  }
-  $stmt->finish();
 
+  if($@) {
+    my ($p,$l,$f) = caller;
+    warn("WARNING: Unable to execute [$sql]:\n" .
+         "         $@" .
+         "         Called from $f line $l\n" );
+    return 0;
+  }
+  return 1;
 }
 
 # ----------------------------------------
 
 sub copy_table {
-
   my ($dbcon, $table) = @_;
 
   debug("Copying $table");
   my $sql = "INSERT INTO $target.$table SELECT * FROM $source.$table";
-  execute($dbcon, $sql);
-
+  execute($dbcon, $sql) or warn("WARNING: Could not copy table $table\n");
 }
 
 # ----------------------------------------
@@ -649,7 +702,7 @@ sub create {
     debug("Creating database $target");
 
     my $dbic = DBI->connect("dbi:mysql:host=$host;port=$port;", "$user", "$password") || die "Can't connect to DB";
-    execute($dbic, "CREATE DATABASE $target") || die "Error creating $target";
+    execute($dbic, "CREATE DATABASE $target") || die "Error creating $target.";
     $dbic->disconnect();
 
     debug("Building schema for $target from $create");
