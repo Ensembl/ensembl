@@ -1,5 +1,5 @@
 #
-# BioPerl module for DBArchive::DBAdaptor
+# BioPerl module for Bio::EnsEMBL::Archive::DBSQL::DBAdaptor
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,20 +11,20 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBArchive::DBAdaptor
+Bio::EnsEMBL::Archive::DBSQL::DBAdaptor
 
 Object representing an instance of the Archive DB
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBArchive::DBAdaptor->new(
+    $db = Bio::EnsEMBL::Archive::DBSQL::DBAdaptor->new(
 						  -user   => 'pig',
 						  -dbname => 'pog',
 						  -host   => 'pug',
 						  -driver => 'mysql',
 						  );
 
-    $asad  = $db->get_ArchiveSeqAdaptor();
+    $asad  = $db->get_VersionedSeqAdaptor();
 
     my @aseqs = $asad->fetch_by_object_id('ENSE00000456');
 
@@ -46,7 +46,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 =cut
 
-package Bio::EnsEMBL::DBArchive::DBAdaptor;
+package Bio::EnsEMBL::Archive::DBSQL::DBAdaptor;
 
 use vars qw(@ISA);
 use strict;
@@ -118,10 +118,10 @@ sub new {
 
 =cut
 
-sub get_ArchiveSeqAdaptor {
+sub get_VersionedSeqAdaptor {
     my ($self) = @_;
     
-    return Bio::EnsEMBL::DBArchive->new($self,$self->_read_only);
+    return Bio::EnsEMBL::Archive::DBSQL::VersionedSeqAdaptor->new($self,$self->_read_only);
 }
 
 sub dbname {

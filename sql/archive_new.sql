@@ -13,6 +13,7 @@ CREATE TABLE versioned_seq (
 	versioned_seq_id int(10) unsigned NOT NULL auto_increment,
 	seq_id  int(10) unsigned NOT NULL,
 	version int(10),
+	sequence mediumtext NOT NULL,
 	start_clone varchar(40),
 	start_coord int(10),
 	end_clone varchar(40),

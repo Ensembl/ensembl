@@ -1,6 +1,6 @@
 
 #
-# BioPerl module for ArchiveSeqAdaptor
+# BioPerl module for VersionedSeqAdaptor
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -12,16 +12,16 @@
 
 =head1 NAME
 
-ArchiveSeqAdaptor - DB Adaptor for ArchiveSeq objects
+VersionedSeqAdaptor - DB Adaptor for ArchiveSeq objects
 
 =head1 SYNOPSIS
 
-    my $asad = Bio::EnsEMBL::DBArchive->new($db);
+    my $asad = Bio::EnsEMBL::Archive::DBSQL->new($db);
     my @aseqs = $asad->fetch_by_ensembl_id('ENSE00000023423');
 
 =head1 DESCRIPTION
 
-The ArchiveSeqAdaptor contains all the SQL needed to fetch/store ArchiveSeq objects in the Archive Database
+The VersionedSeqAdaptor contains all the SQL needed to fetch/store ArchiveSeq objects in the Archive Database
 
 =head1 CONTACT
 
@@ -36,17 +36,17 @@ Internal methods are usually preceded with a _
 
 
 # Let the code begin...
-package Bio::EnsEMBL::Overlap::DBSQL::ArchiveSeqAdaptor;
+package Bio::EnsEMBL::Overlap::DBSQL::VersionedSeqAdaptor;
 
 use vars qw(@ISA);
 use strict;
-use Bio::EnsEMBL::DBArchive::BaseAdaptor;
-use Bio::EnsEMBL::DBArchive::ArchiveSeq;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Archive::DBSQL::ArchiveSeq;
 
 use Bio::Root::RootI;
 
 #The method ->new is inherited from the BaseAdaptor
-@ISA = qw(Bio::EnsEMBL::DBArchive::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::Archive::DBSQL::BaseAdaptor);
 
 
 1;
