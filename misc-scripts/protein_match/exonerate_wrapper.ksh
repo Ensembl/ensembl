@@ -46,13 +46,15 @@ function usage
 {
 	cat >&2 <<-EOT
 	Usage:	$0 [-h?]
-	        $0 [-q path] [-t path] [-v]
+	        $0 [-q path] [-t path] [-v] [-- opts]
 
 	-h, -?   Show usage information.
 	-e path  Explicit path to exonerate executable.
 	-q path  Path to FastA file containing query sequences.
 	-t path  Path to FastA file containing target sequences.
 	-v       Be verbose.
+	opts     Extra options to pass to exonerate, e.g. -M 512 -s 200
+		 (must not affect format of output!).
 
 	Default values:
 	  -e $e_cmd
@@ -74,20 +76,21 @@ while getopts 'h?e:q:t:v' opt; do
 	*) usage; exit 1 ;;
     esac
 done
+shift $(( OPTIND - 1 ))
 
 if [[ ! -r $q_fa ]]; then
-    print -u2 "Can't find file '$q_fa'"
+    print -u2 "Can't find or read file '$q_fa'"
     exit 1
 elif [[ ! -r $t_fa ]]; then
-    print -u2 "Can't find file '$t_fa'"
+    print -u2 "Can't find or read file '$t_fa'"
     exit 1
 elif [[ ! -x $e_cmd && ! -x $(whence $e_cmd) ]]; then
-    print -u2 "Can't execute '$e_cmd'"
+    print -u2 "Can't find or execute '$e_cmd'"
     exit 1
 fi
 
 e_opt="--showalignment no --showsugar no --showcigar no --showvulgar no 
-       --model $e_mod --ryo $e_fmt -q $q_fa -t $t_fa"
+       --model $e_mod --ryo $e_fmt -q $q_fa -t $t_fa $@"
 
 nice -n 19 $e_cmd $e_opt |
 perl -ne '
