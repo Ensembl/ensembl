@@ -59,22 +59,36 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
+  my ($sisterid,$sisterpos,$sisterpolarity,$selfposition) = $self->_rearrange([qw( SISTERID
+										   SISTERPOSITION
+										   SISTERPOLARITY
+										   SELFPOSITION
+										   )], @args);
+  if( !defined $sisterid || !defined $sisterpos || !defined $sisterpolarity || !defined $selfposition) {
+      $self->throw("You have to construct ContigOverlap objects with all four arguments, sisterid, sisterposition, sisterpolarity, and selfposition");
+  }
+
+  $self->sister_id($sisterid);
+  $self->sister_position($sisterpos);
+  $self->sister_polarity($sisterpolarity);
+  $self->self_position($selfposition);
+
   # set stuff in self from @args
   return $make; # success - we hope!
 }
 
-=head2 sister_contig_id
+=head2 sister_id
 
- Title   : sister_contig_id
- Usage   : $obj->sister_contig_id($newval)
+ Title   : sister_id
+ Usage   : $obj->sister_id($newval)
  Function: 
- Returns : value of sister_contig_id
+ Returns : value of sister_id
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_contig_id{
+sub sister_id{
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
@@ -84,39 +98,39 @@ sub sister_contig_id{
    
 }
 
-=head2 sister_contig_position
+=head2 sister_position
     
- Title   : sister_contig_position
- Usage   : $obj->sister_contig_position($newval)
+ Title   : sister_position
+ Usage   : $obj->sister_position($newval)
  Function: 
- Returns : value of sister_contig_position
+ Returns : value of sister_position
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_contig_position{
+sub sister_position{
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'sister_contig_position'} = $value;
+       $obj->{'sister_position'} = $value;
    }
-   return $obj->{'sister_contig_position'};
+   return $obj->{'sister_position'};
    
 }
 
-=head2 sister_contig_polarity
+=head2 sister_polarity
 
- Title   : sister_contig_polarity
- Usage   : $obj->sister_contig_polarity($newval)
+ Title   : sister_polarity
+ Usage   : $obj->sister_polarity($newval)
  Function: 
- Returns : value of sister_contig_polarity
+ Returns : value of sister_polarity
  Args    : newvalue (optional)
 
 
 =cut
 
-sub sister_contig_polarity {
+sub sister_polarity {
    my $obj = shift;
    if( @_ ) {
        my $value = shift;
@@ -126,18 +140,18 @@ sub sister_contig_polarity {
    
 }
 
-=head2 self_contig_position
+=head2 self_position
 
- Title   : self_contig_position
- Usage   : $obj->self_contig_position($newval)
+ Title   : self_position
+ Usage   : $obj->self_position($newval)
  Function: 
- Returns : value of self_contig_position
+ Returns : value of self_position
  Args    : newvalue (optional)
 
 
 =cut
 
-sub self_contig_position{
+sub self_position{
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
