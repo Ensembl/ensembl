@@ -196,7 +196,8 @@ sub fetch_by_supercontig_name {
      -chr_start =>$slice_start,
      -chr_end => $slice_end,
      -strand => $strand,
-     -assembly_type => $assembly_type
+     -assembly_type => $assembly_type,
+     -adaptor => $self
     );
   
   return $slice;
