@@ -167,6 +167,15 @@ sub fetch_by_dbID {
 }
 
 
+sub deleteObj {
+    my( $self ) = @_;
+    
+    $self->{_cache} = undef;
+    $self->{_logic_name_cache} = undef;
+    $self->SUPER::deleteObj;
+}
+
+
 =head2 fetch_by_logic_name
 
   Arg [1]    : string $logic_name the logic name of the analysis to retrieve

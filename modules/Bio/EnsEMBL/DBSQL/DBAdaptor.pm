@@ -1012,8 +1012,11 @@ sub add_ExternalFeatureFactory{
 =cut
 
 sub get_adaptor() {
-
 	my ($self, $canonical_name, @other_args) = @_;
+
+  if ($self->isa('Bio::EnsEMBL::Container')) {
+    $self = $self->_obj;
+  }
 
 	# throw if module for $canonical_name does not exist
 	throw("No such data type $canonical_name") 
@@ -1049,8 +1052,11 @@ sub get_adaptor() {
 =cut
 
 sub set_adaptor() {
-
 	my ($self, $canonical_name, $new_object) = @_;
+
+  if ($self->isa('Bio::EnsEMBL::Container')) {
+    $self = $self->_obj;
+  }
 
   # throw if an unrecognised canonical_name is used
 	throw("No such data type $canonical_name") 

@@ -330,6 +330,10 @@ sub locator {
 sub _get_adaptor {
   my( $self, $module, @args) = @_;
 
+  if ($self->isa('Bio::EnsEMBL::Container')) {
+    $self = $self->_obj;
+  }
+
   my( $adaptor, $internal_name );
   
   #Create a private member variable name for the adaptor by replacing
