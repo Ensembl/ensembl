@@ -72,6 +72,16 @@ sub new_fast {
   return bless $hashref, $class;
 }
 
+sub dbID {
+  my $self = shift;
+  
+  if(@_) {
+    $self->{'dbID'} = shift;
+  }
+
+  return $self->{'dbID'};
+}
+
 sub position {
   my ($self, $arg) = @_;
 
