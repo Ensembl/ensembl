@@ -40,33 +40,15 @@ The rest of the documentation details each of the object methods. Internal metho
 package Bio::EnsEMBL::DB::ContigI;
 
 use strict;
-use Bio::AnnSeq;
 
-
-=head2 created
-
- Title   : created
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub created{
-   my ($self) = @_;
-   $self->throw("Class [$self] has not implemented the created method");
-}
 
 =head2 seq
 
  Title   : seq
  Usage   : $seq = $contig->seq();
- Function: Gets a Bio::Seq object out from the contig
+ Function: Gets a Bio::PrimarySeqI object out from the contig
  Example :
- Returns : Bio::Seq object
+ Returns : Bio::PrimarySeqI object
  Args    :
 
 
@@ -152,154 +134,6 @@ sub get_all_RepeatFeatures{
 }
 
 
-=head2 find_supporting_evidence
-
- Title   : find_supporting_evidence
- Usage   : $obj->find_supporting_evidence($exon);
- Function: Looks through all the similarity features and
-           stores as supporting evidence any feature
-           that overlaps with an exon.  I know it is
-           a little crude but it\'s a start/
- Example : 
- Returns : Nothing
- Args    : Bio::EnsEMBL::Exon
-
-
-=cut
-
-
-sub find_supporting_evidence {
-    my ($self,$exon) = @_;
-
-    my @features = $self->get_all_SimilarityFeatures;
-
-    foreach my $f (@features) {
-	if ($f->overlaps($exon)) {
-	    $exon->add_Supporting_Feature($f);
-	}
-    }
-}
-
-=head2 get_all_clone_SeqFeatures
-
- Title   : get_all_clone_SeqFeatures
- Usage   : foreach $feat ( $contig->get_all_clone_SeqFeatures )
- Function: returns sequence features but in the clone coordinate space.
- Example :
- Returns : an array of SeqFeatures
- Args    : None
-
- This method is common to all Contig objects, whatever the implementation.
-Implementation objects do not need to write this method
-
-=cut
-
-sub get_all_clone_SeqFeatures{
-   my ($self) = @_;
-   my @out;
-
-   foreach my $sf ( $self->get_all_SeqFeatures ) {
-       my ($start,$end,$strand) = $self->_convert_coords_contig_clone($sf->start,$sf->end,$sf->strand);
-       $sf->start($start);
-       $sf->end($end);
-       $sf->strand($strand);
-       push(@out,$sf);
-   }
-
-   return @out;
-}
-
-=head2 get_clone_RepeatFeatures
-
- Title   : get_clone_RepeatFeatures
- Usage   : foreach $feat ( $contig->get_clone_RepeatFeatures )
- Function: returns sequence features but in the clone coordinate space.
- Example :
- Returns : an array of SeqFeatures
- Args    : None
-
- This method is common to all Contig objects, whatever the implementation.
-Implementation objects do not need to write this method
-
-=cut
-
-sub get_clone_RepeatFeatures {
-   my ($self) = @_;
-   my @out;
-
-   foreach my $sf ( $self->get_all_RepeatFeatures ) {
-       my ($start,$end,$strand) = $self->_convert_coords_contig_clone($sf->start,$sf->end,$sf->strand);
-       $sf->start($start);
-       $sf->end($end);
-       $sf->strand($strand);
-       push(@out,$sf);
-   }
-
-   return @out;
-}
-
-
-sub _convert_coords_contig_clone {
-    my $self = shift;
-    my $start = shift;
-    my $end = shift;
-    my $strand = shift;
-
-    my ($out_start,$out_end,$out_strand);
-
-    if( !defined $strand ) {
-	$self->throw("_convert_coords_contig_clone(start,end,strand)");
-    }
-
-    my $offset = $self->offset;
-
-    if( $self->orientation == 1 ) {
-       $out_strand = $strand;
-       if( $out_strand == 1 ) {
-	   $out_start = $offset + $start -1;
-	   $out_end   = $offset + $end -1;
-       } else {
-	   $out_start = $offset + $start -1;
-	   $out_end   = $offset + $end -1;
-       }
-   } else {
-       my $length = $self->length(); 
-       if( $strand == -1 ) {
-	   $out_start = $offset-1 + ($length - $end +1);
-	   $out_end   = $offset-1 + ($length - $start +1);
-	   $out_strand = 1;
-       } else {
-	   $out_start   = $offset-1 + ($length - $end +1);
-	   $out_end     = $offset-1 + ($length - $start +1);
-	   $out_strand = -1;
-       }
-   }
-
-   return ($out_start,$out_end,$out_strand);
-}
-
-    
-
-=head2 seq_date
-
- Title   : seq_date
- Usage   : $contig->seq_date()
- Function: Gives the unix time value of the dna table created datetime field, which indicates
-           the original time of the dna sequence data
- Example : $contig->seq_date()
- Returns : unix time
- Args    : none
-
-
-=cut
-
-sub seq_date{
-    my ($self) = @_;
-
-    $self->throw("Object did not provide the seq_date method on Contig interface!");
-
-}
-
 
 =head2 get_all_Genes
 
@@ -318,61 +152,6 @@ sub get_all_Genes{
 
    $self->throw("Object did not provide the get_all_Genes method on Contig interface!");
 
-}
-
-=head2 offset
-
- Title   : offset
- Usage   : $offset = $contig->offset()
- Function: Provides the offset of the contig in the clone
-         : somehow. 1 means it is the first contig
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub offset{
-   my ($self,@args) = @_;
-
-   $self->throw("Object did not provide the offset method on Contig interface!");
-
-}
-
-=head2 orientation
-
- Title   : orientation
- Usage   : 
- Function: Provides the orientation of the contig in the clone.
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub orientation{
-   my ($self,@args) = @_;
-
-   $self->throw("Object did not provide the orientation method on Contig interface!");
-}
-
-=head2 order
-
- Title   : order
- Usage   : $obj->order($newval)
- Function: 
- Returns : value of order
- Args    : newvalue (optional)
-
-
-=cut
-
-sub order{
-    my ($self,@args) = @_;
-
-    $self->throw("Object did not provide the order method on Contig interface!");
 }
 
 
@@ -394,6 +173,13 @@ sub length {
    $self->throw("Object did not provide the length method on Contig interface!");
 
 }
+
+=head1 Decorating methods
+
+These methods do not have to implemented by the derived object.
+They are work on top of the interface defined above
+
+=cut
 
 =head2 annseq
 
@@ -493,8 +279,6 @@ sub write_acedb {
 }
 
 
-
-
 =head2 as_seqfeatures
 
  Title   : as_seqfeatures
@@ -544,5 +328,43 @@ sub as_seqfeatures {
     return @sf;
 }
 
+
+=head1 Cruft
+
+Not clear if this method belongs here....
+
+=cut
+
+#
+# Not sure where to put this?
+#
+ 
+=head2 find_supporting_evidence
+
+ Title   : find_supporting_evidence
+ Usage   : $obj->find_supporting_evidence($exon);
+ Function: Looks through all the similarity features and
+           stores as supporting evidence any feature
+           that overlaps with an exon.  I know it is
+           a little crude but it\'s a start/
+ Example : 
+ Returns : Nothing
+ Args    : Bio::EnsEMBL::Exon
+
+
+=cut
+
+
+sub find_supporting_evidence {
+    my ($self,$exon) = @_;
+
+    my @features = $self->get_all_SimilarityFeatures;
+
+    foreach my $f (@features) {
+	if ($f->overlaps($exon)) {
+	    $exon->add_Supporting_Feature($f);
+	}
+    }
+}
 
 1;
