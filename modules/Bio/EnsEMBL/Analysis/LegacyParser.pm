@@ -186,14 +186,15 @@ sub _parse_exon{
    my $is = $fh->input_record_separator('>');
    my $dis = <$fh>; # skip first record (dull!)
    while( <$fh> ) {
-       if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+).*(1999-\d\d-\d\d_[\d:]+)\s+(1999-\d\d-\d\d_[\d:]+).*\n(\S*)/  ) {
+       if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(\S*)/  ) {
 	   my $eid = $1;
 	   my $contigid = $2;
 	   my $start = $3;
 	   my $end = $4;
-	   my $created = $5;
-	   my $modified = $6;
-	   my $pep = $7;
+	   my $phase = $5;
+	   my $created = $6;
+	   my $modified = $7;
+	   my $pep = $8;
 
 	   #print STDOUT "Exon $eid - $pep\n";
 	   # ok. Get out the Dna sequence object
@@ -203,8 +204,19 @@ sub _parse_exon{
 	   my $exon = Bio::EnsEMBL::Exon->new();
 	   $exon->id($eid);
 	   $exon->contig_id($contigid);
+	  
+	   if( $end < $start ) {
+	       my $s = $end;
+	       $end = $start;
+	       $start = $s;
+	       $exon->strand(-1);
+	   } else {
+	       $exon->strand(1);
+	   }
+	   $exon->phase($phase);
 	   $exon->start($start);
-	   $exon->end($start);
+	   $exon->end($end);
+	   
 	   $exon->created($created);
 	   $exon->modified($modified);
 	   $self->{'_exon_hash'}->{$eid} = $exon;

@@ -59,6 +59,8 @@ use Bio::EnsEMBL::DB::Contig;
 use Bio::EnsEMBL::DB::Clone;
 use DBI;
 
+use Bio::EnsEMBL::DB::DummyStatement;
+
 @ISA = qw(Bio::Root::Object);
 # new() is inherited from Bio::Root::Object
 
@@ -93,15 +95,21 @@ sub _initialize {
   }
   my $dsn = "DBI:$driver:database=$db;host=$host";
 
-  my $dbh = DBI->connect("$dsn","$user",'');
+  if( $debug > 10 ) {
+      print STDERR "Debug mode $debug means we have not connected to the database\n";
+      $self->_db_handle("dummy dbh handle in debug mode $debug");
+  } else {
 
-  $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
+      my $dbh = DBI->connect("$dsn","$user",'');
 
-  if( $self->_debug > 3 ) {
-     $self->warn("Using connection $dbh");
-  }
+      $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
+      
+      if( $self->_debug > 3 ) {
+	  $self->warn("Using connection $dbh");
+      }
      
-  $self->_db_handle($dbh);
+      $self->_db_handle($dbh);
+  }
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -204,6 +212,18 @@ sub write_Gene{
 
    # gene is big daddy object
 
+   foreach my $trans ( $gene->each_Transcript() ) {
+       $self->write_Transcript($trans,$gene);
+       my $c = 1;
+       foreach my $exon ( $trans->each_Exon() ) {
+	   my $sth = $self->prepare("insert into exon_transcript (exon,transcript,order) values ('". $exon->id()."','".$trans->id()."',".$c.")");
+	   $sth->execute();
+	   if( $done{$exon->id()} ) { next; }
+	   $done{$exon->id()} = 1;
+	   $self->write_Exon($exon);
+       }
+   }
+
 }
 
 =head2 write_Transcript
@@ -236,7 +256,7 @@ sub write_Transcript{
 
    # ok - now load this line in
 
-   my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "'");
+   my $tst = $self->prepare("insert into transcript (id,gene) values ('" . $trans->id . "','" . $gene->id . "')");
    $tst->execute();
    
    my $unlockst = $self->prepare("unlock transcript");
@@ -278,7 +298,7 @@ sub write_Exon{
 		       $exon->start . ",".
 			   $exon->end . ",".
 			       $exon->strand . ",".
-				   $exon->phase . ",";
+				   $exon->phase . ")";
    
    my $sth = $self->prepare($exonst);
    $sth->execute();
@@ -295,6 +315,9 @@ sub write_Exon{
  Title   : prepare
  Usage   : $sth = $dbobj->prepare("select start,end from feature where analysis = \" \" ");
  Function: prepares a SQL statement on the DBI handle
+
+           If the debug level is greater than 10, provides information into the
+           DummyStatement object
  Example :
  Returns : A DBI statement handle object
  Args    : a SQL string
@@ -307,6 +330,14 @@ sub prepare{
 
    if( ! $string ) {
        $self->throw("Attempting to prepare an empty SQL query!");
+   }
+
+   if( $self->_debug > 10 ) {
+       print STDERR "Prepared statement $string\n";
+       my $st = Bio::EnsEMBL::DB::DummyStatement->new();
+       $st->_fileh(\*STDERR);
+       $st->_statement($string);
+       return $st;
    }
 
    # should we try to verify the string?
@@ -328,12 +359,12 @@ sub prepare{
 =cut
 
 sub _debug{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'_db_handle'} = $value;
+    my ($self,$value) = @_;
+    if( defined $value) {
+	$self->{'_debug'} = $value;
     }
-    return $self->{'_db_handle'};
-
+    return $self->{'_debug'};
+    
 }
 
 
