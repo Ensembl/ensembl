@@ -1993,7 +1993,6 @@ sub write_Exon{
        $sth->execute();
 
        # Now the supporting evidence
-       print "Writing supporting evidence from write_Exon\n";
        $self->write_supporting_evidence($exon);
    }
    else {
