@@ -296,7 +296,8 @@ sub version {
 sub get_all_Contigs {
    my ($self) = @_;
    my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self->_dbobj,
-					   '-id' => $self->id() );
+					   '-id' => $self->id(), 
+                                           '-clone' => $self);
                                            
    my @contigs;
    push(@contigs, $contig);
