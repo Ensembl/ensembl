@@ -231,7 +231,7 @@ sub fetch_by_DBEntry {
     my $sth = $self->prepare( "select gene_name from gene_xref where external_name = ? and db= ?" );
     $sth->execute( $dbentry, $db );
     my( $stable_id ) = $sth->fetchrow;
-    return $self->fetch_by_stable_id( $stable_id, $chr_coords );
+    return $stable_id ? $self->fetch_by_stable_id( $stable_id, $chr_coords ) : undef;
 }
 
 =head2 fetch_by_stable_id
