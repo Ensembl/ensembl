@@ -38,11 +38,14 @@ B<EnsTestDB.conf.example> for an example.
 
 package EnsTestDB;
 
+use vars qw(@ISA);
 use strict;
 use Sys::Hostname 'hostname';
 use Bio::EnsEMBL::DBLoader;
 use DBI;
 use Carp;
+
+@ISA = qw(Bio::EnsEMBL::DBSQL::DBAdaptor);
 
 #Package variable for unique database name
 my $counter=0;
