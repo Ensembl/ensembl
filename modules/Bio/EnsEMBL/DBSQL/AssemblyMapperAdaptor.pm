@@ -266,7 +266,8 @@ sub register_assembled {
     }
 
     ($asm_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} = $asm_seq_region_id;
+    $self->{'_sr_id_cache'}->{"$asm_seq_region:$asm_cs_id"} =
+      $asm_seq_region_id;
 
     $sth->finish();
   }
@@ -315,7 +316,8 @@ sub register_assembled {
                  $cmp_seq_region, $cmp_start, $cmp_end,
                  $ori,
                  $asm_seq_region, $region_start, $region_end);
-      $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $cmp_seq_region_id;
+      $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
+        $cmp_seq_region_id;
     }
   }
 
@@ -355,7 +357,8 @@ sub register_component {
   return if($asm_mapper->have_registered_component($cmp_seq_region));
 
 
-  my $cmp_seq_region_id = $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"};
+  my $cmp_seq_region_id = 
+    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"};
 
 
   if(!$cmp_seq_region_id) {
@@ -371,7 +374,8 @@ sub register_component {
     }
 
     ($cmp_seq_region_id) = $sth->fetchrow_array();
-    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $cmp_seq_region_id;
+    $self->{'_sr_id_cache'}->{"$cmp_seq_region:$cmp_cs_id"} =
+      $cmp_seq_region_id;
 
     $sth->finish();
   }
@@ -424,6 +428,39 @@ sub register_component {
 
 
 
+=head2 seq_regions_to_ids
+
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $coord_system
+  Arg [2]    : listref of strings $seq_regions
+  Example    : my @ids = @{$asma->seq_regions_to_ids($coord_sys, \@seq_regs)};
+  Description: Converts a list of seq_region names to internal identifiers
+               using the internal cache that has accumulated while registering
+               regions for AssemblMappers.  Note that this only works for
+               regions which have been registered and is only intended to be
+               called from the AssemblMapper objects created by this adaptor.
+  Returntype : listref of ints
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub seq_regions_to_ids {
+  my $self = shift;
+  my $coord_system = shift;
+  my $seq_regions = shift;
+
+  my $cs_id = $coord_system->dbID();
+
+  my @out;
+
+  foreach my $sr (@$seq_regions) {
+    my $id = $self->{'_sr_id_cache'}->{"$sr:$cs_id"};
+    throw("Seq_region [$sr] with coord_system [$cs_id] not found") if(!$id);
+    push @out, $id;
+  }
+
+  return \@out;
+}
 
 
 
