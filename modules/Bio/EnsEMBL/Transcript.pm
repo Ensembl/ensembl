@@ -1160,9 +1160,9 @@ sub get_all_translateable_Exons {
 
     # Adjust to translation end if this is the end exon
     if ($ex == $end_exon) {
-      if ($t_end < 1 or $t_end > $length) {
-        throw("Translation end '$t_end' is outside exon $ex length=$length");
-      }
+#      if ($t_end < 1 or $t_end > $length) {
+#        throw("Translation end '$t_end' is outside exon $ex length=$length");
+#      }
       $adjust_end = $t_end - $length;
     }
 
