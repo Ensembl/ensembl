@@ -8,6 +8,7 @@
 # Dumping data for table 'analysis'
 #
 
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'analysis_test3','nb3','gogene','h3r','gff_test','gff_feat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'analysis_test3','nb3','gogene','h3r','gff_test','gff_feat');
 
 #
@@ -86,8 +87,9 @@ INSERT INTO genetype (gene_id, type) VALUES ('gene_id3','test');
 # Dumping data for table 'protein_feature'
 #
 
+
 INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hstart, hend, hid, score, evalue, perc_id) VALUES (1,2,5,1,'translation_id3',4,7,'SP34', 99, 23, 45);
-INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hstart, hend, hid, score, evalue, perc_id) VALUES (2,4,8,1,'translation_id3',3,12,'SP01', 98, 12, 78);
+INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hstart, hend, hid, score, evalue, perc_id) VALUES (2,4,8,1,'translation_id3',3,8,'SP01', 98, 12, 78);
 
 #
 # Dumping data for table 'repeat_feature'

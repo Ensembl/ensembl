@@ -54,24 +54,28 @@ eval {
 };
 if ($@) {
     print "not ok 3\n";
+
 }
 else {
     print "ok 3\n";
 }
 
-if ($transl[0]->feature1->start == 2) {
+
+
+if ($transl[0]->start == 2) {
     print "ok 4\n";
 }
 else {
     print "not ok 4\n";
 }
 
-if ($transl[0]->feature1->end == 5) {
+if ($transl[0]->end == 5) {
     print "ok 5\n";
 }
 else {
     print "not ok 5\n";
 }
+
 
 if ($transl[0]->feature1->score == 99.000) {
     print "ok 6\n";
@@ -80,7 +84,7 @@ else {
     print "not ok 6\n";
 }
 
-if ($transl[0]->feature1->analysis->id == 1) {
+if ($transl[0]->feature1->analysis->id == 7) {
     print "ok 7\n";
 }
 else {
