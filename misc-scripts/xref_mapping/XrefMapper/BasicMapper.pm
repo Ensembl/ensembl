@@ -919,6 +919,9 @@ sub dump_core_xrefs {
 
   my $object_xref_id = $start_object_xref_id;
 
+  # build cache of source id -> external_db id
+  my %source_to_external_db = $self->map_source_to_external_db();
+
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
 
@@ -951,21 +954,24 @@ sub dump_core_xrefs {
     # so we add on $xref_id_offset
     while ($xref_sth->fetch()) {
 
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\n";
+      my $external_db_id = $source_to_external_db{$source_id};
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
       $source_ids{$source_id} = $source_id;
 
     }
 
     # Now get the dependent xrefs for each of these xrefs and write them as well
-    $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
+    $sql = "SELECT DISTINCT(x.xref_id), dx.master_xref_id, x.accession, x.label, x.description, x.source_id, x.version FROM dependent_xref dx, xref x WHERE x.xref_id=dx.dependent_xref_id AND master_xref_id $id_str";
 
     my $dep_sth = $xref_dbi->prepare($sql);
     $dep_sth->execute();
 
-    $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id);
+    $dep_sth->bind_columns(\$xref_id, \$master_xref_id, \$accession, \$label, \$description, \$source_id, \$version);
     while ($dep_sth->fetch()) {
 
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $accession . "\t" . $label . "\t" . $description . "\tDEPENDENT\n";
+      my $external_db_id = $source_to_external_db{$source_id};
+
+      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\tDEPENDENT\n";
       $source_ids{$source_id} = $source_id;
 
       # create an object_xref linking this (dependent) xref with any objects it maps to
@@ -1004,47 +1010,6 @@ sub dump_core_xrefs {
   close(XREF);
   close(OBJECT_XREF);
   close(EXTERNAL_SYNONYM);
-
-  # now write the exernal_db file - the %source_ids hash will contain the IDs of the
-  # sources that need to be written as external_dbs
-  open(EXTERNAL_DB, ">external_db.txt");
-
-  # get current highest internal ID from external_db
-  my $row = @{$core_dbi->selectall_arrayref("SELECT MAX(external_db_id) FROM external_db")}[0];
-  my $max_edb_id = @{$row}[0];
-  if (!defined $max_edb_id) {
-    print "Can't get highest existing external_db_id, using 1\n)";
-  } else {
-    print "Maximum existing external_db_id = $max_edb_id\n";
-    $max_edb_id = 0;
-  }
-  my $edb_id = $max_edb_id + 1;
-
-  my @source_id_array = keys %source_ids;
-  my $source_id_str;
-  if(@source_id_array > 1)  {
-    $source_id_str = "IN (" . join(',', @source_id_array). ")";
-  } else {
-    $source_id_str = "= " . $source_id_array[0];
-  }
-
-  # get source names; 
- #print STDERR $source_sql."\n";
-  my $source_sql = "SELECT name, release, source_id FROM source WHERE source_id $source_id_str";
-  my $source_sth = $xref_dbi->prepare($source_sql);
-  #print STDERR $source_sql."\n";
-  $source_sth->execute();
-
-  my ($source_name, $release, $source_id);
-  $source_sth->bind_columns(\$source_name, \$release, \$source_id);
-
-  while ($source_sth->fetch()) {
-    print EXTERNAL_DB "$edb_id\t$source_name\t$release\tXREF\n";
-    # TODO knownxref etc??
-    $edb_id++;
-  }
-
-  close(EXTERNAL_DB);
 
   print "Before calling display_xref, object_xref_mappings size " . scalar (keys %{$object_xref_mappings}) . "\n";
 
@@ -1312,6 +1277,45 @@ sub find_in_list {
 
   return -1;
 
+}
+
+# Build a map of source id (in xref database) to external_db (in core database)
+
+sub map_source_to_external_db {
+
+  my $self = shift;
+
+  my %source_to_external_db;
+
+  # get all sources
+  my $sth = $self->xref->dbi()->prepare("SELECT source_id, name FROM source");
+  $sth->execute();
+  my ($source_id, $source_name);
+  $sth->bind_columns(\$source_id, \$source_name);
+
+  while($sth->fetchrow_array()) {
+
+    # find appropriate external_db_id for each one
+    my $sql = "SELECT external_db_id FROM external_db WHERE db_name=?";
+    my $core_sth = $self->dbi()->prepare($sql);
+    $core_sth->execute($source_name);
+
+    my @row = $core_sth->fetchrow_array();
+
+    if (@row) {
+
+      $source_to_external_db{$source_id} = $row[0];
+      #print "Source name $source_name id $source_id corresponds to core external_db_id " . $row[0] . "\n";
+
+    } else {
+
+      print STDERR "Can't find external_db entry for source name $source_name\n"
+
+    }
+
+  } # while source
+
+  return %source_to_external_db;
 }
 
 1;
