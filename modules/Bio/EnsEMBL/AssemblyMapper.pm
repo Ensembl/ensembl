@@ -248,9 +248,9 @@ sub register_region {
       $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
    }
 
-   unless ($start =~ /^\d+$/) {
-      $self->throw("Expecting integer for chromosome start, but got '$start'");
-   }
+#   unless ($start =~ /^\d+$/) {
+#      $self->throw("Expecting integer for chromosome start, but got '$start'");
+#   }
 
    unless ($end =~ /^\d+$/) {
       $self->throw("Expecting integer for chromosome end, but got '$end'");
