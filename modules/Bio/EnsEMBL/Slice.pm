@@ -326,9 +326,9 @@ sub invert {
   
   my %s = %$self;
   my $slice = bless \%s, ref $self;
-
   $slice->strand($self->strand * -1);
-
+  delete $slice->{name};
+ 
   return $slice;
 }
 
