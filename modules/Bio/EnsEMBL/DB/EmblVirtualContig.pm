@@ -270,6 +270,7 @@ sub project_name{
 sub add_date {
    my ($self) = shift;
    foreach my $dt ( @_ ) {
+       #print STDERR "adding date $dt\n";
        push(@{$self->{'date'}},$dt);
    }
 }

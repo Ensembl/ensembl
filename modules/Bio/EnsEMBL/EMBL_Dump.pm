@@ -190,7 +190,7 @@ sub ensembl_annseq_output {
 #########################
 
 sub id_EnsEMBL {
-    my ($annseq,$type) = shift;
+    my ($annseq,$type) = @_;
 
     #return $annseq->id;
 
