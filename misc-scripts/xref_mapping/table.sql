@@ -64,8 +64,8 @@ CREATE TABLE source (
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
   url                         varchar(255),
-  file_modified_date          timestamp(14) not null,
-  upload_date                 timestamp(14) not null,
+  file_modified_date          datetime not null,
+  upload_date                 datetime not null,
   release                     varchar(255),
 
   PRIMARY KEY (source_id),
@@ -77,13 +77,15 @@ CREATE TABLE source (
 
 CREATE TABLE species (
 
-  species_id                  int unsigned not null auto_increment,
+  taxonomy_id                 int unsigned not null,
   name                        varchar(255) not null,
 
-  PRIMARY KEY(species_id),
+  PRIMARY KEY(taxonomy_id),
   KEY name_idx(name)
 
 );
+
+INSERT INTO species (taxonomy_id, name) VALUES (9606, 'homo_sapiens');
 
 ################################################################################
 
