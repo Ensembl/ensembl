@@ -5,6 +5,7 @@ package Bio::EnsEMBL::RepeatFeature;
 
 use strict;
 use Bio::EnsEMBL::SeqFeature;
+use Bio::LocationI;
 
 use vars '@ISA';
 
