@@ -78,9 +78,13 @@ sub get_FeaturePair_list_by_rawcontig_id{
    }
 
    my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id' and a.rawversion=$version");
+
+
    #print STDERR "SQL: select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id'";
-   $sth->execute;
+
+   $sth->execute || $self->throw("Unable to retrieve versions!");
    my @out;
+
    while( my $aref = $sth->fetchrow_arrayref ) {
        my ($start,$end,$strand,$hstart,$hend,$hstrand,$hname,$score) = @{$aref};
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
