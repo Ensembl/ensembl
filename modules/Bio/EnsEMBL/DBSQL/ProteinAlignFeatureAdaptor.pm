@@ -58,7 +58,8 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
-
+use Bio::EnsEMBL::DnaPepAlignFeature;
+use Bio::EnsEMBL::PepDnaAlignFeature;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 # new() can be inherited from Bio::Root::RootI
 
@@ -129,10 +130,10 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
 
    $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
 
@@ -154,6 +155,7 @@ sub fetch_by_contig_id{
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
+       
        $out->cigar($cigar);
 
        $out->analysis($ana{$analysis_id});
@@ -165,6 +167,117 @@ sub fetch_by_contig_id{
    return @f;
 }
 
+sub fetch_by_contig_id_and_logic_name{
+
+  my($self, $cid, $logic_name) = @_;
+
+  
+   if( !defined $cid ) {
+       $self->throw("fetch_by_contig_id_and_logic_name must have an contig id");
+   }
+
+   if(!defined $logic_name){
+     $self->throw("must provide a logic_name to fetch by logic name: $!\n");
+   } 
+
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   $sth->execute();
+
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+
+   my @f;
+   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
+   my %ana;
+
+   while( $sth->fetch ) {
+       if( !defined $ana{$analysis_id} ) {
+	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+       }
+
+
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+       $out->start($start);
+       $out->end($end);
+       $out->strand($strand);
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       
+       $out->cigar($cigar);
+
+       $out->analysis($ana{$analysis_id});
+       $out->seqname($contig->name);
+       $out->attach_seq($contig->seq);
+       push(@f,$out);
+   }
+   
+   return @f;
+
+}
+
+sub fetch_by_contig_id_and_dbname{
+
+  my($self, $cid, $db_name) = @_;
+
+  
+   if( !defined $cid ) {
+       $self->throw("fetch_by_contig_id_and_logic_name must have an contig id");
+   }
+
+   if(!defined $db_name){
+     $self->throw("must provide a db_name to fetch by db name: $!\n");
+   }
+
+   my $sth1 = $self->prepare("select analysis_id from analysis where db = '$db_name'");
+
+   $sth1->execute();
+   my @analysis_ids;
+   my $array_ref;
+   while($array_ref = $sth1->fetchrow_arrayref){
+        my $analysis_id = $array_ref->[0];
+        push(@analysis_ids, $analysis_id);
+   }
+   my $analysis_idlist = join(',', @analysis_ids);
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
+   $sth->execute();
+
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+
+   my @f;
+   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
+   my %ana;
+
+   while( $sth->fetch ) {
+       if( !defined $ana{$analysis_id} ) {
+	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+       }
+
+
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+       $out->start($start);
+       $out->end($end);
+       $out->strand($strand);
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       
+       $out->cigar($cigar);
+
+       $out->analysis($ana{$analysis_id});
+       $out->seqname($contig->name);
+       $out->attach_seq($contig->seq);
+       push(@f,$out);
+   }
+   
+   return @f;
+
+}
 
 =head2 fetch_by_assembly_location
 
@@ -244,6 +357,162 @@ sub fetch_by_assembly_location{
 
 }
 
+
+sub fetch_by_assembly_location_and_dbname{
+
+    my ($self,$start,$end,$chr,$type,$db_name) = @_;
+
+   if( !defined $type ) {
+       $self->throw("Assembly location must be start,end,chr,type");
+   }
+
+   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
+       $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
+   }
+
+   if(!defined $db_name){
+  
+      $self->throw($db_name." not defined must have a db name to get features\n");
+
+   } 
+
+   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
+   $mapper->register_region($start,$end,$chr);
+
+   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+
+   # build the SQL
+
+   my $cid_list = join(',',@cids);
+    
+
+    my $sth1 = $self->prepare("select analysis_id from analysis where db = '$db_name'");
+   
+
+   $sth1->execute();
+   my @analysis_ids;
+   my $array_ref;
+   while($array_ref = $sth1->fetchrow_arrayref){
+        my $analysis_id = $array_ref->[0];
+        push(@analysis_ids, $analysis_id);
+   }
+   my $analysis_idlist = join(',', @analysis_ids);
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
+   $sth->execute();
+
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+
+   my @f;
+    my %ana;
+
+   while( $sth->fetch ) {
+       # we whether this is sensible to use or not
+       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
+       
+       # coord list > 1 - means does not cleanly map. At the moment, skip
+       if( scalar(@coord_list) > 1 ) {
+	   next;
+       }
+
+       if( !defined $ana{$analysis_id} ) {
+	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+       }
+
+       # ok, ready to build a sequence feature: do we want this relative or not?
+
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+       $out->start($coord_list[0]->start);
+       $out->end($coord_list[0]->end);
+       $out->strand($coord_list[0]->strand);
+       $out->seqname($coord_list[0]->seqname);
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       $out->cigar($cigar);
+
+       $out->analysis($ana{$analysis_id});
+       
+       push(@f,$out); 
+   }
+   
+   return @f;
+
+}
+
+sub fetch_by_assembly_location_and_logic_name{
+
+  my($self, $start,$end,$chr,$type, $logic_name) = @_;
+
+  
+   if( !defined $type ) {
+       $self->throw("Assembly location must be start,end,chr,type");
+   }
+   if(!defined $logic_name){
+     $self->throw("must provide a logic_name to fetch by logic name: $!\n");
+   } 
+
+   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
+       $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
+   }
+
+   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
+   $mapper->register_region($start,$end,$chr);
+
+   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+
+   # build the SQL
+
+   my $cid_list = join(',',@cids);
+
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from protein_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   $sth->execute();
+
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+
+   my @f;
+   
+   my %ana;
+
+   while( $sth->fetch ) {
+       # we whether this is sensible to use or not
+       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
+       
+       # coord list > 1 - means does not cleanly map. At the moment, skip
+       if( scalar(@coord_list) > 1 ) {
+	   next;
+       }
+
+       if( !defined $ana{$analysis_id} ) {
+	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+       }
+
+       # ok, ready to build a sequence feature: do we want this relative or not?
+
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+       $out->start($coord_list[0]->start);
+       $out->end($coord_list[0]->end);
+       $out->strand($coord_list[0]->strand);
+       $out->seqname($coord_list[0]->seqname);
+
+       $out->hstart($hstart);
+       $out->hend($hend);
+       $out->hseqname($hname);
+       $out->cigar($cigar);
+
+       $out->analysis($ana{$analysis_id});
+       
+       push(@f,$out);
+   }
+   
+   return @f;
+
+}
+
 =head2 store
 
  Title   : store
@@ -288,6 +557,232 @@ sub store{
 
 }
 
+sub fetch_featurepair_list_by_contig_id{
+  my($self, $contig_id) = @_;
+
+  my @cigar_feats = $self->fetch_by_contig_id($contig_id);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
+sub fetch_featurepair_list_by_contig_id_and_logic_name{
+  my($self, $contig_id, $logic_name) = @_;
+
+  my @cigar_feats = $self->fetch_by_contig_id_and_logic_name($contig_id, $logic_name);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
+
+sub fetch_featurepair_list_by_contig_id_and_dbname{
+  my($self, $contig_id, $db_name) = @_;
+
+  my @cigar_feats = $self->fetch_by_contig_id_and_dbname($contig_id, $db_name);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
+sub fetch_featurepair_list_by_dbID{
+  my($self, $dbId) = @_;
+
+  my $cigar_feat = $self->fetch_by_dbId($dbId);
+  my @fps;
+  
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  
+
+  return @fps;
+}
+
+
+sub fetch_featurepair_list_by_assembly_location_and_dbname{
+  my($self, $start, $end, $chr, $type, $db_name) = @_;
+
+  my @cigar_feats = $self->fetch_by_assembly_location($start, $end, $chr, $type, $db_name);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
+sub fetch_featurepair_list_by_assembly_location{
+  my($self, $start, $end, $chr, $type) = @_;
+
+  my @cigar_feats = $self->fetch_by_assembly_location_and_dbname($start, $end, $chr, $type);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
+
+sub fetch_featurepair_list_by_assembly_location_nad_logic_name{
+  my($self, $start, $end, $chr, $type, $logic_name) = @_;
+
+  my @cigar_feats = $self->fetch_by_assembly_location_and_logic_name($start, $end, $chr, $type, $logic_name);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+
+}
 
 
 1;
