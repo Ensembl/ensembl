@@ -1,12 +1,12 @@
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
-
+use Bio::EnsEMBL::Attribute;
 
 
 my $host = 'ecs1g';
-my $user = '';
-my $pass = '';
+my $user = 'ensadmin';
+my $pass = 'ensembl';
 my $dbname = 'homo_sapiens_core_20_34';
 my $port = '3306';
 
@@ -18,6 +18,7 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(-host => $host,
 
 
 my $slice_adaptor = $db->get_SliceAdaptor();
+my $attrib_adaptor = $db->get_AttributeAdaptor();
 
 my @chromosomes = @{$slice_adaptor->fetch_all('chromosome')};
 
@@ -41,13 +42,27 @@ foreach my $chromosome (@chromosomes) {
     }
   }
 
-  $slice_adaptor->set_seq_region_attrib($chromosome,
-                                        'GeneCount', $num_genes);
-  $slice_adaptor->set_seq_region_attrib($chromosome,
-                                        'KnownGeneCount', $num_known_genes);
+  my @attribs;
 
-  $slice_adaptor->set_seq_region_attrib($chromosome,
-                                        'PseudoGeneCount', $num_pseudo_genes);
+  push @attribs, Bio::EnsEMBL::Attribute->new
+    (-NAME => 'Gene Count',
+     -CODE => 'GeneCount',
+     -VALUE => $num_genes,
+     -DESCRIPTION => 'Total Number of Genes');
+
+  push @attribs, Bio::EnsEMBL::Attribute->new
+    (-NAME => 'Known Gene Count',
+     -CODE => 'KnownGeneCount',
+     -VALUE => $num_known_genes,
+     -DESCRIPTION => 'Total Number of Known Genes');
+
+  push @attribs, Bio::EnsEMBL::Attribute->new
+    (-NAME => 'PseudoGene Count',
+     -CODE => 'PseudoGeneCount',
+     -VALUE => $num_pseudo_genes,
+     -DESCRIPTION => 'Total Number of PseudoGenes');
+
+  $attrib_adaptor->store_on_Slice($chromosome, \@attribs);
 }
 
 
@@ -58,12 +73,9 @@ sub print_chromo_stats {
 
   foreach my $chr (@$chromosomes) {
     print "\nchromosome: ",$chr->seq_region_name(),"\n";
-    my ($num_genes)  = $chr->get_attribute('GeneCount');
-    my ($num_known)  = $chr->get_attribute('KnownGeneCount');
-    my ($num_pseudo) = $chr->get_attribute('PseudoGeneCount');
-    print "NumGenes: $num_genes\n";
-    print "NumKnown: $num_known\n";
-    print "NumPseudo: $num_pseudo\n";
+    foreach my $attrib (@{$chr->get_all_Attributes()}) {
+      print "  ", $attrib->name(), ": ", $attrib->value(), "\n";
+    }
   }
 }
 
