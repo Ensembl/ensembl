@@ -333,7 +333,9 @@ sub store {
 
   # if we need to fetch the timestamp, or the insert failed due to existance
   # of an existing entry, we need to retrieve the entry from the db
-  if(!$analysis->created() || !$rows_inserted) {
+  # note: $sth->execute can return 0E0 on erorr which is zero, but true
+  # which is why the $rows_inserted clause was added.
+  if(!$analysis->created() || !$rows_inserted || $rows_inserted == 0) {
     my $new_analysis = $self->fetch_by_logic_name($analysis->logic_name);
 
     if(!$new_analysis) {
