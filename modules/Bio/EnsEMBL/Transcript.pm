@@ -205,9 +205,7 @@ sub _translation_stable_id {
    if( @_ ) {
       my $value = shift;
       $self->{'_translation_stable_id'} = $value;
-	print STDERR "SET ";
     }
-      print STDERR "VALUE: $self->{'_translation_stable_id'}\n";
     return $self->{'_translation_stable_id'};
 }
 
