@@ -113,6 +113,9 @@ sub create_xrefs {
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
 
+    my ($description) = $_ =~ /DE\s(.*)\n/;
+    $xref->{DESCRIPTION} = $description;
+
     # set accession (and synonyms if more than one)
     my @acc = split /;\s*/, $acc;
     $xref->{ACCESSION} = $acc[0];
