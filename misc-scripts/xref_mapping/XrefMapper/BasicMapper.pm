@@ -721,14 +721,13 @@ sub parse_mappings {
   my $dir = $self->dir();
 
   # get current max object_xref_id
-  # TODO use selectall_arrayref
   my $row = @{$self->dbi()->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
   if (!defined $max_object_xref_id) {
     print "Can't get highest existing object_xref_id, using 1\n";
+    $max_object_xref_id = 1;
   } else {
     print "Maximum existing object_xref_id = $max_object_xref_id\n";
-    $max_object_xref_id = 1;
   }
   my $object_xref_id_offset = $max_object_xref_id + 1;
   my $object_xref_id = $object_xref_id_offset;
@@ -739,7 +738,7 @@ sub parse_mappings {
     print "Can't get highest existing xref_id, using 0\n)";
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
-    $object_xref_id_offset = 1;
+    $max_xref_id = 1;
   }
   my $xref_id_offset = $max_xref_id + 1;
 
@@ -834,13 +833,16 @@ sub parse_mappings {
   print "Read $total_lines lines from $total_files exonerate output files\n";
 
   # write relevant xrefs to file
-  $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
+  my $max_object_xref_id = $self->dump_core_xrefs(\%primary_xref_ids, $object_xref_id+1, $xref_id_offset, $object_xref_id_offset, \%ensembl_object_types);
 
   # dump xrefs that don't appear in either the primary_xref or dependent_xref tables
   $self->dump_orphan_xrefs($xref_id_offset);
 
   # dump interpro table as well
   $self->dump_interpro();
+
+  # dump direct xrefs
+  $self->dump_direct_xrefs($xref_id_offset, $max_object_xref_id);
 
   # write comparison info. Can be removed after development
   $self->dump_comparison();
@@ -881,6 +883,69 @@ sub dump_orphan_xrefs() {
   close(XREF);
 
   print "Wrote $count xrefs that are neither primary nor dependent\n";
+
+}
+
+# Dump direct xrefs. Need to do stable ID -> internal ID mapping.
+
+sub dump_direct_xrefs {
+
+  my ($self, $xref_id_offset, $max_object_xref_id) = @_;
+  my $object_xref_id = $max_object_xref_id + 1;
+
+  print "Writing direct xrefs\n";
+
+  my $count;
+
+  open (XREF, ">>" . $self->dir() . "/xref.txt");
+  open (OBJECT_XREF, ">>" . $self->dir() . "/object_xref.txt");
+
+  # SQL / statement handle for getting all direct xrefs
+  my $xref_sql = "SELECT dx.general_xref_id, dx.ensembl_stable_id, dx.type, dx.linkage_xref, x.accession, x.version, x.label, x.description, x.source_id, x.species_id FROM direct_xref dx, xref x WHERE dx.general_xref_id=x.xref_id";
+  my $xref_sth = $self->xref()->dbi()->prepare($xref_sql);
+
+  $xref_sth->execute();
+
+  my ($xref_id, $ensembl_stable_id, $type, $linkage_xref, $accession, $version, $label, $description, $source_id, $species_id);
+  $xref_sth->bind_columns(\$xref_id, \$ensembl_stable_id, \$type, \$linkage_xref,\ $accession, \$version, \$label, \$description, \$source_id, \$species_id);
+
+  while ($xref_sth->fetch()) {
+
+    my $external_db_id = $source_to_external_db{$source_id};
+
+    if ($external_db_id) {
+
+      # Look up Ensembl internal ID from stable ID. No joins, so quick.
+      my $table = lc($type);
+      my $core_sql = "SELECT ${table}_id FROM ${table}_stable_id WHERE stable_id=\'$ensembl_stable_id\'" ;
+      my $core_sth = $self->dbi()->prepare($core_sql);
+      my $core_sth->execute();
+      my @row = $core_sth->fetchrow_array();
+      my $ensembl_internal_id = $row[0];
+
+      if ($ensembl_internal_id) {
+
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
+	$object_xref_id++;
+	$count++;
+
+      } else {
+
+	print STDERR "Can't find $table corresponding to stable ID $ensembl_stable_id in ${table}_stable_id, not writing record for xref $accession\n";
+
+      }
+
+    }
+
+  }
+
+  close(OBJECT_XREF);
+  close(XREF);
+
+  $xref_sth->finish();
+
+  print "Wrote $count direct xrefs\n";
 
 }
 
@@ -1130,6 +1195,8 @@ sub dump_core_xrefs {
   my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
 
   $self->build_gene_display_xrefs_and_descriptions($transcript_display_xrefs);
+
+  return $object_xref_id;
 
 }
 
