@@ -43,7 +43,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::SeqFeature::Generic;
+
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::SeqFeature;
@@ -51,6 +51,7 @@ use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Repeat;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
+
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
