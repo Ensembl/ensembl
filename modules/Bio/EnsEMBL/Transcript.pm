@@ -13,8 +13,6 @@ Transcript - gene transcript object
 
 =head1 SYNOPSIS
 
-Give standard usage here
-
 =head1 DESCRIPTION
 
 Contains details of coordinates of all exons that make
@@ -36,6 +34,8 @@ Manipulation:
 =head1 CONTACT
 
 Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
+
+=head1 METHODS
 
 =cut
 
@@ -979,8 +979,8 @@ sub get_all_cdna_SNPs {
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
-      my @coords = $transcript->genomic2cdna($snp->start, $snp->end, 
-                                             $snp->strand, $slice);
+      my @coords = $transcript->genomic2cdna($snp->start, $snp->end,
+                                             $snp->strand);
 
       #skip snps that don't map cleanly (possibly an indel...)
       if(scalar(@coords) != 1) {
