@@ -58,27 +58,39 @@ foreach my $clone_id ($db->get_all_Clone_id()) {
 		print "  <seq_relationship seq=\"",$contig->id,"\">\n";
 		print "   <span>\n";
 		my $switch = 1;
-		my $ex_cont_start;
-		my $ex_cont_end;
-		foreach my $tr_exon ($trans->translateable_exons) {
-		    if ($tr_exon->contig_id eq $contig->id) {
+		my $trans_start;
+		my $trans_end;
+		foreach my $trans_exon ($trans->each_Exon) {
+		    if ($trans_exon->contig_id eq $contig->id) {
 			if ($switch == 1) {
-			    $ex_cont_start = $tr_exon->start;
+			    $trans_start = $trans_exon->start;
 			    $switch = 0;
 			}
-			$ex_cont_end = $tr_exon->end;
+			$trans_end = $trans_exon->end;
 		    }
 		}
-	        print "    <start>$ex_cont_start</start>\n";
-		print "    <end>$ex_cont_end</end>\n";
+	        print "    <start>$trans_start</start>\n";
+		print "    <end>$trans_end</end>\n";
 		print "   </span>\n";
 		print "  </seq_relationship>\n";
 		print "  <feature_span>\n";
 		print "  <type>translation</type>\n";
 		print "   <seq_relationship seq=\"",$contig->id,"\">\n";
 		print "    <span>\n";
-		print "     <start>",$trans->translation->start,"</start>\n";
-		print "     <end>",$trans->translation->end,"</end>\n";
+		my $switch = 1;
+		my $tr_start;
+		my $tr_end;
+		foreach my $tr_exon ($trans->translateable_exons) {
+		    if ($tr_exon->contig_id eq $contig->id) {
+			if ($switch == 1) {
+			    $tr_start = $tr_exon->start;
+			    $switch = 0;
+			}
+			$tr_end = $tr_exon->end;
+		    }
+		}
+		print "     <start>$tr_start</start>\n";
+		print "     <end>$tr_end</end>\n";
 		print "    </span>\n";
 		print "   </seq_relationship>\n";
 		print "  </feature_span>\n";
