@@ -727,16 +727,17 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
 				$time[2], $time[1]-1, $time[0] - 1900 );
     my $secs_old = time() - $epoch_then;
     my $days_old = $secs_old / ( 60 * 60 * 24 );
-    
     if( $days_old > $days ){
       warn( "Dropping table $table_name: $num_rows rows\n" );
       my $sth_drop = $dbh->prepare( "DROP table $table_name" );
       my $sth_log  = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
       $sth_drop->execute || $self->throw( $sth_drop->errstr );
+      my( $se,$mi,$hr,$da,$mo,$yr ) = (localtime)[0,1,2,3,4,5];
+      my $now = sprintf( "%4d-%2d-%2d %2d:%2d:%2d", 
+			 $yr+1900,$mo+1,$da,$hr,$mi,$se );
       $sth_log->execute
-        ('DELETED','NOW()',$num_rows,$table_name) ||
-	  $self->throw( $sth_log->errstr );;
-      
+        ('DELETED',$now,$num_rows,$table_name) ||
+	  $self->throw( $sth_log->errstr );
     }
   }
 
