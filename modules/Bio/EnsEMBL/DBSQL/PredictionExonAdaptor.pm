@@ -116,9 +116,34 @@ sub fetch_all_by_PredictionTranscript {
   my ( $self, $transcript ) = @_;
   my $constraint = "pe.prediction_transcript_id = ".$transcript->dbID();
 
-  my $keep_all = 1; #keep transcripts that are off end of slice
-  return $self->generic_fetch( $constraint, undef,
-                               $transcript->slice(), $keep_all);
+  # use 'keep_all' option to keep exons that are off end of slice
+
+
+  my $tslice = $transcript->slice();
+  my $slice;
+
+  if(!$tslice) {
+    throw("Transcript must have attached slice to retrieve exons.");
+  }
+
+  if($transcript->start < 1 || $transcript->end > $tslice->length()) {
+    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
+  } else {
+    $slice = $tslice;
+  }
+
+  my $exons = $self->fetch_all_by_Slice_constraint($slice, $constraint);
+
+  # remap exon coordinates if necessary
+  if($slice != $tslice) {
+    my @out;
+    foreach my $ex (@$exons) {
+      push @out, $ex->transfer($tslice);
+    }
+    $exons = \@out;
+  }
+
+  return $exons;
 }
 
 
@@ -260,7 +285,7 @@ sub list_dbIDs {
 #
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice, $keep_all) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
   #
   # This code is ugly because an attempt has been made to remove as many
@@ -382,7 +407,7 @@ sub _objs_from_sth {
 
 	#throw away features off the end of the requested slice
 	if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	  next FEATURE if(!$keep_all);
+	  next FEATURE;
 	}
       }
 
