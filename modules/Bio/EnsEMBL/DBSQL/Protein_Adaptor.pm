@@ -135,7 +135,17 @@ sub fetch_Protein_by_dbid{
 
 
    #Get the transcript id from the translation id 
-   my $query = "select t.transcript_id, t.gene_id, s.stable_id from transcript as t, translation_stable_id as s where t.translation_id = '$id' and t.translation_id = s.translation_id";
+   my $query = "SELECT	t.transcript_id, 
+			g.stable_id, 
+			s.stable_id 
+		FROM	transcript as t, 
+			gene_stable_id as g,
+			translation_stable_id as s 
+		WHERE	t.translation_id = '$id' 
+		AND	t.translation_id = s.translation_id
+		AND	g.gene_id = t.gene_id
+		";
+
    my $sth = $self->prepare($query);
    $sth ->execute();
    my @rowid = $sth->fetchrow;
@@ -179,8 +189,6 @@ sub fetch_Protein_by_dbid{
    my $meta_obj = $self->db->get_MetaContainer();
    my $species = $meta_obj->get_Species();
    
-   print STDERR "Got a species $species\n";
-
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
   
@@ -191,7 +199,6 @@ sub fetch_Protein_by_dbid{
 					      -primary_id => $id,
 					      -id => $id,
 					      -desc => $desc,
-
 					      );
 
    #Set up the adaptor handler for the protein object
@@ -200,7 +207,7 @@ sub fetch_Protein_by_dbid{
    #Add the species object to protein object
    $protein->species($species);
 
-   $protein->transcriptac($transid);                                              
+   $protein->transcriptac($transid);
    $protein->geneac($geneid);
    $protein->stable_id($stableid);
    
