@@ -6,7 +6,7 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
-my ($host, $port, $user, $password, $source, $target, $verbose);
+my ($host, $port, $user, $password, $source, $target, $verbose, $create, $clean);
 $host = "127.0.0.1";
 $port = 5000;
 $password = "";
@@ -19,11 +19,21 @@ GetOptions ('host=s'      => \$host,
             'source=s'    => \$source,
             'target=s'    => \$target,
             'verbose'     => \$verbose,
-            'help'        => sub { &show_help(); exit 1;});
+	    'clean'       => \$clean,
+	    'create=s'    => \$create,
+            'help'        => sub { &show_help(); exit 1;} );
 
 die "Host must be specified"           unless $host;
-die "Source schema be specifed"        unless $source;
 die "Target schema must be specified"  unless $target;
+die "Source schema be specifed"        unless $source;
+
+if ($clean) {
+  &clean();
+}
+
+if ($create) {
+  &create();
+}
 
 my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$target", "$user", "$password") || die "Can't connect to target DB";
 my $sth;
@@ -298,7 +308,6 @@ copy_table($dbi, "go_xref");
 copy_table($dbi, "identity_xref");
 copy_table($dbi, "interpro");
 copy_table($dbi, "map");
-copy_table($dbi, "map_density");
 copy_table($dbi, "mapannotation");
 copy_table($dbi, "mapannotationtype");
 copy_table($dbi, "mapfrag");
@@ -307,7 +316,6 @@ copy_table($dbi, "mapping_session");
 copy_table($dbi, "mapset");
 copy_table($dbi, "marker");
 copy_table($dbi, "marker_feature");
-copy_table($dbi, "marker_map_location");
 copy_table($dbi, "marker_synonym");
 copy_table($dbi, "object_xref");
 copy_table($dbi, "peptide_archive");
@@ -339,6 +347,8 @@ sub show_help {
   print "  --port {folder}   The database port to use.\n";
   print "  --source {schema} The name of the source schema\n";
   print "  --target {schema} The name of the target schema\n";
+  print "  --clean           Remove target schema, which must have been specified with --target\n";
+  print "  --create {file}   Create target schema, which must have been specified with --target, from SQL file\n";
   print "  --verbose         Print extra output information\n";
 
 }
@@ -381,6 +391,47 @@ sub copy_table {
 
 sub clean {
 
+  if (!defined $target) {
 
+    print "Target database must be specified with --target for --clean\n";
+    exit(1);
+
+  } else {
+
+    debug("Removing $target");
+
+    my $dbic = DBI->connect("dbi:mysql:host=$host;port=$port;", "$user", "$password") || die "Can't connect to DB";
+    execute($dbic, "DROP DATABASE $target") || die "Error removing $target";
+    $dbic->disconnect();
+
+  }
 
 }
+
+# ----------------------------------------
+
+sub create {
+
+  if (!defined $target) {
+
+    print "Target database must be specified with --target for --clean\n";
+    exit(1);
+
+  } else {
+
+    debug("Creating database $target");
+
+    my $dbic = DBI->connect("dbi:mysql:host=$host;port=$port;", "$user", "$password") || die "Can't connect to DB";
+    execute($dbic, "CREATE DATABASE $target") || die "Error removing $target";
+    $dbic->disconnect();
+
+    debug("Building schema for $target from $create");
+    die "Can't open $create" if (! -e $create);
+    my $cmd = "mysql -u $user -p$password -h $host -P $port $target < $create";
+    debug($cmd);
+    system ($cmd);
+
+  }
+
+}
+
