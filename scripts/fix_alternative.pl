@@ -32,16 +32,17 @@ while (my $rowhash = $sth->fetchrow_hashref) {
     push @out, $temp;
 }
 @out=sort {$b->transcript <=> $a->transcript} @out;
-
+open (FILE,">bad_clones.list") || die("Could not open bad_clones.list");
 my $oldtranscript=$out[0]->transcript;
 my @ranks;
 foreach my $exon (@out) {
     #print STDERR "Got exon ".$exon->id." on trans ".$exon->transcript." and rank ".$exon->rank."\n";
+    eval {
     if ($exon->transcript eq $oldtranscript) {
 	foreach my $rank (@ranks) {
 	    if ($exon->rank eq $rank) {
 		my $real_exon=$db->get_Exon($exon->id);
-		print $real_exon->clone_id."\n";
+		print FILE $real_exon->clone_id."\n";
 	    }
 	}
 	push @ranks,$exon->rank;
@@ -50,4 +51,8 @@ foreach my $exon (@out) {
 	@ranks=[];
     }
     $oldtranscript=$exon->transcript;
+};
+    if ($@) {
+	print STDERR "Could not process ".$exon->id>" because of $@\n";
+    }
 }
