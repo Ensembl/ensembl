@@ -244,7 +244,7 @@ sub fetch_by_DBEntry {
 
 sub fetch_by_stable_id {
   my ($self, $stable_id, $chr_coords) = @_;
-  warn( "~~~~~~~~~~~~~~" );
+  #warn( "~~~~~~~~~~~~~~" );
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
   my $sth = $self->prepare
