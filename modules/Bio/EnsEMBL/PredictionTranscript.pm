@@ -63,12 +63,7 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::Seq;
 
-
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
-
-
-#implement the Transcript interface
-use implements qw(Bio::EnsEMBL::TranscriptI);
 
 =head2 new
 

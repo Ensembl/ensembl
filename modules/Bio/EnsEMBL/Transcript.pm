@@ -64,11 +64,6 @@ use Bio::EnsEMBL::TranscriptI;
 @ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI Bio::EnsEMBL::TranscriptI);
 # new() is inherited from Bio::Root::Object
 
-#implement the Transcript interface
-use implements qw(Bio::EnsEMBL::TranscriptI);
-
-# _initialize is where the heavy stuff will happen when new is called
-
 sub new {
   my($class,@args) = @_;
 
