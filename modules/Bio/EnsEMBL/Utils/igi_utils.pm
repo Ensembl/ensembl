@@ -86,11 +86,14 @@ sub parse_group_field {
 }                                       # parse_group_field
 
 
-### sorts igi3_5 igi3_10 on the basis of the numbers:
-sub by_igi_number { 
-    my $aa = substr($main::a,5);
-    my $bb = substr($main::b,5);
-    $aa <=> $bb;
+### sorts igi3_5 igi3_10 on the basis of the numbers.  call as :
+###
+###    sort { Bio::EnsEMBL::Utils::igi_utils::by_igi_number($a, $b) } @igis; 
+### 
+### 
+sub by_igi_number {
+  my ($aa, $bb) = (substr($_[0],5), substr($_[1],5));
+  $aa <=> $bb;
 }
 
 1;
