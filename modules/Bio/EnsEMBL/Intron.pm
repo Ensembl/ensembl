@@ -24,14 +24,10 @@ use vars qw(@ISA);
 use strict;
 
 
-use Bio::EnsEMBL::Feature;
+use Bio::EnsEMBL::SeqFeature;
 use Bio::Seq; # introns have to have sequences...
 
-use Bio::EnsEMBL::Utils::Exception qw( warning throw deprecate );
-use Bio::EnsEMBL::Utils::Argument qw( rearrange );
-
-
-@ISA = qw(Bio::EnsEMBL::Feature);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeature);
 
 =head2 new
 
@@ -52,30 +48,30 @@ sub new {
   my $self = $class->SUPER::new();
 
   if($e1->strand == -1){
-    $self->{'end'} = ($e1->start)-1;
-    $self->{'start'} = ($e2->end)+1;
+    $self->end(($e1->start)-1);
+    $self->start(($e2->end)+1);
   }
   else{
-    $self->{'start'}= ($e1->end)+1;
-    $self->{'end'} = ($e2->start)-1;
+    $self->start(($e1->end)+1);
+    $self->end(($e2->start)-1);
   }
 
   if($e1->strand != $e2->strand){
-    throw("Exons on different strand. Not allowed");
+    $self->throw("Exons on different strand. Not allowed");
   }
   else{
-    $self->{'strand'} = $e1->strand;
+    $self->strand($e1->strand);
   }
 
-  if($e1->slice ne $e2->slice){
-    throw("Exons on different slices. Not allowed");
+  if($e1->contig != $e2->contig){
+    $self->throw("Exons on different slices. Not allowed");
   }
   else{ 
-    $self->{'slice'} = $e1->slice;
+    $self->contig($e1->contig);
   }
 
-  $self->{'prev'} = $e1;
-  $self->{'next'} = $e2;
+  $self->prev_Exon($e1);
+  $self->next_Exon($e2);
 
   return $self;
 }
@@ -92,10 +88,14 @@ sub new {
 
 =cut
 
-sub prev_Exon {
-  my ($self) = shift;
 
-  return $self->{'prev'};
+sub prev_Exon {
+    my( $self, $prev_Exon ) = @_;
+    
+    if ($prev_Exon) {
+        $self->{'_prev_Exon'} = $prev_Exon;
+    }
+    return $self->{'_prev_Exon'};
 }
 
 
@@ -111,11 +111,23 @@ sub prev_Exon {
 =cut
 
 sub next_Exon {
-  my ($self) = shift;
-
-  return $self->{'next'};
+    my( $self, $next_Exon ) = @_;
+    
+    if ($next_Exon) {
+        $self->{'_next_Exon'} = $next_Exon;
+    }
+    return $self->{'_next_Exon'};
 }
 
+sub stable_id {
+    my( $self ) = @_;
+    
+    my $prev = $self->prev_Exon;
+    my $next = $self->next_Exon;
+    return $self->prev_Exon->stable_id
+        . "-"
+        . $self->next_Exon->stable_id;
+}
 
 1;
 
