@@ -141,6 +141,11 @@ foreach my $db_to_copy (@dbs_to_copy) {
   my $destination_srv = $db_to_copy->{dest_srv};
   $destination_srv =~ s/(ecs[123].{1}).*/$1/;
   my $destination_tmp_directory = $mysql_directory_per_svr{$destination_srv}."/current/tmp";
+  unless (-e $destination_tmp_directory && -d $destination_tmp_directory) {
+    print STDERR "// temporary destination directory $destination_tmp_directory does not exist.
+// Create it before trying to copy the database.
+// Skipped copy of $source_db of $source_srv\n";
+  }
   my $destination_directory = $mysql_directory_per_svr{$destination_srv}."/current/var";
 
   # checking that destination db does not exist
