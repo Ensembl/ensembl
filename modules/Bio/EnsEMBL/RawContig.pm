@@ -646,7 +646,7 @@ sub display_id{
 
 sub desc{
   my $self = shift;
-  return "Slice, no descrtipion";
+  return "RawContig, no description";
 }
 
 =head2 moltype

@@ -417,9 +417,10 @@ sub get_all_ProteinAlignFeatures {
 sub get_all_SimilarityFeatures {
   my ($self, $logic_name, $score) = @_;
 
-  my @out = 
-      @{ $self->get_all_ProteinAlignFeatures($logic_name, $score) },
-      @{ $self->get_all_DnaAlignFeatures($logic_name, $score) };
+  my @out = ();
+
+  push @out, @{$self->get_all_ProteinAlignFeatures($logic_name, $score) };
+  push @out, @{$self->get_all_DnaAlignFeatures($logic_name, $score) };
 
   return \@out;
 }
@@ -1145,7 +1146,7 @@ sub display_id{
 
 sub desc{
   my $self = shift;
-  return "Slice, no descrtipion";
+  return "Slice, no description";
 }
 
 =head2 moltype
