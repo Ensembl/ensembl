@@ -19,13 +19,20 @@ Bio::EnsEMBL::Analysis::UpdateManager
 
     my $fromlocator =  "Bio::EnsEMBL::TimDB::Obj";   # Timdb is different of course
     my $tolocator   =  "Bio::EnsEMBL::DBSQL::Obj/host=obi-wan:port=410000;dbname=pogtest;user=root;pass=''";
+    my $arclocator  =  "Bio::EnsEMBL::DBArchive::Obj/host=obi-wan:port=410000;dbname=arctest;user=root;pass=''";
+
     my $manager     =   new Bio::EnsEMBL::Analysis::UpdateManager(-fromlocator => $fromlocator,
 								  -tolocator   => $tolocator,
+								  -arclocator  => $arclocator,
 								  -fromtime    => 90000000,
 								  -totime      => 90001000,
 								  );
-       $manager->chunksize(20);
-       $manager->update;
+
+       $manager->chunksize(20);            # Transfer objects in chunks of 20
+       $manager->nowrite(1);               # Don't write to recipient database (testing)
+       $manager->verbose(1);               # Extra debugging info.
+
+       $manager->update;                   # Start the updating process
 
 
 =head1 DESCRIPTION
@@ -74,22 +81,68 @@ sub _initialize {
   
   my $make = $self->SUPER::_initialize;
 
-  my ($fromlocator,$tolocator,$fromtime,$totime) = $self->_rearrange([qw(FROMLOCATOR
-									 TOLOCATOR
-									 FROMTIME
-									 TOTIME
-									 )],@args);
+  my ($fromlocator,$tolocator,$arclocator,$fromtime,$totime) = $self->_rearrange([qw(FROMLOCATOR
+										     TOLOCATOR
+										     ARCLOCATOR
+										     FROMTIME
+										     TOTIME
+										     )],@args);
 
   $fromlocator || $self->throw("No donor database locator specified\n");
   $tolocator   || $self->throw("No recipient database locator specified\n");
+  $arclocator  || $self->throw("No archive database locator specified\n");
   
   
   $self->fromlocator($fromlocator);
   $self->tolocator  ($tolocator);
+  $self->arclocator ($arclocator);
+
   $self->fromtime   ($fromtime);
   $self->totime     ($totime);
 
   return $make; # success - we hope!
+}
+
+
+=head2 logfile
+
+  Title   : logfile
+  Usage   : $self->logfile($logfile)
+  Function: Gets/sets the logfile name
+  Returns : Nothing
+  Args    : None
+
+=cut
+
+sub logfile {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_logfile} = $arg;
+    }
+
+    if (!defined($self->{_logfile})) {
+	$self->{_logfile} = "update.log";
+    }
+    return $self->{_logfile};
+}
+
+=head2 getchunk
+
+  Title   : getchunk
+  Usage   : $self->getchunk(@clonearray);
+  Function: Gets a chunk of clones from an array
+  Returns : string
+  Args    : string
+
+=cut
+
+sub getchunk {
+    my ($self,$current,@clones) = @_;
+
+    my @chunk = splice(@clones,$current,$self->chunksize);
+
+    return @chunk;
 }
 
 =head2 fromlocator
@@ -132,6 +185,26 @@ sub tolocator {
     }
     
     return $self->{_tolocator};
+}
+
+=head2 arclocator
+
+  Title   : arclocator
+  Usage   : $self->arclocator($str);
+  Function: Get/Set method for the archive database locator string
+  Returns : string
+  Args    : string
+
+=cut
+
+sub arclocator {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_arclocator} = $arg;
+    }
+    
+    return $self->{_arclocator};
 }
 
 
@@ -226,6 +299,46 @@ sub retries {
     return $self->{_retries};
 }
 
+=head2 nowrite
+
+  Title   : nowrite
+  Usage   : $self->nowrite(1)
+  Function: No writing is done to the recipient database
+  Returns : Nothing
+  Args    : 0,1
+
+=cut
+
+sub nowrite {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_nowrite} = $arg;
+    }
+
+    return $self->{_nowrite};
+}
+
+=head2 verbose
+
+  Title   : verbose
+    Usage   : $self->verbose(1);
+  Function: Turns on/off verbose message printing
+  Returns : Nothing
+  Args    : 0,1
+
+=cut
+
+sub verbose {
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+	$self->{_verbose} = $arg;
+    }
+
+    return $self->{_verbose};
+}
+
 
 =head2 fromtime 
 
@@ -295,23 +408,6 @@ sub get_updated_objects {
     return @clones;
 }
 
-=head2 getchunk
-
-  Title   : getchunk
-  Usage   : $self->getchunk($current,@clones);
-  Function: Gets the next slice of clone ids from the whole array
-  Returns : Nothing
-  Args    : None
-
-=cut
-
-sub getchunk {
-    my ($self,$current,@clones) = @_;
-
-    my @chunk = splice(@clones,0,$self->chunksize);
-
-    return @chunk;
-}
 
 =head2 update
 
@@ -331,76 +427,229 @@ sub update {
     my $current    = 0;
     
     while ($current < $num_clones) {
-	print(STDERR "Starting new fork chunk $current\n");
+	print(STDERR "Starting new fork chunk $current/$num_clones\n");
 
 	if (my $pid = fork) {
 	    # Parent here
 	    # Wait for the child to finish
 	    my $status = waitpid $pid,0;
 	    
-	    if ($status) {
-		$current += $self->chunksize;
-	    } else {
+	    if (!$status) {
 		print(STDERR "Exit status for child [$current] = $status\n");
 	    }
+
+	    $current += $self->chunksize;
+
 	} elsif (defined($pid)) {
 	    # child here
 
-	    my @clones = $self->getchunk($current,@clone_id);           print(STDERR "In child. Transferring @clones\n");
-	    my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR "Connected to donor database\n");
-	    my $todb   = $self->connect ($self->tolocator); 	        print(STDERR "Connected to recipient database\n");
+	    my @clones = $self->getchunk($current,@clone_id);           print(STDERR  "In child. Transferring @clones\n");
+	    my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR  "Connected to donor database\n");
+	    my $todb   = $self->connect ($self->tolocator); 	        print(STDERR  "Connected to recipient database\n");
+	    my $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
 
-	    $self->transfer_chunk($fromdb,$todb,@clones);
+	    $self->transfer_chunk($fromdb,$todb,$arcdb,@clones);
 	    
 	    # must exit child. Big trouble otherwise
 	    exit(0);
 	}
+    }
+
+    if (!$self->nowrite) {
+	my $todb = $self->connect($self->tolocator);  print(STDERR  "Connected to recipient database\n");
+  	   $todb->replace_last_update($self->totime);
     }
 }
 
 =head2 transfer_chunk
 
   Title   : transfer_chunk
-  Usage   : $self->transfer_chunk($fromdb,$todb,@clones);
+  Usage   : $self->transfer_chunk($fromdb,$todb,$arcdb,@clones);
   Function: Updates from the donor to the recipient database in chunks
   Returns : Nothing
-  Args    : None
+  Args    : None.
 
 =cut
 
 
 sub transfer_chunk {
-    my ($self,$fromdb,$todb,@clones) = @_;
+    my ($self,$fromdb,$todb,$arcdb,@clones) = @_;
 
     eval {
 	foreach my $id (@clones) {
 	    
 	    my $object=$fromdb->get_Clone($id);
-	    my $type;
 	    
 	    # Check if it is a clone object
 	    if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
-		$type = "Clone";
-		print STDERR "Got clone with id ".$object->id."\n";
+		$self->write_clone($todb,$arcdb,$object);
 	    }
-	    
+
+	    # These won't happen - updated clones only are returned from TimDB
+
 	    # Check if it is a gene
 	    elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-		print STDERR "Gene level: got gene with id ".$object->id.
-		    ", and version ".$object->version."\n";
+		$self->write_gene($todb,$arcdb,$object);
 	    }
 	    
 	    # Check if it is an exon
 	    elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-		print STDERR "Got exon with id ".$object->id."\n";
+		$self->write_exon($todb,$object);
 	    }
 	}
     };
     
     if ($@) {
+	warn($@);
 	warn("ERROR: clone(s) not updated @clones\n");
     }
     
 }
+
+=head2 write_exon
+
+  Title   : write_exon
+  Usage   : $self->write_exon($db,$object);
+  Function: Writes exon into the recipient database
+  Returns : Nothing
+  Args    : Bio::EnsEMBL::DB::ObjI,Bio::EnsEMBL::Exon
+
+=cut
+
+
+sub write_exon {
+    my ($self,$db,$object) = @_;
+
+    $self->verbose && print STDERR "Got exon with id ".$object->id."\n";
+
+    my $rec_exon;
+
+    #Check if it is already present in recipient
+    eval {
+	$rec_exon = $db->get_Exon($object->id);
+    };
+
+
+    if ( $@ ) {
+	$self->verbose && print "New Exon, writing it in the database\n";
+	$self->nowrite || $db->write_Exon($object);
+    } else {
+
+	if ($object->version > $rec_exon->version) {
+
+	    $self->verbose && print "Exon with new version, updating the database\n";
+	    $self->nowrite || $db->delete_Exon($object->id);
+	    $self->nowrite || $db->write_Exon ($object);
+
+	} elsif ($rec_exon->version > $object->version) {
+	    print "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
+	}  else {
+	    $self->verbose && print "Exons with the same version, databases kept unchanged\n";
+	}
+    }
+}
+
+
+=head2 write_clone
+
+  Title   : write_clone
+  Usage   : $self->write_clone($db,$object);
+  Function: Writes clone into the recipient database
+  Returns : Nothing
+  Args    : Bio::EnsEMBL::DB::ObjI,Bio::EnsEMBL::DB::CloneI
+
+=cut
+
+
+sub write_clone {
+    my ($self,$db,$arcdb,$object) = @_;
+
+    my $rec_clone;
+
+    $self->verbose && print STDERR "Got clone with id ".$object->id."\n";
+    
+    eval {
+	$rec_clone = $db->get_Clone($object->id);
+    };
+
+    if ( $@ ) { 
+	$self->verbose &&  print "New Clone, writing it in the database\n";
+	$db  ->write_Clone($object)  unless $self->nowrite;
+
+	foreach my $gene ($object->get_all_Genes('evidence')) {
+	    $self->verbose &&  print "Getting all genes via clone get_all_Genes method\n";
+	    $self->write_gene($db,$arcdb,$gene,'1');
+	}
+
+    } else {
+
+	if ($object->version > $rec_clone->version) {
+	    $self->verbose && print "Clone with new version, updating the database, and deleting the old version\n";
+
+	    $self->nowrite || $db->delete_Clone($rec_clone->id);
+	    $self->nowrite || $db->write_Clone ($object);
+
+	    foreach my $gene ($object->get_all_Genes('evidence')) {
+
+		$self->verbose &&  print "Getting all genes via clone get_all_Genes method\n";
+		$self->verbose &&  print "Got gene ".$gene->id."\n";
+		$self->write_gene($db,$arcdb,$gene,'1');
+	    }
+
+	} elsif ($rec_clone->version > $object->version) {
+	    print STDERR "ERROR: Something is seriously wrong, found a clone in the recipient database with version number higher than that of the donor database!!!\n";
+	    exit;
+	}  else {
+	    $self->verbose && print "Clone versions equal, not modifying database\n";
+	}
+    }
+}
+
+
+=head2 write_gene
+
+  Title   : write_gene
+  Usage   : $self->write_gene($db,$object);
+  Function: Writes gene into the recipient database
+  Returns : Nothing
+  Args    : Bio::EnsEMBL::DB::ObjI,Bio::EnsEMBL::Gene
+
+=cut
+
+
+sub write_gene {
+    my ($self,$db,$arc_db,$don_gene,$clone_level) = @_;
+
+    my $rec_gene;
+
+    $self->verbose && print STDERR "Got gene with id ".$don_gene->id.", and version ".$don_gene->version."\n";    
+
+    eval {
+	$rec_gene = $db->get_Gene($don_gene->id,'evidence');
+    };
+    
+    if ( $@ ) {
+	$self->verbose && print "New Gene, writing it in the database\n";
+	$self->nowrite || $db->write_Gene($don_gene);
+    } else {
+	if ($don_gene->version > $rec_gene->version) {
+	    
+	    $self->verbose && print "Gene with new version, updating the database, and archiving old version\n";
+	    $self->nowrite || $db->archive_Gene($rec_gene,$arc_db);
+	    $self->nowrite || $db->write_Gene  ($don_gene);
+	    
+	}  elsif ($rec_gene->version > $don_gene->version) {
+	    print STDERR "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
+	} else {
+	    if ($clone_level) {
+		$self->verbose && print "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
+		$self->nowrite || $db->delete_Gene($rec_gene->id);
+		$self->nowrite || $db->write_Gene ($don_gene);
+	    } else {
+		$self->verbose && print "Genes with the same version, nothing needs to be done\n"; 
+	    }
+	}
+    }
+}   
 
 
