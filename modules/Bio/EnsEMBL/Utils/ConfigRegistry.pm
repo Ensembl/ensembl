@@ -283,9 +283,10 @@ sub attach_dna{
 sub load_blast{
     my ($dba) = @_;
 
-  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
-  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', 
-				      "Bio::EnsEMBL::External::BlastAdaptor");
+# use the old style methods
+#  Bio::EnsEMBL::Registry->add_DBAdaptor($dba->species, $dba->group, $dba);
+#  Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, 'Blast', 
+#				      "Bio::EnsEMBL::External::BlastAdaptor");
 }
 
 
@@ -364,6 +365,11 @@ sub load_estgene{
     Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
   }
 
+  ## if the core exists then set this for the dna getting
+  my $core = $reg->get_DBAdaptor($dba->species,"core");
+  if(defined($core)){
+    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
+  }
 }
 
 
@@ -420,6 +426,10 @@ sub load_est{
   foreach my $type (qw(Sequence AssemblyMapper KaryotypeBand RepeatFeature CoordSystem AssemblyExceptionFeature)){
     Bio::EnsEMBL::Registry->set_get_via_dnadb_if_set($dba->species,$type);
   }
+  my $core = $reg->get_DBAdaptor($dba->species,"core");
+  if(defined($core)){
+    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
+  }
 }
 
 
@@ -469,6 +479,10 @@ sub load_vega{
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
+  }
+  my $core = $reg->get_DBAdaptor($dba->species,"core");
+  if(defined($core)){
+    $reg->add_DNAAdaptor($dba->species,$dba->group,$core); 
   }
 }
 
