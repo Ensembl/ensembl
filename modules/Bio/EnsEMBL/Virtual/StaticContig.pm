@@ -998,10 +998,10 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
 
 
 
-=head2 karyotype_band
+=head2 fetch_karyotype_band
 
- Title   : karyotype_band
- Usage   : $label = $self->karyotype_band
+ Title   : fetch_karyotype_band
+ Usage   : $band_obj = $self->fetch_karyotype_band
  Function:
  Example :
  Returns : 
@@ -1010,11 +1010,11 @@ my $query ="SELECT     STRAIGHT_JOIN t.gene,
 
 =cut
 
-sub karyotype_band {
+sub fetch_karyotype_band {
    my ($self,@args) = @_;
 
-   my $kadp = $self->dbobj->get_KaryotypeAdaptor();
-   my $band = $kadp->get_band_label_by_position($self->_chr_name,$self->_global_start + ($self->length/2));
+   my $kadp = $self->dbobj->get_KaryotypeBandAdaptor();
+   my $band = $kadp->fetch_by_chromosome_position($self->_chr_name,$self->_global_start + ($self->length/2));
 
    return $band 
 }
