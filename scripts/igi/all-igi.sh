@@ -18,6 +18,35 @@ all-merges.sh > all-merges.out 2>all-merges.log
 # file(s). Results go to  out/{stats,mapping,summary,final}
 all-stats.sh > all-stats.out 2>all-stats.log
 
+igihome=$HOME/proj/igi                  # change to needs
+resultdir=$igihome/out
+indir=$resultdir/merged
+
+outdir=$resultdir/stats
+mappingoutdir=$resultdir/mapping
+summaryoutdir=$resultdir/summary
+finaloutdir=$resultdir/final
+
+allmerges=*.merge
+fullmergeonly=ens_affy_fgenesh.merge
+indir=$resultdir/merged
+
+# now produce the 'final' gtf files, i.e. the ones that are predicted by two
+# or more sources:
+for d in $finaloutdir; do
+    [ -d $d ]  && echo "Found dir $d, not merging" >&2  && exit 1
+    mkdir $d
+done
+
+cd $indir
+for m in $fullmergeonly; do 
+    name=`basename $m .merge`
+    final=$name.gtf
+    gtfsummary2gtf.pl $summaryoutdir/$name.summary  < $m > $finaloutdir/$final
+    gzip < $finaloutdir/$final > $finaloutdir/$final.gz
+done
+
+
 # do the peptide business; first, collate them:
 pep-collate.sh 2> pep-collate.log
 

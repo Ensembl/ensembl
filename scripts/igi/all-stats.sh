@@ -18,13 +18,12 @@ fullmergeonly=ens_affy_fgenesh.merge
 
 [ ! -d $indir ] && echo "$indir: not found ">&2 && exit 1
 
-for d in $outdir $mappingoutdir $summaryoutdir $finaloutdir; do 
+for d in $outdir $mappingoutdir $summaryoutdir ; do 
     [ -d $d ]  && echo "Found dir $d, not merging" >&2  && exit 1
     mkdir $d
 done
 
 cd $indir
-
 
 # for m in $allmerges ; do
 for m in $fullmergeonly ; do
@@ -37,13 +36,4 @@ for m in $fullmergeonly ; do
        > $outdir/$name.stats 2> $outdir/$name.log
 done
 
-# now produce the 'final' gtf files, i.e. the ones that are predicted by two
-# or more sources:
-cd $indir
-for m in $fullmergeonly; do 
-    name=`basename $m .merge`
-    final=$name.gtf
-    gtfsummary2gtf.pl $summaryoutdir/$name.summary  < $m > $finaloutdir/$final
-    gzip < $finaloutdir/$final > $finaloutdir/$final.gz
-done
 
