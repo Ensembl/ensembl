@@ -482,7 +482,8 @@ sub get_Exon{
    my $contig_id = $exon->contig_id();
 
    # we have to make another trip to the database to get out the contig to clone mapping.
-   my $sth2     = $self->_db_obj->prepare("select clone from contig where internal_id = '$contig_id'");
+   my $sth2     = $self->_db_obj->prepare("select clone from contig where
+id = '$contig_id'");
    my $res2     = $sth2->execute;
    my $rowhash2 = $sth2->fetchrow_hashref;
 
