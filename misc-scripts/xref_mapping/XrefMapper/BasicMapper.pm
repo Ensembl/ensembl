@@ -825,7 +825,7 @@ sub get_ensembl_object_type {
 
     $type = "Transcript";
 
-  } elsif ($filename =~ /_prot_/i) {
+  } elsif ($filename =~ /_peptide_/i) {
 
     $type = "Translation";
 
