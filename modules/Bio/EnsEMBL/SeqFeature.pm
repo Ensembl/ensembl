@@ -254,26 +254,6 @@ sub move {
   }
 }
 
-=head2 slide
-
-  Arg [1]    : int $slide 
-               the new feature start position
-  Example    : $feature->move(100);
-  Description: Shifts a features location.  This is faster
-               then calling seperate accesors in a large loop.
-  Returntype : none
-  Exceptions : none
-  Caller     : BaseFeatureAdaptor
-
-=cut
-
-sub slide {
-  my $self = shift;
-  my $slide = shift;
-
-  $self->{'_gsf_start'} += $slide;
-  $self->{'_gsf_end'} += $slide;
-}
 
 =head2 score
 
@@ -980,24 +960,24 @@ sub contig_id{
 =cut
 
 sub contig {
-    my ($self, $arg) = @_;
+  my ($self, $arg) = @_;
 
-    if ($arg) {
-        unless (defined $arg && ref $arg && $arg->isa("Bio::PrimarySeqI")) {
-            $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
-        }
-
-        $self->{'_gsf_seq'} = $arg;
-
-        # attach to sub features if they want it
-
-        foreach my $sf ($self->sub_SeqFeature) {
-            if ($sf->can("attach_seq")) {
-                $sf->attach_seq($arg);
-            }
-        }
+  if ($arg) {
+    unless (defined $arg && ref $arg && $arg->isa("Bio::PrimarySeqI")) {
+      $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
     }
-    return $self->{'_gsf_seq'};
+    
+    $self->{'_gsf_seq'} = $arg;
+    
+    # attach to sub features if they want it
+    
+    foreach my $sf ($self->sub_SeqFeature) {
+      if ($sf->can("attach_seq")) {
+	$sf->attach_seq($arg);
+      }
+    }
+  }
+  return $self->{'_gsf_seq'};
 }
 
 

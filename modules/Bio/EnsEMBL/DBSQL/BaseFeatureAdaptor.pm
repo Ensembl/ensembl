@@ -268,67 +268,6 @@ sub fetch_by_Contig_and_score{
 }
 
 
-=head2 fetch_by_Slice_constraint
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-               the slice from which to obtain features
-  Arg [2]    : (optional) string $constraint
-               An SQL query constraint (i.e. part of the WHERE clause)
-  Arg [3]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Slice_constraint($slice, 'perc_ident > 5');
-  Description: Returns a list of features created from the database which are 
-               are on the Slice defined by $slice and fulfill the SQL 
-               constraint defined by $constraint. If logic name is defined, 
-               only features with an analysis of type $logic_name will be 
-               returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
-  Exceptions : thrown if $slice is not defined
-  Caller     : Bio::EnsEMBL::Slice
-
-=cut
-
-sub fetch_by_Slice_constraint {
-  my($self, $slice, $constraint, $logic_name) = @_;
-
-  my $key = join($slice->name, $constraint, $logic_name);
-
-  #check the cache
-  if($self->{'_slice_feature_cache'}{$key}) {
-    return @{$self->{'_slice_feature_cache'}{$key}};
-  }
-
-  if(!$slice){
-    $self->throw("need a slice to work\n");
-  }
-  unless($slice->isa("Bio::EnsEMBL::Slice")) {
-    $self->throw("$slice isn't a slice");
-  }
-
-  my $features = 
-    $self->fetch_by_assembly_location_constraint($slice->chr_start,
-						 $slice->chr_end,
-						 $slice->chr_name,
-						 $slice->assembly_type,
-						 $constraint,
-						 $logic_name);
-
-  #convert from chromosomal coordinates to slice coordinates
-  my $slide = -($slice->chr_start - 1);
-
-  foreach my $f (@$features){
-    #shift the feature start and end
-    $f->slide($slide);
-    $f->contig($slice);
-  }
-
-  #update the cache
-  $self->{'_slice_feature_cache'}{$key} = $features;
-
-  return @$features;
-}
-
-
 =head2 fetch_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
@@ -390,128 +329,47 @@ sub fetch_by_Slice_and_score {
 }  
 
 
-=head2 fetch_by_assembly_location
+=head2 fetch_by_Slice_constraint
 
-  Arg [1]    : int $start
-               the start of the assembly region from which to obtain align
-               features (in chromosomal coords).
-  Arg [2]    : int $end
-               the end of the assembly region from which to obtain align 
-               features (in chromosomal coords).
-  Arg [3]    : string $chr
-               the name of the chromosome from which to obtain align features.
-  Arg [4]    : string $type
-               the type of assembly to obtain features from
-  Arg [5]    : (optional) string $logic_name
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               the slice from which to obtain features
+  Arg [2]    : (optional) string $constraint
+               An SQL query constraint (i.e. part of the WHERE clause)
+  Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @feats = $adaptor->fetch_by_assembly_location(1, 10000, '9', 'NCBI30');
-  Description: Returns a listref of features created from the database which 
-               are in the assembly region defined by $start, $end, and $chr. 
-               If $logic_name is defined, only features with an analysis 
-               of type $logic_name will be returned.
-  Returntype : list of Bio::EnsEMBL::*Features
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_by_assembly_location{
-  my ($self,$start,$end,$chr,$type, $logic_name) = @_;
-
-  #fetch by assembly location constraint w/ empty constraint
-  return $self->fetch_by_assembly_location_constraint($start, $end, $chr,
-						      $type, '', $logic_name);
-}
-
-
-=head2 fetch_by_assembly_location_and_score
-
-  Arg [1]    : int $start
-               the start of the assembly region from which to obtain align
-               features (in chromosomal coords).
-  Arg [2]    : int $end
-               the end of the assembly region from which to obtain align 
-               features (in chromosomal coords).
-  Arg [3]    : string $chr
-               the name of the chromosome from which to obtain align features.
-  Arg [5]    : string $type
-               the type of assembly to obtain features from
-  Arg [6]    : float $score
-               a lower bound for the score of feats to obtain
-  Arg [7]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @f = $a->fetch_by_assembly_location_and_score(1,10000,'9','NCBI30', 50.0);
+  Example    : @fts = $a->fetch_by_Slice_constraint($slice, 'perc_ident > 5');
   Description: Returns a list of features created from the database which are 
-               are in the assembly region defined by $start, $end, and $chr, 
-               and with a percentage identity greater than $pid.  If 
-               $logic_name is defined, only features with an analysis of type 
-               $logic_name will be returned. 
-  Returntype : listref of Bio::EnsEMBL::*AlignFeature in 
-               chromosomal coordinates
-  Exceptions : thrown if $score is not defined
-  Caller     : general
+               are on the Slice defined by $slice and fulfill the SQL 
+               constraint defined by $constraint. If logic name is defined, 
+               only features with an analysis of type $logic_name will be 
+               returned. 
+  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Exceptions : thrown if $slice is not defined
+  Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
-sub fetch_by_assembly_location_and_score{
-  my ($self, $start, $end, $chr, $type, $score, $logic_name) = @_;
-  my $constraint;
+sub fetch_by_Slice_constraint {
+  my($self, $slice, $constraint, $logic_name) = @_;
 
-  if(!defined $score) {
-    $self->throw("need a score even if its 0\n");
-  } else {
-    $constraint = "score > $score";
+  unless(defined $slice && ref $slice && $slice->isa("Bio::EnsEMBL::Slice")) {
+    $self->throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
   }
 
-  return $self->fetch_by_assembly_location_constraint($start, $end, $chr,$type,
-						     $constraint, $logic_name);
-}
-
-
-=head2 fetch_by_assembly_location_constraint
-
-  Arg [1]    : int $start
-               the start of the assembly region from which to obtain align
-               features (in chromosomal coords).
-  Arg [2]    : int $end
-               the end of the assembly region from which to obtain align 
-               features (in chromosomal coords).
-  Arg [3]    : string $chr
-               the name of the chromosome from which to obtain align features.
-  Arg [4]    : string $type
-               the type of assembly to obtain features from
-  Arg [5]    : (optional) string $constraint
-               a SQL constraint restricting which features should be obtained
-  Arg [5]    : (optional) string $logic_name
-               the logic name of the type of features to obtain
-  Example    : @f = $a->fetch_by_assembly_location_constraint(1,10000,'9','NCBI30', 'score > 50.0', 'swall');
-  Description: Returns a list of features created from the database which are 
-               are in the assembly region defined by $start, $end, and $chr, 
-               and with a percentage identity greater than $pid.  If 
-               $logic_name is defined, only features with an analysis of type 
-               $logic_name will be returned. 
-  Returntype : listref of Bio::EnsEMBL::*AlignFeature in chromosomal 
-               coordinates
-  Exceptions : thrown if $score is not defined
-  Caller     : BaseFeatureAdaptor
-
-=cut
-
-sub fetch_by_assembly_location_constraint {
-  my ($self, $chr_start, $chr_end, $chr, $type, $constraint, $logic_name) = @_;
-
-  if( !defined $type ) {
-    $self->throw("Assembly location must be start,end,chr,type");
+  #check the cache and return if we have already done this query
+  my $key = join($slice->name, $constraint, $logic_name);
+  if($self->{'_slice_feature_cache'}{$key}) {
+    return @{$self->{'_slice_feature_cache'}{$key}};
   }
 
-  if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
-    $self->throw("start/end must be numbers not $chr_start,$chr_end " .
-		 "(have you typed the location in the right way around" .
-		 "- start,end,chromosome,type)?");
-  }
-  
-  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);  
-  my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
+  my $chr_start = $slice->chr_start();
+  my $chr_end   = $slice->chr_end();
+  				 
+  my $mapper = 
+    $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+
+  #get the list of contigs this slice is on
+  my @cids = $mapper->list_contig_ids($slice->chr_name, $chr_start ,$chr_end);
   
   if( scalar(@cids) == 0 ) {
     return ();
@@ -519,7 +377,7 @@ sub fetch_by_assembly_location_constraint {
 
   my $cid_list = join(',',@cids);
 
-  #construct the constraint for the contig ids 
+  #construct the SQL constraint for the contig ids 
   if($constraint) {
     $constraint .= " AND contig_id IN ($cid_list)";
   } else {
@@ -530,34 +388,23 @@ sub fetch_by_assembly_location_constraint {
 
   my @out;
   
-  #convert the features to assembly coordinates from raw contig coordinates
+
   #&eprof_start('transform');
-  my ($start, $end, $strand);
-  while(my $f = shift @$features) {
+  #convert the features to slice coordinates from raw contig coordinates
+  foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
-    my $contig_id = $f->entire_seq->dbID();
+    my $contig_id = $f->contig->dbID();
 
     #&eprof_start('rawcontig2assembly CALL');
-    my @coord_list = 
-      $mapper->map_coordinates_to_assembly($contig_id, $f->start(),
-					   $f->end(),$f->strand(),"rawcontig");
+    my ($chr_name, $start, $end, $strand)  = 
+      $mapper->fast_to_assembly($contig_id, $f->start(),
+				$f->end(),$f->strand(),"rawcontig");
     #&eprof_end('rawcontig2assembly CALL');
-    
-    # coord list > 1 - means does not cleanly map At the moment, skip
-    if( scalar(@coord_list) > 1 ) {
+
+    #not defined start means gap
+    unless(defined $start) { 
       next;
     }
-     
-    my ($coord) = @coord_list;
-
-    #maps to a gap in assembly?
-    if($coord->isa("Bio::EnsEMBL::Mapper::Gap")){
-      next;
-    }
-
-    $start = $coord->{'start'};
-    $end = $coord->{'end'};
-    $strand = $coord->{'strand'};
 
     #maps to region outside desired area
     if(($start < $chr_start) || ($end > $chr_end)) {
@@ -565,14 +412,18 @@ sub fetch_by_assembly_location_constraint {
     }
     
     #shift the feature start, end and strand in one call
-    $f->move($start, $end, $strand);
+    $f->move($start - $chr_start + 1, $end - $chr_start + 1, $strand);
+    $f->contig($slice);
     
     push(@out,$f);
   }
   
   #&eprof_end('rawcontig2assembly transform');
+
+  #update the cache
+  $self->{'_slice_feature_cache'}{$key} = \@out;
   
-  return \@out;
+  return @out;
 }
 
 
@@ -613,6 +464,7 @@ sub store{
   Caller     : general
 
 =cut
+
 
 sub remove {
   my ($self, $feature) = @_;
