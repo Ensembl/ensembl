@@ -53,13 +53,13 @@ EOT
 	my $d  = $p0 . '_delta_' . $pair[1][1];
 	print <<EOT;
 # DELTA: $pair[0][1] -> $pair[1][1]
-if [ ! -d databases/$p0 -a ! -f databases/$p0.done ]; then
-  scp -c none -r ecs3:/mysqla/current/var/$p0 databases/
-fi
-if [ ! -d databases/$p1 -a ! -f databases/$p1.done ]; then
-  scp -c none -r ecs3:/mysqla/current/var/$p1 databases/
-fi
 if [ ! -f deltas/$d.txt ]; then
+  if [ ! -d databases/$p0 ]; then
+    scp -c none -r ecs3:/mysqla/current/var/$p0 databases/
+  fi
+  if [ ! -d databases/$p1 ]; then
+    scp -c none -r ecs3:/mysqla/current/var/$p1 databases/
+  fi
   /usr/bin/time perl ./build.pl -c ./xdelta.osf -s databases -d deltas \\
     $pair[0][0] $pair[0][1] $pair[1][1] 2>&1 | \\
     tee deltas/$d.txt
@@ -72,7 +72,6 @@ EOT
 	print <<EOT;
 if [ -d databases/$pair[1][0]_$pair[1][1] ]; then
   rm -rf databases/$pair[1][0]_$pair[1][1]
-  touch  databases/$pair[1][0]_$pair[1][1].done
 fi
 EOT
     }
