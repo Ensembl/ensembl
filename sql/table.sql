@@ -391,13 +391,25 @@ CREATE TABLE karyotype (
 #
 
 CREATE TABLE objectXref(
+       objectxrefId INT not null auto_increment,
        ensembl_id VARCHAR(40) not null, 
        ensembl_object_type ENUM( 'RawContig', 'Transcript', 'Gene', 'Translation' ) not null,
        xrefId INT not null,
 
-       PRIMARY KEY( ensembl_object_type, ensembl_id, xrefId ),
-       KEY xref_index( xrefId, ensembl_object_type, ensembl_id )
+       UNIQUE ( ensembl_object_type, ensembl_id, xrefId ),
+       KEY xref_index( objectxrefId, xrefId, ensembl_object_type, ensembl_id )
    	);			
+
+#
+#Table structure for identityXref
+#
+CREATE TABLE identityXref(
+        objectxrefId INT not null ,
+	query_identity 	int(5),
+        target_identity int(5),
+        PRIMARY KEY (objectxrefId)
+        );
+
 
 #
 #Table structure for table Xref
