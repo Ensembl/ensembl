@@ -596,9 +596,6 @@ sub find_supporting_evidence {
   }
 }
 
-
-
-
 =head2 stable_id
 
   Arg [1]    : string $stable_id
@@ -660,7 +657,7 @@ sub load_genomic_mapper {
   my ( $self, $mapper, $id, $start ) = @_;
 
   $mapper->add_map_coordinates( $id, $start, $start+$self->length()-1,
-				$self->strand(), $self->contig,
+				$self->strand(), $self->slice(),
 				$self->start(), $self->end() );
 }
 
@@ -866,6 +863,56 @@ sub modified{
     if( defined $value ) {
       $self->{'_modified'} = $value;
     }
+    return $self->{'_modified'};
+}
+
+
+
+=head2 created
+
+ Title   : created
+ Usage   : $obj->created()
+ Function: 
+ Returns : value of created
+ Args    :
+
+
+=cut
+
+sub created{
+    my ($self,$value) = @_;
+
+    deprecated( "Created attribute not supported any more" );
+    if(defined $value ) {
+      $self->{'_created'} = $value;
+    }
+
+
+    return $self->{'_created'};
+
+}
+
+=head2 modified
+
+ Title   : modified
+ Usage   : $obj->modified()
+ Function: 
+ Returns : value of modified
+ Args    : 
+
+
+=cut
+
+sub modified{
+    my ($self,$value) = @_;
+    
+
+    deprecated( "Created attribute not supported any more" );
+    if( defined $value ) {
+      $self->{'_modified'} = $value;
+    }
+
+
     return $self->{'_modified'};
 }
 
