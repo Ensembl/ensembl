@@ -41,6 +41,7 @@ use strict;
 
 use POSIX;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
+use Bio::EnsEMBL::Utils::Cache;
 use Bio::EnsEMBL::DensityFeature;
 use Bio::EnsEMBL::DensityFeatureSet;
 use Bio::EnsEMBL::DensityType;
@@ -48,7 +49,34 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
+our $DENSITY_FEATURE_CACHE_SIZE = 20;
 
+=head2 new
+
+  Arg [1]    : list of args @args
+               Superclass constructor arguments
+  Example    : none
+  Description: Constructor which just initializes internal cache structures
+  Returntype : Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor
+  Exceptions : none
+  Caller     : implementing subclass constructors
+
+=cut
+
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  #initialize an LRU cache
+  my %cache;
+  tie(%cache, 'Bio::EnsEMBL::Utils::Cache', $DENSITY_FEATURE_CACHE_SIZE);
+  $self->{'_density_feature_cache'} = \%cache;
+
+  return $self;
+}
 
 =head2 fetch_all_by_Slice
 
@@ -508,13 +536,55 @@ sub store{
   }
 }
 
+=head2 fetch_Featureset_by_Slice 
+
+  Arg [1-5]  : see
+               Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor::fetch_all_by_Slice()
+               for argument documentation
+  Example    : $featureset = $dfa->fetch_FeatureSet_by_Slice($slice,'SNPDensity', 10, 1);
+  Description: wrapper around
+               Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor::fetch_all_by_Slice()
+               which returns a Bio::EnsEMBL::DensityFeatureSet and also caches
+               results
+  Returntype : Bio::EnsEMBL::DensityFeatureSet
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub fetch_Featureset_by_Slice {
-  my $self = shift;  
-  my $dfeats = $self->fetch_all_by_Slice(@_);
-  my $dfeatSet = new Bio::EnsEMBL::DensityFeatureSet($dfeats);
+  my ($self, $slice, $logic_name, $num_blocks, $interpolate, $max_ratio) = @_;
 
-  return ($dfeatSet);
+  my $key = join(":", $slice->name,
+                      $logic_name,
+                      $num_blocks || 50,
+                      $interpolate || 0,
+                      $max_ratio);
+                      
+  unless ($self->{'_density_feature_cache'}->{$key}) {
+    my $dfeats = $self->fetch_all_by_Slice($slice, $logic_name, $num_blocks,
+                                           $interpolate, $max_ratio);
+    $self->{'_density_feature_cache'}->{$key} =
+      new Bio::EnsEMBL::DensityFeatureSet($dfeats);
+  }
+  return $self->{'_density_feature_cache'}->{$key};
+}
+
+# deleteObj
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Cleans up internal caches and references to other objects so
+#               that correct garbage collection may occur.
+#  Returntype : none
+#  Exceptions : none
+#  Caller     : Bio::EnsEMBL::DBConnection::deleteObj
+
+sub deleteObj {
+  my $self = shift;
+
+  #flush feature cache
+  %{$self->{'_density_feature_cache'}} = ();
 }
 
 
