@@ -613,7 +613,7 @@ CREATE TABLE external_db(
          external_db_id INT not null auto_increment,
          db_name VARCHAR(40) not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
-	 status  VARCHAR(10) ENUM ('KNOWN','XREF','PRED') not null,
+	 status  ENUM ('KNOWN','XREF','PRED') not null,
          PRIMARY KEY( external_db_id ) 
 );
 
