@@ -24,19 +24,19 @@ sub create_coord_systems {
   my @coords =
     (['chunk',         undef, 'default_version,sequence_level'],
      ['chromosome', $ass_def, 'top_level,default_version'],
-     ["scaffold" ,     undef, "default_version,sequence_level"]);
+     ["scaffold" ,     undef, "default_version"]);
 
   my @assembly_mappings = ("chromosome:$ass_def|chunk",
-                           "scaffold|chunk");
+                           "chromosome:$ass_def|scaffold");
 
   my %cs = (gene                  => 'chromosome',
             transcript            => 'chromosome',
             exon                  => 'chromosome',
-            dna_align_feature     => 'scaffold',
-            protein_align_feature => 'scaffold',
-            marker_feature        => 'scaffold',
-            simple_feature        => 'scaffold',
-            repeat_feature        => 'scaffold',
+            dna_align_feature     => 'chunk',
+            protein_align_feature => 'chunk',
+            marker_feature        => 'chunk',
+            simple_feature        => 'chunk',
+            repeat_feature        => 'chunk',
             qtl_feature           => 'chromosome',
             misc_feature          => 'chromosome',
             prediction_transcript => 'chromosome',
@@ -81,7 +81,7 @@ sub create_seq_regions {
   $self->debug("AnophelesGambiae Specific: creating seq_regions");
 
   $self->contig_to_seq_region('chunk');
-  $self->clone_to_seq_region('scaffold');
+  $self->supercontig_to_seq_region('scaffold');
   $self->chromosome_to_seq_region();
 }
 
@@ -93,7 +93,7 @@ sub create_assembly {
   $self->debug("AnophelesGambiae Specific: loading assembly table");
 
   $self->assembly_contig_chromosome();
-  $self->assembly_contig_clone();
+  $self->assembly_supercontig_chromosome();
 
   return;
 }
@@ -254,57 +254,6 @@ sub store_pexon {
                       $pexon->{'score'},
                       $pexon->{'p_value'});
   $store_sth->finish();
-
-  return;
-}
-
-
-#
-# override the clone to seq region so that the version is not
-# tacked on the end
-#
-sub clone_to_seq_region {
-  my $self = shift;
-  my $target_cs_name = shift;
-
-  my $target = $self->target();
-  my $source = $self->source();
-  my $dbh    = $self->dbh();
-
-  # target coord_system will have a different ID
-  $target_cs_name ||= "clone";
-  my $cs_id = $self->get_coord_system_id($target_cs_name);
-
-  $self->debug("AnophelesGambiae Specific: Transforming clones into " .
-               "$target_cs_name seq_regions");
-
-  my $select_sth = $dbh->prepare
-    ("SELECT cl.clone_id, cl.embl_acc,
-             MAX(ctg.embl_offset)+ctg.length-1
-     FROM   $source.clone cl, $source.contig ctg
-		 WHERE  cl.clone_id = ctg.clone_id GROUP BY ctg.clone_id");
-  $select_sth->execute();
-
-  my ($clone_id, $embl_acc, $length);
-  $select_sth->bind_columns(\$clone_id, \$embl_acc, \$length);
-
-  my $insert_sth = $dbh->prepare
-    ("INSERT INTO $target.seq_region (name, coord_system_id, length) " .
-     "VALUES(?,?,?)");
-
-  my $tmp_insert_sth = $dbh->prepare
-    ("INSERT INTO $target.tmp_cln_map (old_id, new_id) VALUES (?, ?)");
-
-  while ($select_sth->fetch()) {
-    $insert_sth->execute("$embl_acc", $cs_id, $length);
-
-    #store mapping of old -> new ids in temp table
-    $tmp_insert_sth->execute($clone_id, $insert_sth->{'mysql_insertid'});
-  }
-
-  $select_sth->finish();
-  $insert_sth->finish();
-  $tmp_insert_sth->finish();
 
   return;
 }
