@@ -104,7 +104,7 @@ sub isa {
     return 1;
   } 
   
-  if($module eq ref($self->_obj())) {
+  if($self->_obj()->isa($module)) {
     return 1;
   }
 
