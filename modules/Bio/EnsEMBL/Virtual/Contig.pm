@@ -294,49 +294,27 @@ sub moltype {
 =cut
     
 sub top_SeqFeatures {
-    my ($self,@args) = @_;
-    my (@f);
-
+    my $self = shift;
+    my @sf = ();
     
-    if( !$self->skip_SeqFeature('similarity')  ) { 
-	push(@f,$self->get_all_SimilarityFeatures());
-    } 
-    
-    if( !$self->skip_SeqFeature('repeat')  ) { 
-	push(@f,$self->get_all_RepeatFeatures());
-    } 
-    
-    if( !$self->skip_SeqFeature('external')  ) { 
-	push(@f,$self->get_all_ExternalFeatures());
-    } 
-
-    if ( !$self->skip_SeqFeature('prediction') ) {
-	push(@f,$self->get_all_PredictionFeatures());
-    } 
-
-    
-    if( !$self->skip_SeqFeature('gene') ) {
-	foreach my $gene ( $self->get_all_Genes()) {
-	    my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
-	    push(@f,$vg);
-	}
+    unless( $self->skip_SeqFeature('meta') ) {
+    	my $sf = Bio::SeqFeature::Generic->new();
+    	$sf->start(         1 );
+    	$sf->end(           $self->length() );
+    	$sf->strand(        1 );
+    	$sf->primary_tag(   'source' );
+    	$sf->add_tag_value( 'organism' , $self->species->binomial );
+        @sf = ($sf);
     }
 
-    if( !$self->skip_SeqFeature('contig') ) {
-	push(@f,$self->_vmap->each_MapContig);
-    }
-
-    if( !$self->skip_SeqFeature('meta') ) {
-	my $sf = Bio::SeqFeature::Generic->new();
-	$sf->start(1);
-	$sf->end($self->length());
-	$sf->strand(1);
-	$sf->primary_tag('source');
-	$sf->add_tag_value('organism',$self->species->binomial);
-	push(@f,$sf);
-    }
-
-    return @f;
+    return     
+        @sf, 
+        $self->skip_SeqFeature('similarity') ? () : $self->get_all_SimilarityFeatures(),
+        $self->skip_SeqFeature('repeat')     ? () : $self->get_all_RepeatFeatures(),
+        $self->skip_SeqFeature('external')   ? () : $self->get_all_ExternalFeatures(),
+        $self->skip_SeqFeature('prediction') ? () : $self->get_all_PredictionFeatures(),
+        $self->skip_SeqFeature('contig')     ? () : $self->_vmap->each_MapContig(),
+        $self->skip_SeqFeature('gene')       ? () : map { Bio::EnsEMBL::VirtualGene->new(-gene => $_,-contig => $self) } $self->get_all_Genes();
 }
 
 =head2 length
@@ -355,8 +333,8 @@ sub length {
     my $obj = shift;
     
     if( @_ ) {
-	my $value = shift;
-	$obj->{'length'} = $value;
+    	my $value = shift;
+	    $obj->{'length'} = $value;
     }
     return $obj->{'length'};
 }
@@ -374,10 +352,10 @@ sub length {
 =cut
 
 sub embl_accession {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'embl_accession'} = $value;
+    my $obj = shift;
+    if( @_ ) {
+         my $value = shift;
+        $obj->{'embl_accession'} = $value;
     }
     return $obj->{'embl_accession'};
 
@@ -399,13 +377,8 @@ sub embl_accession {
 
 sub get_all_VirtualGenes {
     my ($self,$supporting) = @_;
-        
-    my @out;
-    foreach my $gene ( $self->get_all_Genes($supporting)) {
-	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
-	push(@out,$vg);
-    }
-    return @out;
+    return map { Bio::EnsEMBL::VirtualGene->new(-gene => $_,-contig => $self) }
+        $self->get_all_Genes($supporting);
 }
 
 
@@ -541,13 +514,8 @@ sub get_all_VirtualGenes_startend{
 =cut
 
 sub get_all_SeqFeatures {
-   my ($self) = @_;
-   my @out;
-   push(@out,$self->get_all_SimilarityFeatures());
-   push(@out,$self->get_all_RepeatFeatures());
-
-   return @out;
-
+   my $self = shift;
+   return $self->get_all_SimilarityFeatures(), $self->get_all_RepeatFeatures();
 }
 
 
@@ -572,25 +540,22 @@ sub get_all_SimilarityFeatures_above_score{
     my $sf = [];
     
     foreach my $c ($self->_vmap->get_all_RawContigs) {
+        push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
 	
-	
-	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
-	
-	# Need to clip seq features to fit the boundaries of
-	# our v/c so displays don't break
-	my @vcsf = ();
-	my $count = 0;
-	foreach $sf ( @$sf ) {
-	    $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-	    
-	    if( !defined $sf ) {next;}        
-	    
-	    if (($sf->start < 0 ) || ($sf->end >$self->length)) {$count++;}
-	    
-	    else{push (@vcsf, $sf);}
-	}
-	
-	return @vcsf;	
+    	# Need to clip seq features to fit the boundaries of
+	    # our v/c so displays don't break
+    	my @vcsf = ();
+    	my $count = 0;
+	    foreach $sf ( @$sf ) {
+	        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+	        if( !defined $sf ) {next;}        
+	        if (($sf->start < 0 ) || ($sf->end >$self->length)) {
+                $count++;
+            } else {
+                push (@vcsf, $sf);
+            }
+    	}
+	    return @vcsf;	
     }
     
 }

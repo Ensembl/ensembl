@@ -1294,15 +1294,15 @@ sub get_all_ExternalFeatures{
    ## After sorting call each one to get a list of feature back in contig/clone coords.
    ## Note that they should always return lists (possible empty) or bad things happen.
    
-   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-	print STDERR "EXTFEATFACT: $extf\n";
-       if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
-	   push(@web,$extf);
-       } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
-	   $self->throw("Should add DAS feature factories to add_DASFeatureFactory");
-       } else {
-	   push(@std,$extf);
-       }
+    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+	    print STDERR "EXTFEATFACT: $extf\n";
+        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
+	        push(@web,$extf);
+        } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
+	        $self->throw("Should add DAS feature factories to add_DASFeatureFactory");
+        } else {
+	        push(@std,$extf);
+        }
    }
 
    #Build needed arrays and hashes in one go
@@ -1315,8 +1315,8 @@ sub get_all_ExternalFeatures{
        $int_ext{$contig->internal_id}=$contig->id;
        push (@cintidlist,$contig->internal_id);
        if( !defined $cloneh{$contig->cloneid} ) {
-	   $cloneh{$contig->cloneid} = [];
-	   $featureh{$contig->cloneid} = [];
+	    $cloneh{$contig->cloneid} = [];
+	    $featureh{$contig->cloneid} = [];
        }
        my $string = $contig->cloneid.".".$contig->seq_version;
        push(@clones,$string);
@@ -1344,24 +1344,24 @@ sub get_all_ExternalFeatures{
        # then loop over features, changing identifiers and then push onto final array
        
        foreach my $clone ( keys %cloneh ) {
-	   my @features = sort { $a->start <=> $b->start } @{$featureh{$clone}};
-	   my @contigs  = sort { $a->embl_offset <=> $b->embl_offset } @{$cloneh{$clone}};
-	   my $current_contig = shift @contigs;
-	   FEATURE :
-	       foreach my $f ( @features ) {
-		   while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
-		       $current_contig = shift @contigs;
-		       if( !defined $current_contig ) { last FEATURE; }
-		   }
-		   if( $f->end < $current_contig->embl_offset ) {
-		       next; # not on a contig on this golden path presumably
-		   }
-		   $f->start($f->start - $current_contig->embl_offset+1);
-		   $f->end  ($f->end   - $current_contig->embl_offset+1);
-		   $f->seqname($current_contig->id);
-		   push(@contig_features,$f);
-	       }
-       }
+    	   my @features = sort { $a->start <=> $b->start }             @{ $featureh{$clone} };
+	       my @contigs  = sort { $a->embl_offset <=> $b->embl_offset } @{ $cloneh{$clone}   };
+    	   my $current_contig = shift @contigs;
+	       FEATURE :
+	           foreach my $f ( @features ) {
+    		   while( $current_contig->length + $current_contig->embl_offset < $f->start ) {
+	    	       $current_contig = shift @contigs;
+    		       if( !defined $current_contig ) { last FEATURE; }
+	    	   }
+    		   if( $f->end < $current_contig->embl_offset ) {
+	    	       next; # not on a contig on this golden path presumably
+		       }
+    		   $f->start($f->start - $current_contig->embl_offset+1);
+	    	   $f->end  ($f->end   - $current_contig->embl_offset+1);
+    		   $f->seqname($current_contig->id);
+	    	   push(@contig_features,$f);
+            }
+        }
    }
 
    &eprof_end("External-feature-web-get");
@@ -2097,6 +2097,15 @@ sub get_all_VirtualGenscans_startend_lite {
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_EMBLgenes_start_end(
+        $self->_chr_name, 
+        $self->_global_start, 
+        $self->_global_end
+    ); 
+}
+
+sub get_all_SangerGenes_startend_lite {
+	my  $self = shift;
+	return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
         $self->_global_end
@@ -2860,11 +2869,7 @@ sub add_SeqFeature{
 
 sub top_SeqFeatures{
    my ($self) = @_;
-   my @sf;
-
-   @sf = $self->SUPER::top_SeqFeatures();
-   push(@sf,@{$self->{'additional_seqf'}});
-   return @sf;
+   return $self->SUPER::top_SeqFeatures(), @{$self->{'additional_seqf'}};
 }
 
 
@@ -2883,22 +2888,12 @@ sub top_SeqFeatures{
 sub _raw_contig_id_list {
    my ($self,@args) = @_;
     
-   my $string;
-
-   if( defined $self->{'_raw_contig_id_list'} ) {
-       return $self->{'_raw_contig_id_list'};
+   unless( defined $self->{'_raw_contig_id_list'} ) {
+        my $string = join ',',
+                     map { $_->internal_id } $self->_vmap->get_all_RawContigs;
+        $self->{'_raw_contig_id_list'} = $string ? "($string)" : "";
    }
-
-   foreach my $c ( $self->_vmap->get_all_RawContigs) {
-       $string .= $c->internal_id . ",";
-   }
-
-   chop $string;
-
-   if ($string) { $string = "($string)";}
-
-   $self->{'_raw_contig_id_list'} = $string;
-   return $string;
+   return $self->{'_raw_contig_id_list'};
 		   
 }
 
@@ -2916,12 +2911,11 @@ sub _raw_contig_id_list {
 =cut
 
 sub _use_cext_get{
-   my ($obj,$value) = @_;
-   if( defined $value) {
+    my ($obj,$value) = @_;
+    if( defined $value) {
       $obj->{'_use_cext_get'} = $value;
     }
     return $obj->{'_use_cext_get'};
-
 }
 
 =head2 _cext_get_all_SimilarityFeatures_type
@@ -2961,38 +2955,36 @@ sub _cext_get_all_SimilarityFeatures_type{
 =cut
 
 sub _fill_cext_SimilarityFeature_cache{
-   my ($self) = @_;
+    my ($self) = @_;
 
-   my $host = $self->dbobj->host;
-   my $user = $self->dbobj->username;
-   my $dbname = $self->dbobj->dbname;
-   my $pass = $self->dbobj->password;
-   if( !defined $pass ) {
-       $pass = '-';
-   }
+    my $host = $self->dbobj->host;
+    my $user = $self->dbobj->username;
+    my $dbname = $self->dbobj->dbname;
+    my $pass = $self->dbobj->password;
+    $pass = '-' unless defined $pass;
 
-   &Bio::EnsEMBL::Ext::ContigAcc::prepare_Ensembl_cache($host,$user,$pass,$dbname);
+    &Bio::EnsEMBL::Ext::ContigAcc::prepare_Ensembl_cache($host,$user,$pass,$dbname);
 
-   my $glob_start=$self->_global_start;
-   my $glob_end=$self->_global_end;
-   my $chr_name=$self->_chr_name;
+    my $glob_start = $self->_global_start;
+    my $glob_end   = $self->_global_end;
+    my $chr_name   = $self->_chr_name;
    
-   my $fpl = &Bio::EnsEMBL::Ext::ContigAcc::FeaturePairList_by_Score_VC($chr_name,$glob_start,$glob_end,'10');
+    my $fpl = &Bio::EnsEMBL::Ext::ContigAcc::FeaturePairList_by_Score_VC($chr_name,$glob_start,$glob_end,'10');
    
-   my $cache = {};
-   $self->{'_cext_sim_cache'} = $cache;
-   my $save;
-   foreach my $f ( $fpl->each_FeaturePair ) {
-       my $db = $f->analysis->db;
-       if( !defined $cache->{$db} ) {
-	   $cache->{$db} = [];
-       }
-       push(@{$cache->{$db}},$f);
-       $save = $f;
-   }
+    my $cache = {};
+    $self->{'_cext_sim_cache'} = $cache;
+    my $save;
+    foreach my $f ( $fpl->each_FeaturePair ) {
+        my $db = $f->analysis->db;
+        if( !defined $cache->{$db} ) {
+ 	   $cache->{$db} = [];
+        }
+        push(@{$cache->{$db}},$f);
+        $save = $f;
+    }
 
-   $fpl = 0;
-   &Bio::EnsEMBL::Ext::ContigAcc::release_Ensembl_cache();
+    $fpl = 0;
+    &Bio::EnsEMBL::Ext::ContigAcc::release_Ensembl_cache();
 
 }
 
@@ -3130,21 +3122,3 @@ sub _sgp_select {
 
 
 1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
