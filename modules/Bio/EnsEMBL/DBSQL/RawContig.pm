@@ -103,6 +103,18 @@ sub new {
     return $self;
 }
 
+sub fpcctg_name {
+    my $self = shift;
+    my $sth = $self->dbobj->prepare(
+        "select fpcctg_name
+           from static_golden_path
+          where raw_id = ?"
+    );
+    $sth->execute( $self->internal_id );
+    my ($name) = $sth->fetchrow_array();
+    return $name;
+}
+
 
 sub direct_new {
     my( $pkg, @args ) = @_;

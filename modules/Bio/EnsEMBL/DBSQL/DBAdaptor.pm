@@ -2962,21 +2962,32 @@ sub get_ComparaDBAdaptor{
 
 =cut
 
+#sub get_SyntenyAdaptor{
+#    my( $self ) = @_;
+#
+#    if( !defined $self->{'_synteny_adaptor'} ) {
+#       require Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor;
+#
+#        my $saname      = $::pipeConf{'saname'} || undef;
+#        my $sauser      = $::pipeConf{'sauser'} || undef;
+#        my $dbhost      = $::pipeConf{'dbhost'} || undef;
+#
+#       $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
+#                                                                                  -dbname =>$saname,
+#                                                                                  -user   =>$sauser,
+#                                                                                  -host   =>$dbhost
+#                                                                                  );
+#   }
+#   return $self->{'_synteny_adaptor'};
+#
+#}
+
 sub get_SyntenyAdaptor{
     my( $self ) = @_;
 
     if( !defined $self->{'_synteny_adaptor'} ) {
-       require Bio::EnsEMBL::Compara::DBSQL::SyntenyAdaptor;
-
-        my $saname      = $::pipeConf{'saname'} || undef;
-        my $sauser      = $::pipeConf{'sauser'} || undef;
-        my $dbhost      = $::pipeConf{'dbhost'} || undef;
-
-       $self->{'_compara_dbadaptor'}  = Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-                                                                                  -dbname =>$saname,
-                                                                                  -user   =>$sauser,
-                                                                                  -host   =>$dbhost
-                                                                                  );
+       require Bio::EnsEMBL::DBSQL::SyntenyAdaptor;
+       $self->{'_synteny_adaptor'}  = Bio::EnsEMBL::DBSQL::SyntenyAdaptor->new($self);
    }
    return $self->{'_synteny_adaptor'};
 

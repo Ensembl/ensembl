@@ -147,6 +147,49 @@ sub end{
 
 }
 
+sub fpcctg_name {
+    my $self = shift;
+    my $sth = $self->contig->dbobj->prepare(
+        "select fpcctg_name
+           from static_golden_path
+          where raw_id = ?"
+    );
+    $sth->execute( $self->contig->internal_id );
+    my ($name) = $sth->fetchrow_array();
+    return $name;
+}
+
+
+sub is_first_contig {
+    my $self = shift;
+    my $sth = $self->contig->dbobj->prepare(
+        "select c.internal_id
+           from static_golden_path as sgp, contig as c, clone as cl
+          where c.internal_id = sgp.raw_id and c.clone = cl.internal_id and cl.id = ?
+          order by sgp.chr_start
+          limit 1"
+    );
+    $sth->execute( $self->contig->cloneid );
+    
+    my ($internal_id) = $sth->fetchrow_array();
+    return $self->contig->internal_id == $internal_id;
+}
+
+sub is_last_contig {
+    my $self = shift;
+    my $sth = $self->contig->dbobj->prepare(
+        "select c.internal_id
+           from static_golden_path as sgp, contig as c, clone as cl
+          where c.internal_id = sgp.raw_id and c.clone = cl.internal_id and cl.id = ?
+          order by sgp.chr_start desc
+          limit 1"
+    );
+    $sth->execute( $self->contig->cloneid );
+    
+    my ($internal_id) = $sth->fetchrow_array();
+    return $self->contig->internal_id == $internal_id;
+}
+
 
 =head2 rawcontig_start
 

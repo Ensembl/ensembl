@@ -108,6 +108,24 @@ sub fetch_by_stable_id {
   }
 }
 
+sub fetch_by_translation_stable_id {
+    my ($self, $stable_id) = @_;
+    my $sth = $self->prepare(
+        "select t.transcript_id
+           from transcript as t, translation_stable_id as tsi
+          where t.translation_id = tsi.translation_id and
+                tsi.stable_id = ?"
+    );
+    $sth->execute( $stable_id );
+
+    if( my $arr = $sth->fetchrow_arrayref ) {
+        my $transcript = $self->fetch_by_dbID( $arr->[0] );
+        return $transcript;
+    } else {
+        $ self->warn( "No Translation with this stable id found in the database." );
+        return undef;
+    }
+}
 
 =head2 store
 
