@@ -267,10 +267,10 @@ sub get_repeatmasked_seq {
       $soft_mask = 0;
     }
 
-    my @repeats = $self->get_all_RepeatFeatures($logic_name);
+    my $repeats = $self->get_all_RepeatFeatures($logic_name);
 
     my $dna = $self->seq();
-    my $masked_dna = $self->_mask_features($dna,\@repeats,$soft_mask);
+    my $masked_dna = $self->_mask_features($dna,$repeats,$soft_mask);
     my $masked_seq = Bio::PrimarySeq->new('-seq'        => $masked_dna,
 					  '-display_id' => $self->name,
 					  '-primary_id' => $self->name,
@@ -350,7 +350,7 @@ repeat_start $start or repeat_end $end not within [1-$dnalen] RawContig range co
   Args      : none
   Function  : connect to database through set adaptor and retrieve the 
               PredictionFeatures for this contig.
-  Returntype: list Bio::EnsEMBL::PredictionTranscript 
+  Returntype: listref Bio::EnsEMBL::PredictionTranscript 
               (previously this returned a SeqFeature)
   Exceptions: none
   Caller    : general
@@ -368,7 +368,7 @@ sub get_all_PredictionTranscripts {
   
   my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
     
-  return $pta->fetch_by_RawContig($self, $logic_name);
+  return $pta->fetch_all_by_RawContig($self, $logic_name);
 }
 
 
@@ -378,7 +378,7 @@ sub get_all_PredictionTranscripts {
   Args      : none
   Function  : connect to database through set adaptor and retrieve the 
               repeatfeatures for this contig.
-  Returntype: list Bio::EnsEMBL::RepeatFeature
+  Returntype: listref Bio::EnsEMBL::RepeatFeature
   Exceptions: none
   Caller    : general, get_repeatmasked_seq()
 
@@ -395,7 +395,7 @@ sub get_all_RepeatFeatures {
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
 
-   return $rfa->fetch_all_by_Contig( $self, $logic_name);
+   return $rfa->fetch_all_by_RawContig( $self , $logic_name);
 }
 
 
@@ -422,10 +422,10 @@ sub get_all_SimilarityFeatures {
   my @out;
   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
-  push @out, $dafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
-  push @out, $pafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
+  push @out, @{$dafa->fetch_by_RawContig_and_score($self, $score, $logic_name)};
+  push @out, @{$pafa->fetch_by_RawContig_and_score($self, $score, $logic_name)};
     
-  return @out;
+  return \@out;
 }
 
 
