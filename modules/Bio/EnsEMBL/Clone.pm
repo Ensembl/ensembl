@@ -92,8 +92,7 @@ sub new {
 		   'embl_version' => $embl_version,
 		   'htg_phase' => $htg_phase,
 		   'created'   => $created,
-		   'modified'  => $modified,
-		   '_contig_list' => [] 
+		   'modified'  => $modified
 		 }, $class;
 
 #    $self->adaptor($adaptor);

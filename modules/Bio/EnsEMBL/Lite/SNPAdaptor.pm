@@ -27,6 +27,7 @@ use strict;
 package Bio::EnsEMBL::Lite::SNPAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::DBEntry;
 use Bio::EnsEMBL::SNP;
 
 use vars '@ISA';
@@ -71,43 +72,46 @@ sub fetch_by_Slice {
   my $link;
 
   while($sth->fetch()) {
-    # this snp has not been seen before, create a new snp object
-    
+    my @links = ();
+
+    #Add db links to the snp variation object
+    unless($link = $link_hash{"dbSNP:$refsnpid"}) {
+      $link = Bio::EnsEMBL::DBEntry->new_fast( 
+		{'_dbname'     => 'dbSNP',
+		 '_primary_id' => $refsnpid });
+      $link_hash{"dbSNP:$refsnpid"} = $link;
+    }
+    push @links, $link;
+   
+    if ($hgbaseid) {
+      unless($link = $link_hash{"HGBASE:$hgbaseid"}) {
+	$link = Bio::EnsEMBL::DBEntry->new_fast( 
+		{'_dbname' => 'HGBASE',
+		 '_primary_id' => $hgbaseid});
+
+	$link_hash{"HGBASE:$hgbaseid"} = $link;
+      }
+      push @links, $link;
+    }
+    if ($tscid) {
+      unless($link = $link_hash{"TSC-CSHL:$tscid"}) {
+	$link = Bio::EnsEMBL::DBEntry->new_fast(
+		  {'dbname'      => 'TSC-CSHL',
+		   '_primary_id' => $tscid     });
+	$link_hash{"TSC-CSHL:$tscid"} = $link;
+      }
+      push @links, $link;
+    }
+
+    #create a snp object through a fast (hacky) constructor
     my $snp = Bio::EnsEMBL::SNP->new_fast(
 		  { '_gsf_start'  => $chr_start - $slice_start + 1,
 		    '_gsf_end'    => $chr_start - $slice_start + 1,
 		    '_snp_strand' => $chr_strand,
 		    '_gsf_score'  => 1,
-		    '_type'       => $type });
-    
+		    '_type'       => $type ,
+		    'link'        => \@links });
 
-    #Add db links to the snp variation object
-    unless($link = $link_hash{"dbSNP:$refsnpid"}) {
-      $link = new Bio::Annotation::DBLink;
-      $link->database('dbSNP');
-      $link->primary_id($refsnpid);
-      $link_hash{"dbSNP:$refsnpid"} = $link;
-    }
-    $snp->add_DBLink($link);
-   
-    if ($hgbaseid) {
-      unless($link = $link_hash{"HGBASE:$hgbaseid"}) {
-	$link = new Bio::Annotation::DBLink;
-	$link->database('HGBASE');
-	$link->primary_id($hgbaseid);
-	$link_hash{"HGBASE:$hgbaseid"} = $link;
-      }
-      $snp->add_DBLink($link);
-    }
-    if ($tscid) {
-      unless($link = $link_hash{"TSC-CSHL:$tscid"}) {
-	$link = new Bio::Annotation::DBLink;
-	$link->database('TSC-CSHL');
-	$link->primary_id($tscid);
-	$link_hash{"TSC-CSHL:$tscid"} = $link;
-      }
-      $snp->add_DBLink($link);
-    }
 
     push @snps, $snp;
   }

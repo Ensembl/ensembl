@@ -45,6 +45,13 @@ use strict;
 @ISA = qw( Bio::EnsEMBL::Root Bio::Annotation::DBLink );
 
 
+sub new_fast {
+  my $class = shift;
+  my $hashref = shift;
+
+  return bless $hashref, $class;
+}
+
 sub new {
   my ($class, @args) = @_;
 
