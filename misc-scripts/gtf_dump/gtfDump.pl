@@ -23,6 +23,11 @@ my $dbpass = undef;
 $dsn = "dbi:mysql:host=$host;database=$dbname";
 $db = DBI->connect( $dsn, $dbuser , $dbpass );
 
+if( !defined $db ) {
+    die "Unable to connect to database host $host database $dbname $dbpass";
+}
+
+
 $sth = $db->prepare( "
             SELECT t.gene, t.id, e.id, e.seq_start, 
                    e.seq_end, e.strand, e.phase, 

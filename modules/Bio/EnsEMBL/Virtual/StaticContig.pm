@@ -1800,6 +1800,9 @@ sub get_all_Genes_exononly{
        if( $transcriptid ne $current_transcript_id ) {
 	   # make a new transcript
 	   $current_transcript = Bio::EnsEMBL::WebTranscript->new();
+	   $current_transcript->dbID($current_transcript_id);
+	   $current_transcript->adaptor($self->dbobj->get_TranscriptAdaptor);
+
 	   $current_gene->add_Transcript($current_transcript);
 	   push(@trans,$current_transcript);
 	   if( $rank == 1 ) {

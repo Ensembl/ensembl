@@ -286,8 +286,30 @@ sub fetch_by_rawContig {
 }
 
 sub fetch_by_transcript {
-  my ( $self, $trscId ) = @_;
-  return $self->_fetch_by_EnsObject_type( $trscId, 'Transcript' );
+  my ( $self, $trans ) = @_;
+
+  my $query1 = "SELECT tlsi.stable_id 
+                FROM transcript t, translation_stable_id tlsi
+                WHERE t.transcript_id = ?
+                AND t.translation_id = tlsi.translation_id";
+
+  my $sth1 = $self->prepare($query1);
+  $sth1->execute( $trans->dbID );
+
+  # 
+  # Did this to be consistent with fetch_by_Gene, but don't like
+  # it (filling in the object). I think returning the array would
+  # be better. Oh well. EB
+  #
+  
+  while (my $transid = $sth1->fetchrow) {
+      my @translation_xrefs = $self->_fetch_by_EnsObject_type( $transid, 'Translation' );
+      foreach my $translink(@translation_xrefs) {
+	  $trans->add_DBLink($translink);
+      }
+  }
+
+
 }
 
 sub fetch_by_translation {

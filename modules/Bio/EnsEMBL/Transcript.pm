@@ -77,7 +77,6 @@ sub new {
   bless $self,$class;
 
   $self->{'_trans_exon_array'} = [];
-  $self->{'_db_link'} = [];
 
   # set stuff in self from @args
   foreach my $a (@args) {
@@ -105,6 +104,15 @@ sub new {
 sub each_DBLink {
    my ($self,@args) = @_;
 
+
+   if( !defined $self->{'_db_link'} ) {
+       $self->{'_db_link'} = [];
+       if( defined $self->adaptor ) {
+	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_transcript($self);
+       }
+   } 
+
+
    return @{$self->{'_db_link'}}
 }
 
@@ -125,6 +133,10 @@ sub add_DBLink{
 
    if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
        $self->throw("This [$value] is not a DBLink");
+   }
+
+   if( !defined $self->{'_db_link'} ) {
+       $self->{'_db_link'} = [];
    }
 
    push(@{$self->{'_db_link'}},$value);
