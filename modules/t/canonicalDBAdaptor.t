@@ -10,22 +10,22 @@ BEGIN { $| = 1;
 
 
 use TestUtils qw(debug test_getter_setter);
+use MultiTestDB;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
 use Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
 
-my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new( -user   => 'ensro',
-					      -dbname => 'homo_sapiens_core_14_31',
-					      -host   => '127.0.0.1',
-					      -port   => '5000',
-					      -driver => 'mysql');
-
-# Check DBAdaptor
+# Get a DBAdaptor to from the test system
+my $multi = MultiTestDB->new;
+ok($multi);
+my $db = $multi->get_DBAdaptor("core");
 ok($db);
 
 # Should get meaningful type back
-my $test_adaptor = $db->get_ArchiveStableIdAdaptor();
+my $test_adaptor;
+
+$test_adaptor = $db->get_ArchiveStableIdAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor"));
 $test_adaptor = $db->get_QtlFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor"));
@@ -35,10 +35,6 @@ $test_adaptor = $db->get_ProteinFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor"));
 $test_adaptor = $db->get_ProteinAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProteinAdaptor"));
-#$test_adaptor = $db->get_SNPAdaptor();
-#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor"));
-#$test_adaptor = $db->get_BlastAdaptor();
-#ok($test_adaptor->isa("Bio::EnsEMBL::External::BlastAdaptor"));
 $test_adaptor = $db->get_MapFragAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::MapFragAdaptor"));
 $test_adaptor = $db->get_CloneAdaptor();
@@ -85,6 +81,15 @@ $test_adaptor = $db->get_MarkerFeatureAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor"));
 $test_adaptor = $db->get_MarkerAdaptor();
 ok($test_adaptor->isa("Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor"));
+
+# Note get_BlastAdaptor() and get_SNPAdaptor() require DBs of type
+# 'blast' and 'lite' respectively - these are not available via MultiTestDB
+#my $blast_db = $multi->get_DBAdaptor("lite");
+#ok($blast_db);
+#$test_adaptor = $blast_db->get_BlastAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::External::BlastAdaptor"));
+#$test_adaptor = $db->get_SNPAdaptor();
+#ok($test_adaptor->isa("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor"));
 
 # Should get an error if we ask for something non-existent
 eval { $db->get_adaptor("SomeNonExistentType") };
