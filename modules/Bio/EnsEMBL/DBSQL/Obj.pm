@@ -1096,13 +1096,20 @@ sub write_Protein_feature {
 =cut
 
 sub write_Feature {
-    my ($self,$feature,$analysisid,$contig) = @_;
+    my ($self,$feature,$contig) = @_;
 
-    $self->throw("Feature is not a Bio::SeqFeature::Generic")        unless $feature->isa("Bio::SeqFeature::Generic");
-    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
+    $self->throw("Wrong number of arguments entered for write_Feature") unless defined($contig);
+    $self->throw("Feature is not a Bio::SeqFeature::Generic")           unless $feature->isa("Bio::SeqFeature::Generic");
+    $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")        unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
+
 
     my $contigid = $contig->id;
 
+    if (! $feature->each_tag_value('Analysis')) {
+	$self->throw("Feature " . $feature->seqname . " doesn't have analysis. Can't write to database");
+    }
+
+    my $analysisid = 1;
     
     my $sth = $self->prepare("insert into feature(id,contig,start,end,score,strand,name,analysis) values (NULL,\"" . 
 			     $contig ->id          . "\"," .
@@ -1215,17 +1222,16 @@ sub write_Analysis {
 =cut
 
 sub write_Homol_Feature {
-    my ($self,$feature,$analysisid,$contig) = @_;
+    my ($self,$feature,$contig) = @_;
 
     $self->throw("Wrong number of arguments to write_Homol_Feature") unless $contig;
     $self->throw("Feature is not a Bio::SeqFeature::Homol")          unless $feature->isa("Bio::SeqFeature::Homol");
     $self->throw("$contig is not a Bio::EnsEMBL::DBSQL::Contig")     unless $contig ->isa("Bio::EnsEMBL::DBSQL::Contig");
-    $self->throw("No analysis id input")                             unless $analysisid;
 
     my $contigid = $contig->id;
     my $homol    = $feature->homol_SeqFeature;
-
-    my $rv = $self->write_Feature($feature,$analysisid,$contig);
+    print("Writing homol feature\n");
+    my $rv = $self->write_Feature($feature,$contig);
 
     $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
 
@@ -1394,6 +1400,26 @@ sub write_Contig {
      my $sth =  $self->prepare($sql);
      my $rv  =  $sth->execute();
      $self->throw("Failed to insert contig $contigid") unless $rv;
+   }
+
+   # Get all seq features and call write_Feature or write_Homol_Feature.
+
+   foreach my $f ($contig->get_all_SeqFeatures) {
+
+       $self->throw("Feature doesn't have analysis object attached")    unless $f->each_tag_value('Analysis');
+
+       my $rv;
+       
+       if ($f->isa("Bio::SeqFeature::Homol")) {
+	   $rv = $self->write_Feature($f,$contig);
+       } elsif ($f->isa("Bio::SeqFeature::Generic")) {
+	   $rv = $self->write_Homol_Feature($f);
+       } else {
+	   $self->throw("Can't write feature - $f is not a Bio::SeqFeature::Generic");
+       }
+
+       $self->throw("Feature writing failed for contig " . $contig->id) unless $rv;
+
    }
 
    return 1;
