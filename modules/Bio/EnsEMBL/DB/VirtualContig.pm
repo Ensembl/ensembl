@@ -631,6 +631,7 @@ sub get_all_Genes {
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
 	    $self->_convert_seqfeature_to_vc_coords($exon);
+	   
 	    #print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
 	}
     }
