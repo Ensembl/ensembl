@@ -85,7 +85,8 @@ sub new {
 
 	# $self here is actually a Container object
 	# so need to call _obj to get the DBAdaptor
-	$self->_obj->{'default_module'} =  { 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+	$self->_obj->{'default_module'} =  {
+              'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
             'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
             'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
             'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
@@ -116,7 +117,6 @@ sub new {
             'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
             'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
             'ProxyRepeatFeature'   => 'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
-            'ProxyDnaAlignFeature' => 'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
             'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor' };
 
 	# initialise storage for hash of names of current modules
@@ -607,14 +607,7 @@ sub get_ProteinAlignFeatureAdaptor {
 
 sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
-  
-  my $core_adaptor = 
-    $self->get_adaptor("DnaAlignFeature");
-
-  #return a proxy adaptor which can choose between the core and est DBs
-  return 
-    $self->get_adaptor("ProxyDnaAlignFeature",
-			$core_adaptor);
+  return $self->get_adaptor("DnaAlignFeature");
 }
 
 

@@ -95,8 +95,7 @@ sub new {
 
   if( ! defined $empty ) {
     if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
-      print STDERR "Chr: " . $chr . "\t" . "Start: " . $start . "\t" . 
-	"End: " . $end . "\t" . "Type: " . $type . "\n";
+     #warn "Chr: $chr\tStart: $start\tEnd: $end\tType: $type";
       $self->throw("Do not have all the parameters for slice");
     }
     $self->chr_name($chr);
@@ -524,12 +523,17 @@ sub get_all_PredictionTranscripts {
 =cut
 
 sub get_all_DnaAlignFeatures {
-   my ($self, $logic_name, $score) = @_;
+  my ($self, $logic_name, $score, $dbtype) = @_;
 
-   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+  my $db = ($dbtype) ? $self->adaptor->db->get_db_adaptor($dbtype) : $self->adaptor->db;
 
-   return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
-}
+  if(!$db) {
+    $self->warn("Don't have db $dbtype returning empty list\n");
+    return [];
+  }
+
+  return $db->get_DnaAlignFeatureAdaptor()->fetch_all_by_Slice_and_score($self, $score, $logic_name);
+} 
 
 
 
@@ -553,11 +557,16 @@ sub get_all_DnaAlignFeatures {
 =cut
 
 sub get_all_ProteinAlignFeatures {
-  my ($self, $logic_name, $score) = @_;
+  my ($self, $logic_name, $score, $dbtype) = @_;
 
-  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
+  my $db = ($dbtype) ? $self->adaptor->db->get_db_adaptor($dbtype) : $self->adaptor->db;
 
-  return $pafa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
+  if(!$db) {
+    $self->warn("Don't have db $dbtype returning empty list\n");
+    return [];
+  }
+
+  return $db->get_ProteinAlignFeatureAdaptor()->fetch_all_by_Slice_and_score($self, $score, $logic_name);
 }
 
 
@@ -583,13 +592,10 @@ sub get_all_ProteinAlignFeatures {
 =cut
 
 sub get_all_SimilarityFeatures {
-  my ($self, $logic_name, $score) = @_;
+  my $self = shift;
 
-  my @out = ();
-
-  push @out, @{$self->get_all_ProteinAlignFeatures($logic_name, $score) };
-  push @out, @{$self->get_all_DnaAlignFeatures($logic_name, $score) };
-
+  my @out =  @{$self->get_all_ProteinAlignFeatures( @_ ) },
+             @{$self->get_all_DnaAlignFeatures(     @_ ) };
   return \@out;
 }
 
