@@ -609,4 +609,4 @@ sub _resolve_type {
   $arch_id->type( $id_type );
 }
 
-
+1;
