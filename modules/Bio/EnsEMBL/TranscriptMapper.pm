@@ -42,13 +42,13 @@ Email questions to the ensembl developer mailing list <ensembl-dev@ebi.ac.uk>
 use strict;
 use warnings;
 
+package Bio::EnsEMBL::TranscriptMapper;
+
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 use Bio::EnsEMBL::Mapper;
 use Bio::EnsEMBL::Mapper::Gap;
 use Bio::EnsEMBL::Mapper::Coordinate;
-
-package Bio::EnsEMBL::TranscriptMapper;
 
 
 
@@ -80,25 +80,8 @@ sub new {
     throw("Transcript argument is required.");
   }
 
-  #
   # Create a cdna <-> genomic mapper and load it with exon coords
-  #
-
-  my $mapper = Bio::EnsEMBL::Mapper->new( 'cdna', 'genomic');
-
-  my $slice = $transcript->slice();
-
-  my $seqname = ($slice) ? $slice->name() : $transcript->seqname();
-  $seqname ||= 'genome';
-
-  my $cdna_start = 1;
-  foreach my $exon (@{$transcript->get_all_Exons()}) {
-    my $cdna_end = $cdna_start + $exon->length() - 1;
-    $mapper->add_map_coordinates('cdna', $cdna_start, $cdna_end,
-                                 $exon->strand(),
-                                 $seqname, $exon->start, $exon->end());
-    $cdna_start = $cdna_end + 1;
-  }
+  my $mapper = _load_mapper($transcript);
 
   my $exons = $transcript->get_all_Exons();
   my $start_phase;
@@ -108,20 +91,111 @@ sub new {
     $start_phase = -1;
   }
 
-  return bless({'exon_coord_mapper' => $mapper,
-                'seqname'          => $seqname,
-                'start_phase'       => $start_phase,
-                'cdna_coding_start' => $transcript->cdna_coding_start(),
-                'cdna_coding_end'   => $transcript->cdna_coding_end()},$class);
+  my $self = bless({'exon_coord_mapper' => $mapper,
+                    'start_phase'       => $start_phase,
+                    'cdna_coding_start' => $transcript->cdna_coding_start(),
+                    'cdna_coding_end'   => $transcript->cdna_coding_end()},
+                   $class);
 }
 
 
 
-sub exon_coord_mapper {
-  my $self = shift;
-  return $self->{'exon_coord_mapper'};
-}
+sub _load_mapper {
+  my $transcript = shift;
 
+  my $mapper = Bio::EnsEMBL::Mapper->new( 'cdna', 'genomic');
+
+  my $edits_on = $transcript->edits_enabled();
+  my @edits;
+
+  if($edits_on) {
+    @edits = @{$transcript->get_all_SeqEdits()};
+    @edits = sort {$a->start() <=> $b->start()} @edits;
+  }
+
+  my $edit_shift = 0;
+
+  my $cdna_start = undef;
+  my $cdna_end   = 0;
+
+  foreach my $ex (@{$transcript->get_all_Exons}) {
+    my $gen_start = $ex->start();
+    my $gen_end   = $ex->end();
+
+    $cdna_start = $cdna_end + 1;
+    $cdna_end   = $cdna_start + $ex->length() - 1;
+
+    my $strand = $ex->strand();
+
+    # add deletions and insertions into pairs when SeqEdits turned on
+    # ignore mismatches (i.e. treat as matches)
+    if($edits_on) {
+      while(@edits && $edits[0]->start() + $edit_shift <= $cdna_end) {
+
+        my $edit = shift(@edits);
+        my $len_diff = $edit->length_diff();
+
+        if($len_diff) {
+          # break pair into two parts, finish first pair just before edit
+
+          my $prev_cdna_end   = $edit->start() + $edit_shift - 1;
+          my $prev_cdna_start = $cdna_start;
+          my $prev_len        = $prev_cdna_end - $prev_cdna_start + 1;
+
+          my $prev_gen_end;
+          my $prev_gen_start;
+          if($strand == 1) {
+            $prev_gen_start = $gen_start;
+            $prev_gen_end   = $gen_start + $prev_len - 1;
+          } else {
+            $prev_gen_start = $gen_end - $prev_len + 1;
+            $prev_gen_end   = $gen_end;
+          }
+
+          if($prev_len > 0) { # only create map pair if not boundary case
+            $mapper->add_map_coordinates
+              ('cdna', $prev_cdna_start, $prev_cdna_end, $strand,
+               'genome', $prev_gen_start,$prev_gen_end);
+          }
+
+          $cdna_start = $prev_cdna_end  + 1;
+
+          if($strand == 1) {
+            $gen_start  = $prev_gen_end + 1;
+          } else {
+            $gen_end    = $prev_gen_start - 1;
+          }
+
+          $cdna_end  += $len_diff;
+
+          if($len_diff > 0) {
+            # insert in cdna, shift cdna coords along
+            $cdna_start += $len_diff;
+          } else {
+            # delete in cdna (insert in genomic), shift genomic coords along
+
+            if($strand == 1) {
+              $gen_start  -= $len_diff;
+            } else {
+              $gen_end    += $len_diff;
+            }
+          }
+
+          $edit_shift += $len_diff;
+        }
+      }
+    }
+
+    my $pair_len = $cdna_end - $cdna_start + 1;
+
+    if($pair_len > 0) {
+      $mapper->add_map_coordinates('cdna', $cdna_start, $cdna_end, $strand,
+                                   'genome', $gen_start, $gen_end);
+    }
+  }
+
+  return $mapper;
+}
 
 
 =head2 cdna2genomic
@@ -148,7 +222,7 @@ sub cdna2genomic {
     throw("Must call with start/end");
   }
 
-  my $mapper = $self->exon_coord_mapper();
+  my $mapper = $self->{'exon_coord_mapper'};
 
   return $mapper->map_coordinates( 'cdna', $start, $end, 1, "cdna" );
 }
@@ -182,10 +256,9 @@ sub genomic2cdna {
     throw("start, end and strand arguments are required\n");
   }
 
-  my $mapper = $self->exon_coord_mapper();
+  my $mapper = $self->{'exon_coord_mapper'};
 
-  return $mapper->map_coordinates($self->{'seqname'}, $start, $end, $strand,
-                                  "genomic");
+  return $mapper->map_coordinates("genome", $start, $end, $strand,"genomic");
 
 }
 
