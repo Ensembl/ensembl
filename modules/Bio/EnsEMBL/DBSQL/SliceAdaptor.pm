@@ -774,6 +774,13 @@ sub fetch_normalized_slice_projection {
     
     # gaps are regions where there is no mapping to another region
     my $rel_start = 1;
+
+    #if there was only one coord and it is a gap, we know it is just the
+    #same slice with no overlapping symlinks
+    if(@linked == 1 && $linked[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+      return [[1,$slice->length, $slice]];
+    }
+
     for my $coord ( @linked ) {
       if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
         my $exc_slice = Bio::EnsEMBL::Slice->new
