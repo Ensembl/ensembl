@@ -19,6 +19,57 @@ use Bio::Search::HSP::EnsemblHSP; # This is a web module
 #----------------------------------------------------------------------
 # Define SQL
 
+#--- TICKETS ---
+
+our $SQL_SEARCH_MULTI_STORE = "
+INSERT INTO blast_ticket ( create_time, update_time, object, ticket )
+VALUES                   ( NOW(), NOW(), ? , ? )";
+
+our $SQL_SEARCH_MULTI_UPDATE = "
+UPDATE blast_ticket
+SET    object      = ?,
+       update_time = NOW()
+WHERE  ticket      = ?";
+
+our $SQL_SEARCH_MULTI_RETRIEVE = "
+SELECT object
+FROM   blast_ticket
+WHERE  ticket = ? ";
+
+#--- RESULTS ---
+
+our $SQL_RESULT_STORE = "
+INSERT INTO blast_result ( ticket, object )
+VALUES                   ( ? , ? )";
+
+our $SQL_RESULT_UPDATE = "
+UPDATE  blast_result
+SET     object = '?'
+WHERE   result_id = ?";
+
+our $SQL_RESULT_RETRIEVE = "
+SELECT object
+FROM   blast_result
+WHERE  result_id = ? ";
+
+#--- HITS ---
+
+our $SQL_HIT_STORE = "
+INSERT INTO blast_hit ( ticket, object )
+VALUES                ( ? , ? )";
+
+our $SQL_HIT_UPDATE = "
+UPDATE  blast_hit
+SET     object = '?'
+WHERE   hit_id = ?";
+
+our $SQL_HIT_RETRIEVE = "
+SELECT object
+FROM   blast_hit
+WHERE  hit_id = ? ";
+
+#--- HSPS ---
+
 our $SQL_HSP_STORE = "
 INSERT INTO blast_hsp ( ticket, object, chr_name, chr_start, chr_end )
 VALUES                ( ? , ? , ? , ? , ? )";
@@ -58,6 +109,234 @@ sub new {
 }
 
 #----------------------------------------------------------------------
+=head2 store_search_multi
+
+  Arg [1]   : Bio::Tools::Run::EnsemblSearchMulti obj
+  Function  : Stores the ensembl SearchMulti container object in the database
+  Returntype: scalar (token)
+  Exceptions: 
+  Caller    : 
+  Example   : my $container_token = $blast_adpt->store_ticket( $container );
+
+=cut
+
+sub store_search_multi{
+  my $self         = shift;
+  my $search_multi = shift || 
+    $self->throw( "Need a Bio::Tools::Run::EnsemblSearchMulti obj" );
+
+  my $dbh  = $self->db->db_handle;
+
+  my $store_obj = $search_multi->_prepare_storable;
+  my $frozen  = freeze( $store_obj );
+  my $ticket  = $search_multi->token ||
+    $self->throw( "Bio::Tools::Run::EnsemblSearchMulti obj has no ticket" );
+
+  my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
+  my $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
+  $sth->finish;
+
+  if( $rv eq '0E0' ){ # Insert (do first to minimise risk of race)
+    my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_STORE );
+    $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
+    #$search_multi->token( $self->dbh->{mysql_insertid} );
+    $sth->finish;
+  }
+  else{ # Update
+    my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_UPDATE );
+    $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  return $search_multi->token();
+}
+
+#----------------------------------------------------------------------
+
+=head2 retrieve_search_multi
+
+  Arg [1]   : 
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub retrieve_search_multi {
+  my $self   = shift;
+  my $ticket = shift || $self->throw( "Need an EnsemblSearchMulti ticket" );  
+
+  my $dbh  = $self->db->db_handle;
+  my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_RETRIEVE );
+  my $rv  = $sth->execute( $ticket ) || $self->throw( $sth->errstr );
+  if( $rv < 1 ){ $self->throw( "Token $ticket not found" ) }
+  my ( $frozen ) = $sth->fetchrow_array;
+  $sth->finish;
+
+  my $stored_obj = thaw( $frozen );
+  if( ! ref( $stored_obj ) or 
+      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
+    $self->throw( "Token $ticket returned no data" );
+  }
+  return $stored_obj;
+}
+
+
+
+#----------------------------------------------------------------------
+=head2 store_result
+
+  Arg [1]   : Bio::Search::Result::EnsemblResult obj
+  Function  : Stores the ensembl Result in the database
+  Returntype: scalar (token)
+  Exceptions: 
+  Caller    : 
+  Example   : my $result_token = $blast_adpt->store_result( $result );
+
+=cut
+
+sub store_result{
+  my $self = shift;
+  my $res  = shift || 
+    $self->throw( "Need a Bio::Search::Result::EnsemblResult obj" );
+
+  my $dbh  = $self->db->db_handle;
+
+  my $store_obj = $res->_prepare_storable;
+  my $frozen = freeze( $store_obj );
+  my $ticket = $res->group_ticket;
+  my $token  = $res->token;
+
+  my( $rv );
+  if( $token ){
+    my $sth = $dbh->prepare( $SQL_RESULT_RETRIEVE );
+    $rv = $sth->execute( $token ) ||  $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  if( $rv ){ # Update
+    my $sth = $dbh->prepare( $SQL_RESULT_UPDATE );
+    $sth->execute( $store_obj ) || $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  else{ # Insert
+    my $sth = $dbh->prepare( $SQL_RESULT_STORE );
+    $sth->execute( $ticket, $frozen ) || $self->throw( $sth->errstr );
+    $res->token( $dbh->{mysql_insertid} );
+    $sth->finish;
+  }
+  return $res->token();
+}
+
+#----------------------------------------------------------------------
+
+=head2 retrieve_result
+
+  Arg [1]   : 
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub retrieve_result{
+  my $self   = shift;
+  my $token  = shift || $self->throw( "Need a Result token" );
+
+  my $dbh  = $self->db->db_handle;
+  my $sth = $dbh->prepare( $SQL_RESULT_RETRIEVE );
+  my $rv  = $sth->execute( $token ) || $self->throw( $sth->errstr );
+  if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
+  my ( $frozen ) = $sth->fetchrow_array;
+  $sth->finish;
+
+  my $stored_obj = thaw( $frozen );
+  if( ! ref( $stored_obj ) or 
+      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
+    $self->throw( "Token $token returned no data" );
+  }
+  return $stored_obj;
+}
+
+#----------------------------------------------------------------------
+=head2 store_hit
+
+  Arg [1]   : Bio::Search::Hit::EnsemblHit obj
+  Function  : Stores the ensembl Hit in the database
+  Returntype: scalar (token)
+  Exceptions: 
+  Caller    : 
+  Example   : my $hit_token = $blast_adpt->store_hit( $hit );
+
+=cut
+
+sub store_hit{
+  my $self = shift;
+  my $hit  = shift || 
+    $self->throw( "Need a Bio::Search::Hit::EnsemblHit obj" );
+
+  my $dbh  = $self->db->db_handle;
+
+  my $store_obj = $hit->_prepare_storable;
+  my $frozen = freeze( $store_obj );
+  my $ticket = $hit->group_ticket;
+  my $token  = $hit->token;
+
+  my( $rv );
+  if( $token ){
+    my $sth = $dbh->prepare( $SQL_HIT_RETRIEVE );
+    $rv = $sth->execute( $token ) ||  $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  if( $rv ){ # Update
+    my $sth = $dbh->prepare( $SQL_HIT_UPDATE );
+    $sth->execute( $store_obj ) || $self->throw( $sth->errstr );
+    $sth->finish;
+  }
+  else{ # Insert
+    my $sth = $dbh->prepare( $SQL_HIT_STORE );
+    $sth->execute( $ticket, $frozen ) || $self->throw( $sth->errstr );
+    $hit->token( $dbh->{mysql_insertid} );
+    $sth->finish;
+  }
+  return $hit->token();
+}
+
+#----------------------------------------------------------------------
+
+=head2 retrieve_hit
+
+  Arg [1]   : 
+  Function  : 
+  Returntype: 
+  Exceptions: 
+  Caller    : 
+  Example   : 
+
+=cut
+
+sub retrieve_hit{
+  my $self   = shift;
+  my $token  = shift || $self->throw( "Need a Hit token" );
+
+  my $dbh  = $self->db->db_handle;
+  my $sth = $dbh->prepare( $SQL_HIT_RETRIEVE );
+  my $rv  = $sth->execute( $token ) || $self->throw( $sth->errstr );
+  if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
+  my ( $frozen ) = $sth->fetchrow_array;
+  $sth->finish;
+
+  my $stored_obj = thaw( $frozen );
+  if( ! ref( $stored_obj ) or 
+      ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
+    $self->throw( "Token $token returned no data" );
+  }
+  return $stored_obj;
+}
+
+#----------------------------------------------------------------------
 =head2 store_hsp
 
   Arg [1]   : Bio::Search::HSP::EnsemblHSP obj
@@ -85,7 +364,7 @@ sub store_hsp{
 
   my $store_obj = $hsp->_prepare_storable;
   my $frozen = freeze( $store_obj );
-  my $ticket = $hsp->blast_ticket;
+  my $ticket = $hsp->group_ticket;
 
   my $chr_name  = 'NULL';
   my $chr_start = 'NULL';
@@ -126,38 +405,22 @@ sub store_hsp{
 =cut
 
 sub retrieve_hsp{
-  my $self = shift;
+  my $self   = shift;
+  my $token  = shift || $self->throw( "Need an HSP token" );
+
   my $dbh  = $self->db->db_handle;
-  my( $caller, $token ) = @_;
-  
-  my $hsp;
-  my $class = ref( $caller ) || $caller;
-
-  # Is this a call on a retrievable object?
-  if( ref( $caller ) ){
-    if( $caller->retrievable ){
-      $hsp = $caller;
-      $token = $hsp->token;
-    }
-  }
-  else{ $hsp = bless( {}, $caller ) }
-
-  if( ! $token ){ $self->throw( "Need an HSP token" ) }
   my $sth = $dbh->prepare( $SQL_HSP_RETRIEVE );
   my $rv  = $sth->execute( $token ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
   $sth->finish;
-  my $stored_obj = thaw( $frozen );
 
+  my $stored_obj = thaw( $frozen );
   if( ! ref( $stored_obj ) or 
       ! $stored_obj->isa( 'Bio::Root::Storable' ) ){
     $self->throw( "Token $token returned no data" );
   }
-  $stored_obj->{-retrievable} = 0;
-  map{ $hsp->{$_} = $stored_obj->{$_} } keys %$stored_obj; # Copy hasheys
-  return bless( $hsp, ref( $stored_obj ) ); # Maintain class of stored obj
-
+  return $stored_obj;
 }
 
 
