@@ -52,7 +52,7 @@ my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 my $help;
 my $usefile = 0;
-my $getall = 1;
+my $getall = 0;
 my $debug;
 
 &GetOptions( 
@@ -77,7 +77,7 @@ if ($help) {
 my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 my $seqio;
-my $errcount = 0;
+my $errcount=0;
 my @clone_id;
 
 if( $usefile == 1 ) {
@@ -110,8 +110,8 @@ foreach my $clone_id ( @clone_id ) {
 		my $trans_pep;
 
 		eval {
-		    my $trans_dna = $trans->dna_seq;
-		    my $trans_seq=$trans_dna->seq;
+		    $trans_dna = $trans->dna_seq;
+		    $trans_seq=$trans_dna->seq;
 		};
 		
 		my $err;
@@ -123,7 +123,6 @@ foreach my $clone_id ( @clone_id ) {
 		    $err = "no sequence present in this contig!\n";
 		}
 		$trans_seq =~ s/[A,T,G,C,N,Y,R]//g;
-		print "$trans_seq\n";
 		if ($trans_seq ne "") {
 		    $errcount++;
 		    print "Error $errcount\n";
@@ -149,10 +148,10 @@ foreach my $clone_id ( @clone_id ) {
 		    print "Error:\n$@";
 		}
 		eval {
-		    my $trans_pep=$trans->translate->seq;
+		    $trans_pep=$trans->translate->seq;
 		};
 		if ($@) {
-		     $errcount++;
+		    $errcount++;
 		    print "Error $errcount\n";
 		    print "Clone:     $clone_id\n";
 		    print "Contig:    ",$contig->id,"\n";
@@ -160,8 +159,8 @@ foreach my $clone_id ( @clone_id ) {
 		    print "Transcript ",$trans->id,"\n";
 		    print "Error:\n$@";
 		}
-		if ($trans_pep =~ /\*/) {
-		    $$errcount++;
+		if ($trans_pep =~ /\*/) {  
+		    $errcount++;
 		    print "Error $errcount\n";
 		    print "Clone:     $clone_id\n";
 		    print "Contig:    ",$contig->id,"\n";

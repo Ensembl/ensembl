@@ -577,7 +577,7 @@ sub dna_seq {
     # the seq call automatically truncates to the correct 
     # coordinates (handily) in SeqFeature
 
-    my $tmp = $exon->seq->str();
+    my $tmp = $exon->seq->seq();
 
     # we now have to figure out if the phase is compatible. If it
     # is not, we need to add some stuff in...
