@@ -1,5 +1,3 @@
-
-#
 #
 # BioPerl module for Bio::EnsEMBL::SeqFeature
 #
@@ -64,32 +62,34 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::SeqFeature;
                                
-use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
+use vars qw(@ISA);
 use strict;
 
 
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::EnsEMBL::Analysis;
-
+use Bio::EnsEMBL::Root;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::SeqFeatureI);
+
 
 sub new {
   my($caller,@args) = @_;
   
   my $self = {};
-  bless $self, $caller;
   
+  if(ref $caller) {
+    bless $self, ref $caller;
+  } else { 
+    bless $self, $caller;
+  }
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
 
-my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase); 
-
-  eval {
-
-  ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase) = 
+  my ($start,$end,$strand,$frame,$score,$analysis,$seqname, $source_tag, 
+      $primary_tag, $percent_id, $p_value, $phase, $end_phase) = 
 
       $self->_rearrange([qw(START
                             END
@@ -105,14 +105,8 @@ my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_ta
                             PHASE
                             END_PHASE
                             )],@args);
-  };
   
-  if( $@ ) {
-      my $dummy = Bio::Root::Object->new();
-      $dummy->throw($@);
-  }
-
-#  $gff_string && $self->_from_gff_string($gff_string);
+  #  $gff_string && $self->_from_gff_string($gff_string);
 
   if ( defined $analysis  && $analysis ne "")   { $self->analysis($analysis)};
   if ( defined ($start) && $start ne "" )       { $self->start($start)};

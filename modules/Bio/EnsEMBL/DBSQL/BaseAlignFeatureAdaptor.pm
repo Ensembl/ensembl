@@ -146,7 +146,8 @@ sub fetch_by_Slice_and_pid {
                and with a percentage identity greater than $pid.  If 
                $logic_name is defined, only features with an analysis of type 
                $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
+  Returntype : listref of 
+               Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
   Exceptions : thrown if $pid is not defined
   Caller     : general
 

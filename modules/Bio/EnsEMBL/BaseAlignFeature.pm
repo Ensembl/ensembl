@@ -88,13 +88,11 @@ use Bio::EnsEMBL::SeqFeature;
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw(Bio::EnsEMBL::FeaturePair Bio::EnsEMBL::Root);
+@ISA = qw(Bio::EnsEMBL::FeaturePair);
 
 sub new {
     my ($class,@args) = @_;
 
-    my ($caller, $pkg, $line) = caller;
-  
     my $self = $class->SUPER::new(@args);
     #print "calling new with @args\n";
     my ($cigar_string,$features) 

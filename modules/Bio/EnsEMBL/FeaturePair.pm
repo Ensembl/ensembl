@@ -37,10 +37,11 @@ Bio::EnsEMBL::FeaturePair - Stores sequence features which are
 =head1 DESCRIPTION
 
 A sequence feature object where the feature is itself a feature on another 
-sequence - e.g. a blast hit where residues 1-40 of a  protein sequence SW:HBA_HUMAN  
-has hit to bases 100 - 220 on a genomic sequence HS120G22.  The genomic sequence 
-coordinates are used to create one sequence feature $f1 and the protein coordinates
-are used to create feature $f2.  A FeaturePair object can then be made
+sequence - e.g. a blast hit where residues 1-40 of a  protein sequence 
+SW:HBA_HUMAN has hit to bases 100 - 220 on a genomic sequence HS120G22.  
+The genomic sequence coordinates are used to create one sequence feature 
+$f1 and the protein coordinates are used to create feature $f2.  
+A FeaturePair object can then be made
 
     my $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,   # genomic
 					   -feature2 => $f2,   # protein
@@ -74,7 +75,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -84,12 +86,12 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::FeaturePair;
 
-use vars qw(@ISA $ENSEMBL_EXT_LOADED $ENSEMBL_EXT_USED );
+use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::SeqFeatureI;
+use Bio::EnsEMBL::SeqFeature;
 
-@ISA = qw(Bio::EnsEMBL::SeqFeatureI);
+@ISA = qw(Bio::EnsEMBL::SeqFeature);
 
 
 sub new {
@@ -107,14 +109,18 @@ sub new {
 			    FEATURE2
 			    )],@args);
 
+  $self->SUPER::new(-ANALYSIS => $feature1->analysis(),
+		    -SEQNAME  => $feature1->seqname(),
+		    -START    => $feature1->start(),
+		    -END      => $feature1->end(),
+		    -FRAME    => $feature1->frame(),
+		    -SCORE    => $feature1->score(),
+		    -PERCENT_ID => $feature1->percent_id(),
+		    -P_VALUE => $feature1->p_value(),
+		    -PHASE => $feature1->phase(),
+		    -END_PHASE => $feature1->end_phase());
 
-  #if( !defined $feature1 || !defined $feature2 ) {
-  #  $self->throw("Have not defined either feature1 or feature2. You can define empty feature1 and feature2 if so desired");
-  #}
 
-  # Store the features in the object
-
-  $feature1 && $self->feature1($feature1);
   $feature2 && $self->feature2($feature2);
 
   # set stuff in self from @args
@@ -131,19 +137,28 @@ sub new {
  Returns : Bio::SeqFeatureI
  Args    : none
 
-
 =cut
 
 
 sub feature1 {
-    my ($self,$arg) = @_;
+  my ($self,$arg) = @_;
 
-    if (defined($arg)) {
-	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") unless (ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI"));
-	$self->{_feature1} = $arg;
-    } 
+  if($arg) {
+      $self->start($arg->start());
+      $self->end($arg->end());
+      $self->strand($arg->strand());
+      $self->frame($arg->frame());
+      $self->score($arg->score());
+      $self->seqname($arg->seqname());
+      $self->percent_id($arg->percent_id());
+      $self->p_value($arg->p_value());
+      $self->phase($arg->phase());
+      $self->end_phase($arg->end_phase());
+      $self->analysis($arg->analysis);
+      $self->attach_seq($arg->entire_seq);
+    }
 
-    return $self->{_feature1};
+  return $self;
 }
 
 =head2 feature2
@@ -162,212 +177,38 @@ sub feature2 {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI") unless (ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI"));
-	$self->{_feature2} = $arg;
+      unless(ref($arg) ne "" && $arg->isa("Bio::SeqFeatureI")) {
+	$self->throw("Argument [$arg] must be a Bio::SeqFeatureI");
+      }
+
+      $self->{_hstart}      = $arg->start();
+      $self->{_hend}        = $arg->end();
+      $self->{_hstrand}     = $arg->strand();
+      $self->{_hseqname}    = $arg->seqname();
+      $self->{_hphase}      = $arg->phase();
+      $self->{_hend_phase}  = $arg->end_phase();
+      $self->{_hentire_seq} = $arg->entire_seq();
+      return $arg;
     } 
-    return $self->{_feature2};
-}
-
-=head2 start
-
- Title   : start
- Usage   : $start = $featpair->start
-           $featpair->start(20)
- Function: Get/set on the start coordinate of feature1
- Returns : integer
- Args    : none
-
-=cut
-
-sub start {
-    my ($self,$value) = @_;
     
-    if (defined($value)) {
-	return $self->feature1->start($value);
-    } else {
-	return $self->feature1->start;
+    my $seq = new Bio::EnsEMBL::SeqFeature(
+		    -SEQNAME    => $self->{_hseqname},
+		    -START      => $self->{_hstart},
+		    -END        => $self->{_hend},
+		    -SCORE      => $self->score(),
+		    -PERCENT_ID => $self->percent_id(),
+		    -P_VALUE    => $self->p_value(),
+		    -PHASE      => $self->{_hphase},
+		    -END_PHASE  => $self->{_hend_phase},
+		    -ANALYSIS   => $self->analysis);
+
+    if($self->{_hentire_seq}) {
+      $seq->attach_seq($self->{_hentire_seq});
     }
 
+    return $seq;
 }
 
-=head2 end
-
- Title   : end
- Usage   : $end = $featpair->end
-           $featpair->end($end)
- Function: get/set on the end coordinate of feature1
- Returns : integer
- Args    : none
-
-
-=cut
-
-sub end{
-    my ($self,$value) = @_;
-
-    if (defined($value)) {
-	return $self->feature1->end($value);
-    } else {
-	return $self->feature1->end;
-    }
-}
-
-=head2 length
-
- Title   : length
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub length {
-   my ($self) = @_;
-
-   return $self->end - $self->start +1;
-}
-
-
-=head2 strand
-
- Title   : strand
- Usage   : $strand = $feat->strand()
-           $feat->strand($strand)
- Function: get/set on strand information, being 1,-1 or 0
- Returns : -1,1 or 0
- Args    : none
-
-
-=cut
-
-sub strand{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature1->strand($arg);
-    } else {
-	return $self->feature1->strand;
-    }
-}
-
-=head2 score
-
- Title   : score
- Usage   : $score = $feat->score()
-           $feat->score($score)
- Function: get/set on score information
- Returns : float
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub score {
-    my ($self,$arg) = @_;
-  
-    if (defined($arg)) {
-	return $self->feature1->score($arg);
-    } else {
-	return $self->feature1->score || 0;
-    }
-}
-
-=head2 frame
-
- Title   : frame
- Usage   : $frame = $feat->frame()
-           $feat->frame($frame)
- Function: get/set on frame information
- Returns : 0,1,2
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub frame {
-    my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->frame($arg);
-    } else {
-	return $self->feature1->frame;
-    }
-}
-
-=head2 primary_tag
-
- Title   : primary_tag
- Usage   : $ptag = $featpair->primary_tag
- Function: get/set on the primary_tag of feature1
- Returns : 0,1,2
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub primary_tag{
-    my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->primary_tag($arg);
-    } else {
-	return $self->feature1->primary_tag;
-    }
-}
-
-=head2 source_tag
-
- Title   : source_tag
- Usage   : $tag = $feat->source_tag()
-           $feat->source_tag('genscan');
- Function: Returns the source tag for a feature,
-           eg, 'genscan' 
- Returns : a string 
- Args    : none
-
-
-=cut
-
-sub source_tag{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature1->source_tag($arg);
-    } else {
-	return $self->feature1->source_tag;
-    }
-}
-
-=head2 seqname
-
- Title   : seqname
- Usage   : $obj->seqname($newval)
- Function: There are many cases when you make a feature that you
-           do know the sequence name, but do not know its actual
-           sequence. This is an attribute such that you can store 
-           the seqname.
-
-           This attribute should *not* be used in GFF dumping, as
-           that should come from the collection in which the seq
-           feature was found.
- Returns : value of seqname
- Args    : newvalue (optional)
-
-
-=cut
-
-sub seqname{
-    my ($self,$arg) = @_;
-    
-    if (defined($arg)) {
-	return $self->feature1->seqname($arg);
-    } else {
-	return $self->feature1->seqname;
-    }
-}
 
 =head2 hseqname
 
@@ -385,10 +226,10 @@ sub hseqname {
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	$self->feature2->seqname($arg);
+      $self->{_hseqname} = $arg;
     }
 
-    return $self->feature2->seqname;
+    return $self->{_hseqname};
 }
 
 
@@ -404,14 +245,13 @@ sub hseqname {
 =cut
 
 sub hstart {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) {
-	return $self->feature2->start($value);
-    } else {
-	return $self->feature2->start;
-    }
-
+  my ($self,$value) = @_;
+  
+  if (defined($value)) {
+    $self->{_hstart} = $value;
+  }
+  
+  return $self->{_hstart};
 }
 
 =head2 hend
@@ -423,20 +263,17 @@ sub hstart {
  Returns : integer
  Args    : none
 
-
 =cut
 
 sub hend{
     my ($self,$value) = @_;
 
     if (defined($value)) {
-	return $self->feature2->end($value);
-    } else {
-	return $self->feature2->end;
+      $self->{_hend} = $value;
     }
+
+    return $self->{_hend};
 }
-
-
 
 =head2 hstrand
 
@@ -447,106 +284,19 @@ sub hend{
  Returns : -1,1 or 0
  Args    : none
 
-
 =cut
 
 sub hstrand{
     my ($self,$arg) = @_;
 
     if (defined($arg)) {
-	return $self->feature2->strand($arg);
-    } else {
-	return $self->feature2->strand;
-    }
-}
-
-=head2 hscore
-
- Title   : hscore
- Usage   : $score = $feat->score()
-           $feat->score($score)
- Function: get/set on score information
- Returns : float
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub hscore {
-    my ($self,$arg) = @_;
-  
-    if (defined($arg)) {
-	return $self->feature2->score($arg);
-    } else {
-	return $self->feature2->score;
-    }
-}
-
-=head2 hframe
-
- Title   : hframe
- Usage   : $frame = $feat->frame()
-           $feat->frame($frame)
- Function: get/set on frame information
- Returns : 0,1,2
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub hframe {
-    my ($self,$arg) = @_;
+      $self->{_hstrand} = $arg;
+    } 
     
-    if (defined($arg)) {
-	return $self->feature2->frame($arg);
-    } else { 
-	return $self->feature2->frame;
-    }
+    return $self->{_hstrand};
 }
 
-=head2 hprimary_tag
 
- Title   : hprimary_tag
- Usage   : $ptag = $featpair->hprimary_tag
- Function: Get/set on the primary_tag of feature2
- Returns : 0,1,2
- Args    : none if get, the new value if set
-
-
-=cut
-
-sub hprimary_tag{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature2->primary_tag($arg);
-    } else {
-	return $self->feature2->primary_tag;
-    }
-}
-
-=head2 hsource_tag
-
- Title   : hsource_tag
- Usage   : $tag = $feat->hsource_tag()
-           $feat->source_tag('genscan');
- Function: Returns the source tag for a feature,
-           eg, 'genscan' 
- Returns : a string 
- Args    : none
-
-
-=cut
-
-sub hsource_tag{
-    my ($self,$arg) = @_;
-
-    if (defined($arg)) {
-	return $self->feature2->source_tag($arg);
-    } else {
-	return $self->feature2->source_tag;
-    }
-}
 
 =head2 invert
 
@@ -562,140 +312,12 @@ sub hsource_tag{
 sub invert {
     my ($self) = @_;
 
-    my $tmp = $self->feature1;
-    
-    $self->feature1($self->feature2);
-    $self->feature2($tmp);
+    my $tmp = $self->feature2;
 
+
+    $self->feature2($self->feature1);
+    $self->feature1($tmp);
 }
-
-=head2 sub_SeqFeature
-
- Title   : sub_SeqFeature
- Usage   : Function just for complying with SeqFeatureI
- Function:
- Example :
- Returns : an empty list
- Args    :
-
-
-=cut
-
-sub sub_SeqFeature{
-   my ($self,@args) = @_;
-
-   return ();
-}
-
-=head2 all_tags
-
- Title   : all_tags
- Usage   : Function just for complying with SeqFeatureI
- Function:
- Example :
- Returns : an empty list
- Args    :
-
-
-=cut
-
-sub all_tags{
-   my ($self,@args) = @_;
-   return ();
-
-}
-
-
-=head2 analysis
-
- Title   : analysis
- Usage   : $sf->analysis();
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub analysis{
-   my ($self,$value) = @_;
-
-   if( defined $value ) {
-       $self->throw("Trying to add a non analysis object $value!") unless (ref $value && $value->isa('Bio::EnsEMBL::Analysis'));
-       $self->{_analysis} = $value;
-   }
-
-   if (defined($self->feature1)) { $self->feature1->analysis($value);}
-   if (defined($self->feature2)) { $self->feature2->analysis($value);}
-
-   if (defined($self->{_analysis})) {
-       return $self->{_analysis};
-   } else {
-       return $self->feature1->analysis;
-   }
-   return $self->{_analysis};
-}
-
-
-
-=head2 seq
-
- Title   : seq
- Usage   : $tseq = $sf->seq()
- Function: returns the truncated sequence (if there) for this
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub seq{
-   my ($self,$arg) = @_;
-
-   return $self->feature1()->seq($arg);
-}
-
-
-=head2 attach_seq
-
- Title   : attach_seq
- Usage   : $sf->attach_seq($seq)
- Function: Attaches a Bio::PrimarySeqI object to this feature. This
-           Bio::PrimarySeqI object is for the *entire* sequence: ie
-           from 1 to 10000
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub attach_seq{
-   my ($self,$seq) = @_;
-
-   return $self->feature1()->attach_seq($seq);
-}
-
-=head2 entire_seq
-
- Title   : entire_seq
- Usage   : $whole_seq = $sf->entire_seq()
- Function: gives the entire sequence that this seqfeature is attached to
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub entire_seq{
-   my ($self) = @_;
-
-   return $self->feature1()->entire_seq();
-}
-
 
 =head2 validate
 
@@ -713,26 +335,19 @@ sub entire_seq{
 =cut
 
 sub validate {
-    my ($self) = @_;
-
-    # First the features;
-
-    $self->throw("Empty or wrong type of feature1 object") unless defined($self->feature1)   && 
-	                                             ref($self->feature1) ne "" && 
-						     $self->feature1->isa("Bio::EnsEMBL::SeqFeatureI");
-    $self->throw("Empty or wrong type of feature1 object ") unless defined($self->feature2) &&
-	                                             ref($self->feature2) ne "" && 
-						     $self->feature2->isa("Bio::EnsEMBL::SeqFeatureI");
-
-    $self->feature1->validate();
-    $self->feature2->validate();
-
-    # Now the analysis object
-    if (defined($self->analysis)) {
-	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::Analysis");
-    } else {
-	$self->throw("No analysis object defined");
+  my ($self) = @_;
+  
+  $self->SUPER::validate();
+  $self->feature2->validate();
+  
+  # Now the analysis object
+  if (defined($self->analysis)) {
+    unless($self->analysis->isa("Bio::EnsEMBL::Analysis")) {
+      $self->throw("Wrong type of analysis object");
     }
+  } else {
+    $self->throw("No analysis object defined");
+  }
 }
 
 =head2 validate_prot_feature
@@ -744,31 +359,22 @@ sub validate {
  Returns : 
  Args    :
 
-
 =cut
 
 sub validate_prot_feature{
    my ($self) = @_;
- # First the features;
 
-    $self->throw("Empty or wrong type of feature1 object") unless defined($self->feature1)   && 
-	                                             ref($self->feature1) ne "" && 
-						     $self->feature1->isa("Bio::EnsEMBL::SeqFeatureI");
-    $self->throw("Empty or wrong type of feature1 object ") unless defined($self->feature2) &&
-	                                             ref($self->feature2) ne "" && 
-						     $self->feature2->isa("Bio::EnsEMBL::SeqFeatureI");
+   $self->SUPER::validate_prot_feature(1);
+   $self->feature2->validate_prot_feature(2);
 
-    $self->feature1->validate_prot_feature(1);
-    $self->feature2->validate_prot_feature(2);
-
-    # Now the analysis object
-    if (defined($self->analysis)) {
-	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::Analysis");
-    } else {
-	$self->throw("No analysis object defined");
-    }
-
-}
+   if (defined($self->analysis)) {
+     unless($self->analysis->isa("Bio::EnsEMBL::Analysis")) {
+       $self->throw("Wrong type of analysis object");
+     }
+   } else {
+     $self->throw("No analysis object defined");
+   }
+ }
 
 =head2 set_featurepair_fields
 
@@ -786,7 +392,7 @@ sub set_featurepair_fields {
    my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
         $hstrand, $hscore, $hseqname, $analysis, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
-   #print STDERR "start ".$start." end ".$end." strand ".$strand." score ".$score." seqname ".$seqname." hstart ".$hstart." hend ".$hend." hstrand ".$hstrand." hscore ".$hscore." hseqname ".$hseqname." analysis ".$analysis." e_vlaue ".$e_value." pid ".$perc_id." phase ".$phase." end phase ".$end_phase."\n";
+   
    $self->throw('interface fault') if (@_ < 12 or @_ > 16);
 
    $self->start($start);
@@ -807,11 +413,11 @@ sub set_featurepair_fields {
 }
 
 sub set_all_fields{
-   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,
-        $hstrand,$hscore, $hsource,$hprimary,$hseqname, $e_value, $perc_id, 
-        $phase, $end_phase) = @_;
+   my ($self, $start, $end, $strand, $score, $source, $primary, $seqname,
+       $hstart, $hend, $hstrand, $hscore, $hsource, $hprimary, $hseqname, 
+       $e_value, $perc_id, $phase, $end_phase) = @_;
     
-    $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments! $!");
+   $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments! $!");
 
     $self->start($start);
     $self->end($end);
@@ -831,8 +437,6 @@ sub set_all_fields{
     $self->percent_id ($perc_id)   if (defined $perc_id);
     $self->phase      ($phase)     if (defined $phase);
     $self->end_phase  ($end_phase) if (defined $end_phase);
-
-
 }
 
 =head2 to_FTHelper
@@ -870,20 +474,9 @@ sub to_FTHelper{
    $fth->add_field('note', "$type: matches $r_start to $r_end");
    $fth->add_field('note', "score=".$self->score);
    
-   
    return $fth;
 }
 
-sub id {
-    my ($self,$value) = @_;
-
-    if (defined($value)) {
-	return $self->feature1->id($value);
-    }
-    
-    return $self->feature1->id;
-
-}
 
 sub gffstring {
     my ($self) = @_;
@@ -913,28 +506,153 @@ sub gffstring {
     return $str;
 }
 
-=head2 percent_id
 
- Title   : percent_id
- Usage   : $percent_id = $featpair->percent_id
-           $featpair->percent_id($pid)
- Function: Get/set on the percent_id of feature1
- Returns : integer
+
+
+=head2 hphase
+
+ Title   : hphase
+ Usage   : $hphase = $fp->hphase()
+           $fp->hphase($hphase)
+ Function: get/set on start hphase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hphase {
+  my ($self, $value) = @_;
+  
+  if (defined($value)) {
+    $self->{_hphase} = $value;
+  }
+  
+  return $self->{_hphase};
+}
+
+
+=head2 hend_phase
+
+ Title   : hend_phase
+ Usage   : $hend_phase = $feat->hend_phase()
+           $feat->hend_phase($hend_phase)
+ Function: get/set on end phase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hend_phase {
+  my ($self, $value) = @_;
+    
+  if (defined($value)) {
+    $self->{_hend_phase} = $value;
+  }
+  
+  return $self->{_hend_phase};
+}
+
+
+
+
+
+
+=head2 hscore
+
+ Title   : hscore
+ Usage   : $score = $feat->score()
+           $feat->score($score)
+ Function: get/set on score information
+ Returns : float
+ Args    : none if get, the new value if set
+
+
+=cut
+
+sub hscore {
+    my ($self,$arg) = @_;
+
+    $self->warn("FeaturePair::hscore is deprecated.  " .
+		"Just use FeaturePair::score");
+    
+    if (defined($arg)) {
+	$self->{_hscore} = $arg;
+    } 
+
+    return $self->{_hscore};
+}
+
+
+=head2 hframe
+
+ Title   : hframe
+ Usage   : $frame = $feat->frame()
+           $feat->frame($frame)
+ Function: get/set on frame information
+ Returns : 0,1,2
+ Args    : none if get, the new value if set
+
+=cut
+
+sub hframe {
+  my ($self,$arg) = @_;
+ 
+  $self->warn("FeaturePair::hframe is deprecated just use FeaturePair::frame");
+ 
+  if (defined($arg)) {
+    $self->{_hframe} = $arg;
+  } 
+  
+  return $self->{_hframe};
+}
+
+=head2 hprimary_tag
+
+ Title   : hprimary_tag
+ Usage   : $ptag = $featpair->hprimary_tag
+ Function: Get/set on the primary_tag of feature2
+ Returns : 0,1,2
+ Args    : none if get, the new value if set
+
+=cut
+
+sub hprimary_tag{
+  my ($self,$arg) = @_;
+  
+  $self->warn("FeaturePair::hprimary_tag is deprecated, this is now part of" .
+	      "the analysis object accessable by FeaturePair::analysis");
+  
+  if (defined($arg)) {
+    $self->{_hprimary_tag} = $arg;
+  }
+
+  return $self->{_hprimary_tag};
+}
+
+=head2 hsource_tag
+
+ Title   : hsource_tag
+ Usage   : $tag = $feat->hsource_tag()
+           $feat->source_tag('genscan');
+ Function: Returns the source tag for a feature,
+           eg, 'genscan' 
+ Returns : a string 
  Args    : none
 
 =cut
 
-sub percent_id {
-    my ($self,$value) = @_;
-    
-    if (defined($value)) 
-    {
-	    return $self->feature1->percent_id($value);
-    }     
-	return $self->feature1->percent_id();
+sub hsource_tag{
+    my ($self,$arg) = @_;
 
+ $self->warn("FeaturePair::hprimary_tag is deprecated, this is now part of" .
+	      "the analysis object accessable by FeaturePair::analysis");
+
+    if (defined($arg)) {
+	$self->{_hsource_tag} = $arg;
+    }
+
+    return $self->{_hsource_tag};
 }
-
 
 =head2 hpercent_id
 
@@ -950,34 +668,16 @@ sub percent_id {
 sub hpercent_id {
     my ($self,$value) = @_;
     
-    if (defined($value)) 
-    {
-	    return $self->feature2->percent_id($value);
+    $self->warn("FeaturePair::hpercent_id is deprecated " .
+		"Just use FeaturePair::percent_id");
+
+    if (defined($value)) {
+      $self->{_hpercent_id} = $value;
     }     
-	return $self->feature2->percent_id();
-}
-
-=head2 p_value
-
- Title   : p_value
- Usage   : $p_value = $featpair->p_value
-           $featpair->p_value($p_value)
- Function: Get/set on the p_value of feature1
- Returns : integer
- Args    : none
-
-=cut
-
-sub p_value {
-    my ($self,$value) = @_;
     
-    if (defined($value)) 
-    {
-	    return $self->feature1->p_value($value);
-    }     
-	return $self->feature1->p_value();
-
+    return $self->{_hpercent_id};
 }
+
 
 =head2 hp_value
 
@@ -991,139 +691,17 @@ sub p_value {
 =cut
 
 sub hp_value {
-    my ($self,$value) = @_;
+  my ($self,$value) = @_;
+
+  $self->warn("FeaturePair::hp_value is deprecated. " .
+	      "Just use FeaturePair::p_value"); 
     
-    if (defined($value)) 
-    {
-	    return $self->feature2->p_value($value);
-    }     
-	return $self->feature2->p_value();
+  if($value) {
+    $self->{_hp_value} = $value;
+  }
+
+  return $self->{_hp_value};
 }
 
-=head2 phase
-
- Title   : phase
- Usage   : $phase = $feat->phase()
-           $feat->phase($phase)
- Function: get/set on start phase of predicted feature1
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature1->phase($value);
-    }
-    return $self->feature1->phase();
-}
-
-
-
-=head2 end_phase
-
- Title   : end_phase
- Usage   : $end_phase = $feat->end_phase()
-           $feat->end_phase($end_phase)
- Function: get/set on end phase of predicted feature1
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub end_phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature1->end_phase($value);
-    }
-    return $self->feature1->end_phase();
-}
-
-=head2 hphase
-
- Title   : hphase
- Usage   : $hphase = $fp->hphase()
-           $fp->hphase($hphase)
- Function: get/set on start hphase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub hphase {
-    my ($self, $value) = @_;
-    if (defined($value)) 
-    {
-        $self->feature2->phase($value);
-    }
-    return $self->feature2->phase();
-    
-}
-
-=head2 hend_phase
-
- Title   : hend_phase
- Usage   : $hend_phase = $feat->hend_phase()
-           $feat->hend_phase($hend_phase)
- Function: get/set on end phase of predicted feature2
- Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
-
-=cut
-
-sub hend_phase {
-    my ($self, $value) = @_;
-    
-    if (defined($value)) 
-    {
-        $self->feature2->end_phase($value);
-    }
-    return $self->feature2->end_phase();
-}
-
-
-# SeqFeature compliance
-
-=head2 has_tag
-
- Title   : has_tag
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub has_tag{
-   my ($self,@args) = @_;
-
-   return 0;
-}
-
-
-#
-# Bioperl 0.7 compliance
-#
-sub location {
-    my ($self) = @_;
-    return $self;
-}
-
-sub to_FTstring {
-    my ($self) = @_;
-    
-    if( $self->strand == 1 ) {
-	return $self->start."..".$self->end;
-    } else {
-	return "complement(".$self->start."..".$self->end.")";
-    }
-}
 
 1;

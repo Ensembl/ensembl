@@ -144,45 +144,52 @@ sub generic_fetch {
 
 =cut
 
-sub _obj_from_hashref {
-  my ($self, $hashref) = @_;
+sub _obj_from_sth {
+  my ($self, $sth) = @_;
 
   my $rca = $self->db()->get_RepeatConsensusAdaptor();
-
-  #create a repeat consensus object
-  my $rc = new Bio::EnsEMBL::RepeatConsensus;
-  $rc->dbID($hashref->{'repeat_consensus_id'});
-  $rc->repeat_class($hashref->{'repeat_class'});
-  $rc->name($hashref->{'repeat_name'});
-  $rc->repeat_consensus($hashref->{'repeat_consensus'});
-  $rc->adaptor($rca);
-
-  #get the analysis object for this repeat
-  my $aa = $self->db->get_AnalysisAdaptor();
-  my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
-
-  #create the new repeat feature
-  my $r = new Bio::EnsEMBL::RepeatFeature;
-  $r->dbID($hashref->{'repeat_feature_id'});
-
-  $r->start($hashref->{'contig_start'});
-  $r->end($hashref->{'contig_end'});
-
-  $r->score($hashref->{'score'});
-  $r->strand( $hashref->{'contig_strand'} );  
-  $r->hstart( $hashref->{'repeat_start'} );
-  $r->hend( $hashref->{'repeat_end'} );
-
-  $r->analysis($analysis);
-  $r->repeat_consensus($rc);
-  $r->adaptor($self);
-
-  #attach the appropriate contig to this sequence
   my $ca = $self->db()->get_RawContigAdaptor();
-  my $contig = $ca->fetch_by_dbID($hashref->{'contig_id'});
-  $r->attach_seq($contig);
- 
-  return $r;
+  my $aa = $self->db->get_AnalysisAdaptor();
+
+  my $hashref;
+  my @features = ();
+
+  while($hashref = $sth->fetchrow_hashref()) {
+    #create a repeat consensus object
+    my $rc = new Bio::EnsEMBL::RepeatConsensus;
+    $rc->dbID($hashref->{'repeat_consensus_id'});
+    $rc->repeat_class($hashref->{'repeat_class'});
+    $rc->name($hashref->{'repeat_name'});
+    $rc->repeat_consensus($hashref->{'repeat_consensus'});
+    $rc->adaptor($rca);
+    
+    my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
+
+    #create the new repeat feature
+    my $r = new Bio::EnsEMBL::RepeatFeature;
+    $r->dbID($hashref->{'repeat_feature_id'});
+    
+    $r->start($hashref->{'contig_start'});
+    $r->end($hashref->{'contig_end'});
+    
+    $r->score($hashref->{'score'});
+    $r->strand( $hashref->{'contig_strand'} );  
+    $r->hstart( $hashref->{'repeat_start'} );
+    $r->hend( $hashref->{'repeat_end'} );
+    
+    $r->analysis($analysis);
+    $r->repeat_consensus($rc);
+    $r->adaptor($self);
+
+    #attach the appropriate contig to this sequence
+    my $contig = $ca->fetch_by_dbID($hashref->{'contig_id'});
+    
+    $r->attach_seq($contig);
+    
+    push @features, $r;
+  }
+  
+  return \@features;
 }
   
 

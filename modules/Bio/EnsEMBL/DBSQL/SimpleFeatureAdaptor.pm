@@ -141,43 +141,49 @@ sub _columns {
 }
 
 
-=head2 _obj_from_hashref
+=head2 _objs_from_sth
 
   Arg [1]    : hash reference $hashref
   Example    : none
-  Description: PROTECTED implementation of superclass abstranct method.
-               creates SimpleFeatures from a SQL query result formatted as
-               a hashreference
+  Description: PROTECTED implementation of superclass abstract method.
+               creates SimpleFeatures from an executed DBI statement handle.
   Returntype : Bio::EnsEMBL::SimpleFeature
   Exceptions : none
   Caller     : internal
 
 =cut
 
-sub _obj_from_hashref {
-  my ($self, $hashref) = @_;
+sub _objs_from_sth {
+  my ($self, $sth) = @_;
 
-  my $aa = $self->db()->get_AnalysisAdaptor();
-  my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
-  
+  my $aa = $self->db()->get_AnalysisAdaptor();  
   my $rca = $self->db()->get_RawContigAdaptor();
-  my $contig = $rca->fetch_by_dbID($hashref->{'contig_id'});
 
-  my $out = Bio::EnsEMBL::SimpleFeature->new();
-  $out->start($hashref->{'contig_start'});
-  $out->end($hashref->{'contig_end'});
-  $out->strand($hashref->{'contig_strand'});
-  $out->analysis($analysis);
-  $out->display_label($hashref->{'display_label'});
-  $out->attach_seq($contig); 
+  my @features = ();
+  
+  my $hashref;
+  while($hashref = $sth->fetchrow_hashref()) {
+    my $contig = $rca->fetch_by_dbID($hashref->{'contig_id'});
+    my $analysis = $aa->fetch_by_dbID($hashref->{'analysis_id'});
 
-  if($hashref->{'score'}) {
-    $out->score($hashref->{'score'});
+    my $out = Bio::EnsEMBL::SimpleFeature->new();
+    $out->start($hashref->{'contig_start'});
+    $out->end($hashref->{'contig_end'});
+    $out->strand($hashref->{'contig_strand'});
+    $out->analysis($analysis);
+    $out->display_label($hashref->{'display_label'});
+    $out->attach_seq($contig); 
+
+    if($hashref->{'score'}) {
+      $out->score($hashref->{'score'});
+    }
+    
+    $out->dbID($hashref->{'simple_feature_id'});
+
+    push @features, $out;
   }
 
-  $out->dbID($hashref->{'simple_feature_id'});
-
-  return $out;
+  return \@features;
 }
 
 1;

@@ -79,8 +79,7 @@ sub new {
   #Initialize caching data structures
   tie(%{$self->{_raw_contig_cache}}, 
       'Bio::EnsEMBL::Utils::Cache', 
-      $RAW_CONTIG_CACHE_SIZE, 
-      {Debug =>0});
+      $RAW_CONTIG_CACHE_SIZE);
 
   return $self;
 }

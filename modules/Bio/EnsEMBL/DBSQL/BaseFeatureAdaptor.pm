@@ -48,9 +48,37 @@ use strict;
 # Object preamble - inherits from Bio::EnsEMBL::Root
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+my $SLICE_FEATURE_CACHE_SIZE = 12;
+
+
+=head2 new
+
+  Arg [1]    : list of args @args
+               Superclass constructor arguments
+  Example    : none
+  Description: Constructor which just initializes internal cache structures
+  Returntype : Bio::EnsEMBL::BaseFeatureAdaptor
+  Exceptions : none
+  Caller     : implementing subclass constructors
+
+=cut
+
+sub new {
+  my ($class, @args) = @_;
+
+  my $self = $class->SUPER::new(@args);
+
+  #initialize caching data structures
+  tie(%{$self->{'_slice_feature_cache'}}, 
+      'Bio::EnsEMBL::Utils::Cache',
+      $SLICE_FEATURE_CACHE_SIZE);
+
+  return $self;
+}
 
 =head2 generic_fetch
 
@@ -100,16 +128,12 @@ sub generic_fetch {
   }
   
   my $sth = $self->prepare($sql);
-  $sth->execute();
-  
-  my $hashref;
-  my @out;
 
-  while($hashref = $sth->fetchrow_hashref()) {
-    push @out, $self->_obj_from_hashref($hashref);
-  }
+  #print STDERR "SQL START\n\n";
+  $sth->execute();
+  #print STDERR "SQL END\n";
   
-  return @out;
+  return $self->_objs_from_sth($sth);
 }
 
 
@@ -137,7 +161,7 @@ sub fetch_by_dbID{
   my $constraint = "${tablename}_id = $id";
 
   #return first element of _generic_fetch list
-  my ($feat) = $self->generic_fetch($constraint); 
+  my ($feat) = @{$self->generic_fetch($constraint)}; 
   return $feat;
 }
 
@@ -239,10 +263,7 @@ sub fetch_by_Contig_and_score{
     $constraint = "score > $score";
   }
     
-  my @features = 
-    $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
-  
-  return @features;
+  return $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
 }
 
 
@@ -269,6 +290,13 @@ sub fetch_by_Contig_and_score{
 sub fetch_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
+  my $key = join($slice->name, $constraint, $logic_name);
+  
+  #check the cache
+  if($self->{'_slice_feature_cache'}{$key}) {
+    return @{$self->{'_slice_feature_cache'}{$key}};
+  }
+
   if(!$slice){
     $self->throw("need a slice to work\n");
   }
@@ -276,7 +304,7 @@ sub fetch_by_Slice_constraint {
     $self->throw("$slice isn't a slice");
   }
 
-  my @features = 
+  my $features = 
     $self->fetch_by_assembly_location_constraint($slice->chr_start,
 						 $slice->chr_end,
 						 $slice->chr_name,
@@ -285,7 +313,7 @@ sub fetch_by_Slice_constraint {
 						 $logic_name);
 
   #convert from chromosomal coordinates to slice coordinates
-  foreach my $f (@features){
+  foreach my $f (@$features){
     my $start = ($f->start - ($slice->chr_start - 1));
     my $end = ($f->end - ($slice->chr_start - 1));
    
@@ -294,7 +322,10 @@ sub fetch_by_Slice_constraint {
     $f->attach_seq($slice);
   }
 
-  return @features;
+  #update the cache
+  $self->{'_slice_feature_cache'}{$key} = $features;
+
+  return @$features;
 }
 
 
@@ -372,7 +403,7 @@ sub fetch_by_Slice_and_score {
   Arg [5]    : (optional) string $logic_name
                the logic name of the type of features to obtain
   Example    : @feats = $adaptor->fetch_by_assembly_location(1, 10000, '9', 'NCBI30');
-  Description: Returns a list of features created from the database which are 
+  Description: Returns a listref of features created from the database which 
                are in the assembly region defined by $start, $end, and $chr. 
                If $logic_name is defined, only features with an analysis 
                of type $logic_name will be returned.
@@ -413,7 +444,8 @@ sub fetch_by_assembly_location{
                and with a percentage identity greater than $pid.  If 
                $logic_name is defined, only features with an analysis of type 
                $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
+  Returntype : listref of Bio::EnsEMBL::*AlignFeature in 
+               chromosomal coordinates
   Exceptions : thrown if $score is not defined
   Caller     : general
 
@@ -456,7 +488,8 @@ sub fetch_by_assembly_location_and_score{
                and with a percentage identity greater than $pid.  If 
                $logic_name is defined, only features with an analysis of type 
                $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*AlignFeature in chromosomal coordinates
+  Returntype : listref of Bio::EnsEMBL::*AlignFeature in chromosomal 
+               coordinates
   Exceptions : thrown if $score is not defined
   Caller     : BaseFeatureAdaptor
 
@@ -491,12 +524,12 @@ sub fetch_by_assembly_location_constraint {
     $constraint = "contig_id IN ($cid_list)";
   }
   
-  my @features = $self->generic_fetch($constraint, $logic_name); 
+  my $features = $self->generic_fetch($constraint, $logic_name); 
 
   my @out;
-
+  
   #convert the features to assembly coordinates from raw contig coordinates
-  foreach my $f (@features) {
+  while(my $f = shift @$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $contig_id = $f->entire_seq->dbID();
     my @coord_list = 
@@ -526,14 +559,10 @@ sub fetch_by_assembly_location_constraint {
     $f->strand($coord->strand());
     #$f->seqname($coord->id());
 
-    #
-    # Should we attach a slice of the entire chromosome here? (mcvicker)
-    #
-
     push(@out,$f);
   }
   
-  return @out;
+  return \@out;
 }
 
 
@@ -620,6 +649,26 @@ sub _obj_from_hashref {
   $self->throw("abstract method _obj_from_hashref not defined by implementing"
              . " subclass of AlignFeatureAdaptor");
 } 
+
+
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none
+  Description: Cleans up internal caches and references to other objects so
+               that correct garbage collection may occur.
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBConnection::deleteObj
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  #flush feature cache
+  %{$self->{'_slice_feature_cache'}} = ();
+}
 
 1;
 
