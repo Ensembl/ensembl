@@ -110,7 +110,7 @@ sub usage {
  with parameters -host [hostname] -user [username with write permit] 
                  -pass [password] -port [portnumber]
  on all databases that match -dbpattern [some_db_regexp]
- on -gene, -repeat, -stats/-genestats/-snpstats, -gc.
+ on -gene, -repeat, -snp, -stats/-genestats/-snpstats, -gc.
 
  Without -dbpattern it lists all available databases and does nothing.
 
