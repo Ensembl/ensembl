@@ -250,7 +250,8 @@ sub do_sql_file {
         
 	#Modified split statement, only semicolumns before end of line,
 	#so we can have them inside a string in the statement
-        foreach my $s (grep /\S/, split /;\n/, $sql) {
+	#\s*\n, takes in account the case when there is space before the new line
+        foreach my $s (grep /\S/, split /;\s*\n/, $sql) {
             $self->validate_sql($s);
             $dbh->do($s);
             $i++
