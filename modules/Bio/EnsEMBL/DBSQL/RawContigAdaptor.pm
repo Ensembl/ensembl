@@ -535,47 +535,6 @@ sub deleteObj {
 
 
 
-
-=head2 fetch_by_clone
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Clone instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_clone {
-  my ($self, @args) = @_;
-  
-  print STDERR "fetch_by_clone has been renamed fetch_all_by_Clone\n" . caller;
-
-  return $self->fetch_by_Clone(@args);
-}
-
-
-=head2 fetch_by_Clone
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Clone instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Clone {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Clone has been renamed fetch_all_by_Clone\n" . caller);
-
-  return $self->fetch_all_by_Clone(@args);
-}
-
-
 =head2 remove
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig

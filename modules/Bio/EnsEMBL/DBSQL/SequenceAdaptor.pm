@@ -305,31 +305,4 @@ sub _reverse_comp {
 }
 
 
-
-
-
-
-=head2 fetch_by_Contig_start_end_strand
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_by_RawContig_start_end_strand instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Contig_start_end_strand {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Contig_start_end_strand has been renamed fetch_by_RawContig_start_end_strand\n" . caller);
-
-  return $self->fetch_by_RawContig_start_end_strand(@args);
-}
-
-
-
-
-
 1;

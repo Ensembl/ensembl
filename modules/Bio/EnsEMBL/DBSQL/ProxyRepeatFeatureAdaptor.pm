@@ -68,24 +68,5 @@ sub fetch_all_by_Slice {
 }
 
 
-=head2 fetch_by_Slice
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
-
-  return $self->fetch_all_by_Slice(@args);
-}
-
 1;
 
