@@ -115,32 +115,26 @@ foreach my $slice ( @$slices ) {
     my $blocksize = $density_type->block_size();
     $current_start = 1;
 
-    my @density_features=();
-
     while($current_start <= $slice->end()) {
       $current_end = $current_start+$blocksize-1;
       if( $current_end > $slice->end() ) {
-	$current_end = $slice->end();
+        $current_end = $slice->end();
       }
 
       my $sub_slice = $slice->sub_Slice( $current_start, $current_end );
 
       my $gc = $sub_slice->get_base_count()->{'%gc'};
-      push @density_features, Bio::EnsEMBL::DensityFeature->new
-	(-seq_region    => $slice,
-	 -start         => $current_start,
-	 -end           => $current_end,
-	 -density_type  => $density_type,
-	 -density_value => $gc);
+      my $df =  Bio::EnsEMBL::DensityFeature->new
+        (-seq_region    => $slice,
+         -start         => $current_start,
+         -end           => $current_end,
+         -density_type  => $density_type,
+         -density_value => $gc);
+
+      $dfa->store($df);
 
       $current_start = $current_end+1;
     }
-
-    $dfa->store(@density_features);
-    print "Created ",scalar @density_features, " %GC density features ";
-    print "for seq_region ", $slice->seq_region_name(),"\n";
-
-    # print_features(\@density_features);
   }
 }
 

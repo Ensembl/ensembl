@@ -85,8 +85,6 @@ foreach my $slice (@$top_slices){
 
   $current_start = 1;
 
-  my @density_features=();
-
   print "SNP densities for ".$slice->seq_region_name().
     " with block size $block_size\n";
 
@@ -104,14 +102,13 @@ foreach my $slice (@$top_slices){
     #
     #  How many snps fall into this subslice
     #
-    
     foreach my $snp (@{$sub_slice->get_all_SNPs()}){
       if( $snp->start >= 1 ) {
-	$count++
+        $count++
       }
     }
 
-    push @density_features, Bio::EnsEMBL::DensityFeature->new
+    my $df = Bio::EnsEMBL::DensityFeature->new
       (-seq_region    => $slice,
        -start         => $current_start,
        -end           => $current_end,
@@ -120,10 +117,8 @@ foreach my $slice (@$top_slices){
 
     $current_start = $current_end + 1;
 
+    $dfa->store($df);
   }
-  $dfa->store(@density_features);
-  print "Created ", scalar @density_features, " snp density features.\n";
-  # print_features(\@density_features);
 }
 
 

@@ -107,12 +107,10 @@ foreach my $slice ( @$slices ) {
     my $blocksize = $density_type->block_size();
     $current_start = 1;
 
-    my @density_features=();
-
     while($current_start <= $slice->end()) {
       $current_end = $current_start+$blocksize-1;
       if( $current_end > $slice->end() ) {
-	$current_end = $slice->end();
+        $current_end = $slice->end();
       }
       my $this_block_size = $current_end - $current_start + 1;
 
@@ -122,35 +120,29 @@ foreach my $slice ( @$slices ) {
       my $rr = Bio::EnsEMBL::Mapper::RangeRegistry->new();
 
       foreach my $repeat (@{$sub_slice->get_all_RepeatFeatures()}){
-	$rr->check_and_register("1",$repeat->start,$repeat->end);
+        $rr->check_and_register("1",$repeat->start,$repeat->end);
       }
 
       my $count = 0;
       my $non_repeats = $rr->check_and_register("1",1,$this_block_size);
       if( defined $non_repeats ) {
-	foreach my $non_repeat ( @$non_repeats ) {
-	  $count += ($non_repeat->[1]-$non_repeat->[0])+1;
-	}
-      } 
-	
+        foreach my $non_repeat ( @$non_repeats ) {
+          $count += ($non_repeat->[1]-$non_repeat->[0])+1;
+        }
+      }
 
-      print "repeat-> ".$count." are none repeat regions out of $this_block_size\n";
       my $percentage_repeat = (($this_block_size-$count)/$this_block_size)*100;
-      push @density_features, Bio::EnsEMBL::DensityFeature->new
-	(-seq_region    => $slice,
-	 -start         => $current_start,
-	 -end           => $current_end,
-	 -density_type  => $density_type,
-	 -density_value => $percentage_repeat);
+      my $df = Bio::EnsEMBL::DensityFeature->new
+        (-seq_region    => $slice,
+         -start         => $current_start,
+         -end           => $current_end,
+         -density_type  => $density_type,
+         -density_value => $percentage_repeat);
+
+      $dfa->store($df);
 
       $current_start = $current_end + 1;
     }
-
-    $dfa->store(@density_features);
-    print STDERR "Created ",scalar @density_features," repeat density features ";
-    print STDERR "for ",$slice->seq_region_name(),"\n";
-
-#    print_features(\@density_features);
   }
 }
 
