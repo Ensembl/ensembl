@@ -276,11 +276,8 @@ foreach my $clone_id ( @clones ) {
 
     eval {
 	my $clone = $db->get_Clone($clone_id);
-	print(STDERR "ick\n");
 	my $as    = $clone->virtualcontig;
-	print(STDERR "wor\n");
 	$as->skip_SeqFeature('similarity',1);
-	print(STDERR "pog\n");
 	# choose output mode
 	
 	# test clone check call
@@ -292,7 +289,7 @@ foreach my $clone_id ( @clones ) {
 	    }
 	}
 
-	my $debug = 1;
+	my $debug = 0;
 	if($debug){
 	    # debug tests
 	    my $id=$clone->id;
@@ -308,7 +305,7 @@ foreach my $clone_id ( @clones ) {
 	    }
 	    exit 0;
 	}
-
+        print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
 	    foreach my $contig ( $clone->get_all_Contigs )  {
 		my @seqfeatures = $contig->as_seqfeatures();
