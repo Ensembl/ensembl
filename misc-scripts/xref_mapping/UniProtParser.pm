@@ -188,13 +188,12 @@ sub create_xrefs {
 	  $dep{SOURCE_NAME} = $source;
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
-	  # some xref types have additional information
-	  if ($source =~ /GO/) {
-	    my ($go_linkage_type) = $extra[1] =~ /(\w+)/;
-	    $dep{LINKAGE_ANNOTATION} = $go_linkage_type;
-	    $dep{LABEL} = $extra[0];
+	  if($dep =~ /EMBL/){
+	    my ($protein_id) = $extra[0];
+	    if($protein_id ne "-"){
+	      $dep{PROTEIN_ID} = $protein_id;
+	    }
 	  }
-	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	}
       }
     }
