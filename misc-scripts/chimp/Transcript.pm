@@ -334,7 +334,7 @@ sub make_Transcript {
   foreach my $iexon (@{$itrans->get_all_Exons}) {
     my $slice =
       $slice_adaptor->fetch_by_region('chromosome', $iexon->seq_region,
-                                     undef, undef,undef, 'BROAD1');
+                                     undef, undef,undef, 'CHIMP1');
 
     my $exon = Bio::EnsEMBL::Exon->new
       (-START     => $iexon->start(),
