@@ -116,11 +116,13 @@ sub _initialize {
     # loop over transcripts
     my $count = 1;
 
+    $self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+
     foreach my $g ($gs->each_Transcript) {
 	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
 	
 	foreach my $msp (@$msptype) {
-      
+	    
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
 	    my $pid            = "$id.$count";
 
@@ -131,7 +133,7 @@ sub _initialize {
 		$self->read_Pfam($genpep,$clone_dir,$disk_id,$count,$msp);
 
 	    } elsif ($msp->[5] eq 'gff'){
-		$self->read_Repeats($clone_dir,$disk_id,$msptype->[6]);
+		
 
 	    } else {
 		$self->throw("no parser for $$msp[5] defined");
@@ -141,8 +143,13 @@ sub _initialize {
 
 	my @homols = $genpep->each_Homol;      # Converts the hits from peptide into genomic coordinates
     
-	foreach my $h (@homols) {
-	    $self->add_Feature($h);
+	foreach my $homol (@homols) {
+	    if ($homol->homol_SeqFeature->seqname eq "HSLPO") {
+		print("Sources 2 are " . $homol->homol_SeqFeature->seqname . " " . $homol->source_tag . " " . $homol->homol_SeqFeature->source_tag . "\n");
+	    }
+
+
+	    $self->add_Feature($homol);
 	}
 
 	$count++;    
@@ -252,7 +259,7 @@ sub add_Feature {
     $self->throw("Feature must be Bio::SeqFeature::Generic in add_Feature") unless $f->isa("Bio::SeqFeature::Generic");
 
     if ($f->source_tag eq "") {
-	print(STDERR "ERROR: No source tag in add_Feature for " . $f->homol_SeqFeature->seqname . "\n");
+#	print(STDERR "ERROR: No source tag in add_Feature for " . $f->homol_SeqFeature->seqname . "\n");
     }
 
     if (!defined($self->{_features})) {
@@ -313,10 +320,12 @@ sub read_MSP {
     my ($type1,$type2) = $mspobj->get_types;
 
     foreach my $homol ($mspobj->each_Homol) { 
-#	print("HOMOL : " . $homol->seqname ." " . 
-#	      $homol->homol_SeqFeature->seqname . " " .
-#	      $homol->homol_SeqFeature->start . " " . 
-#	      $homol->homol_SeqFeature->end . "\n");
+	$homol->source_tag($mspobj->source_tag);
+	$homol->homol_SeqFeature->source_tag($mspobj->source_tag);
+
+	if ($homol->homol_SeqFeature->seqname eq "HSLPO") {
+	    print("Sources 1 are " . $homol->homol_SeqFeature->seqname . " " . $homol->source_tag . " " . $homol->homol_SeqFeature->source_tag . "\n");
+	}
 
 	if ($type1 eq "PEP") {
 
@@ -329,7 +338,7 @@ sub read_MSP {
 	    }
 
 	} elsif ($type1 eq "DNA") {
-	    $homol->source_tag($mspobj->source_tag);
+
 	    $self->add_Feature($homol);
 	    
 	} else {
