@@ -243,14 +243,14 @@ sub dump_expression  {
 
     # small ones:
     foreach $table ( qw(key_word lib_key library source ) ) {
-        $sql = "select * from $satdb.$table";
+        $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table);
     }
     # frequency                            ;
     # seqtag                               ;
     # seqtag_alias                         ;
     $sql = "
-SELECT sa.*
+SELECT distinct sa.*
 FROM $satdb.seqtag_alias sa, 
      $litedb.gene lg
 WHERE sa.db_name = 'ensgene'
@@ -260,7 +260,7 @@ WHERE sa.db_name = 'ensgene'
     dump_data($sql, $satdb, 'seqtag_alias');
 
     $sql = "
-SELECT st.*
+SELECT distinct st.*
 FROM  $satdb.seqtag st,
       $satdb.seqtag_alias sa, 
       $litedb.gene lg
@@ -272,7 +272,7 @@ WHERE sa.db_name = 'ensgene'
     dump_data($sql, $satdb, 'seqtag');
 
     $sql = "
-SELECT f.*
+SELECT distinct  f.*
 FROM  $satdb.frequency f,
       $satdb.seqtag_alias sa, 
       $litedb.gene lg
@@ -294,13 +294,13 @@ sub dump_snp  {
 
     my @small_ones = qw(Assay ContigHit Locus  Pop Resource Submitter);
     foreach my $table ( @small_ones ) { 
-        $sql = "select * from $satdb.$table";
+        $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table);
     }
 
     #  RefSNP:
     $sql = "
-SELECT rs.*
+SELECT distinct rs.*
 FROM   $satdb.RefSNP rs, 
        $litedb.gene_snp lgs,
        $litedb.gene lg
@@ -312,7 +312,7 @@ WHERE  lg.chr_name = '$chr'
     
     #  SubSNP
     $sql = "
-SELECT ss.*
+SELECT distinct ss.*
 FROM   $satdb.SubSNP ss, 
        $litedb.gene_snp lgs,
        $litedb.gene lg
@@ -327,7 +327,7 @@ WHERE  lg.chr_name = '$chr'
 
 #  Hit        
     $sql = "
-SELECT h.*
+SELECT distinct h.*
 FROM   $satdb.Hit h, 
        $litedb.gene_snp lgs,
        $litedb.gene lg
