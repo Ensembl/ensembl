@@ -293,6 +293,24 @@ sub moltype {
 
 
 
+=head2 alphabet
+
+  Arg [1]    : 
+  Example    : 
+  Description: Another method to make bioperl happy
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub alphabet {
+  my $self = shift;
+
+  return $self->slice->alphabet();
+}
+
+
 =head2 species
 
   Arg [1]    : none
