@@ -451,7 +451,7 @@ sub display_id {
 
 =cut
 
-sub seq_length {
+sub length {
   my $self = shift;
   my $seq = $self->seq();
 
@@ -546,9 +546,5 @@ sub get_all_DASFeatures{
     return \%das_features;
 }
 
-sub length {
-	my $self = shift;
-	return 1 ;
-}
 
 1;
