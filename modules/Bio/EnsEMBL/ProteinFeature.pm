@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-ProteinFeature.pm - DESCRIPTION of Object
+Bio::EnsEMBL::ProteinFeature
 
 =head1 SYNOPSIS
 
@@ -73,8 +73,8 @@ sub new {
 
   #the strand of protein features is always 0
   $self->{'strand'}      = 0;
-  $self->{'idesc'}       = $idesc;
-  $self->{'interpro_ac'} = $interpro_ac;
+  $self->{'idesc'}       = $idesc || '';
+  $self->{'interpro_ac'} = $interpro_ac || '';
 
   return $self;
 }
@@ -88,14 +88,16 @@ sub strand {
 }
 
 
-=Head2 idesc
 
- Title   : idesc
- Usage   : $obj->idesc($newval)
- Function: 
- Returns : value of idesc
- Args    : newvalue (optional)
+=head2 idesc
 
+  Arg [1]    : (optional) string The interpro description
+  Example    : print $protein_feature->idesc();
+  Description: Getter/Setter for the interpro description of this protein 
+               feature.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -106,14 +108,16 @@ sub idesc{
 }
 
 
+
 =head2 interpro_ac
 
- Title   : interpro_ac
- Usage   : $obj->interpro_ac($newval)
- Function: 
- Returns : value of interpro_ac
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) string The interpro accession
+  Example    : print $protein_feature->interpro_ac();
+  Description: Getter/Setter for the interpro accession of this protein 
+               feature.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
 
 =cut
 
