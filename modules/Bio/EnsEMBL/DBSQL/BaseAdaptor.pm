@@ -176,7 +176,7 @@ sub db{
 
 =head2 deleteObj
 
-  Arg [1]    : none
+  Args       : none
   Example    : $adaptor->deleteObj();
   Description: Explicitly destroys this object and objects referenced by 
                this object.  This method should only be called if you know

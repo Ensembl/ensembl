@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for DB::Clone
 #
@@ -16,28 +15,27 @@ Bio::EnsEMBL::DBSQL::CloneAdaptor
 
 =head1 SYNOPSIS
 
-    # $db is Bio::EnsEMBL::DB::DBAdaptor
-
-    my $da= Bio::EnsEMBL::DBSQL::CloneAdaptor->new($obj);
-    my $clone=$da->fetch_by_dbID($id);
-
+    $clone_adaptor = $database_adaptor->get_CloneAdaptor();
+    $clone = $clone_adaptor->fetch_by_dbID(1234);
     @contig = $clone->get_all_Contigs();
     @genes    = $clone->get_all_Genes();
 
 =head1 DESCRIPTION
 
-Represents information on one Clone
+Database adaptor for the creation of clone objects
 
-=head1 CONTACT
+=head1 AUTHOR - Ewan Birney
 
-Describe contact details here
+This modules is part of the Ensembl project http://www.ensembl.org
+
+Email birney@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal 
+methods are usually preceded with a _
 
 =cut
-
 
 # Let the code begin...
 
@@ -51,6 +49,19 @@ use Bio::EnsEMBL::Clone;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
+
+=head2 _generic_sql_fetch
+
+  Arg [1]    : string $where_clause
+               the WHERE clause of the SQL query to be executed
+  Example    : $clone = $self->_generic_sql_fetch('embl_acc = AC011082');
+  Description: PRIVATE Performs an SQL query and returns an Clone object 
+               created from the result.
+  Returntype : Bio::EnsEMBL::Clone
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::CloneAdaptor
+
+=cut
 
 sub _generic_sql_fetch {
     my( $self, $where_clause ) = @_;
@@ -83,12 +94,15 @@ sub _generic_sql_fetch {
 
 =head2 fetch_by_accession
 
- Function: fetches a clone by its EMBL/GenBank accession number
-           It will fetch the highest version in the database
-
- Args    : accession number, as a string, no version number
-
- Returns : Bio::EnsEMBL::Clone
+  Arg [1]    : string $acc
+               the EMBL accession for the clone
+  Example    : $clone = $clone_adaptor->fetch_by_accession('AC011082');
+  Description: fetches a clone by its EMBL/GenBank accession number
+               It will fetch the highest version in the database 
+  Returntype : Bio::EnsEMBL::Clone 
+  Exceptions : thrown if $acc not defined or if no clone with accession $acc
+               exists in the database
+  Caller     : general
 
 =cut
 
@@ -110,71 +124,86 @@ sub fetch_by_accession {
     }
 }
 
+
 =head2 fetch_by_accession_version
 
- Function: fetches a specific version of an accession number
- Args   1: accession number as a string
-        2: version as a digit 
- Returns : Bio::EnsEMBL::Clone
+  Arg [1]    : string $acc
+               the EMBL accession number
+  Arg [2]    : int $ver
+               the EMBL accession version
+  Example    : $clone = $clone_adaptor->fetch_by_accession_version($acc, $ver);
+  Description: retrieves a Clone object with accession $acc and version $ver 
+               from the database.  
+  Returntype : Bio::EnsEMBL::Clone
+  Exceptions : thrown if $acc or $ver is not defined or if no clone exists with
+               in the database with accession $acc and version $ver
+  Caller     : general
 
 =cut
 
 sub fetch_by_accession_version { 
-    my ($self, $acc, $ver) = @_;
+  my ($self, $acc, $ver) = @_;
+  
+  unless ($acc and $ver) {
+    $self->throw("Need both accession (got '$acc') and version (got '$ver')");
+  }
 
-    unless ($acc and $ver) {
-        $self->throw("Need both accession (got '$acc') and version (got '$ver')");
-    }
-
-    my $clone = $self->_generic_sql_fetch(
-        qq{ WHERE embl_acc = '$acc' AND embl_version = '$ver' }
-        );
-    if ($clone) {
-        return $clone;
-    } else {
-        $self->throw("no clone with accession '$acc' and version '$ver'");
-    }
+  my $clone = 
+    $self->_generic_sql_fetch( qq{ WHERE embl_acc = '$acc' 
+				   AND embl_version = '$ver' });
+  if ($clone) {
+    return $clone;
+  } else {
+    $self->throw("no clone with accession '$acc' and version '$ver'");
+  }
 }
+
 
 =head2 fetch_by_name
 
- Function: fetches a single clone by the "name" field. The name
-           field is often the EMBL ID of a clone (which itself is often
-           the same as the accession number) but is a deliberately open
-           slot for another identifier for the clone, eg. the stringified
-           tracking identifier in a sequencing centre
- Args    : name as a string
- Returns : Bio::EnsEMBL::Clone
+  Arg [1]    : string $name
+               the "name" of the clone.
+  Example    : $clone = $clone_adaptor->fetch_by_name($name);
+  Description: fetches a single clone by the "name" field. The name
+               field is often the EMBL ID of a clone (which itself is often
+               the same as the accession number) but is a deliberately open
+               slot for another identifier for the clone, eg. the stringified
+               tracking identifier in a sequencing centre
+  Returntype : Bio::EnsEMBL::Clone
+  Exceptions : thrown if name is a non-true value (i.e. undefined or '') or 
+               if there is no clone with name $name in the database
+  Caller     : general
 
 =cut
 
 sub fetch_by_name {
-    my ($self, $name) = @_;
-    print $name."\n";
-    $self->throw("name not given") unless $name;
-
-    my $clone = $self->_generic_sql_fetch(
-        qq{ WHERE name = '$name' }
-        );
-
-    if ($clone) {
-        return $clone;
-    } else {
-        $self->throw("No Clone with name '$name'");
-    }
+  my ($self, $name) = @_;
+  
+  $self->throw("name not given") unless $name;
+  
+  my $clone = $self->_generic_sql_fetch(qq{ WHERE name = '$name' });
+  
+  if ($clone) {
+    return $clone;
+  } else {
+    $self->throw("No Clone with name '$name'");
+  }
 }
+
 
 =head2 fetch_by_dbID
 
- Function: fetches a clone by the internal id in the database
-           of the Clone. Most likely this will be used by
-           other adaptors to build objects from references to Clones
- Args    : the numeric internal id of the clone table
- Returns : Bio::EnsEMBL::Clone
+  Arg [1]    : int $id
+               the numeric internal id of the clone table 
+  Example    : $clone = $clone_adaptor->fetch_by_dbID(7);
+  Description: fetches a clone by the internal id in the database
+               of the Clone. Most likely this will be used by
+               other adaptors to build objects from references to Clones
+  Returntype : Bio::EnsEMBL::Clone
+  Exceptions : thrown if $id is not provided
+  Caller     : general
 
 =cut
-
-
 
 sub fetch_by_dbID {
     my ($self,$id) = @_;
@@ -189,25 +218,17 @@ sub fetch_by_dbID {
 }
 
 
-sub fetch {
-    my ($self,$id) = @_;
-    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
-    $self->fetch_by_accession($id);
-}
 
+=head2 list_embl_version_by_accesssion
 
-
-
-
-=head2 list_embl_version_by_accession
-
- Title   : list_embl_version_by_accession
- Usage   : @vers = $obj->list_embl_version_by_accession($accession)
- Function:
- Example :
- Returns : @vers
- Args    : $accession
-
+  Arg [1]    : string $id
+               the EMBL accession of the clone versions to retrieve
+  Example    : @vers = $clone->list_embl_version_by_accession($accession) 
+  Description: Returns a list of versions for a given EMBL accession
+  Returntype : list of ints
+  Exceptions : thrown if $id arg is not defined or if no clone with accession
+               $id exists in the database
+  Caller     : general
 
 =cut
 
@@ -237,77 +258,81 @@ sub list_embl_version_by_accession {
 
 =head2 delete_by_dbID
 
- Title   : delete_by_dbID
- Usage   : $clone->delete_by_dbID()
- Function: Deletes clone (itself), including contigs and features, but not its genes
- Example : 
- Returns : nothing
- Args    : none
-
+  Arg [1]    : string $clone_id 
+               the EMBL accession of the clone to delete
+  Example    : $clone_adaptor->delete($clone_id);
+  Description: Deletes clone (itself), including contigs and features, 
+               but not its genes 
+  Returntype : none
+  Exceptions : thrown if any portion of deletion fails
+  Caller     : ?
 
 =cut
 
 sub delete_by_dbID {
-    my ($self, $clone_id) = @_;
-
-    my $fadaptor = $self->db->get_FeatureAdaptor;
-
-    # Make a list of all contig and dna entries to delete
-    my $sth = $self->prepare(qq{
+  my ($self, $clone_id) = @_;
+  
+  my $fadaptor = $self->db->get_FeatureAdaptor;
+  
+  # Make a list of all contig and dna entries to delete
+  my $sth = $self->prepare(qq{
         SELECT contig_id, dna_id
         FROM contig
         WHERE clone_id = $clone_id
         });
+  $sth->execute;
+  
+  my( @contigs, @dnas );
+  while( my ($c, $d) = $sth->fetchrow_hashref) {
+    push(@contigs, $c);
+    push(@dnas,    $d);
+  }
+
+  # Delete features for each contig, and each contig
+  foreach my $contig_id ( @contigs ) {
+    $fadaptor->delete_by_RawContig_internal_id($contig_id);
+    my $sth = 
+      $self->prepare("DELETE FROM contig WHERE contig_id = $contig_id");
     $sth->execute;
+    $self->throw("Failed to delete contigs for contig_id '$contig_id'")
+      unless $sth->rows;
+  }
 
-    my( @contigs, @dnas );
-    while( my ($c, $d) = $sth->fetchrow_hashref) {
-        push(@contigs, $c);
-        push(@dnas,    $d);
+  # Delete DNA as long as we aren't using a remote DNA database.
+  if ($self->db ne $self->db->dnadb) {
+    $self->warn("Using a remote dna database - not deleting dna\n");
+  } else {
+    foreach my $dna_id (@dnas) {
+      $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
+      $sth->execute;
+      $self->throw("Failed to delete dna for dna_id '$dna_id'")
+	unless $sth->rows;
     }
+  }
 
-    # Delete features for each contig, and each contig
-    foreach my $contig_id ( @contigs ) {
-        $fadaptor->delete_by_RawContig_internal_id($contig_id);
-        my $sth = $self->prepare("DELETE FROM contig WHERE contig_id = $contig_id");
-        $sth->execute;
-        $self->throw("Failed to delete contigs for contig_id '$contig_id'")
-            unless $sth->rows;
-    }
-
-    # Delete DNA as long as we aren't using a remote DNA database.
-    if ($self->db ne $self->db->dnadb) {
-        $self->warn("Using a remote dna database - not deleting dna\n");
-    } else {
-        foreach my $dna_id (@dnas) {
-            $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
-            $sth->execute;
-            $self->throw("Failed to delete dna for dna_id '$dna_id'")
-                unless $sth->rows;
-        }
-    }
-
-    # Delete the row for the clone
-    $sth = $self->prepare("DELETE FROM clone WHERE clone_id = $clone_id");
-    $sth->execute;
-    $self->throw("Failed to delete clone for clone_id '$clone_id'")
-        unless $sth->rows;
+  # Delete the row for the clone
+  $sth = $self->prepare("DELETE FROM clone WHERE clone_id = $clone_id");
+  $sth->execute;
+  $self->throw("Failed to delete clone for clone_id '$clone_id'")
+    unless $sth->rows;
 }
 
 
 =head2 get_all_Genes
 
- Title   : get_all_Genes
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : string $clone_id
+               the EMBL accession for the clone from which the genes are to be
+               retrieved
+  Example    : my @genes = $clone_adaptor->get_all_Genes('AC011082');
+  Description: Retrieves a list of Gene objects which are present on a clone.
+               It might be better to have this on the gene adaptor but 
+               for now it will stay here.
+  Returntype : list of Bio::EnsEMBL::Genes
+  Exceptions : thrown if $clone_id is not defined
+  Caller     : Clone::get_all_Genes
 
 =cut
 
-# will contact geneAdaptor when ready
 sub get_all_Genes {
     my ($self, $clone_id) = @_;
 
@@ -340,69 +365,30 @@ sub get_all_Genes {
 }
 
 
-=head2 get_Contig
+=head2 store
 
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : Bio::EnsEMBL::Clone $clone 
+               the Clone to store in the database 
+  Example    : $clone_adaptor->store($clone);
+  Description: Stores a clone object in the database
+  Returntype : none
+  Exceptions : thrown if $clone is not defined or if $clone is not a 
+               Bio::EnsEMBL::Clone
+  Caller     : general
 
 =cut
-
-sub get_Contig {
-   my ($self,$contigid) = @_;
-
-   $self->throw("CloneAdaptor::get_Contig is deprecated, " .
-		"use \$contig_adaptor->fetch_by_dbID(\$id) instead");
-   
-   return undef;
-   
-   #my $contig = $self->db->get_Contig($contigid);
-   
-   #return $contig->fetch();
-}
-
-
-# creates all tables for this adaptor
-# if they exist they are emptied and newly created
-sub create_tables {
-  my $self = shift;
-
-  my $sth = $self->prepare( "drop table if exists clone" );
-  $sth->execute();
-
-  $sth = $self->prepare( qq{
-    CREATE TABLE clone (
-      internal_id   int(10) unsigned NOT NULL auto_increment,
-      id            varchar(40) NOT NULL,
-      embl_id       varchar(40) NOT NULL,
-      version       int(10) NOT NULL,
-      embl_version  int(10) NOT NULL,
-      htg_phase     int(10) DEFAULT '-1' NOT NULL,
-      created       datetime NOT NULL,
-      modified      datetime NOT NULL,
-  
-      PRIMARY KEY (internal_id),
-      UNIQUE embl (embl_id,embl_version),
-      UNIQUE id   (id,embl_version)
-     )   
-  } );
-  $sth->execute();
-}
-
 
 sub store{
   my ($self, $clone) = @_;
 
-  $clone || $self->throw("trying to write a clone without a clone object : $!\n");
+  unless($clone) {
+    $self->throw("trying to write a clone without a clone object : $!\n");
+  }
 
-  if( !$clone->isa('Bio::EnsEMBL::DB::CloneI') ) {
-	$self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::DB::CloneI'");
-    }
-
+  if( !$clone->isa('Bio::EnsEMBL::Clone') ) {
+    $self->throw("Clone '$clone' is not a 'Bio::EnsEMBL::Clone'");
+  }
+  
   my $sql =  "insert into clone(name, 
                                 embl_acc, 
                                 version, 
@@ -433,9 +419,39 @@ sub store{
     my $rca = $self->db->get_RawContigAdaptor();
     $rca->store($contig, $id);
   }
-
-
 }
 
+
+=head2 fetch
+
+ Description: DEPRECATED use fetch_by_accession instead
+
+=cut
+
+sub fetch {
+    my ($self,$id) = @_;
+    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
+    $self->fetch_by_accession($id);
+}
+
+=head2 get_Contig
+
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::RawContigAdaptor::fetch_by_dbID instead
+
+=cut
+
+sub get_Contig {
+   my ($self,$contigid) = @_;
+
+   $self->throw("CloneAdaptor::get_Contig is deprecated, " .
+		"use \$contig_adaptor->fetch_by_dbID(\$id) instead");
+   
+   return undef;
+   
+   #my $contig = $self->db->get_Contig($contigid);
+   
+   #return $contig->fetch();
+}
 
 1;

@@ -28,7 +28,6 @@ This modules is part of the Ensembl project http://www.ensembl.org
 
 Email birney@ebi.ac.uk
 
-Describe contact details here
 
 =head1 APPENDIX
 

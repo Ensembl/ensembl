@@ -7,14 +7,14 @@
         -user   => 'root',
         -dbname => 'pog',
         -host   => 'caldy',
-        -driver => 'mysql',
+        -driver => 'mysql'
         );
 
     $gene_adaptor = $db->get_GeneAdaptor();
 
     $gene = $gene_adaptor()->fetch_by_stable_id($stable_id);
 
-    $slice = $db->get_SliceAdaptor()->fetch_by_dbID($slice_id);
+    $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end('X', 1, 10000);
 
     
 =head1 DESCRIPTION
@@ -47,6 +47,29 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
 #Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
+
+
+=head2 new
+
+  Arg [1]    : string SOURCE 
+               The source name of the database.  This may be removed soon.
+  Arg [2]    : Bio::EnsEMBL::DBSQL::DBAdaptor DNADB 
+               The dna database to be attached to this database.  This may also
+               be changed.
+  Arg [..]   : Other args are passed to superclass 
+               Bio::EnsEMBL::DBSQL::DBConnection
+  Example    : $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+						    -user   => 'root',
+						    -dbname => 'pog',
+						    -host   => 'caldy',
+						    -driver => 'mysql' );
+  Description: Constructor for DBAdaptor.
+  Returntype : Bio::EnsEMBL::DBSQL::DBAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub new {
   my($class, @args) = @_;
     
@@ -67,16 +90,17 @@ sub new {
 }
 
 
-
 =head2 source
-  Arg  1    : scalar string $source
-              The source of info in the database connected to (e.g. 'embl')
-  Function  : Sets/Gets the source or human readable name of the genes in 
-              the connected database. For example for the sanger db the source
-              would be 'sanger'.
-  Returntype: scalar string
-  Exceptions: none
-  Caller    : Bio::EnsEMBL::GeneAdaptor  Bio::EnsEMBL::LiteGeneAdaptor EnsWeb
+
+  Arg [1]    : (optional) string $source
+               The source of info in the database connected to (e.g. 'embl') 
+  Example    : $db_adaptor->source('sanger');
+  Description: Sets/Gets the source or human readable name of the genes in 
+               the connected database. For example for the sanger db the source
+               would be 'sanger'. 
+  Returntype : string
+  Exceptions : none 
+  Caller     : Bio::EnsEMBL::GeneAdaptor  Bio::EnsEMBL::LiteGeneAdaptor EnsWeb 
 
 =cut
 
@@ -93,13 +117,12 @@ sub source {
 
 =head2 get_MetaContainer
 
- Title   : get_Meta_Container
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none
+  Example    : $meta_container = $db_adaptor->get_MetaContainer(); 
+  Description: Gets a MetaContainer object for this database
+  Returntype : Bio::EnsEMBL::DBSQL::MetaContainer
+  Exceptions : none
+  Caller     : ?
 
 =cut
 
@@ -117,63 +140,15 @@ sub get_MetaContainer {
 
 
 
-
-
-
-
-=head2 add_DASFeatureFactory
-
- Title   : add_DASFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub add_DASFeatureFactory{
-   my ($self,$value) = @_;
-
-   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
-       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
-   }
-
-   push(@{$self->{'_das_ff'}},$value);
-}
-
-=head2 _each_DASFeatureFactory
-
- Title   : _each_DASFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _each_DASFeatureFactory{
-   my ($self) = @_;
-
-   return @{$self->{'_das_ff'}}
-}
-
-
-
-
-
 =head2 get_ProteinFeatureAdaptor
 
- Title   : get_ProteinFeatureAdaptor
- Usage   : my $pfa = $dba->get_ProteinFeatureAdaptor(); 
- Function: Gets a ProteinFeatureAdaptor for this database.  
-           Formerly named get_Protfeat_Adaptor()
- Example : my $protfeat = $dba->get_ProteinFeatureAdaptor->fetch_by_dbID($id);
- Returns : Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor
- Args    : none
+  Args       : none 
+  Example    : $pfa = $database_adaptor->get_ProteinFeatureAdaptor();  
+  Description: Gets a ProteinFeatureAdaptor for this database.  
+               Formerly named get_Protfeat_Adaptor()
+  Returntype : Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor 
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -187,13 +162,13 @@ sub get_ProteinFeatureAdaptor {
 
 =head2 get_ProteinAdaptor
 
- Title   : get_ProteinAdaptor
- Usage   : my $pa = $dba->get_ProteinAdaptor(); 
- Function: Gets a ProteinAdaptor for this database.  
-           Formerly named get_Protein_Adaptor()
- Example : my $prot = $dba->get_ProteinAdaptor->fetch_by_dbID($id);
- Returns : Bio::EnsEMBL::DBSQL::ProteinAdaptor
- Args    : none
+  Args       : none 
+  Example    : $pa = $database_adaptor->get_ProteinAdaptor();  
+  Description: Gets a ProteinAdaptor for this database.  
+               Formerly named get_Protein_Adaptor() 
+  Returntype : Bio::EnsEMBL::DBSQL::ProteinAdaptor 
+  Exceptions : none 
+  Caller     : general
 
 =cut
 
@@ -204,6 +179,17 @@ sub get_ProteinAdaptor {
 }
 
 
+=head2 get_SNPAdaptor
+
+  Args       : none 
+  Example    : $snp_adaptor = $db_adaptor->get_SNPAdaptor();
+  Description: Gets a SNPAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::SNPAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_SNPAdaptor {
   my ($self)  = @_;
 
@@ -212,6 +198,17 @@ sub get_SNPAdaptor {
 }
 
 
+=head2 get_MapFragAdaptor
+
+  Args       : none 
+  Example    : $map_frag_adaptor = $db_adaptor->get_MapFragAdaptor();
+  Description: Gets a MapFragAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::MapFragAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_MapFragAdaptor {
   my $self = shift;
 
@@ -219,16 +216,16 @@ sub get_MapFragAdaptor {
 }
 
 
-
 =head2 get_CloneAdaptor
 
-    my $ca = $dba->get_CloneAdaptor;
+  Args       : none 
+  Example    : $clone_adaptor = $db_adaptor->get_CloneAdaptor();
+  Description: Gets a CloneAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::CloneAdaptor
+  Exceptions : none
+  Caller     : general
 
-Returns a B<Bio::EnsEMBL::DBSQL::CloneAdaptor>
-object, which is used for reading and writing
-B<Clone> objects from and to the SQL database.
-
-=cut 
+=cut
 
 sub get_CloneAdaptor {
   my( $self ) = @_;
@@ -236,6 +233,18 @@ sub get_CloneAdaptor {
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
 }
 
+
+=head2 get_LandmarkMarkerAdaptor
+
+  Args       : none 
+  Example    : $marker_adaptor = $db_adaptor->get_LandmarkMarkerAdaptor();
+  Description: Gets a LandmarkMarkerAdaptor which currently is always retrieved
+               from the lite database attached to this database.
+  Returntype : Bio::EnsEMBL::DBSQL::LandmarkMarkerAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_LandmarkMarkerAdaptor {
   my $self = shift;
@@ -250,28 +259,31 @@ sub get_LandmarkMarkerAdaptor {
 
 =head2 get_PredictionTranscriptAdaptor
 
-  Args      : none
-  Function  : PredictionTranscript Adaptor for this database.
-  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
-  Exceptions: none
-  Caller    : general
+  Args       : none 
+  Example    : $pta = $db_adaptor->get_PredictionTranscriptAdaptor();
+  Description: Gets a PredictionTranscriptAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_PredictionTranscriptAdaptor {
-   my ($self) = @_;
+  my ($self) = @_;
 
-   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
+  return 
+    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
  }
+
 
 =head2 get_SequenceAdaptor
 
-  Args      : none
-  Function  : The sequence producing adaptor. Could be hooked to a different
-              database than the rest for example.
-  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
-  Exceptions: none
-  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
+  Args       : none 
+  Example    : $sequence_adaptor = $db_adaptor->get_SequenceAdaptor();
+  Description: Gets a SequenceAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::SequenceAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -281,75 +293,40 @@ sub get_SequenceAdaptor {
    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
 }
 
-=head2 lite_DBAdaptor
 
-  Arg    [1]: Bio::EnsEMBL::Lite::DBAdaptor $liteDBConnection
-              From there you get the denormalized GeneAdaptor.
-  Function  : The liteDB is set in EnsWEB to get denormalized access to
-              EnsEMBL data. It provides a GeneAdaptor that makes half
-              filled Genes.
-  Returntype: Bio::EnsEMBL::Lite::DBAdaptor
-  Exceptions: 
-  Caller    : set in EnsWEB, get internal
+=head2 get_GeneAdaptor
+
+  Args       : none 
+  Example    : $gene_adaptor = $db_adaptor->get_GeneAdaptor();
+  Description: Gets a GeneAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-
-sub lite_DBAdaptor {
-  my ($self, $arg ) = @_;
-  if ( defined $arg ) {
-    $self->{_liteDB} = $arg;
-
-  }
-
-  return $self->{_liteDB};
-}
-
-
-sub SNP_DBAdaptor {
-  my ($self, $arg) = @_;
-
-  if(defined $arg) {
-    $self->{_SNP_db} = $arg;
-  }
-
-  return $self->{_SNP_db};
-}
-
-
-
-sub map_DBAdaptor {
-  my ($self, $arg ) = @_;
-  if ( defined $arg ) {
-    $self->{_mapDB} = $arg;
-  }
-
-  return $self->{_mapDB};
-}
-
-
-sub est_DBAdaptor {
-  my ($self, $arg) = @_;
-  
-  if(defined $arg) {
-    $self->{_estDB} = $arg;
-  }
-
-  return $self->{_estDB};
-}
-
 sub get_GeneAdaptor {
-    my( $self ) = @_;
-    #get a core db adaptor
-    my $core_adaptor = $self->_get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
-
-    #use a proxy gene adaptor, capable of making decisions with regards to the
-    #database that it uses, passing in the core adaptor as a constructor arg
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor",
+  my( $self ) = @_;
+  #get a core db adaptor
+  my $core_adaptor = $self->_get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
+  
+  #use a proxy gene adaptor, capable of making decisions with regards to the
+  #database that it uses, passing in the core adaptor as a constructor arg
+  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor",
 			     $core_adaptor);
-  }
+}
 
 
+=head2 get_ExonAdaptor
+
+  Args       : none 
+  Example    : $exon_adaptor = $db_adaptor->get_ExonAdaptor();
+  Description: Gets an ExonAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::ExonAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_ExonAdaptor {
   my( $self ) = @_;
@@ -357,11 +334,35 @@ sub get_ExonAdaptor {
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ExonAdaptor");
 }
 
+
+=head2 get_TranscriptAdaptor
+
+  Args       : none 
+  Example    : $transcript_adaptor = $db_adaptor->get_TranscriptAdaptor();
+  Description: Gets a TranscriptAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::TranscriptAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_TranscriptAdaptor {
   my( $self ) = @_;
   
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::TranscriptAdaptor");
 }
+
+
+=head2 get_TranslationAdaptor
+
+  Args       : none 
+  Example    : $translation_adaptor = $db_adaptor->get_TranslationAdaptor();
+  Description: Gets a TranslationAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::TranslationAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_TranslationAdaptor {
     my( $self ) = @_;
@@ -369,11 +370,35 @@ sub get_TranslationAdaptor {
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::TranslationAdaptor");
 }
 
+
+=head2 get_FeatureAdaptor
+
+  Args       : none 
+  Example    : $feature_adaptor = $db_adaptor->get_FeatureAdaptor();
+  Description: Gets a FeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::FeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_FeatureAdaptor {
     my( $self ) = @_;
 
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::FeatureAdaptor");
 }
+
+
+=head2 get_RawContigAdaptor
+
+  Args       : none 
+  Example    : $rca = $db_adaptor->get_RawContigAdaptor();
+  Description: Gets a RawContigAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::RawContigAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub get_RawContigAdaptor {
     my( $self ) = @_;
@@ -381,38 +406,51 @@ sub get_RawContigAdaptor {
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
 }
 
+
+=head2 get_SliceAdaptor
+
+  Args       : none 
+  Example    : $slice_adaptor = $db_adaptor->get_SliceAdaptor();
+  Description: Gets a SliceAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::SliceAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_SliceAdaptor {
   my( $self ) = @_;
   
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SliceAdaptor");
 }
 
+
 =head2 get_AnalysisAdaptor
 
- Title   : get_AnalysisAdaptor
- Usage   : $analysisAdaptor = $dbObj->get_AnalysisAdaptor;
- Function: gives the adaptor to fetch/store Analysis objects.
- Example :
- Returns : the adaptor
- Args    :
+  Args       : none 
+  Example    : $analysis_adaptor = $db_adaptor->get_AnalysisAdaptor();
+  Description: Gets an AnalysisAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_AnalysisAdaptor {
     my( $self ) = @_;
 
-#    print "Getting an analysis adaptor from" . $self->dbname() . "\n";
-
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
 }
 
+
 =head2 get_SimpleFeatureAdaptor
 
- Title   : get_SimpleFeatureAdaptor
- Usage   : $sa = $db->get_SimpleFeatureAdaptor;
- Example :
- Returns : the adaptor
- Args    : none
+  Args       : none 
+  Example    : $sfa = $db_adaptor->get_SimpleFeatureAdaptor();
+  Description: Gets a SimpleFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -425,11 +463,12 @@ sub get_SimpleFeatureAdaptor {
 
 =head2 get_RepeatConsensusAdaptor
 
- Title   : get_SimpleFeatureAdaptor
- Usage   : $sa = $db->get_SimpleFeatureAdaptor;
- Example :
- Returns : the adaptor
- Args    : none
+  Args       : none 
+  Example    : $rca = $db_adaptor->get_RepeatConsensusAdaptor();
+  Description: Gets a RepeatConsensusAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -439,6 +478,18 @@ sub get_RepeatConsensusAdaptor {
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor");
 }
 
+
+=head2 get_RepeatFeatureAdaptor
+
+  Args       : none 
+  Example    : $rfa = $db_adaptor->get_RepeatFeatureAdaptor();
+  Description: Gets a RepeatFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_RepeatFeatureAdaptor {
   my( $self ) = @_;
   
@@ -446,39 +497,41 @@ sub get_RepeatFeatureAdaptor {
     $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
   
   #create a proxy adaptor, using a core RepeatFeatureAdaptor as constructor arg
-  
   return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor",
 			    $core_adaptor);
 }
 
+
 =head2 get_ProteinAlignFeatureAdaptor
 
- Title   : get_ProteinAlignFeatureAdaptor
- Usage   : $sa = $db->get_ProteinAlignFeatureAdaptor;
- Returns : the adaptor
-
+  Args       : none 
+  Example    : $pafa = $db_adaptor->get_ProteinAlignFeatureAdaptor();
+  Description: Gets a ProteinAlignFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
 sub get_ProteinAlignFeatureAdaptor {
   my( $self ) = @_;
     
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
+  return 
+    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
 }
 
-
+  
 =head2 get_DnaAlignFeatureAdaptor
 
- Args      : none
- Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
-             this database. There should only be one around.
- Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
- Exceptions: none
- Caller    : FeatureAdaptor, general
+  Args       : none 
+  Example    : $dafa = $db_adaptor->get_DnaAlignFeatureAdaptor();
+  Description: Gets a DnaAlignFeatureAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
-  
-  
+
 sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
   
@@ -488,16 +541,18 @@ sub get_DnaAlignFeatureAdaptor {
   #return a proxy adaptor which can choose between the core and est DBs
   return 
     $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor",
-		       $core_adaptor);
+			$core_adaptor);
 }
+
 
 =head2 get_AssemblyMapperAdaptor
 
- Title   : get_AssemblyMapperAdaptor
- Usage   : $sa = $db->get_AssemblyMapperAdaptor;
- Example :
- Returns : the adaptor
- Args    :
+  Args       : none 
+  Example    : $asma = $db_adaptor->get_AssemblyMapperAdaptor();
+  Description: Gets an AsemblyMapperAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -508,6 +563,17 @@ sub get_AssemblyMapperAdaptor {
 }
 
 
+=head2 get_DBEntryAdaptor
+
+  Args       : none 
+  Example    : $dbentry_adaptor = $db_adaptor->get_DBEntryAdaptor();
+  Description: Gets a DBEntryAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::DBEntryAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub get_DBEntryAdaptor {
     my( $self ) = @_;
 
@@ -517,13 +583,16 @@ sub get_DBEntryAdaptor {
 
 =head2 get_StaticGoldenPathAdaptor
 
- Title   : get_StaticGoldenPathAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none 
+  Example    : $sgpa = $db_adaptor->get_StaticGoldenPathAdaptor();
+  Description: Gets a StaticGoldenPathAdaptor for this database
+               Use of the StaticGoldenPathAdaptor is not recommended.  It is
+               being phased out, and is largly deprecated already.  The 
+               SliceAdaptor or AssemblyMapperAdaptor may be a viable 
+               alternatives.
+  Returntype : Bio::EnsEMBL::DBSQL::AnalysisAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -536,13 +605,12 @@ sub get_StaticGoldenPathAdaptor{
 
 =head2 get_KaryotypeBandAdaptor
 
- Title   : get_KaryotypeBandAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none 
+  Example    : $kba = $db_adaptor->get_KaryotypeBandAdaptor();
+  Description: Gets a KaryotypeBandAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -552,15 +620,15 @@ sub get_KaryotypeBandAdaptor {
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
 }
 
+
 =head2 get_ChromosomeAdaptor
 
- Title   : get_ChromosomeAdaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Args       : none 
+  Example    : $ca = $db_adaptor->get_ChromosomeAdaptor();
+  Description: Gets a ChromosomeAdaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::ChromosomeAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
 
@@ -569,6 +637,19 @@ sub get_ChromosomeAdaptor {
 
     return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
 }
+
+
+
+=head2 list_supported_assemblies
+
+  Args       : none
+  Example    : my @supported = $database_adaptor->list_supported_assemblies);
+  Description: Returns a list of assemblies supported by this database.
+  Returntype : list of strings
+  Exceptions : thrown if SQL query fails
+  Caller     : ?
+
+=cut
 
 sub list_supported_assemblies {
     my($self) = @_;
@@ -590,19 +671,21 @@ sub list_supported_assemblies {
     return @out;
 }
 
-			     
-
+	
 =head2 deleteObj
 
-    Title   : deleteObj
-    Usage   : $dbObj->deleteObj
-    Function: Call when you are done with this object. Breaks links between objects. Necessary to clean up memory.
-    Example : -
-    Returns : -
-    Args    : -
+  Args       : none
+  Example    : $db_adaptor->deleteObj();
+  Description: Explicitly destroys this object and objects referenced by 
+               this object.  This method should only be called if you know
+               what you are doing, and is only needed for object destruction
+               when circular references are present (these will prevent 
+               perls automatic garbage collection).
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
 
-
-=cut
+=cut		     
 
 sub deleteObj {
 
@@ -620,16 +703,18 @@ sub deleteObj {
 }
 
 
-
 =head2 assembly_type
 
- Title   : assembly_type
- Usage   : $obj->assembly_type($newval)
- Function: 
- Example : 
- Returns : name of assembly
- Args    : newvalue (optional)
-
+  Arg [1]    : (optional) string $value
+                the new assembly type value
+  Example    : $db_adaptor->assembly_type($newval);
+  Description: Getter / Setter for the type of assembly used by
+               this database.  If the value is not set then the 
+               default value is obtained from the MetaContainer
+  Returntype : string
+  Exceptions : thrown if there is no defined assembly type, and the default
+               assembly type cannot be obtained from the MetaContainer 
+  Caller     : ?
 
 =cut
 
@@ -673,7 +758,6 @@ sub assembly_type{
 sub dnadb {
   my ($self,$arg) = @_;
 
-
   if (defined($arg)) {
     if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
       $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
@@ -682,6 +766,149 @@ sub dnadb {
   }
   return $self->{_dnadb} || $self;
 }
+
+
+=head2 lite_DBAdaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Lite::DBAdaptor $liteDBConnection
+               A denormalized Lite database to attach to this database
+  Example    : $lite_db = $db_adaptor->lite_DBAdaptor();
+  Description: A Getter/Setter for the lite database adaptor attached to this
+               database
+  Returntype : Bio::EnsEMBL::Lite::DBAdaptor
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub lite_DBAdaptor {
+  my ($self, $arg ) = @_;
+  if ( defined $arg ) {
+    $self->{_liteDB} = $arg;
+
+  }
+
+  return $self->{_liteDB};
+}
+
+
+=head2 SNP_DBAdaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor $arg
+               An external SNP database to be attached to this database
+  Example    : $db_adaptor->SNP_DBAdaptor($snp_database_adaptor);
+  Description: A Getter/Setter for the external SNP database adaptor 
+               attached to this database
+  Returntype : Bio::EnsEMBL::ExternalData::SNPSQL::DBAdaptor
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub SNP_DBAdaptor {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{_SNP_db} = $arg;
+  }
+
+  return $self->{_SNP_db};
+}
+
+
+=head2 map_DBAdaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Map::DBSQL::DBAdaptor $arg
+               A Map database to attach to this database
+  Example    : $db_adaptor->lite_db($map_db_adaptor);
+  Description: A Getter/Setter for the Map database adaptor attached to this
+               database
+  Returntype : Bio::EnsEMBL::Map::DBSQL::DBAdaptor
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub map_DBAdaptor {
+  my ($self, $arg ) = @_;
+  if ( defined $arg ) {
+    $self->{_mapDB} = $arg;
+  }
+
+  return $self->{_mapDB};
+}
+
+
+=head2 est_DBAdaptor
+
+  Arg [1]    : (optional) Bio::EnsEMBL::ExternalData::ESTSQL::DBAdaptor $arg
+               An external EST database to attach to this database
+  Example      $db_adaptor->est_DBAdaptor();
+  Description: A Getter/Setter for the EST database adaptor attached to this
+               database
+  Returntype : Bio::EnsEMBL::ExternalData::ESTSQL::DBAdator
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub est_DBAdaptor {
+  my ($self, $arg) = @_;
+  
+  if(defined $arg) {
+    $self->{_estDB} = $arg;
+  }
+
+  return $self->{_estDB};
+}
+
+=head2 add_DASFeatureFactory
+
+  Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value 
+  Example    : none
+  Description: Attaches a DAS Feature Factory to this method.  
+               ExternalFeatureFactory objects are not really used right now.
+               They may be reintroduced or taken out completely.  The fate
+               of this function is unknown (although it is presently needed).
+  Returntype : none
+  Exceptions : none
+  Caller     : EnsWeb
+
+=cut
+
+sub add_DASFeatureFactory{
+  my ($self,$value) = @_;
+  
+  unless( ref $value && 
+	  $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+    $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI"
+		 . " but it should be!");
+  }
+  
+  push(@{$self->{'_das_ff'}},$value);
+}
+
+
+
+=head2 _each_DASFeatureFactory
+
+  Args       : none
+  Example    : none
+  Description: Not sure if this is used, or if it should be removed.  It 
+               does not seem to be used at the moment
+  Returntype : Bio::EnsEMBL::DB::ExternalFeatureFactoryI
+  Exceptions : none
+  Caller     : ??
+
+=cut
+
+sub _each_DASFeatureFactory{
+   my ($self) = @_;
+
+   return @{$self->{'_das_ff'}}
+}
+
+
 
 
 
@@ -697,14 +924,15 @@ sub dnadb {
 
 
 
+
 =head2 extension_tables
 
- Title   : extension_tables
- Usage   : $obj->extension_tables($newval)
- Function: 
- Returns : value of extension_tables
- Args    : newvalue (optional)
-
+  Arg [1]    : none
+  Example    : none
+  Description: NOT IMPLEMENTED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -724,13 +952,15 @@ sub extension_tables{
 
 }
 
+
 =head2 list_ExternalAdaptors
 
- Title   : list_ExternalAdaptors
- Usage   : $obj->list_ExternalAdaptors
- Function: returns all the names of installed external adaptors
- Returns : a (possibly empty) list of name of external adaptors
- Args    : none
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -745,15 +975,15 @@ sub list_ExternalAdaptors {
     #return keys % {$self->{_ext_adaptors}};
 }
 
+
 =head2 add_ExternalAdaptor
 
- Title   : add_ExternalAdaptor
- Usage   : $obj->add_ExternalAdaptor('family', $famAdaptorObj);
- Function: adds the external adaptor the internal hash of known 
-           external adaptors. If an adaptor of the same name is installed, 
-           it will be overwritten.
- Returns : undef
- Args    : a name and a adaptor object. 
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -767,13 +997,15 @@ sub add_ExternalAdaptor {
     #undef;
 }
 
+
 =head2 get_ExternalAdaptor
 
- Title   : get_ExternalAdaptor
- Usage   : $obj->get_ExternalAdaptor('family');
- Function: retrieve external adaptor by name
- Returns : an adaptor (sub-type of BaseAdaptor) or undef
- Args    : the name 
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -791,13 +1023,12 @@ sub get_ExternalAdaptor {
 
 =head2 remove_ExternalAdaptor
 
- Title   : remove_ExternalAdaptor
- Usage   : $obj->remove_ExternalAdaptor('family')
- Function: removes the named external adaptor from the internal hash of known 
-           external adaptors. If the adaptor name is not known, nothing 
-           happens. 
- Returns : undef
- Args    : a name
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -814,16 +1045,14 @@ sub remove_ExternalAdaptor {
 }
 
 
-
 =head2 add_ExternalFeatureFactory
 
- Title   : add_ExternalFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -840,15 +1069,15 @@ sub add_ExternalFeatureFactory{
 #   push(@{$self->{'_external_ff'}},$value);
 }
 
+
 =head2 _each_ExternalFeatureFactory
 
- Title   : _each_ExternalFeatureFactory
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -867,13 +1096,15 @@ sub _each_ExternalFeatureFactory{
 
 ## internal stuff for external adaptors
 
+
 =head2 _ext_adaptor
 
- Title   : _ext_adaptor
- Usage   : $obj->_ext_adaptor('family' [, $famAdaptorObj] )
- Function: 
- Returns : an adaptor or undef
- Args    : a name and a adaptor object. 
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -893,8 +1124,76 @@ sub _ext_adaptor {
 }
 
 
+=head2 add_db_adaptor
 
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
+=cut
+
+sub add_db_adaptor {
+  my ($self, $name, $adaptor) = @_;
+
+  $self->{'_db_adaptors'}->{$name} = $adaptor;
+}
+
+=head2 remove_db_adaptor
+
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub remove_db_adaptor {
+  my ($self, $name) = @_;
+
+  my $adaptor = $self->{'_db_adaptors'}->{$name};
+  delete $self->{'_db_adaptors'}->{$name};
+
+  return $adaptor;
+}
+
+=head2 get_all_db_adaptors
+
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_all_db_adaptors {
+  my ($self, $name) = @_;   
+
+  return $self->{'_db_adaptors'};
+}
+
+=head2 get_db_adaptor
+
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_db_adaptor {
+  my ($self, $name) = @_;
+
+  return $self->{'_db_adaptors'}->{$name};
+}
 
 
 
@@ -917,13 +1216,14 @@ Functions which are completely deprecated
 
 
 =head2 get_LiteAdaptor
-    
- Title   : DEPRECATED get_LiteAdaptor
- Usage   : DEPRECATED my $la = $db->get_LiteAdaptor;
- Function: DEPRECATED Returns the lite database object handler
- Example : DEPRECATED
- Returns : DEPRECATED Bio::EnsEMBL::DBSQL::LiteAdaptor
- Args    : DEPRECATED
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::Lite::DBAdaptor instead or
+               lite_DBAdaptor
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -940,13 +1240,13 @@ sub get_LiteAdaptor {
 
 
 =head2 feature_Obj
-    
- Title   : feature_Obj
- Usage   : my $featureobj = $db->feature_Obj
- Function: Returns the feature object database handle
- Example : 
- Returns : Bio::EnsEMBL::DB::Feature_ObjI
- Args    : 
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -957,864 +1257,794 @@ sub feature_Obj {
 }
 
 
-
-
-sub add_db_adaptor {
-  my ($self, $name, $adaptor) = @_;
-
-  $self->{'_db_adaptors'}->{$name} = $adaptor;
-}
-
-sub remove_db_adaptor {
-  my ($self, $name) = @_;
-
-  my $adaptor = $self->{'_db_adaptors'}->{$name};
-  delete $self->{'_db_adaptors'}->{$name};
-
-  return $adaptor;
-}
-
-sub get_all_db_adaptors {
-  my ($self, $name) = @_;   
-
-  return $self->{'_db_adaptors'};
-}
-
-sub get_db_adaptor {
-  my ($self, $name) = @_;
-
-  return $self->{'_db_adaptors'}->{$name};
-}
-
-
 =head2 get_Gene
 
- Title   : get_Gene
- Usage   : $obj->get_Gene($geneid, $supporting)
- Function: gets one gene out of the db with or without supporting evidence
- Example : $obj->get_Gene('ENSG00000009151','evidence')
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : gene id and supporting tag (if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::GenAdaptor::fetch_by_stable_id instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Gene {
    my ($self,$geneid, $supporting) = @_;
 
-   $self->warn("Obj->get_Gene is a deprecated method!\nCalling gene_Obj->get instead!");
+   $self->warn("DBAdaptor::get_Gene is deprecated\n" .
+	   "use Bio::EnsEMBL::DBSQL::GeneAdaptor::fetch_by_stable_id instead");
 
-   return $self->gene_Obj->get($geneid,$supporting);
+   return $self->get_GeneAdaptor->fetch_by_stable_id($geneid,$supporting);
 }
+
 
 =head2 get_Gene_by_Transcript_id
 
- Title   : get_Gene_by_Transcript_id
- Usage   : $obj->get_Gene_by_Transcript_id($transid, $supporting)
- Function: gets one gene out of the db with or without supporting evidence
- Example : $obj->get_Gene_by_Transcript_id('ENST00000009151')
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : transcript id and supporting tag (if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Gene_by_Transcript_id {
    my ($self,$tid, $supporting) = @_;
 
-   $self->warn("Obj->get_Gene_by_Transcript_id is a deprecated method! 
-Calling gene_Obj->get instead!");
-
-   return $self->gene_Obj->get_Gene_by_Transcript_id($tid,$supporting);
+   $self->throw("Call to deprecated method " .
+		"Bio::EnsEMBL::DBSQL::DBAdaptor::get_Gene_by_Transcript_id\n");
+	
+   return undef;
 }
-
 
 
 =head2 get_Gene_by_DBLink
 
- Title   : get_Gene_by_DBLink
- Usage   : $obj->get_Gene_by_DBLink($ext_id, $supporting)
- Function: gets one gene out of the db with or without supporting evidence
- Example : $obj->get_Gene_by_DBLink( 'MC1R')
- Returns : gene object (with transcripts, exons and supp.evidence if wanted)
- Args    : transcript id and supporting tag (if latter not specified, assumes without
-	   Note that it is much faster to get genes without supp.evidence!
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Gene_by_DBLink {
    my ($self,$ext_id, $supporting) = @_;
 
-  # $self->warn("Obj->get_Gene_by_DBLink is a deprecated method! Calling gene_Obj->get instead!");
+   $self->throw("Call to deprecated method " .
+		"Bio::EnsEMBL::DBSQL::DBAdaptor::get_Gene_by_DBLink\n");
 
-   return $self->gene_Obj->get_Gene_by_DBLink($ext_id,$supporting);
+   return undef;
 }
+
 
 
 =head2 get_Gene_array
 
- Title   : get_Gene_array
- Usage   :
- Function: old deprecated method, points to new method
-           get_gene_array_supporting without asking for supp.evidence
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+              use Bio::EnsEMBL::DBSQL::GeneAdaptor::fetch_by_stable_id instead 
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Gene_array {
     my ($self,@geneid) = @_;
 
-    $self->throw("Very deprecated method, should call methods with supporting evidence and from
-gene_Obj!");
+    $self->throw("Call to deprecated method get_Gene_array");
+
+    return undef;
 }
+
 
 =head2 get_Gene_array_supporting
 
- Title   : get_Gene_array_supporting
- Usage   : $obj->get_Gene_array_supporting($supporting,@geneid)
- Function: Gets an array of genes, with transcripts and exons. If $supporting
-           equal to 'evidence' the supporting evidence for each exon is also read
-           from the supporting evidence table
- Example : $obj->get_Gene_array_supporting ('evidence',@geneid)
- Returns : an array of gene objects
- Args    : 'evidence' and gene id array
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::GeneAdaptor::fetch_by_stable_id instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Gene_array_supporting {
     my ($self,$supporting,@geneid) = @_;
+    
+    $self->throw("Call to deprecated method get_Gene_array_supporting");
 
-    $self->warn("Obj->get_Gene_array_supporting is a deprecated method!
-Calling gene_Obj->get_array_supporting instead!");
-
-    return $self->gene_Obj->get_array_supporting($supporting,@geneid);
+    return undef;
 }
 
 
+=head2 get_Virtual_Contig_by_Transcript_id
 
-=head2 get_Virtual_Contig
-    
- Title   : get_Virtual_Contig
- Usage   : $obj->get_Virtual_Contig($transcript,$max_length)
- Function: Gets a Bio::EnsEMBL::DB::Virtual Contig object which 
-           spans the whole sequence on which the given 
-           Bio::EnsEMBL::Transcript object lies, as long 
-           as its length does not exceed max_length. If max_length
-           is exceeded, undef is returned instead.
- Example : $obj->get_Virtual_Contig($transcript,50000)
- Returns : VirtualContig Object (or undef)
- Args    : Bio::EnsEMBL::Transcript object and max_length int variable
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::DBSQL::SliceAdaptor->fetch_by_transcript_stable_id
+               instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
-
-
 
 sub get_Virtual_Contig_by_Transcript_id {
    my ($self,$tid, $maxlen) = @_;
 
-#   $self->warn("Obj->get_Virtual_contig is a deprecated method! 
-#Calling gene_Obj->get_Virtual_contig instead!");
+   $self->warn("get_Virtual_contig is deprecated. Use " .
+	     "Bio::EnsEMBL::DBSQL::SliceAdaptor->fetch_by_transcript_stable_id"
+	     . " instead.");
 
-   return my $vc =$self->gene_Obj->get_Virtual_Contig($tid,$maxlen);
+   return $self->get_SliceAdaptor->fetch_by_transcript_stable_id($tid,$maxlen);
 }
 
 
-
-
-
 =head2 get_Transcript_in_VC_coordinates
-    
- Title   : get_Transcript_in_VC_coordinates
- Usage   : $obj->get_Transcript_in_VC_coordinates($transcript_id)
- Function: Gets a Bio::EnsEMBL::Transcript object in vc coordinates
- Example : $obj->get_Virtual_Contig($transcript_id)
- Returns : Bio::EnsEMBL::Transcript
- Args    : transcript id
 
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::TranscriptAdaptor->fetch_by_stable_id
+               and Transcript::transform(Bio::EnsEMBL::Slice) instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
-
-
-
 
 sub get_Transcript_in_VC_coordinates{
    my ($self,$tid) = @_;
 
-   $self->warn("Obj->get_Transcript_in_VC_coordinates is a deprecated method! 
-Calling gene_Obj->get_Virtual_contig instead!");
+  $self->throw("call to deprecated method get_Transcript_in_VC_coordinates\n");
 
-   return my $transcript =$self->gene_Obj->get_Transcript_in_VC_coordinates($tid);
+   return undef;
 }
 
-=head2 donor_locator
-    
- Title   : get_donor_locator
- Usage   : $obj->get_donor_locator; 
- Function: Reads the meta table of the database to get the donor_database_locator
- Example : get_donor_locator
- Returns : locator string
- Args    : none
 
+=head2 get_donor_locator
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_donor_locator {
     my ($self) = @_;
 
-    $self->warn("Obj->get_donor_locator is a deprecated method! 
-Calling Update_Obj->get_donor_locator instead!");
-    
-    return $self->get_Update_Obj->get_donor_locator();
+    $self->throw("call to deprecated method get_donor_locator\n");
+
+    return undef;
 }
+
 
 =head2 get_last_update_offset
 
- Title   : get_last_update_offset
- Usage   : $obj->get_last_update_offset; 
- Function: Reads the meta table of the database to get the last_update time - offset time
- Example : get_last_update_offset
- Returns : UNIX TIME of last update - offset time
- Args    : none
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_last_update_offset{
     my ($self) = @_;
 
-    $self->warn("Obj->get_last_update_offset is a deprecated method! 
-Calling Update_Obj->get_last_update_offset instead!");
- 
-    return $self->get_Update_Obj->get_last_update_offset();
+    $self->throw("call to deprecated method get_donor_locator\n");
+
+    return undef;
 }    
+
+
 
 =head2 get_last_update
 
- Title   : get_last_update
- Usage   : $obj->get_last_update; 
- Function: Reads the db_update table of the database to get the finishing time of the
-           last complete update
- Example : get_last_update
- Returns : UNIX TIME of last update
- Args    : none
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_last_update{
     my ($self) = @_;
+
+    $self->throw("call to deprecated method get_last_update_offset\n");
     
-    $self->warn("Obj->get_last_update is a deprecated method! 
-Calling Update_Obj->get_last_update_offset instead!");
-    
-    return $self->get_Update_Obj->get_last_update_offset();
+    return undef;
 }     
+
 
 =head2 get_now_offset
 
- Title   : get_now_offset
- Usage   : $obj->get_now_minus_offset; 
- Function: Gets the current time from the point of view of the database, substracts the
-           offset time found in the meta table and gives back unix time of now-offset
- Example : get_now_offset
- Returns : UNIX TIME of now - offset_time
- Args    : none
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_now_offset{
     my ($self) = @_;
 
-    $self->warn("Obj->get_now_offset is a deprecated method! 
-Calling Update_Obj->get_now_offset instead!");
-   
-    return $self->get_Update_Obj->get_now_offset();
+    $self->throw("call to deprecated method get_now_offset\n");
+
+    return undef;
 }
+
+
 
 =head2 get_offset
 
- Title   : get_offset
- Usage   : $obj->get_offset; 
- Function: Gets the offset time found in the meta table
- Example : get_offset
- Returns : UNIX TIME of offset_time
- Args    : none
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_offset{
     my ($self) = @_;
 
-    $self->throw("Obj->get_offset should not be needed any more!"); 
+    $self->throw("call to deprecated method get_offset\n");
+
+    return undef;
 }
     
 
+
 =head2 get_Protein_annseq
 
- Title   : get_Protein_annseq
- Usage   : get_Protein_annseq ($ENSP); 
- Function: Creates an annseq object for a particular peptide, storing the peptide
-           sequence in $annseq->primary_seq, and adding all the protein features as generic
-           Seqfeatures
- Example : 
- Returns : $annseq
- Args    : $ENSP
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Protein_annseq{
     my ($self,$ENSP) = @_;
 
-    $self->warn("Obj->get_Protein_annseq is a deprecated method! 
-Calling Feature_Obj->get_Protein_annseq instead!");
+    $self->throw("call to deprecated method get_Protein_annseq\n");
     
-    $self->get_Feature_Obj->get_Protein_annseq($ENSP);
+    return undef;
 } 
 
-=head2 get_Transcript
-    
- Title   : get_Transcript
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
+=head2 get_Transcript
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::DBSQL::TranscriptAdaptor::fetch_by_dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
     
 sub get_Transcript{
     my ($self,$transid) = @_;
- 
-    $self->warn("Obj->get_Transcript is a deprecated method! 
-Calling gene_Obj->get_Transcript instead!");
 
-    return $self->gene_Obj->get_Transcript($transid);
+    $self->warn("call to deprecated method get_Transcript " .
+		"use Bio::EnsEMBL::DBSQL::TranscriptAdaptor::fetch_by_dbID " .
+		"instead\n");
+ 
+    return $self->get_TranscriptAdaptor->fetch_by_dbID($transid);
 }
+
+
 
 =head2 get_Translation
 
- Title   : get_Translation
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::DBSQL::TranslationAdaptor::fetch_by_dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Translation{
    my ($self,$translation_id) = @_;
 
-   $self->warn("Obj->get_Translation is a deprecated method! 
-Calling gene_Obj->get_Translation instead!");
-
-   return $self->gene_Obj->get_Translation($translation_id);
+   $self->warn("call to deprecated method get_Translation " .
+	       "use Bio::EnsEMBL::DBSQL::TranslationAdaptor::fetch_by_dbID " .
+	       "instead\n");
+   
+   return $self->get_TranslationAdaptor->fetch_by_dbID($translation_id);
 }
+
 
 =head2 get_Exon
 
- Title   : get_Exon
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::ExonAdaptor::fetch_by_dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Exon{
    my ($self,$exonid) = @_;
 
-   $self->warn("Obj->get_Exon is a deprecated method! 
-Calling gene_Obj->get_Exon instead!");
+   $self->warn("call to deprecated method get_Exon " .
+	       "use Bio::EnsEMBL::DBSQL::ExonAdaptor::fetch_by_dbID instead");
 
-   return $self->gene_Obj->get_Exon($exonid);
+   return $self->get_ExonAdaptor->fetch_by_dbID($exonid);
 }
+
 
 =head2 get_all_Gene_id
 
- Title   : get_all_Gene_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_all_Gene_id{
    my ($self) = @_;
 
-   $self->warn("Obj->get_all_Gene_id is a deprecated method! 
-Calling gene_Obj->get_all_Gene_id instead!");
+   $self->throw("call to deprecated method get_all_Gene_id\n");
 
-   return $self->gene_Obj->get_all_Gene_id();
+   return undef;
 }
-
 
 
 =head2 get_all_Transcript_id
 
- Title   : get_all_Transcript_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_all_Transcript_id{
    my ($self) = @_;
 
-   $self->warn("Obj->get_all_Transcript_id is a deprecated method! 
-Calling gene_Obj->get_all_Gene_id instead!");
+   $self->throw("Call to deprecated method get_all_Transcript_id\n");
 
-   return $self->gene_Obj->get_all_Transcript_id();
+   return undef;
 }
+
+
 
 =head2 delete_Exon
 
- Title   : delete_Exon
- Usage   : $obj->delete_Exon($exon_id)
- Function: Deletes exon, including exon_transcript rows
- Example : $obj->delete_Exon(ENSE000034)
- Returns : nothing
- Args    : $exon_id
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::DBSQL::ExonAdaptor::remove instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub delete_Exon{
     my ($self,$exon_id) = @_;
 
-    $self->warn("Obj->delete_Exon is a deprecated method
-Calling gene_Obj->delete_Exon instead!");
+    $self->throw("call to deprecated method delete exon. use " .
+		 "Bio::EnsEMBL::DBSQL::ExonAdaptor::remove instead");
 
-    return $self->gene_Obj->delete_Exon($exon_id);
+    return undef;
 }
+
 
 =head2 delete_Supporting_Evidence
 
- Title   : delete_Supporting_Evidence
- Usage   : $obj->delete_Supporting_Evidence($exon_id)
- Function: Deletes exon\'s supporting evidence entries
- Example : $obj->delete_Supporting_Evidence(ENSE000034)
- Returns : nothing
- Args    : $exon_id
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub delete_Supporting_Evidence {
     my ($self,$exon_id) = @_;
  
-    $self->warn("Obj->delete_Supporting_Evidence is a deprecated method
-Calling gene_Obj->delete_Supporting_Evidence instead!");
+    $self->throw("call to deprecated method delete_Supporting_Evidence\n");
 
-    return $self->gene_Obj->delete_Supporting_Evidence($exon_id);
+    return undef;
 }
+
 
 =head2 delete_Features
 
- Title   : delete_Features
- Usage   :
- Function: deletes all features from a contig;
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub delete_Features {
     my ($self,$contig) = @_;
 
-    $self->warn("Obj->delete_Features is a deprecated method! 
-Calling Feature_Obj->delete instead!");
+    $self->throw("call to deprecated method delete_Features\n");
 
-   $self->get_Feature_Obj->delete($contig);
+    return undef;
 } 
+
 
 =head2 delete_Gene
 
- Title   : delete_Gene
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub delete_Gene{
-   my ($self,$geneid) = @_;
+sub delete_Gene {
+  my ($self, @args) = @_;
 
-   $self->warn("Obj->delete_Gene is a deprecated method! 
-Calling gene_Obj->delete instead!");
+  $self->throw("call to deprecated method delete_Gene");
 
-   return $self->gene_Obj->delete($geneid);
+  return undef;
 }
+
 
 =head2 geneid_to_cloneid
 
- Title   : geneid_to_cloneid
- Usage   : @cloneid = $db->geneid_to_cloneid($geneid);
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub geneid_to_cloneid{
-    my ($self,$geneid) = @_;
-    
-    $self->throw("Obj->geneid_to_cloneid is a deprecated method, called gene_Obj->each_cloneid instead!
-All the gene, transcript, and exon methods are now to be found in gene_Obj");
-    return $self->gene_Obj->each_cloneid($geneid);
+sub geneid_to_cloneid {
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method geneid_to_cloneid");
+
+  return undef;
 }
+
 
 =head2 write_Gene
 
- Title   : write_Gene
- Usage   : $obj->write_Gene($gene)
- Function: writes a particular gene into the database
-           
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
+sub write_Gene {
+  my ($self, @args) = @_;
 
-sub write_Gene{
-   my ($self,$gene) = @_;
+  $self->throw("call to deprecated method write_Gene");
 
-   my ( $p, $f, $l ) = caller;
-   $self->warn("Obj->write_Gene is a deprecated method! Calling from $p::$f::$l\n" );
-
-   return $self->get_GeneAdaptor()->store( $gene );
+  return undef;
 }
+
 
 =head2 write_all_Protein_features
 
- Title   : write_all_Protein_features
- Usage   : $obj->write_all_Protein_features($ENSP)
- Function: writes all protein features of a particular peptide into the database          
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_all_Protein_features {
-    my ($self,$prot_annseq,$ENSP) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->write_all_Protein_features is a deprecated method! 
-Calling Feature_Obj->write_all_Protein_features instead!");
-    
-    $self->get_Feature_Obj->write_all_Protein_features($prot_annseq,$ENSP);
-} 
+  $self->throw("call to deprecated method write_all_Protein_features");
+
+  return undef;
+}
 
 
 =head2 write_Protein_feature
 
- Title   : write_Protein_feature
- Usage   : $obj->write_Protein_feature($ENSP, $feature)
- Function: writes a protein feature object of a particular peptide into the database          
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Protein_feature {
-    my ($self,$ENSP,$feature) = @_;
- 
-    $self->warn("Obj->write_Protein_feature is a deprecated method! 
-Calling Feature_Obj->write_Protein_feature instead!");
-    
-    $self->get_Feature_Obj->write_Protein_feature($ENSP,$feature);
-} 
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method write_Protein_feature");
+
+  return undef;
+}
+
 
 =head2 write_Feature
 
- Title   : write_Feature
- Usage   : $obj->write_Feature($contig,@features)
- Function: Writes a feature on the genomic sequence of a contig into the database
- Example :
- Returns : nothing
- Args    : Bio::EnsEMBL::SeqFeatureI
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Feature {
-    my ($self,$contig,@features) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->write_Feature is a deprecated method! 
-Calling Feature_Obj->write_Feature instead!");
-    
-    $self->get_Feature_Obj->write($contig,@features);
-} 
+  $self->throw("call to deprecated method write_Feature");
+
+  return undef;
+}
+
 
 =head2 write_supporting_evidence
 
- Title   : write_supporting_evidence
- Usage   : $obj->write_supporting_evidence
- Function: Writes supporting evidence features to the database
- Example :
- Returns : nothing
- Args    : None
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_supporting_evidence {
-    my ($self,$exon) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->write_supporting_evidence is a deprecated method!
-Calling gene_Obj->write_supporting_evidence instead!");
+  $self->throw("call to deprecated method write_supporting_evidence");
 
-    return $self->gene_Obj->write_supporting_evidence($exon);
+  return undef;
 }
+
 
 =head2 get_supporting_evidence
 
- Title   : get_supporting_evidence
- Usage   : $obj->get_supporting_evidence
- Function: Writes supporting evidence features to the database
- Example :
- Returns : nothing
- Args    : array of exon objects, needed to know which exon to attach the evidence to
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_supporting_evidence {
-    my ($self,@exons) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->get_supporting_evidence is a deprecated method! 
-Calling gene_Obj->get_supporting_evidence instead!");
+  $self->throw("call to deprecated method get_supporting_evidence");
 
-   return $self->gene_Obj->get_supporting_evidence(@exons);
+  return undef;
 }
+
 
 =head2 write_Analysis
 
- Title   : write_Analysis
- Usage   : $obj->write_Analysis($anal)
- Function: Writes analysis details to the database
-           Checks first whether this analysis entry already exists
- Example :
- Returns : int
- Args    : Bio::EnsEMBL::AnalysisI
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Analysis {
-    my ($self,$analysis) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->write_Analysis is a deprecated method! 
-Calling Feature_Obj->write_Analysis instead!");
-    
-    $self->get_Feature_Obj->write_Analysis($analysis);
-} 
-    
+  $self->throw("call to deprecated method write_Analysis");
+
+  return undef;
+}
+
+
 =head2 exists_Homol_Feature
 
- Title   : exists_Homol_Feature
- Usage   : $obj->exists_Homol_Feature($feature)
- Function: Tests whether this feature already exists in the database
- Example :
- Returns : nothing
- Args    : Bio::SeqFeature::Homol
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub exists_Homol_Feature {
-    my ($self,$feature,$analysisid,$contig) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->exists_Homol_Feature is a deprecated method! 
-Calling Feature_Obj->exists_Homol_Feature instead!");
-    
-    $self->get_Feature_Obj->exists($feature,$analysisid,$contig);
-} 
-    
+  $self->throw("call to deprecated method exists_Homol_Feature");
+
+  return undef;
+}
+
+
 =head2 get_Analysis
 
- Title   : get_Analysis
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::AnalysisAdaptor::fetch_by_dbID
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Analysis {
     my ($self,$id) = @_;
 
-    $self->warn("Obj->get_Analysis is a deprecated method! 
-Calling Feature_Obj->get_Analysis instead!");
+    $self->warn("call to deprecated method get_Analysis. Use " .
+		"Bio::EnsEMBL::DBSQL::AnalysisAdaptor::fetch_by_DBID instead");
     
-    $self->get_Feature_Obj->get_Analysis($id);
+    $self->get_AnalysisAdaptor()->fetch_by_dbID($id);
 } 
+
 
 =head2 exists_Analysis
 
- Title   : exists_Analysis
- Usage   : $obj->exists_Analysis($anal)
- Function: Tests whether this feature already exists in the database
- Example :
- Returns : Analysis id if the entry exists
- Args    : Bio::EnsEMBL::Analysis
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub exists_Analysis {
-    my ($self,$analysis) = @_;
-    
-    $self->warn("Obj->exists_Analysis is a deprecated method! 
-Calling Feature_Obj->exists_Analysis instead!");
-    
-    $self->get_Feature_Obj->exists_Analysis($analysis);
-} 
- 
-    
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method exists_Analysis");
+
+  return undef;
+}
+
+
 =head2 write_Transcript
 
- Title   : write_Transcript
- Usage   : $obj->write_Transcript($trans,$gene)
- Function: writes a particular transcript *but not the exons* into
-           the database
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub write_Transcript{
-   my ($self,$trans,$gene) = @_;
+sub write_Transcript {
+  my ($self, @args) = @_;
 
-   $self->warn("Obj->write_Transcript is a deprecated method! 
-Calling gene_Obj->write_Transcript instead!");
+  $self->throw("call to deprecated method write_Transcript");
 
-   return $self->gene_Obj->write_Transcript($trans,$gene);
+  return undef;
 }
+
 
 =head2 write_Translation
 
- Title   : write_Translation
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub write_Translation{
-    my ($self,$translation) = @_;
+sub write_Translation {
+  my ($self, @args) = @_;
 
-    $self->warn("Obj->write_Translation is a deprecated method
-Calling gene_Obj->write_Translation instead!");
+  $self->throw("call to deprecated method write_Translation");
 
-    return $self->gene_Obj->write_Translation($translation);
+  return undef;
 }
 
 
 =head2 write_Exon
 
- Title   : write_Exon
- Usage   : $obj->write_Exon($exon)
- Function: writes a particular exon into the database
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Exon {
-   my ($self,$exon) = @_;
+  my ($self, @args) = @_;
 
-   $self->warn("Obj->write_Exon is a deprecated method! 
-Calling gene_Obj->write_Exon instead!");
+  $self->throw("call to deprecated method write_Exon");
 
-   return $self->gene_Obj->write_Exon($exon);
+  return undef;
 }
-
-
 
 
 =head2 get_PredictionFeature_as_Transcript
 
- Title   : get_PredictionFeature_as_Transcript
- Usage   :$obj->get_PredictionFeature_as_Transcript($genscan_id)
- Function:Call get_PredictionFeature_as_Transcript in Feature_obj object,see documentation for this method
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_PredictionFeature_as_Transcript{
-   my ($self,$genscan_id) = @_;
+sub get_PredictionFeature_as_Transcript {
+  my ($self, @args) = @_;
 
-   $self->warn("Deprecated method : use FeatureAdaptor->fetch_PredictionFeature_as_Transcript");
-   return $self->get_FeatureAdaptor->fetch_PredictionFeature_as_Transcript($genscan_id);
+  $self->throw("call to deprecated method get_PredictionFeature_as_Transcript");
 
+  return undef;
 }
 
 
 =head2 write_Clone
 
- Title   : write_Clone
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Clone {
-    my ($self,$clone) = @_;
+  my ($self, @args) = @_;
 
+  $self->throw("call to deprecated method write_Clone");
 
-    $self->warn("this method is being depreciated please use Bio::EnsEMBL::CloneAdaptor->store()\n");
+  return undef;
 
-    my $clone_ad = $self->get_CloneAdaptor();
-
-    $clone_ad->store($clone);
+#    $clone_ad->store($clone);
    # my $clone_id = $clone->id;
 
 #    $clone || $self->throw("Trying to write a clone without a clone object!\n");
@@ -1839,19 +2069,18 @@ sub write_Clone {
 #    foreach my $contig ( $clone->get_all_Contigs() ) {        
 #        $self->write_Contig($contig,$id);
 #    }
-    
-   
 }
+
 
 =head2 write_Contig
 
- Title   : write_Contig
- Usage   : $obj->write_Contig($contig,$clone)
- Function: Writes a contig and its dna into the database
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::RawContigAdaptor::store instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -1859,7 +2088,8 @@ sub write_Contig {
     my($self, $contig, $clone)  = @_;
        
 
-    $self->warn("this method is depreciated please use Bio::EnsEMBL::DBSQL::RawContigAdaptor->store()\n");
+    $self->warn("call to deprecated method write_Contig. " .
+	      "use Bio::EnsEMBL::DBSQL::RawContigAdaptor->store() instead.\n");
     
     my $rca = $self->get_RawContigAdaptor();
 
@@ -1924,28 +2154,25 @@ sub write_Contig {
     return 1;
 }
 
+
+
 =head2 _insertSequence
 
- Title   : _insertSequence
- Usage   : $obj->_insertSequence
- Function: Insert the dna sequence and date into the dna table.
- Example :
- Returns : 
- Args    : $sequence, $date
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub _insertSequence {
-    my ($self, $sequence, $date) = @_;
-    
-    $sequence =~ tr/atgcn/ATGCN/;
-    
-    $self->warn("this method is depreciated please use Bio::EnsEMBL::RawContigAdaptor->_insertSequence\n");
-    
-    my $rca = $self->get_RawContigAdaptor();
+  my ($self, @args) = @_;
 
-    $rca->_insertSequence($sequence, $date);
+  $self->throw("call to deprecated method _insertSequence");
+
+  return undef;
 
     #if ($self->dnadb ne $self) {
 #      $self->throw("ERROR: Trying to write to a remote dna database");
@@ -1964,20 +2191,21 @@ sub _insertSequence {
 
 =head2 write_Species
 
- Title   : write_Species
- Usage   : $obj->write_Species
- Function: writes a species object into the database
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Species {
-    my ($self,$species) = @_;
+  my ($self, @args) = @_;
 
-    $self->throw("there isn't a species table in the new schema\n");
+  $self->throw("call to deprecated method write_Species");
+
+  return undef;
 
     #if (!defined($species)) {
 #	$self->throw("No species argument input");
@@ -2019,22 +2247,21 @@ sub write_Species {
 
 =head2 get_Update_Obj
 
- Title   : get_Update_Obj
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Update_Obj {
-    my ($self) = @_;
+  my ($self, @args) = @_;
 
-    $self->warn("get_Update_Obj is deprecated. There is no longer an " .
-		"Update_Obj object");
+  $self->throw("call to deprecated method get_Update_Obj");
 
-    return undef;
+  return undef;
 
  #   my( $update_obj );
 #    unless ($update_obj = $self->{'_update_obj'}) {
@@ -2049,21 +2276,20 @@ sub get_Update_Obj {
 
 =head2 get_all_chr_ids
 
- Title   : get_all_chr_ids
- Usage   : DEPRECATED    
-           Use $dba->get_ChromosomeAdaptor()->fetch_all() instead.
- Function: DEPRECATED returns all the valid FPC contigs from given golden path
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED static golden path type (typically, 'UCSC')
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_all_chr_ids {
    my ($self, $type) = @_;
 
-   $self->warn("DBAdaptor->get_all_chr_ids is deprecated\n" .
-	       "Use \$dba->get_ChromosomeAdaptor()->fetch_all() instead");
+   $self->warn("call to deprecated method get_all_chr_ids " . 
+	    "Use Bio::EnsEMBL::DBSQL::ChromosomeAdaptor::fetch_all instead\n");
 
    return $self->get_ChromosomeAdaptor()->fetch_all();
 
@@ -2082,16 +2308,15 @@ sub get_all_chr_ids {
 #   return @out;
 }
 
+
 =head2 get_all_fpcctg_ids
 
- Title   : get_all_fpcctg_ids
- Usage   : DEPRECATED
-           Use $dba->get_StaticGoldenPathAdaptor()->get_all_fpc_ids() instead
- Function: DEPRECATED returns all the valid FPC contigs from given golden path
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED static golden path type (typically, 'UCSC')
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2119,25 +2344,25 @@ sub get_all_fpcctg_ids {
 #   return @out;
 }
 
+
+
 =head2 get_object_by_wildcard
 
- Title   : get_object_by_wildcard
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_object_by_wildcard{
-   my ($self,$type,$string) = @_;
+sub get_object_by_wildcard {
+  my ($self, @args) = @_;
 
-   $self->warn("DBAdaptor->get_object_by_wildcard is deprecated. Use " . 
-	       "specific adaptor accessor functions instead");
+  $self->throw("call to deprecated method get_object_by_wildcard");
 
-   return undef;
+  return undef;
 
  #  print STDERR "Got type: $type and string: $string\n";
 #   my @ids;
@@ -2179,24 +2404,24 @@ sub get_object_by_wildcard{
 }
 
 
+
 =head2 write_Chromosome
 
- Title   : write_Chromosome
- Usage   : DEPRECATED
- Function: DEPRECATED writes a chromosome into the database
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub write_Chromosome {
-  my ($self,$chromosome,$length, $known_genes, $unknown_genes, $snps) = @_;
+  my ($self, @args) = @_;
 
-  $self->throw("DBAdaptor->write_Chromosome() is deprecated.  " .
-	       "No replacement has been written yet. If a replacement " .
-	       "is created it will be within ChromosomeAdaptor");
+  $self->throw("call to deprecated method write_Chromosome");
+
+  return undef;
 
 #  $self->throw("No chromosome argument input") unless defined($chromosome);
    
@@ -2250,22 +2475,24 @@ sub write_Chromosome {
   }
 
 
+
 =head2 _analysis_cache
 
- Title   : _analysis_cache
- Usage   : DEPRECATED $obj->_analysis_cache()
- Function: DEPRECATED
- Returns : DEPRECATED reference to a hash
- Args    : DEPRECATED newvalue (optional)
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub _analysis_cache{
-   my $self = shift;
+sub _analysis_cache {
+  my ($self, @args) = @_;
 
-   $self->throw("DBAdaptor->_analysis_cache is deprecated\n");
+  $self->throw("call to deprecated method _analysis_cache");
 
+  return undef;
 #   if( @_ ) {
 #      my $value = shift;
 #      $obj->{'_analysis_cache'} = $value;
@@ -2273,23 +2500,24 @@ sub _analysis_cache{
 #    return $obj->{'_analysis_cache'};
 }
 
+
 =head2 _contig_seq_cache
 
- Title   : _contig_seq_cache
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub _contig_seq_cache{
-   my ($self,$id,$seq) = @_;
+sub _contig_seq_cache {
+  my ($self, @args) = @_;
 
-   $self->throw("DBAdaptor->_contig_seq_cache is deprecated\n");
+  $self->throw("call to deprecated method _contig_seq_cache");
 
+  return undef;
 
 #   if( $seq ) {
        
@@ -2308,79 +2536,76 @@ sub _contig_seq_cache{
 #   return $self->{'_contig_seq_cache'}->{$id};
 }
 
+
 =head2 _flush_seq_cache
 
- Title   : _flush_seq_cache
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub _flush_seq_cache{
-   my ($self,@args) = @_;
+sub _flush_seq_cache {
+  my ($self, @args) = @_;
 
-   $self->throw("DBAdaptor->_flush_seq_cache is deprecated\n");
+  $self->throw("call to deprecated method _flush_seq_cache");
 
-
-   $self->{'_contig_seq_cache'} = {};
+  return undef;
+#   $self->{'_contig_seq_cache'} = {};
 }
-
 
 
 =head2 _lock_tables
 
- Title   : _lock_tables
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub _lock_tables{
-   my ($self,@tables) = @_;
-   
-   $self->warn("DBAdaptor->_lock_tables is deprecated\n");
-
-   my $state;
-   foreach my $table ( @tables ) {
-       if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
-	   $self->warn("$table already locked. Relock request ignored");
-       } else {
-	   if( $state ) { $state .= ","; } 
-	   $state .= "$table write";
-	   $self->{'_lock_table_hash'}->{$table} = 1;
-       }
+sub _lock_tables {
+ my( $self, @tables) = @_;
+ $self->warn("call to deprecated method _lock_tables");   
+ 
+ my $state;
+ foreach my $table ( @tables ) {
+   if( $self->{'_lock_table_hash'}->{$table} == 1 ) {
+     $self->warn("$table already locked. Relock request ignored");
+   } else {
+     if( $state ) { $state .= ","; } 
+     $state .= "$table write";
+     $self->{'_lock_table_hash'}->{$table} = 1;
    }
-
-   my $sth = $self->prepare("lock tables $state");
-   my $rv = $sth->execute();
-   $self->throw("Failed to lock tables $state") unless $rv;
+ }
+ 
+ my $sth = $self->prepare("lock tables $state");
+ my $rv = $sth->execute();
+ $self->throw("Failed to lock tables $state") unless $rv;
 
 }
 
+
 =head2 _unlock_tables
 
- Title   : _unlock_tables
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub _unlock_tables{
+sub _unlock_tables {
    my ($self,@tables) = @_;
-
-   $self->warn("DBAdaptor->_unlock_tables is deprecated\n");
-
+   
+   $self->throw("call to deprecated method _unlock_tables");
 
    my $sth = $self->prepare("unlock tables");
    my $rv  = $sth->execute();
@@ -2391,14 +2616,14 @@ sub _unlock_tables{
 
 =head2 get_Clone
 
- Title   : get_Clone
- Usage   : DEPRECATED 
-           Use $db->get_CloneAdaptor()->fetch_by_accession_version($acc,$ver) 
-           or $db->get_CloneAdaptor()->fetch_by_accession($acc) instead
- Function: DEPRECATED retrieve latest version of a clone from the database
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED Use 
+               Bio::EnsEMBL::DBSQL::CloneAdaptor::fetch_by_accession_version 
+               or Bio::EnsEMBL::DBSQL::CloneAdaptor::fetch_by_accession instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2421,18 +2646,17 @@ sub get_Clone {
     }
 
 }
-  
+
+
 =head2 list_embl_version_by_Clone
 
- Title   : list_embl_version_by_Clone
- Usage   : DEPRECATED 
-           use $db->get_CloneAdaptor()->list_embl_version_by_accession instead
- Function: DEPRECATED 
-           retrieve list of embl_versions of a clone from the database
- Example : DEPRECATED
-           @versions = $dbobj->list_embl_versions_by_Clone('AB000381');
- Returns : DEPRECATED @versions
- Args    : DEPRECATED $accession
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use
+               Bio::EnsEMBL::DBSQL::CloneAdaptor::list_embl_versions_by_Clone 
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2447,15 +2671,16 @@ sub list_embl_version_by_Clone {
     return $ca->list_embl_version_by_accession($accession);
 }
 
-=head2 get_Clone_by_version
 
- Title   : get_Clone_by_version
- Usage   : DEPRECATED
- Function: DEPRECATED retrieve specific version of a clone from the database
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
+=head2 get_Clone_by_Version
 
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::DBSQL::CloneAdaptor::fetch_by_accession_version
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2470,14 +2695,17 @@ sub get_Clone_by_version {
     return $ca->fetch_by_accession_version($accession,$ver);
 }
   
+
+
 =head2 get_Contig
 
- Title   : get_Contig
- Usage   : DEPRECATED
- Function: DEPRECATED
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::RawContigAdaptor::fetch_by_name instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2490,6 +2718,18 @@ sub get_Contig {
     return $self->get_RawContigAdaptor->fetch_by_name($id);
 }
 
+
+=head2 get_Contig_by_internal_id
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED 
+               use Bio::EnsEMBL::DBSQL::RawContigAdaptor::fetch_by_dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
 
 sub get_Contig_by_internal_id {
   my ($self,$id) = @_;
@@ -2516,15 +2756,24 @@ sub get_Contig_by_internal_id {
 #  return $self->get_Contig($contigid);
 }
 
-  
- 
-sub get_Contig_by_international_id{
-   my ($self,$int_id) = @_;
-   $self->throw("DBADaptor->get_Contig_by_international_id() is deprecated\n" .
-		"No replacement has been implemented\n");
 
-   return undef;
+=head2 get_contig_by_international_id
 
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_contig_by_international_id {
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method get_contig_by_international_id");
+
+  return undef;
 #   my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
 #   $sth->execute;
 #   my $row = $sth->fetchrow_hashref;
@@ -2533,96 +2782,77 @@ sub get_Contig_by_international_id{
 #   return $self->get_Contig($id);
 }
 
+
 =head2 get_Contigs_by_Chromosome
 
- Title   : get_Contig_by_Chromosome
- Usage   : DEPRECATED @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
- Function: DEPRECATED
-           retrieve contigs belonging to a certain chromosome from the
-           database 
- Example : DEPRECATED
- Returns : DEPRECATED A list of Contig objects. Probably an empty list.
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub get_Contigs_by_Chromosome {
-    my ($self,$chromosome ) = @_;
-    
-    $self->throw("Obj->get_Contigs_by_Chromosome is a deprecated method! 
-Call Contig->get_by_Chromosome instead!");
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method get_Contigs_by_Chromosome");
+
+  return undef;
 }
+
+
 
 =head2 get_all_Clone_id
 
- Title   : get_all_Clone_id
- Usage   : DEPRECATED @cloneid = $obj->get_all_Clone_id
- Function: DEPRECATED returns all the valid (live) Clone ids in the database
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_Clone_id{
-   my ($self) = @_;
-   my @out;
+sub get_all_Clone_id {
+  my ($self, @args) = @_;
 
-   my $sth = $self->prepare("select id from clone");
-   my $res = $sth->execute;
+  $self->throw("call to deprecated method get_all_Clone_id");
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
-   }
-
-   return @out;
+  return undef;
 }
+
+
 
 =head2 get_all_Contig_id
 
- Title   : get_all_Contig_id
- Usage   : DEPRECATED @Contigid = $obj->get_all_Contig_id
-           call $db->get_RawContigAdaptor->fetch_all() and iterate through
-           returned raw contig objects instead,
- Function: DEPRECATED returns all the valid (live) Contig ids in the database
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub get_all_Contig_id{
-   my ($self) = @_;
-   my @out;
+sub get_all_Contig_id {
+  my ($self, @args) = @_;
 
-   $self->warn('DBAdaptor->get_all_Contig_id is deprecated. Use:
-   \$rca = \$self->get_RawContigAdaptor();
-   foreach \$contig (\$rca->fetch_all()) {
-     push \@out, \$contig->name();
-   }
-   ');
-   
-   my $rca = $self->get_RawContigAdaptor();
+  $self->throw("call to deprecated method get_all_Contig_id");
 
-   foreach my $contig ($rca->fetch_all()) {
-     push @out, $contig->name();
-   }
-
-   return @out;
+  return undef;
 }
 
 
 =head2 perl_only_sequences
 
- Title   : perl_only_sequences
- Usage   : DEPRECATED $obj->perl_only_sequences($newval)
- Function: DEPRECATED
- Returns : DEPRECATED value of perl_only_sequences
- Args    : DEPRECATED newvalue (optional)
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2640,14 +2870,15 @@ sub perl_only_sequences{
 
 }
 
+
 =head2 perl_only_contigs
 
- Title   : perl_only_contigs
- Usage   : DEPRECATED $obj->perl_only_contigs($newval)
- Function: DEPRECATED
- Returns : DEPRECATED value of perl_only_contigs
- Args    : DEPRECATED newvalue (optional)
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2668,11 +2899,12 @@ sub perl_only_contigs{
 
 =head2 _crossdb
 
- Title   : _crossdb
- Usage   : DEPRECATED $obj->_crossdb($newval)
- Function: DEPRECATED
- Returns : DEPRECATED value of _crossdb
- Args    : DEPRECATED newvalue (optional)
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -2690,6 +2922,17 @@ sub _crossdb {
 }
 
 
+=head2 create_tables
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
 sub create_tables { 
   my $self = shift;
 
@@ -2703,17 +2946,18 @@ sub create_tables {
   # (which should disappear once)
 }
 
-#=head2 get_FamilyAdaptor
 
-# Title   : get_FamilyAdaptor
-# Usage   :
-# Function:
-# Example :
-# Returns : 
-# Args    :
+=head2 get_FamilyAdaptor
 
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::ExternalData::Family::DBSQL::DBAdaptor instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
-#=cut
+=cut
 
 ## following is not part of core EnsEMBL, so maybe doesn't belong here and
 ## has to be moved elsehwere (e.g. as part of a more dynamical
@@ -2729,65 +2973,65 @@ sub get_FamilyAdaptor {
 "Keep it cached using add_ExternalAdaptor from the core DBAdaptor\n" .
 "From the family DBAdaptor you can then get_FamilyAdaptor\n" .
 "For more info, see perldoc Bio::EnsEMBL::ExternalData::Family::DBSQL::DBAdaptor\n");
-    
-    my( $fa );
-    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
-        eval{
-            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
-        };
-        if ($@) {
-            $self->throw(
-                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
-                . "It is not part of the core Ensembl distribution.\n"
-                . "Have you installed it?");
-        }
-        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
-        $self->{'_externaldata_family_familyadaptor'} = $fa;
-    }
-    return $fa;
+    return undef;
+
+#    my( $fa );
+#    unless ($fa = $self->{'_externaldata_family_familyadaptor'}) {
+#        eval{
+#            require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+#        };
+#        if ($@) {
+#            $self->throw(
+#                "Unable to load 'Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor'\n"
+#                . "It is not part of the core Ensembl distribution.\n"
+#                . "Have you installed it?");
+#        }
+#        $fa = Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
+#        $self->{'_externaldata_family_familyadaptor'} = $fa;
+#    }
+#    return $fa;
 }
 
 
-
 =head2 find_GenomeHits
-    
- Title   : find_GenomeHits
- Usage   : DEPRECATED my @features = $self->find_GenomeHits($hid)
- Function: DEPRECATED Finds all features in the db that
-           are hits to a sequence with id $hid
- Example : DEPRECATED
- Returns : DEPRECATED @ Bio::EnsEMBL::FeaturePair
- Args    : DEPRECATED string
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
- 
+
 sub find_GenomeHits {
-    my ($self,$arg) = @_;
-    $self->throw("Bio::EnsEMBL::DBSQL::DBAdaptor::find_GenomeHits is deprecated");
-    return ();
-    #    return $self->feature_Obj->find_GenomeHits($arg);
+  my ($self, @args) = @_;
+
+  $self->throw("call to deprecated method find_GenomeHits");
+
+  return undef;
 }
 
 
 =head2 release_number
 
- Title   : DEPRECATED release_number
- Usage   : DEPRECATED 
- Function: DEPRECATED 
-  #######SNEAKY METHOD FOR RELEASE NUMBER, VERY TEMPORAR%Y!!!!
- Example : DEPRECATED
- Returns : DEPRECATED
- Args    : DEPRECATED
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
-sub release_number{
-   my ($self,@args) = @_;
+sub release_number {
+  my ($self, @args) = @_;
 
-   $self->throw("DBAdaptor::release_number is deprecated\n"); 
+  $self->throw("call to deprecated method release_number");
 
-   return 110;
+  return undef;
 }
+
+
 
 1;
