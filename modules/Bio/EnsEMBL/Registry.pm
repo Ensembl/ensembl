@@ -130,11 +130,13 @@ sub load_all{
     $registry_register{'seen'}=1;
     if(defined($web_reg)){
 #      print STDERR  "Loading conf from site defs file ".$web_reg."\n";
-      unless (my $return = do $web_reg ){
-	throw "Error in Configuration\n $!\n";
+      if(-e $web_reg){
+	unless (my $return = do $web_reg ){
+	  throw "Error in Configuration\n $!\n";
+	}
+	# other wise it gets done again by the web initialisation stuff
+	delete $INC{$web_reg}; 
       }
-      # other wise it gets done again by the web initialisation stuff
-      delete $INC{$web_reg}; 
     }
     elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
 #      print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
@@ -213,8 +215,10 @@ sub load_all{
 sub add_db{
   my ($class, $db, $name, $adap) = @_;
 
-  $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
 
+  if($db->species() ne $adap->species){
+    $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
+  }
 }
 
 =head2 remove_db
@@ -249,6 +253,11 @@ sub remove_db{
 sub get_db{
   my ($class, $db, $name) = @_;
 
+  my $ret = Bio::EnsEMBL::Registry->get_DBAdaptor($db->species,$name);
+
+  if(defined($ret)){
+    return $ret;
+  }
   return $registry_register{$db->species()}{$db->group()}{'_special'}{$name};
 }
 
@@ -499,7 +508,8 @@ sub get_adaptor{
 
   my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
-    throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
+    return undef;
+#    throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
   }
   if(!ref($ret)){ # not instantiated yet
     my $dba = $registry_register{$species}{$group}{'_DB'};
