@@ -15,10 +15,10 @@
 Protein_Adaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::Protein_Adaptor;
 
-$db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+$db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
 my $protein_adaptor=Bio::EnsEMBL::Protein_Adaptor->new($obj);
 
 my $protein = $protein_adaptor->fetch_Protein_by_dbid;

@@ -15,10 +15,10 @@ Bio::EnsEMBL::DBSQL::Feature_Obj - MySQL database adapter class for EnsEMBL Feat
 
 =head1 SYNOPSIS
 
-  use Bio::EnsEMBL::DBSQL::Obj;
+  use Bio::EnsEMBL::DBSQL::DBAdaptor;
   use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 
-  $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+  $db = new Bio::EnsEMBL::DBSQL::DBAdaptor( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
   my $feature_obj=Bio::EnsEMBL::Protein_Feature_Adaptor->new($obj);
 
   
