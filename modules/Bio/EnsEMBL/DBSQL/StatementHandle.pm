@@ -27,12 +27,12 @@ package Bio::EnsEMBL::DBSQL::StatementHandle;
 use vars qw(@ISA);
 use strict;
 
-use Bio::EnsEMBL::Utils::Exception qw(warning);
+use Bio::EnsEMBL::Utils::Exception qw(warning stack_trace_dump);
 
 use DBD::mysql;
 use DBI;
 
-use Time::HiRes qw(time);
+#use Time::HiRes qw(time);
 
 @ISA = qw(DBI::st);
 
@@ -71,6 +71,37 @@ sub sql {
 
   return $dbc_sql_hash{$self};
 }
+
+
+#
+# uncomment this for printing out handy debug information (every query)
+#
+# sub execute {
+#   my $self = shift;
+
+#   my $sql = $self->sql();
+
+
+#   my @chrs = split(//, $sql);
+
+#   my $j = 0;
+#   for(my $i =0; $i < @chrs; $i++) {
+#     $chrs[$i] = $_[$j++] if($chrs[$i] eq '?' && defined($_[$j]));
+#   }
+
+#   my $str = join('', @chrs);
+
+#   my $time = time;
+#   print STDERR "\nSQL:\n$str\n\n";
+
+# #  print STDERR stack_trace_dump(), "\n";
+
+#   my $res = $self->SUPER::execute(@_);
+#   $time = time - $time;
+#   print STDERR "DONE ($time)\n";
+
+#   return $res;
+# }
 
 
 sub DESTROY {
