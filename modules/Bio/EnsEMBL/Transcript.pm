@@ -344,12 +344,13 @@ sub translation {
   my $self = shift;
   if( @_ ) {
     my $value = shift;
-    if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
-      throw("This [$value] is not a translation");
+    if( defined($value) &&
+        (!ref($value) || !$value->isa('Bio::EnsEMBL::Translation'))) {
+      throw("Bio::EnsEMBL::Translation argument expected.");
     }
     $self->{'translation'} = $value;
-  } elsif( !exists $self->{'translation'} and defined $self->adaptor() ) {
-    $self->{'translation'} = 
+  } elsif( !exists($self->{'translation'}) and defined($self->adaptor())) {
+    $self->{'translation'} =
       $self->adaptor()->db()->get_TranslationAdaptor()->
         fetch_by_Transcript( $self );
   }
