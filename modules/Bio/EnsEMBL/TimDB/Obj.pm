@@ -33,9 +33,7 @@ methods. Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
-
 
 package Bio::EnsEMBL::TimDB::Obj;
 use vars qw($AUTOLOAD @ISA);
@@ -45,7 +43,7 @@ use strict;
 
 use Bio::Root::Object;
 use Bio::EnsEMBL::DB::ObjI;
-
+use Bio::EnsEMBL::TimDB::Clone;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ObjI);
 # new() is inherited from Bio::Root::Object
@@ -59,9 +57,42 @@ sub _initialize {
 
   $self->{'_gene_hash'} = {};
   $self->{'_contig_hash'} = {};
-      
-# set stuff in self from @args
- return $make; # success - we hope!
+
+  # set stuff in self from @args
+  # (nothing)
+
+  # unfinished analysis is in humpub, so use humconf to get location
+  use humConf qw(HUMPUB_ROOT);
+  
+  # in order to access the flat file db, check that we can see the master dbm file
+  # that will tell us where the relevant directory is
+  my $unfinished_root="$HUMPUB_ROOT/th/unfinished_ana";
+  $self->{'_unfinished_root'}=$unfinished_root;
+  my $clone_dbm_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_clone.dbm";
+  my %unfin_clone;
+  unless(dbmopen(%unfin_clone,$clone_dbm_file,0666)){
+      $self->throw("Error opening clone dbm file");
+  }
+  $self->{'_clone_dbm'}=\%unfin_clone;
+
+  # define a few other important file handles
+  my $exon_file="$HUMPUB_ROOT/blast/confirmed_exon";
+  my $transcript_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.transcript.lis";
+  my $gene_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.gene.lis";
+  if(!-e $exon_file){
+      $self->throw("Could not access exon file");
+  }
+  if(!-e $transcript_file){
+      $self->throw("Could not access transcript file");
+  }
+  if(!-e $gene_file){
+      $self->throw("Could not access gene file");
+  }
+  $self->{'_exon_file'}=$exon_file;
+  $self->{'_transcript_file'}=$transcript_file;
+  $self->{'_gene_file'}=$gene_file;
+
+  return $make; # success - we hope!
 }
 
 =head2 get_Gene
@@ -98,10 +129,21 @@ sub get_Gene{
 =cut
 
 sub get_Clone{
-   my ($self) = @_;
+   my ($self,$id) = @_;
 
-   # yikes
-   $self->throw("Not implemented in the object!");
+   # check to see if clone exists
+   my($line,$cdate,$type,$cgp,$acc,$sv);
+   if($line=$self->{'_clone_dbm'}->{$id}){
+       ($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
+   }else{
+       $self->throw("$id is not a valid sequence in this database");
+   }
+
+   # create clone object
+   my $clone = new Bio::EnsEMBL::TimDB::Clone(-id => $id,
+					      -dbobj => $self,
+					      -cgp => $cgp);
+   return $clone;
 }
 
 
@@ -120,7 +162,7 @@ sub get_Clone{
 sub get_Contig{
     my ($self,$contigid)= @_;
 
-   $self->throw("Tim has not reimplemented this function");
+    $self->throw("Tim has not reimplemented this function");
 
     $self->{'_contig_hash'}->{$contigid} || $self->throw("No contig with $contigid stored in this in-memory TimDB");
     return $self->{'_contig_hash'}->{$contigid};
@@ -143,7 +185,7 @@ sub get_Contig{
 sub write_Gene{
    my ($self,$gene) = @_;
 
-   $self->throw("Tim has not reimplemented this function");
+   $self->throw("Cannot write to a TimDB");
 
    if( !$gene->isa("Bio::EnsEMBL::Gene") ) {
        $self->throw("$gene is not an ensembl gene. Can't store!");
@@ -167,7 +209,7 @@ sub write_Gene{
 sub write_Contig {
    my ($self,$contig) = @_;
 
-   $self->throw("Tim has not reimplemented this function");
+   $self->throw("Cannot write to a TimDB");
 
    if( !$contig->isa("Bio::EnsEMBL::DB::ContigI") ) {
        $self->throw("$contig is not an ensembl contig. Can't store!");
@@ -175,4 +217,41 @@ sub write_Contig {
 
    $self->{'_contig_hash'}->{$contig->id()} = $contig; 
 }
+
+# simple internal methods (hardwired things that would have been done by AUTOLOAD)
+#sub _db_handle{
+#   my($self,$value)=@_;
+#   $self->{'_db_handle'}=$value if(defined $value);
+#   return $self->{'_db_handle'};
+#}
+
+#sub AUTOLOAD {
+#    my $self = shift;
+#    my $class = ref($self) || $self->throw("\'$self\' is not an object of mine!");
+#    my $name = $AUTOLOAD;
+#
+#    # don't propagate DESTROY messages...
+#
+#    $name =~ /::DESTROY/ && return;
+#
+#    unless (exists $self->{'_permitted'}->{$name}) {
+#	$self->throw("In type $class, can't access $name - probably passed a wrong variable");
+#    }
+#    if (@_) {
+#	return $self->{$name} = shift;
+#    } else {
+#	return $self->{$name}
+#    }
+#}
+
+# close the dbm clone file
+sub DESTROY{
+   my ($obj) = @_;
+   if( $obj->{'_clone_dbm'} ) {
+       dbmclose(%{$obj->{'_clone_dbm'}});
+       $obj->{'_clone_dbm'} = undef;
+   }
+}
+
+
 

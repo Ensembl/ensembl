@@ -1,6 +1,5 @@
-
 #
-# BioPerl module for Bio::EnsEMBL::PerlDB::Clone
+# BioPerl module for Bio::EnsEMBL::TimDB::Clone
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -12,11 +11,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::PerlDB::Clone - Perl wrapper over Tim's directories for Clones
+Bio::EnsEMBL::TimDB::Clone - Perl wrapper over Tim's directories for Clones
 
 =head1 SYNOPSIS
 
-    $clone = Bio::EnsEMBL::PerlDB::Clone->new();
+    $clone = Bio::EnsEMBL::TimDB::Clone->new();
  
     $clone->add_Contig($contig);
     
@@ -31,13 +30,13 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
 
 # Let the code begin...
-
 
 package Bio::EnsEMBL::TimDB::Clone;
 use vars qw($AUTOLOAD @ISA);
@@ -57,11 +56,29 @@ use Bio::Root::Object;
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
+  my ($dbobj,$id,$cgp)=$self->_rearrange([qw(DBOBJ
+					     ID
+					     CGP
+					     )],@args);
+  $id || $self->throw("Cannot make contig db object without id");
+  $dbobj || $self->throw("Cannot make contig db object without db object");
+  $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
+      $self->throw("Cannot make contig db object with a $dbobj object");
+  $cgp || $self->throw("Cannot make a contig db object without location data");
 
-  $self->{'_contig_array'} = [];
+  $self->id($id);
+  $self->_dbobj($dbobj);
+
+  my $clone_dir=$dbobj->{'_unfinished_root'}."/$cgp/data/$id";
+  unless(-d $clone_dir){
+      $self->throw("Cannot find directory for $id");
+  }
+
+  $self->{'_clone_dir'}=$clone_dir;
+
 # set stuff in self from @args
- return $make; # success - we hope!
+  return $make; # success - we hope!
 }
 
 
@@ -137,5 +154,47 @@ sub get_all_Genes{
 
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_clone_id'} = $value;
+    }
+    return $obj->{'_clone_id'};
+
+}
+
+
+=head2 _dbobj
+
+ Title   : _dbobj
+ Usage   : $obj->_dbobj($newval)
+ Function: 
+ Example : 
+ Returns : value of _dbobj
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _dbobj {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_dbobj'} = $value;
+    }
+    return $obj->{'_dbobj'};
+
+}
 
 1;

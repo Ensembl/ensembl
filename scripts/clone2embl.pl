@@ -10,10 +10,16 @@ use Bio::AnnSeqIO;
 use Getopt::Long;
 
 my $dbtype = 'rdb';
-my $host   = 'croc';
-my $host1   = 'humsrv1';
+my $host;
+my $host1  = 'croc';
+my $host2  = 'humsrv1';
 my $port   = '410000';
-my $clone  = 'dJ1156N12';
+# this doesn't have genes (finished)
+#my $clone  = 'dJ1156N12';
+# this does have genes (finished)
+my $clone  = 'dJ271M21';
+# this does have genes (unfinished)
+# my $clone = '';
 
 &GetOptions( 'dbtype:s' => \$dbtype,
 	     'host:s'   => \$host,
@@ -23,8 +29,10 @@ my $clone  = 'dJ1156N12';
 my $db;
 
 if( $dbtype =~ 'ace' ) {
-    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host1, -port => $port);
+    $host=$host2 unless $host;
+    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
 } elsif ( $dbtype =~ 'rdb' ) {
+    $host=$host1 unless $host;
     $db = Bio::EnsEMBL::DB::Obj->new( -user => 'root', -db => 'pog' , -host => $host );
 } elsif ( $dbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new();
@@ -47,7 +55,6 @@ my $comment = Bio::Annotation::Comment->new();
 $comment->text("This clone was reannotated via the EnsEMBL system. Please visit the EnsEMBL web site, http://ensembl.ebi.ac.uk for more information");
 
 $as->annotation->add_Comment($comment);
-
 
 my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
 
