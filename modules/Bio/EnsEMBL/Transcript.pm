@@ -73,6 +73,7 @@ sub _initialize {
   foreach my $a (@args) {
     $self->add_Exon($a);
   }
+  $self->is_partial(0);
 
   return $self; # success - we hope!
 }
@@ -162,6 +163,76 @@ sub flush_Exon{
 
    $self->{'_trans_exon_array'} = [];
 }
+
+
+=head2 split_Transcript_to_Partial
+
+ Title   : split_Transcript_to_Partial
+ Usage   : @trans = $trans->split_Transcript_to_Partial
+ Function: splits a transcript with potential non spliceable
+           exons into a set of partial transcripts
+ Example :
+ Returns : an array of Bio::EnsEMBL::Transcript objects
+ Args    :
+
+
+=cut
+
+sub split_Transcript_to_Partial{
+   my ($self,@args) = @_;
+
+   my @exons = $self->each_Exon;
+
+   my $l = $#exons;
+   my $prev = shift @exons;
+
+
+   my $t;
+   my @out;
+
+
+   TRANSCRIPT :
+   while ( $#exons >= 0 ) {
+
+
+       # make a new transcript, add the old exon
+       $t = $self->new();
+       $t->id($self->id);
+       
+       $t->add_Exon($prev);
+       $t->is_partial(1);
+       push(@out,$t);
+
+       while( my $exon = shift @exons ) {
+	   if( $exon->phase == $prev->end_phase ) {
+	       # add it
+	       $t->add_Exon($exon);
+	       $prev = $exon;
+	   } else {
+	       $prev = $exon;
+	       if( $#exons < 0 ) {
+		   # this was the last exon!
+		   $t = $self->new();
+		   $t->id($self->id);
+		   
+		   $t->add_Exon($prev);
+		   $t->is_partial(1);
+		   push(@out,$t);
+		   last TRANSCRIPT;
+	       } else {
+		   next TRANSCRIPT;
+	       }
+	   }
+       }
+   }
+
+   if( $#out == 0 ) {
+       $t->is_partial(0);
+   }
+
+   return @out;
+}
+
 
 =head2 translate
 
@@ -589,7 +660,31 @@ sub find_coord {
   }
 }
 
+=head2 is_partial
+
+ Title   : is_partial
+ Usage   : $obj->is_partial($newval)
+ Function: 
+ Example : 
+ Returns : value of is_partial
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub is_partial{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'is_partial'} = $value;
+    }
+    return $obj->{'is_partial'};
+
+}
+
+
 1;
+
+
 
 
 

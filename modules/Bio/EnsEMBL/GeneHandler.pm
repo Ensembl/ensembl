@@ -30,6 +30,10 @@ they aren't.
 It provides way to get the 'correct' embl type information out the 
 of the objects, potentially with context wrt to the dna sequence.
 
+This is a difficult module to understand as you have to understand how
+the AnnSeqIO/EMBL dumper works. It is there where the FtHelper objects
+are made.
+
 =head1 CONTACT
 
 Describe contact details here
@@ -86,7 +90,6 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
-
 =head2 to_FTHelper
 
  Title   : to_FTHelper
@@ -106,120 +109,16 @@ sub to_FTHelper{
    my (@out);
    my (@exons);
 
-   my %exh;
+   my $exh = {};
    
    foreach my $trans ( $self->gene()->each_Transcript() ) {
-       my $trans_strand = undef;
-       my $trans_loc;
-       # wrap this in an eval to catch database exceptions.
-       eval {
-	   foreach my $exon ( $trans->each_Exon() ) {
-	       # get out the clone
-	       if( $exon->clone_id() eq $self->clone->id() ) {
-
-		   # in the future we probably need to factor out
-		   # this inner loop as we will need to reuse it
-
-		   # find the offset position of the contig in the clone
-		   my $contig = $self->clone()->get_Contig($exon->contig_id());
-		   $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
-
-		   my $pos = $contig->offset();
-		   my $ori = $contig->orientation();
-		   
-                   # make an Exon FTHelper and add them
-
-		   my $ft = new Bio::AnnSeqIO::FTHelper->new();
-
-		   
-		   
-		   my $locstart;
-		   my $locend;
-		   my $exst;
-		   
-		   if( $ori == 1 ) {
-		       $locstart = $exon->start+$pos-1;
-		       $locend   = $exon->end+$pos-1;
-		       $ft->loc("$locstart..$locend");
-		       if( $exon->strand == -1 ) {
-			   $exst = -1;
-			   $ft->loc("complement(". $ft->loc . ")");
-		       } else {
-			   $exst = 1;
-		       }
-		   } else {
-		       my $tseq = $contig->seq(); # this is bad news to get out the length
-		       $locstart = $pos-1 + ($tseq->seq_len() - $exon->end +1);
-		       $locend   = $pos-1 + ($tseq->seq_len() - $exon->start +1);
-		       $ft->loc("$locstart..$locend"); 
-		       if( $exon->strand == 1 ) {
-			   $exst = -1;
-			   $ft->loc("complement(". $ft->loc . ")");
-		       } else {
-			   $exst = 1;
-		       }
-		   }
-		   $ft->key("Exon");
-
-		   # add other stuff to Exon?
-		   $ft->add_field('created',$exon->created());
-		   $ft->add_field('modified',$exon->modified());
-		   $ft->add_field('exon_id',$exon->id());
-		   $ft->add_field('phase',$exon->phase());
-		   $ft->add_field('end_phase',$exon->end_phase());
-
-		   # FIXME: we are redoing too much information above
-                   # add this to a hash so that we can get out the 
-                   # unique set of exons for this gene. We can't stop
-                   # processing this exon, as we need the information for transcript.
-
-		   $exh{$exon->id()} = $ft;
-		   
-
-		   # ok - now handle the location line in the transcript object
-		   if( defined $trans_loc  ) {
-		       $trans_loc .= ",";
-		       $trans_loc .= $ft->loc;
-		   } else {
-		       $trans_loc = $ft->loc;
-		   }
-
-
-		   if( !defined $trans_strand ) {
-		       $trans_strand = $exst;
-		   } else {
-		       if( $exst != $trans_strand ) {
-			   $self->warn("Oh no - transcript with orientation different from implied gene order on" . $self->id());
-		       }
-		   }
-
-		   
-	       } else {
-		   $self->throw("Have not delt with exons on other clones yet! Self is ". $self->clone->id(). " exon is " . $exon->clone_id() . "$exon");
-	       }
-	   }
-
-	   my $fth = Bio::AnnSeqIO::FTHelper->new();
-	   $fth->key("CDS");
-	   
-	   $trans_loc = "join($trans_loc)";
-	   if( $trans_strand == -1 ) {
-	       $fth->loc("complement($trans_loc)");
-	   } else {
-	       $fth->loc($trans_loc);
-	   }
-	   my $pseq = $trans->translate();
-	   $fth->add_field('translate',$pseq->str);
-	   $fth->add_field('transcript_id',$trans->id());
-	   $fth->add_field('gene_id',$self->gene->id());
-	   
-	   push(@out,$fth);
-       };
-       if( $@ ) {
-	   $self->throw("Unable to process transcript due to\n$@\n");
+       foreach my $ptrans ( $trans->split_Transcript_to_Partial ) {
+	   push(@out,$self->_process_Transcript($ptrans,$exh));
        }
    }
-   push(@out,values %exh);
+
+
+   push(@out,values %{$exh});
    return @out;
 
 }
@@ -266,4 +165,181 @@ sub gene{
     return $obj->{'gene'};
 
 }
+
+
+=head2 _process_Transcript
+
+ Title   : _process_Transcript
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _process_Transcript{
+   my ($self,$trans,$exon_hash_ref) = @_;
+
+   my $ori;
+   my $firstexon;
+   my $trans_loc;
+
+   #
+   # First exon describes the orientation of the gene
+   #
+   my @fth;
+
+   ($firstexon) = $trans->each_Exon();
+   my $contig = $self->clone()->get_Contig($firstexon->contig_id());
+   
+
+   if( $contig->orientation == 1 ) {
+       if( $firstexon->strand == 1 ) {
+	   $ori = 1;
+       } else {
+	   $ori = -1;
+       }
+   } else {
+       if( $firstexon->strand == 1 ) {
+	   $ori = -1;
+       } else {
+	   $ori = 1;
+       }
+   }
+
+
+   # ok. Now - get into the major loop, and start processing
+   # the exons
+
+   foreach my $exon ( $trans->each_Exon() ) {
+       # get out the clone
+       if( $exon->clone_id() ne $self->clone->id() ) {
+	   $self->throw("Cannot currently dump exons across clones");
+       }
+
+       $contig = $self->clone()->get_Contig($exon->contig_id());
+       $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
+
+	          
+       my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+
+       if( ! $exon_hash_ref->{$exon->id()}  ) {
+	   # add this exon
+	   # make an Exon FTHelper and add them
+	   
+	   my $ft = new Bio::AnnSeqIO::FTHelper->new();
+	   $ft->key("Exon");
+	   # add other stuff to Exon?
+	   $ft->add_field('created',$exon->created());
+	   $ft->add_field('modified',$exon->modified());
+	   $ft->add_field('exon_id',$exon->id());
+	   $ft->add_field('phase',$exon->phase());
+	   # $ft->add_field('end_phase',$exon->end_phase());
+
+
+	   if( $loc_comp == -1 ) {
+	       $ft->loc("complement($locstart..$locend)");
+	   } else {
+	       $ft->loc("$locstart..$locend");
+	   }
+	   $exon_hash_ref->{$exon->id()} = $ft;
+       }
+
+       # add the information to the Transcript object whatever.
+
+       if( $loc_comp == 1 ) {
+	   if( ! defined $trans_loc ) {
+	       $trans_loc = "$locstart..$locend";
+	   } else {
+	       $trans_loc .= ",$locstart..$locend";
+	   }
+       } else {
+	   if( ! defined $trans_loc ) {
+	       $trans_loc = "complement($locstart..$locend)";
+	   } else {
+	       $trans_loc .= ",complement($locstart..$locend)";
+	   }
+       }
+   }
+
+   my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
+   $t_fth->key("CDS");
+   my $pseq = $trans->translate();
+   $t_fth->add_field('translate',$pseq->str);
+   $t_fth->add_field('transcript_id',$trans->id());
+   $t_fth->add_field('gene_id',$self->gene->id());
+   if( $trans->is_partial() == 1 ) {
+       $t_fth->add_field('note',"transcript is a partial transcript");
+   }
+   
+   $t_fth->loc("join($trans_loc)");
+
+   push(@fth,$t_fth);
+   return @fth;
+}
+
+=head2 _deduce_exon_location
+
+ Title   : _deduce_exon_location
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _deduce_exon_location{
+   my ($self,$exon,$contig) = @_;
+
+   my ($locstart,$locend,$loc_comp);
+
+   if( $contig->orientation == 1 ) {
+       $loc_comp = $exon->strand;
+       if( $loc_comp == 1 ) {
+	   $locstart = $contig->offset + $exon->start -1;
+	   $locend   = $contig->offset + $exon->end -1;
+       } else {
+	   $locstart = $contig->offset + $exon->start -1;
+	   $locend   = $contig->offset + $exon->end -1;
+       }
+   } else {
+       my $tseq = $contig->seq(); # this is bad news to get out the length
+       my $pos  = $contig->offset();
+
+       if( $exon->strand == -1 ) {
+	   $locstart = $pos-1 + ($tseq->seq_len() - $exon->end +1);
+	   $locend   = $pos-1 + ($tseq->seq_len() - $exon->start +1);
+	   $loc_comp = 1;
+       } else {
+	   $locstart   = $pos-1 + ($tseq->seq_len() - $exon->end +1);
+	   $locend     = $pos-1 + ($tseq->seq_len() - $exon->start +1);
+	   $loc_comp = -1;
+       }
+   }
+   return ($locstart,$locend,$loc_comp);
+}
+
+1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -53,10 +53,10 @@ $contig->orientation(1);
 $contig->seq($seq); 
 $contig->id('Contig-1');
 
-$seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TTTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT' );
+$seq2 = Bio::Seq->new( -id => 'Contig-2' , -seq => 'TCAGAAATTTGGGTGTTTTGGCCCTGGTGGTTTGGGTTT' );
 $contig2 = Bio::EnsEMBL::PerlDB::Contig->new();
 $contig2->offset(60);
-$contig2->orientation(1);
+$contig2->orientation(-1);
 $contig2->id('Contig-2');
 $contig2->seq($seq2);
 
@@ -68,18 +68,18 @@ $ex1   = new Bio::EnsEMBL::Exon;
 $ex2   = new Bio::EnsEMBL::Exon;
 
 $ex1->start(8);
-$ex1->end(14);
+$ex1->end(13);
 $ex1->phase(0);
 $ex1->strand(1);
-$ex1->attach_seq($seq);
-$ex1->contig_id('Contig-1');
+$ex1->attach_seq($seq2);
+$ex1->contig_id('Contig-2');
 $ex1->clone_id('test-clone');
 $ex1->created('dummy_creation_date');
 $ex1->modified('dummy_modification_date');
 $ex1->id('exon-id-1');
 
-$ex2->start(8);
-$ex2->end(12);
+$ex2->start(18);
+$ex2->end(23);
 $ex2->phase(1);
 $ex2->strand(1);
 $ex2->attach_seq($seq2);
@@ -114,8 +114,24 @@ print "ok 2\n";
 
 $as = $clone->get_AnnSeq();
 $asio = Bio::AnnSeqIO->new(-format => 'EMBL' , -fh => \*STDERR ) ;
+$asio->_post_sort(\&sort_FTHelper_EnsEMBL);
 
 $asio->write_annseq($as);
+
+sub sort_FTHelper_EnsEMBL {
+    my $a = shift;
+    my $b = shift;
+
+    if( $a->key eq $b->key ) {
+	return ($a->loc cmp $b->loc);
+    }
+
+    if( $a->key eq 'CDS' ) {
+	return -1;
+    }
+
+    return 1;
+}
 
 
 

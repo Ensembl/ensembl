@@ -200,7 +200,7 @@ sub gff{
     my ($self) = @_;
     my $contig_id=$self->id();
     
-    use GFF;
+  #  use GFF;
     my $gff=new GFF::GeneFeatureSet;
     foreach my $gene ($self->get_all_Genes()){
 	my $gene_id=$gene->id;
