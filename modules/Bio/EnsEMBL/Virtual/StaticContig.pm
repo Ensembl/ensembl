@@ -1379,6 +1379,8 @@ sub get_landmark_MarkerFeatures_old {
 
 my ($self) = @_;
 
+$self->throw( "Method deprecated." );
+
 my $glob_start = $self->_global_start;
 my $glob_end   = $self->_global_end;
 my $length     = $self->length;
@@ -1481,14 +1483,14 @@ sub get_landmark_MarkerFeatures{
     my $length     = $self->length;
 
 
-   my $statement= " SELECT  start,
-			    end,
-			    strand,
+   my $statement= " SELECT  chr_start,
+			    chr_end,
+			    chr_strand,
 			    name 
-		    FROM    contig_landmarkMarker 
+		    FROM    landmarkMarker 
 		    WHERE   chr_name = '$chr_name'
-                    AND     start >= $glob_start 
-                    AND     end <= $glob_end 
+                    AND     chr_start >= $glob_start 
+                    AND     chr_end <= $glob_end 
 		    ORDER BY start
 		";
    
