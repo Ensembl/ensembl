@@ -64,7 +64,7 @@ sub parse_genes {
 		$tc++;
 	    }
 	    foreach my $exon ($gene->each_unique_Exon) {
-		if ($exon->id =~ /ENS-F15G0000/) {
+		if ($exon->id =~ /ensembl-F15G0000/) {
 		    $ec++;
 		}
 	    }
