@@ -1,7 +1,8 @@
 #!/usr/local/bin/perl
 
 BEGIN {
-    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+#    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
     unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
 }
 
@@ -22,78 +23,114 @@ use strict;
 
 my ($clonefile,
     $clone,
+    $test,
 );
 
 
 GetOptions("clonefile=s" => \$clonefile,            # File of clone names
 	   "clone=s"     => \$clone,                # Clone name on the command line
+	   "test"        => \$test,
 	   ) or usage();
 
 # Connect to the database
 my @clones     = read_clones($clonefile,$clone);
-
-my $db         = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
-					       -host   => 'obi-wan',
-					       -user   => 'ensdev',
-					       )  or die "Can't connect to database";
-
-my $timdb      = Bio::EnsEMBL::TimDB::Obj->new('','',1);
-my @clones     = $timdb->get_all_Clone_id;
+my $db;
+#my $db         = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
+#					       -host   => 'obi-wan',
+#					       -user   => 'ensdev',
+#					       )  or die "Can't connect to database";
+my $timdb      = Bio::EnsEMBL::TimDB::Obj->new('','',$test);
+#my @clones     = $timdb->get_all_Clone_id;
 
 CLONE: foreach my $cloneid (@clones) {
+    
+    print("\nProcessing clone $cloneid\n");
+    
+    print("Fetching TimDB object\n");
+    
+    my $tim_clone   = $timdb->get_Clone($cloneid);
+    my @tim_contigs = $tim_clone->get_all_Contigs();
+    
+    
+    print("Number of contigs found is " . (1+$#tim_contigs) . "\n");
+    
+    
+  CONTIG: foreach my $contig (@tim_contigs) {
+      open(POG,">$cloneid." . $contig->id . ".gff"); 
+      my $fh = \*POG;
+      
+      print(" - Processing contig " . $contig->id . "\n");
 
-#    eval{
-	print("\nProcessing clone $cloneid\n");
-	
-	print("Fetching TimDB object\n");
-	
-	my $tim_clone   = $timdb->get_Clone($cloneid);
-	my @tim_contigs = $tim_clone->get_all_Contigs();
-	
+      print_genes($contig,$fh);
 
-	print("Number of contigs found is " . (1+$#tim_contigs) . "\n");
-	
-
-	CONTIG: foreach my $contig (@tim_contigs) {
-#	    next CONTIG unless $contig->id =~ /00001/;
-	    print(" - Processing contig " . $contig->id . "\n");
-
-	    my @features = $contig->get_all_SeqFeatures;
-	    
-	    print("Number of features found is " . ($#features+1) . "\n");
-
-	    foreach my $f (@features) {
-		print($f->seqname    . "\t" . 
-		      $f->source_tag . "\t" . 
-		      $f->start      . "\t" . 
-		      $f->end        . "\t" . 
-		      $f->primary_tag . "\t" . 
-		      $f->strand      . "\t" . 
-		      $f->frame       . "\t");
-
-		if ($f->isa("Bio::SeqFeature::Homol")) {
-		    my $h = $f->homol_SeqFeature;
-		    print($h->seqname . "\t"  . 
-			  $h->source_tag . "\t" .
-			  $h->start   . "\t" . 
-			  $h->end     . "\n");
-		}
-
-		
-
-	    }
-
-	}
- #   }; 
-
- #   if (@_) {
-#	print(STDERR "@_");
-#	next CONTIG;
-#    }
+      my @features = $contig->get_all_SeqFeatures;
+      
+      print("Number of features found is " . ($#features+1) . "\n");
+      
+      homol2GFF($fh,\@features);
+      
+      
+  }
 }
 
+sub print_genes {
+    my ($contig,$fh) = @_;
+
+    foreach my $gene ($contig->get_all_Genes) {
+	foreach my $trans($gene->each_Transcript) {
+	    foreach my $ex ($trans->each_Exon) {
+		print($fh  "Gene\tGENSCAN\texon\t" . $ex->start . "\t" . $ex->end . "\t0\t" . $ex->strand . "\t0\n");
+	    }
+	}
+    }
+}
+sub homol2GFF {
+    my ($fh,$homols) = @_;
+
+    foreach my $h1 (@$homols) {
+	my $score = $h1->score;
+
+	if ($score eq "") {
+	    $score = 1;
+	}
+
+	my $strand1 = $h1->strand;
+
+	if ($strand1 == -1) {
+	    $strand1 = '-';
+	} else {
+	    $strand1 = '+';
+	}
+
+	my $h2 = $h1->homol_SeqFeature;
 
 
+	if (defined($h2)) {
+	    my $strand = "+";
+	    
+	    if ($h2->strand == -1) {
+		$strand = "-";
+	    }
+	    
+	    print($fh $h1->seqname . "\t" . $h1->source_tag . "\t" . $h2->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $score ."\t" . $strand . 
+		  "\t0\tSequence:" . 
+		  $h2->seqname . "\t" . $h2->start . "\t" . $h2->end ."\n");
+	} else {
+
+	    print($fh $h1->seqname. "\t" . $h1->source_tag . "\t" . $h1->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $score ."\t" . $strand1 . "\t0\t\n");
+	      }
+	    
+    }
+}
+sub print_gene {
+    my ($fh,$g) = @_;
+
+    foreach my $ex ($g->each_Exon) {
+	print($fh  "Gene\tGENSCAN\texon\t" . $ex->start . "\t" . $ex->end . "\t0\t" . $ex->strand . "\t0\n");
+    }
+
+    print("\nTranslation " . $g->translate()->seq . "\n");
+}
 
 sub get_accession {
     my ($cloneid) = @_;

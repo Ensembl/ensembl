@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 
 BEGIN {
-    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
     unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
 }
 
@@ -58,7 +58,7 @@ my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensdev',
 					      -user   => 'ensdev',
 					      )  or die "Can't connect to database";
 
-my $contigobj = $db->get_Contig("$accession.$contig");
+my $contigobj = $db->get_Contig("$accession.$contig") if $write;
 
 
 # For each gene there are a set of msptmp files containing
@@ -77,7 +77,9 @@ TRANS: foreach my $g ($gs->each_Transcript) {
     my $mspfile    = fetch_msp_file($root_dir,$clone,$contig,$count);
 
     my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
-    my $msp        = new Bio::EnsEMBL::Analysis::MSPcrunch     ($mspfile,'PEP-PEP');
+    my $msp        = new Bio::EnsEMBL::Analysis::MSPcrunch     (-file => $mspfile,
+								-type => 'PEP-DNA',
+								-source_tag => 'tblastn_vert');
 
 
     foreach my $homol ($msp->each_Homol) { # Adds each hit to the GenscanPeptide object
@@ -162,6 +164,8 @@ sub homol2gff {
     my ($fh,$homols) = @_;
 
     my $source = "tblastn_dbest";
+    my $source = "blastp_swir";
+    my $source = "tblastn_vert";
 
     foreach my $h1 (@$homols) {
 	my $h2 = $h1->homol_SeqFeature;
@@ -179,8 +183,9 @@ sub homol2gff {
 
 sub fetch_msp_file {
     my ($root_dir,$clone,$contig,$count) = @_;
-#    my $ext = ".tblastn_dbest.msptmp";
+    my $ext = ".tblastn_dbest.msptmp";
     my $ext = ".blastp_swir.msptmp";
+    my $ext = ".tblastn_vert.msptmp";
 
     return $root_dir . "/" . $clone . "." . $contig  . "." . $count . $ext;
 }
