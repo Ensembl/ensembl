@@ -207,6 +207,7 @@ CREATE TABLE protein_align_feature (
 
   PRIMARY KEY ( protein_align_feature_id ),
   KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
+  KEY seq_region_idx_2( seq_region_id, seq_region_start),
   KEY hit_idx( hit_name ),
   KEY analysis_idx( analysis_id )
 
@@ -236,6 +237,7 @@ CREATE TABLE dna_align_feature (
 
   PRIMARY KEY ( dna_align_feature_id ),
   KEY seq_region_idx( seq_region_id, analysis_id, seq_region_start, score ),
+  KEY seq_region_idx_2( seq_region_id, seq_region_start),
   KEY hit_idx( hit_name ),
   KEY analysis_idx( analysis_id )
 
