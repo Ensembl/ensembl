@@ -37,9 +37,9 @@ $priority{'MarkerSymbol'} = 1000;
 $priority{'wormbase_transcript'} = 1000;
 $priority{'flybase_symbol'} = 1000;
 $priority{'Anopheles_symbol'} = 1000;
-$priority{'SWISSPROT'} = 900;
+$priority{'Uniprot/SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
-$priority{'SPTREMBL'} = 700;
+$priority{'Uniprot/SPTREMBL'} = 700;
 $priority{'LocusLink'} = 100;
 
 

@@ -422,7 +422,7 @@ MAPPING: while (<MAP>) {
 	    
 	    
 
-	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB") || $a->xDB eq 'BRIGGSAE_HYBRID') {
+	    if (($a->xDB eq "Uniprot/SPTREMBL") || ($a->xDB eq "Uniprot/SWISSPROT") || ($a->xDB eq "RefSeq") || ($a->xDB eq "ANOSUB") || $a->xDB eq 'BRIGGSAE_HYBRID') {
 
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
@@ -434,7 +434,7 @@ MAPPING: while (<MAP>) {
 
 		$dbentry->status($a->stat);
 
-		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT"))) {
+		if (($check eq "yes") && (($a->xDB eq "Uniprot/SPTREMBL") || ($a->xDB eq "Uniprot/SWISSPROT"))) {
 
 		    if (($sp2embl{$a->xAC}) && ($ens2embl{$targetid})) {
 

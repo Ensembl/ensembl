@@ -334,56 +334,61 @@ if ($organism eq "human") {
 
 #Get Xref mapping specifically for mouse.
 if ($organism eq "mouse") {
-    my %mgi2sp;
-    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
-    while (<MGISP>) {
-	chomp;
-	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
-      	
-	my @sp = split(/\s/,$sps);
-	
-	#put in hash all of the SP entries which correspond to an MGI (this will be used later)
-	$mgi2sp{$mgi} = $sps;
-	
+  my %mgi2sp;
+
+  open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
+
+  while (<MGISP>) {
+    chomp;
+# Format (^I = tab): MGI:1913305^I0610009D07Rik^IO^IRIKEN cDNA 0610009D07 gene^Isyntenic^I12^IP59708$
+
+    my ($mgi,$rik,$a,$b,$c,$d,$sps) = split (/\t/,$_);
+          
+    # put in hash all of the SP entries which correspond to an MGI (this will be used later)
+    $mgi2sp{$mgi} = $sps;
+  }
+
+  open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
+
+  my %mgi_got;
+  my %mgi_syns;
+  while (<MGILOC>) {
+    # The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+    chomp;
+    my ($mgi,$locus) = split (/\t/,$_);
+
+    if ($mgi_got{$mgi}) {
+      if (!$mgi_syns{$mgi}) {
+        $mgi_syns{$mgi} = [];
+        push(@{$mgi_syns{$mgi}}, $locus);
+      } else {
+        push(@{$mgi_syns{$mgi}}, $locus);
+      }          
+    } else {
+      $mgi_got{$mgi} = $locus;
     }
-    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
-    my %mgi_got;
-    my %mgi_syns;
-    while (<MGILOC>) {
-      #The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
-      chomp;
-      my ($mgi,$locus) = split (/\t/,$_);
-      if($mgi_got{$mgi}){
-	if(!$mgi_syns{$mgi}){
-	  $mgi_syns{$mgi} = [];
-	  push(@{$mgi_syns{$mgi}}, $locus);
-	}else{
-	  push(@{$mgi_syns{$mgi}}, $locus);
-	}	    
-      }else{
-	$mgi_got{$mgi} = $locus;
-      }
+  }
       
+  my @mgi_ids = keys(%mgi_got);
+  foreach my $mgi (@mgi_ids) {
+    my @syns;
+    my $syns;
+    if ($mgi_syns{$mgi}) {
+      @syns = @{$mgi_syns{$mgi}};
+      $syns = join(';',@syns);
     }
-	
-    my @mgi_ids = keys(%mgi_got);
-    foreach my $mgi(@mgi_ids){
-      my @syns;
-      my $syns;
-      if($mgi_syns{$mgi}){
-	@syns = @{$mgi_syns{$mgi}};
-	$syns = join(';',@syns);
-      }
-      my $locus = $mgi_got{$mgi};
-      if ($mgi2sp{$mgi}) {
-	#There can be many SPs for one MGI
-	my @swiss = split (/\s/,$mgi2sp{$mgi}); 
-	
-	foreach my $sw(@swiss) {
-	  print OUT "$sw\tSPTR\t$mgi\tMarkerSymbol\t$locus\t$syns\tXREF\n";
-	}
+
+    my $locus = $mgi_got{$mgi};
+
+    if ($mgi2sp{$mgi}) {
+      # There can be many SPs for one MGI
+      my @swiss = split (/\s/,$mgi2sp{$mgi}); 
+      
+      foreach my $sw (@swiss) {
+        print OUT "$sw\tSPTR\t$mgi\tMarkerSymbol\t$locus\t$syns\tXREF\n";
       }
     }
+  }
 }
 
 #Get specific xmapping for anopheles.
