@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 32;
+	plan tests => 33;
 }
 
 use MultiTestDB;
@@ -252,3 +252,4 @@ my $ids = $pta->list_dbIDs();
 ok (@{$ids});
 
 
+ok($pt->display_id eq $pt->stable_id);

@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 11
+	plan tests => 12
 }
 
 use MultiTestDB;
@@ -87,3 +87,6 @@ ok($mf->strand == 0);
 #######
 
 ok($mapweight == $mf->map_weight);
+
+
+ok($mf->display_id eq $mf->marker->display_MarkerSynonym());

@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 33;
+	plan tests => 34;
 }
 
 use MultiTestDB;
@@ -137,6 +137,9 @@ print_features([$feat]);
 # List_dbidx
 my $ids = $sfa->list_dbIDs();
 ok (@{$ids});
+
+
+ok($feat->display_id eq $feat->display_label);
 
 
 

@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 use MultiTestDB;
@@ -46,12 +46,18 @@ $aef->adaptor($aefa);
 ok($aef->adaptor->isa('Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor'));
 
 # fetch all
-my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', '20_HAP1');
+my $chr_slice = $dba->get_SliceAdaptor->fetch_by_region('chromosome', 
+                                                        '20_HAP1');
 my @features = @{$aefa->fetch_all_by_Slice($chr_slice)};
 
 ok(@features);
 foreach my $f (@features) {
-  print "Feature: " . $f->slice->seq_region_name . " " . $f->start . " " . $f->end . " " . $f->type;
+  debug( "Feature: " . $f->slice->seq_region_name . " " . 
+         $f->start . " " . $f->end . " " . $f->type);
   my $as = $f->alternate_slice();
-  print " Alternate slice: " . $as->seq_region_name . " " . $as->start . " " . $as->end . "\n";
+  debug(" Alternate slice: " . $as->seq_region_name . " " . 
+        $as->start . " " . $as->end);
 }
+
+my $f = (@features);
+ok($f->display_id eq $f->alternate_slice->seq_region_name);

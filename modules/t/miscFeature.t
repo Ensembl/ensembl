@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 10
+	plan tests => 11
 }
 
 use MultiTestDB;
@@ -62,6 +62,9 @@ my $name1 = 'test name';
 my $name2 = 'AL4231124.1';
 
 $mf->add_attribute('name',  $name1);
+
+ok($mf->display_id eq $name1);
+
 $mf->add_attribute('name',  $name2);
 $mf->add_attribute('version', '4');
 

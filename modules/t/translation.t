@@ -5,7 +5,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 18;
+	plan tests => 19;
 }
 
 my $loaded = 0;
@@ -109,3 +109,5 @@ ok(@protein_features == 3);
 my @domain_features = @{$translation->get_all_DomainFeatures()};
 debug("Got " . scalar(@domain_features) . " domain features.");
 ok(@domain_features == 3);
+
+ok($translation->display_id eq $translation->stable_id);

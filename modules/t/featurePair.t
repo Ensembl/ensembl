@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 22;
+	plan tests => 23;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -16,7 +16,7 @@ use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::CoordSystem;
 use MultiTestDB;
 
-our $verbose= 1; #turn on or off debug statements
+our $verbose= 0; #turn on or off debug statements
 
 my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
@@ -94,3 +94,4 @@ ok(test_getter_setter($fp, 'species', 'Rattus_norvegicus'));
 ok(test_getter_setter($fp, 'hspecies', 'Danio_rerio'));
 
 
+ok($fp->display_id eq $fp->hseqname());

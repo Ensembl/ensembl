@@ -11,7 +11,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 15;
+	plan tests => 16;
 }
 
 
@@ -93,5 +93,6 @@ ok(test_getter_setter($rf, 'hend', 200));
 ok(test_getter_setter($rf, 'repeat_consensus', $repeat_consensus));
 ok(test_getter_setter($rf, 'score', '45.5'));
 
+ok($rf->display_id eq 'ACTG(n)');
 
 ok($rf->hstrand == 1);

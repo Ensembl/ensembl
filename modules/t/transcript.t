@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 35;
+	plan tests => 36;
 }
 
 use MultiTestDB;
@@ -240,3 +240,5 @@ ok($tr && $tr->stable_id eq 'ENST00000262651');
 $tr = $ta->fetch_by_translation_id(21734);
 
 ok($tr && $tr->stable_id eq 'ENST00000201961');
+
+ok($tr->display_id() eq $tr->stable_id());

@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 74;
+	plan tests => 75;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -360,3 +360,5 @@ foreach my $segment (@projection) {
   debug("[$start-$end] -> " . $slice->seq_region_name
         . ' ' . $slice->start . '-' . $slice->end . '('.$slice->strand().')');
 }
+
+ok($feature->display_id eq '');

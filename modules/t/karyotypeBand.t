@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;
+	plan tests => 10;
 }
 
 
@@ -46,6 +46,7 @@ ok($kb->end()   == $end);
 ok($kb->stain() eq $stain);
 ok($kb->name() eq $name);
 ok($kb->slice == $slice);
+ok($kb->display_id eq $name);
 
 #
 # test getter/setters
