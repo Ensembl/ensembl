@@ -65,8 +65,8 @@ CREATE TABLE source (
   name                        varchar(255) not null,
   url                         varchar(255),
   checksum                    varchar(255),
-  file_modified_date          datetime not null,
-  upload_date                 datetime not null,
+  file_modified_date          datetime,
+  upload_date                 datetime,
   release                     varchar(255),
 
   PRIMARY KEY (source_id),
@@ -83,6 +83,9 @@ INSERT INTO source VALUES (4, 'UniProt_SwissProt_drosophilla_melanogaster', 'ftp
 INSERT INTO source VALUES (5, 'UniProt_SwissProt_caenorhabditis_elegans', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/6239.SPC', '', now(), now(), 1);
 INSERT INTO source VALUES (6, 'UniProt_SwissProt_gallus_gallus', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), 1);
 INSERT INTO source VALUES (7, 'UniProt_SwissProt_pan_troglodytes', 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9598.SPC', '', now(), now(), 1);
+
+# Other sources - used to create dependent xrefs, but not to upload from
+INSERT INTO source VALUES (100, 'EMBL', null, null, null, null, null);
 
 ################################################################################
 
