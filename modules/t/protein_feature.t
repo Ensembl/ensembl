@@ -50,7 +50,7 @@ my $protfeat = Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor->new($db);
 my @transl;
 my $id;
 eval {
-    @transl = $protfeat->Fetch_protfeature_by_translation("translation_id3");
+    @transl = $protfeat->fetch_by_translationID("translation_id3");
 };
 if ($@) {
     print "not ok 3\n";
@@ -123,7 +123,7 @@ else {
 }
 
 eval {
-    $id = $protfeat->Fetch_protfeature_by_id(1);
+    $id = $protfeat->fetch_by_dbID(1);
 };
 if ($@) {
     print "not ok 13\n";
@@ -168,7 +168,9 @@ else {
     print "ok 15\n";
 }
 
-@transl1 = $protfeat->Fetch_protfeature_by_translation("translation_id3");
+
+
+@transl1 = $protfeat->fetch_by_translationID("translation_id3");
 if (scalar @transl1 == 3) {
     print "ok 16\n";
 }
@@ -176,9 +178,8 @@ else {
     print "not ok 16\n";
 }
 
-
 eval {
-$protfeat->delete("translation_id3");
+$protfeat->delete_by_translationID("translation_id3");
 };
 
 if ($@) {
@@ -206,7 +207,7 @@ my $feature1 = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat3,
 					     -feature2 => $feat4);
 
 
-@transl1 = $protfeat->Fetch_protfeature_by_translation("translation_id3");
+@transl1 = $protfeat->fetch_by_translationID("translation_id3");
 
 if (scalar @transl1 == 0) {
     print "ok 18\n";
@@ -216,7 +217,7 @@ else {
 }
 
 eval {
-$protfeat->write_Protein_feature_by_translation("translation_id3",$feature,$feature1);
+$protfeat->write_Protein_feature_by_translationID("translation_id3",$feature,$feature1);
 };
 
 if ($@) {
@@ -226,7 +227,7 @@ else {
     print "ok 19\n";
 }
 
-my @transl2 = $protfeat->Fetch_protfeature_by_translation("translation_id3");
+my @transl2 = $protfeat->fetch_by_translationID("translation_id3");
 
 if (scalar @transl2 == 2) {
     print "ok 20\n";
@@ -236,7 +237,7 @@ else {
 }
 
 eval {
-$protfeat->delete_by_id(1);
+$protfeat->fetch_by_translationID("wrong_id");
 };
 
 if ($@) {
@@ -247,12 +248,14 @@ else {
 }
 
 eval {
-    $id = $protfeat->Fetch_protfeature_by_id(1);
+    $protfeat->delete_by_dbID(1);
 };
+
 if ($@) {
-    print "ok 22\n";
-}
-else {
     print "not ok 22\n";
 }
+else {
+    print "ok 22\n";
+}
+
 
