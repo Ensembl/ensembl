@@ -129,6 +129,9 @@ sub register_region{
   $self->throw("$assmapper is not a Bio::EnsEMBL::AssemblyMapper")
     unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
 
+  my $chr = $self->db->get_ChromosomeAdaptor()->fetch_by_name( $chr_name );
+  my $chr_id = $chr->dbID();
+  my $max_assembly_contig = $self->db()->get_MetaContainer->get_max_assembly_contig();
 
   my $select = qq{
       select
@@ -136,27 +139,25 @@ sub register_region{
          ass.contig_end,
          ass.contig_id,
          ass.contig_ori,
-         chr.name,
          ass.chr_start,
          ass.chr_end
       from
          assembly ass,
-         chromosome chr
       where
-         chr.name = '$chr_name' and
-         ass.chromosome_id = chr.chromosome_id and
-         $start <= ass.chr_end  and
-         $end >= ass.chr_start  and
+         ass.chromosome_id = $chr_id and
+         ? <= ass.chr_end  and
+         ? >= ass.chr_start  and
+	 ? <= ass.chr_start and
          ass.type = '$type'
    };
 
   my $sth = $self->prepare($select);
    
-  $sth->execute();
+  $sth->execute( $start, $end, $start-$max_assembly_contig );
    
   while( my $arrayref = $sth->fetchrow_arrayref ) {
     my ($contig_start, $contig_end, $contig_id, $contig_ori,
-	$chr_name, $chr_start, $chr_end) = @$arrayref;
+	$chr_start, $chr_end) = @$arrayref;
     if( $assmapper->_have_registered_contig($contig_id) == 0 ) {
       $assmapper->_register_contig($contig_id);
       $assmapper->_mapper->add_map_coordinates(
