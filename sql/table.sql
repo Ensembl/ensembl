@@ -34,6 +34,7 @@ CREATE TABLE clone (
   id varchar(40) DEFAULT '' NOT NULL,
   embl_id varchar(40) DEFAULT '' NOT NULL,
   version int(10) DEFAULT '0' NOT NULL,
+  embl_version int(10) DEFAULT '0' NOT NULL,
   htg_phase int(10) DEFAULT '-1' NOT NULL,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
@@ -133,6 +134,9 @@ CREATE TABLE feature (
   strand int(1) DEFAULT 1 NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
+  hstart int(11) DEFAULT '0' NOT NULL,
+  hend int(11) DEFAULT '0' NOT NULL,
+  hid varchar(40) DEFAULT '' NOT NULL,
   KEY overlap (id,contig,seq_start,seq_end,analysis),
   PRIMARY KEY(id)
 );
@@ -179,16 +183,6 @@ CREATE TABLE ghost (
   PRIMARY KEY (id,version,obj_type)
 );
 
-#
-# Table structure for table 'homol_feature'
-#
-CREATE TABLE homol_feature (
-  feature varchar(40) DEFAULT '' NOT NULL,
-  hstart int(11) DEFAULT '0' NOT NULL,
-  hend int(11) DEFAULT '0' NOT NULL,
-  hid varchar(40) DEFAULT '' NOT NULL,
-  PRIMARY KEY (feature)
-);
 
 #
 # Table structure for table 'mapbin'

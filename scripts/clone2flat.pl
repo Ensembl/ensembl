@@ -97,7 +97,7 @@ use Getopt::Long;
 # global defaults
 my $host = 'localhost';
 
-my $module    = 'Bio::EnsEMBL::DBOLD::Obj';
+my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
 
 my $dbtype    = '';
 my $format    = 'embl';

@@ -222,7 +222,18 @@ foreach my $clone_id ( @clone ) {
 	my $clone = $from_db->get_Clone($clone_id);
 	if( $delete_first == 1 ) {
 	    print STDERR "Deleting clone $clone_id";
-	    $to_db->delete_Clone($clone_id);
+	    my $oldclone;
+	    eval {
+		$oldclone = $to_db->get_Clone($clone_id);
+	    };
+	    if( $@ ) {
+		# do nothing. Clone not there
+	    } else {
+		foreach my $gene ( $oldclone->get_all_Genes() ) {
+		    $to_db->delete_Gene($gene->id());
+		} 
+		$to_db->delete_Clone($clone_id);
+	    }
 	}
 
 	$to_db->write_Clone($clone);

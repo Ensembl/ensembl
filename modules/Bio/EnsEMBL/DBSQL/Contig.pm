@@ -209,7 +209,7 @@ sub get_all_SeqFeatures{
    
    # make the SQL query
 
-   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name " . 
+   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid " . 
 				    "from feature where contig = \"$id\""                . 
 				    " and seq_start >= $start and seq_end <= $end");
    my $res = $sth->execute();
@@ -219,24 +219,18 @@ sub get_all_SeqFeatures{
 
        # Get the feature id
        my $fid = $rowhash->{id};
-       
-       # Is this a homol feature?
-       my $sth2 = $self->_dbobj->prepare("select hstart,hend,hid from homol_feature where feature = $fid");
-       my $rv   = $sth2->execute;
-
        my $out;
+       
+       if ($rowhash->{'hid'} ne '__NONE__' ) {
 
-       if ($sth2->rows > 0) {
-
-	   my $rh2  = $sth2->fetchrow_hashref;
 	   $out = new Bio::SeqFeature::Homol;
 	   
-	   my $homol = new Bio::SeqFeature::Homol(-start  => $rh2->{hstart},
-						  -end    => $rh2->{hend},
-						  -strand => $rh2->{strand},
+	   my $homol = new Bio::SeqFeature::Homol(-start  => $rowhash->{hstart},
+						  -end    => $rowhash->{hend},
+						  -strand => 1,
 				
 						  );
-	   $homol->seqname   ($rh2->{hid});						 
+	   $homol->seqname   ($rowhash->{hid});						 
 	   $homol->source_tag($rowhash->{name});
 	   $homol->primary_tag('similarity');
 	   $homol->strand    ($rowhash->{strand});
@@ -431,7 +425,7 @@ sub seq_date{
    my $datetime = $rowhash->{'created'};
    $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
    $sth->execute();
-   my $rowhash = $sth->fetchrow_arrayref();
+   $rowhash = $sth->fetchrow_arrayref();
    return $rowhash->[0];
 }
 

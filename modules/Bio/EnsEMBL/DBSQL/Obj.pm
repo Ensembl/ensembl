@@ -95,7 +95,7 @@ sub _initialize {
   # here to allow multiple exons to be retrieved fine
   #
   $self->{'_contig_seq_cache'} = {};
-  
+  $self->_analysis_cache({});
 
   $self->{'_lock_table_hash'} = {};
 
@@ -1118,7 +1118,10 @@ sub write_Gene{
    $sth2->execute();
 
    foreach my $cloneid ( $gene->each_cloneid_neighbourhood ) {
-       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."',".$cloneid.")");
+       print STDERR "Using $cloneid and ",$gene->id,"\n";
+       print STDERR "Calling [","insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $gene->id ."','".$cloneid."')","\n";
+
+       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."')");
        $sth->execute();
    }
 }
@@ -1184,7 +1187,7 @@ sub write_Protein_feature {
 =head2 write_Feature
 
  Title   : write_Feature
- Usage   : $obj->write_Feature($feature)
+ Usage   : $obj->write_Feature($contig,@features)
  Function: Writes a feature on the genomic sequence of a contig into the database
  Example :
  Returns : nothing
@@ -1194,43 +1197,65 @@ sub write_Protein_feature {
 =cut
 
 sub write_Feature {
-    my ($self,$feature,$contig) = @_;
+    my ($self,$contig,@features) = @_;
 
-    $self->throw("Wrong number of arguments entered for write_Feature") unless defined($contig);
-    $self->throw("Feature is not a Bio::SeqFeature::Generic")           unless $feature->isa("Bio::SeqFeature::Generic");
     $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")          unless (defined($contig) && $contig->isa("Bio::EnsEMBL::DB::ContigI"));
 
 
     my $contigid = $contig->id;
     my $analysis;
 
-    if (! $feature->has_tag('Analysis')) {
-	$self->throw("Feature " . $feature->seqname . " doesn't have analysis. Can't write to database");
-    } else {
-	my @res = $feature->each_tag_value('Analysis');
-	if ($#res == 0 && $res[0]->isa("Bio::EnsEMBL::Analysis::Analysis")) {
-	    $analysis = $res[0];
+    my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid) values (?,?,?,?,?,?,?,?,?,?,?)");
+
+    FEATURE :
+    foreach my $feature ( @features ) {
+	if( ! $feature->isa('Bio::SeqFeatureI') ) {
+	    $self->throw("Feature $feature is not a feature!");
+	}
+
+	if (! $feature->has_tag('Analysis')) {
+	    $self->throw("Feature " . $feature->seqname . " doesn't have analysis. Can't write to database");
 	} else {
-	    $self->throw("Can't write feature as >1 Analysis tag or not present");
+	    my @res = $feature->each_tag_value('Analysis');
+	    if ($#res == 0 && $res[0]->isa("Bio::EnsEMBL::Analysis::Analysis")) {
+		$analysis = $res[0];
+	    } else {
+		$self->warn("Can't write feature as >1 Analysis tag or not present in ". $feature->start ." to ".$feature->end. " on contig ".$contig->id);
+		next;
+	    }
+	}
+
+	my $analysisid = $self->write_Analysis($analysis);
+
+	if( $feature->isa('Bio::SeqFeature::Homol') ) {
+	    my $homol = $feature->homol_SeqFeature;
+	    $sth->execute('NULL',
+			  $contig->id,
+			  $feature->start,
+			  $feature->end,
+			  $feature->score,
+			  $feature->strand,
+			  $feature->source_tag,
+			  $analysisid,
+			  $homol->start,
+			  $homol->end,
+			  $homol->seqname);
+	} else {
+	    $sth->execute('NULL',
+			  $contig->id,
+			  $feature->start,
+			  $feature->end,
+			  $feature->score,
+			  $feature->strand,
+			  $feature->source_tag,
+			  $analysisid,
+			  -1,
+			  -1,
+			  "__NONE__");
 	}
     }
 
-    my $analysisid = $self->write_Analysis($analysis);
-
-
-			                                  
-    my $sth = $self->prepare("insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis) values (NULL,\"" . 
-			  $contig ->id          . "\"," .
-			  $feature->start       . "," . 
-			  $feature->end         . "," . 
-			  $feature->score       . "," . 
-			  $feature->strand      . ",\"" . 
-			  $feature->source_tag . "\"," .
-			  $analysisid           . ")");
-
-    my $rv = $sth->execute();
-    
-    return $rv;
+    return 1;
 }
 
 =head2 write_Analysis
@@ -1414,71 +1439,26 @@ sub exists_Analysis {
                 " gff_feature = \""     . $anal->gff_feature     . "\"";
     }
     
+    if( exists $self->_analysis_cache->{$query} ) {
+	return $self->_analysis_cache->{$query};
+    }
+
     my $sth = $self->prepare($query);
+    
 
     my $rv = $sth->execute();
 
 
     if ($rv && $sth->rows > 0) {
 	my $rowhash = $sth->fetchrow_hashref;
-	return $rowhash->{'id'};
+	my $anaid = $rowhash->{'id'}; 
+	$self->_analysis_cache->{$query} = $anaid;
+	return $anaid;
     } else {
 	return 0;
     }
 }
     
-
-=head2 write_Homol_Feature
-
- Title   : write_Homol_Feature
- Usage   : $obj->write_Homol_Feature($feature)
- Function: Writes a homol feature on the genomic sequence of a contig into the database
- Example :
- Returns : nothing
- Args    : Bio::SeqFeature::Homol
-
-
-=cut
-
-sub write_Homol_Feature {
-    my ($self,$feature,$contig) = @_;
-
-    $self->throw("Wrong number of arguments to write_Homol_Feature") unless defined($contig);
-    $self->throw("Feature is not a Bio::SeqFeature::Homol")          unless $feature->isa("Bio::SeqFeature::Homol");
-    $self->throw("$contig is not a Bio::EnsEMBL::DB::ContigI")       unless $contig ->isa("Bio::EnsEMBL::DB::ContigI");
-    
-    my $contigid = $contig->id;
-    my $homol    = $feature->homol_SeqFeature;
-
-    my $analysisid;
-    
-    if ($feature->has_tag('Analysis')) {
-	my @res = $feature->each_tag_value('Analysis');
-	$analysisid = $self->write_Analysis($res[0]);
-    }
-    
-    my $id = $self->exists_Homol_Feature($feature,$analysisid,$contig);
-
-    return 1 if $id;
-
-    my $rv = $self->write_Feature($feature,$contig);
-
-
-    $self->throw("Writing homol feature to the database failed for contig " . $contigid . "\n") unless $rv;
-
-    # Now write into the homol table - reading the manual last_insert_id should
-    # work on a per client basis so I shouldn't have to lock the tables.
-
-    my $sth    = $self->prepare("insert into homol_feature(feature,hstart,hend,hid) values (last_insert_id()," .
-			     $homol->start        . "," .
-			     $homol->end          . ",\"" .
-			     $homol->seqname      . "\")");
-    
-    $rv  = $sth->execute;
-    
-    return $rv;
-}
-
 
 =head2 write_Transcript
 
@@ -1633,26 +1613,10 @@ sub write_Contig {
      $self->throw("Failed to insert contig $contigid") unless $rv;
    }
 
-   # Get all seq features and call write_Feature or write_Homol_Feature.
+   # write sequence features. We write all of them together as it
+   # is more efficient
 
-   foreach my $f ($contig->get_all_SeqFeatures) {
-
-       $self->throw("Feature doesn't have analysis object attached")    unless $f->each_tag_value('Analysis');
-
-       my $rv;
-       
-       if ($f->isa("Bio::SeqFeature::Homol")) {
-	   $rv = $self->write_Homol_Feature($f,$contig);
-       } elsif ($f->isa("Bio::SeqFeature::Generic")) {
-#	   $rv = $self->write_Feature($f,$contig);
-	   $rv = 1;
-       } else {
-	   $self->throw("Can't write feature - $f is not a Bio::SeqFeature::Generic");
-       }
-
-       $self->throw("Feature writing failed for contig " . $contig->id) unless $rv;
-
-   }
+   $self->write_Feature($contig,$contig->get_all_SeqFeatures);
 
    return 1;
 }
@@ -1681,7 +1645,7 @@ sub write_Clone{
    my @sql;
 
    push(@sql,"lock tables clone write");
-   push(@sql,"insert into clone(id,version,embl_id,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."',now())");
+   push(@sql,"insert into clone(id,version,embl_id,embl_version,htg_phase,created,modified,stored) values('$clone_id','".$clone->version."','".$clone->embl_id."','".$clone->embl_version."','".$clone->htg_phase."','".$clone->created."','".$clone->modified."',now())");
    push(@sql,"unlock tables");   
 
    foreach my $sql (@sql) {
@@ -1732,6 +1696,27 @@ sub prepare{
    # should we try to verify the string?
 
    return $self->_db_handle->prepare($string);
+}
+
+=head2 _analysis_cache
+
+ Title   : _analysis_cache
+ Usage   : $obj->_analysis_cache()
+ Function: 
+ Returns : reference to a hash
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _analysis_cache{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_analysis_cache'} = $value;
+    }
+    return $obj->{'_analysis_cache'};
+
 }
 
 =head2 _contig_seq_cache
