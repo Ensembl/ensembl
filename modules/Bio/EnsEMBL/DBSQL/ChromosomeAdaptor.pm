@@ -114,7 +114,7 @@ sub fetch_by_chrname{
 
 =cut
 
-sub get_landmark_MarkerFeatures{
+sub get_landmark_MarkerFeatures_old{
    my ($self,$chr_name) = @_;
 
 
@@ -164,6 +164,54 @@ sub get_landmark_MarkerFeatures{
    return @out;
 }
 
+
+
+
+=head2 get_landmark_MarkerFeatures
+
+ Title   : get_landmarkMarkers
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_landmark_MarkerFeatures{
+   my ($self,$chr_name) = @_;
+
+
+   my $statement= "   select start,end,strand,name from contig_landmarkMarker where 
+                      chr_name='$chr_name'";
+   
+   $statement =~ s/\s+/ /g;
+   #print STDERR "Doing Query ... $statement\n";
+   
+   my $sth = $self->prepare($statement);
+   $sth->execute;
+   
+   my ($start, $end, $strand, $name);
+   
+   my $analysis;
+   my %analhash;
+   
+   $sth->bind_columns
+       ( undef, \$start, \$end,  \$strand, \$name);
+   
+   my @out;
+   while( $sth->fetch ) {
+       my $sf = Bio::EnsEMBL::SeqFeature->new();
+       $sf->start($start);
+       $sf->end($end);
+       $sf->strand($strand);
+       $sf->id($name);
+       push(@out,$sf);
+   } 
+
+   return @out;
+}
 
 
 
