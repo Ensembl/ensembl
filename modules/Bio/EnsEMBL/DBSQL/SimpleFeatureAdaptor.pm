@@ -162,15 +162,23 @@ sub _columns {
 =cut
 
 sub _objs_from_sth {
-  my ($self, $sth) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
-  my $db = $self->db();
-  my $aa = $db->get_AnalysisAdaptor();
-  my $slice_adaptor = $db->get_SliceAdaptor();
+  #
+  # This code is ugly because an attempt has been made to remove as many
+  # function calls as possible for speed purposes.  Thus many caches and
+  # a fair bit of gymnastics is used.
+  #
+
+  my $sa = $self->db()->get_SliceAdaptor();
+  my $aa = $self->db->get_AnalysisAdaptor();
 
   my @features;
-  my %slice_cache;
-  my %analysis_cache;
+  my %analysis_hash;
+  my %slice_hash;
+  my %sr_name_hash;
+  my %sr_cs_hash;
+
 
   my($simple_feature_id,$seq_region_id, $seq_region_start, $seq_region_end,
      $seq_region_strand, $display_label, $analysis_id, $score);
@@ -179,23 +187,108 @@ sub _objs_from_sth {
                      \$seq_region_end, \$seq_region_strand, \$display_label,
                      \$analysis_id, \$score);
 
-  while($sth->fetch()) {
-    my $slice = $slice_cache{$seq_region_id} ||=
-      $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
+  my $asm_cs;
+  my $cmp_cs;
+  my $asm_cs_vers;
+  my $asm_cs_name;
+  my $cmp_cs_vers;
+  my $cmp_cs_name;
+  if($mapper) {
+    $asm_cs = $mapper->assembled_CoordSystem();
+    $cmp_cs = $mapper->component_CoordSystem();
+    $asm_cs_name = $asm_cs->name();
+    $asm_cs_vers = $asm_cs->version();
+    $cmp_cs_name = $cmp_cs->name();
+    $cmp_cs_vers = $cmp_cs->version();
+  }
 
-    my $analysis = $analysis_cache{$analysis_id} ||=
+  my $dest_slice_start;
+  my $dest_slice_end;
+  my $dest_slice_strand;
+  my $dest_slice_length;
+  if($dest_slice) {
+    $dest_slice_start  = $dest_slice->start();
+    $dest_slice_end    = $dest_slice->end();
+    $dest_slice_strand = $dest_slice->strand();
+    $dest_slice_length = $dest_slice->length();
+  }
+
+  FEATURE: while($sth->fetch()) {
+    #get the analysis object
+    my $analysis = $analysis_hash{$analysis_id} ||=
       $aa->fetch_by_dbID($analysis_id);
 
-    push @features, Bio::EnsEMBL::SimpleFeature->new
-      (-START => $seq_region_start,
-       -END   => $seq_region_end,
-       -STRAND => $seq_region_strand,
-       -SLICE => $slice,
-       -ANALYSIS => $analysis,
-       -ADAPTOR => $self,
-       -DBID => $simple_feature_id,
-       -DISPLAY_LABEL => $display_label,
-       -SCORE => $score);
+    #get the slice object
+    my $slice = $slice_hash{"ID:".$seq_region_id};
+
+    if(!$slice) {
+      $slice = $sa->fetch_by_seq_region_id($seq_region_id);
+      $slice_hash{"ID:".$seq_region_id} = $slice;
+      $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
+      $sr_cs_hash{$seq_region_id} = $slice->coord_system();
+    }
+
+    #
+    # remap the feature coordinates to another coord system
+    # if a mapper was provided
+    #
+    if($mapper) {
+      my $sr_name = $sr_name_hash{$seq_region_id};
+      my $sr_cs   = $sr_cs_hash{$seq_region_id};
+
+      ($sr_name,$seq_region_start,$seq_region_end,$seq_region_strand) =
+        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
+                          $seq_region_strand, $sr_cs);
+
+      #skip features that map to gaps or coord system boundaries
+      next FEATURE if(!defined($sr_name));
+
+      #get a slice in the coord system we just mapped to
+      if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
+          $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
+                               $cmp_cs_vers);
+      } else {
+        $slice = $slice_hash{"NAME:$sr_name:$asm_cs_name:$asm_cs_vers"} ||=
+          $sa->fetch_by_region($asm_cs_name, $sr_name, undef, undef, undef,
+                               $asm_cs_vers);
+      }
+    }
+
+    #
+    # If a destination slice was provided convert the coords
+    # If the dest_slice starts at 1 and is foward strand, nothing needs doing
+    #
+    if($dest_slice) {
+      if($dest_slice_start != 1 || $dest_slice_strand != 1) {
+        if($dest_slice_strand == 1) {
+          $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+          $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+        } else {
+          my $tmp_seq_region_start = $seq_region_start;
+          $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+          $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+          $seq_region_strand *= -1;
+        }
+
+        #throw away features off the end of the requested slice
+        if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+          next FEATURE;
+        }
+      }
+      $slice = $dest_slice;
+    }
+
+    push @features, Bio::EnsEMBL::SimpleFeature->new_fast(
+      {'start'    => $seq_region_start,
+       'end'      => $seq_region_end,
+       'strand'   => $seq_region_strand,
+       'slice'    => $slice,
+       'analysis' => $analysis,
+       'adaptor'  => $self,
+       'dbID'     => $simple_feature_id,
+       'display_label' => $display_label,
+       'score'    => $score});
   }
 
   return \@features;
