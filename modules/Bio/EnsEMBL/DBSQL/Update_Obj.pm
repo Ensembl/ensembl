@@ -382,7 +382,11 @@ sub get_updated_Objects{
     }
     
     foreach my $cloneid (@clones) {
-	push @out, $self->_db_obj->get_Clone ($cloneid);
+	my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $cloneid,
+						    -dbobj => $self->_db_obj );
+   
+	$clone->fetch();
+	push @out, $clone;
     }	
     
     $sth = $self->_db_obj->prepare("select id from gene where stored > '".$last_offset."' and stored <= '".$now_offset."'");
@@ -396,7 +400,9 @@ sub get_updated_Objects{
     
     #Get all gene objects for the ids contained in @clones, and push them in @out
     foreach my $geneid (@genes) {
-	push @out, $self->_db_obj->get_Gene ($geneid);
+	my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
+	my $gene = $gene_obj->get($geneid);
+	push @out, $gene;
     }	
     return @out;
 }

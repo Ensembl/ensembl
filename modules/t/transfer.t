@@ -92,6 +92,27 @@ system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 6\n";
 
+#Trying manual transfer of one gene from donor to recipient
+my $dbtype = 'rdb';
+my $host   = 'localhost';
+my $port   = '410000';
+my $dbname = $conf{'donor'};
+my $dbuser = $nuser;
+my $dbpass = undef;
+my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+
+my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+$don_db =  Bio::EnsEMBL::DBLoader->new($locator);
+
+my $dbname = $conf{'recipient'};
+my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+$rec_db =  Bio::EnsEMBL::DBLoader->new($locator);
+
+$gene=$don_db->get_Gene('ENSG00000019482');
+
+$rec_db->delete_Gene($gene->id);
+$rec_db->write_Gene($gene);
+print "ok 7\n";
 
 END {
     my $drop_donor = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{donor}";

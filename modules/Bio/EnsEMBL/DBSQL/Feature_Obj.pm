@@ -203,7 +203,7 @@ sub write {
 		$analysis = $feature->analysis;
 	    }
 	    
-	    my $analysisid = $self->_db_obj->write_Analysis($analysis);
+	    my $analysisid = $self->write_Analysis($analysis);
 
 
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
@@ -245,7 +245,7 @@ sub write {
 	    $analysis = $feature->analysis;
 	}
 
-	my $analysisid = $self->_db_obj->write_Analysis($analysis);
+	my $analysisid = $self->write_Analysis($analysis);
 	my $homol = $feature->feature2;
 
 	$sth2->execute('NULL',
@@ -275,7 +275,7 @@ sub write {
 	    $analysis = $feature->analysis;
 	}
 
-	my $analysisid = $self->_db_obj->write_Analysis($analysis);
+	my $analysisid = $self->write_Analysis($analysis);
 	my $score      = $feature->score();
 
 	if( !defined $score ) { $score = "-1000"; }
@@ -382,10 +382,10 @@ sub get_Protein_annseq{
     my $sth     = $self->_db_obj->prepare("select id from transcript where translation = '$ENSP'");
     my $res     = $sth->execute();
     my $rowhash = $sth->fetchrow_hashref;
-
-    my $transcript  = Bio::EnsEMBL::Transcript->new();
-       $transcript  = $self->_db_obj->get_Transcript($rowhash->{'id'});
-    my $translation = $self->_db_obj->get_Translation($ENSP);
+    
+    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->_db_obj);
+    my $transcript = $gene_obj->get_Transcript($rowhash->{'id'});
+    my $translation = $gene_obj->get_Translation($ENSP);
 
     $transcript->translation($translation);
 
@@ -468,6 +468,160 @@ sub write_Protein_feature {
 			     .$ENSP."'
 				)");
     $sth->execute();
+}
+
+=head2 get_Analysis
+
+ Title   : get_Analysis
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Analysis {
+    my ($self,$id) = @_;
+
+    my $sth = $self->_db_obj->prepare("select db,db_version,program,program_version,gff_source,gff_feature,id from analysis where id = $id");
+    my $rv  = $sth->execute;
+    my $rh  = $sth->fetchrow_hashref;
+
+
+    if ($sth->rows) {
+	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
+
+	if( defined $rh->{'db'} ) {
+	    $anal->db($rh->{'db'});
+	}
+	if( defined $rh->{'db_version'} ) {
+	    $anal->db_version($rh->{'db_version'});
+	}
+
+	$anal->program($rh->{'program'});
+	$anal->program_version($rh->{'program_version'});
+	$anal->gff_source($rh->{gff_source});
+	$anal->gff_feature($rh->{gff_feature});
+	my $mid = $rh->{'id'};
+
+	$anal->id("$mid");
+	return $anal;
+    }  else {
+	$self->throw("Can't fetch analysis id $id\n");
+    }
+    
+}
+
+=head2 exists_Analysis
+
+ Title   : get_Analysis
+ Usage   : $obj->exists_Analysis($anal)
+ Function: Tests whether this feature already exists in the database
+ Example :
+ Returns : Analysis id if the entry exists
+ Args    : Bio::EnsEMBL::Analysis
+
+
+=cut
+
+sub exists_Analysis {
+    my ($self,$anal) = @_;
+
+    $self->throw("Object is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
+
+    my $query;
+
+    if ($anal->db ne "" && $anal->db_version ne "") {
+        $query = "select id from analysis where db = \""      . $anal->db              . "\" and" .
+                " db_version = \""      . $anal->db_version      . "\" and " .
+                " program =    \""      . $anal->program         . "\" and " .
+                " program_version = \"" . $anal->program_version . "\" and " .
+                " gff_source = \""      . $anal->gff_source      . "\" and" .
+                " gff_feature = \""     . $anal->gff_feature     . "\"";
+    } else {
+        $query = "select id from analysis where " .
+                " program =    \""      . $anal->program         . "\" and " .
+                " program_version = \"" . $anal->program_version . "\" and " .
+                " gff_source = \""      . $anal->gff_source      . "\" and" .
+                " gff_feature = \""     . $anal->gff_feature     . "\"";
+    }
+    
+    if( exists $self->_db_obj->_analysis_cache->{$query} ) {
+	return $self->_db_obj->_analysis_cache->{$query};
+    }
+
+    my $sth = $self->_db_obj->prepare($query);
+    
+
+    my $rv = $sth->execute();
+
+
+    if ($rv && $sth->rows > 0) {
+	my $rowhash = $sth->fetchrow_hashref;
+	my $anaid = $rowhash->{'id'}; 
+	$self->_db_obj->_analysis_cache->{$query} = $anaid;
+	return $anaid;
+    } else {
+	return 0;
+    }
+}
+
+=head2 write_Analysis
+
+ Title   : write_Analysis
+ Usage   : $obj->write_Analysis($anal)
+ Function: Writes analysis details to the database
+           Checks first whether this analysis entry already exists
+ Example :
+ Returns : int
+ Args    : Bio::EnsEMBL::AnalysisI
+
+=cut
+
+sub write_Analysis {
+    my ($self,$anal) = @_;
+
+    $self->throw("Argument is not a Bio::EnsEMBL::AnalysisI") unless $anal->isa("Bio::EnsEMBL::AnalysisI");
+
+
+    # First check whether this entry already exists.
+    my $query;
+    my $analysisid = $self->exists_Analysis($anal);
+
+    return $analysisid if $analysisid;
+
+    if ($anal->db ne "" && $anal->db_version ne "") {
+	$query = "insert into analysis(id,db,db_version,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->db               . "\","   .
+                $anal->db_version       . ",\""   .
+		$anal->program          . "\",\"" .
+		$anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+    } else {
+	$query = "insert into analysis(id,program,program_version,gff_source,gff_feature) values (NULL,\"" .
+                $anal->program          . "\",\"" .
+                $anal->program_version  . "\",\"" .
+                $anal->gff_source       . "\",\"" .
+                $anal->gff_feature      . "\")";
+    }
+
+    my $sth  = $self->_db_obj->prepare($query);
+    my $rv   = $sth->execute;
+    
+    
+    $sth = $self->_db_obj->prepare("select last_insert_id()");
+    $rv  = $sth->execute;
+    
+    if ($sth->rows == 1) {
+	my $rowhash = $sth->fetchrow_hashref;
+	return $rowhash->{'last_insert_id()'};
+    } else {
+	$self->throw("Wrong number of rows returned : " . $sth->rows . " : should be 1");
+    }
+
 }
 
 =head2 _db_obj

@@ -76,14 +76,6 @@ sub _initialize {
   $db_obj || $self->throw("Database Gene object must be passed a db obj!");
   $self->_db_obj($db_obj);
 
-  #
-  # This needs to be rethought. We are caching sequences
-  # here to allow multiple exons to be retrieved fine
-  # And now more cache's. I think cache's might be a fact of life...
-  # 
-
-  $self->{'_contig_seq_cache'} = {};
-
   return $make; # success - we hope!
 
 }
@@ -100,7 +92,7 @@ sub _initialize {
 
 =cut
 
-sub each_cloneid{
+sub get_all_my_cloneid{
    my ($self,$geneid) = @_;
 
    my $sth = $self->_db_obj->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
@@ -410,12 +402,15 @@ sub get_array_supporting {
 	
 	my $seq;
 	
-	if( $self->_contig_seq_cache($exon->contig_id) ) {
-	    $seq = $self->_contig_seq_cache($exon->contig_id);
+	if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
+	    $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
 	} else {
-	    my $contig = $self->_db_obj->get_Contig($exon->contig_id());
+	    my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
+								   -id    => $exon->contig_id() );
+   
+	    $contig->fetch(); 
 	    $seq = $contig->primary_seq();
-	    $self->_contig_seq_cache($exon->contig_id,$seq);
+	    $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
 	}
 	
 	$exon ->attach_seq($seq);
@@ -488,12 +483,16 @@ sub get_Exon{
 
    my $seq;
 
-   if( $self->_contig_seq_cache($exon->contig_id) ) {
-       $seq = $self->_contig_seq_cache($exon->contig_id);
+   if( $self->_db_obj->_contig_seq_cache($exon->contig_id) ) {
+       $seq = $self->_db_obj->_contig_seq_cache($exon->contig_id);
    } else {
-       my $contig = $self->_db_obj->get_Contig($exon->contig_id());
+       
+       my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
+								   -id    => $exon->contig_id() );
+   
+       $contig->fetch(); 
        $seq = $contig->primary_seq();
-       $self->_contig_seq_cache($exon->contig_id,$seq);
+       $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
    }
 
    $exon->attach_seq($seq);
@@ -569,7 +568,9 @@ sub get_supporting_evidence {
 	    $f->analysis($anahash{$analysisid});
 
 	} else {
-	    $f->analysis($self->_db_obj->get_Analysis($analysisid));
+	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    $f->analysis($feature_obj->get_Analysis($analysisid));
+
 	    $anahash{$analysisid} = $f->analysis;
 	}
 	
@@ -680,7 +681,10 @@ sub write{
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
-	   my $contig = $self->_db_obj->get_Contig($contig_id);
+	   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
+								  -id    => $contig_id );
+	   
+	   $contig->fetch();
 
 	   $contighash{$contig_id} = $contig;
 
@@ -698,7 +702,8 @@ sub write{
 
    
    foreach my $trans ( $gene->each_Transcript() ) {
-       $self->_db_obj->write_Transcript($trans,$gene);
+
+       $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
 	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
@@ -713,7 +718,7 @@ sub write{
 	   }
 	   my $tmpid = $exon->contig_id;
 	   $exon->contig_id($internal_contig_id);
-	   $self->_db_obj->write_Exon($exon);
+	   $self->write_Exon($exon);
 	   $exon->contig_id($tmpid);
 	   
 	   $c++;
@@ -817,8 +822,8 @@ sub write_supporting_evidence {
 	    print(STDERR "Supporting feature invalid. Skipping feature\n");
 	    next FEATURE;
 	}
-
-	my $analysisid = $self->_db_obj->write_Analysis($f->analysis);
+	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+  	my $analysisid = $feature_obj->write_Analysis($f->analysis);
 	
 	if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
 	    $sth->execute('NULL',
@@ -928,34 +933,3 @@ sub _db_obj{
 
 }
 
-=head2 _contig_seq_cache
-
- Title   : _contig_seq_cache
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _contig_seq_cache{
-   my ($self,$id,$seq) = @_;
-
-   if( $seq ) {
-       
-       #
-       # Every 100 hits, flush the cache
-       #
-       if( $self->{'_contig_seq_cnt'} > 100 ) {
-	   $self->_flush_seq_cache;
-	   $self->{'_contig_seq_cnt'} = 0;
-       }
-
-       $self->{'_contig_seq_cnt'}++;
-       $self->{'_contig_seq_cache'}->{$id} = $seq;
-   }
-
-   return $self->{'_contig_seq_cache'}->{$id};
-}
