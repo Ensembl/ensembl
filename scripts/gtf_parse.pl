@@ -35,9 +35,15 @@
 
     -module    module name to load to (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -parsefile name of the GTF file to parse
+    -parse     name of the GTF file to parse
+
+    -compare   compares GTF files (use with -parse2) 
+    -parse2    name of other GTF file to parse (used with -compare)
 
     -print     prints gene structures to STDOUT
+
+    -check     only checks
+
 
     -help      displays this documentation with PERLDOC
 
