@@ -134,7 +134,7 @@ package main;
                    
                    #File containing the wormbase names: ftp.sanger.ac.uk/pub/databases/wormpep/wormpep.table
                    'eleg_nom' => '',
-
+		   'elegans_pseudo' => 'pseudogene', 
                    ###########
                    #zebrafish#
                    ###########
@@ -184,7 +184,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '',
+             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
 
              
 
