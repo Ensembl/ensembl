@@ -257,7 +257,7 @@ sub store {
 	} elsif ( $feature->isa('Bio::EnsEMBL::RepeatFeature') ) {
 	    $repeat_adaptor->store($contig_internal_id,$feature);
 	} elsif ( $feature->isa('Bio::EnsEMBL::SimpleFeature') ) {
-	    $dna_align_adaptor->store($contig_internal_id,$feature);
+	    $simple_adaptor->store($contig_internal_id,$feature);
 #	} elsif ( $feature->isa('Bio::EnsEMBL::PredictionFeature') ) {
 #	    $prediction_adaptor->store($contig_internal_id,$feature);
 	} else {
