@@ -467,9 +467,18 @@ sub update {
 	    # child here
 
 	   my @clones = $self->getchunk($current,@clone_id);           print(STDERR  "In child. Transferring @clones\n");
+	   $self->verbose() && print STDERR "Connecting to donor database...\n"; 
 	   my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR  "Connected to donor database\n");
+	    $self->verbose() && print STDERR "Connecting to recipient database...\n"; 
 	   my $todb   = $self->connect ($self->tolocator); 	        print(STDERR  "Connected to recipient database\n");
-	   my $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
+	   my $arcdb;
+	   if ($self->arclocator eq "none") {
+	       $arcdb = "none";
+	   }
+	   else {
+	       $self->verbose() && print STDERR "Connecting to archive database...\n";
+	       $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
+	   }
 	   
 	   eval {
 	       $self->transfer_chunk($fromdb,$todb,$arcdb,@clones);
@@ -506,7 +515,14 @@ sub transfer_chunk {
         my $object;
 	eval {
 	    $object=$fromdb->get_Clone($id);
-	    
+	};
+	
+	if ($@) {
+	    warn("Could not fetch clone from TimDB, probably locked, skipping clone\n");
+	    next;
+	}
+	
+	eval {
 	    # Check if it is a clone object
 	    if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
 		$self->write_clone($todb,$arcdb,$object);
@@ -527,15 +543,9 @@ sub transfer_chunk {
 	};
 	if ($@) {
 	    warn($@);
-	    # FIXME
-	    # don't think you should delete clones at this point
-	    # as you get an exception if the clone load fails for any reason
-	    # should remove clones via 'ghosts'
-	    warn("ERROR: clone $id could not be fetched - might have become locked");
-	    #warn("ERROR: clone $id not updated, will be deleted from recipient database\n");
-	    #$todb->delete_Clone($object);
-	    
-	}    
+	    warn("ERROR: problems in updating clone $id, will be deleted from recipient database to preserve data integrity\n");
+	    $todb->delete_Clone($object);
+	}
     }
 }
 
@@ -601,7 +611,7 @@ sub write_exon {
 
 sub write_clone {
     my ($self,$db,$arcdb,$object) = @_;
-
+    my %old_genes;
     my $rec_clone;
 
     $self->verbose && print STDERR "Got clone with id ".$object->id."\n";
@@ -616,6 +626,7 @@ sub write_clone {
 
 	foreach my $gene ($object->get_all_Genes('evidence')) {
 	    $self->verbose &&  print STDERR "Getting all genes via clone get_all_Genes method\n";
+	    
 	    $self->write_gene($db,$arcdb,$gene,'1');
 	}
 
@@ -623,22 +634,23 @@ sub write_clone {
 	print("Object 1 [$object] [$rec_clone]\n");
 	if ($object->version > $rec_clone->version) {
 	    $self->verbose && print STDERR "Clone with new version, updating the database, and deleting the old version\n";
+	    
+	    print STDERR "Getting all genes from donor clone\n";
+	    my @new_genes=$object->get_all_Genes('evidence');
+
+	    print STDERR "Getting all genes from recipient clone\n";    
+	    foreach my $old_gene ($rec_clone->get_all_Genes('evidence')) {
+		$old_genes{$old_gene->id} = $old_gene;
+	    }
 
 	    unless ($self->nowrite) {
 		$db->delete_Clone($rec_clone->id);
 		$db->write_Clone ($object);
 	    }
-
-	    foreach my $gene ($object->get_all_Genes('evidence')) {
-
-		if ($self->verbose) {
-		    print STDERR "Getting all genes via clone get_all_Genes method\n";
-		    print STDERR "Got gene ".$gene->id."\n";
-		}
-
-		$self->write_gene($db,$arcdb,$gene,'1');
+	    
+	    foreach my $gene (@new_genes) {
+		$self->write_gene($db,$arcdb,$gene,%old_genes,'1');
 	    }
-
 	} elsif ($rec_clone->version > $object->version) {
 	    print STDERR "ERROR: Something is seriously wrong, found a clone in the recipient database with version number higher than that of the donor database!!!\n";
 	    exit;
@@ -661,38 +673,38 @@ sub write_clone {
 
 
 sub write_gene {
-    my ($self,$db,$arc_db,$don_gene,$clone_level) = @_;
+    my ($self,$db,$arc_db,$don_gene,%old_genes,$clone_level) = @_;
 
     my $rec_gene;
 
     $self->verbose && print STDERR "Got gene with id ".$don_gene->id.", and version ".$don_gene->version."\n";    
-
-    eval {
-	$rec_gene = $db->get_Gene($don_gene->id,'evidence');
-    };
     
-    
-    if ( ! defined($rec_gene) ) {
+    if(!$old_genes{$don_gene->id} ) {
 	$self->verbose && print STDERR "New Gene, writing it in the database\n";
 	$self->nowrite || $db->write_Gene($don_gene);
     } else {
-	if ($don_gene->version > $rec_gene->version) {
+	if ($don_gene->version > $old_genes{$don_gene->id}->version) {
 	    
-	    $self->verbose && print STDERR "Gene with new version, updating the database, and archiving old version\n";
-
 	    unless ($self->nowrite) {
-		$db->archive_Gene($rec_gene,$arc_db);
+		if ($arc_db ne "none") {
+		    $self->verbose && print STDERR "Gene with new version, updating the database, and archiving old version\n";
+		    $db->archive_Gene($old_genes{$don_gene->id},$arc_db);
+		}
+		else {
+		    $self->verbose && print STDERR "Gene with new version, updating the database, and deleting old version\n";
+		    $db->delete_Gene($old_genes{$don_gene->id}->id);
+		}
 		$db->write_Gene  ($don_gene);
 	    }
 	    
-	}  elsif ($rec_gene->version > $don_gene->version) {
+	}  elsif ($old_genes{$don_gene->id}->version > $don_gene->version) {
 	    print STDERR "Something is seriously wrong, found a gene in the recipient database with version number higher than that of the donor database!!!\n";
 	} else {
 	    if ($clone_level) {
 		$self->verbose && print STDERR "Genes with the same version, deleting recipient gene and writing one from donor without archiving\n";  
 
 		unless ($self->nowrite) {
-		    $db->delete_Gene($rec_gene->id);
+		    $db->delete_Gene($old_genes{$don_gene->id}->id);
 		    $db->write_Gene ($don_gene);
 		}
 	    } else {
