@@ -46,7 +46,7 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
-# modify VCs' features' genomic start/end by the following:
+# modify slices' features' genomic start/end by the following:
 use constant VC_HACK_BP  => +1;
 
 use vars qw(@ISA);
@@ -295,11 +295,11 @@ sub _get_evidence_from_transcript {
 
     Title   :   _get_similarity_features_from_transcript
     Usage   :   $ea->_get_similarity_features_from_transcript(
-                                         $transcript_obj, $vc);
+                                      $transcript_obj, $slice);
                 $ea->_get_similarity_features_from_transcript(
-		        $transcript_obj, $vc, $hid);
+		        $transcript_obj, $slice, $hid);
     Function:   use SGP adaptor supplied to get similarity features
-                off a VC of the transcript supplied; features not
+                off a slice of the transcript supplied; features not
 		overlapping any exon are cut; if a list of hit
 		accession numbers are given, features not involving
 		those accession numbers are cut; genomic start and
@@ -310,20 +310,19 @@ sub _get_evidence_from_transcript {
 =cut
 
 sub _get_similarity_features_from_transcript {
-  my ($self, $transcript_obj, $vc) = splice @_, 0, 3;
+  my ($self, $transcript_obj, $slice) = splice @_, 0, 3;
   $self->throw('interface fault')
-    if (!$self or !$transcript_obj or !$vc);
+    if (!$self or !$transcript_obj or !$slice);
   my @wanted_arr = @_;
 
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
   my $db = $self->dbadaptor;
   my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
-  my @gapped_features = $pfadp->fetch_by_Slice($vc);
+  my @gapped_features = $pfadp->fetch_by_Slice($slice);
   my $dfadp = $db->get_DnaAlignFeatureAdaptor;
-  push @gapped_features, $dfadp->fetch_by_Slice($vc);
+  push @gapped_features, $dfadp->fetch_by_Slice($slice);
   my @all_features = ();
-  GAPPED_FEATURE_LOOP:
   foreach my $gapped_feature (@gapped_features) {
     push @all_features, $gapped_feature->_parse_cigar;
   }
@@ -740,8 +739,6 @@ sub _get_per_hid_effective_scores {
       $per_hid_effective_scores{$hseqname} = 0;
     }
     $per_hid_effective_scores{$hseqname} += $feature_len;
-    # another possibility:
-    # $per_hid_effective_scores{$hseqname} += $feature_len * $feature->score
   }
   return \%per_hid_effective_scores;
 }
@@ -1034,20 +1031,21 @@ sub _get_aligned_evidence_for_transcript {
   my $ea = $db->get_ExonAdaptor;
   my $transcript_name_to_display = $transcript_id;
 
-  # get all exons off a VC
-  my $transcript_obj_nonvc;
+  # get all exons off a slice
+  my $transcript_obj_nonslice;
   my $transcript_dbID;
   if ($transcript_id =~ /^ENS/i) {      # stable ID
-    $transcript_obj_nonvc = $ta->fetch_by_stable_id($transcript_id);
-    $transcript_dbID = $transcript_obj_nonvc->dbID;
+    $transcript_obj_nonslice = $ta->fetch_by_stable_id($transcript_id);
+    $transcript_dbID = $transcript_obj_nonslice->dbID;
   } else {      # internal (db) ID
     $transcript_dbID = $transcript_id;
-    $transcript_obj_nonvc = $ta->fetch_by_dbID($transcript_dbID);
+    $transcript_obj_nonslice = $ta->fetch_by_dbID($transcript_dbID);
   }
-  my $vc = $sa->fetch_Slice_by_transcript_dbID( $transcript_dbID, 1000);
+  my $slice = $sa->fetch_Slice_by_transcript_dbID($transcript_dbID,
+                                                  1000);
   
   my $transcript_obj;   # VC version
-  my @genes = $vc->get_all_Genes;
+  my @genes = $slice->get_all_Genes;
   GENE_LOOP:
   foreach my $gene (@genes) {
     my @transcripts = $gene->get_all_Transcripts;
@@ -1066,7 +1064,7 @@ sub _get_aligned_evidence_for_transcript {
                                  $transcript_obj, @_);
   } else {
     @features = $self->_get_similarity_features_from_transcript(
-                                       $transcript_obj, $vc, @_);
+                                    $transcript_obj, $slice, @_);
   }
   my $per_hid_effective_scores_hash_ref =
     $self->_get_per_hid_effective_scores(\@features);
