@@ -113,6 +113,16 @@ sub end {
   return $self->{_gsf_end};
 }
 
+sub chr_name {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{_chr_name} = $arg;
+  }
+
+  return $self->{_chr_name};
+}
+
 
 sub source {
    my ($self, $arg) = @_;
