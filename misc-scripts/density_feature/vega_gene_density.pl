@@ -195,10 +195,9 @@ foreach my $slice (@$top_slices){
             ## only count genes that don't overlap the subslice start
             ## (since these were already counted in the last bin)
             if ($gene->start >= 1) {
-	        $total{$gene->type}++;
+	      $total{$gene->type}++;
             }
 	    $num{$gene_types{$gene->type}}++;
-
         }
 
         ## create DensityFeature objects for each type
@@ -295,6 +294,18 @@ foreach my $slice (@$top_slices){
      -CODE => 'UnprocPsCount',
      -VALUE => $total{'Unprocessed_pseudogene'} || 0,
      -DESCRIPTION => 'Number of Unprocessed pseudogenes');
+
+    push @attribs, Bio::EnsEMBL::Attribute->new
+    (-NAME => 'Known genes (in progress)',
+     -CODE => 'KnwnprogCount',
+     -VALUE => $total{'Known_in_progress'} || 0,
+     -DESCRIPTION => 'Number of Known Genes in progress');
+
+    push @attribs, Bio::EnsEMBL::Attribute->new
+    (-NAME => 'Novel CDS (in progress)',
+     -CODE => 'NovCDSprogCount',
+     -VALUE => $total{'Novel_CDS_in_progress'} || 0,
+     -DESCRIPTION => 'Number of novel CDS in progress');
 
     $attrib_adaptor->store_on_Slice($slice, \@attribs) unless $dry;
 
