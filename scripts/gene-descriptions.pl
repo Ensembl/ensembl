@@ -14,7 +14,7 @@
 my @word_order = 
    qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
 
-$Usage = "Usage: $0 swissprot-descriptions.dat  ens-sp-mappings.dat > out\n";
+$Usage = "Usage: $0 sp-descriptions.dat mapping.dat > gene-descriptions.dat\n";
 
 die $Usage if @ARGV == 0;
 
