@@ -334,7 +334,6 @@ sub get_description {
       $self->throw("must call with dbID");
   }
 
-
   my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
 
   $sth->execute;
@@ -501,7 +500,6 @@ sub remove {
 
 sub get_Interpro_by_geneid {
    my ($self,$gene) = @_;
-
 
    my $sth = $self->prepare("
       SELECT i.interpro_ac,idesc.description 
