@@ -382,7 +382,7 @@ sub translateable_seq {
     if (defined($exon->phase)) {
       $phase = $exon->phase;
     }
-    if( $phase != $lastphase ) {
+    if( $phase != $lastphase && $ENV{'MONKEY_EXONS'} == 1 ) {
 
       # endpadding for the last exon
       if( $lastphase == 1 ) {
