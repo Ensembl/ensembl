@@ -1752,7 +1752,9 @@ sub _got_overlaps {
 
 =cut
 
-{
+{ # (this brace is the beginning of a block that results in static compilation
+  # of the SQL queries)
+
     # Certainly worth explaining here.
     #
     # The overlap type indicates which end on the two contigs this overlap is.
@@ -1870,11 +1872,10 @@ sub _got_overlaps {
 	if( $self->golden_start > $self->golden_end ) {
 	    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
 	}
-    }
+    }                           # sub _load_overlaps
 
-# this brace is the end-of-scope flag to statically compile the
-# SQL queries.
-} 
+} # (this brace is the end of a block that results in static compilation
+  # of the SQL queries).
 
 =head2 _right_overlap
 
@@ -2251,7 +2252,7 @@ sub _chr_end{
 
 =cut
 
-sub fpc_contig_start{
+sub fpc_contig_start {
     my $self = shift;
 
     if( defined $self->_fpc_contig_start) { return $self->_fpc_contig_start;}
@@ -2344,7 +2345,7 @@ sub _fpc_contig_end{
  Title   : static_golden_start
  Usage   : $self->static_golden_start($newval)
  Function: 
- Returns : value of static_golden_start
+ Returns : value of static_golden_start (in RawContig coordinates)
  Args    :
 
 
@@ -2392,7 +2393,7 @@ sub _static_golden_start{
  Title   : static_golden_end
  Usage   : $self->static_golden_end($newval)
  Function: 
- Returns : value of static_golden_end
+ Returns : value of static_golden_end (in RawContig coordinates)
  Args    :
 
 
