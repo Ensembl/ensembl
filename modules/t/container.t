@@ -9,15 +9,12 @@ BEGIN { $| = 1;
 }
 
 
-use MultiTestDB;
-use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::Container;
 
 #
 #1 TEST - Container Compiles
 #
 ok(1); 
-
 
 #
 #2-5 TEST new and isa
@@ -46,7 +43,7 @@ ok($container->test_method(6) == 6);
 # 9 test destroy
 #
 $container = undef;
-sleep(1);
+#sleep(1);
 ok($test_obj->deleteObj_called);
 
 
