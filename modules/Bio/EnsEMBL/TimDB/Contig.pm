@@ -115,10 +115,11 @@ sub get_all_SeqFeatures {
     my ($self) = @_;
 
     my @out;
-
+    
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
     push(@out,$self->get_all_GenePredictions);
+    push( @out, $self->get_all_StsFeatures );
 
     return @out;
 }
@@ -190,6 +191,29 @@ sub get_all_SimilarityFeatures {
     }
     # return array of objects
     return $self->featureParser->each_Feature;
+}
+
+=head2 get_all_StsFeatures
+
+ Title   : get_all_StsFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : List of FeaturePairs, describing sts-hits on the contig.
+ Args    :
+
+
+=cut
+
+sub get_all_StsFeatures {
+    my ($self) = @_;
+
+    if (!defined($self->{_read_StsFeatures})) {
+	$self->featureParser->read_StsFeatures;
+	$self->{_read_StsFeatures} = 1;
+    }
+    # return array of objects
+    return $self->featureParser->each_StsFeature;
 }
 
 =head2 get_all_GenePredictions
