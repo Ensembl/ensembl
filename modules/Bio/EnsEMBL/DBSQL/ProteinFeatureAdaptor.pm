@@ -89,7 +89,7 @@ sub fetch_by_translation_id {
 	      "SELECT p.seq_start, p.seq_end, p.analysis_id, 
                       p.score, p.perc_ident, p.evalue, 
                       p.hit_start, p.hit_end, p.hit_id, 
-                      x.display_label 
+                      x.display_label, i.interpro_ac
                FROM protein_feature p,analysis a 
                LEFT JOIN interpro AS i ON p.hit_id = i.id
                LEFT JOIN xref AS x ON x.dbprimary_acc = i.interpro_ac
@@ -101,7 +101,7 @@ sub fetch_by_translation_id {
 
   while( my $row = $sth->fetchrow_arrayref) {
     my ($start, $end, $analysisid, $score, $perc_id, $evalue, $hstart,
-	$hend,$hid,$desc) = @$row;
+	$hend,$hid,$desc, $interpro_ac) = @$row;
     
     my $analysis = $analysis_adaptor->fetch_by_dbID($analysisid);
     
@@ -118,7 +118,8 @@ sub fetch_by_translation_id {
     $feat->hseqname($hid);
     
     $feat->idesc($desc);
-    
+    $feat->interpro_ac($interpro_ac);
+
     push(@features,$feat);
   }
   
