@@ -43,21 +43,29 @@ Examples of creating an exon
 
     $trans = $ex->translate();                # Translates the exon. Returns a Bio::Seq
 
-Frameshifts - these haven''t been coded yet :-)
 
-    Frameshifts in the exon are stored as an array of positions and an array of lengths
+    Frameshifts
 
-    my @pos =  $ex->frameshift_position()   # Array of start coordinates of frameshifts
-    my @len =  $ex->frameshift_length()     # Array of lengths of frameshifts
+    Frameshifts in the exon are stored as a multi-dimensional array of coordinates and lengths
+    [start_position, length]
+
+    my @fshifts =  $ex->get frameshifts();   # A multi-dim array of start coordinates and lengths
 
     Setting frameshifts
     
-    $ex->add_frameshift(1208,1)             # Adds a frameshift at position 1208 and it
-                                            # is an insertion of 1 base
-    $ex->add_frameshift(6509,-2)            # Adds a frameshift at position 6509 and it
-                                            # is a deletion of 2 bases
+    $ex->add_frameshift(5,2);                # Adds a frameshift at position 5 and it
+                                             # is an insertion of 2 bases
+                                             # e.g CCCCAATTTT becomes cdna CCCCTTTT
 
-    $ex->translate()  translates the dna sequence in the correct phase taking the frameshifts into account.
+    $ex->add_frameshift(5,-2);               # Adds a frameshift at position 5 and it
+                                             # is a deletion of 2 bases
+                                             # e.g CCCCAATTTT becomes cdna CCCCANNATTTT
+                                             
+    Retrieving cdna
+
+    $dna = $ex->get_cdna();                  # Get a frameshift modified dna sequence
+                                             # and return it in a Bio::Seq
+
 
 =head1 DESCRIPTION
 
@@ -69,7 +77,7 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a_
 
 =cut
 
@@ -1000,6 +1008,188 @@ sub _get_stable_entry_info {
 
 }
 
+
+=head2 add_frameshift
+
+ Title   : add_frameshift
+ Usage   : $exon->add_frameshift($start,$length)
+ Function: stores frameshift information in the current exon object
+ Returns : Nothing
+ Args    : start, length
+
+
+=cut
+
+
+sub add_frameshift {
+    my ($self,$start,$length) = @_;
+
+
+    # do some simple sanity checks
+
+    my $tseq = $self->seq->seq;
+
+    if ( $start > length( $tseq ) ) {
+      print STDERR "Trying to add a frameshift outside the range of the sequence. Ignoring.\n";
+      return;
+    }
+
+    if ( !defined $start ) {
+      print STDERR "Trying to add a frameshift without any parameters. Ignoring.\n";
+      return;
+    }
+
+    if ( !defined $length ) {
+      print STDERR "Trying to add a frameshift without a specified length. Ignoring.\n";
+      return;
+    }
+
+    if ( $start <= 0) {
+      print STDERR "Trying to add a frameshift with a start point of zero or less. Ignoring.\n";
+      return;
+    }
+
+    if ( $length == 0) {
+      print STDERR "Trying to add a frameshift with a length of zero. Ignoring.\n";
+      return;
+    }
+
+    # and finally if the frameshift data is valid....
+    push @{$self->{'_frameshifts'}},[$start,$length];
+}
+
+
+=head2 get_frameshifts
+
+ Title   : get_frameshifts
+ Usage   : $exon->get_frameshifts()
+ Function: retrieves an array of frameshifts if they exist
+ Returns : Array of frameshifts [start, length] or UNDEF
+ Args    : None
+
+=cut
+
+sub get_frameshifts {
+    my ($self) = @_;
+
+    # if already stored in the current exon object
+    if ( defined $self->{'_frameshifts'} ) {
+      return @{$self->{'_frameshifts'}};
+      }
+    else {  # else fetch frameshift data from database
+
+      if ( !defined $self->adaptor ) {
+	return;  # return undef if no ExonAdaptor
+      }
+      $self->adaptor->fetch_frameshifts( $self );
+      if ( defined $self->{'_frameshifts'}){
+	return @{$self->{'_frameshifts'}};
+      }
+      else {
+	return;  # not necessarily any frameshifts stored
+      }
+    }
+}
+
+
+=head2 get_cdna
+
+ Title   : get_cdna
+ Usage   : $seq = $exon->get_cdna()
+ Function: converts an exon's dna based on any existing frameshifts
+ Returns : Bio::Seq object
+ Args    : None
+
+=cut
+
+sub get_cdna {
+  my ($self) =@_;
+
+  my $seq = $self->seq->seq;
+
+  # check to see if frameshifts actually exist
+  my @frameshifts = $self->get_frameshifts();
+
+  # if the exon has no frameshifts, simply return the dna
+  # sequence unmodified
+
+  if ( !defined @frameshifts ) {
+    my $temp_seq = Bio::Seq->new(
+	   -SEQ         => $seq,
+	   -DISPLAY_ID  => 'cdna_unmodified',
+           -MOLTYPE     => 'dna'
+           );
+
+    return $temp_seq;
+  }
+
+  # if there are frameshifts...
+  # sort frameshifts into order based on their start positions.
+  # important that this is done because the while loop below relies on this!!
+  # frameshifts are stored as [start, length]
+  @frameshifts = sort { $a->[0] <=> $b->[0] } @frameshifts;
+
+  my $fshift_seq = "";   # frameshift modified sequence
+
+  # need to check that starting from 1 is in fact correct!!
+  my $bp = 1;            # position along sequence
+  my $curr_frame  = 0;    # current frameshift
+
+  # run along the genomic sequence for the current exon
+  while ( $bp <= length($seq) ) {
+
+    # do something if we find a frameshift
+    if ( $bp == $frameshifts[$curr_frame][0] ) {
+
+      # if bps have been inserted then jump along the sequence
+      # ignoring extraneous bps
+      if ( $frameshifts[$curr_frame][1] > 0 ) {
+	$bp += $frameshifts[$curr_frame][1];
+      }
+
+      # else if bps have been deleted, insert some Ns.
+      # there shouldn't be a 0 case but cover it just in case.
+      elsif ( $frameshifts[$curr_frame][1] <= 0 ) {
+	$fshift_seq .= substr($seq, $bp-1, 1);
+            # -1 to be consistent with the dna seqeunce	
+      	$fshift_seq .= 'N' x -$frameshifts[$curr_frame][1];
+	$bp++;
+      }
+
+      # to stop -warnings complaining
+      if ( $curr_frame < $#frameshifts ) {
+	$curr_frame++;      # point to the next frameshift
+      }
+   }
+    else {  # store the current base pair
+      $fshift_seq .= substr($seq, $bp-1, 1);
+            # -1 to be consistent with the dna seqeunce
+      $bp++;
+    }
+  }
+
+  # a sanity check here to make sure the modified sequence is the
+  # right length - but return modified cdna anyway...
+
+  my $seq_changes = 0;
+
+  for my $i ( 0 .. $#frameshifts ) {
+    $seq_changes += $frameshifts[$i][1];
+  }
+
+  if ( length($seq) - $seq_changes != length($fshift_seq)) {
+    print STDERR "Frameshift modified sequence isn't the correct length.\n";
+  }
+
+  # push the modified sequence into a Bio::Seq object
+  my $temp_seq = Bio::Seq->new(
+	 -SEQ         => $fshift_seq,
+	 -DISPLAY_ID  => 'cdna_modified',
+         -MOLTYPE     => 'dna'
+         );
+
+  return $temp_seq;
+}
 
 
 # Inherited methods
