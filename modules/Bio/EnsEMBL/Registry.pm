@@ -587,7 +587,7 @@ sub get_alias{
 
   Arg [1]    : name of the possible alias to get species for
   Arg [2]    : if set will not throw if not found.
-  Example    : Bio::EnsEMBL::Registry->get_alias("Human");
+  Example    : Bio::EnsEMBL::Registry->alias_exists("Human");
   Description: does the species name exist.
   Returntype : 1 if exists else 0
   Exceptions : none
