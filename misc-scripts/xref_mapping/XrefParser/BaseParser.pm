@@ -260,6 +260,52 @@ sub get_source_id_for_source_name {
   return $source_id;
 
 }
+
+sub get_valid_xrefs_for_dependencies{
+  my ($self, $dependent_name, @reverse_ordered_source_list) = @_;
+
+  my %dependent_2_xref;
+
+
+  my $sql = "select source_id from source where name =?";
+  my $sth = dbi()->prepare($sql);
+  my @dependent_sources;
+  $sth->execute($dependent_name);
+  while(my @row = $sth->fetchrow_array()){
+    push @dependent_sources,$row[0];
+  }
+
+  my @sources;
+  foreach my $name (@reverse_ordered_source_list){
+    $sth->execute($name);
+    while(my @row = $sth->fetchrow_array()){
+      push @sources,$row[0];
+    }
+  }
+  $sth->finish;
+
+  $sql  = "select d.dependent_xref_id, x2.accession ";
+  $sql .= "  from dependent_xref d, xref x1, xref x2 ";
+  $sql .= "    where x1.xref_id = d.master_xref_id and";
+  $sql .= "          x1.source_id=? and ";
+  $sql .= "          x2.xref_id = d.dependent_xref_id and";
+  $sql .= "          x2.source_id=? ";
+  
+  my $sth = dbi()->prepare($sql);
+  foreach my $d (@dependent_sources){
+    foreach my $s (@sources){
+       $sth->execute($s,$d);
+       while(my @row = $sth->fetchrow_array()){
+	 $dependent_2_xref{$row[1]} = $row[0];
+       }
+     }
+  }
+
+  return \%dependent_2_xref;
+}
+
+
+
 sub get_valid_codes{
   my ($self,$source_name,$species_id) =@_;
   my %valid_codes;

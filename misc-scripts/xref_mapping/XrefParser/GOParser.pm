@@ -31,6 +31,7 @@ sub run {
   my $file = shift;
   my $source_id = shift;
   my $species_id = shift;
+  my %wrongtype;
 
   if(!defined($source_id)){
     $source_id = XrefParser::BaseParser->get_source_id_for_filename($file);
@@ -42,13 +43,15 @@ sub run {
 
   my (%swiss) = %{XrefParser::BaseParser->get_valid_codes("uniprot",$species_id)};
   my (%refseq) = %{XrefParser::BaseParser->get_valid_codes("refseq",$species_id)};
+  my %worm;
+  my $wormset;
 
   my $count  = 0;
 
   open(GO,"<".$file) || die "Could not open $file\n";
 
   my $taxon_line = "taxon:".$species_id;
-
+  my $miss =0;
   while (<GO>) {
     if(/$taxon_line/){
       chomp;
@@ -73,8 +76,28 @@ sub run {
 	  $count++;
 	}
       }
-      else{
-	print STDERR "unknown type ".$array[0]."\n";
+      elsif($array[0] =~ /^WB$/){
+#WB      CE20707 ZYG-9           GO:0008017      WB:WBPaper00003099|PMID:9606208 ISS             F                       protein  taxon:6239      20030829        WB
+	if(!defined($wormset)){
+	  $wormset = 1;
+	  %worm = %{XrefParser::BaseParser->get_valid_xrefs_for_dependencies
+	      ('wormbase_transcript','Uniprot/SPTREMBL','RefSeq_peptide',
+	       'Uniprot/SWISSPROT')};
+	}
+	if(defined($worm{$array[2]})){
+	  XrefParser::BaseParser->add_to_xrefs($worm{$array[2]},$array[4],'',$array[4],'',$array[6],$source_id,$species_id);
+	  $count++;
+	}
+	else{
+	  $miss++;
+	  if($miss < 10){
+	    print "miss: ".$array[2]."\n";
+	  }
+	}
+      }
+      elsif(!defined($wrongtype{$array[0]})){
+	print STDERR "WARNING: unknown type ".$array[0]."\n";
+	$wrongtype{$array[0]} = 1;
       }
     }
   }

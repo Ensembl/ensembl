@@ -81,7 +81,17 @@ sub create_xrefs {
     $type = 'dna';
     $source_id = $dna_source_id;
 
-  } else{
+  } elsif($file =~ /RefSeq_dna/){
+
+    $type = 'dna';
+    $source_id = $dna_source_id;
+
+  } elsif($file =~ /RefSeq_protein/){
+
+    $type = 'peptide';
+    $source_id = $peptide_source_id;
+
+  }else{
     die "Could not work out sequence type & source for $file\n";
   }
 
@@ -145,6 +155,7 @@ sub create_xrefs {
       my @LocusIDline = $entry =~ /db_xref=.LocusID:(\d+)/g;
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
       my @mimline = $entry =~ /db_xref=.MIM:(\d+)/g;
+      my @wormline = $entry =~ /db_xref=\"WormBase:(\S+)\"/g;
 
       foreach my $ll (@LocusIDline) {
 	my %dep;
@@ -152,6 +163,21 @@ sub create_xrefs {
 	$dep{LINKAGE_SOURCE_ID} = $source_id;
 	$dep{ACCESSION} = $ll;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+      }
+      foreach my $ll (@wormline) {
+	my %dep;
+	$dep{SOURCE_ID} = $dependent_sources{'wormbase_transcript'};
+	$dep{LINKAGE_SOURCE_ID} = $source_id;
+	$dep{ACCESSION} = $ll;
+	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
+	if($ll =~ /(\S+\.\d+)/){
+	  my $temp = $1;
+	  my %dep2;
+	  $dep2{SOURCE_ID} = $dependent_sources{'wormbase_gene'};
+	  $dep2{LINKAGE_SOURCE_ID} = $source_id;
+	  $dep2{ACCESSION} = $temp;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep2;
+	}
       }
       foreach my $ll (@EntrezGeneIDline) {
 	my %dep;

@@ -224,12 +224,8 @@ sub create_xrefs {
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
-#	print $dep."\n";
 	my ($source, $acc, @extra) = split /;\s*/, $1;
-#	print "source is $source \n";
-#	print "acc is $acc \n";
 	if (exists $dependent_sources{$source}) {
-#	  print "EXISTS\n";
 	  # create dependent xref structure & store it
 	  my %dep;
 	  $dep{SOURCE_NAME} = $source;
@@ -238,7 +234,6 @@ sub create_xrefs {
 	  $dep{ACCESSION} = $acc;
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	  if($dep =~ /EMBL/){
-#	    print "prtein_id is ".$extra[0]."\n";
 	    my ($protein_id) = $extra[0];
 	    if($protein_id ne "-"){
 	      my %dep2;
@@ -249,6 +244,39 @@ sub create_xrefs {
 	      push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
 	    }
 	  }
+	}
+	elsif($source =~ /WormPep/){
+	  #DR   WormPep; F35D6.1b; CE28299.
+	  my %dep;
+	  $dep{SOURCE_NAME} = 'wormbase_transcript';
+	  $dep{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+	  $dep{SOURCE_ID} = $dependent_sources{'wormbase_transcript'};
+	  $dep{ACCESSION} = $acc;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
+
+	  my $gene;
+	  if($acc =~ /(\S+\.\d+)/){
+	    $gene = $1;
+	    my %dep2;
+	    $dep2{SOURCE_NAME} = 'wormbase_gene';
+	    $dep2{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+	    $dep2{SOURCE_ID} = $dependent_sources{'wormbase_gene'};
+	    $dep2{ACCESSION} = $gene;
+	    push @{$xref->{DEPENDENT_XREFS}}, \%dep2; # array of hashrefs
+	  }
+
+	  my %dep3;
+	  my $worm_id ;
+	  if($extra[0] =~ /([^.]+)/){
+	    $worm_id = $1;
+	  }
+	  $dep3{SOURCE_NAME} = 'wormpep_id';
+	  $dep3{LINKAGE_SOURCE_ID} = $xref->{SOURCE_ID};
+	  $dep3{SOURCE_ID} = $dependent_sources{'wormpep_id'};
+	  $dep3{ACCESSION} = $worm_id;
+	  push @{$xref->{DEPENDENT_XREFS}}, \%dep3; # array of hashrefs
+
+#	  print $worm_id."\t".$gene."\t".$acc."\n";
 	}
       }
     }
