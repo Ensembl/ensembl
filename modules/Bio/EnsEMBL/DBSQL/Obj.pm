@@ -883,8 +883,7 @@ sub DESTROY {
 sub get_Gene {
    my ($self,$geneid, $supporting) = @_;
 
-   $self->warn("Obj->get_Gene is a deprecated method! 
-Calling Gene_Obj->get instead!");
+   $self->warn("Obj->get_Gene is a deprecated method!\nCalling gene_Obj->get instead!");
 
    return $self->gene_Obj->get($geneid,$supporting);
 }
@@ -906,7 +905,7 @@ sub get_Gene_by_Transcript_id {
    my ($self,$tid, $supporting) = @_;
 
    $self->warn("Obj->get_Gene_by_Transcript_id is a deprecated method! 
-Calling Gene_Obj->get instead!");
+Calling gene_Obj->get instead!");
 
    return $self->gene_Obj->get_Gene_by_Transcript_id($tid,$supporting);
 }
@@ -928,7 +927,7 @@ sub get_Gene_array {
     my ($self,@geneid) = @_;
 
     $self->throw("Very deprecated method, should call methods with supporting evidence and from
-Gene_Obj!");
+gene_Obj!");
 }
 
 =head2 get_Gene_array_supporting
@@ -948,7 +947,7 @@ sub get_Gene_array_supporting {
     my ($self,$supporting,@geneid) = @_;
 
     $self->warn("Obj->get_Gene_array_supporting is a deprecated method!
-Calling Gene_Obj->get_array_supporting instead!");
+Calling gene_Obj->get_array_supporting instead!");
 
     return $self->gene_Obj->get_array_supporting($supporting,@geneid);
 }
@@ -977,7 +976,7 @@ sub get_Virtual_Contig_by_Transcript_id {
    my ($self,$tid, $maxlen) = @_;
 
    $self->warn("Obj->get_Virtual_contig is a deprecated method! 
-Calling Gene_Obj->get_Virtual_contig instead!");
+Calling gene_Obj->get_Virtual_contig instead!");
 
    return my $vc =$self->gene_Obj->get_Virtual_Contig($tid,$maxlen);
 }
@@ -1005,7 +1004,7 @@ sub get_Transcript_in_VC_coordinates{
    my ($self,$tid) = @_;
 
    $self->warn("Obj->get_Transcript_in_VC_coordinates is a deprecated method! 
-Calling Gene_Obj->get_Virtual_contig instead!");
+Calling gene_Obj->get_Virtual_contig instead!");
 
    return my $transcript =$self->gene_Obj->get_Transcript_in_VC_coordinates($tid);
 }
@@ -1156,7 +1155,7 @@ sub get_Transcript{
     my ($self,$transid) = @_;
  
     $self->warn("Obj->get_Transcript is a deprecated method! 
-Calling Gene_Obj->get_Transcript instead!");
+Calling gene_Obj->get_Transcript instead!");
 
     return $self->gene_Obj->get_Transcript($transid);
 }
@@ -1177,7 +1176,7 @@ sub get_Translation{
    my ($self,$translation_id) = @_;
 
    $self->warn("Obj->get_Translation is a deprecated method! 
-Calling Gene_Obj->get_Translation instead!");
+Calling gene_Obj->get_Translation instead!");
 
    return $self->gene_Obj->get_Translation($translation_id);
 }
@@ -1198,7 +1197,7 @@ sub get_Exon{
    my ($self,$exonid) = @_;
 
    $self->warn("Obj->get_Exon is a deprecated method! 
-Calling Gene_Obj->get_Exon instead!");
+Calling gene_Obj->get_Exon instead!");
 
    return $self->gene_Obj->get_Exon($exonid);
 }
@@ -1219,7 +1218,7 @@ sub get_all_Gene_id{
    my ($self) = @_;
 
    $self->warn("Obj->get_all_Gene_id is a deprecated method! 
-Calling Gene_Obj->get_all_Gene_id instead!");
+Calling gene_Obj->get_all_Gene_id instead!");
 
    return $self->gene_Obj->get_all_Gene_id();
 }
@@ -1376,7 +1375,7 @@ sub delete_Exon{
     my ($self,$exon_id) = @_;
 
     $self->warn("Obj->delete_Exon is a deprecated method
-Calling Gene_Obj->delete_Exon instead!");
+Calling gene_Obj->delete_Exon instead!");
 
     return $self->gene_Obj->delete_Exon($exon_id);
 }
@@ -1397,7 +1396,7 @@ sub delete_Supporting_Evidence {
     my ($self,$exon_id) = @_;
  
     $self->warn("Obj->delete_Supporting_Evidence is a deprecated method
-Calling Gene_Obj->delete_Supporting_Evidence instead!");
+Calling gene_Obj->delete_Supporting_Evidence instead!");
 
     return $self->gene_Obj->delete_Supporting_Evidence($exon_id);
 }
@@ -1440,7 +1439,7 @@ sub delete_Gene{
    my ($self,$geneid) = @_;
 
    $self->warn("Obj->delete_Gene is a deprecated method! 
-Calling Gene_Obj->delete instead!");
+Calling gene_Obj->delete instead!");
 
    return $self->gene_Obj->delete($geneid);
 }
@@ -1460,8 +1459,8 @@ Calling Gene_Obj->delete instead!");
 sub geneid_to_cloneid{
     my ($self,$geneid) = @_;
     
-    $self->throw("Obj->geneid_to_cloneid is a deprecated method, called Gene_Obj->each_cloneid instead!
-All the gene, transcript, and exon methods are now to be found in Gene_Obj");
+    $self->throw("Obj->geneid_to_cloneid is a deprecated method, called gene_Obj->each_cloneid instead!
+All the gene, transcript, and exon methods are now to be found in gene_Obj");
     return $self->gene_Obj->each_cloneid($geneid);
 }
 
@@ -1567,7 +1566,7 @@ sub write_Gene{
    my ($self,$gene) = @_;
 
    $self->warn("Obj->write_Gene is a deprecated method! 
-Calling Gene_Obj->write instead!");
+Calling gene_Obj->write instead!");
 
    return $self->gene_Obj->write($gene);
 }
@@ -1655,7 +1654,7 @@ sub write_supporting_evidence {
     my ($self,$exon) = @_;
 
     $self->warn("Obj->write_supporting_evidence is a deprecated method!
-Calling Gene_Obj->write_supporting_evidence instead!");
+Calling gene_Obj->write_supporting_evidence instead!");
 
     return $self->gene_Obj->write_supporting_evidence($exon);
 }
@@ -1676,7 +1675,7 @@ sub get_supporting_evidence {
     my ($self,@exons) = @_;
 
     $self->warn("Obj->get_supporting_evidence is a deprecated method! 
-Calling Gene_Obj->get_supporting_evidence instead!");
+Calling gene_Obj->get_supporting_evidence instead!");
 
    return $self->gene_Obj->get_supporting_evidence(@exons);
 }
@@ -1788,7 +1787,7 @@ sub write_Transcript{
    my ($self,$trans,$gene) = @_;
 
    $self->warn("Obj->write_Transcript is a deprecated method! 
-Calling Gene_Obj->write_Transcript instead!");
+Calling gene_Obj->write_Transcript instead!");
 
    return $self->gene_Obj->write_Transcript($trans,$gene);
 }
@@ -1809,7 +1808,7 @@ sub write_Translation{
     my ($self,$translation) = @_;
 
     $self->warn("Obj->write_Translation is a deprecated method
-Calling Gene_Obj->write_Translation instead!");
+Calling gene_Obj->write_Translation instead!");
 
     return $self->gene_Obj->write_Translation($translation);
 }
@@ -1831,7 +1830,7 @@ sub write_Exon {
    my ($self,$exon) = @_;
 
    $self->warn("Obj->write_Exon is a deprecated method! 
-Calling Gene_Obj->write_Exon instead!");
+Calling gene_Obj->write_Exon instead!");
 
    return $self->gene_Obj->write_Exon($exon);
 }
@@ -2008,7 +2007,6 @@ sub gene_Obj {
     }
 
     return $self->{_gene_obj};
-
 }
 
 =head2 feature_Obj
