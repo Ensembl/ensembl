@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 38;
+	plan tests => 40;
 }
 
 use MultiTestDB;
@@ -265,8 +265,12 @@ ok( scalar(@{$gene->get_all_Exons()} ) == 3);
 
 $gene = $gene->transform( "chromosome" );
 
-$multi->hide( "core", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
+my $desc = 'test description for a gene';
+my $stable_id = 'ENSG00000171456';
+$gene->description($desc);
+$gene->stable_id($stable_id);
 
+$multi->hide( "core", "meta_coord", "gene", "transcript", "exon", "exon_transcript", "gene_description", "translation", "gene_stable_id", "transcript_stable_id", "exon_stable_id", "translation_stable_id", "supporting_feature", "dna_align_feature" );
 
 my $gene_ad = $db->get_GeneAdaptor();
 debug( "Storing the gene" );
@@ -277,10 +281,15 @@ ok(1);
 my $genes = $slice->get_all_Genes();
 
 
-
 ok(scalar( @$genes) == 1 );
 
 my $gene_out = $genes->[0];
+
+#make sure the stable_id was stored
+ok($gene_out->stable_id eq $stable_id);
+
+#make sure the description was stored
+ok($gene_out->description eq $desc);
 
 ok(scalar(@{$gene_out->get_all_Exons()}) == 3);
 
