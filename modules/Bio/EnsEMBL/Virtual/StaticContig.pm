@@ -1903,9 +1903,11 @@ return $markers[0];
 
  Title   : get_all_Genes_exononly
  Usage   :
- Function:
+ Function: Get all genes making sure there is no redundant exons
+           Suitable if no translation has to be intended on transcript.
+           Much faster than get_all_Genes.
  Example :
- Returns : 
+ Returns : Array of Bio::EnsEMBL::Gene
  Args    :
 
 
@@ -1962,6 +1964,7 @@ sub get_all_Genes_exononly{
     my @out;
     my @trans;
     my $length = $glob_end - $glob_start;
+    my %exon_already_seen;
 
     while( $sth->fetch ) {
         next if (($end > $length) || ($start < 1));
@@ -2010,6 +2013,7 @@ sub get_all_Genes_exononly{
 #	        }
 #        }
 
+	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
         my $exon = Bio::EnsEMBL::Exon->new();
             $exon->start($start);
             $exon->end($end);
@@ -2021,6 +2025,7 @@ sub get_all_Genes_exononly{
             $previous_exon = $exon;
             $current_transcript->add_Exon($exon);
             $current_transcript->end_exon_rank($rank);
+            $exon_already_seen{$exonid} = 1;
    }
 
    #
