@@ -81,7 +81,7 @@ use Bio::EnsEMBL::ProjectionSegment;
 =head2 new
 
   Arg [...]  : List of named arguments
-               string COORD_SYSTEM
+               Bio::EnsEMBL::CoordSystem COORD_SYSTEM
                string SEQ_REGION_NAME,
                int    START,
                int    END,
