@@ -194,7 +194,7 @@ sub _objs_from_sth {
 
   my ($row, $row_cache);
 
-  my $row_cache = $sth->fetchall_arrayref();
+  $row_cache = $sth->fetchall_arrayref();
 
   if($slice) {
     my ($chr, $start, $end, $strand);
