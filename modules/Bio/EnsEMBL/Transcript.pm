@@ -570,6 +570,7 @@ sub split_Transcript_to_Partial {
    # should we check here if the Exons know their entire_seq?
 
    my @exons;
+
    if( $on_translate == 1 ) {
        @exons = $self->translateable_exons();
    } else {
@@ -676,6 +677,7 @@ sub translate {
 
         my $tseq = $ptrans->_translate_coherent($debug);
 
+#	print STDERR "Translation " . $tseq->seq . "\n";
         # to be consistent with our EMBL dumping, we need to make the actual join
         # with fill-in N's and then pass into translate so that ambiguous codons
         # which still have a translation happen! This has to be the weirdest piece
@@ -690,6 +692,8 @@ sub translate {
 	    my $first_exon = $ptrans   ->start_exon();
 	    my $filler;
 
+#	    print STDERR "Exon phases " . $first_exon->phase . " " . $last_exon->end_phase . "\n";
+
 	    # last exon
 	    if( $last_exon->end_phase != 0 ) {
 	        $filler = substr($last_exon->seq->seq, $last_exon->seq->length - $last_exon->end_phase);
@@ -698,7 +702,7 @@ sub translate {
 
 	    # do first exon now.
 
-	    if( $first_exon->phase == 0 ) {
+	    if( $first_exon->phase != 0 ) {
 	        $filler .= 'N' x $first_exon->phase;
 	    } else {
 	        $filler .= 'NNN';
@@ -939,8 +943,8 @@ sub _translate_coherent{
    $debug = 0;
 
    if ( $debug ) {
-#       print STDERR "Bstr is $tstr\n";
-#       print STDERR "Exon phase is " . $exon_start->phase . "\n";
+       print STDERR "\nBstr is $tstr\n";
+       print STDERR "Exon phase is " . $exon_start->phase . "\n";
        my @trans;
        my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
@@ -951,10 +955,10 @@ sub _translate_coherent{
 	$trans[1] = $exseq->translate('*','X',2);
 	$trans[2] = $exseq->translate('*','X',1);
 
-#       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
-#       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
-#       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
-#       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
+       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
+       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
+       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
+       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
    }
 
 
