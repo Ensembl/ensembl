@@ -47,7 +47,7 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
   }
 
   # tidy up
-  unlink $transcript_fnam or die "file delete error";
+  die "file delete error" unless unlink $transcript_fnam;
 
 } else {			# master: prepare for others to do the work
 
