@@ -300,7 +300,7 @@ sub get_all_SeqFeatures {
     push(@out,$self->get_all_RepeatFeatures);
 #   push(@out,$self->get_all_PredictionFeatures);
 
-    print(STDERR "Fetched all features\n");
+#    print(STDERR "Fetched all features\n");
     return @out;
 }
 
@@ -373,7 +373,7 @@ sub get_all_SimilarityFeatures{
        
        #Build fset feature object if new fset found
        if ($fset != $seen) {
-	   print(STDERR "Making new fset feature $fset\n");
+#	   print(STDERR "Making new fset feature $fset\n");
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
 	   $out->analysis($analysis);
@@ -1050,7 +1050,7 @@ sub _load_overlaps{
 	   }
 
 
-	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
+#	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 
 	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->dbobj,
 								  -id    => $sisterid );
@@ -1092,7 +1092,7 @@ sub _load_overlaps{
 	   } else {
 	       $self->throw("Impossible type position $type\n");
 	   }
-	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
+#	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 	   
 	   my $sis      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->dbobj,
 								  -id    => $sisterid );

@@ -63,7 +63,7 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::EnsEMBL::Pipeline:DB::Gene_ObjI Bio::Root::Object);
+@ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::Object);
 
 # new() is inherited from Bio::Root::Object
 
