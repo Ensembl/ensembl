@@ -1408,9 +1408,9 @@ sub get_all_SearchFeatures {
 
     my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
-    my $offset = $self->chr_start-1;
+    my $offset = $self->start-1;
 
-    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->chr_start, $self->chr_end) : [];
+    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->start, $self->end) : [];
 
     foreach( @$features ) { 
       $_->start( $_->start-$offset );
