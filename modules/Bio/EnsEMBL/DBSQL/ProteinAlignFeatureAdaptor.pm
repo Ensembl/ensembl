@@ -91,23 +91,43 @@ sub fetch_by_dbID{
    }
 
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
-
-   my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-   $out->start($start);
-   $out->end($end);
-   $out->strand($strand);
-   $out->score($score);
-   $out->hstart($hstart);
-   $out->hend($hend);
-   $out->hseqname($hname);
-   $out->cigar($cigar);
+   my $f1 = Bio::EnsEMBL::SeqFeature->new();
+   my $f2 = Bio::EnsEMBL::SeqFeature->new();
    
-   $out->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
+   $f1->start($start);
+   $f1->end($end);
+   $f1->score($score);
+   $f1->seqname($contig->name);
+   $f1->strand($strand);
+   
+   $f2->start($hstart);
+   $f2->end($hend);
+   $f2->seqname($hname);
+   
+   
+    
+   my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+						       -feature2 => $f2,
+						       -cigar_string => $cigar);
+   $dnapep->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
+   $dnapep->seqname($contig->name);
+   $dnapep->attach_seq($contig->seq);
+  # my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
+#   $out->start($start);
+#   $out->end($end);
+#   $out->strand($strand);
+#   $out->score($score);
+#   $out->hstart($hstart);
+#   $out->hend($hend);
+#   $out->hseqname($hname);
+#   $out->cigar($cigar);
+   
+#   $out->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
 
-   $out->seqname($contig->id);
-   $out->attach_seq($contig->seq);
+#   $out->seqname($contig->id);
+#   $out->attach_seq($contig->seq);
 
-   return $out;
+   return $dnapep;
 
 }
 
@@ -130,7 +150,7 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id = '$cid'");
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
@@ -142,26 +162,31 @@ sub fetch_by_contig_id{
    my %ana;
 
    while( $sth->fetch ) {
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-
-
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($start);
-       $out->end($end);
-       $out->strand($strand);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
+     if( !defined $ana{$analysis_id} ) {
+       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+     }
+     my $f1 = Bio::EnsEMBL::SeqFeature->new();
+     my $f2 = Bio::EnsEMBL::SeqFeature->new();
+     
+     $f1->start($start);
+     $f1->end($end);
+     $f1->score($score);
+     $f1->seqname($contig->name);
+     $f1->strand($strand);
        
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
-       $out->seqname($contig->name);
-       $out->attach_seq($contig->seq);
-       push(@f,$out);
+     $f2->start($hstart);
+     $f2->end($hend);
+     $f2->seqname($hname);
+   
+       
+       
+     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+     $dnapep->analysis($ana{$analysis_id});
+     $dnapep->seqname($contig->name);
+  
+     push(@f,$dnapep);
    }
    
    return @f;
@@ -192,26 +217,31 @@ sub fetch_by_contig_id_and_logic_name{
    my %ana;
 
    while( $sth->fetch ) {
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-
-
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($start);
-       $out->end($end);
-       $out->strand($strand);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
+     if( !defined $ana{$analysis_id} ) {
+       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+     }
+     my $f1 = Bio::EnsEMBL::SeqFeature->new();
+     my $f2 = Bio::EnsEMBL::SeqFeature->new();
+     
+     $f1->start($start);
+     $f1->end($end);
+     $f1->score($score);
+     $f1->seqname($contig->name);
+     $f1->strand($strand);
        
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
-       $out->seqname($contig->name);
-       $out->attach_seq($contig->seq);
-       push(@f,$out);
+     $f2->start($hstart);
+     $f2->end($hend);
+     $f2->seqname($hname);
+   
+       
+       
+     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+     $dnapep->analysis($ana{$analysis_id});
+     $dnapep->seqname($contig->name);
+  
+     push(@f,$dnapep);
    }
    
    return @f;
@@ -253,26 +283,31 @@ sub fetch_by_contig_id_and_dbname{
    my %ana;
 
    while( $sth->fetch ) {
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-
-
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($start);
-       $out->end($end);
-       $out->strand($strand);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
+     if( !defined $ana{$analysis_id} ) {
+       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+     }
+     my $f1 = Bio::EnsEMBL::SeqFeature->new();
+     my $f2 = Bio::EnsEMBL::SeqFeature->new();
+     
+     $f1->start($start);
+     $f1->end($end);
+     $f1->score($score);
+     $f1->seqname($contig->name);
+     $f1->strand($strand);
        
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
-       $out->seqname($contig->name);
-       $out->attach_seq($contig->seq);
-       push(@f,$out);
+     $f2->start($hstart);
+     $f2->end($hend);
+     $f2->seqname($hname);
+   
+       
+       
+     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+     $dnapep->analysis($ana{$analysis_id});
+     $dnapep->seqname($contig->name);
+  
+     push(@f,$dnapep); 
    }
    
    return @f;
@@ -303,20 +338,20 @@ sub fetch_by_assembly_location{
    }
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($start,$end,$chr);
+   $mapper->register_region($chr,$start,$end);
 
-   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+   my @cids = $mapper->list_contig_ids($chr, $start,$end);
 
    # build the SQL
 
    my $cid_list = join(',',@cids);
-   my $sth = $self->prepare("select s.contig_id,s.contig_start,s.contig_end,s.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line,p.score from protein_align_feature p where p.contig_id in ($cid_list)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name,p.cigar_line, p.analysis_id, p.score from protein_align_feature p where p.contig_id in ($cid_list)");
    $sth->execute();
 
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score);
+   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname,$cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
 
    my @f;
@@ -324,7 +359,7 @@ sub fetch_by_assembly_location{
 
    while( $sth->fetch ) {
        # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
+       my @coord_list = $mapper->map_coordinates_to_assembly($contig_id,$contig_start,$contig_end,$strand,"rawcontig");
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {
@@ -334,23 +369,36 @@ sub fetch_by_assembly_location{
        if( !defined $ana{$analysis_id} ) {
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
-
+       if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
+	 
+	 next;
+       }       
        # ok, ready to build a sequence feature: do we want this relative or not?
 
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($coord_list[0]->start);
-       $out->end($coord_list[0]->end);
-       $out->strand($coord_list[0]->strand);
-       $out->seqname($coord_list[0]->seqname);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
+     
+       my $f1 = Bio::EnsEMBL::SeqFeature->new();
+       my $f2 = Bio::EnsEMBL::SeqFeature->new();
        
-       push(@f,$out);
+       $f1->start($coord_list[0]->start);
+       $f1->end($coord_list[0]->end);
+       $f1->score($score);
+       $f1->seqname($coord_list[0]->id);
+       $f1->strand($coord_list[0]->strand);
+       
+       $f2->start($hstart);
+       $f2->end($hend);
+       $f2->seqname($hname);
+   
+       
+       
+       my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+       $dnapep->analysis($ana{$analysis_id});
+       $dnapep->seqname($coord_list[0]->id);
+       push(@f,$dnapep);
    }
 
    return @f;
@@ -377,9 +425,9 @@ sub fetch_by_assembly_location_and_dbname{
    } 
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($start,$end,$chr);
+   $mapper->register_region($chr, $start,$end);
 
-   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+   my @cids = $mapper->list_contig_ids($chr, $start,$end);
 
    # build the SQL
 
@@ -397,45 +445,59 @@ sub fetch_by_assembly_location_and_dbname{
         push(@analysis_ids, $analysis_id);
    }
    my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p where p.contig_id in($cid_list) and p.analysis_id in($analysis_idlist)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
+   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
     my %ana;
 
    while( $sth->fetch ) {
-       # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
        
-       # coord list > 1 - means does not cleanly map. At the moment, skip
-       if( scalar(@coord_list) > 1 ) {
-	   next;
-       }
-
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-
-       # ok, ready to build a sequence feature: do we want this relative or not?
-
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($coord_list[0]->start);
-       $out->end($coord_list[0]->end);
-       $out->strand($coord_list[0]->strand);
-       $out->seqname($coord_list[0]->seqname);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
+     # we whether this is sensible to use or not
+     my @coord_list = $mapper->map_coordinates_to_assembly($contig_id,$contig_start,$contig_end,$strand,"rawcontig");
+     
+     # coord list > 1 - means does not cleanly map. At the moment, skip
+     if( scalar(@coord_list) > 1 ) {
+       next;
+     }
+     
+     if( !defined $ana{$analysis_id} ) {
+       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+     }
+     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+       #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+       $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
        
-       push(@f,$out); 
+       next;
+     }       
+     # ok, ready to build a sequence feature: do we want this relative or not?
+     
+     
+     my $f1 = Bio::EnsEMBL::SeqFeature->new();
+     my $f2 = Bio::EnsEMBL::SeqFeature->new();
+     
+     $f1->start($coord_list[0]->start);
+     $f1->end($coord_list[0]->end);
+     $f1->score($score);
+     $f1->seqname($coord_list[0]->id);
+     $f1->strand($coord_list[0]->strand);
+     
+     $f2->start($hstart);
+     $f2->end($hend);
+     $f2->seqname($hname);
+     
+     
+     
+     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+     $dnapep->analysis($ana{$analysis_id});
+     $dnapep->seqname($coord_list[0]->id);
+     push(@f,$dnapep);
    }
    
    return @f;
@@ -459,9 +521,9 @@ sub fetch_by_assembly_location_and_logic_name{
    }
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($start,$end,$chr);
+   $mapper->register_region($chr, $start,$end);
 
-   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+   my @cids = $mapper->list_contig_ids($chr, $start,$end);
 
    # build the SQL
 
@@ -470,45 +532,60 @@ sub fetch_by_assembly_location_and_logic_name{
    my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
+   my ($contig_id,$contig_start,$contig_end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
+   $sth->bind_columns(undef,\$contig_id,\$contig_start,\$contig_end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    
    my %ana;
 
    while( $sth->fetch ) {
-       # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
+     # we whether this is sensible to use or not
+     my @coord_list = $mapper->map_coordinates_to_assembly($contig_id,$contig_start,$contig_end,$strand,"rawcontig");
+     
+     # coord list > 1 - means does not cleanly map. At the moment, skip
+     if( scalar(@coord_list) > 1 ) {
+       next;
+     }
+     
+     if( !defined $ana{$analysis_id} ) {
+       $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+     }
+     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+       #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+       $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
        
-       # coord list > 1 - means does not cleanly map. At the moment, skip
-       if( scalar(@coord_list) > 1 ) {
-	   next;
-       }
-
-       if( !defined $ana{$analysis_id} ) {
-	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
-       }
-
-       # ok, ready to build a sequence feature: do we want this relative or not?
-
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($coord_list[0]->start);
-       $out->end($coord_list[0]->end);
-       $out->strand($coord_list[0]->strand);
-       $out->seqname($coord_list[0]->seqname);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hseqname($hname);
-       $out->cigar($cigar);
-
-       $out->analysis($ana{$analysis_id});
-       
-       push(@f,$out);
+       next;
+     }       
+     # ok, ready to build a sequence feature: do we want this relative or not?
+     
+     
+     my $f1 = Bio::EnsEMBL::SeqFeature->new();
+     my $f2 = Bio::EnsEMBL::SeqFeature->new();
+     
+     $f1->start($coord_list[0]->start);
+     $f1->end($coord_list[0]->end);
+     $f1->score($score);
+     $f1->seqname($coord_list[0]->id);
+     $f1->strand($coord_list[0]->strand);
+     
+     $f2->start($hstart);
+     $f2->end($hend);
+     $f2->seqname($hname);
+     
+     
+     
+     my $dnapep =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
+							 -feature2 => $f2,
+							 -cigar_string => $cigar);
+     $dnapep->analysis($ana{$analysis_id});
+     $dnapep->seqname($coord_list[0]->id);
+     push(@f,$dnapep);
+     
+     
    }
-   
+  
    return @f;
 
 }
@@ -536,7 +613,7 @@ sub store{
        $self->throw("Contig_id must be a number, not [$contig_id]");
    }
 
-   my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_name,cigar_line,analysis_id,score) values (?,?,?,?,?,?,?,?,?,?)");
+   my $sth = $self->prepare("insert into protein_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_name,cigar_line,analysis_id,score, evalue, perc_ident) values (?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
    foreach my $sf ( @sf ) {
        if( !ref $sf || !$sf->isa("Bio::EnsEMBL::FeaturePair") ) {
@@ -550,239 +627,14 @@ sub store{
 	   # maybe we should throw here. Shouldn't we always have an analysis from the database?
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
-
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score);
+       #print STDERR "storing ".$sf->gffstring."\n";
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score, $sf->p_value, $sf->percent_id);
    }
 
 
 }
 
-sub fetch_featurepair_list_by_contig_id{
-  my($self, $contig_id) = @_;
 
-  my @cigar_feats = $self->fetch_by_contig_id($contig_id);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-}
-
-sub fetch_featurepair_list_by_contig_id_and_logic_name{
-  my($self, $contig_id, $logic_name) = @_;
-
-  my @cigar_feats = $self->fetch_by_contig_id_and_logic_name($contig_id, $logic_name);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-}
-
-
-sub fetch_featurepair_list_by_contig_id_and_dbname{
-  my($self, $contig_id, $db_name) = @_;
-
-  my @cigar_feats = $self->fetch_by_contig_id_and_dbname($contig_id, $db_name);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-}
-
-sub fetch_featurepair_list_by_dbID{
-  my($self, $dbId) = @_;
-
-  my $cigar_feat = $self->fetch_by_dbId($dbId);
-  my @fps;
-  
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  
-
-  return @fps;
-}
-
-
-sub fetch_featurepair_list_by_assembly_location_and_dbname{
-  my($self, $start, $end, $chr, $type, $db_name) = @_;
-
-  my @cigar_feats = $self->fetch_by_assembly_location($start, $end, $chr, $type, $db_name);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-}
-
-sub fetch_featurepair_list_by_assembly_location{
-  my($self, $start, $end, $chr, $type) = @_;
-
-  my @cigar_feats = $self->fetch_by_assembly_location_and_dbname($start, $end, $chr, $type);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-}
-
-sub fetch_featurepair_list_by_assembly_location_nad_logic_name{
-  my($self, $start, $end, $chr, $type, $logic_name) = @_;
-
-  my @cigar_feats = $self->fetch_by_assembly_location_and_logic_name($start, $end, $chr, $type, $logic_name);
-  my @fps;
-  foreach my $cigar_feat(@cigar_feats){
-    my $f1 = Bio::EnsEMBL::SeqFeature->new();
-    my $f2 = Bio::EnsEMBL::SeqFeature->new();
-    
-    $f1->start($cigar_feat->start);
-    $f1->end($cigar_feat->end);
-    $f1->score($cigar_feat->score);
-    $f1->seqname($cigar_feat->seqname);
-    $f1->strand($cigar_feat->strand);
-    
-    $f2->start($cigar_feat->hstart);
-    $f2->end($cigar_feat->hend);
-    $f2->strand($cigar_feat->hstrand);
-    $f2->seqname($cigar_feat->hseqname);
-
-    my $cigar = $cigar_feat->cigar;
-    
-    my $dnadna =  Bio::EnsEMBL::DnaPepAlignFeature->new(-feature1 => $f1,
-							-feature2 => $f2,
-							-cigar_string    => $cigar);
-    my @parsed_fps = $dnadna->_parse_cigar;
-    push(@fps, @parsed_fps);
-  }
-
-  return @fps;
-
-}
 
 
 1;

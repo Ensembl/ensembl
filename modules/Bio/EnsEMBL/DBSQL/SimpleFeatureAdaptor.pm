@@ -196,15 +196,16 @@ sub fetch_by_assembly_location_and_logic_name{
    }
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($start,$end,$chr);
+   $mapper->register_region($chr,$start,$end);
 
-   my @cids = $mapper->list_contig_ids($start,$end,$chr);
-   print  
+   my @cids = $mapper->list_contig_ids($chr,$start,$end);
+   print "have ".scalar(@cids)." contig ids\n";  
    # build the SQL
 
    my $cid_list = join(', ',@cids);
    print $cid_list."\n";
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.analysis_id, p.score from protein_align_feature p, analysis a where p.contig_id in ($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   print "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.analysis_id, p.score from simple_feature p, analysis a where p.contig_id in (".$cid_list.") and a.analysis_id = p.analysis_id and a.logic_name = '".$logic_name."'\n";
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.analysis_id, p.score from simple_feature p, analysis a where p.contig_id in ($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$display,$analysis_id);
@@ -215,7 +216,7 @@ sub fetch_by_assembly_location_and_logic_name{
 
    while( $sth->fetch ) {
        # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id);
+       my @coord_list = $mapper->map_coordinates_to_assembly($contig_id, $start,$end,$strand);
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {
@@ -267,9 +268,9 @@ sub fetch_by_assembly_location{
    }
 
    my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
-   $mapper->register_region($start,$end,$chr);
+   $mapper->register_region($chr, $start,$end);
 
-   my @cids = $mapper->list_contig_ids($start,$end,$chr);
+   my @cids = $mapper->list_contig_ids($chr, $start,$end);
 
    # build the SQL
 
@@ -285,7 +286,7 @@ sub fetch_by_assembly_location{
 
    while( $sth->fetch ) {
        # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id);
+       my @coord_list = $mapper->map_coordinates_to_assembly($contig_id, $start,$end,$strand);
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {
@@ -295,7 +296,12 @@ sub fetch_by_assembly_location{
        if( !defined $ana{$analysis_id} ) {
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
-
+       if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
+	 #$counter++;
+	 next;
+       }
        # ok, ready to build a sequence feature: do we want this relative or not?
 
        my $out = Bio::EnsEMBL::SimpleFeature->new();

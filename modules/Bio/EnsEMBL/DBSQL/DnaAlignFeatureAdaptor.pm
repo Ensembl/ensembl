@@ -81,10 +81,10 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from dna_align_feature p where p.dna_align_feature_id = $id");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.dna_align_feature_id = $id");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id) = $sth->fetchrow_array();
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score) = $sth->fetchrow_array();
 
    if( !defined $contig_id ) {
        $self->throw("No simple feature with id $id");
@@ -96,7 +96,7 @@ sub fetch_by_dbID{
    $out->start($start);
    $out->end($end);
    $out->strand($strand);
-
+   $out->score($score);
    $out->hstart($hstart);
    $out->hend($hend);
    $out->hstrand($hstrand);
@@ -148,7 +148,7 @@ sub fetch_by_contig_id{
        }
 
 
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
@@ -180,12 +180,12 @@ sub fetch_by_contig_id_and_logic_name{
      $self->throw("must provide a logic_name to fetch by logic name: $!\n");
    } 
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from dna_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from dna_align_feature p, analysis a where p.contig_id = $cid and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -201,7 +201,7 @@ sub fetch_by_contig_id_and_logic_name{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -241,12 +241,12 @@ sub fetch_by_contig_id_and_dbname{
         push(@analysis_ids, $analysis_id);
    }
    my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from dna_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.contig_id = $cid and p.analysis_id in($analysis_idlist)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -262,7 +262,7 @@ sub fetch_by_contig_id_and_dbname{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -312,15 +312,15 @@ sub fetch_by_assembly_location{
   # build the SQL
   print STDERR "have @cids contig ids\n";
   my $cid_list = join(',',@cids);
-  my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,a.gff_source,a.gff_feature from dna_align_feature p where p.contig_id in ($cid_list)";
+  my $sql = "select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line, p.score from dna_align_feature p where p.contig_id in ($cid_list)";
   
-  my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line, p.analysis_id from dna_align_feature p where p.contig_id in ($cid_list)");
+  my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line, p.analysis_id, p.score from dna_align_feature p where p.contig_id in ($cid_list)");
   $sth->execute();
   
   
-  my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id);
+  my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score);
   
-  $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand, \$hname,\$cigar,\$analysis_id);
+  $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand, \$hname,\$cigar,\$analysis_id. \$score);
   
 
   my @f;
@@ -354,7 +354,7 @@ sub fetch_by_assembly_location{
     $out->end($coord_list[0]->end);
     $out->strand($coord_list[0]->strand);
     $out->seqname($coord_list[0]->id);
-    
+    $out->score($score);
     $out->hstart($hstart);
     $out->hend($hend);
     $out->hstrand($hstrand);
@@ -408,14 +408,14 @@ sub fetch_by_assembly_location_and_dbname{
         push(@analysis_ids, $analysis_id);
    }
    my $analysis_idlist = join(',', @analysis_ids);
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from dna_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and p.analysis_id in($analysis_idlist)");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
-   my @f;
+    my @f;
     my %ana;
 
    while( $sth->fetch ) {
@@ -432,13 +432,17 @@ sub fetch_by_assembly_location_and_dbname{
        }
 
        # ok, ready to build a sequence feature: do we want this relative or not?
-
+       if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
+	 next;
+       }
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
        $out->start($coord_list[0]->start);
        $out->end($coord_list[0]->end);
        $out->strand($coord_list[0]->strand);
        $out->seqname($coord_list[0]->seqname);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -478,12 +482,12 @@ sub fetch_by_assembly_location_and_logic_name{
 
    my $cid_list = join(',',@cids);
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id from dna_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_name, p.cigar_line,p.analysis_id, p.score from dna_align_feature p, analysis a where p.contig_id in($cid_list) and a.analysis_id = p.analysis_id and a.logic_name = '$logic_name'");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hname, $cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    
@@ -501,7 +505,12 @@ sub fetch_by_assembly_location_and_logic_name{
        if( !defined $ana{$analysis_id} ) {
 	   $ana{$analysis_id} = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
        }
-
+       if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
+	 #print STDERR "the gap is from ".$coord_list[0]->start." to ".$coord_list[0]->end." on contig ".$contig_id."\n";
+	 $self->warn("feature is on a piece of contig not on golden path or in a gap skipping as not needed\n");
+	 
+	 next;
+       }
        # ok, ready to build a sequence feature: do we want this relative or not?
 
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
@@ -509,7 +518,7 @@ sub fetch_by_assembly_location_and_logic_name{
        $out->end($coord_list[0]->end);
        $out->strand($coord_list[0]->strand);
        $out->seqname($coord_list[0]->seqname);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hseqname($hname);
@@ -546,7 +555,7 @@ sub store{
        $self->throw("Contig_id must be a number, not [$contig_id]");
    }
 
-   my $sth = $self->prepare("insert into dna_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_strand,hit_name,cigar_line,analysis_id,score) values (?,?,?,?,?,?,?,?,?,?,?)");
+   my $sth = $self->prepare("insert into dna_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_strand,hit_name,cigar_line,analysis_id,score,evalue, perc_ident) values (?,?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
    foreach my $sf ( @sf ) {
        if( !ref $sf || !$sf->isa("Bio::EnsEMBL::FeaturePair") ) {
@@ -560,8 +569,8 @@ sub store{
 	   # maybe we should throw here. Shouldn't we always have an analysis from the database?
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
-      
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hstrand,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score);
+       print STDERR "storing ".$sf->gffstring."\n";
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hstrand,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score, $sf->p_value, $sf->percent_id);
    }
 
 
