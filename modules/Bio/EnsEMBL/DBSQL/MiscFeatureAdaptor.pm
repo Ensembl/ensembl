@@ -66,7 +66,7 @@ use vars qw(@ISA);
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                A slice representing the region to fetch from
-  Arg [2]    : string $set_code
+  Arg [2...] : string $set_code
                The code of the set to retrieve features from
   Example    : @feats = @{$mfa->fetch_all_by_Slice_and_set_code('cloneset')};
   Description: Retrieves a set of MiscFeatures which have a particular set code
@@ -82,20 +82,25 @@ use vars qw(@ISA);
 sub fetch_all_by_Slice_and_set_code {
   my $self = shift;
   my $slice = shift;
-  my $set_code = shift;
 
-  throw('Set code argument is required.') if(!$set_code);
+  throw('Set code argument is required.') unless @_;
 
   my $msa = $self->db->get_MiscSetAdaptor();
-  my $set = $msa->fetch_by_code($set_code);
-
-  if(!$set) {
-    warning("No misc_set with code [$set_code] exists.\n" .
-            "Returning empty list.");
+  my @sets = ();
+  foreach my $set_code (@_) {
+    my $set = $msa->fetch_by_code($set_code);
+    if(!$set) { warning("No misc_set with code [$set_code] exists") }
+    else { push @sets, $set->dbID; }
+  }
+  my $constraint;
+  if( @sets > 1 ) {
+    $constraint = " mfms.misc_set_id in ( @{[join ',',@sets]} ) ";
+  } elsif( @sets == 1 ) {
+    $constraint = " mfms.misc_set_id = $sets[0] ";
+  } else {
     return [];
   }
-
-  my $constraint = " mfms.misc_set_id = " . $set->dbID();
+  warn "$constraint.....";
   return $self->fetch_all_by_Slice_constraint($slice, $constraint);
 }
 
