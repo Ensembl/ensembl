@@ -158,7 +158,7 @@ if ( $tdbtype =~ 'timdb' ) {
 if ( $fdbtype =~ 'timdb' ) {
     if ($freeze) {
 	print STDERR "Loading with freeze settings!\n";
-	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 2,-nogene =>1,\@clone,0);
+	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 3,-nogene =>1,-clones => \@clone,0);
     }
     else {
 	$from_db = Bio::EnsEMBL::TimDB::Obj->new(\@clone);
