@@ -116,11 +116,11 @@ sub fetch_all_by_RawContig_and_priority {
   my ($self, $contig, $priority, @args) = @_;
 
   my $constraint;
-  if(defined $constraint) {
+  if(defined $priority) {
     $constraint = "m.priority > $priority";
   }
   
-  return $self->fetch_all_by_RawContig_constraint($constraint, @args);
+  return $self->fetch_all_by_RawContig_constraint($contig, $constraint, @args);
 }
 
 
