@@ -1,0 +1,52 @@
+
+EnsEMBL Versioning.
+-------------------
+
+Ewan Birney, Jan 2000.
+
+
+There are a number of issues to object versioning inside Ensembl. We
+use versioning first to indicate when something has changed for
+the user. We also use versioning in inter-database transfer to
+maintain state. 
+
+There are a number of very pragmatic decisions made here which 
+we are forced into at the moment. We can do alot better than this
+in the future.
+
+
+We have the following versions on objects:
+
+
+Clones - embl version (sv number)
+         ensembl version
+
+The ensembl version should click on when there is a change in
+    a) the DNA data (in which case the embl version will increase)
+    b) the features (computed analysis).
+
+We know that b) is a bad thing which we need to rethink. 
+
+
+
+Genes/Transcripts/Exons - version
+
+Exons will change if the DNA sequence of the exon changes (notice exon
+versions do not change if just the coordinates change). Transcript
+versions change if there is an addition or deletion of an Exon and
+Gene versions will change if there is an addition or deletion of a
+transcript.
+
+
+Notice that the coordinates can change without the
+exons/transcripts/genes changing versions. Coordinate changes *must*
+be due to changes in the clone, so the update rule has to change that
+when we get new Clone we have to reload the genes which have one or
+more exons on the Clone, irregardless of the version number of the
+Genes/Transcripts or Exons.
+
+In others the coordinate system of the gene/transcript/exons are
+linked to the clone, and the version numbers of the above objects
+follow their own rules.
+
+
