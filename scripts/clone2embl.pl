@@ -110,6 +110,7 @@ if($gff){
     $gff->dump;
 
 }else{
+
     $as->seq->desc("Reannotated Clone via EnsEMBL");
     my $comment = Bio::Annotation::Comment->new();
 
@@ -119,6 +120,11 @@ if($gff){
 
     my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
     $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
+
+    # attach ensembl specific dumping functions
+    $emblout->_id_generation_func(\&id_EnsEMBL);
+
+
     if( $nodna == 1 ) {
 	$emblout->_show_dna(0);
     }
@@ -126,6 +132,12 @@ if($gff){
     
 
     $emblout->write_annseq($as);
+}
+
+sub id_EnsEMBL {
+    my $annseq = shift;
+
+    return sprintf("%-11s",$annseq->seq->id() );
 }
 
 sub sort_FTHelper_EnsEMBL {

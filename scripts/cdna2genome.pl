@@ -50,6 +50,8 @@ use Getopt::Long;
 
 
 my $log = new Bio::EnsEMBL::Analysis::Log;
+$log->dump_to_error(1);
+
 
 my $output = 'gff';
 my $nosim4 = 0;
@@ -126,9 +128,11 @@ while($seq = $seqin->next_seq()){
 	# next unless msptmp hits
 	next unless scalar(@embl_acc);
 
-	my $outfile="$dir/$contig.sim4_vert.$output";
-	open(SIM4OUT,">$outfile") || die "cannot open $outfile";
-	$OUTFILE=\*SIM4OUT;
+	#my $outfile="$dir/$contig.sim4_vert.$output";
+	#open(SIM4OUT,">$outfile") || die "cannot open $outfile";
+	#$OUTFILE=\*SIM4OUT;
+
+	$OUTFILE = \*STDOUT;
 
 	# debug
 	#foreach my $acc (@embl_acc){
@@ -205,6 +209,8 @@ sub _do_cdna2genome{
 	    my $seqout = Bio::SeqIO->new( -format => 'Fasta', -file => ">/tmp/sim4.cdna.$$");
 	    $seqout->write_seq($cdna->seq);
 	    $seqout = undef;
+	    print STDERR "file $file vs /tmp/sim4.cdna.$$ \n";
+
 	    my $sim4 = Bio::Tools::Sim4::Results->new( -file => "sim4 $file /tmp/sim4.cdna.$$ |" );
 	    
 
@@ -219,6 +225,11 @@ sub _do_cdna2genome{
 		
 		my $seen_start = 0;
 		my @exons = $es->each_Exon;
+
+		if( $#exons == -1 ) {
+		    die("No exons in $embl_acc sim4 run!");
+		}
+
 		
 		# sort by whether homology is start/end.
 		
