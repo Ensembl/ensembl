@@ -71,12 +71,13 @@ use Bio::EnsEMBL::Slice;
 =cut
 
 sub new_slice{
-    my ($self,$chr,$start,$end,$type) = @_;
+    my ($self,$chr,$start,$end,$strand,$type) = @_;
 
 
     my $slice = Bio::EnsEMBL::Slice->new( -chr_name  => $chr,
 					  -chr_start => $start,
 					  -chr_end   => $end,
+					  -strand    => $strand,
 					  -assembly_type      => $type,
 					-adaptor => $self);
 
@@ -97,7 +98,7 @@ sub new_slice{
 =cut
 
 sub new_web_slice{
-    my ($self,$chr,$start,$end,$type) = @_;
+    my ($self,$chr,$start,$end,$strand,$type) = @_;
     
     die "Not implemented new slice yet";
     
@@ -144,9 +145,6 @@ sub fetch_all_prediction_transcripts{
 }
 
 
-
-
-
 sub fetch_all_similarity_features{
   my($self, $slice, $logic_name) = @_;
 
@@ -164,6 +162,7 @@ sub fetch_all_similarity_features{
 
   return @out;
 }
+
 
 sub fetch_all_similarity_features_above_score{
   my($self, $slice, $score, $logic_name) = @_;
