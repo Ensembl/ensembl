@@ -93,6 +93,11 @@ Usage
     This means  that databases modified  on the  external site can  not be
     updated in this way.
 
+    Note:  If  a file is compressed  (*.gz), the checksum and  size of the
+    patched  file will  *not* be  verified.  This  is because  xdelta will
+    recompress the  file which in most  cases will result in  a compressed
+    file that is slightly different  from the original file.  However, the
+    xdelta program does still do its own MD5 checksum verification.
 
 
 vim: et
