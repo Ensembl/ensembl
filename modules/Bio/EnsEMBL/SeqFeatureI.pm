@@ -189,31 +189,5 @@ sub location {
     return $self;
 }
 
-sub to_FTstring {
-    my ($self) = @_;
-
-    my @sf = $self->sub_SeqFeature();
-    
-    if( scalar(@sf) > 0 ) {
-	my $string = "join(";
-	foreach my $sf ( @sf ) {
-	    if( $sf->strand == 1 ) {
-		$string .= $sf->start."..".$sf->end.",";
-	    } else {
-		$string .= "complement(".$sf->start."..".$sf->end."),";
-	    }
-	}
-	$string =~ s/\,$//g;
-	$string .= ")";
-	return $string;
-    }
-
-    # else simple
-    if( $self->strand == 1 ) {
-	return $self->start."..".$self->end;
-    } else {
-	return "complement(".$self->start."..".$self->end.")";
-    }
-}
 
 1;
