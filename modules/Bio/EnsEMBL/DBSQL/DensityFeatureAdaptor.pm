@@ -13,8 +13,13 @@ Bio::EnsEMBL::DBSQL::DensityFeatureAdaptor
 
 =head1 SYNOPSIS
 
-my $density_feature_adaptor = $database_adaptor->get_DensityFeatureAdaptor();
-@density_features = @{$density_feature_adaptor->fetch_all_by_Slice($slice)};
+my $dfa = $database_adaptor->get_DensityFeatureAdaptor();
+
+my $interpolate = 1;
+my $blocks_wanted = 50;
+
+@dense_feats = @{$dfa->fetch_all_by_Slice($slice,'SNPDensity',
+                                             $blocks_wanted, $interpolate);}
 
 =head1 DESCRIPTION
 
@@ -40,6 +45,52 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor);
 
 
+
+=head2 fetch_all_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice - The slice representing the region
+               to retrieve density features from.
+  Arg [2]    : string $logic_name - The logic name of the density features to
+               retrieve.
+  Arg [3]    : int $num_blocks (optional; default = 50) - The number of
+               features that are desired. The ratio between the size of these
+               features and the size of the features in the database will be
+               used to determine which database features will be used.
+  Arg [4]    : boolean $interpolate (optional; default = 0) - A flag indicating
+               whether the features in the database should be interpolated to
+               fit them to the requested number of features.  If true the
+               features will be interpolated to provide $num_blocks features.
+               This will not guarantee that exactly $num_blocks features are
+               returned due to rounding etc. but it will be close.
+  Arg [5]    : float $max_ratio - The maximum ratio between the size of the
+               requested features (as determined by $num_blocks) and the actual
+               size of the features in the database.  If this value is exceeded
+               then an empty list will be returned.  This can be used to
+               prevent excessive interpolation of the database values.
+  Example    : #interpolate:
+               $feats = $dfa->fetch_all_by_Slice($slice,'SNPDensity', 10, 1);
+               #do not interpoloate, get what is in the database:
+               $feats = $dfa->fetch_all_by_Slice($slice,'SNPDensity', 50);
+               #interpolate, but not too much
+               $feats = $dfa->fetch_all_by_Slice($slice,'SNPDensity',50,1,5.0);
+  Description: Retrieves a set of density features which overlap the region
+               of this slice. Density features are a discrete representation
+               of a continuous value along a sequence, such as a density or
+               percent coverage.  Density Features may be stored in chunks of
+               different sizes in the database, and interpolated to fit the
+               desired size for the requested region.  For example the database
+               may store a single density value for each 1KB and also for each
+               1MB.  When fetching for an entire chromosome the 1MB density
+               chunks will be used if the requested number of blocks is not
+               very high.
+  Returntype : Bio::EnsEMBL::DensityFeature
+  Exceptions : warning on invalid $num_blocks argument
+               warning if no features with logic_name $logic_name exist
+               warning if density_type table has invalid block_size value
+  Caller     : general
+
+=cut
+
 sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name, $num_blocks, $interpolate, $max_ratio) = @_;
 
@@ -62,14 +113,14 @@ sub fetch_all_by_Slice {
     return [];
   }
 
-  my $sth = $self->prepare("SELECT density_type_id, block_size, analysis_id  ".
-                           "FROM   density_type " .
-                           "WHERE  analysis_id = ?");
+  my $sth = $self->prepare
+    ("SELECT density_type_id, block_size, analysis_id, value_type  ".
+     "FROM   density_type " .
+     "WHERE  analysis_id = ?");
   $sth->execute($analysis->dbID());
 
   my $best_ratio = undef;
-  my $density_type_id;
-  my $row;
+  my ($density_type_id, $density_value_type, $row);
 
   while($row = $sth->fetchrow_arrayref) {
     my $block_size = $row->[1];
@@ -89,6 +140,7 @@ sub fetch_all_by_Slice {
     if(!defined($best_ratio) || $ratio < $best_ratio) {
       $best_ratio = $ratio;
       $density_type_id = $row->[0];
+      $density_value_type = $row->[3];
     }
   }
 
@@ -116,13 +168,14 @@ sub fetch_all_by_Slice {
 
   #resize the features that were returned
   my $start = 1;
-  my $end   = $start+$wanted_block_size;
+  my $end   = $start+$wanted_block_size-1;
 
   while($start < $length) {
     $end = $length if($end > $length);
 
     my $density_value = 0.0;
     my ($f, $fstart, $fend, $portion);
+    my @dvalues;
 
     #construct a new feature using all of the old density features that
     #we overlapped
@@ -132,11 +185,24 @@ sub fetch_all_by_Slice {
       $fstart = ($f->{'start'} < $start) ? $start : $f->{'start'};
       $fend   = ($f->{'end'}   > $end  ) ? $end   : $f->{'end'};
       $fend   = $length if($fend > $length);
-      $portion = ($fend-$fstart+1)/$f->length();
 
-      #take a percentage of density value, depending on how much of the
-      #feature we overlapped
-      $density_value += $portion * $f->{'density_value'};
+      if($density_value_type eq 'sum') {
+
+        $portion = ($fend-$fstart+1)/$f->length();
+
+        #take a percentage of density value, depending on how much of the
+        #feature we overlapped
+        $density_value += $portion * $f->{'density_value'};
+
+      } elsif($density_value_type eq 'ratio') {
+
+        #maintain a running total of the length used from each feature
+        #and its value
+        push(@dvalues,[$fend-$fstart+1,$f->{'density_value'}]);
+
+      } else {
+        throw("Unknown density value type [$density_value_type].");
+      }
 
       #do not want to look at next feature if we only used part of this one:
       last if($fend < $f->{'end'});
@@ -148,13 +214,26 @@ sub fetch_all_by_Slice {
       unshift(@features, $f);
     }
 
+    if($density_value_type eq 'ratio') {
+      #take a weighted average of the all the density values of the features
+      #used to construct this one
+      my $total_len = $end - $start + 1;
+      if($total_len > 0) {
+        foreach my $pair (@dvalues) {
+          my ($dlen, $dval) = @$pair;
+          $density_value += $dval * ($dlen/$total_len);
+        }
+      }
+    }
+
     push @out, Bio::EnsEMBL::DensityFeature->new_fast
       ({'start'    => $start,
         'end'      => $end,
         'slice'    => $slice,
         'analysis' => $analysis,
         'adaptor'  => $self,
-        'density_value' => $density_value});
+        'density_value'      => $density_value,
+        'density_value_type' => $density_value_type});
 
     $start = $end + 1;
     $end  += $wanted_block_size;
@@ -162,7 +241,6 @@ sub fetch_all_by_Slice {
 
   return \@out;
 }
-
 
 
 sub _tables {
@@ -177,7 +255,7 @@ sub _columns {
 
   return qw( df.density_feature_id
              df.seq_region_id df.seq_region_start df.seq_region_end
-             df.density_value dt.analysis_id );
+             df.density_value dt.analysis_id dt.value_type);
 }
 
 
@@ -207,10 +285,11 @@ sub _objs_from_sth {
   my %sr_cs_hash;
 
   my($density_feature_id, $seq_region_id, $seq_region_start, $seq_region_end,
-     $density_value, $analysis_id );
+     $density_value, $analysis_id, $density_value_type );
 
   $sth->bind_columns(\$density_feature_id, \$seq_region_id, \$seq_region_start,
-                     \$seq_region_end, \$density_value, \$analysis_id);
+                     \$seq_region_end, \$density_value, \$analysis_id, 
+                     \$density_value_type);
 
   my $asm_cs;
   my $cmp_cs;
@@ -261,12 +340,26 @@ sub _objs_from_sth {
       my $sr_name = $sr_name_hash{$seq_region_id};
       my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
-      ($sr_name,$seq_region_start,$seq_region_end) =
-        $mapper->fastmap($sr_name, $seq_region_start, $seq_region_end,
-                         1, $sr_cs);
+      my $len = $seq_region_end - $seq_region_start + 1;
 
-      #skip features that map to gaps or coord system boundaries
-      next FEATURE if(!defined($sr_name));
+      my @coords =
+        $mapper->map($sr_name, $seq_region_start, $seq_region_end,1, $sr_cs);
+
+      #filter out gaps
+      @coords = grep {!$_->isa('Bio::EnsEMBL::Mapper::Gap')} @coords;
+
+      #throw out density features mapped to gaps, or split
+      next FEATURE if(@coords != 1);
+
+      $seq_region_start  = $coords[0]->{'start'};
+      $seq_region_end    = $coords[0]->{'end'};
+      $sr_name           = $coords[0]->{'id'};
+
+      if($density_value_type eq 'sum') {
+        #adjust density value so it reflects length of feature actually used
+        my $newlen = $seq_region_end - $seq_region_start +1;
+        $density_value *= $newlen/$len if($newlen != $len);
+      }
 
       #get a slice in the coord system we just mapped to
       if($asm_cs == $sr_cs || ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
@@ -295,7 +388,7 @@ sub _objs_from_sth {
           $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
         }
 
-        #throw away features off the end of the requested slice
+        #throw away features entirely off the end of the requested slice
         if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
           next FEATURE;
         }
@@ -310,7 +403,8 @@ sub _objs_from_sth {
        'analysis' => $analysis,
        'adaptor'  => $self,
        'dbID'     => $density_feature_id,
-       'density_value' => $density_value,});
+       'density_value'      => $density_value,
+       'density_value_type' => $density_value_type});
   }
 
   return \@features;
