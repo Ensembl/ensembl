@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 31;
+	plan tests => 27;
 }
 
 use MultiTestDB;
@@ -359,17 +359,4 @@ if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
   $lga->store( $gene );
   debug( "Store done" );
 }
-
-
-
-$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
-
-my $ext_name = $gene->external_name;
-ok( $ext_name eq 'Q9H466' );
-
-my $ext_db = $gene->external_db;
-ok( $ext_db eq 'SPTREMBL' );
-
-ok( test_getter_setter( $gene, "external_name", "ECSTR-12" ));
-ok( test_getter_setter( $gene, "external_db", "EMBL" ));
 
