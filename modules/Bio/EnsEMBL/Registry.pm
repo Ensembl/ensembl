@@ -603,6 +603,20 @@ sub alias_exists{
   return 0;
 }
 
+sub set_disconnect_when_inactive{
+
+  foreach my $dba ( @{get_all_DBAdaptors()}){
+    my $dbc = $dba->dbc;
+    #disconnect if connected
+    if($dbc->connected()){
+      $dbc->disconnect();
+      $dbc->connected(undef);
+    }
+
+    $dbc->disconnect_when_inactive(1);
+  }
+}
+
 =head2 change_access
 
   Will change the username and password for a set of databases.
