@@ -62,7 +62,8 @@ my @features = $protein->get_all_DomainFeatures;
 
 my @f;
 
-if (scalar @features == 2) {
+
+if (scalar @features == 3) {
     print "ok 4\n";
 }
 else {
@@ -144,7 +145,7 @@ else {
 
 my @seq_features = $protein->top_SeqFeatures();
 
-if (scalar(@seq_features) == 4) {
+if (scalar(@seq_features) == 5) {
     print "ok 14\n";
 }
 else {
@@ -256,7 +257,7 @@ my @domains = $protein->get_all_DomainFeatures();
 
 
 
-if (scalar @domains == 2) {
+if (scalar @domains == 3) {
      print "ok 27\n";
 }
 else {

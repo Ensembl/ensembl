@@ -17,6 +17,7 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','trans','trans');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (9,'superfamily',3,'hmm','1','superfamily','domain');
 
 #
 # Dumping data for table 'analysisprocess'
@@ -92,55 +93,6 @@ INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000657884','
 # Dumping data for table 'feature'
 #
 
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (1,1,4116,4199,431.0000,-1,1,'wublastp',169,196,'RB2B_HUMAN',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (2,1,3851,3949,431.0000,-1,1,'wublastp',197,228,'RB2B_HUMAN',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (3,1,4530,4625,431.0000,-1,1,'wublastp',137,168,'RB2B_HUMAN',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (4,1,4116,4199,435.0000,-1,1,'wublastp',169,196,'RB2A_HUMAN',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (5,1,3851,3949,435.0000,-1,1,'wublastp',197,228,'RB2A_HUMAN',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (6,1,4530,4625,435.0000,-1,1,'wublastp',137,168,'RB2A_HUMAN',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (7,1,33852,34112,350.0000,1,1,'wublastp',42,128,'Q9NPT6',0.0000,80,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (8,1,10228,10230,186.0000,-1,2,'wutblastn',326,328,'Mm.155789',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (9,1,4981,5091,186.0000,-1,2,'wutblastn',329,439,'Mm.155789',0.0000,84,0,1);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (10,1,4116,4199,431.0000,-1,2,'wutblastn',658,741,'Hs.122660',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (11,1,3851,3949,431.0000,-1,2,'wutblastn',742,837,'Hs.122660',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (12,1,4530,4625,431.0000,-1,2,'wutblastn',562,657,'Hs.122660',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (13,1,4116,4199,435.0000,-1,2,'wutblastn',658,741,'Hs.145409',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (14,1,3851,3949,435.0000,-1,2,'wutblastn',742,837,'Hs.145409',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (15,1,4530,4625,435.0000,-1,2,'wutblastn',562,657,'Hs.145409',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (16,1,34005,34067,87.0000,-1,2,'wutblastn',138,200,'Hs.184776',0.0000,86,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (17,1,34071,34145,88.0000,-1,2,'wutblastn',59,133,'Hs.184776',0.0000,76,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (18,1,33960,33971,198.0000,1,2,'wutblastn',333,344,'Hs.247828',0.0000,98,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (19,1,33852,33956,198.0000,1,2,'wutblastn',228,332,'Hs.247828',0.0000,98,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (20,1,33855,33998,209.0000,1,2,'wutblastn',197,340,'Rn.6018',0.0000,85,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (21,1,33990,34190,254.0000,1,2,'wutblastn',333,533,'Rn.6018',0.0000,76,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (22,1,33876,34076,272.0000,1,2,'wutblastn',344,544,'Hs.178036',0.0000,82,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (23,1,33855,34190,480.0000,1,2,'wutblastn',114,449,'Mm.22723',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (24,1,4530,4625,431.0000,-1,3,'wutblastn',562,657,'AF095350',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (25,1,4116,4199,431.0000,-1,3,'wutblastn',658,741,'AF095350',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (26,1,3851,3949,431.0000,-1,3,'wutblastn',742,837,'AF095350',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (27,1,4116,4199,431.0000,-1,3,'wutblastn',658,741,'AF095351',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (28,1,3851,3949,431.0000,-1,3,'wutblastn',742,837,'AF095351',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (29,1,4530,4625,431.0000,-1,3,'wutblastn',562,657,'AF095351',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (30,1,4116,4199,435.0000,-1,3,'wutblastn',331,414,'HSM801920',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (31,1,3851,3949,435.0000,-1,3,'wutblastn',415,510,'HSM801920',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (32,1,4530,4628,435.0000,-1,3,'wutblastn',232,330,'HSM801920',0.0000,89,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (33,1,4530,4625,435.0000,-1,3,'wutblastn',562,657,'AF095352',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (34,1,4116,4199,435.0000,-1,3,'wutblastn',658,741,'AF095352',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (35,1,3851,3949,435.0000,-1,3,'wutblastn',742,837,'AF095352',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (36,1,33909,34190,384.0000,1,3,'wutblastn',1,282,'AF281334',0.0000,81,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (37,1,34179,34211,47.0000,1,3,'wutblastn',475,507,'HSU37230',0.0000,91,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (38,1,33855,34190,472.0000,1,3,'wutblastn',150,485,'HSU37230',0.0000,83,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (39,1,34179,34211,47.0000,1,3,'wutblastn',473,505,'HS43701',0.0000,91,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (40,1,33855,34190,480.0000,1,3,'wutblastn',148,483,'HS43701',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (41,1,34179,34211,47.0000,1,3,'wutblastn',454,486,'HSU02032',0.0000,91,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (42,1,33855,34190,480.0000,1,3,'wutblastn',129,464,'HSU02032',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (43,1,34179,34208,43.0000,1,3,'wutblastn',426,455,'HSCH13C1A',0.0000,90,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (44,1,33855,34190,480.0000,1,3,'wutblastn',101,436,'HSCH13C1A',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (45,1,33855,34190,480.0000,1,3,'wutblastn',142,477,'RRRPL23A',0.0000,84,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (46,1,2640,2889,-1000.0000,0,4,'e-PCR',1,249,'RH79812',0.0000,0,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (47,1,2743,2874,-1000.0000,0,4,'e-PCR',1,131,'RH70758',0.0000,0,0,0);
-INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id, phase, end_phase) VALUES (48,1,7530,7802,-1000.0000,0,4,'e-PCR',1,272,'RH111189',0.0000,0,0,0);
-
 
 #
 # Dumping data for table 'fset'
@@ -196,6 +148,7 @@ INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000002','PR00012');
 
 INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000001','Zn-finger CCHC type','Zn-finger');
 INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('IPR000002','petit_domain','petit');
+INSERT INTO interpro_description (interpro_ac,description,short_description) VALUES ('d1hfza_','super_domain','NULL');
 
 #
 # Dumping data for table 'karyotype'
@@ -225,6 +178,8 @@ INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.common_name',
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (1,'ENSP00000216167',2,6,6,6,12,'PF00098',23,435,23);
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (2,'ENSP00000216167',7,14,7,14,21,'PR00012',21,4,56);
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,'ENSP00000216167',3,11,8,0,0,'transmembrane',21,4,56);
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (4,'ENSP00000216167',2,12,9,0,0,'d1hfza_',0,0,'NULL');
+
 
 #
 # Dumping data for table 'repeat_feature'
