@@ -231,12 +231,41 @@ sub fetch_all_by_Gene {
   my $self = shift;
   my $gene = shift;
 
-  # should be on the same slice as gene
   my $constraint = "t.gene_id = ".$gene->dbID();
 
-  my $slice = $gene->slice();
-  my $keep_all = 1; #keep transcripts that fall off end of slice
-  return $self->generic_fetch( $constraint, undef, $slice, $keep_all );
+  # Use the fetch_all_by_Slice_constraint method because it
+  # handles the difficult Haps/PARs and coordinate remapping
+
+  # Get a slice that entirely overlaps the gene.  This is because we
+  # want all transcripts to be retrieved, not just ones overlapping
+  # the slice the gene is on (the gene may only partially overlap the slice)
+  # For speed reasons, only use a different slice if necessary though.
+
+  my $gslice = $gene->slice();
+  my $slice;
+
+  if(!$gslice) {
+    throw("Gene must have attached slice to retrieve transcripts.");
+  }
+
+  if($gene->start() < 1 || $gene->end() > $gslice->length()) {
+    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($gene);
+  } else {
+    $slice = $gslice;
+  }
+
+  my $transcripts = $self->fetch_all_by_Slice_constraint($slice,$constraint);
+
+  if($slice != $gslice) {
+    my @out;
+    foreach my $tr (@$transcripts) {
+      push @out, $tr->transfer($gslice);
+    }
+    $transcripts = \@out;
+  }
+
+
+  return $transcripts;
 }
 
 
@@ -364,7 +393,7 @@ sub store {
    # the display xref needs to be set after xrefs are stored which needs to
    # happen after transcript is stored...
 
-   my $xref_id = 0;
+   my $xref_id = undef;
 
    #
    #store transcript
@@ -423,7 +452,7 @@ sub store {
                "exons in its associated Transcript.");
        }
      }
-       
+
      $db->get_TranslationAdaptor()->store( $translation, $transc_dbID );
    }
 
@@ -440,13 +469,27 @@ sub store {
    # Update transcript to point to display xref if it is set
    #
    if(my $dxref = $transcript->display_xref) {
-     if(my $dxref_id = $dbEntryAdaptor->exists($dxref)) {
+     my $dxref_id;
+
+     if($dxref->is_stored($db)) {
+       $dxref_id = $dxref->dbID();
+     } else {
+       $dxref_id = $dbEntryAdaptor->exists($dxref);
+     }
+
+     if(defined($dxref_id)) {
        my $sth = $self->prepare( "update transcript set display_xref_id = ?".
                                  " where transcript_id = ?");
        $sth->execute($dxref_id, $transc_dbID);
-       $sth->finish();
        $dxref->dbID($dxref_id);
        $dxref->adaptor($dbEntryAdaptor);
+       $sth->finish();
+     } else {
+       warning("Display_xref ".$dxref->dbname().":".$dxref->display_id() .
+               " is not stored in database.\nNot storing " .
+               "relationship to this transcript.");
+       $dxref->dbID(undef);
+       $dxref->adaptor(undef);
      }
    }
 
@@ -726,7 +769,7 @@ sub list_stable_ids {
 #  Caller     : internal
 
 sub _objs_from_sth {
-  my ($self, $sth, $mapper, $dest_slice, $keep_all) = @_;
+  my ($self, $sth, $mapper, $dest_slice) = @_;
 
   #
   # This code is ugly because an attempt has been made to remove as many
@@ -854,22 +897,21 @@ sub _objs_from_sth {
 
         #throw away features off the end of the requested slice
         if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-          next FEATURE if(!$keep_all);
+          next FEATURE;
         }
       }
-      
+
       $slice = $dest_slice;
     }
 
     my $display_xref;
 
     if( $display_xref_id ) {
-      $display_xref = bless 
-        { 'dbID' => $display_xref_id,
-          'adaptor' => $dbEntryAdaptor,
-          'display_id' => $external_name,
-          'dbname' => $external_db
-        }, "Bio::EnsEMBL::DBEntry";
+      $display_xref = Bio::EnsEMBL::DBEntry->new_fast
+        ({ 'dbID' => $display_xref_id,
+           'adaptor' => $dbEntryAdaptor,
+           'display_id' => $external_name,
+           'dbname' => $external_db});
     }
 				
 
