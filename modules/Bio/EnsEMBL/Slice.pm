@@ -1,4 +1,3 @@
-
 #
 # Ensembl module for Bio::EnsEMBL::Assembly::Slice
 #
@@ -553,17 +552,19 @@ sub get_all_Genes_by_source{
 =cut
 
 sub get_Genes_by_type {
+  
   my $self = shift; 
   warn( "\$Slice->get_Genes_by_type(\$type): You don't want to do it like that!.\nYou want to do it like this \$Slice->get_all_Genes_by_type(\$type)");
   return $self->get_all_Genes_by_type( @_ );
 }
 
-sub get_all_Genes_by_type{
-   my ($self, $type, $empty_flag) = @_;
-   
-   my @out = grep { $_->type eq $type } $self->get_all_Genes($empty_flag);
 
-   return \@out;
+sub get_all_Genes_by_type{
+  my ($self, $type, $empty_flag) = @_;
+  
+  my @out = grep { $_->type eq $type } @{ $self->get_all_Genes($empty_flag)};
+  
+  return \@out;
 }
 
 
