@@ -444,10 +444,10 @@ sub geneids_by_extids{
    unless (scalar @genes){ 
        $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
 		      FROM transcript tr, 
-			   Xref x, objectXref oxr
+			   xref x, object_xref oxr
 		      WHERE tr.translation_id = oxr.ensembl_id 
-			AND oxr.xrefId = x.xrefId 
-			AND x.dbprimary_id='$name'");
+			AND oxr.xref_id = x.xref_id 
+			AND x.dbprimary_acc='$name'");
        $sth->execute();
        while( ($a) = $sth->fetchrow_array ) {
 	   push(@genes,$a);
