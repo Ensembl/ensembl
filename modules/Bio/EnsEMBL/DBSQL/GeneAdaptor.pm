@@ -561,17 +561,17 @@ sub get_Interpro_by_geneid {
    my ($self,$gene) = @_;
     my $sql="
 	SELECT	i.interpro_ac, 
-		idesc.description 
+		x.description 
         FROM	transcript t, 
 		protein_feature pf, 
 		interpro i, 
-		interpro_description idesc, 
+                Xref x,
 		gene_stable_id gsi
 	WHERE	gsi.stable_id = '$gene' 
 	    AND	t.gene_id = gsi.gene_id
 	    AND	t.translation_id = pf.translation 
 	    AND	i.id = pf.hid 
-	    AND	i.interpro_ac = idesc.interpro_ac";
+	    AND	i.interpro_ac = x.dbprimary_id";
    
    my $sth = $self->prepare($sql);
    $sth->execute;
