@@ -3,7 +3,7 @@
 # Copyright EMBL-EBI 2001
 #
 # Author: Arne Stabenau
-# 
+#
 # Date : 21.07.2001
 #
 
@@ -60,14 +60,13 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 
 =head2 fetch_by_Transcript
 
-  Arg [1]    : none, string, int, Bio::EnsEMBL::Example $formal_parameter_name
-    Additional description lines
-    list, listref, hashref
-  Example    :  ( optional )
-  Description: testable description
-  Returntype : none, txt, int, float, Bio::EnsEMBL::Example
-  Exceptions : none
-  Caller     : object::methodname or just methodname
+  Arg [1]    : Bio::EnsEMBL::Transcript $transcript
+  Example    : $tl = $translation_adaptor->fetch_by_Transcript($transcript);
+  Description: Retrieves a Translation via its associated transcript.
+               If the Translation is not found, undef is returned.
+  Returntype : Bio::EnsEMBL::Translation
+  Exceptions : throw on incorrect argument
+  Caller     : Transcript
 
 =cut
 
@@ -168,7 +167,7 @@ sub fetch_all_by_external_name {
     if($transcript) {
       push @out, $self->fetch_by_Transcript($transcript);
     }
-  } 
+  }
 
   return \@out;
 }
@@ -465,7 +464,7 @@ sub get_stable_entry_info {
   my @array = $sth->fetchrow_array();
   $translation->{'_stable_id'} = $array[0];
   $translation->{'_version'}   = $array[1];
-  
+
   return 1;
 }
 
