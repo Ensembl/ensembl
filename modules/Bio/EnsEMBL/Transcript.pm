@@ -21,7 +21,7 @@ Contains details of coordinates of all exons that make
 up a gene transcript.
 
 Creation:
-   
+
      my $tran = new Bio::EnsEMBL::Transcript();
      my $tran = new Bio::EnsEMBL::Transcript(@exons);
 
@@ -59,6 +59,7 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::TranscriptI;
+use Bio::Tools::CodonTable;
 use Bio::EnsEMBL::Mapper;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
@@ -771,6 +772,106 @@ sub get_all_Introns {
 
 
 
+=head2 get_all_peptide_variations
+
+  Arg [1]    : (optional) $snps listref of coding snps in cdna coordinates
+  Example    : $pep_hash = $trans->get_all_peptide_variations;
+  Description: Takes a list of coding snps on this transcript in which are in 
+               cdna coordinates and returns a hash with peptide coordinate keys
+               and listrefs of alternative amino acids as values.  If no
+               argument all of the coding snps on this transcript are used
+               by default
+  Returntype : hashref
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_peptide_variations {
+  my $self = shift;
+  my $snps = shift;
+
+  my $codon_table = Bio::Tools::CodonTable->new;
+  my $codon_length = 3;
+  my $cdna = $self->spliced_seq;
+
+  unless(defined $snps) {
+    $snps = $self->get_all_cdna_SNPs->{'coding'};
+  }
+
+  my $variant_alleles;
+  foreach my $snp (@$snps) {
+    my $start = $snp->start;
+
+    #skip variations not on a single base
+    next if ($start != $snp->end);
+
+    #modulus is the offset of the nucleotide from codon start (0|1|2)
+    my $codon_pos = $start % $codon_length;
+
+    #calculate the peptide coordinate of the snp
+    my $peptide = ($start + $codon_pos) / $codon_length;
+
+    #retrieve the codon
+    my $codon = substr($cdna, $start - $codon_pos, $codon_length);
+
+    #store each alternative allele by its location in the peptide
+    my @alleles = split('/', lc($snp->alleles));
+    foreach my $allele (@alleles) {
+      next if $allele eq '-';       #skip deletions
+      next if CORE::length($allele) != 1; #skip insertions
+
+      #create a data structure of variant alleles sorted by both their
+      #peptide position and their position within the peptides codon
+      $variant_alleles ||= {};
+      if(exists $variant_alleles->{$peptide}) {
+	my $alleles_arr = $variant_alleles->{$peptide}->[1];
+	push @{$alleles_arr->[$codon_pos]}, $allele;
+      } else {
+	#create a list of 3 lists (one list for each codon position)
+	my $alleles_arr = [[],[],[]];
+	push @{$alleles_arr->[$codon_pos]}, $allele;
+	$variant_alleles->{$peptide} = [$codon, [$alleles_arr]];
+      }
+    }
+  }
+
+  my %out;
+  #now generate all possible codons for each peptide and translate them
+  foreach my $peptide (keys %$variant_alleles) {
+    my ($codon, $alleles) = @{$variant_alleles->{$peptide}};
+
+    #need to push original nucleotides onto each position
+    #so that all possible combinations can be generated
+    my $n1 = $codon->substr($codon,0,1);
+    my $n2 = $codon->substr($codon,1,1);
+    my $n3 = $codon->substr($codon,2,1);
+
+    push @{$alleles->[0]}, $n1;
+    push @{$alleles->[1]}, $n2;
+    push @{$alleles->[2]}, $n3;
+
+    my %alt_amino_acids;
+    foreach my $a1 (@{$alleles->[0]}) {
+      substr($codon, 0, 1) = $a1;
+      foreach my $a2 (@{$alleles->[1]}) {
+	substr($codon, 1, 1) = $a2;
+	foreach my $a3 (@{$alleles->[2]}) {
+	  substr($codon, 2, 1) = $3;
+	  my $aa = $codon_table->translate($codon);
+	  $alt_amino_acids{$aa} = 1;
+	}
+      }
+    }
+
+    my @aas = keys %alt_amino_acids;
+    $out{$peptide} = \@aas;
+  }
+
+  return \%out;
+}
+
+
 =head2 get_all_SNPs
 
   Arg [1]    : (optional) int $flanking
@@ -850,13 +951,13 @@ sub get_all_SNPs {
 	  ($trans_strand == -1 && $snp->start > $transcript->coding_end)) {
 	    #this snp is in the 5' UTR
 	    $key = 'five prime UTR';
-	  } 
+	  }
 
 	  elsif(($trans_strand == 1 && $snp->start > $transcript->coding_end)||
 	     ($trans_strand == -1 && $snp->end < $transcript->coding_start)) {
 	    #this snp is in the 3' UTR
 	    $key = 'three prime UTR';
-	  } 
+	  }
 
 	  else {
 	    #snp is coding
@@ -888,7 +989,7 @@ sub get_all_SNPs {
 
 
 
-=head2 get_all_cdna_snps
+=head2 get_all_cdna_SNPs
 
   Arg [1]    : none 
   Example    : $cdna_snp_hasref = $transcript->get_all_cdna_SNPs;
@@ -918,7 +1019,7 @@ sub get_all_cdna_SNPs {
 
   my $sa = $self->adaptor->db->get_SliceAdaptor;
   my $slice = $sa->fetch_by_transcript_id($self->dbID);
- 
+
   #copy this transcript, so we can work in coord system we are interested in
   my $transcript = Bio::EnsEMBL::Transcript->new;
   %$transcript = %$self;
@@ -930,8 +1031,7 @@ sub get_all_cdna_SNPs {
     $exon_transforms{$exon} = $new_exon;
   }
   $transcript->transform(\%exon_transforms);
-  
-  
+
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
@@ -965,7 +1065,7 @@ sub get_all_cdna_SNPs {
     }
   }
 
-  return \%snp_hash; 
+  return \%snp_hash;
 }
 
 
