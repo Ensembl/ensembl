@@ -85,7 +85,7 @@ use Bio::EnsEMBL::DB::VirtualPrimarySeq;
 
 my $VC_UNIQUE_NUMBER = 0;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI Bio::EnsEMBL::DB::VirtualMap);
+@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::VirtualContigI);
 
 # new() is inherited from Bio::Root::Object
 
