@@ -100,16 +100,18 @@ sub new {
       throw("Bio::EnsEMBL::DBSQL::DBConnection argument expected.");
     }
 
+    #share a common db_handle, use a shared scalar ref_count to track # connections
     my $rcount = $dbconn->ref_count();
     $$rcount++; # dereference and increment shared var
     $self->ref_count($rcount);
+    $self->db_handle($dbconn->db_handle());
 
     $self->driver($dbconn->driver());
     $self->host($dbconn->host());
+    $self->port($dbconn->port());
+    $self->dbname($dbconn->dbname());
     $self->username($dbconn->username());
     $self->password($dbconn->password());
-    $self->port($dbconn->port());
-    $self->db_handle($dbconn->db_handle());
 
     return Bio::EnsEMBL::Container->new($self);
   }
@@ -127,6 +129,7 @@ sub new {
     $port = 3306;
   }
 
+=head1
   my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
 
   my $dbh;
@@ -140,6 +143,7 @@ sub new {
   my $ref_count = 1;
   $self->ref_count(\$ref_count);
   $self->db_handle($dbh);
+=cut
 
   $self->username( $user );
   $self->host( $host );
@@ -148,10 +152,51 @@ sub new {
   $self->port($port);
   $self->driver($driver);
 
+  $self->connect();
+  
   # be very sneaky and actually return a container object which is outside
   # of the circular reference loops and will perform cleanup when all 
   # references to the container are gone.
   return new Bio::EnsEMBL::Container($self);
+}
+
+
+=head2 connect
+
+  Example    : $db_connection->connect()
+  Description: Explicitely connect to database if not connected
+  Returntype : none
+  Exceptions : none
+  Caller     : new, db_handle
+
+=cut
+
+sub connect {
+  my $self = shift;
+
+  if($self->{'_db_handle'}) { return; }
+
+  my $host      = $self->host();
+  my $driver    = $self->driver();
+  my $user      = $self->username();
+  my $password  = $self->password();
+  my $port      = $self->port();
+  my $db        = $self->dbname();
+
+  my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
+
+  my $dbh;
+  eval{
+    $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+  };
+
+  $dbh || throw("Could not connect to database $db user " .
+                "$user using [$dsn] as a locator\n" . $DBI::errstr);
+
+  #print STDERR "DBConnection : CONNECT\n";
+  my $ref_count = 1;
+  $self->ref_count(\$ref_count);
+  $self->{'_db_handle'} = $dbh;
 }
 
 
@@ -420,10 +465,10 @@ sub db_handle {
 
    if( defined $value) {
       $self->{'_db_handle'} = $value;
-    }
-    return $self->{'_db_handle'};
+   }
+   else { $self->connect(); }
+   return $self->{'_db_handle'};
 }
-
 
 
 =head2 prepare
@@ -446,13 +491,13 @@ sub prepare {
    if( ! $string ) {
        throw("Attempting to prepare an empty SQL query.");
    }
-   if( !defined $self->{_db_handle} ) {
+   if( !defined $self->db_handle ) {
       throw("Database object has lost its database handle.");
    }
 
    #info("SQL(".$self->dbname."):$string");
 
-   return $self->{_db_handle}->prepare($string);
+   return $self->db_handle->prepare($string);
 } 
 
 
@@ -612,23 +657,46 @@ sub DESTROY {
 
    #print STDERR "DESTROYING DBConnection\n";
 
-   my $dbh = $obj->{'_db_handle'};
-
-   if( $dbh ) {
-     my $refcount = $obj->ref_count();
-     $$refcount--;
-
-     # Do not disconnect if the InactiveDestroy flag has been set
-     # this can really screw up forked processes.
-     # Also: do not disconnect if this database handle is shared by
-     # other DBConnections (as indicated by the refcount)
-     if(!$dbh->{'InactiveDestroy'} && $$refcount == 0) {
-       $dbh->disconnect;
-     }
-
-     $obj->{'_db_handle'} = undef;
-   }
+   $obj->disconnect();
 }
 
+
+=head2 disconnect
+
+  Example    : $db_connection->disconnect()
+  Description: Explicitely disconnect from database if connected
+  Returntype : none
+  Exceptions : none
+  Caller     : ?, DESTROY
+
+=cut
+
+sub disconnect {
+  my $self = shift;
+
+  my $dbh = $self->{'_db_handle'};
+
+  if( $dbh ) {
+    my $refcount = $self->ref_count();
+    $$refcount--;
+    #print STDERR "DBConnection : ref_count-- ";
+
+    # Do not disconnect if the InactiveDestroy flag has been set
+    # this can really screw up forked processes.
+    # Also: do not disconnect if this database handle is shared by
+    # other DBConnections (as indicated by the refcount)
+    if(!$dbh->{'InactiveDestroy'} && $$refcount == 0) {
+      $dbh->disconnect;
+      #print STDERR ": DISCONNECT ";
+    }
+    #print STDERR "\n";
+
+    $self->{'_db_handle'} = undef;
+    #unlink shared ref_count variable since no longer sharing db_handle
+    my $unlinked_refcount = 0;
+    $self->ref_count(\$unlinked_refcount);  
+  }
+
+}
 
 1;

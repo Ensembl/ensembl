@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 15;
+	plan tests => 19;
 }
 
 use MultiTestDB;
@@ -91,6 +91,7 @@ ok(test_getter_setter($dbc, 'db_handle', $db->db_handle));
 my $sth = $dbc->prepare('SELECT * from gene limit 1');
 $sth->execute;
 ok($sth->rows);
+$sth->finish;
 
 #
 # 12 add_db_adaptor
@@ -114,7 +115,31 @@ $dbc->remove_db_adaptor('core');
 ok(!defined $dbc->get_db_adaptor('core'));
 ok(!defined $dbc->get_all_db_adaptors->{'core'});
 
+#
+# 16-17 disconnect and auto-reconnect via a prepare
+#
+ok($dbc->disconnect);
+$sth = $dbc->prepare('SELECT * from gene limit 1');
+$sth->execute;
+ok($sth->rows);
+$sth->finish;
 
+#
+# 18-19 make new connection with shared dbhandle, 
+# test copied/shared connection
+# disconnect original, 
+# use copy with shared handle (that shouldn't have been disconnected)
+#
+my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
+$sth = $dbc2->prepare('SELECT * from gene limit 1');
+$sth->execute;
+ok($sth->rows);
+$sth->finish;
+$dbc->disconnect;
+$sth = $dbc2->prepare('SELECT * from gene limit 1');
+$sth->execute;
+ok($sth->rows);
+$sth->finish;
 
 
 
