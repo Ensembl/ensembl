@@ -610,13 +610,19 @@ sub _parse_features {
     if($query_unit > $hit_unit){
       # I am going to make the assumption here that this situation will 
       # only occur with DnaPepAlignFeatures, this may not be true
-      if( int($length/$query_unit)!= $hlength * $hit_unit) {
+      my $query_p_length = sprintf "%.0f", ($length/$query_unit);
+      my $hit_p_length = sprintf "%.0f", ($hlength * $hit_unit);
+      if( $query_p_length != $hit_p_length) {
+	print STDERR $length."/".$query_unit." ".$hlength."*".$hit_unit."\n";
 	$self->throw( "Feature lengths not comparable Lengths:" .$length . 
 		      " " . $hlength . " Ratios:" . $query_unit . " " . 
 		      $hit_unit );
       }
     } else{
+      my $query_d_length = sprintf "%.0f", ($length*$hit_unit);
+      my $hit_d_length = sprintf "%.0f", ($hlength * $query_unit);
       if( $length * $hit_unit != $hlength * $query_unit ) {
+	print STDERR $length."*".$hit_unit." ".$hlength."*".$query_unit."\n";
 	$self->throw( "Feature lengths not comparable Lengths:" . $length . 
 		      " " . $hlength . " Ratios:" . $query_unit . " " . 
 		      $hit_unit );
