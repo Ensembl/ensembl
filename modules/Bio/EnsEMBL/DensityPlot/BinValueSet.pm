@@ -108,7 +108,7 @@ sub get_binvalues{
     	$self->throw("Cannot scale - no values to scale against");  
     }
 
-    my $width = $self->scale_to_fit() || $self->throw("Cannot scale values - scale_to_fit has not been set");  
+    my $width = $self->scale_to_fit();
 
     if ($self->stretch && ($biggest_value-$smallest_value) ){
     	foreach my $bv (@{ $self->{'_bin_array'}}){
