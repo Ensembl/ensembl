@@ -587,7 +587,7 @@ sub get_all_PredictionFeatures {
 
        if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1) {
 	   $count++;
-	   $current_fset = new Bio::EnsEMBL::SeqFeature;
+	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
 	   $current_fset->source_tag('genscan');
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
@@ -599,7 +599,7 @@ sub get_all_PredictionFeatures {
 	   push(@array,$current_fset);
        }
 
-       $out = new Bio::EnsEMBL::SeqFeature;
+       $out = Bio::EnsEMBL::SeqFeature->new;
        
        $out->seqname   ($self->id);
        $out->raw_seqname($self->id);
@@ -823,7 +823,40 @@ sub _external_feature_cache{
 }
 
 
+sub get_all_FPCClones {
+    my $self = shift;
 
+    my $glob_start = $self->_global_start;
+    my $glob_end   = $self->_global_end;
+    my $length     = $self->length;
+    my $chr_name   = $self->_chr_name;
+
+    
+    my $mapdb;
+    
+    eval {
+	$mapdb = $self->dbobj->mapdb();
+    };
+    if( $@ || !defined $mapdb ) {
+	$self->warn("in get_all_FPCClones, unable to get mapdb. Returning empty list [$@]");
+	return ();
+    }
+
+    my $fpcmap = $mapdb->get_Map('FPC');
+    $chr_name =~ s/chr//g;
+
+    my $chr = $fpcmap->get_ChromosomeMap($chr_name);
+
+    my @fpcclones = $chr->get_Clones_by_start_end($glob_start,$glob_end);
+
+    foreach my $clone ( @fpcclones ) {
+	$clone->start($clone->start - $glob_start);
+    }
+
+    return @fpcclones;
+}
+
+   
 
 sub get_landmark_MarkerFeatures {
 
