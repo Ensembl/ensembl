@@ -69,7 +69,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  print "Got",join(',',@args),"\n";
+  #print "Got",join(',',@args),"\n";
   my ($db,$host,$driver,$user,$password,$debug) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
@@ -78,7 +78,7 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    )],@args);
-  print "Got $db as db and $user as user\n";
+  #print "Got $db as db and $user as user\n";
 
   $db || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -113,6 +113,37 @@ sub _initialize {
 
 # set stuff in self from @args
   return $make; # success - we hope!
+}
+
+=head2 get_new_id_from_old_id
+
+ Title   : get_new_id_from_old_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_new_id_from_old_id{
+   my ($self,$type,$old_id) = @_;
+
+   if( !defined $old_id ) {
+       $self->throw("Must give type and old_id");
+   }
+
+   my $sth = $self->prepare("select old_id,new_id from deleted_id where old_id = '$old_id' and id_type = '$type'");
+   my $res = $sth->execute();
+   my ($old,$new) = $sth->fetchrow_array();
+   
+   if( !defined $new || $new eq "" ) {
+       return "__DELETED__";
+   } else {
+       return $new;
+   }
+
 }
 
 
@@ -247,7 +278,7 @@ sub get_seq_by_gene_version{
 =head2 write_seq
 
  Title   : write_seq
- Usage   : $db->write_seq (seq,gene_id,gene_version,clone_id,clone_version)
+ Usage   : $db->write_seq (seq,gene_id,gene_version,type,clone_id,clone_version)
  Function: Writes an entry in the archive database
  Example : $db->get_seq_by_id (ENSP0000012)
  Returns : array of $seq objects
