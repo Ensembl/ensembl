@@ -243,6 +243,14 @@ sub add_DBEntry {
 
 sub get_all_supporting_features {
   my $self = shift;
+
+  if( !exists  $self->{_supporting_evidence} )  {
+    if($self->adaptor) {
+      my $tsfa = $self->adaptor->db->get_TranscriptSupportingFeatureAdaptor();
+      $self->{_supporting_evidence} = $tsfa->fetch_all_by_Transcript($self);
+    }
+  }
+
   
   return $self->{_supporting_evidence} || [];
 }
@@ -273,7 +281,11 @@ sub add_supporting_features {
   # check whether this feature object has been added already
   FEATURE: foreach my $feature (@features) {
 
-    unless($feature && $feature->isa("Bio::EnsEMBL::FeaturePair")) {
+    if (!defined($feature) || ref($feature) eq "ARRAY") {
+      throw("Element in transcript supporting features array is undefined or is an ARRAY for " . $self->dbID);
+    }
+    if (!$feature || !$feature->isa("Bio::EnsEMBL::FeaturePair")) {
+      print "feature = " . $feature . "\n";
       throw("Supporting feat [$feature] not a " .
             "Bio::EnsEMBL::FeaturePair");
     } 
@@ -1603,6 +1615,16 @@ sub transform {
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
 
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transform( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_transcript->{'_supporting_evidence'} = \@new_features;
+  }
+
+
   # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'} = undef;
   $new_transcript->{'coding_region_start'} = undef;
@@ -1657,6 +1679,16 @@ sub transfer {
 
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
+
+  if( exists $self->{'_supporting_evidence'} ) {
+    my @new_features;
+    for my $old_feature ( @{$self->{'_supporting_evidence'}} ) {
+      my $new_feature = $old_feature->transfer( @_ );
+      push( @new_features, $new_feature );
+    }
+    $new_transcript->{'_supporting_evidence'} = \@new_features;
+  }
+
 
   # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'} = undef;
