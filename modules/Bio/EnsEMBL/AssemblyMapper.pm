@@ -22,9 +22,9 @@ Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coor
   
     $mapper->register_region('chr1',1,100000);
 
-    my @chr_coordlist = $mapper->map_coordinates(2,5,-1,627012,"rawcontig");
+    my @chr_coordlist = $mapper->map_coordinates_to_assembly(2,5,-1,627012);
  
-    my @raw_coordlist = $mapper->map_coordinates(10002,10020,1,"chr1","assembly");
+    my @raw_coordlist = $mapper->map_coordinates_to_rawcontig(10002,10020,1,"chr1");
 
     my @cid_list = $mapper->list_contig_ids(10002,10020,"chr1");
 
@@ -84,38 +84,69 @@ sub new {
 }
 
 
+=head2 map_coordinates_to_assembly
 
-=head2 map_coordinates
+    my @coord = $ass_mapr->map_coordinates_to_assembly(
+        $raw_start, $raw_end, $contig_ori, $contig_id);
+    
+    # Example:
+    my @coord = $ass_mapr->map_coordinates_to_assembly(
+        12003, 12135, -1, 3002);
 
- Title   : map_coordinates
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+Takes a coordinate pair in RawContig space, and
+remaps it to Assembly space.
 
+Arguments are the start, end, and orientation of
+the coordinate pair in RawContig coordinates, and
+the contig_id (db_ID) of the RawContig.
+
+The return values are a list of (usually one)
+C<Bio::EnsEMBL::Mapper::Coordinate> objects.
 
 =cut
 
-sub map_coordinates{
-   my ($self,$start,$end,$strand,$id,$maptype) = @_;
+sub map_coordinates_to_assembly {
+    my( $self, $start, $end, $strand, $contig_id ) = @_;
 
-   if( !defined $maptype ) {
-       $self->throw("map_coordinates start,end,strand,id,maptype");
-   }
+    unless ($contig_id =~ /^\d+$/) {
+        $self->throw("Expecting numeric contig_id, but got '$contig_id'");
+    }
 
-   if( $maptype ne "rawcontig" && $maptype ne "assembly" ) {
-       $self->throw("maptype must be either rawcontig or assembly, not $maptype");
-   }
-
-   if( $maptype eq "rawcontig" && $id =~ /^[^\d]/ ) {
-       $self->throw("You have a rawcontig type, but the id is $id. AssemblyMappers expect internal_ids of the contigs in their mappers - probably you have given us a raw contig text id");
-   }
-
-   # ok map it 
-
-   return $self->_mapper->map_coordinates($start,$end,$strand,$id,$maptype);
+    return $self->_mapper->map_coordinates($start,$end,$strand,$contig_id,'rawcontig');
 }
+
+=head2 map_coordinates_to_rawcontig
+
+    my @coord = $ass_mapr->map_coordinates_to_rawcontig(
+        $ass_start, $ass_end, $ass_ori, $chr_name);
+    
+    # Example:
+    my @coord = $ass_mapr->map_coordinates_to_rawcontig(
+        13000444, 13000444, -1, 'chr2');
+
+Takes a coordinate pair in Assembly space, and
+remaps it to RawContig space.
+
+Arguments are the start, end, and orientation of
+the coordinate pair in genomic assembly
+coordinates, and the name of the chromosome (or
+piece of assembly).
+
+The return values are a list of (usually one)
+C<Bio::EnsEMBL::Mapper::Coordinate> objects. The
+C<id> method of each Coordinate object is the
+numeric contig_id (db_ID) of the RawContig it
+maps to.
+
+=cut
+
+sub map_coordinates_to_rawcontig {
+    my( $self, $start, $end, $strand, $chr_name ) = @_;
+
+    return $self->_mapper->map_coordinates($start,$end,$strand,$chr_name,'assembly');
+}
+
+
 
 =head2 list_contig_ids
 
@@ -150,20 +181,23 @@ sub list_contig_ids{
 
 =head2 register_region
 
- Title   : register_region
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+    $ass_mapr->register_region(12_000_000, 13_000_000, 'X');
 
+Causes the assembly information (needed for
+coordinate mapping) for a region of a chromosome
+to be fetched from the database.
+
+Arguments are chr_start, chr_end, chr_name.  The
+example would load the assembly information for
+the region of chromosome B<X> between 12Mbp and
+13Mbp.
 
 =cut
 
 sub register_region{
-   my ($self,$start,$end,$id) = @_;
+   my ($self,$start,$end,$chr_name) = @_;
 
-   $self->adaptor->register_region($self,$self->_type,$id,$start,$end);
+   $self->adaptor->register_region($self,$self->_type,$chr_name,$start,$end);
 }
 
 

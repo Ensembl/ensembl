@@ -213,7 +213,7 @@ sub fetch_by_assembly_location{
 
    while( $sth->fetch ) {
        # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates($start,$end,$strand,$contig_id,"rawcontig");
+       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id,"rawcontig");
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {

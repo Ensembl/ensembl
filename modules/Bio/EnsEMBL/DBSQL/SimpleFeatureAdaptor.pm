@@ -43,14 +43,10 @@ package Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
-
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::SimpleFeature;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-# new() can be inherited from Bio::Root::RootI
-
 
 =head2 fetch_by_dbID
 
@@ -186,7 +182,7 @@ sub fetch_by_assembly_location{
 
    while( $sth->fetch ) {
        # we whether this is sensible to use or not
-       my @coord_list = $mapper->map_coordinates($start,$end,$strand,$contig_id,"rawcontig");
+       my @coord_list = $mapper->map_coordinates_to_assembly($start,$end,$strand,$contig_id);
        
        # coord list > 1 - means does not cleanly map. At the moment, skip
        if( scalar(@coord_list) > 1 ) {

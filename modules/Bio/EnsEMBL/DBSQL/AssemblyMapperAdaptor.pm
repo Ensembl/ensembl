@@ -16,11 +16,14 @@ Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-Give standard usage here
+    # $dba is an Bio::EnsEMBL::DBSQL::DBAdaptor
+    my $ass_adptr = $dba->get_AssemblyMapperAdaptor;
 
 =head1 DESCRIPTION
 
-Adaptor for handling Assembly mappers 
+Adaptor for handling Assembly mappers.  This is a
+I<Singleton> class.  ie: There is only one per
+database (C<DBAdaptor>).
 
 =head1 AUTHOR - Ewan Birney
 
@@ -53,10 +56,9 @@ use Bio::EnsEMBL::AssemblyMapper;
 
 
 sub new {
-  my($class,$dbadaptor) = @_;
+  my($class, $dbadaptor) = @_;
 
-  my $self = Bio::EnsEMBL::DBSQL::BaseAdaptor->new($dbadaptor);
-  bless $self,$class;
+  my $self = $class->SUPER::new($dbadaptor);
 
   $self->{'_type_cache'} = {};
 
@@ -66,13 +68,13 @@ sub new {
 
 =head2 fetch_by_type
 
- Title   : fetch_by_type
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+    my $ass_mapr = $ass_adptr->fetch_by_type('UCSC');
 
+Fetches a C<Bio::EnsEMBL::AssemblyMapper> object
+from the adaptor for a particular assembly
+(golden path) type (eg: B<USCS> or B<SANGER>).
+
+The answer is cached for a particular assembly type.
 
 =cut
 
@@ -90,18 +92,14 @@ sub fetch_by_type{
 
 =head2 register_region
 
- Title   : register_region
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+    $ass_adptr->register_region($ass_mapr, 'UCSC', '20', 1_000_000, 2_000_000);
+
 
 
 =cut
 
 sub register_region{
-   my ($self,$assmapper,$type,$id,$start,$end) = @_;
+   my ($self,$assmapper,$type,$chr_name,$start,$end) = @_;
 
    # This is to reassure people that I've got this piece of
    # SQL correct ;) EB
@@ -116,7 +114,7 @@ sub register_region{
 
 
 
-   my $sth = $self->prepare("select ass.contig_start,ass.contig_end,ass.contig_id,ass.contig_ori,chr.name,ass.chr_start,ass.chr_end from assembly ass,chromosome chr where chr.name = '$id' AND ass.chromosome_id = chr.chromosome_id and NOT (ass.chr_start > $end) and NOT (ass.chr_end < $start) and ass.type = '$type'");
+   my $sth = $self->prepare("select ass.contig_start,ass.contig_end,ass.contig_id,ass.contig_ori,chr.name,ass.chr_start,ass.chr_end from assembly ass,chromosome chr where chr.name = '$chr_name' AND ass.chromosome_id = chr.chromosome_id and NOT (ass.chr_start > $end) and NOT (ass.chr_end < $start) and ass.type = '$type'");
 
    $sth->execute();
 
