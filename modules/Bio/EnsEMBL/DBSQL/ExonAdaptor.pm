@@ -156,6 +156,33 @@ sub fetch_by_dbID {
 
 }
 
+=head2 fetch_by_stable_id
+
+ Title   : fetch_by_stable_id
+ Usage   : $exonAdaptor->fetch_by_stable_id( $exon_stable_id )
+ Function: gets an exon by its stable_id
+ Example : 
+ Returns : exon Object or undef if none is found
+ Args    : stable_id of an exon
+
+=cut
+
+sub fetch_by_stable_id {
+  my $self = shift;
+  my $stable_id = shift;
+
+  my $sth = $self->prepare( "SELECT exon_id from exon_stable_id
+                             WHERE stable_id = ?" );
+  $sth->execute( $stable_id );
+  if( my $arr = $sth->fetchrow_arrayref ) {
+    my $exon = $self->fetch_by_dbID( $arr->[0] );
+    return $exon;
+  } else {
+    $self->warn( "No Exon with this stable_id in the database!" );
+    return undef;
+  }
+}
+
 
 # returns list of exons or maybe empty list (gene not known)
 sub fetch_by_geneId {
