@@ -564,7 +564,7 @@ Features
     transform
     transfer
     project
-    analsysis
+    analysis
     
   The feature class inherits from the Storable base class and thereby inherits
   the following methods:
@@ -881,18 +881,6 @@ to the NCBI34 assembly:
   }
 
 
-Circular Chromosomes
---------------------
-
-TBD
-
-
-Comparative Sequence (Chimp)
-----------------------------
-
-TBD
-
-
 OTHER CONSIDERATIONS
 --------------------
 
@@ -902,5 +890,10 @@ Loci
 Similar genes which are defined across haplotypes need
 to be somehow linked into loci.  The intent is that 
 a user would be able to see that a gene has a counterpart
-on an equivalent aplotypic sequence.  How this will work is TBD.
+on an equivalent haplotypic sequence. 
 
+This is work in progress. The current opinion among us is to implement
+it via a relationship table that specifies which genes on default
+haplotypes are considered equivalent to other genes on
+(overlapping) haplotypes.
+  
