@@ -89,10 +89,9 @@ use vars qw(@ISA @EXPORT_OK);
            :  @param = (-name=>'me', -color=>'blue');
            :  @param = (-NAME=>'me', -COLOR=>'blue');
            :  @param = (-Name=>'me', -Color=>'blue');
-           :  @param = ('me', 'blue');  
            : A leading hyphenated argument is used by this function to 
            : indicate that named parameters are being used.
-           : Therefore, the ('me', 'blue') list will be returned as-is.
+           : Therefore, a ('me', 'blue') list will be returned as-is.
            :
            : Note that Perl will confuse unquoted, hyphenated tags as 
            : function calls if there is a function of the same name 
@@ -116,46 +115,24 @@ use vars qw(@ISA @EXPORT_OK);
 
 
 sub rearrange {
-  my($order,@param) = @_;
-
-  return unless @param;
+  my $order = shift;
 
   # If we've got parameters, we need to check to see whether
   # they are named or simply listed. If they are listed, we
-  # can just return them. 
+  # can just return them.
+  return @_ unless (@_ && $_[0] && substr($_[0], 0,1) eq '-');
 
-  return @param unless (defined($param[0]) && $param[0]=~/^-/); 
+  # Convert all of the parameter names to uppercase, and create a
+  # hash with parameter names as keys, and parameter values as values
+  my $i = 0;
+  my (%param) = map {if($i) { $i--; $_; } else { $i++; uc($_); }} @_;
 
-  # Now we've got to do some work on the named parameters.
-  # The next few lines strip out the '-' characters which
-  # preceed the keys, and capitalizes them.
-  my $i;
-  for ($i=0;$i<@param;$i+=2) {
-    $param[$i]=~s/^\-//;
-    $param[$i]=~tr/a-z/A-Z/;
-  }
-
-  # Now we'll convert the @params variable into an associative array.
-  local($^W) = 0;  # prevent "odd number of elements" warning with -w.
-  my(%param) = @param;
-
-  my(@return_array);
 
   # What we intend to do is loop through the @{$order} variable,
   # and for each value, we use that as a key into our associative
   # array, pushing the value at that key onto our return array.
-  my($key);
-
-  foreach $key (@{$order}) {
-    $key = uc($key);
-    my($value) = $param{$key};
-    delete $param{$key};
-    push(@return_array,$value);
-  }
-
-  return (@return_array);
+  return map {$param{uc("-$_")} || $param{uc($_)}} @$order;
 }
-
 
 1;
 
