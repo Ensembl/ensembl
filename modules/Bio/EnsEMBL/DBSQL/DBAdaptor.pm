@@ -302,7 +302,7 @@ sub get_available_adaptors{
 		 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
 		 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor');
 
-  return (%pairs);
+  return (\%pairs);
 }
 
 

@@ -188,7 +188,7 @@ sub load_core{
   my ($dba) = @_;
 
 
-  my %pairs = $dba->get_available_adaptors();
+  my %pairs = %{$dba->get_available_adaptors()};
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
@@ -275,7 +275,7 @@ sub add_blast_link{
 sub load_estgene{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
+  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
 
 
   foreach my $key (keys %pairs){
@@ -298,7 +298,7 @@ sub load_estgene{
 sub load_est{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
+  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
@@ -318,7 +318,7 @@ sub load_est{
 sub load_vega{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();  #calls SUPER class so same as core adaptors
+  my %pairs = %{$dba->get_available_adaptors()};  #calls SUPER class so same as core adaptors
 
   foreach my $key (keys %pairs){
     Bio::EnsEMBL::Registry->add_adaptor($dba->species, $dba->group, $key, $pairs{$key});
@@ -333,7 +333,7 @@ sub load_vega{
 sub load_compara{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();
+  my %pairs = %{$dba->get_available_adaptors()};
 
   foreach my $key (keys %pairs){
 
@@ -345,7 +345,7 @@ sub load_compara{
 sub load_hive{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();
+  my %pairs = %{$dba->get_available_adaptors()};
 
   foreach my $key (keys %pairs){
 
@@ -379,7 +379,7 @@ sub load_haplotype{
 sub load_pipeline{
   my ($dba) = @_;
 
-  my %pairs = $dba->get_available_adaptors();  #calls pipeline DBAdaptor (NOT implementred yet)
+  my %pairs = %{$dba->get_available_adaptors()};  #calls pipeline DBAdaptor (NOT implementred yet)
 # core + these ones:-
 #		 'Analysis'           => 'Bio::EnsEMBL::Pipeline::DBSQL::AnalysisAdaptor',
 #		 'Job'                => 'Bio::EnsEMBL::Pipeline::DBSQL::JobAdaptor',
