@@ -1,4 +1,4 @@
-ore#
+#
 # BioPerl module for Contig
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
