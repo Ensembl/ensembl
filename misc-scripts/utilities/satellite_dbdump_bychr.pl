@@ -182,7 +182,7 @@ WHERE lg.chr_name = '$chr'
 
     foreach my $w ( qw(doc stop vector word) ) {
         my $table = "disease_index_${w}list";
-        $sql = "select * from $satdb.$table";
+        $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table );
     }
 }                                       # disease
