@@ -25,7 +25,7 @@ ok($csa && $csa->isa('Bio::EnsEMBL::DBSQL::CoordSystemAdaptor'));
 
 
 #
-# 2-6 Test fetch_by_name()
+# Test fetch_by_name()
 #
 
 my $cs = $csa->fetch_by_name('chromosome');
@@ -35,10 +35,11 @@ ok($cs->dbID());
 ok($cs->version eq 'NCBI33');
 ok($cs->is_top_level());
 ok(!$cs->is_sequence_level());
+ok($cs->is_default());
 
 
 #
-# 7-8 Test fetch_all_by_name
+#  Test fetch_all_by_name
 #
 my @cs_list = @{$csa->fetch_all_by_name('chromosome')};
 
@@ -48,7 +49,7 @@ ok($cs_list[0]->equals($cs));
 
 
 #
-# 9-10 Test fetch_by_dbID()
+# Test fetch_by_dbID()
 #
 $cs = $csa->fetch_by_dbID(3);
 
@@ -108,10 +109,41 @@ ok(@$path == 3 &&
      $path->[2]->name eq 'chromosome'))
    );
 
+#
+# Test store
+#
 
+$multi->save('core', 'coord_system');
 
+$cs = Bio::EnsEMBL::CoordSystem->new
+  (-NAME            => 'chromosome',
+   -VERSION         => 'NCBI35',
+   -DEFAULT         => 0,
+   -SEQUENCE_LEVEL  => 0,
+   -TOP_LEVEL        => 1);
 
+$csa->store($cs);
 
+ok($cs->adaptor == $csa);
+ok($cs->dbID());
+
+#now make sure we can retrieve this
+$cs = $csa->fetch_by_name('chromosome', 'NCBI35');
+ok($cs->name eq 'chromosome');
+ok($cs->version eq 'NCBI35');
+ok(!$cs->is_default);
+ok(!$cs->is_sequence_level);
+ok($cs->is_top_level);
+
+my $sth = $db->prepare('SELECT attrib FROM coord_system ' .
+                       'WHERE  name = ? and version = ?');
+$sth->execute('chromosome', 'NCBI35');
+
+my ($attrib) = $sth->fetchrow_array();
+ok($attrib eq 'top_level');
+$sth->finish();
+
+$multi->restore('core', 'coord_system');
 
 
 
