@@ -34,10 +34,14 @@ shift(@chromo);
 shift(@chromo);
 
 foreach $chromo ( @chromo ) {
-    $chromo =~ /.*?(\d+).*\.agp/ || next;
+    #$chromo =~ /.*?(\d+).*\.agp/ || next;
+    $chromo =~ /chr([^_\.]+)[_|\.].*agp/ || next;
     $chrnumber = $1;
-    
-    
+
+    print STDERR "Doing $chromo\n";
+    #if ($chromo ne 'chr22.agp') {
+    #	next;
+    #}
     open(GF,"$chr/$chromo") || die "no $file $!\n";
     open(OUT,">$chr/$chromo.fpc");
     
@@ -54,16 +58,17 @@ foreach $chromo ( @chromo ) {
 	open(F,"$contigdir/$chrnumber/$contig/$contig.agp") || die "did not open $contig $!\n";
 	while(<F>) {
 	    # chr20   1       1970    1       P       AL360078.3      76699   78668   -
-	    /\S+\/(\S+)\s+(\d+)\s+(\d+)\s+\d+\s+\S\s+(\S+)\s+(\d+)\s+(\d+)/ || next;
+	    /\S+\/(\S+)\s+(\d+)\s+(\d+)\s+\d+\s+\S\s+(\S+)\s+(\d+)\s+(\d+)/ ||next;
+	    
 	    $id = $1;
 	    $fstart = $2;
 	    $fend = $3;
 	    $accf = $4;
 	    $accst = $5;
 	    $accend = $6;
-	    
 	    $idstring = "$accf:$accst:$accend";
-	    #print "Storing $idstring\n";
+	    
+	    #print "Storing contig string $idstring\n";
 	    $fpc{$idstring} = $id;
 	    $fpcstart{$idstring} = $fstart;
 	    $fpcend{$idstring} = $fend;
@@ -71,6 +76,8 @@ foreach $chromo ( @chromo ) {
     }
     
     while( <GF> ) {
+	#19/ctg113	1	37401	1	F	AC011523.3	1	37401	+
+	#22/chr22       1       37693   1       F       AP000522.1      1       37693   +
 	/(\S+)\s+(\d+)\s+(\d+)\s+\d+\s+\S\s+(\S+)\s+(\d+)\s+(\d+)/ || do { print OUT $_; next; };
 	
 	$id = $1;
@@ -80,7 +87,7 @@ foreach $chromo ( @chromo ) {
 	$accst = $5;
 	$accend = $6;
 	$idstring = "$accf:$accst:$accend";
-	
+	#print "Reading chromosome line with $idstring\n";
 	if( !defined $fpc{$idstring} ) {
 	    print STDERR "Could not find fpc contig for $idstring\n";
 	    next;
