@@ -6,7 +6,9 @@
 
 =head1 SYNOPSIS - 
 
-    vc2flat -vc_parameters
+    vc2flat -fcontig -fposition -ori -left -right
+
+    vc2flat.pl -fcontig 'AC007997.00004' -fposition 1 -left 10000 -right 10000 -ori 1
 
     vc2flat -format gff 
    
@@ -166,7 +168,7 @@ per line, ith vc parameters separated by commas!");
 	push(@vcs,\@list);
     }
 } else {
-    $focuscontig || die ("Need to supply a focus contig!\n");
+    $focuscontig || die ("Need to supply a rawcontig id to use as a focus contig!\n");
     $focusposition || die ("Need to supply a focus position!\n");
     $ori || die ("Need to supply an orientation!\n");
     $left || die ("Need to supply left size!\n"); 
@@ -242,8 +244,6 @@ foreach my $vc_list_ref ( @vcs ) {
 	    # genbank format - the ID line is wrong. Fall back to locus
 	    $gbout->_id_generation_func(undef);
 	    $gbout->_ac_generation_func(undef);
-	    $vc->accession($vc->id());
-	    $vc->division("PRI");
 	    if( $nodna == 1 ) {
 		$gbout->_show_dna(0);
 	    }
