@@ -374,7 +374,7 @@ sub analysis {
    my ($self,$value) = @_;
 
    if (defined($value)) {
-       $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object") unless 
+       $self->throw("Analysis is not a Bio::EnsEMBL::AnalysisI object but a $value object") unless 
 	   (ref($value) && $value->isa("Bio::EnsEMBL::AnalysisI"));
        $self->{_analysis} = $value;
    }

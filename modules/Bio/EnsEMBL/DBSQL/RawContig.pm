@@ -349,8 +349,7 @@ sub get_all_SimilarityFeatures{
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
-	   print STDERR "Got a $hid\n";
-
+	 
 	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
@@ -373,7 +372,6 @@ sub get_all_SimilarityFeatures{
 	   }
 	   $out->analysis($analysis);
        }
-       print STDERR "About to add $out\n";
        # Final check that everything is ok.
        $out->validate();
        
@@ -381,7 +379,6 @@ sub get_all_SimilarityFeatures{
       
    }
    
-   print STDERR "About to return...\n";
    return @array;
 }
 

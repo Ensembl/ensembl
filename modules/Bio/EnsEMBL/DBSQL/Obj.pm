@@ -78,13 +78,14 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$driver,$user,$password,$debug) = 
+  my ($db,$host,$driver,$user,$password,$debug,$perl) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
 			    USER
 			    PASS
 			    DEBUG
+			    PERLONLYFEATURES
 			    )],@args);
 
   $db   || $self->throw("Database object must have a database name");
@@ -131,6 +132,11 @@ sub _initialize {
      
       $self->_db_handle($dbh);
   }
+
+  if( $perl == 1 ) {
+      $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+  }
+
 
   return $make; # success - we hope!
 
@@ -2032,12 +2038,9 @@ sub get_Analysis {
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
 
-    print STDERR "Got analysis with $id\n";
 
     if ($sth->rows) {
 	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
-
-	print STDERR "About to fill $anal\n";
 
 	if( defined $rh->{'db'} ) {
 	    $anal->db($rh->{'db'});
@@ -2051,10 +2054,8 @@ sub get_Analysis {
 	$anal->gff_source($rh->{gff_source});
 	$anal->gff_feature($rh->{gff_feature});
 	my $mid = $rh->{'id'};
-	print STDERR "About to set id to $mid\n";
 
 	$anal->id("$mid");
-	print STDERR "About to return analysis $anal\n";
 	return $anal;
     }  else {
 	$self->throw("Can't fetch analysis id $id\n");
