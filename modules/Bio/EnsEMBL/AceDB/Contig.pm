@@ -205,7 +205,7 @@ sub get_all_RepeatFeatures {
     # Get tandem features
     my @repeat_features = $self->_get_tandems();
     
-    # Append motif_homols with RepeatMaster and RepeatMaster_SINE methods
+    # Append motif_homols with RepeatMaster, RepeatMaster_SINE, hmmfs.3 or scan
     my @methods = qw/RepeatMaster RepeatMaster_SINE hmmfs.3 scan/;
     push(@repeat_features, $self->_get_homols('Homol.Motif_homol[1]', @methods));
      
@@ -325,7 +325,7 @@ sub get_all_Genes {
             $gene->id($genename);
             $gene->version(1); 
             $gene->add_Transcript($transcript);
-            $gene->add_cloneid_neighbourhood($self->clone);
+            $gene->add_cloneid_neighbourhood($self->id);
             
             # Add the gene to the genes array
             push(@genes, $gene);
@@ -372,12 +372,16 @@ sub clone {
 
 sub get_all_SimilarityFeatures {
      my ($self) = @_;
-  
+ 
     # Get DNA, Pep, EST and STS homols
     my @similarity_features = $self->_get_homols('Homol.DNA_homol[1]');
     push (@similarity_features, $self->_get_homols('Homol.Pep_homol[1]'));
     push (@similarity_features, $self->_get_homols('Homol.EST_homol[1]'));
     push (@similarity_features, $self->_get_homols('Homol.STS_homol[1]'));
+    
+    # Append motif_homols with Queryprosite
+    my @methods = qw/Queryprosite/;
+    push(@similarity_features, $self->_get_homols('Homol.Motif_homol[1]', @methods));
      
     # Return all the sequence features 
     return @similarity_features;    
@@ -636,7 +640,7 @@ sub _create_exon {
 }
 
 
-=head2_create_feature_pair
+=head2 _create_feature_pair
 
  Title   : _create_feature_pair
  Usage   :
@@ -660,8 +664,71 @@ sub _create_feature_pair {
         ($hstart, $hend) = ($hend, $hstart); 
          $strand = -$strand;
     }
+ 
+    my ($program, $source);   
+    if ($meth =~ /^TBLASTX/) {
+        $program = "TBLASTX";
+        $source = substr($meth, 8);     
+    }
+    else {
+        $program = $source = $meth;
+    }   
+
+    my $feature = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+    # Set the fields with the set_all_fields method of FeaturePair 
+    $feature->set_all_fields($start,      # start
+                            $end,         # end,
+                            $strand,      # strand,
+                            $score,       # score,
+                            $source,      # source,
+                            "similarity", # primary,
+                            $self->id,    # seqname,
+                            $hstart,      # hstart,
+                            $hend,        # hend,
+                            1,            # hstrand is always 1
+                            $score,       # hscore is the same as score
+                            $source,      # hsource is the same as source
+                            "similarity", # hprimary,
+                            $hid);        # hseqname
+                            
+    my $analysis = new Bio::EnsEMBL::Analysis(					    
+					    -program         => $program,
+					    -program_version => 1,
+					    -gff_source      => $source,
+					    -gff_feature     => "similarity"
+                                            );
+    $feature->analysis($analysis);                            
+    $feature->validate();
+    return $feature;
+}
+
+
+=head2 _create_repeat
+
+ Title   : _create_repeat
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _create_repeat {
+    my ($self, $meth, $score, $start, $end, $hstart, $hend, $hid) = @_;        
+    my $strand = 1;
+     
+    if ($start > $end) {
+        ($start, $end) = ($end, $start);
+        $strand = -1;        
+    }         
+    if ($hstart > $hend) {                
+        ($hstart, $hend) = ($hend, $hstart); 
+         $strand = -$strand;
+    }
     
-    # Create a new Bio::EnsEMBL::Repeat with a pair of SeqFeatures
+    # Create a new Bio::EnsEMBL::Repeat 
     my $repeat = Bio::EnsEMBL::FeatureFactory->new_repeat();
    
     # Set the Repeat features with the set_all_fields method of FeaturePair 
@@ -669,21 +736,21 @@ sub _create_feature_pair {
                             $end,         # end,
                             $strand,      # strand,
                             $score,       # score,
-                            'repeat',     # source is just 'repeat'
-                            $meth,        # primary,
+                            $meth,        # source,
+                            "similarity", # primary,
                             $self->id,    # seqname,
                             $hstart,      # hstart,
                             $hend,        # hend,
                             1,            # hstrand is always 1
                             $score,       # hscore is the same as score
-                            'repeat',     # hsource is just 'repeat'
-                            $meth,        # hprimary,
+                            $meth,        # hsource is the same as source
+                            "similarity", # hprimary is the same as primary
                             $hid);        # hseqname
                             
     my $analysis = new Bio::EnsEMBL::Analysis(					    
-					    -program         => "RepeatMasker",
+					    -program         => $meth,
 					    -program_version => 1,
-					    -gff_source      => "RepeatMasker",
+					    -gff_source      => $meth,
 					    -gff_feature     => "repeat"
                                             );
     $repeat->analysis($analysis);                            
@@ -909,11 +976,20 @@ sub _get_homols {
                     # Loop through the column to the right of $score
                     foreach my $pos ($score->col(1)) {
                     
-                        # Inialise $start etc from the row of data
-                        my ($start, $end, $hstart, $hend) = $pos->row(); 
-                        # Create a new repeat and add it to the array                       
-                        push(@seq_features, $self->_create_feature_pair
-                            ($meth, $score, $start, $end, $hstart, $hend, $hid));
+                        # Initalise $start etc from the row of data
+                        my ($start, $end, $hstart, $hend) = $pos->row();
+                         
+                        # Create a repeat or a feature pair and add it to the array 
+                        if (($type eq "Homol.Motif_homol[1]") && ($meth ne "Queryprosite")) {
+                            my $repeat = $self->_create_repeat
+                                ($meth, $score, $start, $end, $hstart, $hend, $hid);
+                            push(@seq_features, $repeat);
+                        } 
+                        else {
+                            my $feature = $self->_create_feature_pair
+                                ($meth, $score, $start, $end, $hstart, $hend, $hid);
+                            push(@seq_features, $feature);
+                        }                                                                           
                     }
                 }
             }
@@ -951,20 +1027,29 @@ sub _get_tandems {
     
     # Create a new feature object for each of the tandems found
     foreach my $tandem (@tandems) {
-        my($start, $end, $score, $remark) = $tandem->row();        
-        my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
-        $feature->start($start);
-        $feature->end($end);
-        $feature->score($score);
-        $feature->seqname($self->id);
-        $feature->source_tag("repeat");
-        $feature->primary_tag("tandem");
-        if ($start < $end) {
-            $feature->strand(1);
+        my($start, $end, $score, $remark) = $tandem->row();               
+        my $feature = Bio::EnsEMBL::FeatureFactory->new_repeat();
+        
+        my $strand = 1;
+        if ($start > $end) {
+            $strand = -1;
         }
-        else {
-            $feature->strand(-1);
-        }
+        # Set the Repeat features with the set_all_fields method of FeaturePair 
+        $feature->set_all_fields($start,       # start
+                            $end,         # end,
+                            $strand,      # strand,
+                            $score,       # score,
+                            "tandem",      # source,
+                            "similarity",      # primary,
+                            $self->id,    # seqname,
+                            $start,      # hstart,
+                            $end,        # hend,
+                            -$strand,     # hstrand 
+                            $score,       # hscore is the same as score
+                            "tandem",      # hsource is the same as source
+                            "similarity",      # hprimary is the same as primary
+                            $self->id);        # hseqname        
+        
         $feature->analysis($analysis);
         $feature->validate();
         push(@seq_features, $feature);
