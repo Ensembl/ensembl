@@ -151,7 +151,7 @@ sub hasOverlap {
     
     foreach my $exon2 ($self->_getPredictorExons()) {  
               
-         if ($exon2->end   > $exon1->start && $exon2->start < $exon1->end) {                
+         if ($exon2->end > $exon1->start && $exon2->start < $exon1->end) {                
             return 1;
         }
     }

@@ -254,13 +254,46 @@ sub isExactlyMatched {
     
     return 0;
 }
+
+
+=head2 getGeneOverlaps
+
+ Title   : getGeneOverlaps
+ Usage   : $obj->getGeneOverlaps()
+ Function: Gets the predictor genes that the standard gene overlaps 
+ Example : 
+ Returns : Array of gene objects
+ Args    : None
+
+
+=cut
+
+sub getGeneOverlaps {
+    my ($self) = @_;
+    
+    my @predictors;
+    
+    foreach my $gene ($self->_getPredictorGenes()) { 
+        my $comparer = new Bio::EnsEMBL::GeneComparison::ExonCompare($gene->each_unique_Exon());
+        foreach my $standardExon ($self->_getStandardExons()) {
+            $comparer->setStandardExon($standardExon);            
+            if ($comparer->hasOverlap()) {
+		push @predictors, $gene;
+                last;
+            }
+        }
+    }
+    
+    return @predictors;
+}
+
 =head2 getGeneOverlapids
 
  Title   : getGeneOverlapids
  Usage   : $obj->getGeneOverlapids()
- Function: Calculates the number of predictor genes that the standard gene overlaps. 
+ Function: Gets the IDs of the predictor genes that the standard gene overlaps. 
  Example : 
- Returns : integer
+ Returns : Reference to array of ID Strings
  Args    : None
 
 
@@ -269,14 +302,13 @@ sub isExactlyMatched {
 sub getGeneOverlapids {
     my ($self) = @_;
     
-    my $overlaps = 0;
     my @predictors;
+    
     foreach my $gene ($self->_getPredictorGenes()) { 
         my $comparer = new Bio::EnsEMBL::GeneComparison::ExonCompare($gene->each_unique_Exon());
         foreach my $standardExon ($self->_getStandardExons()) {
             $comparer->setStandardExon($standardExon);            
             if ($comparer->hasOverlap()) {
-                $overlaps++;
 		push @predictors, $gene->id;
                 last;
             }
@@ -285,6 +317,7 @@ sub getGeneOverlapids {
     
     return \@predictors;
 }
+
 
 =head2 getGeneOverlapCount
 
