@@ -1091,7 +1091,9 @@ sub _convert_seqfeature_to_vc_coords {
     $sf->strand($rstrand);
     
     if( $sf->can('attach_seq') ) {
-	$sf->attach_seq($self->primary_seq);
+	if (!$self->noseq) {
+	    $sf->attach_seq($self->primary_seq);
+	}
     }
     
     $sf->seqname($self->id);
@@ -1447,6 +1449,28 @@ sub _vmap{
     }
     return $obj->{'_vmap'};    
 }
+
+=head2 noseq
+
+ Title   : noseq
+ Usage   : $vc->noseq
+ Function: If set to 1, vc does not attach a primary seq to its exons 
+ Example : $vc->noseq(1)
+ Returns : nothing
+ Args    : 1/0
+
+
+=cut
+
+sub noseq{
+    my ($obj,$value) = @_;
+    
+    if( defined $value) {
+	$obj->{'_noseq'} = $value;
+    }
+    return $obj->{'_noseq'};    
+}
+
 1;
 
 
