@@ -413,6 +413,30 @@ sub get_all_ContigOverlaps {
     return values %overlap;
 }
 
+=head2 is_golden
+
+ Title   : is_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_golden{
+   my ($self,@args) = @_;
+   
+   foreach my $contig ($self->get_all_Contigs) {
+       if ($contig->is_golden) {
+	   return 1;
+       }
+   }
+   return 0;
+}
+
+
 =head2 htg_phase
 
  Title   : htg_phase
