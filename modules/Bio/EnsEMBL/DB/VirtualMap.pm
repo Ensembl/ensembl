@@ -794,7 +794,7 @@ sub vcpos_to_rcpos {
     if ($vcpos >$length) {
 	$self->throw("Asked to map vc position outside vc coordinates!\n");
     }
-    
+    print STDERR "Looking for $vcpos....\n";
     #Go through all Contigs and find out where vcpos lies
     foreach my $mc ($self->get_all_MapContigs) {
 	
@@ -803,20 +803,27 @@ sub vcpos_to_rcpos {
 	if ($mc->end < $vcpos) {
 	    next;
 	}
-
+	
 	#If vcpos is within the start and enf of this Contig, we found it!
 	#And we get out of the loop...
 	if (($vcpos >= $mc->start)&&($vcpos <= $mc->end)) {
+	    print STDERR "Found contig!\n ".$mc->contig->id." with start ".$mc->start." and end ".$mc->end."\n"; 
 	    $rc=$mc->contig;
-	    $rc_pos=$vcpos-$mc->start;
-
-	    #Sort out the strand
-	    my $strand=$mc->orientation;
-	    if ($vcstrand == 1) {
-		$rc_strand = $strand;
+	    if ($mc->orientation == 1) {
+		$rc_pos=$vcpos-$mc->start+1;
 	    }
 	    else {
-		$rc_strand = -$strand;
+		$rc_pos=$mc->end-$vcpos+1;
+	    }
+	    
+	    #If strand passed to the method, sort out the strand
+	    if ($vcstrand) {
+		if ($vcstrand == 1) {
+		    $rc_strand = $mc->orientation;
+		}
+		else {
+		    $rc_strand = -$mc->orientation;
+		}
 	    }
 	    last;
 	}
@@ -830,5 +837,9 @@ sub vcpos_to_rcpos {
 	    last;
 	}
     }
-    return $rc,$rc_pos,$rc_strand;
+    
+    
+    $vcstrand && return $rc,$rc_pos,$rc_strand;
+    return $rc,$rc_pos;
 }
+

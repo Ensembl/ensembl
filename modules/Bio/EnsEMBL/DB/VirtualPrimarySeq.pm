@@ -204,8 +204,7 @@ sub seq {
 	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
 	   $trunc = $tseq->subseq($end,$mc->start_in);
-	   $trunc =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-	   my $trunc = CORE::reverse $trunc;
+	   my $trunc = $self->revcom($trunc);
        }
        $seq_string .= $trunc;
        $last_point += length($trunc);
@@ -243,14 +242,95 @@ sub subseq{
        $self->throw("You have to have start positive and length less than the total length of sequence");
    }
    
-   #remove one from start, and then length is end-start
-   $start--;
+   my $subseq;
+   my ($start_rc,$start_rc_pos)=$self->_vmap->vcpos_to_rcpos($start);
+   my ($end_rc,$end_rc_pos)=$self->_vmap->vcpos_to_rcpos($end);
    
-   my $length= $end-$start;
+   print STDERR "START: contig ".$start_rc->id." and pos. $start_rc_pos\n";
+   print STDERR "END: contig ".$end_rc->id." and pos. $end_rc_pos\n";
+
+   my $mc=$self->_vmap->get_MapContig($start_rc->id);
+
+   #Let's deal straight away with the simplest case, i.e. start and end in 
+   #the same RawContig. This is a very powerful way to reduce the time it 
+   #takes to do small subseqs (for example for exons!)
    
+   #If start and end RawContig identical, just do a subseq and complement it 
+   #if the orientation of the RawContig in the VirtualContig is -1
+   my $subseq;
+   if ($start_rc->id eq $end_rc->id) {
+       print STDERR "Using the new fast VirtualPrimarySeq method to retrieve sequence!\n";
+       
+       if ($mc->orientation == 1) {
+	   my $seq=$start_rc->primary_seq->subseq($start_rc_pos,$end_rc_pos);
+	   return $seq;
+       }
+       else {
+	   my $seq=$start_rc->primary_seq->subseq($end_rc_pos,$start_rc_pos);
+	   return $seq;
+	   #return $self->revcom($seq);
+       }
+   }
+   #If the start and end RawContig are different, then it gets a bit more complicated...
+   #else {
+
+       #First of all we get the seq from the start in the start RawContig to its golden_end
+       #Again, if the orientation is negative we do it the other way around and revcom it!
+       
+       #if ($mc->orientation == 1) {
+	   #$subseq=$start_rc->primary_seq->subseq($start_rc_pos,$start_rc->golden_end);
+       #}
+       #else {
+	   #my $seq=$start_rc->primary_seq->subseq($mc->contig->golden_end,$start_rc_pos);
+	   #$subseq=$self->revcom($seq);
+       #}
+
+       #Then loop through each MapContig (note: they are given back sorted by start in vc)
+       #my $before_start=1;
+       #foreach my $mc ($self->get_all_MapContigs) {
+	   
+	   #If this MapContig is before our start contig, skip it
+	   #if (($mc->contig->id ne $start_rc->id)&& ($before_start=1)){
+	       #next;
+	   #}
+
+	   #Then find the start contig...
+	   #elsif ($mc->contig->id eq $start_rc->id) {
+	       #$before_start=0;
+	       #next;
+	   #}
+	   
+	   #...and go through the rest of the contigs
+	   
+           #If we find the end contig, we add the last piece of 
+           #subseq, and get out of the loop
+	   #elsif ($mc->contig->id eq $end_rc->id) {
+	       #if ($mc->orientation == 1) {
+		   #$subseq.=$end_rc->primary_seq->subseq($end_rc_pos,$end_rc->golden_end);
+	       #}
+	       #else {
+		   #my $seq=$end_rc->primary_seq->subseq($end_rc->golden_end,$end_rc_pos);
+		   #$subseq.=$self->revcom($seq);
+	       #} 
+	       #last;
+	   #}
+	   
+	   #If it is one of the intermediate contigs, add its whole seq to the subseq
+	   #else {
+	       #if ($mc->orientation == 1) {
+		   #$subseq.=$mc->contig->primary_seq->subseq($mc->contig->golden_start,$mc->contig->golden_end);
+	       #}
+	       #else {
+		   #my $seq=$mc->contig->primary_seq->subseq($mc->contig->golden_end,$mc->contig->golden_start);
+		   #$subseq.=$self->revcom($seq);
+	      #} 
+	   #}
+       #}
+   #} 
    
    #Need to do this properly...
    return substr $self->seq, $start, ($end-$start);
+   #return $subseq;
 }
 
 =head2 moltype
@@ -382,6 +462,23 @@ sub _clone_map{
     return $obj->{'_clone_map'};    
 }
 
+=head2 revcom
+
+ Title   : revcom
+ Usage   : $obj->revcom($newval);
+ Function: get/set method for revcom
+ Returns : value of revcom
+ Args    : newvalue (optional)
 
 
+=cut
+
+sub revcom{
+    my ($self,$str)=@_;
+    
+    $str =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+    my $revcom = CORE::reverse $str;
+
+    return $revcom;
+}
 1;

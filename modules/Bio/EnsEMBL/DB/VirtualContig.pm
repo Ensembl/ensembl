@@ -692,6 +692,25 @@ sub length {
    return $self->_vmap->left_size + $self->_vmap->right_size;
 }
 
+
+=head2 vcpos_to_rcpos
+
+ Title   : vcpos_to_rcpos
+ Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->vcpos_to_rcpos($vc_pos,$vc_strand)
+ Function: Maps a VirtualContig position to the RawContig Position
+ Returns : Bio::EnsEMBL::DB::MapContig object, 
+           position (int), strand (int)
+ Args    : position (int), strand (int)
+
+
+=cut
+
+sub vcpos_to_rcpos {
+    my ($self, $vcpos, $vcstrand)=@_;
+
+    return $self->_vmap->vcpos_to_rcpos($vcpos,$vcstrand);
+}
+
 =head2 embl_accession
 
  Title   : embl_accession
@@ -1077,7 +1096,7 @@ sub _dump_map {
    print $fh "Contig Map Dump: \n";
    
    foreach my $mc ($self->_vmap->get_all_MapContigs) {
-       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," start in contig ",$mc->start_in," orientation ",$mc->orientation,"\n";
+       print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in," orientation ",$mc->orientation,"\n";
    }
 }
 

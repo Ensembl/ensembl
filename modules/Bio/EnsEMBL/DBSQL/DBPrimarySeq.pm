@@ -247,10 +247,6 @@ sub subseq{
        $self->throw("You have to have start positive and length less than the total length of sequence");
    }
    
-   # remove one from start, and then length is end-start
-   #$start--;
-   #($start == 0) && {$start=1};
-       
    my $id=$self->dna_id;
    my $length= $end-$start+1;
    

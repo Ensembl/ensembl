@@ -114,16 +114,15 @@ if( $@ ) {
 } else {
     print "ok 8\n";    
     print "ok 9\n";
-
-
+    
+    
     $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
 						-focusposition => 10,
 						-ori => 1,
 						-left => 1000000,
 						-right => 1000000 );
-
     $vc->_dump_map();
-
+    
     $seq = $vc->primary_seq();
     if( $seq->isa('Bio::PrimarySeqI') ) {
 	print "ok 10\n";
