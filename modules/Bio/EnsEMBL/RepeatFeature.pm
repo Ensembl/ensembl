@@ -69,7 +69,7 @@ sub get_RepeatConsensus {
     my( $self ) = @_;
     
     my $rc_id = $self->repeat_consensus_id;
-    return $self->repeat_consensus_adaptor->fetch_by_dbID($rc_id);
+    return $self->adaptor->fetch_by_dbID($rc_id);
 }
 
 
