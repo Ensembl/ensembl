@@ -366,8 +366,12 @@ sub draw_feature
 
     my $image_comp_ref=&Parameters::contig_image_components;  
     my $url;
-    if ($ft->analysis->db ne ""){ $url=$image_comp_ref->{$ft->analysis->db}{link};}
-				  else {$url=$image_comp_ref->{$ft->analysis->gff_source}{link};}
+    if ($ft->analysis->db ne ""){ 
+        $url=$image_comp_ref->{$ft->analysis->db}{link};
+    }
+    else {
+        $url=$image_comp_ref->{$ft->analysis->gff_source}{link};
+    }
 
     my $y_start;
     my $y_end;
@@ -379,15 +383,26 @@ sub draw_feature
 
     my $name;
     my $db;
-    if ($ft->isa("Bio::EnsEMBL::FeaturePair"))
-    {
-	if ($ft->analysis->db eq "swir"){($db,$name)=split /:/,$ft->hseqname;}
-	if ($ft->analysis->db eq "dbest"){($db,$name)=split /\|/,$ft->hseqname;}
-	else {$name=$ft->hseqname;}
-    }
-    if ($ft->isa("Bio::EnsEMBL::SeqFeature")){$name=$ft->analysis->gff_source}
+    if ($ft->isa("Bio::EnsEMBL::FeaturePair")){
 
-    unless ($url eq ""){&print_map($x_start,$y_start,$x_end,$y_end,$name,$url,$name);}
+$name=$ft->hseqname;
+	if ($ft->analysis->db eq "swir"){
+            ($db,$name)=split /:/,$ft->hseqname;
+        }
+	if ($ft->analysis->db eq "dbest"){
+            ($db,$name)=split /\|/,$ft->hseqname;
+        }
+#	else {
+  #          $name=$ft->hseqname;
+ #       }
+    }
+    if ($ft->isa("Bio::EnsEMBL::SeqFeature")){
+        $name=$ft->analysis->gff_source;
+    }
+
+    unless ($url eq ""){
+        &print_map($x_start,$y_start,$x_end,$y_end,$name,$url,$name);
+    }
     $im->filledRectangle($x_start,$y_start,$x_end,$y_end,$color);    
 
 }
