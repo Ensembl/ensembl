@@ -78,24 +78,26 @@ close(PMATCH);
 
 unlink($pmatch_out);	# Get rid of pmatch output file
 
-# Sort the %hits hash on QSTART, then on TSTART.
-# Also calculate the lengths of any overlaps in the query or target.
 foreach my $query (values(%hits)) {
 	foreach my $target (values(%{ $query })) {
+
+		# Sort the %hits hash on QSTART, then on TSTART.
 		@{ $target->{HITS} } =
 			sort { $a->{QSTART} <=> $b->{QSTART}  ||
 			       $a->{TSTART} <=> $b->{TSTART} }
 					@{ $target->{HITS} };
 
-		# Figure out how long the query and target overlaps are.
-		# The first hit for any $qid<->$tid combination will never
-		# have QOVERLAP or TOVERLAP keys (since it's not preceeded
-		# by another hit).  This loop also calculates the total
-		# length of the hits and the overlaps.
+		# Figure out how long the query and target overlaps
+		# are.   This loop also calculates the total length of
+		# the hits and the overlaps.
 
 		my $qoverlap = 0;	# Total query overlap length
 		my $toverlap = 0;	# Total target overlap length
 		my $totlen = 0;		# Total hit length
+
+		my $qgaps = 0;	# Number of gaps in the query
+		my $tgaps = 0;	# Number of gaps in the target
+				# Are these interesting?
 
 		my @pair;
 		foreach my $hit (@{ $target->{HITS} }) {
@@ -105,18 +107,27 @@ foreach my $query (values(%hits)) {
 			push(@pair, $hit);
 			next if (scalar(@pair) != 2);
 
-			$qoverlap +=
+			my $overlap;
+
+			$overlap =
 				overlap([$pair[0]{QSTART}, $pair[0]{QEND}],
 					[$pair[1]{QSTART}, $pair[1]{QEND}]);
+			$qoverlap += $overlap;
+			++$qgaps if ($overlap == 0); # ($overlap <= 1  ???)
 
-			$toverlap +=
+			$overlap =
 				overlap([$pair[0]{TSTART}, $pair[0]{TEND}],
 					[$pair[1]{TSTART}, $pair[1]{TEND}]);
+			$toverlap += $overlap;
+			++$tgaps if ($overlap == 0); # ($overlap <= 1  ???)
 		}
 
 		# Calculate the query and target identities
 		$target->{QIDENT} = 100*($totlen - $qoverlap)/$target->{QLEN};
 		$target->{TIDENT} = 100*($totlen - $toverlap)/$target->{TLEN};
+
+		$target->{QGAPS}  = $qgaps;
+		$target->{TGAPS}  = $tgaps;
 	}
 }
 
