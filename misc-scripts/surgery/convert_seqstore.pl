@@ -45,7 +45,7 @@ my @inserts = ('("chromosome",  "NCBI33", "default_version,top_level")',
 	       '("clone",       NULL,     "default_version")',
 	       '("contig",      NULL,     "default_version,sequence_level")' );
 foreach my $insert (@inserts) {
-  execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES '. $insert);
+  execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES ' . $insert);
 }
 
 # cache coord-system names to save lots of joins
@@ -60,15 +60,22 @@ while(my $row = $sth->fetchrow_hashref()) {
 }
 
 # ----------------------------------------------------------------------
-# Add info to the meta table that describes which features are in which
-# co-ordinate systems
+# The meta_coord table defines which coord systems feature tables use
 
-copy_table($dbi, "meta");
-debug("Adding co-ordinate system information to meta table");
-$sth = $dbi->prepare("INSERT INTO meta (meta_key, meta_value) VALUES ('feature.coord_system', ?)");
-my @cs = ("gene|chromosome:NCBI33", "transcript|chromosome:NCBI33", "exon|chromosome:NCBI33", "dna_align_feature|contig", "marker_feature|contig", "simple_feature|contig", "protein_align_feature|contig", "repeat_feature|contig", "qtl_feature|chromosome");
-foreach my $val (@cs) {
-  $sth->execute($val);
+debug("Building meta_coord");
+$sth = $dbi->prepare("INSERT INTO meta_coord VALUES (?, ?)");
+my %cs = (gene               	=> 'chromosome',
+	  transcript         	=> 'chromosome',
+	  exon               	=> 'chromosome',
+	  dna_align_feature     => 'contig',
+	  protein_align_feature => 'contig',
+	  marker_feature        => 'contig',
+	  simple_feature        => 'contig',
+	  repeat_feature        => 'contig',
+	  qtl_feature           => 'chromosome');
+
+foreach my $val (keys %cs) {
+  $sth->execute($val, $coord_system_ids{$cs{$val}});
 }
 
 # ----------------------------------------------------------------------
@@ -216,7 +223,7 @@ while(my $row = $sth->fetchrow_hashref()) {
 # ----------------------------------------------------------------------
 # dna table
 
-debug("Copying dna table");
+debug("Translating dna");
 execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna");
 
 # ----------------------------------------------------------------------
@@ -225,28 +232,28 @@ execute($dbi, "INSERT INTO $target.dna SELECT dna_id, sequence FROM $source.dna"
 # contig IDs were copied verbatim into seq_region
 
 # simple_feature
-debug("Copying simple_feature");
+debug("Translating simple_feature");
 execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, 'display_label', analysis_id, score FROM $source.simple_feature");
 
 # repeat_feature
-debug("Copying repeat_feature");
+debug("Translating repeat_feature");
 execute($dbi, "INSERT INTO $target.repeat_feature (repeat_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score) SELECT repeat_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score FROM $source.repeat_feature");
 
 # protein_align_feature
-debug("Copying protein_align_feature");
+debug("Translating protein_align_feature");
 execute($dbi, "INSERT INTO $target.protein_align_feature (protein_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score) SELECT protein_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score FROM $source.protein_align_feature");
 
 # dna_align_feature
-debug("Copying dna_align_feature");
+debug("Translating dna_align_feature");
 execute($dbi, "INSERT INTO $target.dna_align_feature (dna_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score) SELECT dna_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score FROM $source.dna_align_feature");
 
 # marker_feature
-debug("Copying marker_feature");
+debug("Translating marker_feature");
 execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
 
 # qtl_feature
 # Note this uses the perviously constructed %chromosome_id_old_new hash for mapping
-debug("Copying qtl_feature");
+debug("Translating qtl_feature");
 $sth = $dbi->prepare("SELECT * FROM $source.qtl_feature");
 $sth->execute or die "Error when reading qtl_feature";
 while(my $row = $sth->fetchrow_hashref()) {
@@ -392,7 +399,7 @@ sub copy_table {
 
   my ($dbcon, $table) = @_;
 
-  debug("Copying $table with no modifications");
+  debug("Copying $table");
   my $sql = "INSERT INTO $target.$table SELECT * FROM $source.$table";
   execute($dbcon, $sql);
 
