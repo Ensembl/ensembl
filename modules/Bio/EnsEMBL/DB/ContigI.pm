@@ -113,6 +113,44 @@ sub get_all_SeqFeatures{
 
 }
 
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures{
+   my ($self) = @_;
+
+   $self->throw("Object did not provide the get_all_SimilarityFeatures method on Contig interface!");
+
+}
+
+=head2 get_all_RepeatFeatures
+
+ Title   : get_all_RepeatFeatures
+ Usage   : foreach my $sf ( $contig->get_all_RepeatFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_RepeatFeatures{
+   my ($self) = @_;
+
+   $self->throw("Object did not provide the get_all_RepeatFeatures method on Contig interface!");
+
+}
+
 =head2 get_all_clone_SeqFeatures
 
  Title   : get_all_clone_SeqFeatures
