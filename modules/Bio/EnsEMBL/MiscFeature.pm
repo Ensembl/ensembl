@@ -240,16 +240,10 @@ sub get_all_attribute_values {
   my @results = map { uc( $_->code() ) eq uc( $code ) ? $_->value : () } @{$self->{'attributes'}};
   return \@results;
 }
-
 sub get_scalar_attribute {
   my $self = shift;
   my $code = shift;
-  my @results;
-  if( $code eq 'name' ) {
-    @results = grep { uc( $_->code() ) eq 'NAME' || uc( $_->code() ) eq 'NON_REF' } @{$self->{'attributes'}};
-  } else {
-    @results = grep { uc( $_->code() ) eq uc( $code )} @{$self->{'attributes'}};
-  }
+  my @results = grep { uc( $_->code() ) eq uc( $code )} @{$self->{'attributes'}};
   return @results ? $results[0]->value() : '';
 }
 
@@ -269,7 +263,6 @@ sub get_scalar_attribute {
 sub display_id {
   my $self = shift;
   my ($attrib) = @{$self->get_all_Attributes('name')};
-  ($attrib) =  @{$self->get_all_Attributes('non_ref')} if(!$attrib);
   ($attrib) =  @{$self->get_all_Attributes('synonym')} if(!$attrib);
   if( defined $attrib ) {
     return $attrib->value();
