@@ -66,9 +66,9 @@ features in one these two coordinate systems
 
 The methods that have to be implemented are:
 
-    get_External_SeqFeatures_contig($ensembl_contig_identifier,$sequence_version,$start,$end);
+    get_Ensembl_SeqFeatures_contig($ensembl_contig_identifier,$sequence_version,$start,$end);
 
-   get_External_SeqFeatures_clone($embl_accession_number,$sequence_version,$start,$end);
+   get_Ensembl_SeqFeatures_clone($embl_accession_number,$sequence_version,$start,$end);
 
 The semantics of this method is as follows:
 
@@ -98,7 +98,7 @@ the following spec:
 
     c) must be unique in-memory objects, ie, the implementation is not
     allowed to cache the sequence feature in its entirity. Two
-    separate calls to get_External_SeqFeatures_contig must be able to
+    separate calls to get_Ensembl_SeqFeatures_contig must be able to
     separately set start,end,strand information without clobbering
     each other. The other information, if so wished, can be cached by
     each SeqFeature holding onto another object, but this is left to
@@ -168,7 +168,7 @@ use vars qw(@ISA);
 sub get_Ensembl_SeqFeatures_contig{
    my ($self) = @_;
 
-   $self->throw("Abstract method get_External_SeqFeatures_contig encountered in base class. Implementation failed to complete it")
+   $self->throw("Abstract method get_Ensembl_SeqFeatures_contig encountered in base class. Implementation failed to complete it")
 
 }
 
