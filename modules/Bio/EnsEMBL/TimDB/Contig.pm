@@ -519,6 +519,8 @@ sub id{
 sub chromosome {
     my ($self,$chr,$species) = @_;
 
+    print(STDERR "Chromosome [$chr] [$species]\n");
+
     if (defined($chr) && defined($species)) {
 	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new($species,$chr);
     } 

@@ -95,7 +95,6 @@ sub _initialize {
   my $cgp_dir         = $dbobj->{'_unfin_data_root_cgp'}->{$cgp};
   my $clone_dir       = "$cgp_dir/data/$disk_id";
   my $contig_dbm_file = "$cgp_dir/unfinished_ana.dbm";
-
   
   $self->clone_dir     ($clone_dir,$disk_id);
   $self->build_contigs ($contig_dbm_file);
@@ -121,9 +120,12 @@ sub build_contigs {
     my $disk_id = $self->disk_id;
     my $id      = $self->id;
 
+    my $tmpembl_order  = 1;
+    my $tmpembl_offset = 1;
+
     while (($key,$val) = each %unfin_contig) {
 
-#	print(STDERR "[$key][$val]\n");
+	#print(STDERR "[$key][$val]\n");
 
 	if($key=~/^$disk_id/){
 	    
@@ -145,7 +147,7 @@ sub build_contigs {
 
 	    $tmpcontig->length     ($len);
 	    $tmpcontig->disk_id    ($disk_key);
-	    $tmpcontig->_clone_dir  ($self->clone_dir);
+	    $tmpcontig->_clone_dir ($self->clone_dir);
 	    $tmpcontig->chromosome ($self->chromosome,$self->species);
 	    $tmpcontig->checksum   ($checksum);
 
@@ -153,11 +155,13 @@ sub build_contigs {
 	    $tmpcontig->order      (1);
 	    $tmpcontig->offset     (1);
 	    $tmpcontig->orientation(1);
-	    $tmpcontig->embl_offset(1);
-	    $tmpcontig->embl_order (1);
+	    $tmpcontig->embl_offset($tmpembl_order);
+	    $tmpcontig->embl_order ($tmpembl_offset);
 
 	    $self->add_Contig($tmpcontig);
 
+	    $tmpembl_order++;
+	    $tmpembl_offset += $tmpcontig->length + $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
 	}
     }
     
