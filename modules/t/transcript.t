@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 22;
+	plan tests => 26;
 }
 
 use MultiTestDB;
@@ -15,7 +15,7 @@ use Bio::EnsEMBL::Slice;
 
 my $multi = MultiTestDB->new();
 
-$verbose = 0;
+$verbose = 0; #set to true to turn on debug print outs
 
 ok( $multi );
 
@@ -111,8 +111,16 @@ ok( $pepcoords[0]->start() == 85861 );
 debug( "start Exon: ".$tr->start_Exon->stable_id() );
 debug( "end Exon: ".$tr->end_Exon->stable_id() );
 
+debug( "cdna_coding_start: ". $tr->cdna_coding_start );
+ok($tr->cdna_coding_start == 65);
+ok(test_getter_setter($tr, 'cdna_coding_start', 99));
+
 debug( "five_prime_utr: ".substr( $tr->five_prime_utr()->seq(), -5 , 5 ));
 ok( substr( $tr->five_prime_utr()->seq(), -5, 5) eq "CGAAG" ); 
+
+debug( "cdna_coding_end: ". $tr->cdna_coding_end );
+ok($tr->cdna_coding_end == 868);
+ok(test_getter_setter($tr, 'cdna_coding_end', 102));
 
 debug( "three_prime_utr: ".substr( $tr->three_prime_utr()->seq(), -5, 5  ));
 ok( substr( $tr->three_prime_utr()->seq(), -5, 5  ) eq "TTCAA");
