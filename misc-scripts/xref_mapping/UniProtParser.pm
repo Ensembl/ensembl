@@ -181,19 +181,19 @@ sub create_xrefs {
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
-	print $dep."\n";
+#	print $dep."\n";
 	my ($source, $acc, @extra) = split /;\s*/, $1;
-	print "source is $source \n";
-	print "acc is $acc \n";
+#	print "source is $source \n";
+#	print "acc is $acc \n";
 	if (exists $dependent_sources{$source}) {
-	  print "EXISTS\n";
+#	  print "EXISTS\n";
 	  # create dependent xref structure & store it
 	  my %dep;
 	  $dep{SOURCE_NAME} = $source;
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
 	  if($dep =~ /EMBL/){
-	    print "prtein_id is ".$extra[0]."\n";
+#	    print "prtein_id is ".$extra[0]."\n";
 	    my ($protein_id) = $extra[0];
 	    if($protein_id ne "-"){
 	      $dep{PROTEIN_ID} = $protein_id;
