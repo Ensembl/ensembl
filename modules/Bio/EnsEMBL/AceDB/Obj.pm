@@ -144,6 +144,27 @@ sub get_Clone {
    return $clone;
 }
 
+
+=head2 get_all_Clone_id
+
+ Title   : get_all_Clone_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Clone_id {
+   my ($self) = @_;
+ 
+   my @clones = map $_->name, $self->fetch(Genome_Sequence => 'AC3');
+   return @clones;
+}
+
+
 =head2 get_Contig
 
  Title   : get_Contig

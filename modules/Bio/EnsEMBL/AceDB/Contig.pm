@@ -181,7 +181,7 @@ sub get_all_RepeatFeatures {
     my @repeat_features = $self->_get_tandems();
     
     # Append motif_homols with RepeatMaster and RepeatMaster_SINE methods
-    my @methods = qw/RepeatMaster RepeatMaster_SINE/;
+    my @methods = qw/RepeatMaster RepeatMaster_SINE hmmfs.3 scan/;
     push(@repeat_features, $self->_get_homols('Homol.Motif_homol[1]', @methods));
      
     # Return all the sequence features 
@@ -290,7 +290,10 @@ sub get_all_Genes {
                 $translation->start_exon_id($exons[$#exons]->id());
 	        $translation->end_exon_id($exons[0]->id());
             }  
-             
+    print "Trans start: ", $translation->start(), "\n";  
+    print "Trans end: ", $translation->end(), "\n"; 
+    print "Trans start id: ", $translation->start_exon_id(), "\n"; 
+    print "Trans end id: ", $translation->end_exon_id(), "\n";        
 	    # Create a new Transcript object from the exons and the Translation
             my $transcript = new Bio::EnsEMBL::Transcript(@exons);    
 	    $transcript->translation($translation);
@@ -310,49 +313,6 @@ sub get_all_Genes {
 }
 
 
-sub _create_exon {
-    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase) = @_;
-     
-    my $bioseq = $self->primary_seq();
-       
-    my $exon = new Bio::EnsEMBL::Exon();        
-    $exon->clone_id($id);
-    $exon->contig_id($id);
-    $exon->attach_seq($bioseq);
-    $exon->strand($strand);
-    $exon->phase($phase);
-    $exon->seqname($genename);
- #   $exon->created("1999-07-12");
- #   $exon->modified("1999-07-12");
-    
-    # We have to map acedb coordinates which are relative to the
-    # start/end in the subsequence to the exon coordinates, which
-    # are absolute.
-    if( $strand == 1 ) {
-            $exon->start($start+$starte-1);
-            $exon->end($start+$ende-1);
-    }
-    else {
-	    $exon->start($start-$ende+1);
-	    $exon->end($start-$starte+1);
-    } 
-    
-    my $exonid;
-    if( $self->dbobj->_exon_id_start() ) {
-	     $exonid = $self->dbobj->_exon_id_start();
-	     my $nexte = $exonid++;
-	     $self->dbobj->_exon_id_start($exonid);
-    } 
-    else {
-	     $exonid = "dummy_exon_id.$genename.$index";
-    }
-    $exon->id($exonid);
-    
-    print STDERR "Exon: ID: $exonid seqname: $genename start: $start end: $end phase: $phase\n";            
-    return $exon;
-}
-
-
 =head2 get_all_SimilarityFeatures
 
  Title   : get_all_SimilarityFeatures
@@ -367,12 +327,12 @@ sub _create_exon {
 
 sub get_all_SimilarityFeatures {
      my ($self) = @_;
-   
-    # Get DNA and Pep homols
-    my @similarity_features = $self->_get_homols('Homol.DNA_homol');
-    push (@similarity_features, $self->_get_homols('Homol.Pep_homol'));
-    push (@similarity_features, $self->_get_homols('Homol.EST_homol'));
-    push (@similarity_features, $self->_get_homols('Homol.STS_homol'));
+  
+    # Get DNA, Pep, EST and STS homols
+    my @similarity_features = $self->_get_homols('Homol.DNA_homol[1]');
+    push (@similarity_features, $self->_get_homols('Homol.Pep_homol[1]'));
+    push (@similarity_features, $self->_get_homols('Homol.EST_homol[1]'));
+    push (@similarity_features, $self->_get_homols('Homol.STS_homol[1]'));
      
     # Return all the sequence features 
     return @similarity_features;    
@@ -547,6 +507,57 @@ sub ace_seq {
 }
 
 
+=head2 _create_exon
+
+ Title   : _create_exon
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    : 
+
+=cut
+
+sub _create_exon {
+    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase) = @_;
+     
+    my $bioseq = $self->primary_seq();
+       
+    my $exon = new Bio::EnsEMBL::Exon();        
+    $exon->clone_id($id);
+    $exon->contig_id($id);
+    $exon->attach_seq($bioseq);
+    $exon->strand($strand);
+    $exon->phase($phase);
+    $exon->seqname($genename);
+    
+    # We have to map acedb coordinates which are relative to the
+    # start/end in the subsequence to the exon coordinates, which
+    # are absolute.
+    if( $strand == 1 ) {
+            $exon->start($start+$starte-1);
+            $exon->end($start+$ende-1);
+    }
+    else {
+	    $exon->start($start-$ende+1);
+	    $exon->end($start-$starte+1);
+    } 
+    
+    my $exonid;
+    if( $self->dbobj->_exon_id_start() ) {
+	     $exonid = $self->dbobj->_exon_id_start();
+	     my $nexte = $exonid++;
+	     $self->dbobj->_exon_id_start($exonid);
+    } 
+    else {
+	     $exonid = "dummy_exon_id.$genename.$index";
+    }
+    $exon->id($exonid);
+    
+    return $exon;
+}
+
+
 =head2_create_feature_pair
 
  Title   : _create_feature_pair
@@ -560,16 +571,16 @@ sub ace_seq {
 =cut
 
 sub _create_feature_pair {
-    my ($self, $meth, $score, $start, $end, $hstart, $hend, $hid) = @_;    
+    my ($self, $meth, $score, $start, $end, $hstart, $hend, $hid) = @_;        
     my $strand = 1;
     
     if ($start > $end) {
-        $strand = -1;
-        ($start, $end) = ($end, $start); 
-    }
-    
-    if ($hstart > $hend) {
-        $self->throw("HStart '$hstart' greater than HEnd '$hend' in '$hid' \n");        
+        ($start, $end) = ($end, $start);
+        $strand = -1;        
+    }         
+    if ($hstart > $hend) {                
+        ($hstart, $hend) = ($hend, $hstart); 
+         $strand = -$strand;
     }
     
     # Create a new Bio::EnsEMBL::Repeat with a pair of SeqFeatures
@@ -707,9 +718,9 @@ sub _get_tandems {
     
     # Create a new feature object for each of the tandems found
     foreach my $tandem (@tandems) {
-        my($start, $end, $score, $remark) = $tandem->row(1);        
+        my($end, $score, $remark) = $tandem->row(1);        
         my $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
-        $feature->start($start);
+        $feature->start($tandem);
         $feature->end($end);
         $feature->score($score);
         $feature->seqname($self->id);
