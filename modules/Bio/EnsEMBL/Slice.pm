@@ -15,8 +15,11 @@ Bio::EnsEMBL::Slice - Arbitary Slice of a genome
 
 =head1 SYNOPSIS
 
+   $slice_adaptor = $db->get_SliceAdaptor;
 
-   foreach $gene ( $slice->get_all_Genes ) {
+   $slice = $slice_adaptor->fetch_by_chr_start_end('X', 1_000_000, 2_000_000);
+
+   foreach $gene ( @{$slice->get_all_Genes} ) {
       # do something with a gene
    }
        
@@ -36,18 +39,11 @@ ensembl-dev@ebi.ac.uk
 
 =cut
 
-
-# Let the code begin...
-
-
 package Bio::EnsEMBL::Slice;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
-
 use Bio::EnsEMBL::Root;
-use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::PrimarySeqI;
 use Bio::EnsEMBL::Tile;
 
@@ -684,7 +680,7 @@ sub get_all_SNPs {
   Arg [1]    : (optional) string $logic_name
                The name of the analysis used to generate the genes to retrieve 
   Arg [2]    : (optional) boolean $empty_flag 
-  Example    : @genes = $slice->get_all_Genes;
+  Example    : @genes = @{$slice->get_all_Genes};
   Description: Retrieves all genes that overlap this slice.  The empty flag is 
                used by the web code and is used to retrieve light weight genes
                that only have a start, end and strand (only works if lite db
@@ -1280,14 +1276,10 @@ sub get_all_Haplotypes {
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
   
-######################################################
-
  my %genomic_features =
       map { ( $_->_dsn => $_->fetch_all_by_Slice($self) ) }
          $self->adaptor()->db()->_each_DASFeatureFactory;
    
-#############################################
-
 return \%genomic_features;
 
 }
