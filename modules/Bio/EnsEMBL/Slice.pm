@@ -1077,6 +1077,8 @@ sub get_all_compara_DnaAlignFeatures {
   #this function will be cleaned up once compara is cleaned up 
   #most likely a fetch by slice method will be present in compara
 
+  return $self->{"_dna_align_$qy_species"} if $self->{"_dna_align_$qy_species"};
+    
   my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
 
   unless($compara_db) {
@@ -1122,7 +1124,7 @@ sub get_all_compara_DnaAlignFeatures {
     }
   }
 
-  return $features;
+  return $self->{"_dna_align_$qy_species"} = $features;
 }
 
 
