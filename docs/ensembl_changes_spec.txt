@@ -33,12 +33,18 @@ Proposed New/Modified Tables:
 
   seq_region
   ----------
-  seq_region_id  int
-  name           varchar
-  coord_system   varchar (or maybe enum)
-  version	       varchar
-  default	       enum(true, false)
-  length         int
+  seq_region_id    int
+  name             varchar
+  coord_system_id  int
+  length           int
+
+
+  coord_system
+  ------------
+  coord_system_id   int
+  name              varchar
+  version           varchar
+  attrib            set ('top_level', 'default_version', 'sequence')          
 
 
   seq_region_annotation
@@ -139,7 +145,6 @@ Removed Tables
   probably be computed in chromosomal coordinates instead of contig 
   coordinates.
   
-
   contig
   ------
   Contigs are no longer needed.  They are stored as entries in the seq_region
@@ -150,10 +155,12 @@ Removed Tables
   clone
   -----
   Clones are no longer needed.  Clones are stored as entries in the seq_region 
-  table with type 'clone'.  The htg_phase, created and modified timestamps will
-  be discarded as they are no longer maintained anyway.  The embl_acc, version,
-  and embl_version columns are redundant and will also be discarded.  Versions
-  can simply be appended onto the end of the name with a '.'.
+  table with type 'clone'.  The modified timestamp will be discarded as it is 
+  no longer maintained anyway.  The embl_acc, version, and embl_version 
+  columns are redundant and will also be discarded.  Versions
+  can simply be appended onto the end of the name with a '.'.  Any additional
+  information that needs to be present (such as htg_phase) can be added to
+  the seq_region_annotation table.
 
   chromosome
   ----------
@@ -161,42 +168,58 @@ Removed Tables
   seq_region table with type 'chromosome'.
 
 
+
+
+
 META INFORMATION
 ----------------
 
 Considerable more meta information will have to be stored in the core
-databases in order for the general approach to be maintained.  It may 
-be satisfactory to store this information in the existing meta table, 
-or it may be better to create a meta_assembly table that is more specific.
+databases in order for the general approach to be maintained.  
+This information will be stored in the new coord_system table and in the 
+meta table.
 
-This includes the following:
+Meta information includes the following:
 
-  The seq_region type (coordinate system) that every type of feature is stored
-  in.  This may be based on either logic_names, or upon table names.
+  * The seq_region coordinate system of every type of feature stored in the
+    database.  Initially we will only allow for a single coordinate system
+    per table (e.g. all genes will have to be stored in the same coordinate 
+    system).  Eventually we may extend this to be allowed to store differing
+    coordinate systems in a single table. This information will be present in 
+    the meta table.
 
-  The top-level seq_region type (coordinate system). For human
-  this would be 'chromosome'.  For briggsae this may be something like
-  'scaffold' or 'super contig'.  This information would be used to construct
-  the web display and would possible be the default coordinate system when 
-  a coordinate system is unspecified by a user.
+  * The top-level seq_region type (coordinate system). For human
+    this would be 'chromosome'.  For briggsae this may be something like
+    'scaffold' or 'super contig'.  This information would be used to construct
+    the web display and would possibly be the default coordinate system when 
+    a coordinate system is unspecified by a user. This is stored as a flag
+    in the coordinate system table.
 
-  The coordinate system where the sequence is actually stored. For example in 
-  human this would be at the contig or clone level.  
+  * The default version of each coordinate system.  This is stored as a flag
+    in the coordinate system table.
 
-  The assembly relationships between coordinate systems.  For example  
-  the clone, chromosome and nt_contig coordinate systems may all be 
-  constructed from the contig coordinate system:
-    contig -> clone
-    contig -> chromosome
-    contig -> nt_contig
-  Or there may be a more hierarchical approach:
-    contig    -> clone
-    clone     -> nt_contig
-    nt_contig -> chromosome
+  * The coordinate system where sequence is stored.  This will be stored as a
+    flag in the coordinate system table.  Initially it will only be possible
+    to have a single coordinate system in which sequence is stored.  This 
+    may be extended in the future to allow sequence to be stored for multiple
+    coordinate systems.
 
-  The names of the allowable coordinate systems.  This would allow for 
-  quick validation of API requests and provide a list that could be used
-  by the website for coordinate system selection.
+  * The assembly relationships between coordinate systems.  For example  
+    the clone, chromosome and nt_contig coordinate systems may all be 
+    constructed from the contig coordinate system:
+      contig -> clone
+      contig -> chromosome
+      contig -> nt_contig
+    Or there may be a more hierarchical approach:
+      contig    -> clone
+      clone     -> nt_contig
+      nt_contig -> chromosome
+    This information will be stored in the meta table.
+
+   * The names of the allowable coordinate systems.  This would allow for 
+     quick validation of API requests and provide a list that could be used
+     by the website for coordinate system selection.  This information will be
+     stored in the coordinate system table.
 
 
 API CHANGES
@@ -218,6 +241,7 @@ Slice
 
   The following attributes will therefore define a unique slice:
   coord_system    (e.g. 'chromosome' or 'clone')
+  version         (e.g. 'NCBI33' or '')
   seq_region_name (e.g. 'X' or 'AL035554.1')
   start           (e.g. 1000000 or 1)
   end             (e.g. 2000001 or 800)
@@ -225,7 +249,7 @@ Slice
 
   The name method will return the above values joined by a ':' delimiter, and
   will not be settable:
-  e.g.  'chromosome:X:1000000:2000001:1' or 'clone:AL035554.1:1:800:-1'
+  e.g.  'chromosome:NCBI33:X:1000000:2000001:1' or 'clone::AL035554.1:1:800:-1'
   This value can be used as a hashvalue that uniquely defines a slice.
 
   The concept of an 'empty' slice will no longer exist.
@@ -245,6 +269,8 @@ Slice
             $clone->seq_region_name, ':', $clone->start, '-', $clone->end, 
             $clone->strand, "\n";
     }
+
+    An optional second argument to the get_tiling_path will be the version.
 
 
 Tile
@@ -275,6 +301,7 @@ SliceAdaptor
     Slice fetch_by_region(coord_system, name, start, end, strand)
     Slice fetch_by_region(coord_system, name, start, end, strand, version)
     listref of Slices fetch_all(coord_system)
+    listref of Slices fetch_all(coord_system, version)
   
 RawContig
 ---------
@@ -583,6 +610,13 @@ FeatureAdaptors
   (6) Remap features to the requested coord system using the mapper
   (7) Return the features
 
+
+CoordSystemAdaptor
+------------------
+  A CoordSystemAdaptor will provide access to the information in the 
+  coord_system table.  This adaptor will not provide coord_system objects
+  but will provide useful methods to obtain meta information stored in
+  this table.
 
 
 NEW FEATURES
