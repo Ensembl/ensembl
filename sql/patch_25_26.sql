@@ -1,3 +1,5 @@
+# 3 new tables to deal with affy probes
+
 CREATE TABLE affy_feature (
        affy_feature_id INT NOT NULL auto_increment,
        seq_region_id INT UNSIGNED NOT NULL,
@@ -36,3 +38,13 @@ CREATE TABLE affy_array (
        PRIMARY KEY( affy_array_id )
 );
 
+# Shorten some db_name entries in the external_db table 
+UPDATE external_db SET db_name='Genoscope_pred_transcript' WHERE db_name='Genoscope_predicted_transcript';
+UPDATE external_db SET db_name='Genoscope_pred_gene' WHERE db_name='Genoscope_predicted_gene';
+ALTER TABLE external_db MODIFY db_name VARCHAR(27);
+
+# Adds an index no the seq_region_id column (only) of density_feature
+# This speeds up some queries very significantly, particularly those 
+# used in some healthchecks.
+
+ALTER TABLE density_feature ADD INDEX seq_region_id_idx (seq_region_id);
