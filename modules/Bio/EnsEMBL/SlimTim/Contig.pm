@@ -568,6 +568,10 @@ sub _parse_sequence_header{
    $hash{'int_id'} =~ /\S+\.\d+~(\d+)/;
    my $order = $1;
    $self->embl_order($order);
+   my $id = $self->id();
+   $id =~ /\S+\.(\S+)/;
+   my $ext = $1;
+   $self->id($hash{'acc'}.".".$ext);
 
 }
 
