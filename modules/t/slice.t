@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 48;
+	plan tests => 47;
 }
 
 use TestUtils qw( debug );
