@@ -9,9 +9,9 @@ Introduction
 
 This tutorial describes how to use the Ensembl Perl API.  It is intended to be an introduction and demonstration of the general API concepts.  This tutorial is not comprehensive, but it will hopefully enable to reader to become quickly productive, and facilitate a rapid understanding of the core system.  This tutorial assumes at least some familiarity with Perl.
 
-The Perl API provides a level of abstraction over the Ensembl databases and is used by the Ensembl web interface, pipeline, and genebuild systems.  To external users the API may be useful to automate the extraction of particular data, to customize the Ensembl to fulfill a particular purpose, or to store their own data in Ensembl.  As a brief introduction this tutorial focuses primarily on the retrieval of data from the Ensembl databases. 
+The Perl API provides a level of abstraction over the Ensembl databases and is used by the Ensembl web interface, pipeline, and genebuild systems.  To external users the API may be useful to automate the extraction of particular data, to customize Ensembl to fulfill a particular purpose, or to store additional data in Ensembl.  As a brief introduction this tutorial focuses primarily on the retrieval of data from the Ensembl databases. 
 
-It is important to note that the Perl API is only one of many ways of accessing the data stored in Ensembl.  Additionally there is a Java API, the genome browser web interface, and the EnsMart system.  If you are a Java programmer then the Java API is likely to be of more interest to you.  Similarly, EnsMart may be a more appropriate tool for certain types of data mining.
+The Perl API is only one of many ways of accessing the data stored in Ensembl.  Additionally there is a Java API, the genome browser web interface, and the EnsMart system.  If you are a Java programmer then the Java API is likely to be of more interest to you.  Similarly, EnsMart may be a more appropriate tool for certain types of data mining.
 
 
 Other Sources of Information
@@ -53,7 +53,7 @@ when prompted, the password is 'cvs'
 cvs -d :pserver:cvs@cvs.bioperl.org:/home/repository/bioperl \
   checkout -r branch-1-2 bioperl-live
 
-To obtain the Ensembl API code perform these CVS commands, substituting '20' with the appropriate branch number:
+To obtain the Ensembl API code perform these CVS commands, substituting 24 with the appropriate branch number:
 
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster \
   login
@@ -61,12 +61,12 @@ cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster \
 when prompted, the password is 'CVSUSER'
 
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster \
-  checkout -r branch-ensembl-20 ensembl
+  checkout -r branch-ensembl-24 ensembl
 
 
 Database Access
 
-If you don't have, or don't want to install, the Ensembl database locally (which is all you will need to complete the tutorial exercises) you can point your scripts at a publicly available database at the Sanger Centre.  Use the following connection information in your scripts (where X_Y is the latest version of the database, for example 24_34e):
+If you don't have, or don't want to install, the Ensembl database locally you can point your scripts at a publicly available database at the Sanger Centre.  Use the following connection information in your scripts (where X_Y is the latest version of the database, for example 24_34e):
 
 host                 ensembldb.ensembl.org
 dbname               homo_sapiens_core_X_Y
@@ -80,7 +80,7 @@ You will need to install the Perl DBI and DBD::mysql modules from CPAN if they a
 
 Setting up the Environment
 
-Perl needs to know the location of the BioPerl and Ensembl API modules in order for any scripts that you write to work.  You can do this by setting the PERL5LIB environment variable from your shell.  Assuming that you have placed the source in an 'src' directory under your home directory the following tcsh/csh commands could be used:
+Perl needs to know the location of the BioPerl and Ensembl API modules in order for any scripts that you write to work.  You can do this by setting the PERL5LIB environment variable from your shell.  Assuming that you have placed the source in an src directory under your home directory the following tcsh/csh commands could be used:
 
 setenv PERL5LIB ${PERL5LIB}:${HOME}/src/bioperl-live
 setenv PERL5LIB ${PERL5LIB}:${HOME}/src/ensembl/modules
@@ -122,7 +122,7 @@ Methods which begin with get_all or fetch_all return references to lists.  Many 
 
 get_all_Transcripts, fetch_all_by_Slice, get_all_Exons 
 
-The following examples demonstrate some of perl's list reference syntax.  Note that you do not need to understand the API concepts in this example.  The important thing to note is the language syntax; the concepts will be described later.
+The following examples demonstrate some of perl's list reference syntax.  You do not need to understand the API concepts in this example.  The important thing to note is the language syntax; the concepts will be described later.
 
 #fetch all clones from the slice adaptor (returns listref)
 my $clones_ref = $slice_adaptor->fetch_all('clone');
@@ -147,10 +147,10 @@ foreach my $contig (@$genes) {
   print $contig->name . "\n";
 }
 
-# retrieve a single Clone object (not a listref)
+# retrieve a single Slice object (not a listref)
 $clone = $slice_adaptor->fetch_by_region('clone', 'AL031658.11');
 # no dereferencing needed:
-print $slice->seq_region_name() . "\n";  
+print $clone->seq_region_name() . "\n";  
 
 
 Connecting to the Database - The DBAdaptor
@@ -234,7 +234,7 @@ To retrieve a set of slices from a particular coordinate system the fetch_all me
 @slices = @{$slice_adaptor->fetch_all('clone')};
 
 
-For certain types of analysis it is necessary to break up regions into smaller manageable pieces.  The method split_Slices can be imported from the Bio::EnsEMBL::Utils::Slice modules to break up larger slices into smaller component slices.
+For certain types of analysis it is necessary to break up regions into smaller manageable pieces.  The method split_Slices can be imported from the Bio::EnsEMBL::Utils::Slice module to break up larger slices into smaller component slices.
 
 use Bio::EnsEMBL::Utils::Slice qw(split_Slices);
 
@@ -587,7 +587,7 @@ foreach my $clone (@$clones) {
 
 External References
 
-Ensembl cross references its genes, transcripts and translations with identifiers from other databases.  A DBEntry object represents a cross reference and is often refered to as an xref.  The following code snippet retrieves and prints DBEntries for a gene, its transcripts and its translations:
+Ensembl cross references its genes, transcripts and translations with identifiers from other databases.  A DBEntry object represents a cross reference and is often referred to as an 'xref'.  The following code snippet retrieves and prints DBEntries for a gene, its transcripts and its translations:
 
 # define a helper subroutine to print DBEnties
 sub print_DBEntries {
@@ -642,19 +642,19 @@ Consider, for example, the following figure of two features associated with a Sl
  1  2  3  4  5  6  7  8  9  10 11 12 13 
 
 
-The Slice itself will has a start of 2, an end of 13, and a length of 12 even though the underlying sequence region only has a length of 11.  Retrieving the sequence of such a slice would give the following string: CTAAATCTTGNN. Note that the undefined region of sequence is represented by Ns.  Feature A has a start of 0, an end of 2, and a strand of 1.  Feature B has a start of 3, an end of 6, and a strand of -1.    
+The Slice itself has a start of 2, an end of 13, and a length of 12 even though the underlying sequence region only has a length of 11.  Retrieving the sequence of such a slice would give the string CTAAATCTTGNN -- the undefined region of sequence is represented by Ns.  Feature A has a start of 0, an end of 2, and a strand of 1.  Feature B has a start of 3, an end of 6, and a strand of -1.    
 
 
 Coordinate Systems
 
-Sequences stored in Ensembl are associated with coordinate systems.  What the coordinate systems are varies from species to species. For example, the homo_sapiens database has the following coordinate systems: contig, clone, supercontig, chromosome.  Sequence and features may be retrieved from any coordinate system despite the fact they are only stored internally in a single coordinate system.  The database stores the relationship between these coordinate systems and the API provides means to convert between them.  The API has a CoordSystem object and and object adaptor, however, these are most often used internally.  The following example fetches a chromosome coordinate system object from the database:
+Sequences stored in Ensembl are associated with coordinate systems.  What the coordinate systems are varies from species to species. For example, the homo_sapiens database has the following coordinate systems: contig, clone, supercontig, chromosome.  Sequence and features may be retrieved from any coordinate system despite the fact they are only stored internally in a single coordinate system.  The database stores the relationship between these coordinate systems and the API provides means to convert between them.  The API has a CoordSystem object and object adaptor, however, these are most often used internally.  The following example fetches a chromosome coordinate system object from the database:
 
 my $csa = $db->get_CoordSystemAdaptor();
 my $cs = $csa->fetch_by_name('chromosome');
 
 print "Coord system: " . $cs->name()." ".$cs->version."\n";
 
-A coordinate system is uniquely defined by its name and version.  Most coordinate systems do not have a version, and the ones that do have a default version so it is usually sufficient to use only the name when requesting a coordinate system.  For example, chromosome coordinate systems have a version which is the assembly that defined the construction of the coordinate system.  The version of human chromosome coordinate system might be NCBI33 or NCBI34.  
+A coordinate system is uniquely defined by its name and version.  Most coordinate systems do not have a version, and the ones that do have a default version, so it is usually sufficient to use only the name when requesting a coordinate system.  For example, chromosome coordinate systems have a version which is the assembly that defined the construction of the coordinate system.  The version of human chromosome coordinate system might be NCBI33 or NCBI34.  
 
 Slice objects have an associated CoordSystem object and a seq_region_name that uniquely defines the sequence that they are positioned on.  You may have noticed that the coordinate system of the sequence region was specified when obtaining a Slice in the fetch_by_region method.  Similarly the version may also be specified (though it can almost always be omitted):
 
@@ -705,7 +705,7 @@ The transform method returns a copy of the original feature in the new coordinat
                       (ctg 3)   (--============] (ctg3)
 
 
-Both Feature A and Feature B are defined in the chromosomal coordinate system  described by the tiling path of contigs.  However, Feature A is not be defined in the contig coordinate system because it spans both Contig 1 and Contig 2.  Feature B, on the other hand, is still defined in the contig coordinate system.
+Both Feature A and Feature B are defined in the chromosomal coordinate system  described by the tiling path of contigs.  However, Feature A is not defined in the contig coordinate system because it spans both Contig 1 and Contig 2.  Feature B, on the other hand, is still defined in the contig coordinate system.
 
 The special toplevel coordinate system can also be used in this instance to move the feature to the highest possible coordinate system in a given region:
 
@@ -796,17 +796,4 @@ print $feat_slice->expand(5000, 5000)->seq(), "\n";
 
 # get all genes which overlap the feature
 $genes = $feat_slice->get_all_Genes();
-
-
-
-
-
-
-
-
-
-
-
-
-
 
