@@ -170,8 +170,6 @@ sub write {
     my $contigid = $contig->id;
     my $analysis;
 
-    my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
-                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     
     # Put the repeats in a different table, and also things we need to write
     # as fsets.
@@ -211,24 +209,32 @@ sub write {
 
 	    if ( $feature->isa('Bio::EnsEMBL::FeaturePair') ) {
 		my $homol = $feature->feature2;
-	    
-		$sth->execute('NULL',
-			          $contig->internal_id,
-			          $feature->start,
-			          $feature->end,
-			          $feature->score,
-			          $feature->strand,
-			          $feature->source_tag,
-			          $analysisid,
-			          $homol->start,
-			          $homol->end,
-			          $homol->seqname,
-                      $feature->percent_id,
-                      $feature->p_value,
-                      $feature->phase,
-                      $feature->end_phase);
-	    } else {
-		$sth->execute('NULL',
+	    my $sth = $self->_db_obj->prepare(  
+                  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                  "values ('NULL',"
+                  .$contig->internal_id     .","
+                  .$feature->start          .","
+                  .$feature->end            .","
+                  .$feature->score          .","
+                  .$feature->strand         .","
+                  ."'".$feature->source_tag."',"
+                  .$analysisid              .","
+                  .$homol->start            .","
+                  .$homol->end              .","
+                  ."'".$homol->seqname      ."',"
+                  .((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL')  .","    
+                  .((defined $feature->p_value)      ? $feature->p_value     : 'NULL')  .","
+                  .((defined $feature->phase)        ? $feature->phase       : 'NULL')  .","
+                  .((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')  .")");
+        
+        $sth->execute();
+        
+        
+        } else {
+		my $sth = $self->_db_obj->prepare(  "insert into feature(id,contig,seq_start,seq_end,score,strand,name,analysis,hstart,hend,hid,perc_id,evalue,phase,end_phase) ".
+                                        "values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    
+        $sth->execute('NULL',
 			          $contig->internal_id,
 			          $feature->start,
 			          $feature->end,
@@ -309,7 +315,8 @@ sub write {
 	foreach my $sub ( $feature->sub_SeqFeature ) {
 	    my $sth5 = $self->_db_obj->prepare("insert into feature "
                       ."(id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) "
-                      ."values('NULL','".$contig->internal_id."',"
+                      ."values('NULL','"
+                      .$contig->internal_id ."',"
 				      .$sub->start          .","
 				      .$sub->end            . ","
 				      .$sub->score          . ","

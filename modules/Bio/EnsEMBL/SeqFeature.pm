@@ -101,7 +101,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
                 PERCENT_ID
                 P_VALUE
                 PHASE
-                end_phase
+                END_PHASE
 			    )],@args);
 };
   if( $@ ) {
@@ -111,19 +111,20 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
+
   $start        && $self->start($start);
   $end          && $self->end($end);
-  $strand       && $self->strand($strand);
+  defined $strand       && $self->strand($strand);      #strand can be 0
   $primary_tag  && $self->primary_tag($primary_tag);
   $source_tag   && $self->source_tag($source_tag);
   $frame        && $self->frame($frame);
-  $score        && $self->score($score);
+  defined $score        && $self->score($score);
   $analysis     && $self->analysis($analysis);
   $seqname      && $self->seqname($seqname);
-  $percent_id   && $self->percent_id($percent_id);
-  $p_value      && $self->p_value($p_value);
-  $phase        && $self->phase($phase);
-  $end_phase    && $self->end_phase($end_phase);
+  defined $percent_id   && $self->percent_id($percent_id);
+  defined $p_value      && $self->p_value($p_value);
+  defined $phase        && $self->phase($phase);        #phase can be 0
+  defined $end_phase    && $self->end_phase($end_phase);#phase can be 0 
 
   return $self; # success - we hope!
 
@@ -774,19 +775,19 @@ sub phase {
  Title   : end_phase
  Usage   : $end_phase = $feat->end_phase()
            $feat->end_phase($end_phase)
- Function: get/set on end phase of predicted exon feature
+ Function: returns end_phase based on phase and length of feature
  Returns : [0,1,2]
- Args    : none if get, 0,1 or 2 if set. 
+ Args    : none if get, 0,1 or 2 if set.
 
 =cut
 
 sub end_phase {
-    my ($self, $value) = @_;
+   my ($self, $value) = @_;
     
     if (defined($value)) 
     {
-	    $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
-	    $self->{_end_phase} = $value;
+            $self->throw("Valid values for Phase are [0,1,2] \n") if ($value < 0 || $value > 2);
+            $self->{_end_phase} = $value;
     }
 
     return $self->{_end_phase};

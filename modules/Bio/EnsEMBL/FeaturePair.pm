@@ -773,22 +773,29 @@ sub validate {
 =cut
 
 sub set_all_fields{
-   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,$hstrand,$hscore,$hsource,$hprimary,$hseqname) = @_;
+   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,
+        $hstrand,$hscore, $hsource,$hprimary,$hseqname, $e_value, $perc_id, 
+        $phase, $end_phase) = @_;
 
-   $self->start($start);
-   $self->end($end);
-   $self->strand($strand);
-   $self->score($score);
-   $self->source_tag($source);
-   $self->primary_tag($primary);
-   $self->seqname($seqname);
-   $self->hstart($hstart);
-   $self->hend($hend);
-   $self->hstrand($hstrand);
-   $self->hscore($hscore);
-   $self->hsource_tag($hsource);
-   $self->hprimary_tag($hprimary);
-   $self->hseqname($hseqname);
+    $self->start($start);
+    $self->end($end);
+    $self->strand($strand);
+    $self->score($score);
+    $self->source_tag($source);
+    $self->primary_tag($primary);
+    $self->seqname($seqname);
+    $self->hstart($hstart);
+    $self->hend($hend);
+    $self->hstrand($hstrand);
+    $self->hscore($hscore);
+    $self->hsource_tag($hsource);
+    $self->hprimary_tag($hprimary);
+    $self->hseqname($hseqname);
+    $self->p_value    ($e_value)   if (defined $e_value);
+    $self->percent_id ($perc_id)   if (defined $perc_id);
+    $self->phase      ($phase)     if (defined $phase);
+    $self->end_phase  ($end_phase) if (defined $end_phase);
+
 
 }
 
