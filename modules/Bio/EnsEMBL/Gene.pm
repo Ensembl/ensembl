@@ -462,7 +462,7 @@ sub description {
     if( exists $self->{'_description'} ) {
       return $self->{'_description'};
     }
-    $self->{'_description'} = $self->adaptor->get_description($self->dbID);
+    $self->{'_description'} = $self->adaptor ? $self->adaptor->get_description($self->dbID) : undef;
     return $self->{'_description'};
 }
 
