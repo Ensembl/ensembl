@@ -53,7 +53,9 @@ foreach my $clone_id ( @clone) {
 	}
     }
 
-    $db->delete_Clone($clone_id);
+    # deprecated method!
+    # $db->delete_Clone($clone_id);
+    $clone->delete;
     
 }
 

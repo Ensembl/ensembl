@@ -54,6 +54,8 @@
 
     -help      displays this documentation with PERLDOC
 
+    -limit     limits the number of seconds that can be spent on single vc
+
 =cut
 
 use strict;
@@ -90,6 +92,7 @@ my $species='';
 my $freeze=0;
 my $nogene=0;
 my $nosecure=0;
+my $limit=0;
 
 # defaults for msql (rdb) access
 my $host1     = 'localhost';
@@ -135,7 +138,8 @@ my $right;
 	     'fposition:i' => \$focusposition,
 	     'ori:i'     => \$ori,
 	     'left:i'    => \$left,
-	     'right:i'   => \$right
+	     'right:i'   => \$right,
+	     'limit:i'   => \$limit,
 	     ) or exec('perldoc', $0);
 
 if ($help){
@@ -204,15 +208,21 @@ foreach my $vc_list_ref ( @vcs ) {
 	print STDERR "\n";
     }
 
+    $SIG{'ALRM'}=sub{die "timeout"};
+    
     eval {
+	# limit time that can be spent
+	if($limit){
+	    alarm($limit);
+	}
 	my $focuscontig=$db->get_Contig($vc_list_ref->[0]);
 	my $vc=Bio::EnsEMBL::DB::EmblVirtualContig->new(
-	 				       -focuscontig => $focuscontig,
-	       				       -focusposition => $vc_list_ref->[1],
-	       				       -ori => $vc_list_ref->[2],
-	       				       -left => $vc_list_ref->[3], 
-	       				       -right => $vc_list_ref->[4] 
-						       );
+				-focuscontig => $focuscontig,
+			        -focusposition => $focuscontig->golden_start+10,
+			        -ori => $vc_list_ref->[2],
+				-left => $vc_list_ref->[3], 
+				-right => $vc_list_ref->[4],
+							);
 	$vc->id( "virtual_contig_".$vc->_unique_number);
 	$vc->sv(1);
 	my $date=localtime()." (created on the fly by the EnsEMBL system)";
@@ -265,9 +275,16 @@ foreach my $vc_list_ref ( @vcs ) {
 	} elsif ( $format =~ /ace/ ) {
 	    $vc->write_acedb($OUT,$aceseq);
 	}
+	alarm(0);
     };
     if( $@ ) {
-	print STDERR "Dumping Error! Cannot dump ".$vc_list_ref->[0]."\n$@\n";
+	alarm(0);
+	if($@=~/timeout/){
+	    print STDERR "Timeout Error! Cannot dump ";
+	}else{
+	    print STDERR "Dumping Error! Cannot dump ";
+	}
+	print STDERR $vc_list_ref->[0]." Alignment\n";
     }
 }
 
