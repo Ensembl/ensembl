@@ -413,8 +413,8 @@ sub dump_genes {
 	    my $start_seqname;
 	    my $start_strand;
 
-	    my $end=$trans->translation->end;
-	    my $end_start;
+	    my $end;
+	    my $end_start=$trans->translation->end;
 	    my $end_exon_id=$trans->translation->end_exon_id;
 	    my $end_seqname;
 	    my $end_strand;
@@ -447,10 +447,10 @@ sub dump_genes {
 		if ($exon->id eq $end_exon_id) {
 		    if ($exon->strand == -1) {
 			$end_strand = "-";
-			$end_start=$end+3;
+			$end=$end_start+3;
 		    }
 		    else {
-			$end_start=$end-3;
+			$end=$end_start-3;
 			$end_strand="+";
 		    }
 		    $end_seqname=$exon->contig_id;
