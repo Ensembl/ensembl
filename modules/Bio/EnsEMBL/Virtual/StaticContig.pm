@@ -1356,8 +1356,8 @@ sub _convert_chrfeature_to_vc_coords{
     
     if($f->das_start > $chr_end || $f->das_end < $chr_start) {
 #        print STDERR "DAS ERROR! Feature not on VC between $chr_start and $chr_end: START: ",
-                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
-                    "\n";
+#                    $f->das_start,' END: ',$f->das_end,' STRAND: ',$f->das_strand, ' ID: ', $f->das_feature_id,
+#                    "\n";
         return ();
     }
 
@@ -2185,12 +2185,37 @@ sub get_all_Genes_exononly{
 
 =cut
 
+sub get_all_RepeatFeatures_lite {
+   my ($self,$type,$bp) = @_;
+   return $self->dbobj->get_LiteAdaptor->fetch_virtualRepeatFeatures_start_end(
+      $self->_chr_name, $self->_global_start, $self->_global_end, $type, $bp );
+}
+ 
+ sub get_all_DnaDnaAlignFeature {
+     my  ($self, $compara_dbadaptor, $subject_species, $query_species) = @_;
+     my @Q = 
+        $compara_dbadaptor->get_GenomicAlignAdaptor->fetch_DnaDnaAlignFeature_by_species_chr_start_end(
+             $subject_species,
+             $query_species,
+             $self->_chr_name,
+             $self->_global_start,
+             $self->_global_end,
+             'VirtualContig'
+    );
+    foreach (@Q) {
+        $_->start( $_->start()-$self->_global_start+1 );
+        $_->end(   $_->end()  -$self->_global_start+1 );
+    }
+    return @Q;
+}
+
 sub get_all_VirtualGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
-        $self->_global_end
+        $self->_global_end,
+        'core'
     ); 
 }
 
@@ -2206,7 +2231,7 @@ sub get_all_VirtualTranscripts_startend_lite {
 
 sub get_all_VirtualTranscripts_startend_lite_coding {
     my  $self = shift;
-    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_coding_start_end(
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualtranscripts_start_end(
         $self->_chr_name,
         $self->_global_start,
         $self->_global_end,
@@ -2225,19 +2250,21 @@ sub get_all_VirtualGenscans_startend_lite {
 
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
-	return $self->dbobj->get_LiteAdaptor->fetch_EMBLgenes_start_end(
+	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
-        $self->_global_end
+        $self->_global_end,
+        'embl'
     ); 
 }
 
 sub get_all_SangerGenes_startend_lite {
       my  $self = shift;
-      return $self->dbobj->get_LiteAdaptor->fetch_SangerGenes_start_end(
+      return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
         $self->_chr_name,
         $self->_global_start,
-        $self->_global_end
+        $self->_global_end,
+        'sanger'
     );
 }
 

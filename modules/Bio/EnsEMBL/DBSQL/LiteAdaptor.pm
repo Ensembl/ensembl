@@ -75,8 +75,8 @@ sub fetch_virtualtranscripts_start_end {
         push @transcripts, {
             'db'            => $row->{'db'},
             'type'          => $row->{'type'},
-            'transcript'    => $row->{'transcript_name'},
-            'stable_id'     => $row->{'transcript_id'},
+            'transcript'    => $row->{'transcript_id'},
+            'stable_id'     => $row->{'transcript_name'},
             'translation'   => $row->{'translation_name'},
             'gene'          => $row->{'gene_name'},
             'chr_name'      => $row->{'chr_name'},
@@ -167,60 +167,6 @@ sub fetch_virtualgenes_start_end {
     return \@genes
 }
                 
-
-# if count is -ve, get genes before start, else after.
-sub fetch_virtualgenes_start_count {
-    my ( $self, $chr, $vc_start, $count ) =@_;
-    my $_db_name = $self->{'_lite_db_name'};
-    my $cache_name = "_virtualgenes_count_cache_$chr"."_$vc_start"."_$count";
-    return $self->{$cache_name} if( $self->{$cache_name} );
-
-    my $sql;
-    if ($count < 0){
-	$sql =  "select g.gene_id, g.gene_name, 
-                g.chr_name, g.chr_start, g.chr_end,
-                g.chr_strand, g.external_name, g.external_db
-           from $_db_name.gene as g 
-          where g.chr_name = ? and g.chr_start < ?
-	  order by g.chr_start desc
-          limit ?"
-    }
-    else {
-	$sql = "select g.gene_id, g.gene_name, 
-                g.chr_name, g.chr_start, g.chr_end,
-                g.chr_strand, g.external_name, g.external_db
-           from $_db_name.gene as g 
-          where g.chr_name = ? and g.chr_start >= ?
-	  order by g.chr_start
-          limit ?"
-    }
-    
-    my $sth = $self->prepare( $sql );
-    eval {
-        $sth->execute( "$chr", $vc_start, abs($count) );
-    };
-    return [] if($@);
-    my @genes;
-    while( my $row = $sth->fetchrow_arrayref() ) {
-        push @genes, {
-            'gene'      => $row->[0],
-            'stable_id' => $row->[1],
-            'chr_name'  => $row->[2],
-            'chr_start' => $row->[3],
-            'chr_end'   => $row->[4],
-            'start'     => $row->[3]-$vc_start+1,
-            'end'       => $row->[4]-$vc_start+1,
-            'strand'    => $row->[5],
-            'synonym'   => $row->[6],
-            'db'        => $row->[7]
-        };
-    }
-    @genes = reverse @genes if $count < 0;
-    return $self->{$cache_name} = \@genes;
-    return \@genes
-}
-
-
 sub fetch_virtualRepeatFeatures_start_end {
     my ( $self, $chr, $vc_start, $vc_end, $type, $glob_bp ) =@_;
     $type ||= '';
