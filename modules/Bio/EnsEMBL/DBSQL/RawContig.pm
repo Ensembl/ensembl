@@ -753,6 +753,7 @@ sub get_all_SimilarityFeatures{
    } else {
        $sth = $self->dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis,name,hstart,hend,hid, evalue, perc_id, phase, end_phase ".
 				     "from feature where contig = $id");
+   
    }
 
    $sth->execute();
@@ -764,7 +765,7 @@ sub get_all_SimilarityFeatures{
        my $out;
        my $analysis;
               
-       #print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fset\n";
+#       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fset\n";
        
        if (!$analhash{$analysisid}) {
 	   
@@ -796,26 +797,26 @@ sub get_all_SimilarityFeatures{
 	   #$out->id          ($hid);              # MC This is for Arek - but I don't
 	                                          #    really know where this method has come from.
        } else {
-	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname    ($self->id);
-	   $out->start      ($start);
-	   $out->end        ($end);
-	   $out->strand     ($strand);
-	   $out->source_tag ($name);
-	   $out->primary_tag('similarity');
-	   $out->id         ($fid);
-       $out->p_value    ($evalue)    if (defined $evalue);
-       $out->percent_id ($perc_id)   if (defined $perc_id); 
-       $out->phase      ($phase)     if (defined $phase);    
-       $out->end_phase  ($end_phase) if (defined $end_phase); 
-        
+	 $out = new Bio::EnsEMBL::SeqFeature;
+	 $out->seqname    ($self->id);
+	 $out->start      ($start);
+	 $out->end        ($end);
+	 $out->strand     ($strand);
+	 $out->source_tag ($name);
+	 $out->primary_tag('similarity');
+	 $out->id         ($fid);
+	 $out->p_value    ($evalue)    if (defined $evalue);
+	 $out->percent_id ($perc_id)   if (defined $perc_id); 
+	 $out->phase      ($phase)     if (defined $phase);    
+	 $out->end_phase  ($end_phase) if (defined $end_phase); 
+	 
 	   if( defined $f_score ) {
 	       $out->score($f_score);
 	   }
 	   $out->analysis($analysis);
        }
        # Final check that everything is ok.
-       $out->validate();
+       $out->validate() || $out->throw("Invalid data in $out");
        if( $out->can('attach_seq') ) {
 	   $out->attach_seq($self->primary_seq);
        }
@@ -824,11 +825,12 @@ sub get_all_SimilarityFeatures{
       
    }
    
-   my @extras = $self->get_extra_features;
-   my @newfeatures = $self->filter_features(\@fps,\@extras);
+#   my @extras = $self->get_extra_features;
+#   my @newfeatures = $self->filter_features(\@fps,\@extras);
 
 #   print ("Size " . @array . " " . @newfeatures . "\n");
-   push(@array,@newfeatures);
+#   push(@array,@newfeatures);
+   push(@array,@fps);
 
    return @array;
 }
