@@ -210,7 +210,7 @@ sub delete_by_dbID {
 
 
 
-=head2 get_rawcontig_by_position
+=head2 get_RawContig_by_position
 
   Arg   1    : int $base_pair
   Example    : none
@@ -221,7 +221,7 @@ sub delete_by_dbID {
 
 =cut
 
-sub get_rawcontig_by_position {
+sub get_RawContig_by_position {
 
     my ($self, $pos) = @_;
 
