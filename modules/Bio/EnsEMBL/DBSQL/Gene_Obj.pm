@@ -1141,7 +1141,7 @@ sub get_supporting_evidence_direct {
            AND e.id in ($list) 
            AND !(f.seq_end < e.seq_start OR f.seq_start > e.seq_end) 
 	       AND f.strand = e.strand
-              AND f.name != 'genscan'};
+              AND f.analysis != 3}; #hack for genscan
 
  # PL: query not checked thoroughly
     my $sth2=$self->_db_obj->prepare($query);
