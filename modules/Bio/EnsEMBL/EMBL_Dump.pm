@@ -190,7 +190,7 @@ sub ensembl_annseq_output {
 #########################
 
 sub id_EnsEMBL {
-    my $annseq = shift;
+    my ($annseq,$type) = shift;
 
     #return $annseq->id;
 
@@ -198,6 +198,16 @@ sub id_EnsEMBL {
     my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
     my $length = $annseq->length();
     my $id = $annseq->id();
+
+    # yuk. Don't look
+    my @dates = $self->each_date();
+    my $date = shift @dates;
+    $date =~ s/\(.*\)//g;
+
+    if( $type eq 'genbank' ) {
+	return sprintf("%-9s  %d bp  DNA   %s   %s",$id,$length,$division,$date);
+    }
+
 
     return sprintf("%-9s  ENSEMBL; DNA; %s; %d BP.", $id, $division, $length );
 }
