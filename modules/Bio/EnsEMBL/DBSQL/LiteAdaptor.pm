@@ -436,6 +436,7 @@ sub fetch_virtualsnps {
                 'tscid'     => $row->{'tscid'},
                 'hgbaseid'  => $row->{'hgbaseid'},
                 'anosnpid'  => $row->{'anosnpid'},
+                'mapweight' => $row->{'mapweight'},
                 'type'      => $row->{'type'},
             };
     	  	$old_start = $start;
