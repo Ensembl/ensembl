@@ -893,7 +893,7 @@ sub get_repeatmasked_seq {
 
 sub mask_features {
     my ($self, $dnastr,@repeats) = @_;
-    my $dnalen = length $dnastr;
+    my $dnalen = CORE::length($dnastr);
     
   REP:foreach my $f (@repeats) {
       

@@ -2750,6 +2750,26 @@ sub get_attribute{
    return $value;
 }
 
+=head2 SeqI implementing functions
+
+=head2 species
+
+ Title   : species
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub species{
+   my ($self,@args) = @_;
+
+   return undef;
+}
+
 
 
 1;

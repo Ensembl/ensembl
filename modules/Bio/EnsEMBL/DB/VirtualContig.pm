@@ -891,25 +891,6 @@ sub _gene_query{
     }
     
     # get out unique set of translation objects
-    foreach my $gene ( values %genes ) {
-	foreach my $transcript ( $gene->each_Transcript ) {
-	    my $translation = $transcript->translation;
-	    $trans{"$translation"} = $translation;	    
-	}
-    } 
-    
-    foreach my $t ( values %trans ) {
-
-	if( exists $exonconverted{$t->start_exon_id} ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->start_exon_id}->contig_id,$t->start,$t->start,1);
-	    $t->start($start);
-	}
-
-	if( exists $exonconverted{$t->end_exon_id}  ) {
-	    my ($start,$end,$str) = $self->_convert_start_end_strand_vc($exon{$t->end_exon_id}->contig_id,$t->end,$t->end,1);
-	    $t->end($start);
-	}
-    }
     
     return values %genes;
 }
