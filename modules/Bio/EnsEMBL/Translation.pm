@@ -334,5 +334,29 @@ sub transform {
   }
 }
 
+=head2 get_all_DBLinks
+
+  Arg [1]    : 
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub get_all_DBLinks {
+  my $self = shift;
+
+  if( !defined $self->{'_db_link'} ) {
+    $self->{'_db_link'} = [];
+    if( defined $self->adaptor ) {
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Translation($self);
+    }
+  } 
+  
+  return $self->{'_db_link'};
+}
+
 
 1;
