@@ -186,13 +186,15 @@ INSERT INTO gene (id,version,created,modified,stored,analysisId) VALUES ('ENSG00
 # Dumping data for table 'interpro'
 #
 
-INSERT INTO interpro (interpro_ac,id) VALUES ('IPR00001','PF00098');
-INSERT INTO interpro (interpro_ac,id) VALUES ('IPR00002','PR00012');
+INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000001','PF00098');
+INSERT INTO interpro (interpro_ac,id) VALUES ('IPR000002','PR00012');
 
 #
 # Dumping data for table 'interpro_description'
 #
 
+INSERT INTO interpro_description (interpro_ac,description) VALUES ('IPR000001','Zn-finger CCHC type');
+INSERT INTO interpro_description (interpro_ac,description) VALUES ('IPR000002','petit_domain');
 
 #
 # Dumping data for table 'karyotype'
