@@ -408,10 +408,7 @@ sub get_Genes_by_type{
    
    my @out = ();
 
-   print STDERR "Slice : Getting genes of type $type \n";
-
    foreach my $gene (@genes) {
-     print STDERR "Slice : Got gene of type " . $gene->type() . "\n";
      if($gene->type() eq $type) {
        push @out, $gene;
      }
@@ -691,7 +688,6 @@ sub get_Chromosome {
   my $self = shift @_;
 
   my $ca =  $self->adaptor->db->get_ChromosomeAdaptor();
-
 
   return $ca->fetch_by_chr_name($self->chr_name());
 }
