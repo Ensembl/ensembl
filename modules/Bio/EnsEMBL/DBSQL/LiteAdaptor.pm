@@ -131,7 +131,7 @@ sub fetch_virtualgenes_start_end {
     my $cache_name = "_virtualgenes_cache_$chr"."_$vc_start"."_$vc_end";
     return $self->{$cache_name} if( $self->{$cache_name} );
     my $sth = $self->prepare(
-        "select g.gene, g.name, 
+        "select g.gene_id, g.gene_stable_id, 
                 g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
                 g.chrom_strand, g.display_id, g.db_name
            from $_db_name.gene as g 
