@@ -65,7 +65,7 @@ sub usage {
 
   -create       If specified, cause dbname to be deleted and re-created if it
                 already exists. User is prompted before database is dropped to
-                prevent disasters arising from dropping the wronf database.
+                prevent disasters arising from dropping the wrong database.
 
   -skipdownload Don't download new data, parse existing.
 
