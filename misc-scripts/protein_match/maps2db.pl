@@ -364,6 +364,11 @@ MAPPING: while (<MAP>) {
     
      my ($targetid,$tperc,$targetalignstart,$targetalignend,$queryid,$qperc,$qalignstart,$qalignend,$score,$cigarline) = split (/\,/,$_);
 
+
+#To comply between exonerate ouputing and the way coordinates are stored in Ensembl
+    $targetalignstart++;
+    $qalignstart++;
+    
     my $m = $queryid; 
     #print STDERR "$targetid,$queryid,$tag,$tperc,$qperc\n";
 
