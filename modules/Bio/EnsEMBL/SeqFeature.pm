@@ -889,6 +889,9 @@ sub gffstring {
    $str .= (defined $self->strand)      ?   $strand."\t"             :  ".\t";
    $str .= (defined $self->score)       ?   $self->score."\t"        :  "\t";
    $str .= (defined $self->phase)       ?   $self->phase."\t"        :  ".\t";
+   eval{
+     $str .= (defined $self->end_phase)   ?   $self->end_phase."\t"        :  ".\t";
+   };
 
    return $str;
 }
