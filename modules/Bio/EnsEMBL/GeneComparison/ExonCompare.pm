@@ -85,7 +85,7 @@ sub new {
 
 sub setStandardExon {
     my ($self, $exon) = @_;
-    
+    #print STDERR "Standard exon is set to".$exon->id."\n";
     $self->throw("$exon is not an Exon") unless ($exon->isa('Bio::EnsEMBL::Exon'));
     $self->{'_standardExon'} = $exon;
 }

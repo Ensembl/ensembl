@@ -43,7 +43,7 @@ feature that actually exits. The sensitivity of a prediction is defined as
 TP/(TP + FN) and may be thought of as a measure of how successful the prediction 
 is at finding things that are really there. The specificity is defined as 
 TP/(TP + FP) and can be thought of a measure of how careful a tool is about not 
-predicting things that aren't really there. The sensitivity and specificity 
+predicting things that aren''t really there. The sensitivity and specificity 
 that the predictor clone predicts the standard clone are calculated at the gene, 
 exon and base level. 
 
@@ -95,37 +95,49 @@ sub new {
     ($standard) || $self->throw("GeneComparisonStats requires a standard object");
     ($predictor) || $self->throw("GeneComparisonStats requires a predictor object");
 
-    # Check if $standard is a reference to an object (which will contain :: in package name) 
-    if (ref($standard) =~ /::/) {
-        if ($standard->isa('Bio::EnsEMBL::DB::CloneI') || $standard->isa('Bio::EnsEMBL::DB::ContigI')) {
-            @{$self->{'_standardGenes'}} = $standard->get_all_Genes();
-        }
-    }
-    elsif (ref($standard) eq "ARRAY") {
+    if  (ref($standard) eq "ARRAY") {
         $self->{'_standardGenes'} = $standard;
     }
+    elsif ($standard->isa('Bio::EnsEMBL::DB::CloneI') || $standard->isa('Bio::EnsEMBL::DB::ContigI')) {
+        @{$self->{'_standardGenes'}} = $standard->get_all_Genes();
+    }
     else {
-        $self->throw("The standard parameter must a reference to CloneI, ContigI or an array of genes");
+        $self->throw("The standard parameter must be CloneI, ContigI or an array of genes");
     }
 
-    # Check if $predictor is a reference to an object (which will contain :: in package name) 
-    if (ref($predictor) =~ /::/) {    
-        if ($predictor->isa('Bio::EnsEMBL::DB::CloneI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
-            @{$self->{'_predictorGenes'}} = $predictor->get_all_Genes();
-        }
-    }
-    elsif (ref($predictor) eq "ARRAY") {
+    if (ref($predictor) eq "ARRAY") {
         $self->{'_predictorGenes'} = $predictor;
     }
+    
+    elsif ($predictor->isa('Bio::EnsEMBL::DB::CloneI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
+        @{$self->{'_predictorGenes'}} = $predictor->get_all_Genes();
+    }
     else {
-        $self->throw("The predictor parameter must be a reference to CloneI, ContigI or an array of genes");
+        $self->throw("The predictor parameter must be CloneI, ContigI or an array of genes");
     }
     
     # Compare the sequence if both the standard and predictor realise ContigI
-    if ($standard->isa('Bio::EnsEMBL::DB::ContigI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
-        $self->throw("Standard and predictor have different DNA") unless ($standard->seq() eq $predictor->seq());
+    if (ref($standard) ne "ARRAY") {
+	if ($standard->isa('Bio::EnsEMBL::DB::ContigI') || $predictor->isa('Bio::EnsEMBL::DB::ContigI')) {
+	    $self->throw("Standard and predictor have different DNA") unless ($standard->seq() eq $predictor->seq());
+	}
     }
-        
+    
+    my @standard = @{$self->{'_standardGenes'}}; 
+    my $ns = scalar @standard; 
+    print STDERR "Got $ns standard genes\n";
+    if (!$standard[0]->isa('Bio::EnsEMBL::Gene')) {
+	$self->throw("Standard genes are not Bio::EnsEMBL::Gene objects\n");
+    }
+
+    my @predictor = @{$self->{'_predictorGenes'}};
+    my $np = scalar @predictor;
+    print STDERR "Got $np predictor genes\n";
+    
+    if (!$predictor[0]->isa('Bio::EnsEMBL::Gene')) {
+	$self->throw("Predictor genes are not Bio::EnsEMBL::Gene objects\n");
+    }
+    
     return $self;
 }
 
@@ -165,7 +177,7 @@ sub _getStandardGenes {
 
 sub _getPredictorGenes {
     my ($self) = @_;
-    
+
     return @{$self->{'_predictorGenes'}}; 
 }
 
@@ -175,7 +187,7 @@ sub _getPredictorGenes {
  Title   : getGeneSpecificity
  Usage   : $obj->getGeneSpecificity()
  Function: The specificity at which the predictor is able to correctly identify
-            and asemble all of a gene's exons. 
+            and asemble all of a gene''s exons. 
  Example : 
  Returns : Integer
  Args    : None
@@ -199,7 +211,7 @@ sub getGeneSpecificity {
  Title   : getGeneSensitivity
  Usage   : $obj->getGeneSensitivity()
  Function: The sensitivity at which the predictor is able to correctly identify
-            and asemble all of a gene's exons. 
+            and asemble all of a gene''s exons. 
  Example : 
  Returns : Integer
  Args    : None
@@ -223,7 +235,7 @@ sub getGeneSensitivity {
  Title   : _genePredictions
  Usage   : $obj->_genePredictions()
  Function: Calculates the specificity and sensitivity at which the predictor is able to correctly identify
-            and asemble all of each standard gene's exons. They are both calculated at the same time because almost
+            and assemble all of each standard gene''s exons. They are both calculated at the same time because almost
             certainly they will both be required and half the data for each calculation is the same.
             If all the exons of a standard gene are identified and every intron-exon boundary is 
             correct, i.e. each exon has an exact overlap, the gene is a true positive; otherwise
@@ -246,14 +258,15 @@ sub _genePredictions {
     foreach my $standardGene ($self->_getStandardGenes) {
         $comparer->setStandardGene($standardGene);
         if ($comparer->isExactlyMatched()) {
-            $truePositive++;
+	    $truePositive++;
         } else {
-            $falseNegative++;
+	    $falseNegative++;
         }
     }
     
     # If there are no true positives we don't need to calculate the false positives
     if ($truePositive == 0) {     
+	print STDERR "There are no true positives, skipping false positives!\n";
         $self->{'_geneSpecificity'} = 0;  
         $self->{'_geneSensitivity'} = 0;
         return;
@@ -262,17 +275,42 @@ sub _genePredictions {
     $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare($self->_getStandardGenes);
     
     foreach my $predictorGene ($self->_getPredictorGenes) {
-    
         $comparer->setStandardGene($predictorGene);
         unless ($comparer->isExactlyMatched()) {
             $falsePositive++;
         } 
     }  
-               
+    
     $self->{'_geneSpecificity'} = $truePositive / ($truePositive + $falsePositive);  
     $self->{'_geneSensitivity'} = $truePositive / ($truePositive + $falseNegative);       
 }
 
+=head2 get_OverlapScore
+
+ Title   : get_OverlapScore
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_OverlapMap{
+   my ($self,@args) = @_;
+   
+   my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare($self->_getPredictorGenes);
+   my %genes;
+   foreach my $standardGene ($self->_getStandardGenes) {
+       $comparer->setStandardGene($standardGene);
+       $genes{$standardGene->id}=$comparer->getGeneOverlapids();
+   }
+   
+   
+   
+   return %genes;
+}
 
 
 =head2 getMissedGeneScore
@@ -368,7 +406,7 @@ sub _getMissedGene {
 
  Title   : getSplitGeneScore
  Usage   : $obj->getSplitGeneScore()
- Function: The score indicates how often the predictor incorrectly splits a gene's 
+ Function: The score indicates how often the predictor incorrectly splits a gene''s 
             exons into multiple genes. A gene from the standard set is 
             considered split if it overlaps more than one predicted gene.
             The score is defined as the sum of the number of predicted genes
@@ -399,7 +437,7 @@ sub getSplitGeneScore {
  Title   : getJoinedGeneScore
  Usage   : $obj->getJoinedGeneScore()
  Function: The score indicates how often the predictor incorrectly assembles multiple
-            genes' exons into a single gene. A predicted gene is considered 
+            genes'' exons into a single gene. A predicted gene is considered 
             joined if it overlaps more than one gene in the standard set.
             The score is defined as the sum of the number of standard genes that
             overlap each predicted genes divided by the number of predicted genes
@@ -790,19 +828,19 @@ sub _basePredictions {
 
 sub getGeneComparisonStats {
     my ($self) = @_;
-    
-    return  "Gene level sensitivity: ", $self->getGeneSensitivity(), "\n",
-            "Gene level specificity: ", $self->getGeneSpecificity(), "\n",
-            "Missed gene score: ", $self->getMissedGeneScore(), "\n",
-            "Wrong gene score: ", $self->getWrongGeneScore(), "\n",
-            "Joined gene score: ", $self->getJoinedGeneScore(), "\n",
-            "Split gene score: ", $self->getSplitGeneScore(), "\n",
-            "Exon level sensitivity: ", $self->getExonSensitivity(), "\n",
-            "Exon level specificity: ", $self->getExonSpecificity(), "\n",
-            "Missed exon score: ", $self->getMissedExonScore(), "\n",
-            "Wrong exon score: ", $self->getWrongExonScore(), "\n",            
-            "Base level sensitivity: ", $self->getBaseSensitivity(), "\n",
-            "Base level specificity: ", $self->getBaseSpecificity(), "\n";
+    #print STDERR "Getting stats\n";
+    return  "Gene level sensitivity: ". $self->getGeneSensitivity(). "\n".
+            "Gene level specificity: ". $self->getGeneSpecificity(). "\n".
+            "Missed gene score: ". $self->getMissedGeneScore(). "\n".
+            "Wrong gene score: ". $self->getWrongGeneScore(). "\n".
+            "Joined gene score: ". $self->getJoinedGeneScore(). "\n".
+            "Split gene score: ". $self->getSplitGeneScore(). "\n".
+            "Exon level sensitivity: ". $self->getExonSensitivity(). "\n".
+            "Exon level specificity: ". $self->getExonSpecificity(). "\n".
+            "Missed exon score: ". $self->getMissedExonScore(). "\n".
+            "Wrong exon score: ". $self->getWrongExonScore(). "\n".            
+            "Base level sensitivity: ". $self->getBaseSensitivity(). "\n".
+            "Base level specificity: ". $self->getBaseSpecificity(). "\n";
 }
 
 1;

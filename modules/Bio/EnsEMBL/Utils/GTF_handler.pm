@@ -284,16 +284,16 @@ sub _build_transcript {
 	$self->warn("Could not find translation end for transcript $oldtrans, skipping");
 	return;
     }
-    print STDERR "Translation start: $trans_start\n";
-    print STDERR "Translation end  : $trans_end\n";
+    #print STDERR "Translation start: $trans_start\n";
+    #print STDERR "Translation end  : $trans_end\n";
     my $phase=0;
     my $end_phase;
     foreach my $num (keys%exons) {
 
-	print STDERR "Exon    ".$exons{$num}->id."\n";
-	print STDERR "Strand: ".$exons{$num}->strand."\n";
-	print STDERR "Start:  ".$exons{$num}->start."\n";
-	print STDERR "End:    ".$exons{$num}->end."\n";
+	#print STDERR "Exon    ".$exons{$num}->id."\n";
+	#print STDERR "Strand: ".$exons{$num}->strand."\n";
+	#print STDERR "Start:  ".$exons{$num}->start."\n";
+	#print STDERR "End:    ".$exons{$num}->end."\n";
 
 	#Positive strand
 	if ($exons{$num}->strand == 1) {
@@ -359,7 +359,7 @@ sub _build_transcript {
 	    }
 
 	}
-	print STDERR "Phase:   $phase\n";
+	#print STDERR "Phase:   $phase\n";
 
 	#Assign phase to exon
 	$exons{$num}->phase($phase);

@@ -166,7 +166,7 @@ while ( @gene_id > 0 ) {
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
 			print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
-			next;
+			#next;
 		    }
 		    $tseq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($tseq);
@@ -188,6 +188,7 @@ while ( @gene_id > 0 ) {
 		    my $seq = $trans->dna_seq();
 		    $seq->id($trans->id);
 		    my @exon = $trans->each_Exon;
+		    print STDERR "Translation start".$trans->translation->start."\n";
 		    my $fe = $exon[0];
 		    $seq->desc("Gene:$gene_id Clone:".$fe->clone_id . " Contig:" . $fe->contig_id);
 		    $seqio->write_seq($seq);
