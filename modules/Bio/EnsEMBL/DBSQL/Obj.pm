@@ -1215,7 +1215,11 @@ sub exists_Homol_Feature {
     
     my $homol = $feature->homol_SeqFeature;
 
-    my $sth = $self->prepare("select f.id  from feature as f,homol_feature as h where " .
+    if (!defined($homol)) {
+	$self->throw("Homol feature doesn't exist");
+    }
+    
+    my $query = "select f.id  from feature as f,homol_feature as h where " .
 			     "  f.id = h.feature " . 
 			     "  and h.hstart = "    . $homol->start . 
 			     "  and h.hend   = "    . $homol->end   . 
@@ -1225,8 +1229,10 @@ sub exists_Homol_Feature {
 			     "  and f.seq_end = "   . $feature->end .
 			     "  and f.score = "     . $feature->score . 
 			     "  and f.name = '"     . $feature->source_tag . 
-			     "' and f.analysis = "  . $analysisid);
+			     "' and f.analysis = "  . $analysisid;
 
+
+    my $sth = $self->prepare($query);
     my $rv  = $sth->execute;
     my $rowhash;
 
