@@ -573,14 +573,14 @@ sub get_all_ExternalFeatures{
        foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
 	   foreach my $extf ( @std ) {
 	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length)) {
+		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->internal_id,$contig->seq_version,1,$contig->length,$contig->id)) {
 			$sf->seqname($contig->id);
 			push(@contig_features,$sf);
 		   }
 	       }
 	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
-		   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length()) ) {
+		   foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->id) ) {
 		       
 		       my $start = $sf->start - $contig->embl_offset+1;
 		       my $end   = $sf->end   - $contig->embl_offset+1;

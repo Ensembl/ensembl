@@ -171,8 +171,8 @@ sub fetch {
  
     my $id=$self->id;
 
-    my $sth = $self->dbobj->prepare("
-        SELECT contig.internal_id
+    my $query = 
+    "    SELECT contig.internal_id
           , contig.dna
           , clone.embl_version
           , clone.id
@@ -182,7 +182,10 @@ sub fetch {
         WHERE contig.dna = dna.id
           AND contig.clone = clone.internal_id
           AND contig.id = '$id'
-        ");
+        ";
+
+
+    my $sth = $self->dbobj->prepare($query);    
     my $res = $sth->execute();
 
     if (my $row = $sth->fetchrow_arrayref) {  
@@ -1392,9 +1395,15 @@ sub get_all_ExternalFeatures{
 
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
 
-
        if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
-	   push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->internal_id,$self->seq_version,1,$self->length));
+
+	   my @tmp = $extf->get_Ensembl_SeqFeatures_contig($self->internal_id,
+							   $self->seq_version,
+							   1,
+							   $self->length,
+							   $self->id);
+
+	   push(@out,@tmp);
        }
        if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
        
