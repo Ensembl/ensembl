@@ -498,7 +498,7 @@ sub fetch_by_transcript_stable_id {
     # this is a cheap SQL call
      my $sth = $self->prepare("	SELECT	tr.gene_id 
 				FROM	transcript as tr, transcript_stable_id tcl 
-				WHERE	tr.transcript_id = $transid
+				WHERE	tcl.stable_id = \"$transid\"
                                   AND   tr.transcript_id = tcl.transcript_id");
     $sth->execute;
 
