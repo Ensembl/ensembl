@@ -170,12 +170,13 @@ sub fetch_by_region {
     throw('start [$start] must be less than or equal to end [$end]');
   }
 
-  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
-                                  -SEQ_REGION_NAME => $seq_region_name,
-                                  -START           => $start,
-                                  -END             => $end,
-                                  -STRAND          => $strand,
-                                  -ADAPTOR         => $self);
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $coord_system,
+                                  -SEQ_REGION_NAME   => $seq_region_name,
+                                  -SEQ_REGION_LENGTH => $length,
+                                  -START             => $start,
+                                  -END               => $end,
+                                  -STRAND            => $strand,
+                                  -ADAPTOR           => $self);
 }
 
 
@@ -269,12 +270,13 @@ sub fetch_by_seq_region_id {
     $self->{'_name_cache'}->{$key} = [$seq_region_id, $length];
   }
 
-  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
-                                  -SEQ_REGION_NAME => $name,
-                                  -START           => 1,
-                                  -END             => $length,
-                                  -STRAND          => 1,
-                                  -ADAPTOR         => $self);
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
+                                  -SEQ_REGION_NAME   => $name,
+                                  -SEQ_REGION_LENGTH => $length,
+                                  -START             => 1,
+                                  -END               => $length,
+                                  -STRAND            => 1,
+                                  -ADAPTOR           => $self);
 }
 
 
@@ -535,12 +537,13 @@ sub fetch_all {
       #any remainder gets added to the last slice of the seq_region
       $end = $length if($i == $number-1);
 
-      push @out, Bio::EnsEMBL::Slice->new(-START           => $start,
-                                          -END             => $end,
-                                          -STRAND          => 1,
-                                          -SEQ_REGION_NAME => $name,
-                                          -COORD_SYSTEM    => $cs,
-                                          -ADAPTOR         => $self);
+      push @out, Bio::EnsEMBL::Slice->new(-START             => $start,
+                                          -END               => $end,
+                                          -STRAND            => 1,
+                                          -SEQ_REGION_NAME   => $name,
+                                          -SEQ_REGION_LENGTH => $length,
+                                          -COORD_SYSTEM      => $cs,
+                                          -ADAPTOR           => $self);
       $start += $multiple;
     }
   }
@@ -588,6 +591,7 @@ sub fetch_all_non_redundant {
                                         -END    => $length,
                                         -STRAND => 1,
                                         -SEQ_REGION_NAME => $name,
+                                        -SEQ_REGION_LENGTH => $length,
                                         -COORD_SYSTEM => $cs,
                                         -ADAPTOR => $self);
   }
@@ -754,6 +758,8 @@ sub fetch_by_gene_stable_id {
                The feature to fetch the slice around
   Arg [2]    : int size (optional)
                The desired number of flanking basepairs around the feature.
+               The size may also be provided as a percentage of the feature 
+               size such as 200% or 80.5%.
   Example    : $slice = $slice_adaptor->fetch_by_Feature($feat, 100);
   Description: Retrieves a slice around a specific feature.  All this really
                does is return a resized version of the slice that the feature
@@ -803,19 +809,22 @@ sub fetch_by_Feature{
     }
   }
 
-## Size may be stored as a %age of the length of the feature
-## Size = 100% gives no context
-## Size = 200% gives context - 50% the size of the feature either side of feature
+  ## Size may be stored as a %age of the length of the feature
+  ## Size = 100% gives no context
+  ## Size = 200% gives context - 50% the size of the feature either side of 
+  ## feature
 
   $size = int( ($1-100)/200 * ($fend-$fstart+1) ) if( $size =~/([\d+\.]+)%/ );
 
   #return a new slice covering the region of the feature
-  return Bio::EnsEMBL::Slice->new(-seq_region_name => $slice->seq_region_name,
-                                  -coord_system    => $slice->coord_system,
-                                  -start           => $fstart - $size,
-                                  -end             => $fend + $size,
-                                  -strand          => 1,
-                                  -adaptor         => $self);
+  return Bio::EnsEMBL::Slice->new
+    (-seq_region_name   => $slice->seq_region_name,
+     -seq_region_length => $slice->seq_region_length,
+     -coord_system      => $slice->coord_system,
+     -start             => $fstart - $size,
+     -end               => $fend + $size,
+     -strand            => 1,
+     -adaptor           => $self);
 }
 
 
@@ -989,24 +998,26 @@ sub fetch_normalized_slice_projection {
   for my $coord ( @linked ) {
     if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
       my $exc_slice = Bio::EnsEMBL::Slice->new
-        (-START        => $coord->start(),
-         -END          => $coord->end(),
-         -STRAND       => $slice->strand(),
-         -COORD_SYSTEM => $slice->coord_system(),
-         -ADAPTOR      => $self,
-         -SEQ_REGION_NAME => $slice->seq_region_name);
+        (-START             => $coord->start(),
+         -END               => $coord->end(),
+         -STRAND            => $slice->strand(),
+         -COORD_SYSTEM      => $slice->coord_system(),
+         -ADAPTOR           => $self,
+         -SEQ_REGION_NAME   => $slice->seq_region_name(),
+         -SEQ_REGION_LENGTH => $slice->seq_region_length());
       push( @out, [ $rel_start, $coord->length()+$rel_start-1,
                         $exc_slice ] );
     } else {
       my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
       my $exc2_slice = Bio::EnsEMBL::Slice->new
         (
-         -START  => $coord->start(),
-         -END    => $coord->end(),
-         -STRAND => $coord->strand(),
-         -SEQ_REGION_NAME => $exc_slice->seq_region_name(),
-         -COORD_SYSTEM => $exc_slice->coord_system(),
-         -ADAPTOR => $self
+         -START             => $coord->start(),
+         -END               => $coord->end(),
+         -STRAND            => $coord->strand(),
+         -SEQ_REGION_NAME   => $exc_slice->seq_region_name(),
+         -SEQ_REGION_LENGTH => $exc_slice->seq_region_length(),
+         -COORD_SYSTEM      => $exc_slice->coord_system(),
+         -ADAPTOR           => $self
         );
 	
       push( @out, [ $rel_start, $coord->length() + $rel_start - 1,
@@ -1033,7 +1044,8 @@ sub fetch_normalized_slice_projection {
                start at 1, and must have a valid seq_region name and coordinate
                system. The attached coordinate system must already be stored in
                the database.  The sequence region is assumed to start at 1 and
-               to have a length equalling the length of the slice.
+               to have a length equalling the length of the slice.  The end of
+               the slice must equal the seq_region_length.
                If the slice coordinate system is the sequence level coordinate
                system then the seqref argument must also be passed.  If the
                slice coordinate system is NOT a sequence level coordinate
@@ -1050,6 +1062,7 @@ sub fetch_normalized_slice_projection {
                      match the slice length.
                throw if the SQL insert fails (e.g. on duplicate seq region)
                throw if slice argument is not passed
+               throw if the slice end is not equal to seq_region_length
   Caller     : database loading scripts
 
 =cut
@@ -1079,6 +1092,10 @@ sub store {
 
   if($slice->start != 1 || $slice->strand != 1) {
     throw("Slice must have start==1 and strand==1.");
+  }
+
+  if($slice->end() != $slice->seq_region_length()) {
+    throw("Slice must have end==seq_region_length");
   }
 
   my $sr_len = $slice->length();
