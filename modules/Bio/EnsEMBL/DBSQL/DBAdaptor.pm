@@ -278,27 +278,6 @@ sub get_Feature_Obj {
 }
 
 
-=head2 gene_Obj
-    
- Title   : gene_Obj
- Usage   : my $geneobj = $db->gene_Obj
- Function: Returns the gene object database handle
- Example : 
- Returns : Bio::EnsEMBL::DB::Gene_ObjI
- Args    : 
-
-=cut
-
-sub gene_Obj {
-    my ($self) = @_;
-
-    unless (defined($self->{_gene_obj})) {
-	$self->{_gene_obj} = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);    
-    }
-
-    return $self->{_gene_obj};
-}
-
 =head2 get_Protfeat_Adaptor
 
  Title   : get_Protfeat_Adaptor

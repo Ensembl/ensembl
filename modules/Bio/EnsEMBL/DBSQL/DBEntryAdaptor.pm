@@ -74,14 +74,14 @@ sub fetch_by_dbID {
     $exDB->urlPattern( $url );
   }
 
-  my $sth = $self->prepare( "
+  my $get_synonym = $self->prepare( "
     SELECT synonym 
       FROM externalSynonym
      WHERE xrefId = $dbID
   " );
-  $sth->execute();
+  $get_synonym->execute();
   
-  while( my ($synonym) = $sth->fetchrow_array() ) {
+  while( my ($synonym) = $get_synonym->fetchrow_array() ) {
     $exDB->add_synonym( $synonym );
   }
 
