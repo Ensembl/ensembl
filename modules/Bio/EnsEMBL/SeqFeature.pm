@@ -432,7 +432,7 @@ sub validate {
 sub vthrow {
     my ($self,$message) = @_;
 
-    print(STDERR "Error validating feature [$message]\n");
+    warn ( "Error validating feature [$message]:");
     print(STDERR "   Seqname     : [" . $self->{_gsf_seqname} . "]\n");
     print(STDERR "   Start       : [" . $self->{_gsf_start} . "]\n");
     print(STDERR "   End         : [" . $self->{_gsf_end} . "]\n");
@@ -447,7 +447,10 @@ sub vthrow {
     print(STDERR "   Primary_tag : [" . 
         ((defined ($self->{_primary_tag})) ? $self->{_primary_tag} : "undefined") . "]\n");
         
-    print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
+    if( $self->{_analysis} ){
+      print(STDERR "   Analysis    : [" . $self->{_analysis}->dbID . "]\n");
+    }
+    else{ warn( '_analysis is not defined' ) };
 
     $self->throw("Invalid feature - see dump on STDERR");
 }

@@ -88,8 +88,8 @@ sub fetch_by_chr_start_end {
             assembly_contig_type
     FROM assembly_contig
     WHERE assembly_contig_chr_name = \'$chr\'
-    AND   assembly_contig_chr_start   >= $chrstart
-    AND   assembly_contig_chr_end     <= $chrend};
+    AND   assembly_contig_chr_end   >= $chrstart
+    AND   assembly_contig_chr_start     <= $chrend};
       
 
   my $sth = $self->prepare($query);

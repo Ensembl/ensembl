@@ -1232,27 +1232,30 @@ sub get_all_DASFeatures{
             ) {
 
 	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
-                    #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
+#                    warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
-                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+#                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
  	                push(@chr_features, $sf);
-               } elsif( $sf->seqname() =~ /^[1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y]$/o) {  # breaks on mouse!
-                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|X|Y)$/o) {  # breaks on mouse!
+#                    warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
  	                push(@chr_features, $sf);
                } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) { 
-                    #warn ("Got a FPC contig feature: ", $sf->seqname(), "\n");
+#                    warn ("Got a FPC contig feature: ", $sf->seqname(), "\n");
  	                push(@fpc_features, $sf);
+               } elsif( $sf->seqname() =~ /^(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|X)\.\d+\-\d+/i) { 
+#                    warn ("Got a mouse clone feature: ", $sf->seqname(), "\n");
+ 	                push(@contig_features, $sf);
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
-#                    print STDERR "CLONE >".$sf->seqname()."<\n";
+                    print STDERR "CLONE >".$sf->seqname()."<\n";
                     if(my $contig_from_clone = $self->contig_from_clone($sf->seqname()) ) {
-#                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
+                        print STDERR "CONTIG NAME FROM CLONE >$contig_from_clone<\n";
                         $sf->seqname($contig_from_clone);
  	                    push(@contig_features, $sf);
                     }
-                    #warn ("Got a clone feature: ", $sf->seqname(), "\n");
+#                    warn ("Got a clone feature: ", $sf->seqname(), "\n");
                } elsif( $sf->das_type_id() eq '__ERROR__') { 
-                    #Always push errors even if they aren't wholly within the VC
+#                    Always push errors even if they aren't wholly within the VC
 	                push(@genomic_features, $sf);
                } elsif( $sf->seqname() eq '') { 
                     #suspicious
@@ -1269,42 +1272,45 @@ sub get_all_DASFeatures{
    }
    
    foreach my $sf ( @contig_features ) {
-#            print STDERR "SEG ID: ",         $sf->seqname(), "\t";
-#            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
-#            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
-#            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
-#            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
-#            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+          #  print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+          #  print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+          #  print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+          #  print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+          #  print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+          #  print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
        if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
 	        push(@genomic_features, $sf);
        }
+       #else {
+       # print STDERR "Binning ", $sf->seqname(), "\n";
+       #}
    }
 
     
    my $xx = 1;
    foreach my $sf ( @chr_features ) {
-       #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
-       #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
-            #print STDERR "SC SEG ID: ",         $sf->seqname(), "\t";
-            #print STDERR "SC DSN: ",            $sf->das_dsn(), "\t";
-            #print STDERR "SC FEATURE START: ",  $sf->das_start(), "\t";
-            #print STDERR "SC FEATURE END: ",    $sf->das_end(), "\t";
-            #print STDERR "SC FEATURE STRAND: ", $sf->das_strand(), "\t";
-            #print STDERR "SC FEATURE TYPE: ",   $sf->das_type_id(), "\n";
-       #print STDERR "FEATURE START: ",  $sf->start() , "\t";
-       #print STDERR "FEATURE END: ",    $sf->end() , "\t";
-       #print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
-       #print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
+#       print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+#      print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+#           print STDERR "SC SEG ID: ",         $sf->seqname(), "\t";
+#           print STDERR "SC DSN: ",            $sf->das_dsn(), "\t";
+#           print STDERR "SC FEATURE START: ",  $sf->das_start(), "\t";
+#           print STDERR "SC FEATURE END: ",    $sf->das_end(), "\t";
+#           print STDERR "SC FEATURE STRAND: ", $sf->das_strand(), "\t";
+#            print STDERR "SC FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+#       print STDERR "FEATURE START: ",  $sf->start() , "\t";
+#       print STDERR "FEATURE END: ",    $sf->end() , "\t";
+#       print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
+#       print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
        if( defined $self->_convert_chrfeature_to_vc_coords($sf) ) {
-       		#print STDERR "$xx AFTER: ", $sf->seqname() , "\t";
-            #print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
-            #print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
-            #print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
-       		#print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
-            
-			#print STDERR "SEG ID: ",         $sf->seqname(), "\t";
-            #print STDERR "DSN: ",            $sf->das_dsn(), "\t";
-            #print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+#       		print STDERR "$xx AFTER: ", $sf->seqname() , "\t";
+#            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+#            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+#            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+#       		print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
+#            
+#			print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+#            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+#            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
 	        push(@genomic_features, $sf);
        }
        $xx++;
@@ -1386,7 +1392,8 @@ sub get_all_ExternalFeatures{
    ## Note that they should always return lists (possible empty) or bad things happen.
    
     foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-	#  print STDERR "EXTFEATFACT: $extf\n";
+	   print STDERR "EXTFEATFACT: $extf\n";
+    
         if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	        push(@web,$extf);
         } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {

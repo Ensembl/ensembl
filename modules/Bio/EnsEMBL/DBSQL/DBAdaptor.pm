@@ -2982,6 +2982,26 @@ sub get_SyntenyAdaptor{
 
 }
 
+=head2 get_AssemblyContigAdaptor
 
+ Title   : get_AssemblyContigAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor()
+ Args    :
+
+=cut
+
+sub get_AssemblyContigAdaptor {
+    my( $self ) = @_;
+
+    if( !defined $self->{'_assemblycontig_adaptor'} ) {
+        require Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor;
+        my $aca = Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor->new($self);
+        $self->{'_assemblycontig_adaptor'} = $aca;
+    }
+    return $self->{'_assemblycontig_adaptor'};
+}
 
 1;

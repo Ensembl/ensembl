@@ -288,7 +288,6 @@ sub fetch_evidence_by_Exon {
                    FROM supporting_feature 
 		     WHERE exon_id = ".$exon->dbID;
 
-
   my $sth = $self->prepare($statement);
   $sth->execute || $self->throw("execute failed for supporting evidence get!");
 
