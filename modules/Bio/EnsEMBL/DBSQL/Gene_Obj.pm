@@ -268,15 +268,53 @@ sub get_Interpro_by_geneid{
    my ($self,$gene) = @_;
 
 
-   my $sth = $self->_db_obj->prepare("select i.interpro_ac from transcript t, protein_feature pf, interpro i where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid");
+   my $sth = $self->_db_obj->prepare("select i.interpro_ac,idesc.description from transcript t, protein_feature pf, interpro i, interpro_description idesc where t.gene = '$gene' and t.translation = pf.translation and i.id = pf.hid and i.interpro_ac = idesc.interpro_ac");
    $sth->execute;
 
    my @out;
-
+   my %h;
    while( (my $arr = $sth->fetchrow_arrayref()) ) {
-       push(@out,@{$arr});
+       if( $h{$arr->[0]} ) { next; }
+       $h{$arr->[0]}=1;
+       my $string = $arr->[0] .":".$arr->[1];
+       
+       push(@out,$string);
    }
 
+
+   return @out;
+}
+
+
+
+=head2 get_Interpro_by_keyword
+
+ Title   : get_Interpro_by_keyword
+ Usage   : @interproid = $gene_obj->get_Interpro_by_keyword('keyword');
+ Function: gets interpro accession numbers by keyword. Another really stink hack - we should have a much more structured system than this
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Interpro_by_keyword{
+   my ($self,$keyword) = @_;
+
+
+   my $sth = $self->_db_obj->prepare("select idesc.interpro_ac,idesc.description from interpro_description idesc where idesc.description like '%$keyword%'");
+   $sth->execute;
+
+   my @out;
+   my %h;
+   while( (my $arr = $sth->fetchrow_arrayref()) ) {
+       if( $h{$arr->[0]} ) { next; }
+       $h{$arr->[0]}=1;
+       my $string = $arr->[0] .":".$arr->[1];
+       
+       push(@out,$string);
+   }
 
    return @out;
 }

@@ -87,6 +87,24 @@ sub new {
   return $self;
 }
 
+
+sub get_Gene_chr_MB {
+    my ($self,$gene) =  @_;
+
+    my $sth = $self->dbobj->prepare("select STRAIGHT_JOIN p.chr_name,p.chr_start from transcript tr,translation t,exon e,static_golden_path p where tr.gene = '$gene' and t.id = tr.translation and t.start_exon = e.id and e.contig = p.raw_id");
+
+    $sth->execute();
+
+    my ($chr,$mbase) = $sth->fetchrow_array;
+
+    $mbase = $mbase / 1000000;
+      
+    my $round = sprintf("%.1f",$mbase);   
+
+    return ($chr,$round); 
+        
+}
+
 =head2 fetch_RawContigs_by_fpc_name
 
  Title   : fetch_RawContigs_by_fpc_name
@@ -615,11 +633,11 @@ sub fetch_VirtualContig_by_gene{
 
    my $type = $self->dbobj->static_golden_path_type();
 
-   my $sth = $self->dbobj->prepare("SELECT  (e.seq_start+sgp.chr_start),
+   my $sth = $self->dbobj->prepare("SELECT  STRAIGHT_JOIN (e.seq_start+sgp.chr_start),
 					    sgp.chr_name 
-				    FROM    exon e,
-					    transcript tr,
+				    FROM    transcript tr, 
 					    exon_transcript et,
+                                            exon e,
 					    static_golden_path sgp 
 				    WHERE e.id=et.exon 
                                     AND et.transcript=tr.id 
