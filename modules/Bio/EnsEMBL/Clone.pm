@@ -93,7 +93,7 @@ sub new {
 		   'htg_phase' => $htg_phase,
 		   'created'   => $created,
 		   'modified'  => $modified,
-		   '_contig_list' => ()
+		   '_contig_list' => [] 
 		 }, $class;
 
 #    $self->adaptor($adaptor);
@@ -184,7 +184,7 @@ sub add_Contig {
   my ($self, $contig) = @_;
 
   unless(defined $self->{'_contig_list'})  {
-    $self->{'_contig_list'} = ();
+    $self->{'_contig_list'} = [];
   }
 
   push @{$self->{'_contig_list'}}, $contig;
