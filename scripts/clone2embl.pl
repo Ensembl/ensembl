@@ -50,6 +50,8 @@
 
     -end       end point in list of clones (useful with -getall)
 
+    -outfile   write output into file instead of to STDOUT
+
 =head1 EXAMPLE CLONES
 
     dJ271M21/AL031983   T  single contig, mainly forward strand genes, but one reverse
@@ -103,6 +105,7 @@ my $dbname = 'ensdev';
 my $verbose = 0;
 my $cstart = 0;
 my $cend   = undef;
+my $outfile;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -122,13 +125,14 @@ my $cend   = undef;
 	     'aceseq:s'  => \$aceseq,
 	     'pepform:s' => \$pepformat,
 	     # usefile to be consistent with other scripts
-	     'usefile'  => \$fromfile,
+	     'usefile'   => \$fromfile,
 	     'getall'    => \$getall,
 	     'test'      => \$test,
 	     'part'      => \$part,
 	     'verbose'   => \$verbose,
-	     'start:i'     => \$cstart,
-	     'end:i'       => \$cend,
+	     'start:i'   => \$cstart,
+	     'end:i'     => \$cend,
+	     'outfile:s' => \$outfile,
 	     );
 
 if($help){
@@ -161,8 +165,14 @@ if( $dbtype =~ 'ace' ) {
 	push(@clones,'dJ271M21');
     }
 
+    # don't specify clone list if want to do getall, so whole db loads
+    my $raclones;
+    if(!$getall){
+	$raclones=\@clones;
+    }
+
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new(\@clones,$noacc,$test,$part);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
@@ -190,6 +200,14 @@ if( defined $cend ) {
     @clones = @temp;
 }
 
+# set output file
+my $OUT;
+if($outfile){
+    open(OUT,">$outfile") || die "cannot write to $outfile";
+    $OUT=\*OUT;
+}else{
+    $OUT=\*STDOUT;
+}
 
 foreach my $clone_id ( @clones ) {
 
@@ -216,18 +234,18 @@ foreach my $clone_id ( @clones ) {
 	    foreach my $contig ( $clone->get_all_Contigs )  {
 		my @seqfeatures = $contig->as_seqfeatures();
 		foreach my $sf ( @seqfeatures ) {
-		    print $sf->gff_string, "\n";
+		    print $OUT $sf->gff_string, "\n";
 		}
 	    }
 	} elsif ( $format =~ /fastac/ ) {
-	    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => \*STDOUT);
+	    my $seqout = Bio::SeqIO->new( -format => 'Fasta' , -fh => $OUT);
 	    
 	    foreach my $contig ( $clone->get_all_Contigs ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
-	    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+	    my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
 		$emblout->_show_dna(0);
@@ -235,7 +253,7 @@ foreach my $clone_id ( @clones ) {
 	    
 	    $emblout->write_annseq($as);
 	} elsif ( $format =~ /pep/ ) {
-	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
+	    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => $OUT ) ;
 	    my $cid = $clone->id();
 	    
 	    foreach my $gene ( $clone->get_all_Genes() ) {
@@ -251,7 +269,7 @@ foreach my $clone_id ( @clones ) {
 	    }
 	} elsif ( $format =~ /ace/ ) {
 	    foreach my $contig ( $clone->get_all_Contigs() ) {
-		$contig->write_acedb(\*STDOUT,$aceseq);
+		$contig->write_acedb($OUT,$aceseq);
 	    }
 	}
     };

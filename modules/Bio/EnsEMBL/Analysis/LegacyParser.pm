@@ -134,9 +134,11 @@ sub _parse_exon{
     
     my %disk_id;
     # do clone->disk_id lookups
-    foreach my $clone (@$raclones){
-	my($id,$disk_id)=$obj->get_id_acc($clone);
-	$disk_id{$disk_id}=$id;
+    if($raclones){
+	foreach my $clone (@$raclones){
+	    my($id,$disk_id)=$obj->get_id_acc($clone);
+	    $disk_id{$disk_id}=$id;
+	}
     }
 
     my $fh = new FileHandle;
@@ -270,9 +272,11 @@ sub _parse_contig_order{
 
     my %disk_id;
     # do clone->disk_id lookups
-    foreach my $clone (@$raclones){
-	my($id,$disk_id)=$obj->get_id_acc($clone);
-	$disk_id{$disk_id}=$id;
+    if($raclones){
+	foreach my $clone (@$raclones){
+	    my($id,$disk_id)=$obj->get_id_acc($clone);
+	    $disk_id{$disk_id}=$id;
+	}
     }
 
     my $fh = new FileHandle;
@@ -416,7 +420,7 @@ sub map_all{
 
     # contig->exons
     my %contig2exon;
-    my $n;
+    my $n=0;
     foreach my $exon (values %{$self->{'_exon_hash'}}){
 	my $contig_id=$exon->contig_id;
 	# mapping of contig->exon(s)
@@ -430,7 +434,7 @@ sub map_all{
     # exons->transcripts
     my %exon2transcript;
     my %transcripts;
-    my $missed_exons;
+    my %missed_exons;
     my $n_missed_exons;
     foreach my $t (keys %{$self->{'_trans_hash'}}){
 	my $transcript=new Bio::EnsEMBL::Transcript;
@@ -439,8 +443,7 @@ sub map_all{
 	$transcript->id($transcript_id);
 	foreach my $exon_id (@{$self->{'_trans_hash'}->{$transcript_id}}){
 	    if(!exists $self->{'_exon_hash'}->{$exon_id} ) {
-		$missed_exons.=' '.$exon_id;
-		$n_missed_exons++;
+		$missed_exons{$exon_id}++;
 		next;
 	    }
 	    $transcripts{$transcript_id}=$transcript;
@@ -453,8 +456,10 @@ sub map_all{
 	#}
     }
     # report missing exons, provided $clone not specified for speed.
+    $n_missed_exons=scalar(keys %missed_exons);
+    my $missed_exons_text=join("\n",(keys %missed_exons));
     if($n_missed_exons && !$raclones){
-	$self->warn("$n_missed_exons exons missing: $missed_exons");
+	$self->warn("$n_missed_exons exons missing: $missed_exons_text");
     }
     # DEBUG
     print STDERR scalar(keys %exon2transcript)." exons have transcripts\n";

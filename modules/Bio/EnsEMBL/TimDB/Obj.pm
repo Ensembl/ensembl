@@ -302,7 +302,7 @@ sub _get_Clone_id{
    }else{
        print STDERR " and are excluded\n";
    }
-   return @list;
+   return sort @list;
 }
 
 sub _check_clone_entry{

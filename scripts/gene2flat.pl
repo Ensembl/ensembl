@@ -21,6 +21,7 @@ in particular the protein translation
 =cut
 use strict;
 use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::TimDB::Obj;
 use Bio::SeqIO;
 
 use Getopt::Long;
@@ -33,16 +34,20 @@ my $format  = 'pep';
 my $usefile = 0;
 my $getall  = 0;
 my $verbose = 0;
+my $noacc   = 0;
+my $test    = 0;
 
 &GetOptions( 
-	     'dbtype:s' => \$tdbtype,
-	     'host:s'   => \$thost,
-	     'port:n'   => \$tport,
-	     'usefile'  => \$usefile,
-	     'dbname:s' => \$tdbname,
+	     'dbtype:s'   => \$tdbtype,
+	     'host:s'     => \$thost,
+	     'port:n'     => \$tport,
+	     'usefile'    => \$usefile,
+	     'dbname:s'   => \$tdbname,
 	     'format:s'   => \$format,
-	     'getall'   => \$getall,
-	     'verbose' => \$verbose,
+	     'getall'     => \$getall,
+	     'verbose'    => \$verbose,
+	     'test'       => \$test,
+	     'noacc'      => \$noacc,
 	     );
 my $db;
 
@@ -50,8 +55,10 @@ if( $tdbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $thost, -port => $tport);
 } elsif ( $tdbtype =~ 'rdb' ) {
     $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $tdbname , -host => $thost );
+} elsif ( $tdbtype =~ 'timdb' ) {
+    $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
-    die("$tdbtype is not a good type (should be ace, rdb)");
+    die("$tdbtype is not a good type (should be ace, rdb, timdb)");
 }
 
 my @gene_id;
