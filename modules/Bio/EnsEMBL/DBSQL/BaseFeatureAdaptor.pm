@@ -317,8 +317,11 @@ sub fetch_by_Slice_constraint {
   my $chr_start = $slice->chr_start - 1;
   foreach my $f (@$features){
     #shift the feature start and end
-    $f->move($f->start() - $chr_start,  $f->end() - $chr_start);
-    $f->attach_seq($slice);
+    # $f->move($f->start() - $chr_start,  $f->end() - $chr_start);
+    Bio::EnsEMBL::SeqFeature::move
+      ( $f, Bio::EnsEMBL::SeqFeature::start( $f ) - $chr_start, 
+	Bio::EnsEMBL::SeqFeature::end( $f ) - $chr_start ); 
+    Bio::EnsEMBL::SeqFeature::contig( $f, $slice);
   }
 
   #update the cache
