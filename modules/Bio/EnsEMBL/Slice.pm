@@ -502,7 +502,7 @@ sub get_base_count {
                coordinate system.  Projecting to a coordinate system that
                the slice is assembled from is analagous to retrieving a tiling
                path.  This method may also be used to 'project up' to a higher
-               level coordinate system however.
+               level coordinate system, however.
 
                This method returns a listref of triplets [start,end,slice]
                which represents the projection.  The start and end defined the
@@ -530,8 +530,12 @@ sub project {
   my $asma = $db->get_AssemblyMapperAdaptor();
   my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
-  # perform the mapping between this slice and the requested system
+  #no mapping is needed if the requested coord system is the one we are in
+  if($slice_cs->equals($cs)) {
+    return [[1, $slice->length(), $self]];
+  }
 
+  # perform the mapping between this slice and the requested system
   my @coords =
     $asm_mapper->map($self->seq_region_name(), $self->start(),
                      $self->end(), $self->strand(), $slice_cs);
