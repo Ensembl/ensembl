@@ -97,17 +97,16 @@ sub fetch_all_by_Slice_and_set_code {
 
 
 
-=head2 _tablename
+#_tables
+#
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED Implementation of abstract superclass method to
+#               provide the name of the tables to query
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : internal
 
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED Implementation of abstract superclass method to
-               provide the name of the tables to query
-  Returntype : string
-  Exceptions : none
-  Caller     : internal
-
-=cut
 
 sub _tables {
   my $self = shift;
@@ -119,17 +118,15 @@ sub _tables {
 }
 
 
-=head2 _columns
+#_columns
 
-  Arg [1]    : none
-  Example    : none
-  Description: PROTECTED Implementation of abstract superclass method to 
-               provide the name of the columns to query 
-  Returntype : list of strings
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#  Arg [1]    : none
+#  Example    : none
+#  Description: PROTECTED Implementation of abstract superclass method to 
+#               provide the name of the columns to query 
+#  Returntype : list of strings
+#  Exceptions : none
+#  Caller     : internal
 
 sub _columns {
   my $self = shift;
@@ -147,17 +144,15 @@ sub _columns {
 
 
 
-=head2 _default_where_clause
+# _default_where_clause
 
-  Arg [1]    : none
-  Example    : none
-  Description: Overrides superclass method to provide an additional 
-               table joining constraint before the SQL query is performed. 
-  Returntype : string
-  Exceptions : none
-  Caller     : generic_fetch
-
-=cut
+#  Arg [1]    : none
+#  Example    : none
+#  Description: Overrides superclass method to provide an additional 
+#               table joining constraint before the SQL query is performed.
+#  Returntype : string
+#  Exceptions : none
+#  Caller     : generic_fetch
 
 sub _default_where_clause {
   my $self = shift;
@@ -183,18 +178,16 @@ sub _final_clause {
 }
 
 
-=head2 _obj_from_hashref
+# _objs_from_sth
 
-  Arg [1]    : Hashreference $hashref
-  Example    : none 
-  Description: PROTECTED implementation of abstract superclass method.
-               responsible for the creation of MiscFeatures from a
-               hashref generated from an SQL query
-  Returntype : listref of Bio::EnsEMBL::MiscFeatures
-  Exceptions : none
-  Caller     : internal
-
-=cut
+#  Arg [1]    : StatementHandle $sth
+#  Example    : none
+#  Description: PROTECTED implementation of abstract superclass method.
+#               responsible for the creation of MiscFeatures from a
+#               hashref generated from an SQL query
+#  Returntype : listref of Bio::EnsEMBL::MiscFeatures
+#  Exceptions : none
+#  Caller     : internal
 
 sub _objs_from_sth {
   my ($self, $sth, $mapper, $dest_slice) = @_;

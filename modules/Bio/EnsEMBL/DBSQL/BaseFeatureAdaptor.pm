@@ -470,7 +470,8 @@ sub _logic_name_to_constraint {
   return $constraint if(!$logic_name);
 
   #make sure that an analysis_id exists in the primary table
-  my $prim_synonym = $self->_tables()->[0]->[1];
+  my ($prim_tab) = $self->_tables();
+  my $prim_synonym = $prim_tab->[1];
 
   my $found_analysis=0;
   foreach my $col ($self->_columns) {
