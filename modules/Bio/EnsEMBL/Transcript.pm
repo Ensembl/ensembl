@@ -840,9 +840,11 @@ sub translate {
   my $peptide = Bio::Seq->new( -seq => $mrna,
 			       -moltype => "dna",
 			       -id => $display_id );
-  $peptide->translate();
+
+  # does this change the peptide or not??
+  return $peptide->translate();
   
-  return $peptide;
+#  return $peptide;
 }
 
 =head2 seq
