@@ -571,11 +571,11 @@ sub store_hsp{
   #my $ticket = $hsp->group_ticket || warn( "HSP $id has no ticket" );
   my $ticket = $self->ticket || warn( "HSP $id BlastAdaptor has no ticket" );
 
-  my $chr_name  = 'NULL';
-  my $chr_start = 'NULL';
-  my $chr_end   = 'NULL';
+  my $chr_name  = '';
+  my $chr_start = 0;
+  my $chr_end   = 0;
   if( my $genomic = $hsp->genomic_hit ){
-    $chr_name  = $genomic->seqname;
+    $chr_name  = $genomic->seq_region_name;
     $chr_start = $genomic->start;
     $chr_end   = $genomic->end;
   }
@@ -710,7 +710,6 @@ AND    chr_end   >= ? );
        push @binded, $chr_end, $chr_start;
      }
    }
-
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
 
@@ -749,11 +748,11 @@ sub get_all_SearchFeatures {
   $self->dynamic_use( ref($hsps->[0] ) );
   my @feats = ();
   foreach my $hsp( @$hsps ){
-    my $base_align = $hsp->ens_genomic_align || next;
+    my $base_align = $hsp->genomic_hit || next;
 
     ( $ticket ) = split( "!!", $ticket );
     my $hsp_id = join( "!!", $ticket, $hsp->token );
-    
+
     $base_align->hseqname( join( ":", $base_align->hseqname, $hsp_id ) );
     push @feats, $base_align;
   }
