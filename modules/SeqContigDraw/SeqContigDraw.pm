@@ -443,10 +443,15 @@ sub gene_length
     
     my ($gene) = @_;
     
+    # this wont work with genes across contigs. Doh!
     my @exons = sort { $a->start <=> $b->start } $gene->each_unique_Exon();    
-    my $f= shift @exons;       
+    my ($f,$l);
+    $f = $exons[0];
+    $l = $exons[$#exons];
+
+    #my $f= shift @exons;       
     my $first=$f->start; 
-    my $l=pop @exons;
+    #my $l=pop @exons;
     my $last=$l->end;
     my $gene_len=$last-$first;
     
