@@ -1004,7 +1004,7 @@ sub fetch_VirtualContig_by_mapfrag {
    return $self->fetch_VirtualContig_by_chr_start_end(
        $mapfrag->seq,
        $start-$halfsize,
-       $start+$size-$halfsize
+       $end+$size-$halfsize
    );
 }
 
@@ -1012,9 +1012,8 @@ sub fetch_VirtualContig_by_mapfrag {
 
  Title   : fetch_VirtualContig_of_mapfrag
  Usage   : $vc = $stadp->fetch_VirtualContig_of_mapfrag('AC000012',100000);
- Function: create a VirtualContig based on a Map frag, and of a
-           given length. The VC is the centred on the mapfrag and is the
-           greater of the size of the mapfrag or $size...
+ Function: create a VirtualContig based on a Map frag, with $size base pairs
+           either end....
  Example :
  Returns : 
  Args    : mapfrag_id, size
@@ -1024,7 +1023,7 @@ sub fetch_VirtualContig_by_mapfrag {
 sub fetch_VirtualContig_of_mapfrag {
     my ($self,$mapfrag_name,$size) = @_;
 
-    $size||=1;
+    $size||=0;
    
     if( !defined $mapfrag_name ) {
         $self->throw("Must have mapfrag name to fetch VirtualContig of mapfrag");
@@ -1036,16 +1035,9 @@ sub fetch_VirtualContig_of_mapfrag {
     if( !defined $mapfrag ) {
         $self->throw( "Mapfrag $mapfrag_name is not in the database" );
     }
-    my $start   = $mapfrag->seq_start();
-    my $end     = $mapfrag->seq_end();
-
-    if($mapfrag->length < $size ) {
-       $start   = int( ( $start + $end - $size )/2 );
-       $end     = $start + $size - 1;
-    }
    
     return $self->fetch_VirtualContig_by_chr_start_end(
-        $mapfrag->seq, $start, $end
+        $mapfrag->seq, $mapfrag->seq_start() - $size, $mapfrag->seq_end() + $size
     );
 }
 
