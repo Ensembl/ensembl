@@ -1,3 +1,7 @@
+## the chunking capability of this script has been script has ben replicated by new script split_fasta_in_subslices_anopheles.pl
+## the loading into db capability of this script - which was partial anyway - is no longer functional.  Use peipleine scripts load_seq_region.pl and load_agp.pl instead
+
+
 use strict;
 use Getopt::Long;
 use Bio::SeqIO;
