@@ -54,19 +54,20 @@ use Bio::EnsEMBL::Chromosome;
 
 # we inheriet new of BaseAdaptor
 
+
 =head2 fetch_by_dbID
 
- Title   : fetch_by_dbID
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg 1     : txt $chromosome_name
+  Function  : return a chromosome object from the name for the chromosome.
+              Uses static_golden_path ??
+  Returntype: Bio::EnsEMBL::Chromosome
+  Exceptions: if chromosome_name not present in static_golden_path table
+  Caller    : ??
 
 =cut
 
-sub fetch_by_dbID{
+
+sub fetch_by_dbID {
    my ($self,$id) = @_;
 
    # should check is correct!
@@ -83,17 +84,17 @@ sub fetch_by_dbID{
    return $chr;
 }
 
+
 =head2 fetch_by_chrname
 
- Title   : fetch_by_chrname
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg  1    : txt $chromosome_name
+  Function  : chains to fetch_by_dbID
+  Returntype: Bio::EnsEMBL::Chromosome
+  Exceptions: see above
+  Caller    : ??
 
 =cut
+
 
 sub fetch_by_chrname{
    my ($self,$id) = @_;
@@ -102,17 +103,18 @@ sub fetch_by_chrname{
    return $self->fetch_by_dbID($id);
 }
 
-=head2 get_landmark_MarkerFeatures
 
- Title   : get_landmarkMarkers
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
+=head2 get_landmark_MarkerFeatures_old
+
+  Arg  1    : txt $chromosome_name
+  Function  : depracated, defunct
+  Returntype: list Bio:EnsEMBL::SeqFeature
+  Exceptions: none
+  Caller    : ??
 
 =cut
+
 
 sub get_landmark_MarkerFeatures_old{
    my ($self,$chr_name) = @_;
@@ -167,19 +169,19 @@ sub get_landmark_MarkerFeatures_old{
 }
 
 
-
-
 =head2 get_landmark_MarkerFeatures
 
- Title   : get_landmarkMarkers
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg  1    : txt $chromosome_name
+  Arg  2    : int $min_feature_distance (glob)
+  Function  : landmark marker SeqFeatures from landmark_marker table
+              on given chromosome name, ordered ascending. If same marker closer than
+              $min_feature_distance on chromosome one is pruned from result.
+  Returntype: list Bio::EnsEMBL::SeqFeature
+  Exceptions: none
+  Caller    : ??
 
 =cut
+
 
 sub get_landmark_MarkerFeatures{
    my ($self,$chr_name,$glob) = @_;

@@ -52,6 +52,18 @@ use strict;
 
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::Root::RootI );
 
+
+=head2 new
+
+  Arg  1    : Bio::EnsEMBL::DBSQL::DBAdaptor $dbadaptor
+  Function  : create an AnalysisAdaptor. Caches all Analysis objects from the database.
+  Returntype: Bio::EnsEMBL::DBSQL::AnalysisAdaptor
+  Exceptions: none
+  Caller    : DBAdaptor::get_AnalysisAdaptor
+
+=cut
+
+
 sub new {
   my $class = shift;
   my $self = bless {},$class;
@@ -63,15 +75,18 @@ sub new {
   return $self;
 }
 
+
 =head2 fetch_all
 
-  Title   : fetch_all
-  Usage   : @analyses = $self->fetch_all;
-  Function: retrieves all analyses from db;
-  Returns : List of Bio::EnsEMBL::Analysis
-  Args    : -
+  Args      : none
+  Function  : Retrieves all Analysis objects from the database,
+              caches them.
+  Returntype: list Bio::EnsEMBL::Analysis
+  Exceptions: none
+  Caller    : $self->new
 
 =cut
+
 
 sub fetch_all {
   my $self = shift;
@@ -98,14 +113,18 @@ sub fetch_all {
   return values %{$self->{_cache}};
 }
 
+
 =head2 fetch_by_dbID
 
-  Title   : fetch_by_dbID
-  Usage   : my $analysis = $adaptor->fetch_by_dbID
-  Function: Retrieves an analysis from database by internal id
-  Returns : throws exception when something goes wrong.
-            undef if the id is not in the db.
-  Args    : 
+  Arg 1     : int $internal_analysis_id
+  Function  : Retrieves an analysis from database by internal id.
+              Returns undef if id not present in db.
+  Returntype: Bio::EnsEMBL::Analysis
+  Exceptions: none
+  Caller    : generally used
+
+=cut
+
 
 =cut
 
@@ -139,6 +158,18 @@ sub fetch_by_dbID {
   $self->{_cache}->{$anal->dbID} = $anal;
   return $anal;
 }
+
+
+=head2 fetch_by_newest_logic_name
+
+  Arg  1    : txt $logic_name
+  Function  : Retrieve latest Analysis object from db with given logic_name
+  Returntype: Bio::EnsEMBL::Analysis
+  Exceptions: none
+  Caller    : Probably Pipeline control scripts
+
+=cut
+
 
 sub fetch_by_newest_logic_name {
   my $self = shift;
@@ -194,8 +225,20 @@ sub fetch_by_logic_name {
   return @result;
 }
 
-# store makes dbID for analysis object
-# sets the creation time in created if it wasnt set before
+
+=head2 store
+
+  Arg  1    : Bio:EnsEMBL::Analysis $analysis
+  Function  : stores $analysis in db. Doesn if already equppied with dbID
+              Sets created date if not already set. Sets dbID and adaptor
+              inside $analysis. Returns dbID.
+  Returntype: int
+  Exceptions: none
+  Caller    : Every store that links to analysis object
+
+=cut
+
+
 sub store {
 
   my $self = shift;
