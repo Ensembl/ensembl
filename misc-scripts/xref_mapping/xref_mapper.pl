@@ -117,6 +117,9 @@ for my $species ( @all_species ) {
   print "\nDumping xref & Ensembl sequences" . info($i, @all_species) . "\n";
   $species->dump_seqs($location);
 
+  print "\nChecking external_db table\n" if ($upload);
+  $species->upload_external_db() if ($upload);
+
   print "\nRunning mapping" . info($i, @all_species) . "\n";
   $species->build_list_and_map();
 
@@ -169,6 +172,8 @@ options:
   -upload               upload xref, object_xref, identity_xref data, and set
                         display_xrefs for genes and transcripts. Data is written
                         to *.txt etc regardless of whether this option is used.
+                        If external_db in core database is empty, it is populated
+                        from ../external_db/external_dbs.txt
 
   -deleteexisting       delete existing data from xref, object_xref,
                         identity_xref and external synonym tables. Also set all
