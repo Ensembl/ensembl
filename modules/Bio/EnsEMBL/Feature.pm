@@ -60,6 +60,7 @@ package Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Slice;
 
 use vars qw(@ISA);
 
@@ -576,6 +577,9 @@ sub transfer {
                the region on the requested coordinate system that this feature
                porjected to.
 
+               If the feature projects entirely into a gap then a reference to
+               an empty list is returned.
+
   Returntype : list reference of [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
@@ -602,21 +606,71 @@ sub project {
           " adaptor");
   }
 
-  #get a slice that exactly overlaps the feature
-  $slice = $slice_adaptor->fetch_by_Feature($self);
+  my $db = $slice_adaptor->db();
+  my $cs  = $slice->coord_system();
 
-  my $offset = $self->{'start'} - 1;
+  #convert this features coords to absolute coords (i.e. relative to the start
+  #of the seq_region, not to the slice)
+  $slice = $slice_adaptor->fetch_by_region($cs->name(),
+                                           $slice->seq_region_name(),
+                                           undef, #start
+                                           undef, #end
+                                           1, #strand
+                                           $cs->version);
+  my $feature = $self->transfer($slice);
 
-  my $projection = $slice->project($cs_name, $cs_version);
+  #map the absolute coords to the other coord system
+  my $csa = $db->get_CoordSystemAdaptor();
+  my $dest_cs = $csa->fetch_by_name($cs_name, $cs_version);
 
-  #adjust the project coordinates so that they are relative to the
-  #the slice the feature is currently on
-  foreach my $segment (@$projection) {
-    $segment->[0] += $offset;
-    $segment->[1] += $offset;
+  if($dest_cs->equals($cs)) {
+    #no transformation is necessary, just give back a slice
+    #spanning the feature (on the same strand as the feature)
+    my $strand = $feature->strand;
+    my $slice = Bio::EnsEMBL::Slice->new
+      (-COORD_SYSTEM    => $dest_cs,
+       -START           => $feature->start(),
+       -END             => $feature->end(),
+       -STRAND          => $feature->strand(),
+       -SEQ_REGION_NAME => $slice->seq_region_name,
+       -ADAPTOR         => $slice_adaptor);
+    return [[$self->{'start'}, $self->{'end'}, $slice]];
   }
 
-  return $projection;
+  my $asma = $db->get_AssemblyMapperAdaptor();
+  my $asm_mapper = $asma->fetch_by_CoordSystems($cs, $dest_cs);
+
+  my @coords = $asm_mapper->map($slice->seq_region_name,
+                                $feature->start(),
+                                $feature->end(),
+                                $feature->strand(),
+                                $cs);
+
+  my @projection;
+  my $current_start = $self->{'start'};
+
+  foreach my $coord (@coords) {
+    my $coord_start = $coord->start();
+    my $coord_end   = $coord->end();
+    my $length = $coord_end - $coord_start + 1;
+
+    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+      my $slice = Bio::EnsEMBL::Slice->new
+        (-COORD_SYSTEM => $dest_cs,
+         -START        => $coord_start,
+         -END          => $coord_end,
+         -STRAND       => $coord->strand(),
+         -SEQ_REGION_NAME => $coord->id(),
+         -ADAPTOR      => $slice_adaptor);
+
+      my $current_end = $current_start + $length - 1;
+      push @projection, [$current_start, $current_end, $slice];
+    }
+
+    $current_start += $length;
+  }
+
+  return \@projection;
 }
 
 
