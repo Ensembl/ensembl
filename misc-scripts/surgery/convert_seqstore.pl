@@ -435,6 +435,16 @@ copy_table($dbi, "xref");
 
 # ----------------------------------------------------------------------
 
+debug( "Add some more entries to meta table" );
+execute( $dbi, "INSERT INTO $target.meta( meta_key, meta_value ) " .
+	"VALUES (  \"assembly.mapping\", \"chromosome:NCBI33|contig\" ), " .
+	"( \"assembly.mapping\", \"clone|contig\" ), " .
+	"( \"assembly.mapping\", \"supercontig|contig\" ) " );
+
+		 
+
+
+
 &check() if $check;
 
 $dbi->disconnect();
