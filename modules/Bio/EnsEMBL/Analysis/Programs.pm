@@ -1,5 +1,5 @@
 
-package Programs;
+package Bio::EnsEMBL::Analysis::Programs;
 use strict;
 use vars qw( %Program_Paths );
 use Carp;
@@ -9,6 +9,7 @@ use Sys::Hostname;
 sub import {
     my $pkg = shift;
     foreach (@_) {
+        print STDERR "importing: $_\n";
         $Program_Paths{ $_ } = 0;
     }
     my( $home, @PATH, @missing );
@@ -124,15 +125,15 @@ __END__
 
 =head1 SYSNOPSIS
 
-    use Programs qw( efetch getz est2genome 
+    use Bio::EnsEMBL::Analysis::Programs qw( efetch getz est2genome 
                      /usr/local/bin/this_one
                      ~me/some/path/my_prog
                      ~/../jane/bin/her_prog );
 
     # Can also do at run time
-    Programs->import( $someProg );
+    Bio::EnsEMBL::Analysis::Programs->import( $someProg );
 
-    $path_to_prog = Programs::Program_Paths{ $prog };
+    $path_to_prog = $Bio::EnsEMBL::Analysis::Programs::Program_Paths{ $prog };
 
 =head1 DESCRIPTION
 
