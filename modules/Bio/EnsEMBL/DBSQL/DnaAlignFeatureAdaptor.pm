@@ -80,7 +80,16 @@ sub fetch_by_dbID{
        $self->throw("fetch_by_dbID must have an id");
    }
 
-   my $sth = $self->prepare("select d.contig_id,d.contig_start,d.contig_end,d.contig_strand,d.hit_start,d.hit_end,d.hit_strand,d.hit_name,d.cigar_line,d.analysis_id, d.score from dna_align_feature d where d.dna_align_feature_id = $id");
+   my $tablename = $self->tablename();
+
+   my $sth = $self->prepare("
+      SELECT d.contig_id, d.contig_start, d.contig_end,
+             d.contig_strand, d.hit_start, d.hit_end,
+             d.hit_strand, d.hit_name, d.cigar_line,
+             d.analysis_id, d.score 
+        FROM $tablename d 
+       WHERE d.dna_align_feature_id = $id ");
+
    $sth->execute();
 
    my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score) = $sth->fetchrow_array();
@@ -111,12 +120,19 @@ sub fetch_by_dbID{
 
 sub fetch_by_contig_id_constraint{
    my ($self,$cid, $constraint) = @_;
+   my $tablename = $self->tablename();
 
    if( !defined $cid ) {
        $self->throw("fetch_by_contig_id must have an contig id");
    }
    
-   my $sql = "select d.contig_id,d.contig_start,d.contig_end,d.contig_strand,d.hit_start,d.hit_end,d.hit_strand,d.hit_name,d.cigar_line,d.analysis_id, d.score,d.perc_ident,d.evalue from dna_align_feature d where d.contig_id = $cid";
+   my $sql = 
+     "SELECT d.contig_id, d.contig_start, d.contig_end,
+             d.contig_strand, d.hit_start, d.hit_end,
+             d.hit_strand, d.hit_name, d.cigar_line,
+             d.analysis_id, d.score, d.perc_ident, d.evalue 
+        FROM $tablename d 
+       WHERE d.contig_id = $cid ";
    if($constraint){
      $sql .= " AND $constraint";
    }
@@ -450,7 +466,8 @@ sub fetch_by_assembly_location_and_pid{
 
 sub fetch_by_assembly_location_constraint{
   my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
-  
+  my $tablename = $self->tablename();
+
   if( !defined $type ) {
     $self->throw("Assembly location must be start,end,chr,type");
   }
@@ -476,8 +493,8 @@ sub fetch_by_assembly_location_constraint{
                     d.hit_start, d.hit_end, d.hit_strand, d.hit_name,
                     d.cigar_line, d.analysis_id, d.score, d.perc_ident,
                     d.evalue
-             FROM   dna_align_feature d 
-             WHERE d.contig_id IN ($cid_list)";
+               FROM $tablename d 
+              WHERE d.contig_id IN ($cid_list)";
   
   if($constraint) {
     $sql .=  " AND $constraint";
@@ -545,6 +562,7 @@ sub fetch_by_assembly_location_constraint{
 
 sub store{
    my ($self,$contig_id,@sf) = @_;
+   my $tablename = $self->tablename();
 
    if( scalar(@sf) == 0 ) {
        $self->throw("Must call store with contig_id then sequence features");
@@ -554,7 +572,12 @@ sub store{
        $self->throw("Contig_id must be a number, not [$contig_id]");
    }
 
-   my $sth = $self->prepare("insert into dna_align_feature (contig_id,contig_start,contig_end,contig_strand,hit_start,hit_end,hit_strand,hit_name,cigar_line,analysis_id,score,evalue, perc_ident) values (?,?,?,?,?,?,?,?,?,?,?, ?, ?)");
+   my $sth = $self->prepare("
+     INSERT INTO $tablename (contig_id, contig_start, contig_end,
+                             contig_strand, hit_start, hit_end,
+                             hit_strand, hit_name, cigar_line,
+                             analysis_id, score, evalue, perc_ident) 
+     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?, ?)");
 
    foreach my $sf ( @sf ) {
        if( !ref $sf || !$sf->isa("Bio::EnsEMBL::DnaDnaAlignFeature") ) {
@@ -569,7 +592,10 @@ sub store{
 	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
        }
        #print STDERR "storing ".$sf->gffstring."\n";
-       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->hstart,$sf->hend,$sf->hstrand,$sf->hseqname,$sf->cigar_string,$sf->analysis->dbID,$sf->score, $sf->p_value, $sf->percent_id);
+       $sth->execute( $contig_id, $sf->start, $sf->end, $sf->strand,
+                      $sf->hstart, $sf->hend, $sf->hstrand, $sf->hseqname,
+		      $sf->cigar_string, $sf->analysis->dbID, $sf->score, 
+                      $sf->p_value, $sf->percent_id);
    }
 
 
@@ -625,6 +651,13 @@ sub _new_feature {
 
   return $align_feat;
 }
+
+
+sub tablename {
+  return "dna_align_feature";
+}
+
+
     
 1;
 
