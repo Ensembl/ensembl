@@ -41,7 +41,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-our $SLICE_FEATURE_CACHE_SIZE = 4;
+my $SLICE_FEATURE_CACHE_SIZE = 4;
 my $MAX_SPLIT_QUERY_SEQ_REGIONS = 3;
 
 =head2 new
