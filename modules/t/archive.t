@@ -50,8 +50,7 @@ $archive = Bio::EnsEMBL::DBArchive::Obj->new( -host => $host, -dbname => $dbname
 print "ok 2\n";
 
 $seq = Bio::Seq->new( -id => 'silly',-seq => 'ATTCGTTGGGTGGCCCGTGGGTG');
-
-$archive->write_seq($seq,1,'exon','ENSG000000012',1);
+$archive->write_seq($seq->id,1,'exon',$seq->seq,'ENSG000000012',1,'AC0345344',1);
 
 print "ok 3\n";
 
