@@ -1144,7 +1144,13 @@ sub translate {
                                -alphabet => 'dna',
                                -id       => $display_id );
 
-  return $self->translation->modify_translation( $peptide->translate() );
+  my $translation = $peptide->translate();
+
+  if($self->edits_enabled()) {
+    $self->translation()->modify_translation( $translation );
+  }
+
+  return $translation;
 }
 
 
