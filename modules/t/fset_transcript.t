@@ -27,6 +27,7 @@ BEGIN { $| = 1; print "1..11\n";
 END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBLoader;
+use Bio::EnsEMBL::DBSQL::FeatureAdaptor;
 use lib 't';
 use EnsTestDB;
 $loaded = 1;
