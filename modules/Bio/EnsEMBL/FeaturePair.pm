@@ -496,26 +496,19 @@ sub to_FTHelper{
 sub gffstring {
     my ($self) = @_;
 
-    my $str;
-    my $strand = "+";
+    my $str = $self->SUPER::gffstring();
 
-    if ($self->strand == -1) {
-      $strand = "-";
-    }
+   my $hstrand = "+";
+   
+   if ($self->hstrand == -1) {
+     $hstrand = "-";
+   }
 
-    #hope this doesn't slow things down too much
-    $str .= (defined $self->seqname)    ?   $self->seqname."\t"     :  "\t";
-    $str .= (defined $self->source_tag) ?   $self->source_tag."\t"  :  "\t";
-    $str .= (defined $self->primary_tag)?   $self->primary_tag."\t" :  "\t";
-    $str .= (defined $self->start)      ?   $self->start."\t"       :  "\t";
-    $str .= (defined $self->end)        ?   $self->end."\t"         :  "\t";
-    $str .= (defined $self->score)      ?   $self->score."\t"       :  "\t";
-    $str .= $strand . "\t";
-    $str .= (defined $self->phase)      ?   $self->phase."\t"       :  ".\t";
+    #Append a few FeaturePair specific things
     $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
     $str .= (defined $self->hstart)     ?   $self->hstart."\t"      :  "\t";
     $str .= (defined $self->hend)       ?   $self->hend."\t"        :  "\t";
-    $str .= (defined $self->hstrand)    ?   $self->hstrand."\t"     :  "\t";
+    $str .= (defined $self->hstrand)    ?   $hstrand."\t"           :  "\t";
     $str .= (defined $self->hphase)     ?   $self->hphase."\t"      :  ".\t";
     
     return $str;
