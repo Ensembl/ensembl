@@ -312,13 +312,21 @@ sub _set_exon_phases {
       # chop it off before comparing
       my $tmp = $trans[$i]->seq();
       
+
       if (substr($tmp,-1) eq "*") {
 	$tmp = substr($tmp,0,-1);
       }
 
+      # if we have an X, substitute it to a .
+      $tmp =~ s/X/\./g;
+
+      # if we have a stop - forget it?
+
+      $tmp =~ /\*/ && next;
+      
       # Compare strings to see if the exon peptide is contained in 
       # the full sequence
-      if ((my $pos = index($pep,$tmp)) >= 0) {
+      if ($pep =~ /$tmp/ ) {
 	$phase = $i;
       }
     }
@@ -329,7 +337,11 @@ sub _set_exon_phases {
       #print STDERR "new phase is $phase\n";
       $exon->phase($phase);
     } else {
-      $self->warn("Can not find frame for exon. Sequences do not match\n");
+	my $pep0 = $trans[0]->seq;
+	my $pep1 = $trans[1]->seq;
+	my $pep2 = $trans[2]->seq;
+
+      $self->warn("Can not find frame for exon. Sequences do not match\nInput $pep\n0     $pep0\n1     $pep1\n2     $pep2\n");
     }
 
   }

@@ -270,7 +270,7 @@ sub translateable_exons{
 
    # one exon genes - easy to handle.
    if( $#exons == 0 ) {
-       return $self;
+       return @exons;
    }
 
    while( my $exon = shift @exons ) {

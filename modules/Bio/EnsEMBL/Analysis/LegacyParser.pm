@@ -480,7 +480,7 @@ sub map_all{
 	    # only add transcript if found a valid exon
 	    $transcripts{$transcript_id}=$transcript;
 	    #$self->{'_exon_hash'}->{$e}->_rephase_exon_genscan();
-	    print STDERR "Writing $e\n";
+	    #print STDERR "Writing $e\n";
 	    $transcript->add_Exon($self->{'_exon_hash'}->{$e});
 	    push(@{$exon2transcript{$exon_id}},$transcript);
 	}
@@ -533,43 +533,6 @@ sub map_all{
 		next;
 	    }
 
-
-	    #
-	    # This puts in the Translation information
-	    #
-	    
-	    my $ttranscript = $transcripts{$transcript_id};
-
-	    my $fe = $ttranscript->first_exon();
-	    my $le = $ttranscript->last_exon();
-	    
-	    if( !defined $fe ) {
-		$self->throw("Attempting to build a transcript with no Exons. problem!");
-	    }
-	    
-	    my $trans = Bio::EnsEMBL::Translation->new();
-	    $trans->start_exon_id($fe->id);
-	    $trans->end_exon_id($le->id);
-	    
-	    if( $fe->strand == 1 ) {
-		$trans->start($fe->start + (3 -$fe->phase)%3 );
-	    } else {
-		$trans->start($fe->end - (3 -$fe->phase)%3 );
-		print STDERR "Translation start at ",$trans->start,"\n";
-	    }
-	    
-	    if( $le->strand == -1 ) {
-		$trans->end($le->end - $le->end_phase );
-	    } else {
-		$trans->end($le->end + $le->end_phase );
-	    }
-	    my $tid = $ttranscript->id();
-	    # horrible
-	    $tid =~ s/ENST/ENSP/;
-
-	    $trans->id($tid);
-	    $trans->version($trans->version);
-	    $ttranscript->translation($trans);
 
 	    $gene->add_Transcript($transcripts{$transcript_id});
 	    push(@{$transcript2gene{$transcript_id}},$gene);

@@ -119,7 +119,7 @@ sub _initialize {
 	  $exon->attach_seq($bioseq);
 	  
 	  if( ! defined $exhash{$exon->start()} ) {
-	      $self->warn("No exon in in genscan file. Ugh");
+	      $self->warn("No exon in in genscan file. Ugh [Exon $exon_id, Disk id ".$self->disk_id);
 	      next;
 	  } 
 	  if( $exhash{$exon->start()}->end != $exon->end() ) {
@@ -131,6 +131,43 @@ sub _initialize {
 	  # 2. build list of transcripts containing these exons
 	  foreach my $transcript (@{$dbobj->{'_exon2transcript'}->{$exon_id}}){
 	      $transcript_id{$transcript->id()}=$transcript;
+	      # Now deal with adding translations!
+
+	      #
+	      # This puts in the Translation information
+	      #
+	      
+	      my $fe = $transcript->first_exon();
+	      my $le = $transcript->last_exon();
+	      
+	      if( !defined $fe ) {
+		  $self->throw("Atempting to build a transcript with no Exons. problem!");
+	      }
+	      
+	      my $trans = Bio::EnsEMBL::Translation->new();
+	      $trans->start_exon_id($fe->id);
+	      $trans->end_exon_id($le->id);
+	      
+	      if( $fe->strand == 1 ) {
+		  $trans->start($fe->start + (3 -$fe->phase)%3 );
+	      } else {
+		  $trans->start($fe->end - (3 -$fe->phase)%3 );
+		  print STDERR "Translation start at ",$trans->start," vs ",$fe->end," from phase ",$fe->phase,"\n";
+	      }
+	      
+	      if( $le->strand == -1 ) {
+		  $trans->end($le->end - $le->end_phase );
+	      } else {
+		  $trans->end($le->end + $le->end_phase );
+	      }
+	      my $tid = $transcript->id();
+	      # horrible
+	      $tid =~ s/ENST/ENSP/;
+	      
+	      $trans->id($tid);
+	      $trans->version($trans->version);
+	      $transcript->translation($trans);
+	      
 	  }
       }
       # 3. build list of genes containing these transcripts
