@@ -208,7 +208,7 @@ sub dump_core {
 
     # first the small ones in full
     my @tables = qw(analysis analysisprocess chromosome externalDB meta
-                       species interpro interpro_description);
+                       interpro interpro_description);
     
     foreach my $table ( @tables ) { 
         $sql = "
@@ -219,7 +219,7 @@ FROM $satdb.$table complete_table
     }
 
     # those that have a chr_name:
-    @tables = qw(karyotype contig_landmarkMarker static_golden_path);
+    @tables = qw(karyotype landmark_marker static_golden_path);
     foreach my $table ( @tables ) { 
         $sql = "
 SELECT distinct t.*
@@ -236,7 +236,7 @@ WHERE chr_name = '$chr'"
         $sql = "
 SELECT distinct t.*
 FROM $satdb.$table t 
-WHERE chrname = '$chr'";
+WHERE chr_name = '$chr'";
         dump_data($sql, $satdb, $table);
     }
 
@@ -286,31 +286,33 @@ SELECT distinct f.*
         dump_data($sql, $satdb, $table);
     }
 
-    $sql="
-SELECT distinct fsf.* 
-  FROM $satdb.static_golden_path sgp,
-       $satdb.feature f, 
-       $satdb.fset_feature fsf
- WHERE sgp.chr_name = '$chr'
-   AND sgp.type = '$static_golden_path_type'
-   AND sgp.raw_id = f.contig
-   AND fsf.feature = f.id
-";
-    dump_data($sql, $satdb, 'fset_feature');
+# has gone:
+#     $sql="
+# SELECT distinct fsf.* 
+#   FROM $satdb.static_golden_path sgp,
+#        $satdb.feature f, 
+#        $satdb.fset_feature fsf
+#  WHERE sgp.chr_name = '$chr'
+#    AND sgp.type = '$static_golden_path_type'
+#    AND sgp.raw_id = f.contig
+#    AND fsf.feature = f.id
+# ";
+#     dump_data($sql, $satdb, 'fset_feature');
 
-    $sql="
-SELECT distinct fs.*
-  FROM $satdb.static_golden_path sgp,
-       $satdb.feature f, 
-       $satdb.fset fs,
-       $satdb.fset_feature fsf
- WHERE sgp.chr_name = '$chr'
-   AND sgp.type = '$static_golden_path_type'
-   AND sgp.raw_id = f.contig
-   AND fsf.feature = f.id
-   AND fsf.fset = fs.id
-";
-    dump_data($sql, $satdb, 'fset');
+# has gone too:
+#     $sql="
+# SELECT distinct fs.*
+#   FROM $satdb.static_golden_path sgp,
+#        $satdb.feature f, 
+#        $satdb.fset fs,
+#        $satdb.fset_feature fsf
+#  WHERE sgp.chr_name = '$chr'
+#    AND sgp.type = '$static_golden_path_type'
+#    AND sgp.raw_id = f.contig
+#    AND fsf.feature = f.id
+#    AND fsf.fset = fs.id
+# ";
+#    dump_data($sql, $satdb, 'fset');
 
     $sql="
 SELECT distinct e.*
@@ -432,14 +434,16 @@ SELECT distinct pf.*
 ";
     dump_data($sql, $satdb, 'protein_feature');
 
-    $sql="
-SELECT distinct gt.* 
-FROM   $satdb.genetype gt, 
-       $litedb.gene lg
-WHERE  lg.chr_name = '$chr'
-  AND  lg.name = gt.gene_id
-";
-    dump_data($sql, $satdb, 'genetype');
+# genetype has gone:
+# 
+#     $sql="
+# SELECT distinct gt.* 
+# FROM   $satdb.genetype gt, 
+#        $litedb.gene lg
+# WHERE  lg.chr_name = '$chr'
+#   AND  lg.name = gt.gene_id
+# ";
+#     dump_data($sql, $satdb, 'genetype');
 
     $sql="
 SELECT gd.* 
@@ -1098,7 +1102,8 @@ sub dump_schema {
     my $destdir = "$workdir/$satdb";
     my $destfile = "$satdb.sql";
 
-    warn "Dumping/checking schema of $satdb\n";
+    my $thing = $check_sql ? "Just check" : "Dump";
+    warn "${thing}ing schema of $satdb\n";
 
     unless (-d $destdir) {
         mkdir $destdir, 0755 || die "mkdir $destdir: $!";
@@ -1238,7 +1243,7 @@ sub check_sql {
     $cmd = "echo \"$sql limit 1\" | $mysql -N -q --batch -h $host -u $user $pass_arg $litedb ";
     $out=`$cmd`;
     
-    if ( !$out or length($out) < 8 or $?  ) { 
+    if ( !$out or length($out) < 3 or $?  ) { 
         carp "``$cmd'' exited with little or no output and exit-status $?\n";
     } 
 
