@@ -381,7 +381,7 @@ sub transform {
   #of the seq_region, not to the slice)
   my $slice_adaptor = $db->get_SliceAdaptor;
   $slice = $slice_adaptor->fetch_by_region($current_cs->name(),
-                                           $slice->seq_region(),
+                                           $slice->seq_region_name(),
                                            undef, #start
                                            undef, #end
                                            1, #strand
@@ -479,7 +479,7 @@ sub transfer {
     $current_slice = $feature->{'slice'};
   }
 
-  if($current_slice->seq_region() ne $slice->seq_region()) {
+  if($current_slice->seq_region_name() ne $slice->seq_region_name()) {
     throw('Feature is not on the seq_region of the slice to transfer to');
   }
 
