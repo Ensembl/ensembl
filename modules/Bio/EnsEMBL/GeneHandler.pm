@@ -368,7 +368,16 @@ sub _generate_missing_exon{
    my $end;
    my $isc;
 
-   if( ($strand == 1 && $contigb->orientation == 1) || ($strand == -1 && $contigb->orientation == -1) ) {
+   # figure out whether conitga is before or after contigb
+   my $corder;
+   if( $contiga->order < $contigb ) {
+       $corder = 1;
+   } else {
+       $corder = -1;
+   }
+
+#   if( ($strand == 1 && $contigb->orientation == 1) || ($strand == -1 && $contigb->orientation == -1) ) {
+   if( $corder == 1 ) {
        $start = $contigb->offset - ($Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING/2);
        $end = $start + $number -1;
        $isc = 0;
