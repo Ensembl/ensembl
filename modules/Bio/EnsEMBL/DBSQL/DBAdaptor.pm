@@ -2029,6 +2029,31 @@ sub get_all_Clone_id{
    return @out;
 }
 
+=head2 get_all_Contig_id
+
+ Title   : get_all_Contig_id
+ Usage   : @Contigid = $obj->get_all_Contig_id
+ Function: returns all the valid (live) Contig ids in the database
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Contig_id{
+   my ($self) = @_;
+   my @out;
+
+   my $sth = $self->prepare("select id from contig");
+   my $res = $sth->execute;
+
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       push(@out,$rowhash->{'id'});
+   }
+
+   return @out;
+}
 
 
 =head2 perl_only_sequences

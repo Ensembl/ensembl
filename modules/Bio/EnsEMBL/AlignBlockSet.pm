@@ -117,7 +117,7 @@ sub add_AlignBlock{
 =cut
 
 sub create_from_cigar{
-   my ($class,$dbadaptor,$cigar) = @_;
+   my ($class,$cigar) = @_;
 
    my $self = $class->new;
    

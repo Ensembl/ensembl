@@ -46,7 +46,7 @@ FeatureFactory is a way of abstracting out the ability to get
 features, featurepairs (two features linked together in a database search
 result) and analysis without needing to know the implementation.
 
-The idea is that in this module we take full advantage of Perl's run
+The idea is that in this module we take full advantage of Perl run
 time object loading to figure out the best implementation to use
 in this situation.
 

@@ -154,8 +154,8 @@ while ( @gene_id > 0 ) {
 
 		    my $tseq = $trans->translate();
 		    if ( $tseq->seq =~ /\*/ ) {
-			print ERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
-			next;
+			print ERR "translation of ".$trans->id." has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+			#next;
 		    }
                     my $gene_version = $gene->version;
 

@@ -720,7 +720,6 @@ sub translate {
     }
 
     $seqstr =~ s/\*$//;
-
     my $trans_seq = Bio::Seq->new( -seq => $seqstr , '-id' => $self->translation->id() ) ;
 
 
@@ -936,11 +935,10 @@ sub _translate_coherent{
        $tstr .= $str;
    }
 
-   $debug = 0;
 
    if ( $debug ) {
-#       print STDERR "Bstr is $tstr\n";
-#       print STDERR "Exon phase is " . $exon_start->phase . "\n";
+       print STDERR "Bstr is $tstr\n";
+       print STDERR "Exon phase is " . $exon_start->phase . "\n";
        my @trans;
        my $exseq = new Bio::PrimarySeq(-SEQ => $tstr , '-id' => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
@@ -951,10 +949,10 @@ sub _translate_coherent{
 	$trans[1] = $exseq->translate('*','X',2);
 	$trans[2] = $exseq->translate('*','X',1);
 
-#       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
-#       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
-#       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
-#       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
+       print(STDERR "Exon start end " . $exon_start->start . " " . $exon_start->end . " " . $exon_start->phase . " " . $exon_start->strand ."\n");
+       print(STDERR "Translation 0 " . $trans[0]->seq . "\n");
+       print(STDERR "Translation 1 " . $trans[1]->seq . "\n");
+       print(STDERR "Translation 2 " . $trans[2]->seq . "\n");
    }
 
 
