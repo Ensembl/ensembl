@@ -629,84 +629,110 @@ sub project {
           "[$cs_name $cs_version]");
   }
 
-  #no mapping is needed if the requested coord system is the one we are in
-  #but we do need to check if some of the slice is outside of defined regions
+  # no mapping is needed if the requested coord system is the one we are in
+  # but we do need to check if some of the slice is outside of defined regions
   if($slice_cs->equals($cs)) {
-    my $entire_len = $self->seq_region_length();
-
-    #if the slice has negative coordinates or coordinates exceeding the 
-    #exceeding length of the sequence region we want to shrink the slice to
-    #the defined region
-
-    if($self->{'start'} > $entire_len || $self->{'end'} < 1) {
-      #none of this slice is in a defined region
-      return [];
-    }
-
-    my $right_contract = 0;
-    my $left_contract  = 0;
-    if($self->{'end'} > $entire_len) {
-      $right_contract = $entire_len - $self->{'end'};
-    }
-    if($self->{'start'} < 1) {
-      $left_contract = $self->{'start'} - 1;
-    }
-
-    my $new_slice;
-    if($left_contract || $right_contract) {
-      $new_slice = $self->expand($left_contract, $right_contract);
-    } else {
-      $new_slice = $self;
-    }
-
-    return [bless [1-$left_contract, $self->length()+$right_contract, 
-                   $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
+    return $self->_constrain_to_region();
   }
 
   my @projection;
   my $current_start = 1;
 
-  my $asma = $db->get_AssemblyMapperAdaptor();
-  my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
+  # decompose this slice into its symlinked components.
+  # this allows us to handle haplotypes and PARs
+  my $normal_slice_proj =
+    $slice_adaptor->fetch_normalized_slice_projection($self);
+  foreach my $segment (@$normal_slice_proj) {
+    my $normal_slice = $segment->[2];
+
+    $slice_cs = $normal_slice->coord_system();
+
+    my $asma = $db->get_AssemblyMapperAdaptor();
+    my $asm_mapper = $asma->fetch_by_CoordSystems($slice_cs, $cs);
 
     # perform the mapping between this slice and the requested system
-  my @coords = $asm_mapper->map($self->seq_region_name(),
-                                $self->start(),
-                                $self->end(),
-                                $self->strand(),
-                                $slice_cs);
+    my @coords = $asm_mapper->map($normal_slice->seq_region_name(),
+				  $normal_slice->start(),
+				  $normal_slice->end(),
+				  $normal_slice->strand(),
+				  $slice_cs);
 
-  #construct a projection from the mapping results and return it
+    #construct a projection from the mapping results and return it
 
-  foreach my $coord (@coords) {
-    my $coord_start  = $coord->start();
-    my $coord_end    = $coord->end();
-    my $length       = $coord_end - $coord_start + 1;
+    foreach my $coord (@coords) {
+      my $coord_start  = $coord->start();
+      my $coord_end    = $coord->end();
+      my $length       = $coord_end - $coord_start + 1;
 
-    #skip gaps
-    if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-      my $coord_cs     = $coord->coord_system();
+      #skip gaps
+      if($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
+        my $coord_cs     = $coord->coord_system();
 
-      #create slices for the mapped-to coord system
-      my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
-                                                  $coord->id(),
-                                                  $coord_start,
-                                                  $coord_end,
-                                                  $coord->strand(),
-                                                  $coord_cs->version());
+        # If the normalised projection just ended up mapping to the
+        # same coordinate system we were already in then we should just
+        # return the original region.  This can happen for example, if we
+        # were on a PAR region on Y which refered to X and a projection to
+        # 'toplevel' was requested.
+        if($coord_cs->equals($slice_cs)) {
+          # trim off regions which are not defined
+          return $self->_constrain_to_region();
+        }
 
-      my $current_end = $current_start + $length - 1;
+        #create slices for the mapped-to coord system
+        my $slice = $slice_adaptor->fetch_by_region($coord_cs->name(),
+                                                    $coord->id(),
+                                                    $coord_start,
+                                                    $coord_end,
+                                                    $coord->strand(),
+                                                    $coord_cs->version());
+
+        my $current_end = $current_start + $length - 1;
 	
-      push @projection, bless([$current_start, $current_end, $slice],
-                              "Bio::EnsEMBL::ProjectionSegment");
-    }
+        push @projection, bless([$current_start, $current_end, $slice],
+                                "Bio::EnsEMBL::ProjectionSegment");
+      }
 
-    $current_start += $length;
+      $current_start += $length;
+    }
   }
 
   return \@projection;
 }
 
+
+sub _constrain_to_region {
+  my $self = shift;
+
+  my $entire_len = $self->seq_region_length();
+
+  #if the slice has negative coordinates or coordinates exceeding the 
+  #exceeding length of the sequence region we want to shrink the slice to
+  #the defined region
+
+  if($self->{'start'} > $entire_len || $self->{'end'} < 1) {
+    #none of this slice is in a defined region
+    return [];
+  }
+
+  my $right_contract = 0;
+  my $left_contract  = 0;
+  if($self->{'end'} > $entire_len) {
+    $right_contract = $entire_len - $self->{'end'};
+  }
+  if($self->{'start'} < 1) {
+    $left_contract = $self->{'start'} - 1;
+  }
+
+  my $new_slice;
+  if($left_contract || $right_contract) {
+    $new_slice = $self->expand($left_contract, $right_contract);
+  } else {
+    $new_slice = $self;
+  }
+
+  return [bless [1-$left_contract, $self->length()+$right_contract, 
+                 $new_slice], "Bio::EnsEMBL::ProjectionSegment" ];
+}
 
 
 =head2 expand
