@@ -429,11 +429,13 @@ sub _transform_to_RawContig {
 
   #transform the supporting features to raw contig coords (hashed on contig)
   my %sf_hash;
-  foreach my $sf ($self->get_all_supporting_features()) {
+  my @sfs = $self->get_all_supporting_features();
+  foreach my $sf (@sfs) {
     foreach my $mapped_feat ($sf->transform()) {
       unless(exists $sf_hash{$mapped_feat->contig->name}) {
 	$sf_hash{$mapped_feat->contig->name} = [];
       }
+      print STDERR "transform has returned ".$mapped_feat."\n";
       push @{$sf_hash{$mapped_feat->contig->name}}, $mapped_feat;
     }
   }
@@ -518,7 +520,7 @@ sub _transform_to_RawContig {
     $new_exon->contig( $rawContig );
     
     #replace old supporting feats with transformed supporting feats
-    $new_exon->add_supporting_features($sf_hash{$rawContig->name()});
+    $new_exon->add_supporting_features(@{$sf_hash{$rawContig->name()}});
     
     return $new_exon;
   }
@@ -951,6 +953,7 @@ sub add_supporting_features {
   
   # check whether this feature object has been added already
  FEATURE: foreach my $feature (@features) {
+    print STDERR "have ".$feature." to add to exon\n";
     unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI")) {
       $self->throw("Supporting feat [$feature] not a " . 
 		   "Bio::EnsEMBL::SeqFeatureI");
