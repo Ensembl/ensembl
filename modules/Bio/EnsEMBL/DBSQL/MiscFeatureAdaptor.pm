@@ -15,11 +15,17 @@ Bio::EnsEMBL::DBSQL::MiscFeatureAdaptor
 
 $mfa = $database_adaptor->get_MiscFeatureAdaptor();
 
+# retrieve a misc feature by its dbID
 my $misc_feat = $mfa->fetch_by_dbID(1234);
+
+# retrieve all misc features in a given region
 my @misc_feats = @{$mfa->fetch_all_by_Slice($slice)};
 
+# retrieve all misc features in a given region with a given set code
 my @misc_clones = @{$mfa->fetch_all_by_Slice_and_set_code('cloneset')};
 
+# store some misc features in the database
+$mfa->store(@misc_features);
 
 =head1 DESCRIPTION
 
@@ -37,10 +43,7 @@ than one set.
 
 Post questions to the EnsEMBL developer list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -477,7 +480,8 @@ sub _objs_from_sth {
 
   Arg [1]    : none
   Example    : @feature_ids = @{$misc_feature_adaptor->list_dbIDs()};
-  Description: Gets an array of internal ids for all misc_features in the current db
+  Description: Gets an array of internal ids for all misc_features in the 
+               current db
   Returntype : list of ints
   Exceptions : none
   Caller     : ?
@@ -493,12 +497,15 @@ sub list_dbIDs {
 
 =head2 store
 
-  Arg [1]    : 
-  Example    : 
-  Description: 
-  Returntype : 
-  Exceptions : 
-  Caller     : 
+  Arg [1]    : list of Bio::EnsEMBL::MiscFeatures @misc_features
+  Example    : $misc_feature_adaptor->store(@misc_features);
+  Description: Stores a list of MiscFeatures in this database.  The stored
+               features will have their 
+  Returntype : none
+  Exceptions : throw on invalid arguments
+               warning if misc feature is already stored in this database
+               throw if start/end/strand attribs are not valid
+  Caller     : general
 
 =cut
 
@@ -517,7 +524,7 @@ sub store {
 
   my $feature_set_sth = $self->prepare
     ("INSERT IGNORE misc_feature_misc_set SET " .
-     " misc_feature_id = ? " .
+     " misc_feature_id = ?, " .
      " misc_set_id = ?");
 
   my $msa = $db->get_MiscSetAdaptor();
@@ -537,7 +544,7 @@ sub store {
     # do some checking of the start/end and convert to seq_region coords
     my $original = $mf;
     my $seq_region_id;
-    ($mf, $seq_region_id) = $self->pre_store($mf);
+    ($mf, $seq_region_id) = $self->_pre_store($mf);
 
     # store the actual MiscFeature
     $feature_sth->execute($seq_region_id, $mf->start(),
