@@ -30,7 +30,7 @@ ok( $db );
 
 my $gene;
 my $ga = $db->get_GeneAdaptor();
-print STDERR $ga."\n";
+
 debug ("Gene->list_dbIDs");
 my $ids = $ga->list_dbIDs();
 ok (@{$ids});
@@ -41,7 +41,6 @@ ok (@{$stable_ids});
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
-print STDERR $gene."\n";
 
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
