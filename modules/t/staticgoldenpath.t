@@ -461,3 +461,11 @@ print "ok 33\n";
 #   print "ok 34\n";
 #}
 
+
+my @features = $chr->get_SimpleFeatures_by_analysis_id(100);
+
+if( scalar(@features) != 2 ) {
+   print "not ok 34\n";
+} else {
+   print "ok 34\n";
+}

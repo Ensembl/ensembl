@@ -221,6 +221,47 @@ sub fetch_by_stable_id{
    return $self->fetch_by_dbID($dbID);
 }
 
+=head2 fetch_by_contig_list
+
+ Title   : fetch_by_contig_list
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_by_contig_list{
+   my ($self,@list) = @_;
+
+   my $str;
+
+   foreach my $id ( @list ) {
+       $str .= "'$id',";
+   }
+   $str =~ s/\,$//g;
+   $str = "($str)";
+
+   # 
+   # this is non-optimised, because we are going to make multiple
+   # trips to the database. should fix here
+   #
+
+   my $sth = $self->prepare("select distinct(t.gene_id) from transcript t,exon_transcript et,exon e,contig c where c.id in $str and c.internal_id = e.contig and et.exon_id = e.exon_id and et.transcript_id = t.transcript_id");
+   $sth->execute;
+
+   my @out;
+
+   while( my ($gid) = $sth->fetchrow_array() ) {
+       push(@out,$self->fetch_by_dbID($gid));
+   }
+
+   return @out;
+	    
+}
+
 
 =head2 fetch_by_Transcript_id
 
