@@ -319,7 +319,7 @@ sub get_all_Genes {
 	   }
 
 	   my $exon = Bio::EnsEMBL::Exon->new();
-	   print(STDERR "Creating exon in clone  = $contigid\n");
+	   #print(STDERR "Creating exon in clone  = $contigid\n");
 	   $exon->clone_id ($id);
 	   $exon->contig_id($contigid);
 	   $exon->id       ($exonid);

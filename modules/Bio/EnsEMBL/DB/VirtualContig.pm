@@ -287,16 +287,16 @@ sub windowed_VirtualContig {
 
     my @ids = keys %{$self->{'contighash'}};
     @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
-    print STDERR "In Windowed vc...\n";
+    #print STDERR "In Windowed vc...\n";
 
-    print STDERR @ids."\n\n";
+    #print STDERR @ids."\n\n";
     
     my $id = undef;
     foreach $_ ( @ids ) {
-	print STDERR "Looking at $_\n";
+	#print STDERR "Looking at $_\n";
 
        if( $self->start_in_vc($_) < $position ) {
-           print STDERR "Starting contig: $_ [". $self->start_in_vc($_). " < $position] \n";
+           #print STDERR "Starting contig: $_ [". $self->start_in_vc($_). " < $position] \n";
            $id = $_;
            last;
        }
@@ -406,13 +406,13 @@ sub primary_seq {
        }
        
        
-       print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
+       #print STDERR "got $cid, from ",$self->{'startincontig'}->{$cid}," to ",$c->golden_end,"\n";
         
        if( $self->{'contigori'}->{$cid} == 1 ) {
-	   print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
+	   #print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
 	   $trunc = $tseq->subseq($self->{'startincontig'}->{$cid},$end);
        } else {
-	   print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
+	   #print(STDERR "ori " . $self->{'contigori'}->{$cid} . "\t" . $self->{'startincontig'}->{$cid} . "\t" . $end . "\n");
 	   $trunc = $tseq->trunc($end,$self->{'startincontig'}->{$cid})->revcom->seq;
        }
 #       print STDERR "Got $trunc\n";
@@ -890,7 +890,7 @@ sub _build_contig_map {
   # so we can figure out the start position (contig-wise)
   
   # initialisation - find the correct end of the focus contig
-  print(STDERR "in build_contig_map\n");
+  #print(STDERR "in build_contig_map\n");
   my ($current_left_size,$current_orientation,$current_contig,$overlap);
     
   if( $ori == 1 ) {
@@ -903,13 +903,13 @@ sub _build_contig_map {
   
   $current_contig = $focuscontig;
   
-  print STDERR "Left size is $left\n";
+  #print STDERR "Left size is $left\n";
   
   GOING_LEFT :
     
     while( $current_left_size < $left ) {
-      print(STDERR "Current left = $current_left_size\n");
-      print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
+      #print(STDERR "Current left = $current_left_size\n");
+      #print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
 
       if( $current_orientation == 1 ) {
 
@@ -919,11 +919,11 @@ sub _build_contig_map {
 	# if there is no left overlap, trim left to this size
 	# as this means we have run out of contigs
 	    
-	print STDERR "Gone left\n";
+	#print STDERR "Gone left\n";
 	    
 	if( !defined $overlap ) {
 	  $left = $current_left_size;
-	  print STDERR "getting out - no overlap\n";
+	  #print STDERR "getting out - no overlap\n";
 	  last;
 	}
 	
@@ -933,7 +933,7 @@ sub _build_contig_map {
 	  $current_left_size += $overlap->distance;
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!
-	    print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
+	    #print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
 	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
 	    last GOING_LEFT;
 	  }
@@ -960,13 +960,13 @@ sub _build_contig_map {
 	
 	if( $overlap->distance == 1 ) {
 	  $current_left_size += $overlap->sister->golden_length-1;
-	  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
+	  #print STDERR ("Current " . $current_left_size . " " . $left . "\n");
 	} else {
 	  $current_left_size += $overlap->distance;
-	  print STDERR ("Current " . $current_left_size . " " . $left . "\n");
+	  #print STDERR ("Current " . $current_left_size . " " . $left . "\n");
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!
-	    print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
+	    #print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
 	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
 	    last GOING_LEFT;
 	  }
@@ -988,33 +988,33 @@ sub _build_contig_map {
   
   my $total = $left + $right;
   
-  print STDERR "leftmost contig is "  . $current_contig->id . 
-               " with $total to account for, " .
-	       " gone $current_left_size of $left\n";
+  #print STDERR "leftmost contig is "  . $current_contig->id . 
+  #             " with $total to account for, " .
+  #	       " gone $current_left_size of $left\n";
 
   $self->{'leftmostcontig_id'} = $current_contig->id;
   
   # the first contig will need to be trimmed at a certain point
   my $startpos;
   
-  print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
-  print STDERR "Current left = $left vs global left= $current_left_size\n";
+  #print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
+  #print STDERR "Current left = $left vs global left= $current_left_size\n";
   
   my $current_length;
-  print STDERR "Left overhang is " . $self->_left_overhang . "\n";
+  #print STDERR "Left overhang is " . $self->_left_overhang . "\n";
   if( $self->_left_overhang() == 0 ) {
     if( $current_orientation == 1 ) {
-      print(STDERR "Current orientation $current_orientation\n");
-      print(STDERR "golden start " . $current_contig->golden_start . "\n");
+      #print(STDERR "Current orientation $current_orientation\n");
+      #print(STDERR "golden start " . $current_contig->golden_start . "\n");
       $startpos = $current_contig->golden_start + ($current_left_size - $left);
     } else {
-      print(STDERR "Current orientation $current_orientation\n");
-      print(STDERR "golden end " . $current_contig->golden_end . "\n");
+      #print(STDERR "Current orientation $current_orientation\n");
+      #print(STDERR "golden end " . $current_contig->golden_end . "\n");
       
       $startpos = $current_contig->golden_end   - ($current_left_size - $left);
     }
 	
-	print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
+	#print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
 	
 	$self->{'start'}        ->{$current_contig->id} = 1;
 	$self->{'startincontig'}->{$current_contig->id} = $startpos;
@@ -1028,12 +1028,12 @@ sub _build_contig_map {
 	}
   } else {
 	# has an overhang - first contig offset into the system
-    print STDERR "First contig offset " . $self->_left_overhang . "\n";
+    #print STDERR "First contig offset " . $self->_left_overhang . "\n";
       $self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
 	if( $current_orientation == 1 ) {
 	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
 	} else {
-	  print STDERR "Start in contig is " . $current_contig->golden_end . "\n";
+	  #print STDERR "Start in contig is " . $current_contig->golden_end . "\n";
 
 	  $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
 	}
@@ -1044,23 +1044,23 @@ sub _build_contig_map {
     }
 
 
-    print STDERR "current length before we get into this is $current_length\n";
+    #print STDERR "current length before we get into this is $current_length\n";
     
     while( $current_length < $total ) {
-	print STDERR "In building actually got $current_length towards $total\n";
+	#print STDERR "In building actually got $current_length towards $total\n";
 	
 	# move onto the next contig.
 	
 	if( $current_orientation == 1 ) {
 	    # go right wrt to the contig.
-	    print STDERR "Going right\n";
+	    #print STDERR "Going right\n";
 	    
 	    $overlap = $current_contig->get_right_overlap();
 	    
 	    # if there is no right overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
-		print STDERR "Out of contigs!\n";
+		#print STDERR "Out of contigs!\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
@@ -1077,7 +1077,7 @@ sub _build_contig_map {
 	    # add to total, move on the contigs
 	    
 	    $current_contig = $overlap->sister();
-	    print(STDERR "New sister " . $current_contig->id  . "\n");
+	    #print(STDERR "New sister " . $current_contig->id  . "\n");
 	    $self->{'contighash'}->{$current_contig->id} = $current_contig;
 	    
 	    if( $overlap->sister_polarity == 1) {
@@ -1115,10 +1115,10 @@ sub _build_contig_map {
 	    $current_length += $overlap->sister->golden_length -1;
 	} else {
 	    # go left wrt to the contig
-	    print STDERR "Going left with " . $current_contig->id . "\n";
+	    #print STDERR "Going left with " . $current_contig->id . "\n";
 	    
 	    $overlap = $current_contig->get_left_overlap();
-	    print STDERR ("Overlap is $overlap\n");
+	    #print STDERR ("Overlap is $overlap\n");
 	    # if there is no left overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
@@ -1130,7 +1130,7 @@ sub _build_contig_map {
 	   # add to total, move on the contigs
 
 	   $current_contig = $overlap->sister();
-	    print(STDERR "New sister " . $current_contig->id  . "\n");
+	    #print(STDERR "New sister " . $current_contig->id  . "\n");
 	   $self->{'contighash'}->{$current_contig->id} = $current_contig;
 
 	   if( $overlap->sister_polarity == 1) {
@@ -1167,7 +1167,7 @@ sub _build_contig_map {
    $total = $left + $right;
 
    # need to store end point for last contig
-   print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
+   #print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
 
     $self->{'rightmostcontig_id'} = $current_contig->id();
     if( $self->_right_overhang == 0 ) {
