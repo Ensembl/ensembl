@@ -585,8 +585,14 @@ sub get_AnnSeq {
 =head2 write_acedb
 
  Title   : write_acedb
- Usage   : $contig->write_acedb(\*FILEHANDLE);
-           $contig->write_acedb(\*FILEHANDLE,$ace_seq_name);
+ Usage   : $contig->write_acedb(\*FILEHANDLE);            
+           $contig->write_acedb(\*FILEHANDLE,$ace_seq_name, $type, $supp_evid);           
+               $ace_seq_name refers to the name of the aceDB-clone name
+               $type refers to the type of gene in the ensEMBL database
+               $supp_evid, indicates supporting evidences
+           by default: $ace_seq_name is the accession number
+                       $type is ensembl
+                       $supp_evid is 0 
  Function: Dumps exon, transcript and gene objects in acedb format
  Returns : 
  Args    :
@@ -594,61 +600,99 @@ sub get_AnnSeq {
 =cut
 
 sub write_acedb {
-    my ($self,$fh,$seqname) = @_;
-
-    my $contig_id=$self->id();
-
+    my ($self,$fh,$seqname,$type,$supp_evid) = @_;
+     
+    my $contig_id = $self->id();
+     
+    $type ||= 'ensembl';
+    $supp_evid ||= 0;    
     $seqname ||= $contig_id;
     
-    foreach my $gene ($self->get_all_Genes()){
-	my $gene_id=$gene->id;
-	TRANSCRIPT :
-	foreach my $trans ( $gene->each_Transcript ) {
-	    my $trans_id=$trans->id;
-	    
-	    # check this transcript has exons on this contig
-	    foreach my $exon ( $trans->each_Exon ) {
-		if( $exon->contig_id ne $contig_id ) {
-		    $self->warn("Could not ace dump transcript " . $trans->id . "as exons across contigs");
-		    next TRANSCRIPT;
-		}
-	    }
-	    
-	    # exons are in order.
+    # get all genes 
+    my @genes = $self->get_Genes_by_Type( $type, $supp_evid );
+    
+    # exit if the clone has no genes
+    unless (@genes) {                
+        print STDERR "'$seqname' has no genes\n";
+        return;
+    } 
+    
+    GENE:          
+    foreach my $gene ( @genes ){	               
+        my $gene_id=$gene->id;
+        	
+	# get all the transcripts of this gene. 
+        my @trans_in_gene = $gene->each_Transcript;
+        
+        # get another gene if this one has no transcripts (pseudogene)
+        unless (@trans_in_gene ) {
+            print STDERR "'$seqname' contains a gene with no transcripts (gene_id: '$gene_id')\n";
+            next GENE;
+        }
+        
+        # for each transcript
+        TRANSCRIPT:
+        foreach my $trans ( @trans_in_gene ) {	              
+            my $trans_id=$trans->id;
+            
+            # get all exons of this transcript	                           
+            my @exons = $trans->each_Exon;   
+                                                                                                        
+            # get transcript exons which belong to the contig 
+            my @exons_in_contig;
+            
+            EXON:
+            foreach my $exon ( @exons ) {                             
+               if ( $exon->contig_id eq $contig_id ) {               
+                  push ( @exons_in_contig,$exon );                                                     
+               } else { next EXON; }
+            }  
+            
+            if (@exons_in_contig) {
+                # check the strand and get the coordinates                                                       
+                my $tstrand = $exons_in_contig[0]->strand;
+                my ($tstart,$tend);
+                if( $tstrand == 1 ) {
+                $tstart = $exons_in_contig[0]->start;
+                $tend   = $exons_in_contig[$#exons_in_contig]->end;
+                } else {
+                $tstart = $exons_in_contig[0]->end;
+                $tend   = $exons_in_contig[$#exons_in_contig]->start;
+                }
 
-	    my @exons = $trans->each_Exon;
+	        # start .ace file printing...
+	        print $fh "Sequence $seqname\n";
+	        print $fh "Subsequence $trans_id $tstart $tend\n\n";
 
-	    my $tstrand = $exons[0]->strand;
-	    my ($tstart,$tend);
-	    if( $tstrand == 1 ) {
-		$tstart = $exons[0]->start;
-		$tend   = $exons[$#exons]->end;
-	    } else {
-		$tstart = $exons[0]->end;
-		$tend   = $exons[$#exons]->start;
-	    }
+	        # print coordinates of the transcript relative to the contig
+	        print $fh "Sequence $trans_id\nSource $seqname\nCDS\nCDS_predicted_by EnsEMBL\nMethod EnsEMBL\n";
 
-	    # print starting stuff...
+                # print coordinates of each exon relative to the transcript   
+                foreach my $exon ( @exons_in_contig ) {
+                    if( $tstrand == 1 ) {
+                        print $fh "Source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
+                    } else {
+                        print $fh "Source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
+                    }                      
+                }
 
-	    print $fh "Sequence $seqname\n";
-	    print $fh "subsequence $gene_id.$trans_id.EnsEMBL $tstart $tend\n\n";
-		
-	    # acedb has coordinates relative to transcripts.
-	    
-	    print $fh "Sequence $gene_id.$trans_id.EnsEMBL\nCDS\nStart_not_found\nEnd_not_found\nMethod EnsEMBL\n";
-	    
-	    foreach my $exon ( $trans->each_Exon ) {
-		if( $tstrand == 1 ) {
-		    print $fh "source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
-		} else {
-		    print $fh "source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
-		}
-	    }
+                # indicate end or start not found for transcript across several contigs
+                 if ($exons[0] != $exons_in_contig[0]) {
+                    print $fh "Start_not_found\n";
+                } 
+                 if ($exons[$#exons] != $exons_in_contig[$#exons_in_contig]) {
+                    print $fh "End_not_found\n";
+                }     
 
-	    print $fh "\n\n";
-	}
+	        print $fh "\n\n"; 
+                  
+            } else {
+                print STDERR "'$trans_id' has no exons in '$seqname'\n";
+                next TRANSCRIPT;
+            }
+                                                            
+	 }         
     }
-
 }
 
 

@@ -151,7 +151,7 @@ sub fetch {
     }
 
     my $byacc= $self->{'_byacc'};
-    
+
     # Fill clone object
     $self->disk_id     ($disk_id);
     $self->embl_version($sv);
@@ -203,13 +203,13 @@ sub build_contigs {
 
 #	print(STDERR "[$key][$val]\n");
 
-	if($key=~/^$disk_id/){
+	if($key=~/^$disk_id\./){
 	    
 	    my($len,$checksum,$embl_offset,$embl_order,$international_id) = split(/,/,$val);
 	  
 	    # all of these values should be positive, non zero
 	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
-	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
+	    # $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
 	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
 	    $self->throw("Error: invalid embl_order [$embl_offset] for contig $key")	if !$embl_offset  || $embl_offset<1;
 
@@ -220,7 +220,6 @@ sub build_contigs {
 	    
 	    my $disk_key = $key;
 	    $key =~ s/^$disk_id/$id/;
-
 	    print STDERR "Attempting to retrieve contig with $disk_key [$key]\n";
 	    
 	    my $tmpcontig = new Bio::EnsEMBL::TimDB::Contig( -dbobj => $self->_dbobj,

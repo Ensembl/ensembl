@@ -741,8 +741,6 @@ INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG000000194
 INSERT INTO genetype (gene_id, type) VALUES ('ENSG00000019419','ensembl');
 
 
-
-
 INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000021073',1,'ENSG00000019419','ENSP00000021073');
 
 #

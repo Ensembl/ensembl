@@ -190,17 +190,16 @@ sub subseq{
 
        
    my @mapcontigs=$self->_vmap->each_MapContig();
-
    my $start_contig=shift(@mapcontigs);
 
    if( !defined $start_contig ) {
-       # all gap contig!
-       return 'N' x ($end - $start +1);
+	# all gap
+	return 'N' x ($end - $start +1);
    }
-
    while ($start_contig->end < $start) {
        $start_contig = shift(@mapcontigs);
    }
+   
    
    # could be in the middle of a gap
    if( $start_contig->start > $end ) {
@@ -226,6 +225,7 @@ sub subseq{
        
    # ok end is > than start. See if start is actually in contig
    if( $start < $start_contig->start ) {
+      # print STDERR "start in gap before contig $start : " . $start_contig->start . "\n";
        #print STDERR "start in gap before contig ... honest\n";
 
        #nope. Got some N's to put in
@@ -237,7 +237,7 @@ sub subseq{
 
        # of course, end could be in this contig. Bugger.
        if( $end <= $start_contig->end ) {
-	   #print STDERR "start in gap before: end in contig\n";
+	#   print STDERR "start in gap before: end in contig\n";
 
 	   if( $start_contig->orientation == 1 ) {
 	       $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start,$start_contig->rawcontig_start + ($end - $start_contig->start));
@@ -272,7 +272,7 @@ sub subseq{
    my $current;
    #print STDERR "About to enter loop...\n";
    while( ($current = shift @mapcontigs) ) {
-       #print STDERR "Looking at ",$current->end," vs ",$end,"\n";
+      # print STDERR "Looking at ",$current->end," vs ",$end,"\n";
        if( $end <= $current->end ) {
 	   last;
        }

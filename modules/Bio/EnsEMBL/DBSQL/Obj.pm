@@ -59,129 +59,165 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DB::ObjI;
 use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DBSQL::Update_Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
 use Bio::EnsEMBL::DBSQL::RawContig;
+use Bio::EnsEMBL::DBSQL::GapContig;
+
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 
 use DBI;
+
 use Bio::EnsEMBL::DBSQL::SQL;
+use Bio::EnsEMBL::DB::ObjI;
+
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw( Bio::EnsEMBL::DB::ObjI Bio::Root::RootI );
+@ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
 
 sub new {
   my($pkg, @args) = @_;
 
   my $self = bless {}, $pkg;
 
-  my ($db,$mapdbname,$host,$driver,$user,$password,$debug,$perl,$perlonlysequences,$perlonlycontigs,$external,$port) = 
-      $self->_rearrange([qw(DBNAME
-			    MAPDBNAME
-			    HOST
-			    DRIVER
-			    USER
-			    PASS
-			    DEBUG
-			    PERLONLYFEATURES
-			    PERLONLYSEQUENCES
-			    PERLONLYCONTIGS
-			    EXTERNAL
-			    PORT
-			    )],@args);
-  $db   || $self->throw("Database object must have a database name");
-  $user || $self->throw("Database object must have a user");
+    my (
+        $db,
+        $mapdbname,
+        $host,
+        $driver,
+        $user,
+        $password,
+        $debug,
+        $perl,
+        $perlonlysequences,
+        $external,
+        $port,
+        $contig_overlap_source,
+        $overlap_distance_cutoff,
+        ) = $self->_rearrange([qw(
+            DBNAME
+	    MAPDBNAME
+	    HOST
+	    DRIVER
+	    USER
+	    PASS
+	    DEBUG
+	    PERLONLYFEATURES
+	    PERLONLYSEQUENCES
+	    EXTERNAL
+	    PORT
+            CONTIG_OVERLAP_SOURCE
+            OVERLAP_DISTANCE_CUTOFF
+	    )],@args);
+    $db   || $self->throw("Database object must have a database name");
+    $user || $self->throw("Database object must have a user");
 
-  #
-  # This needs to be rethought. We are caching sequences
-  # here to allow multiple exons to be retrieved fine
-  # And now more cache's. I think cache's might be a fact of life...
-  # 
+    #
+    # This needs to be rethought. We are caching sequences
+    # here to allow multiple exons to be retrieved fine
+    # And now more cache's. I think cache's might be a fact of life...
+    # 
 
-  $self->{'_contig_seq_cache'} = {};
-  $self->{'_contig_seq_cnt'} = 0;
-  $self->{'_lock_table_hash'} = {};
-  $self->_analysis_cache({});
-  $self->{'_external_ff'} = [];
+    $self->{'_contig_seq_cache'} = {};
+    $self->{'_contig_seq_cnt'} = 0;
+    $self->{'_lock_table_hash'} = {};
+    $self->_analysis_cache({});
+    $self->{'_external_ff'} = [];
   $self->static_golden_path_type('UCSC');
-  if( $debug ) {
-      $self->_debug($debug);
-  } else {
-      $self->_debug(0);
-  }
-  
-  if( ! $driver ) {
-      $driver = 'mysql';
-  }
 
-  if( ! $host ) {
-      $host = 'localhost';
-  }
+    if( $debug ) {
+        $self->_debug($debug);
+    } else {
+        $self->_debug(0);
+    }
+    if( ! $driver ) {
+        $driver = 'mysql';
+    }
+    if( ! $host ) {
+        $host = 'localhost';
+    }
+    if( ! defined $perlonlysequences ) {
+        $perlonlysequences = 0;
+    }
 
-  if( ! defined $perlonlysequences ) {
-      $perlonlysequences = 0;
-  }
+    my $dsn = "DBI:$driver:database=$db;host=$host";
 
-  if( ! defined $perlonlycontigs ) {
-      $perlonlycontigs = 1;
-  }
+    if( $debug && $debug > 10 ) {
+        $self->_db_handle("dummy dbh handle in debug mode $debug");
+    } else {
 
-  my $dsn = "DBI:$driver:database=$db;host=$host";
-  
-  if( $debug && $debug > 10 ) {
-      $self->_db_handle("dummy dbh handle in debug mode $debug");
-  } else {
+        my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
 
-      #my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
-      my $sql_module = "Bio::EnsEMBL::DBSQL::SQL::\L$driver";
-      my $dbh = $sql_module->new($dsn, $user, $password);
-      
-      if( $self->_debug > 3 ) {
-	  $self->warn("Using connection $dbh");
-      }
-     
-      $self->_db_handle($dbh);
-  }
+        $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
 
-  if ($perl && $perl == 1) {
-      $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
-  }
+        if( $self->_debug > 3 ) {
+	    $self->warn("Using connection $dbh");
+        }
 
-  $self->perl_only_sequences($perlonlysequences);
-  $self->perl_only_contigs($perlonlycontigs);
+        $self->_db_handle($dbh);
+    }
 
-  if( defined $external ){
-      foreach my $external_f ( @{$external} ) {
-	  $self->add_ExternalFeatureFactory($external_f);
-      }
-  }
+    if ($perl && $perl == 1) {
+        $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+    }
 
-  $self->dbname( $db );
-  $self->username( $user );
-  $self->host( $host );
-  
-  # Store info for connecting to a mapdb.
-  {
-    $mapdbname ||= 'maps';
-    $self->{'_mapdb'} = {
-        -DBNAME => $mapdbname,
-        -HOST   => $host,
-        -DRIVER => $driver,
-        -USER   => $user,
-        -PASS   => $password,
-        -ENSDB  => $db,
-        };
-  }
+    $self->perl_only_sequences($perlonlysequences);
 
-  return $self;
+    if( defined $external ){
+        foreach my $external_f ( @{$external} ) {
+	    $self->add_ExternalFeatureFactory($external_f);
+        }
+    }
+
+    # Store info for connecting to a mapdb.
+    {
+      $mapdbname ||= 'maps';
+      $self->{'_mapdb'} = {
+          -DBNAME => $mapdbname,
+          -HOST   => $host,
+          -DRIVER => $driver,
+          -USER   => $user,
+          -PASS   => $password,
+          -ENSDB  => $db,
+          };
+    }
+
+    # What source of contigoverlaps should we use?
+    $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
+
+    # What is the maximum distance allowed between contigs
+    # in an overlap?
+    $self->overlap_distance_cutoff($overlap_distance_cutoff) if $overlap_distance_cutoff;
+
+    return $self; # success - we hope!
 }
+
+=head2 get_Update_Obj
+
+ Title   : get_Update_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Update_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+ 
+    return $update_obj;
+  }
 
 # only the get part of the 3 functions should be considered public
 
@@ -206,26 +242,6 @@ sub host {
   $self->{_host};
 }
 
-
-=head2 get_Update_Obj
-
- Title   : get_Update_Obj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Update_Obj {
-    my ($self) = @_;
-    
-    my $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
- 
-    return $update_obj;
-}
 
 =head2 get_Feature_Obj
 
@@ -2061,21 +2077,8 @@ sub get_Contig{
    return $contig->fetch();
 }
 
-=head2 get_Contig
-
- Title   : get_Contig
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
 sub get_Contig_by_international_id{
    my ($self,$int_id) = @_;
-
    #$self->warn("Obj->get_Contig is a deprecated method! 
 #Calling Contig->fetch instead!");
    my $sth=$self->prepare("select id from contig where international_id = '$int_id'");
@@ -2173,27 +2176,6 @@ sub perl_only_contigs{
       $obj->{'perl_only_contigs'} = $value;
     }
     return $obj->{'perl_only_contigs'};
-
-}
-
-=head2 static_golden_path_type
-
- Title   : static_golden_path_type
- Usage   : $obj->static_golden_path_type($newval)
- Function: 
- Returns : value of static_golden_path_type
- Args    : newvalue (optional)
-
-
-=cut
-
-sub static_golden_path_type{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'static_golden_path_type'} = $value;
-    }
-    return $obj->{'static_golden_path_type'};
 
 }
 
@@ -2425,3 +2407,167 @@ sub diffdump{
     return $self->{'_diffdump'};
     
 }
+
+=head2 contig_overlap_source
+
+ Title   : contig_overlap_source
+ Usage   : $obj->contig_overlap_source($newval)
+ Function: Gets or sets a subroutine which is used to
+           decide which overlap sources are used to
+           build virtual contigs.
+ Returns : value of contig_overlap_source, or a ref to
+           the default subroutine "_default_contig_overlap_source".
+ Args    : ref to a subroutine
+
+
+=cut
+
+sub contig_overlap_source {
+    my( $self, $sub ) = @_;
+    
+    if ($sub) {
+        $self->throw("'$sub' is not a CODE reference")
+            unless ref($sub) eq 'CODE';
+        $self->{'_contig_overlap_source'} = $sub;
+    }
+    return $self->{'_contig_overlap_source'} || \&_default_contig_overlap_source;
+}
+
+=pod
+
+=head2 _default_contig_overlap_source
+
+The default subroutine used by B<contig_overlap_source>.
+
+=cut
+
+sub _default_contig_overlap_source {
+    #return $_[0] eq 'phrap';
+    return 1;
+}
+
+
+=head2 get_PredictionFeature_as_Transcript
+
+ Title   : get_PredictionFeature_as_Transcript
+ Usage   :$obj->get_PredictionFeature_as_Transcript($genscan_id)
+ Function:Call get_PredictionFeature_as_Transcript in Feature_obj object,see documentation for this method
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_PredictionFeature_as_Transcript{
+   my ($self,$genscan_id) = @_;
+
+   return $self->get_Feature_Obj->get_PredictionFeature_as_Transcript($genscan_id);
+
+}
+
+
+
+
+
+
+
+
+=head2 overlap_distance_cutoff
+
+ Title   : overlap_distance_cutoff
+ Usage   : $obj->overlap_distance_cutoff($int)
+ Function: Gets or sets an integer which is used when building
+           VirtualContigs.  If the distance in a contig overlap
+           is greater than the cutoff, then the overlap will
+           not be returned.
+ Returns : value of overlap_distance_cutoff, or -1 if it is not set
+ Args    : positive integer
+
+
+=cut
+
+
+sub overlap_distance_cutoff {
+    my( $self, $cutoff ) = @_;
+    
+    if (defined $cutoff) {
+        $self->throw("'$cutoff' is not an positive integer")
+            unless $cutoff =~ /^\d+$/;
+        $self->{'_overlap_distance_cutoff'} = $cutoff;
+    }
+    my $ret = $self->{'_overlap_distance_cutoff'};
+    if (defined($ret)) {
+        return $ret;
+    } else {
+        return -1;
+    }
+}
+
+
+=head2 extension_tables
+
+ Title   : extension_tables
+ Usage   : $obj->extension_tables($newval)
+ Function: 
+ Returns : value of extension_tables
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub extension_tables{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'extension_tables'} = $value;
+    }
+    return $obj->{'extension_tables'};
+
+}
+
+=head2 static_golden_path_type
+
+ Title   : static_golden_path_type
+ Usage   : $obj->static_golden_path_type($newval)
+ Function: 
+ Example : 
+ Returns : value of static_golden_path_type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub static_golden_path_type{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'static_golden_path_type'} = $value;
+    }
+    return $obj->{'static_golden_path_type'};
+
+}
+
+
+=head2 _crossdb
+
+ Title   : _crossdb
+ Usage   : $obj->_crossdb($newval)
+ Function: 
+ Returns : value of _crossdb
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _crossdb{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'_crossdb'} = $value;
+    }
+    return $obj->{'_crossdb'};
+
+}
+
+
+1;

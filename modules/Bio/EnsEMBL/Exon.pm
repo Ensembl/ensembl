@@ -94,7 +94,7 @@ use Bio::Seq; # exons have to have sequences...
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
 
   # Array to store supporting evidence for this exon
   $self->{_supporting_evidence} = [];
@@ -381,6 +381,7 @@ sub phase {
     if ($value < 0 || $value > 2) {
       $self->throw("Bad value ($value) for exon phase. Should only be 0,1,2\n");
     } else {
+#	print STDERR "Setting phase for " . $self->id . " to $value\n";
       $self->{'phase'} = $value;
     }
   }
@@ -722,13 +723,25 @@ sub each_Supporting_Feature {
 
 
 sub find_supporting_evidence {
-    my ($self,$features) = @_;
+    my ($self,$features,$sorted) = @_;
 
-    foreach my $f (@$features) {
-	if (($f->seqname eq $self->contig_id) && ($f->overlaps($self))) {
-	    $self->add_Supporting_Feature($f);
+    FEAT : foreach my $f (@$features) {
+	# return if we have a sorted feature array
+	if ($sorted == 1 && $f->start > $self->end) {
+	    return;
 	}
-    }
+	if ($f->sub_SeqFeature) {
+	  my @subf = $f->sub_SeqFeature;
+
+	  $self->find_supporting_evidence(\@subf);
+	} else {
+	  if ($f->seqname eq $self->contig_id) {
+	    if (!($f->end < $self->start || $f->start > $self->end)) {
+	      $self->add_Supporting_Feature($f);
+	    }
+	  }
+	}
+      }
 }
 
 

@@ -147,9 +147,6 @@ sub delete {
    foreach my $contig ( @contigs ) {
        my $sth = $self->_db_obj->prepare("delete from contig where internal_id = $contig");
        my $res = $sth->execute;
-
-       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
-       $feature_obj->delete($contig);
    }
 
 
@@ -158,9 +155,9 @@ sub delete {
        $res = $sth->execute;
 
        # Mysql does not optimise or statements in where clauses
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna");
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_a_id = $dna;");
        $res = $sth ->execute;
-       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna");
+       $sth = $self->_db_obj->prepare("delete from contigoverlap where dna_b_id = $dna;");
        $res = $sth ->execute;
 
    }
@@ -380,61 +377,39 @@ sub get_rawcontig_by_position {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
     
-    my @overlaps;
-
+    
+    my( %overlap );
     foreach my $contig ($self->get_all_Contigs) {
-	if (defined($contig->get_left_overlap)) {
-	    
-	    my $overlap    = $contig->get_left_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'left2right';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'left2left';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	}
-
-	if (defined($contig->get_right_overlap)) {
-	    
-	    my $overlap    = $contig->get_right_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'right2left';
-	    } elsif ($overlap->sister_polarity == -1) {
-		$type = 'right2right';
-	    } else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	    
-	}
+	foreach my $lap ($contig->get_all_Overlaps) {
+            $overlap{$lap->hash_string} = $lap;
+        }
     }
-
-    return (@overlaps);
+    return values %overlap;
 }
+
+=head2 is_golden
+
+ Title   : is_golden
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub is_golden{
+   my ($self,@args) = @_;
+   
+   foreach my $contig ($self->get_all_Contigs) {
+       if ($contig->is_golden) {
+	   return 1;
+       }
+   }
+   return 0;
+}
+
 
 =head2 htg_phase
 

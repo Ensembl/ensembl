@@ -203,10 +203,14 @@ sub build_clone_map {
     my $length      = 0;
     my $seen        = 0;
     my $middle      = 0;
-    
+    my $smallest_of = 10000000000000000000;
+
     foreach my $contig ( $clone->get_all_Contigs ) {
 	$self->create_MapContig($contig->embl_offset,1,1,$contig);
-	
+	if( $contig->embl_offset < $smallest_of ) {
+	    $smallest_of = $contig->embl_offset;
+	}
+
 	$total_len = $contig->embl_offset + $contig->length;
 	
 	if( $total_len > $length ) {
@@ -219,12 +223,19 @@ sub build_clone_map {
 	}
 	
     }
+
+    if( $smallest_of != 1 ) {
+	# needs left overhang
+	$self->left_overhang($smallest_of);
+    }
+
    
     # Tony: This vc made from a clone. Since it must have a left/right arm
     # we set the 'focus' to the middle.
     # The magic -1 avoids counting the focus base twice
     $middle = int($length)/2;
-    $self->left_size($middle-1);
+   # $self->left_size($middle-1);
+    $self->left_size($middle);
     $self->right_size($length-$middle);
     
     # Remember this vc contructed from a clone (rather than extending a 'seed' contig)
@@ -372,10 +383,11 @@ sub build_contig_map {
 	my $mc=$self->get_MapContig($current_contig->id);
 	$mc->leftmost(1);
 	
+	# first +1 for the 1 convention, second to ensure abutting bases.
 	if( $current_orientation == 1 ) {
-	    $current_length = $current_contig->golden_end - $startpos +1;
+	    $current_length = $current_contig->golden_end - $startpos +1 +1;
 	} else {
-	    $current_length = $startpos - $current_contig->golden_start+1;
+	    $current_length = $startpos - $current_contig->golden_start+1 +1;
 	}
     } else {
 	# has an overhang - first contig offset into the system

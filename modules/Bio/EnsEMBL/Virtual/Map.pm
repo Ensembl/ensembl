@@ -396,9 +396,9 @@ sub raw_contig_position {
 	#If we are not out of the loop at this stage it means that
 	#our Contig lies in a gap
 	if ($mc->start > $vcpos) {
-	    $rc='N';
-	    $rc_pos=-1;
-	    $rc_strand=-2;
+	    $rc='gapcontig';
+	    $rc_pos= $vcpos;
+	    $rc_strand= $vcstrand;
 	    last;
 	}
     }

@@ -23,6 +23,7 @@
     'password'      => undef,
     
     # File containing the datbase schema in SQL format - mandatory
+
     'schema_sql'    => ['../sql/table.sql'],
     
     #EnsEMBL DBSQL::Obj module name - optional                   

@@ -236,7 +236,13 @@ sub _initialize {
 		    $fok=1;
 		}else{
 		    # see if maps via a translation
-		    my($clone2)=$self->get_id_acc($clone,1);
+		    my $clone2;
+		    eval {
+			($clone2)=$self->get_id_acc($clone,1);
+		    };
+		    if ($@) {
+			$self->warn("Clone $clone is not recognised or locked");
+		    }
 		    next if $clone2 eq 'unk';
 		    if($clones{$clone2}){
 			push(@okclones,$clone2);
@@ -451,6 +457,16 @@ sub _get_Clone_id{
        my($id,$val,$disk_id);
        while(($disk_id,$val)=each %{$self->{'_clone_dbm'}}){
 
+	   # shouldn't be looking at this disk_id if its in accession
+	   # (alias mapping dbm)
+	   # and points to a different disk_id
+	   my $tid;
+	   if($tid=$self->{'_accession_dbm'}->{$disk_id}){
+	       if($tid ne $id){
+		   next;
+	       }
+	   }
+
 	   my($flock,$fsv,$facc,$species1,$freeze1,$fdlock)=
 	       $self->_check_clone_entry($disk_id,\$nc,\$nsid,
 					 \$nisv,\$nlock,\$ndlock);
@@ -464,6 +480,7 @@ sub _get_Clone_id{
 	       $nwspecies++;
 	       next;
 	   }
+
 	   # either unlocked or if nogene set and dna not locked
 	   if((!$flock || ($self->{'_nogene'} && !$fdlock)) && 
 	      ($fall || !$fsv) && !$facc){
@@ -504,7 +521,12 @@ sub _get_Clone_id{
    }else{
        print STDERR " and are excluded\n";
    }
-   print STDERR "  Total of ".scalar(@list)." clones are in final list\n";
+   my $nc2=scalar(@list);
+   if($nc2==1){
+       print STDERR "  Total of $nc2 clone is in final list\n";
+   }else{
+       print STDERR "  Total of $nc2 clones are in final list\n";
+   }
    if(scalar(@list)<10){
        print STDERR "  ".join(',',@list)."\n";
    }
@@ -614,7 +636,17 @@ sub get_id_acc{
     # cgp is the clone category (SU, SF, EU, EF)
     my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp,$chr,$species);
 
-    if($line=$self->{'_clone_dbm'}->{$id}){
+    if(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
+	# lookup by accession number, if valid
+	if($line=$self->{'_clone_dbm'}->{$id2}){
+	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
+	    if($acc ne $id){
+		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
+	    }else{
+		$fok=1;
+	    }
+	}
+    }elsif($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
 	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
 	# translate to $acc if output requires this
@@ -630,24 +662,28 @@ sub get_id_acc{
 	    $id2=$id;
 	}
 	$fok=1;
-    }elsif(($self->{'_byacc'}) && ($id2=$self->{'_accession_dbm'}->{$id})){
-	# lookup by accession number, if valid
-	if($line=$self->{'_clone_dbm'}->{$id2}){
-	    ($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp,$chr,$species)=split(/,/,$line);
-	    if($acc ne $id){
-		$self->throw("$id maps to $id2 but does not map back correctly ($acc)");
-	    }else{
-		$fok=1;
-	    }
-	}
     }
     if(!$fok){
 	$self->throw("$id is not a valid sequence in this database");
     }
-    # in case chr is set to unk, set to unknown
-    if(!$chr || $chr eq 'unk'){$chr='unknown';}
+
+    # various chr data fixes
+    # data fix for chr (some data is stored in chr dbmfile as 05 instead of 5)
+    $chr=~s/^0+//;
+    # data fix for anything else
+    if($chr=~/^\d+$/){
+	if($chr<1 || $chr>22){
+	    # if doesn't fit allowed numerical ranges
+	    $chr='unknown';
+	}
+    }elsif($chr ne 'X' && $chr ne 'Y'){
+	# if doesn't fit allowed character values
+	$chr='unknown';
+    }
+
     # in case species is not defined, set to human
     if(!$species){$species='human';}
+
     # return $id = name in ensembl (determined by _byacc); $id2 = name on disk
     return $id,$id2,$cgp,$sv,$emblid,$htgsp,$chr,$species;
 }

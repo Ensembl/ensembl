@@ -792,7 +792,6 @@ sub validate_prot_feature{
 
 }
 
-
 =head2 set_all_fields
 
  Title   : set_all_fields

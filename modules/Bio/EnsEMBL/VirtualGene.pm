@@ -89,7 +89,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($gene,$contig) = $self->_rearrange(['GENE','CONTIG'],@args);
+  my ($gene,$contig,$start,$end,$strand) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND'],@args);
   if( !defined $gene ) {
       $self->throw("No gene in virtualgene object");
   }
@@ -105,7 +105,13 @@ sub _initialize {
   }
 
   $self->contig_id($contig->id);
-  $self->_calculate_coordinates($gene,$contig);
+  if( !defined $start ) {
+      $self->_calculate_coordinates($gene,$contig);
+  } else {
+      $self->start($start);
+      $self->end($end);
+      $self->strand($strand);
+  }
 
   return $make; # success - we hope!
 }
@@ -554,7 +560,7 @@ sub to_FTHelper {
 		    }
 		    my $tstart = $exon->start + $contig{$exon->contig_id}->embl_offset;
 		    my $tend   = $exon->end   + $contig{$exon->contig_id}->embl_offset;
-		    my $acc = $contig{$exon->contig_id}->embl_accession;
+		    my $acc = $contig{$exon->contig_id}->cloneid;
 
 		    if( $exon->strand == 1 ) {
 			$join .= "$acc:".$exon->start."..".$exon->end.",";
@@ -572,14 +578,17 @@ sub to_FTHelper {
 	    my $ft = Bio::SeqIO::FTHelper->new();
 	    $ft->loc("join(".$join.")");
 	    $ft->key('CDS');
-	    print STDERR "Translation is [",$translated_seq->seq,"]\n";
+	    #print STDERR "Translation is [",$translated_seq->seq,"]\n";
 
-	    $ft->add_field('translate',$translated_seq->seq);
+	    $ft->add_field('translatation',$translated_seq->seq);
 	    $ft->add_field('cds',$trans->translation->id);
 	    $ft->add_field('gene',$self->gene->id);
 	    $ft->add_field('transcript',$trans->id);
 	    foreach my $dbl ( @dblinks ) {
 		$ft->add_field('dbxref',$dbl->database.":".$dbl->primary_id);
+	    }
+	    if( $ptrans->is_partial == 1 ) {
+		$ft->add_field('note',"transcript split due to inability to predict a single translateable transcript");
 	    }
 	    push(@out,$ft);
 	}

@@ -96,7 +96,7 @@ if ($gene->created == 962641806 ) {
 }
 else {
     print "ok 8\n";
-    print STDERR "*** SKIPPING gene created test \n";
+    print STDERR "*** skipping gene created test\n";
 }  
 
 if ($gene->modified == 962641806 ) {
@@ -311,7 +311,7 @@ else {
     print STDERR "Trying to get genes by a non-exisiting supporting feature hid, and still getting this: $geneids[0]!\nSomething is wrong with get_geneids_by_hids\n";
 }
 
-my @geneids=$gene_obj->get_geneids_by_hids('TR:P78310');
+@geneids=$gene_obj->get_geneids_by_hids('TR:P78310');
 if ($geneids[0] eq 'test_gene') {
     print "ok 28\n";
 }

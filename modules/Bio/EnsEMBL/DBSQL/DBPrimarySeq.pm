@@ -395,3 +395,5 @@ sub desc {
    } 
    return $self->{'desc'} || '';
 }
+
+1;

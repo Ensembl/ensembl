@@ -82,6 +82,8 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
 use Bio::EnsEMBL::DB::VirtualPrimarySeq;
+use Bio::EnsEMBL::DBSQL::Utils;
+use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end );
 
 my $VC_UNIQUE_NUMBER = 0;
 
@@ -142,6 +144,7 @@ sub _initialize {
   
   $self->_unique_number($VC_UNIQUE_NUMBER);
   
+ # print STDERR "We are ending with length ",$self->length,"\n";
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -358,6 +361,9 @@ sub primary_seq {
    #Go through each MapContig
    my $previous = undef;
    foreach my $mc ( @map_contigs ) {
+     #  print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
+     #  print STDERR "adding to",length($seq_string),"\n";
+
        if( defined $previous && $previous->end+1 != $mc->start ) {
 	   # then start had better be before end
 	   if( $mc->start < $previous->end ) {
@@ -375,8 +381,6 @@ sub primary_seq {
        }
        
        # now add in the actual sequence.
-       #print STDERR $mc->start," Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
-       #print STDERR "adding to",length($seq_string),"\n";
 
        # flip if other way around
        my $substring;
@@ -393,6 +397,10 @@ sub primary_seq {
        $previous = $mc;
    }
    
+
+  # print STDERR "length is ",length($seq_string),"compared to ",$self->length,"\n";
+
+
    # if there is a right overhang, add it 
    if( $self->_vmap->right_overhang() > 0 ) {
        $seq_string .= 'N' x $self->_vmap->right_overhang();
@@ -483,6 +491,63 @@ sub get_all_VirtualGenes {
     return @out;
 }
 
+=head2 get_all_VirtualGenes_startend
+
+ Title   : get_all_VirtualGenes_startend
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_VirtualGenes_startend{
+   my ($self,@args) = @_;
+
+   my %gene;
+   my @ret;
+
+   foreach my $contig ($self->_vmap->get_all_RawContigs) {
+       foreach my $gene ( $contig->get_all_Genes() ) {      
+	   $gene{$gene->id()} = $gene;
+       }
+   }
+   
+ GENE:
+   foreach my $gene ( values %gene ) {
+       my $genestart = $self->length;
+       my $geneend   = 1;
+       my $genestr;
+       foreach my $trans ( $gene->each_Transcript ) {
+	   foreach my $exon ( $trans->each_Exon ) {
+
+	       my $mc = $self->_vmap->get_MapContig($exon->contig_id);
+	       if( !defined $mc ) {
+		   next;
+	       }
+	       
+	       
+	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	       if( $st < $genestart ) {
+		   $genestart = $st;
+	       }
+	       if( $en > $geneend ) {
+		   $geneend = $en;
+	       }
+	       $genestr = $str;
+	   }
+       }
+       
+       my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self, -start => $genestart, -end => $geneend, -strand => $genestr);
+       push(@ret,$vg);
+   }
+
+   return @ret;
+}
+
+
 
 =head2 get_all_SeqFeatures
 
@@ -507,6 +572,7 @@ sub get_all_SeqFeatures {
 }
 
 
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -520,34 +586,120 @@ sub get_all_SeqFeatures {
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-    my ($self, $analysis_type, $score) = @_;
-    
-    my $sf = ();
-    foreach my $c ($self->_vmap->get_all_RawContigs) {
-	   push(@$sf, $c->get_all_SimilarityFeatures_above_score($analysis_type, $score));
-   }
-
-   # Need to clip seq features to fit the boundaries of
-   # our v/c so displays don't break
-   my @vcsf = ();
-   my $count = 0;
-   foreach $sf ( @$sf ) {
-
-       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
-
-       if( !defined $sf ) {      
-	   next;
-       }	
-       if (($sf->start < 0 ) || ($sf->end > $self->length)) {
-	   $count++;
-       }
-       else{
-	    push (@vcsf, $sf);
-       }
-   }
+    my ($self, $analysis_type, $score,$glob) = @_;
    
-   return @vcsf;
+
+    &eprof_start('entire_get_above_score');
+    
+    my @vcsf;
+    foreach my $mc ($self->_vmap->get_all_MapContigs) {
+	&eprof_start('get_type_raw');
+	my @sf = $mc->contig->get_all_SimilarityFeatures_above_score($analysis_type, $score,$glob); 
+	&eprof_end('get_type_raw');
+	    
+             
+	my ($start_allowed,$end_allowed);
+	foreach my $sf ( @sf ) {
+	    if ($mc->leftmost){	
+		if ( $mc->orientation == 1) {
+		    # If end < startincontig contig for orientation 1 
+		    if ($sf->start < $mc->start_in) {  
+			next;              
+		    }		# 
+		} else {
+		    # If start > startincontig for orientation <> 1
+		    if ($sf->end > $mc->start_in) {  
+			next;              
+		    }
+		}
+	    }  elsif ($mc->rightmost_end){
+		
+		if ( $mc->orientation == 1) {
+		    
+		    if ($sf->end >  $mc->rightmost_end) {  
+			next;              
+		    }
+		    
+		} else {
+		    # If start > startincontig for orientation <> 1
+		    if ($sf->start <  $mc->rightmost_end) {  
+			next;              
+		    }
+		}
+	    }
+	    
+	    
+	    # Could be clipped on ANY contig
+	    my $ori   = $mc->orientation;
+	    my $start = $sf->start;
+	    my $end   = $sf->end;
+	    my $strand = $sf->strand;
+
+	    if( $ori == 1 ) {
+		if ($start < $mc->start_in) {  
+		    next;              
+		}
+		if ($end >  $mc->end_in) {  
+		    next;              
+		}
+	    } else {
+		if ($end > $mc->start_in) {  
+		    next;              
+		}
+		if ($start <  $mc->end_in) {  
+		    next;              
+		}
+	    }
+	    
+	    my ($rstart,$rend,$rstrand);
+	    if( $ori == 1 ) {
+		
+		# ok - forward with respect to vc. Only need to add offset
+		my $offset = $mc->start - $mc->start_in;
+		$rstart = $start + $offset;
+		$rend   = $end + $offset;
+		$rstrand = $strand;
+	    } else {
+		my $offset = $mc->start+ $mc->start_in;
+				# flip strand
+		$rstrand = $sf->strand * -1;
+		
+		# yup. A number of different off-by-one errors possible here
+		
+		$rstart  = $offset - $end;
+		$rend    = $offset - $start;
+	    }
+	    
+	    
+	    $sf->start ($rstart);
+	    $sf->end   ($rend);
+	    $sf->strand($rstrand);
+	    
+	    #if( $sf->can('attach_seq') ) {
+		#if (!$self->noseq) {
+		 #   $sf->attach_seq($self->primary_seq);
+		#}			#
+	    #}			# 
+	    
+	    $sf->seqname($self->id);
+	    push(@vcsf,$sf);
+	    
+	}			# 
+    }
+				# 
+
+
+    &eprof_end('entire_get_above_score');
+   
+  
+    return @vcsf;
 }
+
+
+
+
+
+
 
 
 =head2 get_all_SimilarityFeatures
@@ -653,6 +805,35 @@ sub get_all_Genes {
 }
 
 
+=head2 get_all_PredictionFeatures_as_Transcripts
+
+ Title   : get_all_PredictionFeatures_as_Transcripts
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+    
+
+
+sub get_all_PredictionFeatures_as_Transcripts {
+    my ($self) = @_;
+	
+    my @transcripts;
+	
+    foreach my $ft ($self->_get_all_SeqFeatures_type('prediction'))
+    {
+	
+	my $contig=$self->_vmap->dbobj->get_Contig($ft->raw_seqname);
+	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+	    
+    }
+
+    return @transcripts;		
+}
+
 
 
 =head2 get_Genes_by_Type
@@ -686,11 +867,11 @@ sub get_Genes_by_Type {
 
 sub _gene_query{
     
-    my ($self,%gene) = @_;
+    my ($self,%genes) = @_;
     my (%trans,%exon,%exonconverted);
         
 
-    foreach my $gene ( values %gene ) {
+    foreach my $gene ( values %genes ) {
 	
         my $internalExon = 0;
 	foreach my $exon ( $gene->all_Exon_objects() ) {
@@ -704,12 +885,12 @@ sub _gene_query{
 	}
         
         unless ($internalExon) {    
-            delete $gene{$gene->id};
+            delete $genes{$gene->id};
         } 
     }
     
     # get out unique set of translation objects
-    foreach my $gene ( values %gene ) {
+    foreach my $gene ( values %genes ) {
 	foreach my $transcript ( $gene->each_Transcript ) {
 	    my $translation = $transcript->translation;
 	    $trans{"$translation"} = $translation;	    
@@ -729,7 +910,7 @@ sub _gene_query{
 	}
     }
     
-    return values %gene;
+    return values %genes;
 }
 
 
@@ -948,62 +1129,141 @@ sub is_truncated {
 
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
+   my @sf;
 
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
        return $self->_get_cache($type);
    }
 
-   # ok - build the sequence feature list...
 
-   my $sf;
-   
-   if( $self->_cache_seqfeatures() ) {
-       $sf = $self->_make_cache($type);
-   } else {
-       $sf = []; 
-   }
-   
+   &eprof_start('raw-seqfeature-get');
    foreach my $c ($self->_vmap->get_all_RawContigs) {
        if( $type eq 'repeat' ) {
-	   push(@$sf,$c->get_all_RepeatFeatures());
+	   push(@sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
-	   push(@$sf,$c->get_all_SimilarityFeatures());
+	   push(@sf,$c->get_all_SimilarityFeatures());
        } elsif ( $type eq 'prediction' ) {
-	   push(@$sf,$c->get_all_PredictionFeatures());
+	   push(@sf,$c->get_all_PredictionFeatures());
        } elsif ( $type eq 'external' ) {
-	   push(@$sf,$c->get_all_ExternalFeatures());
+	   push(@sf,$c->get_all_ExternalFeatures());
        } elsif ( $type eq 'marker' ) {
-	   push(@$sf,$c->get_MarkerFeatures());
+	   push(@sf,$c->get_MarkerFeatures());
        } else {
 	   $self->throw("Type $type not recognised");
        }
    }
-
+   &eprof_end('raw-seqfeature-get');
+   &eprof_start('vc-seqfeature-convert');
    my @vcsf = ();
-   # need to clip seq features to fit the boundaries of
-   # our v/c so displays don't break
+   my %mapcontig;
 
-   my $count = 0;
-   foreach $sf ( @$sf ) {
+   # this is a horrible duplication of the code in subroutines, placed here
+   # for optimisation reasons
+
+   foreach my $sf ( @sf ) {
        #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
-       $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
-       if( !defined $sf ) {      
-	   next;
+       my @sub = $sf->sub_SeqFeature();
+       if( $#sub >=  0 ) {
+	   $sf = $self->_convert_seqfeature_to_vc_coords($sf);
+       
+	   if( !defined $sf ) {      
+	       next;
+	   } else {
+	       push(@vcsf,$sf);
+	   }
        }
 
+       if( !exists $mapcontig{$sf->seqname} ) {
+	   $mapcontig{$sf->seqname} = $self->_vmap->get_MapContig($sf->seqname);
+       }
+       my $mc = $mapcontig{$sf->seqname};
+       if( !defined $mc ) { 
+	   next;
+       }
+       
+       if ($mc->leftmost){	
+	   if ( $mc->orientation == 1) {
+	       # If end < startincontig contig for orientation 1 
+	       if ($sf->start < $mc->start_in) {  
+		   next;              
+	       }
+	   } else {
+	       # If start > startincontig for orientation <> 1
+	       if ($sf->end > $mc->start_in) {  
+		   next;              
+	       }
+	   }
+       }  elsif ($mc->rightmost_end){
+	   
+	   if ( $mc->orientation == 1) {
+	       
+	       if ($sf->end >  $mc->rightmost_end) {  
+		   next;              
+	       }
+	       
+	   } else {
+	       # If start > startincontig for orientation <> 1
+	       if ($sf->start <  $mc->rightmost_end) {  
+		   next;              
+	       }
+	   }
+       }
+       
+    
+       # Could be clipped on ANY contig
+       
+       if( $mc->orientation == 1 ) {
+	   if ($sf->start < $mc->start_in) {  
+	       next;              
+	   }
+	   if ($sf->end >  $mc->end_in) {  
+	       next;              
+	   }
+       } else {
+	   if ($sf->end > $mc->start_in) {  
+	       next;              
+	   }
+	   if ($sf->start <  $mc->end_in) {  
+	       next;              
+	   }
+       }
 	
-       if($sf->start < 0 ){
-	   $count++;
-        }
-        elsif ($sf->end > $self->length){
-	    $count++;
-        }
-        else{
-	    push (@vcsf, $sf);
-        }
+       my ($rstart,$rend,$rstrand);
+       if( $mc->orientation == 1 ) {
+	   
+	   # ok - forward with respect to vc. Only need to add offset
+	   my $offset = $mc->start - $mc->start_in;
+	   $rstart = $sf->start + $offset;
+	   $rend   = $sf->end + $offset;
+	   $rstrand = $sf->strand;
+       } else {
+	   my $offset = $mc->start+ $mc->start_in;
+	   # flip strand
+	   $rstrand = $sf->strand * -1;
+	
+	   # yup. A number of different off-by-one errors possible here
+	   
+	   $rstart  = $offset - $sf->end;
+	   $rend    = $offset - $sf->start;
+       }
+       
+    
+       $sf->start ($rstart);
+       $sf->end   ($rend);
+       $sf->strand($rstrand);
+       
+       if( $sf->can('attach_seq') ) {
+	   if (!$self->noseq) {
+	       $sf->attach_seq($self->primary_seq);
+	   }
+       }
+       
+       $sf->seqname($self->id);
+       push(@vcsf,$sf);
+       
    }
-   
+   &eprof_end('vc-seqfeature-convert');
    return @vcsf;
 }
 
@@ -1028,10 +1288,9 @@ sub _convert_seqfeature_to_vc_coords {
     if( !defined $cid ) {
 	$self->throw("sequence feature [$sf] has no seqname!");
     }
-    eval {
-	$mc=$self->_vmap->get_MapContig($cid);
-    };
-    if ($@) { #print STDERR $@,"\n";   
+
+    $mc=$self->_vmap->get_MapContig($cid);
+    if( !defined $mc ) {
 	return undef;
     }
 
@@ -1081,15 +1340,12 @@ sub _convert_seqfeature_to_vc_coords {
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
 
 
-    if ($mc->leftmost){
-	
+    if ($mc->leftmost){	
 	if ( $mc->orientation == 1) {
-	    
 	    # If end < startincontig contig for orientation 1 
 	    if ($sf->start < $mc->start_in) {  
 		return undef;              
 	    }
-	    
 	} else {
 	    # If start > startincontig for orientation <> 1
 	    if ($sf->end > $mc->start_in) {  
@@ -1132,19 +1388,28 @@ sub _convert_seqfeature_to_vc_coords {
     }
 	
 
+   # print STDERR "before ",$sf->id," ",$sf->start," end ",$sf->end,"\n";
+
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
-    
-    $sf->start ($rstart);
-    $sf->end   ($rend);
-    $sf->strand($rstrand);
-    
+
+   # print STDERR "rstart ",$rstart," rend ",$rend,"\n";
+
+   # print STDERR "seq length ",$sf->seq,"\n";
+
     if( $sf->can('attach_seq') ) {
 	if (!$self->noseq) {
 	    $sf->attach_seq($self->primary_seq);
 	}
     }
+    #  print STDERR "seq length ",$sf->seq->length,"\n";
+
+    $sf->start ($rstart);
+    $sf->end   ($rend);
+    $sf->strand($rstrand);
+    
     
     $sf->seqname($self->id);
+
     return $sf;
 }
 
@@ -1166,10 +1431,8 @@ sub _convert_start_end_strand_vc {
     my ($rstart,$rend,$rstrand);
 
     my $mc;
-    eval {
-	$mc=$self->_vmap->get_MapContig($contig);
-    };
-    if($@) {
+    $mc=$self->_vmap->get_MapContig($contig);
+    if( !defined $mc ) {
 	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig");
     }
 
@@ -1214,6 +1477,51 @@ sub _dump_map {
    foreach my $mc ($self->_vmap->get_all_MapContigs) {
        print $fh "Contig ".$mc->contig->id." starts:",$mc->start," ends:".$mc->end." start in contig ",$mc->start_in," end in contig ".$mc->end_in." orientation ",$mc->orientation,"\n";
    }
+}
+
+=head2 dump_agp
+
+ Title   : dump_agp
+ Usage   : Produces an accessioned golden path file (agp)
+  Function: $vc->dump_agp('ctg123',\*STDOUT);
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub dump_agp {
+   my ($self,$id,$fh) = @_;
+
+   ! defined $fh && do { $self->throw("No file handle passed to dump_agp"); };
+   my @mapc = $self->_vmap->get_all_MapContigs;
+   my $mc = shift @mapc;
+   my $start = 1;
+   my $clone = $self->dbobj->get_Clone($mc->contig->cloneid);
+   my $ori = $mc->orientation == '-1' ? "-" : "+";
+
+   print $fh sprintf("%10s %6d %6d %4d  P  %s.%s %5d %5d %s\n",$id,
+		     1,$mc->length,1,$mc->contig->cloneid,$clone->embl_version,$mc->start_in,$mc->end_in,$ori);
+   my $prev = $mc;
+   my $count = 2;
+   my $current = $mc->length;
+   # main loop
+   foreach $mc ( @mapc) {
+       if( $prev->end+1 < $mc->start ) {
+	   print $fh sprintf("%10s %6d %6d  N %d",$id,$current+1,$current+$mc->start-$prev->end+1,$mc->start-$prev->end+1);
+	   $current = $current+$mc->start-$prev->end+1;
+	   $count++;
+       }
+       $clone = $self->dbobj->get_Clone($mc->contig->cloneid);
+       $ori = $mc->orientation == '-1' ? "-" : "+";
+       
+       print $fh sprintf("%10s %6d %6d %4d  P  %s.%s %5d %5d %s\n",$id,
+			 $current+1,$current+$mc->length,1,$mc->contig->cloneid,$clone->embl_version,$mc->start_in,$mc->end_in,$ori);
+       $current = $current+$mc->length;
+       $count++;
+   }
+   
 }
 
 

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..11\n"; 
+BEGIN { $| = 1; print "1..12\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -118,6 +118,16 @@ if( $@ ) {
     print "ok 11\n";
 
 
+}
+
+$db->extension_tables(1);
+
+$contig->set_attribute('silly','something');
+
+if( $contig->get_attribute('silly') ne 'something' ) {
+    print "not ok 12\n";
+} else {
+    print "ok 12\n";
 }
     
 

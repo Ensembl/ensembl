@@ -99,6 +99,8 @@ sub is_similar {
 	$self->throw("Trying to test against a [$co] which is not good");
     }
 
+    #warn $self->hash_string, "\n", $co->hash_string, "\n";
+
     if( $self->contiga->id eq $co->contiga->id ) {
 	if( $self->contigb->id ne $co->contigb->id ) {
 	    return 0;

@@ -128,7 +128,7 @@ sub new {
     if ($ns == 0) {
 	$self->throw("No standard genes given!\n");
     }
-    #print STDERR "Got $ns standard genes\n";
+    print STDERR "Got $ns standard genes\n";
     if (!$standard[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Standard genes are not Bio::EnsEMBL::Gene objects\n");
     }
@@ -138,7 +138,7 @@ sub new {
     if ($np == 0) {
 	$self->throw("No standard genes given!\n");
     }
-    #print STDERR "Got $np predictor genes\n";
+    print STDERR "Got $np predictor genes\n";
     
     if (!$predictor[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Predictor genes are not Bio::EnsEMBL::Gene objects\n");
@@ -436,11 +436,12 @@ sub getOverlapStats {
     my ($self) = @_;
     
     unless ($self->{'_overlapStats'}) { 
-        $self->_getMissedGenes();
+        $self->_getMissedGene();
     }
         
     return %{$self->{'_overlapStats'}};
 }
+
 =head2 getWrongGeneScore
 
  Title   : getWrongGeneScore
@@ -496,13 +497,16 @@ sub _getMissedGene {
     my $missed = 0;
     # Initialise _missedGenes to empty array
     $self->{'_missedGenes'} = [];  
+    $self->{'_missedGeneObjects'} = [];
     my %stats; 
+    my %mapping;
     
     foreach my $gene (@$array1) {  
         $comparer->setStandardGene($gene);
         
         if ($comparer->isMissed()) {
             push @{$self->{'_missedGenes'}}, $gene->id;
+	    #push @{$self->{'_missedGeneObjects'}}, $gene;
             $missed++;
         }
  
@@ -516,6 +520,8 @@ sub _getMissedGene {
                 
                 my ($tP, $fP, $fN) = $comparer->getBaseOverlaps(\@exons); 
                 my $statID = $gene->id. " - ". $overlap->id; 
+		$mapping{$statID}=[$gene,$overlap];
+
                 # Add the proportion of the standard that was predicted
                 # The total length of the standard is $tP + $fN
                 my $proportion = $tP / ($tP + $fN);   
@@ -523,10 +529,24 @@ sub _getMissedGene {
             }    
         }
     }
+
+    my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare(@$array1);
+    my $missed = 0;
+    # Initialise _missedGenes to empty array
+    $self->{'_other_missedGeneObjects'} = [];
+    
+    foreach my $gene (@$array2) {  
+        $comparer->setStandardGene($gene);
+	if ($comparer->isMissed()) {
+	    push @{$self->{'_other_missedGeneObjects'}}, $gene;
+            $missed++;
+        }
+    }
     
     # Initialise _overlapStats to %stats
     %{$self->{'_overlapStats'}} = %stats; 
-               
+    %{$self->{'_genemapping'}} = %mapping;
+
     if (@$array1) {
         return $missed / @$array1;
     }
@@ -534,6 +554,112 @@ sub _getMissedGene {
     return 0;
 }
 
+=head2 make_merges
+
+ Title   : make_merges
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub make_merges{
+   my ($self,@args) = @_;
+   
+   my %mapping=%{$self->{'_genemapping'}}; 
+   my $seen="";
+   my @merged;
+   my $id=1;
+   my $ctg;
+   #Go through each pair of overlapping genes standard-predictor
+   foreach my $map_id ( keys (%mapping)) {
+       print STDERR "Mapping: $map_id\n";
+       
+       my $standard=$mapping{$map_id}[0];
+       my $predictor=$mapping{$map_id}[1];
+       my $st_id=$standard->id;
+       $st_id =~ /ctg(\d+)/;
+       $ctg=$1;
+       my $pr_id=$predictor->id;
+       #If we haven't met either of them before, build a new merged gene object
+       if ($seen !~ /$st_id/ && $seen !~ /$pr_id/) {
+	   print STDERR "Creating new gene\n";
+	   my $m_gene=Bio::EnsEMBL::Gene->new;
+	   $m_gene->id("IGI_M2_ctg$ctg\_$id");
+	   $m_gene->version(1);
+	   my $time = time; chomp($time);
+	   $m_gene->created($time);
+	   $m_gene->modified($time);
+	   $id++;
+
+	   #Add to this new object each transcript from both predictor and standard
+	   foreach my $trans ($standard->each_Transcript) {
+	       $m_gene->add_Transcript($trans);
+	   }
+	   foreach my $trans ($predictor->each_Transcript) {
+	       $m_gene->add_Transcript($trans);
+	   }
+	   push @merged,$m_gene;
+	   $seen.="$map_id";
+	   #print STDERR "Seen: $seen\n\n";
+       }
+       else {
+	   foreach my $merged (@merged) {
+	       foreach my $trans ($merged->each_Transcript) {
+		   if ($trans->id =~ /$st_id/) {
+		       foreach my $pred_trans ($predictor->each_Transcript) {
+			   $merged->add_Transcript($pred_trans);
+		       }
+		   }
+		   elsif ($trans->id =~ /$predictor/) {
+		       foreach my $stand_trans ($predictor->each_Transcript) {
+			   $merged->add_Transcript($stand_trans);
+		       }
+		       
+		   }
+	       }
+	   }
+       }
+   }
+   foreach my $missed (@{$self->{'_missedGeneObjects'}}) {
+       
+       my $m_gene=Bio::EnsEMBL::Gene->new;
+       $m_gene->id("IGI_M2_ctg$ctg\_$id");
+       print STDERR "Creating new gene IGI_M2_ctg$ctg\_$id \n";
+       $m_gene->version(1);
+       my $time = time; chomp($time);
+       $m_gene->created($time);
+       $m_gene->modified($time);
+       $id++;
+       
+       #Add to this new object each transcript from both predictor and standard
+       foreach my $trans ($missed->each_Transcript) {
+	   $m_gene->add_Transcript($trans);
+       }
+       push @merged,$m_gene;
+   }
+   foreach my $missed (@{$self->{'_other_missedGeneObjects'}}) {
+       my $m_gene=Bio::EnsEMBL::Gene->new;
+       $m_gene->id("IGI_M2_ctg$ctg\_$id");
+       print STDERR "Creating new gene IGI_M2_ctg$ctg\_$id \n";
+       $m_gene->version(1);
+       my $time = time; chomp($time);
+       $m_gene->created($time);
+       $m_gene->modified($time);
+       $id++;
+       
+       #Add to this new object each transcript from both predictor and standard
+       foreach my $trans ($missed->each_Transcript) {
+	   $m_gene->add_Transcript($trans);
+       }
+       push @merged,$m_gene;
+   }
+
+   return @merged;
+}
 
 
 =head2 getSplitGeneScore

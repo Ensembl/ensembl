@@ -495,7 +495,7 @@ sub split_Transcript_to_Partial{
        push(@out,$t);
 
        while( my $exon = shift @exons ) {
-	   if( $exon->seqname eq $prev->seqname && $exon->phase == $prev->end_phase) {
+	   if( $exon->phase == $prev->end_phase) {
 	       # add it
 	       $t->add_Exon($exon);
 	       $prev = $exon;
@@ -1061,6 +1061,16 @@ sub modified{
 
 }
 
+# sneaky web only function...
+sub gene_is_known {
+    my ($self,$value) = @_;
+    
+    if( defined $value ) {
+         $self->{'_web_hack_gene_is_known'} = $value;
+    }
+    
+    return $self->{'_web_hack_gene_is_known'};
+}
 =head2 rna_pos
 
   Title   : rna_pos

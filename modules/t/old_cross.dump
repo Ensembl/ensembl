@@ -1,0 +1,143 @@
+# MySQL dump 8.10
+#
+# Host: localhost    Database: cross_test_old
+#--------------------------------------------------------
+# Server version	3.23.25-beta
+
+#
+# Dumping data for table 'analysis'
+#
+
+
+#
+# Dumping data for table 'chromosome'
+#
+
+
+#
+# Dumping data for table 'clone'
+#
+
+INSERT INTO clone (id, embl_id, version, embl_version, htg_phase, created, modified, stored) VALUES ('crosstest1','crossembl_1',1,1,4,'2000-11-16 15:19:03','2000-11-16 15:19:03','2000-11-16 15:19:03');
+
+#
+# Dumping data for table 'contig'
+#
+
+INSERT INTO contig (internal_id, id, clone, length, offset, corder, dna, chromosomeId, international_id) VALUES (1,'octc.1','crosstest1',80,10,1,1,1,'int_octc_1');
+INSERT INTO contig (internal_id, id, clone, length, offset, corder, dna, chromosomeId, international_id) VALUES (2,'octc.2','crosstest1',80,100,2,2,1,'int_octc_2');
+INSERT INTO contig (internal_id, id, clone, length, offset, corder, dna, chromosomeId, international_id) VALUES (3,'octc.3','crosstest1',80,200,3,3,1,'int_octc_3');
+
+#
+# Dumping data for table 'contigext'
+#
+
+
+#
+# Dumping data for table 'contigoverlap'
+#
+
+
+#
+# Dumping data for table 'db_update'
+#
+
+
+#
+# Dumping data for table 'dna'
+#
+
+INSERT INTO dna (id, sequence, created) VALUES (1,'GTTCATGCAGGCCTTGGTGCTTCCACATCTGTCCAAGGGCCTTTCAAATGTGACTTTTAACTCTGTGGATTGATTTGCCC','2000-11-16 15:30:29');
+INSERT INTO dna (id, sequence, created) VALUES (2,'TGATTTTTTCCTGCTTTTCAAGGCTGTACTGTCCAAGGGCCTTTCAAACATTCCTATGGGAATTCCTTGGGAGTCTAACT','2000-11-16 15:31:00');
+INSERT INTO dna (id, sequence, created) VALUES (3,'TTATCTGTGGCACATTTGTATTTGTCATCTGTCCAAGGGCCTTTCAAATAGTCAACCGGAGACTCGGGGTCTGAGTGGAG','2000-11-16 15:31:30');
+
+#
+# Dumping data for table 'exon'
+#
+
+
+#
+# Dumping data for table 'exon_transcript'
+#
+
+
+#
+# Dumping data for table 'feature'
+#
+
+
+#
+# Dumping data for table 'fset'
+#
+
+
+#
+# Dumping data for table 'fset_feature'
+#
+
+
+#
+# Dumping data for table 'gene'
+#
+
+
+#
+# Dumping data for table 'geneclone_neighbourhood'
+#
+
+
+#
+# Dumping data for table 'genedblink'
+#
+
+
+#
+# Dumping data for table 'genetype'
+#
+
+
+#
+# Dumping data for table 'ghost'
+#
+
+
+#
+# Dumping data for table 'meta'
+#
+
+
+#
+# Dumping data for table 'repeat_feature'
+#
+
+
+#
+# Dumping data for table 'species'
+#
+
+
+#
+# Dumping data for table 'static_golden_path'
+#
+
+
+#
+# Dumping data for table 'supporting_feature'
+#
+
+
+#
+# Dumping data for table 'transcript'
+#
+
+
+#
+# Dumping data for table 'transcriptdblink'
+#
+
+
+#
+# Dumping data for table 'translation'
+#
+
+

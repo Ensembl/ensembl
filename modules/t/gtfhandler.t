@@ -34,6 +34,7 @@ print "ok 1\n";    # 1st test passes.
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 my @genes=&parse_genes('t/genes.gtf',1);
 
+
 my $dump_file = 't/gene_dump.gtf';
 open (DUMP,"> $dump_file");
 $gtfh->dump_genes(\*DUMP, @genes);

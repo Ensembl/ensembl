@@ -53,6 +53,7 @@ INSERT INTO dna (id, sequence, created) VALUES (4,'TCAGAAATTTGGGTGTTTTGGCCCTGGTG
 # Dumping data for table 'exon'
 #
 
+
 INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_1',1,1,'2000-07-03 16:16:25','2000-07-03 16:16:25','2000-07-03 16:16:25',8,13,1,0,0,1);
 INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_2',2,1,'2000-07-03 16:17:09','2000-07-03 16:17:09','2000-07-03 16:17:09',18,23,1,0,0,1);
 INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('test_exon_3',2,1,'2000-07-03 16:17:32','2000-07-03 16:17:32','2000-07-03 16:17:32',26,28,1,0,0,1);
@@ -96,9 +97,11 @@ INSERT INTO gene (id,version,created,modified,stored) VALUES ('test_gene',1,'200
 # Dumping data for table 'genedblink'
 #
 
+
 INSERT INTO genedblink (gene_id, external_db, external_id) VALUES ('test_gene','sptrembl','MC1R');
 
 #
+
 # Dumping data for table 'ghost'
 #
 
@@ -151,3 +154,4 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 #
 
 INSERT INTO genetype (gene_id, type) VALUES ('test_gene','ensembl');
+

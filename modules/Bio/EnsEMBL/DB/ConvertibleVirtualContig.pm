@@ -122,6 +122,15 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_DBLink($dbl);
    }
 
+   # Convert all the exons and keep track of the name
+   # mapping for the translation.
+   my %namehash;
+   foreach my $exon ($gene->each_unique_Exon) {
+       my @clonedexons = $self->_reverse_map_Exon($exon);
+       $namehash{$exon->id} = [];
+       push(@{$namehash{$exon->id}},@clonedexons);
+   }
+ 
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
        $clonedtrans->id($trans->id);
@@ -135,30 +144,31 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_Transcript($clonedtrans);
 
        foreach my $exon ( $trans->each_Exon ) {
-	   my @clonedexons = $self->_reverse_map_Exon($exon);
+#	   my @clonedexons = $self->_reverse_map_Exon($exon);
+           my @clonedexons = @{$namehash{$exon->id}};
+
 	   foreach my $ce ( @clonedexons ) {
 	       $clonedtrans->add_Exon($ce);
 	   }
-	   
-	   # translations
-	   if( exists $translation{$trans->translation->id} ) {
-	       $clonedtrans->translation($translation{$trans->translation->id});
-	   } else {
-	       my $trl = $trans->translation(); 
-	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
-	       $clonedtrl->id($trl->id);
-	       $clonedtrl->start_exon_id($trl->start_exon_id);
-	       $clonedtrl->end_exon_id($trl->end_exon_id);
-	       $clonedtrl->version($trl->version);
+       }	   
+       # translations
+       if( exists $translation{$trans->translation->id} ) {
+           $clonedtrans->translation($translation{$trans->translation->id});
+       } else {
+           my $trl = $trans->translation(); 
+           my $clonedtrl = Bio::EnsEMBL::Translation->new();
+           $clonedtrl->id($trl->id);
+           $clonedtrl->start_exon_id($trl->start_exon_id);
+           $clonedtrl->end_exon_id($trl->end_exon_id);
+           $clonedtrl->version($trl->version);
 
-	       my ($srawcontig,$start,$sstrand) = $self->_vmap->raw_contig_position($trl->start,1);
-	       $clonedtrl->start($start);
-	       my ($erawcontig,$end,$estrand) = $self->_vmap->raw_contig_position($trl->end,1);
-	       $clonedtrl->end($end);
+           my ($srawcontig,$start,$sstrand) = $self->_vmap->vcpos_to_rcpos($trl->start,1);
+           $clonedtrl->start($start);
+           my ($erawcontig,$end,$estrand) = $self->_vmap->vcpos_to_rcpos($trl->end,1);
+           $clonedtrl->end($end);
 	       
-	       $translation{$trl->id} = $clonedtrl;
-	       $clonedtrans->translation($clonedtrl);
-	   }
+           $translation{$trl->id} = $clonedtrl;
+           $clonedtrans->translation($clonedtrl);
        }
    }
 

@@ -160,26 +160,15 @@ sub end{
 	# not the entire golden length used here (!)
 	# the mysterious +1 is to keep the overlapping base convention.
 	if( $self->orientation == 1 ) {
-	    return $self->start + ($self->contig->golden_end - $self->start_in -1);
+	    return $self->start + ($self->contig->golden_end - $self->start_in);
 	} else {
-	    return $self->start + ($self->start_in - $self->contig->golden_start -1);
+	    return $self->start + ($self->start_in - $self->contig->golden_start);
 	}
     } else {
 	return $self->start + $self->contig->golden_length-1;
     } 
 }
 
-
-sub _leftmost_end {
-    my ($obj,$value) = @_;
-    
-    if( defined $value) {
-	$obj->{'_leftmost_end'} = $value;
-    }
-    return $obj->{'_leftmost_end'};
-}
-
-    
 =head2 end_in
 
  Title   : end_in
@@ -202,6 +191,23 @@ sub end_in {
 	return $self->start_in - ($self->end - $self->start);
     }
 
+}
+
+
+sub length {
+    my $self = shift;
+
+    return $self->end - $self->start +1;
+}
+
+
+sub _leftmost_end {
+    my ($obj,$value) = @_;
+    
+    if( defined $value) {
+	$obj->{'_leftmost_end'} = $value;
+    }
+    return $obj->{'_leftmost_end'};
 }
 
 

@@ -60,7 +60,7 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
-use Bio::EnsEMBL::ContigOverlapHelper;
+use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
@@ -73,11 +73,19 @@ sub new {
     
     my $self = bless {}, $pkg;
 
-    my ($dbobj,$id,$perlonlysequences,$userawcontigacc) = $self->_rearrange([qw(DBOBJ
-					    ID
-					    PERLONLYSEQUENCES
-					    USERAWCONTIGACC
-					    )],@args);
+    my (
+        $dbobj,
+        $id,
+        $perlonlysequences,
+        $contig_overlap_source,
+        $overlap_distance_cutoff,
+        ) = $self->_rearrange([qw(
+            DBOBJ
+	    ID
+	    PERLONLYSEQUENCES
+            CONTIG_OVERLAP_SOURCE
+            OVERLAP_DISTANCE_CUTOFF
+	    )], @args);
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
@@ -88,10 +96,60 @@ sub new {
     $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
-    $self->use_rawcontig_acc($userawcontigacc);
-    
+    $self->contig_overlap_source($contig_overlap_source);
+    $self->overlap_distance_cutoff($overlap_distance_cutoff);
+
     return $self;
 }
+
+
+sub direct_new {
+    my( $pkg, @args ) = @_;
+    my $self = bless {}, $pkg;
+
+    my (
+        $dbobj,
+        $id,
+        $perlonlysequences,
+        $contig_overlap_source,
+        $overlap_distance_cutoff,
+	$internal_id,
+	$dna_id,
+	$seq_version,
+	$cloneid
+        ) = $self->_rearrange([qw(
+				  DBOBJ
+				  ID
+				  PERLONLYSEQUENCES
+				  CONTIG_OVERLAP_SOURCE
+				  OVERLAP_DISTANCE_CUTOFF
+				  INTERNAL_ID
+				  DNA_ID
+				  SEQ_VERSION
+				  CLONEID
+	    )], @args);
+
+    $id    || $self->throw("Cannot make contig db object without id");
+    $dbobj || $self->throw("Cannot make contig db object without db object");
+    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    if( !$internal_id || !$dna_id || !$seq_version || !$cloneid ) {
+	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid]!");
+    }
+
+    $self->id($id);
+    $self->dbobj($dbobj);
+    $self->_got_overlaps(0);
+    $self->internal_id($internal_id);
+    $self->dna_id($dna_id);
+    $self->seq_version($seq_version);
+    $self->cloneid    ($cloneid);
+    $self->perl_only_sequences($perlonlysequences);
+    $self->contig_overlap_source($contig_overlap_source);
+    $self->overlap_distance_cutoff($overlap_distance_cutoff);
+
+    return $self;
+}
+
 
 =head2 fetch
 
@@ -262,6 +320,7 @@ sub get_all_Exons {
     return @exons;
 }
 
+
 =head2 get_old_Exons
 
  Title   : get_old_Exons
@@ -335,8 +394,6 @@ sub get_old_Exons {
 	}
 	push(@{$fphash{$fp->hseqname}},$fp);
     }
-
-
     #We now need to get all the Genes for this clone on the old case
     # now perform the mapping
 
@@ -413,8 +470,6 @@ my $query="
 }
 
 
-
-
 sub _gene_query{
 
  my ($self, $query,$supporting) = @_;
@@ -446,6 +501,60 @@ sub _gene_query{
  return;
 }
 
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
+ Usage   :
+ Function: returns all exons for this contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+sub get_all_Exons {
+
+    my ($self)=@_;
+
+
+    my $contig_id=$self->id;
+
+
+    my $query="SELECT e.id, e.seq_start,e.seq_end,e.strand,e.phase,e.created,e.modified 
+               FROM   exon e,contig c 
+               WHERE  c.internal_id=e.contig and c.id ='$contig_id'";
+
+    my $sth = $self->dbobj->prepare ($query);
+    $sth->execute;
+
+    my ($id,$start,$end,$strand,$phase,$created,$modified);
+    $sth->bind_columns (undef,\$id,\$start,\$end,\$strand,\$phase,\$created,\$modified);
+    
+    my @exons;
+    while ($sth->fetch){
+	my $exon=Bio::EnsEMBL::Exon->new;
+	
+	$exon->id($id);
+	$exon->start($start);
+	$exon->end($end);
+	$exon->strand($strand);
+	$exon->seqname($self->id);
+	$exon->contig_id($self->id);
+	$exon->phase($phase);
+	$exon->created($created);
+	$exon->modified($modified);
+	$exon->sticky_rank(1);
+
+	push @exons,$exon;
+    }
+    return @exons;
+}
+
+
 =head2 has_genes
 
  Title   : has_genes
@@ -457,6 +566,9 @@ sub _gene_query{
 
 
 =cut
+
+
+
 
 sub has_genes{
    my ($self,@args) = @_;
@@ -584,6 +696,117 @@ sub _seq_cache{
    return $obj->{'_seq_cache'};
 
 }
+
+
+=head2 get_old_Exons
+
+ Title   : get_old_Exons
+ Usage   : my @mapped_exons=$rc->get_old_Exons 
+ Function: Used to get out exons in new coordinates
+ Returns : an array of Bio::EnsEMBL::Exon objects
+ Args    : none
+
+
+=cut
+
+sub get_old_Exons {
+    my ($self) = @_;
+
+    #This method requires a connection to a crossmatch database
+    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
+    my $crossdb = $self->_crossdb;
+
+    
+    #The crossdb should be holding onto old and new dbs, we need the old one here...
+    my $old_db;
+    eval {
+	$old_db=$self->_crossdb->old_dbobj;
+    }; 
+    if ($@) {
+	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
+    }
+    my $oldclone;
+    eval {
+	$oldclone = $old_db->get_Clone($self->cloneid);
+    };
+
+    #If the clone does not exist, these are really new exons
+    if ($@) {
+	print STDERR "Clone doesn't exist in old db, returning empty array...\n";
+	return ();
+    }
+   
+    my $newclone= $self->dbobj->get_Clone($self->cloneid);
+    #If the clones have the same version, the underlying dna hasn't changed,
+    #therefore we just return the old exons...
+    if ($oldclone->embl_version == $newclone->embl_version) {
+	print STDERR "Clones have the same version, returning old exons as they are...\n";
+	my @exons=$oldclone->get_Contig($self->id)->get_all_Exons();
+	my $size=scalar (@exons);
+	print STDERR "Returning $size old exons for contig ".$self->id." on clone ".$oldclone->id."\n"; 
+	return $oldclone->get_Contig($self->id)->get_all_Exons(); 
+    }
+    #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
+    my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
+    $self->id =~ /(\S+)\.0+(\d+)/;
+    my $id = "$1.".$newclone->version.".$2";
+    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($id);
+    my @sorted_fp= sort { $a->start <=> $b->start} @fp;
+
+    my %validoldcontigs;
+    my %fphash;
+    my @old_exons;
+    foreach my $fp ( @sorted_fp ) {
+	print STDERR "Going through $fp\n";
+	my $contigid = $fp->hseqname;
+	$contigid =~ s/\.\d+\./\./g;
+	$contigid =~ /(\S+)\.(\d+)/;
+	my $newid = $1.".0000".$2; 
+	print STDERR "Contig id called $contigid\n";
+	my $oldcontig=$old_db->get_Contig($newid);
+	push @old_exons, $oldcontig->get_all_Exons;
+	$validoldcontigs{$newid} = $fp->hseqname;
+	if( !exists $fphash{$fp->hseqname} ) {
+	    $fphash{$fp->hseqname} = [];
+	}
+	push(@{$fphash{$fp->hseqname}},$fp);
+    }
+
+
+    #We now need to get all the Genes for this clone on the old case
+    # now perform the mapping
+
+    my @mapped_exons;
+  EXON:
+    
+    foreach my $exon (@old_exons) {
+	
+	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
+	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
+		if( $fp->strand == $fp->hstrand ) {
+		    # straightforward mapping
+		    print STDERR $exon->id."is on a == strands feature pair\n";
+		    $exon->start($fp->start + $exon->start - $fp->hstart);
+		    $exon->end($fp->start + $exon->end - $fp->hstart);
+		} else {
+		    print STDERR $exon->id." is in opposite strands feature pair!\n";
+		    # Grrr strand hell.
+		    my $oldstart = $exon->start;
+		    my $oldend   = $exon->end;
+
+		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
+		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
+		    $exon->strand( -1 * $exon->strand);
+		}
+		push (@mapped_exons,$exon);
+		next EXON;
+	    }
+	}
+    }
+
+    return @mapped_exons;		
+}
+
 
 
 =head2 get_all_SeqFeatures
@@ -911,6 +1134,7 @@ sub get_all_SimilarityFeatures{
 	   $out->id($fset);
 	   $out->analysis($analysis);
 	   $out->seqname ($self->id);
+	   $out->raw_seqname ($self->id);
 	   $out->score($fset_score);
 	   $out->source_tag($name);
 	   $out->primary_tag("FSET");
@@ -921,11 +1145,12 @@ sub get_all_SimilarityFeatures{
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname    ($self->id);
-       $feature->start      ($start);
-       $feature->end        ($end);
-       $feature->strand     ($strand);
-       $feature->source_tag ($name);
+       $feature->seqname   ($self->id);
+       $feature->raw_seqname ($self->id);
+       $feature->start     ($start);
+       $feature->end       ($end);
+       $feature->strand    ($strand);
+       $feature->source_tag($name);
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
        $feature->p_value    ($evalue)       if (defined $evalue);
@@ -1012,7 +1237,8 @@ sub get_all_SimilarityFeatures{
 	 $out->percent_id ($perc_id)   if (defined $perc_id); 
 	 $out->phase      ($phase)     if (defined $phase);    
 	 $out->end_phase  ($end_phase) if (defined $end_phase); 
-	 
+	   $out->raw_seqname   ($self->id);
+
 	   if( defined $f_score ) {
 	       $out->score($f_score);
 	   }
@@ -1248,13 +1474,15 @@ sub get_all_PredictionFeatures {
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
+	   $current_fset->raw_seqname($self->id);
 	   $current_fset->id($fsetid);
 	   push(@array,$current_fset);
        }
 
        $out = new Bio::EnsEMBL::SeqFeature;
        
-       $out->seqname   ($fsetid);
+       $out->seqname   ($self->id);
+       $out->raw_seqname($self->id);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);
@@ -1263,6 +1491,7 @@ sub get_all_PredictionFeatures {
        $out->phase     ($phase)     if (defined $phase);    
        $out->end_phase ($end_phase) if (defined $end_phase);
         
+       $out->id($fsetid); # to make genscan peptide work
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
        
@@ -1719,6 +1948,24 @@ sub dbobj {
    }
    return $self->{'_dbobj'};
 }
+
+=head2 crossdb
+
+ Title   : crossdb
+ Usage   :
+ Function:
+ Example :
+ Returns : The Bio::EnsEMBL::DBSQL::CrossMatchAdaptor object
+ Args    :
+
+
+=cut
+
+sub _crossdb {
+   my ($self,$arg) = @_;
+
+   return $self->dbobj->_crossdb;
+}
 	
 =head2 _got_overlaps
 
@@ -1732,13 +1979,11 @@ sub dbobj {
 =cut
 
 sub _got_overlaps {
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_got_overlaps'} = $value;
+    my($obj, $value) = @_;
+    if (defined($value)) {
+        $obj->{'_got_overlaps'} = $value;
     }
     return $obj->{'_got_overlaps'};
-
 }
 
 =head2 _load_overlaps
@@ -1751,6 +1996,32 @@ sub _got_overlaps {
  Args    :
 
 =cut
+
+sub _load_overlaps {
+    my( $self ) = @_;
+    my $id = $self->id;
+    my @over = $self->get_all_Overlaps;
+    foreach my $lap (@over) {
+        my( $end, $helper ) = $lap->make_ContigOverlapHelper($id);
+        if ($end eq 'left') {
+            $self->_left_overlap($helper);
+        }
+        elsif ($end eq 'right') {
+            $self->_right_overlap($helper);
+        }
+        else {
+            $self->throw("Weird, got: '$end', '$helper'");
+        }
+    }
+
+    # Flag that we've visited the database to get overlaps
+    $self->_got_overlaps(1);
+
+    # sanity check ourselves
+    if( $self->golden_start > $self->golden_end ) {
+	$self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
+    }
+}
 
 { # (this brace is the beginning of a block that results in static compilation
   # of the SQL queries)
@@ -1768,24 +2039,15 @@ sub _got_overlaps {
     # 
     # The sequence has to be appropiately versioned otherwise this gets complicated
     # in the update scheme.
-    
-    # The polarity look up tables in this array belong
-    # with the respective queries in the queries array below.
-    my @polarity_lut = (
-            {
-              'right2left'   => ['right',  1],
-              'right2right'  => ['right', -1],
-              'left2right'   => ['left',   1],
-              'left2left'    => ['left',  -1],
-            },
-            {
-              'right2left'   => ['left',   1],
-              'right2right'  => ['right', -1],
-              'left2right'   => ['right',  1],
-              'left2left'    => ['left',  -1],
-            },
-        );
 
+
+{ # Begin bare block to keep @queries array private to get_all_Overlaps
+
+    # Doing two queries seems to be quickest
+    # Statements like:
+    #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
+    # make queries inordinately slow because MySQL
+    # doesn't use indices on OR statements.
     my @queries = (
        q{SELECT c.id sister_id
           , o.contig_b_position sister_pos
@@ -1810,7 +2072,7 @@ sub _got_overlaps {
           AND dna_b_id = ?},
         );
 
-    sub _load_overlaps {
+    sub get_all_Overlaps {
         my ($self) = @_;
 
         my $id      = $self->dna_id();
@@ -1820,62 +2082,65 @@ sub _got_overlaps {
         # Statements like:
         #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
         # seem to make queries inordinately slow.
+        my $overlap_source_sub  = $self->contig_overlap_source();
+        my $overlap_cutoff      = $self->overlap_distance_cutoff();
+        
+        my( @overlap );
         foreach my $i (0,1) {
             my $query_str = $queries[$i];
-            my $pol_lut = $polarity_lut[$i];
 
             my $sth = $self->dbobj->prepare($query_str);
             $sth->execute($id);
 
             while (my $row = $sth->fetchrow_arrayref) {
                 
-                my( $sister_id, 
-                    $sister_pos,
-                    $self_pos,
+                my( $sister_id,
+                    $pos_a,
+                    $pos_b,
                     $type,
-                    $size,
+                    $distance,
                     $source,
                     ) = @$row;
                 
-                # Must have a way to choose right overlap types
-                #next unless $source eq 'ucsc';
+                # Skip this overlap if it isn't from the right source
+                next unless &$overlap_source_sub($source);
                 
-                # Make the sister contig object
-		my $sis = $self->dbobj->get_Contig($sister_id);
+                # Skip overlaps with distances larger than the cutoff
+                if ($overlap_cutoff > -1 and $distance > $overlap_cutoff) {
+                    next;
+                }
                 
-                # Get the overlap end, and sister polarity
-                # (Will cause an exception if $type is 
-                my( $end, $sister_pol ) = @{$pol_lut->{$type}};
-                
-                # Make a new ContigOverlapHelper object
-                my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
-	            -sister         => $sis,
-	            -sisterposition => $sister_pos, 
-	            -selfposition   => $self_pos,
-	            -sisterpolarity => $sister_pol,
-	            -distance       => $size,
-	            -source         => $source,
-		    );
-                
-                # Save as left or right overlap depending upon the end
-	        if ($end eq 'left') {
-	            $self->_left_overlap($co);
-	        } else {
-	            $self->_right_overlap($co);
-	        }
+                # Make the other contig of the overlap
+                my( $contig_a, $contig_b );
+                if ($i == 0) {
+                    $contig_a = $self;
+                    $contig_b = $self->dbobj->get_Contig($sister_id);
+                } else {
+                    $contig_a = $self->dbobj->get_Contig($sister_id);
+                    $contig_b = $self;
+                }
+
+                my $new_overlap = Bio::EnsEMBL::ContigOverlap->new(
+                    '-contiga'      => $contig_a,
+                    '-contigb'      => $contig_b,
+                    '-positiona'    => $pos_a,
+                    '-positionb'    => $pos_b,
+                    '-overlap_type' => $type,
+                    '-distance'     => $distance,
+                    '-source'       => $source,
+                    );
+                push(@overlap, $new_overlap);
             }
         }
-        # Flag that we've visited the database to get overlaps
-        $self->_got_overlaps(1);
+        if (@overlap > 2) {
+            $self->throw("Got '". scalar(@overlap) ."' overlaps, which is too many for 1 contig!");
+        } else {
+            return @overlap;
+        }
+    }
+} # End privacy block
 
-	# sanity check ourselves
-	if( $self->golden_start > $self->golden_end ) {
-	    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
-	}
-    }                           # sub _load_overlaps
 
-} # (this brace is the end of a block that results in static compilation
-  # of the SQL queries).
 
 =head2 _right_overlap
 
@@ -1913,10 +2178,10 @@ sub _right_overlap {
 =cut
 
 sub _left_overlap {
-   my ($obj,$value) = @_;
+    my ($obj,$value) = @_;
 
-   if( defined $value) {
-      $obj->{'_left_overlap'} = $value;
+    if (defined $value) {
+        $obj->{'_left_overlap'} = $value;
     }
     return $obj->{'_left_overlap'};
 
@@ -2567,6 +2832,187 @@ sub use_rawcontig_acc{
 
 }
 
+=head2 get_repeatmasked_seq
+
+ Title   : get_repeatmasked_seq
+ Usage   : $seq = $obj->get_repeatmasked_seq()
+ Function: Masks DNA sequence by replacing repeats with N's
+ Returns : Bio::PrimarySeq
+ Args    : none
+
+
+=cut
+
+
+sub get_repeatmasked_seq {
+    my ($self) = @_;
+    my @repeats = $self->get_all_RepeatFeatures();
+    my $seq = $self->primary_seq();
+    my $dna = $seq->seq();
+    my $masked_dna = $self->_mask_features($dna, @repeats);
+    my $masked_seq = Bio::PrimarySeq->new(   -seq => $masked_dna, 
+                                             -display_id => $self->id,         
+                                             -primary_id => $self->internal_id,
+                                             -moltype => 'dna',
+                                         );
+    return $masked_seq;
+}
+
+sub _mask_features {
+    my ($self, $dnastr,@repeats) = @_;
+    my $dnalen = CORE::length($dnastr);
+
+    $dnastr =~ s/[^A-Za-z\-\.\*]//g; #TEMP BUG FIX: removing rubbish from sequence, not sure where it comes from
+
+    REP:foreach my $f (@repeats) 
+    {
+
+	    my $start  = $f->start;
+	    my $end    = $f->end;
+	    my $length = ($end - $start) + 1;
+
+
+	    if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) 
+        {
+	        print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
+	        next REP;
+	    }
+
+	    $start--;
+
+	    my $padstr = 'N' x $length;
+
+	    substr ($dnastr,$start,$length) = $padstr;
+        if ($dnastr !~ /^[A-Za-z\-\.\*]+$/)
+        {
+            $dnastr =~ s/[A-Za-z\-\.\*]//g;
+            $self->throw("Nonstandard characters found $dnastr\n"); 
+        }
+    }
+
+    return $dnastr;
+}
+
+
+
+=head2 contig_overlap_source
+
+ Title   : contig_overlap_source
+ Usage   : my $source_sub = $contig->contig_overlap_source()
+ Function: Gets or sets a subroutine which is used to
+           decide which overlap sources are used to
+           build virtual contigs.
+ Returns : value of contig_overlap_source.
+ Args    : ref to a subroutine
+
+=cut
+
+sub contig_overlap_source {
+    my( $self, $sub ) = @_;
+    
+    if ($sub) {
+        $self->throw("'$sub' is not a CODE reference")
+            unless ref($sub) eq 'CODE';
+        $self->{'_contig_overlap_source'} = $sub;
+    }
+    return $self->{'_contig_overlap_source'};
+}
+
+
+=head2 overlap_distance_cutoff
+
+ Title   : overlap_distance_cutoff
+ Usage   : my $cutoff = $contig->overlap_distance_cutoff()
+ Function: Gets or sets an integer which is used when building
+           VirtualContigs.  If the distance in a contig overlap
+           is greater than the cutoff, then the overlap will
+           not be returned.
+ Returns : value of overlap_distance_cutoff
+ Args    : positive integer
+
+
+=cut
+
+
+sub overlap_distance_cutoff {
+    my( $self, $cutoff ) = @_;
+    
+    if (defined $cutoff) {
+	if( $cutoff !~ /^\d+$/ && $cutoff != -1 ) {
+	    $self->throw("'$cutoff' is not an positive integer");
+	    }
+        $self->{'_overlap_distance_cutoff'} = $cutoff;
+    }
+    return $self->{'_overlap_distance_cutoff'};
+}
+
+
+sub is_golden {
+   my $self = shift;
+
+   if( defined $self->get_left_overlap || defined $self->get_right_overlap ) {
+       return 1;
+   } 
+   return 0;
+}
+
+
+=head2 set_attribute
+
+ Title   : set_attribute
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub set_attribute{
+   my ($self,$tag,$value) = @_;
+
+   if( !$self->dbobj->extension_tables ) {
+       # only warn
+       $self->warn("attempting to set attribute with no extension tables. Skipping");
+   }
+   my $id = $self->internal_id;
+
+   my $sth = $self->dbobj->prepare("insert into contigext (contig_id,tag,value) VALUES ($id,'$tag','$value')");
+   $sth->execute();
+
+}
+
+=head2 get_attribute
+
+ Title   : get_attribute
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub get_attribute{
+   my ($self,$tag) = @_;
+
+   if( !$self->dbobj->extension_tables ) {
+       # only warn
+       $self->warn("attempting to set attribute with no extension tables. Skipping");
+   }
+   if( !defined $tag ) {
+       $self->throw("no tag passed to get attribute");
+   }
+
+   my $id = $self->internal_id;
+   my $sth = $self->dbobj->prepare("select value from contigext where contig_id = $id and tag = '$tag'");
+   $sth->execute();
+   my ($value) = $sth->fetchrow_array();
+
+   return $value;
+}
+
 
 =head2 _crossdb
 
@@ -2577,14 +3023,10 @@ sub use_rawcontig_acc{
  Returns : The Bio::EnsEMBL::DBSQL::CrossMatchAdaptor object
  Args    :
 
-
 =cut
-
 sub _crossdb {
    my ($self,$arg) = @_;
-
    return $self->dbobj->_crossdb;
 }
-	
 
 1;

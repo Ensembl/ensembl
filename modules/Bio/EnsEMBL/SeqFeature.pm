@@ -88,7 +88,9 @@ sub new {
 my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase); 
 
   eval {
+
   ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname, $percent_id, $p_value, $phase, $end_phase) = 
+
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -151,11 +153,28 @@ sub seqname{
 
    if( $arg) {
       $self->{'_gsf_seqname'} = $arg;
-    }
+ 
+   }
 
     return $self->{'_gsf_seqname'};
 
 }
+
+
+
+sub raw_seqname{
+   my ($self,$arg) = @_;
+
+   if( $arg) {
+      $self->{'_gsf_raw_seqname'} = $arg;
+  
+  }
+  
+
+    return $self->{'_gsf_raw_seqname'};
+
+}
+
 
 
 

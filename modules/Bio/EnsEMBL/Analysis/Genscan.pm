@@ -320,15 +320,18 @@ EXON:    foreach my $exon ($tran->each_Exon) {
 	my $exseq = new Bio::Seq(-seq => $seq);
 	my @trans;
 	my $phase;
-#	print("Exon seq iis $seq [" . $exseq->seq . "] " . length($seq) . "\n");
+	#print STDERR ("Exon seq is $seq [" . $exseq->seq . "] " . length($seq) . "\n");
 	if (length($seq) < 3) {
 	    $phase = 0;
 	} else {
-	    $trans[0] = $exseq->translate();
+	    # read the translate function **very carefully** to understand this.
+	    # means translate wrt to standard genetic code and no edit on M
+
+	    $trans[0] = $exseq->translate('*','X',0,1,1);
 	    # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
 	    # intron leaves one base pair.
-	    $trans[1] = $exseq->translate('*','X',2);
-	    $trans[2] = $exseq->translate('*','X',1);
+	    $trans[1] = $exseq->translate('*','X',2,1,1);
+	    $trans[2] = $exseq->translate('*','X',1,1,1);
 	    
 	    my $i = 0;
 	    $phase = 4;
@@ -347,13 +350,20 @@ EXON:    foreach my $exon ($tran->each_Exon) {
 		# if we have an X, substitute it to a .
 		$tmp =~ s/X/\./g;
 		
+		# if last amino acid is a stop, remove it
+		$tmp =~ s/\*$//g;
+
 		# if we have a stop - forget it?
-		
 		$tmp =~ /\*/ && next;
 		
+		# substitute * for X's
+		#$tmp =~ s/\*/X/g;
+
 		# Compare strings to see if the exon peptide is contained in 
 		# the full sequence
+		# print STDERR "Comparing $tmp to $pep ($i)\n";
 		if ($pep =~ /$tmp/ ) {
+		    #print STDERR "setting to $i\n";
 		    $phase = $i;
 		}
 	    }
