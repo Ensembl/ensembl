@@ -544,6 +544,9 @@ sub _remap {
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $fslice = $f->slice();
+    if(!$fslice) {
+      throw("Feature does not have attached slice.\n");
+    }
     my $fseq_region = $fslice->seq_region_name();
     my $fcs = $fslice->coord_system();
 
