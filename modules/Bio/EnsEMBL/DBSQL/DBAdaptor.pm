@@ -131,7 +131,8 @@ sub new {
       'SupportingFeature'    =>
           'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
       'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
-      'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor'
+      'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
+      'AssemblyExceptionFeature' => 'Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor'
     };
 
 
@@ -747,6 +748,23 @@ sub get_MiscFeatureAdaptor {
   return $self->get_adaptor('MiscFeature');
 }
 
+
+=head2 get_AssemblyExceptionFeatureAdaptor
+
+  Arg [1]    : none
+  Example    : $aefa = $db_adaptor->get_AssebmyExceptionFeatureAdaptor();
+  Description: Gets a AssemblyExceptionFeature adaptor for this database
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyExceptionFeatureAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_AssemblyExceptionFeatureAdaptor {
+  my $self = shift;
+
+  return $self->get_adaptor('AssemblyExceptionFeature');
+}
 
 
 =head2 dnadb
