@@ -220,15 +220,9 @@ sub list_contig_ids {
   
   $self->register_region($chr_name, $start, $end);
   
-  my @pairs = $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
-  
-  my @ids;
-  
-  foreach my $pair ( @pairs ) {    
-    push(@ids,$pair->from->id);
-  }
-  
-  return @ids;
+  return map
+    { $_->from->id }
+    $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
 }
 
 
@@ -440,7 +434,7 @@ sub adaptor {
   Example    : none
   Description: returns the size in which this mapper registers chromosomal
                regions. It should be optimized on the size of pieces 
-               in assembly table, so that not to many and not too little
+               in assembly table, so that not too many and not too little
                rows are retrieved. 
   Returntype : int
   Exceptions : none
@@ -473,7 +467,7 @@ sub _chunksize {
 sub _chunk_register_region {
   my ( $self, $chr_name, $first_chunk, $last_chunk ) = @_;
 
-  for( my $i = $first_chunk; $i <= $last_chunk; $i++ ) {
+  foreach my $i ( $first_chunk..$last_chunk ) {
     if( exists $self->{$chr_name}{$i} ) {
       next;
     } else {
