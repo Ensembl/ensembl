@@ -135,6 +135,9 @@ sub _initialize {
   my $clone_order=$dbobj->{'_contig_order_hash'}->{$id};
   print STDERR "Order string for $id is: $clone_order\n";
   my $spacing=$Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
+  my %order;
+  my %offset;
+  my %orientation;
   my $offset=1;
   if($clone_order){
       # have order information, so use thi
@@ -144,13 +147,13 @@ sub _initialize {
       foreach my $ocontig (split(/[:;]/,$clone_order)){
 	  $ncontig2++;
 	  my($contig,$fr)=($ocontig=~/(.*)\.([FR])$/);
-	  $self->{_contig_order}->{$contig}=$ncontig2;
-	  $self->{_contig_offset}->{$contig}=$offset;
+	  $order{$contig}=$ncontig2;
+	  $offset{$contig}=$offset;
 	  # forward or reverse
 	  if($fr eq 'F'){
-	      $self->{'_contig_orientation'}->{$contig}=1;
+	      $orientation{$contig}=1;
 	  }else{
-	      $self->{'_contig_orientation'}->{$contig}=-1;
+	      $orientation{$contig}=-1;
 	  }
 	  # offset is length + separation
 	  if($contig_len{$contig}){
@@ -171,10 +174,10 @@ sub _initialize {
       my $ncontig2;
       foreach my $contig (sort {$contig_len{$a}<=>$contig_len{$b}} keys %contig_len){
 	  $ncontig2++;
-	  $self->{_contig_order}->{$contig}=$ncontig2;
-	  $self->{_contig_offset}->{$contig}=$offset;
+	  $order{$contig}=$ncontig2;
+	  $offset{$contig}=$offset;
 	  # always forward
-	  $self->{_contig_orientation}->{$contig}=1;
+	  $orientation{$contig}=1;
 	  # offset is length + separation
 	  $offset+=$contig_len{$contig}+$spacing;
 	  push(@contig_id,$contig);
@@ -186,10 +189,12 @@ sub _initialize {
       my $disk_contig_id=$id2disk{$contig_id};
       print STDERR "Attempting to retrieve contig with $disk_contig_id [$contig_id]\n";
       my $contig = new Bio::EnsEMBL::TimDB::Contig ( -dbobj => $self->_dbobj,
-						     -cloneobj => $self,
 						     -id => $contig_id,
 						     -disk_id => $disk_contig_id,
-						     -clone_dir => $self->{'_clone_dir'}
+						     -clone_dir => $self->{'_clone_dir'},
+						     -order => $order{$contig_id},
+						     -offset => $offset{$contig_id},
+						     -orientation => $orientation{$contig_id},
 						     );
       push(@res,$contig);
   }

@@ -59,29 +59,34 @@ sub _initialize {
   my($self,@args) = @_;
   
   my $make = $self->SUPER::_initialize;
-  my ($dbobj,$id,$disk_id,$cloneobj,$clone_dir)=$self->_rearrange([qw(DBOBJ
-							   ID
-							   DISK_ID
-							   CLONEOBJ
-							   CLONE_DIR
-							   )],@args);
+  my ($dbobj,$id,$disk_id,$clone_dir,$order,$offset,$orientation)=
+      $self->_rearrange([qw(DBOBJ
+			    ID
+			    DISK_ID
+			    CLONE_DIR
+			    ORDER
+			    OFFSET
+			    ORIENTATION
+			    )],@args);
   $id || $self->throw("Cannot make contig object without id");
   $disk_id || $self->throw("Cannot make contig object without disk_id");
   $dbobj || $self->throw("Cannot make contig object without db object");
   $dbobj->isa('Bio::EnsEMBL::TimDB::Obj') || 
       $self->throw("Cannot make contig object with a $dbobj object");
-  $cloneobj->isa('Bio::EnsEMBL::TimDB::Clone') || 
-      $self->throw("Cannot make clone object with a $cloneobj object");
+  $order || $self->throw("Cannot make contig object without order");
+  $offset || $self->throw("Cannot make contig object without offset");
+  $orientation || $self->throw("Cannot make contig object without orientation");
+  
   # id of contig
   $self->id($id);
   $self->disk_id($disk_id);
   # db object
   $self->_dbobj($dbobj);
   # clone object
-  $self->_cloneobj($cloneobj);
   $self->_clone_dir($clone_dir);
-
-
+  $self->order($order);
+  $self->offset($offset);
+  $self->orientation($orientation);
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
@@ -231,12 +236,10 @@ sub add_Gene{
 sub order{
     my $self = shift;
     if( @_ ) {
-	$self->throw("Can't set order on a TimDB database");
+	my $value = shift;
+	$self->{'_order'} = $value;
     }
-    my $id = $self->id();
-    my $order=$self->_cloneobj()->{'_contig_order'}->{$id};
-    print STDERR "Order for $id is $order\n";
-    return $order;
+    return $self->{'_order'};
 }
 
 
@@ -253,12 +256,10 @@ sub order{
 sub offset{
     my $self = shift;
     if( @_ ) {
-	$self->throw("Can't set offset on a TimDB database");
+	my $value = shift;
+	$self->{'_offset'} = $value;
     }
-    my $id=$self->id;
-    my $offset=$self->_cloneobj()->{'_contig_offset'}->{$id};
-    print STDERR "Offset for $id is $offset\n";
-    return $offset;
+    return $self->{'_offset'};
 }
 
 
@@ -275,12 +276,10 @@ sub offset{
 sub orientation{
     my $self = shift;
     if( @_ ) {
-	$self->throw("Can't set offset on a TimDB database");
+	my $value = shift;
+	$self->{'_orientation'} = $value;
     }
-    my $id=$self->id;
-    my $orientation=$self->_cloneobj()->{'_contig_orientation'}->{$id};
-    print STDERR "Orientation for $id is $orientation\n";
-    return $orientation;
+    return $self->{'_orientation'};
 }
 
 
@@ -305,11 +304,11 @@ sub seq{
 
     my $id=$self->id;
     my $disk_id=$self->disk_id;
+    my $clonediskid=$disk_id;
+    $clonediskid=~s/\.\d+$//;
 
     # read from sequence file
-    my $cloneobj=$self->_cloneobj();
-    my $clonediskid=$cloneobj->disk_id;
-    my $file=$cloneobj->{'_clone_dir'}."/$clonediskid.seq";
+    my $file=$self->_clone_dir . "/$clonediskid.seq";
 
     my $seqin = Bio::SeqIO::Fasta->new( -file => $file);
     my($seq,$seqid,$ffound);
@@ -384,24 +383,6 @@ sub _dbobj {
     return $obj->{'_dbobj'};
 }
 
-=head2 _cloneobj
-
- Title   : _cloneobj
- Usage   : $obj->_cloneobj($newval)
- Function: 
- Example : 
- Returns : value of _cloneobj
- Args    : newvalue (optional)
-
-=cut
-
-sub _cloneobj {
-    my ($obj,$value) = @_;
-    if( defined $value) {
-	$obj->{'_cloneobj'} = $value;
-    }
-    return $obj->{'_cloneobj'};
-}
 
 =head2 _clone_dir
 
