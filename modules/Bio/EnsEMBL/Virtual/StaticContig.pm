@@ -859,7 +859,7 @@ sub get_all_FPCClones {
 
    
 
-sub get_landmark_MarkerFeatures {
+sub get_landmark_MarkerFeatures_old {
 
 my ($self) = @_;
 
@@ -946,6 +946,76 @@ if($@){$self->warn("Problems retrieving map data\nMost likely not connected to m
 return @markers;
 
 }
+
+
+
+
+
+sub get_landmark_MarkerFeatures{
+   my ($self,$glob) = @_;
+
+my $chr_name   = $self->_chr_name;
+
+   if( !defined $glob ) {
+       $glob = 500000;
+   }
+
+
+my $glob_start = $self->_global_start;
+my $glob_end   = $self->_global_end;
+my $length     = $self->length;
+
+
+   my $statement= " SELECT  start,
+			    end,
+			    strand,
+			    name 
+		    FROM    contig_landmarkMarker 
+		    WHERE   chr_name = '$chr_name'
+                    AND     start>=$glob_start 
+                    AND     end <=$glob_end 
+		    ORDER BY start
+		";
+   
+   $statement =~ s/\s+/ /g;
+ #  print STDERR "Doing Query ... $statement\n";
+   
+   my $sth = $self->dbobj->prepare($statement);
+   $sth->execute;
+   
+   my ($start, $end, $strand, $name);
+   
+   my $analysis;
+   my %analhash;
+   
+   $sth->bind_columns
+       ( undef, \$start, \$end,  \$strand, \$name);
+   
+   my @out;
+   my $prev;
+   while( $sth->fetch ) {
+       if( defined $prev && $prev->end + $glob > $start  && $prev->id eq $name ) {           
+           next;
+       }
+       #clipping 
+       $start=$start-$glob_start;
+       $end=$end-$glob_start;
+
+#       print STDERR "fetching $start\n";
+       my $sf = Bio::EnsEMBL::SeqFeature->new();
+       $sf->start($start);
+       $sf->end($end);
+       $sf->strand($strand);
+       $sf->id($name);
+       push(@out,$sf);
+       $prev = $sf;
+   } 
+
+   return @out;
+}
+
+
+
 
 
 
