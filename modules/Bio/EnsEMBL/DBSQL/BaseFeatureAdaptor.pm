@@ -74,8 +74,11 @@ sub new {
 
   Arg [1]    : (optional) string $constraint
                An SQL query constraint (i.e. part of the WHERE clause)
-  Arg [2]    : (optional) string $logic_name
-               the logic_name of the analysis of the features to obtain
+  Arg [2]    : (optional) Bio::EnsEMBL::AssemblyMapper $mapper
+               A mapper object used to remap features
+               as they are retrieved from the database
+  Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
+               A slice that features should be remapped to
   Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
@@ -86,33 +89,12 @@ sub new {
 =cut
 
 sub generic_fetch {
-  my ($self, $constraint, $logic_name, $mapper, $slice) = @_;
+  my ($self, $constraint, $mapper, $slice) = @_;
 
   my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
 
   my $db = $self->db();
-
-  if($logic_name) {
-    #determine the analysis id via the logic_name
-    my $an = $db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
-
-    if(!defined($an) || !$an->dbID()) {
-      warning("No analysis for logic name [$logic_name] exists\n");
-      return [];
-    }
-
-    my $analysis_id = $an->dbID();
-
-    #get the synonym for the primary table
-    my $syn = $tabs[0]->[1];
-
-    if($constraint) {
-      $constraint .= " AND ${syn}.analysis_id = $analysis_id";
-    } else {
-      $constraint = " ${syn}.analysis_id = $analysis_id";
-    }
-  }
 
   #
   # Construct a left join statement if one was defined, and remove the
@@ -156,6 +138,8 @@ sub generic_fetch {
 
   #append additional clauses which may have been defined
   $sql .= " $final_clause";
+
+  ###print STDERR "\n\n$sql\n\n";
 
   my $sth = $db->prepare($sql);
 
@@ -295,11 +279,14 @@ sub fetch_all_by_Slice_constraint {
     throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
   }
 
-  $logic_name ||= '';
   $constraint ||= '';
+  $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
+
+  #if the logic name was invalid, undef was returned
+  return [] if(!defined($constraint));
 
   #check the cache and return if we have already done this query
-  my $key = uc(join(':', $slice->name, $constraint, $logic_name));
+  my $key = uc(join(':', $slice->name, $constraint));
 
   if(exists($self->{'_slice_feature_cache'}->{$key})) {
     return $self->{'_slice_feature_cache'}->{$key};
@@ -339,7 +326,7 @@ sub fetch_all_by_Slice_constraint {
           "${tab_syn}.seq_region_id = $seq_region_id AND " .
           "${tab_syn}.seq_region_start <= $slice_end AND " .
           "${tab_syn}.seq_region_end >= $slice_start";
-      my $fs = $self->generic_fetch($constraint,$logic_name,undef,$slice);
+      my $fs = $self->generic_fetch($constraint,undef,$slice);
 
       #features may still have to have coordinates made relative to slice start
       $fs = $self->_remap($fs, $mapper, $slice);
@@ -373,7 +360,7 @@ sub fetch_all_by_Slice_constraint {
         $constraint .= "${tab_syn}.seq_region_id IN ($id_str)";
 
         my $fs = 
-          $self->generic_fetch($constraint, $logic_name, $mapper, $slice);
+          $self->generic_fetch($constraint, $mapper, $slice);
 
         $fs = $self->_remap($fs, $mapper, $slice);
 
@@ -388,8 +375,7 @@ sub fetch_all_by_Slice_constraint {
             "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
             "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
             "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
-          my $fs = $self->generic_fetch($constraint,$logic_name,
-                                        $mapper,$slice);
+          my $fs = $self->generic_fetch($constraint,$mapper,$slice);
 
           $fs = $self->_remap($fs, $mapper, $slice);
 
@@ -467,6 +453,55 @@ sub _remap {
   }
 
   return \@out;
+}
+
+
+#
+# Given a logic name and an existing constraint this will
+# add an analysis table constraint to the feature.  Note that if no
+# analysis_id exists in the columns of the primary table then no
+# constraint is added at all
+#
+sub _logic_name_to_constraint {
+  my $self = shift;
+  my $constraint = shift;
+  my $logic_name = shift;
+
+  return $constraint if(!$logic_name);
+
+  #make sure that an analysis_id exists in the primary table
+  my $prim_synonym = $self->_tables()->[0]->[1];
+
+  my $found_analysis=0;
+  foreach my $col ($self->_columns) {
+    my ($syn,$col_name) = split(/\./,$col);
+    next if($syn ne $prim_synonym);
+    if($col_name eq 'analysis_id') {
+      $found_analysis = 1;
+      last;
+    }
+  }
+
+  if(!$found_analysis) {
+    warning("This feature is not associated with an analysis.\n" .
+            "Ignoring logic_name argument = [$logic_name].\n");
+    return $constraint;
+  }
+
+  my $aa = $self->db->get_AnalysisAdaptor();
+  my $an = $aa->fetch_by_logic_name($logic_name);
+
+  if(!$an) {
+    warning("No analysis exists with logic_name = [$logic_name].\n" .
+            "Returning empty list.\n");
+    return undef;
+  }
+
+  my $an_id = $an->dbID();
+
+  $constraint .= ' AND' if($constraint);
+  $constraint .= " ${prim_synonym}.analysis_id = $an_id";
+  return $constraint;
 }
 
 
@@ -657,8 +692,8 @@ sub _default_where_clause {
   Example    : none
   Description: Can be overridden by a subclass to specify any left joins
                which should occur. The table name specigfied in the join
-               must still be present in the return values of 
-  Returntype : a {'tablename' => 'join condition'} pair 
+               must still be present in the return values of
+  Returntype : a {'tablename' => 'join condition'} pair
   Exceptions : none
   Caller     : general
 
