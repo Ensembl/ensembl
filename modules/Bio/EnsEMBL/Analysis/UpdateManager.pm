@@ -380,7 +380,7 @@ sub get_updated_objects {
 	}
     } else {
 	eval {
-	    @clones = $fromdb->get_updated_Clone_id($self->fromtime,$self->totime);
+	    @clones = $fromdb->get_Update_Obj->get_updated_Clone_id($self->fromtime,$self->totime);
 	};
 	if ($@) {
 	    print "Could not call get_updated_Clone_id from the donor database:\n$@!";
@@ -474,7 +474,7 @@ sub update {
 	    # child here
 
 	   my @clones = $self->getchunk($current,@clone_id);           
-           print(STDERR  "In child. Transferring @clones\n");
+           print(STDERR  "In child [$current]. Transferring @clones\n");
 	   $self->verbose() && print STDERR "Connecting to donor database...\n"; 
 	   my $fromdb = $self->connect ($self->fromlocator,@clones);   
            print(STDERR  "Connected to donor database\n");
@@ -507,10 +507,6 @@ sub update {
 	   $self->throw("Couldn't fork a new process");
        }
     }
-    
-    # Now that all the new Contigs have been added we can update their contigOverlaps
-    $self->_write_Contig_overlaps() unless $self->nowrite;
-
         
     
     if (!$self->nowrite) {
@@ -545,7 +541,7 @@ sub transfer_chunk {
 	    next;
 	}
 	
-#    eval {
+    eval {
         # Check if it is a clone object
         if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
             $self->write_clone($todb,$arcdb,$object);
@@ -563,11 +559,25 @@ sub transfer_chunk {
             $self->write_exon($todb,$object);
         }
 
-#    };
+    };
 	if ($@) {
-	    warn($@);
-	    warn("ERROR: problems in updating clone $id, will be deleted from recipient database to preserve data integrity\n");
-	    $object->delete();
+	    warn("ERROR: problems in updating clone $id: $@ Deleting it from recipient database to preserve data integrity\n");
+            
+            # Check if it is a clone object
+            if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
+                my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id, -dbobj => $todb);
+                $clone->delete();
+            }
+        
+            # Check if it is a gene
+            elsif ($object->isa("Bio::EnsEMBL::Gene")) {
+                $todb->gene_Obj->delete($id);
+            }
+        
+            # Check if it is an exon
+            elsif ($object->isa("Bio::EnsEMBL::Exon")) {
+               $self->gene_Obj->delete_Exon($id);
+            }
 	}
     }
 }
@@ -651,9 +661,6 @@ sub write_clone {
         $self->verbose &&  print STDERR "New Clone, writing it in the database\n";
         unless ($self->nowrite) {
             $db  ->write_Clone($object);
-            # Store each clone added to the new DB so their ContigOverlaps 
-            # can be wriiten after all the clones have been added
-            $self->_add_Clone($object);
         }
 
         foreach my $gene ($object->get_all_Genes('evidence')) {
@@ -678,9 +685,6 @@ sub write_clone {
             unless ($self->nowrite) {
                 $rec_clone->delete();
                 $db->write_Clone ($object);
-                # Store each clone changed in the new DB so their ContigOverlaps 
-                # can be wriiten after all the clones have been added
-            $self->_add_Clone($object);
             }
             foreach my $gene (@new_genes) {
                 $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
@@ -719,7 +723,7 @@ sub write_gene {
     
     if(!$old_genes{$don_gene->id} ) {
 	$self->verbose && print STDERR "New Gene, writing it in the database\n";
-	$self->nowrite || $db->write_Gene($don_gene);
+	$self->nowrite || $db->gene_Obj->write($don_gene);
     } else {
 	if ($don_gene->version > $old_genes{$don_gene->id}->version) {
 	    
@@ -752,33 +756,4 @@ sub write_gene {
     }
 }   
 
-sub _add_Clone {
-    my ($self, $clone) = @_;
 
-    if ($clone) {
-        $self->{_clones} ||= [];
-        push @{$self->{_clones}}, $clone;
-    }
-}
-
-sub _list_Clones {
-    my ($self) = @_;
-    
-    return ($self->{_clones}) ? @{$self->{_clones}} : ();
-}
-
-sub _write_ContigOverlaps {
-    my ($self) = @_;
-    
-    $self->verbose && print STDERR "Writting ContigOverlaps for new inserted Clone\n";
-    my $db   = $self->connect ($self->tolocator);    
-    my @newClones = $self->list_Clones;
-    
-    foreach my $clone (@newClones) {
-        foreach my $contig ($clone->get_all_Contigs) {
-            foreach my $overlap ($clone->get_all_ContigOverlaps) {     
-                $db->write_ContigOverlap($overlap, $clone);
-            }
-        }
-    }
-}
