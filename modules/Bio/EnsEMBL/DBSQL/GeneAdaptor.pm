@@ -782,6 +782,17 @@ sub store {
      $sth->execute();
    }
 
+   #
+   # store the gene description associated with this gene if there is one
+   #
+   my $desc = $gene->description();
+   if(defined($desc)) {
+     my $sth = $self->prepare("INSERT INTO gene_description " .
+                             " SET gene_id = ?, " .
+                             " description = ?" );
+     $sth->execute($gene_dbID, $desc);
+     $sth->finish();
+   }
 
    #
    # store the dbentries associated with this gene
