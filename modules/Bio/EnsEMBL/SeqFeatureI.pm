@@ -198,9 +198,9 @@ sub to_FTstring {
 	my $string = "join(";
 	foreach my $sf ( @sf ) {
 	    if( $sf->strand == 1 ) {
-		$string .= $sf->start."..".$self->end.",";
+		$string .= $sf->start."..".$sf->end.",";
 	    } else {
-		$string .= "complement(".$sf->start."..".$self->end."),";
+		$string .= "complement(".$sf->start."..".$sf->end."),";
 	    }
 	}
 	$string =~ s/\,$//g;
