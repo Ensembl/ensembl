@@ -61,9 +61,11 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -driver => 'mysql',
 	);
 
+
+
 my $adaptor = $db->get_DBEntryAdaptor();
 
-if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat") || ($organism eq "zebrafish")) {
     print STDERR "Reading Refseq file\n";
     open (REFSEQ,"$refseq_gnp") || die "Can't open REFSEQ $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
