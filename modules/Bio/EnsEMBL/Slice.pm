@@ -64,7 +64,7 @@ use Bio::PrimarySeqI;
 
 
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning stack_trace_dump);
 
 use Bio::EnsEMBL::RepeatMaskedSlice;
 use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
