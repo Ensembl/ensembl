@@ -181,7 +181,7 @@ use vars qw(@ISA);
 sub get_Ensembl_SeqFeatures_contig{
    my ($self) = @_;
 
-   $self->throw("Abstract method get_External_SeqFeatures_contig encountered in base class. Implementation failed to complete it");
+   $self->warn("Abstract method get_External_SeqFeatures_contig encountered in base class. Implementation failed to complete it");
 
 }
 
@@ -200,7 +200,7 @@ sub get_Ensembl_SeqFeatures_contig{
 sub get_Ensembl_SeqFeatures_clone{
    my ($self) = @_;
    
-   $self->throw("Abstract method get_Ensembl_SeqFeatures_clone encountered in base class. Implementation failed to complete it");
+   $self->warn("Abstract method get_Ensembl_SeqFeatures_clone encountered in base class. Implementation failed to complete it");
 
 }
 
@@ -219,11 +219,16 @@ sub get_Ensembl_SeqFeatures_clone{
        
 sub get_SeqFeature_by_id {
    my ($self) = @_;
-   $self->throw("Abstract method get_SeqFeature_by_id  encountered in base class. Implementation failed to complete it");
+   $self->warn("Abstract method get_SeqFeature_by_id  encountered in base class. Implementation failed to complete it");
 
 
 }
 
 1;
+
+
+
+
+
 
 
