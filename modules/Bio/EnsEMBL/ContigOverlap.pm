@@ -20,8 +20,8 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-The contig overlap object is symmetrical.  It describes the overlap between two 
-contigs.
+The contig overlap object is symmetrical.  It
+describes the overlap between two  contigs.
 
 http://www.ncbi.nlm.nih.gov/genome/seq/Hs_Data/contig.xml
 
@@ -66,12 +66,12 @@ sub _initialize {
 			       OVERLAP_TYPE
 			       SOURCE
 			       DISTANCE
-									      )], @args);
-  if( !defined $contiga   || !defined $contigb   || 
-      !defined $positiona || !defined $positionb || 
-      !defined($overlap_type) || !defined($source)) {
-
-      $self->throw("You have to construct ContigOverlap objects with all five arguments, contiga,contigb,positiona,positionb,overlap_type [@args]");
+                               )], @args);
+  unless ($contiga and $contigb
+          and defined($positiona) and defined($positionb)
+          and $overlap_type and $source) {
+      $self->throw("You have to construct ContigOverlap objects with all six arguments (contiga,contigb,positiona,positionb,overlap_type)\n"
+        ."Only got :". join(',', map "'$_'", ($contiga,$contigb,$positiona,$positionb,$overlap_type,$source)));
   }
 
   $self->contiga     ($contiga);
@@ -180,23 +180,52 @@ sub positionb {
 
 =head2 overlap_type
 
- Title   : overlap_type
- Usage   : $obj->overlap_type
- Function: 
- Returns : value of overlap_type
- Args    : newvalue (optional)
+    $type = $self->overlap_type;
+    $self->overlap_type($type);
 
+Gets or sets the overlap_type, which is one of
+the following four types:
+
+=over 4
+
+=item right2left
+
+    5'--A------->3'
+            5'--B------->3'
+
+=item right2right
+
+    5'--A------->3'
+            3'<-------B--5'
+
+=item left2left
+
+    3'<-------A--5'
+            5'--B------->3'
+
+=item left2right
+
+    3'<-------A--5'
+            3'<-------B--5'
+
+=back
 
 =cut
 
-sub overlap_type {
-    my $obj = shift;
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'overlap_type'} = $value;
-   }
-    return $obj->{'overlap_type'};
+{
+    my %valid_type = map {$_, 1} qw(right2left right2right left2left left2right);
     
+    sub overlap_type {
+        my( $obj, $value ) = @_;
+        if( $value ) {
+            $obj->throw("invalid overlap type '$value'")
+                unless $valid_type{$value};
+
+            $obj->{'overlap_type'} = $value;
+        }
+        return $obj->{'overlap_type'};
+
+    }
 }
 
 =head2 type
@@ -248,36 +277,35 @@ sub distance {
  Usage   : $obj->invert
  Function: 
  Returns : Reverses the sense of the overlap
- Args    : newvalue (optional)
+ Args    : none
 
 
 =cut
 
-sub invert {
-    my $self = shift;
+{
+    my %type_complement = (
+        'right2left'    => 'left2right',
+        'left2right'    => 'right2left',
+        'left2left'     => 'left2left',
+        'right2right'   => 'right2right',
+        );
 
-    my $tmp = $self->contiga;
-    $self->contiga($self->contigb);
-    $self->contigb($tmp);
-    
-    $tmp = $self->positiona;
-    $self->positiona($self->positionb);
-    $self->positionb($tmp);
+    sub invert {
+        my $self = shift;
 
-    my $oldtype = $self->overlap_type;
+        my $tmp = $self->contiga;
+        $self->contiga($self->contigb);
+        $self->contigb($tmp);
 
-    if ($oldtype eq 'right2left') {
-	$self->overlap_type('left2right');
-    } elsif ($oldtype eq 'left2right') {
-	$self->overlap_type('right2left');
-    } elsif ($oldtype eq 'left2left') {
-	$self->overlap_type('right2right');
-    } elsif ($oldtype eq 'right2right') {
-	$self->overlap_type('left2left');
-    } else {
-	$self->throw("Unknown overlap type [" . $self->overlap_type . "]");
+        $tmp = $self->positiona;
+        $self->positiona($self->positionb);
+        $self->positionb($tmp);
+
+        my $oldtype = $self->overlap_type;
+        my $newtype = $type_complement{$oldtype}
+            or $self->throw("Invalid overlap type '$oldtype'");
+        $self->overlap_type($newtype);
     }
 }
-
 
 1;

@@ -1015,25 +1015,23 @@ sub _load_overlaps {
    my $id      = $self->internal_id();
    my $version = $self->seq_version();
 
-
-   my $query =  "select co.contig_a_position," .
-                "       co.contig_b_position," .
-		"       co.overlap_type," .
-		"       co.dna_a_id, ".
-		"       co.dna_b_id, ".
-		"       co.type, " .
-		"       co.overlap_size, " .
-		"       con.dna " .
-                "from   contigoverlap as co, " . 
-		"       contig as con " .
-		"where  con.internal_id = $id " .
-		"and    (con.dna = co.dna_b_id " . 
-		"or     con.dna = co.dna_a_id)  ";
-
+   my $query = "SELECT co.contig_a_position
+                  , co.contig_b_position
+                  , co.overlap_type
+                  , co.dna_a_id
+                  , co.dna_b_id
+                  , co.type
+                  , co.overlap_size
+                  , con.dna
+                FROM contigoverlap as co
+                  , contig as con
+                WHERE con.internal_id = ?
+                  AND (   con.dna = co.dna_b_id
+                       OR con.dna = co.dna_a_id)";
 
    my $sth = $self->dbobj->prepare($query);
    
-   if( !$sth->execute() ) {
+   if( !$sth->execute($id) ) {
        $self->throw("Unable to execute contig overlap get!");
    }
 
