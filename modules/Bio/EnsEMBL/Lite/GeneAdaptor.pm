@@ -334,6 +334,7 @@ sub _objects_from_sth {
   my ( $exon_id );
 
   while( my $hr = $sth->fetchrow_hashref() ) {
+    my $db = $hr->{'db'};
     unless( $slice->chr_name ) {
       #retrieve a slice for the entire chromosome
       my $chr = $hr->{'chr_name'};
@@ -385,18 +386,18 @@ sub _objects_from_sth {
     $exon_id = shift( @exon_ids );
 
     my $exon;
-    if( ! exists $exon_cache{ "$exon_id" } ) {
+    if( ! exists $exon_cache{ "$db:$exon_id" } ) {
       $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $strand);
       #  we need dbIDs for Exons !!!
       #   $exon->dbID( );
       # this is not right for source != core ...
       $exon->adaptor( $core_db_adaptor->get_ExonAdaptor() );
-      $exon_cache{"$exon_id"} = $exon;
+      $exon_cache{"$db:$exon_id"} = $exon;
       $exon->dbID( $exon_id );
       $exon->phase( 0 );
       $exon->end_phase( 0 );      
     } else {
-      $exon = $exon_cache{"$exon_id"};
+      $exon = $exon_cache{"$db:$exon_id"};
     }
 
     if($coding_start || $coding_end) { #ignore if both = 0
@@ -435,11 +436,11 @@ sub _objects_from_sth {
       $start = $end + $intron_length + 1;
       $end = $start + $exon_length - 1;
 
-      if( ! exists $exon_cache{ "$exon_id" } ) {
+      if( ! exists $exon_cache{ "$db:$exon_id" } ) {
 	$exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, 
 					      $hr->{'chr_strand'});
 	$exon->adaptor( $core_db_adaptor->get_ExonAdaptor() );
-	$exon_cache{"$exon_id"} = $exon;
+	$exon_cache{"$db:$exon_id"} = $exon;
 	$exon->dbID( $exon_id );
 	# no phase information stored, 
 	# putting something to avoid N padding
@@ -449,7 +450,7 @@ sub _objects_from_sth {
 	  print STDERR "Exon without dbID: $exon\n";
 	}
       } else {
-	$exon = $exon_cache{"$exon_id"};
+	$exon = $exon_cache{"$db:$exon_id"};
       }
 
       if($coding_start || $coding_end) {
