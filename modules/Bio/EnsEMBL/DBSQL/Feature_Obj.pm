@@ -61,10 +61,11 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
-
 use DBI;
-
+use Bio::EnsEMBL::DBSQL::Utils;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
+
+
 
 @ISA = qw(Bio::Root::Object);
 
@@ -711,6 +712,134 @@ sub find_GenomeHits {
 
     return @features;
 }
+
+
+
+=head2 get_PredictionFeature_by_id 
+
+ Title   : get_PredictionFeature_by_id
+ Usage   : $obj->get_PredictionFeature_by_id($id)
+ Function: 
+ Example : 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+
+
+
+
+
+sub get_PredictionFeature_by_id {
+   my ($self,$genscan_id) = @_;
+ 
+   unless ($genscan_id){$self->throw("I need a genscan id");}
+   
+   my $fsetid;
+   my %analhash;
+  
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.analysis,fset.id,c.id " .
+       "from feature f, fset fset,fset_feature ff,contig c where ff.feature = f.id and fset.id = ff.fset ".
+        " and c.internal_id=f.contig and ff.fset ='$genscan_id' and name = 'genscan'";
+ 
+       
+   my $sth = $self->_db_obj->prepare($query);   
+        
+   $sth->execute();
+   
+   my ($fid,$start,$end,$strand,$score,$analysisid,$contig);
+           
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid,\$contig);
+
+   my $current_fset;
+   if( $sth->fetch ) {
+       my $out;
+
+       my $analysis;
+
+       if (!$analhash{$analysisid}) {
+       
+           
+           $analysis = $self->get_Analysis($analysisid);
+
+           $analhash{$analysisid} = $analysis;
+       
+       } else {
+           $analysis = $analhash{$analysisid};
+       }
+          
+           $current_fset = new Bio::EnsEMBL::SeqFeature;
+           $current_fset->source_tag('genscan');
+           $current_fset->primary_tag('prediction');
+           $current_fset->analysis($analysis);
+           $current_fset->seqname($contig);
+           $current_fset->id($fsetid);
+        
+
+   $out = new Bio::EnsEMBL::SeqFeature;
+ 
+       $out->seqname   ($contig);
+       $out->start     ($start);
+       $out->end       ($end);
+       $out->strand    ($strand);  
+ 
+       $out->source_tag('genscan');
+       $out->primary_tag('prediction');
+ 
+       if( defined $score ) {
+           $out->score($score);
+       }
+
+       $out->analysis($analysis);
+
+       # Final check that everything is ok.
+           
+       $out->validate();
+       $current_fset->add_sub_SeqFeature($out,'EXPAND');
+       $current_fset->strand($strand);
+   }
+   
+     else { $self->throw("Fset $genscan_id does not exist in the database");}
+
+
+return $current_fset;
+
+}
+
+
+
+
+=head2 get_PredictionFeature_as_Transcript 
+
+ Title   : get_PredictionFeature_as_Transcript
+ Usage   : $obj->get_PredictionFeature_as_Transcript($id)
+ Function: 
+ Example : 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+
+
+
+
+sub get_PredictionFeature_as_Transcript{
+    my ($self,$genscan_id)=@_;
+    unless ($genscan_id){$self->throw("I need a genscan id");}
+
+    my $ft=$self->get_PredictionFeature_by_id($genscan_id);
+    my $contig=$self->_db_obj->get_Contig($ft->seqname);
+ 
+    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+
+
+}
+
+
 
 =head2 _db_obj
 
