@@ -267,13 +267,15 @@ sub get_all_SimilarityFeatures_above_score{
     my $chr_name   = $self->_chr_name;
     my $idlist     = $self->_raw_contig_id_list;
     my $type       = $self->dbobj->static_golden_path_type;
+    my $count = 0;
     
     unless ($idlist){
 	return ();
     }
 
-    if( ! defined $self->{_feature_cache} ) {
-      
+    if( ! defined $self->{'_feature_cache'} ) {
+      &eprof_start('similarity-query');
+
       my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
@@ -285,13 +287,17 @@ sub get_all_SimilarityFeatures_above_score{
                         WHERE  sgp.raw_id = f.contig
                         AND    f.contig in $idlist
                         AND    sgp.type = '$type'
-		        AND    sgp.chr_name = '$chr_name' 
+		        AND    sgp.chr_name = '$chr_name'
+                        AND    a.id = f.analysis
                         ORDER  by start";
     
       my  $sth = $self->dbobj->prepare($statement);    
       $sth->execute(); 
     
-    
+      &eprof_end('similarity-query');
+   
+      &eprof_start('similarity-obj');
+
       my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
 	  $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
     
@@ -299,7 +305,8 @@ sub get_all_SimilarityFeatures_above_score{
 			 \$analysisid,\$name,\$hstart,\$hend,\$hid);
     
     
-      
+      $self->{'_feature_cache'} = {};
+
       my $out;
       my $length=$self->length;
   FEATURE: 
@@ -308,6 +315,10 @@ sub get_all_SimilarityFeatures_above_score{
 
 	
 	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
 	
 	
 	my $analysis=$self->_get_analysis($analysisid);
@@ -322,13 +333,22 @@ sub get_all_SimilarityFeatures_above_score{
 
 	$out->analysis($analysis);
         $out->id      ($hid);
-	push( @{$self->{_feature_cache}{$analysis->db()}}, $out );
+	if( !defined $self->{'_feature_cache'}->{$analysis->db()} ) {
+	    $self->{'_feature_cache'}->{$analysis->db()} = [];
+	}
+
+	push( @{$self->{'_feature_cache'}->{$analysis->db()}}, $out );
+	$count++;
       }
-    } 
+
+      &eprof_end('similarity-obj');
+
+  }
     # now extract requested features
-    
+    print STDERR "FEATURE COUNT $count ",$Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY," ", $Bio::EnsEMBL::FeatureFactory::ENSEMBL_EXT_LOADED,"\n";
+
     my @features;
-    foreach my $feature ( @{$self->{_feature_cache}{$analysis_type}} ) {
+    foreach my $feature ( @{$self->{_feature_cache}->{$analysis_type}} ) {
       
       if( $feature->score() > $score ) {
 	push( @features, $feature );
