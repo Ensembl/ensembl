@@ -303,6 +303,19 @@ else {
     print "not ok 32\n";
 }
 
+eval {
+    my $seqio = Bio::SeqIO->new('-format' => 'swiss' , -file => ">seq_temp.swiss" ) ;
+
+    $seqio->write_seq($protein);
+};
+
+if ($@) {
+    print STDERR "Exception $@\n";
+    print "not ok 33\n";
+}
+else {
+    print "ok 33\n";
+}
 
 
 
