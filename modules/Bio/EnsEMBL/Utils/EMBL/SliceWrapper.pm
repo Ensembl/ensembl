@@ -58,6 +58,7 @@ use Bio::Annotation;
 use Bio::SeqFeature::Generic;
 use Bio::SeqI;
 use Bio::EnsEMBL::Utils::EMBL::GeneWrapper;
+use Bio::EnsEMBL::Utils::EMBL::TranscriptWrapper;
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::SeqI);
 

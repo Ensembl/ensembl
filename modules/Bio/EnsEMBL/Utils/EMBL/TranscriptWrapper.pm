@@ -133,7 +133,9 @@ sub to_FTHelper {
   }
 
   my $join = "";
-    
+  
+  my $exons;
+   
   foreach my $exon (@{$trans->get_all_translateable_Exons()}) {
     $join .= ',' if($join); #append a comma to the last coord set
 
@@ -149,7 +151,9 @@ sub to_FTHelper {
   $ft->key('CDS');
   
   $ft->add_field('translation', $trans->translate()->seq());
-  $ft->add_field('cds', $trans->translation->stable_id());
+  if($trans->can('translation')) {
+    $ft->add_field('cds', $trans->translation->stable_id());
+  }
   $ft->add_field('transcript', $trans->stable_id());
   foreach my $dbl (@dblinks) {
     $ft->add_field('db_xref', $dbl->database().":".$dbl->primary_id());
