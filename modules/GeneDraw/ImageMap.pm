@@ -58,8 +58,12 @@ Methods available in the ImageMap package:
 
     
     sub print_map_start{
-	my ($img_map_fh)=@_;
-	print $img_map_fh "<IMG SRC=\"output.gif\" BORDER=\"0\" USEMAP=\"#Ngs22\"><BR>\n";
+	my ($img_map_fh,$gif_url)=@_;
+	if( !defined $gif_url ) {
+	    $gif_url = "output.gif";
+	}
+
+	print $img_map_fh "<IMG SRC=\"$gif_url\" BORDER=\"0\" USEMAP=\"#Ngs22\"><BR>\n";
 	print $img_map_fh "<MAP Name=\"Ngs22\">\n";
     }
 

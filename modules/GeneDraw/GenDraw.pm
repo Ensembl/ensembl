@@ -12,11 +12,11 @@ use DrawingRoutines;
 
 sub build_image
 {
-    my($bases_per_pixel,$contig_name)=@_;
+    my($bases_per_pixel,$contig_obj)=@_;
     
     my $GAP=50;
     my $x_img_len=600;
-    my $repeats = &GenDraw::adjust_image_size($bases_per_pixel,$x_img_len,$contig_name);
+    my $repeats = &GenDraw::adjust_image_size($bases_per_pixel,$x_img_len,$contig_obj);
     my $y_img_len=$repeats*$GAP;
     my $margin=30;
     my $im = new GD::Image($x_img_len+2*$margin,$y_img_len);
@@ -28,18 +28,14 @@ sub build_image
 
 sub adjust_image_size 
 {
-    my ($bases_per_pixel,$x_img_len,$contig_name)=@_;
+    my ($bases_per_pixel,$x_img_len,$contig_obj)=@_;
     
-    my $dbuser = 'ensembl';
+    my $dbuser = 'ensro';
     my $dbname = 'ensdev';
-    my $host = 'sol28';
+    my $host = 'obi-wan';
     my $dbpass = undef;
 
-    my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname , 
-					    -host => $host, -password => $dbpass );
-        
-    my $contig = $db->get_Contig($contig_name);
-    my $seq = $contig->seq();
+    my $seq = $contig_obj->seq();
     my $repeats =$seq->seq_len/($x_img_len*$bases_per_pixel)+2;    
 
     return $repeats;
@@ -51,10 +47,10 @@ sub adjust_image_size
 
 sub draw_genes 
 {
-    my ($im_fh,$contig_name,$bases_per_pixel,$img_map_fh) = @_;
+    my ($im_fh,$contig_obj,$bases_per_pixel,$img_map_fh,$gif_url,$genearray) = @_;
 
 # get image parameters
-    my @parms=&build_image($bases_per_pixel,$contig_name);
+    my @parms=&build_image($bases_per_pixel,$contig_obj);
     my $GAP=@parms[1];
     my $x_img_len=@parms[2];
     my $margin=@parms[3];
@@ -69,13 +65,6 @@ sub draw_genes
     my $red = $im_fh->colorAllocate(255,0,0);
     my $blue = $im_fh->colorAllocate(0,0,255);
 
-# create a db object        
-    my $dbuser = 'ensembl';
-    my $dbname = 'ensdev';
-    my $host = 'sol28';
-    my $dbpass = undef; 
-    my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname , 
-					-host => $host, -password => $dbpass );
 
 # set the the vertical distance between each drawn object and the sequence
     my $center= ($GAP)/2;
@@ -127,10 +116,10 @@ sub draw_genes
 #
 
     # start of an image map    
-    &ImageMap::print_map_start($img_map_fh);
+    &ImageMap::print_map_start($img_map_fh,$gif_url);
 
     # create contig object and get seq
-    my $contig = $db->get_Contig($contig_name);   
+    my $contig = $contig_obj;
     my $seq = $contig->seq();    
     $remaining_bases=$seq->seq_len;
 
@@ -165,7 +154,8 @@ sub draw_genes
 	# loop through all genes/transcripts/exons
 	#
 	
-	foreach my $gene ( $contig->get_all_Genes ) { $gene_status=1;
+	foreach my $gene ( @{$genearray} ) { 
+	    $gene_status=1;
 	    foreach my $trans ( $gene->each_Transcript() ) {
 		foreach my $exon ( $trans->each_Exon() ) {
 		    
@@ -224,7 +214,7 @@ sub draw_genes
 		&DrawingRoutines::draw_a_rectangle($im_fh,$x_start,$y_gene_line_start,$x_end,$y_gene_line_end,$black);
 		
 		# draw gene image map
-		&ImageMap::print_map($im_fh,$x_start,$y_ex_img_start,$x_end,$y_ex_img_end,$gene->id,"GETgene?",$img_map_fh);	
+		&ImageMap::print_map($im_fh,$x_start,$y_ex_img_start,$x_end,$y_ex_img_end,$gene->id,"geneview.pl?gene_id=",$img_map_fh);	
 	    }    
 	}
 	
@@ -235,7 +225,7 @@ sub draw_genes
 	$im_fh->string(gdSmallFont,$x_start,$y_start_baseno+$drawing_counter*$GAP,$first_no_of_bases,$black);
 	$im_fh->string(gdSmallFont,$x_img_len+$margin-30,$y_start_baseno+$drawing_counter*$GAP,$last_no_of_bases,$black);
 	
-	print $last_no_of_bases," bp ...  done\n";
+	#print $last_no_of_bases," bp ...  done\n";
     }
     
     # end of an image map
