@@ -63,22 +63,21 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
                         (-start    => 1,
                          -end      => 100,
                          -slice    => $slice,
-                         -analysis => $analysis,
                          -adaptor  => $adaptor,
-                         -dbID     => 10,
                          -type     => 'HAP')
   Description: Constructs a new Bio::EnsEMBL::Feature.  Generally subclasses
                of this method are instantiated, rather than this class itself.
   Returntype : Bio::EnsEMBL::Feature
-  Exceptions : Thrown on invalid -SLICE, -ANALYSIS, -STRAND arguments
+  Exceptions : Thrown on invalid -SLICE arguments
   Caller     : general, subclass constructors
 
 =cut
 
 sub new {
+
   my $caller = shift;
 
-  #allow this to be called as class or object method
+  # allow this to be called as class or object method
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
