@@ -406,7 +406,7 @@ sub get_array_supporting {
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exon_rank,
-	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
+	    $exoncreated,$exonmodified,$phase,$strand,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
  	
@@ -472,8 +472,8 @@ sub get_array_supporting {
 	$exon->modified ($exonmodified);
 	$exon->start    ($start);
 	$exon->end      ($end);
-	$exon->strand   ($strand);
-	$exon->phase    ($phase);
+	$exon->phase   ($phase);
+	$exon->strand    ($strand);
 	$exon->version  ($exonversion);
 	$exon->seqname  ($contigid);
 	$exon->sticky_rank($exon_rank);
