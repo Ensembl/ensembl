@@ -1190,23 +1190,27 @@ sub get_all_DASFeatures{
        }
    }
    
-   #my $xx = 1;
+   my $xx = 1;
    foreach my $sf ( @chr_features ) {
-       #print STDERR "BEFORE: ", $sf->seqname() , "\t";
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
-       #print STDERR $sf->start() , "\t";
-       #print STDERR $sf->end() , "\t";
-       #print STDERR $sf->strand() , "\n";
-       if( defined $self->_convert_chrfeature_to_vc_coords($sf, ) ) {
-            print STDERR "SEG ID: ",         $sf->seqname(), "\t";
-            print STDERR "DSN: ",            $sf->das_dsn(), "\t";
-            print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
-            print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
-            print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
-            print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+       #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
+       #print STDERR "FEATURE START: ",  $sf->start() , "\t";
+       #print STDERR "FEATURE END: ",    $sf->end() , "\t";
+       #print STDERR "FEATURE STRAND: ", $sf->strand() , "\t";
+       #print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
+       if( defined $self->_convert_chrfeature_to_vc_coords($sf) ) {
+       		#print STDERR "$xx AFTER: ", $sf->seqname() , "\t";
+            #print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+            #print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+       		#print STDERR "FEATURE ID: ",   $sf->das_feature_id(), "\n";
+            
+			#print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+            #print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+            #print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
 	        push(@genomic_features, $sf);
        }
-       #$xx++;
+       $xx++;
    }
    $self->{'_das_cached_features'} = \@genomic_features;
    return @genomic_features;
@@ -1225,12 +1229,21 @@ sub get_all_DASFeatures{
 =cut
 
 sub _convert_chrfeature_to_vc_coords{
-    my ($self, $f, $chr_start) = @_;
+    my ($self, $f) = @_;
+
+    my $chr_start = $self->_global_start();
+    my $chr_end   = $self->_global_end();
     
-    $chr_start = $self->_global_start();
-    
-    $f->start($f->start() - $chr_start);
-    $f->end($f->end() - $chr_start);
+	if($f->start() < $self->_global_start()){
+		print STDERR "DAS ERROR! Feature not on VC  between $chr_start and $chr_end: ";
+        print STDERR " START: ",  $f->das_start(), "\t";
+        print STDERR " END: ",    $f->das_end(), "\t";
+        print STDERR " STRAND: ", $f->das_strand(), "\t";
+       	print STDERR " ID: ",   $f->das_feature_id(), "\n";	
+		return();
+	}
+    $f->start($f->start() - $chr_start + 1);
+    $f->end($f->end() - $chr_start + 1);
     return($f);
 }
 

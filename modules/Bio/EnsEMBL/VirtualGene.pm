@@ -625,7 +625,7 @@ sub to_FTHelper {
 		} else {
 		    # in someone else's coordinate system. Yuk.
 		    if( !defined $contig{$exon->contig_id} ) {
-			$contig{$exon->contig_id} = $self->dbobj->get_Contig($exon->contig_id);
+			$contig{$exon->contig_id} = $exon->contig();
 		    }
 		    my $tstart = $exon->start + $contig{$exon->contig_id}->embl_offset;
 		    my $tend   = $exon->end   + $contig{$exon->contig_id}->embl_offset;

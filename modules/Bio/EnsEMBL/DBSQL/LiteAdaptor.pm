@@ -155,7 +155,7 @@ sub fetch_virtualRepeatFeatures_start_end {
         	    'chr_start' => $row->[3],
             	'chr_end'   => $end,
         	    'start'     => $row->[3]-$vc_start+1,
-            	'end'       => $end-$vc_start+1,
+            	'end'       => $end     -$vc_start+1,
 	            'strand'    => $row->[5],
 			};
 		}
@@ -222,8 +222,8 @@ sub fetch_snp_features {
             
             #Variation
             $snp = new Bio::EnsEMBL::ExternalData::Variation
-              (-start => $snp_start-$vc_start,
-               -end => $snp_start-$vc_start,
+              (-start => $snp_start-$vc_start +1 ,
+               -end => $snp_start-$vc_start +1,
                -strand => $chrom_strand,
                -original_strand => $strand,
                -score => 1,

@@ -845,7 +845,7 @@ sub seq {
     }
     
     my $seq = Bio::Seq->new(
-        -DISPLAY_ID => $self->id,
+        -DISPLAY_ID => $self->stable_id,
         -MOLTYPE    => 'dna',
         -SEQ        => $transcript_seq_string,
         );
@@ -1611,6 +1611,8 @@ sub strand_in_context{
    my @exons = $self->each_Exon_in_context($context);
 
    if( scalar(@exons) == 0 ) {
+	print STDERR "TRANSCRIPT: ", $self->stable_id,"\n";
+
        $self->warn("There are no exons in this context. Bad to call this - returning strand 0 from strand_in_context on Transcript");
        return 0;
    }
