@@ -200,7 +200,7 @@ sub check_err {
 
 sub query_identity_threshold {
 
-  return 98;
+  return 0;
 
 }
 
@@ -209,7 +209,7 @@ sub query_identity_threshold {
 
 sub target_identity_threshold {
 
-  return 98;
+  return 0;
 
 }
 
