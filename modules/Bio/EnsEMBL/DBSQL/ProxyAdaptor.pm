@@ -155,7 +155,7 @@ sub AUTOLOAD {
 }
 
 
-=head2 DELETE
+=head2 DESTROY
 
   Arg [1]    : none
   Example    : none

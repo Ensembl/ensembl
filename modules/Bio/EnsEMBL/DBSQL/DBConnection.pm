@@ -1,4 +1,4 @@
-=Head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
+#=Head1 NAME - Bio::EnsEMBL::DBSQL::DBConnection
 
 =head1 SYNOPSIS
 
@@ -375,11 +375,8 @@ sub prepare {
       $self->throw("Database object has lost its database handle.");
    }
 
-#   print STDERR "QUERY: ",join( "\nQUERY: ", split( "\n",$string )),"\n";
-#   $string =~ s/\n/ /g;
-#   $string =~ s/ +/ /g;
-#   print STDERR "QUERY: ",$string,"\n";
-   # should we try to verify the string?
+   #print STDERR "\n\nSQL(".$self->dbname."):$string\n\n";
+
    return $self->{_db_handle}->prepare($string);
 } 
 
