@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;  
 	use Test ;
-	plan tests => 20;
+	plan tests => 22;
 }
 
 my $loaded = 0;
@@ -135,4 +135,16 @@ my $stable_ids = $exonad->list_stable_ids();
 ok (@{$stable_ids});
 
 $multi->restore();
+
+# regression test
+# make sure that sequence fetching and caching is not broken
+$exon->stable_id('TestID');
+my $first_seq = $exon->seq();
+my $second_seq = $exon->seq();
+
+ok($first_seq->seq() && $first_seq->seq() eq $second_seq->seq());
+ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display_id());
+
+
+
 
