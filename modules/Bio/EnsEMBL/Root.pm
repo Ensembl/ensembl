@@ -12,7 +12,7 @@ rearrange method which can be imported in the following way:
    use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
    #can now call rearrange as a class method (instead as object method)
-   my ($start, $end) = rearrange(['START','END'], \@args);
+   my ($start, $end) = rearrange(['START','END'], @args);
 
 If you want to use the throw or warn methods the replacement use the class
 methods throw and warning from the Bio::EnsEMBL::Utils::Exception class:
