@@ -265,7 +265,6 @@ sub read_Genscan {
     foreach my $trans ($self->gs->each_Transcript) {
 	my $gene = new Bio::EnsEMBL::SeqFeature(-primary_tag => 'prediction');
 	$gene->source_tag ('genscan');
-	
 	$gene->score(-1000);
 	$gene->analysis($analysis);
 
@@ -277,6 +276,7 @@ sub read_Genscan {
 
 	    $f->source_tag ('genscan');
 	    $f->primary_tag('prediction');
+
 	    if( ! defined $ex->seqname ) {
 		$f->seqname($ex->entire_seq->id());
 	    } else {
@@ -288,7 +288,9 @@ sub read_Genscan {
 	    } else {
 		$f->score(-1000);
 	    }
+
 	    $f->analysis($analysis);
+
 	    if( !defined $gene->seqname ) {
 		$gene->seqname($f->seqname);
 	    }
