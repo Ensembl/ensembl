@@ -760,24 +760,25 @@ sub get_all_peptide_variations {
     foreach my $allele (@alleles) {
       next if $allele eq '-';       #skip deletions
       next if CORE::length($allele) != 1; #skip insertions
-      
-      if($strand == -1) {
-	#complement the allele if the snp is on the reverse strand
-	$allele =~ 
-	 tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-      }
+
+      #get_all_cdna_SNPs always gives strand of 1 now
+      #if($strand == -1) {
+      #  #complement the allele if the snp is on the reverse strand
+      #  $allele =~ 
+      #  tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+      #}
 
       #create a data structure of variant alleles sorted by both their
       #peptide position and their position within the peptides codon
       $variant_alleles ||= {};
       if(exists $variant_alleles->{$peptide}) {
-	my $alleles_arr = $variant_alleles->{$peptide}->[1];
-	push @{$alleles_arr->[$codon_pos]}, $allele;
+        my $alleles_arr = $variant_alleles->{$peptide}->[1];
+        push @{$alleles_arr->[$codon_pos]}, $allele;
       } else {
-	#create a list of 3 lists (one list for each codon position)
-	my $alleles_arr = [[],[],[]];
-	push @{$alleles_arr->[$codon_pos]}, $allele;
-	$variant_alleles->{$peptide} = [$codon, $alleles_arr];
+        #create a list of 3 lists (one list for each codon position)
+        my $alleles_arr = [[],[],[]];
+        push @{$alleles_arr->[$codon_pos]}, $allele;
+        $variant_alleles->{$peptide} = [$codon, $alleles_arr];
       }
     }
   }
@@ -797,13 +798,13 @@ sub get_all_peptide_variations {
     foreach my $a1 (@{$alleles->[0]}) {
       substr($codon, 0, 1) = $a1;
       foreach my $a2 (@{$alleles->[1]}) {
-	substr($codon, 1, 1) = $a2;
-	foreach my $a3 (@{$alleles->[2]}) {
-	  substr($codon, 2, 1) = $a3;
-	  my $aa = $codon_table->translate($codon);
-	  #print "$codon translation is $aa\n";
-	  $alt_amino_acids{$aa} = 1;
-	}
+        substr($codon, 1, 1) = $a2;
+        foreach my $a3 (@{$alleles->[2]}) {
+          substr($codon, 2, 1) = $a3;
+          my $aa = $codon_table->translate($codon);
+          #print "$codon translation is $aa\n";
+          $alt_amino_acids{$aa} = 1;
+        }
       }
     }
 
@@ -878,35 +879,35 @@ sub get_all_SNPs {
     else {
       #snp is inside transcript region check if it overlaps an exon
       foreach my $e (@{$transcript->get_all_Exons}) {
-	if($snp->end >= $e->start && $snp->start <= $e->end) {
-	  #this snp is in an exon
+        if($snp->end >= $e->start && $snp->start <= $e->end) {
+          #this snp is in an exon
 
-	  if(($trans_strand == 1 && 
-	      $snp->end < $transcript->coding_region_start) ||
-	     ($trans_strand == -1 && 
-	      $snp->start > $transcript->coding_region_end)) {
-	    #this snp is in the 5' UTR
-	    $key = 'five prime UTR';
-	  }
+          if(($trans_strand == 1 && 
+              $snp->end < $transcript->coding_region_start) ||
+             ($trans_strand == -1 && 
+              $snp->start > $transcript->coding_region_end)) {
+            #this snp is in the 5' UTR
+            $key = 'five prime UTR';
+          }
 
-	  elsif(($trans_strand == 1 && 
-		 $snp->start > $transcript->coding_region_end)||
-		($trans_strand == -1 && 
-		 $snp->end < $transcript->coding_region_start)) {
-	    #this snp is in the 3' UTR
-	    $key = 'three prime UTR';
-	  }
+          elsif(($trans_strand == 1 && 
+                 $snp->start > $transcript->coding_region_end)||
+                ($trans_strand == -1 && 
+                 $snp->end < $transcript->coding_region_start)) {
+            #this snp is in the 3' UTR
+            $key = 'three prime UTR';
+          }
 
-	  else {
-	    #snp is coding
-	    $key = 'coding';
-	  }
-	  last;
-	}
+          else {
+            #snp is coding
+            $key = 'coding';
+          }
+          last;
+        }
       }
       unless($key) {
-	#snp was not in an exon and is therefore intronic
-	$key = 'intronic';
+        #snp was not in an exon and is therefore intronic
+        $key = 'intronic';
       }
     }
 
@@ -951,9 +952,7 @@ sub get_all_cdna_SNPs {
   my $all_snps = $self->get_all_SNPs;
   my %snp_hash;
 
-  my @cdna_types = ('three prime UTR', 
-		    'five prime UTR',
-		    'coding');
+  my @cdna_types = ('three prime UTR', 'five prime UTR','coding');
 
   my $sa = $self->adaptor->db->get_SliceAdaptor;
   my $slice = $sa->fetch_by_transcript_id($self->dbID);
@@ -964,11 +963,8 @@ sub get_all_cdna_SNPs {
   foreach my $type (@cdna_types) {
     $snp_hash{$type} = [];
     foreach my $snp (@{$all_snps->{$type}}) {
-	  my @coords = 
-	$transcript->genomic2cdna($snp->start, 
-				  $snp->end, 
-				  $snp->strand, 
-				  $slice);
+      my @coords = $transcript->genomic2cdna($snp->start, $snp->end, 
+                                             $snp->strand, $slice);
 
       #skip snps that don't map cleanly (possibly an indel...)
       if(scalar(@coords) != 1) {
@@ -979,8 +975,20 @@ sub get_all_cdna_SNPs {
       my ($coord) = @coords;
 
       unless($coord->isa('Bio::EnsEMBL::Mapper::Coordinate')) {
-	#warning("snp of type $type maps to gap\n");
-	next;
+        #warning("snp of type $type maps to gap\n");
+        next;
+      }
+
+      my $alleles = $snp->{'alleles'};
+      my $ambicode = $snp->{'_ambiguity_code'};
+
+      #we arbitrarily put the SNP on the +ve strand because it is easier to
+      #work with in the webcode.
+      if($coord->strand == -1) {
+        $alleles =~
+         tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
+        $ambicode =~
+         tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
       }
 
       #copy the snp and convert to cdna coords...
@@ -989,7 +997,9 @@ sub get_all_cdna_SNPs {
       bless $new_snp, ref $snp;
       $new_snp->start($coord->start);
       $new_snp->end($coord->end);
-      $new_snp->strand($coord->strand);
+      $new_snp->strand(1);
+      $new_snp->{'alleles'} = $alleles;
+      $new_snp->{'_ambiguity_code'} = $ambicode;
       push @{$snp_hash{$type}}, $new_snp;
     }
   }
