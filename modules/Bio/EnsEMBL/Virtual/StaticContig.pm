@@ -267,8 +267,9 @@ sub get_all_SimilarityFeatures_above_score{
   my $idlist     = $self->_raw_contig_id_list;
   my $type       = $self->dbobj->static_golden_path_type;
   my $count = 0;
-    
+   
   unless ($idlist){
+    print STDERR "There are no contigs to dump features on in get_all_SimilarityFeatures_above_score\n";
     return ();
   }
 
@@ -323,7 +324,7 @@ sub get_all_SimilarityFeatures_above_score{
     #open(T,">>/tmp/stat2.sql");
     #print T $statement,"\n";
     #close(T);
-    # print STDERR $statement . "\n";
+#    print STDERR $statement . "\n";
 
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
@@ -400,7 +401,7 @@ sub get_all_SimilarityFeatures_above_score{
       # &eprof_end('similarity-obj-creation');
     }
       
-    #print STDERR "FEATURE: got $count in entire call\n";
+ #   print STDERR "FEATURE: got $count in entire call\n";
     &eprof_end('similarity-obj');
       
   }
@@ -1201,11 +1202,15 @@ sub get_all_DASFeatures{
    #foreach (@clones){
    #    print STDERR "Clone: ", $_, "\n";
    #}
-       
+   my $chr_length = $self->fetch_chromosome_length();       
    foreach my $extf ( $self->dbobj->_each_DASFeatureFactory ) {
        
        if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
-	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@fpccontigs, \@clones,\@rawcontigs)) {
+	       foreach my $sf (
+                $extf->get_Ensembl_SeqFeatures_DAS(
+                    $self->_chr_name,$self->_global_start,$self->_global_end,
+                    \@fpccontigs, \@clones,\@rawcontigs, $chr_length)
+            ) {
 
 	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
                     #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
@@ -2541,14 +2546,15 @@ sub get_all_Genes {
 =cut
 
 sub fetch_chromosome_length {
-   my ($self,$chr) = @_;
+    my ($self,$chr) = @_;
 
-   unless (defined $chr){
-      $chr = $self->_chr_name();
-   }
-   my $kba = $self->dbobj->get_KaryotypeBandAdaptor();
-   my $len = $kba->fetch_chromosome_length($chr);
-   return($len);
+    $chr ||= $self->_chr_name();
+    
+    my $cache_name = "_chr_length_$chr";
+    $self->{ $cache_name } = $self->dbobj->get_KaryotypeBandAdaptor()->fetch_chromosome_length($chr)
+        unless defined $self->{ $cache_name };
+            
+    return( $self->{ $cache_name } );
 }
 
 
