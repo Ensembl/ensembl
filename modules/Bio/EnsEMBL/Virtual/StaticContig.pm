@@ -1083,6 +1083,9 @@ sub get_all_DASFeatures{
    }
 
    my @contig_features;
+   my @chr_features;
+   my @fpc_features;
+   my @clone_features;
    my @genomic_features;
 
    my @rawcontigs = $self->_vmap->get_all_RawContigs();
@@ -1104,13 +1107,25 @@ sub get_all_DASFeatures{
 	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@fpccontigs, \@clones,\@rawcontigs)) {
 
 	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
-		            #Ensembl raw contig feature
+                    #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
+               } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
+                    #warn ("Got a chromosomal feature: ", $sf->seqname(), "\n");
+ 	                push(@chr_features, $sf);
+               } elsif( $sf->seqname() =~ /ctg\d+|NT_\d+/i) { 
+                    #warn ("Got a FPC contig feature: ", $sf->seqname(), "\n");
+ 	                push(@fpc_features, $sf);
+               } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) { 
+                    #warn ("Got a clone feature: ", $sf->seqname(), "\n");
+ 	                push(@clone_features, $sf);
                } elsif( $sf->seqname() eq '__ERROR__') { 
                     #Always push errors even if they aren't wholly within the VC
 	                push(@genomic_features, $sf);
+               } elsif( $sf->seqname() eq '') { 
+                    #suspicious
+	                warn ("Got a DAS feature with an empty seqname! (discarding it)\n");
 	           } else {
-		            #push(@genomic_features,$sf);
+		            warn ("Got a DAS feature with an unrecognized segment type: >", $sf->seqname(), "< >", $sf->das_type_id(), "<\n");
 	           }
 	       }
 	   
@@ -1120,14 +1135,26 @@ sub get_all_DASFeatures{
        }
    }
    
-   #my $xx = 1;
    foreach my $sf ( @contig_features ) {
+       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
+            #print STDERR "SEG ID: ",         $sf->seqname(), "\t";
+            #print STDERR "DSN: ",            $sf->das_dsn(), "\t";
+            #print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
+            #print STDERR "FEATURE END: ",    $sf->das_end(), "\t";
+            #print STDERR "FEATURE STRAND: ", $sf->das_strand(), "\t";
+            #print STDERR "FEATURE TYPE: ",   $sf->das_type_id(), "\n";
+	        push(@genomic_features, $sf);
+       }
+   }
+   
+   #my $xx = 1;
+   foreach my $sf ( @chr_features ) {
        #print STDERR "BEFORE: ", $sf->seqname() , "\t";
        #print STDERR "$xx BEFORE: ", $sf->seqname() , "\t";
        #print STDERR $sf->start() , "\t";
        #print STDERR $sf->end() , "\t";
        #print STDERR $sf->strand() , "\n";
-       if( defined $self->_convert_seqfeature_to_vc_coords($sf) ) {
+       if( defined $self->_convert_chrfeature_to_vc_coords($sf, ) ) {
             print STDERR "SEG ID: ",         $sf->seqname(), "\t";
             print STDERR "DSN: ",            $sf->das_dsn(), "\t";
             print STDERR "FEATURE START: ",  $sf->das_start(), "\t";
@@ -1138,12 +1165,31 @@ sub get_all_DASFeatures{
        }
        #$xx++;
    }
-   
    $self->{'_das_cached_features'} = \@genomic_features;
    return @genomic_features;
 }
 
+=head2 _convert_chrfeature_to_vc_coords
 
+ Title   : _convert_chrfeature_to_vc_coords
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _convert_chrfeature_to_vc_coords{
+    my ($self, $f, $chr_start) = @_;
+    
+    my $chr_start = $self->_global_start();
+    
+    $f->start($f->start() - $chr_start);
+    $f->end($f->end() - $chr_start);
+    return($f);
+}
 
 =head2 get_all_ExternalFeatures
 

@@ -787,10 +787,11 @@ sub get_all_ExternalGenes {
    &eprof_start("external_gene_retrieve");
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->can('get_Ensembl_Genes_contig_list')) {
-	   foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
+	     foreach my $gene ( $extf->get_Ensembl_Genes_contig_list(@rawids) ) {
 	       #print STDERR "Retrieved gene with ",$gene->id,"\n";
-	       $gene{$gene->id()} = $gene;
-	   }
+	       #$gene{$gene->id()} = $gene;
+	       $gene{$gene->dbID()} = $gene;
+	     }
        }
    }
    &eprof_end("external_gene_retrieve");
@@ -1008,7 +1009,7 @@ sub _gene_query{
 	    # $exon->seqname($exon->contig_id);
 	    $exon{$exon->dbID} = $exon;
 	    
-            print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
+      #      print STDERR "Exon for gene ",$gene->dbID," is on ",$exon->seqname," ",$exon->start,":",$exon->end,"\n";
 
 	    ### got to treat sticky exons separately.
 	    if( $exon->isa('Bio::EnsEMBL::StickyExon') ) {
@@ -1079,7 +1080,7 @@ sub _gene_query{
 		    $exonconverted{$exon->dbID} = 1;
 		}               
 	    }
-            print STDERR "Exon for gene is now on ",$gene->dbID," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
+         #   print STDERR "Exon for gene is now on ",$gene->dbID," is on ",$exon->seqname," at ",$exon->start,":",$exon->end,"\n";
 
 	}                               # foreach exon
         
@@ -1202,85 +1203,72 @@ sub _convert_seqfeature_to_vc_coords {
     my $cid = $sf->seqname();
     my $mc;
     if( !defined $cid ) {
-	$self->throw("sequence feature [$sf] has no seqname!");
+    	$self->throw("sequence feature [$sf] has no seqname!");
     }
-
     # potentially we could be asked to convert something
     # that wasn't on this VC at all, eg, an exon from a distant contig
     eval {
-	$mc=$self->_vmap->get_MapContig_by_id($cid);
+	    $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
     if ($@ || !ref $mc) { 
-	return undef;
+	    return undef;
     }
     
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
-    
     if( $#sub >=  0 ) {
-	# chain to constructor of the object. Not pretty this.
-	$sf->flush_sub_SeqFeature();
-	
-	my $seen = 0;
-	my $strand;
-	foreach my $sub ( @sub ) {
-	    #print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
-	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	    
-	    if( !defined $sub ) {        
-		next;
+	    # chain to constructor of the object. Not pretty this.
+	    $sf->flush_sub_SeqFeature();
+	    my $seen = 0;
+	    my $strand;
+	    foreach my $sub ( @sub ) {
+	        #print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	        $sub = $self->_convert_seqfeature_to_vc_coords($sub);
+	        if( !defined $sub ) {        
+		        next;
+	        }
+	        if( $seen == 0 ){
+		        $sf->start($sub->start);
+		        $sf->end($sub->end);
+	        }
+	        $seen =1;
+	        $strand = $sub->strand;
+	        $sf->add_sub_SeqFeature($sub,'EXPAND');
 	    }
-	    if( $seen == 0 ){
-		$sf->start($sub->start);
-		$sf->end($sub->end);
+	    if( $seen == 1 ) {       
+	        # we assumme that the mapping was unambiguous wrt to the strand
+	        $sf->strand($strand);
+	        return $sf;
+	    } else {
+	        return undef;
 	    }
-
-	    $seen =1;
-	    $strand = $sub->strand;
-	    $sf->add_sub_SeqFeature($sub,'EXPAND');
-	}
-	if( $seen == 1 ) {       
-	    # we assumme that the mapping was unambiguous wrt to the strand
-
-	    $sf->strand($strand);
-	    
-	    return $sf;
-	} else {
-	    return undef;
-	    
-	}
     }
 
     # might be clipped left/right
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
-
-    
-    # Could be clipped on ANY contig
-
-
-  
-    if ($sf->start < $mc->rawcontig_start) {  
-	return undef;              
+    # Could be clipped on ANY contig  
+    if ($sf->start < $mc->rawcontig_start) {
+        #print STDERR "Binning $cid\n";
+	    return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-	return undef;              
+        #print STDERR "Binning $cid\n";
+	    return undef;              
     }
-
-
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
 
-    
     if( $sf->can('attach_seq') ) {
-	if (!$self->noseq) {
-	    $sf->attach_seq($self->primary_seq);
-	}
+	    if (!$self->noseq) {
+	        $sf->attach_seq($self->primary_seq);
+	    }
     }
     $sf->start ($rstart);
     $sf->end   ($rend);
     $sf->strand($rstrand);
     $sf->seqname($self->id);
     return $sf;
+
 }
 
 =head2 _convert_start_end_strand_vc
