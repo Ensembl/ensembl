@@ -2027,7 +2027,7 @@ sub get_all_Genes_exononly{
             $previous_exon = $exon;
 	    $exons{$exonid} = $exon;
         }
-        $current_transcript->add_Exon($exon_already_seen{$exons});
+        $current_transcript->add_Exon($exons{$exonid});
         $current_transcript->end_exon_rank($rank);
    }
 
