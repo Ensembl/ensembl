@@ -165,7 +165,7 @@ sub fetch_by_Slice_start_end_strand {
        );
    }
    else {
-     self->throw("Incorrect strand set on slice $slice");
+     $self->throw("Incorrect strand set on slice $slice");
    }
 }
 
