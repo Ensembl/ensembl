@@ -40,15 +40,14 @@ $priority{'SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
 $priority{'SPTREMBL'} = 700;
 $priority{'LocusLink'} = 100;
-#$priority{'Anopheles_paper'} = 50;
-#$priority{'Celera_Gene'} = 50;
+
 
 if (!defined $organism) {    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
 }
 
 print STDERR "Connecting to the database...\n";
 print STDERR "dealing with organism ".$organism."\n";
-#my $multi = MultiTestDB->new();
+
 
 my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -user   => $user,
@@ -58,7 +57,6 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
         -driver => 'mysql',
 	);
 
-#my $db = $multi->get_DBAdaptor( 'core' );
 
 my $transadaptor = $db->get_TranscriptAdaptor();
 my $geneadaptor  = $db->get_GeneAdaptor();
@@ -68,6 +66,7 @@ my $query = "select transcript_id from transcript";
 my $sth = $db->prepare($query);
 $sth->execute();
 
+print STDERR "Getting transcript display xref_id\n";
 while(my $id = $sth->fetchrow) {
     my $trans = $transadaptor->fetch_by_dbID($id);
     my $xrefs = $trans->get_all_DBLinks;
@@ -87,8 +86,11 @@ while(my $id = $sth->fetchrow) {
     $transadaptor->update($trans);
 }
 
-if ($organism ne "elegans") {
+print STDERR "Done\n";
+print STDERR "Getting gene display_xref_id\n";
 
+
+if ($organism ne "elegans") {
     my $query1 = "select gene_id from gene";
     my $sth1 = $db->prepare($query1);
     $sth1->execute();
@@ -113,6 +115,7 @@ if ($organism ne "elegans") {
        
     }
 }
+#Not sure id it is really needed if wormbase_gene is put in the priority list... Laura?
 elsif ($organism eq "elegans") {
     my $query1 = "select g.gene_id, x.xref_id from gene_stable_id g, xref x, external_db e where g.stable_id = x.display_label and x.external_db_id = e.external_db_id and e.db_name = 'wormbase_gene'";
     my $sth1 = $db->prepare($query1);
@@ -127,7 +130,7 @@ elsif ($organism eq "elegans") {
     
 }
 
-
+print STDERR "Done\n";
 
 
 

@@ -47,43 +47,43 @@ package main;
 
              #Location of the query peptide file (eg: Ensembl predicted protein) 
              #'query'        => '/work1/mongin/mapping/primary/ensembl110.pep',
-             'query'       => '/acari/work4/mongin/dros3_mapping/Primary/drosophila-release3-peptides.fasta',   
+             'query'       => '/Users/emmanuelmongin/code_test/mapping_test/Primary',   
              
              #Location of the sptr file, this file will be used as an 
 	     #input to grep the specific sp entries to the organism 
 	     #using grep_sp_entries.pl. This file is supposed to be 
-	     #in SP format
+	     #in SP format. This option is not really use but you are welcome to use it (it is most of the time simpler to get the data through SRS or from the files produced by Swiss-Prot). But if you have the whole SPTR somewhere you can easily access...
 	   
 	      'total_sptr'  => '',
 
              #Location of the sptr file in fasta format containing the entries specific to the organism
 	     #'sptr_fa'      => '/work1/mongin/mapping/primary/HS.f',
-	     'sptr_fa'      => '/acari/work4/mongin/dros3_mapping/Primary/7227.FASTAC',
+	     'sptr_fa'      => '/Users/emmanuelmongin/code_test/mapping_test/Primary/7227.FASTAC',
 	     
              #Location of the sptr file in Swiss-Prot format containing the entries specific to the organism
 	     #'sptr_swiss'      => '/ecs2/work1/lec/briggsae_peptides/briggsae.test',
-	     'sptr_swiss' => '/acari/work4/mongin/dros3_mapping/Primary/7227.SPC',	     
+	     'sptr_swiss' => '/Users/emmanuelmongin/code_test/mapping_test/Primary/Primary/7227.SPC',	     
 
              #Location of the file containing all refseq and all SP in fasta format (This file will be produced by running prepare_proteome.pl)
             
-	     'pmatch_input_fa'    => '/acari/work4/mongin/dros3_mapping/Primary/total.fa',
+	     'pmatch_input_fa'    => '/Users/emmanuelmongin/code_test/mapping_test/Primary/total.fa',
 
              #Output file containing the mapping of SP and refseq sequences to external databases
            
-             'x_map_out'  => '/acari/work4/mongin/dros3_mapping/Output/xmap.out',
+             'x_map_out'  => '/Users/emmanuelmongin/code_test/mapping_test/Output/xmap.out',
 
              #Output file from pmatch.pl and input file for maps2db.pl
              #'pmatch_out'  => '/work1/mongin/mapping/outputs/pmatch_human1.txt',
-             'pmatch_out'  => '/acari/work4/mongin/dros3_mapping/Output/pmatch.out',
+             'pmatch_out'  => '/Users/emmanuelmongin/code_test/mapping_test/Primary/pmatch.out',
 
 
              #Location of the Refseq (proteins) file in fasta format
 	     #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	     'refseq_fa'    => '/acari/work4/mongin/dros3_mapping/Primary/fly.faa',
+	     'refseq_fa'    => '',
 	     
              #Location of the Refseq (proteins) file in Genbank format
 	     #'refseq_gnp'    => '/work1/mongin/mouse/mapping/primary/mouse.gnp',
-	     'refseq_gnp'  => '/acari/work4/mongin/dros3_mapping/Primary/fly.gnp',
+	     'refseq_gnp'  => '',
 
              ############################################
              #Organism specific files for the X_mapping #
@@ -152,7 +152,7 @@ package main;
                    #drosophila#
                    ############
 
-                   'dros_ext_annot' => '/acari/work4/mongin/dros3_mapping/Primary/xrefs.txt',
+                   'dros_ext_annot' => '',
 
 
 		   ##########
@@ -197,10 +197,13 @@ package main;
              #Organism related information#
              ##############################
 
-             #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish
+             #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse, elegans, anopheles, zebrafish, rat
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'drosophila',
+             'organism' => 'human',
+             
+             #List of authorised organisms, don't forget to add a new organism to this list
+             'organism_list' => ['human','drosophila','mouse','elegans','anopheles','zebrafish','rat'],
              
 
              #OX (Organism taxonomy cross-reference) number
@@ -211,12 +214,7 @@ package main;
 	     #'ox' => '6238' briggsae 	 
              'ox'  => '',
 
-	     
-             
-
-
-                  
-
+	    
              
 	     ##################	 
 	     #obslete options# 

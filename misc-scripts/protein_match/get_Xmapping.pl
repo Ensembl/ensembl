@@ -14,6 +14,8 @@ my %conf =  %::mapping_conf; # configuration options
 
 # global vars
 
+my $org_list = $conf{'organism_list'};
+
 #Get general options
 my $organism   = $conf{'organism'};
 my $sptr_swiss = $conf{'sptr_swiss'};
@@ -25,7 +27,6 @@ my $refseq_gnp = $conf{'refseq_gnp'};
 #Get specific options for human
 my $ens1       = $conf{'ens1'};
 my $ens4       = $conf{'ens4'};
-my $refseq_pred = $conf{'refseq_pred_gnp'};
 my $go          = $conf{'go'}; 
 my $gkb         = $conf{'gkb'}; 
 
@@ -43,10 +44,140 @@ my $eleg_nom   = $conf{'eleg_nom'};
 my $zeb_gene    = $conf{'zeb_gene'};
 my $zeb_dblink  = $conf{'zeb_dblink'};
 
-#Get specific options for drosophila
-my $ext_annot   = $conf{'dros_ext_annot'};
 
 my $briggsae_peptides = $conf{'briggsae_hybrid'};
+
+#Check that the configuration file has been well filled in for each different organism
+#Beginning of check
+
+my %check;
+my $seenorg = 0;
+
+#Check if the organism is correct
+foreach my $or (@{$org_list}) {
+    if ($or eq $organism) {
+	$seenorg = 1;
+    }
+}
+
+if ($seenorg == 0) {
+    print STDERR "Either the organism name you are using ($organism) is not define or is not allowed\n";
+    print STDERR "Here is a list of authorised organisms:\n";
+    foreach my $or (@{$org_list}) {
+	print STDERR "$or\n";
+    }
+
+    exit();
+}
+
+
+#Organism specific checks
+if($organism eq "human") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    $check{'ens1'} = $conf{'ens1'};
+    $check{'ens4'} = $conf{'ens4'};
+    $check{'go'} = $conf{'go'};
+    $check{'gkb'} = $conf{'gkb'};
+    
+    foreach my $k (keys %check) {
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "mouse") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    $check{'mgi_sp'} = $conf{'mgi_sp'};
+    $check{'mgi_locus'} = $conf{'mgi_locus'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "elegans") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'elegans_nom'} = $conf{'elegans_nom'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "anopheles") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'submitted_genes'} = $conf{'submitted_genes'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "drosophila") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "rat") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "zebrafish") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'zeb_gene'} = $conf{'zeb_gene'};
+    $check{'zeb_dblink'} = $conf{'zeb_dblink'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+
+#End of check
 
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nsptr_swiss: $sptr_swiss\nx_map: $out\n";
@@ -488,3 +619,24 @@ sub process_parsed_sp{
   }
 }
 
+sub usage {
+    
+  print STDERR <<HELP
+
+Usage: get_Xmapping.pl 
+One of the element of the configuration file has not been properly loaded
+for the organism $organism
+Please fill in properly your configuration file
+
+Here is your set up:
+HELP
+;
+
+ foreach my $k (keys %check) {
+	print STDERR "$k:\t$check{$k}\n";
+    }
+
+
+
+  exit();
+}

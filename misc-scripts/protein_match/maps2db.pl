@@ -20,6 +20,7 @@ my %conf =  %::mapping_conf; # configuration options
 
 # global vars
 
+my $org_list = $conf{'organism_list'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
 my $map        = $conf{'pmatch_out'};
@@ -29,12 +30,19 @@ my $user       = $conf{'dbuser'};
 my $pass       = $conf{'password'};
 my $port       = $conf{'port'};
 my $organism   = $conf{'organism'};
-my $type = $conf{'elegans_pseudo'};
-my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
 my $refseq_pred = $conf{'refseq_pred_gnp'};
+
+#Organism specific options
+#Drosophila
 my $dros_ext_annot = $conf{'dros_ext_annot'};
+
+#Elegans
 my $cefile         = $conf{'eleg_nom'};
+my $type = $conf{'elegans_pseudo'};
+
+#working option but obsolete
+my $check      = $conf{'check'};
 
 my %map;
 my %cemap;
@@ -45,9 +53,162 @@ my %embl2sp;
 my %errorflag;
 my %ref_map_pred;
 
-if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
-    die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
+#Checks
+
+my %check;
+my $seenorg = 0;
+
+#Check if the organism is correct
+foreach my $or (@{$org_list}) {
+    if ($or eq $organism) {
+	$seenorg = 1;
+    }
 }
+
+if ($seenorg == 0) {
+    print STDERR "Either the organism name you are using ($organism) is not define or is not allowed\n";
+    print STDERR "Here is a list of authorised organisms:\n";
+    foreach my $or (@{$org_list}) {
+	print STDERR "$or\n";
+    }
+
+    exit();
+}
+
+#Organism specific checks
+if($organism eq "human") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    
+    foreach my $k (keys %check) {
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "mouse") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "elegans") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'elegans_nom'} = $conf{'elegans_nom'};
+    $check{'elegans_pseudo'} = $conf{'elegans_pseudo'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "anopheles") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "drosophila") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+    $check{'dros_ext_annot'} = $conf{'dros_ext_annot'};
+    
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "rat") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'refseq_gnp'} = $conf{'refseq_gnp'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+if ($organism eq "zebrafish") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+    $check{'pmatch_out'} = $conf{'pmatch_out'};
+    $check{'db'}     = $conf{'db'};
+    $check{'host'}       = $conf{'host'};
+    $check{'dbuser'}       = $conf{'dbuser'};
+    $check{'password'} = $conf{'password'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
+#End of checks
 
 print STDERR "Connecting to the database... $dbname:$host\n";
 print STDERR "dealing with organism ".$organism."\n";
@@ -437,6 +598,29 @@ if ($organism eq "elegans") {
 	}
       }
   }
+
+sub usage {
+    
+    print STDERR <<HELP
+
+Usage: maps2db.pl 
+One of the element of the configuration file has not been properly loaded
+for the organism $organism
+Please fill in properly your configuration file
+
+Here is your set up:
+HELP
+;
+
+ foreach my $k (keys %check) {
+	print STDERR "$k:\t$check{$k}\n";
+    }
+
+
+
+  exit();
+}
+
 ###############
 #Some OO stuff#
 ###############

@@ -30,9 +30,6 @@ my $refseq_fa = $conf{'refseq_fa'};
 
 
 #Set the default percentage of idt
-#$opt_p = 66;
-
-my $organism = $conf{'organism'};
 
 my $opt_q = $conf{'query'};
 my $opt_t = $conf{'pmatch_input_fa'};
@@ -43,7 +40,23 @@ my $q_thr = $conf{'query_idt'};
 my $pmatch_bin = $conf{'pmatch'};
 my ($opt_w,$opt_l,$opt_d);
 
+#Check if the configuration file is correct
+my %check;
+$check{'query'} = $conf{'query'};
+$check{'pmatch_input_fa'} = $conf{'pmatch_input_fa'};
+$check{'pmatch_out'} = $conf{'pmatch_out'};
+$check{'target_id'} = $conf{'target_idt'};
+$check{'query_idt'} = $conf{'query_idt'};
+$check{'pmatch'} = $conf{'pmatch'};
 
+foreach my $k (keys %check) {
+    if ($check{$k} !~ /(\S+)/) {
+	usage();
+    }
+}
+
+
+#End of checks
 
 #################################
 
@@ -51,17 +64,6 @@ my $query = $opt_q;
 my $target = $opt_t;
 my %hash2;
 
-#################################
-# make worm-specific protein set from SWALL if ($opt_w)
-
-if ($organism eq "worm") {
-    if ($opt_w) {
-	print STDERR "extract worm sequences from SWALL...\n";
-	my $getz = "getz -f seq -sf fasta \'[swall-org:Caenorhabditis elegans]\' > $$.swall";
-	system "$getz";
-	$target = "$$.swall";
-    }
-}
 
 #################################
 # run pmatch (Richard Durbin's fast protein matcher, rd@sanger.ac.uk)
@@ -436,6 +438,26 @@ sub process_matches {
     }
 }
 
+sub usage {
+    
+  print STDERR <<HELP
+
+Usage: pmatch.pl 
+One of the element of the configuration file has not been properly loaded
+Please fill in properly your configuration file
+
+Here is your set up:
+HELP
+;
+
+ foreach my $k (keys %check) {
+	print STDERR "$k:\t$check{$k}\n";
+    }
+
+
+
+  exit();
+}
 
 
 ##########################################
