@@ -180,6 +180,19 @@ sub name {
   return $self->{_name};
 }
 
+
+# scp: RawContig->primary_seq is used by the pipeline/bioperl
+# (which expects an object to be returned that implements 'id'.
+# As RawContig->primary_seq now returns a RawContig, this
+# object needs to implement 'id' also.
+
+sub id {
+  my ($self) = shift;
+
+  return $self->name || $self->dbID;
+}
+
+
 sub international_name {
   my $self = shift;
   my $arg = shift;
