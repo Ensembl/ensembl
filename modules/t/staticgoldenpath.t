@@ -203,8 +203,8 @@ $sf->hseqname('other');
 $sf->score(100);
 $sf->primary_tag('similarity');
 $sf->source_tag('someone');
-$sf->feature2->primary_tag('similarity');
-$sf->feature2->source_tag('someone');
+$sf->primary_tag('similarity');
+$sf->source_tag('someone');
 
 $analysis = Bio::EnsEMBL::FeatureFactory->new_analysis();
 $analysis->program('program');
@@ -213,7 +213,7 @@ $analysis->gff_source('source');
 $analysis->gff_feature('feature');
 
 $sf->analysis($analysis);
-$sf->feature2->analysis($analysis);
+#$sf->feature2->analysis($analysis);
 $sf->hstrand(1);
 $sf->hscore(100);
 

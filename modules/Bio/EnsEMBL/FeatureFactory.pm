@@ -79,7 +79,7 @@ $USE_PERL_ONLY = 0;
 
 BEGIN {
     
-    my $load_ext = $ENV{'ENSEMBL_C_EXTENSION'} || 0;
+    my $load_ext = $ENV{'ENSEMBL_C_EXTENSION'} || 1;
     
     if( $load_ext == 0 ) {
 	# do not even attempt to load
@@ -92,7 +92,7 @@ BEGIN {
 	    $ENSEMBL_EXT_LOADED = 0;
 	} else {
 	    $ENSEMBL_EXT_LOADED = 1;
-	    print STDERR "Loaded Ensembl Feature C Extensions.\n";
+	    print STDERR "Going to use (default) C-extensions ($ENSEMBL_EXT_LOADED)\n";
 	}
     }
 }
