@@ -62,7 +62,7 @@ sub new {
     my $self = {};
     bless $self,$class;
 
-    if( !defined $dbobj || !ref $dbobj || !$dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') ) {
+    if( !defined $dbobj || !ref $dbobj ) {
 	$self->throw("Don't have a db [$dbobj] for new adaptor");
     }
 

@@ -89,6 +89,7 @@ sub get_FeaturePair_list_by_rawcontig_id{
    return @out;
 }
 
+
 =head2 write_FeaturePair_List
 
  Title   : write_FeaturePair_List
@@ -111,9 +112,22 @@ sub write_FeaturePair_List{
        $sth = $self->prepare("select LAST_INSERT_ID()");
        $sth->execute;
        my ($hitid) = $sth->fetchrow_array;
-       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$fp->feature1->seqname.",".$fp->feature1->start.",".$fp->feature1->end.",".$fp->feature1->strand.")");
+
+       my $seqname = $fp->feature1->seqname;
+       $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
+       my $version = $2;
+       my $contigid = "$1.$3";
+
+       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,version,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$contigid.",".$version.",".$fp->feature1->start.",".$fp->feature1->end.",".$fp->feature1->strand.")");
        $sth->execute;
-       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$fp->feature2->seqname.",".$fp->feature2->start.",".$fp->feature2->end.",".$fp->feature2->strand.")");
+
+       $seqname = $fp->feature2->seqname;
+       $seqname =~ /(\S+)\.(\d+).(\S+)/ || $self->throw("Feature pair name does not conform to acc.version.number sequence");
+       $version = $2;
+       $contigid = "$1.$3";
+
+       $sth = $self->prepare("INSERT INTO symmetric_contig_feature (symcfid,symchid,rawcontigid,version,seq_start,seq_end,strand) VALUES (NULL,$hitid,".$contigid.",".$version.",".$fp->feature2->start.",".$fp->feature2->end.",".$fp->feature2->strand.")");
+
        $sth->execute;
    }
 
