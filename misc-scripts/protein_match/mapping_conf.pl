@@ -29,7 +29,7 @@ package main;
              'query'        => '/work4/mongin/data/ensembl.pep',
              #'query'       => '',   
         
-	     'sptr_fa'      => '/work1/mongin/mapping/primary/refseq.fa',
+	     'sptr_fa'      => '/work1/mongin/mapping/kate/refseq_p.fa',
 	     #'sptr_fa'      => '',
 	     
 	     'sptr_swiss'      => '/work1/mongin/mapping/primary/sptr.swiss',
@@ -50,7 +50,7 @@ package main;
              'refseq_map' => '/work1/mongin/mapping/tests/refseq_map.txt',
              #'refseq_map' => '',
 
-             'sp_map' => '/work1/mongin/mapping/tests/refseq_map2.txt',
+             'sp_map' => '/work1/mongin/mapping/tests/refseq_map3.txt',
              #'sp_map' => '',
 
              'x_map'  => '/work1/mongin/mapping/tests/xmap_out1.txt',

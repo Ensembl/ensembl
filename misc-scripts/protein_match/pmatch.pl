@@ -55,6 +55,7 @@ $usage .= "-p minimum percentage off identity accepted OPTIONAL (default value 6
 
 my $query = $opt_q;
 my $target = $opt_t;
+my %hash2;
 
 #################################
 # make worm-specific protein set from SWALL if ($opt_w)
@@ -407,118 +408,46 @@ sub process_matches {
         # and populate the different arrays of types of matches
         foreach my $target_id (sort {$percent{$query_id}{$b} <=> $percent{$query_id}{$a}} keys %{$percent{$query_id}}) {
             my ($qperc , $tperc) = split (/\t/ , $percent{$query_id}->{$target_id});
-            # if the 2 proteins are identical
-            if ($qperc == 100 && $tperc == 100) {
-                $target_match{$target_id} = 1;
-		push (@matches , "$query_id\t$target_id");
-	    }
-            elsif (($qperc < 100 || $tperc < 100) && @matches) {
-                last;
-	    }
-            # partial target
-            #elsif ($qperc == 100 && $tperc < 100) {
-            #    push (@partial_target , "$query_id\t$target_id\tpartial_target\t$qperc\t$tperc");
-	    #}
-            # partial query
-            #elsif ($qperc < 100 && $tperc == 100) {
-            #    push (@partial_query , "$query_id\t$target_id\tpartial_query\t$qperc\t$tperc");
-	    #}
-            # candidate match
-	    # the similarities for the target and query of a cadidate match must be over the value given in $opt_p
-            elsif ($qperc > $opt_p && $tperc > $opt_p) {
-                push (@candidates , "$query_id\t$target_id\tcandidate\t$qperc\t$tperc");
+
+            if ($qperc > $opt_p && $tperc > $opt_p) {
+                
+		if( !defined $hash2{$target_id} ) {
+		    $hash2{$target_id} = [];
+		}
+		
+		my $p= NamePerc->new;
+		$p->name($query_id);
+		$p->tperc($tperc);
+		$p->qperc($qperc);
+
+		
+		push(@{$hash2{$target_id}},$p);
+
 	    }
             else {
                 last;
 	    }
 	}
-        # check what we've got, and keep the results in the appropriate hash
-	# Some work can be done here to spot pseudogenes
-       
-        if (@matches) {
-            # one perfect match
-            if ((my $num = @matches) == 1) {
-                @{$match{$query_id}} =  "$matches[0]\tmatch\t100\t100";
-		
-	    }
-            # several perfect matches
-	    # If their os several perfect matches, print all of them
-            else { 
-		foreach my $m(@matches) {
-		    my $mt = "$m\tmatch\t100\t100";
-		    push (@{$match{$query_id}}, "$mt");
-		}
-		#$match{$query_id} = "$matches[0]\trepeat";
-	    }
-	}
-        #if (@partial_query) {
-        #    $partial{$query_id} = "$partial_query[0]";
-	#}
-        #if (@partial_target) {
-        #    $partial{$query_id} = "$partial_target[0]";
-	#}
-        if (@candidates) {
-	    foreach my $m(@candidates) {
-		push (@{$candidate{$query_id}}, "$m");
-	    }
-            #$candidate{$query_id} = "$candidates[0]";
-	}
     }
 
-    # loop over all the query proteins, printing to OUT
-    foreach my $pep (@$query_ids) {
-        # exact match
-        if (exists $match{$pep}) {
-	    foreach my $res(@{$match{$pep}}) {
-		print OUT "$res\n";
-		$count_match++;
+#Loop over the target protein
+    foreach my $know ( keys %hash2 ) {
+	my @array = @{$hash2{$know}};
+	@array = sort { $b->tperc <=> $a->tperc } @array;
+	
+#The Ensembl match to the known protein is labelled as PRIMARY and will be used later for the mapping 
+	my $top = shift @array;
+	
+	print  OUT $top->name."\t$know\tcandidate\t".$top->qperc."\t".$top->tperc."\n";
+
+	foreach my $repeat (@array) {
+	    if( $repeat->tperc+1 >= $top->tperc ) {
+		print  OUT $repeat->name."\t$know\tduplicate\t".$repeat->qperc."\t".$repeat->tperc."\n";
 	    }
-	}
-        # partial match (distinguish candidate target proteins that do have
-        # an exact match to another worm protein from the ones that don't
-        #if (exists $partial{$pep}) {
-            #my @a = split (/\t/ , $partial{$pep});
-            # the matching target protein has already an exactly matching query protein
-            #if (exists $target_match{$a[1]}) {
-            #    print OUT "$partial{$pep}\n";
-            #    $count_partial++;
-	    #}
-            # the matching target protein does not have an exactly matching query protein
-            #else {
-            #    $a[2] .= "_match";
-            #    my $line = join ("\t" , @a);
-            #    print OUT "$line\n";
-            #    $count_partial_match++;
-	    #}
-	#}
-        # candidate match
-        if (exists $candidate{$pep}) {
-	    foreach my $res(@{$candidate{$pep}}) {
-		
-            #my @a = split (/\t/ , $candidate{$pep});
-		my @a = split (/\t/ , $res);
-		# accept only if the candidate target protein does not have an exactly matching query protein
-		unless (exists $target_match{$a[1]}) {
-		    print OUT "$res\n";
-		    $count_candidate++;
-		}
-	    }
-	}
-        else {
-            #print OUT "$pep\torphan\n";
-            $count_orphan++;
 	}
     }
-
-    # print some numbers...
-    my $number = @$query_ids;
-    print STDERR "$number\tproteins in total:\n";
-    print STDERR "$count_match\tproteins have an exact match [match]\n";
-    print STDERR "$count_partial_match\tproteins have an overlapping match [partial_query_match or partial_target_match]\n";
-    print STDERR "$count_partial\tproteins overlap with a peptide that has been mapped to another query protein [partial_query or partial_target]\n";
-    print STDERR "$count_candidate\tproteins partially match a peptide that has not been mapped to another target protein [candidate]\n";
-    print STDERR "$count_orphan\tproteins do not match anything [orphan]\n";
 }
+
 
 ##########################################
 # some OO stuff:
@@ -544,6 +473,83 @@ sub _init {
     my %extra = @_;
     @$self{keys %extra} = values %extra;
 }
+
+
+package NamePerc;
+
+
+sub new {
+    my $class= shift;
+    my $self = {};
+    bless $self,$class;
+    return $self;
+}
+
+
+=head2 name
+
+ Title   : name
+ Usage   : $obj->name($newval)
+ Function:
+ Returns : value of name
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub name{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'name'} = $value;
+    }
+    return $obj->{'name'};
+
+}
+
+=head2 qperc
+
+ Title   : qperc
+ Usage   : $obj->qperc($newval)
+ Function: 
+ Returns : value of query perc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub qperc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'qperc'} = $value;
+    }
+    return $obj->{'qperc'};
+
+}
+
+
+=head2 tperc
+
+ Title   : tperc
+ Usage   : $obj->tperc($newval)
+ Function:
+ Returns : value of target perc
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub tperc{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'perc'} = $value;
+    }
+    return $obj->{'perc'};
+
+}                    
+
 
 1;
 ##########################################
