@@ -261,11 +261,12 @@ $softmasked_seq = $seq = undef;
 #
 # 45 Test Slice::get_all_MapFrags
 #
-ok(scalar @{$slice->get_all_MapFrags('cloneset')});
+# ok(scalar @{$slice->get_all_MapFrags('cloneset')});
 
 #
 # 46 Test Slice::get_tiling_path
 #
+
 ok(scalar @{$slice->get_tiling_path});
 
 

@@ -1,20 +1,19 @@
 use lib 't';
+use strict;
+use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 22;
+	plan tests => 23;
 }
 
-my $loaded = 0;
-END {print "not ok 1\n" unless $loaded;}
-
 use MultiTestDB;
+use TestUtils qw ( debug );
+
 use Bio::EnsEMBL::Gene;
 
-$loaded = 1;
-
 # switch on the debug prints
-my $verbose = 1;
+my $verbose = 0;
 
 ok(1);
 
@@ -26,7 +25,7 @@ my $db = $multi->get_DBAdaptor( "core" );
 ok( $db );
 
 my $gene;
-$ga = $db->get_GeneAdaptor();
+my $ga = $db->get_GeneAdaptor();
 
 $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
@@ -49,14 +48,14 @@ ok( $gene->end() == 30815178 );
 
 
 
-$links = $gene->get_all_DBLinks();
+my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));
 
 ok( scalar @$links == 6 );
 
 # now create a new gene ...
 
-$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
+my $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end( "20",30264615, 30265615 );
 
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name("ensembl");
 
@@ -192,7 +191,7 @@ foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
   my $pep = $trans->translate();
   debug( "Peptide: ".$pep->seq() );
 
-  if($pep->seq !~ /\*\./){
+  if($pep->seq !~ /\*./){
     $translate = 1;
   } else {
     $translate = 0;
@@ -214,13 +213,31 @@ debug( "Pep phase 1: $pep2" );
 
 ok( $pep1 ne $pep2 );
 
-
 $multi->restore();
 
+$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
 
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
+my ( $known, $unknown );
+
+my $genes = $slice->get_all_Genes();
+for my $gene ( @$genes ) {
+  if( $gene->is_known() ) {
+    $known++;
+  } else {
+    $unknown++;
   }
 }
+
+debug( "known: $known Unknown: $unknown\n" );
+
+ok( $known==17 );
+
+
+
+
+
+
+
+
+
+

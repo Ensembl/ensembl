@@ -19,8 +19,8 @@ use Bio::SeqIO;
 use strict;
 
 ### Currently there is no trunk db on kaka.
-my $host = 'ecs1d';
-my $user = 'ensro';
+my $host = 'kaka.sanger.ac.uk';
+my $user = 'anonymous';
 my $dbname = 'homo_sapiens_core_9_30';
 
 ### External dbs
@@ -329,12 +329,12 @@ $db->add_db_adaptor('lite', $lite_db);
 $lite_db->add_db_adaptor('core', $db);
 
 
-#print out snp features on a  slice
-my $snp_features = $slice->get_all_SNPs;
+# #print out snp features on a  slice
+ my $snp_features = $slice->get_all_SNPs;
 
-foreach my $snp (@$snp_features) {
-    print "snp " . $snp->start . "\n";
-}
+ foreach my $snp (@$snp_features) {
+     print "snp " . $snp->start . "\n";
+ }
 
 #print out landmark marker features on a slice
 my @landmark_features = @{$slice->get_all_landmark_MarkerFeatures};

@@ -442,7 +442,7 @@ sub _fetch_by_object_type {
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
-           exDB.db_name, exDB.release, 
+           exDB.db_name, exDB.release, exDB.status, 
            oxr.object_xref_id, 
            es.synonym, 
            idt.query_identity, idt.target_identity
@@ -462,7 +462,7 @@ sub _fetch_by_object_type {
   
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
-	 $desc, $dbname, $release, $objid, 
+	 $desc, $dbname, $release, $exDB_status, $objid, 
          $synonym, $queryid, $targetid ) = @$arrRef;
     
     my $exDB;
@@ -502,6 +502,10 @@ sub _fetch_by_object_type {
         $exDB->description( $desc );
       }
       
+      if( $exDB_status ) {
+	$exDB->status( $exDB_status );
+      }
+
       push( @out, $exDB );
     }                                   # if (!$seen{$refID})
 

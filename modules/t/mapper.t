@@ -23,7 +23,9 @@
 # This test script heavily edited by ihh@fruitfly.org
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..5\n";   # 5 tests total
+BEGIN { $| = 1;
+	use Test;
+	plan tests => 5;   # 5 tests total
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
@@ -31,17 +33,16 @@ use lib 't';
 
 $loaded = 1;
 # $n_test = 0;
-printok();
+ok( 1 );
 
-use Bio::EnsEMBL::Mapper;    
+use Bio::EnsEMBL::Mapper;
 
-# testing the Bio::EnsEMBL::Mapper module
 
 $mapper = Bio::EnsEMBL::Mapper->new( "rawcontig", "virtualcontig" );
 load_sgp_dump( $mapper, undef );
 
 # loading done successfully
-printok();
+ok( 1 );
 
 # transform a segment entirely within the first rawcontig
 test_transform ($mapper,
@@ -88,7 +89,7 @@ sub test_transform {
 	warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 	warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 	warn "Wrong number of segments\n";
-	printnotok();
+	ok( 0 );
 	return;
     }
     for (my $i = 0; $i < @coord; ++$i) {
@@ -100,12 +101,12 @@ sub test_transform {
 		warn "Dest:\n", map ("(".join(",",@$_).")\n", @coord);
 		warn "Expected:\n", map ("(".join(",",@$_).")\n", @dest);
 		warn "Error in segment ", $i+1, " field ", $n+1, "\n";
-		printnotok();
+		ok( 0 );
 		return;
 	    }
 	}
     }
-    printok();
+    ok( 1 );
     return;
 }
 
@@ -243,9 +244,4 @@ chr1	625359	1214016	1216330	1	2315	1
 #
 sub isgap { my ($obj) = @_; return !$obj->can ('strand') }
 
-# ok & notok subroutines
-sub printok { print "ok\n" }
-sub printnotok { print "not ok\n" }
-#sub printok { print "ok ", ++$n_test, "\n" }
-#sub printnotok { print "not ok ", ++$n_test, "\n" }
 

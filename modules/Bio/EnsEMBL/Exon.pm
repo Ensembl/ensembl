@@ -1579,26 +1579,21 @@ sub seq {
   my $arg = shift;
 
   if( defined $arg ) {
-    $self->{'_seq_cache'} = $arg;
+    $self->warn( "seq setting on Exon not supported currently" );
+    $self->{'_seq_cache'} = $arg->seq();
   }
 
   if( defined $self->{'_seq_cache'} ) {
-    return $self->{'_seq_cache'};
+    return Bio::Seq->new(-seq=> $self->{'_seq_cache'});
   }
 
-  #print "Seq on " . $self->stable_id . "\n";
   my $seq;
-  #print STDERR " calling exon->seq\n";
+
   if ( ! defined $self->contig ) {
     $self->warn(" this exon doesn't have a contig you won't get a seq \n");
     return undef;
   }
   else {
-    # call subseq on the contig which may be a RawContig or a Slice
-
-    #print STDERR "[Exon.pm seq method: Start: " . $self->start . "\tEnd:   " . $self->end . "\t";
-    #print STDERR "Strand: " . $self->strand . "]\nContig: " . $self->contig() . "\n\n";
-
       
     $seq = $self->contig()->subseq($self->start, $self->end);
 
@@ -1608,11 +1603,9 @@ sub seq {
     }
       
    }
-  #print STDERR "have seq ".$seq."\n";
-  my $bioseq = Bio::Seq->new(-seq=> $seq);
-  $self->{'_seq_cache'} = $bioseq;
+  $self->{'_seq_cache'} = $seq;
 
-  return $bioseq;
+  return Bio::Seq->new(-seq=> $self->{'_seq_cache'});
 }
 
 

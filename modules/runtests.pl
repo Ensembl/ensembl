@@ -1,6 +1,8 @@
 #!/usr/local/bin/perl -w
 
 use strict;
+use warnings;
+
 use lib 't';
 
 use Getopt::Std;

@@ -94,7 +94,6 @@ sub new {
 
   my $self = {};
   bless $self,$class;
-
   
   # set stuff in self from @args
   foreach my $exon (@optional_exons) {
@@ -144,7 +143,9 @@ sub stable_id {
               coords.
   Function  : Getter/Setter for the coding start of this transcript.
               Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript.
+              and so that it can be drawn as a Transcript. Since prediction
+              transcripts do not currently have UTRs the coding start should
+              return the same value as the start method.
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
@@ -171,7 +172,9 @@ sub coding_start {
               in slice coords.
   Function  : Getter/Setter for the coding end of this transcript.
               Implemented to satisfy requirements of TranscriptI interface
-              and so that it can be drawn as a Transcript.
+              and so that it can be drawn as a Transcript. Since prediction
+              transcripts do not currently have UTRs the coding end should
+              be the same as the end of the transcript.
   Returntype: scalar int
   Exceptions: none
   Caller    : GlyphSet_transcript
@@ -348,7 +351,6 @@ sub get_all_translateable_Exons {
   return [ grep{ ref( $_ ) eq 'Bio::EnsEMBL::Exon' } @{$self->get_all_Exons} ];
 }
 
-############################################################
 
 
 =head2 sort
@@ -368,7 +370,7 @@ sub sort {
   my @exons = @{$self->get_all_Exons()};
 
   # Empty the exon holder
-  $self->flush_Exon();
+  $self->flush_Exons();
 
   # Now sort the exons and put back in the feature table
   my $strand = $exons[0]->strand;
@@ -385,14 +387,14 @@ sub sort {
   }
 }
 
-############################################################
+
 
 =head2 get_exon_count
 
   Args      : none
   Function  : How many exons are in this PTranscript. Some might 
-              actually not be in this object, depending on how it was retrieved.
-	      (non golden exons missing on Slice->get_predicitonTranscripts())     
+              not be in this object, depending on how it was retrieved.
+	      (non golden exons missing on Slice->get_predicitonTranscripts()) 
   Returntype: int
   Exceptions: none
   Caller    : general
@@ -438,7 +440,8 @@ sub set_exon_count {
 =head2 length
 
   Args      : none
-  Function  : length of DNA of all Exons in the PT together. No phase padding is done.
+  Function  : length of DNA of all Exons in the PT together. No phase padding 
+              is done.
   Returntype: int
   Exceptions: differs from length in get_cdna() as that might be padded.
   Caller    : unknown
@@ -469,12 +472,14 @@ sub length {
 
 =cut
 
-sub flush_Exon{
+sub flush_Exons {
    my ($self,@args) = @_;
 
    $self->{'exons'} = [];
    $self->{'start'} = undef;
    $self->{'end'} = undef;
+   $self->{'coding_start'} = undef;
+   $self->{'coding_end'}   = undef;
 }
 
 
@@ -637,7 +642,7 @@ sub pep2genomic {
    my ( $ov_start, $ov_end );
    my ( $pep_start, $pep_end );
 
-   print ::LOG "pep2genomic: ",$start_amino, " ", $end_amino,"\n";
+   #print ::LOG "pep2genomic: ",$start_amino, " ", $end_amino,"\n";
 
    if( ! defined $self->{'_exon_align'} ) {
      $self->get_cdna();
@@ -664,9 +669,9 @@ sub pep2genomic {
        }
      }
    }
-   for my $tmp ( @result ) {
-     print ::LOG "pep2genomic result: ", join ( " ", @$tmp ),"\n";
-   }
+   #for my $tmp ( @result ) {
+   #  print ::LOG "pep2genomic result: ", join ( " ", @$tmp ),"\n";
+   #}
 
    return @result;
 }
@@ -678,7 +683,8 @@ sub pep2genomic {
   Arg  2    : int $end_cdna
   Function  : computes a list of genomic location covering the given range 
               of nucleotides. Exons do part of calculation. 
-  Returntype: list [ start, end, strand, Contig_object, Exon, cdna_start, cdna_end ]
+  Returntype: list [ start, end, strand, Contig_object, Exon, cdna_start, 
+                     cdna_end ]
   Exceptions: none
   Caller    : Runnables mapping blast hits to genomic coords
 
@@ -720,9 +726,9 @@ sub cdna2genomic {
        }
      }
    }
-   for my $tmp ( @result ) {
+#   for my $tmp ( @result ) {
      #print ::LOG "cdna2genomic result: ", join ( " ", @$tmp ),"\n";
-   }
+#   }
 
    return @result;
 }
@@ -743,6 +749,18 @@ sub _dump {
   }
   return $res;
 }
+
+
+=head2 type
+
+  Arg [1]    : (optional) string $type 
+  Example    : none
+  Description: Getter setter for the type of this prediction transcript
+  Returntype : string
+  Exceptions : none
+  Caller     : none
+
+=cut
 
 sub type {
   my ($self, $type) = @_;
