@@ -25,7 +25,7 @@ my $org_list = $conf{'organism_list'};
 my $refseq_gnp = $conf{'refseq_gnp'};
 my $xmap       = $conf{'x_map_out'};
 my $mapping    = $conf{'mapping_out'};
-my $submitted_genes = $conf{'submitted_genes'};
+my $celera_mapping = $conf{'celera_mapping'};
 my $dbname     = $conf{'db'};
 my $host       = $conf{'host'};
 my $user       = $conf{'dbuser'};
@@ -158,7 +158,7 @@ if ($organism eq "anopheles") {
     $check{'host'}       = $conf{'host'};
     $check{'dbuser'}       = $conf{'dbuser'};
     $check{'password'} = $conf{'password'};
-    $check{'submitted_genes'} = $conf{'submitted_genes'};
+    $check{'celera_mapping'} = $conf{'celera_mapping'};
 
     foreach my $k (keys %check) {
 	print STDERR $check{$k}."\n";
@@ -508,7 +508,7 @@ MAPPING: while (<MAP>) {
 
 
 if ($organism eq "anopheles") {
-    open (ANOANNOT,"$submitted_genes") || die "Can't open Anno file\n";
+    open (ANOANNOT,"$celera_mapping") || die "Can't open Anno file $celera_mapping\n";
     
     while (<ANOANNOT>) {
 	chomp;

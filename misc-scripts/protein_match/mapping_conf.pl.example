@@ -138,6 +138,11 @@ package main;
                    #File containing the submitted genes, see ensembl-genename/scripts for utility scripts
                    'submitted_genes' => '',
 
+		   #This option will allow to map back to genes predicted by celera of the science issue. Use the following sql from the previous release to dump the file which will be used for this mapping 
+		   #select ts.stable_id,x.dbprimary_acc,e.db_name from translation_stable_id ts,xref x, object_xref o, external_db e where x.xref_id = o.xref_id and o.ensembl_id = ts.translation_id and x.external_db_id = e.external_db_id and (x.external_db_id = 400 or x.external_db_id = 410 or x.external_db_id = 420) into outfile '/acari/work4/mongin/anopheles_mai/mapping/Primary/celera_mapping.txt';
+                   'celera_mapping' => '', 
+
+
                    #########
                    #elegans#
                    #########
