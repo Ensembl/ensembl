@@ -1018,7 +1018,7 @@ sub write_Gene{
    $sth2->execute();
 
    foreach my $cloneid ( $gene->each_cloneid_neighbourhood ) {
-       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."',".$c.")");
+       my $sth = $self->prepare("insert into geneclone_neighbourhood (gene,clone) values ('" . $gene->id . "','". $cloneid ."',".$cloneid.")");
        $sth->execute();
    }
 
