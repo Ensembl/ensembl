@@ -118,6 +118,45 @@ sub sv {
 
 }
 
+=head2 embl_version
+
+ Title   : embl_version
+ Usage   : $clone->embl_version()
+ Function: Gives the value of the EMBL version, i.e. the data version
+ Example : $clone->embl_version()
+ Returns : version number
+ Args    : none
+
+
+=cut
+
+sub embl_version{
+    my ($self,@args) = @_;
+
+    $self->warn("Base class has not implemented this yet!");
+
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $clone->seq_date()
+ Function: loops over all $contig->seq_date, throws a warning if they are different and 
+           returns the first unix time value of the dna created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $clone->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+    my ($self,@args) = @_;
+
+    $self->warn("Base class has not implemented this yet!");
+}
+
 
 =head2 version
 
@@ -158,6 +197,42 @@ sub htg_phase {
 
 }
 
+=head2 created
+
+ Title   : created
+ Usage   : $clone->created()
+ Function: Gives the unix time value of the created datetime field, which indicates
+           the first time this clone was put in ensembl
+ Example : $clone->created()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub created{
+    my ($self,@args) = @_;
+    
+    $self->warn("Base class has not implemented this yet!");
+}
+=head2 modified
+
+ Title   : modified
+ Usage   : $clone->modified()
+ Function: Gives the unix time value of the modified datetime field, which indicates
+           the last time this clone was modified in ensembl
+ Example : $clone->modified()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub modified{
+    my ($self,@args) = @_;
+
+    $self->warn("Base class has not implemented this yet!");
+}
 
 =head2 get_Contig
 
@@ -291,13 +366,29 @@ sub seq {
 
 sub get_AnnSeq {
     my ($self, $strict_EMBL) = @_;
-
     my (@contigs,@genes,$as,$seq);
+    
+    @contigs = $self->get_all_Contigs();
+    @genes   = $self->get_all_Genes();
+    
+    $seq = $self->seq();
+    
+    $as = Bio::EnsEMBL::AnnSeq->new();
+    
+    $as->embl_id($self->embl_id());
+    $as->sv($self->sv());
+    $as->htg_phase($self->htg_phase());
+    
+    $as->seq($seq);
+    foreach my $gene ( @genes ) {
+	my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self, -gene => $gene );
+	$as->add_SeqFeature($gh);
+    }
 
     ### @contigs doesn't get used? ###
     #@contigs = $self->get_all_Contigs();
     @genes   = $self->get_all_Genes();
-
+    
     $seq = $self->seq();
     
     $as = Bio::EnsEMBL::AnnSeq->new();
@@ -314,7 +405,6 @@ sub get_AnnSeq {
                                                 );
         $as->add_SeqFeature($gh);
     }
-
     return $as;
 }
 

@@ -150,4 +150,60 @@ sub write_Contig {
    $self->throw("Not implemented in the object!");
 }
 
+=head2 get_updated_objects
+    
+ Title   : get_updated_objects
+ Usage   : $obj->get_updated_objects ($recipient_last_update, $recipient_now, $recipient_offset)
+ Function: Gets all the objects that have been updated (i.e.change in 
+	   version number) between the current time - offset time given by
+           the recipient database and the last update time stored in its meta table 
+ Example : $obj->get_updated_objects (973036800,973090800)
+ Returns : all the objects updated within that timespan
+ Args    : $recipient_last_update, $recipient_now
+
+=cut
+
+sub get_updated_objects{
+    my ($self) = @_;
+    
+   $self->throw("Not implemented in the object!");
+}
+
+=head2 get_last_update
+
+ Title   : get_last_update
+ Usage   : $obj->get_last_update; 
+ Function: Reads the meta table of the database to get the last_update time
+ Example : get_last_update
+ Returns : UNIX TIME of last update
+ Args    : none
+
+
+=cut
+
+sub get_last_update{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+}
+
+=head2 get_now_offset
+
+ Title   : get_now_offset
+ Usage   : $obj->get_now_minus_offset; 
+ Function: Gets the current time from the point of view of the database, substracts the
+           offset time found in the meta table and gives back unix time of now-offset
+ Example : get_now_offset
+ Returns : UNIX TIME of now - offset_time
+ Args    : none
+
+
+=cut
+
+sub get_now_offset{
+    my ($self) = @_;
+    
+    $self->throw("Not implemented in the object!");
+} 
+
 1;

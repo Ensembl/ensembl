@@ -60,6 +60,23 @@ sub seq{
    $self->throw("Object did not provide the seq method on a contig interface");
 }
 
+=head2 id
+
+ Title   : id
+ Usage   : $obj->id($newval)
+ Function: 
+ Example : 
+ Returns : value of id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub id{
+    my ($self) = @_;
+    $self->throw("Object did not provide the id method on a contig interface");
+}
+
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
@@ -79,7 +96,25 @@ sub get_all_SeqFeatures{
 
 }
 
+=head2 seq_date
 
+ Title   : seq_date
+ Usage   : $contig->seq_date()
+ Function: Gives the unix time value of the dna table created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $contig->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+    my ($self) = @_;
+
+    $self->throw("Object did not provide the seq_date method on Contig interface!");
+
+}
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -136,6 +171,24 @@ sub orientation{
 
    $self->throw("Object did not provide the orientation method on Contig interface!");
 }
+
+=head2 order
+
+ Title   : order
+ Usage   : $obj->order($newval)
+ Function: 
+ Returns : value of order
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub order{
+    my ($self,@args) = @_;
+
+    $self->throw("Object did not provide the order method on Contig interface!");
+}
+
 
 =head2 length
 
