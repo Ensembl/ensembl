@@ -357,6 +357,7 @@ sub fetch_by_Slice_constraint {
   }
 
   #check the cache and return if we have already done this query
+  if (!defined $logic_name) {$logic_name = "";}
   my $key = join($slice->name, $constraint, $logic_name);
   if($self->{'_slice_feature_cache'}{$key}) {
     return @{$self->{'_slice_feature_cache'}{$key}};
