@@ -56,12 +56,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
   Arg [-CODE]   : string - the code for this attribute
   Arg [-NAME]   : string - a human readable name for this attribute
-  Arg [-DESC]   : string - a description for this attribute
+  Arg [-DESCRIPTION]   : string - a description for this attribute
   Arg [-VALUE]  : value  - the value of this attribute
   Example    :   my $attribute = Bio::EnsEMBL::Attribute->new
                       (-CODE => 'myCode',
                        -NAME => 'My Attribute',
-                       -DESC => 'This is my attribute description.',
+                       -DESCRIPTION => 'This is my attribute description.',
                        -VALUE => '10023');
   Description: Constructor.  Instantiates a Bio::EnsEMBL::Attribute object.
   Returntype : Bio::EnsEMBL::Attribute
@@ -78,11 +78,11 @@ sub new {
   my $class = ref($caller) || $caller;
 
   my ($code, $name, $desc, $value) =
-    rearrange([qw(CODE NAME DESC VALUE)], @_);
+    rearrange([qw(CODE NAME DESCRIPTION VALUE)], @_);
 
   return bless {'code'    => $code,
                 'name'    => $name,
-                'desc'    => $desc,
+                'description'    => $desc,
                 'value'   => $value}, $class;
 }
 
@@ -122,10 +122,10 @@ sub name {
   return $self->{'name'};
 }
 
-=head2 desc
+=head2 description
 
-  Arg [1]    : string $desc (optional)
-  Example    : $desc = $attribute->desc();
+  Arg [1]    : string $description (optional)
+  Example    : $description = $attribute->description();
   Description: Getter/Setter for description attribute
   Returntype : string
   Exceptions : none
@@ -133,10 +133,10 @@ sub name {
 
 =cut
 
-sub desc {
+sub description {
   my $self = shift;
-  $self->{'desc'} = shift if(@_);
-  return $self->{'desc'};
+  $self->{'description'} = shift if(@_);
+  return $self->{'description'};
 }
 
 
