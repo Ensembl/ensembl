@@ -139,7 +139,8 @@ sub get_all_SimilarityFeatures_above_score {
   # get_ProteinAlignFeatures_above_score.  
   # Reminder Warning follows:
   #
-  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score.");
+  $self->warn("Call to Slice->get_all_SimilarityFeatures_above_score." .
+	     "logic name = $logic_name");
 
   my @prot_feats = 
     $self->get_all_ProteinAlignFeatures_above_score($logic_name, $score);
@@ -163,8 +164,6 @@ sub get_all_SimilarityFeatures_above_score {
 sub get_all_DnaAlignFeatures_above_score{
    my ($self,$logic_name, $score) = @_;
 
-   $self->warn("Slice: get_all_SimilarityFeatures_above_score\n");
-
    if( !defined $score ) {
      $self->throw("No defined score.");
    }
@@ -187,7 +186,7 @@ sub get_all_DnaAlignFeatures_above_score{
 sub get_all_ProteinAlignFeatures_above_score {
   my ($self, $logic_name, $score) = @_;
 
-  my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
+  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
 
   return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
 }
@@ -280,17 +279,11 @@ sub get_all_SimilarityFeatures_above_pid{
 =cut
 
 sub get_all_RepeatFeatures{
-   my ($self,@args) = @_;
+   my ($self, $logic_name) = @_;
 
+   my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
 
-   $self->warn("Slice: get_all_RepeatFeatures\n");
-
-   my @repeats = 
-     $self->adaptor->db->get_RepeatFeatureAdaptor()->fetch_by_Slice($self);
-
-   
-
-   return @repeats;
+   return $rpfa->fetch_by_Slice($self, $logic_name);
 }
 
 

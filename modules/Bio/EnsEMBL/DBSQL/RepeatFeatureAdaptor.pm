@@ -11,6 +11,7 @@ use vars qw(@ISA);
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
+
 sub fetch_by_RawContig {
     my( $self, $contig, $logic_name ) = @_;
 
@@ -21,17 +22,25 @@ sub fetch_by_RawContig {
     return @repeats;
 }
 
+
 sub fetch_by_contig_id {
     my( $self, $contig_id, $logic_name ) = @_;
     my $constraint = "contig_id = $contig_id";
 
     if($logic_name){
-      my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+      my $analysis = 
+	$self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+      if($analysis->dbID()) {
+	$self->warn("No analysis for logic name $logic_name\n");
+	return ();
+      }
+
       $constraint .= " AND analysis_id = ".$analysis->dbID;
     }
 
     return $self->_generic_fetch($constraint);
 }
+
 
 sub fetch_by_dbID {
     my( $self, $db_id ) = @_;
@@ -41,8 +50,6 @@ sub fetch_by_dbID {
         );
     return $rf;
 }
-
-
 
 
 
@@ -58,22 +65,28 @@ sub _generic_fetch {
         $repeat_start,
         $repeat_end,
         $analysis_id,
-	$score
+	$score,
+	$repeat_name,
+	$repeat_class,
+	$repeat_consensus
         );
 
     my $sth = $self->prepare(qq{
-      SELECT repeat_feature_id
-	, contig_id
-	, contig_start
-        , contig_end
-        , contig_strand
- 	, repeat_id
-        , repeat_start
-        , repeat_end
-        , analysis_id
-	, score
-        FROM repeat_feature f
-        WHERE }. $where_clause);
+      SELECT f.repeat_feature_id
+	, f.contig_id
+	, f.contig_start
+        , f.contig_end
+        , f.contig_strand
+ 	, f.repeat_id
+        , f.repeat_start
+        , f.repeat_end
+        , f.analysis_id
+	, f.score
+	, c.repeat_name
+	, c.repeat_class
+	, c.repeat_consensus
+        FROM repeat_feature f, repeat_consensus c
+        WHERE }. $where_clause . " AND f.repeat_id = c.repeat_id");
 
     $sth->execute;
     $sth->bind_columns(
@@ -86,23 +99,24 @@ sub _generic_fetch {
         \$repeat_start,
         \$repeat_end,
         \$analysis_id,
-	\$score	       
+	\$score,
+	\$repeat_name,
+        \$repeat_class,
+	\$repeat_consensus
         );
 
-    my $rca = $self->db->get_RepeatConsensusAdaptor;
-    my $aa  = $self->db->get_AnalysisAdaptor;
+    my $rca = $self->db->get_RepeatConsensusAdaptor();
+    my $aa  = $self->db->get_AnalysisAdaptor();
+    my $rfa = $self->db->get_RepeatFeatureAdaptor();
 
-    my( @repeats, %analysis_cache );
-    while ($sth->fetch) {
-        # new in RepeatFeature takes no arguments
-      my( $ana_obj );
-      unless ($ana_obj = $analysis_cache{$analysis_id}) {
-	$ana_obj = $aa->fetch_by_dbID($analysis_id)
-	  or $self->throw("No analysis object for ID '$analysis_id'");
-	$analysis_cache{$analysis_id} = $ana_obj;
-      }
-        
-      my $r = $self->_new_repeat($contig_start, $contig_end, $contig_strand, $repeat_start, $repeat_end, $score, $ana_obj, $contig_id, $repeat_id, $rca, $repeat_feature_id);
+    my @repeats;
+    while ($sth->fetch) {        
+      my $r = $self->_new_repeat($contig_start, $contig_end, $contig_strand, 
+				 $repeat_start, $repeat_end, $score, 
+				 $contig_id, $repeat_id, $repeat_name,
+				 $repeat_class, $repeat_consensus,
+				 $analysis_id, $rfa, $rca, 
+				 $aa, $repeat_feature_id);
       push(@repeats, $r);
     }
     return( @repeats );
@@ -117,15 +131,23 @@ sub fetch_by_assembly_location{
   my $constraint;
 
   if($logic_name){
-      my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
-      $constraint = " analysis_id = ".$analysis->dbID;
+    my $analysis  = 
+      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    unless($analysis->dbID()) {
+      $self->warn("No analysis for logic name $logic_name\n");
+      return ();
     }
+    $constraint = " analysis_id = ".$analysis->dbID;
+  }
   
-
-  my @repeats = $self->fetch_by_assembly_location_constraint($start, $end, $chr, $type, $constraint);
+  my @repeats = 
+    $self->fetch_by_assembly_location_constraint($start, $end, $chr, 
+						 $type, $constraint);
 
   return @repeats;
 }
+
+
 
 sub fetch_by_Slice{
   my ($self, $slice, $logic_name) = @_;
@@ -133,25 +155,35 @@ sub fetch_by_Slice{
   my $constraint;
 
   if($logic_name){
-      my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+      my $analysis  = 
+	$self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+      unless($analysis->dbID()) {
+	$self->warn("No analysis for logic name $logic_name\n");
+	return ();
+      }
+
       $constraint = " analysis_id = ".$analysis->dbID;
     }
   
 
-  my @repeats = $self->fetch_by_assembly_location_constraint($slice->chr_start, $slice->chr_end, $slice->chr_name, $slice->assembly_type, $constraint);
+  my @repeats = 
+    $self->fetch_by_assembly_location_constraint($slice->chr_start, 
+						 $slice->chr_end, 
+						 $slice->chr_name, 
+						 $slice->assembly_type, 
+						 $constraint);
  
-  my @out;
-
   foreach my $r(@repeats){
-   
+    #convert from chromosomal to slice coordiantes
     my $start = ($r->start - ($slice->chr_start - 1));
     my $end = ($r->end - ($slice->chr_start - 1));
-    my $repeat = $self->_new_repeat($start, $end, $r->strand, $r->hstart, $r->hend, $r->score, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID);
-    push(@out, $repeat);
-   
+    $r->start($start);
+    $r->end($end);
   }
-  return(@out);
+  return(@repeats);
 }
+
+
 
 sub fetch_by_assembly_location_constraint{
   my ($self,$chr_start,$chr_end,$chr,$type,$constraint) = @_;
@@ -161,49 +193,51 @@ sub fetch_by_assembly_location_constraint{
   }
   
   if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
-    $self->throw("start/end must be numbers not $chr_start,$chr_end (have you typed the location in the right way around - start,end,chromosome,type)?");
+    $self->throw("start/end must be numbers not $chr_start,$chr_end " .
+		 "(have you typed the location in the right way around " .
+		 "- start,end,chromosome,type)?");
   }
   
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
   
   $mapper->register_region($chr,$chr_start,$chr_end);
 
+  # determine the raw contigs that these repeats are on
   my @cids = $mapper->list_contig_ids($chr, $chr_start ,$chr_end);
-  my %ana;
   my $cid_list = join(',',@cids);
   my $sql = "contig_id in($cid_list) ";
   if($constraint){
     $sql .= "AND $constraint";
   }
+
+  #fetch the repeats from the database
   my @repeats = $self->_generic_fetch(qq{$sql});
-  my @out;
- 
+
+  #
+  # Adjust each repeat so start and end are in chromosomal coordinates
+  # 
   foreach my $r(@repeats){
-   
-    my $analysis_id = $r->analysis->dbID();
-    my @coord_list = $mapper->map_coordinates_to_assembly($r->contig_id, $r->start, $r->end, $r->strand, "rawcontig");
+    my @coord_list = 
+      $mapper->map_coordinates_to_assembly($r->contig_id, $r->start, 
+					   $r->end, $r->strand, "rawcontig");
     if(scalar(@coord_list) > 1){
       #$self->warn("this feature doesn't cleanly map skipping\n");
       next;
     }
     if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-      #$self->warn("this feature is on a part of ".$r->contig_id." which isn't on the golden path skipping");
+      #$self->warn("this feature is on a part of ".$r->contig_id.
+      #            " which isn't on the golden path skipping");
       next;
     }
     if(!($coord_list[0]->start >= $chr_start) ||
        !($coord_list[0]->end <= $chr_end)){
       next;
     }
-   
-    my $repeat = $self->_new_repeat($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $r->hstart, $r->hend, $r->score, $r->analysis, $r->contig_id, $r->repeat_id, $r->repeat_consensus_adaptor, $r->dbID); 
-    
-    push(@out, $repeat);
-      
+    $r->start($coord_list[0]->start());
+    $r->end($coord_list[0]->end());
   }
 
-  return @out;
-    
-  
+  return @repeats;
 }
 
 
@@ -306,15 +340,26 @@ sub store {
 
 
 sub _new_repeat{
-  my($self, $start, $end, $strand, $hstart, $hend, $score, $analysis, $contig_id, $repeat_id, $rca, $dbID) = @_;
-  
-  my $r = Bio::EnsEMBL::RepeatFeature->new;
-  $r->dbID($dbID);
+  my($self, $start, $end, $strand, $hstart, $hend, $score, $contig_id, 
+     $repeat_id, $repeat_name, $repeat_class, $repeat_consensus, 
+     $analysis_id, $rfa, $rca, $aa, $dbID) = @_;
 
-  # So RepeatFeature can get its repeat
-  $r->repeat_consensus_adaptor($rca);
+  #create a repeat consensus object
+  my $rc = new Bio::EnsEMBL::RepeatConsensus;
+  $rc->dbID($repeat_id);
+  $rc->repeat_class($repeat_class);
+  $rc->name($repeat_name);
+  $rc->repeat_consensus($repeat_consensus);
+  $rc->adaptor($rca);
+
+  #get the analysis object for this repeat
+  my $analysis = $aa->fetch_by_dbID($analysis_id);
+
+  #create the new repeat feature
+  my $r = new Bio::EnsEMBL::RepeatFeature;
+  $r->dbID($dbID);
+  $r->repeat_consensus($rc);
   $r->repeat_id($repeat_id);
-  
   $r->contig_id( $contig_id);
   $r->start    ( $start  );
   $r->end      ( $end    );
@@ -328,8 +373,6 @@ sub _new_repeat{
   $r->analysis($analysis);
 
   return $r;
-       
-
 }
 
 1;

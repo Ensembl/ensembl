@@ -44,17 +44,17 @@ sub contig_id {
     return $self->{'_contig_id'};
 }
 
-sub repeat_consensus_adaptor {
-    my( $self, $rca ) = @_;
-    
-    if ($rca) {
-        unless (ref($rca) and $rca->isa('Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor')) {
-            $self->throw("Not a 'Bio::EnsEMBL::DBSQL::RepeatConsenusAdpator': $rca")
-        }
-        $self->{'_repeat_consensus_adaptor'} = $rca;
-    }
-    return $self->{'_repeat_consensus_adaptor'};
+
+sub adaptor {
+  my ($self, $adaptor) = @_;
+
+  if(defined $adaptor) {
+    $self->{'_adaptor'} = $adaptor;
+  }
+
+  return $self->{'_adaptor'};
 }
+
 
 sub repeat_consensus {
     my( $self, $con ) = @_;
@@ -74,16 +74,6 @@ sub get_RepeatConsensus {
     return $self->repeat_consensus_adaptor->fetch_by_dbID($repeat_id);
 }
 
-# Bio::EnsEMBL::SeqFeatureI methods
-
-# Should this be dbID?  -- I'm implementing Bio::EnsEMBL::SeqFeatureI
-sub id {
-    my $self = shift;
-    
-    $self->warn("Delegating id call to dbID");
-    
-    $self->dbID(@_);
-}
 
 sub dbID {
     my( $self, $db_id ) = @_;

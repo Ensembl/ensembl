@@ -173,7 +173,7 @@ sub fetch_by_contig_id{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor($logic_name);
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -200,7 +200,7 @@ sub fetch_by_contig_id_and_score{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -231,7 +231,7 @@ sub fetch_by_contig_id_and_pid{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -259,7 +259,7 @@ sub fetch_by_Slice{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -299,7 +299,7 @@ sub fetch_by_Slice_and_score {
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -342,7 +342,7 @@ sub fetch_by_Slice_and_pid {
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -376,7 +376,7 @@ sub fetch_by_assembly_location{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -402,7 +402,7 @@ sub fetch_by_assembly_location_and_score{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -429,7 +429,7 @@ sub fetch_by_assembly_location_and_pid{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID()) {
+    unless(defined $analysis && $analysis->dbID()) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }

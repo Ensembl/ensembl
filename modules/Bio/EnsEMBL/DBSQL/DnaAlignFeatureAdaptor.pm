@@ -177,7 +177,7 @@ sub fetch_by_contig_id_and_score{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -208,7 +208,7 @@ sub fetch_by_contig_id_and_pid{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -237,7 +237,7 @@ sub fetch_by_Slice{
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-   unless($analysis->dbID() ) {
+   unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
    }
@@ -283,7 +283,7 @@ sub fetch_by_Slice_and_score {
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -326,7 +326,7 @@ sub fetch_by_Slice_and_pid {
   if($logic_name){
    my $aa = $self->db->get_AnalysisAdaptor();
    $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -373,7 +373,7 @@ sub fetch_by_assembly_location{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -399,7 +399,7 @@ sub fetch_by_assembly_location_and_score{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -426,7 +426,7 @@ sub fetch_by_assembly_location_and_pid{
   if($logic_name){
     my $aa = $self->db->get_AnalysisAdaptor();
     $analysis = $aa->fetch_by_logic_name($logic_name);
-    unless($analysis->dbID() ) {
+    unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return ();
     }
@@ -482,8 +482,6 @@ sub fetch_by_assembly_location_constraint{
   if($constraint) {
     $sql .=  " AND $constraint";
   }
-
-  print STDERR $sql . ' ' . $self->stack_trace_dump();
 
   my $sth = $self->prepare($sql);
 
@@ -616,10 +614,16 @@ sub _new_feature {
   $f2->analysis($analysis);
 
 
-  my $out = Bio::EnsEMBL::DnaDnaAlignFeature->new( -cigar_string => $cigar, -feature1 => $f1, -feature2 => $f2);
+  my $align_feat = 
+    Bio::EnsEMBL::DnaDnaAlignFeature->new( -cigar_string => $cigar, 
+					   -feature1 => $f1, 
+					   -feature2 => $f2);
 
+  
+  #set the 'id' of the feature to the hit name
+  $align_feat->id($hseqname);
 
-  return $out;
+  return $align_feat;
 }
     
 1;

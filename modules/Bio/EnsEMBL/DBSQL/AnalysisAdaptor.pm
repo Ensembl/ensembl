@@ -94,6 +94,7 @@ sub fetch_all {
   my $rowHashRef;
 
   $self->{_cache} = {};
+  $self->{_logic_name_cache} = {};
   
   my $sth = $self->prepare( q {
     SELECT analysis_id, logic_name,
@@ -108,6 +109,7 @@ sub fetch_all {
   while( $rowHashRef = $sth->fetchrow_hashref ) {
     my $analysis = $self->_objFromHashref( $rowHashRef  );
     $self->{_cache}->{$analysis->dbID} = $analysis;
+    $self->{_logic_name_cache}->{$analysis->logic_name()} = $analysis;
   }
 
   return values %{$self->{_cache}};
@@ -153,6 +155,7 @@ sub fetch_by_dbID {
 
   my $anal = $self->_objFromHashref( $rowHashRef );
   $self->{_cache}->{$anal->dbID} = $anal;
+  $self->{_logic_name_cache}->{$anal->logic_name()} = $anal;
   return $anal;
 }
 
@@ -172,7 +175,8 @@ sub fetch_by_newest_logic_name {
   my $self = shift;
   my $logic_name = shift;
   
-  $self->warn("logic_names should now be unique should need to use this method use fetch_by_logic_name\n");
+  $self->warn("logic_names should now be unique should not " .
+	      "need to use this method use fetch_by_logic_name\n");
 
   return $self->fetch_by_logic_name($logic_name);
 }
@@ -183,6 +187,11 @@ sub fetch_by_logic_name {
   my $logic_name = shift;
   my $analysis;
   my $rowHash;
+
+  #check the cache for the logic name
+  if(defined $self->{_logic_name_cache}{$logic_name}) {
+    return $self->{_logic_name_cache}{$logic_name};
+  }
 
   my $sth = $self->prepare( "
     SELECT analysis_id, logic_name,
@@ -197,8 +206,17 @@ sub fetch_by_logic_name {
   $sth->execute($logic_name);
   my $rowHashRef;
   $rowHashRef = $sth->fetchrow_hashref; 
+
+  unless(defined $rowHashRef) {
+    return undef;
+  }
+
   $analysis = $self->_objFromHashref( $rowHashRef );
   
+  #place the analysis in the caches, cross referenced by dbID and logic_name
+  $self->{_cache}{$analysis->dbID()} = $analysis;
+  $self->{_logic_name_cache}{$logic_name} = $analysis;
+
   return $analysis;
 }
 

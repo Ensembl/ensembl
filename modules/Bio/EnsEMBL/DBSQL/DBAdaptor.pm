@@ -424,31 +424,31 @@ sub get_adaptor {
 
 =cut
 
-sub get_Protfeat_Adaptor {
-    my( $self ) = @_;
+#sub get_Protfeat_Adaptor {
+#    my( $self ) = @_;
     
-    return 
-      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
-}
+#    return 
+#      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
+#}
 
 
-=head2 get_Protein_Adaptor
+#=head2 get_Protein_Adaptor
 
- Title   : get_Protein_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+# Title   : get_Protein_Adaptor
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
 
 
-=cut
+#=cut
 
-sub get_Protein_Adaptor {
-    my( $self ) = @_;
+#sub get_Protein_Adaptor {
+#    my( $self ) = @_;
  
-    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
-}
+#    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
+#}
 
 
 sub get_MapFragAdaptor {
