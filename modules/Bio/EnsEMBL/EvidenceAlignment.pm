@@ -117,9 +117,9 @@ sub transcriptid {
     Title   :   get_features
     Usage   :   $ea->get_features($transcript_obj, $vc);
     Function:   use SGP adaptor supplied to get evidence off a VC of
-		the transcript supplied; return reference to an array
-		of featurepairs; cache so data gets reused if
-		$transcript_obj is same as last time
+		the transcript supplied; return an array
+		of featurepairs; cache, so data gets reused if
+		$transcript_obj has the same stable_id last time
 =cut
 {
   my @last_features;
@@ -360,10 +360,9 @@ sub _get_aligned_evidence {
   #my $total_exon_len = $utr_region_in_first_exon;
   my $total_exon_len = 0;
   my @pep_evidence_arr = ();
+  my @features = $self->get_features($transcript_obj, $vc);
   for (my $i = 0; $i <= $#exons_to_display; $i++) {
-    my @features = $self->get_features($transcript_obj, $vc);
     my $start = $exons_to_display[$i]->start;
-    #my @features = $exons_to_display[$i]->each_Supporting_Feature;
 
     my $last_feat = undef;
     PEP_FEATURE_LOOP:
@@ -380,14 +379,18 @@ sub _get_aligned_evidence {
                                         $feature->hseqname);
       next PEP_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype eq "protein") {
-        my $hlength = $feature->hend - $feature->hstart + 1;
+        my $hlen = $feature->hend - $feature->hstart + 1;
         my $length = $feature->end - $feature->start + 1;
-        next PEP_FEATURE_LOOP unless ($length == (3 * $hlength));
-	my $hseq;
-	eval {
-          $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
-	};
-	next PEP_FEATURE_LOOP if ($@);	# data wrong
+        next PEP_FEATURE_LOOP unless ($length == (3 * $hlen));
+	if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+	 > length $hit_seq_obj->seq))
+	{
+	  print STDERR "XXX pep hit coords out of range for ",
+	  $feature->hseqname, ", hstart ", $feature->hstart, ", hend ",
+	  $feature->hend, ", max length ", length $hit_seq_obj->seq, "\n";
+	  next PEP_FEATURE_LOOP;
+	}
+        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
         my $hindent;
         if ($exons_to_display[$i]->strand > 0) {
           $hindent = ($total_exon_len + $fstart - $start) / 3;
@@ -405,7 +408,7 @@ sub _get_aligned_evidence {
         my %hit_details = ( 'hseqname'    => $feature->hseqname,
                             'hstart'      => $feature->hstart,
 		            'hend'        => $feature->hend,
-			    'hlength'     => $hlength,
+			    'hlength'     => $hlen,
 			    'hseq'        => $hseq,
 			    'hindent'     => $hindent,
 			    'score'       => $feature->score,
@@ -505,12 +508,10 @@ sub _get_aligned_evidence {
 
   $total_exon_len = 0;
   my @nuc_evidence_arr = ();
+  my @features = $self->get_features($transcript_obj, $vc);
   for (my $i = 0; $i <= $#all_exons; $i++) {
     my $start = $all_exons[$i]->start;
-    #my @features = $all_exons[$i]->each_Supporting_Feature;
-
     my $last_feat = undef;
-    my @features = $self->get_features($transcript_obj, $vc);
     NUC_FEATURE_LOOP:
     foreach my $feature(@features) {
       next NUC_FEATURE_LOOP unless ($all_exons[$i]->overlaps($feature));
@@ -529,12 +530,15 @@ sub _get_aligned_evidence {
                                         $feature->hseqname);
       next NUC_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype ne "protein") {
-        my $hlength = $feature->hend - $feature->hstart + 1;
-	my $hseq;
-	eval {
-          $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlength;
-	};
-	next NUC_FEATURE_LOOP if ($@);	# data wrong
+	if (($feature->hstart - 1 < 0) || ($feature->hstart - 1 + $hlen
+	 > length $hit_seq_obj->seq))
+	{
+	  print STDERR "XXX nuc hit coords out of range for ",
+	  $feature->hseqname, ", hstart ", $feature->hstart, ", hend ",
+	  $feature->hend, ", max length ", length $hit_seq_obj->seq, "\n";
+	  next NUC_FEATURE_LOOP;
+	}
+        my $hseq = substr $hit_seq_obj->seq, $feature->hstart - 1, $hlen;
         my $strand_wrt_exon = $all_exons[$i]->strand * $feature->strand;
         if ($strand_wrt_exon < 0) {
           my $hseq_obj = Bio::PrimarySeq->new( -seq => $hseq,
@@ -556,7 +560,7 @@ sub _get_aligned_evidence {
                             'hseqname'    => $feature->hseqname,
                             'hstart'      => $feature->hstart,
                             'hend'        => $feature->hend,
-	  		    'hlength'     => $hlength,
+	  		    'hlength'     => $hlen,
 			    'hseq'        => $hseq,
 			    'hindent'     => $hindent,
 			    'hstrand'     => $feature->hstrand,
