@@ -1,15 +1,4 @@
 use strict;
-
-=head1 Get_ens2ensembl.pl
-
-=head1 Description
-
-=head2 Aims
-The aim of thi script is to get from the database the corresponding clones for each Ensembl peptides. This will be then used to postprocess pmatch and get a more sensible mapping.
-
-=cut
-
-
 use Bio::SeqIO;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;

@@ -28,7 +28,7 @@ my %hash;
 my %ref_map;
 my %ens2embl;
 my %sp2embl;
-
+my %embl_clone;
 
 &GetOptions(
             
@@ -46,6 +46,17 @@ if ($refseq) {
     open (REFSEQ,"$refseq") || die "Can't open file $refseq\n";
 }
 open (OUT,">$out") || die "Can't open file $out\n";
+
+open (CLONE,"clones.txt") || die "Can't open file\n";
+
+#Put in a hash all of the embl clones used by Ensembl
+while (<CLONE>) {
+    chomp;
+    my ($embl_ac,$id) = split(/\t/,$_);
+    print "$embl_ac\n";
+    $embl_clone{$embl_ac}=1;
+}
+
 
 while (<DBMAP>) {
     chomp;
@@ -82,13 +93,21 @@ while (<XREF>) {
     
 	push(@{$hash{$xrac}},$both);
     }
-    if ($xrdb eq "ENSEMBL") {
+
+#Get the embl clone corresponding for each Ensembl peptides
+    if (($xrdb eq "ENSEMBL")) {
+	
 	push(@{$ens2embl{$xrac}},$id);
     }
-    if (($xrdb eq "SP") && ($db eq "EMBL")) {
-	push(@{$sp2embl{$xrac}},$id);
-    }
 
+#Get the embl ACs for each SP and SPTREMBL proteins
+    if ((($xrdb eq "SP") || ($xrdb eq "SPTREMBL")) && ($db eq "EMBL")) {
+	 #print "$id\n";
+	if ($embl_clone{$id}) {
+	    
+	    push(@{$sp2embl{$xrac}},$id);
+	}
+    }
 }
 
 while (<MAP>) {
@@ -96,35 +115,50 @@ while (<MAP>) {
 
 #P01111  COBP00000000001 100     PRIMARY  
     my ($xr,$ens,$perc,$tag) = split (/\t/,$_);
-    if (($tag eq "PRIMARY") || ($tag eq "DUPLICATE")) {
 
+#Hack to be taken away
+    my ($en1,$en2) = $ens =~ /(\w{3})P(\d+)/;
+    my $enst = $en1."T".$en2;
+
+#For now take primary or duplicates and only matches which correspond to more than 25% of the external peptide. These criteria will have to be lowered up.
+    if ((($tag eq "PRIMARY") || ($tag eq "DUPLICATE")) && ($perc >= 25)) {
+	
 #Its a hack an another solution will have to be found, if the external known gene is a refseq protein accession number get back the equivalent refseq DNA accession number 
 	if ($xr =~ /^NP_\d+/) {
 	    $xr = $ref_map{$xr};
 	}
 
+#If the external peptide correspond to an embl clone, we will take the match only if the Ensembl peptide correspond to the same clone (at least one exon)
 	if ($sp2embl{$xr}) {
+	    print "$xr\t".@{$sp2embl{$xr}}."\n";
 	    my $tot_sp_embl;
 	    my $tot_ens_embl;
 	    my @sp_embl = @{$sp2embl{$xr}};
 	    
 	    foreach my $sing1 (@sp_embl) {
+		#print "$sing1\n";
 		$tot_sp_embl .= $sing1;
-	    }
-	    
 
-	    my @ens_embl = @{$ens2embl{$xr}};
-	    
-	    foreach my $sing2 (@sp_embl) {
-		$tot_ens_embl .= $sing2;
 	    }
-	    if ($tot_ens_embl =~ $tot_sp_embl) {
-		print OUT "$ens\t$map{$xr}\t$xr\n";
+	  	  	    
+	    if ($ens2embl{$enst}) {
+		my @ens_embl = @{$ens2embl{$enst}};
+	    
+		foreach my $sing2 (@sp_embl) {
+		    $tot_ens_embl .= $sing2;
+		}
+		if ($tot_ens_embl =~ $tot_sp_embl) {
+		    print  OUT "$ens\t$map{$xr}\t$xr\n";
+		}
+		else {
+		    #print "no\n";
+		}
 	    }
 	}
-	
+	else {
 #Print the know gene AC and its database
 	print OUT "$ens\t$map{$xr}\t$xr\n";
+    }
 
 #Print all of the external database it links to (eg: HUGO)
 	foreach my $both (@{$hash{$xr}}){

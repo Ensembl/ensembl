@@ -32,9 +32,9 @@ my ($ens,$sp,$refseq);
 
 &runpmatch();
 &postprocesspmatch($sp);
-#&postprocesspmatch($refseq);
+&postprocesspmatch($refseq);
 &finalprocess($sp);
-#&finalprocess($refseq);
+&finalprocess($refseq);
 
 sub runpmatch {
     print STDERR "Running pmatch\n";
@@ -87,7 +87,7 @@ sub postprocesspmatch {
 
 #Write out the processed data
     foreach my $key ( keys %hash1 ) {
-	if ($hashlength{$key} >= 20) {
+	if (($hashlength{$key} >= 20)) {
 	    ($a,$b) = split(/:/,$key);
 	    print OUT "$a\t$b\t$hash1{$key}\n";
 	}
