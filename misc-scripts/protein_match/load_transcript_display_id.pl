@@ -32,6 +32,7 @@ my %priority;
 
 $priority{'HUGO'} = 1000;
 $priority{'MarkerSymbol'} = 1000;
+$prority{'Wormbase'} = 1000;
 $priority{'SWISSPROT'} = 900;
 $priority{'SPTREMBL'} = 800;
 $priority{'RefSeq'} = 600;
