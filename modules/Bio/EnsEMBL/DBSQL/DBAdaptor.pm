@@ -268,8 +268,9 @@ sub get_available_adaptors{
       CompressedSequence       DBEntry              DnaAlignFeature
       DensityFeature           DensityType          Exon
       Gene                     KaryotypeBand        MiscSet
-      MiscFeature              PredictionTranscript PredictionExon 
-      ProteinFeature           ProteinAlignFeature  RepeatConsensus
+      MiscFeature              PredictionTranscript PredictionExon
+      ProteinFeature           ProteinAlignFeature  RegulatoryFeature
+      RegulatoryMotif          RepeatConsensus
       RepeatFeature            Sequence             SimpleFeature
       Slice                    SupportingFeature    Transcript
       Translation
