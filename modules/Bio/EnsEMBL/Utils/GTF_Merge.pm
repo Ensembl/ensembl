@@ -17,22 +17,18 @@ Bio::EnsEMBL::Utils::GTF_Merge - Module having the GTF merge subroutines
 
     use Bio::EnsEMBL::Utils::GTF_Merge('gtf_merge');
 
-    &gtf_merge($input_file1,$input_file2,$output_file,$new_gene_prefix);
+    &gtf_merge($input_file1, $output_file, $new_gene_prefix);
  
 =head1 DESCRIPTION
 
 Module containing the sub routine gtf_merge, which works on one sorted stream
 containing gtf features from several different sources.
 
-
 The merge is done on overlapping exon lines
 
 The end result is a new file in $output file which has the gene name
 of input1 and input2 replaced by the "new_gene_prefix_unique number"
 appropiate to the merge.
-
-The routine gets  confused if the transcript identifiers in the two files are
-not distinct.
 
 =head1 CONTACT
 
@@ -62,7 +58,7 @@ use Carp;
 
  Title   : gtf_merge
  Usage   : &gtf_merge(\*INPUT,\*OUTPUT,'IGI_M3_');
- Function: Merges transcripts on the basis of overlapping
+ Function: Merges genes on the basis of overlapping
            exons and writes out the merged file to output
            The genes are given the new numbering scheme based on
            the prefix written above
@@ -84,22 +80,22 @@ sub gtf_merge {
 	&confess("Did not pass in new_prefix - must be sort,out,new_prefix");
     }
 
-    my ($prevctg,$prevstrand,$prevtrans,$prevend,$prevstart);
+    my ($prevctg,$prevstrand,$prevgene,$prevend,$prevstart);
     my %thash;
     my %seenctg;
     my %ghash;
     my $unique_number = 1;
     
 
-    # main loop. Only process things with transcript_id lines
+    # main loop. Only process things with gene_id lines
     # see whether previous line is contig or strand different, in which case,
     # simply move to the next line.
 
     # save each line in @lines
     
-    # each transcript creates an igi when first seen
+    # each gene creates an igi when first seen
     # when an overlap occurs, all the igis assigned to the later
-    # transcript (may well be more than one, though one is likely to
+    # gene (may well be more than one, though one is likely to
     # to be the most often case) get transfered to previous overlapped igi
     
     my @lines;
@@ -108,23 +104,23 @@ sub gtf_merge {
 	push(@lines,$_);
 	my ($ctg,$source,$tag,$start,$end,$score,$strand) = split;
 	if( $tag ne 'exon' ) { next; }
+#	push(@lines,$_);
 
 	if( $strand != '-' && $strand != '+' ) {
 	    &confess("Strand is neither + or -. A GTF file error? At $_");
 	}
 
-	/transcript_id\s+(\S+)/ || next;
-	my $trans = $1;
-	$trans =~ s/\"//g;
-	$trans =~ s/;$//g;
+	/gene_id\s+(\S+)/ || next;
+	my $gene = $1;
+	$gene =~ s/\"//g;
+	$gene =~ s/;$//g;
 	
-	
-	if( !defined $thash{$trans} ) {
+	if( !defined $thash{$gene} ) {
 	    my $new_igi = "temp_" . $unique_number;
 	    $unique_number++;
-	    $thash{$trans} = $new_igi; # one igi of trans
+	    $thash{$gene} = $new_igi; # one igi of gene
 	    $ghash{$new_igi} = [];     
-	    push(@{$ghash{$new_igi}},$trans); # all transcripts of igi
+	    push(@{$ghash{$new_igi}},$gene); # all genes of igi
 	}
 
 	if( !defined $prevctg || $ctg ne $prevctg || $strand ne $prevstrand) {
@@ -135,7 +131,7 @@ sub gtf_merge {
 	    $seenctg{$ctg} = 1;
 	    $prevctg   = $ctg;
 	    $prevend = $end;
-	    $prevtrans   = $trans;
+	    $prevgene   = $gene;
 	    $prevstrand = $strand;
 	    $prevstart  = $start;
 	    next;
@@ -149,12 +145,12 @@ sub gtf_merge {
 
 
 	if( $start <= $prevend ) {
-	    # merge $trans into $prevtrans
+	    # merge $gene into $prevgene
 	    if( $log ) {
-		print $log "$prevtrans\t$trans\t$prevstart:$prevend\t$start:$end\n";
+		print $log "$prevgene\t$gene\t$prevstart:$prevend\t$start:$end\n";
 	    }
-	    my $combined_igi  =  $thash{$prevtrans};
-	    my $dead_igi      = $thash{$trans};
+	    my $combined_igi  =  $thash{$prevgene};
+	    my $dead_igi      = $thash{$gene};
 
 	    # of course, this could be the second time we
 	    # see this merge ;)
@@ -162,19 +158,19 @@ sub gtf_merge {
 		
 		foreach my $t ( @{$ghash{$dead_igi}} ) {
 	
-		    # move it across to the prevtrans igi
+		    # move it across to the prevgene igi
 		    push(@{$ghash{$combined_igi}},$t);
 		    # reset this guys thash
 		    $thash{$t} = $combined_igi;
 		} 
-		# delete igi from $trans
+		# delete igi from $gene
 		delete $ghash{$dead_igi};
 	    }
 	}
 
 	if( $prevend <= $end ) {
 	    $prevend    = $end;
-	    $prevtrans  = $trans;
+	    $prevgene  = $gene;
 	}
 	$prevstart = $start;
 
@@ -210,23 +206,23 @@ sub gtf_merge {
     foreach ( @lines ) {
 	/^#/ && do { print $out $_; next; };
 	
-	my ($trans,$gene);
-	/transcript_id\s+(\S+)/ && do { $trans = $1; };
+	my ($gene);
+	/gene_id\s+(\S+)/ && do { $gene = $1; };
 
 
-	if( !defined $trans ) {
-	    #print STDERR "Line starting [",substr($_,0,50),"] has no transcript id. Cannot provide IGI\n";
-	    print STDERR "Line with no transcript id: $_\n";
+	if( !defined $gene ) {
+	    print STDERR "Line with no gene_id: $_\n";
 	    print $out $_;
 	    next;
 	} 
-	$trans =~ s/\"//g;
-	$trans =~ s/;$//g;
+	$gene =~ s/\"//g;
+	$gene =~ s/;$//g;
 
-	my $igi = $thash{$trans};
-	s/transcript_id/igi_id "$igi"; transcript_id/;
+	my $igi = $thash{$gene};
+	s/gene_id/igi_id "$igi"; gene_id/;
 
-	print $out $_;
+ 	print $out $_;
+#	print $out $_ if 
     }
 
 
