@@ -37,11 +37,13 @@ if( $@ ) {
 print STDERR "... DBI checks out\n";
 
 #
-# See if we can load the bioperl root object
+# See if we can load the bioperl root object and AnnSeq object
+# AnnSeq is 0.6 or later...
 #
 
 eval {
     require Bio::Root::Object;
+    require Bio::AnnSeq;
 };
 
 if( $@ ) {
@@ -81,7 +83,7 @@ print STDERR "... ensembl checks out\n";
 print STDERR "The ensembl software looks ready to run!\n\n";
 print STDERR "Looking at your DBI installation. I'll need some details about this to establish a connection\n\n";
 
-print STDERR "What is the name of the ensembl database [ensdev]\n\nIf you haven't created a database, no worries\nSimply Cntr-C out of this and go\nmysqladmin -u username create ensdev\n(you may need to talk to whoever install mysql to get permissions to create ensdev)\n\nWhat is the name of the ensembl database [ensdev]";
+print STDERR "What is the name of the ensembl database [ensdev]\n\n(If you haven't created a database, no worries\nSimply Cntr-C out of this and go\nmysqladmin -u username create ensdev\nYou may need to talk to whoever install mysql to get permissions to create ensdev)\n\nWhat is the name of the ensembl database [ensdev]";
 
 my $db = <STDIN>;
 chomp $db;
@@ -156,32 +158,12 @@ do {
 my $dna_file;
 
 
-print STDERR "Can you give the full pathname of the ensembl dna file?";
-
-do {
-    my $fname = <STDIN>;
-    chomp $fname;
-    if( $fname =~ /^\s*$/ && defined $dna_file ) {
-	last;
-    }
-
-    if( !-e $fname ) {
-	print STDERR "Cannot open $fname\n";
-    } else {
-	$dna_file = $fname;
-    }
-
-} while ( ! defined $dna_file );
-
-my $dna_dir = $dna_file;
-$dna_dir =~ s/\/.*$/\//;
-
 
 #
 # Sanity checks
 #
 
-if ( !-e "../sql/table.sql" || !-e $dna_file || !-e $table_file ) {
+if ( !-e "../sql/table.sql" || !-e $table_file ) {
     print STDERR "Cannot find one of table.seq, dna file or table data file. Sorry.\n\n";
     exit(0);
 }
@@ -203,18 +185,17 @@ if( $q ne 'yes' ) {
     print STDERR "\n\nBye...\n";
 }
 
+print "... reinitialisation of tables\n";
+
 system("mysql -h $host -u $user $db < ../sql/table.sql");
 
-print "... reinitialisation of tables done\n";
+print ".......done\n";
+
+print "... loading data\n";
 
 system("mysql -h $host -u $user $db < $table_file");
 
-print "... load tables\n";
-
-open(MSQL,"| mysql -h $host -u $user $db");
-
-print MSQL "insert into meta (name,write_number,dna_dir) = ('ensembl',0,$dna_dir);\n";
-close(MSQL);
+print ".......done\n";
 
 print STDERR "Your distribution is read to run!\n";
 
