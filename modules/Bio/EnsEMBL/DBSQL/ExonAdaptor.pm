@@ -216,8 +216,6 @@ sub _exon_from_sth {
     $exon->seqname('artificial.sticky.exon');
 
     #my $rev = reverse(split(//,$sticky_str));
-    my $tempseq = Bio::PrimarySeq->new( -display_id => 'artificial.sticky.exon'.$exon->dbID , '-seq' => $sticky_str);
-    $exon->attach_seq($tempseq);
 
   } else {
     $exon = $self->_new_Exon_from_hashRef($hashRef);
@@ -242,21 +240,11 @@ sub _new_Exon_from_hashRef {
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->adaptor($self);
 
-   if( !exists $self->{rchash}->{$hashRef->{'contig_id'}} ) {
-     $self->{rchash}->{$hashRef->{'contig_id'}} = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
-     if ( !defined $self->{rchash}->{$hashRef->{'contig_id'}} ) {
-	 $self->throw("No contig for ".$hashRef->{'contig_id'});
-     }
-   }
+   my $rc = $self->db->get_RawContigAdaptor->fetch_by_dbID($hashRef->{'contig_id'});
 
-   $exon->attach_seq($self->{rchash}->{$hashRef->{'contig_id'}});
-   $exon->contig( $self->{rchash}->{$hashRef->{'contig_id'}} );
+   $exon->contig( $rc );
    $exon->seqname($hashRef->{'cid'});
-   $exon->ori_start( $exon->start );
-   $exon->ori_end( $exon->end );
-   $exon->ori_strand( $exon->strand );
 
-   # maybe we should cache this.
    
   return $exon;
 }
