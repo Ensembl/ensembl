@@ -50,9 +50,9 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
                as they are retrieved from the database
   Arg [3]    : (optional) Bio::EnsEMBL::Slice $slice
                A slice that features should be remapped to
-  Arg [4]    : (optional) boolean $keep_all
-               Set to 1 if all features, even ones entirely off slice,
-               should be kept
+  Arg [4]    : (optional) hashref $options
+               Hashref of options flags passed on to the _objs_from_sth method
+               implementation.
   Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
   Description: Overrides the default generic fetch for this object. Will
                ignore slice constraints.
@@ -63,7 +63,9 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 =cut
 
 sub generic_fetch {
-  my ($self, $constraint, $mapper, $slice, $keep_all) = @_;
+  my ($self, $constraint, $mapper, $slice) = @_;
+
+  $options ||= {};
 
   my $columns = join(', ', $self->_columns());
 
@@ -80,7 +82,7 @@ sub generic_fetch {
 
   $sth->execute;
 
-  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $keep_all);
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $options);
 
   return $res;
 }
