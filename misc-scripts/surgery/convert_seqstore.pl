@@ -1,0 +1,232 @@
+# Convert release 16-era schemas to use new non-clone/contig schema
+
+use strict;
+use warnings;
+
+use DBI;
+use Getopt::Long;
+
+my $sourceDB = "glenn_old_schema";
+my $targetDB = "glenn_new_schema";
+
+
+my ($host, $port, $user, $password, $source, $target, $verbose);
+$host = "127.0.0.1";
+$port = 5000;
+$password = "";
+$user = "ensro";
+
+GetOptions ('host=s'      => \$host,
+            'user=s'      => \$user,
+            'password=s'  => \$password,
+            'port=s'      => \$port,
+            'source=s'    => \$source,
+            'target=s'    => \$target,
+            'verbose'     => \$verbose,
+            'help'        => sub { &show_help(); exit 1;});
+
+die "Host must be specified"           unless $host;
+die "Source schema be specifed"        unless $source;
+die "Target schema must be specified"  unless $target;
+
+my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$targetDB", "$user", "$password") || die "Can't connect to target DB";
+my $sth;
+
+# TODO - build "meta" table describing which tables use which co-ordinate systems
+
+# ----------------------------------------------------------------------
+# The coord_system table needs to be filled first
+
+debug("Building coord_system table");
+my @inserts = ('INSERT INTO coord_system (name, version, attrib) VALUES ("chromosome",  "NCBI33", "default_version,top_level")',
+	       'INSERT INTO coord_system (name, version, attrib) VALUES ("supercontig", NULL,     "default_version")',
+	       'INSERT INTO coord_system (name, version, attrib) VALUES ("clone",       NULL,     "default_version")',
+	       'INSERT INTO coord_system (name, version, attrib) VALUES ("contig",      NULL,     "default_version,sequence")' );
+foreach my $insert (@inserts) {
+  execute($dbi, $insert);
+}
+
+# cache coord-system names to save lots of joins
+debug("Caching coord_system IDs");
+my %coord_system_ids; # hash with keys = coord-system names, values = internal IDs
+$sth = $dbi->prepare("SELECT coord_system_id, name FROM coord_system");
+$sth->execute or die "Error when caching coord-system IDs";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $id = $row->{"coord_system_id"};
+  my $name = $row->{"name"};
+  $coord_system_ids{$name} = $id;
+}
+
+# ----------------------------------------------------------------------
+# Build the seq_region table
+# This table is fundamental since many other tables reference it by seq_region_id
+
+# For now we can just copy the contents of the contig table, with the appropriate
+# coordinate system ID. Note contig IDs are copied as-is (i.e. NOT using autonumber)
+
+debug("Copying source contig table to seq_region");
+my $cs_id = $coord_system_ids{"contig"};
+execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length from $sourceDB.contig");
+
+# Similarly for the clone table - can use autonumber for the IDs as they're not referenced anywhere
+$cs_id = $coord_system_ids{"clone"};
+execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) SELECT CONCAT(cl.name, '.', cl.version), $cs_id, MAX(ctg.embl_offset)+ctg.length-1 FROM $source.clone cl, $source.contig ctg WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
+
+# And chromosomes
+# Note old/new ID mapping is stored in %chromosme_id_old_new 
+my %chromosome_id_old_new;
+$cs_id = $coord_system_ids{"chromosome"};
+$sth = $dbi->prepare("SELECT chromosome_id, name, length from $sourceDB.chromosome");
+$sth->execute or die "Error when caching coord-system IDs";
+while(my $row = $sth->fetchrow_hashref()) {
+  my $old_id = $row->{"chromosome_id"};
+  my $name   = $row->{"name"};
+  my $length = $row->{"length"};
+  execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) VALUES ('$name', $cs_id, $length)");
+  my $new_id = $dbi->{'mysql_insertid'};
+  $chromosome_id_old_new{$old_id} = $new_id;
+}
+#foreach my $id (keys (%chromosome_id_old_new)) {
+#  print "OLD: $id   NEW: " . $chromosome_id_old_new{$id} . "\n";
+#}
+
+# ----------------------------------------------------------------------
+# Feature tables
+# Note that we can just rename contig_* to set_region_* since the
+# contig IDs were copied verbatim into seq_region
+
+my @feature_tables = ("exon", "repeat_feature", "simple_feature", "dna_align_feature", "protein_align_feature", "marker_feature", "qtl_feature");
+
+# exon
+debug("Copying exon");
+execute($dbi, "INSERT INTO $target.exon (exon_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, phase, end_phase) SELECT exon_id, contig_id, contig_start, contig_end, contig_strand, phase, end_phase FROM $source.exon");
+
+# simple_feature
+debug("Copying simple_feature");
+execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, 'display_label', analysis_id, score FROM $source.simple_feature");
+
+# repeat_feature
+debug("Copying repeat_feature");
+execute($dbi, "INSERT INTO $target.repeat_feature (repeat_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score) SELECT repeat_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, repeat_start, repeat_end, repeat_consensus_id, score FROM $source.repeat_feature");
+
+# protein_align_feature
+debug("Copying protein_align_feature");
+execute($dbi, "INSERT INTO $target.protein_align_feature (protein_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score) SELECT protein_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, cigar_line, evalue, perc_ident, score FROM $source.protein_align_feature");
+
+# dna_align_feature
+debug("Copying dna_align_feature");
+execute($dbi, "INSERT INTO $target.dna_align_feature (dna_align_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score) SELECT dna_align_feature_id, contig_id, contig_start, contig_end, contig_strand, analysis_id, hit_start, hit_end, hit_name, hit_strand, cigar_line, evalue, perc_ident, score FROM $source.dna_align_feature");
+
+# marker_feature
+debug("Copying marker_feature");
+execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
+
+# qtl_feature
+# TODO - this is in chromosomal co-ords so needs to be handled differently
+
+
+
+# ----------------------------------------------------------------------
+# These tables are copied as-is
+copy_table($dbi, "map");
+copy_table($dbi, "analysis");
+copy_table($dbi, "dnafrag");
+copy_table($dbi, "exon_stable_id");
+copy_table($dbi, "exon_transcript");
+copy_table($dbi, "external_db");
+copy_table($dbi, "external_synonym");
+copy_table($dbi, "gene_archive");
+copy_table($dbi, "gene_description");
+copy_table($dbi, "gene_stable_id");
+copy_table($dbi, "go_xref");
+copy_table($dbi, "identity_xref");
+copy_table($dbi, "interpro");
+copy_table($dbi, "karyotype");
+copy_table($dbi, "map");
+copy_table($dbi, "map_density");
+copy_table($dbi, "mapannotation");
+copy_table($dbi, "mapannotationtype");
+copy_table($dbi, "mapfrag");
+copy_table($dbi, "mapfrag_mapset");
+copy_table($dbi, "mapping_session");
+copy_table($dbi, "mapset");
+copy_table($dbi, "marker");
+copy_table($dbi, "marker_feature");
+copy_table($dbi, "marker_map_location");
+copy_table($dbi, "marker_synonym");
+copy_table($dbi, "meta");
+copy_table($dbi, "object_xref");
+copy_table($dbi, "peptide_archive");
+copy_table($dbi, "protein_feature");
+copy_table($dbi, "qtl");
+copy_table($dbi, "qtl_synonym");
+copy_table($dbi, "repeat_consensus");
+# copy_table($dbi, "stable_id_event"); type enum???
+copy_table($dbi, "transcript_stable_id");
+copy_table($dbi, "translation_stable_id");
+
+# TODO finish
+
+# ----------------------------------------------------------------------
+$dbi->disconnect();
+
+debug("Done");
+
+# ----------------------------------------------------------------------
+# Misc / utility functions
+
+sub show_help {
+
+  print "Usage: perl convert_seqstore.pl {options}\n";
+  print "Where options are:\n";
+  print "  --host {hostname} The database host.\n";
+  print "  --user {username} The database user. Must have read permissions on both schema, and write permissions on the target schema\n";
+  print "  --password {pass} The password for user, if required.\n";
+  print "  --port {folder}   The database port to use.\n";
+  print "  --source {schema} The name of the source schema\n";
+  print "  --target {schema} The name of the target schema\n";
+  print "  --verbose         Print extra output information\n";
+
+}
+
+# ----------------------------------------------------------------------
+
+sub debug {
+
+  my $str = shift;
+
+  print $str . "\n" if $verbose;
+
+}
+
+# ----------------------------------------
+
+sub execute {
+
+  my ($dbcon, $sql) = @_;
+
+  my $stmt = $dbcon->prepare($sql);
+  $stmt->execute() || die "Unable to execute $sql";
+  $stmt->finish();
+
+}
+
+# ----------------------------------------
+
+sub copy_table {
+
+  my ($dbcon, $table) = @_;
+
+  debug("Copying $table with no modifications");
+  my $sql = "INSERT INTO $target.$table SELECT * FROM $source.$table";
+  execute($dbcon, $sql);
+
+}
+
+# ----------------------------------------
+
+sub clean {
+
+
+
+}
