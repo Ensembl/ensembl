@@ -93,13 +93,13 @@ use strict;
 sub new {
     my ($class,@args) = @_;
 
+    my ($caller, $pkg, $line) = caller;
+  
     my $self = $class->SUPER::new(@args);
     #print "calling new with @args\n";
-    my ($cigar_string,$features) = $self->_rearrange([qw(CIGAR_STRING FEATURES)],
+    my ($cigar_string,$features) 
+      = $self->_rearrange([qw(CIGAR_STRING FEATURES)], @args);
 
-                                                     @args);
-
-    #print STDERR "@args\n";
     if (defined($cigar_string) && defined($features)) {
       $self->throw("Can't input cigar_string and an array of features.");
     } elsif (defined($features)) {
@@ -471,231 +471,285 @@ sub _parse_features {
   my $hit_unit = $self->_hit_unit();
 
   if (ref($features) ne "ARRAY") {
-    $self->throw("features must be an array reference not a [" . ref($features) . "]");
+    $self->throw("features must be an array reference not a [" . 
+		 ref($features) . "]");
   }
 
-  for my $f ( @$features ) {
-
-    my $feats = scalar (@$features) - 1;
-    my $strand     = $features->[0]->strand;
-    my @f;
-
-    if( $strand == 1 ) {
-      
-      @f = sort {$a->start <=> $b->start} @$features;
-      
-    } else {
-      
-      @f = sort { $b->start <=> $a->start} @$features;
-    }
-    
-    my $hstrand     = $f[0]->hstrand;
-    my $name        = $f[0]->seqname;
-    my $hname       = $f[0]->hseqname;
-    my $score       = $f[0]->score;
-    my $percent     = $f[0]->percent_id;
-    my $pvalue      = $f[0]->p_value;
-    my $analysis    = $f[0]->analysis;
-    my $phase       = $f[0]->phase;
-    
-    # implicit strand 1 for peptide sequences
-    ( defined $strand ) || ( $strand = 1 );
-    ( defined $hstrand ) || ( $hstrand = 1 );
-    my $ori = $strand * $hstrand;
-    
-    
-    if (scalar(@f) == 0) {
-      $self->throw("No features in the array to parse");
-    }
-
-    my $prev1; # where last feature q part ended
-    my $prev2; # where last feature s part ended
-    
-    my $string;
-    
-    my $f1start = $f[0]->start;
-    my $f1end   = $f[$#f]->end;
-    
-    if ( $strand == 1 ) {
-      $f1start = $f[0]->start;
-      $f1end   = $f[$#f]->end;
-    } else {
-      $f1end   = $f[0]->end;
-      $f1start = $f[$#f]->start;
-    }
-    
-    my $f2start;
-    my $f2end;
-    
-    if ( $hstrand == 1 ) {
-      $f2start = $f[0]->hstart;
-      $f2end   = $f[$#f]->hend;
-    } else {
-      $f2end = $f[0]->hend;
-      $f2start = $f[$#f]->hstart;
-    }
-    
-    foreach my $f (@f) {
-      if (!$f->isa("Bio::EnsEMBL::FeaturePair")) {
-	$self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
-      }
-      
-      if( defined $f->hstrand() ) {
-	if ($f->hstrand != $hstrand) {
-	  $self->throw("Inconsistent hstrands in feature array");
-	}
-      }
-      if( defined $f->strand() ) {
-	if ($f->strand != $strand) {
-	  $self->throw("Inconsistent strands in feature array");
-	}
-      }
-
-      if ($name ne $f->seqname) {
-	$self->throw("Inconsistent names in feature array [$name - " . $f->seqname . "]");
-      }
-      if ($hname ne $f->hseqname) {
-	$self->throw("Inconsistent names in feature array [$hname - " . $f->hseqname . "]");
-      }
-      if ($score ne $f->score) {
-	$self->throw("Inconsisent scores in feature array [$score - " . $f->score . "]");
-      }
-      if ($percent ne $f->percent_id) {
-	$self->throw("Inconsistent pids in feature array [$percent - " . $f->percent_id . "]");
-      }
-      
-      my $start1 = $f->start;
-      my $start2 = $f->hstart();
-      
-      if (defined($prev1)) {
-	if ( $strand == 1 ) {
-	  if ($f->start < $prev1) {
-	    $self->throw("Inconsistent coordinates feature is forward strand hstart in current feature should be greater than hend in previous feature " . $f->start . " < ".$prev1."\n");
-	  }
-	} else {
-	  if ($f->end > $prev1) {
-	    $self->throw("Inconsistent coordinates in feature array feature is reverse strand hend should be less than previous hstart " . $f->end . " > $prev1");
-	  }
-	}
-	
-      }
-     # print STDERR "handling feature ".$f->gffstring."\n";
-      my $length = ($f->end - $f->start + 1);
-      my $hlength = ($f->hend - $f->hstart + 1);
-     # print STDERR "length ".$length." = ".$f->end." - ".$f->start." + 1\n";
-     # print STDERR "hlength ".$hlength." = ".$f->hend." - ".$f->hstart." + 1\n";
-     # print STDERR "hit unit ".$hit_unit." query unit ".$query_unit."\n";
-
-      # using multiplication to avoid rounding errors, hence the
-      # switch from query to hit for the ratios
-      
-      if($query_unit > $hit_unit){
-	# I am going to make the assumption here that this situation will only occur with DnaPepAlignFeatures, this may not be true
-	if( int($length/$query_unit)!= $hlength * $hit_unit) {
-	  $self->throw( "Feature lengths not comparable Lengths:".$length." ".$hlength." Ratios:".$query_unit." ". $hit_unit );
-	}
-	
-      }else{
-	if( $length * $hit_unit != $hlength * $query_unit ) {
-	  $self->throw( "Feature lengths not comparable Lengths:".$length." ".$hlength." Ratios:".$query_unit." ". $hit_unit );
-	}
-      }
-
-      my $hlengthfactor = ($query_unit/$hit_unit);
-      # if( $query_unit == 1 && $hit_unit == 3 ) {
-      #	$hlengthfactor = (1/3);
-      #     }
-      #     if( $query_unit == 3 && $hit_unit == 1 ) {
-      #	$hlengthfactor = 3;
-      #      }
-      
-      # find out the type of gap
-      if( $strand == 1 ) {
-	if( ( defined $prev1 ) && ( $f->start > $prev1 + 1  )) {
-	  # I type gap
-	  my $gap = $f->start - $prev1 - 1;
-	  if( $gap == 1 ) {
-	    $gap = "";
-	  }
-	  $string .= "$gap"."I";
-	}
-	$prev1 = $f->end();
-      } else {
-	if(( defined $prev1 ) && ($f->end + 1 < $prev1 )) {
-	  # I type gap
-	  my $gap = $prev1 - $f->end() - 1;
-	  if( $gap == 1 ) {
-	    $gap = "";
-	  }
-	  $string .= "$gap"."I";
-	}
-	$prev1 = $f->start();
-      }
-      
-      if( $hstrand == 1 ) {
-	if((  defined $prev2 ) && ( $f->hstart() > $prev2 + 1 )) {
-	  # D type gap
-	  my $gap = $f->hstart - $prev2 - 1;
-	  my $gap2 = int( $gap * $hlengthfactor + 0.05 );
-	  
-	  if( $gap2 == 1 ) {
-	    $gap2 = "";
-	  }
-	  $string .= "$gap2"."D";
-	} 
-	$prev2 = $f->hend();
-      } else {
-	if( ( defined $prev2 ) && ( $f->hend() + 1 < $prev2 )) {
-	  # D type gap 
-	  my $gap = $prev2 - $f->hend - 1;
-	  my $gap2 = int( $gap * $hlengthfactor + 0.05 );
-	  
-	  if( $gap2 == 1 ) {
-	    $gap2 = "";
-	  }
-	  $string .= "$gap2"."D";
-	}
-	$prev2 = $f->hstart();
-      }
-      
-      my $matchlength = $f->end() - $f->start() + 1;
-      if( $matchlength == 1 ) {
-	$matchlength = "";
-      }
-      $string .= $matchlength."M";
-    }
-
-    my $feature1 = new Bio::EnsEMBL::SeqFeature();
-    
-    $feature1->start($f1start);
-    $feature1->end  ($f1end);
-    $feature1->strand($strand);
-    $feature1->score($score);
-    $feature1->percent_id($percent);
-    $feature1->p_value($pvalue);
-    $feature1->seqname($name);
-    $feature1->phase($phase);
-    $feature1->analysis($analysis);
-    #print STDERR "checking feature1 ".$feature1->gffstring."\n";
-    $feature1->validate;
+  my $strand     = $features->[0]->strand;
+  my @f;
   
-    my $feature2 = new Bio::EnsEMBL::SeqFeature();
-    
-    $feature2->start($f2start);
-    $feature2->end  ($f2end);
-    $feature2->strand($hstrand);
-    $feature2->score($score);
-    $feature2->seqname($hname);
-    $feature2->percent_id($percent);
-    $feature2->p_value($pvalue);
-    $feature2->phase($phase);
-    $feature2->analysis($analysis);
-    $feature2->validate;
-    $self->feature1($feature1);
-    $self->feature2($feature2);
-    $self->cigar_string($string);
-    
+  #
+  # Sort the features on their start position
+  # Ascending order on positive strand, descending on negative strand
+  #
+  if( $strand == 1 ) {
+    @f = sort {$a->start <=> $b->start} @$features;
+  } else {
+    @f = sort { $b->start <=> $a->start} @$features;
   }
+    
+  my $hstrand     = $f[0]->hstrand;
+  my $name        = $f[0]->seqname;
+  my $hname       = $f[0]->hseqname;
+  my $score       = $f[0]->score;
+  my $percent     = $f[0]->percent_id;
+  my $pvalue      = $f[0]->p_value;
+  my $analysis    = $f[0]->analysis;
+  my $phase       = $f[0]->phase;
+    
+  # implicit strand 1 for peptide sequences
+  ( defined $strand ) || ( $strand = 1 );
+  ( defined $hstrand ) || ( $hstrand = 1 );
+  my $ori = $strand * $hstrand;
+    
+    
+  if (scalar(@f) == 0) {
+    $self->throw("No features in the array to parse");
+  }
+
+  my $prev1; # where last feature q part ended
+  my $prev2; # where last feature s part ended
+    
+  my $string;
+
+  #determine start of the alignment on source sequence    
+  my $f1start;
+  my $f1end;
+  if ( $strand == 1 ) {
+    $f1start = $f[0]->start;
+    $f1end   = $f[$#f]->end;
+  } else {
+    $f1end   = $f[0]->end;
+    $f1start = $f[$#f]->start;
+  }
+
+  #determine start of alignment on hit sequence    
+  my $f2start;
+  my $f2end;
+  if ( $hstrand == 1 ) {
+    $f2start = $f[0]->hstart;
+    $f2end   = $f[$#f]->hend;
+  } else {
+    $f2end = $f[0]->hend;
+    $f2start = $f[$#f]->hstart;
+  }
+    
+  #
+  # Loop through each portion of alignment and construct cigar string
+  #
+  foreach my $f (@f) {
+    #
+    # Sanity checks
+    #
+    if (!$f->isa("Bio::EnsEMBL::FeaturePair")) {
+      $self->throw("Array element [$f] is not a Bio::EnsEMBL::FeaturePair");
+    }
+    if( defined $f->hstrand() ) {
+      if ($f->hstrand != $hstrand) {
+	$self->throw("Inconsistent hstrands in feature array");
+      }
+    }
+    if( defined $f->strand() ) {
+      if ($f->strand != $strand) {
+	$self->throw("Inconsistent strands in feature array");
+      }
+    }
+    if ($name ne $f->seqname) {
+      $self->throw("Inconsistent names in feature array [$name - " . 
+		   $f->seqname . "]");
+    }
+    if ($hname ne $f->hseqname) {
+      $self->throw("Inconsistent names in feature array [$hname - " . 
+		   $f->hseqname . "]");
+    }
+    if ($score ne $f->score) {
+      $self->throw("Inconsisent scores in feature array [$score - " . 
+		   $f->score . "]");
+    }
+    if ($percent ne $f->percent_id) {
+      $self->throw("Inconsistent pids in feature array [$percent - " . 
+		   $f->percent_id . "]");
+    }
+    
+    my $start1 = $f->start;      #source sequence alignment start
+    my $start2 = $f->hstart();   #hit sequence alignment start
+    
+    #
+    # More sanity checking
+    #
+    if (defined($prev1)) {
+      if ( $strand == 1 ) {
+	if ($f->start < $prev1) {
+	  $self->throw("Inconsistent coordinates feature is forward strand " .
+		       "hstart in current feature should be greater than " .
+		       "hend in previous feature " . $f->start . " < " .
+		       $prev1."\n");
+	}
+      } else {
+	if ($f->end > $prev1) {
+	  $self->throw("Inconsistent coordinates in feature array feature " .
+		       "is reverse strand hend should be less than previous " .
+		       "hstart " . $f->end . " > $prev1");
+	}
+      }
+    }
+
+    my $length = ($f->end - $f->start + 1); #length of source seq alignment
+    my $hlength = ($f->hend - $f->hstart + 1); #length of hit seq alignment
+
+    # using multiplication to avoid rounding errors, hence the
+    # switch from query to hit for the ratios
+    
+    #
+    # Yet more sanity checking
+    #
+    if($query_unit > $hit_unit){
+      # I am going to make the assumption here that this situation will 
+      # only occur with DnaPepAlignFeatures, this may not be true
+      if( int($length/$query_unit)!= $hlength * $hit_unit) {
+	$self->throw( "Feature lengths not comparable Lengths:" .$length . 
+		      " " . $hlength . " Ratios:" . $query_unit . " " . 
+		      $hit_unit );
+      }
+    } else{
+      if( $length * $hit_unit != $hlength * $query_unit ) {
+	$self->throw( "Feature lengths not comparable Lengths:" . $length . 
+		      " " . $hlength . " Ratios:" . $query_unit . " " . 
+		      $hit_unit );
+      }
+    }
+
+    my $hlengthfactor = ($query_unit/$hit_unit);
+    # if( $query_unit == 1 && $hit_unit == 3 ) {
+    #	$hlengthfactor = (1/3);
+    #     }
+    #     if( $query_unit == 3 && $hit_unit == 1 ) {
+    #	$hlengthfactor = 3;
+    #      }
+      
+
+    #
+    # Check to see if there is an I type (insertion) gap:
+    #   If there is a space between the end of the last source sequence 
+    #   alignment and the start of this one, then this is an insertion
+    #
+
+    my $insertion_flag = 0;
+    if( $strand == 1 ) {
+      if( ( defined $prev1 ) && ( $f->start > $prev1 + 1  )) {
+
+	#there is an insertion
+	$insertion_flag = 1;
+	my $gap = $f->start - $prev1 - 1;
+	if( $gap == 1 ) {
+	  $gap = ""; # no need for a number if gap length is 1
+	}
+	$string .= "$gap"."I";
+      }
+
+      #shift our position in the source seq alignment
+      $prev1 = $f->end();
+    } else {
+      if(( defined $prev1 ) && ($f->end + 1 < $prev1 )) {
+
+	#there is an insertion
+	$insertion_flag = 1;
+	my $gap = $prev1 - $f->end() - 1;
+	if( $gap == 1 ) {
+	  $gap = ""; # no need for a number if gap length is 1
+	}
+	$string .= "$gap"."I";
+      }
+
+      #shift our position in the source seq alignment
+      $prev1 = $f->start();
+    }
+      
+    #
+    # Check to see if there is a D type (deletion) gap
+    #   There is a deletion gap if there is a space between the end of the
+    #   last portion of the hit sequence alignment and this one
+    #
+    if( $hstrand == 1 ) {
+      if((  defined $prev2 ) && ( $f->hstart() > $prev2 + 1 )) {
+	
+	#there is a deletion
+	my $gap = $f->hstart - $prev2 - 1;
+	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+	
+	if( $gap2 == 1 ) {
+	  $gap2 = "";  # no need for a number if gap length is 1
+	}
+	$string .= "$gap2"."D";
+
+	#sanity check,  Should not be an insertion and deletion
+	if($insertion_flag) {
+	  $self->throw("Should not be an deletion and insertion on the " .
+		       "same alignment region. cigar_line=$string\n");
+	} 
+      } 
+      #shift our position in the hit seq alignment
+      $prev2 = $f->hend();
+
+     } else {
+      if( ( defined $prev2 ) && ( $f->hend() + 1 < $prev2 )) {
+
+	#there is a deletion
+	my $gap = $prev2 - $f->hend - 1;
+	my $gap2 = int( $gap * $hlengthfactor + 0.05 );
+	
+	if( $gap2 == 1 ) {
+	  $gap2 = "";  # no need for a number if gap length is 1
+	}
+	$string .= "$gap2"."D";
+
+	#sanity check,  Should not be an insertion and deletion
+	if($insertion_flag) {
+	  $self->throw("Should not be an deletion and insertion on the " .
+		       "same alignment region. prev2 = $prev2; f->hend() = " .
+		       $f->hend() . "; cigar_line = $string;\n");
+	} 
+      }
+      #shift our position in the hit seq alignment
+      $prev2 = $f->hstart();
+    }
+      
+    my $matchlength = $f->end() - $f->start() + 1;
+    if( $matchlength == 1 ) {
+      $matchlength = "";
+    }
+    $string .= $matchlength."M";
+  }
+
+  my $feature1 = new Bio::EnsEMBL::SeqFeature();
+  
+  $feature1->start($f1start);
+  $feature1->end  ($f1end);
+  $feature1->strand($strand);
+  $feature1->score($score);
+  $feature1->percent_id($percent);
+  $feature1->p_value($pvalue);
+  $feature1->seqname($name);
+  $feature1->phase($phase);
+  $feature1->analysis($analysis);
+  #print STDERR "checking feature1 ".$feature1->gffstring."\n";
+  $feature1->validate;
+  
+  my $feature2 = new Bio::EnsEMBL::SeqFeature();
+  
+  $feature2->start($f2start);
+  $feature2->end  ($f2end);
+  $feature2->strand($hstrand);
+  $feature2->score($score);
+  $feature2->seqname($hname);
+  $feature2->percent_id($percent);
+  $feature2->p_value($pvalue);
+  $feature2->phase($phase);
+  $feature2->analysis($analysis);
+  $feature2->validate;
+  $self->feature1($feature1);
+  $self->feature2($feature2);
+  $self->cigar_string($string);
 }
 
 
