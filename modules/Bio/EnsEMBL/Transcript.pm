@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Transcript
 #
@@ -295,8 +294,6 @@ sub translateable_exons{
        
        return $retexon;
    }
-
-   print "Start exon id ".$self->translation->start_exon_id()."\n";
 
    while( my $exon = shift @exons ) {
        if( $exon->id eq $self->translation->start_exon_id() ) {
