@@ -118,7 +118,6 @@ sub fetch_all_by_PredictionTranscript {
 
   # use 'keep_all' option to keep exons that are off end of slice
 
-
   my $tslice = $transcript->slice();
   my $slice;
 
@@ -126,16 +125,13 @@ sub fetch_all_by_PredictionTranscript {
     throw("Transcript must have attached slice to retrieve exons.");
   }
 
-  if($transcript->start < 1 || $transcript->end > $tslice->length()) {
-    $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
-  } else {
-    $slice = $tslice;
-  }
+  # use a small slice the same size as the prediction transcript
+  $slice = $self->db->get_SliceAdaptor->fetch_by_Feature($transcript);
 
   my $exons = $self->fetch_all_by_Slice_constraint($slice, $constraint);
 
   # remap exon coordinates if necessary
-  if($slice != $tslice) {
+  if($slice->name() ne $tslice->name()) {
     my @out;
     foreach my $ex (@$exons) {
       push @out, $ex->transfer($tslice);
