@@ -1,4 +1,3 @@
-
 #
 # BioPerl module for Bio::EnsEMBL::TimDB::Contig
 #
@@ -33,22 +32,18 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
-
 # Let the code begin...
-
-
 package Bio::EnsEMBL::TimDB::Contig;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::ContigI;
 
-
 # Object preamble - inheriets from Bio::Root::Object
-
 use Bio::Root::Object;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
@@ -58,13 +53,13 @@ use Bio::Root::Object;
 
 sub _initialize {
   my($self,@args) = @_;
-
+  
   my $make = $self->SUPER::_initialize;
 
   $self->{'_sf_array'} = [];
   $self->{'_gene_array'} = [];
  
-# set stuff in self from @args
+  # set stuff in self from @args
   return $make; # success - we hope!
 }
 
@@ -102,11 +97,11 @@ sub get_all_SeqFeatures{
 =cut
 
 sub get_all_Genes{
-   my ($self) = @_;
-   
+    my ($self) = @_;
    $self->throw("Tim has not reimplemented this function");
-   return @{$self->{'_gene_array'}};
+    return @{$self->{'_gene_array'}};
 }
+
 
 =head2 add_SeqFeature
 
@@ -117,19 +112,13 @@ sub get_all_Genes{
  Returns : 
  Args    :
 
-
 =cut
 
 sub add_SeqFeature{
    my ($self,$sf) = @_;
-
-   $self->throw("Tim has not reimplemented this function");
-   if( $sf->isa("Bio::SeqFeatureI") ) {
-       $self->throw("$sf is a not a SeqFeatureI type");
-   }
-
-   push(@{$self->{'_sf_array'}},$sf);
+   $self->throw("SeqFeatures cannot be added in TimDB");
 }
+
 
 =head2 add_Gene
 
@@ -140,102 +129,92 @@ sub add_SeqFeature{
  Returns : 
  Args    :
 
-
 =cut
 
 sub add_Gene{
    my ($self,$gene) = @_;
-
-   $self->throw("Tim has not reimplemented this function");
-   if( !$gene->isa("Bio::EnsEMBL::Gene") ) {
-       $self->throw("$gene is a not a Bio::EnsEMBL::Gene type");
-   }
-
-   push(@{$self->{'_gene_array'}},$gene);
+   $self->throw("Genes cannot be added to TimDB");
 }
+
 
 =head2 offset
 
  Title   : offset
- Usage   : $obj->offset($newval)
+ Usage   : $self->offset($newval)
  Function: 
  Returns : value of offset
  Args    : newvalue (optional)
 
-
 =cut
 
 sub offset{
-   my $obj = shift;
+    my $self = shift;
 
-   $self->throw("Tim has not reimplemented this function");
-
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'offset'} = $value;
-   }
-    return $obj->{'offset'};
-
+    $self->throw("Tim has not reimplemented this function");
+    
+    if( @_ ) {
+	my $value = shift;
+	$self->{'offset'} = $value;
+    }
+    return $self->{'offset'};
 }
+
 
 =head2 orientation
 
  Title   : orientation
- Usage   : $obj->orientation($newval)
+ Usage   : $self->orientation($newval)
  Function: 
  Returns : value of orientation
  Args    : newvalue (optional)
 
-
 =cut
 
 sub orientation{
-   my $obj = shift;
-
-   $self->throw("Tim has not reimplemented this function");
-
-   if( @_ ) {
-       my $value = shift;
-       $obj->{'orientation'} = $value;
-   }
-   return $obj->{'orientation'};
-   
+    my $self = shift;
+    
+    $self->throw("Tim has not reimplemented this function");
+    
+    if( @_ ) {
+	my $value = shift;
+       $self->{'orientation'} = $value;
+    }
+    return $self->{'orientation'};
 }
-
 
 
 =head2 seq
 
  Title   : seq
- Usage   : $obj->seq($newval)
+ Usage   : $self->seq($newval)
  Function: 
  Returns : value of seq
  Args    : newvalue (optional)
 
-
 =cut
 
 sub seq{
-    my $obj = shift;
-
-   $self->throw("Tim has not reimplemented this function");
-
+    my $self = shift;
+    
+    $self->throw("Tim has not reimplemented this function");
+    
     if( @_ ) {
 	my $value = shift;
 	if(! $value->isa("Bio::Seq") ) {
-	    $obj->throw("$value is not a Bio::Seq!");
+	    $self->throw("$value is not a Bio::Seq!");
 	}			
-
-	$obj->{'seq'} = $value;
+	
+	$self->{'seq'} = $value;
     }
-    return $obj->{'seq'};
+    return $self->{'seq'};
     
 }
+
 
 =head2 id
 
  Title   : id
- Usage   : $obj->id($newval)
+ Usage   : $self->id($newval)
  Function: 
  Returns : value of id
  Args    : newvalue (optional)
@@ -244,16 +223,12 @@ sub seq{
 =cut
 
 sub id{
-   my $obj = shift;
-
-   $self->throw("Tim has not reimplemented this function");
-
+   my $self = shift;
    if( @_ ) {
        my $value = shift;
-       $obj->{'id'} = $value;
+       $self->{'id'} = $value;
    }
-   return $obj->{'id'};
-   
+   return $self->{'id'};
 }
 
 1;

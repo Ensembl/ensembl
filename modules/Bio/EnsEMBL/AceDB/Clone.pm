@@ -34,7 +34,8 @@ Describe contact details here
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object
+methods. Internal methods are usually preceded with a _
 
 =cut
 
@@ -61,18 +62,19 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
+  # set stuff in self from @args
   my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
 					  ID
 					  )],@args);
 
   $id || $self->throw("Cannot make contig db object without id");
   $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+  $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || 
+      $self->throw("Cannot make contig db object with a $dbobj object");
 
   $self->id($id);
   $self->_dbobj($dbobj);
 
-# set stuff in self from @args
   return $make; # success - we hope!
 }
 

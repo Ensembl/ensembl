@@ -75,7 +75,7 @@ sub _initialize {
   }
   $self->{'_clone_dbm'}=\%unfin_clone;
 
-  # define a few other important file handles
+  # define a few other important files
   my $exon_file="$HUMPUB_ROOT/blast/confirmed_exon";
   my $transcript_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.transcript.lis";
   my $gene_file="$HUMPUB_ROOT/th/unfinished_ana/unfinished_ana.gene.lis";
@@ -88,9 +88,25 @@ sub _initialize {
   if(!-e $gene_file){
       $self->throw("Could not access gene file");
   }
+  # only exon file needs to be saved as it contains more information than in following mappings
   $self->{'_exon_file'}=$exon_file;
-  $self->{'_transcript_file'}=$transcript_file;
-  $self->{'_gene_file'}=$gene_file;
+
+  # build mappings from these flat files
+  # FIXME - this should be moved to the pipeline so that this information
+  # is stored in DBM files.
+  # (better to do it here once than each time we need the information!)
+  my %contig2exon;
+  my %exons;
+  my %exon2transcript;
+  my %transcriptExons;
+  my %transcript2gene;
+  my %geneTranscripts;
+  $self->{'_contig2exon'}=\%contig2exon;
+  $self->{'_exons'}=\%exons;
+  $self->{'_exon2transcript'}=\%exon2transcript;
+  $self->{'_transcriptExons'}=\%transcriptExons;
+  $self->{'_transcript2gene'}=\%transcript2gene;
+  $self->{'_geneTranscripts'}=\%geneTranscripts;
 
   return $make; # success - we hope!
 }
@@ -131,7 +147,8 @@ sub get_Gene{
 sub get_Clone{
    my ($self,$id) = @_;
 
-   # check to see if clone exists
+   # check to see if clone exists, and extract relevant items from dbm record
+   # cgp is the clone category (SU, SF, EU, EF)
    my($line,$cdate,$type,$cgp,$acc,$sv);
    if($line=$self->{'_clone_dbm'}->{$id}){
        ($cdate,$type,$cgp,$acc,$sv)=split(/,/,$line);
@@ -184,14 +201,7 @@ sub get_Contig{
 
 sub write_Gene{
    my ($self,$gene) = @_;
-
    $self->throw("Cannot write to a TimDB");
-
-   if( !$gene->isa("Bio::EnsEMBL::Gene") ) {
-       $self->throw("$gene is not an ensembl gene. Can't store!");
-   }
-
-   $self->{'_gene_hash'}->{$gene->id()} = $gene; 
 }
 
 =head2 write_Contig
@@ -208,14 +218,7 @@ sub write_Gene{
 
 sub write_Contig {
    my ($self,$contig) = @_;
-
    $self->throw("Cannot write to a TimDB");
-
-   if( !$contig->isa("Bio::EnsEMBL::DB::ContigI") ) {
-       $self->throw("$contig is not an ensembl contig. Can't store!");
-   }
-
-   $self->{'_contig_hash'}->{$contig->id()} = $contig; 
 }
 
 # simple internal methods (hardwired things that would have been done by AUTOLOAD)
