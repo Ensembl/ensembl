@@ -161,7 +161,7 @@ sub get_Gene{
 
    while( my $rowhash = $sth1->fetchrow_hashref) {
        # get a contig object, which checks that this exists. 
-       print("'Contig is " . $rowhash->{contig} . "\n");
+       print("Contig is " . $rowhash->{contig} . "\n");
        my $contig = $self->get_Contig($rowhash->{'contig'});
        # if there is no exception then it is there. Get rid of it
        $contig = 0;
@@ -176,8 +176,8 @@ sub get_Gene{
 
    while( my $rowhash = $sth->fetchrow_hashref) {
 
-       print("Transcript   " . $rowhash->{id} . "\n");
-       print("Translation  " . $rowhash->{translation} . "\n");
+#       print("Transcript   " . $rowhash->{id} . "\n");
+#       print("Translation  " . $rowhash->{translation} . "\n");
 
        my $trans       = $self->get_Transcript($rowhash->{'id'});
        my $translation = $self->get_Translation($rowhash->{'translation'});
