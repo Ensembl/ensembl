@@ -44,13 +44,13 @@ if ($#ARGV != 2) {
 }
 
 my $db = $ARGV[0];
-my $v1 = $ARGV[1]; my $v1_dir = sprintf "%s/%s_%s", $src_prefix, $db, $v1;
-my $v2 = $ARGV[2]; my $v2_dir = sprintf "%s/%s_%s", $src_prefix, $db, $v2;
+my $v1 = $ARGV[1]; my $v1_dir = sprintf "%s/%s_%s", $dst_prefix, $db, $v1;
+my $v2 = $ARGV[2]; my $v2_dir = sprintf "%s/%s_%s", $dst_prefix, $db, $v2;
 
-my $delta_dir = sprintf "%s/%s_%s_delta_%s", $dst_prefix, $db, $v1, $v2;
+my $delta_dir = sprintf "%s/%s_%s_delta_%s", $src_prefix, $db, $v1, $v2;
 
-die $! if (! -d $v1_dir);
-die $! if (! -d $delta_dir);
+die "$v1_dir: $!" if (! -d $v1_dir);
+die "$delta_dir: $!" if (! -d $delta_dir);
 
 while (-d $v2_dir) {
     $v2_dir = sprintf "%s.%04d", $v2_dir, int(rand(10000));

@@ -75,15 +75,15 @@ fi
 
 if [ ! -f deltas/${d}_apply.txt ]; then
   # Apply the delta as a test
-  /usr/bin/time perl -w ./apply.pl -c ./xdelta.osf -s deltas -s databases \\
+  /usr/bin/time perl -w ./apply.pl -c ./xdelta.osf -s deltas -d databases \\
     $db $v0 $v1 2>&1 | \\
      tee deltas/${d}_apply.txt
 fi
 
-  # Remove older revision and new revision built by apply.pl
-  rm -rf databases/$db0
-  rm -rf databases/${db1}.????
-fi
+# Remove older revision and new revision built by apply.pl
+rm -rf databases/$db0
+rm -rf databases/${db1}.????
+
 EOT
     }
     if (defined $pair[1]) {
@@ -93,6 +93,7 @@ if [ -d databases/$db1 ]; then
   # Remove newer (latest) revision
   rm -rf databases/$db1
 fi
+
 EOT
     }
 }
