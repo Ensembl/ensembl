@@ -137,7 +137,9 @@ sub parse_file {
     $self->throw("No filehandle supplied") unless $fh;
     
     my %valid_gtf_feature = map {$_, 1} qw{ exon cds start_codon stop_codon };
-    my( %gtf, %gene_type );
+    my( %gtf,           # Big hash that stores an entire parsed GTF file.
+        %gene_type,     # Just maps gene names to types.
+        );
     my $seq_name_parser = $self->seq_name_parser;
     
   GTF_LINE: while (<$fh>) {
@@ -166,7 +168,7 @@ sub parse_file {
         
         # It is isn't a legal GTF file without a group field
         unless ($group_field) {
-            warn "Skipping unparseable line : '$gtf_line'\n";
+            warn("Skipping unparseable line : '$gtf_line'\n");
             next;
         }
 
@@ -309,8 +311,8 @@ sub _make_transcript {
     $transcript->modified($time);
 
     my @exon_num = sort {$a <=> $b} keys %$trans_gtf;
-    my $translation_start = []; # For recording the exon number and sequence
-    my $translation_end   = []; # position of the start and end coordinates.
+    my $translation_start = []; # For recording the exon number and sequence position
+    my $translation_end   = []; # of the start and end of the translation.
     foreach my $n (@exon_num) {
 
         # Try to make a new exon
@@ -421,10 +423,10 @@ sub _make_exon {
     
     if ($exon_gtf->{'stop_codon'}) {
         if ($strand == 1) {
-            $t_end = $exon_gtf->{'stop_codon'}[2];
+            $t_end = $exon_gtf->{'stop_codon'}[1] - 1;
         } else {
             # Strand is -1
-            $t_end = $exon_gtf->{'stop_codon'}[1];
+            $t_end = $exon_gtf->{'stop_codon'}[2] + 1;
         }
     }
     
@@ -676,9 +678,9 @@ sub dump_genes {
                     $seen_end = 1;
                     my( $x, $y );
                     if ($strand eq '+') {
-                        ($x, $y) = ($translation_end - 2, $translation_end);
+                        ($x, $y) = ($translation_end + 1, $translation_end + 3);
                     } else {
-                        ($x, $y) = ($translation_end, $translation_end + 2);
+                        ($x, $y) = ($translation_end - 3, $translation_end - 1);
                     }
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'stop_codon',
