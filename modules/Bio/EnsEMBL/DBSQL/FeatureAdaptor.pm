@@ -90,7 +90,7 @@ sub delete_by_RawContig {
  Title   : delete_by_RawContig_id
  Usage   : $fa->delete_by_RawContig($contig)
  Function: deletes features and repeatfeatures by Bio::EnsEMBL::DB::RawContigI
- Example : $fa->delete_by_RawContig($RawContig_obj)
+ Example : $fa->delete_by_RawContig($internal_id)
  Returns : nothing
  Args    : Bio::EnsEMBL::DB::RawContigI
 
@@ -99,10 +99,8 @@ sub delete_by_RawContig {
 
 sub delete_by_RawContig_internal_id {
     my ($self,$contig_internal_id) = @_;
-#    $contig_internal_id || $self->throw("I need contig id or Bio::EnsEMBL::DB::ContigI object");
-    if (ref( $contig_internal_id) && $contig_internal_id->isa("Bio::EnsEMBL::DB::ContigI")) {
-	return $self->delete_by_RawContig($contig_internal_id);
-    }
+    $contig_internal_id || $self->throw("I need contig internal id");
+    $contig_internal_id =~ /^\d+$/ or $self->warn("[$contig_internal_id] does not look like internal id.");
     my $sth = $self->db->prepare("select fs.fset " .
 			     "from   fset_feature as fs, " .
 			     "       feature as f " .
@@ -271,8 +269,8 @@ sub _store_FeaturePair {
 	 $homol->start,
 	 $homol->end,
 	 $homol->seqname,
-	 ((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL'),
 	 ((defined $feature->p_value)      ? &exponent($feature->p_value)     : 'NULL'),
+	 ((defined $feature->percent_id)   ? $feature->percent_id  : 'NULL'),
 	 ((defined $feature->phase)        ? $feature->phase       : 'NULL'),
 	 ((defined $feature->end_phase)    ? $feature->end_phase   : 'NULL')
     );
@@ -333,8 +331,8 @@ sub _store_single_feature
 sub _store {
     my $self = shift;
     my $sth = $self->db->prepare("insert into feature (id,contig,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-    #print STDERR join(",", @_), "\n";
-    $sth->execute(@_);   
+#    print STDERR join(", ", @_), "\n";
+    $sth->execute(@_);
     return $sth->{mysql_insertid};
 }
 
@@ -377,7 +375,7 @@ sub _store_PredictionFeature {
 		 -1,
 		 -1,
 		 ($sub->primary_tag || "__NONE__"),
-		 ((defined $sub->p_value)     ?   &exponent($sub->p_value)       : 'NULL'),
+		 ((defined $sub->p_value)     ?   &exponent($sub->p_value) : 'NULL'),
                  ((defined $sub->percent_id)  ?   $sub->percent_id    : 'NULL'),
                  ((defined $sub->phase)       ?   $sub->phase         : 'NULL'),
                  ((defined $sub->end_phase)   ?   $sub->end_phase     : 'NULL')
@@ -480,16 +478,22 @@ sub fetch_by_hid {
 			"f.name, "      .
 			"f.hstart, "    .
 			"f.hend, "      .
-			"f.hid "       .
+			"f.hid, "       .
+			"f.evalue, "    .
+			"f.perc_id, "   .
+			"f.phase, "     .
+			"f.end_phase "   .
 	        "from   feature as f,contig as c " .
 		"where  f.hid = '$arg' and " . 
 		        "c.internal_id = f.contig";
 
     my $sth   = $self->db->prepare($query);
     my $res   = $sth->execute;
-    my ($contig,$start,$end,$score,$strand,$analysisid,$name,$hstart,$hend,$hid);
+    my ($contig,$start,$end,$score,$strand,$analysisid,$name,$hstart,$hend,$hid,
+	$evalue,$perc_id,$phase,$end_phase);
     $sth->bind_columns(undef,\$contig,\$start,\$end,\$score,\$strand,\$analysisid,
-		       \$name,\$hstart,\$hend,\$hid);
+		       \$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,
+		       \$end_phase);
     
     my @features;
     my $analysisadaptor = $self->db->get_AnalysisAdaptor;
@@ -498,7 +502,8 @@ sub fetch_by_hid {
 	$name = defined($name) ? $name : 'no_source';
 	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 	$out->set_all_fields($start,$end,$strand,$score,$name,'similarity',$contig,
-			     $hstart,$hend,1,$score,$name,'similarity',$hid);
+			     $hstart,$hend,1,$score,$name,'similarity',$hid,$evalue,
+			     $perc_id,$phase,$end_phase);
 	$out->analysis($analysisadaptor->fetch_by_dbID($analysisid));
 	$out->validate;
 	push(@features,$out);
