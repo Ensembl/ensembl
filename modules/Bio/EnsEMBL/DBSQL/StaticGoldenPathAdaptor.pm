@@ -92,15 +92,16 @@ sub new {
 
  Title   : fetch_RawContigs_by_fpc_name
  Usage   :
- Function:
+ Function: find all contigs belonging to the given FPC and lying on the
+           Golden Path
  Example :
- Returns : 
- Args    :
+ Returns : returns an list of all rawContigs 
+ Args    : the FPC id.
 
 
 =cut
 
-sub fetch_RawContigs_by_fpc_name{
+sub fetch_RawContigs_by_fpc_name {
    my ($self,$fpc) = @_;
    
    my $type = $self->dbobj->static_golden_path_type();
@@ -125,10 +126,11 @@ sub fetch_RawContigs_by_fpc_name{
 
  Title   : fetch_RawContigs_by_chr_name
  Usage   :
- Function:
+ Function: get all the RawContigs on given chromosome belonging to the
+           Golden Path
  Example :
- Returns : 
- Args    :
+ Returns : a list of RawContigs
+ Args    : the chromosome name
 
 
 =cut
@@ -159,15 +161,16 @@ sub fetch_RawContigs_by_chr_name{
 
  Title   : fetch_RawContigs_by_chr_start_end
  Usage   :
- Function:
+ Function: return all RawContigs on given chromosome between start and
+           end, on current Golden Path
  Example :
- Returns : 
- Args    :
+ Returns : list of RawContigs
+ Args    : chromosome, start, end (in chromosome coordinates)
 
 
 =cut
 
-sub fetch_RawContigs_by_chr_start_end{
+sub fetch_RawContigs_by_chr_start_end {
    my ($self,$chr,$start,$end) = @_;
 
 
@@ -193,15 +196,16 @@ sub fetch_RawContigs_by_chr_start_end{
 
  Title   : fetch_VirtualContig_by_chr_start_end
  Usage   :
- Function:
+ Function: create a Virtual Contig based on a segment of a chromosome and
+           start/end
  Example :
- Returns : 
- Args    :
+ Returns : A VirtualContig
+ Args    : chromosome, start, end (in Chromosome coordinates)
 
 
 =cut
 
-sub fetch_VirtualContig_by_chr_start_end{
+sub fetch_VirtualContig_by_chr_start_end {
    my ($self,$chr,$start,$end) = @_;
 
    if( !defined $end ) {
@@ -226,15 +230,16 @@ sub fetch_VirtualContig_by_chr_start_end{
 
  Title   : fetch_VirtualContig_by_clone
  Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012',40000);
- Function:
+ Function: create a VirtualContig based on clone, and of a
+           given length. The thing is centered around the start of the clone.
  Example :
  Returns : 
- Args    :
+ Args    : clone name, size
 
 
 =cut
 
-sub fetch_VirtualContig_by_clone{
+sub fetch_VirtualContig_by_clone {
    my ($self,$clone,$size) = @_;
 
    if( !defined $size ) {
@@ -264,15 +269,14 @@ sub fetch_VirtualContig_by_clone{
 
  Title   : fetch_VirtualContig_by_contig
  Usage   : $vc = $stadp->fetch_VirtualContig_by_clone('AC000012.00001',40000);
- Function:
+ Function: as fetch_VirtualContig_by_clone, but based on a RawContig. 
  Example :
  Returns : 
- Args    :
-
+ Args    : contigid (display_id, not internal one).
 
 =cut
 
-sub fetch_VirtualContig_by_contig{
+sub fetch_VirtualContig_by_contig {
    my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {
@@ -281,6 +285,8 @@ sub fetch_VirtualContig_by_contig{
 
    my $type = $self->dbobj->static_golden_path_type();
 
+
+   # PL: could use shortcut, since Virtual<->Raw is a one-to-one thing?
    my $sth = $self->dbobj->prepare("select c.id,st.chr_start,st.chr_name from static_golden_path st,contig c where c.id = '$contigid' AND c.internal_id = st.raw_id AND st.type = '$type'");
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
@@ -298,10 +304,10 @@ sub fetch_VirtualContig_by_contig{
 
  Title   : fetch_VirtualContig_by_fpc_name
  Usage   :
- Function:
+ Function: create a VirtualContig representing a complete FPC contig
  Example :
  Returns : 
- Args    :
+ Args    : the FPC contig id.
 
 
 =cut
@@ -316,6 +322,7 @@ sub fetch_VirtualContig_by_fpc_name{
    return $vc;
 }
 
+# depracated
 =head2 fetch_VirtualContig_by_fpc_name_slice
 
  Title   : fetch_VirtualContig_by_fpc_name_slice
@@ -328,9 +335,11 @@ sub fetch_VirtualContig_by_fpc_name{
 
 =cut
 
-sub fetch_VirtualContig_by_fpc_name_slice{
+sub fetch_VirtualContig_by_fpc_name_slice {
    my ($self,$name,$start,$end) = @_;
-
+   
+   $self->warn("Usage of fetch_VirtualContig_by_fpc_name_slice is depracated. Please use nothing instead :-)");
+   
    if( !defined $end ) {
        $self->throw("must have start end to fetch by slice");
    }
@@ -356,7 +365,7 @@ sub fetch_VirtualContig_by_fpc_name_slice{
 =head2 fetch_VirtualContig_list_sized
 
  Title   : fetch_VirtualContig_list_sized
- Usage   : @vclist = $stadaptor->fetch_VirtualContig_list_sized('ctg123',2000000,100000,4000000,100)
+ Usage   : @vclist = $stadaptor->fetch_VirtualContig_list_sized('ctg123',2000000,50000,4000000,100)
  Function: returns a list of virtual contigs from a FPC contig, split at gaps. The
            splitting happens as a greedy process:
               read as many contigs in until the first lenght threshold hits
@@ -370,7 +379,7 @@ sub fetch_VirtualContig_by_fpc_name_slice{
 
 =cut
 
-sub fetch_VirtualContig_list_sized{
+sub fetch_VirtualContig_list_sized {
    my ($self,$name,$length1,$gap1,$length2,$gap2) = @_;
 
    if( !defined $gap2 ) {
@@ -421,10 +430,10 @@ sub fetch_VirtualContig_list_sized{
 
  Title   : fetch_VirtualContig_by_chr_name
  Usage   :
- Function:
+ Function: create a VirtualContig representing the complete given chromosome
  Example :
  Returns : 
- Args    :
+ Args    : chromosome name
 
 
 =cut
@@ -451,7 +460,7 @@ sub fetch_VirtualContig_by_chr_name{
 
 =cut
 
-sub get_all_fpc_ids{
+sub get_all_fpc_ids {
    my ($self,@args) = @_;
 
    my $type = $self->dbobj->static_golden_path_type();
@@ -476,7 +485,7 @@ sub get_all_fpc_ids{
  Usage   : $obj->dbobj($newval)
  Function: 
  Example : 
- Returns : value of dbobj
+ Returns : value of dbobj (i.e., the database handle)
  Args    : newvalue (optional)
 
 
