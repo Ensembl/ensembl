@@ -58,7 +58,7 @@ sub run {
       }
     }
     if($xref){
-       XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$mim_number,$desc,'',$source_id,$species_id);  
+       XrefParser::BaseParser->add_to_xrefs($xref,$mim_number,'',$desc,$gene_names,'',$source_id,$species_id);  
       $count++;
     }
     else{
