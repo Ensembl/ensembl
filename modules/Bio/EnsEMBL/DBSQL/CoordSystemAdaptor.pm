@@ -17,8 +17,7 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   # Get all coord systems in the database:
   #
   foreach my $cs (@{$csa->fetch_all()}) {
-    my ($id, $name, $version) = @$cs;
-    print "$name $version\n";
+    print $cs->name, ' ',  $cs->version, "\n";
   }
 
   #
@@ -26,14 +25,14 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   #
 
   #use the default version of coord_system 'chromosome' (e.g. NCBI33):
-  my ($id, $name, $version) = $csa->fetch_by_name('chromosome');
+  $cs = $csa->fetch_by_name('chromosome');
 
   #get an explicit version of coord_system 'chromosome':
-  my ($id, $name, $version) = $csa->fetch_by_name('chromsome', 'NCBI34');
+  $cs = $csa->fetch_by_name('chromsome', 'NCBI34');
 
   #get all coord_systems of name 'chromosome':
-  foreach my $cs (@{$csa->fetch_all_by_name('chromosome')}) {
-    my ($id, $name, $version) = @$cs;
+  foreach $cs (@{$csa->fetch_all_by_name('chromosome')}) {
+     print $cs->name, ' ', $cs->version, "\n";
   }
 
   #
@@ -41,14 +40,14 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   #
 
   #Get the default top_level coord system:
-  my ($id, $name, $version) = $csa->fetch_top_level();
+  $cs = $csa->fetch_top_level();
 
   #Get a particular version of a top_level coord system:
-  my ($id, $name, $version) = $csa->fetch_top_level('NCBI34');
+  $cs = $csa->fetch_top_level('NCBI34');
 
   #Get all top level coord systems:
-  foreach my $cs (@{$csa->fetch_all_top_level()}) {
-    my ($id, $name, $version) = @$cs;
+  foreach $cs (@{$csa->fetch_all_top_level()}) {
+    print $cs->name(), ' ', $cs->version, "\n";
   }
 
   #
@@ -56,28 +55,25 @@ Bio::EnsEMBL::DBSQL::CoordSystemAdaptor
   #
 
   #Get the coord system which is used to store sequence:
-  my ($id, $name, $version) = $csa->fetch_sequence_level();
+  $cs = $csa->fetch_sequence_level();
 
   #
   # Fetching by id
   #
-  my ($id, $name, $version) = $csa->fetch_by_dbID(1);
+  $cs = $csa->fetch_by_dbID(1);
 
 
 =head1 DESCRIPTION
 
 This adaptor allows the querying of information from the coordinate system
-adaptor.  There is no CoordSystem object since this is really a source
-of meta information and the needed information can be easily
-(and more speedily) represented as (id,name,version) triplets.
+adaptor.
 
 Note that many coordinate systems do not have a concept of a version
-for the entire coordinate system (though they may have a per-sequence version).The 'chromosome' coordinate system usually has a version (i.e. the 
+for the entire coordinate system (though they may have a per-sequence version).
+The 'chromosome' coordinate system usually has a version (i.e. the
 assembly version) but the clonal coordinate system does not (despite having
 individual sequence versions).  In the case where a coordinate system does
-not have a version a triplet is still used for representation, but the version
-is an empty string ''.
-
+not have a version an empty string ('') is used instead.
 
 =head1 AUTHOR - Graham McVicker
 
@@ -99,11 +95,11 @@ package Bio::EnsEMBL::DBSQL::CoordSystemAdaptor;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::CoordSystem;
 
 use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
-
 
 
 =head2 new
@@ -124,7 +120,7 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my $self = $class->SUPER::new();
+  my $self = $class->SUPER::new(@_);
 
   #
   # Cache the entire contents of the coord_system table cross-referenced
@@ -151,17 +147,29 @@ sub new {
   $sth->bind_columns(\$dbID, \$name, \$version, \$attrib);
 
   while($sth->fetch()) {
-    my $cs = [$dbID, $name, $version || ''];
-    my @attribs = split(',',$attrib);
+    my $seq_lvl = 0;
+    my $top_lvl = 0;
+    foreach my $attrib (split(',', $attrib)) {
+      $self->{"_is_$attrib"}->{$dbID} = 1;
+      if($attrib eq 'sequence_level') {
+        $seq_lvl = 1;
+      } elsif($attrib eq 'top_level') {
+        $top_lvl = 1;
+      }
+    }
+
+    my $cs = Bio::EnsEMBL::CoordSystem->new
+      (-DBID           => $dbID,
+       -ADAPTOR        => $self,
+       -NAME           => $name,
+       -VERSION        => $version,
+       -TOP_LEVEL      => $top_lvl,
+       -SEQUENCE_LEVEL => $seq_lvl);
 
     $self->{'_dbID_cache'}->{$dbID} = $cs;
 
     $self->{'_name_cache'}->{lc($name)} ||= [];
     push @{$self->{'_name_cache'}->{lc($name)}}, $cs;
-
-    foreach my $attrib (@attribs) {
-      $self->{"_is_$attrib"}->{$dbID} = 1;
-    }
   }
 
 
@@ -181,11 +189,11 @@ sub new {
     my($asm_name, $asm_version) = split(/:/, $asm);
     my($cmp_name, $cmp_version) = split(/:/, $cmp);
 
-    my ($asm_id) = $self->fetch_by_name($asm_name,$asm_version);
-    my ($cmp_id) = $self->fetch_by_name($asm_name,$asm_version);
+    my $cmp_cs = $self->fetch_by_name($cmp_name,$cmp_version);
+    my $asm_cs = $self->fetch_by_name($asm_name,$asm_version);
 
-    $mappings{$asm_id} ||= {};
-    $mappings{$asm_id}->{$cmp_id} = 1;
+    $mappings{$asm_cs->dbID} ||= {};
+    $mappings{$asm_cs->dbID}->{$cmp_cs->dbID} = 1;
   }
 
   $self->{'_mapping_paths'} = \%mappings;
@@ -199,8 +207,7 @@ sub new {
 
   Arg [1]    : none
   Example    : foreach my $cs (@{$csa->fetch_all()}) {
-                 my ($id, $name, $version) = @$cs;
-                 print "$name $version\n";
+                 print $cs->name(), ' ', $cs->version(), "\n";
                }
   Description: Retrieves every coordinate system defined in the DB
                formatted as a listref of [dbID,name,version] triplets.
@@ -227,11 +234,10 @@ sub fetch_all {
   Arg [2]    : string $version (optional)
                The version of the coordinate system to retrieve.  If not
                specified the default version will be used.
-  Example    : ($id, $name, $ver) = $csa->fetch_by_name('clone');
-               ($id, $name, $ver) = $csa->fetch_by_name('chromosome',
-                                                        'NCBI33');
+  Example    : $coord_sys = $csa->fetch_by_name('clone');
+               $coord_sys = $csa->fetch_by_name('chromosome', 'NCBI33');
   Description: Retrieves a coordinate system by its name
-  Returntype : (id, name, version) triplet
+  Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : throw if the requested coordinate system does not exist
                throw if no name argument provided
                warning if no version provided and default does not exist
@@ -254,9 +260,9 @@ sub fetch_by_name {
 
   foreach my $cs (@coord_systems) {
     if($version) {
-      return @$cs if(lc($cs->[2]) eq $version);
-    } elsif($self->{'_is_default'}) {
-      return @$cs;
+      return $cs if(lc($cs->version()) eq $version);
+    } elsif($self->{'_is_default_version'}->{$cs->dbID()}) {
+      return $cs;
     }
   }
 
@@ -266,11 +272,11 @@ sub fetch_by_name {
 
   #didn't find a default, just take first one
   my $cs =  shift @coord_systems;
-  my $v = $cs->[2];
+  my $v = $cs->version();
   warning("No default version for coord_system [$name] exists. " .
       "Using version [$v] arbitrarily");
 
-  return @$cs;
+  return $cs;
 }
 
 
@@ -279,10 +285,10 @@ sub fetch_by_name {
   Arg [1]    : string $name
                The name of the coordinate system to retrieve
   Example    : foreach my $cs (@{$csa->fetch_all_by_name('chromosome')}){
-                 my ($id, $name, $version) = @$cs;
+                 print $cs->name(), ' ', $cs->version();
                }
   Description: Retrieves all coordinate systems of a particular name
-  Returntype : listref of [id, name, version triplets]
+  Returntype : listref of Bio::EnsEMBL::CoordSystem objects
   Exceptions : throw if no name argument provided
   Caller     : general
 
@@ -302,11 +308,10 @@ sub fetch_all_by_name {
 =head2 fetch_by_dbID
 
   Arg [1]    : int dbID
-  Example    : ($dbID, $name, $version) = $csa->fetch_by_dbID(4);
-  Description: Retrieve a coord_system via its internal
-               identifier.  The coord_system is returned formatted as
-               a (id, name, version) triplet.
-  Returntype : (id, name, version) triplet
+  Example    : $cs = $csa->fetch_by_dbID(4);
+  Description: Retrieves a coord_system via its internal
+               identifier.
+  Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : thrown if no coord_system exists for specified dbID
   Caller     : general
 
@@ -318,11 +323,11 @@ sub fetch_by_dbID {
 
   throw('dbID argument is required') if(!$dbID);
 
-  my $cs = $self->{'_dbID_cache'}->{'dbID'};
+  my $cs = $self->{'_dbID_cache'}->{$dbID};
 
-  throw ('Coord_system with dbID [$dbID] does not exist')  if(!$cs);
+  throw("Coord_system with dbID [$dbID] does not exist")  if(!$cs);
 
-  return @$cs;
+  return $cs;
 }
 
 
@@ -332,8 +337,8 @@ sub fetch_by_dbID {
   Arg [1]    : string $version (optional)
                The version of the top-level to obtain. If not provided
                the default version top-level will be returned.
-  Example    : ($id, $name, $version) = $csa->fetch_top_level();
-               ($id, $name, $version) = $csa->fetch_top_level('NCBI34');
+  Example    : $cs = $csa->fetch_top_level();
+               $cs = $csa->fetch_top_level('NCBI34');
   Description: Retrieves the top level coordinate system.  It is possible
                to have multiple top-level coordinate systems if there is
                more than one version of the top-level system.  For
@@ -343,7 +348,7 @@ sub fetch_by_dbID {
                the default and will be returned if no specific version
                is requested. If a specific version is requested then it
                will be returned.
-  Returntype : a (id, name, version) triplet
+  Returntype : a Bio::EnsEMBL::CoordSystem object
   Exceptions : throw if no top-level coord_system exists for specified
                version
                throw if no top-level coord_system exists at all
@@ -392,7 +397,7 @@ sub fetch_all_top_level {
   Example    : ($id, $name, $version) = $csa->fetch_sequence_level();
   Description: Retrieves the coordinate system at which sequence
                is stored at.
-  Returntype : a (id, name, version) triplet
+  Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : throw if no sequence_level coord system exists at all
                throw if multiple sequence_level coord systems exists
   Caller     : general
@@ -402,7 +407,7 @@ sub fetch_all_top_level {
 sub fetch_sequence_level {
   my $self = shift;
 
-  my @dbIDs= keys %{$self->{'_is_sequence_level'}};
+  my @dbIDs = keys %{$self->{'_is_sequence_level'}};
 
   throw('No sequence_level coord_system is defined') if(!@dbIDs);
 
@@ -411,9 +416,7 @@ sub fetch_sequence_level {
           'Only one is currently supported');
   }
 
-  my $dbID = shift;
-
-  return @{$self->{'_dbID_cache'}->{$dbID}};
+  return $self->{'_dbID_cache'}->{$dbIDs[0]};
 }
 
 
@@ -421,27 +424,29 @@ sub fetch_sequence_level {
 
 =head2 get_mapping_path
 
-  Arg [1]    : int $cs1_id
-  Arg [2]    : int $cs2_id
-  Example    : foreach my $map_step @{$csa->get_mapping_path($cs1_id,$cs2_id);
-  Description: Given the identifiers for two coordinate systems this
-               will return a mapping path between them.  The path is
-               formatted as a list of coordinate systems starting with
-               the assembled coord systems and descending through
-               component systems.  For example, if the following
-               mappings were defined in the meta table:
-               chromosome(1) -> clone(2)
-               clone(2) -> contig(3)
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs1
+  Arg [2]    : Bio::EnsEMBL::CoordSystem $cs2
+  Example    : foreach my $cs @{$csa->get_mapping_path($cs1,$cs2);
+  Description: Given two coordinate systems this will return a mapping path
+               between them.  The path is formatted as a list of coordinate
+               systems starting with the assembled coord systems and
+               descending through component systems.  For example, if the
+               following mappings were defined in the meta table:
+               chromosome -> clone
+               clone -> contig
 
-               And the contig and chromosome coordinate system ids were
-               provided to this function the following could be the
-               return value:
-               [1,2,3]
+               And the contig and chromosome coordinate systems where
+               provided as arguments like so:
+               $csa->get_mapping_path($chr_cs,$ctg_cs);
+
+               The return values would be:
+               [$chr_cs, $clone_cs, $contig_cs]
 
                The return value would be the same even if the order of
                arguments was reversed.
 
-               If no mapping path exists, an empty list is returned.
+               If no mapping path exists, an reference to an empty list is
+               returned.
 
   Returntype : listref of coord_sytem ids ordered from assembled to smaller
                component coord_systems
@@ -452,11 +457,14 @@ sub fetch_sequence_level {
 
 sub get_mapping_path {
   my $self = shift;
-  my $cs1_id = shift;
-  my $cs2_id = shift;
+  my $cs1 = shift;
+  my $cs2 = shift;
   my $seen = shift || {};
 
   $self->{'_shortest_path'} ||= {};
+
+  my $cs1_id = $cs1->dbID();
+  my $cs2_id = $cs2->dbID();
 
   # if this method has already been called with the same arguments
   # return the cached result
@@ -472,15 +480,15 @@ sub get_mapping_path {
 
   #if there is a direct mapping between this coord system and other one
   #then path between cannot be shorter, just return the one step path
-  if($self->{'_mapping_path'}->{$cs1_id}->{$cs2_id}) {
-    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs1_id,$cs2_id];
-    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs1_id,$cs2_id];
-    return [$cs1_id,$cs2_id];
+  if($self->{'_mapping_paths'}->{$cs1_id}->{$cs2_id}) {
+    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs1,$cs2];
+    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs1,$cs2];
+    return [$cs1,$cs2];
   }
-  if($self->{'_mapping_path'}->{$cs1_id}->{$cs2_id}) {
-    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs2_id,$cs1_id];
-    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs2_id,$cs1_id];
-    return [$cs1_id,$cs2_id];
+  if($self->{'_mapping_paths'}->{$cs2_id}->{$cs1_id}) {
+    $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$cs2,$cs1];
+    $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$cs2,$cs1];
+    return [$cs2,$cs1];
   }
 
   $seen->{"$cs1_id:$cs2_id"} = 1;
@@ -492,31 +500,43 @@ sub get_mapping_path {
 
   #need to try both as assembled since we do not know which is the assembled
   #coord_system and which is the component
-  foreach my $pair ([$cs1_id,$cs2_id], [$cs2_id,$cs1_id]) {
-    my ($asm_cs_id, $target_cs_id) = @$pair;
+  foreach my $pair ([$cs1,$cs2], [$cs2,$cs1]) {
+    my ($asm_cs, $target_cs) = @$pair;
+    my $asm_cs_id = $asm_cs->dbID();
 
-    foreach my $cmp_cs_id (keys %{$self->{'_mapping_path'}->{$asm_cs_id}}) {
-      my $path = $self->get_mapping_path($cmp_cs_id, $target_cs_id, $seen);
+    foreach my $cmp_cs_id (keys %{$self->{'_mapping_paths'}->{$asm_cs_id}}) {
+      my $cmp_cs = $self->fetch_by_dbID($cmp_cs_id);
+      my $path = $self->get_mapping_path($cmp_cs, $target_cs, $seen);
       my $len = @$path;
+      my $shortest;
+
+      next if($len == 0);
+
+      #Check whether the component was used as an assembled
+      #or component in the next part of the path:
+      if($cmp_cs_id == $path->[0]->dbID) {
+        $path = [$asm_cs, @$path];
+      } else {
+        $path = [@$path, $asm_cs];
+      }
 
       #shortest possible indirect, add to path so far and return
       if($len == 2) {
-        $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$asm_cs_id, @$path];
-        $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$asm_cs_id, @$path];
-        return [$asm_cs_id, @$path];
-      }
-
-      #keep track of the shortest path found so far, there may yet be shorter..
-      if($len != 0 && (!defined($shortest) || $len < @$shortest)) {
+        $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = $path;
+        $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = $path;
+        return $path;
+      } elsif(!defined($shortest) || $len+1 < @$shortest) {
+        #keep track of the shortest path found so far,
+        #there may yet be shorter..
         $shortest = $path;
       }
     }
     #use the shortest path found so far,
     #if no path was found continue, using the the other id as assembled
     if(defined($shortest)) {
-      $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = [$asm_cs_id,@$shortest];
-      $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = [$asm_cs_id,@$shortest];
-      return [$asm_cs_id, @$shortest];
+      $self->{'_shortest_path'}->{"$cs1_id:$cs2_id"} = $shortest;
+      $self->{'_shortest_path'}->{"$cs2_id:$cs1_id"} = $shortest;
+      return $shortest;
     }
   }
 
@@ -542,9 +562,9 @@ sub _fetch_by_attrib {
   foreach my $dbID (@dbIDs) {
     my $cs = $self->{'_dbID_cache'}->{$dbID};
     if($version) {
-      return @$cs if(lc($version) eq $cs->[2]);
-    } elsif($self->{'_is_default'}->{$dbID}) {
-      return @$cs;
+      return $cs if(lc($version) eq $cs->version());
+    } elsif($self->{'_is_default_version'}->{$dbID}) {
+      return $cs;
     }
   }
 
@@ -556,12 +576,13 @@ sub _fetch_by_attrib {
   #coordsystem with attrib exists but no default is defined:
   my $dbID = shift @dbIDs;
   my $cs = $self->{'_dbID_cache'}->{$dbID};
-  my $v = $cs->[2];
+  my $v = $cs->version();
   warning("No default version for $attrib coord_system exists. " .
           "Using version [$v] arbitrarily");
 
-  return @$cs;
+  return $cs;
 }
+
 
 sub _fetch_all_by_attrib {
   my $self = shift;
