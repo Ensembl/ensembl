@@ -548,7 +548,7 @@ sub _create_db_name {
 
     my @t_info = localtime;
 
-    my $date = join ( "_", $t_info[3],$t_info[4]);  
+    my $date = join ( "_", $t_info[3],$t_info[4]+1);  
     my $time = join ( "", $t_info[2],$t_info[1],$t_info[0]);  
 
     my $species = $self->species;
