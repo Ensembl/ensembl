@@ -67,9 +67,13 @@ sub gene_stats {
         $sumfeats += $nfeats;
 
         $n++;
+
     }
-    my $avg = int($sum/$n);
-    my $avgfeats= int($sumfeats/$n);
+    my ($avg, $avgfeats) = ('none', 'none');
+    if ($n>0) {
+        $avg = int($sum/$n);
+        $avgfeats= int($sumfeats/$n);
+    } 
     return ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats);
 }
 
@@ -200,14 +204,20 @@ my @igis_of_n_sources = undef;
 ## do histogram: give numbers
 foreach my $igi (@all_igis) {
     my $n  = int(keys %{$sources_of_igi{$igi}});
-    ${$igis_of_n_sources[$n]}{$igi} = ${$igis_of_source{'ALL'}}{$igi};
- # the list of coordinates
+    my $loc = ${$igis_of_source{'ALL'}}{$igi}; # start,end etc. of this igi
+
+#     ${$igis_of_n_sources[$n]}{$igi} = $loc this is for those that are in
+# exactly two groups, but you want to know the  cumulation: simply add it 
+# to all the clusterings:
+    for (my $i=$n; $i<$n_sources; $i++) {
+        ${$igis_of_n_sources[$i]}{$igi} = $loc
+    }
 }
 
 # warn @igis_of_n_sources;
 print "overlap totals (histogram)\n" ;
 for(my $i = 0; $i<=$n_sources; $i++) {
-    print "numbers of igis in $i/$n_sources sources: ",
+    print "numbers of igis in $i/$n_sources or more sources: ",
       int(keys %{$igis_of_n_sources[$i]}), "/$n_igis\n";
 }
 
@@ -217,7 +227,7 @@ for(my $i = 1; $i<=$n_sources; $i++) {
     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
         gene_stats($igis_of_n_sources[$i]) ;
 
-    print "those in $i sources: ";
+    print "those in $i or more sources: ";
     print "minl=$min, maxl=$max, avgl=$avg, ";
     print "minf=$minfeats, maxf=$maxfeats, avgf=$avgfeats\n";
 }
