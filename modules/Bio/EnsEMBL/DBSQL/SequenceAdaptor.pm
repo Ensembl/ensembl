@@ -1,9 +1,9 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::SequenceAdaptor
+# Ensembl module for Bio::EnsEMBL::DBSQL::SequenceAdaptor
 #
 # Cared for by Arne Stabenau <stabenau@ebi.ac.uk>
 #
-# Copyright EMBL/EBI
+# Copyright Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -37,8 +37,45 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 use Bio::EnsEMBL::Utils::Sequence  qw(reverse_comp);
+use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
+our $SEQ_CACHE_SZ    = 5;
+#our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
+our $SEQ_CACHE_MAX   = 0;
+
+
+
+=head2 new
+
+  Arg [1]    : none
+  Example    : my $sa = $db_adaptor->get_SequenceAdaptor();
+  Description: Constructor.  Calls superclass constructor and initialises
+               internal cache structure.
+  Returntype : Bio::EnsEMBL:DBSQL::SequenceAdaptor
+  Exceptions : none
+  Caller     : DBAdaptor::get_SequenceAdaptor
+
+=cut
+
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  # use an LRU cache to limit the size
+  my %seq_cache;
+  tie(%seq_cache, 'Bio::EnsEMBL::Utils::Cache', $SEQ_CACHE_SZ);
+
+  $self->{'seq_cache'} = \%seq_cache;
+
+  return $self;
+}
+
 
 =head2 fetch_by_Slice_start_end_strand
 
@@ -180,18 +217,62 @@ sub _fetch_seq {
   my $start         = shift;
   my $length           = shift;
 
-  my $tmp_seq;
+  my $cache = $self->{'seq_cache'};
 
-  my $sth = $self->prepare(
-               "SELECT SUBSTRING( d.sequence, ?, ?)
-                FROM dna d
-                WHERE d.seq_region_id = ?");
-  $sth->execute($start, $length, $seq_region_id);
-  $sth->bind_columns(\$tmp_seq);
-  $sth->fetch();
-  $sth->finish();
+  if($length < $SEQ_CACHE_MAX) {
+    my $chunk_min = ($start-1) >> $SEQ_CHUNK_PWR;
+    my $chunk_max = ($start + $length - 1) >> $SEQ_CHUNK_PWR;
 
-  return \$tmp_seq;
+    # piece together sequence from cached component parts
+
+    my $entire_seq = undef;
+    for(my $i = $chunk_min; $i <= $chunk_max; $i++) {
+      if($cache->{"$seq_region_id:$i"}) {
+        $entire_seq .= $cache->{"$seq_region_id:$i"};
+      } else {
+        # retrieve uncached portions of the sequence
+
+        my $sth = $self->prepare
+          ("SELECT SUBSTRING( d.sequence, ?, ?)
+            FROM dna d
+            WHERE d.seq_region_id = ?");
+
+        my $tmp_seq;
+
+        my $min = ($i << $SEQ_CHUNK_PWR) + 1;
+
+        $sth->execute($min, 1 << $SEQ_CHUNK_PWR, $seq_region_id);
+        $sth->bind_columns(\$tmp_seq);
+        $sth->fetch();
+        $sth->finish();
+
+        $entire_seq .= $tmp_seq;
+        $cache->{"$seq_region_id:$i"} = $tmp_seq;
+      }
+    }
+
+    # return only the requested portion of the entire sequence
+    my $min =  ($chunk_min    << $SEQ_CHUNK_PWR) + 1;
+    my $max = ($chunk_max+1) << $SEQ_CHUNK_PWR;
+    my $seq = substr($entire_seq, $start-$min, $length);
+
+    return \$seq;
+  } else {
+
+    # do not do any caching for requests of very large sequences
+    my $sth = $self->prepare
+      ("SELECT SUBSTRING( d.sequence, ?, ?)
+        FROM dna d
+        WHERE d.seq_region_id = ?");
+
+    my $tmp_seq;
+    $sth->execute($start, $length, $seq_region_id);
+    $sth->bind_columns(\$tmp_seq);
+    $sth->fetch();
+    $sth->finish();
+
+    return \$tmp_seq;
+  }
 }
 
 
