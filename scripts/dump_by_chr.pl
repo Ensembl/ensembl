@@ -1031,13 +1031,14 @@ sub create_tmp_db {
     }
 
     if ($check_sql) { 
-#        check_sql($db, $sql, $table);  # assumes a plain SELECT statement
+## NOTE: this is very hackish, I expect an SQL string that looks like
+## "create ... select ; alter ...", containing stuff for a single table.
         $sql =~ s/distinct//gi;
         $sql =~ s/;/ limit 1;/;          # just so we have *something*
 #        warn "SQL\n\n$sql\n\n";
     }
 
-    # now populate it:
+    # now create and populate the table
     $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $tmpdb";
 
     $out = `$cmd 2>&1`;
