@@ -253,7 +253,14 @@ if( $c->static_golden_type ne 'UCSC'  ) {
    print "ok 28\n";
 }
 
+$c->length();
+
+
 $seq = $c->get_repeatmasked_seq();
+
+$c->length();
+
+
 if  (!$seq->isa('Bio::PrimarySeqI') 
         || $seq->length != $c->length 
         || $seq->seq !~ /N/i) 

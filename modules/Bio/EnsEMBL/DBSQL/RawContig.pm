@@ -1211,6 +1211,7 @@ sub get_all_ExternalFeatures{
 
 sub length{
    my ($self,@args) = @_;
+
    my $id= $self->internal_id();
     $self->throw("Internal ID not set") unless $id;
    if (! defined ($self->{_length})) {
@@ -2386,7 +2387,7 @@ sub get_repeatmasked_seq {
 
 sub mask_features {
     my ($self, $dnastr,@repeats) = @_;
-    my $dnalen = &length($dnastr);
+    my $dnalen = CORE::length($dnastr);
 
     REP:foreach my $f (@repeats) {
 
