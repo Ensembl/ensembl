@@ -52,8 +52,11 @@ ok(scalar @$exons);
 #
 #  4 test new
 #
-my $new_pt = new Bio::EnsEMBL::PredictionTranscript( -exons => $exons);
+my $new_pt = new Bio::EnsEMBL::PredictionTranscript( -exons => $exons,
+                                                    -display_label => 'test');
 ok(scalar @{$new_pt->get_all_Exons});
+ok($new_pt->display_label() eq $new_pt->stable_id() && 
+   $new_pt->display_label eq 'test');
 
 #
 # 5 test stable_id
@@ -244,7 +247,7 @@ ok(&Bio::EnsEMBL::Test::TestUtils::test_getter_setter($pt, 'type', 'test'));
 my $stable_id = 'GENSCAN00000011401';
 
 $pt = $pta->fetch_by_stable_id($stable_id);
-ok($pt->stable_id eq $stable_id);
+ok($pt->stable_id() eq $stable_id);
 
 # 32 list_dbIDs
 my $ids = $pta->list_dbIDs();
@@ -293,6 +296,10 @@ $pta->store($pt);
 $pt = $pta->fetch_by_dbID($pt->dbID);
 
 ok($pt && $pt->dbID);
+
+# check that display label is automatically generated if it was unspecified
+ok($pt->display_label() eq $pt->stable_id() 
+   && $pt->display_label() eq 'GENSCAN' . ('0'x(11-length($pt->dbID()))) . $pt->dbID());
 
 @exons = @{$pt->get_all_Exons};
 ok(@exons == 2);
