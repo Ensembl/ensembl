@@ -696,30 +696,65 @@ sub submit_depend_job {
   # build up the bsub command; first part
   my @depend_bsub = ('bsub', '-K');
 
-  # one -wended clause for each main job
+  # build -w 'ended(job1) && ended(job2)' clause
+  my $ended_str = "-w ";
+  my $i = 0;
   foreach my $job (@job_names) {
-    push @depend_bsub, "-wended($job)";
+    $ended_str .= "ended($job)";
+    $ended_str .= " && " if ($i < $#job_names);
+    $i++;
   }
 
+  push @depend_bsub, $ended_str;
+
   # rest of command
-  push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err", '/bin/true');
+  push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err");
 
   #print "##depend bsub:\n" . join (" ", @depend_bsub) . "\n";
 
-  my ($depend_wtr, $depend_rtr, $depend_etr, $depend_pid);
-  $depend_pid = open3($depend_wtr, $depend_rtr, $depend_etr, @depend_bsub);
-  my $depend_jobid;
-  while (<$depend_rtr>) {
-    if (/Job <([0-9]+)> is/) {
-      $depend_jobid = $1;
-      print "LSF job ID for depend job: $depend_jobid \n" ;
+  my $jobid = 0;
+
+  eval {
+    my $pid;
+    my $reader;
+
+    local *BSUB;
+    local *BSUB_READER;
+
+    if (($reader = open(BSUB_READER, '-|'))) {
+      while (<BSUB_READER>) {
+	if (/^Job <(\d+)> is submitted/) {
+	  $jobid = $1;
+	  print "LSF job ID for depend job: $jobid\n"
+	}
+      }
+      close(BSUB_READER);
+    } else {
+      die("Could not fork : $!\n") unless (defined($reader));
+      open(STDERR, ">&STDOUT");
+      if (($pid = open(BSUB, '|-'))) {
+	
+	print BSUB "/bin/true\n";
+	close BSUB;
+	if ($? != 0) {
+	  die("bsub exited with non-zero status ($?) - job not submitted\n");
+	}
+      } else {
+	if (defined($pid)) {
+	  exec(@depend_bsub);
+	  die("Could not exec bsub : $!\n");
+	} else {
+	  die("Could not fork : $!\n");
+	}
+      }
+      exit(0);
     }
-  }
-  if (!defined($depend_jobid)) {
-    print STDERR "Error: could not get depend job ID\n";
-  }
+  };
 
-
+  if ($@) {
+    # Something went wrong
+    warn("Job submission failed:\n$@\n");
+  }
 
 }
 
@@ -1583,7 +1618,8 @@ sub transcript_display_xref_sources {
 	  'Genoscope_predicted_transcript',
 	  'Genoscope_predicted_gene',
 	  'Uniprot/SWISSPROT',
-	  'RefSeq',
+	  'RefSeq_peptide',
+	  'RefSeq_dna',
 	  'Uniprot/SPTREMBL',
 	  'LocusLink');
 
@@ -1941,5 +1977,22 @@ sub compare_xref_descriptions {
   }
 }
 
+# load external_db (if it's empty) from ../external_db/external_dbs.txt
+
+sub upload_external_db {
+
+  my $row = @{$core_dbi->selectall_arrayref("SELECT COUNT(*) FROM external_db")}[0];
+  my $count = @{$row}[0];
+
+  if ($count == 0) {
+    my $edb = cwd() . "/../external_db/external_dbs.txt";
+    print "external_db table is empty, uploading from $edb\n";
+    my $edb_sth = $core_dbi->prepare("LOAD DATA INFILE \'$edb\' INTO TABLE external_db");
+    $edb_sth->execute();
+  } else {
+    print "external_db table already has $count rows, will not change it\n";
+   }
+
+}
 
 1;
