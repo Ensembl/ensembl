@@ -636,6 +636,14 @@ B<+++>:
     ...+++###+++###+          1 ++###+++###++...
     ...++###+++###++          2 +###+++###+++...
 
+Here is another explanation from Ewan:
+
+Phase means the place where the intron lands
+inside the codon - 0 between  codons, 1 between
+the 1st and second base, 2 between the second and
+3rd  base. Exons therefore have a start phase and
+a end phase, but introns have just one phase.
+
 =cut
 
 sub phase {
