@@ -55,7 +55,7 @@ GetOptions("transcript"   => \$using_transcripts,
 	   "pass=s"       => \$pass,
 	   "dbname=s"     => \$dbname,
 	   "host=s"       => \$host,
-           "logic_name=s" => \$logic_name
+           "logic_name=s" => \$logic_name,
 	   "evidence"     => \$evidence
           ) or usage_die();
 

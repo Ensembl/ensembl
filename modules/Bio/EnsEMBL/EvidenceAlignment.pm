@@ -90,7 +90,7 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher, $pfetch,
+  my ($transcriptid, $contigname, $dbadaptor, $seqfetcher, $pfetch,
     $use_supporting_evidence) =
     $self->_rearrange(['TRANSCRIPTID',
 		       'CONTIGID',
