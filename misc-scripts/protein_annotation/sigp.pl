@@ -104,7 +104,7 @@ while(<_PFAMSEQ>) {
 
   if ($_ =~ /^\>/) {
 
-    if (not ($entries % 3000)) {
+    if (not ($entries % 1500)) {
       close(DATABASE);
   
 
@@ -118,6 +118,9 @@ while(<_PFAMSEQ>) {
     $entries++;
     $truncate = 1;
 
+    my ($ac) = $_  =~ /^\>ENSP(\d+)/;
+    
+		
     print DATABASE $_;
 
   }  else {

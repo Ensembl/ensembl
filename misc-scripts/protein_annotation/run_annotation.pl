@@ -9,9 +9,9 @@ my $file;
 
 
 &split_file();
-#&run_low_complexity();
-#&run_coils();
-#&run_tmhmm();
+&run_low_complexity();
+&run_coils();
+&run_tmhmm();
 &run_sign_pep();
 
 sub split_file {
@@ -100,13 +100,13 @@ sub run_sign_pep {
     foreach my $file (@allfiles) {
 	if ($file =~ /sigp_split.(\d+)/) {
 	    my ($run) = $file =~ /(sigp_split.\d+)/;
-	    #print STDERR "$run\n";
+	    print STDERR "RUN1: $run\n";
 	    push(@runfiles,$file);
 	}
     }
 
     foreach my $run (@runfiles) {
-	print STDERR "$run\n";
+	print STDERR "RUN2: $run\n";
 	my $run_peps = "bsub -q acari -o tmp/$run.peps.out -e tmp/$run.peps.err perl /work1/birney/mongin/src/ensembl-live/misc-scripts/protein_annotation/sigp_readsplit.pl $run";
 	    
 	 system($run_peps)==0 || die "$0\Error running '$run_peps' : $!";
@@ -116,6 +116,14 @@ sub run_sign_pep {
       		
 
    	    
+
+
+
+
+
+
+
+
 
 
 
