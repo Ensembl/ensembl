@@ -252,9 +252,9 @@ sub delete_by_dbID {
    # Delete from DNA table, Contig table, Clone table
    
    foreach my $contig ( @contigs ) {
+       $fadaptor->delete_by_RawContig_internal_id($contig);
        my $sth = $self->prepare("delete from contig where internal_id = $contig");
        my $res = $sth->execute;
-       $fadaptor->delete_by_RawContig_internal_id($contig);
    }
 
 
