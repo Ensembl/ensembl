@@ -55,11 +55,10 @@ Other contributors' names here.
 use strict;
 
 package Bio::EnsEMBL::Utils::EasyArgv;
-use vars qw(@ISA @EXPORT);
 use vars qw($debug);
 use Exporter ();
-@ISA= qw(Exporter);
-@EXPORT = qw(get_ens_db_from_argv
+our @ISA= qw(Exporter);
+our @EXPORT = qw(get_ens_db_from_argv
 );
 use Bio::Root::Root; # For _load_module
 use Getopt::Long;
@@ -67,12 +66,14 @@ use Getopt::Long;
 sub _debug_print;
 
 sub get_ens_db_from_argv {
-    my ($db_file, $host, $user, $pass, $dbname, $db_module);
+    my ($db_file, $host, $user, $pass, $dbname, $driver, $db_module);
     $host = 'localhost';
+    $driver ='mysql';
     $db_module = 'Bio::EnsEMBL::SQL::DBAdaptor';
     Getopt::Long::config('pass_through');
     &GetOptions(
         'db_file=s' => \$db_file,
+        'driver|dbdriver|db_driver=s' => \$driver,
         'host|dbhost|db_host=s' => \$host,
         'user|dbuser|db_user=s' => \$user,
         'pass|dbpass|db_pass=s' => \$pass,
@@ -89,13 +90,14 @@ sub get_ens_db_from_argv {
             or die "'$db_file' is not EnsEMBL DBAdaptor\n";
         _debug_print "I get a db from file\n";
         
-    }elsif(defined $host && defined $user && defined $dbname){
+    }elsif(defined $host and defined $user and defined $dbname){
         Bio::Root::Root::_load_module($db_module);
         $db = $db_module->new(
             -host => $host,
             -user => $user,
             -pass => $pass,
-            -dbname => $dbname
+            -dbname => $dbname,
+            -driver => $driver
         );
     }else{
         die "Cannot get the db, due to the insufficient information\n";
