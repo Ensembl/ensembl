@@ -323,6 +323,12 @@ sub virtualcontig{
    my $vc = Bio::EnsEMBL::DB::EmblVirtualContig->new( -clone => $self);
    $vc->id($self->id);
    $vc->sv($self->embl_version);
+   
+   my $created=localtime($self->created);
+   my $modified=localtime($self->modified);
+   
+   $vc->add_date($created);
+   $vc->add_date($modified);
    return $vc;
 }
 

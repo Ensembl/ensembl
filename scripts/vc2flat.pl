@@ -212,6 +212,8 @@ foreach my $vc_list_ref ( @vcs ) {
 						       );
 	$vc->id( "virtual_contig_".$vc->_unique_number);
 	$vc->sv(1);
+	my $date=localtime()." (created on the fly by the EnsEMBL system)";
+	$vc->add_date($date);
         # debug tests by contig
 	print(STDERR "Format is $format\n");
 	if( $format =~ /gff/ ) {
