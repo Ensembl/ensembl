@@ -47,6 +47,7 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::TranscriptMapper;
 use Bio::EnsEMBL::Utils::TranscriptSNPs;
+use Bio::EnsEMBL::SeqEdit;
 
 use Bio::EnsEMBL::Utils::Argument qw( rearrange );
 use Bio::EnsEMBL::Utils::Exception qw( deprecate warning throw );
@@ -91,6 +92,8 @@ sub new {
   $self->external_db( $external_db ) if( defined $external_db );
   $self->external_status( $external_status ) if( defined $external_status );
   $self->display_xref( $display_xref ) if( defined $display_xref );
+  $self->edits_enabled(1);
+
 
   return $self;
 }
@@ -203,7 +206,7 @@ sub external_db {
 
   if(defined $ext_dbname) { 
     return ( $self->{'external_db'} = $ext_dbname );
-  } 
+  }
 
   if( exists $self->{'external_db'} ) {
     return $self->{'external_db'};
@@ -269,7 +272,7 @@ sub external_name {
 
   if(defined $ext_name) { 
     return ( $self->{'external_name'} = $ext_name );
-  } 
+  }
 
   if( exists $self->{'external_name'} ) {
     return $self->{'external_name'};
@@ -362,8 +365,8 @@ sub translation {
 
   Args       : none
   Example    : none
-  Description: retrieves all Exon sequences and concats them together. No phase padding magic is 
-               done, even if phases dont align.
+  Description: Retrieves all Exon sequences and concats them together.
+               No phase padding magic is done, even if phases do not align.
   Returntype : txt
   Exceptions : none
   Caller     : general
@@ -386,97 +389,34 @@ sub spliced_seq {
     }
   }
 
-  return $seq_string;
-}
+  # apply post transcriptional edits
+  if($self->edits_enabled()) {
+    my @seqeds = @{$self->get_all_SeqEdits()};
 
+    # sort edits in reverse order to remove complication of
+    # adjusting downstream edits
+    @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
 
-=head2 edited_seq
-
-  Args       : none
-  Example    : none
-  Description: Retrieves the spliced_seq and applies all _rna_edit attributes
-               to it. It will adjust cdna_coding_start and cdna_coding_end.
-               These will be used by translateable_seq to extract the sequence that is 
-               to translate.
-
-               The format of _rna_edit attribute value is "start end alt_sequence"
-               start and end are zero based in_between coords to describe the location
-               in the cdna of the alt_sequence. Inserts have the same start and end.
-               Deletes have no alt_sequence.
-
-               WARNING! This function has to modify the start and end position of the 
-               translation!
-  Returntype : txt
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub edited_seq {
-  my ( $self ) = @_;
-
-  my $attribs = $self->get_all_Attributes( "_rna_edit" );
-  my $seq = $self->spliced_seq();
-
-  my $cdna_coding_start = $self->cdna_coding_start( undef );
-  my $cdna_coding_end = $self->cdna_coding_end( undef );
-  
-  my $translation;
-  if( $cdna_coding_start && $cdna_coding_end ) {
-    $translation = 1;
-  } else {
-    $translation = 0;
-  }
-
-  my @edits;
-
-  for my $attrib ( @$attribs ) {
-    my ( $start, $end, $alt_seq ) = split( " ", $attrib->value());
-    # length diff is the adjustment to do on cdna_coding_start/end
-    my $length_diff = ( CORE::length( $alt_seq ) - ( $end - $start));
-    push( @edits, [ $start, $end, $alt_seq, $length_diff ] );
-  }
-
-  @edits = sort { $b->[0] <=> $a->[0] } @edits;
-
-  for my $edit ( @edits ) {
-    # applying the edit
-    substr( $seq, $edit->[0], $edit->[1]-$edit->[0] ) = $edit->[2];
-    
-    my $diff = $edit->[3];
-    if( $diff != 0 ) {
-      # possibly adjust cdna start/end
-      if( $edit->[0]+1 <= $cdna_coding_end ) {
-        $cdna_coding_end += $diff;
-      }
-      if( $edit->[0]+1 < $cdna_coding_start ) {
-        $cdna_coding_start += $diff;
-      }
+    foreach my $se (@seqeds) {
+      $se->apply_edit(\$seq_string);
     }
   }
 
-  if( $translation ) {
-    $self->cdna_coding_start( $cdna_coding_start );
-    $self->cdna_coding_end( $cdna_coding_end );
-  }
-
-  return $seq;
+  return $seq_string;
 }
-
-
 
 
 =head2 translateable_seq
 
   Args       : none
   Example    : print $transcript->translateable_seq(), "\n";
-  Description: Returns a sequence string which is the the translateable part 
+  Description: Returns a sequence string which is the the translateable part
                of the transcripts sequence.  This is formed by splicing all
-               Exon sequences together and apply all defined RNA edits. Then the
-               coding part of the sequence is extracted and returned.
-
-               The code will not support monkey exons any more. If you want to have
-               non phase matching exons, defined appropriate _rna_edit attributes!
+               Exon sequences together and apply all defined RNA edits.
+               Then the coding part of the sequence is extracted and returned.
+               The code will not support monkey exons any more. If you want to
+               have non phase matching exons, defined appropriate _rna_edit
+               attributes!
   Returntype : txt
   Exceptions : none
   Caller     : general
@@ -486,12 +426,10 @@ sub edited_seq {
 sub translateable_seq {
   my ( $self ) = @_;
 
-  # IMPORTANT: first extract the sequence, then the cdna start/end
-  # because editing may modify this positions.
-  my $mrna = $self->edited_seq();
+  my $mrna = $self->spliced_seq();
   my $start = $self->cdna_coding_start();
   my $end = $self->cdna_coding_end();
-  
+
   my $start_phase = $self->translation->start_Exon->phase();
   if( $start_phase > 0 ) {
     $mrna = "N"x$start_phase . $mrna;
@@ -525,13 +463,10 @@ sub cdna_coding_start {
 
   if( @_ ) {
     $self->{'cdna_coding_start'} = shift;
-  } 
+  }
 
   if(!defined $self->{'cdna_coding_start'} && defined $self->translation){
-    #
-    #calculate the coding start relative from the start of the
-    #translation (in cdna coords)
-    #
+    # calc coding start relative from the start of translation (in cdna coords)
     my $start = 0;
 
     my @exons = @{$self->get_all_Exons};
@@ -547,6 +482,21 @@ sub cdna_coding_start {
         $start += $exon->length;
       }
     }
+
+    # adjust cdna coords if sequence edits are enabled
+    if($self->edits_enabled()) {
+      my @seqeds = @{$self->get_all_SeqEdits()};
+      # sort in reverse order to avoid adjustment of downstream edits
+      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+
+      foreach my $se (@seqeds) {
+        # use less than start so that start of CDS can be extended
+        if($se->start() < $start) {
+          $start += $se->length_diff();
+        }
+      }
+    }
+
     $self->{'cdna_coding_start'} = $start;
   }
 
@@ -574,22 +524,37 @@ sub cdna_coding_end {
 
   if( @_ ) {
     $self->{'cdna_coding_end'} = shift;
-  } 
-  
+  }
+
   if(!defined $self->{'cdna_coding_end'} && defined $self->translation) {
     my @exons = @{$self->get_all_Exons};
 
     my $end = 0;
     while(my $exon = shift @exons) {
       if($exon == $self->translation->end_Exon) {
-	#add the coding portion of the final coding exon
-	$end += $self->translation->end;
-	last;
+        # add coding portion of the final coding exon
+        $end += $self->translation->end;
+        last;
       } else {
-	#add the entire exon
-	$end += $exon->length;
+        # add entire exon
+        $end += $exon->length;
       }
     }
+
+    # adjust cdna coords if sequence edits are enabled
+    if($self->edits_enabled()) {
+      my @seqeds = @{$self->get_all_SeqEdits()};
+      # sort in reverse order to avoid adjustment of downstream edits
+      @seqeds = sort {$b->start() <=> $a->start()} @seqeds;
+
+      foreach my $se (@seqeds) {
+        # use less than or equal to end+1 so end of the CDS can be extended
+        if($se->start() <= $end + 1) {
+          $end += $se->length_diff();
+        }
+      }
+    }
+
     $self->{'cdna_coding_end'} = $end;
   }
 
@@ -620,7 +585,7 @@ sub coding_region_start {
 
   if( defined $value ) {
     $self->{'coding_region_start'} = $value;
-  } elsif(!defined $self->{'coding_region_start'} && 
+  } elsif(!defined $self->{'coding_region_start'} &&
 	  defined $self->translation) {
     #calculate the coding start from the translation
     my $start;
@@ -665,7 +630,7 @@ sub coding_region_end {
 
   if( defined $value ) {
     $self->{'coding_region_end'} = $value;
-  } elsif( ! defined $self->{'coding_region_end'} 
+  } elsif( ! defined $self->{'coding_region_end'}
 	   && defined $self->translation() ) {
     $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
@@ -682,12 +647,68 @@ sub coding_region_end {
 }
 
 
+
+=head2 edits_enabled
+
+  Arg [1]    : (optional) boolean $newval
+  Example    : $transcript->edits_enabled(1);
+  Description: Enables/Disables the application of SeqEdits to this transcript.
+               Edits are enabled by default, and affect the cdna/mrna
+               sequences coordinates and the resultant translation.
+  Returntype : boolean - the current value of the edits
+  Exceptions : none
+  Caller     : general, cdna_coding_start, cdna_coding_end, length
+
+=cut
+
+sub edits_enabled {
+  my $self = shift;
+
+  if(@_) {
+    $self->{'edits_enabled'} = shift;
+    # flush cached values that will be different with/without edits
+    $self->{'cdna_coding_start'} = undef;
+    $self->{'cdna_coding_end'}   = undef;
+  }
+
+  return $self->{'edits_enabled'};
+}
+
+
+=head2 get_all_SeqEdits
+
+  Arg [1]    : none
+  Example    : my @seqeds = @{$transcript->get_all_SeqEdits()};
+  Description: Retrieves all post transcriptional sequence modifications for
+               this transcript.
+  Returntype : Bio::EnsEMBL::SeqEdit
+  Exceptions : none
+  Caller     : spliced_seq()
+
+=cut
+
+sub get_all_SeqEdits {
+  my $self = shift;
+
+  my @seqeds;
+
+  my $attribs = $self->get_all_Attributes('_rna_edit');
+
+  # convert attributes to SeqEdit objects
+  foreach my $a (@$attribs) {
+    push @seqeds, Bio::EnsEMBL::SeqEdit->new(-ATTRIB => $a);
+  }
+
+  return \@seqeds;
+}
+
+
 =head2 get_all_Attributes
 
   Arg [1]    : optional string $attrib_code
                The code of the attribute type to retrieve values for.
   Example    : ($rna_edits) = @{$transcript->get_all_Attributes('_rna_edit')};
-               @transcript_attributes    = @{$transcript->get_all_Attributes()};
+               @transc_attributes    = @{$transcript->get_all_Attributes()};
   Description: Gets a list of Attributes of this transcript.
                Optionally just get Attrubutes for given code.
   Returntype : listref Bio::EnsEMBL::Attribute
@@ -708,11 +729,11 @@ sub get_all_Attributes {
     }
 
     my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
-    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Transcript( $self );
+    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Transcript($self);
   }
 
   if( defined $attrib_code ) {
-    my @results = grep { uc($_->code()) eq uc($attrib_code) }  
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }
     @{$self->{'attributes'}};
     return \@results;
   } else {
@@ -727,10 +748,10 @@ sub get_all_Attributes {
                You can have more Attributes as arguments, all will be added.
   Example    : $transcript->add_Attributes($rna_edit_attribute);
   Description: Adds an Attribute to the Transcript. Usefull to do _rna_edits.
-               If you add an attribute before you retrieve any from database, lazy load
-               will be disabled.
+               If you add an attribute before you retrieve any from database, 
+               lazy load will be disabled.
   Returntype : none
-  Exceptions : 
+  Exceptions : throw on incorrect arguments
   Caller     : general
 
 =cut
@@ -745,10 +766,16 @@ sub add_Attributes {
 
   for my $attrib ( @attribs ) {
     if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
-      throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+     throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
     }
     push( @{$self->{'attributes'}}, $attrib );
   }
+
+  # flush cdna coord cache b/c we may have added a SeqEdit
+  $self->{'cdna_coding_start'} = undef;
+  $self->{'cdna_coding_end'} = undef;
+
+  return;
 }
 
 
@@ -823,7 +850,6 @@ sub add_Exon{
     throw("Exon overlaps with other exon in same transcript.\n" .
           "Transcript Exons:\n$all_str\n" .
           "This Exon:\n$cur_str");
-    throw("Exon overlaps with other exon in same transcript.");
   }
 
   # recalculate start, end, slice, strand
@@ -896,13 +922,21 @@ the transcript.
 =cut
 
 sub length {
-    my( $self ) = @_;
-    
-    my $length = 0;
-    foreach my $ex (@{$self->get_all_Exons}) {
-        $length += $ex->length;
+  my( $self ) = @_;
+
+  my $length = 0;
+  foreach my $ex (@{$self->get_all_Exons}) {
+    $length += $ex->length;
+  }
+
+  # adjust the length if post transcriptional edits are enabled
+  if($self->edits_enabled()) {
+    foreach my $se (@{$self->get_all_SeqEdits()}) {
+      $length += $se->length_diff();
     }
-    return $length;
+  }
+
+  return $length;
 }
 
 
@@ -986,9 +1020,13 @@ sub three_prime_utr {
   Example    : none
   Description: Returns a list of exons that translate with the
                start and end exons truncated to the CDS regions.
+               This function does not take into account any SeqEdits
+               (post transcriptional RNA modifictions) when constructing the
+               the 'translateable' exons, and it does not update the phase
+               information of the created 'translateable' exons.
   Returntype : listref Bio::EnsEMBL::Exon
   Exceptions : throw if translation has invalid information
-  Caller     : Genebuild, $self->translate()
+  Caller     : Genebuild
 
 =cut
 
@@ -997,7 +1035,7 @@ sub get_all_translateable_Exons {
   my ( $self ) = @_;
 
   #return an empty list if there is no translation (i.e. pseudogene)
-  my $translation = $self->translation or return [];  
+  my $translation = $self->translation or return [];
   my $start_exon      = $translation->start_Exon;
   my $end_exon        = $translation->end_Exon;
   my $t_start         = $translation->start;
@@ -1012,7 +1050,7 @@ sub get_all_translateable_Exons {
     }
 
     my $length  = $ex->length;
-        
+
     my $adjust_start = 0;
     my $adjust_end = 0;
     # Adjust to translation start if this is the start exon
@@ -1022,7 +1060,7 @@ sub get_all_translateable_Exons {
       }
       $adjust_start = $t_start - 1;
     }
-        
+
     # Adjust to translation end if this is the end exon
     if ($ex == $end_exon) {
       if ($t_end < 1 or $t_end > $length) {
@@ -1189,9 +1227,8 @@ sub get_TranscriptMapper {
 =cut
 
 sub start_Exon{
-   my ($self,@args) = @_;
-
-   return $self->get_all_Exons()->[0];
+  my $self = shift;
+  return $self->get_all_Exons()->[0];
 }
 
 =head2 end_Exon
@@ -1204,8 +1241,7 @@ sub start_Exon{
 =cut
 
 sub end_Exon{
-   my ($self,@args) = @_;
-
+   my $self = shift;
    return $self->get_all_Exons()->[-1];
 }
 
@@ -1223,12 +1259,9 @@ sub end_Exon{
 =cut
 
 sub description{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'description'} = $value;
-    }
-    return $obj->{'description'};
+  my $self = shift;
+  $self->{'description'} = shift if( @_ );
+  return $self->{'description'};
 }
 
 
@@ -1243,11 +1276,9 @@ sub description{
 =cut
 
 sub version{
-    my $self = shift;
-
-    $self->{'version'} = shift if( @_ );
-
-    return $self->{'version'};
+  my $self = shift;
+  $self->{'version'} = shift if( @_ );
+  return $self->{'version'};
 }
 
 
@@ -1263,11 +1294,9 @@ sub version{
 =cut
 
 sub stable_id{
-    my $self = shift;
-
-    $self->{'stable_id'} = shift if( @_ );
-
-    return $self->{'stable_id'};
+  my $self = shift;
+  $self->{'stable_id'} = shift if( @_ );
+  return $self->{'stable_id'};
 }
 
 
@@ -1366,8 +1395,7 @@ sub transform {
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
 
-  #flush internal values that depend on the exon coords that may have been
-  #cached
+  # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'} = undef;
   $new_transcript->{'coding_region_start'} = undef;
   $new_transcript->{'coding_region_end'} = undef;
@@ -1422,8 +1450,7 @@ sub transfer {
     $new_transcript->{'_trans_exon_array'} = \@new_exons;
   }
 
-  #flush internal values that depend on the exon coords that may have been
-  #cached
+  # flush cached internal values that depend on the exon coords
   $new_transcript->{'transcript_mapper'} = undef;
   $new_transcript->{'coding_region_start'} = undef;
   $new_transcript->{'coding_region_end'} = undef;
@@ -1490,8 +1517,7 @@ sub recalculate_coordinates {
   $self->strand( $strand );
   $self->slice( $slice );
 
-  #flush internal values that depend on the exon coords that may have been
-  #cached
+  # flush cached internal values that depend on the exon coords
   $self->{'transcript_mapper'} = undef;
   $self->{'coding_region_start'} = undef;
   $self->{'coding_region_end'} = undef;
