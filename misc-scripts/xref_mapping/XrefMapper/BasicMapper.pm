@@ -750,7 +750,7 @@ sub store {
   my $dir = $self->dir();
   foreach my $file (glob("$dir/*.map")) {
 
-    print "Parsing results from " . basename($file) .  "\n";
+    #print "Parsing results from " . basename($file) .  "\n";
     open(FILE, $file);
     $total_files++;
 
