@@ -196,7 +196,7 @@ sub id_EnsEMBL {
     my $length = $annseq->seq->seq_len();
     my $id = $annseq->embl_id();
 
-    return sprintf("%-9s  standard; DNA; %s; %d BP.", $id, $division, $length );
+    return sprintf("%-9s  ENSEMBL; DNA; %s; %d BP.", $id, $division, $length );
 }
 
 
