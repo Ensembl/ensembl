@@ -72,6 +72,35 @@ sub _initialize {
   return $make; # success - we hope!
 }
 
+=head2 seq
+
+ Title   : seq
+ Usage   : $seq = $contig->seq();
+ Function: Gets a Bio::Seq object out from the contig
+ Example :
+ Returns : Bio::Seq object
+ Args    :
+
+
+=cut
+
+sub seq{
+   my ($self) = @_;
+   my $id = $self->id();
+
+   my $sth = $self->_dbobj->prepare("select sequence from dna where contig = \"$id\"");
+   my $res = $sth->execute();
+   # should be a better way of doing this
+   my $str = $res->fetchrow_hashref->{sequence};
+   
+   if( ! $str ) {
+       $self->throw("No DNA sequence in contig $id");
+   }
+
+   return Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+   
+}
+
 =head2 get_all_SeqFeatures
 
  Title   : get_all_SeqFeatures
