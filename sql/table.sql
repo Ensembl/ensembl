@@ -56,6 +56,7 @@ CREATE TABLE contig (
   corder int(10) unsigned,
   dna int(10),
   chromosomeId int(10) DEFAULT '0' NOT NULL,
+  international_id varchar(40) DEFAULT '',
   PRIMARY KEY (internal_id),
   KEY clone_index (clone),
   KEY id_index (id)
@@ -123,6 +124,7 @@ CREATE TABLE exon (
   strand int(2) DEFAULT '1' NOT NULL,
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
+  rank int(10) DEFAULT '1' NOT NULL,
   KEY idx1 (id,contig),
   PRIMARY KEY (id),
   KEY contig_index (contig)
@@ -149,13 +151,15 @@ CREATE TABLE feature (
   contig int(40) DEFAULT '' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
-  score int(10) DEFAULT '0' NOT NULL,
+  score double(16,4) DEFAULT '0' NOT NULL,
   strand int(1) DEFAULT '1' NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   name varchar(40),
   hstart int(11) DEFAULT '0' NOT NULL,
   hend int(11) DEFAULT '0' NOT NULL,
   hid varchar(40) DEFAULT '' NOT NULL,
+  evalue double(16,4),
+  perc_id int(10),
   KEY overlap (id,contig,seq_start,seq_end,analysis),
   PRIMARY KEY (id),
   KEY contig_index (contig),
@@ -236,7 +240,7 @@ CREATE TABLE repeat_feature (
   contig varchar(40) DEFAULT '' NOT NULL,
   seq_start int(10) DEFAULT '0' NOT NULL,
   seq_end int(10) DEFAULT '0' NOT NULL,
-  score int(10) DEFAULT '0' NOT NULL,
+  score double(16,4) DEFAULT '0' NOT NULL,
   strand int(1) DEFAULT '1' NOT NULL,
   analysis varchar(40) DEFAULT '' NOT NULL,
   hstart int(11) DEFAULT '0' NOT NULL,
@@ -306,5 +310,21 @@ CREATE TABLE translation (
   seq_end int(10) DEFAULT '0' NOT NULL,
   end_exon varchar(40) DEFAULT '' NOT NULL,
   PRIMARY KEY (id)
+);
+
+
+CREATE TABLE genedblink (
+   gene_id  varchar(40) DEFAULT '' NOT NULL,
+   external_db varchar(40) DEFAULT '' NOT NULL,
+   external_id varchar(40) DEFAULT '' NOT NULL,
+   PRIMARY KEY(gene_id,external_db,external_id)
+);
+
+
+CREATE TABLE transcriptdblink (
+   transcript_id  varchar(40) DEFAULT '' NOT NULL,
+   external_db varchar(40) DEFAULT '' NOT NULL,
+   external_id varchar(40) DEFAULT '' NOT NULL,
+   PRIMARY KEY(transcript_id,external_db,external_id)
 );
 

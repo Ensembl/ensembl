@@ -1,10 +1,10 @@
 INSERT INTO clone VALUES ('pog','pog',1,1,-1,'0000-00-00 00:00:00','0000-00-00 00:00:00','0000-00-00 00:00:00');
 
-INSERT INTO contig VALUES ('contig1',1,'pog',5,NULL,NULL,1,0);
-INSERT INTO contig VALUES ('contig2',2,'pog',6,NULL,NULL,2,0);
-INSERT INTO contig VALUES ('contig3',3,'pog',5,NULL,NULL,3,0);
-INSERT INTO contig VALUES ('contig4',4,'pog',6,NULL,NULL,4,0);
-INSERT INTO contig VALUES ('contig5',5,'pog',5,NULL,NULL,5,0);
+INSERT INTO contig VALUES ('contig1',1,'pog',5,NULL,NULL,1,0,'international-a');
+INSERT INTO contig VALUES ('contig2',2,'pog',6,NULL,NULL,2,0,'international-b');
+INSERT INTO contig VALUES ('contig3',3,'pog',5,NULL,NULL,3,0,'international-c');
+INSERT INTO contig VALUES ('contig4',4,'pog',6,NULL,NULL,4,0,'international-d');
+INSERT INTO contig VALUES ('contig5',5,'pog',5,NULL,NULL,5,0,'international-e');
 
 INSERT INTO contigoverlap VALUES (1,2,4,5,'TEST',1,'right2right');
 INSERT INTO contigoverlap VALUES (2,3,1,4,'TEST',1,'left2right');

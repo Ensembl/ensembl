@@ -13,5 +13,6 @@ CREATE TABLE ghost (
   version varchar(5) DEFAULT '' NOT NULL,
   seq_type set("transcript","protein","exon") DEFAULT '' NOT NULL, 
   deleted_time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  new_id varchar(40) DEFAULT '',
   PRIMARY KEY (id,version,seq_type)
 );
