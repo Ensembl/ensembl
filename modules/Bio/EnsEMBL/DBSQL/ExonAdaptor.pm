@@ -323,11 +323,36 @@ sub remove {
     throw("ExonAdaptor can only remove Exons not PredictionExons.");
   }
 
-  # delete the association to supporting features, but not the alignment
-  # features themselves.
+  # Remove the supporting features of this exon
 
-  my $sth = $self->prepare("DELETE FROM supporting_feature WHERE exon_id = ?");
+  my $prot_adp = $self->db->get_ProteinAlignFeatureAdaptor;
+  my $dna_adp = $self->db->get_DnaAlignFeatureAdaptor;
+
+  my $sth = $self->prepare("SELECT feature_type, feature_id  " .
+                           "FROM supporting_feature " .
+                           "WHERE exon_id = ?");
+  $sth->execute($exon->dbID);
+
+  while(my ($type, $feature_id) = $sth->fetchrow()){
+    if($type eq 'protein_align_feature'){
+      my $f = $prot_adp->fetch_by_dbID($feature_id);
+      $prot_adp->remove($f);
+    }
+    elsif($type eq 'dna_align_feature'){
+      my $f = $dna_adp->fetch_by_dbID($feature_id);
+      $dna_adp->remove($f);
+    }
+    else {
+      warning("Unknown supporting feature type $type. Not removing feature.");
+    }
+  }
+  $sth->finish();
+
+  # delete the association to supporting features
+
+  $sth = $self->prepare("DELETE FROM supporting_feature WHERE exon_id = ?");
   $sth->execute( $exon->dbID );
+  $sth->finish();
 
   # delete the exon stable identifier
 
