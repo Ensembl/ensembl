@@ -217,7 +217,7 @@ CREATE TABLE geneclone_neighbourhood (
 CREATE TABLE ghost (
   id varchar(40) DEFAULT '' NOT NULL,
   version varchar(5) DEFAULT '' NOT NULL,
-  obj_type enum('transcript','protein','exon') DEFAULT '' NOT NULL,
+  obj_type enum('transcript','protein','exon') DEFAULT 'exon' NOT NULL,
   deleted datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id,version,obj_type)
