@@ -565,7 +565,7 @@ sub write_ContigOverlap {
 				       "$distance," .
 				       "'$overlap_type')";
 
-    print(STDERR "query is $query\n");
+    #print(STDERR "query is $query\n");
 
     $sth = $self->prepare($query);
     $res = $sth ->execute;

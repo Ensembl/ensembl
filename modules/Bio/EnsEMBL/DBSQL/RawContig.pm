@@ -1030,7 +1030,6 @@ sub _load_overlaps {
 		"and    (con.dna = co.dna_b_id " . 
 		"or     con.dna = co.dna_a_id)  ";
 
-#   print(STDERR "Query is $query");
 
    my $sth = $self->dbobj->prepare($query);
    
