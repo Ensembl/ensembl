@@ -173,6 +173,25 @@ sub get_all_RepeatFeatures{
 
 }
 
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures (Abstract)
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self) = @_;
+   
+   $self->throw("Abstract method get_all_ExternalFeatures encountered in base class. Implementation failed to complete it")
+
+}
+
 
 
 =head2 get_all_Genes
@@ -280,7 +299,6 @@ sub top_SeqFeatures{
    my (@f);
    push(@f,$self->get_all_SeqFeatures());
    foreach my $gene ( $self->get_all_Genes()) {
-       print STDERR "Got a $gene\n";
        my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,-contig => $self);
        push(@f,$vg);
    }

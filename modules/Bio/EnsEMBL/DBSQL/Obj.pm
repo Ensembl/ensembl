@@ -79,7 +79,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize;
 
-  my ($db,$host,$driver,$user,$password,$debug,$perl) = 
+  my ($db,$host,$driver,$user,$password,$debug,$perl,$external) = 
       $self->_rearrange([qw(DBNAME
 			    HOST
 			    DRIVER
@@ -87,6 +87,7 @@ sub _initialize {
 			    PASS
 			    DEBUG
 			    PERLONLYFEATURES
+			    EXTERNAL
 			    )],@args);
 
   $db   || $self->throw("Database object must have a database name");
@@ -136,6 +137,12 @@ sub _initialize {
 
   if( $perl == 1 ) {
       $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
+  }
+
+  if( defined $external ){
+      foreach my $external_f ( @{$external} ) {
+	  $self->add_ExternalFeatureFactory($external_f);
+      }
   }
 
 
@@ -2530,6 +2537,7 @@ sub write_ContigOverlap {
     $res = $sth->execute;
 
 }
+
     
 
 =head2 prepare
@@ -2566,6 +2574,48 @@ sub prepare {
 
    return $self->_db_handle->prepare($string);
 }
+
+
+=head2 add_ExternalFeatureFactory
+
+ Title   : add_ExternalFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_ExternalFeatureFactory{
+   my ($self,$value) = @_;
+
+   if( ! ref $value || $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
+   }
+
+   push(@{$self->{'_external_ff'}},$value);
+}
+
+=head2 _each_ExternalFeatureFactory
+
+ Title   : _each_ExternalFeatureFactory
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _each_ExternalFeatureFactory{
+   my ($self) = @_;
+
+   return @{$self->{'_external_ff'}}
+}
+
 
 =head2 _analysis_cache
 

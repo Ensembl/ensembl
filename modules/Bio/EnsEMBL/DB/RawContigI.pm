@@ -46,8 +46,13 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::EnsEMBL::DB::ContigI);
 
+=head1 Inheriets from ContigI
 
+As RawContig inheriets from ContigI, the implementation
+functions on ContigI must be completed. Please read ContigI
+documentation
 
+=cut
 
 =head2 created
 

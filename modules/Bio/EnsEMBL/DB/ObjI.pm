@@ -297,6 +297,24 @@ sub archive_Gene {
     $self->throw("Not implemented in the object!");
 }
 
+=head2 add_ExternalFeatureFactory
+
+ Title   : add_ExternalFeatureFactory (Abstract)
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_ExternalFeatureFactory{
+   my ($self) = @_;
+   $self->throw("Abstract method add_ExternalFeatureFactory encountered in base class. Implementation failed to complete it")
+
+}
+
 
 
 =head2 replace_last_update

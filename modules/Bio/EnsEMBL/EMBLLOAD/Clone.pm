@@ -22,11 +22,8 @@ Bio::EnsEMBL::EMBLLOAD::Clone
 
     @genes   = $clone->get_all_Genes();
 
-    # dumping EMBL format
 
-    $ostream = Bio::AnnSeqIO->new( -format => 'EMBL' , -fh => \*STDOUT );
-    $annseq  = $clone->_getAnnSeq();
-    $ostream->write_annseq($annseq);
+
 
     
 =head1 DESCRIPTION
@@ -64,7 +61,7 @@ sub _initialize {
     my($self,@args) = @_;    
     my ($annseq)=$self->_rearrange([qw(ANNSEQ)],@args);
     my $make = $self->SUPER::_initialize; 
-    $self->_getAnnSeq($annseq);  
+    $self->_get_Seq($annseq);  
     return $make; 
     
 }
@@ -86,7 +83,7 @@ sub _initialize {
 sub id {
 
    my ($self) = @_;
-   my $id=$self->_getAnnSeq->seq->id;  
+   my $id=$self->_get_Seq->seq->id;  
    return $id;
 }
 
@@ -107,7 +104,7 @@ sub id {
 sub embl_id {
 
    my ($self) = @_;
-   my $id=$self->_getAnnSeq->seq->id;  
+   my $id=$self->_get_Seq->seq->id;  
    return $id;
 }
 
@@ -134,7 +131,7 @@ sub get_all_Genes {
     my @exons;
     my $exon_counter;
 
-    foreach my $ft($self->_getAnnSeq->all_SeqFeatures){
+    foreach my $ft($self->_get_Seq->all_SeqFeatures){
 	if($ft->primary_tag eq 'CDS'){
 	    
 	    my $exon = Bio::EnsEMBL::Exon->new($ft->start,$ft->end,$ft->strand);
@@ -146,7 +143,7 @@ sub get_all_Genes {
 	    $exon->version("1");
 	    $exon->created("2000");
 	    $exon->modified("2000");
-	    $exon->attach_seq($self->_getAnnSeq->seq);
+	    $exon->attach_seq($self->_get_Seq->seq);
 
 
 	    push @exons,$exon;
@@ -170,7 +167,7 @@ sub get_all_Genes {
 	#$transcript->gene("new_gene_id");
 
 	my $gene = Bio::EnsEMBL::Gene->new();  
-	my $gene_id=$self->_getAnnSeq->seq->id;
+	my $gene_id=$self->_get_Seq->seq->id;
 	$gene_id="EMBLG" . "0000" . $gene_id; 
 	$gene->id($gene_id);
 	$gene->add_Transcript($transcript);
@@ -183,7 +180,7 @@ sub get_all_Genes {
 
 
 
-sub _getAnnSeq {
+sub _get_Seq {
 
     my ($self,$value) = @_;
     if (defined $value){$self->{'annseq'}=$value;}
@@ -374,8 +371,9 @@ sub get_Contig {
 	   if ($value eq $contig->id){$seen=1;}
 	   else {$seen=0;}}}
    if ($seen==1){
-       $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_getAnnSeq);   
-       $contig->id($value);}   
+       return $contig;
+
+   }   
    else{$self->throw("can't get a clone without valid id");}
    
    return $contig;
@@ -399,7 +397,7 @@ sub get_Contig {
 sub get_all_Contigs {
    my ($self) = @_;
 
-   my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_getAnnSeq);
+   my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_get_Seq);
    push my @contigs,$contig;
  
    return @contigs;

@@ -49,17 +49,20 @@ sub _initialize {
     my($self,@args) = @_;
     
     my $make = $self->SUPER::_initialize;    
-    my ($file,$format)=$self->_rearrange([qw(FILE FORMAT)],@args);        
+    my ($file,$format,$seq)=$self->_rearrange([qw(FILE FORMAT SEQ)],@args);        
 # my $file='data/newentry';
 # my$format='EMBL';  
 
-   $file   || $self->throw("no file");
-    $format || $self->throw("no format");
-
-      
-    my $stream= Bio::AnnSeqIO->new( -format => $format, -file => $file);
-    my $annseq=$stream->next_annseq();
-    $self->_get_AnnSeq($annseq);
+    if( defined $seq && defined $file ) {
+	$self->throw("trying to build EMBLLOAD object from both a file and a sequence!");
+    }
+    if( ! defined $seq ) {
+	$file   || $self->throw("no file");
+	$format || $self->throw("no format");
+	my $stream= Bio::SeqIO->new( -format => $format, -file => $file);
+	$seq=$stream->next_seq();
+    }
+    $self->get_Seq($seq);
 
     return $make;     
 }
@@ -82,7 +85,7 @@ sub _initialize {
 sub get_Clone {
 
     my ($self,$value)=@_;
-    my $clone = Bio::EnsEMBL::EMBLLOAD::Clone->new($self->_get_AnnSeq);   
+    my $clone = Bio::EnsEMBL::EMBLLOAD::Clone->new($self->get_Seq);   
     return $clone;
 }
 
@@ -104,7 +107,7 @@ sub get_Clone {
 sub get_Contig {
 
    my ($self) = @_;
-   my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_get_AnnSeq);    
+   my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->get_Seq);    
    return $contig;  
 }
 
@@ -138,9 +141,10 @@ sub get_Gene {
 	   if ($value eq $gene->id){$seen=1;}
 	   else {$seen=0;}}}
    if ($seen==1){
-       $gene = Bio::EnsEMBL::Gene->new();   
-       $gene->id($value);}   
-   else{$self->throw("can't get a gene without valid id");}
+       return $gene;
+   } else {
+       $self->throw("can't get a gene without valid id");
+   }
    
    return $gene;
 }
@@ -163,7 +167,7 @@ sub get_Gene {
 
 sub get_all_Clone_id{
    my ($self) = @_;   
-   my $id=$self->_get_AnnSeq->seq->id;
+   my $id=$self->get_Seq->id;
    return $id;
    
 }
@@ -375,7 +379,7 @@ sub replace_last_update {
 
 
 
-sub _get_AnnSeq {
+sub get_Seq {
 
     my ($obj,$value) = @_;
     if( defined $value) {$obj->{'annseq'} = $value;}

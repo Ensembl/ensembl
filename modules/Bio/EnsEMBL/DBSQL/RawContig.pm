@@ -450,7 +450,6 @@ sub get_all_RepeatFeatures {
 	   # build EnsEMBL features and make the FeaturePair
 
 	   $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-
 	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
 				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 
@@ -467,6 +466,7 @@ sub get_all_RepeatFeatures {
  
    return @array;
 }
+
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
@@ -542,6 +542,44 @@ sub get_all_PredictionFeatures {
  
    return @array;
 }
+
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self,@args) = @_;
+   my @out;
+   my $acc;
+   
+   # this is not pretty.
+   $acc = $self->id();
+   $acc =~ s/\.\d+$//g;
+   my $embl_offset = $self->embl_offset();
+
+   foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
+       push(@out,$extf->get_Ensembl_SeqFeatures_contig($self->id,$self->seq_version,1,$self->length));
+       foreach my $sf ( $extf->get_Ensembl_SeqFeatures_clone($acc,$self->seq_version,$self->embl_offset,$self->embl_offset+$self->length()) ) {
+	   my $start = $sf->start - $embl_offset;
+	   my $end   = $sf->end   - $embl_offset;
+	   $sf->start($start);
+	   $sf->end($end);
+	   push(@out,$sf);
+       }
+   }
+
+   return @out;
+
+}
+
 
 =head2 length
 

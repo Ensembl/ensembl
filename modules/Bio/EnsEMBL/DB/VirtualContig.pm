@@ -313,16 +313,17 @@ sub top_SeqFeatures{
    my ($self,@args) = @_;
    my (@f);
 
-   print STDERR "Skip value is [",$self->skip_SeqFeature('similarity'),"]\n";
 
    if( $self->skip_SeqFeature('similarity') != 1 ) { 
-       print STDERR "Going to call similarity features...!\n";
-
        push(@f,$self->get_all_SimilarityFeatures());
    } 
 
    if( $self->skip_SeqFeature('repeat') != 1 ) { 
        push(@f,$self->get_all_RepeatFeatures());
+   } 
+
+   if( $self->skip_SeqFeature('external') != 1 ) { 
+       push(@f,$self->get_all_ExternalFeatures());
    } 
 
    foreach my $gene ( $self->get_all_Genes()) {
@@ -393,6 +394,24 @@ sub get_all_RepeatFeatures{
    
    return $self->_get_all_SeqFeatures_type('repeat');
 
+}
+
+=head2 get_all_ExternalFeatures
+
+ Title   : get_all_ExternalFeatures
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_ExternalFeatures{
+   my ($self) = @_;
+
+   return $self->_get_all_SeqFeatures_type('external');
 }
 
 
@@ -997,6 +1016,8 @@ sub _get_all_SeqFeatures_type {
 	   push(@$sf,$c->get_all_SimilarityFeatures());
        } elsif ( $type eq 'prediction' ) {
 	   push(@$sf,$c->get_all_PredictionFeatures());
+       } elsif ( $type eq 'external' ) {
+	   push(@$sf,$c->get_all_ExternalFeatures());
        } else {
 	   $self->throw("Type $type not recognised");
        }
