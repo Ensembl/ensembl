@@ -89,7 +89,7 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($gene,$contig) = $self->_rearrange(['GENE','CONTIG'],@args);
+  my ($gene,$contig,$start,$end,$strand) = $self->_rearrange(['GENE','CONTIG','START','END','STRAND'],@args);
   if( !defined $gene ) {
       $self->throw("No gene in virtualgene object");
   }
@@ -100,7 +100,13 @@ sub _initialize {
   $self->gene($gene);
   $self->dbobj($contig->dbobj);
   $self->contig_id($contig->id);
-  $self->_calculate_coordinates($gene,$contig);
+  if( !defined $start ) {
+      $self->_calculate_coordinates($gene,$contig);
+  } else {
+      $self->start($start);
+      $self->end($end);
+      $self->strand($strand);
+  }
 
   return $make; # success - we hope!
 }

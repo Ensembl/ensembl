@@ -1001,7 +1001,7 @@ sub get_Virtual_Contig{
     my $first_contig=$self->_db_obj->get_Contig($first_exon->contig_id());
     my $first_ori=$first_exon->strand();
     my $vc=Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $first_contig,
-					      -focusposition => 2,
+					      -focusposition => $first_contig->golden_start+1,
 					      -ori => $first_ori,
 					      -left => 5000,
 					      -right => 5000
