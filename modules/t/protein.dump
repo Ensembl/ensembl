@@ -328,13 +328,6 @@ INSERT INTO static_golden_path (fpcctg_name, chr_name, raw_id, chr_start, chr_en
 INSERT INTO transcript (id, version, gene, translation) VALUES ('ENST00000216167',1,'ENSG00000100331','ENSP00000216167');
 
 
-#
-# Dumping data for table 'transcriptdblink'
-#
-
-INSERT INTO transcriptdblink (transcript_id, external_db, external_id) VALUES ('ENST00000216167','EMBL','AL365511');
-INSERT INTO transcriptdblink (transcript_id, external_db, external_id) VALUES ('ENST00000216167','SPTREMBL','Q9NPS7');
-
 
 #
 # Dumping data for table 'translation'
@@ -346,22 +339,25 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 # Dumping data for table 'objectXref'
 #
 
-#INSERT INTO objectXref (ensembl_id, ensembl_object_type) VALUES ('ENST00000216167','Transcript');
-
+INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 1);
+INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 2);
 #
 # Dumping data for table 'Xref'
 #
 
-#INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (1, 1, 'AL365511', 01, 'blablaou');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (1, 1, 'AL365511', 01, 'blablaou');
+INSERT INTO Xref (xrefID, externalDBId, dbprimary_id, version, description) VALUES (2, 2, 'Q9NPS7', 02, 'tremblannot');
 
 #
 # Dumping data for table 'externalSynonym'
 #
 
-#INSERT INTO externalSynonym (xrefId, synonym) VALUES (1, 'EMBL_SYNONYME1');
+INSERT INTO externalSynonym (xrefId, synonym) VALUES (1, 'EMBL_SYNONYME1');
+INSERT INTO externalSynonym (xrefId, synonym) VALUES (2, 'SPTREMBL_SYNONYME2');
 
 #
 # Dumping data for table 'externalDB'
 #
 
-#INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (1, 'EMBL', 23, 'http//');
+INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (1, 'EMBL', 23, 'http//');
+INSERT INTO externalDB (externalDBId, db_name, release, url_pattern) VALUES (2, 'SPTREMBL', 2, 'http//');

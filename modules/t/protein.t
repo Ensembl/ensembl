@@ -45,9 +45,9 @@ print "ok 2\n";
 
 
  my $protein_adaptor=Bio::EnsEMBL::DBSQL::Protein_Adaptor->new($db);
-#eval {
+eval {
     $protein = $protein_adaptor->fetch_Protein_by_dbid('ENSP00000216167');
-#};
+};
 if ($@) {
     print "not ok 3\n";
 }
@@ -103,6 +103,7 @@ else {
 }
 
 my @dblinks = $protein->annotation->each_DBLink();
+
 
 if (scalar @dblinks == 7) {
      print "ok 9\n";
@@ -169,9 +170,9 @@ else {
     print "not ok 16\n";
 }
 
-my $rm = "rm seq_temp.swiss";
+#my $rm = "rm seq_temp.swiss";
 
-system($rm) == 0 or die "$0\Error running '$rm'";
+#system($rm) == 0 or die "$0\Error running '$rm'";
 
 
 
