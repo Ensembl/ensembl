@@ -60,11 +60,12 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
   Arg [TYPE] : The type (e.g. HAP for haplotype, PAR for PAR)
   Arg [...]  : Named arguments passed to superclass
   Example    : $feature = Bio::EnsEMBL::AssemblyExceptionFeature->new
-                        (-start    => 1,
-                         -end      => 100,
-                         -slice    => $slice,
-                         -adaptor  => $adaptor,
-                         -type     => 'HAP')
+                        (-start           => 1,
+                         -end             => 100,
+                         -slice           => $slice,
+                         -alternate_slice => $alt_slice,
+                         -adaptor         => $adaptor,
+                         -type            => 'HAP')
   Description: Constructs a new Bio::EnsEMBL::Feature.  Generally subclasses
                of this method are instantiated, rather than this class itself.
   Returntype : Bio::EnsEMBL::Feature
@@ -81,9 +82,9 @@ sub new {
   my $class = ref($caller) || $caller;
   my $self = $class->SUPER::new(@_);
 
-  my ($type) = rearrange(['TYPE'],@_);
-
+  my ($type, $alternate_slice) = rearrange(['TYPE', 'ALTERNATE_SLICE'],@_);
   $self->{'type'} = $type;
+  $self->{'alternate_slice'} = $alternate_slice;
 
   return $self;
 }
@@ -109,13 +110,34 @@ sub new_fast {
 =cut
 
 sub type {
-  my $self = shift;
 
-  # TODO check for legal type
+  my $self = shift;
 
   $self->{'type'} = shift if(@_);
 
   return $self->{'type'};
+}
+
+
+=head2 alternate_slice
+
+  Arg [1]    : (optional) string $value
+  Example    : $alt_slice = $assembly_exception_feature->alternate_slice();
+  Description: Getter/Setter for the alternate slice associated with this feature.
+               The alternate slice represents the "other side" of the AssemblyExceptionFeature.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub alternate_slice {
+
+  my $self = shift;
+
+  $self->{'alternate_slice'} = shift if(@_);
+
+  return $self->{'alternate_slice'};
 }
 
 1;
