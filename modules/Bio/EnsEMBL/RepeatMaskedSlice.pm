@@ -17,7 +17,7 @@ Bio::EnsEMBL::RepeatMaskedSlice - Arbitary Slice of a genome
 
    $slice = $sa->fetch_by_region('chromosome', 'X', 1_000_000, 2_000_000);
 
-   $repeat_masked_slice = $sa->get_repeatmasked_seq();
+   $repeat_masked_slice = $slice->get_repeatmasked_seq();
 
    #get repeat masked sequence:
    my $dna = $repeat_masked_slice->seq();
