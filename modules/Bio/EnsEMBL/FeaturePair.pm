@@ -498,11 +498,11 @@ sub gffstring {
 
     my $str = $self->SUPER::gffstring();
 
-   my $hstrand = "+";
+    my $hstrand = "+";
    
-   if ($self->hstrand == -1) {
-     $hstrand = "-";
-   }
+    if (($self->hstrand)&&($self->hstrand == -1)) {
+      $hstrand = "-";
+    }
 
     #Append a few FeaturePair specific things
     $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
