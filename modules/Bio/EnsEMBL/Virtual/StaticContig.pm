@@ -248,6 +248,7 @@ sub get_all_SimilarityFeatures_above_score{
 			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
 
 	$out->analysis($analysis);
+        $out->id      ($hid);
 	push(@features,$out);
     }
     return @features;
