@@ -122,7 +122,7 @@ sub fetch_by_contig_list{
   my ($self, @args) = @_;
 
   #use core db
-  return $self->{'_core_adaptor'}->fetch_by_stable_id(@args);
+  return $self->{'_core_adaptor'}->fetch_by_contig_list(@args);
 }
 
 
