@@ -20,7 +20,7 @@ my %dependent_sources;
 my %taxonomy2species_id;
 my %name2species_id;
 
-my ($host, $port, $dbname, $user, $pass, $create);
+my ($host, $port, $dbname, $user, $pass, $create, $release);
 my $skipdownload;
 
 # --------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ my $skipdownload;
 
 sub run {
 
-  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create) = @_;
+  ($host, $port, $dbname, $user, $pass, my $speciesr, my $sourcesr, $skipdownload, $create, $release) = @_;
 
   my @species = @$speciesr;
   my @sources = @$sourcesr;
@@ -154,11 +154,14 @@ sub run {
 	# update AFTER processing in case of crash.
 	update_source($dbi, $source_url_id, $file_cs, $new_file[0]);
 
+	# set release if specified
+	set_release($release, $source_id) if ($release);
+
       } 
     elsif(!$empty){
       print "Ignoring ".join(' ',@new_file)." as checksums match\n";
     }
-    
+
   }
 
   # remove last working directory
@@ -803,6 +806,24 @@ sub create {
   die "Cannot open ".$sql_dir."sql/populate_metadata.sql" if (! -e $sql_dir."sql/populate_metadata.sql");
   $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/populate_metadata.sql";
   system($cmd);
+
+}
+
+# --------------------------------------------------------------------------------
+
+# Set release for a source.
+
+sub set_release {
+
+  my ($release, $source_id) = @_;
+
+  my $dbi = dbi();
+
+  my $sth = $dbi->prepare("UPDATE source SET release=? WHERE source_id=?");
+
+  $sth->execute($release, $source_id);
+
+  print "Set release to $release for source ID $source_id\n";
 
 }
 
