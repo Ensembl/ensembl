@@ -224,24 +224,48 @@ sub get_all_RepeatFeatures{
    return @repeats;
 }
 
+=head2 repeat_adaptor
+
+ Title   : repeat_adaptor
+ Usage   : $obj->repeat_adaptor
+ Function: For getting hold of the repeat feature adaptor within a slice obj
+ Example :
+ Returns : RepeatFeatureAdaptor
+ Args    : none
+
+
+=cut
+
+
+sub repeat_adaptor{
+    my ($self) = @_;
+
+    my $db = $self->adaptor->{'db'};
+
+    my $rep_adaptor = $db->get_RepeatFeatureAdaptor;
+
+    return $rep_adaptor;
+}
+
 
 =head2 get_all_PredictionFeatures
 
  Title   : get_all_PredictionFeatures
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $obj->get_all_PredictionFeatures
+ Function: Use to derive a list of prediction features specific to the analysis type specified by the logic name.
+ Example : my @pred_rm_feat = $obj->get_all_PredictionFeatures('RepeatMasker');
+ Returns : a list of Bio::EnsEMBL::PredictionTranscript objects
+ Args    : a logic name - the name of the analysis that created or returned the prediction feature.
 
 
 =cut
 
 sub get_all_PredictionFeatures{
    my ($self,@args) = @_;
-
-
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   
+   my @pred_feat = $self->adaptor->fetch_all_prediction_transcripts($self);
+   
+   return @pred_feat;
 }
 
 
