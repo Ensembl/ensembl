@@ -200,6 +200,17 @@ sub external_name {
 }
 
 
+sub is_known {
+  my $self = shift;
+  if( defined $self->external_name() ) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+
 
 sub adaptor {
    my $self = shift;
