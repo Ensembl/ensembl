@@ -59,7 +59,7 @@ package Bio::EnsEMBL::Feature;
 
 use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
-use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 use vars qw(@ISA);
 
@@ -369,9 +369,13 @@ sub transform {
   my $cs_name = shift;
   my $cs_version = shift;
 
-  ### for backwards compatibility it might be a good idea to transform to
-  ### contig coords if no args are provided and to chain this method to
-  ### transfer() if a slice is provided
+  #
+  # For backwards compatibility check if the arguments are old style args
+  #
+  if(!$cs_name || ref($cs_name)) {
+    deprecate('Calling transform without a coord system name is deprecated.');
+    return $self->_deprecated_transform($cs_name);
+  }
 
   my $slice = $self->{'slice'};
 
@@ -409,7 +413,7 @@ sub transform {
   my @coords = $asm_mapper->map($slice->seq_region_name(),
                                 $feature->{'start'},
                                 $feature->{'end'},
-                                $feature->{'strand'},
+                                $feature->{'strand'} || 1, #strand can be 0
                                 $current_cs);
 
   #we don't deal with gaps or with multiple seq_region mappings
@@ -540,6 +544,37 @@ sub project {
 sub contig {
   deprecate('Use slice() instead');
   slice(@_);
+}
+
+
+sub _deprecated_transform {
+  my $self = shift;
+  my $arg = shift;
+
+  if(!$arg) {
+    deprecate("Calling transform() with no arguments is deprecated.\n".
+          "A coordinate system name argument should be used instead.\n".
+          "You probably wanted transform('seqlevel') or transform('contig').");
+    return $self->transform('seqlevel');
+  }
+
+  if(ref($arg) eq 'Bio::EnsEMBL::Slice') {
+    if($arg->{'empty'}) {
+      deprecate("Calling transform with an empty slice is deprecated.\n" .
+                "A coordinate system name argument should be used instead.\n".
+                "You probably wanted transform('chromosome') or " .
+                "transform('toplevel')");
+      return $self->transform('toplevel');
+    }
+    deprecate("Calling transform with a slice is deprecated.\n" .
+              "Use the transfer method instead");
+    return $self->transfer($arg);
+  }
+
+  warning("Calling transform with a [".ref($arg)."] arg is no longer " .
+          "(or never was) supported.  Doing nothing instead.");
+
+  return $self;
 }
 
 1;
