@@ -215,7 +215,11 @@ sub register_contig {
      return ();
    }
 
-   return ( $ctg_list[0]->[0,1,2] )
+   my $chr_name = $ctg_list[0]->[0];
+   my $chr_start = $ctg_list[0]->[1];
+   my $chr_end = $ctg_list[0]->[2];
+
+   return ($chr_name, $chr_start, $chr_end);
 }
 
 
