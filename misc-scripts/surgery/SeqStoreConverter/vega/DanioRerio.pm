@@ -449,5 +449,64 @@ sub copy_other_tables {
 }
 
 
+sub update_clone_info {
+  my $self = shift;
+  my $target_cs_name = shift;
+
+  my $target = $self->target();
+  my $source = $self->source();
+  my $dbh    = $self->dbh();
+
+  $self->debug("Danio_specific - Transforming clone_id into seq_region_id for clone_info and current_clone_info");
+
+  foreach my $table_name ('clone_info','current_clone_info') {
+    my $select_st1 = 
+      "SELECT ctg.name, ctg.clone_id " .
+      "FROM   $source.contig ctg, $source.$table_name ci " .
+      "WHERE  ctg.clone_id = ci.clone_id " .
+      "AND ctg.name not like 'ctg%' " .
+      "AND ctg.name not like 'NA%'";
+
+    my $query_results1 = $dbh->selectall_arrayref($select_st1);
+
+    my $i = 0;
+    foreach my $contig_name (@$query_results1) {
+      my $embl_acc = $contig_name->[0];
+      my $select_st2 = 
+	"SELECT sr.seq_region_id " .
+	"FROM $target.seq_region sr " . 
+	"WHERE sr.name = '$embl_acc'";
+      my @query_results2 = $dbh->selectrow_array($select_st2);
+      push @{$query_results1->[$i]},@query_results2;
+      $i++;
+    }
+
+    foreach my $clone (@$query_results1) {
+      my $seq_reg_id = $clone->[2];
+      my $clone_id = $clone->[1];
+
+      my $update_query = 
+	"UPDATE $target.$table_name " .
+	"SET clone_id = '$seq_reg_id' " .
+	"WHERE clone_id = '$clone_id'";
+      $dbh->do($update_query);
+    }
+    my $alter_struct_1 = 
+      "ALTER table $target.$table_name " .
+      "CHANGE clone_id seq_region_id int(10) not null";
+    my $alter_struct_2 = 
+      "ALTER table $target.$table_name " .
+      "modify seq_region_id int(10) not null";
+    $dbh->do($alter_struct_1);
+    $dbh->do($alter_struct_2);
+
+  }
+
+  return;
+}
+
+
+
+
 
 1;

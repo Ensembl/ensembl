@@ -70,20 +70,21 @@ while( my $line = <FILE> ) {
 for my $converter ( @all_species_converters ) {
   $converter->debug( "\n\n*** converting " . $converter->source . " to " . 
                      $converter->target() . " ***");
- # $converter->transfer_meta();
- # $converter->create_coord_systems();
- # $converter->create_seq_regions();
- # $converter->create_assembly();
- # $converter->create_attribs();
- # $converter->set_top_level();
+  $converter->transfer_meta();
+  $converter->create_coord_systems();
+  $converter->create_seq_regions();
+  $converter->create_assembly();
+  $converter->create_attribs();
+  $converter->set_top_level();
 
-#  $converter->transfer_dna();
-#  $converter->transfer_genes();
-#  $converter->transfer_prediction_transcripts();
-#  $converter->transfer_features();
-#  $converter->transfer_stable_ids();
+  $converter->transfer_dna();
+  $converter->transfer_genes();
+  $converter->transfer_prediction_transcripts();
+  $converter->transfer_features();
+  $converter->transfer_stable_ids();
   $converter->copy_other_tables();
-#  $converter->copy_repeat_consensus();
+  $converter->copy_repeat_consensus();
+  $converter->update_clone_info();
 }
 
 
