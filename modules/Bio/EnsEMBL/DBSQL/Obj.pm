@@ -526,16 +526,19 @@ sub write_ContigOverlap {
     # Firstly check that both contigs involved in the overlap are present in the db.
     # If they are new they may not have been inserted yet. In this case when they are inserted, 
     # this ContigOverlap should be found again and will be correctly inserted, hopefully!
-    my $sth = $self->prepare('select id from contig where id = ?');
-    foreach my $cid ($contiga->id, $contigb->id) {
-        $sth->execute($cid);
-        if ($sth->rows == 0) {
-            # Can't write an overlap if contiga or contigb not in DB
-            $self->warn("ContigOverlap can't be written because contig '$cid' not found in DB");
-	    return;
-        } 
-    }
     
+    my $r_contig_a;
+    my $r_contig_b;
+    
+    eval {
+       $r_contig_a = $self->get_Contig($contiga->id);
+       $r_contig_b = $self->get_Contig($contigb->id);
+    };
+    if( $@ ) {
+       $self->warn("Cannot write Overlaps - contig is not in database - $@");
+       return;
+    }
+  
     #print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
     #print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
     #print(STDERR "contigaposition " . $contig_a_position . "\n");
@@ -543,7 +546,7 @@ sub write_ContigOverlap {
     #print(STDERR "overlap type "    . $overlap_type . "\n");
 
     # Get dna_id's
-    my( $dna_a_id, $dna_b_id ) = map $_->dna_id, ($contiga, $contigb);
+    my( $dna_a_id, $dna_b_id ) = map $_->dna_id, ($r_contig_a, $r_contig_b);
     $self->throw("Can't get both dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
         unless $dna_a_id and $dna_b_id;
     $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")

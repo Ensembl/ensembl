@@ -52,7 +52,7 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBSQL::Feature_Obj;
@@ -66,32 +66,27 @@ use Bio::EnsEMBL::Chromosome;
 use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use Bio::PrimarySeq;
 
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
+@ISA = qw(Bio::EnsEMBL::DB::RawContigI Bio::Root::RootI);
 
-# new() is inherited from Bio::Root::Object
+sub new {
+    my( $pkg, @args ) = @_;
+    
+    my $self = bless {}, $pkg;
 
-# _initialize is where the heavy stuff will happen when new is called
+    my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
+					    ID
+					    )],@args);
 
-sub _initialize {
-  my($self,@args) = @_;
+    $id    || $self->throw("Cannot make contig db object without id");
+    $dbobj || $self->throw("Cannot make contig db object without db object");
+    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
-  my $make = $self->SUPER::_initialize;
+    $self->id($id);
+    $self->dbobj($dbobj);
+    $self->_got_overlaps(0);
+    $self->fetch();
 
-  my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
-					  ID
-					  )],@args);
-
-  $id    || $self->throw("Cannot make contig db object without id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
-
-  $self->id($id);
-  $self->dbobj($dbobj);
-  $self->_got_overlaps(0);
-  $self->fetch();
-
-# set stuff in self from @args
-  return $make; # success - we hope!
+    return $self;
 }
 
 =head2 fetch
@@ -141,45 +136,6 @@ sub fetch {
 
     return $self;
 }
-
-=head2 get_Contigs_by_Chromosome
-
- Title   : get_Contig_by_Chromosome
- Usage   : @contigs = $dbobj->get_Contig_by_Chromosome( $chrObj );
- Function: retrieve contigs belonging to a certain chromosome from the
-           database 
- Example :
- Returns : A list of Contig objects. Probably an empty list.
- Args    :
-
-
-=cut
-
-sub get_by_Chromosome {
-    my ($self,$chromosome ) = @_;
-    my $chromosomeId = $chromosome->get_db_id;
-    my @result = ();
-    
-    my $sth = $self->dbobj->prepare("select c.id,c.internal_id,cl.embl_version " . 
-				      "from dna as d,contig as c,clone as cl " .
-			     "where d.id = c.dna and c.chromosomeId = '$chromosomeId' and c.clone = cl.id");
-    
-    
-    my $res = $sth ->execute;
-    my $row;
-    
-    while( $row = $sth->fetchrow_arrayref ) {
-	my $contig = new Bio::EnsEMBL::DBSQL::RawContig 
-	    ( -dbobj => $self->dbobj,		
-	      -id    => $row->[0] );
-	$contig->internal_id($row->[1]);
-	$contig->seq_version($row->[2]);
-	push( @result, $contig );
-    }
-    
-    return @result;
-}
-
 
 =head2 get_all_Genes
 
@@ -1461,6 +1417,7 @@ sub _got_overlaps {
             $sth->execute($id);
 
             while (my $row = $sth->fetchrow_arrayref) {
+                
                 my( $sister_id, 
                     $sister_pos,
                     $self_pos,
@@ -1468,6 +1425,8 @@ sub _got_overlaps {
                     $size,
                     $source,
                     ) = @$row;
+                
+                next unless $source eq 'ucsc';
                 
                 # Make the sister contig object
                 my $sis = Bio::EnsEMBL::DBSQL::RawContig->new(

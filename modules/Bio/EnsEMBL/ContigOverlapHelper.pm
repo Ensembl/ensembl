@@ -48,18 +48,18 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::Root::Object;
+use Bio::Root::RootI;
 
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::Root::RootI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+  my($pkg,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
+  my $self = bless {}, $pkg;
 
   my ($sister,$sisterpos,$sisterpolarity,$selfposition,$distance,$source) = $self->_rearrange([qw( SISTER
 											 SISTERPOSITION
@@ -80,8 +80,8 @@ sub _initialize {
   $self->self_position  ($selfposition);
   $self->distance       ($distance);
   $self->source         ($source);
-  # set stuff in self from @args
-  return $make; # success - we hope!
+  
+  return $self;
 }
 
 =head2 sister

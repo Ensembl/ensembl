@@ -40,23 +40,18 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::ContigOverlap;
+use Bio::EnsEMBL::ContigOverlapHelper;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
 
-use Bio::Root::Object;
+@ISA = qw(Bio::Root::RootI);
 
+sub new {
+  my($pkg,@args) = @_;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
-
-# _initialize is where the heavy stuff will happen when new is called
-
-sub _initialize {
-  my($self,@args) = @_;
-
-  my $make = $self->SUPER::_initialize(@args);
+    my $self = bless {}, $pkg;
 
   my ($contiga,$contigb,$positiona,$positionb,$overlap_type,$source,$distance) 
       = $self->_rearrange([qw( CONTIGA
@@ -82,8 +77,7 @@ sub _initialize {
   $self->source      ($source);
   $self->distance    ($distance);
 
-  # set stuff in self from @args
-  return $make; # success - we hope!
+  return $self;
 }
 
 =head2 contiga
@@ -279,40 +273,71 @@ sub distance {
 
 }
 
-=head2 invert
+=head2 make_ContigOverlapHelper
 
- Title   : invert
- Usage   : $obj->invert
- Function: 
- Returns : Reverses the sense of the overlap
- Args    : none
+    
+    my($end, $helper) = $obj->make_ContigOverlapHelper('FOO');
 
+For contig with id B<FOO> in the ContigOverlap
+object, returns the end of contig B<FOO> which is
+overlaped by the other contig (either "B<left>"
+or "B<right>"), and a new
+C<Bio::EnsEMBL::ContigOverlapHelper> for this
+overlap.
 
 =cut
 
 {
-    my %type_complement = (
-        'right2left'    => 'left2right',
-        'left2right'    => 'right2left',
-        'left2left'     => 'left2left',
-        'right2right'   => 'right2right',
+    my %pol_a = (
+        'right2left'   => ['right',  1],
+        'right2right'  => ['right', -1],
+        'left2right'   => ['left',   1],
+        'left2left'    => ['left',  -1],
+        );
+    my %pol_b = (
+        'right2left'   => ['left',   1],
+        'right2right'  => ['right', -1],
+        'left2right'   => ['right',  1],
+        'left2left'    => ['left',  -1],
         );
 
-    sub invert {
-        my $self = shift;
+    sub make_ContigOverlapHelper {
+        my($self, $id) = @_;
 
-        my $tmp = $self->contiga;
-        $self->contiga($self->contigb);
-        $self->contigb($tmp);
+        $self->throw("Can't return a ContigOverlapHelper without an id")
+            unless $id;
 
-        $tmp = $self->positiona;
-        $self->positiona($self->positionb);
-        $self->positionb($tmp);
+        my $type = $self->overlap_type;
 
-        my $oldtype = $self->overlap_type;
-        my $newtype = $type_complement{$oldtype}
-            or $self->throw("Invalid overlap type '$oldtype'");
-        $self->overlap_type($newtype);
+        my($end, $sis, $self_pos, $sister_pos, $sister_pol);
+        if ($id eq $self->contiga->id) {
+            $self_pos   = $self->positiona;
+            $sis        = $self->contigb;
+            $sister_pos = $self->positionb;
+            ($end, $sister_pol) = @{$pol_a{$type}}
+                or $self->throw("Illegal overlap type '$type'");
+        }
+        elsif ($id eq $self->contigb->id) {
+            $self_pos   = $self->positionb;
+            $sis        = $self->contiga;
+            $sister_pos = $self->positiona;
+            ($end, $sister_pol) = @{$pol_b{$type}}
+                or $self->throw("Illegal overlap type '$type'");
+        }
+        else {
+            $self->throw("ID $id not found in ContigOverlap object");
+        }
+
+        # Return new ContigOverlapHelper object
+        my $helper = Bio::EnsEMBL::ContigOverlapHelper->new(
+	    '-sister'           => $sis,
+	    '-selfposition'     => $self_pos,
+	    '-sisterposition'   => $sister_pos, 
+	    '-sisterpolarity'   => $sister_pol,
+	    '-distance'         => $self->distance,
+	    '-source'           => $self->source,
+	    );
+        return($end, $helper);
     }
 }
 

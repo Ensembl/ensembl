@@ -1230,8 +1230,11 @@ sub write_Exon {
 	$self->throw("$exon is not a EnsEMBL exon - not dumping!");
     }
     
-    my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase,rank) 
-        values (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?, ?, NOW(), ?,?)";
+    my $exonst = q{
+        insert into exon (id, version, contig, created, modified
+          , seq_start, seq_end, strand, phase, stored, end_phase, rank) 
+        values (?,?,?,FROM_UNIXTIME(?),FROM_UNIXTIME(?),?,?,?,?,NOW(),?,?)
+        };
     
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(

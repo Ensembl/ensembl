@@ -47,35 +47,32 @@ package Bio::EnsEMBL::AceDB::Clone;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+use Bio::Root::RootI;
 
-use Bio::Root::Object;
-
-
-@ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI );
+@ISA = qw(Bio::EnsEMBL::DB::CloneI Bio::Root::RootI);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
 
-sub _initialize {
-  my($self,@args) = @_;
+sub new {
+    my($pkg,@args) = @_;
 
-  my $make = $self->SUPER::_initialize(@args);
+    my $self = bless {}, $pkg;
 
-  # set stuff in self from @args
-  my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
-					  ID
-					  )],@args);
+    # set stuff in self from @args
+    my ($dbobj,$id) = $self->_rearrange([qw(DBOBJ
+					    ID
+					    )],@args);
 
-  $id || $self->throw("Cannot make contig db object without id");
-  $dbobj || $self->throw("Cannot make contig db object without db object");
-  $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || 
-      $self->throw("Cannot make contig db object with a $dbobj object");
+    $id || $self->throw("Cannot make contig db object without id");
+    $dbobj || $self->throw("Cannot make contig db object without db object");
+    $dbobj->isa('Bio::EnsEMBL::AceDB::Obj') || 
+        $self->throw("Cannot make contig db object with a $dbobj object");
 
-  $self->id($id);
-  $self->_dbobj($dbobj);
+    $self->id($id);
+    $self->_dbobj($dbobj);
 
-  return $make; # success - we hope!
+    return $self; # success - we hope!
 }
 
 
@@ -97,26 +94,6 @@ sub seq {
    return $contig->seq();
 }
 
-
-=head2 created
-
- Title   : created
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub created {
-    my ($self) = @_;
-    my ($contig) = $self->get_Contig($self->id()); 
-    if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
-        return $date;
-    }
-    return 0;   
-}
 
 
 =head2 embl_version
@@ -207,6 +184,23 @@ sub id {
 
 }
 
+=head2 created
+
+ Title   : created
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub created {
+    my ($self) = @_;
+    
+    return $self->get_Contig->seq_date;
+}
+
 
 =head2 modified
 
@@ -221,11 +215,8 @@ sub id {
 
 sub modified {
     my ($self) = @_;
-    my ($contig) = $self->get_Contig($self->id()); 
-    if (my $date = $contig->ace_seq->at('Properties.Status.Finished[1]')) {
-        return $date->name;
-    }
-    return 0;   
+    
+    return $self->get_Contig->seq_date;
 }
 
 
@@ -242,8 +233,8 @@ sub modified {
 
 sub seq_date {
     my ($self) = @_;
-    my ($contig) = $self->get_Contig($self->id()); 
-    return $contig->seq_date();   
+    
+    return $self->get_Contig->seq_date;
 }
 
 
@@ -282,7 +273,7 @@ sub version {
    if (my $version = $contig->ace_seq->at('DB_info.Sequence_version[1]')) {   
         return $version->name;
    }
-   # If the version isn't defined just return 1.     
+   # If the version isn't defined just return 1.
    return 1;
 }
 
@@ -299,14 +290,9 @@ sub version {
 =cut
 
 sub get_all_Contigs {
-   my ($self) = @_;
-   my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self->_dbobj,
-					   '-id' => $self->id(), 
-                                           '-clone' => $self);
+    my ($self) = @_;
                                            
-   my @contigs;
-   push(@contigs, $contig);
-   return @contigs;   
+    return ($self->get_Contig($self->id));
 }
 
 
@@ -325,64 +311,7 @@ sub get_all_Contigs {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
     
-    my @overlaps;
-
-    foreach my $contig ($self->get_all_Contigs) {
-	if (defined($contig->get_left_overlap)) {
-	    
-	    my $overlap    = $contig->get_left_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'left2right';
-	    } 
-            elsif ($overlap->sister_polarity == -1) {
-		$type = 'left2left';
-	    } 
-            else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	}
-
-	if (defined($contig->get_right_overlap)) {
-	    
-	    my $overlap    = $contig->get_right_overlap;
-	    my $type;
-	    
-	    if ($overlap->sister_polarity == 1) {
-		$type = 'right2left';
-	    } 
-            elsif ($overlap->sister_polarity == -1) {
-		$type = 'right2right';
-	    } 
-            else {
-		$self->throw("Invalid value [" .$overlap->sister_polarity . "] for polarity");
-	    }
-	    
-	    my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga => $contig,
-							     -contigb => $overlap->sister,
-							     -positiona => $overlap->self_position,
-							     -positionb => $overlap->sister_position,
-							     -source    => $overlap->source,
-							     -distance  => $overlap->distance,
-							     -overlap_type => $type);
-	    
-	    push(@overlaps,$tmpoverlap);
-	    
-	}
-    }
-
-    return (@overlaps);
+    return $self->get_Contig->get_ContigOverlaps;
 }
 
 
@@ -398,14 +327,21 @@ sub get_all_ContigOverlaps {
 =cut
 
 sub get_Contig {
-   my ($self,$contigid) = @_;
+    my ($self,$contigid) = @_;
 
-   if( $contigid ne $self->id() ) {
-       $self->throw("In an Acedb database, trying to get a contigid $contigid not on the clone. Indicates an error!");
-   }
+    if( defined($contigid) and $contigid ne $self->id() ) {
+        $self->throw("In an Acedb database, trying to get a contigid $contigid not on the clone. Indicates an error!");
+    }
+    
+    unless ($self->{'_contig_cache'}) {
+        my $contig = new Bio::EnsEMBL::AceDB::Contig(
+            '-dbobj'  => $self->_dbobj,
+            '-id'     => $self->id,
+            );
+        $self->{'_contig_cache'} = $contig;
+    }
 
-   my ($c) = $self->get_all_Contigs(); 
-   return $c;
+    return $self->{'_contig_cache'};
 }
 
 
@@ -443,9 +379,9 @@ sub get_all_Genes {
 =cut
 
 sub _dbobj {
-   my ($obj,$value) = @_;
-   if( defined $value) {
-      $obj->{'_dbobj'} = $value;
+    my ($obj,$value) = @_;
+    if( defined $value) {
+        $obj->{'_dbobj'} = $value;
     }
     return $obj->{'_dbobj'};
 

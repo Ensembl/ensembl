@@ -222,8 +222,6 @@ sub connect {
 sub chunksize {
     my ($self,$arg) = @_;
 
-    my $default_chunk = 20;
-
     if (defined($arg)) {
 	$self->{_chunksize} = $arg;
     } 
@@ -587,46 +585,46 @@ sub transfer_chunk {
 	    next;
 	}
 	
-    eval {
-        # Check if it is a clone object
-        if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
-            $self->write_clone($todb,$arcdb,$object);
-        }
-        
-        # These won't happen - updated clones only are returned from TimDB
-        
-        # Check if it is a gene
-        elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-            if ($self->nogene == 0) {
-              $self->write_gene($todb,$arcdb,$object);
-            }
-        }
-        
-        # Check if it is an exon
-        elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-            $self->write_exon($todb,$object);
-        }
-
-    };
-	if ($@) {
-	    warn("ERROR: problems in updating clone $id: $@ Deleting it from recipient database to preserve data integrity\n");
-            
+        eval {
             # Check if it is a clone object
             if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
-                my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id, -dbobj => $todb);
-                $clone->delete();
+                $self->write_clone($todb,$arcdb,$object);
             }
-        
+
+            # These won't happen - updated clones only are returned from TimDB
+
             # Check if it is a gene
             elsif ($object->isa("Bio::EnsEMBL::Gene")) {
-                $todb->gene_Obj->delete($id);
+                if ($self->nogene == 0) {
+                  $self->write_gene($todb,$arcdb,$object);
+                }
             }
-        
+
             # Check if it is an exon
             elsif ($object->isa("Bio::EnsEMBL::Exon")) {
-               $self->gene_Obj->delete_Exon($id);
+                $self->write_exon($todb,$object);
             }
-	}
+
+        };
+        if ($@) {
+            warn("ERROR: problems in updating clone $id: $@ Deleting it from recipient database to preserve data integrity\n");
+                
+                # Check if it is a clone object
+                if ($object->isa("Bio::EnsEMBL::DB::CloneI")) {
+                    my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id => $id, -dbobj => $todb);
+                    $clone->delete();
+                }
+            
+                # Check if it is a gene
+                elsif ($object->isa("Bio::EnsEMBL::Gene")) {
+                    $todb->gene_Obj->delete($id);
+                }
+            
+                # Check if it is an exon
+                elsif ($object->isa("Bio::EnsEMBL::Exon")) {
+                   $self->gene_Obj->delete_Exon($id);
+                }
+        }
     }
 }
 
@@ -726,19 +724,19 @@ sub write_clone {
         if ($object->version > $rec_clone->version) {
             $self->verbose && print STDERR "Clone with new version, updating the database, and deleting the old version\n";
             if ($self->nogene == 0) {
-            print STDERR "Getting all genes from donor clone\n";
-            my @new_genes=$object->get_all_Genes('evidence');
-            print STDERR "Getting all genes from recipient clone\n";    
-            foreach my $old_gene ($rec_clone->get_all_Genes('evidence')) {
-                $old_genes{$old_gene->id} = $old_gene;
-            }
-            unless ($self->nowrite) {
-                $rec_clone->delete();
-                $db->write_Clone ($object);
-            }
-            foreach my $gene (@new_genes) {
-                $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
-            }
+                print STDERR "Getting all genes from donor clone\n";
+                my @new_genes=$object->get_all_Genes('evidence');
+                print STDERR "Getting all genes from recipient clone\n";    
+                foreach my $old_gene ($rec_clone->get_all_Genes('evidence')) {
+                    $old_genes{$old_gene->id} = $old_gene;
+                }
+                unless ($self->nowrite) {
+                    $rec_clone->delete();
+                    $db->write_Clone ($object);
+                }
+                foreach my $gene (@new_genes) {
+                    $self->write_gene($db,$arcdb,$gene,%old_genes,'1');
+                }
             }
         }       
         elsif ($rec_clone->version > $object->version) {

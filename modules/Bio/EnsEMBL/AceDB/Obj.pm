@@ -59,51 +59,88 @@ use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::AceDB::Contig;
 use Bio::EnsEMBL::AceDB::Clone;
 use Bio::EnsEMBL::AceDB::Update_Obj;
+use Time::Local 'timelocal';
 use Ace;
 
-@ISA = qw(Bio::Root::Object);
-# new() is inherited from Bio::Root::Object
+@ISA = qw(Bio::Root::RootI);
 
-# _initialize is where the heavy stuff will happen when new is called
+sub new {
+    my($pkg,@args) = @_;
 
-sub _initialize {
-  my($self,@args) = @_;
+    my $self = bless {}, $pkg;
 
-  my $make = $self->SUPER::_initialize;
+    my ($host,$port,$timeout,$debug) = $self->_rearrange(
+        [qw(HOST PORT TIMEOUT DEBUG)],@args);
 
-  my ($host,$port,$timeout,$debug) = $self->_rearrange([qw(HOST
-					   PORT
-					   TIMEOUT
-					   DEBUG
-					   )],@args);
+    $host || $self->throw("Database object must have a host");
 
-  $host || $self->throw("Database object must have a host");
-  
-  if( $debug ) {
-     $self->_debug($debug);
- } else {
-     $self->_debug(0);
- }
-  
-  $timeout ||= 60;
-  my $ace = my $db = Ace->connect(-host => $host,
-				  -timeout => $timeout,
-				  -port => $port);
+    if( $debug ) {
+       $self->_debug($debug);
+    } else {
+        $self->_debug(0);
+    }
 
-  if( !$ace ) {
-      $self->throw("Could not connect to ace database $host,$port due to " . Ace->error() . " ");
-  }
+    $timeout ||= 60;
+    my $ace = my $db = Ace->connect(-host => $host,
+				    -timeout => $timeout,
+				    -port => $port);
+    $ace->date_style('ace');
+    if( !$ace ) {
+        $self->throw("Could not connect to ace database $host,$port due to " . Ace->error() . " ");
+    }
 
-  if( $self->_debug > 3 ) {
-     $self->warn("Using connection $ace");
-  }
-     
-  $self->_db_handle($ace);
+    if( $self->_debug > 3 ) {
+       $self->warn("Using connection $ace");
+    }
 
-# set stuff in self from @args
-  return $make; # success - we hope!
+    $self->_db_handle($ace);
+
+    return $self;
 }
 
+=head2 dateace
+
+    my $time = $obj->dateace('2000-05-24');
+
+Converts a ACeDB format date into a unix time int
+using C<Time::Local::timelocal>.
+
+=cut
+
+sub dateace {
+    my( $self, $acedate ) = @_;
+    
+    my($year, $mon, $mday) = $acedate =~ /(\d{4})-(\d{2})-(\d{2})/
+        or die "Invalid ace date '$acedate'";
+    $year -= 1900;
+    $mon  -= 1;
+    return timelocal(0,0,0,$mday,$mon,$year);
+}
+
+=head2 dna_fetch_method
+
+    $obj->dna_fetch_method(\&humace_dna_get);
+    my $method = $obj->dna_fetch_method;
+    
+    my $bio_seq = &$method($contig);
+
+Sets or gets a subroutine in the database object
+which is used by C<Bio::EnsEMBL::AceDB::Contig>
+objects to fetch C<Bio::PrimarySeq> objects from
+the database.
+
+=cut
+
+sub dna_fetch_method {
+    my( $self, $value ) = @_;
+    
+    if ($value) {
+        $self->throw("'$value' is not a reference to a subroutine")
+            unless ref($value) eq 'CODE';
+        $self->{'_dna_fetch_method'} = $value;
+    }
+    return $self->{'_dna_fetch_method'};
+}
 
 =head2 get_Gene
 
@@ -137,10 +174,10 @@ sub get_Gene{
 =cut
 
 sub get_Clone {
-   my ($self,$id) = @_;
+    my ($self,$id) = @_;
 
-   $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
-   my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id, -dbobj => $self);
+    $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
+    my $clone = new Bio::EnsEMBL::AceDB::Clone( -id => $id, -dbobj => $self);
 
     return $clone;
 }
@@ -159,10 +196,10 @@ sub get_Clone {
 =cut
 
 sub get_all_Clone_id {
-   my ($self) = @_;
- 
-   my @clones = map $_->name, $self->fetch(Genome_Sequence => '*');
-   return @clones;
+    my ($self) = @_;
+
+    my @clones = map $_->name, $self->fetch(Genome_Sequence => '*');
+    return @clones;
 }
 
 
@@ -179,13 +216,15 @@ sub get_all_Clone_id {
 =cut
 
 sub get_Contig {
-   my ($self,$id) = @_;
+    my ($self,$id) = @_;
 
-   $self->fetch("Sequence => $id") || $self->throw("$id is not a valid sequence in this database");
-   my $contig = new Bio::EnsEMBL::AceDB::Contig ( -dbobj => $self,
-					       -id => $id );
+    $self->fetch(Sequence => $id) || $self->throw("$id is not a valid sequence in this database");
+    my $contig = new Bio::EnsEMBL::AceDB::Contig(
+        -dbobj => $self,
+        -id    => $id
+        );
 
-   return $contig;
+    return $contig;
 }
 
 
@@ -262,10 +301,10 @@ sub _debug{
 
 =cut
 
-sub _db_handle{
-   my ($self,$value) = @_;  
-   if( defined $value) {
-      $self->{'_db_handle'} = $value;
+sub _db_handle {
+    my ($self,$value) = @_;  
+    if ($value) {
+        $self->{'_db_handle'} = $value;
     }
     return $self->{'_db_handle'};
 
@@ -282,11 +321,11 @@ sub _db_handle{
 
 =cut
 
-sub _exon_id_start{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_exon_id_start'} = $value;
+sub _exon_id_start {
+    my $obj = shift;
+    if (@_) {
+       my $value = shift;
+       $obj->{'_exon_id_start'} = $value;
     }
     return $obj->{'_exon_id_start'};
 

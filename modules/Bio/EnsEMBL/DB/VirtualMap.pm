@@ -270,14 +270,14 @@ sub build_contig_map {
     }
     my %seen_hash;
 
-    print STDERR "Starting with $current_left_size and $left to build\n";
+    #print STDERR "Starting with $current_left_size and $left to build\n";
 
     GOING_LEFT :
     
 	while( $current_left_size < $left ) {
-	    print STDERR "Current contig ".$current_contig->id." current left $current_left_size vs $left\n";
+	    #print STDERR "Current contig ".$current_contig->id." current left $current_left_size vs $left\n";
 
-	    if( exists $seen_hash{$current_contig->id} ) {
+	    if( $seen_hash{$current_contig->id} ) {
 		$self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
 	    } else {
 		$seen_hash{$current_contig->id} = 1;
@@ -293,6 +293,7 @@ sub build_contig_map {
 	      
 		if( !defined $overlap ) {
 		    $left = $current_left_size;
+                    #print STDERR "run out of contigs goin left\n";
 		    last;
 		}
 		
@@ -323,6 +324,7 @@ sub build_contig_map {
 		# as this means we have run out of contigs
 		if( !defined $overlap ) {
 		    $left = $current_left_size;
+                    #print STDERR "run out of contigs going right\n";
 		    last;
 		}
 		
@@ -346,6 +348,7 @@ sub build_contig_map {
 		    $current_orientation = 1;
 		}
 	    }
+            #print STDERR "current_left_size = $current_left_size\n";
 	}
   
     # now $current_contig is the left most contig in this set, with
@@ -397,11 +400,11 @@ sub build_contig_map {
     %seen_hash = ();
     
     while( $current_length < $total ) {
-	print STDERR "Looking on right move $current_length vs $total\n";
+	#print STDERR "Looking on right move $current_length vs $total\n";
 
 	# move onto the next contig.
 	
-	if( exists $seen_hash{$current_contig->id} ) {
+	if( $seen_hash{$current_contig->id} ) {
 	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
 	} else {
 	    $seen_hash{$current_contig->id} = 1;
@@ -415,7 +418,7 @@ sub build_contig_map {
 	    # if there is no right overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
-		print STDERR "Found right end\n";
+		#print STDERR "Found right end\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
@@ -424,7 +427,7 @@ sub build_contig_map {
 	    # see whether the distance gives us an end condition, and a right_overhang
 	    
 	    if( $current_length + $overlap->distance > $total ) {
-		print STDERR "Found right overhang\n";
+		#print STDERR "Found right overhang\n";
 		# right overhang
 		$self->right_overhang($total - $current_length);
 		last;
@@ -464,7 +467,7 @@ sub build_contig_map {
 	    
 	    # up the length
 	    $current_length += $overlap->sister->golden_length -1;
-	    print STDERR "Returning with length $current_length\n";
+	    #print STDERR "Returning with length $current_length\n";
 	} else {
 	    # go left wrt to the contig
 	 	    
@@ -475,7 +478,7 @@ sub build_contig_map {
 	    #IS THIS FINE?
 
 	    if( !defined $overlap ) {
-		print STDERR "Found right end...going left\n";
+		#print STDERR "Found right end...going left\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
@@ -484,7 +487,7 @@ sub build_contig_map {
 	    # see whether the distance gives us an end condition, and a right_overhang
 	    
 	    if( $current_length + $overlap->distance > $total ) {
-		print STDERR "Found right overhang\n";
+		#print STDERR "Found right overhang\n";
 		# right overhang
 		$self->right_overhang($total - $current_length);
 		last;
@@ -520,7 +523,7 @@ sub build_contig_map {
 	    
 	    # up the length
 	    $current_length += $overlap->sister->golden_length -1;
-	    print STDERR "Returning with length $current_length\n";
+	    #print STDERR "Returning with length $current_length\n";
 	}
     }
     
