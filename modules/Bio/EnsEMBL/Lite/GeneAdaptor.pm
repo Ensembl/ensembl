@@ -165,27 +165,20 @@ sub fetch_by_gene_id_list {
 =cut
 
 sub fetch_all_by_Slice {
-  my ( $self, $slice, $empty_flag ) = @_;
-  my $out;
+    my ( $self, $slice, $empty_flag ) = @_;
 
-  if($empty_flag) {
-    #check cache of empty genes
-    if($self->{'_slice_empty_gene_cache'}{$slice->name()}) {
-      return @{$self->{'_slice_empty_gene_cache'}{$slice->name()}};
+    if($empty_flag) {
+    # return from cache or the _get_empty_Genes fn while caching results....
+        return $self->{'_slice_empty_gene_cache'}{$slice->name()} ||= 
+                   $self->_get_empty_Genes($slice);
     }
-    
-    $out = $self->_get_empty_Genes($slice);
-    $self->{'_slice_empty_gene_cache'}{$slice->name()} = $out;
-    return $out;
-  }
 
   #check the cache which uses the slice name as it key
-  if($self->{'_slice_gene_cache'}{$slice->name()}) {
-    return $self->{'_slice_gene_cache'}{$slice->name()};
-  }
+    if($self->{'_slice_gene_cache'}{$slice->name()}) {
+        return $self->{'_slice_gene_cache'}{$slice->name()};
+    }
 
-  my $sth = $self->prepare
-    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
+    my $sth = $self->prepare( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
               t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
               t.exon_structure, t.external_name, t.exon_ids, t.external_db, 
@@ -204,12 +197,9 @@ sub fetch_all_by_Slice {
 		   $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
 		   $slice->chr_start );
  
-  $out = $self->_objects_from_sth( $sth, $slice );
+    return $self->{'_slice_gene_cache'}{$slice->name} =
+                $self->_objects_from_sth( $sth, $slice );
 
-  #place the results in an LRU cache
-  $self->{'_slice_gene_cache'}{$slice->name} = $out;
-
-  return $out;
 }
 
 

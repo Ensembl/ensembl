@@ -320,18 +320,10 @@ sub fetch_all_by_domain {
 sub fetch_all_by_contig_list{
    my ($self,@list) = @_;
 
-   my $str;
+   my $str = "('". join( "','", @list ). "')";
 
-   foreach my $id ( @list ) {
-       $str .= "'$id',";
-   }
-   $str =~ s/\,$//g;
-   $str = "($str)";
-
-   # 
    # this is non-optimised, because we are going to make multiple
    # trips to the database. should fix here
-   #
 
    my $sth = $self->prepare("SELECT distinct(t.gene_id) 
                              FROM transcript t,exon_transcript et,
@@ -371,7 +363,7 @@ sub fetch_all_by_Slice {
 
   #check the cache which uses the slice name as it key
   if($self->{'_slice_gene_cache'}{$slice->name()}) {
-    return @{$self->{'_slice_gene_cache'}{$slice->name()}};
+    return $self->{'_slice_gene_cache'}{$slice->name()};
   }
 
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
@@ -387,7 +379,7 @@ sub fetch_all_by_Slice {
   
   # no genes found so return
   if ( scalar (@cids) == 0 ) {
-    return ();
+    return [];
   }
   
   my $str = "(".join( ",",@cids ).")";
@@ -410,8 +402,7 @@ sub fetch_all_by_Slice {
 
   #place the results in an LRU cache
   return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
-
-  return \@out;
+  return $self->{'_slice_gene_cache'}{$slice->name} = \@out;
 }
 
 
@@ -514,22 +505,22 @@ sub fetch_by_maximum_DBLink {
   my $self = shift;
   my $external_id = shift;
 
-  my $genes = $self->fetch_by_DBEntry( $external_id );
+    my $genes=$self->fetch_all_by_DBEntry( $external_id );
 
-  my $biggest;
-  my $max=0;
-  my $size=scalar(@genes);
-  if ($size > 0) {
-    foreach my $gene (@$genes) {
-      my $size = (scalar(@{$gene->get_all_Exons}));
-      if ($size > $max) {
-	$biggest = $gene;
-	$max=$size;
-      }
+    my $biggest;
+    my $max=0;
+    my $size=scalar(@$genes);
+    if ($size > 0) {
+	foreach my $gene (@$genes) {
+	    my $size = scalar(@{$gene->get_all_Exons});
+	    if ($size > $max) {
+		$biggest = $gene;
+		$max=$size;
+	    }
+	}
+	return $biggest;
     }
-    return $biggest;
-    }
-  return;
+    return;
 }
 
 
