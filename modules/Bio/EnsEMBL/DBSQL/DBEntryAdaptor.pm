@@ -270,12 +270,17 @@ sub exists {
 }
 
 
+
 =head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
                (The gene to retrieve DBEntries for)
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($gene)};
-  Description: This should be changed, it modifies the gene passed in
+  Description: This returns a list of DBEntries associated with this gene.
+               Note that this method was changed in release 15.  Previously
+               it set the DBLinks attribute of the gene passed in to contain
+               all of the gene, transcript, and translation xrefs associated 
+               with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries
   Exceptions : none
   Caller     : Bio::EnsEMBL::Gene
@@ -285,31 +290,7 @@ sub exists {
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
 
-  my $sth = $self->prepare(
-      "SELECT t.transcript_id, t.translation_id
-       FROM   transcript t
-       WHERE  t.gene_id = ?");
-
-  $sth->execute( $gene->dbID );
-
-  while (my($transcript_id, $translation_id) = $sth->fetchrow) {
-    if($translation_id) {
-      foreach my $translink (@{$self->_fetch_by_object_type($translation_id, 
-							    'Translation')} ){ 
-        $gene->add_DBLink($translink);
-      }
-    }
-    foreach my $translink(@{ $self->_fetch_by_object_type( $transcript_id, 
-							   'Transcript' )} ) { 
-      $gene->add_DBLink($translink);
-    }
-  }
-  if($gene->stable_id){
-    my $genelinks = $self->_fetch_by_object_type( $gene->dbID, 'Gene' );
-    foreach my $genelink ( @$genelinks ) {
-      $gene->add_DBLink( $genelink );
-    }
-  }
+  return $self->_fetch_by_object_type($gene->dbID(), 'Gene');
 }
 
 
@@ -317,7 +298,11 @@ sub fetch_all_by_Gene {
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_RawContig($contig)}
-  Description: Retrieves a list of DBentries by a contig object
+  Description: Retrieves a list of DBentries by a contig object. Since 
+               xrefs are never stored in EnsEMBL for RawContigs this method
+               never returns anything.  It has been left in, because of the
+               possibility that it is used externally, and because you could
+               in theory store xrefs on rawcontigs if you wanted to.
   Returntype : listref of Bio::EnsEMBL::DBEntries
   Exceptions : none
   Caller     : general
@@ -326,7 +311,8 @@ sub fetch_all_by_Gene {
 
 sub fetch_all_by_RawContig {
   my ( $self, $contig ) = @_;
-  return $self->_fetch_by_object_type($contig->dbID, 'RawContig' );
+
+  return $self->_fetch_by_object_type( $contig->dbID(), 'RawContig' );
 }
 
 
@@ -334,7 +320,11 @@ sub fetch_all_by_RawContig {
 
   Arg [1]    : Bio::EnsEMBL::Transcript
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_Gene($trans)};
-  Description: This should be changed, it modifies the transcipt passed in
+  Description: This returns a list of DBEntries associated with this 
+               transcript. Note that this method was changed in release 15.  
+               Previously it set the DBLinks attribute of the gene passed in 
+               to contain all of the gene, transcript, and translation xrefs 
+               associated with this gene.
   Returntype : listref of Bio::EnsEMBL::DBEntries
   Exceptions : none
   Caller     : Bio::EnsEMBL::Gene 
@@ -344,29 +334,7 @@ sub fetch_all_by_RawContig {
 sub fetch_all_by_Transcript {
   my ( $self, $trans ) = @_;
 
-  my $sth = $self->prepare("
-  SELECT t.translation_id 
-                FROM transcript t
-                WHERE t.transcript_id = ?
-  ");
-
-  $sth->execute( $trans->dbID );
-
-  # 
-  # Did this to be consistent with fetch_by_Gene, but don't like
-  # it (filling in the object). I think returning the array would
-  # be better. Oh well. EB
-  #
-  # ??
-
-  while (my($translation_id) = $sth->fetchrow) {
-	  foreach my $translink(@{ $self->_fetch_by_object_type( $translation_id, 'Translation' )} ) {
-        $trans->add_DBLink($translink);
-    }
-  }
-  foreach my $translink(@{ $self->_fetch_by_object_type( $trans->dbID, 'Transcript' )} ) {
-     $trans->add_DBLink($translink);
-  }
+  return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript');
 }
 
 
@@ -384,6 +352,7 @@ sub fetch_all_by_Transcript {
 
 sub fetch_all_by_Translation {
   my ( $self, $trans ) = @_;
+
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
 }
 
@@ -398,9 +367,9 @@ sub fetch_all_by_Translation {
   Returntype : arrayref of DBEntry objects
   Exceptions : none
   Caller     : fetch_all_by_Gene
-  			   fetch_all_by_Translation
-			   fetch_all_by_Transcript
-  			   fetch_all_by_RawContig
+               fetch_all_by_Translation
+               fetch_all_by_Transcript
+               fetch_all_by_RawContig
 
 =cut
 
