@@ -102,8 +102,10 @@ sub new {
 
   my $self = $class->SUPER::new(@args);
 
+
   # Array to store supporting evidence for this exon
-  $self->{_supporting_evidence} = [];
+  $self->{_supporting_evidence} = undef;
+
 
   # add in EnsEMBL tag as 1.
 
@@ -745,7 +747,7 @@ sub add_Supporting_Feature {
     $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeatureI") unless 
 	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeatureI");
 
-    $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
+    $self->{_supporting_evidence} = undef unless defined($self->{_supporting_evidence});
 
     # check whether this feature object has been added already
     my $found = 0;

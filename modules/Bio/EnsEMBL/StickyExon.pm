@@ -145,6 +145,70 @@ sub add_component_Exon{
    push(@{$self->{'_component_exons'}},$exon);
 }
 
+=head2 add_Supporting_Feature
+
+ Title   : add_Supporting_Feature
+ Usage   : $obj->add_Supporting_Feature($feature)
+ Function: 
+ Returns : Nothing
+ Args    : Bio::EnsEMBL::SeqFeature
+
+
+=cut
+
+
+sub add_Supporting_Feature {
+    my ($self,$feature) = @_;
+
+    $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeatureI") unless 
+	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeatureI");
+
+    $self->{_supporting_evidence} = undef unless defined($self->{_supporting_evidence});
+
+    # check whether this feature object has been added already
+    my $found = 0;
+    if ( $feature && $self->{_supporting_evidence} ){
+      foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
+	# compare objects
+	if ( $feature == $added_feature ){
+	  $found = 1;
+	  
+	  # no need to look further
+	  last;
+	}
+      }
+    }
+    if ( $found == 0 ){
+      push(@{$self->{_supporting_evidence}},$feature);
+    }
+}
+
+
+
+=head2 each_Supporting_Feature
+
+ Title   : each_Supporting_Feature
+ Usage   : my @f = $obj->each_Supporting_Feature
+ Function: 
+ Returns : @Bio::EnsEMBL::Feature
+ Args    : none
+
+
+=cut
+
+
+sub each_Supporting_Feature {
+    my ($self) = @_;
+
+    if ( !defined ( $self->{_supporting_evidence} )) {
+      $self->{_supporting_evidence} = [];  
+      $self->adaptor->fetch_evidence_by_Exon( $self );
+    }
+
+    return @{$self->{_supporting_evidence}};
+}
+
+
 =head2 length
 
  Title   : length

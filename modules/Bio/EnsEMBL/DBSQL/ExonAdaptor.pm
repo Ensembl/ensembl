@@ -271,17 +271,7 @@ sub _new_Exon_from_hashRef {
 
 sub fetch_evidence_by_Exon {
   my ( $self, $exon )  = @_;
-  # if exon is sticky, get supporting from components
-  if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
-    # sticky storing. Sticky exons contain normal exons ...
-
-    my @componentExons = $exon->each_component_Exon();
-    for my $componentExon ( @componentExons ) {
-      $self->fetch_evidence_by_Exon( $componentExon );
-    }
-    return;
-  }
-			
+ 
   my $statement = "SELECT contig_id, seq_start, seq_end, score,
                           strand, analysis, name, hstart, hend,
                           hid, evalue, perc_id, phase, end_phase
