@@ -56,6 +56,7 @@ sub run {
 #AF218575        Nbn     621420
 
   my $count= 0;
+  my $mismatch = 0;
   <RGD>;
   while (<RGD>) {
     chomp;
@@ -68,10 +69,11 @@ sub run {
       $count++;
     }
     else{
-      print $array[0]." not found??\n";
+      $mismatch++;
     }
   }
   print "$count xrefs succesfully loaded\n";
+  print "$mismatch xrefs ignored\n";
 }
 
 
