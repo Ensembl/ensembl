@@ -314,9 +314,9 @@ sub read_MSP {
 
     foreach my $homol ($mspobj->each_Homol) { 
 #	print("HOMOL : " . $homol->seqname ." " . 
-	      $homol->homol_SeqFeature->seqname . " " .
-	      $homol->homol_SeqFeature->start . " " . 
-	      $homol->homol_SeqFeature->end . "\n");
+#	      $homol->homol_SeqFeature->seqname . " " .
+#	      $homol->homol_SeqFeature->start . " " . 
+#	      $homol->homol_SeqFeature->end . "\n");
 
 	if ($type1 eq "PEP") {
 
