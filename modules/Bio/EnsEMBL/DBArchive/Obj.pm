@@ -101,7 +101,7 @@ sub _initialize {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
       
-      my $dbh = DBI->connect("$dsn","$user","$password",{RaiseError => 1});
+      my $dbh = DBI->connect("$dsn",$user,$password,{RaiseError => 1});
       $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
       
       if( $self->_debug > 3 ) {
@@ -298,7 +298,7 @@ sub write_seq{
    #$clone_id || $self->throw("Attempting to write a sequence without a clone id!");
    #$clone_version || $self->throw("Attempting to write a sequence without a clone version number!");
 
-   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','$version','$type','$gene_id','$gene_version','".$seq->seq."')");
+   my $sth = $self->prepare("insert into sequence (id,version,seq_type,gene_id,gene_version,sequence) values ('".$seq->id()."','".$version."','".$type."','".$gene_id."','".$gene_version."','".$seq->seq."')");
    $sth->execute();
 }
 =head2 delete_seq

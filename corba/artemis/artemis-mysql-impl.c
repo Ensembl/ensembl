@@ -2,6 +2,7 @@
 #include "timetolease.h" 
 #include <stdio.h>
 #include <stdlib.h>
+#include <mysql/mysql.h>
 
 
 /*

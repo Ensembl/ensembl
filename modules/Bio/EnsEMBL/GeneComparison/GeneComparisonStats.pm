@@ -128,7 +128,7 @@ sub new {
     if ($ns == 0) {
 	$self->throw("No standard genes given!\n");
     }
-    print STDERR "Got $ns standard genes\n";
+    #print STDERR "Got $ns standard genes\n";
     if (!$standard[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Standard genes are not Bio::EnsEMBL::Gene objects\n");
     }
@@ -138,7 +138,7 @@ sub new {
     if ($np == 0) {
 	$self->throw("No standard genes given!\n");
     }
-    print STDERR "Got $np predictor genes\n";
+    #print STDERR "Got $np predictor genes\n";
     
     if (!$predictor[0]->isa('Bio::EnsEMBL::Gene')) {
 	$self->throw("Predictor genes are not Bio::EnsEMBL::Gene objects\n");

@@ -111,19 +111,20 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 
 #  $gff_string && $self->_from_gff_string($gff_string);
 
-  defined $start        && $self->start($start);
-  defined $end          && $self->end($end);
-  defined $strand       && $self->strand($strand);
-  defined $primary_tag  && $self->primary_tag($primary_tag);
-  defined $source_tag   && $self->source_tag($source_tag);
-  defined $frame        && $self->frame($frame);
-  defined $score        && $self->score($score);
-  defined $analysis     && $self->analysis($analysis);
-  defined $seqname      && $self->seqname($seqname);
-  defined $percent_id   && $self->percent_id($percent_id);
-  defined $p_value      && $self->p_value($p_value);
-  defined $phase        && $self->phase($phase);
-  defined $end_phase    && $self->end_phase($end_phase);
+  $start        && $self->start($start);
+  $end          && $self->end($end);
+  $strand       && $self->strand($strand);
+  $primary_tag  && $self->primary_tag($primary_tag);
+  $source_tag   && $self->source_tag($source_tag);
+  $frame        && $self->frame($frame);
+  $score        && $self->score($score);
+  $analysis     && $self->analysis($analysis);
+  $seqname      && $self->seqname($seqname);
+  $percent_id   && $self->percent_id($percent_id);
+  $p_value      && $self->p_value($p_value);
+  $phase        && $self->phase($phase);
+  $end_phase    && $self->end_phase($end_phase);
+
   return $self; # success - we hope!
 
 }

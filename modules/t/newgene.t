@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..37\n"; 
+BEGIN { $| = 1; print "1..38\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -320,6 +320,7 @@ else {
     print STDERR "Could not get test_gene id using get_geneids_by_hids!\n";
 }
 
+
 my $gene_by_link=$gene_obj->get_Gene_by_DBLink('MC1R');
 if ($gene_by_link->id eq 'test_gene') {
     print "ok 29\n";
@@ -338,6 +339,29 @@ else {
      print STDERR "Trying to get genes by a non-exisiting dblink, and still getting this: $gene_by_link!\nSomething is wrong with get_gene_by_DBLink!\n";
 }
 
+($sg) = $db->gene_Obj->get_array_supporting('evidence','test_gene');
+if( !defined $sg ) {
+    print STDERR "Unable to retrieve supporitng gene test_gene\n";
+    print "not ok 31\n";
+} else {
+    
+    $seen = 0;
+    foreach $exon ( $sg->each_unique_Exon ) {
+	if( $exon->id eq 'test_exon_1') {
+	    ($sf) = $exon->each_Supporting_Feature();
+	    if( defined $sf && $sf->hseqname eq 'TR:P78310' ) {
+		$seen = 1;
+	    }
+	}
+    }
+    
+    if( $seen == 0 ) {
+	print "not ok 31\n";
+	print STDERR "Unable to make supporting evidence";
+    } else {
+	print "ok 31\n";
+    }
+}
 
 $gene_obj->delete_Exon('test_exon_1');
 #Checking if the exon has been really deleted
@@ -346,10 +370,10 @@ eval {
     $exon = $gene_obj->get_Exon('test_exon_1');
 };
 if ($@ =~ /No\sexon\sof\sthis\sid\stest_exon_1/) {
-    print "ok 31\n";
+    print "ok 32\n";
 }
 else {
-    print "not ok 31\n";
+    print "not ok 32\n";
     print STDERR "Exon still present after deleting!\n";
 }
 
@@ -357,10 +381,10 @@ $gene_obj->delete_Supporting_Evidence('test_exon_2');
 $exon=$gene_obj->get_Exon('test_exon_2');
 $gene_obj->get_supporting_evidence($exon);
 if (scalar $exon->each_Supporting_Feature == 0) {
-    print "ok 32\n";
+    print "ok 33\n";
 }
 else {
-    print "not ok 32\n";
+    print "not ok 33\n";
     print STDERR "Exon supporting evidence still present after deleting!\n";
 }
 $gene_obj->delete('test_gene');
@@ -372,45 +396,49 @@ eval {
 };
 
 if ($@ =~ /Error\sretrieving\sgene\swith\sID\:\stest_gene/) {
-    print "ok 33\n";
-}
-else {
-    print "not ok 33\n";
-    print STDERR "Gene still present after deleting!\n";
-} 
-my $newgeneid = $gene_obj->get_new_GeneID;
-if ($newgeneid eq 'ENSG00000000001') {
     print "ok 34\n";
 }
 else {
     print "not ok 34\n";
+    print STDERR "Gene still present after deleting!\n";
+} 
+my $newgeneid = $gene_obj->get_new_GeneID;
+if ($newgeneid eq 'ENSG00000000001') {
+    print "ok 35\n";
+}
+else {
+    print "not ok 35\n";
     print STDERR "New gene id does not look right!\n";
 }
 
 my $newtransid = $gene_obj->get_new_TranscriptID;
 if ($newtransid eq 'ENST00000000001') {
-    print "ok 35\n";
-}
-else {
-    print "not ok 35\n";
-    print STDERR "New transcript id does not look right!\n";
-}
-my $newexonid = $gene_obj->get_new_ExonID;
-if ($newexonid eq 'ENSE00000000001') {
     print "ok 36\n";
 }
 else {
     print "not ok 36\n";
-    print STDERR "New exon id does not look right!\n";
+    print STDERR "New transcript id does not look right!\n";
 }
-my $newtranslid = $gene_obj->get_new_TranslationID;
-if ($newtranslid eq 'ENSP00000000001') {
+my $newexonid = $gene_obj->get_new_ExonID;
+if ($newexonid eq 'ENSE00000000001') {
     print "ok 37\n";
 }
 else {
     print "not ok 37\n";
+    print STDERR "New exon id does not look right!\n";
+}
+
+
+my $newtranslid = $gene_obj->get_new_TranslationID;
+if ($newtranslid eq 'ENSP00000000001') {
+    print "ok 38\n";
+}
+else {
+    print "not ok 38\n";
     print STDERR "New protein id does not look right!\n";
 }
+
+
 
 #Methods still needed to test:
 #$gene_obj->get_Virtual_Contig;

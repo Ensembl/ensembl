@@ -41,6 +41,8 @@ $ens_test->do_sql_file("t/writeablevc.dump");
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
+
+
 print "ok 2\n";    
 
 
@@ -149,8 +151,14 @@ $exon{'exon-2'} = $exon;
 $exon->attach_seq($wvc->primary_seq);
 
 $newgene = $wvc->convert_Gene_to_raw_contig($gene);
-$db->write_Gene($newgene);
+$gene_obj = $db->gene_Obj;
+$gene_obj->use_delayed_insert(0);
+$gene_obj->write($newgene);
 print "ok 4\n";
+
+# let the write complete...
+#$sth = $db->prepare("flush tables");
+#$sth->execute;
 
 ($newgene) = $db->gene_Obj->get_array_supporting('evidence','gene-id-1');
 
@@ -170,7 +178,7 @@ if( !defined $newgene ) {
 		    @sf = $exon->each_Supporting_Feature();
 		    $sf = shift @ sf;
 		    if( !defined $sf || !ref $sf || $sf->hseqname() ne 'other' ) {
-			print STDERR "did not retrieve supporting evidence on exon-1";
+			print STDERR "did not retrieve supporting evidence on exon-1 [$sf]";
 			$error = 1;
 		    }
 		}
