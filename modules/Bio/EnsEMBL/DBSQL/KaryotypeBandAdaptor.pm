@@ -43,6 +43,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
 use vars qw(@ISA);
+use Bio::EnsEMBL::KaryotypeBand;
 use strict;
 
 # Object preamble - inherits from Bio::Root::RootI
@@ -127,7 +128,7 @@ sub fetch_by_chromosome_name{
     $sth->execute;
     my ($chr_start,$chr_end,$stain) = $sth->fetchrow_array;
 
-    return undef unless defined $band;
+    return undef unless defined $chr_start;
 
     my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
     $band_obj->name($name);
@@ -174,7 +175,7 @@ sub fetch_all_by_chromosome{
 
     while ($sth->fetch()){
 	my $band_obj = Bio::EnsEMBL::KaryotypeBand->new();
-	$band_obj->name($name);
+	$band_obj->name($band);
 	$band_obj->chromosome($chr);
 	$band_obj->start($chr_start);
 	$band_obj->end($chr_end);
