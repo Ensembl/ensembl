@@ -28,6 +28,12 @@ package main;
              #'check'      => 'yes',
              'check'      => '',
 
+             #'query_idt'  => 50,
+             'query_idt'    => 50,
+
+             #'target_idt  => 50,
+             'target_idt'  => 50,
+
              ################################ 
 	     # Files location (Input/Output)#
              ################################
