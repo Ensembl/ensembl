@@ -540,18 +540,6 @@ sub get_id_acc{
     # cgp is the clone category (SU, SF, EU, EF)
     my($line,$cdate,$type,$cgp,$acc,$sv,$id2,$fok,$emblid,$htgsp);
 
-#    print "id: |$id|\n";
-#    print "line: ".$self->{'_clone_dbm'}->{$id}."\n";
-#    print "byacc: ".$self->{'_byacc'}."\n";
-#    print "accdb: ".$self->{'_accession_dbm'}."\n";
-#    print "acc: ".$self->{'_accession_dbm'}->{$id}."\n";
-#    if($t){
-#	print "ACC: ".scalar(keys %{$self->{'_accession_dbm'}})."\n";
-#	foreach my $clone (keys %{$self->{'_accession_dbm'}}){
-#	    print "|$clone|,|".$self->{'_accession_dbm'}->{$clone}."|\n";
-#	}
-#    }
-
     if($line=$self->{'_clone_dbm'}->{$id}){
 	# first straight forward lookup
 	($cdate,$type,$cgp,$acc,$sv,$emblid,$htgsp)=split(/,/,$line);
