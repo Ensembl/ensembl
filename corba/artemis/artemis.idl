@@ -18,7 +18,6 @@ module artemis {
 	string getKey();
 	string getLocation();
 	QualifierList getQualifiers();
-	boolean getQualifierByName(in string name,out Qualifier thequalifier);
     };
 
     typedef sequence <Feature> FeatureList;
@@ -26,10 +25,6 @@ module artemis {
     interface Entry {
 	string getName(); // accession number usually.
 	long getFeatureCount(); 
-	Feature getFeatureAtIndex(in long index);
-	long indexOf(in Feature feature);
-	boolean contains(in Feature feature);
-	FeatureList getFeaturesInRange(in long start,in long end);
 	FeatureList getAllFeatures();
 	Sequence getSequence();
     };
