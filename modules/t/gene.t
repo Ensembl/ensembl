@@ -351,7 +351,8 @@ $multi->restore();
 
 $slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
 
-my ( $known, $unknown );
+my $known = 0;
+my $unknown = 0;
 
 $genes = $slice->get_all_Genes();
 for my $gene ( @$genes ) {
