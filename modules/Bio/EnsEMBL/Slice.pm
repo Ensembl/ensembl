@@ -1021,8 +1021,12 @@ sub get_all_Haplotypes {
   }
 
   my $haplo_adaptor = $haplo_db->get_HaplotypeAdaptor;
+
+  my $haplotypes = $haplo_adaptor->fetch_all_by_Slice($self, $lite_flag);
 		
-  return $haplo_adaptor->fetch_all_by_Slice($self, $lite_flag);
+  print STDERR "Slice: returning " . @$haplotypes . " haplotypes\n";
+
+  return $haplotypes;
 }
 
 
