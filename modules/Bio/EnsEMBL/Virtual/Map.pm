@@ -270,6 +270,10 @@ sub create_MapContig{
 sub get_MapContig_by_id {
    my ($self,$name) = @_;
 
+   if (!defined $self->{'_contig_map'}->{$name}) {
+       $self->throw("Could not find Map Contig for contig $name\n");
+   }
+
    return $self->{'_contig_map'}->{$name};
 }
 

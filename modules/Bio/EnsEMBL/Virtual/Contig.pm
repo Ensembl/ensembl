@@ -567,8 +567,14 @@ sub get_all_Exons{
 	    push @vcexons,$exon;
 	}
     }
+    #Make sure it's not redundant
+    my @unique=();
+    my %seen=();
+    foreach my $exon (@vcexons) {
+	push (@unique,$exon) unless $seen{$exon->id}++;
+    }
     
-    return @vcexons;	  
+    return @unique;	
 }
 
 
@@ -611,8 +617,14 @@ sub get_old_Exons{
 	    push @vcexons,$exon;
 	}
     }
+    #Make sure it's not redundant
+    my @unique=();
+    my %seen=();
+    foreach my $exon (@vcexons) {
+	push (@unique,$exon) unless $seen{$exon->id}++;
+    }
     
-    return @vcexons;	  
+    return @unique;	  
 }
 
 
@@ -810,8 +822,29 @@ sub get_all_Genes {
 
 }
 
+=head2 get_old_Genes
+
+ Title   : get_old_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
 
+=cut
+
+sub get_old_Genes {
+    my ($self) = @_;
+    my (%gene,%trans,%exon,%exonconverted);
+    
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {
+	foreach my $gene ( $contig->get_old_Genes() ) {      
+	    $gene{$gene->id()} = $gene;
+	}
+    }
+    return $self->_gene_query(%gene);
+}
 
 =head2 get_Genes_by_Type
 
@@ -838,7 +871,6 @@ sub get_Genes_by_Type {
     return $self->_gene_query(%gene);
 
 }
-
 
 sub _gene_query{
     
