@@ -81,12 +81,14 @@ sub _initialize {
     my ($dbadaptor, 
         $dbdriver, $dbhost, $dbport, $dbuser, $dbpass, $dbname,
         $analysis, $analysis_dbid, $analysis_logic_name, 
-        $contig, $contig_dbid, $contig_name) =
+        $contig, $contig_dbid, $contig_name, 
+        $translation_id) =
         
         $self->_rearrange([qw(DBADAPTOR 
             DBDRIVER DBHOST DBPORT DBUSER DBPASS DBNAME
             ANALYSIS ANALYSIS_DBID ANALYSIS_LOGIC_NAME 
-            CONTIG CONTIG_DBID CONTIG_NAME)], @args);
+            CONTIG CONTIG_DBID CONTIG_NAME
+            TRANSLATION_ID)], @args);
 
     
     if(defined $dbadaptor){

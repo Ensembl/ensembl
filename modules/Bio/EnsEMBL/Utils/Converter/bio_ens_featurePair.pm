@@ -56,7 +56,9 @@ use Bio::EnsEMBL::Utils::Converter::bio_ens;
 sub _initialize {
     my ($self, @args) = @_;
     $self->SUPER::_initialize(@args);
-
+    my ($translation_id) = $self->_rearrange([qw(TRANSLATION_ID)], @args);
+    $self->translation_id($translation_id);
+    
     # internal converter for seqFeature
     $self->{_bio_ens_seqFeature} = new Bio::EnsEMBL::Utils::Converter (
         -in => 'Bio::SeqFeature::Generic',
@@ -104,6 +106,7 @@ sub _convert_single_to_proteinFeature {
         -feature1 => $featurePair->feature1,
         -feature2 => $featurePair->feature2
     );
+    $proteinFeature->seqname($self->translation_id);
     return $proteinFeature;
 }
 
@@ -155,5 +158,10 @@ sub _create_consensus{
     return $consensus;
 }
 
+sub translation_id {
+    my ($self, $arg) = @_;
+    return $self->{_translation_id} = $arg if(defined($arg));
+    return $self->{_translation_id};
+}
         
 1;

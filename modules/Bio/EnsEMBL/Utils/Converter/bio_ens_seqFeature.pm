@@ -64,16 +64,38 @@ sub _convert_single {
         $self->warn("No seq_id value. EnsEMBL SeqFeature will validate it");
         $seq_id = 'Unknown';
     }
-        
+    
+    # Debated issue here. There are p_value and percent_id in EnsEMBL API and DB
+    # schema, but not in bioperl. If in bioperl there are tags called p_value or
+    # percent_id, then the values are passed, otherwise set the default 1.
+    #
+    # the problem arise when I try to converter the seqfeature for tmhmm to 
+    # EnsEMBL seqFeature.
+    # -- Juguang, 11 July '03
+    my $score = $in->score || 1;
+    my $percent_id;
+    if($in->has_tag('percent_id')){
+        ($percent_id) = @{$in->get_tag_values('percent_id')};
+    }else{
+        $percent_id ||= 1;
+    }
+    my $p_value;
+    if($in->has_tag('p_value')){
+        ($p_value) = @{$in->get_tag_values('p_value')};
+    }else{
+        $p_value ||= 1;
+    }
     my $ens_seqFeature;
     my @args = (
         -start => $in->start,
         -end => $in->end,
         -strand => $in->strand,
-        -score => $in->score,
+        -score => $score,
         -analysis => $self->analysis,
         -source_tag => $in->source_tag,
-        -seqname => $seq_id
+        -seqname => $seq_id,
+        -percent_id => $percent_id,
+        -p_value => $p_value
     );
 
     my $output_module = $self->out;
