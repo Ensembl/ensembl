@@ -464,6 +464,7 @@ sub build_contig_map {
 	    
 	    # up the length
 	    $current_length += $overlap->sister->golden_length -1;
+	    print STDERR "Returning with length $current_length\n";
 	} else {
 	    # go left wrt to the contig
 	 	    
@@ -474,6 +475,7 @@ sub build_contig_map {
 	    #IS THIS FINE?
 
 	    if( !defined $overlap ) {
+		print STDERR "Found right end...going left\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
@@ -518,6 +520,7 @@ sub build_contig_map {
 	    
 	    # up the length
 	    $current_length += $overlap->sister->golden_length -1;
+	    print STDERR "Returning with length $current_length\n";
 	}
     }
     

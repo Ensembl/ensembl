@@ -146,27 +146,53 @@ sub start{
 
 sub end{
     my ($self) = @_;
-    
-    if(my $end=$self->rightmost_end) {
+    my $end = $self->rightmost_end;
+    if(defined $end) {
 	if( $self->orientation == 1 ) {
-	    return $self->start + ($end - $self->contig->golden_start -1);
+	    return $self->start + ($end - $self->start_in);
 	} else {
-	    return $self->start + ($self->contig->golden_start -end +1);
+	    #print STDERR "Returning on end... ",$self->start," ",$self->start_in," ",$end,"\n";
+	    return $self->start + ($self->start_in - $end);
 	}
     } elsif ( $self->leftmost ) {
-	print STDERR "Using leftmost for ",$self->contig->id,"\n";
+	#print STDERR "Using leftmost for ",$self->contig->id,"\n";
 
 	# not the entire golden length used here (!)
 	# the mysterious +1 is to keep the overlapping base convention.
 	if( $self->orientation == 1 ) {
-	    return $self->start + ($self->contig->golden_end - $self->start_in)+1;
+	    return $self->start + ($self->contig->golden_end - $self->start_in);
 	} else {
-	    return $self->start + ($self->start_in - $self->contig->golden_start)+1;
+	    return $self->start + ($self->start_in - $self->contig->golden_start);
 	}
     } else {
 	return $self->start + $self->contig->golden_length-1;
     } 
 }
+
+=head2 end_in
+
+ Title   : end_in
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub end_in {
+    my ($self) = @_;
+
+    $self->throw("No start_in defined") unless defined($self->start_in);
+    if( $self->orientation == 1 ) {
+	return $self->start_in + ($self->end - $self->start);
+    } else {
+	return $self->start_in - ($self->end - $self->start);
+    }
+
+}
+
 
 =head2 rightmost_end
 

@@ -352,54 +352,37 @@ sub primary_seq {
    }
    
    #Go through each MapContig
+   my $previous = undef;
    foreach my $mc ( @map_contigs ) {
-       my $tseq = $mc->contig->primary_seq();
-       print STDERR "Looking at",$mc->start," on ",$mc->contig->id,"to $last_point\n";
- 
-       if( ($mc->start) != ($last_point) ) {
-	   print STDERR "    Looking at",$mc->contig->id," as having a gap to $last_point\n";
-	   
-           # Tony: added a throw here - if we get negative numbers of inserted N's
-	   
-	   my $no = $mc->start - $last_point;
-	   
-           if ($no < -1){
-	       $self->throw("Error. Trying to insert negative number ($no) of N\'s into contig sequence");
-           }
-	   
-	   $seq_string .= 'N' x $no;
-	   $last_point += $no;
-       } 
-       
-       my $trunc;
-       my $end;
-       
-       if( $self->_vmap->clone_map ) {
-	   $end = $mc->contig->length;
-       } else {
-	   if($mc->rightmost_end) {
-	       $end = $mc->rightmost_end;
-	       print STDERR "Right most end is $end\n";
-	   } else {
-	       if( $mc->orientation == 1 ) {
-		   $end = $mc->contig->golden_end;
-		   print STDERR "End is $end\n";
-	       } else {
-		   $end = $mc->contig->golden_start;
-	       }
+       if( defined $previous && $previous->end != $mc->start ) {
+	   # then start had better be before end
+	   if( $mc->start < $previous->end ) {
+	       $self->throw("Inconsistent map contigs with start of next contig less than end of previous");
 	   }
-       }
-       if( $mc->orientation == 1 ) {
-	   print STDERR "About to call with ",$mc->start_in,":",$end,"\n";
-	   $trunc = $tseq->subseq($mc->start_in,$end);
+
+	   my $length = $mc->start - $previous->end -1;
+	   my $str = 'N' x $length;
+	   $seq_string .= $str;
        } else {
-	   my $subseq = $tseq->subseq($end,$mc->start_in);
-	   $subseq =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
-	   $trunc = CORE::reverse $subseq;
+	   # exact overlap - chew back the switch base
+	   $seq_string = substr($seq_string,0,-1);
        }
-       $seq_string .= $trunc;
-       $last_point  = $mc->end;
-       #$last_point += length($trunc);
+
+       # now add in the actual sequence.
+       #print STDERR "Start in is ".$mc->contig->id." ".$mc->start_in.":".$mc->end_in." ".$mc->contig->length."\n";
+
+       # flip if other way around
+       my $substring;
+       if( $mc->orientation == -1 ) {
+	   $substring = $mc->contig->primary_seq->subseq($mc->end_in,$mc->start_in);
+	   $substring =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	   $substring = CORE::reverse $substring;
+       } else {
+	   $substring = $mc->contig->primary_seq->subseq($mc->start_in,$mc->end_in);
+       }
+
+       # add it
+       $seq_string .= $substring;
    }
    
    # if there is a right overhang, add it 
@@ -946,7 +929,7 @@ sub _get_all_SeqFeatures_type {
 
    my $count = 0;
    foreach $sf ( @$sf ) {
-
+       #print "\n ##### Starting to convert featre " . $sf->seqname . " " . $sf->id . "\n";
        $sf = $self->_convert_seqfeature_to_vc_coords($sf);
 
        if( !defined $sf ) {      
@@ -1002,7 +985,7 @@ sub _convert_seqfeature_to_vc_coords {
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
 
-   # print STDERR "Got ",scalar(@sub),"sub features\n";
+    #print STDERR "Got ",scalar(@sub),"sub features\n";
 
     if( $#sub >=  0 ) {
 	# chain to constructor of the object. Not pretty this.
@@ -1011,9 +994,9 @@ sub _convert_seqfeature_to_vc_coords {
 	my $seen = 0;
 	my $strand;
 	foreach my $sub ( @sub ) {
-	    #print STDERR "Converting ",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+	    #print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	    $sub = $self->_convert_seqfeature_to_vc_coords($sub);
-	    #print STDERR "To: ",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+
 	    if( !defined $sub ) {        
 		next;
 	    }
@@ -1031,7 +1014,7 @@ sub _convert_seqfeature_to_vc_coords {
 
 	    $sf->strand($strand);
 	    
-	    print STDERR "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
+	    #print STDOUT "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
 	    return $sf;
 	} else {        
 	    return undef;
@@ -1039,6 +1022,9 @@ sub _convert_seqfeature_to_vc_coords {
     }
 
     # might be clipped left/right
+    #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
+
+
     if ($mc->leftmost){
 	
 	if ( $mc->orientation == 1) {
@@ -1049,12 +1035,12 @@ sub _convert_seqfeature_to_vc_coords {
 	    }
 	    
 	} else {
-            # If start > startincontig for orientation <> 1
+	    # If start > startincontig for orientation <> 1
 	    if ($sf->end > $mc->start_in) {  
 		return undef;              
 	    }
-        }
-    }  elsif ( $mc->rightmost_end){
+	}
+    }  elsif ($mc->rightmost_end){
 	
 	if ( $mc->orientation == 1) {
 	    
@@ -1069,7 +1055,26 @@ sub _convert_seqfeature_to_vc_coords {
 	    }
         }
     }
+    
+    
+    # Could be clipped on ANY contig
 
+    if( $mc->orientation == 1 ) {
+	if ($sf->start < $mc->start_in) {  
+	    return undef;              
+	}
+	if ($sf->end >  $mc->end_in) {  
+	    return undef;              
+	}
+    } else {
+	if ($sf->end > $mc->start_in) {  
+	    return undef;              
+	}
+	if ($sf->start <  $mc->end_in) {  
+	    return undef;              
+	}
+    }
+	
 
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
     
@@ -1111,6 +1116,7 @@ sub _convert_start_end_strand_vc {
     if($@) {
 	$self->throw("Attempting to map a sequence feature with [$contig] on a virtual contig with no $contig");
     }
+
     if( $mc->orientation == 1 ) {
        
         # ok - forward with respect to vc. Only need to add offset
