@@ -4,7 +4,7 @@
 
 
 ALTER TABLE xref MODIFY dbprimary_acc VARCHAR(40) BINARY NOT NULL;
-ALTER TABLE affy_probe MODIFTY probeset VARCHAR(40);
+ALTER TABLE affy_probe MODIFY probeset VARCHAR(40);
 ALTER TABLE interpro DROP INDEX interpro_ac;
 ALTER TABLE interpro DROP INDEX id;
 
