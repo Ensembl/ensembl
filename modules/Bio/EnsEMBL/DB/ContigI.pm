@@ -562,6 +562,28 @@ sub accession_number{
 
 }
 
+=head2 alphabet
+
+ Title   : alphabet
+ Usage   : print "Molecule type: ", $obj->alphabet, "\n";
+ Function: 
+ Returns :
+ Args    :
+
+
+=cut
+
+sub alphabet{
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->throw("ContigI object's alphabet must be 'dna'")
+      if ($value ne 'dna');
+  }
+  return 'dna';
+
+}
+
 =head2 desc
 
  Title   : desc
