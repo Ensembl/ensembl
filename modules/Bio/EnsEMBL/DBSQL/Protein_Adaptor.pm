@@ -122,6 +122,8 @@ sub fetch_Protein_by_dbid{
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
 
+  
+
 #Get all of the Dblink for the given Transcript
    my @dblinks = $self->fetch_DBlinks_by_dbid($id);
 
@@ -137,6 +139,10 @@ sub fetch_Protein_by_dbid{
 #Get the aa sequence using the transcript object   
    my $sequence = $transcript->translate->seq;
    
+   my $length = length($sequence);
+   if ($length == 0) {
+       return 0;
+   }
   
 #Define the moltype
    my $moltype = "protein";
