@@ -87,7 +87,7 @@ BEGIN {
 	$ENSEMBL_EXT_LOADED = 0;
     } else {
 	$ENSEMBL_EXT_LOADED = 1;
-        print STDERR "Loaded Ext...\n";
+        print STDERR "Loaded Ensembl Feature C Extensions.\n";
     }
 }
 
@@ -198,8 +198,8 @@ sub new_analysis{
 
     if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
 	# catch for @args being passed in.
-	my $self = Bio::EnsEMBL::Ext::Analysis->new();
-	return $self;
+        my $self = Bio::EnsEMBL::Ext::Analysis->new();
+        return $self;
     }
 
     return Bio::EnsEMBL::Analysis->new();

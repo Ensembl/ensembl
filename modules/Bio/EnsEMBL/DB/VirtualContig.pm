@@ -134,7 +134,7 @@ sub _initialize {
   }
   
   $self->_unique_number($VC_UNIQUE_NUMBER);
-
+  
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -178,6 +178,10 @@ sub extend {
 					       -right           => $self->_right_size + $right,
 					       );
 
+
+   my $id = join('.', ($nvc->_focus_contig->id, $nvc->_focus_position, $nvc->_focus_orientation, $nvc->_left_size, $nvc->_right_size));
+   $nvc->_unique_number($id);
+   
    return $nvc;
 }
 
@@ -201,7 +205,7 @@ sub extend_maximally {
        $self->throw("Can only extend a VirtualContigI, Bailing out...");
    }
    # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(100000000000,100000000000);
+   my $nvc = $self->extend(10000000000,10000000000);
    return $nvc;
 }
 
@@ -210,7 +214,7 @@ sub extend_maximally {
 
  Title   : extend_maximally_left
  Usage   : $new_vc = $vc->extend_maximally_left();
- Function: Extends an existing vc as far as possible in both directions
+ Function: Extends an existing vc as far as possible to the left
  Example :
  Returns : Bio::EnsEMBL::DB::VirtualContig
  Args    :
@@ -225,7 +229,7 @@ sub extend_maximally_left {
        $self->throw("Can only extend a VirtualContigI, Bailing out...");
    }
    # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(100000000000,0);
+   my $nvc = $self->extend(10000000000,0);
    return $nvc;
 }
 
@@ -234,7 +238,7 @@ sub extend_maximally_left {
 
  Title   : extend_maximally_right
  Usage   : $new_vc = $vc->extend_maximally_right();
- Function: Extends an existing vc as far as possible in both directions
+ Function: Extends an existing vc as far as possible to the right
  Example :
  Returns : Bio::EnsEMBL::DB::VirtualContig
  Args    :
@@ -249,7 +253,7 @@ sub extend_maximally_right {
        $self->throw("Can only extend a VirtualContigI, Bailing out...");
    }
    # based on an original idea by Ewan Birney. ;)
-   my $nvc = $self->extend(0,100000000000);
+   my $nvc = $self->extend(0,10000000000);
    return $nvc;
 }
 
@@ -284,11 +288,11 @@ sub primary_seq {
    my $last_point = 1;
 
    foreach my $cid ( @contig_id ) {
-       print(STDERR "\nFinding sequence for $cid\n");
+       #print(STDERR "\nFinding sequence for $cid\n");
        my $c    = $self->{'contighash'}->{$cid};
        my $tseq = $c->primary_seq();
 
-       print(STDERR "Seq length/start is " . $tseq->length . "\t" .$self->{start}{$cid} . "\n");
+       #print(STDERR "Seq length/start is " . $tseq->length . "\t" .$self->{start}{$cid} . "\n");
        if( $self->{'start'}->{$cid} != ($last_point+1) ) {
        
            # Tony: added a throw here - if we get negative numbers of inserted N's
@@ -300,7 +304,7 @@ sub primary_seq {
 	       $self->throw("Error. Trying to insert negative number ($no) of N\'s into contig sequence");
            }
 	   
-	   print STDERR "Putting in $no x N\n";
+	   #print STDERR "Putting in $no x N\n";
 
 	   $seq_string .= 'N' x $no;
 	   $last_point += $no;
@@ -363,7 +367,7 @@ sub primary_seq {
 
 =cut
 
-sub id{
+sub id {
     my ($self) = @_;
 
     return "virtual_contig_".$self->_unique_number;
@@ -381,7 +385,7 @@ sub id{
 
 =cut
 
-sub top_SeqFeatures{
+sub top_SeqFeatures {
    my ($self,@args) = @_;
    my (@f);
 
@@ -420,7 +424,7 @@ sub top_SeqFeatures{
 
 =cut
 
-sub get_all_SeqFeatures{
+sub get_all_SeqFeatures {
    my ($self) = @_;
    my @out;
    push(@out,$self->get_all_SimilarityFeatures());
@@ -442,7 +446,7 @@ sub get_all_SeqFeatures{
 
 =cut
 
-sub get_all_SimilarityFeatures{
+sub get_all_SimilarityFeatures {
    my ($self) = @_;
    
    return $self->_get_all_SeqFeatures_type('similarity');
@@ -461,7 +465,7 @@ sub get_all_SimilarityFeatures{
 
 =cut
 
-sub get_all_RepeatFeatures{
+sub get_all_RepeatFeatures {
    my ($self) = @_;
    
    return $self->_get_all_SeqFeatures_type('repeat');
@@ -480,7 +484,7 @@ sub get_all_RepeatFeatures{
 
 =cut
 
-sub get_all_ExternalFeatures{
+sub get_all_ExternalFeatures {
    my ($self) = @_;
 
    return $self->_get_all_SeqFeatures_type('external');
@@ -522,11 +526,11 @@ sub get_all_Genes {
     foreach my $gene ( values %gene ) {
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
-	    print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
+	    #print STDERR "Exon was ",$exon->start,":",$exon->end,":",$exon->strand,"\n";
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
 	    $self->_convert_seqfeature_to_vc_coords($exon);
-	    print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
+	    #print STDERR "Exon going to ",$exon->start,":",$exon->end,":",$exon->strand," ,",$exon->seqname,"\n";
 	}
     }
     
@@ -572,7 +576,7 @@ sub length {
 
 =cut
 
-sub embl_accession{
+sub embl_accession {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -594,7 +598,7 @@ sub embl_accession{
 
 =cut
 
-sub dbobj{
+sub dbobj {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -616,7 +620,7 @@ sub dbobj{
 
 =cut
 
-sub skip_SeqFeature{
+sub skip_SeqFeature {
    my ($self,$tag,$value) = @_;
 
    if( defined $value ) {
@@ -639,7 +643,7 @@ sub skip_SeqFeature{
 
 =cut
 
-sub _build_clone_map{
+sub _build_clone_map {
    my ($self,$clone) = @_;
 
    my $total_len   = 0;
@@ -647,21 +651,20 @@ sub _build_clone_map{
    my $seen        = 0;
    my $middle      = 0;
    
-   print STDERR "Making clone map\n";
+   #print STDERR "Making clone map\n";
    foreach my $contig ( $clone->get_all_Contigs ) {
        $self->{'start'}        ->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}    ->{$contig->id} = 1;
        $self->{'contighash'}   ->{$contig->id} = $contig;
 
-       #print STDERR "Got ",$contig->id," [",$contig->embl_offset,"] to [",$contig->length,"]\n";
-       print STDERR "Clone map: contig: ",$contig->id," [em_offset: ",$contig->embl_offset,"] ==> [contig_offset: ",$contig->length,"]\n";
+       #print STDERR "Clone map: contig: ",$contig->id," [em_offset: ",$contig->embl_offset,"] ==> [contig_offset: ",$contig->length,"]\n";
 
        $total_len = $contig->embl_offset + $contig->length;
 
        if( $total_len > $length ) {
 	   $length = $total_len;
-           print STDERR "New contig length: ",$length,"\n";
+           #print STDERR "New contig length: ",$length,"\n";
        }
        
        if( $seen == 0 ) {
@@ -700,7 +703,7 @@ sub _build_clone_map{
 
 =cut
 
-sub _build_contig_map{
+sub _build_contig_map {
     my ($self,$focuscontig,$focusposition,$ori,$left,$right) = @_;
 
    # we first need to walk down contigs going left
@@ -1081,7 +1084,7 @@ sub _get_all_SeqFeatures_type {
    }
 
    foreach my $c ( values %{$self->{'contighash'}} ) {
-       print STDERR "Looking at ",$c->id,"\n";
+       #print STDERR "Looking at ",$c->id,"\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -1095,12 +1098,29 @@ sub _get_all_SeqFeatures_type {
        }
    }
 
+   my @vcsf = ();
+   # need to clip seq features to fit the boundaries of
+   # our v/c so displays don't break
 
+   my $count = 0;
    foreach $sf ( @$sf ) {
        $self->_convert_seqfeature_to_vc_coords($sf);
+       
+       if($sf->start < 0 ){
+            #print STDERR "Discarding (L) vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
+            $count++;
+        }
+        elsif ($sf->end > $self->length){
+            #print STDERR "Discarding (R) vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
+            $count++;
+        }
+        else{
+            #print STDERR "Keeping vc feature: ",$sf->seqname," at start: ",$sf->start," end: ",$sf->end,"\n";
+            push (@vcsf, $sf);
+        }
    }
-
-   return @$sf;
+   
+   return @vcsf;
 }
 
 
@@ -1116,7 +1136,7 @@ sub _get_all_SeqFeatures_type {
 
 =cut
 
-sub _convert_seqfeature_to_vc_coords{
+sub _convert_seqfeature_to_vc_coords {
    my ($self,$sf) = @_;
 
    my $cid = $sf->seqname();
@@ -1209,7 +1229,7 @@ sub _convert_start_end_strand_vc {
 
 =cut
 
-sub _dump_map{
+sub _dump_map {
    my ($self,$fh) = @_;
 
    ! defined $fh && do { $fh = \*STDERR};
@@ -1257,7 +1277,7 @@ sub _focus_contig {
 
 =cut
 
-sub _focus_position{
+sub _focus_position {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_focus_position'} = $value;
@@ -1278,7 +1298,7 @@ sub _focus_position{
 
 =cut
 
-sub _focus_orientation{
+sub _focus_orientation {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_focus_orientation'} = $value;
@@ -1299,7 +1319,7 @@ sub _focus_orientation{
 
 =cut
 
-sub _left_size{
+sub _left_size {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_left_size'} = $value;
@@ -1319,7 +1339,7 @@ sub _left_size{
 
 =cut
 
-sub _right_size{
+sub _right_size {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_right_size'} = $value;
@@ -1339,7 +1359,7 @@ sub _right_size{
 
 =cut
 
-sub _cache_seqfeatures{
+sub _cache_seqfeatures {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -1361,7 +1381,7 @@ sub _cache_seqfeatures{
 
 =cut
 
-sub _has_cached_type{
+sub _has_cached_type {
    my ($self,$type) = @_;
 
    if ( exists $self->{'_sf_cache'}->{$type} ) {
@@ -1383,7 +1403,7 @@ sub _has_cached_type{
 
 =cut
 
-sub _make_cache{
+sub _make_cache {
    my ($self,$type) = @_;
 
    if( $self->_has_cached_type($type) == 1) {
@@ -1407,11 +1427,31 @@ sub _make_cache{
 
 =cut
 
-sub _get_cache{
+sub _get_cache {
    my ($self,$type) = @_;
 
    return $self->{'_sf_cache'}->{$type};
    
+}
+
+=head2 _clear_vc_cache
+
+ Title   : _clear_vc_cache
+ Usage   : $virtual_contig->_clear_vc_cache
+ Function: clears a v/c internal cache (use when extending a virtual contig)
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _clear_vc_cache {
+    my $self = shift;
+    $self->{'_seq_cache'} = undef;
+    foreach my $c (keys %{$self->{'_sf_cache'}}){
+        $self->{'_sf_cache'}->{$c} = undef;
+    }   
 }
 
 =head2 _unique_number
@@ -1425,7 +1465,7 @@ sub _get_cache{
 
 =cut
 
-sub _unique_number{
+sub _unique_number {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -1446,7 +1486,7 @@ sub _unique_number{
 
 =cut
 
-sub _seq_cache{
+sub _seq_cache {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
@@ -1468,7 +1508,7 @@ sub _seq_cache{
 
 =cut
 
-sub _clone_map{
+sub _clone_map {
    my ($obj,$value) = @_;
    if( defined $value) {
       $obj->{'_clone_map'} = $value;
