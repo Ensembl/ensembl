@@ -440,7 +440,7 @@ sub get_array_supporting {
 	}
 	
 	# Create new transcript if the id has changed
-	#if( $transcriptid ne $current_transcript_id ) {
+	if( $transcriptid ne $current_transcript_id ) {
 
 	    # put away old exons
              if( defined $trans ) {
