@@ -830,10 +830,12 @@ sub fetch_VirtualContig_of_transcript{
   
                     FROM    exon e,
                         exon_transcript et,
-                        static_golden_path sgp 
-                    WHERE et.transcript='$transcriptid'  
-                    AND e.id=et.exon 
-                    AND sgp.raw_id=e.contig 
+                        static_golden_path sgp,
+                        transcript_stable_id tsi,
+                    WHERE tsi.stable_id = '$transcriptid'  
+                    AND et.transcript_id= tsi.transcript_id
+                    AND e.exon_id=et.exon_id 
+                    AND sgp.raw_id=e.contig_id 
                     AND sgp.type = '$type' 
                     ");
    $sth->execute();
