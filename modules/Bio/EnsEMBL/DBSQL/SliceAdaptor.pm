@@ -183,7 +183,8 @@ sub fetch_by_fpc_name {
        -chr_start =>$slice_start,
        -chr_end => $slice_end,
        -strand => $strand,
-       -assembly_type => $type
+       -assembly_type => $type,
+       -adaptor => $self       
       );
 
     return $slice;
