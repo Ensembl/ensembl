@@ -986,7 +986,7 @@ sub _convert_seqfeature_to_vc_coords {
     eval {
 	$mc=$self->_vmap->get_MapContig($cid);
     };
-    if ($@) {   
+    if ($@) { print STDERR $@,"\n";   
 	return undef;
     }
 
