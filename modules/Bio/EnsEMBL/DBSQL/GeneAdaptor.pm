@@ -218,6 +218,8 @@ sub fetch_by_dbID {
     foreach my $exonId ( @{$transcriptExons{$transcriptId}} ) {
       $transcript->add_Exon( $exonIds{$exonId} );
     }
+    # store also a type for the transcript
+    $transcript->type($gene->type);
     $gene->add_Transcript( $transcript );
   }
   
@@ -348,7 +350,7 @@ sub fetch_all_by_contig_list{
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice to fetch genes from
-  Example    : $genes = $gene_adaptor->fetch_all_by_slice($slice);
+  Example    : $genes = $gene_adaptor->fetch_all_by_Slice($slice);
   Description: Retrieves all genes which are present on a slice
   Returntype : listref of Bio::EnsEMBL::Genes in slice coordinates
   Exceptions : none
