@@ -40,7 +40,7 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 #implement the interface GeneAdaptorI
-use implements qw(GeneAdaptorI);
+use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
 
 sub fetch_by_Slice {

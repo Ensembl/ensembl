@@ -28,6 +28,7 @@ Bio::EnsEMBL::DBSQL::GeneAdaptor - MySQL Database queries to generate and store 
 
 package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 
+use Bio::EnsEMBL::DBSQL::GeneAdaptorI;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
@@ -36,7 +37,7 @@ use Bio::EnsEMBL::Gene;
 use vars '@ISA';
 
 
-@ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 
 
 use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);

@@ -30,13 +30,14 @@ package Bio::EnsEMBL::Lite::GeneAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Transcript;
+use Bio::EnsEMBL::DBSQL::GeneAdaptorI;
 use Bio::EnsEMBL::Gene;
 
 
 use vars '@ISA';
 
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::GeneAdaptorI);
 
 use implements qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI);
 

@@ -31,7 +31,7 @@ use Bio::EnsEMBL::DBSQL::SNPAdaptorI;
 
 use vars '@ISA';
 
-@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+@ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor Bio::EnsEMBL::SNPAdaptorI);
 
 #implement the SNPAdaptorI interface
 use implements qw(Bio::EnsEMBL::DBSQL::SNPAdaptorI);

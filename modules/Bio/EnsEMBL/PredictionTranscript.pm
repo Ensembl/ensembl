@@ -60,12 +60,15 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Transcript;
 use Bio::Seq;
-use Bio::EnsEMBL::TranscriptI;
 
 
 @ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
 
+
+#implement the Transcript interface
+use implements qw(Bio::EnsEMBL::TranscriptI);
 
 =head2 new
 
@@ -475,10 +478,10 @@ sub get_cdna {
     $new_cdna = $exon->seq->seq();
 #    print $new_cdna."\n";
     $cdna .= $new_cdna;
-    $cdna_end = $cdna_start + length( $new_cdna ) - 1;
+    $cdna_end = $cdna_start + CORE::length( $new_cdna ) - 1;
 
     # how many peptides are added by this exon??
-    $pep_count = int( ( length( $new_cdna ) + $exon->phase() + 2 ) / 3 );
+    $pep_count = int( ( CORE::length( $new_cdna ) + $exon->phase() + 2 ) / 3 );
 
     $pep_end = $pep_start + $pep_count - 1; 
     $lastphase = $exon->end_phase();

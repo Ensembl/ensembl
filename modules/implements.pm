@@ -30,7 +30,6 @@ use implements qw(Interface1 Interface2);
 
 =cut
 
-
 package implements;
 
 use strict;
@@ -39,40 +38,43 @@ use Carp;
 
 my %__INTERFACES;
 
+#
+# Called by the 'use implements qw(interfaces)' pragma in implementing
+# modules
+#
 sub import {
   my ($class, @interfaces) = @_;
 
   my $caller = caller(0);
 
-  #print "storing interface defs for $caller\n";
-
   #put interfaces this caller is implementing into a hash, keyed by caller
-  $__INTERFACES{$caller} = @interfaces;
-
-  no strict 'refs';
-  #update the inheritence of this caller to include its interfaces
-  push @{"$caller\::ISA"}, @interfaces;
-  use strict 'refs';
+  @{$__INTERFACES{$caller}} = @interfaces;
 }
 
 
-
+#
+# Called immediately following compilation.  Validates each implementor
+# and checks that it has the correct interface.
+#
+# NOTE: this is not called by mod_perl since mod_perl does not
+# support CHECK or INIT blocks. 
+#
 CHECK {
   my @errors = ();
 
   #validate each module that imported 'implements'
   foreach my $implementor (keys %__INTERFACES) {
-
-    #print "Validating $implementor\n";
-
     my %seen_packages = ();
     my @checked_packages = ();
     
     no strict 'refs';
-    my @unchecked_packages = @{"$implementor\::ISA"};
+    my @unchecked_packages = @{$__INTERFACES{$implementor}};
+
+    #update the inheritence of this implementor to include its interfaces
+    push @{"${implementor}::ISA"}, @{$__INTERFACES{$implementor}};
     use strict 'refs';
 
-    #traverse the isa heirarchy of each implementor to construct 
+    #traverse the isa heirarchy of the direct interfaces to construct 
     #a complete list (including super class interfaces) of interfaces 
     #this caller must implement
     while(@unchecked_packages) {
@@ -80,6 +82,7 @@ CHECK {
       
       #skip this package if we've seen it before
       next if($seen_packages{$package});
+
     
       #we haven't seen this package before so add it to the list and obtain 
       #its superclass interfaces
@@ -99,7 +102,7 @@ CHECK {
       
       #obtain the interface's methods from it's symbol table
       no strict 'refs';
-      my %symbol_table = %{"$interface\::"};
+      my %symbol_table = %{"${interface}::"};
       use strict 'refs';
       
       while(my ($method, $value) = each (%symbol_table)) {
@@ -113,11 +116,13 @@ CHECK {
 
 	#check the implentor's symbol table to see if this method exists
 	no strict 'refs';
-	my %implementation_symbols = %{"$implementor\::"};
+	my %implementation_symbols = %{"${implementor}::"};
 	use strict 'refs';
 
 	local *a;
-	*a = $implementation_symbols{$method};
+	if(defined $implementation_symbols{$method}) {
+	  *a = $implementation_symbols{$method};
+	}
 	unless(defined &a) {
 	  push @errors, "Error: $implementor implements interface " . 
                         "'$interface' but does not define method '$method'\n";
