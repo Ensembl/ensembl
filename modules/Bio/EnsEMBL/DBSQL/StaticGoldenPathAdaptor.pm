@@ -429,18 +429,18 @@ sub fetch_VirtualContig_of_gene{
    my @start_sorted=sort @start;
    my @end_sorted=sort @end;
 
-   my $start=pop @start_sorted;
-   my $end=shift @end_sorted;
+   $start=pop @start_sorted;
+   $end=shift @end_sorted;
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
    }
      
    return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-   														$start-$size,
-														$end+$size
-													);
-  
+							$start-$size,
+							$end+$size
+							);
+   
 }
 
 
@@ -484,14 +484,11 @@ sub fetch_VirtualContig_by_clone{
 
 
    my $halfsize = int($size/2);
-   #if( $start > $size/2 ) {    
-       return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-	   													$start-$halfsize,
-														$start+$size-$halfsize
-														);
-   #} else {
-   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
-   #}
+
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+							$start-$halfsize,
+							$start+$size-$halfsize
+							);
 }
 
 
@@ -593,21 +590,18 @@ sub fetch_VirtualContig_by_gene{
    
    my @start_sorted=sort @start;
 
-   my $start=pop @start_sorted;
+   $start=pop @start_sorted;
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");
    }
      
    my $halfsize = int($size/2);
-   #if( $start > $size/2 ) {       
-  	return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
-   														$start-$halfsize,
-														$start+$size-$halfsize
-														);
-   #} else {
-   #    return $self->fetch_VirtualContig_by_chr_start_end($chr_name,1,$size);
-   #}
+
+   return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,
+							$start-$halfsize,
+							$start+$size-$halfsize
+							);
 }
 
 
