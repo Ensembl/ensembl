@@ -2069,8 +2069,8 @@ sub perl_only_contigs{
 sub delete_Clone{
    my ($self,$clone_id) = @_;
 
-   $self->warn("Obj->delete_Clone is a deprecated method! 
-Calling Clone->delete instead!");
+   #$self->warn("Obj->delete_Clone is a deprecated method! 
+#Calling Clone->delete instead!");
    
    (ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
