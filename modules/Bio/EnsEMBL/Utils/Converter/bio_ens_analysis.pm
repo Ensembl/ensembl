@@ -10,12 +10,13 @@ use Bio::EnsEMBL::Analysis;
 sub _convert_single {
     my ($self, $input) = @_;
 
-    $self->throw("a Bio::Pipeline::Analysis object needed"){
-        unless(ref($input) && $input->isa('Bio::Pipeline::Analysis');
-    }
+    $self->throw("a Bio::Pipeline::Analysis object needed")
+        unless(ref($input) && $input->isa('Bio::Pipeline::Analysis'));
+    
 
     my $ens_analysis = new Bio::EnsEMBL::Analysis(
-        -logic_name => $input->logic_name
+        -logic_name => $input->logic_name,
+        -id =>$input->dbID
     );
 
     return $ens_analysis;

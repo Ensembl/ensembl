@@ -93,8 +93,10 @@ sub _convert_single_to_repeatFeature {
     my $ens_repeat_consensus = 
         $self->_create_consensus($repeat_name, $repeat_class);
     $ens_repeatfeature->repeat_consensus($ens_repeat_consensus);
-    
-    $ens_repeatfeature->attach_seq($self->contig);
+   
+    my($contig) = ref ($self->contig) eq 'ARRAY' ? @{$self->contig} : $self->contig;
+
+    $ens_repeatfeature->attach_seq($contig);
     $ens_repeatfeature->analysis($self->analysis);
     return $ens_repeatfeature;
 }
