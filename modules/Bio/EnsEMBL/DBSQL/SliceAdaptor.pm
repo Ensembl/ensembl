@@ -120,7 +120,31 @@ sub fetch_by_region {
 }
 
 
+sub fetch_by_seq_region_id {
+  my ($self, $seq_region_id) = @_;
 
+  my $sth = $self->prepare("SELECT name, length, coord_system_id " .
+                           "FROM seq_region " .
+                           "WHERE seq_region_id = ?");
+
+  $sth->execute($seq_region_id);
+
+  if($sth->rows() != 1) {
+    throw("Cannot create slice on non-existant or ambigous seq_region:" .
+          "  seq_region_id=[$seq_region_id],\n");
+  }
+
+  my ($seq_region_name, $length, $cs_id) = $sth->fetchrow_array();
+
+  my $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
+
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
+                                  -SEQ_REGION_NAME => $seq_region_name,
+                                  -START           => 1,
+                                  -END             => $length,
+                                  -STRAND          => 1,
+                                  -ADAPTOR         => $self);
+}
 
 
 
