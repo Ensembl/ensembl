@@ -825,7 +825,7 @@ CREATE TABLE attrib_type (
   attrib_type_id              smallint(5) unsigned NOT NULL auto_increment,
   code                        varchar(15) NOT NULL default '',
   name                        varchar(255) NOT NULL default '',
-  description                 text NOT NULL,
+  description                 text,
 
   PRIMARY KEY ( attrib_type_id),
   UNIQUE KEY c(code)
