@@ -59,6 +59,7 @@ use strict;
 # (inherits for methods like throw and rearrange)
 
 use Bio::Root::RootI;
+use Bio::PrimarySeqI;
 
 @ISA = qw(Bio::Root::RootI Bio::PrimarySeqI);
 
