@@ -225,16 +225,23 @@ foreach my $ensg ( keys %gene_desc )  {
   ### get rid of the Rik mess:
   if (defined $desc) {
     $_ = $desc;
-    if (s/[0-9A-Z]{10}Rik protein[ \.]//g) {
+    if (s/[0-9A-Z]{10}RIK PROTEIN[ \.]//ig) {
       warn "throwing away: $desc\n";
     }
-    s/^\s*\(Fragment\)\.?\s*$//g;
+    if (s/RIKEN CDNA [0-9A-Z]{10}[ \.]//ig) {
+      warn "throwing away: $desc\n";
+    }
+    
+    s/^\s*\(FRAGMENT\)\.?\s*$//ig;
+    s/^\s*\(GENE\)\.?\s*$//ig;
     s/^\s*\(\s*\)\s*$//g;
     ### add more as appropriate
     
     if ($_) { #  =~ /[a-z]/;???
       #  print STDOUT "$ensg\t $_ [Source:$db;Acc:$acc,%qy:$qy_percid,\%tg:$tg_percid]\n"; 
       print STDOUT "$ensg\t".substr($_,0,255-length(" [Source:$db;Acc:$acc]"))." [Source:$db;Acc:$acc]\n"; 
+    } else {
+      warn "throwing away: $desc\n";
     }
   } else {
     warn "Description for Acc $acc in $db file not defined.
