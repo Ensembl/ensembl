@@ -16,7 +16,7 @@ INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, 
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
 INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transm',3,'hmm','1','transm','transm');
+INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','trans','trans');
 
 #
 # Dumping data for table 'analysisprocess'
@@ -205,7 +205,18 @@ INSERT INTO interpro_description (interpro_ac,description,short_description) VAL
 #
 # Dumping data for table 'meta'
 #
-
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (1,'species.classification','sapiens');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (2,'species.classification','Homo');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (3,'species.classification','Homonidae');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (4,'species.classification','Catarrhini');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (5,'species.classification','Primates');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (6,'species.classification','Eutheria');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (7,'species.classification','Mammalia');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (8,'species.classification','Vertebrata');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (9,'species.classification','Chordata');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (10,'species.classification','Metazoa');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (11,'species.classification','Eukaryota');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.common_name','Human');
 
 #
 # Dumping data for table 'protein_feature'
@@ -213,7 +224,7 @@ INSERT INTO interpro_description (interpro_ac,description,short_description) VAL
 
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (1,'ENSP00000216167',2,6,6,6,12,'PF00098',23,435,23);
 INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (2,'ENSP00000216167',7,14,7,14,21,'PR00012',21,4,56);
-INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,'ENSP00000216167',7,14,8,14,21,'transmembrane',21,4,56);
+INSERT INTO protein_feature (id,translation,seq_start,seq_end,analysis,hstart,hend,hid,score,evalue,perc_id) VALUES (3,'ENSP00000216167',3,11,8,0,0,'transmembrane',21,4,56);
 
 #
 # Dumping data for table 'repeat_feature'
@@ -341,8 +352,16 @@ INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) 
 # Dumping data for table 'objectXref'
 #
 
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 1);
-INSERT INTO objectXref (ensembl_id, ensembl_object_type, xrefId ) VALUES ('ENSP00000216167','Translation', 2);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (1, 'ENSP00000216167','Translation', 1);
+INSERT INTO objectXref (objectxrefId, ensembl_id, ensembl_object_type, xrefId ) VALUES (2, 'ENSP00000216167','Translation', 2);
+
+
+#
+#Dumping data for identityXref
+#
+
+INSERT INTO identityXref (objectxrefId, query_identity, target_identity) VALUES (1,98,99);
+
 #
 # Dumping data for table 'Xref'
 #
