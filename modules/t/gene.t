@@ -4,11 +4,11 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 27;
+	plan tests => 31;
 }
 
 use MultiTestDB;
-use TestUtils qw ( debug );
+use TestUtils qw ( debug test_getter_setter );
 
 use Bio::EnsEMBL::Gene;
 
@@ -351,11 +351,14 @@ debug( "known: $known Unknown: $unknown\n" );
 ok( $known==17 );
 
 
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 
+my $ext_name = $gene->external_name;
+ok( $ext_name eq 'Q9H466' );
 
+my $ext_db = $gene->external_db;
+ok( $ext_db eq 'SPTREMBL' );
 
-
-
-
-
+ok( test_getter_setter( $gene, "external_name", "ECSTR-12" ));
+ok( test_getter_setter( $gene, "external_db", "EMBL" ));
 

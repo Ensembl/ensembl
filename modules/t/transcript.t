@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 20;
+	plan tests => 22;
 }
 
 use MultiTestDB;
@@ -73,8 +73,15 @@ my $species = $tr->species()->binomial();
 debug( "Species: ".$species );
 ok( $species eq "Homo sapiens" );
 
+
+ok( $tr->external_db eq 'HUGO' );
+ok( $tr->external_name eq 'MAPRE1' );
+
+
 ok( test_getter_setter( $tr, "external_name", "ECSTR-12" ));
 ok( test_getter_setter( $tr, "external_db", "EMBL" ));
+ 
+
 ok( test_getter_setter( $tr, "dbID", 100000 ));
 ok( test_getter_setter( $tr, "type", "NOVEL" ));
 ok( $tr->translation->isa( "Bio::EnsEMBL::Translation" ));
