@@ -252,8 +252,6 @@ sub fetch_by_stable_id {
   my ($self, $stable_id, $chr_coords) = @_;
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
-  warn( $stable_id );
-
   my $sth = $self->prepare
     ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
               t.chr_strand, t.transcript_name, t.translation_id, 
