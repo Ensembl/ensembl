@@ -485,6 +485,7 @@ CREATE TABLE assembly (
     chr_end        int(10) NOT NULL,
     superctg_start   int(10) NOT NULL,
     superctg_end     int(10) NOT NULL,
+    superctg_ori     tinyint(2) NOT NULL,
     contig_start   int(10) NOT NULL,
     contig_end     int(10) NOT NULL,
     contig_ori     tinyint  NOT NULL, 
