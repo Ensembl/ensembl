@@ -561,6 +561,7 @@ sub primary_xref_id_exists {
 
 sub delete_by_source {
 
+  my $self =shift;
   my $xrefs = shift;
 
   # SQL for deleting stuff
