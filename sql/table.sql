@@ -116,7 +116,7 @@ CREATE TABLE exon (
   phase         tinyint(2) NOT NULL,
   end_phase     tinyint(2) NOT NULL,
   
-  PRIMARY KEY ( exon_id, sticky_rank),
+  PRIMARY KEY ( exon_id),
   KEY seq_region_idx (seq_region_id, seq_region_start )
 );
 
