@@ -1348,14 +1348,14 @@ sub delete_Gene{
    my ($self,$geneid) = @_;
    my @trans;
    my %exon;
-   my $translation;
+   my @translation;
    # get out exons, transcripts for gene. 
 
    my $sth = $self->prepare("select id,translation from transcript where gene = '$geneid'");
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
        push(@trans,$rowhash->{'id'});
-       $translation = $rowhash->{'translation'};
+       push(@translation,$rowhash->{'translation'});
    }
 
    foreach my $trans ( @trans ) {
@@ -1366,9 +1366,11 @@ sub delete_Gene{
        }
    }
 
-   my $sth2 = $self->prepare("delete from translation where id = '$translation'");
-   $sth2->execute;
-
+   foreach my $translation (@translation) {
+       
+       my $sth2 = $self->prepare("delete from translation where id = '$translation'");
+       $sth2->execute;
+   }
    # delete exons, transcripts, gene rows
 
    foreach my $exon ( keys %exon ) {
