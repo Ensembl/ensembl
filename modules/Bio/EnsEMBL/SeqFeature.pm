@@ -67,6 +67,7 @@ use strict;
 
 
 use Bio::EnsEMBL::SeqFeatureI;
+use Bio::EnsEMBL::Analysis;
 use Bio::Root::RootI;
 
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::SeqFeatureI);
