@@ -282,7 +282,8 @@ sub stable_id{
     
 
     if( defined $value ) {
-      $self->throw("setting stable id info is not supported");
+      $self->{'_stable_id'} = $value;
+      return;
     }
 
     if( exists $self->{'_stable_id'} ) {
