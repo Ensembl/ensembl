@@ -122,8 +122,8 @@ VALUES                   ( ? , ? )";
 
 our $SQL_RESULT_UPDATE = "
 UPDATE  blast_result
-SET     object = ?
-AND     ticket = ?
+SET     object = ?,
+        ticket = ?
 WHERE   result_id = ?";
 
 our $SQL_RESULT_RETRIEVE = "
@@ -139,8 +139,8 @@ VALUES                  ( ? , ? )";
 
 our $SQL_HIT_UPDATE = "
 UPDATE  blast_hit%s
-SET     object = ?
-AND     ticket = ?
+SET     object = ?,
+        ticket = ?
 WHERE   hit_id = ?";
 
 our $SQL_HIT_RETRIEVE = "
@@ -216,7 +216,7 @@ sub store_search_multi{
   my $rv = $sth->execute( $ticket ) ||  $self->throw( $sth->errstr );
   $sth->finish;
 
-  if( $rv eq '0E0' ){ # Insert (do first to minimise risk of race)
+  if( $rv < 1 ){ # Insert (do first to minimise risk of race)
     my $sth = $dbh->prepare( $SQL_SEARCH_MULTI_STORE );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     #$search_multi->token( $self->dbh->{mysql_insertid} );
@@ -252,6 +252,7 @@ sub retrieve_search_multi {
   my $rv  = $sth->execute( $ticket ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $ticket not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
+  $frozen || $self->throw( "Object from ticket $ticket is empty" );
   $sth->finish;
 
   my $stored_obj = thaw( $frozen );
@@ -283,26 +284,26 @@ sub store_result{
 
   my $dbh  = $self->db->db_handle;
 
-  my $store_obj = $res->_prepare_storable;
-  my $frozen = freeze( $store_obj );
   my $ticket = $res->group_ticket;
   my $token  = $res->token;
+  my $store_obj = $res->_prepare_storable;
+  my $frozen = freeze( $store_obj );
 
-  my( $rv );
+  my $rv = 0;
   if( $token ){
     my $sth = $dbh->prepare( $SQL_RESULT_RETRIEVE );
     $rv = $sth->execute( $token ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv ){ # Update
-    my $sth = $dbh->prepare( $SQL_RESULT_UPDATE );
-    $sth->execute( $frozen, $ticket, $token ) || $self->throw( $sth->errstr );
-    $sth->finish;
-  }
-  else{ # Insert
+  if( $rv < 1 ){# Insert
     my $sth = $dbh->prepare( $SQL_RESULT_STORE );
     $sth->execute( $frozen, $ticket ) || $self->throw( $sth->errstr );
     $res->token( $dbh->{mysql_insertid} );
+    $sth->finish;
+  }
+  else{  # Update
+    my $sth = $dbh->prepare( $SQL_RESULT_UPDATE );
+    $sth->execute( $frozen, $ticket, $token ) || $self->throw( $sth->errstr );
     $sth->finish;
   }
   return $res->token();
@@ -330,6 +331,7 @@ sub retrieve_result{
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $id not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
+  $frozen || $self->throw( "Object from result $id is empty" );
   $sth->finish;
 
   my $stored_obj = thaw( $frozen );
@@ -371,7 +373,7 @@ sub store_hit{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv ){ # Update
+  if( $rv > 0 ){ # Update
     my $sth = $dbh->prepare( sprintf $SQL_HIT_UPDATE, $use_date );
     $sth->execute( $frozen, $ticket, $id ) || $self->throw( $sth->errstr );
     $sth->finish;
@@ -411,6 +413,7 @@ sub retrieve_hit{
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
+  $frozen || $self->throw( "Object from hit $id is empty" );
   $sth->finish;
 
   my $stored_obj = thaw( $frozen );
@@ -460,7 +463,7 @@ sub store_hsp{
     $rv = $sth->execute( $id ) ||  $self->throw( $sth->errstr );
     $sth->finish;
   }
-  if( $rv ){ # Update
+  if( $rv > 0 ){ # Update
     my $sth = $dbh->prepare( sprintf $SQL_HSP_UPDATE, $use_date );
     my @bound = ( $frozen, $ticket, $chr_name,  $chr_start, $chr_end, $id );
     $sth->execute( @bound ) || $self->throw( $sth->errstr );
@@ -502,6 +505,7 @@ sub retrieve_hsp{
   my $rv  = $sth->execute( $id ) || $self->throw( $sth->errstr );
   if( $rv < 1 ){ $self->throw( "Token $token not found" ) }
   my ( $frozen ) = $sth->fetchrow_array;
+  $frozen || $self->throw( "Object from hsp $id is empty" );
   $sth->finish;
 
   my $stored_obj = thaw( $frozen );
