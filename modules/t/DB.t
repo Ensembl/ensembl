@@ -73,7 +73,10 @@ $discard = $clone->htg_phase();
 $discard = $clone->embl_id();
 $discard = $clone->version();
 $discard = $clone->embl_version();
+$vc = $clone->virtualcontig();
 print "ok 3\n";
+
+
 
 
 my @contigs = $clone->get_all_Contigs();

@@ -373,11 +373,13 @@ sub length {
 sub _build_clone_map{
    my ($self,$clone) = @_;
    my ($tlen,$length);
+   $tlen = $length = 0;
    foreach my $contig ( $clone->get_all_Contigs ) {
        $self->{'start'}->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}->{$contig->id} = 1;
        $self->{'contighash'}->{$contig->id} = $contig;
+       print STDERR "Got [",$contig->embl_offset,"] to [",$contig->length,"]\n";
        $tlen = $contig->embl_offset+$contig->length;
        if( $tlen > $length ) {
 	   $length = $tlen;

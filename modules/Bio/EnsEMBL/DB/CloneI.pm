@@ -49,8 +49,10 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DB::CloneI;
 use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
+
 use strict;
 use POSIX;
+use Bio::EnsEMBL::DB::VirtualContig;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -316,9 +318,11 @@ Decorating functions. You do not need to implement these functions
 =cut
 
 sub virtualcontig{
-   my ($self,@args) = @_;
-
-
+   my ($self) = @_;
+   
+   my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -clone => $self);
+   
+   return $vc;
 }
 
 
