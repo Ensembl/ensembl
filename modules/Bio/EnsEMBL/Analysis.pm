@@ -476,7 +476,7 @@ sub compare {
 
   foreach my $methodName ( 'program', 'program_version', 'program_file',
     'db','db_version','db_file','gff_source','gff_feature', 'module',
-    'module_version', 'parameter','logic_name' ) {
+    'module_version', 'parameters','logic_name' ) {
     if( defined $self->$methodName() && ! $ana->can($methodName )) {
       $detail = 1;
     } 
