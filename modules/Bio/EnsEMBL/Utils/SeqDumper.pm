@@ -739,7 +739,7 @@ sub _dump_feature_table {
   #
   if($self->is_enabled('genscan')) {
     my @genscan_exons;
-    foreach my $transcript (@{$slice->get_all_PredictionTranscripts}) {
+    foreach my $transcript(@{$slice->get_all_PredictionTranscripts(undef,1)}) {
       my $exons = $transcript->get_all_Exons();
       push @genscan_exons, @$exons;
       $self->write(@ff, 'mRNA', $self->features2location($exons));

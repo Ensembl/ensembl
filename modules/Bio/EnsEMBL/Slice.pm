@@ -978,6 +978,11 @@ sub get_all_Attributes {
   Arg [1]    : (optional) string $logic_name
                The name of the analysis used to generate the prediction
                transcripts obtained.
+  Arg [2]    : (optional) boolean $load_exons
+               If set to true will force loading of all PredictionExons
+               immediately rather than loading them on demand later.  This
+               is faster if there are a large number of PredictionTranscripts
+               and the exons will be used.
   Example    : @transcripts = @{$slice->get_all_PredictionTranscripts};
   Description: Retrieves the list of prediction transcripts which overlap
                this slice with logic_name $logic_name.  If logic_name is 
@@ -989,7 +994,7 @@ sub get_all_Attributes {
 =cut
 
 sub get_all_PredictionTranscripts {
-   my ($self,$logic_name) = @_;
+   my ($self,$logic_name, $load_exons) = @_;
 
    if(!$self->adaptor()) {
      warning('Cannot get PredictionTranscripts without attached adaptor');
@@ -998,7 +1003,7 @@ sub get_all_PredictionTranscripts {
 
    my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
 
-   return $pta->fetch_all_by_Slice($self, $logic_name);
+   return $pta->fetch_all_by_Slice($self, $logic_name, $load_exons);
 }
 
 
