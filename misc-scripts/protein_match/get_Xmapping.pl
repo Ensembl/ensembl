@@ -287,11 +287,8 @@ if($organism eq "anopheles") {
 #This files can be dumped using the following utility scripts in /ensembl-genename/scripts
 	chomp;
 	if ($_ =~ />/) {
-#	    print STDERR "$_\n";
 	    my ($ac,$name) = $_ =~ />(\S+)\t(\S+)/;
-		    
-	    print OUT "$ac\tANOSUB\t$ac\tANOSUB\t$name\tKNOWN\n";
-	
+	    print OUT "$ac\tANOSUB\t$ac\tANOSUB\t$name\t\tKNOWN\n";
 	}
     }
 }
