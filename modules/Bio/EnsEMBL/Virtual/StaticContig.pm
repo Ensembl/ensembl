@@ -1387,7 +1387,8 @@ sub _external_feature_cache{
 
 sub get_all_FPCClones {
     my $self = shift;
-
+    my $flag = shift;
+    
     my $glob_start = $self->_global_start;
     my $glob_end   = $self->_global_end;
     my $length     = $self->length;
@@ -1409,7 +1410,12 @@ sub get_all_FPCClones {
 
     my $chr = $fpcmap->get_ChromosomeMap($chr_name);
 
-    my @fpcclones = $chr->get_Clones_by_start_end($glob_start,$glob_end);
+    my @fpcclones;
+    if($flag eq 'FISH') {
+        @fpcclones = $chr->get_Clones_by_start_end_including_FISH($glob_start,$glob_end);
+    } else {
+        @fpcclones = $chr->get_Clones_by_start_end($glob_start,$glob_end);
+    }
 
     foreach my $clone ( @fpcclones ) {
         my $newstart = $clone->start - $glob_start;
@@ -1955,6 +1961,15 @@ sub get_all_Genes_exononly{
 sub get_all_VirtualGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
+        $self->_chr_name, 
+        $self->_global_start, 
+        $self->_global_end
+    ); 
+}
+
+sub get_all_EMBLGenes_startend_lite {
+	my  $self = shift;
+	return $self->dbobj->get_LiteAdaptor->fetch_EMBLgenes_start_end(
         $self->_chr_name, 
         $self->_global_start, 
         $self->_global_end
