@@ -200,14 +200,6 @@ sub create_seq_regions {
     #insert into seq_region table
     $insert_sth->execute($name, $cs_id, $length);
     #copy old/new mapping into temporary table
-
-    #avoid trying to add the same chromosome id twice into the mappings
-    #not all supercontigs make up 'supercontigs' in the chromosome table,
-    #some were used to construct chromosomes, and we don't want these ids.
-    if(!$chr_id_added{$old_id}) {
-      $tmp_chr_insert_sth->execute($old_id, $insert_sth->{'mysql_insertid'});
-      $chr_id_added{$old_id} = 1;
-    }
    $tmp_supercontig_insert_sth->execute($name,$insert_sth->{'mysql_insertid'});
   }
 
@@ -216,7 +208,6 @@ sub create_seq_regions {
   $tmp_supercontig_insert_sth->finish();
   $tmp_clone_insert_sth->finish();
   $insert_sth->finish();
-
 }
 
 
