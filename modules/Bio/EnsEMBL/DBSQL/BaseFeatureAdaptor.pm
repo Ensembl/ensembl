@@ -325,8 +325,19 @@ sub fetch_all_by_Slice_constraint {
     if($feat_cs->equals($slice_cs)) {
       #no mapping is required if this is the same coord system
 
-      ### obtain seq_region_id of this slice from db somehow
+      # obtain seq_region_id of this slice from db
+      my $seq_region_id = 
+        $self->db->get_SliceAdaptor->get_seq_region_id($slice);
+      $constraint .= " AND " if($constraint);
+      $constraint .=
+          "${tab_syn}.seq_region_id = $seq_region_id AND " .
+          "${tab_syn}.seq_region_start <= $slice_end AND " .
+          "${tab_syn}.seq_region_end >= $slice_start";
+      my $fs = $self->generic_fetch($constraint,$logic_name,undef,$slice);
 
+      #features may still have to have coordinates made relative to slice start
+      $fs = $self->_remap($fs, $mapper, $slice);
+      push @features, @$fs;
     } else {
       $mapper = $asma->fetch_by_CoordSystems($slice_cs, $feat_cs);
 
@@ -367,7 +378,7 @@ sub fetch_all_by_Slice_constraint {
       my $len = @coords;
       for(my $i = 0; $i < $len; $i++) {
         $constraint .= " AND " if($constraint);
-        $constraint .= 
+        $constraint .=
           "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
           "${tab_syn}.seq_region_start <= " . $coords[$i]->end() . " AND " .
           "${tab_syn}.seq_region_end >= "   . $coords[$i]->start();
@@ -388,7 +399,8 @@ sub fetch_all_by_Slice_constraint {
 
 #
 # Given a list of features checks if they are in the correct coord system
-# by looking at the first feature slice.  If they 
+# by looking at the first features slice.  If they are not then they are
+# converted and placed on the slice.
 #
 sub _remap {
   my ($self, $features, $mapper, $slice) = @_;
