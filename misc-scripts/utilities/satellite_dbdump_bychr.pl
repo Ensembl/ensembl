@@ -10,8 +10,8 @@
 
 =head1 SYNOPSIS
 
-  This script generates a dump of an EnsEMBL satellite database for
-  particular chromosome. Useful to create a small but fully functional
+  This script generates a dump of an EnsEMBL database + satellites for
+  a particular chromosome. Useful to create a small but fully functional
   ensembl installation, e.g. for a laptop. It needs access to an ensembl-lite
   database (for golden path etc.)
 
@@ -68,7 +68,8 @@ my $dbpass = undef;
 # my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 
 my $litedb = ''; # 'homo_sapiens_lite_110'; # force user to provide it
-my $dumplite = 0;
+my $dumplite = 0;                       # we always specify lite, but it
+                                        # doesn't always need dumping
 
 my $chr = 'chr21';                      # smaller than chr22
 my $template = undef;                   # when dumping all
@@ -83,6 +84,7 @@ my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 #                  /mysql/current/bin/mysqldump
 
 # the satellite db's that have been implemented:
+my $coredb;
 my $famdb;
 my $diseasedb;
 my $mapsdb;
@@ -103,6 +105,7 @@ my $mousedb;
             'chr:s'      => \$chr,
             'workdir:s'  => \$workdir,
             'limit:n'    => \$lim,      # no more than so many rows (debugging)
+            'core:s' => \$coredb,
             'family:s' => \$famdb,
             'disease:s' => \$diseasedb,
             'maps:s' => \$mapsdb,
@@ -128,6 +131,7 @@ if ($template) {                        #
     my $db;
 
     &dump_lite( template_fill($template, 'lite'));
+    &dump_core( template_fill($template, 'core'));
     &dump_family( template_fill($template, 'family'));
     &dump_disease( template_fill($template, 'disease'));
     &dump_maps( template_fill($template, 'maps'));
@@ -140,6 +144,7 @@ if ($template) {                        #
 } else { 
 
     &dump_lite($litedb) if $dumplite;
+    &dump_core($coredb);
     &dump_family($famdb);
     &dump_disease($diseasedb);
     &dump_maps($mapsdb);
@@ -161,6 +166,195 @@ sub template_fill {
     $result =~ s/%s/$actual/;
     $result;
 }
+
+sub dump_core { 
+### replacement for make_dump. First commit on branch-ensembl-110, cause
+### that's stable. 
+    warn "not ready yet! not dumping core (at least not intentionally :-)";
+    return undef;
+
+    my ($satdb) = @_;
+    return unless $satdb;
+
+    dump_schema($satdb);
+    warn "This may take a while...\n";
+
+    my $sql;
+
+    # first the small ones in full
+    my @tables = qw(analysis analysisprocess chromosome externalDB meta
+                       species interpro interpro_description);
+    
+    foreach my $table ( @small_ones ) { 
+        $sql = "select distinct t.* from $satdb.$table t";
+        dump_data($sql, $satdb, $table);
+    }
+
+    # those that have a chr_name:
+    @tables = qw(karyotype contig_landmarkMarker static_golden_path);
+    foreach my $table ( @tables ) { 
+        $sql = "
+SELECT distinct t.*
+FROM $satdb.$table t 
+WHERE chr_name = $chr"
+          ;
+        dump_data($sql, $satdb, $table);
+    }
+
+    # ... or chrname (sigh);
+
+    @tables = qw(mapd_ensity);
+    foreach my $table ( @tables ) { 
+        $sql = "
+SELECT distinct t.*
+FROM $satdb.$table t 
+WHERE chrname = $chr";
+        dump_data($sql, $satdb, $table);
+    }
+
+    $sql="
+SELECT distinct ctg.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.contig ctg
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = ctg.internal_id
+";
+    dump_data($sql, $satdb, 'contig');
+
+    $sql="
+SELECT distinct cl.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.contig ctg,
+       $satdb.clone cl
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = ctg.internal_id
+   AND ctg.clone = cl.internal_id   
+";
+    dump_data($sql, $satdb, 'clone');
+
+    $sql="
+SELECT distinct d.* 
+  FROM $satdb.static_golden_path sgp,
+       $satdb.contig ctg,
+       $satdb.dna d
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = ctg.internal_id
+   AND ctg.dna = d.id   
+";
+    dump_data($sql, $satdb, 'dna');
+
+    foreach my $table ( qw(feature repeat_feature) ) { 
+        $sql="
+SELECT distinct f.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.feature f
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = f.contig
+";
+        dump_data($sql, $satdb, $table);
+    }
+
+    $sql="
+SELECT distinct fsf.* 
+  FROM $satdb.static_golden_path sgp,
+       $satdb.feature f, 
+       $satdb.fset_feature fsf
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = f.contig
+   AND fsf.feature = f.id
+";
+    dump_data($sql, $satdb, 'fset_feature');
+
+    $sql="
+SELECT distinct fs.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.feature f, 
+       $satdb.fset fs,
+       $satdb.fset_feature fsf
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = f.contig
+   AND fsf.feature = f.id
+   AND fsf.fset = fs.id
+";
+    dump_data($sql, $satdb, 'fset');
+
+    $sql="
+SELECT distinct e.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.exon e
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = e.contig
+";
+    dump_data($sql, $satdb, 'exon');
+
+    $sql="
+SELECT distinct et.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.exon e,
+       $satdb.exon_transcript et
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = e.contig
+   AND e.id = et.exon
+";
+
+    dump_data($sql, $satdb, 'exon_transcript');
+    
+    $sql="
+SELECT distinct tsc.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc
+ WHERE sgp.chr_name = '$chr' 
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = e.contig
+   AND e.id = et.exon
+   and et.transcript = tsc.id
+";
+    dump_data($sql, $satdb, 'transcript');
+
+    $sql="
+SELECT distinct g.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.exon e,
+       $satdb.exon_transcript et,
+       $satdb.transcript tsc,
+       $satdb.gene g
+ WHERE sgp.chr_name = '$chr' 
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = e.contig
+   AND e.id = et.exon
+   and et.transcript = tsc.id
+   and et.rank = 1
+   and tsc.gene = g.id
+";
+    dump_data($sql, $satdb, 'gene');
+
+    $sql="
+SELECT distinct trl.*
+  FROM homo_sapiens_core_110.static_golden_path sgp,
+       homo_sapiens_core_110.exon e,
+       homo_sapiens_core_110.exon_transcript et,
+       homo_sapiens_core_110.transcript tsc,
+       homo_sapiens_core_110.translation trl
+ WHERE sgp.chr_name = 'chr21' 
+   AND sgp.type = 'UCSC'
+   AND sgp.raw_id = e.contig
+   AND e.id = et.exon
+   and et.transcript = tsc.id
+   and tsc.translation = trl.id
+";
+    dump_data($sql, $satdb, 'translation');
+    
+}                                       # dump_core
 
 sub dump_lite {
 # needed for a few things
@@ -479,6 +673,7 @@ SELECT distinct ctg.*
    and ctg.clone = cl.internal_id
 ";
     dump_data($sql, $satdb, 'contig');
+
     $sql ="
 SELECT distinct dna.*
   FROM $litedb.gene lg,
