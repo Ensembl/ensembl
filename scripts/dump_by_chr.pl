@@ -3,8 +3,6 @@
 # $Id$
 # 
 #
-use Carp;
-
 =head1 NAME
 
  dump_by_chr.pl
