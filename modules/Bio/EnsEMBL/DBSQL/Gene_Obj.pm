@@ -892,7 +892,7 @@ sub get_Virtual_Contig{
     }
 
     if (!defined $max_length) {
-	$max_length=50000;
+	$max_length=500000;
     }
 
     my $transcript=$self->get_Transcript($trans_id);
