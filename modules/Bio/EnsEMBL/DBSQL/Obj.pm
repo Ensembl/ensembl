@@ -171,7 +171,6 @@ sub get_Gene{
     $sth2->execute();
     my $rowhash= $sth2->fetchrow_hashref;
     $gene->version($rowhash->{'version'});
-    $self->warn("Got gene version ".$gene->version." in get_Gene");
     $gene->created($rowhash->{'created'});
     $gene->modified($rowhash->{'modified'});
 
@@ -665,11 +664,13 @@ sub get_updated_Objects{
     $sth->execute();
     my $rowhash = $sth->fetchrow_arrayref();
     $last_offset = $rowhash->[0];
+    print STDERR "Last= $last_offset\n";
 
     $sth = $self->prepare("select FROM_UNIXTIME(".$now_offset.")");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
     $now_offset = $rowhash->[0];
+    print STDERR "now: $now_offset\n";
 
     #First, get all clone ids that have been updated between last and now-offset
     $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
@@ -1145,7 +1146,7 @@ sub write_Gene{
        }
    }
 
-   $self->warn("Got gene version ".$gene->version." in write_Gene");
+   print "Got gene version ".$gene->version." in write_Gene";
 
     eval {
        $old_gene=$self->get_Gene($gene->id);
@@ -1162,7 +1163,7 @@ sub write_Gene{
        $sth2->execute();
    }
    else {
-       $self->warn ("Got this gene with this version already, no need to write in db");
+       print "Got this gene with this version already, no need to write in db");
    }
    foreach my $cloneid ($gene->each_cloneid_neighbourhood) {
        #print STDERR "Using $cloneid and ",$gene->id,"\n";
@@ -1550,7 +1551,7 @@ sub write_Transcript{
        $self->write_Translation($trans->translation());
    }
    else {
-       $self->warn ("Transcript already present in the database with the same version number, no need to write it in");
+       print "Transcript already present in the database with the same version number, no need to write it in");
    }
    return 1;
 }
@@ -1591,7 +1592,7 @@ sub write_Translation{
 	$tst->execute();
     }
     else {
-	$self->warn ("Translation already present in the database with the same version number, no need to write it in");
+	print "Translation already present in the database with the same version number, no need to write it in");
     }
 }
 
@@ -1642,7 +1643,7 @@ sub write_Exon{
        $sth->execute();
    }
    else {
-       $self->warn("Exon with the same version number already present, no need to write it in");
+       print "Exon with the same version number already present, no need to write it in");
    }
 #   my $unlockst = $self->prepare("unlock exon");
 #   $unlockst->execute;
