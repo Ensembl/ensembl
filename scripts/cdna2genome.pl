@@ -2,6 +2,8 @@
 
 use strict;
 
+#  perl ../scripts/cdna2genome.pl -timdb ~/th/unfinished_ana/sanger/data/dJ718J7/dJ718J7.seq
+
 =head1 NAME
 
 cdna2genome
@@ -160,14 +162,14 @@ sub _do_cdna2genome{
     my $aseq = Bio::AnnSeq->new();
     $aseq->seq($seq);
 
-    my $OUTFILE;
+    #my $OUTFILE;
 
   ACC: 
     foreach my $embl_acc ( @$rembl_acc ) {
 
 	# get out the cdna.
 	my $aseqio = Bio::AnnSeqIO->new( -format => 'EMBL', 
-					 -file => "getz -e '[embl-acc:$embl_acc]' |");    
+					 -file => "efetch -a em:$embl_acc |");    
 	my $cdna;
 	eval {
 	    $cdna = $aseqio->next_annseq();
