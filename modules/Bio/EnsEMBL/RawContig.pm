@@ -41,13 +41,6 @@ sub new {
 }
 
 
-sub dbID {
-  my $self = shift;
-  deprecate('Use Bio::EnsEMBL::Slice instead of Bio::EnsEMBL::RawContig');
-
-  return $self->adaptor->get_seq_region_id($self);
-}
-
 
 
 sub embl_offset {

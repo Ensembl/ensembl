@@ -1407,10 +1407,6 @@ sub get_all_Genes_by_source {
 }
 
 
-sub dbID {
-  deprecate("Do not use this method, it does nothing");
-}
-
 =head2 id
 
   Description: DEPRECATED use name() instead
@@ -1600,6 +1596,18 @@ sub get_tiling_path {
   return \@tiling_path;
 }
 
+
+=head2 get_tiling_path
+
+  Description: DEPRECATED use project instead
+
+=cut
+
+sub dbID {
+  my $self = shift;
+  deprecate('Use SliceAdaptor::get_seq_region_id instead.');
+  return $self->adaptor->get_seq_region_id($self);
+}
 
 
 
