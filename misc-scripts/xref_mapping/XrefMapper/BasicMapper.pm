@@ -47,6 +47,8 @@ my %object_xref_identities;
 my %xref_descriptions;
 my %xref_accessions;
 my %source_to_external_db;
+my %xrefs_written;
+my %object_xrefs_written;
 
 =head2 dump_seqs
 
@@ -873,8 +875,11 @@ sub dump_orphan_xrefs() {
 
     my $external_db_id = $source_to_external_db{$source_id};
     if ($external_db_id) { # skip "unknown" sources
-      print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-      $count++;
+      if (!$xrefs_written{$xref_id}) {
+	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	$xrefs_written{$xref_id} = 1;
+	$count++;
+      }
     }
 
   }
@@ -895,7 +900,7 @@ sub dump_direct_xrefs {
 
   print "Writing direct xrefs\n";
 
-  my $count;
+  my $count = 0;
 
   open (XREF, ">>" . $self->dir() . "/xref.txt");
   open (OBJECT_XREF, ">>" . $self->dir() . "/object_xref.txt");
@@ -912,27 +917,27 @@ sub dump_direct_xrefs {
   while ($xref_sth->fetch()) {
 
     my $external_db_id = $source_to_external_db{$source_id};
-
     if ($external_db_id) {
 
       # Look up Ensembl internal ID from stable ID. No joins, so quick.
-      my $table = lc($type);
-      my $core_sql = "SELECT ${table}_id FROM ${table}_stable_id WHERE stable_id=\'$ensembl_stable_id\'" ;
+      my $core_sql = "SELECT ${type}_id FROM ${type}_stable_id WHERE stable_id=\'$ensembl_stable_id\'" ;
       my $core_sth = $self->dbi()->prepare($core_sql);
-      my $core_sth->execute();
+      $core_sth->execute();
       my @row = $core_sth->fetchrow_array();
       my $ensembl_internal_id = $row[0];
-
       if ($ensembl_internal_id) {
 
-	print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
-	print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t$type\t" . ($xref_id+$xref_id_offset) . "\n";
+	if (!$xrefs_written{$xref_id}) {
+	  print XREF ($xref_id+$xref_id_offset) . "\t" . $external_db_id . "\t" . $accession . "\t" . $label . "\t" . $version . "\t" . $description . "\n";
+	  $xrefs_written{$xref_id} = 1;
+	}
+	print OBJECT_XREF "$object_xref_id\t$ensembl_internal_id\t" . ucfirst($type) . "\t" . ($xref_id+$xref_id_offset) . "\n";
 	$object_xref_id++;
 	$count++;
 
       } else {
 
-	print STDERR "Can't find $table corresponding to stable ID $ensembl_stable_id in ${table}_stable_id, not writing record for xref $accession\n";
+	print STDERR "Can't find $type corresponding to stable ID $ensembl_stable_id in ${type}_stable_id, not writing record for xref $accession\n";
 
       }
 
@@ -1072,10 +1077,9 @@ sub dump_core_xrefs {
   # execute several queries with a max of 200 entries in each IN clause - more efficient
   my $batch_size = 200;
 
-  # keep track of what xref_id & object_xref_ids have been written to prevent 
+  # keep track of what xref_id & object_xref_ids have been written to prevent
   # duplicates; e.g. several dependent xrefs may be dependent on the same master xref.
-  my %xrefs_written;
-  my %object_xrefs_written;
+  # Note %xrefs_written and %object_xrefs_written are global
 
   while(@xref_ids) {
 
