@@ -92,16 +92,19 @@ execute($dbi, "INSERT INTO seq_region SELECT contig_id, name, $cs_id, length fro
 # Similarly for the clone table - can use autonumber for the IDs as they're not referenced anywhere
 $cs_id = $coord_system_ids{"clone"};
 execute($dbi, "INSERT INTO seq_region (name, coord_system_id, length) " .
-	      "SELECT CONCAT(cl.name, '.', cl.version), " .
-	      "$cs_id, " . 
-	      "MAX(ctg.embl_offset)+ctg.length-1 " .
-	      "FROM $source.clone cl, $source.contig ctg " .
-	      "WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
+		     "SELECT CONCAT(cl.name, '.', cl.version), " .
+		     "$cs_id, " .
+		     "MAX(ctg.embl_offset)+ctg.length-1 " .
+		     "FROM $source.clone cl, $source.contig ctg " .
+		     "WHERE cl.clone_id=ctg.clone_id GROUP BY ctg.clone_id");
 
 # And chromosomes
-# Note old/new ID mapping is stored in %chromosme_id_old_new 
+# Note old/new ID mapping is stored in %chromosme_id_old_new; it turns out it is vastly
+# quicker to store the mappings in a temporary table and join to it rather than
+# doing a row-by-row INSERT using this hash
+
 my %chromosome_id_old_new;
-$cs_id = $coord_system_ids{"chromosome"};
+my $cs_id = $coord_system_ids{"chromosome"};
 $sth = $dbi->prepare("SELECT chromosome_id, name, length FROM $source.chromosome");
 $sth->execute or die "Error when caching coord-system IDs";
 while(my $row = $sth->fetchrow_hashref()) {
@@ -113,6 +116,18 @@ while(my $row = $sth->fetchrow_hashref()) {
   $chromosome_id_old_new{$old_id} = $new_id;
 }
 
+# store this hash in a temporary table to save having to do row-by-row inserts later
+my $create_sql = 
+  "CREATE TEMPORARY TABLE $target.tmp_chr_map (" .
+  "old_id INT, new_id INT,".
+  "INDEX new_idx (new_id))";
+$sth = $dbi->prepare($create_sql);
+$sth->execute or die "Error when creating temporary chr_map table";
+$sth = $dbi->prepare("INSERT INTO $target.tmp_chr_map (old_id, new_id) VALUES (?, ?)");
+while (my ($old_id, $new_id) = each %chromosome_id_old_new) {
+  $sth->execute($old_id, $new_id) || die "Error writing to tmp_chr_map";
+}
+
 # ----------------------------------------------------------------------
 # Gene
 # Need to calculate start, end etc
@@ -120,20 +135,20 @@ while(my $row = $sth->fetchrow_hashref()) {
 debug("Building gene table");
 
 my $sql =
-  "INSERT INTO $target.gene " .
-  "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
-  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-  "       a.contig_ori*e.contig_strand as strand, " .
-  "       g.display_xref_id " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-  "WHERE  t.transcript_id = et.transcript_id " .
-  "AND    et.exon_id = e.exon_id " .
-  "AND    e.contig_id = a.contig_id " .
-  "AND    g.gene_id = t.gene_id " . 
-  "GROUP BY g.gene_id";
+	 "INSERT INTO $target.gene " .
+	 "SELECT g.gene_id, g.type, g.analysis_id, e.contig_id, " .
+	 "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+	 "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+	 "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+	 "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+	 "       a.contig_ori*e.contig_strand as strand, " .
+	 "       g.display_xref_id " .
+	 "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+	 "WHERE  t.transcript_id = et.transcript_id " .
+	 "AND    et.exon_id = e.exon_id " .
+	 "AND    e.contig_id = a.contig_id " .
+	 "AND    g.gene_id = t.gene_id " . 
+	 "GROUP BY g.gene_id";
 execute($dbi, $sql);
 
 # ----------------------------------------------------------------------
@@ -143,20 +158,20 @@ execute($dbi, $sql);
 debug("Building transcript table");
 
 $sql =
-  "INSERT INTO $target.transcript " .
-  "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
-  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-  "       a.contig_ori*e.contig_strand as strand, " .
-  "       g.display_xref_id " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-  "WHERE  t.transcript_id = et.transcript_id " .
-  "AND    et.exon_id = e.exon_id " .
-  "AND    e.contig_id = a.contig_id " .
-  "AND    g.gene_id = t.gene_id " .
-  "GROUP BY t.transcript_id";
+	 "INSERT INTO $target.transcript " .
+	 "SELECT t.transcript_id, g.gene_id, e.contig_id, " .
+	 "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+	 "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+	 "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+	 "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+	 "       a.contig_ori*e.contig_strand as strand, " .
+	 "       g.display_xref_id " .
+	 "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+	 "WHERE  t.transcript_id = et.transcript_id " .
+	 "AND    et.exon_id = e.exon_id " .
+	 "AND    e.contig_id = a.contig_id " .
+	 "AND    g.gene_id = t.gene_id " .
+	 "GROUP BY t.transcript_id";
 #print $sql . "\n";
 execute($dbi, $sql);
 
@@ -167,20 +182,20 @@ execute($dbi, $sql);
 debug("Building exon table");
 
 $sql =
-  "INSERT INTO $target.exon " .
-  "SELECT e.exon_id, e.contig_id, " .
-  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
-  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
-  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
-  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
-  "       a.contig_ori*e.contig_strand as strand, " .
-  "       e.phase, e.end_phase " .
-  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
-  "WHERE  t.transcript_id = et.transcript_id " .
-  "AND    et.exon_id = e.exon_id " .
-  "AND    e.contig_id = a.contig_id " .
-  "AND    g.gene_id = t.gene_id " .
-  "GROUP BY e.exon_id";
+	 "INSERT INTO $target.exon " .
+	 "SELECT e.exon_id, e.contig_id, " .
+	 "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+	 "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+	 "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+	 "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+	 "       a.contig_ori*e.contig_strand as strand, " .
+	 "       e.phase, e.end_phase " .
+	 "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $source.gene g " .
+	 "WHERE  t.transcript_id = et.transcript_id " .
+	 "AND    et.exon_id = e.exon_id " .
+	 "AND    e.contig_id = a.contig_id " .
+	 "AND    g.gene_id = t.gene_id " .
+	 "GROUP BY e.exon_id";
 #print $sql . "\n";
 execute($dbi, $sql);
 
@@ -190,7 +205,7 @@ execute($dbi, $sql);
 
 debug("Building translation table");
 
-$sql = 
+$sql =
   "INSERT INTO $target.translation " .
   "SELECT tl.translation_id, ts.transcript_id, tl.seq_start, tl.start_exon_id, tl.seq_end, tl.end_exon_id " .
   "FROM $source.transcript ts, $source.translation tl " .
@@ -203,22 +218,13 @@ execute($dbi, $sql);
 
 debug("Building assembly table");
 
-# Need to do this row-by-row to get chromosome ID mapping
-$sth = $dbi->prepare("SELECT * FROM $source.assembly");
-$sth->execute or die "Error when reading assembly info from source DB";
-while(my $row = $sth->fetchrow_hashref()) {
+execute($dbi,
+	"INSERT INTO $target.assembly " .
+	"SELECT tcm.new_id, " .
+	"a.contig_id, a.chr_start, a.chr_end, a.contig_start, a.contig_end, a.contig_ori " .
+	"FROM $target.tmp_chr_map tcm, $source.assembly a " .
+	"WHERE tcm.old_id = a.chromosome_id");
 
-  $sql = "INSERT INTO $target.assembly VALUES (" . 
-         $chromosome_id_old_new{$row->{"chromosome_id"}} . ", " .
-	 $row->{"contig_id"} . ", " .
-	 $row->{"chr_start"} . ", " .
-	 $row->{"chr_end"} . ", " .
-	 $row->{"contig_start"} . ", " .
-	 $row->{"contig_end"} . ", " .
-	 $row->{"contig_ori"} . ")";
-  execute($dbi, $sql);
-
-}
 
 # ----------------------------------------------------------------------
 # dna table
@@ -252,58 +258,44 @@ debug("Translating marker_feature");
 execute($dbi, "INSERT INTO $target.marker_feature (marker_feature_id, marker_id, seq_region_id, seq_region_start, seq_region_end, analysis_id, map_weight) SELECT marker_feature_id, marker_id, contig_id, contig_start, contig_end, analysis_id, map_weight FROM $source.marker_feature");
 
 # qtl_feature
-# Note this uses the perviously constructed %chromosome_id_old_new hash for mapping
+# Note this uses chromosome coords so we have to join with tmp_chr_map to get the mapping
 debug("Translating qtl_feature");
-$sth = $dbi->prepare("SELECT * FROM $source.qtl_feature");
-$sth->execute or die "Error when reading qtl_feature";
-while(my $row = $sth->fetchrow_hashref()) {
 
-  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
-  execute($dbi, "INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) VALUES (" . $seq_region_id . ", " . $row->{"start"} . ", " . $row->{"end"} . ", " . $row->{"qtl_id"} . ", " . $row->{"analysis_id"} . ")");
-
-}
+execute($dbi,
+	"INSERT INTO $target.qtl_feature(seq_region_id, start, end, qtl_id, analysis_id) " .
+	"SELECT tcm.new_id, " .
+	"       q.start, q.end, q.qtl_id, q.analysis_id " .
+        "FROM $target.tmp_chr_map tcm, $source.qtl_feature q " .
+	"WHERE tcm.old_id = q.chromosome_id");
 
 # ----------------------------------------------------------------------
 # These tables now have seq_region_* instead of chromosome_*
 
 debug("Translating karyotype");
-$sth = $dbi->prepare("SELECT * FROM $source.karyotype");
-$sth->execute or die "Error when reading karyotype";
-while(my $row = $sth->fetchrow_hashref()) {
-  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
-  execute($dbi, "INSERT INTO $target.karyotype VALUES (" . $seq_region_id . ", " .
-	         $row->{"chr_start"} . ", " .
-	         $row->{"chr_end"} . ", " .
-	         "'" . $row->{"band"} . "', " .
-	         "'" . $row->{"stain"} . "')");
-}
+execute($dbi,
+	"INSERT INTO $target.karyotype " .
+	"SELECT tcm.new_id, " .
+	"       k.chr_start, k.chr_end, k.band, k.stain " .
+	"FROM $target.tmp_chr_map tcm, $source.karyotype k " .
+	"WHERE tcm.old_id = k.chromosome_id");
+
 
 debug("Translating marker_map_location");
-$sth = $dbi->prepare("SELECT * FROM $source.marker_map_location");
-$sth->execute or die "Error when reading marker_map_location";
-while(my $row = $sth->fetchrow_hashref()) {
-  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
-  execute($dbi, "INSERT INTO $target.marker_map_location VALUES (" .
-	         $row->{"marker_id"} . ", " .
-	         $row->{"map_id"} . ", " .
-	         $seq_region_id . ", " .
-	         $row->{"marker_synonym_id"} . ", " .
-	         "'" . $row->{"position"} . "', " .
-	         $row->{"lod_score"} . ")");
-}
+execute($dbi, 
+	"INSERT INTO $target.marker_map_location " .
+	"SELECT mml.marker_id, mml.map_id, " .
+	"       tcm.new_id, " .
+	"       mml.marker_synonym_id, mml.position, mml.lod_score " .
+	"FROM $target.tmp_chr_map tcm, $source.marker_map_location mml " .
+	"WHERE tcm.old_id = mml.chromosome_id");
 
 debug("Translating map_density");
-$sth = $dbi->prepare("SELECT * FROM $source.map_density");
-$sth->execute or die "Error when reading map_density";
-while(my $row = $sth->fetchrow_hashref()) {
-  my $seq_region_id = $chromosome_id_old_new{$row->{"chromosome_id"}};
-  execute($dbi, "INSERT INTO $target.map_density VALUES (" .
-	         $seq_region_id . ", " .
-	         $row->{"chr_start"} . ", " .
-	         $row->{"chr_end"} . ", " .
-	         "'" . $row->{"type"} . "', " .
-	         $row->{"value"} . ")");
-}
+execute($dbi,
+	"INSERT INTO $target.map_density " .
+	"SELECT tcm.new_id, ".
+	"       md.chr_start, md.chr_end, md.type, md.value " .
+	"FROM $target.tmp_chr_map tcm, $source.map_density md " .
+	"WHERE tcm.old_id = md.chromosome_id");
 
 # ----------------------------------------------------------------------
 # These tables are copied as-is
