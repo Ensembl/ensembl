@@ -363,31 +363,32 @@ sub description {
     return $self->{'_description'};
 }
 
-=head2 each_DBLink
 
- Title   : each_DBLink
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
 
+=head2 get_all_DBLinks
+
+  Arg [1]    : none
+  Example    : @dblinks = $gene->get_all_DBLinks();
+  Description: retrieves a list of DBLinks for this gene
+  Returntype : Bio::EnsEMBL::DBEntry
+  Exceptions : none
+  Caller     : general
 
 =cut
 
-sub each_DBLink {
-   my ($self,@args) = @_;
+sub get_all_DBLinks {
+   my $self = shift;
 
    if( !defined $self->{'_db_link'} ) {
        $self->{'_db_link'} = [];
        if( defined $self->adaptor ) {
-	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_gene($self);
+	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Gene($self);
        }
    } 
 
-
    return @{$self->{'_db_link'}}
 }
+
 
 
 =head2 add_DBLink
@@ -403,17 +404,18 @@ sub each_DBLink {
 =cut
 
 sub add_DBLink{
-   my ($self,$value) = @_;
+  my ($self,$value) = @_;
 
-   if( !defined $value || !ref $value || ! $value->isa('Bio::Annotation::DBLink') ) {
-       $self->throw("This [$value] is not a DBLink");
-   }
+  unless(defined $value && ref $value 
+	 && $value->isa('Bio::Annotation::DBLink') ) {
+    $self->throw("This [$value] is not a DBLink");
+  }
+  
+  if( !defined $self->{'_db_link'} ) {
+    $self->{'_db_link'} = [];
+  }
 
-   if( !defined $self->{'_db_link'} ) {
-       $self->{'_db_link'} = [];
-   }
-
-   push(@{$self->{'_db_link'}},$value);
+  push(@{$self->{'_db_link'}},$value);
 }
 
 
@@ -889,6 +891,28 @@ sub refresh {
 #       $e->end($e->ori_end);
 #       $e->strand($e->ori_strand);
 #   }
+}
+
+
+
+=head2 each_DBLink
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::get_all_DBLinks instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub each_DBLink {
+  my $self = shift;
+
+  $self->warn("each_DBLink has been renamed get_all_DBLinks\n" .
+	      caller);
+
+  return $self->get_all_DBLinks();
 }
 
 1;

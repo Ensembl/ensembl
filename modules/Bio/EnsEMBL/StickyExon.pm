@@ -362,6 +362,8 @@ sub transform {
     my $composite_exon_strand = 0;
     my $composite_exon_phase = -1;
 
+    my @supporting_features;
+
     # sort the component exons
     $self->_sort_by_sticky_rank(); 
 
@@ -409,6 +411,9 @@ sub transform {
       # concatenate the raw sequence together
       $dna_seq .= $c_exon->seq();
 
+      #add the supporting features from the exons
+      push @supporting_features, $c_exon->get_all_supporting_features(); 
+
    #   print STDERR $c_exon->dbID . " " . $c_exon->seq . "\n";
 
       # now pull out the start and end points of the newly concatenated sequence
@@ -453,6 +458,7 @@ sub transform {
     $newexon->adaptor($component_exons[0]->adaptor);
 
     $newexon->contig( $slice );
+    $newexon->add_supporting_features(@supporting_features);
     $newexon->phase( $composite_exon_phase );
 #SMJS Hack
 

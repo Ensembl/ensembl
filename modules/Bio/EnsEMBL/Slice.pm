@@ -803,8 +803,6 @@ sub get_tiling_path {
 
 
   # Get the ids of the raw_contigs in this region specified in chrmsml coords 
-  $mapper->register_region( $self->chr_name, $self->chr_start(),
-			     $self->chr_end() );
   my @mapped = $mapper->map_coordinates_to_rawcontig
     (
      $self->chr_name(),

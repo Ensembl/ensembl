@@ -155,13 +155,6 @@ sub new_fast {
   return $self;
 }
 
-=pod 
-
-=head1 Methods unique to exon
-
-
-=pod 
-
 
 =head2 dbID
 
@@ -908,189 +901,121 @@ sub _genscan_peptide{
 }
 
 
-=head2 add_Supporting_Feature
 
- Title   : add_Supporting_Feature
- Usage   : $obj->add_Supporting_Feature($feature)
- Function: 
- Returns : Nothing
- Args    : Bio::EnsEMBL::SeqFeature
+=head2 add_supporting_feature
 
+  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $feature
+  Example    : $exon->add_supporting_features(@features);
+  Description: Adds a list of supporting features to this exon. 
+               Duplicate features are not added.  
+               If supporting features are added manually in this
+               way, prior to calling get_all_supporting_features then the
+               get_all_supporting_features call will not retrieve supporting
+               features from the database.
+  Returntype : none
+  Exceptions : thrown if any of the features are not SeqFeatureIs
+  Caller     : general
 
 =cut
 
-sub add_Supporting_Feature {
-    my ($self,$feature) = @_;
-    #print STDERR "args ".$feature."\n";
-    $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeatureI") unless 
-	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeatureI");
-    #print STDERR "adding ".$feature." supporting feature\n";
-    $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
+sub add_supporting_features {
+  my ($self,@features) = @_;
+  
+  $self->{_supporting_evidence} = [] 
+    unless defined($self->{_supporting_evidence});
 
-    # check whether this feature object has been added already
-    my $found = 0;
-    if ( $feature && $self->{_supporting_evidence} ){
-      foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
-	# compare objects
-	if ( $feature == $added_feature ){
-	  $found = 1;
-	  
-	  # no need to look further
-	  last;
-	}
+  # check whether this feature object has been added already
+  FEATURE: foreach my $feature (@features) {
+    $self->throw("Supporting feat [$feature] not a Bio::EnsEMBL::SeqFeatureI") 
+      unless($feature && $feature->isa("Bio::EnsEMBL::SeqFeatureI"));
+
+    foreach my $added_feature ( @{ $self->{_supporting_evidence} } ){
+      # compare objects
+      if ( $feature == $added_feature ){
+	#this feature has already been added
+	next FEATURE;
       }
     }
-    if ( $found == 0 ){
-      #print STDERR "adding ".$feature." to evidence array\n";
-      push(@{$self->{_supporting_evidence}},$feature);
-    }
+  
+    #no duplicate was found, add the feature
+    push(@{$self->{_supporting_evidence}},$feature);
+  }
 }
 
 
-=head2 each_Supporting_Feature
+=head2 get_all_supporting_features
 
- Title   : each_Supporting_Feature
- Usage   : my @f = $obj->each_Supporting_Feature
- Function: 
- Returns : @Bio::EnsEMBL::Feature
- Args    : none
-
+  Arg [1]    : none
+  Example    : @evidence = $exon->get_all_supporting_features();
+  Description: Retreives any supporting features added manually by 
+               calls to add_supporting_features. If no features have been
+               added manually and this exon is in a database (i.e. it h
+  Returntype : 
+  Exceptions : 
+  Caller     : 
 
 =cut
 
+sub get_all_supporting_features {
+  my $self = shift;
 
-sub each_Supporting_Feature {
-    my ($self) = @_;
-    if ( !defined ( $self->{_supporting_evidence} ) || 
-	 (scalar @{$self->{_supporting_evidence}} == 0)) {
-      $self->{_supporting_evidence} = [];
-      if ( $self->adaptor ){
-	$self->adaptor->fetch_evidence_by_Exon( $self );
-      }
+  if( !defined(( $self->{_supporting_evidence} ) 
+      || scalar @{$self->{_supporting_evidence}} == 0)) {
+
+    $self->{_supporting_evidence} = [];
+
+    if($self->adaptor) {
+      my $sfa = $self->adaptor->db->get_SupportingFeatureAdaptor();
+      push @{$self->{_supporting_evidence}}, $sfa->fetch_by_Exon($self);
     }
-    #print STDERR "returning ".@{$self->{_supporting_evidence}}." pieces of evidence\n";
-    #foreach my $sf(@{$self->{_supporting_evidence}}){
-    #  print STDERR "have ".$sf." evidence to return\n";
-    #}
-    return @{$self->{_supporting_evidence}};
+  }
+
+  return @{$self->{_supporting_evidence}};
 }
 
 
 =head2 find_supporting_evidence
 
- Title   : find_supporting_evidence
- Usage   : $obj->find_supporting_evidence(\@features)
- Function: Looks through all the similarity features and
-           stores as supporting evidence any feature
-           that overlaps with an exon.  I know it is
-           a little crude but it\'s a start/
- Example : 
- Returns : Nothing
- Args    : Bio::EnsEMBL::Exon
-
+  Arg [1]    : Bio::EnsEMBL::SeqFeatureI $features
+               The list of features to search for supporting (i.e. overlapping)
+               evidence.
+  Arg [2]    : (optional) boolean $sorted
+               Used to speed up the calculation of overlapping features.  
+               Should be set to true if the list of features is sorted in 
+               ascending order on their start coordinates.
+  Example    : $exon->find_supporting_evidence(\@features);
+  Description: Looks through all the similarity features and
+               stores as supporting features any feature
+               that overlaps with an exon.  
+  Returntype : none
+  Exceptions : none
+  Caller     : general
 
 =cut
-
 
 sub find_supporting_evidence {
-    my ($self,$features,$sorted) = @_;
-
-    FEAT : foreach my $f (@$features) {
-	# return if we have a sorted feature array
-	if ($sorted == 1 && $f->start > $self->end) {
-	    return;
-	}
-	if ($f->sub_SeqFeature) {
-	  my @subf = $f->sub_SeqFeature;
-
-	  $self->find_supporting_evidence(\@subf);
-	} else {
-	  if ($f->entire_seq()->name eq $self->contig()->name) {
-	    if (!($f->end < $self->start || $f->start > $self->end)) {
-	      $self->add_Supporting_Feature($f);
-	    }
-	  }
+  my ($self,$features,$sorted) = @_;
+  
+  foreach my $f (@$features) {
+    # return if we have a sorted feature array
+    if ($sorted == 1 && $f->start > $self->end) {
+      return;
+    }
+    if ($f->sub_SeqFeature) {
+      my @subf = $f->sub_SeqFeature;
+      
+      $self->find_supporting_evidence(\@subf);
+    } else {
+      if ($f->entire_seq()->name eq $self->contig()->name) {
+	if ($f->end >= $self->start && $f->start <= $self->end) {
+	  $self->add_supporting_feature($f);
 	}
       }
-}
-
-
-=head2 Ori methods
-
-The ori methods are a hack around the virtual contig system to allow
-us to cache genes in get_all_ExternalGenes via the ExternalWrapper
-class, reusing the gene objects through more than one lift of the
-virtual contig. Both Elia and Ewan understand this (vaguely) and it is
-definitely a hack waiting to be removed somehow.
-
-
-=head2 ori_start
-
- Title   : ori_start
- Usage   : $obj->ori_start($newval)
- Function: Getset for ori_start value
- Returns : value of ori_start
- Args    : newvalue (optional)
-
-
-=cut
-
-sub ori_start{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'ori_start'} = $value;
     }
-    return $obj->{'ori_start'};
-
-}
-
-=head2 ori_end
-
- Title   : ori_end
- Usage   : $obj->ori_end($newval)
- Function: Getset for ori_end value
- Returns : value of ori_end
- Args    : newvalue (optional)
-
-
-=cut
-
-sub ori_end{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'ori_end'} = $value;
-    }
-    return $obj->{'ori_end'};
-
-}
-
-=head2 ori_strand
-
- Title   : ori_strand
- Usage   : $obj->ori_strand($newval)
- Function: Getset for ori_strand value
- Returns : value of ori_strand
- Args    : newvalue (optional)
-
-
-=cut
-
-sub ori_strand{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'ori_strand'} = $value;
-    }
-    return $obj->{'ori_strand'};
-
+  }
 }
 
 
-=head2 Stable id 
-
-Stable id information is fetched on demand from stable tables
 
 =head2 created
 
@@ -1490,6 +1415,8 @@ sub seq {
 }
 
 
+
+
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here
 # for convenience...
@@ -1641,15 +1568,19 @@ triplets (start, stop, strand) from which new ranges could be built.
 
 =cut
 
+
+
+=head1 Deprecated Methods
+=cut
+
 =head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use dbID or stable_id instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
@@ -1742,6 +1673,122 @@ sub contig_id{
   } else {
     return undef;
   }
+}
+
+
+
+=head2 each_Supporting_Feature
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use get_all_supporting_features instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub each_Supporting_Feature {
+  my ($self, @args) = @_;
+  
+  $self->warn("Exon::each_Supporting_Feature has been renamed " .
+	      "get_all_supporting_features" . caller);
+  
+  return $self->get_all_supporting_features(@args);
+}
+
+
+=head2 add_Supporting_Feature
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use add_supporting_feature instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub add_Supporting_Feature {
+  my ($self, @args) = @_;
+  
+  $self->warn("Exon::add_Supporting_Feature has been renamed " .
+	      "add_supporting_features" . caller);
+
+  return $self->add_supporting_features(@args);
+}
+
+=head2 ori_start
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED not needed, do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub ori_start{
+   my $obj = shift;
+   
+   $obj->warn("Call to deprecated method ori_start " . caller);
+
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_start'} = $value;
+    }
+    return $obj->{'ori_start'};
+
+}
+
+
+=head2 ori_end
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED not needed, do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub ori_end{
+   my $obj = shift;
+
+   $obj->warn("Call to deprecated method ori_end " . caller);
+
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_end'} = $value;
+    }
+    return $obj->{'ori_end'};
+
+}
+
+
+=head2 ori_strand
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED not needed, do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub ori_strand{
+   my $obj = shift;
+
+   $obj->warn("Call to deprecated method ori_strand " . caller);
+
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'ori_strand'} = $value;
+    }
+    return $obj->{'ori_strand'};
 }
 
 
