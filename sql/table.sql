@@ -1027,7 +1027,8 @@ CREATE TABLE seq_region (
   length                      INT(10) NOT NULL,
 
   UNIQUE(coord_system_id, name),
-  PRIMARY KEY (seq_region_id)
+  PRIMARY KEY (seq_region_id),
+  KEY name_idx(name)  
 
 ) TYPE=MyISAM;
 
