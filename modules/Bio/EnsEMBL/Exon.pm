@@ -94,7 +94,7 @@ use Bio::Seq; # exons have to have sequences...
 sub _initialize {
   my($self,@args) = @_;
 
-  my $make = $self->SUPER::_initialize;
+  my $make = $self->SUPER::_initialize(@args);
 
   # Array to store supporting evidence for this exon
   $self->{_supporting_evidence} = [];
