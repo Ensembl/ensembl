@@ -570,7 +570,7 @@ sub fetch_by_gene_stable_id {
 
 =cut
 
-sub fetch_by_Feature {
+sub fetch_by_Feature{
   my ($self, $feature, $size) = @_;
 
   $size ||= 0;
@@ -609,7 +609,7 @@ sub fetch_by_Feature {
   return Bio::EnsEMBL::Slice->new(-seq_region_name => $slice->seq_region_name,
                                   -coord_system    => $slice->coord_system,
                                   -start           => $fstart - $size,
-                                  -end             => $fstart + $size,
+                                  -end             => $fend + $size,
                                   -strand          => 1,
                                   -adaptor         => $self);
 }
