@@ -232,7 +232,6 @@ sub dump_xref{
   if(defined($self->dumpcheck())){
     my $skip = 1;
     foreach my $list (@lists){
-      $method[$i] = shift @$list;
       if(!-e $xref->dir()."/xref_".$i."_dna.fasta"){ 
 	$skip = 0;
       }
@@ -242,6 +241,7 @@ sub dump_xref{
       $i++;
     }
     if($skip){
+      $method[$i] = shift @$list;
       $self->method(\@method);
       return;
     }
