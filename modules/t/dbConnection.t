@@ -124,9 +124,11 @@ ok(test_getter_setter($dbc, 'db_handle', $dbc->db_handle));
 # try the database with the disconnect_when_inactive flag set.
 # this should automatically disconnect from the db
 #
+my $dbh = $dbc->db_handle();
+
 $dbc->disconnect_when_inactive(1);
 
-ok(!$dbc->db_handle->ping());
+ok(!$dbh->ping());
 
 {
   # reconnect should happen now
@@ -138,7 +140,9 @@ ok(!$dbc->db_handle->ping());
   # disconnect should occur now
 }
 
-ok(!$dbc->db_handle->ping());
+ok(!$dbh->ping());
+
+$dbh = $dbc->db_handle();
 
 #
 # try the same thing but with 2 connections at a time
@@ -162,7 +166,7 @@ ok(!$dbc->db_handle->ping());
 }
 
 
-ok(!$dbc->db_handle->ping());
+ok(!$dbh->ping());
 
 $dbc->disconnect_when_inactive(0);
 
