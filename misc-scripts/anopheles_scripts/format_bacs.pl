@@ -1,13 +1,51 @@
+=head1 NAME
+
+  format_bacs.pl
+
+=head1 SYNOPSIS
+ 
+  format_bacs.pl -db anopheles_arne_core_9_2 -dbhost ecs1b -dbuser ensro -bacs /acari/work4/mongin/final_build/bacs/BACS.txt -map /acari/work4/mongin/final_build/bacs/bacs2bacs_ends.txt
+
+=head1 DESCRIPTION
+
+  Takes a BAC mapping in the following format:
+  
+180L9   219000001128745 AAAB01008847    19611853        X       3715079 1A      5A      45775   151560  IN      unmapped
+150B16  219000001128745 AAAB01008847    19611853        X       3715079 1A      5A      47855   170796  IN      unmapped
+
+   and remap the coordinates in chromosome coordinates in a format ready to go to mapfrag
+
+=head1 CONTACTS
+
+  ensembl-dev@ebi.ac.uk
+  mongin@ebi.ac.uk
+
+=cut
+
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::ProteinAdaptor;
+use Getopt::Long;
 
-my $host      = 'ecs1b';
-my $dbuser    = 'ensro';
-my $dbname    = 'anopheles_arne_core_9_2';
-my $dbpass    = undef;
-my $path      = 'NOTRE_DAME';
+my $host      = '';
+my $dbuser    = '';
+my $dbname    = '';
+my $dbpass    = '';
+my $path      = '';
 my $port;
+
+my $bacs;
+my $map;
+
+&GetOptions(
+	    'db:s' => \$dbname,
+	    'dbhost:s'=> \$dbhost,
+	    'pass:s' => \$dbpass,
+            'port:s' => \$dbport,
+            'dbuser:s'=> \$dbuser,
+	    'mapping:s'=>\$map,
+	    'bacs:s'=>\$bacs
+	    );
 
 print STDERR "Connecting to $host, $dbname\n";
 
@@ -20,8 +58,7 @@ my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 					    '-port'   => $port
 					   );
 
-my $bacs = "/acari/work4/mongin/final_build/bacs/BACS.txt";
-my $map = "/acari/work4/mongin/final_build/bacs/bacs2bacs_ends.txt";
+
 my %map;
 
 open (BAC,$bacs) || die "Can't open $bacs\n";

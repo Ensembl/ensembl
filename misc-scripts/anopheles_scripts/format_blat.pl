@@ -1,8 +1,27 @@
+=head1 NAME
+
+  format_blat.pl
+
+=head1 SYNOPSIS
+ 
+  format_blat.pl blat.out > blat_formated.txt
+
+=head1 DESCRIPTION
+
+  Formats a blat output into a format ready to go to mapfag. This is currently used to  produce the markers mapping
+
+=head1 CONTACT
+
+  ensembl-dev@ebi.ac.uk
+  mongin@ebi.ac.uk
+
+=cut
+
 use strict;
 
 my ($input) = @ARGV;
 
-print STDERR "$input\n";
+print STDERR "Blat output $input\n";
 
 open (IN,"$input") || die;
 
@@ -15,22 +34,15 @@ while(<IN>) {
     my ($match,$a,$b,$c,$f,$g,$h,$k,$strand,$hid,$r,$hstart,$hend,$id,$m,$start,$end,$blockcount,$blocksize,$w,$tstart) = split;
 
     if ($hid =~ /^AG/) {
-
- #   print STDERR "HID: $hid\n";
-
 	if ($match > $score{$hid}) {
-#	print STDERR "$hid\n";
-	    
 	    $load{$hid} = $_;
 	    $score{$hid} = $match;
-	    
 	}
     }
 }
 
 
 foreach my $k (keys %load) {
- #   print "$k\n";
 
     my ($match,$a,$b,$c,$f,$g,$h,$l,$strand,$hid,$r,$hstart,$hend,$id,$m,$start,$end,$blockcount,$blocksize,$w,$tstart) = split (/\t/,$load{$k});
 
@@ -53,18 +65,7 @@ foreach my $k (keys %load) {
 	
 	$start = $start + 1;
 	$hstart = $hstart + 1;
-
-
-#	foreach my $bl(@blocks) {
-#	    my $start = $targets[$count] + 1;
-#	    my $startq = $queries[$count] + 1;
-#	    my $end = $start + $bl;
-#	    my $endq = $startq + $bl;
 	    print "\\N\t$id\t$start\t$end\t$strand\t$k\t50\t$idt\n";
-#	    $count++;
-#	}
-#    }
-#    print "SCORE $k\t$match\n"; 
 	}
 }
 
