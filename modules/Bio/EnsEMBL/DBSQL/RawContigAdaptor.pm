@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::RawContig;
 
 use Bio::EnsEMBL::Utils::Cache; # CPAN LRU Cache module
-use constant RAW_CONTIG_CACHE_SIZE => 50;
+my $RAW_CONTIG_CACHE_SIZE = 20;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -78,8 +78,8 @@ sub new {
 
   #Initialize caching data structures
   tie(%{$self->{_raw_contig_cache}}, 
-      'Bio::Ensembl::Utils::Cache', 
-      RAW_CONTIG_CACHE_SIZE, 
+      'Bio::EnsEMBL::Utils::Cache', 
+      $RAW_CONTIG_CACHE_SIZE, 
       {Debug =>0});
 
   return $self;
@@ -440,5 +440,28 @@ sub _fill_contig_from_arrayref {
   return $contig;
 }
 
+
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none
+  Description: Cleans up object references contained within this object so
+               that proper garbage collection can occur.
+  Returntype : none
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBConnection::deleteObj
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  #print STDERR "\t\tRawContigAdaptor::deleteObj\n";
+
+  $self->SUPER::deleteObj();
+
+  #flush internal cache
+  %{$self->{'_raw_contig_cache'}} = ();
+}
 
 1;

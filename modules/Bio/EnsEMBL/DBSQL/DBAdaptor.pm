@@ -26,7 +26,9 @@ retrieval and creation of objects from the database,
 
 =head1 CONTACT
 
-Describe contact details here
+Arne Stabenau - stabenau@ebi.ac.uk
+Graham McVicker - mcvicker@ebi.ac.uk
+Ewan Birney - birney@ebi.ac.uk 
 
 =head1 APPENDIX
 
@@ -43,6 +45,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptorHolder;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
@@ -85,8 +88,8 @@ sub new {
   if(defined $dnadb) {
     $self->dnadb($dnadb);
   }
- 
-  return $self; # success - we hope!
+
+  return $self;
 }
 
 
@@ -690,37 +693,6 @@ sub list_supported_assemblies {
     return @out;
 }
 
-	
-=head2 deleteObj
-
-  Args       : none
-  Example    : $db_adaptor->deleteObj();
-  Description: Explicitly destroys this object and objects referenced by 
-               this object.  This method should only be called if you know
-               what you are doing, and is only needed for object destruction
-               when circular references are present (these will prevent 
-               perls automatic garbage collection).
-  Returntype : none
-  Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
-
-=cut		     
-
-sub deleteObj {
-
-  my  $self=shift;
-  my $dummy;
-  $self->DESTROY;
-  
-  foreach my $name ( keys %{$self} ) {
-    eval {
-      $dummy = $self->{$name}; 
-      $self->{$name}  = undef;
-      $dummy->deleteObj;
-    };
-  }
-}
-
 
 =head2 assembly_type
 
@@ -778,9 +750,6 @@ sub dnadb {
   my ($self,$arg) = @_;
 
   if (defined($arg)) {
-    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
-      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
-    }
     $self->{_dnadb} = $arg;
   }
   return $self->{_dnadb} || $self;

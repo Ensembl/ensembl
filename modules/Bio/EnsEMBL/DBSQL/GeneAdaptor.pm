@@ -33,12 +33,37 @@ package Bio::EnsEMBL::DBSQL::GeneAdaptor;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Gene;
-
+use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
 
 use vars '@ISA';
-
-
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+my  $SLICE_GENE_CACHE_SIZE = 3;
+
+=head2 new
+
+  Arg [1]    : list of arguments @args
+  Example    : $gene_adaptor = new Bio::EnsEMBL::DBSQL::GeneAdaptor($db_adptr);
+  Description: Craetes a new GeneAdaptor object
+  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
+
+sub new {
+  my($class, @args) = @_;
+
+  #call superclass constructor
+  my $self = $class->SUPER::new(@args);
+
+  #initialize tie hash cache
+  tie (%{$self->{'_slice_gene_cache'}}, 
+       'Bio::EnsEMBL::Utils::Cache', 
+       $SLICE_GENE_CACHE_SIZE,);
+
+  return $self;
+}
 
 
 =head2 list_geneIds
@@ -286,7 +311,7 @@ sub fetch_by_contig_list{
   Example    : $genes = $gene_adaptor->fetch_by_slice($slice);
   Description: Retrieves all genes which are present on a slice
   Returntype : list of Bio::EnsEMBL::Genes in slice coordinates
-  Exceptions : none
+  Exceptions : nonetail -
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
@@ -295,24 +320,29 @@ sub fetch_by_Slice {
   my ( $self, $slice, $type ) = @_;
   my @out;
 
+  #check the cache which uses the slice name as it key
+  if($self->{'_slice_gene_cache'}{$slice->name()}) {
+    return @{$self->{'_slice_gene_cache'}{$slice->name()}};
+  }
+
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
-   ( $slice->assembly_type() );
+    ( $slice->assembly_type() );
   
- $mapper->register_region( $slice->chr_name(),
+  $mapper->register_region( $slice->chr_name(),
 			    $slice->chr_start(),
 			    $slice->chr_end());
   
- my @cids = $mapper->list_contig_ids( $slice->chr_name(),
-				      $slice->chr_start(),
-				      $slice->chr_end());
-
- # no genes found so return
- if ( scalar (@cids) == 0 ) {
-   return undef;
- }
-
- my $str = "(".join( ",",@cids ).")";
-
+  my @cids = $mapper->list_contig_ids( $slice->chr_name(),
+				       $slice->chr_start(),
+				       $slice->chr_end());
+  
+  # no genes found so return
+  if ( scalar (@cids) == 0 ) {
+    return ();
+  }
+  
+  my $str = "(".join( ",",@cids ).")";
+  
   my $sth = $self->prepare("
     SELECT distinct(t.gene_id) 
     FROM   transcript t,exon_transcript et,exon e 
@@ -320,15 +350,18 @@ sub fetch_by_Slice {
     AND    et.exon_id = e.exon_id 
     AND    et.transcript_id = t.transcript_id");
 
- $sth->execute;
+  $sth->execute;
   
- while( my ($geneid) = $sth->fetchrow ) {
-   my $gene = $self->fetch_by_dbID( $geneid );
-   my $newgene = $gene->transform( $slice );    
-   push( @out, $newgene );
- }
+  while( my ($geneid) = $sth->fetchrow ) {
+    my $gene = $self->fetch_by_dbID( $geneid );
+    my $newgene = $gene->transform( $slice );    
+    push( @out, $newgene );
+  }
 
- return @out;
+  #place the results in an LRU cache
+  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+
+  return @out;
 }
 
 
@@ -702,6 +735,33 @@ sub get_description {
   my @array = $sth->fetchrow_array();
   return $array[0];
 }
+
+
+
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none 
+  Description: Responsible for cleaning up this objects references to other
+               objects so that proper garbage collection can occur. 
+  Returntype : none
+  Exceptions : none
+  Caller     : DBConnection::DeleteObj
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  #print STDERR "\t\tGeneAdaptor::deleteObj\n";
+  
+  #call superclass destructor
+  $self->SUPER::deleteObj();
+
+  #flush the cache
+  %{$self->{'_slice_gene_cache'}} = ();
+}
+							
 
 
 1;

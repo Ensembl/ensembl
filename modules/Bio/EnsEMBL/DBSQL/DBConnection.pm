@@ -40,7 +40,7 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-
+use Bio::EnsEMBL::DBSQL::DBAdaptorContainer;
 use Bio::EnsEMBL::Root;
 use DBI;
 
@@ -131,7 +131,12 @@ sub new {
   $self->dbname( $db );
   $self->password( $password);
 
-  return $self;
+  #be very sneaky and actually return a dbholder object which is outside
+  #of the circular reference loops and will cleanup after the subclass 
+  #dbadaptor
+  return new Bio::EnsEMBL::DBSQL::DBAdaptorContainer($self);
+
+#  return $self;
 }
 
 
@@ -461,6 +466,37 @@ sub get_db_adaptor {
 }
 
 
+
+sub deleteObj {
+  my $self = shift;
+
+  #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
+
+  foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
+    #print STDERR "\tcleaning [$adaptor_name]\n";
+
+    my $adaptor = $self->{'_adaptors'}{$adaptor_name};
+
+    #call each of the adaptor deleteObj methods
+    if($adaptor && $adaptor->can('deleteObj')) {
+      #print STDERR "\t\tdeleting adaptor\n";
+      $adaptor->deleteObj();
+    }
+
+    #break dbadaptor -> object adaptor references
+    $self->{'_adaptors'}{$adaptor_name} = undef;
+  }
+
+  #print STDERR "Cleaning up attached databases\n";
+
+  #break dbadaptor -> dbadaptor references
+  foreach my $db_name (keys %{$self->get_all_db_adaptors()}) {
+    #print STDERR "\tbreaking reference to $db_name database\n";
+    $self->remove_db_adaptor($db_name);
+  }
+}
+
+
 =head2 DESTROY
 
   Arg [1]    : none
@@ -476,6 +512,8 @@ sub get_db_adaptor {
 
 sub DESTROY {
    my ($obj) = @_;
+
+   #print STDERR "DESTROYING DBConnection\n";
 
    if( $obj->{'_db_handle'} ) {
        $obj->{'_db_handle'}->disconnect;

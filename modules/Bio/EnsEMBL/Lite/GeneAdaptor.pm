@@ -31,14 +31,40 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Gene;
-
+use Bio::EnsEMBL::Utils::Cache; #CPAN LRU Cache
 
 use vars '@ISA';
-
-
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-my $MAX_TRANSCRIPT_LENGTH=3000000;
+my $SLICE_GENE_CACHE_SIZE = 3;
+my $MAX_TRANSCRIPT_LENGTH = 3000000;
+
+
+=head2 new
+
+  Arg [1]    : list of arguments @args
+  Example    : $gene_adaptor = new Bio::EnsEMBL::DBSQL::GeneAdaptor($db_adptr);
+  Description: Craetes a new GeneAdaptor object
+  Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
+  Exceptions : none
+  Caller     : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
+
+sub new {
+  my($class, @args) = @_;
+
+  #call superclass constructor
+  my $self = $class->SUPER::new(@args);
+
+  #initialize tie hash cache
+  tie (%{$self->{'_slice_gene_cache'}}, 
+       'Bio::EnsEMBL::Utils::Cache', 
+       $SLICE_GENE_CACHE_SIZE,
+       {Debug => 0});
+
+  return $self;
+}
 
 
 =head2 fetch_by_Slice
@@ -57,12 +83,18 @@ sub fetch_by_Slice {
   my ( $self, $slice ) = @_;
   my @out;
 
+  #check the cache which uses the slice name as it key
+  if($self->{'_slice_gene_cache'}{$slice->name()}) {
+    return @{$self->{'_slice_gene_cache'}{$slice->name()}};
+  }
+
   my $sth = $self->prepare
-    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, t.chr_strand,
-              t.transcript_name, t.translation_id, t.translation_name, t.gene_id,
-              t.type, t.gene_name, t.db, t.exon_structure, t.external_name,
-              t.exon_ids,
-              t.external_db, t.coding_start, t.coding_end, g.external_name as gene_external_name, 
+    ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, 
+              t.chr_strand, t.transcript_name, t.translation_id, 
+              t.translation_name, t.gene_id, t.type, t.gene_name, t.db, 
+              t.exon_structure, t.external_name, t.exon_ids, t.external_db, 
+              t.coding_start, t.coding_end, 
+              g.external_name as gene_external_name, 
               g.external_db as gene_external_db, g.type as gene_type 
         FROM  transcript t 
     LEFT JOIN gene g 
@@ -73,12 +105,20 @@ sub fetch_by_Slice {
     );
 
   eval {
-    $sth->execute( $slice->chr_name, $slice->chr_end, $slice->chr_start-$MAX_TRANSCRIPT_LENGTH, $slice->chr_start );
+    $sth->execute( $slice->chr_name, $slice->chr_end, 
+		   $slice->chr_start - $MAX_TRANSCRIPT_LENGTH, 
+		   $slice->chr_start );
   };
   
   return () if($@);
 
-  return $self->_objects_from_sth( $sth, $slice );
+
+  @out = $self->_objects_from_sth( $sth, $slice );
+
+  #place the results in an LRU cache
+  $self->{'_slice_gene_cache'}{$slice->name} = \@out;
+
+  return @out;
 }
 
 
@@ -86,8 +126,6 @@ sub fetch_by_stable_id {
   my ($self, $stable_id ) = @_;
   my $core_DBAdaptor = $self->db->get_db_adaptor('core');
 
-  print STDERR  ( "dbname ",$self->db->dbname(),"\n");
-  print STDERR  ( "host ",$self->db->host(),"\n");
 
   my $sth = $self->prepare
     ( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end, t.chr_strand,
@@ -287,6 +325,31 @@ sub _objects_from_sth {
   }
 
   return @out;
+}
+
+
+=head2 deleteObj
+
+  Arg [1]    : none
+  Example    : none 
+  Description: Responsible for cleaning up this objects references to other
+               objects so that proper garbage collection can occur. 
+  Returntype : none
+  Exceptions : none
+  Caller     : DBConnection::DeleteObj
+
+=cut
+
+sub deleteObj {
+  my $self = shift;
+
+  #print STDERR "\t\tLite::GeneAdaptor::deleteObj\n";
+
+  #call superclass destructor 
+  $self->SUPER::deleteObj;
+
+  #flush the cache
+  %{$self->{'_slice_gene_cache'}} = ();
 }
 
 

@@ -8,7 +8,7 @@
 #
 
 #package Tie::Cache; # old package
-package Bio::Ensembl::Utils::Cache;
+package Bio::EnsEMBL::Utils::Cache;
 
 use strict;
 use vars qw(

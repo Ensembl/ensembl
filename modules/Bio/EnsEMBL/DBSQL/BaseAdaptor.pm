@@ -174,32 +174,27 @@ sub db{
 }
 
 
+
 =head2 deleteObj
 
-  Args       : none
-  Example    : $adaptor->deleteObj();
-  Description: Explicitly destroys this object and objects referenced by 
-               this object.  This method should only be called if you know
-               what you are doing, and is only needed for object destruction
-               when circular references are present (these will prevent 
-               perls automatic garbage collection).
+  Arg [1]    : none
+  Example    : none
+  Description: Cleans up this objects references to other objects so that
+               proper garbage collection can occur
   Returntype : none
   Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::DBConnection?
+  Caller     : Bio::EnsEMBL::DBConnection
 
 =cut
 
 sub deleteObj {
   my $self = shift;
-  my @dummy = values %{$self};
-  foreach my $key ( keys %$self ) {
-    delete $self->{$key};
-  }
-  foreach my $obj ( @dummy ) {
-    eval {
-      $obj->deleteObj;
-    }
-  }
+
+  #print STDERR "\t\tBaseAdaptor::deleteObj\n";
+
+  #remove reference to the database adaptor
+  $self->{'db'} = undef;
 }
+
 
 
