@@ -43,6 +43,8 @@ INSERT INTO source VALUES (1080, 'MarkerSymbol', 1, 'Y',2);
 INSERT INTO source VALUES (1090, 'HUGO', 1, 'Y',2);
 INSERT INTO source VALUES (1200, 'RGD', 1, 'Y',2);
 INSERT INTO source VALUES (1300, 'Interpro', 1, 'Y', 2);
+INSERT INTO source VALUES (1400, 'ZFIN_ID', 1, 'Y', 2);
+INSERT INTO source VALUES (1500, 'MIM2', 1, 'Y', 3);
 
 
 
@@ -74,6 +76,8 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      Interpro
 #INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,' ftp://ftp.ebi.ac.uk/pub/databases/interpro/short_name.dat ftp://ftp.ebi.ac.uk/pub/databases/interpro/protein2interpro.dat.gz', '', now(), now(), "InterproParser");
 
+
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1500, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");
 
 ###MOUSE
 ##      uniprot
@@ -119,8 +123,19 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 ##      refseq
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (3, 7955,'ftp://ftp.ncbi.nih.gov/refseq/D_rerio/mRNA_Prot/zebrafish.rna.fna.gz', '', now(), now(), "RGDParser");
 
-##      GO   #MONSTER file of all GO !!!!!!
-INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 7955,'ftp://ftp.ebi.ac.uk/pub/databases/GO/goa/SPTR/gene_association.goa_sptr.gz', '', now(), now(), "GOParser");
+##      GO 
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1070, 7955,'ftp://ftp.geneontology.org/pub/go/gene-associations/gene_association.zfin.gz', '', now(), now(), "GOParser");
+
+##      ZFIN
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1400, 7955,'http://zfin.org/data_transfer/Downloads/refseq.txt http://zfin.org/data_transfer/Downloads/swissprot.txt', '', now(), now(), "ZFINParser");
+
+
+###chicken
+##      uniprot
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1, 9031, 'ftp://ftp.ebi.ac.uk/pub/databases/SPproteomes/swissprot_files/proteomes/9031.SPC', '', now(), now(), "UniProtParser");
+
+
+
 
 ################################################################################
 
