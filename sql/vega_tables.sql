@@ -1426,13 +1426,13 @@ CREATE TABLE keyword (
 #
 # Table structure for table 'current_clone_info'
 
-CREATE TABLE current_clone_info (
-  clone_info_id int(10) unsigned NOT NULL default '0',
-  clone_id varchar(40) default NULL,
-  clone_version int(10) default NULL,
-  PRIMARY KEY  (clone_info_id)
-) TYPE=MyISAM;
 
+CREATE TABLE current_clone_info (
+  clone_id int(10) unsigned NOT NULL default '0',
+  clone_info_id int(10) unsigned NOT NULL default '0',
+  clone_version int(10) default NULL,
+  PRIMARY KEY  (clone_id)
+) TYPE=MyISAM
 
 
 ################################################################################
