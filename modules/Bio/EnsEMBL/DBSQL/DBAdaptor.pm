@@ -2142,7 +2142,7 @@ sub get_Clone {
     if ($accession =~ /(.+?)\.(\d+)/) {
 	$accession = $1;
 	my $version   = $2;
-	return $ca->fetch_by_accession($accession, $version);
+	return $ca->fetch_by_accession_version($accession, $version);
     }
     else {
 	return $ca->fetch_by_accession($accession);
