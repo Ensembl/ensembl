@@ -1,17 +1,18 @@
 use lib 't';
-use TestUtils qw(test_getter_setter);
+use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::Translation;
 use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 16;
+	plan tests => 18;
 }
 
 my $loaded = 0;
 END {print "not ok 1\n" unless $loaded;}
 
-my $verbose = 0;
+#turn on/off debug prints:
+our $verbose = 0;
 
 use MultiTestDB;
 
@@ -92,3 +93,19 @@ ok($translation && $translation->dbID() == 21734);
 #
 ($translation) = @{$ta->fetch_all_by_external_name('CAC33959')};
 ok($translation && $translation->dbID() == 21716);
+
+#
+# test get_all_ProteinFeatures
+#
+
+my @protein_features = @{$translation->get_all_ProteinFeatures()};
+debug("Got " . scalar(@protein_features) ." protein features.");
+ok(@protein_features == 3);
+
+
+#
+# test get_all_DomainFeatures
+#
+my @domain_features = @{$translation->get_all_DomainFeatures()};
+debug("Got " . scalar(@domain_features) . " domain features.");
+ok(@domain_features == 3);
