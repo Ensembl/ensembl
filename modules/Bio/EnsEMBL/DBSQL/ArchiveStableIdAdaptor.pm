@@ -86,7 +86,7 @@ sub fetch_by_stable_id {
 
 
 
-=head2 fetch_by_gene_archive_id
+=head2 fetch_all_by_gene_archive_id
 
   Arg [1]    : Bio::EnsEMBL::ArchiveStableId $gene_archive_id
   Example    : none
@@ -100,7 +100,7 @@ sub fetch_by_stable_id {
 
 
 
-sub fetch_by_gene_archive_id {
+sub fetch_all_by_gene_archive_id {
   my $self = shift;
   my $gene_archive_id = shift;
   my @result = ();
