@@ -350,7 +350,7 @@ sub get_PredictionExonAdaptor {
 sub get_SequenceAdaptor {
    my $self = shift;
 
-   my $mc = $self->get_MetaContainer();
+   my $mc = $self->dnadb->get_MetaContainer();
 
    my ($use_compressed) = @{$mc->list_value_by_key('sequence.compression')};
 
@@ -483,7 +483,7 @@ sub get_TranslationAdaptor {
 sub get_SliceAdaptor {
   my( $self ) = @_;
   
-  return $self->get_adaptor("Slice");
+  return $self->dnadb()->get_adaptor("Slice");
 }
 
 
@@ -748,7 +748,7 @@ sub get_MarkerAdaptor {
 sub get_CoordSystemAdaptor {
   my $self = shift;
 
-  return $self->get_adaptor('CoordSystem');
+  return $self->dnadb()->get_adaptor('CoordSystem');
 }
 
 
