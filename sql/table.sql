@@ -560,9 +560,9 @@ CREATE TABLE external_synonym(
 #
 
 CREATE TABLE external_db(
-         external_db_id INT not null auto_increment,
-         db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily','Anopheles_symbol','Anopheles_paper','wormbase_gene','wormbase_transcript','wormpep_id','flybase_gene','flybase_transcript','flybase_symbol','drosophila_gene_id','GKB', 'BRIGGSAE_HYBRID','AFFY_HG_U133','AFFY_HG_U95','sanger_probe','Vega','Sanger_Mver1_1_1','Sanger_Hver1_2_1','AFFY_MG_U74','AFFY_MG_U74v2','AFFY_Mu11Ksub','AFFY_RG_U34','AFFY_RN_U34','AFFY_RT_U34','DROS_ORTH','Vega_transcript','Vega_gene','Vega_translation') not null,
-	 release VARCHAR(40) DEFAULT '' NOT NULL,
+         external_db_id INT not null,
+         db_name VARCHAR(100) NOT NULL,
+	 release VARCHAR(40)  NOT NULL,
 	 status  ENUM ('KNOWNXREF','KNOWN','XREF','PRED','ORTH') not null,
          PRIMARY KEY( external_db_id ) 
 );
@@ -753,8 +753,6 @@ CREATE TABLE mapfrag_mapset (
 
 CREATE TABLE qtl (
   qtl_id int unsigned auto_increment not null,
-  source_database enum("rat genome database") not null,
-  source_primary_id varchar(255) not null,
   trait varchar(255) not null,
   lod_score float,
   flank_marker_id_1 int,
@@ -762,6 +760,15 @@ CREATE TABLE qtl (
   peak_marker_id int,
   primary key ( qtl_id ),
   key trait_idx( trait )
+);
+
+CREATE TABLE qtl_synonym (
+  qtl_synonym_id int unsigned auto_increment not null,
+  qtl_id int unsigned not null,
+  source_database enum("rat genome database", "ratmap") not null,
+  source_primary_id varchar(255) not null,
+  primary key (qtl_synonym_id);
+  key qtl_idx(qtl_id)
 );
 
 CREATE TABLE qtl_feature (
