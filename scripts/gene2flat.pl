@@ -95,13 +95,6 @@ if ($help) {
     exec('perldoc', $0);
 }
 
-if( defined $logerror ) {
-    open(ERROR,">$logerror") || die "Could not open $logerror $!";
-} else {
-    open(ERROR,">&STDERR") || die "Could not dup STDERR";
-}
-
-
 if ( $tdbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
@@ -144,7 +137,7 @@ foreach my $gene_id ( @gene_id ) {
 		my $fe = $exon[0];
 		my $tseq = $trans->translate();
 		if ( $tseq->seq =~ /\*/ ) {
-		    print ERROR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
+		    print STDERR "translation has stop codons. Skipping! (in clone". $fe->clone_id .")\n";
 		    next;
 		}
 		$tseq->desc("Gene:$gene_id Clone:".$fe->clone_id);
@@ -178,7 +171,7 @@ foreach my $gene_id ( @gene_id ) {
     };
 
     if( $@ ) {
-	print ERROR "Unable to process $gene_id due to \n$@\n";
+	print STDERR "Unable to process $gene_id due to \n$@\n";
     }
 }
 

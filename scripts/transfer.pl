@@ -124,8 +124,6 @@ my $to_db;
 my @clone;
 
 
-open(ERROR,">transfer.error\n");
-
 if ($help){
     exec('perldoc', $0);
 }
@@ -178,7 +176,7 @@ foreach my $clone_id ( @clone ) {
     };
     if ( $@ ) {
 	
-	print ERROR "Clone $clone_id\n$@\n";
+	print STDERR "Could not transfer clone $clone_id\n$@\n";
     }
 }
 
