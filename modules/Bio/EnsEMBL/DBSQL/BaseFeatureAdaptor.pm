@@ -103,11 +103,10 @@ sub generic_fetch {
   
   if($logic_name) {
     #determine the analysis id via the logic_name
-    my $aa = $self->db->get_AnalysisAdaptor();
-    my $analysis = $aa->fetch_by_logic_name($logic_name);
+    my $analysis = $self->db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
     unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
-      return ();
+      return [];
     }
     
     my $analysis_id = $analysis->dbID();
@@ -119,18 +118,9 @@ sub generic_fetch {
     }
   } 
       
-  my $sql = 
-    "SELECT $columns 
-     FROM $tablename";
-
-  if($constraint) {
-     $sql .= " WHERE $constraint";
-  }
-  
+  my $sql = "SELECT $columns FROM $tablename ".($constraint ? " where $constraint " : '' );
   my $sth = $self->prepare($sql);
-
-  $sth->execute();
-  
+  $sth->execute;
   return $self->_objs_from_sth($sth, $mapper, $slice);
 }
 
@@ -316,9 +306,8 @@ sub fetch_by_Slice_and_score {
     $constraint = "score > $score";
   }
 
-  my @res = $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
-
-  return @res;
+  return $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
+  #&eprof_end('transform');
 }  
 
 
@@ -350,24 +339,20 @@ sub fetch_by_Slice_constraint {
   }
 
   #check the cache and return if we have already done this query
-  if (!defined $logic_name) {$logic_name = "";}
-  my $key = join($slice->name, $constraint, $logic_name);
-  if($self->{'_slice_feature_cache'}{$key}) {
-    return @{$self->{'_slice_feature_cache'}{$key}};
-  }
+  $logic_name = '' unless defined $logic_name;
 
+  my $key = join($slice->name, $constraint, $logic_name);
+  return $self->{'_slice_feature_cache'}{$key} if $self->{'_slice_feature_cache'}{$key};
+    
   my $chr_start = $slice->chr_start();
   my $chr_end   = $slice->chr_end();
   				 
-  my $mapper = 
-    $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
 
   #get the list of contigs this slice is on
-  my @cids = $mapper->list_contig_ids($slice->chr_name, $chr_start ,$chr_end);
+  my @cids = $mapper->list_contig_ids( $slice->chr_name, $chr_start ,$chr_end );
   
-  if( scalar(@cids) == 0 ) {
-    return ();
-  }
+  return [] unless scalar(@cids);
 
   my $cid_list = join(',',@cids);
 
@@ -378,18 +363,17 @@ sub fetch_by_Slice_constraint {
     $constraint = "contig_id IN ($cid_list)";
   }
 
-  my $features = 
-    $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
+  my $features = $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
   if(@$features && $features->[0]->contig == $slice) {
     #features have been converted to slice coords already, cache and return
-    $self->{'_slice_feature_cache'}{$key} = $features;
-    return @$features;
+    return $self->{'_slice_feature_cache'}{$key} = $features;
   }
 
   my @out;
   
   #convert the features to slice coordinates from raw contig coordinates
+
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $contig_id = $f->contig->dbID();
@@ -397,27 +381,18 @@ sub fetch_by_Slice_constraint {
     my ($chr_name, $start, $end, $strand) = 
       $mapper->fast_to_assembly($contig_id, $f->start(), $f->end(),$f->strand(),"rawcontig");
 
-    #not defined start means gap
-    unless(defined $start) { 
-      next;
-    }
-
-    #maps to region outside desired area
-    if(($start > $chr_end) || ($end < $chr_start)) {
-      next;
-    }
+    next unless defined $start;                      # not defined start means gap
+    next if ($start > $chr_end) || ($end <= $chr_start);  # maps to region outside desired area 
     
     #shift the feature start, end and strand in one call
-    $f->move($start - $chr_start + 1, $end - $chr_start + 1, $strand);
+    $f->move( $start - $chr_start, $end - $chr_start, $strand );
     $f->contig($slice);
     
-    push(@out,$f);
+    push @out,$f;
   }
   
   #update the cache
-  $self->{'_slice_feature_cache'}{$key} = \@out;
-  
-  return @out;
+  return $self->{'_slice_feature_cache'}{$key} = \@out;
 }
 
 
