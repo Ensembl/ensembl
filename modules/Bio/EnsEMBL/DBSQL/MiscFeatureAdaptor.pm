@@ -115,7 +115,7 @@ sub _tables {
   return (['misc_feature',          'mf'],
           ['misc_feature_misc_set', 'mfms'],
           ['misc_attrib',           'ma'],
-          ['misc_attrib_type',      'mat']);
+          ['attrib_type',           'at']);
 }
 
 
@@ -141,8 +141,8 @@ sub _columns {
 	     mf.seq_region_end
 	     mf.seq_region_strand
 	     ma.value
-             mat.code
-             mfms.misc_set_id);
+       at.code
+       mfms.misc_set_id);
 }
 
 
@@ -172,7 +172,7 @@ sub _left_join {
   return(
       ['misc_feature_misc_set','mf.misc_feature_id = mfms.misc_feature_id'],
       ['misc_attrib', 'mf.misc_feature_id = ma.misc_feature_id'],
-      ['misc_attrib_type','ma.misc_attrib_type_id = mat.misc_attrib_type_id']);
+      ['attrib_type','ma.attrib_type_id = at.attrib_type_id']);
 }
 
 
