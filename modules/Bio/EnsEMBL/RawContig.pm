@@ -477,9 +477,9 @@ sub get_genscan_peptides {
      return ();
    }
 
-   my $transcripts = $self->adaptor()->db()->get_PredictionTranscriptAdaptor()->
+   my @transcripts = $self->adaptor()->db()->get_PredictionTranscriptAdaptor()->
      fetch_by_Contig( $self );
-   return @$transcripts;
+   return @transcripts;
 }
 
 
