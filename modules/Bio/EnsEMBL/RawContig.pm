@@ -105,15 +105,13 @@ sub new {
 # perl_primary_seq - and again
 # get_all_SeqFeatures - Call the relevant Adaptors
 # get_all_SimilarityFeatures_above_score
-# get_all_SimilarityFeatures
-# get_all_RepeatFeatures
+
 
 # Are this used from Pipeline? Web uses StaticContig
 # get_MarkerFeatures
 # get_landmark_MarkerFeatures
 
 
-# get_all_PredictionFeatures - use PredictionTranscriptAdaptor
 # get_genscan_peptides - should work via above, so deprecated
 # get_all_ExternalFeatures - which adaptors provide them??
 # get_all_ExternalGenes - again, we need adaptors for them
@@ -469,6 +467,29 @@ sub get_all_SimilarityFeatures {
     return @sim_feat;
 }
 
+=head2 get_all_PredictionFeatures
+
+  Args      : none
+  Function  : connect to database through set adaptor and retrieve the 
+              PredictionFeatures for this contig.
+  Returntype: list Bio::EnsEMBL::PredictionTranscript (previously this returned a SeqFeature)
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_all_PredictionFeatures {
+    my $self = shift;
+
+   if( ! defined $self->adaptor() ) {
+     $self->warn( "Need db connection for get_all_PredictionFeatures()" );
+     return ();
+   }
+
+    my @pred_feat = $self->adaptor->db->get_PredictionTranscriptAdaptor->fetch_by_contig_id($self->dbID);
+
+    return @pred_feat;
+}
 
 
 =head2 get_genscan_peptides
