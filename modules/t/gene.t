@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 58;
+	plan tests => 59;
 }
 
 use MultiTestDB;
@@ -547,12 +547,16 @@ my $first_ex = Bio::EnsEMBL::Exon->new
   (-START => 10,
    -END   => 100,
    -STRAND => 1,
+   -PHASE  => 0,
+   -END_PHASE => 1,
    -SLICE => $slice);
 
 my $second_ex = Bio::EnsEMBL::Exon->new
   (-START   => 200,
    -END     => 400,
    -STRAND  => 1,
+   -PHASE   => 1,
+   -END_PHASE => 0,
    -SLICE   => $slice);
 
 $transcript1 = Bio::EnsEMBL::Transcript->new
@@ -569,3 +573,40 @@ $gene->recalculate_coordinates();
 
 ok($gene->start() == 10);
 ok($gene->end()  == 400);
+
+
+
+
+#
+# test that the display_xref_id is set for the gene and its transcript
+#
+$multi->hide( "core", "gene", "transcript", "exon", 'xref', 'object_xref',
+              "exon_transcript", "translation" );
+
+$gene->analysis($analysis);
+
+my $dbe = Bio::EnsEMBL::DBEntry->new(-primary_id => 'test_id',
+                                     -version    => 1,
+                                     -dbname     => 'EMBL',
+                                     -release    => 1,
+                                     -display_id => 'test_id');
+
+
+$gene->add_DBEntry($dbe);
+$gene->display_xref($dbe);
+
+$gene->get_all_Transcripts()->[0]->add_DBEntry($dbe);
+$gene->get_all_Transcripts()->[0]->display_xref($dbe);
+
+
+debug( "Storing gene" );
+$gene_ad->store($gene);
+
+
+my $dbe_id = $db->db_handle->selectall_arrayref("SELECT display_xref_id FROM gene")->[0]->[0];
+
+ok($dbe_id && $dbe_id == $dbe->dbID());
+
+
+
+$multi->restore();
