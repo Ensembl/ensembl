@@ -828,7 +828,7 @@ sub get_MiscFeatureAdaptor {
 sub get_AssemblyExceptionFeatureAdaptor {
   my $self = shift;
 
-  return $self->get_adaptor('AssemblyExceptionFeature');
+  return $self->dnadb->get_adaptor('AssemblyExceptionFeature');
 }
 
 
