@@ -78,7 +78,7 @@ ok($asm_mapper && $asm_mapper->isa('Bio::EnsEMBL::AssemblyMapper'));
 # 3 Test map
 #
 
-my @coords = $asm_mapper->map('20', 500_001, 60_000_000, 1, $chr_cs);
+@coords = $asm_mapper->map('20', 500_001, 60_000_000, 1, $chr_cs);
 ok(@coords);
 print_coords(@coords);
 
