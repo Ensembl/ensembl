@@ -440,3 +440,10 @@ CREATE TABLE interpro (
   interpro_ac	varchar(40) NOT NULL,
   id		varchar(40) NOT NULL
 );
+
+CREATE TABLE interpro_description (
+  interpro_ac varchar(40) DEFAULT '' NOT NULL,
+  description varchar(255),
+  PRIMARY KEY (interpro_ac)
+);
+
