@@ -41,8 +41,8 @@ use Bio::EnsEMBL::Utils::Cache;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-our $SEQ_CHUNK_PWR   = 18; # 2^18 = approx. 250KB
-our $SEQ_CACHE_SZ    = 5;
+our $SEQ_CHUNK_PWR   = 22; # 2^18 = approx. 250KB
+our $SEQ_CACHE_SZ    = 10;
 our $SEQ_CACHE_MAX   = (2 ** $SEQ_CHUNK_PWR) * $SEQ_CACHE_SZ;
 
 

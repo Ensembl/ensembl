@@ -925,7 +925,7 @@ sub fetch_by_Feature{
   $size = int( ($1-100)/200 * ($fend-$fstart+1) ) if( $size =~/([\d+\.]+)%/ );
 
   #return a new slice covering the region of the feature
-  return Bio::EnsEMBL::Slice->new
+  my $S = Bio::EnsEMBL::Slice->new
     (-seq_region_name   => $slice->seq_region_name,
      -seq_region_length => $slice->seq_region_length,
      -coord_system      => $slice->coord_system,
@@ -933,6 +933,8 @@ sub fetch_by_Feature{
      -end               => $fend + $size,
      -strand            => 1,
      -adaptor           => $self);
+  $S->{'_raw_feature_strand'}  = $feature->strand * $slice_strand if $feature->can('strand');
+  return $S;
 }
 
 
