@@ -27,10 +27,7 @@ through the use of start_Exon/end_Exon, and start/end attributes.
 
 Post questions to the EnsEMBL Developer list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods.
-Internal methods are usually preceded with a _
+=head1 METHODS
 
 =cut
 
@@ -322,6 +319,101 @@ sub get_all_DBLinks {
 
   return $self->get_all_DBEntries(@_);
 }
+
+
+
+
+=head2 get_all_ProteinFeatures
+
+  Arg [1]    : (optional) string $logic_name
+               The analysis logic_name of the features to retrieve.  If not
+               specified, all features are retrieved instead.
+  Example    : $features = $self->get_all_ProteinFeatures('PFam');
+  Description: Retrieves all ProteinFeatures associated with this 
+               Translation. If a logic_name is specified, only features with 
+               that logic_name are returned.  If no logic_name is provided all
+               associated protein_features are returned.
+  Returntype : Bio::EnsEMBL::ProteinFeature
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_all_ProteinFeatures {
+  my $self = shift;
+  my $logic_name = shift;
+
+  if(!$self->{'protein_features'}) {
+    my $adaptor = $self->adaptor();
+    my $dbID    = $self->dbID();
+    if(!$adaptor || !$dbID) {
+      warning("Cannot retrieve ProteinFeatures from translation without " .
+              "an attached adaptor and a dbID. Returning empty list.");
+      return [];
+    }
+
+    my %hash;
+    $self->{'protein_features'} = \%hash;
+
+    my $pfa = $adaptor->db()->get_ProteinFeatureAdaptor();
+    my $name;
+    foreach my $f (@{$pfa->fetch_by_translation_id($dbID)}) {
+      $name = lc($f->analysis->logic_name());
+      $hash{$name} ||= [];
+      push @{$hash{$name}}, $f;
+    }
+  }
+
+  #a specific type of protein feature was requested
+  if(defined($logic_name)) {
+    $logic_name = lc($logic_name);
+    return $self->{'protein_features'}->{$logic_name} || [];
+  }
+
+  my @features;
+
+  #all protein features were requested
+  foreach my $type (keys %{$self->{'protein_features'}}) {
+    push @features, @{$self->{'protein_features'}->{$type}};
+  }
+
+  return \@features;    
+}
+
+
+
+=head2 get_all_DomainFeatures
+
+  Arg [1]    : none
+  Example    : @domain_feats = @{$translation->get_all_DomainFeatures};
+  Description: A convenience method which retrieves all protein features
+               that are considered to be 'Domain' features.  Features which
+               are 'domain' features are those with analysis logic names:
+               'pfscan', 'scanprosite', 'superfamily', 'pfam', 'prints'.
+  Returntype : listref of Bio::EnsEMBL::ProteinFeatures
+  Exceptions : none
+  Caller     : webcode (protview)
+
+=cut
+
+sub get_all_DomainFeatures{
+ my ($self) = @_;
+
+ my @features;
+
+ my @types = ('pfscan',      #profile (prosite or pfam motifs) 
+              'scanprosite', #prosite 
+              'superfamily', 
+              'pfam',
+              'prints');
+
+ foreach my $type (@types) {
+   push @features, @{$self->get_all_ProteinFeatures($type)};
+ }
+
+ return \@features;
+}
+
 
 
 =head2 temporary_id
