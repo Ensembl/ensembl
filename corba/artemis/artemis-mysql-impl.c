@@ -3,20 +3,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*
+ * This file makes implementations of Artemis Entries and sequence objects
+ * using a mysql database system. It is where most of the clever stuff occurs
+ * complex SQL queries for example to build up transcript and feature type
+ * objects.
+ */
+
 /*** App-specific servant structures ***/
 typedef struct {
   POA_Ensembl_artemis_Sequence servant;
   PortableServer_POA poa;
-  MYSQL * connection;
-  char * contig_id;
-  long length;
+  MYSQL * connection; /* database connection */
+  char * contig_id;   /* need this to retrieve the data */
+  long length;        /* we store this in memory as it is cheap */
 } impl_POA_Ensembl_artemis_Sequence;
+
+/*
+ * This is an implementation only of Transcripts, not of anything else
+ * Other features are implementated elsewhere
+ */
 
 typedef struct {
   POA_Ensembl_artemis_Feature servant;
   PortableServer_POA poa;
-  MYSQL * connection;
-  char * transcript_id;
+  MYSQL * connection;   /* database connection */
+  char * transcript_id; /* 
   char * location;
 } impl_POA_Ensembl_artemis_Feature;
 
@@ -168,12 +180,13 @@ impl_POA_Ensembl_artemis_Sequence * new_impl_EA_Sequence(PortableServer_POA poa,
 {
    impl_POA_Ensembl_artemis_Sequence *newservant;
 
-
+   fprintf(stderr,"About to make implementation\n");
    newservant = g_new0(impl_POA_Ensembl_artemis_Sequence, 1);
    newservant->servant.vepv = &impl_Ensembl_artemis_Sequence_vepv;
    newservant->poa = poa;
    newservant->connection =c ;
    newservant->contig_id = c_id;
+   fprintf(stderr,"Returning....\n");
 
    return newservant;
 }
@@ -189,6 +202,7 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
   MYSQL_RES * result;
   MYSQL_ROW row;
   int state;
+  int no;
   
   
   if( c == NULL ) {
@@ -208,14 +222,29 @@ Ensembl_artemis_Sequence new_Ensembl_artemis_Sequence(PortableServer_POA poa,MYS
   fprintf(stderr,"About to make select call...\n");
   
   sprintf(sqlbuffer,"SELECT length from contig where id = '%s'",c_id);
+
+  fprintf(stderr,"Before state\n");
   state = mysql_query(c,sqlbuffer);
+  fprintf(stderr,"Before store\n");
   result = mysql_store_result(c);
+  no = mysql_num_rows(result);
+  if( no == 0 ) {
+    fprintf(stderr,"No sequence of this name %s",c_id);
+    return;
+  }
+
+
+  fprintf(stderr,"Before fetch\n");
   row = mysql_fetch_row(result);
 
+  fprintf(stderr,"Making implementation\n");
   newservant = new_impl_EA_Sequence(poa,c,c_id);
+  
+  fprintf(stderr,"Made newservant...\n");
+
   newservant->length = atol(row[0]);
 
-  fprintf(stderr,"Made and stored!\n");
+  fprintf(stderr,"Made and stored! %d\n",newservant->length);
 
   fprintf(stderr,"About to free!\n");
   mysql_free_result(result);
@@ -290,6 +319,7 @@ impl_Ensembl_artemis_Sequence_length(impl_POA_Ensembl_artemis_Sequence *
 				     servant, CORBA_Environment * ev)
 {
    CORBA_long retval;
+   fprintf(stderr,"Going to return %d\n",servant->length);
    retval = servant->length;
    return retval;
 }
@@ -372,6 +402,7 @@ impl_Ensembl_artemis_Feature_getLocation(impl_POA_Ensembl_artemis_Feature *
 					 servant, CORBA_Environment * ev)
 {
    CORBA_char *retval;
+   fprintf(stderr,"Getting into getLocation\n");
    retval = CORBA_string_dup(servant->location);
    return retval;
 }
@@ -382,6 +413,12 @@ impl_Ensembl_artemis_Feature_getQualifiers(impl_POA_Ensembl_artemis_Feature *
 {
    Ensembl_artemis_QualifierList *retval;
 
+   retval = CORBA_sequence_Ensembl_artemis_Qualifier__alloc();
+   retval->_buffer = (Ensembl_artemis_Qualifier * ) calloc (1,sizeof(Ensembl_artemis_Qualifier));
+   retval->_length = 1;
+   retval->_maximum = 1;
+
+   retval->_buffer[0] = new_EA_Qualifier("transcript_id",servant->transcript_id);
 
    return retval;
 }
@@ -412,6 +449,9 @@ impl_POA_Ensembl_artemis_Entry * new_EA_Entry(PortableServer_POA poa, MYSQL * c,
   newservant = g_new0(impl_POA_Ensembl_artemis_Entry, 1);
   newservant->servant.vepv = &impl_Ensembl_artemis_Entry_vepv;
   newservant->poa = poa;
+
+  g_assert(c);
+  g_assert(c_id);
 
   newservant->connection = c;
   newservant->contig_id  = c_id;
@@ -457,6 +497,7 @@ impl_Ensembl_artemis_Entry_getName(impl_POA_Ensembl_artemis_Entry * servant,
 				   CORBA_Environment * ev)
 {
    CORBA_char *retval;
+   fprintf(stderr,"Going to return name %s\n",servant->contig_id);
    retval = CORBA_string_dup(servant->contig_id);
    return retval;
 }
@@ -474,15 +515,14 @@ static Ensembl_artemis_FeatureList *
 impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
 					  servant, CORBA_Environment * ev)
 {
-   Ensembl_artemis_FeatureList *retval;
+  Ensembl_artemis_Feature temp_buffer[1024];
+  Ensembl_artemis_FeatureList *retval;
 
    /* MySQL stuff */
    char sqlbuffer[1024];
    MYSQL_RES * result;
    MYSQL_ROW row;
 
-   MYSQL_RES * trans_result;
-   MYSQL_ROW trans_row;
    char loc[2048];
    char * trans_id;
    int i;
@@ -490,58 +530,85 @@ impl_Ensembl_artemis_Entry_getAllFeatures(impl_POA_Ensembl_artemis_Entry *
    int state;
    int touched;
    int no;
+   int seen = 0;
 
 
    c = servant->connection;
    fprintf(stderr,"Got in...\n",no);
 
-   sprintf(sqlbuffer,"SELECT p1.transcript from exon_transcript as p1,exon as p2 where p2.contig = '%s' and p1.exon = p2.id",servant->contig_id);
+
+   sprintf(sqlbuffer,"SELECT p1.transcript,p1.rank,p2.start,p2.end,p2.strand,p2.id,p2.created,p2.modified from exon_transcript as p1,exon as p2 where p2.contig = '%s' and p1.exon = p2.id order by p1.transcript,p1.rank",servant->contig_id);
    state = mysql_query(c,sqlbuffer);
    result = mysql_store_result(c);
-   no = mysql_num_rows(result);
 
-   fprintf(stderr,"Got %d transcripts\n",no);
-   retval = CORBA_sequence_Ensembl_artemis_Feature__alloc();
-   retval->_buffer = (Ensembl_artemis_Feature *) allocbuf (no,sizeof(Ensembl_artemis_Feature));
-   retval->_maximum = no;
-   retval->_length = no;
-   
+   trans_id = NULL;
+   seen = 0;
+   i = 0;
    while ( row = mysql_fetch_row(result) ) {
+     fprintf(stderr,"Got a row for transcript %s\n",trans_id == NULL ? "NoTranscript" : trans_id);
+
      /* transcript id */
-     fprintf(stderr,"Got a result!\n");
-     trans_id = g_strdup(row[0]);
-     /* now we need the second select to get out the exons */
-     fprintf(stderr,"Got a result ... getting a select... %s!\n",trans_id);
-     sprintf(sqlbuffer,"SELECT p1.exon,p1.rank,p2.start,p2.end,p2.strand from exon_transcript as p1, exon as p2, where p1.transcript = '%s' and p1.exon = p2.id order by p1.rank",trans_id);
-     state = mysql_query(c,sqlbuffer);
-
-     fprintf(stderr,"About to retrieve... %s!\n",trans_id);
-     trans_result = mysql_store_result(c);
-     loc[0] = '\0';
-
-     fprintf(stderr,"Ready to loop!\n");
-
-     while( trans_row = mysql_fetch_row(trans_result) ) {
-       fprintf(stderr,"Got into a row...\n");
-       if( touched == 0 ) {
-	 strcat(loc,",");
-	 touched = 1;
-       }
-       if( strcmp(trans_row[5],"1") ) {
-	 strcat(loc,trans_row[3]);
-	 strcat(loc,"..");
-	 strcat(loc,trans_row[4]);
-       } else {
-	 strcat(loc,"complement(");
-	 strcat(loc,trans_row[3]);
-	 strcat(loc,"..");
-	 strcat(loc,trans_row[4]);
+     if( trans_id == NULL || strcmp(trans_id,row[0]) != 0 ) {
+       /* put away old feature object */
+       if( seen != 0 ) {
 	 strcat(loc,")");
-       }
+	 fprintf(stderr,"Going to be making %s %s\n",trans_id,loc);
+	 temp_buffer[i++] = new_Ensembl_artemis_Feature(servant->poa,g_strdup(loc),trans_id,ev);
+       } 
+
+       /* get ready for the next transcript */
+       trans_id = g_strdup(row[0]);
+       loc[0] = '\0';
+       strcat(loc,"join(");
+       touched = 0;
+       seen =1;
      }
 
-     retval->_buffer[i++] = new_Ensembl_artemis_Feature(servant->poa,g_strdup(loc),trans_id,ev);
+     fprintf(stderr,"Now processing %s %s  %s %s %s %s\n",trans_id,row[4],row[2],row[3],row[6],row[7]);
+     temp_buffer[i++] = new_EA_Exon_Feature(servant->poa,row[5],row[6],row[7],atol(row[2]),atol(row[3]),1,0,ev);
+
+     if( touched == 1 ) {
+       strcat(loc,",");
+     } else {
+       touched = 1;
+     }
+
+
+     if( strcmp(row[4],"1") ) {
+       fprintf(stderr,"Going to use forward\n");
+       strcat(loc,row[2]);
+       strcat(loc,"..");
+       strcat(loc,row[3]);
+     } else {
+       fprintf(stderr,"Going to use backward\n");
+       strcat(loc,"complement(");
+       strcat(loc,row[2]);
+       strcat(loc,"..");
+       strcat(loc,row[3]);
+       strcat(loc,")");
+     }
+     
    }
+
+   /* last feature */
+   if( seen != 0 ) {
+     strcat(loc,")");
+     fprintf(stderr,"Going to be making %d %s %s\n",i,trans_id,loc);
+     temp_buffer[i++] = new_Ensembl_artemis_Feature(servant->poa,g_strdup(loc),trans_id,ev);
+   } 
+
+   no = i;
+   retval = CORBA_sequence_Ensembl_artemis_Feature__alloc();
+   if( no != 0 ) {
+     retval->_buffer = (Ensembl_artemis_Feature *) calloc (no,sizeof(Ensembl_artemis_Feature));
+   }
+
+   retval->_maximum = no;
+   retval->_length = no;
+   for(i=0;i<no;i++) {
+     retval->_buffer[i] = temp_buffer[i];
+   }
+
 
    /*CORBA_sequence_set_release(retval,1);*/
    fprintf(stderr,"Passing in buffer with %d\n",CORBA_sequence_get_release(retval));

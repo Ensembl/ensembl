@@ -1,6 +1,5 @@
 
 module Ensembl {
-
   module artemis {
     
     interface Sequence {
@@ -28,6 +27,12 @@ module Ensembl {
 	long getFeatureCount(); 
 	FeatureList getAllFeatures();
 	Sequence getSequence();
+    };
+
+    typedef sequence<string> EntryNameList;
+    interface DB {
+      Entry getEntry(in string entryname);
+      EntryNameList getallEntryNames();
     };
   };
 };

@@ -6,7 +6,7 @@ int main (int argc,char ** argv)
   CORBA_Environment ev;
   CORBA_ORB orb;
   char * ior;
-  int len,i;
+  int len,i,j;
   Ensembl_artemis_Entry entry;
   Ensembl_artemis_Sequence seq;
   Ensembl_artemis_FeatureList * ftl;
@@ -15,7 +15,7 @@ int main (int argc,char ** argv)
   char filebuffer[1024];
   char * end;
   FILE * ifp;
-
+  Ensembl_artemis_QualifierList * ql;
   
   CORBA_exception_init(&ev);
   orb = CORBA_ORB_init(&argc, argv, "orbit-local-orb", &ev);
@@ -43,7 +43,7 @@ int main (int argc,char ** argv)
   entry = CORBA_ORB_string_to_object(orb, ior, &ev);
   
   ftl = Ensembl_artemis_Entry_getAllFeatures(entry,&ev);
-  fprintf(stdout,"Got length of %d\n",ftl->_length);
+  fprintf(stderr,"Got length of %d\n",ftl->_length);
 
   for(i=0;i<ftl->_length;i++) {
     fprintf(stdout,"Attempting %d\n",i);
@@ -51,18 +51,23 @@ int main (int argc,char ** argv)
 	    Ensembl_artemis_Feature_getLocation(ftl->_buffer[i],&ev),
 	    Ensembl_artemis_Feature_getKey(ftl->_buffer[i],&ev)
 	    );
+    ql = Ensembl_artemis_Feature_getQualifiers(ftl->_buffer[i],&ev);
+    for(j=0;j<ql->_length;j++) {
+      fprintf(stdout,"   %s %s\n",ql->_buffer[j].name,ql->_buffer[j].values._buffer[0]);
+    }
+    
   }
 
-  fprintf(stdout,"Out...\n",i);
+  fprintf(stderr,"Out...\n",i);
 
 
   seq = Ensembl_artemis_Entry_getSequence(entry,&ev);
   fprintf(stderr,"Got seq\n");
   len = Ensembl_artemis_Sequence_length(seq,&ev);
-  fprintf(stderr,"Got length\n");
+  fprintf(stderr,"Got length %d\n",len);
   seqchar = Ensembl_artemis_Sequence_getSubSequence(seq,1,len,&ev);
 
-  fprintf(stdout,">%s Transcript:%d\n",Ensembl_artemis_Entry_getName(entry,&ev),
+  fprintf(stderr,">%s Transcript:%d\n",Ensembl_artemis_Entry_getName(entry,&ev),
 	  Ensembl_artemis_Entry_getFeatureCount(entry,&ev));
 
   /* print 60 char long lines */
