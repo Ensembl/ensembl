@@ -603,7 +603,7 @@ sub project {
   }
 
   #get a slice that exactly overlaps the feature
-  my $slice = $slice_adaptor->fetch_by_Feature($self);
+  $slice = $slice_adaptor->fetch_by_Feature($self);
 
   my $offset = $self->{'start'} - 1;
 

@@ -532,7 +532,7 @@ sub project {
 
   #no mapping is needed if the requested coord system is the one we are in
   if($slice_cs->equals($cs)) {
-    return [[1, $slice->length(), $self]];
+    return [[1, $self->length(), $self]];
   }
 
   # perform the mapping between this slice and the requested system
