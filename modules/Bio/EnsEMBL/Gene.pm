@@ -288,15 +288,18 @@ sub source {
 
 sub is_known{
   my ($self) = @_;
-  my @array;
-  @array = $self->get_all_DBLinks();
-  if( scalar(@array) > 0 ) {
-    return 1;
-  }
-  foreach my $trans ( @{$self->get_all_Transcripts} ) {
-    @array = $trans->get_all_DBLinks();
-    if( scalar(@array) > 0 ) {
+
+  for my $entry ( @{$self->get_all_DBLinks()} ) {
+    if( $entry->status eq "KNOWN" ) {
       return 1;
+    }
+  }
+
+  foreach my $trans ( @{$self->get_all_Transcripts} ) {
+    for my $entry ( @{$trans->get_all_DBLinks()} ) {
+      if( $entry->status eq "KNOWN" ) {
+	return 1;
+      }
     }
   }
   

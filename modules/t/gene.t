@@ -4,10 +4,12 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 22;
+	plan tests => 23;
 }
 
 use MultiTestDB;
+use TestUtils qw ( debug );
+
 use Bio::EnsEMBL::Gene;
 
 # switch on the debug prints
@@ -189,7 +191,7 @@ foreach my $trans( @{$gene_out->get_all_Transcripts()} ){
   my $pep = $trans->translate();
   debug( "Peptide: ".$pep->seq() );
 
-  if($pep->seq !~ /\*\./){
+  if($pep->seq !~ /\*./){
     $translate = 1;
   } else {
     $translate = 0;
@@ -211,16 +213,24 @@ debug( "Pep phase 1: $pep2" );
 
 ok( $pep1 ne $pep2 );
 
-
 $multi->restore();
 
+$slice = $db->get_SliceAdaptor()->fetch_by_chr_start_end("20", 30_252_000, 31_252_001 );
 
-sub debug {
-  my $txt = shift;
-  if( $verbose ) {
-    print STDERR $txt,"\n";
+my ( $known, $unknown );
+
+my $genes = $slice->get_all_Genes();
+for my $gene ( @$genes ) {
+  if( $gene->is_known() ) {
+    $known++;
+  } else {
+    $unknown++;
   }
 }
+
+debug( "known: $known Unknown: $unknown\n" );
+
+ok( $known==17 );
 
 
 
