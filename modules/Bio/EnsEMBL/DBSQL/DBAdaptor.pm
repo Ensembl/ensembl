@@ -97,6 +97,7 @@ sub new {
       'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
       'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
       'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor',
+      'CompressedSequence' => 'Bio::EnsEMBL::DBSQL::CompressedSequenceAdaptor',
       'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
       'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
       'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
@@ -348,6 +349,34 @@ sub get_SequenceAdaptor {
    #return the sequence adaptor for the dnadb (which may be this db)
    return $self->dnadb->get_adaptor("Sequence");
 }
+
+
+=head2 get_CompressedSequenceAdaptor
+
+  Args       : none 
+  Example    : $seq_adaptor = $db_adaptor->get_CompressedSequenceAdaptor();
+  Description: Gets a CompressedSequenceAdaptor for this database.  
+               A compressed sequence adaptor behaves like a normal
+               SequenceAdaptor except that it stores and retrieves compressed
+               sequence from the dnac table (rather than the dna table).
+               Normally if you want to use compressed sequence you should
+               convert your database to a compressed database with a script
+               and then set the 'sequence.compression' meta_key to a value
+               of '1' in the meta table.  This way the compressed sequence
+               adaptor will be used instead of the normal sequence adaptor.
+  Returntype : Bio::EnsEMBL::DBSQL::SequenceAdaptor
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_CompressedSequenceAdaptor {
+   my $self = shift;
+
+   #return the sequence adaptor for the dnadb (which may be this db)
+   return $self->dnadb->get_adaptor("CompressedSequence");
+}
+
 
 
 =head2 get_GeneAdaptor
