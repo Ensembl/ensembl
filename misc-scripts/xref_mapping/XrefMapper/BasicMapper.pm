@@ -776,6 +776,10 @@ sub parse_mappings {
 
   my $dir = $self->dir();
 
+  #create new connections incase old ones have died.
+  $core_dbi = $self->dbi();
+  $xref_dbi = $self->xref()->dbi();
+
   # get current max object_xref_id
   my $row = @{$core_dbi->selectall_arrayref("SELECT MAX(object_xref_id) FROM object_xref")}[0];
   my $max_object_xref_id = @{$row}[0];
