@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..16\n"; 
+BEGIN { $| = 1; print "1..28\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -104,43 +104,74 @@ else {
 
 my @dblinks = $protein->annotation->each_DBLink();
 
+my @synonyms = $dblinks[0]->get_synonyms();
 
-if (scalar @dblinks == 7) {
-     print "ok 9\n";
+if ($dblinks[0]->url_pattern eq "http//") {
+    print "ok 9\n";
 }
 else {
     print "not ok 9\n";
 }
 
-if ($protein->seq eq "RNSKRTLCMNNLFPHYRQKNPRLLREPSDFLHLKSVKSSCFLLPYP") {
+    
+if ($dblinks[0]->release == 23) {
     print "ok 10\n";
 }
 else {
     print "not ok 10\n";
 }
 
-if ($features[0]->analysis->db eq "Pfam") {
-     print "ok 11\n";
+if ($synonyms[0] eq "EMBL_SYNONYME1") {
+    print "ok 11\n";
 }
 else {
     print "not ok 11\n";
 }
 
-
-if ($features[1]->analysis->db eq "PRINTS") {
+if ($dblinks[1]->description eq "tremblannot") {
      print "ok 12\n";
 }
 else {
     print "not ok 12\n";
 }
 
-my @introns = $protein->each_Intron_feature();
-
-if ($introns[0]->feature1->start == 18) {
-    print "ok 13\n";
+if (scalar @dblinks == 7) {
+     print "ok 13\n";
 }
 else {
     print "not ok 13\n";
+}
+
+if ($protein->seq eq "RNSKRTLCMNNLFPHYRQKNPRLLREPSDFLHLKSVKSSCFLLPYP") {
+    print "ok 14\n";
+}
+else {
+    print "not ok 14\n";
+}
+
+if ($features[0]->analysis->db eq "Pfam") {
+     print "ok 15\n";
+}
+else {
+    print "not ok 15\n";
+}
+
+
+
+if ($features[1]->analysis->db eq "PRINTS") {
+     print "ok 16\n";
+}
+else {
+    print "not ok 16\n";
+}
+
+my @introns = $protein->each_Intron_feature();
+
+if ($introns[0]->feature1->start == 18) {
+    print "ok 17\n";
+}
+else {
+    print "not ok 17\n";
 }
 
 
@@ -150,29 +181,96 @@ my @features2 = $protein->each_Protein_feature();
 
 
 if (scalar @features2 == 3) {
-    print "ok 14\n";
+    print "ok 18\n";
 }
 else {
-    print "not ok 14\n";
+    print "not ok 18\n";
 }
 
 if ($protein->geneac() eq "ENSG00000100331") {
-print "ok 15\n";
+print "ok 19\n";
 }
 else {
-    print "not ok 15\n";
+    print "not ok 19\n";
 }
 
 if ($protein->transcriptac() eq "ENST00000216167") {
-    print "ok 16\n";
+    print "ok 20\n";
 }
 else {
-    print "not ok 16\n";
+    print "not ok 20\n";
 }
 
-#my $rm = "rm seq_temp.swiss";
+my @seq_features = $protein->top_SeqFeatures();
 
-#system($rm) == 0 or die "$0\Error running '$rm'";
+
+
+if (scalar(@seq_features) == 3) {
+    print "ok 21\n";
+}
+else {
+    print "not ok 21\n";
+}
+
+if ($seq_features[0]->feature2->seqname eq "PF00098") {
+    print "ok 22\n";
+}
+else {
+    print "not ok 22\n";
+}
+
+if ($seq_features[0]->feature1->seqname eq "ENSP00000216167") {
+    print "ok 23\n";
+}
+else {
+    print "not ok 23\n";
+}
+
+my @introns = $protein->each_Intron_feature();
+
+if (scalar(@introns) == 1) {
+    
+    print "ok 24\n";
+}
+else {
+    print "not ok 24\n";
+}
+    
+
+if ($introns[0]->intron_position == 18) {
+    
+    print "ok 25\n";
+}
+else {
+    print "not ok 25\n";
+}
+
+if ($introns[0]->intron_length == 31) {
+    
+    print "ok 26\n";
+}
+else {
+    print "not ok 26\n";
+}
+
+
+if ($protein->molecular_weight == 5547) {
+    print "ok 27\n";
+}
+else {
+    print "not ok 27\n";
+}
+
+if ($protein->checksum() eq "D5C2BBEAA77A0FB6") {
+    print "ok 28\n";
+}
+else {
+    print "not ok 28\n";
+}
+
+my $rm = "rm seq_temp.swiss";
+
+system($rm) == 0 or die "$0\Error running '$rm'";
 
 
 
