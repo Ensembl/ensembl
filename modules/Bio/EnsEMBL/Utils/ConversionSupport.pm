@@ -106,6 +106,7 @@ sub parse_common_options {
         'driver|dbdriver|db_driver=s',
         'conffile|conf=s',
         'logfile|log=s',
+        'logpath=s',
         'interactive|i=s',
         'dry_run|dry|n=s',
         'help|h|?',
@@ -117,13 +118,16 @@ sub parse_common_options {
         open(CONF, $conffile) or throw( 
             "Unable to open configuration file $conffile for reading: $!");
         while (<CONF>) {
+            chomp;
+
             # remove comments
-			s/\s+[;].*$//;
-			s/^[#;].*$//;
+            s/^[#;].*//;
+            s/\s+[;].*$//;
 
             # read options into internal parameter datastructure
-           	$self->param($1, $2) if (/(\w\S*)\s*=\s*(.*)/);
-		}
+            next unless (/(\w\S*)\s*=\s*(.*)/);
+            $self->param($1, $2);
+        }
     } else {
         warning("Unable to open configuration file $conffile for reading: $!");
     }
@@ -533,6 +537,64 @@ sub get_chrlength {
     return \%chr;
 }
 
+=head2 get_taxonomy_id
+
+  Arg[1]      : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Example     : my $sid = $support->get_taxonony_id($dba);
+  Description : Retrieves the taxononmy ID from the meta table
+  Return type : Int - the taxonomy ID
+  Exceptions  : thrown if no taxonomy ID is found in the database
+  Caller      : general
+
+=cut
+
+sub get_taxonomy_id {
+    my ($self, $dba) = @_;
+    my $sql = 'SELECT meta_value FROM meta WHERE meta_key = "species.taxonomy_id"';
+    my $sth = $dba->dbc->db_handle->prepare($sql);
+    $sth->execute;
+    my ($tid) = $sth->fetchrow_array;
+    $sth->finish;
+    $self->throw("Could not determine taxonomy_id from database.") unless $tid;
+    return $tid;
+}
+
+=head2 get_species_scientific_name
+
+  Arg[1]      : Bio::EnsEMBL::DBSQL::DBAdaptor $dba
+  Example     : my $species = $support->get_species_scientific_name($dba);
+  Description : Retrieves the species scientific name (Genus species) from the
+                meta table
+  Return type : String - species scientific name
+  Exceptions  : thrown if species name can't be determined from db
+  Caller      : general
+
+=cut
+
+sub get_species_scientific_name {
+    my ($self, $dba) = @_;
+    my $sql = qq(
+        SELECT
+                meta_value
+        FROM
+                meta
+        WHERE meta_key = "species.classification"
+        ORDER BY meta_id
+        LIMIT 2
+    );
+    my $sth = $dba->dbc->db_handle->prepare($sql);
+    $sth->execute;
+    my @sp;
+    while (my @row = $sth->fetchrow_array) {
+        push @sp, $row[0];
+    }
+    $sth->finish;
+    my $species = join(" ", reverse @sp);
+    $self->throw("Could not determine species scientific name from database.")
+        unless $species;
+    return $species;
+}
+
 =head2 sort_chromosomes
 
   Arg[1]      : Hashref $chr_hashref - Hashref with chr_name as keys
@@ -663,6 +725,9 @@ sub log_filehandle {
     $mode ||= ">";
     my $fh = \*STDERR;
     if (my $logfile = $self->param('logfile')) {
+        if (my $logpath = $self->param('logpath')) {
+            $logfile = "$logpath/$logfile";
+        }
         open($fh, "$mode", $logfile) or throw(
             "Unable to open $logfile for writing: $!");
     }
