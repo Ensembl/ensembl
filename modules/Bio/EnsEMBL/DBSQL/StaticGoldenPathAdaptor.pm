@@ -245,29 +245,46 @@ sub fetch_RawContigs_by_chr_start_end{
 
    my $type = $self->dbobj->static_golden_path_type();
    
-   # very annoying. DB obj wont make contigs by internalid. doh!
-   my $sth = $self->dbobj->prepare("SELECT  c.id 
+   # go for new go-faster method
+   my $sth = $self->dbobj->prepare("SELECT  c.id,
+                                            c.internal_id,
+                                            c.dna,
+                                            c.clone,
+                                            cl.embl_version
 				    FROM    static_golden_path st,
-					    contig c 
+					    contig c, 
+                                            clone  cl
 				    WHERE c.internal_id = st.raw_id 
 				    AND st.chr_name = '$chr' 
 				    AND  st.type = '$type' 
 				    AND st.chr_end > $start 
-				    AND st.chr_start < $end 
+				    AND st.chr_start < $end
+                                    AND cl.id = c.clone 
 				    ORDER BY st.fpcctg_start"
 				    );
 
    $sth->execute;
    my @out;
    my $cid;
-   while( ( my $cid = $sth->fetchrow_arrayref) ) {
-       my $rc = $self->dbobj->get_Contig($cid->[0]);
+   while( ( my $array = $sth->fetchrow_arrayref) ) {
+       my ($id,$internalid,$dna,$clone,$seq_version) = @{$array};
+       my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
+	   ( 
+	     -dbobj => $self->dbobj,
+	     -id    => $id,
+	     -perlonlysequences => $self->dbobj->perl_only_sequences,
+	     -contig_overlap_source      => $self->dbobj->contig_overlap_source(),
+	     -overlap_distance_cutoff    => $self->dbobj->overlap_distance_cutoff(),
+	     -internal_id => $internalid,
+	     -dna_id => $dna,
+	     -seq_version => $seq_version,
+	     -cloneid => $clone
+	     );
        push(@out,$rc);
    }
 
    return @out;
    
-
 }
 
 
@@ -464,8 +481,8 @@ sub fetch_VirtualContig_of_gene{
    
    my @start_sorted=sort { $a <=> $b } @start;
 
-   my $start=shift @start_sorted;
-   my $end=pop @start_sorted;
+   $start=shift @start_sorted;
+   $end=pop @start_sorted;
 
    if( !defined $start ) {
        $self->throw("Gene is not on the golden path. Cannot build VC");

@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..26\n"; 
+BEGIN { $| = 1; print "1..27\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -369,6 +369,11 @@ if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 26\n";}
 else {print "not ok 26\n";}
 
 
+$contig = $stadaptor->fetch_VirtualContig_by_chr_start_end('chr2',10,300);
+
+
+if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 27\n";}
+else {print "not ok 27\n";}
 
 
 

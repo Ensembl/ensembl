@@ -133,7 +133,7 @@ sub direct_new {
     $dbobj || $self->throw("Cannot make contig db object without db object");
     $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
     if( !$internal_id || !$dna_id || !$seq_version || !$cloneid ) {
-	$self->throw("you don't have all the data to make a direct new!");
+	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid]!");
     }
 
     $self->id($id);
