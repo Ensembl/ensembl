@@ -45,6 +45,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
+use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning deprecate);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
@@ -1117,7 +1118,7 @@ sub add_ExternalFeatureFactory{
 
 =cut
 
-sub get_adaptor() {
+sub get_adaptor {
 	my ($self, $canonical_name, @other_args) = @_;
 
   if ($self->isa('Bio::EnsEMBL::Container')) {
@@ -1157,7 +1158,7 @@ sub get_adaptor() {
 
 =cut
 
-sub set_adaptor() {
+sub set_adaptor {
   my ($self, $canonical_name, $new_object) = @_;
 
   if ($self->isa('Bio::EnsEMBL::Container')) {
@@ -1197,7 +1198,7 @@ sub set_adaptor() {
 
 =cut
 
-sub get_GenericFeatureAdaptors() {
+sub get_GenericFeatureAdaptors {
 
   my ($self, @names) = @_;
 
@@ -1232,7 +1233,7 @@ sub get_GenericFeatureAdaptors() {
 
 =cut
 
-sub add_GenericFeatureAdaptor() {
+sub add_GenericFeatureAdaptor {
   my ($self, $name, $adaptor_obj) = @_;
 	
   # check that $adaptor is an object that subclasses BaseFeatureAdaptor	
@@ -1245,6 +1246,33 @@ sub add_GenericFeatureAdaptor() {
 }
 
 
+
+
+=head2 get_SeqRegionCache
+
+  Arg [1]    : none
+  Example    : my $srcache = $dba->get_SeqRegionCache();
+  Description: Retrieves a seq_region cache for this database
+  Returntype : Bio::EnsEMBL::Utils::SeqRegionCache
+  Exceptions : none
+  Caller     : SliceAdaptor, AssemblyMapperAdaptor
+
+=cut
+
+sub get_SeqRegionCache {
+  my $self = shift;
+
+  # use the cache from the database where seq_regions are stored
+  if($self != $self->dnadb()) {
+    return $self->dnadb()->get_SeqRegionCache();
+  }
+
+  if(!$self->{'seq_region_cache'}) {
+    $self->{'seq_region_cache'} = Bio::EnsEMBL::Utils::SeqRegionCache->new();
+  }
+
+  return $self->{'seq_region_cache'};
+}
 
 
 #########################

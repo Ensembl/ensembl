@@ -3,7 +3,7 @@
 # Ensembl module for Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
 #
 #
-# Copyright EnsEMBL
+# Copyright Ensembl
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -45,12 +45,13 @@ This is used to retrieve mappers between any two coordinate systems whose
 makeup is described by the assembly table.  Currently one step (explicit) and
 two step (implicit) pairwise mapping is supported.  In one-step mapping
 an explicit relationship between the coordinate systems is defined in the
-assembly table.  In two-step 'chained' mapping no explicit mapping is present 
-but the coordinate systems must share a common mapping to an intermediate 
+assembly table.  In two-step 'chained' mapping no explicit mapping is present
+but the coordinate systems must share a common mapping to an intermediate
 coordinate system.
 
 =head1 CONTACT
 
+This module is part of the Ensembl project: www.ensembl.org
 Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 METHODS
@@ -99,6 +100,12 @@ sub new {
   my $self = $class->SUPER::new($dbadaptor);
 
   $self->{'_asm_mapper_cache'} = {};
+
+  # use a shared cache (for this database) that contains info about
+  # seq regions
+  my $seq_region_cache = $self->db->get_SeqRegionCache();
+  $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
+  $self->{'sr_id_cache'}   = $seq_region_cache->{'id_cache'};
 
   return $self;
 }
@@ -175,18 +182,18 @@ sub fetch_by_CoordSystems {
 
   if(@mapping_path == 2) {
     #1 step regular mapping
-    $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
+    #$asm_mapper = Bio::EnsEMBL::AssemblyMapper->new($self, @mapping_path);
 
 #   If you want multiple pieces on two seqRegions to map to each other
 #   uncomment following. AssemblyMapper assumes only one mapped piece per contig
-#    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
+    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new( $self, $mapping_path[0], undef, $mapping_path[1] );  
     $self->{'_asm_mapper_cache'}->{$key} = $asm_mapper;
     return $asm_mapper;
   }
 
   if(@mapping_path == 3) {
    #two step chained mapping
-   $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new($self,@mapping_path);
+    $asm_mapper = Bio::EnsEMBL::ChainedAssemblyMapper->new($self,@mapping_path);
     #in multi-step mapping it is possible get requests with the
     #coordinate system ordering reversed since both mappings directions
     #cache on both orderings just in case
@@ -252,7 +259,6 @@ sub register_assembled {
   my @chunk_regions;
   #determine span of chunks
   #bitwise shift right is fast and easy integer division
- 
 
   my($start_chunk, $end_chunk);
 
@@ -351,12 +357,12 @@ sub register_assembled {
                  $asm_seq_region, $asm_start, $asm_end,
                  $ori,
                  $cmp_seq_region, $cmp_start, $cmp_end);
-      my $arr = [ $cmp_seq_region_id, $cmp_seq_region, $cmp_cs_id, $cmp_seq_region_length ];
 
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$cmp_seq_region:$cmp_cs_id"} =
-          $arr;
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$cmp_seq_region_id"} =
-          $arr;
+      my $arr = [ $cmp_seq_region_id, $cmp_seq_region, 
+                  $cmp_cs_id, $cmp_seq_region_length ];
+
+      $self->{'sr_name_cache'}->{"$cmp_seq_region:$cmp_cs_id"} = $arr;
+      $self->{'sr_id_cache'}->{"$cmp_seq_region_id"} = $arr;
     }
   }
 
@@ -373,7 +379,7 @@ sub _seq_region_name_to_id {
   ($sr_name && $cs_id) || throw('seq_region_name and coord_system_id args ' .
 				'are required');
 
-  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr_name:$cs_id"};
+  my $arr = $self->{'sr_name_cache'}->{"$sr_name:$cs_id"};
   if( $arr ) {
     return $arr->[0];
   }
@@ -397,11 +403,9 @@ sub _seq_region_name_to_id {
   $sth->finish();
 
   $arr = [ $sr_id, $sr_name, $cs_id, $sr_length ];
-  
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr_name:$cs_id"} =
-      $arr;
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$sr_id"} =
-      $arr;
+
+  $self->{'sr_name_cache'}->{"$sr_name:$cs_id"} = $arr;
+  $self->{'sr_id_cache'}->{"$sr_id"} = $arr;
 
   return $sr_id;
 }
@@ -477,12 +481,11 @@ sub register_component {
   my ($asm_start, $asm_end, $asm_seq_region_id, $asm_seq_region, $asm_seq_region_length) =
     $sth->fetchrow_array();
 
-  my $arr = [ $asm_seq_region_id, $asm_seq_region, $asm_cs_id, $asm_seq_region_length ];
-  
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$asm_seq_region:$asm_cs_id"} =
-      $arr;
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$asm_seq_region_id"} =
-      $arr;
+  my $arr = [ $asm_seq_region_id, $asm_seq_region,
+              $asm_cs_id, $asm_seq_region_length ];
+
+  $self->{'sr_name_cache'}->{"$asm_seq_region:$asm_cs_id"} = $arr;
+  $self->{'sr_id_cache'}->{"$asm_seq_region_id"} = $arr;
 
   $sth->finish();
 
@@ -701,12 +704,11 @@ sub register_chained {
       }
 
       #update sr_name cache
-      my $arr = [ $mid_seq_region_id, $mid_seq_region, $mid_cs_id, $mid_length ];
-  
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$mid_seq_region:$mid_cs_id"} =
-          $arr;
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$mid_seq_region_id"} =
-          $arr;
+      my $arr = [ $mid_seq_region_id, $mid_seq_region,
+                  $mid_cs_id, $mid_length ];
+
+      $self->{'sr_name_cache'}->{"$mid_seq_region:$mid_cs_id"} = $arr;
+      $self->{'sr_id_cache'}->{"$mid_seq_region_id"} = $arr;
 
       push @mid_ranges,[$mid_seq_region_id,$mid_seq_region,
                         $mid_start,$mid_end];
@@ -785,12 +787,10 @@ sub register_chained {
         );
 
       #update sr_name cache
-      my $arr = [ $end_seq_region_id, $end_seq_region, $end_cs_id, $end_length ];
-      
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$end_seq_region:$end_cs_id"} =
-          $arr;
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$end_seq_region_id"} =
-          $arr;
+      my $arr = [ $end_seq_region_id,$end_seq_region,$end_cs_id,$end_length ];
+
+      $self->{'sr_name_cache'}->{"$end_seq_region:$end_cs_id"} = $arr;
+      $self->{'sr_id_cache'}->{"$end_seq_region_id"} = $arr;
 
       #register this region on the end coord system
       $end_registry->check_and_register($end_seq_region, $end_start, $end_end);
@@ -906,7 +906,7 @@ sub seq_regions_to_ids {
   my @out;
 
   foreach my $sr (@$seq_regions) {
-    my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$sr:$cs_id"};
+    my $arr = $self->{'sr_name_cache'}->{"$sr:$cs_id"};
     if( $arr ) {
       push( @out, $arr->[0] );
     } else {

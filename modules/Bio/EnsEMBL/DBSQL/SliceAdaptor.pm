@@ -94,8 +94,6 @@ use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Mapper;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
-use Bio::EnsEMBL::Utils::Cache; #CPAN LRU cache
-use Bio::EnsEMBL::Utils::SeqRegionCache;
 
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
@@ -107,6 +105,12 @@ sub new {
 
   my $self = $class->SUPER::new(@_);
 
+  # use a cache which is shared and also used by the assembly
+  # mapper adaptor
+  my $seq_region_cache = $self->db->get_SeqRegionCache();
+
+  $self->{'sr_name_cache'} = $seq_region_cache->{'name_cache'};
+  $self->{'sr_id_cache'}   = $seq_region_cache->{'id_cache'};
 
   return $self;
 }
@@ -223,7 +227,7 @@ sub fetch_by_region {
   my $length;
   my $arr;
   if( $key ) {
-    $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{$key};
+    $arr = $self->{'sr_name_cache'}->{$key};
   }
 
   if( $arr ) {
@@ -261,10 +265,8 @@ sub fetch_by_region {
 
         # cache values for future reference
         my $arr = [ $id, $tmp_name, $cs_id, $tmp_length ];
-        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$tmp_name:$cs_id"} =
-            $arr;
-        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$id"} =
-            $arr;
+        $self->{'sr_name_cache'}->{"$tmp_name:$cs_id"} = $arr;
+        $self->{'sr_id_cache'}->{"$id"} = $arr;
 
         my $tmp_ver = substr($tmp_name, $prefix_len);
 
@@ -292,13 +294,11 @@ sub fetch_by_region {
       my ($id, $cs_id);
       ($seq_region_name, $id, $length, $cs_id) = $sth->fetchrow_array();
       $sth->finish();
-      
+
       # cahce to speed up for future queries
       my $arr = [ $id, $seq_region_name, $cs_id, $length ];
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$seq_region_name:$cs_id"} =
-          $arr;
-      $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$id"} =
-          $arr;
+      $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr;
+      $self->{'sr_id_cache'}->{"$id"} = $arr;
 
       $cs = $csa->fetch_by_dbID( $cs_id );
     }
@@ -385,7 +385,7 @@ sub fetch_by_name {
 sub fetch_by_seq_region_id {
   my ($self, $seq_region_id) = @_;
 
-  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{ $seq_region_id };
+  my $arr = $self->{'sr_id_cache'}->{ $seq_region_id };
   my ($name, $length, $cs);
 
   if( $arr ) {
@@ -409,11 +409,9 @@ sub fetch_by_seq_region_id {
 
     #cache results to speed up repeated queries
     my $arr = [ $seq_region_id, $name, $cs_id, $length ];
-      
-    $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$name:$cs_id"} =
-        $arr;
-    $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
-        $arr;
+
+    $self->{'sr_name_cache'}->{"$name:$cs_id"} = $arr;
+    $self->{'sr_id_cache'}->{"$seq_region_id"} = $arr;
   }
 
   return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,
@@ -453,7 +451,7 @@ sub get_seq_region_id {
   
   my $seq_region_name = $slice->seq_region_name();
   my $key = $seq_region_name.":".$slice->coord_system->dbID();
-  my $arr = $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$key"};
+  my $arr = $self->{'sr_name_cache'}->{"$key"};
 
   if( $arr ) {
     return $arr->[0];
@@ -480,12 +478,10 @@ sub get_seq_region_id {
 
   #cache information for future requests
   $arr = [ $seq_region_id, $seq_region_name, $cs_id, $length ];
-  
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$seq_region_name:$cs_id"} =
-      $arr;
-  $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
-      $arr;
-  
+
+  $self->{'sr_name_cache'}->{"$seq_region_name:$cs_id"} = $arr;
+  $self->{'sr_id_cache'}->{"$seq_region_id"} = $arr;
+
   return $seq_region_id;
 }
 
@@ -610,11 +606,9 @@ sub fetch_all {
       #we know we have filled it up
       if($cache_count < $Bio::EnsEMBL::Utils::SeqRegionCache::SEQ_REGION_CACHE_SIZE) {
         my $arr = [ $seq_region_id, $name, $cs_id, $length ];
-        
-        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_name_cache{"$name:$cs_id"} =
-            $arr;
-        $Bio::EnsEMBL::Utils::SeqRegionCache::sr_id_cache{"$seq_region_id"} =
-            $arr;
+
+        $self->{'sr_name_cache'}->{"$name:$cs_id"} = $arr;
+        $self->{'sr_id_cache'}->{"$seq_region_id"} = $arr;
 
         $cache_count++;
       }
