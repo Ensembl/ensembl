@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 48;
+	plan tests => 53;
 }
 
 use TestUtils qw( debug );
@@ -14,7 +14,7 @@ use MultiTestDB;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::ProjectionSegment;
 
-our $verbose= 0;
+our $verbose = 0;
 
 #
 # TEST - Slice Compiles
@@ -96,6 +96,27 @@ ok($subseq eq 'TGCAT');
 $subseq = $test_slice->subseq(2,6,-1);
 ok($subseq eq 'ATGCA');
 debug("subseq = $subseq");
+
+# test that subslice works correctly with attached sequence
+
+my $sub_slice = $test_slice->sub_Slice(2, 6);
+ok($sub_slice->seq eq 'TGCAT');
+
+# test that invert works correctly with attached sequence
+ok($sub_slice->invert()->seq() eq 'ATGCA');
+
+
+# test that slice can be created without db, seq or coord system
+$test_slice = Bio::EnsEMBL::Slice->new('-seq_region_name' => 'test',
+                                       '-start'           => 1,
+                                       '-end'             => 3);
+
+ok($test_slice);
+ok($test_slice->seq() eq 'NNN');
+
+debug("\$test_slice->name = " . $test_slice->name());
+
+ok($test_slice->name() eq '::test:1:3:1');
 
 
 $slice = new Bio::EnsEMBL::Slice
@@ -340,3 +361,5 @@ my $sr_slice = $slice->seq_region_Slice();
 ok($sr_slice->start() == 1 &&
    $sr_slice->end()   == $slice->seq_region_length() &&
    $sr_slice->strand() == 1);
+
+
