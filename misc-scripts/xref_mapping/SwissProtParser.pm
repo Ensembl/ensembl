@@ -110,7 +110,12 @@ sub create_xrefs {
     my $xref;
     my $acc;
     ($acc) = $_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions
-    ($xref->{LABEL})    = $_ =~ /ID\s+(\w+)/;
+    my ($label, $sp_type) = $_ =~ /ID\s+(\w+)\s+(\w+)/;
+
+    # SwissProt/SPTrEMBL are differentiated by having STANDARD/PRELIMINARY here
+    next if ($sp_type !~ /STANDARD/i);
+
+    ($xref->{LABEL}) = $label;
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
 
