@@ -133,6 +133,10 @@ sub register_region{
   my $chr_id = $chr->dbID();
   my $max_assembly_contig = $self->db()->get_MetaContainer->get_max_assembly_contig();
 
+  if (! defined $max_assembly_contig) {
+      $max_assembly_contig = 1_000_000_000;
+  }
+
   my $select = qq{
       select
          ass.contig_start,
