@@ -1,5 +1,5 @@
 
-=Head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
+=head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
 
 =head1 SYNOPSIS
 
