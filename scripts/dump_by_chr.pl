@@ -5,8 +5,6 @@
 #
 use Carp;
 
-warn "Not ready for main branch this is a direct copy of rev. 1.3.2.4";
-
 =head1 NAME
 
  dump_by_chr.pl
@@ -326,8 +324,17 @@ SELECT distinct e.*
 ";
     dump_data($sql, $satdb, 'exon');
 
-    dump_data('to be done', $satdb, 'exon_stable_id');
-
+    $sql="
+SELECT distinct esi.*
+  FROM $satdb.static_golden_path sgp,
+       $satdb.exon e, 
+       $satdb.exon_stable_id esi
+ WHERE sgp.chr_name = '$chr'
+   AND sgp.type = '$static_golden_path_type'
+   AND sgp.raw_id = e.contig_id
+   AND e.exon_id = esi.exon_id
+";
+    dump_data($sql, $satdb, 'exon_stable_id');
 
 
 # dumping exon_transcript, transcript and supporting_feature used to be
@@ -368,7 +375,7 @@ SELECT tsi.*
    AND gsi.gene_id = tsc.gene_id
    AND tsc.transcript_id = tsi.transcript_id
 ";
-    dump_data('to be done', $satdb, 'transcript_stable_id');
+    dump_data($sql, $satdb, 'transcript_stable_id');
 
     $sql="
 SELECT g.*
@@ -387,8 +394,8 @@ SELECT gsi.*
        $satdb.gene_stable_id gsi
  WHERE lg.chr_name = '$chr'
    AND lg.name = gsi.stable_id
-"
-    dump_data('to be done', $satdb, 'gene_stable_id');
+";
+    dump_data($sql, $satdb, 'gene_stable_id');
 
     $sql="
 SELECT trl.*
@@ -405,16 +412,16 @@ SELECT trl.*
 
     $sql="
 SELECT trlsi.*
-  FROM homo_sapiens_lite_120.gene lg,
-       ensembl110_new_schema_2.gene_stable_id gsi,
-       ensembl110_new_schema_2.transcript tsc, 
-       ensembl110_new_schema_2.translation_stable_id trlsi
- WHERE lg.chr_name = 'chr21'
+  FROM $litedb.gene lg,
+       $satdb.gene_stable_id gsi,
+       $satdb.transcript tsc, 
+       $satdb.translation_stable_id trlsi
+ WHERE lg.chr_name = '$chr'
    AND lg.name = gsi.stable_id
    AND gsi.gene_id = tsc.gene_id
    AND tsc.translation_id = trlsi.translation_id
 ";
-    dump_data('to be done', $satdb, 'translation_stable_id');
+    dump_data($sql, $satdb, 'translation_stable_id');
 
     $sql="
 SELECT distinct pf.*
@@ -423,7 +430,7 @@ SELECT distinct pf.*
        $satdb.protein_feature pf
  WHERE lg.chr_name = '$chr'
    AND lg.gene = lgp.gene
-   AND lgp.translation = pf.translation
+   AND lgp.translation_id = pf.translation
 ";
     dump_data($sql, $satdb, 'protein_feature');
 
@@ -462,15 +469,18 @@ WHERE  lg.chr_name = '$chr'
 ";
     dump_data($sql, $satdb, 'supporting_feature');
 
+    warn "only looking at Xrefs involving Translations";
+
     $sql="
-SELECT distinct ox.* 
+SELECT distinct ox.*
 FROM   $satdb.objectXref ox, 
        $litedb.gene_prot lgp, 
        $litedb.gene lg
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation
+  AND  ox.ensembl_id = lgp.translation_id
 ";
+
     dump_data($sql, $satdb, 'objectXref');
 
     $sql="
@@ -481,7 +491,7 @@ FROM   $satdb.Xref x,
        $litedb.gene lg
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation
+  AND  ox.ensembl_id = lgp.translation_id
   AND  x.xrefId = ox.xrefId
 ";
     dump_data($sql, $satdb, 'Xref');
@@ -494,7 +504,7 @@ FROM   $satdb.externalSynonym xs,
        $litedb.gene lg
 WHERE  lg.chr_name = '$chr'
   AND  lg.gene = lgp.gene
-  AND  ox.ensembl_id = lgp.translation
+  AND  ox.ensembl_id = lgp.translation_id
   AND  xs.xrefId = ox.xrefId
 ";
     dump_data($sql, $satdb, 'externalSynonym');
@@ -507,7 +517,7 @@ FROM  $satdb.identityXref ix,
       $litedb.gene lg
 WHERE lg.chr_name = '$chr'
  AND  lg.gene = lgp.gene
- AND  ox.ensembl_id = lgp.translation
+ AND  ox.ensembl_id = lgp.translation_id
  AND  ix.objectXrefId = ox.objectXrefId
 ";
     dump_data($sql, $satdb, 'identityXref');
