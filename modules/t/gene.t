@@ -149,7 +149,7 @@ my @exons = $gene_out->get_all_Exons();
 
 @sorted_exons = sort{$a->start <=> $b->start}@exons;
 
-print STDERR "EXON 1 START = ".$sorted_exons[0]->start."\n";
+
 
 ok($sorted_exons[0]->start==5);
 
@@ -166,9 +166,9 @@ ok($sorted_exons[2]->phase==0);
 my $pep;
 my $translate = 0;
 foreach my $trans($gene->each_Transcript()){
-	print STDERR $trans->seq->seq."\n";
+	
 	my $pep = $trans->translate();
-	print STDERR "PEP ".$pep->seq()."\n";
+
 	if($pep !=~ /\*/){
 	    $translate = 1;
         }else{
