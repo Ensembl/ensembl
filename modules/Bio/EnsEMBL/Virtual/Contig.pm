@@ -1,4 +1,4 @@
-
+          
 #
 # BioPerl module for Bio::EnsEMBL::Virtual::Contig.pm
 #
@@ -951,7 +951,7 @@ sub get_Genes_by_Type {
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
 	foreach my $gene ( $contig->get_Genes_by_Type($type,$supporting) ) {      
-	    $gene{$gene->dbID()} = $gene;
+	  $gene{$gene->dbID()} = $gene;
 
 	    # deal with supporting feature coordinates
 
@@ -1067,6 +1067,7 @@ sub _gene_query{
 # virtual coords for Translation objs; that is not needed anymore. 
 
     
+
     return values %gene;
 }
 
@@ -1133,7 +1134,6 @@ sub _get_all_SeqFeatures_type {
        if( !defined $sf ) {      
 	   next;
        }
-       
        
        if($sf->start < 0 ){
 	   $count++;
@@ -1781,6 +1781,7 @@ sub _reverse_map_Exon {
        $rmexon->modified($exon->modified);
        $rmexon->version($exon->version);
        $rmexon->phase($exon->phase);
+       $rmexon->end_phase($exon->end_phase);
        $rmexon->sticky_rank(1);
 
 
@@ -1854,6 +1855,7 @@ sub _reverse_map_Exon {
 	   $rmexon->modified($exon->modified);
 	   $rmexon->version($exon->version);
 	   $rmexon->phase($exon->phase);
+	   $rmexon->end_phase($exon->end_exon);
 	   $rmexon->sticky_rank($sticky++);
 	   $rmexon->attach_seq($c->contig->primary_seq);
 
