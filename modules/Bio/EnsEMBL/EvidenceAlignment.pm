@@ -384,7 +384,17 @@ sub _get_aligned_features_for_contig {
   for (my $i = 0; $i < 3; $i++) {
     my $evidence_line = $translations[$i]->seq;
     $evidence_line = $self->pad_pep_str($evidence_line);
-    $evidence_line = ('-' x $i) . $evidence_line;
+    if ($i == 1) {
+      $evidence_line = '-' . $evidence_line;
+    } elsif ($i == 2) {
+      $evidence_line = '--' . $evidence_line;
+    }
+    while (length $evidence_line < $dna_len_bp) {
+      $evidence_line .= '-';
+    }
+    while (length $evidence_line > $dna_len_bp) {
+      chop $evidence_line;
+    }
     $evidence_obj = Bio::PrimarySeq->new(
                       -seq              => $evidence_line,
                       -id               => 0,
@@ -570,6 +580,12 @@ sub _get_aligned_features_for_contig {
   foreach my $evidence_line (@evidence_arr) {
     push @filtered_evidence_arr, $evidence_line
       if ($$evidence_line{seq} =~ /[^-]/);
+  }
+
+  # use uppercase
+  foreach my $evidence_line (@filtered_evidence_arr) {
+    my $seq_str = uc $evidence_line->seq;
+    $evidence_line->seq($seq_str);
   }
 
   return \@filtered_evidence_arr;
