@@ -122,6 +122,7 @@ sub new {
     $self->{'_lock_table_hash'} = {};
     $self->_analysis_cache({});
     $self->{'_external_ff'} = [];
+    $self->static_golden_path_type('UCSC');
 
     if( $debug ) {
         $self->_debug($debug);
@@ -202,11 +203,6 @@ sub new {
       $litedbname ||= 'lite';
       $self->{'_lite_db_name'} = $litedbname;
     }
-
-    eval{ 
-      my $sgp = $self->get_MetaContainer->get_default_assembly || undef;
-      $self->static_golden_path_type($sgp);
-    };
 
     return $self; # success - we hope!
 }
@@ -2457,26 +2453,6 @@ sub get_StaticGoldenPathAdaptor{
         $self->{'_static_golden_path_adaptor'} = $sgpa;
     }
     return $sgpa;
-}
-
-sub list_supported_assemblies {
-    my($self) = @_;
-    my @out;
-
-    my $query = q{
-        SELECT distinct type
-        FROM   static_golden_path
-    };
-
-    my $sth = $self->prepare($query) ||
-     $self->throw("Error in list_supported_assemblies");
-    my $res = $sth->execute ||
-     $self->throw("Error in list_supported_assemblies");
-
-    while (my($type) = $sth->fetchrow_array) {
-       push(@out, $type);
-    }
-    return @out;
 }
 
 =head2 get_KaryotypeBandAdaptor
