@@ -120,6 +120,21 @@ sub id{
 }
 
 
+=head2 internal_id
+
+ Title   : internal_id
+ Usage   : $obj->internal_id($newval)
+ Function: 
+ Example : 
+ Returns : value of database internal id
+ Args    : newvalue (optional)
+
+=cut
+
+sub internal_id {
+   my ($self,$value) = @_;
+    $self->throw("Object did not provide the id method on a contig interface");
+}
 
 =head2 get_all_SeqFeatures
 
@@ -139,7 +154,6 @@ sub get_all_SeqFeatures{
    $self->throw("Object did not provide the get_all_SeqFeatures method on Contig interface!");
 
 }
-
 
 
 
@@ -687,6 +701,73 @@ sub as_seqfeatures {
     return @sf;
 }
 
+=head2 embl_order
+
+ Title   : embl_order
+ Usage   : $obj->embl_order
+ Function: 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub embl_order{
+    my ($self) = @_;
+    $self->throw("Object did not provide the embl_order method on a contig interface");
+}
+
+=head2 embl_offset
+
+ Title   : embl_offset
+ Usage   : $obj->embl_offset
+ Function: 
+ Returns : 
+ Args    : 
+
+
+=cut
+
+sub embl_offset{
+    my ($self) = @_;
+    $self->throw("Object did not provide the embl_offset method on a contig interface");
+}
+
+=head2 seq_date
+
+ Title   : seq_date
+ Usage   : $contig->seq_date()
+ Function: Gives the unix time value of the dna table 
+           created datetime field, which indicates
+           the original time of the dna sequence data
+ Example : $contig->seq_date()
+ Returns : unix time
+ Args    : none
+
+
+=cut
+
+sub seq_date{
+    my ($self) = @_;
+    $self->throw("Object did not provide the seq_date method on a contig interface");
+}
+
+=head2 version
+
+ Title   : version
+ Usage   : $obj->version($newval)
+ Function: 
+ Returns : value of version
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub version{
+   my $self = shift;
+    $self->throw("Object did not provide the version method on a contig interface");
+
+}
 
 =head1 Cruft
 
