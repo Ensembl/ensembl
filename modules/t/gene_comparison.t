@@ -21,7 +21,6 @@
 
 use strict;
 use Bio::EnsEMBL::GeneComparison::GeneComparisonStats;
-use Bio::EnsEMBL::DB::Clone;
 use Bio::EnsEMBL::DBSQL::Obj;
 use lib 't';
 use EnsTestDB;
