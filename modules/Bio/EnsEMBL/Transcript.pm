@@ -1723,6 +1723,69 @@ sub temporary_id{
 }
 
 
+sub finex_string {
+   my ($self) = @_;
+
+   my $finex;
+
+   if ($self->stable_id ne "") {
+     $finex = $self->stable_id;
+   } else {
+     $finex = $self->dbID;
+   }
+
+   $finex .= " ";
+
+   my @exons = $self->get_all_Exons;
+
+   $finex .= scalar(@exons) . " ";
+
+   if ($exons[0]->strand == 1) {
+      @exons = sort {$a->start <=> $b->start} @exons;
+   } else {
+      @exons = sort {$b->start <=> $a->start} @exons;
+   }
+
+
+   my $found_start = 0;
+   my $found_end   = 0;
+
+   foreach my $exon (@exons) {
+     my $length = $exon->length;
+
+     
+     if ($exon == $self->translation->start_exon &&
+	 $exon == $self->translation->end_exon) {
+       $length = $self->translation->end - $self->translation->start + 1;
+
+       $found_start = 1;
+       $found_end   = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+
+     } elsif ($exon == $self->translation->start_exon) {
+       $length = $exon->length - $self->translation->start + 1;
+       $found_start = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+
+     } elsif ($exon == $self->translation->end_exon) {
+       $length = $self->translation->end;
+       $found_end = 1;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+       
+     } elsif ($found_start == 1 && $found_end == 0) {
+       $length = $exon->length;
+
+       $finex .= $exon->phase . ":" . $exon->end_phase . ":" . $length . " ";
+     }
+   }
+
+   $finex =~ s/\ $//;
+
+   return $finex;
+}
 
 
 1;
