@@ -675,30 +675,32 @@ sub get_Interpro_by_geneid {
 
 =head2 get_description
 
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED do not use
-  Returntype : none
-  Exceptions : none
-  Caller     : none
+  Arg [1]    : int $dbID
+               the database identifier of the gene whose description should be
+               obtained
+  Example    : $description = $gene_adaptor->get_description(1234);
+  Description: Retrieves a description for a gene which is created during
+               the gene build and stored in the the gene_description table.
+               In the future this method should check the family database
+               for a description if one does not exist in the core, however,
+               this has not been implemented yet.  
+  Returntype : string
+  Exceptions : thrown if $dbId arg is not defined
+  Caller     : geneview
 
 =cut
 
 sub get_description {
   my ($self, $dbID) = @_;
 
-  $self->throw("call to deprecated method get_description");
+  if( !defined $dbID ) {
+      $self->throw("must call with dbID");
+  }
 
-  return undef;
-
-#  if( !defined $dbID ) {
-#      $self->throw("must call with dbID");
-#  }
-
-#  my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
-#  $sth->execute;
-#  my @array = $sth->fetchrow_array();
-#  return $array[0];
+  my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
+  $sth->execute;
+  my @array = $sth->fetchrow_array();
+  return $array[0];
 }
 
 

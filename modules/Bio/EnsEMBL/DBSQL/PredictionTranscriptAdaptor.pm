@@ -10,9 +10,19 @@
 =head1 NAME
 
 Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor - 
-  MySQL Database queries to load and store PredictionExons
+MySQL Database queries to load and store PredictionExons
 
 =head1 SYNOPSIS
+
+#get a prediction transcript adaptor from the database
+$pta = $database_adaptor->get_PredictionTranscriptAdaptor();
+
+#get a slice on a region of chromosome 1
+$sa = $database_adaptor->get_SliceAdaptor();
+$slice = $sa->fetch_by_chr_start_end('1', 100000, 200000);
+
+#get all the prediction transcripts from the slice region
+@prediction_transcripts = $pta->fetch_by_Slice($slice);
 
 =head1 CONTACT
 
@@ -24,12 +34,10 @@ Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor -
 =cut
 
 
-
 package Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor;
 
 use vars qw( @ISA );
 use strict;
-
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -42,16 +50,15 @@ use Bio::EnsEMBL::PredictionTranscript;
 
 =head2 fetch_by_dbID
 
-  Arg  1    : int $dbID
-              database internal id for a PredictionTranscript
-  Function  : Retrieves PredictionTranscript from db with given dbID.
-  Returntype: Bio::EnsEMBL::PredictionTranscript
-  Exceptions: returns undef when not found
-  Caller    : general
+  Arg [1]    : int $dbID
+               database internal id for a PredictionTranscript 
+  Example    : $pt = $prediction_transcript_adaptor->fetch_by_dbID($dbID);
+  Description: Retrieves PredictionTranscript from db with given dbID. 
+  Returntype : Bio::EnsEMBL::PredictionTranscript in contig coords
+  Exceptions : none
+  Caller     : general
 
 =cut
-
-
 
 sub fetch_by_dbID {
   my ( $self, $dbID ) = @_;
@@ -87,6 +94,22 @@ sub fetch_by_dbID {
   return $res[0];
 }
 
+
+=head2 fetch_by_Contig
+
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
+               the contig to retrieve prediction transcripts on
+  Arg [2]    : (optional) string $logic_name
+               the type of analysis performed on objects which should be
+               retrieved
+  Example    : @pts = $pt_adaptor->fetch_by_Contig($contig,'Genscan')
+  Description: Retrieves prediction transcripts from a contig
+  Returntype : list of Bio::EnsEMBL::PredictionTranscript in contig coords
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_Contig{
   my ($self, $contig, $logic_name) = @_;
 
@@ -95,33 +118,61 @@ sub fetch_by_Contig{
   return @results;
 }
 
-sub fetch_by_contig_id{
- my ($self, $contig_id, $logic_name) = @_;
- 
- my $constraint = undef;
 
- if($logic_name){
-    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
-   $constraint = " analysis_id = ".$analysis->dbID;
- }
+=head2 fetch_by_contig_id
 
- my @results = $self->fetch_by_contig_id_constraint($contig_id, $constraint);
-
- return @results;
-
-}
-
-=head2 fetch_by_contig_id_constraint
-
-  Arg  1    : Bio::EnsEMBL::RawContig $contig
-              Only dbID in Contig is used.
-  Function  : returns all PredicitonTranscipts on given contig
-  Returntype: listref Bio::EnsEMBL::PredictionTranscript
-  Exceptions: none, if there are none, the list is empty.
-  Caller    : Bio::EnsEMBL::RawContig->get_genscan_peptides();
+  Arg [1]    : int $contig_id
+               the database id of the contig to retrieve prediction 
+               transcripts on
+  Arg [2]    : (optional) string $logic_name
+               the type of analysis performed on objects which should be
+               retrieved
+  Example    : @pts = $pt_adaptor->fetch_by_Contig($contig,'Genscan')
+  Description: Retrieves prediction transcripts from a contig
+  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in contig coords
+  Exceptions : none
+  Caller     : general
 
 =cut
 
+sub fetch_by_contig_id {
+  my ($self, $contig_id, $logic_name) = @_;
+  
+  my $constraint = undef;
+  
+  if($logic_name){
+    my $analysis  = 
+      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+
+    unless($analysis && $analysis->dbID()) {
+      $self->warn("no analysis with logic_name '$logic_name' exists");
+      return ();
+    }
+
+    $constraint = " analysis_id = ".$analysis->dbID;
+  }
+
+  my @results = $self->fetch_by_contig_id_constraint($contig_id, $constraint);
+
+  return @results;
+}
+
+
+=head2 fetch_by_contig_id_constraint
+
+  Arg [1]    : int $contig_id
+               the unique database identifier of the contig to retrieve 
+               prediction transcripts from
+  Arg [2]    : (optional) string $constraint
+               the limiting SQL to form the where clause of the the database
+               query
+  Example    : @pts = $pta->fetch_by_contig_id_constraint(1,'analysis_id = 2');
+  Description: returns all PredicitonTranscipts on given contig 
+  Returntype : list of Bio::EnsEMBL::PredictionTranscript in contig coords 
+  Exceptions : none, if there are none, the list is empty.
+  Caller     : ?
+
+=cut
 
 sub fetch_by_contig_id_constraint {
   my $self = shift;
@@ -158,6 +209,21 @@ sub fetch_by_contig_id_constraint {
   return @res;
 }
 
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice of the region to obtain prediction transcripts from
+  Arg [2]    : (optional) string $logic_name
+               the type of analysis performed on the prediction transcripts to 
+               obtain
+  Example    : @pts = $pta->fetch_by_Slice($slice,'Genscan');
+  Description: returns all PredicitonTranscipts on the region of the slice 
+  Returntype : list of Bio::EnsEMBL::PredictionTranscript in slice coords 
+  Exceptions : none, if there are none, the list is empty.
+  Caller     : ?
+
+=cut
 
 sub fetch_by_Slice{
   my ($self, $slice, $logic_name) = @_;
@@ -198,7 +264,8 @@ sub fetch_by_Slice{
   EXON:foreach my $e(@sorted_exons){
       my $start = ($e->start - ($slice->chr_start - 1));
       my $end = ($e->end - ($slice->chr_start - 1));
-      my $exon = $self->_new_Exon($start, $end, $e->strand, $e->phase, $e->score, $e->p_value, $contig);
+      my $exon = $self->_new_Exon($start, $end, $e->strand, 
+				  $e->phase, $e->score, $e->p_value, $contig);
       $pred_t->add_Exon( $exon, $exon_count );
       $exon_count++;
     }
@@ -208,21 +275,80 @@ sub fetch_by_Slice{
   return @out;
 }
 
+
+=head2 fetch_by_assembly_location
+
+  Arg [1]    : int $chr_start 
+               the start of the region to obtain prediction transcripts from
+               in chromosomal coordinates
+  Arg [2]    : int $chr_end
+               the end of the region to obtain prediction transcripts from
+               in chromosomal coordinates
+  Arg [3]    : string $chr
+               the chromosome to obtain prediction transcripts from
+  Arg [4]    : string $type
+               the type of assembly to use to obtain transcripts from
+  Arg [5]    : (optional) string $logic_name
+               the type of analysis used to construct the prediction 
+               transcripts
+  Example    : @pts = $pta->fetch_by_assembly_location(1,20000, '2', 'NCBI30',
+                                                       'Genscan');
+  Description: Retrieves prediction transcripts from a region of the assembly 
+  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
+  Exceptions : none
+  Caller     : fetch_by_Slice
+
+=cut
+
 sub fetch_by_assembly_location{
   my ($self, $chr_start, $chr_end, $chr, $type, $logic_name) = @_;
 
   my $constraint = undef;
 
   if($logic_name){
-    my $analysis  = $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
+    my $analysis = 
+      $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
     $constraint = " analysis_id = ".$analysis->dbID;
+
+    unless($analysis && $analysis->dbID()) {
+      $self->warn("no analysis exists for logic_name $logic_name");
+      return ();
+    }
   }
   
-  my @results = $self->fetch_by_assembly_location_constraint($chr_start, $chr_end, $chr, $type, $constraint);
+  my @results = $self->fetch_by_assembly_location_constraint($chr_start, 
+							     $chr_end, 
+							     $chr, 
+							     $type, 
+							     $constraint);
 
   return @results;
 }
 
+
+=head2 fetch_by_assembly_location
+
+  Arg [1]    : int $chr_start 
+               the start of the region to obtain prediction transcripts from
+               in chromosomal coordinates
+  Arg [2]    : int $chr_end
+               the end of the region to obtain prediction transcripts from
+               in chromosomal coordinates
+  Arg [3]    : string $chr
+               the chromosome to obtain prediction transcripts from
+  Arg [4]    : string $type
+               the type of assembly to use to obtain transcripts from
+  Arg [5]    : (optional) string $contraint
+               SQL constraint to limit the values returned (inserted in 
+               WHERE clause).
+  Example    : @pts = $pta->fetch_by_assembly_location(1,20000, '2', 'NCBI30',
+                                                       'analysis_id=2');
+  Description: Retrieves prediction transcripts from a region of the assembly 
+  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
+  Exceptions : thrown if $chr_start or $chr_end are not numbers
+  Caller     : fetch_by_assembly_location
+
+=cut
 
 sub fetch_by_assembly_location_constraint{
   my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
@@ -232,7 +358,9 @@ sub fetch_by_assembly_location_constraint{
   }
   
   if( $chr_start !~ /^\d/ || $chr_end !~ /^\d/ ) {
-    $self->throw("start/end must be numbers not $chr_start,$chr_end (have you typed the location in the right way around - start,end,chromosome,type)?");
+    $self->throw("start/end must be numbers not $chr_start,$chr_end " .
+		 "(have you typed the location in the right way around" .
+		 " - start,end,chromosome,type)?");
   }
   
   my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($type);
@@ -287,21 +415,29 @@ sub fetch_by_assembly_location_constraint{
       }
       my $contig = $sorted_exons[0]->contig;
     EXON:foreach my $e(@sorted_exons){
-	my @coord_list = $mapper->map_coordinates_to_assembly($e->contig->dbID, $e->start, $e->end, $e->strand, "rawcontig");
+	my @coord_list = 
+	  $mapper->map_coordinates_to_assembly($e->contig->dbID, $e->start, 
+					       $e->end, $e->strand, 
+					       "rawcontig");
 	if( scalar(@coord_list) > 1 ) {
-	  #$self->warn("maps to ".scalar(@coord_list)." coordinate objs not all of feature will be on golden path skipping\n");
+	  #$self->warn("maps to ".scalar(@coord_list)." .
+	  #             "coordinate objs not all of feature will be on " .
+	  #             "golden path skipping\n");
 	  next GENE;
 	}
 	
 	if($coord_list[0]->isa("Bio::EnsEMBL::Mapper::Gap")){
-	  #$self->warn("this feature is on a part of $contig_id which isn't on the golden path skipping");
+	  #$self->warn("this feature is on a part of $contig_id which isn't " .
+	  #             "on the golden path skipping");
 	  next GENE;
 	}
 	if(!($coord_list[0]->start >= $chr_start) ||
 	   !($coord_list[0]->end <= $chr_end)) {
 	  next GENE;
 	}
-	my $exon = $self->_new_Exon($coord_list[0]->start, $coord_list[0]->end, $coord_list[0]->strand, $e->phase, $e->score, $e->p_value, $contig);
+	my $exon = $self->_new_Exon($coord_list[0]->start, $coord_list[0]->end,
+				    $coord_list[0]->strand, $e->phase, 
+				    $e->score, $e->p_value, $contig);
 	$pred_t->add_Exon( $exon, $exon_count );
 	$exon_count++;
       }
@@ -312,21 +448,20 @@ sub fetch_by_assembly_location_constraint{
 }
 
 
-
-
 =head2 _ptrans_from_sth
 
-  Arg  1    : DBI:st $statement_handle
-              an already executed statement handle.
-  Function  : Generate PredictionTranscripts from the handle. Obviously 
-              this needs to come from a query on prediciton_transcript.
-              Needs to be sorted on exon_rank and p.._t.._id.
-  Returntype: list Bio::EnsEMBL::PredictionTranscript
-  Exceptions: none, list can be empty
-  Caller    : internal
+  Arg [1]    : DBI:st $statement_handle
+               an already executed statement handle. 
+  Example    : none
+  Description: PRIVATE 
+               Generate PredictionTranscripts from the handle. Obviously 
+               this needs to come from a query on prediciton_transcript.
+               Needs to be sorted on exon_rank and p.._t.._id. 
+  Returntype : list Bio::EnsEMBL::PredictionTranscript in contig coords 
+  Exceptions : none
+  Caller     : internal
 
 =cut
-
 
 sub _ptrans_from_sth {
   my $self = shift;
@@ -364,16 +499,15 @@ sub _ptrans_from_sth {
 
 =head2 _new_Exon_from_hashRef
 
-  Arg  1    : hashref $exon_attributes
-              Data from a line in prediction_transcript
-  Function  : Creates an Exon from the data
-  Returntype: Bio::EnsEMBL::Exon
-  Exceptions: none
-  Caller    : internal
+  Arg [1]    : hashref $exon_attributes
+               Data from a line in prediction_transcript 
+  Example    : none
+  Description: PRIVATE Creates an Exon from the data 
+  Returntype : Bio::EnsEMBL::Exon in contig coords
+  Exceptions : none
+  Caller     : internal
 
 =cut
-
-
 
 sub _new_Exon_from_hashRef {
   my $self = shift;
@@ -406,6 +540,23 @@ sub _new_Exon_from_hashRef {
 
 
 
+=head2 _new_Exon
+
+  Arg [1]    : int $start
+  Arg [2]    : int $end
+  Arg [3]    : int $strand
+  Arg [4]    : int $phase
+  Arg [5]    : float $score
+  Arg [6]    : float $pvalue
+  Arg [7]    : Bio::EnsEMBL::Contig $contig
+  Example    : none 
+  Description: PRIVATE creates a new exon from args and returns it
+  Returntype : Bio::EnsEMBL::Exon
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
 sub _new_Exon{
   my ($self, $start, $end, $strand, $phase, $score, $pvalue, $contig) = @_; 
   my $exon = Bio::EnsEMBL::Exon->new();
@@ -428,14 +579,16 @@ sub _new_Exon{
   return $exon;
 }
 
+
 =head2 store
 
-  Arg  1    : Bio::EnsEMBL::PredictionTranscript $pt
-  Function  : Stores given $pt in database. Puts dbID and Adaptor into $pt 
-              object. Returns the dbID.
-  Returntype: int
-  Exceptions: on wrong argument type
-  Caller    : general
+  Arg [1]    : Bio::EnsEMBL::PredictionTranscript $pre_trans 
+  Example    : $prediction_transcript_adaptor->store($pre_trans);
+  Description: Stores given $pt in database. Puts dbID and Adaptor into $pt 
+               object. Returns the dbID. 
+  Returntype : int 
+  Exceptions : on wrong argument type 
+  Caller     : general 
 
 =cut
 
@@ -443,7 +596,8 @@ sub store {
   my ( $self, $pre_trans ) = @_;
 
   if( ! $pre_trans->isa('Bio::EnsEMBL::PredictionTranscript') ) {
-    $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript - not dumping!");
+    $self->throw("$pre_trans is not a EnsEMBL PredictionTranscript " 
+		 . "- not dumping!");
   }
 
   if( $pre_trans->dbID && $pre_trans->adaptor == $self ) {
@@ -452,12 +606,12 @@ sub store {
 
 
   my $exon_sql = q{
-       INSERT into prediction_transcript ( prediction_transcript_id, exon_rank, contig_id, 
-                                           contig_start, contig_end, contig_strand, 
-                                           start_phase, score, p_value,
-                                           analysis_id, exon_count )
-		 VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
-	       };
+    INSERT INTO prediction_transcript ( prediction_transcript_id, exon_rank, 
+					contig_id, contig_start, contig_end, 
+					contig_strand, start_phase, score, 
+					p_value, analysis_id, exon_count )
+    VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+  };
 
   my $exonst = $self->prepare($exon_sql);
 
@@ -481,16 +635,20 @@ sub store {
     # this is only in PredictionExon
     my $score = $exon->score();
     my $p_value = $exon->p_value();
-    #print "storing exon with pvalue ".$exon->p_value." and score ".$exon->score."\n";
+
     my $analysis = $pre_trans->analysis->dbID;
 
     if( $rank == 1 ) {
-      $exonst->execute( undef, 1, $contig_id, $contig_start, $contig_end, $contig_strand,
-			$start_phase, $score, $p_value, $analysis, scalar( @exons) );
-      $dbID =   $exonst->{'mysql_insertid'};
+      $exonst->execute( undef, 1, $contig_id, $contig_start, 
+			$contig_end, $contig_strand,
+			$start_phase, $score, $p_value, $analysis, 
+			scalar( @exons) );
+      $dbID = $exonst->{'mysql_insertid'};
     } else {
-      $exonst->execute( $dbID, $rank, $contig_id, $contig_start, $contig_end, $contig_strand,
-			$start_phase, $score, $p_value, $analysis, scalar( @exons ) );
+      $exonst->execute( $dbID, $rank, $contig_id, $contig_start, 
+			$contig_end, $contig_strand,
+			$start_phase, $score, $p_value, $analysis, 
+			scalar( @exons ) );
     }
     $rank++;
   }
@@ -505,15 +663,14 @@ sub store {
 
 =head2 remove
 
-  Arg  1    : Bio::EnsEMBL::PredictionTranscript $pt
-  Function  : removes given $pt from database. Expects access to
-              internal db via $pt->{'dbID'} to set it undef.
-  Returntype: none
-  Exceptions: none
-  Caller    : general
+  Arg [1]    : Bio::EnsEMBL::PredictionTranscript $pt 
+  Example    : $prediction_transcript_adaptor->remove($pt);
+  Description: removes given prediction transcript $pt from database. 
+  Returntype : none
+  Exceptions : none 
+  Caller     : general
 
 =cut
-
 
 sub remove {
   my $self = shift;
@@ -523,18 +680,14 @@ sub remove {
     return;
   }
 
-  my $sth = $self->prepare( "delete from prediction_transcript where prediction_transcript_id = ?" );
+  my $sth = $self->prepare( "DELETE FROM prediction_transcript 
+                             WHERE prediction_transcript_id = ?" );
   $sth->execute( $pre_trans->dbID );
 
   # uhh, didnt know another way of resetting to undef ...
   $pre_trans->{dbID} = undef;
   $pre_trans->{adaptor} = undef;
 }
-
-
-
-
-
 
 
 1;
