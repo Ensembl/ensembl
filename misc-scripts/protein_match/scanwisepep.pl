@@ -4,7 +4,6 @@
 
 use strict;
 use Getopt::Std;
-use Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher;
 
 BEGIN {
     my $script_dir = $0;
@@ -29,26 +28,29 @@ my $opt_o = $conf{'pmatch_out'};
 my %target2length;
 my %query2length;
 
-#$t_thr = 40;
-#$q_thr = 40;
-#$target = "/acari/work4/mongin/final_build/release_mapping/Primary/final.fa";
-#$query = "/acari/work4/mongin/final_build/release_mapping/Primary/sptr_ano_gambiae_19_11_02_formated.fa";
+$t_thr = 40;
+$q_thr = 40;
+$target = "/Users/emmanuelmongin/work/test_mapping/Primary/final_test.fa";
+$query = "/Users/emmanuelmongin/work/test_mapping/Primary/sptr_ano_gambiae_19_11_02_formated.fa";
+my $bin = "/Users/emmanuelmongin/src/wise2.2.3-rc6/src/bin/scanwisep";
+$opt_o = "/Users/emmanuelmongin/work/test_mapping/Output/scanpep.out";
+
 
 #################################
 # run scanwisepep
 
-    my $scanwise = "/usr/local/ensembl/bin/scanwisep-2.2.3-rc6 -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /tmp/$$.pmatch";
+    my $scanwise = "$bin -seqdb $target $query -seqloadtile 5 -hspthread -hspthreadno 4 -hsp2hit_best -hsp2hit_best_perc 10 -hitoutput tab  >> /tmp/$$.scanpep";
 
 print STDERR "Running Scanwise: $scanwise\n";
 
-system "$scanwise";
+#system "$scanwise";
 
-open (PMATCH , "/tmp/$$.pmatch") || die "cannot read /tmp/$$.pmatch\n";
+#open (PMATCH , "/tmp/$$.scanpep") || die "cannot read /tmp/$$.scanpep\n";
 
 open (OUT,">$opt_o") || die "cannot open $opt_o\n";
 
 
-#open (PMATCH , "/tmp/4367756.pmatch");
+open (PMATCH , "/tmp/475.scanpep");
 
 print STDERR "Parsing Output\n";
 
@@ -61,53 +63,32 @@ my $count = 0;
 
 my %match2desc;
 
-my $format = "fasta";
-my @targetdb = "/acari/work4/mongin/final_build/release_mapping/pred_index";
-my @querydb = "/acari/work4/mongin/final_build/release_mapping/index";
-
-    my $tfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher->new(
-										-db     => \@targetdb,
-										-format => $format,
-										);
-
-    my $qfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::OBDAIndexSeqFetcher->new(
-										-db     => \@querydb,
-										-format => $format,
-										);
 while (<PMATCH>) {
+    print $_;
     $count++;
     chomp;
+
     my @a = split;
     my $score = $a[0];
     my $qid = $a[1];
     my $qstart = $a[2];
     my $qend = $a[3];
-    my $tid = $a[5];
-    my $tstart = $a[6];
-    my $tend = $a[7];
-    my $status = $a[9];
+    my $qlenght = $a[5];
+    my $tid = $a[6];
+    my $tstart = $a[7];
+    my $tend = $a[8];
+    my $tlenght = $a[10];
+    my $status = $a[11];
 
     my @matches = ("$qid","$tid");
     
     my $match = join(":",@matches);
 
-    if (! defined $match2desc{$match}->{'tlength'}){
-
-	my $seq = $tfetcher->get_Seq_by_acc($tid);
-	my $length = length($seq->seq);
-	
-	$match2desc{$match}->{'tlength'} = $length;
-
-    }
+    $match2desc{$match}->{'tlength'} = $tlength;
     
-    if (! defined $match2desc{$match}->{'qlength'}){
-	my $seq = $qfetcher->get_Seq_by_acc($qid);
-
-	my $length = length($seq->seq);
-	
-	$match2desc{$match}->{'qlength'} = $length;
-    }
-
+    
+    $match2desc{$match}->{'qlength'} = $qlength;
+    
     my $tmatchlength = $tend - $tstart + 1;
     my $qmatchlength = $qend - $qstart + 1;
 
@@ -117,6 +98,8 @@ while (<PMATCH>) {
 }
 
 foreach my $key(keys %match2desc) {
+    print STDERR "KEY: $key\t LENGHT: $match2desc{$key}->{'tlength'}\n";
+    
     my ($query,$target) = split(/:/,$key);
     my $targetperc =   $match2desc{$key}->{'tmatchlength'} * 100 / $match2desc{$key}->{'tlength'}; 
     my $queryperc =  $match2desc{$key}->{'qmatchlength'} * 100 / $match2desc{$key}->{'qlength'}; 
