@@ -1,7 +1,9 @@
+# this script check some of the foreign key relationships in ensembl style 
+# database. No commandline args, you have to edit $db= line
+
 use DBI;
 use strict; 
 use IO::File;
-use Data::Dumper;
 
 my $db = DBI->connect( "dbi:mysql:host=ecs2d;database=embl_6_29_new", "ensro","" );
 
@@ -31,7 +33,6 @@ $count = $db->selectrow_array
 print STDERR "new contigs in embl $count\n";
 
 
-# exon_transcript without exon ?
 orphan( $db, "exon", "exon_id", "exon_transcript", "exon_id" );
 orphan( $db, "exon_transcript", "exon_id", "exon", "exon_id" );
 orphan( $db, "exon", "exon_id", "exon_stable_id", "exon_id" );
@@ -64,12 +65,12 @@ orphan( $db, "objectXref", "xrefId", "Xref", "xrefId" );
 
 exit;
 
-$count = $db->selectall_array
-  ( q{
-  
-  } 
-  );
-print STDERR "$count\n";
+#$count = $db->selectrow_array
+#  ( q{
+#  
+#  } 
+#  );
+#print STDERR "$count\n";
 
 
 sub orphan {
