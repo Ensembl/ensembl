@@ -2227,82 +2227,6 @@ sub perl_only_contigs{
 
 }
 
-=head2 delete_Clone
-
- Title   : delete_Clone
- Usage   : $obj->delete_Clone($clone_id)
- Function: Deletes clone, including contigs, but not its genes
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub delete_Clone{
-   my ($self,$clone_id) = @_;
-
-   #$self->warn("Obj->delete_Clone is a deprecated method! 
-#Calling Clone->delete instead!");
-   
-   (ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
-
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $clone_id,
-					       -dbobj => $self );
-   
-   return $clone->delete();
-}
-
-=head2 cloneid_to_geneid
-
- Title   : cloneid_to_geneid
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub cloneid_to_geneid{
-   my ($self,$cloneid) = @_;
-
-    $self->warn("Obj->cloneid_to_geneid is a deprecated method! 
-Calling Clone->get_all_geneid instead!");
-
-   (ref($cloneid)) && $self->throw ("Passing an object reference instead of a variable!\n");
-
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $cloneid,
-					       -dbobj => $self );
-   
-   return $clone->get_all_my_geneid();
-}
-
-
-=head2 gene_Obj
-    
- Title   : gene_Obj
- Usage   : my $geneobj = $db->gene_Obj
- Function: Returns the gene object database handle
- Example : 
- Returns : Bio::EnsEMBL::DB::Gene_ObjI
- Args    : 
-
-=cut
-
-sub gene_Obj {
-    my( $self ) = @_;
-
-    my( $go );
-    unless ($go = $self->{'_gene_obj'}) {
-        require Bio::EnsEMBL::DBSQL::Gene_Obj;
-	$go = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-        $self->{'_gene_obj'} = $go;
-    }
-    return $go;
-}
-
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
@@ -2400,6 +2324,18 @@ sub get_RawContigAdaptor {
     return $rca;
 }
 
+
+sub get_SliceAdaptor {
+    my( $self ) = @_;
+
+    my( $rca );
+    unless ($rca = $self->{'_slice_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::SliceAdaptor;
+	$a = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($self);
+        $self->{'_slice_adaptor'} = $a;
+    }
+    return $a;
+}
 
 =head2 get_AnalysisAdaptor
 

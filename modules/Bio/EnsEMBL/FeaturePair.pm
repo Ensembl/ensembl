@@ -108,6 +108,11 @@ sub new {
 			    FEATURE2
 			    )],@args);
 
+
+  #if( !defined $feature1 || !defined $feature2 ) {
+  #  $self->throw("Have not defined either feature1 or feature2. You can define empty feature1 and feature2 if so desired");
+  #}
+
   # Store the features in the object
 
   $feature1 && $self->feature1($feature1);

@@ -1,10 +1,9 @@
 
-
  use lib 't';
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 4;
 }
 
 my $loaded = 0;
@@ -29,6 +28,25 @@ ok($ens_test);
 
 my $db = $ens_test->get_DBSQL_Obj;
 
+$sla= $db->get_SliceAdaptor();
+
+$slice = $sla->new_slice('1',4,400,'NCBI_28');
+
+ok($slice);
+
+&write_feature();
+
+ok(1);
+
+
+($outf) = $slice->get_all_SimilarityFeatures_above_score(5);
+
+#ok($outf);
+
+
+
+sub write_feature {
+
 $dna_f_ad = $db->get_DnaAlignFeatureAdaptor();
 
 
@@ -47,7 +65,8 @@ $feature2->start  (105);
 $feature2->end    (107);
 $feature2->strand (1);
 $feature2->score  (10);
-$feature2->seqname('dummy-hid');
+$feature2->seqname("dummy-hid");
+
 $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
 				    -feature2 => $feature2);
 
@@ -60,6 +79,7 @@ $feature1->end  (14);
 $feature1->strand(1);
 $feature1->score(10);
 $feature1->seqname(1);
+
 #$feature1->analysis($self->analysis);
 
 $feature2 = new Bio::EnsEMBL::SeqFeature();
@@ -68,6 +88,7 @@ $feature2->end    (110);
 $feature2->strand (1);
 $feature2->score  (10);
 $feature2->seqname('dummy-hid');
+
 $fp2 = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
 				    -feature2 => $feature2);
 
@@ -83,21 +104,7 @@ $dnaf->hseqname('dummy-hid');
 
 $dnaf->analysis($db->get_AnalysisAdaptor->fetch_by_logic_name("dummy-blast"));
 
-ok($dnaf);
 
 $dna_f_ad->store(1,$dnaf);
 
-ok(1);
-
-($outf) = $dna_f_ad->fetch_by_contig_id(1);
-
-ok($outf);
-ok($outf->start == 5);
-ok($outf->end   == 14);
-
-ok( scalar($outf->ungapped_features) == 2);
-
-($outf) = $dna_f_ad->fetch_by_assembly_location(1,400,1,'NCBI_28');
-
-#ok($outf);
-#ok( scalar($outf->ungapped_features) == 2);
+}

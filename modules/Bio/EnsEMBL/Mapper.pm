@@ -268,6 +268,7 @@ sub map_coordinates{
 sub add_map_coordinates{
    my ($self, $contig_id, $contig_start, $contig_end, $contig_ori, $chr_name, $chr_start, $chr_end) = @_;
 
+   
    if( !defined $contig_ori ) {
        $self->throw("Need 7 arguments!");
    }
@@ -334,8 +335,13 @@ sub add_map_coordinates{
 sub list_pairs{
    my ($self, $id, $start, $end, $type) = @_;
 
+
    if( !defined $type ) {
        $self->throw("Must start,end,id,type as coordinates");
+   }
+
+   if( $start > $end ) {
+     $self->throw("Start is greater than end for id $id, start $start, end $end\n");
    }
 
    # perhaps a little paranoid/excessive
@@ -349,7 +355,6 @@ sub list_pairs{
 
    if( $type eq $self->to ) {
        $self_func = \&Bio::EnsEMBL::Mapper::Pair::to;
-
        if( !defined $self->{'_pair_hash_to'}->{$id} ) {
 	   return ();
        }
@@ -365,6 +370,7 @@ sub list_pairs{
 
    my @output;
    foreach my $p ( @list ) {
+
        if( &$self_func($p)->end < $start ) {
 	   next;
        }

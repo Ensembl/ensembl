@@ -61,7 +61,19 @@ sub new {
 
   my $self = {};
   bless $self,$class;
-  
+
+  my ($chr,$start,$end,$type,$adaptor) = $self->_rearrange([qw(CHR_NAME CHR_START CHR_END ASSEMBLY_TYPE ADAPTOR)],@args);
+
+  if( !defined $chr || !defined $start || !defined $end || !defined $type ) {
+    $self->throw("Do not have all the parameters for slice");
+  }
+
+  $self->chr_name($chr);
+  $self->chr_start($start);
+  $self->chr_end($end);
+  $self->assembly_type($type);
+  $self->adaptor($adaptor);
+
 # set stuff in self from @args
   return $self;
 }
@@ -88,9 +100,17 @@ are the methods to implement
 =cut
 
 sub get_all_SimilarityFeatures_above_score{
-   my ($self,@args) = @_;
+   my ($self,$score) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   my @out;
+
+   if( !defined $score ) {
+     $self->throw("No defined score.");
+   }
+
+   push(@out,$self->adaptor->db->get_DnaAlignFeatureAdaptor->fetch_by_Slice_and_score($self,$score));
+
+   return @out;
 }
 
 
@@ -391,6 +411,30 @@ sub assembly_type{
     return $self->{'assembly_type'};
 
 }
+
+
+=head2 adaptor
+
+ Title   : adaptor
+ Usage   : $obj->adaptor($newval)
+ Function: 
+ Example : 
+ Returns : value of adaptor
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub adaptor{
+   my ($self,$value) = @_;
+   if( defined $value) {
+      $self->{'adaptor'} = $value;
+    }
+    return $self->{'adaptor'};
+
+}
+
+
 
 1;
 

@@ -91,22 +91,8 @@ sub fetch_by_dbID{
    }
 
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
-
-   my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-   $out->start($start);
-   $out->end($end);
-   $out->strand($strand);
-   $out->score($score);
-   $out->hstart($hstart);
-   $out->hend($hend);
-   $out->hstrand($hstrand);
-   $out->hseqname($hname);
-   $out->cigar($cigar);
-   
-   $out->analysis($self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id));
-
-   $out->seqname($contig->id);
-   $out->attach_seq($contig->seq);
+   my $analysis = $self->db->get_AnalysisAdaptor->fetch_by_dbID($analysis_id);
+   my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$analysis,$contig->name,$contig->seq);
 
    return $out;
 
@@ -148,25 +134,15 @@ sub fetch_by_contig_id{
        }
 
 
-       my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();;
-       $out->start($start);
-       $out->end($end);
-       $out->strand($strand);
-       $out->score($score);
-       $out->hstart($hstart);
-       $out->hend($hend);
-       $out->hstrand($hstrand);
-       $out->hseqname($hname);
-       $out->cigar($cigar);
+       my $out= $self->_new_feature($start,$end,$strand,$score,$hstart,$hend,$hstrand,$hname,$cigar,$ana{$analysis_id},$contig->name,$contig->seq);
 
-       $out->analysis($ana{$analysis_id});
-       $out->seqname($contig->name);
-       $out->attach_seq($contig->seq);
        push(@f,$out);
    }
-   
    return @f;
 }
+
+
+
 sub fetch_by_contig_id_and_logic_name{
 
   my($self, $cid, $logic_name) = @_;
@@ -280,6 +256,13 @@ sub fetch_by_contig_id_and_dbname{
 }
 
 
+sub fetch_by_Slice_and_score {
+  my ($self,$slice,$score) = @_;
+
+  $self->warn("*** CODE GOING TO BE FIXED - RETURNING 0***");
+  return ();
+}  
+
 =head2 fetch_by_assembly_location
 
  Title   : fetch_by_assembly_location
@@ -299,6 +282,10 @@ sub fetch_by_assembly_location{
     $self->throw("Assembly location must be start,end,chr,type");
   }
   
+
+  $self->warn("*** CODE GOING TO BE FIXED - RETURNING 0***");
+  return ();
+
   if( $start !~ /^\d/ || $end !~ /^\d/ ) {
     $self->throw("start/end must be numbers not $start,$end (have you typed the location in the right way around - start,end,chromosome,type");
   }
@@ -805,6 +792,38 @@ sub fetch_featurepair_list_by_assembly_location_nad_logic_name{
 
 }
 
+
+sub _new_feature {
+  my ($self,$start,$end,$strand,$score,$hstart,$hend,$hstrand,$hseqname,$cigar,$analysis,$seqname,$seq) = @_;
+
+  if( !defined $seq ) {
+    $self->throw("Internal error - wrong number of arguments to new_feature");
+  }
+
+  my $f1 = Bio::EnsEMBL::SeqFeature->new();
+  my $f2 = Bio::EnsEMBL::SeqFeature->new();
+
+  $f1->start($start);
+  $f1->end($end);
+  $f1->strand($strand);
+  $f1->score($score);
+  $f1->seqname($seqname);
+  $f1->attach_seq($seq);
+
+  $f2->start($hstart);
+  $f2->end($hend);
+  $f2->strand($hstrand);
+  $f2->seqname($hseqname);
+
+  $f1->analysis($analysis);
+  $f2->analysis($analysis);
+
+
+  my $out = Bio::EnsEMBL::DnaDnaAlignFeature->new( -cigar_string => $cigar, -feature1 => $f1, -feature2 => $f2);
+
+  return $out;
+}
+    
 1;
 
 

@@ -47,9 +47,13 @@ package Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inherits from Bio::Root::RootI
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
+use Bio::EnsEMBL::Slice;
+
+@ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
+# new is inherieted from BaseAdaptor
 
 =head2 new_slice
 
@@ -64,10 +68,16 @@ use strict;
 =cut
 
 sub new_slice{
-    my ($chr,$start,$end,$type) = @_;
+    my ($self,$chr,$start,$end,$type) = @_;
 
-    die "Not implemented new slice yet";
 
+    my $slice = Bio::EnsEMBL::Slice->new( -chr_name  => $chr,
+					  -chr_start => $start,
+					  -chr_end   => $end,
+					  -assembly_type      => $type,
+					-adaptor => $self);
+
+    return $slice;
 }
 
 
@@ -84,7 +94,7 @@ sub new_slice{
 =cut
 
 sub new_web_slice{
-    my ($chr,$start,$end,$type) = @_;
+    my ($self,$chr,$start,$end,$type) = @_;
     
     die "Not implemented new slice yet";
     

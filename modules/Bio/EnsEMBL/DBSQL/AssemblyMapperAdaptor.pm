@@ -118,6 +118,7 @@ sub register_region{
    $self->throw("$assmapper is not a Bio::EnsEMBL::AssemblyMapper")
       unless $assmapper->isa("Bio::EnsEMBL::AssemblyMapper");
 
+
    # This is to reassure people that I've got this piece of
    # SQL correct ;) EB
    #
@@ -132,8 +133,12 @@ sub register_region{
    # SCP: Those not clauses are a bit confusing, so I've
    # ditched them :-)  "NOT a > b" equiv to "a <= b"
 
+   # No. SCP - not right! The NOT has a bracket'd AND and so
+   # one can't just expand it like this EB. Replaced it and
+   # if *anyone* wants to change this, talk to me or James G first!
 
-   my $sth = $self->prepare(qq{
+
+   my $select = qq{
       select
          ass.contig_start,
          ass.contig_end,
@@ -148,24 +153,28 @@ sub register_region{
       where
          chr.name = '$chr_name' and
          ass.chromosome_id = chr.chromosome_id and
-         $end   >= ass.chr_start and
-         $start <= ass.chr_end and
+         NOT (
+         $start >= ass.chr_end  and
+         $end <= ass.chr_start)  and
          ass.type = '$type'
-   });
+   };
 
+   #print STDERR "Going to select $select\n";
+   my $sth = $self->prepare($select);
+   
    $sth->execute();
-
+   
    while( my $arrayref = $sth->fetchrow_arrayref ) {
-       my ($contig_start,$contig_end,$contig_id,$contig_ori,$chr_name,$chr_start,$chr_end) = @$arrayref;
-       if( $assmapper->_have_registered_contig($contig_id) == 0 ) {
-	   $assmapper->_register_contig($contig_id);
-	   $assmapper->_mapper->add_map_coordinates(
-               $contig_id, $contig_start, $contig_end, $contig_ori,
-	       $chr_name, $chr_start, $chr_end
-           );
-       }
+     my ($contig_start,$contig_end,$contig_id,$contig_ori,$chr_name,$chr_start,$chr_end) = @$arrayref;
+     if( $assmapper->_have_registered_contig($contig_id) == 0 ) {
+       $assmapper->_register_contig($contig_id);
+       $assmapper->_mapper->add_map_coordinates(
+						$contig_id, $contig_start, $contig_end, $contig_ori,
+						$chr_name, $chr_start, $chr_end
+					       );
+     }
    }
-
+   
 }
 
 
