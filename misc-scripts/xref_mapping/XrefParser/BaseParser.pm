@@ -5,6 +5,7 @@ use strict;
 use DBI;
 use Digest::MD5 qw(md5_hex);
 use File::Path;
+use File::Basename;
 use POSIX qw(strftime);
 use Getopt::Long;
 
@@ -32,7 +33,9 @@ sub run {
   my @species = @$speciesr;
   my @sources = @$sourcesr;
 
-  create($host, $port, $user, $pass, $dbname) if ($create);
+  my $sql_dir = dirname($0);
+
+  create($host, $port, $user, $pass, $dbname, $sql_dir."/") if ($create);
 
   my $dbi = dbi();
 
@@ -778,7 +781,7 @@ sub sanitise {
 
 sub create {
 
-  my ($host, $port, $user, $pass, $dbname) = @_;
+  my ($host, $port, $user, $pass, $dbname, $sql_dir) = @_;
 
   my $dbh = DBI->connect( "DBI:mysql:host=$host:port=$port", $user, $pass,
                           {'RaiseError' => 1});
@@ -797,14 +800,14 @@ sub create {
 
   $dbh->do( "CREATE DATABASE " . $dbname );
 
-  print "Creating $dbname from sql/table.sql\n";
-  die "Cannot open sql/table.sql" if (! -e "sql/table.sql");
-  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < sql/table.sql";
+  print "Creating $dbname from ".$sql_dir."sql/table.sql\n";
+  die "Cannot open  ".$sql_dir."sql/table.sql" if (! -e $sql_dir."sql/table.sql");
+  my $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/table.sql";
   system ($cmd);
 
-  print "Populating metadata in $dbname from sql/populate_metadata.sql\n";
-  die "Cannot open sql/populate_metadata.sql" if (! -e "sql/populate_metadata.sql");
-  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < sql/populate_metadata.sql";
+  print "Populating metadata in $dbname from ".$sql_dir."sql/populate_metadata.sql\n";
+  die "Cannot open ".$sql_dir."sql/populate_metadata.sql" if (! -e $sql_dir."sql/populate_metadata.sql");
+  $cmd = "mysql -u $user -p$pass -P $port -h $host $dbname < ".$sql_dir."sql/populate_metadata.sql";
   system($cmd);
 
 }
