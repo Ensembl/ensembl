@@ -102,10 +102,10 @@ sub new {
 
   bless $self,$class;
 
-my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname); 
+my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname); 
 
   eval {
-  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname) = 
+  ($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname,$raw_seqname) = 
       $self->_rearrange([qw(START
 			    END
 			    STRAND
@@ -115,6 +115,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
 			    SOURCE_TAG
 			    PRIMARY_TAG
 			    SEQNAME
+			    RAW_SEQNAME
 			    )],@args);
 };
   if( $@ ) {
@@ -133,6 +134,7 @@ my($start,$end,$strand,$frame,$score,$analysis,$source_tag,$primary_tag,$seqname
   $score        && $self->score($score);
   $analysis     && $self->analysis($analysis);
   $seqname      && $self->seqname($seqname);
+  $raw_seqname  && $self->raw_seqname($raw_seqname);
 
   return $self; # success - we hope!
 
@@ -161,11 +163,28 @@ sub seqname{
 
    if( $arg) {
       $self->{'_gsf_seqname'} = $arg;
-    }
+ 
+   }
 
     return $self->{'_gsf_seqname'};
 
 }
+
+
+
+sub raw_seqname{
+   my ($self,$arg) = @_;
+
+   if( $arg) {
+      $self->{'_gsf_raw_seqname'} = $arg;
+  
+  }
+  
+
+    return $self->{'_gsf_raw_seqname'};
+
+}
+
 
 
 
@@ -712,3 +731,5 @@ sub id {
 }
 
 1;
+
+

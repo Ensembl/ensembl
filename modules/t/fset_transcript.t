@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..12\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -36,7 +36,7 @@ print "ok 1\n";    # 1st test passes.
 my $ens_test = EnsTestDB->new();
     
 # Load some data into the db
-$ens_test->do_sql_file("t/donor.dump");
+$ens_test->do_sql_file("t/fset_transcript.dump");
 
 
 # Get an EnsEMBL db object for the test db
@@ -89,10 +89,47 @@ if ($@){print "ok 9\n";}
 else { print "not ok 9\n";}
 
 
+my $contig=$db->get_Contig("AC021078.00069");
+
+if ($contig->isa ("Bio::EnsEMBL::DB::ContigI"))
+{print  "ok 10\n";}
+else { print "not ok 10\n";}
 
 
 
 
+
+my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $contig,
+                                              -focusposition => 1,
+                                              -ori => 100,
+                                              -left => 20000,
+                                              -right => 20000
+                                              );
+
+
+if ($vc->isa ("Bio::EnsEMBL::DB::VirtualContig"))
+{print  "ok 11\n";}
+else { print "not ok 11\n";}
+
+
+my ($transcript,$seq);
+
+foreach my $ft ($vc->get_all_PredictionFeatures_as_Transcripts){
+if ($ft->isa(Bio::EnsEMBL::Transcript)){$transcript=1;}
+else {$transcript=0;last;}
+#if($ft->translate->seq->isa(Bio::Seq)){$seq=1;}
+#else {$seq=0;last;}
+
+}
+
+if ($transcript==1)
+{print  "ok 12\n";}
+else { print "not ok 12\n";} 
+
+
+#if ($seq==1)
+#{print  "ok 13\n";}
+#else { print "not ok 13\n";}
 
 
 

@@ -650,6 +650,7 @@ sub get_all_SimilarityFeatures{
 	   $out->id($fset);
 	   $out->analysis($analysis);
 	   $out->seqname ($self->id);
+	   $out->raw_seqname ($self->id);
 	   $out->score($fset_score);
 	   $out->source_tag($name);
 	   $out->primary_tag("FSET");
@@ -661,6 +662,7 @@ sub get_all_SimilarityFeatures{
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
        $feature->seqname   ($self->id);
+       $feature->raw_seqname ($self->id);
        $feature->start     ($start);
        $feature->end       ($end);
        $feature->strand    ($strand);
@@ -732,6 +734,7 @@ sub get_all_SimilarityFeatures{
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
 	   $out->seqname   ($self->id);
+	   $out->raw_seqname   ($self->id);
 	   $out->start     ($start);
 	   $out->end       ($end);
 	   $out->strand    ($strand);
@@ -971,6 +974,7 @@ sub get_all_PredictionFeatures {
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
+	   $current_fset->raw_seqname($self->id);
 	   $current_fset->id($fsetid);
 	   push(@array,$current_fset);
        }
@@ -978,6 +982,7 @@ sub get_all_PredictionFeatures {
        $out = new Bio::EnsEMBL::SeqFeature;
        
        $out->seqname   ($self->id);
+       $out->raw_seqname($self->id);
        $out->start     ($start);
        $out->end       ($end);
        $out->strand    ($strand);

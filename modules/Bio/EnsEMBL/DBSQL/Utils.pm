@@ -59,7 +59,7 @@ sub fset2transcript {
 
     
     my $transcript = new Bio::EnsEMBL::Transcript;
-    $transcript->id($contig->id . "." . $genscan->seqname);
+    $transcript->id($contig->id . "." . $genscan->raw_seqname);
         
     my @exons;
     my $count= 1;
@@ -80,7 +80,7 @@ sub fset2transcript {
     }
     
     my $translation = new Bio::EnsEMBL::Translation;
-    $translation->id($contig->id.".".$genscan->seqname);
+    $translation->id($contig->id.".".$genscan->raw_seqname);
     
     if ($exons[0]->strand == 1) {
 	@exons = sort {$a->start <=> $b->start} @exons;

@@ -782,7 +782,8 @@ sub get_all_PredictionFeatures_as_Transcripts {
 	
     foreach my $ft ($self->_get_all_SeqFeatures_type('prediction'))
     {
-	my $contig=$self->_db_obj->get_Contig($ft->seqname);
+	
+	my $contig=$self->_vmap->dbobj->get_Contig($ft->raw_seqname);
 	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
 	    
     }
