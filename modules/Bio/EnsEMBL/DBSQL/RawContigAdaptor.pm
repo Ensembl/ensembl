@@ -51,10 +51,27 @@ use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::RawContig;
 
+use Bio::EnsEMBL::Utils::Cache; # CPAN LRU Cache module
+use constant RAW_CONTIG_CACHE_SIZE => 50;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
-# new() is inherited from Bio::EnsEMBL::DBSQL::BaseAdaptor
+#Override the inherited constructor
+sub new {
+  my($class, @args) = @_;
+
+  #call super class constructor
+  my $self = $class->SUPER::new(@args);
+
+  #Initialize caching data structures
+
+  #%$self->{_raw_contig_cache} = %{};
+
+  tie %{$self->{_raw_contig_cache}}, 'Bio::Ensembl::Utils::Cache', RAW_CONTIG_CACHE_SIZE, {Debug =>0};
+
+  return $self;
+}
+
 
 sub get_internal_id_by_id
 {
@@ -92,16 +109,22 @@ sub fetch_by_dbID {
   my $self = shift;
   my $dbID = shift;
 
-  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                          offset, corder, dna_id, 
-                          international_name
-                   FROM contig
-                   WHERE contig_id = $dbID" );
-  $sth->execute();
-  
-  my ( $contig ) = $self->_contig_from_sth( $sth );
+  # retrieve the raw contig from the cache
+  my $raw_contig = $self->{_raw_contig_cache}->{$dbID}; 
+     
+  unless($raw_contig) {
+    # the cache did not contain a raw contig, create a new empty 'lazy loaded'
+    # contig under the assumption that the contig data will not be 
+    # needed.  If the data is needed then it can be loaded from the DB by
+    # other db adaptor functions
 
-  return $contig;
+    $raw_contig = new Bio::EnsEMBL::RawContig($dbID, $self);
+
+    #store the new raw contig in the cache
+    $self->{_raw_contig_cache}->{$dbID} = $raw_contig;
+  }
+
+  return $raw_contig;
 }
 
 

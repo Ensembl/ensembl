@@ -247,76 +247,7 @@ sub get_Update_Obj {
 }
 
 
-=head2 get_CloneAdaptor
 
-    my $ca = $dba->get_CloneAdaptor;
-
-Returns a B<Bio::EnsEMBL::DBSQL::CloneAdaptor>
-object, which is used for reading and writing
-B<Clone> objects from and to the SQL database.
-
-=cut 
-
-sub get_CloneAdaptor {
-    my( $self ) = @_;
-    
-    my( $ca );
-    unless ($ca = $self->{'_clone_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::CloneAdaptor;
-        $ca = Bio::EnsEMBL::DBSQL::CloneAdaptor->new($self);
-        $self->{'_clone_adaptor'} = $ca;
-    }
-    return $ca;
-}
-
-
-=head2 get_PredictionTranscriptAdaptor
-
-  Args      : none
-  Function  : PredictionTranscript Adaptor for this database.
-  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
-  Exceptions: none
-  Caller    : general
-
-=cut
-
-sub get_PredictionTranscriptAdaptor {
-   my $self = shift;
-
-   my( $pta );
-   unless ($pta = $self->{'_pt_adaptor'}) {
-     require Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor;
-     $pta = Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor->new($self);
-     $self->{'_pt_adaptor'} = $pta;
-   }
-   return $pta;
-}
-
-
-
-=head2 get_SequenceAdaptor
-
-  Args      : none
-  Function  : The sequence producing adaptor. Could be hooked to a different
-              database than the rest for example.
-  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
-  Exceptions: none
-  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
-
-=cut
-
-sub get_SequenceAdaptor {
-   my $self = shift;
-   my $sqa;
-
-   unless ( $sqa = $self->{'sequence_adaptor' } ) {
-     require Bio::EnsEMBL::DBSQL::SequenceAdaptor;
-     $sqa = Bio::EnsEMBL::DBSQL::SequenceAdaptor->new( $self );
-     $self->{'sequence_adaptor'} = $sqa;
-   }
-
-   return $sqa;
-}
 
 
 # only the get part of the 3 functions should be considered public
@@ -394,52 +325,7 @@ sub get_MetaContainer {
     return $mc;
 }
 
-=head2 get_Protfeat_Adaptor
 
- Title   : get_Protfeat_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Protfeat_Adaptor {
-    my( $self ) = @_;
-    
-    my( $pfa );
-    unless ($pfa = $self->{'_protein_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor;
-        $pfa = Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor->new($self);
-    }
-    return $pfa;
-}
-
-
-=head2 get_Protfeat_Adaptor
-
- Title   : get_Protfeat_Adaptor
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub get_Protein_Adaptor {
-    my( $self ) = @_;
-    
-    my( $pa );
-    unless ($pa = $self->{'_protein_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::ProteinAdaptor;
-        $pa = Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($self);
-    }
-    return $pa;
-}
 
 =head2 get_all_chr_ids
 
@@ -1290,12 +1176,6 @@ sub get_Gene_by_DBLink {
 
    return $self->gene_Obj->get_Gene_by_DBLink($ext_id,$supporting);
 }
-
-
-
-
-
-
 
 
 =head2 get_Gene_array
@@ -2251,19 +2131,140 @@ sub perl_only_contigs{
 
 }
 
+=head2 get_adaptor
+
+  Title   : get_adaptor
+  Usage   : $obj->get_adaptor("full::module::name")
+  Returns : An already existing, or a new instance of the specified DB adaptor 
+  Args : the fully qualified name of the adaptor module to retrieve
+
+=cut
+
+sub get_adaptor {
+  my( $self, $module) = @_;
+
+  my( $adaptor, $internal_name );
+  
+  #Create a private member variable name for the adaptor by: 
+  # (1)stripping out the the parent package names, 
+  # (2)prepending an underscore, and (3) converting to all lower case 
+  
+  $module =~ /(::)?(\S+)$/;
+  $internal_name = '_' . lc($2); 
+
+  unless ($adaptor = $self->{'_int_adaptors'}{$internal_name}) {
+    eval "require $module";
+    
+    if($@) {
+      print STDERR "$module cannot be found.\nException $@\n";
+      return undef;
+    }
+      
+    $adaptor = "$module"->new($self);
+    $self->{'_int_adaptors'}{$internal_name} = $adaptor;
+  }
+
+  return $adaptor;
+}
+
+
+=head2 get_Protfeat_Adaptor
+
+ Title   : get_Protfeat_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protfeat_Adaptor {
+    my( $self ) = @_;
+    
+    return 
+      $self->get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
+}
+
+
+=head2 get_Protein_Adaptor
+
+ Title   : get_Protein_Adaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Protein_Adaptor {
+    my( $self ) = @_;
+ 
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::Protein_Adaptor");
+}
+
+=head2 get_CloneAdaptor
+
+    my $ca = $dba->get_CloneAdaptor;
+
+Returns a B<Bio::EnsEMBL::DBSQL::CloneAdaptor>
+object, which is used for reading and writing
+B<Clone> objects from and to the SQL database.
+
+=cut 
+
+sub get_CloneAdaptor {
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
+}
+
+
+=head2 get_PredictionTranscriptAdaptor
+
+  Args      : none
+  Function  : PredictionTranscript Adaptor for this database.
+  Returntype: Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor
+  Exceptions: none
+  Caller    : general
+
+=cut
+
+sub get_PredictionTranscriptAdaptor {
+   my ($self) = @_;
+
+   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
+ }
+
+=head2 get_SequenceAdaptor
+
+  Args      : none
+  Function  : The sequence producing adaptor. Could be hooked to a different
+              database than the rest for example.
+  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
+  Exceptions: none
+  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
+
+=cut
+
+sub get_SequenceAdaptor {
+   my $self = shift;
+
+   return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
+}
+
+
+
 sub get_GeneAdaptor {
     my( $self ) = @_;
 
-    my( $ga );
-    unless ($ga = $self->{'_gene_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::GeneAdaptor;
-	$ga = Bio::EnsEMBL::DBSQL::GeneAdaptor->new($self);
-        $self->{'_gene_adaptor'} = $ga;
-    }
-    return $ga;
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
 }
 
-=head2 get_LiteAdaptor;
+=head2 get_LiteAdaptor
     
  Title   : get_LiteAdaptor
  Usage   : my $la = $db->get_LiteAdaptor;
@@ -2273,92 +2274,47 @@ sub get_GeneAdaptor {
  Args    : 
 
 =cut
+
 sub get_LiteAdaptor {
     my( $self ) = @_;
 
-    my $la;
-    unless ($la = $self->{'_lite_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::LiteAdaptor;
-    	$la = Bio::EnsEMBL::DBSQL::LiteAdaptor->new( $self );
-#        $la->{'lite_db_name'} = $self->{'lite_db_name'};
-        $self->{'_lite_adaptor'} = $la;
-    }
-    return $la;
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::LiteAdaptor");
 }
 
 sub get_ExonAdaptor {
-    my( $self ) = @_;
-
-    my( $ea );
-    unless ($ea = $self->{'_exon_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::ExonAdaptor;
-	$ea = Bio::EnsEMBL::DBSQL::ExonAdaptor->new($self);
-        $self->{'_exon_adaptor'} = $ea;
-    }
-    return $ea;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ExonAdaptor");
 }
 
 sub get_TranscriptAdaptor {
-    my( $self ) = @_;
-
-    my( $ta );
-    unless ($ta = $self->{'_transcript_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::TranscriptAdaptor;
-	$ta = Bio::EnsEMBL::DBSQL::TranscriptAdaptor->new($self);
-        $self->{'_transcript_adaptor'} = $ta;
-    }
-    return $ta;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranscriptAdaptor");
 }
 
 sub get_TranslationAdaptor {
     my( $self ) = @_;
 
-    my( $ta );
-    unless ($ta = $self->{'_translation_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::TranslationAdaptor;
-	$ta = Bio::EnsEMBL::DBSQL::TranslationAdaptor->new($self);
-        $self->{'_translation_adaptor'} = $ta;
-    }
-    return $ta;
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::TranslationAdaptor");
 }
-
 
 sub get_FeatureAdaptor {
     my( $self ) = @_;
 
-    my( $fa );
-    unless ($fa = $self->{'_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::FeatureAdaptor;
-	$fa = Bio::EnsEMBL::DBSQL::FeatureAdaptor->new($self);
-        $self->{'_feature_adaptor'} = $fa;
-    }
-    return $fa;
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::FeatureAdaptor");
 }
-
 
 sub get_RawContigAdaptor {
     my( $self ) = @_;
 
-    my( $rca );
-    unless ($rca = $self->{'_rawcontig_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::RawContigAdaptor;
-	$rca = Bio::EnsEMBL::DBSQL::RawContigAdaptor->new($self);
-        $self->{'_rawcontig_adaptor'} = $rca;
-    }
-    return $rca;
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
 }
 
-
 sub get_SliceAdaptor {
-    my( $self ) = @_;
-
-    my( $sa );
-    unless ($sa = $self->{'_slice_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::SliceAdaptor;
-	$a = Bio::EnsEMBL::DBSQL::SliceAdaptor->new($self);
-        $self->{'_slice_adaptor'} = $a;
-    }
-    return $a;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SliceAdaptor");
 }
 
 =head2 get_AnalysisAdaptor
@@ -2370,19 +2326,12 @@ sub get_SliceAdaptor {
  Returns : the adaptor
  Args    :
 
-
 =cut
 
 sub get_AnalysisAdaptor {
     my( $self ) = @_;
-    
-    my( $aa );
-    unless ($aa = $self->{'_analysis_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
-        $aa = Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self);
-        $self->{'_analysis_adaptor'} = $aa;
-    }
-    return $aa;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
 }
 
 =head2 get_SimpleFeatureAdaptor
@@ -2393,96 +2342,59 @@ sub get_AnalysisAdaptor {
  Returns : the adaptor
  Args    :
 
-
 =cut
 
 sub get_SimpleFeatureAdaptor {
-    my( $self ) = @_;
-    
-    my( $sf );
-    unless ($sf = $self->{'_simple_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
-        $sf = Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor->new($self);
-        $self->{'_simple_feature_adaptor'} = $sf;
-    }
-    return $sf;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor");
 }
 
 sub get_RepeatConsensusAdaptor {
-    my( $self ) = @_;
-    
-    my( $rca );
-    unless ($rca = $self->{'_repeat_consensus_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor;
-        $rca = Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor->new($self);
-        $self->{'_repeat_consensus_adaptor'} = $rca;
-    }
-    return $rca;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor");
 }
 
 sub get_RepeatFeatureAdaptor {
-    my( $self ) = @_;
-    
-    my( $rfa );
-    unless ($rfa = $self->{'_repeat_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
-        $rfa = Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor->new($self);
-        $self->{'_repeat_feature_adaptor'} = $rfa;
-    }
-    return $rfa;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
 }
 
 =head2 get_ProteinAlignFeatureAdaptor
 
  Title   : get_ProteinAlignFeatureAdaptor
  Usage   : $sa = $db->get_ProteinAlignFeatureAdaptor;
- Example :
  Returns : the adaptor
- Args    :
 
 
 =cut
 
 sub get_ProteinAlignFeatureAdaptor {
-    my( $self ) = @_;
+  my( $self ) = @_;
     
-    my( $sf );
-    unless ($sf = $self->{'_protein_align_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor;
-        $sf = Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor->new($self);
-        $self->{'_protein_align_feature_adaptor'} = $sf;
-    }
-    return $sf;
+  return $self->("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
 }
-
 
 
 =head2 get_DnaAlignFeatureAdaptor
 
-  Args      : none
-  Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
-              this database. There should only be one around.
-  Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
-  Exceptions: none
-  Caller    : FeatureAdaptor, general
+ Args      : none
+ Function  : Returns the DnaAlignFeatuire Adaptor which is connected to
+             this database. There should only be one around.
+ Returntype: Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor
+ Exceptions: none
+ Caller    : FeatureAdaptor, general
 
 =cut
-
-
+  
+  
 sub get_DnaAlignFeatureAdaptor {
-   my $self = shift;
-    
-    my( $sf );
-    unless ($sf = $self->{'_dna_align_feature_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor;
-        $sf = Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor->new($self);
-        $self->{'_dna_align_feature_adaptor'} = $sf;
-    }
-    return $sf;
+  my $self = shift;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
 }
-
-
-
 
 =head2 get_AssemblyMapperAdaptor
 
@@ -2492,32 +2404,19 @@ sub get_DnaAlignFeatureAdaptor {
  Returns : the adaptor
  Args    :
 
-
 =cut
 
 sub get_AssemblyMapperAdaptor {
-    my( $self ) = @_;
+  my( $self ) = @_;
     
-    my( $sf );
-    unless ($sf = $self->{'_assembly_mapper_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor;
-        $sf = Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor->new($self);
-        $self->{'_assembly_mapper_adaptor'} = $sf;
-    }
-    return $sf;
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
 }
 
 
 sub get_DBEntryAdaptor {
     my( $self ) = @_;
 
-    my( $dbea );
-    unless ($dbea = $self->{'_db_entry_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
-        $dbea = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($self);
-        $self->{'_db_entry_adaptor'} = $dbea;
-    }
-    return $dbea
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::DBEntryAdaptor");
 }
 
 
@@ -2534,38 +2433,11 @@ sub get_DBEntryAdaptor {
 =cut
 
 sub get_StaticGoldenPathAdaptor{
-    my( $self ) = @_;
-
-    my( $sgpa );
-    unless ($sgpa = $self->{'_static_golden_path_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
-        $sgpa = Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(
-            -db => $self,
-            );
-        $self->{'_static_golden_path_adaptor'} = $sgpa;
-    }
-    return $sgpa;
+  my( $self ) = @_;
+  
+  return $self->get_adaptor("Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor");
 }
 
-sub list_supported_assemblies {
-    my($self) = @_;
-    my @out;
-
-    my $query = q{
-        SELECT distinct type
-        FROM   static_golden_path
-    };
-
-    my $sth = $self->prepare($query) ||
-     $self->throw("Error in list_supported_assemblies");
-    my $res = $sth->execute ||
-     $self->throw("Error in list_supported_assemblies");
-
-    while (my($type) = $sth->fetchrow_array) {
-       push(@out, $type);
-    }
-    return @out;
-}
 
 =head2 get_KaryotypeBandAdaptor
 
@@ -2581,14 +2453,8 @@ sub list_supported_assemblies {
 
 sub get_KaryotypeBandAdaptor {
     my( $self ) = @_;
-    
-    my( $ktba );
-    unless ($ktba = $self->{'_karyotype_band_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor;
-        $ktba = Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor->new($self);
-        $self->{'_karyotype_band_adaptor'} = $ktba;
-    }
-    return $ktba;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
 }
 
 =head2 get_ChromosomeAdaptor
@@ -2605,14 +2471,8 @@ sub get_KaryotypeBandAdaptor {
 
 sub get_ChromosomeAdaptor {
     my( $self ) = @_;
-    
-    my( $ca );
-    unless ($ca = $self->{'_chromosome_adaptor'}) {
-        require Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
-        $ca = Bio::EnsEMBL::DBSQL::ChromosomeAdaptor->new($self);
-        $self->{'_chromosome_adaptor'} = $ca;
-    }
-    return $ca;
+
+    return $self->get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
 }
 
 =head2 get_FamilyAdaptor
@@ -2652,6 +2512,29 @@ sub get_FamilyAdaptor {
     }
     return $fa;
 }
+
+
+
+sub list_supported_assemblies {
+    my($self) = @_;
+    my @out;
+
+    my $query = q{
+        SELECT distinct type
+        FROM   static_golden_path
+    };
+
+    my $sth = $self->prepare($query) ||
+     $self->throw("Error in list_supported_assemblies");
+    my $res = $sth->execute ||
+     $self->throw("Error in list_supported_assemblies");
+
+    while (my($type) = $sth->fetchrow_array) {
+       push(@out, $type);
+    }
+    return @out;
+}
+
 
 
 =head2 find_GenomeHits
