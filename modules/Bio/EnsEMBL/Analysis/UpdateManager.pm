@@ -472,18 +472,26 @@ sub update {
 
 	    # child here
 
-	   my @clones = $self->getchunk($current,@clone_id);           print(STDERR  "In child. Transferring @clones\n");
-	   $self->verbose() && print STDERR "Connecting to donor database...\n"; 
-	   my $fromdb = $self->connect ($self->fromlocator,@clones);   print(STDERR  "Connected to donor database\n");
-	    $self->verbose() && print STDERR "Connecting to recipient database...\n"; 
-	   my $todb   = $self->connect ($self->tolocator); 	        print(STDERR  "Connected to recipient database\n");
+	   my @clones = $self->getchunk($current,@clone_id);           
+
+	   print STDERR  "In child. Transferring @clones\n";
+	   print STDERR "Connecting to donor database...\n"      if $self->verbose;
+
+	   my $fromdb = $self->connect ($self->fromlocator,@clones);   
+
+	   print STDERR  "Connected to donor database\n";
+	   print STDERR "Connecting to recipient database...\n"  if $self->verbose;
+
+	   my $todb   = $self->connect ($self->tolocator); 	        
+	   print(STDERR  "Connected to recipient database\n");
 	   my $arcdb;
+
 	   if ($self->arclocator eq "none") {
 	       $arcdb = "none";
-	   }
-	   else {
-	       $self->verbose() && print STDERR "Connecting to archive database...\n";
-	       $arcdb  = $self->connect ($self->arclocator); 	        print(STDERR  "Connected to archive database\n");
+	   } else {
+	       print STDERR "Connecting to archive database...\n" if $self->verbose;
+	       $arcdb  = $self->connect ($self->arclocator); 	        
+	       print STDERR  "Connected to archive database\n";
 	   }
 	   
 	   eval {

@@ -296,6 +296,7 @@ sub translateable_exons{
        }
 
        my $retexon = new Bio::EnsEMBL::Exon;
+
        $retexon->contig_id ($exon->contig_id);
        $retexon->clone_id  ($exon->clone_id);
        $retexon->strand    ($exon->strand);
@@ -532,8 +533,8 @@ sub translate {
       # that there is some filler.
       
       if( defined $prevtrans ) {
-	  my $last_exon = $prevtrans->last_exon();
-	  my $first_exon = $ptrans->first_exon();
+	  my $last_exon  = $prevtrans->last_exon();
+	  my $first_exon = $ptrans   ->first_exon();
 	  my $filler;
 
 	  # last exon
