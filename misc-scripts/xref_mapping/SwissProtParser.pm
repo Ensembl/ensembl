@@ -1,12 +1,9 @@
-# Parse UniProt/SwissProt files to create xrefs.
+# Parse UniProt/Swiss-Prot files to create xrefs.
 
 package SwissProtParser;
 
-
 use strict;
 use POSIX qw(strftime);
-use DBI;
-use Data::Dumper;
 use File::Basename;
 
 use BaseParser;
