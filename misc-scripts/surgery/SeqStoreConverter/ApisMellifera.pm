@@ -27,19 +27,6 @@ sub create_coord_systems {
 
   my @assembly_mappings =  ("scaffold:$ass_def|contig");
 
-  my %cs = (gene                  => 'scaffold',
-            transcript            => 'scaffold',
-            exon                  => 'scaffold',
-            dna_align_feature     => 'contig',
-            protein_align_feature => 'contig',
-            marker_feature        => 'contig',
-            simple_feature        => 'contig',
-            repeat_feature        => 'contig',
-            qtl_feature           => 'scaffold',
-            misc_feature          => 'scaffold',
-            prediction_transcript => 'contig',
-            prediction_exon       => 'contig',
-            karyotype             => 'scaffold');
 
   $self->debug("Building coord_system table");
 
@@ -51,13 +38,6 @@ sub create_coord_systems {
   foreach my $cs (@coords) {
     $sth->execute(@$cs);
     $coord_system_ids{$cs->[0]} = $sth->{'mysql_insertid'};
-  }
-  $sth->finish();
-
-  $self->debug("Building meta_coord table");
-  $sth = $dbh->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
-  foreach my $val (keys %cs) {
-    $sth->execute($val, $coord_system_ids{$cs{$val}});
   }
   $sth->finish();
 

@@ -96,8 +96,9 @@ for my $converter ( @all_species_converters ) {
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
   if ($vega_schema) {
-	$converter->update_clone_info();
+    $converter->update_clone_info();
   }
+  $converter->create_meta_coord();
 }
 
 

@@ -29,34 +29,6 @@ sub create_coord_systems {
   $sth->execute('scaffold', $default_assembly,
                 'default_version,sequence_level', 1);
 
-  my $csid =  $sth->{'mysql_insertid'};
-
-  $sth->finish();
-
-  #
-  # Load the meta_coord table. Every feature is in scaffold coordinates.
-  #
-  $sth = $self->dbh()->prepare
-    ("INSERT INTO $target.meta_coord (table_name, coord_system_id) " .
-     "VALUES (?,?)");
-
-  my @tables = qw(gene
-                  transcript
-                  exon
-                  dna_align_feature
-                  protein_align_feature
-                  marker_feature
-                  simple_feature
-                  repeat_feature
-                  qtl_feature
-                  misc_feature
-                  prediction_transcript
-                  prediction_exon
-                  karyotype);
-
-  foreach my $table (@tables) {
-    $sth->execute($table, $csid);
-  }
   $sth->finish();
 }
 

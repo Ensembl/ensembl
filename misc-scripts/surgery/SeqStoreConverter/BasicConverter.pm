@@ -549,20 +549,6 @@ sub create_coord_systems {
                             "chromosome:$ass_def|contig|clone",
                             "chromosome:$ass_def|contig|supercontig");
 
-  my %cs = (gene                  => 'chromosome',
-            transcript            => 'chromosome',
-            exon                  => 'chromosome',
-            dna_align_feature     => 'contig',
-            protein_align_feature => 'contig',
-            marker_feature        => 'contig',
-            simple_feature        => 'contig',
-            repeat_feature        => 'contig',
-            qtl_feature           => 'chromosome',
-            misc_feature          => 'chromosome',
-            prediction_transcript => 'contig',
-            prediction_exon       => 'contig',
-            karyotype             => 'chromosome');
-
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
@@ -573,13 +559,6 @@ sub create_coord_systems {
   foreach my $cs (@coords) {
     $sth->execute(@$cs);
     $coord_system_ids{$cs->[0]} = $sth->{'mysql_insertid'};
-  }
-  $sth->finish();
-
-  $self->debug("Building meta_coord table");
-  $sth = $dbh->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
-  foreach my $val (keys %cs) {
-    $sth->execute($val, $coord_system_ids{$cs{$val}});
   }
   $sth->finish();
 
@@ -598,8 +577,64 @@ sub create_coord_systems {
 }
 
 
+
+#
+# populates the contents of the meta_coord table
+# must be executed after all of the feature tables in the target database
+# have already been populated
+#
+
+sub create_meta_coord {
+  my $self = shift;
+
+  $self->debug("Building meta_coord table");
+
+  my $target = $self->target();
+  my $dbh    = $self->dbh();
+
+  my @feature_tables = qw(density_feature
+                          dna_align_feature
+                          exon
+                          gene
+                          karyotype
+                          marker_feature
+                          misc_feature
+                          prediction_exon
+                          prediction_transcript
+                          protein_align_feature
+                          repeat_feature
+                          simple_feature
+                          transcript);
+
+  foreach my $ft (@feature_tables) {
+
+    $dbh->do(qq{INSERT INTO $target.meta_coord(table_name, coord_system_id,
+                                               max_length)
+                SELECT '$ft', sr.coord_system_id,
+                        MAX(f.seq_region_end - f.seq_region_start + 1)
+                FROM $target.$ft f, $target.seq_region sr
+                WHERE sr.seq_region_id = f.seq_region_id
+                GROUP BY sr.coord_system_id});
+  }
+
+  # special case for assembly exception, features are created from both
+  # sides of table
+
+  $dbh->do(qq{INSERT INTO $target.meta_coord
+              SELECT 'assembly_exception', sr.coord_system_id, 
+              MAX(IF(ae.seq_region_end - ae.seq_region_start > ae.exc_seq_region_end - ae.exc_seq_region_start, ae.seq_region_end - ae.seq_region_start + 1, ae.exc_seq_region_end - ae.exc_seq_region_start + 1))
+              FROM   $target.assembly_exception ae, $target.seq_region sr
+              WHERE  sr.seq_region_id = ae.seq_region_id
+              GROUP BY sr.coord_system_id});
+
+}
+
+
 sub create_seq_regions {
   my $self = shift;
+
+  my $target = $self->target();
+  my $dbh    = $self->dbh();
 
   #default behaviour is to simply copy all tables as they come
 

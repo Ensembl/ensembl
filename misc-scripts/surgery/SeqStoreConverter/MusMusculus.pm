@@ -33,20 +33,6 @@ sub create_coord_systems {
                             "chromosome:$ass_def|contig|supercontig",
                             "supercontig|contig|clone");
 
-  my %cs = (gene                  => 'chromosome',
-            transcript            => 'chromosome',
-            exon                  => 'chromosome',
-            dna_align_feature     => 'contig',
-            protein_align_feature => 'contig',
-            marker_feature        => 'contig',
-            simple_feature        => 'contig',
-            repeat_feature        => 'contig',
-            qtl_feature           => 'chromosome',
-            misc_feature          => 'chromosome',
-            prediction_transcript => 'contig',
-            prediction_exon       => 'contig',
-            karyotype             => 'chromosome');
-
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare("INSERT INTO $target.coord_system " .
@@ -57,13 +43,6 @@ sub create_coord_systems {
   foreach my $cs (@coords) {
     $sth->execute(@$cs);
     $coord_system_ids{$cs->[0]} = $sth->{'mysql_insertid'};
-  }
-  $sth->finish();
-
-  $self->debug("Building meta_coord table");
-  $sth = $dbh->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
-  foreach my $val (keys %cs) {
-    $sth->execute($val, $coord_system_ids{$cs{$val}});
   }
   $sth->finish();
 

@@ -33,20 +33,6 @@ sub create_coord_systems {
                             "supercontig:$ass_def|chunk|clone",
                             "chromosome:$ass_def|chunk|supercontig");
 
-  my %cs = (gene                   => ['supercontig','chromosome'],
-             transcript             => ['supercontig','chromosome'],
-             exon                   => ['supercontig','chromosome'],
-             dna_align_feature      => ['chunk'],
-             protein_align_feature  => ['chunk'],
-             marker_feature         => ['chunk'],
-             simple_feature         => ['chunk'],
-             repeat_feature         => ['chunk'],
-             qtl_feature            => ['chunk'],
-             misc_feature           => ['chunk'],
-             prediction_transcript  => ['chunk'],
-             prediction_exon        => ['chunk'],
-             karyotype              => ['chromosome']);
-
   $self->debug("Building coord_system table");
 
   my $sth = $dbh->prepare
@@ -60,17 +46,6 @@ sub create_coord_systems {
     $coord_system_ids{$cs->[0]} = $sth->{'mysql_insertid'};
   }
   $sth->finish();
-
-  $self->debug("Building meta_coord table");
-  $sth = $dbh->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
-  foreach my $feature_type (keys %cs) {
-    foreach my $coord_sys (@{$cs{$feature_type}}) {
-      $sth->execute($feature_type, $coord_system_ids{$coord_sys});
-    }
-  }
-  $sth->finish();
-
-
 
   $self->debug("Adding assembly.mapping entries to meta table");
 
