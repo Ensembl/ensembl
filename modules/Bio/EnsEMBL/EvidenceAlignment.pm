@@ -259,7 +259,7 @@ sub _get_evidence_from_transcript {
   $self->throw('interface fault') if (!$self or !$transcript_obj);
   my @wanted_arr = @_;
 
-  my @exons = $transcript_obj->get_all_Exons;
+  my @exons = @{$transcript_obj->get_all_Exons};
   my $strand = $exons[0]->strand;
   my @features = ();
   foreach my $exon (@exons) {
@@ -315,13 +315,13 @@ sub _get_similarity_features_from_transcript {
     if (!$self or !$transcript_obj or !$slice);
   my @wanted_arr = @_;
 
-  my @exons = $transcript_obj->get_all_Exons;
+  my @exons = @{$transcript_obj->get_all_Exons};
   my $strand = $exons[0]->strand;
   my $db = $self->dbadaptor;
   my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
-  my @gapped_features = $pfadp->fetch_by_Slice($slice);
+  my @gapped_features = @{$pfadp->fetch_all_by_Slice($slice)};
   my $dfadp = $db->get_DnaAlignFeatureAdaptor;
-  push @gapped_features, $dfadp->fetch_by_Slice($slice);
+  push @gapped_features, @{$dfadp->fetch_by_Slice($slice)};
   my @all_features = ();
   foreach my $gapped_feature (@gapped_features) {
     push @all_features, $gapped_feature->_parse_cigar;
@@ -419,9 +419,9 @@ sub _get_features_from_rawcontig {
   # keeping protein and DNA together for simplified porting
   # from branch-ensembl-6
   my $pfadp = $db->get_ProteinAlignFeatureAdaptor;
-  my @gapped_features = $pfadp->fetch_by_Contig($rawcontig_obj);
+  my @gapped_features = @{$pfadp->fetch_by_Contig($rawcontig_obj)};
   my $dfadp = $db->get_DnaAlignFeatureAdaptor;
-  push @gapped_features, $dfadp->fetch_by_Contig($rawcontig_obj);
+  push @gapped_features, @{$dfadp->fetch_by_Contig($rawcontig_obj)};
 
   my @all_features = ();
   GAPPED_FEATURE_LOOP:
@@ -1044,18 +1044,18 @@ sub _get_aligned_evidence_for_transcript {
 					  1000);
   
   my $transcript_obj;   # VC version
-  my @genes = $slice->get_all_Genes;
+  my $genes = $slice->get_all_Genes;
   GENE_LOOP:
-  foreach my $gene (@genes) {
-    my @transcripts = $gene->get_all_Transcripts;
-    foreach my $transcript (@transcripts) {
+  foreach my $gene (@$genes) {
+    my $transcripts = $gene->get_all_Transcripts;
+    foreach my $transcript (@$transcripts) {
       if ($transcript->dbID eq $transcript_dbID) {
         $transcript_obj = $transcript;
         last GENE_LOOP;
       }
     }
   }
-  my @all_exons = $transcript_obj->get_all_Exons;
+  my @all_exons = @{$transcript_obj->get_all_Exons};
 
   my @features;
   if ($self->use_supporting_evidence) {

@@ -22,7 +22,7 @@ $sa = $database_adaptor->get_SliceAdaptor();
 $slice = $sa->fetch_by_chr_start_end('1', 100000, 200000);
 
 #get all the prediction transcripts from the slice region
-@prediction_transcripts = $pta->fetch_by_Slice($slice);
+$prediction_transcripts = @{$pta->fetch_all_by_Slice($slice)};
 
 =head1 CONTACT
 
@@ -94,22 +94,22 @@ sub fetch_by_dbID {
 }
 
 
-=head2 fetch_by_Contig
+=head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
                The contig to retrieve prediction transcripts from
   Arg [2]    : (optional) string $logic_name
                the type of analysis performed on objects which should be
                retrieved
-  Example    : @pts = $pt_adaptor->fetch_by_Contig($contig,'Genscan')
+  Example    : @pts = @{$pt_adptr->fetch_all_by_RawContig($contig,'Genscan')};
   Description: Retrieves prediction transcripts from a contig
-  Returntype : list of Bio::EnsEMBL::PredictionTranscripts in contig coords
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscripts in contig coords
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_by_Contig {
+sub fetch_all_by_RawContig {
   my ($self, $contig, $logic_name) = @_;
 
   my $constraint = undef;
@@ -126,28 +126,27 @@ sub fetch_by_Contig {
     $constraint = " analysis_id = ".$analysis->dbID;
   }
 
-  my @results = $self->fetch_by_Contig_constraint($contig, $constraint);
-
-  return @results;
+  return $self->fetch_all_by_RawContig_constraint($contig, $constraint);
 }
 
 
-=head2 fetch_by_Contig_constraint
+=head2 fetch_all_by_RawContig_constraint
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
                The contig to obtain prediction transcripts from
   Arg [2]    : (optional) string $constraint
                the limiting SQL to form the where clause of the the database
                query
-  Example    : @pts = $pta->fetch_by_Contig_constraint($contig, 'analysis_id = 2');
+  Example    : $pts = $pta->fetch_all_by_RawContig_constraint($contig, 
+                                                            'analysis_id = 2');
   Description: returns all PredicitonTranscipts on given contig 
-  Returntype : list of Bio::EnsEMBL::PredictionTranscript in contig coords 
+  Returntype : listref of Bio::EnsEMBL::PredictionTranscript in contig coords 
   Exceptions : none, if there are none, the list is empty.
   Caller     : ?
 
 =cut
 
-sub fetch_by_Contig_constraint {
+sub fetch_all_by_RawContig_constraint {
   my $self = shift;
   my $contig = shift;
   my $constraint = shift;
@@ -187,14 +186,14 @@ sub fetch_by_Contig_constraint {
 }
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice of the region to obtain prediction transcripts from
   Arg [2]    : (optional) string $logic_name
                the type of analysis performed on the prediction transcripts to 
                obtain
-  Example    : @pts = $pta->fetch_by_Slice($slice,'Genscan');
+  Example    : @pts = $pta->fetch_all_by_Slice($slice,'Genscan');
   Description: returns all PredicitonTranscipts on the region of the slice 
   Returntype : list of Bio::EnsEMBL::PredictionTranscript in slice coords 
   Exceptions : none, if there are none, the list is empty.
@@ -202,7 +201,7 @@ sub fetch_by_Contig_constraint {
 
 =cut
 
-sub fetch_by_Slice{
+sub fetch_all_by_Slice{
   my ($self, $slice, $logic_name) = @_;
 
   my $constraint = undef;
@@ -212,30 +211,35 @@ sub fetch_by_Slice{
       $self->db->get_AnalysisAdaptor->fetch_by_logic_name($logic_name);
 
     unless($analysis->dbID()) {
-      $self->warn("PredictionTranscriptAdaptor->fetch_by_slice: " .
+      $self->warn("PredictionTranscriptAdaptor::fetch_all_by_slice: " .
 		  "no analysis with logic name $logic_name exists\n");
       return ();
     }
     $constraint = " analysis_id = ".$analysis->dbID;
   }
   
-  my @results = $self->fetch_by_assembly_location_constraint($slice->chr_start, $slice->chr_end, $slice->chr_name, $slice->assembly_type, $constraint);
+  my $results = 
+    $self->fetch_all_by_assembly_location_constraint($slice->chr_start, 
+						 $slice->chr_end, 
+						 $slice->chr_name, 
+						 $slice->assembly_type, 
+						 $constraint);
 
-  my @out;
+  my @out = ();
 
- GENE: foreach my $transcript(@results){
+ GENE: foreach my $transcript(@$results){
     my $exon_count = 1;
     my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
     $pred_t->dbID($transcript->dbID);
     $pred_t->adaptor($self);
     $pred_t->analysis($transcript->analysis);
     $pred_t->set_exon_count($transcript->get_exon_count);
-    my @exons = $transcript->get_all_Exons;
+    my $exons = $transcript->get_all_Exons;
     my @sorted_exons;
-    if($exons[0]->strand == 1){
-      @sorted_exons = sort{$a->start <=> $b->start} @exons;
+    if($exons->[0]->strand == 1){
+      @sorted_exons = sort{$a->start <=> $b->start} @$exons;
     }else{
-      @sorted_exons = sort{$b->start <=> $a->start} @exons;
+      @sorted_exons = sort{$b->start <=> $a->start} @$exons;
     }
     my $contig = $sorted_exons[0]->contig;
   EXON:foreach my $e(@sorted_exons){
@@ -249,11 +253,11 @@ sub fetch_by_Slice{
     push(@out, $pred_t);
   }
   
-  return @out;
+  return \@out;
 }
 
 
-=head2 fetch_by_assembly_location
+=head2 fetch_all_by_assembly_location
 
   Arg [1]    : int $chr_start 
                the start of the region to obtain prediction transcripts from
@@ -268,16 +272,16 @@ sub fetch_by_Slice{
   Arg [5]    : (optional) string $logic_name
                the type of analysis used to construct the prediction 
                transcripts
-  Example    : @pts = $pta->fetch_by_assembly_location(1,20000, '2', 'NCBI30',
-                                                       'Genscan');
+  Example    : @pts = $pta->fetch_all_by_assembly_location(1,20000, '2', 
+							  'NCBI30', 'Genscan');
   Description: Retrieves prediction transcripts from a region of the assembly 
   Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
   Exceptions : none
-  Caller     : fetch_by_Slice
+  Caller     : fetch_all_by_Slice
 
 =cut
 
-sub fetch_by_assembly_location{
+sub fetch_all_by_assembly_location{
   my ($self, $chr_start, $chr_end, $chr, $type, $logic_name) = @_;
 
   my $constraint = undef;
@@ -293,17 +297,16 @@ sub fetch_by_assembly_location{
     }
   }
   
-  my @results = $self->fetch_by_assembly_location_constraint($chr_start, 
-							     $chr_end, 
-							     $chr, 
-							     $type, 
-							     $constraint);
+  return $self->fetch_all_by_assembly_location_constraint($chr_start, 
+						      $chr_end, 
+						      $chr, 
+						      $type, 
+						      $constraint);
 
-  return @results;
 }
 
 
-=head2 fetch_by_assembly_location
+=head2 fetch_all_by_assembly_location_constraint
 
   Arg [1]    : int $chr_start 
                the start of the region to obtain prediction transcripts from
@@ -318,16 +321,16 @@ sub fetch_by_assembly_location{
   Arg [5]    : (optional) string $contraint
                SQL constraint to limit the values returned (inserted in 
                WHERE clause).
-  Example    : @pts = $pta->fetch_by_assembly_location(1,20000, '2', 'NCBI30',
-                                                       'analysis_id=2');
+  Example    : $pts = $pta->fetch_all_by_assembly_locationconstraint(1,20000, 
+						'2', 'NCBI30','analysis_id=2');
   Description: Retrieves prediction transcripts from a region of the assembly 
   Returntype : list of Bio::EnsEMBL::PredictionTranscripts in chromo coords
   Exceptions : thrown if $chr_start or $chr_end are not numbers
-  Caller     : fetch_by_assembly_location
+  Caller     : fetch_all_by_assembly_location
 
 =cut
 
-sub fetch_by_assembly_location_constraint{
+sub fetch_all_by_assembly_location_constraint{
   my ($self, $chr_start, $chr_end, $chr, $type, $constraint) = @_;
 
   if( !defined $type ) {
@@ -375,7 +378,7 @@ sub fetch_by_assembly_location_constraint{
   $sth->execute;
 
   my $results = $self->_ptrans_from_sth($sth);
-  my @out;
+  my @out = ();
   GENE: foreach my $transcript(@$results){
       my $exon_count = 1;
       my $pred_t = Bio::EnsEMBL::PredictionTranscript->new();
@@ -664,6 +667,108 @@ sub remove {
   $pre_trans->{dbID} = undef;
   $pre_trans->{adaptor} = undef;
 }
+
+
+
+=head2 fetch_by_Contig
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig has been renamed fetch_all_by_RawContig\n" . caller);
+
+  return $self->fetch_all_by_RawContig(@args);
+}
+
+
+=head2 fetch_by_Contig_constraint
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_by_RawContig_constraint instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig_constraint {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig_constraint has been renamed fetch_by_RawContig_constraint\n" . caller);
+
+  return $self->fetch_by_RawContig_constraint(@args);
+}
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
+=head2 fetch_by_assembly_location
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_assembly_location instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_assembly_location {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_assembly_location has been renamed fetch_all_by_assembly_location\n" . caller);
+
+  return $self->fetch_all_by_assembly_location(@args);
+}
+
+
+=head2 fetch_by_assembly_location_constraint
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_assembly_location_constraint instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_assembly_location_constraint {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_assembly_location_constraint has been renamed fetch_all_by_assembly_location_constraint\n" . caller);
+
+  return $self->fetch_all_by_assembly_location_constraint(@args);
+}
+
 
 
 1;

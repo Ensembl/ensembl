@@ -36,7 +36,7 @@ use vars '@ISA';
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
               The slice we want SNPs on
@@ -48,7 +48,7 @@ use vars '@ISA';
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self, $slice ) = @_;
 
   my $slice_start = $slice->chr_start();
@@ -119,6 +119,29 @@ sub fetch_by_Slice {
 	
   return \@snps;
 }
+
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
     
     
     

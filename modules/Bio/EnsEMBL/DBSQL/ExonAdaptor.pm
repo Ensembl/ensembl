@@ -121,11 +121,11 @@ sub fetch_by_stable_id {
 
 
 
-=head2 fetch_by_gene_id
+=head2 fetch_all_by_gene_id
 
   Arg [1]    : int $id
                The identifier of the gene whose exons will be retrieved 
-  Example    : @exons = $exon_adaptor->fetch_by_gene_id(1234); 
+  Example    : @exons = $exon_adaptor->fetch_all_by_gene_id(1234); 
   Description: Retrieves all exons from the gene specified by $geneId
   Returntype : listref of Bio::EnsEMBL::Exon in contig coordinates
   Exceptions : thrown if $geneId is not defined  
@@ -133,7 +133,7 @@ sub fetch_by_stable_id {
 
 =cut
 
-sub fetch_by_gene_id {
+sub fetch_all_by_gene_id {
   my ( $self, $gene_id ) = @_;
   my %exons;
   my $hashRef;
@@ -622,9 +622,9 @@ sub remove {
 sub fetch_by_geneId {
   my ($self, $gene_id) = @_;
 
-  $self->warn("fetch_by_geneId has been renamed fetch_by_gene_id\n" . caller);
+  $self->warn("fetch_by_geneId has been renamed fetch_all_by_gene_id\n" . caller);
 
-  return $self->fetch_by_gene_id($gene_id);
+  return $self->fetch_all_by_gene_id($gene_id);
 }
 
 
@@ -660,6 +660,8 @@ sub fetch_frameshifts {
 #   push @{$exon->{'_frameshifts'}}, [$arr[0], $arr[1]];
 #  }
 }
+
+
 
 
 1;

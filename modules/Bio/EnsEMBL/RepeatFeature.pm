@@ -68,8 +68,8 @@ sub repeat_consensus {
 sub get_RepeatConsensus {
     my( $self ) = @_;
     
-    my $repeat_consensus_id = $self->repeat_consensus_id;
-    return $self->repeat_consensus_adaptor->fetch_by_dbID($repeat_consensus_id);
+    my $rc_id = $self->repeat_consensus_id;
+    return $self->repeat_consensus_adaptor->fetch_by_dbID($rc_id);
 }
 
 
@@ -195,14 +195,14 @@ sub contig_id {
     my( $self, $contig_id ) = @_;
     
     $self->warn("call to deprecated method " .
-		"Bio::EnsEMBL::RepeatFeature::contig_id. Use attach_seq, or " .
-		"entire_seq methods to associate contig objects instead");
+		"Bio::EnsEMBL::RepeatFeature::contig_id. Use contig " .
+		"to associate contig objects instead");
 
     if($contig_id) {
       my $contig = 
 	$self->adaptor->db->get_RawContigAdaptor->fetch_by_dbID($contig_id);
 
-      $self->attach_seq($contig);
+      $self->contig($contig);
     }
 
     return $self->entire_seq()->dbID();

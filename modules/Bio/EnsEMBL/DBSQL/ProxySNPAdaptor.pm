@@ -47,13 +47,13 @@ use vars '@ISA';
   Description: Forwards request to the Lite database if it is available
                If the lite database is not available the request is 
                forwarded to the SNP database. 
-  Returntype : list of Bio::EnsEMBL::ExternalData::Variation
+  Returntype : listref of Bio::EnsEMBL::ExternalData::Variation
   Exceptions : thrown if neither the SNP nor Lite databases are available
   Caller     : snpview
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->get_db_adaptor('lite');
@@ -61,10 +61,10 @@ sub fetch_by_Slice {
 
   if(defined $lite_db) {
     #use the Lite database if it is available
-    return $lite_db->get_SNPAdaptor()->fetch_by_Slice(@args);
+    return $lite_db->get_SNPAdaptor()->fetch_all_by_Slice(@args);
   } elsif(defined $snp_db) {
     #use the snp database if it is available
-    return $snp_db->get_SNPAdaptor()->fetch_by_Slice(@args);
+    return $snp_db->get_SNPAdaptor()->fetch_all_by_Slice(@args);
   }
 
   #There is no core SNPAdaptor so throw an exception if lite and SNP
@@ -74,6 +74,28 @@ sub fetch_by_Slice {
 
   return undef;
 }
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
 
 
 =head2 fetch_by_SNP_id

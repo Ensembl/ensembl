@@ -937,7 +937,7 @@ sub contig_id{
    my ($self,$arg) = @_;
 
    $self->warn("Bio::EnsEMBL::SeqFeature::contig_id is deprecated. " .
-	    "Use attach_seq instead to associate a contig with a SeqFeature");
+	    "Use contig() instead to associate a contig with a SeqFeature");
 
    if($arg) {
      my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($arg);

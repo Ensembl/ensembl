@@ -47,7 +47,7 @@ use Bio::EnsEMBL::MarkerFeature;
 
 my $MAX_FEATURE_LENGTH = 5000;
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
               the area you want to retrieve features from
@@ -58,7 +58,7 @@ my $MAX_FEATURE_LENGTH = 5000;
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my( $self, $slice ) = @_;
  
   my $sth = $self->prepare( "
@@ -95,7 +95,7 @@ sub fetch_by_Slice {
 
 # returns Features by Marker object in chromosomal Coords
 
-sub fetch_by_Marker {
+sub fetch_all_by_Marker {
   my $self = shift;
   my $marker = shift;
 
@@ -140,5 +140,48 @@ sub fetch_by_Marker {
 
   return \@result;
 }
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
+=head2 fetch_by_Marker
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Marker instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Marker {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Marker has been renamed fetch_all_by_Marker\n" . caller);
+
+  return $self->fetch_all_by_Marker(@args);
+}
+
+
 
 1;

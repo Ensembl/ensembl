@@ -41,29 +41,51 @@ use vars '@ISA';
 
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg [1]    : arbitrary list of args @args 
   Example    : none
-  Description: Forwards requests for fetch_by_Slice to the lite database if
+  Description: Forwards requests for fetch_all_by_Slice to the lite database if
                is available.  This is done for improved performance.
-  Returntype : list of Bio::EnsEMBL::Gene
+  Returntype : listref of Bio::EnsEMBL::Gene
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->get_db_adaptor('lite');
 
   if(defined $lite_db) {
     #use the lite database if it is available
-    return $lite_db->get_RepeatFeatureAdaptor()->fetch_by_Slice(@args);
+    return $lite_db->get_RepeatFeatureAdaptor()->fetch_all_by_Slice(@args);
   } 
 
   #otherwise use the core database
-  return $self->{'_primary_adaptor'}->fetch_by_Slice(@args);
+  return $self->{'_primary_adaptor'}->fetch_all_by_Slice(@args);
 }
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+1;
 

@@ -176,7 +176,7 @@ sub seq {
   #or retrieved from the database
   if($self->adaptor()) {
     my $sa = $self->adaptor->db->dnadb->get_SequenceAdaptor(); 
-    return $sa->fetch_by_Contig_start_end_strand($self, 1, -1, 1);
+    return $sa->fetch_by_RawContig_start_end_strand($self, 1, -1, 1);
   }
   
   $self->warn("RawContig seq not set, and no db is available");
@@ -233,7 +233,7 @@ sub subseq {
 
   my $seq_adaptor = $self->adaptor->db->get_SequenceAdaptor();
 
-  my $sub_seq = $seq_adaptor->fetch_by_Contig_start_end_strand($self, 
+  my $sub_seq = $seq_adaptor->fetch_by_RawContig_start_end_strand($self, 
 							       $start, $end, 
 							       $strand);
   return $sub_seq;
@@ -368,7 +368,7 @@ sub get_all_PredictionTranscripts {
   
   my $pta = $self->adaptor->db->get_PredictionTranscriptAdaptor();
     
-  return $pta->fetch_by_Contig($self, $logic_name);
+  return $pta->fetch_by_RawContig($self, $logic_name);
 }
 
 
@@ -395,7 +395,7 @@ sub get_all_RepeatFeatures {
 
    my $rfa = $self->adaptor()->db->get_RepeatFeatureAdaptor();
 
-   return $rfa->fetch_by_Contig( $self , $logic_name);
+   return $rfa->fetch_by_RawContig( $self , $logic_name);
 }
 
 
@@ -422,8 +422,8 @@ sub get_all_SimilarityFeatures {
   my @out;
   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
   my $pafa = $self->adaptor->db->get_ProteinAlignFeatureAdaptor();
-  push @out, $dafa->fetch_by_Contig_and_score($self, $score, $logic_name);
-  push @out, $pafa->fetch_by_Contig_and_score($self, $score, $logic_name);
+  push @out, $dafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
+  push @out, $pafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
     
   return @out;
 }
@@ -455,7 +455,7 @@ sub get_all_DnaAlignFeatures {
 
    my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
 
-   return $dafa->fetch_by_Contig_and_score($self,$score, $logic_name);
+   return $dafa->fetch_by_RawContig_and_score($self,$score, $logic_name);
 }
 
 
@@ -486,7 +486,7 @@ sub get_all_ProteinAlignFeatures {
 
   my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
 
-  return $pafa->fetch_by_Contig_and_score($self, $score, $logic_name);
+  return $pafa->fetch_by_RawContig_and_score($self, $score, $logic_name);
 }
 
 
@@ -517,7 +517,7 @@ sub get_all_SimpleFeatures {
 
   my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
 
-  return $sfa->fetch_by_Contig_and_score($self, $score, $logic_name);
+  return $sfa->fetch_by_RawContig_and_score($self, $score, $logic_name);
 }
 
 

@@ -54,7 +54,7 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 
 
-=head2 fetch_by_Contig_and_pid
+=head2 fetch_all_by_RawContig_and_pid
 
   Arg [1]    : Bio::EnsEMBL::RawContig
                the contig to obtain align features from
@@ -62,18 +62,18 @@ use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
                a lower bound for the percentage identifier of feats to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @feats = $adaptor->fetch_by_Contig_and_pid($contig, 50.0);
-  Description: Returns a list of features created from the database which are 
-               are on the contig defined by $cid and with a percentage id 
+  Example    : $fts = $adaptor->fetch_all_by_RawContig_and_pid($contig, 50.0);
+  Description: Returns a listref of features created from the database which
+               are on the contig defined by $contig and with a percentage id 
                greater than $pid.  If logic name is defined, only features
                with an analysis of type $logic_name will be returned. 
-  Returntype : listref of Bio::EnsEMBL::*AlignFeature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::BaseAlignFeature in contig coordinates
   Exceptions : thrown if $pid is not defined
   Caller     : general
 
 =cut
 
-sub fetch_by_Contig_and_pid {
+sub fetch_all_by_Contig_and_pid {
   my($self, $contig, $pid, $logic_name) = @_;
 
   my $constraint;
@@ -82,11 +82,14 @@ sub fetch_by_Contig_and_pid {
     $constraint = "perc_ident > $pid";
   }
 
-  return $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
+  return $self->fetch_all_by_Contig_constraint($contig, 
+					       $constraint, $logic_name);
 }
 
 
-=head2 fetch_by_Slice_and_pid
+
+
+=head2 fetch_all_by_Slice_and_pid
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice from which to obtain align features.
@@ -94,8 +97,8 @@ sub fetch_by_Contig_and_pid {
                a lower bound for the percentage identifier of feats to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @feats = $adaptor->fetch_by_Slice_and_pid($slice, 50.0);
-  Description: Returns a list of features created from the database which are 
+  Example    : @feats = $adaptor->fetch_all_by_Slice_and_pid($slice, 50.0);
+  Description: Returns a listref of features created from the database which 
                are on the Slice $slice and with a percentage id 
                greater than $pid.  If logic name is defined, only features
                with an analysis of type $logic_name will be returned. 
@@ -105,7 +108,7 @@ sub fetch_by_Contig_and_pid {
 
 =cut
 
-sub fetch_by_Slice_and_pid {
+sub fetch_all_by_Slice_and_pid {
   my ($self,$slice,$pid, $logic_name) = @_;
   my $constraint;
 
@@ -113,7 +116,8 @@ sub fetch_by_Slice_and_pid {
     $constraint = "perc_ident > $pid";
   }
 
-  return $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
+  return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
+					      $logic_name);
 }  
 
 
@@ -123,6 +127,47 @@ sub fetch_by_Slice_and_pid {
 # _tablename
 # _columns
 # _obj_from_hashref
+
+
+
+=head2 fetch_by_Contig_and_pid
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig_and_pid instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig_and_pid {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig_and_pid has been renamed fetch_all_by_RawContig_and_pid\n" . caller);
+
+  return $self->fetch_all_by_RawContig_and_pid(@args);
+}
+
+=head2 fetch_by_Slice_and_pid
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice_and_pid instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice_and_pid {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice_and_pid has been renamed fetch_all_by_Slice_and_pid\n" . caller);
+
+  return $self->fetch_all_by_Slice_and_pid(@args);
+}
+
 
 
 1;

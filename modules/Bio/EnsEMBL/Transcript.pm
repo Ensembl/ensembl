@@ -102,14 +102,14 @@ sub new {
 sub get_all_DBLinks {
   my $self = shift;
 
-   if( !defined $self->{'_db_link'} ) {
-       $self->{'_db_link'} = [];
-       if( defined $self->adaptor ) {
-	 $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Transcript($self);
-       }
-   } 
-
-   return $self->{'_db_link'};
+  if( !defined $self->{'_db_link'} ) {
+    $self->{'_db_link'} = [];
+    if( defined $self->adaptor ) {
+      $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Transcript($self);
+    }
+  } 
+  
+  return $self->{'_db_link'};
 }
 
 
@@ -261,21 +261,22 @@ sub _translation_id {
 =cut
 
 sub translation {
-   my $self = shift;
-   if( @_ ) {
-      my $value = shift;
-      if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
-	  $self->throw("This [$value] is not a translation");
-      }
-      $self->{'translation'} = $value;
-    } else {
-      if( ! defined $self->{'translation'} &&
-	  defined $self->_translation_id() ) {
-	$self->{'translation'} = $self->adaptor->db->get_TranslationAdaptor()
-	  ->fetch_by_dbID( $self->_translation_id(),$self );
-      }
+  my $self = shift;
+  if( @_ ) {
+    my $value = shift;
+    if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
+      $self->throw("This [$value] is not a translation");
     }
-    return $self->{'translation'};
+    $self->{'translation'} = $value;
+  } else {
+    if( ! defined $self->{'translation'} &&
+	defined $self->_translation_id() ) {
+      $self->{'translation'} = 
+	$self->adaptor->db->get_TranslationAdaptor->fetch_by_dbID( 
+					    $self->_translation_id(), $self );
+    }
+  }
+  return $self->{'translation'};
 }
 
 

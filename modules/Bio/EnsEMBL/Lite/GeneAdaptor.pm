@@ -72,7 +72,7 @@ sub new {
 
 
 
-=head2 fetch_by_gene_idlist
+=head2 fetch_all_by_gene_id_list
 
   Arg [1]    : arrayref $gene_ids  
   Example    : 
@@ -83,7 +83,7 @@ sub new {
 
 =cut
 
-sub fetch_by_gene_id_list {
+sub fetch_all_by_gene_id_list {
   my ($self, $gene_ids, $empty_flag ) = @_;
 
   my $db = 'core';
@@ -125,7 +125,30 @@ sub fetch_by_gene_id_list {
 }
   
 
-=head2 fetch_by_Slice
+
+=head2 fetch_by_gene_id_list
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_gene_id_list instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_gene_id_list {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_gene_id_list has been renamed fetch_all_by_gene_id_list\n" . caller);
+
+  return $self->fetch_all_by_gene_id_list(@args);
+}
+
+
+
+
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice we want genes on
@@ -134,14 +157,14 @@ sub fetch_by_gene_id_list {
                obtained.  Empty gene objects are light weight and only 
                contain the start, end, source, and name of the gene object
   Function   : retrieve all the genes on this slice. 
-              uses www_transcript to get info
+               uses www_transcript to get info
   Returntype : listref of Bio::EnsEMBL::Gene objects
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ( $self, $slice, $empty_flag ) = @_;
   my $out;
 
@@ -188,6 +211,27 @@ sub fetch_by_Slice {
 
   return $out;
 }
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
 
 
 sub fetch_by_stable_id {

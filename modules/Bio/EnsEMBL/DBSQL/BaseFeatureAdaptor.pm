@@ -86,10 +86,10 @@ sub new {
                An SQL query constraint (i.e. part of the WHERE clause)
   Arg [2]    : (optional) string $logic_name
                the logic_name of the analysis of the features to obtain
-  Example    : @fts = $a->generic_fetch('contig_id in (1234, 1235)', 'swall');
+  Example    : $fts = $a->generic_fetch('contig_id in (1234, 1235)', 'Swall');
   Description: Performs a database fetch and returns feature objects in
                contig coordinates.
-  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
   Exceptions : none
   Caller     : BaseFeatureAdaptor, ProxyDnaAlignFeatureAdaptor::generic_fetch
 
@@ -103,7 +103,8 @@ sub generic_fetch {
   
   if($logic_name) {
     #determine the analysis id via the logic_name
-    my $analysis = $self->db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
+    my $analysis = 
+      $self->db->get_AnalysisAdaptor()->fetch_by_logic_name($logic_name);
     unless(defined $analysis && $analysis->dbID() ) {
       $self->warn("No analysis for logic name $logic_name exists\n");
       return [];
@@ -118,7 +119,8 @@ sub generic_fetch {
     }
   } 
       
-  my $sql = "SELECT $columns FROM $tablename ".($constraint ? " where $constraint " : '' );
+  my $sql = "SELECT $columns FROM $tablename " . 
+    ($constraint ? " where $constraint " : '' );
   my $sth = $self->prepare($sql);
   $sth->execute;
   return $self->_objs_from_sth($sth, $mapper, $slice);
@@ -132,7 +134,7 @@ sub generic_fetch {
   Example    : $feat = $adaptor->fetch_by_dbID(1234);
   Description: Returns the feature created from the database defined by the
                the id $id. 
-  Returntype : Bio::EnsEMBL::*Feature
+  Returntype : Bio::EnsEMBL::SeqFeature
   Exceptions : thrown if $id is not defined
   Caller     : general
 
@@ -154,7 +156,7 @@ sub fetch_by_dbID{
 }
 
 
-=head2 fetch_by_Contig_constraint
+=head2 fetch_all_by_Contig_constraint
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
                The contig object from which features are to be obtained
@@ -162,18 +164,18 @@ sub fetch_by_dbID{
                An SQL query constraint (i.e. part of the WHERE clause)
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Contig_constraint($contig, 'perc_ident>5.0');
-  Description: Returns a list of features created from the database which are 
+  Example    : $fs = $a->fetch_all_by_Contig_constraint($ctg,'perc_ident>5.0');
+  Description: Returns a listref of features created from the database which 
                are on the contig defined by $cid and fulfill the SQL constraint
                defined by $constraint. If logic name is defined, only features
                with an analysis of type $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::SeqFeature in contig coordinates
   Exceptions : thrown if $cid is not defined
   Caller     : general
 
 =cut
 
-sub fetch_by_Contig_constraint {
+sub fetch_all_by_Contig_constraint {
   my ($self, $contig, $constraint, $logic_name) = @_;
   
   unless( defined $contig ) {
@@ -196,32 +198,32 @@ sub fetch_by_Contig_constraint {
 }
 
 
-=head2 fetch_by_Contig
+=head2 fetch_all_by_Contig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig 
                the contig from which features should be obtained
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Contig($contig, 'swall');
+  Example    : @fts = $a->fetch_all_by_Contig($contig, 'wall');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid If logic name is defined, 
                only features with an analysis of type $logic_name will be 
                returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::*Feature in contig coordinates
   Exceptions : none
   Caller     : general
 
 =cut
    
-sub fetch_by_Contig{
+sub fetch_all_by_Contig{
   my ($self, $contig, $logic_name) = @_;
 
   #fetch by contig id constraint with empty constraint
-  return $self->fetch_by_Contig_constraint($contig, '',$logic_name);
+  return $self->fetch_all_by_Contig_constraint($contig, '',$logic_name);
 }
 
 
-=head2 fetch_by_Contig_and_score
+=head2 fetch_all_by_Contig_and_score
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig 
                the contig from which features should be obtained
@@ -229,18 +231,18 @@ sub fetch_by_Contig{
                the lower bound of the score of the features to obtain
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Contig_and_score(1, 50.0, 'swall');
+  Example    : @fts = $a->fetch_by_Contig_and_score(1, 50.0, 'Swall');
   Description: Returns a list of features created from the database which are 
                are on the contig defined by $cid and which have score greater
                than score.  If logic name is defined, only features with an 
                analysis of type $logic_name will be returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in contig coordinates
+  Returntype : listref of Bio::EnsEMBL::*Feature in contig coordinates
   Exceptions : thrown if $score is not defined
   Caller     : general
 
 =cut
 
-sub fetch_by_Contig_and_score{
+sub fetch_all_by_Contig_and_score{
   my($self, $contig, $score, $logic_name) = @_;
 
   my $constraint;
@@ -249,36 +251,37 @@ sub fetch_by_Contig_and_score{
     $constraint = "score > $score";
   }
     
-  return $self->fetch_by_Contig_constraint($contig, $constraint, $logic_name);
+  return $self->fetch_all_by_Contig_constraint($contig, $constraint, 
+					       $logic_name);
 }
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice from which to obtain features
   Arg [2]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Slice($slice, 'swall');
-  Description: Returns a list of features created from the database which are 
-               are on the Slice defined by $slice.If $logic_name is defined, 
-               only features with an analysis of type $logic_name will be 
-               returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Example    : $fts = $a->fetch_all_by_Slice($slice, 'Swall');
+  Description: Returns a listref of features created from the database 
+               which are on the Slice defined by $slice. If $logic_name is 
+               defined only features with an analysis of type $logic_name 
+               will be returned. 
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self, $slice, $logic_name) = @_;
   
   #fetch by constraint with empty constraint
-  return $self->fetch_by_Slice_constraint($slice, '', $logic_name);
+  return $self->fetch_all_by_Slice_constraint($slice, '', $logic_name);
 }
 
 
-=head2 fetch_by_Slice_and_score
+=head2 fetch_all_by_Slice_and_score
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice from which to obtain features
@@ -286,19 +289,19 @@ sub fetch_by_Slice {
                lower bound of the the score of the features retrieved
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Slice($slice, 'swall');
+  Example    : $fts = $a->fetch_all_by_Slice($slice, 'Swall');
   Description: Returns a list of features created from the database which are 
                are on the Slice defined by $slice and which have a score 
                greated than $score. If $logic_name is defined, 
                only features with an analysis of type $logic_name will be 
                returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : none
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
-sub fetch_by_Slice_and_score {
+sub fetch_all_by_Slice_and_score {
   my ($self, $slice, $score, $logic_name) = @_;
   my $constraint;
 
@@ -306,12 +309,12 @@ sub fetch_by_Slice_and_score {
     $constraint = "score > $score";
   }
 
-  return $self->fetch_by_Slice_constraint($slice, $constraint, $logic_name);
-  #&eprof_end('transform');
+  return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
+					      $logic_name);
 }  
 
 
-=head2 fetch_by_Slice_constraint
+=head2 fetch_all_by_Slice_constraint
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice from which to obtain features
@@ -319,19 +322,19 @@ sub fetch_by_Slice_and_score {
                An SQL query constraint (i.e. part of the WHERE clause)
   Arg [3]    : (optional) string $logic_name
                the logic name of the type of features to obtain
-  Example    : @fts = $a->fetch_by_Slice_constraint($slice, 'perc_ident > 5');
-  Description: Returns a list of features created from the database which are 
+  Example    : $fs = $a->fetch_all_by_Slice_constraint($slc, 'perc_ident > 5');
+  Description: Returns a listref of features created from the database which 
                are on the Slice defined by $slice and fulfill the SQL 
                constraint defined by $constraint. If logic name is defined, 
                only features with an analysis of type $logic_name will be 
                returned. 
-  Returntype : list of Bio::EnsEMBL::*Feature in Slice coordinates
+  Returntype : listref of Bio::EnsEMBL::SeqFeatures in Slice coordinates
   Exceptions : thrown if $slice is not defined
   Caller     : Bio::EnsEMBL::Slice
 
 =cut
 
-sub fetch_by_Slice_constraint {
+sub fetch_all_by_Slice_constraint {
   my($self, $slice, $constraint, $logic_name) = @_;
 
   unless(defined $slice && ref $slice && $slice->isa("Bio::EnsEMBL::Slice")) {
@@ -342,15 +345,18 @@ sub fetch_by_Slice_constraint {
   $logic_name = '' unless defined $logic_name;
 
   my $key = join($slice->name, $constraint, $logic_name);
-  return $self->{'_slice_feature_cache'}{$key} if $self->{'_slice_feature_cache'}{$key};
+  return $self->{'_slice_feature_cache'}{$key} 
+    if $self->{'_slice_feature_cache'}{$key};
     
   my $chr_start = $slice->chr_start();
   my $chr_end   = $slice->chr_end();
   				 
-  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
+  my $mapper = 
+    $self->db->get_AssemblyMapperAdaptor->fetch_by_type($slice->assembly_type);
 
   #get the list of contigs this slice is on
-  my @cids = $mapper->list_contig_ids( $slice->chr_name, $chr_start ,$chr_end );
+  my @cids = 
+    $mapper->list_contig_ids( $slice->chr_name, $chr_start ,$chr_end );
   
   return [] unless scalar(@cids);
 
@@ -363,14 +369,15 @@ sub fetch_by_Slice_constraint {
     $constraint = "contig_id IN ($cid_list)";
   }
 
-  my $features = $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
+  my $features = 
+    $self->generic_fetch($constraint, $logic_name, $mapper, $slice); 
   
   if(@$features && $features->[0]->contig == $slice) {
     #features have been converted to slice coords already, cache and return
     return $self->{'_slice_feature_cache'}{$key} = $features;
   }
 
-  my @out;
+  my @out = ();
   
   #convert the features to slice coordinates from raw contig coordinates
 
@@ -379,10 +386,13 @@ sub fetch_by_Slice_constraint {
     my $contig_id = $f->contig->dbID();
 
     my ($chr_name, $start, $end, $strand) = 
-      $mapper->fast_to_assembly($contig_id, $f->start(), $f->end(),$f->strand(),"rawcontig");
+      $mapper->fast_to_assembly($contig_id, $f->start(), 
+				$f->end(),$f->strand(),"rawcontig");
 
-    next unless defined $start;                      # not defined start means gap
-    next if ($start > $chr_end) || ($end <= $chr_start);  # maps to region outside desired area 
+    # not defined start means gap
+    next unless defined $start;     
+    # maps to region outside desired area 
+    next if ($start > $chr_end) || ($end <= $chr_start);  
     
     #shift the feature start, end and strand in one call
     $f->move( $start - $chr_start, $end - $chr_start, $strand );
@@ -398,7 +408,7 @@ sub fetch_by_Slice_constraint {
 
 =head2 store
 
-  Arg [1]    : list of Bio::EnsEMBL::*Feature
+  Arg [1]    : list of Bio::EnsEMBL::SeqFeature
   Example    : $adaptor->store(@feats);
   Description: ABSTRACT  Subclasses are responsible for implementing this 
                method.  It should take a list of features and store them in 
@@ -542,6 +552,133 @@ sub deleteObj {
   #flush feature cache
   %{$self->{'_slice_feature_cache'}} = ();
 }
+
+
+
+
+=head2 fetch_by_Contig_constraint
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig_constraint instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig_constraint {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig_constraint has been renamed fetch_all_by_RawContig_constraint\n" . caller);
+
+  return $self->fetch_all_by_RawContig_constraint(@args);
+}
+
+
+
+=head2 fetch_by_Contig
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig has been renamed fetch_all_by_RawContig\n" . caller);
+
+  return $self->fetch_all_by_RawContig(@args);
+}
+
+
+=head2 fetch_by_Contig_and_score
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_RawContig_and_score instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig_and_score {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig_and_score has been renamed fetch_all_by_RawContig_and_score\n" . caller);
+
+  return $self->fetch_all_by_RawContig_and_score(@args);
+}
+
+
+=head2 fetch_by_Slice_and_score
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice_and_score instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice_and_score {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice_and_score has been renamed fetch_all_by_Slice_and_score\n" . caller);
+
+  return $self->fetch_all_by_Slice_and_score(@args);
+}
+
+
+=head2 fetch_by_Slice_constraint
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice_constraint instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice_constraint {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice_constraint has been renamed fetch_all_by_Slice_constraint\n" . caller);
+
+  return $self->fetch_all_by_Slice_constraint(@args);
+}
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
+
 
 1;
 

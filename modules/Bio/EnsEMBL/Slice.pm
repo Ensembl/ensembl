@@ -307,7 +307,7 @@ sub get_all_PredictionTranscripts {
 
    my $pta = $self->adaptor()->db()->get_PredictionTranscriptAdaptor();
 
-   return $pta->fetch_by_Slice($self, $logic_name);
+   return $pta->fetch_all_by_Slice($self, $logic_name);
 }
 
 
@@ -332,7 +332,7 @@ sub get_all_DnaAlignFeatures {
 
    my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
 
-   return $dafa->fetch_by_Slice_and_score($self,$score, $logic_name);
+   return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
 }
 
 
@@ -357,7 +357,7 @@ sub get_all_ProteinAlignFeatures {
 
   my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
 
-  return $pafa->fetch_by_Slice_and_score($self, $score, $logic_name);
+  return $pafa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
 }
 
 
@@ -410,7 +410,7 @@ sub get_all_SimpleFeatures {
 
   my $sfa = $self->adaptor()->db()->get_SimpleFeatureAdaptor();
 
-  return $sfa->fetch_by_Slice_and_score($self, $score, $logic_name);
+  return $sfa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
 }
 
 
@@ -433,7 +433,7 @@ sub get_all_RepeatFeatures {
 
    my $rpfa = $self->adaptor()->db()->get_RepeatFeatureAdaptor();
 
-   return $rpfa->fetch_by_Slice($self, $logic_name);
+   return $rpfa->fetch_all_by_Slice($self, $logic_name);
 }
 
 
@@ -453,7 +453,7 @@ sub get_all_SNPs {
 
   my $snpa = $self->adaptor()->db()->get_SNPAdaptor();
 
-  return $snpa->fetch_by_Slice($self);
+  return $snpa->fetch_all_by_Slice($self);
 }
 
 
@@ -475,7 +475,7 @@ sub get_all_Genes{
 
    #caching is performed on a per slice basis in the GeneAdaptor
    my $gene_adaptor = $self->adaptor->db->get_GeneAdaptor();
-   return $gene_adaptor->fetch_by_Slice($self, $empty_flag);
+   return $gene_adaptor->fetch_all_by_Slice($self, $empty_flag);
 }
 
 
@@ -651,7 +651,7 @@ sub get_KaryotypeBands {
   my ($self) = @_;
   
   my $kadp = $self->adaptor->db->get_KaryotypeBandAdaptor();
-  return $kadp->fetch_by_Slice($self);
+  return $kadp->fetch_all_by_Slice($self);
 }
 
 
@@ -780,7 +780,7 @@ sub get_all_MapFrags {
 
     my $mfa = $self->adaptor()->db()->get_MapFragAdaptor();
 
-    return $mfa->fetch_by_mapset_chr_start_end($mapset, 
+    return $mfa->fetch_all_by_mapset_chr_start_end($mapset, 
 					       $self->chr_name,
 					       $self->chr_start, 
 					       $self->chr_end);
@@ -884,7 +884,7 @@ sub get_landmark_MarkerFeatures {
   if( ! defined $lma ) {
     return [];
   } else {
-    return $lma->fetch_by_Slice( $self );
+    return $lma->fetch_all_by_Slice( $self );
   }
 
 }

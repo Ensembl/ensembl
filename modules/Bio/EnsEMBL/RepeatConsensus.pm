@@ -90,15 +90,7 @@ sub repeat_consensus {
 sub seq {
     my( $self ) = @_;
     
-    # Stored in the object?
-    if (my $rc = $self->repeat_consensus) {
-        return $rc;
-    }
-    
-    # No, in the database.
-    my $db_id = $self->dbID
-        or $self->throw("No dbID - is the consensus stored in the database?");
-    return $self->adaptor->fetch_seq_string_for_dbID($db_id);
+    return $self->repeat_consensus;
 }
 
 1;

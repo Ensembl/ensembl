@@ -60,11 +60,11 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 # inherit new from BaseAdaptor
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                The slice object covering the region to retrieve bands from 
-  Example    : @bands = $karyotype_band_adaptor->fetch_by_Slice($slice);
+  Example    : @bands = @{$karyotype_band_adaptor->fetch_all_by_Slice($slice)};
   Description: Fetches karyotype band object from the database for the
                region given by the slice.
   Returntype : listref of Bio::EnsEMBL::KaryotypeBand objects in 
@@ -74,7 +74,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self,$slice) = @_;
   
   my $start = $slice->chr_start();
@@ -116,11 +116,11 @@ sub fetch_by_Slice {
 }
 
 
-=head2 fetch_by_chr_name
+=head2 fetch_all_by_chr_name
 
   Arg [1]    : string $chr_name
                Name of the chromosome from which to retrieve band objects 
-  Example    : @bands = $karyotype_band_adaptor->fetch_by_chr_name('X'); 
+  Example    : @bands=@{$karyotype_band_adaptor->fetch_all_by_chr_name('X')}; 
   Description: Fetches all the karyotype band objects from the database for the
                given chromosome. 
   Returntype : listref of Bio::EnsEMBL::KaryotypeBand in chromosomal 
@@ -130,7 +130,7 @@ sub fetch_by_Slice {
 
 =cut
 
-sub fetch_by_chr_name {
+sub fetch_all_by_chr_name {
     my ($self,$chr_name) = @_;
 
     my $chr_adaptor = $self->db()->get_ChromosomeAdaptor();
@@ -163,13 +163,14 @@ sub fetch_by_chr_name {
 }
 
 
-=head2 fetch_by_chr_band
+
+=head2 fetch_all_by_chr_band
 
   Arg  [1]   : string $chr_name
                Name of the chromosome from which to retrieve the band
   Arg  [2]   : string $band
                The name of the band to retrieve from the specified chromosome
-  Example    : $band = $karyotype_band_adaptor->fetch_by_chr_band('4', 'q23'); 
+  Example    : $band = $kary_adaptor->fetch_all_by_chr_band('4', 'q23'); 
   Description: Fetches the karyotype band object from the database 
                for the given chromosome and band name.
   Returntype : Bio::EnsEMBL::KaryotypeBand in 
@@ -179,7 +180,7 @@ sub fetch_by_chr_name {
 
 =cut
 
-sub fetch_by_chr_band {
+sub fetch_all_by_chr_band {
     my ($self,$chr_name, $band) = @_;
 
     $self->throw("Need band name") unless defined $band;
@@ -208,6 +209,75 @@ sub fetch_by_chr_band {
 
     return $band_obj;
 }
+
+
+=head2 fetch_by_chr_band
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_chr_band instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_chr_band {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_chr_band has been renamed fetch_all_by_chr_band\n" . caller);
+
+  return $self->fetch_all_by_chr_band(@args);
+}
+
+
+
+=head2 fetch_by_chr_name
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_chr_name instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_chr_name {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_chr_name has been renamed fetch_all_by_chr_name\n" . caller);
+
+  return $self->fetch_all_by_chr_name(@args);
+}
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
+
+
+
+
+
+
 
 
 1;

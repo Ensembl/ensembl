@@ -153,7 +153,7 @@ sub get_all_Contigs {
   #from the database
   unless ($c_list = $self->{'_contig_list'}) {
     my $ra = $self->adaptor->db->get_RawContigAdaptor;
-    $c_list = $ra->fetch_by_Clone($self);
+    $c_list = $ra->fetch_all_by_Clone($self);
     $self->{'_contig_list'} = $c_list;
   }
 

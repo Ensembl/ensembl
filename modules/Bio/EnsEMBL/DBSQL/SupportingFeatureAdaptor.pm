@@ -13,7 +13,7 @@ Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor - Retrieves supporting features
 =head1 SYNOPSIS
 
 $supporting_feature_adaptor = $database_adaptor->get_SupportingFeatureAdaptor;
-@supporting_features = $supporting_feature_adaptor->fetch_by_Exon($exon);
+@supporting_feats = @{$supporting_feat_adaptor->fetch_all_by_Exon($exon)};
 
 =head1 CONTACT
 
@@ -35,13 +35,13 @@ use vars qw(@ISA);
 
 
 
-=head2 fetch_by_Exon
+=head2 fetch_all_by_Exon
 
   Arg [1]    : Bio::EnsEMBL::Exon $exon 
                The exon to fetch supporting features for
   Arg [2]    : (optional)boolean $sticky_component_flag
                Indicates $exon is a component exon to a sticky exon
-  Example    : @supporting = @{$supporting_feat_adaptor->fetch_by_Exon($exon)};
+  Example    : @sfs = @{$supporting_feat_adaptor->fetch_all_by_Exon($exon)};
   Description: Retrieves supporting features (evidence) for a given exon. 
   Returntype : list of Bio::EnsEMBL::BaseAlignFeatures in the same coordinate
                system as the $exon argument
@@ -51,7 +51,7 @@ use vars qw(@ISA);
 
 =cut
 
-sub fetch_by_Exon {
+sub fetch_all_by_Exon {
   my ( $self, $exon )  = @_;
 
   my $out = [];
@@ -59,7 +59,7 @@ sub fetch_by_Exon {
   # if exon is sticky, get supporting from components
   if( $exon->isa( 'Bio::EnsEMBL::StickyExon' )) {
     foreach my $component_exon ( $exon->each_component_Exon() ) {
-      push @$out, @{$self->fetch_by_Exon( $component_exon )};
+      push @$out, @{$self->fetch_all_by_Exon( $component_exon )};
     }
     return $out;
   }
@@ -105,6 +105,29 @@ sub fetch_by_Exon {
   }
   return $out;
 }
+
+
+
+=head2 fetch_by_Exon
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Exon instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Exon {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Exon has been renamed fetch_all_by_Exon\n" . caller);
+
+  return $self->fetch_all_by_Exon(@args);
+}
+
+
 
 
 1;

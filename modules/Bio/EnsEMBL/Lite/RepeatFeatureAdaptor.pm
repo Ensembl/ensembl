@@ -55,7 +55,7 @@ my $MAX_REPEAT_LENGTH = 100000;
 
 =cut
 
-sub fetch_by_Slice_and_type {
+sub fetch_by_all_Slice_and_type {
   my ($self, $slice, $type) = @_;
  
   my $sth = $self->prepare(
@@ -116,7 +116,7 @@ sub fetch_by_Slice_and_type {
 }
 
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
     my ( $self, $slice ) = @_;
     
     my $sth = $self->prepare(
@@ -173,6 +173,49 @@ sub fetch_by_Slice {
 
     return \@repeats; 
 }
+
+
+
+=head2 fetch_by_Slice_and_type
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice_and_type instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice_and_type {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice_and_type has been renamed fetch_all_by_Slice_and_type\n" . caller);
+
+  return $self->fetch_all_by_Slice_and_type(@args);
+}
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
 
 1;
 

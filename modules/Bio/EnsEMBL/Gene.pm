@@ -387,7 +387,7 @@ sub get_all_DBLinks {
    if( !defined $self->{'_db_link'} ) {
      $self->{'_db_link'} = [];
      if( defined $self->adaptor ) {
-       $self->adaptor->db->get_DBEntryAdaptor->fetch_by_Gene($self);
+       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
      }
    } 
 

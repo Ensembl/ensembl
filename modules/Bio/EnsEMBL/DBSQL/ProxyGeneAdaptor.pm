@@ -58,19 +58,42 @@ use vars '@ISA';
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ($self, @args) = @_;
 
   my $lite_db = $self->db()->get_db_adaptor('lite');
  
   if(defined $lite_db) {
     #use the Lite database if it is available
-    return $lite_db->get_GeneAdaptor()->fetch_by_Slice(@args);
+    return $lite_db->get_GeneAdaptor()->fetch_all_by_Slice(@args);
   }
 
   #otherwise use the core database
-  return $self->{'_primary_adaptor'}->fetch_by_Slice(@args);
+  return $self->{'_primary_adaptor'}->fetch_all_by_Slice(@args);
 }
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
 
 
 =head2 fetch_by_transcript_stable_id

@@ -79,7 +79,7 @@ sub _get_mapset_id {
 
 
 
-=head2 fetch_by_mapset_chr_start_end
+=head2 fetch_all_by_mapset_chr_start_end
 
   Arg [1]    : string $mapset_code
                The code of the mapset to retrieve map frags from
@@ -90,7 +90,7 @@ sub _get_mapset_id {
                The start of the region to obtain map_frags from
   Arg [4]    : int $chr_end (optional)
                The end of the region to obtain map_frags from
-  Example    : @mfs = @{$mf_adptr->fetch_by_mapset_chr_start_end('Tilepath')};
+  Example    : $mfs = $mf_adptr->fetch_all_by_mapset_chr_start_end('Tilepath');
   Description: Retrieves a list of MapFragments from a given mapset within an
                optionally specified region of the assembly 
   Returntype : listref of Bio::EnsEMBL::MapFrag
@@ -99,7 +99,7 @@ sub _get_mapset_id {
 
 =cut
 
-sub fetch_by_mapset_chr_start_end {
+sub fetch_all_by_mapset_chr_start_end {
     my( $self, $mapset_code, $chr_name, $chr_start, $chr_end ) = @_;
     my $key = join ':', $mapset_code, $chr_name, $chr_start, $chr_end;
     
@@ -116,7 +116,7 @@ sub fetch_by_mapset_chr_start_end {
     }
 
     my $sth = $self->prepare(
-        qq( select mf.mapfrag_id, mf.type, mf.name,
+	  qq( select mf.mapfrag_id, mf.type, mf.name,
                    mf.seq_start, mf.seq_end, mf.orientation,
                    df.name as seq, df.dnafrag_type as seq_type,
                    mat.code as note_type, ma.value as note
@@ -403,4 +403,27 @@ sub has_mapset {
     $sth->execute( $name );
     return $sth->fetchrow_array();
 }
+
+
+=head2 fetch_by_mapset_chr_start_end
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_mapset_chr_start_end instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_mapset_chr_start_end {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_mapset_chr_start_end has been renamed fetch_all_by_mapset_chr_start_end\n" . caller);
+
+  return $self->fetch_all_by_mapset_chr_start_end(@args);
+}
+
+
+
 1;

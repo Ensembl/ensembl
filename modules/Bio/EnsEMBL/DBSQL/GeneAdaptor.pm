@@ -136,7 +136,7 @@ sub fetch_by_dbID {
   my ( $self, $geneId ) = @_;
 
   my $exonAdaptor = $self->db->get_ExonAdaptor();
-  my @exons = @{$exonAdaptor->fetch_by_gene_id( $geneId )};
+  my @exons = @{$exonAdaptor->fetch_all_by_gene_id( $geneId )};
   my %exonIds;
 
   #
@@ -256,13 +256,13 @@ sub fetch_by_stable_id{
 
 
 
-=head2 fetch_by_domain
+=head2 fetch_all_by_domain
 
   Arg [1]    : string $domain
                the domain to fetch genes from
   Arg [2]    : (optional) boolean $empty_flag
                true if lightweight genes are desired (for speed purposes)
-  Example    : my @genes = $gene_adaptor->fetch_by_domain($domain);
+  Example    : my @genes = $gene_adaptor->fetch_all_by_domain($domain);
   Description: retrieves a listref of genes whose translation contain interpro
                domain $domain.
   Returntype : list of Bio::EnsEMBL::Genes
@@ -271,7 +271,7 @@ sub fetch_by_stable_id{
 
 =cut
 
-sub fetch_by_domain {
+sub fetch_all_by_domain {
   my ($self, $domain, $empty_flag) = @_;
 
   unless($domain) {
@@ -297,18 +297,18 @@ sub fetch_by_domain {
   }
 
   #may want to use proxy...
-  return $self->db->get_GeneAdaptor->fetch_by_gene_id_list(\@gene_ids, 
+  return $self->db->get_GeneAdaptor->fetch_all_by_gene_id_list(\@gene_ids, 
 							   $empty_flag);
 }
 
 
   
 
-=head2 fetch_by_contig_list
+=head2 fetch_all_by_contig_list
 
   Arg [1]    : list of ints @list
                the contigs to retrieve genes from
-  Example    : @genes = $gene_adaptor->fetch_by_contig_list(1, 2, 3, 4);
+  Example    : @genes = @{$gene_adaptor->fetch_all_by_contig_list(1, 2, 3, 4)};
   Description: Retrieves all genes which are present on list of contigs
                denoted by their unique database ids
   Returntype : listref of Bio::EnsEMBL::Genes in contig coordinates
@@ -317,7 +317,7 @@ sub fetch_by_domain {
 
 =cut
 
-sub fetch_by_contig_list{
+sub fetch_all_by_contig_list{
    my ($self,@list) = @_;
 
    my $str;
@@ -352,11 +352,11 @@ sub fetch_by_contig_list{
 }
 
 
-=head2 fetch_by_Slice
+=head2 fetch_all_by_Slice
 
   Arg [1]    : Bio::EnsEMBL::Slice $slice
                the slice to fetch genes from
-  Example    : $genes = $gene_adaptor->fetch_by_slice($slice);
+  Example    : $genes = $gene_adaptor->fetch_all_by_slice($slice);
   Description: Retrieves all genes which are present on a slice
   Returntype : listref of Bio::EnsEMBL::Genes in slice coordinates
   Exceptions : none
@@ -364,7 +364,7 @@ sub fetch_by_contig_list{
 
 =cut
 
-sub fetch_by_Slice {
+sub fetch_all_by_Slice {
   my ( $self, $slice, $type ) = @_;
   my @out;
 
@@ -573,7 +573,7 @@ sub get_stable_entry_info {
 
   Arg [1]    : in $external_id
                the external identifier for the gene to be obtained
-  Example    : @genes = $gene_adaptor->fetch_by_DBEntry($ext_id)
+  Example    : @genes = @{$gene_adaptor->fetch_all_by_DBEntry($ext_id)}
   Description: retrieves a list of genes with an external database 
                idenitifier $external_id
   Returntype : listref of Bio::EnsEMBL::DBSQL::Gene in contig coordinates
@@ -582,7 +582,7 @@ sub get_stable_entry_info {
 
 =cut
 
-sub fetch_by_DBEntry {
+sub fetch_all_by_DBEntry {
   my $self = shift;
   my $external_id = shift;
   my @genes = ();
@@ -805,8 +805,10 @@ sub get_description {
       $self->throw("must call with dbID");
   }
 
-  my $sth = $self->prepare("select description from gene_description where gene_id = $dbID");
-  $sth->execute;
+  my $sth = $self->prepare("SELECT description 
+                            FROM   gene_description 
+                            WHERE  gene_id = ?");
+  $sth->execute($dbID);
   my @array = $sth->fetchrow_array();
   return $array[0];
 }
@@ -837,6 +839,70 @@ sub deleteObj {
   %{$self->{'_slice_gene_cache'}} = ();
 }
 							
+
+
+
+
+=head2 fetch_by_Slice
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Slice instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Slice {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Slice has been renamed fetch_all_by_Slice\n" . caller);
+
+  return $self->fetch_all_by_Slice(@args);
+}
+
+
+
+=head2 fetch_by_contig_list
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_contig_list instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_contig_list {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_contig_list has been renamed fetch_all_by_contig_list\n" . caller);
+
+  return $self->fetch_all_by_contig_list(@args);
+}
+
+
+=head2 fetch_by_domain
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_domain instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_domain {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_domain has been renamed fetch_all_by_domain\n" . caller);
+
+  return $self->fetch_all_by_domain(@args);
+}
+
 
 
 1;

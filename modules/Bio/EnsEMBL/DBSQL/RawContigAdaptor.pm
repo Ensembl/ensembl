@@ -302,20 +302,20 @@ sub fetch_filled_by_dbIDs {
 }
 
 
-=head2 fetch_by_clone
+=head2 fetch_all_by_Clone
 
   Arg [1]    : Bio::EnsEMBL::Clone $clone
                The clone object that the contigs are desired from 
-  Example    : $contigs = raw_contig_adaptor->fetch_by_clone($clone);
+  Example    : $contigs = raw_contig_adaptor->fetch_all_by_Clone($clone);
   Description: Returns a list reference of contig objects on a particular
                clone.
-  Returntype : list reference of Bio::EnsEMBL::RawContig
+  Returntype : list reference of Bio::EnsEMBL::RawContig objects
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub fetch_by_Clone {
+sub fetch_all_by_Clone {
   my $self = shift;
   my $clone = shift;
 
@@ -328,6 +328,9 @@ sub fetch_by_Clone {
 
   return $self->_contig_from_sth( $sth );
 }
+
+
+
 
 
 =head2 fetch_attributes
@@ -537,7 +540,7 @@ sub deleteObj {
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED use fetch_by_Clone instead
+  Description: DEPRECATED use fetch_all_by_Clone instead
   Returntype : none
   Exceptions : none
   Caller     : none
@@ -547,10 +550,31 @@ sub deleteObj {
 sub fetch_by_clone {
   my ($self, @args) = @_;
   
-  print STDERR "fetch_by_clone has been renamed fetch_by_Clone\n" . caller;
+  print STDERR "fetch_by_clone has been renamed fetch_all_by_Clone\n" . caller;
 
   return $self->fetch_by_Clone(@args);
 }
+
+
+=head2 fetch_by_Clone
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_Clone instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Clone {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Clone has been renamed fetch_all_by_Clone\n" . caller);
+
+  return $self->fetch_all_by_Clone(@args);
+}
+
 
 
 1;

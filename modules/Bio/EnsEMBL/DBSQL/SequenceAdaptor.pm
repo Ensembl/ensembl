@@ -47,16 +47,16 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
-=head2 fetch_by_Contig_start_end_strand
+=head2 fetch_by_RawContig_start_end_strand
 
-  Arg [1]    : int Bio::EnsEMBL::RawContig $contig
+  Arg [1]    : Bio::EnsEMBL::RawContig $contig
   Arg [2]    : int $start
   Arg [3]    : int $end
                a -1 means until the end
   Arg [4]    : int $strand
                -1, 1 are possible values
-  Example    : $dna = $seq_adp->fetch_by_Contig_start_end_strand($contig, 1,
-                                                                 1000, -1);
+  Example    : $dna = $seq_adp->fetch_by_RawContig_start_end_strand($contig, 1,
+								    1000, -1);
   Description: retrieves the dna string from the database from the 
                given RawContig. 
   Returntype : string 
@@ -65,7 +65,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 =cut
 
-sub fetch_by_Contig_start_end_strand {
+sub fetch_by_RawContig_start_end_strand {
   my ( $self, $contig, $start, $end, $strand ) = @_;
   my $sth;
   
@@ -118,6 +118,8 @@ sub fetch_by_Contig_start_end_strand {
     return undef;
   }
 }
+
+
 
 
 =head2 fetch_by_Slice_start_end_strand
@@ -223,7 +225,7 @@ sub fetch_by_assembly_location {
        my $contig = 
 	 $self->db->get_RawContigAdaptor()->fetch_by_dbID($segment->id());
 
-       my $contig_seq = $self->fetch_by_Contig_start_end_strand
+       my $contig_seq = $self->fetch_by_RawContig_start_end_strand
 	 ( $contig,
 	   $segment->start(),
 	   $segment->end(),
@@ -300,6 +302,31 @@ sub _reverse_comp {
   tr/CGTAcgta/GCATgcat/;
   return $_;
 }
+
+
+
+
+
+
+=head2 fetch_by_Contig_start_end_strand
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_by_RawContig_start_end_strand instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_Contig_start_end_strand {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_Contig_start_end_strand has been renamed fetch_by_RawContig_start_end_strand\n" . caller);
+
+  return $self->fetch_by_RawContig_start_end_strand(@args);
+}
+
 
 
 

@@ -303,7 +303,7 @@ sub store {
 
 
 
-=head2 fetch_by_Gene
+=head2 fetch_all_by_Gene
 
   Arg [1]    : Bio::EnsEMBL::Gene $gene 
                The gene to retrienve DBEntries for
@@ -315,7 +315,7 @@ sub store {
 
 =cut
 
-sub fetch_by_Gene {
+sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
  
   my $query1 = "SELECT t.translation_id 
@@ -343,7 +343,7 @@ sub fetch_by_Gene {
 
 
 
-=head2 fetch_by_RawContig
+=head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
   Example    : @db_entries = @{$db_entry_adaptor->fetch_by_RawContig($contig)}
@@ -354,13 +354,13 @@ sub fetch_by_Gene {
 
 =cut
 
-sub fetch_by_RawContig {
+sub fetch_all_by_RawContig {
   my ( $self, $contig ) = @_;
   return $self->_fetch_by_object_type($contig->dbID, 'RawContig' );
 }
 
 
-=head2 fetch_by_Transcript
+=head2 fetch_all_by_Transcript
 
   Arg [1]    : Bio::EnsEMBL::Transcript
   Example    : 
@@ -371,7 +371,7 @@ sub fetch_by_RawContig {
 
 =cut
 
-sub fetch_by_Transcript {
+sub fetch_all_by_Transcript {
   my ( $self, $trans ) = @_;
 
   my $query1 = "SELECT t.translation_id 
@@ -397,7 +397,7 @@ sub fetch_by_Transcript {
 }
 
 
-=head2 fetch_by_Translation
+=head2 fetch_all_by_Translation
 
   Arg [1]    : Bio::EnsEMBL::Translation $trans
                The translation to fetch database entries for
@@ -409,7 +409,7 @@ sub fetch_by_Transcript {
 
 =cut
 
-sub fetch_by_Translation {
+sub fetch_all_by_Translation {
   my ( $self, $trans ) = @_;
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
 }
@@ -739,7 +739,7 @@ sub create_tables {
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED use fetch_by_Translation instead
+  Description: DEPRECATED use fetch_all_by_Translation instead
   Returntype : none
   Exceptions : none
   Caller     : none
@@ -749,26 +749,26 @@ sub create_tables {
 sub fetch_by_translation {
   my ($self, $trans_id) = @_;
 
-  $self->warn("fetch_by_translation has been renamed fetch_by_Translation");
+  $self->warn("fetch_by_translation has been renamed fetch_all_by_Translation");
   my $trans = $self->db->get_TranslationAdaptor->fetch_by_dbID($trans_id);
 
-  return $self->fetch_by_Translation($trans);
+  return $self->fetch_all_by_Translation($trans);
 }
 
 
 
-=head2 fetch_by_rawContig
+=head2 fetch_all_by_rawContig
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED use Bio::EnsEMBL::fetch_by_rawContig instead
+  Description: DEPRECATED use Bio::EnsEMBL::fetch_all_by_RawContig instead
   Returntype : none
   Exceptions : none
   Caller     : none
 
 =cut
 
-sub fetch_by_rawContig {
+sub fetch_all_by_rawContig {
   my ( $self, $rawContigId ) = @_;
   
   $self->warn("fetch_by_rawContig has been renamed fetch_by_RawContig");
@@ -780,11 +780,11 @@ sub fetch_by_rawContig {
 
 
 
-=head2 fetch_by_transcript
+=head2 fetch_all_by_transcript
 
   Arg [1]    : none
   Example    : none
-  Description: DEPRECATED fetch_by_Transcript instead
+  Description: DEPRECATED fetch_all_by_Transcript instead
   Returntype : none
   Exceptions : none
   Caller     : none
@@ -794,9 +794,9 @@ sub fetch_by_rawContig {
 sub fetch_by_transcript {
   my ( $self, $trans ) = @_;
 
-  $self->warn("fetch_by_transcript has been renamed fetch_by_Transcript");
+  $self->warn("fetch_by_transcript has been renamed fetch_all_by_Transcript");
 
-  return $self->fetch_by_Transcript($trans);
+  return $self->fetch_all_by_Transcript($trans);
 }
 
 

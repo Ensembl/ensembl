@@ -65,7 +65,7 @@ use Bio::EnsEMBL::SeqFeature;
 
 
 
-=head2 fetch_by_translation_id
+=head2 fetch_all_by_translation_id
 
   Arg [1]    : int $transl
                the internal id of the translation corresponding to protein 
@@ -219,7 +219,7 @@ sub fetch_by_dbID{
 
 =cut
 
-sub fetch_by_feature_and_dbID{
+sub fetch_all_by_feature_and_dbID{
     my ($self,$feature,$transl) = @_;
     my @features;
     my $analysis_adaptor = $self->db()->get_AnalysisAdaptor();
@@ -370,6 +370,28 @@ sub fetch_by_feature_and_dbID{
     
     return \@features;
   }
+
+
+=head2 fetch_by_feature_and_dbID
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use fetch_all_by_feature_and_dbID instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub fetch_by_feature_and_dbID {
+  my ($self, @args) = @_;
+
+  $self->warn("fetch_by_feature_and_dbID has been renamed fetch_all_by_feature_and_dbID\n" . caller);
+
+  return $self->fetch_all_by_feature_and_dbID(@args);
+}
+
+
 
 
 
