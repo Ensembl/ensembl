@@ -58,13 +58,15 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
                string SEQ_REGION_NAME,
                int    START,
                int    END,
-               int    STRAND, (optional)
+               string VERSION (optional, defaults to '')
+               int    STRAND, (optional, defaults to 1)
                Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR (optional)
   Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => 'chromosome',
                                                  -start => 1,
 						 -end => 10000,
                                                  -strand => 1,
 						 -seq_region_name => 'X',
+                                                 -version => 'NCBI33',
 					         -adaptor => $slice_adaptor);
   Description: Creates a new slice object.  A slice represents a region
                of sequence in a particular coordinate system.  Slices can be
@@ -91,14 +93,18 @@ sub new {
   #new can be called as a class or object method
   my $class = ref($caller) || $caller;
 
-  my ($coord_system, $seq_region_name, $start, $end, $strand, $adaptor) =
-   rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME START END STRAND ADAPTOR)],@_);
+  my ($coord_system, $seq_region_name, $version,
+      $start, $end, $strand, $adaptor) =
+        rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME VERSION
+                      START END STRAND ADAPTOR)], @_);
 
-  $coord_system    || throw('COORD_SYSTEM argument is required');
-  $seq_region_name || throw('SEQ_REGION_NAME argument is required');
+  $coord_system     || throw('COORD_SYSTEM argument is required');
+  $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
   defined($start)   || throw('START argument is required');
-  defined($end)    || throw('END argument is required');
-  ($start <= $end) || throw('start must be less than or equal to end');
+  defined($end)     || throw('END argument is required');
+  ($start <= $end)  || throw('start must be less than or equal to end');
+
+  $version ||= '';
 
   #strand defaults to 1 if not defined
   $strand ||= 1;
@@ -115,6 +121,7 @@ sub new {
 
   return bless {'coord_system'    => $coord_system,
                 'seq_region_name' => $seq_region_name,
+                'version'         => $version,
                 'start'           => $start,
                 'end'             => $end,
                 'strand'          => $strand,
@@ -175,6 +182,27 @@ sub seq_region_name {
   return $self->{'seq_region_name'};
 }
 
+
+=head2 seq_region_name
+
+  Arg [1]    : none
+  Example    : $version = $slice->version;
+  Description: Returns the version of the seq_region that this slice is on. For
+               example if this slice is in chromosomal coordinates the
+               version might reflect the version of the assembly such as
+               'NCBI33'.  For a clone the version might be something like
+               '4'.  Some sequences may not have any version at all, in which
+               case this will return an empty string.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub version {
+  my $self = shift;
+  return $self->{'version'};
+}
 
 
 =head2 coord_system
@@ -262,37 +290,15 @@ sub strand{
 
 
 
-=head2 assembly_type
-
-  Arg [1]    : string $value
-  Example    : $assembly_mapper_adaptor->fetch_by_type($slice->assembly_type);
-  Description: Gets/Sets the assembly type that this slice is constructed 
-               from.  This is generally set by the slice adaptor and probably
-               shouldnt be set outside of this context. 
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub assembly_type{
-   my ($self,$value) = @_;
-   if( defined $value) {
-      $self->{'assembly_type'} = $value;
-    }
-    return $self->{'assembly_type'};
-
-}
-
 
 
 =head2 name
 
   Arg [1]    : none
-  Example    : do_something() if($slice->name() eq 'chromosome:X:1:100000:1');
+  Example    : my $results = $cache{$slice->name()};
   Description: Returns the name of this slice. The name is formatted as a colon
                delimited string with the following attributs:
-               coord_system:seq_region_name:start:end:strand
+               coord_system:seq_region_name:version:start:end:strand
 
                Slices with the same name are equivalent and thus the name can
                act as a hash value.
@@ -308,6 +314,7 @@ sub name {
   return join(':',
               $self->{'coord_system'},
               $self->{'seq_region_name'},
+              $self->{'version'},
               $self->{'start'},
               $self->{'end'},
               $self->{'strand'});
@@ -1489,5 +1496,18 @@ sub chr_end{
   deprecate('Use end() instead');
   end(@_);
 }
+
+
+=head2 assembly_type
+
+  Description: DEPRECATED use version instead
+
+=cut
+
+sub assembly_type{
+  deprecated('Use version() instead');
+  version(@_);
+}
+
 
 1;
