@@ -13,13 +13,13 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::GenscanMC - Parses genscan gene prediction output
+Bio::EnsEMBL::Analysis::Genscan - Parses genscan gene prediction output
 
 =head1 SYNOPSIS
 
-    my $gs = new Bio::EnsEMBL::Analysis::GenscanMC($file);      # $file is filename
+    my $gs = new Bio::EnsEMBL::Analysis::Genscan($file);      # $file is filename
 or
-    my $gs = new Bio::EnsEMBL::Analysis::GenscanMC($file,$dna); # $dna is Bio::Seq
+    my $gs = new Bio::EnsEMBL::Analysis::Genscan($file,$dna); # $dna is Bio::Seq
 
 Extracting the data
 
@@ -46,7 +46,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 # Let the code begin...
 
-package Bio::EnsEMBL::Analysis::GenscanMC;
+package Bio::EnsEMBL::Analysis::Genscan;
 
 use vars qw(@ISA);
 use strict;

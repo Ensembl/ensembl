@@ -44,7 +44,7 @@ use strict;
 use Bio::EnsEMBL::DB::ContigI;
 use Bio::Seq;
 use Bio::SeqIO;
-use Bio::EnsEMBL::Analysis::GenscanMC;
+use Bio::EnsEMBL::Analysis::Genscan;
 use Bio::EnsEMBL::Analysis::FeatureParser;
 use FileHandle;
 
@@ -93,7 +93,7 @@ sub _initialize {
 
   # ok. Hell. We open the Genscan file using the Genscan object.
   # this is needed to remap the exons lower down
-  my $gs = Bio::EnsEMBL::Analysis::GenscanMC->new($self->_clone_dir . "/" . 
+  my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
 						$self->disk_id . ".gs",
 						$self->seq());
   # save for later

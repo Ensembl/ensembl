@@ -69,7 +69,7 @@ sub _initialize {
     $disk_id              || $self->throw("Cannot make contig_feature object without disk_id");
     $gs                   || $self->throw("Cannot make contig_feature object without gs object");
 
-    $gs->isa('Bio::EnsEMBL::Analysis::GenscanMC') ||   $self->throw("$gs is not a gs object in new contig_feature");
+    $gs->isa('Bio::EnsEMBL::Analysis::Genscan') ||   $self->throw("$gs is not a gs object in new contig_feature");
     $seq                  || $self->throw("Cannot make contig_feature object without seq object");
     $seq->isa('Bio::Seq') || $self->throw("$seq is not a seq object in new contig_feature");
 
@@ -84,7 +84,7 @@ sub _initialize {
     
 
     # DEBUG
-    print_genes($gs,$seq); if $self->_debug;
+    print_genes($gs,$seq) if $self->_debug;
   
     # mapping of data to filenames
     my $msptype = [['swir_p',  'blastp',  'swir',     'pep', '.blastp_swir.msptmp',   'msp'  ],
