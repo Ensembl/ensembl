@@ -44,9 +44,9 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 my $dbtype = 'rdb';
-my $host   = 'sol28';
+my $host   = 'obi-wan.sanger.ac.uk';
 my $port   = '410000';
-my $dbname = 'ens100';
+my $dbname = 'ensembl';
 my $dbuser = 'ensembl';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
