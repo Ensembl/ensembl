@@ -176,7 +176,9 @@ sub get_all_SimilarityFeatures_above_score{
 	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
     
        
-    my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
+    my    $statement = "SELECT f.id, 
+                               f.seq_start+s.chr_start-s.raw_start,
+                               f.seq_end+s.chr_start-s.raw_start, 
                                f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
                                s.chr_start,s.chr_end,s.raw_ori
 		        FROM   feature f, analysis a,static_golden_path s
