@@ -369,9 +369,10 @@ sub write_Gene{
 
 
 
-   $self->_lock_tables('gene','exon','transcript','exon_transcript');
+  # $self->_lock_tables('gene','exon','transcript','exon_transcript');
 
    # gene is big daddy object
+
 
    foreach my $trans ( $gene->each_Transcript() ) {
        $self->write_Transcript($trans,$gene);
@@ -386,10 +387,12 @@ sub write_Gene{
        }
    }
 
+#   my $sth2 = $self->prepare("insert into gene (id,created,modified) values ('". $gene->id(). "','" . $gene->created . "','" . $gene->modified . "')");
+   
    my $sth2 = $self->prepare("insert into gene (id) values ('". $gene->id(). "')");
    $sth2->execute();
 
-   $self->_unlock_tables();
+   #$self->_unlock_tables();
 
 }
 
@@ -618,9 +621,9 @@ sub _db_handle{
 
 }
 
-=head2 _lock_table
+=head2 _lock_tables
 
- Title   : _lock_table
+ Title   : _lock_tables
  Usage   :
  Function:
  Example :
@@ -630,7 +633,7 @@ sub _db_handle{
 
 =cut
 
-sub _lock_table{
+sub _lock_tables{
    my ($self,@tables) = @_;
 
    foreach my $table ( @tables ) {
@@ -646,9 +649,9 @@ sub _lock_table{
 
 }
 
-=head2 _unlock_table
+=head2 _unlock_tables
 
- Title   : _unlock_table
+ Title   : _unlock_tables
  Usage   :
  Function:
  Example :
@@ -658,7 +661,7 @@ sub _lock_table{
 
 =cut
 
-sub _unlock_table{
+sub _unlock_tables{
    my ($self,@tables) = @_;
 
    my $sth = $self->prepare("unlock tables");
@@ -682,6 +685,8 @@ sub _unlock_table{
 
 sub DESTROY{
    my ($obj) = @_;
+
+   $obj->_unlock_tables();
 
    if( $obj->{'_db_handle'} ) {
        $obj->{'_db_handle'}->disconnect;
