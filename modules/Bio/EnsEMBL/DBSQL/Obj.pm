@@ -1091,13 +1091,13 @@ sub delete_Gene{
 sub geneid_to_cloneid{
    my ($self,$geneid) = @_;
 
-   my $sth = $self->prepare("select p1.id from contig as p1, transcript as p2, exon_transcript as p3 where p2.gene = '$geneid' and p2.id = p3.transcript and p3 ");
+   my $sth = $self->prepare("select clone from geneclone_neighbourhood where gene = '$geneid'");
 
    my @out;
 
    $sth->execute;
    while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
+       push(@out,$rowhash->{'clone'});
    }
 
 }
