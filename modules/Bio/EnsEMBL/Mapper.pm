@@ -282,26 +282,28 @@ sub fastmap {
 
    my $pairs = $hash->{$id};
 
-   my $pair = $pairs->[0];
-   my $self_coord   = $pair->{$from};
-   my $target_coord = $pair->{$to};
+   foreach my $pair (@$pairs) {
+     my $self_coord   = $pair->{$from};
+     my $target_coord = $pair->{$to};
    
-   # only super easy mapping is done 
-   if( $start < $self_coord->{'start'} ||
-       $end > $self_coord->{'end'} ) {
-     next;
-   }
-
-   if( $pair->{'ori'} == 1 ) {
-     return ( $target_coord->{'id'},
-	      $target_coord->{'start'}+$start-$self_coord->{'start'},
-	      $target_coord->{'start'}+$end-$self_coord->{'start'},
-	      $strand );
-   } else {
-     return ( $target_coord->{'id'},
-	      $target_coord->{'end'} - ($end - $self_coord->{'start'}),
-	      $target_coord->{'end'} - ($start - $self_coord->{'start'}),
-	      -$strand );
+     # only super easy mapping is done 
+     if( $start < $self_coord->{'start'} ||
+	 $end > $self_coord->{'end'} ) {
+       next;
+     }
+     
+     if( $pair->{'ori'} == 1 ) {
+       return ( $target_coord->{'id'},
+		$target_coord->{'start'}+$start-$self_coord->{'start'},
+		$target_coord->{'start'}+$end-$self_coord->{'start'},
+		$strand );
+     } else {
+       return ( $target_coord->{'id'},
+		$target_coord->{'end'} - ($end - $self_coord->{'start'}),
+		$target_coord->{'end'} - ($start - $self_coord->{'start'}),
+		-$strand );
+     }
+     
    }
 
    return ();
