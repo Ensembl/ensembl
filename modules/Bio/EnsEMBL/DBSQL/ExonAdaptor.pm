@@ -256,7 +256,7 @@ sub store {
       "INSERT INTO exon_stable_id " .
 	"SET version = ?, " .
           "stable_id = ?, " .
-	    "exon_id = ?";
+	    "exon_id = ?, ";
   
     if( $exon->created_date() ) {
       $statement .= "created_date = from_unixtime( ".$exon->created_date()."),";
