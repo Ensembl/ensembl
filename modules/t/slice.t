@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 41;
+	plan tests => 43;
 }
 
 use TestUtils qw( debug );
@@ -267,4 +267,37 @@ ok($a == 234371
    && $gc_content == 48.59 
    && $a+$c+$t+$g+$n == $slice->length);
 
+my $test_seq = 'ATGCATGCATGCATGCATGCATGC';
+my $test_slice = new Bio::EnsEMBL::Slice
+  (-seq_region_name  => 'misc',
+   -start            => 1,
+   -end              => 24,
+   -strand           => 1,
+   -coord_system     => $coord_system,
+   -seq              => $test_seq,
+   );
 
+
+
+
+
+
+ok($test_slice->length == 24);
+
+$hash = $test_slice->get_base_count;
+$a = $hash->{'a'};
+$c = $hash->{'c'};
+$t = $hash->{'t'};
+$g = $hash->{'g'};
+$n = $hash->{'n'};
+$gc_content = $hash->{'%gc'};
+
+
+
+ok($a == 6
+   && $c == 6 
+   && $t == 6 
+   && $g == 6 
+   && $n == 0 
+   && $gc_content == 50 
+   && $a+$c+$t+$g+$n == $test_slice->length);

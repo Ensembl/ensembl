@@ -116,9 +116,9 @@ sub new {
   #new can be called as a class or object method
   my $class = ref($caller) || $caller;
 
-  my ($coord_system, $seq_region_name,
+  my ($seq, $coord_system, $seq_region_name,
       $start, $end, $strand, $adaptor, $empty) =
-        rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME
+        rearrange([qw(SEQ COORD_SYSTEM SEQ_REGION_NAME
                       START END STRAND ADAPTOR EMPTY)], @_);
 
   #empty is only for backwards compatibility
@@ -133,7 +133,10 @@ sub new {
   defined($end)     || throw('END argument is required');
   ($start <= $end)  || throw('start must be less than or equal to end');
 
-
+  if($seq && length($seq) != ($end - $start + 1)){
+      throw('SEQ must be the same length as the defined LENGTH not '.
+            length($seq).' compared to '.($end - $start + 1));
+  }
   if(!$coord_system || !ref($coord_system) ||
      !$coord_system->isa('Bio::EnsEMBL::CoordSystem')) {
     throw('COORD_SYSTEM argment must be a Bio::EnsEMBL::CoordSystem');
@@ -153,6 +156,7 @@ sub new {
   }
 
   return bless {'coord_system'    => $coord_system,
+                'seq'             => $seq,
                 'seq_region_name' => $seq_region_name,
                 'start'           => $start,
                 'end'             => $end,
@@ -367,10 +371,12 @@ sub invert {
 
   #make a shallow copy of the slice via a hash copy,
   my %s = %$self;
-
+  if(!$self->adaptor){
+    warning("You can't invert a Slice which isn't attached to a database");
+    return;
+  }
   #flip the strand,
   $s{'strand'} = $self->{'strand'} * -1;
-
   #bless and return the copy
   return  bless \%s, ref $self;
 }
@@ -391,8 +397,13 @@ sub invert {
 
 sub seq {
   my $self = shift;
-  my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1,undef, 1 )};
+
+  if(!$self->{'seq'}){
+    my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor;
+    return ${$seqAdaptor->fetch_by_Slice_start_end_strand( $self, 1,undef, 1 )};
+   }
+
+  return $self->{'seq'};
 }
 
 
@@ -416,7 +427,7 @@ sub seq {
 
 sub subseq {
   my ( $self, $start, $end, $strand ) = @_;
-
+  
   if ( $end < $start ) {
     throw("End coord is less then start coord");
   }
@@ -426,12 +437,16 @@ sub subseq {
   if ( $strand != -1 && $strand != 1 ) {
     throw("Invalid strand [$strand] in call to Slice::subseq.");
   }
-
-  my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
-  my $seqref = $seqAdaptor->fetch_by_Slice_start_end_strand( $self, $start,
-                                                          $end, $strand );
-
-  return $$seqref;
+  my $subseq;
+  if($self->adaptor){
+    my $seqAdaptor = $self->adaptor->db->get_SequenceAdaptor();
+    $subseq = ${$seqAdaptor->fetch_by_Slice_start_end_strand
+      ( $self, $start,
+        $end, $strand )};
+  }else{
+    $subseq = substr ($self->seq(), ($start-1), $end);
+  }
+  return $subseq;
 }
 
 
@@ -475,11 +490,9 @@ sub get_base_count {
 
   while($start <= $len) {
     $end = $start + $RANGE - 1;
-
+    
     $end = $len if($end > $len);
-
     $seq = $self->subseq($start, $end);
-
     $a += $seq =~ tr/Aa/Aa/;
     $c += $seq =~ tr/Cc/Cc/;
     $t += $seq =~ tr/Tt/Tt/;
@@ -543,7 +556,11 @@ sub project {
   throw('Coord_system name argument is required') if(!$cs_name);
 
   #obtain a mapper between this coordinate system and the requested one
-
+  if(!$self->adaptor){
+    warning("You can't project a slice which isn't attached to a ".
+            "database on to another coordinate system");
+    return;
+  }
   my $slice_adaptor = $self->adaptor();
 
   if(!$slice_adaptor) {
@@ -681,6 +698,12 @@ sub expand {
   my $self = shift;
   my $five_prime_shift = shift || 0;
   my $three_prime_shift = shift || 0;
+  
+  if($self->{'seq'}){
+    warning("You can't expand a slice which already has an attached ".
+            "sequence ");
+    return;
+  }
 
   my $new_start;
   my $new_end;
@@ -1198,6 +1221,7 @@ sub get_repeatmasked_seq {
        -END     => $self->{'end'},
        -STRAND  => $self->{'strand'},
        -ADAPTOR => $self->{'adaptor'},
+       -SEQ     => $self->{'seq'},
        -SEQ_REGION_NAME => $self->{'seq_region_name'},
        -COORD_SYSTEM    => $self->{'coord_system'},
        -REPEAT_MASK     => $logic_names,
