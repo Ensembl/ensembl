@@ -106,7 +106,7 @@ print STDERR "What password shall I try to connect to the MySQL db []?\n";
 my $pass = <STDIN>;
 chomp $pass;
 if( $pass =~ /^\s*$/ ) {
-    $pass = '';
+    $pass = undef;
 }
 
 print STDERR "What host shall I try to connect to the MySQL db [localhost]?\n";
@@ -194,13 +194,22 @@ if( $q ne 'yes' ) {
 
 print "... reinitialisation of tables\n";
 
-system("mysql -h $host -u $user $db < ../sql/table.sql");
+my $addp;
+
+if( defined $pass ) {
+    $addp = "-p";
+} else {
+    $addp = '';
+}
+
+
+system("mysql -h $host -u $user $addp $db < ../sql/table.sql");
 
 print ".......done\n";
 
 print "... loading data\n";
 
-system("mysql -h $host -u $user $db < $table_file");
+system("mysql -h $host -u $user $addp $db < $table_file");
 
 print ".......done\n";
 
