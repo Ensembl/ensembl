@@ -111,4 +111,10 @@ sub validate {
 }
 
 
+sub id {
+    my ($self,$value) = @_;
+
+    $self->_abstractDeath;
+}
+
 1;

@@ -633,10 +633,10 @@ sub _genscan_peptide{
 }
 
 
-=head2 add_supporting_evidence
+=head2 add_Supporting_Feature
 
- Title   : add_supporting_evidence
- Usage   : $obj->add_supporting_evidence($feature)
+ Title   : add_Supporting_Feature
+ Usage   : $obj->add_Supporting_Feature($feature)
  Function: 
  Returns : Nothing
  Args    : Bio::EnsEMBL::SeqFeature
@@ -645,11 +645,11 @@ sub _genscan_peptide{
 =cut
 
 
-sub add_supporting_evidence {
+sub add_Supporting_Feature {
     my ($self,$feature) = @_;
 
-    $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeature") unless 
-	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeature");
+    $self->throw("Supporting evidence [$feature] not Bio::EnsEMBL::SeqFeatureI") unless 
+	defined($feature) &&  $feature->isa("Bio::EnsEMBL::SeqFeatureI");
 
     $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
 
@@ -658,10 +658,10 @@ sub add_supporting_evidence {
 
 
 
-=head2 each_supporting_evidence
+=head2 each_Supporting_Feature
 
- Title   : each_supporting_evidence
- Usage   : my @f = $obj->each_supporting_evidence
+ Title   : each_Supporting_Feature
+ Usage   : my @f = $obj->each_Supporting_Feature
  Function: 
  Returns : @Bio::EnsEMBL::Feature
  Args    : none
@@ -670,7 +670,7 @@ sub add_supporting_evidence {
 =cut
 
 
-sub each_supporting_evidence {
+sub each_Supporting_Feature {
     my ($self) = @_;
 
     $self->{_supporting_evidence} = [] unless defined($self->{_supporting_evidence});
@@ -678,6 +678,36 @@ sub each_supporting_evidence {
     return @{$self->{_supporting_evidence}};
 
 }
+
+=head2 find_supporting_evidence
+
+ Title   : find_supporting_evidence
+ Usage   : $obj->find_supporting_evidence(\@features)
+ Function: Looks through all the similarity features and
+           stores as supporting evidence any feature
+           that overlaps with an exon.  I know it is
+           a little crude but it\'s a start/
+ Example : 
+ Returns : Nothing
+ Args    : Bio::EnsEMBL::Exon
+
+
+=cut
+
+
+sub find_supporting_evidence {
+    my ($self,$features) = @_;
+
+
+    foreach my $f (@$features) {
+
+	# We should probably check the contig name here.
+	if (($f->seqname == $self->contig_id) && $f->overlaps($self)) {
+	    $self->add_Supporting_Feature($f);
+	}
+    }
+}
+
 
 # Inherited methods
 # but you do have all the SeqFeature documentation: reproduced here

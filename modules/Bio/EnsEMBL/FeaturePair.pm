@@ -217,5 +217,15 @@ sub to_FTHelper{
    return $fth;
 }
 
+sub id {
+    my ($self,$value) = @_;
+
+    if (defined($value)) {
+	return $self->feature1->id($value);
+    }
+    
+    return $self->feature1->id;
+
+}
 
 1;

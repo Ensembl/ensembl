@@ -665,4 +665,15 @@ sub flush_sub_SeqFeature {
 }
 
 
+sub id {
+    my ($self,$value) = @_;
+
+    if (defined($value)) {
+	$self->{_id} = $value;
+    }
+
+    return $self->{_id};
+
+}
+
 1;
