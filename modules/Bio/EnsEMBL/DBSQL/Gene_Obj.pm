@@ -457,7 +457,7 @@ sub get_Gene_by_Transcript_id {
     my $supporting = shift;
 
     # this is a cheap SQL call
-    my $sth = $self->prepare("select gene from transcript where id = '$transid'");
+    my $sth = $self->_db_obj->prepare("select gene from transcript where id = '$transid'");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
