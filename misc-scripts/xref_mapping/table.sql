@@ -66,7 +66,8 @@ CREATE TABLE source (
   source_id                   int unsigned not null auto_increment,
   name                        varchar(255) not null,
   release                     varchar(255),
-
+  download                    enum('Y', 'N') default 'Y',
+   
   PRIMARY KEY (source_id),
   KEY name_idx(name) 
 
@@ -92,14 +93,14 @@ CREATE TABLE source_url (
 
 # "High level" sources that we will also download from (via source_url)
 
-INSERT INTO source VALUES (1, "UniProtSwissProt", 1);
-INSERT INTO source VALUES (2, "RefSeq", 1);
+INSERT INTO source VALUES (1, "UniProtSwissProt", 1, 'Y');
+INSERT INTO source VALUES (2, "RefSeq", 1, 'Y');
 
 # Other sources - used to create dependent xrefs, but not to upload from
 
-INSERT INTO source VALUES (1000, 'EMBL', 1);
-INSERT INTO source VALUES (1001, 'PUBMED', 1);
-INSERT INTO source VALUES (1002, 'MEDLINE', 1);
+INSERT INTO source VALUES (1000, 'EMBL', 1, 'N');
+INSERT INTO source VALUES (1001, 'PUBMED', 1, 'N');
+INSERT INTO source VALUES (1002, 'MEDLINE', 1, 'N');
 
 # Files to fetch data from
 
