@@ -71,7 +71,7 @@ sub new {
 		      'EXTERNAL_DB', 'EXTERNAL_STATUS', 'DISPLAY_XREF' ], @_ );
   
   if( $exons ) {
-    $self->_recalculate_cordinates();
+    $self->recalculate_coordinates();
   }
 
   $self->stable_id( $stable_id );
@@ -614,7 +614,7 @@ sub add_Exon{
 
    push(@{$self->{'_trans_exon_array'}},$exon);
    # recalculate start, end, slice, strand
-   $self->_recalculate_cordinates();
+   $self->_recalculate_coordinates();
 }
 
 
@@ -999,7 +999,6 @@ sub flush_Exons{
    $self->{'_start'} = undef;
    $self->{'_end'} = undef;
    $self->{'_strand'} = undef;
-   $self->{'_exon_coord_mapper'} = undef;
 
    $self->{'_trans_exon_array'} = [];
 }
@@ -1735,17 +1734,20 @@ sub transfer {
 
 
 
-#_recalculate_cordinates
-#
-#  Args       : none
-#  Example    : none
-#  Description: called when exon coordinate change happened to recalculate the
-#               coords of the transcript.
-#  Returntype : none
-#  Exceptions : none
-#  Caller     : internal
+=head recalculate_coordinates
 
-sub _recalculate_cordinates {
+  Args       : none
+  Example    : none
+  Description: called when exon coordinate change happened to recalculate the
+               coords of the transcript.  This method should be called if one
+               of the exons has been changed.
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub recalculate_coordinates {
   my $self = shift;
   
   if( ! defined $self->{'_trans_exon_array'} ) {
@@ -1788,6 +1790,14 @@ sub _recalculate_cordinates {
   $self->end( $end );
   $self->strand( $strand );
   $self->slice( $slice );
+
+  #flush internal values that depend on the exon coords that may have been
+  #cached
+  $self->{'_exon_coord_mapper'} = undef;
+  $self->{'coding_region_start'} = undef;
+  $self->{'coding_region_end'} = undef;
+  $self->{'cdna_coding_start'} = undef;
+  $self->{'cdna_coding_end'} = undef;
 }
 
 

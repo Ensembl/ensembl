@@ -400,7 +400,7 @@ sub add_Transcript{
 
    $self->{'_transcript_array'} ||= [];
    push(@{$self->{'_transcript_array'}},$trans);
-   $self->_recalculate_cordinates();
+   $self->recalculate_coordinates();
 }
 
 
@@ -563,7 +563,7 @@ sub display_xref {
 }
 
 
-=head2 _recalculate_cordinates
+=head2 recalculate_cordinates
 
   Args       : none
   Example    : none
@@ -577,7 +577,7 @@ sub display_xref {
 
 
 
-sub _recalculate_cordinates {
+sub recalculate_cordinates {
   my $self = shift;
   
   if( ! defined $self->{'_transcript_array'} ) {
