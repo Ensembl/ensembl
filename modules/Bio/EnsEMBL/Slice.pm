@@ -1300,6 +1300,21 @@ sub moltype {
   return 'dna';
 }
 
+=head2 alphabet
+
+  Arg [1]    : none
+  Example    : none
+  Description: Only for BioPerl compliance
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+sub alphabet {
+  my $self = shift;
+  return 'dna';
+}
+
 =head2 accession_number
 
   Arg [1]    : none
