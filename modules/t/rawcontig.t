@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..28\n"; 
+BEGIN { $| = 1; print "1..29\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -253,6 +253,18 @@ if( $c->static_golden_type ne 'UCSC'  ) {
    print "ok 28\n";
 }
 
+$seq = $c->get_repeatmasked_seq();
+if  (!$seq->isa('Bio::PrimarySeqI') 
+        || $seq->length != $c->length 
+        || $seq->seq !~ /N/i) 
+{
+    print STDERR "Got a $seq with length",$seq->length,":",$c->length,"\n";
+    print "not ok 29\n";
+} 
+else 
+{
+    print "ok 29\n";
+}
   
 $db = undef;
 
