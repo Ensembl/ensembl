@@ -1,0 +1,114 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+# Let the code begin...
+
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::DB::ContigI;
+
+use Getopt::Long;
+use strict;
+
+my ($cloneid,
+);
+
+$|=1;
+
+GetOptions("clone=s"     => \$cloneid,                # Clone name      e.g. dJ998N21
+	   ) or usage();
+
+# Connect to the database
+
+my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'pogtest',
+					      -host   => 'obi-wan',
+					      -user   => 'ensloader',
+					      )  or die "Can't connect to database";
+my   @clones;
+push(@clones,$cloneid);
+
+my $clone = $db->get_Clone($cloneid);
+print("   - getting genes for clone $cloneid\n");
+
+open(POG,">" . $clone->id . ".gff");
+
+
+my @homols;
+my @features;
+
+print("   - getting contigs\n");
+
+foreach my $contig ($clone->get_all_Contigs) {
+    push(@features,$contig->get_all_SimilarityFeatures);
+}
+
+print("   - getting genes\n");
+my @genes = $clone->get_all_Genes;
+print("   - done\n");
+
+foreach my $gene (@genes) {
+    
+    print("   - processing gene " . $gene->id . "\n");
+
+     foreach my $exon ($gene->each_unique_Exon) {
+	 my @homols;
+	 print("   - processing exon " . $exon->id . "\n");
+	 $exon  ->find_supporting_evidence (\@features);
+	 print("   - found supporting evidence\n");
+	 $db    ->write_supporting_evidence($exon);
+
+	 $exon->{_supporting_evidence} = [];
+	 print("supporting features are [" . $exon->each_Supporting_Feature . "]\n");
+	 print("   - written supporting evidence\n");
+	 $db    ->get_supporting_evidence  ($exon);
+	 print("   - got supporting evidence\n");
+	 push(@homols,$exon->each_Supporting_Feature);
+	 homol2gff(\*POG,\@homols,$exon->id);               # Prints out gff.
+     }
+ }
+
+
+
+
+close(POG);
+
+
+############################################################
+#
+# Subroutines.
+# 
+# This are inserted mostly just for tidiness
+#
+############################################################
+
+sub usage {
+    print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
+    exit(0);
+}
+
+
+sub homol2gff {
+    my ($fh,$homols,$exon) = @_;
+
+    foreach my $h1 (@$homols) {
+	my $h2 = $h1->feature2;
+	my $strand = "+";
+
+	if ($h2->strand == -1) {
+	    $strand = "-";
+	}
+
+	print($fh $exon . "\t" . $h1->source_tag . "\t" . $h2->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $h1->score ."\t" . $strand . 
+	      "\t0\tSequence:" . 
+	      $h2->seqname . "\t" . $h2->start . "\t" . $h2->end ."\n");
+    }
+}
+
+
+
+

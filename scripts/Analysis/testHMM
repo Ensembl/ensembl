@@ -1,0 +1,100 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+# Let the code begin...
+
+
+use Bio::EnsEMBL::Analysis::Genscan;
+use Bio::EnsEMBL::Analysis::GenscanPeptide;
+use Bio::Tools::HMMER::Results;
+
+use Getopt::Long;
+use strict;
+
+my ($clone,
+    $contig,
+);
+
+
+GetOptions("clone=s"     => \$clone,                # Clone name      e.g. dJ998N21
+	   "contig=s"    => \$contig,               # Contig number   e.g. 00577
+	   ) or usage();
+
+# Initialize directories and clone/contig names
+
+my $root_dir  = "/nfs/disk100/humpub/th/unfinished_ana/data/$clone/";
+
+my $gsfile    = $root_dir . "/" . $clone . "." . $contig . ".gs";
+my $dnafile   = $root_dir . "/" . $clone . ".seq";
+
+
+open(POG,">$clone.$contig.gff");                # This is for gff output
+
+my $fh        = \*POG;
+my $dna       = find_seq($dnafile,$clone,$contig)      or die "Couldn't find dna for $clone.$contig";
+my $gs        = new Bio::EnsEMBL::Analysis::Genscan($gsfile,$dna);
+
+my $count     = 0;
+
+TRANS: foreach my $g ($gs->each_Transcript) {
+
+    $count++;
+
+    print_gene($fh,$g);                    # Just for debugging purposes
+
+    my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
+
+    my $pfamfile = $root_dir . "/" . $clone . "." . $contig . ".$count.hmmpfam_frag";
+    print("Pfamfile is $pfamfile\n");
+
+    my $res = new Bio::Tools::HMMER::Results( -file => "$pfamfile", 
+					      -type => 'hmmpfam');
+
+    print("Made object\n");
+    # print out the results for each sequence
+    foreach my $seq ( $res->each_Set ) {
+	print("here\n");
+	print "Sequence bit score is",$seq->bits,"\n";
+	foreach my $domain ( $seq->each_Domain ) {
+	    print " Domain start ",$domain->start," end ",$domain->end," score ",$domain->bits,"\n";
+	}
+    }
+    
+    # new result object on a sequence/domain cutoff of 25 bits sequence, 15 bits domain
+#    my $newresult = $res->filter_on_cutoff(25,15);
+
+    # alternative way of getting out all domains directly
+    foreach my $domain ( $res->each_Domain ) {
+	print "Domain on ",$domain->seqname," with score ",$domain->bits," evalue ",$domain->evalue,"\n";
+    }
+}
+sub find_seq {
+    my ($dnafile,$clone,$contig) = @_;
+
+    my $seqio     = new Bio::SeqIO(-file   => $dnafile,
+				   -format => 'Fasta');
+    
+    my $dna;
+    
+    while (my $d = $seqio->next_seq) {
+	if ($d->id eq "$clone.$contig") {
+	    $dna = $d;
+	}
+    }
+    return $dna;
+}
+sub print_gene {
+    my ($fh,$g) = @_;
+
+    foreach my $ex ($g->each_Exon) {
+	print($fh  "Gene\tGENSCAN\texon\t" . $ex->start . "\t" . $ex->end . "\t0\t" . $ex->strand . "\t0\n");
+    }
+
+    print("\nTranslation " . $g->translate()->seq . "\n");
+}
+
+

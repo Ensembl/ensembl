@@ -1,0 +1,140 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+# Let the code begin...
+
+
+use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::DB::ContigI;
+
+use Getopt::Long;
+use strict;
+
+my ($dbname,
+    $dbhost,
+    $dbuser,
+    $dbpass,
+    $clonefile,
+    );
+
+$|=1;
+
+GetOptions("dbname=s" => \$dbname,
+	   "dbhost=s" => \$dbhost,
+	   "dbuser=s" => \$dbuser,
+	   "dbpass=s" => \$dbpass,
+	   "clonefile=s" => \$clonefile,
+	   ) or usage();
+
+$dbname  = 'ensembl' unless $dbname;
+$dbhost  = 'obi-wan' unless $dbhost;
+$dbuser  = 'ens-ro'  unless $dbuser;
+$dbpass  = ''        unless $dbpass;
+# Connect to the database
+
+my $db        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => $dbname,
+					      -host   => $dbhost,
+					      -user   => $dbuser,
+					      -pass   => $dbpass,
+					      )  or die "Can't connect to database";
+
+my $db2        = Bio::EnsEMBL::DBSQL::Obj->new(-dbname => 'ensembl',
+					      -host   => $dbhost,
+					      -user   => $dbuser,
+					      -pass   => $dbpass,
+					      )  or die "Can't connect to database";
+
+my @clones     = get_clones($clonefile);
+
+
+foreach my $cloneid (@clones) {
+    eval {
+	print(STDERR "   - Processing clone $cloneid\n");
+	my $clone = $db->get_Clone($cloneid);
+	print(STDERR "   - getting genes for clone $cloneid\n");
+	
+	my @features;
+	
+	print(STDERR "   - getting contigs\n");
+	
+	foreach my $contig ($clone->get_all_Contigs) {
+	    push(@features,$contig->get_all_SimilarityFeatures);
+	}
+	
+	print(STDERR "   - getting genes\n");
+	my @genes = $clone->get_all_Genes;
+	print(STDERR "   - done\n");
+	
+	foreach my $gene (@genes) {
+	    
+	    print(STDERR "   - processing gene " . $gene->id . "\n");
+	    
+	    foreach my $exon ($gene->each_unique_Exon) {
+		
+		my @homols;
+		
+		print(STDERR "   - processing exon " . $exon->id . "\n");
+		
+		$exon  ->find_supporting_evidence (\@features);
+		print(STDERR "   - found supporting evidence\n");
+		$db2    ->write_supporting_evidence($exon);
+	    }
+	}
+    };
+    if ($@) {
+	print(STDERR "Error processing clone $cloneid. Skipping clone");
+    }
+}
+
+############################################################
+#
+# Subroutines.
+# 
+# This are inserted mostly just for tidiness
+#
+############################################################
+
+sub usage {
+    print("\nUsage: featureparser_test2 <clone> <contig_number> <accession>\n");
+    exit(0);
+}
+
+sub get_clones {
+    my ($clonefile) = @_;
+
+    open(FILE,"<$clonefile") || die "Can't open clone file $clonefile";
+
+    my @clones;
+    while (<FILE>) {
+	chomp;
+	push(@clones,$_);
+    }
+
+    return @clones;
+}
+
+sub homol2gff {
+    my ($fh,$homols,$exon) = @_;
+
+    foreach my $h1 (@$homols) {
+	my $h2 = $h1->feature2;
+	my $strand = "+";
+
+	if ($h2->strand == -1) {
+	    $strand = "-";
+	}
+
+	print($fh $exon . "\t" . $h1->source_tag . "\t" . $h2->primary_tag ."\t" . $h1->start . "\t" . $h1->end . "\t" . $h1->score ."\t" . $strand . 
+	      "\t0\tSequence:" . 
+	      $h2->seqname . "\t" . $h2->start . "\t" . $h2->end ."\n");
+    }
+}
+
+
+
+
