@@ -179,6 +179,16 @@ CREATE TABLE feature (
 );
 
 #
+#Table structure for table 'interpro'
+#
+
+CREATE TABLE interpro (
+  interpro_ac	varchar(40) NOT NULL,
+  id		varchar(40) NOT NULL,
+  KEY id (id)
+);
+
+#
 # Table structure for table 'fset'
 #
 CREATE TABLE fset (
@@ -251,6 +261,29 @@ CREATE TABLE meta (
   donor_database_locator    varchar(100) NOT NULL,
   offset_time               time DEFAULT '00:30:00' NOT NULL,
   schema_version            varchar(40) NOT NULL
+);
+
+#
+# Table structure for table 'protein_feature'
+#
+
+CREATE TABLE protein_feature (
+  id            int(10) unsigned NOT NULL auto_increment,
+  translation   varchar(40) NOT NULL,	
+  seq_start     int(10) NOT NULL,
+  seq_end       int(10) NOT NULL,
+  analysis      int(10) unsigned NOT NULL,
+  hstart        int(10) NOT NULL,
+  hend          int(10) NOT NULL,
+  hid           varchar(40) NOT NULL,
+  score         double(16,4) NOT NULL,
+  evalue        double(16,4),
+  perc_id       int(10),
+
+  PRIMARY KEY   (id),
+  KEY hid (hid),
+  KEY translation (translation)
+
 );
 
 #
