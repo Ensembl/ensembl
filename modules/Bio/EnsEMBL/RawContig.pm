@@ -70,7 +70,7 @@ sub clone {
   my @projection = @{$self->project('clone')};
 
   if(@projection != 1) {
-    warning('This contig not associated with a single clone');
+    warning('This contig is associated with ' .scalar(@projection).' clones.');
     return undef;
   }
 

@@ -1722,7 +1722,7 @@ sub get_Chromosome {
   deprecate("Use SliceAdaptor::fetch_by_region('chromosome'," .
             '$slice->seq_region_name) instead');
 
-  my $chr = $self->adaptor->fetch_by_region('chromosome',
+  my $chr = $self->adaptor->fetch_by_region('toplevel',
                                             $self->seq_region_name());
 
   return bless($chr, 'Bio::EnsEMBL::Chromosome');
