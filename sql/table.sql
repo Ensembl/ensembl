@@ -1201,3 +1201,74 @@ CREATE TABLE density_type (
   UNIQUE(analysis_id, block_size)
 
 ) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_feature'
+#
+
+CREATE TABLE regulatory_feature (
+
+  regulatory_feature_id INT NOT NULL auto_increment,
+  name                  VARCHAR(255) NOT NULL,
+  seq_region_id         INT NOT NULL,                  # FK refs seq_region
+  seq_region_start      INT NOT NULL,
+  seq_region_end        INT NOT NULL,
+  seq_region_strand     TINYINT NOT NULL,
+  analysis_id           INT NOT NULL,                  # FK refs analysis
+  regulatory_motif_id   INT,                           # FK refs regulatory_motif
+  influence             ENUM('positive', 'negative', 'mixed', 'unknown'),
+
+  PRIMARY KEY(regulatory_feature_id)
+
+) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_motif'
+#
+
+CREATE TABLE regulatory_motif (
+
+  regulatory_motif_id   INT NOT NULL auto_increment,
+  name                  VARCHAR(255) NOT NULL,
+  type                  ENUM('miRNA_target', 'promoter'),
+
+  PRIMARY KEY(regulatory_motif_id)
+
+) TYPE=MyISAM;
+
+################################################################################
+#
+# Table structure for table 'regulatory_feature_object'
+#
+# Relates regulatory regions to the Ensembl objects they influence. Many-many.
+
+CREATE TABLE regulatory_feature_object (
+
+  regulatory_feature_id INT NOT NULL,               # FK to regulatory_feature
+  ensembl_object_type   ENUM( 'Transcript', 'Translation', 'Gene') NOT NULL,
+  ensembl_object_id     INT NOT NULL,               # FK to transcript,gene etc
+
+  KEY regulatory_feature_idx (regulatory_feature_id),
+  KEY ensembl_object_idx (ensembl_object_type, ensembl_object_id)
+
+) TYPE=MyISAM;
+
+
+################################################################################
+#
+# Table structure for table 'peptide_regulatory_feature'
+#
+
+CREATE TABLE peptide_regulatory_feature (
+
+  translation_id        INT NOT NULL,               # FK to translation
+  regulatory_feature_id INT NOT NULL,               # FK to regulatory_feature
+
+  KEY translation_idx (translation_id),
+  KEY regulatory_feature_idx (regulatory_feature_id)
+
+) TYPE=MyISAM;
+
+
