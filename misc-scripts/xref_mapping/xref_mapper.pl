@@ -38,9 +38,8 @@ if(defined($dumpcheck) && defined($maxdump)){
 open(FILE, $file) or die("Could not open input file '$file'");
  
 my  @all_species;
-my $xref;
-#my $output=undef;
-my $new=undef;
+my $xref=undef;
+my $species=undef;
 my $type;
 while( my $line = <FILE> ) {
   chomp($line);
@@ -49,67 +48,57 @@ while( my $line = <FILE> ) {
 
 #  print $line."\n";
   my ($key, $value) = split("=",$line);
-
-  if($key eq "species" || $key eq "xref"){
-    if(defined($new)){ #save old one
-      if($type eq "species"){
-	push @all_species, $new;
-      }
-      else{
-	$xref = $new;
-      }
-      $new = undef;
+ 
+  if($key eq "species"){
+    $type = "species";
+    if(defined($species)){
+      push @all_species, $species;
+      $species = undef;
     }
-    if($key eq "species"){
-      $type = "species";
-      eval "require XrefMapper::$value";
-      my $module;
-      if($@) {
-	warn("Could not require mapper module XrefMapper::$value\n" .
-	     "Using XrefMapper::BasicMapper instead:\n$@");
-	require XrefMapper::BasicMapper;
-	$module = "BasicMapper";
-      }
-      else{
-	$module = $value;
-      }
-      {
-	no strict 'refs';
-	$new = "XrefMapper::$module"->new();
-	$new->species($value);
-      }
-      if(defined($dumpcheck)){
-	$new->dumpcheck("yes");
-      }
-      if(defined($maxdump)){
-	$new->maxdump($maxdump);
-      }
-      if(defined($use_existing_mappings)){
-	$new->use_existing_mappings("yes");
-      }
+    eval "require XrefMapper::$value";
+    my $module;
+    if($@) {
+      warn("Could not require mapper module XrefMapper::$value\n" .
+	   "Using XrefMapper::BasicMapper instead:\n$@");
+      require XrefMapper::BasicMapper;
+      $module = "BasicMapper";
     }
     else{
-      $type= "xref";
-      $new = new XrefMapper::db();
+      $module = $value;
+    }
+    {
+      no strict 'refs';
+      $species = "XrefMapper::$module"->new();
+      $species->species($value);
+    }
+    if(defined($dumpcheck)){
+      $species->dumpcheck("yes");
+    }
+    if(defined($maxdump)){
+      $species->maxdump($maxdump);
+    }
+    if(defined($use_existing_mappings)){
+      $species->use_existing_mappings("yes");
     }
   }
-  else{
-    $new->$key($value);
+  elsif($key eq "xref"){
+    $type = "xref";
+    $xref = new XrefMapper::db();
   }
+  elsif($type eq "species"){ # processing species data
+    $species->$key($value);
+  }
+  elsif($type eq "xref"){    # processing xref data
+    $xref->$key($value);
+  }
+}
+if(defined($species)){
+  push @all_species, $species;
 }
 
-if(defined($new)){ #save last one
-  if($type eq "species"){
-    push @all_species, $new;
-  }
-  else{
-    $xref = $new;
-  }
-  $new = undef;
-}
 
 for my $species ( @all_species ) {
-  $species->xref($xref);
+  $species->xref($xref); # attach xref object to species object
   $species->dump_seqs();
   $species->run_matching();
   $species->store();
