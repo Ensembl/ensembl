@@ -716,7 +716,7 @@ sub dnadb {
 sub extension_tables{
    my $obj = shift;
 
-   self->warn("Extension tables is not implemented, and will either be ". 
+   $obj->warn("Extension tables is not implemented, and will either be ". 
 	      "deprecated or implemented in the near future\n");
 
    return undef;
