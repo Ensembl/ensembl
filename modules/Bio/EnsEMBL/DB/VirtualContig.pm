@@ -647,7 +647,49 @@ sub get_all_Genes {
 	    $gene{$gene->id()} = $gene;
 	}
     }
+
+    return $self->_gene_query(%gene);
+
+}
+
+
+
+
+=head2 get_Genes_by_Type
+
+ Title   : get_Genes_by_Type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Genes_by_Type {
+    my ($self,$type) = @_;
+    my (%gene,%trans,%exon,%exonconverted);
     
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {
+	foreach my $gene ( $contig->get_Genes_by_Type($type) ) {      
+	    $gene{$gene->id()} = $gene;
+	}
+    }
+
+    return $self->_gene_query(%gene);
+
+}
+
+
+
+
+sub _gene_query{
+    
+    my ($self,%gene) = @_;
+    my (%trans,%exon,%exonconverted);
+        
+
     foreach my $gene ( values %gene ) {
 	
         my $internalExon = 0;
@@ -689,6 +731,12 @@ sub get_all_Genes {
     
     return values %gene;
 }
+
+
+
+
+
+
 
 
 =head2 length

@@ -43,6 +43,7 @@ Bio::EnsEMBL::DB::ContigI.pm - Abstract Interface for Contig
     $seqout->write_seq($contig);
 
 
+
 =head1 DESCRIPTION
 
 The contig interface defines a single continuous piece of DNA with both
@@ -56,6 +57,7 @@ The contig interface just defines a number of functions which have to provided
 by implementations. Two good implementations are the RawContig implementation
 found in Bio::EnsEMBL::DBSQL::RawContig and the generic VirtualContig interface
 in Bio::EnsEMBL::DB::VirtualContig
+
 
 =head1 CONTACT
 
@@ -81,6 +83,7 @@ use Bio::Root::RootI
 
 @ISA = qw( Bio::SeqI Bio::Root::RootI );
 
+
 =head2 primary_seq
 
  Title   : seq
@@ -98,6 +101,7 @@ sub primary_seq {
    $self->throw("Object did not provide the primary_seq method on a contig interface");
 }
 
+
 =head2 id
 
  Title   : id
@@ -114,6 +118,7 @@ sub id{
     my ($self) = @_;
     $self->throw("Object did not provide the id method on a contig interface");
 }
+
 
 
 =head2 get_all_SeqFeatures
@@ -135,6 +140,9 @@ sub get_all_SeqFeatures{
 
 }
 
+
+
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -153,6 +161,8 @@ sub get_all_SimilarityFeatures_above_score{
    $self->throw("Object did not provide the get_all_SimilarityFeatures_above_score method in ContigI abstract class!");
 
 }
+
+
 
 
 =head2 get_all_SimilarityFeatures
@@ -174,6 +184,9 @@ sub get_all_SimilarityFeatures{
 
 }
 
+
+
+
 =head2 get_all_RepeatFeatures
 
  Title   : get_all_RepeatFeatures
@@ -192,6 +205,9 @@ sub get_all_RepeatFeatures{
    $self->throw("Object did not provide the get_all_RepeatFeatures method on Contig interface!");
 
 }
+
+
+
 
 =head2 get_all_ExternalFeatures
 
@@ -214,6 +230,9 @@ sub get_all_ExternalFeatures{
 
 
 
+
+
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -232,6 +251,36 @@ sub get_all_Genes{
    $self->throw("Object did not provide the get_all_Genes method on Contig interface!");
 
 }
+
+
+
+
+
+
+=head2 get_Genes_by_Type
+
+ Title   : get_Genes_by_Type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Genes_by_Type{
+   my ($self) = @_;
+
+   $self->throw("Object did not provide the get_Genes_by_Type method on Contig interface!");
+
+}
+
+
+
+
+
+
 
 
 =head2 length
