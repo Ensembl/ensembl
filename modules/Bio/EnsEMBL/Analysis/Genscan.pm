@@ -54,6 +54,8 @@ use strict;
 # Object preamble - inherits from Bio::Root::Object;
 
 use Bio::Root::Object;
+use Bio::SeqIO;
+
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 
