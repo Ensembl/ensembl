@@ -983,4 +983,58 @@ sub add_DBLink{
 #  push(@{$self->{'_db_link'}},$value);
 }
 
+=head2 get_all_DASFactories
+
+  Arg [1]   : none
+  Function  : Retrieves a listref of registered DAS objects
+              TODO: Abstract to a DBLinkContainer obj
+  Returntype: [ DAS_objects ]
+  Exceptions:
+  Caller    :
+  Example   : $dasref = $prot->get_all_DASFactories
+
+=cut
+
+sub get_all_DASFactories {
+   my $self = shift;
+   return [ $self->adaptor()->db()->_each_DASFeatureFactory ];
+}
+
+=head2 get_all_DASFeatures
+
+  Arg [1]    : none
+  Example    : $features = $prot->get_all_DASFeatures;
+  Description: Retreives a hash reference to a hash of DAS feature
+               sets, keyed by the DNS, NOTE the values of this hash
+               are an anonymous array containing:
+                (1) a pointer to an array of features;
+                (2) a pointer to the DAS stylesheet
+              TODO: Abstract to a DBLinkContainer obj
+  Returntype : hashref of Bio::SeqFeatures
+  Exceptions : ?
+  Caller     : webcode
+
+=cut
+
+sub get_all_DASFeatures{
+  my ($self,@args) = @_;
+  $self->{_das_features} ||= {}; # Cache
+  my %das_features;
+  foreach my $dasfact( @{$self->get_all_DASFactories} ){
+    my $dsn = $dasfact->_dsn;
+    if( $self->{_das_features}->{$dsn} ){ # Use cached
+      $das_features{$dsn} = $self->{_das_features}->{$dsn};
+      next;
+    }
+    else{ # Get fresh data
+      my @featref = $dasfact->fetch_all_by_DBLink_Container( $self );
+      $self->{_das_features}->{$dsn} = [@featref];
+      $das_features{$dsn} = [@featref];
+    }
+  }
+  return \%das_features;
+}
+
+
+
 1;

@@ -910,6 +910,7 @@ sub get_all_DBLinks{
 
   Arg [1]   : none
   Function  : Retrieves a listref of registered DAS objects
+              TODO: Abstract to a DBLinkContainer obj
   Returntype: [ DAS_objects ]
   Exceptions:
   Caller    :
@@ -931,6 +932,7 @@ sub get_all_DASFactories {
                are an anonymous array containing:
                 (1) a pointer to an array of features;
                 (2) a pointer to the DAS stylesheet
+              TODO: Abstract to a DBLinkContainer obj
   Returntype : hashref of Bio::SeqFeatures
   Exceptions : ?
   Caller     : webcode
