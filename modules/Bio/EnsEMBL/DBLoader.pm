@@ -71,14 +71,14 @@ sub new{
    my ($class,$string) = @_;
    my ($module,%hash);
 
-   $string =~ /(\S+?)\/(\S+)/ || die "Could not parse [$string] as a ensembl database locator. Needs database_module/params";
+   $string =~ /(\S+?)\/([\S+\s*]+)/ || die "Could not parse [$string] as a ensembl database locator. Needs database_module/params";
    $module = $1;
    my $param = $2;
 
    &_load_module($module);
    my @param = split(/;/,$param);
    foreach my $keyvalue ( @param ) {
-       $keyvalue =~ /(\S+?)=(\S*)/ || do { warn("In loading $keyvalue, could not split into keyvalue for loading $module. Ignoring"); next; };
+       $keyvalue =~ /(\S+?)=([\S*\s*]*)/ || do { warn("In loading $keyvalue, could not split into keyvalue for loading $module. Ignoring"); next; };
 
        my $key = $1;
        my $value = $2;
