@@ -1,0 +1,5 @@
+echo "y" | mysqladmin drop eliatest
+mysqladmin create eliatest
+mysql eliatest < ../sql/table.sql
+echo "insert into meta (donor_database_locator) values('Bio::EnsEMBL::TimDB::Obj');" | mysql eliatest
+perl update_list_chunk.pl -tdbname eliatest -usefile test.list -tpass superpog
