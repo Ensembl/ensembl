@@ -52,8 +52,11 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
-use Bio::EnsEMBL::Analysis::ensConf qw(TRANSCRIPT_ID_SUBSCRIPT 
-				       GENE_ID_SUBSCRIPT);
+use Bio::EnsEMBL::Analysis::ensConf qw(
+				       TRANSCRIPT_ID_SUBSCRIPT 
+				       GENE_ID_SUBSCRIPT
+				       EXON_ID_SUBSCRIPT
+				       );
 use FileHandle;
 
 @ISA = qw(Bio::Root::Object);
@@ -148,7 +151,7 @@ sub _parse_exon{
     my $dis = <$fh>; # skip first record (dull!)
     while( <$fh> ) {
 	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
-	    my $eid = $1;
+	    my $e = $1;
 	    my $contigid = $2;
 	    my $start = $3;
 	    my $end = $4;
@@ -159,6 +162,15 @@ sub _parse_exon{
 	    
 	    $pep =~ s/\s+//g;
 	    
+	    # FIXME
+	    # timdb has e/t/g version numbers - should be added to model at this point
+	    # decode version at this point
+	    my $eid;
+	    if($e=~/^$EXON_ID_SUBSCRIPT(\d+)/){
+		$eid=$EXON_ID_SUBSCRIPT.$1;
+	    }else{
+		$self->throw("Exon identifier could not be parsed: $eid");
+	    }
 
 	    # skip if not from $clone (if defined)
 	    my $cloneid=$contigid;
@@ -212,7 +224,7 @@ sub _parse_exon{
 	    
 	    $exon->created($created);
 	    $exon->modified($modified);
-	    $self->{'_exon_hash'}->{$eid} = $exon;
+	    $self->{'_exon_hash'}->{$e} = $exon;
 	} else {
 	    chomp;
 	    $self->throw("Yikes. Line with > but not parsed! [$_]");
@@ -438,29 +450,54 @@ sub map_all{
     my $n_missed_exons;
     foreach my $t (keys %{$self->{'_trans_hash'}}){
 	my $transcript=new Bio::EnsEMBL::Transcript;
-	$t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $t as a gene thingy");
-	my $transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
+
+	# FIXME
+	# parse versions at this point
+	my $transcript_id;
+	if($t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/){
+	    $transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
+	}else{
+	    $self->throw("Cannot parse $t as a valid transcript id");
+	}
+
 	$transcript->id($transcript_id);
-	foreach my $exon_id (@{$self->{'_trans_hash'}->{$transcript_id}}){
-	    if(!exists $self->{'_exon_hash'}->{$exon_id} ) {
+	foreach my $e (@{$self->{'_trans_hash'}->{$t}}){
+
+	    # FIXME
+	    # parse versions at this point
+	    my $exon_id;
+	    if($e =~ /$EXON_ID_SUBSCRIPT(\d+)/){
+		$exon_id = $EXON_ID_SUBSCRIPT . $1;
+	    }else{
+		$self->throw("Cannot parse $e as a valid exon id");
+	    }
+
+	    # 
+	    if(!exists $self->{'_exon_hash'}->{$e} ) {
 		$missed_exons{$exon_id}++;
 		next;
 	    }
+	    # only add transcript if found a valid exon
 	    $transcripts{$transcript_id}=$transcript;
-	    #$self->{'_exon_hash'}->{$exon_id}->_rephase_exon_genscan();
-	    $transcript->add_Exon($self->{'_exon_hash'}->{$exon_id});
+	    #$self->{'_exon_hash'}->{$e}->_rephase_exon_genscan();
+	    $transcript->add_Exon($self->{'_exon_hash'}->{$e});
 	    push(@{$exon2transcript{$exon_id}},$transcript);
 	}
+
+	# don't sort - it breaks things because order is no longer
+	# necessarily linear
 	#if(scalar($transcript->each_Exon())){
 	#    $transcript->sort();
 	#}
     }
+
     # report missing exons, provided $clone not specified for speed.
     $n_missed_exons=scalar(keys %missed_exons);
     my $missed_exons_text=join("\n",(keys %missed_exons));
     if($n_missed_exons && !$raclones){
 	$self->warn("$n_missed_exons exons missing: $missed_exons_text");
     }
+
     # DEBUG
     print STDERR scalar(keys %exon2transcript)." exons have transcripts\n";
     $obj->{'_exon2transcript'}=\%exon2transcript;
@@ -469,10 +506,28 @@ sub map_all{
     my %transcript2gene;
     foreach my $g (keys %{$self->{'_gene_hash'}}){
 	my $gene=new Bio::EnsEMBL::Gene;
-	$g =~ /$GENE_ID_SUBSCRIPT(\d+)/ || $self->throw("Cannot parse $g as a gene thingy");
-	my $gene_id = $GENE_ID_SUBSCRIPT . $1;
+
+	# FIXME
+	# parse versions at this point
+	my $gene_id;
+	if($g =~ /$GENE_ID_SUBSCRIPT(\d+)/){
+	    $gene_id = $GENE_ID_SUBSCRIPT . $1;
+	}else{
+	    $self->throw("Cannot parse $g as a valid gene id");
+	}
+
 	$gene->id($gene_id);
-	foreach my $transcript_id (@{$self->{'_gene_hash'}->{$gene_id}}){
+	foreach my $t (@{$self->{'_gene_hash'}->{$g}}){
+
+	    # FIXME
+	    # parse versions at this point
+	    my $transcript_id;
+	    if($t =~ /$TRANSCRIPT_ID_SUBSCRIPT(\d+)/){
+		$transcript_id = $TRANSCRIPT_ID_SUBSCRIPT . $1;
+	    }else{
+		$self->throw("Cannot parse $t as a valid transcript id");
+	    }
+
 	    if(!exists $transcripts{$transcript_id}){
 		next;
 	    }
