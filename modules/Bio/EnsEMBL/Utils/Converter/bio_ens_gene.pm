@@ -54,12 +54,11 @@ sub _initialize {
     my ($self, @args) = @_;
     $self->SUPER::_initialize(@args);
     
-    my $converter_for_transcripts = new Bio::EnsEMBL::Utils::Converter(
+    $self->{_converter_for_transcripts} = new Bio::EnsEMBL::Utils::Converter(
         -in => 'Bio::SeqFeature::Gene::Transcript',
         -out => 'Bio::EnsEMBL::Transcript'
     );
 
-    $self->_converter_for_transcripts($converter_for_transcripts);
 }
 
 sub _convert_single {
@@ -70,36 +69,20 @@ sub _convert_single {
     }
     my $gene = $input;
     my $ens_gene = Bio::EnsEMBL::Gene->new();
+    $ens_gene->analysis($self->analysis);
     my @transcripts = $gene->transcripts;
     
-    # 
-    $self->_converter_for_transcripts->contig($self->contig);
+    # contig is needed by exon and Supporting Feature; S.F. needs an analysis.
+    $self->{_converter_for_transcripts}->contig($self->contig);
+    $self->{_converter_for_transcripts}->analysis($self->analysis);
     
-    my $ens_transcripts = $self->_converter_for_transcripts->convert(
+    my $ens_transcripts = $self->{_converter_for_transcripts}->convert(
         \@transcripts);
     
     foreach(@{$ens_transcripts}){
         $ens_gene->add_Transcript($_);
     }
     return $ens_gene;
-}
-
-=head2 _converter_for_transcripts
-  Title   : _converter_for_transcripts
-  Usage   : $self->_converter_for_transcripts
-  Function: get and set for _converter_for_transcripts
-  Return  : L<Bio::EnsEMBL::Utils::Converter>
-  Args    : L<Bio::EnsEMBL::Utils::Converter>
-  Notes   : This is for internal use. Do not sign it.
-=cut
-
-sub _converter_for_transcripts {
-    my ($self, $arg) = @_;
-    if(defined($arg)){
-        $self->throws("A Bio::EnsEMBL::Utils::Converter object expected.") unless($arg->isa('Bio::EnsEMBL::Utils::Converter'));
-        $self->{__converter_for_transcripts} = $arg;
-    }
-    return $self->{__converter_for_transcripts};
 }
 
 1;

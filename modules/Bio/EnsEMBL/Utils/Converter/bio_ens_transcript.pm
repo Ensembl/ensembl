@@ -57,9 +57,15 @@ sub _convert_single {
     my $transcript = $arg;
 
     my @exons = $transcript->exons_ordered;
-    my @ens_exons = @{ $self->_converter_for_exons->convert(\@exons) };
+    $self->{_converter_for_exons}->contig($self->contig);
+    $self->{_converter_for_exons}->analysis($self->analysis);
     
-    my $ens_transcript = Bio::EnsEMBL::Transcript->new(@ens_exons);
+    my $ens_exons = $self->{_converter_for_exons}->convert(\@exons);
+    
+    my $ens_transcript = Bio::EnsEMBL::Transcript->new(@{$ens_exons});
+    $ens_transcript->start($transcript->start);
+    $ens_transcript->end($transcript->end);
+#    $ens_transcript->strand($transcript->strand);
     return $ens_transcript;
 }
 
@@ -67,21 +73,11 @@ sub _convert_single {
 sub _initialize {
     my ($self, @args) = @_;
     $self->SUPER::_initialize(@args);
-    my $converter_for_exons = new Bio::EnsEMBL::Utils::Converter(
+
+    $self->{_converter_for_exons} = new Bio::EnsEMBL::Utils::Converter(
         -in => 'Bio::SeqFeature::Gene::Exon',
         -out => 'Bio::EnsEMBL::Exon'
     );
 
-    $self->_converter_for_exons($converter_for_exons);
 }
 
-
-sub _converter_for_exons {
-    my ($self, $arg) = @_;
-    if(defined($arg)){
-        $self->{__converter_for_exons} = $arg;
-    }
-    return $self->{__converter_for_exons};
-}
-
-1;

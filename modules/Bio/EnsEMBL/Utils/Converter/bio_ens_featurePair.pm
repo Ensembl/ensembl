@@ -46,19 +46,52 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens_featurePair;
 use strict;
 use vars qw(@ISA);
 
+use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::RepeatConsensus;
-
+use Bio::EnsEMBL::Utils::Converter;
 use Bio::EnsEMBL::Utils::Converter::bio_ens;
 @ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
 
+sub _initialize {
+    my ($self, @args) = @_;
+    $self->SUPER::_initialize(@args);
+
+    # internal converter for seqFeature
+    $self->{_bio_ens_seqFeature} = new Bio::EnsEMBL::Utils::Converter (
+        -in => 'Bio::SeqFeature::Generic',
+        -out => 'Bio::EnsEMBL::SeqFeature',
+    );
+}
+
 sub _convert_single {
     my ($self, $pair) = @_;
+    unless($pair && $pair->isa('Bio::SeqFeature::FeaturePair')){
+        $self->throw('a Bio::SeqFeature::FeaturePair object needed');
+    }
+    
     if($self->out eq 'Bio::EnsEMBL::RepeatFeature'){
         return $self->_convert_single_to_repeatFeature($pair);
+    }elsif($self->out eq 'Bio::EnsEMBL::FeaturePair'){
+        return $self->_convert_single_to_featurePair($pair);
     }else{
         my $output_module = $self->out;
         $self->throw("Cannot covert to [$output_module]");
     }
+}
+
+sub _convert_single_to_featurePair {
+    my ($self, $pair) = @_;
+    my $feature1 = $pair->feature1;
+    my $feature2 = $pair->feature2;
+    $self->{_bio_ens_seqFeature}->contig($self->contig);
+    $self->{_bio_ens_seqFeature}->analysis($self->analysis);
+    my $ens_f1 = $self->{_bio_ens_seqFeature}->_convert_single($feature1);
+    my $ens_f2 = $self->{_bio_ens_seqFeature}->_convert_single($feature2);
+    my $ens_fp = Bio::EnsEMBL::FeaturePair->new(
+        -feature1 => $ens_f1,
+        -feature2 => $ens_f2
+    );
+    return $ens_fp;
 }
 
 sub _convert_single_to_repeatFeature {

@@ -54,21 +54,26 @@ use Bio::EnsEMBL::Utils::Converter::bio_ens;
 sub _convert_single {
     my ($self, $in) = @_;
     
-    unless($in && defined($in) && ref($in) && $in->isa('Bio::SeqFeature::Generic')){
+    unless($in && defined($in) && $in->isa('Bio::SeqFeature::Generic')){
         $self->throw("a Bio::SeqFeature::Generic object needed");
     }
     
     my $seqFeature = $in;
-    
+    my $seq_id = $seqFeature->seq_id;
+    unless(defined($seq_id) && $seq_id){
+        $self->warn("No seq_id value. EnsEMBL SeqFeature will validate it");
+        $seq_id = 'Unknown';
+    }
+        
     my $ens_seqFeature;
     my @args = (
         -start => $in->start,
         -end => $in->end,
         -strand => $in->strand,
-        -score => $in->score
+        -score => $in->score,
         -analysis => $self->analysis,
-        -source_tag => $in->source_tag
-        -seqname => $in->seq_id
+        -source_tag => $in->source_tag,
+        -seqname => $seq_id
     );
 
     my $output_module = $self->out;
@@ -90,7 +95,7 @@ sub _convert_single {
     }
     
     $ens_seqFeature->attach_seq($self->contig);
-
+    $ens_seqFeature->seqname($seq_id);
     return $ens_seqFeature;
 }
 
