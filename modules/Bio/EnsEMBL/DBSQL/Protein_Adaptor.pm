@@ -62,6 +62,7 @@ use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
 use Bio::EnsEMBL::DBSQL::DBEntryAdaptor;
+use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
 # this is required at the right point if needed
 #use Bio::EnsEMBL::ExternalData::GeneSNP;
@@ -712,17 +713,20 @@ sub get_snps {
     my $virtual = $db->get_StaticGoldenPathAdaptor();
     
 #Fetch a virtual contig for the given transcript. All of the external are retrieved for this virtual contig as well as all genes.   
+
+    &eprof_start('snp_vc_build');
+
     my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
+
+    &eprof_end('snp_vc_build');
+
     my @snips = $vc->get_all_ExternalFeatures();
-    my @genes = $vc->get_all_Genes();
+    my ($gene) = $vc->get_Genes($geneid);
+
+
     
 #Get which virtual transcript holds the transcript we want to study   
 
-   foreach my $gen (@genes) {
-       if ($gen->id eq $geneid) {
-	   $gene = $gen;
-       }
-   }
 
    my @transcripts = $gene->each_Transcript();
 
@@ -763,44 +767,9 @@ sub get_snps {
 	    }
 	}
     }
-   
-    foreach my $gen (@genes) {
-	if ($gen->id eq $geneid) {
-	    $gene = $gen;
-	}
 
-    }
-    
-    my @transcripts = $gene->each_Transcript();
-    
-    foreach my $trans  (@transcripts) {
-	if ($trans->id eq $transid) {
-	    $transcript = $trans;
-	}
-    }
-    
-    my $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
-	(-gene => $gene,
-	 -contig => $vc
-	 );
-    
-    $genesnp->transcript($transcript);
-    
-    my @seq_diff = $genesnp->snps2transcript(@snips);
-    
-    foreach my $diff (@seq_diff) {
-	foreach my $var ($diff->each_Variant) {
-	    if($var->isa('Bio::Variation::AAChange') ) {
-		#print STDERR $var->label, "\n";
-		#print STDERR $var->trivname, "\n";
-		#print STDERR $var->allele_ori->seq, "\n";
-		#print STDERR $var->allele_mut->seq, "\n";
-		#foreach my $all ($var->each_Allele) {
-		#    print STDERR $all->seq, "\n";
-		#}
-	    }
-	}
-    }
+    push(@array_features,@seq_diff);
+   
     return @array_features;
 }
 
