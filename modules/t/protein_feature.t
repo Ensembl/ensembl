@@ -24,7 +24,7 @@
 #
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..22\n"; 
+BEGIN { $| = 1; print "1..26\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -94,49 +94,64 @@ else {
     print "not ok 8\n";
 }
 
-if ($transl[0]->feature2->start == 4) {
+if ($transl[0]->feature1->percent_id == 45) {
     print "ok 9\n";
 }
 else {
     print "not ok 9\n";
 }
 
-if ($transl[0]->feature2->end == 7) {
+if ($transl[0]->feature1->p_value == 23.0000) {
     print "ok 10\n";
 }
 else {
     print "not ok 10\n";
 }
 
-if ($transl[0]->feature2->seqname eq "SP34") {
+
+if ($transl[0]->feature2->start == 4) {
     print "ok 11\n";
 }
 else {
     print "not ok 11\n";
 }
 
-if (scalar(@transl) == 2) {
+if ($transl[0]->feature2->end == 7) {
     print "ok 12\n";
 }
 else {
     print "not ok 12\n";
 }
 
-eval {
-    $id = $protfeat->fetch_by_dbID(1);
-};
-if ($@) {
-    print "not ok 13\n";
-}
-else {
+if ($transl[0]->feature2->seqname eq "SP34") {
     print "ok 13\n";
 }
+else {
+    print "not ok 13\n";
+}
 
-if ($id->feature1->start == $transl[0]->feature1->start) {
+if (scalar(@transl) == 2) {
     print "ok 14\n";
 }
 else {
     print "not ok 14\n";
+}
+
+eval {
+    $id = $protfeat->fetch_by_dbID(1);
+};
+if ($@) {
+    print "not ok 15\n";
+}
+else {
+    print "ok 15\n";
+}
+
+if ($id->feature1->start == $transl[0]->feature1->start) {
+    print "ok 16\n";
+}
+else {
+    print "not ok 16\n";
 }
 
 my $analysis = $protfeat->_feature_obj->get_Analysis(1);
@@ -145,7 +160,9 @@ my $feat1 = new Bio::EnsEMBL::SeqFeature ( -start => 1,
 					   -end => 4,        
 					   -score => 97,
 					   -analysis => $analysis,
-					   -seqname => "translation_id3");
+					   -seqname => "translation_id3",
+					   -percent_id => 34,
+					   -p_value => 45);
    
 my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 5,
 					  -end => 6,
@@ -162,20 +179,20 @@ $protfeat->write_Protein_feature($feature);
 };
 
 if ($@) {
-    print "not ok 15\n";
+    print "not ok 17\n";
 }
 else {
-    print "ok 15\n";
+    print "ok 17\n";
 }
 
 
 
 @transl1 = $protfeat->fetch_by_translationID("translation_id3");
 if (scalar @transl1 == 3) {
-    print "ok 16\n";
+    print "ok 18\n";
 }
 else {
-    print "not ok 16\n";
+    print "not ok 18\n";
 }
 
 eval {
@@ -183,10 +200,10 @@ $protfeat->delete_by_translationID("translation_id3");
 };
 
 if ($@) {
-    print "not ok 17\n";
+    print "not ok 19\n";
 }
 else {
-    print "ok 17\n";
+    print "ok 19\n";
 }
 
 
@@ -196,7 +213,9 @@ my $feat3 = new Bio::EnsEMBL::SeqFeature ( -start => 1,
 					   -end => 4,        
 					   -score => 97,
 					   -analysis => $analysis,
-					   -seqname => "translation_id3");
+					   -seqname => "translation_id3",
+					   -percent_id => 56,
+					   -p_value => 67);
    
 my $feat4 = new Bio::EnsEMBL::SeqFeature (-start => 5,
 					  -end => 6,
@@ -210,26 +229,6 @@ my $feature1 = new Bio::EnsEMBL::FeaturePair(-feature1 => $feat3,
 @transl1 = $protfeat->fetch_by_translationID("translation_id3");
 
 if (scalar @transl1 == 0) {
-    print "ok 18\n";
-}
-else {
-    print "not ok 18\n";
-}
-
-eval {
-$protfeat->write_Protein_feature_by_translationID("translation_id3",$feature,$feature1);
-};
-
-if ($@) {
-    print "not ok 19\n";
-}
-else {
-    print "ok 19\n";
-}
-
-my @transl2 = $protfeat->fetch_by_translationID("translation_id3");
-
-if (scalar @transl2 == 2) {
     print "ok 20\n";
 }
 else {
@@ -237,7 +236,7 @@ else {
 }
 
 eval {
-$protfeat->fetch_by_translationID("wrong_id");
+$protfeat->write_Protein_feature_by_translationID("translation_id3",$feature,$feature1);
 };
 
 if ($@) {
@@ -247,15 +246,52 @@ else {
     print "ok 21\n";
 }
 
+my @transl2 = $protfeat->fetch_by_translationID("translation_id3");
+
+if (scalar @transl2 == 2) {
+    print "ok 22\n";
+}
+else {
+    print "not ok 22\n";
+}
+
+eval {
+$protfeat->fetch_by_translationID("wrong_id");
+};
+
+if ($@) {
+    print "not ok 23\n";
+}
+else {
+    print "ok 23\n";
+}
+
 eval {
     $protfeat->delete_by_dbID(1);
 };
 
 if ($@) {
-    print "not ok 22\n";
+    print "not ok 24\n";
 }
 else {
-    print "ok 22\n";
+    print "ok 24\n";
 }
 
+my $interpro_id;
+eval {
+    $interpro_id = $protfeat->get_interproac_by_signature_id("PF01038");
+};
 
+if ($@) {
+    print "not ok 25\n";
+}
+else {
+    print "ok 25\n";
+}
+
+if ($interpro_id->external_db eq "IPR003255") {
+    print "ok 26\n";
+}
+else {
+    print "not ok 26\n";
+}

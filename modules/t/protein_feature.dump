@@ -113,8 +113,8 @@ INSERT INTO genetype (gene_id, type) VALUES ('gene_id3','test');
 # Dumping data for table 'protein_feature'
 #
 
-INSERT INTO protein_feature (id, seq_start, seq_end, score, analysis, translation, hstart, hend, hid) VALUES (1,2,5,99.0000,1,'translation_id3',4,7,'SP34');
-INSERT INTO protein_feature (id, seq_start, seq_end, score, analysis, translation, hstart, hend, hid) VALUES (2,4,8,87.0000,1,'translation_id3',3,12,'SP01');
+INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hstart, hend, hid, score, evalue, perc_id) VALUES (1,2,5,1,'translation_id3',4,7,'SP34', 99, 23, 45);
+INSERT INTO protein_feature (id, seq_start, seq_end, analysis, translation, hstart, hend, hid, score, evalue, perc_id) VALUES (2,4,8,1,'translation_id3',3,12,'SP01', 98, 12, 78);
 
 #
 # Dumping data for table 'repeat_feature'
@@ -163,3 +163,8 @@ INSERT INTO transcript (id, version, gene, translation) VALUES ('transcript_id3'
 
 INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('translation_id3',1,25,'exon_id3',100,'exon_id3');
 
+#
+# Dumping data for table 'interpro'
+#
+
+INSERT INTO interpro (interpro_ac,id) VALUES ('IPR003255','PF01038');
