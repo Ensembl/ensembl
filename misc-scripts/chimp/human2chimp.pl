@@ -9,13 +9,12 @@ use Bio::EnsEMBL::Exon;
 
 use InterimTranscript;
 use InterimExon;
+use StatMsg;
+use Deletion;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-use StatMsg;
 
-my $MAX_CODING_INDEL     = 18; #max allowed coding indel in exon
-my $MAX_FRAMESHIFT_INDEL = 8; #max allowed frameshifting indel in exon
 
 my $verbose;
 
@@ -246,9 +245,10 @@ sub transfer_transcript {
         #
         # complete failure to map exon
         #
+	my $stat_code = StatMsg::EXON | StatMsg::DELETE | StatMsg::ENTIRE;
 
         $chimp_exon->fail(1);
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_DELETE_ENTIRE));
+	$chimp_transcript->add_Exon($chimp_exon);
 
         #if this is a UTR exon, this is ok
         my @cds_coords = $trans_mapper->genomic2cds($c->start(),$c->end(),
@@ -259,13 +259,21 @@ sub transfer_transcript {
            $cds_coords[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
           debug('entire utr exon deletion - ok');
 
+	  $stat_code |= StatMsg::UTR;
+
+	  $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
+
           # we can simply throw out this exon, it was all UTR
         } else {
           ### TBD: can do more sensible checking and maybe split transcript
+	  $stat_code |= StatMsg::CDS;
 
-          my $sm = StatMsg->new(StatMsg::EXON_DELETE_CODING);
-          $chimp_transcript->add_StatMsg($sm);
-          $chimp_transcript->fail(1);
+	  if(@cds_coords > 1) {
+	    # some UTR was deleted too
+	    $stat_code |= StatMsg::UTR;
+	  }
+
+          $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
 
           return ();
         }
@@ -281,8 +289,6 @@ sub transfer_transcript {
         $chimp_exon->strand($c->strand());
         $chimp_exon->seq_region($c->id());
 
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::OK_EXON_PREFECT));
-
         $chimp_cdna_pos += $c->length();
         $cdna_exon_start += $c->length();
 
@@ -297,7 +303,7 @@ sub transfer_transcript {
         #failed to obtain extent of coords due to scaffold spanning
         #strand flipping, or exon inversion
 
-        $chimp_transcript->add_StatMsg($chimp_exon->last_StatMsg());
+	$transcript->add_Exon($chimp_exon);
 
         ### TBD - fix this, may be ok to drop exon and continue esp. if exon
         ###       is entirely UTR
@@ -312,8 +318,8 @@ sub transfer_transcript {
           #
           # deletion in chimp, insert in human
           #
-          process_deletion(\$chimp_cdna_pos, $c->length(),
-                           $chimp_exon, $chimp_transcript);
+          Deletion::process_deletion(\$chimp_cdna_pos, $c->length(),
+				     $chimp_exon, $chimp_transcript);
 
         } else {
           # can actually end up with adjacent inserts and deletions so we need
@@ -373,386 +379,6 @@ sub transfer_transcript {
                             $slice_adaptor);
 }
 
-###############################################################################
-# process_deletion
-#
-# Processes a deletion in an exon by adjusting the exon start/end
-# and adjusting the translation start/end of the transcript as necessary
-#
-# If the deletion is in the CDS and considered to be too long to accomodate
-# this method will return undef.
-#
-# On success this this method will return a listref of extra exons that
-# needed to be created as sometimes it is necessary to split exons into
-# multiple parts.
-#
-###############################################################################
-
-sub process_deletion {
-  my $cdna_del_pos_ref  = shift;
-  my $del_len           = shift;
-  my $exon        = shift;
-  my $transcript  = shift;
-
-  my $del_start = $$cdna_del_pos_ref + 1;
-  my $del_end   = $$cdna_del_pos_ref + $del_len;
-
-  # sanity check, deletion should be completely in
-  # or adjacent to exon boundaries
-  if($del_start < $exon->cdna_start() - 1 ||
-     $del_start > $exon->cdna_end() + 1) {
-
-    throw("Unexpected: deletion is outside of exon boundary\n" .
-          "     del_start       = $del_start\n" .
-          "     del_end         = $del_end\n" .
-          "     cdna_exon_start =". $exon->cdna_start() .
-          "     cdna_exon_end   =". $exon->cdna_end());
-  }
-
-
-  #
-  # case 1: delete covers entire CDS
-  #
-  if($del_start <= $transcript->cdna_coding_start() &&
-     $del_end   >= $transcript->cdna_coding_end()) {
-
-    # nothing can be done with this exon since entire CDS is deleted
-
-    $exon->fail(1);
-    $transcript->fail(1);
-    $exon->add_StatMsg(StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_ENTIRE));
-    return;
-  }
-
-  #
-  # case 2: delete overlaps UTR and start of CDS
-  #
-  elsif($del_start < $transcript->cdna_coding_start() &&
-        $del_end   >= $transcript->cdna_coding_start()) {
-    my $utr_del_len = $transcript->cdna_coding_start - $del_start;
-    my $cds_del_len = $del_len - $utr_del_len;
-
-    debug("delete ($del_len) in 5' utr ($utr_del_len) " .
-          "and start of cds ($cds_del_len)");
-
-    if($cds_del_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been deleted
-
-      my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG);
-      $exon->fail(1);
-      $transcript->fail(1);
-      $exon->add_StatMsg($sm);
-      return;
-    }
-
-    # move up CDS to account for delete in 5prime UTR
-    $transcript->move_cdna_coding_start(-$utr_del_len);
-    $transcript->move_cdna_coding_end(-$utr_del_len);
-
-    #move up CDS end to account for delete in CDS
-    $transcript->move_cdna_coding_end(-$cds_del_len);
-
-    my $frameshift = $cds_del_len % 3;
-
-    if($frameshift) {
-      if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
-        # frameshift deletion is too long
-
-        my $sm=StatMsg->new(StatMsg::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
-        $exon->fail(1);
-        $transcript->fail(1);
-        $exon->add_StatMsg($sm);
-        return;
-      }
-
-      # move down CDS start to put reading frame back (shrink CDS)
-      debug("shifting cds start to restore reading frame");
-      $transcript->move_cnda_coding_start(3 - $frameshift);
-
-      my $sm = StatMsg->new(StatMsg::SHORT_FRAMESHIFT_DELETE);
-      $exon->add_StatMsg($sm);
-
-      if($transcript->cdna_coding_start >= $transcript->cdna_coding_end()) {
-        $sm = StatMsg->new(StatMsg::NO_CDS_LEFT);
-        $transcript->add_StatMsg($sm);
-        $transcript->fail(1);
-        return;
-      }
-    }
-  }
-
-  #
-  # case 3: delete overlaps end of CDS and UTR
-  #
-  elsif($del_start <= $transcript->cdna_coding_end() &&
-        $del_end   > $transcript->cdna_coding_end()) {
-    my $cds_del_len = $$cdna_coding_end_ref - $del_start + 1;
-    my $utr_del_len = $del_len - $cds_del_len;
-
-    debug("delete ($del_len) in 3' utr ($utr_del_len) and" .
-          " end of cds ($cds_del_len)");
-
-    if($cds_del_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been deleted
-      my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG);
-      $exon->add_StatMsg($sm);
-      $exon->fail(1);
-      $transcript->fail(1);
-      return;
-    }
-
-    # move up CDS end to account for CDS deletion
-    $transcript->move_cdna_coding_end(-$cds_del_len);
-
-    my $frameshift = $cds_del_len % 3;
-
-    if($frameshift) {
-      if($cds_del_len > $MAX_FRAMESHIFT_INDEL) {
-        my $sm=StatMsg->new(StatMsg::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
-        $exon->add_StatMsg($sm);
-        $exon->fail(1);
-        $transcript->fail(1);
-        return;
-      }
-
-      #move up CDS end to put reading frame back (shrink CDS)
-      debug("shifting cds end to restore reading frame");
-      $transcript->move_cdna_coding_end(3 - $frameshift);
-
-      my $sm = StatMsg->new(StatMsg::SHORT_FRAMESHIFT_DELETE);
-      $exon->add_StatMsg($sm);
-
-      if($$cdna_coding_start_ref >= $$cdna_coding_end_ref) {
-        $sm = StatMsg->new(StatMsg::NO_CDS_LEFT);
-        $transcript->add_StatMsg($sm);
-        $transcript->fail(1);
-        return;
-      }
-    }
-  }
-
-  #
-  # case 4: delete is at start of CDS
-  #
-  elsif($del_start == $transcript->cdna_coding_start()) {
-    debug("delete ($del_len) at start of cds");
-
-    if($del_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been deleted
-      $exon->fail(1);
-      $transcript->fail(1);
-      $exon->add_StatMsg(StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG));
-      return;
-    }
-
-    # move up CDS end to account for CDS deletion
-    $transcript->move_cdna_coding_end(-$del_len);
-
-    my $frameshift = $del_len % 3;
-
-    if($frameshift) {
-      if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        my $sm=StatMsg->new(StatMsg::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
-        $exon->add_StatMsg($sm);
-        $exon->fail(1);
-        $transcript->fail(1);
-        return;
-      }
-
-      # move down CDS start to put reading frame back (shrink CDS)
-      debug("shifting cds start to restore reading frame");
-      $transcript->move_cdna_coding_start(3 - $frameshift);
-
-      if($transcript->cdna_coding_start() >= $transcript->cdna_coding_end()) {
-        $transcript->add_StatMsg(StatMsg->new(StatMsg::NO_CDS_LEFT));
-        $transcript->fail(1);
-        return;
-      }
-    }
-  }
-
-  #
-  # case 5: delete is at end of CDS
-  #
-  elsif($del_end == $transcript->cdna_coding_end()) {
-    debug("delete ($del_len) at end of cds");
-
-    if($del_len > $MAX_CODING_INDEL) {
-      # too much coding sequence has been deleted
-      my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG);
-      $exon->add_StatMsg(StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG));
-      $exon->fail(1);
-      $transcript->fail(1);
-      return;
-    }
-
-    # move up CDS end to account for CDS deletion
-    $transcript->move_cdna_coding_end(-$del_len);
-
-    my $frameshift = $del_len % 3;
-
-    if($frameshift) {
-      if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        my $sm=StatMsg->new(StatMsg::PART_EXON_CDS_FRAMESHIFT_DELETE_TOO_LONG);
-        $exon->add_StatMsg($sm);
-        $exon->fail(1);
-        $transcript->fail(1);
-        return;
-      }
-
-      # move up CDS end to put reading frame back (shrink CDS)
-      $transcript->move_cdna_coding_end(3 - $frameshift);
-
-      my $sm = StatMsg->new(StatMsg::SHORT_FRAMESHIFT_DELETE);
-      $exon->add_StatMsg($sm);
-
-      if($transcript->cdna_coding_start() >= $transcript->cdna_coding_end()) {
-        $sm = StatMsg->new(StatMsg::NO_CDS_LEFT);
-        $transcript->add_StatMsg($sm);
-        return;
-      }
-    }
-  }
-
-  #
-  # case 6: delete is in middle of CDS
-  #
-  elsif($del_end   > $transcript->cdna_coding_start() &&
-        $del_start < $transcript->cdna_coding_end()) {
-    debug("delete ($del_len) in middle of cds");
-
-    if($del_len > $MAX_CODING_INDEL) {
-      my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG);
-      $exon->add_StatMsg($sm);
-      $exon->fail(1);
-      $transcript->fail(1);
-      return;
-    }
-
-    #move up CDS end to account for CDS deletion
-    $transcript->move_cdna_coding_end(-$del_len);
-
-    my $frameshift = $del_len % 3;
-
-    if($frameshift) {
-      if($del_len > $MAX_FRAMESHIFT_INDEL) {
-        my $sm = StatMsg->new(StatMsg::PART_EXON_CDS_DELETE_TOO_LONG);
-        $exon->add_StatMsg($sm);
-        $exon->fail(1);
-        $transcript->fail(1);
-        return;
-      }
-
-      my $sm = StatMsg->new(StatMsg::SHORT_FRAMESHIFT_DELETE);
-      $exon->add_StatMsg($sm);
-
-      # this is going to require splitting the exon
-      # to make a frameshift deletion
-
-      #first exon is going to end right before deletion
-      my $first_len  = $del_start - $exon->cdna_start();
-      my $intron_len = 3 - $frameshift;
-
-      #reduce the length of the CDS by the length of the new intron
-      $transcript->move_cdna_coding_end(-$intron_len);
-
-      # the next match that is added to the cdna position will have too much
-      # sequence because we used part of the sequence to create the frameshift
-      # intron, compensate by reducing cdna position by intron len
-      $$cdna_del_pos_ref -= $intron_len;
-
-      debug("introducing frameshift intron ($intron_len) " .
-            "to maintain reading frame");
-
-      ### TBD may have to check we have not run up to end of CDS here
-
-      # we may have encountered a delete at the very end of the exon
-      # in this case we have to take the intron out of the end of this exon
-      # since we are not creating a second one
-      if($first_len + $intron_len >= $exon->length()) {
-        if($exon->strand() == 1) {
-          $exon->end($exon->end - $intron_len);
-        } else {
-          $exon->start($exon->start - $intron_len);
-          $exon->cdna_start($exon->cdna_start - $intron_len);
-        }
-        return [];
-      }
-
-      # second exon is going to start right after 'frameshift intron'
-
-      if($exon->strand == 1) {
-        # end the current exon at the beginning of the deletion
-        # watch out though, because we may be at the very beginning of
-        # the exon in which case we do not want to create one
-
-        if($first_len) {
-          my $first_exon = InterimExon->new();
-
-          # copy the original exon and adjust the coords as necessary
-          %{$first_exon} = %{$exon};
-          $first_exon->cdna_end($exon->cdna_start() + $first_len - 1);
-          $first_exon->end($first_exon->start() + $first_len - 1);
-          $transcript->add_Exon($first_exon);
-
-          $exon->cdna_start($first_exon->cdna_end() + 1);
-          $exon->flush_StatMsgs();
-        }
-
-        # start next exon after new intron
-        $exon->start($exon->start() + $first_len + $intron_len);
-
-        return;
-      } else {
-        if($first_len) {
-          my $first_exon = InterimExon->new();
-
-          # copy the original exon and adjust the coords as necessary
-          %{$first_exon} = %{$exon};
-          $first_exon->cdna_end($exon->cdna_start + $first_len - 1);
-          $first_exon->start($exon->end() - $first_len + 1);
-          $transcript->add_Exon($first_exon);
-
-          $exon->cdna_start($first_exon->cdna_end() + 1);
-          $exon->flush_StatMsgs();
-        }
-
-        # start next exon after new intron
-        $exon->end($exon->end() - ($first_len + $intron_len));
-        return;
-      }
-    }
-  }
-
-  #
-  # case 7: delete is in 5prime UTR
-  #
-  elsif($del_end < $$cdna_coding_start_ref) {
-    debug("delete ($del_len) in 5' utr");
-
-    # just move up the CDS
-    $transcript->move_cdna_coding_start(-$del_len);
-    $transcript->move_cdna_coding_end(-$del_len);
-  }
-
-  #
-  # case 8: delete is in 3prime UTR
-  #
-  elsif($del_start > $$cdna_coding_end_ref) {
-    debug("delete ($del_len) in 3' utr");
-
-    #do not have to do anything
-  }
-
-  #
-  # default : sanity check
-  #
-  else {
-    throw("Unexpected delete case encountered");
-  }
-
-  return;
-}
 
 ###############################################################################
 # process_insertion
@@ -917,6 +543,8 @@ sub get_coords_extent {
 
   my($start, $end, $strand, $seq_region);
 
+  my $stat_code = StatMsg::EXON;
+
   foreach my $c (@$coords) {
     next if($c->isa('Bio::EnsEMBL::Mapper::Gap'));
 
@@ -925,7 +553,8 @@ sub get_coords_extent {
     }
     elsif($seq_region ne $c->id()) {
       $chimp_exon->fail(1);
-      $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_SCAFFOLD_SPAN));
+      $stat_code |= StatMsg::SCAFFOLD_SPAN;
+      $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
       return;
     }
 
@@ -934,7 +563,8 @@ sub get_coords_extent {
     }
     elsif($strand != $c->strand()) {
       $chimp_exon->fail(1);
-      $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_STRAND_FLIP));
+      $stat_code |= StatMsg::STRAND_FLIP;
+      $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
       return;
     }
 
@@ -943,12 +573,14 @@ sub get_coords_extent {
     } else {
       if($strand == 1 && $start > $c->start()) {
         $chimp_exon->fail(1);
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_INVERT));
+	$stat_code |= StatMsg::INVERT;
+        $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
       if($strand == -1 && $start < $c->start()) {
         $chimp_exon->fail(1);
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_INVERT));
+	$stat_code |= StatMsg::INVERT;
+        $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
 
@@ -962,12 +594,14 @@ sub get_coords_extent {
     } else {
       if($strand == 1 && $end > $c->end()) {
         $chimp_exon->fail(1);
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_INVERT));
+	$stat_code |= StatMsg::INVERT;
+        $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
       if($strand == -1 && $end < $c->end()) {
         $chimp_exon->fail(1);
-        $chimp_exon->add_StatMsg(StatMsg->new(StatMsg::EXON_INVERT));
+	$stat_code |= StatMsg::INVERT;
+        $chimp_exon->add_StatMsg(StatMsg->new($stat_code));
         return;
       }
       if($c->end > $end) {

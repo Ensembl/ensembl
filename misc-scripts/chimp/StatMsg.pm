@@ -1,85 +1,12 @@
 use strict;
 use warnings;
 
-
-
 package StatMsg;
+
 use Exporter;
 
-use vars qw(@EXPORT_OK @ISA);
-
-@ISA = qw(Exporter);
-
-@EXPORT_OK = qw(&push_err &pop_err &ec2str);
-
-sub new {
-  my $class = shift;
-  my $code  = shift;
-
-  if(!defined($code)) {
-    die("Status Code Argument is required.\n");
-  }
-
-  return bless {'code' => $code}, $class;
-}
-
-sub code {
-  return $self->{'code'};
-}
-
-sub code_str {
-  return code2str($self->{'code'});
-}
-
-
-#converts a code to a string
-sub code2str {
-  my $code = shift;
-
-  my $str = '';
-
-  my print "StatCode $code:";
-
-  if(!$ec) {
-    $str .= '  OK';
-  }
-  if($ec & ENTIRE) {
-    $str .= ' entire';
-  }
-  if($ec & LONG) {
-    $str .= ' long';
-  }
-  if($ec & MEDIUM) {
-    $str .= ' medium';
-  }
-  if($ec & SHORT) {
-    $str .= ' short';
-  }
-  if($ec & FRAMESHIFT) {
-    $str .= ' frameshifting';
-  }
-  if($ec & EXON) {
-    $str .=  ' exon';
-  }
-  if($ec & TRANSCRIPT) {
-    $str .=  ' transcript';
-  }
-  if($ec & DELETE) {
-    $str .= ' deletion';
-  }
-  if($ec & INSERT) {
-    $str .= ' insertion';
-  }
-
-
-  
-
-
-  return "$str\n";
-}
-
 #
-# Status codes.
+# Status codes
 # The status codes are bitfields that can be combined with biwise or
 #
 # Examples :
@@ -87,7 +14,6 @@ sub code2str {
 # $code = StatMsg::EXON  | StatMsg::DELETE | StatMsg::CDS |
 #         StatMsg::SHORT | StatMsg::FRAMESHIFT;
 #
-
 
 use constant DELETE                 => 0x00000001;
 use constant INSERT                 => 0x00000002;
@@ -113,6 +39,109 @@ use constant EXON                   => 0x00008000;
 use constant FIVE_PRIME             => 0x00010000;
 use constant THREE_PRIME            => 0x00020000;
 use constant MIDDLE                 => 0x00040000;
+
+use vars qw(@EXPORT_OK @ISA);
+
+@ISA = qw(Exporter);
+
+@EXPORT_OK = qw(&push_err &pop_err &ec2str);
+
+
+sub new {
+  my $class = shift;
+  my $code  = shift;
+
+  if(!defined($code)) {
+    die("Status Code Argument is required.\n");
+  }
+
+  return bless {'code' => $code}, $class;
+}
+
+sub code {
+  my $self = shift;
+  return $self->{'code'};
+}
+
+sub code_str {
+  my $self = shift;
+  return code2str($self->{'code'});
+}
+
+
+#
+# converts a code to a string
+#
+sub code2str {
+  my $code = shift;
+
+  my $str = "StatCode $code:";
+
+  if(!$code) {
+    $str .= '  OK';
+  }
+  if($code & ENTIRE) {
+    $str .= ' entire';
+  }
+  if($code & LONG) {
+    $str .= ' long';
+  }
+  if($code & MEDIUM) {
+    $str .= ' medium';
+  }
+  if($code & SHORT) {
+    $str .= ' short';
+  }
+  if($code & FRAMESHIFT) {
+    $str .= ' frameshifting';
+  }
+  if($code & EXON) {
+    $str .=  ' exon';
+  }
+  if($code & TRANSCRIPT) {
+    $str .=  ' transcript';
+  }
+  if($code & DELETE) {
+    $str .= ' deletion';
+  }
+  if($code & INSERT) {
+    $str .= ' insertion';
+  }
+  if($code & CDS) {
+    $str .= ' in CDS';
+  }
+  if($code & UTR) {
+    $str .= ' in UTR';
+  }
+  if($code & FIVE_PRIME) {
+    $str .= " at 5' end";
+  }
+  if($code & THREE_PRIME) {
+    $str .= " at 3' end";
+  }
+  if($code & MIDDLE) {
+    $str .= " in middle";
+  }
+  if($code & DOESNT_TRANSLATE) {
+    $str .= " does not translate";
+  }
+  if($code & SCAFFOLD_SPAN) {
+    $str .= " spans multiple scaffolds";
+  }
+  if($code & INVERT) {
+    $str .= " inversion";
+  }
+  if($code & STRAND_FLIP) {
+    $str .= " flips strands";
+  }
+  if($code & NO_CDS_LEFT) {
+    $str .= " all CDS deleted";
+  }
+
+  return "$str\n";
+}
+
+
 
 
 1;

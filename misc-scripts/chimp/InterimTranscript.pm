@@ -12,8 +12,9 @@ sub new {
 
 
 sub add_StatMsg {
+  my $self = shift;
   my $statMsg = shift;
-  push $self->{'StatMsgs'}, $statMsg;
+  push @{$self->{'StatMsgs'}}, $statMsg;
 }
 
 sub get_all_StatMsgs {
@@ -26,7 +27,7 @@ sub last_StatMsg {
 
   my @msgs = @{$self->{'StatMsgs'}};
   return undef if(!@msgs);
-  return @msgs[$#msgs];
+  return $msgs[$#msgs];
 }
 
 
