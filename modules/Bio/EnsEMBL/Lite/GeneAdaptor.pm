@@ -333,10 +333,10 @@ sub _objects_from_sth {
 
   while( my $hr = $sth->fetchrow_hashref() ) {
     my $db = $hr->{'db'};
-    unless( $slice->chr_name ) {
+    unless( $slice && $slice->chr_name ) {
       #retrieve a slice for the entire chromosome
       my $chr = $hr->{'chr_name'};
-      %$slice = %{$core_db_adaptor->get_SliceAdaptor->fetch_by_chr_name($chr)};
+      $slice = $core_db_adaptor->get_SliceAdaptor->fetch_by_chr_name($chr);
     }
     my $slice_start = $slice->chr_start;
 
@@ -653,6 +653,10 @@ sub deleteObj {
 sub fetch_all_by_external_name {
     my ( $self, $name, $db, $empty_flag ) = @_;
 
+    $db ||= 'core';
+
+    $self->throw('name argument is required') if (!$name);
+
     if($empty_flag) {
     # return from cache or the _get_empty_Genes fn while caching results....
         return $self->{'_external_empty_gene_cache'}{"$db:$name"} ||= $self->_get_empty_Genes_by_external_name( $name, $db );
@@ -679,7 +683,7 @@ sub fetch_all_by_external_name {
 
     $sth->execute( $db, $name );
 
-    return $self->{'_external_gene_cache'}{"$db:name"} = $self->_objects_from_sth( $sth, "" );
+    return $self->{'_external_gene_cache'}{"$db:$name"} = $self->_objects_from_sth( $sth, "" );
 }
 
 sub count_by_external_name { 
