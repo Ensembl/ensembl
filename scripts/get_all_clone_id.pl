@@ -37,7 +37,7 @@ if( $dbtype =~ 'ace' ) {
 
 } elsif ( $dbtype =~ 'timdb' ) {
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 1,-nogene => 1,\@empty,0);
+    $db = Bio::EnsEMBL::TimDB::Obj->new(\@empty,0);
 } else {
     die("$dbtype is not a good type (should be ace, rdb or timdb)");
 }
