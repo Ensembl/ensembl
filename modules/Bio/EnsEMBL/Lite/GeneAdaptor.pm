@@ -310,11 +310,9 @@ sub _objects_from_sth {
 
     my $exon;
     if( ! exists $exon_cache{ "$exon_id" } ) {
-      $exon = Bio::EnsEMBL::Exon->new
-	( $start, $end, $hr->{'chr_strand'}*$slice->strand());
+      $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $hr->{'chr_strand'}*$slice->strand());
       #  we need dbIDs for Exons !!!
       #   $exon->dbID( );
-      $exon->contig( $slice );
       # this is not right for source != core ...
       $exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
       $exon_cache{"$exon_id"} = $exon;
@@ -335,9 +333,7 @@ sub _objects_from_sth {
       $end = $start + $exon_length - 1;
 
       if( ! exists $exon_cache{ "$exon_id" } ) {
-	$exon = Bio::EnsEMBL::Exon->new
-	  ( $start, $end, $hr->{'chr_strand'});
-	$exon->contig( $slice );
+	$exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $hr->{'chr_strand'});
 	$exon->adaptor( $core_DBAdaptor->get_ExonAdaptor() );
 	$exon_cache{"$exon_id"} = $exon;
 	$exon->dbID( $exon_id );
