@@ -73,9 +73,12 @@ package Bio::EnsEMBL::Utils::GeneComparison;
 use vars qw(@ISA);
 use strict;
 
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::GeneCluster;
 use Bio::EnsEMBL::Utils::TranscriptCluster;
 use Bio::Root::RootI;
+
+do "Bio/EnsEMBL/Utils/GeneComparison_conf.pl";
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -280,10 +283,11 @@ sub cluster_Genes {
       }
     }
     # if not in this cluster compare to the ($limit) previous clusters
-    my $limit = 6;
+
+    my $limit = 14;
     if ( $found == 0 && $cluster_count > 1 ){
       my $lookup = 1;
-      while ( !($cluster_count <= $lookup ) && !($lookup > $limit) ){ 
+      while ( !($cluster_count <= $lookup) && !($lookup > $limit) ){ 
 	#print STDERR "cluster_count: $cluster_count, looking at ".($cluster_count - $lookup)."\n";
 	my $previous_cluster = $clusters[ $cluster_count - 1 - $lookup ];
 	foreach my $gene_in_cluster ( $previous_cluster->get_Genes ){
@@ -540,14 +544,14 @@ sub cluster_Transcripts {
     push (@sorted_transcripts, $transcripts[$pos]);
   }
   @transcripts = @sorted_transcripts;
-  # test
-  foreach my $tran (@transcripts){
-    print STDERR "\ntranscript: ".$tran->stable_id."internal_id: ".$tran->dbID."\n";
-    foreach my $exon ($tran->get_all_Exons){
-      print STDERR $exon->seqname." ".$exon->start.":".$exon->end."\n";
-    }
-    print STDERR "\n";
-  }
+#  # test
+#  foreach my $tran (@transcripts){
+#    print STDERR "\ntranscript: ".$tran->stable_id."internal_id: ".$tran->dbID."\n";
+#    foreach my $exon ($tran->get_all_Exons){
+#      print STDERR $exon->seqname." ".$exon->start.":".$exon->end."\n";
+#    }
+#    print STDERR "\n";
+#  }
   my $time1 = time();
   my @clusters;
 
@@ -572,12 +576,17 @@ sub cluster_Transcripts {
 	next LOOP1;
       }
     }
-   # if not in this cluster compare to the ($limit) previous clusters
-    my $limit = 6;
+    # if not in this cluster compare to the previous clusters:
+    
+    # to set a limit in the number of previous cluster to look up
+    # set for example my $limit = 6; and then add to the while condition :
+    # while ( !(...) &&  !($lookup > $limit) ){ 
+    
+    my $limit = 14;
     if ( $found == 0 && $cluster_count > 1 ){
       my $lookup = 1;
-      while ( !($cluster_count <= $lookup ) && !($lookup > $limit) ){ 
-	print STDERR "cluster_count: $cluster_count, looking at ".($cluster_count - $lookup)."\n";
+      while ( !($cluster_count <= $lookup )  &&  !($lookup > $limit)  ){ 
+	#print STDERR "cluster_count: $cluster_count, looking at ".($cluster_count - $lookup)."\n";
 	my $previous_cluster = $clusters[ $cluster_count - 1 - $lookup ];
 	foreach my $t_in_cluster ( $previous_cluster->get_Transcripts ){
 	  if ( _compare_Transcripts( $sorted_transcripts[$c], $t_in_cluster ) ){	
@@ -604,455 +613,125 @@ sub cluster_Transcripts {
   return @clusters;
 }
 
-####################################################################################
-
-=head2
-
-#  Title   : find_missing_Exons
-#  Usage   : my %stats = $gene_comparison->find_missing_Exons(\@gene_clusters);
-#  Function: This method takes an array of GeneCluster objects, pairs up all the transcripts in each 
-#            cluster and then go through each transcript pair trying to match the exons. It will write out the 
-#            analysis on linked and unlinked exons, whether the match is exact or there is mismatch, and if so, 
-#            how many bases and in which region 5' and 3'. It also puts a flag to the exons where the 
-#            translation starts and ends, so that one can see which are the coding exons.
-#  Example : look in ...ensembl/misc-scripts/utilities/gene_comparison_script.pl
-#  Returns : a hash with the arrays of transcript pairs (each pari being a Bio::EnsEMBL::Utils::TranscriptCLuster)
-#            as values, and the number of missing exons as keys (starting from zero), useful to make a histogram
-#  Args    : an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects 
-
-
-#=cut
-
-
-#sub find_missing_Exons{
-#  my ($self,$clusters) = @_;
-  
-#  my @pairs_missing;  # this will hold the transcript pairs that have one or more exons missing
-#  my $pairs_count;    # this will count the total number of pairs compared
-#  if ( !defined( $clusters ) ){
-#    $self->throw( "Must pass an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects");
-#  } 
-
-#  if ( !$$clusters[0]->isa( 'Bio::EnsEMBL::Utils::GeneCluster' ) ){
-#    $self->throw( "Can't process a [$$clusters[0]], you must pass a Bio::EnsEMBL::Utils::GeneCluster" );
-#  }
-
-#  my %missing; # this hash holds the transcript pairs with one, two, etc... missing exons
-#  my @unpaired;
-#  my @doubled;
-
-#  my $cluster_count=1;
-
-#  # we check for missing exons in each gene cluster
-# GENE:
-#  foreach my $gene_cluster (@$clusters){
-#    print STDERR "\nIn gene-cluster $cluster_count\n";
-#    $cluster_count++; 
-
-#    # pair up the transcripts in each gene_cluster according to exon_overlap
-#    print STDERR "pairing up transcripts ...\n";
-#    my ( $ref_pairs, $ref_unpaired, $ref_doubled ) = $gene_cluster->pair_Transcripts;
-    
-#    my @pairs = @{ $ref_pairs };
-#    push ( @unpaired, @{ $ref_unpaired } );
-#    push ( @doubled,  @{ $ref_doubled }  );
-
-#    # @pairs is an array of TranscriptClusters, each containing two transcripts
-#   PAIR:
-#    foreach my $pair ( @pairs ){
-#      my ($tran1,$tran2) = $pair->get_Transcripts;
-#      my @exons1 = $tran1->get_all_Exons;
-#      my @exons2 = $tran2->get_all_Exons;
-#      my ($s_exon_id1,$e_exon_id1) = ('','');
-#      my ($s_exon_id2,$e_exon_id2) = ('','');
-#      my $missing_exon_count = 0;
-#      $pairs_count++;
-
-#      if ( $tran1->translation ){
-#         $s_exon_id1 = $tran1->translation->start_exon_id;
-#         $e_exon_id1 = $tran1->translation->end_exon_id;
-#      }
-#      if ( $tran1->translation ){
-#         $s_exon_id1 = $tran1->translation->start_exon_id;
-#         $e_exon_id1 = $tran1->translation->end_exon_id;
-#      }
-#      # now we link the exons, but first, a bit of formatted info
-      
-#      print  "\nComparing transcripts:\n";
-#      print STDERR $pair->to_String;
-            
-#                  # count cases where mismatches occur withing coding region
-#      my %link;
-#      my $start=0;    # start looking at the first one
-#      my @buffer;     # buffer that keeps track of the skipped exons in @exons2 
-
-#      # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
-#     EXONS1:
-#      for (my $i=0; $i<=$#exons1; $i++){
-#        my $foundlink = 0;
-        
-#       EXONS2:
-#        for (my $j=$start; $j<=$#exons2; $j++){
-          
-#          # compare $exons1[$i] with $exons2[$j] 
-#          if ( $exons1[$i]->overlaps($exons2[$j]) ){
-            
-#            # if you've found a link, check first whether there is anything left unmatched in @buffer
-#            if ( @buffer && scalar(@buffer) != 0 ){
-#              foreach my $exon_number ( @buffer ){
-#                print STDERR "no link        ".$exon_number."\n";
-#                $missing_exon_count++;
-#              }
-#            } 
-#            $foundlink = 1;
-#            printf STDERR "%7d <----> %-2d ", ( ($i+1) , ($j+1) );
-
-#            # there is a match, check whether it is exact
-#            if ( $exons1[$i]->equals( $exons2[$j] ) ){
-#              print STDERR "exact";
-#            }
-#            # or there is a mismatch in the number of bases
-#            else{              
-#                if ( $exons1[$i]->start != $exons2[$j]->start ){
-#                  my $mismatch = abs($exons1[$i]->start - $exons2[$j]->start);
-#                  print STDERR "mismatch: $mismatch bases in the 5' end";
-#                }
-#                if (  $exons1[$i]->end  != $exons2[$j]->end   ){
-#                  my $mismatch = abs($exons1[$i]->end  -  $exons2[$j]->end  );
-#                  print STDERR "mismatch: $mismatch bases in the 3' end";
-#                }
-#            }
-
-#            # flag the exons where the CDS starts and ends
-#            if ( $exons1[$i]->dbID eq $s_exon_id1 || $exons2[$j]->dbID eq $s_exon_id2 ){
-#               print STDERR " (start CDS)";
-#            }
-#            if ( $exons1[$i]->dbID eq $e_exon_id1 || $exons2[$j]->id eq $e_exon_id2 ){
-#               print STDERR " (end CDS)";
-#            }
-#            print STDERR "\n";
-
-#            $start += scalar(@buffer)+1;
-#            @buffer = ();  # we start a new one
-#            next EXONS1;
-#          }          
-#          else {  # oops, no overlap, skip this one
-#            # print STDERR "  exon ".($i+1)." does not link with ".($j+1).", skipping it...\n";
-            
-#            # keep this info in a @buffer if you haven't exhausted all checks in @exons2  
-#            if ( $j<$#exons2 ){
-#              push ( @buffer, ($j+1) );
-#            }
-#            # if you got to the end of @exons2 and found no link, ditch the @buffer
-#            elsif ( $j == $#exons2 ){ 
-#              @buffer = ();
-#            }
-#            # and get outta here              
-#            next EXONS2;
-#          }
-#        }   # end of EXONS2 loop
-
-#        if ( $foundlink == 0 ){  # found no link for $exons1[$i], go to the next one
-#            printf STDERR "%7d        no link\n", ($i+1);
-#            $missing_exon_count++;
-#        }
-    
-#      }      # end of EXONS1 loop
-    
-#    push ( @{ $missing{ $missing_exon_count } }, $pair ); 
-    
-#    }        # end of  PAIR  loop      
-
-#  }          # end of  GENE  loop
-
-#  # print out the transcripts pairs with at least one exon missing
-#  foreach my $key ( sort { $a <=> $b } ( keys( %missing ) ) ){
-#    my $these_pairs = scalar( @{ $missing{$key} } );
-#    my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
-#    print STDERR "\n$these_pairs transcript pairs with $key exon(s) missing: $percentage percent\n";
-#    foreach my $pair ( @{ $missing{ $key } } ){
-#       print STDERR $pair->to_String."\n";
-#    }
-#  }
-#  print STDERR scalar( @unpaired )." transcripts unpaired\n";
-#  print STDERR scalar( @doubled )." transcripts repeated\n";
-
-#  # we return the hash with the arrays of transcript pairs as values, and 
-#  # the number of missing exons as keys, that can be used to make a histogram
-#  return %missing;
-#}
 
 ####################################################################################
 
-=head2
-
-  Title   : find_missing_coding_Exons
-  Usage   : my %stats = $gene_comparison->find_missing_coding_Exons(\@gene_clusters);
-  Function: This method takes an array of GeneCluster objects, pairs up all the transcripts in each 
-            cluster and then go through each transcript pair trying to match the exons. 
-  Example : look in ...ensembl/misc-scripts/utilities/gene_comparison_script.pl
-  Returns : a hash with the arrays of transcript pairs (each pair being a Bio::EnsEMBL::Utils::TranscriptCluster)
-            as values, and the number of missing MIDDLE exons as keys,
-            useful to make a histogram
-  Args    : an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects 
-
-=cut
-
-
-sub find_missing_coding_Exons{
+sub compare_CDS{
   my ($self,$clusters) = @_;
-  
-  my @pairs_missing;  # this will hold the transcript pairs that have one or more exons missing
-  my $pairs_count;    # this will count the total number of pairs compared
-  if ( !defined( $clusters ) ){
-    $self->throw( "Must pass an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects");
-  } 
+  my @total_ann_unpaired;
+  my @total_pred_unpaired;
+  my @total_ann_doubled;
+  my @total_pred_doubled;
+  my $pairs_count = 0;
 
-  if ( !$$clusters[0]->isa( 'Bio::EnsEMBL::Utils::GeneCluster' ) ){
-    $self->throw( "Can't process a [$$clusters[0]], you must pass a Bio::EnsEMBL::Utils::GeneCluster" );
-  }
-
-  my %missing; # this hash holds the transcript pairs with one, two, etc... missing exons
-  my @unpaired;
-  my @doubled;
-
-  my $cluster_count=1;
-
-  # we check for missing exons in each gene cluster
  GENE:
   foreach my $gene_cluster (@$clusters){
-    print STDERR "\nIn gene-cluster $cluster_count\n";
-    $cluster_count++; 
-
-    # pair up the transcripts in each gene_cluster according to exon_overlap
-    print STDERR "pairing up transcripts ...\n";
-    my ( $ref_pairs, $ref_unpaired, $ref_doubled ) = $gene_cluster->pair_Transcripts;
+  my ( $pairs, $ann_unpaired, $pred_unpaired, $ann_doubled, $pred_doubled) = $gene_cluster->pair_Transcripts;
+    my @pairs = @{ $pairs };
+    my @ann_unpaired;
+    my @pred_unpaired;
+    my @ann_doubled;
+    my @pred_doubled;
+    push ( @ann_unpaired , @{ $ann_unpaired }  );
+    push ( @pred_unpaired, @{ $pred_unpaired } );
+    push ( @ann_doubled  , @{ $ann_doubled }   );    
+    push ( @pred_doubled , @{ $pred_doubled }  );
     
-    my @pairs = @{ $ref_pairs };
-    push ( @unpaired, @{ $ref_unpaired } );
-    push ( @doubled,  @{ $ref_doubled }  );
+    push ( @total_ann_doubled  , @ann_doubled   );
+    push ( @total_pred_doubled , @pred_doubled  );
+    push ( @total_ann_unpaired , @ann_unpaired  ); 
+    push ( @total_pred_unpaired, @pred_unpaired );
 
-    # @pairs is an array of TranscriptClusters, each containing two transcripts
+    # for each pair we keep track of the exon comparison
+ 
    PAIR:
     foreach my $pair ( @pairs ){
-      my ($tran1,$tran2) = $pair->get_Transcripts;
-      my @exons1 = $tran1->get_all_Exons;
-      my @exons2 = $tran2->get_all_Exons;
-      my ($s_exon_id1,$e_exon_id1) = ('','');
-      my ($s_exon_id2,$e_exon_id2) = ('','');
-      my $missing_exon_count = 0;
-
       $pairs_count++;
-
-      if ( $tran1->translation ){
-         $s_exon_id1 = $tran1->translation->start_exon_id;
-         $e_exon_id1 = $tran1->translation->end_exon_id;
-      }
-      if ( $tran2->translation ){
-         $s_exon_id2 = $tran2->translation->start_exon_id;
-         $e_exon_id2 = $tran2->translation->end_exon_id;
-         print STDERR "e_exon_id2: ".$e_exon_id2."\n";
-      }
-      # now we link the exons, but first, a bit of formatted info
-      
-      print  "\nComparing transcripts:\n";
-      print STDERR $pair->to_String;
-            
-                  # count cases where mismatches occur withing coding region
-      my %link;
-      my $start=0;    # start looking at the first one
-      my @buffer;     # buffer that keeps track of the skipped exons in @exons2 
-
-      # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
- 
-      my $CDS1 = 0; # flag to signal when we're in the CDS region in $tran1
-     EXONS1:
-      for (my $i=0; $i<=$#exons1; $i++){
-        my $foundlink = 0;
-        my $CDS2 = 0; # flag to signal when we're in the CDS region in $tran2
-          
-       EXONS2:
-        for (my $j=$start; $j<=$#exons2; $j++){
-          
-          # compare $exons1[$i] with $exons2[$j] 
-          if ( $exons1[$i]->overlaps($exons2[$j]) ){
-            
-            # if you've found a link, check first whether there is anything left unmatched in @buffer
-            if ( @buffer && scalar(@buffer) != 0 ){
-              foreach my $exon_number ( @buffer ){
-                print STDERR "no link        ".$exon_number;
-                $missing_exon_count++;
-                if ( $CDS2 == 0 && $exons2[$exon_number-1]->dbID eq $s_exon_id2 ){
-                  print STDERR " CDS2 start";
-                  $CDS2 = 1;
-                }
-                if ( $CDS2 == 1 && $exons2[$exon_number-1]->dbID eq $e_exon_id2 ){
-                  print STDERR " CDS2 end";
-                  $CDS2 = 0;
-                }
-                if ( $CDS2 == 1 ){
-                  print STDERR "coding exon";
-                }
-                print STDERR "\n";
-              }
-            } 
-            $foundlink = 1;
-            printf STDERR "%7d <----> %-2d ", ( ($i+1) , ($j+1) );
-
-            # then check whether it is exact
-            if ( $exons1[$i]->equals( $exons2[$j] ) ){
-              print STDERR "exact";
-            }
-
-            # or there is a mismatch in the number of bases
-            else{              
-                if ( $exons1[$i]->start != $exons2[$j]->start ){
-                  my $mismatch = abs($exons1[$i]->start - $exons2[$j]->start);
-                  print STDERR "mismatch: $mismatch bases in the 5' end";
-                }
-                if (  $exons1[$i]->end  != $exons2[$j]->end   ){
-                  my $mismatch = abs($exons1[$i]->end  -  $exons2[$j]->end  );
-                  print STDERR "mismatch: $mismatch bases in the 3' end";
-                }
-            }
-            if ( $CDS1 == 0 && $exons1[$i]->dbID eq $s_exon_id1 ){
-               print STDERR " CDS1 start";
-               $CDS1 = 1;
-            }
-            if ( $CDS2 == 0 && $exons2[$j]->dbID eq $s_exon_id2 ){
-               print STDERR " CDS2 start";
-               $CDS2 = 1;
-            }
-            if ( $CDS1 == 1 && $exons1[$i]->dbID eq $e_exon_id1 ){
-               print STDERR " CDS1 end";
-               $CDS1 = 0;
-            }
-            if ( $CDS2 == 1 && $exons2[$j]->dbID eq $e_exon_id2 ){
-               print STDERR " CDS2 end";
-               $CDS2 = 0;
-            }
-            print STDERR "\n";
-
-            $start += scalar(@buffer)+1;
-            @buffer = ();  # we start a new one
-            next EXONS1;
-          }          
-          else {  # oops, no overlap, skip this one
-            # print STDERR "  exon ".($i+1)." does not link with ".($j+1).", skipping it...\n";
-            
-            # keep this info in a @buffer if you haven't exhausted all checks in @exons2  
-            if ( $j<$#exons2 ){
-              push ( @buffer, ($j+1) );
-            }
-            # if you got to the end of @exons2 and found no link, ditch the @buffer
-            elsif ( $j == $#exons2 ){ 
-              @buffer = ();
-            }
-            # and get outta here              
-            next EXONS2;
-          }
-        }   # end of EXONS2 loop
-
-        if ( $foundlink == 0 ){  # found no link for $exons1[$i], go to the next one
-            printf STDERR "%7d        no link", ($i+1);
-            $missing_exon_count++;
-            if ( $CDS1 == 0 && $exons1[$i]->dbID eq $s_exon_id1 ){
-               print STDERR " CDS1 start";
-               $CDS1 = 1;
-            }
-            if ( $CDS1 == 1 && $exons1[$i]->dbID eq $e_exon_id1 ){
-               print STDERR " CDS1 end";
-               $CDS1 = 0;
-            }
-            if ( $CDS1 == 1 ){
-              print STDERR " coding exon";
-            }
-            print STDERR "\n";
-        }
-    
-     }       # end of EXONS1 loop
-    
-    push ( @{ $missing{ $missing_exon_count } }, $pair ); 
-    
-    }        # end of  PAIR  loop      
-
-  }          # end of  GENE  loop
-
-  # print out the transcripts pairs with at least one exon missing
-  foreach my $key ( sort { $a <=> $b } ( keys( %missing ) ) ){
-    my $these_pairs = scalar( @{ $missing{$key} } );
-    my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
-    print STDERR "\n$these_pairs transcript pairs with $key exon(s) missing: $percentage percent\n";
-    foreach my $pair ( @{ $missing{ $key } } ){
-       print STDERR $pair->to_String."\n";
+       my ($prediction,$annotation) = $pair->get_Transcripts;
     }
   }
-  print STDERR scalar( @unpaired )." transcripts unpaired\n";
-  foreach my $tran ( @unpaired ){
-    print STDERR "stable_id: ".$tran->stable_id." internal_id: ".$tran->dbID."\n";
-  }
-  print STDERR scalar( @doubled )." transcripts repeated\n";
-  foreach my $tran ( @doubled ){
-    print STDERR "stable_id: ".$tran->stable_id." internal_id: ".$tran->dbID."\n";
-  }
-
-  # we return the hash with the arrays of transcript pairs as values, and 
-  # the number of missing exons as keys, that can be used to make a histogram
-  return %missing;
 }
-
 
 ####################################################################################
 
-=head2 find_overpredicted_Exons()
- 
-  Title   : find_overpredicted_Exons
-  Usage   : my %stats = $gene_comparison->find_missing_Exons(\@gene_clusters);
+=head2 compare_Exons()
+
+  Title   : compare_Exons()
+  Usage   : my %stats = $gene_comparison->compare_Exons(\@gene_clusters);
   Function: This method takes an array of GeneCluster objects, pairs up all the transcripts in each 
             cluster and then go through each transcript pair trying to match the exons. 
             It keeps track of the exons present in the gene_array2 passed to new() that are missing in
-            the corresponding transcript of gene_array1. For the opposite comparison use
-            'find_missing_Exons'
-  Example : look in ...ensembl/misc-scripts/utilities/gene_comparison_script.pl
+            the corresponding transcript of gene_array1, also of those exons that are overpredicted in
+            in gene_array1 with respect to gene_array2. It also gives a generic exon_mismatch result.
+            Setting the flag 'coding' in the arguments we can compare the CDSs
+  
+  Example : look in ...ensembl/misc-scripts/utilities/run_GeneComparison for a pipeline-like example
   Returns : a hash with the arrays of transcript pairs (each pair being a Bio::EnsEMBL::Utils::TranscriptCluster)
             as values, and the number of missing exons as keys, useful to make a histogram
   Args    : an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects 
 
 =cut
   
-sub find_overpredicted_Exons{
-  my ($self,$clusters) = @_;
+sub compare_Exons{
+  my ($self,$clusters,$coding) = @_;
   
-  my @pairs_missing;  # this will hold the transcript pairs that have one or more exons missing
-  my $pairs_count;    # this will count the total number of pairs compared
-  my $over_exon_count = 0; # counts the number of overpredicted exons
-  my %over_exon_position;  # keeps track of the positions of the exons
+  my @pairs_missing;                # holds the transcript pairs that have one or more exons missing
+  my $pairs_count;                  # this will count the total number of pairs compared
+  my $total_missing_exon_count = 0; # counts the number of overpredicted exons
+  my $total_over_exon_count    = 0; # same for overpredictions
+  my $total_exon_mismatches    = 0; # includes the above two cases
+ 
+  my %over_exon_position;           # keeps track of the positions of the exons
+  my %missing_exon_position;        # keeps track of the positions of the exons
+  
+  my $total_prediction_matched = 0; # numerator in the computation of the sensitivity/specificity
+                                    #  ( = TruePositive )
+
+  my $total_annotation_length  = 0; # denominator in the computation of the sensitivity
+                                    #  ( = TruePositive + FalseNegative )
+
+  my $total_prediction_length  = 0; # denominator in the computation of the specificity
+                                    #  ( = TruePositive + FalsePositive )
+
+  my $sum_sensitivity          = 0;
+  my $sum_specificity          = 0;
+  my $average_sensitivity      = 0;
+  my $average_specificity      = 0;
+  my $total_sensitivity        = 0;
+  my $total_specificity        = 0;
+
   if ( !defined( $clusters ) ){
     $self->throw( "Must pass an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects");
   } 
-
   if ( !$$clusters[0]->isa( 'Bio::EnsEMBL::Utils::GeneCluster' ) ){
     $self->throw( "Can't process a [$$clusters[0]], you must pass a Bio::EnsEMBL::Utils::GeneCluster" );
   }
   
   # warn about the comparison that is about to happen
-  my ($type1,$type2) = $$clusters[0]->gene_Types;
-  my $message = "finding exons in gene-types: ";
-  foreach my $type ( @$type2 ){
-    $message .= $type.", ";
+  my ($annotation_types,$prediction_types) = $$clusters[0]->gene_Types;
+  my ($message1,$message2) = ( '','');
+  my $messageA = "Comparing exons in gene-types: ";
+  foreach my $type ( @$annotation_types ){
+    $message1 .= $type.", ";
   }
-  $message .= "\nwhich are overpredicted with respect to gene-types: ";
-  foreach my $type ( @$type1 ){
-    $message .= $type.", ";
+  my $messageB = " with exons in gene-types: ";
+  foreach my $type ( @$prediction_types ){
+    $message2 .= $type.", ";
   }
-  print STDERR $message."...\n";
+  print STDERR $messageA.$message1.$messageB.$message2."...\n";
 
-  my %missing; # this hash holds the transcript pairs with one, two, etc... missing exons
-  my @unpaired;
-  my @doubled;
-  my $exact_matches = 0; # counts the number of exact matching exons
-  my $exon_pair_count    = 0; # counts the number of exons
-  my $cluster_count = 1;
+  my %missing;       # this hash holds the transcript pairs with one, two, etc... missing exons
+  my %overpredicted; # similarly for overpredicted exons
+  my %mismatches;    # includes all of the above
+
+  my @total_ann_unpaired;
+  my @total_pred_unpaired;
+  my @total_ann_doubled;
+  my @total_pred_doubled;
+  my $exact_matches   = 0; # counts the number of exact matching exons
+  my $exon_pair_count = 0; # counts the number of exons
+
+  my $cluster_count   = 1;
 
   # we check for missing exons in genes of type $type2 in each gene cluster
  GENE:
@@ -1060,338 +739,116 @@ sub find_overpredicted_Exons{
     print STDERR "\nIn gene-cluster $cluster_count\n";
     $cluster_count++; 
 
-    # pair up the transcripts in each gene_cluster according to exon_overlap
+    # pair_Transcripts returns (\@pairs,\@ann_unpaired,\@pred_unpaired,\@ann_doubled,\@pred_doubled)
     print STDERR "pairing up transcripts ...\n";
-    my ( $ref_pairs, $ref_unpaired, $ref_doubled ) = $gene_cluster->pair_Transcripts;
-    my @pairs = @{ $ref_pairs };
-    push ( @unpaired, @{ $ref_unpaired } );
-    push ( @doubled,  @{ $ref_doubled }  );
+    my ( $pairs, $ann_unpaired, $pred_unpaired, $ann_doubled, $pred_doubled) = $gene_cluster->pair_Transcripts;
+    my @pairs = @{ $pairs };
+    my @ann_unpaired;
+    my @pred_unpaired;
+    my @ann_doubled;
+    my @pred_doubled;
+    push ( @ann_unpaired , @{ $ann_unpaired }  );
+    push ( @pred_unpaired, @{ $pred_unpaired } );
+    push ( @ann_doubled  , @{ $ann_doubled }   );    
+    push ( @pred_doubled , @{ $pred_doubled }  );
+    
+    push ( @total_ann_doubled  , @ann_doubled   );
+    push ( @total_pred_doubled , @pred_doubled  );
+    push ( @total_ann_unpaired , @ann_unpaired  ); 
+    push ( @total_pred_unpaired, @pred_unpaired );
 
-    # @pairs is an array of TranscriptClusters, each containing two transcripts
+    # for each pair we keep track of the exon comparison
+ 
    PAIR:
     foreach my $pair ( @pairs ){
       $pairs_count++;
-      my ($annotation,$prediction) = $pair->get_Transcripts;
-      my @ann_exons  = $annotation->get_all_Exons;
-      my @pred_exons = $prediction->get_all_Exons;
       
-      # order exons according to the strand
-      if ( $ann_exons[0]->strand == 1 ){
-	@ann_exons  = sort{ $a->start <=> $b->start } @ann_exons;
-	@pred_exons = sort{ $a->start <=> $b->start } @pred_exons;
-      }
-      if ( $ann_exons[0]->strand == -1 ){
-	@ann_exons  = sort{ $b->start <=> $a->start } @ann_exons;
-	@pred_exons = sort{ $b->start <=> $a->start } @pred_exons;
+      # we match the exons in the pair
+      my ($printout, $missing_stats, $over_stats, $mismatch_stats, $match_stats) = 
+	$self->_match_Exons($pair, $coding);
+  
+      # where 
+      # printout{ pair }{ exon_number }  = [ exon/no link, exon/no link, extra comments      ];
+      # $missing_stats                   = [ $missing_exon_count , \%missing_exon_position   ];
+      # $over_stats                      = [ $over_exon_count    , \%over_exon_position      ];
+      # $mismatch_stats                  = [ $exon_mismatch_count                            ];
+      # $match_stats                     = [ $exon_pair_count    , $thispair_exact_matches   ];
+      
+
+      my $missing_exon_count             = $$missing_stats[0];
+      my %thispair_missing_exon_position = %{ $$missing_stats[1] };
+      
+      my $over_exon_count                = $$over_stats[0];
+      my %thispair_over_exon_position    = %{ $$over_stats[1] };
+      
+      my $exon_mismatch_count            = $$mismatch_stats[0];
+      
+      my $thispair_exon_pair_count       = $$match_stats[0];
+      my $thispair_exact_matches         = $$match_stats[1];
+
+      #$exon_mismatch_count = $missing_exon_count + $over_exon_count;
+      push ( @{ $missing{ $missing_exon_count } }    , $pair );
+      push ( @{ $overpredicted{ $over_exon_count } } , $pair );
+      push ( @{ $mismatches{ $exon_mismatch_count } }, $pair );
+
+      $total_missing_exon_count += $missing_exon_count;
+      $total_over_exon_count    += $over_exon_count;
+      $total_exon_mismatches    += $exon_mismatch_count;
+      $exact_matches            += $thispair_exact_matches;
+      $exon_pair_count          += $thispair_exon_pair_count;
+
+      foreach my $key ( keys( %thispair_missing_exon_position ) ){
+	$missing_exon_position{ $key } += $thispair_missing_exon_position{ $key };
       }
 
-      # now we link the exons, but first, a bit of formatted info
-      print  "\nComparing transcripts:\n";
-      print STDERR $pair->to_String;
-            
-      my %link;
-      my $start=0;    # start looking at the first one
-      my @buffer;     # buffer that keeps track of the skipped exons in @exons2 
+      foreach my $key ( keys( %thispair_over_exon_position ) ){
+	$over_exon_position{ $key } += $thispair_over_exon_position{ $key };
+      }
+      
+      # print out info about this pair
+      $self->_to_String( $pair, $printout );
 
-      # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
-    EXONS1:
-      for (my $i=0; $i<=$#ann_exons; $i++){
-        my $foundlink = 0;
-    	
-      EXONS2:
-        for (my $j=$start; $j<=$#pred_exons; $j++){
-          
-          # compare $ann_exons[$i] with $pred_exons[$j] 
-          if ( $ann_exons[$i]->overlaps($pred_exons[$j]) ){
-            
-            # if you've found a link, check first whether there is anything left unmatched in @buffer
-            if ( @buffer && scalar(@buffer) != 0 ){
-              foreach my $exon_number ( @buffer ){
-                print STDERR "no link        ".$exon_number."\n";
-                $over_exon_count++;
-		if ( $exon_number == 1 ){
-		  $over_exon_position{'first'}++;
-		}
-		elsif ( $exon_number == $#pred_exons+1 ){
-		  $over_exon_position{'last'}++;
-		}
-		else {
-		  $over_exon_position{ $exon_number }++;
-		}	     
-	      }
-	    }
-	    $foundlink = 1;
-	    $exon_pair_count++;
-	    printf STDERR "%7d <----> %-2d ", ( ($i+1) , ($j+1) );
-	    
-	    # then check whether it is exact
-	    if ( $ann_exons[$i]->equals( $pred_exons[$j] ) ){
-	      print STDERR "exact\n";
-	      $exact_matches++;
-	    }
-	    
-	    # or there is a mismatch in the number of bases
-	    else{              
-	      if ( $ann_exons[$i]->start != $pred_exons[$j]->start ){
-		my $mismatch = abs($ann_exons[$i]->start - $pred_exons[$j]->start);
-		my $msg = "mismatch: $mismatch bases in the"; 
-		if ( $ann_exons[$i]->strand == 1 ){
-		  $msg .= " 5' end";
-		}
-		elsif ( $ann_exons[$i]->strand == -1 ){
-		  $msg .= " 3' end";
-		}
-		print STDERR $msg."\n";
-	      }
-	      if (  $ann_exons[$i]->end  != $pred_exons[$j]->end   ){
-		my $mismatch = abs($ann_exons[$i]->end  -  $pred_exons[$j]->end  );
-		my $msg = "mismatch: $mismatch bases in the";
-		if ( $ann_exons[$i]->strand == 1 ){
-		  $msg .= " 3' end";
-		}
-		elsif ( $ann_exons[$i]->strand == -1 ){
-		  $msg .= " 5' end";
-		}	      
-		print STDERR $msg."\n";
-	      }
-	    }
-	    $start += scalar(@buffer)+1;
-	    @buffer = ();  # we start a new one
-	    next EXONS1;
-	  }          
-	  else {  # oops, no overlap, skip this one
-	    # keep this info in a @buffer if you haven't exhausted all checks in @exons2  
-	    if ( $j<$#pred_exons ){
-	      push ( @buffer, ($j+1) );
-	    }
-	    # if you got to the end of @exons2 and found no link, ditch the @buffer
-	    elsif ( $j == $#pred_exons ){ 
-	      @buffer = ();
-	    }
-	    # and get outta here              
-	    next EXONS2;
-	  }
-	}   # end of EXONS2 loop
-	
-	if ( $foundlink == 0 ){  # found no link for $exons1[$i], go to the next one
-	  printf STDERR "%7d        no link", ($i+1);
-	  print STDERR "\n";
-	}
-      }       # end of EXONS1 loop
-      push ( @{ $missing{ $over_exon_count } }, $pair ); 
     }        # end of  PAIR  loop      
-  }         # end of  GENE  loop
-  
-  # print out the transcripts pairs with at least one exon missing
-  foreach my $key ( sort { $a <=> $b } ( keys( %missing ) ) ){
-    my $these_pairs = scalar( @{ $missing{$key} } );
-    my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
-    print STDERR "\n$these_pairs transcript pairs with $key exon(s) overpredicted: $percentage percent\n";
-    foreach my $pair ( @{ $missing{ $key } } ){
-      print STDERR $pair->to_String."\n";
-    }
+  }          # end of  GENE  loop
+ 
+      
+  # we recover info from this transcript pair comparison
+
+  # print out the results
+  print STDERR "Total number of transcript pairs: ".$pairs_count."\n";
+  print STDERR "Transcripts unpaired: ".scalar( @total_ann_unpaired )." from annotation, and ". 
+    scalar( @total_pred_unpaired )." from prediction\n";
+  foreach my $tran ( @total_ann_unpaired ){
+    print STDERR $tran->stable_id."\n";
   }
-  print STDERR "Exact matches: ".$exact_matches." out of ".$exon_pair_count."\n";
-  
-  print STDERR "Over-predicted exons: ".$over_exon_count.", positions:\n";
+  foreach my $tran ( @total_pred_unpaired ){
+    print STDERR $tran->stable_id."\n";
+  }
+
+  print STDERR "Transcripts repeated: ".scalar( @total_ann_doubled )." from annotation, and ".
+    scalar( @total_pred_doubled )." from prediction\n";
+  foreach my $tran ( @total_ann_doubled ){
+    print STDERR $tran->stable_id."\n";
+  }
+  foreach my $tran ( @total_pred_doubled ){
+    print STDERR $tran->stable_id."\n";
+  }
+
+  print STDERR "\n";
+  print STDERR "Exact matches                 : ".$exact_matches." out of ".$exon_pair_count."\n";  
+  print STDERR "Total exon mismatches         : ".$total_exon_mismatches."\n";
+  print STDERR "Exons missed by the prediction: ".$total_missing_exon_count."\n";
+  foreach my $key ( keys( %missing_exon_position ) ){
+    printf STDERR " position %5s = %2d missed\n", ($key , $missing_exon_position{$key});
+  }
+  print STDERR "Exons overpredicted           : ".$total_over_exon_count."\n";
   foreach my $key ( keys( %over_exon_position ) ){
-    print STDERR $key.": ".$over_exon_position{$key}."\n";
+    printf STDERR " position %2s = %2d overpredicted\n", ($key , $over_exon_position{$key});
   }
   print STDERR "\n";
-  
-  print STDERR $pairs_count." transcript pairs\n";
-  
-  print STDERR scalar( @unpaired )." transcripts unpaired\n";
-  foreach my $tran ( @unpaired ){
-    print STDERR $tran->stable_id."\n";
-  }
-  print STDERR scalar( @doubled )." transcripts repeated\n";
-  foreach my $tran ( @doubled ){
-    print STDERR $tran->stable_id."\n";
-  }
-  
-  # we return the hash with the arrays of transcript pairs as values, and 
-  # the number of missing exons as keys, that can be used to make a histogram
-  return %missing;
-}
 
-####################################################################################
-
-=head2 find_missing_Exons()
-
-  This method produces an histogram with the number of exon pairs per percentage overlap.
-  The percentage overlap of two exons, say e1 and e2, is calculated in _compare_Transcripts method as
-  100*intersection(e1,e2)/max_length(e1,e2). It takes whole exons, i.e. without chopping out the 
-  non-coding part. This method returns a hash containing the number of occurences as values and
-  the integer percentage overlap as keys
-
-=cut
-  
-sub find_missing_Exons{
-  my ($self,$clusters) = @_;
-  
-  my @pairs_missing;  # this will hold the transcript pairs that have one or more exons missing
-  my $pairs_count;    # this will count the total number of pairs compared
-  my $total_missing_exon_count = 0; # counts the number of overpredicted exons
-  my %missing_exon_position;  # keeps track of the positions of the exons
-  if ( !defined( $clusters ) ){
-    $self->throw( "Must pass an arrayref of Bio::EnsEMBL::Utils::GeneCluster objects");
-  } 
-
-  if ( !$$clusters[0]->isa( 'Bio::EnsEMBL::Utils::GeneCluster' ) ){
-    $self->throw( "Can't process a [$$clusters[0]], you must pass a Bio::EnsEMBL::Utils::GeneCluster" );
-  }
-  
-  # warn about the comparison that is about to happen
-  my ($type1,$type2) = $$clusters[0]->gene_Types;
-  my $message = "finding exons in gene-types: ";
-  foreach my $type ( @$type1 ){
-    $message .= $type.", ";
-  }
-  $message .= "\nwhich are missing in gene-types: ";
-  foreach my $type ( @$type2 ){
-    $message .= $type.", ";
-  }
-
-  print STDERR $message."...\n";
-
-  my %missing; # this hash holds the transcript pairs with one, two, etc... missing exons
-  my @unpaired;
-  my @doubled;
-  my $exact_matches = 0; # counts the number of exact matching exons
-  my $exon_pair_count    = 0; # counts the number of exons
-  my $cluster_count = 1;
-
-  # we check for missing exons in genes of type $type2 in each gene cluster
- GENE:
-  foreach my $gene_cluster (@$clusters){
-    print STDERR "\nIn gene-cluster $cluster_count\n";
-    $cluster_count++; 
-
-    # pair up the transcripts in each gene_cluster according to exon_overlap
-    print STDERR "pairing up transcripts ...\n";
-    my ( $ref_pairs, $ref_unpaired, $ref_doubled ) = $gene_cluster->pair_Transcripts;
-    my @pairs = @{ $ref_pairs };
-    push ( @unpaired, @{ $ref_unpaired } );
-    push ( @doubled,  @{ $ref_doubled }  );
-
-    # @pairs is an array of TranscriptClusters, each containing two transcripts
-   PAIR:
-    foreach my $pair ( @pairs ){
-      $pairs_count++;
-      my $missing_exon_count;
-      my ($annotation,$prediction) = $pair->get_Transcripts;
-      my @ann_exons  = $annotation->get_all_Exons;
-      my @pred_exons = $prediction->get_all_Exons;
-      
-      # order exons according to the strand
-      if ( $ann_exons[0]->strand == 1 ){
-	@ann_exons  = sort{ $a->start <=> $b->start } @ann_exons;
-	@pred_exons = sort{ $a->start <=> $b->start } @pred_exons;
-      }
-      if ( $ann_exons[0]->strand == -1 ){
-	@ann_exons  = sort{ $b->start <=> $a->start } @ann_exons;
-	@pred_exons = sort{ $b->start <=> $a->start } @pred_exons;
-      }
-
-      # now we link the exons, but first, a bit of formatted info
-      print  "\nComparing transcripts:\n";
-      print STDERR $pair->to_String;
-            
-      my %link;
-      my $start=0;    # start looking at the first one
-      my @buffer;     # buffer that keeps track of the skipped exons in @exons2 
-
-      # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
-    EXONS1:
-      for (my $i=0; $i<=$#ann_exons; $i++){
-        my $foundlink = 0;
-    	
-      EXONS2:
-        for (my $j=$start; $j<=$#pred_exons; $j++){
-          
-          # compare $ann_exons[$i] with $pred_exons[$j] 
-          if ( $ann_exons[$i]->overlaps($pred_exons[$j]) ){
-            
-            # if you've found a link, check first whether there is anything left unmatched in @buffer
-            if ( @buffer && scalar(@buffer) != 0 ){
-              foreach my $exon_number ( @buffer ){
-                print STDERR "no link        ".$exon_number."\n";
-		#if ( $exon_number == 1 ){                 $missing_exon_position{'first'}++; }
-		#elsif ( $exon_number == $#pred_exons+1 ){ $missing_exon_position{'last'}++; }
-		#else {                                    $missing_exon_position{ $exon_number }++; }	     
-	      }
-	    }
-	    $foundlink = 1;
-	    $exon_pair_count++;
-	    printf STDERR "%7d <----> %-2d ", ( ($i+1) , ($j+1) );
-	    
-	    # then check whether it is exact
-	    if ( $ann_exons[$i]->equals( $pred_exons[$j] ) ){
-	      print STDERR "exact";
-	      $exact_matches++;
-	    }
-	    
-	    # or there is a mismatch in the number of bases
-	    else{              
-	      if ( $ann_exons[$i]->start != $pred_exons[$j]->start ){
-		my $mismatch = abs($ann_exons[$i]->start - $pred_exons[$j]->start);
-		my $msg = "mismatch: $mismatch bases in the"; 
-		if ( $ann_exons[$i]->strand == 1 ){
-		  $msg .= " 5' end";
-		}
-		elsif ( $ann_exons[$i]->strand == -1 ){
-		  $msg .= " 3' end";
-		}
-		print STDERR $msg;
-	      }
-	      if (  $ann_exons[$i]->end  != $pred_exons[$j]->end   ){
-		my $mismatch = abs($ann_exons[$i]->end  -  $pred_exons[$j]->end  );
-		my $msg = "mismatch: $mismatch bases in the";
-		if ( $ann_exons[$i]->strand == 1 ){
-		  $msg .= " 3' end";
-		}
-		elsif ( $ann_exons[$i]->strand == -1 ){
-		  $msg .= " 5' end";
-		}	      
-		print STDERR $msg;
-	      }
-	    }
-	    print STDERR "\n";
-	    $start += scalar(@buffer)+1;
-	    @buffer = ();  # we start a new one
-	    next EXONS1;
-	  }         
-	  else {  # oops, no overlap, skip this one
-	    # keep this info in a @buffer if you haven't exhausted all checks in @exons2  
-	    if ( $j<$#pred_exons ){
-	      push ( @buffer, ($j+1) );
-	    }
-	    # if you got to the end of @exons2 and found no link, ditch the @buffer
-	    elsif ( $j == $#pred_exons ){ 
-	      @buffer = ();
-	    }
-	    # and get outta here              
-	    next EXONS2;
-	  }
-	}   # end of EXONS2 loop
-	 
-	# found no link for $exons1[$i], go to the next one
-	if ( $foundlink == 0 ){  
-	  printf STDERR "%7d        no link", ($i+1);
-	  print STDERR "\n";
-	  $missing_exon_count++;
-	  if ( $i+1 == 1 ){                 $missing_exon_position{'first'}++; }
-	  elsif ( $i+1 == $#ann_exons+1 ){  $missing_exon_position{'last'}++; }
-	  else {  $missing_exon_position{ $i+1 }++; }	  
-	}
-      }       # end of EXONS1 loop
-      push ( @{ $missing{ $missing_exon_count } }, $pair ); 
-      $total_missing_exon_count += $missing_exon_count;
-    }        # end of  PAIR  loop      
-  }         # end of  GENE  loop
-  
   # print out the transcripts pairs with at least one exon missing
+  print STDERR "Exons of genes ".$message1." which are missing in genes ".$message2.":\n";
   foreach my $key ( sort { $a <=> $b } ( keys( %missing ) ) ){
     my $these_pairs = scalar( @{ $missing{$key} } );
     my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
@@ -1400,25 +857,28 @@ sub find_missing_Exons{
       print STDERR $pair->to_String."\n";
     }
   }
-  print STDERR "Exact matches: ".$exact_matches." out of ".$exon_pair_count."\n";
-  
-  print STDERR "Missing exons: ".$total_missing_exon_count.", at positions:\n";
-  foreach my $key ( keys( %missing_exon_position ) ){
-    print STDERR $key.": ".$missing_exon_position{$key}."\n";
+
+  # print out the transcripts pairs with at least one exon overpredicted
+  print STDERR "Exons of genes ".$message2." which are overpredicted with respect to genes ".$message1.":\n";
+  foreach my $key ( sort { $a <=> $b } ( keys( %overpredicted ) ) ){
+    my $these_pairs = scalar( @{ $overpredicted{$key} } );
+    my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
+    print STDERR "\n$these_pairs transcript pairs with $key exon(s) overpredicted: $percentage percent\n";
+    foreach my $pair ( @{ $overpredicted{ $key } } ){
+      print STDERR $pair->to_String."\n";
+    }
   }
-  print STDERR "\n";
-  
-  print STDERR $pairs_count." transcript pairs\n";
-  
-  print STDERR scalar( @unpaired )." transcripts unpaired\n";
-  foreach my $tran ( @unpaired ){
-    print STDERR $tran->stable_id."\n";
+
+  # print out the transcripts pairs with at least one exon mismatch
+  print STDERR "Exons mismatches between genes ".$message1." and ".$message2.":\n";
+  foreach my $key ( sort { $a <=> $b } ( keys( %mismatches ) ) ){
+    my $these_pairs = scalar( @{ $mismatches{$key} } );
+    my $percentage  = sprintf "%.2f", 100*$these_pairs/$pairs_count;
+    print STDERR "\n$these_pairs transcript pairs with $key exon(s) mismatch: $percentage percent\n";
+    foreach my $pair ( @{ $mismatches{ $key } } ){
+      print STDERR $pair->to_String."\n";
+    }
   }
-  print STDERR scalar( @doubled )." transcripts repeated\n";
-  foreach my $tran ( @doubled ){
-    print STDERR $tran->stable_id."\n";
-  }
-  
   # we return the hash with the arrays of transcript pairs as values, and 
   # the number of missing exons as keys, that can be used to make a histogram
   return %missing;
@@ -1426,6 +886,352 @@ sub find_missing_Exons{
 
 ####################################################################################
 
+=head2 _match_Exons()
+  
+  Title   : _match_Exons
+  Function: this is the actual method that tries to match exons and store the info
+            in hashes and then return them. This is done per Transcript Pair
+  Args    : a pair of transcripts in the form of a TranscriptCluster object
+
+=cut
+
+sub _match_Exons{
+  my ($self, $pair, $coding ) = @_;
+  
+  my $prediction_matched  = 0; #  ( = TruePositive )
+  my $annotation_length   = 0; #  ( = TruePositive + FalseNegative )
+  my $prediction_length   = 0; #  ( = TruePositive + FalsePositive )
+
+  my $missing_exon_count  = 0;
+  my $over_exon_count     = 0; # counts the number of overpredicted exons
+  my $exon_mismatch_count = 0;
+  my $exon_pair_count     = 0;
+  my $exact_matches       = 0;
+  
+  my %missing_exon_position;
+  my %over_exon_position;
+
+  # the order is given by the order they are put into the pair in GeneCluster
+  my ($prediction,$annotation) = $pair->get_Transcripts;
+  
+  # get the exons
+  my (@ann_exons,@pred_exons);
+  if ($coding){
+    
+    # get only the CDS from the exons... if there is a translation
+    if ( $annotation->translation ){
+      @ann_exons = $annotation->translateable_exons;
+    }
+    else{
+      print STDERR "transcript ".$annotation->stable_id." has no translation, skipping this pair:\n";
+      print STDERR $pair->to_String."\n";
+      next PAIR;
+    }
+    if ( $prediction->translation ){
+      @pred_exons= $prediction->translateable_exons;
+    }
+    else{
+      print STDERR "transcript ".$prediction->stable_id." has no translation, skipping this pair:\n";
+      print STDERR $pair->to_String."\n";
+      next PAIR;
+    }
+  }
+  else{
+    @ann_exons  = $annotation->get_all_Exons;
+    @pred_exons = $prediction->get_all_Exons;
+  }
+  
+  # compute TruePositive + FalseNegative
+  foreach my $exon (@ann_exons){
+    $annotation_length       += $exon->length;
+  }
+  
+  # compute TruePositive + FalsePositive
+  foreach my $exon (@pred_exons){
+    $prediction_length       += $exon->length;
+  }
+  
+  # order exons according to the strand
+  if ( $ann_exons[0]->strand == 1 ){
+    @ann_exons  = sort{ $a->start <=> $b->start } @ann_exons;
+    @pred_exons = sort{ $a->start <=> $b->start } @pred_exons;
+  }
+  if ( $ann_exons[0]->strand == -1 ){
+    @ann_exons  = sort{ $b->start <=> $a->start } @ann_exons;
+    @pred_exons = sort{ $b->start <=> $a->start } @pred_exons;
+  }
+  
+  # now we link the exons, but first, a bit of formatted info
+  print  "\nComparing transcripts:\n";
+  print STDERR $pair->to_String;
+  
+  my %link;
+  my $start=0;    # start looking at the first one
+  my @buffer;     # buffer that keeps track of the skipped exons in @exons2 
+
+  my $sensitivity;
+  my $specificity;
+  my $printout;
+  my $printout_count = 1;
+  
+  $$printout{ $pair }{ 0 } = [ "annotation", "prediction", "" ];
+
+  # Note: variables start at ZERO, but in the print-outs we shift them to start at ONE
+ EXONS1:
+  for (my $i=0; $i<=$#ann_exons; $i++){
+    my $foundlink = 0;
+    
+  EXONS2:
+    for (my $j=$start; $j<=$#pred_exons; $j++){
+      
+      # compare $ann_exons[$i] with $pred_exons[$j] 
+      if ( $ann_exons[$i]->overlaps($pred_exons[$j]) ){
+	
+	# if you've found a link, check first whether there is anything left unmatched in @buffer
+	if ( @buffer && scalar(@buffer) != 0 ){
+	  foreach my $exon_number ( @buffer ){
+	    $$printout{ $pair }{ $printout_count } = ["no link",$exon_number,""];
+	    $printout_count++;
+	    $over_exon_count++;
+	    
+	    if ( $exon_number == 1 ){
+	      $over_exon_position{'first'}++;
+	    }
+	    elsif ( $exon_number == $#pred_exons+1 ){
+	      $over_exon_position{'last'}++;
+	    }
+	    else {
+	      $over_exon_position{ $exon_number }++;
+	    }	     
+	  }
+	}
+	$foundlink = 1;
+	$exon_pair_count++;
+
+	# then check whether it is exact
+	if ( $ann_exons[$i]->equals( $pred_exons[$j] ) ){
+	  $$printout{ $pair }{ $printout_count } = [ ($i+1) , ($j+1) , "exact" ];
+	  $printout_count++;
+	  
+	  $prediction_matched += $pred_exons[$j]->length;
+	  $exact_matches++;
+	}
+	
+	# or there is a mismatch in the number of bases
+	else{              
+	  my $message = '';
+	  if ( $ann_exons[$i]->start != $pred_exons[$j]->start ){
+	    my $mismatch = ($ann_exons[$i]->start - $pred_exons[$j]->start);
+	    my $absolute_mismatch = abs( $mismatch );
+	    my $msg;
+	    if ( $mismatch > 0 ){
+	      $msg = "prediction has $absolute_mismatch extra bases in the";
+	    }
+	    elsif( $mismatch < 0 ){
+	      $msg = "prediction misses $absolute_mismatch bases in the";
+	    }
+	    if ( $ann_exons[$i]->strand == 1 ){
+	      $msg .= " 5' end, ";
+	    }
+	    elsif ( $ann_exons[$i]->strand == -1 ){
+	      $msg .= " 3' end, ";
+	    }
+	    $message .= $msg;
+	  }
+	  if (  $ann_exons[$i]->end  != $pred_exons[$j]->end   ){
+	    my $mismatch = ($ann_exons[$i]->end  -  $pred_exons[$j]->end  );
+	    my $absolute_mismatch = abs( $mismatch );
+	    my $msg;
+	    if ( $mismatch > 0 ){
+	      $msg = "prediction misses $absolute_mismatch bases in the";
+	    }
+	    elsif( $mismatch < 0 ){
+	      $msg = "prediction has $absolute_mismatch extra bases in the";
+	    }
+	    if ( $ann_exons[$i]->strand == 1 ){
+	      $msg .= " 3' end, ";
+	    }
+	    elsif ( $ann_exons[$i]->strand == -1 ){
+	      $msg .= " 5' end, ";
+	    }	      
+	    $message .= $msg;
+	  }
+	  $$printout{ $pair }{ $printout_count } = [ ($i+1) , ($j+1) , $message ];
+	  $printout_count++;
+	}
+	$start += scalar(@buffer)+1;
+	
+	# we start a new buffer
+	@buffer = ();  
+	next EXONS1;
+      }
+      # if no overlap, skip this one
+      else {  
+	# keep this info in a @buffer if you haven't exhausted all checks in @exons2  
+	if ( $j<$#pred_exons ){
+	  push ( @buffer, ($j+1) );
+	}
+	# if you got to the end of @exons2 and found no link, ditch the @buffer
+	elsif ( $j == $#pred_exons ){ 
+	  @buffer = ();
+	}
+	# and get outta here              
+	next EXONS2;
+      }
+    }   # end of EXONS2 loop
+    
+    # found no link for $ann_exons[$i], go to the next one
+    if ( $foundlink == 0 ){  
+      $$printout{ $pair }{ $printout_count } = [ ($i+1) , "no link"  , "" ];
+      $printout_count++;
+      $missing_exon_count++;
+      if ( $i+1 == 1 ){
+	$missing_exon_position{'first'}++; 
+      }
+      elsif ( $i+1 == $#ann_exons+1 ){  
+	$missing_exon_position{'last'}++; 
+      }
+      else {  
+	$missing_exon_position{ $i+1 }++; 
+      }	  
+      # see whether there is any feature we could have used 
+      # WARNING: this method works but it is extremely slow
+      #my ($similarity_features, $prediction_features) = $self->_missed_exon_Evidence( $pair, $ann_exons[$i] );
+    }
+  }       # end of EXONS1 loop
+
+  # stats
+  $exon_mismatch_count = $over_exon_count + $missing_exon_count;
+  my $missing_stats  = [ $missing_exon_count , \%missing_exon_position ];
+  my $over_stats     = [ $over_exon_count    , \%over_exon_position    ];
+  my $mismatch_stats = [ $exon_mismatch_count                          ];
+  my $match_stats    = [ $exon_pair_count    , $exact_matches          ];
+
+  # we return printout{ pair }{ exon_number } = [ exon/no link, exon/no link, extra comments ]
+  return ( $printout, $missing_stats, $over_stats, $mismatch_stats, $match_stats );
+}
+
+####################################################################################
+
+sub input_id {  my $self = shift @_;
+  my ($chr,$chrstart,$chrend) = @_;
+  if ( $chr && $chrstart && $chrend ){
+    $self->{'_chr_name'}  = $chr;
+    $self->{'_chr_start'} = $chrstart;
+    $self->{'_chr_end'}   = $chrend;
+  }
+  return ( $self->{'_chr_name'}, $self->{'_chr_start'}, $self->{'_chr_end'} );
+}
+
+####################################################################################
+
+
+=head2 _missed_exon_Evidence
+
+Function: It searches for possible evidence that we could have used to predict the missed exon passed as argument
+
+=cut
+
+sub _missed_exon_Evidence{
+  my ($self, $pair, $exon) = @_;
+
+  # take the missed exon (virtual contig) coordinates
+  my ( $start, $end ) = ( $exon->start, $exon->end );
+
+  # we need to get info from the annotation database
+  my $dbname    = $::db1_conf{'dbname'};
+  my $dbuser    = $::db1_conf{'user'};
+  my $path      = $::db1_conf{'path'};
+  my $host      = $::db1_conf{'host'};
+  my $genetypes = $::db1_conf{'genetypes'}; # this is an arrayref 
+  
+  my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+					      -host             => $host,
+					      -user             => $dbuser,
+					      -dbname           => $dbname,
+					     );
+
+  $db->static_golden_path_type($path);
+  my $sgp = $db->get_StaticGoldenPathAdaptor;
+  
+  # get info of where we are sitting:
+  my ($chr,$chrstart,$chrend) = $self->input_id;
+  unless ( $chr && $chrstart && $chrend ){
+    $self->throw( "You must provide a chr_name, chr_start and a chr_end" );
+  }
+  
+  # get a virtual contig for that piece we're interested in
+  my ($start_pos,$end_pos) = ( $chrstart + $start, $chrstart + $end);
+  my $vcontig = $sgp->fetch_VirtualContig_by_chr_start_end($chr,$start_pos,$end_pos);
+  
+  # get features from that piece
+  my @similarity_features = $vcontig->get_all_SimilarityFeatures;
+  my @prediction_features = $vcontig->get_all_PredictionFeatures;
+
+  print STDERR scalar(@similarity_features)." similarity features retrieved in this range\n";
+  print STDERR scalar(@prediction_features)." prediction features retrieved in this range\n";
+
+  return ( \@similarity_features, \@prediction_features );
+  
+}
+
+#####################################################################################  
+
+=head2 exon_Density()
+
+=cut
+
+sub exon_Density{
+  my ($self, @transcripts) = @_;  
+  my $sum_density;
+  foreach my $tran (@transcripts){
+    my $exon_span;
+    my @exons = $tran->get_all_Exons;
+    @exons = sort { $a->start <=> $b->start } @exons;
+    my $transcript_length = $exons[$#exons]->end - $exons[0]->start;
+    foreach my $exon ( $tran->get_all_Exons ){
+      $exon_span += $exon->length;
+    }
+    $sum_density += $exon_span/$transcript_length;
+  }
+  return $sum_density;
+}
+
+####################################################################################
+
+
+=head2 _to_String();
+
+=cut
+
+sub _to_String{
+  my ($self, $pair, $printout ) = @_;
+  my $count = 0;
+  while ( $$printout{ $pair }{ $count } ){
+    my $msg;
+    my ( $str1, $str2, $str3 ) = ( '', '', '' );
+    
+    # exons in annotation (or 'no link' )
+    $str1 = ${ $$printout{$pair}{$count} }[0];
+
+    # exons in prediction (or 'no link' )
+    $str2 = ${ $$printout{$pair}{$count} }[1];
+
+    # comments: exact, mismatch bases
+    $str3 = ${ $$printout{$pair}{$count} }[2];
+    
+    if ( $count == 0 ){
+      $msg = sprintf "%10s   %-2s  %s\n", ( $str1, $str2, $str3 );
+    }
+    else{
+      $msg = sprintf "%8s <----> %-2s  %s\n", ( $str1, $str2, $str3 );
+    }
+    print STDERR $msg;
+    $count++;
+  }
+}
+  
+####################################################################################
 
 =head2 get_Exon_Statistics()
 
@@ -2059,6 +1865,8 @@ sub flush_gene_Clusters {
     my ($self) = @_;
     $self->{'_gene_clusters'} = [];
 }
+
+#####################################################################################
 
 
 
