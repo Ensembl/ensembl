@@ -236,17 +236,21 @@ sub store {
   $sth->finish();
 
   if(!$dbX) {
-      #
-      # store the new xref
-      #
+    if(!$exObj->primary_id()) {
+      throw("DBEntry cannot be stored without a primary_id attribute.");
+    }
+
+    #
+    # store the new xref
+    #
     $sth = $self->prepare( "
-       INSERT ignore INTO xref 
+       INSERT ignore INTO xref
        SET dbprimary_acc = ?,
            display_label = ?,
            version = ?,
            description = ?,
            external_db_id = ?" );
-    $sth->execute( $exObj->primary_id(), $exObj->display_id(), 
+    $sth->execute( $exObj->primary_id(), $exObj->display_id(),
 		   $exObj->version(), $exObj->description(), $dbRef);
     $dbX = $sth->{'mysql_insertid'};
     $sth->finish();
@@ -262,10 +266,10 @@ sub store {
 
     my $synonym_store_sth = $self->prepare(
         "INSERT ignore INTO external_synonym
-         SET xref_id = ?, synonym = ?");     
+         SET xref_id = ?, synonym = ?");
 
     my $synonyms = $exObj->get_all_synonyms();
-    foreach my $syn ( @$synonyms ) {	    
+    foreach my $syn ( @$synonyms ) {
       $synonym_check_sth->execute($dbX, $syn);
       my ($dbSyn) = $synonym_check_sth->fetchrow_array(); 
       $synonym_store_sth->execute($dbX, $syn) if(!$dbSyn);
