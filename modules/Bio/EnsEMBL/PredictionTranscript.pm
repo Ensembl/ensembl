@@ -644,6 +644,15 @@ sub pep2genomic {
   $start = 3* $start-2;
   $end   = 3* $end;
 
+  #
+  # Adjust the phase
+  #
+  my $exons = $self->get_all_Exons;
+  if($exons && (my $e = $exons->[0])) {
+    $start -= $e->phase;
+    $end   -= $e->phase;
+  }
+
   return $self->cdna2genomic( $start, $end );
 }
 
