@@ -1049,11 +1049,10 @@ sub get_all_SearchFeatures {
     my $sfa = $self->adaptor()->db()->get_db_adaptor('blast');
 
     my $offset = $self->chr_start-1;
-    warn $sfa,"--",$ticket;
-    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket) : [];#, $self->chr_name, $self->chr_start, $self->chr_end) : [];
 
+    my $features = $sfa ? $sfa->get_all_SearchFeatures($ticket, $self->chr_name, $self->chr_start, $self->chr_end) : [];
+    warn join(', ', @$features );
     foreach( @$features ) { 
-      warn ( $_ );
       $_->start( $_->start-$offset );
       $_->end(   $_->end-$offset );
     };

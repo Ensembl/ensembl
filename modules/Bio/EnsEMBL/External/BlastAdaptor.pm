@@ -64,8 +64,8 @@ WHERE  ticket = ? );
 AND    chr_name = ? );
 
    my $RANGE_SQL = qq(
-AND    chr_start >= ?
-AND    chr_end   <= ? );
+AND    chr_start <= ?
+AND    chr_end   >= ? );
 
    my $q = $SQL;
    my @binded = ( $ticket );
@@ -76,9 +76,11 @@ AND    chr_end   <= ? );
 
      if( $chr_start && $chr_end ){
        $q .= $RANGE_SQL;
-       push @binded, $chr_start, $chr_end;
+       push @binded, $chr_end, $chr_start;
      }
    }
+   warn( "$q: ", join( ', ',@binded ) ); 
+
    my $sth = $self->db->db_handle->prepare($q);
    my $rv = $sth->execute( @binded ) || $self->throw( $sth->errstr );
 
