@@ -1,5 +1,7 @@
 #!/usr/local/bin/perl -w
 
+# $Id$
+#
 # Author: Andreas Kahari <andreas.kahari@ebi.ac.uk>
 #
 # This is a  wrapper around Richard Durbin's
@@ -12,6 +14,7 @@ use Data::Dumper;	# For debugging output
 
 my $pmatch_cmd	= '/nfs/disk5/ms2/bin/pmatch';
 my $pmatch_opt	= '-T 14';
+my $pmatch_out	= '/tmp/pmatch_out.' . $$;	# Will be unlinked
 
 my $datadir	= '/acari/work4/mongin/final_build/release_mapping/Primary';
 my $target	= $datadir . '/final.fa';
@@ -40,9 +43,12 @@ sub overlap
 	return ($first->[1] - $first->[0] + 1);
 }
 
+if (system("$pmatch_cmd $pmatch_opt $target $query >$pmatch_out") == -1) {
+	# Failed to run pmatch
+	die($!);
+}
 
-
-open(PMATCH, "$pmatch_cmd $pmatch_opt $target $query |") or die($!);
+open(PMATCH, $pmatch_out) or die($!);
 
 my %hits;
 
@@ -52,50 +58,65 @@ while (defined(my $line = <PMATCH>)) {
 		$qid, $qstart, $qend, $qperc, $qlen,
 		$tid, $tstart, $tend, $tperc, $tlen) = split(/\s+/, $line);
 
-	$hits{$qid}{$tid} = [ ] if (!exists($hits{$qid}{$tid}));
+	if (!exists($hits{$qid}{$tid})) {
+		$hits{$qid}{$tid} = {
+			QLEN	=> $qlen,
+			TLEN 	=> $tlen,
+			HITS	=> [ ]
+		};
+	}
 
-	
-	push(@{ $hits{$qid}{$tid} }, {
+	push(@{ $hits{$qid}{$tid}{HITS} }, {
 		LENGTH	=> $length,
-		#not needed# QID	=> $qid,
 		QSTART	=> $qstart,
 		QEND	=> $qend,
-		QPERC	=> $qperc,
-		QLEN	=> $qlen,
-		#not needed# TID	=> $tid,
 		TSTART	=> $tstart,
-		TEND	=> $tend,
-		TPERC	=> $tperc,
-		TLEN	=> $tlen });
+		TEND	=> $tend });
 }
 
 close(PMATCH);
+
+unlink($pmatch_out);	# Get rid of pmatch output file
 
 # Sort the %hits hash on QSTART, then on TSTART.
 # Also calculate the lengths of any overlaps in the query or target.
 foreach my $query (values(%hits)) {
 	foreach my $target (values(%{ $query })) {
-		@{ $target } =
+		@{ $target->{HITS} } =
 			sort { $a->{QSTART} <=> $b->{QSTART}  ||
-			       $a->{TSTART} <=> $b->{TSTART} } @{ $target };
+			       $a->{TSTART} <=> $b->{TSTART} }
+					@{ $target->{HITS} };
 
 		# Figure out how long the query and target overlaps are.
 		# The first hit for any $qid<->$tid combination will never
 		# have QOVERLAP or TOVERLAP keys (since it's not preceeded
-		# by another hit).
+		# by another hit).  This loop also calculates the total
+		# length of the hits and the overlaps.
+
+		my $qoverlap = 0;	# Total query overlap length
+		my $toverlap = 0;	# Total target overlap length
+		my $totlen = 0;		# Total hit length
+
 		my @pair;
-		foreach my $hit (@{ $target }) {
+		foreach my $hit (@{ $target->{HITS} }) {
+			$totlen += $hit->{LENGTH};
+
 			shift(@pair) if (scalar(@pair) == 2);
 			push(@pair, $hit);
 			next if (scalar(@pair) != 2);
 
-			$hit->{QOVERLAP} =
+			$qoverlap +=
 				overlap([$pair[0]{QSTART}, $pair[0]{QEND}],
 					[$pair[1]{QSTART}, $pair[1]{QEND}]);
-			$hit->{TOVERLAP} =
+
+			$toverlap +=
 				overlap([$pair[0]{TSTART}, $pair[0]{TEND}],
 					[$pair[1]{TSTART}, $pair[1]{TEND}]);
 		}
+
+		# Calculate the query and target identities
+		$target->{QIDENT} = 100*($totlen - $qoverlap)/$target->{QLEN};
+		$target->{TIDENT} = 100*($totlen - $toverlap)/$target->{TLEN};
 	}
 }
 
