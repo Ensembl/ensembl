@@ -890,7 +890,7 @@ sub _build_contig_map {
   GOING_LEFT :
     
     while( $current_left_size < $left ) {
-      print(STDERR "Current left = $current_left_size Left = $left\n");
+      print(STDERR "Current left = $current_left_size\n");
       print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
 
       if( $current_orientation == 1 ) {
@@ -910,9 +910,8 @@ sub _build_contig_map {
 	}
 	
 	if( $overlap->distance == 1 ) {
-      
-	  $current_left_size += $overlap->sister->golden_length -1;          
-	} else {      
+	  $current_left_size += $overlap->sister->golden_length -1;
+	} else {
 	  $current_left_size += $overlap->distance;
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!
@@ -1354,6 +1353,23 @@ sub _convert_seqfeature_to_vc_coords {
 
    if( !exists $self->{'contig'}->{$cid} ) {
        return 0;
+   }
+
+
+   # might be clipped left/right
+
+   if( $self->{'leftmostcontig_id'} eq $cid ){
+       if( $self->ori_in_vc($cid) == 1) {
+	   # if end is less than startincontig - a no-go
+	   if( $sf->end < $self->{'startincontig'}->{$cid} ) {
+	       return 0;
+	   }
+       } else {
+	   # if start is > start in contig
+	   if( $sf->start > $self->{'startincontig'}->{$cid} ) {
+	       return 0;
+	   }
+       }
    }
 
 
