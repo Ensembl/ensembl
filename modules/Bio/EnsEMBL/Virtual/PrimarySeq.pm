@@ -167,12 +167,16 @@ sub subseq{
    }
        
    my @mapcontigs=$self->_vmap->each_MapContig();
-
    my $start_contig=shift(@mapcontigs);
 
+   if( !defined $start_contig ) {
+	# all gap
+	return 'N' x ($end - $start +1);
+   }
    while ($start_contig->end < $start) {
        $start_contig = shift(@mapcontigs);
    }
+   
    
    # could be in the middle of a gap
    if( $start_contig->start > $end ) {
