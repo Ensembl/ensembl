@@ -44,7 +44,7 @@ Internal methods are usually preceded with a _
 
 
 # Let the code begin...
-package Bio::EnsEMBL::DBSQL::DBPrimarySeq;
+package Bio::EnsEMBL::DBOLD::DBPrimarySeq;
 use vars qw(@ISA);
 use strict;
 

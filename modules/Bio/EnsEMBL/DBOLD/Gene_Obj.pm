@@ -1,5 +1,5 @@
 #
-# EnsEMBL module for Bio::EnsEMBL::DBSQL::Gene_Obj
+# EnsEMBL module for Bio::EnsEMBL::DBOLD::Gene_Obj
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
@@ -11,7 +11,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Gene_Obj - MySQL database adapter class for EnsEMBL genes, transcripts,
+Bio::EnsEMBL::DBOLD::Gene_Obj - MySQL database adapter class for EnsEMBL genes, transcripts,
 exons, etc.
 
 =head1 SYNOPSIS
@@ -19,14 +19,14 @@ exons, etc.
   $gene   = $gene_obj->get('HG45501');
 
   use Bio::EnsEMBL::Gene;
-  use Bio::EnsEMBL::DBSQL::Gene_Obj;
+  use Bio::EnsEMBL::DBOLD::Gene_Obj;
 
   # Get a gene object from the database
   my $gene = $gene_obj->get('HG45501', $db_obj);
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj,
+This is one of the objects contained in Bio:EnsEMBL::DBOLD::Obj,
 dealing with Gene methods, such as writing and getting genes,
 transcripts, translations, and exons.
 
@@ -47,7 +47,7 @@ methods. Internal methods are usually preceded with a _
 
 # Let the code begin...
 
-package Bio::EnsEMBL::DBSQL::Gene_Obj;
+package Bio::EnsEMBL::DBOLD::Gene_Obj;
 
 use vars qw(@ISA);
 use strict;
@@ -55,7 +55,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBOLD::Obj;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
@@ -64,7 +64,7 @@ use Bio::EnsEMBL::DB::VirtualContig;
 use DBI;
 use Bio::EnsEMBL::StickyExon;
 
-use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DBOLD::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
 
 @ISA = qw(Bio::EnsEMBL::DB::Gene_ObjI Bio::Root::Object);
@@ -1116,7 +1116,7 @@ sub get_supporting_evidence {
 	    $f->analysis($anahash{$analysisid});
 	    
 	} else {
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
 	    $f->analysis($feature_obj->get_Analysis($analysisid));
 		
 	    $anahash{$analysisid} = $f->analysis;
@@ -1184,7 +1184,7 @@ sub get_supporting_evidence_direct {
 	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid,$contig) = @{$arrayref};
 	my $analysis;
 	if (!$analhash{$analysisid}) {
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
 	    $analysis = $feature_obj->get_Analysis($analysisid);
 	    $analhash{$analysisid} = $analysis;	   
 	} 
@@ -1226,7 +1226,7 @@ sub get_supporting_evidence_direct {
 	my ($start,$end,$f_score,$strand,$analysisid,$name,$hstart,$hend,$hid,$evalue,$perc_id,$exonid) = @{$arrayref};
 	my $analysis;
 	if (!$analhash{$analysisid}) {
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
 	    $analysis = $feature_obj->get_Analysis($analysisid);
 	    $analhash{$analysisid} = $analysis;	   
 	} 
@@ -1792,7 +1792,7 @@ sub write_supporting_evidence {
 	    print(STDERR "Supporting feature invalid. Skipping feature\n");
 	    next FEATURE;
 	}
-	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+	my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->_db_obj);
   	my $analysisid = $feature_obj->write_Analysis($f->analysis);
 	
 	if ($f->isa("Bio::EnsEMBL::FeaturePairI")) {

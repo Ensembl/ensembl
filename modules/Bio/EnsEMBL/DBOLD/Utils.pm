@@ -1,4 +1,4 @@
-# Ensembl module for Bio::EnsEMBL::DBSQL::Utils
+# Ensembl module for Bio::EnsEMBL::DBOLD::Utils
 #
 # Written by Arek Kasprzyk
 #
@@ -11,13 +11,13 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Utils - Module having the fset2transcript subroutines
+Bio::EnsEMBL::DBOLD::Utils - Module having the fset2transcript subroutines
 
 =head1 SYNOPSIS
 
-    use Bio::EnsEMBL::DBSQL::Utils;
+    use Bio::EnsEMBL::DBOLD::Utils;
 
-    &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset_id);
+    &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($fset_id);
 
 =head1 DESCRIPTION
 
@@ -42,8 +42,8 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 
-package Bio::EnsEMBL::DBSQL::Utils;
-use Bio::EnsEMBL::DBSQL::Obj;
+package Bio::EnsEMBL::DBOLD::Utils;
+use Bio::EnsEMBL::DBOLD::Obj;
 use strict;
 
 

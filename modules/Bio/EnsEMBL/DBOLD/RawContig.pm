@@ -46,7 +46,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::RawContig;
+package Bio::EnsEMBL::DBOLD::RawContig;
 use vars qw(@ISA);
 use strict;
 
@@ -54,16 +54,16 @@ use strict;
 
 use Bio::Root::RootI;
 
-use Bio::EnsEMBL::DBSQL::Obj;
-use Bio::EnsEMBL::DBSQL::Feature_Obj;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
+use Bio::EnsEMBL::DBOLD::Obj;
+use Bio::EnsEMBL::DBOLD::Feature_Obj;
+use Bio::EnsEMBL::DBOLD::Gene_Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
 use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::ContigOverlap;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
-use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
+use Bio::EnsEMBL::DBOLD::DBPrimarySeq;
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::EnsEMBL::DB::RawContigI Bio::Root::RootI);
@@ -89,7 +89,7 @@ sub new {
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
     $self->id($id);
     $self->dbobj($dbobj);
@@ -132,7 +132,7 @@ sub direct_new {
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    $dbobj->isa('Bio::EnsEMBL::DBOLD::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
 
     if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid || !defined $chr_start || !defined $chr_end) {
 	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid,$chr_start,$chr_end]!");
@@ -160,7 +160,7 @@ sub direct_new {
  Usage   : $contig->fetch($contig_id)
  Function: fetches the data necessary to build a Rawcontig object
  Example : $contig->fetch(1)
- Returns : Bio::EnsEMBL::DBSQL::RawContig object
+ Returns : Bio::EnsEMBL::DBOLD::RawContig object
  Args    : $contig_id
 
 
@@ -489,7 +489,7 @@ sub _gene_query{
      
      if( ! exists $got{$rowhash->{'gene'}}) {  
 	 
-	 my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);
+	 my $gene_obj = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self->dbobj);
          my $gene;
          #PL: this may be overcautious, e.g. when called by get_GeneByType()
          eval {
@@ -570,9 +570,9 @@ sub primary_seq{
 
  Title   : db_primary_seq
  Usage   : $dbseq = $contig->db_primary_seq();
- Function: Gets a Bio::EnsEMBL::DBSQL::DBPrimarySeq object out from the contig
+ Function: Gets a Bio::EnsEMBL::DBOLD::DBPrimarySeq object out from the contig
  Example :
- Returns : Bio::EnsEMBL::DBSQL::DBPrimarySeq object
+ Returns : Bio::EnsEMBL::DBOLD::DBPrimarySeq object
  Args    : 
 
 
@@ -581,7 +581,7 @@ sub primary_seq{
 sub db_primary_seq {
     my ($self) = @_;
     
-    my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
+    my $dbseq = Bio::EnsEMBL::DBOLD::DBPrimarySeq->new(
 						       -dna => $self->dna_id,
 						       -db_handle => $self->dbobj->_db_handle
 						       );
@@ -746,7 +746,7 @@ sub get_all_SimilarityFeatures_above_score{
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
        
@@ -839,7 +839,7 @@ sub get_all_SimilarityFeatures_above_score{
               
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
 	   
@@ -940,7 +940,7 @@ sub get_all_SimilarityFeatures {
        
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	   eval {
 	     $analysis = $feature_obj->get_Analysis($analysisid);
 	     $analhash{$analysisid} = $analysis;
@@ -1052,7 +1052,7 @@ sub get_all_RepeatFeatures {
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 
 	   $analhash{$analysisid} = $analysis;
@@ -1204,7 +1204,7 @@ while( $sth->fetch ) {
     
     if (!$analhash{$analysisid}) {
 	
-	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	$analysis = $feature_obj->get_Analysis($analysisid);
         $analhash{$analysisid} = $analysis;
         
@@ -1278,7 +1278,7 @@ sub get_all_PredictionFeatures {
 	   
        if (!$analhash{$analysisid}) {
 
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+	   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 
 	   $analhash{$analysisid} = $analysis;
@@ -1361,7 +1361,7 @@ sub get_genscan_peptides {
     my ($self) = @_;
     my @transcripts;
     foreach my $fset ($self->get_all_PredictionFeatures) {
-	my $trans = &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($fset,$self);
+	my $trans = &Bio::EnsEMBL::DBOLD::Utils::fset2transcript($fset,$self);
 	push(@transcripts,$trans);
     }
 
@@ -1757,7 +1757,7 @@ sub _db_obj {
  Usage   :
  Function:
  Example :
- Returns : The Bio::EnsEMBL::DBSQL::ObjI object
+ Returns : The Bio::EnsEMBL::DBOLD::ObjI object
  Args    :
 
 
@@ -1767,7 +1767,7 @@ sub dbobj {
    my ($self,$arg) = @_;
 
    if (defined($arg)) {
-        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless $arg->isa("Bio::EnsEMBL::DBSQL::Obj");
+        $self->throw("[$arg] is not a Bio::EnsEMBL::DBOLD::Obj") unless $arg->isa("Bio::EnsEMBL::DBOLD::Obj");
         $self->{'_dbobj'} = $arg;
    }
    return $self->{'_dbobj'};
@@ -1779,7 +1779,7 @@ sub dbobj {
  Usage   :
  Function:
  Example :
- Returns : The Bio::EnsEMBL::DBSQL::CrossMatchAdaptor object
+ Returns : The Bio::EnsEMBL::DBOLD::CrossMatchAdaptor object
  Args    :
 
 

@@ -1,5 +1,5 @@
 #
-# BioPerl module for DBSQL::Obj
+# BioPerl module for DBOLD::Obj
 #
 # Cared for by Ewan Birney <birney@sanger.ac.uk>
 #
@@ -11,11 +11,11 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
+Bio::EnsEMBL::DBOLD::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::Obj->new(
+    $db = Bio::EnsEMBL::DBOLD::Obj->new(
         -user   => 'root',
         -dbname => 'pog',
         -host   => 'caldy',
@@ -52,7 +52,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::DBSQL::Obj;
+package Bio::EnsEMBL::DBOLD::Obj;
 
 use vars qw(@ISA);
 use strict;
@@ -62,25 +62,25 @@ use strict;
 use Bio::Root::RootI;
 
 use Bio::EnsEMBL::DB::ObjI;
-use Bio::EnsEMBL::DBSQL::Gene_Obj;
-use Bio::EnsEMBL::DBSQL::Update_Obj;
-use Bio::EnsEMBL::DBSQL::Feature_Obj;
-use Bio::EnsEMBL::DBSQL::RawContig;
-use Bio::EnsEMBL::DBSQL::GapContig;
+use Bio::EnsEMBL::DBOLD::Gene_Obj;
+use Bio::EnsEMBL::DBOLD::Update_Obj;
+use Bio::EnsEMBL::DBOLD::Feature_Obj;
+use Bio::EnsEMBL::DBOLD::RawContig;
+use Bio::EnsEMBL::DBOLD::GapContig;
 
-use Bio::EnsEMBL::DBSQL::Clone;
-use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
-use Bio::EnsEMBL::DBSQL::KaryotypeAdaptor;
-use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
+use Bio::EnsEMBL::DBOLD::Clone;
+use Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBOLD::KaryotypeAdaptor;
+use Bio::EnsEMBL::DBOLD::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
 
 use DBI;
 
-use Bio::EnsEMBL::DBSQL::SQL;
+use Bio::EnsEMBL::DBOLD::SQL;
 use Bio::EnsEMBL::DB::ObjI;
 
-use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DBOLD::DummyStatement;
 
 @ISA = qw(Bio::EnsEMBL::DB::ObjI Bio::Root::RootI);
 
@@ -226,7 +226,7 @@ sub new {
 sub get_Update_Obj {
     my ($self) = @_;
     
-    my $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj = Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
  
     return $update_obj;
   }
@@ -270,7 +270,7 @@ sub host {
 sub get_Feature_Obj {
     my ($self) = @_;
     
-    my $update_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $update_obj = Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
  
     return $update_obj;
 }
@@ -456,7 +456,7 @@ sub write_Contig {
     
     # write sequence features. We write all of them together as it
     # is more efficient
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     $feature_obj->write($contig, @features);
     
     return 1;
@@ -549,13 +549,13 @@ sub write_Chromosome {
     my $mapdb = $obj->mapdb;
 
 Sets or gets a mapdb connection, which is a
-C<Bio::EnsEMBL::Map::DBSQL::Obj> object.
+C<Bio::EnsEMBL::Map::DBOLD::Obj> object.
 
 If a mapdb connection doesn't exist, a new
 connection is made using the information provided
 to the C<_initialize> method.  This will produce
 an exception if the
-C<Bio::EnsEMBL::Map::DBSQL::Obj> module can't be
+C<Bio::EnsEMBL::Map::DBOLD::Obj> module can't be
 found.
 
 =cut
@@ -565,7 +565,7 @@ sub mapdb {
     
     if ($value) {
         $self->throw("$value is not a valid mapdb object")
-            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::Obj");
+            unless $value->isa("Bio::EnsEMBL::Map::DBOLD::Obj");
         $self->{'_mapdb'} = $value;
     }
     else {
@@ -575,8 +575,8 @@ sub mapdb {
         # If $map is just an unblessed hash (first time
         # mapdb is called), connect to the map database.
         if (ref($map) eq 'HASH') {
-            require Bio::EnsEMBL::Map::DBSQL::Obj;
-            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new(%$map);
+            require Bio::EnsEMBL::Map::DBOLD::Obj;
+            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBOLD::Obj->new(%$map);
         }
     }
     return $self->{'_mapdb'};
@@ -772,7 +772,7 @@ sub prepare {
    
    if( $self->_debug > 10 ) {
        print STDERR "Prepared statement $string\n";
-       my $st = Bio::EnsEMBL::DBSQL::DummyStatement->new();
+       my $st = Bio::EnsEMBL::DBOLD::DummyStatement->new();
        $st->_fileh(\*STDERR);
        $st->_statement($string);
        return $st;
@@ -1215,7 +1215,7 @@ sub get_donor_locator {
     $self->warn("Obj->get_donor_locator is a deprecated method! 
 Calling Update_Obj->get_donor_locator instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_donor_locator();
 }
 
@@ -1236,7 +1236,7 @@ sub get_last_update_offset{
     $self->warn("Obj->get_last_update_offset is a deprecated method! 
 Calling Update_Obj->get_last_update_offset instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_last_update_offset();
 }    
 
@@ -1258,7 +1258,7 @@ sub get_last_update{
     $self->warn("Obj->get_last_update is a deprecated method! 
 Calling Update_Obj->get_last_update_offset instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_last_update_offset();
 }     
 
@@ -1281,7 +1281,7 @@ sub get_now_offset{
     $self->warn("Obj->get_now_offset is a deprecated method! 
 Calling Update_Obj->get_now_offset instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_now_offset();
 }
     
@@ -1323,7 +1323,7 @@ sub get_Protein_annseq{
     $self->warn("Obj->get_Protein_annseq is a deprecated method! 
 Calling Feature_Obj->get_Protein_annseq instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->get_Protein_annseq($ENSP);
 } 
 
@@ -1453,7 +1453,7 @@ sub get_updated_Clone_id {
     $self->warn("Obj->get_updated_Clone_id is a deprecated method! 
 Calling Update_Obj->get_updated_Clone_id instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_updated_Clone_id($last_offset, $now_offset);
 }
     
@@ -1477,7 +1477,7 @@ sub get_updated_Objects{
     $self->warn("Obj->get_updated_Objects is a deprecated method! 
 Calling Update_Obj->get_updated_Objects instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_updated_Objects($last_offset,$now_offset);
 }
     
@@ -1501,7 +1501,7 @@ sub get_updated_Ghosts{
     $self->warn("Obj->get_updated_Ghosts is a deprecated method! 
 Calling Update_Obj->get_updated_Ghosts instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_updated_Ghosts($last_offset, $now_offset);
 }
     
@@ -1522,7 +1522,7 @@ sub get_Ghost{
     $self->warn("Obj->get_Ghost is a deprecated method! 
 Calling Update_Obj->get_Ghost instead!");
    
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->get_Ghost($ghost_id,$ghost_type);
 }
     
@@ -1544,7 +1544,7 @@ sub write_Ghost{
     $self->warn("Obj->write_Ghost is a deprecated method! 
 Calling Update_Obj->write_Ghost instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->write_Ghost($ghost);
 }
     
@@ -1568,7 +1568,7 @@ sub archive_Gene {
    $self->warn("Obj->archive_Gene is a deprecated method! 
 Calling Update_Obj->archive_Gene instead!");
    
-   my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+   my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
    return $update_obj->archive_Gene($gene,$arc_db);
 }
 
@@ -1632,7 +1632,7 @@ sub delete_Features {
     $self->warn("Obj->delete_Features is a deprecated method! 
 Calling Feature_Obj->delete instead!");
 
-   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+   my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
    return $feature_obj->delete($contig);
 } 
 
@@ -1694,7 +1694,7 @@ sub replace_last_update {
     $self->warn("Obj->replace_last_update is a deprecated method! 
 Calling Update_Obj->replace_last_update instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->replace_last_update($now_offset);
 }        
 
@@ -1715,7 +1715,7 @@ sub current_update {
      $self->warn("Obj->current_update is a deprecated method! 
 Calling Update_Obj->current_update instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->current_update();
 }    
 
@@ -1736,7 +1736,7 @@ sub start_update {
      $self->warn("Obj->start_update is a deprecated method! 
 Calling Update_Obj->start_update instead!");
  
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->start_update($start,$end);
 }   
 
@@ -1757,7 +1757,7 @@ sub finish_update {
     $self->warn("Obj->finish_update is a deprecated method! 
 Calling Update_Obj->finish_update instead!");
     
-    my $update_obj=Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+    my $update_obj=Bio::EnsEMBL::DBOLD::Update_Obj->new($self);
     return $update_obj->finish_update();
 }   
 
@@ -1801,7 +1801,7 @@ sub write_all_Protein_features {
     $self->warn("Obj->write_all_Protein_features is a deprecated method! 
 Calling Feature_Obj->write_all_Protein_features instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->write_all_Protein_features($prot_annseq,$ENSP);
 } 
 
@@ -1824,7 +1824,7 @@ sub write_Protein_feature {
     $self->warn("Obj->write_Protein_feature is a deprecated method! 
 Calling Feature_Obj->write_Protein_feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->write_Protein_feature($ENSP,$feature);
 } 
 
@@ -1846,7 +1846,7 @@ sub write_Feature {
     $self->warn("Obj->write_Feature is a deprecated method! 
 Calling Feature_Obj->write_Feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->write($contig,@features);
 } 
 
@@ -1911,7 +1911,7 @@ sub write_Analysis {
     $self->warn("Obj->write_Analysis is a deprecated method! 
 Calling Feature_Obj->write_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->write_Analysis($analysis);
 } 
     
@@ -1933,7 +1933,7 @@ sub exists_Homol_Feature {
     $self->warn("Obj->exists_Homol_Feature is a deprecated method! 
 Calling Feature_Obj->exists_Homol_Feature instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->exists($feature,$analysisid,$contig);
 } 
     
@@ -1955,7 +1955,7 @@ sub get_Analysis {
     $self->warn("Obj->get_Analysis is a deprecated method! 
 Calling Feature_Obj->get_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->get_Analysis($id);
 } 
 
@@ -1977,7 +1977,7 @@ sub exists_Analysis {
     $self->warn("Obj->exists_Analysis is a deprecated method! 
 Calling Feature_Obj->exists_Analysis instead!");
     
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+    my $feature_obj=Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);
     return $feature_obj->exists_Analysis($analysis);
 } 
  
@@ -2066,7 +2066,7 @@ sub get_Clone {
    #$self->warn("Obj->get_Clone is a deprecated method! 
 #Calling Clone->fetch instead!");
     
-    my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $id,
+    my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $id,
 						-dbobj => $self );
    
     return $clone->fetch();
@@ -2090,7 +2090,7 @@ sub get_Contig{
    #$self->warn("Obj->get_Contig is a deprecated method! 
 #Calling Contig->fetch instead!");
 
-   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
+   my $contig      = new Bio::EnsEMBL::DBOLD::RawContig ( -dbobj => $self,
 							  -id    => $id,
 							  -perlonlysequences => $self->perl_only_sequences(),
 							  -userawcontigacc => !$self->perl_only_contigs );
@@ -2220,7 +2220,7 @@ sub delete_Clone{
    
    (ref($clone_id)) && $self->throw ("Passing an object reference instead of a variable\n");
 
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $clone_id,
+   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $clone_id,
 					       -dbobj => $self );
    
    return $clone->delete();
@@ -2246,7 +2246,7 @@ Calling Clone->get_all_geneid instead!");
 
    (ref($cloneid)) && $self->throw ("Passing an object reference instead of a variable!\n");
 
-   my $clone = new Bio::EnsEMBL::DBSQL::Clone( -id    => $cloneid,
+   my $clone = new Bio::EnsEMBL::DBOLD::Clone( -id    => $cloneid,
 					       -dbobj => $self );
    
    return $clone->get_all_my_geneid();
@@ -2268,7 +2268,7 @@ sub gene_Obj {
     my ($self) = @_;
 
     unless (defined($self->{_gene_obj})) {
-	$self->{_gene_obj} = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);    
+	$self->{_gene_obj} = Bio::EnsEMBL::DBOLD::Gene_Obj->new($self);    
     }
 
     return $self->{_gene_obj};
@@ -2289,7 +2289,7 @@ sub feature_Obj {
     my ($self) = @_;
 
     unless (defined($self->{_feature_obj})) {
-	$self->{_feature_obj} = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);    
+	$self->{_feature_obj} = Bio::EnsEMBL::DBOLD::Feature_Obj->new($self);    
     }
 
     return $self->{_feature_obj};
@@ -2312,7 +2312,7 @@ sub get_AnalysisAdaptor {
    my ($self) = @_;
    if( ! defined $self->{_analysisAdaptor} ) {
      $self->{_analysisAdaptor} = 
-       Bio::EnsEMBL::DBSQL::AnalysisAdaptor->new($self);
+       Bio::EnsEMBL::DBOLD::AnalysisAdaptor->new($self);
    }
    return $self->{_analysisAdaptor};
 }
@@ -2334,7 +2334,7 @@ sub get_AnalysisAdaptor {
 sub get_StaticGoldenPathAdaptor{
    my ($self,@args) = @_;
 
-   return Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(-dbobj => $self);
+   return Bio::EnsEMBL::DBOLD::StaticGoldenPathAdaptor->new(-dbobj => $self);
 }
 
 =head2 get_KaryotypeAdaptor
@@ -2352,7 +2352,7 @@ sub get_StaticGoldenPathAdaptor{
 sub get_KaryotypeAdaptor{
    my ($self,@args) = @_;
 
-   return Bio::EnsEMBL::DBSQL::KaryotypeAdaptor->new($self);
+   return Bio::EnsEMBL::DBOLD::KaryotypeAdaptor->new($self);
 }
 
 
