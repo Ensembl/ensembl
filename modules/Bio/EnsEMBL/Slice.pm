@@ -734,6 +734,9 @@ sub get_all_PredictionTranscripts {
                to obtain.
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
+  Arg [3]    : (optional) string $dbtype
+               The name of an attached database to retrieve the features from
+               instead.  e.g. 'est'.
   Example    : @dna_dna_align_feats = @{$slice->get_all_DnaAlignFeatures};
   Description: Retrieves the DnaDnaAlignFeatures which overlap this slice with
                logic name $logic_name and with score above $score.  If 
@@ -747,9 +750,21 @@ sub get_all_PredictionTranscripts {
 =cut
 
 sub get_all_DnaAlignFeatures {
-   my ($self, $logic_name, $score) = @_;
+   my ($self, $logic_name, $score, $dbtype) = @_;
 
-   my $dafa = $self->adaptor->db->get_DnaAlignFeatureAdaptor();
+   my $db;
+
+   if($dbtype) {
+     $db = $self->adaptor->db->get_db_adaptor($dbtype);
+     if(!$db) {
+       warning("Don't have db $dbtype returning empty list\n");
+       return [];
+     }
+   } else {
+     $db = $self->adaptor->db;
+   }
+
+   my $dafa = $db->get_DnaAlignFeatureAdaptor();
 
    return $dafa->fetch_all_by_Slice_and_score($self,$score, $logic_name);
 }
@@ -763,6 +778,9 @@ sub get_all_DnaAlignFeatures {
                to obtain.
   Arg [2]    : (optional) float $score
                The mimimum score of the features to retrieve
+  Arg [3]    : (optional) string $dbtype
+               The name of an attached datbase to retrieve features from 
+               instead.
   Example    : @dna_pep_align_feats = @{$slice->get_all_ProteinAlignFeatures};
   Description: Retrieves the DnaPepAlignFeatures which overlap this slice with
                logic name $logic_name and with score above $score.  If 
@@ -776,10 +794,21 @@ sub get_all_DnaAlignFeatures {
 =cut
 
 sub get_all_ProteinAlignFeatures {
-  my ($self, $logic_name, $score) = @_;
+  my ($self, $logic_name, $score, $dbtype) = @_;
 
-  my $pafa = $self->adaptor()->db()->get_ProteinAlignFeatureAdaptor();
+  my $db;
 
+  if($dbtype) {
+    $db = $self->adaptor->db->get_db_adaptor($dbtype);
+    if(!$db) {
+      warning("Don't have db $dbtype returning empty list\n");
+      return [];
+    }
+  } else {
+    $db = $self->adaptor->db;
+  }
+
+  my $pafa = $db->get_ProteinAlignFeatureAdaptor();
   return $pafa->fetch_all_by_Slice_and_score($self, $score, $logic_name);
 }
 
