@@ -95,31 +95,60 @@ Post questions to the Ensembl developer list: <ensembl-dev@ebi.ac.uk>
 package Bio::EnsEMBL::Registry;
 
 use strict;
-use Bio::EnsEMBL::Utils::ConfigRegistry;
+#use Bio::EnsEMBL::Utils::ConfigRegistry;
 #use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 #use Bio::EnsEMBL::DBSQL::DBMergedAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+#use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 
-our %register = ();
+use vars qw(%registry_register);
 
+$registry_register{'_WARN'} = 0;
+#print STDERR "REG: ".caller()."\n";
 
-#$register{'_WARN'} = 0; # default report overwriting
+sub load_all{
+  my $class = shift;
+  my $web_reg = shift;
 
-if(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
-#  print "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
-  unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
-    throw "Error in Configuration\n $!\n";
+  #$registry_register{'_WARN'} = 0; # default report overwriting
+  if(!defined($registry_register{'seen'})){
+    $registry_register{'seen'}=1;
+    if(defined($web_reg)){
+      print STDERR  "Loading conf from site defs file ".$web_reg."\n";
+      unless (my $return = do $web_reg){
+	throw "Error in Configuration\n $!\n";
+      }
+    }
+    elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
+      print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
+      print STDERR "Called from ".caller()."\n";
+      unless (my $return = do $ENV{ENSEMBL_REGISTRY}){
+	throw "Error in Configuration\n $!\n";
+      }
+    }
+    elsif(-e $ENV{HOME}."/.ensembl_init"){
+      print STDERR "Loading conf from ".$ENV{HOME}."/.ensembl_init\n";
+      do($ENV{HOME}."/.ensembl_init");
+    }
+    else{
+      print STDERR "NO default configuration to load\n";
+    }
   }
-}
-elsif(-e $ENV{HOME}."/.ensembl_init"){
-#  print "Loading conf from ".$ENV{HOME}."/.ensembl_init\n";
-  do($ENV{HOME}."/.ensembl_init");
-}
-else{
-#  print "NO default configuration to load\n";
+  else{
+    print STDERR "Already configured???\n";
+
+    if(defined($registry_register{'_DBA'})){ # print available
+      foreach my $db (@{$registry_register{'_DBA'}}){
+	print STDERR $db->species."\t".$db->group()."\n";
+      }
+    }
+    else{
+      print STDERR "No dbas ???\n";
+    }
+  }
 }
 
 #=head2 warn_on_duplicates
@@ -136,8 +165,8 @@ else{
 #sub warn_on_duplicates{
 #  my ($class) = shift;
 #
-#  $register{'_WARN'} = shift if(@_);
-#  return $register{'_WARN'};
+#  $registry_register{'_WARN'} = shift if(@_);
+#  return $registry_register{'_WARN'};
 #}
 
 sub check_if_already_there{
@@ -146,8 +175,8 @@ sub check_if_already_there{
   my ($dbname,$host,$driver,$port ) =
     rearrange([qw(DBNAME HOST DRIVER PORT )], @_);
 
-  if(defined($register{'_DBA'})){
-    foreach my $db (@{$register{'_DBA'}}){
+  if(defined($registry_register{'_DBA'})){
+    foreach my $db (@{$registry_register{'_DBA'}}){
       my $dbc= $db->db();
       if($dbc->host() eq $host and $dbc->dbname() eq $dbname
 	 and $dbc->driver() eq $driver and $dbc->port() eq $port){
@@ -157,6 +186,23 @@ sub check_if_already_there{
   }
   return 0;
 }
+
+sub set_default_track{
+  my ($class, $species, $group) = @_;  
+
+  $registry_register{'def_track'}{$species}{$group} = 1;
+}
+
+sub default_track{
+  my ($class, $species, $group) = @_;  
+
+  if(defined($registry_register{'def_track'}{$species}{$group})){
+    return 1;
+  }
+  
+  return 0;
+}
+
 
 #
 # add ons.
@@ -177,7 +223,7 @@ sub add_db{
   my ($class, $db, $name, $adap) = @_;
 
 #  print STDERR "ADDING# ".$adap->dbname." to ".$db->db->dbname."  as $name\n";
-  $register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
+  $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
 
 }
 
@@ -194,8 +240,8 @@ sub add_db{
 sub remove_db{
   my ($class, $db, $name) = @_;
 
-  my $ret = $register{$db->species()}{$db->group()}{'_special'}{$name};
-  $register{$db->species()}{$db->group()}{'_special'}{$name} = undef;
+  my $ret = $registry_register{$db->species()}{$db->group()}{'_special'}{$name};
+  $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = undef;
 
   return $ret;
 }
@@ -213,7 +259,7 @@ sub remove_db{
 sub get_db{
   my ($class, $db, $name) = @_;
 
-  return $register{$db->species()}{$db->group()}{'_special'}{$name};
+  return $registry_register{$db->species()}{$db->group()}{'_special'}{$name};
 }
 
 =head2 get_all_db_adaptors
@@ -229,8 +275,8 @@ sub get_all_db_adaptors{
   my ($class,$db) = @_;
   my %ret=();
 
- foreach my $key (keys %{$register{$db->species()}{$db->group()}{'_special'}}){
-   $ret{$key} = $register{$db->species()}{$db->group()}{'_special'}{$key};
+ foreach my $key (keys %{$registry_register{$db->species()}{$db->group()}{'_special'}}){
+   $ret{$key} = $registry_register{$db->species()}{$db->group()}{'_special'}{$key};
  }
 
   return \%ret;
@@ -255,20 +301,20 @@ sub get_all_db_adaptors{
 sub add_DBAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
-#  if(defined($register{$species}{$group}{'_DB'}) && warn_on_duplicates()){
+  $species = $class->get_alias($species);
+#  if(defined($registry_register{$species}{$group}{'_DB'}) && warn_on_duplicates()){
 #    warning("Overwriting DBAdaptor in Registry for $species $group $adap\n");
 #  }
 
-  $register{$species}{$group}{'_DB'} = $adap;
+  $registry_register{$species}{$group}{'_DB'} = $adap;
 
-  if(!defined($register{'_DBA'})){
+  if(!defined($registry_register{'_DBA'})){
     my @list =();
     push(@list,$adap);
-    $register{'_DBA'}= \@list;
+    $registry_register{'_DBA'}= \@list;
   }
   else{
-    push(@{$register{'_DBA'}},$adap);
+    push(@{$registry_register{'_DBA'}},$adap);
   }
 
 }
@@ -288,10 +334,10 @@ sub add_DBAdaptor{
 sub get_DBAdaptor{
   my ($class, $species, $group) = @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
+  $species = $class->get_alias($species);
 
   if(defined($group)){ # group defined so return standard DB Adaptor
-    return  $register{$species}{$group}{'_DB'};
+    return  $registry_register{$species}{$group}{'_DB'};
   }
   else{ #return a merged db adaptor
     return  new_merged Bio::EnsEMBL::DBSQL::DBAdaptor($species);
@@ -309,7 +355,7 @@ sub get_DBAdaptor{
 sub get_all_DBAdaptors{
   my ($class)=@_;
 
-  return @{$register{'_DBA'}};
+  return @{$registry_register{'_DBA'}};
 }
 
 #
@@ -330,12 +376,12 @@ sub get_all_DBAdaptors{
 sub add_DNAAdaptor{
   my ($class, $species, $group, $adap) = @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
-#  if(defined($register{$species}{$group}{'_DNA'}) && warn_on_duplicates()){
+  $species = $class->get_alias($species);
+#  if(defined($registry_register{$species}{$group}{'_DNA'}) && warn_on_duplicates()){
 #    warning("Overwriting DNAAdaptor in Registry for $species $group $adap\n");
 #  }
 
-  $register{$species}{$group}{'_DNA'} = $adap;
+  $registry_register{$species}{$group}{'_DNA'} = $adap;
 
 }
 
@@ -352,8 +398,8 @@ sub add_DNAAdaptor{
 sub get_DNAAdaptor{
   my ($class, $species, $group) = @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
-  return  $register{$species}{$group}{'_DNA'};
+  $species = $class->get_alias($species);
+  return  $registry_register{$species}{$group}{'_DNA'};
 }
 
 #
@@ -373,32 +419,44 @@ sub get_DNAAdaptor{
 =cut
 
 sub add_adaptor{
-  my ($class,$species,$group,$type,$adap)= @_;
+  my ($class,$species,$group,$type,$adap, $reset)= @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
+  $species = $class->get_alias($species);
 
-#  if(defined($register{$species}{$group}{$type}) && warn_on_duplicates()){
-#    warning("Overwriting Adaptor in Registry for $species $group $type\n");
-#  }
-  $register{$species}{$group}{$type} = $adap;
+  if(defined($reset)){ # JUST REST THE HASH VLAUE NO MORE PROCESSING NEEDED
+    $registry_register{$species}{$group}{$type} = $adap;
+    return;
+  }
+  if(defined($registry_register{$species}{$group}{$type})){ #&& warn_on_duplicates()){
+    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
+    $registry_register{$species}{$group}{$type} = $adap;
+    if($species eq 'Homo_sapiens' and $group eq  'core' and $type eq 'MetaCoordContainer'){
+      print STDERR stack_trace_dump();
+    }
+   return;
+  }
+  $registry_register{$species}{$group}{$type} = $adap;
 
-
-  if(!defined ($register{$species}{'list'})){
+  
+  if(!defined ($registry_register{$species}{'list'})){
     my @list =();
     push(@list,$adap);
-    $register{$species}{'list'}= \@list;
+    $registry_register{$species}{'list'}= \@list;
   }
   else{
-    push(@{$register{$species}{'list'}},$adap);
+    push(@{$registry_register{$species}{'list'}},$adap);
   }
-
-  if(!defined ($register{$type}{$species})){
+  print STDERR "REGADD  $species \t $group \t $type to the registry\n";
+  if($type eq "MetaContainer"){
+    print STDERR "called by ".caller()."\n";
+  }
+  if(!defined ($registry_register{$type}{$species})){
     my @list =();
     push(@list,$adap);
-    $register{$type}{$species}= \@list;
+    $registry_register{$type}{$species}= \@list;
   }
   else{
-    push(@{$register{$type}{$species}},$adap);
+    push(@{$registry_register{$type}{$species}},$adap);
   }
 
 }
@@ -407,7 +465,7 @@ sub add_adaptor{
 sub set_get_via_dnadb_if_set{
   my ($class,$species,$type) = @_;
 
-  $register{$species}{$type}{'DNADB'} = 1;
+  $registry_register{$species}{$type}{'DNADB'} = 1;
 }
 
 =head2 get_adaptor
@@ -424,23 +482,26 @@ sub set_get_via_dnadb_if_set{
 sub get_adaptor{
   my ($class,$species,$group,$type)= @_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
+  $species = $class->get_alias($species);
  
   #throw in a check to see if we should get the dnadb one and not the normal
-  if(defined($register{$species}{$type}{'DNADB'}) && $class->get_DNAAdaptor($species,$group)){
+  if(defined($registry_register{$species}{$type}{'DNADB'}) && $class->get_DNAAdaptor($species,$group)){
     my $dna = $class->get_DNAAdaptor($species,$group);
     $species = $dna->species();
     $group = $dna->group();
   }
 
-  my $ret = $register{$species}{$group}{$type};
+  my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
+    foreach my $arse (@{$registry_register{$species}{'list'}}){
+      print STDERR $species."\t".$arse."\n";
+    } 
     throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
     print STDERR caller();
     print STDERR "\nfin\n";;
   }
   if(!ref($ret)){ # not instantiated yet
-    my $dba = $register{$species}{$group}{'_DB'};
+    my $dba = $registry_register{$species}{$group}{'_DB'};
     my $module = $ret;
     eval "require $module";
 
@@ -449,7 +510,7 @@ sub get_adaptor{
       return undef;
     }
     my $adap = "$module"->new($dba);
-    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $type, $adap);
+    Bio::EnsEMBL::Registry->add_adaptor($species, $group, $type, $adap, "reset");
     $ret = $adap;
   }
 
@@ -469,7 +530,7 @@ sub get_all_adaptors{
   my ($class,$species)= @_;
 
   $species = get_alias($species);
-  return $register{$species}{'list'};
+  return $registry_register{$species}{'list'};
 }
 
 
@@ -486,9 +547,9 @@ sub get_all_adaptors{
 sub get_MergedAdaptor{
   my ($class,$species,$type)=@_;
 
-  $species = Bio::EnsEMBL::Utils::ConfigRegistry->get_alias($species);
+  $species = $class->get_alias($species);
   my $ret = new Bio::EnsEMBL::DBSQL::MergedAdaptor();
-  $ret->add_list(@{$register{$type}{$species}});
+  $ret->add_list(@{$registry_register{$type}{$species}});
 
   return $ret;
 }
@@ -496,16 +557,75 @@ sub get_MergedAdaptor{
 sub add_alias{
   my ($class, $species,$key) = @_;
 
-  $register{'_ALIAS'}{$key} = $species;
+  $registry_register{'_ALIAS'}{$key} = $species;
 }
 
 sub get_alias{
-  my ($class, $key) = @_;
+  my ($class, $key, $no_throw) = @_;
 
-  if(!defined($register{'_ALIAS'}{$key})){
-    throw("Unknown species $key has it been mistyped??\n");
+  if(!defined($registry_register{'_ALIAS'}{$key})){
+    if(defined($no_throw)){
+      return undef;
+    }
+    else{
+      throw("Unknown species $key has it been mistyped??\n");
+    }
   }
-  return $register{'_ALIAS'}{$key};
+  return $registry_register{'_ALIAS'}{$key};
+}
+
+sub add_new_track{
+  my ($class, $config, $dba ) = @_;
+
+#  my $view = $config->{'type'};
+
+#  print STDERR "art => ".$config->{'general'}->{$view}{'_artefacts'}."\n";
+  print STDERR "art => ".$config->{'_artefacts'}."\n";
+
+#  find the vega point and use this as the start point.
+  my $start = 1001;
+  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
+    $start = $config->{'vega_transcript_lite'}->{'pos'};
+  }
+  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
+    $start = $config->{'transcript_lite'}->{'pos'};
+  }
+  else{ # no transcripts on this view so do not add track here
+    print STDERR "no transcript options on this display \n";
+    return;
+  }
+  my $KEY = $dba->group();
+  if(!defined($registry_register{'web_tracks'}{$KEY})){ # check not already stored;
+    $registry_register{'web_tracks'}{$KEY} = $KEY;
+    $registry_register{'web_tracks'}{'count'}++;
+    $start +=  $registry_register{'web_tracks'}{'count'}; # add to start pos for each new one
+  }
+#  else{ # already added 
+#    return;
+#  }
+  print STDERR "HELL adding $KEY at pos $start\n";
+  $config->{$KEY} ={
+		    'on'    => "on",
+		    'compact' => 'yes',
+		    'pos'     => $start,
+		    'str'     => 'b',
+		    'src'     => 'all', # 'ens' or 'all'
+		    'available'=> 'species '.$dba->species(),
+		    'dba'  => $dba,		   
+#		    'colours' => {$config->{'_colourmap'}->colourSet( 'vega_gene' )},
+		    'glyphset' => 'generic_transcript',
+		    'dep'      => 6,
+		   };
+
+  push @{ $config->{'_artefacts'} }, $KEY;
+  push @{ $config->{'_settings'}->{'features'}}, [$KEY => $KEY] ;
+  
+# [ 'transcript_lite'      => "Ensembl Trans."  ],  
+  return;
+}
+
+sub turn_web_tracks_off{
+
 }
 
 1;
