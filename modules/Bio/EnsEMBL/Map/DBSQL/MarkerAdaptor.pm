@@ -36,6 +36,58 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 
 
+=head2 fetch_all
+
+  Arg [1]    : none
+  Example    : @all_markers = @{$marker_adaptor->fetch_all};
+  Description: Retrieves all markers from the database
+  Returntype : listref of Bio::EnsEMBL::Map::Markers
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub fetch_all {
+  my $self = shift;
+  my $dbID = shift;
+
+  my $sth = $self->prepare("SELECT m.marker_id, m.priority, m.left_primer, 
+                                   m.right_primer,
+                                   m.min_primer_dist, m.max_primer_dist,
+                                   ms.marker_synonym_id, ms.name, ms.source
+                            FROM   marker m 
+                            LEFT JOIN marker_synonym ms 
+                            ON     ms.marker_synonym_id = 
+                                    m.display_marker_synonym_id");
+
+  $sth->execute;
+
+  my( $marker_id, $priority, $left_primer, $right_primer,
+      $min_pdist, $max_pdist, $ms_id, $ms_name, $ms_src);
+
+  $sth->bind_columns(\$marker_id, \$priority, 
+		     \$left_primer, \$right_primer, \$min_pdist, \$max_pdist,
+		     \$ms_id, \$ms_name, \$ms_src);
+
+  my @out;
+  while($sth->fetch) {
+    #create a display marker synonym for each marker created, if one is defined
+    my $synonym;
+    if($ms_id) { 
+      $synonym = Bio::EnsEMBL::Map::MarkerSynonym->new
+	($ms_id, $ms_src, $ms_name);
+    }	
+    
+    push @out, Bio::EnsEMBL::Map::Marker->new
+      ($marker_id, $self, $left_primer, $right_primer, $min_pdist, $max_pdist,
+       $priority, $synonym);
+  }
+
+  return \@out;
+}
+
+
+
 =head2 fetch_by_dbID
 
   Arg [1]    : int $dbID
@@ -182,13 +234,13 @@ sub fetch_attributes {
                             WHERE  ms.marker_id = ?");
 
   my @syns = ();
-  my ($ms_id, $src, $name);
+  my ($ms_id, $ms_src, $ms_name);
 
   $sth->execute($m_id);
-  $sth->bind_columns(\$ms_id, \$src, \$name);
+  $sth->bind_columns(\$ms_id, \$ms_src, \$ms_name);
 
   while($sth->fetch) {
-    push @syns, Bio::EnsEMBL::Map::MarkerSynonym->new($ms_id, $src, $name);
+    push @syns, Bio::EnsEMBL::Map::MarkerSynonym->new($ms_id,$ms_src,$ms_name);
   }  
   $sth->finish;
 
