@@ -212,14 +212,18 @@ sub fetch_all_by_Slice_constraint {
     
   my $slice_start  = $slice->chr_start();
   my $slice_end    = $slice->chr_end();
-  my $slice_strand = $slice->strand();
-		 
 
   #get the synonym of the primary_table
   my @tabs = $self->_tables;
   my $syn = $tabs[0]->[1];
+  
+  my $chromosome_id = $slice->get_Chromosome->dbID();
 
+  $constraint .= ' AND ' if($constraint);
 
+  $constraint .= " ${syn}.chromosome_id = $chromosome_id " .
+    "AND ${syn}.end >= $slice_start AND ${syn}.start <= $slice_end";
+  
   #for speed the remapping to slice may be done at the time of object creation
   my $features = 
     $self->generic_fetch($constraint, $logic_name, undef, $slice); 
@@ -229,7 +233,6 @@ sub fetch_all_by_Slice_constraint {
     #features have been converted to slice coords already, cache and return
     return $self->{'_slice_feature_cache'}{$key} = $features;
   }
-
 }
 
 
