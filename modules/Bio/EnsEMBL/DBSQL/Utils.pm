@@ -239,6 +239,7 @@ sub fset2transcript_3frame {
       $exon->phase    ($endphase);
       $exon->score    ($f->score);
       $exon->p_value  ($f->p_value);
+      $exon->seqname ($f->seqname);
       $endphase = $exon->end_phase;
 
       $transcript->add_Exon($exon);
