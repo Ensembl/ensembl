@@ -813,8 +813,10 @@ sub get_PredictionFeature_as_Transcript{
 
     my $ft=$self->get_PredictionFeature_by_id($genscan_id);
     my $contig=$self->_db_obj->get_Contig($ft->seqname);
- 
-    return &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+
+    # Due to f*cked up genscan phases we are reduced to guessing the phases
+#    return &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+    return Bio::EnsEMBL::DBSQL::Utils::fset2transcript_guess_phases($ft,$contig);
 }
 
 
