@@ -787,7 +787,7 @@ sub get_all_PredictionFeatures {
 		        AND    a.gff_source = '$analysis_type'  
                         AND    sgp.type = '$type'
 		        AND    sgp.chr_name='$chr_name' 
-                        ORDER BY f.strand,f.seq_start
+                        ORDER BY f.contig,f.strand,f.id
                         ";
    
    my $sth = $self->dbobj->prepare($query);
