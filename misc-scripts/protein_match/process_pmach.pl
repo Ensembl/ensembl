@@ -32,27 +32,27 @@ my ($ens,$sp,$refseq,$pdb);
             );
 
 &runpmatch();
-#&postprocesspmatch($sp);
+&postprocesspmatch($sp);
 &postprocesspmatch($refseq);
-#&postprocesspmatch($pdb);
-#&finalprocess($sp);
+&postprocesspmatch($pdb);
+&finalprocess($sp);
 &finalprocess($refseq);
-#&finalprocess($pdb);
+&finalprocess($pdb);
 
-#perl ../../../src/ensembl-live/misc-scripts/protein_match/process_pmach.pl -ens ../primary/TGWpep -sp ../primary/SPTr.human.expanded -refseq ../primary/hs2.fsa -pdb ../primary/scop.fas
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/process_pmach.pl -ens ../primary/SPAN_pepfile  -sp ../primary/SPTr.human.expanded -refseq ../primary/hs2.fsa -pdb ../primary/scop_human.fas 
 
 sub runpmatch {
     print STDERR "Running pmatch\n";
  
 #Run pmatch and store the data in files which will be kept for debugging
-    #my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $sp $ens > ens_sp_rawpmatch";
+    my $pmatch1 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $sp $ens > ens_sp_rawpmatch";
     my $pmatch2 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $refseq $ens > ens_refseq_rawpmatch";
-    #my $pmatch3 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $pdb $ens > ens_pdb_rawpmatch";
+    my $pmatch3 = "/nfs/griffin2/rd/bin.ALPHA/pmatch -T 14 $pdb $ens > ens_pdb_rawpmatch";
 
 
-    #system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
+    system($pmatch1); # == 0 or die "$0\Error running '$pmatch1' : $!";
     system($pmatch2); #== 0 or die "$0\Error running '$pmatch2' : $!";
-    #system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
+    system($pmatch3); #== 0 or die "$0\Error running '$pmatch2' : $!"; 
 
 }
 

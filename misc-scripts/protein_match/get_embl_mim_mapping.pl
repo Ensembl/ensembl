@@ -45,7 +45,9 @@ while ( my $seq1 = $in1->next_seq() ) {
 	    }
 	    
 	    print OUT "$map{$ac}\t$ac\tEMBL_AC\t".$link->primary_id,"\n";
-	    print OUT "$map{$ac}\t$ac\tEMBL_PROT_AC\t".$link->optional_id,"\n";
+
+	    my ($protac) = $link->optional_id =~ /^(\w+).\S+/;
+	    print OUT "$map{$ac}\t$ac\tEMBL_PROT_AC\t$protac\n";
 	}
 	if  ($link->database eq "MIM") {
 	    if (!defined $map{$ac}) {
@@ -57,6 +59,8 @@ while ( my $seq1 = $in1->next_seq() ) {
 	
 	
     }
+
+
 }
 
 

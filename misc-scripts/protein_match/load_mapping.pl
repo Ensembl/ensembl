@@ -12,18 +12,18 @@ my %scopid;
 my %gene_map;
 my %transcript_map;
 my %spid;
-my ($mapping, $hugosyn, $scopsyn, $out, $spsyn);
+my ($mapping, $hugosyns, $scopsyn, $out, $spsyn);
 
-#perl ../../src/ensembl-live/misc-scripts/protein_match/load_mapping.pl -mapping outputs/final_sorted.map -hugosyn secondary/ens4.txt -scopsyn secondary/dir.dom.scop.txt_1.53 -spid primary/hum_sp_sptrembl.pep
+#perl ../../src/ensembl-live/misc-scripts/protein_match/load_mapping.pl -mapping outputs/final_sorted.map -hugosyn secondary/nomeid.txt -scopsyn secondary/dir.dom.scop.txt_1.53 -spid primary/hum_sp_sptrembl.pep
 
 &GetOptions(
 	    'mapping:s'=>\$mapping,
-	    'hugosyn:s'=>\$hugosyn,
+	    'hugosyn:s'=>\$hugosyns,
 	    'scopsyn:s'=>\$scopsyn,
 	    'spid:s'=>\$spsyn
             );
 
-my $dsn = "DBI:mysql:database=ensembl090_tmp;host=ecs1c";    
+my $dsn = "DBI:mysql:database=xrefs100_tmp;host=ecs1c";    
 my $db = DBI->connect("$dsn",'ensadmin') || die ("Could not connect to db!");   
 
 my $adaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
@@ -32,35 +32,42 @@ my $adaptor = Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 
 print STDERR "Getting SP mapping\n";
 
-#my $in  = Bio::SeqIO->new(-file => $spsyn, '-format' =>'swiss');
+my $in  = Bio::SeqIO->new(-file => $spsyn, '-format' =>'swiss');
 
-#while ( my $seq = $in->next_seq() ) {
-    my $ac;# = $seq->accession;
-    my $id;# = $seq->id;
+while ( my $seq = $in->next_seq() ) {
+    my $ac = $seq->accession;
+    my $id = $seq->id;
     $spid{$ac} = $id;
-#}
+}
 
 
-open (HUGO, "$hugosyn") || die "Can't open file $mapping\n";
+open (HUGO, "$hugosyns") || die "Can't open file $mapping\n";
 while (<HUGO>) {
     chomp;
 
 #get red of the cariage return present in Hugos
     $_ =~ s/\r//g;
-    my ($hgnc, $symbol, $alias, $withdrawn) = split (/\t/,$_);
+    #my ($hgnc, $symbol, $alias, $withdrawn) = split (/\t/,$_);
     
+    my @hug = split (/\t/,$_);
+
+    my $hgnc = $hug[0];
+    my $symbol = $hug[1];
+    my $alias = $hug[8];
+
     my @aliases = split (/, /,$alias);
-    my @withdrawns = split (/, /,$withdrawn);
+    #my @withdrawns = split (/, /,$withdrawn);
     
     $hugoid{$hgnc}=$symbol;
 
     foreach my $al(@aliases) {
-	push(@{$hugosyn{$symbol}},$al);
+	
+	push(@{$hugosyn{$hgnc}},$al);
     }
 
-    foreach my $wi(@withdrawns) {
-	push(@{$hugosyn{$symbol}},$wi);
-    }
+    #foreach my $wi(@withdrawns) {
+	#push(@{$hugosyn{$symbol}},$wi);
+    #}
 }
 close (HUGO);
 
@@ -76,7 +83,9 @@ while (<SCOP>) {
 #Set up the display id
     my $display = $pdb." ".$chain;
 
-    push (@{$scopid{$scopac}},$display);
+    #push (@{$scopid{$scopac}},$display);
+
+    $scopid{$scopac} = $display;
 
     #push(@{$scopsyn{$scopac}},$pdb);
     #push(@{$scopsyn{$scopac}},$chain);
@@ -95,12 +104,12 @@ while (<MAPPING>) {
     
 #Get SP mapping
     #if (($db ne "HUGOSYMBOL") && ($db ne "SCOP") && ($db ne "SCOP1") && ($db ne "SCOP2") && ($db ne "HUGOID") && ($db ne "HUGOALIAS") && ($db ne "HUGOWITHDRAWN")) {
-    if (($db eq "EMBL") || ($db eq "EC") || ($db eq "OMIM") || ($db eq "REFSEQ") || ($db eq "LOCUS")) {
+    if (($db eq "EMBL_AC") || ($db eq "EMBL_PROT_AC") || ($db eq "EC") || ($db eq "OMIM") || ($db eq "REFSEQ") || ($db eq "LOCUS")) {
 	
 
 ##############Temporary changes###########################
-	my ($ac1) = $ens =~ /COBP(\d+)/;
-	$ens = "COBT"."$ac1";
+	#my ($ac1) = $ens =~ /COBP(\d+)/;
+	#$ens = "COBT"."$ac1";
 ##########################################################	
 	
 	
@@ -111,7 +120,7 @@ while (<MAPPING>) {
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db );
-	$adaptor->store($dbentry,$ens,"Gene");
+	$adaptor->store($dbentry,$ens,"Translation");
     }
     
     
@@ -129,15 +138,16 @@ while (<MAPPING>) {
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db );
+	$adaptor->store($dbentry,$ens,"Translation");
     }
     
     if ($db eq "HUGOID") {
 
 ##################Temporary changes#######################
-	my ($ac1) = $ens =~ /COBP(\d+)/;
-	$ens = "COBT"."$ac1";
+	#my ($ac1) = $ens =~ /COBP(\d+)/;
+	#$ens = "COBT"."$ac1";
 ##########################################################
-	
+       
 	if (!defined $hugoid{$primary_ac}) {
 	    print "Hugo primary Ac ($primary_ac) does not have an id\n";
 	} 
@@ -150,8 +160,12 @@ while (<MAPPING>) {
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db );
+
+	 
 	if ($hugosyn{$primary_ac}) {
 	    my @synonyms = @{$hugosyn{$primary_ac}};
+	    
+	    #print STDERR "SYN: @synonyms\t$primary_ac\n";
 	    foreach my $syn (@synonyms) {
 		
 		if ($syn =~ /\S+/) {
@@ -161,24 +175,27 @@ while (<MAPPING>) {
 	}
 	
 	
-	$adaptor->store($dbentry,$ens,"Gene");
+	$adaptor->store($dbentry,$ens,"Translation");
     }
 
-if ($db eq "SCOP") {
-     	
+    if ($db eq "SCOP") {
+	my $dspl;
+ 	
 #############tmp########################
-    my ($ac1) = $ens =~ /COBP(\d+)/;
-    $ens = "COBT"."$ac1";
+    #my ($ac1) = $ens =~ /COBP(\d+)/;
+    #$ens = "COBT"."$ac1";
 ########################################
-
+    $dspl = $scopid{$primary_ac};
     if (!defined $scopid{$primary_ac}) {
 	    print "SCOP primary Ac ($primary_ac) does not have an id\n";
+	    ($dspl) = $primary_ac =~ /\w{1}(\w{4})/;
 	} 
 
+   
 	my $dbentry = Bio::EnsEMBL::DBEntry->new
 	    ( -adaptor => $adaptor,
 	      -primary_id => $primary_ac,
-	      -display_id => $scopid{$primary_ac},
+	      -display_id => $dspl,
 	      -version => 1,
 	      -release => 1,
 	      -dbname => $db );
@@ -190,11 +207,18 @@ if ($db eq "SCOP") {
 	    }
 	}
     }
-	$adaptor->store($dbentry,$ens,"Gene");
+	$adaptor->store($dbentry,$ens,"Translation");
 	
     }
 
 }
+
+
+
+
+
+
+
 
 
 

@@ -39,7 +39,7 @@ my %embl_clone;
 	    'output:s'=>\$out
             );
 
-#perl ../../../src/ensembl-live/misc-scripts/protein_match/get_xrefs.pl -mapping ../map_outputs/totalmap.final -xrefs ../sec_outputs/xrefs.map -dbmap ../sec_outputs/mapdb.map -refseq ../primary/hs.gnp -output final.map 
+#perl ../../../src/ensembl-live/misc-scripts/protein_match/get_xrefs.pl -mapping ../map_outputs/map.total -xrefs ../sec_outputs/xref.total -dbmap ../sec_outputs/mapdb.map -refseq ../primary/hs.gnp -output final.map
 
 open (DBMAP,"$dbmap") || die "Can't open file $dbmap\n"; 
 open (XREF,"$xrefs") || die "Can't open file $xrefs\n";
@@ -52,12 +52,12 @@ open (OUT,">$out") || die "Can't open file $out\n";
 #open (CLONE,"clones.txt") || die "Can't open file\n";
 
 #Put in a hash all of the embl clones used by Ensembl
-while (<CLONE>) {
-    chomp;
-    my ($embl_ac,$id) = split(/\t/,$_);
-    print "$embl_ac\n";
-    $embl_clone{$embl_ac}=1;
-}
+#while (<CLONE>) {
+#    chomp;
+#    my ($embl_ac,$id) = split(/\t/,$_);
+#    print "$embl_ac\n";
+#    $embl_clone{$embl_ac}=1;
+#}
 
 
 while (<DBMAP>) {
@@ -105,7 +105,7 @@ while (<XREF>) {
 #Get the embl ACs for each SP and SPTREMBL proteins
     #if ((($xrdb eq "SP") || ($xrdb eq "SPTREMBL")) && ($db eq "EMBL")) {
 	 #print "$id\n";
-	#if ($embl_clone{$id}) {
+        #if ($embl_clone{$id}) {
 	    
 	 #   push(@{$sp2embl{$xrac}},$id);
 	#}
@@ -117,7 +117,9 @@ while (<MAP>) {
     
 #P01111  COBP00000000001 100     PRIMARY  
     my ($xr,$ens,$perc,$tag) = split (/\t/,$_);
-    
+    if ($xr =~ /^\w+-\d{2}/) {
+	($xr) = $xr =~ /^(\w+)-\d{2}/;
+    }
 #Hack to be taken away
     #my ($en1,$en2) = $ens =~ /(\w{3})P(\d+)/;
     #my $enst = $en1."T".$en2;
@@ -161,10 +163,18 @@ while (<MAP>) {
 #Print the know gene AC and its database
 	#print OUT "$ens\t$map{$xr}\t$xr\n";
 	#}
+	
+	if (!defined $map{$xr}) {
+	    print STDERR "can't find primary $xr\n";
+	}
+
 	print OUT "$ens\t$map{$xr}\t$xr\n";
 	
 	#Print all of the external database it links to (eg: HUGO)
 	    foreach my $both (@{$hash{$xr}}){
+		if (!defined $hash{$xr}) {
+	    print STDERR "can't find Xref $xr\n";
+	}
 		($a,$b) = split(/&/,$both);
 		print OUT "$ens\t$a\t$b\n";
 	    }
