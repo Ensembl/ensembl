@@ -563,7 +563,7 @@ sub _seq_cache{
 =cut
 
 sub get_old_Exons {
-    my ($self) = @_;
+    my ($self,$logfile) = @_;
 
     #This method requires a connection to a crossmatch database
     if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_exons!");}
@@ -638,10 +638,10 @@ sub get_old_Exons {
     # now perform the mapping
 
     my @mapped_exons;
-  EXON:
-    
-    foreach my $exon (@old_exons) {
+    my @unmapped;
+EXON: foreach my $exon (@old_exons) {
 	#print STDERR "Going through old exon ".$exon->id."\n";
+	my $mapped=0;
 	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
 		if( $fp->strand == $fp->hstrand ) {
@@ -665,13 +665,17 @@ sub get_old_Exons {
 		    $exon->strand( -1 * $exon->strand);
 		}
 		push (@mapped_exons,$exon);
+		$mapped=1;
 		next EXON;
 	    }
+	}
+	if ($mapped == 0) {
+	    print $logfile "LOST EXON: ".$exon->id."\n";
 	}
     }
     my $size=scalar(@mapped_exons);
     #print STDERR "Returning $size mapped exons\n";
-    return @mapped_exons;		
+    return (@mapped_exons);		
 }
 
 

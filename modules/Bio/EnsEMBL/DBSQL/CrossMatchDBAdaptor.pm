@@ -16,11 +16,17 @@ Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor - DESCRIPTION of Object
 
 =head1 SYNOPSIS
 
-Give standard usage here
+my $db=Bio::EnsEMBL::DBSQL::Obj->new(-dbname=>'july_dna',-host=>'ecs1c',-user=>'ensadmin');
+
+my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'crossmatch',-host=>'ecs1c',-user=>'ensadmin');
+
+$db->_crossdb($cross);
 
 =head1 DESCRIPTION
 
-Describe the object here
+This Object is a database adapter for the crossmatch database, it loads the old and new databases, which are held in _new_db and _old_db. It also gets a SymmetricFeatureContainer object, where the methods for getting and returning crossmatches are.
+
+The crossdb can then be added to a standard db in its _crossdb method.
 
 =head1 CONTACT
 
@@ -44,13 +50,13 @@ use strict;
 use DBI;
 use Bio::Root::RootI;
 use Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer;
+use Bio::EnsEMBL::DBLoader;
 
 @ISA = qw(Bio::Root::RootI);
 
 sub new {
     my($class,@args) = @_;
  
-   
     my $self = {};
     bless $self,$class;
 
@@ -84,17 +90,17 @@ sub new {
 =head2 new_dbobj
 
  Title   : new_dbobj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $crossdb->new_dbobj
+ Function: reads the dblocation table to load the new db
+ Example : $crossdb->new_dbobj()
+ Returns : Bio::EnsEMBL::DBSQL::Obj
+ Args    : none
 
 
 =cut
 
 sub new_dbobj{
-   my ($self,@args) = @_;
+   my ($self) = @_;
 
    my $t = $self->_new_dbobj;
    if( defined $t ) { return $t; }
@@ -109,33 +115,30 @@ sub new_dbobj{
    my $db = Bio::EnsEMBL::DBLoader->new($loc);
 
    $self->_new_dbobj($db);
-
+   $db->_crossdb($self);
    return $db;
-
 }
 
 
 =head2 old_dbobj
 
  Title   : old_dbobj
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $crossdb->old_dbobj
+ Function: reads the dblocation table to load the old db
+ Example : $crossdb->old_dbobj()
+ Returns : Bio::EnsEMBL::DBSQL::Obj
+ Args    : none
 
 
 =cut
 
 sub old_dbobj{
-   my ($self,@args) = @_;
-
+   my ($self) = @_;
 
    my $t = $self->_old_dbobj;
    if( defined $t ) { return $t; }
 
    # yank it out ;)
-
    my $sth = $self->prepare("select olddatabase from dblocation");
    $sth->execute;
    my ($loc) = $sth->fetchrow_array;
@@ -145,23 +148,22 @@ sub old_dbobj{
    $self->_old_dbobj($db);
 
    return $db;
-
 }
 
 =head2 get_SymmetricContigFeatureContainer
 
  Title   : get_SymmetricContigFeatureContainer
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $crossdb->get_SymmetricContigFeatureContainer
+ Function: Gets a Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
+ Example : $crossdb->get_SymmetricContigFeatureContainer
+ Returns : Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer
+ Args    : none
 
 
 =cut
 
 sub get_SymmetricContigFeatureContainer{
-   my ($self,@args) = @_;
+   my ($self) = @_;
 
    return Bio::EnsEMBL::DBSQL::SymmetricContigFeatureContainer->new($self);
 }
@@ -169,17 +171,17 @@ sub get_SymmetricContigFeatureContainer{
 =head2 get_clonelist
 
  Title   : get_clonelist
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+ Usage   : $crossdb->get_clonelist
+ Function: Reads the clonelist table, to return list of clones with different
+           versions between old and new
+ Example : $crossdb->get_clonelist
+ Returns : array of strings 
+ Args    : none
 
 =cut
 
 sub get_clonelist{
-   my ($self,@args) = @_;
+   my ($self) = @_;
 
    my @clones;
    my $sth=$self->prepare("select clone from clonelist");
@@ -194,7 +196,7 @@ sub get_clonelist{
 
  Title   : _new_dbobj
  Usage   : $obj->_new_dbobj($newval)
- Function: 
+ Function: get/set for the new db adapter
  Returns : value of _new_dbobj
  Args    : newvalue (optional)
 
@@ -215,7 +217,7 @@ sub _new_dbobj{
 
  Title   : _old_dbobj
  Usage   : $obj->_old_dbobj($newval)
- Function: 
+ Function: get/set for the old db adapter
  Returns : value of _old_dbobj
  Args    : newvalue (optional)
 
@@ -232,20 +234,14 @@ sub _old_dbobj{
 
 }
 
-
-
-
-
 =head2 prepare
 
  Title   : prepare
- Usage   : $sth = $dbobj->prepare("select seq_start,seq_end from feature where analysis = \" \" ");
+ Usage   : $sth = $dbobj->prepare($statement);
  Function: prepares a SQL statement on the DBI handle
-
- Example :
+ Example :$sth = $dbobj->prepare("select seq_start,seq_end from feature where analysis = \'example\' ");
  Returns : A DBI statement handle object
  Args    : a SQL string
-
 
 =cut
 
@@ -268,8 +264,8 @@ sub prepare {
 
  Title   : _db_handle
  Usage   : $obj->_db_handle($newval)
- Function: 
- Example : 
+ Function: get/set for the db handle
+ Example : $obj->_db_handle($newval)
  Returns : value of _db_handle
  Args    : newvalue (optional)
 
@@ -284,3 +280,4 @@ sub _db_handle{
     return $self->{'_db_handle'};
 
 }
+

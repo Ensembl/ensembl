@@ -20,11 +20,13 @@ Give standard usage here
 
 =head1 DESCRIPTION
 
-Describe the object here
+This module is a container for symmetric contig feature pairs, i.e. pairs of features between contigs that have identical sequence in two versions of a database. The pairs are stored symmetrically, i.e. each feature on each contig is stored in the contig_feature table, and each pair is stored with an id in a separate table.
+
+The method which fetches teh feature pairs breaks the symmetry by asking for all the feature pairs with a certain version of the clone (on which the contig is sitting). The crosmmatching at the moment relies on the sv version of the clones.
 
 =head1 AUTHOR - Ewan Birney
 
-This modules is part of the Ensembl project http://www.ensembl.org
+This module is part of the Ensembl project http://www.ensembl.org
 
 Email birney@ebi.ac.uk
 
@@ -55,11 +57,12 @@ use Bio::EnsEMBL::FeatureFactory;
 =head2 get_FeaturePair_list_by_rawcontig_id
 
  Title   : get_FeaturePair_list_by_rawcontig_id
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $scfc->get_FeaturePair_list_by_rawcontig_id($rid,15)
+ Function: gets all the feature pairs for a specific rawcontig id 
+           and clone version
+ Example : $scfc->get_FeaturePair_list_by_rawcontig_id('AC000043.12',5)
+ Returns : array of Bio::EnsEMBL::FeaturePair
+ Args    : id of the rawcontig,sv version of the clone it is on
 
 
 =cut
@@ -93,11 +96,11 @@ sub get_FeaturePair_list_by_rawcontig_id{
 =head2 write_FeaturePair_List
 
  Title   : write_FeaturePair_List
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+ Usage   : $scfc->write_FeaturePair_List(@fp)
+ Function: Writes an array of feature pairs to the db
+ Example : $scfc0>write_FeaturePair_List(@fp)
+ Returns : nothing
+ Args    : array of Bio::EnsEMBL::FeaturePair
 
 
 =cut
