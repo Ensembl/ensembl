@@ -17,7 +17,8 @@ Bio::EnsEMBL::EvidenceAlignment.pm
 
  my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
                           -DBADAPTOR    => $dba,
-                          -TRANSCRIPTID => $tr_stable_id);
+                          -TRANSCRIPTID => $tr_stable_id,
+			  -SEQFETCHER   => $seqfetcher);
  my $alignment_arr_ref = $ea->fetch_alignment;
  $ea->transcriptid($other_tr_stable_id);
  my $other_alignment_arr_ref = $ea->fetch_alignment;
@@ -44,9 +45,6 @@ methods. Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
-# pfetch binary - just pick it up from PATH
-use constant PFETCH => 'pfetch';
-
 # modify placement on VC by adding the following to genomic start/end
 use constant VC_MINUS_STRAND_HACK_BP => -1;
 use constant VC_PLUS_STRAND_HACK_BP  => +1;
@@ -57,6 +55,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
 use Bio::Root::RootI;
+use Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch;
 
 @ISA = qw(Bio::Root::RootI);
 
@@ -73,7 +72,9 @@ use Bio::Root::RootI;
     Returns :   An EvidenceAlignment object
     Args    :   Database adaptor object and an ID string (-CONTIGID
                 with contig ID or -TRANSCRIPTID with transcript
-		stable ID).
+		stable ID); optional seqfetcher (-SEQFETCHER), which
+		must have a get_Seqs_by_accs method (by default,
+		Pfetch is used).
 
 =cut
 
@@ -81,11 +82,12 @@ sub new {
   my($class,@args) = @_;
 
   my $self = $class->SUPER::new(@args);
-  my ($transcriptid, $contigid, $dbadaptor) = $self->_rearrange(
-                                                ['TRANSCRIPTID',
-						 'CONTIGID',
-                                                 'DBADAPTOR'],
-						@args);
+  my ($transcriptid, $contigid, $dbadaptor, $seqfetcher) = $self->_rearrange(
+                                                         ['TRANSCRIPTID',
+						          'CONTIGID',
+                                                          'DBADAPTOR',
+						          'SEQFETCHER'],
+						         @args);
   if (defined $transcriptid and defined $contigid) {
     $self->throw("may have a transcript ID or a contig ID but not both");
   }
@@ -95,6 +97,10 @@ sub new {
   if ($contigid) {
     $self->contigid($contigid);
   }
+  if (! $seqfetcher) {
+    $seqfetcher = Bio::EnsEMBL::Pipeline::SeqFetcher::Pfetch->new();
+  }
+  $self->seqfetcher($seqfetcher);
   $self->dbadaptor($dbadaptor);
 
   return $self; # success - we hope!
@@ -115,6 +121,23 @@ sub dbadaptor {
     $obj->{evidencealignment_db_adaptor} = $value;
   }
   return $obj->{evidencealignment_db_adaptor};
+}
+
+=head2 seqfetcher
+
+    Title   :   seqfetcher
+    Usage   :   $ea->seqfetcher($seqfetcher_obj);
+    Function:   get/set for seqfetcher, which must have a
+                get_Seqs_by_accs method
+=cut
+
+sub seqfetcher {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{evidencealignment_seqfetcher} = $value;
+  }
+  return $obj->{evidencealignment_seqfetcher};
 }
 
 =head2 transcriptid
@@ -303,12 +326,11 @@ sub _get_transcript_nuc {
   return $retval;
 }
 
-# get all hit sequences by aggregated use of pfetch
+# get all hit sequences by aggregated use of seqfetcher
 sub _get_hits {
   my ($self, $features_arr_ref) = @_;
   $self->throw('interface fault') if (@_ != 2);
 
-  my $pfetch = PFETCH;		# executable
   my $clump_size = 1000;	# number of sequences to fetch at once
   my %hits_hash = ();
   my @hseqnames = ();
@@ -316,44 +338,33 @@ sub _get_hits {
     my $hseqname = $$features_arr_ref[$i]->hseqname;
     if (! exists $hits_hash{$hseqname})
     {
-      push @hseqnames, $$features_arr_ref[$i]->hseqname;
+      push @hseqnames, $hseqname;
       if ((@hseqnames % $clump_size) == 0) {
-        open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
-          or $self->throw("error running pfetch");
-        my $seq_no = 0;
-        while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
-          chomp;
-	  my $seq_obj;
-	  if ($_ ne "no match") {
-	     my $seq_obj = Bio::Seq->new(
-	                     -seq => $_,
-	                     -id  => 'fake_id',
-	 		     -accession_number =>$hseqnames[$seq_no]
-	                   );
-   	    $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+        my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+	foreach my $seq_obj (@seqs) {
+          $hits_hash{$seq_obj->accession_number} = $seq_obj;
+	}
+	foreach my $hseqname (@hseqnames) {
+	  if (not exists $hits_hash{$hseqname}) {
+	    $self->warn("couldn't fetch sequence for hit $hseqname");
+	    $hits_hash{$hseqname} = undef;
 	  }
-	  $seq_no++;
-        }
-      @hseqnames = ();
+	}
+        @hseqnames = ();
       }
     }
   }
-
-  # fetch the non-clump-sized remainder
-  open (EVIDENCEALIGNMENT_PFETCH_IN_FH, "$pfetch -q @hseqnames |")
-    or $self->throw("error running pfetch");
-  my $seq_no = 0;
-  while (<EVIDENCEALIGNMENT_PFETCH_IN_FH>) {
-    chomp;
-    my $seq_obj;
-    if ($_ ne "no match") {
-      my $seq_obj = Bio::Seq->new( -seq => $_,
-                                   -id  => 'fake_id',
-				   -accession_number =>$hseqnames[$seq_no]
-				 );
-      $hits_hash{$hseqnames[$seq_no]} = $seq_obj;
+  if (@hseqnames) {	# fetch the non-clump-sized remainder
+    my @seqs = $self->seqfetcher->get_Seqs_by_accs(@hseqnames);
+    foreach my $seq_obj (@seqs) {
+      $hits_hash{$seq_obj->accession_number} = $seq_obj;
     }
-    $seq_no++;
+    foreach my $hseqname (@hseqnames) {
+      if (not exists $hits_hash{$hseqname}) {
+        $self->warn("couldn't fetch sequence for hit $hseqname");
+        $hits_hash{$hseqname} = undef;
+      }
+    }
   }
 
   return \%hits_hash;
@@ -431,8 +442,7 @@ sub _get_aligned_features_for_contig {
     }
     my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
     if (! $hit_seq_obj) {
-      $self->warn("couldn't fetch hit sequence " . $feature->hseqname . "\n");
-      next PEP_FEATURE_LOOP;
+      next PEP_FEATURE_LOOP;	# already warned in _get_hits()
     }
     next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
       unless ($hit_seq_obj->moltype eq 'protein');
@@ -529,8 +539,7 @@ sub _get_aligned_features_for_contig {
     }
     my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
     if (! $hit_seq_obj) {
-      $self->warn("couldn't fetch hit sequence " . $feature->hseqname . "\n");
-      next NUC_FEATURE_LOOP;
+      next NUC_FEATURE_LOOP;	# already warned in _get_hits()
     }
     next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
       unless ($hit_seq_obj->moltype ne 'protein');
@@ -758,8 +767,7 @@ sub _get_aligned_evidence_for_transcript {
         && ($last_feat->hseqname eq $feature->hseqname));
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
-        $self->warn("couldn't fetch hit sequence " . $feature->hseqname ."\n");
-        next PEP_FEATURE_LOOP;
+        next PEP_FEATURE_LOOP;	# already warned in _get_hits()
       }
       next PEP_FEATURE_LOOP	# not an error, DNA and protein are mixed
         unless ($hit_seq_obj->moltype eq 'protein');
@@ -862,8 +870,7 @@ sub _get_aligned_evidence_for_transcript {
         && ($last_feat->hseqname eq $feature->hseqname));
       my $hit_seq_obj = $$hits_hash_ref{$feature->hseqname};
       if (! $hit_seq_obj) {
-        $self->warn("couldn't fetch hit sequence " . $feature->hseqname ."\n");
-	next NUC_FEATURE_LOOP;
+	next NUC_FEATURE_LOOP;	# already warned in _get_hits()
       }
       next NUC_FEATURE_LOOP	# not an error, DNA and protein are mixed
         unless ($hit_seq_obj->moltype ne 'protein');
