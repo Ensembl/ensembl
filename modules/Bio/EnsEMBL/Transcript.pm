@@ -493,6 +493,9 @@ sub five_prime_utr {
       if ( $self->stable_id ){
 	$seq->id($self->stable_id . '-five_prime_UTR');
       }
+      elsif ( $self->dbID ){
+	$seq->id($self->dbID . '-five_prime_UTR');
+      }
       elsif ( $self->temporary_id ){
 	$seq->id($self->temporary_id . '-five_prime_UTR');
       }
@@ -547,6 +550,9 @@ sub three_prime_utr {
         my $seq = Bio::Seq->new;
         if ( $self->stable_id ){
 	  $seq->id($self->stable_id . '-three_prime_UTR');
+	}
+	elsif ( $self->dbID ){
+	  $seq->id($self->dbID . '-three_prime_UTR');
 	}
 	elsif ( $self->temporary_id ){
 	  $seq->id($self->temporary_id . '-three_prime_UTR');
