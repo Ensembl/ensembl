@@ -1,7 +1,7 @@
-# Copyright EMBL-EBI 2001
+# Copyright EMBL-EBI 2002
 # Author: Alistair Rust - Based on the slimmer test_genome.pl script
 # Creation: 30.10.2002
-# Last modified: 30.10.2002
+# Last modified: 08.11.2002
 #
 # File name: fuller_test_genome_9_chr20.pl
 #
@@ -91,7 +91,8 @@ CREATE TEMPORARY TABLE $destDB.tmp1(
 ") or die "Could create tmp1 table " . $dbh->errstr;
 
 
-# Find clones present in a central, exciting 2Mb region of Chromosome 20
+print STDERR "Grabbing clones \n";
+# Find clones present in a central, exciting 1Mb region of Chromosome 20
 $dbh->do("
 INSERT INTO $destDB.tmp1
 SELECT distinct( c.clone_id )
@@ -99,11 +100,12 @@ FROM   $srcDB.contig c, $srcDB.assembly a, $srcDB.chromosome chr
 WHERE  a.contig_id = c.contig_id
 AND    a.chromosome_id = chr.chromosome_id
 AND    chr.name  = '20'
-AND    a.chr_start < 45140000
-AND    a.chr_end > 44140001
+AND    a.chr_start >= 30252000
+AND    a.chr_end < 31252001
 ") or die "Could not do tmp1 chr2 clones insert statement:" . $dbh->errstr;
 
 
+print STDERR "Inserting clones \n";
 #Select relevant clones from the source database for the new database
 $dbh->do("
 INSERT INTO $destDB.clone
@@ -193,8 +195,8 @@ CREATE TABLE $destDB.gene_list
 SELECT gene_id
 FROM $destDB.gene_global_start_end g
 WHERE g.chromosome = '20'
-AND g.start < 45140000
-AND g.end > 44140001
+AND g.start >= 30252000
+AND g.end < 31252001
 ") or die "Could not do gene_list table insertion from chr2: " . $dbh->errstr;
 
 $dbh->do("
