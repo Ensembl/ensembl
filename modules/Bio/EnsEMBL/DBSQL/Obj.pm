@@ -2028,20 +2028,33 @@ sub exists_Homol_Feature {
 sub get_Analysis {
     my ($self,$id) = @_;
 
-    my $sth = $self->prepare("select * from analysis where id = $id");
+    my $sth = $self->prepare("select db,db_version,program,program_version,gff_source,gff_feature,id from analysis where id = $id");
     my $rv  = $sth->execute;
     my $rh  = $sth->fetchrow_hashref;
 
+    print STDERR "Got analysis with $id\n";
+
     if ($sth->rows) {
 	my $anal = Bio::EnsEMBL::FeatureFactory->new_analysis();
-	$anal->db($rh->{'db'});
-	$anal->db_version($rh->{'db_version'});
+
+	print STDERR "About to fill $anal\n";
+
+	if( defined $rh->{'db'} ) {
+	    $anal->db($rh->{'db'});
+	}
+	if( defined $rh->{'db_version'} ) {
+	    $anal->db_version($rh->{'db_version'});
+	}
+
 	$anal->program($rh->{'program'});
 	$anal->program_version($rh->{'program_version'});
 	$anal->gff_source($rh->{gff_source});
 	$anal->gff_feature($rh->{gff_feature});
-	$anal->id($rh->{id});
+	my $mid = $rh->{'id'};
+	print STDERR "About to set id to $mid\n";
 
+	$anal->id("$mid");
+	print STDERR "About to return analysis $anal\n";
 	return $anal;
     }  else {
 	$self->throw("Can't fetch analysis id $id\n");

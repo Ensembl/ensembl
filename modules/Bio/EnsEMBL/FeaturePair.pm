@@ -670,6 +670,41 @@ sub validate {
     }
 }
 
+=head2 set_all_fields
+
+ Title   : set_all_fields
+ Usage   : $fp->set_all_fields($start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,$hstrand,$hscore,$hsource,$hprimary,$hseqname)
+ Function: set all the fields in the feature pair object
+           (this is for performance issues when using the C layer which needs
+	    this methods to cut down on Perl context switching. It is in the Perl
+	    Layer to allow a pure perl implementation to work ontop of the perl)
+ Example :
+ Returns : nothing
+ Args    : listed above
+
+
+=cut
+
+sub set_all_fields{
+   my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,$hstrand,$hscore,$hsource,$hprimary,$hseqname) = @_;
+
+   $self->start($start);
+   $self->end($end);
+   $self->strand($strand);
+   $self->score($score);
+   $self->source_tag($source);
+   $self->primary_tag($primary);
+   $self->seqname($seqname);
+   $self->hstart($hstart);
+   $self->hend($hend);
+   $self->hstrand($hstrand);
+   $self->hscore($hscore);
+   $self->hsource_tag($hsource);
+   $self->hprimary_tag($hprimary);
+   $self->hseqname($hseqname);
+
+}
+
 =head2 to_FTHelper
 
  Title   : to_FTHelper

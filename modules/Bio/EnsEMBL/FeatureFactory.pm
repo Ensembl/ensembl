@@ -23,6 +23,7 @@ Bio::EnsEMBL::FeatureFactory - A static class for providing features
   $feature = Bio::EnsEMBL::FeatureFactory->new_feature();
   $fp      = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
   $ana     = Bio::EnsEMBL::FeatureFactory->new_analysis();
+  $rep     = Bio::EnsEMBL::FeatureFactory
 
   # fill in feature attributes normally
   # (you cannot set them at the new function stage)
@@ -86,6 +87,7 @@ BEGIN {
 	$ENSEMBL_EXT_LOADED = 0;
     } else {
 	$ENSEMBL_EXT_LOADED = 1;
+        print STDERR "Loaded Ext...\n";
     }
 }
 
@@ -129,7 +131,8 @@ sub new_feature{
 
 sub new_feature_pair{
     my $self;
-    if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 1 ) {
+
+    if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
 	# catch for @args being passed in.
 	$self = Bio::EnsEMBL::Ext::FeaturePair->new();
 	return $self;
@@ -143,6 +146,39 @@ sub new_feature_pair{
     $self->feature2($two);
 
     return $self;
+
+}
+
+=head2 new_repeat
+
+ Title   : new_repeat
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub new_repeat{
+   my ($self,@args) = @_;
+   
+   if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
+       # catch for @args being passed in.
+       $self = Bio::EnsEMBL::Ext::Repeat->new();
+       return $self;
+   }
+   
+   $self = Bio::EnsEMBL::Repeat->new();
+   my $one = Bio::EnsEMBL::SeqFeature->new();
+   my $two = Bio::EnsEMBL::SeqFeature->new();
+   
+   $self->feature1($one);
+   $self->feature2($two);
+   
+   return $self;
+   
 
 }
 
@@ -160,7 +196,7 @@ sub new_feature_pair{
 
 sub new_analysis{
 
-    if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 1 ) {
+    if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
 	# catch for @args being passed in.
 	my $self = Bio::EnsEMBL::Ext::Analysis->new();
 	return $self;
@@ -170,5 +206,8 @@ sub new_analysis{
 }
 
 1;
+
+
+
 
 

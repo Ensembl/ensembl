@@ -41,6 +41,10 @@ use strict;
 
 # Object preamble - inherits from Bio::Root::Object
 
+BEGIN {
+    print STDERR "Warning - file still using DBSQL::Contig. Should use RawContig!";
+};
+
 use Bio::Root::Object;
 
 use Bio::EnsEMBL::DBSQL::Obj;

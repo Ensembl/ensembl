@@ -27,7 +27,7 @@ END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBSQL::Clone;
-use Bio::EnsEMBL::DBSQL::Contig;
+use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DB::VirtualContig;
 

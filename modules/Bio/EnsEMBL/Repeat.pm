@@ -82,6 +82,10 @@ Returns a C<Bio::SeqIO::FTHelper> object which
 will print the repeat in the Sanger Centre
 format.
 
+WARNING: if you change this, you will also need
+to change the EnsemblExt.pm module to have the correct
+FThelper function
+
 =cut
 
 sub to_FTHelper {

@@ -18,8 +18,8 @@ Bio::EnsEMBL::DB::RawContig - Handle onto a database stored raw contiguous DNA
     # get a contig object somehow, eg from an DB::Obj
 
     @genes = $contig->get_all_Genes();
-    @sf    = $contig->get_all_Repeat_Features();
-    @sf    = $contig->get_all_Similarity_Features();
+    @sf    = $contig->get_all_RepeatFeatures();
+    @sf    = $contig->get_all_SimilarityFeatures();
 
     $contig->id();
     $contig->length();
@@ -57,10 +57,9 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::RawContigI;
 
-use Bio::EnsEMBL::SeqFeature;
-use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::ContigOverlap;
+use Bio::EnsEMBL::FeatureFactory;
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
@@ -350,50 +349,39 @@ sub get_all_SimilarityFeatures{
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
-	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
-	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
-	   
-	   $out = Bio::EnsEMBL::FeaturePair->new( -feature1 => $feature1, 
-						  -feature2 => $feature2);
+	   print STDERR "Got a $hid\n";
 
-	   $out->hstart     ($hstart);
-	   $out->hend       ($hend);
-	   $out->hseqname   ($hid);
-	   $out->hsource_tag($name);
-	   $out->hprimary_tag('similarity');
-	   $out->hstrand     ($strand);
+	   $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
+
+
+	   $out->set_all_fields($start,$end,$strand,$score,$self->id(),'similarity',$id,
+				$hstart,$hend,1,$score,$name,'similarity',$hid);
+
 	   $out->analysis    ($analysis);
-
-	   if( defined $score ) {
-	       $out->hscore($score);
-	   }
-
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
+	   $out->seqname   ($id);
+	   $out->start     ($start);
+	   $out->end       ($end);
+	   $out->strand    ($strand);
+	   $out->source_tag($name);
+	   $out->primary_tag('similarity');
+	   $out->id         ($fid);
+
+	   if( defined $score ) {
+	       $out->score($score);
+	   }
+	   $out->analysis($analysis);
        }
-
-       $out->seqname   ($id);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);
-       $out->source_tag($name);
-       $out->primary_tag('similarity');
-       $out->id         ($fid);
-
-       if( defined $score ) {
-	   $out->score($score);
-       }
-
-
-       $out->analysis($analysis);
-
+       print STDERR "About to add $out\n";
        # Final check that everything is ok.
-       
        $out->validate();
-
+       
       push(@array,$out);
+      
    }
    
+   print STDERR "About to return...\n";
    return @array;
 }
 
@@ -447,45 +435,17 @@ sub get_all_RepeatFeatures {
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
-	   my $feature1 = new Bio::EnsEMBL::SeqFeature;
-	   my $feature2 = new Bio::EnsEMBL::SeqFeature;
 
-	   $out = Bio::EnsEMBL::Repeat->new( -feature1 => $feature1, 
-					     -feature2 => $feature2);
+	   $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
 
-	   $out->hstart      ($hstart);
-	   $out->hend       ($hend);
-	   $out->hseqname   ($hid);
-	   $out->hsource_tag('repeat');
-	   $out->hprimary_tag('similarity');
-	   $out->hstrand     ($strand);
-	   $out->analysis    ($analysis);
+	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$id,
+				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 
-	   if( defined $score ) {
-	       $out->hscore($score);
-	   }
+	   $out->analysis($analysis);
 
        } else {
-#	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $self->warn("Repeat feature doesn't have hid. Skipping\n");
+	   $self->warn("Repeat feature does not have a hid. bad news....");
        }
-
-      
-       $out->seqname   ($id);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);
-       $out->source_tag('repeat');
-       $out->primary_tag('similarity');
-
-       if( defined $score ) {
-	   $out->score($score);
-       }
-
-
-       $out->analysis($analysis);
-
-       # Final check that everything is ok.
        
        $out->validate();
 

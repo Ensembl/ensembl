@@ -49,7 +49,7 @@ use strict;
 # Object preamble - inheriets from Bio::Root::Object
 
 use Bio::Root::Object;
-use Bio::EnsEMBL::DBSQL::Contig;
+use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DB::CloneI;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
@@ -305,7 +305,7 @@ sub get_all_Contigs{
    my $total = 0;
 
    while( my $rowhash = $sth->fetchrow_hashref) {
-       my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self->_dbobj,
+       my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_dbobj,
 						      -id => $rowhash->{'id'} );
        $contig->order($count++);
 
