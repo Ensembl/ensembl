@@ -131,6 +131,8 @@ INSERT INTO species (taxonomy_id, name) VALUES (6238,  'caenorhabditis_briggsae'
 INSERT INTO species (taxonomy_id, name) VALUES (7955,  'danio_rerio');
 INSERT INTO species (taxonomy_id, name) VALUES (9598,  'pan_troglodytes');
 INSERT INTO species (taxonomy_id, name) VALUES (9031,  'gallus_gallus');
+INSERT INTO species (taxonomy_id, name) VALUES (99883, 'tetraodon_nigroviridis');
+INSERT INTO species (taxonomy_id, name) VALUES (170,   'apis_mellifera');
 
 ################################################################################
 
