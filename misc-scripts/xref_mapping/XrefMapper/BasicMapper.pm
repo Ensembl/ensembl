@@ -585,7 +585,6 @@ sub run_mapping {
       my $obj = $obj_name->new();
       my $job_name = $obj->run($queryfile, $targetfile, $self->dir());
       push @job_names, $job_name;
-      print "Added LSF job $job_name to list\n";
       sleep 1; # make sure unique names really are unique
 
     }
