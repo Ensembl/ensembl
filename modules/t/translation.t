@@ -163,8 +163,8 @@ $tr->edits_enabled(1);
 my $sc = Bio::EnsEMBL::SeqEdit->new(-START   => 2,
                                     -END     => 2,
                                     -ALT_SEQ => 'U',
-                                    -CODE    => '_selenocystein',
-                                    -NAME    => 'Selenocystein');
+                                    -CODE    => '_selenocysteine',
+                                    -NAME    => 'Selenocysteine');
 
 $tr->translation->add_Attributes( $sc->get_Attribute() );
 
