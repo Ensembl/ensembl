@@ -125,6 +125,62 @@ sub is_similar {
     $self->throw("Should never reach here. Bad error!");
 }
 
+=head2 is_identical
+
+ Title   : is_identical
+ Usage   : $obj->is_identical($other_contig_overlap)
+ Function: Finds out whether these two overlaps have the same 
+           basic contigs connected at the same end with
+           the same switch points
+ Returns : 1 or 0
+ Args    : a different contig_overlap object
+
+
+=cut
+
+sub is_identical {
+    my ($self,$co ) = @_;
+
+    if( !ref $co || !$co->isa('Bio::EnsEMBL::ContigOverlap') ) {
+	$self->throw("Trying to test against a [$co] which is not good");
+    }
+
+    if( $self->contiga->id eq $co->contiga->id ) {
+	if( $self->contigb->id ne $co->contigb->id ) {
+	    return 0;
+	} 
+	if( $self->overlap_type ne $co->overlap_type ) {
+	    return 0;
+	}
+
+	if( $self->positiona != $co->positiona || $self->positionb != $co->positionb || $self->distance != $co->distance ) {
+	    return 0;
+	}
+
+	return 1;
+    } else {
+	if( $self->contiga->id ne $co->contigb->id ) {
+	    return 0;
+	} 
+	# yuk. inverted match
+	if( $self->contigb->id ne $co->contiga->id ) {
+	    return 0;
+	} 
+	my $tag = $self->_invert_overlap_type($co->overlap_type);
+	if( $tag ne $self->overlap_type ) {
+	    return 0;
+	}
+
+	if( $self->positiona != $co->positionb || $self->positionb != $co->positiona || $self->distance != $co->distance ) {
+	    return 0;
+	}
+
+	return 1;
+    }
+
+    $self->throw("Should never reach here. Bad error!");
+}
+
 sub _invert_overlap_type {
     my ($self,$type) = @_;
 
