@@ -55,7 +55,7 @@ sub fetch_by_name {
     my $self = shift;
     my $name = shift;
     
-    my $result = $self->generic_fetch( "aa.name = $name" );
+    my $result = $self->generic_fetch( "aa.name = '$name'" );
     if( scalar @$result > 1 ) {
 	warn( "AffyArray $name is not unique, only one result is returned" );
     } 
