@@ -123,7 +123,7 @@ sub store {
 
   $sequence = uc($sequence);
 
-  my $bvector;
+  my $bvector = '';
 
   #convert sequence to 0s,1s,2s and 3s
   $sequence =~ tr/ACTG/0123/;
@@ -136,10 +136,11 @@ sub store {
 
   my $len    = length($sequence);
   for(my $i=0; $i < $len; $i++) {
-    #pack the 
     my $char = substr($sequence,$i,1);
 
-    if(($char+0) eq $char) { #fast way to check if an int
+    #quickly check if this character was an A,C,T or G (and was converted to
+    # a 0,1,2,3)
+    if($char =~ /[0-3]/) {
       vec($bvector, $i,2) = $char;
       if($nline_char) {
         #end of an nline
@@ -167,6 +168,7 @@ sub store {
         $nline_len  = 1;
         $nline_off  = $i+1;
       }
+      $char = 0; #need to put numeric val into bitvector despite nline
     }
 
     vec($bvector, $i,2) = $char; 
