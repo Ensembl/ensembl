@@ -168,7 +168,7 @@ sub upload_xrefs {
   if ($#xrefs > -1) {
 
     # remove all existing xrefs with same source ID(s)
-    delete_by_source(\@xrefs);
+    #delete_by_source(\@xrefs);
 
     # upload new ones
     print "Uploading xrefs\n";
@@ -481,3 +481,4 @@ sub delete_by_source {
 
 # --------------------------------------------------------------------------------
 1;
+
