@@ -306,8 +306,8 @@ sub fetch_by_region {
 
   $end = $length if(!defined($end));
 
-  if($end < $start) {
-    throw("start [$start] must be less than or equal to end [$end]");
+  if($end+1 < $start) {
+    throw("start [$start] must be less than or equal to end+1 [$end+1]");
   }
 
   return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM      => $cs,

@@ -135,7 +135,7 @@ sub new {
   $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
   defined($start)   || throw('START argument is required');
   defined($end)     || throw('END argument is required');
-  ($start <= $end)  || throw('start must be less than or equal to end');
+  ($start <= $end+1)  || throw('start must be less than or equal to end+1');
 
   $seq_region_length = $end if(!defined($seq_region_length));
 

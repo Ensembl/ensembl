@@ -121,8 +121,8 @@ sub new {
   }
 
   if(defined($start) && defined($end)) {
-    if($end < $start) {
-      throw('-START argument must be less than -END argument');
+    if($end+1 < $start) {
+      throw('Start must be less than or equal to end+1');
     }
   }
 
