@@ -306,7 +306,30 @@ sub pep_seq {
     return @$pep;
 }
 
-=pod 
+=head2 sticky_rank
+
+ Title   : sticky_rank
+ Usage   : $obj->sticky_rank($newval)
+ Function: 
+ Returns : value of sticky_rank
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub sticky_rank{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'sticky_rank'} = $value;
+    }
+    return $obj->{'sticky_rank'};
+
+}
+
+
+
+
 
 =head2 end_phase
 

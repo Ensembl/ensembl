@@ -62,6 +62,7 @@ use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::DB::VirtualContig;
 use DBI;
+use Bio::EnsEMBL::StickyExon;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 use Bio::EnsEMBL::DB::Gene_ObjI;
@@ -320,6 +321,7 @@ sub get_array_supporting {
           , UNIX_TIMESTAMP(exon.modified)
           , exon.strand
           , exon.phase
+	  , exon.rank
           , transl.seq_start, transl.start_exon
           , transl.seq_end, transl.end_exon
           , transl.id
@@ -346,6 +348,7 @@ sub get_array_supporting {
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
+          , exon.rank
         };
     
     # This should work as but I couldn't test it because
@@ -394,12 +397,15 @@ sub get_array_supporting {
    
     my $current_gene_id       = '';
     my $current_transcript_id = '';
+    my $previous_exon = undef;
+    my $sticky_exon = 0;
     
     my ($gene,$trans);
+    my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	
-	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
+	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exon_rank,
 	    $exoncreated,$exonmodified,$strand,$phase,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
@@ -428,6 +434,11 @@ sub get_array_supporting {
 	
 	# Create new transcript if the id has changed
 	if( $transcriptid ne $current_transcript_id ) {
+
+	    # put away old exons
+	    $self->_store_exons_in_transcript($trans,@transcript_exons);
+
+	    # put in new exons
 
 	    $trans = Bio::EnsEMBL::Transcript->new();
 	    
@@ -464,7 +475,7 @@ sub get_array_supporting {
 	$exon->phase    ($phase);
 	$exon->version  ($exonversion);
 	$exon->seqname  ($contigid);
-	
+	$exon->sticky_rank($exon_rank);
         
 	#
 	# Attach the sequence, cached if necessary...
@@ -485,9 +496,10 @@ sub get_array_supporting {
 	    $seq = $contig->primary_seq();
 	    $self->_db_obj->_contig_seq_cache($exon->contig_id,$seq);
 	}
-	
+
 	$exon ->attach_seq($seq);
-	$trans->add_Exon($exon);
+	push(@transcript_exons,$exon);
+
 
     }
     
@@ -497,6 +509,93 @@ sub get_array_supporting {
     
     return @out;
 }
+
+=head2 _store_exons_in_transcript
+
+ Title   : _store_exons_in_transcript
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _store_exons_in_transcript{
+   my ($self,$trans,@exons) = @_;
+
+   if( !ref $trans || !$trans->isa('Bio::EnsEMBL::Transcript') ) {
+       $self->throw(" $trans is not a transcript");
+   }
+
+   foreach my $exon ( @exons ) {
+       if( $exons[0]->id eq $exon->id ) {
+	   # sticky exons.
+	   my @sticky_exons;
+	   push(@sticky_exons,$exon);
+	   foreach my $newexon ( @exons ) {
+	       if( $newexon->id eq $exon->id ) {
+		   push(@sticky_exons,$newexon);
+	       } else {
+		   unshift(@exons,$exon);
+		   last;
+	       }
+	   }
+
+	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
+	   $trans->add_Exon($sticky);
+       } else {
+	   $trans->add_Exon($exon);
+       }
+   }
+}
+
+=head2 _make_sticky_exon
+
+ Title   : _make_sticky_exon
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _make_sticky_exon{
+   my ($self,@exons) = @_;
+
+   my $sticky = Bio::EnsEMBL::StickyExon->new();
+   my $seq  = Bio::PrimarySeq->new();
+   my $seqstr = "";
+
+   @exons = sort { $a->sticky_rank <=> $b->sticky_rank } ( @exons );
+   $seq->id("exon.sticky_contig.".$exons[0]->id);
+   $sticky->id($exons[0]->id);
+   $sticky->phase($exons[0]->phase);
+   $sticky->contig_id($seq->id);
+   $sticky->clone_id ($exons[0]->clone_id);
+   $sticky->created  ($exons[0]->created);
+   $sticky->modified ($exons[0]->modified);
+	
+   $sticky->version  ($exons[0]->version);
+   $sticky->seqname  ($seq->id);
+ 
+   foreach my $exon ( @exons ) {
+       $seqstr .= $exon->seq->seq();
+       $sticky->add_component_Exons($exon);
+   }
+
+   $seq->seq($seqstr);
+   $sticky->start    (1);
+   $sticky->end      ($seq->length);
+   $sticky->strand   (1);
+  
+   return $sticky;
+
+}
+
 
 =head2 get_Gene_by_Transcript_id
 
