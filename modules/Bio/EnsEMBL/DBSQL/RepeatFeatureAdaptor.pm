@@ -111,9 +111,13 @@ sub _generic_fetch {
 
 sub store {
     my( $self, $contig_id, @repeats ) = @_;
+
+    my $rca = $self->db->get_RepeatConsensusAdaptor;
+    my ($cons, $db_id);
     
     $self->throw("Can't store repeats without a contig_id (got '$contig_id')")
         unless $contig_id =~ /^\d+$/;
+
     my $sth = $self->prepare(qq{
         INSERT into repeat_feature( repeat_feature_id
           , contig_id
@@ -128,6 +132,20 @@ sub store {
         VALUES(NULL, ?,?,?,?,?,?,?,?,?)
         });
     foreach my $rf (@repeats) {
+
+        unless ($rf->repeat_id) {
+            $self->throw("Must have a RepeatConsensus attached")
+	     unless defined ($cons = $rf->repeat_consensus);
+
+            unless ($cons->dbID) {
+	        $db_id = ($rca->fetch_by_name($cons->name))[0]->dbID;
+	        $cons->dbID($db_id);
+		# FIXME - need to take some action here if we don't
+		# match a consensus seq already stored
+	    }
+	    $rf->repeat_id($db_id);
+	}
+
         $sth->execute(
             $contig_id,
             $rf->start,
