@@ -89,7 +89,7 @@ CREATE TABLE clone (
 # id - string we give to this clone in ensembl
 #      should be same as embl_id unless clone is not in embl
 # embl_id - hows the clone submitted to embl
-# htg_phase - finished unfinished draft is 210 (?)
+# htg_phase - finished/unfinished: draft is 123, finished is 4
 
 
 #
@@ -467,13 +467,13 @@ CREATE TABLE translation_stable_id (
 # which is present in the golden path. The part of the contig that is
 # in the path is delimited by fields raw_start and raw_end (start < end), and
 # the absolute position within the golden path chromosome (chromosome_id) is given
-# by chr_start and chr_end. Each contig is in some "fingerprint clone contig"
-# and the fpc contig is identified by field fpcctg_name and the position of
-# the specified bit of the contig within its FPC contig is given by fields
-# fpcctg_start and fpcctg_end.
-# With the data set at time of this writing, field type is always "UCSC".
+# by chr_start and chr_end. Each contig is in some "supercontig" such as a
+# "fingerprint clone contig" or NT contig and the super contig is identified
+# by field superctg_name and the position of the specified bit of the contig
+# within its super contig is given by fields superctg_start and superctg_end.
+# With the data set at time of this writing, field type is always "NCBI_xx".
 # 
-# NB, chr_start <= chr_end, raw_start <= raw_end, and fpcctg_start <= fpcctg_end.
+# NB, chr_start <= chr_end, raw_start <= raw_end, and superctg_start <= superctg_end.
 # 
  
 
