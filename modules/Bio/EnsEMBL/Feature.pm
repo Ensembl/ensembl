@@ -26,8 +26,8 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
 
     #move the feature to a different slice (possibly on another coord system)
     $feature = $feature->transfer($new_slice);
-   
-    #project the feature onto another coordinate system possible accross 
+
+    #project the feature onto another coordinate system possible accross
     #boundaries:
     @coords = $feature->map('contig');
 
@@ -37,7 +37,7 @@ Bio::EnsEMBL::Feature - Ensembl specific sequence feature.
 =head1 DESCRIPTION
 
 This is the Base feature class from which all EnsEMBL features inherit.  It
-provides a bare minimum functionality that all features require.  It basically 
+provides a bare minimum functionality that all features require.  It basically
 describes a location on a sequence of in an arbitrary coordinate system.
 
 =head1 CONTACT
@@ -46,7 +46,7 @@ Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. 
+The rest of the documentation details each of the object methods.
 Internal methods are usually preceded with a _
 
 =cut
@@ -58,11 +58,9 @@ use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
-#This only inherits from root for backwards compatibility.  
+#This only inherits from root for backwards compatibility.
 #In the future this inheritence will be removed
-@ISA = qw(Bio::EnsEMBL::Root); 
-
-
+@ISA = qw(Bio::EnsEMBL::Root);
 
 
 =head2 new
@@ -76,13 +74,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw);
   Arg [-END]  : The end coordinate of this feature relative to the start of
                 the slice it is sitting on.  Coordinates start at 1 and are
                 inclusive.
-  Ag  [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.   
-               
+  Arg [-STRAND]: The orientation of this feature.  Valid values are 1,-1,0.
   Example    : $feature = Bio::EnsEMBL::Feature->new(-start    => 1, 
                                                      -end      => 100,
                                                      -strand   => 1,
                                                      -slice    => $slice,
-                                                     -analysis => $analysis); 
+                                                     -analysis => $analysis);
   Description: Constructs a new Bio::EnsEMBL::Feature.  Generally subclasses
                of this method are instantiated, rather than this class itself.
   Returntype : Bio::EnsEMBL::Feature
@@ -97,9 +94,9 @@ sub new {
 
   my $class = ref($caller) || $caller;
 
-  my($start, $end, $strand, $slice, $analysis) = 
-    rearrange(['START','END','STRAND','SLICE','ANALYSIS']); 
-  
+  my($start, $end, $strand, $slice, $analysis) =
+    rearrange(['START','END','STRAND','SLICE','ANALYSIS'], @_);
+
   if(defined($slice)) {
     if(!ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
       throw('-SLICE argument must be a Bio::EnsEMBL::Slice');
@@ -113,7 +110,7 @@ sub new {
   }
 
   if(defined($strand)) {
-    if(!$strand == 1 || !$strand == -1 || !$strand == 0) {
+    if(!($strand == 1) && !($strand == -1) && !($strand == 0)) {
       throw('-STRAND argument must be 1, -1, or 0');
     }
   }
@@ -128,7 +125,7 @@ sub new {
                 'end'      => $end,
                 'strand'   => $strand,
                 'slice'    => $slice,
-                'analysis' => $analysis}, $class); 
+                'analysis' => $analysis}, $class);
 }
 
 
@@ -199,7 +196,7 @@ sub end {
 
 sub strand {
   my $self = shift;
-  
+
   if(@_) {
     my $strand = shift || 0;
     if(defined($strand) && $strand != 0 && $strand != 1 && $strand != -1) {
@@ -216,7 +213,7 @@ sub strand {
 
 =head2 move
 
-  Arg [1]    : int start 
+  Arg [1]    : int start
   Arg [2]    : int end
   Arg [3]    : (optional) int strand
   Example    : None
@@ -233,7 +230,7 @@ sub strand {
 sub move {
   my $self = shift;
 
-  throw('start and end arguments are required') if(@_ != 2);
+  throw('start and end arguments are required') if(@_ < 2);
 
   my $start  = shift;
   my $end    = shift;
@@ -244,7 +241,7 @@ sub move {
   }
   if(defined($strand) && $strand != 0 && $strand != -1 && $strand != 1) {
     throw('strand must be 0, -1 or 1');
-  }   
+  }
 
   $self->{'start'} = $start;
   $self->{'end'} = $end;
@@ -287,7 +284,7 @@ sub length {
 
 sub analysis {
   my $self = shift;
-  
+
   if(@_) {
     my $an = shift;
     if(defined($an) && (!ref($an) || !$an->isa('Bio::EnsEMBL::Analysis'))) {
@@ -295,7 +292,7 @@ sub analysis {
     }
     $self->{'analysis'} = $an;
   }
-    
+
   return $self->{'analysis'};
 }
 
@@ -323,8 +320,8 @@ sub slice {
     my $sl = shift;
     if(defined($sl) && (!ref($sl) || !$sl->isa('Bio::EnsEMBL::Slice'))) {
       throw('slice argument must be a Bio::EnsEMBL::Slice');
-    } 
-    
+    }
+
     $self->{'slice'} = $sl;
   }
 
