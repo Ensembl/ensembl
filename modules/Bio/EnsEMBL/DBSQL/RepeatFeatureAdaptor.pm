@@ -115,7 +115,7 @@ sub store {
     $self->throw("Can't store repeats without a contig_id (got '$contig_id')")
         unless $contig_id =~ /^\d+$/;
     my $sth = $self->prepare(qq{
-        INSERT repeat_feature( repeat_feature_id
+        INSERT into repeat_feature( repeat_feature_id
           , contig_id
           , contig_start
           , contig_end

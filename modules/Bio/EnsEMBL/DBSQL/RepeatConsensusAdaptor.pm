@@ -82,10 +82,10 @@ sub store {
     my( $self, @consensi ) = @_;
     
     my $sth = $self->prepare(q{
-        INSERT repeat_id
+        INSERT into repeat_consensus( repeat_id
           , repeat_name
           , repeat_class
-          , repeat_consensus
+          , repeat_consensus )
         VALUES (NULL, ?,?,?)
         });
     
