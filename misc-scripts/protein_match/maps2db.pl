@@ -620,6 +620,7 @@ if ($organism eq "elegans") {
     #print STDERR;
     chomp;
     my @array = split;
+    $array[0] =~ s/\>//;
     #print STDERR "mapping ".$array[0]." to ".$array[1]."\n";
     $cemap{$array[0]} = $array[1];
   }
@@ -638,73 +639,88 @@ if ($organism eq "elegans") {
                "t.transcript_id = ts.transcript_id and ".
                "t.transcript_id = tr.transcript_id and ".
                "t.gene_id = g.gene_id");
-    my $sth = $db->prepare($query);
-    $sth->execute();
-    while (my @res = $sth->fetchrow) {
-	my $transl_dbid = $res[0];
-	my $transc_stable_id = $res[1];
-	my $gene_stable_id = $res[2];
-	my $gene_type = $res[3];
-	if($gene_type ne $type){
-	my $dbentry = Bio::EnsEMBL::DBEntry->new
-	    ( -adaptor => $adaptor,
-	      -primary_id => $gene_stable_id,
-	      -display_id => $gene_stable_id,
-	      -version => 1,
-	      -release => 1,
-	      -dbname => $db1);
-	$dbentry->status("KNOWNXREF");
-	if($transl_dbid == 0){
-	  die "have no translation_id  for $transc_stable_id $!";
-	}
-	#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
-	$adaptor->store($dbentry,$transl_dbid,"Translation");
-	
-	my $transdbentry = Bio::EnsEMBL::DBEntry->new
-	    ( -adaptor => $adaptor,
-	      -primary_id => $transc_stable_id,
-	      -display_id => $transc_stable_id,
-	      -version => 1,
-	      -release => 1,
-	      -dbname => $db2);
-	$transdbentry->status("KNOWNXREF");
-	if($transl_dbid == 0){
-	  die "have no translation_id $!";
-	}
-	#print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";	
-	$adaptor->store($transdbentry,$transl_dbid,"Translation");
-
-	my $ce = $cemap{$transc_stable_id};
-	
-	if ($ce) {
-	  #print STDERR "$db3\t$ce\n";
-	  my $ceentry = Bio::EnsEMBL::DBEntry->new
-	    ( -adaptor => $adaptor,
-	      -primary_id => $ce,
-	      -display_id => $ce,
-	      -version => 1,
-	      -release => 1,
-	      -dbname => $db3);
-	  $ceentry->status("KNOWNXREF");
-	  if($transl_dbid == 0){
-	    die "have no translation_id $!";
-	  }
-	  #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
-	  $adaptor->store($ceentry,$transl_dbid,"Translation");
-	}
-      }else{
-	my $transdbentry = Bio::EnsEMBL::DBEntry->new
-	    ( -adaptor => $adaptor,
-	      -primary_id => $transc_stable_id,
-	      -display_id => $transc_stable_id,
-	      -version => 1,
-	      -release => 1,
-	      -dbname => $db4);
-	$transdbentry->status("PSEUDO");
-	$adaptor->store($transdbentry,$transl_dbid,"Transcript");
+  my $sth = $db->prepare($query);
+  $sth->execute();
+  while (my @res = $sth->fetchrow) {
+    my $transl_dbid = $res[0];
+    my $transc_stable_id = $res[1];
+    my $gene_stable_id = $res[2];
+    my $gene_type = $res[3];
+    #print STDERR "Type ".$gene_type." comparing to ".$type."\n";
+    #if($gene_type ne $type) {
+    my $dbentry = Bio::EnsEMBL::DBEntry->new
+      ( -adaptor => $adaptor,
+        -primary_id => $gene_stable_id,
+        -display_id => $gene_stable_id,
+        -version => 1,
+        -release => 1,
+        -dbname => $db1);
+    $dbentry->status("KNOWNXREF");
+    if($transl_dbid == 0){
+      die "have no translation_id  for $transc_stable_id $!";
+    }
+    #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
+    $adaptor->store($dbentry,$transl_dbid,"Translation");
+    
+    my $transdbentry = Bio::EnsEMBL::DBEntry->new
+      ( -adaptor => $adaptor,
+        -primary_id => $transc_stable_id,
+        -display_id => $transc_stable_id,
+        -version => 1,
+        -release => 1,
+        -dbname => $db2);
+    $transdbentry->status("KNOWNXREF");
+    if($transl_dbid == 0){
+      die "have no translation_id $!";
+    }
+    #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";	
+    $adaptor->store($transdbentry,$transl_dbid,"Translation");
+    
+    my $ce = $cemap{$transc_stable_id};
+    
+    if ($ce) {
+      #print STDERR "$db3\t$ce\n";
+      my $ceentry = Bio::EnsEMBL::DBEntry->new
+        ( -adaptor => $adaptor,
+          -primary_id => $ce,
+          -display_id => $ce,
+          -version => 1,
+          -release => 1,
+          -dbname => $db3);
+      $ceentry->status("KNOWNXREF");
+      if($transl_dbid == 0){
+        die "have no translation_id $!";
       }
+      #print STDERR "storing ".$dbentry->dbname." ".$dbentry->primary_id." with ".$transl_dbid."\n";
+      $adaptor->store($ceentry,$transl_dbid,"Translation");
     }
   }
+  my $sql2 = ("select t.transcript_id, ts.stable_id, gs.stable_id, ".
+              "g.type ".
+              "from transcript t, gene_stable_id gs, ".
+              "transcript_stable_id ts, gene g ". 
+              "where t.gene_id = gs.gene_id and t.gene_id = g.gene_id ".
+              "and t.transcript_id = ts.transcript_id ".
+              "and g.type = ?");
+  my $sth_two = $db->prepare($sql2);
+  $sth_two->execute($type);
+  while (my @res = $sth_two->fetchrow) {
+    my $transc_dbid = $res[0];
+    my $transc_stable_id = $res[1];
+    my $gene_stable_id = $res[2];
+    my $gene_type = $res[3];
+      my $transdbentry = Bio::EnsEMBL::DBEntry->new
+        ( -adaptor => $adaptor,
+          -primary_id => $transc_stable_id,
+          -display_id => $transc_stable_id,
+          -version => 1,
+          -release => 1,
+          -dbname => $db4);
+    $transdbentry->status("PSEUDO");
+    $adaptor->store($transdbentry,$transc_dbid,"Transcript");
+  }
+}
+
 
 sub usage {
     
