@@ -184,6 +184,46 @@ sub get_Gene{
    return $gene;
 }
 
+=head2 get_Protein_annseq
+
+ Title   : get_Protein_annseq
+ Usage   : get_Protein_annseq ($ENSP); 
+ Function: Creates an annseq object for a particular peptide, storing the peptide
+           sequence in $annseq->seq, and adding all the protein features as generic
+           Seqfeatures
+ Example : 
+ Returns : $annseq
+ Args    : $ENSP
+
+
+=cut
+
+sub get_Protein_annseq{
+   my ($self,$ENSP) = @_;
+   my $annseq = Bio::EnsEMBL::annseq->new();
+
+   my $rowhash = $sth->fetchrow_hashref;
+   my $sth = $self->prepare("select id from transcript where translation = '$ENSP'");
+   my $res = $sth->execute();
+   my $rowhash = $sth->fetchrow_hashref;
+   my $transcript = Bio::EnsEMBL::Transcript->new();
+   $transcript = $self->get_Transcript($rowhash->{'id'});
+   my $translation = $transcript->translate();
+   $annseq->seq($translation);
+   $sth = $self->prepare("select * from proteinfeature where translation = '$ENSP'");
+   $res = $sth->execute();
+   while( my $rowhash = $sth->fetchrow_hashref) {
+       my $feature = new Bio::SeqFeature::Generic ( -start => $rowhash->{'seq_start'}, 
+						    -end => $rowhash->{'seq_end'},
+						    -score  =>  $rowhash->{'score'},
+						    -primary_tag    => $rowhash->{'name'});
+       $annseq->add_Seq_Feature($feature);
+   }
+
+   return $annseq;   
+}
+
+
 =head2 get_Transcript
 
  Title   : get_Transcript
@@ -618,6 +658,62 @@ sub write_Gene{
    #$self->_unlock_tables();
 
 }
+
+
+=head2 write_all_Protein_features
+
+ Title   : write_all_Protein_features
+ Usage   : $obj->write_all_Protein_features($ENSP)
+ Function: writes all protein features of a particular peptide into the database          
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_all_Protein_features {
+   my ($self,$ENSP) = @_;
+
+   my $prot_annseq = $self->get_Protein_annseq($ENSP);
+   foreach $feature ($prot_annseq->all_SeqFeatures()) {
+       my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
+				.$feature->start()." ,"
+				.$feature->end()." ,'"
+				.$feature->primary_tag()."' ,"
+				.$feature->score()." ,'"
+				.$ENSP."'
+				)");
+       $sth->execute();
+   }
+}
+
+=head2 write_Protein_feature
+
+ Title   : write_Protein_feature
+ Usage   : $obj->write_Protein_feature($ENSP, $feature)
+ Function: writes a protein feature object of a particular peptide into the database          
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub write_Protein_feature {
+   my ($self,$ENSP,$feature) = @_;
+
+   my $sth = $self->prepare("insert into proteinfeature (seq_start, seq_end, name, score, translation) values ("
+				.$feature->start()." ,"
+				.$feature->end()." ,'"
+				.$feature->primary_tag()."' ,"
+				.$feature->score()." ,'"
+				.$ENSP."'
+				)");
+       $sth->execute();
+   }
+}
+
 
 =head2 write_Transcript
 

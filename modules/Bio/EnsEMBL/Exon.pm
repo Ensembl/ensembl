@@ -43,7 +43,7 @@ Examples of creating an exon
 
     $trans = $ex->translate();                # Translates the exon. Returns a Bio::Seq
 
-Frameshifts - these haven't been coded yet :-)
+Frameshifts - these haven''t been coded yet :-)
 
     Frameshifts in the exon are stored as an array of positions and an array of lengths
 
@@ -684,7 +684,7 @@ triplets (start, stop, strand) from which new ranges could be built.
   Usage   : ($start, $stop, $strand) = $feat->intersection($r)
   Function: gives the range that is contained by both ranges
   Args    : a RangeI to compare this one to
-  Returns : nothing if they don't overlap, or the range that they do overlap
+  Returns : nothing if they don''t overlap, or the range that they do overlap
 
 
 =head2 union
