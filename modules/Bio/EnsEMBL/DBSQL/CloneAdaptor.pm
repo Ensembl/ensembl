@@ -237,6 +237,7 @@ sub delete_by_dbID {
    
    my @contigs;
    my @dnas;
+   my $fadaptor = $self->get_FeatureAdaptor;
 
    # get a list of contigs to zap
 
@@ -253,6 +254,7 @@ sub delete_by_dbID {
    foreach my $contig ( @contigs ) {
        my $sth = $self->prepare("delete from contig where internal_id = $contig");
        my $res = $sth->execute;
+       $fadaptor->delete_by_RawContig_internal_id($contig);
    }
 
 
