@@ -1,6 +1,25 @@
 #!/usr/local/bin/perl
-
 # $Id$ 
+
+# This script is used for collecting statistics on the gtf merges done by
+# gtf_merge.pl (which are typically called from the wrapper
+# all-merges.sh), and it is typically called by the all-stats.sh wrapper.
+
+# The whole objective is to compare gene predictions of different
+# 'sources', currently EnsEMBL, Affymetrix and Fgenesh (Softberry Inc),
+# and arrive at a consensus 'Initial Gene Index' (igi). The igi's are
+# assigned by gtf_merge, and this script just summarizes them. 
+
+# The script has grown a bit unwieldy, but that is because it is so
+# convenient to stay inside this script once every feature, gene and igi
+# of each prediction is loaded into the hashes-of-hashes-of-hashes of this
+# script.
+
+# For usage, ask author ;-)
+
+# Written by Philip lijnzaad@ebi.ac.uk
+
+
 use strict;
 use Getopt::Long;
 
