@@ -93,7 +93,7 @@ sub new {
   $self->dnadb($dnadb);
 
   # following was added on branch; unclear if it is needed:
-  $self->mapdbname( $mapdbname );
+  # $self->mapdbname( $mapdbname );
   #    $self->litedbname( $litedbname );
 
   if(defined $source) {
@@ -121,19 +121,6 @@ sub new {
 #    }
 #  }
 
-  # Store info for connecting to a mapdb.
-  {
-    $mapdbname ||= 'maps';
-    $self->{'_mapdb'} = {
-          -DBNAME => $mapdbname,
-          -HOST   => $self->host(),
-          -PORT   => $self->port(),
-          -DRIVER => $self->driver(),
-          -USER   => $self->username(),
-          -PASS   => $self->password(),
-          -ENSDB  => $self->dbname(),
-          };
-    }
 
   # Store info for connecting to a litedb.
   {
@@ -257,20 +244,11 @@ sub mapdb {
     
     if ($value) {
         $self->throw("$value is not a valid mapdb object")
-            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::Obj");
+            unless $value->isa("Bio::EnsEMBL::Map::DBSQL::DBAdaptor");
         $self->{'_mapdb'} = $value;
     }
-    else {
-        my $map = $self->{'_mapdb'}
-            or $self->throw("No mapdb information");
-
-        # If $map is just an unblessed hash (first time
-        # mapdb is called), connect to the map database.
-        if (ref($map) eq 'HASH') {
-            require Bio::EnsEMBL::Map::DBSQL::Obj;
-            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new( %$map );
-        }
-    }
+    
+    
     return $self->{'_mapdb'};
 }
 
@@ -545,6 +523,15 @@ sub lite_DBAdaptor {
   return $self->{_liteDB};
 }
 
+sub map_DBAdaptor {
+  my ($self, $arg ) = @_;
+  if ( defined $arg ) {
+    $self->{_mapDB} = $arg;
+    print STDERR "DBAdaptor->map_DBAdaptor map db defined\n"; 
+  }
+
+  return $self->{_mapDB};
+}
 
 
 sub get_GeneAdaptor {
