@@ -222,9 +222,9 @@ sub get_seq_by_id{
 =head2 get_seq_by_clone
 
  Title   : get_seq_by_clone
- Usage   : $db->get_seq (clone_id)
- Function: Gets all the sequence objects for a given clone_id out of the Archive database
- Example : $db->get_seq_by_clone (AL021546)
+ Usage   : $db->get_seq (clone_id, seq_type)
+ Function: Gets all the sequence objects for a given clone_id and sequence type out of the Archive database
+ Example : $db->get_seq_by_clone ('AL021546', 'exon')
  Returns : array of $seq objects
  Args    : clone_id
 
@@ -232,13 +232,14 @@ sub get_seq_by_id{
 =cut
 
 sub get_seq_by_clone{
-    my ($self,$clone_id) = @_;
+    my ($self,$clone_id, $seq_type) = @_;
     
     my @out;
     $clone_id || $self->throw("Attempting to get a sequence with no clone id");
-    
+    $seq_type || $self->throw("Attempting to get a sequence with no sequence type");
+
     # get the sequence object
-    my $sth = $self->prepare("select * from sequence where clone_id = '$clone_id'");
+    my $sth = $self->prepare("select * from sequence where (clone_id = '$clone_id' && seq_type='$seq_type')");
     my $res = $sth->execute();
     
     while( my $rowhash = $sth->fetchrow_hashref) {
@@ -266,6 +267,57 @@ sub get_seq_by_clone{
     return @out;
 }
 
+=head2 get_seq_by_clone_version
+
+ Title   : get_seq_by_clone_version
+ Usage   : $db->get_seq (clone_id, clone_version, seq_type)
+ Function: Gets all the sequence objects for a given clone_id, clone_version and sequence 
+           type out of the Archive database
+ Example : $db->get_seq_by_clone ('AL021546','1','exon')
+ Returns : array of $seq objects
+ Args    : clone_id
+
+
+=cut
+
+sub get_seq_by_clone_version{
+    my ($self,$clone_id, $clone_version, $seq_type) = @_;
+    
+    my @out;
+    $clone_id || $self->throw("Attempting to get a sequence with no clone id");
+    $clone_version || $self->throw("Attempting to get a sequence with no clone version");
+    $seq_type || $self->throw("Attempting to get a sequence with no sequence type");
+
+    # get the sequence object
+    my $sth = $self->prepare("select * from sequence where (clone_id = '$clone_id' && clone_version = '$clone_version' && seq_type='$seq_type')");
+    my $res = $sth->execute();
+    
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $seq = Bio::Seq->new;
+	my $type;
+	my $id = $rowhash->{'id'};
+	$id .= ".";
+	$id .= $rowhash->{'version'};
+	if ($rowhash->{'seq_type'} eq 'protein') {
+	    $type = 'amino';
+	}
+	else {
+	    $type = 'dna';
+	}
+	$seq = Bio::Seq->new(
+			     -seq=>$rowhash->{'sequence'},
+			     -id=>$id,
+			     -desc=>'Sequence from the EnsEMBL Archive database',
+			     -type=>$type,
+			     );
+	push @out, $seq;
+    }
+    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
+
+    return @out;
+}
+
+
 =head2 get_seq_by_gene
 
  Title   : get_seq_by_gene
@@ -286,6 +338,54 @@ sub get_seq_by_gene{
     
     # get the sequence object
     my $sth = $self->prepare("select * from sequence where gene_id = '$gene_id'");
+    my $res = $sth->execute();
+    
+    while( my $rowhash = $sth->fetchrow_hashref) {
+	my $seq = Bio::Seq->new;
+	my $type;
+	my $id = $rowhash->{'id'};
+	$id .= ".";
+	$id .= $rowhash->{'version'};
+	if ($rowhash->{'seq_type'} eq 'protein') {
+	    $type = 'amino';
+	}
+	else {
+	    $type = 'dna';
+	}
+	$seq = Bio::Seq->new(
+			     -seq=>$rowhash->{'sequence'},
+			     -id=>$id,
+			     -desc=>'Sequence from the EnsEMBL Archive database',
+			     -type=>$type,
+			     );
+	push @out, $seq;
+    }
+    @out = sort { my $aa = $a->id; $aa =~ s/^[^.]*.//g; my $bb = $b->id; $bb =~ s/^[^.]*.//g; return $aa <=> $bb } @out;
+
+    return @out;
+}
+
+=head2 get_seq_by_gene_version
+
+ Title   : get_seq_by_gene_version
+ Usage   : $db->get_seq (gene_id, version)
+ Function: Gets all the sequence objects for a given gene_id out of the Archive database
+ Example : $db->get_seq_by_gene ('AL021546','1')
+ Returns : array of $seq objects
+ Args    : gene_id, version
+
+
+=cut
+
+sub get_seq_by_gene_version{
+    my ($self,$gene_id, $gene_version) = @_;
+    
+    my @out;
+    $gene_id || $self->throw("Attempting to get a sequence with no gene id");
+    $gene_version || $self->throw("Attempting to get a sequence with no gene version");
+    
+    # get the sequence object
+    my $sth = $self->prepare("select * from sequence where (gene_id = '$gene_id' && gene_version = '$gene_version')");
     my $res = $sth->execute();
     
     while( my $rowhash = $sth->fetchrow_hashref) {

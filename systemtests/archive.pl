@@ -11,7 +11,7 @@ my $host   = 'localhost';
 my $port   = '410000';
 my $dbname = 'archive';
 my $dbuser = 'root';
-#my $dbpass;
+my $dbpass = '';
 my $module = 'Bio::EnsEMBL::DBArchive::Obj';
 my $help;
 
@@ -39,12 +39,22 @@ foreach $seq ($db->get_seq_by_id('ENSP0000dummy')) {
 }
 
 print "Now testing get_seq_by_clone...\n";
-foreach $seq ($db->get_seq_by_clone('dummy_clone_id')) {
+foreach $seq ($db->get_seq_by_clone('dummy_clone_id','transcript')) {
+    print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
+}
+
+print "Now testing get_seq_by_clone_version...\n";
+foreach $seq ($db->get_seq_by_clone_version('dummy_clone_id','1','transcript')) {
     print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
 }
 
 print "Now testing get_seq_by_gene...\n";
 foreach $seq ($db->get_seq_by_gene('dummy_gene_id2')) {
+    print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
+}
+
+print "Now testing get_seq_by_gene_version...\n";
+foreach $seq ($db->get_seq_by_gene_version('dummy_gene_id2','1')) {
     print  "\n         id: ",$seq->id,"\ndescription: ",$seq->desc,"\n       type: ",$seq->type,"\n   sequence: ",$seq->seq,"\n\n";
 }
 
