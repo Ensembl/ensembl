@@ -106,7 +106,7 @@ sub run {
 	# TODO - read .gz file directly? open (FILE, "zcat $file|") or Compress::Zlib
 	if ($file =~ /(.*)\.gz$/) {
 	  print "Uncompressing $dir/$file\n";
-	  system("gunzip", "$dir/$file");
+	  system("gunzip -f ", "$dir/$file");
 	  $file = $1;
 	}
 	
@@ -701,7 +701,7 @@ sub get_xref{
 }
 
 sub add_to_xrefs{
-  my ($master_xref,$acc,$label,$linkage,$source_id,$species_id) = @_;
+  my ($self,$master_xref,$acc,$label,$linkage,$source_id,$species_id) = @_;
 
   if(!defined($add_xref_sth)){
     $add_xref_sth = dbi->prepare("INSERT INTO xref (accession,label,description,source_id,species_id) VALUES(?,?,?,?,?)");
@@ -710,10 +710,11 @@ sub add_to_xrefs{
 
   my $dependent_id = get_xref($acc, $source_id);
   if(!defined($dependent_id)){
-    $add_xref_sth->execute($acc,$label,"",$source_id,$species_id);
+    $add_xref_sth->execute($acc,$label,"",$source_id,$species_id) || die "$acc\t$label\t\t$source_id\t$species_id\n";
   }
   $dependent_id = get_xref($acc, $source_id);
-  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id);
+  $add_dependent_xref_sth->execute($master_xref, $dependent_id,  $linkage, $source_id)|| die "$master_xref\t$dependent_id\t$linkage\t$source_id";
+
 
 }
 
