@@ -13,8 +13,9 @@ int main (int argc, char *argv[])
     CORBA_Environment ev;
     char *retval;
     CORBA_ORB orb;
-    Ensembl_artemis_Sequence seq;
-
+    Ensembl_artemis_BioSequence seq;
+    SimpleObjectManager * som;
+    SimpleObjectManagerAdaptor soma;
     MYSQL *connection,mysql;
 
     fprintf(stderr,"Got in...\n");
@@ -32,8 +33,11 @@ int main (int argc, char *argv[])
     poa = (PortableServer_POA)CORBA_ORB_resolve_initial_references(orb, "RootPOA", &ev);
     PortableServer_POAManager_activate(PortableServer_POA__get_the_POAManager(poa, &ev), &ev);
 
+    som = new_SimpleObjectManager(stderr,0,0,60,"test-entry",60,1,0,&ev);
+    soma = SimpleObjectManager_get_Adaptor(som);
+
     fprintf(stderr,"About to make...\n");
-    seq = new_Ensembl_artemis_Sequence(poa,connection,argv[1],&ev);
+    seq = new_Ensembl_artemis_BioSequence(poa,connection,argv[1],soma,&ev);
     fprintf(stderr,"Made...\n");
     retval = CORBA_ORB_object_to_string(orb, seq, &ev);
     ifp = fopen("seq.ior","w");

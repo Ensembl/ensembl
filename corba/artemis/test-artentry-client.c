@@ -8,7 +8,7 @@ int main (int argc,char ** argv)
   char * ior;
   int len,i,j;
   Ensembl_artemis_Entry entry;
-  Ensembl_artemis_Sequence seq;
+  Ensembl_artemis_BioSequence seq;
   Ensembl_artemis_FeatureList * ftl;
   char * seqchar;
   char * seqid;
@@ -63,9 +63,9 @@ int main (int argc,char ** argv)
 
   seq = Ensembl_artemis_Entry_getSequence(entry,&ev);
   fprintf(stderr,"Got seq\n");
-  len = Ensembl_artemis_Sequence_length(seq,&ev);
+  len = Ensembl_artemis_BioSequence_length(seq,&ev);
   fprintf(stderr,"Got length %d\n",len);
-  seqchar = Ensembl_artemis_Sequence_getSubSequence(seq,1,len,&ev);
+  seqchar = Ensembl_artemis_BioSequence_getSubSequence(seq,1,len,&ev);
   fprintf(stderr,"Got sequence %c\n",seqchar[0]);
 
   fprintf(stderr,">%s Transcript:%d\n",Ensembl_artemis_Entry_getName(entry,&ev),

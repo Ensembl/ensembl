@@ -11,6 +11,8 @@
 
 Ensembl_artemis_Entry new_Ensembl_artemis_Entry(PortableServer_POA poa, MYSQL * c,const char * c_id,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev);
 
+Ensembl_artemis_BioSequence new_Ensembl_artemis_BioSequence(PortableServer_POA poa,MYSQL *c,char * c_id,SimpleObjectManagerAdaptor soma,CORBA_Environment * ev);
+
 #define RETHROW(ev, val ) if ((ev)->_major != CORBA_NO_EXCEPTION ) return val;
 #define RETHROW_VOID(ev) RETHROW(ev,)
 
