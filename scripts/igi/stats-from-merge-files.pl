@@ -1,6 +1,8 @@
 #!/usr/local/bin/perl
 # $Id$ 
 
+# Copyright EnsEMBL http://www.ensembl.org
+
 # This script is used for collecting statistics on the gtf merges done by
 # gtf_merge.pl (which are typically called from the wrapper
 # all-merges.sh), and it is typically called by the all-stats.sh wrapper.
@@ -36,9 +38,9 @@ my $gtf_dump;
             'chaining:s'  => \$chaining,
 	     'igi2native:s'     => \$i2nmapping, 
 	     'native2igi:s'     => \$n2imapping, 
-	     'h|help'     => \$help,
              'gtfsummary:s' => \$gtf_summary,
              'gtfdump:s' => \$gtf_dump
+	     'h|help'     => \$help,
 	     );
 die $usage if $help;
 
