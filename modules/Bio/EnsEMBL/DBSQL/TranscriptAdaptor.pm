@@ -206,7 +206,7 @@ sub fetch_by_translation_id {
 
   my ($dbID) = $sth->fetchrow_array;
   if ($dbID){
-    return $self->fetch_by_dbID($id);
+    return $self->fetch_by_dbID($dbID);
   } else {
     return undef;
   }
