@@ -63,7 +63,8 @@ use DBI;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
-@ISA = qw(Bio::Root::Object);
+@ISA = qw(Bio::EnsEMBL::Pipeline:DB::Gene_ObjI Bio::Root::Object);
+
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called
@@ -909,6 +910,144 @@ sub write_Translation{
 			     . $translation->end_exon_id . "')");
     $tst->execute();
     return 1;
+}
+
+
+
+=head2 get_new_GeneID
+
+ Title   : get_new_GeneID
+ Usage   : my $id = $geneobj->get_new_GeneID
+ Function: 
+ Example : 
+ Returns : Gets the next unused gene id from the database
+ Args    : none
+
+
+=cut
+
+sub get_new_GeneID {
+    my ($self) = @_;
+
+    my $query = "select max(id) as id from gene";
+
+    my $sth   = $self->_db_obj->prepare($query);
+    my $res   = $sth->execute;
+    my $row   = $sth->fetchrow_hashref;
+    my $id    = $row->{id};
+
+    print(STDERR "max id is $id\n");
+
+    if ($id =~ /ENSG(\d+)$/) {
+	my $newid  = $1;
+	$newid++;
+
+	
+	if (length($newid) > 11) {
+	    if ($newid =~ /^0/) {
+		$newid =~ s/^0//;
+	    } else {
+		$self->throw("Can't truncation number string to generate new gene id [$newid]");
+	    }
+	}
+	$newid = "ENSG" . $newid;
+	return $newid;
+    } else {
+	$self->throw("[$id] does not look like a gene id (e.g. ENSG00000019784)");
+    }
+    
+}
+
+=head2 get_new_TranscriptID
+
+ Title   : get_new_TranscriptID
+ Usage   : my $id = $geneobj->get_new_TranscriptID
+ Function: 
+ Example : 
+ Returns : Gets the next unused transcript id from the database
+ Args    : none
+
+
+=cut
+
+sub get_new_TranscriptID {
+    my ($self) = @_;
+
+    my $query = "select max(id) as id from transcript";
+
+    my $sth   = $self->_db_obj->prepare($query);
+    my $res   = $sth->execute;
+    my $row   = $sth->fetchrow_hashref;
+    my $id    = $row->{id};
+
+    print(STDERR "max id is $id\n");
+
+    if ($id =~ /ENST(\d+)$/) {
+	my $newid  = $1;
+	$newid++;
+
+	
+	if (length($newid) > 11) {
+	    if ($newid =~ /^0/) {
+		$newid =~ s/^0//;
+	    } else {
+		$self->throw("Can't truncation number string to generate new transcript id [$newid]");
+	    }
+	}
+	$newid = "ENST" . $newid;
+
+	return $newid;
+    } else {
+	$self->throw("[$id] does not look like a transcript id (e.g. ENST00000019784)");
+    }
+
+
+}
+
+=head2 get_new_ExonID
+
+ Title   : get_new_ExonID
+ Usage   : my $id = $geneobj->get_new_ExonID
+ Function: 
+ Example : 
+ Returns : Gets the next unused exon id from the database
+ Args    : none
+
+
+=cut
+
+sub get_new_ExonID {
+    my ($self) = @_;
+
+    my $query = "select max(id) as id from exon";
+
+    my $sth   = $self->_db_obj->prepare($query);
+    my $res   = $sth->execute;
+    my $row   = $sth->fetchrow_hashref;
+    my $id    = $row->{id};
+
+    print(STDERR "max id is $id\n");
+
+    if ($id =~ /ENSE(\d+)$/) {
+	my $newid  = $1;
+	$newid++;
+
+	
+	if (length($newid) > 11) {
+	    if ($newid =~ /^0/) {
+		$newid =~ s/^0//;
+	    } else {
+		$self->throw("Can't truncation number string to generate new exon id [$newid]");
+	    }
+	}
+	$newid = "ENSE" . $newid;
+
+	return $newid;
+    } else {
+	$self->throw("[$id] does not look like an exon id (e.g. ENSE00000019784)");
+    }
+
+
 }
 
 

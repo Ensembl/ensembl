@@ -773,8 +773,8 @@ sub get_Gene {
 
    $self->warn("Obj->get_Gene is a deprecated method! 
 Calling Gene_Obj->get instead!");
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->get($geneid,$supporting);
+
+   return $self->gene_Obj->get($geneid,$supporting);
 }
 
 =head2 get_Gene_array
@@ -816,8 +816,7 @@ sub get_Gene_array_supporting {
     $self->warn("Obj->get_Gene_array_supporting is a deprecated method!
 Calling Gene_Obj->get_array_supporting instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->get_array_supporting($supporting,@geneid);
+    return $self->gene_Obj->get_array_supporting($supporting,@geneid);
 }
 
 =head2 donor_locator
@@ -968,8 +967,7 @@ sub get_Transcript{
     $self->warn("Obj->get_Transcript is a deprecated method! 
 Calling Gene_Obj->get_Translation instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->get_Transcript($transid);
+    return $self->gene_Obj->get_Transcript($transid);
 }
 
 =head2 get_Translation
@@ -990,8 +988,7 @@ sub get_Translation{
    $self->warn("Obj->get_Translation is a deprecated method! 
 Calling Gene_Obj->get_Translation instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->get_Translation($translation_id);
+   return $self->gene_Obj->get_Translation($translation_id);
 }
 
 =head2 get_Exon
@@ -1012,8 +1009,7 @@ sub get_Exon{
    $self->warn("Obj->get_Exon is a deprecated method! 
 Calling Gene_Obj->get_Exon instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->get_Exon($exonid);
+   return $self->gene_Obj->get_Exon($exonid);
 }
 
 =head2 get_all_Gene_id
@@ -1034,8 +1030,7 @@ sub get_all_Gene_id{
    $self->warn("Obj->get_all_Gene_id is a deprecated method! 
 Calling Gene_Obj->get_all_Gene_id instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->get_all_Gene_id();
+   return $self->gene_Obj->get_all_Gene_id();
 }
 
 =head2 get_updated_Clone_id
@@ -1192,8 +1187,7 @@ sub delete_Exon{
     $self->warn("Obj->delete_Exon is a deprecated method
 Calling Gene_Obj->delete_Exon instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->delete_Exon($exon_id);
+    return $self->gene_Obj->delete_Exon($exon_id);
 }
 
 =head2 delete_Supporting_Evidence
@@ -1214,8 +1208,7 @@ sub delete_Supporting_Evidence {
     $self->warn("Obj->delete_Supporting_Evidence is a deprecated method
 Calling Gene_Obj->delete_Supporting_Evidence instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->delete_Supporting_Evidence($exon_id);
+    return $self->gene_Obj->delete_Supporting_Evidence($exon_id);
 }
 
 =head2 delete_Features
@@ -1258,8 +1251,7 @@ sub delete_Gene{
    $self->warn("Obj->delete_Gene is a deprecated method! 
 Calling Gene_Obj->delete instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->delete($geneid);
+   return $self->gene_Obj->delete($geneid);
 }
 
 =head2 geneid_to_cloneid
@@ -1279,8 +1271,7 @@ sub geneid_to_cloneid{
     
     $self->warn("Obj->geneid_to_cloneid is a deprecated method, called Gene_Obj->each_cloneid instead!
 All the gene, transcript, and exon methods are now to be found in Gene_Obj");
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->each_cloneid($geneid);
+    return $self->gene_Obj->each_cloneid($geneid);
 }
 
 =head2 replace_last_update
@@ -1387,8 +1378,7 @@ sub write_Gene{
    $self->warn("Obj->write_Gene is a deprecated method! 
 Calling Gene_Obj->write instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->write($gene);
+   return $self->gene_Obj->write($gene);
 }
 
 =head2 write_all_Protein_features
@@ -1476,8 +1466,7 @@ sub write_supporting_evidence {
     $self->warn("Obj->write_supporting_evidence is a deprecated method!
 Calling Gene_Obj->write_supporting_evidence instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->write_supporting_evidence($exon);
+    return $self->gene_Obj->write_supporting_evidence($exon);
 }
 
 =head2 get_supporting_evidence
@@ -1498,8 +1487,7 @@ sub get_supporting_evidence {
     $self->warn("Obj->get_supporting_evidence is a deprecated method! 
 Calling Gene_Obj->get_supporting_evidence instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->get_supporting_evidence(@exons);
+   return $self->gene_Obj->get_supporting_evidence(@exons);
 }
 
 =head2 write_Analysis
@@ -1611,8 +1599,7 @@ sub write_Transcript{
    $self->warn("Obj->write_Transcript is a deprecated method! 
 Calling Gene_Obj->write_Transcript instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->write_Transcript($trans,$gene);
+   return $self->gene_Obj->write_Transcript($trans,$gene);
 }
 
 =head2 write_Translation
@@ -1633,8 +1620,7 @@ sub write_Translation{
     $self->warn("Obj->write_Translation is a deprecated method
 Calling Gene_Obj->write_Translation instead!");
 
-    my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-    return $gene_obj->write_Translation($translation);
+    return $self->gene_Obj->write_Translation($translation);
 }
 
 
@@ -1656,8 +1642,7 @@ sub write_Exon {
    $self->warn("Obj->write_Exon is a deprecated method! 
 Calling Gene_Obj->write_Exon instead!");
 
-   my $gene_obj=Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);
-   return $gene_obj->write_Exon($exon);
+   return $self->gene_Obj->write_Exon($exon);
 }
 
 =head2 get_Clone
@@ -1810,3 +1795,27 @@ Calling Clone->get_all_geneid instead!");
    
    return $clone->get_all_my_geneid();
 }
+
+
+=head2 gene_Obj
+    
+ Title   : gene_Obj
+ Usage   : my $geneobj = $db->gene_Obj
+ Function: Returns the gene object database handle
+ Example : 
+ Returns : Bio::EnsEMBL::DB::Gene_ObjI
+ Args    : 
+
+=cut
+
+sub gene_Obj {
+    my ($self) = @_;
+
+    unless (defined($self->{_gene_obj})) {
+	$self->{_gene_obj} = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self);    
+    }
+
+    return $self->{_gene_obj};
+
+}
+  
