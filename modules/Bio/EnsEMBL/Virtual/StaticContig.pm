@@ -1964,7 +1964,7 @@ sub get_all_Genes_exononly{
     my @out;
     my @trans;
     my $length = $glob_end - $glob_start;
-    my %exon_already_seen;
+    my %exons;
 
     while( $sth->fetch ) {
         next if (($end > $length) || ($start < 1));
@@ -2014,7 +2014,7 @@ sub get_all_Genes_exononly{
 #        }
 
 #	next if (exists $exon_already_seen{$exonid}); # just to make sure there is no redundant exons.
-#        unless( exists $exon_already_seen{$exonid} ) {
+        unless( exists $exons{$exonid} ) {
             my $exon = Bio::EnsEMBL::Exon->new();
             $exon->start($start);
             $exon->end($end);
@@ -2025,8 +2025,9 @@ sub get_all_Genes_exononly{
             $exon->phase($phase);
 	    $exon_already_seen{$exonid} = 1;
             $previous_exon = $exon;
-#        }
-        $current_transcript->add_Exon($exon);
+	    $exons{$exonid} = $exon;
+        }
+        $current_transcript->add_Exon($exon_already_seen{$exons});
         $current_transcript->end_exon_rank($rank);
    }
 
