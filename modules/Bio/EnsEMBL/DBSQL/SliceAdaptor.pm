@@ -626,15 +626,25 @@ sub fetch_all {
          -ADAPTOR           => $self);
 
       if(!defined($include_duplicates) or !$include_duplicates){
-        #do not include duplicates
-        my @dup = @{$self->fetch_normalized_slice_projection($slice)};
-        foreach my $dup_test( @dup){
-          if($dup_test->[2]->get_seq_region_id == $slice->get_seq_region_id){
-            push @out, $dup_test->[2];
+        # test if this slice *could* have a duplicate (exception) region
+        $self->_build_exception_cache() if(!exists $self->{'asm_exc_cache'});
+        if(exists $self->{asm_exc_cache}->{$seq_region_id}) {
+
+          # Dereference symlinked assembly regions.  Take out
+          # any regions which are symlinked because these are duplicates
+          my @projection = @{$self->fetch_normalized_slice_projection($slice)};
+          foreach my $segment ( @projection) {
+            if($segment->[2]->seq_region_name() eq $slice->seq_region_name() &&
+               $segment->[2]->coord_system->equals($slice->coord_system)) {
+              push @out, $segment->[2];
+            }
           }
+        } else {
+          # no duplicate regions
+          push @out, $slice;
         }
-      }
-      else {
+      } else {
+        # we want duplicates anyway so do not do any checks
         push @out, $slice;
       }
     }
@@ -1005,21 +1015,11 @@ sub fetch_normalized_slice_projection {
 
   my $slice_seq_region_id = $self->get_seq_region_id( $slice );
 
+  $self->_build_exception_cache() if(!exists($self->{'asm_exc_cache'}));
+
   my $result = $self->{'asm_exc_cache'}->{$slice_seq_region_id};
 
-  if(!defined($result)) {
-    my $sql = "
-      SELECT seq_region_id, seq_region_start, seq_region_end,
-             exc_type, exc_seq_region_id, exc_seq_region_start,
-             exc_seq_region_end
-        FROM assembly_exception
-       WHERE seq_region_id = ?";
-
-    my $sth = $self->prepare( $sql );
-    $sth->execute( $slice_seq_region_id );
-    $result = $sth->fetchall_arrayref();
-    $self->{'asm_exc_cache'}->{$slice_seq_region_id} = $result;
-  }
+  $result ||= [];
 
   my (@haps, @pars);
 
@@ -1276,9 +1276,31 @@ sub prepare {
   return $self->db()->dnadb()->prepare( $sql );
 }
 
+sub _build_exception_cache {
+  my $self = shift;
 
-  
+  # build up a cache of the entire assembly exception table
+  # it should be small anyway
+  my $sth = $self->prepare
+    ("SELECT seq_region_id, seq_region_start, seq_region_end,
+             exc_type, exc_seq_region_id, exc_seq_region_start,
+             exc_seq_region_end
+        FROM assembly_exception");
 
+  $sth->execute();
+
+  my %hash;
+  $self->{'asm_exc_cache'} = \%hash;
+
+  my $row;
+  while($row = $sth->fetchrow_arrayref()) {
+    my @result = @$row;
+    $hash{$result[0]} ||= [];
+    push(@{$hash{$result[0]}}, \@result);
+  }
+
+  return;
+}
 
 
 #####################################
