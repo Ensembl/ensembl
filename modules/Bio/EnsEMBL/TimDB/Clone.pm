@@ -431,6 +431,9 @@ sub embl_id {
 sub sv {
     my ($obj,$value) = @_;
     if (defined $value) {
+	if ($value = '' ){
+	    $value = -1;
+	}
 	if ($value =~ /^-?\d+$/) {
 	    $obj->{'_clone_sv'} = $value;
 	} else {
