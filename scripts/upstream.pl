@@ -19,7 +19,7 @@ while(my ($se,$id) = $sth->fetchrow_array) {
 
 foreach my $se (keys %et) {
     print STDERR "Dumping sequence upstream of ".$et{$se}."\n";
-    my $sth = $db->prepare("select e.strand,if(e.strand = 1,if(e.seq_start > $length,substring(sequence,e.seq_start-$length,$length),substring(sequence,$length-e.seq_start,e.seq_start)),if(c.length-e.seq_end > $length,substring(sequence,e.seq_end,$length),substring(sequence,e.seq_end,c.length))), if(e.strand = 1,if(e.seq_start > $length,length(substring(sequence,e.seq_start-$length,$length)),length(substring(sequence,$length-e.seq_start,e.seq_start))),if(c.length-e.seq_end > $length,length(substring(sequence,e.seq_end,$length)),length(substring(sequence,e.seq_end,c.length)))),c.internal_id from exon e, contig c, dna d where e.contig = c.internal_id and c.dna = d.id and e.id = '".$se."'");
+    my $sth = $db->prepare("select e.strand,if(e.strand = 1,if(e.seq_start > $length,substring(sequence,e.seq_start-$length,$length),substring(sequence,1,e.seq_start)),if(c.length-e.seq_end > $length,substring(sequence,e.seq_end,$length),substring(sequence,e.seq_end,c.length))), if(e.strand = 1,if(e.seq_start > $length,length(substring(sequence,e.seq_start-$length,$length)),length(substring(sequence,1,e.seq_start))),if(c.length-e.seq_end > $length,length(substring(sequence,e.seq_end,$length)),length(substring(sequence,e.seq_end,c.length)))),c.internal_id from exon e, contig c, dna d where e.contig = c.internal_id and c.dna = d.id and e.id = '".$se."'");
     $sth->execute;
     TRANS: while (my ($strand,$string, $cl,$contig) = $sth->fetchrow_array) {
 	my ($sth2,$sth3,$seqstr,$contig2);
