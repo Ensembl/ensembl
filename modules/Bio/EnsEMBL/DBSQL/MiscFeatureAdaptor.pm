@@ -100,7 +100,7 @@ sub fetch_all_by_Slice_and_set_code {
   } else {
     return [];
   }
-  warn "$constraint.....";
+
   return $self->fetch_all_by_Slice_constraint($slice, $constraint);
 }
 
