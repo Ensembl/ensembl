@@ -388,7 +388,20 @@ assumes without
 
 sub fetch_by_DBEntry {
   my $self = shift;
-  $self->throw( "Not implemented yet" );
+  my $external_id = shift;
+  my @genes = ();
+
+  my $entryAdaptor = $self->db->get_DBEntryAdaptor();
+
+
+  my @ids = $entryAdaptor->geneids_by_extids($external_id);
+  foreach my $gene_id ( @ids ) {
+    my $gene = $self->fetch_by_dbID( $gene_id );
+    if( $gene ) {
+      push( @genes, $gene );
+    }
+  }
+  return @genes;
 }
 
 

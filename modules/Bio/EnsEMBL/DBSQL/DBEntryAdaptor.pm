@@ -368,7 +368,13 @@ sub geneids_by_extids{
    my ($self,$name) = @_;
    my @genes;
 
-   my $sth = $self->prepare("select tr.gene from transcript tr,Xref x, objectXref oxr where tr.translation = oxr.ensembl_id and oxr.xrefId = x.xrefId and x.display_id = '$name'");
+   my $sth = $self->prepare("SELECT DISTINCT( tr.gene_id ) 
+                  FROM transcript tr, translation_stable_id tlsi, 
+                       Xref x, objectXref oxr
+                  WHERE tr.translation_id = tlsi.translation_id 
+                    AND tlsi.stable_id = oxr.ensembl_id 
+                    AND oxr.xrefId = x.xrefId 
+                    AND x.display_id = '$name'");
    $sth->execute();
 
    while( ($a) = $sth->fetchrow_array ) {
