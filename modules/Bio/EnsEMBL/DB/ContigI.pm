@@ -775,4 +775,35 @@ sub mask_features {
     return $dnastr;
 }
 
+=head2 get_gc_content
+
+ Title   : get_gc_content
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub get_gc_content {
+   my ($self) = @_;
+
+   my $seq = $self->primary_seq->seq();
+
+   my $num_g = $seq =~ tr/G/G/;
+   my $num_c = $seq =~ tr/C/C/;
+   my $num_n = $seq =~ tr/N/N/;
+
+   my $seq_length = $self->primary_seq->length;
+
+   my $perc_gc = ((($num_g+$num_c)/($seq_length-$num_n))*100);
+
+   my $perc_gc = int($perc_gc+0.5);
+   return $perc_gc;
+
+}   
+
+
 1;
