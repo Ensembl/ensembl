@@ -449,7 +449,7 @@ sub get_all_RepeatFeatures {
 
 	   $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
 
-	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$id,
+	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
 				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
 
 	   $out->analysis($analysis);
