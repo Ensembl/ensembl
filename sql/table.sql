@@ -544,8 +544,8 @@ CREATE TABLE identity_xref(
 	query_identity 	int(5),
         target_identity int(5),
 
-	hit_start int,
-	hit_end int,
+	query_start int,
+	query_end int,
 	translation_start int,
 	translation_end int,
 	cigar_line text,
