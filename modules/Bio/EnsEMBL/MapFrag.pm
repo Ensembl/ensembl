@@ -13,7 +13,7 @@ sub new {
         'type'        => $_[2],     'seq'         => $_[3],
         'seq_type'    => $_[4],     'seq_start'   => $_[5],
         'seq_end'     => $_[6],     'orientation' => $_[7],
-        'name'        => $_[8]
+        'name'        => $_[8],     '_bac_ends'   => {}
     };
     bless $self,$class;
     return $self;
@@ -36,6 +36,11 @@ sub add_mapset {
     $self->{'_mapsets'}{ $mapset->code } = $mapset;
 }
 
+sub add_bacend {
+    my( $self, $value ) = @_;
+    $self->{'_bac_ends'}{$value} = 1;
+}
+
 sub add_annotation {
     my( $self, $type, $value ) = @_;
     $self->{'_annotations'}{$type} = $value;
@@ -47,10 +52,16 @@ sub synonyms {
     return keys %{$self->{'_synonyms'}};
 }
 
+sub bacends {
+    my $self = shift;
+    return keys %{$self->{'_bac_ends'}};
+}
+
 sub embl_accs {
     my $self = shift;
     return keys %{$self->{'_embl_accs'}};
 }
+
 sub mapsets {
     my $self = shift;
     return values %{$self->{'_mapsets'}};

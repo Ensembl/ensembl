@@ -140,7 +140,9 @@ sub fetch_all_by_mapset_chr_start_end {
             );
             $old_id = $data->{'mapfrag_id'}
         }
-        if($data->{'note_type'} eq 'synonym') {
+        if($data->{'note_type'} eq 'bac_acc') {
+            $map_frag->add_bacend( $data->{'note'} ); 
+        } elsif($data->{'note_type'} eq 'synonym') {
             $map_frag->add_synonym( $data->{'note'} ); 
         } elsif($data->{'note_type'} eq 'embl_acc') {
             $map_frag->add_embl_acc( $data->{'note'} ); 
