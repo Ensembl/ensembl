@@ -115,10 +115,6 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The reference, comment, description and feature table of the original entry can be found in the DDBJ/EMBL/GenBank database with the identical accession number.");
-   $aseq->annotation->add_Comment($comment);
-   
-   $comment = Bio::Annotation::Comment->new();
    $comment->text("The /gene indicates a unique id for a gene, /cds a unique id for a translation and a /exon a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://www.ensembl.org/Docs/embl.html.");
 
    $aseq->annotation->add_Comment($comment);
@@ -128,7 +124,7 @@ sub add_ensembl_comments {
    $aseq->annotation->add_Comment($comment); 
 
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("In unfinished, rough draft DNA sequence gene structures can cross fragments and, in these cases, the order and orientation of the fragments is likely to be different from the order in the the International Nucleotide Sequence Databases DDBJ/EMBL/GenBank.");
+   $comment->text("This entry represents a slice of genome sequence. The ID and accession give the location of the slice. The underlying clone information, where available, is detailed in the misc features of the feature table." );
 
    $aseq->annotation->add_Comment($comment); 
   
@@ -164,7 +160,7 @@ sub ensembl_annseq_output {
 
    # attach ensembl specific dumping functions
    $aseqstream->_id_generation_func(\&id_EnsEMBL);
-   $aseqstream->_kw_generation_func(\&kw_EnsEMBL);
+   #$aseqstream->_kw_generation_func(\&kw_EnsEMBL);
    $aseqstream->_sv_generation_func(\&sv_EnsEMBL);
    $aseqstream->_ac_generation_func(\&ac_EnsEMBL);
    
