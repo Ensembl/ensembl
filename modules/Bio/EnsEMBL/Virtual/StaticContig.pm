@@ -343,6 +343,90 @@ sub get_all_SimilarityFeatures_above_score{
 }
 
 
+#
+# This is for lucash's unigene only feature table...
+#
+
+sub get_all_unigene_features {
+    my ($self, $bp) = @_;
+    
+    my $glob_start = $self->_global_start;
+    my $chr_name   = $self->_chr_name;
+    my $idlist     = $self->_raw_contig_id_list;
+    my $type       = $self->dbobj->static_golden_path_type;
+    
+    unless ($idlist){
+	return ();
+    }
+
+    my    $statement = "SELECT f.id, 
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+		        FROM   unigene_feature f, static_golden_path sgp
+                        WHERE  sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
+		        AND    sgp.chr_name = '$chr_name' 
+                        ORDER  by start";
+    
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+    
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+    
+    
+    my @features;
+    
+    my $out;
+    my $length=$self->length;
+  FEATURE: 
+
+    while($sth->fetch) {
+
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
+	
+	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+	
+	#exclude contained features
+	if(  defined $bp && defined $out && $end < $out->end ) { next; }
+
+	#Glob overlapping and close features
+	if ( defined $bp && defined $out && $out->end+$bp >= $start ) {
+		
+	    # reset previous guys end to end
+	    $out->end($end);
+	    next;
+	}
+
+	
+	my $analysis=$self->_get_analysis($analysisid);
+	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+	
+	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+	$out->analysis($analysis);
+        $out->id      ($hid);
+	push(@features,$out);
+    }
+    return @features;
+}
+
+
 
 =head2 get_all_SimilarityFeatures_above_pid
 
