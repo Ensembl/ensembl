@@ -374,6 +374,7 @@ sub get_updated_objects {
 	while(<IN>){
 	    if(/^(\S+)/){
 		push(@clones,$1);
+		print STDERR "Clone to update is $1\n";
 	    }
 	}
     } else {
