@@ -290,7 +290,7 @@ sub get_seq_region_id {
   Arg [2]    : string $coord_system_version (optional)
                The version of the coordinate system to retrieve slices of
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
-               @contigs = @{$slice_adaptor->fetch_all('contig');
+               @contigs = @{$slice_adaptor->fetch_all('contig')};
   Description: Retrieves slices of all seq_regions for a given coordinate
                system.  This is analagous to the methods fetch_all which were
                formerly on the ChromosomeAdaptor, RawContigAdaptor and
