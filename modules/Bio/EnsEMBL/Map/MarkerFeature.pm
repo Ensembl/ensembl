@@ -39,13 +39,13 @@ use Bio::EnsEMBL::SeqFeature;
   Arg [2]    : (optional) Bio::EnsEMBL::Adaptor $adaptor
   Arg [3]    : (optional) int $start 
   Arg [4]    : (optional) int $end
-  Arg [5]    : (optional) int $strand
-  Arg [6]    : (optional) Bio::EnsEMBL ::RawContig or ::Slice $contig
-  Arg [7]    : (optional) Bio::EnsEMBL::Analysis
-  Arg [8]    : (optional) int $marker_id
-  Arg [9]    : (optional) int $map_weight
-  Arg [10]   : (optional) Bio::EnsEMBL::Map::Marker $marker 
-  Example    : $marker = Bio::EnsEMBL::Map::MarkerFeature->new(100, 200, 1, 
+  Arg [5]    : (optional) Bio::EnsEMBL ::RawContig or ::Slice $contig
+  Arg [6]    : (optional) Bio::EnsEMBL::Analysis
+  Arg [7]    : (optional) int $marker_id
+  Arg [8]    : (optional) int $map_weight
+  Arg [9]    : (optional) Bio::EnsEMBL::Map::Marker $marker 
+  Example    : $marker = Bio::EnsEMBL::Map::MarkerFeature->new(123, $adaptor,
+							       100, 200, 
 							       $ctg, 123);
   Description: Creates a new MarkerFeature
   Returntype : Bio::EnsEMBL::Map::MarkerFeature
@@ -55,7 +55,7 @@ use Bio::EnsEMBL::SeqFeature;
 =cut
 
 sub new {
-  my ($caller, $dbID, $adaptor, $start, $end, $strand, $contig, $analysis,
+  my ($caller, $dbID, $adaptor, $start, $end, $contig, $analysis,
       $marker_id, $map_weight, $marker) = @_;
   
   my $class = ref($caller) || $caller;
@@ -65,7 +65,7 @@ sub new {
 		 'adaptor'     => $adaptor,
 		 '_gsf_start'  => $start,
 		 '_gsf_end'    => $end,
-		 '_gsf_strand' => $strand,
+		 '_gsf_strand' => 0,
 		 '_gsf_seq'    => $contig,
 		 '_analysis'    => $analysis,
 		 'marker_id'   => $marker_id,

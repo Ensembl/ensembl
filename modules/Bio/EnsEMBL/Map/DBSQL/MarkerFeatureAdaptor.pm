@@ -131,7 +131,7 @@ sub _columns {
 
   return ('mf.marker_feature_id', 'mf.marker_id', 
 	  'mf.contig_id', 'mf.contig_start', 'mf.contig_end', 
-	  'mf.contig_strand', 'mf.analysis_id', 'mf.map_weight',
+	  'mf.analysis_id', 'mf.map_weight',
 	  'm.left_primer', 'm.right_primer', 'm.min_primer_dist', 
 	  'm.max_primer_dist', 'm.priority', 'm.type', 'ms.marker_synonym_id',
 	  'ms.name', 'ms.source');
@@ -163,14 +163,14 @@ sub _objs_from_sth {
   my $sth  = shift;
 
   my ($marker_feature_id, $marker_id, 
-      $contig_id, $contig_start, $contig_end, $contig_strand,
+      $contig_id, $contig_start, $contig_end,
       $analysis_id, $map_weight,
       $left_primer, $right_primer, $min_primer_dist, $max_primer_dist, 
       $priority, $type, $ms_id, $ms_name, $ms_source);
 
   #warning: ordering depends on _columns function implementation
   $sth->bind_columns(\$marker_feature_id, \$marker_id, 
-      \$contig_id, \$contig_start, \$contig_end, \$contig_strand,
+      \$contig_id, \$contig_start, \$contig_end,
       \$analysis_id, \$map_weight,
       \$left_primer, \$right_primer, \$min_primer_dist, \$max_primer_dist,
       \$priority, \$type, \$ms_id, \$ms_name, \$ms_source);
@@ -218,7 +218,7 @@ sub _objs_from_sth {
     #now create a new marker_feature using the marker
     push @out, Bio::EnsEMBL::Map::MarkerFeature->new
       ($marker_feature_id, $self, 
-       $contig_start, $contig_end, $contig_strand, $contig, 
+       $contig_start, $contig_end, $contig, 
        $analysis, $marker_id, $map_weight, $marker);
   }
 
@@ -231,88 +231,89 @@ sub _objs_from_sth {
 =head2 store
 
   Arg [1]    : Bio::EnsEMBL::Map::MarkerFeature
-  Example    : $marker_feature_adaptor->store($marker_feature);
-  Description: Stores a marker feature in this database and returns the 
-               dbID of the newly stored feature on success.  The dbID and
-               adaptor will also be set on successful storing.
-  Returntype : int
+  Example    : $marker_feature_adaptor->store(@marker_features);
+  Description: Stores a list of marker features in this database.
+               The dbID and adaptor of each marker will be set on successful 
+               storing.
+  Returntype : none
   Exceptions : thrown if not all data needed for storing is populated in the
-               marker feature
+               marker features
   Caller     : general
 
 =cut
 
 sub store {
-  my $self = shift;
-  my $mf = shift;
+  my ($self, @mfs) = @_;
 
-  #
-  # Sanity checking!
-  #
-  unless($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
-    $self->throw('Incorrect argument [$mf] to store.  Expected ' .
-		 'Bio::EnsEMBL::Map::MarkerFeature');
-  }
+  foreach my $mf (@mfs) {
 
-  #don't store this feature if it has already been stored
-  return $mf->dbID if($mf->adaptor == $self);
+    #
+    # Sanity checking!
+    #
+    unless($mf && ref $mf && $mf->isa('Bio::EnsEMBL::Map::MarkerFeature')) {
+      $self->throw('Incorrect argument [$mf] to store.  Expected ' .
+		   'Bio::EnsEMBL::Map::MarkerFeature');
+    }
     
-  my $marker = $mf->marker;
+    #don't store this feature if it has already been stored
+    next if($mf->adaptor == $self);
+    
+    my $marker = $mf->marker;
+    
+    unless($marker && ref $marker && 
+	   $marker->isa('Bio::EnsEMBL::Map::Marker')) {
+      $self->throw('Cannot store MarkerFeature without an associated Marker');
+    }
 
-  unless($marker && ref $marker && $marker->isa('Bio::EnsEMBL::Map::Marker')) {
-    $self->throw('Cannot store MarkerFeature without an associated Marker');
-  }
-
-  my $marker_id = $marker->dbID;
-  unless($marker_id) {
-    $self->throw('Associated marker must have dbID to store MarkerFeature');
-  }
+    my $marker_id = $marker->dbID;
+    unless($marker_id) {
+      $self->throw('Associated marker must have dbID to store MarkerFeature');
+    }
 
 
-  my $analysis = $mf->analysis;
+    my $analysis = $mf->analysis;
+    
+    unless($analysis && ref $analysis && 
+	   $analysis->isa('Bio::EnsEMBL::Analysis')) {
+      $self->throw('Cannot store MarkerFeature without associated Analysis');
+    }
 
-  unless($analysis && ref $analysis && 
-	 $analysis->isa('Bio::EnsEMBL::Analysis')) {
-    $self->throw('Cannot store MarkerFeature without an associated Analysis');
-  }
+    my $analysis_id = $analysis->dbID;
 
-  my $analysis_id = $analysis->dbID;
+    unless($analysis_id) {
+     $self->throw('Associated analysis must have dbID to store MarkerFeature');
+    }
 
-  unless($analysis_id) {
-    $self->throw('Associated analysis must have dbID to store MarkerFeature');
-  }
+    my $contig = $mf->contig;
 
-  my $contig = $mf->contig;
+    unless($contig && ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
+      $self->throw('Cannot store MarkerFeature that is not in contig coords');
+    }
+    
+    my $contig_id = $contig->dbID;
 
-  unless($contig && ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
-    $self->throw('Cannot store MarkerFeature that is not in contig coords');
-  }
+    unless($contig_id) {
+      $self->throw('Attached contig must have dbID to store MarkerFeature');
+    }
 
-  my $contig_id = $contig->dbID;
+    #
+    # Everything looks ok so store
+    #
 
-  unless($contig_id) {
-    $self->throw('Attached contig must have dbID to store MarkerFeature');
-  }
-
-  #
-  # Everything looks ok so store
-  #
-
-  my $sth = 
-    $self->prepare("INSERT INTO marker_feature (marker_id,
-                           contig_id, contig_start, contig_end, contig_strand,
+    my $sth = 
+      $self->prepare("INSERT INTO marker_feature (marker_id,
+                           contig_id, contig_start, contig_end,
                            analysis_id, map_weight)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)");
-  $sth->execute($marker_id, 
-		$contig_id, $mf->start,$mf->end,$mf->strand,
-		$analysis_id,0);
+                    VALUES (?, ?, ?, ?, ?, ?)");
+    $sth->execute($marker_id, 
+		  $contig_id, $mf->start, $mf->end,
+		  $analysis_id, 0);
 
-  my $dbID = $sth->{'mysql_insertid'};
-                                        
-  $mf->dbID($dbID);
-  $mf->adaptor($self);
-
-  return $dbID;
+    my $dbID = $sth->{'mysql_insertid'};
+    
+    $mf->dbID($dbID);
+    $mf->adaptor($self);
+  }
 }
 
 

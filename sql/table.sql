@@ -637,7 +637,6 @@ CREATE TABLE marker_feature (
     contig_id                 int(10) unsigned NOT NULL, #foreign key contig:contig_id
     contig_start              int(10) unsigned NOT NULL,
     contig_end                int(10) unsigned NOT NULL,
-    contig_strand             tinyint(1) NOT NULL,
     analysis_id               int(10) unsigned NOT NULL, #foreign key analysis:analysis_id
     map_weight                int(10) unsigned,
 
