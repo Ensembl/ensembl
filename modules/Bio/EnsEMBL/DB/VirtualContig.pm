@@ -109,6 +109,9 @@ sub _initialize {
   # this is for cache's of sequence features if/when we want them
   $self->{'_sf_cache'}     = {};
 
+  $self->_left_overhang(0);
+  $self->_right_overhang(0);
+
   if( defined $clone && defined $focuscontig ){
       $self->throw("Build a virtual contig either with a clone or a focuscontig, but not with both");
   }
@@ -284,10 +287,14 @@ sub windowed_VirtualContig {
 
     my @ids = keys %{$self->{'contighash'}};
     @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
+    print STDERR "In Windowed vc...\n";
+
     print STDERR @ids."\n\n";
     
     my $id = undef;
-    foreach ( @ids ) {
+    foreach $_ ( @ids ) {
+	print STDERR "Looking at $_\n";
+
        if( $self->start_in_vc($_) < $position ) {
            print STDERR "Starting contig: $_ [". $self->start_in_vc($_). " < $position] \n";
            $id = $_;
@@ -350,6 +357,12 @@ sub primary_seq {
    my $seq_string;
    my $last_point = 1;
 
+   # if there is a left overhang, add it 
+
+   if( $self->_left_overhang() > 0 ) {
+       $seq_string = 'N' x $self->_left_overhang();
+   }
+
    foreach my $cid ( @contig_id ) {
        #print(STDERR "\nFinding sequence for $cid\n");
        my $c    = $self->{'contighash'}->{$cid};
@@ -406,6 +419,13 @@ sub primary_seq {
        $seq_string .= $trunc;
        $last_point += length($trunc);
    }
+
+   # if there is a right overhang, add it 
+
+   if( $self->_right_overhang() > 0 ) {
+       $seq_string .= 'N' x $self->_right_overhang();
+   }
+
 
    $seq = Bio::PrimarySeq->new( -id      => "virtual_contig_".$self->_unique_number,
 				-seq     => $seq_string,
@@ -867,6 +887,8 @@ sub _build_contig_map {
 
     print STDERR "Left size is $left\n";
 
+    GOING_LEFT :
+
     while( $current_left_size < $left ) {
 	print(STDERR "Current left = $current_left_size\n");
 	print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
@@ -894,6 +916,12 @@ sub _build_contig_map {
 		$current_left_size += $overlap->sister->golden_length -1;
 	    } else {
 		$current_left_size += $overlap->distance;
+		if( $current_left_size > $left ) {
+		    # set the left overhang!
+		    print STDERR "Triggered left overhang - ",$overlap->distance,":$current_left_size\n";
+		    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
+		    last GOING_LEFT;
+		}
 		$current_left_size += $overlap->sister->golden_length;
 	    }
 	    
@@ -921,6 +949,11 @@ sub _build_contig_map {
 		$current_left_size += $overlap->sister->golden_length-1;
 	    } else {
 		$current_left_size += $overlap->distance;
+		if( $current_left_size < $left ) {
+		    # set the left overhang!
+		    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
+		    last GOING_LEFT;
+		}
 		$current_left_size += $overlap->sister->golden_length;
 	    }
 	    
@@ -948,38 +981,53 @@ sub _build_contig_map {
 
 
     my $startpos;
+    
+    print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
+    print STDERR "Current left = $left vs global left= $current_left_size\n";
+    
 
-   print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
-   print STDERR "Current left = $left vs global left= $current_left_size\n";
+    my $current_length;
 
-    if( $current_orientation == 1 ) {
-	print(STDERR "Current orientation $current_orientation\n");
-	print(STDERR "golden start " . $current_contig->golden_start . "\n");
-	$startpos = $current_contig->golden_start + ($current_left_size - $left);
+    if( $self->_left_overhang() == 0 ) {
+	if( $current_orientation == 1 ) {
+	    print(STDERR "Current orientation $current_orientation\n");
+	    print(STDERR "golden start " . $current_contig->golden_start . "\n");
+	    $startpos = $current_contig->golden_start + ($current_left_size - $left);
+	} else {
+	    print(STDERR "Current orientation $current_orientation\n");
+	    print(STDERR "golden end " . $current_contig->golden_end . "\n");
+	    
+	    $startpos = $current_contig->golden_end   - ($current_left_size - $left);
+	}
+	
+	print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
+	
+	$self->{'start'}        ->{$current_contig->id} = 1;
+	$self->{'startincontig'}->{$current_contig->id} = $startpos;
+	$self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
+	$self->{'contighash'}   ->{$current_contig->id} = $current_contig;
+
+	if( $current_orientation == 1 ) {
+	    # mystic +1 due to biological counting scheme
+	    $current_length = $current_contig->golden_end - $startpos +1;
+	} else {
+	    # mystic +1 due to biological counting scheme
+	    $current_length = $startpos - $current_contig->golden_start+1;
+	}
     } else {
-	print(STDERR "Current orientation $current_orientation\n");
-	print(STDERR "golden end " . $current_contig->golden_end . "\n");
-
-	$startpos = $current_contig->golden_end   - ($current_left_size - $left);
+	# has an overhang - first contig offset into the system
+	$self->{'start'}        ->{$current_contig->id} = $self->_left_overhang+1;
+	if( $current_orientation == 1 ) {
+	    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start;
+	} else {
+	    $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_end;
+	}
+	$self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
+	$self->{'contighash'}   ->{$current_contig->id} = $current_contig;
+	$current_length = $self->_left_overhang() + $current_contig->golden_length;
     }
-    
-    print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
-    
-    $self->{'start'}        ->{$current_contig->id} = 1;
-    $self->{'startincontig'}->{$current_contig->id} = $startpos;
-    $self->{'contigori'}    ->{$current_contig->id} = $current_orientation;
-    $self->{'contighash'}   ->{$current_contig->id} = $current_contig;
-    
-   
-   my $current_length;
 
-    if( $current_orientation == 1 ) {
-	# mystic +1 due to biological counting scheme
-	$current_length = $current_contig->golden_end - $startpos +1;
-    } else {
-	# mystic +1 due to biological counting scheme
-	$current_length = $startpos - $current_contig->golden_start+1;
-    }
+
     print STDERR "current length before we get into this is $current_length\n";
     
     while( $current_length < $total ) {
@@ -1002,6 +1050,14 @@ sub _build_contig_map {
 		last;
 	   }
 	    
+	    # see whether the distance gives us an end condition, and a right_overhang
+
+	    if( $current_length + $overlap->distance > $total ) {
+		# right overhang
+		$self->_right_overhang($total - $current_length);
+		last;
+	    }
+
 	    # add to total, move on the contigs
 	    
 	    $current_contig = $overlap->sister();
@@ -1097,12 +1153,20 @@ sub _build_contig_map {
    # need to store end point for last contig
    print STDERR "Looking at setting rightmost end with $total and $current_length ",$current_contig->golden_end,"\n";
 
-   $self->{'rightmostcontig_id'} = $current_contig->id();
-   if( $current_orientation == 1 ) {
-       $self->{'rightmostend'}    = $current_contig->golden_end - ($current_length - $total);
-   } else {
-       $self->{'rightmostend'}    = $current_contig->golden_start + ($current_length - $total);
-   }
+    $self->{'rightmostcontig_id'} = $current_contig->id();
+    if( $self->_right_overhang == 0 ) {
+	if( $current_orientation == 1 ) {
+	    $self->{'rightmostend'}    = $current_contig->golden_end - ($current_length - $total);
+	} else {
+	    $self->{'rightmostend'}    = $current_contig->golden_start + ($current_length - $total);
+	}
+    } else {
+	if( $current_orientation == 1 ) {
+	    $self->{'rightmostend'}    = $current_contig->golden_end;
+	} else {
+	    $self->{'rightmostend'}    = $current_contig->golden_start;
+	}
+    }
    
    # put away the focus/size info etc
 
@@ -1711,6 +1775,50 @@ sub _at_right_end {
     return $obj->{'_at_right_end'};
 
 }
+
+=head2 _left_overhang
+
+ Title   : _left_overhang
+ Usage   : $obj->_left_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of _left_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _left_overhang{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_left_overhang'} = $value;
+    }
+    return $obj->{'_left_overhang'};
+
+}
+
+=head2 _right_overhang
+
+ Title   : _right_overhang
+ Usage   : $obj->_right_overhang($newval)
+ Function: 
+ Example : 
+ Returns : value of _right_overhang
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _right_overhang{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_right_overhang'} = $value;
+    }
+    return $obj->{'_right_overhang'};
+
+}
+
+
 1;
 
 
