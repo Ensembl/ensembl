@@ -257,6 +257,63 @@ sub extend_maximally_right {
    return $nvc;
 }
 
+=head2 windowed_VirtualContig
+
+ Title   : windowed_VirtualContig
+ Usage   : $newvc = $vc->windowed_VirtualContig(13400,0,2000);
+ Function: Provides a new vc from a current vc as a window
+           on the old vc. 
+ Example :
+ Returns : 
+ Args    : position in vc, right distance, left distance.
+
+
+=cut
+
+sub windowed_VirtualContig {
+   my ($self,$position,$left,$right) = @_;
+
+   if( $position < 0 || $postion > $self->length ) {
+       $self->throw("Attempting to build a new virtual contig out of length bounds!");
+   }
+
+   # scan along right->left until we find the first contig
+   # whoes start point is before the position
+
+   # hmm - should we presort these guys sometime?
+
+   my @ids = keys %{$self->{'contighash'}};
+   @ids = sort { $self->{'start'}->{$b} <=> $self->{'start'}->{$a} } @ids;
+   my $id;
+   foreach $id ( @ids ) {
+       if( $self->start_in_vc($id) < $position ) {
+	   last;
+       }
+   }
+
+   # $id is going to be our new focus. Now - just call 
+   # a constructor with appropiate arthmetic...
+
+   my $vcpos;
+   my $rc = $self->{'contig'}->{$id};
+   if( $self->ori_in_vc($id) == 1 ) {
+       $vcpos = $rc->golden_left + ($position - $self->start_in_vc($id));
+   } else {
+       $vcpos = $rc->golden_right - ($position - $self->start_in_vc($id));
+   }
+
+   return Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $id,
+						-focusposition => $vcpos,
+						-ori => $self->ori_in_vc($id),
+						-left => $left,
+						-right => $right
+						);
+
+
+}
+
+
+
 
 =head2 primary_seq
 
