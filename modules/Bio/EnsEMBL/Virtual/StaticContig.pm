@@ -1240,9 +1240,9 @@ sub get_all_ExternalFeatures{
    #print STDERR "Got ",scalar(@contig_features),"before lift\n";
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
-	        push(@final, $f);
+	   push(@final,$f);
        } elsif( $f->id eq '__ERROR__') { #Always push errors even if they aren't wholly within the VC
-            push(@final, $f);
+           push(@final, $f);
        }
    }
    #print STDERR "Got ",scalar(@final),"after lift\n";
