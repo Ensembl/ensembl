@@ -33,14 +33,8 @@ my $gene_adapt = $db->get_GeneAdaptor();
 my $slice_adapt = $db->get_SliceAdaptor();
 
 
-#open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
-#open (OUT,">/acari/work1/mongin/test_dump/AAAB01008846.tbl") || die;
-#open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008846.fsa") || die;
-
-
 open (MAP,"/acari/work1/mongin/test_dump/AAAB01.output.p2g") || die;
-open (OUT,">/acari/work1/mongin/test_dump/AAAB01008961.tbl") || die;
-open (SEQ,">/acari/work1/mongin/test_dump/AAAB01008961.fsa") || die;
+
 open (SCAFMAP,"/acari/work1/mongin/test_dump/accessions") || die;
 open (EBIMAP,"/acari/work1/mongin/test_dump/ebi_id_mapping.txt") || die;
 
@@ -68,12 +62,15 @@ close(MAP);
 #my $query1 = "select clone_id,name from clone where name = 'AAAB01008961'";
 #my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008846' and a.superctg_name = c.name";
 
-my $query1 = "select c.clone_id, c.name, a.superctg_ori from clone c, assembly a where name = 'AAAB01008961' and a.superctg_name = c.name limit 1";
+my $query1 = "select distinct(c.name), a.superctg_ori from clone c, assembly a where a.superctg_name = c.name";
 
 my $sth1 = $db->prepare($query1);
 $sth1->execute();
 
-while (my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
+while (my ($clone_name,$ori) = $sth1->fetchrow_array) {
+
+    open (OUT,">/acari/work1/mongin/test_dump/tmp1/$clone_name.tbl") || die;
+    open (SEQ,">/acari/work1/mongin/test_dump/tmp1/$clone_name.fsa") || die;
 
     my $slice = $slice_adapt->fetch_by_clone_accession($clone_name);
     
@@ -81,6 +78,8 @@ while (my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
 	$slice = $slice->invert();
     }
     
+    print STDERR "$clone_name\n";
+
     my $chr_name = $slice->chr_name;
     
     my $clone_seq = $slice->seq;
@@ -89,9 +88,9 @@ while (my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
 
     my $old_clone_name = $scafmap{$clone_name};
     
-    print SEQ ">gnl|WGS:AAAB|$old_clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
+    print SEQ ">gnl|WGS:AAAB|$old_clone_name|gb|$clone_name [organism=Anopheles gambiae str. PEST] [tech=wgs] [chromosome=$chr_name]\n$clone_seq\n";
     
-    print OUT ">Feature gnl|WGS:AAAB|$old_clone_name\n";
+    print OUT ">Feature gnl|WGS:AAAB|$old_clone_name|gb|$clone_name\n";
     
     my @genes = @{$slice->get_all_Genes};
     
@@ -175,6 +174,9 @@ while (my ($id,$clone_name,$ori) = $sth1->fetchrow_array) {
 	    }
 	}
     }
+
+    close(OUT);
+    close(SEQ);
 }
 
 sub checks {
@@ -303,9 +305,9 @@ sub checks {
 
 	#print STDERR "SEQ: ".$new_tr->translate->seq."\n";
 
-	my $coding_length = $coding_end - $coding_start + 1;
+	#my $coding_length = $coding_end - $coding_start + 1;
 	
-	print STDERR "Coding start: $coding_start\tcoding end: $coding_end\tLength: $cdna_length\n";
+	#print STDERR "Coding start: $coding_start\tcoding end: $coding_end\tLength: $cdna_length\n";
 
 	if ($tl_start > 1) {
 	    $utr{$gene_dbid}->{'up'} = 1;
@@ -588,17 +590,19 @@ sub print_translation_coordinates {
     
     if ($cel_id) {
 	print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$cel_id|gb|$map{$cel_id}\n";
+	print OUT "\t\t\tprot_desc\tgnl|WGS:AAAB|$cel_id|gb|$map{$cel_id}\n";
     }
     if ($ebi_id) {
 	print OUT "\t\t\tprotein_id\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
+	print OUT "\t\t\tprot_desc\tgnl|WGS:AAAB|$ebi_id|gb|$map{$ebi_id}\n";
     }
     if ($symbol) {
-	print OUT "\t\t\tprotein_id\t$symbol\n";
+	print OUT "\t\t\tgene\t$symbol\n";
     }
     my @interpro = &get_protein_annotation($tr_dbID,$db);
 
     foreach my $ipr(@interpro) {
-	print OUT "\t\t\tdb_xref Interpro:$ipr\n";
+	print OUT "\t\t\tdb_xref\tInterpro:$ipr\n";
     }
     print OUT "\t\t\tevidence\tnot_experimental\n";
     
@@ -662,3 +666,25 @@ sub get_protein_annotation {
     }
     return @interpro;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
