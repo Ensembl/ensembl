@@ -263,6 +263,7 @@ CREATE TABLE repeat_feature (
 CREATE TABLE supporting_feature (
   supporting_feature_id            int(10) unsigned NOT NULL auto_increment,
   exon_id          int NOT NULL,
+  contig_id     int(10) unsigned NOT NULL,
   seq_start     int(10) NOT NULL,
   seq_end       int(10) NOT NULL,
   score         int(10) NOT NULL,
