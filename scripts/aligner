@@ -63,14 +63,14 @@ foreach my $id (@ARGV) {
   } else {
     $ea->contigname($id);
   }
-  my $evidence_seq_arr_ref;
+  my @evidence_seq_arr;
   eval {
-    $evidence_seq_arr_ref = $ea->fetch_alignment;
+    @evidence_seq_arr = $ea->fetch_alignment;
   };
   if ($@) {
     die "error: can't fetch alignment for $id\n";
   }
-  foreach my $evidence_obj (@$evidence_seq_arr_ref) {
+  foreach my $evidence_obj (@evidence_seq_arr) {
     print ">", $evidence_obj->accession_number , "\n"
       or die "write error for $id";
     print $evidence_obj->seq , "\n\n"
