@@ -688,38 +688,10 @@ sub fetch_VirtualContig_of_gene{
 sub fetch_VirtualContig_of_exon{
    my ($self,$exonid,$size) = @_;
 
-   if( !defined $exonid ) {
-       $self->throw("Must have exon id to fetch VirtualContig of exon");
-   }
-   if( !defined $size ) {$size=0;}
 
-   my $type = $self->dbobj->static_golden_path_type()
-    or $self->throw("No assembly type defined");
+   $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_of_exon is deprecated.");
 
-   my $sth = $self->dbobj->prepare("SELECT  
-   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_end)),
-   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_start)),
-     a.chromosome_id
-                    FROM    exon e,
-			    assembly a 
-                    WHERE e.id='$exonid' 
-                    AND a.contig_id=e.contig 
-                    AND a.type = '$type' 
-                    ");
-   $sth->execute();
-
-   my ($start,$end,$chr_name)=$sth->fetchrow_array;
-   
-   if( !defined $start ) {
-       $self->throw("Exon is not on the golden path. Cannot build VC");
-   }
-     
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-							$start-$size,
-							$end+$size
-						    );
+   return NULL;
 }
 
 
@@ -736,16 +708,9 @@ sub fetch_VirtualContig_of_exon{
 sub fetch_VirtualContig_of_feature {
    my ($self,$contigid,$seq_start,$seq_end,$size) = @_;
 
-   unless( defined $contigid && defined $seq_start && defined $seq_end ) {
-       $self->throw("Must have feature details to fetch VirtualContig of feature");
-   }
-   if( !defined $size ) {$size=0;}
-   my($chr_name,$raw_ori,$start,$end) = $self->get_location_of_feature($contigid,$seq_start,$seq_end);
-     
-   return $self->fetch_VirtualContig_by_chr_start_end(  $chr_name,
-							$start-$size,
-							$end+$size
-							);
+   $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_of_feature is deprecated.");
+
+   return NULL;
 }
 
 
@@ -1035,7 +1000,7 @@ sub fetch_VirtualContig_by_fpc_name{
     &eprof_start('Slice: staticcontig build');
 
     eval {
-      $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$type);
+      $slice = Bio::EnsEMBL::Slice->new($chr,$slice_start,$slice_end,$strand,$type);
     } ;
     if( $@ ) {
       $self->throw("Unable to build a slice using its fpc_name for for $chr, $start,$end\n\nUnderlying exception $@\n");
@@ -1045,54 +1010,6 @@ sub fetch_VirtualContig_by_fpc_name{
     return $slice;
 }
 
-# deprecated
-=head2 fetch_VirtualContig_by_fpc_name_slice
-
- Title   : fetch_VirtualContig_by_fpc_name_slice
- Usage   : do not use; depracated. Use a construct with
-           fetch_VirtualContig_list_sized() instead.
-
- Function: bit bizarre: start and end (in fpc coords) indicate which
-           RawContigs to use, then construct a VC consisting of the _full_
-           extent of these RCs. (As a result, its length is not simply
-           end-start+1)
- Example :
- Returns : a Virtual contig, consisting of all the overlap of th
- Args    : fpc contig id, and start end in fpc coordinates?
-
-=cut
-
-sub fetch_VirtualContig_by_fpc_name_slice {
-   my ($self,$name,$start,$end) = @_;
-   
-   $self->warn("Usage of StaticGoldenPathAdaptor.fetch_VirtualContig_by_fpc_name_slice is depracated. Use a construct with fetch_VirtualContig_list_sized() instead");
-   
-   if( !defined $end ) {
-       $self->throw("must have start end to fetch by slice");
-   }
-
-   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
-   my @finalfpc;
-
-   foreach my $fpc ( @fpc ) {
-       if( $fpc->fpc_contig_start >= $start && $fpc->fpc_contig_end <= $end ) {
-       push(@finalfpc,$fpc);
-       }
-   }
-   if( scalar @finalfpc == 0 ) {
-       $self->throw("No complete raw contigs between $start and $end");
-   }
-
-   $start = $finalfpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new(   $start->chr_start,
-                            $start->fpc_contig_start,
-                            -1,
-                            @finalfpc
-                            );
-   $vc->id("$name-$start-$end");
-   $vc->dbobj($self->dbobj);
-   return $vc;
-}
 
 =head2 fetch_VirtualContig_list_sized
 
@@ -1113,56 +1030,9 @@ sub fetch_VirtualContig_by_fpc_name_slice {
 sub fetch_VirtualContig_list_sized {
    my ($self,$name,$length1,$gap1,$length2,$gap2) = @_;
 
-   if( !defined $gap2 ) {
-       $self->throw("Must fetch Virtual Contigs in sized lists");
-   }
-   my @fpc = $self->fetch_RawContigs_by_fpc_name($name);
-   my $chr;
-   if ($#fpc >= 0) { $chr = $fpc[0]->chromosome; }
+   $self->warn("Use of StaticGoldenPathAdaptor.fetch_VirtualContig_list_sized is deprecated.");
 
-   my @finalfpc;
-   my @vclist;
-
-   my $current_start = 1;
-   my $prev = shift @fpc;
-   push(@finalfpc,$prev);
-   foreach my $fpc ( @fpc ) {
-       $fpc->dbobj($self->dbobj);
-
-       if( ( ($fpc->fpc_contig_end - $current_start+1) > $length1 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap1) ||
-       ( ($fpc->fpc_contig_end -$current_start+1) > $length2 && ($fpc->fpc_contig_start - $prev->fpc_contig_end -1) >= $gap2) ) {
-       # build new vc and reset stuff
-
-       my $start = $finalfpc[0];
-
-       my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
-       $vc->id($name);
-           $vc->dbobj($self->dbobj);
-       $vc->_chr_name($chr);
-
-       push(@vclist,$vc);
-       
-       $prev = $fpc;
-       $current_start = $prev->fpc_contig_start;
-       @finalfpc = ();
-       push(@finalfpc,$prev);
-       $prev->dbobj($self->dbobj);
-       } else {
-       push(@finalfpc,$fpc);
-       $prev = $fpc;
-       $fpc->dbobj($self->dbobj);
-       }
-   }
-   # last contig
-
-   my $start = $finalfpc[0];
-   my $vc = Bio::EnsEMBL::Virtual::StaticContig->new($start->chr_start,$start->fpc_contig_start,-1,@finalfpc);
-   $vc->dbobj($self->dbobj);
-   $vc->_chr_name($chr);
-
-   push(@vclist,$vc);
-
-   return @vclist;
+   return NULL;
 }
 
 
