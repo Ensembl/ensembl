@@ -604,11 +604,12 @@ sub get_base_count {
   Example    :
     my $clone_projection = $slice->project('clone');
 
-    foreach my $segment (@$clone_projection) {
-      my ($start, $end, $clone) = @$segment;
-      print $slice->seq_region_name, ':', $start, '-', $end , ' -> ',
-            $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
-            $clone->strand, "\n";
+    foreach my $seg (@$clone_projection) {
+      my $clone = $segment->to_Slice();
+      print $slice->seq_region_name(), ':', $seg->from_start(), '-',
+            $seg->from_end(), ' -> ',
+            $clone->seq_region_name(), ':', $clone->start(), '-',$clone->end(),
+            $clone->strand(), "\n";
     }
   Description: Returns the results of 'projecting' this slice onto another
                coordinate system.  Projecting to a coordinate system that
@@ -620,7 +621,8 @@ sub get_base_count {
                which represents the projection.  The start and end defined the
                region of this slice which is made up of the third value of
                the triplet: a slice in the requested coordinate system.
-  Returntype : list reference of [$start,$end,$slice] triplets
+  Returntype : list reference of Bio::EnsEMBL::ProjectionSegment objects which
+               can also be used as [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
 
@@ -1512,16 +1514,17 @@ sub get_all_KaryotypeBands {
                 e.g. "repeat_class_SINE/MIR"
                "repeat_name_" . $repeat_consensus->name
                 e.g. "repeat_name_MIR"
-               depending on which base you want to apply the not default masking either 
-               the repeat_class or repeat_name. Both can be specified in the same hash
-               at the same time, but in that case, repeat_name setting has priority over 
-               repeat_class. For example, you may have hard masking as default, and 
-               you may want soft masking of all repeat_class SINE/MIR,
-               but repeat_name AluSp (which are also from repeat_class SINE/MIR).
+               depending on which base you want to apply the not default
+               masking either the repeat_class or repeat_name. Both can be
+               specified in the same hash at the same time, but in that case,
+               repeat_name setting has priority over repeat_class. For example,
+               you may have hard masking as default, and you may want soft
+               masking of all repeat_class SINE/MIR, but repeat_name AluSp
+               (which are also from repeat_class SINE/MIR).
                Your hash will be something like {"repeat_class_SINE/MIR" => 1,
                                                  "repeat_name_AluSp" => 0}
-  Example    : $rm_slice = $slice->get_repeatmasked_seq()
-               $softrm_slice->get_repeatmasked_seq(['RepeatMask'],1)
+  Example    : $rm_slice = $slice->get_repeatmasked_seq();
+               $softrm_slice = $slice->get_repeatmasked_seq(['RepeatMask'],1);
   Description: Returns Bio::EnsEMBL::Slice that can be used to create repeat
                masked sequence instead of the regular sequence.
                Sequence returned by this new slice will have repeat regions

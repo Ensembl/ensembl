@@ -554,38 +554,36 @@ sub transfer {
   Example    :
     my $clone_projection = $feature->project('clone');
 
-    foreach my $segment (@$clone_projection) {
-      my ($start, $end, $clone) = @$segment;
-      print "Features current coords $start-$end project onto clone coords " .
+    foreach my $seg (@$clone_projection) {
+      my $clone = $seg->to_Slice();
+      print "Features current coords ", $seg->from_start, '-',
+        $seg->from_end, " project onto clone coords " .
         $clone->seq_region_name, ':', $clone->start, '-', $clone->end,
-          $clone->strand, "\n";
+        $clone->strand, "\n";
     }
   Description: Returns the results of 'projecting' this feature onto another
                coordinate system.  This is useful to see where a feature
                where a feature would lie in a coordinate system in which it
                crosses a boundary.
 
-               This method returns a listref of triplets [start,end,slice]
-               which represents the projection.  The start and end are the
-               coordinates relative to the feature start.
-               For example if a feature is current 100-200bp on a slice
+               This method returns a reference to a list of
+               Bio::EnsEMBL::ProjectionSegment objects.
+               ProjectionSegments are blessed arrays and can also be used as
+               triplets [from_start,from_end,to_Slice]. The from_start and
+               from_end are the coordinates relative to the feature start.
+               For example, if a feature is current 100-200bp on a slice
                then the triplets returned might be:
-               1,50,$slice1
-               51,101,$slice2
+               [1,50,$slice1],
+               [51,101,$slice2]
 
-               The third value of the returned triplets is a slice spanning
-               the region on the requested coordinate system that this feature
-               projected to.
-
-               For additional clarity the returned triplets are blessed into
-               Bio::EnsEMBL::ProjectionSegment objects and can be accessed
-               via from_start(), from_end() and to_Slice() methods.
+               The to_Slice is a slice spanning the region on the requested
+               coordinate system that this feature projected to.
 
                If the feature projects entirely into a gap then a reference to
                an empty list is returned.
 
-  Returntype : list reference of [$start,$end,$slice]
-               (Bio::EnsEMBL::ProjectionSegment) triplets
+  Returntype : list reference of Bio::EnsEMBL::ProjectionSegments
+               which can also be used as [$start,$end,$slice] triplets
   Exceptions : none
   Caller     : general
 

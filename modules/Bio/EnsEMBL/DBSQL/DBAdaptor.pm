@@ -18,12 +18,12 @@
 
 =head1 DESCRIPTION
 
-This is the primary interface to an EnsEMBL database. It maintains an active
-connection to the database and allows for the retrieval of ObjectAdaptors,
-via a set of get_XxxxAdaptor methods (where Xxxx is the type of adaptor).
 
-ObjectAdaptors can then be used to obtain objects and actual information
-from the database.
+Formerly this class provided database connectivity and a means to retrieve
+object adaptors.  This class is now provided for convenience and backwards
+compatibility, but delegates its connection responsibilities to the
+DBConnection class (no longer inherited from) and its object adaptor
+retrieval to the static Bio::EnsEMBL::Registry.
 
 
 =head1 CONTACT

@@ -2,7 +2,7 @@
 
 =head1 SYNOPSIS
 
-    $db = Bio::EnsEMBL::DBSQL::DBConnection->new(
+    $dbc = Bio::EnsEMBL::DBSQL::DBConnection->new(
         -user    => 'anonymous',
         -dbname  => 'homo_sapiens_core_20_34c',
         -host    => 'ensembldb.ensembl.org',
@@ -12,19 +12,26 @@
         );
 
 
-   You should use this as a base class for all objects (DBAdaptor) that 
-   connect to a database.  SQL statements should be created/executed through
+   SQL statements should be created/executed through
    this modules prepare() and do() methods.
 
-   $sth = $db->prepare( "SELECT something FROM yourtable" );
+   $sth = $dbc->prepare( "SELECT something FROM yourtable" );
+
+   $sth->execute();
+
+   # do something with rows returned ...
+
+   $sth->finish();
 
 =head1 DESCRIPTION
 
   This class is a wrapper around DBIs datbase handle.  It provides some
   additional functionality such as the ability to automatically disconnect
-  when inactive and reconnect when needed, and a way to obtain ObjectAdaptors.
-  This class is intended to be inherited from rather than used directly.
-  See Bio::EnsEMBL::DBSQL::DBAdaptor.
+  when inactive and reconnect when needed.
+
+  Generally this class will be used through one of the object adaptors or the
+  Bio::EnsEMBL::Registry and will not be instantiated directly.
+
 
 =head1 CONTACT
 
@@ -234,6 +241,9 @@ sub connect {
 
 sub connected {
   my $self = shift;
+
+  # Use the process id ($$) as part of the key for the connected flag.
+  # This forces the opening of another connection in a forked subprocess.
   $self->{'connected'.$$} = shift if(@_);
   return $self->{'connected'.$$};
 }
@@ -518,6 +528,10 @@ sub locator {
 sub db_handle {
    my $self = shift;
 
+   # Use the process id ($$) as part of the key for the database handle
+   # this makes this object fork safe.  fork() does not makes copies
+   # of the open socket which creates problems when one of the forked
+   # processes disconnects,
    return $self->{'db_handle'.$$} = shift if(@_);
    return $self->{'db_handle'.$$} if($self->connected);
 

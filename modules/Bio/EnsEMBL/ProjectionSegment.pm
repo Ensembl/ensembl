@@ -10,7 +10,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::ProjectionSegment - part of the list that is returned from project function calls
+Bio::EnsEMBL::ProjectionSegment - part of the list that is returned from
+project function calls
 
 =head1 SYNOPSIS
 
@@ -29,8 +30,9 @@ Bio::EnsEMBL::ProjectionSegment - part of the list that is returned from project
 
 =head1 DESCRIPTION
 
-The ProjectionSegment is a helper object to make the arrays returned by project more accessible. Instead of
-writing $segment->[0], $segment->[1] or $segment->[2] its possible to use the more descriptive notation of
+The ProjectionSegment is a helper object to make the arrays returned by 
+project more accessible. Instead of writing $segment->[0], $segment->[1] or
+$segment->[2] its possible to use the more descriptive notation of
 $segment->from_start(), $segement->from_end(), $segment->to_Slice().
 
 =head1 AUTHOR - Arne Stabenau
