@@ -150,6 +150,9 @@ sub new {
 
 
 
+
+
+
 =head2 get_all_SimilarityFeatures_above_score
 
  Title   : get_all_SimilarityFeatures_above_score
@@ -161,6 +164,7 @@ sub new {
 
 
 =cut
+
 
 sub get_all_SimilarityFeatures_above_score{
 
@@ -225,7 +229,7 @@ my @distinct_features;
 	 if ($self->_clip_2_vc($out)){
 	     push @features,$self->_convert_2_vc($out);
 	 }
-     } 
+     }
  }
 
 return @features;
@@ -235,57 +239,55 @@ return @features;
 
 sub _create_similarity_features
 {
-    my ($self,@args)=@_;
+my ($self,@args)=@_;
 
-    my $out;
-    my $analysis;
-    my %analhash;
-    my $contig;
-    
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	$hstart,$hend,$hid,$chr_start,$chr_end,$raw_ori,$glob_start,$glob_end)=@args;
+my $out;
+my $analysis;
+my %analhash;
+my $contig;
 
-    # flip coordinates 
-    if ($raw_ori == -1){
-	($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
-    }
-    
-    # create features
-    if (!$analhash{$analysisid}) 
-    {
-	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	$analysis = $feature_obj->get_Analysis($analysisid);
-	$analhash{$analysisid} = $analysis;	   
-    } 
-    else {$analysis = $analhash{$analysisid};}
-    
-    if( !defined $name ) {
-	$name = 'no_source';
-    }
-    
-    $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-    $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-			 $hstart,$hend,1,$f_score,$name,'similarity',$hid);
-    $out->analysis    ($analysis);
-    $out->id          ($hid);              
-    $out->seqname   ($self->id);
-    $out->start     ($start);
-    $out->end       ($end);
-    $out->strand    ($strand);
-    $out->source_tag($name);
-    $out->primary_tag('similarity');
-    $out->id         ($hid);
-    
-    if( defined $f_score ) {
-	$out->score($f_score);
-    }
-    $out->analysis($analysis);
-    $out->validate();
-           
-    return $out;
+my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+    $hstart,$hend,$hid,$chr_start,$chr_end,$raw_ori,$glob_start,$glob_end)=@args;
+
+# flip coordinates 
+if ($raw_ori == -1){
+    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
 }
 
+# create features
+if (!$analhash{$analysisid}) 
+{
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+    $analysis = $feature_obj->get_Analysis($analysisid);
+    $analhash{$analysisid} = $analysis;	   
+} 
+else {$analysis = $analhash{$analysisid};}
 
+if( !defined $name ) {
+    $name = 'no_source';
+}
+
+$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+		     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+$out->analysis    ($analysis);
+$out->id          ($hid);              
+$out->seqname   ($self->id);
+$out->start     ($start);
+$out->end       ($end);
+$out->strand    ($strand);
+$out->source_tag($name);
+$out->primary_tag('similarity');
+$out->id         ($hid);
+
+if( defined $f_score ) {
+    $out->score($f_score);
+}
+$out->analysis($analysis);
+$out->validate();
+
+return $out;
+}
 
 
 
@@ -304,9 +306,6 @@ sub _create_similarity_features
 sub get_all_RepeatFeatures {
   
 my ($self) = @_;
-
-my @array;
-my %analhash;
 
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
@@ -335,82 +334,93 @@ $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
 		     \$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
 
  
-
-
+my @features;
 my @distinct_features;  
 
  FEATURE:  while( $sth->fetch ) {
      
-     my $out;
-     my $analysis;
-     
-     # exclude overlapping features
-     
+     # exclude overlapping features (for the web)     
      foreach my $arrayref(@distinct_features){
 	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
      }
      my @list=($start,$end,$analysisid);
      push @distinct_features,\@list;
      
-     
-     # flip contigs
-     my $vc_start;
-     my $vc_end;
-     
-     if ($raw_ori == -1){    
-	 $vc_start=$chr_end+$chr_start-$end;
-	 $vc_end=$chr_end+$chr_start-$start;
-	 $strand=-1*$strand;
-     } else {
-	 $vc_start=$start;
-	 $vc_end=$end;
-     }
-      
 
-    # clip and map to vc coordinates  
-     
-     if ($vc_start>=$glob_start && $vc_end<=$glob_end){
-	 
-	 $start=$vc_start-$glob_start;
-	 $end=$vc_end-$glob_start;
-	 
-	 # create features
-	 
-	 if (!$analhash{$analysisid}) {
-	     
-	     my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	     $analysis = $feature_obj->get_Analysis($analysisid);
-	     
-	     $analhash{$analysisid} = $analysis;
-	     
-	 } else {
-	     $analysis = $analhash{$analysisid};
+     # create features
+     my @args=($fid,$start,$end,$strand,$score,$analysisid,
+	       $hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end);
+   
+     my $out=$self->_create_repeat_features(@args);
+
+     if (defined $out){
+	 if ($self->_clip_2_vc($out)){
+	     push @features,$self->_convert_2_vc($out);
 	 }
-	 
-	 
-	 if( $hid ne '__NONE__' ) {
-	     # is a paired feature
-	     # build EnsEMBL features and make the FeaturePair
-	     
-	     $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-	     $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
-				  $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
-	     
-	     $out->analysis($analysis);
-	     
-	 } else {
-	     $self->warn("Repeat feature does not have a hid. bad news....");
-	 }
-	 
-	 $out->validate();
-	 
-	 push(@array,$out);
-     }  
+     }
  }
 
-return @array;
+return @features;
 
 }
+
+
+
+sub _create_repeat_features {
+my ($self,@args)=@_;
+
+
+my $out;
+my $analysis;
+my %analhash;
+
+my ($fid,$start,$end,$strand,$score,$analysisid,
+    $hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end)=@args;
+
+
+# flip coordinates 
+if ($raw_ori == -1){
+    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
+}
+
+
+	 
+# create features
+
+if (!$analhash{$analysisid}) {
+    
+    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+    $analysis = $feature_obj->get_Analysis($analysisid);
+    
+    $analhash{$analysisid} = $analysis;
+    
+} else {
+    $analysis = $analhash{$analysisid};
+}
+
+
+if( $hid ne '__NONE__' ) {
+    # is a paired feature
+    # build EnsEMBL features and make the FeaturePair
+    
+    $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+    $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
+			 $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+    
+    $out->analysis($analysis);
+    
+} else {
+    $self->warn("Repeat feature does not have a hid. bad news....");
+}
+
+$out->validate();  
+ 
+ return $out;
+}
+
+
+
+
 
 
 =head2 get_landmark_MarkerFeatures
