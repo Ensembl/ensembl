@@ -214,13 +214,8 @@ sub translation {
 
   return undef if(!@exons);
 
-  if($strand == 1) {
-    $start_exon = $exons[0];
-    $end_exon = $exons[-1];
-  } else {
-    $start_exon = $exons[-1];
-    $end_exon = $exons[0];
-  }
+  $start_exon = $exons[0];
+  $end_exon = $exons[-1];
 
   my $pta;
 
