@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/local/bin/perl -w
 
 =head1 fpc2staticgp
 
@@ -21,17 +21,20 @@ To make the fpc file, use mergechrfpc.pl
 
 =cut
 
+use strict;
 
 my $dump = shift;
 
+my %h;
+my (%start, %end, %contig_id);
 
 open(L,">parse.log");
 open(C,">idlist.txt");
 open(D,$dump) || die "Could not open $dump\n";
 while(<D>) {
-    ($id,$internal_id,$start,$end) = split;
+    my ($id,$internal_id,$start,$end) = split;
     $id =~ /([^.]+\.[^.]+)\./ || die "Bad id $id";
-    $clone = $1;
+    my $clone = $1;
     if( !defined $h{$clone} ) {
 	$h{$clone} = [];
     }
@@ -47,7 +50,7 @@ print STDERR "Hash is loaded\n";
 
 foreach my $f ( @ARGV ) {
     open(F,$f) || die "could not open $f\n";
-    while( <F> ) {
+    FPC: while( <F> ) {
 	# pick up only contig lines. have a +/-
 	/\-|\+/ || do { next; };
 	my ($chr,$start,$end,$number,$d,$id,$rstart,$rend,$ori,$fpc,$fstart,$fend) = split;
@@ -55,21 +58,23 @@ foreach my $f ( @ARGV ) {
 	    die "on $_\n";
 	}
 
-	($clone) = $id =~ /(\S+\.\d+)/;
-	#print STDERR "Looking at $clone $id\n";
-	$seen = 0;
+	my ($clone) = $id =~ /(\S+\.\d+)/;
+	# print STDERR "Looking at $clone $id\n";
+	my $seen = 0;
 	if( !exists $h{$clone} ) {
 	  print STDERR "No clone loaded with $clone\n";
+	  next FPC;
 	}
 
-	foreach $iid ( @{$h{$clone}} ) {
-	    #print STDERR "Looking at $iid $rstart:$rend ",$start{$iid}," ",$end{$iid},"\n";
+	foreach my $iid ( @{$h{$clone}} ) {
+	    # print STDERR "Looking at $iid $rstart:$rend ",$start{$iid}," ",$end{$iid},"\n";
 
 	    if( $rstart >= $start{$iid} && $rstart <= $end{$iid} ) {
 		if( $rend > $end{$iid} ) {
 		    print L "$f $clone ($id) Bad news... $iid does not fit! $rend vs ",$end{$iid},"\n";
 		} else {
 		    $seen = 1;
+		    my $orit;
 		    if( $ori eq '-' ) {
 			$orit = -1;
 		    } else {
@@ -88,7 +93,7 @@ foreach my $f ( @ARGV ) {
 	if( $seen == 0 ) {
 	    print STDERR "Unable to fit $clone $rstart:$rend\n";
 	}
-    }
+    } # FPC
 }
 		   
 		   
