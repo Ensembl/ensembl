@@ -82,7 +82,7 @@ sub new {
   $self->primary_id($dna_id);
   $self->db_handle($dbh);
   
-  my $sth = $self->db_handle->prepare(q{SELECT id,internal_id FROM contig WHERE dna = ?});
+  my $sth = $self->db_handle->prepare(q{SELECT name,contig_id FROM contig WHERE dna_id = ?});
   $sth->execute($dna_id);
   if (my($id, $internal_id) = $sth->fetchrow) {
       $self->display_id($id)

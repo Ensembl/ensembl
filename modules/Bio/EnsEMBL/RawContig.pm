@@ -151,6 +151,16 @@ sub length {
   return $self->{_length};
 }
 
+sub seq {
+  my $self = shift;
+  my $arg = shift;
+  
+  ( defined $arg ) &&
+    ( $self->{_seq} = $arg );
+  
+  return $self->{_seq};
+}
+
     
 
 

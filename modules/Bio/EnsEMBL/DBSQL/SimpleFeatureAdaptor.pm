@@ -119,7 +119,7 @@ sub fetch_by_contig_id{
    $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$display,\$gff_source,\$gff_feature);
 
    my @f;
-   my $contig = $self->db->get_ContigAdaptor->fetch_by_dbID($cid);
+   my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
    while( $sth->fetch ) {
        my $out = Bio::EnsEMBL::SimpleFeature->new();
        $out->start($start);
@@ -128,8 +128,9 @@ sub fetch_by_contig_id{
        $out->primary_tag($gff_feature);
        $out->source_tag($gff_source);
        $out->display_text($display);
-       $out->seqname($contig->id);
+       $out->seqname($contig->name);
        $out->attach_seq($contig->seq);
+       push(@f,$out);
    }
    
    return @f;
@@ -199,6 +200,50 @@ sub fetch_by_assembly_location{
    }
 
    return @f;
+
+}
+
+=head2 store
+
+ Title   : store
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub store{
+   my ($self,$contig_id,@sf) = @_;
+
+   if( scalar(@sf) == 0 ) {
+       $self->throw("Must call store with contig_id then sequence features");
+   }
+
+   if( $contig_id !~ /^\d+$/ ) {
+       $self->throw("Contig_id must be a number, not [$contig_id]");
+   }
+
+   my $sth = $self->prepare("insert into simple_feature (contig_id,contig_start,contig_end,contig_strand,display_label,analysis_id,score) values (?,?,?,?,?,?,?)");
+
+   foreach my $sf ( @sf ) {
+       if( !ref $sf || !$sf->isa("Bio::EnsEMBL::SimpleFeature") ) {
+	   $self->throw("Simple feature must be an Ensembl SimpleFeature, not a [$sf]");
+       }
+
+       if( !defined $sf->analysis ) {
+	   $self->throw("Cannot store sequence features without analysis");
+       }
+       if( !defined $sf->analysis->dbID ) {
+	   # maybe we should throw here. Shouldn't we always have an analysis from the database?
+	   $self->throw("I think we should always have an analysis object which has originated from the database. No dbID, not putting in!");
+       }
+
+       $sth->execute($contig_id,$sf->start,$sf->end,$sf->strand,$sf->display_text,$sf->analysis->dbID,$sf->score);
+   }
+
 
 }
 

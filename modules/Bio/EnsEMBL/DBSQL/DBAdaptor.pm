@@ -2442,13 +2442,13 @@ sub get_AnalysisAdaptor {
 sub get_SimpleFeatureAdaptor {
     my( $self ) = @_;
     
-    my( $aa );
-    unless ($aa = $self->{'_analysis_adaptor'}) {
+    my( $sf );
+    unless ($sf = $self->{'_simple_feature_adaptor'}) {
         require Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor;
-        $aa = Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor->new($self);
-        $self->{'_analysis_adaptor'} = $aa;
+        $sf = Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor->new($self);
+        $self->{'_simple_feature_adaptor'} = $sf;
     }
-    return $aa;
+    return $sf;
 }
 
 

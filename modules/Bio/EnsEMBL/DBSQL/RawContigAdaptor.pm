@@ -46,7 +46,10 @@ use strict;
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use DBI;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
+use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 
+use Bio::EnsEMBL::Clone;
+use Bio::EnsEMBL::RawContig;
 
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -90,14 +93,14 @@ sub fetch_by_dbID {
   my $dbID = shift;
 
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
-                          offset, corder, dna_id, chromosome_id, 
+                          offset, corder, dna_id, 
                           international_name
                    FROM contig
                    WHERE contig_id = $dbID" );
   $sth->execute();
   
   my ( $contig_id, $name, $clone_id, $length, $offset, $corder, $dna_id,
-       $chromosome_id, $international_id ) = $sth->fetchrow_array();
+       $international_id ) = $sth->fetchrow_array();
 
   if( ! defined $contig_id ) {
     # no contig found
@@ -109,11 +112,13 @@ sub fetch_by_dbID {
   # clone, sequence, chromosome should be lightweight objects attached
   # possibly either just dbID or I have a join
 
-  my $dbPrimarySeq = Bio::EnsEMBL::DBPrimary(); # ?
+  my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new( '-db_handle' => $self->db, '-dna' => $dna_id); # ?
 
-  my $chromosome = Bio::EnsEMBL::Chromosome->new( -dbID => $chromosome_id );
-  my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
-  my $contig = Bio::EnsEMBL::RawContig->new( );
+  # my $clone = Bio::EnsEMBL::Clone->new( -dbID => $clone_id );
+  my $contig = Bio::EnsEMBL::RawContig->new();
+  $contig->seq($dbPrimarySeq);
+
+  return $contig;
 }
 
 
