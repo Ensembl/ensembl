@@ -447,7 +447,63 @@ sub pep2genomic {
      }
    }
    for my $tmp ( @result ) {
-     print ::LOG join ( " ", @$tmp ),"\n";
+     print ::LOG "pep2genomic result: ", join ( " ", @$tmp ),"\n";
+   }
+
+   return @result;
+}
+
+
+=head2 cdna2genomic
+
+  Arg  1    : int $start_cdna
+  Arg  2    : int $end_cdna
+  Function  : computes a list of genomic location covering the given range 
+              of nucleotides. Exons do part of calculation. 
+  Returntype: list [ start, end, strand, Contig_object, Exon, cdna_start, cdna_end ]
+  Exceptions: none
+  Caller    : Runnables mapping blast hits to genomic coords
+
+=cut
+
+sub cdna2genomic {
+   my $self = shift;
+   my $start_cdna = shift;
+   my $end_cdna = shift;
+   my @result = ();
+
+
+   my ( $ov_start, $ov_end );
+
+
+   print ::LOG "cdna2genomic: ",$start_cdna, " ", $end_cdna,"\n";
+
+   if( ! defined $self->{'_exon_align'} ) {
+     $self->get_cdna();
+   }
+
+   for my $ex_align ( @{$self->{'_exon_align'}} ) {
+
+     # calculate overlap of cdna region with each exon
+     $ov_start = ( $start_cdna >= $ex_align->{cdna_start} ) ? $start_cdna : $ex_align->{cdna_start};
+     $ov_end = ( $end_cdna <= $ex_align->{cdna_end} ) ? $end_cdna : $ex_align->{cdna_end};
+     
+     if( $ov_end >= $ov_start ) {
+       my @ires = $ex_align->{exon}->cdna2genomic
+	 ( $ov_start - $ex_align->{cdna_start} + 1,
+	   $ov_end - $ex_align->{cdna_start} + 1 );
+
+       for my $cdnaCoord ( @ires ) {
+	 
+	 push( @result, [ $cdnaCoord->[0], $cdnaCoord->[1], $cdnaCoord->[2],
+			  $cdnaCoord->[3], $ex_align->{exon},
+			  $ov_start,
+			  $ov_end ] );
+       }
+     }
+   }
+   for my $tmp ( @result ) {
+     print ::LOG "cdna2genomic result: ", join ( " ", @$tmp ),"\n";
    }
 
    return @result;
