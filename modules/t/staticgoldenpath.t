@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..24\n"; 
+BEGIN { $| = 1; print "1..26\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -72,6 +72,7 @@ if( $rc1->id ne 'contig1' ) {
 } else {
    print "ok 6\n";
 }
+
 
 
 $vc = $stadaptor->fetch_VirtualContig_by_fpc_name('ctg123');
@@ -350,7 +351,22 @@ if( !defined $gene ) {
 
 
        
+#
+# some extra test for getting vc around contigs,clones.
+#
 
+
+
+my $contig=$stadaptor->fetch_VirtualContig_by_contig('contig1');
+
+if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 25\n";}
+else {print "not ok 25\n";}
+
+
+my $contig=$stadaptor->fetch_VirtualContig_by_clone('pog');
+
+if ($contig->isa(Bio::EnsEMBL::Virtual::StaticContig)){print "ok 26\n";}
+else {print "not ok 26\n";}
 
 
 
