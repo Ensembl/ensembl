@@ -5,6 +5,8 @@
 # Silly script to dump the ENS[P,G] to swissprot/trembl accno mappings from an
 # ensembl database. Used by gene-descriptions.pl
 
+mysql=mysql
+
 outname=mapping
 outfile=`pwd`/$outname.dat
 logfile=$outname.log
@@ -17,7 +19,8 @@ if [ $# -le 1 ]; then
     exit 2
 fi
 
-sql="SELECT tsc.translation, tsc.gene, xdb.db_name, x.dbprimary_id
+(cat <<EOF
+SELECT tsc.translation, tsc.gene, xdb.db_name, x.dbprimary_id
 FROM transcript tsc, 
      objectXref ox,
      Xref x,
@@ -27,7 +30,8 @@ WHERE tsc.translation = ox.ensembl_id
   AND x.externalDBId = xdb.externalDBId
   AND xdb.db_name in ('SWISS-PROT', 'SPTREMBL')
 order by tsc.gene asc, xdb.db_name desc, x.dbprimary_id asc
-into outfile '$outfile'"
+into outfile '$outfile'
+EOF
+) | $mysql "$@" > $logfile 2>&1
 
-echo $sql | mysql "$@" > $logfile 2>&1
 
