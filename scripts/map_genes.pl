@@ -4,6 +4,7 @@ use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
 use Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor;
 use Bio::EnsEMBL::Pipeline::GeneComp;
 
+my $chr=shift(@ARGV);
 my $logfile=shift(@ARGV);
 open (LOG,">$logfile");
 my $cross=Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor->new(-dbname=>'crossmatch',-host=>'ecs1c',-user=>'ensadmin');
@@ -19,7 +20,7 @@ my $st=$db->get_StaticGoldenPathAdaptor;
 print STDERR "st= $st\n";
 
 print STDERR "Building Virtual Contig...\n";
-my $vc=$st->fetch_VirtualContig_by_chr_start_end('chr1',5000000,10000000);
+my $vc=$st->fetch_VirtualContig_by_chr_name($chr);
 
 my (%temp_old,$mapped,$new,$untransf) = Bio::EnsEMBL::Pipeline::GeneComp::map_temp_Exons_to_real_Exons($vc,\*LOG);
 my @keys = keys (%temp_old);
