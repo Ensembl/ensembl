@@ -733,7 +733,7 @@ sub peptide {
 
   Arg [1]    : none
   Example    : my $seq_str = $exon->seq->seq;
-  Description: Retrieves the dna sequence of this Exon.  
+  Description: Retrieves the dna sequence of this Exon.
                Returned in a Bio::Seq object.  Note that the sequence may
                include UTRs (or even be entirely UTR).
   Returntype : Bio::Seq
@@ -751,23 +751,21 @@ sub seq {
     $self->{'_seq_cache'} = $arg->seq();
   }
 
-  if( defined $self->{'_seq_cache'} ) {
-    return Bio::Seq->new(-seq=> $self->{'_seq_cache'});
-  }
+  if(!defined($self->{'_seq_cache'})) {
+    my $seq;
 
-  my $seq;
-
-  if ( ! defined $self->slice ) {
-    warning(" this exon doesn't have a slice you won't get a seq \n");
-    return undef;
-  } else {
-    $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
+    if ( ! defined $self->slice ) {
+      warning(" this exon doesn't have a slice you won't get a seq \n");
+      return undef;
+    } else {
+      $seq = $self->slice()->subseq($self->start, $self->end, $self->strand);
+    }
+    $self->{'_seq_cache'} = $seq;
   }
-  $self->{'_seq_cache'} = $seq;
 
   return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
                        -id      => $self->stable_id,
-                       -moltype => 'dna');
+                       -moltype => 'dna'); 
 }
 
 
