@@ -671,7 +671,7 @@ sub fetch_by_chr_start_end {
   #assume that by chromosome the user actually meant top-level coord
   #system since this is the old behaviour of this deprecated method
   my $csa = $self->db->get_CoordSystemAdaptor();
-  my $cs = $csa->get_top_coord_system();
+  my $cs = $csa->fetch_top_level();
 
   return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
 }
