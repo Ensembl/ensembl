@@ -6,6 +6,7 @@
 use strict;
 use Getopt::Long;
 use DBI;
+use Sys::Hostname;
 
 # hard wired
 my $driver="mysql";
@@ -341,7 +342,14 @@ sub _db_history_insert{
 sub _db_history_create{
     my($host,$database)=@_;
     my $dbh;
-    if(my $err=&_db_connect(\$dbh,$host,$database,$create_user,$create_password)){return $err};
+    my $local_host=hostname();
+    my $connect_host;
+    if($local_host eq $host){
+	$connect_host="";
+    }else{
+	$connect_host=$host;
+    }
+    if(my $err=&_db_connect(\$dbh,$connect_host,$database,$create_user,$create_password)){return $err};
     eval{
 	my $query="create table if not exists $db_history".
 	    "(type enum ('owner','user','title','note','label') not null,".
