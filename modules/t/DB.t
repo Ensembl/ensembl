@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..9\n"; 
+BEGIN { $| = 1; print "1..10\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -95,7 +95,7 @@ foreach $gene ( $clone->get_all_Genes() ) {
 
 print "ok 7\n";
 
-@feat = $contig->get_all_SeqFeatures();
+@feat = $contig->get_all_SimilarityFeatures();
 
 $ft = $feat[0];
 
@@ -126,7 +126,7 @@ if( !defined $ft ) {
 	print "ok 10\n";		
     } 
 
-    print STDERR "DB is".$ft->analysis->db.":".$ft->primary_tag."\n" ;
+    print STDERR "DB is [".$ft->analysis->db."]:Program:[".$ft->analysis->program."] - ".$ft->primary_tag."\n" ;
 }
 
 

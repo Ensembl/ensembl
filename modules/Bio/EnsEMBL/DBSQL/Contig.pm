@@ -202,7 +202,7 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
-#   push(@out,$self->get_all_PredictionFeatures);
+    push(@out,$self->get_all_PredictionFeatures);
 
     print(STDERR "Fetched all features\n");
     return @out;
@@ -260,6 +260,16 @@ sub get_all_SimilarityFeatures{
        } else {
 	   $analysis = $analhash{$analysisid};
        }
+       # skip if this is actually a prediction feature
+
+       # FIXME: this is not good.
+
+       if( $analysis->program eq 'Genscan' ) {
+	   next;
+       }
+
+       print STDERR "Found analysis program type of ",$analysis->program,"\n";
+
        
        if( !defined $name ) {
 	   $name = 'no_source';
@@ -325,6 +335,10 @@ sub get_all_SimilarityFeatures{
 	   
        } else {
 	   $analysis = $analhash{$analysisid};
+       }
+
+       if( $analysis->program eq 'Genscan' ) {
+	   next;
        }
        
        if( !defined $name ) {
@@ -502,20 +516,28 @@ sub get_all_PredictionFeatures {
 
    # make the SQL query
 
-   my $sth = $self->_dbobj->prepare("select id,seq_start,seq_end,strand,score,analysis" . 
-				    "from feature where contig = '$id' and name = 'genscan'");
-   
+   my $sth = $self->_dbobj->prepare("select  p1.id, p1.seq_start, p1.seq_end, " . 
+				    "p1.strand,p1.score,p1.analysis,p1.name,  " .
+				    "p1.hstart,p1.hend,p1.hid,p2.fset,p2.rank " . 
+				    "from feature as p1, fset_feature as p2 analysis as p3 where " .
+				    "p1.contig ='$id' and p2.feature = p1.id and p3.id = p1.analysis ".
+                                    "and p3.program = 'Genscan' order by p2.fset");
    $sth->execute();
-   
-   my ($fid,$start,$end,$strand,$score,$analysisid);
+
+   my ($fid,$start,$end,$strand,$score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank);
+   my $seen = 0;
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$fset,\$rank);
+
+   my $out;
    
-   while( $sth->fetch ) {
-       my $out;
+   my $fset_id_str = "";
+
+   while($sth->fetch) {
+
        my $analysis;
-       
+
        if (!$analhash{$analysisid}) {
 	   $analysis = $self->_dbobj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
@@ -523,30 +545,53 @@ sub get_all_PredictionFeatures {
        } else {
 	   $analysis = $analhash{$analysisid};
        }
+       # skip if this is actually a prediction feature
 
+       # FIXME: this is not good.
 
-       $out = new Bio::EnsEMBL::SeqFeature;
-       
-       $out->seqname   ($id);
-       $out->start     ($start);
-       $out->end       ($end);
-       $out->strand    ($strand);
-
-       $out->source_tag('genscan');
-       $out->primary_tag('prediction');
-       
-       if( defined $score ) {
-	   $out->score($score);
+       if( $analysis->program ne 'Genscan' ) {
+	   next;
        }
 
-       $out->analysis($analysis);
-
-       # Final check that everything is ok.
        
-       $out->validate();
+       if( !defined $name ) {
+	   $name = 'no_source';
+       }
+       
+       #Build fset feature object if new fset found
+       if ($fset != $seen) {
+	   #print("Making new fset feature $fset\n");
+	   $out =  new Bio::EnsEMBL::SeqFeature;
+	   $out->id($fset);
+	   $out->analysis($analysis);
+	   $seen = $fset;
+	   push(@array,$out);
+       }
+       $fset_id_str = $fset_id_str . $fid . ",";       
+       #Build Feature Object
+       my $feature = new Bio::EnsEMBL::SeqFeature;
+       $feature->seqname   ($id);
+       $feature->start     ($start);
+       $feature->end       ($end);
+       $feature->strand    ($strand);
+       $feature->source_tag($name);
+       $feature->primary_tag('similarity');
+       $feature->id         ($fid);
+       
+       if( defined $score ) {
+	   $feature->score($score);
+       }
+       
+       $feature->analysis($analysis);
+       
+       # Final check that everything is ok.
+       $feature->validate();
 
-      push(@array,$out);
-  }
+       #Add this feature to the fset
+       $out->add_sub_SeqFeature($feature,'EXPAND');
+
+   }
+
  
    return @array;
 }
