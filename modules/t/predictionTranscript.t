@@ -261,7 +261,7 @@ ok($pt->display_id eq $pt->stable_id);
 
 my $analysis_adaptor = $db->get_AnalysisAdaptor();
 
-my $analysis = $analysis_adaptor->fetch_by_logic_name('Genscan');
+$analysis = $analysis_adaptor->fetch_by_logic_name('Genscan');
 
 $multi->hide('core', 'prediction_transcript', 'prediction_exon');
 
