@@ -15,7 +15,12 @@ Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
 
 =head1 SYNOPSIS
 
-    $db = new Bio::EnsEMBL::DBSQL::Obj( -user => 'root', -db => 'pog' , -host => 'caldy' , -driver => 'mysql' );
+    $db = Bio::EnsEMBL::DBSQL::Obj->new(
+        -user   => 'root',
+        -dbname => 'pog',
+        -host   => 'caldy',
+        -driver => 'mysql',
+        );
 
     $clone  = $db->get_clone('X45667');
 
