@@ -26,12 +26,10 @@ exons, etc.
 
 =head1 DESCRIPTION
 
-This is one of the objects contained in Bio:EnsEMBL::DBSQL::Obj,
-dealing with Gene methods, such as writing and getting genes,
-transcripts, translations, and exons.
+THIS MODULE IS DEPRECATED AND SHOULD NOT BE USED
 
-The Obj object represents a database that is implemented somehow (you
-shouldn\'t care much as long as you can get the object).
+it is here solely for backwards compatibility (if even that!)
+
 
 =head1 CONTACT
 

@@ -343,6 +343,9 @@ sub fetch_evidence_by_Exon {
 sub store {
   my ( $self, $exon ) = @_;
 
+<<<<<<< ExonAdaptor.pm
+
+=======
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
@@ -353,6 +356,7 @@ sub store {
   }
 
 
+>>>>>>> 1.26
   my $exon_sql = q{
        INSERT into exon ( exon_id, contig_id, seq_start, seq_end, strand, phase, 
 			  end_phase, sticky_rank)

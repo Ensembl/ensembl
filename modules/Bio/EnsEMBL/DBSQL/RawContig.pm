@@ -1293,7 +1293,8 @@ sub get_all_PredictionFeatures {
        "from feature f where contig = $id and name = 'genscan' order by f.strand*f.seq_start";
 
    my $sth = $self->dbobj->prepare($query);
-   
+
+
    $sth->execute();
    
    my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
@@ -1309,7 +1310,9 @@ sub get_all_PredictionFeatures {
 
    while( $sth->fetch ) {
        my $out;
-       
+   
+       print STDERR "PHASE $phase\n";
+
        my $analysis;
 	   
        if (!$analhash{$analysisid}) {
