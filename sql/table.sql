@@ -11,7 +11,7 @@ CREATE TABLE analysisprocess (
   analysisId int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   logic_name varchar(40) not null,
-  db varchar(40),
+  db varchar(80),
   db_version varchar(40),
   db_file varchar(80),
   program varchar(80),
