@@ -377,7 +377,7 @@ sub peptide {
       $tr->genomic2pep($exon->start, $exon->end, $exon->strand, $exon->contig);
     
     #filter out gaps
-    my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+    @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
  
     if(scalar(@coords) > 1) {
       $self->throw("Error. Exon maps to multiple locations in peptide." .
