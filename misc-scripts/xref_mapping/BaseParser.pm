@@ -59,18 +59,30 @@ sub run {
 
   my $dbi = dbi();
 
-  # TODO specify species
+  # validate species names
+  my @species_ids = validate_species(@species);
 
   # validate source names
   exit(1) if (!validate_sources(@sources));
 
   # build SQL
+  my $species_sql = "";
+  # pending Ian adding species_id to source_url
+  if (@species_ids) {
+    $species_sql .= " AND su.species_id IN (";
+    for (my $i = 0; $i < @species_ids; $i++ ) {
+      $species_sql .= "," if ($i ne 0);
+      $species_sql .= $species_ids[$i];
+    }
+    $species_sql .= ") ";
+  }
+
   my $source_sql = "";
   if (@sources) {
-    $source_sql .= " AND s.name IN (";
+    $source_sql .= " AND LOWER(s.name) IN (";
     for (my $i = 0; $i < @sources; $i++ ) {
       $source_sql .= "," if ($i ne 0);
-      $source_sql .= "\'" . $sources[$i] . "\'";
+      $source_sql .= "\'" . lc($sources[$i]) . "\'";
     }
     $source_sql .= ") ";
   }
@@ -79,10 +91,9 @@ sub run {
     "SELECT s.source_id, su.source_url_id, s.name, su.url, su.checksum, su.parser " .
       "FROM source s, source_url su " .
 	"WHERE s.download='Y' AND su.source_id=s.source_id " .
-	  $source_sql .
-	  "ORDER BY s.name";
+	  $source_sql . $species_sql .
+	  "ORDER BY s.ordered";
 print $sql . "\n";
-  exit(0);
 
   my $sth = $dbi->prepare($sql);
   $sth->execute();
@@ -550,11 +561,11 @@ sub validate_sources {
   my @sources = @_;
 
   my $dbi = dbi();
-  my $sth = $dbi->prepare("SELECT * FROM source WHERE name=?");
+  my $sth = $dbi->prepare("SELECT * FROM source WHERE LOWER(name)=?");
 
   foreach my $source (@sources) {
 
-    $sth->execute($source);
+    $sth->execute(lc($source));
     if ($sth->fetchrow_array()) {
       print "Source $source is valid\n";
     } else {
@@ -568,7 +579,35 @@ sub validate_sources {
 
 }
 
+# --------------------------------------------------------------------------------
 
+sub validate_species {
+
+  my @species = @_;
+
+  my @species_ids;
+
+  my $dbi = dbi();
+  my $sth = $dbi->prepare("SELECT species_id, name FROM species WHERE LOWER(name)=? OR LOWER(aliases) LIKE ?");
+  my ($species_id, $species_name);
+
+  foreach my $sp (@species) {
+
+    $sth->execute(lc($sp), "%" . lc($sp) . "%");
+    $sth->bind_columns(\$species_id, \$species_name);
+    if (my @row = $sth->fetchrow_array()) {
+      print "Species $sp is valid (name = " . $species_name . ", ID = " . $species_id . ")\n";
+      push @species_ids, $species_id;
+    } else {
+      print "Species $sp is not valid, exiting\n";
+      exit(1);
+    }
+
+  }
+
+  return @species_ids;
+
+}
 # --------------------------------------------------------------------------------
 
 1;
