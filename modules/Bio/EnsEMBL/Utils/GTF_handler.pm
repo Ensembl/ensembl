@@ -647,12 +647,8 @@ sub dump_genes {
                 # Is the start codon here?
                 if ($exon_id eq $start_exon_id) {
                     $seen_start = 1;
-                    my( $x, $y );
-                    if ($strand eq '+') {
-                        ($x, $y) = ($translation_start, $translation_start + 2);
-                    } else {
-                        ($x, $y) = ($translation_start, $translation_start-2);
-                    }
+                    my( $x, $y ) = ($translation_start + $exon_start-1, 
+                                    $translation_start + $exon_start-1 + 2);
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'start_codon',
                         $x, $y, $score, $strand,
@@ -676,12 +672,9 @@ sub dump_genes {
                 # Is the end codon here?
                 if ($exon_id eq $end_exon_id) {
                     $seen_end = 1;
-                    my( $x, $y );
-                    if ($strand eq '+') {
-                        ($x, $y) = ($translation_end -2, $translation_end);
-                    } else {
-                        ($x, $y) = ($translation_end + 2, $translation_end);
-                    }
+                    my( $x, $y ) = ($translation_end + $exon_start-1 -2, 
+                                    $translation_end + $exon_start-1);
+
                     $transcript_string .= join("\t",
                         $seq_name, $type, 'stop_codon',
                         $x, $y, $score, $strand,
