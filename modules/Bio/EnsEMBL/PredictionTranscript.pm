@@ -427,7 +427,7 @@ sub flush_Exon{
   Args      : none
   Function  : Give a peptide translation of all exons currently in
               the PT. Gives empty string when none is in.
-  Returntype: txt
+  Returntype: a Bio::Seq as in transcript->translate()
   Exceptions: if the exons come in two or more groups, with an undef exon
               in the middle, only the first group is translated.
   Caller    : general
@@ -439,12 +439,16 @@ sub translate {
   my ($self) = @_;
 
   my $dna = $self->get_cdna();
-  my $bioseq = new Bio::Seq( -seq => $dna, -moltype => 'dna' );
-  my $pep = $bioseq->translate();
+  $dna    =~ s/TAG$|TGA$|TAA$//i;
+  # the above line will remove the final stop codon from the mrna
+  # sequence produced if it is present, this is so any peptide produced
+  # won't have a terminal stop codon
+  # if you want to have a terminal stop codon either comment this line out
+  # or call translatable seq directly and produce a translation from it
 
-  my $pep_seq = $pep->seq;
-  $pep_seq =~ s/\*$//;
-  return $pep_seq;
+  my $bioseq = new Bio::Seq( -seq => $dna, -moltype => 'dna' );
+  
+  return $bioseq->translate();
 }
 	 
 
