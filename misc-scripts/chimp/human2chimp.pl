@@ -709,13 +709,20 @@ options: -hdbname <dbname>      human database name
 
          -dport <port>          desitnation mysql db port (default 3306)
 
+         -verbose               flag indicating debug and progress messages
+                                should be printed to STDERR
+
+         -logfile <file>        File to which status messages should be logged
+                                to.  The contents of this file can be
+                                interpreted using the get_stats.pl script.
+
          -help                  display this message
 
 example: perl human2chimp.pl -hdbname homo_sapiens_core_20_34b -hhost ecs2d \\
                              -huser ensro -cdbname pan_troglodytes_core_20_1 \\
                              -chost ecs4 -cport 3350 -cuser ensro \\
                              -store -ddbname pt_genes -dhost ecs1d \\
-                             -duser ensadmin -dpass secret
+                             -duser ensadmin -dpass secret -logfile out.txt
 
 EOF
 
