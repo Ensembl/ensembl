@@ -250,6 +250,10 @@ sub getGeneSensitivity {
 sub _genePredictions {
     my ($self) = @_;
     
+    # Initialise these properties to empty arrays
+    $self->{'_exactlyMatchedStandardGenes'} = [];    
+    $self->{'_exactlyMatchedPredictorGenes'} = [];
+    
     my $truePositive = 0;
     my $falsePositive = 0;
     my $falseNegative = 0;    
@@ -259,6 +263,7 @@ sub _genePredictions {
         $comparer->setStandardGene($standardGene);
         if ($comparer->isExactlyMatched()) {
 	    $truePositive++;
+            push @{$self->{'_exactlyMatchedStandardGenes'}}, $standardGene->id;
         } else {
 	    $falseNegative++;
         }
@@ -276,9 +281,12 @@ sub _genePredictions {
     
     foreach my $predictorGene ($self->_getPredictorGenes) {
         $comparer->setStandardGene($predictorGene);
-        unless ($comparer->isExactlyMatched()) {
-            $falsePositive++;
+        if ($comparer->isExactlyMatched()) {  
+            push @{$self->{'_exactlyMatchedPredictorGenes'}}, $predictorGene->id;
         } 
+        else {
+            $falsePositive++;
+        }
     }  
     
     $self->{'_geneSpecificity'} = $truePositive / ($truePositive + $falsePositive);  
@@ -340,6 +348,75 @@ sub getMissedGeneScore {
 
 
 
+=head2 getMissedGeneIds
+
+ Title   : getMissedGeneIds
+ Usage   : $obj->getMissedGeneIds()
+ Function: A gene is considered missed if none of its exons are overlapped by a predicted gene.
+            If necessary this is calculated by a call to _getMissed with each standard gene being 
+            compared against all the predictor genes.
+ Example : 
+ Returns : An array of the IDs of the genes that are missed 
+ Args    : None
+
+=cut
+
+sub getMissedGenes {
+    my ($self) = @_;
+    
+    unless ($self->{'_missedGenes'}) { 
+        my @array1 = $self->_getStandardGenes;
+        my @array2 = $self->_getPredictorGenes;                  
+        $self->{'_missedGeneScore'} = $self->_getMissedGene(\@array1, \@array2); 
+    }
+        
+    return @{$self->{'_missedGenes'}};
+}
+
+
+=head2 getExactlyMatchedStandardGenes
+
+ Title   : getExactlyMatchedStandardGenes
+ Usage   : $obj->getExactlyMatchedStandardGenes()
+ Function: 
+ Example : 
+ Returns : An array of the IDs of the standard genes that are exactly matched 
+ Args    : None
+
+=cut
+
+sub getExactlyMatchedStandardGenes {
+    my ($self) = @_;
+    
+    unless ($self->{'_exactlyMatchedStandardGenes'}) { 
+        $self->_genePredictions();
+    }
+        
+    return @{$self->{'_exactlyMatchedStandardGenes'}};
+}
+
+
+=head2 getExactlyMatchedPredictorGenes
+
+ Title   : getExactlyMatchedPredictorGenes
+ Usage   : $obj->getExactlyMatchedPredictorGenes()
+ Function: 
+ Example : 
+ Returns : An array of the IDs of the predictor genes that are exactly matched 
+ Args    : None
+
+=cut
+
+sub getExactlyMatchedPredictorGenes {
+    my ($self) = @_;
+    
+    unless ($self->{'_exactlyMatchedPredictorGenes'}) { 
+        $self->_genePredictions();
+    }
+        
+    return @{$self->{'_exactlyMatchedPredictorGenes'}};
+}
+
 =head2 getWrongGeneScore
 
  Title   : getWrongGeneScore
@@ -359,7 +436,7 @@ sub getWrongGeneScore {
     unless ($self->{'_wrongGeneScore'}) { 
         my @array1 = $self->_getPredictorGenes;
         my @array2 = $self->_getStandardGenes;                  
-        $self->{'_wrongGeneScore'} = $self->_getMissedGene(\@array1, \@array2);
+        ($self->{'_wrongGeneScore'}) = $self->_getMissedGene(\@array1, \@array2);
     }
     
     return $self->{'_wrongGeneScore'};
@@ -371,11 +448,11 @@ sub getWrongGeneScore {
 
  Title   : _getMissedGene
  Usage   : $obj->_getMissedGene()
- Function: Calculate the frequency at which the genes in array2 completely fails to 
-            identify a gene in array1. A gene is considered missed if none of
+ Function: Calculate the frequency at which the genes in array2 completely fails 
+            to identify a gene in array1. A gene is considered missed if none of
             its exons are overlapped by a predicted gene.
  Example : 
- Returns : Integer - Missed gene frequency
+ Returns : Real - Missed gene frequency
  Args    : Two arrays of genes
 
 =cut
@@ -385,19 +462,22 @@ sub _getMissedGene {
     
     my $comparer = new Bio::EnsEMBL::GeneComparison::GeneCompare(@$array2);
     my $missed = 0;
-        
+    # Initialise property to empty array
+    $self->{'_missedGenes'} = [];   
+    
     foreach my $gene (@$array1) {  
         $comparer->setStandardGene($gene);
-        $missed += $comparer->isMissed();
+        if ($comparer->isMissed()) {
+            push @{$self->{'_missedGenes'}}, $gene->id;
+            $missed++;
+        }
     }
-          
+             
     if (@$array1) {
         return $missed / @$array1;
     }
     # If there are no standard genes the frequency of missing them must be 0
-    else {
-        return 0;
-    }
+    return 0;
 }
 
 
@@ -828,7 +908,7 @@ sub _basePredictions {
 
 sub getGeneComparisonStats {
     my ($self) = @_;
-    #print STDERR "Getting stats\n";
+    
     return  "Gene level sensitivity: ". $self->getGeneSensitivity(). "\n".
             "Gene level specificity: ". $self->getGeneSpecificity(). "\n".
             "Missed gene score: ". $self->getMissedGeneScore(). "\n".
