@@ -53,8 +53,13 @@ for my $asi ( @$transcripts ) {
   debug( "Transcripts G1" );
   _print_asi( $asi );
   
+  #get_translation_archive_id was changed to give back listref.
+  #this makes the function poorly named, but it is what the
+  #webteam uses so....
   my $tl = $asi->get_translation_archive_id();
-  _print_asi( $tl );
+  foreach my $asi2 (@$tl) {
+    _print_asi( $asi2 );
+  }
 }
 
 #
