@@ -87,7 +87,7 @@ if( $usefile ) {
 
 my $seqio;
 
-if( $format eq 'pep' ) {
+if( $format eq 'pep' || $format eq 'transcript' ) {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
@@ -127,8 +127,12 @@ foreach my $gene_id ( @gene_id ) {
 	} 
 	elsif ($format eq 'transcript') {
 	    foreach my $trans ( $gene->each_Transcript ) {
-		print "Transcript ",$trans->id,"\n";
-		print $trans->dna_seq->seq,"\n";
+		my $seq = $trans->dna_seq();
+		$seq->id($trans->id);
+		my @exon = $trans->each_Exon;
+		my $fe = $exon[0];
+		$seq->desc("Gene:$gene_id Clone:".$fe->clone_id);
+		$seqio->write_seq($seq);
 	    }
 	}
 	else {
@@ -140,3 +144,8 @@ foreach my $gene_id ( @gene_id ) {
 	print ERROR "Unable to process $gene_id due to \n$@\n";
     }
 }
+
+
+
+
+
