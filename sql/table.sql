@@ -176,7 +176,7 @@ CREATE TABLE feature (
   end_phase     tinyint(1),
   
   PRIMARY KEY (id),
-  KEY contig (contig),
+  KEY contig_ana_score (contig, analysis, score),
   KEY hid (hid)
 ) MAX_ROWS = 300000000 AVG_ROW_LENGTH = 80;
 
