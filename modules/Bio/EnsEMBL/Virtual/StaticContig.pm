@@ -1903,22 +1903,24 @@ sub get_all_VirtualGenes_startend
     
     &eprof_start("virtualgene-sql-get");
 
-    my $query ="SELECT     STRAIGHT_JOIN t.gene,
+    my $query ="SELECT     STRAIGHT_JOIN t.gene_id,
                        MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
                        MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                   (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end, 
-                       IF (sgp.raw_ori=1,e.strand,(-e.strand)) 
-            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
-            WHERE      sgp.raw_id=e.contig
-            AND        e.contig in $idlist 
-            AND        e.id=et.exon 
-            AND        t.id=et.transcript 
+                       IF (sgp.raw_ori=1,e.strand,(-e.strand)),
+                       gsi.stable_id
+            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t, gene_stable_id gsi
+            WHERE      sgp.raw_id=e.contig_id
+            AND        e.contig_id in $idlist 
+            AND        e.exon_id=et.exon_id 
+            AND        t.transcript_id=et.transcript_id 
             AND        sgp.chr_end >= $glob_start   
             AND        sgp.chr_start <=$glob_end 
             AND        sgp.chr_name='$chr_name'
             AND        sgp.type = '$type'
-            GROUP BY   t.gene;";
+            AND        gsi.gene_id = t.gene_id
+            GROUP BY   t.gene_id;";
 # note: without the e.contig in $idlist, the query results and the query
 # plan are identical. Scrap it ? PL
 
@@ -1931,8 +1933,8 @@ sub get_all_VirtualGenes_startend
     &eprof_start("virtualgene-build");
 
 				# 
-    my ($gene_id,$start,$end,$strand);	# 
-    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand);
+    my ($gene_id,$start,$end,$strand, $stable_id);	# 
+    $sth->bind_columns(undef,\$gene_id,\$start,\$end,\$strand,\$stable_id);
 
     while ($sth->fetch){
 	if( $end < 1 ) { 
@@ -1950,20 +1952,21 @@ sub get_all_VirtualGenes_startend
 	if (($start < 1)) {$start=1;}
 
 	$gene=Bio::EnsEMBL::Gene->new();
-	$gene->id($gene_id);
+	$gene->dbID($gene_id);
+	$gene->stable_id( $stable_id );
 
 	&eprof_start("virtualgene-externaldb");
 
 	
 #Get the DBlinks for the given gene
     my $entryAdaptor = $self->dbobj->get_DBEntryAdaptor();
-    my @gene_xrefs = $entryAdaptor->fetch_by_gene($gene_id);
+    my @gene_xrefs = $entryAdaptor->fetch_by_gene($stable_id);
 
     foreach my $genelink (@gene_xrefs) {
         $gene->add_DBLink($genelink);
     }
 
-	my $query1 = "select t.translation from transcript t where t.gene = '$gene_id';";
+	my $query1 = "select tlsi.stable_id from transcript t, translation_stable_id tlsi where t.gene_id = $gene_id AND t.translation_id = tlsi.translation_id";
 	my $sth1 = $self->dbobj->prepare($query1);
 	$sth1->execute;
 	
