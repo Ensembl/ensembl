@@ -62,7 +62,7 @@ use Bio::EnsEMBL::WebTranscript;
 my $static_number = 0;
 
 # overrides Bio::EnsEMBL::Virtual::Contig::new
-sub new {                               
+sub new {
     my ($class,$global_start,$vc_start_position,$global_end,@contigs) = @_;
     
     my $self = {};
@@ -1247,21 +1247,22 @@ sub get_all_Genes_exononly{
        return @{$self->{'_all_Genes_exononly'}};
    }
 
-   my $query = "SELECT e.id,e.sticky_rank,et.rank,et.transcript,t.gene, 
-                        IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
-                        IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
-                        IF     (sgp.raw_ori=1,e.strand,(-e.strand))
-                        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
-                        WHERE  t.id = et.transcript
-                        AND    et.exon = e.id 
-                        AND    sgp.raw_id = e.contig
-		        AND    sgp.chr_name = '$chr_name' 
-                        AND    e.contig in $idlist
-                        AND    sgp.chr_end >= $glob_start 
-		        AND    sgp.chr_start <=$glob_end 
-                        ORDER  BY t.gene,t.id,et.rank,e.sticky_rank";
+   my $query = "
+        SELECT e.id,e.sticky_rank,et.rank,et.transcript,t.gene, 
+        IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                 (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
+        IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                 (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
+        IF     (sgp.raw_ori=1,e.strand,(-e.strand))
+        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
+        WHERE  t.id = et.transcript
+        AND    et.exon = e.id 
+        AND    sgp.raw_id = e.contig
+	AND    sgp.chr_name = '$chr_name' 
+        AND    e.contig in $idlist
+        AND    sgp.chr_end >= $glob_start 
+	AND    sgp.chr_start <= $glob_end 
+        ORDER  BY t.gene,t.id,et.rank,e.sticky_rank";
 
    my $sth = $self->dbobj->prepare($query);
    $sth->execute();
@@ -1388,7 +1389,7 @@ sub get_all_Genes_exononly{
 
 sub get_all_VirtualGenes_startend
 {
-    my ($self)=shift;
+    my $self = shift;
     
     my $gene;
     my @genes;
@@ -1397,12 +1398,10 @@ sub get_all_VirtualGenes_startend
 	return @{$self->{'_virtualgenes_startend'}};
     }
 
-
-    my $glob_start=$self->_global_start;
-    my $glob_end=$self->_global_end;
-    my $chr_name=$self->_chr_name;
-    my $idlist  = $self->_raw_contig_id_list();
-				# 
+    my $glob_start  = $self->_global_start;
+    my $glob_end    = $self->_global_end;
+    my $chr_name    = $self->_chr_name;
+    my $idlist      = $self->_raw_contig_id_list();
 
     unless ($idlist){
 	return ();
@@ -1427,8 +1426,7 @@ sub get_all_VirtualGenes_startend
             AND        sgp.chr_end >= $glob_start   
             AND        sgp.chr_start <=$glob_end 
             AND        sgp.chr_name='$chr_name' 
-            GROUP BY   t.gene;"; # 
-    
+            GROUP BY   t.gene;";
     
     my $sth = $self->dbobj->prepare($query);
     $sth->execute;
@@ -1660,26 +1658,29 @@ sub get_Genes {
 
 =cut
 
-sub get_all_Genes{
-   my ($self) = @_;
+sub get_all_Genes {
+    my ($self) = @_;
 
+    if( defined $self->{'_static_vc_gene_get'} ) {
+        return @{$self->{'_static_vc_gene_get'}};
+    }
 
-   if( defined $self->{'_static_vc_gene_get'} ) {
-       return @{$self->{'_static_vc_gene_get'}};
-   }
-
-
-   &eprof_start("total-static-gene-get");
-   my $idlist  = $self->_raw_contig_id_list();
-
-   
+    &eprof_start("total-static-gene-get");
+    my $idlist  = $self->_raw_contig_id_list();
+    
     if( $idlist !~ /\w/ ) { 
-       return ();
-   }
+        return ();
+    }
 
-
-   my $query = "SELECT t.gene from exon e,exon_transcript et,transcript t where e.contig in $idlist and e.id = et.exon and et.transcript = t.id";
-
+    my $query = "
+        SELECT DISTINCT(t.gene)
+        FROM exon e
+          , exon_transcript et
+          , transcript t
+        WHERE e.contig IN $idlist
+          AND e.id = et.exon
+          AND et.transcript = t.id
+        ";
 
    #print STDERR "Query is $query\n";
 
@@ -1687,7 +1688,7 @@ sub get_all_Genes{
 
    my $sth = $self->dbobj->prepare($query);
    $sth->execute;
-   
+      
    &eprof_end("gene-sql-get");
 
    my ($gene_id,$start,$end);	# 
