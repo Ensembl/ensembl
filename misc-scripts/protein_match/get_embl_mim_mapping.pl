@@ -39,14 +39,23 @@ while ( my $seq1 = $in1->next_seq() ) {
     
     
     foreach my $link(@dblink) {
-	if (($link->database eq "EMBL") || ($link->database eq "MIM")) {
-	    
+	if ($link->database eq "EMBL") {
 	    if (!defined $map{$ac}) {
 		die "Can't map $ac\n";
 	    }
-
-	    print OUT "$map{$ac}\t$ac\t".$link->database."\t".$link->primary_id,"\n";
+	    
+	    print OUT "$map{$ac}\t$ac\tEMBL_AC\t".$link->primary_id,"\n";
+	    print OUT "$map{$ac}\t$ac\tEMBL_PROT_AC\t".$link->optional_id,"\n";
 	}
+	if  ($link->database eq "MIM") {
+	    if (!defined $map{$ac}) {
+		die "Can't map $ac\n";
+	    }
+	    
+	    print OUT "$map{$ac}\t$ac\tOMIM\t".$link->primary_id,"\n";
+	}
+	
+	
     }
 }
 
