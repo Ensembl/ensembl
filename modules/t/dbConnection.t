@@ -155,7 +155,7 @@ ok(${$dbc2->ref_count()} == 3 && $dbc3->ref_count() == $dbc->ref_count());
 # disconnect original, 
 # use copy with shared handle (that shouldn't have been disconnected)
 #
-my $dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
+$dbc2 = Bio::EnsEMBL::DBSQL::DBConnection->new(-dbconn => $dbc);
 $sth = $dbc2->prepare('SELECT * from gene limit 1');
 $sth->execute;
 ok($sth->rows);
