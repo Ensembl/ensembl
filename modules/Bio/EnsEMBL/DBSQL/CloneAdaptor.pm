@@ -31,7 +31,7 @@ use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use Bio::EnsEMBL::Clone;
-
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::SliceAdaptor);
 
