@@ -212,6 +212,8 @@ sub get_all_Genes {
 
     foreach my $ft ( $self->_get_Seq->top_SeqFeatures ) {
 	if( $ft->primary_tag eq 'CDS_span' ) {
+	    print STDERR "multi exon gene!\n";
+
 	    my $gene       = Bio::EnsEMBL::Gene->new();
 	    my $trans      = Bio::EnsEMBL::Transcript->new();
 	    $gene->add_Transcript($trans);
@@ -219,6 +221,12 @@ sub get_all_Genes {
 	    $gene->version(1);
 	    $trans->id($id.".trans.".$genecounter);
 	    $trans->version(1);
+
+	    if( $ft->has_tag('pseudo') ) {
+		$gene->type('pseudo');
+	    } else {
+		$gene->type('standard');
+	    }
 
 	    # split seqfeature
 	    my $phase = 0;
@@ -241,7 +249,7 @@ sub get_all_Genes {
 	    my @exons = $trans->each_Exon;
 	    my $first = shift @exons;
 	    my $last;
-	    if( $#exons == 0 ) {
+	    if( $#exons == -1 ) {
 		$last = $first;
 	    } else {
 		$last = pop @exons;
@@ -259,11 +267,21 @@ sub get_all_Genes {
 	    $genecounter++;
 	    push(@genes,$gene);
 	} elsif ( $ft->primary_tag eq 'CDS' ) {
+	    print STDERR "Single exon gene!\n";
+
+	    
 	    my $gene       = Bio::EnsEMBL::Gene->new();
 	    my $trans      = Bio::EnsEMBL::Transcript->new();
 	    $gene->add_Transcript($trans);
 	    $gene->version(1);
 	    $gene->id($id.".gene.".$genecounter);
+
+	    if( $ft->has_tag('pseudo') ) {
+		$gene->type('pseudo');
+	    } else {
+		$gene->type('standard');
+	    }
+
 	    $trans->id($id.".trans.".$genecounter);
 	    $trans->version(1);
 	    my $exon = Bio::EnsEMBL::Exon->new();
