@@ -154,6 +154,7 @@ sub new {
       $self->{'end'}   = $f1->end();
       $self->{'strand'} = $f1->strand();
       $self->{'slice'}  = $f1->contig();
+      $self->{'analysis'} = $f1->analysis() if($f1->analysis());
     };
   }
 
@@ -167,6 +168,7 @@ sub new {
       $self->{'hstart'}   = $f2->start();
       $self->{'hend'}     = $f2->end();
       $self->{'hstrand'}  = $f2->strand();
+      $self->{'analysis'} = $f2->analysis() if($f2->analysis());
     };
   }
 
