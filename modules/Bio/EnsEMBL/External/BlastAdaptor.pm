@@ -673,9 +673,6 @@ sub clean_blast_database{
   $days =~ /\D/    && $self->throw( "Bad arg: number of days $days not int" );
   my $dbh = $self->db->db_handle;
 
-  # Rotate daily Result, Hit and HSP tables
-  $self->rotate_daily_tables;
-
   # Get list of tickets > $days days old
   my $q = qq/
 SELECT ticket 
@@ -735,10 +732,10 @@ WHERE  update_time < SUBDATE( NOW(), INTERVAL $days DAY ) /;
       warn( "Dropping table $table_name: $num_rows rows\n" );
       my $sth_drop = $dbh->prepare( "DROP table $table_name" );
       my $sth_log  = $dbh->prepare( $SQL_TABLE_LOG_UPDATE );
-      #$sth_drop->execute || $self->throw( $sth_drop->errstr );
-      #$sth_log->execute
-        #('DELETED','NOW()',$num_rows,$table_name) ||
-	  #  $self->throw( $sth_log->errstr );;
+      $sth_drop->execute || $self->throw( $sth_drop->errstr );
+      $sth_log->execute
+        ('DELETED','NOW()',$num_rows,$table_name) ||
+	  $self->throw( $sth_log->errstr );;
       
     }
   }
