@@ -661,6 +661,12 @@ sub get_all_PredictionFeatures {
 }
 
 
+sub get_MarkerFeatures {
+
+    my ($self)=@_;
+     return $self->_get_all_SeqFeatures_type('marker');
+}
+
 
 
 =head2 get_all_Genes
