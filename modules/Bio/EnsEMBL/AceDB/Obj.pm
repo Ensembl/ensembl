@@ -45,7 +45,7 @@ The rest of the documentation details each of the object methods. Internal metho
 =cut
 
 
-# Let the code begin...
+#' Let the code begin...
 
 
 package Bio::EnsEMBL::AceDB::Obj;
