@@ -130,14 +130,15 @@ sub _generic_fetch {
   my $self = shift;
   my $conditions = shift;
 
-  my $where;
+  my $where = '';
 
   if( @$conditions ) {
     $where = "WHERE ".join( " and ", @$conditions );
   }
+
   my $query = "SELECT ".
     join( ", ", $self->_columns() ). 
-      " FROM qtl q ".
+      " FROM qtl q LEFT JOIN qtl_synonym qs ON q.qtl_id = qs.qtl_id ".
 	$where;
 
   my $sth = $self->prepare( $query );
@@ -148,12 +149,10 @@ sub _generic_fetch {
 
 
 sub _columns {
-  return ( 'q.qtl_id','q.source_database','q.source_primary_id',
+  return ( 'q.qtl_id','qs.source_database','qs.source_primary_id',
 	   'q.trait','q.lod_score','q.flank_marker_id_1',
 	   'q.flank_marker_id_2','q.peak_marker_id' );
 }
-
-
 
 
 sub _obj_from_sth {
@@ -171,8 +170,15 @@ sub _obj_from_sth {
 		      \$flank_marker_id_2, \$peak_marker_id );
 
   my @out = ();
+  my %already_seen;
 
   while( $sth->fetch()) {
+
+    #multiple columns with same qtl are multiple synonyms
+    if(my $qtl = $already_seen{$qtl_id}) {
+      $qtl->add_synonym($source_database, $source_primary_id);
+      next;
+    }
 
     my $mad = $self->db()->get_MarkerAdaptor();
 
@@ -180,7 +186,7 @@ sub _obj_from_sth {
     my $flank_marker_2 = $flank_marker_id_2 ? $mad->fetch_by_dbID( $flank_marker_id_2 ) : undef;
     my $peak_marker = $peak_marker_id ? $mad->fetch_by_dbID( $peak_marker_id ) : undef;
     
-    push ( @out, Bio::EnsEMBL::Map::Qtl->new
+    my $qtl = Bio::EnsEMBL::Map::Qtl->new
       (
        $qtl_id,
        $self->db->get_QtlAdaptor(),
@@ -189,10 +195,11 @@ sub _obj_from_sth {
        $flank_marker_2,
        $trait, 
        $lod_score,
-       $source_database,
-       $source_primary_id
-      ) );
+       {$source_database => $source_primary_id}
+      );
     
+    push @out, $qtl;
+    $already_seen{$qtl_id} = $qtl;
   }
 
   return \@out;

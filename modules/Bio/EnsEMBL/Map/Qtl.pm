@@ -51,8 +51,8 @@ use Bio::EnsEMBL::Root;
   Arg [5]    : Bio::EnsEMBL::Map::Marker $flank_marker_2
   Arg [6]    : string $trait
   Arg [7]    : float $lod_score
-  Arg [8]    : string $source_database
-  Arg [9]    : string $source_primary_id
+  Arg [8]    : hashref $synonyms
+               A hashref with source keys and identifier values
   Example    : none
   Description: Creates a new Qtl object. Usually done by Adaptor
   Returntype : Bio::EnsEMBL::Map::Qtl
@@ -64,7 +64,7 @@ use Bio::EnsEMBL::Root;
 sub new {
   my ( $class, $dbID, $adaptor, $flank_marker_1, $peak_marker, 
        $flank_marker_2, $trait, $lod_score,
-       $source_database, $source_primary_id ) = @_;
+       $synonyms ) = @_;
 
   $class = ref( $class ) ||$class;
   my $self = bless( {
@@ -75,8 +75,7 @@ sub new {
 		     'peak_marker' => $peak_marker,
 		     'trait' => $trait,
 		     'lod_score' => $lod_score,
-		     'source_database' => $source_database,
-		     'source_primary_id' => $source_primary_id
+		     'synonyms' => $synonyms
 		    }, $class );
   return $self;
 }
@@ -127,53 +126,54 @@ sub adaptor {
 }
 
 
-=head2 source_database
 
-  Arg [1]    : string $source_database
-               Name for the database that provided the QTL. It should
-               give possibility to URL link to the QTL.
-  Example    : none
-  Description: Getter/Setter for the source_database attribute
-  Returntype : string
+=head2 add_synonym
+
+  Arg [1]    : string $source
+               The source of the synonym
+  Arg [2]    : string $identifier
+               The identifier from this source
+  Example    : $qtl->add_synonym('rat genome database', '65516');
+  Description: Adds a synonym to this qtl
+  Returntype : none
+  Exceptions : thrown if arguments are not provided
+  Caller     : general
+
+=cut
+
+sub add_synonym {
+  my $self = shift;
+  my $source = shift;
+  my $identifier = shift;
+ 
+  unless($source && $identifier) {
+    $self->throw('Source and identifier arguments are required');
+  }
+
+  $self->{'synonyms'}->{$source} = $identifier;
+}
+
+
+=head2 get_synonyms
+
+  Arg [1]    : none
+  Example    : 
+     foreach my $source ($keys %{$qtl->get_synonyms}) {
+       print $source . ':'. $qtl->get_synonyms->{$source};
+     }
+  Description: Returns a hashref of synonyms keyed on their source name 
+  Returntype : hashref of synonyms keyed on their source name
   Exceptions : none
   Caller     : general
 
 =cut
 
-sub source_database {
+sub get_synonyms {
   my $self = shift;
 
-  if(@_) {
-    $self->{'source_database'} = shift;
-  }
-
-  return $self->{'source_database'};
+  return $self->{'synonyms'} || {};
 }
 
-
-=head2 source_primary_id
-
-  Arg [1]    : string $source_primary_id
-               primary_id for this qtl in the source database. Should enable
-               URL construction to get additional information about Qtl
-  Example    : none
-  Description: Getter/Setter for attribute source_primary_id
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub source_primary_id {
-  my $self = shift;
-
-  if(@_) {
-    $self->{'source_primary_id'} = shift;
-  }
-
-  return $self->{'source_primary_id'};
-
-}
 
 
 =head2 trait
@@ -325,3 +325,53 @@ sub get_QtlFeature {
   }
 }
 
+
+
+
+
+=head2 source_database
+
+This method is deprecated.  Use get_synonyms or add_synonym instead.
+
+=cut
+
+sub source_database {
+  my $self = shift;
+
+  my ($f, $p, $l) = caller;
+
+  $self->warn("$f:$l: call to deprecated method Qtl::source_database.".
+	      " Use Qtl::get_synonyms or Qtl::add_synonym instead");
+
+  my $syns = $self->get_synonyms;
+  my ($source) = keys %$syns;
+  
+  return $source || '';
+}
+
+
+=head2 source_primary_id
+
+This method is deprecated. Use get_synonyms or add_synonym instead.
+
+=cut
+
+sub source_primary_id {
+  my $self = shift;
+
+  my ($f, $p, $l) = caller;
+  $self->warn("$f:$l: call to deprecated method Qtl::source_database.".
+	      " Use Qtl::get_synonyms or Qtl::add_synonym instead");
+
+  my $syns = $self->get_synonyms;
+  my ($source) = keys %$syns;
+  
+  if($source) {
+    return $syns->{$source};
+  }
+
+  return '';
+}
+
+
+1;

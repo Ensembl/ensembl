@@ -66,7 +66,7 @@ sub _columns {
   my $self = shift;
 
   return ( 'c.name', 'qf.start', 'qf.end', 'q.qtl_id', 'qf.analysis_id',
-	   'q.source_database', 'q.source_primary_id',
+	   'qs.source_database', 'qs.source_primary_id',
 	   'q.trait', 'q.lod_score', 'q.flank_marker_id_1',
 	   'q.flank_marker_id_2', 'q.peak_marker_id' );
 }
@@ -76,11 +76,12 @@ sub _tables {
 
   return (['qtl_feature', 'qf'], #primary table
 	  ['qtl', 'q'],
-	  ['chromosome' ,'c' ]);
+	  ['chromosome' ,'c' ],
+          ['qtl_synonym', 'qs']);
 }
 
 sub _left_join {
-  return;
+  return ('qtl_synonym', 'ON q.qtl_id = qs.qtl_id');
 }
           
 sub _default_where_clause {
@@ -111,6 +112,7 @@ sub _objs_from_sth {
 		      \$flank_marker_id_2, \$peak_marker_id );
 
   my @out = ();
+  my %already_seen;
   while( $sth->fetch()) {
 
     my $mad = $self->db()->get_MarkerAdaptor();
@@ -126,6 +128,12 @@ sub _objs_from_sth {
 	fetch_by_chr_name( $chromosome_name );
     }
 
+    #rows with the same qtl contain additional synonyms of the qtl
+    if(my $qtl = $already_seen{$qtl_id}) {
+      $qtl->add_synonym($source_database, $source_primary_id);
+      next;
+    }
+
     my $qtl = Bio::EnsEMBL::Map::Qtl->new
       (
        $qtl_id,
@@ -135,9 +143,10 @@ sub _objs_from_sth {
        $flank_marker_2,
        $trait, 
        $lod_score,
-       $source_database,
-       $source_primary_id
+       {$source_database => $source_primary_id}
       );
+
+    $already_seen{$qtl_id} = $qtl;
     
     #now create a new marker_feature using the marker
     if( $slice->strand == 1 ) {
