@@ -48,7 +48,7 @@ sub new {
 
   my $self = bless {},$class;
 
-  my ( $dbID, $adaptor, $primary_id, $version,
+  my ( $adaptor, $dbID, $primary_id, $version,
        $dbname, $release  ) = $self->_rearrange
 	 ( [ qw { ADAPTOR
 		DBID
@@ -183,6 +183,15 @@ sub url {
   my $url = $self->urlPattern();
   $url =~ s/ /$id/;
   return $url;
+}
+
+sub dump {
+  my $self = shift;
+  my ($k,$v);
+
+  while( ($k,$v) = each %$self ) {
+    print $k," ",$v,"\n";
+  }
 }
 
 1;
