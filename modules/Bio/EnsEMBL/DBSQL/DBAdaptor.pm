@@ -807,13 +807,27 @@ sub deleteObj {
     foreach my $adaptor_name (keys %{$self->{'current_objects'}}) {
       my $adaptor = $self->{'current_objects'}->{$adaptor_name};
 
-      if($adaptor && $adaptor->can('deleteObj')) {
+      if(ref($adaptor) && $adaptor->can('deleteObj')) {
         $adaptor->deleteObj();
       }
 
       delete $self->{'current_objects'}->{$adaptor_name};
     }
   }
+
+  if(exists $self->{'generic_feature_adaptors'}) {
+    foreach my $name (keys %{$self->{'generic_feature_adaptors'}}) {
+      my $adaptor = $self->{'generic_feature_adaptors'}->{$name};
+      if(ref($adaptor) && $adaptor->can('deleteObj')) {
+	$adaptor->deleteObj();
+      }
+
+      delete $self->{'generic_feature_adaptors'}->{$name};
+    }
+
+    delete $self->{'generic_feature_adaptors'};
+  }
+
 
   delete $self->{'_meta_container'};
   delete $self->{'dnadb'};
@@ -1044,25 +1058,25 @@ sub get_adaptor() {
 =cut
 
 sub set_adaptor() {
-	my ($self, $canonical_name, $new_object) = @_;
+  my ($self, $canonical_name, $new_object) = @_;
 
   if ($self->isa('Bio::EnsEMBL::Container')) {
     $self = $self->_obj;
   }
 
   # throw if an unrecognised canonical_name is used
-	throw("No such data type $canonical_name") 
+  throw("No such data type $canonical_name")
     if(!exists($self->{'default_module'}->{$canonical_name}));
 
-	my $default_module = $self->{'default_module'}->{$canonical_name};
-	
-	# Check that $new_module is a subclass of $default_module	
-	if (!$new_object->isa($default_module)) {  # polymorphism should work
-		throw("ref($new_object) is not a subclass of $default_module");
-	}
+  my $default_module = $self->{'default_module'}->{$canonical_name};
 
-	# set the value in current_module
-	$self->{'current_objects'}->{$canonical_name} = $new_object;
+  # Check that $new_module is a subclass of $default_module	
+  if (!$new_object->isa($default_module)) {  # polymorphism should work
+    throw("ref($new_object) is not a subclass of $default_module");
+  }
+
+  # set the value in current_module
+  $self->{'current_objects'}->{$canonical_name} = $new_object;
 }
 
 #
@@ -1119,16 +1133,15 @@ sub get_GenericFeatureAdaptors() {
 =cut
 
 sub add_GenericFeatureAdaptor() {
-
-	my ($self, $name, $adaptor_obj) = @_;
+  my ($self, $name, $adaptor_obj) = @_;
 	
-	# check that $adaptor is an object that subclasses BaseFeatureAdaptor	
-	if (!$adaptor_obj->isa("Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor")) {
-	  throw("$name is a " . ref($adaptor_obj) . "which is not a " .
+  # check that $adaptor is an object that subclasses BaseFeatureAdaptor	
+  if (!$adaptor_obj->isa("Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor")) {
+    throw("$name is a " . ref($adaptor_obj) . "which is not a " .
           "subclass of Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor" );
-	}
+  }
 
-	$self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
+  $self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
 }
 
 
