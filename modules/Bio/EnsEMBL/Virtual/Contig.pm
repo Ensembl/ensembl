@@ -504,8 +504,9 @@ sub get_all_VirtualGenes_startend{
 		   
 	       } else {
 		   if ($self->_convert_seqfeature_to_vc_coords($exon)) {
-		       $internalExon = 1;
-		       $exonconverted{$exon->dbID} = 1;
+		     $internalExon = 1;
+		     $exonconverted{$exon->dbID} = 1;
+
 		   } else {$internalExon=0;}               
 		   
 	       }   
@@ -979,11 +980,15 @@ sub get_all_Exons{
 
 sub get_Genes_by_Type {
     my ($self,$type,$supporting) = @_;
+
     my (%gene,%trans,%exon,%exonconverted);
     
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
 	foreach my $gene ( $contig->get_Genes_by_Type($type,$supporting) ) {      
 	    $gene{$gene->dbID()} = $gene;
+
+	    # deal with supporting feature coordinates
+
 	}
     }
 
@@ -1208,6 +1213,7 @@ sub _convert_seqfeature_to_vc_coords {
     }
     # potentially we could be asked to convert something
     # that wasn't on this VC at all, eg, an exon from a distant contig
+
     eval {
 	    $mc = $self->_vmap->get_MapContig_by_id($cid);
     };
@@ -1224,7 +1230,7 @@ sub _convert_seqfeature_to_vc_coords {
 	    my $seen = 0;
 	    my $strand;
 	    foreach my $sub ( @sub ) {
-	        #print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
+#	        print STDOUT "Converting sub ",$sub->id,":",$sub->seqname,":",$sub->start,":",$sub->end,":",$sub->strand,"\n";
 	        $sub = $self->_convert_seqfeature_to_vc_coords($sub);
 	        if( !defined $sub ) {        
 		        next;
@@ -1246,15 +1252,31 @@ sub _convert_seqfeature_to_vc_coords {
 	    }
     }
 
+    # if this is an exon, we need to convert any supporting evidence
+    if($sf->isa("Bio::EnsEMBL::Exon")){
+      foreach my $se($sf->each_Supporting_Feature){
+	if($se->seqname == $sf->contig->internal_id){
+	  $se->seqname($sf->seqname); # hack much like the one for exon->seqname above
+	  $self->_convert_seqfeature_to_vc_coords($se);
+	}
+	else{
+	  print STDERR "This seqfeature is on contig " . $se->seqname
+	    . " but the exon is on contig " . $sf->contig->internal_id
+	    . " - odd things will happen\n";
+	  
+	}
+      }
+    }
+
     # might be clipped left/right
     #print ("Leftmost " . $mc->leftmost . " " . $mc->orientation . " " . $mc->start_in . " " . $mc->end_in  . " " . $sf->start . " " . $sf->end . "\n");
     # Could be clipped on ANY contig  
     if ($sf->start < $mc->rawcontig_start) {
-        # print STDERR "Binning $cid\n";
+#         print STDERR "Binning $cid\n";
 	    return undef;              
     }
     if ($sf->end >  $mc->rawcontig_end) {  
-        # print STDERR "Binning $cid\n";
+#         print STDERR "Binning $cid\n";
 	    return undef;              
     }
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
@@ -1317,6 +1339,7 @@ sub _convert_start_end_strand_vc {
 	$rend   = $mc->end   - ($start - $mc->rawcontig_start);
 
     }
+
     return ($rstart,$rend,$rstrand);
 }
 
@@ -1591,11 +1614,9 @@ sub convert_Gene_to_raw_contig {
        $convertedexon{$exon} = $self->_reverse_map_Exon($exon);
    }
 
-
-
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
-       #print STDERR "Reverse mapping ",$trans->id,"\n";
+#       print STDERR "Reverse mapping ",$trans->dbID,"\n";
        foreach my $dbl ( $trans->each_DBLink() ) {
 	   $clonedtrans->add_DBLink($dbl);
        }
@@ -1725,7 +1746,7 @@ sub _reverse_map_Exon {
        $rmexon->contig($scontig);
        $rmexon->seqname($scontig->id);
        $rmexon->attach_seq($scontig->primary_seq);
-       $exon_to_return = $rmexon;
+       $exon_to_return = $rmexon; 
    } else {
        # we are in the world of sticky-ness....
 #       print STDERR "Into sticky exon\n";
@@ -1829,9 +1850,9 @@ sub _reverse_map_Exon {
    #
    # here we handle supporting features
    #
-
    foreach my $se ( $exon->each_Supporting_Feature ) {
      # we only map featurepairs
+
      if( ! $se->isa('Bio::EnsEMBL::FeaturePairI') ) {
        $self->warn("In reverse map exon, cannot map supporting feature $se");
        next;
@@ -1847,18 +1868,21 @@ sub _reverse_map_Exon {
        }
 
        $se->validate();
-       print STDERR "SE validation done!";
+#       print STDERR "SE validation done!";
 
        my $new_feature = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
        $new_feature->start($res->{'raw_start'});
        $new_feature->end($res->{'raw_end'});
-       print STDERR "Setting strand to ",$res->{'raw_strand'},"\n";
+#       print STDERR "Setting strand to ",$res->{'raw_strand'},"\n";
        $new_feature->strand($res->{'raw_strand'});
        $new_feature->seqname($res->{'raw_contig_id'});
 
-       $new_feature->hstart($hstart);
-       $new_feature->hend($hstart + $res->{'raw_end'} - $res->{'raw_start'});
-       $hstart =$hstart + $res->{'raw_end'} - $res->{'raw_start'}+1;
+# hstart & hend do not need remapping!!!!
+
+       $new_feature->hstart($se->hstart);
+#       $new_feature->hend($hstart + $res->{'raw_end'} - $res->{'raw_start'});
+       $new_feature->hend($se->hend);
+#       $hstart =$hstart + $res->{'raw_end'} - $res->{'raw_start'}+1;
        $new_feature->hstrand($se->hstrand);
        $new_feature->score($se->score);
        $new_feature->hscore($se->score);
@@ -1871,9 +1895,8 @@ sub _reverse_map_Exon {
        $new_feature->hsource_tag($se->hsource_tag);
        $new_feature->hprimary_tag($se->hprimary_tag);
 
-       print STDERR "Adding feature to exon ",$exon_to_return->dbID,"\n";
+#       print STDERR "Adding feature to exon ",$exon_to_return->dbID,"\n";
        $new_feature->validate();
-
        $exon_to_return->add_Supporting_Feature($new_feature);
      }
    }
@@ -2352,7 +2375,6 @@ sub dbobj{
 }
 
 1;
-
 
 
 
