@@ -304,7 +304,7 @@ sub fetch_filled_by_dbIDs {
 }
 
 
-=head2 fetch_by_Clone
+=head2 fetch_by_clone
 
   Arg [1]    : Bio::EnsEMBL::Clone $clone
                The clone object that the contigs are desired from 
@@ -317,7 +317,7 @@ sub fetch_filled_by_dbIDs {
 
 =cut
 
-sub fetch_by_Clone {
+sub fetch_by_clone {
   my $self = shift;
   my $clone = shift;
 
