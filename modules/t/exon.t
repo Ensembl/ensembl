@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 22;
+	plan tests => 24;
 }
 
 my $loaded = 0;
@@ -166,4 +166,15 @@ ok($hashkey eq $exon->slice->name . '-' . $exon->start . '-' .
                '-' . $exon->end_phase);
 
 $multi->restore();
+
+
+# regression test
+# make sure that sequence fetching and caching is not broken
+$exon->stable_id('TestID');
+my $first_seq = $exon->seq();
+my $second_seq = $exon->seq();
+
+ok($first_seq->seq() && $first_seq->seq() eq $second_seq->seq());
+ok($first_seq->display_id()  && $first_seq->display_id() eq $second_seq->display_id());
+
 
