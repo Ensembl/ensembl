@@ -9,7 +9,7 @@ use vars qw(@EXPORT_OK @ISA);
 
 @ISA = qw(Exporter);
 
-@EXPORT_OK = qw(&set_err &get_err &ec2str);
+@EXPORT_OK = qw(&push_err &pop_err &ec2str);
 
 
 use constant OK => 0;
@@ -34,17 +34,27 @@ use constant TRANSCRIPT_SCAFFOLD_SPAN => 22;
 
 use constant TRANSCRIPT_DOES_NOT_TRANSLATE => 30;
 
+use constant PART_EXON_CDS_DELETE_FIVE_PRIME_TOO_LONG  => 40;
+use constant PART_EXON_CDS_DELETE_THREE_PRIME_TOO_LONG => 41;
+use constant PART_EXON_CDS_DELETE_MIDDLE_TOO_LONG      => 42;
 
-my $ERR;
 
-sub  set_err {
-  $ERR = shift;
+my @ERR_STACK = ();
+
+sub push_err {
+  my $err      = shift || return;
+  my $err_desc = shift || '';
+
+  push @ERR_STACK, [$err, $err_desc];
 }
 
-sub get_err {
-  my $cur_err = $ERR;
-  $ERR = OK;
-  return $cur_err;
+sub pop_err {
+  my ($err, $err_desc);
+
+  return () if(!@ERR_STACK);
+
+  my $arref = pop(@ERR_STACK);
+  return @$arref;
 }
 
 
@@ -99,6 +109,15 @@ sub ec2str {
   }
   elsif($ec == TRANSCRIPT_SCAFFOLD_SPAN) {
     $str = 'Transcript spans multiple scaffolds.';
+  }
+  elsif($ec == PART_EXON_CDS_DELETE_FIVE_PRIME_TOO_LONG) {
+    $str = "CDS deletion at 5' end of exon too long.";
+  }
+  elsif($ec == PART_EXON_CDS_DELETE_THREE_PRIME_TOO_LONG) {
+    $str = "CDS deletion at 3' end of exon too long.";
+  }
+  elsif($ec == PART_EXON_CDS_DELETE_MIDDLE_TOO_LONG) {
+    $str = "CDS deletion in middle of exon too long.";
   }
 
   return $str;
