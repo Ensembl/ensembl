@@ -59,14 +59,14 @@ sub repeat_consensus_adaptor {
 }
 
 sub repeat_consensus {
-    my( $self ) = @_;
+    my( $self, $con ) = @_;
     
-    my( $con );
-    unless ($con = $self->{'_repeat_consensus'}) {
-        $con = $self->get_RepeatConsensus;
+    if (defined $con) {
+	$self->throw("$con is not a RepeatConsensus")
+	 unless $con->isa("Bio::EnsEMBL::RepeatConsensus");
         $self->{'_repeat_consensus'} = $con;
     }
-    return $con;
+    return $self->{'_repeat_consensus'};
 }
 
 sub get_RepeatConsensus {
