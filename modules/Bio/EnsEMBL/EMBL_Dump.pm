@@ -110,11 +110,15 @@ sub add_ensembl_comments {
    $aseq->seq->desc("Reannotated sequence via Ensembl");
    my $comment = Bio::Annotation::Comment->new();
    
-   $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://ensembl.ebi.ac.uk for more information.");
+   $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://www.ensembl.org/ for more information.");
+   $aseq->annotation->add_Comment($comment);
+
+   $comment = Bio::Annotation::Comment->new();
+   $comment->text("The reference, comment, description and feature table of the original entry can be found in the DDBJ/EMBL/GenBank database with the identical accession number.");
    $aseq->annotation->add_Comment($comment);
    
    $comment = Bio::Annotation::Comment->new();
-   $comment->text("The /gene_id indicates a unique id for a gene, /cds_id a unique id for a translation and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://ensembl.ebi.ac.uk/docs/embl.html.");
+   $comment->text("The /gene_id indicates a unique id for a gene, /cds_id a unique id for a translation and a /exon_id a unique id for an exon. These ids are maintained wherever possible between versions. For more information on how to interpret the feature table, please visit http://www.ensembl.org/docs/embl.html.");
    $aseq->annotation->add_Comment($comment);
 
    $comment = Bio::Annotation::Comment->new();

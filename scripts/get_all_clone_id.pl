@@ -2,6 +2,7 @@
 
 use strict;
 
+use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Getopt::Long;
@@ -13,7 +14,9 @@ my $port   = '0';
 my $dbname = 'ensdev';
 my $update_date = undef;
 my $tmap = 0;
-
+my $dbuser = 'ensro';
+my $dbpass = undef;
+my $port = 410000;
 &GetOptions( 'dbtype:s'  => \$dbtype,
 	     'host:s'    => \$host,
 	     'port:n'    => \$port,
@@ -29,7 +32,9 @@ my $db;
 if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
 } elsif ( $dbtype =~ 'rdb' ) {
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'ensembl', -db => $dbname , -host => $host );
+    my $locator = "Bio::EnsEMBL::DBSQL::Obj/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+    $db = Bio::EnsEMBL::DBLoader->new($locator);
+
 } elsif ( $dbtype =~ 'timdb' ) {
     # clones required are passed to speed things up - cuts down on parsing of flat files
     $db = Bio::EnsEMBL::TimDB::Obj->new(\@empty,0);

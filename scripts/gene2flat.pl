@@ -125,6 +125,13 @@ if( $format eq 'pep' || $format eq 'transcript' ) {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
+if( $format eq 'id' ) {
+    foreach my $id ( @gene_id ) {
+	print "$id\n";
+    }
+    exit(0);
+}
+
 while ( @gene_id > 0 ) {
     my @chunk_list = splice(@gene_id,0,$chunk);
 
