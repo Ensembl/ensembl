@@ -29,13 +29,16 @@ my $all_stats;
 my $chaining = undef;
 my $i2nmapping;
 my $n2imapping;
-
+my $gtf_summary;
+my $gtf_dump;
 &GetOptions( 
             'stats'  => \$all_stats,
             'chaining:s'  => \$chaining,
 	     'igi2native:s'     => \$i2nmapping, 
 	     'native2igi:s'     => \$n2imapping, 
-	     'h|help'     => \$help
+	     'h|help'     => \$help,
+             'gtfsummary:s' => \$gtf_summary,
+             'gtfdump:s' => \$gtf_dump
 	     );
 die $usage if $help;
 
@@ -149,12 +152,39 @@ if ($n2imapping) {
     }
 }
 
+if ($gtf_summary) {
+#    for(my $i= int(@all_sources); $i>0; $i--) {
+## for now, only do it for n==2, forget about loop
+    for(my $i= 2; $i==2; $i--) {
+#        my $file = "$gtf_dump-n=$i.gtf";
+        my $file = "$gtf_summary";
+        open(OUT, "> $file" ) || die die "$file: $!";
+
+        my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
+        foreach (@stuff) {chomp};
+        print OUT "## run ", join(' ',@stuff), "\n";
+        print OUT "## for EnsEMBL (http://www.ensembl.org)\n";
+        print OUT <<BLURP
+## GTF summary file in gff format. The source is 'igi3', and only gene
+## features are given. Only genes predicted by $i or more gene predictions
+## have been included. The original gene id's have been prefixed with
+## <source-name>. The output is sorted by fpc contig id, strand, and start
+BLURP
+  ;
+        close(OUT);
+        my $sortcmd="sort -k1,1 -k7,7 -k4,4n ";
+        open(OUT, "| $sortcmd >> $file") || die "$file: $!";
+        gtf_for_igis_predicted_by_n(\*OUT, $i);
+    }
+}
+
 
 sub blurp {
     print '### $Id$  ', "\n";
     my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
     foreach (@stuff) {chomp};
     print "### run ", join(' ',@stuff), "\n";
+    print "### for EnsEMBL (http://www.ensembl.org)\n";
     print "### argument(s): ", join(' ', @argv_copy), "\n";
     foreach (@argv_copy) {   print "### ", `ls -l $_`; }
     
@@ -289,7 +319,7 @@ sub track_extents {
                                  $seq_name, $strand ];
 }
 
-
+### find out how the sets overlap between each other
 sub find_overlaps { 
     my @all_igis = keys %{$igis_of_source{'ALL'}};
     my $n_igis = int(@all_igis);
@@ -515,3 +545,31 @@ sub print_native_to_igi {
         print $OUT "$nat $igis_of_native{$nat}\n";
     }
 }
+
+### print a gtf file for all igi's that are predicted by N sources for
+### now, just print start and end, nothing else. I.e., don't give any
+### native exons or so:
+sub gtf_for_igis_predicted_by_n {
+    my ($OUT, $n)  = @_;
+    my $newsource = 'igi3';             # fixed
+    my $feature='gene';                 # fixed
+    my $score = 0;                      # fixed
+    my $phase = '.';                      # fixed
+
+    foreach my $igi  (sort keys %{$igis_of_n_sources[$n]}) {
+        my ($nfeats, $min, $max, $nexons, $seq_name, $strand )
+          = @{$igis_of_source{'ALL'}{$igi}};
+        my @fields =($seq_name, $newsource, $feature, $min,$max, $score, $strand, $phase);
+
+        # add the ids:
+        my $rest ="igi_id \"$igi\"; ";
+      SOURCE:
+        foreach my $source (sort @all_sources) {
+            foreach my $nat_id (sort keys %{$natives_of_igi{$source}{$igi}}) {
+                $rest .= "gene_id \"$source:$nat_id\"; ";
+            }
+        }                               # source
+        push(@fields, $rest);
+        print $OUT join("\t", @fields), "\n"; 
+    }                                   # foreach $igi
+}                                       # gtf_for_igis_predicted_by_n
