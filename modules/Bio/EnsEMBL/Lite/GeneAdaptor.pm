@@ -244,7 +244,7 @@ sub _objects_from_sth {
     # create exons from exon_structure entry
     my @exons = ();
     my @lengths = split( ":", $hr->{'exon_structure'} );
-    my @exon_ids = split( ",", $hr->{'exon_ids'} );
+    my @exon_ids = split( ":", $hr->{'exon_ids'} );
     my ( $start, $end );
 
       
