@@ -47,7 +47,7 @@ my $dbh = DBI->connect( $dsn, $user, $pass );
 
 my @dbnames = map {$_->[0] } @{ $dbh->selectall_arrayref( "show databases" ) };
 
-my @dbs = grep {$_ =~ /$dbpattern/} @dbnames;
+my @dbs = grep {$_ =~ /^$dbpattern$/} @dbnames;
 
 foreach my $db (@dbs) {
   open RFILE, $repeatfile or die("Could not open repeat file $repeatfile");
