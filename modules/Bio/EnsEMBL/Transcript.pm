@@ -1056,8 +1056,9 @@ sub get_all_cdna_SNPs {
 
   #transform transcript to same coord system we will get snps in
   my %exon_transforms;
+  my $new_exon ;
   foreach my $exon (@{$transcript->get_all_Exons}) {
-    my $new_exon = $exon->transform($slice);
+     $new_exon = $exon->transform($slice);
     $exon_transforms{$exon} = $new_exon;
   }
   $transcript->transform(\%exon_transforms);
@@ -1083,6 +1084,15 @@ sub get_all_cdna_SNPs {
 	#$self->warn("snp of type $type maps to gap\n");
 	next;
       }
+
+	# change allele and ambicode if strand of coordinate system is different to snp strand
+		
+	my $exon_strand = $new_exon->{'_gsf_strand'};
+	
+	if ($snp->strand ne $exon_strand ){
+		$snp->{'alleles'} =~ tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;
+		$snp->{'_ambiguity_code'} =~ tr/acgthvmrdbkynwsACGTDBKYHVMRNWS\//tgcadbkyhvmrnwsTGCAHVMRDBKYNWS\//;					
+	}
 
       #copy the snp and convert to cdna coords...
       my $new_snp;
