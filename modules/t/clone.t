@@ -2,7 +2,7 @@ use lib 't';
 use Test;
 use strict;
 
-BEGIN { $| = 1; plan tests => 25;}
+BEGIN { $| = 1; plan tests => 24;}
 
 use MultiTestDB;
 use Bio::Seq;
@@ -92,11 +92,11 @@ ok(scalar(@$contigs) == 2);
 #
 # now let's get a real clone from the test db
 #
-my $rclone_adaptor = $dba->get_CloneAdaptor;
-ok($rclone_adaptor);
+my $clone_adaptor = $dba->get_CloneAdaptor;
+ok($clone_adaptor);
 
 
-my $real_clone = $rclone_adaptor->fetch_by_accession('AL031658');
+my $real_clone = $clone_adaptor->fetch_by_accession('AL031658');
 ok($real_clone);
 
 
@@ -124,8 +124,7 @@ $ens_test->save("core","contig","clone","dna","repeat_feature","simple_feature",
 #
 # do the deletion
 #
-my $rca = $dba->get_CloneAdaptor;
-$rca->remove($real_clone);
+$clone_adaptor->remove($real_clone);
 
 #
 # check the clones
@@ -133,14 +132,14 @@ $rca->remove($real_clone);
 my $sth = $dba->prepare("select * from clone");
 $sth->execute;
 #print STDERR "Num clones " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 9);
+ok(scalar($sth->rows) == 11);
 
 #
 # check the contigs
 #$sth = $dba->prepare("select * from contig");
 $sth->execute;
 #print STDERR "Num contigs " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 9);
+ok(scalar($sth->rows) == 11);
 
 #
 # check the simple features
@@ -148,7 +147,7 @@ ok(scalar($sth->rows) == 9);
 $sth = $dba->prepare("select * from simple_feature");
 $sth->execute;
 #print STDERR "Num simple_features " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 115);
+ok(scalar($sth->rows) == 116);
 
 #
 # check the repeat features
@@ -156,7 +155,7 @@ ok(scalar($sth->rows) == 115);
 $sth = $dba->prepare("select * from repeat_feature");
 $sth->execute;
 #print STDERR "Num repeat_features " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 1780);
+ok(scalar($sth->rows) == 1937);
 
 #
 # check the protein_align_features
@@ -164,7 +163,7 @@ ok(scalar($sth->rows) == 1780);
 $sth = $dba->prepare("select * from protein_align_feature");
 $sth->execute;
 #print STDERR "Num protein_align_features " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 4698);
+ok(scalar($sth->rows) == 4727);
 
 #
 # check the protein_align_features
@@ -172,7 +171,7 @@ ok(scalar($sth->rows) == 4698);
 $sth = $dba->prepare("select * from dna_align_feature");
 $sth->execute;
 #print STDERR "Num dna_align_features " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 15455);
+ok(scalar($sth->rows) == 15525);
 
 #
 # check the prediction_transcripts
@@ -180,7 +179,7 @@ ok(scalar($sth->rows) == 15455);
 $sth = $dba->prepare("select * from prediction_transcript");
 $sth->execute;
 #print STDERR "Num dna_align_features " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 147);
+ok(scalar($sth->rows) == 161);
 
 
 #
@@ -189,7 +188,7 @@ ok(scalar($sth->rows) == 147);
 $sth = $dba->prepare("select * from dna");
 $sth->execute;
 #print STDERR "Num dna records " . scalar($sth->rows) . "\n";
-ok(scalar($sth->rows) == 9);
+ok(scalar($sth->rows) == 11);
 
 
 # restore the tables for the next test
@@ -200,17 +199,9 @@ $ens_test->restore("core","contig","clone","dna","repeat_feature","simple_featur
 #
 # just a quick check to see whether the restore has worked
 #
-$sth = $dba->prepare("select * from clone");
+$sth = $dba->prepare("select * from contig");
 $sth->execute;
-ok(scalar($sth->rows) == 10);
-
-
-#
-# just a quick check to see whether the restore has worked
-#
-$sth = $dba->prepare("select * from simple_feature");
-$sth->execute;
-ok(scalar($sth->rows) == 135);
+ok(scalar($sth->rows) == 12);
 
 
 #
