@@ -64,7 +64,7 @@ use Bio::DBLinkContainerI;
 @ISA = qw(Bio::Root::RootI Bio::DBLinkContainerI);
 # new() is inherited from Bio::Root::Object
 
-# _initialize is where the heavy stuff will happen when new is called
+# initialize is where the heavy stuff will happen when new is called
 
 sub new {
   my($class,@args) = @_;
@@ -457,12 +457,13 @@ sub five_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $start_exon_id   = $translation->start_exon->stable_id;
-    my $t_start         = $translation->start;
-    
-    my $seq_string = '';
+    my $t_start     = $translation->start;
+    my $seq_string  = '';
+
     foreach my $ex ($self->get_all_Exons) {
-        if ($ex->stable_id eq $start_exon_id) {
+      
+      # if they are the same exon, in this case they should be as well the same object
+      if ($ex == $translation->start_exon ) {
             my $start   = $ex->start;
             my $end     = $ex->end;
             my $strand  = $ex->strand;
@@ -485,15 +486,23 @@ sub five_prime_utr {
         } else {
             $seq_string .= $ex->seq->seq;
         }
-    }
-    
+      }
+  
     if ($seq_string) {
-        my $seq = Bio::Seq->new;
-        $seq->id($self->stable_id . '-five_prime_UTR');
-        $seq->seq($seq_string);
-        return $seq;
+      my $seq = Bio::Seq->new;
+      if ( $self->stable_id ){
+	$seq->id($self->stable_id . '-five_prime_UTR');
+      }
+      elsif ( $self->temporary_id ){
+	$seq->id($self->temporary_id . '-five_prime_UTR');
+      }
+      else{
+	warn( "no id set for five_prime_UTR sequence" );
+      }
+      $seq->seq($seq_string);
+      return $seq;
     } else {
-        return;
+      return;
     }
 }
 
@@ -502,16 +511,16 @@ sub three_prime_utr {
     
     my $translation = $self->translation
         or $self->throw("No translation attached to transcript object");
-    my $end_exon_id   = $translation->end_exon->stable_id;
-    my $t_end         = $translation->end;
-    
-    my $seq_string = '';
-    my $in_utr = 0;
+    my $t_end       = $translation->end;
+    my $seq_string  = '';
+    my $in_utr      = 0;
+
     foreach my $ex ($self->get_all_Exons) {
         if ($in_utr) {
             $seq_string .= $ex->seq->seq;
         }
-        elsif ($ex->stable_id eq $end_exon_id) {
+	# if they are the same exon, in this case they should be as well the same object
+        elsif ($ex == $translation->end_exon)  {
             $in_utr = 1;
             my $start   = $ex->start;
             my $end     = $ex->end;
@@ -536,7 +545,15 @@ sub three_prime_utr {
     
     if ($seq_string) {
         my $seq = Bio::Seq->new;
-        $seq->id($self->stable_id . '-three_prime_UTR');
+        if ( $self->stable_id ){
+	  $seq->id($self->stable_id . '-three_prime_UTR');
+	}
+	elsif ( $self->temporary_id ){
+	  $seq->id($self->temporary_id . '-three_prime_UTR');
+	}
+	else{
+	  warn( "no id set for three_prime_UTR sequence" );
+	}
         $seq->seq($seq_string);
         return $seq;
     } else {
@@ -802,7 +819,7 @@ sub translate {
 	        my $fphase = $first_exon->phase;
 	        $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
 	    }
-	    my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
+	    my $fillerseq  = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
 	    my $tfillerseq = $fillerseq->translate();
 	    $seqstr .= $tfillerseq->seq;
         } 
