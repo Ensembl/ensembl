@@ -46,7 +46,8 @@ use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DB::ContigI;
-
+use Bio::EnsEMBL::SeqFeature;
+use Bio::EnsEMBL::Homol;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 # new() is inherited from Bio::Root::Object
@@ -215,15 +216,17 @@ sub get_all_SeqFeatures{
    my $res = $sth->execute();
 
    FEAT: while( my $rowhash = $sth->fetchrow_hashref) {
-       next FEAT unless $rowhash->{name} !~ /Repeat/;
-
+   
+       # EB. Removing this line.
+       #next FEAT unless $rowhash->{name} !~ /Repeat/;
+   
        # Get the feature id
        my $fid = $rowhash->{id};
        my $out;
        
        if ($rowhash->{'hid'} ne '__NONE__' ) {
 
-	   $out = new Bio::SeqFeature::Homol;
+	   $out = new Bio::EnsEMBL::Homol;
 	   
 	   my $homol = new Bio::SeqFeature::Homol(-start  => $rowhash->{hstart},
 						  -end    => $rowhash->{hend},
@@ -241,7 +244,7 @@ sub get_all_SeqFeatures{
 
 	   $out->homol_SeqFeature($homol);
        } else {
-	   $out = new Bio::SeqFeature::Generic;
+	   $out = new Bio::EnsEMBL::SeqFeature;
        }
 
       
@@ -256,13 +259,13 @@ sub get_all_SeqFeatures{
        if( defined $rowhash->{score} ) {
 	   $out->score($rowhash->{score});
        }
-       print("Creating feature\n");
+       #print("Creating feature\n");
        # Now fetch the analysis
        my $analysis;
        my $analid = $rowhash->{analysis};
 
        if (!$analhash{$analid}) {
-	   print("creating analysis " . $analid . "\n");
+	   #print("creating analysis " . $analid . "\n");
 
 	   $analysis = $self->_dbobj->get_Analysis($analid);
 	   
@@ -272,11 +275,19 @@ sub get_all_SeqFeatures{
 	   $analysis = $analhash{$rowhash->{analysis}};
        }
 
-       $out->add_tag_value('Analysis',$analysis);
+       $out->analysis($analysis);
+       #$out->add_tag_value('Analysis',$analysis);
 
        if ($out->isa("Bio::SeqFeature::Homol")){ 
 	   $out->homol_SeqFeature->add_tag_value('Analysis',$analysis);
        }
+
+       # downcast to repeat for repeats. Not pretty.
+       
+       if( $out->source_tag() =~ /Repeat/ ) {
+	   bless $out, "Bio::EnsEMBL::Analysis::Repeat";
+       }
+
 
       push(@array,$out);
   }

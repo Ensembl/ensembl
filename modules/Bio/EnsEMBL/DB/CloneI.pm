@@ -361,20 +361,37 @@ sub seq {
 =head2 get_AnnSeq
 
  Title   : get_AnnSeq
- Usage   : $annseq = $clone->get_AnnSeq($strict_EMBL)
+ Usage   : $annseq = $clone->get_AnnSeq($referece_to_hash)
  Function: Gets a Bio::AnnSeq which can be used as standard
  Example :
  Returns : 
- Args    : $strict_EMBL - causes EMBL dumping with only EMBL-
+ Args    : Has ref can have a number of attributes to control
+           how this call is used.
+
+           $hash->{'strict_EMBL'} = 1; #
+
+           causes EMBL dumping with only EMBL-
            allowed feature qualfiers if true.  Set when
            generating files for submission to the EMBL database.
 
+           $hash->{'seqfeature_filter'} = \&feature_filter_function;
 
+           provides a filter on the sequence features which are attached
+
+           
 =cut
 
 sub get_AnnSeq {
-    my ($self, $strict_EMBL) = @_;
+    my ($self, $hash_ref) = @_;
     my (@contigs,@genes,$as,$seq);
+
+    if( defined $hash_ref && ! ref $hash_ref ) {
+	$self->throw("Semantics to parameterisation of get_AnnSeq has changed - now pass in a hash");
+    }
+
+    if( ! defined $hash_ref ) {
+	$hash_ref = {};
+    }
 
     @genes = $self->get_all_Genes();
     
@@ -390,7 +407,7 @@ sub get_AnnSeq {
     foreach my $gene ( @genes ) {
         my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self,
                                                 -gene => $gene,
-                                                -strict_embl => $strict_EMBL,
+                                                -strict_embl => $hash_ref->{'strict_EMBL'},
                                                 );
         $as->add_SeqFeature($gh);
     }
@@ -400,10 +417,15 @@ sub get_AnnSeq {
     
         # Coordinates retrieved are in Clone coordinate space
         # from the get_all_clone_SeqFeatures method
-        foreach my $homol ($contig->get_all_clone_SeqFeatures) {
-        
-            next unless $homol->isa('Bio::EnsEMBL::Analysis::Repeat');
-            $as->add_SeqFeature( $homol );
+        foreach my $feature ($contig->get_all_clone_SeqFeatures) {
+
+	    # apply filter if there
+	    if( $hash_ref->{'seqfeature_filter'} ) {
+		if( &{$hash_ref->{'seqfeature_filter'}}($feature) != 1 ) {
+		    next;
+		}
+	    }
+            $as->add_SeqFeature( $feature );
         }
     }
     return $as;

@@ -101,19 +101,13 @@ sub get_all_Genes{
 
    my $res = $sth->execute();
    while( my $rowhash = $sth->fetchrow_hashref) {
-
-       if( $got{$rowhash->{'gene'}} != 1 ) {
-          my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
-	  push(@out,$gene);
-	  $got{$rowhash->{'gene'}} = 1;
-       }
-
+       if( exists $got{$rowhash->{'gene'}} ) {
+	   my $gene = $self->_dbobj->get_Gene($rowhash->{'gene'});
+	   push(@out,$gene);
+	   $got{$rowhash->{'gene'}} = 1;
+       }    
    }
-   
-
    return @out;
-
-
 }
 
 =head2 get_Contig
@@ -228,7 +222,7 @@ sub created{
    my $datetime = $rowhash->{'created'};
    $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
    $sth->execute();
-   my $rowhash = $sth->fetchrow_arrayref();
+   $rowhash = $sth->fetchrow_arrayref();
    return $rowhash->[0];
 }
 
@@ -256,7 +250,7 @@ sub modified{
    my $datetime = $rowhash->{'modified'};
    $sth = $self->_dbobj->prepare("select UNIX_TIMESTAMP('".$datetime."')");
    $sth->execute();
-   my $rowhash = $sth->fetchrow_arrayref();
+   $rowhash = $sth->fetchrow_arrayref();
    return $rowhash->[0];
 }
 
@@ -345,7 +339,7 @@ sub seq_date{
    my ($self) = @_;
 
    my $id = $self->id();
-   my $seq_date, my $old_seq_date;
+   my ($seq_date,$old_seq_date);
 
    foreach my $contig ($self->get_all_Contigs) {
        $seq_date = $contig->seq_date;
@@ -377,7 +371,7 @@ sub sv{
     
    $self->warn("Clone::sv - deprecated method. From now on you should use the Clone::version method, which is consistent with our nomenclature");
 
-   return $self->version();
+   return $self->embl_version();
 }
 
 =head2 embl_id

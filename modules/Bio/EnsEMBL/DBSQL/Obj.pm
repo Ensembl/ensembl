@@ -93,10 +93,12 @@ sub _initialize {
   #
   # This needs to be rethought. We are caching sequences
   # here to allow multiple exons to be retrieved fine
-  #
+  # And now more cache's. I think cache's might be a fact of life...
+  # 
+
   $self->{'_contig_seq_cache'} = {};
   $self->_analysis_cache({});
-
+  $self->{'_contig_seq_cnt'} = 0;
   $self->{'_lock_table_hash'} = {};
 
   if( $debug ) {
@@ -273,7 +275,7 @@ sub get_last_update{
     $sth = $self->prepare("select UNIX_TIMESTAMP('".$last."')");
     $sth->execute();
     $rowhash = $sth->fetchrow_arrayref();
-    my $last = $rowhash->[0];
+    $last = $rowhash->[0];
     ($last eq "") && $self->throw ("No value stored for last_update in meta table!");
     return $last;
 }
@@ -645,7 +647,7 @@ sub get_updated_Objects{
     $now_offset = $rowhash->[0];
 
     #First, get all clone ids that have been updated between last and now-offset
-    my $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
+    $sth = $self->prepare("select id from clone where stored > '".$last_offset." - 00:30:00' and stored <= '".$now_offset."'");
    
     $sth->execute;
     my @out;
