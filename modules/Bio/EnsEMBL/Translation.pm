@@ -498,6 +498,150 @@ sub seq {
   return $self->{'seq'};
 }
 
+=head2 get_all_Attributes
+
+  Arg [1]    : optional string $attrib_code
+               The code of the attribute type to retrieve values for.
+  Example    : ($selenocystein) = @{$translation->get_all_Attributes('_selenocystein')};
+               @translation_attributes    = @{$translation->get_all_Attributes()};
+  Description: Gets a list of Attributes of this translation.
+               Optionally just get Attrubutes for given code.
+               Recognized attribute "_selenocystein"
+  Returntype : listref Bio::EnsEMBL::Attribute
+  Exceptions : warning if translation does not have attached adaptor and 
+               attempts lazy load.
+  Caller     : general, modify_translation
+
+=cut
+
+sub get_all_Attributes {
+  my $self = shift;
+  my $attrib_code = shift;
+
+  if( ! exists $self->{'attributes' } ) {
+    if(!$self->adaptor() ) {
+#      warning('Cannot get attributes without an adaptor.');
+      return [];
+    }
+
+    my $attribute_adaptor = $self->adaptor->db->get_AttributeAdaptor();
+    $self->{'attributes'} = $attribute_adaptor->fetch_all_by_Translation( $self );
+  }
+
+  if( defined $attrib_code ) {
+    my @results = grep { uc($_->code()) eq uc($attrib_code) }  
+    @{$self->{'attributes'}};
+    return \@results;
+  } else {
+    return $self->{'attributes'};
+  }
+}
+
+
+=head2 add_Attributes
+
+  Arg [1...] : Bio::EnsEMBL::Attribute $attribute
+               You can have more Attributes as arguments, all will be added.
+  Example    : $translation->add_Attributes($selenocystein_attribute);
+  Description: Adds an Attribute to the Translation. Usefull to do _selenocystein.
+               If you add an attribute before you retrieve any from database, lazy load
+               will be disabled.
+               Current API attributes are
+               _selenocystein num
+                 which gives the number of the selenocystein aminoacid (U) 
+  Returntype : none
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+sub add_Attributes {
+  my $self = shift;
+  my @attribs = @_;
+
+  if( ! exists $self->{'attributes'} ) {
+    $self->{'attributes'} = [];
+  }
+
+  for my $attrib ( @attribs ) {
+    if( ! $attrib->isa( "Bio::EnsEMBL::Attribute" )) {
+      throw( "Argument to add_Attribute has to be an Bio::EnsEMBL::Attribute" );
+    }
+    push( @{$self->{'attributes'}}, $attrib );
+  }
+}
+
+
+=head2 add_selenocystein_position
+
+  Arg [1...] : int $num
+               The amino acid that should be a selenocystein. You can provide more 
+               than one.
+  Example    : $translation->add_selenocystein_position( 37 );
+  Description: Will create an Attribute that is attached to this Translation that causes
+               the peptide sequence derived from it to have a U (selenocystein) in
+               the given position(s).
+  Returntype : none
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+
+sub add_selenocystein_position {
+  my $self = shift;
+  my @args = @_;
+
+  for my $arg ( @args ) {
+    my $attrib = Bio::EnsEMBL::Attribute->new
+        ( 
+          -code => "_selenocystein",
+          -value => $arg,
+          -name => "Selenocystein position",
+          -description => "Position of selenocystein in peptide sequence" 
+          );
+    $self->add_Attributes( $attrib );
+  }
+}
+
+
+
+
+
+=head2 modify_translation
+
+  Arg    1   : Bio::Seq $peptide 
+  Example    : 
+  Description: Applies selenocysteins to the Bio::Seq peptide thats passed in
+  Returntype : Bio::Seq
+  Exceptions : 
+  Caller     : Bio::EnsEMBL::Transcript->translate
+
+=cut
+
+sub modify_translation {
+  my ($self, $seq) = @_;
+
+  my $attribs = $self->get_all_Attributes( "_selenocystein" );
+
+  if( ! @$attribs ) {
+    return $seq;
+  }
+  
+  # into bioperl (sigh)
+  my $peptide = $seq->seq();
+
+  for my $attrib ( @$attribs ) {
+    my $pos = $attrib->value();
+    substr( $peptide, $pos-1, 1 ) = "U";
+  }
+
+  $seq->seq( $peptide );
+  return $seq;
+}
+
+
+
 
 
 =head1 DEPRECATED METHODS
