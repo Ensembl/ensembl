@@ -1037,6 +1037,9 @@ sub add_ExternalFeatureAdaptor {
   }
 
   my $track_name = $adaptor->{'_track_name'};
+  if(!$track_name) {
+    $track_name = $adaptor->track_name();
+  }
 
   #use a generic track name if one hasn't been defined
   unless(defined $track_name) {
@@ -1052,7 +1055,7 @@ sub add_ExternalFeatureAdaptor {
     $self->{'_xf_adaptors'}->{"$track_name"} = $adaptor;
   }
 
-  $adaptor->db($self);
+  $adaptor->ensembl_db($self);
 }
 
 
