@@ -410,7 +410,7 @@ sub get_AnnSeq {
 
     $as->seq($seq);
 
-    my $str = POSIX::strftime( "%d-%b-%Y", gmtime($self->seq_date) );
+    my $str = POSIX::strftime( "%d-%B-%Y", gmtime($self->seq_date) );
     $as->add_date($str);
 
 
