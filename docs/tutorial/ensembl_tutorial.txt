@@ -102,21 +102,21 @@ mysql -u anonymous -h kaka.sanger.ac.uk
 
 If MySQL is not installed, go to www.mysql.com to download the client.
 
-Inside the MySQL prompt you generally want to start with the database "homo_sapiens_core_9_30" (at time of writing 
-this was the most recent build) and the database "ensembl_mart_9_1".  There are also databases for other species - you 
+Inside the MySQL prompt you generally want to start with the database "homo_sapiens_core_16_33" (at time of writing 
+this was the most recent build) and the database "ensembl_mart_16_1".  There are also databases for other species - you 
 should be able to use these in the same way as described here for human.
 
 Try the "show databases" SQL command to see all the databases that are available, followed by a "use" command 
-similar to "use homo_sapiens_core_9_30" to choose the current/most recent database.  Other databases are named 
-like "homo_sapiens_lite_9_1" - the naming scheme following the convention of  species tag, underscore, database 
-type, underscore and  release number.  Have a look around to see what you can use.
+similar to "use homo_sapiens_core_16_33" to choose the current/most recent database.  Other databases are 
+named like "homo_sapiens_lite_16_1" - the naming scheme following the convention of  species tag, underscore, 
+database type, underscore and  release number.  Have a look around to see what you can use.
 
-Starting with the "core" database (homo_sapiens_core_9_30 or the most recent update of this database), try some of 
+Starting with the "core" database (homo_sapiens_core_16_33 or the most recent update of this database), try some of 
 these nice queries to get a taste of what is stored in the databases:
 
 Choose the current human core database:
 
-"USE homo_sapiens_core_9_30;"
+"USE homo_sapiens_core_16_33;"
 
 Retrieve the first two DDBJ/EMBL/GenBank entries stored in the database:
 
@@ -161,7 +161,7 @@ always mean joining to the assembly table. This is a bit painful. Thankfully we 
 that is derived from this database (a datamart in trendy computer speak), called EnsEMBL Mart. This is changing rapidly, 
 but is well worth playing around with:
 
-"USE ensembl_mart_9_1;"
+"USE ensembl_mart_16_1;"
 
 To  genes from a particular region:
 
@@ -218,9 +218,9 @@ bioperl-live
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster login
 when prompted, the password is CVSUSER
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-
-9 ensembl
+16 ensembl
 cvs -d :pserver:cvsuser@cvsro.sanger.ac.uk:/cvsroot/CVSmaster checkout -r branch-ensembl-
-9 ensembl-external
+16 ensembl-external
 
 If you don't have, or don't want to install, the EnsEMBL database locally (which is all you will need to complete the tutorial 
 exercises) you can point your scripts at a publically available one at the Sanger Centre.  Use the following fields in your 
