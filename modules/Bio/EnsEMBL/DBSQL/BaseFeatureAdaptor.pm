@@ -118,7 +118,9 @@ sub fetch_by_dbID{
   my $tablename = $self->_tablename();
   my $constraint = "${tablename}_id = $id";
 
-  return $self->generic_fetch($constraint);
+  #return first element of _generic_fetch list
+  my ($feat) = $self->generic_fetch($constraint); 
+  return $feat;
 }
 
 

@@ -171,6 +171,8 @@ sub _obj_from_hashref {
   #set the 'id' of the feature to the hit name
   $align_feat->id($hashref->{'hit_name'});
 
+  $align_feat->dbID($hashref->{'dna_align_feature_id'});
+
   return $align_feat;
 }
 

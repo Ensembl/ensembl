@@ -1,5 +1,3 @@
-
-
 #
 # BioPerl module for Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor
 #
@@ -128,6 +126,8 @@ sub _obj_from_hashref {
   if($hashref->{'score'}) {
     $out->score($hashref->{'score'});
   }
+
+  $out->dbID($hashref->{'simple_feature_id'});
 
   return $out;
 }

@@ -153,6 +153,8 @@ sub _obj_from_hashref {
   $dnapep->attach_seq($contig);
   #set the 'id' of the feature to the hit name
   $dnapep->id($hashref->{'hit_name'});
+
+  $dnapep->dbID($hashref->{'protein_align_feature_id'});
   
   return $dnapep;
 }
