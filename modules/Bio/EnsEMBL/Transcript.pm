@@ -1500,7 +1500,7 @@ sub _get_cdna_coord_mapper {
 sub start_Exon{
    my ($self,@args) = @_;
 
-   return ${$self->{'_trans_exon_array'}}[0];
+   return $self->get_all_Exons()->[0];
 }
 
 =head2 end_Exon
@@ -1515,7 +1515,7 @@ sub start_Exon{
 sub end_Exon{
    my ($self,@args) = @_;
 
-   return ${$self->{'_trans_exon_array'}}[$#{$self->{'_trans_exon_array'}}];
+   return $self->get_all_Exons()->[-1];
 }
 
 
