@@ -541,6 +541,83 @@ sub deleteObj {
 
   #flush the cache
   %{$self->{'_slice_gene_cache'}} = ();
+  %{$self->{'_external_gene_cache'}} = ();
+}
+
+
+sub fetch_all_by_external_name {
+    my ( $self, $name, $db, $empty_flag ) = @_;
+
+    if($empty_flag) {
+    # return from cache or the _get_empty_Genes fn while caching results....
+        return $self->{'_external_empty_gene_cache'}{"$db:$name"} ||= $self->_get_empty_Genes_by_external_name( $name, $db );
+    }
+
+  #check the cache which uses the slice name as it key
+    if($self->{'_external_gene_cache'}{"$db:$name"}) {
+        return $self->{'_external_gene_cache'}{"$db:$name"};
+    }
+
+    my $sth = $self->prepare( "SELECT t.id, t.transcript_id, t.chr_name, t.chr_start, t.chr_end,
+              t.chr_strand, t.transcript_name, t.translation_id,
+              t.translation_name, t.gene_id, t.type, t.gene_name, t.db,
+              t.exon_structure, t.external_name, t.exon_ids, t.external_db,
+              t.coding_start, t.coding_end,
+              g.external_name as gene_external_name,
+              g.external_db as gene_external_db, g.type as gene_type
+         FROM transcript t, gene_xref as gx, gene as g
+        where g.gene_id = t.gene_id AND g.db = t.db and t.db = ? and gx.external_name = ? and gx.gene_id = g.gene_id
+        order by g.gene_name, t.gene_name"
+    );
+
+    $sth->execute( $db, $name );
+
+    return $self->{'_external_gene_cache'}{"$db:name"} = $self->_objects_from_sth( $sth, "" );
+}
+
+sub count_by_external_name { 
+  my ($self, $name, $db) = @_;
+  my $sth = $self->prepare( "SELECT count(distinct g.gene_name) FROM   gene g, gene_xref as gx WHERE  g.gene_id = gx.gene_id and g.db = ? and gx.external_name = ?" );
+  $sth->execute( $db, $name );
+  my ($count) = $sth->fetchrow_array();
+  return $count;
+}
+
+sub _get_empty_Genes_by_external_name {
+  my ($self, $name, $db) = @_;
+
+  my $sth = $self->prepare(
+	 "SELECT distinct g.db, g.gene_id, g.gene_name, g.chr_name, g.chr_start,
+              g.chr_end, g.chr_strand, g.type, g.external_name, g.external_db
+       FROM   gene g, gene_xref as gx
+       WHERE  g.gene_id = gx.gene_id and g.db = ? and gx.external_name = ?" );
+
+  $sth->execute( $db, $name );
+  my @out = ();
+  my $core_gene_adaptor = $self->db->get_db_adaptor('core')->get_GeneAdaptor;
+
+  my $hashref;
+
+  while($hashref = $sth->fetchrow_hashref()) {
+    my $gene = new Bio::EnsEMBL::Gene();
+    $gene->chr_name($hashref->{'chr_name'});
+    $gene->start($hashref->{'chr_start'});
+    $gene->end($hashref->{'chr_end'});
+    $gene->stable_id( $hashref->{'gene_name'} );
+    $gene->dbID( $hashref->{'gene_id'} );
+    $gene->adaptor( $core_gene_adaptor );
+    $gene->source( $hashref->{'db'} );
+    $gene->strand( $hashref->{'chr_strand'} );
+
+    if( defined $hashref->{'type' } ) {
+      $gene->external_name( $hashref->{'external_name'} );
+      $gene->external_db( $hashref->{'external_db'} );
+      $gene->type( $hashref->{'type'} );
+    }
+    push @out, $gene;
+  }
+
+  return \@out;
 }
 
 
