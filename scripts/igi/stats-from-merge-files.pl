@@ -78,6 +78,7 @@ sub gene_stats {
 }
 
 my %igis_of_source;
+my %gene_ids_of_igi;
 
 GTF_LINE:
 while (<>) {
@@ -105,6 +106,10 @@ while (<>) {
         warn("Skipping line with no igi_id: '$_'\n");
         next GTF_LINE;
     }
+    unless ($gene_id) {
+        warn("Skipping line with no gene_id: '$_'\n");
+        next GTF_LINE;
+    }
 
     # keep track of marginals by looping over current one and fictional
     # source 'all' at same time:
@@ -117,6 +122,9 @@ while (<>) {
         } else { 
             ($nfeats, $min, $max)= (0, $start, $end);
         }
+
+        $gene_ids_of_igi{$s}{$igi}{$gene_id}++;
+
 # print "WAS: $start, $end, $min, $max\n";    
         $min = $start if $start < $min;
         $max = $end if $end > $max;
@@ -168,7 +176,7 @@ foreach my $source1 (@all_sources) {
             }
             $tot++;
         }
-        print "$shared/$tot\t";
+        printf "%d/%d (%3d%%)\t", $shared, $tot, 100.0*$shared/$tot;
     }
     print "\n"; 
 }
@@ -216,9 +224,10 @@ foreach my $igi (@all_igis) {
 
 # warn @igis_of_n_sources;
 print "overlap totals (histogram)\n" ;
-for(my $i = 0; $i<=$n_sources; $i++) {
-    print "numbers of igis in at least $i sources: ",
-      int(keys %{$igis_of_n_sources[$i]}), "/$n_igis\n";
+for(my $i = 1; $i<=$n_sources; $i++) {
+    my $n=int(keys %{$igis_of_n_sources[$i]});
+    printf "numbers of igis in found in $i sources: %d/%d(%3d%%)\n",
+      $n, $n_igis, 100.0*$n/$n_igis;
 }
 
 print "----\n";
@@ -227,9 +236,26 @@ for(my $i = 1; $i<=$n_sources; $i++) {
     my ($min, $max, $avg, $minfeats, $maxfeats, $avgfeats) = 
         gene_stats($igis_of_n_sources[$i]) ;
 
-    print "those in at least $i sources: ";
+    print "those in $i sources: ";
     print "minl=$min, maxl=$max, avgl=$avg, ";
     print "minf=$minfeats, maxf=$maxfeats, avgf=$avgfeats\n";
 }
 
-
+### see to what extent native gene_ids get lumped together by the igi clustering
+print "----\n";
+my @histo = undef;
+foreach my $source ('ALL', @all_sources) { 
+    my $gene_ids_of_igi_of_source = $gene_ids_of_igi{$source};
+    foreach my $igi  ( keys %$gene_ids_of_igi_of_source ) {
+        my @gene_ids = keys %{$gene_ids_of_igi_of_source->{$igi}};
+        $histo[ int(@gene_ids) ]{$source} ++;
+    }
+}
+print "gene id lumping: histogram of number of native gene_ids per igi:\n";
+foreach my $source ('ALL', @all_sources) { 
+    print "source $source:\n";
+    for (my $i=0;  $i< int(@histo); $i++ ) {
+        my $n = $histo[ $i ]{$source};
+        print "\t$i: $n\n" if $n;
+    }
+}
