@@ -146,13 +146,19 @@ sub create_xrefs {
       my @dep_lines = split /\n/, $deps;
     foreach my $dep (@dep_lines) {
       if ($dep =~ /^DR\s+(.+)/) {
-	my ($source, $acc, @dummy) = split /;\s*/, $1;
+	my ($source, $acc, @extra) = split /;\s*/, $1;
 	if (exists $dependent_sources{$source}) {
 	  # create dependent xref structure & store it
 	  my %dep;
 	  $dep{SOURCE_NAME} = $source;
 	  $dep{SOURCE_ID} = $dependent_sources{$source};
 	  $dep{ACCESSION} = $acc;
+	  # some xref types have additional information
+	  if ($source =~ /GO/) {
+	    my ($go_linkage_type) = $extra[1] =~ /(\w+)/;
+	    $dep{LINKAGE_ANNOTATION} = $go_linkage_type;
+	    $dep{LABEL} = $extra[0];
+	  }
 	  push @{$xref->{DEPENDENT_XREFS}}, \%dep; # array of hashrefs
 	}
       }
