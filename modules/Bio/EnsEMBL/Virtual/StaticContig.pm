@@ -345,7 +345,7 @@ sub get_all_RepeatFeatures {
 	    $out->analysis($analysis);
 	    
 	} else {
-	    $self->warn("Repeat feature does not have a hid. bad news....");
+	    print(STDERR "Repeat feature does not have a hid. bad news....");
 	}
 	push(@features,$out);
     }
@@ -488,68 +488,67 @@ sub get_landmark_MarkerFeatures {
 
 my ($self) = @_;
 
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $length=$self->length;
-my $chr_name=$self->_chr_name;
-my $dbname=$self->dbobj->dbname;
-my $mapsdbname=$self->dbobj->mapdbname;
+my $glob_start = $self->_global_start;
+my $glob_end   = $self->_global_end;
+my $length     = $self->length;
+my $chr_name   = $self->_chr_name;
+my $dbname     = $self->dbobj->dbname;
+my $mapsdbname = $self->dbobj->mapdbname;
 my @markers;
 
 
 eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
+
+
+    my $statement= "   SELECT 
+                       IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                              (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)),                                        
+                       IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                              (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
+                              f.score, 
+                       IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
+                              f.name, f.hstart, f.hend, 
+                              f.hid, f.analysis, c.name 
+                       FROM   feature f,
+                              contig_landmarkMarker c,
+                              static_golden_path sgp 
+                       WHERE  f.contig = c.contig
+                       AND    f.hid=c.marker  
+                       AND    sgp.raw_id=f.contig 
+                       AND    sgp.chr_end >= $glob_start 
+                       AND    sgp.chr_start <=$glob_end 
+                       AND    sgp.chr_name='$chr_name'";
     
-    my $statement= "  SELECT 
-                      IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                             (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)),                                        
-                      IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                             (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
-                             f.score, 
-                      IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
-                             f.name, f.hstart, f.hend, 
-                             f.hid, f.analysis, s.name 
-                      FROM   $dbname.feature f, $dbname.analysis a, 
-                             $mapsdbname.MarkerSynonym s, 
-                             $dbname.static_golden_path sgp 
-                      WHERE  f.hid=s.marker  
-                      AND    sgp.raw_id=f.contig 
-                      AND    f.analysis = a.id 
-                      AND    a.db='mapprimer'
-                      AND    sgp.chr_end >= $glob_start 
-                      AND    sgp.chr_start <=$glob_end 
-                      AND    sgp.chr_name='$chr_name'                       
-                      AND    (s.name regexp '^D[0-9,X,Y][0-9]?S')";
- #                     AND    (s.name regexp '^D[0-9,X,Y][0-9]?S' OR s.name regexp '^AFM')";
-    
-    my $sth = $self->dbobj->prepare($statement);
-    $sth->execute;
-    
-    my ($start, $end, $score, $strand, $hstart, 
-        $name, $hend, $hid, $analysisid,$synonym);
-    
-    my $analysis;
-    my %analhash;
-    
-    $sth->bind_columns
-	( undef, \$start, \$end, \$score, \$strand, \$name, 
-	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
-            
-    while( $sth->fetch ) {
-	#clipping
-	if (($end > $length) || ($start < 1)) {
-	    next;
-	}
+	my $sth = $self->dbobj->prepare($statement);
+	$sth->execute;
 	
-	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
-		  $analysisid,$synonym);
+	my ($start, $end, $score, $strand, $hstart, 
+	    $name, $hend, $hid, $analysisid,$synonym);
+	
+	my $analysis;
+	my %analhash;
+	
+	$sth->bind_columns
+	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
+	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
+	
+      while( $sth->fetch ) {
 
-
-	my $out=$self->_create_Marker_features(@args);
-	if (defined $out){
-	    push (@markers,$out);
-	} 
-    }
+	    #clipping
+	    if (($end > $length) || ($start < 1)) {
+		next;
+	    }
+	    
+	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
+		      $analysisid,$synonym);
+	    
+	    
+	    my $out=$self->_create_Marker_features(@args);
+	    if (defined $out){
+		push (@markers,$out);
+	    } 
+	}
 };
 
 
@@ -1297,6 +1296,7 @@ sub _raw_contig_id_list {
    return $string;
 		   
 }
+
 
 
 
