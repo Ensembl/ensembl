@@ -1745,6 +1745,25 @@ sub _reverse_map_Exon{
    $self->throw("Internal error. Should not reach here!");
 }
 
+# internal function used by _sanity_check; returns undef if all OK, error
+# string otherwise
+sub _check_exon_start_end {
+    my ($transc, $exon) = @_;
+    my $message = undef;
+
+       if ( $transc->start < 1 ) { 
+           $message .= "Transcript's end < 1: " . $transc->start 
+             . "(transcript:". $transc->id() . ",exon:".$exon->id().")";
+       }
+       if ( $transc->end > $exon->length) { 
+           $message .= "Transcript's end (".$transc->end
+             .") > exon length (".$exon->length.") "
+             . "(transcript:". $transc->id() . ",exon:".$exon->id().")";
+       }
+    return $message;
+}
+
+
 =head2 _sanity_check
 
  Title   : _sanity_check
@@ -1841,29 +1860,17 @@ sub _sanity_check{
        # start exon:
        my $t = $trans->translation;
        my $e = $gene->get_Exon_by_id($t->start_exon_id);
+       my $m =_check_exon_start_end($t, $e);
 
-       if ( $t->start < 1 ) { 
-           $error =1;
-           $message .= "Transcript's end < 1: " . $t->start;
-       }
-       if ( $t->end > $e->length) { 
-           $error =1;
-           $message .= "Transcript's end (".$t->end.") > exon length (".$e->length.").";
-       }
+       if ($m) { $error++;  $message .= $m;}
 
        # same for end exon:
        $e = $gene->get_Exon_by_id($t->end_exon_id);
-       if ( $t->start < 1 ) { 
-           $error =1;
-           $message .= "Transcript's end < 1: " . $t->start;
-       }
-       if ( $t->end > $e->length) { 
-           $error =1;
-           $message .= "Transcript's end (".$t->end.") > exon length (".$e->length.").";
-       }
+       $m  = _check_exon_start_end($t, $e);
+       if ($m) { $error++;  $message .= $m;}
    }                                    # each_Transcript
 
-   if( $error == 1 ) {
+   if( $error ) {
        $self->throw("Cannot write gene due to: $message");
    }
 }
