@@ -965,6 +965,22 @@ sub transfer_stable_ids {
   return;
 }
 
+sub transfer_meta {
+  my $self = shift;
+
+  my $source = $self->source();
+  my $target = $self->target();
+
+  my $dbh = $self->dbh();
+
+  $dbh->do("INSERT INTO $target.meta (meta_key, meta_value) " .
+           "SELECT m.meta_key, m.meta_value FROM $source.meta m " .
+           "ORDER BY meta_id");
+
+  return;
+}
+
+
 sub copy_other_tables {
   my $self = shift;
 

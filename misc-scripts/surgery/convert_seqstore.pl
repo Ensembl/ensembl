@@ -69,7 +69,7 @@ while( my $line = <FILE> ) {
 for my $converter ( @all_species_converters ) {
   $converter->debug( "\n\n*** converting " . $converter->source . " to " . 
                      $converter->target() . " ***");
-  $converter->copy_tables('meta');
+  $converter->transfer_meta();
   $converter->create_coord_systems();
   $converter->create_seq_regions();
   $converter->create_assembly();
