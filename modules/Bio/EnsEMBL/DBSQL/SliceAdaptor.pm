@@ -476,24 +476,16 @@ sub get_seq_region_attribs {
                'toplevel'.
   Arg [2]    : string $coord_system_version (optional)
                The version of the coordinate system to retrieve slices of
-  Arg [3]    : int $max_length (optional)
-               The maximum length of slices to be returned.  Seq_regions which
-               are larger than $max_length will be split into multiple slices.
-               If this argument is not provided then slices will not be 
-               split.  If this argument is less than 1 a warning will occur and
-               the slices will not be split.
-  Arg [4]    : int $overlap (optional)
-               The amount that the returned slices should overlap. By default
-               this value is 0.  If no max_length value is provided but an 
-               overlap which is not zero is provided this argument will be
-               ignored and a warning will occur.
-  Arg [5]    : boolean $include_non_reference
+  Arg [3]    : bool $include_non_reference (optional)
+               If this argument is not provided then onlt reference slices 
+               will be returned. If set both reference and non refeference 
+               slices will be rerurned. 
+  Arg [4]    : int $no_duplicates (optional)
+               If set eno duplicate entries will be returned.
+
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
 
-               #create chunks of size 100k with 10k overlap
-               @fixed_chunks = @{$slice_adaptor->fetch_all('chromosome', undef,
-                                                           1e5, 1e4);
 
   Description: Retrieves slices of all seq_regions for a given coordinate
                system.  This is analagous to the methods fetch_all which were
@@ -505,10 +497,7 @@ sub get_seq_region_attribs {
                If the coordinate system name provided is 'toplevel', all 
                non-redundant toplevel slices are returned.
   Returntype : listref of Bio::EnsEMBL::Slices
-  Exceptions : throw if max_length < 1 is provided
-               throw if overlap < 0 is provided
-               throw if overlap is provided but max_length is not
-               throw if overlap is greater than max_length
+  Exceptions : none
   Caller     : general
 
 =cut
@@ -518,27 +507,7 @@ sub fetch_all {
   my $cs_name = shift;
   my $cs_version = shift || '';
 
-  my ($max_length, $overlap) = @_;
-
-  #
-  # sanity checking of the overlap / maxlength arguments
-  #
-  if(defined($max_length) && $max_length < 1) {
-    throw("Invalid max length [$max_length] provided.");
-  }
-
-  $overlap ||= 0;
-  if($overlap != 0) {
-    if(!defined($max_length)) {
-      throw("Cannot define overlap without defining valid max_length.");
-    }
-    if($overlap < 0) {
-      throw("Cannot define overlap that is less than 0.");
-    }
-    if($max_length <= $overlap) {
-      throw("Overlap must be less than max_length.");
-    }
-  }
+  my ($include_non_reference, $include_duplicates) = @_;
 
   #
   # verify existance of requested coord system and get its id
@@ -550,25 +519,45 @@ sub fetch_all {
 
   my $sth;
 
+  
+  my %bad_vals=();
+  #
+  # Get a hash of non reference seq regions
+  #
+  if(!$include_non_reference){
+    my $sth2 = $self->prepare(
+			      "SELECT sr.seq_region_id ".
+			      "FROM seq_region sr, seq_region_attrib sra, attrib_type at ".
+			      " WHERE at.code='non_ref'".
+			      "  AND sra.seq_region_id=sr.seq_region_id ".
+			      "  AND at.attrib_type_id=sra.attrib_type_id " );
+    $sth2->execute();
+    my ($seq_region_id);
+    $sth2->bind_columns(\$seq_region_id);
+    while($sth2->fetch()) {
+      $bad_vals{$seq_region_id} = 1;
+    }
+    $sth2->finish();
+  }
   #
   # Retrieve the seq_regions from the database
   #
   if($orig_cs->is_top_level()) {
-    $sth =
-      $self->prepare("SELECT sr.seq_region_id, sr.name, sr.length, " .
-                     "       sr.coord_system_id " .
-                     "FROM seq_region sr, " .
-                     "     seq_region_attrib sra, attrib_type at " .
-                     "WHERE at.code='toplevel' " .
-                     "AND   at.attrib_type_id=sra.attrib_type_id " .
-                     "AND   sra.seq_region_id=sr.seq_region_id");
+   $sth =
+       $self->prepare("SELECT sr.seq_region_id, sr.name, sr.length, " .
+                      "       sr.coord_system_id " .
+                      "FROM seq_region sr, " .
+                      "     seq_region_attrib sra, attrib_type at " .
+                      "WHERE at.code='toplevel' " .
+                      "AND   at.attrib_type_id=sra.attrib_type_id " .
+                      "AND   sra.seq_region_id=sr.seq_region_id");
     $sth->execute();
   } else {
-    $sth =
-      $self->prepare('SELECT seq_region_id, name, length, coord_system_id ' .
-                     'FROM   seq_region ' .
-                     'WHERE  coord_system_id =?');
-    $sth->execute($orig_cs->dbID);
+     $sth =
+       $self->prepare('SELECT seq_region_id, name, length, coord_system_id ' .
+                      'FROM   seq_region ' .
+                      'WHERE  coord_system_id =?');
+     $sth->execute($orig_cs->dbID);
   }
 
   my ($seq_region_id, $name, $length, $cs_id);
@@ -580,69 +569,47 @@ sub fetch_all {
 
   my @out;
   while($sth->fetch()) {
-    my $cs = $csa->fetch_by_dbID($cs_id);
+    if(!defined($bad_vals{$seq_region_id})){
+      my $cs = $csa->fetch_by_dbID($cs_id);
+      
+      if(!$cs) {
+	throw("seq_region $name references non-existent coord_system $cs_id.");
+      }
+      
+      my $cs_key = lc($cs->name().':'.$cs_version);
+      
+      #cache values for future reference, but stop adding to the cache once we
+      #we know we have filled it up
+      if($cache_count < $SEQ_REGION_CACHE_SIZE) {
+	my $key = lc($name) . ':'. $cs_key;
+	$name_cache->{$key} = [$seq_region_id, $length];
+	$id_cache->{$seq_region_id} = [$name, $length, $cs];
+	$cache_count++;
+      }
+      
+      my $slice = Bio::EnsEMBL::Slice->new(-START             => 1,
+					-END               => $length,
+					-STRAND            => 1,
+					-SEQ_REGION_NAME   => $name,
+					-SEQ_REGION_LENGTH => $length,
+					-COORD_SYSTEM      => $cs,
+					-ADAPTOR           => $self);
 
-    if(!$cs) {
-      throw("seq_region $name references non-existent coord_system $cs_id.");
-    }
-
-    my $cs_key = lc($cs->name().':'.$cs_version);
-
-    #cache values for future reference, but stop adding to the cache once we
-    #we know we have filled it up
-    if($cache_count < $SEQ_REGION_CACHE_SIZE) {
-      my $key = lc($name) . ':'. $cs_key;
-      $name_cache->{$key} = [$seq_region_id, $length];
-      $id_cache->{$seq_region_id} = [$name, $length, $cs];
-      $cache_count++;
-    }
-
-    #
-    # split the seq regions into appropriately sized chunks
-    #
-    my $start = 1;
-    my $end;
-    my $multiple;
-    my $number;
-
-    if($max_length && ($length > $overlap)) {
-      #No seq region may be longer than max_length but we want to make
-      #them all similar size so that the last one isn't much shorter.
-      #Divide the seq_region into the largest equal pieces that are shorter
-      #than max_length
-
-      #calculate number of slices to create
-      $number = ($length-$overlap) / ($max_length-$overlap);
-      $number = ceil($number); #round up to int
-
-      #calculate length of created slices
-      $multiple = $length / $number;
-      $multiple   = floor($multiple); #round down to int
-    } else {
-      #just one slice of the whole seq_region
-      $number = 1;
-      $multiple = $length;
-    }
-
-    my $i;
-    for(my $i=0; $i < $number; $i++) {
-      $end = $start + $multiple + $overlap;
-
-      #any remainder gets added to the last slice of the seq_region
-      $end = $length if($i == $number-1);
-
-      push @out, Bio::EnsEMBL::Slice->new(-START             => $start,
-                                          -END               => $end,
-                                          -STRAND            => 1,
-                                          -SEQ_REGION_NAME   => $name,
-                                          -SEQ_REGION_LENGTH => $length,
-                                          -COORD_SYSTEM      => $cs,
-                                          -ADAPTOR           => $self);
-      $start += $multiple;
+      if(!defined($include_duplicates) or !$include_duplicates){  #do not include duplicates
+	my @dup = @{$self->fetch_normalized_slice_projection($slice)};
+	foreach my $dup_test( @dup){
+	  if($dup_test->[2]->get_seq_region_id == $slice->get_seq_region_id){
+	    push @out, $dup_test->[2];
+	  }
+	}
+      }
+      else{
+	push @out, $slice;
+      }
     }
   }
   $sth->finish();
-
+  
   return \@out;
 }
 
