@@ -25,33 +25,56 @@ $| = 1;
 	     'infile=s'   => \$infile,
 	     );
 
-my ($db1) = get_db_handles();
+my $db = new Bio::EnsEMBL::DBSQL::Obj(-host => $host1,
+	 -user => 'ensro',
+	-dbname => $dbname1);
+my @ids = $db->get_all_Clone_id;
 
-my ($clone1,$acc) = get_cloneids($infile,@ARGV);
 my $i = 0;
-
-for ($i = 0; $i <= $#$clone1; $i++) {
-    print("Processing clone " . $clone1->[$i] . "\t" . $acc->[$i] . "\n");
+open OUT,">chr22.cdna";
+foreach my $cloneid (@ids) {
+    print("Processing clone " . $cloneid . "\n");
     eval {
-    my $cl1    = $db1->get_Clone($clone1->[$i]);
+    my $cl1    = $db->get_Clone($cloneid);
 
     my @genes1 = $cl1->get_all_Genes();
 
     my $count = 1;
 
     foreach my $gene1 (@genes1) {
+        print "Found gene " . $gene1->id . "\n";
+        my @cdna;
 
-        print("$acc->[$i]\t$clone1->[$i]\t" . $gene1->id . "\n");
-
-        foreach my $exon ($gene1->each_unique_Exon) {
-                print("Exon " . $exon->id . "\t" .$exon->start . "\t" . $exon->end . "\t" . $exon->strand . "\n");
+        foreach my $tran ($gene1->each_Transcript) {
+            my $pep;
+            foreach my $exon ($tran->each_Exon) {
+              $pep .= $exon->seq->seq;
+            }
+            push(@cdna,$pep);
         }
+
+        my $maxlen;
+        my $finalpep;
+
+        if ($#cdna >= 0) {
+	  foreach my $p (@cdna) {
+	     if (length($p) > $maxlen) {
+               $finalpep = $p;
+               $maxlen   = length($p);
+             }
+             print OUT ">" . $gene1->id . "\n";
+             $p =~ s/(.{72})/$1\n/g;
+             print OUT $p . "\n";
+         }
+        }
+
     }
   };
     if ($@) {
       print("Error processing clone: $@\n");
     }
   }
+close(OUT);
 sub get_cloneids {
     my ($infile,@ARGV) = @_;
 
@@ -77,26 +100,3 @@ sub get_cloneids {
 
 
 
-sub get_db_handles {
-    my ($db1);
-
-    if( $dbtype1 =~ 'ace' ) {
-	$db1 = Bio::EnsEMBL::AceDB::Obj->new( -host => $host1, 
-					      -port => $port1);
-    } elsif ( $dbtype1 =~ 'rdb' ) {
-
-	my $locator = "Bio::EnsEMBL::DBSQL::Obj/host=$host1;" .
-  	              "port=$port1;"      .
-		      "dbname=ensembl;"  .
-		      "user=$dbuser1;"    .
-		      "pass=$dbpass1";
-
-	$db1 = Bio::EnsEMBL::DBLoader->new($locator);
-	
-    } else {
-	die("$dbtype1 is not a good type (should be ace or rdb)");
-
-    }
-
-    return ($db1);
-}
