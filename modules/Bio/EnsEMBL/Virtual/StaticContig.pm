@@ -53,6 +53,8 @@ use strict;
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::Contig;
 use Bio::Annotation;
+use Bio::Annotation::DBLink;
+use Bio::EnsEMBL::VirtualGene;
 
 @ISA = qw(Bio::EnsEMBL::Virtual::Contig);
 
@@ -177,26 +179,23 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
+
     my    $statement = "SELECT f.id, 
-                      IF     (sgp.raw_ori=1,
-                                 (f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,
-  
-                      IF     (sgp.raw_ori=1,
-                                 (f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
-                      IF     (sgp.raw_ori=1,
-                                  f.strand,
-                                  (-f.strand)),
-                      f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
-		    FROM   feature f, analysis a,static_golden_path sgp
-                    WHERE  f.score > $score
-                    AND    f.analysis = a.id 
-                    AND    sgp.raw_id = f.contig
-		    AND    a.db = '$analysis_type'  
-                    AND    sgp.chr_end >= $glob_start 
-		    AND    sgp.chr_start <=$glob_end 
-		    AND    sgp.chr_name='$chr_name' ORDER by start";
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+		        FROM   feature f, analysis a,static_golden_path sgp
+                        WHERE  f.score > $score
+                        AND    f.analysis = a.id 
+                        AND    sgp.raw_id = f.contig
+		        AND    a.db = '$analysis_type'  
+                        AND    sgp.chr_end >= $glob_start 
+		        AND    sgp.chr_start <=$glob_end 
+		        AND    sgp.chr_name='$chr_name' 
+                        ORDER  by start";
     
 
     my  $sth = $self->dbobj->prepare($statement);    
@@ -274,17 +273,17 @@ sub get_all_RepeatFeatures {
     my $length=$self->length;
 
     my $statement = "SELECT rf.id,
-                 IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
-                        (sgp.chr_start+sgp.raw_end-rf.seq_end-$glob_start)) as start,                                        
-                 IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
-                        (sgp.chr_start+sgp.raw_end-rf.seq_start-$glob_start)), 
-                 IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
-                        rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
-                 FROM   repeat_feature rf,static_golden_path sgp
-                 WHERE  sgp.raw_id = rf.contig
-                 AND    sgp.chr_end >= $glob_start 
-                 AND    sgp.chr_start <=$glob_end
-		 AND    sgp.chr_name='$chr_name' order by start";
+                     IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                            (sgp.chr_start+sgp.raw_end-rf.seq_end-$glob_start)) as start,                                        
+                     IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                            (sgp.chr_start+sgp.raw_end-rf.seq_start-$glob_start)), 
+                     IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
+                            rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
+                     FROM   repeat_feature rf,static_golden_path sgp
+                     WHERE  sgp.raw_id = rf.contig
+                     AND    sgp.chr_end >= $glob_start 
+                     AND    sgp.chr_start <=$glob_end
+		     AND    sgp.chr_name='$chr_name' order by start";
     
     my $sth = $self->dbobj->prepare($statement);
     $sth->execute();
@@ -451,42 +450,6 @@ sub get_all_ExternalFeatures{
 }
 
 
-
-
-=head2 karyotype_band
-
- Title   : karyotype_band
- Usage   : $label = $self->karyotype_band
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub karyotype_band {
-   my ($self,@args) = @_;
-
-   my $kadp = $self->dbobj->get_KaryotypeAdaptor();
-   my $band = $kadp->get_band_label_by_position($self->_chr_name,$self->_global_start + ($self->length/2));
-
-   return $band 
-}
-
-=head2 get_landmark_MarkerFeatures
-
-  Title   : get_landmark_MarkerFeatures 
-  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
-  Function: Gets MarkerFeatures with identifiers like D8S509. 
-            MarkerFeatures can be asked for a Marker. 
-            Its assumed, that when you can get MarkerFeatures, then you can 
-            get the Map Code as well.
-  Example : - 
-  Returns : -
-  Args : -
-
-=cut
 
 
 sub get_landmark_MarkerFeatures {
@@ -766,6 +729,138 @@ return $markers[0];
 
 
 }
+
+
+
+
+
+
+=head2 get_all_VirtualGenes_startend
+
+ Title   : get_all_VirtualGenes_startend
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+
+
+
+sub get_all_VirtualGenes_startend
+{
+my ($self)=shift;
+
+my $gene;
+my @genes;
+
+my $glob_start=$self->_global_start;
+my $glob_end=$self->_global_end;
+my $chr_name=$self->_chr_name;
+
+$self->throw ("I need a chromsome name") unless defined $chr_name;
+$self->throw ("I need a chromosome end") unless defined $glob_end;
+$self->throw ("I need a chromsome start") unless defined $glob_start;
+
+my $query ="SELECT     t.gene,
+                       MIN(IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start))) as start,
+                       MAX(IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start))) as end 
+            FROM       static_golden_path sgp ,exon e,exon_transcript et,transcript t 
+            WHERE      sgp.raw_id=e.contig 
+            AND        e.id=et.exon 
+            AND        t.id=et.transcript 
+            AND        sgp.chr_end >= $glob_start   
+            AND        sgp.chr_start <=$glob_end 
+            AND        sgp.chr_name='$chr_name' 
+            GROUP BY   t.gene;";
+
+
+    my $sth = $self->dbobj->prepare($query);
+    $sth->execute;
+    
+    my ($gene_id,$start,$end);
+    $sth->bind_columns(undef,\$gene_id,\$start,\$end);
+
+    while ($sth->fetch){
+
+	if (($end > $self->length)) {$end=$self->length;}
+	if (($start < 1)) {$start=1;}
+
+	$gene=Bio::EnsEMBL::Gene->new();
+	$gene->id($gene_id);
+
+	my $query = "select external_db,external_id from genedblink where gene_id = '$gene_id'";
+	my $sth = $self->dbobj->prepare($query);
+	my $res = $sth ->execute();
+	while( (my $hash = $sth->fetchrow_hashref()) ) {
+	    my $dblink = Bio::Annotation::DBLink->new();
+	    $dblink->database($hash->{'external_db'});
+	    $dblink->primary_id($hash->{'external_id'});
+	    $gene->add_DBLink($dblink);
+	}
+
+	my $genestr=1;
+	my $vg = Bio::EnsEMBL::VirtualGene->new(-gene => $gene,
+						-contig => $self, 
+						-start => $start, 
+						-end => $end, 
+						-strand => $genestr
+						);
+	push @genes,$vg;
+    }
+
+    return @genes;
+
+}
+
+
+
+
+
+
+
+=head2 karyotype_band
+
+ Title   : karyotype_band
+ Usage   : $label = $self->karyotype_band
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub karyotype_band {
+   my ($self,@args) = @_;
+
+   my $kadp = $self->dbobj->get_KaryotypeAdaptor();
+   my $band = $kadp->get_band_label_by_position($self->_chr_name,$self->_global_start + ($self->length/2));
+
+   return $band 
+}
+
+=head2 get_landmark_MarkerFeatures
+
+  Title   : get_landmark_MarkerFeatures 
+  Usage   : @fp = $contig->get_landmark_MarkerFeatures; 
+  Function: Gets MarkerFeatures with identifiers like D8S509. 
+            MarkerFeatures can be asked for a Marker. 
+            Its assumed, that when you can get MarkerFeatures, then you can 
+            get the Map Code as well.
+  Example : - 
+  Returns : -
+  Args : -
+
+=cut
+
+
+
 
 sub _get_analysis {
     my ($self,$analysisid)=@_;
