@@ -206,23 +206,36 @@ sub seq {
 
 
 sub subseq {
-  my $self = shift;
+  my $self   = shift;
+  my $start  = shift;
+  my $end    = shift;
+  my $strand = shift;
+
   #
   # get all the features
   #
   my $logic_names = $self->repeat_mask_logic_names();
   my $soft_mask   = $self->soft_mask();
 
+
+  # We want the repeat coordinates to be relative to the beginning of the
+  # subregion requested and we only want the ones in the subregion.
+  # Create a slice of the subregion to retrieve these with.
+  my $left_expand  = 1 - $start;  # a negative expansion is a contraction
+  my $right_expand = $end - $self->length();
+
+  my $subslice = $self->expand($left_expand, $right_expand);
+
   my $repeats = [];
 
   foreach my $l (@$logic_names) {
-    push @{$repeats}, @{$self->get_all_RepeatFeatures($l)};
+    push @{$repeats}, @{$subslice->get_all_RepeatFeatures($l)};
   }
 
   #
   # get the dna
   #
-  my $dna = $self->SUPER::subseq(@_);
+  my $dna = $self->SUPER::subseq($start, $end, $strand);
 
   #
   # mask the dna
