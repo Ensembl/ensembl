@@ -2265,6 +2265,15 @@ sub get_all_VirtualFgenesh_startend_lite {
     );
 }
 
+sub get_all_VirtualHalfwise_startend_lite {
+    my  $self = shift;
+    return $self->dbobj->get_LiteAdaptor->fetch_virtualhalfwise_start_end(
+        $self->_chr_name,
+        $self->_global_start,
+        $self->_global_end
+    );
+}
+
 sub get_all_EMBLGenes_startend_lite {
 	my  $self = shift;
 	return $self->dbobj->get_LiteAdaptor->fetch_virtualgenes_start_end(
