@@ -590,7 +590,7 @@ sub fetch_VirtualContig_of_clone{
                                     AND cl.id = '$clone'  
                                     AND c.internal_id = st.raw_id 
                     AND st.type = '$type' 
-                                    ORDER BY st.fpcctg_start"
+                                    ORDER BY st.chr_start"
                     );
    $sth->execute();
  
@@ -905,7 +905,7 @@ sub fetch_VirtualContig_by_clone {
                                     AND cl.id = '$clone' 
                     AND c.internal_id = st.raw_id 
                     AND st.type = '$type' 
-                    ORDER BY st.fpcctg_start"
+                    ORDER BY st.chr_start"
                     );
    $sth->execute();
    my ($contig,$start,$chr_name) = $sth->fetchrow_array;
