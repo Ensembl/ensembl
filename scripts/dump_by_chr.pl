@@ -5,7 +5,7 @@
 #
 use Carp;
 
-die "Not ready for main branch this is a direct copy of rev. 1.3.2.4";
+warn "Not ready for main branch this is a direct copy of rev. 1.3.2.4";
 
 =head1 NAME
 
@@ -466,7 +466,7 @@ sub dump_lite {
     my $sql;
 
     # tables that have chr_name:
-    foreach my $table ( qw(gene gene_exon karyotype location snp) ) {
+    foreach my $table ( qw(gene karyotype location snp) ) {
         $sql="
 SELECT distinct t.*
 FROM   $litedb.$table t
