@@ -28,6 +28,10 @@
 
     -dbname    For RDBs, what name to connect to
 
+    -dbuser    For RDBs, what username to connect as
+
+    -dbpass    For RDBs, what password to use
+
     -nodna     don't write dna part of embl file (for testing)
 
     -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
@@ -86,26 +90,36 @@ use Bio::SeqIO;
 
 use Getopt::Long;
 
-my $dbtype = 'rdb';
+# global defaults
 my $host;
-my $host1  = 'croc';
-my $host2  = 'humsrv1';
-my $port   = '410000';
-my $format = 'embl';
-my $nodna  = 0;
+# default is for msql
+my $dbtype    = 'rdb';
+my $format    = 'embl';
+my $nodna     = 0;
 my $help;
-my $noacc  = 0;
+my $noacc     = 0;
 my $aceseq;
-my $fromfile = 0;
-my $getall =0;
+my $fromfile  = 0;
+my $getall    = 0;
 my $pepformat = 'Fasta';
 my $test;
 my $part;
-my $dbname = 'ensdev';
-my $verbose = 0;
-my $cstart = 0;
-my $cend   = undef;
+my $verbose   = 0;
+my $cstart    = 0;
+my $cend      = undef;
 my $outfile;
+
+# defaults for msql (rdb) access
+# msql was 'croc'
+my $host1     = 'obi-wan';
+# msql was 'ensdev'
+my $dbname    = 'ens2';
+my $dbuser    = 'humpub';
+my $dbpass    = 'ens2pass';
+
+# defaults for acedb (humace)
+my $host2     = 'humsrv1';
+my $port      = '410000';
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -115,6 +129,8 @@ my $outfile;
 # my $clone = '217N14';
 
 &GetOptions( 'dbtype:s'  => \$dbtype,
+	     'dbuser:s'  => \$dbuser,
+	     'dbpass:s'  => \$dbpass,
 	     'host:s'    => \$host,
 	     'port:n'    => \$port,
 	     'dbname:s'  => \$dbname,
@@ -157,7 +173,8 @@ if( $dbtype =~ 'ace' ) {
     $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $host, -port => $port);
 } elsif ( $dbtype =~ 'rdb' ) {
     $host=$host1 unless $host;
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => 'root', -db => $dbname , -host => $host );
+    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $dbuser, -db => $dbname , 
+					 -host => $host, -password => $dbpass );
 } elsif ( $dbtype =~ 'timdb' ) {
 
     # EWAN: no more - you should be able to load as many clones as you like!
@@ -182,6 +199,7 @@ my $debug_lists=0;
 if($debug_lists){
     # all clones
     my @list=$db->get_all_Clone_id();
+    print scalar(@list)." clones returned in list\n";
     # clones updated from before when I first started updating
     my @list=$db->get_updated_Clone_id('939220000');
     # clones updated from now (should be none)
@@ -191,6 +209,7 @@ if($debug_lists){
 
 if ( $getall == 1 ) {
     @clones = $db->get_all_Clone_id();
+    print STDERR scalar(@clones)." clones found in DB\n";
 }
 
 if( defined $cend ) {
