@@ -78,7 +78,6 @@ sub compare {
 
   close(NEW_ONLY);
   close(OLD_ONLY);
-  close(MISMATCHED);
 
   print "\nCompared " . scalar(keys %$new) . " new xref mappings with " . scalar(keys %$old) . " existing ensembl mappings\n";
 
@@ -99,6 +98,9 @@ sub compare {
 sub pc {
 
   my ($a, $total) = @_;
+
+  return "?" if (!$total);
+
   my $number = 100 * $a / $total;
   my $pad = "";
   $pad .= " " if ($number < 100);
