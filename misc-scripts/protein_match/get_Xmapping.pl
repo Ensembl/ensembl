@@ -62,56 +62,46 @@ print STDERR "Reading SPTR file\n";
 
 
 
-print STDERR "parseing sp file\n";
+#print STDERR "parseing sp file\n";
 my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
-print STDERR "processing sp lines\n";
+#print STDERR "processing sp lines\n";
 &process_parsed_sp($swiss, $ac, $id, \*OUT);
-Get Xref mapping specifically for drosophila
-
-    #if ($organism eq "drosophila") {
-	#Get the gene name, especially useful to replace Hugo name when these don't exist.
-	#my @gene_names = $seq->annotation->each_gene_name;
-	#foreach my $g(@gene_names) {
-	 #   print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\tXREF\n";
-	#}
-    #}
-    
 
 
 if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
-#Read the refseq file in gnp format
-    print STDERR "Reading REFSEQ File\n";
+  #Read the refseq file in gnp format
+  print STDERR "Reading REFSEQ File\n";
+  
+  open (REFSEQ,"$refseq_gnp") || die "Can't open Refseq gnp $refseq_gnp\n";
+  
+  $/ = "\/\/\n";
+  
+  while (<REFSEQ>) {
+    my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+    my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
     
-    open (REFSEQ,"$refseq_gnp") || die "Can't open Refseq gnp $refseq_gnp\n";
+    $refseq_map{$dna_ac} = $prot_ac; 
     
-    $/ = "\/\/\n";
+    #Its a curated Refseq, flag it as known
+    print OUT "$prot_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\tKNOWN\n";
     
-    while (<REFSEQ>) {
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-	
-	$refseq_map{$dna_ac} = $prot_ac; 
-	
-#Its a curated Refseq, flag it as known
-	print OUT "$prot_ac\tRefSeq\t$prot_ac\tRefSeq\t$prot_ac\t\tKNOWN\n";
-       
-	my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
-	my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
-
-#XREF entries	
-	if ($mim) {
-	    print OUT "$prot_ac\tRefSeq\t$mim\tMIM\t$mim\t\tXREF\n";
-	}
-	
-	if ($locus) {
-	    print OUT "$prot_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\tXREF\n";
-	}
+    my ($mim) = $_ =~ /\/db_xref=\"MIM:(\d+)/;
+    my ($locus) = $_ =~ /\/db_xref=\"LocusID:(\d*)/;
+    
+    #XREF entries	
+    if ($mim) {
+      print OUT "$prot_ac\tRefSeq\t$mim\tMIM\t$mim\t\tXREF\n";
     }
-    close (REFSEQ);
     
-    $/ = "\n";
+    if ($locus) {
+      print OUT "$prot_ac\tRefSeq\t$locus\tLocusLink\t$locus\t\tXREF\n";
+    }
+  }
+  close (REFSEQ);
+  
+  $/ = "\n";
 }
-    
+
 
 
 #Get Xref mapping specifically for human
@@ -176,41 +166,41 @@ if ($organism eq "human") {
 }
 
 #Get Xref mapping specifically for mouse.
-#if ($organism eq "mouse") {
-#    my %mgi2sp;
-#    print STDERR "Getting Xrefs specifically for mouse\n";
-#    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
-#    while (<MGISP>) {
-#	chomp;
-#	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
+if ($organism eq "mouse") {
+    my %mgi2sp;
+    print STDERR "Getting Xrefs specifically for mouse\n";
+    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
+    while (<MGISP>) {
+	chomp;
+	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
       	
-#	my @sp = split(/\s/,$sps);
+	my @sp = split(/\s/,$sps);
 	
-##put in hash all of the SP entries which correspond to an MGI (this will be used later)
-#	$mgi2sp{$mgi} = $sps;
+#put in hash all of the SP entries which correspond to an MGI (this will be used later)
+	$mgi2sp{$mgi} = $sps;
 	
-#	foreach my $s(@sp) {
-#	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
-#	}
-#    }
-#    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
+	foreach my $s(@sp) {
+	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
+	}
+    }
+    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
     
-#    while (<MGILOC>) {
-##The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+    while (<MGILOC>) {
+#The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
 	
-#	chomp;
-#	my ($mgi,$locus) = split (/\t/,$_);
+	chomp;
+	my ($mgi,$locus) = split (/\t/,$_);
 	
-#	if ($mgi2sp{$mgi}) {
-##There can be many SPs for one MGI
-#	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
+	if ($mgi2sp{$mgi}) {
+#There can be many SPs for one MGI
+	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
 	    
-#	    foreach my $sw(@swiss) {
-#		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\tXREF\n";
-#	    }
-#	}
-#    }
-#}
+	    foreach my $sw(@swiss) {
+		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\tXREF\n";
+	    }
+	}
+    }
+}
 
 #Get specific xmapping for anopheles.
 if($organism eq "anopheles") {
@@ -229,30 +219,7 @@ if($organism eq "anopheles") {
     }
 }
 
-#Get specific xmapping for elegans
-#if($organism eq "elegans") {
-#    print STDERR "Getting Xref specifically for briggsae\n";
-#    open (ELEGNOM,"$eleg_nom") || die "Can't open $eleg_nom";
-    
-#    while (<ELEGNOM>) {
-#	chomp;
-#	my $sp;
-#	my ($name,$ac) = split;
-		
-#	if ($_ =~ /TR:/) {
-#	    ($sp) = $_ =~ /TR:(\S+)/;
-#	}
-	
-#	if ($_ =~ /SW:/) {
-#	    ($sp) = $_ =~ /SW:(\S+)/;
-#	}
 
-#	if ($sp) {
-#	    print OUT "$sp\tSPTR\t$ac\tWORMBASE\t$name\t\tXREF\n";
-#	}
-#    }
-#    close(ELEGNOM);
-#}
 
 #Get specific xmapping for zebrafishq
 if($organism eq "zebrafish") {
@@ -284,14 +251,12 @@ if($organism eq "zebrafish") {
     }
     close (ZEBGENE);
 }
-print STDERR "The output has been written there: $out\n";
-
-
 
 
 if($organism eq 'briggsae'){
+  my $in  = Bio::SeqIO->new(-file => $briggsae_peptides, '-format' =>'fasta');
  BRIGGSAE: while(my $seq = $in->next_seq){
-    my $in  = Bio::SeqIO->new(-file => $briggsae_peptides, '-format' =>'fasta');
+    
     #ID CBG11531 desc CBP02734 (cb25.fpc2454.en7794a/cb25.fpc2454.tw352/cb25.fpc2454.gc383) W = 100.00; B = 99.7 
     #print STDERR "ID ".$seq->id." desc ".$seq->desc."\n";
     my $id = $seq->id;
@@ -301,11 +266,12 @@ if($organism eq 'briggsae'){
     $syns =~ s/[\(\)]//g;
     my @secs = split /\//, $syns;
     my $syn = join(';',@secs);
-    print $display_id."\tSPTR\t".$display_id."\tBRIGGSAE_HYBRID\t".$id."\t".$syn."\tXREF\n";
+    print OUT $display_id."\tSPTR\t".$display_id."\tBRIGGSAE_HYBRID\t".$id."\t".$syn."\tXREF\n";
   }
 }
 
-
+close(OUT);
+print STDERR "The output has been written there: $out\n";
 
 sub parse_sp_file{
   my ($file) = @_;
@@ -339,7 +305,7 @@ sub parse_sp_file{
       }
       $ac = 1;
     }
-    if(($_ =~ /^ID/) || ($_ =~ /^AC/) || ($_ =~ /^DR/)){
+    if(($_ =~ /^ID/) || ($_ =~ /^AC/) || ($_ =~ /^DR/) || ($_ =~ /^GN/)){
       if(!$swiss{$counter}){
 	$swiss{$counter} = [];
       }
@@ -375,6 +341,7 @@ sub process_parsed_sp{
     my @protein_ids;
     my @mims;
     my @pdbs;
+    my @genenames;
     my $id = $id{$entry};
     my $ac = $ac{$entry};
     my $tag;
@@ -434,6 +401,17 @@ sub process_parsed_sp{
 	  push(@pdbs, $mim);
 	}
       }
+      if($organism eq 'drosophila'){
+	if($line =~ /^GN/){
+	  $line =~ s/GN//;
+	  my @values = split /\s+OR\s+/, $line;
+	  foreach my $g(@values){
+	    $g =~ s/\.//;
+	    $g =~ s/\s+//g;
+	    push(@genenames, $g);
+	  }
+	}
+      }
     }
     
     if(!$tag){
@@ -459,6 +437,9 @@ sub process_parsed_sp{
     }
     foreach my $mim(@pdbs){
       print $out $ac."\tSPTR\t".$mim."\tPDB\t".$mim."\tXREF\n";
+    }
+    foreach my $mim(@genenames){
+      print $out $ac."\tSPTR\t".$mim."\tFlyBase\t".$mim."\t\tXREF\n";
     }
   }
 }

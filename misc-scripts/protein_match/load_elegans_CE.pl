@@ -68,7 +68,7 @@ while (my @res = $sth->fetchrow) {
 	
 #	print STDERR "$db1\t$db2\n";
     
-#    $adaptor->store($dbentry,$transl_dbid,"Translation");
+    $adaptor->store($dbentry,$transl_dbid,"Translation");
     
     my $transdbentry = Bio::EnsEMBL::DBEntry->new
 	    ( -adaptor => $adaptor,
@@ -79,7 +79,7 @@ while (my @res = $sth->fetchrow) {
 	      -dbname => $db2);
     $transdbentry->status("XREF");
     
-#    $adaptor->store($transdbentry,$transl_dbid,"Translation");
+    $adaptor->store($transdbentry,$transl_dbid,"Translation");
 
     my $ce = $map{$transc_stable_id};
     
