@@ -50,6 +50,7 @@ use strict;
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::Contig;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
+use Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor;
 use Bio::Annotation;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::VirtualGene;
@@ -3198,6 +3199,32 @@ sub _sgp_select {
                   (sgp.chr_start+sgp.raw_end-$start-$glob_start+1)), 
              IF (sgp.raw_ori=1,$strand,(-$strand)) ";
   return $str;
+}
+
+sub has_AssemblyContigs {
+  my ($self) = @_;
+
+  my $ad = new Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor($self->dbobj);
+
+  if ($ad->has_AssemblyContigs($self->dbobj->static_golden_path_type)) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+sub each_AssemblyContig {
+  my ($self) = @_;
+
+  my $chr      = $self->_chr_name;
+  my $chrstart = $self->_global_start;
+  my $chrend   = $self->_global_end;
+
+  my $ad = new Bio::EnsEMBL::DBSQL::AssemblyContigAdaptor($self->dbobj);
+  my @contigs = $ad->fetch_by_chr_start_end($chr,$chrstart,$chrend);
+
+  return @contigs;
+
 }
 
 
