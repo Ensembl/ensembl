@@ -655,29 +655,7 @@ sub analysis{
 sub seq{
    my ($self,$arg) = @_;
 
-   if( defined $arg ) {
-       $self->throw("Calling SeqFeature::Generic->seq with an argument. You probably want attach_seq");
-   }
-
-   if( ! exists $self->{'_gsf_seq'} ) {
-       return undef;
-   }
-
-   # assumming our seq object is sensible, it should not have to yank
-   # the entire sequence out here.
-
-   my $seq = $self->{'_gsf_seq'}->trunc($self->start(),$self->end());
-
-
-   if( $self->strand == -1 ) {
-
-       # ok. this does not work well (?)
-       #print STDERR "Before revcom", $seq->str, "\n";
-       $seq = $seq->revcom;
-       #print STDERR "After  revcom", $seq->str, "\n";
-   }
-
-   return $seq;
+   return $self->feature1()->seq($arg);
 }
 
 
@@ -698,11 +676,7 @@ sub seq{
 sub attach_seq{
    my ($self,$seq) = @_;
 
-   if( !defined $seq  || !ref $seq || ! $seq->isa("Bio::PrimarySeqI") ) {
-       $self->throw("Must attach Bio::PrimarySeqI objects to SeqFeatures");
-   }
-
-   $self->{'_gsf_seq'} = $seq;
+   return $self->feature1()->attach_seq($seq);
 }
 
 =head2 entire_seq
@@ -720,7 +694,7 @@ sub attach_seq{
 sub entire_seq{
    my ($self) = @_;
 
-   return $self->{'_gsf_seq'};
+   return $self->feature1()->entire_seq();
 }
 
 
