@@ -426,44 +426,6 @@ sub set_featurepair_fields {
 }
 
 
-=head2 to_FTHelper
-
- Title   : to_FTHelper
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub to_FTHelper{
-   my ($self) = @_;
-
-   # Make new FTHelper, and fill in the key
-   my $fth = Bio::SeqIO::FTHelper->new;
-   $fth->key('similarity');
-   
-   # Add location line
-   my $g_start = $self->start;
-   my $g_end   = $self->end;
-   my $loc = "$g_start..$g_end";
-   if ($self->strand == -1) {
-        $loc = "complement($loc)";
-    }
-   $fth->loc($loc);
-   
-   # Add note describing similarity
-   my $type    = $self->hseqname;
-   my $r_start = $self->hstart;
-   my $r_end   = $self->hend;
-   $fth->add_field('note', "$type: matches $r_start to $r_end");
-   $fth->add_field('note', "score=".$self->score);
-   
-   return $fth;
-}
-
 
 sub gffstring {
     my ($self) = @_;
