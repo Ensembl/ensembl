@@ -94,7 +94,7 @@ sub _columns {
   my $self = shift;
 
   return qw(dna_align_feature_id contig_id analysis_id contig_start 
-	    contig_end contig_strand hit_start hit_name hit_strand phase
+	    contig_end contig_strand hit_start hit_name hit_strand
 	    cigar_line evalue perc_ident score);
 }
 
