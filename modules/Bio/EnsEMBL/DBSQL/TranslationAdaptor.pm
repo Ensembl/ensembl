@@ -56,23 +56,22 @@ use Bio::EnsEMBL::Utils::Exception qw( throw warning deprecate );
 sub fetch_by_Transcript {
   my ( $self, $transcript ) = @_;
 
-
-
   my $sql = "
-    SELECT tl.translation_id, tl.transcript_id, tl.start_exon_id,
+    SELECT tl.translation_id, tl.start_exon_id,
            tl.end_exon_id, tl.seq_start, tl.seq_end,
            tlsi.stable_id, tlsi.version
       FROM translation tl
  LEFT JOIN translation_stable_id tlsi
-        ON tl.translation_id = tlsi.translation_id
-     WHERE tl.transcript_id = ? ";
+        ON tlsi.translation_id = tl.translation_id
+     WHERE tl.transcript_id = ?";
 
+  my $transcript_id = $transcript->dbID();
   my $sth = $self->prepare( $sql );
-  $sth->execute( $transcript->dbID() );
+  $sth->execute( $transcript_id );
 
-  my ( $translation_id, $transcript_id, $start_exon_id, $end_exon_id,
+  my ( $translation_id, $start_exon_id, $end_exon_id,
        $seq_start, $seq_end, $stable_id, $version ) = 
-     $sth->fetchrow_array();
+  $sth->fetchrow_array();
 
   if( ! defined $translation_id ) {
     return undef;
@@ -110,7 +109,6 @@ sub fetch_by_Transcript {
    );
 
   return $translation;
-
 }
 
 =head2 fetch_all_by_DBEntry
