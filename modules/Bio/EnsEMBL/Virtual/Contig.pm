@@ -142,28 +142,13 @@ sub new_from_one {
     return $self;
 }
 
+
+
 =head2 new
 
  Title   : new
- Usage   : see SYNOPSIS
- Function: creates a new virtual contig
- Example : see SYNOPSIS
- Returns : a virtual contig
- Args    : 
-           -focuscontig: raw contig that forms the basis of the new
-                         Virtual contig
+ Args    : Now does nothing excepts throws an exception
 
-           -focusposition: the reference point in the focuscontig,
-                           relative to which the left and right (see
-                           below) positions are taken.
-
-           -orientation: the orientation (1 or -1) of the VirtualContig
-
-           -left: How many nucleotides to the left of focusposition are
-                  included
-
-           -right: How many nucleotides to the right of focusposition are 
-                   included.
 =cut
 
 sub new {
@@ -173,53 +158,74 @@ sub new {
     bless $self,$class;
     $self->_make_datastructures();
 
-    my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = 
-	$self->_rearrange([qw( 
-			       FOCUSCONTIG 
-			       FOCUSPOSITION 
-			       ORI 
-			       LEFT 
-			       RIGHT 
-			       CLONE)],@args);
 
-    #Create a new VirtualMap holder object for MapContigs
-    my $vmap=Bio::EnsEMBL::Virtual::Map->new();
-    $self->_vmap($vmap);
-
-    # perhaps this should go into the Vmap constructor?
-    $self->_vmap->right_overhang(0);
-    $self->_vmap->left_overhang(0);
-    my $VC_UNIQUE_NUMBER;
-
-    if( defined $clone ) {
-	$self->throw("Have not delt with clone VC rewrite yet");
-    } else {
-	# paranoia
-	if( !defined $focuscontig   || 
-	    !defined $focusposition || 
-	    !defined $ori           || 
-	    !defined $leftsize      || 
-	    !defined $rightsize ) {
-	    $self->throw("Have to provide all arguments to virtualcontig \n" .
-			 "(focuscontig, focusposition, ori, left and right)");
-	}
-	if (! $focuscontig->isa('Bio::EnsEMBL::DBSQL::RawContig') ) {
-	    $self->throw("$focuscontig is not a Bio::EnsEMBL::DBSQL::RawContig object, cannot make Virtual Contig!");
-	}
-	      $self->_vmap->build_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
-      $self->_vmap->dbobj($focuscontig->dbobj);
-      $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
-    }
-    my $length=$leftsize+$rightsize;
-    $self->length($length);
-    $self->_unique_number($VC_UNIQUE_NUMBER);
+    $self->throw("Bare new now useless. Should be static or something similar");
 
     return $self;
 }
 
+=head2 new_from_inverted
+
+ Title   : new_from_inverted
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub new_from_inverted{
+   my ($class,$vc) = @_;
+
+   my $self = {};
+   bless $self,$class;
+   $self->_make_datastructures();
+
+   if( !ref $vc || !$vc->isa("Bio::EnsEMBL::Virtual::Contig") ) {
+       $self->throw("no virtual contig provided to new from inverted");
+   }
+
+   my $length = $vc->length;
+   foreach my $mc ( $vc->_vmap->each_MapContig ) {
+       # this looks too easy ;)
+       $self->_vmap->create_MapContig($mc->contig,$length-$mc->end+1,$length-$mc->start+1,$mc->rawcontig_start,$mc->orientation*-1);
+   }
+
+
+   # these need to set separately to deal with overhangs
+   $self->_vmap->length($length);
+   $self->length($length);
+
+   $self->id($vc->id.".inverted");
+
+   return $self;
+}
+
+=head2 invert
+
+ Title   : invert
+ Usage   : $newvc = $vc->invert;
+ Function: Makes a new vc which is the reverse complement of this
+           vc. New vc is completely ok for coordinate transformation
+           etc
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub invert{
+   my ($self) = @_;
+
+   return Bio::EnsEMBL::Virtual::Contig->new_from_inverted($self);
+}
+
 		 
 		    
-=head1 New Virtual::Contig functions.
+=head1 Virtual::Contig functions.
 
 =head2 primary_seq
 

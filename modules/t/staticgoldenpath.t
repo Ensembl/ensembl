@@ -297,35 +297,36 @@ if( $vseq->subseq(1,40) ne 'AAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTNNNNN' ) {
 #print STDERR "Whole is ",$vseq->seq,"\n";
 
 
-# testing slices 
+# testing inversions
 
-my $slice = $stadaptor->fetch_VirtualContig_by_fpc_name_slice('ctg123',135,196);
+my $invert = $vc2->invert();
 
-if( $slice->length != 194 ) {
+if( $invert->length != $vc2->length ) {
     print "not ok 21\n";
-    print STDERR "Length is ",$slice->length,"\n";
 } else {
     print "ok 21\n";
 }
 
-#$slice->_dump_map(\*STDERR);
 
-if( $slice->primary_seq->subseq(1,134) ne 'N'x134 ) {
+if( $invert->seq ne $vc2->revcom->seq ) {
     print "not ok 22\n";
-    print STDERR "sequence ",$slice->primary_seq->subseq(1,134),"\n";
 } else {
     print "ok 22\n";
 }
 
-my @fp = $slice->get_all_SimilarityFeatures();
+my @fp = $invert->get_all_SimilarityFeatures();
 my $fp = shift @fp;
 
-if( $fp->start != 176 || $fp->end != 186 ) {
+if( $fp->start != 9 || $fp->end != 19 ) {
     print "not ok 23\n";
     print STDERR "Feature ",$fp->start," ",$fp->end,"\n";
 } else {
     print "ok 23\n";
 }
+
+#$vc2->_dump_map(\*STDERR);
+#print STDERR "//\n";
+#$invert->_dump_map(\*STDERR);
 
 # testing get on vc is good
 
