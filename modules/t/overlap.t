@@ -102,6 +102,8 @@ die ("$0\nCan't create virtual contig :$!") unless defined ($vc);
 
 print "ok 7\n";
 
+$vc->_dump_map(\*STDERR);
+
 my $seq      = $vc->primary_seq;
 print STDERR "Sequence is [" .$seq->seq ."] Should be AAAACCCCTTGGGAAA\n";
 

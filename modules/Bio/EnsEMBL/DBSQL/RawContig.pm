@@ -1480,8 +1480,16 @@ sub _got_overlaps {
         }
         # Flag that we've visited the database to get overlaps
         $self->_got_overlaps(1);
+
+	# sanity check ourselves
+	if( $self->golden_start > $self->golden_end ) {
+	    $self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
+	}
     }
-}
+
+# this brace is the end-of-scope flag to statically compile the
+# SQL queries.
+} 
 
 =head2 _right_overlap
 

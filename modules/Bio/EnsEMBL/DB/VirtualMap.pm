@@ -364,7 +364,7 @@ sub build_contig_map {
 	} else {
 	    $startpos = $current_contig->golden_end   - ($current_left_size - $left);
 	}
-	
+	# mysterious +1 to keep the overlapping base convention working.
 	$self->create_MapContig(1,$startpos,$current_orientation,$current_contig);
 	my $mc=$self->get_MapContig($current_contig->id);
 	$mc->leftmost(1);
@@ -397,6 +397,8 @@ sub build_contig_map {
     %seen_hash = ();
     
     while( $current_length < $total ) {
+	print "Looking on right move $current_length vs $total\n";
+
 	# move onto the next contig.
 	
 	if( exists $seen_hash{$current_contig->id} ) {
@@ -413,6 +415,7 @@ sub build_contig_map {
 	    # if there is no right overlap, trim right to this size
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
+		print STDERR "Found right end\n";
 		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
@@ -421,6 +424,7 @@ sub build_contig_map {
 	    # see whether the distance gives us an end condition, and a right_overhang
 	    
 	    if( $current_length + $overlap->distance > $total ) {
+		print STDERR "Found right overhang\n";
 		# right overhang
 		$self->right_overhang($total - $current_length);
 		last;
@@ -470,11 +474,20 @@ sub build_contig_map {
 	    #IS THIS FINE?
 
 	    if( !defined $overlap ) {
-		$self->found_left_end(1);
+		$self->found_right_end(1);
 		$right = $current_length - $left;
 		last;
 	    }
 	    
+	    # see whether the distance gives us an end condition, and a right_overhang
+	    
+	    if( $current_length + $overlap->distance > $total ) {
+		print STDERR "Found right overhang\n";
+		# right overhang
+		$self->right_overhang($total - $current_length);
+		last;
+	    }
+
 	    # add to total, move on the contigs
 	    $current_contig = $overlap->sister();
 	    

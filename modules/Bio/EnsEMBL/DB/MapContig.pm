@@ -157,10 +157,11 @@ sub end{
 	print STDERR "Using leftmost for ",$self->contig->id,"\n";
 
 	# not the entire golden length used here (!)
+	# the mysterious +1 is to keep the overlapping base convention.
 	if( $self->orientation == 1 ) {
-	    return $self->start + ($self->contig->golden_end - $self->start_in);
+	    return $self->start + ($self->contig->golden_end - $self->start_in)+1;
 	} else {
-	    return $self->start + ($self->start_in - $self->contig->golden_start);
+	    return $self->start + ($self->start_in - $self->contig->golden_start)+1;
 	}
     } else {
 	return $self->start + $self->contig->golden_length-1;
@@ -183,6 +184,9 @@ sub rightmost_end{
     my ($obj,$value) = @_;
     
     if( defined $value) {
+	if( $value <= 0 || $value > $obj->contig->length ) {
+	    $obj->throw("Not possible to have a rightmost_end at $value with contig length".$obj->contig->length);
+	}
 	$obj->{'_rightmost_end'} = $value;
     }
     return $obj->{'_rightmost_end'};

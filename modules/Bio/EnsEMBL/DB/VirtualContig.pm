@@ -354,8 +354,10 @@ sub primary_seq {
    #Go through each MapContig
    foreach my $mc ( @map_contigs ) {
        my $tseq = $mc->contig->primary_seq();
-       
-       if( $mc->start != ($last_point+1) ) {
+       print STDERR "Looking at",$mc->start," on ",$mc->contig->id,"to $last_point\n";
+ 
+       if( ($mc->start) != ($last_point) ) {
+	   print STDERR "    Looking at",$mc->contig->id," as having a gap to $last_point\n";
 	   
            # Tony: added a throw here - if we get negative numbers of inserted N's
 	   
@@ -377,15 +379,19 @@ sub primary_seq {
        } else {
 	   if($mc->rightmost_end) {
 	       $end = $mc->rightmost_end;
+	       print STDERR "Right most end is $end\n";
 	   } else {
 	       if( $mc->orientation == 1 ) {
 		   $end = $mc->contig->golden_end;
+		   print STDERR "End is $end\n";
 	       } else {
 		   $end = $mc->contig->golden_start;
 	       }
 	   }
        }
        if( $mc->orientation == 1 ) {
+	   print STDERR "About to call with ",$mc->start_in,":",$end,"\n";
+
 	   $trunc = $tseq->subseq($mc->start_in,$end);
        } else {
 	   $trunc = $tseq->subseq($end,$mc->start_in);
@@ -393,7 +399,8 @@ sub primary_seq {
 	   my $trunc = CORE::reverse $trunc;
        }
        $seq_string .= $trunc;
-       $last_point += length($trunc);
+       $last_point  = $mc->end;
+       #$last_point += length($trunc);
    }
    
    # if there is a right overhang, add it 
