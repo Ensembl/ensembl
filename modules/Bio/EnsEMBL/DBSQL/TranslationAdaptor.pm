@@ -128,7 +128,20 @@ sub store {
 		 $translation->start_Exon()->dbID(),
 		 $translation->end(),
 		 $translation->end_Exon()->dbID() );
-
+  if (defined($translation->stable_id)) {
+    if (!defined($translation->version)) {
+      $self->throw("Trying to store incomplete stable id information for translation");
+    }
+    
+    my $statement = "INSERT INTO translation_stable_id(translation_id," .
+                                   "stable_id,version)".
+				     " VALUES(" . $translation->dbID . "," .
+				       "'" . $translation->stable_id . "'," .
+					 $translation->version . 
+					   ")";
+    my $sth = $self->prepare($statement);
+    $sth->execute();
+   }
   $translation->dbID( $sth->{'mysql_insertid'} );
   $translation->adaptor( $self );
 
