@@ -319,10 +319,10 @@ CREATE TABLE gene (
   type VARCHAR(40) NOT NULL,
   analysis_id int,
   transcript_count int NOT NULL,
-  relevant_xref_id int unsigned NOT NULL,
+  display_xref_id int unsigned NOT NULL,
 
   PRIMARY KEY (gene_id),
-  KEY xref_id_index ( relevant_xref_id )
+  KEY xref_id_index ( display_xref_id )
 );
 
 
@@ -360,12 +360,12 @@ CREATE TABLE transcript (
   gene_id          INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
   translation_id   INT UNSIGNED NOT NULL,          # foreign key translation:translation_id
   exon_count int NOT NULL,
-  relevant_xref_id int unsigned NOT NULL,
+  display_xref_id int unsigned NOT NULL,
 
   PRIMARY KEY (transcript_id),
   KEY gene_index (gene_id),
   KEY translation_index ( translation_id ),
-  KEY xref_id_index ( relevant_xref_id )
+  KEY xref_id_index ( display_xref_id )
 
 );
 
@@ -566,7 +566,6 @@ CREATE TABLE external_db(
          db_name ENUM ('gene_name','Celera_Pep','Celera_Trans','Celera_Gene','HumanGenscans','protein_id','SCOP','HUGO','GO','SPTREMBL','EMBL','MarkerSymbol','SWISSPROT','PDB','MIM','RefSeq','LocusLink','Interpro','Superfamily','ANOSUB') not null,
 	 release VARCHAR(40) DEFAULT '' NOT NULL,
 	 status  ENUM ('KNOWN','XREF','PRED') not null,
-         priority smallint unsigned not null,
          PRIMARY KEY( external_db_id ) 
 );
 
