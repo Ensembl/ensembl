@@ -1019,9 +1019,9 @@ sub _convert_seqfeature_to_vc_coords {
     $sf->end   ($rend);
     $sf->strand($rstrand);
     
-    if( $sf->can('attach_seq') ) {
-	$sf->attach_seq($self->primary_seq);
-    }
+    #if( $sf->can('attach_seq') ) {
+#	$sf->attach_seq($self->primary_seq);
+#    }
     
     $sf->seqname($self->id);
     
