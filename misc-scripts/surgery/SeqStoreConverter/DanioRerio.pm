@@ -28,7 +28,10 @@ sub create_coord_systems {
 
   my @assembly_mappings =  ("chromosome:$ass_def|chunk",
                             "clone|chunk",
-                            "supercontig:$ass_def|chunk");
+                            "supercontig:$ass_def|chunk",
+                            "chromosome:$ass_def|chunk|clone",
+                            "supercontig:$ass_def|chunk|clone",
+                            "chromosome:$ass_def|chunk|supercontig");
 
   my %cs = (gene                   => ['supercontig','chromosome'],
              transcript             => ['supercontig','chromosome'],

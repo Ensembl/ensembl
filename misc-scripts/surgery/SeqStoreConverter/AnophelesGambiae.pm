@@ -27,7 +27,8 @@ sub create_coord_systems {
      ["scaffold" ,     undef, "default_version", 2]);
 
   my @assembly_mappings = ("chromosome:$ass_def|chunk",
-                           "chromosome:$ass_def|scaffold");
+                           "chromosome:$ass_def|scaffold",
+                           "scaffold|chromosome:$ass_def|chunk");
 
   my %cs = (gene                  => 'chromosome',
             transcript            => 'chromosome',

@@ -41,18 +41,18 @@ sub create_coord_systems {
      "VALUES (?,?)");
 
   my @tables = qw(gene
-                  transcript  
-                  exon               	
-                  dna_align_feature    
-                  protein_align_feature 
-                  marker_feature       
-                  simple_feature        
-                  repeat_feature      
-                  qtl_feature         
-                  misc_feature   
-                  prediction_transcript 
+                  transcript
+                  exon
+                  dna_align_feature
+                  protein_align_feature
+                  marker_feature
+                  simple_feature
+                  repeat_feature
+                  qtl_feature
+                  misc_feature
+                  prediction_transcript
                   karyotype);
-  
+
   foreach my $table (@tables) {
     $sth->execute($table, $csid);
   }

@@ -27,7 +27,8 @@ sub create_coord_systems {
      ["contig"     , undef   , "default_version,sequence_level", 3]);
 
   my @assembly_mappings =  ("scaffold:$ass_def|contig",
-                            "clone|contig");
+                            "clone|contig",
+                            "scaffold:$ass_def|contig|clone");
 
   my %cs = (gene                  => 'scaffold',
             transcript            => 'scaffold',
