@@ -62,7 +62,7 @@ my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
 
 my $adaptor = $db->get_DBEntryAdaptor();
 
-if (($organism eq "human") || ($organism eq "mouse")) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
     print STDERR "Reading Refseq file\n";
     open (REFSEQ,"$refseq_gnp") || die "Can't open REFSEQ $refseq_gnp\n";
 #Read the file by genbank entries (separated by //) 
@@ -290,6 +290,14 @@ if ($organism eq "drosophila") {
 	    $extdb = "flybase_symbol";
 	}
 	
+	if ((($extdb eq "flybase") || ($extdb eq "FlyBase")) && ($ac =~ /FBgn/)) {
+	    $extdb = "flybase_gene";
+	}
+
+	if ($ac =~ /FBan/) {
+	    next;
+	}
+
 	#Here we get CG accession numbers ($cg) corresponding to gene_stable_id in Ensembl, get all of the translation internal ids for the given entry
 
 	my $query = "select t.translation_id from transcript t, gene_stable_id g where g.gene_id = t.gene_id and g.stable_id = '$cg'";
@@ -297,12 +305,14 @@ if ($organism eq "drosophila") {
 	$sth->execute();
 
 	while (my $trans_id = $sth->fetchrow) {
-	    if (! defined $seen{$trans_id}) {
-		$seen{$trans_id} = 1;
-	    }
+#	    if (! defined $seen{$trans_id}) {
+#		$seen{$trans_id} = 1;
+#	    }
+
+	    if ($trans_id) {
 	    #Create a new dbentry object
-	    my $dbentry = Bio::EnsEMBL::DBEntry->new
-		( -adaptor => $adaptor,
+		my $dbentry = Bio::EnsEMBL::DBEntry->new
+		    ( -adaptor => $adaptor,
 		      -primary_id => $ac,
 		      -display_id => $ac,
 		      -version => 1,
@@ -310,7 +320,8 @@ if ($organism eq "drosophila") {
 		      -dbname => $extdb );
 		$dbentry->status("XREF");
 	    
-	    $adaptor->store($dbentry,$trans_id,"Translation");
+		$adaptor->store($dbentry,$trans_id,"Translation");
+	    }
 	}
 
     }

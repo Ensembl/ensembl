@@ -19,7 +19,7 @@ my $organism   = $conf{'organism'};
 my $sptr_swiss = $conf{'sptr_swiss'};
 my $out        = $conf{'x_map_out'};
 
-#Get specific options for human/mouse
+#Get specific options for human/mouse/rat
 my $refseq_gnp = $conf{'refseq_gnp'};
 
 #Get specific options for human
@@ -54,7 +54,7 @@ my %sp_db;
 my %hugo_id;
 my %hugo_syn;
 
-open (OUT,">$out") || die "Can't open $out\n";
+open (OUT,">$out") || die "Can't open OUTFILE $out\n";
 
 #First read the SPTR file in swiss format
 print STDERR "Reading SPTR file\n";
@@ -122,21 +122,21 @@ while ( my $seq = $in->next_seq() ) {
 
 #Get Xref mapping specifically for drosophila
 
-    if ($organism eq "drosophila") {
+    #if ($organism eq "drosophila") {
 	#Get the gene name, especially useful to replace Hugo name when these don't exist.
-	my @gene_names = $seq->annotation->each_gene_name;
-	foreach my $g(@gene_names) {
-	    print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\tXREF\n";
-	}
-    }
+	#my @gene_names = $seq->annotation->each_gene_name;
+	#foreach my $g(@gene_names) {
+	 #   print OUT "$ac\tSPTR\t".$g."\tFlyBase\t".$g."\t\tXREF\n";
+	#}
+    #}
     
 }
 
-if (($organism eq "human") || ($organism eq "mouse")) {
+if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
 #Read the refseq file in gnp format
     print STDERR "Reading REFSEQ File\n";
     
-    open (REFSEQ,"$refseq_gnp") || die "Can't open $refseq_gnp\n";
+    open (REFSEQ,"$refseq_gnp") || die "Can't open Refseq gnp $refseq_gnp\n";
     
     $/ = "\/\/\n";
     
@@ -174,7 +174,7 @@ if ($organism eq "human") {
 #Read the Hugo files
     print STDERR "Reading Hugo files\n";
     
-    open (ENS4,"$ens4") || die "Can't open $ens4\n";;
+    open (ENS4,"$ens4") || die "Can't open hugo ens4 $ens4\n";;
     
     while (<ENS4>) {
 	chomp;
@@ -195,7 +195,7 @@ if ($organism eq "human") {
     }
     close (ENS4);
     
-    open (ENS1,"$ens1") || die "Can't open $ens1\n";
+    open (ENS1,"$ens1") || die "Can't open hugo ens1 $ens1\n";
     
     while (<ENS1>) {
 	chomp;
@@ -215,27 +215,8 @@ if ($organism eq "human") {
     close (ENS1);
 
 #Read the file containing the NCBI prediction in gnp format
-    open (REFSEQ,"$refseq_pred") || die "Can't open $refseq_pred\n";
-    
-    print STDERR "Reading Refseq file with NCBI predictions\n";
 
-    $/ = "\/\/\n";
-    
-    while (<REFSEQ>) {
-	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
-	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
-	
-	$refseq_map{$dna_ac} = $prot_ac; 
-	
-#Its a curated Refseq, flag it as predicted
-	print OUT "$prot_ac\tRefSeq_pred\t$prot_ac\tRefSeq_pred\t$prot_ac\t\tPRED\n";
-
-    }
-    close (REFSEQ);
-    
-    $/ = "\n";
-
-    open (GO,"$go") || die "Can't open $go\n";
+    open (GO,"$go") || die "Can't open Go file $go\n";
 
     print STDERR "Reading GO file\n";
 
@@ -297,7 +278,7 @@ if($organism eq "anopheles") {
 	chomp;
 	if ($_ =~ />/) {
 	    my ($ac,$name) = $_ =~ />(\S+)\t(\S+)/;
-	    print OUT "$ac\tANOSUB\t$ac\tANOSUB\t$name\t\tKNOWN\n";
+	    print OUT "$ac\tAnopheles_symbol\t$ac\tAnopheles_symbol\t$ac\t\tKNOWN\n";
 	}
     }
 }
