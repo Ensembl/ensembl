@@ -76,6 +76,9 @@ sub submit_exonerate {
 
   my ($self, $query, $target, $root_dir, @options) = @_;
 
+  my $queryfile = basename($query);
+  my $targetfile = basename($target);
+
   my $num_jobs = calculate_num_jobs($query);
 
   my $options_str = join(" ", @options);
@@ -101,16 +104,16 @@ sub submit_exonerate {
 
 cd /tmp
 
-rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
+rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 
-lsrcp ecs1a:$root_dir/$target /tmp/\$LSB_JOBINDEX.$target
-lsrcp ecs1a:$root_dir/$query  /tmp/\$LSB_JOBINDEX.$query
+lsrcp ecs1a:$target /tmp/\$LSB_JOBINDEX.$targetfile
+lsrcp ecs1a:$query  /tmp/\$LSB_JOBINDEX.$queryfile
 
-$exonerate_path /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > /tmp/$output
+$exonerate_path /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xref:%qi:%ti:%qab:%qae:%tab:%tae:%C:%s\n" $options_str | grep '^xref' > /tmp/$output
 
 lsrcp /tmp/$output ecs1a:$root_dir/$output
 
-rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
+rm -f /tmp/\$LSB_JOBINDEX.$queryfile /tmp/\$LSB_JOBINDEX.$targetfile /tmp/$output
 EOF
 
   # TODO make sure query/target are the right way round
