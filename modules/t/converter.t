@@ -115,9 +115,8 @@ sub test_FeaturePair{
         -in => 'Bio::SeqFeature::FeaturePair',
         -out => 'Bio::EnsEMBL::RepeatFeature',
         -analysis => $ens_analysis,
-        -contig => $ens_contig
     );
-
+    $converter->contig($ens_contig);
     my ($ens_repeatFeature1) = @{$converter->convert([$featurePair1])};
 
     ok ref($ens_repeatFeature1), 'Bio::EnsEMBL::RepeatFeature';

@@ -47,6 +47,7 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens;
 use strict;
 use vars qw(@ISA);
 use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Utils::Converter;
 @ISA = qw(Bio::EnsEMBL::Utils::Converter);
 
@@ -77,20 +78,46 @@ sub _initialize {
     my ($self, @args) = @_;
     $self->SUPER::_initialize(@args);
     
-    my ($analysis, $contig) =
-        $self->_rearrange([qw(ANALYSIS CONTIG)], @args);
+    my ($dbadaptor, 
+        $dbdriver, $dbhost, $dbport, $dbuser, $dbpass, $dbname,
+        $analysis, $analysis_dbid, $analysis_logic_name, 
+        $contig, $contig_dbid, $contig_name) =
+        
+        $self->_rearrange([qw(DBADAPTOR 
+            DBDRIVER DBHOST DBPORT DBUSER DBPASS DBNAME
+            ANALYSIS ANALYSIS_DBID ANALYSIS_LOGIC_NAME 
+            CONTIG CONTIG_DBID CONTIG_NAME)], @args);
 
-    if(defined($analysis) && $analysis->isa('Bio::Pipeline::Analysis')){
-        my $converter_for_analysis = new Bio::EnsEMBL::Utils::Converter(
-            -in => 'Bio::Pipeline::Analysis',
-            -out => 'Bio::EnsEMBL::Analysis'
-        );
-        ($analysis) = @{$converter_for_analysis->convert([$analysis])};
+    
+    if(defined $dbadaptor){
+        $self->dbadaptor($dbadaptor);
+    }elsif(defined $dbname){
+        $self->ensembl_db(@args);
+    }else{
+        # No db information.
     }
-
-    $self->analysis($analysis);
-    ($contig) = ref($contig) eq 'ARRAY' ? @{$contig} : $contig;
-    $self->contig($contig);
+    
+    if(defined $analysis){
+        $self->analysis($analysis);
+        # then ignore the analysis_dbid and analysis_logic_name
+    }elsif(defined $analysis_dbid){
+        $self->analysis_dbID($analysis_dbid);
+    }elsif(defined $analysis_logic_name){
+        $self->analysis_logic_name($analysis_logic_name);
+    }else{
+        # No analysis information offered
+    }
+    
+    if(defined $contig){
+        ($contig) = ref($contig) eq 'ARRAY' ? @{$contig} : $contig;
+        $self->contig($contig);
+    }elsif(defined $contig_dbid){
+        $self->contig_dbID($contig_dbid);
+    }elsif(defined $contig_name){
+        $self->contig_name($contig_name);
+    }else{
+        # No contig information
+    }
 }
 
 
@@ -127,12 +154,23 @@ sub _guess_module {
 sub analysis {
     my ($self, $arg) = @_;
     if(defined($arg)){
-        $self->throws("A Bio::EnsEMBL::Analysis object expected.") unless(defined $arg);
+        # convert the analysis, if it's not Bio::Pipeline::Analysis
+        if($arg->isa('Bio::Pipeline::Analysis')){
+            my $converter_for_analysis = new Bio::EnsEMBL::Utils::Converter(
+                -in => 'Bio::Pipeline::Analysis',
+                -out => 'Bio::EnsEMBL::Analysis'
+            );
+            ($arg) = @{ $converter_for_analysis->convert([$arg]) };
+        }
+
+        $self->throws("A Bio::EnsEMBL::Analysis object expected.") 
+            unless($arg->isa('Bio::EnsEMBL::Analysis'));
         $self->{_analysis} = $arg;
+        $self->{_analysis_dbid} = $arg->dbID;
+        $self->{_analysis_logic_name} = $arg->logic_name;
     }
     return $self->{_analysis};
 }
-    
 
 
 =head2 contig
@@ -146,11 +184,143 @@ sub analysis {
 sub contig {
     my ($self, $arg) = @_;
     if(defined($arg)){
+        $self->throw("a Bio::EnsEMBL::RawContig needed")
+            unless($arg->isa('Bio::EnsEMBL::RawContig'));
         $self->{_contig} = $arg;
+        $self->{_contig_dbid} = $arg->dbID;
+        $self->{_contig_name} = $arg->name;
     }
     return $self->{_contig};
 }
     
+=head2 dbadaptor
+  Title   : dbadaptor
+  Usage   : $self->dbadaptor
+  Function: get and set for dbadaptor
+  Return  : L<Bio::EnsEMBL::DBSQL::DBAdaptor>
+  Args    : L<Bio::EnsEMBL::DBSQL::DBAdaptor>   
+=cut
 
+sub dbadaptor {
+    my ($self, $arg) = @_;
+    if(defined($arg)){
+        $self->throws("A Bio::EnsEMBL::DBSQL::DBAdaptor object expected.") unless(defined $arg);
+        $self->{_dbadaptor} = $arg;
+    }
+    return $self->{_dbadaptor};
+}
+
+=head2 ensembl_db
+  Title   : ensembl_db
+  Usage   : 
+  Function: 
+  Return  :
+  Args    :
+=cut
+
+sub ensembl_db {
+    my ($self, @args) = @_;
+    
+    my ($dbdriver, $dbhost, $dbport, $dbuser, $dbpass, $dbname) = $self->_rearrange(
+        [qw(DBDRIVER DBHOST DBPORT DBUSER DBPASS DBNAME)], @args);
+
+    my $dbadaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
+        -driver => $dbdriver,
+        -host => $dbhost,
+        -port => $dbport,
+        -user => $dbuser,
+        -pass => $dbpass,
+        -dbname => $dbname
+    );
+    $self->dbadaptor($dbadaptor);
+}
+
+=head2 analysis_dbID
+  Title   : analysis_dbID
+  Usage   : 
+  Function: 
+  Return  :
+  Args    :
+=cut
+
+sub analysis_dbID {
+    my ($self, $arg) = @_;
+
+    if(defined $arg){
+        my $analysis;
+        eval{
+            $analysis = $self->dbadaptor->get_AnalysisAdaptor->fetch_by_dbID($arg);
+        };
+        $self->throw("Failed during fetching analysis by dbID\n$@") if($@);
+        $self->analysis($analysis);
+    }
+    $self->{_analysis_dbid};    
+}
+
+
+=head2 analysis_logic_name
+  Title   : analysis_logic_name
+  Usage   : 
+  Function: 
+  Return  :
+  Args    :
+=cut
+
+sub analysis_logic_name {
+    my ($self, $arg) = @_;
+    
+    if(defined $arg){
+        my $analysis;
+        eval{
+            $analysis = $self->dbadaptor->get_AnalysisAdaptor->fetch_by_logic_name($arg);
+        };
+        $self->throw("Problem happens when fetching analysis by logic name\n$@") if($@);
+
+        $self->analysis($analysis);
+    }
+    return $self->{_analysis_logic_name};
+}
+
+=head2 contig_dbID
+  Title   : contig_dbID
+  Usage   : $self->contig_dbID
+  Function: get and set for contig_dbID
+  Return  : 
+  Args    :    
+=cut
+
+sub contig_dbID {
+    my ($self, $arg) = @_;
+    if(defined($arg)){
+        my $contig;
+        eval{
+            $contig = $self->dbadaptor->get_RawContigAdaptor->fetch_by_dbID($arg);
+        };
+        $self->throw("Failed during fetching contig by dbID\n$@") if($@);
+        $self->contig($contig);
+    }
+    return $self->{_contig_dbid};
+}
+
+=head2 contig_name
+  Title   : contig_name
+  Usage   : $self->contig_name
+  Function: get and set for contig_name
+  Return  : 
+  Args    :    
+=cut
+
+sub contig_name {
+    my ($self, $arg) = @_;
+    if(defined($arg)){
+        my $contig;
+        eval{
+            $contig = $self->dbadaptor->get_RawContigAdaptor->fetch_by_name($arg);
+        };
+        $self->throw("Failed during fetching contig by dbID\n$@") if($@);
+        $self->contig($contig);
+    }
+    return $self->{_contig_name};
+}
 
 1;
