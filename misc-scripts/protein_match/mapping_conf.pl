@@ -36,7 +36,7 @@ package main;
 
              #Location of the statistic file (only neede if you run get_stats.pl)
              #'statistic'  => '/work1/mongin/mapping/stats.txt',
-             'statistic'  => '',        
+             'statistic_file'  => '',        
 
 
              ################################ 
