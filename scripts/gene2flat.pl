@@ -155,7 +155,7 @@ while ( @gene_id > 0 ) {
 	    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 	    $db =  Bio::EnsEMBL::DBLoader->new($locator);
 	}
-	my @genes = $db->get_Gene_array(@chunk_list);
+	my @genes = $db->gene_Obj->get_array_supporting('none',@chunk_list);
 	foreach my $gene ( @genes ) {
 	    my $gene_id = $gene->id();
 	    if( $format eq 'pep' ) {
@@ -177,7 +177,7 @@ while ( @gene_id > 0 ) {
 		    foreach my $exon ( $trans->each_Exon ) {
 			print "  Exon ",$exon->id," ",$exon->contig_id,":",$exon->start,"-",$exon->end,".",$exon->strand,"\n";
 			my $seq = $exon->seq();
-			my $str = $seq->str();
+			my $str = $seq->seq();
 			print "    Start phase ",$exon->phase,"[",substr($str,0,10),"] End phase ",$exon->end_phase," [",substr($str,-10),"]\n";
 		    }
 		}
@@ -229,9 +229,9 @@ while ( @gene_id > 0 ) {
     
     if( $@ ) {
 	my $gene_id = "@chunk_list";
-	foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
-	    print STDERR "Error in clone $clone:\n";
-	}
+	#foreach my $clone ( $db->geneid_to_cloneid($gene_id)) {
+	#    print STDERR "Error in clone $clone:\n";
+	#}
 	print STDERR "unable to process @chunk_list, due to \n$@\n";
     }
     $db->DESTROY;

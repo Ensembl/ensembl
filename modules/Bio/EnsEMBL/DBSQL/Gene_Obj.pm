@@ -405,8 +405,8 @@ sub get_array_supporting {
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
 	
-	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,$exon_rank,
-	    $exoncreated,$exonmodified,$phase,$strand,$trans_start,
+	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
+	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
  	

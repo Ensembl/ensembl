@@ -1440,7 +1440,7 @@ Calling Gene_Obj->delete instead!");
 sub geneid_to_cloneid{
     my ($self,$geneid) = @_;
     
-    $self->warn("Obj->geneid_to_cloneid is a deprecated method, called Gene_Obj->each_cloneid instead!
+    $self->throw("Obj->geneid_to_cloneid is a deprecated method, called Gene_Obj->each_cloneid instead!
 All the gene, transcript, and exon methods are now to be found in Gene_Obj");
     return $self->gene_Obj->each_cloneid($geneid);
 }
