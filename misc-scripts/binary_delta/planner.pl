@@ -83,8 +83,8 @@ EOT
 	my $d  = $db . '_' . $v0 . '_delta_' . $v1;
 	print <<EOT;
 # DELTA: $v0 -> $v1
-if [ \\( ! -f deltas/${d}_build.txt -o \\
-       ! -f deltas/${d}_apply.txt \\) -a \\
+if [ \\( \\( "x\$BUILD" = "xYES" -a ! -f deltas/${d}_build.txt \\) -o \\
+         \\( "x\$APPLY" = "xYES" -a ! -f deltas/${d}_apply.txt \\) \\) -a \\
        ! -d databases/$db0 ]; then
   # Get older revision (needed for build and apply)
   scp -c none -r ecs3:/mysqla/current/var/$db0 databases/
