@@ -581,7 +581,7 @@ sub get_array_supporting {
     $self->_store_exons_in_transcript($trans,@transcript_exons);
    
     if ($supporting && $supporting eq 'evidence') {
-	$self->get_supporting_evidence(@sup_exons);
+	$self->get_supporting_evidence_direct(@sup_exons);
     }
 
     foreach my $g ( @out) {
@@ -975,6 +975,86 @@ sub get_supporting_evidence {
 	$f->validate;
 
 	$exhash{$exon}->add_Supporting_Feature($f);
+    }
+
+}
+
+=head2 get_supporting_evidence_direct
+
+ Title   : get_supporting_evidence_direct
+ Usage   : $obj->get_supporting_evidence_driect
+ Function: Gets supporting evidence features from the feature table
+ Example :
+ Returns : nothing
+ Args    : array of exon objects, needed to know which exon to attach the evidence to
+
+
+=cut
+
+sub get_supporting_evidence_direct {
+    my ($self,@exons) = @_;
+
+    my %exhash;
+    my %analhash;
+    if (@exons == 0) {
+	$self->throw("No exon objects were passed on!");
+    }
+
+    foreach my $exon (@exons) {
+	print STDERR "Preparing select contig,seq_start,seq_end,strand from exon where id = '".$exon->id."'\n";
+
+	my $sth=$self->_db_obj->prepare("select contig,seq_start,seq_end,strand from exon where id = '".$exon->id."'");
+	$sth->execute;
+	while (my $rowhash = $sth->fetchrow_hashref) {
+	    my $contig=$rowhash->{contig};
+	    my $start=$rowhash->{seq_start};
+	    my $end=$rowhash->{seq_end};
+	    my $strand=$rowhash->{strand};
+	    
+	    my $sth2=$self->_db_obj->prepare("select seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id from feature where contig = $contig and !(seq_end < $start or seq_start > $end) and strand = $strand and analysis < 5");
+	    $sth2->execute;
+	    while (my $rowhash = $sth2->fetchrow_hashref) {
+		my $analysisid=$rowhash->{analysis};
+		my $name=$rowhash->{name};
+		my $start=$rowhash->{seq_start};
+		my $end=$rowhash->{seq_end};
+		my $strand=$rowhash->{strand};
+		my $f_score=$rowhash->{score};
+		my $name=$rowhash->{name};
+		my $hstart=$rowhash->{hstart};
+		my $hend=$rowhash->{hend};
+		my $hid=$rowhash->{hid};
+		my $analysis;
+		if (!$analhash{$analysisid}) {
+		    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
+		    $analysis = $feature_obj->get_Analysis($analysisid);
+		    $analhash{$analysisid} = $analysis;	   
+		} 
+		else {$analysis = $analhash{$analysisid};}
+		
+		if( !defined $name ) {
+		    $name = 'no_source';
+		}
+		my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+		$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+		$out->analysis    ($analysis);
+		$out->id          ($hid);              
+		$out->seqname   ($contig);
+		$out->start     ($start);
+		$out->end       ($end);
+		$out->strand    ($strand);
+		$out->source_tag($name);
+		$out->primary_tag('similarity');
+		$out->id         ($hid);
+		
+		if( defined $f_score ) {
+		    $out->score($f_score);
+		}
+		$out->analysis($analysis);
+		$out->validate();
+		$exon->add_Supporting_Feature($out);
+	    }
+	}
     }
 
 }
