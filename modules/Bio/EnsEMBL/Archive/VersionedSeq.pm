@@ -66,23 +66,25 @@ sub new {
   my($class, @args) = @_;
   
   my $self = $class->SUPER::new(@args);
+  $self->{'_future_vseqs'} = [];
+  $self->{'_relatives'} = [];
   
-   my ($dbid,$archive_seq,$version,$start_clone,
-       $seq_start,$end_clone,$seq_end,$sequence,
-       $release,$modified,$adaptor) = 
-       $self->_rearrange([qw(
-	DBID
-	ARCHIVE_SEQ
-	VERSION
-	START_CLONE
-	START
-	END_CLONE
-	END
-	SEQUENCE
-	RELEASE_NUMBER			           
-	MODIFIED		     
-	ADAPTOR
-        )],@args);
+  my ($dbid,$archive_seq,$version,$start_clone,
+      $seq_start,$end_clone,$seq_end,$sequence,
+      $release,$modified,$adaptor) = 
+      $self->_rearrange([qw(
+			    DBID
+			    ARCHIVE_SEQ
+			    VERSION
+			    START_CLONE
+			    START
+			    END_CLONE
+			    END
+			    SEQUENCE
+			    RELEASE_NUMBER			           
+			    MODIFIED		     
+			    ADAPTOR
+			    )],@args);
 
   ($archive_seq && $archive_seq->isa('Bio::EnsEMBL::Archive::Seq')) || $self->throw("An Archive VersionedSeq object must have an attached Bio::EnsEMBL::Archive::Seq [got $archive_seq]");
   $version || $self->throw("An Archive VersionedSeq object must have a version");
@@ -467,6 +469,88 @@ sub modified{
     return $obj->{'modified'};
 
 }
+
+
+=head2 each_relative
+
+ Title   : each_relative
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_relative {
+   my ($self,@args) = @_;
+
+   return @{$self->{'_relatives'}}
+}
+
+=head2 add_relative
+
+ Title   : add_relative
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_relative{
+   my ($self,$value) = @_;
+   
+   if( !defined $value || !ref $value || ! $value->isa('Bio::EnsEMBL::Archive::VersionedSeq') ) {
+       $self->throw("This [$value] is not a VersionedSeq");
+   }
+
+   push(@{$self->{'_relatives'}},$value);
+}
+
+=head2 each_future_vseq
+
+ Title   : each_future_vseq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub each_future_vseq {
+   my ($self,@args) = @_;
+
+   return @{$self->{'_future_vseqs'}}
+}
+
+=head2 add_future_vseq
+
+ Title   : add_future_vseq
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub add_future_vseq{
+   my ($self,$value) = @_;
+   
+   if( !defined $value || !ref $value || ! $value->isa('Bio::EnsEMBL::Archive::VersionedSeq') ) {
+       $self->throw("This [$value] is not a VersionedSeq");
+   }
+
+   push(@{$self->{'_future_vseqs'}},$value);
+}
+
 
 =head2 adaptor
 

@@ -79,6 +79,18 @@ sub fetch_by_dbID {
 					      -release_number => $rel,
 					      -adaptor => $self
 					      );
+    
+    $statement = "SELECT relative_versioned_seq_id from versioned_seq_relatives where master_versioned_seq_id = $id";
+    my $sth = $self->db->execute($statement);
+    while (my ($rid) = $sth->fetchrow_array) {
+	$vseq->add_relative($self->fetch_by_dbID($rid));
+    }
+    
+    $statement = "SELECT new_versioned_seq_id from versioned_seq_history where old_versioned_seq_id = $id";
+    my $sth = $self->db->execute($statement);
+    while (my ($fid) = $sth->fetchrow_array) {
+	$vseq->add_future_vseq($self->fetch_by_dbID($fid));
+    }
     return $vseq;
 }
 
@@ -121,6 +133,18 @@ sub store {
        my $sth = $self->db->execute($statement);
        my $id = $sth->{'mysql_insertid'};
        $vseq->db_ID($id);
+       
+       foreach my $relative ($vseq->each_relative) {
+	   my $rid = $self->store($relative);
+	   $statement = "INSERT INTO versioned_seq_relatives(master_versioned_seq_id,relative_versioned_seq_id) values ($id,$rid)";
+	   $self->db->execute($statement);
+       }
+       
+       foreach my $future_vseq ($vseq->each_future_vseq) {
+	   my $fid = $self->store($future_vseq);
+	   $statement = "INSERT INTO versioned_seq_history(old_versioned_seq_id,new_versioned_seq_id) values ($id,$fid)";
+	   $self->db->execute($statement);
+       }
    } 
    $vseq->adaptor;
    return $vseq->db_ID;

@@ -95,7 +95,6 @@ sub store {
        $self->throw("Cannot store $seq, you have to provide a Bio::EnsEMBL::Archive::Seq object to store!");
    }
    if ($seq->db_ID) {
-       $self->warn("Trying to store this seq ".$seq->name." twice");
        return $seq->db_ID;
    }
    
