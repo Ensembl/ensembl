@@ -23,8 +23,8 @@
     'password'      => undef,
     
     # File containing the datbase schema in SQL format - mandatory
-    'schema_sql'    => '../sql/table.sql',
+    'schema_sql'    => ['../sql/table.sql'],
     
     #EnsEMBL DBSQL::Obj module name - optional                   
-    'module'        => 'Bio::EnsEMBL::Pipeline::DBSQL::Obj',
+    #'module'        => 'Bio::EnsEMBL::Pipeline::DBSQL::Obj',
 }

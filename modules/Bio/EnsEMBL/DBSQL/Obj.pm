@@ -643,7 +643,7 @@ sub write_ContigOverlap {
     $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
         if $dna_a_id == $dna_b_id;
 
-    my $source     = $overlap->source;
+    my $source   = $overlap->source;
     my $distance = $overlap->distance;
 
     #print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");

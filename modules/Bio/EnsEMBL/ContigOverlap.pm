@@ -401,7 +401,7 @@ sub distance {
 	$self->{_distance} = $arg;
     }
 
-    return $self->{_distance} || 1; 
+    return $self->{_distance} || 0; 
 
 }
 
