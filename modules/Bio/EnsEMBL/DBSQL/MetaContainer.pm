@@ -112,6 +112,29 @@ sub store_key_value {
   return;
 }
 
+=head2 update_key_value
+
+  Arg [1]    : string $key
+               a key under which $value should be updated
+  Arg [2]    : string $value
+               the value to update in the meta table
+  Example    : $meta_container->update_key_value($key, $value);
+  Description: update a value in the meta container, accessable by a key
+  Returntype : none
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub update_key_value {
+  my ( $self, $key, $value ) = @_;
+
+  my $sth = $self->prepare( "UPDATE meta SET meta_value = ? WHERE meta_key = ?" );
+
+  my $res = $sth->execute( $value, $key );
+  return;
+}
+
 
 
 # add well known meta info get-functions below
