@@ -65,13 +65,14 @@ sub new {
 	my $siteroot = $self->conv_support->serverroot;
 	$self->conv_support->param('vega_sql',$siteroot.$self->conv_support->param('vega_sql'));
 	$self->conv_support->param('core_sql',$siteroot.$self->conv_support->param('core_sql'));
+	$self->conv_support->param('patch_sql',$siteroot.$self->conv_support->param('patch_sql'));
 	return $self;
 }
 
 =head2 conv_support
 
   Example     : $conversion->conv_support; 
-  Description : This method provides access to Bio::EnsEMBL::Utils::ConversionSupport methods
+  Description : Provides access to Bio::EnsEMBL::Utils::ConversionSupport methods
   Return type : Bio::EnsEMBL::Utils::ConversionSuppor object
   Exceptions  : none
   Caller      : general
@@ -82,6 +83,22 @@ sub conv_support {
 	my $self = shift;
 	return $self->{config};
 }
+
+=head2 conv_obj
+
+  Example     : $conversion->conv_obj; 
+  Description : Provides access to SeqStoreConverter::BasicConverter methods
+  Return type : SeqStoreConverter::BasicConverter object
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub conv_obj {
+	my $self = shift;
+	return $self->{'converter_object'};
+}
+
 
 =head2 species_alias
 
@@ -175,39 +192,62 @@ sub choose_conversion_type {
 
 sub do_conversion {
 	my $self= shift;
-	$self->{converter_object}->debug( "\n\n*** converting " . $self->{converter_object}->source . " to " . 
-					   $self->{converter_object}->target() . " ***");
-	$self->{converter_object}->transfer_meta();
-	$self->{converter_object}->create_coord_systems();
-	$self->{converter_object}->create_seq_regions();
-	$self->{converter_object}->create_assembly();
-	$self->{converter_object}->create_attribs();
-	$self->{converter_object}->set_top_level();
+	$self->conv_obj->debug( "\n\n*** converting " . $self->conv_obj->source . " to " . 
+					   $self->conv_obj->target() . " ***");
+	$self->conv_obj->transfer_meta();
+	$self->conv_obj->create_coord_systems();
+	$self->conv_obj->create_seq_regions();
+	$self->conv_obj->create_assembly();
+	$self->conv_obj->create_attribs();
+	$self->conv_obj->set_top_level();
 	
-	$self->{converter_object}->transfer_dna();
-	$self->{converter_object}->transfer_genes();
-	$self->{converter_object}->transfer_prediction_transcripts();
+	$self->conv_obj->transfer_dna();
+	$self->conv_obj->transfer_genes();
+	$self->conv_obj->transfer_prediction_transcripts();
 	
 	if ($self->conv_support->param('do_features')) {
-		$self->{converter_object}->transfer_features();
+		$self->conv_obj->transfer_features();
 	}
-	if ($self->conv_support->param('do_vega_schema_conversion')) {
-		$self->{converter_object}->transfer_vega_stable_ids();
-	} else {
-		$self->{converter_object}->transfer_stable_ids();
-	}
-	
-	$self->{converter_object}->copy_other_tables();
-	$self->{converter_object}->copy_repeat_consensus();
-	$self->{converter_object}->create_meta_coord();
+#use this for both ensembl and vega for now,
+#but might need changing when vega gets eg transcript modified dates
+	$self->conv_obj->transfer_vega_stable_ids();
+
+	$self->conv_obj->copy_other_tables();
+	$self->conv_obj->copy_repeat_consensus();
+	$self->conv_obj->create_meta_coord();
 	if ($self->conv_support->param('do_vega_schema_conversion')) {
 		
-		$self->{converter_object}->update_clone_info();
-		$self->{converter_object}->remove_supercontigs();
-		$self->{converter_object}->copy_internal_clone_names();
+		$self->conv_obj->update_clone_info();
+		$self->conv_obj->remove_supercontigs();
+		$self->conv_obj->copy_internal_clone_names();
+		$self->conv_obj->update_genscan();
 	}
-	print STDERR "*** All finished ***\n";
+
 }
+
+=head2 make_schema_up_to_date
+
+  Example     : $conversion->make_schema_up_to_date
+  Description : patches schema to latest version
+  Return type : none
+  Exceptions  : none
+  Caller      : $conversion
+
+=cut
+
+sub make_schema_up_to_date {
+	my $self = shift;
+	$self->conv_obj->debug ("\n*** Patching schema to latest version ***\n");
+	my $user = $self->conv_obj->user;
+	my $pass = $self->conv_obj->password;
+	my $port = $self->conv_obj->port;
+	my $host = $self->conv_obj->host;
+	my $target = $self->conv_obj->target;
+	my $patch_schema = $self->conv_support->param('patch_sql');
+	my $cmd = "/usr/local/mysql/bin/mysql -u $user -p$pass -P $port -h $host $target < $patch_schema";
+	system ($cmd);
+}
+
 
 =head2 conv_usage
 
@@ -242,6 +282,7 @@ options: -pass <password>       the mysql user's password (required)
                                       target_db (schema 20+ trget database)
                                       core_sql (location of ensembl schema creation script eg ensembl/sql/table.sql)
                                       vega_sql (location of creation script for additinoal vega tables eg ensembl/sql/vega_specific_tables.sql)
+                                      patch_sql (location of schema patching script eg ensembl/sql/vega_latest_schema.sql)
                                       force (overwrite existing target database? 0 or 1)
                                       verbose (print out debug statements 0 or 1)
                                       do_features (0 or 1 - transfer dna- and protein-align features, for debugging)
