@@ -155,10 +155,13 @@ sub new {
     $self->species($dbconn->species());
     $self->group($dbconn->group());
 
-    $self->connect();
+#    $self->connect();
 
     if($dbconn->disconnect_when_inactive()) {
       $self->disconnect_when_inactive(1);
+    }
+    else{
+      $self->connect();
     }
   } else {
 
@@ -180,7 +183,7 @@ sub new {
     $self->driver($driver);
 
 
-    $self->connect();
+#    $self->connect();
 
     
     if($species){
@@ -199,6 +202,9 @@ sub new {
 
     if($inactive_disconnect) {
       $self->disconnect_when_inactive($inactive_disconnect);
+    }
+    else{
+      $self->connect();
     }
 
   }
@@ -461,7 +467,10 @@ sub disconnect_when_inactive {
     $self->{'disconnect_when_inactive'} = $val;
     if($val) {
       $self->disconnect_if_idle();
-    } elsif(!$self->db_handle->ping()) {
+    }
+    elsif(!defined($self->db_handle)){
+      $self->connect();      
+    }elsif(!$self->db_handle->ping()) {
       # reconnect if the connect went away
       $self->connect();
     }
@@ -538,8 +547,11 @@ sub prepare {
    if( ! $string ) {
      throw("Attempting to prepare an empty SQL query.");
    }
-   if( ! defined($self->db_handle) ) {
-     throw("Database object has lost its database handle.");
+   if( ! defined($self->db_handle) ) { # No connection to star with now so need to try again.
+     $self->connect();
+     if( ! defined($self->db_handle) ) {
+       throw("Database object has lost its database handle.");
+     }
    }
 
    if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
@@ -581,7 +593,10 @@ sub do {
      throw("Attempting to do an empty SQL query.");
    }
    if( ! defined($self->db_handle) ) {
-     throw("Database object has lost its database handle.");
+     $self->connect();
+     if( ! defined($self->db_handle) ) {
+       throw("Database object has lost its database handle.");
+     }
    }
 
    if($self->disconnect_when_inactive() && !$self->db_handle->ping()) {
@@ -624,9 +639,11 @@ sub do {
 sub disconnect_if_idle {
   my $self = shift;
 
-  if($self->db_handle()->{'Kids'} == 0 &&
-     !$self->db_handle()->{'InactiveDestroy'}) {
-    $self->db_handle->disconnect();
+  if(defined($self->db_handle())){
+    if($self->db_handle()->{'Kids'} == 0 &&
+       !$self->db_handle()->{'InactiveDestroy'}) {
+      $self->db_handle->disconnect();
+    }
   }
 }
 
