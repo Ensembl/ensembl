@@ -11,25 +11,40 @@
 # names, then having the right symlinks in place will make it general enough
 # See comments on symlinks below each of the data sources
 
-igihome=~lijnzaad/proj/igi # change to needs
+igihome=$HOME/proj/igi                  # change to needs
 
-cd $igihome/ensembl
-ensembl.collate.sh < ensembl.gtf > all.gtf 2> collate.log
-# ensembl.gft is a symlink to e.g. ensembl_oo23_october.gtf
+all=all.gtf                             # where local collated data goes to
+log=collate.log                         # where local log goes to
+### EnsEMBL:
+dir=$igihome/ensembl                    # can be symlink
+[ ! -d $dir ] && echo "$dir: not found" >&2 && exit 1
+cd $dir
+[ -f $all  ] && echo "found $all, not overwriting it ">&2 && exit 1
+ensembl.collate.sh < ensembl.gtf > $all 2> $log
+### end Ensembl
 
-cd $igihome/affymetrix
-affymetrix.collate.sh  > all.gtf 2> collate.log 
-# dir affymetrix is a symlink to e.g. 2001-02-11.gs5.oo23.affymetrix
 
-cd $igihome/fgenesh
-fgenesh.collate.sh chr_gff/*.sgp.gff > all.gtf 2>collate.log
-# fgenesh is prolly als a symlink, don't know what to though :-) 
+### Affymetrix
+## It has everything in chromosome directories that don't seem to
+## change across releases, but warn about this:
+chroms="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 X Y UL NA"
+echo "make sure that these are the right chromosomes:" | tee /dev/tty >&2
+echo $chroms >&2
+echo "" > /dev/tty
+dir=$igihome/affymetrix                    # can be symlink
+[ ! -d $dir ] && echo "$dir: not found" >&2 && exit 1
+cd $dir
+[ -f $all  ] && echo "found $all, not overwriting it ">&2 && exit 1
+affymetrix.collate.sh  $chroms > $all 2> $log 
+### end Affymetrix
 
-#  fgenesh chromo+chromo_coords -> fpcctg+fpc_coords mapping may be funny, run
-#  statistics on this:
-mkdir missing-stats
-cd missing-stats
-fgenesh.missing-stats.sh ../collate.log  # puts stuff into missing-stats/*
+### Softberry/Fgenesh
+dir=$igihome/fgenesh                    # can be symlink
+[ !  -d $dir ] && echo "$dir: not found" >&2 && exit 1
+cd $dir
+[ -f $all  ] && echo "found $all, not overwriting it ">&2 && exit 1
+fgenesh.collate.sh chr_gff/*.sgp.gff chr_r/*.sgp.gff  > $all 2>$log
+### end Softberry/Fgenesh
 
 
 # add more sources here if needed
