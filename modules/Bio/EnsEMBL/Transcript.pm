@@ -784,6 +784,7 @@ sub translateable_exons {
 #            $new_exon->clone_id($ex->clone_id);
             $new_exon->contig_id($ex->contig_id);
             $new_exon->phase($ex->phase);
+	    $new_exon->end_phase($ex->end_phase);
 	    $new_exon->contig($ex->contig);
             $new_exon->attach_seq($ex->entire_seq);
 
