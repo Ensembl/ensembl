@@ -110,8 +110,10 @@ sub read_Similarities {
     foreach my $g ($gs->each_Transcript) {
 	my $genpep     = new Bio::EnsEMBL::Analysis::GenscanPeptide($g);
 	
-	foreach my $msp (@$msptype) {
-	    
+	MSP: foreach my $msp (@$msptype) {
+
+	    next MSP if ($msp->[0] eq "ce_p" || $msp->[0] eq "sh_p");
+
 	    my $mspfile        = "$clone_dir/$disk_id.$count".$msp->[4];
 	    my $pid            = "$id.$count";
 	    
