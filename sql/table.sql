@@ -5,6 +5,27 @@
 # Server version	3.22.32
 
 #
+# Table structure for table 'analysisprocess'
+#
+CREATE TABLE analysisprocess (
+  analysisId int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  logic_name varchar(40) not null,
+  db varchar(40),
+  db_version varchar(40),
+  db_file varchar(80),
+  program varchar(40),
+  program_version varchar(40),
+  program_file varchar(40),
+  parameters varchar(80),
+  module varchar(80),
+  module_version varchar(40),
+  gff_source varchar(40),
+  gff_feature varchar(40),
+  PRIMARY KEY (analysisId)
+);
+
+#
 # Table structure for table 'analysis'
 #
 CREATE TABLE analysis (
@@ -235,7 +256,8 @@ CREATE TABLE gene (
   created   datetime NOT NULL,
   modified  datetime NOT NULL,
   stored    datetime NOT NULL,
-  
+  analysisId int,
+     
   PRIMARY KEY (id)
 );
 
