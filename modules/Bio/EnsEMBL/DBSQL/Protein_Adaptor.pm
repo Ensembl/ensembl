@@ -51,7 +51,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::Root::Object;
 use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
-use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+#use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
@@ -137,6 +137,7 @@ sub fetch_Protein_by_dbid{
 #Get the aa sequence using the transcript object   
    my $sequence = $transcript->translate->seq;
    
+  
 #Define the moltype
    my $moltype = "protein";
    
@@ -162,7 +163,9 @@ sub fetch_Protein_by_dbid{
 
 #Add the DBlinks to the annotation object
    foreach my $link (@dblinks) {
-       $protein->annotation->add_DBLink($link);
+       if ($link){
+	   $protein->annotation->add_DBLink($link);
+       }
    }
    my %seen1;
    my %seen2;
@@ -173,12 +176,22 @@ sub fetch_Protein_by_dbid{
 #Get the the accession number of the feature matching to the given Protein
        my $pfam = $feat->hseqname;
 
-#This is supposed to 
+#This is supposed to be the rigth way 
        my $dbdesc = $feat->analysis->db;
 
-       #Hack, waiting for the analysis table being properly loaded, will then always return     
-       $dbdesc = "Pfam";
+       #But we currently need a hack here, waiting for the analysis table being properly loaded, will then always return    
+       #print "PF: $pfam\n";
+       if ($pfam =~ /^PF\w+/) {
+	   $dbdesc = "Pfam";
+       }
 
+       if ($pfam =~ /^PR\w+/) {
+	   $dbdesc = "PRINTS";
+       }
+
+       if ($pfam =~ /^PS\w+/) {
+	   $dbdesc = "PROSITE";
+       }
 #If the Interpro signature has not been already put into DBlink, add it.       
        if (! defined ($seen1{$pfam})) {
 	   my $newdblink = Bio::Annotation::DBLink->new();
@@ -196,7 +209,7 @@ sub fetch_Protein_by_dbid{
        
        
 #If the Interpro accession number has not already been put into DBlink, add it 
-       if (! defined ($seen2{$interpro})) {
+       if (! defined ($seen2{$interpro}) && defined $interpro) {
 	   my $dblink = Bio::Annotation::DBLink->new();
 	   $dblink->database('InterPro');
 	   $dblink->primary_id($interpro);
@@ -204,11 +217,13 @@ sub fetch_Protein_by_dbid{
 	   $seen2{$interpro} = 1;
        }
    }
-
-#Add eac protein features to the protein object
+   
+#Add each protein features to the protein object
    foreach my $feat (@prot_feat) {
-       
-       $protein->add_Protein_feature($feat);
+       if ($feat) {
+	   #print STDERR $feat, "\n";
+	   $protein->add_Protein_feature($feat);
+       }
    }
    return $protein;
 }
