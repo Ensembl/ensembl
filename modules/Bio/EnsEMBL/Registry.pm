@@ -599,7 +599,7 @@ sub get_alias{
 
 =cut
 
-sub load_registy_with_web_adaptors{
+sub load_registry_with_web_adaptors{
   my $class = shift;
 
 
