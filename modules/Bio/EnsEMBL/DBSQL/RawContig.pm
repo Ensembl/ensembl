@@ -882,6 +882,8 @@ sub _load_overlaps{
 		"       co.overlap_type," .
 		"       co.dna_a_id, ".
 		"       co.dna_b_id, ".
+		"       co.type, " .
+		"       co.overlap_size, " .
 		"       con.dna as dna1, " .
                 "       con2.dna as dna2, " .
 		"       con.id as id1,".
@@ -950,13 +952,18 @@ sub _load_overlaps{
 	       $self->throw("Impossible type position $type\n");
 	   }
 
-	   print(STDERR "Type $type $sisterpol $selflr\n");
+
+	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
+
 	   my $sis = $self->_dbobj->get_Contig($sisterid);
 	   my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
 						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_b_position'}, 
 						     -selfposition   => $rowhash->{'contig_a_position'},
-						     -sisterpolarity => $sisterpol );
+						     -sisterpolarity => $sisterpol,
+						     -distance       => $rowhash->{'overlap_size'},
+						     -source         => $rowhash->{'type'}
+							   );
 	   if( $selflr eq 'left' ) {
 	       $self->_left_overlap($co);
 	   } else {
@@ -984,14 +991,17 @@ sub _load_overlaps{
 	   } else {
 	       $self->throw("Impossible type position $type\n");
 	   }
-	   print(STDERR "Type $type $sisterpol $selflr\n");
+	   print(STDERR "Type $type $sisterpol $selflr " . $rowhash->{overlap_size} . "\n");
 	   my $sis = $self->_dbobj->get_Contig($sisterid);
 
 	   my $co = Bio::EnsEMBL::ContigOverlapHelper->new(
 						     -sister => $sis,
 						     -sisterposition => $rowhash->{'contig_a_position'}, 
 						     -selfposition   => $rowhash->{'contig_b_position'},
-						     -sisterpolarity => $sisterpol );
+						     -sisterpolarity => $sisterpol,
+						     -distance       => $rowhash->{'overlap_size'},
+						     -source         => $rowhash->{'type'}
+);
 	   if( $selflr eq 'left' ) {
 	       $self->_left_overlap($co);
 	   } else {

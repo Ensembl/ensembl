@@ -1239,9 +1239,14 @@ sub delete_Clone{
        $self->delete_Features($contig); 
    }
 
+
    foreach my $dna (@dnas) {
-       $sth = $self->prepare("delete from dna where id = '$dna'");
+       $sth = $self->prepare("delete from dna where id = $dna");
        $res = $sth->execute;
+
+       $sth = $self->prepare("delete from contigoverlap where dna_a_id = $dna or dna_b_id = $dna");
+       $res = $sth ->execute;
+
    }
 
    $sth = $self->prepare("delete from clone where id = '$clone_id'");
@@ -2536,7 +2541,7 @@ sub write_Species {
 
 =cut
 
-sub write_Clone{
+sub write_Clone {
    my ($self,$clone) = @_;
 
    my $clone_id = $clone->id;
@@ -2629,18 +2634,42 @@ sub write_ContigOverlap {
     $self->throw("More than one dna entry found for " . $contigb->id )unless $sth->rows == 1;
 
     $rowhash = $sth->fetchrow_hashref;
+
     my $dna_b_id = $rowhash->{id};
     my $type     = $overlap->source;
     my $distance = $overlap->distance;
 
     print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
 
-    $query = "insert into contigoverlap(dna_a_id,dna_b_id," .
-	                                "contig_a_position,contig_b_position,".
-					"type,overlap_size,overlap_type) " .
-				"values($dna_a_id,$dna_b_id," . 
-				"$contig_a_position,$contig_b_position,".
-				"'$type',$distance,'$overlap_type')";
+    $self->throw("DNA ids are the same [$dna_a_id][$dna_b_id]") if ($dna_a_id == $dna_b_id);
+    # First check this overlap doesn't already exist.
+    
+    $query = "select * from  contigoverlap " .
+	     "where  (dna_a_id = $dna_a_id and  dna_b_id = $dna_b_id) " .
+	     "or     (dna_a_id = $dna_b_id and  dna_b_id = $dna_a_id) ";
+
+    $sth   = $self->prepare($query);
+    $res   = $sth->execute;
+
+    if ($sth->rows > 0) {
+	$self->warn("ContigOverlap between $dna_a_id and $dna_b_id exists. Not writing");
+	return;
+    }
+
+    $query = "insert into contigoverlap(dna_a_id," .
+	                                "dna_b_id," .
+	                                "contig_a_position," .
+					"contig_b_position,".
+					"type,".
+					"overlap_size,".
+					"overlap_type) " .
+				"values($dna_a_id," .
+				       "$dna_b_id," . 
+				       "$contig_a_position," .
+				       "$contig_b_position,".
+				       "'$type'," .
+				       "$distance," .
+				       "'$overlap_type')";
 
     print(STDERR "query is $query\n");
 
