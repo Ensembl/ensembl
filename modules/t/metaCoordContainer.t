@@ -4,13 +4,13 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 7;
+	plan tests => 8;
 }
 
 use Bio::EnsEMBL::Test::TestUtils;
-
 use Bio::EnsEMBL::Test::MultiTestDB;
 
+our $verbose = 1;
 
 my $multi = Bio::EnsEMBL::Test::MultiTestDB->new();
 my $db = $multi->get_DBAdaptor('core');
@@ -36,8 +36,16 @@ my $cs = $db->get_CoordSystemAdaptor->fetch_by_name('contig');
 
 my $count = count_rows($db, 'meta_coord');
 
-$mcc->add_feature_type($cs, 'exon');
+my $max = -1;
+for( my $i=0; $i<10; $i++ ) {
+  my $length = int(rand( 1000) + 100);
+  $mcc->add_feature_type($cs, 'exon', $length );
+  $max = $length if ( $length > $max );
+}
 
+my $length = $mcc->fetch_max_length_by_CoordSystem_feature_type( $cs, "exon" ); 
+debug( "max = $max; length=$length ");
+ok( $max == $length );
 ok(count_rows($db, 'meta_coord') == $count + 1);
 
 @coord_systems = @{$mcc->fetch_all_CoordSystems_by_feature_type('exon')};
