@@ -709,6 +709,7 @@ sub _gene_query{
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
 
+   print STDERR "Getting into seq feature get $type\n";
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
        return $self->_get_cache($type);
    }
@@ -724,6 +725,7 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
+       print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -738,8 +740,11 @@ sub _get_all_SeqFeatures_type {
 	   $self->throw("Type $type not recognised");
        }
    }
+   print STDERR "before clipping ",scalar(@$sf)," for $type\n";
 
    my @vcsf = ();
+
+
    # need to clip seq features to fit the boundaries of
    # our v/c so displays don't break
 
@@ -764,6 +769,7 @@ sub _get_all_SeqFeatures_type {
         }
    }
    
+   print STDERR "returning ",scalar(@vcsf)," for $type\n";
    return @vcsf;
 }
 
@@ -799,8 +805,6 @@ sub _convert_seqfeature_to_vc_coords {
     }
     
     #print STDERR "starting $sf ",$sf->seqname,":",$sf->start,":",$sf->end,":",$sf->strand,"\n";
-    
-    
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
@@ -808,6 +812,7 @@ sub _convert_seqfeature_to_vc_coords {
     
     if( $#sub >=  0 ) {
 	# chain to constructor of the object. Not pretty this.
+	#print STDERR "sub seqfeature...\n";
 	$sf->flush_sub_SeqFeature();
 	
 	my $seen = 0;
@@ -833,10 +838,12 @@ sub _convert_seqfeature_to_vc_coords {
 
 	    $sf->strand($strand);
 	    
-	    #print STDOUT "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
+	    #print STDERR "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
 	    return $sf;
-	} else {        
+	} else {
+	    #print STDERR "not returning it...\n";
 	    return undef;
+	    
 	}
     }
 
@@ -846,22 +853,17 @@ sub _convert_seqfeature_to_vc_coords {
     
     # Could be clipped on ANY contig
 
-    if( $mc->orientation == 1 ) {
-	if ($sf->start < $mc->rawcontig_start) {  
-	    return undef;              
-	}
-	if ($sf->end >  $mc->rawcontig_end) {  
-	    return undef;              
-	}
-    } else {
-	if ($sf->end > $mc->rawcontig_start) {  
-	    return undef;              
-	}
-	if ($sf->start <  $mc->rawcontig_end) {  
-	    return undef;              
-	}
+    #print STDERR "standard feature\n";
+
+  
+    if ($sf->start < $mc->rawcontig_start) {  
+	return undef;              
     }
-	
+    if ($sf->end >  $mc->rawcontig_end) {  
+	return undef;              
+    }
+
+    #print STDERR "got through clipping\n";
 
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
     
@@ -1090,9 +1092,9 @@ sub get_all_RawContigs {
 
     my @contigs = ();
 
-    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
-        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
-    }
+#    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::VirtualContigI') ) {
+#        $self->throw("Must supply a VirtualContig to get_all_RawContigs: Bailing out...");
+#    }
     
     return $self->_vmap->get_all_RawContigs;
 }
@@ -1184,6 +1186,7 @@ sub convert_Gene_to_raw_contig {
 
    foreach my $trans ( $gene->each_Transcript ) {
        my $clonedtrans = Bio::EnsEMBL::Transcript->new();
+       print STDERR "Reverse mapping ",$trans->id,"\n";
        $clonedtrans->id($trans->id);
        $clonedtrans->version($trans->version);
        $clonedtrans->created($trans->created);
@@ -1195,6 +1198,8 @@ sub convert_Gene_to_raw_contig {
        $clonedgene->add_Transcript($clonedtrans);
 
        foreach my $exon ( $trans->each_Exon ) {
+	   print STDERR "Reverse mapping exon ",$exon->id,"\n";
+
 	   my @clonedexons = $self->_reverse_map_Exon($exon);
 	   foreach my $ce ( @clonedexons ) {
 	       $clonedtrans->add_Exon($ce);
@@ -1454,11 +1459,11 @@ sub _sanity_check{
 	   } 
 	   if( !defined $exon->created ) {
 	       $error = 1;
-	       $message .= "Exon has no id";
+	       $message .= "Exon has no created time";
 	   } 
 	   if( !defined $exon->modified ) {
 	       $error = 1;
-	       $message .= "Exon has no id";
+	       $message .= "Exon has no modified time";
 	   } 
 	   if( !defined $exon->contig_id  ) {
 	       $error = 1;

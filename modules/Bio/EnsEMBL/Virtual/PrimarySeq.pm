@@ -181,7 +181,7 @@ sub subseq{
    # check to see if this is simple, start-end in one contig
    if( $start >= $start_contig->start && $end <= $start_contig->end ) {
        # map straight away.
-       print STDERR "simple map\n";
+       #print STDERR "simple map\n";
        if( $start_contig->orientation == 1 ) {
 	   return $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_start + ($end - $start_contig->start));
        } else {

@@ -79,6 +79,7 @@ sub new {
     my @contigs = $self->_vmap->each_MapContig;
     my $last = pop @contigs;
     $self->_vmap->length($last->end);
+    $self->length($last->end);
     
     $self->_unique_number("static".$static_number++);
     
