@@ -14,11 +14,11 @@ use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end eprof_dump);
 
 
 
-my $dbuser = 'root';
-my $dbname = 'ens074';
-my $host = 'obi-wan';
-my $host = 'cgisrv4';
-my $host = 'localhost';
+my $dbuser = 'ensro';
+my $dbname = 'ens075';
+#my $host = 'obi-wan';
+#my $host = 'cgisrv4';
+my $host = 'ecs1c';
 my $dbpass = undef;
 
 sub get_locator {
