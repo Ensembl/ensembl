@@ -125,12 +125,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw info verbose);
 
         my $interim_transcript = transfer_transcript($transcript, $mapper,
                                                      $human_cs);
-        my $finished_transcripts = 
+        my $finished_transcripts =
           create_transcripts($interim_transcript, $slice_adaptor);
 
         foreach my $ftrans (@$finished_transcripts) {
-          if($transcript->translation()) {
-            print STDERR "\n\n", $transcript->translate->seq(), "\n\n";
+          if($ftrans->translation()) {
+            print STDERR "\n\n", $ftrans->translate->seq(), "\n\n";
           } else {
             print STDERR "NO TRANSLATION LEFT\n";
           }
@@ -218,9 +218,6 @@ sub transfer_transcript {
         $chimp_exon->seq_region($c->id());
 
         $chimp_cdna_pos += $c->length();
-        $cdna_exon_start += $c->length();
-
-        $chimp_transcript->add_Exon($chimp_exon);
       }
     } else {
       #
@@ -417,16 +414,16 @@ sub create_transcripts {
   # check the exons and split transcripts where exons are bad
   my $itranscripts = Transcript::check_iexons($itranscript);
 
-  # if there are any exons left in this transcript add it to the list
-  if (@{$itranscript->get_all_Exons()}) {
-    push @$itranscripts, $itranscript;
-  }
-
   my @finished_transcripts;
 
   foreach my $itrans (@$itranscripts) {
-    push @finished_transcripts, Transcript::make_Transcript($itrans,
-                                                            $slice_adaptor);
+    # if there are any exons left in this transcript add it to the list
+    if (@{$itrans->get_all_Exons()}) {
+      push @finished_transcripts, Transcript::make_Transcript($itrans,
+                                                              $slice_adaptor);
+    } else {
+      info("Transcript ". $itrans->stable_id . " has no exons left\n");
+    }
   }
 
   return \@finished_transcripts;
