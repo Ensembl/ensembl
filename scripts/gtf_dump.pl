@@ -6,20 +6,20 @@
 
 =head1 SYNOPSIS - 
 
-    gtfdump -getall -dbname test -dumpfile all_genes.gtf
-
-    gtfdump -getall -clone_file new_clones.list -dumpfile new_genes.gtf
-
-    gtfdump -dumpfile AB019437-genes.gtf AB019437
+    gtfdump [ < ids-file | -getall]  [ -clones | -fpcs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]
 
 =head1 DESCRIPTION
 
     This module dumps EnsEMBL genes from a database to a file in GTF
-    format. The dump happens on a clone by clone basis. The clones to be
-    dumped can be chosen either by specifying the -getall option, which dumps
-    all genes from a database, or by using the -clonelist and providing a list    of clones to dump, or by simply passing the clone ids on the command lines    after all the other options.
+    format. The dump happens on a clone by clone or fpc by fpc basis. The
+    things to be dumped can be chosen either by specifying the -getall
+    option, which dumps genes  on all things in the database, or 
+    reading the list of ids from stdin, or by simply
+    passing the clone ids on the command lines after all the other
+    options.
 
-    The actual dumping happens in the Bio::EnsEMBL::Utils::GTF_handler module,    which also handles the parsing of GTF files.
+    The actual dumping happens in the Bio::EnsEMBL::Utils::GTF_handler
+    module, which also handles the parsing of GTF files.
 
 =head1 OPTIONS
 
@@ -37,11 +37,12 @@
 
     -module   module name to load to (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -getall   all clones from the database [not applicable to timdb]
+    -getall   all clones or fpcs from the database 
 
-    -clonelist  read in on stdin a list of clones, one clone per line
+    -separatefiles genes of each clone or fpc go to separate <the_id>.gtf
 
-    -dumpfile  name of the file to dump genes to 
+    -dumpfile  name of the file to dump all genes to  (stdout if not specified)
+    
     
     -help      Displays this documentation with PERLDOC
 
@@ -54,19 +55,21 @@ use Getopt::Long;
 
 #Database options
 my $dbtype = 'rdb';
-my $host   = 'localhost';
-my $port   = '410000';
-my $dbname = 'f15';
-my $dbuser = 'root';
+my $host   = 'ecs1c';
+my $port   = undef; # '410000';
+my $dbname = 'ensembl080';
+my $dbuser = 'ensro';
 my $dbpass = undef;
 my $module = 'Bio::EnsEMBL::DBSQL::Obj';
 
 #Clone options
 my $getall;
-my $clonelist;
+my $clones;
+my $fpcs;
 
 #Other options
 my $dumpfile;
+my $separatefiles;
 my $help;
 
 &GetOptions( 
@@ -77,11 +80,30 @@ my $help;
 	     'dbuser:s'  => \$dbuser,
 	     'dbpass:s'  => \$dbpass,
 	     'module:s'  => \$module,
+             'clones'    => \$clones,
+             'fpcs'    => \$fpcs,
              'getall'    => \$getall,
-             'clonelist' => \$clonelist,
 	     'dumpfile:s'=> \$dumpfile,
+             'separatefiles' =>\$separatefiles,
 	     'h|help'    => \$help
 	     );
+my $usage = "gtfdump [ < ids-file | -getall]  [ -clones | -fpcs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]";
+
+die $usage,"\n" if  $help;
+
+if ( !($clones || $fpcs) || ($clones && $fpcs )) {
+    die "need to specify exactly one of [ -clones | -fpcs ]\n";
+}
+
+if ($dumpfile && $separatefiles) {
+    die "specify at most one of [ -dumpfile FILE | -separatefiles ]\n";
+}
+
+if ( $dumpfile && !$separatefiles) {
+    open (DUMP,">$dumpfile") || die ("Could not dump to $dumpfile\n");
+} else {
+    *DUMP=*STDOUT;
+}
 
 my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 
@@ -89,33 +111,52 @@ my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$d
 print STDERR "Using $locator for todb\n";
 
 my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-my @clones;
+my @ids;
 
-if ($clonelist) {
-   while( <> ) {
-   my ($en) = split;
-   push(@clones,$en);
-   }
-}
-elsif ( $getall) {
-   @clones = $db->get_all_Clone_id();
-   print STDERR scalar(@clones)." clones found in DB\n";
-}
-else {
-   @clones = @ARGV;
-}
 if ( $getall) {
-   @clones = $db->get_all_Clone_id();
-   print STDERR scalar(@clones)." clones found in DB\n";
+    if ($clones) {
+        @ids = $db->get_all_Clone_id();
+    } else {
+        @ids = $db->get_all_fpcctg_ids();  
+    }
+    warn scalar(@ids)." ids found in DB\n";
+} elsif ( @ARGV > 0 ) {
+    @ids = @ARGV;
+} else {                                # lines on stdin
+    while( <> ) {
+        my ($en) = split;
+        push(@ids,$en);
+    }
 }
 
-push @clones,'AC011324';
+my $n;
+my $stap = $db->get_StaticGoldenPathAdaptor();
 
-foreach my $clone_id (@clones) {
-    my $clone=$db->get_Clone($clone_id);
-    my @genes=$clone->get_all_Genes();
-    open (DUMP,">$dumpfile") || die ("Could not dump to $dumpfile\n");
-    $gtfh->dump_genes(\*DUMP,@genes);
+foreach my $id (@ids) {
+    warn "doing $id ...\n";
+    my @genes;
+    if ($clones) {
+        my $clone=$db->get_Clone($id);
+        @genes=$clone->get_all_Genes();
+    } else {
+        my $vc = $stap->fetch_VirtualContig_by_fpc_name($id);
+        @genes = $vc->get_all_Genes();
+    }
+        
+
+    next if int(@genes) == 0;
+    warn scalar(@genes)." genes found in db\n";
+
+    if ($separatefiles) {
+        my $file = "$id.gtf";
+        open(F,">$id.gtf") || die "Cannot open $file: $!";
+        $gtfh->dump_genes(\*F,@genes);
+        close(F);
+    } else { 
+        $gtfh->dump_genes(\*DUMP,@genes);
+    }
+
+#     last if $n++ > 100;
 }
 
 
