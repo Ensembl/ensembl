@@ -128,6 +128,7 @@ sub fetch_by_dbID {
   # adding the transcripts
   my %transcriptExons;
   my %transcripts;
+  my %trans_stable_ids;
 
   my $query = qq{
     SELECT tscript.gene_id
@@ -136,9 +137,10 @@ sub fetch_by_dbID {
       , gene.analysisId
       , gene.type
       , tscript.translation_id
+      , tsi.stable_id
     FROM gene
       , transcript tscript
-      , exon_transcript e_t
+      , exon_transcript e_t left join translation_stable_id as tsi on tscript.translation_id = tsi.translation_id
     WHERE gene.gene_id = tscript.gene_id
       AND tscript.transcript_id = e_t.transcript_id
       AND gene.gene_id = $geneId
@@ -171,6 +173,7 @@ sub fetch_by_dbID {
 
     push( @{$transcriptExons{$arr[1]}}, $arr[2] );
     $transcripts{$arr[1]} = $arr[6];
+    $trans_stable_ids{$arr[1]} = $arr[7];
   }
 
   if( $first ) {
@@ -183,6 +186,7 @@ sub fetch_by_dbID {
     $transcript->dbID( $transcriptId );
     $transcript->adaptor( $self->db->get_TranscriptAdaptor() );
     $transcript->_translation_id($transcripts{$transcriptId} );
+    $transcript->_translation_stable_id($trans_stable_ids{$transcriptId} );
 
     foreach my $exonId ( @{$transcriptExons{$transcriptId}} ) {
       $transcript->add_Exon( $exonIds{$exonId} );

@@ -188,6 +188,29 @@ sub adaptor {
 
 }
 
+=head2 _translation_stable_id
+
+ Title   : _translation_stable_id
+ Usage   : $obj->_translation_stable_id($newval)
+ Function: 
+ Returns : translation objects stable ID
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _translation_stable_id {
+   my $self = shift;
+   
+   if( @_ ) {
+      my $value = shift;
+      $self->{'_translation_stable_id'} = $value;
+	print STDERR "SET ";
+    }
+      print STDERR "VALUE: $self->{'_translation_stable_id'}\n";
+    return $self->{'_translation_stable_id'};
+}
+
 =head2 _translation_id
 
  Title   : _translation_id

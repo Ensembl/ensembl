@@ -85,10 +85,11 @@ sub fetch_by_dbID {
     $trans->dbID($transid);
     $trans->adaptor( $self );
 
-    my $ts = $self->prepare("select translation_id from transcript where transcript_id = $transid");
+    my $ts = $self->prepare("select t.translation_id,tsi.stable_id from transcript as t, translation_stable_id as tsi where t.transcript_id = $transid and t.translation_id = tsi.translation_id");
     $ts->execute;
-    my ($val) = $ts->fetchrow_array();
+    my ($val,$val2) = $ts->fetchrow_array();
     $trans->_translation_id($val);
+    $trans->_translation_stable_id($val2);
 
     return $trans;
 }

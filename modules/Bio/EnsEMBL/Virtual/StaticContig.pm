@@ -1148,7 +1148,7 @@ sub get_all_DASFeatures{
        
        if( $extf->can('get_Ensembl_SeqFeatures_DAS') ) {
 	       foreach my $sf ($extf->get_Ensembl_SeqFeatures_DAS($self->_chr_name,$self->_global_start,$self->_global_end, \@fpccontigs, \@clones,\@rawcontigs)) {
-	           if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
+	       if( $sf->seqname() =~ /\w+\.\d+\.\d+.\d+/ ) {
                     #warn ("Got a raw contig feature: ", $sf->seqname(), "\n");
  		            push(@contig_features,$sf);
                } elsif( $sf->seqname() =~ /chr[\d+|X|Y]/i) { 
@@ -1932,13 +1932,13 @@ sub get_all_Genes_exononly{
    }
 
    my $query = "
-        SELECT e.exon_id,e.sticky_rank,e.phase,et.rank,et.transcript_id,t.gene_id, 
+        SELECT e.exon_id,e.sticky_rank,e.phase,et.rank,et.transcript_id,t.gene_id, t.translation_id, 
         IF     (sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_end-$glob_start)) as start,  
         IF     (sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
                  (sgp.chr_start+sgp.raw_end-e.seq_start-$glob_start)), 
-        IF     (sgp.raw_ori=1,e.strand,(-e.strand))
-        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t
+        IF     (sgp.raw_ori=1,e.strand,(-e.strand)), tsi.stable_id
+        FROM   exon e,static_golden_path sgp,exon_transcript et,transcript t left join  translation_stable_id as tsi on tsi.translation_id = t.translation_id
         WHERE  t.transcript_id = et.transcript_id
         AND    et.exon_id = e.exon_id 
         AND    sgp.raw_id = e.contig_id
@@ -1952,8 +1952,8 @@ sub get_all_Genes_exononly{
     my $sth = $self->dbobj->prepare($query);
     $sth->execute();
 
-    my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$start,$end,$strand);
-    $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$start,\$end,\$strand);
+    my ($exonid,$stickyrank,$phase,$rank,$transcriptid,$geneid,$translationid,$start,$end,$strand,$tsid);
+    $sth->bind_columns(undef,\$exonid,\$stickyrank,\$phase,\$rank,\$transcriptid,\$geneid,\$translationid,\$start,\$end,\$strand,\$tsid);
   
     my $current_transcript;
     my $current_gene;
@@ -2000,6 +2000,9 @@ sub get_all_Genes_exononly{
 
         	   $current_transcript_id = $transcriptid;
         	   $current_transcript->dbID($transcriptid);
+       # 	   $current_transcript->_translation_id($translationid);
+        	   $current_transcript->_translation_stable_id($tsid);
+		 print STDERR "$translationid -> $tsid\n";
         	   $current_transcript->adaptor( $self->dbobj->get_TranscriptAdaptor );
         }
         if( $stickyrank > 1 && defined $previous_exon && $previous_exon->dbID() == $exonid ) { # This is the same EXON so amend its length
@@ -2023,9 +2026,9 @@ sub get_all_Genes_exononly{
             $exon->adaptor( $self->dbobj->get_ExonAdaptor() );
             $exon->seqname($self->id);
             $exon->phase($phase);
-            $previous_exon = $exon;
 	    $exons{$exonid} = $exon;
         }
+        $previous_exon = $exons{$exonid};
         $current_transcript->add_Exon($exons{$exonid});
         $current_transcript->end_exon_rank($rank);
    }
