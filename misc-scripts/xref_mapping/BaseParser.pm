@@ -21,6 +21,7 @@ my $base_dir = ".";
 my $dbi;
 my %dependent_sources;
 my %taxonomy2species_id;
+my %name2species_id;
 
 my %filetype2parser = (
 		       "UniProtSwissProt" => "SwissProtParser",
@@ -112,14 +113,14 @@ sub new {
 }
 
 # --------------------------------------------------------------------------------
-# Get source ID for a particular file; matches end of url field
+# Get source ID for a particular file; matches url field 
 
 sub get_source_id_for_filename {
 
   my ($self, $file) = @_;
 
-  my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "'"; 
-  #print $sql . "\n";
+  my $sql = "SELECT source_id FROM source WHERE url LIKE '%/" . $file . "%'"; 
+  print $sql . "\n";
   my $sth = dbi()->prepare($sql);
   $sth->execute();
   my @row = $sth->fetchrow_array();
@@ -263,6 +264,29 @@ sub taxonomy2species_id {
   }
 
   return %taxonomy2species_id;
+
+}
+
+# --------------------------------------------------------------------------------
+# Get & cache a hash of all the species IDs & species names.
+
+sub name2species_id {
+
+  my $self = shift;
+
+  if (!defined %name2species_id) {
+
+    my $dbi = dbi();
+    my $sth = $dbi->prepare("SELECT species_id, name FROM species");
+    $sth->execute() || die $dbi->errstr;
+    while(my @row = $sth->fetchrow_array()) {
+      my $species_id = $row[0];
+      my $name = $row[1];
+      $name2species_id{$name} = $species_id;
+    }
+  }
+
+  return %name2species_id;
 
 }
 
