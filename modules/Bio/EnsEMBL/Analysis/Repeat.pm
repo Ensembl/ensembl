@@ -35,7 +35,7 @@ Manipulation:
     my $start = $rep->start;
     my $end   = $rep->end;
 
-   my $repname  = $rep->homol_SeqFeature->seqname;
+    my $repname  = $rep->homol_SeqFeature->seqname;
     my $repstart = $rep->homol_SeqFeature->start;
     my $repend   = $rep->homol_SeqFeature->end;
 
@@ -56,11 +56,12 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::Analysis::Repeat;
 
-use vars qw($AUTOLOAD @ISA);
+use vars qw(@ISA);
 use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Homol
 
+use Bio::AnnSeqIO::FTHelper;
 use Bio::SeqFeature::Homol;
 
 
@@ -77,6 +78,41 @@ sub _initialize {
 
 =head1 Methods unique to Repeat
 
+=head2 to_FTHelper
+
+Called by C<Bio::AnnSeqIO::FTHelper::from_SeqFeature>, which
+is called by C<Bio::AnnSeqIO::EMBL::write_annseq>.
+
+Returns a C<Bio::AnnSeqIO::FTHelper> object.
+
+=cut
+
+sub to_FTHelper {
+    my( $rep ) = @_;
+    
+    # Make new FTHelper, and fill in the key
+    my $fth = Bio::AnnSeqIO::FTHelper->new;
+    $fth->key('repeat_region');
+    
+    # Add location line
+    my $g_start = $rep->start;
+    my $g_end   = $rep->end;
+    my $loc = "$g_start..$g_end";
+    if ($rep->strand == -1) {
+        $loc = "complement($loc)";
+    }
+    $fth->loc($loc);
+    
+    # Add note describing repeat
+    my $type = $rep->seqname;
+    my $r_start = $rep->homol_SeqFeature->start;
+    my $r_end   = $rep->homol_SeqFeature->end;
+    $fth->add_field('note', "$type: matches $r_start to $r_end of consensus");
+    
+    return $fth;
+}
 
 
+1;
 
+__END__
