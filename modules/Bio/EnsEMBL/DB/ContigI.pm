@@ -291,12 +291,6 @@ sub get_Genes_by_Type{
 }
 
 
-
-
-
-
-
-
 =head2 length
 
  Title   : length
@@ -880,7 +874,7 @@ sub get_repeatmasked_seq {
 
 sub mask_features {
     my ($self, $dnastr,@repeats) = @_;
-    my $dnalen = length($dnastr);
+    my $dnalen = length $dnastr;
     
   REP:foreach my $f (@repeats) {
       

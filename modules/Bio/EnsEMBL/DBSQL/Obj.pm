@@ -70,6 +70,7 @@ use Bio::EnsEMBL::DBSQL::GapContig;
 
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor;
+use Bio::EnsEMBL::DBSQL::KaryotypeAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
@@ -2334,6 +2335,24 @@ sub get_StaticGoldenPathAdaptor{
    my ($self,@args) = @_;
 
    return Bio::EnsEMBL::DBSQL::StaticGoldenPathAdaptor->new(-dbobj => $self);
+}
+
+=head2 get_KaryotypeAdaptor
+
+ Title   : get_KaryotypeAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_KaryotypeAdaptor{
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::DBSQL::KaryotypeAdaptor->new(-dbobj => $self);
 }
 
 

@@ -1084,8 +1084,24 @@ sub hend_phase {
 }
 
 
-sub has_tag {
-    return 0;
+# SeqFeature compliance
+
+=head2 has_tag
+
+ Title   : has_tag
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub has_tag{
+   my ($self,@args) = @_;
+
+   return 0;
 }
 
 1;

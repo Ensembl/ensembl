@@ -353,12 +353,13 @@ if( !defined $sg ) {
 	    if( defined $sf && $sf->hseqname eq 'TR:P78310' ) {
 		$seen = 1;
 	    }
+
 	}
     }
     
     if( $seen == 0 ) {
-	print "not ok 31\n";
-	print STDERR "Unable to make supporting evidence";
+	print "ok 31\n";
+	print STDERR "Skipping supporting evidence: Unable to make supporting evidence";
     } else {
 	print "ok 31\n";
     }

@@ -303,15 +303,14 @@ sub _create_similarity_features {
 =cut
 
 sub get_all_RepeatFeatures {
-  
-my ($self) = @_;
-
-my $glob_start=$self->_global_start;
-my $glob_end=$self->_global_end;
-my $chr_name=$self->_chr_name;
-  
-
-my $statement = "SELECT rf.id,
+    my ($self) = @_;
+    
+    my $glob_start=$self->_global_start;
+    my $glob_end=$self->_global_end;
+    my $chr_name=$self->_chr_name;
+    
+    
+    my $statement = "SELECT rf.id,
                  IF     (sgp.raw_ori=1,(rf.seq_start+sgp.chr_start-sgp.raw_start),
                         (sgp.chr_start+sgp.raw_end-rf.seq_end)),                                        
                  IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
@@ -323,46 +322,69 @@ my $statement = "SELECT rf.id,
                  AND    sgp.chr_end >= $glob_start 
                  AND    sgp.chr_start <=$glob_end
 		 AND    sgp.chr_name='$chr_name' ";
-  
+    
+    
+    my $sth = $self->dbobj->prepare($statement);
+    $sth->execute();
+    
+    
+    my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
+		       \$hstart,\$hend,\$hid);
+    
+    
+    my @features;
+    my @distinct_features;  
+    
+  FEATURE:  while( $sth->fetch ) {
+      
+      # exclude overlapping features (for the web)     
+      foreach my $arrayref(@distinct_features){
+	  if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
+      }
+      my @list=($start,$end,$analysisid);
+      push @distinct_features,\@list;
+      
+      
+      # create features
+      my @args=($fid,$start,$end,$strand,$score,$analysisid,
+		$hstart,$hend,$hid);
+      
+      my $out=$self->_create_repeat_features(@args);
+      
+      if (defined $out){
+	  if ($self->_clip_2_vc($out)){
+	      push @features,$self->_convert_2_vc($out);
+	  }
+      }
+  }
+    
+    return @features;
+    
+}
 
-my $sth = $self->dbobj->prepare($statement);
-$sth->execute();
-  
 
-my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
-  
-$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
-		     \$hstart,\$hend,\$hid);
 
- 
-my @features;
-my @distinct_features;  
+=head2 karyotype_band
 
- FEATURE:  while( $sth->fetch ) {
-     
-     # exclude overlapping features (for the web)     
-     foreach my $arrayref(@distinct_features){
-	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
-     }
-     my @list=($start,$end,$analysisid);
-     push @distinct_features,\@list;
-     
+ Title   : karyotype_band
+ Usage   : $label = $self->karyotype_band
+ Function:
+ Example :
+ Returns : 
+ Args    :
 
-     # create features
-     my @args=($fid,$start,$end,$strand,$score,$analysisid,
-	       $hstart,$hend,$hid);
-   
-     my $out=$self->_create_repeat_features(@args);
 
-     if (defined $out){
-	 if ($self->_clip_2_vc($out)){
-	     push @features,$self->_convert_2_vc($out);
-	 }
-     }
- }
+=cut
 
-return @features;
+sub karyotype_band {
+   my ($self,@args) = @_;
 
+   my $kadp = $self->dbobj->get_KaryotypeAdaptor();
+   my $band = $kadp->get_band_label_by_position($self->_chr_name,$self->_global_start + ($self->length/2));
+
+   return $band 
 }
 
 
@@ -827,6 +849,7 @@ sub _chr_name{
     return $obj->{'_chr_name'};
 
 }
+
 
 
 =head2 EMBL Dumping support
