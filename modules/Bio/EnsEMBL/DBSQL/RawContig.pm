@@ -689,7 +689,7 @@ sub get_all_SimilarityFeatures{
 
        if (!$analhash{$analysisid}) {
 	   
-	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
+       my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	   $analysis = $feature_obj->get_Analysis($analysisid);
 	   $analhash{$analysisid} = $analysis;
        
@@ -718,15 +718,15 @@ sub get_all_SimilarityFeatures{
        $fset_id_str = $fset_id_str . $fid . ",";       
        #Build Feature Object
        my $feature = new Bio::EnsEMBL::SeqFeature;
-       $feature->seqname   ($self->id);
-       $feature->start     ($start);
-       $feature->end       ($end);
-       $feature->strand    ($strand);
-       $feature->source_tag($name);
+       $feature->seqname    ($self->id);
+       $feature->start      ($start);
+       $feature->end        ($end);
+       $feature->strand     ($strand);
+       $feature->source_tag ($name);
        $feature->primary_tag('similarity');
        $feature->id         ($fid);
-       $feature->p_value     ($evalue)       if (defined $evalue);
-       $feature->percent_id    ($perc_id)      if (defined $perc_id);
+       $feature->p_value    ($evalue)       if (defined $evalue);
+       $feature->percent_id ($perc_id)      if (defined $perc_id);
        $feature->phase      ($phase)        if (defined $phase);
        $feature->end_phase  ($end_phase)    if (defined $end_phase);
        
@@ -764,6 +764,8 @@ sub get_all_SimilarityFeatures{
        my $out;
        my $analysis;
               
+       #print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fset\n";
+       
        if (!$analhash{$analysisid}) {
 	   
 	   my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -786,7 +788,7 @@ sub get_all_SimilarityFeatures{
 
 
 	   $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$self->id,
-				$hstart,$hend,1,$f_score,$name,'similarity',$hid);
+				            $hstart,$hend,1,$f_score,$name,'similarity',$hid, $evalue, $perc_id, $phase, $end_phase);
 
 	   $out->analysis    ($analysis);
 	   
@@ -795,17 +797,17 @@ sub get_all_SimilarityFeatures{
 	                                          #    really know where this method has come from.
        } else {
 	   $out = new Bio::EnsEMBL::SeqFeature;
-	   $out->seqname   ($self->id);
-	   $out->start     ($start);
-	   $out->end       ($end);
-	   $out->strand    ($strand);
-	   $out->source_tag($name);
+	   $out->seqname    ($self->id);
+	   $out->start      ($start);
+	   $out->end        ($end);
+	   $out->strand     ($strand);
+	   $out->source_tag ($name);
 	   $out->primary_tag('similarity');
 	   $out->id         ($fid);
        $out->p_value    ($evalue)    if (defined $evalue);
-       $out->percent_id   ($perc_id)   if (defined $perc_id); 
-       $out->phase     ($phase)     if (defined $phase);    
-       $out->end_phase ($end_phase) if (defined $end_phase); 
+       $out->percent_id ($perc_id)   if (defined $perc_id); 
+       $out->phase      ($phase)     if (defined $phase);    
+       $out->end_phase  ($end_phase) if (defined $end_phase); 
         
 	   if( defined $f_score ) {
 	       $out->score($f_score);
@@ -1097,7 +1099,7 @@ sub get_genscan_peptides {
     
     foreach my $gene ($self->get_all_PredictionFeatures)
     {
-        print STDERR "Processing genscan gene: ".$gene->id."\n";
+        #print STDERR "Processing genscan gene: ".$gene->id."\n";
         my $transcript  = Bio::EnsEMBL::Transcript->new();
         my $translation = Bio::EnsEMBL::Translation->new();
         $transcript->id($self->id.".".$gene->id);
@@ -1108,8 +1110,8 @@ sub get_genscan_peptides {
         my (@exons);        
         foreach my $feature (@predictions)
         {
-            print STDERR "Processing predicted exon $count\n";
-            print STDERR "START ".$feature->start." \tEND ".$feature->end."\tPHASE ".$feature->phase."\n";
+            #print STDERR "Processing predicted exon $count\n";
+            #print STDERR "START ".$feature->start." \tEND ".$feature->end."\tPHASE ".$feature->phase."\tENDPHASE ".$feature->end_phase."\n";
             my $exon = Bio::EnsEMBL::Exon->new();
             $exon->id       ($transcript->id.".$count");
             $exon->start    ($feature->start);
@@ -1144,8 +1146,8 @@ sub get_genscan_peptides {
             $transcript->add_Exon($exon);
         }
            
-        print STDERR "gene ".$gene->id." \tstart_exon ".$translation->start_exon_id." \tstart ".$translation->start.
-                     " \tend_exon ".$translation->end_exon_id." \tend ".$translation->end."\n";
+        #print STDERR "gene ".$gene->id." \tstart_exon ".$translation->start_exon_id." \tstart ".$translation->start.
+        #             " \tend_exon ".$translation->end_exon_id." \tend ".$translation->end."\n";
         
         $transcript->translation($translation);
         push (@transcripts, $transcript);
@@ -2376,7 +2378,7 @@ sub get_repeatmasked_seq {
     my @repeats = $self->get_all_RepeatFeatures();
     my $seq = $self->primary_seq();
     my $dna = $seq->seq();
-    my $masked_dna = $self->mask_features($dna, @repeats);
+    my $masked_dna = $self->_mask_features($dna, @repeats);
     my $masked_seq = Bio::PrimarySeq->new(   -seq => $masked_dna, 
                                              -display_id => $self->id,         
                                              -primary_id => $self->internal_id,
@@ -2385,28 +2387,36 @@ sub get_repeatmasked_seq {
     return $masked_seq;
 }
 
-sub mask_features {
+sub _mask_features {
     my ($self, $dnastr,@repeats) = @_;
     my $dnalen = CORE::length($dnastr);
 
-    REP:foreach my $f (@repeats) {
+    $dnastr =~ s/[^A-Za-z\-\.\*]//g; #TEMP BUG FIX: removing rubbish from sequence, not sure where it comes from
 
-	my $start  = $f->start;
-	my $end    = $f->end;
-	my $length = ($end - $start) + 1;
+    REP:foreach my $f (@repeats) 
+    {
+
+	    my $start  = $f->start;
+	    my $end    = $f->end;
+	    my $length = ($end - $start) + 1;
 
 
-	if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) {
-	    print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
-	    next REP;
-	}
+	    if ($start < 0 || $start > $dnalen || $end < 0 || $end > $dnalen) 
+        {
+	        print STDERR "Eeek! Coordinate mismatch - $start or $end not within $dnalen\n";
+	        next REP;
+	    }
 
-	$start--;
+	    $start--;
 
-	my $padstr = 'N' x $length;
+	    my $padstr = 'N' x $length;
 
-	substr ($dnastr,$start,$length) = $padstr;
-
+	    substr ($dnastr,$start,$length) = $padstr;
+        if ($dnastr !~ /^[A-Za-z\-\.\*]+$/)
+        {
+            $dnastr =~ s/[A-Za-z\-\.\*]//g;
+            $self->throw("Nonstandard characters found $dnastr\n"); 
+        }
     }
 
     return $dnastr;
