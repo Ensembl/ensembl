@@ -61,4 +61,27 @@ sub update_clone_info {
   return;
 }
 
+sub remove_supercontigs {
+    my $self = shift;
+    
+    my $target = $self->target();
+    my $dbh    = $self->dbh();
+    $self->debug("Vega mouse specific - removing supercontigs from $target");
+
+    $dbh->do("DELETE FROM $target.meta ". 
+	     "WHERE meta_value like '%supercontig%'");
+
+    $dbh->do("DELETE FROM $target.coord_system ".
+	     "WHERE name like 'supercontig'");
+    
+    $dbh->do("DELETE $target.assembly ".
+	     "FROM $target.assembly a, $target.seq_region sr ". 
+	     "WHERE sr.coord_system_id = 2 ".
+	     "and a.asm_seq_region_id = sr.seq_region_id");
+
+    $dbh->do("DELETE FROM $target.seq_region ".
+	     "WHERE coord_system_id = 2");
+}
+
+
 1;
