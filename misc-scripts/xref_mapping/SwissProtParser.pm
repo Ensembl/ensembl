@@ -112,13 +112,12 @@ sub create_xrefs {
 
     my $xref;
     my $acc;
-    ($acc) =$_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions 
+    ($acc) =$_ =~ /AC\s+(.+);/; # may catch multiple ; separated accessions
     ($xref->{LABEL})    = $_ =~ /ID\s+(\w+)/;
     ($xref->{SPECIES_ID}) = $species_id;
     ($xref->{SOURCE_ID}) = $source_id;
 
     # set accession (and synonyms if more than one)
-    # note synonyms 
     my @acc = split /;/, $acc;
     $xref->{ACCESSION} = $acc[0];
     for (my $a=1; $a <= $#acc; $a++) {
@@ -126,7 +125,7 @@ sub create_xrefs {
     }
 
     # extract sequence
-    my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline 
+    my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline
       my @seq_lines = split /\n/, $seq;
     my $parsed_seq = "";
     foreach my $x (@seq_lines) {
@@ -138,6 +137,24 @@ sub create_xrefs {
 
     $xref->{SEQUENCE} = $parsed_seq;
     #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
+
+    # dependent xrefs - only store those that are from sources listed in the source table
+    my ($deps) = $_ =~ /DR\s+(.+)/s; # /s allows . to match newline
+      my @dep_lines = split /\n/, $deps;
+    foreach my $dep (@dep_lines) {
+      if ($dep =~ /^DR\s+(.+)/) {
+	my ($source, $acc, @dummy) = split /;\s*/, $1;
+	my %dependent_sources = BaseParser->get_dependent_xref_sources();
+	if (exists $dependent_sources{$source}) {
+	  # create dependent xref structure & store it
+	  my %dep;
+	  $dep{SOURCE} = $source;
+	  $dep{ACCESSION} = $acc;
+	  push @{$xref->{DEPENDENT_XREFS}}, %dep;
+	}
+      }
+    }
+
 
     push @xrefs, $xref;
 
