@@ -48,7 +48,7 @@ CREATE TABLE alt_allele (
 
 CREATE TABLE analysis (
 
-  analysis_id                 int(10) unsigned DEFAULT '0' NOT NULL auto_increment,
+  analysis_id                 int(10) unsigned NOT NULL auto_increment,
   created                     datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   logic_name                  varchar(40) not null,
   db                          varchar(120),
