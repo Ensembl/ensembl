@@ -208,7 +208,7 @@ sub standard_table_transfer {
     $select = "SELECT $select from $sourcetable";
   }    
 		   
-  my $sth = $self->source_db()->prepare( $select );
+  my $sth = $self->source_dbh()->prepare( $select );
   $sth->execute();
   
   my $row;
