@@ -74,7 +74,7 @@ INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1090, 9606,'http://www.gene.ucl.ac.uk/public-files/nomen/ens4.txt http://www.gene.ucl.ac.uk/public-files/nomen/ens1.txt', '', now(), now(), "HUGOParser");
 
 ##      Interpro
-#INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,' ftp://ftp.ebi.ac.uk/pub/databases/interpro/short_name.dat ftp://ftp.ebi.ac.uk/pub/databases/interpro/protein2interpro.dat.gz', '', now(), now(), "InterproParser");
+INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1300, 9606,'ftp://ftp.ebi.ac.uk/pub/databases/interpro/short_name.dat ftp://ftp.ebi.ac.uk/pub/databases/interpro/protein2interpro.dat.gz', '', now(), now(), "InterproParser");
 
 
 INSERT INTO source_url (source_id, species_id, url, checksum, file_modified_date, upload_date, parser) VALUES (1500, 9606,'ftp://ftp.ncbi.nih.gov/repository/OMIM/morbidmap', '', now(), now(), "MIMParser");

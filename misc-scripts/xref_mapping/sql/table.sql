@@ -123,3 +123,14 @@ CREATE TABLE species (
 );
 
 ################################################################################
+
+CREATE TABLE interpro (
+
+  interpro               varchar(255) not null,
+  pfam                   varchar(255) not null,
+
+  PRIMARY KEY (interpro)
+
+);
+
+################################################################################
