@@ -1548,7 +1548,7 @@ sub load_genomic_mapper {
 sub adjust_start_end {
   my ( $self, $start_adjust, $end_adjust ) = @_;
 
-  my $new_exon;
+  my $new_exon = Bio::EnsEMBL::Exon->new();
   %{$new_exon} = %{$self};
   if( $self->strand() == 1 ) {
     $new_exon->start( $self->start() + $start_adjust );

@@ -764,28 +764,12 @@ sub get_all_translateable_Exons {
     # Make a truncated exon if the translation start or
     # end causes the coordinates to be altered.
     if ($trunc_start != $start or $trunc_end != $end) {
-      my $new_exon = Bio::EnsEMBL::Exon->new;
-      # ARNE: I doubt this is advisable, modified Exons is not in the DB
-      $new_exon->dbID($ex_id);
-      
-      # Use the new start and end
-      $new_exon->start($trunc_start);
-      $new_exon->end  ($trunc_end);
-      $new_exon->strand($strand);
+      my ( $adjust_start, $adjust_end );
+      $adjust_start = $trunc_start - $start;
+      $adjust_end = $trunc_end - $end;
 
-      # the truncated first exon of the translation should get start phase = 0
-      if ( $ex == $start_exon ){
-	$new_exon->phase(0);
-      }
-      else{
-	$new_exon->phase($ex->phase);
-      }
-      $new_exon->end_phase($ex->end_phase);
-      $new_exon->contig($ex->contig);
-
-      push(@translateable, $new_exon);
+      push( @translateable, $ex->adjust_start_end( $adjust_start, $adjust_end ));
     } else {
-      # Its just an ordinary internal exon
       push(@translateable, $ex);
     }
         
