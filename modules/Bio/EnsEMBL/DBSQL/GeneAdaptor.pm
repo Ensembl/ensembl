@@ -281,40 +281,40 @@ sub fetch_by_Slice {
   my ( $self, $slice ) = @_;
   my @out;
 
-  my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
-    ( $slice->assembly_type() );
+ my $mapper = $self->db->get_AssemblyMapperAdaptor->fetch_by_type
+   ( $slice->assembly_type() );
   
-  $mapper->register_region( $slice->chr_name(),
+ $mapper->register_region( $slice->chr_name(),
 			    $slice->chr_start(),
 			    $slice->chr_end());
   
-  my @cids = $mapper->list_contig_ids( $slice->chr_name(),
-				       $slice->chr_start(),
-				       $slice->chr_end());
+ my @cids = $mapper->list_contig_ids( $slice->chr_name(),
+				      $slice->chr_start(),
+				      $slice->chr_end());
 
-  # no genes found so return
-  if ( scalar (@cids) == 0 ) {
-    return undef;
-  }
+ # no genes found so return
+ if ( scalar (@cids) == 0 ) {
+   return undef;
+ }
 
-  my $str = "(".join( ",",@cids ).")";
+ my $str = "(".join( ",",@cids ).")";
 
-  my $sth = $self->prepare("
-     SELECT distinct(t.gene_id) 
-     FROM   transcript t,exon_transcript et,exon e 
-     WHERE  e.contig_id in $str 
-     AND    et.exon_id = e.exon_id 
-     AND    et.transcript_id = t.transcript_id");
+ my $sth = $self->prepare("
+    SELECT distinct(t.gene_id) 
+    FROM   transcript t,exon_transcript et,exon e 
+    WHERE  e.contig_id in $str 
+    AND    et.exon_id = e.exon_id 
+    AND    et.transcript_id = t.transcript_id");
 
-  $sth->execute;
+ $sth->execute;
   
-  while( my ($geneid) = $sth->fetchrow ) {
-    my $gene = $self->fetch_by_dbID( $geneid );
-    my $newgene = $gene->transform( $slice );    
-    push( @out, $newgene );
-  }
+ while( my ($geneid) = $sth->fetchrow ) {
+   my $gene = $self->fetch_by_dbID( $geneid );
+   my $newgene = $gene->transform( $slice );    
+   push( @out, $newgene );
+ }
 
-  return @out;
+ return @out;
 }
 
 
