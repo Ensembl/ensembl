@@ -15,14 +15,12 @@
 Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
 
 =head1 SYNOPSIS
-  
 
 
 
 =head1 DESCRIPTION
 
-Factory for getting out slices of assemblies. WebSlice is the highly
-accelerated version for the web site.
+Factory for getting out slices of assemblies.
 
 =head1 AUTHOR - Ewan Birney
 
@@ -40,19 +38,16 @@ methods. Internal methods are usually preceded with a _
 =cut
 
 
-# Let the code begin...
-
-
 package Bio::EnsEMBL::DBSQL::SliceAdaptor;
 use vars qw(@ISA);
 use strict;
 
 
-# Object preamble - inherits from Bio::EnsEMBL::Root
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
+use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
@@ -60,18 +55,22 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 # new is inherited from BaseAdaptor
 
 
+=head2 fetch_by_region
 
-=head2 fetch_by_chr_start_end
-
-  Arg [1]    : string $chr
-               the name of the chromosome to obtain a slice for
-  Arg [2]    : int $start
-               the start basepair of the slice to obtain in chromosomal 
-               coordinates
-  Arg [3]    : int $end 
-               the end basepair of the slice to obtain in chromosomal 
-               coordinates
-  Example    : $slice = $slice_adaptor->fetch_by_chr_start_end();
+  Arg [1]    : string $coord_system
+               The coordinate system of the slice to be created
+  Arg [2]    : string $seq_region_name
+               The name of the sequence region that the slice will be
+               created on
+  Arg [3]    : int $start (optional, default = 1)
+               The start of the slice on the sequence region
+  Arg [4]    : int $end (optional, default = seq_region length)
+               The end of the slice on the sequence region
+  Arg [5]    : int $strand (optional, default = 1)
+               The orientation of the slice on the sequence region
+  Arg [6]    : string $version (optional, default = default version)
+               The version of the sequence region to create the slice on
+  Example    : $slice = $slice_adaptor->fetch_by_region('chromosome');
   Description: Creates a slice object on the given chromosome and coordinates.
   Returntype : Bio::EnsEMBL::Slice
   Exceptions : none
@@ -79,37 +78,95 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 =cut
 
+sub fetch_by_region {
+  my ($self, $coord_system, $seq_region_name,
+      $start, $end, $strand, $version) = @_;
+
+  #validate that this coordinate system exists
+  my $mc = $self->db->get_MetaContainer();
+  if(!$mc->is_valid_coord_system($coord_system)) {
+    throw("[$coord_system] is not a valid coord_system for this database. " .
+          "A coord_system key/value pair must be added to " .
+          "the meta table for this system to be valid");
+  }
+
+  throw('seq_region_name argument is required') if(!$seq_region_name);
+
+  $self->{'_slice_cache'} ||= {};
+
+  my $sth = $self->prepare("SELECT length, version, default " .
+                           "FROM seq_region " .
+                           "WHERE name = ? AND coord_system = ?");
+
+  #force cast to string so mysql cannot treat as int
+  $sth->execute("$seq_region_name", "$coord_system");
+
+  #
+  # Pick out a seqregion which is the default if no version was asked for
+  # or the one that matches the version if one was requested
+  #
+  my($length, $default, $v);
+  while(($length, $v, $default) = $sth->fetchrow_array()) {
+    if(defined($version)) {
+      last if($v eq $version);
+    } elsif($default) {
+      $version = $v;
+      last;
+    }
+  }
+
+  #throw if the row we were looking for didn't exist
+  if($v ne $version) {
+    if(defined($version)) {
+      throw("Cannot create slice on non-existant seq_region:\n" .
+            "  coord_system=[$coord_system],\n" .
+            "  name=[$seq_region_name],\n" .
+            "  version=[$version]");
+    } else {
+      throw("Cannot create slice.  No version was specified and default " .
+            "version does not exist for seq_region:\n" .
+            "  coord_system=[$coord_system],\n" .
+            "  name=[$seq_region_name]");
+    }
+  }
+
+  $start = 1 if(!defined($start));
+  $strand = 1 if(!defined($strand));
+  $end = $length if(!defined($length));
+
+  if($end < $start) {
+    throw('start [$start] must be less than or equal to end [$end]');
+  }
+
+  return Bio::EnsEMBL::Slice->new(-COORD_SYTEM     => $coord_system,
+                                  -SEQ_REGION_NAME => $seq_region_name,
+                                  -VERSION         => $version,
+                                  -START           => $start,
+                                  -END             => $end,
+                                  -STRAND          => $strand,
+                                  -ADAPTOR         => $self);
+}
+
+
+
+
+=head2 fetch_by_chr_start_end
+
+  Description: DEPRECATED use fetch_by_region instead
+
+=cut
+
 sub fetch_by_chr_start_end {
     my ($self,$chr,$start,$end) = @_;
+    deprecate('Use fetch_by_region() instead');
 
-    unless($chr) {
-      $self->throw("chromosome name argument must be defined and not ''");
-    }
+    #assume that by chromosome the user actually meant top-level coord
+    #system since this is the old behaviour of this deprecated method
 
-    unless(defined $end) {   # Why defined?  Is '0' a valid end?
-      $self->throw("end argument must be defined\n");
-    }
+    my $mc = $self->db->get_MetaContainer();
+    my $top_level_cs = $mc->get_top_coord_system();
 
-    unless(defined $start) {
-      $self->throw("start argument must be defined\n");
-    }
-
-    if($start > $end) {
-      $self->throw("start must be less than end: parameters $chr:$start:$end");
-    }
-    
-    my $slice;
-    my $type = $self->db->assembly_type();
-
-    $slice = Bio::EnsEMBL::Slice->new(
-          -chr_name      => $chr,
-          -chr_start     => $start,
-          -chr_end       => $end,
-          -assembly_type => $type,
-          -adaptor       => $self
-	 );
-
-    return $slice;
+    return $self->fetch_by_region($top_level_cs, $chr,$start,$end);
 }
 
 
