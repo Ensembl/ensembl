@@ -35,6 +35,7 @@ use Bio::EnsEMBL::Exon;
 use Bio::SeqIO;
 
 use Bio::Seq;
+use FileHandle;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
@@ -121,8 +122,11 @@ $clone->add_Contig($contig2);
 
 print "ok 2\n";
 
+$fh = new FileHandle;
+$fh->open('>out.embl');
+
 $as = $clone->get_AnnSeq();
-$asio = Bio::SeqIO->new( '-format' => 'EMBL' , -fh => \*STDERR ) ;
+$asio = Bio::SeqIO->new( '-format' => 'EMBL' , -fh => $fh) ;
 $asio->_post_sort(\&sort_FTHelper_EnsEMBL);
 
 $asio->write_seq($as);

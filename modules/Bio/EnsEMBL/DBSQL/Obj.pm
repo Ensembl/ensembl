@@ -58,7 +58,7 @@ use strict;
 use Bio::Root::Object;
 
 use Bio::EnsEMBL::Ghost;
-use Bio::EnsEMBL::DBSQL::Contig;
+use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
@@ -722,8 +722,8 @@ sub get_Contig{
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
-   my $contig = new Bio::EnsEMBL::DBSQL::Contig ( -dbobj => $self,
-						  -id    => $id );
+   my $contig = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self,
+						     -id    => $id );
 
    return $contig;
 }
