@@ -308,7 +308,49 @@ sub get_all_Genes{
     return;
 }
 
+=head2 get_old_Genes
 
+ Title   : get_old_Genes
+ Usage   : my @mapped_Genes=$rc->get_old_Genes 
+ Function: Used to get out old Genes (not modifying coordinates)
+ Returns : an array of Bio::EnsEMBL::Exon objects
+ Args    : none
+
+
+=cut
+
+sub get_old_Genes {
+    my ($self) = @_;
+
+    #This method requires a connection to a crossmatch database
+    if (!$self->_crossdb) { $self->throw("You need a crossmatch database to call get_old_Genes!");}
+    my $crossdb = $self->_crossdb;
+
+    
+    #The crossdb should be holding onto old and new dbs, we need the old one here...
+    my $old_db;
+    eval {
+	$old_db=$self->_crossdb->old_dbobj;
+    }; 
+    if ($@) {
+	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_Genes! $@");
+    }
+    my $oldcontig;
+    eval {
+	$oldcontig = $old_db->get_Contig($self->id);
+    };
+
+    #If the clone does not exist, these are really new Genes
+    if ($@) {
+	#print STDERR "Contig ".$self->id." doesn't exist in old db, returning empty array...\n";
+	return ();
+    }
+   
+    my @genes=$oldcontig->get_all_Genes();
+    my $size=scalar (@genes);
+    #print STDERR "Returning $size old Genes as they are for contig ".$self->id."\n"; 
+    return @genes;
+}
 
 =head2 get_all_Exons
 
@@ -319,10 +361,7 @@ sub get_all_Genes{
  Returns : 
  Args    :
 
-
 =cut
-
-
 
 sub get_all_Exons {
 
@@ -540,13 +579,14 @@ sub get_old_Exons {
 	$self->throw("The crossmatch database has to hold the old dna database to be able to call get_old_exons! $@");
     }
     my $oldclone;
+    my $oldcontig;
     eval {
 	$oldclone = $old_db->get_Clone($self->cloneid);
     };
 
     #If the clone does not exist, these are really new exons
     if ($@) {
-	print STDERR "Clone doesn't exist in old db, returning empty array...\n";
+	#print STDERR "Clone ".$self->cloneid." doesn't exist in old db, returning empty array...\n";
 	return ();
     }
    
@@ -554,32 +594,39 @@ sub get_old_Exons {
     #If the clones have the same version, the underlying dna hasn't changed,
     #therefore we just return the old exons...
     if ($oldclone->embl_version == $newclone->embl_version) {
-	print STDERR "Clones have the same version, returning old exons as they are...\n";
-	my @exons=$oldclone->get_Contig($self->id)->get_all_Exons();
+	my $oldcontig;
+	eval {
+	    $oldcontig = $oldclone->get_Contig($self->id);
+	};
+	if ($@) {
+	    print STDERR "Clones with id ".$oldclone->id." have the same version in old and new db, but contig ".$self->id." is not there! (CLONE VERSION BUG)\n";
+	    return ();
+	}
+	my @exons=$oldcontig->get_all_Exons();
 	my $size=scalar (@exons);
-	print STDERR "Returning $size old exons for contig ".$self->id." on clone ".$oldclone->id."\n"; 
-	return $oldclone->get_Contig($self->id)->get_all_Exons(); 
+	#print STDERR "Returning $size old exons as they are for contig ".$self->id." on clone ".$oldclone->id."\n"; 
+	return @exons; 
     }
     #We get out a SymmetricContigFeatureContainer from the crossdb and use it     #to retrieve feature pairs for this contig, then sort them
+    #print STDERR "Not empty or identical, going through mapping\n";
     my $sfpc = $crossdb->get_SymmetricContigFeatureContainer;
-    $self->id =~ /(\S+)\.0+(\d+)/;
-    my $id = "$1.".$newclone->version.".$2";
-    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($id);
+    my @fp=$sfpc->get_FeaturePair_list_by_rawcontig_id($self->id,$newclone->embl_version);
+    #print STDERR "Looking for feature pairs for contig ".$self->id."\n";
     my @sorted_fp= sort { $a->start <=> $b->start} @fp;
-
+    
     my %validoldcontigs;
     my %fphash;
     my @old_exons;
     foreach my $fp ( @sorted_fp ) {
-	print STDERR "Going through $fp\n";
+	#print STDERR "Going through $fp\n";
 	my $contigid = $fp->hseqname;
-	$contigid =~ s/\.\d+\./\./g;
-	$contigid =~ /(\S+)\.(\d+)/;
-	my $newid = $1.".0000".$2; 
-	print STDERR "Contig id called $contigid\n";
-	my $oldcontig=$old_db->get_Contig($newid);
+	#$contigid =~ s/\.\d+\./\./g;
+	#$contigid =~ /(\S+)\.(\d+)/;
+	#my $newid = $1.".0000".$2; 
+	#print STDERR "Contig id called $contigid\n";
+	my $oldcontig=$old_db->get_Contig($contigid);
 	push @old_exons, $oldcontig->get_all_Exons;
-	$validoldcontigs{$newid} = $fp->hseqname;
+	$validoldcontigs{$contigid} = $fp->hseqname;
 	if( !exists $fphash{$fp->hseqname} ) {
 	    $fphash{$fp->hseqname} = [];
 	}
@@ -594,20 +641,25 @@ sub get_old_Exons {
   EXON:
     
     foreach my $exon (@old_exons) {
-	
+	#print STDERR "Going through old exon ".$exon->id."\n";
 	foreach my $fp ( @{$fphash{$validoldcontigs{$exon->seqname}}} ) {
 	    if( $fp->hstart < $exon->start && $fp->hend > $exon->start ) {
 		if( $fp->strand == $fp->hstrand ) {
 		    # straightforward mapping
-		    print STDERR $exon->id."is on a == strands feature pair\n";
+		    #print STDERR $exon->id."is on a == strands feature pair\n";
+		    #print STDERR "FP Seqname ".$fp->seqname." hseqname ".$fp->hseqname."\n";
+		    #print STDERR "Exon seqname ".$exon->seqname."\n";
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
 		    $exon->start($fp->start + $exon->start - $fp->hstart);
 		    $exon->end($fp->start + $exon->end - $fp->hstart);
 		} else {
-		    print STDERR $exon->id." is in opposite strands feature pair!\n";
+		    #print STDERR $exon->id." is in opposite strands feature pair!\n";
 		    # Grrr strand hell.
 		    my $oldstart = $exon->start;
 		    my $oldend   = $exon->end;
-
+		    $exon->seqname($fp->seqname);
+		    $exon->contig_id($fp->seqname);
 		    $exon->start($fp->hend - ($oldstart - $fp->hend));  
 		    $exon->end  ($fp->hend - ($oldend   - $fp->hend));
 		    $exon->strand( -1 * $exon->strand);
@@ -617,7 +669,8 @@ sub get_old_Exons {
 	    }
 	}
     }
-
+    my $size=scalar(@mapped_exons);
+    #print STDERR "Returning $size mapped exons\n";
     return @mapped_exons;		
 }
 

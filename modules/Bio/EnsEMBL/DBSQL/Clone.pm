@@ -102,7 +102,7 @@ sub fetch {
     if( ! $rv ) {
 	# make sure we deallocate sth - keeps DBI happy!
 	$sth = 0;
-        print STDERR "Clone $id does not seem to occur in the database!\n";     
+        #print STDERR "Clone $id does not seem to occur in the database!\n";     
 	$self->throw("Clone $id does not seem to occur in the database!");
     }   
     return $self;

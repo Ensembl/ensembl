@@ -1588,7 +1588,6 @@ sub get_NewId {
     my ($self,$table,$stub) = @_;
 
     my $query = "select max(id) as id from $table where id like '$stub%'";
-
     my $sth   = $self->_db_obj->prepare($query);
     my $res   = $sth->execute;
     my $row   = $sth->fetchrow_hashref;

@@ -65,14 +65,17 @@ use Bio::EnsEMBL::FeatureFactory;
 =cut
 
 sub get_FeaturePair_list_by_rawcontig_id{
-   my ($self,$id) = @_;
+   my ($self,$id,$version) = @_;
 
    if( !defined $id ) {
        $self->throw("Must have a raw contig id");
    }
+   if( !defined $version ) {
+       $self->throw("Must have a raw contig version");
+   }
 
-   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id'");
-   
+   my $sth = $self->prepare("select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id' and a.rawversion=$version");
+   #print STDERR "SQL: select a.seq_start,a.seq_end,a.strand,b.seq_start,b.seq_end,b.strand,b.rawcontigid,p.score  from symmetric_contig_feature a, symmetric_contig_pair_hit p,symmetric_contig_feature b where a.symchid = p.symchid and p.symchid = b.symchid and a.symcfid != b.symcfid and a.rawcontigid = '$id'";
    $sth->execute;
    my @out;
    while( my $aref = $sth->fetchrow_arrayref ) {
@@ -80,7 +83,6 @@ sub get_FeaturePair_list_by_rawcontig_id{
        my $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
        $out->set_all_fields($start,$end,$strand,$score,$id,'symmetric',$id,
 			    $hstart,$hend,$hstrand,$score,$hname,'symmetric',$hname);
-
        push(@out,$out);
    }
 
