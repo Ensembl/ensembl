@@ -5,7 +5,7 @@ use TestUtils qw(test_getter_setter debug);
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 8;
+	plan tests => 9;
 }
 
 use MultiTestDB;
@@ -61,3 +61,8 @@ foreach my $f (@features) {
 
 my ($f) = @features;
 ok($f->display_id eq $f->alternate_slice->seq_region_name);
+
+
+my $feat = $aefa->fetch_by_dbID(1);
+
+ok($feat->dbID() == 1);
