@@ -47,7 +47,16 @@ sub run {
   print "SwissProt source id for $file: $sp_source_id\n";
   print "SpTREMBL source id for $file: $sptr_source_id\n";
 
-  BaseParser->upload_xrefs(create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file));
+  my @xrefs = create_xrefs($sp_source_id, $sptr_source_id, $species_id, $file);
+
+  # delete previous if running directly rather than via BaseParser
+  if (!defined(caller(1))) {
+    print "Deleting previous xrefs for these sources\n";
+    BaseParser->delete_by_source(\@xrefs);
+  }
+
+  # upload
+  BaseParser->upload_xrefs(@xrefs);
 
 }
 
