@@ -141,7 +141,6 @@ sub create_xrefs {
       # TODO experimental/predicted
 
       # pubmed & medline are simple dependent xrefs; may be several of each
-      my @medline = $entry =~ /\s+MEDLINE\s+(\d+)/g;
       my @pubmed = $entry =~ /\s+PUBMED\s+(\d+)/g;
       my @LocusIDline = $entry =~ /db_xref=.LocusID:(\d+)/g;
       my @EntrezGeneIDline = $entry =~ /db_xref=.GeneID:(\d+)/g;
@@ -168,13 +167,6 @@ sub create_xrefs {
 	$dep{ACCESSION} = $mim;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
-      foreach my $med (@medline) {
-	my %dep;
-	$dep{SOURCE_ID} = $dependent_sources{MEDLINE};
-	$dep{LINKAGE_SOURCE_ID} = $source_id;
-	$dep{ACCESSION} = $med;
-	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
-      }
       foreach my $pub (@pubmed) {
 	my %dep;
 	$dep{SOURCE_ID} = $dependent_sources{PUBMED};
@@ -182,21 +174,6 @@ sub create_xrefs {
 	$dep{ACCESSION} = $pub;
 	push @{$xref->{DEPENDENT_XREFS}}, \%dep;
       }
-
-      # Find associated mRNA
-      #my ($mrna) = $entry =~ /DBSOURCE\s+REFSEQ:\s+accession (.*)\n/;
-      #
-      #if($mrna){
-      #	 my %mrna_dep;
-      #	 $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
-      #	 $mrna_dep{LINKAGE_SOURCE_ID} = $source_id;
-      #	 my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
-      #
-      #	 $mrna_dep{ACCESSION} = $mrna_acc;
-      #	 $mrna_dep{VERSION} = $mrna_ver;
-      #	 push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
-      #}
-
 
       push @xrefs, $xref;
 
