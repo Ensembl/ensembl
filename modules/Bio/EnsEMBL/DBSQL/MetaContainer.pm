@@ -263,6 +263,29 @@ sub get_max_assembly_contig {
   }
 }
 
+=head2 get_genebuild
+
+  Arg [1]    : none
+  Example    : $tax_id = $meta_container->get_genebuild();
+  Description: Retrieves the genebuild from the database meta table
+  Returntype : string
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub get_genebuild {
+  my $self = shift;
+
+  my $arrRef = $self->list_value_by_key( 'genebuild.version' );
+
+  if( @$arrRef ) {
+    return $arrRef->[0];
+  } else {
+    $self->warn("Please insert meta_key 'genebuild.version' " .
+		"in meta table at core db.\n");
+  }
+}
 
 
 1;
