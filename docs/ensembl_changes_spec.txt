@@ -84,7 +84,12 @@ Proposed New/Modified Tables:
 
   
   translation
-  ------------
+  -----------
+  Translations now reference transcripts rather than transcripts referencing
+  a single (or no) translation.  This allows for more elegant handling of 
+  pseudogenes (where there is no translation) and also can be used to supply
+  multiple translations for a single transcript (e.g. polycistronic genes).
+
   translation_id   int
   transcript_id    int
   start_exon_id    int
@@ -126,27 +131,6 @@ Removed Tables
   be discarded as they are no longer maintained anyway.  The embl_acc, version,
   and embl_version columns are redundant and will also be discarded.  Versions
   can simply be appended onto the end of the name with a '.'.
-
-  mapfrag
-  -------
-  Anything which is stored in the mapfrag table should be possible to store 
-  in just the dnafrag and/or assembly table.
-
-  mapannotation
-  -------------
-  Don't think that this table should be necessary.
-
-  mapset
-  ------
-  Don't think that this table is necessary.
-
-  mapfrag_mapset
-  --------------
-  Don't think that this table is necessary.
-
-  map_density
-  -----------
-  Don't think that this table is necessary.
 
   chromosome
   ----------
@@ -293,8 +277,8 @@ Chromosome
   whatever the top level dnafrag type is for that species).  For backwards
   compatibility a minimal implementation can remain which inherits from the
   Slice object.  Statistical information (e.g. known genes, genes, snps) that 
-  was on chromosomes can be moved to a statistics class (or somewhere lite 
-  specific for now, this is afterall not even in the core db).
+  was on chromosomes should be possible to calculate directly from the 
+  map_density table with very little impact on performance.
 
 ChromosomeAdaptor
 -----------------
