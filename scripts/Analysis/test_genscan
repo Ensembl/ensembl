@@ -1,0 +1,43 @@
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/pogdir/bioperl-live");
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+}
+
+use Bio::EnsEMBL::Analysis::GenscanMC;
+use Bio::EnsEMBL::Analysis::PepAlign;
+use Bio::EnsEMBL::Analysis::pep_SeqFeature;
+
+use Bio::SeqFeature::Homol;
+use Bio::Seq;
+
+use strict;
+
+my $genfile  = shift;
+my $dnafile  = shift;
+my $contig   = shift;
+
+my $seqio    = new Bio::SeqIO(-file => $dnafile,
+			      -format => 'Fasta');
+
+my $gsdna;
+
+while (my $seq = $seqio->next_seq) {
+    if ($seq->id =~ "$contig") {
+	$gsdna = $seq;
+	last;
+    }
+}
+
+my $gs       = new Bio::EnsEMBL::Analysis::GenscanMC($genfile,$gsdna);
+print("Made genscan\n");
+my @genes    = $gs->each_Transcript;
+print("Fetched transcripts\n");
+my $count    = 0;
+
+foreach my $g (@genes) {
+    $count++;
+    print("GENE $count : " . $g->translate(1)->seq . "\n");
+}
+	
