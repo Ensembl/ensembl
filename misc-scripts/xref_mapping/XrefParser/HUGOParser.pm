@@ -26,7 +26,7 @@ if (!defined(caller())) {
   
   run(@ARGV);
 }
-  
+
  
 sub run {
   my $self = shift if (defined(caller(1)));
