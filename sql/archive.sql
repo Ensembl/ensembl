@@ -20,6 +20,11 @@ CREATE TABLE sequence (
   PRIMARY KEY (id,version,seq_type)
 );
 
+CREATE TABLE dead_genes (
+  id varchar(40) DEFAULT '' NOT NULL,
+  PRIMARY KEY (id)
+);
+
 CREATE TABLE deleted_id (
   old_id varchar(40) DEFAULT '' NOT NULL,
   old_version int(10) DEFAULT '' NOT NULL,
