@@ -654,6 +654,7 @@ sub cleanup {
     
     print STDERR "Dropping db $dbname \n";
     $db->do("DROP database $dbname");
+    $db->disconnect;
   }
 
   my $conf_file = $self->curr_dir . $self->species . $FROZEN_CONF_EXT;
