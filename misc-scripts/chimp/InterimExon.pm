@@ -13,7 +13,9 @@ use StatMsg;
 #
 my @FATAL =
   (StatMsg::DELETE | StatMsg::CDS | StatMsg::LONG,
+   StatMsg::INSERT | StatMsg::CDS | StatMsg::LONG,
    StatMsg::DELETE | StatMsg::CDS | StatMsg::MEDIUM | StatMsg::FRAMESHIFT,
+   StatMsg::INSERT | StatMsg::CDS | StatMsg::MEDIUM | StatMsg::FRAMESHIFT,
    StatMsg::STRAND_FLIP,
    StatMsg::INVERT,
    StatMsg::SCAFFOLD_SPAN,
