@@ -14,15 +14,35 @@
 
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
+use Getopt::Long;
+
+my $host;
+my $dbname;
+my $dbuser;
+
+&GetOptions('h=s' => \$host,
+	    'd=s' => \$dbname,
+	    'u=s' => \$dbuser);
 
 my @word_order = qw(unknown hypothetical putative novel probable [0-9]{3} kDa fragment cdna protein);
 
-my $Usage = "Usage: $0 sp-descriptions.dat mapping.dat > gene-descriptions.dat\n";
+my $usage = "\n Usage: $0 -h host -u dbuser -d dbname sp-descriptions.dat > gene-descriptions.dat\n\n";
 
-die $Usage if @ARGV == 0;
+if (! defined $host) {
+  warn "\n Must specifie a host with -h\n";
+  die $usage;
+} elsif (! defined $dbname) {
+  warn "\n Must specifie a database with -d\n";
+  die $usage;
+} elsif (! defined $dbuser) {
+  warn "\n Must specifie a database username with -u\n";
+  die $usage;
+} elsif (scalar @ARGV ==0) {
+  warn "\n Must give an input file, expects to have the sp-description.pl output as input\n";
+  die $usage;
+}
 
 my $spdesc = shift;
-#my $map = shift;
 
 open SPDESC,$spdesc || die "$spdesc:$!";
 
@@ -36,9 +56,6 @@ while (<SPDESC>) {
 
 close SPDESC || die "$!";
 
-my $host = 'ecs1d.sanger.ac.uk';
-my $dbname = 'homo_sapiens_core_4_28';
-my $dbuser = 'ensro';
 
 my $db = new Bio::EnsEMBL::DBSQL::DBAdaptor (-host => $host,
 					     -user => $dbuser,
