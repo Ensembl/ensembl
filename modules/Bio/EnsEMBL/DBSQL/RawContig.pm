@@ -63,7 +63,7 @@ use Bio::EnsEMBL::Repeat;
 use Bio::EnsEMBL::ContigOverlapHelper;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::Chromosome;
-
+use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
 use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::RawContigI);
@@ -258,6 +258,28 @@ sub has_genes{
    return $seen;
 }
 
+=head2 DB_primary_seq
+
+ Title   : DB_primary_seq
+ Usage   : $dbseq = $contig->DB_Primary_Seq();
+ Function: Gets a Bio::EnsEMBL::DBSQL::DBPrimarySeq object out from the contig
+ Example :
+ Returns : Bio::EnsEMBL::DBSQL::DBPrimarySeq object
+ Args    : 
+
+
+=cut
+
+sub DB_primary_seq {
+    my ($self) = @_;
+    
+    my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
+						       -dna => $self->dna_id,
+						       -db_handle => $self->dbobj->_db_handle
+						       );
+    
+    return $dbseq;
+}
 
 =head2 primary_seq
 
