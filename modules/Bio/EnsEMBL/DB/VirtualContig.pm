@@ -949,7 +949,6 @@ sub _build_contig_map {
 	  if( $current_left_size > $left ) {
 	    # set the left overhang!
 	    print(STDERR "Setting left overhang " . $current_left_size . " " . $left . "\n");
-#	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
 	    $self->_left_overhang($overlap->distance - ($current_left_size - $left));
 	    last GOING_LEFT;
 	  }
