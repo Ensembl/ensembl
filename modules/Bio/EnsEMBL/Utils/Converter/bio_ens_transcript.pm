@@ -46,8 +46,8 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens_transcript;
 use strict;
 use vars qw(@ISA);
 use Bio::EnsEMBL::Transcript;
-use Bio::EnsEMBL::Utils::Converter;
-@ISA = qw(Bio::EnsEMBL::Utils::Converter);
+use Bio::EnsEMBL::Utils::Converter::bio_ens;
+@ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
 
 sub _convert_single {
     my ($self, $arg) = @_;
@@ -57,17 +57,16 @@ sub _convert_single {
     my $transcript = $arg;
 
     my @exons = $transcript->exons_ordered;
-    my $ens_exons = $self->_converter_for_exons(\@exons);
-
-    my $ens_transcript = Bio::EnsEMBL::Transcript->new(
-        @{$ens_exons});
+    my @ens_exons = @{ $self->_converter_for_exons->convert(\@exons) };
+    
+    my $ens_transcript = Bio::EnsEMBL::Transcript->new(@ens_exons);
     return $ens_transcript;
 }
 
 
 sub _initialize {
     my ($self, @args) = @_;
-    
+    $self->SUPER::_initialize(@args);
     my $converter_for_exons = new Bio::EnsEMBL::Utils::Converter(
         -in => 'Bio::SeqFeature::Gene::Exon',
         -out => 'Bio::EnsEMBL::Exon'

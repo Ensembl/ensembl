@@ -45,9 +45,15 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens_exon;
 
 use strict;
 use vars qw(@ISA);
-use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Utils::Converter;
-@ISA = qw(Bio::EnsEMBL::Utils::Converter);
+use Bio::EnsEMBL::Exon;
+use Bio::EnsEMBL::Utils::Converter::bio_ens;
+@ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
+
+sub _initialize {
+    my ($self, @args) = @_;
+    $self->SUPER::_initialize(@args);
+}
 
 =head2 convert
   Title   : convert
@@ -61,7 +67,7 @@ sub convert {
     my ($self, $arg) = @_;
     $self->throw("needs an array ref") unless(ref($arg) eq 'ARRAY');
     
-    my $converter = Bio::EnsEMBL::Utils::Converter(
+    my $converter = Bio::EnsEMBL::Utils::Converter->new(
         -in => 'Bio::SeqFeature::Generic',
         -out => 'Bio::EnsEMBL::Exon',
         -contig => $self->contig

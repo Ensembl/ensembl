@@ -47,11 +47,13 @@ package Bio::EnsEMBL::Utils::Converter::bio_ens_gene;
 
 use strict;
 use vars qw(@ISA);
-use Bio::EnsEMBL::Utils::Converter;
-@ISA = qw(Bio::EnsEMBL::Utils::Converter);
+use Bio::EnsEMBL::Utils::Converter::bio_ens;
+@ISA = qw(Bio::EnsEMBL::Utils::Converter::bio_ens);
 
 sub _initialize {
     my ($self, @args) = @_;
+    $self->SUPER::_initialize(@args);
+    
     my $converter_for_transcripts = new Bio::EnsEMBL::Utils::Converter(
         -in => 'Bio::SeqFeature::Gene::Transcript',
         -out => 'Bio::EnsEMBL::Transcript'

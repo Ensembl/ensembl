@@ -1,6 +1,6 @@
 # EnsEMBL module for conversion of objects between EnsEMBL and other project, such as BioPerl
 #
-# Created and Cared for by Juguang Xiao <juguang@fugu-sg.org>
+# Created and Cared for by Juguang Xiao <juguang@tll.org.sg>
 #
 # Copyright Juguang Xiao
 # 
@@ -42,7 +42,7 @@ Bio::Pipeline::Analysis -> Bio::EnsEMBL::Analysis
 
 =head1 AUTHOR - Juguang Xiao
 
-Juguang Xiao <juguang@fugu-sg.org>
+Juguang Xiao <juguang@tll.org.sg>
 
 =head1 APPENDIX
 
@@ -212,52 +212,10 @@ sub out {
 
 =cut 
 
-sub analysis {
-    my($self, $arg) = @_;
-    if(defined($arg)){
-        $self->throws("A Bio::EnsEMBL::Analysis object expected.") unless(defined $arg);
-        $self->{_analysis} = $arg;
-    }
-    return $self->{_analysis};
-}
-
-=head2 contig
-
-  Title     : contig
-  Useage    : $self->contig
-  Function  : get and set for contig
-  Return    : L<Bio::EnsEMBL::RawContig>
-  Args      : L<Bio::EnsEMBL::RawContig>
-
-=cut 
-
-sub contig {
-    my($self, $arg) = @_;
-    if(defined($arg)){
-        $self->throws("A Bio::EnsEMBL::RawContig object expected.") unless(defined $arg);
-        $self->{_contig} = $arg;
-    }
-    return $self->{_contig};
-}
-
-sub _getset {
-    my ($self, $tag, $value, $type) = @_;
-    
-    $tag || $self->throw("a tag needed");
-    
-    if(defined($value)){
-        $self->{_$tag} = $value;
-    }
-    return $self->{_$tag};
-}
-
-sub getset{
-    my ($self, $arg) = @_;
-    return $self->_getset('getset', $arg);
-}
-
 =head2 _load_module
+  
   This method is copied from Bio::Root::Root
+
 =cut
 
 sub _load_module {
