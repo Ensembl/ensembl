@@ -38,16 +38,20 @@ my $cluster_n;
 &GetOptions( 
             'stats'  => \$all_stats,
             'chaining:s'  => \$chaining,
-	     'igi2native:s'     => \$i2nmapping, 
-	     'native2igi:s'     => \$n2imapping, 
              'gtfsummary:s' => \$gtf_summary,
              'cluster_n:s'  => \$cluster_n,
+	     'igi2native:s'     => \$i2nmapping, 
+	     'native2igi:s'     => \$n2imapping, 
 	     'h|help'     => \$help,
 	     );
 die $usage if $help;
 
 die "need both cluster_n and gtf_summary or neither"
   unless ( defined($gtf_summary) == defined($cluster_n));
+
+die "need -cluster_n when doing igi2native or native2igi"
+  unless ( (defined($n2imapping)||defined($i2nmapping))  
+           == defined($cluster_n));
 
 
 my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
@@ -80,17 +84,25 @@ while (<>) {
     }
     
     # Extract the extra information from the final field of the GTF line.
-    my ($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id) =
+    my ($igi, $gene_name, $native_ids, $transcript_id, $exon_num, $exon_id) =
       Bio::EnsEMBL::Utils::igi_utils::parse_group_field($group_field);
-    
+
     unless ($igi) {
         warn("Skipping line with no igi_id: '$_'\n");
         next GTF_LINE;
     }
-    unless ($native_id) {
+
+    my $native_id; 
+    unless ($native_ids) {
         warn("Skipping line with no gene_id: '$_'\n");
         next GTF_LINE;
     }
+
+    if (int(@$native_ids) > 1 ) {
+        warn("Line with several gene_ids (taking first one): '$_'\n");
+        next GTF_LINE;
+    }
+    $native_id =  ${$native_ids}[0];
 
     # keep track of marginals by looping over current one as well
     # as fictional source 'ALL':
@@ -145,7 +157,7 @@ if ($i2nmapping) {
     foreach my $s (@all_sources) { 
         my $file = "> $i2nmapping.$s";
         open(I2N, $file) || die "can't open $file: $!";
-        print_igi_to_native(\*I2N, $s);
+        print_igi_to_native(\*I2N, $s, $cluster_n);
         close(I2N);
     }
 }
@@ -154,36 +166,31 @@ if ($n2imapping) {
     foreach my $s (@all_sources) {
         my $file = "> $n2imapping.$s";
         open(N2I, $file) || die "can't open $file: $!";
-        print_native_to_igi(\*N2I, $s);
+        print_native_to_igi(\*N2I, $s, $cluster_n);
         close(N2I);
     }
 }
 
 if ($gtf_summary) {
-#    for(my $i= int(@all_sources); $i>0; $i--) {
-## for now, only do it for n==cluster_n, forget about loop
-    for(my $i= $cluster_n; $i==$cluster_n; $i--) {
-#        my $file = "$gtf_dump-n=$i.gtf";
-        my $file = "$gtf_summary";
-        open(OUT, "> $file" ) || die die "$file: $!";
-
-        my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
-        foreach (@stuff) {chomp};
-        print OUT $blurp;
-        print OUT <<MOREBLURP
+    my $file = "$gtf_summary";
+    open(OUT, "> $file" ) || die die "$file: $!";
+    
+    my (@stuff)  = ("on", `date`, "by", `whoami`, "@",  `hostname`);
+    foreach (@stuff) {chomp};
+    print OUT $blurp;
+    print OUT <<MOREBLURP
 ## 
 ## GTF summary file in gff format. The source is 'igi3', and only gene
-## features are given. Only genes predicted by $i or more gene predictions
-## have been included. The original gene id's have been prefixed with
-## <source-name>. The output is sorted by fpc contig id, strand, and start.
-## This is not the final IGI3 file
+## features are given. Only genes predicted by $cluster_n or more gene
+## predictions have been included. The original gene id's have been
+## prefixed with <source-name>. The output is sorted by fpc contig id,
+## strand, and start.  This is not the final IGI3 file
 MOREBLURP
   ;
-        close(OUT);
-        my $sortcmd="sort -k1,1 -k7,7 -k4,4n ";
-        open(OUT, "| $sortcmd >> $file") || die "$file: $!";
-        gtf_for_igis_predicted_by_n(\*OUT, $i);
-    }                                   # for ($i)
+    close(OUT);
+    my $sortcmd="sort -k1,1 -k7,7 -k4,4n ";
+    open(OUT, "| $sortcmd >> $file") || die "$file: $!";
+    gtf_for_igis_predicted_by_n(\*OUT, $cluster_n);
 }                                       # if gtf_summary
 
 ### simple log message
@@ -487,42 +494,52 @@ sub sort_native {
 
 ## print file that maps igi to native
 sub print_igi_to_native {
-    my($OUT, $source) = @_;
-    foreach my $igi (sort keys %{$igis_of_source{$source}}) {
-        print $OUT "$igi "
-          , join(' ', (sort keys %{$natives_of_igi{$source}{$igi}}))
-            , "\n";
+    my($OUT, $source, $cluster_n) = @_;
+    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+                     keys %{$igis_of_source{$source}}) {
+
+        if (defined $ {$igis_of_n_sources [ $cluster_n ]}{$igi} ) {
+            print $OUT "$igi "
+              , join(' ', (sort keys %{$natives_of_igi{$source}{$igi}}))
+                , "\n";
+        } else { warn "i2n: $igi: not in $cluster_n sources\n" }
     }
-}
+}                                       # print_igi_to_native
 
 ## print file that maps native to igi:
 sub print_native_to_igi {
-    my($OUT, $source) = @_;
+    my($OUT, $source, $cluster_n) = @_;
 
     my %igis_of_native = undef;         # have to invert first:
 
-    foreach my $igi (sort keys %{$igis_of_source{$source}}) {
+    foreach my $igi (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+                     keys %{$igis_of_source{$source}}) {
+        
         foreach my $nat (keys %{$natives_of_igi{$source}{$igi}}) {
             $igis_of_native{$nat}=$igi;
         }
     }
 
     foreach my $nat (sort keys %igis_of_native) {
-        print $OUT "$nat $igis_of_native{$nat}\n";
+        my $igi = $igis_of_native{$nat};
+        if (defined $ {$igis_of_n_sources [ $cluster_n ]}{$igi} ) {        
+            print $OUT "$nat $igi\n";
+        } else { warn "n2i: $igi: not in $cluster_n sources\n" }
     }
-}
+}                                       # print_native_to_igi
 
 ### print a gtf file for all igi's that are predicted by N sources for
 ### now, just print start and end, nothing else. I.e., don't give any
 ### native exons or so:
 sub gtf_for_igis_predicted_by_n {
     my ($OUT, $n)  = @_;
-    my $newsource = 'igi3';             # fixed
-    my $feature='gene';                 # fixed
-    my $score = 0;                      # fixed
-    my $phase = '.';                      # fixed
+    my $newsource = 'igi3';
+    my $feature='gene';
+    my $score = 0;
+    my $phase = '.';
 
-    foreach my $igi  (sort keys %{$igis_of_n_sources[$n]}) {
+    foreach my $igi  (sort Bio::EnsEMBL::Utils::igi_utils::by_igi_number
+                      keys %{$igis_of_n_sources[$n]}) {
         my ($nfeats, $min, $max, $nexons, $seq_name, $strand )
           = @{$igis_of_source{'ALL'}{$igi}};
         my @fields =($seq_name, $newsource, $feature, $min,$max, $score, $strand, $phase);
