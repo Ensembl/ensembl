@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 63;
+	plan tests => 65;
 }
 
 use MultiTestDB;
