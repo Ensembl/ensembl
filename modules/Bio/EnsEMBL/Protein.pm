@@ -279,44 +279,31 @@ sub moltype{
     
 sub top_SeqFeatures {
     my ($self,@args) = @_;
-    my (@f);
 
-    push(@f,$self->get_all_DomainFeatures());
-    
-    #push(@f,$self->get_all_IntronFeatures());
-
-    push(@f,$self->get_all_blastpFeatures());
-    
-    #push(@f,$self->get_all_SnpsFeatures());
-    
-    push(@f,$self->get_all_SigpFeatures());
-
-    push(@f,$self->get_all_TransmembraneFeatures());
-    
-    push(@f,$self->get_all_CoilsFeatures());
-    
-    push(@f,$self->get_all_LowcomplFeatures());
-    
-    return @f;
+    return @{$self->get_all_ProteinFeatures};
 }
 
 
-=head2 all_SeqFeature
-
- Title   : all_SeqFeature
- Usage   :
- Function:This method returns the same things than top_SeqFeature, sub SeqFeatures are not currently implemented in the protein object 
- Example :
- Returns : 
- Args    :
 
 
-=cut
+sub get_all_ProteinFeatures {
+  my $self = shift;
 
-sub all_SeqFeature{
-    my ($self) = @_;
+  my @f = ();
 
-    return $self->top_SeqFeatures;
+  push(@f, @{$self->get_all_DomainFeatures()});
+    
+  push(@f, @{$self->get_all_blastpFeatures()});
+    
+  push(@f, @{$self->get_all_SigpFeatures()});
+  
+  push(@f, @{$self->get_all_TransmembraneFeatures()});
+  
+  push(@f, @{$self->get_all_CoilsFeatures()});
+  
+  push(@f, @{$self->get_all_LowcomplFeatures()});
+
+  return \@f;
 }
 
 
@@ -1033,27 +1020,26 @@ sub add_Superfamily{
 #}
 
 
-=head2 add_ProteinFeature
 
-Title   : add_ProteinFeature (formerly add_Protein_feature)
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
+#Title   : add_ProteinFeature (formerly add_Protein_feature)
+# Usage   :
+# Function:
+# Example :
+# Returns : 
+# Args    :
 
 
-=cut
+#=cut
 
-sub add_ProteinFeature{
-   my ($self,$value) = @_;
+#sub add_ProteinFeature{
+#   my ($self,$value) = @_;
 
-   if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
-     $self->throw("[$value] is not a protein feature object");
-   }
+#   if ((!defined $value) || (!$value->isa('Bio::EnsEMBL::ProteinFeature'))) {
+#     $self->throw("[$value] is not a protein feature object");
+#   }
    
-   push(@{$self->{'_prot_feat'}},$value);   
- }
+#   push(@{$self->{'_prot_feat'}},$value);   
+# }
 
 
 =head2 length
@@ -1183,6 +1169,26 @@ sub get_all_DBLinks{
 #}
 
 
+
+
+=head2 all_SeqFeature
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::get_all_ProteinFeatures instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub all_SeqFeature{
+  my ($self) = @_;
+
+  $self->warn("all_SeqFeature has been renamed get_all_ProteinFeatures\n");
+  
+  return @{$self->get_all_ProteinFeautres};
+}
 
 1;
 
