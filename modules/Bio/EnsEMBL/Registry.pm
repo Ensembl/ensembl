@@ -150,9 +150,13 @@ sub load_all{
 	elsif(-e $ENV{HOME}."/.ensembl_init"){
 	    do($ENV{HOME}."/.ensembl_init");
 	}
-	print STDERR "NO default configuration to load\n";
+	else{
+	  print STDERR "NO default configuration to load\n";
+	}
     }
-    print STDERR "Already configured???\n";
+    else{
+      print STDERR "Already configured???\n";
+    }
 }
 
 #=head2 check_if_already_there
@@ -692,46 +696,27 @@ sub default_track{
 =cut
 
 sub add_new_tracks{
-  my($class, $conf) = @_;
+  my($class, $conf, $pos) = @_;
 
   my $start = 0;
   my $reg = $class;
   my $species_reg = $reg->get_alias($conf->{'species'},"nothrow");
-  my $view =  $conf->{'type'};
+  my %pars;
+  print STDERR "Species $species_reg check for default tracks\n";
   if(defined($species_reg)){
-    my $config = $conf->{'general'}->{$view};
     foreach my $dba ($reg->get_all_DBAdaptors()){
-      #      if($dba->species eq $species_reg and !$reg->default_track($dba->species,$dba->group)){
       if(!$reg->default_track($dba->species,$dba->group)){
-	if($start == 0){
-	  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
-	    $start = $config->{'vega_transcript_lite'}->{'pos'};
-	  }
-	  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
-	    $start = $config->{'transcript_lite'}->{'pos'};
-	  }
-	  else{ # no transcripts on this view so do not add track here
-	    #    print STDERR "no transcript options on this display \n";
-	    next;
-	  }
-	  $start ++;
-	}
-	else{
-	  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
-	    $start++;
-	  }
-	  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
-	    $start++;
-	  }
-	  else{ # no transcripts on this view so do not add track here
-	    #    print STDERR "no transcript options on this display \n";
-	    next;
-	  }
-	}
-	$reg->_add_new_track( $conf->{'general'}->{$view}, $dba, $start);
+	$pars{'available'} = "species ".$reg->get_alias($dba->species());
+	$pars{'db_alias'} = $dba->group();
+#	print STDERR "Adding new track for ".$dba->species."\t".$dba->group."\n";
+	$conf->add_new_track_generictranscript('',$dba->group()."_yo","black",$pos,%pars);
+	  #  my( $self, $code, $text_label, $colour, $pos, %pars ) = @_;
+	$pos++;
       }
     }
   }
+  return $pos;
+
 }
 
 
@@ -747,7 +732,7 @@ sub add_new_tracks{
 =cut
 
 sub _add_new_track{
-  my ($class, $config, $dba, $start ) = @_;
+  my ($class, $conf, $config, $dba, $start ) = @_;
 
 
   my $KEY = $dba->group();
