@@ -38,6 +38,7 @@ sub create_coord_systems {
             qtl_feature           => 'chromosome',
             misc_feature          => 'chromosome',
             prediction_transcript => 'chunk',
+            prediction_exon       => 'chunk',
             karyotype             => 'chromosome');
 
   $self->debug("Building coord_system table");

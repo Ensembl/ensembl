@@ -548,6 +548,7 @@ sub create_coord_systems {
             qtl_feature           => 'chromosome',
             misc_feature          => 'chromosome',
             prediction_transcript => 'contig',
+            prediction_exon       => 'prediction_exon',
             karyotype             => 'chromosome');
 
   $self->debug("Building coord_system table");
@@ -578,7 +579,7 @@ sub create_coord_systems {
   foreach my $mapping (@assembly_mappings) {
     $sth->execute($mapping);
   }
-  
+
   $sth->finish();
 
   return;

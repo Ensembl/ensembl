@@ -44,6 +44,7 @@ sub create_coord_systems {
             qtl_feature           => 'chromosome',
             misc_feature          => 'chromosome',
             prediction_transcript => 'contig',
+            prediction_exon       => 'contig',
             karyotype             => 'chromosome');
 
   $self->debug("Building coord_system table");

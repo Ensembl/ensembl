@@ -51,6 +51,7 @@ sub create_coord_systems {
                   qtl_feature
                   misc_feature
                   prediction_transcript
+                  prediction_exon
                   karyotype);
 
   foreach my $table (@tables) {
