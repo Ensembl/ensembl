@@ -40,105 +40,6 @@ my $n2imapping;
 die $usage if $help;
 
 
-sub parse_group_field {
-    my( $group_field ) = @_;
-    
-    my ($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id);
-
-    # Parse the group field
-    foreach my $tag_val (split /;/, $group_field) {
-
-        # Trim trailing and leading spaces
-        $tag_val =~ s/^\s+|\s+$//g;
-
-        my($tag, $value) = split /\s+/, $tag_val, 2;
-
-        # Remove quotes from the value
-        $value =~ s/^"|"$//g;
-        $tag = lc $tag;
-
-        if ($tag eq 'igi_id') {
-            $igi = $value;
-        }
-        elsif ($tag eq 'gene_name') {
-            $gene_name = $value;
-        }
-        elsif ($tag eq 'gene_id') {
-            $native_id = $value;
-        }
-        elsif ($tag eq 'transcript_id') {
-            $transcript_id = $value;
-        }
-        elsif ($tag eq 'exon_number') {
-            $exon_num = $value;
-        }
-        elsif ($tag eq 'exon_id') {
-            $exon_id = $value;
-        }
-        else {
-            #warn "Ignoring group field element: '$tag_val'\n";
-        }
-    }
-    return($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id);
-}                                       # parse_group_field
-
-sub print_coord_stats {
-    my ($min, $max, $avg, 
-        $minfeats, $maxfeats, $avgfeats, 
-        $minexons, $maxexons, $avgexons)  = @_;
-
-    print "\tminl=$min, maxl=$max, avgl=$avg\n";
-    print "\tminfeats=$minfeats, maxfeats=$maxfeats, avgfeats=$avgfeats\n";
-    print "\tminexons=$minexons, maxexons=$maxexons, avgexons=$avgexons\n";
-}
-
-sub igi_stats {
-    my ($igi_hash) = @_;
-    my $huge = 1e308; 
-
-    my ( @igis) = keys %$igi_hash;
-    my $min = $huge;
-    my $max = -$huge;
-    my $sum = 0;
-    my $minfeats = $huge;
-    my $maxfeats = -$huge;
-    my $sumfeats = 0;
-
-    my $minexons = $huge;
-    my $maxexons = -$huge;
-    my $sumexons = 0;
-
-    my $n =0; 
-    foreach my $igi (@igis) {
-        my ($nfeats, $start, $end, $nexons) = @{$igi_hash->{$igi}};
-        die unless defined($nexons);
-        my $len = ($end - $start);
-        $min = $len if $len <  $min ;
-        $max = $len if $len >  $max ;
-        $sum += $len;
-
-        $minfeats = $nfeats if $nfeats <  $minfeats ;
-        $maxfeats = $nfeats if $nfeats >  $maxfeats ;
-        $sumfeats += $nfeats;
-
-        $minexons = $nexons if $nexons <  $minexons ;
-        $maxexons = $nexons if $nexons >  $maxexons ;
-        $sumexons += $nexons;
-
-        $n++;
-    }
-
-    my ($avg, $avgfeats, $avgexons) = ('none', 'none', 'none');
-    if ($n>0) {
-        $avg = int($sum/$n);
-        $avgfeats= int($sumfeats/$n);
-        $avgexons = int($sumexons/$n)
-    } 
-
-    print_coord_stats( $min, $max, $avg, 
-                 $minfeats, $maxfeats, $avgfeats, 
-                 $minexons, $maxexons, $avgexons);
-}
 
 my @argv_copy = @ARGV; # may get gobbled up by the <> construct. 
 
@@ -259,6 +160,108 @@ sub blurp {
     
     print "Sources: " , join( ' ', @all_sources), "\n";
 }
+
+
+sub parse_group_field {
+    my( $group_field ) = @_;
+    
+    my ($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id);
+
+    # Parse the group field
+    foreach my $tag_val (split /;/, $group_field) {
+
+        # Trim trailing and leading spaces
+        $tag_val =~ s/^\s+|\s+$//g;
+
+        my($tag, $value) = split /\s+/, $tag_val, 2;
+
+        # Remove quotes from the value
+        $value =~ s/^"|"$//g;
+        $tag = lc $tag;
+
+        if ($tag eq 'igi_id') {
+            $igi = $value;
+        }
+        elsif ($tag eq 'gene_name') {
+            $gene_name = $value;
+        }
+        elsif ($tag eq 'gene_id') {
+            $native_id = $value;
+        }
+        elsif ($tag eq 'transcript_id') {
+            $transcript_id = $value;
+        }
+        elsif ($tag eq 'exon_number') {
+            $exon_num = $value;
+        }
+        elsif ($tag eq 'exon_id') {
+            $exon_id = $value;
+        }
+        else {
+            #warn "Ignoring group field element: '$tag_val'\n";
+        }
+    }
+    return($igi, $gene_name, $native_id, $transcript_id, $exon_num, $exon_id);
+}                                       # parse_group_field
+
+sub print_coord_stats {
+    my ($min, $max, $avg, 
+        $minfeats, $maxfeats, $avgfeats, 
+        $minexons, $maxexons, $avgexons)  = @_;
+
+    print "\tminl=$min, maxl=$max, avgl=$avg\n";
+    print "\tminfeats=$minfeats, maxfeats=$maxfeats, avgfeats=$avgfeats\n";
+    print "\tminexons=$minexons, maxexons=$maxexons, avgexons=$avgexons\n";
+}
+
+sub igi_stats {
+    my ($igi_hash) = @_;
+    my $huge = 1e308; 
+
+    my ( @igis) = keys %$igi_hash;
+    my $min = $huge;
+    my $max = -$huge;
+    my $sum = 0;
+    my $minfeats = $huge;
+    my $maxfeats = -$huge;
+    my $sumfeats = 0;
+
+    my $minexons = $huge;
+    my $maxexons = -$huge;
+    my $sumexons = 0;
+
+    my $n =0; 
+    foreach my $igi (@igis) {
+        my ($nfeats, $start, $end, $nexons) = @{$igi_hash->{$igi}};
+        die unless defined($nexons);
+        my $len = ($end - $start);
+        $min = $len if $len <  $min ;
+        $max = $len if $len >  $max ;
+        $sum += $len;
+
+        $minfeats = $nfeats if $nfeats <  $minfeats ;
+        $maxfeats = $nfeats if $nfeats >  $maxfeats ;
+        $sumfeats += $nfeats;
+
+        $minexons = $nexons if $nexons <  $minexons ;
+        $maxexons = $nexons if $nexons >  $maxexons ;
+        $sumexons += $nexons;
+
+        $n++;
+    }
+
+    my ($avg, $avgfeats, $avgexons) = ('none', 'none', 'none');
+    if ($n>0) {
+        $avg = int($sum/$n);
+        $avgfeats= int($sumfeats/$n);
+        $avgexons = int($sumexons/$n)
+    } 
+
+    print_coord_stats( $min, $max, $avg, 
+                 $minfeats, $maxfeats, $avgfeats, 
+                 $minexons, $maxexons, $avgexons);
+}
+
 
 ### keep track of start,end of a gene, by looking at the lowest start and
 ### higest end of any of the features. This is used both for igi's and
