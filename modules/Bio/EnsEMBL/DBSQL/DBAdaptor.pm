@@ -495,7 +495,7 @@ sub get_object_by_wildcard{
    if ($type eq 'clone') {
        my @clones;
        foreach my $id (@ids) {
-	   push @clones, $self->get_Cone($id);
+	   push @clones, $self->get_Clone($id);
        }
        return @clones;
    }
