@@ -44,7 +44,6 @@ ENSP00000215395 encoded by transcript ENST00000215395 from gene ENSG00000099644 
 TPSQSEDLRACFEQNKFQGIATRDGLALAIGFLEPIVQNWFQNERSRQVRQHCRESRPRPGRHGPQEGR*KRTAVTGSQTALLLRAFEKDRFPGIAAREDLAR*TGLPGSRIQIRFQNRRARHLGEAGRAPAKAGSRYNAAP  
 
 
-
 =head1 OPTIONS
 
 -host       db server name (default localhost)
@@ -67,6 +66,11 @@ TPSQSEDLRACFEQNKFQGIATRDGLALAIGFLEPIVQNWFQNERSRQVRQHCRESRPRPGRHGPQEGR*KRTAVTGSQT
 =head1 WARNING
 
 This script takes quite a long time to run...
+
+=head1 WARNING
+
+On big chromosomes (like chr1) one is likely to run out of memory
+(that's what happend at least on ecs1c)
 
 =cut
 
