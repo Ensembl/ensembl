@@ -414,7 +414,7 @@ sub get_all_Genes_slow{
 
 =cut
 
-sub get_Contig{
+sub get_Contig {
    my ($self,$contigid) = @_;
 
    # should check this contig is in this clone?
@@ -436,7 +436,7 @@ sub get_Contig{
 
 =cut
 
-sub get_all_my_geneid{
+sub get_all_my_geneid {
    my ($self) = @_;
 
    my $cloneid = $self->id;
@@ -506,6 +506,49 @@ sub get_all_Contigs {
 
    return @res;   
 }
+
+=head2 get_all_RawContigs
+
+ Title   : get_rawcontig_by_position
+ Usage   : $obj->get_rawcontig_by_position($position)
+ Function: 
+ Example : 
+ Returns : returns a raw contig object or undef on error
+ Args    : a position (basepair) in clone
+
+
+=cut
+
+sub get_rawcontig_by_position {
+
+    my ($self, $pos) = @_;
+
+    if( !ref $self || ! $self->isa('Bio::EnsEMBL::DB::CloneI') ) {
+        $self->throw("Must supply a clone to get_all_RawContigs: Bailing out...");
+    }
+
+    if ($pos < 1 ){
+        $self->throw("get_rawcontig_by_position error: Position must be > 0");
+    }
+    
+    my @contigs =  $self->get_all_Contigs();
+    @contigs = sort { $a->embl_offset <=> $b->embl_offset } @contigs;
+    
+    foreach my $c (reverse @contigs ) {
+        if ($pos > $c->embl_offset) {
+            my $size = $c->embl_offset + $c->length;
+            #print STDERR "Wanted base $pos in ",$c->id," with start at ",$c->embl_offset," and endpoint at: $size\n";
+            return $c;
+        } else {
+            my $size = $c->embl_offset + $c->length;
+            #print STDERR "$pos less than $size for ",$c->id,"\n";
+            next;
+        }
+    }
+    
+    return (undef);
+}
+
 
 =head2 get_all_ContigOverlaps 
 
