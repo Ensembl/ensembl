@@ -148,13 +148,8 @@ sub ensembl_db {
   my ($self, $value) = @_;
 
   if($value) {
-    #avoid potentially nasty memory leaks
-    if(ref $value && $value->isa("Bio::EnsEMBL::Container")) {
-      $self->{'ensembl_db'} = $value->_obj;
-    } else {
-      $self->{'ensembl_db'} = $value;
-    }
-  }     
+    $self->{'ensembl_db'} = $value;
+  }
 
   return $self->{'ensembl_db'};
 }

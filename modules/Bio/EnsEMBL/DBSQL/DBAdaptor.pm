@@ -202,50 +202,6 @@ sub db{
 }
 
 
-sub DESTROY{
-  my ($self)= @_;
-
-  $self->{'_db'} = undef;
-}
-
-=head2 deleteObj
-
-  Arg [1]    : none
-  Example    : none
-  Description: Cleans up circular reference loops so proper garbage collection
-               can occur.
-  Returntype : none
-  Exceptions : none
-  Caller     : DBAdaptorContainer::DESTROY
-
-=cut
-
-sub deleteObj {
-  my $self = shift;
-  #print "called deleteObj on DBAdaptor\n";
-
-  #clean up external feature adaptor references
-  if(exists $self->{'_xf_adaptors'}) {
-    foreach my $key (keys %{$self->{'_xf_adaptors'}}) {
-      delete $self->{'_xf_adaptors'}->{$key};
-    }
-  }
-
-  if(exists $self->{'generic_feature_adaptors'}) {
-    foreach my $name (keys %{$self->{'generic_feature_adaptors'}}) {
-      my $adaptor = $self->{'generic_feature_adaptors'}->{$name};
-      if(ref($adaptor) && $adaptor->can('deleteObj')) {
-	$adaptor->deleteObj();
-      }
-
-      delete $self->{'generic_feature_adaptors'}->{$name};
-    }
-
-    delete $self->{'generic_feature_adaptors'};
-  }
-
-}
-
 
 =head2 add_db_adaptor
 
@@ -885,6 +841,10 @@ sub AUTOLOAD {
   }
   die("No such method: $AUTOLOAD\n");
 }
+
+
+sub DESTROY {} # required due to AUTOLOAD
+
 
 #########################
 # sub DEPRECATED METHODS

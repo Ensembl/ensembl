@@ -42,7 +42,6 @@ package Bio::EnsEMBL::DBSQL::DBConnection;
 use vars qw(@ISA);
 use strict;
 
-#use Bio::EnsEMBL::Container; ## Container no longer needed here
 use Bio::EnsEMBL::Registry;
 my $reg = "Bio::EnsEMBL::Registry";
 use Bio::EnsEMBL::Root;
@@ -542,7 +541,7 @@ sub prepare {
      $self->connect();
    }
 
-   #info("SQL(".$self->dbname."):$string");
+  # print STDERR  "SQL(".$self->dbname."):$string\n";
 
    my $sth = $self->db_handle->prepare($string);
 
