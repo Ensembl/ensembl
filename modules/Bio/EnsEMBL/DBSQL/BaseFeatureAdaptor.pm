@@ -212,7 +212,7 @@ sub fetch_all_by_RawContig_constraint {
     $constraint = "contig_id = $cid";
   }
 
-  return @$self->generic_fetch($constraint, $logic_name);
+  return $self->generic_fetch($constraint, $logic_name);
 }
 
 
