@@ -45,7 +45,8 @@ sub fetch_mapset_chr_start_end {
     my( $dnafrag_id, $mapset_id );
     
     unless( 
-        ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) &&
+        ( ( $chr_name eq '' ) || 
+          ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) ) &&
         ( $mapset_id  = $self->_get_mapset_id( $mapset_code ) )
     ) {
         $self->{'_cache'}{$key} = [];
@@ -60,7 +61,7 @@ sub fetch_mapset_chr_start_end {
               from mapfrag as mf, dnafrag as df, mapfrag_mapset as mm
                    left join mapannotation as ma on ma.mapfrag_id = mf.mapfrag_id
                    left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
-             where mm.mapset_id = ? and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
+             where mf.seq_end >= mf.seq_start and mm.mapset_id = ? and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
                     ).
             ( $chr_name ? "and df.dnafrag_id = ?".( $chr_start ? " and mf.seq_start <= ? and mf.seq_start >= ? and mf.seq_end >= ?" : "" ) : "").
         qq(  order by mf.mapfrag_id, mat.code )
@@ -98,6 +99,74 @@ sub fetch_mapset_chr_start_end {
         } else {
             $map_frag->add_annotation( $data->{'note_type'}, $data->{'note'} );
         }
+    }
+    push @map_frags, $map_frag if defined $map_frag;
+    $self->{'_cache'}{$key} = \@map_frags;
+    return @map_frags;
+}
+
+sub fetch_mapsets_chr_start_end {
+    my( $self, $mapsets, $chr_name, $chr_start, $chr_end ) = @_;
+    my $key = join ':', join('-',@$mapsets), $chr_name, $chr_start, $chr_end;
+
+    return @{$self->{'_cache'}{$key}} if $self->{'_cache'}{$key};
+
+    my( $dnafrag_id, $mapset_id );
+
+    $chr_name = undef if $chr_name eq '';
+
+    my @mapset_ids;
+    foreach( @$mapsets ) {
+        my $T = $self->_get_mapset_id( $_ );
+        push @mapset_ids, $T if $T;
+    }
+    unless(
+        ( !$chr_name || ( $dnafrag_id = $self->_get_dnafrag_id( $chr_name ) ) ) && @mapset_ids
+    ) {
+        $self->{'_cache'}{$key} = [];
+        return ();
+    }
+
+    my $QUERY =
+           "select mf.mapfrag_id, mf.type, mf.name, sum(if(mm.mapset_id= $mapset_ids[0],1,0) ) as flag,
+                   mf.seq_start, mf.seq_end, mf.orientation,
+                   df.name as seq, df.dnafrag_type as seq_type,
+                   mat.code as note_type, ma.value as note
+              from mapfrag as mf, dnafrag as df, mapfrag_mapset as mm
+                   left join mapannotation as ma on ma.mapfrag_id = mf.mapfrag_id
+                   left join mapannotationtype as mat on ma.mapannotationtype_id = mat.mapannotationtype_id
+             where mm.mapset_id in (".join(',',@mapset_ids).") and mm.mapfrag_id = mf.mapfrag_id and mf.dnafrag_id = df.dnafrag_id
+                    ".
+            ( $dnafrag_id ? "and df.dnafrag_id = $dnafrag_id".( $chr_start ? " and mf.seq_start <= $chr_end and mf.seq_start >= ".($chr_start - $self->max_feature_length)." and mf.seq_end >= $chr_start" : "" ) : "").
+        qq( group by ma.mapannotation_id
+            order by seq, mf.seq_start, mf.mapfrag_id, mat.code );
+    print STDERR "\n\n$key\n$QUERY\n\n";
+    my $sth = $self->prepare( $QUERY );
+    $sth->execute( );
+    my @map_frags = ();
+    my $old_id    = 0;
+    my $map_frag  = undef;
+    while( my $data = $sth->fetchrow_hashref() ) {
+    if($data->{'mapfrag_id'}!=$old_id) {
+        push @map_frags, $map_frag if defined $map_frag;
+            $map_frag = Bio::EnsEMBL::DBSQL::MapFrag->new(
+                $chr_start || 1,
+                $data->{'mapfrag_id'},
+                $data->{'type'},            $data->{'seq'},
+                $data->{'seq_type'},        $data->{'seq_start'},
+                $data->{'seq_end'},         $data->{'orientation'},
+                $data->{'name'},
+            );
+            $old_id = $data->{'mapfrag_id'}
+        }
+        if($data->{'note_type'} eq 'synonym') {
+            $map_frag->add_synonym( $data->{'note'} );
+        } elsif($data->{'note_type'} eq 'embl_acc') {
+            $map_frag->add_embl_acc( $data->{'note'} );
+        } else {
+            $map_frag->add_annotation( $data->{'note_type'}, $data->{'note'} );
+        }
+        $map_frag->add_annotation( 'flag', $data->{'flag'} > 0 ? 'yes' : 'no' );
     }
     push @map_frags, $map_frag if defined $map_frag;
     $self->{'_cache'}{$key} = \@map_frags;
