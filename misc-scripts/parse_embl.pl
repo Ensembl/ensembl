@@ -12,12 +12,15 @@ parse_embl.pl
 
 =head1 DESCRIPTION
 
-This script will peform simple loading of an annotated genome in EMBL
-flat file format into an Otter database. The script is aimed at
-loading bacterial and small eukaryotic genomes published by the
-Pathogen Sequencing Unit at the Sanger Institue, but should be able to
-load most suitable pre-processed EMBL files.
+This is a script originally written by Keith James to load a pathogen
+genome from an EMBL flat file into an Otter (modified ensembl) database.
+It has been has been stripped down and modified to make it more general
+purpose.
 
+This script will peform simple loading of an annotated genome in EMBL
+flat file format into an Ensembl database. The script loads a fairly
+minimal set of gene information from an EMBL file, but could be
+extended to do more.
 
 Certain assumptions are made about the format of the EMBL file such
 that it may require pre-processing before loading - these are listed
@@ -61,10 +64,7 @@ its location it is assumed the ends have not been found.
 
 =item *
 
-The standard Ensembl translation mechanism is not used because it is
-hardwired for eukaryotes. The codon table is specified in the command
-line and affects all protein coding genes. The 'translation_table' tag
-of a feature is ignored, if present.
+Non-standard translation tables are currently not handled.
 
 =item *
 
@@ -87,6 +87,8 @@ Email kdj@sanger.ac.uk
 =head1 CONTRIBUTORS
 
 Stephen Searle, sjms@sanger.ac.uk
+
+Graham McVicker
 
 =head1 METHODS
 
