@@ -18,19 +18,22 @@ Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
 
   my $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(...);
 
-  my $asm_adptr = $dba->get_AssemblyMapperAdaptor;
+  my $asma = $dba->get_AssemblyMapperAdaptor();
+  my $csa  = $dba->get_CoordSystemAdaptor();
 
-  my $chr_ctg_mapper = $asm_adptr->fetch_by_coord_systems('chromosome',
-                                                          'contig',
-                                                          'NCBI33');
+  my $chr33_cs   = $csa->fetch_by_name('chromosome', 'NCBI33');
+  my $chr34_cs   = $csa->fetch_by_name('chromosome', 'NCBI34');
+  my $ctg_cs     = $csa->fetch_by_name('contig');
+  my $clone_cs   = $csa->fetch_by_name('clone');
 
-  my $asm_asm_mapper = $asm_adptr->fetch_by_coord_systems('chromosome',
-                                                          'chromosome',
-                                                          'NCBI33',
-                                                          'NCBI34');
+  my $chr_ctg_mapper =
+    $asma->fetch_by_coord_systems($chr33_cs, $ctg_cs);
 
-  my $ctg_clone_mapper = $asm_adptr->fetch_by_coord_systems('contig',
-                                                            'clone');
+  my $ncbi33_ncbi34_mapper =
+    $asm_adptr->fetch_by_coord_systems($chr33,$chr34);
+
+  my $ctg_clone_mapper = 
+    $asm_adptr->fetch_by_coord_systems($ctg_cs,$clone_cs);
 
   $asm_adptr->register($chr_ctg_mapper, $chr_slice);
 
@@ -45,7 +48,7 @@ This is used to retrieve mappers between any two coordinate systems whose
 makeup is described by the assembly table.  Currently only pairwise mapping
 is supported (i.e there must be an explicit relationship between the coordinate
 systems in the assembly table), but in the future 'chained' mapping between
-coordinate systems may be possible.
+coordinate systems with indirect relationships may be possible.
 
 =head1 CONTACT
 
@@ -72,8 +75,8 @@ use Bio::EnsEMBL::Utils::Exception qw(deprecate throw);
 
 =head2 new
 
-  Arg [1]    : Bio::EnsEMBL::DBAdaptor $dbadaptor the adaptor for the database
-               this assembly mapper is using.
+  Arg [1]    : Bio::EnsEMBL::DBAdaptor $dbadaptor the adaptor for
+               the database this assembly mapper is using.
   Example    : my $asma = new Bio::EnsEMBL::AssemblyMapperAdaptor($dbadaptor);
   Description: Creates a new AssemblyMapperAdaptor object
   Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
@@ -93,61 +96,54 @@ sub new {
 }
 
 
-=head2 fetch_by_coord_systems
+=head2 fetch_by_CoordSystems
 
-  Arg [1]    : string $cs1
-               The name of one of the 1st coord_system to use for mapping
-  Arg [2]    : string $cs2
-               The name of the 2nd coord_system to use for mapping
-  Arg [3]    : (optional) string $cs1_version
-               The version of the 2st coord_system to use for mapping
-  Arg [4]    : (optional) string $cs2_version
-               The version of the 2nd coord_system to use for mapping
-  Description: Retrieves an Assembly mapper for two coordinate systems whose
-               relationship is described in the assembly table.
+  Arg [1]    : Bio::EnsEMBL::CoordSystem $cs1
+               One of the coordinate systems to retrieve the mapper
+               between
+  Arg [2]    : Bio::EnsEMBL::CoordSystem $cs2
+               The other coordinate system to map between
+  Description: Retrieves an Assembly mapper for two coordinate
+               systems whose relationship is described in the
+               assembly table.
 
-               Versions of the coordinate systems may optionally be provided.
-               If they are not provided the default version of each system
-               will be used instead.
-
-               The ordering of the coodinate systems is arbitrary.  The
-               following two statements are equivalent:
-               $mapper = $asm_mapper_adaptor->fetch_by_coord_systems('contig',
-                                                                     'clone');
-               $mapper = $asm_mapper_adaptor->fetch_by_coord_systems('clone',
-                                                                     'contig');
-
+               The ordering of the coodinate systems is arbitrary.
+               The following two statements are equivalent:
+               $mapper = $asma->fetch_by_coord_systems($cs1,$cs2);
+               $mapper = $asma->fetch_by_coord_systems($cs2,$cs1);
   Returntype : Bio::EnsEMBL::AssemblyMapper
   Exceptions : none
-  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Caller     : general
 
 =cut
 
-sub fetch_by_coord_systems {
-  my($self, $cs1, $cs2, $cs1_version, $cs2version) = @_;
+sub fetch_by_CoordSystems {
+  my $self = shift;
+  my $cs1  = shift;
+  my $cs2  = shift;
 
-  throw('Coord_system1 argument is required') if(!$cs1);
-  throw('Coord_system2 argument is required') if(!$cs1);
+  if(!$cs1 || !ref($cs1) || !$cs1->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("cs1 argument must be a Bio::EnsEMBL::CoordSystem");
+  }
+  if(!$cs2 || !ref($cs2) || !$cs2->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw("cs2 argument must be a Bio::EnsEMBL::CoordSystem");
+  }
 
-  my $csa = $self->db()->get_CoordSystemAdaptor();
-
-  my($cs1_id,$cs1,$cs1_version) = $csa->fetch_by_name($cs1,$cs1_version);
-  my($cs2_id,$cs2,$cs2_version) = $csa->fetch_by_name($cs2,$cs2_version);
-
-  if($cs1_id == $cs2_id) {
-    throw("Cannot create mapper between same coord system and version:\n" .
-          "  [$cs1|$cs1_version] and [$cs1|cscs2_version]");
+  if($cs1->equals($cs2)) {
+    throw("Cannot create mapper between same coord systems " :
+          $cs1->name . " " . $cs1->version);
   }
 
   #retrieve the shortest possible mapping path between these systems
-  my @mapping_path = @{$csa->get_mapping_path($cs1_id,$cs2_id)};
+  my @mapping_path = @{$csa->get_mapping_path($cs1,$cs2)};
 
   if(!@mapping_path) {
     throw("There is no mapping defined between these coord systems:\n" .
-          "  [$cs1|$version] and [$cs2|$cs2_version]");
+          $cs1->name() . " " . $cs2->version() . " and " $cs1->name() . " " .
+          $cs2->version());
   }
 
-  my $key = join(':', @mapping_path);
+  my $key = join(':', map({$_->dbID()} @mapping_path));
 
   my $asm_mapper = $self->{'_asm_mapper_cache'}->{$key};
 
@@ -155,9 +151,10 @@ sub fetch_by_coord_systems {
 
   if(@mapping_path > 2) {
     throw("Only explicit (1 step) coordinate system mapping is currently\n" .
-          "supported.  Mapping between [$cs1|$cs1_version] and " .
-          "[$cs2|$cs2_version]\n requires ". (scalar(@mapping_path)-1) .
-          " steps.");
+          "supported.  Mapping between \n" .
+          $cs1->name() . " " . $cs1->version() . " and " .
+          $cs2->name() . " " . $cs2->version() .
+          "\nrequires ". (scalar(@mapping_path)-1) . " steps.");
   }
 
   $asm_mapper = Bio::EnsEMBL::AssemblyMapper->new(@mapping_path);
@@ -191,10 +188,10 @@ sub fetch_by_type{
 
   my $csa = $self->db()->get_CoordSystemAdaptor();
 
-  my ($tl_id,$tl,$tl_version) = $csa->fetch_top_level($type);
-  my ($sl_id,$sl,$sl_version) = $csa->fetch_sequence_level();
+  my $cs1 = $csa->fetch_top_level($type);
+  my $cs2 = $csa->fetch_sequence_level();
 
-  return $self->fetch_by_coord_systems($tl,$sl,$tl_version,$sl_version);
+  return $self->fetch_by_coord_systems($cs1,$cs2);
 }
 
 
@@ -214,13 +211,9 @@ sub register_Slice {
     throw('Slice argument required');
   }
 
-  my $cmp_cs_id = $asm_mapper->component_coord_system_id();
-  my $asm_cs_id = $asm_mapper->assembled_coord_system_id();
-
-  my $csa = $self->db()->get_CoordSystemAdaptor();
-
-  my ($slice_cs_id) =
-    $csa->fetch_by_name($slice->coord_system, $slice->version);
+  my $cmp_cs = $asm_mapper->component_CoordSystem();
+  my $asm_cs = $asm_mapper->assembled_CoordSystem();
+  my $slice_cs = $slice->coord_system();
 
   # Get the seq_region id of the slice.  This is probably better stored
   # right on the slice when it is retrieved.
@@ -229,7 +222,7 @@ sub register_Slice {
     "FROM   seq_region" .
     "WHERE  name = ? AND coord_system_id = ?");
 
-  $sth->execute($slice->seq_region_name, $slice_cs_id);
+  $sth->execute($slice->seq_region_name, $slice_cs->dbID());
 
   if($sth->rows() != 1) {
     throw("Seq_region name=[$name],coord_system_id=[$cs_id] not found");
@@ -242,9 +235,9 @@ sub register_Slice {
   my $start = $slice->start();
   my $end   = $slice->end();
 
-  if($cmp_cs_id == $cmp_cs_id) {
+  if($cmp_cs->equals($slice_cs)) {
     $self->register_component($asm_mapper, $seq_region_id);
-  } elsif($asm_cs_id == $asm_cs_id) {
+  } elsif($asm_cs->equals($slice_cs)) {
     $self->register_assembled($asm_mapper, $seq_region_id, $start, $end);
   } else {
     my $name = $slice->name();

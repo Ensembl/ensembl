@@ -57,8 +57,8 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 
 =head2 fetch_by_region
 
-  Arg [1]    : string $coord_system
-               The coordinate system of the slice to be created
+  Arg [1]    : string $coord_system_name
+               The name of the coordinate system of the slice to be created
   Arg [2]    : string $seq_region_name
                The name of the sequence region that the slice will be
                created on
@@ -69,7 +69,7 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
   Arg [5]    : int $strand (optional, default = 1)
                The orientation of the slice on the sequence region
   Arg [6]    : string $version (optional, default = default version)
-               The version of the sequence region to create the slice on
+               The version of the coordinate system to use (e.g. NCBI33)
   Example    : $slice = $slice_adaptor->fetch_by_region('chromosome');
   Description: Creates a slice object on the given chromosome and coordinates.
   Returntype : Bio::EnsEMBL::Slice
@@ -79,33 +79,24 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 =cut
 
 sub fetch_by_region {
-  my ($self, $coord_system, $seq_region_name,
+  my ($self, $coord_system_name, $seq_region_name,
       $start, $end, $strand, $version) = @_;
-
-  my $csa = $self->db()->get_CoordSystemAdaptor();
 
   throw('seq_region_name argument is required') if(!$seq_region_name);
 
-  my $coord_sys_id;
-
-  # Validate that the coordsystem exists,
-  # Set the version to default if it was not provided
-  # Correct the case of the coord_system name/version:
-  ($coord_sys_id, $coord_system, $version) =
-    $csa->fetch_by_name($coord_system, $version);
-
-  $self->{'_slice_cache'} ||= {};
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
 
   my $sth = $self->prepare("SELECT length " .
                            "FROM seq_region " .
                            "WHERE name = ? AND coord_system_id = ?");
 
   #force seq_region_name cast to string so mysql cannot treat as int
-  $sth->execute("$seq_region_name", $coord_sys_id);
+  $sth->execute("$seq_region_name", $coord_system->dbID());
 
   if($sth->rows() != 1) {
     throw("Cannot create slice on non-existant or ambigous seq_region:" .
-          "  coord_system=[$coord_system],\n" .
+          "  coord_system=[$coord_system_name],\n" .
           "  name=[$seq_region_name],\n" .
           "  version=[$version]");
   }
@@ -120,9 +111,8 @@ sub fetch_by_region {
     throw('start [$start] must be less than or equal to end [$end]');
   }
 
-  return Bio::EnsEMBL::Slice->new(-COORD_SYTEM     => $coord_system,
+  return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                   -SEQ_REGION_NAME => $seq_region_name,
-                                  -VERSION         => $version,
                                   -START           => $start,
                                   -END             => $end,
                                   -STRAND          => $strand,
@@ -145,9 +135,9 @@ sub fetch_by_chr_start_end {
   #assume that by chromosome the user actually meant top-level coord
   #system since this is the old behaviour of this deprecated method
   my $csa = $self->db->get_CoordSystemAdaptor();
-  my ($cs_id, $cs_name, $version) = $csa->get_top_coord_system();
+  my $cs = $csa->get_top_coord_system();
 
-  return $self->fetch_by_region($cs_name, $chr, $start, $end, 1, $version);
+  return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
 }
 
 
