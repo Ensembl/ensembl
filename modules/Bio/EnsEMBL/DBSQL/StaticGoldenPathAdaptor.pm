@@ -63,6 +63,7 @@ use strict;
 
 use Bio::Root::RootI;
 use Bio::EnsEMBL::Virtual::StaticContig;
+use Bio::EnsEMBL::DBSQL::RawContig;
 use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end);
 
 @ISA = qw(Bio::Root::RootI);
@@ -641,7 +642,8 @@ sub fetch_VirtualContig_of_gene{
    my ($chr_name,$start,$end) = $self->get_Gene_chr_bp($geneid);
 
    if( !defined $start ) {
-       $self->throw("Gene is not on the golden path. Cannot build VC");
+        my $type = $self->dbobj->static_golden_path_type();
+       $self->throw("Gene is not on the golden path '$type'. Cannot build VC");
    }
      
    return $self->fetch_VirtualContig_by_chr_start_end(	$chr_name,

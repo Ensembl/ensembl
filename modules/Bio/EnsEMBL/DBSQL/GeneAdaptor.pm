@@ -114,11 +114,11 @@ sub list_geneIds {
    my ($self) = @_;
 
    my @out;
-   my $sth = $self->prepare("select id from gene");
-   my $res = $sth->execute;
+   my $sth = $self->prepare("SELECT id FROM gene");
+   $sth->execute;
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@out,$rowhash->{'id'});
+   while (my ($id) = $sth->fetchrow) {
+       push(@out, $id);
    }
 
    return @out;

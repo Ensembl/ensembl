@@ -1,17 +1,5 @@
-#
-# BioPerl module for DBSQL::Obj
-#
-# Cared for by Ewan Birney <birney@sanger.ac.uk>
-#
-# Copyright Ewan Birney
-#
-# You may distribute this module under the same terms as perl itself
 
-# POD documentation - main docs before the code
-
-=head1 NAME
-
-Bio::EnsEMBL::DBSQL::Obj - Object representing an instance of an EnsEMBL DB
+=head1 NAME - Bio::EnsEMBL::DBSQL::DBAdaptor
 
 =head1 SYNOPSIS
 
@@ -143,9 +131,13 @@ sub new {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
     } else {
 
-        my $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+        my( $dbh );
+        eval{
+            $dbh = DBI->connect("$dsn","$user",$password, {RaiseError => 1});
+        };
 
-        $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator");
+        $dbh || $self->throw("Could not connect to database $db user $user using [$dsn] as a locator\n"
+            . $DBI::errstr);
 
         if( $self->_debug > 3 ) {
 	    $self->warn("Using connection $dbh");

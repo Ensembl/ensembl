@@ -104,18 +104,28 @@ sub fetch_by_geneId {
   my ( $currentId, $currentTranscript );
 
   my $query = qq {
-    SELECT t.id tid,e.id eid, e.version, e.contig, 
-           UNIX_TIMESTAMP(e.created), 
-           UNIX_TIMESTAMP(e.modified)
-	   , e.seq_start, e.seq_end, e.strand, 
-           e.phase, 
-           UNIX_TIMESTAMP(e.stored), 
-           e.end_phase, e.sticky_rank
-    FROM exon e, exon_transcript et, transcript t  
-    WHERE t.gene = $geneId
+    SELECT t.id tid
+      , e.id eid
+      , e.version
+      , e.contig
+      , UNIX_TIMESTAMP(e.created)
+      , UNIX_TIMESTAMP(e.modified)
+      , e.seq_start
+      , e.seq_end
+      , e.strand
+      , e.phase
+      , UNIX_TIMESTAMP(e.stored)
+      , e.end_phase
+      , e.sticky_rank
+    FROM exon e
+      , exon_transcript et
+      , transcript t
+    WHERE t.gene = '$geneId'
       AND et.transcript = t.id
       AND e.id = et.exon
-    ORDER BY t.id, e.id, e.sticky_rank
+    ORDER BY t.id
+      , e.id
+      , e.sticky_rank
   };
 
   my $sth = $self->prepare( $query );
