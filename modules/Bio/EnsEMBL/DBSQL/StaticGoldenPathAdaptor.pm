@@ -358,6 +358,11 @@ sub fetch_RawContigs_by_chr_name{
           , cl.embl_version
           , st.chr_start
           , st.chr_end
+          , st.raw_start
+          , st.raw_end
+          , st.raw_ori
+          , c.offset
+          , c.length
         FROM static_golden_path st
           , contig c
           , clone cl
@@ -366,13 +371,15 @@ sub fetch_RawContigs_by_chr_name{
           AND st.chr_name = '$chr'
           AND st.type = '$type'
         ");
+#### fix this; should also return raw start/end, ori, offset and length
+### see how done later on in this file
    $sth->execute;
 
    my @out;
    my $cid;
    while( ( my $array = $sth->fetchrow_arrayref) ) {
 
-       my ($id,$internalid,$dna,$clone,$seq_version,$chr_start,$chr_end) = @{$array};
+       my ($id,$internalid,$dna,$clone,$seq_version,$chr_start,$chr_end,$raw_start,$raw_end,$raw_ori,$offset,$contig_length) = @{$array};
        my $rc = Bio::EnsEMBL::DBSQL::RawContig->direct_new
 	   ( 
 	     -dbobj => $self->dbobj,
@@ -385,7 +392,12 @@ sub fetch_RawContigs_by_chr_name{
 	     -seq_version => $seq_version,
 	     -cloneid     => $clone,
              -chr_start   => $chr_start,
-             -chr_end     => $chr_end
+             -chr_end     => $chr_end,
+             -raw_start   => $raw_start,
+             -raw_end     => $raw_end,
+             -raw_ori     => $raw_ori,
+             -offset      => $offset,
+             -contig_length => $contig_length
 	     );
        push(@out,$rc);
    }
