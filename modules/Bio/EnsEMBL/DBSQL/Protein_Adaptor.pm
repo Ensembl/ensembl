@@ -193,6 +193,9 @@ sub fetch_Protein_by_dbid{
 					      -desc => $desc,
 
 					      );
+
+   $protein->transcriptac($transid);                                              
+   $protein->geneac($geneid);    
    $protein->adaptor($self);	
 
 #Add the species object to protein object
@@ -520,7 +523,9 @@ sub fetch_by_array_feature{
 sub get_Intron_Position{
     my ($self,$protid) = @_;
     my @array_features;
+    my $previous_ex_end=0;
     my $count = 1;
+    
     
     #my $protid = $protein->id;
     my $query = "select id from transcript where translation = '$protid'";
@@ -532,40 +537,81 @@ sub get_Intron_Position{
     if (!defined $transid) {
 	$self->throw("No transcript can be retrieved with this translation id: $protid")
 	}
-
+    
     my $transcript = $self->fetch_Transcript_by_dbid($transid);
     my ($starts,$ends) = $transcript->pep_coords;
     
     my @exons = $transcript->each_Exon();
     my $nbex = scalar(@exons);
-
-    while ($count < $nbex) {
+    
+    foreach my $ex(@exons) {
+	my $length;
+	my $exid = $ex->id();
+	my ($ex_start, $ex_end) = $self->get_exon_global_coordinates($exid);
+	print STDERR "COORD: $ex_start\t$ex_end\n";
+	if ($previous_ex_end != 0) {
+	    my $intron_start = $previous_ex_end;
+	    my $intron_end = $ex_start;
+	    
+	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
+						       -start => $starts->[$count],
+						       -end => $starts->[$count],
+						       -score => 0, 
+						       -percent_id => "NULL",
+						       -p_value => "NULL");
+	    
+	    my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => $intron_start,
+						      -end => $intron_end,
+						      -seqname => "Intron");
+	    
+	    my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
+								-feature2 => $feat2,);
+	    
+	    push(@array_features,$feature);
+	    
+	    $count++;
+	}
+	$previous_ex_end = $ex_end;
 	
-#An analysis object should also be created here
-	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
-						   -start => $starts->[$count],
-						   -end => $starts->[$count],
-						   -score => 0, 
-						   -percent_id => "NULL",
-						   -p_value => "NULL");
-	
-	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 1,
-						  -end => 1,
-						  -seqname => "Intron");
-	
-	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-							    -feature2 => $feat2,);
-        
-	#$protein->add_Protein_feature($feature);
-	push(@array_features,$feature);
-	
-	$count++;
-    }    
-    return @array_features; 
+    }
+     return @array_features; 
 }
 
 
 
+=head2 get_introns_length_by_exonID
+
+ Title   : get_introns_length_by_exonID
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
 
 
+=cut
+
+sub get_exon_global_coordinates{
+   my ($self,$exid) = @_;
+   
+   print STDERR "$exid\n";
+
+   my $query ="SELECT
+               IF(sgp.raw_ori=1,(e.seq_start+sgp.chr_start-sgp.raw_start),
+                 (sgp.chr_start+sgp.raw_end-e.seq_end)) as start,
+               IF(sgp.raw_ori=1,(e.seq_end+sgp.chr_start-sgp.raw_start),
+                 (sgp.chr_start+sgp.raw_end-e.seq_start)) as end
+               FROM       static_golden_path as sgp ,exon as e,exon_transcript as et
+               WHERE      sgp.raw_id=e.contig
+               AND        e.id='$exid'";
+              
+
+   my $sth = $self->prepare($query);
+   $sth->execute;
+  
+   my @row = $sth->fetchrow;
+   my $start = $row[0];
+   my $end = $row[1];
+   return ($start,$end);
+}
 
