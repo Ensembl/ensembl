@@ -331,7 +331,8 @@ sub contig {
 =head2 transform
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
-              make this slice coords, but how does lazy loading work then??
+              make this slice coords
+              if no slice, back to raw contig
   Function  : make slice coords from raw contig coords or vice versa
   Returntype: Bio::EnsEMBL::Exon (Bio::EnsEMBL::StickyExon)
   Exceptions: none
@@ -339,62 +340,138 @@ sub contig {
 
 =cut
 
-
+# could be used to transform from one slice to another ...
 sub transform {
   my $self = shift;
   my $slice = shift;
+  my $mapper;
+  if(( ! defined $slice ) &&
+     ( defined  $self->{'contig'}) &&
+     ( $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" )) ) {
+    return $self;
+  }
 
   if( defined $self->{'contig'} and 
       $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
-    my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-      ( $slice->assembly_type() );
-
-    my @mapped = $mapper->map_coordinates_to_assembly
-      (
-       $self->contig()->dbID,
-       $self->start(),
-       $self->end(),
-       $self->strand()
-      );
-
-    # exons should always transform so in theory no error check
-    # necessary
-    if( ! @mapped ) {
-      $self->throw( "Exon couldnt map" );
-    }
-    
-    # should get a gap object returned if an exon lies outside of 
-    # the current slice.  Simply return the exon as is - i.e. untransformed.
-    # this untransformed exon will be distinguishable as it will still have
-    # contig attached to it and not a slice.
-    if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-      print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
-      return $self;
-    }
-
-    my $newexon = Bio::EnsEMBL::Exon->new();
-    %$newexon = %$self;
-
-    $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
-    $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
-    $newexon->strand( $mapped[0]->strand() * $slice->strand() );
-
-    $newexon->contig( $slice );
-    $newexon->attach_seq( $slice );
-
-    #print "Exon start " . $self->start . "\n";
-    #print "Exon end   " . $self->end . "\n";
-    #print "Mapped start " . $newexon->start . "\n";
-    #print "Mapped end   " . $newexon->end . "\n";
-
-#    print "Mapped seq: " . $newexon->seq(). "\n";
-#    print "Original:   " . $self->seq() . "\n";
-
-
-    return $newexon;
-
+    $self->_transform_to_slice( $slice );
   } else {
-    $self->throw( "Not implemented yet" );
+    $self->_transform_to_rawcontig();
+  }
+}
+
+
+sub _transform_to_slice {
+  my $self = shift;
+  my $slice = shift;
+  
+  my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+    ( $slice->assembly_type() );
+  
+  my @mapped = $mapper->map_coordinates_to_assembly
+    (
+     $self->contig()->dbID,
+     $self->start(),
+     $self->end(),
+     $self->strand()
+    );
+
+  # exons should always transform so in theory no error check
+  # necessary
+  # actually we could have exons inside and outside the Slice because of db design
+  # and the query that produces them
+  if( ! @mapped ) {
+    $self->throw( "Exon couldnt map" );
+  }
+    
+  # should get a gap object returned if an exon lies outside of 
+  # the current slice.  Simply return the exon as is - i.e. untransformed.
+  # this untransformed exon will be distinguishable as it will still have
+  # contig attached to it and not a slice.
+  if( $mapped[0]->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+    print "Exon " . $self->dbID . " Start:" . $self->start . " End:". $self->end . " mapped to a gap \n";
+    return $self;
+  }
+
+  my $newexon = Bio::EnsEMBL::Exon->new();
+  %$newexon = %$self;
+  
+  $newexon->start( $mapped[0]->start() - $slice->chr_start() + 1);
+  $newexon->end( $mapped[0]->end() - $slice->chr_start() + 1);
+  $newexon->strand( $mapped[0]->strand() * $slice->strand() );
+  
+  $newexon->contig( $slice );
+  $newexon->attach_seq( $slice );
+  
+  #print "Exon start " . $self->start . "\n";
+  #print "Exon end   " . $self->end . "\n";
+  #print "Mapped start " . $newexon->start . "\n";
+  #print "Mapped end   " . $newexon->end . "\n";
+
+  #    print "Mapped seq: " . $newexon->seq(). "\n";
+  #    print "Original:   " . $self->seq() . "\n";
+
+
+  return $newexon;
+}
+
+sub _transform_to_rawcontig {
+  my $self = shift;
+
+  my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+    ( $self->contig()->assembly_type() );
+  my @mapped = $mapper->map_coordinates_to_rawcontig
+    (
+     $self->contig()->chr_name(),
+     $self->start(),
+     $self->end(),
+     $self->strand()
+    );
+
+  if( ! @mapped ) {
+    $self->warn( "Exon couldnt map" );
+    return $self;
+  }
+
+  if( scalar( @mapped ) > 1 ) {
+    # sticky exons
+    # bjeacchh
+    my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+    my $stickyExon = Bio::EnsEMBL::StickyExon->new();
+    $stickyExon->phase( $self->phase() );
+    $stickyExon->adaptor( $self->adaptor() );
+    $stickyExon->start( 1 );
+    if( defined $self->dbID() ) {
+      $stickyExon->dbID( $self->dbID() );
+    }
+
+    my $sticky_length =0;
+    # and then all the component exons ...
+    for( my $i=0; $i <= $#mapped; $i++ ) {
+      my $componentExon = Bio::EnsEMBL::Exon->new();
+      $componentExon->start( $mapped[$i]->start() );
+      $componentExon->end( $mapped[$i]->end() );
+      $componentExon->strand( $mapped[$i]->strand() );
+      my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[$i]->id() );
+      $componentExon->contig( $rawContig );
+      $componentExon->sticky_rank( $i + 1 );
+      $stickyExon->add_component_Exon( $componentExon );
+      $sticky_length += ( $mapped[$i]->end() - $mapped[$i]->start() + 1 );
+    }
+    $stickyExon->end( $sticky_length );
+    return $stickyExon;
+    
+  } else {
+    # thats a simple exon
+    my ( $newstart, $newend, $newstrand );
+    my $rcAdaptor = $self->adaptor()->db()->get_RawContigAdaptor();
+    my $rawContig = $rcAdaptor->fetch_by_dbID( $mapped[0]->id() );
+    $self->start( $mapped[0]->start() );
+    $self->end( $mapped[0]->end() );
+    $self->strand( $mapped[0]->strand() );
+    # attaching seq ?
+    $self->attach_seq( $rawContig );
+    $self->contig( $rawContig );
+    return $self;
   }
 }
 

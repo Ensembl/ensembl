@@ -610,7 +610,8 @@ sub _dump{
 =head2 transform
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
-              make this slice coords, but how does lazy loading work then??
+              make this Gene slice coords
+              Without a $slice, transform to rawContig Coords
   Function  : make slice coords from raw contig coords or vice versa
   Returntype: Bio::EnsEMBL::Gene
   Exceptions: none

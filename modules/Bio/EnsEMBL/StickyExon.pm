@@ -49,6 +49,9 @@ The rest of the documentation details each of the object methods. Internal metho
 
 
 package Bio::EnsEMBL::StickyExon;
+
+use Bio::Seq;
+
 use vars qw(@ISA $AUTOLOAD);
 use strict;
 
@@ -289,10 +292,56 @@ sub _sort_by_sticky_rank {
 }
 
 
+sub attach_seq {
+  my $self = shift;
+  my $seq = shift;
+
+  $self->seq( $seq->seq() );;
+}
+
+
+=head1 seq
+
+  Arg [1]  : String $seq
+             You can set the seq of a sticky Exon. Omit, if you want to retrieve.
+             Attachseq is probably the better way (sigh)
+  Function : retrieve sequence of sticky exon from db or return stored one.
+             If sequence was retrieved once, its cached.
+
+  Returns  : Has to return Bio::Seq
+
+
+=cut
+
+
+sub seq {
+  my $self = shift;
+  my $seq = shift;
+
+  if( defined $seq ) {
+    if( $seq ) {
+      $self->{'_seq'} = $seq;
+    } else {
+      $self->{'_seq'} = undef;
+    }
+  } else {
+    my $seqString = "";
+    for my $cExon ( $self->component_Exons() ) {
+      $seqString .= $cExon->seq()->seq();
+    }
+    $self->{'_seq'} = $seqString;
+  }
+
+  return Bio::Seq->new( -seq => $self->{'_seq'} );
+}
+
+
+
+
 =head2 transform
 
   Arg  1    : Bio::EnsEMBL::Slice $slice
-              make this slice coords, but how does lazy loading work then??
+              make this slice coords.
   Function  : make slice coords from raw contig coords or vice versa
   Returntype: Bio::EnsEMBL::Exon (Bio::EnsEMBL::StickyExon)
   Exceptions: none
@@ -307,8 +356,6 @@ sub transform {
 
   if( defined $self->{'contig'} and 
       $self->{'contig'}->isa( "Bio::EnsEMBL::RawContig" ) )  {
-
-    print STDERR "WARNING sticky exon alert!!\n";
 
     my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
       ( $slice->assembly_type() );
@@ -401,17 +448,10 @@ sub transform {
     $newexon->contig( $slice );
     $newexon->phase( $composite_exon_phase );
 
-    my $newexon_primaryseq = new Bio::PrimarySeq (
-       -SEQ => $dna_seq , 
-       '-id' => 'composite_exon' , 
-       -alphabet => 'dna'
-    );
-
-    $newexon->attach_seq( $newexon_primaryseq );
 
     return $newexon;
   } else {
-    $self->throw( "Not implemented yet" );
+    $self->throw( "Unexpected StickyExon in Assembly coords ..." );
   }
 }
 
