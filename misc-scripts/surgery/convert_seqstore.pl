@@ -398,12 +398,28 @@ if ($species eq "anopheles") {
 } else {
 
   execute( $dbi, "INSERT INTO prediction_transcript ".
-	   "( prediction_transcript_id, seq_region_id, seq_region_start, seq_region_end, " .
-	   "  seq_region_strand, analysis_id ) " .
-	   "SELECT prediction_transcript_id, contig_id, MIN( contig_start ), MAX( contig_end ), contig_strand, " .
-	   "       analysis_id ".
-	   "FROM $source.prediction_transcript " .
+	   "(prediction_transcript_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, analysis_id) " .
+	   "SELECT pt.prediction_transcript_id, a.contig_id, " .
+	   "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+	   "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+	   "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+	   "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+	   "       a.contig_ori*e.contig_strand as strand, " .
+	   "  pt.analysis_id ".
+	   "FROM $source.prediction_transcript pt, $source.assembly a " .
 	   "GROUP BY prediction_transcript_id ");
+
+#  "MIN(IF (a.contig_ori=1,(e.contig_start+a.chr_start-a.contig_start)," .
+#  "       (a.chr_start+a.contig_end-e.contig_end ))) as start, " .
+#  "MAX(IF (a.contig_ori=1,(e.contig_end+a.chr_start-a.contig_start), " .
+#  "       (a.chr_start+a.contig_end-e.contig_start))) as end, " .
+#  "       a.contig_ori*e.contig_strand as strand, " .
+#  "       t.display_xref_id " .
+#  "FROM   $source.transcript t, $source.exon_transcript et, $source.exon e, $source.assembly a, $target.tmp_chr_map tcm " .
+#  "WHERE  t.transcript_id = et.transcript_id " .
+#  "AND    et.exon_id = e.exon_id " .
+#  "AND    e.contig_id = a.contig_id ";
+
 }
 
 #-----------------------------------------------------------------
