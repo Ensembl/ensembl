@@ -407,6 +407,8 @@ sub validate {
     
 }
 
+
+
 sub vthrow {
     my ($self,$message) = @_;
 
@@ -429,6 +431,33 @@ sub vthrow {
 
     $self->throw("Invalid feature - see dump on STDERR");
 }
+
+
+=head2 validate_prot_feature
+
+ Title   : validate_prot_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub validate_prot_feature{
+    my ($self,$num) = @_;
+    $self->throw("Seqname not defined in feature")     unless defined($self->seqname);
+    $self->throw("start not defined in feature")       unless defined($self->start);
+    $self->throw("end not defined in feature")         unless defined($self->end);
+    if ($num == 1) {
+	$self->throw("score not defined in feature")       unless defined($self->score);
+    }
+    $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
+}
+
+
+
 # These methods are specified in the SeqFeatureI interface but we don't want
 # people to store data in them.  These are just here in order to keep
 # existing code working

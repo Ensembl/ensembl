@@ -757,6 +757,42 @@ sub validate {
     }
 }
 
+=head2 validate_prot_feature
+
+ Title   : validate_prot_feature
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub validate_prot_feature{
+   my ($self) = @_;
+ # First the features;
+
+    $self->throw("Empty or wrong type of feature1 object") unless defined($self->feature1)   && 
+	                                             ref($self->feature1) ne "" && 
+						     $self->feature1->isa("Bio::EnsEMBL::SeqFeatureI");
+    $self->throw("Empty or wrong type of feature1 object ") unless defined($self->feature2) &&
+	                                             ref($self->feature2) ne "" && 
+						     $self->feature2->isa("Bio::EnsEMBL::SeqFeatureI");
+
+    $self->feature1->validate_prot_feature(1);
+    $self->feature2->validate_prot_feature(2);
+
+    # Now the analysis object
+    if (defined($self->analysis)) {
+	$self->throw("Wrong type of analysis object") unless $self->analysis->isa("Bio::EnsEMBL::AnalysisI");
+    } else {
+	$self->throw("No analysis object defined");
+    }
+
+}
+
+
 =head2 set_all_fields
 
  Title   : set_all_fields
