@@ -99,7 +99,7 @@ sub store {
         
         $sth->execute($name, $class, $seq);
         
-        my $db_id = $sth->{'insertid'}
+        my $db_id = $sth->{'mysql_insertid'}
             or $self->throw("Didn't get an insertid from the INSERT statement");
         
         $rc->dbID($db_id);

@@ -123,6 +123,7 @@ sub store {
           , repeat_id
           , repeat_start
           , repeat_end
+	  , score
           , analysis_id )
         VALUES(NULL, ?,?,?,?,?,?,?,?,?)
         });
@@ -135,9 +136,10 @@ sub store {
             $rf->repeat_id,
             $rf->hstart,
             $rf->hend,
+	    $rf->score,
             $rf->analysis->dbID,
             );
-        my $db_id = $sth->{'insertid'}
+        my $db_id = $sth->{'mysql_insertid'}
             or $self->throw("Didn't get an insertid from the INSERT statement");
         $rf->dbID($db_id);
     }
