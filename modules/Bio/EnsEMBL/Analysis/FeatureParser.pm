@@ -199,10 +199,10 @@ sub read_Pfam {
     my $pfamfile  = "$clone_dir/$disk_id.$count". $pfam->[4];    
 
     if (! -e $pfamfile) {
-	print( "   - No pfam file $pfamfile exists - Skipping pfam\n");
+	print(STDERR  "   - No pfam file $pfamfile exists - Skipping pfam\n");
 	return;
     } else {
-	print("   - Reading pfam file $pfamfile\n");
+	print(STDERR "   - Reading pfam file $pfamfile\n");
     }
     
     my $pfamobj = new Bio::Tools::HMMER::Results(-file => $pfamfile,
@@ -322,10 +322,10 @@ sub read_MSP {
     my $type = $msp->[6];
 
     if (! -e $mspfile) {
-	print( "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
+	print(STDERR "   - MSPcrunch file $mspfile doesn't exist. Skipping\n");
 	return;
     } else {
-	print( "   - Reading MSPcrunch file $mspfile\n");
+	print(STDERR "   - Reading MSPcrunch file $mspfile\n");
     }
     
 
