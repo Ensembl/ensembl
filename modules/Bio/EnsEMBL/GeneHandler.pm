@@ -251,23 +251,31 @@ sub _process_Transcript{
 
        if( $loc_comp == 1 ) {
 	   if( ! defined $trans_loc ) {
-	       $trans_loc = "$locstart..$locend";
+	       $trans_loc = "<$locstart..$locend";
 	   } else {
 	       $trans_loc .= ",$locstart..$locend";
 	   }
        } else {
 	   if( ! defined $trans_loc ) {
-	       $trans_loc = "complement($locstart..$locend)";
+	       $trans_loc = "complement(<$locstart..$locend)";
 	   } else {
 	       $trans_loc .= ",complement($locstart..$locend)";
 	   }
        }
+
+       
    }
+
+   # the last *f^%$%ing* location needs to have a '>' (would you
+   # believe it). So annoying. This is HORRIBLE
+
+   # puts a > on the last location line
+   $trans_loc =~ s/\.\.(\d+)(\)?)$/..$1>$2/;
 
    my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
    $t_fth->key("CDS");
    my $pseq = $trans->translate();
-   $t_fth->add_field('translate',$pseq->str);
+   $t_fth->add_field('translation',$pseq->str);
    $t_fth->add_field('transcript_id',$trans->id());
    $t_fth->add_field('gene_id',$self->gene->id());
    if( $trans->is_partial() == 1 ) {

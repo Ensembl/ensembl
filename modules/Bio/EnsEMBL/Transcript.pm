@@ -183,6 +183,11 @@ sub split_Transcript_to_Partial{
 
    my @exons = $self->each_Exon;
 
+   # one exon genes - easy to handle.
+   if( $#exons == 0 ) {
+       return $self;
+   }
+
    my $l = $#exons;
    my $prev = shift @exons;
 
