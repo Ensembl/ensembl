@@ -337,15 +337,16 @@ sub get_all_RawContigs {
 
  Title   : raw_contig_position
  Usage   : my ($map_contig,$rc_position,$rc_strand) = $vmap->raw_contig_position($vc_pos,$vc_strand)
- Function: Maps a VirtualContig position to the RawContig Position
- Returns : Bio::EnsEMBL::Virtual::MapContig object, 
-           position (int), strand (int)
- Args    : position (int), strand (int)
+ Function: Maps a VirtualContig position to a RawContig + RawContig position
 
-
+ Returns : The underlying RawContig and a position on it (in RC coords),
+           and optionally the RC strandedness
+ Args   : position on VirtualContig (in VC coords), and optionally
+          VirtualContig strand.
 =cut
 
 sub raw_contig_position {
+# PL: belongs in Contig? 
     my ($self, $vcpos, $vcstrand)=@_;
  
     my $rc;
@@ -402,12 +403,12 @@ sub raw_contig_position {
 	}
     }
     
-    
     $vcstrand && return $rc,$rc_pos,$rc_strand;
     return $rc,$rc_pos;
 }
 
 sub vcpos_to_rcpos {
+#PL: belongs in Contig.pm ? 
     my ($self, $vcpos, $vcstrand)=@_;
     my ($p,$f,$l) = caller;
     $self->warn("$f:$l:vcpos_to_rcpos a deprecated method. use raw_contig_position instead");
