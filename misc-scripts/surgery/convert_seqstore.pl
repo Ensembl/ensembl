@@ -6,12 +6,21 @@ use warnings;
 use DBI;
 use Getopt::Long;
 
-my ($host, $port, $user, $password, $source, $target, $verbose, $create, $clean, $check);
+my ($host, $port, $user, $password, $source, $target, $verbose, $create, $clean, $check, $species);
 $host = "127.0.0.1";
 $port = 5000;
 $password = "";
 $user = "ensro";
 my $copyonly = 0;
+my %species_types = ("human"     => 1,
+		     "mouse"     => 1,
+		     "rat"       => 1,
+		     "fugu"      => 1,
+		     "zebrafish" => 1,
+		     "anopheles" => 1,
+		     "danio"     => 1,
+		     "elegans"   => 1,
+		     "briggsae"  => 1);
 
 GetOptions ('host=s'      => \$host,
             'user=s'      => \$user,
@@ -23,11 +32,16 @@ GetOptions ('host=s'      => \$host,
 	    'clean'       => \$clean,
 	    'check'       => \$check,
 	    'create=s'    => \$create,
+	    'species=s'   => \$species,
             'help'        => sub { &show_help(); exit 1;} );
 
 die "Host must be specified"           unless $host;
 die "Target schema must be specified"  unless $target;
 die "Source schema be specifed"        unless $source;
+die "Species must be specified"        unless $species;
+
+die "Species $species not recognised" unless exists $species_types{$species}; 
+debug("Will use species-specific options for " . $species);
 
 # clean and create need to be done in a specific order
 # they create their own db connections as necessary
@@ -40,16 +54,10 @@ my $sth;
 
 
 # ----------------------------------------------------------------------
-# The coord_system table needs to be filled first
+# The coord_system and meta_coord tables need to be filled first but
+# how this is done varies from species to species
 
-debug("Building coord_system table");
-my @inserts = ('("chromosome",  "NCBI33", "default_version,top_level")',
-	       '("supercontig", NULL,     "default_version")',
-	       '("clone",       NULL,     "default_version")',
-	       '("contig",      NULL,     "default_version,sequence_level")' );
-foreach my $insert (@inserts) {
-  execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES ' . $insert);
-}
+build_species_coord_tables($species);
 
 # cache coord-system names to save lots of joins
 debug("Caching coord_system IDs");
@@ -60,29 +68,6 @@ while(my $row = $sth->fetchrow_hashref()) {
   my $id = $row->{"coord_system_id"};
   my $name = $row->{"name"};
   $coord_system_ids{$name} = $id;
-}
-
-# ----------------------------------------------------------------------
-# The meta_coord table defines which coord systems feature tables use
-
-debug("Building meta_coord");
-$sth = $dbi->prepare("INSERT INTO meta_coord VALUES (?, ?)");
-my %cs = (gene               	=> 'chromosome',
-	  transcript         	=> 'chromosome',
-	  exon               	=> 'chromosome',
-	  dna_align_feature     => 'contig',
-	  protein_align_feature => 'contig',
-	  marker_feature        => 'contig',
-	  simple_feature        => 'contig',
-	  repeat_feature        => 'contig',
-	  qtl_feature           => 'chromosome',
-	  misc_feature          => 'chromosome',
-	  prediction_transcript => 'contig',
-    karyotype             => 'chromosome'
-	 );
-
-foreach my $val (keys %cs) {
-  $sth->execute($val, $coord_system_ids{$cs{$val}});
 }
 
 # ----------------------------------------------------------------------
@@ -161,6 +146,7 @@ while (my ($old_id, $new_id) = each %clone_id_old_new) {
 }
 
 # Supercontigs - need to store new (seq_region) ID->name mapping for later
+debug("Transforming supercontigs into seq_region");
 my %superctg_name_id;
 $cs_id = $coord_system_ids{"supercontig"};
 $sth = $dbi->prepare("SELECT superctg_name, " .
@@ -459,11 +445,11 @@ execute($dbi,
 
 debug("Translating karyotype");
 execute($dbi,
-	     "INSERT INTO $target.karyotype " .
-	     "SELECT null, tcm.new_id, " .
-	     "       k.chr_start, k.chr_end, k.band, k.stain " .
-	     "FROM $target.tmp_chr_map tcm, $source.karyotype k " .
-	     "WHERE tcm.old_id = k.chromosome_id");
+	"INSERT INTO $target.karyotype " .
+	"SELECT null, tcm.new_id, " .
+	"       k.chr_start, k.chr_end, k.band, k.stain " .
+	"FROM $target.tmp_chr_map tcm, $source.karyotype k " .
+	"WHERE tcm.old_id = k.chromosome_id");
 
 
 debug("Translating marker_map_location");
@@ -619,6 +605,8 @@ sub show_help {
   print "  --clean           Remove target schema, which must have been specified with --target\n";
   print "  --create {file}   Create target schema, which must have been specified with --target, from SQL file\n";
   print "  --check           Check target schema for empty tables at end of run\n";
+  print "  --species {name}  Use specific options for a given species; should be one of:\n";
+  print "                      human, mouse, rat, fugu, zebrafish, anopheles, danio, elegans, briggsae\n";
   print "  --verbose         Print extra output information\n";
 
 }
@@ -749,5 +737,45 @@ sub check {
   $sth_target->finish();
   $dbi_source->disconnect();
   $dbi_target->disconnect();
+
+}
+
+# ----------------------------------------------------------------------
+# Species-specific operations
+
+# Build coord_system and meta_coord tables for different species
+
+sub build_species_coord_tables {
+
+  my $species = shift;
+
+  debug("Building coord_system table for " . $species);
+  my @inserts = ('("chromosome",  "NCBI33", "default_version,top_level")',
+		 '("supercontig", NULL,     "default_version")',
+		 '("clone",       NULL,     "default_version")',
+		 '("contig",      NULL,     "default_version,sequence_level")' );
+  foreach my $insert (@inserts) {
+    execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES ' . $insert);
+  }
+
+  debug("Building meta_coord" . $species);
+  $sth = $dbi->prepare("INSERT INTO meta_coord VALUES (?, ?)");
+  my %cs = (gene               	=> 'chromosome',
+	    transcript         	=> 'chromosome',
+	    exon               	=> 'chromosome',
+	    dna_align_feature     => 'contig',
+	    protein_align_feature => 'contig',
+	    marker_feature        => 'contig',
+	    simple_feature        => 'contig',
+	    repeat_feature        => 'contig',
+	    qtl_feature           => 'chromosome',
+	    misc_feature          => 'chromosome',
+	    prediction_transcript => 'contig',
+	    karyotype             => 'chromosome'
+	   );
+
+  foreach my $val (keys %cs) {
+    $sth->execute($val, $coord_system_ids{$cs{$val}});
+  }
 
 }
