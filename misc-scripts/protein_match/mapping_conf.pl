@@ -4,7 +4,7 @@
 
 This script gives the basic configuration needed by the mapping. This configuration script will be used by each script of the mapping. 
 
-For some documentatio, see below.
+For some documentation, see below and the file call protein_mapping.txt in the Ensembl-doc cvs repository.
 
 =head2 Contact
 
@@ -25,14 +25,21 @@ package main;
              #General options#
              #################
 
+             #This option allows to check for dodgy matched ensembl peptides and don't load them into the database (see pmatch code for more details)
              #'check'      => 'yes',
              'check'      => '',
 
+             #This option sets up the threshold for the query identity (in that case we don't take any match where the query identity (in our case Ensembl identity) is below 50%
              #'query_idt'  => 50,
-             'query_idt'    => 50,
+             'query_idt'    => ,
 
+             #IDEM for the target identity
              #'target_idt  => 50,
-             'target_idt'  => 50,
+             'target_idt'  => ,
+ 
+             #Location of the statistic file (only neede if you run get_stats.pl)
+             #'statistic'  => '/work1/mongin/mapping/stats.txt',
+             'statistic'  => '',
 
              ################################ 
 	     # Files location (Input/Output)#
@@ -93,14 +100,6 @@ package main;
 	          #'ens4'      => '/work1/mongin/mapping/primary/ens4.txt',
 	          'ens4'      => '',
 
-                  #Location of the Refseq (proteins) file in fasta format
-	          #'refseq_fa'    => '/work1/mongin/mapping/primary/refseq.fa',
-	          'refseq'    => '',
-	     
-                  #Location of the Refseq (proteins) file in Genbank format
-	          #'refseq_gnp'    => '/work1/mongin/mapping/primary/refseq.gnp',
-	          'refseq_gnp'    => '',
-
                   #######
                   #Mouse#
                   #######
@@ -125,17 +124,17 @@ package main;
 
              #DB name
              #'db' => 'proteintest',
-             'db' => 'mouse_protannot',
+             'db' => '',
 
              #Host name
              #'host' => 'ecs1d',
-             'host' => 'ecs1d',
+             'host' => '',
 
              #User
-             'dbuser' => 'ensadmin',
+             'dbuser' => '',
 
              #Password
-             'password' => 'ensembl',
+             'password' => '',
              
              #####################
              #Executable location#
@@ -143,7 +142,7 @@ package main;
 
              #Location for pmatch binaries
              #'pmatch' => '/nfs/disk65/ms2/bin/pmatch'
-             'pmatch' => '/nfs/disk65/ms2/bin/pmatch',
+             'pmatch' => '',
 
              ##############################
              #Organism related information#
@@ -152,12 +151,12 @@ package main;
              #Name of the organism studied. Current keywords used(or planned to be used): human, drosophila, mouse
              #You can adapt the other scripts given the organisms (eg: do some specific x_mapping for a given organism)
              #'organism' => 'human'
-             'organism' => 'mouse',
+             'organism' => '',
              
 
              #OX (Organism taxonomy cross-reference) number
              #'ox' => '9606'
-             'ox' => '10090'
+             'ox' => ''
 
  );
 
