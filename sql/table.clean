@@ -117,7 +117,6 @@ CREATE TABLE contig (
   offset            int(10) unsigned,
   corder            int(10) unsigned,
   dna_id            int(10) NOT NULL,            # foreign key dna:id
-  chromosome_id     int(10) unsigned NOT NULL,
   international_name  varchar(40),
   
   PRIMARY KEY (contig_id),
