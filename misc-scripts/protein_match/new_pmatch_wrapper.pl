@@ -60,7 +60,7 @@ my %opts = (
 	'p'	=> '2',
 	'q'	=> $query,
 	't'	=> $target
-	   );
+);
 
 if (!getopts('c:kdp:q:t:', \%opts)) {
 	print STDERR <<EOT;
@@ -92,28 +92,30 @@ $pmatch_cmd	= $opts{'c'};
 $query		= $opts{'q'};
 $target		= $opts{'t'};
 
-# In that case the know gene mapping is used thus the option from the conf file ovveride the ones from the command line
+# In that case the know gene mapping is used thus the option
+# from the conf file ovveride the ones from the command line
 if ($opts{'d'} == 1) {
-print STDERR "Warning: Any values given to the command line option will be overideen by the values stored in mapping_conf.pm";    
+	print STDERR "Warning: Any values given to the command line\n" .
+		"option will be overideen by the values stored\n" .
+		"in mapping_conf.pm\n";    
 
-    BEGIN {
-	my $script_dir = $0;
-	$script_dir =~ s/(\S+\/)\S+/$1/;
-	unshift (@INC, $script_dir);
-	require "mapping_conf.pl";
-    }
+	BEGIN {
+		my $script_dir = $0;
+		$script_dir =~ s/(\S+\/)\S+/$1/;
+		unshift (@INC, $script_dir);
+		require "mapping_conf.pl";
+	}
 
+	my %conf =  %::mapping_conf;
 
-my %conf =  %::mapping_conf;
+	$query = $conf{'query'};
+	$target = $conf{'pmatch_input_fa'};
+	$output = $conf{'pmatch_out'};
 
-$query = $conf{'query'};
-$target = $conf{'pmatch_input_fa'};
-$output = $conf{'pmatch_out'};
+	$t_thr = $conf{'target_idt'};
+	$q_thr = $conf{'query_idt'};
 
-$t_thr = $conf{'target_idt'};
-$q_thr = $conf{'query_idt'};
-
-$pmatch_cmd = $conf{'pmatch'};
+	$pmatch_cmd = $conf{'pmatch'};
 }
 
 
@@ -237,22 +239,28 @@ foreach my $query (values(%hits)) {
 }
 
 if ($opts{'d'} == 1) {
-    if ((! defined $q_thr) || (!defined $t_thr) || (! defined $output)) {
-	die "You need to define:\nquery pert idt: $q_idt\ntargett perc idt: $t_idt\nOutput file: $output\n";
-    }
-
-    foreach my $query (values(%goodhits)) {
-	foreach my $target (values(%{ $query })) {
-	    my $qperc = sprintf ("%.1f" , $target->{'QIDENT'});
-	    my $tperc = sprintf ("%.1f" , $target->{'TIDENT'});
-
-	    if (($qperc >= 50)&&($tperc >= 50)) {
-
-		print $target->{'QID'}."\t".$target->{'TID'}."\t$qperc\t$tperc\n";
-	    }
-
+	if (!defined($q_thr) || !defined($t_thr) || !defined($output)) {
+		die "You need to define:\n" .
+		    "query perc idt: $q_thr\n" .
+		    "target perc idt: $t_thr\n" .
+		    "Output file: $output\n";
 	}
-    }
+
+	foreach my $query (values(%goodhits)) {
+		foreach my $target (values(%{ $query })) {
+
+			if ($target->{'QIDENT'} >= 50 &&
+			    $target->{'TIDENT'} >= 50) {
+
+				printf "%s\t%s\t%.1f\t%.1f\n",
+					$target->{'QID'},
+					$target->{'TID'},
+					$target->{'QIDENT'},
+					$target->{'TIDENT'};
+			}
+
+		}
+	}
 }
 
 # Example use of map.  Map [1,1000] on 'O61479' through whatever the
