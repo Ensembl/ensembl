@@ -39,7 +39,7 @@ $priority{'Anopheles_symbol'} = 1000;
 $priority{'SWISSPROT'} = 900;
 $priority{'RefSeq'} = 800;
 $priority{'SPTREMBL'} = 700;
-
+$priority{'LocusLink'} = 100;
 
 if (!defined $organism) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\n\n";
