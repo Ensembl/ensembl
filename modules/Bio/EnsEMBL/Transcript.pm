@@ -1862,66 +1862,62 @@ sub finex_string {
 =cut
 
 sub convert_peptide_coordinate_to_contig {
-  my ($self,$start,$end) = @_;
+    my ($self,$start,$end) = @_;
 
-  if( !defined $end ) {
-    $self->throw("Must call with start/end");
-  }
+    $self->throw("Must call with start/end") unless defined $end;
 
   # move start end into translate cDNA coordinates now.
   # much easier!
-  $start = 3* $start-2;
-  $end   = 3* $end;
+    $start = 3* $start-2;
+    $end   = 3* $end;
 
-  if( !defined $self->translation ) {
-    $self->throw("No translation, so no peptide coordinate!");
-  }
+    $self->throw("No translation, so no peptide coordinate!") unless defined $self->translation;
 
   # get out exons, walk along until we hit first exon
   # calculate remaining distance.
 
-  my $start_exon;
-  my @exons = $self->get_all_Exons;
+    my $start_exon;
+    my @exons = $self->get_all_Exons;
   
-  my $exon;
-  my ( @features, @result );
+    my $exon;
+    my ( @features, @result );
   # ec start end are cdna relative positions for the current exons cdna
-  my ( $ec_start, $ec_end, $offset );
+    my ( $ec_start, $ec_end, $offset );
 
   # which area of the exon overlaps with requested start,end
   # usually either the last bit, the first bit or all.
-  my ( $ov_start, $ov_end );
+    my ( $ov_start, $ov_end );
 
-  $ec_start = 0; $ec_end = -1;
+    $ec_start = 0; $ec_end = -1;
 
-  while( $exon = shift  @exons ) {
-
-    if( $exon == $self->translation->start_exon ) { # in memory reliance
-      $offset = $self->translation->start - 1;
-      $ec_start = 1;
-      $ec_end = $exon->length() - $offset;
-    } else {
-      $offset = 0;
-      if( $ec_start > 0 ) {
-	$ec_start = $ec_end + 1;
-	$ec_end = $exon->length() + $ec_start - 1;
-      } else {
-	next;
-      }
-    }
+    while( $exon = shift  @exons ) {
+        if( $exon == $self->translation->start_exon ) { # in memory reliance
+            $offset = $self->translation->start - 1;
+            $ec_start = 1;
+            $ec_end = $exon->length() - $offset;
+        } else {
+            $offset = 0;
+            if( $ec_start > 0 ) {
+                $ec_start = $ec_end + 1;
+                $ec_end = $exon->length() + $ec_start - 1;
+            } else {
+	            next;
+            }
+        }
     
     # now exon covers ec_start - ec_end in cdna
-    $ov_start = ( $start >= $ec_start ) ? $start : $ec_start;
-    $ov_end = ( $end <= $ec_end ) ? $end : $ec_end;
+        $ov_start = ( $start >= $ec_start ) ? $start : $ec_start;
+        $ov_end = ( $end <= $ec_end ) ? $end : $ec_end;
     
-    if( $ov_end >= $ov_start ) {
-      @features = $exon->cdna_coord_2_features
-	( $ov_start-$ec_start + 1 + $offset, 
-	  $ov_end-$ec_start + 1 + $offset );
-      push( @result, @features );
+        if( $ov_end >= $ov_start ) {
+            @features = $exon->cdna_coord_2_features(
+                $ov_start - $ec_start + 1 + $offset, 
+	            $ov_end   - $ec_start + 1 + $offset
+            );
+            push( @result, @features );
+        }
     }
-  }
-  return @result;
+    return @result;
 }
 
 
