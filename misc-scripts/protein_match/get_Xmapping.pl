@@ -91,6 +91,7 @@ while ( my $seq = $in->next_seq() ) {
     }
 }
 
+if (($organism eq "human") || ($organism eq "mouse")) {
 #Read the refseq file in gnp format
     print STDERR "Reading REFSEQ File\n";
     
@@ -120,7 +121,7 @@ while ( my $seq = $in->next_seq() ) {
     close (REFSEQ);
     
     $/ = "\n";
-    
+}
     
 
 
