@@ -1111,7 +1111,7 @@ sub check_sql {
     my $out = `$cmd`;
 
     if (!$out or $? ) {
-        warn "ERROR: ``$cmd'' exited without output and exit-status $?\n";
+        carp "ERROR: ``$cmd'' exited without output and exit-status $?\n";
         return;
     }
 
