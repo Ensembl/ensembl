@@ -711,13 +711,11 @@ sub store {
        $type = $gene->type;
    }
 
+   # assuming that the store is used during the Genebuil process, set
+   # the relevant_xref_id to 0.  This ought to get re-set during the protein
+   # pipeline run.  This probably update to the gene table has yet to be
+   # implemented.
    my $xref_id = 0;
-#   if (defined ($gene->relevant_xref)) {
-#     $xref_id = $gene->relevant_xref;
-#   }
-#   else {
-#     $xref_id = 0;
-#   }
 
    my $sth2 = $self->prepare("INSERT INTO gene(type, analysis_id, 
                                                transcript_count, relevant_xref_id) 
