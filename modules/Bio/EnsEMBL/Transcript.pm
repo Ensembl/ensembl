@@ -1600,10 +1600,8 @@ sub swap_exons {
     }
   }
 
-#map { if( $_ == $old_exon ) { $_ = $new_exon } } 
-#  @{$self->{'_trans_exon_array'}};
   if( defined $self->{'translation'} ) {
-    if( $self->translation()->start_Exon() == $old_exon ) {
+     if( $self->translation()->start_Exon() == $old_exon ) {
       $self->translation()->start_Exon( $new_exon );
     }
     if( $self->translation()->end_Exon() == $old_exon ) {
