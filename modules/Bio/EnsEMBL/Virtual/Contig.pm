@@ -1239,9 +1239,9 @@ sub _convert_seqfeature_to_vc_coords {
       # get supporting evidence through an ExonAdaptor just once! 
       my $exon_adaptor = $self->dbobj->get_ExonAdaptor;
       $exon_adaptor->fetch_evidence_by_Exon($sf);
-      my @evi = $sf->each_Supporting_Feature;
+      my @evidence = $sf->each_Supporting_Feature;
       
-      foreach my $se ($sf->each_Supporting_Feature){
+      foreach my $se ( @evidence ){
 	if($se->seqname == $sf->contig->internal_id){
 	  $se->seqname($sf->seqname); # hack much like the one for exon->seqname above
 	  $self->_convert_seqfeature_to_vc_coords($se);
@@ -1326,25 +1326,65 @@ sub _convert_start_end_strand_vc {
 	return undef;
     }
 
+    #print STDERR "feature start: ".$start." end: ".$end."\n";
     if( $mc->orientation == 1 ) {
-       
-        # ok - forward with respect to vc. Only need to add offset
-	my $offset = $mc->start - $mc->rawcontig_start;
-	$rstart = $start + $offset;
-	$rend   = $end + $offset;
-	$rstrand = $strand;
-    } else {
 
-	# flip strand
-	$rstrand = $strand * -1;
-	
-	# yup. A number of different off-by-one errors possible here
-	
-	# well, believe or not, this actually works
-	# take a virtual contig starting in 1 and you'll see
-	$rstart = $mc->end   - ($end   - $mc->rawcontig_start);
-	$rend   = $mc->end   - ($start - $mc->rawcontig_start);
+      # NOTE:
+      # $mc->rawcontig_start = in which position of the rawcontig this virtual contig starts
+      # $mc->start = in which position of the virtual contig the raw_contig starts
+      #
+      # start-position of the feature in this bit of contig: $sp = $start - $mc->rawcontig_start + 1
+      #   end-position of the feature in this bit of contig: $ep =   $end - $mc->rawcontig_start + 1
+      #
+      # Now take into account in which position in the virtual contig the raw_contig starts
+      #
+      # start-position of the feature in the contig: $rstart = $sp + $mc->start - 1
+      #   end-position of the feature in the contig:   $rend = $sp + $mc->start - 1
+      #
+      # so the 1's compensate:
+      
+      my $offset = $mc->start - $mc->rawcontig_start;
+      $rstart    = $start + $offset;
+      $rend      = $end + $offset;
+      $rstrand   = $strand;
 
+      #print STDERR "mc->start          : ".$mc->start."\n";
+      #print STDERR "mc->rawcontig_start: ".$mc->rawcontig_start."\n";
+      #print STDERR "offset = $offset  = mc->start - mc->rawcontig_start\n";
+
+    } 
+    else {
+      
+      # flip strand
+      $rstrand = $strand * -1;
+      
+      # well, believe or not, this actually works
+      # take a virtual contig starting in 1 and you'll see
+      #print STDERR "mc->end            : ".$mc->end."\n";
+      #print STDERR "mv->rawcontig_start: ".$mc->rawcontig_start."\n";
+      
+      # NOTE:
+      # $end = end position of the feature in the raw_contig
+      # $mc->rawcontig_start = in which position of the rawcontig this virtual contig starts
+      # $mc->end = in which position of the virtual contig the raw contig ends
+      #
+      # start-position of the feature in this bit of contig: $sp = $start - $mc->rawcontig_start + 1
+      #   end-position of the feature in this bit of contig: $ep =   $end - $mc->rawcontig_start + 1
+      #
+      # Since the contig is inverted, we have to mark positions with respect to the end, thus:
+      #
+      # start-position of the feature in the reversed bit of contig: $rstart = $mc->end - $sp + 1
+      #   end-position of the feature in the reversed bit of contig:   $rend = $mc->end - $ep + 1
+      #
+      # so the 1's compensate
+
+      $rstart = $mc->end   - ($end   - $mc->rawcontig_start);
+      $rend   = $mc->end   - ($start - $mc->rawcontig_start);
+
+      #print STDERR "rstart             : $rstart ( mc->end - ( end   - mc->rawcontig_start ) )\n";
+      #print STDERR "rstart             : $end    ( mc->end - ( start - mc->rawcontig_start ) )\n";
+
+      
     }
 
     return ($rstart,$rend,$rstrand);
@@ -1881,7 +1921,7 @@ sub _reverse_map_Exon {
        my $new_feature = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
        $new_feature->start($res->{'raw_start'});
        $new_feature->end($res->{'raw_end'});
-       print STDERR "new_start: ".$res->{'raw_start'}." new_end: ".$res->{'raw_end'}."\n";
+       #print STDERR "new_start: ".$res->{'raw_start'}." new_end: ".$res->{'raw_end'}."\n";
        $new_feature->strand($res->{'raw_strand'});
        $new_feature->seqname($res->{'raw_contig_id'});
 
