@@ -145,11 +145,15 @@ sub new {
         $host = 'localhost';
 	$self->host( $host );
     }
+    if ( ! $port ) {
+        $port = 3306;
+    }
+
     if( ! defined $perlonlysequences ) {
         $perlonlysequences = 0;
     }
 
-    my $dsn = "DBI:$driver:database=$db;host=$host";
+    my $dsn = "DBI:$driver:database=$db;host=$host;port=$port";
 	
     if( $debug && $debug > 10 ) {
         $self->_db_handle("dummy dbh handle in debug mode $debug");
@@ -167,7 +171,9 @@ sub new {
     }
     $self->username( $user );
     $self->dbname( $db );
-    
+    # following was added on branch; unclear if it is needed:
+    $self->mapdbname( $mapdbname );
+
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
     }
@@ -186,6 +192,7 @@ sub new {
       $self->{'_mapdb'} = {
           -DBNAME => $mapdbname,
           -HOST   => $host,
+          -PORT   => $port,
           -DRIVER => $driver,
           -USER   => $user,
           -PASS   => $password,
@@ -573,6 +580,15 @@ sub mapdb {
     }
     return $self->{'_mapdb'};
 }
+
+# was added on branch; not clear if needed:
+sub mapdbname {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_mapdbname} = $arg );
+  $self->{_mapdbname};
+}
+
 
 
 =head2 write_Species
