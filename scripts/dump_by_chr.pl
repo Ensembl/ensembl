@@ -3,10 +3,9 @@
 # $Id$
 # 
 #
-
-die "Not yet ready for the MAIN branch; use Tbranch-ensembl-110!"
-
 use Carp;
+
+die "Not ready for main branch this is a direct copy of rev. 1.3.2.4";
 
 =head1 NAME
 
@@ -38,7 +37,8 @@ use Carp;
            -h host -u user -p password
      e.g
   
-       dump_by_chr.pl  -disease homo_sapiens_disease_110 \n
+       dump_by_chr.pl  -litedb homo_sapiens_lite_110 \
+           -disease homo_sapiens_disease_110 \
             + host,user,passwd args
 
      Alternatively, dump all things in one go, relying on the consistent
@@ -51,7 +51,7 @@ use Carp;
      In this case, the %s will be replaced by all the known database
      types, and all will be dumped. Is the theory.
 
-     Known types are: (see source code)
+     Known satellite db\'s are: (see source code)
   
    (5) When changing something in this script or dumping from a different
        database, run first with the -check option, to see if all indices
@@ -97,12 +97,13 @@ my $template = undef;                   # when dumping all
 my $check_sql;
 my $lim;
 
-my $mysql = 'mysql'; 
-# my $mysqldump = 'mysqldump'; # in $PATH we trust.
+my $mysql = 'mysql';                    # in $PATH we trust.
+# my $mysqldump = 'mysqldump';          # in $PATH we trust.
 # No we don't; the above is version 8.10, which is too strict. Use an
 # older version:
 my $mysqldump = '/nfs/croc/michele/mysql/bin/mysqldump';
 #                  /mysql/current/bin/mysqldump
+my $mysqladmin = 'mysqladmin';                    # in $PATH we trust.
 
 # the db's that have been implemented:
 my $coredb;
@@ -114,8 +115,15 @@ my $snpdb;
 my $embldb;
 my $estdb;
 my $mousedb;
+
+# this one is not settable (used during embl dump)
+my $tmpdb = "__embl_dump_tmpdb_$$";
+# sorry, but this has to be on the production server, otherwise I can't do
+# the joins ... 
+
 # end of db's
 
+die "couldn't parse arguments; see source code for valid options" unless
 &GetOptions( 
 #             'port:n'     => \$port,
             'litedb:s'   => \$litedb, # for referencing only
@@ -746,6 +754,9 @@ WHERE  lg.chr_name = '$chr'
 
 
 sub dump_embl  {
+### the mapping for this database is strange, so it's more efficient to
+### first create a temporary database that has a table containing the
+### right contig id's.
     my ($satdb) = @_;
     return unless $satdb;
 
@@ -762,64 +773,61 @@ FROM $satdb.$table complete_table
 ";
         dump_data($sql, $satdb, $table);
     }
-
     $sql="
-SELECT distinct cl.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-";
-    dump_data($sql, $satdb, 'clone');
-
-    $sql="
-SELECT distinct ctg.*
+CREATE TABLE tmp_contig
+AS
+SELECT distinct ctg.internal_id as internal_id, ctg.clone as clone, dna as dna
   FROM $litedb.gene lg,
        $satdb.clone cl, 
        $satdb.contig ctg
  WHERE lg.chr_name = '$chr'
    AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
+   AND cl.internal_id = ctg.clone;
+
+ALTER TABLE tmp_contig ADD KEY(internal_id);
+ALTER TABLE tmp_contig ADD KEY(clone);
+";
+    create_tmp_db($tmpdb, $sql, 'tmp_contig');
+    
+    # now for the real tables:
+    $sql="
+SELECT distinct cl.*
+  FROM $tmpdb.tmp_contig ctg,
+       $satdb.clone cl
+ WHERE ctg.clone = cl.internal_id 
+";
+    dump_data($sql, $satdb, 'clone');
+
+    $sql="
+SELECT distinct ctg.*
+  FROM $tmpdb.tmp_contig tctg,
+       $satdb.contig ctg
+ WHERE ctg.internal_id=  tctg.internal_id
 ";
     dump_data($sql, $satdb, 'contig');
 
     $sql ="
-SELECT distinct dna.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+SELECT dna.*
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.dna dna
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.dna = dna.id 
+ WHERE ctg.dna = dna.id 
 ";
      dump_data($sql, $satdb, 'dna');
     
     $sql="
 SELECT DISTINCT e.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
 ";
      dump_data($sql, $satdb, 'exon');
 
     $sql="
 SELECT distinct et.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
 ";
@@ -827,16 +835,11 @@ SELECT distinct et.*
 
     $sql="
 SELECT distinct tsc.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
    AND et.transcript=tsc.id
@@ -845,17 +848,12 @@ SELECT distinct tsc.*
 
     $sql="
 SELECT distinct g.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.gene  g
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
    AND et.transcript=tsc.id
@@ -865,18 +863,13 @@ SELECT distinct g.*
 
     $sql="
 SELECT distinct gt.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.gene  g,
        $satdb.genetype  gt
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
    AND et.transcript=tsc.id
@@ -887,17 +880,12 @@ SELECT distinct gt.*
 
     $sql="
 SELECT distinct tl.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.translation tl
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
    AND et.transcript=tsc.id
@@ -907,18 +895,13 @@ SELECT distinct tl.*
 
     $sql="
 SELECT distinct ox.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+  FROM $tmpdb.tmp_contig ctg,
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.translation tl,
        $satdb.objectXref ox
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND ctg.clone = cl.internal_id
-   AND ctg.internal_id = e.contig
+ WHERE ctg.internal_id = e.contig
    AND e.id = et.exon
    AND e.sticky_rank = 1
    AND et.transcript=tsc.id
@@ -928,24 +911,19 @@ SELECT distinct ox.*
 ";
     dump_data($sql, $satdb, 'objectXref');
 
-    # this one is a total dog ... I need the LIKE statement, given the
-    # strange embl id mapping ...  I suppose I should create a temp table,
-    # index it, then do it on that. Left as an exercise :-(
+    # this one was a total dog (see rev. 1.3.2.2) I need the LIKE
+    # statement, given the strange embl id mapping. Now solved with a
+    # temporary table. 
     $sql="
-SELECT distinct x.*
-  FROM $litedb.gene lg,
-       $satdb.clone cl, 
-       $satdb.contig ctg,
+SELECT DISTINCT x.*
+FROM   $tmpdb.tmp_contig ctg, 
        $satdb.exon e,
        $satdb.exon_transcript et,
        $satdb.transcript tsc,
        $satdb.translation tl,
        $satdb.objectXref ox,
-       $satdb.Xref  x
- WHERE lg.chr_name = '$chr'
-   AND lg.contig like concat(cl.id, '%') 
-   AND cl.internal_id = ctg.clone 
-   AND ctg.internal_id = e.contig
+       $satdb.Xref x
+WHERE  ctg.internal_id = e.contig
    AND e.sticky_rank = 1
    AND e.id = et.exon
    AND et.transcript=tsc.id
@@ -954,13 +932,11 @@ SELECT distinct x.*
    AND ox.ensembl_object_type = 'Translation'
    AND ox.xrefId = x.xrefId
 ";
+    dump_data($sql, $satdb, 'Xref');
 
-    warn "**** Not dumping Xref, too slow; rewrite using a temporary table";
-    # then just re-run
-#    dump_data($sql, $satdb, 'Xref');
+    drop_tmp_db($tmpdb);
     return;
 }                                       # dump_embl
-
 
 sub dump_est  {
     my ($satdb) = @_;
@@ -1044,6 +1020,53 @@ sub dump_schema {
     }
 }                                       # dump_schema
 
+sub create_tmp_db {
+    # create a (temporay) database
+    my ($db, $sql, $table) = @_;
+    warn "Creating $db with table $table\n";
+
+    my ($cmd)="$mysqladmin -u $user -h $host $pass_arg create $db";
+    my ($out)= `$cmd 2>&1`;
+    if ( $? || $out )  {
+        drop_tmp_db($db);            # just in case
+        die "``$cmd'' exited with exit status $? and stdout/err: $out";
+    }
+
+    if ($check_sql) { 
+## NOTE: this is very hackish, I expect an SQL string that looks like
+## "create ... select ; alter ...", containing stuff for a single table.
+        $sql =~ s/distinct//gi;
+        $sql =~ s/;/ limit 1;/;          # just so we have *something*
+#        warn "SQL\n\n$sql\n\n";
+    }
+
+    # now create and populate the table
+    $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $tmpdb";
+
+    $out = `$cmd 2>&1`;
+
+    if ( $? || $out )  {
+#        drop_tmp_db($db);            ? prolly too harsh
+        warn "``$cmd'' exited with exit status $? and stdout/err: $out";
+    }
+    return;
+}                                       # create_tmp_db
+
+sub drop_tmp_db {
+    my ($db)= @_;
+
+##    warn "DEBUG: NOT Dropping $db\n";
+##    return;
+    warn "Dropping $db\n";
+
+    my ($cmd)="$mysqladmin --force -u $user -h $host $pass_arg drop $db";
+    my ($out)= `$cmd 2>&1`;
+    if ( $? || $out )  {
+        warn "``$cmd'' exited with exit status $? and stdout/err: $out";
+    }
+    return;
+}                                       # drop_tmp_db
+
 sub dump_data {
     my($sql, $satdb, $tablename) = @_;
     my ($destdir) = "$workdir/$satdb";
@@ -1071,6 +1094,7 @@ sub dump_data {
     warn "dumping $tablename ...\n";
 
     if ( system($cmd) ) { 
+        drop_tmp_db($tmpdb);         # might be needed
         die "``$cmd'' exited with exit-status $?";
     }
 }                                       # dump_data
@@ -1103,7 +1127,7 @@ sub check_sql {
     $out=`$cmd`;
     
     if ( !$out or length($out) < 8 or $?  ) { 
-        warn "``$cmd'' exited with no or little output and exit-status $?\n";
+        carp "``$cmd'' exited with little or no output and exit-status $?\n";
     } 
 
     return;
