@@ -94,6 +94,19 @@ sub fetch_by_dbID {
 }
 
 
+sub fetch_by_stable_id {
+  my ( $self, $stable_id );
+  my $sth = $self->prepare( "select transcript_id from transcript_stable_id where stable_id = ?" );
+  $sth->execute( $stable_id );
+
+  if( my $arr = $sth->fetchrow_arrayref ) {
+    my $transcript = $self->fetch_by_dbID( $arr->[0] );
+    return $transcript;
+  } else {
+    $ self->warn( "No Transcript with this stable id found in the database." );
+    return undef;
+  }
+}
 
 
 =head2 store
