@@ -3,7 +3,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 21;
+	plan tests => 22;
 }
 
 my $loaded = 0;
@@ -156,6 +156,14 @@ ok (@{$ids});
 debug ("Exon->list_stable_ids");
 my $stable_ids = $exonad->list_stable_ids();
 ok (@{$stable_ids});
+
+#hashkey
+my $hashkey = $exon->hashkey();
+debug($hashkey);
+
+ok($hashkey eq $exon->slice->name . '-' . $exon->start . '-' .
+               $exon->end . '-' . $exon->strand . '-' . $exon->phase .
+               '-' . $exon->end_phase);
 
 $multi->restore();
 
