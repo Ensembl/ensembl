@@ -40,7 +40,7 @@ undef %gene_desc;
 LINE:
 while (<MAP>) {                       
     chomp;
-    ($ensp, $ensg, $db, $acc)=split(/\t/);
+    my ($ensp, $ensg, $db, $acc)=split(/\t/);
 
     if ( defined($gene_desc{$ensg}) ) {
         ($prevdb, $prev_desc)  = @{$gene_desc{$ensg}};
@@ -49,7 +49,7 @@ while (<MAP>) {
         }
         if ($db  eq 'SWISS-PROT') {   
             $desc = $sp_desc{"$db:$acc"};
-            $gene_desc{$ensg} = [ $db, $desc]; # kick out the SPTREMBL desc.
+            $gene_desc{$ensg} = [ $db, $desc, $acc ]; # kick out the SPTREMBL desc.
             next LINE;
         }
 
@@ -58,7 +58,7 @@ while (<MAP>) {
             if ( &compare_desc($prev_desc, $desc) < 0 ) {
                 # new desc is better
                 # warn "new better: $desc (old was: $prev_desc)\n";
-                $gene_desc{$ensg} = [ $db, $desc];
+                $gene_desc{$ensg} = [ $db, $desc, $acc ];
                 next LINE;
             } else {
                 # warn "old better: $prev_desc (new is: $desc)\n";
@@ -68,13 +68,13 @@ while (<MAP>) {
         }
     } else {
         $desc = $sp_desc{"$db:$acc"};
-        $gene_desc{$ensg} = [ $db, $desc];
+        $gene_desc{$ensg} = [ $db, $desc, $acc ];
     }
 }                                       # while <MAP>
 
 #  now dump the stuff to stdout.
 foreach $ensg ( keys %gene_desc )  { 
-    ($db, $desc)   = @{$gene_desc{$ensg}};
+    my ($db,$desc,$acc)   = @{$gene_desc{$ensg}};
 
     ### final cleanup 
     ### get rid of the Rik mess:
@@ -86,7 +86,7 @@ foreach $ensg ( keys %gene_desc )  {
     s/^\s*\(\s*\)\s*$//g;
     ### add more as appropriate
 
-    print STDOUT "$ensg\t$_\n" if $_; #  =~ /[a-z]/;???
+    print STDOUT "$ensg\t $_ [Source:$db;Acc:$acc]\n" if $_; #  =~ /[a-z]/;???
 }
 
 #### following taken from ensembl-external/scripts/family-input.pl
