@@ -460,11 +460,9 @@ sub translateable_seq {
 sub cdna_coding_start {
   my ($self, $value) = @_;
 
-  my $transl = $self->translation;
-
   if(defined $value) {
     $self->{'cdna_coding_start'} = $value;
-  } elsif(!defined $self->{'cdna_coding_start'} && defined $transl) {
+  } elsif(!defined $self->{'cdna_coding_start'} && defined $self->translation){
     #
     #calculate the coding start relative from the start of the
     #translation (in cdna coords)
@@ -475,9 +473,9 @@ sub cdna_coding_start {
     my $exon;
 
     while($exon = shift @exons) {
-      if($exon == $transl->start_Exon) {
+      if($exon == $self->translation->start_Exon) {
 	#add the utr portion of the start exon
-	$start += $transl->start;
+	$start += $self->translation->start;
 	last;
       } else {
 	#add the entire length of this non-coding exon
@@ -508,18 +506,16 @@ sub cdna_coding_start {
 sub cdna_coding_end {
   my ($self, $value) = @_;
 
-  my $transl = $self->translation;
-
   if($value) {
     $self->{'cdna_coding_end'} = $value;
-  } elsif(!defined $self->{'cdna_coding_end'} && defined $transl) {
+  } elsif(!defined $self->{'cdna_coding_end'} && defined $self->translation) {
     my @exons = @{$self->get_all_Exons};
 
     my $end = 0;
     while(my $exon = shift @exons) {
-      if($exon == $transl->end_Exon) {
+      if($exon == $self->translation->end_Exon) {
 	#add the coding portion of the final coding exon
-	$end += $transl->end;
+	$end += $self->translation->end;
 	last;
       } else {
 	#add the entire exon
@@ -549,11 +545,9 @@ sub cdna_coding_end {
 sub coding_start {
   my ($self, $value) = @_;
 
-  my $transl = $self->translation();
-
   if( defined $value ) {
     $self->{'coding_start'} = $value;
-  } elsif(!defined $self->{'coding_start'} && defined $transl) {
+  } elsif(!defined $self->{'coding_start'} && defined $self->translation) {
     #calculate the coding start from the translation
     my $start;
     my $strand = $self->translation()->start_Exon->strand();
@@ -591,8 +585,7 @@ sub coding_end {
 
   if( defined $value ) {
     $self->{'coding_end'} = $value;
-  } elsif( ! defined $self->{'coding_end'} && 
-	   defined $self->translation() ) {
+  } elsif( ! defined $self->{'coding_end'} && defined $self->translation() ) {
     $strand = $self->translation()->start_Exon->strand();
     if( $strand == 1 ) {
       $end = $self->translation()->end_Exon->start();
@@ -1043,7 +1036,9 @@ sub get_all_cdna_SNPs {
 
 sub flush_Exons{
    my ($self,@args) = @_;
-
+   $self->{'_exon_coord_mapper'} = undef;
+   $self->{'coding_start'} = undef;
+   $self->{'coding_end'} = undef;
    $self->{'_start'} = undef;
    $self->{'_end'} = undef;
    $self->{'_strand'} = undef;

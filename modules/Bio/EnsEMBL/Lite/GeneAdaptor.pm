@@ -329,8 +329,6 @@ sub _objects_from_sth {
   my ( $gene, $transcript, $translation ); 
   my ( $exon_id );
 
-  my ($start_exon, $end_exon, $transl_coding_start, $transl_coding_end);
-
   while( my $hr = $sth->fetchrow_hashref() ) {
     unless( $slice->chr_name ) {
       #retrieve a slice for the entire chromosome
@@ -364,9 +362,16 @@ sub _objects_from_sth {
     my @lengths = split( ":", $hr->{'exon_structure'} );
     my @exon_ids = split( ":", $hr->{'exon_ids'} );
     my ( $start, $end );
-    
-    my $coding_start = $hr->{'coding_start'} - $slice_start + 1;
-    my $coding_end   = $hr->{'coding_end'}   - $slice_start + 1;
+
+    my ($start_exon, $end_exon, $transl_coding_start, $transl_coding_end);
+    my $coding_start = 0;
+    if($hr->{'coding_start'}) { 
+      $coding_start = $hr->{'coding_start'} - $slice_start + 1;
+    }
+    my $coding_end = 0;
+    if($hr->{'coding_end'}) {
+      $coding_end = $hr->{'coding_end'} - $slice_start + 1;
+    }
     
     # lowest chr coord  exon first
     $start = $hr->{'chr_start'} - $slice_start + 1;
@@ -389,25 +394,27 @@ sub _objects_from_sth {
       $exon = $exon_cache{"$exon_id"};
     }
 
-    #check if this is the start (end on - strand) exon of the translation
-    if($coding_start >= $start && $coding_start <= $end) {
-      if($strand == 1) {
-	$transl_coding_start = $coding_start - $start + 1;
-	$start_exon = $exon;
-      } else {
-	$transl_coding_end = $end - $coding_start + 1;
-	$end_exon = $exon;
+    if($coding_start || $coding_end) { #ignore if both = 0
+      #check if this is the start (end on - strand) exon of the translation
+      if($coding_start >= $start && $coding_start <= $end) {
+	if($strand == 1) {
+	  $transl_coding_start = $coding_start - $start + 1;
+	  $start_exon = $exon;
+	} else {
+	  $transl_coding_end = $end - $coding_start + 1;
+	  $end_exon = $exon;
+	}
       }
-    }
 
-    #check if this is the end (start on + strand) exon of the translation
-    if($coding_end >= $start && $coding_end <= $end) {
-      if($strand == 1) {
-	$transl_coding_end = $coding_end - $start + 1;
-	$end_exon = $exon;
-      } else {
-	$transl_coding_start = $end - $coding_end + 1;
-	$start_exon = $exon;
+      #check if this is the end (start on + strand) exon of the translation
+      if($coding_end >= $start && $coding_end <= $end) {
+	if($strand == 1) {
+	  $transl_coding_end = $coding_end - $start + 1;
+	  $end_exon = $exon;
+	} else {
+	  $transl_coding_start = $end - $coding_end + 1;
+	  $start_exon = $exon;
+	}
       }
     }
     
@@ -440,28 +447,30 @@ sub _objects_from_sth {
 	$exon = $exon_cache{"$exon_id"};
       }
 
-      #check if this is the start (end on - strand) exon of the translation
-      if($coding_start >= $start && $coding_start <= $end) {
-	if($strand == 1) {
-	  $transl_coding_start = $coding_start - $start + 1;
-	  $start_exon = $exon;
-	} else {
-	  $transl_coding_end = $end - $coding_start + 1;
-	  $end_exon = $exon;
+      if($coding_start || $coding_end) {
+	#check if this is the start (end on - strand) exon of the translation
+	if($coding_start >= $start && $coding_start <= $end) {
+	  if($strand == 1) {
+	    $transl_coding_start = $coding_start - $start + 1;
+	    $start_exon = $exon;
+	  } else {
+	    $transl_coding_end = $end - $coding_start + 1;
+	    $end_exon = $exon;
+	  }
+	}
+	
+	#check if this is the end (start on + strand) exon of the translation
+	if($coding_end >= $start && $coding_end <= $end) {
+	  if($strand == 1) {
+	    $transl_coding_end = $coding_end - $start + 1;
+	    $end_exon = $exon;
+	  } else {
+	    $transl_coding_start = $end - $coding_end + 1;
+	    $start_exon = $exon;
+	  }
 	}
       }
 
-      #check if this is the end (start on + strand) exon of the translation
-      if($coding_end >= $start && $coding_end <= $end) {
-	if($strand == 1) {
-	  $transl_coding_end = $coding_end - $start + 1;
-	  $end_exon = $exon;
-	} else {
-	  $transl_coding_start = $end - $coding_end + 1;
-	  $start_exon = $exon;
-	}
-      }
-      
       push( @exons, $exon );
     }
     
@@ -470,7 +479,7 @@ sub _objects_from_sth {
     $transcript->adaptor( $core_db_adaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
     $transcript->coding_start( $coding_start );
-    $transcript->coding_end( $coding_start );
+    $transcript->coding_end( $coding_end );
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->type( $hr->{ 'type' } );
     $transcript->external_name( $hr->{'external_name'} );
@@ -490,10 +499,15 @@ sub _objects_from_sth {
     $translation->adaptor( $core_db_adaptor->get_TranslationAdaptor() );
     $translation->stable_id( $hr->{'translation_name'} );
     $translation->dbID( $hr->{'translation_id'} );
-    $translation->start_Exon($start_exon);
-    $translation->end_Exon($end_exon);
-    $translation->start($transl_coding_start);
-    $translation->end($transl_coding_end);
+    
+    #some sanger transcripts don't have proper translations defined
+    $start_exon && $translation->start_Exon($start_exon);
+    $end_exon && $translation->end_Exon($end_exon);
+    if($start_exon && $end_exon) {
+      $translation->start($transl_coding_start);
+      $translation->end($transl_coding_end);
+    }
+    
     $transcript->translation( $translation );
 
     $gene->add_Transcript($transcript);
