@@ -117,6 +117,8 @@ sub store {
            release = ?,
            status  = ?
      " );
+	print STDERR "STATUS DBE: ".$exObj->status."\n";
+
 	$sth->execute( $exObj->dbname(), $exObj->release(), $exObj->status);
 	
 	$dbJustInserted = 1;
@@ -250,6 +252,26 @@ sub store {
 	
 	    $exObj->dbID( $dbX );
 	    $exObj->adaptor( $self );
+
+
+	    if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+		$sth = $self->prepare( "
+      SELECT LAST_INSERT_ID()
+    " );
+		$sth->execute();
+		my ( $Xidt ) = $sth->fetchrow_array();
+		
+		$sth = $self->prepare( "
+             INSERT INTO identityXref
+             SET objectxrefId = $Xidt,
+             query_identity = ?,
+             target_identity = ?
+    " );
+		$sth->execute( $exObj->query_identity, $exObj->target_identity );
+		
+	    }
+
+
 	}
     }
         
