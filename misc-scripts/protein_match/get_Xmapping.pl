@@ -60,67 +60,13 @@ open (OUT,">$out") || die "Can't open OUTFILE $out\n";
 print STDERR "Reading SPTR file\n";
 
 
-my $in  = Bio::SeqIO->new(-file => $sptr_swiss, '-format' =>'swiss');
-
-while ( my $seq = $in->next_seq() ) {
-
-    #For each SP entry, store the information concerning the entry
-    my $db;
-    my $ac = $seq->accession;
-    my $id = $seq->display_id;
-
-    #print STDERR "ID: $id\n";
-
-    my ($displ_id,$tag) = split(/:/,$id);
-
-    
-    #Humm not good... will be removed soon
-    $tag = $seq->primary_id;
-    print "have tag ".$tag."\n";
-    if ($tag eq "STANDARD") {
-	$db = "SWISSPROT";
-    }
-    elsif ($tag eq "PRELIMINARY") {
-	$db = "SPTREMBL";
-    }
-    else {
-	die "Try to load unknown SPTR database with tag ".$tag."\n";
-    }
-    my $un_ac = "$ac:$db";
-    my @secs = $seq->get_secondary_accessions;
-    my $syns = join(';',@secs);
-
-#These entries correspond to known genes thus they will be flaged as known
-    print OUT "$ac\tSPTR\t$ac\t$db\t$displ_id\t$syns\tKNOWN\n";
-
-    $sp_db{$ac} = $db;
-
-    #Then get info about the Xref mapping
-    my @dblink = $seq->annotation->each_DBLink;
-    #All of these entries are flaged as XREF, this mean that they have been retrieved using primary DB (SPTR, Refseq)
-    foreach my $link(@dblink) {
-	if ($link->database eq "EMBL") {
-	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
-
-	    my ($protac) = $link->optional_id =~ /^(\w+).\S+/;
-	    if ($protac) {
-		print OUT "$ac\tSPTR\t".$protac."\tprotein_id\t$protac\t\tXREF\n";
-	    }
-	}
-
-	if  ($link->database eq "MIM") {
-	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
-	}
-
-	if  ($link->database eq "PDB") {
-	    print OUT "$ac\tSPTR\t".$link->primary_id."\t".$link->database."\t".$link->primary_id."\t\tXREF\n";
-	}
-
-    }
 
 
-
-#Get Xref mapping specifically for drosophila
+print STDERR "parseing sp file\n";
+my ($swiss, $ac, $id) = &parse_sp_file($sptr_swiss);
+print STDERR "processing sp lines\n";
+&process_parsed_sp($swiss, $ac, $id, \*OUT);
+Get Xref mapping specifically for drosophila
 
     #if ($organism eq "drosophila") {
 	#Get the gene name, especially useful to replace Hugo name when these don't exist.
@@ -130,7 +76,7 @@ while ( my $seq = $in->next_seq() ) {
 	#}
     #}
     
-}
+
 
 if (($organism eq "human") || ($organism eq "mouse") || ($organism eq "rat")) {
 #Read the refseq file in gnp format
@@ -230,41 +176,41 @@ if ($organism eq "human") {
 }
 
 #Get Xref mapping specifically for mouse.
-if ($organism eq "mouse") {
-    my %mgi2sp;
-    print STDERR "Getting Xrefs specifically for mouse\n";
-    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
-    while (<MGISP>) {
-	chomp;
-	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
+#if ($organism eq "mouse") {
+#    my %mgi2sp;
+#    print STDERR "Getting Xrefs specifically for mouse\n";
+#    open (MGISP, "$mgi_sp") || die "Can't open $mgi_sp\n";
+#    while (<MGISP>) {
+#	chomp;
+#	my ($mgi,$rik,$a,$b,$c,$sps) = split (/\t/,$_);
       	
-	my @sp = split(/\s/,$sps);
+#	my @sp = split(/\s/,$sps);
 	
-#put in hash all of the SP entries which correspond to an MGI (this will be used later)
-	$mgi2sp{$mgi} = $sps;
+##put in hash all of the SP entries which correspond to an MGI (this will be used later)
+#	$mgi2sp{$mgi} = $sps;
 	
-	foreach my $s(@sp) {
-	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
-	}
-    }
-    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
+#	foreach my $s(@sp) {
+#	    print OUT "$s\tSPTR\t$mgi\tMGI\t$mgi\t\tXREF\n";
+#	}
+#    }
+#    open (MGILOC, "$mgi_locus") || die "Can't open $mgi_locus\n";
     
-    while (<MGILOC>) {
-#The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
+#    while (<MGILOC>) {
+##The input file gives us MGI to LOCUS, we want SP to LOCUS, thus we use the hash %mgi2sp
 	
-	chomp;
-	my ($mgi,$locus) = split (/\t/,$_);
+#	chomp;
+#	my ($mgi,$locus) = split (/\t/,$_);
 	
-	if ($mgi2sp{$mgi}) {
-#There can be many SPs for one MGI
-	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
+#	if ($mgi2sp{$mgi}) {
+##There can be many SPs for one MGI
+#	    my @swiss = split (/\s/,$mgi2sp{$mgi}); 
 	    
-	    foreach my $sw(@swiss) {
-		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\tXREF\n";
-	    }
-	}
-    }
-}
+#	    foreach my $sw(@swiss) {
+#		print OUT "$sw\tSPTR\t$locus\tLOCUS\t$locus\t\tXREF\n";
+#	    }
+#	}
+#    }
+#}
 
 #Get specific xmapping for anopheles.
 if($organism eq "anopheles") {
@@ -359,3 +305,160 @@ if($organism eq 'briggsae'){
   }
 }
 
+
+
+sub parse_sp_file{
+  my ($file) = @_;
+  open(FH, $file) or die("couldn't open file ".$file." $!");
+  my $counter = 0;
+  my %swiss;
+  my %ac;
+  my %id;
+  my $id = 0;
+  my $ac = 0;
+  
+ SWISS: while(<FH>){
+    chomp;
+    if($_ =~ /^ID/ && $id == 0){
+      my @values = split;
+      if($id{$counter}){
+	print STDERR "something odd going on ".$counter." element already defined ".$id{$counter}."\n";
+	exit;
+      }else{
+	$id{$counter} = $values[1];
+      }
+      $id = 1;
+    }
+    if($_ =~ /^AC/ && $ac == 0){
+      my @values = split;
+      if($ac{$counter}){
+	print STDERR "something odd going on ".$counter." element already defined ".$ac{$counter}."\n";
+	exit;
+      }else{
+	$ac{$counter} = $values[1];
+      }
+      $ac = 1;
+    }
+    if(($_ =~ /^ID/) || ($_ =~ /^AC/) || ($_ =~ /^DR/)){
+      if(!$swiss{$counter}){
+	$swiss{$counter} = [];
+      }
+      push @{$swiss{$counter}}, $_;
+    }
+    if($_ =~ /http/){
+      next SWISS;
+    }
+    if($_ =~ /ftp/){
+      next SWISS;
+    }
+    if($_ =~ /\/\//){
+      $counter++;
+      $id = 0;
+      $ac = 0;
+    }
+  }
+  close(FH);
+  return \%swiss, \%ac, \%id;
+}
+
+
+sub process_parsed_sp{
+  my ($swiss, $ac, $id, $out) = @_;
+
+  my %swiss = %{$swiss};
+  my %ac = %{$ac};
+  my %id = %{$id};
+  foreach my $entry(keys(%swiss)){
+    my @id_syns;
+    my @ac_syns;
+    my @embl_ids;
+    my @protein_ids;
+    my @mims;
+    my @pdbs;
+    my $id = $id{$entry};
+    my $ac = $ac{$entry};
+    my $tag;
+    my $db;
+    $ac =~ s/\;//;
+    my @lines = @{$swiss{$entry}};
+    #print STDERR "Entry ".$entry." has ".@lines." lines ".$ac.":".$id."\n";
+  SP_ENTRY:foreach my $line(@lines){
+      if(!$line){
+	next SP_ENTRY;
+      } 
+      if($line =~ /^ID/){
+	#print STDERR $line."\n";
+	my @values = split /\s+/, $line;
+	#print STDERR "have ".@values." values\n";
+	if($values[1] ne $id){
+	  push(@id_syns, $id);
+	}
+	if($values[2]){
+	  $tag = $values[2];
+	}
+      }
+      if($line =~ /^AC/){
+	#AC   Q04456;
+	my @values = split /\s+/, $line;
+	shift @values;
+	foreach my $v(@values){
+	  $v =~ s/\;//;
+	  if($v ne $ac){
+	    push(@ac_syns, $v);
+	  }
+	}
+      }
+      if($line =~ /^DR/){
+	if($line =~ /EMBL/){
+	  #DR   EMBL; M96144; AAA28056.1; -. 
+	  #print STDERR $line."\n";
+	  my($foo, $bar, $embl, $protein) = split /\s+/, $line;
+	  $embl =~ s/\;//;
+	  $protein =~ s/\;//;
+	  push(@embl_ids, $embl);
+	  #print STDERR "have protein ".$protein."\n";
+	  push(@protein_ids, $protein) unless($protein eq '-');
+	}
+	if($line =~ /MIM/){
+	  #DR   MIM; 115200; -.
+	  my @values = split /\s+/, $line;
+	  my $mim = $values[2];
+	  $mim =~ s/\;//;
+	  push(@mims, $mim);
+	}
+	if($line =~ /PDB/){
+	  #DR   PDB; 1ABQ; 15-OCT-95.
+	  my @values = split /\s+/, $line;
+	  my $mim = $values[2];
+	  $mim =~ s/\;//;
+	  push(@pdbs, $mim);
+	}
+      }
+    }
+    
+    if(!$tag){
+      die "you have no data tag can't decide if data is from swissprot or trembl for ".$id." ".$ac." ".$entry."\n"
+    }
+    if($tag =~ /STANDARD/){
+      $db = 'SWISSPROT';
+    }elsif($tag =~ /PRELIMINARY/){
+      $db = 'SPTREMBL';
+    }else{
+      die("can't deal with tag ".$tag."\n");
+    }
+    my $ac_syns = join(';',@ac_syns);
+    print $out $ac."\tSPTR\t".$ac."\t".$db."\t".$id."\t".$ac_syns."\tKNOWN\n";
+    foreach my $embl_acc(@embl_ids){
+      print $out $ac."\tSPTR\t".$embl_acc."\tEMBL\t".$embl_acc."\tXREF\n";
+    }
+    foreach my $protein(@protein_ids){
+      print $out $ac."\tSPTR\t".$protein."\tprotein_id\t".$protein."\tXREF\n";
+    }
+    foreach my $mim(@mims){
+      print $out $ac."\tSPTR\t".$mim."\tMIM\t".$mim."\tXREF\n";
+    }
+    foreach my $mim(@pdbs){
+      print $out $ac."\tSPTR\t".$mim."\tPDB\t".$mim."\tXREF\n";
+    }
+  }
+}
