@@ -619,6 +619,116 @@ sub _get_empty_Genes_by_external_name {
 }
 
 
+=head2 store
+
+  Arg [1]    : none, string, int, Bio::EnsEMBL::Example $formal_parameter_name
+    Additional description lines
+    list, listref, hashref
+  Example    :  ( optional )
+  Description: testable description
+  Returntype : none, txt, int, float, Bio::EnsEMBL::Example
+  Exceptions : none
+  Caller     : object::methodname or just methodname
+
+=cut
+
+sub store {
+  my ( $self, $gene ) = @_;
+
+  # first make sure that gene is in chromsomal coordinates
+  my $sa = $gene->adaptor()->db()->get_SliceAdaptor;
+  my $chr_slice = Bio::EnsEMBL::Slice->new( -empty => 1,
+					    -adaptor => $sa );
+
+  $gene->transform( $chr_slice );
+
+  my $sth = $self->prepare
+    ( " INSERT INTO gene
+        SET
+          db = ?,
+          analysis = ?,
+          type = ?,
+          gene_id = ?,
+          gene_name = ?,
+          chr_name = ?,
+          chr_start = ?,
+          chr_end = ?,
+          chr_strand = ?,
+          description = ?,
+          external_db = ?,
+          external_name = ? " 
+    );
+
+  $sth->execute( $gene->source, $gene->analysis->logic_name(),
+		 $gene->type(), $gene->dbID(), $gene->stable_id(),
+		 $gene->chr_name(), $gene->start(), $gene->end(),
+		 $gene->strand(), $gene->description(), $gene->external_db(),
+		 $gene->external_name() );
+
+ # now store transcripts
+
+  $sth = $self->prepare
+    ( " INSERT INTO transcript
+           SET
+               db = ?,
+         analysis = ?,
+             type = ?,
+    transcript_id = ?,
+  transcript_name = ?,
+         chr_name = ?,
+        chr_start = ?,
+          chr_end = ?,
+       chr_strand = ?,
+     coding_start = ?,
+       coding_end = ?,
+   translation_id = ?,
+ translation_name = ?,
+          gene_id = ?,
+        gene_name = ?,
+   exon_structure = ?,
+         exon_ids = ?,
+      external_db = ?,
+    external_name = ? " 
+    );
+
+  for my $tr ( @{$gene->get_all_Transcripts() } ) {
+    
+    my $exon_structure = "";
+    my $exon_ids = "";
+    my $last = undef;
+
+    my @all_exons = @{$tr->get_all_Exons()};
+    if( $gene->strand() ==-1 ) {
+      @all_exons = reverse( @all_exons );
+    }
+    for my $ex ( @all_exons ) {
+      if( defined $last ) {
+	$exon_structure .= ":";
+	$exon_structure .= $ex->start() - $last->end() - 1;
+	$exon_structure .= ":";
+
+	$exon_ids .= ",";
+      }
+
+      $exon_structure .= $ex->length;
+      $exon_ids .= $ex->dbID();
+
+      $last = $ex;
+    }
+
+    $sth->execute( $gene->source(), $gene->analysis()->logic_name(),
+		   $gene->type, $tr->dbID(), $tr->stable_id, $gene->chr_name,
+		   $tr->start(), $tr->end(), $gene->strand(), $tr->coding_start(),
+		   $tr->coding_end(), $tr->translation->dbID(), 
+		   $tr->translation->stable_id(), $gene->dbID(), $gene->stable_id(),
+		   $exon_structure, $exon_ids, $tr->external_db(),
+		   $tr->external_name() );
+  }
+}
+
+
+
+
 1;
 __END__
 
