@@ -107,7 +107,7 @@ sub id{
 }
 
 
-=head2 each_component_Exon
+=head2 each_component_Exons
 
  Title   : each_component_Exon
  Usage   :
@@ -119,7 +119,7 @@ sub id{
 
 =cut
 
-sub each_component_Exon{
+sub each_component_Exons{
    my ($self,@args) = @_;
 
    return @{$self->{'_component_exons'}};

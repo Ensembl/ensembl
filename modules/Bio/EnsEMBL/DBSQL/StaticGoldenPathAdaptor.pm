@@ -106,10 +106,10 @@ sub get_Gene_chr_bp {
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_end)),
-   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_start)),
+   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_end)),
+   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_start)),
      a.chromosome_id
   
                     FROM    exon e,
@@ -789,10 +789,10 @@ sub fetch_VirtualContig_of_transcript{
     or $self->throw("No assembly type defined");
 
    my $sth = $self->db->prepare("SELECT  
-   if(a.contig_ori=1,(e.seq_start-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_end)),
-   if(a.contig_ori=1,(e.seq_end-a.contig_start+a.chr_start),
-                    (a.chr_start+a.contig_end-e.seq_start)),
+   if(a.contig_ori=1,(e.contig_start-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_end)),
+   if(a.contig_ori=1,(e.contig_end-a.contig_start+a.chr_start),
+                    (a.chr_start+a.contig_end-e.contig_start)),
      a.chromosome_id
   
                     FROM    exon e,
@@ -1144,15 +1144,15 @@ sub db{
 # sneaky
 
 sub is_golden_static_contig {
-    my ($self,$cid,$pos) = @_;
+    my ($self,$c_name,$pos) = @_;
     my $type = $self->db->static_golden_path_type()
      or $self->throw("No assembly type defined");
 
     my $query = "
-     SELECT c.id, a.contig_start, a.contig_end 
+     SELECT c.name, a.contig_start, a.contig_end 
      FROM contig c, assembly a 
-     WHERE c.id = '$cid' 
-     AND a.contig_id = c.internal_id
+     WHERE c.name = '$c_name' 
+     AND a.contig_id = c.contig_id
      AND a.type = '$type'";
 
     my $sth = $self->db->prepare($query);
