@@ -642,6 +642,25 @@ CREATE TABLE meta (
     KEY meta_value_index ( meta_value )
 );
 
+CREATE TABLE prediction_transcript (
+    prediction_transcript_id int unsigned not null auto_increment,
+    exon_rank smallint unsigned not null,
+    contig_id int unsigned not null,
+    contig_start int unsigned not null,
+    contig_end int unsigned not null,
+    contig_strand tinyint not null,
+    start_phase tinyint not null,
+    score double,
+    p_value double,
+    analysis_id int,
+    exon_count smallint,
+
+    PRIMARY KEY( prediction_transcript_id, exon_rank ),
+    KEY contig_idx( contig_id, contig_start )
+);
+
+    
+
 # Auto add schema version to database
 insert into meta (meta_key, meta_value) values ("schema_version", "$Revision$");
 
