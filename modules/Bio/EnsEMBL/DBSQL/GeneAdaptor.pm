@@ -283,10 +283,8 @@ sub fetch_by_Transcript_id {
     # this is a cheap SQL call
     #my $sth = $self->prepare("select gene_id from transcript where transcript_id = '$transid'");
     my $sth = $self->prepare("	SELECT	tr.gene_id 
-				FROM	transcript as tr, 
-					transcript_stable_id as trs 
-				WHERE	trs.stable_id = '$transid' 
-				AND	trs.transcript_id = tr.transcript_id");
+				FROM	transcript as tr 
+				WHERE	tr.transcript_id = $transid");
     $sth->execute;
 
     my ($geneid) = $sth->fetchrow_array();
