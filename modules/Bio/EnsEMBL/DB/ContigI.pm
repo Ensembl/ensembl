@@ -599,27 +599,26 @@ sub get_AnnSeq {
 
  Title   : write_acedb
  Usage   : $contig->write_acedb(\*FILEHANDLE);            
-           $contig->write_acedb(\*FILEHANDLE,$ace_seq_name, $type, $supp_evid);           
-               $ace_seq_name refers to the name of the aceDB-clone name
-               $type refers to the type of gene in the ensEMBL database
-               $supp_evid, indicates supporting evidences
-           by default: $ace_seq_name is the accession number
-                       $type is ensembl
-                       $supp_evid is 0 
- Function: Dumps exon, transcript and gene objects in acedb format
+           $contig->write_acedb(\*FILEHANDLE, $ace_seq_name, $type, $supp_evid, $revcom, $url_obj);           
+ Function: Dumps exons, transcript and gene objects of a contig in acedb format
  Returns : 
- Args    :
-
+ Args    :  \*FILEHANDLE: file handle where the file is going to be written
+            $ace_seq_name: name of the aceDB-clone name
+            $type: type of gene in the ensEMBL database (default is 'ensembl')
+            $supp_evid: supporting evidences (optional)
+            $revcom: set to 1, if sequence coordinates for the complementary strand are needed in the ace file (optional)
+            $url_ob: Transcript AceDB URL object (optional)
 =cut
 
 sub write_acedb {
-    my ($self,$fh,$seqname,$type,$supp_evid) = @_;
+    my ($self, $fh, $seqname, $type, $supp_evid, $revcom, $url_ob) = @_;
      
     my $contig_id = $self->id();
      
     $type ||= 'ensembl';
     $supp_evid ||= 0;    
     $seqname ||= $contig_id;
+    
     
     # get all genes 
     my @genes = $self->get_Genes_by_Type( $type, $supp_evid );
@@ -631,8 +630,8 @@ sub write_acedb {
     } 
     
     GENE:          
-    foreach my $gene ( @genes ){	               
-        my $gene_id=$gene->id;
+    foreach my $gene ( @genes ){
+        my $gene_id = $gene->id;
         	
 	# get all the transcripts of this gene. 
         my @trans_in_gene = $gene->each_Transcript;
@@ -646,7 +645,8 @@ sub write_acedb {
         # for each transcript
         TRANSCRIPT:
         foreach my $trans ( @trans_in_gene ) {	              
-            my $trans_id=$trans->id;
+            my $trans_id = $trans->id;
+            my $description = $trans->description;
             
             # get all exons of this transcript	                           
             my @exons = $trans->each_Exon;   
@@ -654,57 +654,77 @@ sub write_acedb {
             # get transcript exons which belong to the contig 
             my @exons_in_contig;
             
-            EXON:
             foreach my $exon ( @exons ) {                             
                if ( $exon->contig_id eq $contig_id ) {               
-                  push ( @exons_in_contig,$exon );                                                     
-               } else { next EXON; }
+                  push ( @exons_in_contig, $exon );                                                     
+               }
             }  
             
             if (@exons_in_contig) {
-                # check the strand and get the coordinates                                                       
+                my $tstart;
+                my $tend;
+                my $ace_tstart;
+                my $ace_tend;
                 my $tstrand = $exons_in_contig[0]->strand;
-                my ($tstart,$tend);
+                
+                # check the strand and get the coordinates                                                       
                 if( $tstrand == 1 ) {
-                $tstart = $exons_in_contig[0]->start;
-                $tend   = $exons_in_contig[$#exons_in_contig]->end;
+                    $tstart = $exons_in_contig[0]->start;
+                    $tend   = $exons_in_contig[$#exons_in_contig]->end;
                 } else {
-                $tstart = $exons_in_contig[0]->end;
-                $tend   = $exons_in_contig[$#exons_in_contig]->start;
+                    $tstart = $exons_in_contig[0]->end;
+                    $tend   = $exons_in_contig[$#exons_in_contig]->start;
+                }
+                
+                unless ($revcom){
+                    $ace_tstart = $tstart;
+                    $ace_tend = $tend;
+                }else{
+                    # remaping transcript coordinates in the complementary strand 
+                    my $contig_length = $self->length;
+                    $ace_tstart = $contig_length - $tstart;
+                    $ace_tend = $contig_length - $tend;
                 }
 
 	        # start .ace file printing...
-	        print $fh "Sequence $seqname\n";
-	        print $fh "Subsequence $trans_id $tstart $tend\n\n";
-
 	        # print coordinates of the transcript relative to the contig
-	        print $fh "Sequence $trans_id\nSource $seqname\nCDS\nCDS_predicted_by EnsEMBL\nMethod EnsEMBL\n";
+	        print $fh "Sequence $seqname\n";
+	        print $fh "Subsequence $trans_id $ace_tstart $ace_tend\n\n";
 
                 # print coordinates of each exon relative to the transcript   
+	        print $fh "Sequence $trans_id\nSource $seqname\n";
+                print $fh "CDS\nCDS_predicted_by EnsEMBL\nMethod EnsEMBL\n";
                 foreach my $exon ( @exons_in_contig ) {
                     if( $tstrand == 1 ) {
-                        print $fh "Source_Exons ", ($exon->start - $tstart + 1)," ",($exon->end - $tstart +1), "\n";
+                        print $fh "Source_Exons ", ($exon->start - $tstart + 1),
+                                    " ",($exon->end - $tstart +1), "\n";
                     } else {
-                        print $fh "Source_Exons ", ($tstart - $exon->end +1 ), " ",($tstart - $exon->start+1),"\n";
+                        print $fh "Source_Exons ", ($tstart - $exon->end +1 ),
+                                    " ",($tstart - $exon->start+1), "\n";
                     }                      
                 }
-
+                
                 # indicate end or start not found for transcript across several contigs
-                 if ($exons[0] != $exons_in_contig[0]) {
+                if ($exons[0] != $exons_in_contig[0]) {
                     print $fh "Start_not_found\n";
                 } 
-                 if ($exons[$#exons] != $exons_in_contig[$#exons_in_contig]) {
+                if ($exons[$#exons] != $exons_in_contig[$#exons_in_contig]) {
                     print $fh "End_not_found\n";
                 }     
+                if ($url_ob){
+                    # URL object tag  
+                    print $fh "Web_location $url_ob\n";
+                }
+                if ($description) {
+                    print $fh qq{Remark "$description"\n};
+                }
+	        print $fh "\n\n";
 
-	        print $fh "\n\n"; 
-                  
             } else {
                 print STDERR "'$trans_id' has no exons in '$seqname'\n";
                 next TRANSCRIPT;
             }
-                                                            
-	 }         
+        }
     }
 }
 
