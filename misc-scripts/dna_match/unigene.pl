@@ -90,7 +90,6 @@ if ($ARGV[0] eq "SLAVE") {	# slave: do some work
     my $bsub_output=`$command`;
     sleep 1;
     
-    exit; ### FIXME TMP
   }
 
 }
