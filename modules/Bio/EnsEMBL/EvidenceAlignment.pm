@@ -1,13 +1,99 @@
+#
+#
+# Cared for by Ensembl <ensembl-dev@ebi.ac.uk>
+#
+# You may distribute the source code of the module
+# under the same terms as perl itself.
+#
+# POD documentation - main docs before the code
+
+=pod 
+
+=head1 NAME
+
+Bio::EnsEMBL::EvidenceAlignment.pm
+
+=head1 SYNOPSIS
+
+ my $ea = Bio::EnsEMBL::EvidenceAlignment->new(
+                          -DBADAPTOR    => $dba,
+                          -TRANSCRIPTID => $tr_stable_id);
+ my $seqs_arr_ref = $ea->fetch_alignment;
+ $ea->transcriptid($other_tr_stable_id);
+ my $other_seqs_arr_ref = $ea->fetch_alignment;
+
+=head1 DESCRIPTION
+
+Gives a transcript and its evidence as an alignment, with padding with
+"-" as required. Proteins are given before DNA. Coordinates in the
+database are used to recreate the alignment, and must be correct or some
+data may not be displayed.
+
+=head1 CONTACT
+
+Ensembl: ensembl-dev@ebi.ac.uk
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. 
+Internal methods are usually preceded with a _
+
+=cut
+
+package Bio::EnsEMBL::EvidenceAlignment;
+
+use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Pipeline::SeqFetcher;
 use Bio::SeqIO;
 use Bio::EnsEMBL::Gene;
+use Bio::Root::RootI;
+
+@ISA = qw(Bio::Root::RootI);
+
+sub new {
+  my($class,@args) = @_;
+
+  my $self = $class->SUPER::new(@args);
+  my ($transcriptid, $dbadaptor) = $self->_rearrange(['TRANSCRIPTID',
+                                                      'DBADAPTOR'],
+						      @args);
+  $self->transcriptid($transcriptid);
+  $self->dbadaptor($dbadaptor);
+
+  return $self; # success - we hope!
+}
+
+sub dbadaptor {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{'db_adaptor'} = $value;
+  }
+  return $obj->{'db_adaptor'};
+}
+
+sub transcriptid {
+  my $obj = shift;
+  if( @_ ) {
+    my $value = shift;
+    $obj->{'transcript_id'} = $value;
+  }
+  return $obj->{'transcript_id'};
+}
+
+sub fetch_alignment {
+  my ($self) = @_;
+  $self->throw("must have a transcript stable ID and a DB adaptor object")
+    unless ($self->transcriptid && $self->dbadaptor);
+  return $self->_get_aligned_evidence($self->transcriptid, $self->dbadaptor);
+}
 
 # get a sequence from cache if we have it, otherwise from seqfetcher
-sub get_seq {
-  die "get_seq: interface fault" if (@_ != 3);
-  my ($seqfetcher, $cache_arr_ref, $name) = @_;
+sub _get_seq {
+  my ($self, $seqfetcher, $cache_arr_ref, $name) = @_;
+  $self->throw("interface fault") if (@_ != 4);
   
   foreach my $cache_entry (@$cache_arr_ref) {
     if ($$cache_entry{'name'} eq $name) {
@@ -21,9 +107,9 @@ sub get_seq {
   return $new_entry{'seqobj'};
 }
 
-sub get_transcript_nuc {
-  die "get_transcript_nuc: interface fault" if (@_ != 1);
-  my ($exon_arr_ref) = @_;
+sub _get_transcript_nuc {
+  my ($self, $exon_arr_ref) = @_;
+  $self->throw("interface fault") if (@_ != 2);
 
   my $retval = "";
   my $seq_str;
@@ -39,9 +125,9 @@ sub get_transcript_nuc {
   return $retval;
 }
 
-sub get_transcript_pep {
-  die "get_transcript_pep: interface fault" if (@_ != 1);
-  my ($exon_pep_arr_ref) = @_;
+sub _get_transcript_pep {
+  my ($self, $exon_pep_arr_ref) = @_;
+  $self->throw("interface fault") if (@_ != 2);
   
   my $retval = "";
   my $seq_str;
@@ -57,13 +143,12 @@ sub get_transcript_pep {
   return $retval;
 }
 
-# get_aligned_evidence: public subroutine, to be object-ized
-# takes a DB adaptor and transcript ID
+# takes a transcript ID and a DB adaptor
 # returns ref to an array of Bio::PrimarySeq
 
-sub get_aligned_evidence {
-  die "get_aligned_evidence: interface fault" if (@_ != 2);
-  my ($transcript_id, $db) = @_;
+sub _get_aligned_evidence {
+  my ($self, $transcript_id, $db) = @_;
+  $self->throw("interface fault") if (@_ != 3);
 
   my $sgp = $db->get_StaticGoldenPathAdaptor;
   my @evidence_arr;	# a reference to this is returned
@@ -161,7 +246,7 @@ sub get_aligned_evidence {
 
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              =>
-	              get_transcript_pep(\@exon_peps),
+		                      $self->_get_transcript_pep(\@exon_peps),
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'protein'
@@ -190,7 +275,8 @@ sub get_aligned_evidence {
       && ($last_feat->hstart == $feature->hstart)
       && ($last_feat->hseqname eq $feature->hseqname));
       my $fstart = $feature->start;
-      my $hit_seq_obj = get_seq($seqfetcher, \@seqcache, $feature->hseqname);
+      my $hit_seq_obj = $self->_get_seq($seqfetcher, \@seqcache,
+                                        $feature->hseqname);
       next PEP_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype eq "protein") {
         my $hlength = $feature->hend - $feature->hstart + 1;
@@ -309,7 +395,7 @@ sub get_aligned_evidence {
 
   $evidence_obj = Bio::PrimarySeq->new(
                     -seq              =>
-	              get_transcript_nuc(\@all_exons),
+		                      $self->_get_transcript_nuc(\@all_exons),
                     -id               => 0,
      		    -accession_number => $transcript_obj->stable_id,
 		    -moltype          => 'dna'
@@ -339,7 +425,8 @@ sub get_aligned_evidence {
       my $hlen = $feature->hend -$feature->hstart + 1;
       next NUC_FEATURE_LOOP unless ($flen == $hlen);
       my $hindent;
-      my $hit_seq_obj = get_seq($seqfetcher, \@seqcache, $feature->hseqname);
+      my $hit_seq_obj = $self->_get_seq($seqfetcher, \@seqcache,
+                                        $feature->hseqname);
       next NUC_FEATURE_LOOP if (! $hit_seq_obj);
       if ($hit_seq_obj->moltype ne "protein") {
         my $hlength = $feature->hend - $feature->hstart + 1;
@@ -453,3 +540,5 @@ sub get_aligned_evidence {
   return \@evidence_arr;
 
 }
+
+1;
