@@ -979,6 +979,7 @@ CREATE TABLE seq_region (
   coord_system_id             INT(10),
   length                      INT(10),
 
+  UNIQUE(name, coord_system_id),
   PRIMARY KEY (seq_region_id)
 
 ) TYPE=MyISAM;
@@ -992,7 +993,9 @@ CREATE TABLE seq_region_annotation (
 
   seq_region_id               INT,
   value                       VARCHAR(40),
-  attrib                      VARCHAR(40)
+  attrib                      VARCHAR(40),
+
+  INDEX annotation_idx (seq_region_id)
 
 ) TYPE=MyISAM;
 
@@ -1010,7 +1013,10 @@ CREATE TABLE assembly_exception (
   exc_seq_region_id           INT, 
   exc_seq_region_start        INT, 
   exc_seq_region_end          INT,
-  ori                         INT
+  ori                         INT,
+
+  INDEX sr_idx (seq_region_id, seq_region_start),
+  INDEX ex_idx (exc_seq_region_id, exc_seq_region_start)
 
 ) TYPE=MyISAM;
 
@@ -1026,6 +1032,7 @@ CREATE TABLE coord_system (
   version                     VARCHAR(40),
   attrib                      SET ('top_level', 'default_version', 'sequence_level'),
 
+  UNIQUE(name, version),
   PRIMARY KEY (coord_system_id)
 
 ) TYPE=MyISAM;
