@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/Volumes/External/ensembl_dist/llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong/bin/perl -w
 
 # This file is the companion script to the ensembl_tutorial and has been 
 # tested with the homo_sapiens_core_9_30 database on ecs1d and the main trunk 
@@ -10,6 +10,7 @@
 # MC Jan 2002
 # Updated to main trunk code - Dan Andrews Oct 2002
 # Re-updated to main trunk code - Graham McVicker Oct 2002
+# Updated to branch 16 - Michele Clamp Sept 2003
 
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Lite::DBAdaptor;
@@ -21,11 +22,11 @@ use strict;
 ### Currently there is no trunk db on kaka.
 my $host = 'kaka.sanger.ac.uk';
 my $user = 'anonymous';
-my $dbname = 'homo_sapiens_core_9_30';
+my $dbname = 'homo_sapiens_core_16_33';
 
 ### External dbs
-my $estname  = 'homo_sapiens_est_9_30';
-my $litename = 'homo_sapiens_lite_9_30';
+my $estname  = 'homo_sapiens_est_16_33';
+my $litename = 'homo_sapiens_lite_16_33';
 
 
 #connect to the core database
@@ -336,10 +337,10 @@ $lite_db->add_db_adaptor('core', $db);
      print "snp " . $snp->start . "\n";
  }
 
-#print out landmark marker features on a slice
-my @landmark_features = @{$slice->get_all_landmark_MarkerFeatures};
+#print out marker features on a slice
+my @markers = @{$slice->get_all_MarkerFeatures};
 
-foreach my $marker (@landmark_features) {
+foreach my $marker (@markers) {
     print $marker->gffstring . "\n";
 }
 
