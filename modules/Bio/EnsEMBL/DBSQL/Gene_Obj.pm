@@ -290,6 +290,39 @@ sub get_Gene_by_Transcript_id {
     return $self->get($geneid,$supporting);
 }
 
+
+
+=head2 get_Gene_by_Peptide_id {
+
+ Title   : get_Gene_by_Peptide_id
+ Usage   : $gene_obj->get_Gene_by_Peptide_id($peptideid, $supporting)
+ Function: gets one gene out of the db with or without supporting evidence
+ Returns : gene object (with transcripts, exons and supp.evidence if wanted)
+ Args    : peptide id and supporting tag (if latter not specified,
+assumes without
+           Note that it is much faster to get genes without supp.evidence!
+
+
+=cut
+
+sub get_Gene_by_Peptide_id {
+    my $self = shift;
+    my $peptideid = shift;
+    my $supporting = shift;
+
+    # this is a cheap SQL call
+    my $sth = $self->_db_obj->prepare("select gene from transcript where translation = '$peptideid'");
+    $sth->execute;
+
+    my ($geneid) = $sth->fetchrow_array();
+    if( !defined $geneid ) {
+        return undef;
+    }
+    return $self->get($geneid,$supporting);
+}
+
+
+
 =head2 get_geneids_by_hids
 
  Title   : get_geneids_by_hids
