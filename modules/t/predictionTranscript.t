@@ -9,7 +9,7 @@ BEGIN { $| = 1;
 }
 
 use MultiTestDB;
-use Bio::EnsEMBL::DBSQL::SliceAdaptor;
+use TestUtils;
 use Bio::EnsEMBL::PredictionTranscript;
 use Bio::EnsEMBL::Exon;
 
@@ -59,41 +59,41 @@ ok($pt->stable_id =~ /(\w+\.\d+\.\d+\.\d+)\.(\d+)\.(\d+)/);
 #
 # 6 test coding start
 #
-ok(&test_getter_setter($pt, 'coding_start', 6));
+ok(&TestUtils::test_getter_setter($pt, 'coding_start', 6));
 
 #
 # 7 test coding end
 #
-ok(&test_getter_setter($pt, 'coding_end', 7));
+ok(&TestUtils::test_getter_setter($pt, 'coding_end', 7));
 
 
 #
 # 8 test start
 #
-ok(&test_getter_setter($pt, 'start', 8));
+ok(&TestUtils::test_getter_setter($pt, 'start', 8));
 
 #
 # 9 test end
 #
-ok(&test_getter_setter($pt, 'end', 9));
+ok(&TestUtils::test_getter_setter($pt, 'end', 9));
 
 
 #
 # 10 test analysis 
 #
 my $analysis = $db->get_AnalysisAdaptor->fetch_by_logic_name('Vertrna');
-ok(&test_getter_setter($pt, 'analysis', $analysis));
+ok(&TestUtils::test_getter_setter($pt, 'analysis', $analysis));
 
 #
 # 11 test dbID
 #
-ok(&test_getter_setter($pt, 'dbID', 11));
+ok(&TestUtils::test_getter_setter($pt, 'dbID', 11));
 
 #
 # 12 test adaptor
 #
 my $pta = $db->get_PredictionTranscriptAdaptor;
-ok(&test_getter_setter($pt, 'adaptor', $pta));
+ok(&TestUtils::test_getter_setter($pt, 'adaptor', $pta));
 
 #
 # 13-17 test add Exon
@@ -212,5 +212,5 @@ ok($pt->_dump || 1);
 #
 # 33 test type
 #
-ok(&test_getter_setter($pt, 'type', 'test'));
+ok(&TestUtils::test_getter_setter($pt, 'type', 'test'));
 
