@@ -89,6 +89,7 @@ sub orig_exon_information {
        AND c.internal_id = e.contig_id
        AND cl.internal_id = c.clone
        AND sgp.raw_id = c.internal_id
+       AND e.sticky_rank = 1
      ORDER by clone_id, clone_version,contig_offset, exon_strand
 " );
   $sth->execute();
@@ -116,6 +117,7 @@ sub target_exon_information {
        AND c.internal_id = e.contig_id
        AND cl.internal_id = c.clone
        AND sgp.raw_id = c.internal_id
+       AND e.sticky_rank = 1
      ORDER by clone_id, clone_version,contig_offset, exon_strand
 " );
   

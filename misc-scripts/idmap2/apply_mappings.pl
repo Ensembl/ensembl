@@ -13,15 +13,15 @@
 use strict;
 use DBI;
 
-my $today = "2001-11-01";
+my $today = "2001-12-13";
 
-my $sdbh = DBI->connect( "DBI:mysql:host=ensrv3;database=ensembl110_new_schema_2", "ensro", "");
-my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=ens_UCSC_0801", "ensro", "" );
+my $sdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_120", "ensro", "");
+my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_130", "ensro", "" );
 
 my $starttime = scalar( localtime() );
 
 my $sth;
-my $resultfile = "map_110_120.txt";
+my $resultfile = "map_120_130.txt";
 my %stable_id;
 
 for my $table ( "gene_stable_id", "exon_stable_id", 

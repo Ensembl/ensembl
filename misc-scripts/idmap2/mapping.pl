@@ -22,8 +22,8 @@ my $seqMatches = 0;
 my $cmmaps = 0;
 my $lasttime;
 
-my $sdbh = DBI->connect( "DBI:mysql:host=ensrv3;database=ensembl110_new_schema_2", "ensro", "");
-my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=ens_UCSC_0801", "ensro", "" );
+my $sdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_120", "ensro", "");
+my $tdbh = DBI->connect( "DBI:mysql:host=ecs1d;database=homo_sapiens_core_130", "ensro", "");
 
 my $starttime = scalar( localtime() );
 
@@ -33,7 +33,7 @@ my $allnExonInfo = &SQL::target_exon_information( $tdbh );
 
 # remove exon doublettes caused by multiple transcripts
 my ( %exonHash, %geneHash );
-my ( $oExonInfo, $nExonInfo );
+my ( $oExonInfo, $nExonInfo, @exonInfo );
 my ( $oGenes, $nGenes );
 
 for  my $exon ( @$alloExonInfo ) {
@@ -46,8 +46,12 @@ for  my $exon ( @$alloExonInfo ) {
   }
 }
 
+# filter out stickies
+# @{$oExonInfo} = ( grep { ! defined $exonHash{$_->{'exon_id'}."-2"} } @exonInfo );
+
 $oGenes = scalar( keys %geneHash);
 
+# @exonInfo= ();
 %geneHash = ();
 %exonHash = ();
 
@@ -61,6 +65,7 @@ for  my $exon ( @$allnExonInfo ) {
   }
 }
 $nGenes = scalar( keys %geneHash);
+# @{$nExonInfo} = ( grep { ! defined $exonHash{$_->{'exon_id'}."-2"} } @exonInfo );
 
 print STDERR "Finish: ",scalar(localtime()),"\n";
 
@@ -72,6 +77,7 @@ print STDERR "NewGenes: $nGenes\n";
 
 direct_mapping( $oExonInfo, $nExonInfo );
 contig_version_update( $oExonInfo, $nExonInfo );
+
 MapGenes::map_genes( $oExonInfo, $nExonInfo );
 MapTranscripts::map_transcripts( $alloExonInfo, $allnExonInfo ); 
 
@@ -480,7 +486,6 @@ sub exon_direct_compare {
 }
 
 
-  
 
 
 sub print_exon {

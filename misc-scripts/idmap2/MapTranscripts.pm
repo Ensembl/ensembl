@@ -85,7 +85,7 @@ sub map_envelope {
       $oldTranscriptsMapped{$mapRecord->[0]} = $mapRecord->[1];
       $newTranscriptsMapped{$mapRecord->[1]} = $mapRecord->[0];
       print ( "Transcript mapped:\t",$mapRecord->[0], "\t",$mapRecord->[1],
-	      "\t",$mapRecord->[3],".\n" );
+	      "\t",$mapRecord->[3],"\n" );
       $mappedTranscripts++;
     }
   }
