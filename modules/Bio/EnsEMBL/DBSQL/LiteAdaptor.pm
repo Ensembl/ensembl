@@ -46,6 +46,77 @@ sub new {
     return $self;
 }
 
+sub fetch_virtualtranscripts_start_end {
+    my ( $self, $chr, $vc_start, $vc_end ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_virtualtranscripts_cache_$chr"."_$vc_start"."_$vc_end";
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select transcript_id, transcript_name, translation_name, gene_name,
+                chr_start, chr_end, chr_strand, external_name, external_db,
+                exon_structure, type
+           from $_db_name.js5_transcript_3
+          where chr_name = ? and chr_start <= ? and chr_start >= ? and
+                chr_end >= ?"
+    );
+    eval {
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+    };
+    return [] if($@);
+    my @transcripts;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        push @transcripts, {
+            'transcript'=> $row->[0],
+            'stable_id' => $row->[1],
+            'translation'=> $row->[2],
+            'gene'      => $row->[3],
+            'chr_start' => $row->[4],
+            'chr_end'   => $row->[5],
+            'start'     => $row->[4]-$vc_start+1,
+            'end'       => $row->[5]-$vc_start+1,
+            'strand'    => $row->[6],
+            'synonym'   => $row->[7],
+            'db'        => $row->[8],
+            'exon_structure' => [ split ':', $row->[9] ],
+            'type'      => $row->[10]
+        };
+    }
+    return $self->{$cache_name} = \@transcripts;
+    return \@transcripts
+}
+
+sub fetch_virtualgenscans_start_end {
+    my ( $self, $chr, $vc_start, $vc_end ) =@_;
+    my $_db_name = $self->{'_lite_db_name'};
+    my $cache_name = "_virtualgenscans_cache_$chr"."_$vc_start"."_$vc_end";
+    
+    return $self->{$cache_name} if( $self->{$cache_name} );
+    my $sth = $self->prepare(
+        "select id, chr_name, chr_start, chr_end, chr_strand, exon_structure
+           from $_db_name.js5_genscan_3
+          where chr_name = ? and chr_start <= ? and chr_start >= ? and
+                chr_end >= ?"
+    );
+    eval {
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
+    };
+    return [] if($@);
+    my @transcripts;
+    while( my $row = $sth->fetchrow_arrayref() ) {
+        push @transcripts, {
+            'genscan'   => $row->[0],
+            'chr_start' => $row->[2],
+            'chr_end'   => $row->[3],
+            'start'     => $row->[2]-$vc_start+1,
+            'end'       => $row->[3]-$vc_start+1,
+            'strand'    => $row->[4],
+            'exon_structure' => [ split ':', $row->[5] ]
+        };
+    }
+    return $self->{$cache_name} = \@transcripts;
+    return \@transcripts
+}
+
 sub fetch_virtualgenes_start_end {
     my ( $self, $chr, $vc_start, $vc_end ) =@_;
     my $_db_name = $self->{'_lite_db_name'};
@@ -57,11 +128,11 @@ sub fetch_virtualgenes_start_end {
                 g.chrom_strand, gx.display_id, gx.db_name
            from $_db_name.gene as g, $_db_name.gene_xref as gx
           where g.gene = gx.gene and
-                g.chr_name = ? and g.gene_chrom_start <= ? and
+                g.chr_name = ? and g.gene_chrom_start <= ? and g.gene_chrom_start >= ? and
                 g.gene_chrom_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start );
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -94,11 +165,11 @@ sub fetch_EMBLgenes_start_end {
                 g.chrom_strand, gx.display_id, gx.db_name, g.type
            from $_db_name.embl_gene as g, $_db_name.embl_gene_xref as gx
           where g.gene = gx.gene and
-                g.chr_name = ? and g.gene_chrom_start <= ? and
+                g.chr_name = ? and g.gene_chrom_start <= ? and g.gene_chrom_start >= ? and
                 g.gene_chrom_end >= ?"
     );
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start );
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start );
     };
     return [] if($@);
     my @genes;
@@ -127,15 +198,16 @@ sub fetch_virtualRepeatFeatures_start_end {
     return $self->{$cache_name} if( $self->{$cache_name} );
 	my $glob_bp ||= 0;
     my $_db_name = $self->{'_lite_db_name'};
+
     my $sth = $self->prepare(
         "select r.id, r.hid,  r.chr_name, r.repeat_chrom_start, r.repeat_chrom_end, r.repeat_chrom_strand
            from $_db_name.repeat as r
-          where r.chr_name = ? and r.repeat_chrom_start <= ? and r.repeat_chrom_end >= ?".
+          where r.chr_name = ? and r.repeat_chrom_start <= ? and r.repeat_chrom_start >= ? and r.repeat_chrom_end >= ?".
 		  	( (defined $type && $type ne '') ? " and r.type = '$type'" : '' )
     );
 
     eval {
-        $sth->execute( $chr, $vc_end, $vc_start);
+        $sth->execute( $chr, $vc_end, $vc_start-1000000, $vc_start);
     };
     return [] if($@);
 
@@ -178,7 +250,6 @@ sub fetch_snp_features {
 
     my $_db_name = $self->{'_lite_db_name'};
    
-
     my $query = qq{
 
         SELECT   snp_chrom_start,strand,chrom_strand,
@@ -193,8 +264,11 @@ sub fetch_snp_features {
     #&eprof_start('snp-sql-query');
 
     my $sth = $self->prepare($query);
-    my $res = $sth->execute();
 
+    eval {
+        $sth->execute( );
+    };
+    return () if($@);
     #&eprof_end('snp-sql-query');
 
     my $snp;
