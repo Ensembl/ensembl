@@ -276,7 +276,8 @@ sub is_known{
 =head2 adaptor
 
   Arg [1]    : Bio::EnsEMBL::DBSQL::GeneAdaptor $adaptor
-  Example    : none
+  Example    : $gene->adaptor($gene_adaptor);
+               $gene->adaptor(undef);   # to drop adaptor
   Description: get/set for attribute adaptor
   Returntype : Bio::EnsEMBL::DBSQL::GeneAdaptor
   Exceptions : none
@@ -286,14 +287,15 @@ sub is_known{
 
 
 sub adaptor {
-   my ($self, $arg) = @_;
-
-   if ( defined $arg ) {
-      $self->{'_adaptor'} = $arg ;
-   }
-   return $self->{'_adaptor'};
+    my $self = shift;
+    
+    if (@_) {
+        # Testing for any arguments allows undef to be
+        # passed as an argument to unset the adaptor
+        $self->{'_adaptor'} = shift;
+    }
+    return $self->{'_adaptor'};
 }
-
 
 
 
@@ -514,7 +516,7 @@ sub get_all_DBEntries {
   my $self = shift;
 
   #if not cached, retrieve all of the xrefs for this gene
-  if(!defined $self->{'dbentries'} && $self->adaptor()) {
+  if(!defined $self->{'dbentries'} && $self->adaptor()z) {
     $self->{'dbentries'} = 
       $self->adaptor->db->get_DBEntryAdaptor->fetch_all_by_Gene($self);
   }

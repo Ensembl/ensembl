@@ -199,8 +199,7 @@ sub temporary_id {
 sub adaptor {
    my $self = shift;
    if( @_ ) {
-      my $value = shift;
-      $self->{'adaptor'} = $value;
+      $self->{'adaptor'} = shift;
     }
     return $self->{'adaptor'};
 
