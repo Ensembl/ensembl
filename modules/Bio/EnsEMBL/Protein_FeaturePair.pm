@@ -139,6 +139,28 @@ sub idesc{
 
 }
 
+=head2 interpro_ac
+
+ Title   : interpro_ac
+ Usage   : $obj->interpro_ac($newval)
+ Function: 
+ Returns : value of interpro_ac
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub interpro_ac{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'interpro_ac'} = $value;
+    }
+    return $obj->{'interpro_ac'};
+
+}
+
+
 =head2 intron_length
 
  Title   : intron_length
