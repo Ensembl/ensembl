@@ -680,6 +680,7 @@ sub get_all_ExternalFeatures{
    &eprof_start("External-feature-get");
    
    my @web;
+   my @das;
    my @std;
 
    my @features;
@@ -688,11 +689,19 @@ sub get_all_ExternalFeatures{
    if( scalar($self->_vmap->get_all_RawContigs) == 0) {
        return();
    }
+   ## Loop over the currently config'd EFFs and sort them onto lists that
+   ## are 1. Lightweigth for the web, 2. normal or 3. those that don't know about
+   ## Ensembl internal clone/contig IDs. 
+   ## After sorting call each one to get a list of feature back in contig/clone coords.
+   ## Note that they should always return lists (possible empty) or bad things happen.
+      
    foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
        if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
-	   push(@web,$extf);
+	   		push(@web,$extf);
+       } elsif( $extf->isa('Bio::EnsEMBL::ExternalData::DAS::DAS') ) {
+	   		push(@das,$extf);
        } else {
-	   push(@std,$extf);
+	   		push(@std,$extf);
        }
    }
 
@@ -773,7 +782,42 @@ sub get_all_ExternalFeatures{
 	   }
        }
    }
-		    
+	
+
+	## The DAS external feature factory is based on coordinates on contigs (at the moment)
+	## The standara EFF system has been moved to use contig/clone internal IDs so we have to
+	## make a special case for DAS (and possibly other) EFFs that know nothing about Ensembl
+	## internal IDs	. There are probably more efficient ways to do this....what about DAS caching?
+	if( scalar(@das) > 0 ) {
+       foreach my $contig ( $self->_vmap->get_all_RawContigs) {       
+	   foreach my $extf ( @das ) {
+	       &eprof_start("external_get_std".$extf);
+
+	       if( $extf->can('get_Ensembl_SeqFeatures_contig') ) {
+		   foreach my $sf ($extf->get_Ensembl_SeqFeatures_contig($contig->id,$contig->seq_version,1,$contig->length,$contig->id)) {
+			$sf->seqname($contig->id);
+			push(@contig_features,$sf);
+		   }
+	       }
+	       if( $extf->can('get_Ensembl_SeqFeatures_clone') ) {
+       
+		   foreach my $sf (
+		  
+$extf->get_Ensembl_SeqFeatures_clone($contig->cloneid,$contig->seq_version,$contig->embl_offset,$contig->embl_offset+$contig->length(),$contig->cloneid) ) {
+		       
+		       my $start = $sf->start - $contig->embl_offset+1;
+		       my $end   = $sf->end   - $contig->embl_offset+1;
+		       $sf->start($start);
+		       $sf->end($end);
+		       $sf->seqname($contig->id);
+		       push(@contig_features,$sf);
+		   }
+	       }
+
+	       &eprof_end("external_get_std".$extf);
+	   }
+       }
+   }	    
    &eprof_end("External-feature-get");
 
    # ok. Now @contig_features are in contig coordinates. Map up.
