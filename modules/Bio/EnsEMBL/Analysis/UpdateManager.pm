@@ -404,7 +404,7 @@ sub check_update_status {
     my $tdb = $self->connect($self->tolocator);
 
     if ($tdb->current_update) {
-	$self->throw("Update already running in recipient database. Can't start update");
+	$self->warn("Update already running in recipient database. Can't start update");
     }
 
     my @clones;

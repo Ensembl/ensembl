@@ -1249,7 +1249,6 @@ sub delete_Gene{
    # delete exons, transcripts, gene rows
 
    foreach my $exon ( keys %exon ) {
-       print STDERR "Got exon $exon in delete_Gene\n";
        my $sth = $self->prepare("delete from exon where id = '$exon'");
        $sth->execute;
 
@@ -1640,7 +1639,6 @@ sub write_Feature {
 	if( ! $feature->isa('Bio::EnsEMBL::SeqFeatureI') ) {
 	    $self->throw("Feature $feature is not a feature!");
 	}
-
 	eval {
 	    $feature->validate();
 	};
@@ -2298,8 +2296,7 @@ sub write_Contig {
 
    # write sequence features. We write all of them together as it
    # is more efficient
-
-   $self->write_Feature($contig,$contig->get_all_SeqFeatures);
+    $self->write_Feature($contig,$contig->get_all_SeqFeatures);
 
    return 1;
 }

@@ -564,6 +564,10 @@ sub get_all_PredictionFeatures {
 	   $out =  new Bio::EnsEMBL::SeqFeature;
 	   $out->id($fset);
 	   $out->analysis($analysis);
+	   $out->seqname($id);
+	   $out->score(0);
+	   $out->primary_tag('gene');
+	   $out->source_tag($name);
 	   $seen = $fset;
 	   push(@array,$out);
        }
@@ -575,7 +579,7 @@ sub get_all_PredictionFeatures {
        $feature->end       ($end);
        $feature->strand    ($strand);
        $feature->source_tag($name);
-       $feature->primary_tag('similarity');
+       $feature->primary_tag('exon');
        $feature->id         ($fid);
        
        if( defined $score ) {
