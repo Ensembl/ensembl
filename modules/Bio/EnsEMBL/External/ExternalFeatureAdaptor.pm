@@ -106,12 +106,7 @@ use strict;
 
 package Bio::EnsEMBL::External::ExternalFeatureAdaptor;
 
-use vars qw(@ISA);
-
-use Bio::EnsEMBL::Utils::Exception qw(warning);
-
-
-@ISA = qw(Bio::EnsEMBL::Root);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw);
 
 
 =head2 new
@@ -184,7 +179,7 @@ sub ensembl_db {
 
 sub coordinate_systems {
   my $self = shift;
-  
+
   throw("abstract method coordinate_systems not implemented\n");
 
   return '';
