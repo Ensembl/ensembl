@@ -41,16 +41,6 @@ use Bio::EnsEMBL::DBSQL::DBConnection;
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
 
 
-#Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
-sub new {
-  my($class, @args) = @_;
-
-  #call superclass constructor
-  my $self = $class->SUPER::new(@args);
-  
-  return $self;
-}
-
 sub get_GeneAdaptor {
   my $self = shift;
 
