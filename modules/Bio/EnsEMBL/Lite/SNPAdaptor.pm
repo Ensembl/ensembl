@@ -54,29 +54,14 @@ sub fetch_all_by_Slice {
   my $slice_start = $slice->chr_start();
   my $slice_end   = $slice->chr_end();
   
-  my $sth = $self->prepare(
-      "SELECT * from snp limit 1"
-  ); 
-  $sth->execute();
-  my $columns = $sth->{NAME};
-  my @COLUMN;
-  my %SNPS = (
-	'id_refsnp' => 'dbSNP',
-        'id_wi'     => 'WI',
-        'id_hgbase' => 'HGBASE',
-        'id_tsc'    => 'TSC-CSHL'
-  );
-  my $C = 9;
-  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type, validated, alleles, snpclass, mapweight, ambiguity, source ";
-  foreach(@$columns) {
-    if($SNPS{$_}) {
-      $QUERY.= ", $_";
-      push @COLUMN, $SNPS{$_};
-    }
-  }
-  $QUERY .= " FROM snp WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
+  my %SNPS = qw( 12 dbSNP 13 WI 14 HGBASE 15 TSC-CSHL );
+  my $QUERY = "select internal_id, chr_start, chr_end, chr_strand, type, range_type,
+		      validated, alleles, snpclass, mapweight, ambiguity, source,
+		      id_refsnp, id_wi, id_hgbase, id_tsc 
+                 FROM snp
+                WHERE chr_name = ? AND chr_start >= ? and chr_start <= ? AND chr_end >= ?";
 
-  $sth = $self->prepare( $QUERY ); 
+  my $sth = $self->prepare( $QUERY ); 
   $sth->execute($slice->chr_name(), $slice_start - 500 , $slice_end, $slice_start);
   
   my @snps = ();  
@@ -85,23 +70,16 @@ sub fetch_all_by_Slice {
   my $link;
 
   while(my $arrayref = $sth->fetchrow_arrayref()) {
-    
     my @links = ();
-
-    my $C = 12;
-    foreach( @COLUMN ) {
-       my $V = $arrayref->[$C];
+    foreach( sort keys %SNPS ) {
+       my $V = $arrayref->[ $_ ];
        if( $V && $V ne '' ) {
-         unless($link = $link_hash{"$_:$V"}) {
-           $link_hash{"$_:$V"} = 
-           $link = Bio::EnsEMBL::DBEntry->new_fast( 
-		{'_dbname'     => $_,
-		 '_primary_id' => $V }
-           );
+         unless($link = $link_hash{"$SNPS{$_}:$V"}) {
+           warn("SNP $SNPS{$_} $V" );
+           $link_hash{"$SNPS{$_}:$V"} = $link = Bio::EnsEMBL::DBEntry->new_fast( {'_dbname'     => $SNPS{$_}, '_primary_id' => $V });
          }
+         push @links, $link;
        }
-       $C++;
-       push @links, $link;
     }
 
     #create a snp object through a fast (hacky) constructor
