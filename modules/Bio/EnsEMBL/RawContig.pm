@@ -185,6 +185,12 @@ sub id {
   return $self->name || $self->dbID;
 }
 
+sub display_id {
+  my $self = shift;
+  $self->id();
+}
+
+
 
 sub embl_offset {
   my $self = shift;
@@ -551,5 +557,21 @@ sub dbobj {
 
    return undef;
 }
+
+sub accession_number {
+  my $self = shift;
+  
+  $self->dbID();
+}
+
+sub moltype {
+  return "DNA";
+}
+
+sub desc {
+  return "Contig, no description";
+}
+
+
 
 1;

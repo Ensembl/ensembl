@@ -99,6 +99,9 @@ sub new {
     $mapper->register_region($self->chr_name(),$self->chr_start(),
 			     $self->chr_end());
   } else {
+    $self->strand( 1 );
+    $self->chr_start( 1 );
+
     # empty Slices are used to do mapping to chromosomal coords.
     # After the mapping, the Slice contains chr_name and is reference 
     # point for the mapped object
