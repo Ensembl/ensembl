@@ -1,17 +1,20 @@
 # Parse SwissProt files to create xrefs.
 
+package SwissProtParser;
+
 use strict;
+use POSIX qw(strftime);
 use DBI;
 use Data::Dumper;
+use File::Basename;
 
-my $host = "ecs1g";
-my $port = 3306;
-my $database = "glenn_test_xref";
-my $user = "ensro";
-my $password = "";
+use BaseParser;
+
+use vars qw(@ISA);
+@ISA = qw(BaseParser);
 
 # --------------------------------------------------------------------------------
-# Parse command line
+# parse command line
 
 if (scalar(@ARGV) != 1) {
   print "\nUsage: SwissProtParser.pl file.SPC\n\n";
@@ -20,59 +23,109 @@ if (scalar(@ARGV) != 1) {
 
 my $file = $ARGV[0];
 
+my $species_id = get_species();
+
+my $source_id = BaseParser->upload_source(create_source());
+
+BaseParser->upload_xrefs(create_xrefs($source_id));
+
 # --------------------------------------------------------------------------------
-# Parse file into array of xref objects
+# Get species from file
+# For SwissProt files the filename is the taxonomy ID
 
-open(SWISSPROT, $file) || die "Can't open Swissprot file $file\n"; 
+sub get_species {
 
-my @xrefs;
+  my $self = shift;
 
-my $previous_du = $/;
-$/ = "\/\/\n";
+  my ($species_id, $extension) = split(/\./, basename($file));
 
-while (<SWISSPROT>) {
+  my $sth = BaseParser->dbi()->prepare("SELECT name FROM species WHERE taxonomy_id=?");
+  $sth->execute($species_id);
+  my $species_name;
+  while(my @row = $sth->fetchrow_array()) {
+    $species_name = $row[0];
+  }
+  $sth->finish;
 
-  my $xref;
-  ($xref->{ACCESSION}) =$_ =~ /AC\s+(\w+);/;
-  ($xref->{LABEL}) = $_ =~ /DE\s+(.+)/;
+  if (defined $species_name) {
 
-  #print $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
+    print "Taxonomy ID " . $species_id . " corresponds to " . $species_name . "\n";
 
-  push @xrefs, $xref;
+  } else {
+
+    print "Cannot find species corresponding to taxonomy ID " . $species_id . " - check species table\n";
+    exit(1);
+
+  }
+
+  return $species_id;
 
 }
-
-$/ = $previous_du;
-
-print "Read " . scalar(@xrefs) ." xrefs from $file\n";
 
 # --------------------------------------------------------------------------------
 # Create source object to be loaded into source table
 
-my $source;
-$source = {
-	   NAME => "SwissProt",
-	   URL  => $file,
-	   UPLOAD_DATE => time(),
-	   FILE_MODIFIED_DATE => (stat($file))[9]
-};
+sub create_source {
 
-#print Dumper($source);
+  my $source;
+  my $file_date = POSIX::strftime('%Y%m%d%H%M%S', localtime((stat($file))[9]));
+  $source = { NAME => "SwissProt",
+	      URL  => $file,
+	      FILE_MODIFIED_DATE => $file_date
+	      # TODO URL? Release?
+	    };
 
-# TODO - dates as formatted strings
-# TODO URL? Release?
+  return $source;
+
+}
+
+# --------------------------------------------------------------------------------
+# Parse file into array of xref objects
+
+sub create_xrefs {
+
+  my ($source_id) = @_;
+
+  open(SWISSPROT, $file) || die "Can't open Swissprot file $file\n";
+
+  my @xrefs;
+
+  my $previous_rs = $/;
+  $/ = "\/\/\n";
+
+  while (<SWISSPROT>) {
+
+    my $xref;
+    ($xref->{ACCESSION}) =$_ =~ /AC\s+(\w+);/;
+    ($xref->{LABEL})    = $_ =~ /DE\s+(.+)/;
+    ($xref->{SPECIES_ID}) = $species_id;
+    ($xref->{SOURCE_ID}) = $source_id;
+
+    # extract sequence
+    my ($seq) = $_ =~ /SQ\s+(.+)/s; # /s allows . to match newline 
+      my @seq_lines = split /\n/, $seq;
+    my $parsed_seq = "";
+    foreach my $x (@seq_lines) {
+      $parsed_seq .= $x;
+    }
+    $parsed_seq =~ s/\/\///g;   # remove trailing end-of-record character
+    $parsed_seq =~ s/\s//g;     # remove whitespace
+    $parsed_seq =~ s/^.*;//g;   # remove everything before last ;
+
+    $xref->{SEQUENCE} = $parsed_seq;
+    #print "Adding " . $xref->{ACCESSION} . " " . $xref->{LABEL} ."\n";
+
+    push @xrefs, $xref;
+
+  }
+
+  $/ = $previous_rs;
+
+  print "Read " . scalar(@xrefs) ." xrefs from $file\n";
+
+  return @xrefs;
+
+}
 
 # --------------------------------------------------------------------------------
 
-my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database", "$user", "$password", {'RaiseError' => 1}) || die "Can't connect to database";
-
-# upload the source and get the ID
-#my $sth = $dbi->prepare("INSERT INTO source (name,url,file_modified_date,upload_date,release) VALUES(?,?,?,?,?,?)");
-#$sth->execute($source->{NAME}, $source->{URL}, $source->{FILE_MODIFIED_DATE}, $source->{UPLOAD_DATE}, "") || die $dbi->errstr;
-# TODO last_insert_id() in mySQL
-# TODO better error handling
-
-# TODO what about old versions?
-
-# TODO upload xrefs, source
-# TODO set source_id in each xref appropriately
