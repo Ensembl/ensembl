@@ -146,4 +146,9 @@ sub id{
 
 }
 
+sub length {
+  my $self = shift;
+  return $self->{'end'} - $self->{'start'} + 1;
+}
+
 1;
