@@ -111,7 +111,7 @@ sub run {
 
 	# check that the file actually downloaded; may not (e.g. if too many anonymous users)
 	if ($result != 0) {
-	  print "wget returned exit code $result; $file not downloaded. Skipping.\n";
+	  print "wget returned exit code $result; $type file $file not downloaded. Skipping.\n";
 	  next;
 	}
 
