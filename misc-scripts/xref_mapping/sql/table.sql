@@ -111,7 +111,7 @@ CREATE TABLE direct_xref (
 
 CREATE TABLE species (
 
-  species_id                  int unsigned not null auto_increment,
+  species_id                  int unsigned not null,
   taxonomy_id                 int unsigned not null,
   name                        varchar(255) not null,
   aliases                     varchar(255),
