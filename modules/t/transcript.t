@@ -5,7 +5,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 31;
+	plan tests => 32;
 }
 
 use MultiTestDB;
@@ -15,7 +15,7 @@ use Bio::EnsEMBL::Slice;
 
 my $multi = MultiTestDB->new();
 
-$verbose = 0; #set to true to turn on debug print outs
+$verbose = 1; #set to true to turn on debug print outs
 
 ok( $multi );
 
@@ -194,3 +194,10 @@ ok ( $up_tr->display_xref->dbID() == 614 );
 $multi->restore('core', 'transcript');
 
 
+
+my $interpro = $ta->get_Interpro_by_transid("ENST00000217347");
+foreach my $i (@$interpro) {
+  debug($i);
+}
+###currently no interpro info in the test db
+ok(@$interpro == 0);
