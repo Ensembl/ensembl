@@ -294,11 +294,67 @@ sub get_all_PredictionFeatures{
 =cut
 
 sub get_all_ExternalFeatures{
-   my ($self,@args) = @_;
+   my ($self) = @_;
 
-   $self->throw("Ewan has not implemented this function! Complain!!!!");
+   return $self->_get_all_SeqFeatures_type('external');
 
 }
+
+=head2 _get_all_SeqFeatures_type
+
+ Title   : _get_all_SeqFeatures_type
+ Usage   : Internal function which encapsulates getting
+           features of a particular type and returning
+           them in the slice coordinates.
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _get_all_SeqFeatures_type {
+   my ($self,$type) = @_;
+   my @sf;
+
+   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+     ( $self->assembly_type() );
+
+   $mapper->register_region( $self->chr_name(),
+			     $self->chr_start(),
+			     $self->chr_end() );
+  
+   my @cids = $mapper->list_contig_ids( $self->chr_name(),
+				        $self->chr_start(),
+				        $self->chr_end() );
+   
+   my $rca = $self->adaptor->db->get_RawContigAdaptor;
+   my @vcsf = ();
+   foreach my $id (@cids) {
+     my $c = $rca->fetch_by_dbID($id);
+     if ( $type eq 'external' ) {
+       foreach my $f ($c->get_all_ExternalFeatures()) {
+         my @mapped = $mapper->map_coordinates_to_assembly
+                            ( $id,
+                              $self->chr_start,
+                              $self->chr_end,
+                              $self->strand );
+	 my $newf = Bio::EnsEMBL::SeqFeature->new();
+	 %$newf = %$self;
+	 $newf->start( $mapped[0]->start() - $self->chr_start() + 1);
+         $newf->end( $mapped[0]->end() - $self->chr_start() + 1);
+         $newf->strand( $f->strand * $self->strand);
+	 push @vcsf, $newf;
+       }
+     } else {
+       $self->throw("Type $type not recognised");
+     }
+   }
+
+   return @vcsf;
+}
+
 
 =head2 get_all_Genes
 
