@@ -227,6 +227,27 @@ sub get_Update_Obj {
     return $update_obj;
 }
 
+=head2 get_Feature_Obj
+
+ Title   : get_Feature_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Feature_Obj {
+    my ($self) = @_;
+    
+    my $update_obj = Bio::EnsEMBL::DBSQL::Feature_Obj->new($self);
+ 
+    return $update_obj;
+}
+
+
 =head2 get_object_by_wildcard
 
  Title   : get_object_by_wildcard
