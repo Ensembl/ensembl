@@ -57,7 +57,8 @@ use Bio::Root::Object;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::Analysis::MSPType;
 use Bio::EnsEMBL::FeaturePair;
-use Bio::EnsEMBL::Pep_SeqFeature;
+#used to be Pep_SeqFeature, (removed by mcvicker)
+use Bio::EnsEMBL::SeqFeature;
 
 use FileHandle;
 # Inherits from the base bioperl object
@@ -184,33 +185,34 @@ sub _read_Homol {
     my $sf1;
     my $sf2;
 
-    if ($type1 eq "PEP") {
+#(mcvicker) removed Pep_SeqFeature garbage
+#    if ($type1 eq "PEP") {
 
-	$sf1 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $qstart,
-						-end    => $qend,
-						-strand => 1
-						);
-	$sf1->start_frac(1);
-	$sf1->end_frac  (3);
+#	$sf1 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $qstart,
+#						-end    => $qend,
+#						-strand => 1
+#						);
+#	#$sf1->start_frac(1);
+#	#$sf1->end_frac  (3);
 
-    } else {
+#    } else {
 	$sf1 = new Bio::EnsEMBL::SeqFeature(-start  => $qstart,
 					    -end    => $qend,
 					    -strand => 1);
-    }
+#    }
     
-    if ($type2 eq "PEP") {
-	$sf2 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $hstart,
-						-end    => $hend,
-						-strand => $strand);
-	$sf2->start_frac(1);
-	$sf2->end_frac  (3);
+#    if ($type2 eq "PEP") {
+#	$sf2 = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $hstart,
+#						-end    => $hend,
+#						-strand => $strand);
+#	#$sf2->start_frac(1);
+#	#$sf2->end_frac  (3);
 
-    } else {
+#    } else {
 	$sf2 = new Bio::EnsEMBL::SeqFeature(-start  => $hstart,
 					    -end    => $hend,
 					    -strand => $strand);
-    }
+#    }
 
     $sf1->score($score);
     $sf2->score($score);
