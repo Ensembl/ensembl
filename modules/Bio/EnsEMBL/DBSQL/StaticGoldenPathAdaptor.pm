@@ -275,7 +275,7 @@ sub fetch_RawContigs_by_chr_start_end {
         SELECT c.id
           , c.internal_id
           , c.dna
-          , c.clone
+          , cl.id
           , cl.embl_version
         FROM static_golden_path st
           , contig c
