@@ -90,12 +90,12 @@ sub _columns {
 	     r.contig_start
 	     r.contig_end
 	     r.contig_strand
-	     r.repeat_id
+	     r.repeat_consensus_id
 	     r.repeat_start
 	     r.repeat_end
 	     r.analysis_id
 	     r.score
-	     rc.repeat_id
+	     rc.repeat_consensus_id
 	     rc.repeat_name
 	     rc.repeat_class
 	     rc.repeat_consensus);
@@ -121,9 +121,9 @@ sub generic_fetch {
 
   #modify the constraint to join the repeat and repeat_consensus tables
   if($constraint) {
-    $constraint .= ' AND r.repeat_id = rc.repeat_id';
+    $constraint .= ' AND r.repeat_consensus_id = rc.repeat_consensus_id';
   } else {
-    $constraint = 'r.repeat_id = rc.repeat_id';
+    $constraint = 'r.repeat_consensus_id = rc.repeat_consensus_id';
   }
 
   #invoke the super class method
@@ -151,7 +151,7 @@ sub _obj_from_hashref {
 
   #create a repeat consensus object
   my $rc = new Bio::EnsEMBL::RepeatConsensus;
-  $rc->dbID($hashref->{'repeat_id'});
+  $rc->dbID($hashref->{'repeat_consensus_id'});
   $rc->repeat_class($hashref->{'repeat_class'});
   $rc->name($hashref->{'repeat_name'});
   $rc->repeat_consensus($hashref->{'repeat_consensus'});
@@ -164,7 +164,7 @@ sub _obj_from_hashref {
   #create the new repeat feature
   my $r = new Bio::EnsEMBL::RepeatFeature;
   $r->dbID($hashref->{'repeat_feature_id'});
-  $r->repeat_id($hashref->{'repeat_id'});
+  $r->repeat_consensus_id($hashref->{'repeat_consensus_id'});
   $r->contig_id($hashref->{'contig_id'});
 
   $r->start($hashref->{'contig_start'});
@@ -219,7 +219,7 @@ sub store {
 				, contig_start
 				, contig_end
 				, contig_strand
-				, repeat_id
+				, repeat_consensus_id
 				, repeat_start
 				, repeat_end
 				, score
@@ -228,7 +228,7 @@ sub store {
     });
   foreach my $rf (@repeats) {
             
-        unless ($rf->repeat_id){
+        unless ($rf->repeat_consensus_id){
 
    $self->throw("Must have a RepeatConsensus attached")
 	unless defined ($cons = $rf->repeat_consensus);
@@ -240,7 +240,7 @@ sub store {
       if ($cons->repeat_class eq 'trf') {
 
 	$rca->store($cons);
-	$rf->repeat_id($cons->dbID);
+	$rf->repeat_consensus_id($cons->dbID);
 
       } elsif ($cons->repeat_class eq 'Simple_repeat') {
 
@@ -248,13 +248,13 @@ sub store {
         $rcon =~ s/\((\S+)\)n/$1/;   # get repeat element
 	$cons->repeat_consensus($rcon);
 	$rca->store($cons);
-	$rf->repeat_id($cons->dbID);
+	$rf->repeat_consensus_id($cons->dbID);
 
       } else {
 	
 	# for other repeats - need to see if a consensus is stored already
 	
-	unless ($rf->repeat_id) {
+	unless ($rf->repeat_consensus_id) {
 
 	  # need to get the consensus seq object for this repeat
 
@@ -276,7 +276,7 @@ sub store {
 	    
 	    $cons->dbID($db_id);
 	  }
-	  $rf->repeat_id($cons->dbID);
+	  $rf->repeat_consensus_id($cons->dbID);
 	}
       }
 	#print STDERR "repeat = ".$rf->analysis." ".$rf->analysis->dbID."\n";
@@ -285,7 +285,7 @@ sub store {
 		    $rf->start,
 		    $rf->end,
 		    $rf->strand,
-		    $rf->repeat_id,
+		    $rf->repeat_consensus_id,
 		    $rf->hstart,
 		    $rf->hend,
 		    $rf->score,
