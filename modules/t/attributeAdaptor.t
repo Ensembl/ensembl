@@ -41,7 +41,7 @@ $multi->hide('core', 'misc_attrib', 'seq_region_attrib', 'attrib_type');
 
 my $attrib = Bio::EnsEMBL::Attribute->new(-NAME => 'test_name',
                                           -CODE => 'test_code',
-                                          -DESC => 'test_desc',
+                                          -DESCRIPTION => 'test_desc',
                                           -VALUE => 'test_value');
 
 
@@ -76,7 +76,7 @@ $attrib = $attribs[0];
 
 ok($attrib->name eq 'test_name');
 ok($attrib->code eq 'test_code');
-ok($attrib->desc eq 'test_desc');
+ok($attrib->description eq 'test_desc');
 ok($attrib->value eq 'test_value');
 
 
@@ -109,7 +109,7 @@ ok(@attribs == 0);
 
 my $attrib = Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2',
                                           -CODE => 'test_code2',
-                                          -DESC => 'test_desc2',
+                                          -DESCRIPTION => 'test_desc2',
                                           -VALUE => 'test_value2');
 
 
@@ -145,7 +145,7 @@ $attrib = $attribs[0];
 
 ok($attrib->name eq 'test_name2');
 ok($attrib->code eq 'test_code2');
-ok($attrib->desc eq 'test_desc2');
+ok($attrib->description eq 'test_desc2');
 ok($attrib->value eq 'test_value2');
 
 
