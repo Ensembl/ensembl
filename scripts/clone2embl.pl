@@ -24,7 +24,9 @@
 
     -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -usetimdb  Overrides Module name for using Flat file Sanger system.
+    -usetimdb  Overrides Module name for using Flat file Sanger system
+    
+    -dbtype    Database type (only used for TimDB)
 
     -dbhost    host name for database (gets put as host= in locator)
 
@@ -34,7 +36,7 @@
 
     -dbpass    For RDBs, what password to use (dbpass= in locator)
 
-    -nodna     don't write dna part of embl file (for testing)
+    -nodna     dont write dna part of embl file (for testing)
 
     -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
 
@@ -57,6 +59,8 @@
     -end       end point in list of clones (useful with -getall)
 
     -outfile   write output into file instead of to STDOUT
+
+    -help      displays this documentation with PERLDOC
 
 =head1 EXAMPLE CLONES
 
@@ -82,7 +86,6 @@
 use strict;
 
 use Bio::EnsEMBL::DBLoader;
-
 use Bio::EnsEMBL::EMBL_Dump;
 use Bio::EnsEMBL::TimDB::Obj;
 
@@ -92,9 +95,9 @@ use Bio::SeqIO;
 use Getopt::Long;
 
 # global defaults
-my $host;
+my $host = 'sol28';
 
-my $module    = 'Bio::EnsEMBL::DBSQL::Obj';
+my $module    = 'Bio::EnsEMBL::DBOLD::Obj';
 
 my $dbtype    = 'rdb';
 my $format    = 'embl';
@@ -118,8 +121,8 @@ my $usetimdb = 0;
 # msql was 'croc'
 my $host1     = 'obi-wan';
 # msql was 'ensdev'
-my $dbname    = 'ens2';
-my $dbuser    = 'humpub';
+my $dbname    = 'ensdev';
+my $dbuser    = 'ensembl';
 #my $dbpass    = 'ens2pass';
 my $dbpass = undef;
 
@@ -159,7 +162,7 @@ my $port      = '410000';
 	     'oldstyle'  => \$oldstyle,
 	     );
 
-if($help){
+if ($help){
     exec('perldoc', $0);
 }
 

@@ -10,30 +10,59 @@ trans2xml
 
 =head1 DESCRIPTION
 
-trans2xml produces XML file outputs of each contig, divded by transcripts
+This script produces GAME XML file outputs of the whole database, where each contig produces a new
+annotation ID and each transcript being a new feature_set annotation.
+
+=head1 OPTIONS
+
+    -dbtype    Database tpye (only used for TimDB)
+
+    -host      host name for database (gets put as host= in locator)
+
+    -port      For RDBs, what port to connect to (port= in locator)
+
+    -dbname    For RDBs, what name to connect to (dbname= in locator)
+
+    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+
+    -dbpass    For RDBs, what password to use (dbpass= in locator)
+
+    -module    Module name to load (Defaults to Bio::EnsEMBL::DBSQL::Obj)
+
+    -help      Displays script documentation with PERLDOC
 
 =cut
+
 use strict;
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::SeqIO;
-
 use Getopt::Long;
 
-my $thost   = 'sol28';
-my $tport   = '410000';
-my $tdbname = 'ensdev';
-my $format  = 'transcript';
-my $user    = 'ensembl';
+my $host   = 'sol28';
+my $port   = '410000';
+my $dbname = 'ensdev';
+my $dbuser = 'ensembl';
+my $dbpass = undef;
+my $module = 'Bio::EnsEMBL::DBOLD::Obj';
+my $help;
 
-&GetOptions( 
-	     'host:s'     => \$thost,
-	     'port:n'     => \$tport,
-	     'user:s'     => \$user,
-	     'dbname:s'   => \$tdbname,
+&GetOptions( 	     
+	     'host:s'   => \$host,
+	     'port:n'   => \$port,
+	     'dbname:s' => \$dbname,
+	     'dbuser:s' => \$dbuser,
+	     'dbpass:s' => \$dbpass,
+	     'module:s' => \$module,
+	     'h|help'   => \$help,
 	     );
 
-my $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
+if ($help) {
+    exec('perldoc', $0);
+}
+
+my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+my $db =  Bio::EnsEMBL::DBLoader->new($locator);
 my $seqio;
 
 foreach my $clone_id ($db->get_all_Clone_id()) {

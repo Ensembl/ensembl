@@ -15,45 +15,85 @@ in particular the protein translation
 
 =head1 OPTIONS
 
-   -getall 
+    -dbtype    Database type (only used for TimDB)
 
+    -dbhost    host name for database (gets put as host= in locator)
+
+    -dbname    For RDBs, what name to connect to (dbname= in locator)
+
+    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+
+    -dbpass    For RDBs, what password to use (dbpass= in locator)
+
+    -module    Module name to load (Defaults to Bio::EnsEMBL::DBOLD::Obj)
+
+    -format    [pep/dump/transcript] dump in peptides/info/dna format
+
+    -noacc     [only timdb] by default, regardless of specifing the
+               accession for a sanger clone or its clonename, it will
+               dump as its accession.  Use -noacc to dump by clonename
+
+    -test      use test database rather than live [only timdb]
+               clones in testdb are listed with a T below
+
+    -getall    all clones from the database [no applicable to timdb]
+
+    -usefile   read in on stdin a list of clones, one clone per line
+
+    -verbose   print to STDERR on each gene to dump
+
+    -help      displays this documentation with PERLDOC
 
 =cut
+
 use strict;
+
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::SeqIO;
 
 use Getopt::Long;
 
-my $tdbtype = 'rdb';
-my $thost   = 'sol28';
-my $tport   = '410000';
-my $tdbname = 'ensdev';
+my $dbtype = 'rdb';
+my $host   = 'sol28';
+my $port   = '410000';
+my $dbname = 'ensdev';
+my $dbuser = 'ensembl';
+my $dbpass = undef;
+my $module = 'Bio::EnsEMBL::DBOLD::Obj';
+
 my $format  = 'transcript';
 my $usefile = 0;
 my $getall  = 1;
 my $verbose = 0;
 my $noacc   = 0;
 my $test    = 0;
-my $user    = 'ensembl';
 my $logerror = undef;
+my $help;
 
 &GetOptions( 
-	     'dbtype:s'   => \$tdbtype,
-	     'host:s'     => \$thost,
-	     'port:n'     => \$tport,
-	     'user:s'     => \$user,
+	     'dbtype:s'   => \$dbtype,
+	     'host:s'     => \$host,
+	     'port:n'     => \$port,
+	     'dbname:s'   => \$dbname,
+	     'dbuser:s'   => \$dbuser,
+	     'dbpass:s'   => \$dbpass,
+	     'module:s'   => \$module,
+
 	     'usefile'    => \$usefile,
-	     'dbname:s'   => \$tdbname,
 	     'format:s'   => \$format,
 	     'getall'     => \$getall,
 	     'verbose'    => \$verbose,
 	     'test'       => \$test,
 	     'noacc'      => \$noacc,
-	     'logerror:s'   => \$logerror,
+	     'logerror:s' => \$logerror,
+	     'h|help'     => \$help
 	     );
 my $db;
+
+if ($help) {
+    exec('perldoc', $0);
+}
 
 if( defined $logerror ) {
     open(ERROR,">$logerror") || die "Could not open $logerror $!";
@@ -62,14 +102,11 @@ if( defined $logerror ) {
 }
 
 
-if( $tdbtype =~ 'ace' ) {
-    $db = Bio::EnsEMBL::AceDB::Obj->new( -host => $thost, -port => $tport);
-} elsif ( $tdbtype =~ 'rdb' ) {
-    $db = Bio::EnsEMBL::DBSQL::Obj->new( -user => $user, -db => $tdbname , -host => $thost );
-} elsif ( $tdbtype =~ 'timdb' ) {
+if ( $tdbtype =~ 'timdb' ) {
     $db = Bio::EnsEMBL::TimDB::Obj->new('',$noacc,$test);
 } else {
-    die("$tdbtype is not a good type (should be ace, rdb, timdb)");
+    my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+    $db =  Bio::EnsEMBL::DBLoader->new($locator);
 }
 
 my @gene_id;
