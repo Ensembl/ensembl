@@ -711,6 +711,46 @@ sub hp_value {
   return $self->{_hp_value};
 }
 
+=head2 species
 
+ Arg [1]    : string $genus_species_name (optional)
+              e.g. Homo_sapiens or Mus_musculus
+ Example    : 
+ Description: get/set on the species of feature1
+ Returntype : string
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub species{
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        return $self->{'_species'} = $arg;
+    }
+    return $self->{'_species'};
+}
+
+=head2 hspecies
+
+ Arg [1]    : string $genus_species_name (optional)
+              e.g. Homo_sapiens or Mus_musculus
+ Example    : 
+ Description: get/set on the species of feature2
+ Returntype : string
+ Execeptions: none
+ Caller     : general
+
+=cut
+
+sub hspecies{
+    my ($self,$arg) = @_;
+
+    if (defined($arg)) {
+        return $self->{'_hspecies'} = $arg;
+    } 
+    return $self->{'_hspecies'};
+}
 
 1;
