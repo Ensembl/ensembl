@@ -167,8 +167,6 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-
-#my %maps;
 my %goodhits;
 foreach my $query (values(%hits)) {
 	my $best;
@@ -182,20 +180,14 @@ foreach my $query (values(%hits)) {
 
 		$goodhits{$target->{QID}}{$target->{TID}} = $target;
 
-		#my $map = new Bio::EnsEMBL::Mapper('query', 'target');
-
 		foreach my $hit (@{ $target->{HITS} }) {
 
-			#$map->add_map_coordinates(
-				#$target->{QID},
-				#$hit->{QSTART}, $hit->{QEND}, 1,
-				#$target->{TID},
-				#$hit->{TSTART}, $hit->{TEND});
-
-	#		printf("%s\t%d\t%s\t%d\t%d\t%d\t%d\n", 
-		#		$target->{QID}, $priority, $target->{TID},
-		#		$hit->{QSTART}, $hit->{QEND},
-		#		$hit->{TSTART}, $hit->{TEND});
+		    if ($opts{'d'} != 1) {
+			printf("%s\t%d\t%s\t%d\t%d\t%d\t%d\n", 
+				$target->{QID}, $priority, $target->{TID},
+				$hit->{QSTART}, $hit->{QEND},
+				$hit->{TSTART}, $hit->{TEND});
+		    }
 		}
 		++$priority;
 
@@ -219,14 +211,13 @@ foreach my $query (values(%hits)) {
 	}
 }
 
-
 if ($opts{'d'} == 1) {
 
     foreach my $query (values(%goodhits)) {
 	foreach my $target (values(%{ $query })) {
 	    my $qperc = sprintf ("%.1f" , $target->{'QIDENT'});
 	    my $tperc = sprintf ("%.1f" , $target->{'TIDENT'});
-	    
+
 	    if (($qperc >= 50)&&($tperc >= 50)) {
 
 		print $target->{'QID'}."\t".$target->{'TID'}."\t$qperc\t$tperc\n";
