@@ -823,16 +823,16 @@ sub get_AssemblyExceptionFeatureAdaptor {
 =cut
 
 sub dnadb {
-  my ($self,$arg) = @_;
+  my $self = shift;
 
-  if($arg) {
-    if(ref $arg && (($arg->isa('Bio::EnsEMBL::Container') && 
+  if(@_) {
+    my $arg = shift;
+    if(ref($arg) && (($arg->isa('Bio::EnsEMBL::Container') &&
 		     $arg->_obj == $self) || $arg == $self)) {
       #we don't want to store a circular reference to our self
       return;
     }
 
-    #if this a container, we don't care, hang onto it
     $self->{'dnadb'} = $arg;
   }
 
