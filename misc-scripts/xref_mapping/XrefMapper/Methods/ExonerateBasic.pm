@@ -174,11 +174,11 @@ sub get_class_name() {
 
   my $self = shift;
 
-  $self =~ s/=.*$//;
+  my $module_name = ref($self);
 
-  my @bits = split(/::/, $self);
+  my @bits = split(/::/, $module_name);
 
-  return @bits[$#bits];
+  return $bits[-1];
 
 }
 
@@ -194,6 +194,23 @@ sub check_err {
     print "Warning: $err has non-zero size; may indicate problems with exonerate run\n" if (-s $err);
 
   }
+}
+
+# Percentage identity that query (xref) must match to be considered.
+
+sub query_identity_threshold {
+
+  return 98;
+
+}
+
+
+# Percentage identity that target (ensembl) must match to be considered.
+
+sub target_identity_threshold {
+
+  return 98;
+
 }
 
 1;

@@ -32,6 +32,10 @@ Post questions to the EnsEMBL development list ensembl-dev@ebi.ac.uk
 
 =cut
 
+# Hashes to hold method-specific thresholds
+my %method_query_threshold;
+my %method_target_threshold;
+
 =head2 dump_seqs
 
   Arg[1]: xref object which holds info needed for the dump of xref
@@ -87,11 +91,7 @@ sub build_list_and_map {
     $i++;
   }
 
-  if (!defined($self->use_existing_mappings)) {
-    $self->run_mapping(\@list);
-  } else {
-    print "Using existing mappings";
-  }
+  $self->run_mapping(\@list);
 
 }
 
@@ -583,11 +583,17 @@ sub run_mapping {
 
   my ($self, $lists) = @_;
 
-  # delete old output files in target directory
-  my $dir = $self->dir();
-  unlink (<$dir/*.map $dir/*.out $dir/*.err>);
+  # delete old output files in target directory if we're going to produce new ones
+  if (!defined($self->use_existing_mappings)) {
+    my $dir = $self->dir();
+    unlink (<$dir/*.map $dir/*.out $dir/*.err>);
+  }
 
   # foreach method, submit the appropriate job & keep track of the job name
+  # note we check if use_existing_mappings is set here, not earlier, as we
+  # still need to instantiate the method object in order to fill
+  # method_query_threshold and method_target_threshold
+
   my @job_names;
 
   foreach my $list (@$lists){
@@ -604,17 +610,22 @@ sub run_mapping {
     } else {
 
       my $obj = $obj_name->new();
-      my $job_name = $obj->run($queryfile, $targetfile, $self->dir());
-      push @job_names, $job_name;
-      sleep 1; # make sure unique names really are unique
+      $method_query_threshold{$method} = $obj->query_identity_threshold();
+      $method_target_threshold{$method} = $obj->target_identity_threshold();
 
+      if (!defined($self->use_existing_mappings)) {
+	my $job_name = $obj->run($queryfile, $targetfile, $self->dir());
+	push @job_names, $job_name;
+	sleep 1; # make sure unique names really are unique
+      }
     }
 
   } # foreach method
 
-  # submit depend job to wait for all mapping jobs
-  submit_depend_job($self->dir, @job_names);
-
+  if (!defined($self->use_existing_mappings)) {
+    # submit depend job to wait for all mapping jobs
+    submit_depend_job($self->dir, @job_names);
+  }
 
 } # run_mapping
 
@@ -669,7 +680,7 @@ sub submit_depend_job {
 
 }
 
-=head2 store
+=head2 generate_core_xrefs
 
   Arg[1]     : The target file used in the exonerate run. Used to work out the Ensembl object type.
   Arg[2]     :
@@ -681,7 +692,7 @@ sub submit_depend_job {
 
 =cut
 
-sub store {
+sub generate_core_xrefs {
 
   my ($self, $xref) = @_;
 
@@ -745,6 +756,8 @@ sub store {
     # files are named Method_(dna|peptide)_N.map
     my $type = get_ensembl_object_type($file);
 
+    my $method = get_method($file);
+
     # get or create the appropriate analysis ID
     # XXX restore when using writeable database
     #my $analysis_id = $self->get_analysis_id($type);
@@ -763,8 +776,9 @@ sub store {
 
       # TODO make sure query & target are the right way around
 
-      # only take mappings where there is a good match on or both sequences
-      #next if ($query_identity < 98 and $target_identity < 98);
+      # only take mappings where there is a good match on one or both sequences
+      next if ($query_identity  < $method_query_threshold{$method} &&
+	       $target_identity < $method_target_threshold{$method});
 
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
@@ -838,6 +852,17 @@ sub get_ensembl_object_type {
 
 }
 
+sub get_method {
+
+  my $filename = shift;
+
+  $filename = basename($filename);
+
+  my ($method) = $filename =~ /^(.*)_(dna|peptide)_\d+\.map/;
+
+  return $method;
+
+}
 
 sub get_analysis_id {
 
@@ -947,7 +972,7 @@ sub dump_core_xrefs {
       # write to file and add to object_xref_mappings
       if (defined $xref_to_objects{$master_xref_id}) { # XXX check 
 	my @ensembl_object_ids = keys( %{$xref_to_objects{$master_xref_id}} ); # XXX check
-	print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
+	#print "xref $accession has " . scalar(@ensembl_object_ids) . " associated ensembl objects\n";
 	foreach my $object_id (@ensembl_object_ids) {
 	  my $type = $ensembl_object_types{$object_id};
 	  print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
