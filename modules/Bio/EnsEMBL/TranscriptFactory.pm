@@ -71,7 +71,7 @@ sub fset2transcript {
 	$exon->phase    ($f->phase);
 	$exon->end_phase( ($exon->phase + $exon->length)%3 );
 	#$exon->score($f->score);
-	$exon->p_value($f->p_value);
+#	$exon->p_value($f->p_value);
 	$exon->slice($contig->primary_seq);
 	
 	push(@exons,$exon);
@@ -135,7 +135,7 @@ sub fset2transcript_guess_phases {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	#$exon->score($f->score);
-	$exon->p_value($f->p_value);
+#	$exon->p_value($f->p_value);
 	$exon->slice($contig);
 	$exon->phase($f->phase); 
 	push(@exons,$exon);
@@ -239,7 +239,7 @@ sub fset2transcript_3frame {
       $exon->phase    ($endphase);
       $exon->end_phase( ($exon->phase + $exon->length)%3 );
       #$exon->score    ($f->score);
-      $exon->p_value  ($f->p_value);
+#      $exon->p_value  ($f->p_value);
       $endphase = $exon->end_phase;
 
       $transcript->add_Exon($exon);
