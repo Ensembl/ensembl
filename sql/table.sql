@@ -480,6 +480,7 @@ CREATE TABLE protein_feature (
   score         double(16,4) NOT NULL,
   evalue        double(16,4),
   perc_id       int(10),
+  key (translation),
 
   PRIMARY KEY   (id)
 );
