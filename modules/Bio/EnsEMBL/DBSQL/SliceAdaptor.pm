@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::SlicetAdaptor - Adaptors for slices
+Bio::EnsEMBL::DBSQL::SliceAdaptor - Adaptors for slices
 
 =head1 SYNOPSIS
 
@@ -761,33 +761,31 @@ sub fetch_normalized_slice_projection {
   my $self = shift;
   my $slice = shift;
   
-  if( $self->{'_exc_cache'}->{$slice->name()} ) {
-    return $self->{'_exc_cache'}->{$slice->name()};
-  }
-  
-  my $result = [];
-  my $sql = "
-    SELECT seq_region_id, seq_region_start, seq_region_end,
-           exc_type, exc_seq_region_id, exc_seq_region_start,
-           exc_seq_region_end
-      FROM assembly_exception
-     WHERE seq_region_id = ?";
-
   my $slice_seq_region_id = $self->get_seq_region_id( $slice );
+  
+  my $result = $self->{'asm_exc_cache'}->{$slice_seq_region_id};
+ 
+  if(!defined($result)) {
+    my $sql = "
+      SELECT seq_region_id, seq_region_start, seq_region_end,
+             exc_type, exc_seq_region_id, exc_seq_region_start,
+             exc_seq_region_end
+        FROM assembly_exception
+       WHERE seq_region_id = ?";
 
-  my $sth = $self->prepare( $sql );
-  $sth->execute( $slice_seq_region_id );
+    my $sth = $self->prepare( $sql );
+    $sth->execute( $slice_seq_region_id );
+    $result = $sth->fetchall_arrayref();
+    $self->{'asm_exc_cache'}->{$slice_seq_region_id} = $result;
+  }
 
   my (@haps, @pars);
 
-  my ( $seq_region_id, $seq_region_start, $seq_region_end,
-       $exc_type, $exc_seq_region_id, $exc_seq_region_start,
-       $exc_seq_region_end );
-  $sth->bind_columns( \$seq_region_id, \$seq_region_start, \$seq_region_end,
-                      \$exc_type, \$exc_seq_region_id, \$exc_seq_region_start,
-                      \$exc_seq_region_end );
-
-  while( $sth->fetch() ) {
+  foreach my $row (@$result) {
+    my ( $seq_region_id, $seq_region_start, $seq_region_end,
+         $exc_type, $exc_seq_region_id, $exc_seq_region_start,
+         $exc_seq_region_end ) = @$row;
+    
     # need overlapping PAR and all HAPs if any
     if( $exc_type eq "PAR" ) {
       if( $seq_region_start <= $slice->end() && 
