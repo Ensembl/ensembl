@@ -48,7 +48,7 @@ $protein->gbrowser_adaptor($dbh);
 This object inherit from Bio::SeqI for the implementation and from PrimarySeq
 A protein object hold the basic PrimarySeq requirements, hold annotation, DBlink, protein_features object.
 It will also soon hold family and SNPs objects. The DB adaptor for this object is called Protein_Adaptor 
-Most of the calls should be done from the protein object, the protein object will then deal with calling the rigth DBadaptor (Protein_Adaptor, Protein_Feature_Adaptor, ...)
+Most of the calls should be done from the protein object, the protein object will then deal with calling the rigth DBadaptor (ProteinAdaptor, ProteinFeatureAdaptor, ...)
 
 =head1 CONTACT
 
