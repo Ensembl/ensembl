@@ -267,6 +267,116 @@ sub _fetch_by_EnsObject_type {
   return @out;
 }
 
+=head2 geneids_by_extids
+
+ Title   : geneids_by_extids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub geneids_by_extids{
+   my ($self,$name) = @_;
+   return $self->_type_by_external_id($name,'Gene');
+}
+
+=head2 transcriptids_by_extids
+
+ Title   : transcriptids_by_extids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub transcriptids_by_extids{
+   my ($self,$name) = @_;
+   return $self->_type_by_external_id($name,'Transcript');
+}
+
+=head2 translationids_by_extids
+
+ Title   : translationids_by_extids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub translationids_by_extids{
+    my ($self,$name) = @_;
+    return $self->_type_by_external_id($name,'Transcript');
+}
+
+=head2 rawContigids_by_extids
+
+ Title   : rawContigids_by_extids
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub rawContigids_by_extids{
+   my ($self,$name) = @_;
+   return $self->_type_by_external_id($name,'rawContig');
+}
+
+
+=head2 _type_by_external_id
+
+ Title   : _fetch_type_by_external_id
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _type_by_external_id{
+   my ($self,$name,$ensType) = @_;
+   
+my @out;
+
+  my $sth = $self->prepare( "
+    SELECT oxr.ensembl_id
+    FROM Xref, externalDB exDB, objectXref oxr, externalSynonym syn 
+     WHERE (Xref.dbprimary_id = '$name'
+            AND Xref.xrefId = oxr.xrefId
+            AND oxr.ensembl_object_type = '$ensType')
+     OR    (Xref.display_id = '$name'
+            AND Xref.xrefId = oxr.xrefId
+            AND oxr.ensembl_object_type = '$ensType')
+     OR    (syn.synonym = '$name'
+            AND syn.xrefId = oxr.xrefId
+            AND oxr.ensembl_object_type = '$ensType')
+         " );
+
+   $sth->execute();
+   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
+       my ( $ensID) =
+	   @$arrRef;;
+       push (@out,$ensID);
+     }
+   
+   return @out;
+}
+
 
 # creates all tables for this adaptor
 # if they exist they are emptied and newly created
@@ -291,6 +401,7 @@ sub create_tables {
          xrefId INT not null auto_increment,
          externalDBId int not null,
          dbprimary_id VARCHAR(40) not null,
+	 display_id VARCHAR(40) not null,
          version VARCHAR(10),
 	 description VARCHAR(255),
          PRIMARY KEY( xrefId ),

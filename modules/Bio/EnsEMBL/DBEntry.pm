@@ -49,13 +49,14 @@ sub new {
   my $self = bless {},$class;
 
   my ( $adaptor, $dbID, $primary_id, $version,
-       $dbname, $release  ) = $self->_rearrange
+       $dbname, $release, $display_id  ) = $self->_rearrange
 	 ( [ qw { ADAPTOR
 		DBID
 		PRIMARY_ID
 		VERSION
 		DBNAME
 		RELEASE
+		DISPLAY_ID
 	      }], @args );
 
   if( defined $adaptor ) { $self->adaptor( $adaptor )}
@@ -64,6 +65,7 @@ sub new {
   if( defined $version ) { $self->version( $version ) }
   if( defined $dbname ) { $self->dbname( $dbname ) }
   if( defined $release) { $self->release( $release ) }
+  if( defined $display_id) { $self->display_id( $display_id ) }
   $self->{_synonyms} = [];;
 
   return $self;
@@ -77,6 +79,27 @@ sub primary_id {
   } 
   return $self->{_primary_id};
 }
+
+=head2 display_id
+
+ Title   : display_id
+ Usage   : $obj->display_id($newval)
+ Function: 
+ Returns : value of display_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub display_id{
+   my ( $self, $arg ) = @_;
+   if( defined $arg ) {
+       $self->{_display_id} = $arg;
+   } 
+   return $self->{_display_id};
+
+}
+
 
 sub dbname {
   my ( $self, $arg ) = @_;
@@ -94,7 +117,7 @@ sub database {
 
 sub optional_id {
   my $self = shift;
-  return "";
+  return $self->display_id;
 }
 
 
