@@ -131,6 +131,7 @@ sub get_Gene_chr_bp {
    my @start;
    while ( my @row=$sth->fetchrow_array){
       ($start,$end,$chr)=@row;
+     
        push @start,$start;
        push @start,$end;
    }   

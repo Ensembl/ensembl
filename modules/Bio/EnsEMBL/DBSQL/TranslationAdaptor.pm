@@ -83,7 +83,7 @@ sub fetch_by_dbID {
    $out->dbID         ($rowhash->{'tlid'});
 
    $out->adaptor( $self );
-
+    
    return $out;
 }
 

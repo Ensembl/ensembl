@@ -1077,6 +1077,7 @@ sub _gene_query{
 
 	    } else {                    # not a Sticky
 		# soooooo much simpler
+	        
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
 		    $internalExon = 1;
 		    $exonconverted{$exon->dbID} = 1;
