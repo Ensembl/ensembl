@@ -802,18 +802,29 @@ sub dnadb {
 
 sub deleteObj {
   my $self = shift;
-
   #print "called deleteObj on DBAdaptor\n";
 
   #clean up external feature adaptor references
   if(exists $self->{'_xf_adaptors'}) {
     foreach my $key (keys %{$self->{'_xf_adaptors'}}) {
-      $self->{'_xf_adaptors'}->{$key} = undef;
+      delete $self->{'_xf_adaptors'}->{$key};
     }
   }
 
+  if(exists $self->{'current_objects'}) {
+    foreach my $adaptor_name (keys %{$self->{'current_objects'}}) {
+      my $adaptor = $self->{'current_objects'}->{$adaptor_name};
 
-  $self->{'dnadb'} = undef;
+      if($adaptor && $adaptor->can('deleteObj')) {
+        $adaptor->deleteObj();
+      }
+
+      delete $self->{'current_objects'}->{$adaptor_name};
+    }
+  }
+
+  delete $self->{'_meta_container'};
+  delete $self->{'dnadb'};
 
   #call the superclass deleteObj method
   $self->SUPER::deleteObj;

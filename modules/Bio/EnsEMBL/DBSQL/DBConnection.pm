@@ -520,20 +520,21 @@ sub get_db_adaptor {
 sub deleteObj {
   my $self = shift;
   
-#  print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
+  #print STDERR "DBConnection::deleteObj : Breaking circular references:\n";
+  
+  if(exists($self->{'_adaptors'})) {
+    foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
+      my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
 
-  foreach my $adaptor_name (keys %{$self->{'_adaptors'}}) {
+      #call each of the adaptor deleteObj methods
+      if($adaptor && $adaptor->can('deleteObj')) {
+        #print STDERR "\t\tdeleting adaptor\n";
+        $adaptor->deleteObj();
+      }
 
-    my $adaptor = $self->{'_adaptors'}->{$adaptor_name};
-
-    #call each of the adaptor deleteObj methods
-    if($adaptor && $adaptor->can('deleteObj')) {
-      #print STDERR "\t\tdeleting adaptor\n";
-      $adaptor->deleteObj();
+      #break dbadaptor -> object adaptor references
+      delete $self->{'_adaptors'}->{$adaptor_name};
     }
-
-    #break dbadaptor -> object adaptor references
-    $self->{'_adaptors'}->{$adaptor_name} = undef;
   }
 
   #print STDERR "Cleaning up attached databases\n";
