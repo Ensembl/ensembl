@@ -389,10 +389,7 @@ sub get_updated_Clone_id{
 	# make list of updatable clones
 
 	if($date2 > $last && $date2 < $now_offset){
-	    #Temporary code (Elia) to get this working...
-	    if ($key ne 'AC021960') {
-		push(@clones,$key);
-	    }
+	    push(@clones,$key);
 	}
     }
 
