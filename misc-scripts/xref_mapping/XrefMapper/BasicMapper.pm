@@ -752,30 +752,36 @@ sub store {
 
       $total_lines++;
       chomp();
-      my ($label, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
-      $cigar_line =~ s/ //;
+      my ($label, $query_id, $target_id, $identity, $query_length, $target_length, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split(/:/, $_);
+      $cigar_line =~ s/ //g;
+
+      # calculate percentage identities
+      my $query_identity = int (100 * $identity / $query_length);
+      my $target_identity = int (100 * $identity / $target_length);
 
       # TODO make sure query & target are the right way around
 
+      # only take mappings where there is a good match on or both sequences
+      next if ($query_identity < 98 and $target_identity < 98);
+
       # note we add on $xref_id_offset to avoid clashes
       print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t" . ($query_id+$xref_id_offset) . "\n";
-      print IDENTITY_XREF "$object_xref_id\t" . ($query_id+$xref_id_offset) . "\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
+      print IDENTITY_XREF join("\t", ($object_xref_id, $query_identity, $target_identity, $query_start+1, $query_end, $target_start+1, $target_end, $cigar_line, $score, "\\N", $analysis_id)) . "\n";
+
       # TODO - evalue?
       $object_xref_id++;
 
       $ensembl_object_types{$target_id} = $type;
 
-      #push @{$primary_xref_ids{$query_id}}, $target_id;
-
       # note the NON-OFFSET xref_id is stored here as the values are used in
       # a query against the original xref database
       $primary_xref_ids{$query_id}{$target_id} = $target_id;
-
+	
       # Store in database
       # create entry in object_xref and get its object_xref_id
       #$ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
       #my $object_xref_id = $ox_sth->{'mysql_insertid'};
-
+	
       # create entry in identity_xref
       #$ix_sth->execute($object_xref_id, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score, undef, $analysis_id) || warn "Error writing to identity_xref table";
 
