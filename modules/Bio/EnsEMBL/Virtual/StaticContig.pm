@@ -70,6 +70,7 @@ sub new {
 
     # EMBL dumping support
     $self->{'date'} = [];
+    $self->{_anal_hash}=();
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
    
@@ -236,14 +237,7 @@ sub get_all_SimilarityFeatures_above_score{
 	}
 
 	
-	my $analysis;
-	if (!$analhash{$analysisid}) 
-	{
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	    $analysis = $feature_obj->get_Analysis($analysisid);
-	    $analhash{$analysisid} = $analysis;	   
-	} 
-	else {$analysis = $analhash{$analysisid};}
+	my $analysis=$self->_get_analysis($analysisid);
 	
 	if( !defined $name ) {
 	    $name = 'no_source';
@@ -258,58 +252,6 @@ sub get_all_SimilarityFeatures_above_score{
     }
     return @features;
 }
-
-
-
-
-sub _create_similarity_features {
-    my ($self,@args)=@_;
-    
-    my $out;
-    my $analysis;
-    my $contig;
-    my %analhash;
-    
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,
-        $name,$hstart,$hend,$hid)=@args;
-    
-    
-    if (!$analhash{$analysisid}) 
-      {
-          my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-          $analysis = $feature_obj->get_Analysis($analysisid);
-          $analhash{$analysisid} = $analysis;	   
-      } 
-    else {$analysis = $analhash{$analysisid};}
-    
-    if( !defined $name ) {
-        $name = 'no_source';
-    }
-    
-    $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
-    $out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
-                         $hstart,$hend,1,$f_score,$name,'similarity',$hid);
-    $out->analysis    ($analysis);
-    $out->id          ($hid);              
-    $out->seqname   ($self->id);
-    $out->start     ($start);
-    $out->end       ($end);
-    $out->strand    ($strand);
-    $out->source_tag($name);
-    $out->primary_tag('similarity');
-    $out->id         ($hid);
-    
-    if( defined $f_score ) {
-        $out->score($f_score);
-    }
-    $out->analysis($analysis);
-    $out->validate();
-    
-    return $out;
-}                                       # _create_similarity_features
-
-
-
 
 =head2 get_all_RepeatFeatures
 
@@ -377,19 +319,7 @@ sub get_all_RepeatFeatures {
 	    next;
 	}
 
-	my $analysis;
-	
-	if (!$analhash{$analysisid}) {
-	    
-	    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-	    $analysis = $feature_obj->get_Analysis($analysisid);
-	    
-	    $analhash{$analysisid} = $analysis;
-	    
-	} else {
-	    $analysis = $analhash{$analysisid};
-	}
-	
+	my $analysis=$self->_get_analysis($analysisid);
 	
 	if($hid ne '__NONE__' ) {
 	    # is a paired feature
@@ -432,50 +362,6 @@ sub karyotype_band {
    return $band 
 }
 
-
-
-sub _create_repeat_features {
-my ($self,@args)=@_;
-
-
-my $out;
-my $analysis;
-my %analhash;
-
-my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid)=@args;
-
-
-if (!$analhash{$analysisid}) {
-    
-    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
-    $analysis = $feature_obj->get_Analysis($analysisid);
-    
-    $analhash{$analysisid} = $analysis;
-    
-} else {
-    $analysis = $analhash{$analysisid};
-}
-
-
-if( $hid ne '__NONE__' ) {
-    # is a paired feature
-    # build EnsEMBL features and make the FeaturePair
-    
-    $out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-    $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$self->id,
-			 $hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
-    
-    $out->analysis($analysis);
-    
-} else {
-    $self->warn("Repeat feature does not have a hid. bad news....");
-}
-
-$out->validate();  
- 
- return $out;
-}
-
 =head2 get_landmark_MarkerFeatures
 
   Title   : get_landmark_MarkerFeatures 
@@ -497,6 +383,7 @@ my ($self) = @_;
 
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
+my $length=$self->length;
 my $chr_name=$self->_chr_name;
 my $dbname=$self->dbobj->dbname;
 my $mapsdbname=$self->dbobj->mapdbname;
@@ -507,10 +394,10 @@ eval {
     require Bio::EnsEMBL::Map::MarkerFeature;
     
     my $statement= "  SELECT 
-                      IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
-                             (sgp.chr_start+sgp.raw_end-f.seq_end)),                                        
-                      IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
-                             (sgp.chr_start+sgp.raw_end-f.seq_start)), 
+                      IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)),                                        
+                      IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                             (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
                              f.score, 
                       IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
                              f.name, f.hstart, f.hend, 
@@ -543,6 +430,10 @@ eval {
 	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
             
     while( $sth->fetch ) {
+	#clipping
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
 	
 	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
 		  $analysisid,$synonym);
@@ -550,14 +441,12 @@ eval {
 
 	my $out=$self->_create_Marker_features(@args);
 	if (defined $out){
-	    if ($self->_clip_2_vc($out)){
-		push @markers,$self->_convert_2_vc($out);
-	    }
+	    push (@markers,$out);
 	} 
     }
 };
- 
- 
+
+
 if($@){$self->warn("Problems retrieving map data\nMost likely not connected to maps db\n$@\n");}
 
 return @markers;
@@ -587,7 +476,7 @@ my ($self,$start,$chr_name,$Mb)=@_;
 $self->throw("Must supply golden path position") unless $start;
 $self->throw("Must supply chromosome") unless $chr_name;
 if (!defined $Mb){$Mb=1000000;}
-
+my $length = $self->length;
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
    $chr_name=$self->_chr_name;
@@ -607,10 +496,10 @@ eval {
 	$end=$start+$limit;
 
 	my $statement=   "SELECT    
-                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
-                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
-                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
-                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)),                                       
                                     f.score, 
                           IF        (sgp.raw_ori=1,f.strand,(-f.strand)),
                                     f.name, f.hstart, f.hend, 
@@ -650,7 +539,9 @@ eval {
 		      $analysisid,$synonym);
 	    
 	    my $out=$self->_create_Marker_features(@args);
-	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
+	    if (defined $out){
+		push (@markers,$out);
+	    } 
 	}
     }
 };
@@ -707,10 +598,10 @@ eval {
 
 
 	my $statement=   "SELECT    
-                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
-                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
-                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
-                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)),                                       
                                     f.score, 
                           IF        (sgp.raw_ori=1,f.strand,(-f.strand)), 
                                     f.name, f.hstart, f.hend, 
@@ -750,7 +641,9 @@ eval {
 		      $analysisid,$synonym);
 	    
 	    my $out=$self->_create_Marker_features(@args);
-	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
+	    if (defined $out){
+		push (@markers,$out);
+	    } 
 	}
     }
 };
@@ -762,74 +655,51 @@ return $markers[0];
 
 }
 
-# sub _gp_position has been removed since revision 1.18
-
-sub _create_Marker_features
-{
-
-my ($self,@args)=@_;
-
-my $analysis;
-my %analhash;
-
-my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym)=@args;
-
-
- my ( $out, $seqf1, $seqf2 );
-        
-    if (!$analhash{$analysisid}) {
-	
+sub _get_analysis {
+    my ($self,$analysisid)=@_;
+    
+    my $analysis;
+    my $analhash=$self->{_anal_hash};
+    if (!$analhash->{$analysisid}) {
 	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
 	$analysis = $feature_obj->get_Analysis($analysisid);
-	$analhash{$analysisid} = $analysis;
+	
+	$self->{_anal_hash}->{$analysisid} = $analysis;
 	
     } else {
-	$analysis = $analhash{$analysisid};
+	$analysis = $analhash->{$analysisid};
     }
+    return $analysis;
+}
+
+
+# sub _gp_position has been removed since revision 1.18
+
+sub _create_Marker_features {
+    my ($self,@args)=@_;
+    
+    my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym)=@args;
+    
+    
+    my ( $out, $seqf1, $seqf2 );
+    my $analysis = $self->_get_analysis($analysisid);
     
     $seqf1 = Bio::EnsEMBL::SeqFeature->new();
     $seqf2 = Bio::EnsEMBL::SeqFeature->new();
     $out = Bio::EnsEMBL::Map::MarkerFeature->new
 	( -feature1 => $seqf1, -feature2 => $seqf2 );
- 
+    
     $out->set_all_fields
 	( $start,$end,$strand,$score,
 	  $name,'similarity',$self->id,
 	  $hstart,$hend,1,$score,$name,'similarity',$name);
-
+    
     $out->analysis($analysis);
     $out->mapdb( $self->dbobj->mapdb );
     $out->id ($synonym);
 
     return $out;
-
-
 }
-
-
-
-sub _clip_2_vc
-{
-    my ($self,$ft)=@_;
-
-    $self->throw ("need a feature") unless $ft;
-    if ($ft->start>=$self->_global_start && $ft->end<=$self->_global_end){return 1;}
-    else {return 0;}
-}
-
-
-
-sub _convert_2_vc
-{
- my ($self,$ft)=@_;
- $self->throw ("need a feature") unless $ft;
-
- $ft->start ($ft->start-$self->_global_start);
- $ft->end ($ft->end-$self->_global_start);
-
- return $ft;
-}
-
 
 =head2 _global_start
 
