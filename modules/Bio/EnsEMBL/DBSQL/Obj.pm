@@ -1552,7 +1552,7 @@ sub write_Transcript{
        $self->write_Translation($trans->translation());
    }
    else {
-       print "Transcript already present in the database with the same version number, no need to write it in";
+       print "Transcript already present in the database with the same version number [",$oldtrans->version,"], no need to write it in\n";
    }
    return 1;
 }
