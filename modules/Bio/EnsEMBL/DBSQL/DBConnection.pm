@@ -179,12 +179,14 @@ sub connect {
     $dbh = DBI->connect($dsn,
                         $self->username(),
                         $self->password(),
-                        {RaiseError => 1});
+                        {'RaiseError' => 1});
   };
 
-  $dbh || throw("Could not connect to database " . $self->dbname() .
-                " as user " . $self->username() .
-                " using [$dsn] as a locator:\n" . $DBI::errstr);
+  if(!$dbh || $@) {
+    throw("Could not connect to database " . $self->dbname() .
+          " as user " . $self->username() .
+          " using [$dsn] as a locator:\n" . $DBI::errstr);
+  }
 
   $self->db_handle($dbh);
 
@@ -446,7 +448,6 @@ sub prepare {
    # return an overridden statement handle that provides us with
    # the means to disconnect inactive statement handles automatically
    bless $sth, "Bio::EnsEMBL::DBSQL::StatementHandle";
-
    $sth->dbc($self);
 
    return $sth;
@@ -516,7 +517,7 @@ sub do {
 sub disconnect_if_idle {
   my $self = shift;
 
-  if(!$self->db_handle()->{'ActiveKids'} &&
+  if(!$self->db_handle()->{'Kids'} &&
      !$self->db_handle()->{'InactiveDestroy'}) {
     $self->db_handle->disconnect();
   }
