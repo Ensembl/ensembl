@@ -80,7 +80,7 @@ sub get_MapContig{
        return $mapcontig;
    }
    else {
-       $self->throw("Could not find mapcontig $id");
+       return undef;
    }
 }
 

@@ -878,7 +878,8 @@ sub _gene_query{
 	    # hack to get things to behave
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
-	    if ($self->_convert_seqfeature_to_vc_coords($exon)) {
+	    
+	    if (!$exon->isa('Bio::EnsEMBL::StickyExon') && $self->_convert_seqfeature_to_vc_coords($exon)) {
                 $internalExon = 1;
 		$exonconverted{$exon->id} = 1;
             }                           
