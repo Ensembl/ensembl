@@ -96,6 +96,9 @@ sub store{
 		   . "attach_seq\n");
     }
 
+    # store analysis if not there already
+    $self->db->get_AnalysisAdaptor->store($sf->analysis);
+
     $sth->execute($contig->dbID(), $sf->start, $sf->end, $sf->strand,
 		  $sf->display_label, $sf->analysis->dbID, $sf->score);
   } 

@@ -309,6 +309,9 @@ sub store {
 		   "does not have a dbID");
     }
     
+    # store analysis if not there already
+    $self->db->get_AnalysisAdaptor->store($rf->analysis);
+
     $sth->execute(
 		  $contig->dbID(),
 		  $rf->start,
