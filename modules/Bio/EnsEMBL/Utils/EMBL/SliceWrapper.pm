@@ -381,9 +381,6 @@ sub top_SeqFeatures {
     push @sfs, @{$self->slice->get_all_RepeatFeatures()};
   }
   unless($self->skip_SeqFeature('external')) {
-    if($self->slice->can('get_all_SNPFeatures')) {
-      push @sfs, @{$self->slice->get_all_SNPFeatures()};
-    }
     push @sfs, @{$self->slice->get_all_ExternalFeatures()};
   }
   unless($self->skip_SeqFeature('prediction')) {
@@ -396,7 +393,10 @@ sub top_SeqFeatures {
       push @sfs, new Bio::EnsEMBL::Utils::EMBL::GeneWrapper($gene);
     }
   }
-
+  unless($self->skip_SeqFeature('snp')) {
+    push @sfs, @{$self->slice->get_all_SNPs};
+  }
+  
   return @sfs;
 }
 
