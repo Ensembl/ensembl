@@ -2,9 +2,9 @@
 #
 # Ensembl module for Bio::EnsEMBL::Mapper::Unit
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Written by Ewan Birney <birney@ebi.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright GRL and EBI
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -16,23 +16,22 @@ Bio::EnsEMBL::Mapper::Unit - One side of a map pair
 
 =head1 SYNOPSIS
 
-Give standard usage here
-
 =head1 DESCRIPTION
-
-Describe the object here
+ 
+Two regions mapped between different coordinate systems are
+each represented by a Bio::EnsEMBL::Mapper::Unit and joined
+together as a Bio::EnsEMBL::Mapper::Pair.
 
 =head1 AUTHOR - Ewan Birney
 
-This modules is part of the Ensembl project http://www.ensembl.org
+This module is part of the Ensembl project http://www.ensembl.org
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
+Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -62,15 +61,16 @@ sub new {
     return $self;
 }
 
+
 =head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
+  Arg  1      int|char $id
+	      the id of the object (e.g. chromosome
+	      or RawContig) which is mapped
+  Function    accessor method
+  Returntype  int|char
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Unit
 
 =cut
 
@@ -83,15 +83,16 @@ sub id{
 
 }
 
+
 =head2 start
 
- Title   : start
- Usage   : $obj->start($newval)
- Function: 
- Example : 
- Returns : value of start
- Args    : newvalue (optional)
-
+  Arg  1      int $start
+	      the start coordinate of the mapped
+	      region which this object represents
+  Function    accessor method
+  Returntype  int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Unit
 
 =cut
 
@@ -104,15 +105,16 @@ sub start{
 
 }
 
+
 =head2 end
 
- Title   : end
- Usage   : $obj->end($newval)
- Function: 
- Example : 
- Returns : value of end
- Args    : newvalue (optional)
-
+  Arg  1      int $end
+	      the end coordinate of the mapped
+	      region which this object represents
+  Function    accessor method
+  Returntype  int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Unit
 
 =cut
 

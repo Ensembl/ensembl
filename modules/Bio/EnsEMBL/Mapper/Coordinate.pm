@@ -2,7 +2,7 @@
 #
 # Ensembl module for Bio::EnsEMBL::MapperCoordinate
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Written by Ewan Birney <birney@ebi.ac.uk>
 #
 # Copyright GRL and EBI
 #
@@ -12,23 +12,25 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Mapper::Coordinate - DESCRIPTION of Object
+Bio::EnsEMBL::Mapper::Coordinate
 
 =head1 SYNOPSIS
 
-Give standard usage here
-
 =head1 DESCRIPTION
 
-Describe the object here
+Representation of a mapped region in a sequence; returned from
+Mapper.pm when the target region maps on to valid sequence.
 
 =head1 CONTACT
 
-Ensembl - ensembl-dev@ebi.ac.uk
+This module is part of the Ensembl project http://www.ensembl.org
+
+Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -56,14 +58,15 @@ sub new {
   return $self;
 }
 
+
 =head2 start
 
- Title   : start
- Usage   : $obj->start($newval)
- Function: 
- Returns : value of start
- Args    : newvalue (optional)
-
+  Arg  1      int $start
+              start coordinate of object in mapped region
+  Function    accessor method
+  Returntype  int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
 
 =cut
 
@@ -77,14 +80,15 @@ sub start{
 
 }
 
+
 =head2 end
 
- Title   : end
- Usage   : $obj->end($newval)
- Function: 
- Returns : value of end
- Args    : newvalue (optional)
-
+  Arg  1      int $end
+              end coordinate of object in mapped region
+  Function    accessor method
+  Returntype  int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
 
 =cut
 
@@ -98,14 +102,15 @@ sub end{
 
 }
 
+
 =head2 strand
 
- Title   : strand
- Usage   : $obj->strand($newval)
- Function: 
- Returns : value of strand
- Args    : newvalue (optional)
-
+  Arg  1      int $strand
+              strand of object in mapped region
+  Function    accessor method
+  Returntype  int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
 
 =cut
 
@@ -119,15 +124,16 @@ sub strand{
 
 }
 
+
 =head2 id
 
- Title   : id
- Usage   : $obj->id($newval)
- Function: 
- Example : 
- Returns : value of id
- Args    : newvalue (optional)
-
+  Arg  1      char|int $id
+              id of object in mapped region
+	      e.g. RawContig ID/chromosome name
+  Function    accessor method
+  Returntype  char|int
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Coordinate
 
 =cut
 

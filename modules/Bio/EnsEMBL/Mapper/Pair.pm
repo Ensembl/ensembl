@@ -2,9 +2,9 @@
 #
 # Ensembl module for Bio::EnsEMBL::Mapper::Pair
 #
-# Cared for by Ewan Birney <birney@ebi.ac.uk>
+# Written by Ewan Birney <birney@ebi.ac.uk>
 #
-# Copyright Ewan Birney
+# Copyright GRL and EBI
 #
 # You may distribute this module under the same terms as perl itself
 
@@ -12,27 +12,26 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::Mapper::Pair - DESCRIPTION of Object
+Bio::EnsEMBL::Mapper::Pair
 
 =head1 SYNOPSIS
 
-Give standard usage here
-
 =head1 DESCRIPTION
 
-Describe the object here
+Two regions mapped between different coordinate systems are
+each represented by a Bio::EnsEMBL::Mapper::Unit and joined
+together as a Bio::EnsEMBL::Mapper::Pair.
 
 =head1 AUTHOR - Ewan Birney
 
-This modules is part of the Ensembl project http://www.ensembl.org
+This module is part of the Ensembl project http://www.ensembl.org
 
-Email birney@ebi.ac.uk
-
-Describe contact details here
+Post general queries to B<ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
 
@@ -62,19 +61,20 @@ sub new {
     return $self;
 }
 
-=head2 to
 
- Title   : to
- Usage   : $obj->to($newval)
- Function: 
- Example : 
- Returns : value of to
- Args    : newvalue (optional)
+=head2 from, to
 
+  Arg  1      Bio::EnsEMBL::Mapper::Unit $seqobj
+	      from and to represent the two regions
+	      which are mapped to each other
+  Function    accessor method
+  Returntype  Bio::EnsEMBL::Mapper::Unit
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Pair
 
 =cut
 
-sub to{
+sub to {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'to'} = $value;
@@ -83,19 +83,7 @@ sub to{
 
 }
 
-=head2 from
-
- Title   : from
- Usage   : $obj->from($newval)
- Function: 
- Example : 
- Returns : value of from
- Args    : newvalue (optional)
-
-
-=cut
-
-sub from{
+sub from {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'from'} = $value;
@@ -104,19 +92,20 @@ sub from{
 
 }
 
+
 =head2 ori
 
- Title   : ori
- Usage   : $obj->ori($newval)
- Function: 
- Example : 
- Returns : value of ori
- Args    : newvalue (optional)
-
+  Arg  1      Bio::EnsEMBL::Mapper::Unit $ori
+  Function    accessor method
+	      relative orientation of the the
+	      two mapped regions
+  Returntype  Bio::EnsEMBL::Mapper::Unit
+  Exceptions  none
+  Caller      Bio::EnsEMBL::Mapper::Pair
 
 =cut
 
-sub ori{
+sub ori {
    my ($self,$value) = @_;
    if( defined $value) {
       $self->{'ori'} = $value;
