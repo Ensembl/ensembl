@@ -12,7 +12,7 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::DBSQL::CloneAdapor
+Bio::EnsEMBL::DBSQL::CloneAdaptor
 
 =head1 SYNOPSIS
 
@@ -52,6 +52,30 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 
 
+sub _generic_sql_fetch {
+    my( $self, $where_clause ) = @_;
+    
+    my $sql = q{
+        SELECT clone_id
+          , embl_acc
+          , name
+          , version
+          , embl_version
+          , htg_phase
+          , UNIX_TIMESTAMP(created)
+          , UNIX_TIMESTAMP(modified)
+          , UNIX_TIMESTAMP(stored) }
+        . $where_clause .
+        q{ ORDER BY embl_version DESC };
+    my $sth = $self->prepare($sql);
+    $sth->execute;
+    
+    if (my @fields = $sth->fetchrow) {
+        return Bio::EnsEMBL::Clone->new($self, @fields);
+    } else {
+        return;
+    }
+}
 
 =head2 fetch_by_accession
 
@@ -66,41 +90,80 @@ use Bio::EnsEMBL::DBSQL::Gene_Obj;
 =cut
 
 
-# setup a cache for clone accno's:
-my %clone_cache;
-
 sub fetch_by_accession { 
-    my ($self,$id) = @_;
+    my ($self,$acc) = @_;
 
-    if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
-
-    if ( defined $clone_cache{$id} ) {
-        return $clone_cache{$id};
+    
+    unless ($acc) {
+        $self->throw("Accession not given");
     }
 
-    my $statement="select internal_id,embl_id,version,embl_version,htg_phase,
-                          UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
-                          UNIX_TIMESTAMP(stored) 
-                   from   clone 
-                  where   id = '$id'
-                 order by embl_version desc";
+    my $clone = $self->_generic_sql_fetch(
+        qq{ WHERE embl_acc = '$acc' }
+        );
 
-   
-    my $sth = $self->prepare($statement);    
-    my $res = $sth ->execute();
-
-    my ($internal_id,$embl_id,$version,$embl_version,
-	$htg_phase,$created,$modified, $stored)= $sth->fetchrow_array;
-   
-    $self->throw("no clone for $id") unless defined $internal_id;
-    
-    my @args=($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified, $stored);
-
-    my $clone = Bio::EnsEMBL::Clone->new($self,@args);
-
-    $clone_cache{$id}= $clone;
-    return $clone;
+    if ($clone) {
+        return $clone;
+    } else {
+        $self->throw("No clone with accession '$acc'");
+    }
 }
+
+
+=head2 fetch_by_accession_version
+
+ Title   : fetch_by_accession_version
+ Usage   :
+ Function:
+ Example :
+ Returns : Bio::EnsEMBL::Clone
+ Args    :
+
+
+=cut
+
+sub fetch_by_accession_version { 
+    my ($self, $acc, $ver) = @_;
+
+    unless ($acc and $ver) {
+        $self->throw("Need both accession (got '$acc') and version (got '$ver')");
+    }
+
+    my $clone = $self->_generic_sql_fetch(
+        qq{ WHERE embl_acc = '$acc' AND embl_version = '$ver' }
+        );
+    if ($clone) {
+        return $clone;
+    } else {
+        $self->throw("no clone with accession '$acc' and version '$ver'");
+    }
+}
+
+
+sub fetch_by_name {
+    my ($self, $name) = @_;
+
+    $self->throw("name not given");
+
+    my $clone = $self->_generic_sql_query(
+        qq{ WHERE name = '$name' }
+        );
+
+    if ($clone) {
+        return $clone;
+    } else {
+        $self->throw("No Clone with name '$name'");
+    }
+}
+
+
+
+sub fetch {
+    my ($self,$id) = @_;
+    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
+    $self->fetch_by_accession($id);
+}
+
 
 
 
@@ -126,7 +189,7 @@ sub list_embl_version_by_accession {
     my $sth = $self->prepare(qq{
 	SELECT distinct embl_version
 	FROM   clone
-	WHERE  id = '$id'
+	WHERE  embl_acc = '$id'
     });
     my $res = $sth ->execute();
 
@@ -139,82 +202,6 @@ sub list_embl_version_by_accession {
     
     return @vers;
 }
-
-=head2 fetch_by_accession_version
-
- Title   : fetch_by_accession_version
- Usage   :
- Function:
- Example :
- Returns : Bio::EnsEMBL::Clone
- Args    :
-
-
-=cut
-
-sub fetch_by_accession_version { 
-    my ($self,$id,$ver) = @_;
-
-    if( !defined $id) {$self->throw("Don't have $id for new adaptor");}
-
-    my $statement="select internal_id,embl_id,version,embl_version,htg_phase,
-                          UNIX_TIMESTAMP(created),UNIX_TIMESTAMP(modified),
-                          UNIX_TIMESTAMP(stored) 
-                   from   clone 
-                   where  id           = '$id'
-                   and    embl_version = $ver";
-
-   
-    my $sth = $self->prepare($statement);    
-    my $res = $sth ->execute();
-
-    my ($internal_id,$embl_id,$version,$embl_version,
-	$htg_phase,$created,$modified, $stored)= $sth->fetchrow_array;
-   
-    $self->throw("no clone $id with version $ver") unless defined $internal_id;
-    
-    my @args=($internal_id,$id,$embl_id,$version,$embl_version,$htg_phase,$created,$modified, $stored);
-    
-    return Bio::EnsEMBL::Clone->new($self,@args);
-}
-
-
-sub fetch_by_embl_id {
-    my ($self, $embl_id) = @_;
-
-    $self->throw("Can't fetch clone without EMBL id (got '$embl_id')")
-        unless $embl_id;
-
-    my $sth = $self->prepare(q{
-        SELECT internal_id
-          , id
-          , embl_id
-          , version
-          , embl_version
-          , htg_phase
-          , UNIX_TIMESTAMP(created)
-          , UNIX_TIMESTAMP(modified)
-          , UNIX_TIMESTAMP(stored)
-        FROM clone
-        WHERE embl_id = ?
-        });
-    $sth->execute($embl_id);
-    
-    my @fields = $sth->fetchrow
-        or $self->throw("No Clone with embl_id '$embl_id'");
-    
-    return Bio::EnsEMBL::Clone->new($self, @fields);
-}
-
-
-
-sub fetch
-{
-    my ($self,$id)=@_;
-    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
-    $self->fetch_by_accession($id);
-}
-
 
 
 
@@ -233,45 +220,50 @@ sub fetch
 =cut
 
 sub delete_by_dbID {
-   my ($self,$internal_id) = @_;
-   
-   my @contigs;
-   my @dnas;
-   my $fadaptor = $self->db->get_FeatureAdaptor;
+    my ($self, $clone_id) = @_;
 
-   # get a list of contigs to zap
+    my $fadaptor = $self->db->get_FeatureAdaptor;
 
-   my $sth = $self->prepare("select internal_id,dna from contig where clone = $internal_id");
-   my $res = $sth->execute;
+    # Make a list of all contig and dna entries to delete
+    my $sth = $self->prepare(qq{
+        SELECT contig_id, dna_id
+        FROM contig
+        WHERE clone_id = $clone_id
+        });
+    $sth->execute;
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       push(@contigs,$rowhash->{'internal_id'});
-       push(@dnas,$rowhash->{'dna'});
-   }
-   
-   # Delete from DNA table, Contig table, Clone table
-   
-   foreach my $contig ( @contigs ) {
-       $fadaptor->delete_by_RawContig_internal_id($contig);
-       my $sth = $self->prepare("delete from contig where internal_id = $contig");
-       my $res = $sth->execute;
-   }
+    my( @contigs, @dnas );
+    while( my ($c, $d) = $sth->fetchrow_hashref) {
+        push(@contigs, $c);
+        push(@dnas,    $d);
+    }
 
+    # Delete features for each contig, and each contig
+    foreach my $contig_id ( @contigs ) {
+        $fadaptor->delete_by_RawContig_internal_id($contig_id);
+        my $sth = $self->prepare("DELETE FROM contig WHERE contig_id = $contig_id");
+        $sth->execute;
+        $self->throw("Failed to delete contigs for contig_id '$contig_id'")
+            unless $sth->rows;
+    }
 
-   if ($self->db ne $self->db->dnadb) {
-     $self->warn("Using a remote dna database - can't delete dna\n");
-   } else {
-     
-     foreach my $dna (@dnas) {
-       $sth = $self->prepare("delete from dna where id = $dna");
-       $res = $sth->execute;
-       
-     }
+    # Delete DNA as long as we aren't using a remote DNA database.
+    if ($self->db ne $self->db->dnadb) {
+        $self->warn("Using a remote dna database - not deleting dna\n");
+    } else {
+        foreach my $dna_id (@dnas) {
+            $sth = $self->prepare("DELETE FROM dna WHERE dna_id = $dna_id");
+            $sth->execute;
+            $self->throw("Failed to delete dna for dna_id '$dna_id'")
+                unless $sth->rows;
+        }
+    }
 
-   }
-
-   $sth = $self->prepare("delete from clone where internal_id = $internal_id");
-   $res = $sth->execute;
+    # Delete the row for the clone
+    $sth = $self->prepare("DELETE FROM clone WHERE clone_id = $clone_id");
+    $sth->execute;
+    $self->throw("Failed to delete clone for clone_id '$clone_id'")
+        unless $sth->rows;
 }
 
 
@@ -289,44 +281,34 @@ sub delete_by_dbID {
 
 # will contact geneAdaptor when ready
 sub get_all_Genes {
-   my ($self,$clone_id,$supporting) = @_;
-   my @out;
+    my ($self, $clone_id) = @_;
 
-   $self->throw("I need an id") unless $clone_id;
- 
-   my %got;
-   
-   my $sth = $self->prepare("
+    $self->throw("clone_id not given") unless $clone_id;
+
+    my $sth = $self->prepare(qq{
         SELECT t.gene_id
-        FROM transcript t,
-             exon_transcript et,
-             exon e,
-             contig c
-        WHERE e.contig_id = c.internal_id
+        FROM transcript t
+          , exon_transcript et
+          , exon e
+          , contig c
+        WHERE e.contig_id = c.contig_id
           AND et.exon_id = e.exon_id
           AND t.transcript_id = et.transcript_id
-          AND c.clone = $clone_id
-        ");
-
-    my $res = $sth->execute();
+          AND c.clone_id = $clone_id
+        });
+    $sth->execute();
    
-    while (my $rowhash = $sth->fetchrow_hashref) { 
-            
-        if( ! exists $got{$rowhash->{'gene_id'}}) {  
-            
-           my $geneAdaptor = $self->db->get_GeneAdaptor();
-	   my $gene = $geneAdaptor->fetch_by_dbID( $rowhash->{'gene_id'});
-           if ($gene) {
-	        push(@out, $gene);
-           }
-	   $got{$rowhash->{'gene_id'}} = 1;
-        }       
+    my $geneAdaptor = $self->db->get_GeneAdaptor();
+    my( %got, @genes );
+    while (my ($gene_id) = $sth->fetchrow) { 
+        unless ($got{$gene_id}) {
+            if (my $gene = $geneAdaptor->fetch_by_dbID($gene_id)) {
+                push(@genes, $gene);
+            }
+            $got{$gene_id} = 1;
+        }
     }
-   
-    if (@out) {
-        return @out;
-    }
-    return;
+    return @genes;
 }
 
 
@@ -364,34 +346,25 @@ sub get_Contig {
 =cut
 
 sub get_all_Contigs {
-   my ($self,$internal_id,$version) = @_;
-   my $sth;
-   my @res;
-  
-   my $sql = "select id,internal_id from contig where clone = $internal_id";
+   my ($self, $clone_id, $version) = @_;
 
-   $sth= $self->prepare($sql);
-   my $res  = $sth->execute();
-   my $seen = 0;
+   my $sth = $self->prepare("SELECT contig_id FROM contig WHERE clone_id = $clone_id");
+   $sth->execute();
 
-   my $count   = 0;
-   my $total   = 0;
-   
+   my( @contigs );
+   while( my ($contig_id) = $sth->fetchrow_hashref) {
+       my $c = $self->db->get_Contig($contig_id);
+       $c->internal_id($contig_id);
+       $c->seq_version($version);
 
-   while( my $rowhash = $sth->fetchrow_hashref) {
-       my $contig = $self->db->get_Contig( $rowhash->{'id'});
-       $contig->internal_id($rowhash->{internal_id});
-       $contig->seq_version($version);
-
-       push(@res,$contig);
-       $seen = 1;
+       push(@contigs, $c);
    }
 
-   if( $seen == 0  ) {
-       $self->throw("Clone [$internal_id] has no contigs in the database. Should be impossible, but clearly isn't...");
+   if (@contigs) {
+       return @contigs;
+   } else {
+       $self->throw("Failed to find any contigs for clone_id '$clone_id'");
    }
-
-   return @res;   
 }
 
 
