@@ -201,10 +201,10 @@ sub fetch {
           WHERE contig.clone = clone.internal_id
           AND contig.id = '$id'
         ";
-
+    
     my $sth = $self->dbobj->prepare($query);    
     my $res = $sth->execute();
-
+   
     if (my $row = $sth->fetchrow_arrayref) {  
         $self->internal_id($row->[0]);
         $self->dna_id     ($row->[1]);
@@ -962,7 +962,7 @@ sub get_all_SimilarityFeatures {
 				"from feature where contig = $id");
    
    $sth->execute();
-
+   
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$evalue,\$perc_id,\$phase,\$end_phase);
    
@@ -970,7 +970,7 @@ sub get_all_SimilarityFeatures {
        my $out;
        my $analysis;
               
-#       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid\n";
+       #print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid HID $hid\n";
        
        if (!$analhash{$analysisid}) {
 	   
@@ -991,14 +991,14 @@ sub get_all_SimilarityFeatures {
        
        if( !defined $name ) {
 	 $name = 'no_source';
-       } elsif ($name eq "genscan") {
+       } elsif ($name eq "genscan" ||$name eq "fgenesh" ||$name eq "halfwise" ) {
 	 next FEAT;
        }
-       
        if( $hid ne '__NONE__' ) {
 	   # is a paired feature
 	   # build EnsEMBL features and make the FeaturePair
-	 
+	 #print "making a feature pair\n";
+	 #print "name = ".$name." ID ".$hid."\n";
 	 $out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();
 
 
@@ -1009,8 +1009,10 @@ sub get_all_SimilarityFeatures {
 	   $out->id($fid);
 	   # see comment below
 	   #$out->id          ($hid);              # MC This is for Arek - but I don't
-	                                          #    really know where this method has come from.
+	                                           #    really know where this method has come from.
        } else {
+	 #print "making a single feature";
+	 #print "name = ".$name." ID ".$hid."\n";
 	 $out = new Bio::EnsEMBL::SeqFeature;
 	 $out->seqname    ($self->id);
 	 $out->start      ($start);
@@ -1031,7 +1033,8 @@ sub get_all_SimilarityFeatures {
 	   $out->analysis($analysis);
        }
        # Final check that everything is ok.
-       $out->validate() || $out->throw("Invalid data in $out");
+       #print "gff string ".$out->gffstring."\n";
+       $out->validate();
        if( $out->can('attach_seq') ) {
 	   $out->attach_seq($self->primary_seq);
        }
@@ -1061,7 +1064,7 @@ sub get_all_RepeatFeatures {
    my ($self) = @_;
 
    my @array;
-
+   #print "getting all reapeat features\n";
    my $id     = $self->internal_id();
    my $length = $self->length();
 
@@ -1071,7 +1074,7 @@ sub get_all_RepeatFeatures {
     my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " . 
 				    "from repeat_feature where contig = '$id'";
                                     
-
+   print "sql = ".$statement."\n";
    my $sth = $self->dbobj->prepare($statement);
 
    $sth->execute();
@@ -1289,18 +1292,20 @@ sub get_all_PredictionFeatures {
    my %analhash;
 
    # make the SQL query
-   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid ". 
-       "from feature f where contig = $id and name = 'genscan' order by f.strand*f.seq_start";
+
+
+   my $query = "select f.id,f.seq_start,f.seq_end,f.strand,f.score,f.evalue,f.perc_id,f.phase,f.end_phase,f.analysis,f.hid,f.name ". 
+       "from feature f where contig = $id and name in ('genscan', 'fgenesh') order by name, hid";
+
 
    my $sth = $self->dbobj->prepare($query);
-
-
+   
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid);
+   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid, $name);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid);
+   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$name);
 
    $previous = -1;
    my $current_fset;
@@ -1333,7 +1338,7 @@ sub get_all_PredictionFeatures {
        if( $hid =~ /Initial/ || $hid =~ /Single Exon/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 ) {
        #if( $hid ne $previous || $previous eq -1 ) {
 	   $current_fset = new Bio::EnsEMBL::SeqFeature;
-	   $current_fset->source_tag('genscan');
+	   $current_fset->source_tag($name);
 	   $current_fset->primary_tag('prediction');
 	   $current_fset->analysis($analysis);
 	   $current_fset->seqname($self->id);
@@ -1360,16 +1365,15 @@ sub get_all_PredictionFeatures {
        $out->end_phase ($end_phase) if (defined $end_phase);
         
 
-#	my $query="select fset from fset_feature where feature=$fid"; 
-#	my $sth = $self->dbobj->prepare($query);
-#   	$sth->execute();
-#	my $arr_ref=$sth->fetchrow_arrayref;
+	my $query="select fset from fset_feature where feature=$fid"; 
+	my $sth = $self->dbobj->prepare($query);
+   	$sth->execute();
 
 #	$fsetid=$arr_ref->[0];
        my $fsetid =  $self->internal_id . "." . $fsetstart;
        $out->id($fsetid); # to make genscan peptide work
 	#print STDERR "\t\t===> get_pred_features fsetid: $fsetid\n";
-       $out->source_tag('genscan');
+       $out->source_tag($name);
        $out->primary_tag('prediction');
        
        if( defined $score ) {
