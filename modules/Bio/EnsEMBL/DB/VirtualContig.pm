@@ -98,15 +98,6 @@ sub _initialize {
 
   my ($focuscontig,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUSCONTIG FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
 
-
-  if (defined $clone){
-      $VC_UNIQUE_NUMBER = $clone->id;
-  } else{
-      $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
-  }
-  
-  $self->_unique_number($VC_UNIQUE_NUMBER);
-
   # set up hashes for the map
   $self->{'start'}         = {};
   $self->{'startincontig'} = {};
@@ -124,6 +115,7 @@ sub _initialize {
   
   if( defined $clone ) {
       $self->_build_clone_map($clone);
+      $VC_UNIQUE_NUMBER = $clone->id;
       
   } else {
       if( !defined $focuscontig   || 
@@ -138,8 +130,10 @@ sub _initialize {
       # build the map of how contigs go onto the vc coorindates
       $self->_build_contig_map($focuscontig,$focusposition,$ori,$leftsize,$rightsize);
       $self->dbobj($focuscontig->dbobj);
+      $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
   }
   
+  $self->_unique_number($VC_UNIQUE_NUMBER);
 
 
 # set stuff in self from @args
@@ -175,22 +169,15 @@ sub extend {
        $self->throw("Must supply a left and right value when extending a VirtualContig");
    }
 
-    my $current_left          = $self->_left_size;
-    my $current_right         = $self->_right_size;
-    my $current_ori           = $self->_focus_orientation;
-    my $current_focuscontig   = $self->_focus_contig;
-    my $current_focusposition = $self->_focus_position;
-    
-    print STDERR "Extending raw contig ".$current_focuscontig->id." (ori = $current_ori)\n";
+   print STDERR "Extending raw contig ".$self->_focus_contig->id." (ori = $self->_focus_orientation)\n";
 
-    my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig => $current_focuscontig,
-					        -focusposition   => $current_focusposition,
-					        -ori             => $current_ori,
-					        -left            => $current_left - $left,
-					        -right           => $current_right + $right,
-					        );
-
-   return $nvc;
+   my $nvc = Bio::EnsEMBL::DB::VirtualContig->new( -focuscontig     => $self->_focus_contig,
+					           -focusposition   => $self->_focus_position,
+					           -ori             => $self->_focus_orientation,
+					           -left            => $self->_left_size - $left,
+					           -right           => $self->_right_size + $right,
+					         );
+  return $nvc;
 }
 
 
@@ -563,22 +550,26 @@ sub skip_SeqFeature{
 sub _build_clone_map{
    my ($self,$clone) = @_;
 
-   my $tlen   = 0;
-   my $length = 0;
-   my $seen   = 0;
-
+   my $total_len   = 0;
+   my $length      = 0;
+   my $seen        = 0;
+   my $middle      = 0;
+   
+   print STDERR "Making clone map\n";
    foreach my $contig ( $clone->get_all_Contigs ) {
        $self->{'start'}        ->{$contig->id} = $contig->embl_offset;
        $self->{'startincontig'}->{$contig->id} = 1;
        $self->{'contigori'}    ->{$contig->id} = 1;
        $self->{'contighash'}   ->{$contig->id} = $contig;
 
-       print STDERR "Got ",$contig->id," [",$contig->embl_offset,"] to [",$contig->length,"]\n";
+       #print STDERR "Got ",$contig->id," [",$contig->embl_offset,"] to [",$contig->length,"]\n";
+       print STDERR "Clone map: contig: ",$contig->id," [em_offset: ",$contig->embl_offset,"] ==> [contig_offset: ",$contig->length,"]\n";
 
-       $tlen = $contig->embl_offset+$contig->length;
+       $total_len = $contig->embl_offset + $contig->length;
 
-       if( $tlen > $length ) {
-	   $length = $tlen;
+       if( $total_len > $length ) {
+	   $length = $total_len;
+           print STDERR "New contig length: ",$length,"\n";
        }
        
        if( $seen == 0 ) {
@@ -588,8 +579,14 @@ sub _build_clone_map{
 
    }
 
-   $self->_left_size(1);
-   $self->_right_size($length);
+   # Tony: This vc made from a clone. Since it must have a left/right arm
+   # we set the 'focus' to the middle.
+   # The magic -1 avoids counting the focus base twice
+   $middle = int($length)/2;
+   $self->_left_size($middle-1);
+   $self->_right_size($length-$middle);
+
+   # Remember this vc contructed from a clone (rather than extending a 'seed' contig)
    $self->_clone_map(1);
 }
 
