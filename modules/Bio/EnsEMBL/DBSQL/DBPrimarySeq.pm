@@ -194,6 +194,10 @@ sub seq {
    my($str) = $sth->fetchrow
        or $self->throw("No DNA sequence for dna id " . $id);
    
+   $str =~ /[^ABCDGHKMNRSTVWY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+   $str =~ s/\s//g;
+   $str =~ s/[^ABCDGHKMNRSTVWY]/N/g;
+
    return $str;
 }
 

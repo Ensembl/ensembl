@@ -310,9 +310,9 @@ sub primary_seq {
 
     # Shouldn't sequence integrity be checked on the way
     # into the datbase instead of here?
-    $str =~ /[^ATGCNRY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+    $str =~ /[^ABCDGHKMNRSTVWY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
     $str =~ s/\s//g;
-    $str =~ s/[^ATGCNRY]/N/g;
+    $str =~ s/[^ABCDGHKMNRSTVWY]/N/g;
 
     my $ret = Bio::PrimarySeq->new( 
         -seq => $str, 
