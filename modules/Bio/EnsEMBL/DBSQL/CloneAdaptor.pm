@@ -62,7 +62,7 @@ sub fetch_by_accession {
 
   deprecate('Use SliceAdaptor::fetch_by_region instead');
 
-  #this unfortunately needs a version on the ned to work
+  #this unfortunately needs a version on the end to work
   if(! ($acc =~ /\./)) {
     my $sth = $self->prepare("SELECT sr.name " .
                              "FROM   seq_region sr, coord_system cs " .
