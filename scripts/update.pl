@@ -1,4 +1,10 @@
-#!usr/local/bin/perl
+#!/usr/local/bin/perl
+
+BEGIN {
+    unshift (@INC,"/nfs/disk89/michele/pogdir/ensembl/modules");
+    unshift (@INC,"/nfs/disk89/michele/bioperl-live");
+}
+
 =head1 NAME
 
 Update
@@ -39,9 +45,12 @@ This script updates a recipient database by checking its donor database
 =cut
 
 use strict;
+
+use Bio::EnsEMBL::TimDB::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::EnsEMBL::Ghost;
 use Bio::SeqIO;
+
 use Getopt::Long;
 use vars qw(@ISA);
 
@@ -98,30 +107,30 @@ my $archost = 'localhost';
 my $arcport = '410000';
 my $arcuser = 'root';
 my $arcmodule = 'Bio::EnsEMBL::DBArchive::Obj';
-$arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
+#$arcpass || die "You forgot to give the password for the archive database! Sorry, no access!\n";
 
 $verbose && print "\nConnecting to archive database...\n";
-my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$arcuser;pass=$arcpass";
-my $arc_db = Bio::EnsEMBL::DBLoader->new($arclocator);
+#my $arclocator = "$arcmodule/host=$archost;port=$arcport;dbname=$arcname;user=$arcuser;pass=$arcpass";
+my $arc_db;# = Bio::EnsEMBL::DBLoader->new($arclocator);
     
 $verbose && print "\nConnecting to recipient database...\n";
     
 my $recipient_locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-my $rec_db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
+my $rec_db;# =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
 
 $verbose && print "\nConnecting to donor database...\n";
-my $donor_locator = $rec_db->get_donor_locator;
+my $donor_locator = 'timdb';#$rec_db->get_donor_locator;
 
-if ($donor_locator eq 'timdb') {
+#if ($donor_locator eq 'timdb') {
     $don_db = Bio::EnsEMBL::TimDB::Obj->new(\@clones); 
-}
-else {
-    $don_db =  Bio::EnsEMBL::DBLoader->new($donor_locator);
-}
-my $last_offset = $rec_db->get_last_update_offset;
+#}
+#else {
+#    $don_db =  Bio::EnsEMBL::DBLoader->new($donor_locator);
+#}
+my $last_offset = 1;#$rec_db->get_last_update_offset;
 $verbose && print "\nLast update-offset: $last_offset\n";
 
-my $now_offset = $rec_db->get_now_offset;
+my $now_offset = 949329046;#$rec_db->get_now_offset;
 $verbose && print "Time now-offset at recipient: $now_offset\n";
 
 if ($last_offset > $now_offset) {
