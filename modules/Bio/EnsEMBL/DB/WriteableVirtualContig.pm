@@ -110,6 +110,10 @@ sub write_Gene{
        $self->throw("Got to write a gene, not a [$gene]");
    }
 
+   # sanity check 
+
+   $self->_sanity_check($gene);
+
    # we need to map the exons back into RC coordinates.
    
    # in some cases the mapping will cause us to get a large number
@@ -147,10 +151,9 @@ sub write_Gene{
 	       my $trl = $trans->translation(); 
 	       my $clonedtrl = Bio::EnsEMBL::Translation->new();
 	       $clonedtrl->id($trl->id);
-	       $clonedtrl->created($trl->created);
-	       $clonedtrl->modified($trl->modified);
 	       $clonedtrl->start_exon_id($trl->start_exon_id);
 	       $clonedtrl->end_exon_id($trl->end_exon_id);
+	       $clonedtrl->version($trl->version);
 
 	       my ($srawcontig,$start,$sstrand) = $self->_vmap->vcpos_to_rcpos($trl->start,1);
 	       $clonedtrl->start($start);
@@ -187,8 +190,8 @@ sub _reverse_map_Exon{
        $self->throw("Must supply reverse map an exon not an [$exon]");
    }
 
-   my ($scontig,$start,$sstrand) = $self->_vmap->vcpos_to_rcpos($exon->start,$exon->strand);
-   my ($econtig,$end,$estrand)   = $self->_vmap->vcpos_to_rcpos($exon->end  ,$exon->strand);
+   my ($scontig,$start,$sstrand) = $self->_vmap->raw_contig_position($exon->start,$exon->strand);
+   my ($econtig,$end,$estrand)   = $self->_vmap->raw_contig_position($exon->end  ,$exon->strand);
 
    if( !ref $scontig || !ref $econtig || !$scontig->isa('Bio::EnsEMBL::DB::RawContigI') || !$econtig->isa('Bio::EnsEMBL::DB::RawContigI') ) {
        $self->throw("Exon on vc ".$exon->id." [".$exon->start.":".$exon->end."] is unmappable to rawcontig positions, probably being in a gap. Can't write");
@@ -222,10 +225,13 @@ sub _reverse_map_Exon{
 
        # walk to find scontig
        my $found = 0;
-       foreach my $mc ( @mapcontigs ) {
+       my $mc;
+       while ( $mc = shift @mapcontigs ) { 
+ 
 	   print STDERR "Got ".$mc->contig->id.":".$scontig->id."\n";
 
 	   if( $mc->contig->id eq $scontig->id ) {
+	       print STDERR "Unshifting ",$mc->contig->id,"\n";
 	       unshift(@mapcontigs,$mc);
 	       $found = 1;
 	       last;
@@ -237,6 +243,7 @@ sub _reverse_map_Exon{
 
 
        my $vcstart = $exon->start;
+       print STDERR "Looking from exon-wise",$exon->start,":",$exon->end,"\n";
 
        # ok. Move from start towards end, after we hit end.
        my @exported_exons;
@@ -244,16 +251,18 @@ sub _reverse_map_Exon{
 
        foreach my $c ( @mapcontigs ) {	   
 	   my $vcend;
-	   print STDERR "***Looking at $c\n";
+	   print STDERR "***Looking at",$c->contig->id," - $vcstart...\n";
 
 	   if( $c->contig->id eq $econtig->id ) {
 	       # go to end position
+	       print STDERR "Going for end...",$econtig->id,"\n";
 	       $vcend = $exon->end();
 	   } else {
+	       print STDERR "Going for end of contig\n";
 	       $vcend = $c->end();
 	   }
 
-	   print STDERR "Going to call with $start:$end\n";
+	   print STDERR "....Going to call with $vcstart:$vcend\n";
 	   $self->_dump_map(\*STDERR);
 
 	   my ($iscontig,$istart,$isstrand) = $self->_vmap->vcpos_to_rcpos($vcstart,$exon->strand);
@@ -281,7 +290,7 @@ sub _reverse_map_Exon{
 	   if( $c->contig->id eq $econtig->id ) {
 	       last;
 	   }
-	   
+	   $vcstart = $vcend+1;
        }
 
        return @exported_exons;
@@ -290,6 +299,95 @@ sub _reverse_map_Exon{
    $self->throw("Internal error. Should not reach here!");
 }
 
+=head2 _sanity_check
+
+ Title   : _sanity_check
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _sanity_check{
+   my ($self,$gene) = @_;
+   my $error =0;
+   my $message;
+   if( !defined $gene->id ) {
+       $error = 1;
+       $message .= "Gene has no id;";
+   }
+   if( !defined $gene->version ) {
+       $error = 1;
+       $message .= "Gene has to have a version;";
+   }
+   foreach my $trans ( $gene->each_Transcript ) {
+       if( !defined $trans->id ) {
+	   $error = 1;
+	   $message .= "Transcript has no id;";
+       }
+       if( !defined $trans->translation || !ref $trans->translation) {
+	   $error = 1;
+	   $message .= "Transcript has no translation;";
+       } else {
+	   if( !defined $trans->translation->id ) {
+	       $error = 1;
+	       $message .= "Translation has no id";
+	   } 
+	   if( !defined $trans->translation->start ) {
+	       $error = 1;
+	       $message .= "Translation has no start";
+	   } 
+	   if( !defined $trans->translation->start_exon_id ) {
+	       $error = 1;
+	       $message .= "Translation has no start exon id";
+	   } 
+	   if( !defined $trans->translation->end ) {
+	       $error = 1;
+	       $message .= "Translation has no end";
+	   } 
+	   if( !defined $trans->translation->end_exon_id ) {
+	       $error = 1;
+	       $message .= "Translation has no end exon id";
+	   } 
+       }
+       foreach my $exon ( $trans->each_Exon ) {
+	   if( !defined $exon->id ) {
+	       $error = 1;
+	       $message .= "Exon has no id";
+	   } 
+	   if( !defined $exon->created ) {
+	       $error = 1;
+	       $message .= "Exon has no id";
+	   } 
+	   if( !defined $exon->modified ) {
+	       $error = 1;
+	       $message .= "Exon has no id";
+	   } 
+	   if( !defined $exon->contig_id  ) {
+	       $error = 1;
+	       $message .= "Exon has no contig id";
+	   } else {
+	       if( $exon->contig_id ne $self->id ) {
+		   $error = 1;
+		   $message .= "Exon [".$exon->id."] does not seem to be on this VirtualContig";
+	       }
+	   }
+	   if( !defined $exon->start || !defined $exon->end || !defined $exon->strand || !defined $exon->phase ) {
+	       $error = 1;
+	       $message .= "Exon has error in start/end/strand/phase";
+	   } 
+       }
+   }
+
+   if( $error == 1 ) {
+       $self->throw("Cannot write gene due to: $message");
+   }
+	   
+
+}
 
 
 =head2 _gene_obj

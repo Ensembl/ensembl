@@ -1064,11 +1064,12 @@ sub write{
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
        eval {
+	   print STDERR "Getting out contig for $contig_id\n";
 	   my $contig      = new Bio::EnsEMBL::DBSQL::RawContig ( -dbobj => $self->_db_obj,
 								  -id    => $contig_id );
 	   
 	   $contig->fetch();
-
+	   
 	   $contighash{$contig_id} = $contig;
 
 	   # if there is no exception then it is there. Get rid of it
@@ -1087,13 +1088,18 @@ sub write{
        $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
+	   if( ! defined $exon->contig_id ) {
+	       $self->throw("Bad error - got an exon with no contig id!");
+	   }
+	   print STDERR "Exon has contig id ".$exon->contig_id."\n";
+
 	   my $sth = $self->_db_obj->prepare("insert into exon_transcript (exon,transcript,rank) values ('". $exon->id()."','".$trans->id()."',".$c.")");
 	   $sth->execute();
 	   $c++;
 
 	   if( $done{$exon->id().$exon->sticky_rank()} ) { next; }
 	   $done{$exon->id().$exon->sticky_rank()} = 1;
-
+	  
 	   my $internal_contig_id = $contighash{$exon->contig_id}->internal_id;
 
 	   if (!defined($internal_contig_id)) {

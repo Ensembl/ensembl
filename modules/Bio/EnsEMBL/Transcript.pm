@@ -137,6 +137,9 @@ sub translation {
    my $obj = shift;
    if( @_ ) {
       my $value = shift;
+      if( ! ref $value || !$value->isa('Bio::EnsEMBL::Translation') ) {
+	  $obj->throw("This [$value] is not a translation");
+      }
       $obj->{'translation'} = $value;
     }
     return $obj->{'translation'};

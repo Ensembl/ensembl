@@ -810,7 +810,7 @@ sub raw_contig_position {
     if ($vcpos >$length) {
 	$self->throw("Asked to map vc position outside vc coordinates!\n");
     }
-    print STDERR "Looking for $vcpos....\n";
+    #print STDERR "Looking for $vcpos....\n";
     #Go through all Contigs and find out where vcpos lies
     foreach my $mc ($self->get_all_MapContigs) {
 	
@@ -823,7 +823,7 @@ sub raw_contig_position {
 	#If vcpos is within the start and enf of this Contig, we found it!
 	#And we get out of the loop...
 	if (($vcpos >= $mc->start)&&($vcpos <= $mc->end)) {
-	    print STDERR "Found contig!\n ".$mc->contig->id." with start ".$mc->start." and end ".$mc->end."\n"; 
+	    #print STDERR "Found contig!\n ".$mc->contig->id." with start ".$mc->start." and end ".$mc->end."\n"; 
 	    $rc=$mc->contig;
 	    if ($mc->orientation == 1) {
 		# the contig starts at startin

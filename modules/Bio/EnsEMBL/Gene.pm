@@ -136,7 +136,7 @@ sub unique_contig_ids{
    my ($self) = @_;
    my %h;
 
-   foreach my $exon ( $self->each_unique_Exon() ) {
+   foreach my $exon ( $self->all_Exon_objects ) {
        $h{$exon->contig_id()} = 1;
    }
 
