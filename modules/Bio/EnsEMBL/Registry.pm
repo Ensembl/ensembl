@@ -99,8 +99,8 @@ use strict;
 #use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::MergedAdaptor;
 #use Bio::EnsEMBL::DBSQL::DBMergedAdaptor;
-#use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
-use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+#use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 
@@ -108,6 +108,15 @@ use vars qw(%registry_register);
 
 $registry_register{'_WARN'} = 0;
 #print STDERR "REG: ".caller()."\n";
+
+
+sub load_registy_with_web_adaptors{
+  my $class = shift;
+  use SpeciesDefs;
+
+  my $conf = SpeciesDefs->new();
+
+}
 
 sub load_all{
   my $class = shift;
@@ -118,9 +127,10 @@ sub load_all{
     $registry_register{'seen'}=1;
     if(defined($web_reg)){
       print STDERR  "Loading conf from site defs file ".$web_reg."\n";
-      unless (my $return = do $web_reg){
+      unless (my $return = do $web_reg ){
 	throw "Error in Configuration\n $!\n";
       }
+      delete $INC{$web_reg}; # other wise it gets done again by the web initialisation stuff
     }
     elsif(defined($ENV{ENSEMBL_REGISTRY}) and -e $ENV{ENSEMBL_REGISTRY}){
       print STDERR  "Loading conf from ".$ENV{ENSEMBL_REGISTRY}."\n";
@@ -138,18 +148,10 @@ sub load_all{
     }
   }
   else{
-#    print STDERR "Already configured???\n";
-
-#    if(defined($registry_register{'_DBA'})){ # print available
-#      foreach my $db (@{$registry_register{'_DBA'}}){
-#	print STDERR $db->species."\t".$db->group()."\n";
-#      }
-#    }
-#    else{
-#      print STDERR "No dbas ???\n";
-#    }
+    print STDERR "Already configured???\n";
   }
 }
+
 
 #=head2 warn_on_duplicates
 #
@@ -222,7 +224,6 @@ sub default_track{
 sub add_db{
   my ($class, $db, $name, $adap) = @_;
 
-#  print STDERR "ADDING# ".$adap->dbname." to ".$db->db->dbname."  as $name\n";
   $registry_register{$db->species()}{$db->group()}{'_special'}{$name} = $adap;
 
 }
@@ -428,11 +429,8 @@ sub add_adaptor{
     return;
   }
   if(defined($registry_register{$species}{$group}{$type})){ #&& warn_on_duplicates()){
-#    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
+    print STDERR ("Overwriting Adaptor in Registry for $species $group $type\n");
     $registry_register{$species}{$group}{$type} = $adap;
-#    if($species eq 'Homo_sapiens' and $group eq  'core' and $type eq 'MetaCoordContainer'){
-#      print STDERR stack_trace_dump();
-#    }
    return;
   }
   $registry_register{$species}{$group}{$type} = $adap;
@@ -446,10 +444,9 @@ sub add_adaptor{
   else{
     push(@{$registry_register{$species}{'list'}},$adap);
   }
-#  print STDERR "REGADD  $species \t $group \t $type to the registry\n";
-#  if($type eq "MetaContainer"){
-#    print STDERR "called by ".caller()."\n";
-#  }
+
+#  print STDERR "REGADD  $species \t $group \t $type\t to the registry\n";
+
   if(!defined ($registry_register{$type}{$species})){
     my @list =();
     push(@list,$adap);
@@ -493,12 +490,7 @@ sub get_adaptor{
 
   my $ret = $registry_register{$species}{$group}{$type};
   if(!defined($ret)){
-#    foreach my $arse (@{$registry_register{$species}{'list'}}){
-#      print STDERR $species."\t".$arse."\n";
-#    } 
     throw("COULD NOT FIND ADAPTOR species=$species\tgroup=$group\ttype=$type\n");
-    print STDERR caller();
-    print STDERR "\nfin\n";;
   }
   if(!ref($ret)){ # not instantiated yet
     my $dba = $registry_register{$species}{$group}{'_DB'};
@@ -574,36 +566,55 @@ sub get_alias{
   return $registry_register{'_ALIAS'}{$key};
 }
 
-sub add_new_track{
-  my ($class, $config, $dba ) = @_;
 
-#  my $view = $config->{'type'};
+sub add_new_tracks{
+  my($class, $conf) = @_;
 
-#  print STDERR "art => ".$config->{'general'}->{$view}{'_artefacts'}."\n";
-#  print STDERR "art => ".$config->{'_artefacts'}."\n";
+  my $start = 0;
+  my $reg = $class;
+  my $species_reg = $reg->get_alias($conf->{'species'},"nothrow");
+  my $view =  $conf->{'type'};
+  if(defined($species_reg)){
+    my $config = $conf->{'general'}->{$view};
+    foreach my $dba ($reg->get_all_DBAdaptors()){
+      if($dba->species eq $species_reg and !$reg->default_track($dba->species,$dba->group)){
+	if($start == 0){
+	  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
+	    $start = $config->{'vega_transcript_lite'}->{'pos'};
+	  }
+	  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
+	    $start = $config->{'transcript_lite'}->{'pos'};
+	  }
+	  else{ # no transcripts on this view so do not add track here
+	    #    print STDERR "no transcript options on this display \n";
+	    next;
+	  }
+	  $start ++;
+	}
+	else{
+	  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
+	    $start++;
+	  }
+	  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
+	    $start++;
+	  }
+	  else{ # no transcripts on this view so do not add track here
+	    #    print STDERR "no transcript options on this display \n";
+	    next;
+	  }
+	}
+	$reg->_add_new_track( $conf->{'general'}->{$view}, $dba, $start);
+      }
+    }
+  }
+}
 
-#  find the vega point and use this as the start point.
-  my $start = 1001;
-  if(exists($config->{'vega_transcript_lite'}) and defined($config->{'vega_transcript_lite'}->{'pos'})){
-    $start = $config->{'vega_transcript_lite'}->{'pos'};
-  }
-  elsif(exists($config->{'transcript_lite'}) and defined($config->{'transcript_lite'}->{'pos'})){
-    $start = $config->{'transcript_lite'}->{'pos'};
-  }
-  else{ # no transcripts on this view so do not add track here
-#    print STDERR "no transcript options on this display \n";
-    return;
-  }
+sub _add_new_track{
+  my ($class, $config, $dba, $start ) = @_;
+
+
   my $KEY = $dba->group();
-  if(!defined($registry_register{'web_tracks'}{$KEY})){ # check not already stored;
-    $registry_register{'web_tracks'}{$KEY} = $KEY;
-    $registry_register{'web_tracks'}{'count'}++;
-    $start +=  $registry_register{'web_tracks'}{'count'}; # add to start pos for each new one
-  }
-#  else{ # already added 
-#    return;
-#  }
-#  print STDERR "HELL adding $KEY at pos $start\n";
+
   $config->{$KEY} ={
 		    'on'    => "on",
 		    'compact' => 'yes',
