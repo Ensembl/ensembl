@@ -55,7 +55,7 @@ use Bio::EnsEMBL::Analysis::ensConf qw(UNFIN_ROOT
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$raclones,$noacc,$test,$part,@args) = @_;
+  my($self,$raclones,$noacc,$test,$part,$live,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
@@ -114,15 +114,23 @@ sub _initialize {
   }
   $self->{'_clone_update_dbm'}=\%unfin_clone_update;
 
-  # define a few other important files
+  # define a few other important files, depending on options
   my $file_root;
-  if($part){
-      #$self->throw("Do not use -part  This is a development option which is currently disabled");
-      $self->warn("Using -part to take g/t/co files from test_gtc/ [development option]");
-      $file_root="$unfinished_root/test_gtc";
-  }else{
+  if($test){
+      $self->warn("Using -test: fake test data");
       $file_root="$unfinished_root";
+  }elsif($part){
+      $self->warn("Using -part: to take g/t/co files from test_gtc/ [development option]");
+      $file_root="$unfinished_root/test_gtc";
+  }elsif($live){
+      $self->warn("Using -live to access live version: may be data inconsistencies");
+      $file_root="$unfinished_root";
+  }else{
+      $self->warn("Using current stable release version of e/t/g/co files");
+      $file_root="$unfinished_root/release/current";
+      $exon_file="$unfinished_root/release/current/confirmed_exon";
   }
+
   my $transcript_file="$file_root/unfinished_ana.transcript.lis";
   my $gene_file="$file_root/unfinished_ana.gene.lis";
   my $contig_order_file="$file_root/unfinished_ana.contigorder.lis";

@@ -110,6 +110,7 @@ my $getall    = 0;
 my $pepformat = 'Fasta';
 my $test;
 my $part;
+my $live;
 my $verbose   = 0;
 my $cstart    = 0;
 my $cend      = undef;
@@ -121,8 +122,8 @@ my $usetimdb = 0;
 # msql was 'croc'
 my $host1     = 'obi-wan';
 # msql was 'ensdev'
-my $dbname    = 'ensdev';
-my $dbuser    = 'ensembl';
+my $dbname    = 'ens2';
+my $dbuser    = 'ensro';
 #my $dbpass    = 'ens2pass';
 my $dbpass = undef;
 
@@ -154,6 +155,7 @@ my $port      = '410000';
 	     'usefile'   => \$fromfile,
 	     'getall'    => \$getall,
 	     'test'      => \$test,
+	     'live'      => \$live,
 	     'part'      => \$part,
 	     'verbose'   => \$verbose,
 	     'start:i'   => \$cstart,
@@ -194,7 +196,7 @@ if ( $usetimdb == 1 ) {
     }
 
     # clones required are passed to speed things up - cuts down on parsing of flat files
-    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part);
+    $db = Bio::EnsEMBL::TimDB::Obj->new($raclones,$noacc,$test,$part,$live);
 } else {
     
     my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
