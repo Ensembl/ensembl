@@ -787,6 +787,12 @@ sub dnadb {
 }
 
 
+###########################################################
+#
+# Support for DAS
+#
+###########################################################
+
 =head2 add_DASFeatureFactory
 
   Arg [1]    : Bio::EnsEMBL::ExternalFeatureFactory $value 
@@ -808,7 +814,6 @@ sub add_DASFeatureFactory{
 }
 
 
-
 =head2 _each_DASFeatureFactory
 
   Args       : none
@@ -828,48 +833,115 @@ sub _each_DASFeatureFactory{
 }
 
 
-
-
-
-
 ################################################################## 
 # 
-# SUPPORT FOR EXTERNAL ADAPTORS & FEATURE FACTORIES 
+# SUPPORT FOR EXTERNAL FEATURE FACTORIES 
 # 
-# These are not implemented on the new main trunk and at this
-# point it is not clear if they ever will be.
-#
 ##################################################################
 
 
+=head2 add_ExternalFeatureFactory
+
+  Arg [1]    : Bio::EnsEMBL::DB::ExternalFeatureFactoryI $value
+  Example    : $db_adaptor->add_ExternalFeatureFactory
+  Description: Adds an external feature factory to the core database
+               so that features from external sources can be displayed in 
+               ensembl. This method is still available mainly for legacy
+               support for external EnsEMBL installations.  It should 
+               probably not be used by internal EnsEMBL developers as
+               there is likely a better way to integrate your data with
+               the system.
+  Returntype : none
+  Exceptions : none
+  Caller     : external
+
+=cut
+
+sub add_ExternalFeatureFactory{
+   my ($self,$value) = @_;
+   
+   unless( ref $value && 
+	   $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
+     $self->throw("[$value] is not a " .
+		  "Bio::EnsEMBL::DB::ExternalFeatureFactoryI " .
+		  "but it should be!");
+   }
+
+   push(@{$self->{'_external_ff'}},$value);
+}
 
 
-=head2 extension_tables
+=head2 _each_ExternalFeatureFactory
 
   Arg [1]    : none
   Example    : none
-  Description: NOT IMPLEMENTED
+  Description: PRIVATE included for support of ExternalFeature Factories.
+               Returns list of external feature factories currently attached.
+  Returntype : list of Bio::EnsEMBL::DB::ExternalFeatureFactory objects
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+sub _each_ExternalFeatureFactory{
+   my ($self) = @_;
+
+   return @{$self->{'_external_ff'}}
+}
+
+
+
+##############################################################
+###################DEPRECATED METHODS#########################
+##                                                          ##
+##  All the methods below are deprecated methods,           ##
+##  only kept here to allow old scripts to work             ##
+##  They all send a warning and call the new method instead ##
+##                                                          ##
+##############################################################
+##############################################################
+
+
+=head1 Old Deprecated Functions 
+
+Functions which are completely deprecated 
+
+=cut
+
+
+## internal stuff for external adaptors
+
+
+=head2 _ext_adaptor
+
+  Arg [1]    : none
+  Example    : none
+  Description: NOT CURRENTLY USED
   Returntype : none
   Exceptions : none
   Caller     : none
 
 =cut
 
-sub extension_tables{
-   my $obj = shift;
-
-   $obj->warn("Extension tables is not implemented, and will either be ". 
-	      "deprecated or implemented in the near future\n");
-
-   return undef;
-
-#   if( @_ ) {
-#      my $value = shift;
-#      $obj->{'extension_tables'} = $value;
-#    }
-#    return $obj->{'extension_tables'};
-
+sub _ext_adaptor {
+    my ($self, $adtor_name, $adtor_obj) = @_;
+    
+    $self->throw("No adaptor name given") unless $adtor_name;
+    
+    if( $adtor_obj ) {
+        if ($adtor_obj eq 'DELETE') { 
+            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
+        } else {
+            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
+        }
+    }
+    return $self->{'_ext_adaptors'}{$adtor_name};
 }
+
+
+
+
+
 
 
 =head2 list_ExternalAdaptors
@@ -963,105 +1035,32 @@ sub remove_ExternalAdaptor {
     #undef;
 }
 
-
-=head2 add_ExternalFeatureFactory
+=head2 extension_tables
 
   Arg [1]    : none
   Example    : none
-  Description: NOT CURRENTLY USED
+  Description: NOT IMPLEMENTED
   Returntype : none
   Exceptions : none
   Caller     : none
 
 =cut
 
-sub add_ExternalFeatureFactory{
-   my ($self,$value) = @_;
+sub extension_tables{
+   my $obj = shift;
 
-   $self->warn("DBAdaptor::add_ExternalFeatureFactory is not yet implemented."
-	    . " it will either be implemented or deprecated at a later date");
-
-#   unless( ref $value && $value->isa('Bio::EnsEMBL::DB::ExternalFeatureFactoryI') ) {
-#       $self->throw("[$value] is not a Bio::EnsEMBL::DB::ExternalFeatureFactoryI but it should be!");
-#   }
-
-#   push(@{$self->{'_external_ff'}},$value);
-}
-
-
-=head2 _each_ExternalFeatureFactory
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub _each_ExternalFeatureFactory{
-   my ($self) = @_;
-
-
-   $self->warn("DBAdaptor::_each_ExternalFeatureFactory is not yet implemented"
-	     . "it will either be implemented or deprecated at a later date");
+   $obj->warn("Extension tables is not implemented, and will either be ". 
+	      "deprecated or implemented in the near future\n");
 
    return undef;
 
-   #return @{$self->{'_external_ff'}}
+#   if( @_ ) {
+#      my $value = shift;
+#      $obj->{'extension_tables'} = $value;
+#    }
+#    return $obj->{'extension_tables'};
+
 }
-
-
-## internal stuff for external adaptors
-
-
-=head2 _ext_adaptor
-
-  Arg [1]    : none
-  Example    : none
-  Description: NOT CURRENTLY USED
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub _ext_adaptor {
-    my ($self, $adtor_name, $adtor_obj) = @_;
-    
-    $self->throw("No adaptor name given") unless $adtor_name;
-    
-    if( $adtor_obj ) {
-        if ($adtor_obj eq 'DELETE') { 
-            delete $adtor_obj->{'_ext_adaptors'}{$adtor_name};
-        } else {
-            $self->{'_ext_adaptors'}{$adtor_name} = $adtor_obj;
-        }
-    }
-    return $self->{'_ext_adaptors'}{$adtor_name};
-}
-
-
-
-
-
-##############################################################
-###################DEPRECATED METHODS#########################
-##                                                          ##
-##  All the methods below are deprecated methods,           ##
-##  only kept here to allow old scripts to work             ##
-##  They all send a warning and call the new method instead ##
-##                                                          ##
-##############################################################
-##############################################################
-
-
-=head1 Old Deprecated Functions 
-
-Functions which are completely deprecated 
-
-=cut
 
 
 =head2 get_LiteAdaptor

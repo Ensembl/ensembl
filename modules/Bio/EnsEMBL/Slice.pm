@@ -1104,11 +1104,7 @@ sub fetch_karyotype_band_start_end {
 sub get_all_ExternalFeatures{
    my ($self) = @_;
 
-  $self->warn("Slice->get_all_ExternalFeatures is not currently implemented, and will either be implemented or removed completely in the future\n");
-  
-   return ();
-
-   #return $self->_get_all_SeqFeatures_type('external');
+   return $self->_get_all_SeqFeatures_type('external');
 }
 
 =head2 _get_all_SeqFeatures_type
@@ -1128,58 +1124,50 @@ sub get_all_ExternalFeatures{
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
    $self->throw('interface fault') if @_ != 2;
-
-  $self->warn("Slice->get_all_SeqFeatures_type is not currently correctly implemented.  This may arrive in the future, or may be removed completely");
  
-   return ();
- 
-#   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
-#                                    ( $self->assembly_type );
+   my $mapper = $self->adaptor->db->get_AssemblyMapperAdaptor->fetch_by_type
+                                    ( $self->assembly_type );
 
-#   # register the VC
-#   $mapper->register_region( $self->chr_name,
-#			     $self->chr_start,
-#			     $self->chr_end );
+   # register the VC
+   $mapper->register_region( $self->chr_name,
+			     $self->chr_start,
+			     $self->chr_end );
   
-#   # get contig IDs for the VC
-#   my @cids = $mapper->list_contig_ids( $self->chr_name,
-#				        $self->chr_start,
-#				        $self->chr_end );
+   # get contig IDs for the VC
+   my @cids = $mapper->list_contig_ids( $self->chr_name,
+				        $self->chr_start,
+				        $self->chr_end );
    
-#   my $rca = $self->adaptor->db->get_RawContigAdaptor;
-#   my @vcsf = ();
-#   foreach my $id (@cids) {
-#     my $c = $rca->fetch_by_dbID($id);
+   my $rca = $self->adaptor->db->get_RawContigAdaptor;
+   my @vcsf = ();
+   foreach my $id (@cids) {
+     my $c = $rca->fetch_by_dbID($id);
 
-#     # get start and end of the golden path fragment of the raw contig
-#     my ($chr, $start, $end) = $self->adaptor->get_chr_start_end_of_contig(
-#                                                                  $c->name);
+     if ($type eq 'external') {
+       foreach my $f ($c->get_all_ExternalFeatures) {
+         my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
+                         ($id, $f->start, $f->end, $f->strand);
+         if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
+           next;
+	 }
+	 my $newstrand = $feature_mapped_to_assembly[0]->strand
+	                                       * $self->strand;
+	 my $newstart = $feature_mapped_to_assembly[0]->start
+	                                  - $self->chr_start + 1;
+	 my $newend = $newstart + $f->end - $f->start;
+	 my $newf = Bio::EnsEMBL::SeqFeature->new();
+	 %$newf = %$f;
+	 $newf->start($newstart);
+         $newf->end($newend);
+         $newf->strand($newstrand);
+	 push @vcsf, $newf;
+       }
+     } else {
+       $self->throw("Type $type not recognised");
+     }
+   }
 
-#     if ($type eq 'external') {
-#       foreach my $f ($c->get_all_ExternalFeatures) {
-#         my @feature_mapped_to_assembly = $mapper->map_coordinates_to_assembly
-#                         ($id, $f->start, $f->end, $f->strand);
-#         if($feature_mapped_to_assembly[0]->isa("Bio::EnsEMBL::Mapper::Gap")) {
-#           next;
-#	 }
-#	 my $newstrand = $feature_mapped_to_assembly[0]->strand
-#	                                       * $self->strand;
-#	 my $newstart = $feature_mapped_to_assembly[0]->start
-#	                                  - $self->chr_start + 1;
-#	 my $newend = $newstart + $f->end - $f->start;
-#	 my $newf = Bio::EnsEMBL::SeqFeature->new();
-#	 %$newf = %$f;
-#	 $newf->start($newstart);
-#         $newf->end($newend);
-#         $newf->strand($newstrand);
-#	 push @vcsf, $newf;
-#       }
-#     } else {
-#       $self->throw("Type $type not recognised");
-#     }
-#   }
-
-#   return @vcsf;
+   return @vcsf;
 }
 
 
