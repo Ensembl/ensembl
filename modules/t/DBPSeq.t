@@ -48,7 +48,7 @@ if ( -e 't/DBPSeq.conf' ) {
     foreach $key ( keys %conf ) {
 	print STDERR " $key $conf{$key}\n";
     }
-    print STDERR "\nPlease use a file t/transf_to_vc.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
+    print STDERR "\nPlease use a file t/DBPSeq.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
 }
 
 my $dbtype = 'rdb';

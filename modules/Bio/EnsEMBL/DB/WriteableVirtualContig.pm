@@ -221,13 +221,21 @@ sub _reverse_map_Exon{
        my @mapcontigs = $self->_vmap->get_all_MapContigs();
 
        # walk to find scontig
+       my $found = 0;
+       foreach my $mc ( @mapcontigs ) {
+	   print STDERR "Got ".$mc->contig->id.":".$scontig->id."\n";
 
-       foreach my $c ( @mapcontigs ) {
-	   if( $c->id eq $scontig->id ) {
+	   if( $mc->contig->id eq $scontig->id ) {
+	       unshift(@mapcontigs,$mc);
+	       $found = 1;
 	       last;
 	   }
        }
-       unshift(@mapcontigs,$scontig);
+       if( $found == 0 ) {
+	   $self->throw("Internal error - unable to find map contig with this id");
+       }
+
+
        my $vcstart = $exon->start;
 
        # ok. Move from start towards end, after we hit end.
@@ -236,19 +244,23 @@ sub _reverse_map_Exon{
 
        foreach my $c ( @mapcontigs ) {	   
 	   my $vcend;
-	   if( $c->id eq $econtig->id ) {
+	   print STDERR "***Looking at $c\n";
+
+	   if( $c->contig->id eq $econtig->id ) {
 	       # go to end position
 	       $vcend = $exon->end();
 	   } else {
 	       $vcend = $c->end();
 	   }
 
-	   
+	   print STDERR "Going to call with $start:$end\n";
+	   $self->_dump_map(\*STDERR);
+
 	   my ($iscontig,$istart,$isstrand) = $self->_vmap->vcpos_to_rcpos($vcstart,$exon->strand);
 	   my ($iecontig,$iend,$iestrand)   = $self->_vmap->vcpos_to_rcpos($vcend  ,$exon->strand);
   
 	   if( $iscontig->id ne $iecontig->id || $isstrand != $iestrand) {
-	       $self->throw("Bad internal error. Sticky Exon mapped to different contig/strand for a correct contig placement");
+	       $self->throw("Bad internal error. Sticky Exon mapped to different contig/strand for a correct contig placement ".$iscontig->id.":".$iecontig->id);
 	   }
 
 	   my $rmexon = Bio::EnsEMBL::Exon->new();
@@ -258,15 +270,15 @@ sub _reverse_map_Exon{
 	   $rmexon->version($exon->version);
 	   $rmexon->phase($exon->phase);
 	   $rmexon->sticky_rank($sticky++);
-	   $rmexon->attach_seq($c->primary_seq);	   
+	   $rmexon->attach_seq($c->contig->primary_seq);	   
 	   $rmexon->start($istart);
 	   $rmexon->end($iend);
 	   $rmexon->strand($isstrand);
-	   $rmexon->contig_id($iscontig->id);
-	   $rmexon->seqname($iscontig->id);
+	   $rmexon->contig_id($c->contig->id);
+	   $rmexon->seqname($c->contig->id);
 	   push(@exported_exons,$rmexon);
 
-	   if( $c->id eq $econtig->id ) {
+	   if( $c->contig->id eq $econtig->id ) {
 	       last;
 	   }
 	   

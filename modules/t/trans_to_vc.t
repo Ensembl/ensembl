@@ -38,7 +38,7 @@ $conf{'transcript'} = 'ENST00000020513';
 
 if ( -e 't/trans_to_vc.conf' ) {
    print STDERR "Reading configuration from trans_to_vc.conf\n";
-   open(C,"t/transf_to_vc.conf");
+   open(C,"t/trans_to_vc.conf");
    while(<C>) {
        my ($key,$value) = split;
        $conf{$key} = $value;
@@ -77,6 +77,6 @@ $vc->id;
 my $length=$vc->length;
 print STDERR "Length of contig is $length\n";
 print "ok 4\n";
-my ($rc,$rc_pos,$rc_strand)=$vc->_vmap->raw_contig_postion(40000,-1);
+my ($rc,$rc_pos,$rc_strand)=$vc->raw_contig_position(4000,-1);
 print STDERR "Got RawContig ".$rc->id." rc_pos=$rc_pos, rc_strand=$rc_strand\n";
 			      

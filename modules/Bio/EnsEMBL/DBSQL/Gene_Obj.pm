@@ -1091,8 +1091,8 @@ sub write{
 	   $sth->execute();
 	   $c++;
 
-	   if( $done{$exon->id()} ) { next; }
-	   $done{$exon->id()} = 1;
+	   if( $done{$exon->id().$exon->sticky_rank()} ) { next; }
+	   $done{$exon->id().$exon->sticky_rank()} = 1;
 
 	   my $internal_contig_id = $contighash{$exon->contig_id}->internal_id;
 
@@ -1152,8 +1152,8 @@ sub write_Exon {
 	$self->throw("$exon is not a EnsEMBL exon - not dumping!");
     }
     
-    my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase) 
-        values (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?, ?, NOW(), ?)";
+    my $exonst = "insert into exon (id,version,contig,created,modified,seq_start,seq_end,strand,phase,stored,end_phase,rank) 
+        values (?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?, ?, NOW(), ?,?)";
     
     my $sth = $self->_db_obj->prepare($exonst);
     $sth->execute(
@@ -1166,7 +1166,8 @@ sub write_Exon {
         $exon->end,
         $exon->strand,
         $exon->phase,
-        $exon->end_phase
+        $exon->end_phase,
+	$exon->sticky_rank
         );
     
     # Now the supporting evidence

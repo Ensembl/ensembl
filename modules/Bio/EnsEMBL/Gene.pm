@@ -159,8 +159,8 @@ sub unique_contig_ids{
 sub add_Transcript{
    my ($self,$trans) = @_;
 
-   if( ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
-       $self->throw("$trans is not a Bio::EnsEMBL::Exon!");
+   if( !ref $trans || ! $trans->isa("Bio::EnsEMBL::Transcript") ) {
+       $self->throw("$trans is not a Bio::EnsEMBL::Transcript!");
    }
 
    # at the moment, use the SeqFeature sub hash. But in the future,

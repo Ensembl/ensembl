@@ -108,6 +108,8 @@ sub _initialize {
   if ($#args == 2) {
       $self->_parse_args(@args);
   }
+  # set exon rank to be 1 be default
+  $self->sticky_rank(1);
 
   # set stuff in self from @args
   return $make; # success - we hope!

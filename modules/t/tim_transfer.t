@@ -41,8 +41,21 @@ $conf{'user'}  = 'ensembl';
 $conf{'update'} = '../scripts/update_list_chunk.pl';
 $conf{'perl'} = 'perl';
 
+sub skip_tests {
+    print "ok 2\n";
+    print "ok 3\n";
+    print "ok 4\n";
+    print "ok 5\n";
+    exit(0);
+}
+
+if ( -e 't/tim_transfer.skip' ) {
+       $skip = 1;
+       print STDERR "Skipping Tim tranfer system\n";
+       &skip_tests();
+} 
 if ( -e 't/transfer.conf' ) {
-    print STDERR "Reading configuration from transfer.conf\n";
+    print STDERR	 "Reading configuration from transfer.conf\n";
    open(C,"t/transfer.conf");
     while(<C>) {
 	my ($key,$value) = split;
@@ -82,10 +95,19 @@ system($update) == 0 or die "$0\nError running '$update' : $!";
 
 print "ok 4\n";
 
+
 END {
+    if( $skip != 1) {
     my $drop_recipient = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{recipient}";
     system($drop_recipient) == 0 or die "$0\nError running '$drop_recipient' : $!";
+    }
 }
+
+
+
+
+
+
 
 
 

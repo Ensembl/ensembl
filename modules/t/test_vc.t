@@ -38,11 +38,14 @@ $conf{'contig'} = 'AB014077.00001';
 
 if ( -e 't/trans_to_vc.conf' ) {
    print STDERR "Reading configuration from trans_to_vc.conf\n";
-   open(C,"t/transf_to_vc.conf");
+   open(C,"t/trans_to_vc.conf");
    while(<C>) {
        my ($key,$value) = split;
        $conf{$key} = $value;
    }
+    foreach $key ( keys %conf ) {
+	print STDERR " $key $conf{$key}\n";
+    }
 } else {
     print STDERR "Using default values\n";
     foreach $key ( keys %conf ) {
