@@ -95,26 +95,28 @@ Post questions to the Ensembl developer list: <ensembl-dev@ebi.ac.uk>
 package Bio::EnsEMBL::Registry;
 
 use strict;
-#use Bio::EnsEMBL::Utils::ConfigRegistry;
-#use Bio::EnsEMBL::DBSQL::DBAdaptor;
-use Bio::EnsEMBL::DBSQL::MergedAdaptor;
-#use Bio::EnsEMBL::DBSQL::DBMergedAdaptor;
-use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
-#use Bio::EnsEMBL::Utils::Exception qw(warning throw  deprecate stack_trace_dump);
-use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
+use Bio::EnsEMBL::DBSQL::MergedAdaptor;
+use Bio::EnsEMBL::Utils::Exception qw( deprecate throw warning );
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 use vars qw(%registry_register);
 
 $registry_register{'_WARN'} = 0;
-#print STDERR "REG: ".caller()."\n";
+
 
 
 sub load_registy_with_web_adaptors{
   my $class = shift;
-  use SpeciesDefs;
 
-  my $conf = SpeciesDefs->new();
+
+  eval{ require SiteDefs };
+  if ($@){ die "Can't use SiteDefs.pm - $@\n"; }
+    SiteDefs->import(qw(:ALL));
+
+  eval{ require SpeciesDefs };
+  if ($@){ die "Can't use SpeciesDefs.pm - $@\n"; }
+  my $conf = new SpeciesDefs();
 
 }
 
