@@ -52,9 +52,18 @@ foreach my $clone_id ( @clone_id ) {
 		if (my $trans= $gene->each_Transcript()) {
 		    foreach $trans ($gene->each_Transcript()) {
 			print STDERR "\n        transcript ",$trans->id,"\n";
+			my $switch = 0;
+			my $start_exon_id = $trans->translation->start_exon_id;
+			my $end_exon_id = $trans->translation->end_exon_id;
 			if (my $exon = $trans->each_Exon()) { 
 			    foreach $exon ($trans->each_Exon()) {
 				print STDERR "        exon       ",$exon->id,"\n";
+				if ($start_exon_id eq $exon->id) {
+				    $switch++;
+				}
+				if ($end_exon_id eq $exon->id) {
+				    $switch++;
+				}
 			    }
 			}
 			else {
@@ -65,7 +74,16 @@ foreach my $clone_id ( @clone_id ) {
 			    print "Gene:       ",$gene->id,"\n";
 			    print "Transcript: ",$trans->id,"\n";
 			    print "This transcript does not contain any exon!\n";
-			}   
+			}
+			if ($switch != 2){
+			    $errcount++;
+			    print "Error $errcount\n";
+			    print "Clone:      $clone_id\n";
+			    print "Contig:     ",$contig->id,"\n";
+			    print "Gene:       ",$gene->id,"\n";
+			    print "Transcript: ",$trans->id,"\n";
+			    print "This transcript does not have valid start and end exons for the translation!\n";
+			}
 		    }
 		}
 		else {
@@ -84,7 +102,7 @@ foreach my $clone_id ( @clone_id ) {
     }
     
     if ($errcount>0) {
-	print STDERR "\nFound $errcount empty genes/transcripts\n";
+	print STDERR "\nFound $errcount errors\n";
     }
 }
 
