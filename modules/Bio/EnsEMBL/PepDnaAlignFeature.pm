@@ -1,4 +1,4 @@
-package Bio::EnsEMBL::DnaPepAlignFeature;
+package Bio::EnsEMBL::PepDnaAlignFeature;
 
 # EnsEMBL module for storing dna-dna pairwise alignments
 #
@@ -123,7 +123,7 @@ use strict;
 
 sub _parse_cigar {
   my ($self) = @_;
-  return $self->_generic_parse_cigar( 3, 1 );
+  return $self->_generic_parse_cigar( 1, 3 );
 }
 
       
@@ -162,7 +162,7 @@ sub _parse_cigar {
 sub _parse_features {
   my ($self,$features) = @_;
 
-  $self->_generic_parse_features( $features, 3, 1 );
+  $self->_generic_parse_features( $features, 1, 3 );
 }
 
 1;
