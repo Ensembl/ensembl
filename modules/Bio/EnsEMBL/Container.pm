@@ -170,8 +170,13 @@ sub DESTROY {
 
   #print STDERR "Container::DESTROY : Breaking circular references:\n";
 
-  if($self->_obj->can('deleteObj')) {
-    $self->_obj->deleteObj();
+  my $obj = $self->_obj;
+
+  if(!$obj) {
+    $self->warn("Bio::EnsEMBL::Container: potential memory leak, contained\n"
+		. "object is not defined during garbage collection.");
+  } elsif($obj->can('deleteObj')) {
+    $obj->deleteObj();
   }
 
   $self->{_obj} = undef;
