@@ -30,7 +30,7 @@ Bio::EnsEMBL::Utils::Converter::bio_ens_featurePair
 
 =head1 AUTHOR Juguang Xiao
 
-Juguang Xiao <juguang@fugu-sg.org>
+Juguang Xiao <juguang@tll.org.sg>
 
 =head1 APPENDIX
 

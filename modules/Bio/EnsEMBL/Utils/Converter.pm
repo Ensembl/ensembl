@@ -161,7 +161,7 @@ sub convert{
     return \@output;
 }
 
-sub _converter_single{
+sub _convert_single{
     my ($self, $input) = @_;
     $self->throw("Not implemented. Please check the instance subclass");
 }

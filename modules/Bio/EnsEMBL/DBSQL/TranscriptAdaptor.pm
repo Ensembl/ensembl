@@ -152,7 +152,21 @@ sub fetch_by_translation_stable_id {
   	return undef;
   }
 } 
-                             
+=head2 fetch_by_translation_id
+
+=cut
+
+sub fetch_by_translation_id {
+    my ($self, $transl_id) = @_;
+    my $sth = $self->prepare( 
+        "SELECT transcript_id
+        FROM transcript
+        WHERE translation_id = ?");
+    $sth->execute($transl_id);
+    my ($id) = $sth->fetchrow_array;
+    return $id? $self->fetch_by_dbID($id) : undef;
+}
+
 =head2 fetch_all_by_DBEntry
 
   Arg [1]    : in $external_id
