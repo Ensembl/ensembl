@@ -49,7 +49,7 @@ my $counter=0;
 
 {
     # This is a list of possible entries in the config
-    # file "EnsTestDB.conf"
+    # file "EnsTestDB.conf" or in the hash being used.
     my %known_field = map {$_, 1} qw(
         driver
         host
@@ -59,21 +59,38 @@ my $counter=0;
         schema_sql
         module
         );
-    
+
+    ### now takes an optional argument; when given, it can be a filename
+    ### or a hash, and will be used to get arguments from. If not, the
+    ### file 'EnsTestDB.conf' will be tried; it it exist; that is taken;
+    ### otherwise, some hopefully defaults will be used.
     sub new {
-        my( $pkg ) = @_;
+        my( $pkg, $arg ) = @_;
 
         $counter++;
-        # Get config from file, or use default values
-        my $self = do 'EnsTestDB.conf' || {
-            'driver'        => 'mysql',
-            'host'          => 'localhost',
-            'user'          => 'root',
-            'port'          => '3306',
-            'password'      => undef,
-            'schema_sql'    => ['../sql/table.sql'],
-            'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
-            };
+
+        my $self =undef;
+        if ($arg) {
+            if  (ref $arg eq 'HASH' ) {  # a hash ref
+                $self=$arg;
+            } elsif (-f $arg )  { # a file name
+                $self = do $arg;
+            } else {
+                confess "expected a hash ref or existing file";
+            }
+        } else {
+            $self = do 'EnsTestDB.conf'
+              || {
+                  'driver'        => 'mysql',
+                  'host'          => 'localhost',
+                  'user'          => 'root',
+                  'port'          => '3306',
+                  'password'      => undef,
+                  'schema_sql'    => ['../sql/table.sql'],
+                  'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
+                 };
+        }
+
         foreach my $f (keys %$self) {
             confess "Unknown config field: '$f'" unless $known_field{$f};
         }
@@ -151,7 +168,7 @@ sub dbname {
 sub pause {
     my ($self) = @_;
     my $db = $self->{'_dbname'};
-    print STDERR "pausing to inspect database; name of databse is:  $db\n";
+    print STDERR "pausing to inspect database; name of database is:  $db\n";
     print STDERR "press ^D to continue\n";
     `cat `;
 }
