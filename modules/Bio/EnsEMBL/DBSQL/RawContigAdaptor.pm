@@ -45,8 +45,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use DBI;
-use Bio::EnsEMBL::DBSQL::DummyStatement;
-use Bio::EnsEMBL::DBSQL::DBPrimarySeq;
+
 
 use Bio::EnsEMBL::Clone;
 use Bio::EnsEMBL::RawContig;
@@ -128,17 +127,12 @@ sub fetch_all {
   my $self  = shift;
   my @res;
 
-  my $sth = $self->prepare( "SELECT contig_id, dna_id
+  my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length,
+                             embl_offset, dna_id
                              FROM contig " );
   $sth->execute();
-  while( my $aref = $sth->fetchrow_arrayref() ) {
-    my $dbPrimarySeq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new
-      ( $aref->[1], $self->db() ); # ?
-    
-    my $contig = Bio::EnsEMBL::RawContig->new( $aref->[0], $self );
-    push( @res, $contig );
-  }
-  return @res;
+
+  return $self->_contig_from_sth( $sth );
 }
 
 

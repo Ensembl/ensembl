@@ -1,5 +1,5 @@
 #
-# BioPerl module for DBPrimarySeq
+# EnsEMBL module for Bio::EnsEMBL::DBSQL::SequenceAdaptor
 #
 # Cared for by Elia Stupka <elia@ebi.ac.uk>
 #
