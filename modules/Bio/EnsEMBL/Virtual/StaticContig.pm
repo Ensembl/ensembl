@@ -173,6 +173,9 @@ my ($self, $analysis_type, $score) = @_;
 $self->throw("Must supply analysis_type parameter") unless $analysis_type;
 $self->throw("Must supply score parameter") unless $score;
 
+
+print STDERR "version 005\n";
+
 my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
@@ -183,8 +186,7 @@ my    $statement = "SELECT f.id,
                     IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
                            (sgp.chr_start+sgp.raw_end-f.seq_start)), 
                     IF     (sgp.raw_ori=1,f.strand,(-f.strand)),  
-                           f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
-                           sgp.chr_start,sgp.chr_end,sgp.raw_ori
+                           f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
 		    FROM   feature f, analysis a,static_golden_path sgp
                     WHERE  f.score > $score
                     AND    f.analysis = a.id 
@@ -200,10 +202,10 @@ $sth->execute();
 
 
 my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-    $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+    $hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
     
-$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
-		       \$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+$sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
 
 
 my @features;
@@ -211,10 +213,7 @@ my @distinct_features;
 
  FEATURE: while($sth->fetch) {
     
-     my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-	       $hstart,$hend,$hid,$chr_start,$chr_end,$raw_ori,$glob_start,$glob_end);
-
-  #   print "$hid raw ori $raw_ori $strand\n";
+     my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
     
      # exclude overlaping features (for the web)
      foreach my $arrayref(@distinct_features){
@@ -248,15 +247,9 @@ my $analysis;
 my %analhash;
 my $contig;
 
-my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
-    $hstart,$hend,$hid,$chr_start,$chr_end,$raw_ori,$glob_start,$glob_end)=@args;
+my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid)=@args;
 
-# flip coordinates 
-if ($raw_ori == -1){
-#    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
-}
 
-# create features
 if (!$analhash{$analysisid}) 
 {
     my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -320,8 +313,7 @@ my $statement = "SELECT rf.id,
                  IF     (sgp.raw_ori=1,(rf.seq_end+sgp.chr_start-sgp.raw_start),
                         (sgp.chr_start+sgp.raw_end-rf.seq_start)), 
                  IF     (sgp.raw_ori=1,rf.strand,(-rf.strand)),                         
-                        rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
-                        sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                        rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid  
                  FROM   repeat_feature rf,static_golden_path sgp
                  WHERE  sgp.raw_id = rf.contig
                  AND    sgp.chr_end >= $glob_start 
@@ -333,10 +325,10 @@ my $sth = $self->dbobj->prepare($statement);
 $sth->execute();
   
 
-my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
+my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
   
 $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
-		     \$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
+		     \$hstart,\$hend,\$hid);
 
  
 my @features;
@@ -354,7 +346,7 @@ my @distinct_features;
 
      # create features
      my @args=($fid,$start,$end,$strand,$score,$analysisid,
-	       $hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end);
+	       $hstart,$hend,$hid);
    
      my $out=$self->_create_repeat_features(@args);
 
@@ -379,18 +371,8 @@ my $out;
 my $analysis;
 my %analhash;
 
-my ($fid,$start,$end,$strand,$score,$analysisid,
-    $hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end)=@args;
+my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid)=@args;
 
-
-# flip coordinates 
-if ($raw_ori == -1){
-#    ($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
-}
-
-
-	 
-# create features
 
 if (!$analhash{$analysisid}) {
     
@@ -466,8 +448,7 @@ eval {
                              f.score, 
                       IF     (sgp.raw_ori=1,f.strand,(-f.strand)), 
                              f.name, f.hstart, f.hend, 
-                             f.hid, f.analysis, s.name,
-                             sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+                             f.hid, f.analysis, s.name 
                       FROM   $dbname.feature f, $dbname.analysis a, 
                              $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
                              $dbname.static_golden_path sgp 
@@ -486,19 +467,19 @@ eval {
     $sth->execute;
     
     my ($start, $end, $score, $strand, $hstart, 
-        $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+        $name, $hend, $hid, $analysisid,$synonym);
     
     my $analysis;
     my %analhash;
     
     $sth->bind_columns
 	( undef, \$start, \$end, \$score, \$strand, \$name, 
-	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
+	  \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
             
     while( $sth->fetch ) {
 	
 	my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
-		  $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
+		  $analysisid,$synonym);
 
 
 	my $out=$self->_create_Marker_features(@args);
@@ -559,11 +540,15 @@ eval {
 	$limit=$limit+$Mb;
 	$end=$start+$limit;
 
-	my $statement=   "SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
-                                    f.seq_end+sgp.chr_start-sgp.raw_start, 
-                                    f.score, f.strand, f.name, f.hstart, f.hend, 
-                                    f.hid, f.analysis, s.name,
-                                    sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+	my $statement=   "SELECT    
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                                    f.score, 
+                          IF        (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                    f.name, f.hstart, f.hend, 
+                                    f.hid, f.analysis, s.name  
                           FROM      $dbname.feature f, $dbname.analysis a, 
                                     $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
                                     $dbname.static_golden_path sgp
@@ -583,20 +568,20 @@ eval {
 	my $sth = $self->dbobj->prepare($statement);
 	$sth->execute;
 	
-	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym);
 	
 	my $analysis;
 	my %analhash;
 	
 	$sth->bind_columns
 	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
-	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
+	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
 	
         
 	while( $sth->fetch ) {
 	    
 	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
-		      $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
+		      $analysisid,$synonym);
 	    
 	    my $out=$self->_create_Marker_features(@args);
 	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
@@ -655,11 +640,15 @@ eval {
 	if ($end<0){$end=1;}
 
 
-	my $statement=   "SELECT    f.seq_start+sgp.chr_start-sgp.raw_start as start, 
-                                    f.seq_end+sgp.chr_start-sgp.raw_start, 
-                                    f.score, f.strand, f.name, f.hstart, f.hend, 
-                                    f.hid, f.analysis, s.name,
-                                    sgp.raw_ori,sgp.chr_start,sgp.chr_end 
+	my $statement=   "SELECT    
+                          IF        (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_end)) as start,                                        
+                          IF        (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start),
+                                    (sgp.chr_start+sgp.raw_end-f.seq_start)),                                       
+                                    f.score, 
+                          IF        (sgp.raw_ori=1,f.strand,(-f.strand)), 
+                                    f.name, f.hstart, f.hend, 
+                                    f.hid, f.analysis, s.name  
                           FROM      $dbname.feature f, $dbname.analysis a, 
                                     $mapsdbname.MarkerSynonym s,$mapsdbname.Marker m,
                                     $dbname.static_golden_path sgp
@@ -679,20 +668,20 @@ eval {
 	my $sth = $self->dbobj->prepare($statement);
 	$sth->execute;
 	
-	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym,$raw_ori,$chr_start,$chr_end);
+	my ($score, $strand, $hstart, $name, $hend, $hid, $analysisid,$synonym);
 	
 	my $analysis;
 	my %analhash;
 	
 	$sth->bind_columns
 	    ( undef, \$start, \$end, \$score, \$strand, \$name, 
-	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym,\$raw_ori,\$chr_start,\$chr_end );
+	      \$hstart, \$hend, \$hid, \$analysisid,\$synonym);
 	
         
 	while( $sth->fetch ) {
 	    
 	    my @args=($start,$end,$score,$strand,$name,$hstart,$hend,$hid,
-		      $analysisid,$synonym,$raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name);
+		      $analysisid,$synonym);
 	    
 	    my $out=$self->_create_Marker_features(@args);
 	    if (defined $out){push @markers,$self->_convert_2_vc($out);}; 
@@ -747,14 +736,7 @@ my ($self,@args)=@_;
 my $analysis;
 my %analhash;
 
-my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym,
-    $raw_ori,$chr_start,$chr_end,$glob_start,$glob_end,$chr_name)=@args;
-
-
-if ($raw_ori == -1)
-{
-#($start,$end,$strand)=$self->_flip_coordinates ($start,$end,$strand,$chr_start,$chr_end);
-}
+my ($start,$end,$score,$strand,$name,$hstart,$hend,$hid,$analysisid,$synonym)=@args;
 
 
  my ( $out, $seqf1, $seqf2 );
@@ -810,26 +792,6 @@ sub _convert_2_vc
  $ft->end ($ft->end-$self->_global_start);
 
  return $ft;
-}
-
-
-
-sub _flip_coordinates
-{
-    my ($self,$start,$end,$strand,$chr_start,$chr_end)=@_;
-
-    $self->throw ("need a start") unless defined $start;
-    $self->throw ("need a end") unless defined $end;
-    $self->throw ("need a strand") unless defined $strand;
-    $self->throw ("need a chromosome start") unless defined $chr_start;
-    $self->throw ("need a chromosome end") unless defined $chr_end;
-
-
-    my $vc_start=$chr_end+$chr_start-$end;   
-    my $vc_end=$chr_end+$chr_start-$start;
-    $strand=-1*$strand;
-
-    return ($vc_start,$vc_end,$strand);
 }
 
 
