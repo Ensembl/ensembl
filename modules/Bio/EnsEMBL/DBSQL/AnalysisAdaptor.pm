@@ -437,44 +437,4 @@ sub db {
 }
 
 
-
-=head2 fetch_by_newest_logic_name
-
-  Description: DEPRECATED Logic names should now be unique and should not
-               need to use this method.  Use fetch_by_logic_name instead.
-
-=cut
-
-sub fetch_by_newest_logic_name {
-  my $self = shift;
-  my $logic_name = shift;
-  
-  $self->warn("logic_names should now be unique should not " .
-	      "need to use this method use fetch_by_logic_name\n");
-
-  return $self->fetch_by_logic_name($logic_name);
-}
-
-
-=head2 mysql2Unixtime
-
-  Description: DEPRECATED do not use
-
-=cut
-
-
-sub mysql2Unixtime {
-  my $sqltime = shift;
-  
-  my ($package, $file, $line) = caller();
-
-  warn("AnalysisAdaptor::mysql2Unixtime is deprecated.\n " .
-	      "package:$package: file:$file line:$line\n");
-
-  require "Time::Local";
-  
-  my ($year,$month,$mday,$hour,$min,$sec ) = ( $sqltime =~ /(\d+)-(\d+)-(\d+)\s+(\d+):(\d+):(\d+)/ );
-  my $time = timelocal( $sec, $min, $hour, $mday, $month, $year );
-}
-
 1;

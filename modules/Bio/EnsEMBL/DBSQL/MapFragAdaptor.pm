@@ -460,25 +460,4 @@ sub has_mapset {
 }
 
 
-=head2 fetch_by_mapset_chr_start_end
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_mapset_chr_start_end instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_mapset_chr_start_end {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_mapset_chr_start_end has been renamed fetch_all_by_mapset_chr_start_end\n" . caller);
-
-  return $self->fetch_all_by_mapset_chr_start_end(@args);
-}
-
-
-
 1;

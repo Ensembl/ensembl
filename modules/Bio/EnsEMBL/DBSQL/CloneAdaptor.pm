@@ -443,36 +443,4 @@ sub store{
 }
 
 
-=head2 fetch
-
- Description: DEPRECATED use fetch_by_accession instead
-
-=cut
-
-sub fetch {
-    my ($self,$id) = @_;
-    $self->warn("fetch is now deprecated, use fetch_by_accession instead");
-    $self->fetch_by_accession($id);
-}
-
-=head2 get_Contig
-
-  Description: DEPRECATED 
-               use Bio::EnsEMBL::DBSQL::RawContigAdaptor::fetch_by_dbID instead
-
-=cut
-
-sub get_Contig {
-   my ($self,$contigid) = @_;
-
-   $self->throw("CloneAdaptor::get_Contig is deprecated, " .
-		"use \$contig_adaptor->fetch_by_dbID(\$id) instead");
-   
-   return undef;
-   
-   #my $contig = $self->db->get_Contig($contigid);
-   
-   #return $contig->fetch();
-}
-
 1;

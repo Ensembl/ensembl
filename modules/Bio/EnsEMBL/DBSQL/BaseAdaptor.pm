@@ -126,14 +126,11 @@ sub new {
     }
 
     if($dbobj->isa('Bio::EnsEMBL::Container')) {
-	$self->throw("The base adaptor constructor argument should not be " .
-		     "a Bio::EnsEMBL::Container. This will create a circular ".
-		     "reference loop and result in memory leaks.  You should ".
-		     "use the DBAdaptor::get_XxxxAdaptor methods to create " .
-		     "your object adaptors instead");
+      #avoid a circular reference loop!
+      $self->db($dbobj->_obj);
+    } else {
+      $self->db($dbobj);
     }
-
-    $self->db($dbobj);
 
     return $self;
 }
@@ -207,4 +204,4 @@ sub deleteObj {
 }
 
 
-
+1;

@@ -130,46 +130,4 @@ sub fetch_all_by_Slice_and_pid {
 
 
 
-=head2 fetch_by_Contig_and_pid
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_RawContig_and_pid instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Contig_and_pid {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Contig_and_pid has been renamed fetch_all_by_RawContig_and_pid\n" . caller);
-
-  return $self->fetch_all_by_RawContig_and_pid(@args);
-}
-
-=head2 fetch_by_Slice_and_pid
-
-  Arg [1]    : none
-  Example    : none
-  Description: DEPRECATED use fetch_all_by_Slice_and_pid instead
-  Returntype : none
-  Exceptions : none
-  Caller     : none
-
-=cut
-
-sub fetch_by_Slice_and_pid {
-  my ($self, @args) = @_;
-
-  $self->warn("fetch_by_Slice_and_pid has been renamed fetch_all_by_Slice_and_pid\n" . caller);
-
-  return $self->fetch_all_by_Slice_and_pid(@args);
-}
-
-
-
 1;
-
-
