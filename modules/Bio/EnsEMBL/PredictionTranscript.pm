@@ -63,6 +63,7 @@ use Bio::EnsEMBL::Translation;
 @ISA = qw(Bio::EnsEMBL::Transcript);
 
 
+
 =head2 coding_region_start
 
   Arg [1]    : none
@@ -128,6 +129,40 @@ sub coding_region_end {
 sub get_all_translateable_Exons {
   my $self = shift;
   return $self->get_all_Exons();
+}
+
+
+
+=head2 stable_id
+
+  Arg [1]    : none
+  Example    : print $pt->stable_id();
+  Description: Gets a 'stable' identifier for this prediction transcript.  Note
+               that prediction transcripts do not have real stable
+               identifiers (i.e. identifiers maintained between releases and
+               stored in the database) and this method is provided to be
+               polymorphic with the Transcript class.
+               The stable identifer returned returned is formed by concating
+               the logic-name of the prediction transcripts analysis with
+               the transcripts  dbID (0 Left padded to 11digits).
+  Returntype : string
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+sub stable_id {
+  my $self = shift;
+
+  my $analysis = $self->analysis();
+  my $logic_name = uc($analysis->logic_name()) if($analysis);
+  $logic_name ||= 'PTRANS';
+
+  my $id = $self->dbID();
+  my $pad = 11;
+  $pad -= length($id);
+
+  return $logic_name . ('0' x $pad) . $id;
 }
 
 

@@ -86,10 +86,11 @@ sub _columns {
 
 Arg [1]    : string $stable_id
              The stable id of the transcript to retrieve
-Example    : $trans = $trans_adptr->fetch_by_stable_id('3.10.190');
+Example    : $trans = $trans_adptr->fetch_by_stable_id('GENSCAN00000001234');
 Description: Retrieves a prediction transcript via its stable id.  Note that
-             the stable id is not actually stored in the database and is 
-             calculated upon retrieval as the contig.start.end of the 
+             the stable id is not actually stored in the database and is
+             calculated upon retrieval as the logic_name of the transcripts
+             analysis concatted with the '0'-left-padded internal identifier.
              prediction transcript
 Returntype : Bio::EnsEMBL::PredictionTranscript
 Caller     : general
@@ -97,9 +98,18 @@ Caller     : general
 =cut
 
 sub fetch_by_stable_id {
-  deprecate('This method cannot work anymore unless real stable_ids are ' .
-            'assigned to prediction transcripts');
-  return undef;
+  my $self = shift;
+  my $stable_id = shift;
+
+  throw('Stable_id argument expected') if(!$stable_id);
+
+  #take the last 11 digits
+  my $dbID = substr($stable_id, -11);
+
+  #cast to an integer (remove lpadded 0s):
+  $dbID += 0;
+
+  return $self->fetch_by_dbID($dbID);
 }
 
 
