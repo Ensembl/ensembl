@@ -849,10 +849,13 @@ sub store {
     }
   }
 
-  my $attrib = ($toplevel) ? 'top_level' : '';
-  $attrib   .= ($seqlevel) ? 'seq_level' : '';
-  $attrib   .= ($default)  ? 'default_version' : '';
-  $attrib ||= undef;
+  my @attrib;
+
+  push @attrib, 'top_level' if($toplevel);
+  push @attrib, 'seq_level' if($seqlevel);
+  push @attrib, 'default_version' if($default);
+
+  my $attrib_str = (@attrib) ? join(',', @attrib) : undef;
 
   #
   # store the coordinate system in the database
@@ -863,7 +866,7 @@ sub store {
                              'version = ?, ' .
                              'attrib  = ?');
 
-  $sth->execute($name, $version, $attrib);
+  $sth->execute($name, $version, $attrib_str);
   my $dbID = $sth->{'mysql_insertid'};
   $sth->finish();
 
