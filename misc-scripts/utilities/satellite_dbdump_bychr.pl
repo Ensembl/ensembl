@@ -260,7 +260,7 @@ WHERE sa.db_name = 'ensgene'
     dump_data($sql, $satdb, 'seqtag_alias');
 
     $sql = "
-SELECT distinct st.*
+SELECT distinct  st.*
 FROM  $satdb.seqtag st,
       $satdb.seqtag_alias sa, 
       $litedb.gene lg
@@ -272,7 +272,7 @@ WHERE sa.db_name = 'ensgene'
     dump_data($sql, $satdb, 'seqtag');
 
     $sql = "
-SELECT distinct  f.*
+SELECT distinct f.*
 FROM  $satdb.frequency f,
       $satdb.seqtag_alias sa, 
       $litedb.gene lg
@@ -354,7 +354,7 @@ sub dump_embl  {
 
     my @small_ones = qw(externalDB);
     foreach my $table ( @small_ones ) { 
-        $sql = "select * from $satdb.$table";
+        $sql = "select distinct * from $satdb.$table";
         dump_data($sql, $satdb, $table);
     }
 
@@ -519,7 +519,7 @@ SELECT distinct ox.*
     dump_data($sql, $satdb, 'objectXref');
 
     $sql="
-SELECT x.*
+SELECT distinct x.*
   FROM $litedb.gene lg,
        $satdb.clone cl, 
        $satdb.contig ctg,
