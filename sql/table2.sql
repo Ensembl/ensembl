@@ -1,4 +1,4 @@
-use ens2;
+use ensdev;
 # MySQL dump 5.13
 #
 # Host: localhost    Database: pog
@@ -159,6 +159,17 @@ CREATE TABLE homol_feature (
 CREATE TABLE mapbin (
   id varchar(40) DEFAULT '' NOT NULL,
   chromosome char(2) DEFAULT '' NOT NULL,
+  PRIMARY KEY (id)
+);
+
+CREATE TABLE contig_equiv (
+  id varchar(40) DEFAULT '' NOT NULL,
+  from_contig_id varchar(40),
+  from_contig_postion int(11),
+  from_contig_strand  char(1),
+  to_contig_id varchar(40),
+  to_contig_position int(11),
+  to_contig_strand char(1),
   PRIMARY KEY (id)
 );
 
