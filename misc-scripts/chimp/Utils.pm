@@ -63,7 +63,7 @@ sub print_coords {
 
   foreach my $c (@$cs) {
     if($c->isa('Bio::EnsEMBL::Mapper::Gap')) {
-      info("  GAP");
+      info("  GAP ". $c->length());
     } else {
       info("  ". $c->start. '-'. $c->end. ' ('.$c->strand.")");
     }
