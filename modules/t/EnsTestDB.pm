@@ -73,27 +73,28 @@ my $counter=0;
         $counter++;
 
         my $self =undef;
-        if ($arg) {
-            if  (ref $arg eq 'HASH' ) {  # a hash ref
-                $self=$arg;
-            } elsif (-f $arg )  { # a file name
-                $self = do $arg;
-            } else {
-                confess "expected a hash ref or existing file";
-            }
-        } else {
-            $self = do 'EnsTestDB.conf'
-              || {
-                  'driver'        => 'mysql',
-                  'host'          => 'localhost',
-                  'user'          => 'root',
-                  'port'          => '3306',
-                  'password'      => undef,
-                  'schema_sql'    => ['../sql/table.sql'],
-                  'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
-                 };
-        }
-
+	$self = do 'EnsTestDB.conf'
+	    || {
+		'driver'        => 'mysql',
+		'host'          => 'localhost',
+		'user'          => 'root',
+		'port'          => '3306',
+		'password'      => undef,
+		'schema_sql'    => ['../sql/table.sql'],
+		'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
+		};
+	if ($arg) {
+	    if  (ref $arg eq 'HASH' ) {  # a hash ref
+                foreach my $key (keys %$arg) {
+		    $self->{$key} = $arg->{$key};
+		}
+	    }
+	} elsif (-f $arg )  { # a file name
+	    $self = do $arg;
+	} else {
+	    confess "expected a hash ref or existing file";
+	}
+        
         foreach my $f (keys %$self) {
             confess "Unknown config field: '$f'" unless $known_field{$f};
         }
@@ -101,23 +102,6 @@ my $counter=0;
         $self->create_db;
 	
         return $self;
-    }
-    
-    sub new_from_obj_and_sql_list {
-        my( $self, @sql ) = @_;
-        
-        # Make new object
-        my $new = bless {}, ref($self);
-        
-        # Copy config fields
-        foreach my $field (keys %known_field) {
-            $new->{$field} = $self->{$field};
-        }
-        
-        # Overwrite schema_sql with our list of files
-        $new->{'schema_sql'} = [@sql];
-        
-        return $new;
     }
 }
 

@@ -34,17 +34,14 @@ use Bio::EnsEMBL::Archive::VersionedSeq;
 
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
-    
-my $ens_test = EnsTestDB->new();
-    
-# Load some data into the db
-$ens_test->do_sql_file("../sql/archive_new.sql");
 
-$host = $ens_test->host;
-$dbname = $ens_test->dbname;
-$user = $ens_test->user;
+my $hash = {
+    'schema_sql'    => ['../sql/archive_new.sql'],
+    'module'        => 'Bio::EnsEMBL::Archive::DBSQL::DBAdaptor'
+    };
 
-$db = Bio::EnsEMBL::Archive::DBSQL::DBAdaptor->new( -host => $host, -dbname => $dbname, -user => $user );
+my $ens_test = EnsTestDB->new($hash);
+my $db = $ens_test->get_DBSQL_Obj();
 print "ok 2\n";
 
 my $seq = Bio::EnsEMBL::Archive::Seq->new(
