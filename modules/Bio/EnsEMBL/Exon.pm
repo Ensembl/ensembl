@@ -91,10 +91,10 @@ use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Generic
 
-use Bio::SeqFeature::Generic;
+use Bio::EnsEMBL::SeqFeature;
 use Bio::Seq; # exons have to have sequences...
 
-@ISA = qw(Bio::SeqFeature::Generic);
+@ISA = qw(Bio::EnsEMBL::SeqFeature);
 
 
 sub new {
