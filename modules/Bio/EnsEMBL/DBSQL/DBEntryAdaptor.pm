@@ -384,29 +384,11 @@ sub exists {
 sub fetch_all_by_Gene {
   my ( $self, $gene ) = @_;
 
+  if(!ref($gene) || !$gene->isa('Bio::EnsEMBL::Gene')) {
+    throw("Bio::EnsEMBL::Gene argument expected.");
+  }
+
   return $self->_fetch_by_object_type($gene->dbID(), 'Gene');
-}
-
-
-=head2 fetch_all_by_RawContig
-
-  Arg [1]    : Bio::EnsEMBL::RawContig $contig
-  Example    : @db_entries = @{$db_entry_adaptor->fetch_by_RawContig($contig)}
-  Description: Retrieves a list of DBentries by a contig object. Since 
-               xrefs are never stored in EnsEMBL for RawContigs this method
-               never returns anything.  It has been left in, because of the
-               possibility that it is used externally, and because you could
-               in theory store xrefs on rawcontigs if you wanted to.
-  Returntype : listref of Bio::EnsEMBL::DBEntries
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_all_by_RawContig {
-  my ( $self, $contig ) = @_;
-
-  return $self->_fetch_by_object_type( $contig->dbID(), 'RawContig' );
 }
 
 
@@ -428,6 +410,10 @@ sub fetch_all_by_RawContig {
 sub fetch_all_by_Transcript {
   my ( $self, $trans ) = @_;
 
+  if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Transcript')) {
+    throw("Bio::EnsEMBL::Transcript argument expected.");
+  }
+
   return $self->_fetch_by_object_type( $trans->dbID(), 'Transcript');
 }
 
@@ -447,11 +433,109 @@ sub fetch_all_by_Transcript {
 sub fetch_all_by_Translation {
   my ( $self, $trans ) = @_;
 
+  if(!ref($trans) || !$trans->isa('Bio::EnsEMBL::Translation')) {
+    throw('Bio::EnsEMBL::Translation argument expected.');
+  }
+
   return $self->_fetch_by_object_type( $trans->dbID(), 'Translation' );
 }
 
 
-=head2 fetch_by_object_type
+
+=head2 remove_from_object
+
+  Arg [1]    : Bio::EnsEMBL::DBEntry $dbe - The external reference which
+               is to be disassociated from an ensembl object.
+  Arg [2]    : Bio::EnsEMBL::Storable $object - The ensembl object the
+               external reference is to be disassociated from
+  Arg [3]    : string $object_type - The type of the ensembl object.
+               E.g. 'Gene', 'Transcript', 'Translation'
+  Example    :
+               # remove all dbentries from this translation
+               foreach my $dbe (@{$translation->get_all_DBEntries()}) {
+                 $dbe_adaptor->remove($dbe, $translation, 'Translation');
+               }
+  Description: Removes an association between an ensembl object and a
+               DBEntry (xref).  This does not remove the actual xref from
+               the database, only its linkage to the ensembl object.
+  Returntype : none
+  Exceptions : Throw on incorrect arguments.
+               Warning if object or dbentry is not stored in this database.
+  Caller     : TranscriptAdaptor::remove, GeneAdaptor::remove,
+               TranslationAdaptor::remove
+
+=cut
+
+sub remove_from_object {
+  my $self = shift;
+  my $dbe  = shift;
+  my $object = shift;
+  my $object_type = shift;
+
+  if(!ref($dbe) || !$dbe->isa('Bio::EnsEMBL::DBEntry')) {
+    throw("Bio::EnsEMBL::DBEntry argument expected.");
+  }
+
+  if(!ref($object) || !$dbe->isa('Bio::EnsEMBL::Storable')) {
+    throw("Bio::EnsEMBL::Storable argument expected.");
+  }
+
+  if(!$object_type) {
+    throw("object_type string argument expected.");
+  }
+
+  # make sure both the dbentry and the object it is allegedly linked to
+  # are stored in this database
+
+  if(!$object->is_stored($self->db())) {
+    warning("Cannot remove DBEntries for $object_type " . $object->dbID() .
+            ". Object is not stored in this database.");
+    return;
+  }
+
+  if(!$dbe->is_stored($self->db())) {
+    warning("Cannot remove DBEntry ".$dbe->dbID() . ". Is not stored " .
+            "in this database.");
+    return;
+  }
+
+  # obtain the identifier of the link from the object_xref table
+  my $sth = $self->prepare
+    ("SELECT ox.object_xref_id " .
+     "FROM   object_xref ox ".
+     "WHERE  ox.xref_id = ? " .
+     "AND    ox.ensembl_id = ? " .
+     "AND    ox.ensembl_object_type = ?");
+  $sth->execute($dbe->dbID(), $object->dbID(), $object_type);
+
+  if(!$sth->rows() == 1) {
+    $sth->finish();
+    return;
+  }
+
+  my ($ox_id) = $sth->fetchrow_array();
+  $sth->finish();
+
+  # delete from the tables which contain additional linkage information
+
+  $sth = $self->prepare("DELETE FROM go_xref WHERE object_xref_id = ?");
+  $sth->execute($ox_id);
+  $sth->finish();
+
+  $sth = $self->prepare("DELETE FROM identity_xref WHERE object_xref_id = ?");
+  $sth->execute($ox_id);
+  $sth->finish();
+
+  # delete the actual linkage itself
+  $sth = $self->prepare("DELETE FROM object_xref WHERE object_xref_id = ?");
+  $sth->execute($ox_id);
+  $sth->finish();
+
+  return;
+}
+
+
+=head2 _fetch_by_object_type
 
   Arg [1]    : string $ensObj
   Arg [2]    : string $ensType
@@ -480,8 +564,8 @@ sub _fetch_by_object_type {
   my $sth = $self->prepare("
     SELECT xref.xref_id, xref.dbprimary_acc, xref.display_label, xref.version,
            xref.description,
-           exDB.db_name, exDB.release, exDB.status, 
-           oxr.object_xref_id, 
+           exDB.db_name, exDB.release, exDB.status,
+           oxr.object_xref_id,
            es.synonym, 
            idt.query_identity, idt.target_identity,
            gx.linkage_type
@@ -497,7 +581,7 @@ sub _fetch_by_object_type {
 
   $sth->execute($ensObj, $ensType);
   my (%seen, %linkage_types, %synonyms);
-  
+
 
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
@@ -522,7 +606,7 @@ sub _fetch_by_object_type {
       my $exDB;
 
       if ((defined $queryid)) {         # an xref with similarity scores
-        $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
+        $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);
         $exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
       } elsif( defined $linkage_type ) {
@@ -538,7 +622,7 @@ sub _fetch_by_object_type {
 
       push( @out, $exDB );
       $seen{$refID} = $exDB;
-    } 
+    }
 
     #
     # $exDB still points to the same xref, so we can keep adding
