@@ -505,7 +505,7 @@ sub _getMissedGene {
         
         if ($comparer->isMissed()) {
             push @{$self->{'_missedGenes'}}, $gene->id;
-	    push @{$self->{'_missedGeneObjects'}}, $gene;
+	    #push @{$self->{'_missedGeneObjects'}}, $gene;
             $missed++;
         }
  
