@@ -1248,14 +1248,29 @@ sub get_all_ExternalFeatures{
    
    
    &eprof_start("External-coordinate-lift");
-   
+
    my @final;
+
+### Hack by the web team - James Smith (js5) and Tony Cox (avc)
+###
+### The following code contains a hack specifically designed for external 
+### datasources if there is a problem we return a single object with ->id 
+### of "__ERROR__" and ->das_id of error code. This then gets passed 
+### through even when the feature does not lie on the virtual contig.
+###
+### This allows the drawing code to display information about the track
+### to indicate that it is empty because of no data or empty because of
+### a failure to retrieve the information.
+
    #print STDERR "Got ",scalar(@contig_features),"before lift\n";
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
-	   push(@final,$f);
+                push(@final, $f);
+       } elsif( $f->id eq '__ERROR__') { #Always push errors even if they aren't wholly within the VC
+            push(@final, $f);
        }
    }
+   
    #print STDERR "Got ",scalar(@final),"after lift\n";
 
    &eprof_end("External-coordinate-lift");
@@ -1789,8 +1804,7 @@ sub get_all_Genes_exononly{
        if( $stickyrank > 1 ) {
 	   if( !defined $previous_exon ) {
 	       $self->warn("Really bad news - half-on-half off Sticky Exon. Faking it");
-	   }
-	   if( $previous_exon->end < $end ) {
+	   } elsif( $previous_exon->end < $end ) {
 	       $previous_exon->end($end);
 	       next;
 	   }
