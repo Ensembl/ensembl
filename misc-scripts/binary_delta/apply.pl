@@ -52,9 +52,8 @@ my $delta_dir = sprintf "%s/%s_%s_delta_%s", $dst_prefix, $db, $v1, $v2;
 die $! if (! -d $v1_dir);
 die $! if (! -d $delta_dir);
 
-if (-d $v2_dir) {
-    printf STDERR "Whoa, the directory '%s' already exists\n", $v2_dir;
-    die $!;
+while (-d $v2_dir) {
+    $v2_dir = sprintf "%s.%04d", $v2_dir, int(rand(10000));
 }
 
 printf STDERR "Creating the directory '%s'\n", $v2_dir;

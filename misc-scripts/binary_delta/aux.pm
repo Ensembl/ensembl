@@ -86,7 +86,8 @@ The options may be any of these:
         Default: "$opts->{'s'}"
 -d path Path to the directory holding the old version of the
         database, and where the new version of the database
-        should be created.
+        should be created.  The new database directory will be
+        given a unique name.
         Default: "$opts->{'d'}"
 
 EOT
