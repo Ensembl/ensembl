@@ -160,12 +160,12 @@ sub _objs_from_sth {
   my %c_hash;
 
   if($slice) {
-    $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
-       my ($chr, $start, $end, $strand);
+    my ($chr, $start, $end, $strand);
     my $slice_start = $slice->chr_start() - 1;
     my $slice_name = $slice->name();
     
     while($sth->fetch()) {
+      $analysis = $a_hash{$analysis_id} ||= $aa->fetch_by_dbID($analysis_id);
       ($chr, $start, $end, $strand) = 
 	$mapper->fast_to_assembly($contig_id, $contig_start, 
 				  $contig_end, $contig_strand);
