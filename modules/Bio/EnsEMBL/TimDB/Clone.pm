@@ -43,17 +43,27 @@ use strict;
 use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::TimDB::Contig;
 use Bio::EnsEMBL::ContigOverlap;
-
+use Bio::EnsEMBL::MappedExon;
+use Bio::EnsEMBL::Analysis::ensConf qw(
+				       EXON_ID_SUBSCRIPT
+				       );
+use Bio::EnsEMBL::Analysis::LegacyParser;
 use Bio::SeqIO;
 
 use NDBM_File;
 use Fcntl qw( O_RDONLY );
+use FileHandle;
 
 # Object preamble - inheriets from Bio::Root::Object
 use Bio::Root::Object;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::CloneI);
 # new() is inherited from Bio::Root::Object
+
+
+# DEBUG - for get_old_exons, get_Ghost_exon_ids
+my $text;
+#my $text=".new";
 
 # _initialize is where the heavy stuff will happen when new is called
 sub _initialize {
@@ -519,6 +529,178 @@ sub get_all_Genes{
     print STDERR "Clone contains ".scalar(keys %h)." genes\n";
     return values %h;
 }
+
+
+=head2 get_old_exons
+
+ Title   : get_old_exons
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_exons {
+    my ($self,$contig_id) = @_;
+
+    my $dir=$self->clone_dir;
+    my $disk_id=$self->id;
+
+    # files are required to exist, regardless of any mapping taking place
+    # (security)
+    local *IN;
+    my $emfile="$dir/$disk_id.exon_remapped$text";
+    my $eafile="$dir/$disk_id.exon_archive$text";
+
+    # _parse_exon handles disk_id->id mapping
+    my @mapped_exons=$self->_parse_exon($emfile,$contig_id);
+
+    open(IN,$eafile) || $self->throw("Could not open $eafile");
+    my %changed_exons;
+    while(<IN>){
+	if(/\#\s\d+\s(\w+)\.(\d+)\schanged/){
+	    $changed_exons{$1}=$2;
+	}
+    }
+    close(IN);
+
+    # label mapped exons
+    foreach my $exon (@mapped_exons){
+	my $id=$exon->id;
+	if(!$changed_exons{$id}){
+	    $exon->has_identical_sequence(1);
+	}
+    }
+
+    return @mapped_exons;
+}
+
+
+=head2 get_Ghost_exon_ids
+
+ Title   : get_old_exons
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Ghost_exon_ids {
+    my ($self) = @_;
+
+    my $dir=$self->clone_dir;
+    my $disk_id=$self->id;
+
+    # files are required to exist, regardless of any mapping taking place
+    # (security)
+    local *IN;
+    my $eafile="$dir/$disk_id.exon_archive$text";
+
+    open(IN,$eafile) || $self->throw("Could not open $eafile");
+    my @exons;
+    while(<IN>){
+	if(/\#\s\d+\s(\w+)\.\d+\sdeleted\s\[/){
+	    push(@exons,$1);
+	}
+    }
+    close(IN);
+    return @exons;
+}
+
+
+=head2 _parse_exon
+
+ Title   : _parse_exon
+    (cut down version of routine in Legacyparser, using MappedExon.
+     Missing pepide, phase, etc.]
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+=cut
+
+sub _parse_exon{
+    my ($self,$file,$contig_id) = @_;
+
+    my @exons;
+
+    my $fh = new FileHandle;
+    $fh->open($file) || 
+	$self->throw("Could not open file [", $file, "]");
+
+    my $id=$self->id;
+    my $disk_id=$self->disk_id;
+    
+    my $is = $fh->input_record_separator('>');
+    my $dis = <$fh>; # skip first record (dull!)
+    while( <$fh> ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):*(\d*)\s.*(\d{4}-\d\d-\d\d_[\d:]+)\s+(\d{4}-\d\d-\d\d_[\d:]+).*\n(.*)/  ) {
+	    my $e = $1;
+	    my $contigid = $2;
+	    my $start = $3;
+	    my $end = $4;
+	    my $phase = $5;
+	    my $created = &Bio::EnsEMBL::Analysis::LegacyParser::acetime($6,1);
+	    my $modified = &Bio::EnsEMBL::Analysis::LegacyParser::acetime($7,1);
+	    my $pep = $8;
+	    
+	    $pep =~ s/\s+//g;
+	    
+	    my($eid,$ever);
+	    if($e=~/^$EXON_ID_SUBSCRIPT(\d+)\.(\d+)/){
+		$eid=$EXON_ID_SUBSCRIPT.$1;
+		$ever=$2;
+	    }else{
+		$self->throw("Exon identifier could not be parsed: $eid");
+	    }
+
+	    # convert from disk_id to whatever internal clone_id is
+	    $contigid=~s/^$disk_id/$id/;
+	    my $cloneid=$contigid;
+	    $cloneid=~s/\.\d+$//;
+
+	    # if calling by contig, skip those that are wrong
+	    next if($contig_id && $contigid ne $contig_id);
+
+	    my $exon = Bio::EnsEMBL::MappedExon->new();
+	    $exon->id($eid);
+	    $exon->version($ever);
+
+	    $exon->contig_id($contigid);
+	    $exon->clone_id($cloneid);
+	    
+	    if( $end < $start ) {
+		my $s = $end;
+		$end = $start;
+		$start = $s;
+		$exon->strand(-1);
+	    } else {
+		$exon->strand(1);
+	    }
+
+	    $exon->start($start);
+	    $exon->end($end);
+	    
+	    $exon->created($created);
+	    $exon->modified($modified);
+	    push(@exons,$exon);
+	} else {
+	    chomp;
+	    $self->throw("Yikes. Line with > but not parsed! [$_]");
+	}
+    }
+    $fh->input_record_separator($is);
+    return @exons;
+}
+
 
 #
 # Seq method from the cloneI object now

@@ -293,6 +293,29 @@ sub get_all_Genes {
 }
 
 
+=head2 get_old_exons
+
+ Title   : get_old_exons
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_exons {
+    my ($self) = @_;
+    
+    # all old_exon stuff read at clone level on demand
+    my $contig_id=$self->id;
+    my $clone_id=$contig_id;
+    $clone_id=~s/\.\d+$//;
+    return $self->_dbobj->get_Clone($clone_id)->get_old_exons($contig_id);
+}
+
+
 =head2 add_SeqFeature
 
  Title   : add_SeqFeature
