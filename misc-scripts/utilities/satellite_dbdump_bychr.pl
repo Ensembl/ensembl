@@ -323,7 +323,8 @@ SELECT distinct tsc.*
   FROM $litedb.gene_exon ge,
        $satdb.exon_transcript et,
        $satdb.transcript tsc
- WHERE ge.exon = et.exon
+ WHERE ge.chr_name = '$chr'
+       ge.exon = et.exon
    and et.transcript = tsc.id
 ";
     dump_data($sql, $satdb, 'transcript');
