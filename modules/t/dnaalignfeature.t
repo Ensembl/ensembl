@@ -39,6 +39,7 @@ $feature1->start(5);
 $feature1->end  (7);
 $feature1->strand(1);
 $feature1->score(10);
+$feature1->seqname(1);
 #$feature1->analysis($self->analysis);
 
 $feature2 = new Bio::EnsEMBL::SeqFeature();
@@ -46,7 +47,7 @@ $feature2->start  (105);
 $feature2->end    (107);
 $feature2->strand (1);
 $feature2->score  (10);
-
+$feature2->seqname('dummy-hid');
 $fp = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
 				    -feature2 => $feature2);
 
@@ -58,6 +59,7 @@ $feature1->start(10);
 $feature1->end  (14);
 $feature1->strand(1);
 $feature1->score(10);
+$feature1->seqname(1);
 #$feature1->analysis($self->analysis);
 
 $feature2 = new Bio::EnsEMBL::SeqFeature();
@@ -65,7 +67,7 @@ $feature2->start  (106);
 $feature2->end    (110);
 $feature2->strand (1);
 $feature2->score  (10);
-
+$feature2->seqname('dummy-hid');
 $fp2 = new Bio::EnsEMBL::FeaturePair(-feature1 => $feature1,
 				    -feature2 => $feature2);
 
