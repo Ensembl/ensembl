@@ -81,12 +81,16 @@ sub new {
   $self->primary_id($dna_id);
   $self->db_handle($dbh);
   
-  my $sth=$self->db_handle->prepare("SELECT id,internal_id FROM contig WHERE dna = ".$self->dna_id."");
-  $sth->execute(); 
-  while (my $rowhash=$sth->fetchrow_hashref) {
-      $self->display_id($rowhash->{'id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
-      $self->contig_internal_id($rowhash->{'internal_id'}) or $self->throw("No EnsEMBL id for dna $dna_id");
-      }
+  my $sth = $self->db_handle->prepare(q{SELECT id,internal_id FROM contig WHERE dna = ?});
+  $sth->execute($dna_id);
+  if (my($id, $internal_id) = $sth->fetchrow) {
+      $self->display_id($id)
+          or $self->throw("No EnsEMBL id for dna $dna_id");
+      $self->contig_internal_id($internal_id)
+          or $self->throw("No EnsEMBL id for dna $dna_id");
+  } else {
+      $self->throw("Can't get id data for dna_id '$dna_id' from contig table");
+  }
 
   # set stuff in self from @args
   return $self; # success - we hope!

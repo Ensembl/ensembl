@@ -478,13 +478,13 @@ sub write_Species {
 =cut
 
 sub write_ContigOverlap {
-    my ($self, $overlap, $clone) = @_;
+    my ($self, $overlap) = @_;
 
-    if (!defined($overlap)) {
+    unless (defined($overlap)) {
 	$self->throw("No overlap object");
     }
 
-    if (!($overlap->isa("Bio::EnsEMBL::ContigOverlap"))) {
+    unless (($overlap->isa("Bio::EnsEMBL::ContigOverlap"))) {
 	$self->throw("[$overlap] is not a Bio::EnsEMBL::ContigOverlap");
     }
 
@@ -497,22 +497,14 @@ sub write_ContigOverlap {
     # Firstly check that both contigs involved in the overlap are present in the db.
     # If they are new they may not have been inserted yet. In this case when they are inserted, 
     # this ContigOverlap should be found again and will be correctly inserted, hopefully!
-    my $sth = $self->prepare("select id from contig where id = '". $contiga->id ."'");
-    my $res = $sth->execute;
-    if ($sth->rows == 0) {
-        # Contig a has not been entered into the DB yet! 
-        $self->warn("ContigOverlap of " . $clone->id . " can't be written as contiga: " . 
-            $contiga->id . " not found in DB");
-	return;
-    } 
-    
-    $sth = $self->prepare("select id from contig where id = '". $contigb->id ."'");
-    $res = $sth->execute;
-    if ($sth->rows == 0) {
-        # Contig b has not been entered into the DB yet! 
-        $self->warn("ContigOverlap of " . $clone->id . " can't be written as contigb: " . 
-            $contigb->id . " not found in DB");
-	return;
+    my $sth = $self->prepare('select id from contig where id = ?');
+    foreach my $cid ($contiga->id, $contigb->id) {
+        $sth->execute($cid);
+        if ($sth->rows == 0) {
+            # Can't write an overlap if contiga or contigb not in DB
+            $self->warn("ContigOverlap can't be written because contig '$cid' not found in DB");
+	    return;
+        } 
     }
     
     print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
@@ -521,86 +513,45 @@ sub write_ContigOverlap {
     print(STDERR "contigbposition " . $contig_b_position . "\n");
     print(STDERR "overlap type "    . $overlap_type . "\n");
 
-    # First of all we need to fetch the dna ids
-    my $query = "select d.id from dna as d,contig as c " .
-	        "where  d.id = c.dna ".
-  	        "and    c.id = '". $contiga->id ."'";
-
-    $sth = $self->prepare($query);
-    $res = $sth->execute;
-    my $rowhash;
-    my $dna_a_id;
-    my $dna_b_id;
-    
-    if ($sth->rows == 0) {
-        $self->throw("No dna entry found for " . $contiga->id);
-    }
-    elsif ($sth->rows > 1) {
-        $self->throw("More than one dna entry found for " . $contiga->id);
-    }
-    else {
-        $rowhash = $sth->fetchrow_hashref;
-        $dna_a_id = $rowhash->{id};
-    }    
-
-    $query = "select d.id from dna as d,contig as c " .
-	        "where  d.id = c.dna ".
-  	        "and    c.id = '". $contigb->id ."'";
-    $sth = $self->prepare($query);
-    $res = $sth->execute; 
-     
-    if ($sth->rows == 0) {
-        $self->throw("No dna entry found for " . $contigb->id);
-    }
-    elsif ($sth->rows > 1) {
-        $self->throw("More than one dna entry found for " . $contigb->id);
-    }
-    else {
-        $rowhash = $sth->fetchrow_hashref;
-        $dna_b_id = $rowhash->{id};
-    }  
-       
+    # Get dna_id's
+    my( $dna_a_id, $dna_b_id ) = map $_->dna_id, ($contiga, $contigb);
+    $self->throw("Can't get both dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
+        unless $dna_a_id and $dna_b_id;
+    $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
+        if $dna_a_id == $dna_b_id;
 
     my $type     = $overlap->source;
     my $distance = $overlap->distance;
 
     print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
 
-    $self->throw("DNA ids are the same [$dna_a_id][$dna_b_id]") if ($dna_a_id == $dna_b_id);
-    # First check this overlap doesn't already exist.
+    # Insert data into table
+    my $insert = $self->prepare(q{
+        INSERT contigoverlap(
+            dna_a_id, dna_b_id
+          , contig_a_position, contig_b_position
+          , type
+          , overlap_size, overlap_type)
+        VALUES(?,?,?,?,?,?,?)
+        });
+    eval{
+        $insert->execute(
+            $dna_a_id, $dna_b_id,
+            $contig_a_position, $contig_b_position,
+            $type,
+            $distance, $overlap_type);
+    };
     
-    $query = "select * from  contigoverlap " .
-	     "where  (dna_a_id = $dna_a_id and  dna_b_id = $dna_b_id) " .
-	     "or     (dna_a_id = $dna_b_id and  dna_b_id = $dna_a_id) ";
-
-    $sth   = $self->prepare($query);
-    $res   = $sth->execute;
-
-    if ($sth->rows > 0) {
-	$self->warn("ContigOverlap between $dna_a_id and $dna_b_id exists. Not writing");
-	return;
+    # Check that insert succeeded
+    if ($@) {
+        if ($@ =~ /Duplicate/) {
+            $self->warn("Insert failed: $@");
+        } else {
+            $self->throw($@);
+        }
+    } else {
+        return 1;
     }
-
-    $query = "insert into contigoverlap(dna_a_id," .
-	                                "dna_b_id," .
-	                                "contig_a_position," .
-					"contig_b_position,".
-					"type,".
-					"overlap_size,".
-					"overlap_type) " .
-				"values($dna_a_id," .
-				       "$dna_b_id," . 
-				       "$contig_a_position," .
-				       "$contig_b_position,".
-				       "'$type'," .
-				       "$distance," .
-				       "'$overlap_type')";
-
-    #print(STDERR "query is $query\n");
-
-    $sth = $self->prepare($query);
-    $res = $sth ->execute;
-
 }
 
 =head2 prepare
@@ -865,7 +816,7 @@ sub _unlock_tables{
 
 =cut
 
-sub DESTROY{
+sub DESTROY {
    my ($obj) = @_;
 
    $obj->_unlock_tables();

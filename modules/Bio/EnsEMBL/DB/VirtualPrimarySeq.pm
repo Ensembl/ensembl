@@ -242,7 +242,6 @@ sub subseq{
        $self->throw("You have to have start positive and length less than the total length of sequence");
    }
    
-   my $subseq;
    my ($start_rc,$start_rc_pos)=$self->_vmap->vcpos_to_rcpos($start);
    my ($end_rc,$end_rc_pos)=$self->_vmap->vcpos_to_rcpos($end);
    

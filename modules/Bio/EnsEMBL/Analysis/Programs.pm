@@ -9,7 +9,7 @@ use Sys::Hostname;
 sub import {
     my $pkg = shift;
     foreach (@_) {
-        print STDERR "importing: $_\n";
+        #print STDERR "importing: $_\n";
         $Program_Paths{ $_ } = 0;
     }
     my( $home, @PATH, @missing );
