@@ -984,6 +984,7 @@ CREATE TABLE gene_archive (
 
   KEY gene_idx( gene_stable_id, gene_version ),
   KEY transcript_idx( transcript_stable_id, transcript_version )
+  KEY translation_idx( translation_stable_id, translation_version )
 
 ) TYPE=MyISAM;
 
