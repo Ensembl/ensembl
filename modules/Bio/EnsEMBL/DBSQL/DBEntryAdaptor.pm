@@ -232,15 +232,7 @@ sub store {
 
 sub fetch_by_gene {
   my ( $self, $geneId ) = @_;
-  my $sth = $self->prepare( "select translation from transcript where gene = '$geneId'");
-  $sth->execute();
-  while (my @row = $sth->fetchrow) {
-      my $pepId = $row[0];
-      if (!defined $pepId) {
-	  $self->throw ("Gene does not have translation");
-      }
-      return $self->_fetch_by_EnsObject_type( $pepId, 'Translation' );
-  }
+  return $self->_fetch_by_EnsObject_type( $geneId, 'Gene' );
 }
 
 sub fetch_by_rawContig {
@@ -250,16 +242,7 @@ sub fetch_by_rawContig {
 
 sub fetch_by_transcript {
   my ( $self, $trscId ) = @_;
-  my $sth = $self->prepare( "select translation from transcript where id = '$trscId'");
-  $sth->execute();
-  my @row = $sth->fetchrow;  
-  my $pepId = $row[0];
-
-if (!defined $pepId) {
-	  $self->throw ("Transcript does not have translation");
-      }
-
-  return $self->_fetch_by_EnsObject_type( $pepId, 'Translation' );
+  return $self->_fetch_by_EnsObject_type( $trscId, 'Transcript' );
 }
 
 sub fetch_by_translation {
