@@ -35,12 +35,13 @@ GetOptions ('host=s'      => \$host,
 	    'species=s'   => \$species,
             'help'        => sub { &show_help(); exit 1;} );
 
+
 die "Host must be specified"           unless $host;
 die "Target schema must be specified"  unless $target;
 die "Source schema be specifed"        unless $source;
 die "Species must be specified"        unless $species;
 
-die "Species $species not recognised" unless exists $species_types{$species}; 
+die "Species $species not recognised" unless exists $species_types{lc($species)};
 debug("Will use species-specific options for " . $species);
 
 # clean and create need to be done in a specific order
@@ -57,7 +58,7 @@ my $sth;
 # The coord_system and meta_coord tables need to be filled first but
 # how this is done varies from species to species
 
-build_species_coord_tables($species);
+build_species_coord_tables($species, $dbi);
 
 # cache coord-system names to save lots of joins
 debug("Caching coord_system IDs");
@@ -362,10 +363,10 @@ execute($dbi, "INSERT INTO $target.dna " .
 # Note that we can just rename contig_* to set_region_* since the
 # contig IDs were copied verbatim into seq_region
 
-#For some reason mysql refuses to use the index on large tables sometimes
-#following copies like the following.
-#So: drop the indexes first and then re-add them after
-#It is probably faster this way anyway
+# For some reason mysql refuses to use the index on large tables sometimes
+# following copies like the following.
+# So: drop the indexes first and then re-add them after
+# It is probably faster this way anyway
 
 
 # simple_feature
@@ -373,8 +374,6 @@ debug("Translating simple_feature");
 execute($dbi, "INSERT INTO $target.simple_feature (simple_feature_id, seq_region_id, seq_region_start, seq_region_end, seq_region_strand, display_label, analysis_id, score) SELECT simple_feature_id, contig_id, contig_start, contig_end, contig_strand, display_label, analysis_id, score FROM $source.simple_feature");
 
 # repeat_feature
-
-
 debug("Dropping indexes on repeat_feature");
 execute($dbi, "ALTER TABLE $target.repeat_feature DROP INDEX seq_region_idx");
 execute($dbi, "ALTER TABLE $target.repeat_feature DROP INDEX repeat_idx");
@@ -453,7 +452,7 @@ execute($dbi,
 
 
 debug("Translating marker_map_location");
-execute($dbi, 
+execute($dbi,
 	     "INSERT INTO $target.marker_map_location " .
 	     "SELECT mml.marker_id, mml.map_id, " .
 	     "       c.name, " .
@@ -486,9 +485,6 @@ execute( $dbi,
 	 "SELECT mapset_id, code, name, description, max_length " . 
 	 "FROM $source.mapset ms " );
 
-
-
-
 debug( "Translating mapannotation" );
 execute( $dbi,
 	 "INSERT INTO $target.misc_attrib( misc_feature_id, attrib_type_id, " . 
@@ -501,8 +497,6 @@ execute( $dbi,
 	 "INSERT INTO $target.misc_feature_misc_set( misc_feature_id, misc_set_id ) ".
 	 "SELECT mapfrag_id, mapset_id ".
 	 "FROM $source.mapfrag_mapset " );
-
-
 
 warn( "WARNING: Prediction transcript conversion doesnt work for anopheles database\n".
       "         Convert SNAP predicitons to chromsomal coordinates first\n" );
@@ -523,9 +517,8 @@ execute( $dbi, "INSERT INTO prediction_transcript ".
 	 "GROUP BY prediction_transcript_id ");
 
 
-	 
 #-----------------------------------------------------------------
-# remove the unused created and modified dates from the stable ids       
+# remove the unused created and modified dates from the stable ids
 
 execute( $dbi, "INSERT INTO exon_stable_id " .
 	 " (exon_id, stable_id, version) " .
@@ -572,16 +565,6 @@ copy_table($dbi, "translation_stable_id");
 copy_table($dbi, "xref");
 
 # ----------------------------------------------------------------------
-
-debug( "Add some more entries to meta table" );
-execute( $dbi, "INSERT INTO $target.meta( meta_key, meta_value ) " .
-	"VALUES (  \"assembly.mapping\", \"chromosome:NCBI33|contig\" ), " .
-	"( \"assembly.mapping\", \"clone|contig\" ), " .
-	"( \"assembly.mapping\", \"supercontig|contig\" ) " );
-
-		 
-
-
 
 &check() if $check;
 
@@ -747,35 +730,79 @@ sub check {
 
 sub build_species_coord_tables {
 
-  my $species = shift;
+  my ($species, $dbi) = @_;
+  $species = lc($species);
 
-  debug("Building coord_system table for " . $species);
-  my @inserts = ('("chromosome",  "NCBI33", "default_version,top_level")',
-		 '("supercontig", NULL,     "default_version")',
-		 '("clone",       NULL,     "default_version")',
-		 '("contig",      NULL,     "default_version,sequence_level")' );
-  foreach my $insert (@inserts) {
-    execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES ' . $insert);
+  # get default assembly from meta table
+  my $ass_default;
+  my $stmt = $dbi->prepare("SELECT meta_value FROM $source.meta WHERE meta_key='assembly.default'");
+  my $res = $stmt->execute();
+  if (defined $res) {
+    my @row = ($stmt->fetchrow_array());
+    $ass_default = $row[0];
+    debug("Assembly default for $species: $ass_default\n");
   }
 
-  debug("Building meta_coord" . $species);
-  $sth = $dbi->prepare("INSERT INTO meta_coord VALUES (?, ?)");
-  my %cs = (gene               	=> 'chromosome',
-	    transcript         	=> 'chromosome',
-	    exon               	=> 'chromosome',
-	    dna_align_feature     => 'contig',
-	    protein_align_feature => 'contig',
-	    marker_feature        => 'contig',
-	    simple_feature        => 'contig',
-	    repeat_feature        => 'contig',
-	    qtl_feature           => 'chromosome',
-	    misc_feature          => 'chromosome',
-	    prediction_transcript => 'contig',
-	    karyotype             => 'chromosome'
-	   );
+  if (!defined $ass_default || $ass_default eq "") {
+    warn("Cannot get assembly.default from meta table for $species");
+  }
 
+  my (@coords, %cs, @assembly_mappings);
+
+  if ($species eq "human" ) {
+
+    # get version from somewhere
+    @coords = ('("chromosome",  $ass_default, "default_version,top_level")',
+	       '("supercontig", NULL,     "default_version")',
+	       '("clone",       NULL,     "default_version")',
+	       '("contig",      NULL,     "default_version,sequence_level")' );
+
+    %cs = (gene               	=> 'chromosome',
+	   transcript         	=> 'chromosome',
+	   exon               	=> 'chromosome',
+	   dna_align_feature     => 'contig',
+	   protein_align_feature => 'contig',
+	   marker_feature        => 'contig',
+	   simple_feature        => 'contig',
+	   repeat_feature        => 'contig',
+	   qtl_feature           => 'chromosome',
+	   misc_feature          => 'chromosome',
+	   prediction_transcript => 'contig',
+	   karyotype             => 'chromosome');
+
+    @assembly_mappings =  ('chromosome:NCBI33|contig',
+			   'clone|contig',
+			   'supercontig|contig');
+
+    # ----------------------------------------
+
+  } elsif ($species eq "rat") {
+
+    # TODO finish
+
+  } else {
+
+    warn("\nWARNING: species-specific settings not yet defined for $species !\n\n");
+
+  }
+
+  # ----------------------------------------
+
+  debug("Building coord_system table for " . $species);
+  foreach my $coord (@coords) {
+    execute($dbi, 'INSERT INTO coord_system (name, version, attrib) VALUES ' . $coord);
+  }
+
+  debug("Building meta_coord table for " . $species);
+  $sth = $dbi->prepare("INSERT INTO $target.meta_coord VALUES (?, ?)");
   foreach my $val (keys %cs) {
     $sth->execute($val, $coord_system_ids{$cs{$val}});
   }
+
+  debug("Building adding assembly.mapping entries to meta table for " . $species);
+  foreach my $mapping (@assembly_mappings) {
+    $sth->execute($dbi, "INSERT INTO $target.meta(meta_key, meta_value) VALUES ('assembly.mapping'," . $mapping. ")");
+  }
+
 
 }
