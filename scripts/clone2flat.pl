@@ -320,7 +320,7 @@ foreach my $clone_id ( @clones ) {
 		$seqout->write_seq($contig->seq());
 	    }
 	} elsif ( $format =~ /embl/ ) {
-	    #&Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
+	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
 	    my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {

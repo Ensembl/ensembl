@@ -107,7 +107,7 @@ sub add_ensembl_comments {
        $aseq->throw("not got a EnsEMBL annseq but a $aseq. Not going to add comments");
    }
 
-   $aseq->seq->desc("Reannotated sequence via Ensembl");
+   $aseq->desc("Reannotated sequence via Ensembl");
    my $comment = Bio::Annotation::Comment->new();
    
    $comment->text("This sequence was reannotated via the Ensembl system. Please visit the Ensembl web site, http://www.ensembl.org/ for more information.");
@@ -132,7 +132,7 @@ sub add_ensembl_comments {
   
    my $sf = Bio::SeqFeature::Generic->new();
    $sf->start(1);
-   $sf->end($aseq->seq->seq_len());
+   $sf->end($aseq->length());
    $sf->strand(1);
    $sf->primary_tag('source');
    $sf->add_tag_value('organism','Homo sapiens');
@@ -195,8 +195,8 @@ sub id_EnsEMBL {
 
     # JGRG - is this correct?  I thought phase 3 was HUM.
     my $division = $annseq->htg_phase == 4 ? 'HUM' : 'HTG';
-    my $length = $annseq->seq->seq_len();
-    my $id = $annseq->embl_id();
+    my $length = $annseq->seq->length();
+    my $id = $annseq->id();
 
     return sprintf("%-9s  ENSEMBL; DNA; %s; %d BP.", $id, $division, $length );
 }
@@ -226,7 +226,7 @@ sub sv_EnsEMBL {
        return undef;
    }
 
-   return $annseq->seq->id() . "." . $annseq->sv
+   return $annseq->id() . "." . $annseq->sv
 }
 
 sub ac_EnsEMBL {

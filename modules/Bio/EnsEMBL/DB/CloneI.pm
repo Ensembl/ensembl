@@ -52,7 +52,7 @@ use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 
 use strict;
 use POSIX;
-use Bio::EnsEMBL::DB::VirtualContig;
+use Bio::EnsEMBL::DB::EmblVirtualContig;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -320,8 +320,9 @@ Decorating functions. You do not need to implement these functions
 sub virtualcontig{
    my ($self) = @_;
    
-   my $vc = Bio::EnsEMBL::DB::VirtualContig->new( -clone => $self);
-   
+   my $vc = Bio::EnsEMBL::DB::EmblVirtualContig->new( -clone => $self);
+   $vc->id($self->id);
+   $vc->sv($self->embl_version);
    return $vc;
 }
 

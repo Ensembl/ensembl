@@ -80,7 +80,7 @@ system($suck_data) == 0 or die "$0\nError running '$suck_data' : $!";
 print "ok 4\n";
 
 #Insert values in meta table of recipient
-my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=$conf{donor};user=ensembl;pass=');\" | $conf{mysql} -u $nuser $conf{recipient}";
+my $meta= "echo \"insert into meta (donor_database_locator) values('Bio::EnsEMBL::DBSQL::Obj/host=localhost;port=410000;dbname=$conf{donor};user=$nuser;pass=');\" | $conf{mysql} -u $nuser $conf{recipient}";
 system($meta) == 0 or die "$0\nError running '$meta' : $!";
 
 print "ok 5\n";
