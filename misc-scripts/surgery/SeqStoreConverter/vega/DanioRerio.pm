@@ -148,8 +148,13 @@ sub copy_internal_clone_names {
     my $source = $self->source();
     my $dbh    = $self->dbh();
     $self->debug("Vega Danio specific - copying internal clone names to seq_region_attrib");
-#get id for 'name' attribute
-    my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'name'");
+
+#get id for 'fpc_clone_id' attribute
+
+    $dbh->do("INSERT INTO $target.attrib_type (code,name,description)".
+	     "values ('fpc_clone_id','fpc clone','clone id used for linking to Zebrafish webFPC')");
+
+    my ($attrib_id) = $dbh->selectrow_array("Select attrib_type_id from $target.attrib_type where code = 'fpc_clone_id'");
     warn "No attrib id found\n" unless defined($attrib_id);
 
 #get clone details
