@@ -299,7 +299,7 @@ CREATE TABLE gene (
   seq_region_start            int(10) unsigned NOT NULL, 
   seq_region_end              int(10) unsigned NOT NULL, 
   seq_region_strand           tinyint(2) NOT NULL,       
-  display_xref_id             int unsigned NOT NULL,
+  display_xref_id             int unsigned,
 
   PRIMARY KEY (gene_id),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
@@ -351,7 +351,7 @@ CREATE TABLE transcript (
   seq_region_start            int(10) unsigned NOT NULL, 
   seq_region_end              int(10) unsigned NOT NULL, 
   seq_region_strand           tinyint(2) NOT NULL, 
-  display_xref_id             int unsigned NOT NULL,
+  display_xref_id             int unsigned,
 
   PRIMARY KEY (transcript_id),
   KEY seq_region_idx( seq_region_id, seq_region_start ),
