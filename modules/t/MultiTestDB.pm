@@ -15,7 +15,7 @@
 
 package MultiTestDB;
 
-use vars qw(@ISA);
+use vars qw(@ISA %ENV);
 
 use Bio::EnsEMBL::Root;
 
@@ -49,15 +49,13 @@ sub new {
 
   $self->species($species);
 
-   if($ENV{'HARNESS_ACTIVE'}) {
-    #databases are loaded already, read conf hash from file
-    $self->load_config($species);
-  } else {
+
+  if ( -e $species.$FROZEN_CONF_EXT) {
+    $self->load_config;
+  }
+  else {
     #load the databases and generate the conf hash
-
-    print STDERR "Trying to load [$species] databases\n";
-
-    $self->load_databases($species);
+    $self->load_databases;
   }
 
   #generate the db_adaptors from the $self->{'conf'} hash
@@ -96,12 +94,14 @@ sub store_config {
 
   my $conf = $self->species . $FROZEN_CONF_EXT;
 
-  local *FILE = open ">$conf" or die "Could not open config file '$conf'\n";
+  local *FILE;
+
+  open(FILE, ">$conf") or die "Could not open config file ".$conf."\n";
 
   my $string = Dumper($self->{'conf'});
 
-  #strip of leading '$VAR1 = '
-  $string =~ s/$[\$]VAR1\s*=//;
+  #strip off leading '$VAR1 = '
+  $string =~ s/^[\$]VAR1\s*=//;
 
   #store config in file
   print FILE $string;
@@ -120,7 +120,7 @@ sub create_adaptors {
 
     my $db = $self->{'conf'}->{$dbtype};
     my $adaptor;
-    my $module = $db->{'databases'}->{$dbtype};
+    my $module = $db->{'module'};
 
     #try to instantiate an adaptor for this database 
     eval {
@@ -154,8 +154,10 @@ sub create_adaptors {
 
 
 sub load_databases {
-  my ($self, $species) = @_;
-  
+  my ($self) = shift;
+
+  print STDERR "\nTrying to load [$self->{'species'}] databases\n";
+
   #create database from conf and from zip files 
   my $db_conf = do $CONF_FILE;
 
@@ -183,17 +185,23 @@ sub load_databases {
   #create a database for each database specified
   foreach my $dbtype (keys %{$db_conf->{'databases'}}) {
     #create a unique random dbname
-    my $dbname = $self->_create_db_name($species, $dbtype);
+    my $dbname = $self->_create_db_name($dbtype);
 
-    print STDERR "Creating db $dbname \n";
+    print STDERR "\nCreating db $dbname";
 
     unless($db->do("CREATE DATABASE $dbname")) {
-      $self-throw("Could not create database [$dbname]");
+      $self->throw("Could not create database [$dbname]");
     }
 
     #copy the general config into a dbtype specific config 
     $self->{'conf'}->{$dbtype} = {};
     %{$self->{'conf'}->{$dbtype}} = %$db_conf;
+    $self->{'conf'}->{$dbtype}->{'module'} = $db_conf->{'databases'}->{$dbtype};
+
+    # it's not necessary to store the databases and zip bits of info
+    delete $self->{'conf'}->{$dbtype}->{'databases'};
+    delete $self->{'conf'}->{$dbtype}->{'zip'};
+
 
     #store the temporary database name in the dbtype specific config
     $self->{'conf'}->{$dbtype}->{'dbname'} = $dbname;
@@ -250,13 +258,13 @@ sub load_databases {
 
       $db->do( "load data local infile '$txt_file' into table $tablename" );
 
-    }	     
+    }
   }
-  
+    print STDERR "\n";
   closedir DIR;
 
   $db->disconnect;
-  
+
 }
 
 
@@ -276,6 +284,7 @@ sub unzip_test_dbs {
     $self->throw("zipfile could not be found\n");
   }
 
+  # unzip the zip file quietly
   system ( "unzip -q $zipfile" );
 }
 
@@ -333,8 +342,8 @@ sub hide {
   }
 
   foreach my $table (@tables) {
-    if($self->{'conf'}->{'hidden'}->{$dbtype}->{$table}) {
-      warn "table '$table' is already hidden and cannot be hidden again\n";
+    if($self->{'conf'}->{$dbtype}->{'hidden'}->{$table}) {
+      $self->warn("table '$table' is already hidden and cannot be hidden again\n");
       next;
     }
 
@@ -351,11 +360,11 @@ sub hide {
     local *SCHEMA_FILE;
 
     unless(-f $schema_file && -e $schema_file && 
-	   (SCHEMA_FILE = open $schema_file)) {
+	   open (SCHEMA_FILE,$schema_file) ) {
       #rename the table back
       $sth = $adaptor->prepare("alter table $hidden_name rename $table");
       $sth->execute;
-      warn("could not read schema file '$schema_file' for $dbtype $table" .
+      $self->warn("could not read schema file '$schema_file' for $dbtype $table" .
 	  ". table could not be hidden");
       next;
     }
@@ -363,7 +372,9 @@ sub hide {
     #read all the lines from the schema definition
     my @lines = <SCHEMA_FILE>;
     my $sql = join ' ', @lines;
-    
+
+    $sql =~ s/;$//;
+
     close SCHEMA_FILE;
 
     #presumably create the table
@@ -371,7 +382,7 @@ sub hide {
     $sth->execute;
 
     #update the hidden table config
-    $self->{'conf'}->{'hidden'}->{$dbtype}->{$table} = $hidden_name;
+    $self->{'conf'}->{$dbtype}->{'hidden'}->{$table} = $hidden_name;
   }
 }
 
@@ -400,9 +411,12 @@ sub restore {
   unless($dbtype) {
     #restore all of the tables in every dbtype
 
-    foreach my $dbtype (keys %{$self->{'conf'}->{'hidden'}}) {
+    foreach my $dbtype (keys %{$self->{'conf'}}) {
       $self->restore($dbtype);
     }
+
+    #lose the hidden table details
+#    delete $self->{'conf'}->{'hidden'};
 
     return;
   }
@@ -414,11 +428,11 @@ sub restore {
   
   unless(@tables) {
     #restore all of the tables for this db
-    @tables = keys %{$self->{'conf'}->{'hidden'}->{$dbtype}};
+    @tables = keys %{$self->{'conf'}->{$dbtype}->{'hidden'}};
   }
 
   foreach my $table (@tables) {
-    my $hidden_name = $self->{'conf'}->{'hidden'}->{$dbtype}->{$table};
+    my $hidden_name = $self->{'conf'}->{$dbtype}->{'hidden'}->{$table};
 	
     #drop existing table
     my $sth = $adaptor->prepare("drop table $table");
@@ -429,22 +443,23 @@ sub restore {
     $sth->execute;
 
     #delete value from hidden table config
-    delete $self->{'conf'}->{'hidden'}->{$dbtype}->{$table};
+    delete $self->{'conf'}->{$dbtype}->{'hidden'}->{$table};
   }
+  
 }
 
 
 sub save {
   my ($self, $dbtype, $table) = @_;
 
-  warn "save method not yet implemented\n";
+  $self->warn("save method not yet implemented\n");
 
 }
 
 sub compare {
   my ($self, $dbtype, $table) = @_;
 
-  warn "save method not yet implemented\n";
+  $self->warn("save method not yet implemented\n");
 
 }
 
@@ -483,12 +498,14 @@ sub species {
 
 
 sub _create_db_name {
-    my( $self, $species, $dbtype ) = @_;
+    my( $self, $dbtype ) = @_;
 
     my @t_info = localtime;
 
     my $date = join ( "_", $t_info[3],$t_info[4]);  
     my $time = join ( "", $t_info[2],$t_info[1],$t_info[0]);  
+
+    my $species = $self->species;
 
 #    my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date."_".$time;
     my $db_name = "_test_db_${species}_${dbtype}_".$ENV{'USER'}."_".$date;
@@ -519,12 +536,12 @@ sub do_sql_file {
 	  if ( $comment_strip_warned++ ) { 
 	    # already warned
 	  } else {
-	    warn "#################################\n";
-	    warn "# found comment strings inside quoted string;" .
-	         "not stripping, too complicated: $_\n";
-	    warn "# (continuing, assuming all these they are simply " .
-	      "valid quoted strings)\n";
-	    warn "#################################\n";
+	    $self->warn("#################################\n");
+	    $self->warn("# found comment strings inside quoted string;" .
+	         "not stripping, too complicated: $_\n");
+	    $self->warn("# (continuing, assuming all these they are simply " .
+	      "valid quoted strings)\n");
+	    $self->warn("#################################\n");
 	  }
 	} else {
 	  s/(#|--).*//;       # Remove comments
@@ -574,7 +591,7 @@ sub cleanup {
   foreach my $dbtype (keys %{$self->{'conf'}}) {
 
     my $db_conf = $self->{'conf'}->{$dbtype};
-        my $host   = $db_conf->{'host'};
+    my $host   = $db_conf->{'host'};
     my $user   = $db_conf->{'user'};
     my $pass   = $db_conf->{'pass'};
     my $port   = $db_conf->{'port'};
@@ -634,7 +651,7 @@ sub _delete_files {
 sub DESTROY {
     my( $self ) = shift;
 
-    if($ENV{'HARNESS_ACTIVE'}) {
+    if($ENV{'RUNTESTS_HARNESS'}) {
       #restore tables, do nothing else we want to use the database for 
       #the other tests as well
       $self->restore;
@@ -642,6 +659,7 @@ sub DESTROY {
       $self->store_config;
     } else {
       #we are runnning a stand-alone test, cleanup created databases
+      print STDERR "Destroying\n";
       $self->cleanup;
     }
 }
