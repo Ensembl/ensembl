@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Bio::EnsEMBL::DensityFeature;
+use MultiTestDB;
 use Bio::EnsEMBL::Analysis;
 
 use TestUtils qw(debug test_getter_setter);
@@ -16,42 +17,47 @@ our $verbose = 0; #set to 1 to turn on debug printouts
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 7;
+	plan tests => 4;
 }
 
 use TestUtils qw( debug );
 
-my $analysis = Bio::EnsEMBL::Analysis->new(-DBID => 1,
-                                           -LOGIC_NAME => 'test');
+my $multi = MultiTestDB->new;
+my $db = $multi->get_DBAdaptor('core');
 
 
-my $start = 10;
-my $end   = 102;
-my $density_value = 123;
-my $density_value_type = 'ratio';
+my $analysis =  new Bio::EnsEMBL::Analysis (-program     => "densityFeature.t",
+					   -database    => "ensembl",
+					   -gff_source  => "densityFeature.t",
+					   -gff_feature => "density",
+					   -logic_name  => "GeneDensityTest");
 
-my $df = Bio::EnsEMBL::DensityFeature->new
-  (-start    => $start,
-   -end      => $end,
-   -analysis => $analysis,
-   -density_value => $density_value,
-   -density_value_type => $density_value_type);
+my $dt = Bio::EnsEMBL::DensityType->new(-analysis   => $analysis,
+					-block_size => 600,
+					-value_type => 'sum');
 
-ok($df->start == $start && $df->analysis == $analysis && $df->end == $end);
-ok($df->strand == 0);
+my $slice_adaptor = $db->get_SliceAdaptor();
+my $slice = $slice_adaptor->fetch_by_region('chromosome', '20', 1, 600);
 
-ok($df->density_value == $density_value);
 
-$df = Bio::EnsEMBL::DensityFeature->new_fast
-  ({'start'    => $start,
-    'end'      => $end,
-    'analysis' => $analysis,
-    'density_value' => $density_value,
-    'density_value_type' => $density_value_type});
+#
+#test the constructor
+#
+my $feat = Bio::EnsEMBL::DensityFeature->new(-seq_region    => $slice,
+				             -start         => 1,
+					     -end           => 300,
+					     -density_type  => $dt,
+					     -density_value => 123);
 
-ok($df->start == $start && $df->analysis == $analysis && $df->end == $end);
-ok($df->strand == 0);
-ok($df->density_value == $density_value);
-ok($df->density_value_type eq $density_value_type);
+ok($feat && ref $feat && $feat->isa('Bio::EnsEMBL::DensityFeature'));
+
+
+#
+# Test the getter setter functions;
+#
+
+ok(&test_getter_setter($feat, 'start', 100));
+ok(&test_getter_setter($feat, 'end', 500));
+ok(&test_getter_setter($feat, 'density_value', 456));
 
 
