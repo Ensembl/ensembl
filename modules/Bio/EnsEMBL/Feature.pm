@@ -383,10 +383,19 @@ sub transform {
     throw('Feature is not associated with a slice and may not be transformed');
   }
 
+
   #use db from slice since this feature may not yet be stored in a database
   my $db = $slice->adaptor->db();
   my $cs = $db->get_CoordSystemAdaptor->fetch_by_name($cs_name, $cs_version);
   my $current_cs = $slice->coord_system();
+  
+  # self is already in the requested coordinate system, so we can just return a copy
+  if( $cs->equals( $current_cs ) && $slice->start() == 1 && $slice->strand() == 1 ) {
+    my $new_feature;
+    %$new_feature = %$self;
+    bless $new_feature, ref $self;
+    return $new_feature;
+  }
 
   #convert this features coords to absolute coords (i.e. relative to the start
   #of the seq_region, not to the slice)
