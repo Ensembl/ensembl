@@ -8,7 +8,7 @@ use Bio::SeqIO;
 use strict;
 
 # Set a filename to write introns to futher on - choose something for your system.
-my $work_file = '/acari/work3/dta/perl_scripts/introns.fasta';
+my $work_file = './introns.fasta';
 
 # Grab a database adaptor object - set your own system settings here or use the default.
 
