@@ -1356,6 +1356,13 @@ sub rawcontig_ids {
    return $self->_vmap->RawContig_ids;
 }
 
+sub get_all_RawContigs {
+  my ($self) = @_;
+
+  return $self->_vmap->get_all_RawContigs();
+}
+
+
 =head2 found_left_end
 
  Title   : found_left_end
