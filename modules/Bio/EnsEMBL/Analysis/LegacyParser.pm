@@ -188,7 +188,7 @@ sub _parse_exon{
     my $is = $fh->input_record_separator('>');
     my $dis = <$fh>; # skip first record (dull!)
     while( <$fh> ) {
-	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(\S*)/  ) {
+	if ( /^(\S+)\s(\S+\.\S+):(\d+)-(\d+):(\d+).*(1999-\d\d-\d\d)_[\d:]+\s+(1999-\d\d-\d\d)_[\d:]+.*\n(.*)/  ) {
 	    my $eid = $1;
 	    my $contigid = $2;
 	    my $start = $3;
@@ -197,6 +197,9 @@ sub _parse_exon{
 	    my $created = $6;
 	    my $modified = $7;
 	    my $pep = $8;
+	    
+	    $pep =~ s/\s+//g;
+	    
 
 	    # skip if not from $clone (if defined)
 	    next if($disk_id && $contigid!~/^$disk_id/);
@@ -220,6 +223,7 @@ sub _parse_exon{
 
 	    $exon->contig_id($contigid);
 	    $exon->clone_id($cloneid);
+	    $exon->_genscan_peptide($pep);
 	    
 	    if( $end < $start ) {
 		my $s = $end;
@@ -266,6 +270,8 @@ sub _convert_phase {
     if($strand==1){
 	$phase=((2+($start%3)-$phase)%3);
     }else{
+	$phase=(2-((3+($end%3)-$phase)%3));
+
 	# dJ271M21
 	#$phase=((2+((134292-$end+1)%3)-$phase)%3);
 	# dJ718J7
@@ -410,6 +416,7 @@ sub map_all{
 		next;
 	    }
 	    $transcripts{$transcript_id}=$transcript;
+	    #$self->{'_exon_hash'}->{$exon_id}->_rephase_exon_genscan();
 	    $transcript->add_Exon($self->{'_exon_hash'}->{$exon_id});
 	    push(@{$exon2transcript{$exon_id}},$transcript);
 	}

@@ -284,7 +284,14 @@ sub _set_exon_phases {
       $seq = reverse($seq);
     }
 
-    my @trans = $self->_translate($seq);
+    my @trans;
+    $trans[0] = $exon->seq->translate();
+    # this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
+    # intron leaves one base pair.
+    $trans[1] = $exon->seq->translate('*','X',2);
+    $trans[2] = $exon->seq->translate('*','X',1);
+
+    #my @trans = $self->_translate($seq);
 
 #    for (my $i = 0; $i < 3; $i++) {
 #      print("PHASE $i : " . $trans[$i]->seq() . "\n");
@@ -317,7 +324,7 @@ sub _set_exon_phases {
     # Seet phase if poss.  If no phase is found the input DNA is
     # probably wrong.
     if (defined($phase)) {
-#      print("new phase is $phase\n");
+      #print STDERR "new phase is $phase\n";
       $exon->phase($phase);
     } else {
       $self->warn("Can not find frame for exon. Sequences do not match\n");
@@ -325,6 +332,9 @@ sub _set_exon_phases {
 
   }
 
+  return;
+
+  # EB - no longer need this. Cope somewhere else.
 
   # Genscan DNA coordinates include a stop codon at the end of the terminal exon.  We 
   # need to remove this and change the coordinates
