@@ -219,7 +219,7 @@ sub subseq{
 	   my $temp = $start_contig->contig->primary_seq->subseq(
                 $start_contig->rawcontig_end - ($end - $start_contig->start),
                 $start_contig->rawcontig_end - ($start - $start_contig->start));
-	   $temp =~ tr/ATGCNatgcn/TACGNtacgn/;
+	   $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
 	   $temp = reverse $temp;
 	   return $temp;
        }
