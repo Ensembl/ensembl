@@ -77,6 +77,19 @@ use Bio::EnsEMBL::DBSQL::ChromosomeAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DBSQL::CloneAdaptor;
 
+## following is not part of core EnsEMBL, so maybe doesn't belong here and
+## has to be moved elsehwere (e.g. as part of a more dynamical
+## add_external_adaptor scheme). For convenience I have it here, now,
+## though. It will break things for people who don't have ensembl-external
+## checked out ...
+eval {
+    require Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
+};
+if ($@) {
+    warn "error use'ing FamilyAdaptor: $@ ignored for now\n";
+}
+
+
 use DBI;
 
 use Bio::EnsEMBL::DBSQL::SQL;
@@ -2510,6 +2523,24 @@ sub get_ChromosomeAdaptor{
    my ($self,@args) = @_;
 
    return Bio::EnsEMBL::DBSQL::ChromosomeAdaptor->new($self);
+}
+
+=head2 get_FamilyAdaptor
+
+ Title   : get_FamilyAdaptor
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_FamilyAdaptor {
+   my ($self,@args) = @_;
+
+   return Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor->new($self);
 }
 
 
