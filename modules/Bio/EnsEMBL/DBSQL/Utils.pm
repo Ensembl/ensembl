@@ -73,6 +73,7 @@ sub fset2transcript {
 	$exon->end      ($f->end  );
 	$exon->strand   ($f->strand);
 	$exon->phase    ($f->phase);
+
 	$exon->attach_seq($contig->primary_seq);
 	
 	push(@exons,$exon);
@@ -96,26 +97,14 @@ sub fset2transcript {
     } else {
 	@exons = sort {$b->start <=> $a->start} @exons;
     }
-    my $phase = $exons[0]->phase || 0;
-    if( $phase == 0 ) {
-	$translation->start(1);
-    } elsif ( $exons[0]->phase == 1 ) {
-	$translation->start(3);
-    } elsif ( $exons[0]->phase == 2 ) {
-	$translation->start(2);
-    } else {
-	$genscan->throw("Nasty exon phase".$exons[0]->phase);
-    }
-    #print STDERR "Translation start set to ".$translation->start."\n";
     
-    # this doesn't really 
+    $translation->start(1);
     $translation->end($exons[scalar(@exons)-1]->length);
-    #print STDERR "Translation end set to ".$translation->end."\n"; 
     
     $translation->start_exon_id($exons[0]->id);
     $translation->end_exon_id  ($exons[$#exons]->id);
     
-	my $endphase = 0;
+    my $endphase = $exons[0]->phase;
     
     foreach my $exon (@exons) {
 	

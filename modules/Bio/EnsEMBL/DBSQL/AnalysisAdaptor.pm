@@ -43,7 +43,7 @@ The rest of the documentation details each of the object methods. Internal metho
 
 package Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 
-use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::Pipeline::Analysis;
 use Time::Local;
 
 use vars qw(@ISA);
@@ -341,7 +341,6 @@ sub mysql2Unixtime {
 sub _objFromHashref {
   my $self = shift;
   my $rowHash = shift;
-
 
   my $analysis = Bio::EnsEMBL::Analysis->new
     ( -id => $rowHash->{analysisId},

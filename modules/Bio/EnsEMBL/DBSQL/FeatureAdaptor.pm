@@ -168,7 +168,7 @@ sub delete_by_RawContig_id {
 
 sub write {
     my ($self,$contig,@features) = @_;
-    $self->warn("Deprecate method 'FeatureAdaptor->write', passing to 'FatureAdaptor->store' instead");
+    $self->warn("Deprecated method 'FeatureAdaptor->write', passing to 'FeatureAdaptor->store' instead");
     $self->store($contig,@features);
 }
 

@@ -17,6 +17,24 @@
     $gene   = $db->get_Gene('HG45501');
 
     
+If you want to access the dna from another location you can give a dna database handle
+
+  my $dnadb = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -user   => 'ensro',
+        -dbname => 'ensembl_dna',
+        -host   => 'ensrv3',
+        );
+
+
+   my  $db = Bio::EnsEMBL::DBSQL::DBAdaptor->new(
+        -user   => 'root',
+        -dbname => 'pog',
+        -host   => 'caldy',
+	-dnadb  => $dnadb
+        );
+
+When sequences are fetched they will be got from the dna database.  Any deletes from the
+dna table are forbidden and an error message is printed.
 
 =head1 DESCRIPTION
 
@@ -64,6 +82,7 @@ sub new {
     my (
         $db,
         $mapdbname,
+	$dnadb,
         $host,
         $driver,
         $user,
@@ -73,10 +92,9 @@ sub new {
         $perlonlysequences,
         $external,
         $port,
-        $contig_overlap_source,
-        $overlap_distance_cutoff,
         ) = $self->_rearrange([qw(
             DBNAME
+	    DNADB
 	    MAPDBNAME
 	    HOST
 	    DRIVER
@@ -87,8 +105,6 @@ sub new {
 	    PERLONLYSEQUENCES
 	    EXTERNAL
 	    PORT
-            CONTIG_OVERLAP_SOURCE
-            OVERLAP_DISTANCE_CUTOFF
 	    )],@args);
     $db   || $self->throw("Database object must have a database name");
     $user || $self->throw("Database object must have a user");
@@ -148,6 +164,7 @@ sub new {
     $self->username( $user );
     $self->host( $host );
     $self->dbname( $db );
+    $self->dnadb ($dnadb);
     $self->password( $password);
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
@@ -178,15 +195,35 @@ sub new {
           };
     }
 
-  # What source of contigoverlaps should we use?
-  $self->contig_overlap_source($contig_overlap_source) if $contig_overlap_source;
-  
-    # What is the maximum distance allowed between contigs
-    # in an overlap?
-    $self->overlap_distance_cutoff($overlap_distance_cutoff) if $overlap_distance_cutoff;
 
     return $self; # success - we hope!
 }
+
+
+=head2 get_Update_Obj
+
+ Title   : get_Update_Obj
+ Usage   :
+ Function:
+ Example :
+ Returns :
+ Args    :
+
+
+=cut
+
+sub get_Update_Obj {
+    my ($self) = @_;
+
+    my( $update_obj );
+    unless ($update_obj = $self->{'_update_obj'}) {
+        require Bio::EnsEMBL::DBSQL::Update_Obj;
+        $update_obj = Bio::EnsEMBL::DBSQL::Update_Obj->new($self);
+        $self->{'_update_obj'} = $update_obj;
+    }
+    return $update_obj;
+}
+
 
 =head2 get_CloneAdaptor
 
@@ -489,9 +526,6 @@ sub write_Clone {
         $self->write_Contig($contig,$id);
     }
     
-    foreach my $overlap ($clone->get_all_ContigOverlaps) {    
-        $self->write_ContigOverlap($overlap);
-    }
    
 }
 
@@ -589,6 +623,11 @@ sub _insertSequence {
     my ($self, $sequence, $date) = @_;
     
     $sequence =~ tr/atgcn/ATGCN/;
+    
+
+    if ($self->dnadb ne $self) {
+      $self->throw("ERROR: Trying to write to a remote dna database");
+    } 
     
     my $statement = $self->prepare("
         insert into dna(sequence,created) 
@@ -696,9 +735,12 @@ sub mapdb {
 # was added on branch; not clear if needed:
 sub mapdbname {
   my ($self, $arg ) = @_;
-  ( defined $arg ) &&
-    ( $self->{_mapdbname} = $arg );
-  $self->{_mapdbname};
+  
+  if ( defined($arg))  {
+    $self->{_mapdbname} = $arg;
+  }
+  
+  return $self->{_mapdbname};
 }
 
 
@@ -755,97 +797,6 @@ sub write_Species {
     return $species_id;
 }
 
-=head2 write_ContigOverlap
-
- Title   : write_ContigOverlap
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_ContigOverlap {
-    my ($self, $overlap) = @_;
-
-    unless (defined($overlap)) {
-	$self->throw("No overlap object");
-    }
-
-    unless (($overlap->isa("Bio::EnsEMBL::ContigOverlap"))) {
-	$self->throw("[$overlap] is not a Bio::EnsEMBL::ContigOverlap");
-    }
-
-    my $contiga           = $overlap->contiga;
-    my $contigb           = $overlap->contigb;
-    my $contig_a_position = $overlap->positiona;
-    my $contig_b_position = $overlap->positionb;
-    my $overlap_type      = $overlap->overlap_type;
-
-    # Firstly check that both contigs involved in the overlap are present in the db.
-    # If they are new they may not have been inserted yet. In this case when they are inserted, 
-    # this ContigOverlap should be found again and will be correctly inserted, hopefully!
-    
-    my $r_contig_a;
-    my $r_contig_b;
-    
-    eval {
-       $r_contig_a = $self->get_Contig($contiga->id);
-       $r_contig_b = $self->get_Contig($contigb->id);
-    };
-    if( $@ ) {
-       $self->warn("Cannot write Overlaps - contig is not in database - $@");
-       return;
-    }
-  
-    #print(STDERR "contiga "         . $contiga->id . "\t" . $contiga->internal_id . "\n");
-    #print(STDERR "contigb "         . $contigb->id . "\t" . $contigb->internal_id . "\n");
-    #print(STDERR "contigaposition " . $contig_a_position . "\n");
-    #print(STDERR "contigbposition " . $contig_b_position . "\n");
-    #print(STDERR "overlap type "    . $overlap_type . "\n");
-
-    # Get dna_id's
-    my( $dna_a_id, $dna_b_id ) = map $_->dna_id, ($r_contig_a, $r_contig_b);
-    $self->throw("Can't get both dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
-        unless $dna_a_id and $dna_b_id;
-    $self->throw("dna_id's are the same: dna_a_id '$dna_a_id' and dna_b_id '$dna_b_id'")
-        if $dna_a_id == $dna_b_id;
-
-    my $source   = $overlap->source;
-    my $distance = $overlap->distance;
-
-    #print(STDERR "DNA ids are $dna_a_id : $dna_b_id\n");
-
-    # Insert data into table
-    my $insert = $self->prepare(q{
-        INSERT contigoverlap(
-            dna_a_id, dna_b_id
-          , contig_a_position, contig_b_position
-          , overlap_source
-          , overlap_size, overlap_type)
-        VALUES(?,?,?,?,?,?,?)
-        });
-    eval{
-        $insert->execute(
-            $dna_a_id, $dna_b_id
-          , $contig_a_position, $contig_b_position
-          , $source
-          , $distance, $overlap_type);
-    };
-    
-    # Check that insert succeeded
-    if ($@) {
-        if ($@ =~ /Duplicate/) {
-            $self->warn("Insert failed: $@");
-        } else {
-            $self->throw($@);
-        }
-    } else {
-        return 1;
-    }
-}
 
 =head2 prepare
 
@@ -1307,7 +1258,110 @@ Calling gene_Obj->get_Virtual_contig instead!");
 
    return my $transcript =$self->gene_Obj->get_Transcript_in_VC_coordinates($tid);
 }
+
+=head2 donor_locator
     
+ Title   : get_donor_locator
+ Usage   : $obj->get_donor_locator; 
+ Function: Reads the meta table of the database to get the donor_database_locator
+ Example : get_donor_locator
+ Returns : locator string
+ Args    : none
+
+
+=cut
+
+sub get_donor_locator {
+    my ($self) = @_;
+
+    $self->warn("Obj->get_donor_locator is a deprecated method! 
+Calling Update_Obj->get_donor_locator instead!");
+    
+    return $self->get_Update_Obj->get_donor_locator();
+}
+
+=head2 get_last_update_offset
+
+ Title   : get_last_update_offset
+ Usage   : $obj->get_last_update_offset; 
+ Function: Reads the meta table of the database to get the last_update time - offset time
+ Example : get_last_update_offset
+ Returns : UNIX TIME of last update - offset time
+ Args    : none
+
+=cut
+
+sub get_last_update_offset{
+    my ($self) = @_;
+
+    $self->warn("Obj->get_last_update_offset is a deprecated method! 
+Calling Update_Obj->get_last_update_offset instead!");
+ 
+    return $self->get_Update_Obj->get_last_update_offset();
+}    
+
+=head2 get_last_update
+
+ Title   : get_last_update
+ Usage   : $obj->get_last_update; 
+ Function: Reads the db_update table of the database to get the finishing time of the
+           last complete update
+ Example : get_last_update
+ Returns : UNIX TIME of last update
+ Args    : none
+
+=cut
+
+sub get_last_update{
+    my ($self) = @_;
+    
+    $self->warn("Obj->get_last_update is a deprecated method! 
+Calling Update_Obj->get_last_update_offset instead!");
+    
+    return $self->get_Update_Obj->get_last_update_offset();
+}     
+
+=head2 get_now_offset
+
+ Title   : get_now_offset
+ Usage   : $obj->get_now_minus_offset; 
+ Function: Gets the current time from the point of view of the database, substracts the
+           offset time found in the meta table and gives back unix time of now-offset
+ Example : get_now_offset
+ Returns : UNIX TIME of now - offset_time
+ Args    : none
+
+
+=cut
+
+sub get_now_offset{
+    my ($self) = @_;
+
+    $self->warn("Obj->get_now_offset is a deprecated method! 
+Calling Update_Obj->get_now_offset instead!");
+   
+    return $self->get_Update_Obj->get_now_offset();
+}
+
+=head2 get_offset
+
+ Title   : get_offset
+ Usage   : $obj->get_offset; 
+ Function: Gets the offset time found in the meta table
+ Example : get_offset
+ Returns : UNIX TIME of offset_time
+ Args    : none
+
+
+=cut
+
+sub get_offset{
+    my ($self) = @_;
+
+    $self->throw("Obj->get_offset should not be needed any more!"); 
+}
+    
+
 =head2 get_Protein_annseq
 
  Title   : get_Protein_annseq
@@ -2401,43 +2455,6 @@ sub diffdump{
     
 }
 
-=head2 contig_overlap_source
-
- Title   : contig_overlap_source
- Usage   : $obj->contig_overlap_source($newval)
- Function: Gets or sets a subroutine which is used to
-           decide which overlap sources are used to
-           build virtual contigs.
- Returns : value of contig_overlap_source, or a ref to
-           the default subroutine "_default_contig_overlap_source".
- Args    : ref to a subroutine
-
-
-=cut
-
-sub contig_overlap_source {
-    my( $self, $sub ) = @_;
-    
-    if ($sub) {
-        $self->throw("'$sub' is not a CODE reference")
-            unless ref($sub) eq 'CODE';
-        $self->{'_contig_overlap_source'} = $sub;
-    }
-    return $self->{'_contig_overlap_source'} || \&_default_contig_overlap_source;
-}
-
-=pod
-
-=head2 _default_contig_overlap_source
-
-The default subroutine used by B<contig_overlap_source>.
-
-=cut
-
-sub _default_contig_overlap_source {
-    #return $_[0] eq 'phrap';
-    return 1;
-}
 
 
 =head2 get_PredictionFeature_as_Transcript
@@ -2465,37 +2482,6 @@ sub get_PredictionFeature_as_Transcript{
 
 
 
-
-=head2 overlap_distance_cutoff
-
- Title   : overlap_distance_cutoff
- Usage   : $obj->overlap_distance_cutoff($int)
- Function: Gets or sets an integer which is used when building
-           VirtualContigs.  If the distance in a contig overlap
-           is greater than the cutoff, then the overlap will
-           not be returned.
- Returns : value of overlap_distance_cutoff, or -1 if it is not set
- Args    : positive integer
-
-
-=cut
-
-
-sub overlap_distance_cutoff {
-    my( $self, $cutoff ) = @_;
-    
-    if (defined $cutoff) {
-        $self->throw("'$cutoff' is not an positive integer")
-            unless $cutoff =~ /^\d+$/;
-        $self->{'_overlap_distance_cutoff'} = $cutoff;
-    }
-    my $ret = $self->{'_overlap_distance_cutoff'};
-    if (defined($ret)) {
-        return $ret;
-    } else {
-        return -1;
-    }
-}
 
 
 =head2 extension_tables
@@ -2599,6 +2585,31 @@ sub _ext_adaptor {
         }
     }
     return $self->{'_ext_adaptors'}{$adtor_name};
+}
+
+
+=head2 dnadb
+
+ Title   : dnadb
+ Usage   : my $dnadb = $db->dnadb;
+ Function: returns the database adaptor where the dna lives
+           Useful if you only want to keep one copy of the dna
+           on disk but have other databases with genes and features in
+ Returns : dna database adaptor
+  Args    : Bio::EnsEMBL::DBSQL::DBAdaptor
+
+=cut
+
+sub dnadb {
+  my ($self,$arg) = @_;
+
+  if (defined($arg)) {
+    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
+      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
+    }
+    $self->{_dnadb} = $arg;
+  }
+  return $self->{_dnadb} || $self;
 }
 
 ## support for external adaptors

@@ -96,7 +96,6 @@ sub new {
 
     $self->id($id);
     $self->dbobj($dbobj);
-    $self->_got_overlaps(0);
     $self->fetch();
     $self->perl_only_sequences($perlonlysequences);
     $self->overlap_distance_cutoff($overlap_distance_cutoff);
@@ -156,7 +155,6 @@ sub direct_new {
 
     $self->id($id);
     $self->dbobj($dbobj);
-    $self->_got_overlaps(0);
     $self->internal_id($internal_id);
     $self->dna_id($dna_id);
     $self->seq_version($seq_version);
@@ -198,12 +196,10 @@ sub fetch {
           , clone.embl_version
           , clone.id
           , contig.offset
-        FROM dna
-          , contig
+        FROM contig
           , clone
           WHERE contig.clone = clone.internal_id
           AND contig.id = '$id'
-          AND contig.dna = dna.id
         ";
 
     my $sth = $self->dbobj->prepare($query);    
@@ -619,7 +615,7 @@ sub db_primary_seq {
     
     my $dbseq = Bio::EnsEMBL::DBSQL::DBPrimarySeq->new(
 						       -dna => $self->dna_id,
-						       -db_handle => $self->dbobj->_db_handle
+						       -db_handle => $self->dbobj->dnadb,
 						       );
     
     return $dbseq;
@@ -648,7 +644,7 @@ sub perl_primary_seq {
 
     my $dna_id = $self->dna_id()
         or $self->throw("No dna_id in RawContig ". $self->id);
-    my $sth = $self->dbobj->prepare(q{ SELECT sequence FROM dna WHERE id = ? });
+    my $sth = $self->dbobj->dnadb->prepare(q{ SELECT sequence FROM dna WHERE id = ? });
     my $res = $sth->execute($dna_id);
 
     my($str) = $sth->fetchrow
@@ -656,9 +652,9 @@ sub perl_primary_seq {
 
     # Shouldn't sequence integrity be checked on the way
     # into the datbase instead of here?
-    $str =~ /[^ABCDGHKMNRSTVWY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
-    $str =~ s/\s//g;
-    $str =~ s/[^ABCDGHKMNRSTVWY]/N/g;
+#    $str =~ /[^ABCDGHKMNRSTVWY]/ && $self->warn("Got some non standard DNA characters here! Yuk!");
+#    $str =~ s/\s//g;
+#    $str =~ s/[^ABCDGHKMNRSTVWY]/N/g;
 
     my $ret = Bio::PrimarySeq->new( 
         -seq => $str, 
@@ -714,7 +710,7 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
-#   push(@out,$self->get_all_PredictionFeatures);
+ #   push(@out,$self->get_all_PredictionFeatures);
 
     return @out;
 }
@@ -736,7 +732,7 @@ sub get_all_SimilarityFeatures_above_score{
     my ($self, $analysis_type, $score) = @_;
 
     $self->throw("Must supply analysis_type parameter") unless $analysis_type;
-    $self->throw("Must supply score parameter") unless $score;
+    $self->throw("Must supply score parameter")         unless $score;
     
    my @array;
 
@@ -976,7 +972,7 @@ sub get_all_SimilarityFeatures {
        my $out;
        my $analysis;
               
-#       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid, FSET $fset\n";
+#       print STDERR  "\nID $fid, START $start, END $end, STRAND $strand, SCORE $f_score, EVAL $evalue, PHASE $phase, EPHASE $end_phase, ANAL $analysisid\n";
        
        if (!$analhash{$analysisid}) {
 	   
@@ -1756,55 +1752,12 @@ sub seq_date {
 
    my $id = $self->internal_id();
    my $query = "select UNIX_TIMESTAMP(d.created) from dna as d,contig as c where c.internal_id = $id and c.dna = d.id";
-   my $sth = $self->dbobj->prepare($query);
+   my $sth = $self->dbobj->dnadb->prepare($query);
    $sth->execute();
    my $rowhash = $sth->fetchrow_hashref(); 
    return $rowhash->{'UNIX_TIMESTAMP(d.created)'};
 }
 
-
-=head2 get_left_overlap
-
- Title   : get_left_overlap
- Usage   : $overlap_object = $contig->get_left_overlap();
- Function: Returns the overlap object of contig to the left.
-           This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlapHelper object
- Args    : None
-
-=cut
-
-sub get_left_overlap {
-   my ($self,@args) = @_;
-
-   if( $self->_got_overlaps == 0 ) {
-       $self->_load_overlaps() ;
-   }
-
-   return $self->_left_overlap();
-}
-
-
-=head2 get_right_overlap
-
- Title   : get_right_overlap
- Usage   : $overlap_object = $contig->get_right_overlap();
- Function: Returns the overlap object of contig to the left.
-           This could be undef, indicating no overlap
- Returns : A Bio::EnsEMBL::ContigOverlapHelper object
- Args    : None
-
-=cut
-
-sub get_right_overlap {
-   my ($self,@args) = @_;
-
-   if( $self->_got_overlaps == 0 ) {
-       $self->_load_overlaps() ;
-   }
-
-   return $self->_right_overlap();
-}
 
 
 
@@ -1854,346 +1807,7 @@ sub _crossdb {
    return $self->dbobj->_crossdb;
 }
 	
-=head2 _got_overlaps
 
- Title   : _got_overlaps
- Usage   : $obj->_got_overlaps($newval)
- Function: 
- Returns : value of _got_overlaps
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _got_overlaps {
-    my($obj, $value) = @_;
-    if (defined($value)) {
-        $obj->{'_got_overlaps'} = $value;
-    }
-    return $obj->{'_got_overlaps'};
-}
-
-=head2 _load_overlaps
-
- Title   : _load_overlaps
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-=cut
-
-sub _load_overlaps {
-    my( $self ) = @_;
-    my $id = $self->id;
-    my @over = $self->get_all_Overlaps;
-    foreach my $lap (@over) {
-        my( $end, $helper ) = $lap->make_ContigOverlapHelper($id);
-        if ($end eq 'left') {
-            $self->_left_overlap($helper);
-        }
-        elsif ($end eq 'right') {
-            $self->_right_overlap($helper);
-        }
-        else {
-            $self->throw("Weird, got: '$end', '$helper'");
-        }
-    }
-
-    # Flag that we've visited the database to get overlaps
-    $self->_got_overlaps(1);
-
-    # sanity check ourselves
-    if( $self->golden_start > $self->golden_end ) {
-	$self->throw("This contig ".$self->id." has dodgy golden start/ends with start:".$self->golden_start." end:".$self->golden_end);
-    }
-}
-
-{ # (this brace is the beginning of a block that results in static compilation
-  # of the SQL queries)
-
-    # Certainly worth explaining here.
-    #
-    # The overlap type indicates which end on the two contigs this overlap is.
-    # left means 5', right means 3'. There are four options. From these four
-    # options we can figure out
-    #    a) whether this overlap is on the 5' or the 3' of our contig
-    #    b) which polarity the overlap on the next contig is 
-    #
-    # Polarity indicates whether the sequence is being read in the same 
-    # direction as this contig. 
-    # 
-    # The sequence has to be appropiately versioned otherwise this gets complicated
-    # in the update scheme.
-
-
-    # Doing two queries seems to be quickest
-    # Statements like:
-    #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
-    # make queries inordinately slow because MySQL
-    # doesn't use indices on OR statements.
-    my @queries = (
-       q{SELECT c.id sister_id
-          , o.contig_b_position sister_pos
-          , o.contig_a_position self_pos
-          , o.overlap_type
-          , o.overlap_size
-          , o.overlap_source
-        FROM contigoverlap o
-          , contig c
-        WHERE c.dna = o.dna_b_id
-          AND dna_a_id = ?},
-
-       q{SELECT c.id sister_id
-          , o.contig_a_position sister_pos
-          , o.contig_b_position self_pos
-          , o.overlap_type
-          , o.overlap_size
-          , o.overlap_source
-        FROM contigoverlap o
-          , contig c
-        WHERE c.dna = o.dna_a_id
-          AND dna_b_id = ?},
-        );
-
-    sub get_all_Overlaps {
-        my ($self) = @_;
-    
-        return;
-
-        my $id      = $self->dna_id();
-        my $version = $self->seq_version();
-
-        # Doing two queries seems to be quickest
-        # Statements like:
-        #   c.dna = o.dna_b_id OR c.dna = o.dna_a_id
-        # seem to make queries inordinately slow.
-        my $overlap_source_sub  = $self->dbobj->contig_overlap_source();
-        my $overlap_cutoff      = $self->overlap_distance_cutoff();
-        if( !defined $overlap_cutoff) {
-	    $overlap_cutoff = 100000;
-	}
-
-        my( @overlap );
-        foreach my $i (0,1) {
-            my $query_str = $queries[$i];
-
-            my $sth = $self->dbobj->prepare($query_str);
-            $sth->execute($id);
-
-            while (my $row = $sth->fetchrow_arrayref) {
-                
-                my( $sister_id,
-                    $pos_a,
-                    $pos_b,
-                    $type,
-                    $distance,
-                    $source,
-                    ) = @$row;
-                
-                # Skip this overlap if it isn't from the right source
-                next unless &$overlap_source_sub($source);
-                
-                # Skip overlaps with distances larger than the cutoff
-                if ($overlap_cutoff > -1 and $distance > $overlap_cutoff) {
-                    next;
-                }
-                
-                # Make the other contig of the overlap
-                my( $contig_a, $contig_b );
-                if ($i == 0) {
-                    $contig_a = $self;
-                    $contig_b = $self->dbobj->get_Contig($sister_id);
-                } else {
-                    $contig_a = $self->dbobj->get_Contig($sister_id);
-                    $contig_b = $self;
-                }
-
-                my $new_overlap = Bio::EnsEMBL::ContigOverlap->new(
-                    '-contiga'      => $contig_a,
-                    '-contigb'      => $contig_b,
-                    '-positiona'    => $pos_a,
-                    '-positionb'    => $pos_b,
-                    '-overlap_type' => $type,
-                    '-distance'     => $distance,
-                    '-source'       => $source,
-                    );
-                push(@overlap, $new_overlap);
-            }
-        }
-        if (@overlap > 2) {
-            $self->throw("Got '". scalar(@overlap) ."' overlaps, which is too many for 1 contig!");
-        } else {
-            return @overlap;
-        }
-    }
-} # End privacy block
-
-
-
-=head2 _right_overlap
-
- Title   : _right_overlap
- Usage   : $obj->_right_overlap($newval)
- Function: 
- Example : 
- Returns : value of _right_overlap
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _right_overlap {
-   my ($obj,$value) = @_;
-
-
-   if( defined $value) {
-      $obj->{'_right_overlap'} = $value;
-    }
-    return $obj->{'_right_overlap'};
-
-}
-
-=head2 _left_overlap
-
- Title   : _left_overlap
- Usage   : $obj->_left_overlap($newval)
- Function: 
- Example : 
- Returns : value of _left_overlap
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _left_overlap {
-    my ($obj,$value) = @_;
-
-    if (defined $value) {
-        $obj->{'_left_overlap'} = $value;
-    }
-    return $obj->{'_left_overlap'};
-
-}
-
-
-sub feature_file {
-    my ($self) = @_;
-    
-    return;
-
-    if (!(defined($self->{_feature_file}))) {
-
-	my $cloneid = $self->cloneid;
-	
-	if (defined($cloneid)) {
-	    print STDERR "Fetching job for $cloneid\n";
-	    my @job = $self->dbobj->get_JobsByInputId($cloneid);
-	    print STDERR "Job is $job[0]\n";
-	    
-	    if (defined($job[0])) {
-		$self->{_feature_file} = $job[0]->output_file;
-	    }
-	}
-    }
-    return $self->{_feature_file};
-
-}
-
-sub get_extra_features{
-    my ($self) = @_;
-    my @out;
-
-    if (!defined($self->{_extras})) {
-	$self->{_extras} = [];
-
-#	print (STDERR "Output file " . $self->feature_file ."\n");
-	if (defined($self->feature_file) && (-e $self->feature_file)) {
-	    
-	    my $object;
-	    open (IN,"<" . $self->feature_file) || do {print STDERR ("Could not open output file\n")};
-	    
-	    while (<IN>) {
-		$_ =~ s/\[//;
-		$_ =~ s/\]//;
-		$object .= $_;
-	    }
-	    close(IN);
-	    
-	    if (defined($object)) {
-		my (@obj) = FreezeThaw::thaw($object);
-		foreach my $array (@obj) {
-#		    print STDERR "$array\n";
-		    foreach my $f (@$array) {
-			#    print STDERR "$f\n";
-			if ($f->isa("Bio::EnsEMBL::FeaturePair")) {
-			    $f->source_tag("vert_est2genome");
-			    $f->primary_tag("similarity"); 
-			    $f->analysis($self->analysis);
-			    push(@out,$f);
-#			print STDERR "Adding " . $f->hseqname . "\n";
-			}
-		    }
-		}
-	    }
-	    
-	}
-	push(@{$self->{_extras}},@out);
-    }
-    return @{$self->{_extras}};
-}
-
-sub analysis {
-    my ($self,$arg) = @_;
-
-    if (!(defined($self->{_analysis}))) {
-	my $ana = new Bio::EnsEMBL::Analysis(-db => 'vert',
-					     -dbversion => 1,
-					     -program => 'vert_est2genome',
-					     -program_version => 1,
-					     -gff_source => 'vert_est2genome',
-					     -gff_features => 'similarity',
-					     );
-	$self->{_analysis} = $ana;
-    }
-    return $self->{_analysis};
-}
-
-
-sub filter_features {
-    my ($self,$old,$new) = @_;
-
-    my %newids;
-    my %oldids;
-    my %newfeatures;
-    my %oldfeatures;
-    my @out;
-
-    foreach my $f (@$new) {
-	$newids{$f->hseqname}++;
-	push(@{$newfeatures{$f->hseqname}},$f);
-    }
-
-    foreach my $f (@$old) {
-	$oldids{$f->hseqname}++;
-	push(@{$oldfeatures{$f->hseqname}},$f);
-	if (! (exists $newfeatures{$f->hseqname})) {
-	    push(@out,$f);
-	}
-    }
-
-    foreach my $newid (keys %newids) {
-	if ($newids{$newid} > $oldids{$newid}) {
-	    #print(STDERR "Using new features for $newid\n");
-	    push(@out,@{$newfeatures{$newid}});
-	} else {
-	    #print(STDERR "Using old features for $newid\n");
-	    push(@out,@{$oldfeatures{$newid}});
-	}
-    }
-    return @out;
-}
 
 
 #
@@ -2521,9 +2135,9 @@ sub static_golden_start{
    if (! defined ($self->{'_static_golden_start'})) {
        my $sth = $self->dbobj->prepare("select raw_start from static_golden_path where raw_id = $id and type = '$type'");
        $sth->execute();
-       
+
        my $rowhash = $sth->fetchrow_hashref();
-       
+
        $self->{'_static_golden_start'} = $rowhash->{'raw_start'};
    }
    return $self->{'_static_golden_start'};
@@ -2555,9 +2169,9 @@ sub static_golden_end{
    if (! defined ($self->{'_static_golden_end'})) {
        my $sth = $self->dbobj->prepare("select raw_end from static_golden_path where raw_id = $id and type = '$type'");
        $sth->execute();
-       
+
        my $rowhash = $sth->fetchrow_hashref();
-       
+
        $self->{'_static_golden_end'} = $rowhash->{'raw_end'};
    }
    return $self->{'_static_golden_end'};
@@ -2746,7 +2360,7 @@ sub subseq {
   my ( $self, $start, $end ) = @_;
   my $length = $end-$start+1;
   my $id = $self->dna_id();
-  my $sth = $self->dbobj->prepare("
+  my $sth = $self->dbobj->dnadb->prepare("
      SELECT SUBSTRING(sequence,$start,$length) 
        FROM dna 
       WHERE id = $id

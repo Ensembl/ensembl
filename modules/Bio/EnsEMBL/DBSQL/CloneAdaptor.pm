@@ -239,6 +239,7 @@ sub delete_by_dbID {
    my @dnas;
 
    # get a list of contigs to zap
+
    my $sth = $self->prepare("select internal_id,dna from contig where clone = $internal_id");
    my $res = $sth->execute;
 
@@ -255,11 +256,15 @@ sub delete_by_dbID {
    }
 
 
-   foreach my $dna (@dnas) {
+   if ($self->db ne $self->db->dnadb) {
+     $self->warn("Using a remote dna database - can't delete dna\n");
+   } else {
+     
+     foreach my $dna (@dnas) {
        $sth = $self->prepare("delete from dna where id = $dna");
        $res = $sth->execute;
-
-       # Mysql does not optimise or statements in where clauses
+       
+     }
 
    }
 
@@ -449,6 +454,7 @@ sub create_tables {
   } );
   $sth->execute();
 }
+
 
 
 1;

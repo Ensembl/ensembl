@@ -1473,6 +1473,7 @@ sub write{
 
 
    foreach my $contig_id ( $gene->unique_contig_ids() ) {
+     
        eval {
 #	   print STDERR "Getting out contig for $contig_id\n";
 	   my $contig      = $self->_db_obj->get_Contig($contig_id);
@@ -1491,8 +1492,9 @@ sub write{
    }
 
    # gene is big daddy object
-   
+
    foreach my $trans ( $gene->each_Transcript() ) {
+
        $self->write_Transcript($trans,$gene);
        my $c = 1;
        foreach my $exon ( $trans->each_Exon() ) {
@@ -1662,6 +1664,7 @@ sub write_supporting_evidence {
 
 
     my $string;
+
     if( $self->use_delayed_insert == 1 ) {
 	$string = 'DELAYED';
     } else {
@@ -1670,7 +1673,7 @@ sub write_supporting_evidence {
 
     #$string = '';
 
-    my $sth  = $self->_db_obj->prepare("insert $string into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?,?)");
+    my $sth  = $self->_db_obj->prepare("insert $string into supporting_feature(id,exon,seq_start,seq_end,score,strand,analysis,name,hstart,hend,hid,evalue,perc_id,phase,end_phase) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     
 
     FEATURE: foreach my $f ($exon->each_Supporting_Feature) {
@@ -1686,7 +1689,9 @@ sub write_supporting_evidence {
 	my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->_db_obj);
   	my $analysisid = $feature_obj->write_Analysis($f->analysis);
 	
+	
 	if ($f->isa("Bio::EnsEMBL::FeaturePairI")) {
+
 	    $sth->execute('NULL',
 			  $exon->id,
 			  $f->start,
@@ -1697,7 +1702,11 @@ sub write_supporting_evidence {
 			  $f->source_tag,
 			  $f->hstart,
 			  $f->hend,
-			  $f->hseqname
+			  $f->hseqname,
+			  $f->p_value,
+			  $f->percent_id,
+			  $f->phase,
+			  $f->end_phase
 			  );
 	} else {
 	    $self->warn("Feature is not a Bio::EnsEMBL::FeaturePair");
@@ -1734,6 +1743,8 @@ sub write_Transcript{
    my $translation = $trans->translation;
    my $translation_id = $translation ? $translation->id : '';
    
+   print STDERR "Translation id " . $translation->id . "\n";
+
    # Insert the transcript
    my $tst = $self->_db_obj->prepare("
         insert into transcript (id, gene, translation, version) 
@@ -1776,7 +1787,7 @@ sub write_Translation{
     if ( !defined $translation->version  ) {
 	$self->throw("No version number on translation");
     }
-    
+
     my $tst = $self->_db_obj->prepare("insert into translation (id,version,seq_start,start_exon,seq_end,end_exon) values ('" 
 			     . $translation->id . "',"
 			     . $translation->version . ","

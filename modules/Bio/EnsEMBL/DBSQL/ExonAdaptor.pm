@@ -214,7 +214,9 @@ sub fetch_evidence_by_Exons {
     
   $instring = substr($instring,0,-2);
    
-  my $sth = $self->prepare("select * from supporting_feature where exon in (" . $instring . ")");
+  my $query = "select * from supporting_feature where exon in (" . $instring . ")";
+
+  my $sth = $self->prepare($query);
   $sth->execute;
 
   my %anahash;
@@ -224,7 +226,7 @@ sub fetch_evidence_by_Exons {
     my $f2 = new Bio::EnsEMBL::SeqFeature;
 	
     my $f = new Bio::EnsEMBL::FeaturePair(-feature1 => $f1,
-					      -feature2 => $f2);
+					  -feature2 => $f2);
 
     my $exon = $rowhash->{exon};
 	
@@ -235,6 +237,9 @@ sub fetch_evidence_by_Exons {
 	$f1->strand ($rowhash->{strand});
 	$f1->source_tag($rowhash->{name});
 	$f1->primary_tag('similarity');
+        $f1->percent_id($rowhash->{perc_id});
+        $f1->p_value($rowhash->{p_value});
+        $f1->phase  ($rowhash->{phase});
 	$f1->score  ($rowhash->{score});
 	$f2->seqname($rowhash->{hid});
 	$f2->start  ($rowhash->{hstart});
@@ -243,13 +248,16 @@ sub fetch_evidence_by_Exons {
 	$f2->source_tag($rowhash->{name});
 	$f2->primary_tag('similarity');
 	$f2->score  ($rowhash->{score});
+        $f2->percent_id($rowhash->{perc_id});
+        $f2->p_value($rowhash->{p_value});
+        $f2->phase  ($rowhash->{phase});
 
-	my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
+        my $analysis = $anaAdaptor->fetch_by_dbID( $rowhash->{analysis} );
 
-    $f->analysis($analysis);
+        $f->analysis($analysis);
 
 	$f->validate;
-
+ 
 	$exhash{$exon}->add_Supporting_Feature($f);
     }
 
