@@ -598,7 +598,7 @@ sub _rephase_exon_genscan{
        my $tr1pep = $tr1->str();
        chop $tr1pep;
 
-       print STDERR "[$tr1pep] to\n[$pep]\n";
+#        print STDERR "[$tr1pep] to\n[$pep]\n";
        if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
 	   $phase = 0;
 	   last LOOP;
@@ -610,7 +610,7 @@ sub _rephase_exon_genscan{
        $tr1pep = $tr1->str();
        chop $tr1pep;
 
-       print STDERR "[$tr1pep] to\n[$pep]\n";
+#       print STDERR "[$tr1pep] to\n[$pep]\n";
        if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
 	   $phase = 1;
 	   last LOOP;
@@ -622,7 +622,7 @@ sub _rephase_exon_genscan{
        $tr1pep = $tr1->str();
        chop $tr1pep;
 
-       print STDERR "[$tr1pep] to\n[$pep]\n";
+#       print STDERR "[$tr1pep] to\n[$pep]\n";
        if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
 	   $phase = 2;
 	   last LOOP;
@@ -632,7 +632,7 @@ sub _rephase_exon_genscan{
 
    
 
-   print STDERR "For exon ",$self->strand," ",$self->phase," ",$phase,"\n";
+#   print STDERR "For exon ",$self->strand," ",$self->phase," ",$phase,"\n";
    $self->phase($phase);
    
 
