@@ -149,8 +149,8 @@ sub get_species_id_from_species_name{
 sub get_set_lists{
   my ($self) = @_;
 
-#  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
-return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
+  #  return [["ExonerateGappedBest1", ["homo_sapiens","Uniprot/SWISSPROT"]]];
+  return [["ExonerateGappedBest1", ["homo_sapiens","*"]]];
 
 }
 
@@ -246,7 +246,7 @@ sub dump_xref{
   foreach my $list (@lists){
 #    print "method->".@$list[0]."\n";
     $method[$i] = shift @$list;
-    my $j = 1;
+    my $j = 0;
     my @source_id=();
     my @species_id=();
     foreach my $element (@$list){
@@ -297,72 +297,64 @@ sub dump_xref{
 
 
 sub dump_subset{
+
   my ($self,$xref,$rspecies_id,$rsource_id,$index) = @_;
-  
-  open(XDNA,">".$xref->dir()."/xref_".$index."_dna.fasta") 
-    || die "Could not open xref_".$index."_dna.fasta";
 
-  my $sql = "select p.xref_id, p.sequence, x.species_id , x.source_id ";
-  $sql   .= "  from primary_xref p, xref x ";
-  $sql   .= "  where p.xref_id = x.xref_id and ";
-  $sql   .= "      p.sequence_type ='dna' ";
-  if(defined($self->maxdump())){
-    $sql .= "limit ".$self->maxdump()." ";
-  }
-  
-#  for (my $j =1; $j<scalar(@$rspecies_id); $j++){
-#    print $j."\t".$$rspecies_id[$j]."\t".$$rsource_id[$j]."\n";
-#  }
-  #  return $xref->dir."/xref_".$i."_dna.fasta";
-  
-  my $sth = $xref->dbi()->prepare($sql);
-  $sth->execute();
-  while(my @row = $sth->fetchrow_array()){
-    my $pass = 0;
-    for (my $j =1; $j<scalar(@$rspecies_id); $j++){
-      if($$rspecies_id[$j] < 0 or $row[2] == $$rspecies_id[$j]){
-	if($$rsource_id[$j] < 0 or  $row[3] == $$rsource_id[$j]){
-	  $pass = 1;
-	}
-      }
+  # generate or condition list for species and sources
+  my $final_clause;
+  my $use_all = 0;
+  my @or_list;
+  for (my $j = 0; $j < scalar(@$rspecies_id); $j++){
+    my @condition;
+    if($$rspecies_id[$j] > 0){
+      push @condition, "x.species_id=" . $$rspecies_id[$j];
     }
-    if($pass){
+    if($$rsource_id[$j] > 0){
+      push @condition, "x.source_id=" . $$rsource_id[$j];
+    }
+
+    # note if both source and species are * (-1) there's no need for a final clause
+
+    if ( !@condition ) {
+      $use_all = 1;
+      last;
+    }
+
+    push @or_list, join (" AND ", @condition);
+
+  }
+
+  $final_clause = " AND ((" . join(") OR (", @or_list) . "))" unless ($use_all) ;
+
+
+  for my $sequence_type ('dna', 'peptide') {
+
+    my $filename = $xref->dir() . "/xref_" . $index . "_" . $sequence_type . ".fasta";
+    open(XREF_DUMP,">$filename") || die "Could not open $filename";
+
+    my $sql = "SELECT p.xref_id, p.sequence, x.species_id , x.source_id ";
+    $sql   .= "  FROM primary_xref p, xref x ";
+    $sql   .= "  WHERE p.xref_id = x.xref_id AND ";
+    $sql   .= "        p.sequence_type ='$sequence_type' ";
+    $sql   .= $final_clause;
+
+    if(defined($self->maxdump())){
+      $sql .= " LIMIT ".$self->maxdump()." ";
+    }
+
+    my $sth = $xref->dbi()->prepare($sql);
+    $sth->execute();
+    while(my @row = $sth->fetchrow_array()){
+
       $row[1] =~ s/(.{60})/$1\n/g;
-      print XDNA ">".$row[0]."\n".$row[1]."\n";
-    }
-  }
-  close XDNA;
+      print XREF_DUMP ">".$row[0]."\n".$row[1]."\n";
 
+    }
 
-  open(XPRO,">".$xref->dir."/xref_".$index."_prot.fasta") 
-    || die "Could not open xref_".$index."_prot.fasta";
-  my $sql = "select p.xref_id, p.sequence, x.species_id , x.source_id ";
-  $sql   .= "  from primary_xref p, xref x ";
-  $sql   .= "  where p.xref_id = x.xref_id and ";
-  $sql   .= "      p.sequence_type ='peptide' ";
-  if(defined($self->maxdump())){
-    $sql .= "limit ".$self->maxdump()." ";
+    close(XREF_DUMP);
+    $sth->finish();
+
   }
-  
-  
-  $sth = $xref->dbi()->prepare($sql);
-  $sth->execute();
-  while(my @row = $sth->fetchrow_array()){
-    my $pass = 0;
-    for (my $j =1; $j<scalar(@$rspecies_id); $j++){
-      if($$rspecies_id[$j] < 0 or $row[2] == $$rspecies_id[$j]){
-	if($$rsource_id[$j] < 0 or  $row[3] == $$rsource_id[$j]){
-	  $pass = 1;
-	}
-      }
-    }
-    if($pass){
-      $row[1] =~ s/(.{60})/$1\n/g;
-      print XPRO ">".$row[0]."\n".$row[1]."\n";
-    }
-  }
-  $sth->finish();
-  close XPRO;
 
 }
 
@@ -425,7 +417,7 @@ sub fetch_and_dump_seq{
   }
 
   open(PEP,">".$self->ensembl_protein_file()) 
-    || die("Could not open dna file for writing: ".$self->ensembl_protein_file."\n");
+    || die("Could not open protein file for writing: ".$self->ensembl_protein_file."\n");
 
   my $gene_adap = $db->get_GeneAdaptor();
   my @gene_ids = @{$gene_adap->list_dbIDs()};
@@ -450,13 +442,16 @@ sub fetch_and_dump_seq{
 	print PEP ">".$trans->dbID()."\n".$pep_seq."\n";
       }
     }
-    if(defined($max) and $i > $max){
-      goto FIN;
-    }
+
+    last if(defined($max) and $i > $max);
+
   }
-FIN:
+
   close DNA;
   close PEP;
+
+  print time() . " after \n";
+  exit(0);
 }
 
 
@@ -1225,7 +1220,6 @@ sub build_gene_display_xrefs {
     my $best_transcript_length = -1;
     foreach my $transcript_id (@transcripts) {
       if (!$transcript_display_xrefs->{$transcript_id}) {
-	#print "No display_xref assigned to transcript $transcript_id\n";
 	$trans_no_xref++;
 	next;
       } else {
@@ -1246,7 +1240,7 @@ sub build_gene_display_xrefs {
     if (!$best_xref) {
       #XXXwarn("Couldn't find a display xref for gene id $gene_id\n");
       $miss++;
-    } else {
+    } else{ 
       # Write record 
       print GENE_DX "UPDATE gene SET display_xref_id=" . $best_xref . " WHERE gene_id=" . $gene_id . ";\n";
       $hit++;
