@@ -104,7 +104,7 @@ sub generic_fetch {
   my $left_join = '';
   my @tables;
   if(@left_join_list) {
-    my %left_join_hash = map { $_->[0], $_->[1] } @left_join_list;
+    my %left_join_hash = map { $_->[0] => $_->[1] } @left_join_list;
     while(my $t = shift @tabs) {
       if( exists $left_join_hash{ $t->[0] } ) {
         my $condition = $left_join_hash{ $t->[0] };
@@ -273,20 +273,21 @@ sub fetch_all_by_Slice_and_score {
 =cut
 
 sub fetch_all_by_Slice_constraint {
-  my($self, $slice, $constraint, $logic_name) = @_;
+  my($self, $slice, $original_constraint, $logic_name) = @_;
 
   if(!defined($slice) || !ref($slice) || !$slice->isa("Bio::EnsEMBL::Slice")) {
     throw("Slice arg must be a Bio::EnsEMBL::Slice not a [$slice]\n");
   }
 
-  $constraint ||= '';
-  $constraint = $self->_logic_name_to_constraint($constraint, $logic_name);
+  $original_constraint ||= '';
+  $original_constraint = $self->_logic_name_to_constraint($original_constraint,
+                                                 $logic_name);
 
   #if the logic name was invalid, undef was returned
-  return [] if(!defined($constraint));
+  return [] if(!defined($original_constraint));
 
   #check the cache and return if we have already done this query
-  my $key = uc(join(':', $slice->name, $constraint));
+  my $key = uc(join(':', $slice->name, $original_constraint));
 
   if(exists($self->{'_slice_feature_cache'}->{$key})) {
     return $self->{'_slice_feature_cache'}->{$key};
@@ -310,13 +311,14 @@ sub fetch_all_by_Slice_constraint {
   my @features;
 
   # fetch the features from each coordinate system they are stored in
-  COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
+ COORD_SYSTEM: foreach my $feat_cs (@feat_css) {
     my $mapper;
     my @coords;
     my @ids;
 
     if($feat_cs->equals($slice_cs)) {
       #no mapping is required if this is the same coord system
+      my $constraint = $original_constraint;
 
       # obtain seq_region_id of this slice from db
       my $seq_region_id = 
@@ -354,6 +356,7 @@ sub fetch_all_by_Slice_constraint {
       #than a certain number of regions. As well seperate queries are needed
       #otherwise the indices will not be useful
       if(@coords > 3) {
+        my $constraint = $original_constraint;
         #do one query, and do not limit with start / end constraints
         my $id_str = join(',', @ids);
         $constraint .= " AND " if($constraint);
@@ -370,6 +373,7 @@ sub fetch_all_by_Slice_constraint {
         #do multiple queries using start / end constraints
         my $len = @coords;
         for(my $i = 0; $i < $len; $i++) {
+          my $constraint = $original_constraint;
           $constraint .= " AND " if($constraint);
           $constraint .=
             "${tab_syn}.seq_region_id = "     . $ids[$i] . " AND " .
@@ -703,7 +707,7 @@ sub _default_where_clause {
 sub _left_join {
   my $self = shift;
 
-  return ([]);
+  return ();
 }
 
 
