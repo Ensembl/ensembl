@@ -133,7 +133,7 @@ WHERE  t.chr_name = '$chr'
         $sql="
 SELECT t.*
 FROM   $table t, gene g
-WHERE  t.chr_name = '$chr' 
+WHERE  g.chr_name = '$chr' 
   AND  t.gene = g.gene
 ";
         dump_data($sql, $satdb, $table );
