@@ -325,7 +325,7 @@ sub subseq{
 
 =head2 moltype
 
- Title   : moltype
+ Title   : moltype (depricated)
  Usage   : if( $obj->moltype eq 'dna' ) { /Do Something/ }
  Function: Returns the type of sequence 
  Returns : dna
@@ -340,10 +340,6 @@ sub moltype{
     return $self->alphabet();
 }
 
-
-sub desc {
-   return "";
-}
 
 =head2 alphabet
 
