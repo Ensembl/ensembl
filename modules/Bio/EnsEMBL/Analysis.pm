@@ -60,6 +60,31 @@ use Bio::EnsEMBL::Root;
 @ISA = qw(Bio::EnsEMBL::Root);
 
 
+=head2 new
+
+  Arg [..]   :  Takes a set of named arguments
+  Example    : $analysis = new Bio::EnsEMBL::Analysis::Analysis(
+                                -id              => $id,
+                                -logic_name      => 'SWIRBlast',
+                                -db              => $db,
+                                -db_version      => $db_version,
+                                -db_file         => $db_file,
+                                -program         => $program,
+                                -program_version => $program_version,
+                                -program_file    => $program_file,
+                                -gff_source      => $gff_source,
+                                -gff_feature     => $gff_feature,
+                                -module          => $module,
+                                -module_version  => $module_version,
+                                -parameters      => $parameters,
+                                -created         => $created );
+  Description: Creates a new Analysis object
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub new {
   my($class,@args) = @_;
   
@@ -117,7 +142,6 @@ sub new {
 
 =cut
 
-
 sub adaptor {
     my ($self,$arg) = @_;
 
@@ -126,7 +150,6 @@ sub adaptor {
     }
     return $self->{_adaptor};
 }
-
 
 
 =head2 dbID
@@ -140,7 +163,6 @@ sub adaptor {
 
 =cut
 
-
 sub dbID {
     my ($self,$arg) = @_;
 
@@ -149,19 +171,6 @@ sub dbID {
     }
     return $self->{_dbid};
 }
-
-
-
-
-=head2 db
-
-  Title   : db
-  Usage   : $self->db
-  Function: Get/set method for database
-  Returns : String
-  Args    : String
-
-=cut
 
 
 =head2 db
@@ -175,8 +184,6 @@ sub dbID {
 
 =cut
 
-
-
 sub db {
     my ($self,$arg) = @_;
 
@@ -186,7 +193,6 @@ sub db {
 
     return $self->{_db};
 }
-
 
 
 =head2 db_version
@@ -199,8 +205,6 @@ sub db {
   Caller     : general
 
 =cut
-
-
 
 sub db_version {
     my ($self,$arg) = @_;
@@ -224,7 +228,6 @@ sub db_version {
 
 =cut
 
-
 sub db_file {
     my ($self,$arg) = @_;
 
@@ -247,7 +250,6 @@ sub db_file {
   Caller     : general
 
 =cut
-
 
 sub program {
     my ($self,$arg) = @_;
@@ -281,6 +283,7 @@ sub program_version {
     return $self->{_program_version};
 }
 
+
 =head2 program_file
 
   Arg [1]    : string $program_file
@@ -291,7 +294,6 @@ sub program_version {
   Caller     : general
 
 =cut
-
 
 sub program_file {
     my ($self,$arg) = @_;
@@ -316,7 +318,6 @@ sub program_file {
 
 =cut
 
-
 sub module {
     my ($self,$arg) = @_;
 
@@ -326,6 +327,7 @@ sub module {
 
     return $self->{_module};
 }
+
 
 =head2 module_version
 
@@ -338,8 +340,6 @@ sub module {
 
 =cut
 
-
-
 sub module_version {
     my ($self,$arg) = @_;
 
@@ -349,6 +349,7 @@ sub module_version {
 
     return $self->{_module_version};
 }
+
 
 =head2 gff_source
 
@@ -361,7 +362,6 @@ sub module_version {
 
 =cut
 
-
 sub gff_source {
     my ($self,$arg) = @_;
 
@@ -371,6 +371,7 @@ sub gff_source {
 
     return $self->{_gff_source};
 }
+
 
 =head2 gff_feature
 
@@ -382,7 +383,6 @@ sub gff_source {
   Caller     : general
 
 =cut
-
 
 sub gff_feature {
     my ($self,$arg) = @_;
@@ -417,6 +417,7 @@ sub parameters {
     return $self->{_parameters};
 }
 
+
 =head2 created
 
   Arg [1]    : string $created
@@ -428,7 +429,6 @@ sub parameters {
 
 =cut
 
-
 sub created {
     my ($self,$arg) = @_;
 
@@ -438,6 +438,7 @@ sub created {
 
     return $self->{_created};
 }
+
 
 =head2 logic_name
 
@@ -451,13 +452,13 @@ sub created {
 
 =cut
 
-
 sub logic_name {
   my ($self, $arg ) = @_;
   ( defined $arg ) &&
     ($self->{_logic_name} = $arg);
   $self->{_logic_name};
 }
+
 
 =head2 has_database
 
@@ -470,7 +471,6 @@ sub logic_name {
   Caller     : general
 
 =cut
-
 
 sub has_database{
    my ($self,@args) = @_;
@@ -493,8 +493,6 @@ sub has_database{
   Caller     : unknown
 
 =cut
-
-
 
 sub compare {
   my ($self, $ana ) = @_;

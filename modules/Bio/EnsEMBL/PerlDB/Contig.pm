@@ -157,8 +157,8 @@ sub get_all_RepeatFeatures{
 sub add_RepeatFeature{
    my ($self,$value) = @_;
    
-   if( !ref $value || !$value->isa('Bio::EnsEMBL::Repeat') ) {
-       $self->throw("$value is not a repeat");
+   if( !ref $value || !$value->isa('Bio::EnsEMBL::RepeatFeature') ) {
+       $self->throw("$value is not a repeat feature");
    }
 
    push(@{$self->{'_repeat_array'}},$value);

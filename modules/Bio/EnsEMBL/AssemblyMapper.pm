@@ -12,7 +12,8 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coordinates
+Bio::EnsEMBL::AssemblyMapper - 
+Handles mapping from raw contigs to assembly coordinates
 
 =head1 SYNOPSIS
 
@@ -25,7 +26,7 @@ Bio::EnsEMBL::AssemblyMapper - Handles mapping from raw contigs to assembly coor
 
     my @chr_coordlist = $mapper->map_coordinates_to_assembly(627012, 2, 5, -1);
 
-    my @raw_coordlist = $mapper->map_coordinates_to_rawcontig("1", 10002, 10020);
+    my @raw_coordlist = $mapper->map_coordinates_to_rawcontig("1",10002,10020);
 
     my @cid_list = $mapper->list_contig_ids("1", 10002, 10020);
 
@@ -65,6 +66,19 @@ use Bio::EnsEMBL::Mapper;
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
+
+=head2 new
+
+  Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Arg [2]    : string $type
+               The type of assembly mapper
+  Example    : $mapper = new Bio::EnsEMBL::AssemblyMapper($adaptor,'assembly');
+  Description: Creates a new AssemblyMapper object.
+  Returntype : Bio::EnsEMBL::AssemblyMapper;
+  Exceptions : thrown if arg count is wrong
+  Caller     : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+
+=cut
 
 sub new {
   my($class,$adaptor,$type) = @_;
@@ -111,7 +125,7 @@ sub new {
 sub map_coordinates_to_assembly {
     my ($self, $contig_id, $start, $end, $strand) = @_;
 
-# REGEXPs slow things down...
+# Speed critical section, REGEXPs slow things down...
 #    unless ($contig_id =~ /^\d+$/) {
 #        $self->throw("Expecting numeric contig_id, but got '$contig_id'");
 #    }
@@ -166,7 +180,8 @@ sub fast_to_assembly {
     if( ! exists $self->{'_contig_register'}->{$contig_id} ) {
       $self->register_region_around_contig( $contig_id, 0, 0 );
     }
-    return $self->{'_mapper'}->fastmap($contig_id, $start, $end, $strand, 'rawcontig');
+    return $self->{'_mapper'}->fastmap($contig_id, $start, $end, 
+				       $strand, 'rawcontig');
 }
 
 
@@ -192,29 +207,31 @@ sub fast_to_assembly {
 
 
 sub map_coordinates_to_rawcontig {
-    my ($self, $chr_name, $start, $end, $strand) = @_;
-#    print STDERR "have name ".$chr_name." start ".$start." end ".$end." strand ".$strand."\n";
-    unless ($chr_name =~ /^\S+$/) {
-        $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+  my ($self, $chr_name, $start, $end, $strand) = @_;
+  
+  unless ($chr_name =~ /^\S+$/) {
+    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+  }
+  
+  unless ($start =~ /^\d+$/) {
+    unless($start =~ /^-\d+$/){
+      $self->throw("Expecting integer for contig start coord, " .
+		   "but got '$start'");
     }
+  }
+  
+  unless ($end =~ /^\d+$/) {
+    $self->throw("Expecting integer for chromosome end, but got '$end'");
+  }
+  
+  unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
+    $self->throw("Expecting +/- 1 for chromosome strand, but got '$strand'");
+  }
 
-    unless ($start =~ /^\d+$/) {
-      unless($start =~ /^-\d+$/){
-	$self->throw("Expecting integer for contig start coord, but got '$start'");
-      }
-    }
-
-    unless ($end =~ /^\d+$/) {
-        $self->throw("Expecting integer for chromosome end, but got '$end'");
-    }
-
-    unless ($strand =~ /^[+-]?1$/ || $strand == 0) {
-        $self->throw("Expecting +/- 1 for chromosome strand, but got '$strand'");
-    }
-
-    $self->register_region($chr_name, $start, $end);
-
-    return $self->_mapper->map_coordinates($chr_name, $start, $end, $strand, 'assembly');
+  $self->register_region($chr_name, $start, $end);
+  
+  return $self->_mapper->map_coordinates($chr_name, $start, $end, 
+					 $strand, 'assembly');
 }
 
 
@@ -235,36 +252,35 @@ sub map_coordinates_to_rawcontig {
 
 
 sub list_contig_ids {
-   my ($self, $chr_name, $start, $end) = @_;
+  my ($self, $chr_name, $start, $end) = @_;
   
-   unless ($chr_name =~ /^\S+$/) {
-      $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
-   }
-
-   unless ($start =~ /^\d+$/) {
-     unless ($start =~ /^-\d+$/) {
-       $self->throw("Expecting integer for chromosome start, but got '$start'");
-     }
-   }
-
-   unless ($end =~ /^\d+$/) {
-      $self->throw("Expecting integer for chromosome end, but got '$end'");
-   }
-
-   # may not have registered this region yet
-
-   $self->register_region($chr_name, $start, $end);
+  unless ($chr_name =~ /^\S+$/) {
+    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+  }
   
-   my @pairs = $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
-   
-   my @ids;
+  unless ($start =~ /^\d+$/) {
+    unless ($start =~ /^-\d+$/) {
+      $self->throw("Expecting integer for chromosome start, but got '$start'");
+    }
+  }
+  
+  unless ($end =~ /^\d+$/) {
+    $self->throw("Expecting integer for chromosome end, but got '$end'");
+  }
 
-   foreach my $pair ( @pairs ) {
-    
-      push(@ids,$pair->from->id);
-   }
-   
-   return @ids;
+  # may not have registered this region yet
+  
+  $self->register_region($chr_name, $start, $end);
+  
+  my @pairs = $self->_mapper->list_pairs($chr_name, $start, $end, 'assembly');
+  
+  my @ids;
+  
+  foreach my $pair ( @pairs ) {    
+    push(@ids,$pair->from->id);
+  }
+  
+  return @ids;
 }
 
 
@@ -289,27 +305,26 @@ sub list_contig_ids {
 
 
 sub register_region {
-   my ($self, $chr_name, $start, $end) = @_;
-   
-   unless ($chr_name =~ /^\S+$/) {
-      $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
-   }
-
-   unless ($start =~ /^\d+$/) {
-       unless ($start =~ /^-\d+$/) {
-	 $self->throw("Expecting integer for chromosome start, but got '$start'");
-       }
-   }
-
-   unless ($end =~ /^\d+$/) {
-      $self->throw("Expecting integer for chromosome end, but got '$end'");
-   }
-
-   my $first_chunk = int( $start / $self->_chunksize() );
-   my $last_chunk = int( $end / $self->_chunksize() );
-   
-   $self->_chunk_register_region( $chr_name, $first_chunk, $last_chunk );
-
+  my ($self, $chr_name, $start, $end) = @_;
+  
+  unless ($chr_name =~ /^\S+$/) {
+    $self->throw("Expecting sensible chromosome id, but got '$chr_name'");
+  }
+  
+  unless ($start =~ /^\d+$/) {
+    unless ($start =~ /^-\d+$/) {
+      $self->throw("Expecting integer for chromosome start, but got '$start'");
+    }
+  }
+  
+  unless ($end =~ /^\d+$/) {
+    $self->throw("Expecting integer for chromosome end, but got '$end'");
+  }
+  
+  my $first_chunk = int( $start / $self->_chunksize() );
+  my $last_chunk = int( $end / $self->_chunksize() );
+  
+  $self->_chunk_register_region( $chr_name, $first_chunk, $last_chunk );
 }
 
 

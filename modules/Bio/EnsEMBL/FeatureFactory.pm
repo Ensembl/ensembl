@@ -74,6 +74,7 @@ use strict;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Analysis;
+use Bio::EnsEMBL::RepeatFeature;
 
 $USE_PERL_ONLY = 0;
 
@@ -166,35 +167,37 @@ sub new_feature_pair{
 
 =head2 new_repeat
 
- Title   : new_repeat
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use Bio::EnsEMBL::RepeatFeature::new instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
 
 sub new_repeat{
    my ($self,@args) = @_;
-   
-   if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
-       # catch for @args being passed in.
-       $self = Bio::EnsEMBL::Ext::Repeat->new();
-       return $self;
-   }
-   
-   $self = Bio::EnsEMBL::Repeat->new();
-   my $one = Bio::EnsEMBL::SeqFeature->new();
-   my $two = Bio::EnsEMBL::SeqFeature->new();
-   
-   $self->feature1($one);
-   $self->feature2($two);
-   
-   return $self;
-   
+  
+   self->warn("FeatureFactory::new_repeat is deprecated, use RepeatFeature " .
+	      "constructor instead\n" . caller);
+ 
+   return new Bio::EnsEMBL::RepeatFeature();
 
+#   if( $ENSEMBL_EXT_LOADED == 1 && $USE_PERL_ONLY == 0 ) {
+#       # catch for @args being passed in.
+#       $self = Bio::EnsEMBL::Ext::Repeat->new();
+#       return $self;
+#   }
+   
+#   $self = Bio::EnsEMBL::Repeat->new();
+#   my $one = Bio::EnsEMBL::SeqFeature->new();
+#   my $two = Bio::EnsEMBL::SeqFeature->new();
+   
+#   $self->feature1($one);
+#   $self->feature2($two);
+   
+#   return $self;
 }
 
 =head2 new_analysis

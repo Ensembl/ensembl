@@ -375,51 +375,6 @@ sub _store_PredictionFeature {
 }
 
 
-=head2 _store_Repeat
-
- Title   : _store_Repeat
- Usage   : $fa->_store_Repeat($contig_internal_id,$analysisid,@features)
- Function: internal method for storing Bio::EnsEMBL::RepeatI(s).
-           Writes into repeat_feature table
- Example :
- Returns : nothing
- Args    : contig_internal_id, analysis_d, Bio::EnsEMBL::RepeatI
-
-=cut
-
-
-sub _store_Repeat {
-    my ($self,$contig_internal_id,$analysisid,@features) = @_;
-    # Since repeats have their own table we are not using &_store here
-
-    my $sth = $self->db->prepare("insert into repeat_feature(id,contig,seq_start,seq_end,score,strand,analysis,hstart,hend,hid) values(?,?,?,?,?,?,?,?,?,?)");
-
-    foreach my $feature ( @features ){	
-	if( ! $feature->isa('Bio::EnsEMBL::RepeatI') ) {
-	    $self->throw("Feature $feature is not a Repeat!");
-	}
-	eval {
-	    $feature->validate();
-	};
-	if ($@)	{
-	    next;
-	}
-	my $homol = $feature->feature2;
-	$sth->execute(
-		      'NULL',
-		      $contig_internal_id,
-		      $feature->start,
-		      $feature->end,
-		      $feature->score,
-		      $feature->strand,
-		      $analysisid,
-		      $homol->start,
-		      $homol->end,
-		      $homol->seqname
-		      );
-    }
-}
-
 
 =head2 find_GenomeHits
 
@@ -674,73 +629,74 @@ sub delete {
 }
 
 
+
 =head2 fetch_RepeatFeatures_by_RawContig
 
- Title   : fetch_RepeatFeatures_by_RawContig
- Usage   : foreach my $rf ($fa->fetch_all_RepeatFeatures($contig))
- Function: Gets all the repeat features on a contig.
-           If the thingy passed in is Bio::EnsEMBL::RawContig, gets the internal_id from
-           there. Otherwise assumes that the thingy is contig id, which is used to get
-           contig internal_id via RawContigAdaptor.
- Example :
- Returns : Array of Bio::EnsEMBL::Repeat
- Args    : Bio::EnsEMBL::RawContig or contig id as a string
-
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED use 
+               Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor::fetch_by_Contig 
+               instead
+  Returntype : none
+  Exceptions : none
+  Caller     : none
 
 =cut
-
 
 sub fetch_RepeatFeatures_by_RawContig {
    my ($self, $contig) = @_;
    my $contig_internal_id;
 
-   if (ref($contig) && $contig->isa("Bio::EnsEMBL::RawContig")) {
-       # we have RawContig object
-       $contig_internal_id = $contig->internal_id;
-   } elsif (defined($contig)) {
-       # assume that the thing passed in is Contig id
-       $contig_internal_id = $self->db->get_RawContigAdaptor->get_internal_id_by_id($contig);
-   } else {
-       $self->throw("I need contig id");
-   }
+   $self->warn("fetch_RepeatFeatures_by_RawContigs is deprecated. Use" .
+	       " RepeatFeatureAdaptor::fetch_by_Contig insteat\n" . caller);
 
-   my @array;
+#   if (ref($contig) && $contig->isa("Bio::EnsEMBL::RawContig")) {
+#       # we have RawContig object
+#       $contig_internal_id = $contig->internal_id;
+#   } elsif (defined($contig)) {
+#       # assume that the thing passed in is Contig id
+#       $contig_internal_id = $self->db->get_RawContigAdaptor->get_internal_id_by_id($contig);
+#   } else {
+#       $self->throw("I need contig id");
+#   }
 
-   # make the SQL query
-   my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " .
-		   "from repeat_feature where contig = '$contig_internal_id'";
+#   my @array;
 
-   my $sth = $self->db->prepare($statement);
+#   # make the SQL query
+#   my $statement = "select id,seq_start,seq_end,strand,score,analysis,hstart,hend,hid " .
+#		   "from repeat_feature where contig = '$contig_internal_id'";
 
-   $sth->execute();
+#   my $sth = $self->db->prepare($statement);
 
-   my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
+#   $sth->execute();
 
-   # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid);
+#   my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid);
 
-   my $analysisadaptor = $self->db->get_AnalysisAdaptor;
+#   # bind the columns
+#   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid);
 
-   while( $sth->fetch ) {
-       my $out;
-       if( $hid ne '__NONE__' ) {
-	   # is a paired feature
-	   # build EnsEMBL features and make the FeaturePair
+#   my $analysisadaptor = $self->db->get_AnalysisAdaptor;
 
-	   $out = new Bio::EnsEMBL::Repeat;
-	   #$out = Bio::EnsEMBL::FeatureFactory->new_repeat();
-	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$fid,
-				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+#   while( $sth->fetch ) {
+#       my $out;
+#       if( $hid ne '__NONE__' ) {
+#	   # is a paired feature
+#	   # build EnsEMBL features and make the FeaturePair
 
-	   $out->analysis($analysisadaptor->fetch_by_dbID($analysisid));
-	   $out->id($fid);
-       } else {
-	   $self->warn("Repeat feature does not have a hid. bad news....");
-       }
-       $out->validate();
-       push(@array,$out);
-  }
-  return @array;
+#	   $out = new Bio::EnsEMBL::Repeat;
+#	   #$out = Bio::EnsEMBL::FeatureFactory->new_repeat();
+#	   $out->set_all_fields($start,$end,$strand,$score,'repeatmasker','repeat',$fid,
+#				$hstart,$hend,1,$score,'repeatmasker','repeat',$hid);
+
+#	   $out->analysis($analysisadaptor->fetch_by_dbID($analysisid));
+#	   $out->id($fid);
+#       } else {
+#	   $self->warn("Repeat feature does not have a hid. bad news....");
+#       }
+#       $out->validate();
+#       push(@array,$out);
+#  }
+#  return @array;
 }                                       # get_all_RepeatFeatures
 
 

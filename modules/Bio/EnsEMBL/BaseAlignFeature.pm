@@ -8,7 +8,8 @@
 
 =head1 NAME
 
-  Bio::EnsEMBL::DnaPepAlignFeature - Ensembl specific dna-protein pairwise alignment feature
+Bio::EnsEMBL::DnaPepAlignFeature - Ensembl specific dna-protein 
+                                   pairwise alignment feature
 
 =head1 SYNOPSIS
 
@@ -23,13 +24,13 @@
 
   Alternatively if you have an array of ungapped features
 
-      my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(-features => \@features);
+  my $feat = new Bio::EnsEMBL::DnaPepAlignFeature(-features => \@features);
 
   Where @features is an array of Bio::EnsEMBL::FeaturePair
 
   There is a method to manipulate the cigar_string into ungapped features
 
-      my @ungapped_features = $feat->ungapped_features;
+  my @ungapped_features = $feat->ungapped_features;
 
   This converts the cigar string into an array of Bio::EnsEMBL::FeaturePair
 
@@ -38,7 +39,8 @@
   Bio::EnsEMBL::SeqFeature methods can be used
   Bio::EnsEMBL::FeaturePair methods can be used
 
-  The cigar_string contains the ungapped pieces that make up the gapped alignment
+  The cigar_string contains the ungapped pieces that make up the gapped 
+  alignment
   
   It looks like: n Matches [ x Deletes or Inserts m Matches ]*
   but a bit more condensed like "23M4I12M2D1M"
@@ -63,8 +65,8 @@
                   H P+P P+
   Sbjct:    65 PLTHTPTPTPT 75
 
-  The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 and the
-  strand is -1.
+  The alignment goes from 267 to 479 in sequence 1 and 7 to 75 in sequence 2 
+  and the strand is -1.
 
   The alignment is made up of the following ungapped pieces :
 
@@ -72,11 +74,10 @@
   sequence 1 start 417 , sequence 2 start 18 , match length 27 , strand -1
   sequence 1 start 267 , sequence 2 start 27 , match length 137 , strand -1
 
-  These ungapped pieces are made up into the following string (called a cigar string)
-  "33M3I27M3I137M" with start 267 end 479 strand -1 hstart 7 hend 75 hstrand 1 and
-  feature type would be DnaPepAlignFeature
+  These ungapped pieces are made up into the following string (called a cigar 
+  string) "33M3I27M3I137M" with start 267 end 479 strand -1 hstart 7 hend 75 
+  hstrand 1 and feature type would be DnaPepAlignFeature
   
-
 =cut 
 
 
@@ -89,6 +90,21 @@ use vars qw(@ISA);
 use strict;
 
 @ISA = qw(Bio::EnsEMBL::FeaturePair);
+
+
+=head2 new
+
+  Arg [..]   : List of named arguments. (-cigar_string , -features) defined
+               in this constructor, others defined in FeaturePair and 
+               SeqFeature superclasses.  
+  Example    : 
+  Description: Creates a new BaseAlignFeature using either a cigarstring or
+               a list of ungapped features.
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
 
 sub new {
     my ($class,@args) = @_;
