@@ -350,6 +350,11 @@ sub fetch_attributes {
   
   my $dbID = $contig->dbID();
 
+  unless($dbID && $contig->adaptor) {
+    #do nothing, we do not know where to get the attributes from
+    return;
+  }
+
   my $sth = $self->prepare( "SELECT contig_id, name, clone_id, length, 
                              embl_offset, dna_id
                              FROM contig
@@ -374,7 +379,9 @@ sub fetch_attributes {
                The clone the contig is on
   Example    : my $contig_id = $raw_contig_adaptor->store($contig, $clone);
   Description: Stores a contig and its associated DNA sequence in the database,
-               returns the database id of the new database record.
+               returns the database id of the new database record.  Attaches
+               this adaptor to the the contig object and sets its dbID on 
+               success.
   Returntype : int
   Exceptions : thrown if $contig arg is not defined, $clone arg is not a clone
                or if the database insertion fails. 
@@ -420,6 +427,9 @@ sub store {
   my ($contig_id) = $sth->fetchrow_array();
 
   $sth->finish;
+
+  $contig->dbID($contig_id);
+  $contig->adaptor($self);
 
   return $contig_id;
 }
