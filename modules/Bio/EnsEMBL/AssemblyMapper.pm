@@ -167,7 +167,7 @@ sub map_coordinates_to_rawcontig {
         $self->throw("Expecting +/- 1 for chromosome strand, but got '$strand'");
     }
 
-#    $self->register_region($chr_name, $start, $end);
+    $self->register_region($chr_name, $start, $end);
 
     return $self->_mapper->map_coordinates($chr_name, $start, $end, $strand, 'assembly');
 }
