@@ -775,15 +775,8 @@ sub seq {
     return undef;
   }
 
-  my $slice_adaptor = $self->{'slice'}->adaptor();
-  return undef unless defined $slice_adaptor;
-  my $seq_adaptor = $slice_adaptor->db()->get_SequenceAdaptor();
-
-  return ${$seq_adaptor->fetch_by_Slice_start_end_strand
-    ( 
-     $self->{'slice'}, $self->{'start'},
-     $self->{'end'}, $self->{'strand'}
-    )};
+  return $self->{'slice'}->subseq($self->{'start'}, $self->{'end'},
+                                  $self->{'strand'});
 
 }
 
