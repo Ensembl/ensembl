@@ -68,8 +68,9 @@ my $result_page_title	= 'Guzzle result page';
 my @presets = (
     {	NAME	=> 'EMBL (via Sprot) [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
-	MAP	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
-		   'das_client/sprot_embl.dat',
+	MAPTYPE	=> 'simple',
+	MAPFILE	=> '/home/ak/ensembl-cvs/ensembl/misc-scripts/' .
+		   'das_client/embl_sprot.dat',
 	CHECKED	=> 1 },
     {	NAME	=> 'Sprot [test]',
 	DSN	=> 'http://uhuru/cgi-bin/das/sprot',
@@ -139,13 +140,23 @@ my $be_nice = 1;
 my $use_graphics = 1;
 
 # $use_mapping
-# Whether to make available and use mappings between e.g. EMBL
-# and Swissprot.
+# Whether to make available and use mappings between
+# e.g. Ensembl and Swissprot.
+#
 my $use_mapping = 1;
 if ($use_mapping) {
-    # Where you keep Ensembl modules.
-    use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
+    # Where you keep Ensembl modules (this is for
+    # Bio::EnsEMBL::Mapper which is not part of Bioperl)
+
+    #use lib qw(/home/ak/ensembl-cvs/ensembl/modules);
+
+    # FIXME
+    # Nota bene:  Currently the only mapping supported is a
+    # straight 1:N sequence ID mapping.  The plan is to make
+    # available a more sofisticated mapping based on e.g.
+    # exonerate alignment results.
 }
+
 
 # No servicable parts inside...
 #---------------------------------------------------------------
@@ -167,7 +178,8 @@ if ($use_graphics) {
 }
 
 if ($use_mapping) {
-    require Bio::EnsEMBL::Mapper;
+    #FIXME
+    #require Bio::EnsEMBL::Mapper;
 }
 
 #---------------------------------------------------------------
@@ -195,64 +207,48 @@ sub do_query
 
     my %query;
     foreach my $source (@{ $sources }) {
-	if (!defined $source->{USEMAP}) {
-	    push(@{ $query{$seqid} }, $source->{DSN});
+	if (!defined $source->{MAPTYPE}) {
+	    # Don't do mapping for this source.
+	    push(@{ $query{$seqid}{DSN} }, $source->{DSN});
 	    next;
 	}
 
 	# Do mapping.
 
-        # 1. Find the sequence ID that corresponds to the
-        #    requested sequence ID in the map file.  The
-        #    requested ID should be found in column 1, and the
-        #    corresponding ID will then be in column 2 (this is
-        #    a <tab>-separated file).
-        #
-        # 2. The alignment between the two sequences is
-        #    represented as two coordinates and a cigar line.
-        #    The two coordinates (column 3 and column 4) are
-        #    the start of the alignment in the requested and
-        #    corresponding sequences respectively, and the cigar
-        #    line (column 5) describes the matches, insertions,
-        #    and deletions in the alignment.  Get all this.
-        #
-        # 3. If the user requested a range, then map this range
-        #    into the corresponding range.
-        #
-        # 4. Perform query.
-        #
-        # 5. Map each returned feature back.
+	if ($source->{MAPTYPE} ne 'simple') {
+	    die "I only do 'simple' mappings at the moment, sorry.\n";
+	}
 
-	open(IN, $source->{USEMAP}) or
+        # Simple 1:N ID mapping:
+        #
+        # Notation: The ID requested by the user is the "query
+        #           ID".  The ID actually used by the client to
+        #           perform the query is the "target ID".
+        #
+        # 1. Find the target ID that corresponds to the
+        #    requested query ID in the map file.  The query ID
+        #    should be found in column 1, and the corresponding
+        #    target ID(s) will then be in column 2.  The map
+        #    file is a comma-delimited file and the query IDs
+        #    in column 1 need not be unique if one query ID
+        #    corresponds to more than one target ID.
+        #
+        # 2. Perform the query.
+        #
+        # 3. (this doesn't happen yet) Replace all occurances of
+        #    the target ID in the reply with the query ID.
+        #
+
+	open(IN, $source->{MAPFILE}) or
 	    die "Can't open map data file '" .
-		$source->{USEMAP} ."': " .  $!;
+		$source->{MAPFILE} ."': " .  $!;
 
 	while (defined(my $line = <IN>)) {
-	    next if $line !~ /^$seqid\t/;
-
 	    chomp $line;
-	    my ($qi, $ti, $qab, $tab, $C) = split /\t/, $line;
-	    print $cgi->pre($line);
+	    my ($qi, $ti) = split /,/, $line;
 
-	    # Create Bio::EnsEMBL::Mapper object
-	    my $mapper = new Bio::EnsEMBL::Mapper('query', 'target');
-
-	    # Decompose the cigar line and build up the mapper.
-	    my ($qspos, $tspos) = ($qab + 1, $tab + 1);	# Start of match
-	    my ($qepos, $tepos) = ($qspos, $tspos);	# End of match
-	    while ($C =~ /(\d*)(\w)/g) {
-		print $cgi->pre($1, $2, "\n");
-		$qepos += (defined($1) ? $1 : 1);
-		$tepos += (defined($1) ? $1 : 1);
-		$mapper->add_map_coordinates('query', $qsops, $qepos,
-		    'target', $tspos, $tepos);
-		$qspos = $qepos;
-		$tspos = $tepos;
-	    }
-	    print $cgi->pre($C);
-
-            # TODO: If $range, then map range.  Perform query,
-            # then map back.
+	    last if ($qi gt $seqid);
+	    next if ($qi ne $seqid);
 
 	    $query{$ti}{SEGMENT} = $ti . $range;
 	    push(@{ $query{$ti}{DSN} }, $source->{DSN});
@@ -264,10 +260,12 @@ sub do_query
 
     my @replies;
     foreach my $query (values %query) {
-	push(@replies, $das->features(
+	my $reply = $das->features(
 	    -dsn	=> $query->{DSN},
-	    -segment    => $query->{SEGMENT}));
+	    -segment    => $query->{SEGMENT});
+	push(@replies, $reply);
     }
+
     return @replies;
 }
 
@@ -489,8 +487,11 @@ sub query_page
 	    -name   => 'DSN',
 	    -value  => $preset->{DSN});
 	print $cgi->hidden(
-	    -name   => 'MAP',
-	    -value  => $preset->{MAP}) if exists($preset->{MAP});
+	    -name   => 'MAPTYPE',
+	    -value  => $preset->{MAPTYPE}) if exists($preset->{MAPTYPE});
+	print $cgi->hidden(
+	    -name   => 'MAPFILE',
+	    -value  => $preset->{MAPFILE}) if exists($preset->{MAPFILE});
 	++$count;
     }
 
@@ -544,7 +545,7 @@ sub query_page
 	$cgi->td({ -colspan => '2' }, $cgi->textfield(
 	    -name	=> 'ID',
 	    -size	=> '25',
-	    -default	=> 'ENSP00000158529') ),
+	    -default	=> 'ENSP00000244471') ),
 	($use_stylesheets ? $cgi->td('&nbsp;') : ''));
 
 
@@ -603,7 +604,8 @@ sub result_page
 		DSN	    => [ $cgi->param('DSN')	]->[$idx],
 		COLOUR	    => [ $cgi->param('COLOUR')  ]->[$idx],
 		USESTYLE    => [ $cgi->param('STYLE')	]->[$idx],
-		USEMAP	    => [ $cgi->param('MAP')	]->[$idx] );
+		MAPTYPE	    => [ $cgi->param('MAPTYPE')	]->[$idx],
+		MAPFILE	    => [ $cgi->param('MAPFILE')	]->[$idx] );
 
 	    $source{DSN} =~ s/\s//g;
 	    next unless (length $source{DSN} > 0);
@@ -612,6 +614,12 @@ sub result_page
 	}
 
 	my @replies = do_query($cgi, \@sources);
+
+	if (scalar @replies == 0) {
+	    print $cgi->b("Sorry, no features were found for your query.");
+	    page_foot_and_end($cgi);
+	    exit;
+	}
 
 	foreach my $reply (@replies) {
 	    next unless ($reply->is_success && defined $reply->results);
