@@ -1204,6 +1204,7 @@ sub translate {
   
   my $peptide = Bio::Seq->new( -seq => $mrna,
 			       -moltype => "dna",
+			       -alphabet => 'dna',
 			       -id => $display_id );
     
   return $peptide->translate;
