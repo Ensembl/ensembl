@@ -168,9 +168,9 @@ sub check_non_translations {
   my $new_e2x = shift;
 
   foreach my $key (keys %$new_e2x) {
-    my ($ensembl_id, $type) = split(/:/, $key);
+    my ($ensembl_id, $type) = split(/\./, $key);
     if ($type !~ /Translation/i) {
-      print "\n*Warning*: new xref file contains mappings to Ensembl " . $type . "s; consider using convert_xrefs_to_all_translations.pl then comparing\n\n";
+      print "\n*Warning*: new xref file contains mappings to Ensembl " . lc($type) . "s; consider using convert_xrefs_to_all_translations.pl then comparing\n\n";
       return;
     }
   }
