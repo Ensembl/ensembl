@@ -41,7 +41,7 @@ sub fetch_by_dbID {
   my ($self, $dbID ) = @_;
   
   my $sth = $self->prepare( "
-    SELECT Xref.xrefId, Xref.dbprimary_id,
+    SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
            Xref.version, Xref.description,
            exDB.db_name, exDB.release,
            exDB.url_pattern
@@ -51,7 +51,7 @@ sub fetch_by_dbID {
    " );
 
   $sth->execute();
-  my ( $refID, $dbprimaryId, $version, $desc, $dbname, $release, $url ) =
+  my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $url ) =
     $sth->fetchrow_array();
 
   if( ! defined $refID ) {
@@ -62,6 +62,7 @@ sub fetch_by_dbID {
     ( -adaptor => $self,
       -dbID => $dbID,
       -primary_id => $dbprimaryId,
+      -display_id => $displayid,
       -version => $version,
       -release => $release,
       -dbname => $dbname );
@@ -153,11 +154,12 @@ sub store {
     $sth = $self->prepare( "
       INSERT INTO Xref 
        SET dbprimary_id = ?,
+           display_id = ?,
            version = ?,
            description = ?,
            externalDBId = $dbRef
      " );
-    $sth->execute( $exObj->primary_id(), $exObj->version(),
+    $sth->execute( $exObj->primary_id(), $exObj->display_id(), $exObj->version(),
 		   $exObj->description());
 
     $sth = $self->prepare( "
@@ -219,7 +221,7 @@ sub _fetch_by_EnsObject_type {
   my @out;
 
   my $sth = $self->prepare( "
-    SELECT Xref.xrefId, Xref.dbprimary_id,
+    SELECT Xref.xrefId, Xref.dbprimary_id, Xref.display_id,
            Xref.version, Xref.description,
            exDB.db_name, exDB.release,
            exDB.url_pattern
@@ -232,13 +234,14 @@ sub _fetch_by_EnsObject_type {
 
   $sth->execute();
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
-    my ( $refID, $dbprimaryId, $version, $desc, $dbname, $release, $url ) =
+    my ( $refID, $dbprimaryId, $displayid, $version, $desc, $dbname, $release, $url ) =
       @$arrRef;;
 
     my $exDB = Bio::EnsEMBL::DBEntry->new
       ( -adaptor => $self,
 	-dbID => $refID,
 	-primary_id => $dbprimaryId,
+	-display_id => $displayid,
 	-version => $version,
 	-release => $release,
 	-dbname => $dbname );
