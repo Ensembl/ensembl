@@ -91,7 +91,7 @@ ok($misc_set->longest_feature == 1000);
 
 
 # try to store a misc_set with the same code
-my $misc_set = Bio::EnsEMBL::MiscSet->new
+$misc_set = Bio::EnsEMBL::MiscSet->new
   (-code => 'code',
    -name => 'name',
    -description => 'description',

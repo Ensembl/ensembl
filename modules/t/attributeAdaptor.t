@@ -97,7 +97,7 @@ ok($count == 0);
 #
 # make sure the attribute is no longer retrievable
 #
-my @attribs = @{$aa->fetch_all_by_MiscFeature($mf)};
+@attribs = @{$aa->fetch_all_by_MiscFeature($mf)};
 ok(@attribs == 0);
 
 
@@ -107,10 +107,10 @@ ok(@attribs == 0);
 #
 
 
-my $attrib = Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2',
-                                          -CODE => 'test_code2',
-                                          -DESCRIPTION => 'test_desc2',
-                                          -VALUE => 'test_value2');
+$attrib = Bio::EnsEMBL::Attribute->new(-NAME => 'test_name2',
+                                       -CODE => 'test_code2',
+                                       -DESCRIPTION => 'test_desc2',
+                                       -VALUE => 'test_value2');
 
 
 my $slice = $slice_adaptor->fetch_by_region('chromosome', '20');
@@ -120,7 +120,7 @@ $aa->store_on_Slice($slice, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
 #
-my $count = $db->db_handle->selectall_arrayref
+$count = $db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = ".$slice->get_seq_region_id())->[0]->[0];
 
@@ -137,7 +137,7 @@ ok($count == 1);
 #
 # test that we can now retrieve this attribute
 #
-my @attribs = @{$aa->fetch_all_by_Slice($slice)};
+@attribs = @{$aa->fetch_all_by_Slice($slice)};
 
 ok(@attribs == 1);
 
@@ -157,7 +157,7 @@ $aa->remove_from_Slice($slice);
 #
 # make sure the seq_region_attrib table was updated
 #
-my $count = $db->db_handle->selectall_arrayref
+$count = $db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = " . $slice->get_seq_region_id())->[0]->[0];
 
@@ -166,7 +166,7 @@ ok($count == 0);
 #
 # make sure the attribute is no longer retrievable
 #
-my @attribs = @{$aa->fetch_all_by_Slice($slice)};
+@attribs = @{$aa->fetch_all_by_Slice($slice)};
 ok(@attribs == 0);
 
 
@@ -179,7 +179,7 @@ $aa->store_on_Slice($slice, [$attrib]);
 #
 # make sure the seq_region_attrib table was updated
 #
-my $count = $db->db_handle->selectall_arrayref
+$count = $db->db_handle->selectall_arrayref
   ("SELECT count(*) FROM seq_region_attrib " .
    "WHERE seq_region_id = ".$slice->get_seq_region_id())->[0]->[0];
 
@@ -193,7 +193,7 @@ $count = $db->db_handle->selectall_arrayref
    "WHERE code = 'test_code2'")->[0]->[0];
 ok($count == 1);
 
-my @attribs = @{$aa->fetch_all_by_Slice($slice)};
+@attribs = @{$aa->fetch_all_by_Slice($slice)};
 ok(@attribs == 1);
 
 

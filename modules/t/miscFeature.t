@@ -26,17 +26,15 @@ ok($mf->start() == 10 && $mf->end() == 100);
 #
 # Test add_set, get_set, get_set_codes
 #
-my $ms1 = Bio::EnsEMBL::MiscSet->new(3, undef,
-                                     '1mbcloneset',
-                                     '1mb Clone Set',
-                                     'This is a 1MB cloneset',
-                                     1e7);
+my $ms1 = Bio::EnsEMBL::MiscSet->new(-CODE => '1mbcloneset',
+                                     -NAME => '1mb Clone Set',
+                                     -DESCRIPTION => 'This is a 1MB cloneset',
+                                     -LONGEST_FEATURE => 1e7);
 
-my $ms2 = Bio::EnsEMBL::MiscSet->new(4, undef,
-                                     'tilepath',
-                                     'Tiling Path',
-                                     'NCBI33 Tiling Path',
-                                     1e6);
+my $ms2 = Bio::EnsEMBL::MiscSet->new(-CODE => 'tilepath',
+                                     -NAME => 'Tiling Path',
+                                     -DESCRIPTION => 'NCBI33 Tiling Path',
+                                     -LONGEST_FEATURE => 1e6);
 
 
 

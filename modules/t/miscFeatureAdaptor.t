@@ -118,7 +118,7 @@ $mfa->store($mf);
 ok($mf->dbID() && $mf->adaptor());
 ok($misc_set->dbID() && $misc_set->adaptor());
 
-my $mf = $mfa->fetch_by_dbID($mf->dbID());
+$mf = $mfa->fetch_by_dbID($mf->dbID());
 
 my @attribs = @{$mf->get_all_Attributes()};
 ok(@attribs == 1);
