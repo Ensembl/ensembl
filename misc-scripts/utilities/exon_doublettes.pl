@@ -217,6 +217,7 @@ sub rename_Exon {
   my ( $e1, $e2 ) = @_;
   print "DELETE FROM exon WHERE id=\"",$e1->{name},"\";\n";
   print "UPDATE exon_transcript SET exon=\"",$e2->{name},"\" WHERE exon=\"",
+  $e1->{name},"\";\n";
   print "UPDATE supporting_feature SET exon=\"",$e2->{name},"\" WHERE exon=\"",
   $e1->{name},"\";\n";
 }
