@@ -82,7 +82,8 @@ sub new {
     my (
         $db,
         $mapdbname,
-	$dnadb,
+        $litedbname,
+	    $dnadb,
         $host,
         $driver,
         $user,
@@ -92,9 +93,10 @@ sub new {
         $perlonlysequences,
         $external,
         $port,
-        ) = $self->_rearrange([qw(
-            DBNAME
+    ) = $self->_rearrange([qw(
+        DBNAME
 	    MAPDBNAME
+        LITEDBNAME
 	    DNADB
 	    HOST
 	    DRIVER
@@ -105,7 +107,7 @@ sub new {
 	    PERLONLYSEQUENCES
 	    EXTERNAL
 	    PORT
-	    )],@args);
+	 )],@args);
     $db   || $self->throw("Database object must have a database name");
     $user || $self->throw("Database object must have a user");
 
@@ -168,6 +170,7 @@ sub new {
     $self->password( $password);
     # following was added on branch; unclear if it is needed:
     $self->mapdbname( $mapdbname );
+#    $self->litedbname( $litedbname );
 
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
@@ -195,6 +198,11 @@ sub new {
           };
     }
 
+    # Store info for connecting to a litedb.
+    {
+      $litedbname ||= 'lite';
+      $self->{'_lite_db_name'} = $litedbname;
+    }
 
     return $self; # success - we hope!
 }
@@ -773,7 +781,7 @@ sub mapdb {
         # mapdb is called), connect to the map database.
         if (ref($map) eq 'HASH') {
             require Bio::EnsEMBL::Map::DBSQL::Obj;
-            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new(%$map);
+            $self->{'_mapdb'} = Bio::EnsEMBL::Map::DBSQL::Obj->new( %$map );
         }
     }
     return $self->{'_mapdb'};
@@ -789,8 +797,6 @@ sub mapdbname {
   
   return $self->{_mapdbname};
 }
-
-
 
 =head2 write_Species
 
@@ -2275,6 +2281,29 @@ sub get_GeneAdaptor {
         $self->{'_gene_adaptor'} = $ga;
     }
     return $ga;
+}
+
+=head2 get_LiteAdaptor;
+    
+ Title   : get_LiteAdaptor
+ Usage   : my $la = $db->get_LiteAdaptor;
+ Function: Returns the lite database object handler
+ Example : 
+ Returns : Bio::EnsEMBL::DBSQL::LiteAdaptor
+ Args    : 
+
+=cut
+sub get_LiteAdaptor {
+    my( $self ) = @_;
+
+    my $la;
+    unless ($la = $self->{'_lite_adaptor'}) {
+        require Bio::EnsEMBL::DBSQL::LiteAdaptor;
+    	$la = Bio::EnsEMBL::DBSQL::LiteAdaptor->new( $self );
+#        $la->{'lite_db_name'} = $self->{'lite_db_name'};
+        $self->{'_lite_adaptor'} = $la;
+    }
+    return $la;
 }
 
 sub get_ExonAdaptor {
