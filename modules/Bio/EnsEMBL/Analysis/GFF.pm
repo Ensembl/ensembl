@@ -133,7 +133,7 @@ sub _parse {
 
     open(IN,"<$file") || $self->throw("Can't open $file");
 
-    while (my $line = <IN>) {
+    while (defined(my $line = <IN>)) {
 	if ($line !~ /^\#/) {
 	    my $feature = $self->_parse_line($line);
 	    $self->add_Feature($feature);

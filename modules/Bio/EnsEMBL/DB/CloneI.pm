@@ -367,27 +367,8 @@ sub seq {
 sub get_AnnSeq {
     my ($self, $strict_EMBL) = @_;
     my (@contigs,@genes,$as,$seq);
-    
-    @contigs = $self->get_all_Contigs();
-    @genes   = $self->get_all_Genes();
-    
-    $seq = $self->seq();
-    
-    $as = Bio::EnsEMBL::AnnSeq->new();
-    
-    $as->embl_id($self->embl_id());
-    $as->sv($self->sv());
-    $as->htg_phase($self->htg_phase());
-    
-    $as->seq($seq);
-    foreach my $gene ( @genes ) {
-	my $gh = new Bio::EnsEMBL::GeneHandler( -clone => $self, -gene => $gene );
-	$as->add_SeqFeature($gh);
-    }
 
-    ### @contigs doesn't get used? ###
-    #@contigs = $self->get_all_Contigs();
-    @genes   = $self->get_all_Genes();
+    @genes = $self->get_all_Genes();
     
     $seq = $self->seq();
     
@@ -404,6 +385,14 @@ sub get_AnnSeq {
                                                 -strict_embl => $strict_EMBL,
                                                 );
         $as->add_SeqFeature($gh);
+    }
+
+    foreach my $contig ($self->get_all_Contigs) {
+        # Add features to annseq object
+        # coordinates are in contig coordinate space
+        foreach my $homol ($contig->get_all_Clone_SeqFeatures) {
+            $as->add_SeqFeature( $homol );
+        }
     }
     return $as;
 }

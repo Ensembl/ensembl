@@ -336,8 +336,7 @@ sub _set_exon_phases {
 	    # If we have a stop codon at the end of the translation
 	    # chop it off before comparing
 	    my $tmp = $trans[$i]->seq();
-#	    print("Trans : $i : " . $trans[$i]->seq . "\n");
-	    
+	    #print(STDERR "Trans : $i : " . $trans[$i]->seq . "\n");
 	    if (substr($tmp,-1) eq "*") {
 		$tmp = substr($tmp,0,-1);
 	    }

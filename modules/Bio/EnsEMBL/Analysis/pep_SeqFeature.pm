@@ -88,7 +88,7 @@ sub _initialize {
 sub start_frac {
     my ($self,$arg) = @_;
 
-    if ($arg ne "") {
+    if (defined $arg) {
 	$self->throw("ERROR: only 1,2,3 allowed for end_frac : $arg") unless ($arg == 1 || $arg == 2 || $arg == 3);
 
 	$self->{_start_frac} = $arg;
@@ -112,10 +112,8 @@ sub start_frac {
 sub end_frac {
     my ($self,$arg) = @_;
 
-    if ($arg ne "") {
-    $self->throw("ERROR: only 1,2,3 allowed for end_frac : $arg") unless ($arg == 1 || $arg == 2 || $arg == 3);
-
-
+    if (defined $arg) {
+        $self->throw("ERROR: only 1,2,3 allowed for end_frac : $arg") unless ($arg == 1 || $arg == 2 || $arg == 3);
 	$self->{_end_frac} = $arg;
     }
     

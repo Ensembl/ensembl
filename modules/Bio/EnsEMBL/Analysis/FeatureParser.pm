@@ -52,6 +52,7 @@ use Bio::Tools::HMMER::Results;
 
 use Bio::EnsEMBL::Analysis::GenscanPeptide;
 use Bio::EnsEMBL::Analysis::MSPcrunch;
+use Bio::EnsEMBL::Analysis::GFF;
 use Bio::EnsEMBL::Analysis::Repeat;
 
 use FileHandle;
