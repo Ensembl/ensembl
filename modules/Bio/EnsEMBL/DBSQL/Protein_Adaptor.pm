@@ -56,9 +56,8 @@ package Bio::EnsEMBL::DBSQL::Protein_Adaptor;
 use vars qw(@ISA);
 use strict;
 
-# Object preamble - inheriets from Bio::Root::Object
+
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::Root::Object;
 use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
 use Bio::Species;
@@ -71,7 +70,7 @@ use Bio::Species;
 sub _gene_obj {
     my($self) = @_;
     if( !defined $self->{'gene_obj'}) {
-	my $feat_obj = $self->db->get_Gene_Obj;
+	my $feat_obj = $self->db->gene_Obj;
 	$self->{'gene_obj'} = $feat_obj;
     }
     

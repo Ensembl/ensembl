@@ -770,6 +770,9 @@ sub get_all_ExternalFeatures{
    
    # this is the simplest way. We can do this more efficiently if need be
 
+   
+   &eprof_start("External-coordinate-lift");
+
    my @final;
    foreach my $f ( @contig_features ) {
        if( defined $self->_convert_seqfeature_to_vc_coords($f) ) {
@@ -777,6 +780,8 @@ sub get_all_ExternalFeatures{
        }
    }
 
+
+   &eprof_end("External-coordinate-lift");
 
    $self->{'_external_feature_cache_array'} = \@final;
    $self->_external_feature_cache(1);

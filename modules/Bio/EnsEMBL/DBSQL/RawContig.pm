@@ -89,7 +89,10 @@ sub new {
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+    if( !$dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') && !$dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) { 
+	$self->throw("Cannot make contig db object with a $dbobj object");
+    }
+
 
     $self->id($id);
     $self->dbobj($dbobj);
@@ -132,7 +135,10 @@ sub direct_new {
 
     $id    || $self->throw("Cannot make contig db object without id");
     $dbobj || $self->throw("Cannot make contig db object without db object");
-    $dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') || $self->throw("Cannot make contig db object with a $dbobj object");
+
+    if( !$dbobj->isa('Bio::EnsEMBL::DBSQL::Obj') && !$dbobj->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')) { 
+	$self->throw("Cannot make contig db object with a $dbobj object");
+    }
 
     if( !$internal_id || !$dna_id || !defined($seq_version) || !$cloneid || !defined $chr_start || !defined $chr_end) {
 	$self->throw("you don't have all the data to make a direct new [$internal_id,$dna_id,$seq_version,$cloneid,$chr_start,$chr_end]!");
@@ -1788,7 +1794,7 @@ sub dbobj {
    my ($self,$arg) = @_;
 
    if (defined($arg)) {
-        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless $arg->isa("Bio::EnsEMBL::DBSQL::Obj");
+        $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::Obj") unless ($arg->isa("Bio::EnsEMBL::DBSQL::Obj") || $arg->isa('Bio::EnsEMBL::DBSQL::DBAdaptor'));
         $self->{'_dbobj'} = $arg;
    }
    return $self->{'_dbobj'};

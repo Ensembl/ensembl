@@ -72,7 +72,7 @@ my $counter=0;
             'port'          => '3306',
             'password'      => undef,
             'schema_sql'    => ['../sql/table.sql'],
-            'module'        => 'Bio::EnsEMBL::DBSQL::Obj'
+            'module'        => 'Bio::EnsEMBL::DBSQL::DBAdaptor'
             };
         foreach my $f (keys %$self) {
             confess "Unknown config field: '$f'" unless $known_field{$f};
