@@ -133,10 +133,9 @@ sub fetch_virtualgenes_start_end {
     my $sth = $self->prepare(
         "select g.gene, g.name, 
                 g.chr_name, g.gene_chrom_start, g.gene_chrom_end,
-                g.chrom_strand, gx.display_id, gx.db_name
-           from $_db_name.gene as g, $_db_name.gene_xref as gx
-          where g.gene = gx.gene and
-                g.chr_name = ? and g.gene_chrom_start <= ? and g.gene_chrom_start >= ? and
+                g.chrom_strand, g.display_id, g.db_name
+           from $_db_name.gene as g 
+          where g.chr_name = ? and g.gene_chrom_start <= ? and g.gene_chrom_start >= ? and
                 g.gene_chrom_end >= ?"
     );
     eval {
