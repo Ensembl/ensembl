@@ -222,6 +222,75 @@ sub fetch_Protein_by_dbid{
    return $protein;
 }
 
+
+=head2 fetch_Protein_ligth
+
+ Title   : fetch_Protein_ligth
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub fetch_Protein_ligth{
+my ($self,$id) = @_;
+
+
+   #Get the transcript id from the translation id 
+   my $query = "SELECT	t.transcript_id 
+		FROM	transcript as t 
+		WHERE	t.translation_id = '$id' 
+		";
+
+   my $sth = $self->prepare($query);
+   $sth ->execute();
+   my @rowid = $sth->fetchrow;
+
+   my $transid = $rowid[0];
+
+   if (!defined $transid) {
+       $self->throw("$id does not have a transcript id");
+   }
+
+
+#Get the transcript object (this will allow us to get the aa sequence of the protein
+   my $transcript = $self->fetch_Transcript_by_dbid($transid);
+
+
+#Get the aa sequence out of the transcript object   
+   my $sequence = $transcript->translate->seq;
+
+#Calculate the length of the Peptide   
+   my $length = length($sequence);
+   if ($length == 0) {
+       $self->throw("Transcript".$transcript->id." does not have any amino acid sequence"); 
+       #return 0;
+   }
+  
+#Define the moltype
+   my $moltype = "protein";
+   
+   
+   #This has to be changed, the description may be take from the protein family description line
+   my $desc = "Protein predicted by Ensembl";
+  
+#Create the Protein object
+   my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
+					      -accession_number  => $id,
+					      -display_id => $id,
+					      -primary_id => $id,
+					      -id => $id,
+					      -desc => $desc,
+					      );
+
+   return $protein;
+
+}
+
+
 =head2 fetch_Transcript_by_dbid
 
  Title   : fetch_Transcript_by_dbid
