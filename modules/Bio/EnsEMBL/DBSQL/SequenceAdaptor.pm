@@ -111,11 +111,12 @@ sub fetch_by_Slice_start_end_strand {
    my $csa = $self->db->get_CoordSystemAdaptor();
    my $seqlevel = $csa->fetch_sequence_level();
 
+   my @projection;
    if($slice->coord_system->equals($seqlevel)) {
      #create a fake projection to the entire length of the same slice
-     my @projection = ([1, $slice->length, $slice]);
+     @projection = ([1, $slice->length, $slice]);
    } else {
-     my @projection = @{$slice->project()};
+     @projection = @{$slice->project($seqlevel->name(), $seqlevel->version())};
    }
 
    my $slice_adaptor = $self->db()->get_SliceAdaptor();
@@ -127,6 +128,7 @@ sub fetch_by_Slice_start_end_strand {
    my $total = 0;
    my $tmp_seq;
 
+   #fetch sequence from each of the sequence regions projected onto
    foreach my $segment (@projection) {
      my ($start, $end, $seq_slice) = @$segment;
 
