@@ -432,7 +432,7 @@ sub write_Exon{
 =head2 write_Contig
 
  Title   : write_Contig
- Usage   : $obj->write_Contig($contigid,$dna)
+ Usage   : $obj->write_Contig($contig,$clone)
  Function: writes a contig and its dna into the database
  Example :
  Returns : 
