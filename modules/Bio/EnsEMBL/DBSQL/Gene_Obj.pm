@@ -450,9 +450,9 @@ sub get_array_supporting {
 	        $self->_store_exons_in_transcript($trans,@transcript_exons);
             }
 	    # put in new exons
-	     print "sog\n";
+	    
 	    $trans = Bio::EnsEMBL::Transcript->new();
-	     print "pog\n";
+	    
 	    $trans->id     ($transcriptid);
 	    $trans->version($transcriptversion);
 	    
@@ -468,7 +468,7 @@ sub get_array_supporting {
 	    $translation->version      ($translationversion);
 	    $trans->translation        ($translation);
 	    $gene ->add_Transcript     ($trans);
-	     print "wog\n";
+	    
 	}
 	
 	
@@ -581,7 +581,7 @@ sub _store_exons_in_transcript{
 	   $trans->add_Exon($exon);
        }
    }
-   print "done\n";
+
 }
 
 =head2 _make_sticky_exon

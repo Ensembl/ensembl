@@ -126,7 +126,6 @@ sub _initialize {
 
   my $dsn = "DBI:$driver:database=$db;host=$host";
   
-  print ("$dsn\n");
   if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
