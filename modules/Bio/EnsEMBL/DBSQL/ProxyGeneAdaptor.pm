@@ -33,11 +33,14 @@ use strict;
 package Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor;
 
 use Bio::EnsEMBL::DBSQL::GeneAdaptorI;
-use Bio::EnsEMBL::BaseAdaptor;
+use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 
 use vars '@ISA';
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::GeneAdaptorI Bio::EnsEMBL::DBSQL::BaseAdaptor);
+
+#implement the interface GeneAdaptorI
+use implements qw(GeneAdaptorI);
 
 
 sub fetch_by_Slice {
@@ -72,21 +75,21 @@ sub fetch_by_dbID {
   my ( $self, @args) = @_;
 
   #use core db
-  return $self->db()->fetch_by_dbID(@args);
+  return $self->db()->get_GeneAdaptor()->fetch_by_dbID(@args);
 }
 
 sub fetch_by_stable_id{
   my ($self, @args) = @_;
 
   #use core db
-  return $self->db()->fetch_by_stable_id(@args);
+  return $self->db()->get_GeneAdaptor()->fetch_by_stable_id(@args);
 }
 
 sub fetch_by_contig_list{
   my ($self, @args) = @_;
 
   #use core db
-  return $self->db()->fetch_by_stable_id(@args);
+  return $self->db()->get_GeneAdaptor()->fetch_by_stable_id(@args);
 }
 
 
@@ -94,21 +97,21 @@ sub fetch_by_Transcript_id {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->fetch_by_Transcript_id(@args);
+    return $self->db()->get_GeneAdaptor()->fetch_by_Transcript_id(@args);
 }
 
 sub fetch_by_Peptide_id {
     my ($self, @args) = @_;
     
     #use core db
-    return $self->db()->fetch_by_Peptise_id(@args);
+    return $self->db()->get_GeneAdaptor()->fetch_by_Peptise_id(@args);
 }
 
 sub fetch_by_maximum_DBLink {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->fetch_by_maximum_DBLink(@args);
+    return $self->db()->get_GeneAdaptor()->fetch_by_maximum_DBLink(@args);
 }
 
 
@@ -116,7 +119,7 @@ sub get_description {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_description(@args);
+    return $self->db()->get_GeneAdaptor()->get_description(@args);
 }
 
 
@@ -124,31 +127,29 @@ sub get_stable_entry_info {
     my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_stable_entry_info(@args);
+    return $self->db()->get_GeneAdaptor()->get_stable_entry_info(@args);
 }
 
 
 sub fetch_by_DBEntry {
-    my $self = shift;
+    my ($self, @args) = @_;
 
     #use core db
-    return $self->db()->get_stable_entry_info(@args);
+    return $self->db()->get_GeneAdaptor()->fetch_by_DBEntry(@args);
 }
 
 
 sub store {
-    my $self = shift;
+    my ($self, @args) = @_;
 
-    return $self->db()->get_store(@args);
+    return $self->db()->get_GeneAdaptor()->store(@args);
 }
 
 
 sub remove {
-    my $self = shift;
+    my ($self, @args) = @_;
 
-    $self->throw("remove not defined by implementing sub class");
-
-    return undef;
+    return $self->db()->get_GeneAdaptor()->remove(@args);
 }
 
 
@@ -166,18 +167,17 @@ sub remove {
 =cut
 
 sub get_Interpro_by_geneid {
-    my $self = shift;
+    my ($self, @args) = @_;
 
-    $self->throw("get_Interpro_by_geneid not defined by implementing sub class");
 
-    return undef;
+    return $self->db()->get_GeneAdaptor()->get_Interpro_by_geneid();
 }
 
 
 sub create_tables {
-  my $self = shift;
+  my ($self, @args) = @_;
 
-  $self->throw("create_tables not defined by implementing sub class");
+  return $self->db()->get_GeneAdaptor()->create_tables(@args);
 }
 
 
