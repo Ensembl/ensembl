@@ -289,9 +289,11 @@ sub deprecate {
   return if $DEPRECATED{"$line:$file"};
 
   if($VERBOSITY > -1) {
-    print STDERR "Deprecated method call in file $file line $line.\n" .
+    print STDERR "\n------------------ DEPRECATED ---------------------\n" .
+                 "Deprecated method call in file $file line $line.\n" .
                  "Method $subname is deprecated.\n" .
-                 "$mesg\n";
+                 "$mesg\n" .
+                 "---------------------------------------------------\n";
   }
 
   $DEPRECATED{"$line:$file"} = 1;
