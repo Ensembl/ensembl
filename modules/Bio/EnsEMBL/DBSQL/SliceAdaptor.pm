@@ -799,98 +799,95 @@ sub fetch_normalized_slice_projection {
     }
   }
 
-  if( @pars || @haps ) {
-    my @syms;
-    
-    if( @haps > 1 ) {
-      my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
-      throw( "More than one HAP region not supported yet" );
-    } elsif( @haps == 1 ) {
-      my $hap = $haps[0];
-
-      my $seq_reg_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
-      my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
-
-      #
-      # lengths of haplotype and reference in db may be different
-      # we want to use the maximum possible length for the mapping
-      # between the two systems
-      #
-      my $len1 = $seq_reg_slice->length();
-      my $len2 = $exc_slice->length();
-      my $max_len = ($len1 > $len2) ? $len1 : $len2;
-
-      #the inserted region can differ in length, but mapped sections
-      #need to be same lengths
-      my $diff = $hap->[4] - $hap->[1];
-      
-      # we want the region of the haplotype INVERTED
-      push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
-      push( @syms, [ $hap->[1]+1, $max_len - $diff, 
-                     $hap->[2], $hap->[4] + 1, $max_len ] );
-      
-    }
-    
-    # for now haps and pars should not be both there, but in theory we 
-    # could handle it here by cleverly merging the pars into the existing syms,
-    # for now just:
-    push( @syms, @pars );
-
-    my $mapper = Bio::EnsEMBL::Mapper->new( "sym", "org" );
-    for my $sym ( @syms ) {
-      $mapper->add_map_coordinates( $slice_seq_region_id, $sym->[0], $sym->[1],
-                                    1, $sym->[2], $sym->[3], $sym->[4] );
-    }
-
-    my @linked = $mapper->map_coordinates( $slice_seq_region_id,
-					   $slice->start(), $slice->end(), 
-					   $slice->strand(), "sym" );
-    
-    # gaps are regions where there is no mapping to another region
-    my $rel_start = 1;
-
-    #if there was only one coord and it is a gap, we know it is just the
-    #same slice with no overlapping symlinks
-    if(@linked == 1 && $linked[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
-      return [[1,$slice->length, $slice]];
-    }
-
-    for my $coord ( @linked ) {
-      if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
-        my $exc_slice = Bio::EnsEMBL::Slice->new
-          (-START        => $coord->start(),
-           -END          => $coord->end(),
-           -STRAND       => $slice->strand(),
-           -COORD_SYSTEM => $slice->coord_system(),
-           -ADAPTOR      => $self,
-           -SEQ_REGION_NAME => $slice->seq_region_name);
-        push( @$result, [ $rel_start, $coord->length()+$rel_start-1, 
-                          $exc_slice ] );
-      } else {
-        my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
-        my $exc2_slice = Bio::EnsEMBL::Slice->new
-          (
-           -START  => $coord->start(),
-           -END    => $coord->end(),
-           -STRAND => $coord->strand(),
-           -SEQ_REGION_NAME => $exc_slice->seq_region_name(),
-           -COORD_SYSTEM => $exc_slice->coord_system(),
-           -ADAPTOR => $self
-          );
-	
-        push( @$result, [ $rel_start, $coord->length() + $rel_start - 1, 
-                          $exc2_slice ] );
-      }
-      $rel_start += $coord->length();
-    }
-  } else {
+  if(!@pars && !@haps) {
     #just return this slice, there were no haps or pars
     return  [[1,$slice->length, $slice]];
   }
 
-  # cache and return
-  $self->{'_exc_cache'}->{$slice->name()} = $result;
-  return $result;
+  my @syms;    
+  if( @haps > 1 ) {
+    my @sort_haps = sort { $a->[1] <=> $b->[1] } @haps;
+    throw( "More than one HAP region not supported yet" );
+  } elsif( @haps == 1 ) {
+    my $hap = $haps[0];
+
+    my $seq_reg_slice = $self->fetch_by_seq_region_id($slice_seq_region_id);
+    my $exc_slice = $self->fetch_by_seq_region_id( $hap->[2] );
+
+    #
+    # lengths of haplotype and reference in db may be different
+    # we want to use the maximum possible length for the mapping
+    # between the two systems
+    #
+    my $len1 = $seq_reg_slice->length();
+    my $len2 = $exc_slice->length();
+    my $max_len = ($len1 > $len2) ? $len1 : $len2;
+
+    #the inserted region can differ in length, but mapped sections
+    #need to be same lengths
+    my $diff = $hap->[4] - $hap->[1];
+      
+    # we want the region of the haplotype INVERTED
+    push( @syms, [ 1, $hap->[0]-1, $hap->[2], 1, $hap->[3] - 1 ] );
+    push( @syms, [ $hap->[1]+1, $max_len - $diff, 
+                   $hap->[2], $hap->[4] + 1, $max_len ] );   
+  }
+    
+  # for now haps and pars should not be both there, but in theory we 
+  # could handle it here by cleverly merging the pars into the existing syms,
+  # for now just:
+  push( @syms, @pars );
+
+  my $mapper = Bio::EnsEMBL::Mapper->new( "sym", "org" );
+  for my $sym ( @syms ) {
+    $mapper->add_map_coordinates( $slice_seq_region_id, $sym->[0], $sym->[1],
+                                  1, $sym->[2], $sym->[3], $sym->[4] );
+  }
+
+  my @linked = $mapper->map_coordinates( $slice_seq_region_id,
+                                         $slice->start(), $slice->end(), 
+                                         $slice->strand(), "sym" );
+    
+  # gaps are regions where there is no mapping to another region
+  my $rel_start = 1;
+
+  #if there was only one coord and it is a gap, we know it is just the
+  #same slice with no overlapping symlinks
+  if(@linked == 1 && $linked[0]->isa('Bio::EnsEMBL::Mapper::Gap')) {
+    return [[1,$slice->length, $slice]];
+  }
+
+  my @out;
+  for my $coord ( @linked ) {
+    if( $coord->isa( "Bio::EnsEMBL::Mapper::Gap" )) {
+      my $exc_slice = Bio::EnsEMBL::Slice->new
+        (-START        => $coord->start(),
+         -END          => $coord->end(),
+         -STRAND       => $slice->strand(),
+         -COORD_SYSTEM => $slice->coord_system(),
+         -ADAPTOR      => $self,
+         -SEQ_REGION_NAME => $slice->seq_region_name);
+      push( @out, [ $rel_start, $coord->length()+$rel_start-1, 
+                        $exc_slice ] );
+    } else {
+      my $exc_slice = $self->fetch_by_seq_region_id( $coord->id() );
+      my $exc2_slice = Bio::EnsEMBL::Slice->new
+        (
+         -START  => $coord->start(),
+         -END    => $coord->end(),
+         -STRAND => $coord->strand(),
+         -SEQ_REGION_NAME => $exc_slice->seq_region_name(),
+         -COORD_SYSTEM => $exc_slice->coord_system(),
+         -ADAPTOR => $self
+        );
+	
+      push( @out, [ $rel_start, $coord->length() + $rel_start - 1, 
+                    $exc2_slice ] );
+    }
+    $rel_start += $coord->length();
+  }
+
+  return \@out;
 }
 
 
