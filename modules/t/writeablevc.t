@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..8\n"; 
+BEGIN { $| = 1; print "1..9\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -135,6 +135,8 @@ $exon->created(1);
 $exon->modified(1);
 $exon->contig_id($wvc->id);
 $trans->add_Exon($exon);
+$exon{'exon-1'} = $exon;
+$exon->attach_seq($wvc->primary_seq);
 
 $exon = Bio::EnsEMBL::Exon->new();
 $exon->id('exon-2');
@@ -147,14 +149,39 @@ $exon->created(1);
 $exon->modified(1);
 $exon->contig_id($wvc->id);
 $trans->add_Exon($exon);
+$exon{'exon-2'} = $exon;
+$exon->attach_seq($wvc->primary_seq);
 
 $wvc->write_Gene($gene);
 
 print "ok 8\n";
 
+$newgene = $db->get_Gene('gene-id-1');
+
+$error = 0;
+foreach $exon ( $newgene->each_unique_Exon ) {
+    if( exists $exon{$exon->id} ) {
+	if( $exon->seq != $exon{$exon->id}->seq ) {
+	    print STDERR "For exon ",$exon->id," sequences do not agree!\n";
+	    print STDERR "Exon in RC is $exon [",$exon->seq->seq,"] VC is [",$exon{$exon->id}->seq->seq,"]\n";
+	    $error =1;
+	} else {
+	    print STDERR "Got exon match for",$exon->id,"\n";
+	}
+    } else {
+	print STDERR "Weird exon in output...\n";
+    }
+}
+
+if( $error == 1 ) {
+    print "not ok 9\n";
+} else {
+    print "ok 9\n";
+}
+
 END {
-    my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
-   system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
+   my $drop_overlap        = "echo \"y\" | $conf{mysqladmin} -u ".$nuser." drop $conf{overlap}";
+  #system($drop_overlap)     == 0 or die "$0\nError running '$drop_overlap' : $!";
 }
 
 

@@ -827,11 +827,11 @@ sub raw_contig_position {
 	    $rc=$mc->contig;
 	    if ($mc->orientation == 1) {
 		# the contig starts at startin
-		$rc_pos=$vcpos-$mc->start+1+$mc->start_in;
+		$rc_pos=$vcpos-$mc->start+$mc->start_in;
 	    }
 	    else {
 		# the contig starts at start in but reversed, hence the subtraction
-		$rc_pos=$mc->start_in - $vcpos-$mc->start-1;
+		$rc_pos=$mc->start_in - $vcpos-$mc->start;
 	    }
 	    
 	    #If strand passed to the method, sort out the strand

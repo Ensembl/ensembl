@@ -136,7 +136,7 @@ CREATE TABLE exon (
   end_phase     int(11) NOT NULL,
   rank          int(10) DEFAULT '1' NOT NULL,
   
-  PRIMARY KEY (id),
+  PRIMARY KEY (id,rank),
   KEY id_contig (id,contig),
   KEY contig (contig)
 );

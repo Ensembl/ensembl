@@ -336,21 +336,21 @@ sub get_array_supporting {
           , exon_transcript e_t
           , exon
           , translation transl
-          , geneclone_neighbourhood g_n
-        WHERE g_n.gene = gene.id
-          AND gene.id = tscript.gene
+        WHERE gene.id = tscript.gene
           AND tscript.id = e_t.transcript
           AND e_t.exon = exon.id
           AND exon.contig = con.internal_id
-          AND con.clone = g_n.clone
           AND tscript.translation = transl.id
           AND gene.id IN ($inlist)
+
         ORDER BY tscript.gene
           , tscript.id
           , e_t.rank
           , exon.rank
         };
-    
+
+    #print STDERR "query [$query]\n"; 
+
     # This should work as but I couldn't test it because
     # the exon.contig was the wrong column type.
     # (NOTE: geneclone_neighbourhood table not needed)
@@ -404,15 +404,24 @@ sub get_array_supporting {
     my @transcript_exons;
     
     while( (my $arr = $sth->fetchrow_arrayref()) ) {
-	
+	print STDERR "Getting into this row now....\n";
+
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
 	    $geneversion,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+
  	
 	if( ! defined $phase ) {
 	    $self->throw("Bad internal error! Have not got all the elements in gene array retrieval");
 	}
+	
+	# I think this is a dirty hack 
+	#if( exists $seen{"$exonid-$rank"} ) {
+	#    next;
+	#}
+
+	
 	
 	# Create new gene if the id has changed
 	if( $geneid ne $current_gene_id ) {
@@ -503,6 +512,9 @@ sub get_array_supporting {
 
 
     }
+    if( $current_gene_id eq '' ) {
+	return ();
+    }
     
     $self->_store_exons_in_transcript($trans,@transcript_exons);
    
@@ -531,16 +543,17 @@ sub _store_exons_in_transcript{
    if( !ref $trans || !$trans->isa('Bio::EnsEMBL::Transcript') ) {
        $self->throw(" $trans is not a transcript");
    }
+   print STDERR "Got ",scalar(@exons),"to store...\n";
 
    my $exon;
    while ( ($exon = shift @exons)) {
-        
+       print STDERR "Handling exon",$exon->id,":",$exon->sticky_rank,"\n";
        if( $#exons >= 0 && $exons[0]->id eq $exon->id ) {
         
 	   # sticky exons.
 	   my @sticky_exons;
 	   push(@sticky_exons,$exon);
-	   foreach my $newexon ( @exons ) {
+	   while( my $newexon = shift @exons ) {
 	       if( $newexon->id eq $exon->id ) {
                             
 		   push(@sticky_exons,$newexon);
@@ -553,6 +566,7 @@ sub _store_exons_in_transcript{
 	   }
            
 	   my $sticky = $self->_make_sticky_exon(@sticky_exons);
+	   print STDERR "Added sticky exon... $sticky\n";
 	   $trans->add_Exon($sticky);
            
        } else {
@@ -596,6 +610,8 @@ sub _make_sticky_exon{
 
    foreach my $exon ( @exons ) {
        $seqstr .= $exon->seq->seq();
+       print STDERR "Sticking in ",$exon->id,":",$exon->sticky_rank," $seqstr\n";
+
        $sticky->add_component_Exon($exon);
    }
 
