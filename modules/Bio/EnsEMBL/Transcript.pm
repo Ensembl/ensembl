@@ -232,28 +232,28 @@ sub _get_external_info {
 
   # human
   if ( $species eq 'sapiens' ) {
-    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink };
+    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink EMBL };
   }
   # anopheles
   elsif ( $species eq 'gambiae' ) {
-    @priority_order = qw{ ANOSUB SWISSPROT SPTREMBL };
+    @priority_order = qw{ ANOSUB SWISSPROT SPTREMBL EMBL };
   }
   # zebra fish
   elsif ( $species eq 'rerio' ) {
-    @priority_order = qw{ SWISSPROT SPTREMBL };
+    @priority_order = qw{ SWISSPROT SPTREMBL EMBL };
   }
   # fugu
   elsif ( $species eq 'rubripes' ) {
-    @priority_order = qw{ SWISSPROT SPTREMBL RefSeq LocusLink HUGO };
+    @priority_order = qw{ SWISSPROT SPTREMBL RefSeq LocusLink HUGO EMBL};
   }
   # mouse
   elsif ( $species eq 'musculus' ) {
-    @priority_order = qw{ MarkerSymbol SWISSPROT RefSeq LocusLink };
+    @priority_order = qw{ MarkerSymbol SWISSPROT RefSeq LocusLink EMBL };
   }
   # default list if species is not set
   else {
     $self->warn("Transcript::external_name - No species set. Using default DB order.");
-    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink };
+    @priority_order = qw{ HUGO SWISSPROT SPTREMBL RefSeq LocusLink EMBL };
   }
 
   # find a match (first one) for the db with the highest available priority
