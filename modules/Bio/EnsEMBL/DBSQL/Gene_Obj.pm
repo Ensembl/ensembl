@@ -1140,8 +1140,9 @@ sub get_supporting_evidence_direct {
             AND f.contig = e.contig 
            AND e.id in ($list) 
            AND !(f.seq_end < e.seq_start OR f.seq_start > e.seq_end) 
-	       AND f.strand = e.strand};
-#           f.analysis < 5}; # PL: why < 5 ? 
+	       AND f.strand = e.strand
+              AND f.name != 'genscan'};
+
  # PL: query not checked thoroughly
     my $sth2=$self->_db_obj->prepare($query);
     $sth2->execute;
