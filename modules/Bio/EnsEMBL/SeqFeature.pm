@@ -452,6 +452,8 @@ sub validate_prot_feature{
     $self->throw("end not defined in feature")         unless defined($self->end);
     if ($num == 1) {
 	$self->throw("score not defined in feature")       unless defined($self->score);
+	$self->throw("percent_id not defined in feature") unless defined($self->percent_id);
+	$self->throw("evalue not defined in feature") unless defined($self->p_value);
     }
     $self->throw("analysis not defined in feature")    unless defined($self->analysis);    
 }
@@ -837,4 +839,26 @@ sub gffstring {
    return $str;
 }
 
+
+=head2 external_db
+
+ Title   : external_db
+ Usage   : $pid = $feat->external_db()
+           $feat->external_db($dbid)
+ Function: get/set for an external db accession number (e.g.: Interpro)
+ Returns : 
+ Args    : none if get, the new value if set
+
+=cut
+
+sub external_db {
+    my ($self,$value) = @_;
+    
+    if (defined($value)) 
+    {
+	    $self->{'_external_db'} = $value;
+    }
+
+    return $self->{'_external_db'};
+}
 1;
