@@ -161,7 +161,7 @@ sub featureParser {
 							     $self->_clone_dir,
 							     $self->disk_id,
 							     $self->_gs,
-							     $self->seq,
+							     $self->primary_seq,
 							     $debug);
 
 	$self->{_featureParser} = $sfobj;
@@ -411,7 +411,7 @@ sub seq {
 =head2 primary_seq
 
  Title   : primary_seq
- Usage   : $self->seq
+ Usage   : $self->primary_seq
  Function: 
  Returns : value of seq
  Args    : none
@@ -439,7 +439,7 @@ sub primary_seq {
     open(IN,$file) || die "cannot open $file";
     my $seqin = Bio::SeqIO->new( '-format' => 'Fasta', -fh => \*IN);
     my($seq,$seqid,$ffound);
-    while($seq=$seqin->next_seq()){
+    while($seq=$seqin->next_primary_seq()){
 	$seqid=$seq->id;
 	#print STDERR "Read $seqid from $file\n";
 	if($seqid eq $disk_id){
@@ -453,7 +453,7 @@ sub primary_seq {
     }
     
     $self->{'seq'}=$seq;
-    $self->{'seq'}->type('Dna');
+    $self->{'seq'}->moltype('dna');
     $self->{'seq'}->id($self->id());
     if( ! $self->{'seq'} ) {
 	$self->throw("Could not read sequence in $file");
@@ -569,7 +569,7 @@ sub _gs{
     if(!defined($self->{'_gs'})) {
 	my $gs = Bio::EnsEMBL::Analysis::Genscan->new($self->_clone_dir . "/" . 
 						      $self->disk_id . ".gs",
-						      $self->seq());
+						      $self->primary_seq());
 	
 	
 	$self->{'_gs'} = $gs;
@@ -654,7 +654,7 @@ sub _build_genes{
     # build array of genes
     $self->{'_gene_array'} = [];
     {
-	my $bioseq=$self->seq;
+	my $bioseq=$self->primary_seq;
 	# 1. loop over list of exons in this contig
 	my %transcript_id;
 	my %gene_id;

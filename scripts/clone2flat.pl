@@ -91,7 +91,6 @@ use Bio::EnsEMBL::EMBL_Dump;
 # we run time load tim db now
 #use Bio::EnsEMBL::TimDB::Obj;
 
-use Bio::AnnSeqIO;
 use Bio::SeqIO;
 
 use Getopt::Long;
@@ -327,7 +326,7 @@ foreach my $clone_id ( @clones ) {
 	    }
 	} elsif ( $format =~ /embl/ ) {
 	    &Bio::EnsEMBL::EMBL_Dump::add_ensembl_comments($as);
-	    my $emblout = Bio::AnnSeqIO->new( '-format' => 'EMBL', -fh => $OUT);
+	    my $emblout = Bio::SeqIO->new( '-format' => 'EMBL', -fh => $OUT);
 	    &Bio::EnsEMBL::EMBL_Dump::ensembl_annseq_output($emblout);
 	    if( $nodna == 1 ) {
 		$emblout->_show_dna(0);

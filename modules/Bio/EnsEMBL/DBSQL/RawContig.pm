@@ -23,7 +23,7 @@ Bio::EnsEMBL::DB::RawContig - Handle onto a database stored raw contiguous DNA
 
     $contig->id();
     $contig->length();
-    $primary_seq = $contig->seq();
+    $primary_seq = $contig->primary_seq();
 
 =head1 DESCRIPTION
 
