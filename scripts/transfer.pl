@@ -91,7 +91,7 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'arne_freeze05_tim';
+my $tdbname = 'arne_oct07_tim';
 my $tdbuser = 'root';
 my $tdbpass = undef;
 
@@ -104,8 +104,8 @@ my $getall = 0;
 my $help;
 my $fmodule = 'Bio::EnsEMBL::DBSQL::Obj';
 my $tmodule = 'Bio::EnsEMBL::DBSQL::Obj';
-my $freeze =0;
-my $feature =0;
+my $freeze =1;
+my $feature =1;
 
 my $delete_first = 0;
 my $nosecure=0;
@@ -184,7 +184,7 @@ if ($exon_phase) {
 if ( $fdbtype =~ 'timdb' ) {
     if ($freeze) {
 	print STDERR "Loading with freeze settings!\n";
-	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 4,-nogene =>1, 
+	$from_db = Bio::EnsEMBL::TimDB::Obj->new(-freeze => 5,-nogene =>1, 
 						 -nosecure=>$nosecure, 
 						 -clones => \@clone,0);
     }
