@@ -227,8 +227,9 @@ sub _process_Transcript{
        $contig = $self->clone()->get_Contig($exon->contig_id());
        $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
 
-	          
-       my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+       my ($locstart,$locend);
+       ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
+       
 
        if( ! $exon_hash_ref->{$exon->id()}  ) {
 	   # add this exon
@@ -289,6 +290,7 @@ sub _process_Transcript{
    # better solution to deal with the last exon separately
 
    # puts a > on the last location line
+
    if( $loc_comp == 1 ) {
        $trans_loc =~ s/(\d+)\.\.(\d+)(\)?)$/$1..>$2$3/;
    } else {
