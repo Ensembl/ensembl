@@ -1142,6 +1142,25 @@ sub get_all_compara_DnaAlignFeatures {
   return $dafa->fetch_all_by_Slice($self, $qy_species, $qy_assembly);
 }
 
+sub get_all_compara_Syntenies {
+  my ($self, $qy_species ) = @_;
+
+  unless($qy_species) {
+    $self->throw("Query species and assembly arguments are required");
+  }
+
+  my $compara_db = $self->adaptor->db->get_db_adaptor('compara');
+
+  unless($compara_db) {
+    $self->warn("Compara database must be attached to core database to " .
+		"retrieve compara information");
+    return [];
+  }
+
+  my $sa = $compara_db->get_SyntenyAdaptor;
+  $sa->setSpecies("XX",$self->adaptor->db->get_MetaContainer->get_Species->binomial, $qy_species );
+  return $sa->get_synteny_for_chromosome( $self->chr_name,$self->chr_start, $self->chr_end );
+}
 
 
 =head2 get_all_Haplotypes
