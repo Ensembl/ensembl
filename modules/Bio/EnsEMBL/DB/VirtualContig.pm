@@ -689,7 +689,8 @@ sub _build_contig_map{
        $startpos = $current_contig->golden_end   - ($current_left_size - $left);
    }
 
-   print STDERR "Leftmost contig has $startpos and $current_orientation $left vs $current_left_size\n";
+   print STDERR "Leftmost contig starts at: $startpos orientation: $current_orientation\n";
+   print STDERR "Current left = $left vs global left= $current_left_size\n";
 
    $self->{'start'}->{$current_contig->id} = 1;
    $self->{'startincontig'}->{$current_contig->id} = $startpos;
