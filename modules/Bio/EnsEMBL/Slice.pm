@@ -70,6 +70,7 @@ use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
 
 use Bio::EnsEMBL::RepeatMaskedSlice;
+use Bio::EnsEMBL::Utils::Sequence qw(reverse_comp);
 
 #inheritance to Bio::EnsEMBL::Root will eventually be removed
 @ISA = qw(Bio::EnsEMBL::Root Bio::PrimarySeqI);
@@ -474,8 +475,9 @@ sub subseq {
     $subseq = ${$seqAdaptor->fetch_by_Slice_start_end_strand
       ( $self, $start,
         $end, $strand )};
-  }else{
-    $subseq = substr ($self->seq(), ($start-1), $end);
+  } else {
+    $subseq = substr ($self->seq(), $start-1, $end - $start + 1);
+    reverse_comp(\$subseq) if($strand == -1);
   }
   return $subseq;
 }
