@@ -169,6 +169,7 @@ sub fetch_by_translation_stable_id {
   $sth->execute("$transl_stable_id");
 
   my ($id) = $sth->fetchrow_array;
+  $sth->finish;
   if ($id){
     return $self->fetch_by_dbID($id);
   } else {
@@ -205,6 +206,7 @@ sub fetch_by_translation_id {
   $sth->execute($id);
 
   my ($dbID) = $sth->fetchrow_array;
+  $sth->finish;
   if ($dbID){
     return $self->fetch_by_dbID($dbID);
   } else {
