@@ -290,7 +290,6 @@ sub build_contig_map {
 		# as this means we have run out of contigs
 	      
 		if( !defined $overlap ) {
-		    print "Run out of contigs on the left with $current_left_size to look at<p>\n";
 		    $left = $current_left_size;
 		    last;
 		}
@@ -413,7 +412,6 @@ sub build_contig_map {
 	    # as this means we have run out of contigs
 	    if( !defined $overlap ) {
 		$self->found_right_end(1);
-                print "Run out of contigs on the right with $current_length to find<p>\n";
 		$right = $current_length - $left;
 		last;
 	    }
@@ -511,7 +509,6 @@ sub build_contig_map {
     # $right might have been modified during the walk
     
     $total = $left + $right;
-    print "Total is $total<p>\n";
 
     # need to store end point for last contig
     my $mc=$self->get_MapContig($current_contig->id);
@@ -541,7 +538,6 @@ sub build_contig_map {
     $self->left_size($left);
     $self->right_size($right);
     
-    print "Put away left $left and right $right<p>\n";
     # ready to rock and roll. Woo-Hoo!
 }
 
@@ -831,7 +827,6 @@ sub raw_contig_position {
 	    $rc=$mc->contig;
 	    if ($mc->orientation == 1) {
 		# the contig starts at startin
-                print "Calculation $vcpos - ",$mc->start,"+1+",$mc->start_in,"\n";
 		$rc_pos=$vcpos-$mc->start+1+$mc->start_in;
 	    }
 	    else {
