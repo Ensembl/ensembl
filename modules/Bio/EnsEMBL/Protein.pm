@@ -56,7 +56,6 @@ use Bio::EnsEMBL::Root;
 
 use Bio::SeqI;
 use Bio::EnsEMBL::Transcript;
-use Bio::DBLinkContainerI;
 use Bio::SeqIO;
 use Bio::Tools::SeqStats;
 

@@ -44,12 +44,11 @@ use strict;
 
 use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::TranscriptI;
-use Bio::DBLinkContainerI;
 use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::DBEntry;
 
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI);
+@ISA = qw(Bio::EnsEMBL::Root);
 # new() is inherited from Bio::Root::Object
 
 # _initialize is where the heavy stuff will happen when new is called

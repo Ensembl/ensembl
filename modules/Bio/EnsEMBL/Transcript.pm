@@ -58,11 +58,10 @@ use Bio::EnsEMBL::Root;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Intron;
 use Bio::EnsEMBL::Translation;
-use Bio::DBLinkContainerI;
 use Bio::EnsEMBL::TranscriptI;
 use Bio::EnsEMBL::Mapper;
 
-@ISA = qw(Bio::EnsEMBL::Root Bio::DBLinkContainerI Bio::EnsEMBL::TranscriptI);
+@ISA = qw(Bio::EnsEMBL::Root Bio::EnsEMBL::TranscriptI);
 # new() is inherited from Bio::Root::Object
 
 sub new {
