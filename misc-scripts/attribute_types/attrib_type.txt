@@ -97,3 +97,6 @@
 29	fp_size	FP size 
 
 30	BACend_flag	BAC end flags
+
+#used by (Vega) web code to link WebFPC
+31	fpc_clone_id	fpc clone
