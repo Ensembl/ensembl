@@ -204,7 +204,6 @@ sub each_Exon{
 sub number{
    my ($self,@args) = @_;
 
-
    return scalar(@{$self->{'_trans_exon_array'}});   
 }
 
