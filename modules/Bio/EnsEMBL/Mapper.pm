@@ -149,70 +149,91 @@ sub map_coordinates{
    my $last_used_pair;
    my @result;
 
-   foreach my $pair ( @{$hash->{uc($id)}} ) {
-       my $self_coord   = $pair->{$from};
-       my $target_coord = $pair->{$to};
+   my ( $start_idx, $end_idx, $mid_idx, $pair, $self_coord );
+   my $lr = $hash->{uc($id)};
+   
+   $start_idx = 0;
+   $end_idx = $#$lr;
+   
+   # binary search the relevant pairs
+   # helps if the list is big
+   while(( $end_idx - $start_idx ) <= 1 ) {
+     $mid_idx = ($start_idx+$end_idx)>>1;
+     $pair = $lr->[$mid_idx];
+     $self_coord   = $pair->{$from};
+     if( $self_coord->{'end'} < $start ) {
+       $start_idx = $mid_idx;
+     } else {
+       $end_idx = $mid_idx;
+     }
+   }
 
-       # if we haven't even reached the start, move on
-       if( $self_coord->{'end'} < $start ) {
-	   next;
-       }
+   my $i = $start_idx;
+   for( my $i = $start_idx; $i<=$#$lr; $i++ ) {
+     $pair = $lr->[$i];
+     my $self_coord   = $pair->{$from};
+     my $target_coord = $pair->{$to};
 
-       # if we have over run, break
-       if( $self_coord->{'start'} > $end ) {
-	   last;
-       }
+     # if we haven't even reached the start, move on
+     if( $self_coord->{'end'} < $start ) {
+       next;
+     }
+     
+     # if we have over run, break
+     if( $self_coord->{'start'} > $end ) {
+       last;
+     }
 
-       if( $start < $self_coord->{'start'} ) {
-	   # gap detected
-	   my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
-						    $self_coord->{'start'}-1);
-	
-	   push(@result,$gap);
-           $start = $gap->{'end'}+1;
-       }
-
-       my ($target_start,$target_end,$target_ori);
-
-       # start is somewhere inside the region
-       if( $pair->{'ori'} == 1 ) {
-	 $target_start = 
+     if( $start < $self_coord->{'start'} ) {
+       # gap detected
+       my $gap = Bio::EnsEMBL::Mapper::Gap->new($start, 
+                                                $self_coord->{'start'}-1);
+       
+       push(@result,$gap);
+       $start = $gap->{'end'}+1;
+     }
+     
+     my ($target_start,$target_end,$target_ori);
+     
+     # start is somewhere inside the region
+     if( $pair->{'ori'} == 1 ) {
+       $target_start = 
 	   $target_coord->{'start'} + ($start - $self_coord->{'start'});
-       } else {
-	 $target_end = 
+     } else {
+       $target_end = 
 	   $target_coord->{'end'} - ($start - $self_coord->{'start'});
-       }
+     }
+     
+     # either we are enveloping this map or not. If yes, then end
+     # point (self perspective) is determined solely by target. If not
+     # we need to adjust
 
-       # either we are enveloping this map or not. If yes, then end
-       # point (self perspective) is determined solely by target. If not
-       # we need to adjust
-
-       if( $end > $self_coord->{'end'} ) {
-	   # enveloped
-	   if( $pair->{'ori'} == 1 ) {
-	       $target_end = $target_coord->{'end'};
-	   } else {
-	       $target_start = $target_coord->{'start'};
-	   }
+     if( $end > $self_coord->{'end'} ) {
+       # enveloped
+       if( $pair->{'ori'} == 1 ) {
+         $target_end = $target_coord->{'end'};
        } else {
-	   # need to adjust end
-	   if( $pair->{'ori'} == 1 ) {
-	     $target_end = 
-	       $target_coord->{'start'} + ($end - $self_coord->{'start'});
-	   } else {
-	     $target_start = 
-	       $target_coord->{'end'} - ($end - $self_coord->{'start'});
-	   }
+         $target_start = $target_coord->{'start'};
        }
+     } else {
+       # need to adjust end
+       if( $pair->{'ori'} == 1 ) {
+         $target_end = 
+             $target_coord->{'start'} + ($end - $self_coord->{'start'});
+       } else {
+         $target_start = 
+             $target_coord->{'end'} - ($end - $self_coord->{'start'});
+       }
+     }
 
-       my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
+     my $res = Bio::EnsEMBL::Mapper::Coordinate->new($target_coord->{'id'},
 						     $target_start,
 						     $target_end,
 						     $pair->{'ori'} * $strand);
-       push(@result,$res);
-
-       $last_used_pair = $pair;
-       $start = $self_coord->{'end'}+1;
+     push(@result,$res);
+     
+     $last_used_pair = $pair;
+     $start = $self_coord->{'end'}+1;
    }
 
    if( !defined $last_used_pair ) {
