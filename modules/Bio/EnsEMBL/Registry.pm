@@ -344,6 +344,7 @@ sub add_DNAAdaptor{
   my ($class, $species, $group, $dnadb_species, $dnadb_group) = @_;
 
   $species = $class->get_alias($species);
+  $dnadb_species = $class->get_alias($dnadb_species);
   if($dnadb_group->isa('Bio::EnsEMBL::DBSQL::DBAdaptor')){
     deprecated("");
   }
