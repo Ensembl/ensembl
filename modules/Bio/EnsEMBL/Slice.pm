@@ -995,6 +995,38 @@ sub get_all_compara_DnaAlignFeatures {
 
 
 
+=head2 get_all_Haplotypes
+
+  Arg [1]    : (optional) boolean $lite_flag
+               if true lightweight haplotype objects are used
+  Example    : @haplotypes = $slice->get_all_Haplotypes;
+  Description: Retrieves all of the haplotypes on this slice.  Only works
+               if the haplotype adaptor has been attached to the core adaptor
+               via $dba->add_db_adaptor('haplotype', $hdba); 
+  Returntype : listref of Bio::EnsEMBL::External::Haplotype::Haplotypes
+  Exceptions : warning is Haplotype database is not available
+  Caller     : contigview, general
+
+=cut
+
+sub get_all_Haplotypes {
+  my($self, $lite_flag) = @_;
+
+  my $haplo_db = $self->adaptor->db->get_db_adaptor('haplotype');
+
+  unless($haplo_db) {
+    $self->warn("Haplotype database must be attached to core database to " .
+		"retrieve haplotype information" );
+    return [];
+  }
+
+  my $haplo_adaptor = $haplo_db->get_HaplotypeAdaptor;
+		
+  return $haplo_adaptor->fetch_all_by_Slice($self, $lite_flag);
+}
+
+
+
 
 sub get_all_DASFeatures{
    my ($self,@args) = @_;
@@ -1073,7 +1105,7 @@ foreach my $extf ( $self->adaptor()->db()->_each_DASFeatureFactory ) {
                } elsif( $sf->seqname() =~ /\w{1,2}\d+/i) {
 #                    print STDERR "CLONE >".$sf->seqname()."<\n";
 		 my $clone_adaptor = $self->adaptor->db->get_CloneAdaptor;
-		 my $clone = $clone_adaptor->fetch_by_accession;
+		 my $clone = $clone_adaptor->fetch_by_accession($sf->seqname);
 
 		 #we only use finished clones. finished means there is only
                  #one contig on the clone and it has an offset of 1
