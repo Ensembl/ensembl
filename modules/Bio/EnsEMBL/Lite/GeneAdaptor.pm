@@ -161,10 +161,7 @@ sub fetch_by_Slice {
     $transcript->external_name( $hr->{'external_name'} );
     $transcript->external_db( $hr->{'external_db' } );
 
-    if( $gene->stable_id() =~ /UBE2C/ ) {
-      print STDERR ( "coding_start: ",$transcript->coding_start(),"\n" );
-      print STDERR ( "coding_end: ",$transcript->coding_end(),"\n" );
-    } 
+
     # Add the exons
     if( $hr->{'chr_strand'} != 1 ) {
       @exons = reverse( @exons );
