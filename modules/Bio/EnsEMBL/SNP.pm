@@ -145,6 +145,15 @@ sub source_tag {
   return $self->{_source_tag};
 }
 
+sub source_version {
+  my ($self, $arg) = @_;
+
+  if(defined $arg) {
+    $self->{_source_version} = $arg;
+  }
+
+  return $self->{_source_version};
+}
 
 
 =head2 display_id
