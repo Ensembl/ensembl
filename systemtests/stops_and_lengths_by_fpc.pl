@@ -37,6 +37,7 @@ VKRAYLVHSAYDQSYNFIYKSFRIASII*X
 ENSP00000227580 encoded by transcript ENST00000227580 from gene ENSG00000110163 on fpc ctg12475 has length:     1  
 
 
+
 =head1 OPTIONS
 
 -host       db server name (default localhost)
@@ -67,9 +68,9 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Getopt::Long; 
 
 my $minlength = 2;
-my $host = 'localhost';
+my $host = 'ecs1b.sanger.ac.uk';
 my $port = 3306;
-my $dbname = 'ensembl_test';
+my $dbname = 'ensembl100';
 my $pass = undef;
 my $user = 'ensro';
 my $driver = 'mysql';
@@ -128,14 +129,14 @@ my $stadp = $db->get_StaticGoldenPathAdaptor();
 
 
 # Iterate over fpcs and pull out all genes
-my($genecount, $transcriptcount) = (0, 0);
+my($genecount, $transcriptcount, $counter) = (0, 0, 0);
 foreach my $fpc (@fpcs)
 {
     my($fpc_genecount, $fpc_transcriptcount) = (0, 0);
-    print STDERR "Now checking genes on fpc $fpc\n";
+    print STDERR "Building virtual contig for fpc $fpc\n";
     my $vc = $stadp->fetch_VirtualContig_by_fpc_name($fpc);
-    my @genes = $vc->get_all_Genes;
-    foreach my $gene (@genes)
+    print STDERR "Now checking genes on fpc $fpc\n";
+    foreach my $gene ($vc->get_all_Genes)
     {
 	$genecount++; $fpc_genecount++; 
         foreach my $transcript ($gene->each_Transcript)
@@ -169,14 +170,30 @@ foreach my $fpc (@fpcs)
                       $pep->seq,
                       "\n";
             }
+	    deleteObj($pep);
+	    deleteObj($transcript);
         } #  foreach my $transcript ($gene->each_Transcript)
+	deleteObj($gene);
     } # foreach my $gene (@genes)
     print STDERR "$fpc_genecount genes with $fpc_transcriptcount transcripts\n";
+    deleteObj($fpc);
 } # foreach my $fpc (@fpcs)
 
 print STDERR "Checked ", scalar(@fpcs), " fpcs with $genecount genes with $transcriptcount transcripts\n";
 
 
+sub deleteObj {
+  my $self = shift;
+  eval{
+      my @dummy = values %{$self};
+      foreach my $key ( keys %$self ) {
+	  delete $self->{$key};
+      }
+      foreach my $obj ( @dummy ) {
+	  deleteObj($obj);
+      }
+  };
+}
 
 
 

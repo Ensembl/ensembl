@@ -70,7 +70,7 @@ This script takes quite a long time to run...
 =head1 WARNING
 
 On big chromosomes (like chr1) one is likely to run out of memory
-(that's what happend at least on ecs1c)
+(that is what happend at least on ecs1c)
 
 =cut
 
@@ -81,7 +81,7 @@ use Getopt::Long;
 my $minlength = 2;
 my $host = 'localhost';
 my $port = 3306;
-my $dbname = 'ensembl_test';
+my $dbname = 'ensembl100';
 my $pass = undef;
 my $user = 'ensro';
 my $driver = 'mysql';
@@ -92,7 +92,7 @@ my $help;
              'host:s'      => \$host,
              'port:n'      => \$port,
              'dbname:s'    => \$dbname,
-             'user:s'    => \$user,
+             'user:s'      => \$user,
              'pass:s'      => \$pass,
              'driver:s'    => \$driver,
              'minlength:n' => \$minlength,
@@ -132,6 +132,9 @@ else
     {
 	push @chromosomes, $chr;
     }
+    unless(@chromosomes) {
+	die "Could not get chromosome names from static_golden_path table.\n";
+    }
 }
 
 
@@ -144,12 +147,13 @@ my($genecount, $transcriptcount);
 foreach my $chromosome (@chromosomes)
 {
     my($chr_genecount, $chr_transcriptcount);
-    print STDERR "Now checking genes on chromosome $chromosome\n";
+    print STDERR "Building virtual contig for chromosome $chromosome\n";
     my $vc = $stadp->fetch_VirtualContig_by_chr_name($chromosome);
-    my @genes = $vc->get_all_Genes;
-    foreach my $gene (@genes)
+    print STDERR "Checking genes on chromosome $chromosome\n";
+    foreach my $gene ($vc->get_all_Genes)
     {
-	$genecount++; $chr_genecount++; 
+#	print $gene->id, "\n"; deleteObj($gene); next;
+	$genecount++; $chr_genecount++;
         foreach my $transcript ($gene->each_Transcript)
         {
 	    $transcriptcount++; $chr_transcriptcount++;
@@ -182,8 +186,20 @@ foreach my $chromosome (@chromosomes)
                       "\n";
             }
         } #  foreach my $transcript ($gene->each_Transcript)
+	deleteObj($gene);
     } # foreach my $gene (@genes)
     print STDERR "$chr_genecount genes with $chr_transcriptcount transcripts\n";
 } # foreach my $chromosome (@chromosomes)
 
 print STDERR "Checked ", scalar(@chromosomes), " chromosomes with $genecount genes with $transcriptcount transcripts\n";
+
+sub deleteObj {
+  my $self = shift;
+  my @dummy = values %{$self};
+  foreach my $key ( keys %$self ) {
+      delete $self->{$key};
+  }
+  foreach my $obj ( @dummy ) {
+      deleteObj($obj);
+  }
+}
