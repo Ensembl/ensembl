@@ -253,19 +253,30 @@ sub _objs_from_sth {
 }
 
 
-sub _tablename {
+sub _tables {
   my $self = shift;
 
-  return "protein_align_feature";
+  return ['protein_align_feature', 'paf'];
 }
+
 
 sub _columns {
   my $self = shift;
 
   #warning _objs_from_hashref method depends on ordering of this list 
-  return qw( protein_align_feature_id contig_id contig_start contig_end
-	     analysis_id contig_strand hit_start hit_end hit_name cigar_line
-	     evalue perc_ident score );
+  return qw( paf.protein_align_feature_id 
+	     paf.contig_id 
+	     paf.contig_start 
+	     paf.contig_end
+	     paf.analysis_id 
+	     paf.contig_strand 
+	     paf.hit_start 
+	     paf.hit_end 
+	     paf.hit_name 
+	     paf.cigar_line
+	     paf.evalue 
+	     paf.perc_ident 
+	     paf.score );
 }
 
 

@@ -25,15 +25,7 @@ This is a base adaptor for feature adaptors. This base class is simply a way
 of eliminating code duplication through the implementation of methods 
 common to all feature adaptors.
 
-=head1 AUTHOR - Ewan Birney
-
-Email birney@ebi.ac.uk
-
-Describe contact details here
-
-=head1 APPENDIX
-
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+Contact EnsEMBL development list for info: <ensembl-dev@ebi.ac.uk>
 
 =cut
 
@@ -100,7 +92,7 @@ sub new {
 sub generic_fetch {
   my ($self, $constraint, $logic_name, $mapper, $slice) = @_;
   
-  my $tablename = $self->_tablename();
+  my @tabs = $self->_tables;
   my $columns = join(', ', $self->_columns());
   
   if($logic_name) {
@@ -113,15 +105,43 @@ sub generic_fetch {
     }
     
     my $analysis_id = $analysis->dbID();
-    
+
+    #get the synonym for the primary table
+    my $syn = $tabs[0]->[1];
+
     if($constraint) {
-      $constraint .= " AND analysis_id = $analysis_id";
+      $constraint .= " AND ${syn}.analysis_id = $analysis_id";
     } else {
-      $constraint = " analysis_id = $analysis_id";
+      $constraint = " ${syn}.analysis_id = $analysis_id";
     }
   } 
-  
-  my $sql = "SELECT $columns FROM $tablename ";
+
+  #
+  # Construct a left join statement if one was defined, and remove the
+  # left-joined table from the table list
+  #
+  my ($tablename, $condition) = $self->_left_join;
+  my $left_join = '';
+  my @tables;
+  if($tablename && $condition) {
+    while(my $t = shift @tabs) {
+      if($tablename eq $t->[0]) {
+	my $syn = $t->[1]; 
+	$left_join =  "LEFT JOIN $tablename $syn $condition";
+	push @tables, @tabs;
+	last;
+      } else {
+	push @tables, $t;
+      }
+    }
+  } else {
+    @tables = @tabs;
+  }
+      
+  #construct a nice table string like 'table1 t1, table2 t2'
+  my $tablenames = join(', ', map({ join(' ', @$_) } @tables));
+
+  my $sql = "SELECT $columns FROM $tablenames $left_join";
 
   my $default_where = $self->_default_where_clause;
   my $final_clause = $self->_final_clause;
@@ -167,8 +187,12 @@ sub fetch_by_dbID{
     $self->throw("fetch_by_dbID must have an id");
   }
 
-  my $tablename = $self->_tablename();
-  my $constraint = "${tablename}_id = $id";
+  my @tabs = $self->_tables;
+
+  my ($name, $syn) = @{$tabs[0]};
+
+  #construct a constraint like 't1.table1_id = 1'
+  my $constraint = "${syn}.${name}_id = $id";
 
   #return first element of _generic_fetch list
   my ($feat) = @{$self->generic_fetch($constraint)}; 
@@ -208,10 +232,14 @@ sub fetch_all_by_RawContig_constraint {
 
   my $cid = $contig->dbID();
 
+  #get the synonym of the primary_table
+  my @tabs = $self->_tables;
+  my $syn = $tabs[0]->[1];
+
   if($constraint) {
-    $constraint .= " AND contig_id = $cid";
+    $constraint .= " AND ${syn}.contig_id = $cid";
   } else {
-    $constraint = "contig_id = $cid";
+    $constraint = "${syn}.contig_id = $cid";
   }
 
   return $self->generic_fetch($constraint, $logic_name);
@@ -266,7 +294,10 @@ sub fetch_all_by_RawContig_and_score{
   my $constraint;
 
   if(defined $score){
-    $constraint = "score > $score";
+    #get the synonym of the primary_table
+    my @tabs = $self->_tables;
+    my $syn = $tabs[0]->[1];
+    $constraint = "${syn}.score > $score";
   }
     
   return $self->fetch_all_by_RawContig_constraint($contig, $constraint, 
@@ -324,7 +355,10 @@ sub fetch_all_by_Slice_and_score {
   my $constraint;
 
   if(defined $score) {
-    $constraint = "score > $score";
+    #get the synonym of the primary_table
+    my @tabs = $self->_tables;
+    my $syn = $tabs[0]->[1];
+    $constraint = "${syn}.score > $score";
   }
 
   return $self->fetch_all_by_Slice_constraint($slice, $constraint, 
@@ -382,11 +416,15 @@ sub fetch_all_by_Slice_constraint {
 
   my $cid_list = join(',',@cids);
 
+  #get the synonym of the primary_table
+  my @tabs = $self->_tables;
+  my $syn = $tabs[0]->[1];
+
   #construct the SQL constraint for the contig ids 
   if($constraint) {
-    $constraint .= " AND contig_id IN ($cid_list)";
+    $constraint .= " AND ${syn}.contig_id IN ($cid_list)";
   } else {
-    $constraint = "contig_id IN ($cid_list)";
+    $constraint = "${syn}.contig_id IN ($cid_list)";
   }
 
   #for speed the remapping to slice may be done at the time of object creation
@@ -523,47 +561,42 @@ sub remove_by_RawContig {
 		 "Deletion of features failed.");
   }
 
-  my $table = $self->_tablename();
+  my @tabs = $self->_tables;
 
-  # RepeatFeatureAdaptor returns 2 table names so need to so do some cleaning
-  # up of the returned table name.  This has the form:
-  #  table_name1 t1, table_name2 t2
+  my ($table_name) = @{$tabs[0]};
 
-  my @tables = split(/,/,$table);
+  my $sth = $self->prepare("DELETE FROM $table_name
+                            WHERE contig_id = ?");
 
-  foreach my $table_name (@tables) {
-    # Not pretty this but there is no need to delete anything from the 
-    # repeat_consensus table
-    next if ($table_name =~ /repeat_consensus/);
-
-    my ($actual_table) = $table_name =~ /(^\w+)/;  # lose the table alias, if there is one
-
-    my $sth = $self->prepare("DELETE FROM $actual_table WHERE contig_id = ?");
-    $sth->execute($contig->dbID);
-  }
+  $sth->execute($contig->dbID);
 
   return;
 }
 
 
 
-=head2 _tablename
+=head2 _tables
 
   Args       : none
   Example    : $tablename = $self->_table_name()
   Description: ABSTRACT PROTECTED Subclasses are responsible for implementing
-               this method.  It should return the name of the table to be
+               this method.  It should list of [tablename, alias] pairs.  
+               Additionally the primary table (with the dbID, analysis_id, and
+               score) should be the first table in the list.
+               e.g:
+               ( ['repeat_feature',   'rf'],
+                 ['repeat_consensus', 'rc']);
                used to obtain features.  
-  Returntype : string
+  Returntype : list of [tablename, alias] pairs
   Exceptions : thrown if not implemented by subclass
   Caller     : BaseFeatureAdaptor::generic_fetch
 
 =cut
 
-sub _tablename {
+sub _tables {
   my $self = shift;
 
-  $self->throw("abstract method _tablename not defined by implementing" .
+  $self->throw("abstract method _tables not defined by implementing" .
                " subclass of BaseFeatureAdaptor");
   return undef;
 }
@@ -590,6 +623,22 @@ sub _columns {
 }
 
 
+
+=head2 _left_join
+
+  Arg [1]    : none
+  Example    : 
+  Description: 
+  Returntype : 
+  Exceptions : 
+  Caller     : 
+
+=cut
+
+
+
+
+
 =head2 _default_where_clause
 
   Arg [1]    : none
@@ -597,7 +646,7 @@ sub _columns {
   Description: May be overridden to provide an additional where constraint to 
                the SQL query which is generated to fetch feature records.
                This constraint is always appended to the end of the generated
-               where clause and thus may be used to add a join between tables
+               where clause
   Returntype : string
   Exceptions : none
   Caller     : generic_fetch
@@ -609,6 +658,28 @@ sub _default_where_clause {
 
   return '';
 }
+
+
+
+=head2 _left_join
+
+  Arg [1]    : none
+  Example    : none
+  Description: Can be overridden by a subclass to specify any left joins
+               which should occur. The table name specigfied in the join
+               must still be present in the return values of 
+  Returntype : a {'tablename' => 'join condition'} pair 
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub _left_join {
+  my $self = shift;
+
+  return '';
+}
+
 
 
 =head2 _final_clause
@@ -648,7 +719,7 @@ sub _final_clause {
 sub _objs_from_sth {
   my $self = shift;
 
-  $self->throw("abstract method _obj_from_hashref not defined by implementing"
+  $self->throw("abstract method _obj_from_sth not defined by implementing"
              . " subclass of BaseFeatureAdaptor");
 } 
 

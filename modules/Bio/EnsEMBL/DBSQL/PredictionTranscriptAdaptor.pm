@@ -41,7 +41,7 @@ use Bio::EnsEMBL::PredictionTranscript;
 @ISA = qw( Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor );
 
 
-=head2 _tablename
+=head2 _tables
 
   Arg [1]    : none
   Example    : none
@@ -53,10 +53,10 @@ use Bio::EnsEMBL::PredictionTranscript;
 
 =cut
 
-sub _tablename {
+sub _tables {
   my $self = shift;
 
-  return 'prediction_transcript p';
+  return ['prediction_transcript', 'p'];
 }
 
 

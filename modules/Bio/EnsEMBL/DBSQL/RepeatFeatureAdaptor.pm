@@ -38,6 +38,7 @@ Internal methods are usually preceded with a _
 
 =cut
 
+
 # Let the code begin...
 
 package Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor;
@@ -63,14 +64,14 @@ use vars qw(@ISA);
 
 =cut
 
-sub _tablename {
+sub _tables {
   my $self = shift;
 
-  return 'repeat_feature r, repeat_consensus rc';
+  return (['repeat_feature', 'r'], ['repeat_consensus', 'rc']);
 }
 
 
-=head2 _tablename
+=head2 _columns
 
   Arg [1]    : none
   Example    : none

@@ -107,17 +107,17 @@ sub store{
   Arg [1]    : none
   Example    : none
   Description: PROTECTED implementation of superclass abstract method
-               returns the name of the table to use for queries
-  Returntype : string
+               returns the names, aliases of the tables to use for queries
+  Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : internal
 
 =cut
 
-sub _tablename {
+sub _tables {
   my $self = shift;
   
-  return "simple_feature";
+  return ['simple_feature', 'sf'];
 }
 
 
@@ -136,8 +136,9 @@ sub _tablename {
 sub _columns {
   my $self = shift;
 
-  return qw( simple_feature_id contig_id contig_start contig_end contig_strand
-	     display_label analysis_id score );
+  return qw( sf.simple_feature_id 
+	     sf.contig_id sf.contig_start sf.contig_end sf.contig_strand
+	     sf.display_label sf.analysis_id score );
 }
 
 

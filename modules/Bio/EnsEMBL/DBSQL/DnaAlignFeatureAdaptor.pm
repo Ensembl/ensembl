@@ -58,23 +58,22 @@ use Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor;
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAlignFeatureAdaptor);
 
 
-=head2 _tablename
+=head2 _tables
 
   Args       : none
-  Example    : $tablename = $self->_tablename 
+  Example    : @tabs = $self->_tables
   Description: PROTECTED implementation of the abstract method inherited from
-               BaseFeatureAdaptor.  Returns the name of the table 
-               DnaAlignFeatures are created from.
-  Returntype : string
+               BaseFeatureAdaptor.  Returns list of [tablename, alias] pairs
+  Returntype : list of listrefs of strings
   Exceptions : none
   Caller     : Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor::generic_fetch
 
 =cut
 
-sub _tablename {
+sub _tables {
   my $self = shift;
 
-  return "dna_align_feature";
+  return ['dna_align_feature', 'daf'];
 }
 
 
@@ -94,9 +93,19 @@ sub _columns {
   my $self = shift;
 
   #warning, implementation of _objs_from_sth method depends on order of list
-  return qw(dna_align_feature_id contig_id analysis_id contig_start 
-	    contig_end contig_strand hit_start hit_end hit_name hit_strand
-	    cigar_line evalue perc_ident score);
+  return qw(daf.dna_align_feature_id 
+	    daf.contig_id 
+	    daf.analysis_id 
+	    daf.contig_start 
+	    daf.contig_end 
+	    daf.contig_strand 
+	    daf.hit_start 
+	    daf.hit_end 
+	    daf.hit_name 
+	    daf.hit_strand
+	    daf.cigar_line 
+	    daf.evalue 
+	    daf.perc_ident score);
 }
 
 
@@ -117,7 +126,9 @@ sub _columns {
 
 sub store {
   my ($self, @sf) = @_;
-  my $tablename = $self->_tablename();
+
+  my @tabs = $self->_tables;
+  my ($tablename) = @{$tabs[0]};
   
   if( scalar(@sf) == 0 ) {
     $self->throw("Must call store with sequence features");
