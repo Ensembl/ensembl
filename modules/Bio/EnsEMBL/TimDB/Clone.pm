@@ -177,12 +177,72 @@ sub _make_ContigOverlaps {
     
     my @pieces = split(/:/,$clone_order);
 
+    # Each contig is in the $clone_order string separated by either a colon or
+    # a semi-colon.  Contigs separated by semi-colons are ordered. The ones
+    # separated by colons are unordered
+
+    my $finalcontig;
+    my $finalorient;
+    my @unordered;
+
     foreach my $piece (@pieces) {
+	# Do we have an ordered piece (otherwise put into @unordered )
 	if ($piece =~ /;/) {
 
 	    my @joins      = split(/;/,$piece);
 	    my $numcontigs = scalar(@joins);
 	    
+	    # First of all attach to previous piece
+
+	    if (defined($finalcontig)) {
+		my $newtype;
+		my $positiona;
+		my $positionb;
+
+		my ($contigid,$fr) = ($joins[0] =~ /(.*)\.([FR])$/);
+		my $contiga = $self->get_Contig($contigid);
+
+		$self->throw("No contig [$contigid] existis in clone") unless defined($contiga);
+
+		if ($finalorient == 1) {
+		    $positiona = $finalcontig->length;
+		    
+		    if ($fr eq 'R') {
+			$newtype = 'right2right';
+			$positionb = $contiga->length;
+		    } elsif ($fr eq 'F') {
+			$newtype = 'right2left';
+			$positionb = 1;
+		    } else {
+			$self->throw("Wrong frame [$fr]");
+		    }
+		} elsif ($finalorient == -1) {
+		    $positiona = 1;
+		    if ($fr eq 'R') {
+			$newtype = 'left2right';
+			$positionb = $contiga->length;
+		    } elsif ($fr eq 'F') {
+			$newtype = 'left2left';
+			$positionb = 1;
+		    } else {
+			$self->throw("Wrong frame [$fr]");
+		    }
+		} else {
+		    $self->throw("Wrong finalorient [$finalorient]");
+		}
+		print(STDERR "Joinging " .$finalcontig->id . "\t" . $contiga->id . "\n");
+		my $tmpoverlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $finalcontig,
+								 -contigb   => $contiga,
+								 -positiona => $positiona,
+								 -positionb => $positionb,
+								 -source    => 'UNORDERED',
+								 -distance  => $spacing,
+								 -overlap_type => $newtype);
+		
+		$self->add_ContigOverlap($tmpoverlap);
+	    }
+	    
+	    # Now join the ordered contigs together
 	    for (my $i = 0; $i < ($numcontigs-1); $i++) {
 		# Split the pieces into id and orientation (D89885.00001.F)
 		my ($contig1,$fr1)= ($joins[$i] =~ /(.*)\.([FR])$/);
@@ -201,6 +261,7 @@ sub _make_ContigOverlaps {
 		    $positionb = 1;
 
 		} elsif ($fr1 eq 'F' && $fr2 eq 'R') {
+
 		    $type = 'right2right';
 		    $positiona = $contiga->length;
 		    $positionb = $contigb->length;
@@ -215,7 +276,7 @@ sub _make_ContigOverlaps {
 		    $positiona = 1;
 		    $positionb = $contigb->length;
 		}
-		
+
 		my $overlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $contiga,
 							      -contigb   => $contigb,
 							      -positiona => $positiona,
@@ -225,8 +286,72 @@ sub _make_ContigOverlaps {
 							      -overlap_type => $type);
 		
 		$self->add_ContigOverlap($overlap);
+
+		$finalcontig = $contigb;
+		$finalorient = 1  if $type =~ /2left/;
+		$finalorient = -1 if $type =~ /2right/;
+
 	    }
+	    
+	    
+	} else {
+	    push(@unordered,$piece);
 	}
+    }
+
+    # Now process the unorderedcontigs
+    my @newcontigs;
+    
+    foreach my $contigid (@unordered) {
+	$contigid =~ s/\.[FR]$//;
+	my $contig = $self->get_Contig($contigid) || $self->throw("No contig with id [$contigid]");
+	push(@newcontigs,$contig);
+    }
+    
+    # Sort longest to shortest
+    @newcontigs = sort { $b->length <=> $a->length } @newcontigs;
+    
+    my $numcontigs = scalar(@newcontigs);
+    
+    # Join the final ordered contig onto the first unordered contig
+    if (defined($finalcontig) && $numcontigs >  0) {
+	my $type;
+	my $positiona;
+	my $positionb;
+	
+	if ($finalorient == 1) {
+	    $type      = 'right2left';
+	    $positiona = $finalcontig->length;
+	} elsif ($finalorient == -1) {
+	    $type      = 'left2left';
+	    $positiona = 1;
+	} else {
+	    $self->throw("Final orientation not set");
+	}
+	
+	my $overlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $finalcontig,
+						      -contigb   => $newcontigs[0],
+						      -positiona => $positiona,
+						      -positionb => 1,
+						      -source    => 'UNORDERED',
+						      -distance  => $spacing,
+						      -overlap_type => $type);
+	
+	$self->add_ContigOverlap($overlap);
+    }
+    
+    
+    # Create overlaps between the unordered contigs
+    for (my $i = 0; $i < $numcontigs-1; $i++) {
+	my $overlap = new Bio::EnsEMBL::ContigOverlap(-contiga   => $newcontigs[$i],
+						      -contigb   => $newcontigs[$i+1],
+						      -positiona => $newcontigs[$i]->length,
+						      -positionb => 1,
+						      -source    => 'UNORDERED',
+						      -distance  => $spacing,
+						      -overlap_type => 'right2left');
+	
+	$self->add_ContigOverlap($overlap);
     }
 }
 
