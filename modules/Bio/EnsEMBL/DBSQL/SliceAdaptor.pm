@@ -318,7 +318,7 @@ sub fetch_by_clone_accession{
                         clone  cl,
                         chromosome chr
                     WHERE c.clone_id = cl.clone_id
-                    AND cl.name = '$clone'  
+                    AND cl.embl_acc = '$clone'  
                     AND c.contig_id = a.contig_id 
                     AND a.type = '$type' 
                     AND chr.chromosome_id = a.chromosome_id
