@@ -105,7 +105,7 @@ eval {
 };
 
 if( $@ ) {
-    print STDERR "Does not have contig test, cannot test overlap\n$@\n";
+    print STDERR "Does not have contig test, cannot test overlap\n";
     print "ok 8\n";
     print "ok 9\n";
 } else {

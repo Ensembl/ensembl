@@ -297,6 +297,31 @@ sub get_all_Genes {
    $self->warn("Base class has not implemented get_all_Genes yet!");
 }
 
+=head2
+
+Decorating functions. You do not need to implement these functions
+
+=cut
+
+=head2 virtualcontig
+
+ Title   : virtualcontig
+ Usage   : $vc = $clone->virtualcontig();
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub virtualcontig{
+   my ($self,@args) = @_;
+
+
+}
+
+
 1;
 
 

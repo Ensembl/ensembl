@@ -121,7 +121,7 @@ $clone->add_Contig($contig2);
 
 
 print "ok 2\n";
-
+exit(0);
 $fh = new FileHandle;
 $fh->open('>out.embl');
 

@@ -17,6 +17,16 @@ Bio::EnsEMBL::DB::VirtualContig - A virtual contig implementation
 =head1 SYNOPSIS
 
   #get a virtualcontig somehow
+ 
+  $vc = Bio::EnsEMBL::DB::VirtualContig->new( -focus => $rawcontig,
+					      -focus_position => 2,
+					      -ori => 1,
+					      -left => 5000,
+					      -right => 5000
+					      );
+
+  # or
+  $vc = Bio::EnsEMBL::DB::VirtualContig->new( -clone => $clone);
 
   # usual contig methods applicable:
 
@@ -85,11 +95,8 @@ sub _initialize {
 
   my $make = $self->SUPER::_initialize(@args);
 
-  my ($focus,$focusposition,$ori,$leftsize,$rightsize) = $self->_rearrange([qw( FOCUS FOCUSPOSITION ORI LEFT RIGHT)],@args);
+  my ($focus,$focusposition,$ori,$leftsize,$rightsize,$clone) = $self->_rearrange([qw( FOCUS FOCUSPOSITION ORI LEFT RIGHT CLONE)],@args);
 
-  if( !defined $focus || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
-      $self->throw("Have to provide all arguments to virtualcontig, focus, focusposition, ori, left, right");
-  }
 
   # set up hashes for the map
   $self->{'start'} = {};
@@ -101,9 +108,21 @@ sub _initialize {
 
   # this is for cache's of sequence features if/when we want them
   $self->{'_sf_cache'} = {};
-  
-  # build the map of how contigs go onto the vc coorindates
-  $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
+
+  if( defined $clone && defined $focus ){
+      $self->throw("Build a virtual contig either with a clone or a focus, but not with both");
+  }
+
+  if( defined $clone ) {
+      $self->_build_clone_map($clone);
+  } else {
+      if( !defined $focus || !defined $focusposition || !defined $ori || !defined $leftsize || !defined $rightsize ) {
+	  $self->throw("Have to provide all arguments to virtualcontig, focus, focusposition, ori, left, right");
+      }
+      
+      # build the map of how contigs go onto the vc coorindates
+      $self->_build_contig_map($focus,$focusposition,$ori,$leftsize,$rightsize);
+  }
 
   $self->_unique_number($VC_UNIQUE_NUMBER++);
 
@@ -339,6 +358,36 @@ sub length {
 }
 
 
+=head2 _build_clone_map
+
+ Title   : _build_clone_map
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _build_clone_map{
+   my ($self,$clone) = @_;
+   my ($tlen,$length);
+   foreach my $contig ( $clone->get_all_Contigs ) {
+       $self->{'start'}->{$contig->id} = $contig->embl_offset;
+       $self->{'startincontig'}->{$contig->id} = 1;
+       $self->{'contigori'}->{$contig->id} = 1;
+       $self->{'contighash'}->{$contig->id} = $contig;
+       $tlen = $contig->embl_offset+$contig->length;
+       if( $tlen > $length ) {
+	   $length = $tlen;
+       }
+   }
+
+   $self->_left_size(1);
+   $self->_right_size($length);
+   $self->_clone_map(1);
+}
 
 
 =head2 _build_contig_map
@@ -392,12 +441,17 @@ sub _build_contig_map{
 	       print STDERR "getting out - no overlap\n";
 	       last;
 	   }
-	   # add to total, move on the contigs
-	   $self->warn("Not coping with non-overlapping, sized gaps");
 
-	   # The mystic -1 here is because otherwise we double count the
-	   # switch point base
-	   $current_left_size += $overlap->sister->golden_length -1; 
+
+	   if( $overlap->distance == 0 ) {
+	       # The mystic -1 here is because otherwise we double count the
+	       # switch point base
+	       $current_left_size += $overlap->sister->golden_length -1;
+	   } else {
+	       $current_left_size += $overlap->distance;
+	       $current_left_size += $overlap->sister->golden_length;
+	   }
+
 	   $current_contig = $overlap->sister();
 
 	   if( $overlap->sister_polarity == 1) {
@@ -415,12 +469,15 @@ sub _build_contig_map{
 	       last;
 	   }
 
-	   # add to total, move on the contigs
-	   $self->warn("Not coping with non-overlapping, sized gaps");
+	   if( $overlap->distance == 0 ) {
+	       # The mystic -1 here is because otherwise we double count the
+	       # switch point base
+	       $current_left_size += $overlap->sister->golden_length-1;
+	   } else {
+	       $current_left_size += $overlap->distance;
+	       $current_left_size += $overlap->sister->golden_length;
+	   }
 
-	   # The mystic -1 here is because otherwise we double count the
-	   # switch point base
-	   $current_left_size += $overlap->sister->golden_length-1;
 	   $current_contig = $overlap->sister();
 
 	   if( $overlap->sister_polarity == 1) {
@@ -490,7 +547,6 @@ sub _build_contig_map{
 	   }
 
 	   # add to total, move on the contigs
-	   $self->warn("Not coping with non-overlapping, sized gaps");
 
 	   $current_contig = $overlap->sister();
 	   $self->{'contighash'}->{$current_contig->id} = $current_contig;
@@ -503,8 +559,13 @@ sub _build_contig_map{
 
 	   # The +1's here are to handle the fact we want to produce abutting
 	   # coordinate systems from overlapping switch points.
+	   if( $overlap->distance == 0 ) {
+	       $self->{'start'}->{$current_contig->id} = $current_length +1;
+	   } else {
+	       $self->{'start'}->{$current_contig->id} = $current_length + $overlap->distance;
+	       $current_length += $overlap->distance;
+	   }
 
-	   $self->{'start'}->{$current_contig->id} = $current_length +1;
 	   if( $current_orientation == 1 ) {
 	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start+1;
 	   } else {
@@ -529,7 +590,6 @@ sub _build_contig_map{
 	   }
 
 	   # add to total, move on the contigs
-	   $self->warn("Not coping with non-overlapping, sized gaps");
 
 	   $current_contig = $overlap->sister();
 	   $self->{'contighash'}->{$current_contig->id} = $current_contig;
@@ -543,7 +603,13 @@ sub _build_contig_map{
 	   # The +1's here are to handle the fact we want to produce abutting
 	   # coordinate systems from overlapping switch points.
 
-	   $self->{'start'}->{$current_contig->id} = $current_length +1; 
+	   if( $overlap->distance == 0 ) {
+	       $self->{'start'}->{$current_contig->id} = $current_length +1;
+	   } else {
+	       $self->{'start'}->{$current_contig->id} = $current_length + $overlap->distance;
+	       $current_length += $overlap->distance;
+	   }
+
 	   if( $current_orientation == 1 ) {
 	       $self->{'startincontig'}->{$current_contig->id} = $current_contig->golden_start +1;
 	   } else {
@@ -974,9 +1040,31 @@ sub _seq_cache{
 
 }
 
+=head2 _clone_map
+
+ Title   : _clone_map
+ Usage   : $obj->_clone_map($newval)
+ Function: 
+ Example : 
+ Returns : value of _clone_map
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub _clone_map{
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'_clone_map'} = $value;
+    }
+    return $obj->{'_clone_map'};
+
+}
+
 
 
 1;
+
 
 
 
