@@ -65,7 +65,7 @@ use Bio::EnsEMBL::Protein;
 
   Arg [1]    : int $transid
                The unique internal identifier of this proteins transcript 
-  Example    : $protein = $protein_adaptor->fetch_by_transcript_id
+  Example    : $protein = $protein_adaptor->fetch_by_transcript_id(1234);
   Description: (formerly fetch_Protein_by_transcriptId) Retrieves a protein
                object via the internal database identifier of its transcript
   Returntype : Bio::EnsEMBL::Protein
@@ -161,11 +161,8 @@ sub fetch_by_translation_id {
    #Get all of the family (at the Transcript level), not implemented yet
    #my $family = $self->fetch_Family_by_dbid($id);
 
-   #Get all SNPs ?????? method which would be nice to implement
-
-   #Get the aa sequence out of the transcript object   
-   #my $sequence = $transcript->translate->seq;
-   my $sequence = $transcript->translate()->seq();
+   #Get the polypeptide sequence out of the transcript object   
+   my $sequence = $transcript->translate->seq;
 
    #Calculate the length of the Peptide   
    my $length = length($sequence);
@@ -176,13 +173,10 @@ sub fetch_by_translation_id {
   
    #Define the moltype
    my $moltype = "protein";
-   
    my $meta_obj = $self->db->get_MetaContainer();
    my $species = $meta_obj->get_Species();
-   
-   #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
-  
+
    #Create the Protein object
    my $protein = Bio::EnsEMBL::Protein->new ( -seq =>$sequence,
 					  -accession_number => $translation_id,
@@ -190,6 +184,7 @@ sub fetch_by_translation_id {
 					  -primary_id => $translation_id,
 					  -id => $translation_id,
 					  -desc => $desc,
+					  -moltype => $moltype
 					      );
 
    #Set up the adaptor handler for the protein object
