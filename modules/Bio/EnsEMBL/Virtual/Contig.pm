@@ -866,9 +866,11 @@ sub get_MarkerFeatures {
 sub get_all_Genes {
     my ($self, $supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
-    
+ 
+   
     foreach my $contig ($self->_vmap->get_all_RawContigs) {
-	foreach my $gene ( $contig->get_all_Genes($supporting) ) {      
+
+	foreach my $gene ( $contig->get_all_Genes($supporting) ) {
 	    $gene{$gene->id()} = $gene;
 	}
     }
@@ -989,16 +991,15 @@ sub _gene_query{
 
 		    $internalExon = 1;
 		    $exonconverted{$exon->id} = 1;
-		} else {$internalExon=0;}               
-	    
+		}                
 	    }
-   
 	}
         
         unless ($internalExon) {    
             delete $gene{$gene->id};
         } 
     }
+
     # get out unique set of translation objects
     foreach my $gene ( values %gene ) {
 	foreach my $transcript ( $gene->each_Transcript ) {
@@ -1055,6 +1056,9 @@ sub _gene_query{
 	    delete $gene{$trans_gene{$t->id}};
 	}
     }
+
+ 
+
     return values %gene;
 }
 
