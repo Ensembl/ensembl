@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use lib 't';
 use TestUtils qw(debug test_getter_setter);
 use Bio::EnsEMBL::Translation;
@@ -5,7 +8,7 @@ use Bio::EnsEMBL::Exon;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 19;
+	plan tests => 21;
 }
 
 my $loaded = 0;
@@ -111,3 +114,16 @@ debug("Got " . scalar(@domain_features) . " domain features.");
 ok(@domain_features == 3);
 
 ok($translation->display_id eq $translation->stable_id);
+
+
+
+#
+# test length() and seq()
+#
+my $seq = $translation->seq();
+debug("Seq = $seq");
+ok($seq);
+
+debug("Lenth = " . $translation->length());
+ok(length($seq) == $translation->length());
+
