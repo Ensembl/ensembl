@@ -204,7 +204,15 @@ sub new {
       $self->{'_lite_db_name'} = $litedbname;
     }
 
-    my $sgp = $self->get_MetaContainer->get_default_assembly || undef;
+    my $sgp;
+    
+    eval{
+        $sgp = $self->get_MetaContainer->get_default_assembly || undef;
+    };
+    if($@){
+        warn("Cannot find a meta table via DBAdaptor!\n");
+    }
+    
     $self->static_golden_path_type($sgp);
 
     return $self; # success - we hope!
@@ -305,6 +313,13 @@ sub password {
   ( defined $arg ) &&
     ( $self->{_password} = $arg );
   $self->{_password};
+}
+
+sub port {
+  my ($self, $arg ) = @_;
+  ( defined $arg ) &&
+    ( $self->{_port} = $arg );
+  $self->{_port};
 }
 
 
