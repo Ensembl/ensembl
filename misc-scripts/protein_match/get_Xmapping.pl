@@ -41,7 +41,7 @@ my %sp_db;
 my %hugo_id;
 my %hugo_syn;
 
-open (OUT,">$out") || die "Can't open $out\n";;
+open (OUT,">$out") || die "Can't open $out\n";
 
 #First read the SPTR file in swiss format
 print STDERR "Reading SPTR file\n";
@@ -60,11 +60,12 @@ while ( my $seq = $in->next_seq() ) {
 
     my ($displ_id,$tag) = split(/:/,$id);
 
+    
     #Humm not good... will be removed soon
     $tag = $seq->primary_id;
-    
+
     if ($tag eq "STANDARD") {
-	$db = "SWISS-PROT";
+	$db = "SWISSPROT";
     }
     elsif ($tag eq "PRELIMINARY") {
 	$db = "SPTREMBL";
@@ -104,6 +105,7 @@ while ( my $seq = $in->next_seq() ) {
 	}
 
     }
+
 
 
 #Get Xref mapping specifically for drosophila
@@ -230,8 +232,7 @@ if ($organism eq "human") {
     while (<GO>) {
 	chomp;
 	my @array = split (/\t/,$_);
-	
-	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t\tXREF\n";
+	print OUT "$array[1]\tSPTR\t$array[4]\tGO\t$array[4]\t\tXREF\n";	
 	}
 
 }

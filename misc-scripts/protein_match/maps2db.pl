@@ -30,7 +30,7 @@ my $pass       = $conf{'password'};
 my $organism   = $conf{'organism'};
 my $check      = $conf{'check'};
 my $query_pep  = $conf{'query'};
-
+my $refseq_pred = $conf{'refseq_pred_gnp'};
 
 my %map;
 my %ref_map;
@@ -38,6 +38,7 @@ my %sp2embl;
 my %ens2embl;
 my %embl2sp;
 my %errorflag;
+my %ref_map_pred;
 
 if ((!defined $organism) || (!defined $xmap) || (!defined $map)) {
     die "\nSome basic options have not been set up, have a look at mapping_conf\nCurrent set up (required options):\norganism: $organism\nx_map: $xmap\npmatch_out: $map\ndb: $dbname\nhost: $host\n\n";
@@ -71,6 +72,23 @@ if (($organism eq "human") || ($organism eq "mouse")) {
 #Put back the default (new line) for reading file
     $/ = "\n"; 
 }
+close(REFSEQ);
+
+if ($organism = "human") {
+    open (REFSEQPRED,"$refseq_pred") || die "Can't open $refseq_pred\n";
+    #Read the file by genbank entries (separated by //) 
+    $/ = "\/\/\n";
+    while (<REFSEQ>) {
+#This subroutine store for each NP (refseq protein accession number) its corresponding NM (DNA accession number)
+	my ($prot_ac) = $_ =~ /ACCESSION\s+(\S+)/;
+	my ($dna_ac) = $_ =~ /DBSOURCE    REFSEQ: accession\s+(\w+)/;
+
+	$ref_map_pred{$prot_ac} = $dna_ac;
+    }
+#Put back the default (new line) for reading file
+    $/ = "\n"; 
+}
+close(REFSEQPRED);
 
 
 open (XMAP,"$xmap") || die "Can't open $xmap\n";
@@ -108,8 +126,25 @@ while (<XMAP>) {
 	$xid = $ref_map{$xid};
     }
 
-        #print STDERR "TARGETID: $targetid\t$xdb\n";
-    
+
+    if ($targetid =~ /^XP_\d+/) {
+	
+	    ($targetid) = $targetid =~ /^(XP_\d+)/;
+	    $targetid = $ref_map_pred{$targetid};
+	}
+
+
+    if ($xac =~ /^XP_\d+/) {
+	
+	    ($xac) = $xac =~ /^(XP_\d+)/;
+	    $xac = $ref_map_pred{$xac};
+	}
+
+    if ($xid =~ /^XP_\d+/) {
+	
+	($xid) = $xid =~ /^(XP_\d+)/;
+	$xid = $ref_map_pred{$xid};
+    }
 
     my $p= Desc->new;
     $p->targetDB($targetdb);
@@ -145,18 +180,25 @@ MAPPING: while (<MAP>) {
     my ($queryid,$tid,$tag,$queryperc,$targetperc) = split (/\t/,$_);
     
     my $m = $tid; 
+    
+    print STDERR "$queryid,$tid,$tag,$queryperc,$targetperc\n";
 
     if ($tid =~ /^NP_\d+/) {
 	
 	($tid) = $tid =~ /^(NP_\d+)/;
 	$tid = $ref_map{$tid};
     }
+
+ if ($tid =~ /^XP_\d+/) {
+	
+	($tid) = $tid =~ /^(XP_\d+)/;
+	$tid = $ref_map_pred{$tid};
+    }
     
     if ($tid =~ /^(\w+-\d+)/) {
 	($tid) = $tid =~ /^(\w+)-\d+/;
     }
     
-
     if ((defined $tid) && (defined $map{$tid})) {
 	
 	
@@ -169,7 +211,7 @@ MAPPING: while (<MAP>) {
 	foreach my $a(@array) {
 #If the target sequence is either an SPTR or RefSeq accession number, we have some information concerning the percentage of identity (that the sequences we directly used for the pmatch mapping) 
 	
-	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT") || ($a->xDB eq "RefSeq")) {
+	    if (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT") || ($a->xDB eq "RefSeq")) {
 		my $dbentry = Bio::EnsEMBL::IdentityXref->new
 		    ( -adaptor => $adaptor,
 		      -primary_id => $a->xAC,
@@ -180,7 +222,7 @@ MAPPING: while (<MAP>) {
 
 		$dbentry->status($a->stat);
 
-		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISS-PROT"))) {
+		if (($check eq "yes") && (($a->xDB eq "SPTREMBL") || ($a->xDB eq "SWISSPROT"))) {
 
 		    if (($sp2embl{$a->xAC}) && ($ens2embl{$queryid})) {
 
@@ -199,8 +241,6 @@ MAPPING: while (<MAP>) {
 		    }
 		}
 
-		#print STDERR $a->xAC,"\t",$a->xID,"\t",$a->xDB,"\n";
-
 		$dbentry->query_identity($queryperc);
 		$dbentry->target_identity($targetperc);
 		
@@ -213,7 +253,6 @@ MAPPING: while (<MAP>) {
 		    }
 			}
 
-		#print STDERR "Calling store on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 	    }
 	    
@@ -226,7 +265,7 @@ MAPPING: while (<MAP>) {
 		      -version => 1,
 		      -release => 1,
 		      -dbname => $a->xDB );
-		
+		$dbentry->status($a->stat);
 		
 		
 		my @synonyms = split (/;/,$a->xSYN);
@@ -237,7 +276,6 @@ MAPPING: while (<MAP>) {
 			$dbentry->add_synonym($syn);
 		    }
 		}
-		#print STDERR "Calling store1 on $queryid\n";
 		$adaptor->store($dbentry,$queryid,"Translation");
 		    
 	    }
