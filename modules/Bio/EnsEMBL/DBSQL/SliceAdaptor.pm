@@ -52,7 +52,19 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate);
 @ISA = ('Bio::EnsEMBL::DBSQL::BaseAdaptor');
 
 
-# new is inherited from BaseAdaptor
+
+sub new {
+  my $caller = shift;
+
+  my $class = ref($caller) || $caller;
+
+  my $self = $class->SUPER::new(@_);
+
+  $self->{'_name_cache'} = {};
+  $self->{'_id_cache'} = {};
+
+  return $self;
+}
 
 
 =head2 fetch_by_region
@@ -87,21 +99,39 @@ sub fetch_by_region {
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
 
-  my $sth = $self->prepare("SELECT length " .
-                           "FROM seq_region " .
-                           "WHERE name = ? AND coord_system_id = ?");
+  #check the cache so we only go to the db if necessary
+  my $name_cache = $self->{'_name_cache'};
+  my $key = join(':',$seq_region_name,
+                 $coord_system->name(),
+                 $coord_system->version);
 
-  #force seq_region_name cast to string so mysql cannot treat as int
-  $sth->execute("$seq_region_name", $coord_system->dbID());
+  my $length;
 
-  if($sth->rows() != 1) {
-    throw("Cannot create slice on non-existant or ambigous seq_region:" .
-          "  coord_system=[$coord_system_name],\n" .
-          "  name=[$seq_region_name],\n" .
-          "  version=[$version]");
+  if(exists($name_cache->{$key})) {
+    $length = $name_cache->{$key}->[1];
+  } else {
+    my $sth = $self->prepare("SELECT seq_region_id, length " .
+                             "FROM seq_region " .
+                             "WHERE name = ? AND coord_system_id = ?");
+
+    #force seq_region_name cast to string so mysql cannot treat as int
+    $sth->execute("$seq_region_name", $coord_system->dbID());
+
+    if($sth->rows() != 1) {
+      throw("Cannot create slice on non-existant or ambigous seq_region:" .
+            "  coord_system=[$coord_system_name],\n" .
+            "  name=[$seq_region_name],\n" .
+            "  version=[$version]");
+    }
+
+    my $id;
+    ($id, $length) = $sth->fetchrow_array();
+    $sth->finish();
+
+    #cache results to speed up future queries
+    $name_cache->{$key} = [$id,$length];
+    $self->{'_id_cache'}->{$id} = [$seq_region_name, $length, $coord_system];
   }
-
-  my ($length) = $sth->fetchrow_array();
 
   $start = 1 if(!defined($start));
   $strand = 1 if(!defined($strand));
@@ -120,30 +150,140 @@ sub fetch_by_region {
 }
 
 
+
+
+=head2 fetch_by_seq_region_id
+
+  Arg [1]    : string $seq_region_id
+               The internal identifier of the seq_region to create this slice
+               on
+  Example    : $slice = $slice_adaptor->fetch_by_seq_region_id(34413);
+  Description: Creates a slice object of an entire seq_region using the
+               seq_region internal identifier to resolve the seq_region.
+  Returntype : Bio::EnsEMBL::Slice
+  Exceptions : none
+  Caller     : general
+
+=cut
+
 sub fetch_by_seq_region_id {
   my ($self, $seq_region_id) = @_;
 
-  my $sth = $self->prepare("SELECT name, length, coord_system_id " .
-                           "FROM seq_region " .
-                           "WHERE seq_region_id = ?");
+  my $id_cache = $self->{'_id_cache'};
 
-  $sth->execute($seq_region_id);
+  my ($name, $length, $cs);
 
-  if($sth->rows() != 1) {
-    throw("Cannot create slice on non-existant or ambigous seq_region:" .
-          "  seq_region_id=[$seq_region_id],\n");
+  if(exists $id_cache->{$seq_region_id}) {
+    ($name, $length, $cs) = @{$id_cache->{$seq_region_id}};
+  } else {
+    my $sth = $self->prepare("SELECT name, length, coord_system_id " .
+                             "FROM seq_region " .
+                             "WHERE seq_region_id = ?");
+
+    $sth->execute($seq_region_id);
+
+    if($sth->rows() != 1) {
+      throw("Cannot create slice on non-existant or ambigous seq_region:" .
+            "  seq_region_id=[$seq_region_id],\n");
+    }
+
+    my $cs_id;
+    ($name, $length, $cs_id) = $sth->fetchrow_array();
+    $sth->finish();
+
+    $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
+
+    #cache results to speed up repeated queries
+    $id_cache->{$seq_region_id} = [$name, $length, $cs];
+    my $key = join(':', $name, $cs->name, $cs->version);
+    $self->{'_name_cache'}->{$key} = [$seq_region_id, $length];
   }
 
-  my ($seq_region_name, $length, $cs_id) = $sth->fetchrow_array();
-
-  my $cs = $self->db->get_CoordSystemAdaptor->fetch_by_dbID($cs_id);
-
   return Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $cs,
-                                  -SEQ_REGION_NAME => $seq_region_name,
+                                  -SEQ_REGION_NAME => $name,
                                   -START           => 1,
                                   -END             => $length,
                                   -STRAND          => 1,
                                   -ADAPTOR         => $self);
+}
+
+
+
+
+
+=head2 get_seq_region_id
+
+  Arg [1]    : Bio::EnsEMBL::Slice $slice
+               The slice to fetch a seq_region_id for
+  Example    : $srid = $slice_adaptor->get_seq_region_id($slice);
+  Description: Retrieves the seq_region id (in this database) given a slice
+               Seq region ids are not stored on the slices themselves
+               because they are intended to be somewhat database independant
+               and seq_region_ids vary accross databases.
+  Returntype : int
+  Exceptions : throw if the seq_region of the slice is not in the db
+               throw if incorrect arg provided
+  Caller     : BaseFeatureAdaptor
+
+=cut
+
+sub get_seq_region_id {
+  my $self = shift;
+  my $slice = shift;
+
+  if(!$slice || !ref($slice) || !$slice->isa('Bio::EnsEMBL::Slice')) {
+    throw('Slice argument is required');
+  }
+
+  my $cs_name = $slice->coord_system->name();
+  my $cs_version = $slice->coord_system->version();
+  my $seq_region_name = $slice->seq_region_name();
+
+  my $key = join(':', $seq_region_name,$cs_name,$cs_version);
+
+  my $name_cache = $self->{'_name_cache'};
+
+  if(exists($name_cache->{$key})) {
+    return $name_cache->{$key}->[0];
+  }
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $coord_system = $csa->fetch_by_name($cs_name,$cs_version);
+
+  my $sth = $self->prepare("SELECT seq_region_id, length " .
+                           "FROM seq_region " .
+                           "WHERE name = ? AND coord_system_id = ?");
+
+  #force seq_region_name cast to string so mysql cannot treat as int
+  $sth->execute("$seq_region_name", $coord_system->dbID());
+
+  if($sth->rows() != 1) {
+    throw("Non existant or ambigous seq_region:" .
+          "  coord_system=[$cs_name],\n" .
+          "  name=[$seq_region_name],\n" .
+          "  version=[$cs_version]");
+  }
+
+  my($seq_region_id, $length) = $sth->fetchrow_array();
+  $sth->finish();
+
+  #cache information for future requests
+  $name_cache->{$key} = [$seq_region_id, $length];
+  $self->{'_id_cache'}->{$seq_region_id} =
+    [$seq_region_name, $length, $coord_system];
+
+  return $seq_region_id;
+}
+
+
+
+sub deleteObj {
+  my $self = shift;
+
+  $self->SUPER::deleteObj;
+
+  $self->{'_id_cache'} = {};
+  $self->{'_name_cache'} = {};
 }
 
 
