@@ -114,7 +114,7 @@ push @clones,'AC011324';
 foreach my $clone_id (@clones) {
     my $clone=$db->get_Clone($clone_id);
     my @genes=$clone->get_all_Genes();
-    open (DUMP,">t/gene_dump.gtf");
+    open (DUMP,">$dumpfile") || die ("Could not dump to $dumpfile\n");
     $gtfh->dump_genes(\*DUMP,@genes);
 }
 
