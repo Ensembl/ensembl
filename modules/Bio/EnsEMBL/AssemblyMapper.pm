@@ -85,23 +85,28 @@ sub new {
 }
 
 
+
 =head2 map_coordinates_to_assembly
 
-    Arg  1      int $contig_id
-                raw contig internal ID
-    Arg  2      int $start
-                start position on raw contig
-    Arg  3      int $end
-                end position on raw contig
-    Arg  4      int $strand
-                raw contig orientation (+/- 1)
-    Function    takes RawContig coordinates and remaps it
-                to Assembly coordinates
-    Returntype  Bio::EnsEMBL::Mapper::Coordinate
-    Exceptions  Exception thrown if arguments not of valid type
-    Caller      Bio::EnsEMBL::AssemblyMapper
+  Arg  1     : int $contig_id
+               raw contig internal ID
+  Arg  2     : int $start
+               start position on raw contig
+  Arg  3     : int $end
+               end position on raw contig
+  Arg  4     : int $strand
+               raw contig orientation (+/- 1)
+  Example    : none
+  Description: takes RawContig coordinates and remaps it
+               to Assembly coordinates. Areas that dont map produce 
+               Gap objects.
+  Returntype : list of Bio::EnsEMBL::Mapper::Coordinate,
+               Bio::EnsEMBL::Mapper::Gap
+  Exceptions : throws if args are not numeric
+  Caller     : general
 
 =cut
+
 
 sub map_coordinates_to_assembly {
     my ($self, $contig_id, $start, $end, $strand) = @_;
@@ -133,25 +138,24 @@ sub map_coordinates_to_assembly {
 
 =head2 map_coordinates_to_rawcontig
 
-    Arg  1      char $chr_name
-                chromosome name (e.g. 'X')
-    Arg  2      int $start
-                start position on chromosome
-    Arg  3      int $end
-                end position on chromosome
-    Arg  4      int $strand
-                orientation of seq on assembly (+/- 1)
-    Function    takes region in Assembly coordinates and
-                remaps it to RawContig coordinates
-    Returntype  array of Bio::EnsEMBL::Mapper::Gap
-                and/or   Bio::EnsEMBL::Mapper::Coordinate
-		The id method of each Coordinate object
-		is the numeric contig_id of the RawContig
-		it maps to
-    Exceptions  Exception thrown if arguments not of valid type
-    Caller      Bio::EnsEMBL::AssemblyMapper
+  Arg  1     : string $chr_name
+  Arg  2     : int $chr_start
+  Arg  3     : int $chr_end
+  Arg  4     : int $chr_strand
+               From p to q is 1 reverse is -1
+  Example    : ( "X", 10000, 20000, -1 )
+  Description: takes region in Assembly coordinates and
+               remaps it to RawContig coordinates.
+  Returntype : list of Bio::EnsEMBL::Mapper::Gap
+               and/or   Bio::EnsEMBL::Mapper::Coordinate
+	       The id method of each Coordinate object
+	       is the numeric contig_id of the RawContig
+	       it maps to
+  Exceptions : argument type is checked where appropriat
+  Caller     : general
 
 =cut
+
 
 sub map_coordinates_to_rawcontig {
     my ($self, $chr_name, $start, $end, $strand) = @_;
@@ -180,21 +184,21 @@ sub map_coordinates_to_rawcontig {
 }
 
 
+
 =head2 list_contig_ids
 
-    Arg  1      char $chr_name
-                chromosome name (e.g. 'X')
-    Arg  2      int $start
-                start position on chromosome
-    Arg  3      int $end
-                end position on chromosome
-    Function    Returns a list of RawContig internal IDs
-                which overlap the given chromosome region
-    Returntype  @int - list of contig internal IDs
-    Exceptions  none
-    Caller      Bio::EnsEMBL::AssemblyMapper
+  Arg  1     : string $chr_name
+  Arg  2     : int $chr_start
+  Arg  3     : int $chr_end
+  Example    : ( "X", 1, 1000000 )
+  Description: Returns a list of RawContig internal IDs
+               which overlap the given chromosome region
+  Returntype : list of int
+  Exceptions : arguments are type checked
+  Caller     : general, used for SQL query generation
 
 =cut
+
 
 sub list_contig_ids {
    my ($self, $chr_name, $start, $end) = @_;
@@ -230,25 +234,25 @@ sub list_contig_ids {
 }
 
 
+
 =head2 register_region
 
-  Arg  1      char $chr_name
-              chromosome name (e.g. '2', 'X')
-  Arg  2      char $start
-              chromosome start coordinate
-  Arg  3      char $end
-              chromosome end coordinate
-  Function    Declares a chromosomal region to the AssemblyMapper.
-              This extracts the relevant data from the assembly
-              table and stores it in a Bio::EnsEMBL::Mapper.
-              It therefore must be called before any mapping is
-              attempted on that region. Otherwise only gaps will
-              be returned!
-  Returntype  none
-  Exceptions  none
-  Caller      Bio::EnsEMBL::AssemblyMapper
+  Arg  1     : string $chr_name
+  Arg  2     : int $chr_start
+  Arg  3     : int $chr_end
+  Example    : ( "X", 1, 1000000 )
+  Description: Declares a chromosomal region to the AssemblyMapper.
+               This extracts the relevant data from the assembly
+               table and stores it in a Bio::EnsEMBL::Mapper.
+               It therefore must be called before any mapping is
+               attempted on that region. Otherwise only gaps will
+               be returned! Is done automatically before mapping.
+  Returntype : none
+  Exceptions : arguments are checked
+  Caller     : internal
 
 =cut
+
 
 sub register_region {
    my ($self, $chr_name, $start, $end) = @_;
@@ -271,31 +275,29 @@ sub register_region {
    my $last_chunk = int( $end / $self->_chunksize() );
    
    $self->_chunk_register_region( $chr_name, $first_chunk, $last_chunk );
-#   $self->adaptor->register_region($self, $self->_type, $chr_name, $start, $end);
+
 }
+
 
 
 =head2 register_region_around_contig
 
-  Arg  1      int $contig_id
-              contig internal ID
-  Arg  2      int $left
-              5 prime (chromosomal) extension
-  Arg [3]     int $right
-              optional 3 prime extension
-	      (same as 5 prime if not defined)
-  Function    Declares a chromosomal region to the AssemblyMapper
-	      based around a RawContig.
-              This extracts the relevant data from the assembly
-              table and stores it in a Bio::EnsEMBL::Mapper.
-              It therefore must be called before any mapping is
-              attempted on that region. Otherwise only gaps will
-              be returned!
-  Returntype  none
-  Exceptions  none
-  Caller      Bio::EnsEMBL::AssemblyMapper
+  Arg  1     : int $contig_id
+  Arg  2     : int $upstream_bases
+  Arg  3     : int $downstream_bases
+  Example    : ( 2000, 0, 0 )
+  Description: Declares a region around a given RawContig to this
+               AssemblyMapper. Is done automatically before a mapping
+               is attempted. The registering is cached, so registering 
+               multiple times is cheap.
+               With 0 as up and downstream tests if given contig is mappable.
+               returns 1 if its is and 0 if it isnt. 
+  Returntype : int 0,1
+  Exceptions : all Args must be ints
+  Caller     : internal
 
 =cut
+
 
 sub register_region_around_contig {
    my ($self, $contig_id, $left, $right) = @_;
@@ -340,17 +342,19 @@ Internal functions
 =cut
 
 
+
 =head2 _have_registered_contig
 
- Title   : _have_registered_contig
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
+  Arg  1     : int $rawContig_dbID
+  Example    : none
+  Description: checks if given raw contig was registered before
+  Returntype : int 0,1
+  Exceptions : none
+  Caller     : internal
 
 =cut
+
+
 
 sub _have_registered_contig {
    my ($self,$id) = @_;
@@ -363,17 +367,19 @@ sub _have_registered_contig {
 
 }
 
+
 =head2 _register_contig
 
- Title   : _register_contig
- Usage   :
- Function:
- Example :
- Returns :
- Args    :
-
+  Arg  1     : int $rawContig_dbID
+  Example    : none
+  Description: marks given raw contig as registered
+  Returntype : none
+  Exceptions : none
+  Caller     : internal
 
 =cut
+
+
 
 sub _register_contig {
    my ($self,$id) = @_;
@@ -383,17 +389,18 @@ sub _register_contig {
 }
 
 
+
 =head2 _type
 
- Title   : _type
- Usage   : $obj->_type($newval)
- Function:
- Example :
- Returns : value of _type
- Args    : newvalue (optional)
-
+  Arg [1]    : string $type
+  Example    : none
+  Description: get/set of attribute _type
+  Returntype : string
+  Exceptions : none
+  Caller     : ?
 
 =cut
+
 
 sub _type {
    my ($self,$value) = @_;
@@ -407,15 +414,17 @@ sub _type {
 
 =head2 _mapper
 
- Title   : _mapper
- Usage   : $obj->_mapper($newval)
- Function:
- Example :
- Returns : value of _mapper
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::Mapper $mapper
+               The mapper object which will be used to map between
+               assembly and raw contigs
+  Example    : none
+  Description: get/set of the attribute _mapper 
+  Returntype : Bio::EnsEMBL::Mapper
+  Exceptions : none
+  Caller     : ?
 
 =cut
+
 
 sub _mapper {
    my ($self,$value) = @_;
@@ -430,15 +439,15 @@ sub _mapper {
 
 =head2 adaptor
 
- Title   : adaptor
- Usage   : $obj->adaptor($newval)
- Function:
- Example :
- Returns : value of adaptor
- Args    : newvalue (optional)
-
+  Arg [1]    : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor $adaptor
+  Example    : none
+  Description: get/set for this objects database adaptor
+  Returntype : Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor
+  Exceptions : none
+  Caller     : general
 
 =cut
+
 
 sub adaptor {
    my ($self,$value) = @_;
@@ -452,9 +461,43 @@ sub adaptor {
 
 # this function should be customized for the assemblies that are in 
 # EnsEMBL. (Could be a hash of assembly_type ->size )
+
+
+=head2 _chunksize
+
+  Args       : none
+  Example    : none
+  Description: returns the size in which this mapper registers chromosomal
+               regions. It should be optimized on the size of pieces 
+               in assembly table, so that not to many and not too little
+               rows are retrieved. 
+  Returntype : int
+  Exceptions : none
+  Caller     : internal
+
+=cut
+
+
 sub _chunksize {
   return 1000000;
 }
+
+
+
+=head2 _chunk_register_region
+
+  Arg  1     : string $chr_name
+  Arg  2     : int $first_chunk
+  Arg  3     : int $last_chunk
+  Example    : none
+  Description: registers the region on given chromosome from
+               $first_chunk*chunksize until ($last_chunk+1)*chunksize-1
+  Returntype : none
+  Exceptions : none
+  Caller     : register_region
+
+=cut
+
 
 sub _chunk_register_region {
   my ( $self, $chr_name, $first_chunk, $last_chunk ) = @_;
@@ -474,16 +517,20 @@ sub _chunk_register_region {
 }
 
 
-
 =head2 in_assembly
 
-  Args      : either a Clone object, or RawContig object 
-  Function  : returns true if the Clone/Contig object is in the assembly
-  Returntype: 1 if object is in assembly, 0 if not in assembly
-  Exceptions: thrown if object is not of type Clone or RawContig
-  Caller    : general
+  Arg  1     : Bio::EnsEMBL::Clone or
+               Bio::EnsEMBL::RawContig $object_in_assembly
+                
+  Example    : none
+  Description: tests if the given Clone or RawContig object is in the 
+               assembly
+  Returntype : int 0,1
+  Exceptions : argument type is checked
+  Caller     : general
 
 =cut
+
 
 sub in_assembly {
   my ($self, $object) = @_;
