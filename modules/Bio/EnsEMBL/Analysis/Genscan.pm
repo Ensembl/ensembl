@@ -187,7 +187,7 @@ sub _parse {
   my $count = 0;
   
   while (my $seq = $in->next_seq) {
-    push(@{$self->{peptides}},$seq);
+    push(@{$self->{_peptides}},$seq);
   }
   
   # Set the phases of the exons now we have the peptides
@@ -200,13 +200,14 @@ sub _parse {
   foreach my $transcript ($self->each_Transcript) {
     
     # This sequence is what genscan thinks the translation is
-    my $pep = $self->{peptides}->[$count]->seq();
+    my $pep = $self->{_peptides}->[$count]->seq();
 
     # Sort the coordinates according to strand
     $transcript->sort();
     
     # Catch any exceptions where the phase can't be set for the gene
-    if (defined($self->{dna})) {
+
+    if (defined($self->{_dna})) {
       $self->_set_exon_phases($transcript,$pep);
     }
     $count++;
@@ -255,9 +256,21 @@ sub _remove_transcript {
 sub _set_exon_phases {
   my ($self,$tran,$pep) = @_;
 
+  my $contig_dna = $self->{_dna};
+  
   foreach my $exon ($tran->each_Exon) {
-    my $seq   = $exon->dna_seq->seq();
-    my @trans = $exon->pep_seq;
+    my $seq   = $contig_dna->str($exon->start,$exon->end);
+
+    if ($exon->strand == -1) {
+      $seq =~ tr/ATCGatcg/TAGCtagc/;
+      $seq = reverse($seq);
+    }
+
+    my @trans = $self->_translate($seq);
+
+#    for (my $i = 0; $i < 3; $i++) {
+#      print("PHASE $i : " . $trans[$i]->seq() . "\n");
+#    }
 
 #    print("Genscan phase is " . $exon->phase . "\n");
 #    print("Genscan frame is " . $exon->frame . "\n");
@@ -297,18 +310,46 @@ sub _set_exon_phases {
 
   # Genscan DNA coordinates include a stop codon at the end of the terminal exon.  We 
   # need to remove this and change the coordinates
+  $tran->sort();
 
   my @exons = $tran->each_Exon;
-  my $ex = $exons[$#exons];
+  my $ex    = $exons[$#exons];
 
-  my @pep = $ex->_translate();
+  my $exstr = $contig_dna->str($ex->start,$ex->end);
+
+  if ($ex->strand == -1) {
+    $exstr =~ tr/ATCGatcg/TAGCtagc/;
+    $exstr = reverse($exstr);
+  }
+  
+  my @pep = $self->_translate($exstr);
   my $pep = $pep[$ex->phase]->seq;
 
   if (substr($pep,-1) eq "*") {
-    $ex->end($ex->end()-3);
-    my $seq = $ex->dna_seq->seq();
-    $ex->dna_seq(new Bio::Seq(-seq => substr($seq,0,-3)));
+    if ($ex->strand == -1) {
+      $ex->start($ex->start + 3);
+    } else {
+      $ex->end($ex->end()-3);
+    }
   }
+}
+
+
+sub _translate {
+  my ($self,$seq) = @_;
+
+  my @trans;
+
+  for (my $i = 0; $i < 3; $i++) {
+    my $tmp = $seq;
+       $tmp = substr($seq,$i);
+
+    my $bs = new Bio::Seq(-seq => $tmp);
+    my $tr = $bs->translate();
+    
+    push(@trans,$tr);
+  }
+  return @trans;
 }
 
 # Returns the nth Transcript object from the
@@ -341,19 +382,6 @@ sub _exons {
 
   # Create the exon object
   my $exon = new Bio::EnsEMBL::Exon($start,$stop,$strand);
-
-  # Create the sequence object for the exon
-  if (defined($self->{dna})) {
-    my $seq = $self->{dna}->seq($exon->start,$exon->end);
-    my $newseq = Bio::Seq->new(-seq => $seq);
-
-    # Reverse complement if necessary
-    if ($strand eq '-') {
-      $newseq = $newseq->revcom();
-    }
-    
-    $exon->dna_seq($newseq);
-  }
 
   # Set the other variables
   $exon->type     ($type);
