@@ -145,6 +145,15 @@ sub fetch_by_region {
   my $csa = $self->db()->get_CoordSystemAdaptor();
   my $coord_system = $csa->fetch_by_name($coord_system_name,$version);
 
+  if(!$coord_system) {
+    throw("Unknown coordinate system:\n name='$coord_system_name' " .
+          "version='$version'\n");
+  }
+  if($coord_system->is_top_level()) {
+    throw("Cannot fetch_by_region using the 'toplevel' pseudo coordinate " .
+          "system.\n");
+  }
+
   #check the cache so we only go to the db if necessary
   my $name_cache = $self->{'_name_cache'};
   my $key = lc(join(':',$seq_region_name,
@@ -477,7 +486,8 @@ sub get_seq_region_attribs {
                The amount that the returned slices should overlap. By default
                this value is 0.  If no max_length value is provided but an 
                overlap which is not zero is provided this argument will be
-               ignored and a warning will occur. 
+               ignored and a warning will occur.
+  Arg [5]    : boolean $include_non_reference
   Example    : @chromos = @{$slice_adaptor->fetch_all('chromosome','NCBI33')};
                @contigs = @{$slice_adaptor->fetch_all('contig')};
 
@@ -492,10 +502,12 @@ sub get_seq_region_attribs {
                seq_regions and are on the forward strand.
                If the coordinate system with the provided name and version
                does not exist an empty list is returned.
+               If the coordinate system name provided is 'toplevel', all 
+               non-redundant toplevel slices are returned.
   Returntype : listref of Bio::EnsEMBL::Slices
   Exceptions : throw if max_length < 1 is provided
                throw if overlap < 0 is provided
-               throw if overlap is provided but max_length is not 
+               throw if overlap is provided but max_length is not
                throw if overlap is greater than max_length
   Caller     : general
 
