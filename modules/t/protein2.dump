@@ -216,7 +216,7 @@ INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (8,'species.classification
 INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (9,'species.classification','Chordata');
 INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (10,'species.classification','Metazoa');
 INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (11,'species.classification','Eukaryota');
-INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.classification','Human');
+INSERT INTO meta (meta_id,meta_key,meta_value) VALUES (12,'species.common_name','Human');
 
 #
 # Dumping data for table 'protein_feature'
