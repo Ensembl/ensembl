@@ -205,10 +205,11 @@ sub name {
   if( defined $arg ) {
     $self->{name} = $arg;
   } elsif(!defined $self->{name}) {
+    my $chr_name  = $self->chr_name  || '';
+    my $chr_start = $self->chr_start || '';
+    my $chr_end   = $self->chr_end   || ''; 
 
-    my $string = join '', $self->chr_name, '.', 
-    $self->chr_start, '-', $self->chr_end();
-
+    my $string = "$chr_name.$chr_start-$chr_end"; 
   
     if($self->strand == -1) {
       $self->{name} = "reverse($string)";
