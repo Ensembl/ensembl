@@ -215,7 +215,7 @@ sub _list_dbIDs {
   }
 
   my @out;
-  my $sql = "SELECT " . $pk . " FROM " . $table;
+  my $sql = "SELECT " . $pk . "  FROM " . $table;
   my $sth = $self->prepare($sql);
   $sth->execute;
 
