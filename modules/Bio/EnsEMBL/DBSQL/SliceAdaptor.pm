@@ -122,143 +122,6 @@ sub fetch_by_region {
 
 
 
-=head2 fetch_by_chr_start_end
-
-  Description: DEPRECATED use fetch_by_region instead
-
-=cut
-
-sub fetch_by_chr_start_end {
-  my ($self,$chr,$start,$end) = @_;
-  deprecate('Use fetch_by_region() instead');
-
-  #assume that by chromosome the user actually meant top-level coord
-  #system since this is the old behaviour of this deprecated method
-  my $csa = $self->db->get_CoordSystemAdaptor();
-  my $cs = $csa->get_top_coord_system();
-
-  return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
-}
-
-
-
-=head2 fetch_by_contig_name
-
-  Arg [1]    : string $name
-               the name of the contig to obtain a slice for
-  Arg [2]    : (optional) int $size
-               the size of the flanking regions to obtain (aka context size)
-  Example    : $slc = $slc_adaptor->fetch_by_contig_name('AB000878.1.1.33983');
-  Description: Creates a slice object around the specified contig.  
-               If a context size is given, the slice is extended by that 
-               number of basepairs on either side of the contig.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_by_contig_name {
-  my ($self,$name, $size) = @_;
-  
-  if( !defined $size ) {$size=0;}
-
-  my ($chr_name,$start,$end) = $self->_get_chr_start_end_of_contig($name);
-  
-  $start -= $size;
-  $end += $size;
-  
-  if($start < 1) {
-    $start  = 1;
-  }
-  
-  return $self->fetch_by_chr_start_end($chr_name, $start, $end);
-}
-
-
-=head2 fetch_by_supercontig_name
-
-  Arg [1]    : string $supercontig_name
-  Example    : $slice = $slice_adaptor->fetch_by_supercontig_name('NT_004321');
-  Description: Creates a Slice on the region of the assembly where 
-               the specified super contig lies.  Note that this slice will
-               have the same orientation as the supercontig. If the supercontig
-               has a negative assembly orientation, the slice will also have
-               a negative orientation relative to the assembly.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub fetch_by_supercontig_name {
-  my ($self,$supercontig_name) = @_;
-  
-  my $assembly_type = $self->db->assembly_type();
-  
-  my $sth = $self->db->prepare("
-        SELECT chr.name, a.superctg_ori, MIN(a.chr_start), MAX(a.chr_end)
-        FROM assembly a, chromosome chr
-        WHERE superctg_name = ?
-        AND type = ?
-        AND chr.chromosome_id = a.chromosome_id
-        GROUP by superctg_name
-        ");
-
-  $sth->execute( $supercontig_name, $assembly_type );
-  
-  my ($chr, $strand, $slice_start, $slice_end) = $sth->fetchrow_array;
-  
-  my $slice;
-  
-  $slice = new Bio::EnsEMBL::Slice
-    (
-     -chr_name => $chr,
-     -chr_start =>$slice_start,
-     -chr_end => $slice_end,
-     -strand => $strand,
-     -assembly_type => $assembly_type,
-     -adaptor => $self
-    );
-  
-  return $slice;
-}
-
-
-=head2 list_overlapping_supercontigs
-
-  Arg [1]    : Bio::EnsEMBL::Slice $slice
-               overlapping given Sice
-  Example    : 
-  Description: return the names of the supercontigs that overlap given Slice.  
-  Returntype : listref string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-
-sub list_overlapping_supercontigs {
-   my ($self,$slice) = @_;
-   my $sth = $self->db->prepare( "
-      SELECT DISTINCT superctg_name
-        FROM assembly a, chromosome c
-       WHERE c.chromosome_id = a.chromosome_id 
-         AND c.name = ?
-         AND a.type = ?
-         AND a.chr_end >= ?
-         AND a.chr_start <= ?
-       " );
-   $sth->execute( $slice->chr_name(), $slice->assembly_type(),
-		  $slice->chr_start(), $slice->chr_end() );
-
-   my $result = [];
-   while( my $aref = $sth->fetchrow_arrayref() ) {
-     push( @$result, $aref->[0] );
-   }
-
-   return $result;
-}
 
 
 =head2 fetch_by_chr_band
@@ -312,73 +175,6 @@ sub fetch_by_chr_band {
 }
 
 
-=head2 fetch_by_clone_accession
-
-  Arg [1]    : string $clone 
-               the embl accession of the clone object to retrieve
-  Arg [2]    : (optional) int $size
-               the size of the flanking regions to obtain around the clone 
-  Example    : $slc = $slc_adaptor->fetch_by_clone_accession('AC000012',1000);
-  Description: Creates a Slice around the specified clone.  If a context size 
-               is given, the Slice is extended by that number of basepairs on 
-               either side of the clone.  Throws if the clone is not golden.
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : thrown if the clone is not in the assembly 
-  Caller     : general
-
-=cut
-
-sub fetch_by_clone_accession{
-   my ($self,$clone,$size) = @_;
-
-   if( !defined $clone ) {
-     $self->throw("Must have clone to fetch Slice of clone");
-   }
-   if( !defined $size ) {$size=0;}
-
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  c.name,
-                        a.chr_start,
-                        a.chr_end,
-                        chr.name 
-                    FROM    assembly a, 
-                        contig c, 
-                        clone  cl,
-                        chromosome chr
-                    WHERE c.clone_id = cl.clone_id
-                    AND cl.name = '$clone'  
-                    AND c.contig_id = a.contig_id 
-                    AND a.type = '$type' 
-                    AND chr.chromosome_id = a.chromosome_id
-                    ORDER BY a.chr_start"
-                    );
-   $sth->execute();
- 
-   my ($contig,$start,$end,$chr_name); 
-   my $counter; 
-   my $first_start;
-   while ( my @row=$sth->fetchrow_array){
-       $counter++;
-       ($contig,$start,$end,$chr_name)=@row;
-       if ($counter==1){$first_start=$start;}      
-   }
-
-   if( !defined $contig ) {
-       $self->throw("Clone is not on the golden path. Cannot build Slice");
-   }
-     
-   $first_start -= $size;
-   $end += $size;
-
-   if($first_start < 1) {
-     $first_start = 1;
-   }
-
-   my $slice = $self->fetch_by_chr_start_end($chr_name, $first_start, $end);
-   return $slice;
-}
 
 
 
@@ -521,47 +317,6 @@ sub fetch_by_gene_stable_id{
 
 
 
-=head2 fetch_by_chr_name
-
-  Arg [1]    : string $chr_name
-  Example    : $slice = $slice_adaptor->fetch_by_chr_name('20'); 
-  Description: Retrieves a slice on the region of an entire chromosome
-  Returntype : Bio::EnsEMBL::Slice
-  Exceptions : thrown if $chr_name arg is not supplied
-  Caller     : general
-
-=cut
-
-sub fetch_by_chr_name{
-   my ($self,$chr_name) = @_;
-
-   unless( $chr_name ) {
-       $self->throw("Chromosome name argument required");
-   }
-
-   my $chr_start = 1;
-   
-   #set the end of the slice to the end of the chromosome
-   my $ca = $self->db()->get_ChromosomeAdaptor();
-   my $chromosome = $ca->fetch_by_chr_name($chr_name);
-
-   $self->throw("Unknown chromosome $chr_name") unless $chromosome;
-
-   my $chr_end = $chromosome->length();
-
-   my $type = $self->db->assembly_type();
-
-   my $slice = Bio::EnsEMBL::Slice->new
-     (
-      -chr_name      => $chr_name,
-      -chr_start     => 1,
-      -chr_end       => $chr_end,
-      -assembly_type => $type,
-      -adaptor       => $self
-     );
-
-   return $slice;
-}
 
 
 
@@ -618,46 +373,6 @@ sub fetch_by_mapfrag{
 
 
 
-=head2 _get_chr_start_end_of_contig
-
- Title   : _get_chr_start_end_of_contig
- Usage   :
- Function: returns the chromosome name, absolute start and absolute end of the 
-           specified contig
- Returns : returns chr,start,end
- Args    : contig id
-
-=cut
-
-sub _get_chr_start_end_of_contig {
-    my ($self,$contigid) = @_;
-
-   if( !defined $contigid ) {
-       $self->throw("Must have contig id to fetch Slice of contig");
-   }
-   
-   my $type = $self->db->assembly_type()
-    or $self->throw("No assembly type defined");
-
-   my $sth = $self->db->prepare("SELECT  c.name,
-                        a.chr_start,
-                        a.chr_end,
-                        chr.name 
-                    FROM assembly a, contig c, chromosome chr 
-                    WHERE c.name = '$contigid' 
-                    AND c.contig_id = a.contig_id 
-                    AND a.type = '$type'
-                    AND chr.chromosome_id = a.chromosome_id"
-                    );
-   $sth->execute();
-   my ($contig,$start,$end,$chr_name) = $sth->fetchrow_array;
-
-   if( !defined $contig ) {
-     $self->throw("Contig $contigid is not on the golden path of type $type");
-   }
-
-   return ($chr_name,$start,$end);
-}
 
 =head2 _get_chr_start_end_of_gene
 
@@ -715,6 +430,188 @@ sub _get_chr_start_end_of_gene {
 
    return ($chr,$start,$end);      
 }
+
+
+
+
+=head2 fetch_by_chr_start_end
+
+  Description: DEPRECATED use fetch_by_region instead
+
+=cut
+
+sub fetch_by_chr_start_end {
+  my ($self,$chr,$start,$end) = @_;
+  deprecate('Use fetch_by_region() instead');
+
+  #assume that by chromosome the user actually meant top-level coord
+  #system since this is the old behaviour of this deprecated method
+  my $csa = $self->db->get_CoordSystemAdaptor();
+  my $cs = $csa->get_top_coord_system();
+
+  return $self->fetch_by_region($cs->name,$chr,$start,$end,1,$cs->version);
+}
+
+
+
+=head2 fetch_by_contig_name
+
+  Description: Deprecated. Use fetch_by_region(), Slice::project(), 
+               Slice::expand() instead
+
+=cut
+
+sub fetch_by_contig_name {
+  my ($self, $name, $size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  #previously wanted chromosomal slice on a given contig.  Assume this means
+  #a top-level slice on a given seq_region in the seq_level coord system
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $seq_level = $csa->fetch_sequence_level();
+
+  my $seq_lvl_slice = $self->fetch_by_region($seq_level->name(), $name);
+
+  my @projection = @{$seq_lvl_slice->project($top_level->name(),
+                                             $top_level->version())};
+  if(@projection == 0) {
+    warning("contig $name is not used in ".$top_level->name().' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warn("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+=head2 fetch_by_clone_accession
+
+  Description: DEPRECATED.  Use fetch_by_region, Slice::project, Slice::expand
+               instead.
+
+=cut
+
+sub fetch_by_clone_accession{
+  my ($self,$name,$size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $clone_cs = $csa->fetch_by_name('clone');
+
+  if(!$clone_cs) {
+    warning('Clone coordinate system does not exist for this species');
+    return undef;
+  }
+
+  my $clone = $self->fetch_by_region($clone_cs->name(), $name);
+  my @projection = @{$clone->project($top_level->name(),
+                                     $top_level->version())};
+  if(@projection == 0) {
+    warn("clone $name is not used in " . $top_level->name() . ' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warn("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+=head2 fetch_by_supercontig_name
+
+  Description: DEPRECATED. Use fetch_by_region(), Slice::project() and
+               Slice::expand() instead
+
+=cut
+
+sub fetch_by_supercontig_name {
+  my ($self,$name, $size) = @_;
+
+  deprecate('Use fetch_by_region(), Slice::project() and Slice::expand().');
+
+  my $csa = $self->db()->get_CoordSystemAdaptor();
+  my $top_level = $csa->fetch_top_level();
+  my $sc_level = $csa->fetch_by_name('supercontig');
+
+  if(!$sc_level) {
+    warn('No supercontig coordinate system exists for this species.');
+    return undef;
+  }
+
+  my $sc_slice = $self->fetch_by_region($sc_level->name(),$name);
+
+  my @projection = @{$sc_slice->project($top_level->name(),
+                                        $top_level->version())};
+  if(@projection == 0) {
+    warn("Supercontig $name is not used in " . $top_level->name() .
+         ' assembly.');
+    return undef;
+  }
+
+  if(@projection > 1) {
+    warning("$name is mapped to multiple locations in " . $top_level->name());
+  }
+
+  return $projection[0]->[2]->expand($size, $size);
+}
+
+
+
+
+=head2 list_overlapping_supercontigs
+
+  Description: DEPRECATED use Slice::project instead
+
+=cut
+
+sub list_overlapping_supercontigs {
+   my ($self,$slice) = @_;
+
+   deprecate('Use Slice::project() instead.');
+
+   my $csa = $self->db()->get_CoordSystemAdaptor();
+   my $top_level = $csa->fetch_top_level();
+   my $sc_level = $csa->fetch_by_name('supercontig');
+
+   if(!$sc_level) {
+     warning('No supercontig coordinate system exists for this species.');
+     return undef;
+   }
+
+   my @out;
+   foreach my $seg ($slice->project($sc_level->name(), $sc_level->version)){
+     push @out, $seg->[2]->seq_region_name();
+   }
+
+   return \@out;
+}
+
+
+
+=head2 fetch_by_chr_name
+
+  Description: DEPRECATED. Use fetch by region instead
+
+=cut
+
+sub fetch_by_chr_name{
+   my ($self,$chr_name) = @_;
+   deprecate('Use fetch_by_region() instead');
+
+   my $csa = $self->db()->get_CoordSystemAdaptor();
+   my $cs = $csa->fetch_top_level();
+   return $self->fetch_by_region($cs->name());
+}
+
 
 1;
 
