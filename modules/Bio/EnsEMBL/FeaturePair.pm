@@ -797,25 +797,47 @@ sub validate_prot_feature{
 
 }
 
-=head2 set_all_fields
+=head2 set_featurepair_fields
 
- Title   : set_all_fields
- Usage   : $fp->set_all_fields($start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,$hstrand,$hscore,$hsource,$hprimary,$hseqname)
- Function: set all the fields in the feature pair object
-           (this is for performance issues when using the C layer which needs
-	    this methods to cut down on Perl context switching. It is in the Perl
-	    Layer to allow a pure perl implementation to work ontop of the perl)
- Example :
+ Title   : set_featurepair_fields
+ Usage   : $fp->set_featurepair_fields($start, $end, $strand,
+           $score, $seqname, $hstart, $hend, $hstrand, $hscore,
+	   $hseqname, $analysis);
  Returns : nothing
- Args    : listed above
-
+ Args    : listed above, followed by optional $e_value, $perc_id, 
+           $phase, $end_phase
 
 =cut
+
+sub set_featurepair_fields {
+   my ($self, $start, $end, $strand, $score, $seqname, $hstart, $hend,
+        $hstrand, $hscore, $hseqname, $analysis, $e_value, $perc_id, 
+        $phase, $end_phase) = @_;
+   $self->throw('interface fault') if (@_ < 12 or @_ > 16);
+
+   $self->start($start);
+   $self->end($end);
+   $self->strand($strand);
+   $self->score($score);
+   $self->seqname($seqname);
+   $self->hstart($hstart);
+   $self->hend($hend);
+   $self->hstrand($hstrand);
+   $self->hscore($hscore);
+   $self->hseqname($hseqname);
+   $self->analysis($analysis);
+   $self->p_value    ($e_value)   if (defined $e_value);
+   $self->percent_id ($perc_id)   if (defined $perc_id);
+   $self->phase      ($phase)     if (defined $phase);
+   $self->end_phase  ($end_phase) if (defined $end_phase);
+}
 
 sub set_all_fields{
    my ($self,$start,$end,$strand,$score,$source,$primary,$seqname,$hstart,$hend,
         $hstrand,$hscore, $hsource,$hprimary,$hseqname, $e_value, $perc_id, 
         $phase, $end_phase) = @_;
+    
+    $self->warn("set_all_fields deprecated, use set_featurepair_fields instead\n- note this is not just a change of name, set_featurepair_fields\nexpects different arguments!");
 
     $self->start($start);
     $self->end($end);
