@@ -7,7 +7,14 @@
 
 =head1 NAME
 
-Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externally from EnsEMBL in a single coordinate system to be retrieved in several other (EnsEMBL-style) coordinate systems. This is intended to be a replacement for the old Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
+Bio::EnsEMBL::External::ExternalFeatureAdaptor
+
+=head 1 SUMMARY
+
+Allows features created externally from EnsEMBL in a single coordinate system 
+to be retrieved in several other (EnsEMBL-style) coordinate systems. This is 
+intended to be a replacement for the old 
+Bio::EnsEMBL::DB::ExternalFeatureFactoryI interface.
 
 =head1 SYNOPSIS
 
@@ -24,33 +31,22 @@ Bio::EnsEMBL::External::ExternalFeatureAdaptor - Allows features created externa
   #get some features in RawContig coords
   @feats = @{$xf_adaptor->fetch_all_by_contig_name('AC000087.2.1.42071')};
 
-  #another way of doing the same thing
-  $contig_adaptor = $database_adaptor->get_RawContigAdaptor;
-  $contig = $contig_adaptor->fetch_by_name('AC000087.2.1.42071');
-  @feats = @{$xf_adaptor->fetch_all_by_RawContig($contig);
-
   #get some features in assembly coords
   @feats = @{$xf_adaptor->fetch_all_by_chr_start_end('X', 100000, 200000)};
 
   #get some features in clone coords
   @feats = @{$xf_adaptor->fetch_all_by_clone_accession('AC000087')};
 
-  #another way of doing the same thing
-  $clone_adaptor = $db_adaptor->get_CloneAdaptor;
-  $clone = $clone_adaptor->fetch_by_accession('AC000087');
-  @feats = ${$xf_adaptor->fetch_all_by_Clone($clone);
-
   #Add the adaptor to the ensembl core dbadaptor (implicitly sets db attribute)
   $database_adaptor->add_ExternalFeatureAdaptor($xf_adaptor);
 
   #get some features in Slice coords
   $slice_adaptor = $database_adaptor->get_SliceAdaptor;
-  $slice = $slice_adaptor->fetch_by_chr_start_end(1,100000,200000);
+  $slice = $slice_adaptor->fetch_all_by_chr_start_end(1,100000,200000);
   @feats = @{$xf_adaptor->fetch_all_by_Slice($slice)};
 
-  #now features can be retrieved directly from slice or RawContig
+  #now features can be retrieved directly from Slice
   @feats = @{$slice->get_all_ExternalFeatures};
-  @feats = @{$contig->get_all_ExternalFeatures};
   
 
 =head1 DESCRIPTION
@@ -76,18 +72,11 @@ corresponding fetch methods that must be implemented:
   'ASSEMBLY'            fetch_all_by_chr_start_end
   'CLONE'               fetch_all_by_clone_accession
   'CONTIG'              fetch_all_by_contig_name
+  'SUPERCONTIG'         fetch_all_by_supercontig_name
   'SLICE'               fetch_all_by_Slice
 
-For convenience fetch_all_by_RawContig and fetch_all_by_Clone methods are
-also available.  These methods may be overridden if desired but due to
-internal dependencies the fetch_all_by_contig_name and 
-fetch_all_by_clone_accession must also be overridden if these methods are
-altered.  See the method descriptions for more detail.
-
-The objects returned by the fetch methods should be Bio::SeqFeature object,
-though only the start, end, strand and attach_seq methods are actually used
-by the ExternalFeatureAdaptor.  The objects which are returned by the 
-ExternalFeature adaptor will be altered by the functions called.
+The objects returned by the fetch methods should be EnsEMBL or BioPerl style
+Feature objects.  These objects MUST have start, end and strand methods.
 
 Before the non-overridden ExternalFeatureAdaptor fetch methods may be called
 an EnsEMBL core database adaptor must be attached to the ExternalFeatureAdaptor
@@ -95,7 +84,7 @@ an EnsEMBL core database adaptor must be attached to the ExternalFeatureAdaptor
 coordinate system.  This may be done implicitly by adding the 
 ExternalFeatureAdaptor to the database adaptor through a call to the 
 DBAdaptor add_ExternalFeatureAdaptor method or explicitly by calling the 
-ExternalFeatureAdaptor db method.
+ExternalFeatureAdaptor ensembl_db method.
 
 
 =head1 CONTACT
@@ -119,7 +108,7 @@ package Bio::EnsEMBL::External::ExternalFeatureAdaptor;
 
 use vars qw(@ISA);
 
-use Bio::EnsEMBL::Root;
+use Bio::EnsEMBL::Utils::Exception qw(warning);
 
 
 @ISA = qw(Bio::EnsEMBL::Root);
@@ -196,7 +185,7 @@ sub ensembl_db {
 sub coordinate_systems {
   my $self = shift;
   
-  $self->throw("abstract method coordinate_systems not implemented\n");
+  throw("abstract method coordinate_systems not implemented\n");
 
   return '';
 }
@@ -276,54 +265,181 @@ sub fetch_all_by_Slice {
   my ($self, $slice) = @_;
 
   unless($slice && ref $slice && $slice->isa('Bio::EnsEMBL::Slice')) {
-    $self->throw("[$slice] is not a Bio::EnsEMBL::Slice");
+    throw("[$slice] is not a Bio::EnsEMBL::Slice");
   }
 
   my $out = [];
 
-  my $slice_start  = $slice->chr_start;
-  my $slice_end    = $slice->chr_end;
+  my $csa = $self->ensembl_db->get_CoordSystemAdaptor();
+
+  my $slice_start  = $slice->start;
+  my $slice_end    = $slice->end;
   my $slice_strand = $slice->strand;
-  my $slice_chr    = $slice->chr_name;
+  my $slice_seq_region  = $slice->seq_region_name;
+  my $coord_system = $slice->coord_system;
 
   if($self->_supported('SLICE')) {
-    $self->throw("ExternalFeatureAdaptor supports SLICE coordinate system" .
+    throw("ExternalFeatureAdaptor supports SLICE coordinate system" .
 		 " but fetch_all_by_Slice not implemented");
-  } 
+  }
 
-  #fetch the features in assembly coords
-  $out = $self->fetch_all_by_chr_start_end($slice_chr,$slice_start,$slice_end);
+  my %features;
+  my $from_coord_system;
 
-  #convert from assembly coords to slice coords
-  my($f_start, $f_end, $f_strand);
-  foreach my $f (@$out) {
-    if($slice_strand == 1) {
-      $f_start  = $f->start - $slice_start + 1;
-      $f_end    = $f->end   - $slice_start + 1;
-      $f_strand = $f->strand;
-    } else {
-      $f_start  = $slice_end - $f->end   + 1;
-      $f_end    = $slice_end - $f->start + 1;
-      $f_strand = $f->strand * -1;
+  my $fetch_method;
+
+  #
+  # Get all of the features from whatever coord system they are computed in
+  #
+  if($self->_supported('CLONE')) {
+    $fetch_method = sub {
+      my $self = shift;
+      my $name = shift;
+      my ($acc, $ver) = split(/\./, $name);
+      $self->fetch_all_by_clone_accession($acc,$ver,@_);
+    };
+    $from_coord_system = $csa->fetch_by_name('clone');
+  } elsif($self->_supported('ASSEMBLY')) {
+    $from_coord_system = $csa->fetch_by_name('toplevel');
+    $fetch_method = $self->can('fetch_all_by_chr_start_end');
+  } elsif($self->_supported('CONTIG')) {
+    $from_coord_system = $csa->fetch_by_name('contig');
+    $fetch_method = $self->can('fetch_all_by_contig_name');
+  } elsif($self->_supported('SUPERCONTIG')) {
+    $from_coord_system = $csa->fetch_by_name('supercontig');
+    $fetch_method = $self->can('fetch_all_by_supercontig_name');
+  } else {
+    $self->_no_valid_coord_systems();
+  }
+
+  if($from_coord_system->equals($coord_system)) {
+    $features{$slice_seq_region} = &$fetch_method($self, $slice_seq_region,
+                                                  $slice_start,$slice_end);
+  } else {
+    foreach my $segment (@{$slice->project($from_coord_system->name,
+                                           $from_coord_system->version)}) {
+      my ($start,$end,$pslice) = @$segment;
+      $features{$pslice->seq_region_name} ||= [];
+      push @{$features{$pslice->seq_region_name}},
+           @{&$fetch_method($self, $pslice->seq_region_name,
+                            $pslice->start(),
+                            $pslice->end())};
     }
+  }
+
+  my @out;
+
+  if(!$coord_system->equals($from_coord_system)) {             
+    my $asma = $self->ensembl_db->get_AssemblyMapperAdaptor();
+    my $mapper = $asma->fetch_by_CoordSystems($from_coord_system,
+                                              $coord_system);
+    my %slice_cache;
+    my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor();
+    my $slice_setter;
+
+    #convert the coordinates of each of the features retrieved
+    foreach my $fseq_region (keys %features) {
+      my $feats = $features{$fseq_region};
+      next if(!$feats);
+      $slice_setter = _guess_slice_setter($feats) if(!$slice_setter);
+
+      foreach my $f (@$feats) {
+        my($sr_name, $start, $end, $strand) = 
+          $mapper->fastmap($fseq_region,$f->start,$f->end,$f->strand,
+                           $from_coord_system);
+        
+        #maps to gap
+        next if(!defined($sr_name));
+
+        #maps to unexpected seq region, probably error in the externally
+        if($sr_name ne $slice_seq_region) {
+          warning("Externally created Feature mapped to [$sr_name] " .
+                  "which is not on requested seq_region [$slice_seq_region]");
+          next;
+        }
+
+        #update the coordinates of the feature
+        &$slice_setter($f,$slice);
+        $f->start($start);
+        $f->end($end);
+        $f->strand($strand);
+        push @out, $f;
+      }
+    }
+  } else {
+    #we already know the seqregion the featues are on, we just have
+    #to put them on the slice
+    @out = @{$features{$slice_seq_region}};
+    my $slice_setter = _guess_slice_setter(\@out);
+
+    foreach my $f (@out) {
+      &$slice_setter($f,$slice);
+    }
+  }
+
+  #shift the feature coordinates again if
+  #the requested slice is not the full seqregion
+  if($slice->start != 1 || $slice->strand != 1) {
+    #convert from assembly coords to slice coords
+    my($f_start, $f_end, $f_strand);
+    foreach my $f (@out) {
+      if($slice_strand == 1) {
+        $f_start  = $f->start - $slice_start + 1;
+        $f_end    = $f->end   - $slice_start + 1;
+        $f_strand = $f->strand;
+      } else {
+        $f_start  = $slice_end - $f->end   + 1;
+        $f_end    = $slice_end - $f->start + 1;
+        $f_strand = $f->strand * -1;
+      }
     
-    $f->start($f_start);
-    $f->end($f_end);
-    $f->strand($f_strand);
-    $f->attach_seq($slice);
+      $f->start($f_start);
+      $f->end($f_end);
+      $f->strand($f_strand);
+    }
   }
   
-  return $out;
+  return \@out;
 }
   
+
+sub _guess_slice_setter {
+  my $features = shift;
+
+  #we do not know what type of features these are.  They might
+  #be bioperl features or old ensembl features, hopefully they are new
+  #style features.  Try to come up with a setter method for the
+  #slice.
+
+  return undef if(!@$features);
+
+  my ($f) = @$features;
+
+  my $slice_setter;
+  foreach my $method (qw(slice contig attach_seq)) {
+    last if($slice_setter = $f->can($method));
+  }
+    
+  if(!$slice_setter) {
+    if($f->can('seqname')) {
+      $slice_setter = sub { $_[0]->seqname($_[1]->seq_region_name()); };
+    } else {
+      $slice_setter = sub{} if(!$slice_setter);
+    }
+  }
+
+  return $slice_setter;
+}
+
 
 
 =head2 fetch_all_by_RawContig
 
   Arg [1]    : Bio::EnsEMBL::RawContig $contig
   Example    : @features = @{$self->fetch_all_by_RawContig($contig)};
-  Description: Retrieves features on the region defined by the $contig arg in 
-               RawContig coordinates. 
+  Description: You should use the fetch_all_by_Slice method instead of this
+               method now.  RawContigs have been effectively replaced by
+               Slices.
 
                If this method is overridden then it is also necessary to 
                override the fetch_all_by_contig_name method due to 
@@ -344,172 +460,124 @@ sub fetch_all_by_Slice {
 =cut
 
 sub fetch_all_by_RawContig {
-  my ($self, $contig) = @_;
-
-  unless($contig && ref $contig && $contig->isa('Bio::EnsEMBL::RawContig')) {
-    $self->throw("[$contig] is not a Bio::EnsEMBL::RawContig");
-  }
-
-  my $out = [];
-
-  if($self->_supported('CONTIG')) {
-    return $self->fetch_all_by_contig_name($contig->name);
-  }
-
-  if($self->_supported('CLONE')) {
-    #retrieve features in clone coordinates
-
-    my $offset = $contig->embl_offset;
-    my $length = $contig->length;
-
-    my $feats = $self->fetch_all_by_Clone($contig->clone, $offset, 
-					  $offset + $length - 1);
-    
-    my ($start, $end);
-
-    #convert from clone coordinates to contig coordinates
-    foreach my $f (@$feats) {
-      $start = $f->start - $offset + 1;
-      $end   = $f->end   - $offset + 1;
-      
-      #skip features which are not entirely on this contig
-      next if($start < 1 || $end > $length);
-      
-      $f->start($start);
-      $f->end($end);
-      $f->attach_seq($contig);
-      push(@$out, $f);
-    }
-
-    return $out;
-  }
-
-  unless($self->_supported('SLICE') || $self->_supported('ASSEMBLY')) {
-    $self->_no_valid_coord_system;
-  }
-
-  unless($self->ensembl_db) {
-    $self->throw('DB attribute not set.  This value must be set for the ' .
-		 'ExternalFeatureAdaptor to function correctly');
-  }
-
-  my $asma = $self->ensembl_db->get_AssemblyMapperAdaptor;
-  my $mapper = $asma->fetch_by_type($self->ensembl_db->assembly_type);
-  
-  #map the whole contig to the assembly
-  my @mapped = $mapper->map_coordinates_to_assembly($contig->dbID, 1, 
-						    $contig->length, 1);
-  
-  my $chr;
-
-  foreach my $coord (@mapped) {
-    #skip over parts of the contig that do not map to the assembly
-    next if ($coord->isa('Bio::EnsEMBL::Mapper::Gap'));
-    
-    $chr = $coord->id;
-
-    #retrieve the features in assembly coordinates
-    push @$out, @{$self->fetch_all_by_chr_start_end($coord->id, 
-						$coord->start, 
-						$coord->end)};
-  }
-    
-  #map each feature from assembly coords back to raw contig coords
-  foreach my $f (@$out) {
-    @mapped =$mapper->map_coordinates_to_rawcontig($chr,
-						   $f->start, 
-						   $f->end,
-						   $f->strand);
-    
-    #skip if feature does not map cleanly to our contig
-    next if(@mapped != 1);
-    next if($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap'));
-    
-    unless($mapped[0]->id == $contig->dbID) {
-      $self->throw('Error mapping feature from assembly to contig');
-    }
-    
-    $f->start ($mapped[0]->start);
-    $f->end   ($mapped[0]->end);
-    $f->strand($mapped[0]->strand);
-    $f->attach_seq($contig);
-  }
-
-  return $out;
+  my $self = shift;
+  return $self->fetch_all_by_Slice(@_);
 }
 
 
 =head2 fetch_all_by_contig_name
 
   Arg [1]    : string $contig_name
+  Arg [2]    : int $start (optional)
+               The start of the region on the contig to retrieve features on
+               if not specified the whole of the contig is used.
+  Arg [3]    : int $end (optional) 
+               The end of the region on the contig to retrieve features on
+               if not specified the whole of the contig is used.
   Example    : @fs = @{$self->fetch_all_by_contig_name('AB00879.1.1.39436')};
   Description: Retrieves features on the contig defined by the name 
                $contig_name in RawContig coordinates.
 
                If this method is overridden then the coordinate_systems 
-               method must return 'CONTIG' as one of its values. If the 
-               fetch_all_by_Contig method is overridden then this method
-               should also be overridden to chain calls to that method (and
-               avoid throwing an exception when this method is called).  
+               method must return 'CONTIG' as one of its values. 
 
                This method will work as is (i.e. without being overridden) 
                providing at least one other fetch method has 
-               been overridden and the fetch_all_by_Contig method has not been
-               overridden.               
+               been overridden.               
   Returntype : reference to a list of Bio::SeqFeature objects in the RawContig
                coordinate system.
   Exceptions : thrown if the input argument is incorrect
                thrown if the coordinate_systems method returns the value 
                'CONTIG' and this method has not been overridden.
-  Caller     : general, fetch_all_by_Contig 
+  Caller     : general, fetch_all_by_Slice
 
 =cut
 
 sub fetch_all_by_contig_name {
-  my ($self, $contig_name) = @_;
+  my ($self, $contig_name, $start, $end) = @_;
 
   unless($contig_name) {
-    $self->throw("contig_name argument not defined");
+    throw("contig_name argument not defined");
   }
 
   if($self->_supported('CONTIG')) {
-    $self->throw("ExternalFeatureAdaptor supports CONTIG coordinate system" .
+    throw("ExternalFeatureAdaptor supports CONTIG coordinate system" .
 		 " but fetch_all_by_contig_name is not implemented");
   }
 
   unless($self->ensembl_db) {
-    $self->throw('DB attribute not set.  This value must be set for the ' .
+    throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
-  my $contig_adaptor = $self->ensembl_db->get_RawContigAdaptor; 
-  my $contig = $contig_adaptor->fetch_by_name($contig_name);
-
-  unless($contig) {
-    $self->warn("ExternalFeatureAdaptor::fetch_all_by_contig_name: Contig " .
-		"[$contig_name] not found\n");
-    return [];
-  }
-    
-
-  return $self->fetch_all_by_RawContig($contig);
+  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor();
+  my $slice = $slice_adaptor->fetch_by_region('contig', $contig_name,
+                                             $start, $end);
+  return $self->fetch_all_by_Slice($slice);
 }
 
 
+
+=head2 fetch_all_by_supercontig_name
+
+  Arg [1]    : string $supercontig_name
+  Arg [2]    : int $start (optional)
+               The start of the region on the contig to retrieve features on
+               if not specified the whole of the contig is used.
+  Arg [3]    : int $end (optional) 
+               The end of the region on the contig to retrieve features on
+               if not specified the whole of the contig is used.
+  Example    : @fs = @{$self->fetch_all_by_contig_name('NT_004321')};
+  Description: Retrieves features on the contig defined by the name 
+               $supercontigname in supercontig coordinates.
+
+               If this method is overridden then the coordinate_systems 
+               method must return 'SUPERCONTIG' as one of its values. 
+
+               This method will work as is (i.e. without being overridden) 
+               providing at least one other fetch method has 
+               been overridden.               
+  Returntype : reference to a list of Bio::SeqFeature objects in the RawContig
+               coordinate system.
+  Exceptions : thrown if the input argument is incorrect
+               thrown if the coordinate_systems method returns the value 
+               'SUPERCONTIG' and this method has not been overridden.
+  Caller     : general, fetch_all_by_Slice
+
+=cut
+
+
+sub fetch_all_by_supercontig_name {
+  my ($self, $supercontig_name, $start, $end) = @_;
+
+  unless($supercontig_name) {
+    throw("supercontig_name argument not defined");
+  }
+
+  if($self->_supported('SUPERCONTIG')) {
+    throw("ExternalFeatureAdaptor supports SUPERCONTIG coordinate system" .
+		 " but fetch_all_by_supercontig_name is not implemented");
+  }
+
+  unless($self->ensembl_db) {
+    throw('DB attribute not set.  This value must be set for the ' .
+		 'ExternalFeatureAdaptor to function correctly');
+  }
+
+  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor();
+  my $slice = $slice_adaptor->fetch_by_region('supercontig', $supercontig_name,
+                                             $start, $end);
+  return $self->fetch_all_by_Slice($slice);
+}
 
 
 =head2 fetch_all_by_Clone
 
   Arg [1]    : Bio::EnsEMBL::Clone $clone
-  Arg [2]    : (optional) int $clone_start the start of the clonal region
-               interested in. This information may be used to speed up
-               the query, or may be ignored.
-  Arg [3]    : (optional) int $clone_end the end of the clonal region 
-               interested in.  This information may be used to speed up 
-               the query, or may be ignored.
   Example    : @features = @{$self->fetch_all_by_Clone($clone)};
-  Description: Retrieves features on the region defined by the $clone arg in 
-               Clone coordinates. 
+  Description: You should not use this method anymore. Use the 
+               fetch_all_by_Slice method instead. Clones have effectively been
+               replaced by Slices on the 'clone' coordinate system.
                
                If this method is overridden then it is also necessary to 
                override the fetch_all_by_clone_accession method due to 
@@ -532,44 +600,8 @@ sub fetch_all_by_contig_name {
 =cut
 
 sub fetch_all_by_Clone {
-  my ($self, $clone, $clone_start, $clone_end) = @_;
-
-  #ignore $clone_start && $clone_end it is only useful when 
-  #fetch_all_by_RawContig is not implemented, but fetch_all_by_Clone is
-  #i.e. it can be used by people who override this method...
-
-  unless($clone && ref $clone && $clone->isa('Bio::EnsEMBL::Clone')) {
-    $self->throw("Clone must be a Bio::EnsEMBL::Clone");
-  }
-
-  if($self->_supported('CLONE')) {
-    return $self->fetch_all_by_clone_accession($clone->id, $clone->embl_acc,
-					       $clone_start, $clone_end);
-  }
-  
-  unless($self->_supported('CONTIG') || 
-	 $self->_supported('SLICE')  ||
-	 $self->_supported('ASSEMBLY')) {
-    $self->_no_valid_coord_system;
-  }
-
-  my $out = [];
-
-  #retrieve features from each contig in the clone
-  my $contigs = $clone->get_all_Contigs;
-  my $offset;
-  foreach my $contig (@$contigs) {
-    $offset = $contig->embl_offset;
-    foreach my $f (@{$self->fetch_all_by_RawContig($contig)}) {
-      #convert each feature to clone coordinates
-      $f->start($f->start - $offset + 1);
-      $f->end($f->end - $offset + 1);
-      #$f->attach_seq($clone); #this might work in future...
-      push @$out, $f;
-    }
-  }
-
-  return $out;
+  my $self = shift;
+  return $self->fetch_all_by_Slice(@_);
 }
 
 
@@ -614,32 +646,30 @@ sub fetch_all_by_clone_accession {
   my ($self, $acc, $version, $start, $end) = @_;
 
   unless($acc) {
-    $self->throw("clone accession argument not defined");
+    throw("clone accession argument not defined");
   }
 
   if($self->_supported('CLONE')) {
-    $self->throw('ExternalFeatureAdaptor supports CLONE coordinate system ' .
+    throw('ExternalFeatureAdaptor supports CLONE coordinate system ' .
 		 'but does not implement fetch_all_by_clone_accession');
   }
 
   unless($self->ensembl_db) {
-    $self->throw('DB attribute not set.  This value must be set for the ' .
+    throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
-
-  my $clone_adaptor = $self->ensembl_db->get_CloneAdaptor;
-  my $clone = $clone_adaptor->fetch_by_accession($acc);
-
-
-  unless($clone) {
-    $self->warn("ExternalFeatureAdaptor::fetch_all_by_clone_accession: Clone "
-		. "[$acc] not found\n");
-    return [];
+  if(defined($version)) {
+    $acc = "$acc.$version";
+  } elsif(!$acc =~ /\./) {
+    $acc = "$acc.1";
   }
-    
 
-  return $self->fetch_all_by_Clone($clone);
+  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor;
+
+  my $slice = $slice_adaptor->fetch_by_region('clone', $acc, $start, $end);
+
+  return $self->fetch_all_by_Slice($slice);
 }
 
 
@@ -675,85 +705,20 @@ sub fetch_all_by_chr_start_end {
   my ($self, $chr_name, $start, $end) = @_;
 
   unless($chr_name && defined $start && defined $end && $start < $end) {
-    $self->throw("Incorrect start [$start] end [$end] or chr [$chr_name] arg");
+    throw("Incorrect start [$start] end [$end] or chr [$chr_name] arg");
   }
 
   unless($self->ensembl_db) {
-    $self->throw('DB attribute not set.  This value must be set for the ' .
+    throw('DB attribute not set.  This value must be set for the ' .
 		 'ExternalFeatureAdaptor to function correctly');
   }
 
-  my $out = [];
+  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor();
 
-  my $asma = $self->ensembl_db->get_AssemblyMapperAdaptor;
-  my $mapper = $asma->fetch_by_type($self->ensembl_db->assembly_type);
-  my $contig_adaptor = $self->ensembl_db->get_RawContigAdaptor;
+  my $slice = $slice_adaptor->fetch_by_region('toplevel', $chr_name, $start,
+                                              $end);
 
-  if($self->_supported('ASSEMBLY')) {
-    $self->throw("ExternalFeatureAdaptor supports ASSEMBLY coordinate system".
-		 " but fetch_all_by_chr_start_end is not implemented");
-
-  } 
-
-  my $slice_adaptor = $self->ensembl_db->get_SliceAdaptor;
-  #get a slice of the whole chromosome
-  my $chrom_slice = $slice_adaptor->fetch_by_chr_name($chr_name);
-
-  if($self->_supported('SLICE')) {
-
-    #fetch by slice and convert to assembly coords
-    my $slice = $slice_adaptor->fetch_by_chr_start_end($chr_name,$start,$end);
-    $out = $self->fetch_all_by_Slice($slice);
-    
-    foreach my $f (@$out) {
-      $f->start($start + $f->start - 1);
-      $f->end  ($start + $f->end   - 1);
-      $f->attach_seq($chrom_slice);
-    }
-
-    return $out;
-  }
-  
-  #fetch via rawcontig and convert to assembly coords
-
-  #Figure out what contigs we are overlapping
-  my @cids = $mapper->list_contig_ids( $chr_name, $start, $end);
-    
-  foreach my $cid (@cids) {
-    my $contig = $contig_adaptor->fetch_by_dbID($cid);
-    #retrieve features of each contig that we are overlapping
-    my $feats = $self->fetch_all_by_RawContig($contig);
-    
-    foreach my $f (@$feats) {
-      #convert each feature from contig coords to assembly coords
-      my @mapped = $mapper->map_coordinates_to_assembly($cid,
-							$f->start, 
-							$f->end, 
-							$f->strand);
-      
-      #if maps to multiple locations in assembly, skip feature
-      next if(@mapped > 1);
-	
-      #if maps to a gap, skip
-      next if($mapped[0]->isa('Bio::EnsEMBL::Mapper::Gap'));
-      
-      my $m_start  = $mapped[0]->start;
-      my $m_end    = $mapped[0]->end;
-      my $m_strand = $mapped[0]->strand;
-
-      #skip features which do not overlap this assembly region
-      next if($m_start > $end || $m_end < $start);
-
-      $f->start($m_start);
-      $f->end($m_end);
-      $f->strand($m_strand);
-      $f->attach_seq($chrom_slice);
-
-      push @$out, $f;
-    }
-  }
-    
-  return $out;
+  return $self->fetch_all_by_Slice($slice);
 }
 
 
@@ -771,9 +736,9 @@ sub fetch_all_by_chr_start_end {
 sub _no_valid_coord_system {
   my $self = shift;
 
-  $self->throw("This ExternalFeatureAdaptor does not support a known " .
+  throw("This ExternalFeatureAdaptor does not support a known " .
 		"coordinate system.\n Valid coordinate systems are: " .
-		"[SLICE, ASSEMBLY, CONTIG, CLONE].\n This External Adaptor " . 
+		"[SLICE,ASSEMBLY,SUPERCONTIG,CONTIG,CLONE].\n This External Adaptor " . 
                 "supports: [" . join(', ', $self->coordinate_systems) . "]");
 }  
 
