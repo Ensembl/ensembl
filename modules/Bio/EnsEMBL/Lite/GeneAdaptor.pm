@@ -326,9 +326,10 @@ sub _objects_from_sth {
   my %gene_cache;
   my $core_db_adaptor = $self->db->get_db_adaptor('core');
 
-
   my ( $gene, $transcript, $translation ); 
   my ( $exon_id );
+
+  my ($start_exon, $end_exon, $transl_coding_start, $transl_coding_end);
 
   while( my $hr = $sth->fetchrow_hashref() ) {
     unless( $slice->chr_name ) {
@@ -336,6 +337,7 @@ sub _objects_from_sth {
       my $chr = $hr->{'chr_name'};
       %$slice = %{$core_db_adaptor->get_SliceAdaptor->fetch_by_chr_name($chr)};
     }
+    my $slice_start = $slice->chr_start;
 
     if( !exists $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} } ) {
       $gene = Bio::EnsEMBL::Gene->new();
@@ -355,23 +357,26 @@ sub _objects_from_sth {
       $gene = $gene_cache{ $hr->{'db'}."-".$hr->{gene_id} };
     }
 
+    my $strand = $hr->{'chr_strand'} * $slice->strand;
+
     # create exons from exon_structure entry
     my @exons = ();
     my @lengths = split( ":", $hr->{'exon_structure'} );
     my @exon_ids = split( ":", $hr->{'exon_ids'} );
     my ( $start, $end );
-
-      
+    
+    my $coding_start = $hr->{'coding_start'} - $slice_start + 1;
+    my $coding_end   = $hr->{'coding_end'}   - $slice_start + 1;
+    
     # lowest chr coord  exon first
-    $start = $hr->{'chr_start'} - $slice->chr_start + 1;
+    $start = $hr->{'chr_start'} - $slice_start + 1;
     $end = $start + $lengths[0] - 1;
     shift( @lengths );
     $exon_id = shift( @exon_ids );
 
     my $exon;
     if( ! exists $exon_cache{ "$exon_id" } ) {
-      $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, 
-					 $hr->{'chr_strand'}*$slice->strand());
+      $exon = Bio::EnsEMBL::Exon->new_fast( $slice, $start, $end, $strand);
       #  we need dbIDs for Exons !!!
       #   $exon->dbID( );
       # this is not right for source != core ...
@@ -379,10 +384,33 @@ sub _objects_from_sth {
       $exon_cache{"$exon_id"} = $exon;
       $exon->dbID( $exon_id );
       $exon->phase( 0 );
-      $exon->end_phase( 0 );
+      $exon->end_phase( 0 );      
     } else {
       $exon = $exon_cache{"$exon_id"};
     }
+
+    #check if this is the start (end on - strand) exon of the translation
+    if($coding_start >= $start && $coding_start <= $end) {
+      if($strand == 1) {
+	$transl_coding_start = $coding_start - $start + 1;
+	$start_exon = $exon;
+      } else {
+	$transl_coding_end = $end - $coding_start + 1;
+	$end_exon = $exon;
+      }
+    }
+
+    #check if this is the end (start on + strand) exon of the translation
+    if($coding_end >= $start && $coding_end <= $end) {
+      if($strand == 1) {
+	$transl_coding_end = $coding_end - $start + 1;
+	$end_exon = $exon;
+      } else {
+	$transl_coding_start = $end - $coding_end + 1;
+	$start_exon = $exon;
+      }
+    }
+    
     $exon->contig( $slice );
     push( @exons, $exon );
 
@@ -412,6 +440,28 @@ sub _objects_from_sth {
 	$exon = $exon_cache{"$exon_id"};
       }
 
+      #check if this is the start (end on - strand) exon of the translation
+      if($coding_start >= $start && $coding_start <= $end) {
+	if($strand == 1) {
+	  $transl_coding_start = $coding_start - $start + 1;
+	  $start_exon = $exon;
+	} else {
+	  $transl_coding_end = $end - $coding_start + 1;
+	  $end_exon = $exon;
+	}
+      }
+
+      #check if this is the end (start on + strand) exon of the translation
+      if($coding_end >= $start && $coding_end <= $end) {
+	if($strand == 1) {
+	  $transl_coding_end = $coding_end - $start + 1;
+	  $end_exon = $exon;
+	} else {
+	  $transl_coding_start = $end - $coding_end + 1;
+	  $start_exon = $exon;
+	}
+      }
+      
       push( @exons, $exon );
     }
     
@@ -419,8 +469,8 @@ sub _objects_from_sth {
     my $transcript = Bio::EnsEMBL::Transcript->new();
     $transcript->adaptor( $core_db_adaptor->get_TranscriptAdaptor() );
     $transcript->dbID( $hr->{'transcript_id'});
-    $transcript->coding_start( $hr->{'coding_start'} -$slice->chr_start() + 1);
-    $transcript->coding_end( $hr->{'coding_end'} -$slice->chr_start() + 1);
+    $transcript->coding_start( $coding_start );
+    $transcript->coding_end( $coding_start );
     $transcript->stable_id( $hr->{ 'transcript_name' });
     $transcript->type( $hr->{ 'type' } );
     $transcript->external_name( $hr->{'external_name'} );
@@ -440,7 +490,11 @@ sub _objects_from_sth {
     $translation->adaptor( $core_db_adaptor->get_TranslationAdaptor() );
     $translation->stable_id( $hr->{'translation_name'} );
     $translation->dbID( $hr->{'translation_id'} );
-    $transcript->translation( $translation ); 
+    $translation->start_Exon($start_exon);
+    $translation->end_Exon($end_exon);
+    $translation->start($transl_coding_start);
+    $translation->end($transl_coding_end);
+    $transcript->translation( $translation );
 
     $gene->add_Transcript($transcript);
   }
