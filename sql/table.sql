@@ -114,7 +114,7 @@ CREATE TABLE contig (
   name              varchar(40) NOT NULL,
   clone_id          int(10) NOT NULL,
   length            int(10) unsigned NOT NULL,   # foreign key clone:internal_id
-  offset            int(10) unsigned,
+  embl_offset       int(10) unsigned,
   dna_id            int(10) NOT NULL,            # foreign key dna:id
   
   PRIMARY KEY (contig_id),
