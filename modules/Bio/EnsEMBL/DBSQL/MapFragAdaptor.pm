@@ -121,7 +121,6 @@ sub fetch_all_by_mapset_chr_start_end {
                     ).
             ( $dnafrag_id ? "and df.dnafrag_id = $dnafrag_id".( defined($chr_start) ? " and mf.seq_start <= $chr_end and mf.seq_start >= ".($chr_start-$max_length)." and mf.seq_end >= $chr_start" : "" ) : "").
         qq(  order by mf.mapfrag_id, mat.code );
-    warn( $QUERY );
     my $sth = $self->prepare( $QUERY );
         
     $sth->execute( );
@@ -174,7 +173,6 @@ sub fetch_all_mapsets_by_chr_start_end {
         return $self->{'_cache'}{$key} = [];
     }
 
-    warn( "DNA: $dnafrag_id" );
     my $QUERY = 
           " select mf.mapfrag_id, mf.type, mf.name, sum(if(mm.mapset_id= $mapset_ids[0],1,0) ) as flag,
                    mf.seq_start, mf.seq_end, mf.orientation,
@@ -189,7 +187,6 @@ sub fetch_all_mapsets_by_chr_start_end {
 - $max_length)." and mf.seq_end >= $chr_start" : "" ) : "").
         qq(  group by ma.mapannotation_id
  order by seq, mf.seq_start, mf.mapfrag_id, mat.code ) ;
-    warn( $QUERY );
 
     my $sth = $self->prepare( $QUERY );
        

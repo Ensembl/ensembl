@@ -75,7 +75,6 @@ sub fetch_all_by_Slice {
        my $V = $arrayref->[ $_ ];
        if( $V && $V ne '' ) {
          unless($link = $link_hash{"$SNPS{$_}:$V"}) {
-           warn("SNP $SNPS{$_} $V" );
            $link_hash{"$SNPS{$_}:$V"} = $link = Bio::EnsEMBL::DBEntry->new_fast( {'_dbname'     => $SNPS{$_}, '_primary_id' => $V });
          }
          push @links, $link;
