@@ -935,9 +935,11 @@ sub get_all_SimilarityFeatures {
    my $id     = $self->internal_id();
    my $length = $self->length();
 
-   my @genscan = $self->get_all_PredictionFeatures;
+   #Removed genscan addition, now Virtual Contig adds it using properly get_all_PredictionFeatures
 
-   push(@array,@genscan);
+   #my @genscan = $self->get_all_PredictionFeatures;
+
+   #push(@array,@genscan);
    my %analhash;
 
    #Then get the rest of the features, i.e. featurepairs and single features that are not part of a fset
