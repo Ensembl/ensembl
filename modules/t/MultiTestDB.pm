@@ -231,6 +231,7 @@ sub load_databases {
 
       # it's not necessary to store the databases and zip bits of info
       delete $self->{'conf'}->{$dbtype}->{'databases'};
+      delete $self->{'conf'}->{$dbtype}->{'preloaded'};
       delete $self->{'conf'}->{$dbtype}->{'zip'};
 
 
