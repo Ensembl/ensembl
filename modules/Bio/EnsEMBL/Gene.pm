@@ -738,7 +738,8 @@ sub chr_name {
   deprecate( "Use project() to obtain other coordinate systems" );
 
   my $gene_slice = $self->slice();
-  if( $gene_slice->coord_system()->name eq "chromosome" ) {
+  warn $gene_slice;
+  if( $gene_slice->coord_system() && $gene_slice->coord_system()->name eq "chromosome" ) {
     return $gene_slice->seq_region_name();
   }
 
