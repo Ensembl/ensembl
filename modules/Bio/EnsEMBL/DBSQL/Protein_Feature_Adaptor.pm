@@ -54,6 +54,7 @@ use Bio::EnsEMBL::DBSQL::DBAdaptor;
 
 use Bio::EnsEMBL::Protein_FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
+# use Bio::EnsEMBL::Utils::Eprof qw(eprof_start eprof_end eprof_dump);
 
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -204,7 +205,8 @@ sub fetch_by_feature_and_dbID{
 
 #The call has to be specific for the Interpro components because there is one join to make on the interpro table and then with the Xref table
     if (($feature eq "PRINTS") || ($feature eq "Pfam") || ($feature eq "PROSITE")) {
-	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = $transl and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
+#      &eprof_start('interpro');
+	my $sth = $self->prepare ("select p.seq_start, p.seq_end, p.analysis, p.score, p.perc_id, p.evalue, p.hstart, p.hend, p.hid, x.display_id from protein_feature p,interpro i,analysisprocess a, Xref x  where p.translation = '$transl' and i.id = p.hid and i.interpro_ac = x.dbprimary_id and p.analysis = a.analysisId and a.gff_feature = 'domain' and a.gff_source = '$feature'");
 	
 	$sth->execute();
 	
@@ -244,10 +246,12 @@ sub fetch_by_feature_and_dbID{
 	    }
 	    
 	}
+#      &eprof_end('interpro');
     }
 
 #Superfamily has also a description attached to it but there is no join needed with the interpro table. but its also considered as a domain feature
     elsif ($feature eq "superfamily") {
+#      &eprof_start('superfamily');
 	my $sth = $self->prepare ("select p.seq_start,p.seq_end,p.analysis,p.score,p.perc_id,p.evalue,p.hstart,p.hend,p.hid,x.display_id from protein_feature as p, analysisprocess as a, Xref as x where a.gff_source = '$feature' and p.translation = '$transl' and a.analysisId = p.analysis and x.dbprimary_id = p.hid");
 	$sth->execute();
 	
@@ -283,6 +287,7 @@ sub fetch_by_feature_and_dbID{
 	    }
 	    
 	}
+#      &eprof_end('superfamily');
     }
 
 #Get all of the other features...Coils, TMHMM, ...
