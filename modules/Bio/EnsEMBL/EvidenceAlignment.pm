@@ -42,6 +42,10 @@ Internal methods are usually preceded with a _
 
 package Bio::EnsEMBL::EvidenceAlignment;
 
+# modify placement by adding the following to the genomic start/end
+use constant MINUS_STRAND_HACK_BP => -1;
+use constant PLUS_STRAND_HACK_BP  => +1;
+
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
@@ -128,6 +132,7 @@ sub get_features {
     
   my @exons = $transcript_obj->get_all_Exons;
   my $strand = $exons[0]->strand;
+  print STDERR "transcript ", $transcript_obj->stable_id, "strand ", $strand, "\n";
   my @all_features = $vc->get_all_SimilarityFeatures;
   my @features = ();
   FEATURE_LOOP:
@@ -413,9 +418,11 @@ sub _get_aligned_evidence {
       $hseq = $self->pad_pep_str($hseq);
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
+        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
+	              + PLUS_STRAND_HACK_BP;
       } else {
-        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
+        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
+	              + MINUS_STRAND_HACK_BP;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
@@ -517,9 +524,11 @@ sub _get_aligned_evidence {
       }
       my $hindent_bp;
       if ($exon->strand > 0) {
-        $hindent_bp = $total_exon_len + $feature->start - $exon->start;
+        $hindent_bp =   $total_exon_len + $feature->start - $exon->start
+	              + PLUS_STRAND_HACK_BP;
       } else{
-        $hindent_bp = $total_exon_len + $exon->end - $feature->end;
+        $hindent_bp =   $total_exon_len + $exon->end - $feature->end
+	              + MINUS_STRAND_HACK_BP;
       }
       if ($hindent_bp < 0) {
         $hindent_bp = 0;	# disaster recovery
