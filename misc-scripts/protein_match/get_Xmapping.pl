@@ -189,6 +189,20 @@ if ($organism eq "zebrafish") {
 }
 
 
+
+if ($organism eq "fugu") {
+    $check{'sptr_swiss'} = $conf{'sptr_swiss'};
+    $check{'x_map_out'} = $conf{'x_map_out'};
+
+    foreach my $k (keys %check) {
+	print STDERR $check{$k}."\n";
+	if ($check{$k} !~ /(\S+)/) {
+	    usage();
+	}
+    }
+
+}
+
 #End of check
 
 if ((!defined $organism) || (!defined $sptr_swiss) || (!defined $out)) {
