@@ -51,6 +51,7 @@ my $dbpass = undef;
 my $help;
 my $nowrite;
 my $verbose;
+my $slice;
 
 &GetOptions( 
 	     'dbtype:s'  => \$dbtype,
@@ -62,6 +63,7 @@ my $verbose;
 	     'module=s'  => \$module,
 	     'h|help'    => \$help,
 	     'nowrite'   => \$nowrite,
+	     'slice:s'   => \$slice,
 	     'v|verbose' => \$verbose
 	     );
 
@@ -73,8 +75,10 @@ if ($help) {
     exec('perldoc', $0);
 }
 
-my $last_offset = 1;         $verbose && print "\nLast update-offset: $last_offset\n";
-my $now_offset  = 949329046; $verbose && print "Time now-offset at recipient: $now_offset\n";
+my $last_offset = 949000000;# 948560282;         $verbose && print "\nLast update-offset: $last_offset\n";
+my $now_offset  = 949001000;#time;              $verbose && print "Time now-offset at recipient: $now_offset\n";
+
+$| = 1;
 
 if ($last_offset > $now_offset) {
     print "Time of last_offset update more recent than now-offset, exiting!\n";
@@ -87,9 +91,12 @@ my $recipient_locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbus
 my $rec_db =  Bio::EnsEMBL::DBLoader->new($recipient_locator);
 
 $verbose && print "\nConnecting to donor database...\n\n";
+
 # dummy list, to stop it loading everything
 # object only used to get this list, else it will be missing the genes
+
 my @clone_id;
+
 {
     my @clones;
     my $don_db = Bio::EnsEMBL::TimDB::Obj->new(\@clones);
@@ -102,13 +109,17 @@ my @clone_id;
 
 $verbose && print "\nTransferring updated and new objects from donor to recipient...\n";
 
-my $slice_size=2;
+$slice = 2 unless $slice;
+
 my @slice_array;
+my $count     = 1;
+my $numclones = scalar(@clone_id);
 
-while(@slice_array=splice(@clone_id,0,$slice_size)){
+while(@slice_array = splice(@clone_id,0,$slice)){
 
-    print "\nActive clones: ".join(',',@slice_array)."\n\n";
-
+    print "\nActive clones: $count/$numclones" . join(',',@slice_array) . "\n\n";
+    $count += $slice;
+    eval 
     {
 	my @clone_array=@slice_array;
 	my $don_db=Bio::EnsEMBL::TimDB::Obj->new(\@clone_array);
@@ -136,7 +147,10 @@ while(@slice_array=splice(@clone_id,0,$slice_size)){
 	    }
 	}
 	$don_db->DESTROY;
-    }
+    };
+   if ($@) {
+	warn("ERROR: clone(s) not updated @slice_array\n");
+   }
 }
 
 

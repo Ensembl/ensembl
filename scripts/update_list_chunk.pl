@@ -40,25 +40,40 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::Root::Object);
 
-my $dbtype = 'rdb';
-my $host   = 'localhost';
-my $port   = '410000';
-my $dbname = 'ensembl';
-my $dbuser = 'ensro';
+my $fdbtype = 'rdb';
+my $fhost   = 'obi-wan';
+my $fport   = '410000';
+my $fdbname = 'ensembl';
+my $fdbuser = 'ensro';
+my $fpass = undef;
+my $tdbtype = 'rdb';
+my $thost   = 'localhost';
+my $tport   = '410000';
+my $tdbname = 'ensembl';
+my $tdbuser = 'root';
+my $tpass = undef;
+my $adbname = 'ens_archive';
 my $module = "Bio::EnsEMBL::DBSQL::Obj";
-my $dbpass = undef;
+
 my $help;
 my $nowrite;
 my $verbose;
 my $slice;
 
 &GetOptions( 
-	     'dbtype:s'  => \$dbtype,
-	     'host:s'    => \$host,
-	     'port:n'    => \$port,
-	     'dbname:s'  => \$dbname,
-	     'dbuser:s'  => \$dbuser,
-	     'dbpass:s'  => \$dbpass,
+	     'fdbtype:s'  => \$fdbtype,
+	     'fhost:s'    => \$fhost,
+	     'fport:n'    => \$fport,
+	     'fdbname:s'  => \$fdbname,
+	     'fdbuser:s'  => \$fdbuser,
+	     'fpass:s'    => \$fpass,
+	     'tdbtype:s'  => \$tdbtype,
+	     'thost:s'    => \$thost,
+	     'tport:n'    => \$tport,
+	     'tdbname:s'  => \$tdbname,
+	     'tdbuser=s'  => \$tdbuser,
+	     'tpass:s'    => \$tpass,
+             'adbname:s'  => \$adbname,
 	     'module=s'  => \$module,
 	     'h|help'    => \$help,
 	     'nowrite'   => \$nowrite,
@@ -67,13 +82,21 @@ my $slice;
 	     );
 
 
+$module = "Bio::EnsEMBL::DBSQL::Obj";
 
 if ($help) {
     exec('perldoc', $0);
 }
 
-my $last_offset = 949000000;  
-my $now_offset  = 949110000; #time; 
+my $to_locator       = make_locator_string($tdbtype,$module,$thost,$tport,$tdbname,$tdbuser,$tpass);
+my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
+my $from_locator     = $tdb->get_donor_locator;
+my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$thost;port=$tport;dbname=$adbname;user=$tdbuser;pass=$tpass";
+
+my $last_offset      = $tdb->get_last_update_offset;
+my $now_offset       = time - 30*60;    # This should be something different
+
+print STDERR "From/to times $last_offset $now_offset\n";
 
 $| = 1;
 
@@ -81,10 +104,6 @@ if ($last_offset > $now_offset) {
     print "Time of last_offset update more recent than now-offset, exiting!\n";
     exit;
 }
-
-my $from_locator     = "Bio::EnsEMBL::TimDB::Obj";
-my $to_locator       = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-my $arc_locator      = "Bio::EnsEMBL::DBArchive::Obj//host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
 
 my $update_manager   = new Bio::EnsEMBL::Analysis::UpdateManager(-fromlocator => $from_locator,
 								 -tolocator   => $to_locator,
@@ -99,5 +118,17 @@ $update_manager->chunksize(20);
 $update_manager->update;
 
 
+
+sub make_locator_string {
+    my ($type,$module,$host,$port,$dbname,$dbuser,$dbpass) = @_;
+
+    if ($type eq "rdb") {
+	return 	"$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+    } elsif ($type eq "timdb") {
+	return "Bio::EnsEMBL::TimDB::Obj";
+    } else {
+	die "Database type [$type] not recognised\n";
+    }
+}
 
 

@@ -1,0 +1,30 @@
+#!/usr/local/bin/perl
+
+my $fsetnum = 0;
+
+while (my $line = <>) {
+      chomp($line);
+      
+      my ($dum1,$dum2,$dum3,$dum4,$dum5) = split(' ',$line);
+
+
+      $dum5 =~ s/[\(\)]//g;
+      $dum5 =~ s/\;//g;
+
+      my ($dum6,$fnum,$rank) = split(/,/,$dum5);
+
+      $fnum =~ s/\'//g;
+      $rank =~ s/\'//g;
+
+      if ($rank == 1) {
+	  $fsetnum++;
+
+	  print("INSERT INTO fset VALUES ($fsetnum,-1000);\n");
+      }
+      
+      print("INSERT INTO fset_feature VALUES('" . 
+	    $fsetnum . "','" . 
+	    $fnum    . "',"  .
+	    $rank    . ");\n");
+  }
+      

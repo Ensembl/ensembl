@@ -1,0 +1,173 @@
+#!/usr/local/bin/perl
+
+=head1 NAME
+
+retransfer_Features  - transfers features for a list of input clones
+=head1 SYNOPSIS
+ 
+  update.pl
+
+=head1 DESCRIPTION
+
+This script transfers all the features attached to a clone to a new
+database and deletes any existing features
+
+=head1 OPTIONS
+
+    -host      host name for database (gets put as host= in locator)
+
+    -port      For RDBs, what port to connect to (port= in locator)
+
+    -dbname    For RDBs, what name to connect to (dbname= in locator)
+
+    -dbuser    For RDBs, what username to connect as (dbuser= in locator)
+
+    -dbpass    For RDBs, what password to use (dbpass= in locator)
+
+    -help      Displays script documentation with PERLDOC
+    
+    -nowrite   Runs entire script without writing in recipient
+
+    -verbose   Gets all the print STDERR for testing purposes
+
+=cut
+
+
+use strict;
+use Getopt::Long;
+
+use Bio::EnsEMBL::TimDB::Obj;
+use Bio::EnsEMBL::DBLoader;
+
+use vars qw(@ISA);
+
+@ISA = qw(Bio::Root::Object);
+
+my $fdbtype = 'rdb';
+my $fhost   = 'obi-wan';
+my $fport   = '410000';
+my $fdbname = 'ensembl';
+my $fdbuser = 'ensro';
+my $fpass   = undef;
+my $tdbtype = 'rdb';
+my $thost   = 'localhost';
+my $tport   = '410000';
+my $tdbname = 'ensembl';
+my $tdbuser = 'root';
+my $tpass   = undef;
+
+my $module  = "Bio::EnsEMBL::DBSQL::Obj";
+
+my $help;
+my $usefile;
+
+&GetOptions( 
+	     'fdbtype:s'  => \$fdbtype,
+	     'fhost:s'    => \$fhost,
+	     'fport:n'    => \$fport,
+	     'fdbname:s'  => \$fdbname,
+	     'fdbuser:s'  => \$fdbuser,
+	     'fpass:s'    => \$fpass,
+	     'tdbtype:s'  => \$tdbtype,
+	     'thost:s'    => \$thost,
+	     'tport:n'    => \$tport,
+	     'tdbname:s'  => \$tdbname,
+	     'tdbuser:s'  => \$tdbuser,
+	     'tpass:s'    => \$tpass,
+	     'usefile=s'  => \$usefile,
+	     'h|help'    => \$help,
+	     );
+
+
+$module = "Bio::EnsEMBL::DBSQL::Obj";
+
+if ($help) {
+    exec('perldoc', $0);
+}
+
+
+$| = 1;
+
+my $from_locator     = make_locator_string($fdbtype,$module,$fhost,$fport,$fdbname,$fdbuser,$fpass);
+my $to_locator       = make_locator_string($tdbtype,$module,$thost,$tport,$tdbname,$tdbuser,$tpass);
+
+my @cloneids         = read_clones($usefile,@ARGV);
+
+my $tdb              = new Bio::EnsEMBL::DBLoader($to_locator);
+my $fdb;
+
+if ($fdbtype eq "timdb") {
+    $fdb = new Bio::EnsEMBL::TimDB::Obj(\@cloneids);
+} else {
+    $fdb = new Bio::EnsEMBL::DBLoader($from_locator);
+}
+
+foreach my $cloneid (@cloneids) {
+    eval {
+	my $fclone = $fdb->get_Clone($cloneid);
+	my $tclone = $tdb->get_Clone($cloneid);
+
+	my @allfeatures;
+
+	foreach my $contig ($fclone->get_all_Contigs) {
+	    
+	    my $tcontig  = $tdb   ->get_Contig($contig->id) || die "Contig " . $contig->id . " doesn't exist in recipient database";
+	    my @features = $contig->get_all_SeqFeatures;
+	    
+	    push(@allfeatures,@features);
+
+	    $tdb->delete_Features($contig->id);
+	    $tdb->write_Feature  ($contig,@features);
+	
+	}
+	# now need to find_supporting_evidence
+
+	my @genes = $tclone->get_all_Genes;
+	
+	foreach my $gene (@genes) {
+	    
+	    foreach my $exon ($gene->each_unique_Exon) {
+		
+	        $tdb   ->delete_Supporting_Evidence($exon->id);
+		$exon  ->find_supporting_evidence(\@allfeatures);
+		$tdb   ->write_supporting_evidence($exon);
+	    }
+	}
+    };
+    if ($@) {
+	print("ERROR transferring clone $cloneid [$@]\n");
+    }
+}
+
+sub read_clones {
+    my ($file,@clones) = @_;
+
+    my @out;
+
+    if (defined($file)) {
+	open(IN,"<$file") || die "Can't open $file";
+    }
+
+    while (<IN>) {
+	chomp;
+	push(@out,$_);
+    }
+
+    push(@out,@clones);
+
+    return @out;
+}
+
+sub make_locator_string {
+    my ($type,$module,$host,$port,$dbname,$dbuser,$dbpass) = @_;
+
+    if ($type eq "rdb") {
+	return 	"$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
+    } elsif ($type eq "timdb") {
+	return "Bio::EnsEMBL::TimDB::Obj";
+    } else {
+	die "Database type [$type] not recognised\n";
+    }
+}
+
+

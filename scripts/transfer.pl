@@ -74,7 +74,7 @@ use Getopt::Long;
 $| = 1;
 
 # signal handler
-$SIG{INT}=sub {my $sig=shift;die "exited after SIG$sig";};
+$SIG{INT} = sub {my $sig=shift;die "exited after SIG$sig";};
 
 my $fdbtype = 'rdb';
 my $fhost   = 'localhost';
@@ -177,7 +177,7 @@ foreach my $clone_id ( @clone ) {
     eval {
 	my $clone = $from_db->get_Clone($clone_id);
 	if( $delete_first == 1 ) {
-	    print STDERR "Deleting clone $clone_id";
+	    
 	    my $oldclone;
 	    eval {
 		$oldclone = $to_db->get_Clone($clone_id);
@@ -186,24 +186,29 @@ foreach my $clone_id ( @clone ) {
 		# do nothing. Clone not there
 	    } else {
 		foreach my $gene ( $oldclone->get_all_Genes() ) {
+		    print STDERR "Deleting gene " . $gene->id . "\n";
 		    $to_db->delete_Gene($gene->id());
 		    # Should delete supporting evidence too.
 		} 
+		print STDERR "Deleting clone $clone_id\n";
 		$to_db->delete_Clone($clone_id);
 		# Should delete contig features here too.
 	    }
 	}
 
 	$to_db->write_Clone($clone);
-
+	
 	my @features;
 	
 	foreach my $contig ($clone->get_all_Contigs) {
 	    push(@features,$contig->get_all_SimilarityFeatures);
-	    print(STDERR "Number of features for " . $contig->id . " " . scalar(@features) . "\n");
+
 	}
-	
+
+	print(STDERR "Number of features for " . $clone->id . " " . scalar(@features) . "\n");	
+
 	foreach my $gene ( $clone->get_all_Genes() ) {
+	    print(STDERR "Writing gene " . $gene->id . "\n");
 	    $to_db->write_Gene($gene);
 	    
 	    # Now generate the supporting evidence and write

@@ -1,0 +1,52 @@
+#!/usr/local/bin/perl
+
+my @clones;
+my @unprocessed_clones;
+my @allclones;
+
+while (my $line = <>) {
+    if ($line =~ /Starting/) {
+	@clones = ();
+    }
+
+    if ($line =~ /Got clone with id (\S+)/) {
+	push (@clones,$1);
+    }
+
+    if ($line =~ /In child. Transferring (.*)\n$/) {
+	@allclones = split(' ',$1);
+    }
+
+#    if ($line =~ /^ERROR: clone\(s\) not updated (.*)\n$/) #{
+    if ($line =~ /^Exit status for child(.*) +(\d+)\n$/) {
+	my $current = $1;
+	my $exitnum = $2;
+
+#	print("Chunk $current $exitnum\n");
+	if ($exitnum != 0) {
+	    my $crash;
+
+	    if ($#clones < 0) {
+		$crash = $allclones[0];
+	    } else {
+		$crash = pop(@clones);
+	    }
+	    my $found = 0;
+	    
+	    while (my $cl = shift(@allclones)) {
+		if ($cl eq $crash) {
+		    $found = 1;
+		} 
+		
+		if ($found) {
+#		    print("$cl\n");
+		    push(@unprocessed_clones,$cl);
+		}
+	    }
+	}
+    }
+}
+	    
+foreach my $cl (@unprocessed_clones) {
+    print($cl . "\n");
+}
