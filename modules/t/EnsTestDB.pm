@@ -102,6 +102,23 @@ my $counter=0;
 	
         return $self;
     }
+    
+    sub new_from_obj_and_sql_list {
+        my( $self, @sql ) = @_;
+        
+        # Make new object
+        my $new = bless {}, ref($self);
+        
+        # Copy config fields
+        foreach my $field (keys %known_field) {
+            $new->{$field} = $self->{$field};
+        }
+        
+        # Overwrite schema_sql with our list of files
+        $new->{'schema_sql'} = [@sql];
+        
+        return $new;
+    }
 }
 
 sub driver {
