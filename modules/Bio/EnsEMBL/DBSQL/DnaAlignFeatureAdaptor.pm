@@ -58,6 +58,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::FeatureFactory;
+use Bio::EnsEMBL::DnaDnaAlignFeature;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
 # new() can be inherited from Bio::Root::RootI
@@ -130,12 +131,12 @@ sub fetch_by_contig_id{
        $self->throw("fetch_by_contig_id must have an contig id");
    }
 
-   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id from dna_align_feature p where p.contig_id = $cid");
+   my $sth = $self->prepare("select p.contig_id,p.contig_start,p.contig_end,p.contig_strand,p.hit_start,p.hit_end,p.hit_strand,p.hit_name,p.cigar_line,p.analysis_id, p.score from dna_align_feature p where p.contig_id = $cid");
    $sth->execute();
 
-   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id);
+   my ($contig_id,$start,$end,$strand,$hstart,$hend,$hstrand,$hname,$cigar,$analysis_id, $score);
 
-   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand,\$hname,\$cigar,\$analysis_id);
+   $sth->bind_columns(undef,\$contig_id,\$start,\$end,\$strand,\$hstart,\$hend,\$hstrand,\$hname,\$cigar,\$analysis_id, \$score);
 
    my @f;
    my $contig = $self->db->get_RawContigAdaptor->fetch_by_dbID($cid);
@@ -151,7 +152,7 @@ sub fetch_by_contig_id{
        $out->start($start);
        $out->end($end);
        $out->strand($strand);
-
+       $out->score($score);
        $out->hstart($hstart);
        $out->hend($hend);
        $out->hstrand($hstrand);
@@ -291,6 +292,39 @@ sub store{
 
 }
 
+
+
+sub fetch_featurepair_list_by_contig_id{
+  my($self, $contig_id) = @_;
+
+  my @cigar_feats = $self->fetch_by_contig_id($contig_id);
+  my @fps;
+  foreach my $cigar_feat(@cigar_feats){
+    my $f1 = Bio::EnsEMBL::SeqFeature->new();
+    my $f2 = Bio::EnsEMBL::SeqFeature->new();
+    
+    $f1->start($cigar_feat->start);
+    $f1->end($cigar_feat->end);
+    $f1->score($cigar_feat->score);
+    $f1->seqname($cigar_feat->seqname);
+    $f1->strand($cigar_feat->strand);
+    
+    $f2->start($cigar_feat->hstart);
+    $f2->end($cigar_feat->hend);
+    $f2->strand($cigar_feat->hstrand);
+    $f2->seqname($cigar_feat->hseqname);
+
+    my $cigar = $cigar_feat->cigar;
+    
+    my $dnadna =  Bio::EnsEMBL::DnaDnaAlignFeature->new(-feature1 => $f1,
+							-feature2 => $f2,
+							-cigar_string    => $cigar);
+    my @parsed_fps = $dnadna->_parse_cigar;
+    push(@fps, @parsed_fps);
+  }
+
+  return @fps;
+}
 
 
 1;
