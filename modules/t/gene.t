@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 33;
+	plan tests => 37;
 }
 
 use MultiTestDB;
@@ -376,3 +376,23 @@ if( my $lite = $multi->get_DBAdaptor( 'lite' ) ) {
   debug( "Store done" );
 }
 
+
+# tests for update method
+# go get a fresh gene again
+$gene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+
+# the first update should no effect
+$ga->update($gene);
+
+my $newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+ok ( $newgene->display_xref == 128324 );
+ok ( $newgene->type eq 'ensembl' );
+
+# now change the original gene and update it
+$gene->display_xref(42);
+$gene->type('dummy');
+$ga->update($gene);
+
+$newgene = $ga->fetch_by_stable_id( "ENSG00000171456" ); 
+ok ( $newgene->display_xref == 42 );
+ok ( $newgene->type eq 'dummy' );
