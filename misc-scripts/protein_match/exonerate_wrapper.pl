@@ -144,8 +144,8 @@ if (defined $opts{d} && $opts{d} == 1) {
     $t_fa  = $mapping_conf{total_known_fa}
 	if (exists $mapping_conf{total_known_fa});
     $fout  = $mapping_conf{mapping_out} if (exists $mapping_conf{mapping_out});
-    $q_min = $mapping_conf{known_idt}  if (exists $mapping_conf{known_idt});
-    $t_min = $mapping_conf{ensembl_idt} if (exists $mapping_conf{ensembl_idt});
+    $q_min = $mapping_conf{min_known_idt}  if (exists $mapping_conf{min_known_idt});
+    $t_min = $mapping_conf{min_ensembl_idt} if (exists $mapping_conf{min_ensembl_idt});
 }
 
 if (defined($fin) && length($fin) != 0 &&
