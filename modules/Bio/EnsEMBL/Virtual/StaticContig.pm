@@ -1962,27 +1962,8 @@ sub get_all_VirtualGenes_startend
 	
 #Get the DBlinks for the given gene
     my $entryAdaptor = $self->dbobj->get_DBEntryAdaptor();
-    my @gene_xrefs = $entryAdaptor->fetch_by_gene($stable_id);
+    $entryAdaptor->fetch_by_gene($gene);
 
-    foreach my $genelink (@gene_xrefs) {
-        $gene->add_DBLink($genelink);
-    }
-
-	my $query1 = "select tlsi.stable_id from transcript t, translation_stable_id tlsi where t.gene_id = $gene_id AND t.translation_id = tlsi.translation_id";
-	my $sth1 = $self->dbobj->prepare($query1);
-	$sth1->execute;
-	
-	while (my $transid = $sth1->fetchrow) {
-	    
-	    my @transcript_xrefs = $entryAdaptor->fetch_by_translation($transid);
-	    
-	    foreach my $translink(@transcript_xrefs) {
-		
-		$gene->add_DBLink($translink);
-	    }
-	}
-#End for fetching the DBlinks
-	
 
 	&eprof_end("virtualgene-externaldb");
 
