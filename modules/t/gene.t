@@ -14,7 +14,7 @@ use Bio::EnsEMBL::Gene;
 $loaded = 1;
 
 # switch on the debug prints
-my $verbose = 1;
+my $verbose = 0;
 
 ok(1);
 
