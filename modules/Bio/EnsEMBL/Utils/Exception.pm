@@ -19,17 +19,26 @@ Bio::EnsEMBL::Utils::Exception - Utility functions for error handling
     }
 
     #silence warnings
-    verbose(-1);
+    verbose('OFF');
 
     warning('this is a silent warning');
 
-    verbose(0);
+    #show deprecated and warning messages but not info
+    verbose('DEPRECATE');
    
     warning('this is a warning');
+
+    #show all messages
+    verbose('ALL');
+
+    info('this is an informational message');
 
     sub my_sub {
       deprecate('use other_sub() instead');
     }
+
+    verbose('EXCEPTION');
+    info('This is a high priority info message.', 1000);
 
 
 =head1 DESCRIPTION
@@ -52,7 +61,7 @@ methods.
 
 Post questions to the EnsEMBL development list: ensembl-dev@ebi.ac.uk
 
-=head1 APPENDIX
+=head1 METHODS
 
 The rest of the documentation details exported static class methods. 
 
@@ -70,16 +79,27 @@ use vars qw(@ISA @EXPORT_OK);
 @ISA = qw(Exporter);
 
 @EXPORT_OK = qw(&throw &warning &stack_trace_dump 
-                &stack_trace &verbose &deprecate);
+                &stack_trace &verbose &deprecate &info);
+
+my $VERBOSITY         = 3000;
+my $DEFAULT_INFO      = 4000;
+my $DEFAULT_DEPRECATE = 3000;
+my $DEFAULT_WARNING   = 2000;
+my $DEFAULT_EXCEPTION = 1000;
 
 
 =head2 throw
 
   Arg [1]    : string $msg
+  Arg [2]    : (optional) int $level
+               override the default level of exception throwing
   Example    : use Bio::EnsEMBL::Utils::Exception qw(throw);
                throw('We have a problem');
-  Description: Throws an exception which if not caught be an eval will
-               provide a stack trace to STDERR and die.
+  Description: Throws an exception which if not caught by an eval will
+               provide a stack trace to STDERR and die.  If the verbosity level
+               is lower than the level of the throw, then no error message is
+               displayed but the program will still die (unless the exception
+               is caught).
   Returntype : none
   Exceptions : thrown every time
   Caller     : generally on error
@@ -87,17 +107,26 @@ use vars qw(@ISA @EXPORT_OK);
 =cut
 
 sub throw {
+  my $string = shift;
+
   #for backwards compatibility with Bio::EnsEMBL::Root::throw
   #allow to be called as an object method as well as class method
-  my $string = shift;
   $string = shift if(ref($string)); #skip object if one provided
+
+  my $level  = shift;
+
+  $level = $DEFAULT_EXCEPTION if(!defined($level));
+
+  if($VERBOSITY < $level) {
+    die("\n"); #still die, but silently
+  }
 
   my $std = stack_trace_dump(3);
 
   my $out = "\n-------------------- EXCEPTION --------------------\n" .
-            "MSG: $string\n" .
-            "$std" .
-            "---------------------------------------------------\n";
+              "MSG: $string\n" .
+              "$std" .
+              "---------------------------------------------------\n";
   die $out;
 }
 
@@ -106,14 +135,15 @@ sub throw {
 =head2 warning
 
   Arg [1]    : string warning(message);
+  Arg [2]    : (optional) int level
+               Override the default level of this warning changning the level
+               of verbosity at which it is displayed.
   Example    : use Bio::EnsEMBL::Utils::Exception qw(warning)
                warning('This is a warning');
-  Description: Places a warning. What happens now is down to the
-               verbosity level which may be set through a call to verbose()
-               verbosity 0 or not set => small warning
-               verbosity -1 => no warning
-               verbosity 1 => warning with stack trace
-               verbosity 2 => converts warnings into throw
+  Description: If the verbosity level is higher or equal to the level of this 
+               warning then a warning message is printed to STDERR.  If the 
+               verbosity lower then nothing is done.  Under the default
+               levels of warning and verbosity warnings will be displayed.
   Returntype : none
   Exceptions : warning every time
   Caller     : general
@@ -122,29 +152,61 @@ sub throw {
 
 sub warning {
   my $string = shift;
+  my $level  = shift;
 
-  my $verbose = verbose() || 0;
+  $level = $DEFAULT_WARNING if(!defined($level));
 
-  if ( $verbose == 2 ) {
-    throw($string);
-  } elsif ( $verbose == -1 ) {
-    return;
-  } elsif ( $verbose == 1 ) {
-    my $out = "\n-------------------- WARNING ---------------------\n".
-              "MSG: $string\n" .
-              stack_trace_dump(3).
-              "--------------------------------------------------\n";
-	
-    print STDERR $out;
-    return;
+  return if ($VERBOSITY < $level);
+
+  my @caller = caller;
+  my $line = $caller[2] || '';
+
+  #use only 2 subdirs for brevity when reporting the filename
+  my $file;
+  my @path = split(/\//, $caller[1]);
+  $file = pop(@path);
+  my $i = 0;
+  while(@path && $i < 2) {
+    $i++;
+    $file = pop(@path) ."/$file";
   }
-
+  
   my $out = "\n-------------------- WARNING ----------------------\n".
-            "MSG: $string\n".
-            "---------------------------------------------------\n";
+              "MSG: $string\n".
+              "FILE: $file LINE: $line\n" .
+              "---------------------------------------------------\n";
   print STDERR $out;
 }
 
+
+
+=head2 info
+
+  Arg [1]    : string $string
+               The message to be displayed
+  Arg [2]    : (optional) int $level
+               Override the default level of this message so it is displayed at
+               a different level of verbosity than it normally would be.
+  Example    : use Bio::EnsEMBL::Utils::Exception qw(verbose info)
+  Description: This prints an info message to STDERR if verbosity is higher 
+               than the level of the message.  By default info messages are not
+               displayed.
+  Returntype : none
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub info {
+  my $string = shift;
+  my $level  = shift;
+
+  $level = $DEFAULT_INFO if(!defined($level));
+
+  return if($VERBOSITY < $level);
+
+  print STDERR "INFO: $string\n";
+}
 
 
 
@@ -152,25 +214,73 @@ sub warning {
 
   Arg [1]    : (optional) int 
   Example    : use Bio::EnsEMBL::Utils::Exception qw(verbose warning);
-               verbose(-1);
-               warning("No warning displayed");
-               verbose(0);
-               warning("Regular warning displayed");
-  Description: Gets/Sets verbose level for how warning() behaves
-               -1 = no warning
-                0 = standard, small warning
-                1 = warning with stack trace
-                2 = warning becomes throw
+               #turn warnings and everything more important on (e.g. exception)
+               verbose('WARNING'); 
+               warning("Warning displayed");
+               info("This won't be displayed");
+               deprecate("This won't be diplayed"); 
+
+               #turn exception messages on
+               verbose('EXCEPTION'); 
+               warning("This won't do anything");
+               throw("Die with a message");
+
+               #turn everying off
+               verbose('OFF'); #same as verbose(0);               
+               warning("This won't do anything");
+               throw("Die silently without a message");
+
+               #turn on all messages
+               verbose('ALL');
+               info("All messages are now displayed");
+
+               if(verbose() > 3000) {
+                 print "Verbosity is pretty high";
+               }
+
+  Description: Gets/Sets verbosity level which defines which messages are
+               to be displayed.  An integer value may be passed or one of the
+               following strings:
+               'OFF'       (= 0)
+               'EXCEPTION' (= 1000)
+               'WARNING'   (= 2000)
+               'DEPRECATE' (= 3000)
+               'INFO'      (= 4000)
+               'ALL'       (= 1000000)
+
   Returntype : int 
   Exceptions : none
   Caller     : general
 
 =cut
 
-my $VERBOSITY = 0;
 
 sub verbose {
-  $VERBOSITY = shift if(@_);
+  if(@_) {
+    my $verbosity = shift;
+    if($verbosity =~ /\d+/) { #check if verbosity is an integer
+      $VERBOSITY = $verbosity;
+    } else {
+      $verbosity = uc($verbosity);
+      if($verbosity eq 'OFF' || $verbosity eq 'NOTHING' || 
+         $verbosity eq 'NONE') {
+        $VERBOSITY = 0;
+      } elsif($verbosity eq 'EXCEPTION' || $verbosity eq 'THROW') {
+        $VERBOSITY = $DEFAULT_EXCEPTION;
+      } elsif($verbosity eq 'WARNING' || $verbosity eq 'WARN') {
+        $VERBOSITY = $DEFAULT_WARNING;
+      } elsif($verbosity eq 'DEPRECATE' || $verbosity eq 'DEPRECATED') {
+        $VERBOSITY = $DEFAULT_DEPRECATE;
+      } elsif($verbosity eq 'INFO') {
+        $VERBOSITY = $DEFAULT_INFO;
+      } elsif($verbosity eq 'ON' || $verbosity eq 'ALL') {
+        $VERBOSITY = 1e6;
+      } else {
+        $VERBOSITY = $DEFAULT_WARNING;
+        warning("Unknown level of verbosity: $verbosity");
+      }
+    }
+  }
 
   return $VERBOSITY;
 }
@@ -261,7 +371,8 @@ sub stack_trace {
                deprecate() is deprecated.  Also prints the line number and 
                file from which the deprecated method was called.  Deprecated
                warnings only appear once for each location the method was 
-               called from
+               called from.  No message is displayed if the level of verbosity
+               is lower than the level of the warning.
   Returntype : none
   Exceptions : warning every time
   Caller     : deprecated methods
@@ -273,6 +384,12 @@ my %DEPRECATED;
 sub deprecate {
   my $mesg = shift;
 
+  my $level = shift;
+
+  $level = $DEFAULT_DEPRECATE if(!defined($level));
+
+  return if($VERBOSITY < $level);
+                                 
   my @caller = caller(1);
   my $subname = $caller[3] ;
   my $line = $caller[2];
@@ -293,13 +410,15 @@ sub deprecate {
 
   if($VERBOSITY > -1) {
     print STDERR "\n------------------ DEPRECATED ---------------------\n" .
-                 "Deprecated method call in file $file line $line.\n" .
-                 "Method $subname is deprecated.\n" .
-                 "$mesg\n" .
-                 "---------------------------------------------------\n";
+                   "Deprecated method call in file $file line $line.\n" .
+                   "Method $subname is deprecated.\n" .
+                   "$mesg\n" .
+                   "---------------------------------------------------\n";
   }
 
   $DEPRECATED{"$line:$file"} = 1;
 }
+
+
 
 1;
