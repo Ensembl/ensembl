@@ -311,7 +311,7 @@ sub get_all_Contigs {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
     
-    return $self->get_Contig->get_ContigOverlaps;
+    return $self->get_Contig->get_all_ContigOverlaps;
 }
 
 

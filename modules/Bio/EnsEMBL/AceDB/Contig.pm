@@ -279,18 +279,17 @@ sub get_all_RepeatFeatures {
 
 sub get_all_PredictionFeatures {
     my ($self) = @_;
-               
+    
     # Create a hash of methods we're interested in
     my %methods = map{$_, 1} ('FGENES', 'FGENESH', 'GENESCAN');
-    
     my $id = $self->id();        
     my $seq = $self->ace_seq();
-    my $phase = $self->_get_phase();
     my @prediction_features;
     
     # Loop through the subsequences
     foreach my $sub ($seq->at('Structure.Subsequence')) {
         
+
         # Fetch the method and check we're interested in this subsequence 
         my $method = map($_->name, $sub->fetch->at("Method[1]") );
                   
@@ -411,86 +410,203 @@ sub get_all_Genes {
     
     my $id = $self->id();        
     my $seq = $self->ace_seq();
-    my $phase = $self->_get_phase();
-    my $annotated = map($_->name, $seq->at('Properties.Status.Annotated'));
-    my @genes;
+    my( $annotated );
+    if (my $ann_value = map $_->name, $seq->at('Properties.Status.Annotated[1]')) {
+        $annotated = $self->dbobj->dateace($ann_value);
+    } else {
+        $annotated = 0;
+    }
     
+    my( %gene_store );
     # Loop through the subsequences
     foreach my $sub ($seq->at('Structure.Subsequence[1]')) {
     
-        my $genename = "$sub";
+        my $transcriptname = $sub->name;
+    
+        # Skip mRNA objects
+        next if $transcriptname =~ /\.mRNA$/;
         
-        # No sequences begin .TRIMMED!   
-        #if ($genename =~ /^.TRIMMED/) {
-        #    next;
-        #}
+        my $genename = $self->_gene_name($sub);
         
         # Fetch the method and check we're interested in it            
         my $met = $sub->fetch->at("Method[1]") or next;
         
-        if ($methods{$met}) {
-                                              
-            my ($start, $end) = map($_->name(), $sub->row(1));
-            my $strand = ($start < $end) ? 1 : -1;
-            my $subseq = $sub->fetch();             
-            my $index = 1;
-            my @exons;
-            
-            # Fetch all the exons            
-            foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {  
-                                         
-	        my ($starte, $ende) = map($_->name(), $hit->row());                              	                        
-                my $exon = $self->_create_exon($id, $strand, $start, 
-                    $starte, $end, $ende, $genename, $index, $phase, $annotated); 
-                
-                # Set index and phase for the next exon
-                $index++;                
-	        $phase = $exon->end_phase(); 
-                               	                        
-                push(@exons, $exon);
-            }            
-            
-            # Create a new Translation object with the start and end exon IDs
-            my $translation = new Bio::EnsEMBL::Translation();
-           
-            $translation->id($genename); 
-            $translation->version(1);
-            
-            if ($strand) {                   
-	        $translation->start($start);
-	        $translation->end($end);
-                $translation->start_exon_id($exons[0]->id());
-	        $translation->end_exon_id($exons[$#exons]->id());
-            }
-            else {            
-                $translation->start($end);
-	        $translation->end($start);
-                $translation->start_exon_id($exons[$#exons]->id());
-	        $translation->end_exon_id($exons[0]->id());
-            } 
-           
-	    # Create a new Transcript object from the exons and the Translation
-            my $transcript = new Bio::EnsEMBL::Transcript(@exons);
-            $transcript->id($genename); 
-            $transcript->version(1);   
-	    $transcript->translation($translation);
+        next unless $methods{$met};
+                                                      
+        my ($start, $end) = map($_->name(), $sub->row(1));
+        my $strand = ($start < $end) ? 1 : -1;
+        my $subseq = $sub->fetch();             
+        my $phase = $self->_get_phase($subseq);
+        my $index = 1;
+        my @exons;
 
+        # Fetch all the exons            
+        foreach my $hit ($subseq->at('Structure.From.Source_Exons[1]')) {  
+
+	    my ($starte, $ende) = map($_->name(), $hit->row());                              	                        
+            my $exon = $self->_create_exon($id, $strand, $start, $starte, $end, $ende, $transcriptname, $index, $phase, $annotated); 
+
+            # Set index and phase for the next exon
+            $index++;                
+	    $phase = $exon->end_phase(); 
+
+            push(@exons, $exon);
+        }            
+
+        # Create a new Translation object with the start and end exon IDs
+        my $translation = new Bio::EnsEMBL::Translation();
+
+        $translation->id($genename); 
+        $translation->version(1);
+
+        if ($strand == 1) {                   
+	    $translation->start($start);
+	    $translation->end($end);
+            $translation->start_exon_id($exons[0]->id());
+	    $translation->end_exon_id($exons[$#exons]->id());
+        }
+        else {            
+            $translation->start($end);
+	    $translation->end($start);
+            $translation->start_exon_id($exons[$#exons]->id());
+	    $translation->end_exon_id($exons[0]->id());
+        } 
+
+	# Create a new Transcript object from the exons and the Translation
+        my $transcript = new Bio::EnsEMBL::Transcript(@exons);
+        $transcript->id($genename); 
+        $transcript->version(1);   
+	$transcript->translation($translation);
+
+        my( $gene );
+        unless ($gene = $gene_store{$genename}) {
             # Create a new Gene object and add the Transcript 
-            my $gene = new Bio::EnsEMBL::Gene();
+            $gene = new Bio::EnsEMBL::Gene();
             $gene->id($genename);
             $gene->version(1); 
-            $gene->add_Transcript($transcript);
-            $gene->add_cloneid_neighbourhood($self->id);
-            
-            # Add the gene to the genes array
-            push(@genes, $gene);
         }
+        $gene->add_Transcript($transcript);
+        $gene->add_cloneid_neighbourhood($self->id);
+        $gene_store{$genename} = $gene;
     }
 
     # Return all the genes
-    return @genes;
+    return values %gene_store;
 }
 
+=head2 _gene_name
+
+    my( $name ) = $self->_gene_name($ace);
+
+Given an C<Ace::Object> object, gets the name of
+the Locus that object is attatched to, or if none
+is attatched just returns the name of the object.
+
+=cut
+
+sub _gene_name {
+    my( $self, $ace ) = @_;
+    
+    unless ($ace and $ace->isa('Ace::Object')) {
+        $self->throw("Argument '$ace' is no an Ace::Object");
+    }
+    if (my $locus = $ace->at('Visible.Locus[1]')) {
+        return $locus->name;
+    } else {
+        return $ace->name;
+    }
+}
+
+=head2 _create_exon
+
+ Title   : _create_exon
+ Usage   : 
+ Function: 
+ Example :
+ Returns : 
+ Args    : 
+
+=cut
+
+sub _create_exon {
+    my ($self, $id, $strand, $start, $starte, $end, $ende, $transcriptname, $index, $phase, $annotated) = @_;
+    my $bioseq = $self->primary_seq();
+
+    my $exon = new Bio::EnsEMBL::Exon();        
+    $exon->clone_id($id);
+    $exon->contig_id($id);
+
+    $exon->strand($strand);
+    $exon->phase($phase);
+    $exon->seqname($transcriptname);
+    $exon->version(1);
+    $exon->modified($annotated);
+    $exon->created($annotated);
+    
+    # We have to map acedb coordinates which are relative to the
+    # start/end in the subsequence to the exon coordinates, which
+    # are absolute.
+    if( $strand == 1 ) {
+        $exon->start($start+$starte-1);
+        $exon->end($start+$ende-1);
+    }
+    else {
+	$exon->start($start-$ende+1);
+	$exon->end($start-$starte+1);
+    } 
+    $exon->attach_seq($bioseq);
+    $exon->id("$transcriptname.$index");
+    
+    $exon->created(time);
+    $exon->modified(time);
+   
+    return $exon;
+}
+
+
+=head2 _get_phase
+
+ Title   : _get_phase
+ Usage   : $phase = get_phase()
+ Function: Used to get the phase of an ACeDB subsequence object
+           which represents a transcript.
+ Example :
+ Returns : integer
+ Args    : An ACeDB sequence object.
+
+
+=cut
+
+sub _get_phase {
+    my ($self, $seq) = @_;
+
+    unless ($seq and $seq->isa('Ace::Object')) {
+        $self->throw("SubSequence provided '$seq' is not an Ace::Object object");
+    }
+
+    my( $phase );
+    if ($phase = $seq->at('Properties.Start_not_found')) {
+        if ($phase->right) {
+            # ... return its value if it has one
+            $phase = $phase->right->name;
+        } else {
+            # ... or set phase to undef
+            $phase = undef;
+        }
+    }
+    if (! $phase and $phase = $seq->at('Properties.Coding.CDS')) {
+        if ($phase->right) {
+            # ... return its value if it has one
+            $phase = $phase->right->name;
+        } else {
+            # ... or set phase to undef
+            $phase = undef;
+        }
+    }
+    # Ensembl has phases 0,1,2 whereas ACeDB has phases 1,2,3
+    $phase-- if $phase;
+    return $phase || 0;
+}
 
 =head2 get_all_SimilarityFeatures
 
@@ -642,8 +758,8 @@ sub primary_seq {
     return $self->{'_primary_seq'};
 }
 
-use Bio::SeqIO;
 
+use Bio::SeqIO;
 sub humace_get_seq {
     my( $contig ) = @_;
     
@@ -655,6 +771,10 @@ sub humace_get_seq {
     
     my $id = $contig->id;
     $id =~ s/^Em://i;
+    if ($id =~ /\d{5}$/) {
+        # Fix IDs like "Ac000050"
+        $id = uc $id;
+    }
     my $file = "$ana_dir/$id.seq";
     
     my $seq_in = Bio::SeqIO->new('-format' => 'fasta', '-file' => $file);
@@ -730,63 +850,6 @@ sub ace_seq {
    return $self->{'_ace_seq'};
 }
 
-
-=head2 _create_exon
-
- Title   : _create_exon
- Usage   : 
- Function: 
- Example :
- Returns : 
- Args    : 
-
-=cut
-
-sub _create_exon {
-    my ($self, $id, $strand, $start, $starte, $end, $ende, $genename, $index, $phase, $annotated) = @_;
-     
-    my $bioseq = $self->primary_seq();
-
-    my $exon = new Bio::EnsEMBL::Exon();        
-    $exon->clone_id($id);
-    $exon->contig_id($id);
-
-    $exon->strand($strand);
-    $exon->phase($phase);
-    $exon->seqname($genename);
-    $exon->version(1);
-    $exon->modified($annotated);
-    $exon->created($annotated);
-    
-    # We have to map acedb coordinates which are relative to the
-    # start/end in the subsequence to the exon coordinates, which
-    # are absolute.
-    if( $strand == 1 ) {
-            $exon->start($start+$starte-1);
-            $exon->end($start+$ende-1);
-    }
-    else {
-	    $exon->start($start-$ende+1);
-	    $exon->end($start-$starte+1);
-    } 
-    $exon->attach_seq($bioseq);
-#    print STDERR "Exon " . $exon->start . "\t" . $exon-> end . "\t" . $exon->seq->seq . "\n";
-    my $exonid;
-    if( $self->dbobj->_exon_id_start() ) {
-	     $exonid = $self->dbobj->_exon_id_start();
-	     my $nexte = $exonid++;
-	     $self->dbobj->_exon_id_start($exonid);
-    } 
-    else {
-	$exonid = "$id.$genename.$index";
-    }
-    $exon->id($exonid);
-    
-    $exon->created(time);
-    $exon->modified(time);
-   
-    return $exon;
-}
 
 
 =head2 _create_feature_pair
@@ -887,7 +950,7 @@ sub _load_overlaps {
     }
 }
 
-sub get_ContigOverlaps {
+sub get_all_ContigOverlaps {
     my( $self ) = @_;
     
     # Get the sequence object
@@ -930,7 +993,7 @@ sub get_ContigOverlaps {
     my $self_id = $self->id;
     my( $self_I );
     for (my $i = 0; $i < @lap; $i++) {
-        $self_I = $i if $lap[$i][0] eq $self_id;
+        $self_I = $i if uc($lap[$i][0]) eq uc($self_id);
     }
     $self->throw("Can't find $self_id in link $link") unless defined($self_I);
     
@@ -938,7 +1001,8 @@ sub get_ContigOverlaps {
     
     my( @over );
     # Get overlap to the left in the link
-    if (my $lap_a = $lap[$self_I - 1]) {
+    if ($self_I > 0) {
+        my $lap_a = $lap[$self_I - 1];
         my $contiga = Bio::EnsEMBL::AceDB::Contig->new(
             '-dbobj'    => $self->dbobj,
             '-id'       => $lap_a->[0],
@@ -953,8 +1017,101 @@ sub get_ContigOverlaps {
             );
         push(@over, $self->_create_overlap($self, $contigb, $lap_self, $lap_b));
     }
+    
+    #foreach my $lap (@over) {
+    #    $self->_adjust_overlap($lap);
+    #}
+    
     return @over;
 }
+
+#sub _adjust_overlap {
+#    my( $self, $lap ) = @_;
+#    
+#    my $type = $lap->overlap_type;
+#    my( $end_a, $end_b ) = split /2/, $type;
+#    $self->throw("overlap_type '$type' not recognized")
+#        unless $end_a =~ /^left|right$/ and $end_b =~ /^left|right$/;
+#
+#    # Get the values of the Trim_left and Trim_right tags
+#    # for both contigs.
+#    my( $trim_left_a, $trim_right_a ) = $self->get_trimms($lap->contiga);
+#    my( $trim_left_b, $trim_right_b ) = $self->get_trimms($lap->contigb);
+#    
+#    #$self->throw("Missing trim tags for ". $lap->contiga->id)
+#    #    unless $trim_left_a or $trim_right_a;
+#    #$self->throw("Missing trim tags for ". $lap->contigb->id)
+#    #    unless $trim_left_b or $trim_right_b;
+#    
+#    {
+#        if ($end_a eq 'right') {
+#            if ($trim_right_a) {
+#                # Oh dear - we've trimmed the wrong way.
+#                if ($trim_right_a == -1) {
+#                    # Need to calculate numbers based on overlap
+#                    my $length_b = $lap->contigb->length;
+#                    my $overlap_b = $length_b - $lap->positionb + 1;
+#                    if ($end_b eq 'left') {
+#                        $lap->positionb(1);
+#                    } else {
+#                        $lap->positionb($length_b);
+#                    }
+#                    $lap->positiona($lap->pos
+#                }
+#                else {
+#                    # We've already got the numbers
+#                    $lap->positiona($trim_right_a + 1);
+#                    if ($end_b eq 'left') {
+#                        $lap->positionb($trim_left_b);
+#                    }
+#                    else {
+#                        $lap->positionb($trim_right_b);
+#                    }
+#                }
+#            }
+#        }
+#        elsif ($end_a eq 'left') {
+#        }
+#        else {
+#            $self->throw("overlap_type '$type' not recognized");
+#        }
+#    }
+#}
+#
+#sub get_trimms {
+#    my( $self, $contig ) = @_;
+#    
+#    my $ace = $contig->ace_seq;
+#    my( $trim_left, $trim_right ) = (0,0);
+#    
+#    # If the tag Trim_left exists...
+#    if (my $left = $ace->at('Structure.Trim_left')) {
+#        if ($left->right) {
+#            # ... return its value if it has one
+#            $trim_left = $left->right->name;
+#        } else {
+#            # ... or return -1
+#            $trim_left = -1;
+#        }
+#    }
+#    
+#    # If the tag Trim_right exists...
+#    if (my $right = $ace->at('Structure.Trim_right')) {
+#        if ($right->right) {
+#            # ... return its value if it has one
+#            $trim_right = $right->right->name;
+#        } else {
+#            # ... or return -1
+#            $trim_right = -1;
+#        }
+#    }
+#    
+#    $self->throw("Illegal to have both Trim_left and Trim_right set")
+#        if $trim_left and $trim_right;
+#    
+#    printf STDERR "%12s TL=%6s  TR=%6s\n", $ace, $trim_left, $trim_right;
+#    return($trim_left, $trim_right);
+#}
 
 {
     my %type_select = (
@@ -1004,6 +1161,16 @@ sub get_ContigOverlaps {
                 or $self->throw("No ovelap type for '$dir_a*$dir_b'");
         }
 
+        #warn "returning: Bio::EnsEMBL::ContigOverlap->new(
+        #    '-contiga'      => $contiga,
+        #    '-contigb'      => $contigb,
+        #    '-positiona'    => $pos_a,
+        #    '-positionb'    => $pos_b,
+        #    '-distance'     => $distance,
+        #    '-overlap_type' => $type,
+        #    '-source'       => 'ace_link',
+        #    );\n";
+
         # Return a new ContigOverlap object
         return Bio::EnsEMBL::ContigOverlap->new(
             '-contiga'      => $contiga,
@@ -1015,37 +1182,6 @@ sub get_ContigOverlaps {
             '-source'       => 'ace_link',
             );
     }
-}
-
-=head2 _get_phase
-
- Title   : _get_phase
- Usage   : $phase = get_phase()
- Function: Gets the phase of the contig from AceDB.
- Example :
- Returns : integer
- Args    : none
-
-
-=cut
-
-# CONTIGS DON'T HAVE PHASES!
-
-sub _get_phase {
-    my ($self) = @_;
-    
-    # Get the sequence object
-    my $seq = $self->ace_seq();
-    
-    my $phase = $seq->at('Properties.Coding.CDS[1]');
-    
-    # If the phase is defined set it to phase - 1 
-    if ($phase) {
-        return $phase->name() - 1;
-    } 
-    
-    # Otherwise it's 0
-    return 0;
 }
 
 
