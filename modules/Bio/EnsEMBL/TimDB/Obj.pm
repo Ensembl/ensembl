@@ -69,7 +69,10 @@ sub _initialize {
   # (nothing)
 
   # unfinished analysis is in humpub, so use humconf to get location
-  use humConf qw(HUMPUB_ROOT);
+  #use humConf qw(HUMPUB_ROOT);
+  # NO - should hard code it here or provide it as a paramter. Not a humConf thing...
+
+  my $HUMPUB_ROOT = '/nfs/disk100/humpub/';
   
   # in order to access the flat file db, check that we can see the master dbm file
   # that will tell us where the relevant directory is

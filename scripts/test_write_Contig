@@ -1,12 +1,5 @@
 #!/usr/local/bin/perl
 
-BEGIN {
-  my $rootdir = "/nfs/disk89/michele/pogdir";
-
-  unshift (@INC,"$rootdir/PerlModules");
-  unshift (@INC,"$rootdir/ensembl/modules");
-  unshift (@INC,"$rootdir/bioperl-live/");
-}
 
 use strict;
 
@@ -64,7 +57,7 @@ while (my $seq = $in->next_seq) {
     print("No dna associated with " . $seq->id . " - updating database\n");
   }
 
-  if (defined($old_seq) && index($old_seq->seq,$seq->seq) == 0) {
+  if (defined($old_seq) && index($old_seq->seq,$seq->seq) == 0 && $old_seq->seq cmp $seq->seq) {
     print("DNA not changed for " . $seq->id . " - not updating database\n");
   } else {
     if (defined($old_seq)) {

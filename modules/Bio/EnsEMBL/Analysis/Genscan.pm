@@ -77,8 +77,13 @@ sub _initialize {
   die ("No genscan input file") unless $#args > 0;
   my $file      = shift(@args);
 
-  # The DNA Bio::Seq object - optional
-  $self->{_dna}  = shift(@args);
+  # The DNA Bio::Seq object 
+  my $seq = shift(@args);
+  $seq->isa("Bio::Seq") || $self->throw("No DNA sequence passed into GenScan analysis code.");
+
+  
+  $self->{_dna}  = $seq;
+  
   
   # Stored data:
   # ------------
@@ -177,6 +182,20 @@ sub _parse {
 	 }
        }
      }
+
+  #
+  # EB
+  # Attach all the exons to the sequence, using the attach_seq method
+  # on Exons. Exons in EnsEMBL are "real" seqfeatures, and so can 
+  # have DNA sequence attached to them
+  #
+
+  foreach my $t ( $self->each_Transcript() ) {
+      foreach my $e ( $t->each_Exon() ) {
+	  $e->attach_seq($self->{_dna});
+      }
+  }
+
   
   # Now deal with the predicted peptides - we need this
   # for finding the frame 
@@ -477,11 +496,12 @@ sub toSQLfeatureset {
 
     my $tmp;
     
-    foreach my $gf ($tran->eachGeneFeature()) {
+    foreach my $gf ($tran->each_Exon()) {
       # Exon sql
       
       $tmp = "insert into feature(id,contig,start,end,strand,featureset) values(\'" . 
-           $gf->seqname   .   "\',\'$contig\'," .
+           #$gf->seq->id()   .   "\',\'$contig\'," .
+           "\',\'$contig\'," .
            $gf->start     .   "," .
            $gf->end       .   ",\'" . 
            $gf->strand    .   "\',\'" .
@@ -490,7 +510,7 @@ sub toSQLfeatureset {
       push(@sqllines,$tmp);
 
       # featureset sql
-      $tmp = "insert into featureset(feature,id) values(\'" . $gf->seqname() . 
+      $tmp = "insert into featureset(feature,id) values(\'" . $contig . 
         "\',\'$featureset\');\n";
       push(@sqllines,$tmp);
     }

@@ -1,5 +1,22 @@
 #!/usr/local/bin/perl
 
+=head1 NAME - clone2embl
+
+ provides flat file formats from EnsEMBL databases
+
+=head1 SYNOPSIS - 
+
+    clone2embl dJ271M21
+
+    clone2embl -gff dJ271M21
+   
+    clone2embl -dbtype ace dJ271M21
+
+    clone2embl -dbtype rdb -host mysql.server.somewhere dJ271M21
+
+=cut
+
+
 use strict;
 
 use Bio::EnsEMBL::AceDB::Obj;
@@ -15,6 +32,7 @@ my $host1  = 'croc';
 my $host2  = 'humsrv1';
 my $port   = '410000';
 my $gff;
+my $nodna = 0;
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -27,6 +45,7 @@ my $clone  = 'dJ271M21';
 	     'host:s'   => \$host,
 	     'port:n'   => \$port,
 	     'gff'      => \$gff,
+	     'nodna'      => \$nodna,
 	     );
 
 my $db;
@@ -70,8 +89,28 @@ if($gff){
     $as->annotation->add_Comment($comment);
 
     my $emblout = Bio::AnnSeqIO->new( -format => 'EMBL', -fh => \*STDOUT);
+    $emblout->_post_sort(\&sort_FTHelper_EnsEMBL);
+    if( $nodna == 1 ) {
+	$emblout->_show_dna(0);
+    }
+
+    
 
     $emblout->write_annseq($as);
 }
 
+sub sort_FTHelper_EnsEMBL {
+    my $a = shift;
+    my $b = shift;
+
+    if( $a->key eq $b->key ) {
+	return ($a->loc cmp $b->loc);
+    }
+
+    if( $a->key eq 'CDS' ) {
+	return -1;
+    }
+
+    return 1;
+}
 
