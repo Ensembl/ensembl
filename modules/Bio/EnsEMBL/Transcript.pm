@@ -653,7 +653,7 @@ sub coding_region_end {
   Arg [1]    : (optional) boolean $newval
   Example    : $transcript->edits_enabled(1);
   Description: Enables/Disables the application of SeqEdits to this transcript.
-               Edits are enabled by default, and affect the cdna/mrna
+               Edits are disabled by default, and affect the cdna/mrna
                sequences coordinates and the resultant translation.
   Returntype : boolean - the current value of the edits
   Exceptions : none
