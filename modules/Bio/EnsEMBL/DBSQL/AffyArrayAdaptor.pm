@@ -33,7 +33,7 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
-use Bio::EnsEMBL::AffyProbe;
+use Bio::EnsEMBL::AffyArray;
 
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 
