@@ -161,7 +161,7 @@ sub new {
         }
         $self->_db_handle($dbh);
     }
-  	print STDERR "Connected to ensembl database \"$db\" on server \"$host\" as user \"$user\".\n";
+    #print STDERR "Connected to ensembl database \"$db\" on server \"$host\" as user \"$user\".\n";
 
     if ($perl && $perl == 1) {
         $Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY = 1;
