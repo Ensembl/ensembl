@@ -267,7 +267,7 @@ sub store {
     }
     
     #don't store this feature if it has already been stored
-    next if($mf->adaptor == $self);
+    next if($mf->adaptor && ($mf->adaptor == $self));
     
     my $marker = $mf->marker;
     
