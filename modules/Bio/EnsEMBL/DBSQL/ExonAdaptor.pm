@@ -188,6 +188,7 @@ sub _exon_from_sth {
     $sticky_str    .= $component->seq->seq;
 
     $exon->phase($component->phase);
+    $exon->end_phase($component->end_phase);
     $exon->adaptor($self);
 
     # continue while loop until we hit sticky_rank 1
@@ -236,7 +237,7 @@ sub _new_Exon_from_hashRef {
    $exon->end( $hashRef->{'seq_end'} );
    $exon->strand( $hashRef->{'strand'} );
    $exon->phase( $hashRef->{phase} );
-#    $exon->end_phase( $hashRef->{end_phase} );
+   $exon->end_phase( $hashRef->{end_phase} );
    $exon->dbID($hashRef->{'exon_id'});
    $exon->sticky_rank($hashRef->{'sticky_rank'});
    $exon->adaptor($self);
@@ -418,16 +419,18 @@ sub fetch_overlapping_by_Exon {
 
 sub store {
   my ( $self, $exon ) = @_;
-
+  
   if( ! $exon->isa('Bio::EnsEMBL::Exon') ) {
     $self->throw("$exon is not a EnsEMBL exon - not dumping!");
   }
-
   if( $exon->dbID && $exon->adaptor == $self ) {
-      $self->warn("Exon with dbID ".$exon->dbID." has already got a dbID and is attached to this adaptor. No need therefore to store");
-      return $exon->dbID();
+    $self->warn("Exon with dbID ".$exon->dbID." has already got a dbID and is attached to this adaptor. No need therefore to store");
+    return $exon->dbID();
   }
-
+  
+  my $test_endphase = $exon->end_phase;
+  #print STDERR "phase is :".$exon->phase."\n";
+  #print STDERR "ExonAdaptor.store(): end phase is $test_endphase\n";
 
   my $exon_sql = q{
        INSERT into exon ( exon_id, contig_id, seq_start, seq_end, strand, phase, 
