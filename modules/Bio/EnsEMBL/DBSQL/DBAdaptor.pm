@@ -43,8 +43,11 @@ use vars qw(@ISA);
 use strict;
 
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::DBConnection);
+
+
 
 #Override constructor inherited by Bio::EnsEMBL::DBSQL::DBConnection
 
@@ -80,6 +83,52 @@ sub new {
     $self->dnadb($dnadb);
   }
 
+	# $self here is actually a Container object
+	# so need to call _obj to get the DBAdaptor
+	$self->_obj->{'default_module'} =  { 'ArchiveStableId'      => 'Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor',
+																			 'QtlFeature'           => 'Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor',
+																			 'Qtl'                  => 'Bio::EnsEMBL::Map::DBSQL::QtlAdaptor',
+																			 'ProteinFeature'       => 'Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor',
+																			 'Protein'              => 'Bio::EnsEMBL::DBSQL::ProteinAdaptor',
+																			 'MapFrag'              => 'Bio::EnsEMBL::DBSQL::MapFragAdaptor',
+																			 'DnaAlignFeature'      => 'Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor',
+																			 'Clone'                => 'Bio::EnsEMBL::DBSQL::CloneAdaptor',
+																			 'PredictionTranscript' => 'Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor',
+																			 'Sequence'             => 'Bio::EnsEMBL::DBSQL::SequenceAdaptor',
+																			 'Gene'                 => 'Bio::EnsEMBL::DBSQL::GeneAdaptor',
+																			 'Exon'                 => 'Bio::EnsEMBL::DBSQL::ExonAdaptor',
+																			 'Transcript'           => 'Bio::EnsEMBL::DBSQL::TranscriptAdaptor',
+																			 'Translation'          => 'Bio::EnsEMBL::DBSQL::TranslationAdaptor',
+																			 'RawContig'            => 'Bio::EnsEMBL::DBSQL::RawContigAdaptor',
+																			 'Slice'                => 'Bio::EnsEMBL::DBSQL::SliceAdaptor',
+																			 'Analysis'             => 'Bio::EnsEMBL::DBSQL::AnalysisAdaptor',
+																			 'SimpleFeature'        => 'Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor',
+																			 'RepeatConsensus'      => 'Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor',
+																			 'ProteinAlignFeature'  => 'Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor',
+																			 'AssemblyMapper'       => 'Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor',
+																			 'DBEntry'              => 'Bio::EnsEMBL::DBSQL::DBEntryAdaptor',
+																			 'KaryotypeBand'        => 'Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor',
+																			 'Chromosome'           => 'Bio::EnsEMBL::DBSQL::ChromosomeAdaptor',
+																			 'SupportingFeature'    => 'Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor',
+																			 'MarkerFeature'        => 'Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor',
+																			 'Marker'               => 'Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor',
+																			 'RepeatFeature'        => 'Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor',
+																			 'ProxySNP'             => 'Bio::EnsEMBL::DBSQL::ProxySNPAdaptor',
+																			 'ProxyGene'            => 'Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor',
+																			 'ProxyRepeatFeature'   => 'Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor',
+																			 'ProxyDnaAlignFeature' => 'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
+																			 'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor' };
+
+	# initialise storage for hash of names of current modules
+	%{$self->_obj->{'current_module'}} = %{$self->_obj->{'default_module'}}; 
+
+	# keep a hash of objects representing objects of each adaptor type
+	# instantiated as required in get adaptor
+	$self->_obj->{'current_objects'} = {};
+
+	# initialise generic feature adaptor storage
+	$self->_obj->{'generic_feature_adaptors'} = {};
+
   return $self;
 }
 
@@ -100,7 +149,7 @@ sub get_ArchiveStableIdAdaptor {
     my( $self ) = @_;
     
     return 
-      $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ArchiveStableIdAdaptor");
+      $self->get_adaptor("ArchiveStableId");
 }
 
 
@@ -119,7 +168,7 @@ sub get_QtlFeatureAdaptor {
     my( $self ) = @_;
     
     return 
-      $self->_get_adaptor("Bio::EnsEMBL::Map::DBSQL::QtlFeatureAdaptor");
+      $self->get_adaptor("QtlFeature");
 }
 
 =head2 get_QtlAdaptor
@@ -137,7 +186,7 @@ sub get_QtlAdaptor {
     my( $self ) = @_;
     
     return 
-      $self->_get_adaptor("Bio::EnsEMBL::Map::DBSQL::QtlAdaptor");
+      $self->get_adaptor("Qtl");
 }
 
 =head2 get_MetaContainer
@@ -181,7 +230,7 @@ sub get_ProteinFeatureAdaptor {
     my( $self ) = @_;
     
     return 
-      $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProteinFeatureAdaptor");
+      $self->get_adaptor("ProteinFeature");
 }
 
 
@@ -200,7 +249,7 @@ sub get_ProteinFeatureAdaptor {
 sub get_ProteinAdaptor {
     my( $self ) = @_;
  
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAdaptor");
+    return $self->get_adaptor("Protein");
 }
 
 
@@ -236,7 +285,7 @@ sub get_SNPAdaptor {
   }
   
   #return a proxy adaptor which can use the lite or the core database
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxySNPAdaptor",
+  return $self->get_adaptor("ProxySNP",
 			     $primary_adaptor);
 }
 
@@ -257,7 +306,7 @@ sub get_BlastAdaptor {
 
   my $db_apt = $self->get_db_adaptor('blast');
 
-  return $self->_get_adaptor("Bio::EnsEMBL::External::BlastAdaptor",
+  return $self->get_adaptor("Blast",
 			     $db_apt);
 }
 
@@ -276,7 +325,7 @@ sub get_BlastAdaptor {
 sub get_MapFragAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor( "Bio::EnsEMBL::DBSQL::MapFragAdaptor" );
+  return $self->get_adaptor( "MapFrag" );
 }
 
 
@@ -294,7 +343,7 @@ sub get_MapFragAdaptor {
 sub get_CloneAdaptor {
   my( $self ) = @_;
   
-  return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::CloneAdaptor");
+  return $self->dnadb->get_adaptor("Clone");
 }
 
 
@@ -313,7 +362,7 @@ sub get_PredictionTranscriptAdaptor {
   my ($self) = @_;
 
   return 
-    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::PredictionTranscriptAdaptor");
+    $self->get_adaptor("PredictionTranscript");
  }
 
 
@@ -332,7 +381,7 @@ sub get_SequenceAdaptor {
    my $self = shift;
 
    #return the sequence adaptor for the dnadb (which may be this db)
-   return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::SequenceAdaptor");
+   return $self->dnadb->get_adaptor("Sequence");
 }
 
 
@@ -350,11 +399,11 @@ sub get_SequenceAdaptor {
 sub get_GeneAdaptor {
   my( $self ) = @_;
   #get a core db adaptor
-  my $core_adaptor = $self->_get_adaptor("Bio::EnsEMBL::DBSQL::GeneAdaptor");
+  my $core_adaptor = $self->get_adaptor("Gene");
   
   #use a proxy gene adaptor, capable of making decisions with regards to the
   #database that it uses, passing in the core adaptor as a constructor arg
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyGeneAdaptor",
+  return $self->get_adaptor("ProxyGene",
 			     $core_adaptor);
 }
 
@@ -373,7 +422,7 @@ sub get_GeneAdaptor {
 sub get_ExonAdaptor {
   my( $self ) = @_;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ExonAdaptor");
+  return $self->get_adaptor("Exon");
 }
 
 
@@ -390,8 +439,8 @@ sub get_ExonAdaptor {
 
 sub get_TranscriptAdaptor {
   my( $self ) = @_;
-  
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::TranscriptAdaptor");
+
+  return $self->get_adaptor("Transcript");
 }
 
 
@@ -409,7 +458,7 @@ sub get_TranscriptAdaptor {
 sub get_TranslationAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::TranslationAdaptor");
+    return $self->get_adaptor("Translation");
 }
 
 
@@ -427,7 +476,7 @@ sub get_TranslationAdaptor {
 sub get_RawContigAdaptor {
     my( $self ) = @_;
 
-    return $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::RawContigAdaptor");
+    return $self->dnadb->get_adaptor("RawContig");
 }
 
 
@@ -445,7 +494,7 @@ sub get_RawContigAdaptor {
 sub get_SliceAdaptor {
   my( $self ) = @_;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SliceAdaptor");
+  return $self->get_adaptor("Slice");
 }
 
 
@@ -463,7 +512,7 @@ sub get_SliceAdaptor {
 sub get_AnalysisAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::AnalysisAdaptor");
+    return $self->get_adaptor("Analysis");
 }
 
 
@@ -481,7 +530,7 @@ sub get_AnalysisAdaptor {
 sub get_SimpleFeatureAdaptor {
   my( $self ) = @_;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SimpleFeatureAdaptor");
+  return $self->get_adaptor("SimpleFeature");
 }
 
 
@@ -499,7 +548,7 @@ sub get_SimpleFeatureAdaptor {
 sub get_RepeatConsensusAdaptor {
   my( $self ) = @_;
   
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatConsensusAdaptor");
+  return $self->get_adaptor("RepeatConsensus");
 }
 
 
@@ -518,10 +567,10 @@ sub get_RepeatFeatureAdaptor {
   my( $self ) = @_;
   
   my $core_adaptor = 
-    $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::RepeatFeatureAdaptor");
+    $self->dnadb->get_adaptor("RepeatFeature");
   
   #create a proxy adaptor, using a core RepeatFeatureAdaptor as constructor arg
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyRepeatFeatureAdaptor",
+  return $self->get_adaptor("ProxyRepeatFeature",
 			    $core_adaptor);
 }
 
@@ -541,7 +590,7 @@ sub get_ProteinAlignFeatureAdaptor {
   my( $self ) = @_;
     
   return 
-    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProteinAlignFeatureAdaptor");
+    $self->get_adaptor("ProteinAlignFeature");
 }
 
   
@@ -560,11 +609,11 @@ sub get_DnaAlignFeatureAdaptor {
   my $self = shift;
   
   my $core_adaptor = 
-    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::DnaAlignFeatureAdaptor");
+    $self->get_adaptor("DnaAlignFeature");
 
   #return a proxy adaptor which can choose between the core and est DBs
   return 
-    $self->_get_adaptor("Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor",
+    $self->get_adaptor("ProxyDnaAlignFeature",
 			$core_adaptor);
 }
 
@@ -584,7 +633,7 @@ sub get_AssemblyMapperAdaptor {
   my( $self ) = @_;
 
   return 
-    $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::AssemblyMapperAdaptor");
+    $self->dnadb->get_adaptor("AssemblyMapper");
 }
 
 
@@ -602,7 +651,7 @@ sub get_AssemblyMapperAdaptor {
 sub get_DBEntryAdaptor {
     my( $self ) = @_;
 
-    return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::DBEntryAdaptor");
+    return $self->get_adaptor("DBEntry");
 }
 
 
@@ -622,7 +671,7 @@ sub get_KaryotypeBandAdaptor {
     my( $self ) = @_;
 
     return 
-      $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::KaryotypeBandAdaptor");
+      $self->dnadb->get_adaptor("KaryotypeBand");
 }
 
 
@@ -641,7 +690,7 @@ sub get_ChromosomeAdaptor {
     my( $self ) = @_;
 
     return 
-      $self->dnadb->_get_adaptor("Bio::EnsEMBL::DBSQL::ChromosomeAdaptor");
+      $self->dnadb->get_adaptor("Chromosome");
 }
 
 
@@ -660,7 +709,7 @@ sub get_ChromosomeAdaptor {
 sub get_SupportingFeatureAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor("Bio::EnsEMBL::DBSQL::SupportingFeatureAdaptor");
+  return $self->get_adaptor("SupportingFeature");
 }
 
 
@@ -679,7 +728,7 @@ sub get_SupportingFeatureAdaptor {
 sub get_MarkerFeatureAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor('Bio::EnsEMBL::Map::DBSQL::MarkerFeatureAdaptor');
+  return $self->get_adaptor('MarkerFeature');
 }
 
 
@@ -697,7 +746,7 @@ sub get_MarkerFeatureAdaptor {
 sub get_MarkerAdaptor {
   my $self = shift;
 
-  return $self->_get_adaptor('Bio::EnsEMBL::Map::DBSQL::MarkerAdaptor');
+  return $self->get_adaptor('Marker');
 }
 
 
@@ -999,9 +1048,133 @@ sub add_ExternalFeatureFactory{
    $self->add_ExternalFeatureAdaptor($value);
 }
 
+#
+# OVERWRITABLE STANDARD ADAPTORS
+#
+
+=head2 get_adaptor
+
+  Arg [1]    : Canonical data type for which an adaptor is required.
+  Example    : $db_adaptor->get_adaptor("Protein")
+  Description: Gets an adaptor object for a standard data type.
+  Returntype : Adaptor Object of arbitrary type
+  Exceptions : thrown if there is no associated module
+  Caller     : external
+
+=cut
+
+sub get_adaptor() {
+
+	my ($self, $canonical_name, @other_args) = @_;
+
+	# throw if module for $canonical_name does not exist
+	$self->throw("No such data type $canonical_name") if (!exists($self->{'current_module'}->{$canonical_name}));
+
+	# get module name for $canonical_name
+	my $module_name = $self->{'default_module'}->{$canonical_name};
+
+	# create and store a new one if necessary
+	if (!exists($self->{'current_objects'}->{$canonical_name})) {
+	  $self->{'current_objects'}->{$canonical_name} = $self->_get_adaptor($module_name, @other_args);
+	}
+
+	return $self->{'current_objects'}->{$canonical_name};
+
+}
 
 
+=head2 set_adaptor
 
+  Arg [1]    : Canonical data type for new adaptor.
+	Arg [2]    : Object defining the adaptor for arg1.
+  Example    : $pa = Bio::EnsEMBL::DBSQL::ProteinAdaptor->new($db_adaptor);
+             : $db_adaptor->set_adaptor("Protein", $pa)
+  Description: Stores the object which represents the adaptor for the arg1 data type.
+  Returntype : none
+  Exceptions : If arg2 is not a subclass of the default module for this data type.
+  Caller     : external
+
+=cut
+
+sub set_adaptor() {
+
+	my ($self, $canonical_name, $new_object) = @_;
+
+  # throw if an unrecognised canonical_name is used
+	$self->throw("No such data type $canonical_name") if (!exists($self->{'default_module'}->{$canonical_name}));
+
+	my $default_module = $self->{'default_module'}->{$canonical_name};
+	
+	# Check that $new_module is a subclass of $default_module	
+	if (!$new_object->isa($default_module)) {  # polymorphism should work
+		$self->throw("ref($new_object) is not a subclass of $default_module");
+	}
+
+	# set the value in current_module
+	$self->{'current_objects'}->{$canonical_name} = $new_object;
+
+}
+
+#
+# GENERIC FEATURE ADAPTORS
+#
+
+=head2 get_GenericFeatureAdaptors
+
+  Arg [1]    : List of names of feature adaptors to get. If no adaptor names are given, all the defined adaptors are returned.
+  Example    : $db->get_GenericFeature("SomeFeature", "SomeOtherFeature")
+  Description: Returns a hash containing the named feature adaptors (or all feature adaptors).
+  Returntype : Hash containing the named feature adaptors (or all feature adaptors).
+  Exceptions : If any of the the named generic feature adaptors do not exist.
+  Caller     : external
+
+=cut
+
+sub get_GenericFeatureAdaptors() {
+
+	my ($self, @names) = @_;
+
+  my %adaptors = {};
+
+	if (!@names) {
+		%adaptors = %{$self->{'generic_feature_adaptors'}};
+	} else {
+		foreach my $name (@names) {
+			if (!exists($self->{'generic_feature_adaptors'}->{$name})) {
+				$self->throw("No generic feature adaptor has been defined for $name" );
+			}
+			%adaptors->{$name} = $self->{'generic_feature_adaptors'}->{$name};
+		}
+	}
+
+	return %adaptors;
+
+}
+
+=head2 add_GenericFeatureAdaptor
+
+  Arg [1]    : The name of the feature.
+  Arg [2]    : Adaptor object for a generic feature.
+  Example    : $db->add_GenericFeatureAdaptor("SomeFeature", "Bio::EnsEMBL::DBSQL::SomeFeatureAdaptor")
+  Description: Stores the object which represents the adaptor for the named feature type.
+  Returntype : none
+  Exceptions :
+  Caller     : external
+
+=cut
+
+sub add_GenericFeatureAdaptor() {
+
+	my ($self, $name, $adaptor_obj) = @_;
+	
+	# check that $adaptor is an object that subclasses BaseFeatureAdaptor	
+	if (!$adaptor_obj->isa("Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor")) {
+	  $self->throw("$name is a " . ref($adaptor_obj) . " which is not a subclass of Bio::EnsEMBL::DBSQL::BaseFeatureAdaptor" );
+	}
+
+	$self->{'generic_feature_adaptors'}->{$name} = $adaptor_obj;
+
+}
 
 #
 # sub DEPRECATED METHODS
