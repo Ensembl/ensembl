@@ -104,7 +104,7 @@ sub gene_name_2_xref_from_hugo{
 
   my $sql = "select y.label, x.xref_id ";
   $sql   .= "  from dependent_xref d, xref x, xref y ";
-  $sql   .= "  where d.source_id = $source_id_for_hugo and ";
+  $sql   .= "  where d.linkage_source_id = $source_id_for_hugo and ";
   $sql   .= "        x.xref_id = d.master_xref_id and ";
   $sql   .= "        y.xref_id = d.dependent_xref_id and ";
   $sql   .= "        x.source_id = ?";
