@@ -279,7 +279,7 @@ sub fetch_by_stable_id{
 
    if($chr_coords) {
      #transform gene to chromosomal coords
-     my $slice_adaptor = $self->adaptor->db->get_SliceAdaptor;
+     my $slice_adaptor = $self->db->get_SliceAdaptor;
      my $slice = new Bio::EnsEMBL::Slice(-empty => 1,
 					 -adaptor => $slice_adaptor);
      $gene->transform($slice);
