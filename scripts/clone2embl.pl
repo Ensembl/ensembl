@@ -23,7 +23,7 @@
 
     -nodna     don't write dna part of embl file (for testing)
 
-    -format   [gff/ace] dump in gff/ace format, not EMBL
+    -format    [gff/ace/pep] dump in gff/ace/peptides format, not EMBL
 
     -byacc     can specify an accession for a sanger clone and dump as accession
                or specify sanger clone and will still dump as accession
@@ -34,6 +34,12 @@
 
     dJ718J7    single contig, single reverse strand gene with partial transcripts
 
+    AP000228   External finished clone
+
+    AC005776   External finished clone
+
+    AC010144   External unfinished clone
+
 =cut
 
 
@@ -43,6 +49,7 @@ use Bio::EnsEMBL::AceDB::Obj;
 use Bio::EnsEMBL::DB::Obj;
 use Bio::EnsEMBL::TimDB::Obj;
 use Bio::AnnSeqIO;
+use Bio::SeqIO;
 
 use Getopt::Long;
 
@@ -56,6 +63,8 @@ my $nodna = 0;
 my $help;
 my $noacc =0;
 my $aceseq;
+
+my $pepformat = 'Fasta';
 
 # this doesn't have genes (finished)
 #my $clone  = 'dJ1156N12';
@@ -71,7 +80,8 @@ my $clone  = 'dJ271M21';
 	     'nodna'    => \$nodna,
 	     'h|help'   => \$help,
 	     'noacc'    => \$noacc,
-	     'aceseq'   => \$aceseq,
+	     'aceseq:s'   => \$aceseq,
+	     'pepform:s' => \$pepformat,
 	     );
 
 if($help){
@@ -133,6 +143,15 @@ if( $format =~ /gff/ ) {
     }
 
     $emblout->write_annseq($as);
+} elsif ( $format =~ /pep/ ) {
+    my $seqout = Bio::SeqIO->new ( '-format' => $pepformat , -fh => \*STDOUT ) ;
+
+    foreach my $gene ( $clone->get_all_Genes() ) {
+	foreach my $trans ( $gene->each_Transcript ) {
+	    my $tseq = $trans->translate();
+	    $seqout->write_seq($tseq);
+	}
+    }
 } elsif ( $format =~ /ace/ ) {
     foreach my $contig ( $clone->get_all_Contigs() ) {
 	$contig->write_acedb(\*STDOUT,$aceseq);
@@ -147,7 +166,7 @@ if( $format =~ /gff/ ) {
 sub id_EnsEMBL {
     my $annseq = shift;
 
-    return sprintf("%-11s",$annseq->embl_id() );
+    return sprintf("%-11s standard; DNA; %s; %d BP.",$annseq->embl_id(),$annseq->htg_phase == 4 ? 'HUM' : 'HTG',$annseq->seq->seq_len() );
 }
 
 
@@ -169,6 +188,12 @@ sub sv_EnsEMBL {
    }
 
    return $annseq->seq->id() . "." . $annseq->sv
+}
+
+sub ac_EnsEMBL {
+   my ($annseq) = @_;
+
+   return $annseq->seq->id();
 }
 
 
