@@ -38,8 +38,6 @@ my $ens_test = EnsTestDB->new();
 # Load some data into the db
 $ens_test->do_sql_file("t/rawcontig.dump");
 
-#print STDERR "** This is not testing get_MarkerFeature or get_all_ExternalFeatures\n";
-#print STDERR "** This is not testing overlap gets\n";
     
 # Get an EnsEMBL db object for the test db
 my $db = $ens_test->get_DBSQL_Obj;
@@ -109,15 +107,17 @@ if( !$dbseq->isa('Bio::PrimarySeqI') || !$pseq->isa('Bio::PrimarySeqI') ||
 }
 
 @features = $c->get_all_SeqFeatures();
+
 if( scalar(@features) != 3 ) {
+
     print STDERR "Did not get the expected 3 features out from all_SeqFeatures\n";
     print "not ok 10\n";
 } else {
     print "ok 10\n";
 }
 
-
 @features = $c->get_all_SimilarityFeatures_above_score('swissprot',80);
+
 $f = shift @features;
 if( $f->start != 5 || $f->end != 8 ) {
     print STDERR "Did not get the right sequence feature in get_all_SimilarityFeatures_by_score\n";
@@ -127,7 +127,9 @@ if( $f->start != 5 || $f->end != 8 ) {
 }
 
 @features = $c->get_all_SimilarityFeatures();
+
 if( scalar(@features) != 2 ) {
+
     print STDERR "Did not get the expected 2 features out from all_SimilarityFeatures\n";
     print "not ok 12\n";
 } else {
