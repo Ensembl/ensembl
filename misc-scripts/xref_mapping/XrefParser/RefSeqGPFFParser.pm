@@ -151,14 +151,15 @@ sub create_xrefs {
       # Find associated mRNA
       my ($mrna) = $entry =~ /DBSOURCE\s+REFSEQ:\s+accession (.*)\n/;
 
-      my %mrna_dep;
-      $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
-      my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
+      if($mrna){
+        my %mrna_dep;
+        $mrna_dep{SOURCE_ID} = $source_id; # source is still RefSeq
+        my ($mrna_acc,$mrna_ver) = split (/\./,$mrna);
 
-      $mrna_dep{ACCESSION} = $mrna_acc;
-      $mrna_dep{VERSION} = $mrna_ver;
-      push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
-
+        $mrna_dep{ACCESSION} = $mrna_acc;
+        $mrna_dep{VERSION} = $mrna_ver;
+        push @{$xref->{DEPENDENT_XREFS}}, \%mrna_dep;
+      }
       push @xrefs, $xref;
 
     } # if defined species
