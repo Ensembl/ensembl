@@ -129,7 +129,7 @@ sub new {
       'ProxyDnaAlignFeature' =>
           'Bio::EnsEMBL::DBSQL::ProxyDnaAlignFeatureAdaptor',
       'Blast'                => 'Bio::EnsEMBL::External::BlastAdaptor',
-      'CoordSystemAdaptor'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor'};
+      'CoordSystem'   => 'Bio::EnsEMBL::DBSQL::CoordSystemAdaptor'};
 
 	# initialise storage for hash of names of current modules
 	%{$self->_obj->{'current_module'}} = %{$self->_obj->{'default_module'}};
