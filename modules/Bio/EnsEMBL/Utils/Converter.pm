@@ -26,16 +26,16 @@ Bio::EnsEMBL::Utils::Converter, a converter factory
 
 =head1 DESCRIPTION
     
-    Module to converter the business objects between EnsEMBL and any other projects, currently BioPerl.
+Module to converter the business objects between EnsEMBL and any other projects, currently BioPerl.
 
-    What the ready conversions are,
+What the ready conversions are,
 
-Bio::SeqFeature::Generic <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::SimpleFeature
-Bio::SeqFeature::FeaturePair <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::RepeatFeature
-Bio::Search::HSP::GenericHSP -> Bio::EnsEMBL::BaseAlignFeature's submodules
-Bio::Tools::Prediction::Gene -> Bio::EnsEMBL::PredictionTranscript
-Bio::Tools::Prediction::Exon -> Bio::EnsEMBL::Exon
-Bio::Pipeline::Analysis -> Bio::EnsEMBL::Analysis
+    Bio::SeqFeature::Generic <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::SimpleFeature
+    Bio::SeqFeature::FeaturePair <-> Bio::EnsEMBL::SeqFeature, Bio::EnsEMBL::RepeatFeature
+    Bio::Search::HSP::GenericHSP -> Bio::EnsEMBL::BaseAlignFeature's submodules
+    Bio::Tools::Prediction::Gene -> Bio::EnsEMBL::PredictionTranscript
+    Bio::Tools::Prediction::Exon -> Bio::EnsEMBL::Exon
+    Bio::Pipeline::Analysis -> Bio::EnsEMBL::Analysis
 
 =head1 FEEDBACK
 
@@ -55,15 +55,12 @@ Internal methods are usually preceded with a _
 
 
 package Bio::EnsEMBL::Utils::Converter;
-
 use strict;
-use vars qw(@ISA);
-
 use Bio::EnsEMBL::Root;
-
-@ISA =qw(Bio::EnsEMBL::Root);
+our @ISA =qw(Bio::EnsEMBL::Root);
 
 =head2 new
+
   Title   : new
   Usage   : 
         my $converter = Bio::EnsEMBL::Utils::Converter->new(
@@ -111,10 +108,12 @@ sub _initialize {
 }
 
 =head2 _guess_module
+  
   Usage   : $module = $class->_guess_module(
     'Bio::EnsEMBL::SimpleFeature',
     'Bio::EnsEMBL::Generic'
   );
+
 =cut
 
 sub _guess_module {
@@ -131,6 +130,7 @@ sub _guess_module {
 }
 
 =head2 convert
+    
     Title   : convert
     Usage   : my $array_ref = $converter->convert(\@input);
     Function: does the actual conversion
@@ -161,9 +161,8 @@ sub convert{
     return \@output;
 }
 
-sub _converter_single{
-    my ($self, $input) = @_;
-    $self->throw("Not implemented. Please check the instance subclass");
+sub _convert_single{
+    shift->throw("Not implemented. Please check the instance subclass");
 }
 
 =head2 in
@@ -173,16 +172,6 @@ sub _converter_single{
   Function  : get and set for in
   Return    : 
   Args      : 
-
-=cut 
-
-sub in {
-    my($self, $arg) = @_;
-    if(defined($arg)){
-        $self->{_in} = $arg;
-    }
-    return $self->{_in};
-}
 
 =head2 out
 
@@ -194,23 +183,16 @@ sub in {
 
 =cut 
 
-sub out {
-    my($self, $arg) = @_;
-    if(defined($arg)){
-        $self->{_out} = $arg;
-    }
-    return $self->{_out};
+
+foreach my $field (qw(in out)){
+    my $slot=__PACKAGE__ ."::$field";
+    no strict 'refs';
+    *$field=sub{
+        my $self=shift;
+        $self->{$slot}=shift if @_;
+        return $self->{$slot};
+    };
 }
-
-=head2 analysis
-
-  Title     : analysis
-  Useage    : $self->analysis
-  Function  : get and set for analysis
-  Return    : L<Bio::EnsEMBL::Analysis>
-  Args      : L<Bio::EnsEMBL::Analysis>
-
-=cut 
 
 =head2 _load_module
   
