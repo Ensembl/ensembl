@@ -35,7 +35,7 @@ use strict;
 
 use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::EnsEMBL::Utils::Cache;
-use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate);
+use Bio::EnsEMBL::Utils::Exception qw(warning throw deprecate stack_trace_dump);
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -408,20 +408,42 @@ sub fetch_all_by_Slice_constraint {
                       'Bio::EnsEMBL::ProjectionSegment');
   push( @proj, $segment );
 
+
+  # construct list of Hap/PAR boundaries for entire seq region
+  my @bounds;
+  my $ent_slice = $sa->fetch_by_seq_region_id($sr_id);
+  $ent_slice    = $ent_slice->invert() if($slice->strand == -1);
+  my @ent_proj  = @{$sa->fetch_normalized_slice_projection($ent_slice)};
+
+  shift @ent_proj; # skip first
+  @bounds = map {$_->from_start - $slice->start() + 1} @ent_proj;
+
+
   # fetch features for the primary slice AND all symlinked slices
-  foreach my $segment (@proj) {
-    my $offset = $segment->from_start();
-    my $seg_slice  = $segment->to_Slice();
+  foreach my $seg (@proj) {
+    my $offset = $seg->from_start();
+    my $seg_slice  = $seg->to_Slice();
 
     my $features = $self->_slice_fetch($seg_slice, $constraint);
 
     # if this was a symlinked slice offset the feature coordinates as needed
     if($seg_slice->name() ne $slice->name()) {
+
+    FEATURE:
       foreach my $f (@$features) {
         if($offset != 1) {
+
           $f->{'start'} += $offset-1;
           $f->{'end'}   += $offset-1;
         }
+
+        # discard boundary crossing features from symlinked regions
+        foreach my $bound (@bounds) {
+          if($f->{'start'} < $bound && $f->{'end'} >= $bound) {
+            next FEATURE;
+          }
+        }
+
         $f->{'slice'} = $slice;
         push @result, $f;
       }
