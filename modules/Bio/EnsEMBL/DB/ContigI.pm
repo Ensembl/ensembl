@@ -135,6 +135,24 @@ sub orientation{
    my ($self,@args) = @_;
 
    $self->throw("Object did not provide the orientation method on Contig interface!");
+}
+
+=head2 length
+
+ Title   : length
+ Usage   : 
+ Function: Provides the length of the contig
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub length {
+   my ($self,@args) = @_;
+
+   $self->throw("Object did not provide the length method on Contig interface!");
 
 }
 
