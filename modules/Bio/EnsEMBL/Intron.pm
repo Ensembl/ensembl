@@ -95,6 +95,7 @@ sub upstream_Exon {
         $self->{'_intron_location'} = undef;
         $self->throw("'$exon' is not a Bio::EnsEMBL::Exon")
             unless $exon->isa('Bio::EnsEMBL::Exon');
+        $self->attach_seq($exon->entire_seq);
         $self->{'_upstream_exon'} = $exon;
     }
     return $self->{'_upstream_exon'};
@@ -173,7 +174,6 @@ sub location {
         $loc->end  ($exon_start - 1);
         
         # Attach the sequence and location objects to the intron
-        $self->attach_seq($up_seq);
         $self->{'_intron_location'} = $loc;
         
     }
