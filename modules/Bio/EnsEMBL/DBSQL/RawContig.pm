@@ -54,7 +54,7 @@ use strict;
 
 use Bio::Root::RootI;
 
-use Bio::EnsEMBL::DBSQL::Obj;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::DBSQL::AnalysisAdaptor;
 use Bio::EnsEMBL::DBSQL::FeatureAdaptor;
 use Bio::EnsEMBL::DB::RawContigI;
