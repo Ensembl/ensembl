@@ -314,7 +314,6 @@ sub add_snps{
 
 sub each_snps_feature{
    my ($self) = @_;
-   my ($self) = @_;
    if (defined ($self->{'_snp'})) {
        return @{$self->{'_snp'}};
    }
