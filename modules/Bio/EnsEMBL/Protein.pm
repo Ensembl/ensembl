@@ -55,6 +55,7 @@ use Bio::Annotation::DBLink;
 use Bio::EnsEMBL::Transcript;
 use Bio::DBLinkContainerI;
 use Bio::SeqIO;
+use Bio::Tools::SeqStats;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -458,6 +459,83 @@ sub end{
    return $length;
 
 }
+
+=head2 molecular_weight
+
+ Title   : molecular_weight
+ Usage   : 
+ Function: This method has been placed here for convenience function. This gets and return the molecular weight of the protein
+ Example : my $mw = $protein->molecular_weight
+ Returns : Moleculat weight of the peptide
+ Args    :
+
+
+=cut
+
+sub molecular_weight{
+   my ($self) = @_;
+   my $mw = ${Bio::Tools::SeqStats->get_mol_wt($self)}[0];
+return $mw
+}
+
+=head2 checksum
+
+ Title   : checksum
+ Usage   : my $checksum = $protein->checksum()
+ Function: Get the crc64 for the sequence of the protein (this method has been copied from _crc64 method which is in swiss.pm in Bioperl and have been placed here for convenience function
+ Example : 
+ Returns : CRC64
+ Args    : Nothing
+
+
+=cut
+
+sub checksum{
+   my ($self) = @_;
+
+   my $sequence = \$self->seq();
+
+   my $POLY64REVh = 0xd8000000;
+    my @CRCTableh = 256;
+    my @CRCTablel = 256;
+    my $initialized;       
+    
+
+    my $seq = $$sequence;
+      
+    my $crcl = 0;
+    my $crch = 0;
+    if (!$initialized) {
+	$initialized = 1;
+	for (my $i=0; $i<256; $i++) {
+	    my $partl = $i;
+	    my $parth = 0;
+	    for (my $j=0; $j<8; $j++) {
+		my $rflag = $partl & 1;
+		$partl >>= 1;
+		$partl |= (1 << 31) if $parth & 1;
+		$parth >>= 1;
+		$parth ^= $POLY64REVh if $rflag;
+	    }
+	    $CRCTableh[$i] = $parth;
+	    $CRCTablel[$i] = $partl;
+	}
+    }
+    
+    foreach (split '', $seq) {
+	my $shr = ($crch & 0xFF) << 24;
+	my $temp1h = $crch >> 8;
+	my $temp1l = ($crcl >> 8) | $shr;
+	my $tableindex = ($crcl ^ (unpack "C", $_)) & 0xFF;
+	$crch = $temp1h ^ $CRCTableh[$tableindex];
+	$crcl = $temp1l ^ $CRCTablel[$tableindex];
+    }
+    my $crc64 = sprintf("%08X%08X", $crch, $crcl);
+        
+    return $crc64;
+
+}
+
 
 =head2 adaptor
 

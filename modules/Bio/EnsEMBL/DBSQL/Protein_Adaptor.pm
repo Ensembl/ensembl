@@ -585,7 +585,7 @@ sub get_Introns{
 	if ($previous_ex_end != 0) {
 	    my $intron_start = $previous_ex_end;
 	    my $intron_end = $ex_start;
-	    
+
 	    my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
 						       -start => $starts->[$count],
 						       -end => $starts->[$count],
@@ -642,8 +642,12 @@ sub get_exon_global_coordinates{
    $sth->execute;
   
    my @row = $sth->fetchrow;
+
+   
+
    my $start = $row[0];
    my $end = $row[1];
+
    return ($start,$end);
 }
 
@@ -659,121 +663,70 @@ sub get_exon_global_coordinates{
 
 
 =cut
-
+    
 sub get_snps {
-   my ($self,$protein) = @_;
-   my $db = $self->db;
-   my $gene;
-   my $transcript;
-   my @ex_snps;
-   my $count = 0;
-   my @array_features;
-   
+    my ($self,$protein) = @_;
+    my $db = $self->db;
+    my $gene;
+    my $transcript;
+    my @ex_snps;
+    my $count = 0;
+    my @array_features;
+    
 #Get the transcript, gene accession numbers for the given peptide
-   my $transid = $protein->transcriptac();
-   my $geneid = $protein->geneac();
-   my $protid = $protein->id();
+    my $transid = $protein->transcriptac();
+    my $geneid = $protein->geneac();
+    my $protid = $protein->id();
 
 #For now a static golden path is built (this is not the fastest solution but the easiest one). Should be changed to direct sql statements.
-   $db->add_ExternalFeatureFactory($self->snp_obj()); 
-   $db->static_golden_path_type('UCSC');
+    $db->add_ExternalFeatureFactory($self->snp_obj()); 
+    $db->static_golden_path_type('UCSC');
 
-   my $virtual = $db->get_StaticGoldenPathAdaptor();
-
+    my $virtual = $db->get_StaticGoldenPathAdaptor();
+    
 #Fetch a virtual contig for the given transcript. All of the external are retrieved for this virtual contig as well as all genes.   
-   my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
-   my @snips = $vc->get_all_ExternalFeatures();
-   my @genes = $vc->get_all_Genes();
-
+    my $vc = $virtual->fetch_VirtualContig_of_transcript($transid,0);
+    my @snips = $vc->get_all_ExternalFeatures();
+    my @genes = $vc->get_all_Genes();
+    
 #Get which virtual transcript holds the transcript we want to study   
-   foreach my $gen (@genes) {
-       if ($gen->id eq $geneid) {
-	   $gene = $gen;
-       }
+    foreach my $gen (@genes) {
+	if ($gen->id eq $geneid) {
+	    $gene = $gen;
+	}
    }
-
-   my @transcripts = $gene->each_Transcript();
-
-   foreach my $trans  (@transcripts) {
-       if ($trans->id eq $transid) {
-	   $transcript = $trans;
-       }
-   }
-
-   my $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
-       (-gene => $gene,
-	-contig => $vc
-	);
-
-   $genesnp->transcript($transcript);
-   
-   my @seq_diff = $genesnp->snps2transcript(@snips);
-       
-   foreach my $diff (@seq_diff) {
-       foreach my $var ($diff->each_Variant) {
-	   if($var->isa('Bio::Variation::AAChange') ) {
-	   print STDERR $var->label, "\n";
-	   print STDERR $var->trivname, "\n";
-	   print STDERR $var->allele_ori->seq, "\n";
-	   print STDERR $var->allele_mut->seq, "\n";
-	   foreach my $all ($var->each_Allele) {
-	       print STDERR $all->seq, "\n";
-	   }
-       }
-   }
-   }
-
-#Get all of the exons out of the virtual transcript
-   #my @exons = $transcript->each_Exon;
-
-#This loop checks which exons are localised on the transcript
-#   foreach my $sn (@snips) {
-#       my $sn_pos = $sn->start;
-#       foreach my $ex(@exons) {
-#	   if (($sn_pos >= $ex->start) && ($sn_pos <= $ex->end)) {
-#	       my $uni;
-#	       $uni->{snp} = $sn;
-#This store the position of the exon where the snp is located
-#	       $uni->{pos} = $count;
-#	       push (@ex_snps, $uni);
-#	   }
-#	   $count++;
-#       }
-#       $count = 0;
-#   }
-
-#Loop over all of the snps which are located on exons
-#   foreach my $rt (@ex_snps) {
-#to check
-#      	my @array = (0..$rt->{pos});
-#	my $previous_exons_length = 0;
-#
-#	foreach my $po (@array) {
-#	    $previous_exons_length =+ $exons[$po]->length;
-#	}
-
-#Get the location of the snp in aa coordinates	    
-#	my $aa_pos = int (($rt->{snp}->start - @exons[$rt->{pos}]->start + $previous_exons_length)/3) + 1;
-	
-#Create a Protein_FeaturePair object
-#	my $feat1 = new Bio::EnsEMBL::SeqFeature ( -seqname => $protid,
-#						   -start => $aa_pos,
-#						   -end => $aa_pos,
-#						   -score => 0, 
-#						   -percent_id => "NULL",
-#						   -p_value => "NULL");
-#	
-#	my $feat2 = new Bio::EnsEMBL::SeqFeature (-start => 0,
-#						  -end => 0,
-#						  -seqname => "SNP");
-#	
-#	my $feature = new Bio::EnsEMBL::Protein_FeaturePair(-feature1 => $feat1,
-#							    -feature2 => $feat2,);
-#	
-#	push(@array_features,$feature);
-#	    
-#   }
-   return @array_features;
+    
+    my @transcripts = $gene->each_Transcript();
+    
+    foreach my $trans  (@transcripts) {
+	if ($trans->id eq $transid) {
+	    $transcript = $trans;
+	}
+    }
+    
+    my $genesnp = new Bio::EnsEMBL::ExternalData::GeneSNP
+	(-gene => $gene,
+	 -contig => $vc
+	 );
+    
+    $genesnp->transcript($transcript);
+    
+    my @seq_diff = $genesnp->snps2transcript(@snips);
+    
+    foreach my $diff (@seq_diff) {
+	foreach my $var ($diff->each_Variant) {
+	    if($var->isa('Bio::Variation::AAChange') ) {
+		#print STDERR $var->label, "\n";
+		#print STDERR $var->trivname, "\n";
+		#print STDERR $var->allele_ori->seq, "\n";
+		#print STDERR $var->allele_mut->seq, "\n";
+		#foreach my $all ($var->each_Allele) {
+		#    print STDERR $all->seq, "\n";
+		#}
+	    }
+	}
+    }
+    return @array_features;
 }
 
 

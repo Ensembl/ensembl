@@ -138,3 +138,45 @@ sub idesc{
     return $obj->{'idesc'};
 
 }
+
+=head2 intron_length
+
+ Title   : intron_length
+ Usage   : my $length = $intronfeature->intron_length
+ Function: Return the length of an intron by calling its starting point and end point in global coordinates
+ Example :
+ Returns : Length of a given intron
+ Args    : Nothing
+
+
+=cut
+
+sub intron_length{
+   my ($self) = @_;
+   my $start = $self->feature2->start;
+   my $end = $self->feature2->end;
+
+   my $length = int ((($end - $start)/3)+0.5);
+   
+   return $length;
+}
+
+=head2 intron_position
+
+ Title   : intron_position
+ Usage   :
+ Function: Return the position of the intron on the amino acid sequence
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub intron_position{
+   my ($self,@args) = @_;
+   my $pos = $self->feature1->start;
+   
+   return $pos;
+
+}
