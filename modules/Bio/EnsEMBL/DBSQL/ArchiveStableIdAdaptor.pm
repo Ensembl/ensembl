@@ -317,6 +317,59 @@ sub fetch_pre_by_arch_id {
 }
 
 
+=head2 fetch_all_currently_related
+
+  Arg [1]    : Bio::EnsEMBL::ArchiveStableId $arch_id
+   The one where you want to know the currently related ones.
+  Example    : none
+  Description: Gives back a list of archive stable ids which are successors in the 
+               stable_id_event tree of the given stable_id. Might well be empty.
+  Returntype : listref Bio::EnsEMBL::ArchiveStableId
+  Exceptions : none
+  Caller     : webcode for archive
+
+=cut
+
+
+sub fetch_all_currently_related {
+  my $self = shift;
+  my $arch_id = shift;
+
+  my $current_db_name = $self->list_dbnames()->[0];
+  my $dbname = $arch_id->db_name;
+
+  my ($old, $new) ;
+  if( $dbname eq $current_db_name ) {
+    return [ $arch_id ];
+  }
+
+  while( $dbname != $current_db_name ) {
+    while( my $asi = ( shift @$old )) {
+      push( @$new, @{$asi->get_all_successors()});
+    }
+
+    if( @$new ) {
+      $dbname = $new->[0]->dbname();
+    } else {
+      last;
+    }
+    @$old = @$new;
+  }
+
+  my %stable_ids;
+  my @result;
+  while( my $arch_id = ( shift @$new )) {
+    if( exists $stable_ids{ $arch_id->stable_id } ) {
+      next;
+    } else {
+      push( @result, $arch_id );
+      $stable_ids{ $arch_id->stable_id() } = 1;
+    }
+  }
+
+  return \@result;
+}
+
 
 =head2 fetch_succ_by_arch_id
 
