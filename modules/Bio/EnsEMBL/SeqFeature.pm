@@ -69,21 +69,23 @@ use strict;
 
 use Bio::EnsEMBL::SeqFeatureI;
 use Bio::EnsEMBL::Analysis;
-use Bio::Root::RootI;
+
 
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::SeqFeatureI);
 
 sub new {
   my($caller,@args) = @_;
   
-  my ($self) = $caller->SUPER::new(@args);
+  my $self = {};
+  bless $self, $caller;
+  
 
   $self->{'_gsf_tag_hash'} = {};
   $self->{'_gsf_sub_array'} = [];
   $self->{'_parse_h'} = {};
   $self->{'_contig_id'} = undef;
 
-  bless $self,$caller;
+  
 
 my($start,$end,$strand,$frame,$score,$analysis,$seqname,$source_tag, $primary_tag, $percent_id, $p_value, $phase, $end_phase); 
 
