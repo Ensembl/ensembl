@@ -64,8 +64,22 @@ preceded with a _
 
 
 package Bio::EnsEMBL::EMBL_Dump_Sanger;
+
 use strict;
+use vars qw( @ISA @EXPORT_OK );
+use Exporter;
 use Carp;
+use Bio::Annotation::Reference;
+
+@ISA = ('Exporter');
+@EXPORT_OK = qw(
+                add_ensembl_de_cc
+                add_source_feature
+                add_contig_comments
+                add_accession_info
+                add_reference
+                ensembl_annseq_output
+                );
 
 =head2 add_ensembl_comments
 
@@ -111,19 +125,20 @@ library."
     # Replace newlines with spaces
     foreach (@sang_comments) { s/\n/ /g };
 
-    sub add_ensembl_comments {
-        my ($aseq) = @_;
+    sub add_ensembl_de_cc {
+        my ($aseq, $ext_clone) = @_;
 
         # Sanity checks
         unless ($aseq) {
-            confess "Ok. No aseq passed into EMBL_Dump_Sanger so I can't even throw a nice exception!";
+            confess("Error: No \$aseq passed into EMBL_Dump_Sanger so I can't even throw a nice exception!");
         }
         unless ($aseq->isa('Bio::EnsEMBL::AnnSeq')) {
             $aseq->throw("not got a EnsEMBL annseq but a $aseq. Not going to add comments");
         }
 
         # DE line
-        $aseq->seq->desc("Reannotated sequence via Ensembl");
+        confess("external clone not specified") unless $ext_clone;
+        $aseq->seq->desc("Human DNA sequence *** SEQUENCING IN PROGRESS *** from clone $ext_clone");
 
         # CC lines
         foreach my $text (@sang_comments) {
@@ -131,18 +146,25 @@ library."
             $comment->text($text);
             $aseq->annotation->add_Comment($comment);
         }
-
-
-        my $sf = Bio::SeqFeature::Generic->new();
-        $sf->start(1);
-        $sf->end($aseq->seq->seq_len());
-        $sf->strand(1);
-        $sf->primary_tag('source');
-        $sf->add_tag_value('organism','Homo sapiens');
-        $aseq->add_SeqFeature($sf);
-
-        # done!
     }
+}
+
+sub add_source_feature {
+    my( $aseq, $chr, $map, $lib, $cln ) = @_;
+   
+    my $sf = Bio::SeqFeature::Generic->new();
+    $sf->start(1);
+    $sf->end($aseq->seq->seq_len());
+    $sf->strand(1);
+    $sf->primary_tag('source');
+    
+    $sf->add_tag_value('organism',   'Homo sapiens');
+    $sf->add_tag_value('chromosome', $chr ) if $chr;
+    $sf->add_tag_value('map',        $map ) if $map;
+    $sf->add_tag_value('library',    $lib ) if $lib;
+    $sf->add_tag_value('clone',      $cln ) if $cln;
+    
+    $aseq->add_SeqFeature($sf);
 }
 
 =head2 add_contig_comments
@@ -174,7 +196,7 @@ have been flipped relative to the original data are marked 'Reversed'.
         my $orientation = $contig->orientation;
 
         $id =~ s/^([^\.]+)\.//
-            or die "Can't remove clone id from '$id'";
+            or confess "Can't remove clone id from '$id'";
 
         my $text = "Contig_ID: $id  Length: ${length}bp";
         $text .= "  Reversed" if $orientation == -1;
@@ -202,12 +224,26 @@ have been flipped relative to the original data are marked 'Reversed'.
 =cut
 
 sub add_accession_info {
-    my( $aseq, $acc, $id ) = @_;
+    my( $aseq, $acc, $id, $project ) = @_;
     
     $aseq->seq->id($acc);
     $aseq->embl_id($id);
+    $aseq->project_name($project);
 }
 
+sub add_reference {
+    my( $aseq, $author, $date ) = @_;
+    
+    confess("No author supplied") unless $author;
+    my $reference = Bio::Annotation::Reference->new();
+    $reference->authors("$author;");
+    $reference->location("Submitted ($date) to the EMBL/Genbank/DDBJ databases.\n"
+                        ."Sanger Centre, Hinxton, Cambridgeshire, CB10 1SA, UK.\n"
+                        ."E-mail enquiries: humquery\@sanger.ac.uk\n"
+                        ."Clone requests: clonerequest\@sanger.ac.uk\n");
+    
+    $aseq->annotation->add_Reference($reference);
+}
 
 =head2 ensembl_annseq_output
 
@@ -224,11 +260,11 @@ sub add_accession_info {
 sub ensembl_annseq_output {
    my ($aseqstream) = @_;
 
-   if( !$aseqstream  ) {
-       confess "Ok. No aseq passed into EMBL_Dump_Sanger so I can't even throw a nice exception!";
+   unless ($aseqstream) {
+       confess("Error: No \$aseqstream passed into EMBL_Dump_Sanger so I can't even throw a nice exception!");
    }
 
-   if( !$aseqstream->isa('Bio::AnnSeqIO::EMBL') ) {
+   unless ($aseqstream->isa('Bio::AnnSeqIO::EMBL')) {
        $aseqstream->throw("not got EMBL IO but a $aseqstream. Not going to add output functions");
    }
 
@@ -238,7 +274,7 @@ sub ensembl_annseq_output {
    $aseqstream->_id_generation_func(\&id_EnsEMBL);
    $aseqstream->_kw_generation_func(\&kw_EnsEMBL);
    $aseqstream->_ac_generation_func(\&ac_EnsEMBL);
-   
+   $aseqstream->_sv_generation_func(\&sv_EnsEMBL);
 }
 
 #########################
@@ -268,28 +304,42 @@ sub kw_EnsEMBL {
 }
 
 sub ac_EnsEMBL {
-   my ($annseq) = @_;
+    my ($annseq) = @_;
 
-   return $annseq->seq->id() . ";";
+    my $acc = $annseq->seq->id()
+        or $annseq->throw("No accession in \$annseq");
+    my $proj = $annseq->project_name()
+        or $annseq->throw("No project_name in \$annseq");
+    $proj = '_'. uc $proj;
+    
+    return "$acc;\nXX\nAC * $proj";
 }
 
+# We don't add SV lines to submissions
+sub sv_EnsEMBL {  }
 
-sub sort_FTHelper_EnsEMBL {
-    my $a = shift;
-    my $b = shift;
 
-    if( $a->key eq $b->key ) {
-	return ($a->loc cmp $b->loc);
+BEGIN {
+    # A value of 0 is illegal in %sort_order
+    my %sort_order = (
+        source  => 1,
+        CDS     => 2,
+    );
+
+    # $last is one more than the largest value in %sort_order
+    my $last = (sort {$b <=> $a} values %sort_order)[0] + 1;
+
+    sub sort_FTHelper_EnsEMBL {
+        my $a = shift;
+        my $b = shift;
+
+        my $a_ord = $sort_order{$a->key} || $last;
+        my $b_ord = $sort_order{$b->key} || $last;
+
+        # Features are sorted by location if they don't
+        # sort by thier keys.
+        return $a_ord <=> $b_ord  || $a->loc cmp $b->loc;
     }
-
-    if( $a->key eq 'source' ) {
-	return -1;
-    }
-    if( $a->key eq 'CDS' ) {
-	return -1;
-    }
-
-    return 1;
 }
 
 1;
@@ -313,11 +363,11 @@ BEGIN {
         {
             my $e = external_clone_name($project);
             $ext_clone = $e->{$project}
-                or die "Can't make external clone name";
+                or confiess "Can't make external clone name";
         }
         my $date = EMBLdate();
         my $binomial = species_binomial($species)
-            or die "Can't get latin name for '$species'";
+            or confiess "Can't get latin name for '$species'";
 
         # Make the sequence
         my( $dna, %contig_lengths );

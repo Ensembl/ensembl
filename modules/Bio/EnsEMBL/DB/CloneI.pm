@@ -294,14 +294,14 @@ sub get_AnnSeq {
 
     my (@contigs,@genes,$as,$seq);
 
-     ### @contigs doesn't get used? ###
-    @contigs = $self->get_all_Contigs();
+    ### @contigs doesn't get used? ###
+    #@contigs = $self->get_all_Contigs();
     @genes   = $self->get_all_Genes();
 
     $seq = $self->seq();
-
+    
     $as = Bio::EnsEMBL::AnnSeq->new();
-
+    
     $as->embl_id($self->embl_id());
     $as->sv($self->sv());
     $as->htg_phase($self->htg_phase());

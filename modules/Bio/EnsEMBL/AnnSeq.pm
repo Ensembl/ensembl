@@ -128,3 +128,26 @@ sub embl_id{
     return $obj->{'embl_id'};
 
 }
+
+=head2 project_name
+
+ Title   : project_name
+ Usage   : $obj->project_name($newvalue)
+ Function: Stores the name of the Sanger Centre project.
+           Used only for generating the special "AC * "
+           lines for dumping EMBL files suitable for
+           submission to EMBL.
+           See: Bio::EnsEMBL::EMBL_Dump_Sanger
+ Returns : value of project_name
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub project_name {
+    my $obj = shift;
+    if( @_ ) {
+        $obj->{'project_name'} = shift;
+    }
+    return $obj->{'project_name'};
+}

@@ -74,6 +74,7 @@ sub _initialize {
 
   # id of clone
   $self->id($id);
+  
   $self->disk_id($disk_id);
   $self->sv($sv);
   $self->embl_id($emblid);
@@ -388,11 +389,11 @@ sub embl_id {
 
 sub sv {
     my ($obj,$value) = @_;
-    if( defined $value) {
-	if($value=~/^-?\d+$/){
+    if (defined $value) {
+	if ($value =~ /^-?\d+$/) {
 	    $obj->{'_clone_sv'} = $value;
-	}else{
-	    $obj->throw("Invalid value for SV $value");
+	} else {
+	    $obj->throw("Invalid value for SV '$value'");
 	}
     }
     return $obj->{'_clone_sv'};

@@ -198,22 +198,28 @@ sub ac_EnsEMBL {
 }
 
 
-sub sort_FTHelper_EnsEMBL {
-    my $a = shift;
-    my $b = shift;
+BEGIN {
+    # A value of 0 is illegal in %sort_order
+    my %sort_order = (
+        source  => 1,
+        CDS     => 2,
+    );
 
-    if( $a->key eq $b->key ) {
-	return ($a->loc cmp $b->loc);
-    }
+    # $last is one more than the largest value in %sort_order
+    my $last = (sort {$b <=> $a} values %sort_order)[0] + 1;
 
-    if( $a->key eq 'source' ) {
-	return -1;
-    }
-    if( $a->key eq 'CDS' ) {
-	return -1;
-    }
+    sub sort_FTHelper_EnsEMBL {
+        my $a = shift;
+        my $b = shift;
 
-    return 1;
+        my $a_ord = $sort_order{$a->key} || $last;
+        my $b_ord = $sort_order{$b->key} || $last;
+
+        # Features are sorted by location if they don't
+        # sort by thier keys.
+        return $a_ord <=> $b_ord  || $a->loc cmp $b->loc;
+    }
 }
+
 
 1;
