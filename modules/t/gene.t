@@ -451,3 +451,45 @@ debug($interpro[0]);
 
 
 ok($gene->display_id eq $gene->stable_id);
+
+#
+# test Gene: get_all_alt_alleles
+#
+
+$gene = $ga->fetch_by_dbID( 18256 );
+my $alt_genes = $gene->get_all_alt_alleles();
+
+ok( scalar( @$alt_genes ) == 3 );
+
+# expect the following alleles
+my %gene_ids = ( 18257 => 1, 18258 => 1, 18259 => 1);
+my $ok = 1;
+for my $gene ( @$alt_genes ) {
+  $ok = $ok && $gene_ids{$gene->dbID()};
+}
+ok( $ok );
+
+#
+# test storing a new allele group
+#
+
+$multi->hide( 'alt_allele' );
+
+my @alt_genes;
+push( @alt_genes, $ga->fetch_by_dbID(18270) );
+push( @alt_genes, $ga->fetch_by_dbID(18271) );
+push( @alt_genes, $ga->fetch_by_dbID(18272) );
+$ga->store_alt_alleles( \@alt_genes ); 
+
+$gene = $ga->fetch_by_dbID( 18270 );
+$alt_genes = $gene->get_all_alt_alleles();
+%gene_ids = ( 18271=>1, 18272=>1 );
+
+$ok = 1;
+for my $gene ( @$alt_genes ) {
+  $ok = $ok && $gene_ids{$gene->dbID()};
+}
+ok( $ok );
+
+
+
