@@ -47,9 +47,9 @@ use strict;
 
 # Object preamble - inheriets from Bio::Root::Object
 
-use Bio::AnnSeq;
+use Bio::Seq;
 
-@ISA = qw(Bio::AnnSeq);
+@ISA = qw(Bio::Seq);
 
 # new() is inherited from Bio::Root::Object
 

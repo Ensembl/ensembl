@@ -48,6 +48,7 @@ use Bio::EnsEMBL::DB::ContigI;
 use Bio::EnsEMBL::SeqFeature;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::Repeat;
+use Bio::PrimarySeq;
 
 @ISA = qw(Bio::Root::Object Bio::EnsEMBL::DB::ContigI);
 
@@ -152,7 +153,7 @@ sub seq{
      $str =~ s/\s//g;
      $str =~ s/[^ATGCNRY]/N/g;
 
-     my $ret =Bio::Seq->new ( -seq => $str, -id => $id, -type => 'Dna' );
+     my $ret =Bio::PrimarySeq->new ( -seq => $str, -id => $id, -moltype => 'dna' );
      $self->_seq_cache($ret);
      
      return $ret;

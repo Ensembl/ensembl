@@ -54,7 +54,7 @@ use strict;
 
 # Object preamble - inherits from Bio::SeqFeature::Homol
 
-use Bio::AnnSeqIO::FTHelper;
+use Bio::SeqIO::FTHelper;
 use Bio::EnsEMBL::FeaturePair;
 
 
@@ -74,11 +74,11 @@ sub _initialize {
 =head2 to_FTHelper
 
 Called by
-C<Bio::AnnSeqIO::FTHelper::from_SeqFeature>,
+C<Bio::SeqIO::FTHelper::from_SeqFeature>,
 which is called by
-C<Bio::AnnSeqIO::EMBL::write_annseq>.
+C<Bio::SeqIO::EMBL::write_annseq>.
 
-Returns a C<Bio::AnnSeqIO::FTHelper> object which
+Returns a C<Bio::SeqIO::FTHelper> object which
 will print the repeat in the Sanger Centre
 format.
 
@@ -88,7 +88,7 @@ sub to_FTHelper {
     my( $rep ) = @_;
     
     # Make new FTHelper, and fill in the key
-    my $fth = Bio::AnnSeqIO::FTHelper->new;
+    my $fth = Bio::SeqIO::FTHelper->new;
        $fth->key('repeat_region');
     
     # Add location line

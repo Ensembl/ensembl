@@ -32,7 +32,7 @@ use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::Exon;
 
-use Bio::AnnSeqIO;
+use Bio::SeqIO;
 
 use Bio::Seq;
 
@@ -122,10 +122,10 @@ $clone->add_Contig($contig2);
 print "ok 2\n";
 
 $as = $clone->get_AnnSeq();
-$asio = Bio::AnnSeqIO->new( '-format' => 'EMBL' , -fh => \*STDERR ) ;
+$asio = Bio::SeqIO->new( '-format' => 'EMBL' , -fh => \*STDERR ) ;
 $asio->_post_sort(\&sort_FTHelper_EnsEMBL);
 
-$asio->write_annseq($as);
+$asio->write_seq($as);
 
 sub sort_FTHelper_EnsEMBL {
     my $a = shift;

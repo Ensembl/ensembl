@@ -528,7 +528,7 @@ sub translate {
 	  } else {
 	      $filler .= 'NNN';
 	  }
-	  $filler .= substr($first_exon->seq->str,0,(3-$first_exon->phase)%3);
+	  $filler .= substr($first_exon->seq->seq,0,(3-$first_exon->phase)%3);
 
 	  # translate it.
 	  if( length($filler) != 6 ) {
@@ -536,11 +536,11 @@ sub translate {
 	      my $fphase = $first_exon->phase;
 	      $self->throw("Wrong length of filler seq. Error in coding [$filler] $lphase:$fphase\n");
 	  }
-	  my $fillerseq = Bio::Seq->new( -seq => $filler, -type => 'Dna');
+	  my $fillerseq = Bio::Seq->new( -seq => $filler, -moltype => 'dna');
 	  my $tfillerseq = $fillerseq->translate();
-	  $seqstr .= $tfillerseq->str;
+	  $seqstr .= $tfillerseq->seq;
       } 
-      $seqstr .= $tseq->str;
+      $seqstr .= $tseq->seq;
       $prevtrans = $ptrans;
   }
   
@@ -714,13 +714,13 @@ sub _translate_coherent{
 
        # warn about non DNA passed in. 
 
-       if( $exon->entire_seq()->type ne 'Dna' ) {
+       if( $exon->entire_seq()->moltype ne 'dna' ) {
 	   #$self->warn("Error. Whoever implemented this databases did not set type to Dna. Setting now!");
-	   $exon->entire_seq()->type('Dna');
+	   $exon->entire_seq()->moltype('dna');
        }
 
        my $seq = $exon->seq();
-       my $str = $seq->str();
+       my $str = $seq->seq();
        
 
        if( length $str == 0 ) {
@@ -734,7 +734,7 @@ sub _translate_coherent{
    if ( $debug ) {
        print STDERR "Bstr is $tstr\n";
        my @trans;
-       my $exseq = new Bio::Seq(-seq => $tstr);
+       my $exseq = new Bio::PrimarySeq(-seq => $tstr , -id => 'dummy' , -moltype => 'dna');
        	$trans[0] = $exseq->translate();
 
 	# this is because a phase one intron leaves us 2 base pairs, whereas a phase 2
@@ -764,7 +764,7 @@ sub _translate_coherent{
    # phase 0 - no need.
 
 
-   my $temp_seq = Bio::Seq->new( -seq => $tstr , '-id' => 'temp', -type => 'Dna' );
+   my $temp_seq = Bio::Seq->new( -seq => $tstr , '-id' => 'temp', -moltype => 'dna' );
    my $trans_seq = $temp_seq->translate();
 
    return $temp_seq->translate();

@@ -367,4 +367,51 @@ sub find_supporting_evidence {
     }
 }
 
+#
+# This function should eventually disappear...
+#
+#
+#
+
+sub _convert_coords_contig_clone {
+    my $self = shift;
+    my $start = shift;
+    my $end = shift;
+    my $strand = shift;
+
+    my ($out_start,$out_end,$out_strand);
+
+    if( !defined $strand ) {
+	$self->throw("_convert_coords_contig_clone(start,end,strand)");
+    }
+
+    my $offset = $self->offset;
+
+    if( $self->orientation == 1 ) {
+       $out_strand = $strand;
+       if( $out_strand == 1 ) {
+	   $out_start = $offset + $start -1;
+	   $out_end   = $offset + $end -1;
+       } else {
+	   $out_start = $offset + $start -1;
+	   $out_end   = $offset + $end -1;
+       }
+   } else {
+       my $length = $self->length(); 
+       if( $strand == -1 ) {
+	   $out_start = $offset-1 + ($length - $end +1);
+	   $out_end   = $offset-1 + ($length - $start +1);
+	   $out_strand = 1;
+       } else {
+	   $out_start   = $offset-1 + ($length - $end +1);
+	   $out_end     = $offset-1 + ($length - $start +1);
+	   $out_strand = -1;
+       }
+   }
+
+   return ($out_start,$out_end,$out_strand);
+}
+
+    
+
 1;

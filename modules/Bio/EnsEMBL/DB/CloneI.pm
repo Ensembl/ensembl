@@ -51,8 +51,8 @@ package Bio::EnsEMBL::DB::CloneI;
 use vars qw($AUTOLOAD @ISA $CONTIG_SPACING);
 use strict;
 use Bio::EnsEMBL::GeneHandler;
-use Bio::EnsEMBL::AnnSeq;
 use POSIX;
+use Bio::EnsEMBL::AnnSeq;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -348,12 +348,12 @@ sub seq {
 	   $seq = $seq->revcom();
        }
 
-       $seqstr .= $seq->str();
+       $seqstr .= $seq->seq();
 
-       $current_end = $contig->offset + $seq->seq_len;
+       $current_end = $contig->offset + $seq->length;
    }
 
-   $out = Bio::Seq->new( '-id' => $self->id() , -seq => $seqstr, -type => 'Dna');
+   $out = Bio::Seq->new( '-id' => $self->id() , -seq => $seqstr, -moltype => 'dna');
 
    return $out;
 }
@@ -403,12 +403,11 @@ sub get_AnnSeq {
     $seq = $self->seq();
     
     $as = Bio::EnsEMBL::AnnSeq->new();
+    $as->primary_seq($seq);
     
     $as->embl_id($self->embl_id());
     $as->sv($self->embl_version());
     $as->htg_phase($self->htg_phase());
-
-    $as->seq($seq);
 
     my $str = POSIX::strftime( "%d-%B-%Y", gmtime($self->seq_date) );
     $as->add_date($str);
@@ -433,19 +432,31 @@ sub get_AnnSeq {
         # from the get_all_clone_SeqFeatures method
 
 	#
-        foreach my $feature ($contig->get_clone_RepeatFeatures ) {
-
-	    # apply filter if there
-	    if( $hash_ref->{'seqfeature_filter'} ) {
-		if( &{$hash_ref->{'seqfeature_filter'}}($feature) != 1 ) {
-		    next;
+	if( 0 ) {
+	    # don't do this at the moment
+	    foreach my $feature ($contig->get_clone_RepeatFeatures ) {
+		
+		# apply filter if there
+		if( $hash_ref->{'seqfeature_filter'} ) {
+		    if( &{$hash_ref->{'seqfeature_filter'}}($feature) != 1 ) {
+			next;
+		    }
 		}
+		$as->add_SeqFeature( $feature );
+		
 	    }
-            $as->add_SeqFeature( $feature );
-        }
+	} else {
+	    $self->warn("Not dumping repeat features due to shift in coordinate code");
+	}
+
     }
-    print STDERR "Built AnnSeq\n";
+
     return $as;
 }
 
+
 1;
+
+
+
+

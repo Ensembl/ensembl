@@ -54,6 +54,7 @@ package Bio::EnsEMBL::GeneHandler;
 use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::SeqFeatureI;
+use Bio::SeqIO::FTHelper;
 
 # Object preamble - inheriets from Bio::Root::Object
 
@@ -257,7 +258,7 @@ sub _process_Transcript {
             # add this exon
             # make an Exon FTHelper and add them
 
-            my $ft = new Bio::AnnSeqIO::FTHelper->new();
+            my $ft = new Bio::SeqIO::FTHelper->new();
             $ft->key("exon");
             # add other stuff to Exon?
             if ($self->strict_EMBL_dumping) {
@@ -351,7 +352,7 @@ sub _process_Transcript {
 
 
 
-   my $t_fth = new Bio::AnnSeqIO::FTHelper->new();
+   my $t_fth = new Bio::SeqIO::FTHelper->new();
   
    $t_fth->key("CDS");
    
@@ -366,7 +367,7 @@ sub _process_Transcript {
         $t_fth->add_field('protein_id', "_HUMAN-$trans_id");
     } else {
         my $pseq = $trans->translate();
-        $t_fth->add_field('translation',$pseq->str);
+        $t_fth->add_field('translation',$pseq->seq);
     
         if( $oldstyle == 1 ) {
             $t_fth->add_field('transcript_id',$trans->id());
