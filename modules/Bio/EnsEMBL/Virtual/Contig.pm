@@ -689,6 +689,8 @@ sub get_all_Genes {
     my ($self, $supporting) = @_;
     my (%gene,%trans,%exon,%exonconverted);
     
+    if (defined $self->{'_all_genes'}) {return @{$self->{'_all_genes'}}}
+
     my @internal_id;
     foreach my $contig ( $self->_vmap->get_all_RawContigs) {
 	push(@internal_id,$contig->internal_id);
@@ -717,7 +719,12 @@ sub get_all_Genes {
 	$gene{$gene->id()}= $gene;
     }
 
-    return $self->_gene_query(%gene);
+    my @genes=$self->_gene_query(%gene);
+
+    $self->{'_all_genes'}=\@genes;
+    return $self->{'_all_genes'};
+
+
 
 }
 
