@@ -270,7 +270,7 @@ sub process_cds_delete {
       info("introducing frameshift intron ($intron_len) " .
             "to maintain reading frame");
 
-      # very short exons can be entirely consumed by the intron 
+      # very short exons can be entirely consumed by the intron
       if($intron_len == $exon->length()) {
         # still adjust this 0 length intron, because its length
         # is used in transcript splitting calculations
@@ -282,9 +282,19 @@ sub process_cds_delete {
         }
         $code |= StatMsg::ALL_INTRON;
         $exon->fail(1);
-      } 
+      }
       elsif($intron_len > $exon->length()) {
         $code |= StatMsg::CONFUSED | StatMsg::ALL_INTRON;
+
+        # still adjust this negative length exon b/c its length is used
+        # in transcript splitting calculations
+        $exon->cdna_end($exon->cdna_end - $intron_len);
+        if($exon->strand() == 1) {
+          $exon->end($exon->end - $intron_len);
+        } else {
+          $exon->start($exon->start + $intron_len);
+        }
+
         $exon->fail(1);
       }
       elsif($first_len + $intron_len >= $exon->length()) {
