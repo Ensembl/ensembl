@@ -25,7 +25,7 @@
 ## We start with some black magic to print on failure.
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 9;   # 5 tests total
+	plan tests => 10;   # 5 tests total
 	use vars qw($loaded); }
 END { print "not ok 1\n" unless $loaded; }
 
@@ -64,16 +64,6 @@ test_transform ($mapper,
 
 
 
-# the following subroutine tests that a given source co-ordinate range
-# transforms into a given set of destination co-ordinates
-#
-# args: $src  = [$srcid, $srcstart, $srcend, $srcstrand, $srctype]
-#       @dest = ([$id1, $start1, $end1, $strand1],
-#                [$id2, $start2, $end2, $strand2] ... )
-#
-# for @dest array, $strand=0 indicates gap.
-# for @dest array, $id=$srcid for gaps.
-
 #
 # check if the mapper can do merging
 #
@@ -87,6 +77,25 @@ $mapper->add_map_coordinates( "1", 11, 20, 1, "1", 111, 120 );
 test_transform( $mapper, 
 		[ "1", 5, 25, 1, "asm1" ],
 		[ "1", 105, 125, 1 ] );
+
+
+
+#
+# Slightly differnt merge case
+#
+$mapper = Bio::EnsEMBL::Mapper->new( "asm1", "asm2" );
+
+$mapper->add_map_coordinates( "1", 1, 10, 1, "1", 101, 110 );
+$mapper->add_map_coordinates( "1", 21, 30, 1, "1", 121, 130 );
+$mapper->add_map_coordinates( "1", 12, 20, 1, "1", 112, 120 );
+
+test_transform( $mapper, 
+		[ "1", 5, 25, 1, "asm1" ],
+		[ "1", 105, 110, 1 ],
+		[ "1", 11, 11, 0 ],
+		[ "1", 112, 125, 1 ] );
+
+
 
 #
 # dont merge on wrong orientation
@@ -141,6 +150,16 @@ test_transform( $mapper,
 		[ "1", 36, 45, 0 ]
 	      );
 
+
+# the following subroutine tests that a given source co-ordinate range
+# transforms into a given set of destination co-ordinates
+#
+# args: $src  = [$srcid, $srcstart, $srcend, $srcstrand, $srctype]
+#       @dest = ([$id1, $start1, $end1, $strand1],
+#                [$id2, $start2, $end2, $strand2] ... )
+#
+# for @dest array, $strand=0 indicates gap.
+# for @dest array, $id=$srcid for gaps.
 
 
 sub test_transform {
