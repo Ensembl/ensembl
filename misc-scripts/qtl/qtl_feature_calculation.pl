@@ -47,14 +47,18 @@ for my $qtl ( @$qtls ) {
   my $features;
   my @positions;
 
+  my %synonyms = %{$qtl->get_synonyms()};
+  my ($key) = keys %synonyms;
+  my $id = "$key:$synonyms{$key}";
+
   $marker = $qtl->flank_marker_1;
   if( $marker ) {
     $features = $marker->get_all_MarkerFeatures();
     if( scalar( @$features ) <= 1 ) {
       push( @positions, @$features );
     } else {
-      debug( "Non unique flanking marker ".$marker->display_MarkerSynonym->name()." for qtl ".
-	     $qtl->source_primary_id());
+      debug( "Non unique flanking marker ".
+	     $marker->display_MarkerSynonym->name()." for qtl $id");
 
       # position of marker not unique, dont place qtl
       next;
@@ -68,8 +72,8 @@ for my $qtl ( @$qtls ) {
       push( @positions, @$features );
     } else {
       # position of marker not unique, dont place qtl
-      debug( "Non unique flanking marker ".$marker->display_MarkerSynonym->name()." for qtl ".
-	     $qtl->source_primary_id());
+      debug( "Non unique flanking marker ".
+             $marker->display_MarkerSynonym->name()." for qtl $id");
 
       next;
     }
@@ -82,15 +86,14 @@ for my $qtl ( @$qtls ) {
       push( @positions, @$features );
     } else {
       # position of marker not unique, dont place qtl
-      debug( "Non unique peak marker ".$marker->display_MarkerSynonym->name()." for qtl ".
-	     $qtl->source_primary_id());
+      debug( "Non unique peak marker " . 
+	     $marker->display_MarkerSynonym->name()." for qtl $id");
       next;
     }
   }
 
-  
   if( scalar( @positions )) {
-    my ( $chr_name, $chr_start, $chr_end, $chr_id );
+    my ( $chr_name, $chr_start, $chr_end, $chromo );
     
     for my $feature ( @positions ) {
       my $empty_slice = Bio::EnsEMBL::Slice->new
@@ -103,10 +106,11 @@ for my $qtl ( @$qtls ) {
 
       if( $chr_name && $feature->contig->chr_name() ne $chr_name ) {
 	# inconsistent chromsome skip this one
+	debug( "Qtl $id was placed on more than one chromosome.." );
 	next QTL;
       } 
       $chr_name = $feature->contig->chr_name();
-      $chr_id = $feature->contig->get_Chromosome()->dbID();
+      $chromo = $feature->contig->get_Chromosome();
 
       if( ! defined $chr_start ) {
 	$chr_start = $feature->start();
@@ -120,15 +124,46 @@ for my $qtl ( @$qtls ) {
       }
     }
     
-    if( $chr_end - $chr_start < 1000 ) {
-      debug( "Qtl ".$qtl->source_primary_id()." is shorter than 1kb." );
-      $chr_end += 10_000;
-      $chr_start -= 10_000;
-    } elsif( $chr_end - $chr_start > 20_000_000 ) {
-      debug( "Qtl ".$qtl->source_primary_id()." covers more than 20MB" );
+    if( scalar( @positions ) == 1 ) {
+      debug( "Qtl $id has only one marker placed." );
+    }
+
+    if( $chr_end - $chr_start < 1_000_001 ) {
+      my $middle = int(($chr_end + $chr_start)/2);
+      debug("Qtl $id smaller then 1MB, expanding around $middle");
+
+      if($middle < 500_001) {
+	$middle = 500_001;
+	debug("middle is less then 500k, shifting right"); 
+      }
+
+      if($middle + 500_000 > $chromo->length) {
+       $middle = $chromo->length - 500_000;
+       debug("middle is near end of chromosome, shifting left");
+     }
+      
+      $chr_end   = $middle + 500_000;
+      $chr_start = $middle - 500_000;
+
+      #
+      # for faked chromosomes we could end up with chromosomes less than 1MB
+      # doubt this will ever happen in a species w/ qtls but better safe
+      # then sorry
+      #
+      if($chr_end > $chromo->length) {
+	$chr_end = $chromo->length();
+	debug("qtl is on small fake chromosome, and will span entire length");
+      }
+      if($chr_start < 1) {
+	$chr_start = 1;
+	debug("qtl is on small fake chromosome, and will span entire length");
+      }
+    } elsif( $chr_end - $chr_start > 100_000_000 ) {
+      my $span = int(($chr_end - $chr_start + 1) / 1_000_000);
+      debug( "Qtl $id covers more than 100MB ($span MB)" );
       next;
     }
-    print join( "\t", ( $chr_id, $chr_start, $chr_end, $qtl->dbID(), 50 )),"\n";
+    print join( "\t", ($chromo->dbID, $chr_start, $chr_end, $qtl->dbID(), 50 )),"\n";
   }
 }
 
