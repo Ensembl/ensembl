@@ -256,7 +256,13 @@ sub get_all_clone_Genes{
    }
 
    foreach my $exon ( @genes ) {
+
+# it seems that your exons somehow have become genes
+
+       if ($exon->isa('Bio::EnsEMBL::Gene')){print STDERR 'I am a gene not an exon\n';}
        if( !exists $contig{$exon->contig_id} ) {
+
+
 	   $contig{$exon->contig_id} = $self->get_Contig($exon->contig_id);
        }
        my ($s,$e,$str) = $contig{$exon->contig_id}->_convert_coords_contig_clone($exon->start,$exon->end,$exon->strand);
