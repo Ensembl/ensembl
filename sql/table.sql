@@ -12,6 +12,18 @@
 #  - internal ids are integers named tablename_id
 #  - same name is given in foreign key relations
 
+
+
+CREATE TABLE alt_allele (
+  alt_allele_id INT NOT NULL auto_increment,
+  gene_id INT NOT NULL,
+
+  UNIQUE gene_idx( gene_id ),
+  UNIQUE allele_idx( alt_allele_id, gene_id )
+);
+  
+
+
 ################################################################################
 #
 # Table structure for table 'analysis'
@@ -32,6 +44,7 @@
 # parameters a paramter string which is processed by the perl module
 # gff_source, gff_feature 
 #  - how to make a gff dump from features with this analysis
+
 
 CREATE TABLE analysis (
 
