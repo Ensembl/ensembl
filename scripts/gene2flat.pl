@@ -52,7 +52,7 @@ use Getopt::Long;
 
 my $dbtype = 'rdb';
 my $host   = 'ecs1c';
-my $port   = '3360';
+my $port   = '';
 my $dbname = 'idmap_apr01';
 my $dbuser = 'ensadmin';
 my $dbpass = undef;
@@ -64,8 +64,8 @@ my $getall  = 0;
 my $verbose = 0;
 my $webdir = undef;
 my $logerror = undef;
-my $help;
-my $chunk   = 1;
+my $help =0;
+my $chunk = 1;
 
 &GetOptions( 
 	     'dbtype:s'   => \$dbtype,
@@ -89,7 +89,7 @@ my $db;
 if ($help) {
     exec('perldoc', $0);
 }
-open (ERR,">/work2/elia/apr01_dumps/log");
+open (ERR,">/nfs/acari/elia/panic/log");
 my $locator = "$module/host=$host;port=;dbname=$dbname;user=$dbuser;pass=$dbpass";
 $db =  Bio::EnsEMBL::DBLoader->new($locator);
 
@@ -108,7 +108,7 @@ if( $usefile ) {
 
 my $seqio;
 
-if( $format eq 'pep' || $format eq 'transcript') {
+if( $format eq 'pep' || $format eq 'transcript' || $format eq 'exon') {
     $seqio = Bio::SeqIO->new('-format' => 'Fasta' , -fh => \*STDOUT ) ;
 }
 
@@ -174,6 +174,15 @@ while ( @gene_id > 0 ) {
 		}
 		
 	    } 
+	    elsif ($format eq 'exon') {
+		foreach my $trans ( $gene->each_Transcript ) {
+		    foreach my $exon ($trans->each_Exon) {
+			my $seq = $exon->translate();
+			$seq->id($exon->id);
+			$seqio->write_seq($seq);
+		    }
+		}
+	    }
 	    elsif ($format eq 'transcript') {
 		foreach my $trans ( $gene->each_Transcript ) {
                     my ($chr,$gene_start,$cdna_start) = find_trans_start($trans);

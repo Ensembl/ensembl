@@ -10,11 +10,11 @@ $| = 1;
 
 
 my $dbtype = 'rdb';
-my $host   = 'ecs1c';
-my $port   = '410000';
-my $dbname = 'cross110';
+my $host   = 'ecs1e';
+my $port   = '';
+my $dbname = 'cross_mouse';
 my $dbuser = 'ensadmin';
-my $dbpass = undef;
+my $dbpass = 'ensembl';
 my $module = 'Bio::EnsEMBL::DBSQL::CrossMatchDBAdaptor';
 
 &GetOptions ( 
@@ -34,7 +34,7 @@ my @clones=$crossdb->get_clonelist();
 
 foreach my $clone (@clones) {
     print STDERR "Sending crossclonemap job for clone $clone to LSF queue\n";
-    my $command = "bsub -o $clone.out -e $clone.err -E /work2/elia/src/scripts/echeck.pl /work2/elia/src/ensembl/scripts/clonemap.pl $clone";
+    my $command = "bsub -o $clone.out -e $clone.err -E /nfs/acari/elia/src/scripts/echeck.pl /nfs/acari/elia/src/ensembl/scripts/clonemap.pl $clone";
     print STDERR "Command: $command\n";
     system($command);
 }

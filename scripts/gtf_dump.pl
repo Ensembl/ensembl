@@ -6,12 +6,12 @@
 
 =head1 SYNOPSIS - 
 
-    gtfdump [ < ids-file | -getall]  [ -clones | -fpcs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]
+    gtfdump [ < ids-file | -getall]  [ -clones | -chrs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]
 
 =head1 DESCRIPTION
 
     This module dumps EnsEMBL genes from a database to a file in GTF
-    format. The dump happens on a clone by clone or fpc by fpc basis. The
+    format. The dump happens on a clone by clone or chr by chr basis. The
     things to be dumped can be chosen either by specifying the -getall
     option, which dumps genes  on all things in the database, or 
     reading the list of ids from stdin, or by simply
@@ -37,9 +37,9 @@
 
     -module   module name to load to (Defaults to Bio::EnsEMBL::DBSQL::Obj)
 
-    -getall   all clones or fpcs from the database 
+    -getall   all clones or chrs from the database 
 
-    -separatefiles genes of each clone or fpc go to separate <the_id>.gtf
+    -separatefiles genes of each clone or chr go to separate <the_id>.gtf
 
     -dumpfile  name of the file to dump all genes to  (stdout if not specified)
     
@@ -55,17 +55,17 @@ use Getopt::Long;
 
 #Database options
 my $dbtype = 'rdb';
-my $host   = 'ecs1c';
+my $host   = 'kaka.sanger.ac.uk';
 my $port   = undef; # '410000';
-my $dbname = 'ensembl080';
-my $dbuser = 'ensro';
+my $dbname = 'ensembl';
+my $dbuser = 'anonymous';
 my $dbpass = undef;
-my $module = 'Bio::EnsEMBL::DBSQL::Obj';
+my $module = 'Bio::EnsEMBL::DBSQL::DBAdaptor';
 
 #Clone options
 my $getall;
 my $clones;
-my $fpcs;
+my $chrs;
 
 #Other options
 my $dumpfile;
@@ -81,18 +81,18 @@ my $help;
 	     'dbpass:s'  => \$dbpass,
 	     'module:s'  => \$module,
              'clones'    => \$clones,
-             'fpcs'    => \$fpcs,
+             'chrs'    => \$chrs,
              'getall'    => \$getall,
 	     'dumpfile:s'=> \$dumpfile,
              'separatefiles' =>\$separatefiles,
 	     'h|help'    => \$help
 	     );
-my $usage = "gtfdump [ < ids-file | -getall]  [ -clones | -fpcs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]";
+my $usage = "gtfdump [ < ids-file | -getall]  [ -clones | -chrs]  -dbname test [ -dumpfile all_genes.gtf | -separefiles ]  [ ids ... ]";
 
 die $usage,"\n" if  $help;
 
-if ( !($clones || $fpcs) || ($clones && $fpcs )) {
-    die "need to specify exactly one of [ -clones | -fpcs ]\n";
+if ( !($clones || $chrs) || ($clones && $chrs )) {
+    die "need to specify exactly one of [ -clones | -chrs ]\n";
 }
 
 if ($dumpfile && $separatefiles) {
@@ -117,7 +117,7 @@ if ( $getall) {
     if ($clones) {
         @ids = $db->get_all_Clone_id();
     } else {
-        @ids = $db->get_all_fpcctg_ids('UCSC');  
+        @ids = $db->get_all_chr_ids('UCSC');  
     }
     warn scalar(@ids)." ids found in DB\n";
 } elsif ( @ARGV > 0 ) {
@@ -139,7 +139,7 @@ foreach my $id (@ids) {
         my $clone=$db->get_Clone($id);
         @genes=$clone->get_all_Genes();
     } else {
-        my $vc = $stap->fetch_VirtualContig_by_fpc_name($id);
+        my $vc = $stap->fetch_VirtualContig_by_chr_name($id);
         @genes = $vc->get_all_Genes();
     }
         
