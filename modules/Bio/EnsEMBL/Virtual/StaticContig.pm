@@ -176,28 +176,27 @@ sub get_all_SimilarityFeatures_above_score{
     my $glob_end=$self->_global_end;
     my $chr_name=$self->_chr_name;
     
-    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig,$chr_start,$chr_end,$raw_ori);
     
        
-    my    $statement = "SELECT feature.id, feature.seq_start+static_golden_path.chr_start as s,
-                               feature.seq_end+static_golden_path.chr_start, strand, score, 
-                               analysis, name, hstart, hend, hid,
-                               static_golden_path.chr_start,static_golden_path.chr_end,
-                               static_golden_path.raw_ori
-		        FROM   feature, analysis,static_golden_path
-                        WHERE  feature.score > '$score'  
-                        AND    feature.analysis = analysis.id 
-                        AND    static_golden_path.raw_id = feature.contig
-		        AND    analysis.db = '$analysis_type'  
-                        AND    NOT(static_golden_path.chr_end < '$glob_start' 
-		        OR     static_golden_path.chr_start >'$glob_end' )
-		        AND    static_golden_path.chr_name='$chr_name' 
-                        ORDER  by s";
+    my    $statement = "SELECT f.id, f.seq_start+s.chr_start,f.seq_end+s.chr_start, 
+                               f.strand, f.score,f.analysis, f.name, f.hstart, f.hend, f.hid,
+                               s.chr_start,s.chr_end,s.raw_ori
+		        FROM   feature f, analysis a,static_golden_path s
+                        WHERE  f.score > $score  
+                        AND    f.analysis = a.id 
+                        AND    s.raw_id = f.contig
+		        AND    a.db = '$analysis_type'  
+                        AND    s.chr_end >= $glob_start 
+		        AND    s.chr_start <=$glob_end 
+		        AND    s.chr_name='$chr_name'";
     
     my  $sth = $self->dbobj->prepare($statement);    
     $sth->execute(); 
 
-    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,\$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,\$analysisid,
+		       \$name,\$hstart,\$hend,\$hid,\$chr_start,\$chr_end,\$raw_ori);
 
 
     my @array;
@@ -298,13 +297,16 @@ sub get_all_RepeatFeatures {
   my $glob_end=$self->_global_end;
   my $chr_name=$self->_chr_name;
   
+
+  print STDERR "new version\n";
   
   my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
                           rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                           sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                    FROM   repeat_feature rf,static_golden_path sgp
                    WHERE  sgp.raw_id = rf.contig
-                   AND    NOT (sgp.chr_end < '$glob_start' OR sgp.chr_start >'$glob_end' )
+                   AND    sgp.chr_end >= $glob_start 
+                   AND    sgp.chr_start <=$glob_end
 		   AND    sgp.chr_name='$chr_name' ";
   
 
@@ -314,8 +316,8 @@ sub get_all_RepeatFeatures {
   
   my ($fid,$start,$end,$strand,$score,$analysisid,$hstart,$hend,$hid,$raw_ori,$chr_start,$chr_end);
   
-  $sth->bind_columns
-      (undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
+  $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,
+		     \$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
 
  
 
