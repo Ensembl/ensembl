@@ -216,12 +216,34 @@ sub store {
     # If its GoXref add the linkage type to go_xref table
     #
     if ($exObj->isa('Bio::EnsEMBL::IdentityXref')) {
+      
+      my $analysis_id;
+      if( $exObj->analysis() ) {
+	$analysis_id = $self->db()->get_AnalysisAdaptor()->
+	  store( $exObj->analysis() );
+      } else {
+	$analysis_id = undef;
+      }
+      
       $sth = $self->prepare( "
              INSERT ignore INTO identity_xref
              SET object_xref_id = ?,
              query_identity = ?,
-             target_identity = ?" );
-      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity);
+             target_identity = ?,
+             hit_start = ?,
+             hit_end = ?,
+             translation_start = ?,
+             translation_end = ?,
+             cigar_line = ?,
+             score = ?,
+             evalue = ?,
+             analysis_id = ?" );
+
+      $sth->execute($Xidt, $exObj->query_identity, $exObj->target_identity,
+		   $exObj->hit_start(), $exObj->hit_end(), 
+		   $exObj->translation_start(), $exObj->translation_end(),
+		   $exObj->cigar_line(), $exObj->score(), $exObj->evalue(),
+		   $analysis_id);
     } elsif( $exObj->isa( 'Bio::EnsEMBL::GoXref' )) {
       $sth = $self->prepare( "
              INSERT ignore INTO go_xref
@@ -391,7 +413,9 @@ sub _fetch_by_object_type {
            exDB.db_name, exDB.release, exDB.status, 
            oxr.object_xref_id, 
            es.synonym, 
-           idt.query_identity, idt.target_identity,
+           idt.query_identity, idt.target_identity, idt.hit_start, idt.hit_end,
+           idt.translation_start, idt.translation_end, idt.cigar_line,
+           idt.score, idt.evalue, idt.analysis_id,
            gx.linkage_type
     FROM   xref xref, external_db exDB, object_xref oxr 
     LEFT JOIN external_synonym es on es.xref_id = xref.xref_id 
@@ -410,16 +434,18 @@ sub _fetch_by_object_type {
   while ( my $arrRef = $sth->fetchrow_arrayref() ) {
     my ( $refID, $dbprimaryId, $displayid, $version, 
          $desc, $dbname, $release, $exDB_status, $objid, 
-         $synonym, $queryid, $targetid, $linkage_type ) = @$arrRef;
+         $synonym, $queryid, $targetid, $hit_start, $hit_end,
+	 $translation_start, $translation_end, $cigar_line,
+	 $score, $evalue, $analysis_id, $linkage_type ) = @$arrRef;
 
     my %obj_hash = ( 
-	      _adaptor    => $self,
-        _dbID       => $refID,
-        _primary_id => $dbprimaryId,
-        _display_id => $displayid,
-        _version    => $version,
-        _release    => $release,
-        _dbname     => $dbname);
+		    _adaptor    => $self,
+		    _dbID       => $refID,
+		    _primary_id => $dbprimaryId,
+		    _display_id => $displayid,
+		    _version    => $version,
+		    _release    => $release,
+		    _dbname     => $dbname);
 
 
     # using an outer join on the synonyms as well as on identity_xref, we
@@ -433,6 +459,20 @@ sub _fetch_by_object_type {
         $exDB = Bio::EnsEMBL::IdentityXref->new_fast(\%obj_hash);       
         $exDB->query_identity($queryid);
         $exDB->target_identity($targetid);
+	if( $analysis_id ) {
+	  my $analysis = $self->db()->get_AnalysisAdaptor()->
+	    fetch_by_dbID( $analysis_id );
+	  if( $analysis ) {
+	    $exDB->analysis( $analysis );
+	  }
+	}
+	$exDB->cigar_line( $cigar_line );
+	$exDB->hit_start( $hit_start );
+	$exDB->hit_end( $hit_end );
+	$exDB->translation_start( $translation_start );
+	$exDB->translation_end( $translation_end );
+	$exDB->score( $score );
+	$exDB->evalue( $evalue );
       } elsif( defined $linkage_type ) {
         $exDB = Bio::EnsEMBL::GoXref->new_fast( \%obj_hash );
         $exDB->add_linkage_type( $linkage_type );
