@@ -128,10 +128,14 @@ EOF
 sub parse_and_store {
 
   my $target_file_name = shift;
+
   my $type = get_ensembl_object_type($target_file_name);
 
+  # get or create the appropriate analysis ID
+  my $analysis_id = get_analysis_id($type);
+
   # files to write table data to
-  open (OBJECT_XREF, ">object_xref.txt");
+  open (OBJECT_XREF, ">object_xref.");
   open (IDENTITY_XREF, ">identity_xref.txt");
 
   my $total_lines = 0;
@@ -149,8 +153,11 @@ sub parse_and_store {
       my ($label, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score) = split();
       # TODO make sure query & target are the right way around
 
-      print OBJECT_XREF "$target_id $type $query_id\n"; # XXX object_xref_id
-      print IDENTITY_XREF "$query_id $target_id $query_start $query_end $target_start $target_end $cigar_line $score\n"; # XXX object_xref_id
+      print OBJECT_XREF "$target_id\t$type\t$query_id\n";
+      print IDENTITY_XREF "$query_id\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
+      # TODO - evalue?
+
+      # TODO - get object_xref ID from inserts and use in identity_xref table
 
     }
 
@@ -212,6 +219,7 @@ sub calculate_num_jobs {
 
 }
 
+
 sub get_ensembl_object_type {
 
   my $filename = shift;
@@ -235,5 +243,52 @@ sub get_ensembl_object_type {
   }
 
   return $type;
+
+}
+
+
+sub get_analysis_id {
+
+  my $ensembl_type = shift;
+
+  my %typeToLogicName = ( 'transcript' => 'XrefExonerateDNA',
+			  'translation' => 'XrefExonerateProtein' );
+
+  my $logic_name = $typeToLogicName{lc($ensembl_type)};
+
+  # TODO - get these details from Config
+  my $host = "ecs1g";
+  my $port = 3306;
+  my $database = "arne_core_20_34";
+  my $user = "ensadmin";
+  my $password = "ensembl";
+
+  my $dbi = DBI->connect("dbi:mysql:host=$host;port=$port;database=$database",
+			 "$user",
+			 "$password",
+			 {'RaiseError' => 1}) || die "Can't connect to database";
+
+
+  my $sth = $dbi->prepare("SELECT analysis_id FROM analysis WHERE logic_name='" . $logic_name ."'");
+  $sth->execute();
+
+  my $analysis_id;
+
+  if (my @row = $sth->fetchrow_array()) {
+
+    $analysis_id = $row[0];
+    print "Found exising analysis ID ($analysis_id) for $logic_name\n";
+
+  } else {
+
+    print "No analysis with logic_name $logic_name found, creating ...\n";
+    $sth = $dbi->prepare("INSERT INTO analysis (logic_name, created) VALUES ('" . $logic_name. "', NOW())");
+    # TODO - other fields in analysis table
+    $sth->execute();
+    $analysis_id = $sth->{'mysql_insertid'};
+    print "Done (analysis ID=" . $analysis_id. ")\n";
+
+  }
+
 
 }
