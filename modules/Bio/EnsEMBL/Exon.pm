@@ -37,36 +37,9 @@ Examples of creating an exon
 
     $ex->contig($dna);     # $dna is a Bio::Seq
     $ex->phase(0);         # Sets the phase of the exon
-    $ex->end_phase();      # Calculates the end_phase of the exon from the
-                           # Length of the dna and the starting phase
+    $ex->end_phase(1);      # sets the end_phase of the exon
 
     Phase values  are 0,1,2
-
-    $trans = $ex->translate(); # Translates the exon. Returns a Bio::Seq
-
-
-    Frameshifts
-
-    Frameshifts in the exon are stored as a multi-dimensional array of 
-    coordinates and lengths [start_position, length]
-
-    # A multi-dim array of start coordinates and lengths
-    my @fshifts =  $ex->get frameshifts();   
-
-    Setting frameshifts
-    
-    $ex->add_frameshift(5,2);  # Adds a frameshift at position 5 and it
-                               # is an insertion of 2 bases
-                               # e.g CCCCAATTTT becomes cdna CCCCTTTT
-
-    $ex->add_frameshift(5,-2); # Adds a frameshift at position 5 and it
-                               # is a deletion of 2 bases
-                               # e.g CCCCAATTTT becomes cdna CCCCANNATTTT
-                                             
-    Retrieving cdna
-
-    $dna = $ex->get_cdna();    # Get a frameshift modified dna sequence
-                               # and return it in a Bio::Seq
 
 
 =head1 DESCRIPTION
@@ -576,25 +549,6 @@ sub _transform_to_RawContig {
 
 
 
-=head2 pep_seq
-
-  Arg [1]    : none
-  Example    : @pep = $feat->pep_seq
-  Description: Returns the 3 frame peptide translations of the exon
-  Returntype : list of Bio::Seq objects
-  Exceptions : none
-  Caller     : ?
-
-=cut
-
-sub pep_seq {
-    my ($self) = @_;
-    my $pep = $self->_translate();
-    return @$pep;
-}
-
-
-
 =head2 sticky_rank
 
   Arg [1]    : (optional) int $value
@@ -771,248 +725,6 @@ sub type {
 
 
 
-=head2 _translate
-
-  Arg [1]    : none
-  Example    : none
-  Description: PRIVATE method Returns the 3 frame translations of the exon
-  Returntype : listref of Bio::Seq objects
-  Exceptions : thrown if exon length is less than 3
-  Caller     : ?
-
-=cut
-
-sub _translate {
-    my($self) = @_;
-    my $pep;
-    my $i;
-  
-    if( $self->length < 3 ) {
-	$self->throw("Perfectly valid sub length 2 exon. Impossible to translate. Doh!".$self->length." ".$self->dbID);
-    }
-
-    # changed this to work with the new SeqFeature stuff. I am still not
-    # 100% happy about this. EB.
-  
-    # Get the DNA sequence and create the sequence string
-    $self->seq() || $self->throw("No DNA in object. Can't translate\n");
-
-    my $dna = $self->seq();
-  
-    # Translate in all frames - have to chop
-    # off bases from the beginning of the dna sequence 
-    # for frames 1 and 2 as the translate() method
-    # only translates in one frame. Pah!
-  
-    for ($i = 0; $i < 3; $i++) {
-	my $tmp = new Bio::Seq(-seq => substr($dna->seq,$i));
-	$pep->[$i] = $tmp->translate();
-    }
-    return $pep;
-}
-
-
-
-=head2 translate
-
-  Arg [1]    : none
-  Example    : $pep = $feat->translate;
-  Description: Returns the translation of the exon in the defined phase
-  Returntype : Bio::Seq
-  Exceptions : thrown if the exon cannot be translated
-  Caller     : ?
-
-=cut
-
-sub translate {
-    my($self) = @_;
-
-    my $pep = $self->_translate() || throw ("Can't translate DNA\n");
-
-    my $phase= 0;
-
-    if (defined($self->phase)) {
-       $phase = $self->phase;
-    }
-
-    if ($phase){
-       $phase = 3 - $phase;
-    }
-
-    return $pep->[$phase];
-}
-
-
-
-=head2 strand
-
-  Arg [1]    : int $strand
-  Example    : $strand = $exon->strand;
-  Description: Gets/Sets strand of exon 
-  Returntype : int
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub strand {
-  my ($self,$value) = @_;
-
-  
-   if( defined $value)  {
-      if ($value eq "+") {$value =  1;}
-      if ($value eq "-") {$value = -1;}
-      if ($value eq ".") {$value =  0;}
-
-      $self->{'strand'} = $value;
-    }
-    return $self->{'strand'};
-}
-
-
-
-=head2 start_translation
-
-  Arg [1]    : none
-  Example    : $start_translation = $exon->start_translation
-  Description: Returns start translation coord taking into account phase
-  Returntype : int
-  Exceptions : thrown if arguments are passed
-  Caller     : none
-
-=cut
-
-sub start_translation {
-    my ($self,$value) = @_;
-  
-    if( defined $value){
-	$self->throw("cannot set translation start!");
-    }
-
-    my $phase=$self->phase;
-    $phase=3-$phase if $phase;
-    if($self->strand==1){
-	return ($self->start + $phase);
-    }else{
-	return ($self->end - $phase);
-    }
-}
-
-=head2 end_translation
-
- Title   : end_translation
- Usage   : $end_translation = $feat->end_translation
- Function: Returns coordinate taking into account phase
- Returns : number
- Args    : none
-
-=cut
-
-sub end_translation {
-    my ($self,$value) = @_;
-  
-    if( defined $value){
-	$self->throw("cannot set translation end!");
-    }
-
-    my $phase=$self->end_phase;
-    if($self->strand==1){
-	return ($self->end - $phase);
-    }else{
-	return ($self->start + $phase);
-    }
-}
-
-=head2 _rephase_exon_genscan
-
- Title   : _rephase_exon_genscan
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _rephase_exon_genscan{
-   my ($self) = @_;
-
-   my $dna = $self->seq();
-   my $phase;
-   my $pep = $self->_genscan_peptide();
-
-   # trim top and bottem
-   my $dnaseq = $dna->seq();
-
-   LOOP : {
-
-       $dna->setseq(substr($dnaseq,3,-3));
-       
-       my $tr1 = $dna->translate();
-       my $tr1pep = $tr1->str();
-       chop $tr1pep;
-
-#        print STDERR "[$tr1pep] to\n[$pep]\n";
-       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
-	   $phase = 0;
-	   last LOOP;
-       }
-       
-       $dna->setseq(substr($dnaseq,4,-3));
-       
-       $tr1 = $dna->translate();
-       $tr1pep = $tr1->str();
-       chop $tr1pep;
-
-#       print STDERR "[$tr1pep] to\n[$pep]\n";
-       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
-	   $phase = 1;
-	   last LOOP;
-       }
-       
-       $dna->setseq(substr($dnaseq,5,-3));
-       
-       $tr1 = $dna->translate();
-       $tr1pep = $tr1->str();
-       chop $tr1pep;
-
-#       print STDERR "[$tr1pep] to\n[$pep]\n";
-       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
-	   $phase = 2;
-	   last LOOP;
-       }
-       
-   }
-
-   
-
-#   print STDERR "For exon ",$self->strand," ",$self->phase," ",$phase,"\n";
-   $self->phase($phase);
-   
-
-}
-
-=head2 _genscan_peptide
-
- Title   : _genscan_peptide
- Usage   : $obj->_genscan_peptide($newval)
- Function: 
- Returns : value of _genscan_peptide
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _genscan_peptide{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_genscan_peptide'} = $value;
-    }
-    return $obj->{'_genscan_peptide'};
-
-}
 
 
 
@@ -1273,188 +985,6 @@ sub _get_stable_entry_info {
 }
 
 
-=head2 add_frameshift
-
- Title   : add_frameshift
- Usage   : $exon->add_frameshift($start,$length)
- Function: stores frameshift information in the current exon object
- Returns : Nothing
- Args    : start, length
-
-
-=cut
-
-
-sub add_frameshift {
-    my ($self,$start,$length) = @_;
-
-
-    # do some simple sanity checks
-
-    my $tseq = $self->seq->seq;
-
-    if ( $start > length( $tseq ) ) {
-      print STDERR "Trying to add a frameshift outside the range of the sequence. Ignoring.\n";
-      return;
-    }
-
-    if ( !defined $start ) {
-      print STDERR "Trying to add a frameshift without any parameters. Ignoring.\n";
-      return;
-    }
-
-    if ( !defined $length ) {
-      print STDERR "Trying to add a frameshift without a specified length. Ignoring.\n";
-      return;
-    }
-
-    if ( $start <= 0) {
-      print STDERR "Trying to add a frameshift with a start point of zero or less. Ignoring.\n";
-      return;
-    }
-
-    if ( $length == 0) {
-      print STDERR "Trying to add a frameshift with a length of zero. Ignoring.\n";
-      return;
-    }
-
-    # and finally if the frameshift data is valid....
-    push @{$self->{'_frameshifts'}},[$start,$length];
-}
-
-
-=head2 get_frameshifts
-
- Title   : get_frameshifts
- Usage   : $exon->get_frameshifts()
- Function: retrieves an array of frameshifts if they exist
- Returns : Array of frameshifts [start, length] or UNDEF
- Args    : None
-
-=cut
-
-sub get_frameshifts {
-    my ($self) = @_;
-
-    # if already stored in the current exon object
-    if ( defined $self->{'_frameshifts'} ) {
-      return @{$self->{'_frameshifts'}};
-      }
-    else {  # else fetch frameshift data from database
-
-      if ( !defined $self->adaptor ) {
-	return;  # return undef if no ExonAdaptor
-      }
-      $self->adaptor->fetch_frameshifts( $self );
-      if ( defined $self->{'_frameshifts'}){
-	return @{$self->{'_frameshifts'}};
-      }
-      else {
-	return;  # not necessarily any frameshifts stored
-      }
-    }
-}
-
-
-=head2 get_cdna
-
- Title   : get_cdna
- Usage   : $seq = $exon->get_cdna()
- Function: converts an exons dna based on any existing frameshifts
- Returns : Bio::Seq object
- Args    : None
-
-=cut
-
-sub get_cdna {
-  my ($self) =@_;
-
-  my $seq1 = $self->seq();
-  my $seq = $seq1->seq();
-
-  # check to see if frameshifts actually exist
-  my @frameshifts = $self->get_frameshifts();
-
-  # if the exon has no frameshifts, simply return the dna
-  # sequence unmodified
-
-  if ( scalar(@frameshifts) ==0  ) {
-    my $temp_seq = Bio::Seq->new(
-	   -SEQ         => $seq,
-	   -DISPLAY_ID  => 'cdna_unmodified',
-           -MOLTYPE     => 'dna'
-           );
-
-    return $temp_seq;
-  }
-
-  # if there are frameshifts...
-  # sort frameshifts into order based on their start positions.
-  # important that this is done because the while loop below relies on this!!
-  # frameshifts are stored as [start, length]
-  @frameshifts = sort { $a->[0] <=> $b->[0] } @frameshifts;
-
-  my $fshift_seq = "";   # frameshift modified sequence
-
-  # need to check that starting from 1 is in fact correct!!
-  my $bp = 1;            # position along sequence
-  my $curr_frame  = 0;    # current frameshift
-
-  # run along the genomic sequence for the current exon
-  while ( $bp <= length($seq) ) {
-
-    # do something if we find a frameshift
-    if ( $bp == $frameshifts[$curr_frame][0] ) {
-
-      # if bps have been inserted then jump along the sequence
-      # ignoring extraneous bps
-      if ( $frameshifts[$curr_frame][1] > 0 ) {
-	$bp += $frameshifts[$curr_frame][1];
-      }
-
-      # else if bps have been deleted, insert some Ns.
-      # there shouldnt be a 0 case but cover it just in case.
-      elsif ( $frameshifts[$curr_frame][1] <= 0 ) {
-	$fshift_seq .= substr($seq, $bp-1, 1);
-            # -1 to be consistent with the dna seqeunce	
-      	$fshift_seq .= 'N' x -$frameshifts[$curr_frame][1];
-	$bp++;
-      }
-
-      # to stop -warnings complaining
-      if ( $curr_frame < $#frameshifts ) {
-	$curr_frame++;      # point to the next frameshift
-      }
-   }
-    else {  # store the current base pair
-      $fshift_seq .= substr($seq, $bp-1, 1);
-            # -1 to be consistent with the dna seqeunce
-      $bp++;
-    }
-  }
-
-  # a sanity check here to make sure the modified sequence is the
-  # right length - but return modified cdna anyway...
-
-  my $seq_changes = 0;
-
-  for my $i ( 0 .. $#frameshifts ) {
-    $seq_changes += $frameshifts[$i][1];
-  }
-
-  if ( length($seq) - $seq_changes != length($fshift_seq)) {
-    print STDERR "Frameshift modified sequence isn't the correct length.\n";
-  }
-
-  # push the modified sequence into a Bio::Seq object
-  my $temp_seq = Bio::Seq->new(
-	 -SEQ         => $fshift_seq,
-	 -DISPLAY_ID  => 'cdna_modified',
-         -MOLTYPE     => 'dna'
-         );
-
-  return $temp_seq;
-}
 
 
 =Head1 load_genomic_mapper
@@ -1519,7 +1049,73 @@ sub adjust_start_end {
 }
 
 
+=head2 peptide
 
+  Arg [1]    : Bio::EnsEMBL::Transcript $tr
+  Example    : my $pep_str = $exon->peptide($transcript)->seq; 
+  Description: Retrieves the portion of the transcripts peptide
+               encoded by this exon.  The transcript argument is necessary
+               because outside of the context of a transcript it is not
+               possible to correctly determine the translation.  Note that
+               an entire amino acid will be present at the exon boundaries
+               even if only a partial codon is present.  Therefore the 
+               concatenation of all of the peptides of a transcripts exons 
+               is not the same as a transcripts translation because the 
+               summation may contain duplicated amino acids at splice sites.
+               In the case that this exon is entirely UTR, a Bio::Seq object 
+               with an empty sequence string is returned.
+  Returntype : Bio::Seq
+  Exceptions : thrown if transcript argument is not provided
+  Caller     : general
+
+=cut
+
+sub peptide {
+  my $self = shift;
+  my $tr = shift;
+
+  unless($tr && ref($tr) && $tr->isa('Bio::EnsEMBL::Transcript')) {
+    $self->throw("transcript arg must be Bio::EnsEMBL:::Transcript not [$tr]");
+  }
+
+  #convert exons coordinates to peptide coordinates
+  my @coords = 
+    $tr->genomic2pep($self->start, $self->end, $self->strand, $self->contig);
+  
+  #filter out gaps
+  my @coords = grep {$_->isa('Bio::EnsEMBL::Mapper::Coordinate')} @coords;
+
+  #if this is UTR then the peptide will be empty string
+  my $pep_str = '';
+
+  if(scalar(@coords) > 1) {
+    $self->throw("Error. Exon maps to multiple locations in peptide." .
+		 " Is this exon [$self] a member of this transcript [$tr]?");
+  } elsif(scalar(@coords) == 1) {
+    my $c = $coords[0];
+    $pep_str = $tr->translate->subseq($c->start, $c->end);
+  }
+    
+  return Bio::Seq->new(-seq => $pep_str, 
+		       -moltype => 'protein',
+		       -alphabet => 'protein',
+                       -id => $self->stable_id);
+}
+
+
+
+=head2 seq
+
+  Arg [1]    : none
+  Example    : my $seq_str = $exon->seq->seq;
+  Description: Retrieves the dna sequence of this Exon.  
+               Returned in a Bio::Seq object.  Note that the sequence may
+               include UTRs (or even be entirely UTR).
+  Returntype : Bio::Seq
+  Exceptions : warning if argument passed, warning if exon->contig not defined
+  Caller     : general
+
+=cut
 
 sub seq {
   my $self = shift;
@@ -1552,7 +1148,9 @@ sub seq {
    }
   $self->{'_seq_cache'} = $seq;
 
-  return Bio::Seq->new(-seq=> $self->{'_seq_cache'});
+  return Bio::Seq->new(-seq     => $self->{'_seq_cache'},
+		       -id      => $self->stable_id,
+		       -moltype => 'dna');
 }
 
 
@@ -1582,6 +1180,18 @@ sub seq {
  Returns : integer
  Args    : none
 
+=head2 strand
+
+ Title   : strand
+ Usage   : $strand = $feat->strand()
+           $feat->strand($strand)
+ Function: get/set on strand information, being 1,-1 or 0
+ Returns : -1,1 or 0
+ Args    : none
+
+
+=cut
+
 =head2 length
 
  Title   : length
@@ -1591,8 +1201,6 @@ sub seq {
  Returns : 
  Args    :
 
-
-=cut
 
 =head2 sub_SeqFeature
 
@@ -1713,12 +1321,462 @@ triplets (start, stop, strand) from which new ranges could be built.
 
 
 
-=head1 Deprecated Methods
+=head1 sub Deprecated Methods
 
 =cut
 
 ###############################################################################
 
+
+
+
+
+=head2 _rephase_exon_genscan
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub _rephase_exon_genscan{
+   my ($self) = @_;
+
+   $self->throw("call to deprecated method _rephase_exon_genscan");
+
+#   my $dna = $self->seq();
+#   my $phase;
+#   my $pep = $self->_genscan_peptide();
+
+#   # trim top and bottem
+#   my $dnaseq = $dna->seq();
+
+#   LOOP : {
+
+#       $dna->setseq(substr($dnaseq,3,-3));
+       
+#       my $tr1 = $dna->translate();
+#       my $tr1pep = $tr1->str();
+#       chop $tr1pep;
+
+##        print STDERR "[$tr1pep] to\n[$pep]\n";
+#       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+#	   $phase = 0;
+#	   last LOOP;
+#       }
+       
+#       $dna->setseq(substr($dnaseq,4,-3));
+       
+#       $tr1 = $dna->translate();
+#       $tr1pep = $tr1->str();
+#       chop $tr1pep;
+
+##       print STDERR "[$tr1pep] to\n[$pep]\n";
+#       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+#	   $phase = 1;
+#	   last LOOP;
+#       }
+       
+#       $dna->setseq(substr($dnaseq,5,-3));
+       
+#       $tr1 = $dna->translate();
+#       $tr1pep = $tr1->str();
+#       chop $tr1pep;
+
+##       print STDERR "[$tr1pep] to\n[$pep]\n";
+#       if( $tr1pep !~ /\*/ && $pep =~ /$tr1pep/ ) {
+#	   $phase = 2;
+#	   last LOOP;
+#       }
+       
+#   }
+
+   
+
+##   print STDERR "For exon ",$self->strand," ",$self->phase," ",$phase,"\n";
+#   $self->phase($phase);
+   
+
+}
+
+
+
+=head2 _genscan_peptide
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED do not use
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub _genscan_peptide{
+   my $obj = shift;
+
+   $obj->throw("call to deprecated method Exon::_genscan_peptide");
+   
+#   if( @_ ) {
+#      my $value = shift;
+#      $obj->{'_genscan_peptide'} = $value;
+#    }
+#    return $obj->{'_genscan_peptide'};
+}
+
+
+=head2 _translate
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED - This method was not implemented correctly. It did
+               not take into account the possibility of exons with UTRs.
+               Use peptide instead.
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub _translate {
+    my($self) = @_;
+    $self->throw("Exon::_translate is deprecated - it was implemented " .
+		 "incorrectly, and could not provide correct translations ".
+		 "for exons with UTRs.  Use Exon::peptide instead"); 
+  #  my $pep;
+#    my $i;
+  
+#    if( $self->length < 3 ) {
+#	$self->throw("Perfectly valid sub length 2 exon. Impossible to translate. Doh!".$self->length." ".$self->dbID);
+#    }
+
+#    # changed this to work with the new SeqFeature stuff. I am still not
+#    # 100% happy about this. EB.
+  
+#    # Get the DNA sequence and create the sequence string
+#    $self->seq() || $self->throw("No DNA in object. Can't translate\n");
+
+#    my $dna = $self->seq();
+  
+#    # Translate in all frames - have to chop
+#    # off bases from the beginning of the dna sequence 
+#    # for frames 1 and 2 as the translate() method
+#    # only translates in one frame. Pah!
+  
+#    for ($i = 0; $i < 3; $i++) {
+#	my $tmp = new Bio::Seq(-seq => substr($dna->seq,$i));
+#	$pep->[$i] = $tmp->translate();
+#    }
+#    return $pep;
+}
+
+=head2 translate
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED - This method was not implemented correctly. It did
+               not take into account the possibility of exons with UTRs.
+               Use peptide instead.
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+sub translate {
+    my($self) = @_;
+
+    $self->throw("Exon::translate is deprecated - it was implemented " .
+		 "incorrectly, and could not provide correct translations ".
+		 "for exons with UTRs.  Use Exon::peptide instead"); 
+
+#    my $pep = $self->_translate() || throw ("Can't translate DNA\n");
+
+#    my $phase= 0;
+
+#    if (defined($self->phase)) {
+#       $phase = $self->phase;
+#    }
+
+#    if ($phase){
+#       $phase = 3 - $phase;
+#    }
+
+#    return $pep->[$phase];
+}
+
+
+=head2 start_translation
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED this method was implemented incorrectly and did not
+               work for exons with UTRs. Use the translation object to obtain
+               this information
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub start_translation {
+    my ($self,$value) = @_;
+
+    $self->throw("end_translation is deprecated. use the Translation object ".
+		 "to obtain this information instead");  
+  
+#    if( defined $value){
+#	$self->throw("cannot set translation start!");
+#    }
+
+#    my $phase=$self->phase;
+#    $phase=3-$phase if $phase;
+#    if($self->strand==1){
+#	return ($self->start + $phase);
+#    }else{
+#	return ($self->end - $phase);
+#    }
+}
+
+
+=head2 end_translation
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED this method was implemented incorrectly and did not
+               work for exons with UTRs. Use the translation object to obtain
+               this information
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub end_translation {
+    my ($self,$value) = @_;
+  
+    $self->throw("end_translation is deprecated. use the Translation object ".
+		 "to obtain this information instead");    
+#    if( defined $value){
+#	$self->throw("cannot set translation end!");
+#    }
+
+#    my $phase=$self->end_phase;
+#    if($self->strand==1){
+#	return ($self->end - $phase);
+#    }else{
+#	return ($self->start + $phase);
+#    }
+}
+
+=head2 pep_seq
+
+  Arg [1]    : none
+  Example    : none
+  Description: DEPRECATED This method was implemented incorrectly and did not
+               work for exons with UTRs.  Use peptide instead.
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub pep_seq {
+    my ($self) = @_;
+    
+    $self->throw("pep_seq is deprecated, use peptide instead\n");
+
+#    my $pep = $self->_translate();
+#    return @$pep;
+}
+
+
+
+=head2 add_frameshift
+
+  Arg [1]    : none
+  Example    : none
+  Description: not currently used
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub add_frameshift {
+    my ($self,$start,$length) = @_;
+
+    # do some simple sanity checks
+
+    my $tseq = $self->seq->seq;
+
+    if ( $start > length( $tseq ) ) {
+      print STDERR "Trying to add a frameshift outside the range of the sequence. Ignoring.\n";
+      return;
+    }
+
+    if ( !defined $start ) {
+      print STDERR "Trying to add a frameshift without any parameters. Ignoring.\n";
+      return;
+    }
+
+    if ( !defined $length ) {
+      print STDERR "Trying to add a frameshift without a specified length. Ignoring.\n";
+      return;
+    }
+
+    if ( $start <= 0) {
+      print STDERR "Trying to add a frameshift with a start point of zero or less. Ignoring.\n";
+      return;
+    }
+
+    if ( $length == 0) {
+      print STDERR "Trying to add a frameshift with a length of zero. Ignoring.\n";
+      return;
+    }
+
+    # and finally if the frameshift data is valid....
+    push @{$self->{'_frameshifts'}},[$start,$length];
+}
+
+=head2 get_frameshifts
+
+  Arg [1]    : none
+  Example    : none
+  Description: Not currently used
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_frameshifts {
+    my ($self) = @_;
+
+    # if already stored in the current exon object
+    if ( defined $self->{'_frameshifts'} ) {
+      return @{$self->{'_frameshifts'}};
+      }
+    else {  # else fetch frameshift data from database
+
+      if ( !defined $self->adaptor ) {
+	return;  # return undef if no ExonAdaptor
+      }
+      $self->adaptor->fetch_frameshifts( $self );
+      if ( defined $self->{'_frameshifts'}){
+	return @{$self->{'_frameshifts'}};
+      }
+      else {
+	return;  # not necessarily any frameshifts stored
+      }
+    }
+}
+
+
+
+=head2 get_cdna
+
+  Arg [1]    : none
+  Example    : none
+  Description: Not currently used. In the future this may be useful if
+               frameshifts are implemented
+  Returntype : none
+  Exceptions : none
+  Caller     : none
+
+=cut
+
+sub get_cdna {
+  my ($self) =@_;
+
+  my $seq1 = $self->seq();
+  my $seq = $seq1->seq();
+
+  # check to see if frameshifts actually exist
+  my @frameshifts = $self->get_frameshifts();
+
+  # if the exon has no frameshifts, simply return the dna
+  # sequence unmodified
+
+  if ( scalar(@frameshifts) ==0  ) {
+    my $temp_seq = Bio::Seq->new(
+	   -SEQ         => $seq,
+	   -DISPLAY_ID  => 'cdna_unmodified',
+           -MOLTYPE     => 'dna'
+           );
+
+    return $temp_seq;
+  }
+
+  # if there are frameshifts...
+  # sort frameshifts into order based on their start positions.
+  # important that this is done because the while loop below relies on this!!
+  # frameshifts are stored as [start, length]
+  @frameshifts = sort { $a->[0] <=> $b->[0] } @frameshifts;
+
+  my $fshift_seq = "";   # frameshift modified sequence
+
+  # need to check that starting from 1 is in fact correct!!
+  my $bp = 1;            # position along sequence
+  my $curr_frame  = 0;    # current frameshift
+
+  # run along the genomic sequence for the current exon
+  while ( $bp <= length($seq) ) {
+
+    # do something if we find a frameshift
+    if ( $bp == $frameshifts[$curr_frame][0] ) {
+
+      # if bps have been inserted then jump along the sequence
+      # ignoring extraneous bps
+      if ( $frameshifts[$curr_frame][1] > 0 ) {
+	$bp += $frameshifts[$curr_frame][1];
+      }
+
+      # else if bps have been deleted, insert some Ns.
+      # there shouldnt be a 0 case but cover it just in case.
+      elsif ( $frameshifts[$curr_frame][1] <= 0 ) {
+	$fshift_seq .= substr($seq, $bp-1, 1);
+            # -1 to be consistent with the dna seqeunce	
+      	$fshift_seq .= 'N' x -$frameshifts[$curr_frame][1];
+	$bp++;
+      }
+
+      # to stop -warnings complaining
+      if ( $curr_frame < $#frameshifts ) {
+	$curr_frame++;      # point to the next frameshift
+      }
+   }
+    else {  # store the current base pair
+      $fshift_seq .= substr($seq, $bp-1, 1);
+            # -1 to be consistent with the dna seqeunce
+      $bp++;
+    }
+  }
+
+  # a sanity check here to make sure the modified sequence is the
+  # right length - but return modified cdna anyway...
+
+  my $seq_changes = 0;
+
+  for my $i ( 0 .. $#frameshifts ) {
+    $seq_changes += $frameshifts[$i][1];
+  }
+
+  if ( length($seq) - $seq_changes != length($fshift_seq)) {
+    print STDERR "Frameshift modified sequence isn't the correct length.\n";
+  }
+
+  # push the modified sequence into a Bio::Seq object
+  my $temp_seq = Bio::Seq->new(
+	 -SEQ         => $fshift_seq,
+	 -DISPLAY_ID  => 'cdna_modified',
+         -MOLTYPE     => 'dna'
+         );
+
+  return $temp_seq;
+}
 
 
 1;
