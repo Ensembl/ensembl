@@ -42,6 +42,11 @@ sub get_all_Exons {
   return $self->{'exons'};
 }
 
+sub flush_Exons {
+  my $self = shift;
+  $self->{'exons'} = [];
+}
+
 
 sub stable_id {
   my $self = shift;
@@ -73,5 +78,6 @@ sub move_cdna_coding_end {
   my $offset = shift;
   $self->{'cdna_coding_end'} += $offset;
 }
+
 
 1;
