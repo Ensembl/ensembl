@@ -150,6 +150,63 @@ sub fetch {
     return $self;
 }
 
+
+=head2 get_Genes_by_Type
+
+ Title   : get_Genes_by_Type
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_Genes_by_Type{
+   my ($self,$type,$supporting) = @_;
+   my $contig_id = $self->internal_id();   
+    # prepare the SQL statement
+unless ($type){$self->throw("I need a type argument e.g. ensembl")}; 
+
+my $query="
+        SELECT t.gene
+        FROM transcript t,
+             exon_transcript et,
+             exon e,
+             genetype gt
+        WHERE e.contig = '$contig_id'
+          AND et.exon = e.id
+          AND t.id = et.transcript
+          AND gt.gene_id=t.gene
+          AND gt.type = '$type'
+        ";
+
+
+   my $sth = $self->dbobj->prepare($query);
+   
+   my $res = $sth->execute();
+   my %got;
+   my @gene_array;
+   while (my $rowhash = $sth->fetchrow_hashref) { 
+       if( ! exists $got{$rowhash->{'gene'}}) {  
+	   push(@gene_array,$rowhash->{'gene'});
+       }
+           
+       $got{$rowhash->{'gene'}} = 1;
+   }       
+   
+
+   my $gene_obj = Bio::EnsEMBL::DBSQL::Gene_Obj->new($self->dbobj);             
+
+   my @out = $gene_obj->get_array_supporting($supporting,@gene_array);
+ 
+   if (@out) {
+       return @out;
+   }
+
+}
+
 =head2 get_all_Genes
 
  Title   : get_all_Genes
@@ -949,7 +1006,7 @@ sub get_all_PredictionFeatures {
    # bind the columns
    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$fsetid);
    
-   $previous = '';
+   $previous = undef;
    my $current_fset;
    while( $sth->fetch ) {
        my $out;

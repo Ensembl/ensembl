@@ -315,26 +315,6 @@ sub id{
 
 
 
-=head2 type
-
- Title   : type
- Usage   : $obj->type($newval)
- Function: 
- Returns : value of type
- Args    : newvalue (optional)
-
-
-=cut
-
-sub type{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'type'} = $value;
-    }
-    return $obj->{'type'};
-}
-
 
 
 

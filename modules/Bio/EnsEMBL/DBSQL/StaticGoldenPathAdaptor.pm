@@ -340,7 +340,7 @@ sub fetch_VirtualContig_by_contig{
    my ($self,$contigid,$size) = @_;
 
    if( !defined $size ) {
-       $self->throw("Must have clone and size to fetch VirtualContig by clone");
+       $self->throw("Must have contig and size to fetch VirtualContig by contig");
    }
 
    my $type = $self->dbobj->static_golden_path_type();
