@@ -51,6 +51,7 @@ use Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use Bio::Root::Object;
 use Bio::EnsEMBL::Protein;
 use Bio::EnsEMBL::DBSQL::Protein_Feature_Adaptor;
+use Bio::Species;
 #use Bio::EnsEMBL::ExternalData::Family::FamilyAdaptor;
 
 @ISA = qw(Bio::EnsEMBL::DBSQL::BaseAdaptor);
@@ -105,10 +106,13 @@ sub fetch_Protein_by_dbid{
    my ($self,$id) = @_;
 
 #Get the transcript id from the translation id 
-   my $query = "select id from transcript where translation = '$id'";
+   my $query = "select id,gene from transcript where translation = '$id'";
    my $sth = $self->prepare($query);
    $sth ->execute();
-   my $transid = $sth->fetchrow;
+   my @rowid = $sth->fetchrow;
+
+   my $transid = $rowid[0];
+   my $geneid = $rowid[1];
 
 #Get the different dates (created and modified) for the corresponding gene   
    my $query1 = "select g.created,g.modified from gene as g, transcript as t where t.gene = g.id and t.translation = '$id'";
@@ -118,6 +122,13 @@ sub fetch_Protein_by_dbid{
    my @date = $sth1->fetchrow;
    my $created = $date[0];
    my $modified = $date[1];
+
+#Add created and modified tag to the date
+   ($created) = $created =~ /(\d+-\d+-\d+)/;
+   $created = $created." (Created)";
+
+   ($modified) = $modified =~ /(\d+-\d+-\d+)/;
+   $modified = $modified." (Modified)";
 
 #Get the transcript object (this will allow us to get the aa sequence of the protein
    my $transcript = $self->fetch_Transcript_by_dbid($transid);
@@ -146,7 +157,20 @@ sub fetch_Protein_by_dbid{
   
 #Define the moltype
    my $moltype = "protein";
-   
+
+#Define the specie (here by default human, but will have to find something else when other databases come into Ensembl) 
+   my @class = ( "Eukaryota", "Metazoa", "Chordata", "Craniata", "Vertebrata", "Euteleostomi", "Mammalia", "Eutheria", "Primates", "Catarrhini", "Hominidae","Homo" ,"sapiens (human)");
+   @class = reverse(@class);
+   my $common;
+   my $sub_species;
+   my $org;
+
+   my $species = Bio::Species->new();
+   $species->classification( @class );
+   $species->common_name( $common      ) if $common;
+   $species->sub_species( $sub_species ) if $sub_species;
+   $species->organelle  ( $org         ) if $org;
+
    #This has to be changed, the description may be take from the protein family description line
    my $desc = "Protein predicted by Ensembl";
 
@@ -160,12 +184,16 @@ sub fetch_Protein_by_dbid{
 					      -moltype => $moltype,
 					      );
 
+   $protein->species($species);
+
 #Add the date of creation of the protein to the annotation object
    my $ann  = Bio::Annotation->new;
-
+   $ann->gene_name($geneid);
+   
    $protein ->annotation($ann);
    $protein->add_date($created);
    $protein->add_date($modified);
+   
 
 #Add the DBlinks to the annotation object
    foreach my $link (@dblinks) {
@@ -203,6 +231,8 @@ sub fetch_Protein_by_dbid{
 	   my $newdblink = Bio::Annotation::DBLink->new();
 	   $newdblink->database($dbdesc);
 	   $newdblink->primary_id($pfam);
+#The optionnal id in that case is the signature id but not currently stored, thus to make it work with SP parsers replace it with X
+	   $newdblink->optional_id("X");
 	   $protein->annotation->add_DBLink($newdblink);
 	   $seen1{$pfam} = 1;
        }
