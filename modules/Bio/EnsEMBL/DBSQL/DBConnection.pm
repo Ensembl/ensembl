@@ -281,6 +281,36 @@ sub password {
 }
 
 
+
+=head2 locator
+
+  Arg [1]    : none
+  Example    : $locator = $dbc->locator;
+  Description: Constructs a locator string for this database connection
+               that can, for example, be used by the DBLoader module
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+
+sub locator {
+  my $self = shift;
+  
+  my $ref;
+
+  if($self->isa('Bio::EnsEMBL::Container')) {
+    $ref = ref($self->_obj);
+  } else {
+    $ref = ref($self);
+  }
+
+  return "$ref/host=".$self->host.";port=".$self->port.";dbname=".
+    $self->dbname.";user=".$self->username.";pass=".$self->password;
+}
+
+
 =head2 _get_adaptor
 
   Arg [1]    : string $module
