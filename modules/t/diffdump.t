@@ -26,27 +26,24 @@ BEGIN { $| = 1; print "1..7\n";
 
 END {print "not ok 1\n" unless $loaded;}
 
-use Bio::EnsEMBL::DBLoader;
+use lib 't';
+use EnsTestDB;
 $loaded = 1;
 print "ok 1\n";    # 1st test passes.
+    
+my $ens_test = EnsTestDB->new();
+    
+# Load some data into the db
+$ens_test->do_sql_file("t/diffdump.dump");
+    
+# Get an EnsEMBL db object for the test db
+my $db = $ens_test->get_DBSQL_Obj;
+print "ok 2\n";    
 
-#JUST FOR NOW!
-my $dbtype = 'rdb';
-my $host   = 'localhost';
-my $port   = '410000';
-my $dbname = 'new_test';
-my $dbuser = 'root';
-my $dbpass = "";
-my $module = 'Bio::EnsEMBL::DBSQL::Obj';
-
-#Connect to local ensembl db
-my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-print "ok 2\n";
 my $gene_obj=$db->gene_Obj;
 
 $db->diffdump(1);
-$db->diff_fh("/nfs/disk21/elia/src/ensembl/live/ensembl/modules/t/diff.sql");
+$db->diff_fh("t/diff.sql");
 
 
 $gene = new Bio::EnsEMBL::Gene;
@@ -69,7 +66,7 @@ $ex1->id("dummy_id_1");
 $ex1->version(1);
 $ex1->created(time);
 $ex1->modified(time);
-$ex1->contig_id("test_contig_3");
+$ex1->contig_id("AC021078.00006");
 $ex1->phase(0);
 $ex1->start(8);
 $ex1->end(13);
@@ -79,7 +76,7 @@ $ex2->id("dummy_id_2");
 $ex2->created(time);
 $ex2->modified(time);
 $ex2->version(1);
-$ex2->contig_id("test_contig_4");
+$ex2->contig_id("AC021078.00006");
 $ex2->phase(0);
 $ex2->start(18);
 $ex2->end(23);
@@ -89,7 +86,7 @@ $ex3->id("dummy_id_3");
 $ex3->created(time);
 $ex3->modified(time);
 $ex3->version(1);
-$ex3->contig_id("test_contig_4");
+$ex3->contig_id("AC021078.00006");
 $ex3->phase(0);
 $ex3->start(26);
 $ex3->end(28);
@@ -129,7 +126,7 @@ print "ok 5\n";
 $gene_obj->delete($gene->id);
 print "ok 6\n";
 
-open (FILE,"</nfs/disk21/elia/src/ensembl/live/ensembl/modules/t/diff.sql");
+open (FILE,"<t/diff.sql");
 my $ok=0;
 while (<FILE>) {
     if (/delete/) {
@@ -147,5 +144,5 @@ if ($ok == 28) {
 else {
     print "not ok 7\n";
 }
-system('rm /nfs/disk21/elia/src/ensembl/live/ensembl/modules/t/diff.sql');
+
 

@@ -27,45 +27,23 @@ END {print "not ok 1\n" unless $loaded;}
 
 use Bio::EnsEMBL::DBSQL::Obj;
 use Bio::EnsEMBL::DBLoader;
-$loaded=1;
-print "ok \n";    # 1st test passed, loaded needed modules
 
-$conf{'mysqladmin'} = '/mysql/current/bin/mysqladmin';
-$conf{'mysql'} = '/mysql/current/bin/mysql';
-$conf{'user'}  = 'root';
-$conf{'database'} = 'ensembl07';
-$conf{'contig'} = 'AP000869.00011';
-
-if ( -e 't/DBPSeq.conf' ) {
-   print STDERR "Reading configuration from DBPSeq.conf\n";
-   open(C,"t/DBPSeq.conf");
-   while(<C>) {
-       my ($key,$value) = split;
-       $conf{$key} = $value;
-   }
-} else {
-    print STDERR "Using default values\n";
-    foreach $key ( keys %conf ) {
-	print STDERR " $key $conf{$key}\n";
-    }
-    print STDERR "\nPlease use a file t/DBPSeq.conf to alter these values if the test fails\nFile is written <key> <value> syntax\n\n";
-}
-
-my $dbtype = 'rdb';
-my $host   = 'localhost';
-my $port   = '410000';
-my $dbname = $conf{'database'};
-my $dbuser = $conf{'user'};
-my $dbpass = undef;
-my $module = 'Bio::EnsEMBL::DBSQL::Obj';
-
-#Connect to local ensembl db
-my $locator = "$module/host=$host;port=$port;dbname=$dbname;user=$dbuser;pass=$dbpass";
-my $db =  Bio::EnsEMBL::DBLoader->new($locator);
-print "ok 2\n";
+use lib 't';
+use EnsTestDB;
+$loaded = 1;
+print "ok 1\n";    # 1st test passes.
+    
+my $ens_test = EnsTestDB->new();
+    
+# Load some data into the db
+$ens_test->do_sql_file("t/DBPseq.dump");
+    
+# Get an EnsEMBL db object for the test db
+my $db = $ens_test->get_DBSQL_Obj;
+print "ok 2\n";    
 
 #Get Contig
-my $contig=$db->get_Contig($conf{'contig'});
+my $contig=$db->get_Contig('AC021078.00006');
 print "ok 3\n";
 
 #Get DBPrimarySeq for this contig
@@ -87,15 +65,24 @@ print "ok 6\n";
 
 my $seq = $dbseq->seq();
 print "ok 7\n";
-#print STDERR "Seq of $conf{'contig'} is $seq\n\n";
 
-my $subseq = $dbseq->subseq(100,200);
-print "ok 8\n";
-#print STDERR "Subseq from 100 to 200 is $subseq\n\n";
+
+my $subseq = $dbseq->subseq(2,6);
+if( $subseq ne 'CCGAT' ) {
+  print "not ok 8\n";
+} else {
+  print "ok 8\n";
+}
 
 my $length = $dbseq->length();
-print "ok 9\n";
-#print STDERR "Length of dna of $conf{'contig'} is $length\n";
+if( $length != 1222 ) {
+   print "not ok 9\n";	    
+} else {
+   print "ok 9\n";	    
+}
+
+
+
 
 
 				      
