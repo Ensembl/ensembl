@@ -85,9 +85,10 @@ sub run {
 
 
     # Download each source into the appropriate directory for parsing later
+    # or call the appropriate database parser if appropriate
     # Also delete previous working directory if we're starting a new source type
 
-    #can have more than one file
+    # can have more than one file
 
     my @files = split(/\s+/,$url);
 
@@ -97,14 +98,27 @@ sub run {
     my $type = $name;
     my @new_file=();
     $dir = $base_dir . "/" . sanitise($type);
+    my $dsn;
     foreach my $urls (@files){
+
+      # Database parsing
+      if ($urls =~ /^mysql:/i) {
+	$dsn = $urls;
+	print "Parsing $dsn with $parser\n";
+        eval "require XrefParser::$parser";
+        my $new = "XrefParser::$parser"->new();
+        $new->run($dsn, $source_id, $species_id);
+	next;
+      }
+
       my ($file) = $urls =~ /.*\/(.*)/;
 
+      # File parsing
       if (!$skipdownload) {
-	
+
 	rmtree $dir if ($type ne $last_type);
 	mkdir $dir if (!-e $dir);
-	
+
 	$last_type = $type;
 
 	print "Downloading $urls to $dir/$file\n";
@@ -123,7 +137,7 @@ sub run {
 	  system("gunzip -f $dir/$file");
 	  $file = $1;
 	}
-	
+
       }
       else{
 	if ($file =~ /(.*)\.gz$/) {
@@ -164,8 +178,8 @@ sub run {
 	# set release if specified
 	set_release($release, $source_id) if ($release);
 
-      } 
-    elsif(!$empty){
+      }
+    elsif(!$dsn && !$empty){
       print "Ignoring ".join(' ',@new_file)." as checksums match\n";
     }
 
