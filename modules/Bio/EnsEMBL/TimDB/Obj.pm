@@ -52,7 +52,7 @@ use Bio::EnsEMBL::Analysis::LegacyParser;
 # _initialize is where the heavy stuff will happen when new is called
 
 sub _initialize {
-  my($self,$clone,$noacc,@args) = @_;
+  my($self,$noacc,$clone,@args) = @_;
 
   # DEBUG
   # second parameter is for debugging to avoid reading entire list of objects
