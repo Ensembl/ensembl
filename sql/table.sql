@@ -212,8 +212,8 @@ CREATE TABLE simple_feature (
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) NOT NULL,
-  display_label varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
   analysis_id int(10) unsigned NOT NULL,
+  display_label varchar(40) NOT NULL, # what to show, may link to other things, depends on analysis
 
 # What scoring do we need ?
 
@@ -231,8 +231,8 @@ CREATE TABLE protein_align_feature (
   contig_id int(10) unsigned NOT NULL,
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
   contig_strand tinyint(1) DEFAULT '1' NOT NULL,
+  analysis_id int(10) unsigned NOT NULL,
   hit_start int(10) NOT NULL,
   hit_end int(10) NOT NULL,
   hit_name varchar(40) NOT NULL,
@@ -254,12 +254,10 @@ CREATE TABLE protein_align_feature (
 CREATE TABLE dna_align_feature (
   dna_align_feature_id int unsigned not null auto_increment,
   contig_id int(10) unsigned NOT NULL,
-  analysis_id int(10) unsigned NOT NULL,
-
   contig_start int(10) unsigned NOT NULL,
   contig_end int(10) unsigned NOT NULL,
   contig_strand tinyint(1) NOT NULL,
-
+  analysis_id int(10) unsigned NOT NULL,
   hit_start int NOT NULL,
   hit_end int NOT NULL,
   hit_name varchar(40) NOT NULL,
@@ -281,13 +279,13 @@ CREATE TABLE dna_align_feature (
 
 
 CREATE TABLE repeat_consensus (
-    repeat_id           int unsigned NOT NULL auto_increment,
-    repeat_name         varchar(255) NOT NULL,
-    repeat_class        varchar(40) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
+    repeat_consensus_id  int unsigned NOT NULL auto_increment,
+    repeat_name          varchar(255) NOT NULL,
+    repeat_class         varchar(40) NOT NULL,   # eg:  SINE, LINE, DNA Transposon,
                                                 # Retroviral LTR, Satellite,Tandem
     repeat_consensus    text,   # Or dna_id with entry in DNA table?
     
-    PRIMARY KEY( repeat_id ),
+    PRIMARY KEY( repeat_consensus_id ),
     KEY name (repeat_name),
     KEY class (repeat_class)
 );
@@ -303,7 +301,6 @@ CREATE TABLE repeat_feature (
   repeat_start int(10) NOT NULL,
   repeat_end int(10) NOT NULL,
   repeat_id int(10) unsigned NOT NULL,
-
 
 #  What scoring do we need ?
 
