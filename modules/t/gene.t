@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 49;
+	plan tests => 51;
 }
 
 use MultiTestDB;
@@ -494,3 +494,39 @@ ok( $ok );
 
 $multi->restore('core');
 
+
+#
+# regression test - test the recalculation of coords
+# in the Gene.  This was setting the end incorrectly
+# before.
+#
+$gene = Bio::EnsEMBL::Gene->new();
+
+$gene->slice($slice);
+
+my $first_ex = Bio::EnsEMBL::Exon->new
+  (-START => 10,
+   -END   => 100,
+   -STRAND => 1,
+   -SLICE => $slice);
+
+my $second_ex = Bio::EnsEMBL::Exon->new
+  (-START   => 200,
+   -END     => 400,
+   -STRAND  => 1,
+   -SLICE   => $slice);
+
+$transcript1 = Bio::EnsEMBL::Transcript->new
+  (-EXONS => [$first_ex, $second_ex]);
+
+$transcript2 = Bio::EnsEMBL::Transcript->new
+  (-EXONS => [$first_ex]);
+
+
+$gene->add_Transcript($transcript1);
+$gene->add_Transcript($transcript2);
+
+$gene->recalculate_coordinates();
+
+ok($gene->start() == 10);
+ok($gene->end()  == 400);
