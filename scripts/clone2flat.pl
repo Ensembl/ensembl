@@ -138,9 +138,9 @@ my $checkdna;
 # msql was 'croc'
 my $host1     = 'obi-wan';
 # msql was 'ensdev'
-my $dbname    = 'ensdev';
-my $dbuser    = 'ensembl';
-my $dbpass = 'pass';
+my $dbname    = 'ensembl';
+my $dbuser    = 'ensro';
+my $dbpass = undef;
 
 # defaults for acedb (humace)
 my $host2     = 'humsrv1';

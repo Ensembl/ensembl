@@ -5,7 +5,7 @@ use Bio::EnsEMBL::DB::VirtualContig;
 
 my $db = new Bio::EnsEMBL::DBSQL::Obj(-host   => 'obi-wan',
 				      -port   => 410000,
-				      -dbname => 'ens500a',
+				      -dbname => 'ens500b',
 				      -user => 'ensro',
 				      );
 
@@ -19,14 +19,9 @@ my $vc     = new Bio::EnsEMBL::DB::VirtualContig(-focuscontig   => $contig,
 						 -right         => 1000000);
 
 my $seq      = $vc->primary_seq;
-my @features = $vc->_get_all_SeqFeatures_type('prediction');
-
-foreach my $f (@features) {
-    print ($f->source_tag . "\t" . $f->start . "\t" . $f->end . "\n");
-}
 
 print("Sequence is        " . $seq->length . "\n");
-
+print("Contig length is   " . $vc->length . "\n");
 #print("sequence should be AAAACCCCTTGGGAAA\n");
 #use overlap;
 #
