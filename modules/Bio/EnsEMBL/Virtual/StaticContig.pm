@@ -177,7 +177,7 @@ my $glob_start=$self->_global_start;
 my $glob_end=$self->_global_end;
 my $chr_name=$self->_chr_name;
 
-print STDERR "version 001\n";  
+print STDERR "version 002\n";  
 
 my    $statement = "SELECT f.id, 
                            f.seq_start+s.chr_start-s.raw_start,
@@ -468,6 +468,7 @@ eval {
                       AND    a.db='mapprimer'
                       AND    sgp.chr_end >= $glob_start 
                       AND    sgp.chr_start <=$glob_end 
+                      AND    sgp.chr_name='$chr_name' 
                       AND    s.name regexp '^D[0-9,X,Y][0-9]?S'";
 
     
@@ -810,6 +811,11 @@ sub _flip_coordinates
     $self->throw ("need a start") unless $start;
     $self->throw ("need a end") unless $end;
     $self->throw ("need a strand") unless $strand;
+    $self->throw ("need a chromosome start") unless $chr_start;
+    $self->throw ("need a chromosome end") unless $chr_end;
+
+
+    
 
     my $vc_start=$chr_end+$chr_start-$end;
     my $vc_end=$chr_end+$chr_start-$start;
