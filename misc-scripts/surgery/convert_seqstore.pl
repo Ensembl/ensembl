@@ -41,7 +41,6 @@ while( my $line = <FILE> ) {
 
   my ( $species, $host, $source_db_name, $target_db_name ) = 
     split( "\t", $line );
-
   my $converter;
   if ($vega_schema) {
 	$species = "vega::".$species;
@@ -91,7 +90,7 @@ for my $converter ( @all_species_converters ) {
   $converter->transfer_dna();
   $converter->transfer_genes();
   $converter->transfer_prediction_transcripts();
-#  $converter->transfer_features();
+  $converter->transfer_features();
   $converter->transfer_stable_ids();
   $converter->copy_other_tables();
   $converter->copy_repeat_consensus();
