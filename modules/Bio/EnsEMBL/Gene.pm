@@ -61,7 +61,6 @@ sub _initialize {
   $self->{'_transcript_array'} = [];
   $self->{'_clone_neighbourhood'} = [];
   $self->{'_db_link'} = [];
-
 # set stuff in self from @args
   return $make; # success - we hope!
 }
@@ -286,6 +285,32 @@ sub id{
     return $obj->{'id'};
 
 }
+
+
+
+=head2 type
+
+ Title   : type
+ Usage   : $obj->type($newval)
+ Function: 
+ Returns : value of type
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub type{
+   my $obj = shift;
+   if( @_ ) {
+      my $value = shift;
+      $obj->{'type'} = $value;
+    }
+    return $obj->{'type'};
+}
+
+
+
+
 
 =head2 each_cloneid_neighbourhood
 

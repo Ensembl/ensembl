@@ -358,12 +358,14 @@ sub get_array_supporting {
           , exon.version
           , transl.version
           , con.clone
+	  , genetype.type
         FROM contig con
           , gene
           , transcript tscript
           , exon_transcript e_t
           , exon
           , translation transl
+	  , genetype
         WHERE gene.id = tscript.gene
           AND tscript.id = e_t.transcript
           AND e_t.exon = exon.id
@@ -437,7 +439,7 @@ sub get_array_supporting {
 	my ($geneid,$contigid,$transcriptid,$exonid,$rank,$start,$end,
 	    $exoncreated,$exonmodified,$strand,$phase,$exon_rank,$trans_start,
 	    $trans_exon_start,$trans_end,$trans_exon_end,$translationid,
-	    $geneversion,$genecreated,$genemodified,$genestored,$transcriptversion,$exonversion,$translationversion,$cloneid) = @{$arr};
+	    $geneversion,$genecreated,$genemodified,$genestored,$transcriptversion,$exonversion,$translationversion,$cloneid,$genetype) = @{$arr};
 
  	
 	if( ! defined $phase ) {
@@ -461,6 +463,7 @@ sub get_array_supporting {
 	    $gene = Bio::EnsEMBL::Gene->new();
 	    
 	    $gene->id                       ($geneid);
+	    $gene->type                     ($genetype);
 	    $gene->version                  ($geneversion);
 	    $gene->created                  ($genecreated);
 	    $gene->modified                 ($genemodified);
