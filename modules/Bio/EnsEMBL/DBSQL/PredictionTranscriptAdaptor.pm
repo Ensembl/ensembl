@@ -471,5 +471,21 @@ sub remove {
 }
 
 
+=head2 list_dbIDs
+
+  Arg [1]    : none
+  Example    : @feature_ids = @{$prediction_transcript_adaptor->list_dbIDs()};
+  Description: Gets an array of internal ids for all prediction transcript features in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("prediction_transcript");
+}
 
 1;
