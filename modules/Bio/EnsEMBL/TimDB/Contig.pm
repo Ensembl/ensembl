@@ -110,9 +110,9 @@ sub validate {
     $self->id          || $self->throw("Cannot make contig object without id");
     $self->disk_id     || $self->throw("Cannot make contig object without disk_id");
     $self->_dbobj       || $self->throw("Cannot make contig object without db object");
-    $self->order       || $self->throw("Cannot make contig object without order");
-    $self->offset      || $self->throw("Cannot make contig object without offset");
-    $self->orientation || $self->throw("Cannot make contig object without orientation");
+#    $self->order       || $self->throw("Cannot make contig object without order");
+#    $self->offset      || $self->throw("Cannot make contig object without offset");
+#    $self->orientation || $self->throw("Cannot make contig object without orientation");
     $self->length      || $self->throw("Cannot make contig object without length");
     $self->chromosome  || $self->throw("Cannot make contig object without chromosome");
     $self->_clone_dir   || $self->throw("Cannot make contig object without clone_dir");
@@ -283,7 +283,7 @@ sub get_all_GenePredictions {
 
 =cut
 
-sub get_all_Genes{
+sub get_all_Genes {
     my ($self) = @_;
 
     # map genes if not already mapped
@@ -304,7 +304,7 @@ sub get_all_Genes{
 
 =cut
 
-sub add_SeqFeature{
+sub add_SeqFeature {
    my ($self,$sf) = @_;
    $self->throw("SeqFeatures cannot be added in TimDB");
 }
@@ -338,7 +338,7 @@ sub add_Gene{
 
 =cut
 
-sub length{
+sub length {
     my $self = shift;
     if( @_ ) {
 	my $value = shift;
@@ -519,10 +519,9 @@ sub id{
 sub chromosome {
     my ($self,$chr,$species) = @_;
 
-    print(STDERR "Chromosome [$chr] [$species]\n");
-
     if (defined($chr) && defined($species)) {
-	$self->{_chromosome} = Bio::EnsEMBL::Chromosome->new($species,$chr);
+#    if (!defined($self->{_chromosome})) {
+	$self->{_chromosome} = Bio::EnsEMBL::Species->chromosome_by_name($species,$chr);
     } 
 
     return $self->{_chromosome};
@@ -541,12 +540,23 @@ sub chromosome {
 
 sub internal_id {
     my $self = shift;
-    if( @_ ) {
+    if ( @_ ) {
 	my $value = shift;
 	$self->{'internal_id'} = $value;
     }
     return $self->{'internal_id'};
 }
+
+
+=head2 disk_id
+
+ Title   : disk_id
+ Usage   : $self->disk_id($newval)
+ Function: 
+ Returns : value of disk_id
+ Args    : newvalue (optional)
+
+=cut
 
 sub disk_id {
     my $self = shift;

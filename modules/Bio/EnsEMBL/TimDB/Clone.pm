@@ -42,6 +42,8 @@ use vars qw($AUTOLOAD @ISA);
 use strict;
 use Bio::EnsEMBL::DB::CloneI;
 use Bio::EnsEMBL::TimDB::Contig;
+use Bio::EnsEMBL::ContigOverlap;
+
 use Bio::SeqIO;
 
 use NDBM_File;
@@ -117,25 +119,25 @@ sub build_contigs {
 
     my ($key,$val);
 
+    my $spacing = $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
     my $disk_id = $self->disk_id;
     my $id      = $self->id;
 
-    my $tmpembl_order  = 1;
-    my $tmpembl_offset = 1;
+    my @contigs;
 
     while (($key,$val) = each %unfin_contig) {
 
-	#print(STDERR "[$key][$val]\n");
+#	print(STDERR "[$key][$val]\n");
 
 	if($key=~/^$disk_id/){
 	    
-	    my($len,$checksum,$acc,$embl_offset,$embl_order) = split(/,/,$val);
+	    my($len,$checksum,$embl_offset,$embl_order) = split(/,/,$val);
 	  
 	    # all of these values should be positive, non zero
 	    $self->throw("Error: invalid length [$len] for contig $key") 		if !$len         || $len<1;
 	    $self->throw("Error: invalid checksum [$checksum] for contig $key") 	if !$checksum    || $checksum<1;
-#	    $self->throw("Error: invalid embl_offset [$embl_offset] for contig $key") 	if !$embl_offset || $embl_offset<1;
-#	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
+	    $self->throw("Error: invalid embl_order [$embl_order] for contig $key")	if !$embl_order  || $embl_order<1;
+	    $self->throw("Error: invalid embl_order [$embl_offset] for contig $key")	if !$embl_offset  || $embl_offset<1;
 	    
 	    my $disk_key = $key;
 	    $key =~ s/^$disk_id/$id/;
@@ -150,20 +152,15 @@ sub build_contigs {
 	    $tmpcontig->_clone_dir ($self->clone_dir);
 	    $tmpcontig->chromosome ($self->chromosome,$self->species);
 	    $tmpcontig->checksum   ($checksum);
+	    $tmpcontig->embl_order($embl_order);
+	    $tmpcontig->embl_offset($embl_offset);
 
-	    # These should be set somehow
-	    $tmpcontig->order      (1);
-	    $tmpcontig->offset     (1);
-	    $tmpcontig->orientation(1);
-	    $tmpcontig->embl_offset($tmpembl_order);
-	    $tmpcontig->embl_order ($tmpembl_offset);
+	    push(@contigs,$tmpcontig);
 
-	    $self->add_Contig($tmpcontig);
-
-	    $tmpembl_order++;
-	    $tmpembl_offset += $tmpcontig->length + $Bio::EnsEMBL::DB::CloneI::CONTIG_SPACING;
 	}
+
     }
+
     
     $self->_make_ContigOverlaps;
     
@@ -223,7 +220,8 @@ sub _make_ContigOverlaps {
 							      -contigb   => $contigb,
 							      -positiona => $positiona,
 							      -positionb => $positionb,
-							      -type      => 'CLONE'
+							      -type      => 'CLONE',
+							      -distance  => $spacing,
 							      -overlap_type => $type);
 		
 		$self->add_ContigOverlap($overlap);
@@ -272,6 +270,10 @@ sub add_ContigOverlap {
 sub get_all_ContigOverlaps {
     my ($self) = @_;
 
+    if (!defined($self->{_overlaps})) {
+	$self->{_overlaps} = [];
+    }
+
     return @{$self->{_overlaps}};
 }
 
@@ -288,6 +290,10 @@ sub get_all_ContigOverlaps {
 
 sub get_all_Contigs {
    my ($self) = @_;
+
+   if (!defined($self->{_contigs})) {
+       $self->{_contigs} = [];
+   }
 
    return @{$self->{_contigs}};
 }
