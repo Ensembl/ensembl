@@ -20,7 +20,7 @@
 #-----------------------------------------------------------------------
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..29\n"; 
+BEGIN { $| = 1; print "1..30\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -278,7 +278,15 @@ else {
     print "not ok 29\n";
 }
 
+my $species = $protein->species;
+my @class = $species->classification;
 
+if ($class[1] eq "Homo") {
+    print "ok 30\n";
+}
+else {
+    print "not ok 30\n";
+}
 
 
 
