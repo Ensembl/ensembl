@@ -120,17 +120,30 @@ sub create_xrefs {
 
     # if an OX line exists, only store the xref if the taxonomy ID that the OX
     # line refers to is in the species table
-    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=(\d+);/;
-    if (defined $ox) {
-      my $taxon = $1;
-      my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
-      if (!exists $taxonomy2species_id{$taxon} 
-	  or $taxonomy2species_id{$taxon} ne $species_id) {
-#	print "Skipping xref for species with taxonomy ID $taxon\n";
-	next;
-     }
-    }
+    # due to some records having more than one tax_id, we need to check them 
+    # all and only proceed if one of them matches.
+    #OX   NCBI_TaxID=158878, 158879;
+    #OX   NCBI_TaxID=103690;
 
+
+    my ($ox) = $_ =~ /OX\s+[a-zA-Z_]+=([0-9 ,]+);/;
+#    print "OX  --> $ox\n";
+    my @ox = split /\, /, $ox;
+    my $found = 0;
+
+    my %taxonomy2species_id = XrefParser::BaseParser->taxonomy2species_id();
+    foreach my $taxon_id_from_file (@ox){
+#      print "taxon_id= ".$taxon_id_from_file."\n";
+      if (exists $taxonomy2species_id{$taxon_id_from_file} 
+	  and $taxonomy2species_id{$taxon_id_from_file} eq $species_id) {
+#	print "PASS ".$taxon_id_from_file."\n";
+	$found = 1;	
+      }
+#      else{
+#	print "FAIL ".$taxon_id_from_file."\n";
+#      }
+    }
+    next if (!$found); # no taxon_id's math, so skip to next record
     my $xref;
 
     # set accession (and synonyms if more than one)
