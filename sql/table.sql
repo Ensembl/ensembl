@@ -368,7 +368,7 @@ CREATE table contigext (
 
 CREATE TABLE static_golden_path (
     fpcctg_name    varchar(20) NOT NULL,
-    chr_name       varchar(5)  NOT NULL,
+    chr_name       varchar(20)  NOT NULL,
     raw_id         int(10) NOT NULL,
     chr_start      int(10) NOT NULL,
     chr_end        int(10) NOT NULL,
