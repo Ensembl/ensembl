@@ -211,7 +211,6 @@ sub new {
       $VC_UNIQUE_NUMBER = $focuscontig->id.".$focusposition.$ori.$leftsize.$rightsize";
     }
     my $length=$leftsize+$rightsize;
-    print STDERR "CHECK!!!Got length $length\n";
     $self->length($length);
     $self->_unique_number($VC_UNIQUE_NUMBER);
 
@@ -426,6 +425,9 @@ sub get_all_VirtualGenes_startend{
 	   foreach my $exon ( $trans->each_Exon ) {
 	       
 	       my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+               if( !defined $st ) { 
+		   next;
+               }
 	       if( $st < $genestart ) {
 		   $genestart = $st;
 	       }
@@ -547,7 +549,6 @@ sub get_all_SimilarityFeatures_above_score{
     
     foreach my $c ($self->_vmap->get_all_RawContigs) {
 	
-	print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
 	
 	push(@$sf,$c->get_all_SimilarityFeatures_above_score($analysis_type,$score));
 	
@@ -743,9 +744,7 @@ sub get_old_Exons{
     }
     
     my @vcexons = ();
-    #print STDERR "VC->get_old_Exons:\n";
     foreach my $exon ( @exons ) {
-	#print STDERR "Exon: ".$exon->id." contig:".$exon->contig_id." start:".$exon->start." end:".$exon->end." strand:".$exon->strand."\n";
 	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
 	
 	if( !defined $st ) {next;}        
@@ -816,9 +815,7 @@ sub get_all_Exons{
     foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_all_Exons);}
     
     my @vcexons = ();
-    #print STDERR "VC->get_all_Exons:\n";
     foreach my $exon ( @exons ) {
-	#print STDERR "Exon: ".$exon->id." contig:".$exon->contig_id." start:".$exon->start." end:".$exon->end." strand:".$exon->strand."\n";
 	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
 	
 	if( !defined $st ) {next;}        
@@ -887,7 +884,6 @@ sub _gene_query{
 
 	foreach my $exon ( $gene->all_Exon_objects() ) {
 	    # hack to get things to behave
-            # print STDERR "Internal exon is...",$internalExon,"\n";
 	    $exon->seqname($exon->contig_id);
 	    $exon{$exon->id} = $exon;
 
@@ -953,7 +949,6 @@ sub _gene_query{
 	    } else {                    # not a Sticky
 		# soooooo much simpler
 		if ($self->_convert_seqfeature_to_vc_coords($exon)) {
-                    #print STDERR "Mapped a non sticky exon!\n";
 		    $internalExon = 1;
 		    $exonconverted{$exon->id} = 1;
 		}               
@@ -963,7 +958,6 @@ sub _gene_query{
         if ($internalExon == 0) { 
 # Utterly weird perl behaviour on acari: using unless breaks this 
 #        unless  ($internalExon) {
-       #     print STDERR "Deleting ",$gene->id,"\n";
         #    my $geneid = $gene->id;
             delete $gene{$gene->id};
         } 
@@ -995,7 +989,6 @@ sub _gene_query{
 sub _get_all_SeqFeatures_type {
    my ($self,$type) = @_;
 
-   #print STDERR "Getting into seq feature get $type\n";
    if( $self->_cache_seqfeatures() && $self->_has_cached_type($type) ) {
        return $self->_get_cache($type);
    }
@@ -1011,7 +1004,6 @@ sub _get_all_SeqFeatures_type {
    }
    
    foreach my $c ($self->_vmap->get_all_RawContigs) {
-       #print STDERR "getting for contig ",$c->id," with ",scalar(@$sf),"so far\n";
        if( $type eq 'repeat' ) {
 	   push(@$sf,$c->get_all_RepeatFeatures());
        } elsif ( $type eq 'similarity' ) {
@@ -1026,7 +1018,6 @@ sub _get_all_SeqFeatures_type {
 	   $self->throw("Type $type not recognised");
        }
    }
-   #print STDERR "before clipping ",scalar(@$sf)," for $type\n";
 
    my @vcsf = ();
 
@@ -1055,7 +1046,6 @@ sub _get_all_SeqFeatures_type {
         }
    }
    
-   #print STDERR "returning ",scalar(@vcsf)," for $type\n";
    return @vcsf;
 }
 
@@ -1090,15 +1080,12 @@ sub _convert_seqfeature_to_vc_coords {
 	return undef;
     }
     
-    #print STDERR "starting $sf ",$sf->seqname,":",$sf->start,":",$sf->end,":",$sf->strand,"\n";
     # if this is something with subfeatures, then this is much more complex
     my @sub = $sf->sub_SeqFeature();
     
-    #print STDERR "Got ",scalar(@sub),"sub features\n";
     
     if( $#sub >=  0 ) {
 	# chain to constructor of the object. Not pretty this.
-	#print STDERR "sub seqfeature...\n";
 	$sf->flush_sub_SeqFeature();
 	
 	my $seen = 0;
@@ -1124,10 +1111,8 @@ sub _convert_seqfeature_to_vc_coords {
 
 	    $sf->strand($strand);
 	    
-	    #print STDERR "Giving back a new guy with start",$sf->start,":",$sf->end,":",$sf->strand," id ",$sf->id,"\n";
 	    return $sf;
 	} else {
-	    #print STDERR "not returning it...\n";
 	    return undef;
 	    
 	}
@@ -1139,7 +1124,6 @@ sub _convert_seqfeature_to_vc_coords {
     
     # Could be clipped on ANY contig
 
-    #print STDERR "standard feature\n";
 
   
     if ($sf->start < $mc->rawcontig_start) {  
@@ -1149,7 +1133,6 @@ sub _convert_seqfeature_to_vc_coords {
 	return undef;              
     }
 
-    #print STDERR "got through clipping\n";
 
     my ($rstart,$rend,$rstrand) = $self->_convert_start_end_strand_vc($cid,$sf->start,$sf->end,$sf->strand);
 
