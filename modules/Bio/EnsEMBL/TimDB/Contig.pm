@@ -214,6 +214,7 @@ sub get_all_SeqFeatures {
 
     push(@out,$self->get_all_SimilarityFeatures);
     push(@out,$self->get_all_RepeatFeatures);
+#    push(@out,$self->get_all_GenePredictions);
 
     return @out;
 }
@@ -285,6 +286,29 @@ sub get_all_SimilarityFeatures {
     }
     # return array of objects
     return $self->featureParser->each_Feature;
+}
+
+=head2 get_all_GenePredictions
+
+ Title   : get_all_GenePrediction
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_GenePredictions {
+    my ($self) = @_;
+
+    if (!defined($self->{_read_Genscan})) {
+	$self->featureParser->read_Genscan;
+	$self->{_read_Genscan} = 1;
+    }
+    # return array of objects
+    return $self->featureParser->each_Genscan;
 }
 
 
