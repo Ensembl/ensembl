@@ -309,7 +309,7 @@ sub get_Gene_array_supporting {
     }
     
     if ($supporting && $supporting eq 'evidence') {
-	print "get_Gene: getting supporting evidence for array starting with ".@sup_exons[0]->id."\n";
+	#print "get_Gene: getting supporting evidence for array starting with ".@sup_exons[0]->id."\n";
 	$self->get_supporting_evidence(@sup_exons);
     }
 
