@@ -250,7 +250,6 @@ CREATE TABLE protein_align_feature (
   PRIMARY KEY (	protein_align_feature_id ),
   KEY hit_idx( hit_name ),
   KEY ctg_idx( contig_id, contig_start, analysis_id )
-  
 ) max_rows=300000000 avg_row_length=80;
 
 
@@ -402,7 +401,7 @@ CREATE TABLE exon_feature (
   feature_type enum( "dna_align", "simple", "protein_align" ) not null,
 
   key exon_idx( exon_id, feature_id, feature_type )
-) max_rows=300000000 avg_row_length=80;;
+) max_rows=300000000 avg_row_length=80;
   
  
 
