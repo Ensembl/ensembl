@@ -278,22 +278,27 @@ sub get_mapper {
   if( exists $self->{'_cached_mapper'} ) {
     return $self->{'_cached_mapper'};
   }
+  
+  my ( @lens, @chars );
 
-  my @pre_lens = split( '[DMI]', $self->cigar_line() );
-  my @lens = map { if( ! $_ ) { 1 } else { $_ }} @pre_lens;
-  my @chars = grep { /[DMI]/ } split( //, $self->cigar_line() );
-
+  # if there is no cigar line, nothing is going to be loaded
+  if( $self->cigar_line() ) {
+    my @pre_lens = split( '[DMI]', $self->cigar_line() );
+    @lens = map { if( ! $_ ) { 1 } else { $_ }} @pre_lens;
+    @chars = grep { /[DMI]/ } split( //, $self->cigar_line() );
+  }    
   my $translation_start = $self->translation_start();
   my $translation_end = $self->translation_end();
   my $hit_start = $self->hit_start();
   my $hit_end = $self->hit_end();
 
-#  my $hit_id = $self->display_id();
+  #  my $hit_id = $self->display_id();
   my $hit_id = "external_id";
   my $translation_id = "translation_id";
-
   # now build the mapper
   my $mapper = Bio::EnsEMBL::Mapper->new( "ensembl", "external" );
+
+
   for( my $i=0; $i<=$#lens; $i++ ) {
     my $length = $lens[$i];
     my $char = $chars[$i];
@@ -310,7 +315,7 @@ sub get_mapper {
       $translation_start += $length;
     }
   }
-
+  
   $self->{'_cached_mapper'} = $mapper;
 
   return $mapper;
