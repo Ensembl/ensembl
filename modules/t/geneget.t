@@ -59,7 +59,7 @@ else {
 
 $dbl = shift @dblink;
 
-if( !defined $dbl || $dbl->database ne 'swissprot' ) {
+if( !defined $dbl || $dbl->database ne 'embl' ) {
     print "not ok 4\n";
 } else {
   print "ok 4\n";
