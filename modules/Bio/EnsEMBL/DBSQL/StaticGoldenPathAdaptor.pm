@@ -702,10 +702,11 @@ sub fetch_VirtualContig_of_exon{
    if(sgp.raw_ori=1,(e.seq_end-sgp.raw_start+sgp.chr_start),
                     (sgp.chr_start+sgp.raw_end-e.seq_start)),
      sgp.chr_name
-                    FROM    exon e,
+                    FROM    exon e, exon_stable_id esi,
 			    static_golden_path sgp 
-                    WHERE e.id='$exonid' 
-                    AND sgp.raw_id=e.contig 
+                    WHERE e.exon_id=esi.exon_id
+                    AND   esi.stable_id = '$exonid' 
+                    AND sgp.raw_id=e.contig_id 
                     AND sgp.type = '$type' 
                     ");
    $sth->execute();
