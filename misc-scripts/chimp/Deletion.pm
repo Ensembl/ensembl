@@ -7,6 +7,7 @@ use InterimExon;
 use StatMsg;
 use Length;
 
+use Utils qw(print_exon);
 use Bio::EnsEMBL::Utils::Exception qw(throw info);
 
 
@@ -27,9 +28,9 @@ sub process_delete {
   my $del_end   = $del_start + $del_len - 1;
 
   info((($entire_delete) ? 'entire ' : '')."delete ($del_len)");
-  #print STDERR "BEFORE cds: ", $transcript->cdna_coding_start, '-', 
-  #             $transcript->cdna_coding_end(), "\n";
-  #print STDERR "BEFORE del_start = $del_start\n";
+  info("BEFORE cds: ". $transcript->cdna_coding_start().'-'.
+       $transcript->cdna_coding_end());
+  info("BEFORE del_start = $del_start");
 
   # sanity check, deletion should be completely in
   # or adjacent to exon boundaries
@@ -247,7 +248,7 @@ sub process_cds_delete {
     $transcript->move_cdna_coding_end(-$del_len);
 
     if($frameshift && !$entire_delete) {
-      print STDERR "BEFORE CDS DELETE:\n";
+      info("BEFORE CDS DELETE:");
       print_exon($exon, $transcript);
 
       $code |= StatMsg::FRAMESHIFT if($frameshift);
@@ -319,17 +320,19 @@ sub process_cds_delete {
           if($first_len) {
             my $first_exon = InterimExon->new();
 
-            # copy the original exon and adjust the coords as necessary
+            # Copy the original exon and adjust the coords as necessary
+            # Note that these exons will share stat msgs which is what
+            # we want.
             %{$first_exon} = %{$exon};
             $first_exon->cdna_end($exon->cdna_start() + $first_len - 1);
             $first_exon->end($first_exon->start() + $first_len - 1);
             $transcript->add_Exon($first_exon);
 
-            print STDERR "FIRST EXON:\n";
-            print_exon($first_exon, $transcript);
+            info("FIRST EXON:");
+            info($first_exon, $transcript);
+            $exon->add_StatMsg(StatMsg->new(StatMsg::EXON | StatMsg::SPLIT));
 
             $exon->cdna_start($first_exon->cdna_end() + 1);
-            $exon->flush_StatMsgs();
           }
 
           # start next exon after new intron
@@ -340,16 +343,17 @@ sub process_cds_delete {
             my $first_exon = InterimExon->new();
 
             # copy the original exon and adjust the coords as necessary
+            # these exons will share stat msgs
             %{$first_exon} = %{$exon};
             $first_exon->cdna_end($exon->cdna_start + $first_len - 1);
             $first_exon->start($exon->end() - $first_len + 1);
             $transcript->add_Exon($first_exon);
 
-            print STDERR "FIRST EXON:\n";
+            info("FIRST EXON:");
             print_exon($first_exon, $transcript);
+            $exon->add_StatMsg(StatMsg->new(StatMsg::EXON | StatMsg::SPLIT));
 
             $exon->cdna_start($first_exon->cdna_end() + 1);
-            $exon->flush_StatMsgs();
           }
 
           # start next exon after new intron
@@ -358,7 +362,7 @@ sub process_cds_delete {
         }
       }
 
-      print STDERR "AFTER CDS INSERT:\n";
+      info("AFTER CDS DELETE:");
       print_exon($exon, $transcript);
     }
   }
@@ -373,31 +377,6 @@ sub process_cds_delete {
   }
 
   $exon->add_StatMsg(StatMsg->new($code));
-
-  return;
-}
-
-
-sub print_exon {
-  my $exon = shift;
-  my $tr = shift;
-
-  if (!$exon) {
-    throw("Exon undefined");
-  }
-
-  print STDERR "EXON:\n";
-  print STDERR "  cdna_start = ". $exon->cdna_start() . "\n";
-  print STDERR "  cdna_end   = ". $exon->cdna_end() . "\n";
-  print STDERR "  start             = ". $exon->start() . "\n";
-  print STDERR "  end               = ". $exon->end() . "\n";
-  print STDERR "  strand            = ". $exon->strand() . "\n\n";
-
-  if($tr) {
-    print STDERR "TRANSCRIPT:\n";
-    print STDERR "  cdna_coding_start = ". $tr->cdna_coding_start() . "\n";
-    print STDERR "  cdna_coding_end   = ". $tr->cdna_coding_end(). "\n";
-  }
 
   return;
 }

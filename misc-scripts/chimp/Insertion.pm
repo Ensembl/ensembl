@@ -7,7 +7,7 @@ use InterimExon;
 use Length;
 use StatMsg;
 use Bio::EnsEMBL::Utils::Exception qw(throw info);
-
+use Utils qw(print_exon);
 
 sub process_insert {
   my $cdna_ins_pos_ref = shift;   #basepair to left of insert
@@ -52,7 +52,7 @@ sub process_insert {
      $$cdna_ins_pos_ref <  $transcript->cdna_coding_end()) {
 
     info("insertion in cds ($insert_len)");
-    print STDERR "BEFORE CDS INSERT:\n";
+    info("BEFORE CDS INSERT:");
     print_exon($exon, $transcript);
 
     $code |= StatMsg::CDS;
@@ -75,9 +75,12 @@ sub process_insert {
       my $first_len  = $$cdna_ins_pos_ref - $exon->cdna_start() + 1;
 
       # copy the original exon and adjust coords of each to perform 'split'
+      # share stat msgs between them - if one part of split transcript is
+      # rejected, they all should be
       my $first_exon = InterimExon->new();
       %{$first_exon} = %{$exon};
-      $exon->flush_StatMsgs();
+
+      $exon->add_StatMsg(StatMsg->new(StatMsg::EXON | StatMsg::SPLIT));
 
       # frame shift intron eats into start of inserted region
       # second exon is going to start right after 'frameshift intron'
@@ -112,7 +115,7 @@ sub process_insert {
       $transcript->add_Exon($first_exon);
     }
 
-    print STDERR "AFTER CDS INSERT:\n";
+    info("AFTER CDS INSERT:");
     print_exon($exon, $transcript);
 
   }
@@ -150,30 +153,6 @@ sub process_insert {
 
 
   $exon->add_StatMsg(StatMsg->new($code));
-
-  return;
-}
-
-sub print_exon {
-  my $exon = shift;
-  my $tr = shift;
-
-  if (!$exon) {
-    throw("Exon undefined");
-  }
-
-  print STDERR "EXON:\n";
-  print STDERR "  cdna_start = ". $exon->cdna_start() . "\n";
-  print STDERR "  cdna_end   = ". $exon->cdna_end() . "\n";
-  print STDERR "  start             = ". $exon->start() . "\n";
-  print STDERR "  end               = ". $exon->end() . "\n";
-  print STDERR "  strand            = ". $exon->strand() . "\n\n";
-
-  if($tr) {
-    print STDERR "TRANSCRIPT:\n";
-    print STDERR "  cdna_coding_start = ". $tr->cdna_coding_start() . "\n";
-    print STDERR "  cdna_coding_end   = ". $tr->cdna_coding_end(). "\n";
-  }
 
   return;
 }
