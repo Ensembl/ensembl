@@ -39,7 +39,7 @@ CREATE TABLE clone (
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,	
-  PRIMARY KEY (id)
+  PRIMARY KEY (id,version)
 );
 
 #
@@ -100,7 +100,7 @@ CREATE TABLE exon (
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
   KEY idx1 (id,contig),
-  PRIMARY KEY (id)
+  PRIMARY KEY (id,version)
 );
 
 #
@@ -168,7 +168,7 @@ CREATE TABLE gene (
   created datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   modified datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   stored datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id,version)
 );
 
 #
@@ -220,7 +220,7 @@ CREATE TABLE transcript (
   gene varchar(40) DEFAULT '' NOT NULL,
   translation varchar(40) DEFAULT '' NOT NULL,
   PRIMARY KEY (id),
-  KEY id_geneid (id)
+  KEY id_geneid (id,version)
 );
 
 CREATE TABLE translation (
