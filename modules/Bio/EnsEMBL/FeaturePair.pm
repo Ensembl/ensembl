@@ -843,23 +843,25 @@ sub id {
 }
 
 sub gffstring {
-   my ($self) = @_;
+    my ($self) = @_;
 
-   my $str = $self->seqname . "\t" . $self->source_tag . "\t" . 
-          $self->primary_tag . "\t" . $self->start . "\t" . $self->end . "\t" ;
-
-   my $strand = ".";
-   if ($self->strand == 1) {
-       $strand = "+";
-   } elsif ($self->strand == -1) {
-       $strand = "-";
-   }
-
-   $str .= $self->score .    "\t" . $strand . "\t.\t" ;     
-   $str .= $self->hseqname . "\t" . $self->hstart . "\t" . 
-           $self->hend     . "\t" . $self->hstrand ;
-
-   return $str;
+    my $str;
+    #hope this doesn't slow things down too much
+    $str .= (defined $self->seqname)    ?   $self->seqname."\t"     :  "\t";
+    $str .= (defined $self->source_tag) ?   $self->source_tag."\t"  :  "\t";
+    $str .= (defined $self->primary_tag)?   $self->primary_tag."\t" :  "\t";
+    $str .= (defined $self->start)      ?   $self->start."\t"       :  "\t";
+    $str .= (defined $self->end)        ?   $self->end."\t"         :  "\t";
+    $str .= (defined $self->strand)     ?   $self->strand."\t"      :  ".\t";
+    $str .= (defined $self->score)      ?   $self->score."\t"       :  "\t";
+    $str .= (defined $self->phase)      ?   $self->phase."\t"       :  ".\t";
+    $str .= (defined $self->hseqname)   ?   $self->hseqname."\t"    :  "\t";
+    $str .= (defined $self->hstart)     ?   $self->hstart."\t"      :  "\t";
+    $str .= (defined $self->hend)       ?   $self->hend."\t"        :  "\t";
+    $str .= (defined $self->hstrand)    ?   $self->hstrand."\t"     :  "\t";
+    $str .= (defined $self->hphase)     ?   $self->hphase."\t"      :  ".\t";
+    
+    return $str;
 }
 
 =head2 percent_id
@@ -928,7 +930,6 @@ sub p_value {
 
 }
 
-
 =head2 hp_value
 
  Title   : hp_value
@@ -950,5 +951,88 @@ sub hp_value {
 	return $self->feature2->p_value();
 }
 
-                   
+=head2 phase
+
+ Title   : phase
+ Usage   : $phase = $feat->phase()
+           $feat->phase($phase)
+ Function: get/set on start phase of predicted feature1
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub phase {
+    my ($self, $value) = @_;
+    
+    if (defined($value)) 
+    {
+        $self->feature1->phase($value);
+    }
+    return $self->feature1->phase();
+}
+
+=head2 end_phase
+
+ Title   : end_phase
+ Usage   : $end_phase = $feat->end_phase()
+           $feat->end_phase($end_phase)
+ Function: get/set on end phase of predicted feature1
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub end_phase {
+    my ($self, $value) = @_;
+    
+    if (defined($value)) 
+    {
+        $self->feature1->end_phase($value);
+    }
+    return $self->feature1->end_phase();
+}
+
+=head2 hphase
+
+ Title   : hphase
+ Usage   : $hphase = $fp->hphase()
+           $fp->hphase($hphase)
+ Function: get/set on start hphase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hphase {
+    my ($self, $value) = @_;
+    if (defined($value)) 
+    {
+        $self->feature2->phase($value);
+    }
+    return $self->feature2->phase();
+    
+}
+
+=head2 hend_phase
+
+ Title   : hend_phase
+ Usage   : $hend_phase = $feat->hend_phase()
+           $feat->hend_phase($hend_phase)
+ Function: get/set on end phase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hend_phase {
+    my ($self, $value) = @_;
+    
+    if (defined($value)) 
+    {
+        $self->feature2->end_phase($value);
+    }
+    return $self->feature2->end_phase();
+}
+
 1;

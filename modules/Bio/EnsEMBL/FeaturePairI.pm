@@ -135,5 +135,67 @@ sub hp_value {
     $self->throw("Method not impelemented here");
 }
 
+=head2 phase
 
+ Title   : phase
+ Usage   : $phase = $feat->phase()
+           $feat->phase($phase)
+ Function: get/set on start phase of predicted feature1
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub phase {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+=head2 end_phase
+
+ Title   : end_phase
+ Usage   : $end_phase = $feat->end_phase()
+           $feat->end_phase($end_phase)
+ Function: get/set on end phase of predicted feature1
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub end_phase {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+=head2 hphase
+
+ Title   : hphase
+ Usage   : $hphase = $fp->hphase()
+           $fp->hphase($hphase)
+ Function: get/set on start hphase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hphase {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
+
+=head2 hend_phase
+
+ Title   : hend_phase
+ Usage   : $hend_phase = $feat->hend_phase()
+           $feat->hend_phase($hend_phase)
+ Function: get/set on end phase of predicted feature2
+ Returns : [0,1,2]
+ Args    : none if get, 0,1 or 2 if set. 
+
+=cut
+
+sub hend_phase {
+    my ($self) = @_;
+    $self->throw("Method not impelemented here");
+}
 1;
