@@ -514,6 +514,7 @@ sub primary_seq {
     open(IN,$file) || die "cannot open $file";
     my $seqin = Bio::SeqIO->new( '-format' => 'Fasta', -fh => \*IN);
     my($seq,$seqid,$ffound);
+    #print STDERR "disk_id: $disk_id\n";
     while($seq=$seqin->next_primary_seq()){
 	$seqid=$seq->id;
 	#print STDERR "Read $seqid from $file\n";
