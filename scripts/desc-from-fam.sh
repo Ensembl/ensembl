@@ -1,25 +1,26 @@
-#!/bin/sh -x
+#!/bin/sh
 # -*- mode: sh; -*-
 # $Id$
 
 # Usage: desc-from-fam.sh homo_sapiens_core_110 -h ensrv3 -u ensadmin family110
 
 # Script to merge existing gene_descriptions with those from the families
-# (where unknown) into a new table called $new_gene_description, which is
-# a complete replacement for the old table.  The script assumes that the family
+# (where known) into a new table called $new_gene_description, which is a
+# complete replacement for the old table.  The script assumes that the family
 # and ensembl-core database live in the same server (so you can do joins).
 
 # Database to read existing descriptions from:
 read_database=$1; shift
-# read_database='homo_sapiens_core_110'
 
-# name of the table having the existing descriptions (only changes when the
-# schema does)
+# Name of the table having the existing descriptions (only changes when the
+# schema does, really, but also useful during testing/debugging)
 read_gene_desc_table='gene_description'
 
 # the table with new descriptions to be created (in the current database):
 new_gene_description='merged_gene_description'
 
+# now produce the SQL (with the $variables  being replaced with their values)
+# and pipe this as input into mysql:
 (cat <<EOF
 select count(*) as all_old_descriptions
 from $read_database.$read_gene_desc_table gd
