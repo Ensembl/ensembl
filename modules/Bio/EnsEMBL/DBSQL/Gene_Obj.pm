@@ -756,6 +756,37 @@ sub get_Translation{
    return $out;
 }
 
+=head2 get_Virtual_Contig
+    
+ Title   : get_Virtual_Contig
+ Usage   : $gene_obj->get_Virtual_Contig($transcript,$max_length)
+ Function: Gets a Bio::EnsEMBL::DB::Virtual Contig object which 
+           spans the whole sequence on which the given 
+           Bio::EnsEMBL::Transcript object lies, as long 
+           as its length does not exceed max_length. If max_length
+           is exceeded, undef is returned instead.
+ Example : $gene_obj->get_Virtual_Contig($transcript,50000)
+ Returns : VirtualContig Object (or undef)
+ Args    : Bio::EnsEMBL::Transcript object and max_length int variable
+
+
+=cut
+    
+sub get_Virtual_Contig{
+    my ($self,$transcript, $max_length) = @_;
+
+    if ( !defined $transcript || ! $transcript->isa('Bio::EnsEMBL::Transcript') ) {
+	$self->throw("$transcript is not a Bio::EnsEMBL::Transcript, cannot get Virtual Contig!");
+    }
+
+    if (!defined $max_length) {
+	$self->throw("You need to specify the max. length of the Virtual Contig!");
+    }
+    
+    my $virtualcontig=Bio::EnsEBML::DB::VirtualContig->new();
+    
+    
+}
 =head2 write
 
  Title   : write
