@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 11;
+	plan tests => 45;
 }
 
 use TestUtils qw( debug test_getter_setter );
@@ -14,8 +14,13 @@ use Bio::EnsEMBL::Feature;
 use Bio::EnsEMBL::Slice;
 use Bio::EnsEMBL::Analysis;
 use Bio::EnsEMBL::CoordSystem;
+use MultiTestDB;
 
-our $verbose= 0;
+
+my $multi_db = MultiTestDB->new;
+my $db = $multi_db->get_DBAdaptor('core');
+
+our $verbose= 1; #turn on or off debug statements
 
 my $coord_system = Bio::EnsEMBL::CoordSystem->new
   (-NAME    => 'chromosome',
@@ -31,7 +36,7 @@ my $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
                                      -END             => 2_000_000);
 
 #
-# 1-6 Test new and getters
+# Test new and getters
 #
 my $start  = 10;
 my $end    = 100;
@@ -52,7 +57,7 @@ ok($feature->analysis == $analysis);
 ok($feature->slice == $slice);
 
 #
-# 7-11 Test setters
+# Test setters
 #
 $analysis = Bio::EnsEMBL::Analysis->new(-LOGIC_NAME => 'new analysis');
 $slice = Bio::EnsEMBL::Slice->new(-COORD_SYSTEM    => $coord_system,
@@ -67,14 +72,14 @@ ok(&test_getter_setter($feature, 'slice', $slice));
 
 
 #
-# 8 Test length
+# Test length
 #
 
 ok($feature->length == $start-$end+1);
 
 
 #
-# 9-11 Test move
+# Test move
 #
 
 $feature->move(300, 500, 1);
@@ -82,4 +87,172 @@ $feature->move(300, 500, 1);
 ok($feature->start == 300);
 ok($feature->end == 500);
 ok($feature->strand == 1);
+
+
+#################
+# Test transform
+#################
+
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                 '20',
+                                                 30_249_935,
+                                                 31_000_000);
+
+$feature->slice($slice);
+
+#
+# Test Transform chromosome -> contig
+#
+
+$feature = $feature->transform('contig');
+
+debug("\nchromosome -> contig");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start() == 400);
+ok($feature->end() == 600);
+ok($feature->strand() == 1);
+ok($feature->slice->seq_region_name() eq 'AL359765.6.1.13780');
+ok($feature->slice->coord_system->name() eq 'contig');
+
+
+#
+# Test Transform contig -> supercontig
+#
+
+$feature = $feature->transform('supercontig');
+
+debug("\ncontig -> supercontig");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start()  == 658269);
+ok($feature->end()    == 658469);
+ok($feature->strand() == 1);
+ok($feature->slice->seq_region_name() eq 'NT_028392');
+ok($feature->slice->coord_system->name() eq 'supercontig');
+
+
+#
+# Test Transform supercontig -> contig
+#
+
+$feature = $feature->transform('contig');
+debug("\nsupercontig -> contig");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start() == 400);
+ok($feature->end() == 600);
+ok($feature->strand() == 1);
+ok($feature->slice->seq_region_name() eq 'AL359765.6.1.13780');
+ok($feature->slice->coord_system->name() eq 'contig');
+
+
+#
+# Test Transform contig -> clone
+#
+
+$feature = $feature->transform('clone');
+debug("\ncontig -> clone");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start() == 400);
+ok($feature->end() == 600);
+ok($feature->strand() == 1);
+ok($feature->slice->seq_region_name() eq 'AL359765.6');
+ok($feature->slice->coord_system->name() eq 'clone');
+
+
+#
+# Test transform to into gap
+#
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                 '20',
+                                                 1_000_000,
+                                                 2_000_000);
+$feature->slice($slice);
+
+ok(!defined($feature->transform('contig')));
+
+
+
+###############
+# Test transfer
+###############
+$slice = $db->get_SliceAdaptor->fetch_by_region('chromosome',
+                                                 '20',
+                                                 30_249_935,
+                                                 31_000_000);
+
+$feature->slice($slice);
+
+
+#
+# Transfer to expanded inverted chr slice
+#
+
+#get larger slice on other strand
+$slice = $slice->invert()->expand(100,100);
+
+$feature = $feature->transfer($slice);
+debug("\ntransfer to inverted chromosomal slice");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start()  == 749567);
+ok($feature->end()    == 749767);
+ok($feature->strand() == -1);
+
+
+#
+# Transfer to contig slice
+#
+
+$slice = $db->get_SliceAdaptor->fetch_by_region('contig',
+                                                'AL359765.6.1.13780',
+                                                '30', '3000');
+
+$feature = $feature->transfer($slice);
+debug("\ntransfer to contig slice");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+
+ok($feature->start()  == 471);
+ok($feature->end()    == 671);
+ok($feature->strand() == 1);
+
+
+#
+# Transfer to supercontig slice
+#
+$slice  = $db->get_SliceAdaptor->fetch_by_region('supercontig',
+                                                 'NT_028392');
+
+$feature = $feature->transfer($slice);
+debug("\ntransfer to supercontig slice");
+debug("start  = " . $feature->start());
+debug("end    = " . $feature->end());
+debug("strand = " . $feature->strand());
+debug("seq_region = " . $feature->slice->seq_region_name());
+
+ok($feature->start()  == 658369);
+ok($feature->end()    == 658569);
+ok($feature->strand() == 1);
+
 
