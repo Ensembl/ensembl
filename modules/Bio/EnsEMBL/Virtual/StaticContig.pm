@@ -75,6 +75,10 @@ sub new {
 	$self->_vmap->create_MapContig($rc,$rc->chr_start - $global_start+1,$rc->chr_end - $global_start +1,$rc->static_golden_start,$rc->static_golden_ori);
     }
 
+    # needs to handle overhangs...
+    my @contigs = $self->_vmap->each_MapContig;
+    my $last = pop @contigs;
+    $self->_vmap->length($last->end);
     
     $self->_unique_number("static".$static_number++);
     

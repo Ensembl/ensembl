@@ -135,8 +135,7 @@ sub accession_number {
 
 sub seq {
    my ($self) = @_;
-   $self->throw("Needs to be reimplemented in subseq");
-
+   return $self->subseq(1,$self->length);
 }
 
 =head2 subseq
@@ -161,16 +160,101 @@ sub subseq{
    if( $start <= 0) {
        $self->throw("In subseq start must be positive");
    }
+   if( $end > $self->length ) {
+       $self->throw("Cannot ask for more than length of sequence $end vs".$self->length);
+   }
+       
    my @mapcontigs=$self->_vmap->each_MapContig();
+
    my $start_contig=shift(@mapcontigs);
-   print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
-   while ($start_contig->rawcontigstart < $start) {
+
+   while ($start_contig->end < $start) {
        $start_contig = shift(@mapcontigs);
        print STDERR "Got map contig with start ".$start_contig->rawcontigstart."\n";
    }
    
-   $self->throw("Not implemented yet!");
+   # could be in the middle of a gap
+   if( $start_contig->start > $end ) {
+       return 'N' x ($end - $start +1);
+   }
+
+   # check to see if this is simple, start-end in one contig
+   if( $start >= $start_contig->start && $end <= $start_contig->end ) {
+       # map straight away.
+       if( $start_contig->orientation == 1 ) {
+	   return $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_start + ($end - $start_contig->start));
+       } else {
+	   my $temp = $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_end - ($end - $start_contig->start),$start_contig->rawcontig_end - ($start - $start_contig->start));
+	   $temp =~ tr/ATGCNatgcn/TACGNtacgn/;
+	   $temp = reverse $temp;
+	   return $temp;
+       }
+   }
+
+   my $seqstr = "";
+       
+   # ok end is > than start. See if start is actually in contig
+   if( $start < $start_contig->start ) {
+       #nope. Got some N's to put in
+       $seqstr .= 'N' x ($start_contig->start - $start);
+       # now put in the rest of this contig
+       $seqstr .= $start_contig->_actual_sequence_as_string;
+   } else {
+       # start is in the middle of a contig
+       if( $start_contig->orientation == 1 ) {
+	   $seqstr .= $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start + ($start - $start_contig->start),$start_contig->rawcontig_end);
+       } else {
+	   my $temp = $start_contig->contig->primary_seq->subseq($start_contig->rawcontig_start,$start_contig->rawcontig_end - ($start - $start_contig->start));
+	   $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	   $temp = reverse $temp;
+	   $seqstr .= $temp;
+       }
+   }
+	   
+
    
+   my $previous = $start_contig;
+   my $current;
+   while( ($current = shift @mapcontigs) ) {
+
+       if( $end <= $current->end ) {
+	   last;
+       }
+       
+       # check to add Ns
+       if( $previous->end+1 != $current->start ) {
+	   $seqstr .= 'N' x ($current->start - $previous->end );
+       }
+       
+       # add sequence
+       $seqstr .= $current->_actual_sequence_as_string;
+       $previous = $current;
+   }
+   # end of sequence
+   if( !defined $current ) {
+       $self->throw("Should be impossible to reach this point. Convention bug");
+   }
+
+   # last contig
+   
+   # end could be not inside, in which case only add N's
+   if( $end < $current->start ) {
+       $seqstr .= 'N' x ($end - $previous->end);
+   } else {
+       # ok. Add the remainder
+       if( $current->orientation == 1 ) {
+	   $seqstr .= $current->contig->primary_seq->subseq($current->rawcontig_start,$current->rawcontig_start + ($end - $current->start));
+       } else {
+	   #print STDERR "$end vs",$current->start,"\n";
+	   
+	   my $temp = $current->contig->primary_seq->subseq($current->rawcontig_end - ($end - $current->start),$current->rawcontig_end);
+	   $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+	   $temp = reverse $temp;
+	   $seqstr .= $temp;
+       }
+   }
+
+   return $seqstr;
 }
 
 =head2 moltype
@@ -217,12 +301,9 @@ sub id {
 =cut
 
 sub length {
-    my ($self,$value)= @_;
+    my ($self)= @_;
+    return $self->_vmap->length();
 
-    if( defined $value) {
-	$self->{'_length'} = $value;
-    }
-    return $self->{'_length'};    
 }
 
 =head2 can_call_new

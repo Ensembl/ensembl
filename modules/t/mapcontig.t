@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..6\n"; 
+BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -89,6 +89,14 @@ if( $mc->start != 400 ||
     print "not ok 6\n";
 } else {
     print "ok 6\n";
+}
+
+$str = $mc->_actual_sequence_as_string;
+if( $str ne 'AAAAAAAATTTTTTTTTAAAA' ) {
+    print "not ok 7\n";
+    print STDERR "Seq $str\n";
+} else {
+    print "ok 7\n";
 }
 
 

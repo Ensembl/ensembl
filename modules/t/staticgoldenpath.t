@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..18\n"; 
+BEGIN { $| = 1; print "1..20\n"; 
 	use vars qw($loaded); }
 
 END {print "not ok 1\n" unless $loaded;}
@@ -78,15 +78,10 @@ $vc = $stadaptor->fetch_VirtualContig_by_fpc_name('ctg123');
 
 
 
-#my $vseq=$vc->primary_seq->subseq(10,20);
-#print STDERR "Subseq from 2 to 3: ".$vseq->subseq(2,3)."\n";
-#if( $vc->primary_seq->seq eq 'AAATTT' ) {
-#    print "ok 7\n";
-#} else {
-#    print "not ok 7\n";
-#}
+my $vseq=$vc->primary_seq;
 print "ok 7\n";
 
+# for more serious vseq tests, read below...
 
 $vc2 = $stadaptor->fetch_VirtualContig_by_chr_name('chr2');
 
@@ -282,6 +277,24 @@ if( $exon3->start != 1 || $exon3->end != 8 || $exon3->seq->seq ne 'GGTTTTTT' ) {
     print "ok 18\n";
 }
 
+
+if( $vseq->subseq(1,10) ne 'AAAAAAAAAT' ) {
+    print "not ok 19\n";
+    print STDERR "Sequence ",$vseq->subseq(1,10),"\n";
+} else {
+    print "ok 19\n";
+}
+
+if( $vseq->subseq(1,40) ne 'AAAAAAAAATTTTTTTTTTAAAAAAAAAATTTTTTTNNNN' ) {
+    print "not ok 20\n";
+    print STDERR "Sequence ",$vseq->subseq(1,40),"\n";
+} else {
+    print "ok 20\n";
+}
+
+#print STDERR "Whole is ",$vseq->seq,"\n";
+
+       
 
 
 

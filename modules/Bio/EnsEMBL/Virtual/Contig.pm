@@ -174,8 +174,8 @@ sub new {
 
  Title   : primary_seq
  Usage   : $seq = $contig->primary_seq();
- Function: Gets a Bio::EnsEMBL::DB::VirtualPrimarySeq object out from the contig
- Returns : Bio::EnsEMBL::VirtualPrimarySeq object
+ Function: Gets a Bio::EnsEMBL::Virtual::PrimarySeq object out from the contig
+ Returns : Bio::EnsEMBL::Virtual::PrimarySeq object
  Args    : none
 
 =cut
@@ -183,8 +183,13 @@ sub new {
 sub primary_seq {
     my ($self) = @_;
 
+    if( $self->{'_virtual_primary_seq'} ){
+	return $self->{'_virtual_primary_seq'};
+    }
+
     my $vseq = Bio::EnsEMBL::Virtual::PrimarySeq->new( -vmap =>$self->_vmap, 
 						       -id =>$self->id						        );
+    $self->{'_virtual_primary_seq'} = $vseq;
     return $vseq;
 }
 

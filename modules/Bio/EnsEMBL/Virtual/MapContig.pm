@@ -271,6 +271,31 @@ sub end_in{
 
 }
 
+=head2 _actual_sequence_as_string
+
+ Title   : _actual_sequence_as_string
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub _actual_sequence_as_string{
+   my ($self) = @_;
+
+   my $temp = $self->contig->primary_seq->subseq($self->rawcontig_start,$self->rawcontig_end);
+   if( $self->orientation == 1 ) {
+       return $temp;
+   }
+
+   $temp =~ tr/acgtrymkswhbvdnxACGTRYMKSWHBVDNX/tgcayrkmswdvbhnxTGCAYRKMSWDVBHNX/;
+   $temp = reverse $temp;
+   return $temp;
+}
+
 =head2 _length
 
  Title   : _length
