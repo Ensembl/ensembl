@@ -20,7 +20,7 @@ pepfile=$source.pep
 [ ! -f $origfile ] && echo "$origfile: Not found">&2 && exit 1
 [ -f $pepfile ] && echo "found $pepfile; not overwriting">&2 && exit 1
 sed '/^>/s/>\(ENSP[0-9]*\) Gene:\(ENSG[0-9]*\)\(.*$\)/>\2 \1\3/' < $origfile \
-    >$pepfile  || exit 2
+ | sed '/^>/s/^>/>ENS:/' > $pepfile    >$pepfile  || exit 2
 
 source=affymetrix
 cd $source
@@ -33,7 +33,9 @@ echo $chroms >&2
 echo "" > /dev/tty
 for chr in "$@"; do
     find . $chr -name '*.affymetrix.aa' -exec cat {} \;
-done  > $pepfile
+done  | sed '/^>/s/>\(.*\)\.\([0-9][0-9]*\)$/>AFFY:\1 \1.\2/' > $pepfile
+# the pep file has the transcript id, which is gene_id + number. Replace it
+# to make it easier for gtfsummary2pep
 
 source=fgenesh
 cd $source
@@ -42,8 +44,9 @@ pepfile=$source.pep
 [ -f $pepfile ] && echo "found $pepfile; not overwriting">&2 && exit 1
 for i in   chr_pro/*.sgp.pro chr_r_pro/*.sgp.pro; do
     cat $i
-done > $pepfile
-
+done  | sed '/^>C/s/^>FGENH:C/>S.C/' > $pepfile
+# (replaces ">C1000004 chr1  ..."  with ">S.C1000004 chr1  ..." everywhere;
+# the gtf files have 'S.C...', the pep files 'C....'. Easiest to change here.
 
 
 
