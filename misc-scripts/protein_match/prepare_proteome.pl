@@ -63,9 +63,9 @@ if (($organism eq "human") || ($organism eq "mouse")) {
     &parse_refseq;
 }
 
-if ($organism eq "human") {
-    &parse_refseq_pred;
-}
+#if ($organism eq "human") {
+#    &parse_refseq_pred;
+#}
 
 &parse_sptr;
 &test_protfile;
