@@ -129,14 +129,10 @@ ok(scalar(@{$exon->get_all_supporting_features} == $count));
 debug ("Exon->list_dbIDs");
 my $ids = $exonad->list_dbIDs();
 ok (@{$ids});
-foreach my $id (@$ids) {
-  print "$id\n";
-}
+
 debug ("Exon->list_stable_dbIDs");
 my $stable_ids = $exonad->list_stable_dbIDs();
 ok (@{$stable_ids});
-foreach my $sid (@$stable_ids) {
-  print "$sid\n";
-}
+
 $multi->restore();
 
