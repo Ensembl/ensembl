@@ -791,7 +791,7 @@ sub parse_mappings {
   $row = @{$self->dbi->selectall_arrayref("SELECT MAX(xref_id) FROM xref")}[0];
   my $max_xref_id = @$row[0];
   if (!defined $max_xref_id) {
-    print "Can't get highest existing xref_id, using 1\n)";
+    print "Can't get highest existing xref_id, using 1\n";
     $max_xref_id = 1;
   } else {
     print "Maximum existing xref_id = $max_xref_id\n";
@@ -1000,6 +1000,16 @@ sub dump_direct_xrefs {
       }
 
       my $ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$ensembl_stable_id};
+
+      # horrible hack to deal with UTR transcripts in Elegans
+      my $postfix = 1;
+      while (!$ensembl_internal_id && $postfix < 5) {
+	my $utr_stable_id = $ensembl_stable_id . ".$postfix" ;
+	$ensembl_internal_id = $stable_id_to_internal_id->{$type}->{$utr_stable_id};
+	$postfix++;
+      }
+      # end horrible hack
+
       if ($ensembl_internal_id) {
 
 	if (!$xrefs_written{$xref_id}) {
@@ -1255,10 +1265,15 @@ sub dump_core_xrefs {
 	  my $full_key = $type."|".$object_id."|".$xref_id;
 	  if (!$object_xrefs_written{$full_key}) {
 	    print OBJECT_XREF "$object_xref_id\t$object_id\t$type\t" . ($xref_id+$xref_id_offset) . "\tDEPENDENT\n";
+
 	    # Add this mapping to the list - note NON-OFFSET xref_id is used
 	    my $key = $type . "|" . $object_id;
 	    push @{$object_xref_mappings{$key}}, $xref_id;
 	    $object_xrefs_written{$full_key} = 1;
+
+	    # Also store *parent's* query/target identity for dependent xrefs
+	    $object_xref_identities{$object_id}->{$xref_id}->{"target_identity"} = $object_xref_identities{$object_id}->{$master_xref_id}->{"target_identity"};
+	    $object_xref_identities{$object_id}->{$xref_id}->{"query_identity"} = $object_xref_identities{$object_id}->{$master_xref_id}->{"query_identity"};
 
 	    # write a go_xref with the appropriate linkage type
 	    print GO_XREF $object_xref_id . "\t" . $linkage_annotation . "\n"  if ($source_id == $go_source_id);
@@ -1297,7 +1312,12 @@ sub dump_core_xrefs {
   # calculate display_xref_ids for transcripts and genes
   my $transcript_display_xrefs = $self->build_transcript_display_xrefs($xref_id_offset);
 
-  $self->build_gene_display_xrefs_and_descriptions($transcript_display_xrefs);
+  build_genes_to_transcripts();
+
+  $self->build_gene_display_xrefs($transcript_display_xrefs);
+
+  # now build gene descriptions
+  $self->build_gene_descriptions();
 
   return $object_xref_id;
 
@@ -1397,15 +1417,34 @@ sub build_transcript_display_xrefs {
     # use the one with the highest priority, i.e. lower list position in @priorities
     my @xrefs = @{$object_xref_mappings{$key}};
     my ($best_xref, $best_xref_priority_idx);
+    # store best query & target identities for each source
+    my %best_qi;
+    my %best_ti;
     $best_xref_priority_idx = 99999;
     foreach my $xref (@xrefs) {
 
       my $source = $xref_to_source{$xref};
       if ($source) {
 	my $i = find_in_list($source, @priorities);
-	if ($i > -1 && $i < $best_xref_priority_idx) {
+
+	my $s = $source . "|" . $xref;
+	my $query_identity = $object_xref_identities{$object_id}->{$xref}->{"query_identity"};
+	my $target_identity = $object_xref_identities{$object_id}->{$xref}->{"target_identity"};
+
+      print "###$type $object_id: xref $xref pri $i qi $query_identity\n" if ((($object_id == 93561 && $type =~ /Transcript/) || ($object_id == 65810 && $type =~ /Translation/)) && $i == 0);
+	print "xref $xref $type $object_id pri $i qi $query_identity best qi " . $best_qi{$s} . " ti $target_identity\n" if ($xref == 397813 || $xref == 397814);
+	# Check if this source has a better priority than the current best one
+	# Note if 2 sources are the same priority, the mappings are compared on
+	# query_identity then target_identity
+#	if ($i > -1 && $i < $best_xref_priority_idx &&
+#	    (($query_identity > $best_query_identity) ||
+#	    ($query_identity == $best_query_identity && $target_identity > $best_target_identity))) {
+	if ($i > -1 && $i < $best_xref_priority_idx && $query_identity > $best_qi{$s}) {
 	  $best_xref = $xref;
 	  $best_xref_priority_idx = $i;
+	  $best_qi{$s} = $query_identity;
+	  print "Setting best qi $s to $query_identity\n" if ($xref == 397813 || $xref == 397814);
+	  $best_ti{$s} = $target_identity;
 	}
       } else {
 	warn("Couldn't find a source for xref $xref \n");
@@ -1413,6 +1452,7 @@ sub build_transcript_display_xrefs {
     }
     # store object type, id, and best xref id and source priority
     if ($best_xref) {
+      print "##setting obj to best xref $key to $best_xref | $best_xref_priority_idx\n" if ($best_xref == 397813 || $best_xref == 397814);
       $obj_to_best_xref{$key} = $best_xref . "|" . $best_xref_priority_idx;
     }
 
@@ -1439,7 +1479,6 @@ sub build_transcript_display_xrefs {
 
     # If transcript has a translation, use the best xref out of the transcript & translation
 
-
     my $transcript_id;
     my $translation_id;
     if ($type =~ /Transcript/i) {
@@ -1452,13 +1491,16 @@ sub build_transcript_display_xrefs {
       $object_id = $transcript_id;
     }
     else{
-      print "$type type error BARFFF!!!\n";
+      print "Cannot deal with type $type\n";
       next;
     }
     if ($translation_id) {
       my ($translation_xref, $translation_priority) = split /\|/, $obj_to_best_xref{"Translation|$translation_id"};
       my ($transcript_xref, $transcript_priority)   = split /\|/, $obj_to_best_xref{"Transcript|$transcript_id"};
-      
+      my $transcript_qi = $object_xref_identities{$object_id}->{$transcript_xref}->{"query_identity"};
+      my $translation_qi = $object_xref_identities{$object_id}->{$translation_xref}->{"query_identity"};
+
+print "translation 65810: translation xref: $translation_xref $translation_priority transcript_xref $transcript_xref $transcript_priority\n" if ($type =~ /Translation/ && $object_id == 65810);
       if(!$translation_xref){
 	$best_xref = $transcript_xref;
 	$best_xref_priority_idx = $transcript_priority;
@@ -1467,7 +1509,7 @@ sub build_transcript_display_xrefs {
 	$best_xref = $translation_xref;
 	$best_xref_priority_idx = $translation_priority;
       }
-      elsif ($translation_priority < $transcript_priority) {
+      elsif ($translation_priority < $transcript_priority && $translation_qi > $transcript_qi) {
 	$best_xref = $translation_xref;
 	$best_xref_priority_idx = $translation_priority;
       } else {
@@ -1480,7 +1522,7 @@ sub build_transcript_display_xrefs {
 
       # Write record with xref_id_offset
       print TRANSCRIPT_DX "UPDATE transcript SET display_xref_id=" . ($best_xref+$xref_id_offset) . " WHERE transcript_id=" . $object_id . ";\n";
-      print "wrote " . $best_xref . " (plus offset) for 95625\n" if ($object_id eq 95625);
+      print "wrote " . $best_xref . " (plus offset) for 93591\n" if ($object_id eq 93591);
       print TRANSCRIPT_DX_TXT ($best_xref+$xref_id_offset) . "\t" . $object_id . "\n";
       $n++;
 
@@ -1505,7 +1547,7 @@ sub build_transcript_display_xrefs {
 # Gene gets the display xref of the highest priority of all of its transcripts
 # If more than one transcript with the same priority, longer transcript is used
 
-sub build_gene_display_xrefs_and_descriptions {
+sub build_gene_display_xrefs {
 
   my ($self, $transcript_display_xrefs) = @_;
 
@@ -1519,23 +1561,6 @@ sub build_gene_display_xrefs_and_descriptions {
 					      -user    => $self->user(),
 					      -group   => 'core');
   my $ta = $db->get_TranscriptAdaptor();
-
-  print "Building gene display_xrefs\n";
-  print "Getting transcripts for all genes\n";
-
-  my $sql = "SELECT gene_id, transcript_id FROM transcript";
-  my $sth = $core_dbi->prepare($sql);
-  $sth->execute();
-
-  my ($gene_id, $transcript_id);
-  $sth->bind_columns(\$gene_id, \$transcript_id);
-
-  # Note %genes_to_transcripts is global
-  while ($sth->fetch()) {
-    push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
-  }
-
-  print "Got " . scalar keys(%genes_to_transcripts) . " genes\n";
 
   print "Assigning display_xrefs to genes\n";
 
@@ -1599,8 +1624,7 @@ sub build_gene_display_xrefs_and_descriptions {
   print "Couldn't find display_xrefs for $miss genes\n" if ($miss > 0);
   print "Found display_xrefs for all genes\n" if ($miss eq 0);
 
-  # now build gene descriptions
-  $self->build_gene_descriptions(\%genes_to_transcripts);
+  return \%genes_to_transcripts;
 
 }
 
@@ -1611,7 +1635,7 @@ sub transcript_display_xref_sources {
 
   return ('HUGO',
 	  'MarkerSymbol',
-	  'wormbase_transcript',
+#	  'wormbase_transcript',
 	  'flybase_symbol',
 	  'Anopheles_symbol',
 	  'Genoscope_annotated_gene',
@@ -1625,6 +1649,29 @@ sub transcript_display_xref_sources {
 
 }
 
+# Get transcripts associated with each gene
+
+sub build_genes_to_transcripts {
+
+  my ($self) = @_;
+
+  print "Getting transcripts for all genes\n";
+
+  my $sql = "SELECT gene_id, transcript_id FROM transcript";
+  my $sth = $core_dbi->prepare($sql);
+  $sth->execute();
+
+  my ($gene_id, $transcript_id);
+  $sth->bind_columns(\$gene_id, \$transcript_id);
+
+  # Note %genes_to_transcripts is global
+  while ($sth->fetch()) {
+    push @{$genes_to_transcripts{$gene_id}}, $transcript_id;
+  }
+
+  print "Got " . scalar keys(%genes_to_transcripts) . " genes\n";
+
+}
 
 # Find the index of an item in a list(ref), or -1 if it's not in the list.
 # Only look for exact matches (case insensitive)
@@ -1728,7 +1775,7 @@ sub do_upload {
     }
 
     # don't seem to be able to use prepared statements here
-    $sth = $core_dbi->prepare("LOAD DATA INFILE \'$file\' INTO TABLE $table");
+    $sth = $core_dbi->prepare("LOAD DATA INFILE \'$file\' IGNORE INTO TABLE $table");
     print "Uploading data in $file to $table\n";
     $sth->execute();
 
@@ -1737,7 +1784,7 @@ sub do_upload {
   # gene_display_xref.sql etc
   foreach my $table ("gene", "transcript") {
 
-    my $file = $self->dir() . "/" . $table . "_display_xref.txt";
+    my $file = $self->dir() . "/" . $table . "_display_xref.sql";
     my $sth;
 
     if ($deleteexisting) {
@@ -1749,18 +1796,16 @@ sub do_upload {
     }
 
     print "Setting $table display_xrefs from $file\n";
-    # TODO this better
-    #my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbname() . " < $file";
-    #system $str;
+    my $str = "mysql -u " .$self->user() ." -p" . $self->password() . " -h " . $self->host() ." -P " . $self->port() . " " .$self->dbname() . " < $file";
+    system $str;
 
-    $sth = $core_dbi->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
-    open(DX_TXT, $file);
-    while (<DX_TXT>) {
-      my ($xref_id, $object_id) = split;
-      $sth->execute($xref_id, $object_id);
-    }
-
-    close(DX_TXT);
+    #$sth = $core_dbi->prepare("UPDATE $table SET display_xref_id=? WHERE ${table}_id=?");
+    #open(DX_TXT, $file);
+    #while (<DX_TXT>) {
+    #  my ($xref_id, $object_id) = split;
+    #  $sth->execute($xref_id, $object_id);
+    #}
+    #close(DX_TXT);
   }
 
 }
@@ -1792,7 +1837,7 @@ sub do_upload {
 
 sub build_gene_descriptions {
 
-  my ($self, $genes_to_transcripts) = @_;
+  my ($self) = @_;
 
   # TODO - don't call this from, but after, gene_display_xref
 
