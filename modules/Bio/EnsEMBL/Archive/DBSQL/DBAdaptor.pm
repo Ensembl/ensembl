@@ -71,7 +71,7 @@ sub new {
   
   my ($db,$host,$driver,$user,
       $password,$port,
-      $readonly) = $self->_rearrange([qw(
+      $readonly,$dnadb) = $self->_rearrange([qw(
 					 DBNAME
 					 HOST
 					 DRIVER
@@ -79,6 +79,7 @@ sub new {
 					 PASS
 					 PORT
 					 READONLY
+					 DNADB
 					 )],@args);
   $db   || $self->throw("Database object must have a database name");
   $user || $self->throw("Database object must have a user");
@@ -109,7 +110,7 @@ sub new {
   $self->host( $host );
   $self->dbname( $db );
   $self->password( $password);
-  
+  $self->dnadb($dnadb);
   return $self; # success - we hope!
 }
 
@@ -481,6 +482,29 @@ sub deleteObj {
   }
 }
 
+=head2 dnadb
+
+ Title   : dnadb
+ Usage   : my $dnadb = $db->dnadb;
+ Function: returns the database adaptor where the dna lives
+           Useful if you only want to keep one copy of the dna
+           on disk but have other databases with genes and features in
+ Returns : dna database adaptor
+  Args    : Bio::EnsEMBL::Archive::DBSQL::DBAdaptor
+
+=cut
+
+sub dnadb {
+  my ($self,$arg) = @_;
+
+  if (defined($arg)) {
+    if (! $arg->isa("Bio::EnsEMBL::DBSQL::DBAdaptor")) {
+      $self->throw("[$arg] is not a Bio::EnsEMBL::DBSQL::DBAdaptor");
+    }
+    $self->{_dnadb} = $arg;
+  }
+  return $self->{_dnadb} || $self;
+}
 
 
 1;

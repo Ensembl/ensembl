@@ -81,13 +81,13 @@ sub fetch_by_dbID {
 					      );
     
     $statement = "SELECT relative_versioned_seq_id from versioned_seq_relatives where master_versioned_seq_id = $id";
-    my $sth = $self->db->execute($statement);
+    $sth = $self->db->execute($statement);
     while (my ($rid) = $sth->fetchrow_array) {
 	$vseq->add_relative($self->fetch_by_dbID($rid));
     }
     
     $statement = "SELECT new_versioned_seq_id from versioned_seq_history where old_versioned_seq_id = $id";
-    my $sth = $self->db->execute($statement);
+    $sth = $self->db->execute($statement);
     while (my ($fid) = $sth->fetchrow_array) {
 	$vseq->add_future_vseq($self->fetch_by_dbID($fid));
     }

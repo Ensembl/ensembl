@@ -151,11 +151,11 @@ if( $rc->id ne 'contig2' || $rc_pos != 5 || $rc_strand != 1 ) {
 
 
 $gene = Bio::EnsEMBL::Gene->new();
-$gene->id('gene-id-1');
+$gene->temporary_id('gene-id-1');
 $gene->version(1);
 $gene->type('test');
 $trans = Bio::EnsEMBL::Transcript->new();
-$trans->id('trans-id-1');
+$trans->temporary_id('trans-id-1');
 $trans->version(1);
 
 my $analysis = Bio::EnsEMBL::Analysis->new( 
@@ -192,18 +192,14 @@ $exDB = Bio::EnsEMBL::DBEntry->new
 $gene->add_DBLink($exDB);
 
 $gene->add_Transcript($trans);
-$gene->created(1);
-$gene->modified(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
-$exon->id('exon-1');
+$exon->temporary_id('exon-1');
 $exon->start(201);
 $exon->end(206);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
-$exon->created(1);
-$exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
 
@@ -223,7 +219,7 @@ $sf->source_tag('someone');
 $sf->feature2->primary_tag('similarity');
 $sf->feature2->source_tag('someone');
 
-my $analysis = Bio::EnsEMBL::Analysis->new( 
+$analysis = Bio::EnsEMBL::Analysis->new( 
       -program => 'supporting',
       -gff_source => 'sf',
       -gff_feature => 'yadda',
@@ -241,35 +237,29 @@ $trl = Bio::EnsEMBL::Translation->new();
 $trl->start_exon($exon);
 $trl->start(3);
 $trl->end(4);
-$trl->id('trl-id');
+$trl->temporary_id('trl-id');
 $trl->version(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
-$exon->id('exon-2');
+$exon->temporary_id('exon-2');
 $exon->start(367);
 $exon->end(373);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
-$exon->created(1);
-$exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
 $trl->end_exon($exon);
 
 $trans->translation($trl);
-$trans->created(1);
-$trans->modified(1);
 
 $exon = Bio::EnsEMBL::Exon->new();
-$exon->id('exon-3');
+$exon->temporary_id('exon-3');
 $exon->start(373);
 $exon->end(380);
 $exon->strand(1);
 $exon->version(1);
 $exon->phase(0);
-$exon->created(1);
-$exon->modified(1);
 $exon->contig_id($vc2->id);
 $trans->add_Exon($exon);
 
@@ -280,7 +270,7 @@ for $ex ( $newgene->get_all_Exons() ) {
 	print STDERR "Exon ",$exon->contig_id,"\n";
 }
 
-$db->write_Gene($newgene);
+$db->get_GeneAdaptor->store($newgene);
 
 #$ens_test->pause;
 
@@ -294,7 +284,7 @@ $newgene = $db->get_GeneAdaptor->fetch_by_dbID($newgene->dbID);
 ($trans) = $newgene->each_Transcript;
 if( !defined $trans ) { die "Didn't even get a transcript!"; }
 
-($exon1,$exon2,$exon3) = $trans->each_Exon;
+($exon1,$exon2,$exon3) = $trans->get_all_Exons;
 
 if( $exon1->start != 2 ||
     $exon1->end != 7 || $exon1->strand != 1 ||
@@ -374,7 +364,7 @@ if( !defined $gene ) {
     print "not ok 24\n";
 } else {
     $error = 0;
-    foreach $exon ( $gene->each_unique_Exon ) {
+    foreach $exon ( $gene->get_all_Exons ) {
 	if( $exon->seqname ne $vc2->id ) {
 	    print STDERR "Got exon on ",$exon->seqname," not ",$vc2->id,"\n";
 	    $error = 1;
@@ -439,9 +429,9 @@ else {print "not ok 31\n";}
 @genes = $vcsave->get_all_Genes_exononly();
 
 #foreach $g ( @genes ) {
-#	print STDERR "Got ",$g->id,"\n";
+#	print STDERR "Got ",$g->temporary_id,"\n";
 #	foreach $e ( $g->each_unique_Exon ) {
-#		print STDERR " Got exon ",$e->id,"\n";
+#		print STDERR " Got exon ",$e->temporary_id,"\n";
 #	}
 #}
 

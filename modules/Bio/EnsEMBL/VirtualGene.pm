@@ -494,6 +494,12 @@ sub id {
    return $obj->gene->id;
 }
 
+sub temporary_id {
+  my ($self) = @_;
+
+  return $self->gene->temporary_id;
+}
+
 =head2 is_complete
 
  Title   : is_complete

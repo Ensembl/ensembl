@@ -607,5 +607,28 @@ sub _dump{
 
 }
 
+=head2 temporary_id
+
+ Title   : temporary_id
+ Usage   : $obj->temporary_id($newval)
+ Function: Temporary ids are used for Genscan predictions - which should probably
+           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::DBSQL::Utils use this.
+           MC Over my dead body they will.  Unless you can speed up the database by a couple of orders of magnitude.
+ Example : 
+ Returns : value of temporary_id
+ Args    : newvalue (optional)
+
+
+=cut
+
+sub temporary_id {
+   my ($obj,$value) = @_;
+   if( defined $value) {
+      $obj->{'temporary_id'} = $value;
+    }
+    return $obj->{'temporary_id'};
+
+}
+
 
 1;

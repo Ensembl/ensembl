@@ -908,7 +908,7 @@ sub dna_seq {
     $mrna  .= $tmp; 
   }
 
-  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->id);
+  my $seq = new Bio::PrimarySeq(-SEQ => $mrna,-ID => $self->stable_id);
 
   return $seq;
 }

@@ -1842,14 +1842,14 @@ sub get_all_Genes_exononly{
    #
 
    foreach my $trans ( @trans ) {
-       my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript_id = '".$trans->id."'");
-       $sth2->execute;
-       my ($rank) = $sth2->fetchrow_array();
-       if( $rank == $trans->end_exon_rank) {
-	   $trans->is_end_exon_in_context('dummy',1);
-       } else {
-	   $trans->is_end_exon_in_context('dummy',0);
-       }
+     my $sth2 = $self->dbobj->prepare("select max(rank) from exon_transcript where transcript_id = '".$trans->dbID."'");
+     $sth2->execute;
+     my ($rank) = $sth2->fetchrow_array();
+     if( $rank == $trans->end_exon_rank) {
+       $trans->is_end_exon_in_context('dummy',1);
+     } else {
+       $trans->is_end_exon_in_context('dummy',0);
+     }
                                                               
    }
 
@@ -2224,7 +2224,7 @@ sub get_all_Genes {
    my %gene;
 
    foreach my $gene ( @genes ) {
-       $gene{$gene->id()}= $gene;
+       $gene{$gene->temporary_id()}= $gene;
    }
 
    &eprof_end("full-gene-get");

@@ -9,14 +9,14 @@
 # Dumping data for table 'analysis'
 #
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'sptr','1','wublastp','1','wublastp','similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (2,'unigene.seq','1','wutblastn','1','wutblastn','similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (3,'embl_vertrna','1','wutblastn','1','wutblastn','similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (4,'mapprimer','1','e-PCR','1','e-PCR','sts');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (6,'Pfam',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (7,'PRINTS',3,'hmm','1','Fasta','domain');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (8,'transmembrane',3,'hmm','1','trans','trans');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'sptr',1,'sptr','1','wublastp','1','wublastp','similarity');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'unigene',2,'unigene.seq','1','wutblastn','1','wutblastn','similarity');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'vertrna',3,'embl_vertrna','1','wutblastn','1','wutblastn','similarity');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'mapprimer',4,'mapprimer','1','e-PCR','1','e-PCR','sts');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'repeat',5,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'Pfam',6,'Pfam',3,'hmm','1','Fasta','domain');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now()'prints',7,'PRINTS',3,'hmm','1','Fasta','domain');
+INSERT INTO analysisprocess(analysisId,created,logic_name, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'transmembrane',8,'transmembrane',3,'hmm','1','trans','trans');
 
 #
 # Dumping data for table 'analysisprocess'

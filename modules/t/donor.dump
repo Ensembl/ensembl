@@ -8,10 +8,11 @@
 # Dumping data for table 'analysis'
 #
 
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (1,'vert','1','tblastn','1','tblastn','similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (2,'dbsts','1','blastn','1','blastn','similarity');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (3,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
-INSERT INTO analysis (id, db, db_version, program, program_version, gff_source, gff_feature) VALUES (4,NULL,NULL,'Genscan','1','genscan','exon');
+INSERT INTO analysisprocess (created,logic_name,analysisId, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'vert',1,'vert','1','tblastn','1','tblastn','similarity');
+INSERT INTO analysisprocess (created,logic_name,analysisId, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'dbsts',2,'dbsts','1','blastn','1','blastn','similarity');
+INSERT INTO analysisprocess (created,logic_name,analysisId, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'repeat',3,NULL,NULL,'RepeatMasker','1','RepeatMasker','repeat');
+INSERT INTO analysisprocess (created,logic_name,analysisId, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'genscan',4,NULL,NULL,'Genscan','1','genscan','exon');
+INSERT INTO analysisprocess (created,logic_name,analysisId, db, db_version, program, program_version, gff_source, gff_feature) VALUES (now(),'gene',5,NULL,NULL,'Gene','1','gene','exon');
 
 #
 # Dumping data for table 'chromosome'
@@ -55,41 +56,24 @@ INSERT INTO dna (id, sequence, created) VALUES (1,'GAATTCCTAAACTCAAATAGGCTTTTTCC
 # Dumping data for table 'exon'
 #
 
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031523',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',32592,32683,1,1,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031510',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',33716,33874,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031511',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',34872,34958,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031512',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',36571,36690,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031513',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',37131,37310,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031514',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',37828,37901,1,0,2,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031515',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',38552,38705,1,2,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031516',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:42',41063,41173,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031517',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',20958,21026,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031518',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',24058,24183,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031519',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',24587,24706,1,0,0,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031520',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',29081,29187,1,0,2,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031521',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',30084,30154,1,2,1,1);
-INSERT INTO exon (id, contig, version, created, modified, stored, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES ('ENSE00000031522',1,1,'1999-07-24 15:04:20','1999-07-24 15:04:20','2000-07-14 00:24:43',30258,30332,1,1,1,1);
-
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (1,1,32592,32683,1,1,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (2,1,32592,32683,1,1,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (3,1,32592,32683,1,1,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (4,1,32592,32683,1,1,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (5,1,32592,32683,1,1,0,1);
+INSERT INTO exon (exon_id, contig_id, seq_start, seq_end, strand, phase, end_phase, sticky_rank) VALUES (6,1,32592,32683,1,1,0,1);
 
 
 #
 # Dumping data for table 'exon_transcript'
 #
 
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031523','ENST00000009282',1);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031510','ENST00000009282',2);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031511','ENST00000009282',3);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031512','ENST00000009282',4);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031513','ENST00000009278',1);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031514','ENST00000009278',2);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031515','ENST00000009278',3);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031516','ENST00000009278',4);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031517','ENST00000009279',1);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031518','ENST00000009279',2);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031519','ENST00000009279',3);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031520','ENST00000009279',4);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031521','ENST00000009279',5);
-INSERT INTO exon_transcript (exon, transcript, rank) VALUES ('ENSE00000031522','ENST00000009279',6);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (1,1,1);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (2,1,2);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (3,2,1);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (4,2,2);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (5,3,1);
+INSERT INTO exon_transcript (exon_id, transcript_id, rank) VALUES (6,3,2);
 
 #
 # Dumping data for table 'feature'
@@ -412,22 +396,15 @@ INSERT INTO fset_feature (feature, fset, rank) VALUES (285,1,16);
 # Dumping data for table 'gene'
 #
 
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG00000008215',1,'1970-01-01 01:00:00','1970-01-01 01:00:00','2000-07-14 00:24:42');
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG00000008216',1,'1970-01-01 01:00:00','1970-01-01 01:00:00','2000-07-14 00:24:42');
-INSERT INTO gene (id, version, created, modified, stored) VALUES ('ENSG00000008217',1,'1970-01-01 01:00:00','1970-01-01 01:00:00','2000-07-14 00:24:43');
+INSERT INTO gene (gene_id, type,analysisId) VALUES (1,'ensembl',5);
+INSERT INTO gene (gene_id, type,analysisId) VALUES (2,'ensembl',5);
+INSERT INTO gene (gene_id, type,analysisId) VALUES (3,'ensembl',5);
 
 #
 # Dumping data for table 'genedblink'
 #
 
 
-#
-# Dumping data for table 'genetype'
-#
-
-INSERT INTO genetype (gene_id, type) VALUES ('ENSG00000008215','ensembl');
-INSERT INTO genetype (gene_id, type) VALUES ('ENSG00000008216','ensembl');
-INSERT INTO genetype (gene_id, type) VALUES ('ENSG00000008217','ensembl');
 
 #
 # Dumping data for table 'ghost'
@@ -773,9 +750,10 @@ INSERT INTO supporting_feature (id, exon, seq_start, seq_end, score, strand, ana
 # Dumping data for table 'transcript'
 #
 
-INSERT INTO transcript (id, version, gene,translation) VALUES ('ENST00000009282',1,'ENSG00000008215','ENSP00000009282');
-INSERT INTO transcript (id, version, gene,translation) VALUES ('ENST00000009278',1,'ENSG00000008216','ENSP00000009278');
-INSERT INTO transcript (id, version, gene,translation) VALUES ('ENST00000009279',1,'ENSG00000008217','ENSP00000009279');
+INSERT INTO transcript (transcript_id, gene_id,translation_id) VALUES (1,1,1);
+INSERT INTO transcript (transcript_id, gene_id,translation_id) VALUES (2,2,2);
+INSERT INTO transcript (transcript_id, gene_id,translation_id) VALUES (3,3,3);
+
 
 #
 # Dumping data for table 'transcriptdblink'
@@ -786,7 +764,7 @@ INSERT INTO transcript (id, version, gene,translation) VALUES ('ENST00000009279'
 # Dumping data for table 'translation'
 #
 
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('ENSP00000009282',1,32594,'ENSE00000031523',36690,'ENSE00000031512');
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('ENSP00000009278',1,37131,'ENSE00000031513',41173,'ENSE00000031516');
-INSERT INTO translation (id, version, seq_start, start_exon, seq_end, end_exon) VALUES ('ENSP00000009279',1,20958,'ENSE00000031517',30331,'ENSE00000031522');
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (1,1,32594,1,36690,2);
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (2,3,32594,1,36690,4);
+INSERT INTO translation (translation_id, seq_start, start_exon_id, seq_end, end_exon_id) VALUES (3,5,32594,1,36690,6);
 

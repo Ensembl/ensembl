@@ -65,14 +65,11 @@ $exon1 = Bio::EnsEMBL::Exon->new();
 $exon1->attach_seq($vc);                # why is this needed ?
 
 $exon1->contig_id($vc->id);
-$exon1->id('exon-1s');
+$exon1->temporary_id('exon-1s');
 $exon1->start(210);
 $exon1->end(224);
 $exon1->strand(-1);
-$exon1->version(1);
 $exon1->phase(0);
-$exon1->created(1);
-$exon1->modified(1);
 
 $seq=$exon1->seq->seq;
 $expected= 'GGC' x 2 . 'CCA' x 3;
@@ -86,15 +83,12 @@ if ($seq eq $expected) {
 # exon of two aa residues, midway RawContig20
 $exon2 = Bio::EnsEMBL::Exon->new();
 $exon2->attach_seq($vc);                # why is this needed ?
-$exon2->id('exon-2s');
+$exon2->temporary_id('exon-2s');
 $exon2->contig_id($vc->id);
 $exon2->start(228);
 $exon2->end(233);
 $exon2->strand(1);
-$exon2->version(1);
 $exon2->phase(0);
-$exon2->created(1);
-$exon2->modified(1);
 
 $seq=$exon2->seq->seq;
 $expected= 'GCC' x 2 ;
@@ -107,17 +101,14 @@ if ($seq eq $expected) {
 
 # exon of 7 a.a. residues, last two of RawContig20, first 5 of RawContig30
 $exon3 = Bio::EnsEMBL::Exon->new();
-$exon3->id('exon-3s');
+$exon3->temporary_id('exon-3s');
 $exon3->contig_id($vc->id);
 $exon3->attach_seq($vc);                # why is this needed ?
 
 $exon3->start(237);
 $exon3->end(257);
 $exon3->strand(-1);
-$exon3->version(1);
 $exon3->phase(0);
-$exon3->created(1);
-$exon3->modified(1);
 
 $seq=$exon3->seq->seq;
 $expected= 'GTA' x 5 . 'GGC' x 2 ;
@@ -167,13 +158,9 @@ if ($pep eq $expected) {
 }
 
 $gene = Bio::EnsEMBL::Gene->new();
-$gene->id('gene-id-1s');
-$gene->version(1);
+$gene->temporary_id('gene-id-1s');
 $gene->type('test');
 $gene->add_Transcript($transc);
-$gene->created(1);
-$gene->modified(1);
-
 
 @transc = $gene->each_Transcript;
 if (@transc  ==1 ) {
@@ -272,12 +259,12 @@ if (  $pep eq $expected ) {
 
 @virtualgenes = $vc->get_all_VirtualGenes() ;
 if (      @virtualgenes == @genes       # equal list length
-     and  $virtualgenes[0]->id eq $genes[0]->id ) { 
+     and  $virtualgenes[0]->temporary_id eq $genes[0]->temporary_id ) { 
     print "ok 21\n"; 
 } else { 
     print "not ok 21\n"; 
     warn "should be one gene, one virtualgene, and should have same id; got: ".
-      $virtualgenes[0]->id . " <->" . $genes[0]->id , "\n";
+      $virtualgenes[0]->temporary_id . " <->" . $genes[0]->temporary_id , "\n";
 }
 
 # try read it back in

@@ -23,8 +23,8 @@ VALUES (3, 'TTTTTTTTTTCCCCCCCCCCTTTTTTTTTTCCCCCCCCCC', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
 VALUES (4, 'TTTTTTTTTTCCCCCCCCCCTTTTTTTTTTCCCCCCCCCC', '2000-04-27 08:31:59');
 
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('swir','1','blastp','1','blastp','similarity',1);
-INSERT INTO analysis (db, db_version, program, program_version, gff_source, gff_feature, id) VALUES ('marker','1','blastp','1','ePCR','similarity',2);
+INSERT INTO analysisprocess (created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'swir','swir','1','blastp','1','blastp','similarity',1);
+INSERT INTO analysisprocess (created,logic_name,db, db_version, program, program_version, gff_source, gff_feature, analysisId) VALUES (now(),'marker','marker','1','blastp','1','ePCR','similarity',2);
 
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (1,3,2,12,356,-1,'1','blastp',122,123,'SW:UBIB_ECOLI',0.0,0);
 INSERT INTO feature (id, contig, seq_start, seq_end, score, strand, analysis, name, hstart, hend, hid, evalue, perc_id) VALUES (2,3,2,12,356,-1,'2','ePCR',122,123,'RH0000012',0.0,0);

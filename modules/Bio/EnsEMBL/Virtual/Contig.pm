@@ -1807,8 +1807,7 @@ sub _reverse_map_Exon {
 	   }
 
 	   my $rmexon = Bio::EnsEMBL::Exon->new();
-	   $rmexon->id($exon->id);
-	   $rmexon->created($exon->created);
+	   $rmexon->dbID($exon->dbID);
 	   $rmexon->modified($exon->modified);
 	   $rmexon->version($exon->version);
 	   $rmexon->phase($exon->phase);
@@ -1836,7 +1835,7 @@ sub _reverse_map_Exon {
 	   $vcstart = $vcend+1;
        }
        my $sticky_exon = Bio::EnsEMBL::StickyExon->new();
-       $sticky_exon->id($exon->id);
+       $sticky_exon->dbID($exon->dbID);
        # for reverse strand exons, we need to reverse the
        # order of the components and renumber
        if( $exon->strand == -1) {
@@ -1878,14 +1877,14 @@ sub _check_exon_start_end {
     if ( $to_test < 1 ) { 
         $message .= "Translation's $which_one < 1: " 
           . (($which_one eq 'start')?$transl->start :$transl->end)
-          . " (translation:". $transl->id()  . ")";
+          . " (translation:". $transl->stable_id()  . ")";
     }
     
     if ( $to_test > $exon->length) { 
         $message .= "Translation's $which_one ("
           . (($which_one eq 'start')?$transl->start :$transl->end)
           .") > exon length (".$exon->length.")"
-            . " (translation:". $transl->id() . ",exon:".$exon->id().")";
+            . " (translation:". $transl->stable_id() . ",exon:".$exon->stable_id().")";
     }
 
     return $message;
