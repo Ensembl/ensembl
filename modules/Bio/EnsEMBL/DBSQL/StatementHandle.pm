@@ -32,6 +32,8 @@ use Bio::EnsEMBL::Utils::Exception qw(warning);
 use DBD::mysql;
 use DBI;
 
+use Time::HiRes qw(time);
+
 @ISA = qw(DBI::st);
 
 # As DBD::mysql::st is a tied hash can't store things in it,
@@ -42,7 +44,13 @@ sub dbc {
   my $self = shift;
 
   if (@_) {
-    $dbchash{$self} = shift;
+    my $dbc = shift;
+    if(!defined($dbc)) {
+      # without delete key space would grow indefinately causing mem-leak
+      delete($dbchash{$self});
+    } else {
+      $dbchash{$self} = $dbc;
+    }
   }
 
   return $dbchash{$self};
@@ -52,7 +60,13 @@ sub sql {
   my $self = shift;
 
   if (@_) {
-    $dbc_sql_hash{$self} = shift;
+    my $sql = shift;
+    if(!defined($sql)) {
+      # without delete key space would grow indefinately causing mem-leak
+      delete($dbc_sql_hash{$self});
+    } else {
+      $dbc_sql_hash{$self} = $sql;
+    }
   }
 
   return $dbc_sql_hash{$self};
