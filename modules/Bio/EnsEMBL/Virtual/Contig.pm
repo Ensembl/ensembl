@@ -634,6 +634,128 @@ sub get_all_Genes {
 }
 
 
+=head2 get_old_Exons
+
+ Title   : get_old_exons
+ Usage   : foreach my $exon ( $contig->get_old_Exons ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_Exons{
+
+    my ($self) = @_;
+    
+    my @exons;
+
+
+    foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_old_Exons);}
+    
+    my @vcexons = ();
+    #print STDERR "VC->get_old_Exons:\n";
+    foreach my $exon ( @exons ) {
+	#print STDERR "Exon: ".$exon->id." contig:".$exon->contig_id." start:".$exon->start." end:".$exon->end." strand:".$exon->strand."\n";
+	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	
+	if( !defined $st ) {next;}        
+	if (($st < 0 ) || ($en >$self->length)) {next;}
+	
+	else 
+	{
+	    $exon->start($st);
+	    $exon->end($en);
+	    $exon->strand($str);   
+	    
+	    push @vcexons,$exon;
+	}
+    }
+    #Make sure it's not redundant
+    my @unique=();
+    my %seen=();
+    foreach my $exon (@vcexons) {
+	push (@unique,$exon) unless $seen{$exon->id}++;
+    }
+    
+    return @unique;	  
+}
+
+=head2 get_old_Genes
+
+ Title   : get_old_Genes
+ Usage   :
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_old_Genes {
+    my ($self) = @_;
+    my (%gene,%trans,%exon,%exonconverted);
+    
+    foreach my $contig ($self->_vmap->get_all_RawContigs) {
+	foreach my $gene ( $contig->get_old_Genes() ) {      
+	    $gene{$gene->id()} = $gene;
+	}
+    }
+    return $self->_gene_query(%gene);
+}
+
+=head2 get_all_Exons
+
+ Title   : get_all_Exons
+ Usage   : foreach my $exon ( $contig->get_all_Exons ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_Exons{
+
+    my ($self) = @_;
+    
+    my @exons;
+
+
+    foreach my $c ($self->_vmap->get_all_RawContigs) {push(@exons,$c->get_all_Exons);}
+    
+    my @vcexons = ();
+    #print STDERR "VC->get_all_Exons:\n";
+    foreach my $exon ( @exons ) {
+	#print STDERR "Exon: ".$exon->id." contig:".$exon->contig_id." start:".$exon->start." end:".$exon->end." strand:".$exon->strand."\n";
+	my ($st,$en,$str) = $self->_convert_start_end_strand_vc($exon->contig_id,$exon->start,$exon->end,$exon->strand);
+	
+	if( !defined $st ) {next;}        
+	if (($st < 0 ) || ($en >$self->length)) {next;}
+	
+	else 
+	{
+	    $exon->start($st);
+	    $exon->end($en);
+	    $exon->strand($str);   
+	    
+	    push @vcexons,$exon;
+	}
+    }
+    #Make sure it's not redundant
+    my @unique=();
+    my %seen=();
+    foreach my $exon (@vcexons) {
+	push (@unique,$exon) unless $seen{$exon->id}++;
+    }
+    
+    return @unique;	
+}
+
 
 
 =head2 get_Genes_by_Type
