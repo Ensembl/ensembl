@@ -467,7 +467,7 @@ sub register_contig {
 sub fetch_by_type{
   my ($self,$type) = @_;
 
-  deprecated('Use fetch_by_coord_systems instead');
+  deprecate('Use fetch_by_coord_systems instead');
 
   #assume that what the user wanted was a mapper between the sequence coord
   #level and the top coord level
