@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 21;
+	plan tests => 27;
 }
 
 use MultiTestDB;
@@ -153,6 +153,51 @@ $slice = $slice_adaptor->fetch_by_misc_feature_attribute('superctg',
 ok($slice->seq_region_name eq '20');
 ok($slice->start == 59707812 - $flanking);
 ok($slice->end   == 60855021 + $flanking);
+
+
+#
+# normalized projected slice
+#
+
+#
+# a slice with a PAR region
+# 24,25
+#
+$slice = $slice_adaptor->fetch_by_region( "chromosome", "Y", 9_000_000, 11_000_000, 1 );
+
+my $results = $slice_adaptor->fetch_normalized_slice_projection( $slice );
+
+debug( "Pseudo autosomal region results" );
+for my $projection ( @$results ) {
+  debug( "Start: ".$projection->[0] );
+  debug( "End: ".$projection->[1] );
+  debug( "Slice ".$projection->[2] );
+  debug( "-----------" );
+}
+
+ok( @$results == 3 );
+ok( $results->[1]->[2]->seq_region_name() eq "20" );
+
+#
+# a slice with a haplotype 
+# 26,27
+#
+
+$slice =  $slice_adaptor->fetch_by_region( "chromosome", "20_HAP1", 30_000_000, 31_000_000, 1 );
+$results = $slice_adaptor->fetch_normalized_slice_projection( $slice );
+
+debug( "Haplotype projection results" ); 
+for my $projection ( @$results ) {
+  debug( "Start: ".$projection->[0] );
+  debug( "End: ".$projection->[1] );
+  debug( "Slice ".$projection->[2] );
+  debug( "-----------" );
+}
+
+ok( @$results == 3 );
+ok( $results->[0]->[2]->seq_region_name() eq "20" );
+ok( $results->[1]->[2]->seq_region_name() eq "20_HAP1" );
+ok( $results->[2]->[2]->seq_region_name() eq "20" );
 
 
 
