@@ -4,7 +4,7 @@ use vars qw( $verbose );
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 134;
+	plan tests => 136;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -118,6 +118,17 @@ ok( test_getter_setter( $tr, "display_xref", 42 ));
 
 ok( test_getter_setter( $tr, "dbID", 100000 ));
 ok( test_getter_setter( $tr, "type", "NOVEL" ));
+ok( test_getter_setter( $tr, "created_date", time() ));
+ok( test_getter_setter( $tr, "modified_date", time() ));
+
+
+my @date_time = localtime( $tr->created_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
+
+@date_time = localtime( $tr->modified_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
+
+
 ok( $tr->translation->isa( "Bio::EnsEMBL::Translation" ));
 
 debug( "start() == ".$tr->start() );

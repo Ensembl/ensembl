@@ -3,7 +3,7 @@ use warnings;
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 60;
+	plan tests => 62;
 }
 
 use Bio::EnsEMBL::Test::MultiTestDB;
@@ -48,7 +48,11 @@ $gene = $ga->fetch_by_stable_id( "ENSG00000171456" );
 debug( "Gene->fetch_by_stable_id()" );
 ok( $gene );
 
+my @date_time = localtime( $gene->created_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
+@date_time = localtime( $gene->modified_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
 
 debug( "Gene dbID: ". $gene->dbID());
 ok( $gene->dbID() == 18267 );
@@ -73,7 +77,8 @@ ok( $gene->display_xref->dbID() == 128324);
 ok( test_getter_setter( $gene, "external_name", "banana" ));   
 ok( test_getter_setter( $gene, "external_db", "dummy" ));   
 ok( test_getter_setter( $gene, "display_xref", 42 ));   
-
+ok( test_getter_setter( $gene, "created_date", time() ));
+ok( test_getter_setter( $gene, "modified_date", time() ));
 
 my $links = $gene->get_all_DBLinks();
 debug( "Links: ".scalar( @$links ));

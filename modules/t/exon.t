@@ -2,7 +2,7 @@ use strict;
 
 BEGIN { $| = 1;
 	use Test ;
-	plan tests => 27;
+	plan tests => 31;
 }
 
 my $loaded = 0;
@@ -54,6 +54,9 @@ ok(&test_getter_setter($exon, 'slice', $slice));
 # should try to store (!)
 $exon->end_phase( -1 );
 ok(&test_getter_setter($exon, 'end_phase', 1));
+
+ok( test_getter_setter( $exon, "created_date", time() ));
+ok( test_getter_setter( $exon, "modified_date", time() ));
 
 #
 # find supporting evidence for the exon
@@ -189,6 +192,14 @@ my $exstable_count = count_rows($db, 'exon_stable_id');
 my $supfeat_count = count_rows($db, 'supporting_feature');
 
 $exon = $exonad->fetch_by_stable_id('ENSE00000859937');
+# check the created and modified times
+my @date_time = localtime( $exon->created_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
+
+@date_time = localtime( $exon->modified_date());
+ok( $date_time[3] == 6 && $date_time[4] == 11 && $date_time[5] == 104 );
+
+
 my $supfeat_minus = @{$exon->get_all_supporting_features()};
 
 $exonad->remove($exon);
