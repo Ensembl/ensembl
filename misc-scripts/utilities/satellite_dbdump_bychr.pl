@@ -312,7 +312,6 @@ SELECT distinct e.*
     $sql="
 SELECT distinct et.*
   FROM $litedb.gene_exon ge,
-       $satdb.exon e,
        $satdb.exon_transcript et
  WHERE ge.chr_name = '$chr'
    AND ge.exon = et.exon
@@ -1019,7 +1018,10 @@ sub dump_schema {
     my $d = "$destdir/$destfile";
     $cmd .= " > $d";
     warn "Dumping schema to $d\n";
-    die "$d exists" if -s $d ;
+    if  ( -s $d  )  { 
+        warn "$d exists; not dumping it";
+        return; 
+    }
     
     if ( system($cmd) ) {
         die "Error: ``$cmd'' ended with exit status $?";
@@ -1037,12 +1039,18 @@ sub dump_data {
     }
 
     unless (-d $destdir) {
-        mkdir $destdir, 0755 || die "mkdir $destdir: $!";
+        mkdir $destdir, 0755 || warn "mkdir $destdir: $!";
     }
-    
+
+    my $outfile="$destdir/$datfile";    ;
+    if (-s $outfile) {
+        warn "File $outfile exists and not empty; not dumping this!";
+        return;
+    }
+
     $sql =~ s/\s+/ /g;
     
-    my $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $litedb > $destdir/$datfile";
+    my $cmd = "echo \"$sql\" | $mysql -N -q --batch -h $host -u $user $pass_arg $litedb > $outfile";
     # warn "dumping: $cmd\n"; too verbose
     warn "dumping $tablename ...\n";
 
