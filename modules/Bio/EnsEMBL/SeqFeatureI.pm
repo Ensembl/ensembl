@@ -115,7 +115,7 @@ sub validate {
 sub id {
     my ($self,$value) = @_;
 
-    $self->("Have not implemented id");
+    $self->throw("Have not implemented id");
 }
 
 =head2 percent_id

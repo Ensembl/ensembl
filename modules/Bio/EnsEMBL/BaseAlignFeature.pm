@@ -82,14 +82,13 @@
 
 package Bio::EnsEMBL::BaseAlignFeature;
 
-use Bio::EnsEMBL::FeaturePairI;
 use Bio::EnsEMBL::FeaturePair;
 use Bio::EnsEMBL::SeqFeature;
 
 use vars qw(@ISA);
 use strict;
 
-@ISA = qw(Bio::EnsEMBL::FeaturePairI);
+@ISA = qw(Bio::EnsEMBL::FeaturePair);
 
 sub new {
     my ($class,@args) = @_;
