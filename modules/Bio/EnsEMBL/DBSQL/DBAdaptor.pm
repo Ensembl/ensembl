@@ -294,6 +294,31 @@ sub get_PredictionTranscriptAdaptor {
 
 
 
+=head2 get_SequenceAdaptor
+
+  Args      : none
+  Function  : The sequence producing adaptor. Could be hooked to a different
+              database than the rest for example.
+  Returntype: Bio::EnsEMBL::DBSQL::SequenceAdaptor
+  Exceptions: none
+  Caller    : general, Bio::EnsEMBL::Slice, Bio::EnsEMBL::RawContig
+
+=cut
+
+sub get_SequenceAdaptor {
+   my $self = shift;
+   my $sqa;
+
+   unless ( $sqa = $self->{'sequence_adaptor' } ) {
+     require Bio::EnsEMBL::DBSQL::SequenceAdaptor;
+     $sqa = Bio::EnsEMBL::DBSQL::SequenceAdaptor->new( $self );
+     $self->{'sequence_adaptor'} = $sqa;
+   }
+
+   return $sqa;
+}
+
+
 # only the get part of the 3 functions should be considered public
 
 =head2 release_number
