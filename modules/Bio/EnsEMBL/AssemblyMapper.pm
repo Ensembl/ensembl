@@ -142,6 +142,33 @@ sub max_pair_count {
 
 
 
+=head2 register_all
+
+  Arg [1]    : none
+  Example    : $mapper->max_pair_count(10e6);
+               $mapper->register_all();
+  Description: Pre-registers all assembly information in this mapper.  The
+               cache size should be set to a sufficiently large value
+               so that all of the information can be stored.  This method
+               is useful when *a lot* of mapping will be done in regions
+               which are distributed around the genome.   After registration
+               the mapper will consume a lot of memory but will not have to
+               perform any SQL and will be faster.
+  Returntype : none
+  Exceptions : none
+  Caller     : specialised programs doing a lot of mapping
+
+=cut
+
+sub register_all {
+  my $self = shift;
+  $self->adaptor->register_all($self);
+  return;
+}
+
+
+
+
 =head2 map
 
   Arg [1]    : string $frm_seq_region
@@ -307,7 +334,7 @@ sub list_seq_regions {
   if($frm_cs->equals($self->component_CoordSystem())) {
 
     if(!$self->have_registered_component($frm_seq_region)) {
-      $self->adaptor->register_component($frm_seq_region);
+      $self->adaptor->register_component($self,$frm_seq_region);
     }
 
     #pull out the 'from' identifiers of the mapper pairs.  The
