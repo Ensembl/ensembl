@@ -1617,7 +1617,7 @@ sub _reverse_map_Exon {
 
 #       print STDERR "Straight forward mapping\n";
 
-       my $rmexon = Bio::EnsEMBL::Exon->new();
+       my $rmexon = Bio::EnsEMBL::Exon->new(); # the re-mapped exon
        $rmexon->id($exon->id);
        $rmexon->created($exon->created);
        $rmexon->modified($exon->modified);
@@ -1776,7 +1776,6 @@ sub _check_exon_start_end {
     my $to_test;
 
     # depending on the 'which_one' arg, check beginning or end of it. 
-    # (PL: might be too slow)
     if ($which_one eq 'start' ) { 
         $to_test =  $transl->start;
     } elsif ($which_one eq 'end' ) {
@@ -1786,18 +1785,20 @@ sub _check_exon_start_end {
     }
 
     if ( $to_test < 1 ) { 
-        $message .= "Translation's $which_one < 1: " . $transl->start 
-          . "(translation:". $transl->id()  . ")";
+        $message .= "Translation's $which_one < 1: " 
+          . (($which_one eq 'start')?$transl->start :$transl->end)
+          . " (translation:". $transl->id()  . ")";
     }
     
     if ( $to_test > $exon->length) { 
-        $message .= "Translation's $which_one (".$transl->start
-          .") > exon length (".$exon->length.") "
-            . "(translation:". $transl->id() . ",exon:".$exon->id().")";
+        $message .= "Translation's $which_one ("
+          . (($which_one eq 'start')?$transl->start :$transl->end)
+          .") > exon length (".$exon->length.")"
+            . " (translation:". $transl->id() . ",exon:".$exon->id().")";
     }
 
     return $message;
-}
+}                                       # _check_exon_start_end
 
 
 =head2 _sanity_check
@@ -1912,7 +1913,7 @@ sub _sanity_check{
    if( $error ) {
        $self->throw("Cannot write gene due to: $message");
    }
-}
+}                                       # _sanity_check
 
 
 =head1 Get/Set for Virtual::Contig orientated datastructures.
