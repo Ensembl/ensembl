@@ -228,7 +228,7 @@ sub _process_Transcript{
        $contig->isa("Bio::EnsEMBL::DB::ContigI") || $self->throw("Expecting to get a conting. Instead got a $contig. Not ideal!");
 
 	          
-       my ($locstart,$locend) = $self->_deduce_exon_location($exon,$contig);
+       my ($locstart,$locend,$loc_comp) = $self->_deduce_exon_location($exon,$contig);
 
        if( ! $exon_hash_ref->{$exon->id()}  ) {
 	   # add this exon
@@ -284,6 +284,7 @@ sub _process_Transcript{
    # the last *f^%$%ing* location needs to have a '>' (would you
    # believe it). So annoying. This is ..HORRIBLE..
 
+
    # FIXME:
    # better solution to deal with the last exon separately
 
@@ -314,6 +315,8 @@ sub _process_Transcript{
    # hacky way of figuring out whether we need to "join" or not
    if( $trans_loc =~ /,/ ) {
        $t_fth->loc("join($trans_loc)");
+   } else {
+       $t_fth->loc($trans_loc);
    }
 
 
