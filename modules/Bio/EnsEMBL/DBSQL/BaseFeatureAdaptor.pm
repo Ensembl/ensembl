@@ -541,6 +541,8 @@ sub _remap {
 
   my ($seq_region, $start, $end, $strand);
 
+  my $slice_seq_region = $slice->seq_region_name();
+
   foreach my $f (@$features) {
     #since feats were obtained in contig coords, attached seq is a contig
     my $fslice = $f->slice();
@@ -559,13 +561,14 @@ sub _remap {
       # undefined start means gap
       next if(!defined $start);
     } else {
-      $start  = $f->start();
-      $end    = $f->end();
-      $strand = $f->strand();
+      $start      = $f->start();
+      $end        = $f->end();
+      $strand     = $f->strand();
+      $seq_region = $f->slice->seq_region_name();
     }
 
     # maps to region outside desired area
-    next if ($start > $slice_end) || ($end < $slice_start);
+    next if ($start > $slice_end) || ($end < $slice_start) || ($slice_seq_region ne $seq_region);
 
     #shift the feature start, end and strand in one call
     if($slice_strand == -1) {
