@@ -44,6 +44,7 @@ use Bio::Root::RootI;
 @ISA = qw(Bio::Root::RootI Bio::EnsEMBL::DB::ContigI);
 use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::Gene;
+use Bio::EnsEMBL::DBEntry;
 
 
 sub new {
@@ -52,10 +53,15 @@ sub new {
     my $self = {};
     bless $self,$class;
 
-    my ($annseq)=$self->_rearrange([qw(ANNSEQ)],@args);
+    my ($annseq,$id)=$self->_rearrange([qw(ANNSEQ)],@args);
 
-    $self->_get_Seq($annseq); 
-    $self->id;
+    $self->_get_Seq($annseq);
+
+    # HACK by th, for ensembl100:
+    # inherit id from clone NOT annseq
+    $id="$id.00001";
+    $self->{'_id'} = $self->id($id);
+
     return $self; 
 }
 
@@ -75,9 +81,11 @@ sub new {
 
 sub id {
 
-   my ($self) = @_;
-   my  $id=$self->_get_Seq->id . ".00001"; 
-   return $id;
+   my ($self,$value) = @_;
+   if($value){
+       $self->{'_id'}=$value;
+   }
+   return $self->{'_id'};
 
 }
 
@@ -194,128 +202,323 @@ sub get_all_SimilarityFeatures{
  Returns : 
  Args    :
 
+Transcripts are not automatically grouped based on labels in EMBL
+files, since these could create illegal ensembl entries, if entries to
+not share exons.  If entry with same gene name, but without overlapping
+exons exists, gene name is modified to make it unique.
 
 =cut
-
-
 
 sub get_all_Genes {
 	
     my ($self)=@_;
-    my @genes;
 
-    my $exoncounter = 1;    
-    my $genecounter = 1;
-    
-    my $id = $self->_get_Seq->id;
-
+    my $id = $self->id;
+    my $exoncounter = 1;
+    my $transcounter = 1;
     my $time = time();
 
+    # first loop over all mRNA features, then loop over all CDS
+    # features if CDS fits into an existing transcript, it becomes a
+    # translation of that transcript.  If a transcript fits into an
+    # existing gene, it becomes part of that gene.
+
+    # exons hash is for fast lookup of exact duplicate exons (coordinates)
+    # genes and transcripts hash are for name space clash checks
+    my %genes;
+    my %transcripts;
+    my %exons;
+
+    # WARN: merging genes across clone boundaries not done
+    
+    # turn on/off mRNA parsing
+    my $parse_mrna=0;
+    if($parse_mrna){
+	foreach my $ft ( $self->_get_Seq->top_SeqFeatures ) {
+	    my $ptag = $ft->primary_tag;
+	    if($ptag eq 'mRNA') {
+		$self->_build_gene($ft,$ptag,$id,\$exoncounter,\$transcounter,$time,
+				   \%genes,\%transcripts,\%exons);
+	    }
+	}
+    }
     foreach my $ft ( $self->_get_Seq->top_SeqFeatures ) {
-	if( $ft->primary_tag eq 'CDS_span' ) {
-	    #print STDERR "multi exon gene!\n";
+	my $ptag=$ft->primary_tag;
+	if($ptag eq 'CDS') {
+	    $self->_build_gene($ft,$ptag,$id,\$exoncounter,\$transcounter,$time,
+			       \%genes,\%transcripts,\%exons);
+	}
+    }
 
-	    my $gene       = Bio::EnsEMBL::Gene->new();
-	    my $trans      = Bio::EnsEMBL::Transcript->new();
-	    $gene->add_Transcript($trans);
-	    $gene->id($id.".gene.".$genecounter);
-	    $gene->version(1);
-	    $trans->id($id.".trans.".$genecounter);
-	    $trans->version(1);
+    return (values %genes);
+}
 
-	    if( $ft->has_tag('pseudo') ) {
-		$gene->type('pseudo');
-	    } else {
-		$gene->type('standard');
+sub _build_gene{
+
+    my($self,$ft,$ptag,$id,$rexoncounter,$rtranscounter,$time,
+       $rhgenes,$rhtranscripts,$rhexons)=@_;
+
+    # get clone_id (accession) from contig id
+    my $clone_id=$id;
+    $clone_id=~s/\.\d+$//;
+
+
+    # need to extract and process text from a number of tags
+
+    # this could be accession.number or HUGO -> destined for dbentry table if HUGO
+    my $gene_tag;
+    if($ft->has_tag('gene')){
+	($gene_tag)=$ft->each_tag_value('gene');
+    }	
+
+    # contains transcript name and discription.
+    # extract transcript name (expect to be accession.number or accession.number.x)
+    # and gene name (accession.number)
+    my($product_tag,$description,$gene_id,$hack);
+    if($ft->has_tag('product')){
+	($product_tag)=$ft->each_tag_value('product');
+	if($product_tag=~/^((\w+\.\d+)\S*)\s+\((.*)\)/){
+	    $product_tag=$1;
+	    $gene_id=$2;
+	    $description=$3;
+	}elsif($product_tag=~/^((\w+\.\d+)\S+)$/){
+	    # no description
+	    $product_tag=$1;
+	    $gene_id=$2;
+	}else{
+	    # cannot be parsed
+	    print "productID could not be extracted: \"$product_tag\"\n";
+	    $description=$product_tag;
+	    $hack=1;
+	}
+    }else{
+	print "product tag missing\n";
+	$hack=1;
+    }
+    if($hack){
+	# HACK - not going to group transcripts into genes in this case
+	$product_tag="$clone_id.$$rtranscounter";
+	$gene_id=$product_tag;
+	$$rtranscounter++;
+    }
+
+    # set gene_tag to gene_id if not set
+    if(!$gene_tag){
+	$gene_tag=$gene_id;
+    }
+
+    # destined for dbentry tables
+    my $evidence_tag;
+    if($ft->has_tag('evidence')){
+	($evidence_tag)=$ft->each_tag_value('evidence');
+    }
+    my @dbentry;
+    if($ft->has_tag('db_xref')){
+	foreach my $db_xref ($ft->each_tag_value('db_xref')){
+	    if($db_xref=~/^(\w+):(\w+)$/){
+		my $id=$2;
+		my $dbid;
+		if($1 eq 'SPTREMBL'){
+		    $dbid='SPTREMBL';
+		}elsif($1 eq 'SWISS-PROT'){
+		    $dbid='SP';
+		}
+		if($dbid){
+		    my $dbentry=Bio::EnsEMBL::DBEntry->new(
+							   -primary_id=>$id,
+							   -display_id=>$id,
+							   -version=>1,
+							   -release=>1,
+							   -dbname=>$dbid,
+							   );
+		    push(@dbentry,$dbentry);
+		    print "Created DBENTRY: $dbid->$id\n";
+		}else{
+		    print "UNRECOGNISED: $db_xref\n";
+		}
+	    }
+	}
+    }
+    if($ft->has_tag('protein_id')){
+	my $dbid='protein_id';
+	my($id)=($ft->each_tag_value($dbid));
+	my $dbentry=Bio::EnsEMBL::DBEntry->new(
+					       -primary_id=>$id,
+					       -display_id=>$id,
+					       -version=>1,
+					       -release=>1,
+					       -dbname=>$dbid,
+					       );
+	push(@dbentry,$dbentry);
+	print "Created DBENTRY: $dbid->$id\n";
+    }
+    # accession is another valid dbentry for this transcript
+    # add description in here too
+    {
+	my $dbid='EMBL';
+	my $id=$clone_id;
+	my $dbentry=Bio::EnsEMBL::DBEntry->new(
+					       -primary_id=>$id,
+					       -display_id=>$id,
+					       -version=>1,
+					       -release=>1,
+					       -dbname=>$dbid,
+					       );
+	push(@dbentry,$dbentry);
+	print "Created DBENTRY: $dbid->$id\n";
+    }
+
+    # exons - now are locations: same single, multi mess as before...
+    my $loc=$ft->location;
+    my @exon_features;
+    if($loc->isa('Bio::Location::Split')){
+	print "split loc\n";
+	@exon_features=($loc->sub_Location);
+    }elsif($loc->isa('Bio::Location::Simple')){
+	print "simple loc\n";
+	@exon_features=($loc);
+    }else{
+	$self->throw("unknown location type");
+    }
+    print scalar(@exon_features)." exons\n";
+
+    # in case of transcripts, create any new exons. In case of CDSs,
+    # only create exons if cannot found exact fit of CDS inside
+    # existing transcript (i.e. where there is no mRNA feature)
+
+    # phases are meaningless except for 'translated bits', so they
+    # are added when CDSs are parsed
+
+    my $gene;
+    my $trans;
+
+    my $first;
+    my $first_start;
+    my $last;
+    my $last_end;
+
+    if($ptag!~/^mRNA/){
+	# if CDS, see if we can identify a fitting transcript
+    }
+    if(!$trans){
+	my $flag_existing_exon;
+
+	# create new transcript, checking for name clash with existing one
+	$trans=Bio::EnsEMBL::Transcript->new();
+	# get unique id
+	if($$rhtranscripts{$product_tag}){
+	    $self->throw("transcriptID not unique: \"$product_tag\"");
+	}
+	$trans->id($product_tag);
+	$$rhtranscripts{$product_tag}=$trans;
+	$trans->version(1);
+
+	# create exons, avoiding duplicates
+	foreach my $sub (@exon_features){
+
+	    my $exon;
+	    my $st=$sub->start;
+	    my $ed=$sub->end;
+
+	    # if same start/end exists, get it
+	    $exon=$$rhexons{"$st:$ed"};
+
+	    # if exon exists, must be a gene associated with it
+	    if($exon && !$gene){
+		$flag_existing_exon=1;
 	    }
 
-	    # split seqfeature
-	    my $phase = 0;
-	    foreach my $sub ( $ft->sub_SeqFeature ) {
-		my $exon = Bio::EnsEMBL::Exon->new();
-		$exon->phase($phase);
-		$exon->start($sub->start);
-		$exon->end($sub->end);
+	    # if new exon, create it
+	    if(!$exon){
+		$exon=Bio::EnsEMBL::Exon->new();
+		$$rhexons{"$st:$ed"}=$exon;
+		$exon->start($st);
+		$exon->end($ed);
 		$exon->strand($sub->strand);
 		$exon->contig_id($self->id);
 		$exon->seqname($self->id);
 		$exon->version(1);
 		$exon->created($time);
 		$exon->modified($time);
-		$exon->id($id.".exon.".$exoncounter++);
-		$trans->add_Exon($exon);
-		$phase = $exon->end_phase();
-
+		my $exon_id=$id.".exon.".$$rexoncounter++;
+		$exon->id($exon_id);
+		print STDERR "created exon $exon_id [".$trans->id."]\n";
+	    }else{
+		print STDERR "reused exon ".$exon->id." [".$trans->id."]\n";
 	    }
-	    my @exons = $trans->each_Exon;
-	    my $first = shift @exons;
-	    my $last;
-	    if( $#exons == -1 ) {
-		$last = $first;
-	    } else {
-		$last = pop @exons;
+	    $trans->add_Exon($exon);
+	}
+
+	# add dbentry objects to transcripts
+	foreach my $dbentry (@dbentry){
+	    $trans->add_DBLink($dbentry);
+	}
+
+	# add this transcript to gene, or create new gene
+	if(!$flag_existing_exon){
+	    if($$rhgenes{$gene_id}){
+		$self->throw("gene $gene_id exists, but no exon overlap");
 	    }
-
-	    my $tranl = Bio::EnsEMBL::Translation->new();
-	    $tranl->id($id.".transl.".$genecounter);
-	    $tranl->start_exon_id($first->id);
-	    $tranl->end_exon_id($last->id);
-	    $tranl->start(1);
-	    $tranl->end($last->length);
-	    $tranl->version(1);
-	    $trans->translation($tranl);
-	    
-	    $genecounter++;
-	    push(@genes,$gene);
-	} elsif ( $ft->primary_tag eq 'CDS' ) {
-	    #print STDERR "Single exon gene!\n";
-
-	    
-	    my $gene       = Bio::EnsEMBL::Gene->new();
-	    my $trans      = Bio::EnsEMBL::Transcript->new();
-	    $gene->add_Transcript($trans);
+	    $gene=Bio::EnsEMBL::Gene->new();
+	    $gene->id($gene_id);
 	    $gene->version(1);
-	    $gene->id($id.".gene.".$genecounter);
-
+	    $$rhgenes{$gene_id}=$gene;
+	    # add type tag to gene
 	    if( $ft->has_tag('pseudo') ) {
 		$gene->type('pseudo');
 	    } else {
 		$gene->type('standard');
 	    }
-
-	    $trans->id($id.".trans.".$genecounter);
-	    $trans->version(1);
-	    my $exon = Bio::EnsEMBL::Exon->new();
-	    $exon->phase(0);
-	    $exon->start($ft->start);
-	    $exon->end($ft->end);
-	    $exon->strand($ft->strand);
-	    $exon->contig_id($self->id);
-	    $exon->seqname($self->id);
-	    $exon->version(1);
-	    $exon->created($time);
-	    $exon->modified($time);
-	    $exon->id($id.".exon.".$exoncounter++);
-	    $trans->add_Exon($exon);
-
-	    my $tranl = Bio::EnsEMBL::Translation->new();
-	    $tranl->id($id.".transl.".$genecounter);
-	    $tranl->start_exon_id($exon->id);
-	    $tranl->end_exon_id($exon->id);
-	    $tranl->start(1);
-	    $tranl->end($exon->length);
-	    $trans->translation($tranl);
-	    $tranl->version(1);
-	    $genecounter++;
-	    push(@genes,$gene);
-	} else {
-	    # do nothing!
+	}else{
+	    $gene=$$rhgenes{$gene_id};
+	    if(!$gene){
+		$self->throw("gene $gene_id does not exist, but exon overlap");
+	    }
 	}
+	$gene->add_Transcript($trans);
     }
 
-    return @genes;
-}
 
+    # add Translation if CDS
+    if($ptag=~/^CDS/){
+
+	# if range of CDS in transcript not defined, must be entire
+	# transcript (i.e. no mRNA record, or reading turned off)
+	if(!$first){
+	    my @exons = $trans->each_Exon;
+	    print scalar(@exons)." exons found\n";
+	    $first = shift @exons;
+	    if( $#exons == -1 ) {
+		$last = $first;
+	    } else {
+		$last = pop @exons;
+	    }
+	    $first_start=1;
+	    $last_end=$last->length;
+
+	    # HACK BELOW
+	    my $phase = 0;
+	    foreach my $exon ($trans->each_Exon){
+		$exon->phase($phase);
+		$phase = $exon->end_phase();
+	    }
+
+	}
+
+	# add phase for exons in range
+	# HACK ABOVE
+
+	my $tranl = Bio::EnsEMBL::Translation->new();
+	$tranl->id($trans->id.".transl");
+	$tranl->start_exon_id($first->id);
+	$tranl->end_exon_id($last->id);
+	$tranl->start($first_start);
+	$tranl->end($last_end);
+	$tranl->version(1);
+	$trans->translation($tranl);
+    }
+
+}
 
 =head2 length
 
@@ -335,9 +538,6 @@ sub length {
    return $length;
 
 }
-
-
-
 
 
 

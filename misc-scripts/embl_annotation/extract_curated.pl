@@ -11,14 +11,18 @@ use Bio::EnsEMBL::EMBLLOAD::Obj;
 use Bio::EnsEMBL::DBLoader;
 use Bio::SeqIO;
 
+# embl genes will be written to this database:
 my $ohost='ecs1b';
 my $ouser='ensadmin';
-my $odbname='embl100';
+my $odbname='tim_embl_test';
 
+# list of clones in ensembl for which an embl file should be
+# checked is read from here
 my $ihost='ecs1c';
 my $iuser='ensadmin';
 my $idbname='ensembl100';
 
+# test file
 my $emblfile='AL109928.embl';
 my $write;
 my $verbose;
@@ -28,6 +32,8 @@ my $clone_id;
 my $processed_clone_list='extract_curated.processed.lis';
 my $log='extract_curated.log';
 my $max_clone;
+
+my $help;
 
 &GetOptions(
 
@@ -49,7 +55,24 @@ my $max_clone;
 	    'log:s'=>\$log,
 	    'processed:s'=>\$processed_clone_list,
 	    'max:n'=>\$max_clone,
+
+	    'help|h'=>\$help,
 	     );
+
+if($help){
+    print<<ENDOFTEXT;
+extract_curated.pl
+
+TEST MODE (parsing individual embl files)
+  -emblfile  file   emblfile [$emblfile]
+  -c         name   cloneid, for use with -d option to override emblfile
+  -d                remove entries related to this clone from DB
+  -w                write to database
+
+  -h                this help
+ENDOFTEXT
+    exit 0;
+}
 
 # use -d -c clone to force a delete
 
@@ -67,6 +90,9 @@ my $logging;
 # connect to db for writing
 my $db = Bio::EnsEMBL::DBLoader->new(
     "Bio::EnsEMBL::DBSQL::DBAdaptor/host=$ohost;user=$ouser;dbname=$odbname");
+
+# adaptor for xrefs
+my $adx=Bio::EnsEMBL::DBSQL::DBEntryAdaptor->new($db);
 
 my $dbi;
 if($list){
@@ -165,6 +191,8 @@ if($list){
 
 }else{
 
+    # manual loading from EMBL file - for testing only
+
     if(!$clone_id && $emblfile=~/^(\w+)/){
 	$clone_id=$1;
     }
@@ -186,6 +214,8 @@ if($list){
 
     # link to file to be read
     my $seqio = Bio::SeqIO->new(-format => 'EMBL',-file => $emblfile);
+
+    # version passed as 0 so it is not checked
     &_process_file($db,$seqio,$verbose,$clone_id,0);
 
 }
@@ -209,8 +239,8 @@ sub _process_file{
 	}
 
 	# check SV
-	my $sv=$seq->sv;
-	if($sv=~/\.(\d+)$/){
+	my $sv=$seq->seq_version;
+	if($sv=~/^(\d+)$/){
 	    if($version && $1!=$version){
 		print "Sequence versions are different: Ensembl:$version; EMBL:$1\n";
 		$processed{$clone_id}="embl_version:ENSEMBL:$version:EMBL:$1";
@@ -259,12 +289,12 @@ sub _process_file{
 
 	    # only write clone entry into database if there are genes
 	    if($write){
-	      eval{
-		$db->write_Clone($clone);
-	      };
-	      if($@){
-		print "Failed to write clone $clone_id\n";
-	      }
+		eval{
+		    $db->write_Clone($clone);
+		};
+		if($@){
+		    print "Failed to write clone $clone_id\n";
+		}
 	    }
 
 	}else{
@@ -289,12 +319,21 @@ sub _process_file{
 	    
 	    # write gene to database
 	    if($write){
-	      eval{
-		$db->write_Gene($gene);
-	      };
-	      if($@){
-		print "Failed to write gene ".$gene->id."\n";
-	      }
+		eval{
+		    $db->write_Gene($gene);
+		    foreach  my $transcript ($gene->each_Transcript){
+			my $transcript_id=$transcript->id;
+			foreach my $dbentry ($transcript->each_DBLink){
+			    # attach adapter
+			    $dbentry->adaptor($adx);
+			    print STDERR "Storing ",$transcript_id," ",$dbentry->primary_id,"\n";
+			    $adx->store($dbentry,$transcript_id,'Transcript');
+			}
+		    }
+		};
+		if($@){
+		    print "Failed to write gene ".$gene->id."\n";
+		}
 	    }
 	}
     }

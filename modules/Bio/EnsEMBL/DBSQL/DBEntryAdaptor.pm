@@ -224,6 +224,18 @@ sub store {
 	    $sth->execute( $exObj->query_identity, $exObj->target_identity );
 	    
 	}
+    } else {
+	# line is already in Xref table. Need to add to objectXref
+	$sth = $self->prepare( "
+             INSERT INTO objectXref
+               SET xrefId = $dbX,
+               ensembl_object_type = ?,
+               ensembl_id = ?");
+	
+	$sth->execute( $ensType, $ensObject );
+	
+	$exObj->dbID( $dbX );
+	$exObj->adaptor( $self );
     }
         
     return $dbX;

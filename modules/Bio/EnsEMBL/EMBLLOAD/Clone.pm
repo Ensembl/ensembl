@@ -66,7 +66,13 @@ sub new {
 
     my ($annseq)=$self->_rearrange([qw(ANNSEQ)],@args);
 
-    $self->_get_Seq($annseq);  
+    $self->_get_Seq($annseq);
+
+    # HACK by th, for ensembl100:
+    # store id in memory, to be changed to accession 
+    # since annseq comes with id set to embl_id instead
+    $self->{'_id'} = $self->_get_Seq->id;
+
     return $self; 
     
 }
@@ -86,10 +92,13 @@ sub new {
 =cut
 
 sub id {
-
-   my ($self) = @_;
-   my $id=$self->_get_Seq->id;  
-   return $id;
+    # HACK by th, for ensembl100:
+    # change to get/set to allow id to be changed (see above)
+    my ($self,$value) = @_;
+    if($value){
+	$self->{'_id'}=$value;
+    }
+    return $self->{'_id'};
 }
 
 
@@ -353,13 +362,16 @@ sub get_Contig {
 =cut
 
 sub get_all_Contigs {
-   my ($self) = @_;
-   my @contigs;
-
-   my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_get_Seq);
-   push @contigs,$contig;
- 
-   return @contigs;
+    my ($self) = @_;
+    my @contigs;
+    
+    # HACK by th, for ensembl100:
+    # pass in memory id to contig so it is set correctly there from clone
+    # and not from annseq
+    my $contig = Bio::EnsEMBL::EMBLLOAD::Contig->new($self->_get_Seq,$self->id);
+    push @contigs,$contig;
+    
+    return @contigs;
 
 }
 
