@@ -1333,6 +1333,7 @@ sub cloneid_to_geneid{
  Returns : nothing
  Args    : 
 
+=cut
 
 sub replace_last_update {
     my ($self, $now_offset) = @_;
@@ -1354,10 +1355,7 @@ sub replace_last_update {
     my $donor=$self->get_donor_locator;
     my $offset=$self->get_offset;
     
-    $sth = $self->prepare("delete from meta where last_update = '".$last_offset."'");  
-    $sth->execute;
- 
-    $sth = $self->prepare("insert into meta (last_update,donor_database_locator,offset_time) values ('".$now_offset."','".$donor."','".$offset."')");
+    $sth = $self->prepare("update db_update set time_finished=now(),status='COMPLETE' where status='STARTED'");
     $sth->execute;
 }
 

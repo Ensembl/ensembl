@@ -40,7 +40,7 @@ use vars qw(@ISA);
 
 @ISA = qw(Bio::Root::Object);
 
-my $fdbtype = 'rdb';
+my $fdbtype = 'timdb';
 my $fhost   = 'obi-wan';
 my $fport   = '410000';
 my $fdbname = 'ensembl';
@@ -57,7 +57,7 @@ my $module = "Bio::EnsEMBL::DBSQL::Obj";
 
 my $help;
 my $nowrite;
-my $verbose;
+my $verbose = 1;
 my $slice;
 
 &GetOptions( 
