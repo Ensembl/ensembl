@@ -36,7 +36,7 @@ sub run {
   my ($species_id, $species_name) = get_species($file);
 
   if ($source_id < 1) { # if being run directly
-    $source_id = BaseParser->get_source_id_for_filename($file);
+    $source_id = BaseParser->get_source_id_for_filename(basename($file));
     print "Source id for $file: $source_id\n";
   }
 
