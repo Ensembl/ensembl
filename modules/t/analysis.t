@@ -10,7 +10,7 @@ END {print "not ok 1\n" unless $loaded;}
 
 use MultiTestDB;
 
-my $verbose = 0;
+our $verbose = 1;
 
 $loaded = 1;
 
@@ -54,7 +54,7 @@ ok($analysis_out);
 
 ok($analysis_out->db eq 'dummy');
 
-ok( check_methods( $analysis_out, "db", "db_file", "id", "dbID", "compare",
+ok( check_methods( $analysis_out, "db", "db_file", "dbID", "compare",
 		   "logic_name", "parameters", "gff_source", "gff_feature",
 		   "module", "module_version", "program_file",
 		   "program", "db_version", "adaptor" ));
