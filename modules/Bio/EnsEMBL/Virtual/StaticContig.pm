@@ -76,9 +76,6 @@ sub new {
     $self->annotation( Bio::Annotation->new());
     $self->{'additional_seqf'} = [];
    
-# print STDERR "Static Contig created from ",scalar(@contigs), " contigs.\n";
-    
-
     if( scalar(@contigs) == 0 ) {
 	if( $global_end == -1 ) {
 	    $self->throw("Cannot build a virtual contig from no raw contigs. Probably an error in the call to get raw contigs");
@@ -155,6 +152,93 @@ sub new {
     
     return $self;
 }                                       # new
+
+=head2 get_all_SimilarityFeatures
+
+ Title   : get_all_SimilarityFeatures
+ Usage   : foreach my $sf ( $contig->get_all_SimilarityFeatures ) 
+ Function:
+ Example :
+ Returns : 
+ Args    :
+
+
+=cut
+
+sub get_all_SimilarityFeatures {
+   my ($self) = @_;
+
+   my $glob_start=$self->_global_start;
+   my $glob_end=$self->_global_end;
+   my $chr_name=$self->_chr_name;
+   my $idlist  = $self->_raw_contig_id_list();
+   
+   unless ($idlist){
+       return ();
+   }
+   
+   my    $statement = "SELECT f.id, 
+                        IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
+                        IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
+                                 (sgp.chr_start+sgp.raw_end-f.seq_start-$glob_start)), 
+                        IF     (sgp.raw_ori=1,f.strand,(-f.strand)),
+                                f.score,f.analysis, f.name, f.hstart, f.hend, f.hid 
+		        FROM   feature f, analysis a,static_golden_path sgp
+                        WHERE  f.analysis = a.id 
+                        AND    sgp.raw_id = f.contig
+                        AND    f.contig in $idlist
+                        AND    sgp.chr_end >= $glob_start 
+		        AND    sgp.chr_start <=$glob_end 
+		        AND    sgp.chr_name='$chr_name' 
+                        AND    a.gff_feature = 'similarity'
+                        ORDER  by start";
+   
+
+    my  $sth = $self->dbobj->prepare($statement);    
+    $sth->execute(); 
+    
+    
+    my ($fid,$start,$end,$strand,$f_score,$analysisid,$name,
+	$hstart,$hend,$hid,$fset,$rank,$fset_score,$contig);
+    
+    $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$f_score,
+                       \$analysisid,\$name,\$hstart,\$hend,\$hid);
+    
+    
+    my @features;
+    
+    my $out;
+    my %analhash;
+    my $length=$self->length;
+  FEATURE: 
+
+    while($sth->fetch) {
+
+	if (($end > $length) || ($start < 1)) {
+	    next;
+	}
+	
+	my @args=($fid,$start,$end,$strand,$f_score,$analysisid,$name,$hstart,$hend,$hid);
+
+	my $analysis=$self->_get_analysis($analysisid);
+	
+	if( !defined $name ) {
+	    $name = 'no_source';
+	}
+	
+	$out = Bio::EnsEMBL::FeatureFactory->new_feature_pair();   
+	$out->set_all_fields($start,$end,$strand,$f_score,$name,'similarity',$contig,
+			     $hstart,$hend,1,$f_score,$name,'similarity',$hid);
+
+	$out->analysis($analysis);
+        $out->id      ($hid);
+	push(@features,$out);
+    }
+  
+   return @features;
+
+}
 
 =head2 get_all_SimilarityFeatures_above_score
 
@@ -331,10 +415,6 @@ sub get_all_SimilarityFeatures_above_pid{
       my $out;
       my $analysis;
 
-#      if( $hid eq 'YU20_HUMAN' ) {
-#	print "PID get... Got feature with $start $end and $strand\n";
-#      }
-
       # clip and map to vc coordinates
 
       if ($start>=$glob_start && $end<=$glob_end){
@@ -376,11 +456,6 @@ sub get_all_SimilarityFeatures_above_pid{
 	  $out->analysis($analysis);
 	  
 	  $out->validate();
-
-      #if( $hid eq 'YU20_HUMAN' ) {
-#	print "PID get... pushing feature with $start $end and $strand\n";
-#      }
-
 
 	  push(@array,$out);       
       }
@@ -565,7 +640,6 @@ sub get_all_PredictionFeatures {
    while( $sth->fetch ) {
        
        if (($end > $length) || ($start < 1)) {
-	   print STDERR "Globbing..\n";
 	   next;
        }
        
@@ -817,10 +891,8 @@ sub get_all_ExternalFeatures{
    }
 
    if( $self->_external_feature_cache == 1 ) {
-#       print STDERR "Returning cache'd copy!\n";
        return @{$self->{'_external_feature_cache_array'}};
    }
-#   print STDERR "Getting external features!\n";
    
    &eprof_start("External-feature-get");
    
@@ -1165,7 +1237,6 @@ sub get_landmark_MarkerFeatures{
 		";
    
    $statement =~ s/\s+/ /g;
- #  print STDERR "Doing Query ... $statement\n";
    
    my $sth = $self->dbobj->prepare($statement);
    $sth->execute;
@@ -1192,7 +1263,6 @@ sub get_landmark_MarkerFeatures{
            next;
        }
 
-#       print STDERR "fetching $start\n";
        my $sf = Bio::EnsEMBL::SeqFeature->new();
        $sf->start($start);
        $sf->end($end);
@@ -1675,8 +1745,6 @@ sub get_all_VirtualGenes_startend
 						-strand => $genestr
 						);
 
-#        print STDERR "Giving back $start - $end $genestr for $gene_id\n";
- 
 	push @genes,$vg;
     }
 
@@ -1880,8 +1948,6 @@ sub get_all_Genes {
           AND et.transcript = t.id
         ";
 
-   #print STDERR "Query is $query\n";
-
    &eprof_start("gene-sql-get");
 
    my $sth = $self->dbobj->prepare($query);
@@ -1907,11 +1973,7 @@ sub get_all_Genes {
 
    my $gene_obj = $self->dbobj->gene_Obj();
 
-   #print STDERR "Before gene query " . time . "\n";
-
    my @genes = $gene_obj->get_array_supporting('without',@gene_ids);
-
-   #print STDERR "After gene query " . time . "\n";
 
    my %gene;
 
@@ -1924,9 +1986,7 @@ sub get_all_Genes {
    &eprof_start("gene-convert");
    
    # this delegates off to Virtual::Contig
-   #print STDERR "BEfore convert " . time . "\n";
    my @newgenes=$self->_gene_query(%gene);
-   #print STDERR "After convert " . time . "\n";
 
    &eprof_end("gene-convert");
 
@@ -2467,14 +2527,11 @@ sub _fill_cext_SimilarityFeature_cache{
        if( !defined $cache->{$db} ) {
 	   $cache->{$db} = [];
        }
-       #print STDERR "in loop Got $f ",$f->start," ",$f->end,"\n";
-
        push(@{$cache->{$db}},$f);
        $save = $f;
    }
 
    $fpl = 0;
-   #print STDERR "out of loop $save ",$save->start," ",$save->end,"\n";
    &Bio::EnsEMBL::Ext::ContigAcc::release_Ensembl_cache();
 
 }
