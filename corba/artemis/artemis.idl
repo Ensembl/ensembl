@@ -48,7 +48,6 @@ module Ensembl {
 
       // coordination of the ORB.
       FeatureDefinitionList getFeatureDefinitionList();
-      long max_sequence_length();
     };
   };
 };

@@ -63,6 +63,10 @@ static CORBA_long
 impl_Ensembl_artemis_BioSequence_length(impl_POA_Ensembl_artemis_BioSequence *
 				     servant, CORBA_Environment * ev);
 
+static CORBA_long
+impl_Ensembl_artemis_BioSequence_max_sequence_request(impl_POA_Ensembl_artemis_BioSequence *
+				     servant, CORBA_Environment * ev);
+
 static void
 impl_Ensembl_artemis_Feature__destroy(impl_POA_Ensembl_artemis_Feature *
 				      servant, CORBA_Environment * ev);
@@ -114,6 +118,7 @@ static POA_Ensembl_artemis_BioSequence__epv impl_Ensembl_artemis_BioSequence_epv
    (gpointer) & impl_Ensembl_artemis_BioSequence_getSubSequence,
 
    (gpointer) & impl_Ensembl_artemis_BioSequence_length,
+   (gpointer) & impl_Ensembl_artemis_BioSequence_max_sequence_request,
 
 };
 
@@ -310,6 +315,9 @@ impl_Ensembl_artemis_BioSequence_getSubSequence(impl_POA_Ensembl_artemis_BioSequ
    Ensembl_artemis_RequestedSequenceTooLong * toolong;
 
 
+   SimpleObjectManagerAdaptor_log_message(&servant->soma,G_LOG_LEVEL_DEBUG,"Calling subsequence %d-%d",start,end);
+
+   
    if( start < 0 || end < 0 || start > end || (end-start) > ARTEMIS_MAX_SEQLENGTH ) {
      SimpleObjectManagerAdaptor_log_message(&servant->soma,0,"Requested sequence %d-%d too long or just weird",start,end);
      toolong = Ensembl_artemis_RequestedSequenceTooLong__alloc();
@@ -342,16 +350,19 @@ impl_Ensembl_artemis_BioSequence_length(impl_POA_Ensembl_artemis_BioSequence *
 				     servant, CORBA_Environment * ev)
 {
    CORBA_long retval;
+   SimpleObjectManagerAdaptor_log_message(&servant->soma,G_LOG_LEVEL_DEBUG,"Calling length");
+
    retval = servant->length;
    return retval;
 }
 
 
 static CORBA_long
-impl_Ensembl_artemis_BioSequence_max_sequence_length(impl_POA_Ensembl_artemis_BioSequence *
+impl_Ensembl_artemis_BioSequence_max_sequence_request(impl_POA_Ensembl_artemis_BioSequence *
 					    servant, CORBA_Environment * ev)
 {
    CORBA_long retval;
+   SimpleObjectManagerAdaptor_log_message(&servant->soma,G_LOG_LEVEL_DEBUG,"Calling max sequence length");
    retval = ARTEMIS_MAX_SEQLENGTH;
    return retval;
 }

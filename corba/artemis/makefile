@@ -28,7 +28,7 @@ test-artentry-client : test-artentry-client.o artemis-stubs.o artemis-common.o
 	$(CC) -o test-artentry-client test-artentry-client.o artemis-stubs.o artemis-common.o $(LFLAGS) -lIIOP -lORBit -lORBitutil -lglib -lm -lresolv -lsom
 
 .c.o :
-	cc -c -g $(IFLAGS) $<
+	gcc -c -g $(IFLAGS) $<
 
 
 
