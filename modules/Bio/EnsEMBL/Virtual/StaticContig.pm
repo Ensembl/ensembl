@@ -275,8 +275,6 @@ sub get_all_SimilarityFeatures_above_score{
 
     if( ! defined $self->{'_feature_cache'} ) {
       &eprof_start('similarity-query');
-      print STDERR "STATIC SIM GET - doing query with $analysis_type\n";
-
 
       my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -356,7 +354,6 @@ sub get_all_SimilarityFeatures_above_score{
       }
       
       &eprof_end('similarity-obj');
-      print STDERR "FEATURE COUNT $count ",$Bio::EnsEMBL::FeatureFactory::USE_PERL_ONLY," ", $Bio::EnsEMBL::FeatureFactory::ENSEMBL_EXT_LOADED,"\n";
       
   }
 
@@ -398,7 +395,7 @@ sub get_all_SimilarityFeatures_by_strand{
        if ($f->strand == 1 && $strand == 1) {
 	   unshift(@f,$f);
        }
-       elsif ($strand == -1) {
+       elsif ($strand == -1 && $f->strand == -1) {
 	   push(@f,$f);
        }
    }
@@ -632,7 +629,6 @@ sub get_all_RepeatFeatures {
     
     $bp = $bp+100;
 
-    print STDERR "Repeat Bases glob $bp\n";
 
     my $glob_start=$self->_global_start;
     my $glob_end=$self->_global_end;
@@ -708,7 +704,6 @@ sub get_all_RepeatFeatures {
 	    $out->analysis($analysis);
 	    
 	} else {
-	    #print(STDERR "Repeat feature does not have a hid. bad news....");
 	}
 	push(@features,$out);
     }
@@ -762,7 +757,7 @@ sub get_all_PredictionFeatures {
    
     my $type = $self->dbobj->static_golden_path_type;
     
-   my $query = "SELECT f.id, 
+   my $query = "SELECT f.id,sgp.raw_start,sgp.raw_end,f.seq_start,f.seq_end,
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
                                  (sgp.chr_start+sgp.raw_end-f.seq_end-$glob_start)) as start,  
                         IF     (sgp.raw_ori=1,(f.seq_end+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -782,19 +777,21 @@ sub get_all_PredictionFeatures {
    
    $sth->execute();
    
-   my ($fid,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig);
+   my ($fid,$rawstart,$rawend,$seqstart,$seqend,$start,$end,$strand,$score,$evalue,$perc_id,$phase,$end_phase,$analysisid,$hid,$contig);
    
    # bind the columns
-   $sth->bind_columns(undef,\$fid,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig);
+   $sth->bind_columns(undef,\$fid,\$rawstart,\$rawend,\$seqstart,\$seqend,\$start,\$end,\$strand,\$score,\$evalue,\$perc_id,\$phase,\$end_phase,\$analysisid,\$hid,\$contig);
    
    $previous = -1;
    my $current_fset;
    my $count;
-   
+
    while( $sth->fetch ) {
-       
        if (($end > $length) || ($start < 1)) {
 	   next;
+       }
+       if ($seqstart < $rawstart || $seqend > $rawend) {
+           next;
        }
        
        my $out;
@@ -813,7 +810,7 @@ sub get_all_PredictionFeatures {
        }
 
        
-       if( $hid eq "Initial Exon" || $hid eq "Single Exon" || $previous eq "Single Exon" || $previous eq "Terminal Exon" || $previous eq -1 || $previous_contig != $contig) {
+       if( $hid =~ /Initial/ || $hid =~ /Single/ || $previous =~ /Single/ || $previous =~ /Terminal/ || $previous eq -1 || $previous_contig != $contig) {
 	   $count++;
 	   $current_fset = Bio::EnsEMBL::SeqFeature->new();
 	   $current_fset->source_tag('genscan');
@@ -849,11 +846,8 @@ sub get_all_PredictionFeatures {
 
 	my $fsetid=$arr_ref->[0];
 
-      
-
-
-
        $out->id($fsetid); # to make genscan peptide work
+
        $out->source_tag('genscan');
        $out->primary_tag('prediction');
        
@@ -866,9 +860,11 @@ sub get_all_PredictionFeatures {
        # Final check that everything is ok.
        
        $out->validate();
+
        $current_fset->add_sub_SeqFeature($out,'EXPAND');
        $current_fset->strand($strand);
-       $previous = $hid;
+
+       $previous        = $hid;
        $previous_contig = $contig;
   }
  
@@ -1103,7 +1099,6 @@ sub get_all_ExternalFeatures{
        # get them out, push into array by clone
        foreach my $extf ( @web ) {
 	   &eprof_start("external_get_web".$extf);
-	   print STDERR "web using glob $glob\n";
 
 	   foreach my $feature ( $extf->get_Ensembl_SeqFeatures_clone_web($glob,@clones) ) {
 	       my $clone = $feature->seqname;
