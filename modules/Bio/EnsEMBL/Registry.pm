@@ -24,6 +24,8 @@ be used to get the adaptors needed.
 The registry can be loaded from a configuration file. If the enviroment
 variable ENSEMBL_REGISTRY is set then the file pointed to by it is executed.
 If not set then if the file ~/.ensembl_init exists then this will be executed.
+An example of such configuration file can be found in 
+ensembl/modules/Bio/EnsEMBL/Utils/ensembl_init.example
 For the Web server ENSEMBL_REGISTRY should be set in SiteDefs.pm.
 
 The four types of registrys are for db adaptors, dba adaptors, dna adaptors
