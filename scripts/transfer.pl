@@ -91,7 +91,7 @@ my $fdbpass = undef;
 my $tdbtype = 'rdb';
 my $thost   = 'localhost';
 my $tport   = '410000';
-my $tdbname = 'ensembl_freeze17_michele';
+my $tdbname = 'arne_freeze05_tim';
 my $tdbuser = 'root';
 my $tdbpass = undef;
 
@@ -224,13 +224,27 @@ if ($feature) {
 	    my $oldclone;
 	    print STDERR "Writing features for clone ".$clone->id."\n";
 	    foreach my $contig ($clone->get_all_Contigs) {
+		my $oldcontig = $to_db->get_Contig($contig->id);
 		my @features=$contig->get_all_SeqFeatures;
+		my @oldfeatures=$oldcontig->get_all_SeqFeatures;
 		my $nf=scalar(@features);
-		print STDERR "Writing $nf features for contig ".$contig->id."\n";
+		my $of=scalar(@oldfeatures);
+		print STDERR "Going to write $nf features for contig ".$contig->id."\n";
 		if ($nf) {
-		    my $oldcontig = $to_db->get_Contig($contig->id);
-		    my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
-		    $feature_obj->write($oldcontig, @features);
+		    if ($of == 0) {
+			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
+			$feature_obj->write($oldcontig, @features);
+		    }
+		    elsif ($of != $nf) {
+			print STDERR "Contig in DB has less features than contig in TimDB, deleting old ones, and writing new ones!";
+			my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($to_db);
+			$feature_obj->delete($oldcontig->id);
+			$feature_obj->write($oldcontig, @features);
+		    }
+		    else {
+			print STDERR "Not writing features because ";
+			print STDERR $oldcontig->id." already had the right number of features in the db!\n";
+		    }
 		}
 		else {
 		    print STDERR "Warning: Found zero features for contig ". $contig->id."\n";

@@ -92,9 +92,17 @@ my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
 open (PARSE,"$parse") || die("Could not open $parse for gtf reading$!");
 my @gtf_genes=$gtfh->parse_file(\*PARSE);
 my $g_n=scalar @gtf_genes;
-print STDERR "Got $g_n genes from file $parse\n";
+print STDERR "Got $g_n genes from ens-neo merge file $parse\n";
 if ($print) {
-    $gtfh->print_genes;
+    foreach my $gene (@gtf_genes) {
+	print "Gene:        ".$gene->id."\n";
+	foreach my $trans ($gene->each_Transcript) {
+	    print " transcript: ".$trans->id."\n";
+	    foreach my $exon ($trans->each_Exon) {
+		print "  exon       ".$exon->id."\n";
+	    }
+	}
+    }
 }
 
 #DB writing option not yet implemented
@@ -136,20 +144,15 @@ elsif ($check) {
 }
 elsif ($compare) {
     $parse =~/ctg(\d+).gtf/;
-    my $parse2 = "../neomorphic_known/ctg$1.mrg.gtf";
+    my $parse2 = "../genomescan_gtf/ctg$1.gtf";
     my $gtfh=Bio::EnsEMBL::Utils::GTF_handler->new();
-    open (PARSE2,"$parse2") || die("Could not open $parse2 for ensembl gtf reading$!");
+    open (PARSE2,"$parse2") || die("Could not open $parse2 for genomescan gtf reading$!");
     
     my @standard_genes=$gtfh->parse_file(\*PARSE2);
     my $n=scalar @standard_genes;
-    print STDERR "Got $n genes from Neomoprhic file $parse2\n";
-    #foreach my $gene (@standard_genes) {
-	#foreach my $exon ($gene->each_unique_Exon) {
-	    #print STDERR "Neomorphic gene has exon: ".$exon->id."\n";
-	#}
-    #}
+    print STDERR "Got $n genes from Genomescan file $parse2\n";
     my $stats=Bio::EnsEMBL::GeneComparison::GeneComparisonStats->new(-standard=>\@standard_genes, -predictor=>\@gtf_genes);
- my %genes=$stats->get_OverlapMap;
+    my %genes=$stats->get_OverlapMap;
     my $knownoverlap=0;
     foreach my $gene_id (keys(%genes)){
 	my $n=scalar(@{$genes{$gene_id}});
@@ -163,24 +166,24 @@ elsif ($compare) {
 	    print STDERR "\n";
 	}
     }
-    print STDERR "In total, $knownoverlap known genes overlap ensembl genes\n";
+    print STDERR "In total, $knownoverlap genomscan genes overlap ens-neo merge genes\n";
     my @missed_genes=$stats->getMissedGenes();
     my $missed= scalar(@missed_genes);
-    print STDERR "$missed known genes were missed completely: ";
+    print STDERR "$missed genscan genes were missed completely: ";
     foreach my $id (@missed_genes) {
 	print STDERR "$id ";
     }
     print STDERR "\n";
     my @matched_ensembl= $stats->getExactlyMatchedPredictorGenes();
     my $n_mens= scalar @matched_ensembl;
-    print STDERR "$n_mens ensembl predictions were exactly matched: ";
+    print STDERR "$n_mens ens-neo genes were exactly matched: ";
     foreach my $id (@matched_ensembl) {
-	print STDERR "Matched ensembl gene $id ";
+	print STDERR "Matched ens-neo gene $id ";
     }
     print STDERR "\n";
     my @matched_known=$stats->getExactlyMatchedStandardGenes();
     my $n_mknown=scalar(@matched_known);
-    print STDERR "$n_mknown known genes were exactly matched: ";
+    print STDERR "$n_mknown genscan genes were exactly matched: ";
     foreach my $id (@matched_known) {
 	print STDERR "$id ";
     }
@@ -191,12 +194,14 @@ elsif ($compare) {
 	    $overlaps{$overlap}. "\n";                    
 	
     }
-    #$stats->make_merges;
+    my @merged=$stats->make_merges;
     
     my $string=$stats->getGeneComparisonStats;
     print STDERR "Gene comparison stats:\n";
     print STDERR $string;
-   
+    open (MERGE,">>../ens-neo-genscan_merge.gtf") || die("Could not write to merge file");
+    my $gh=Bio::EnsEMBL::Utils::GTF_handler->new();
+    $gh->dump_genes(\*MERGE,@merged);
 }
 
 elsif ($longest) {
@@ -336,10 +341,25 @@ else {
 	my $vc = $sgp_adaptor->fetch_VirtualContig_by_fpc_name($fpc);
 	foreach my $exon ($gene->each_unique_Exon) {
 	    $exon->contig_id($vc->id);
+	    $exon->attach_seq($vc->primary_seq);
 	}
 	my $newgene = $vc->convert_Gene_to_raw_contig($gene);
 	print STDERR "Writing gene ".$gene->id."\n";
-	$gene_obj->write($newgene);
+	foreach my $trans ($gene->each_Transcript) {
+	    
+	    my $out = Bio::SeqIO->new(-fh => \*STDOUT, -format =>
+				      'Fasta');
+	    
+	    my $seq= $trans->dna_seq;
+	    
+	    my $desc="FPC: $fpc ";
+	    
+	    $seq->desc($desc);
+	    
+	    $out->write_seq($seq);
+	    
+	}
+	#$geneobj->Write($newgene);
+	
     }
 }
-
