@@ -1,101 +1,15 @@
-# Re-create contents of external_db
-# Done as a series of INSERT statements to avoid dependency on a particular file
+# changes to database structure from 26 to 27
+# none of which should affect your current data
+#  so you dont need to apply them
 
-DELETE FROM external_db;
 
-INSERT INTO external_db VALUES(90,'UMCU_Hsapiens_19Kv1',1,'XREF');
-INSERT INTO external_db VALUES(200,'Anopheles_paper',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(210,'Anopheles_symbol',1,'KNOWN');
-INSERT INTO external_db VALUES(300,'BRIGGSAE_HYBRID',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(400,'Celera_Gene',1,'PRED');
-INSERT INTO external_db VALUES(410,'Celera_Pep',1,'PRED');
-INSERT INTO external_db VALUES(420,'Celera_Trans',1,'PRED');
-INSERT INTO external_db VALUES(500,'drosophila_gene_id',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(501,'drosophila_translation_id',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(600,'DROS_ORTH',1,'ORTH');
-INSERT INTO external_db VALUES(700,'EMBL',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(800,'flybase_gene_id',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(801,'flybase_translation_id',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(810,'flybase_symbol',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(820,'flybase_transcript',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(821,'FlyBaseName_gene',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(822,'FlyBaseORFNames',1,'XREF');
-INSERT INTO external_db VALUES(823,'FlyBaseSynonyms',1,'XREF');
-INSERT INTO external_db VALUES(824,'FlyBaseName_translations',1,'XREF');
-INSERT INTO external_db VALUES(900,'GKB',1,'XREF');
-INSERT INTO external_db VALUES(1000,'GO',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1100,'HUGO',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1200,'Interpro',1,'XREF');
-INSERT INTO external_db VALUES(1300,'LocusLink',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1400,'MarkerSymbol',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1500,'MIM',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1600,'PDB',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1700,'protein_id',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(1800,'RefSeq',1,'KNOWN');
-INSERT INTO external_db VALUES(1900,'Sanger_Hver1_2_1',1,'XREF');
-INSERT INTO external_db VALUES(1901,'Sanger_Hver1_3_1',1,'XREF');
-INSERT INTO external_db VALUES(1902,'SNGR_Hver',1,'XREF');
-INSERT INTO external_db VALUES(1910,'Sanger_Mver1_1_1',1,'XREF');
-INSERT INTO external_db VALUES(2000,'Uniprot/SPTREMBL',1,'KNOWN');
-INSERT INTO external_db VALUES(2010,'prediction_SPTREMBL',1,'XREF');
-INSERT INTO external_db VALUES(2100,'Superfamily',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(2200,'Uniprot/SWISSPROT',1,'KNOWN');
-INSERT INTO external_db VALUES(2300,'Vega_gene',1,'XREF');
-INSERT INTO external_db VALUES(2310,'Vega_transcript',1,'XREF');
-INSERT INTO external_db VALUES(2320,'Vega_translation',1,'XREF');
-INSERT INTO external_db VALUES(2400,'wormbase_gene',1,'KNOWN');
-INSERT INTO external_db VALUES(2410,'wormbase_transcript',1,'KNOWN');
-INSERT INTO external_db VALUES(2420,'wormpep_id',1,'KNOWN');
-INSERT INTO external_db VALUES(2430,'wormbase_pseudogene',1,'PSEUDO');
-INSERT INTO external_db VALUES(2500,'ZFIN',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(2510,'ZFIN_ID',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(2520,'ZFIN_AC',1,'KNOWNXREF');
-INSERT INTO external_db VALUES(2600,'GeneDB',1,'KNOWN');
-INSERT INTO external_db VALUES(2700,'Ens_Hs_gene',1,'XREF');
-INSERT INTO external_db VALUES(2710,'Ens_Hs_transcript',1,'XREF');
-INSERT INTO external_db VALUES(2720,'Ens_Hs_translation',1,'XREF');
-INSERT INTO external_db VALUES(2800,'RGD',1,'XREF');
-INSERT INTO external_db VALUES(2900,'Genoscope_pred_gene',1,'XREF');
-INSERT INTO external_db VALUES(2910,'Genoscope_pred_transcript',1,'XREF');
-INSERT INTO external_db VALUES(2920,'Genoscope_annotated_gene',1,'KNOWN');
-INSERT INTO external_db VALUES(3001,'AFFY_MG_U74_all',1,'XREF');
-INSERT INTO external_db VALUES(3002,'AFFY_MG_U74A',1,'XREF');
-INSERT INTO external_db VALUES(3003,'AFFY_MG_U74Av2',1,'XREF');
-INSERT INTO external_db VALUES(3004,'AFFY_MG_U74B',1,'XREF');
-INSERT INTO external_db VALUES(3005,'AFFY_MG_U74Bv2',1,'XREF');
-INSERT INTO external_db VALUES(3006,'AFFY_MG_U74C',1,'XREF');
-INSERT INTO external_db VALUES(3007,'AFFY_MG_U74Cv2',1,'XREF');
-INSERT INTO external_db VALUES(3008,'AFFY_MOE430_all',1,'XREF');
-INSERT INTO external_db VALUES(3009,'AFFY_MOE430A',1,'XREF');
-INSERT INTO external_db VALUES(3010,'AFFY_MOE430B',1,'XREF');
-INSERT INTO external_db VALUES(3011,'AFFY_Mu11Ksub_all',1,'XREF');
-INSERT INTO external_db VALUES(3012,'AFFY_Mu11KsubA',1,'XREF');
-INSERT INTO external_db VALUES(3013,'AFFY_Mu11KsubB',1,'XREF');
-INSERT INTO external_db VALUES(3014,'AFFY_Mouse430_2',1,'XREF');
-INSERT INTO external_db VALUES(3015,'AFFY_Mouse430A_2',1,'XREF');
-INSERT INTO external_db VALUES(3051,'AFFY_RAE230_all',1,'XREF');
-INSERT INTO external_db VALUES(3052,'AFFY_RAE230A',1,'XREF');
-INSERT INTO external_db VALUES(3053,'AFFY_RAE230B',1,'XREF');
-INSERT INTO external_db VALUES(3054,'AFFY_RG_U34_all',1,'XREF');
-INSERT INTO external_db VALUES(3055,'AFFY_RG_U34A',1,'XREF');
-INSERT INTO external_db VALUES(3056,'AFFY_RG_U34B',1,'XREF');
-INSERT INTO external_db VALUES(3057,'AFFY_RG_U34C',1,'XREF');
-INSERT INTO external_db VALUES(3058,'AFFY_RN_U34',1,'XREF');
-INSERT INTO external_db VALUES(3059,'AFFY_RT_U34',1,'XREF');
-INSERT INTO external_db VALUES(3101,'AFFY_HG_U133_all',1,'XREF');
-INSERT INTO external_db VALUES(3102,'AFFY_HG_U133A',1,'XREF');
-INSERT INTO external_db VALUES(3103,'AFFY_HG_U133B',1,'XREF');
-INSERT INTO external_db VALUES(3104,'AFFY_HG_U95_all',1,'XREF');
-INSERT INTO external_db VALUES(3105,'AFFY_HG_U95A',1,'XREF');
-INSERT INTO external_db VALUES(3106,'AFFY_HG_U95Av2',1,'XREF');
-INSERT INTO external_db VALUES(3107,'AFFY_HG_U95B',1,'XREF');
-INSERT INTO external_db VALUES(3108,'AFFY_HG_U95C',1,'XREF');
-INSERT INTO external_db VALUES(3109,'AFFY_HG_U95D',1,'XREF');
-INSERT INTO external_db VALUES(3110,'AFFY_HG_U95E',1,'XREF');
-INSERT INTO external_db VALUES(3111,'AFFY_HG_U133_PLUS_2',1,'XREF');
-INSERT INTO external_db VALUES(3112,'AFFY_HG_U133A_2',1,'XREF');
-INSERT INTO external_db VALUES(3113,'AFFY_HG_Focus',1,'XREF');
-INSERT INTO external_db VALUES(3114,'AFFY_Rat230_2',1,'XREF');
-INSERT INTO external_db VALUES(3115,'AFFY_Zebrafish',1,'XREF');
-INSERT INTO external_db VALUES(3116,'AFFY_U133_X3P',1,'XREF');
-INSERT INTO external_db VALUES(3300,'miRNA_Registry',1,'XREF');
+ALTER TABLE xref MODIFY dbprimary_acc VARCHAR(40) BINARY NOT NULL;
+ALTER TABLE affy_probe MODIFTY probeset VARCHAR(40);
+ALTER TABLE interpro DROP INDEX interpro_ac;
+ALTER TABLE interpro DROP INDEX id;
+
+ALTER TABLE interpro ADD UNIQUE ( interpro_ac, id );
+ALTER TABLE interpro ADD INDEX( id );
+
+
+
