@@ -168,13 +168,12 @@ while (<>) {
         track_extents(\%natives_of_source, $s, $native_id,
                       $seq_name, $start, $end, $strand, $exon_num);
 
-    # keep track of the native gene_ids of a given igi in a given
-    # source. As always, use a hash for faster collating (i.e. keys
-    # %($natives_of_igi{$s}{$igi}) gives them all; the value is
-    # irrelevant 
-    $natives_of_igi{$s}{$igi}{$native_id}++;
-
-
+        # keep track of the native gene_ids of a given igi in a given
+        # source. As always, use a hash for faster collating (i.e. keys
+        # %($natives_of_igi{$s}{$igi}) gives them all; the value is
+        # irrelevant 
+        $natives_of_igi{$s}{$igi}{$native_id}++;
+        
         # pointless to keep track of exon statistics; call exon-lengths.awk
         # for that.
     }                                   # foreach $s
