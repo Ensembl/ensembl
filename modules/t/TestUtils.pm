@@ -5,7 +5,7 @@ package TestUtils;
 require Exporter;
 use vars qw( @ISA @EXPORT_OK );
 @ISA=('Exporter');
-@EXPORT_OK=qw(&debug &test_getter_setter);
+@EXPORT_OK=qw(&debug &test_getter_setter &count_rows);
 
 =head2 test_getter_setter
 
@@ -53,6 +53,15 @@ sub debug {
   }
 }
 
+sub count_rows {
+  my $db = shift;
+  my $tablename = shift;
+
+  my $sth = $db->prepare( "select count(*) from $tablename" );
+  $sth->execute();
+  my ( $count ) = $sth->fetchrow_array();
+  return $count;
+}
 
 
 
