@@ -148,8 +148,10 @@ if ($template) {                        #
     &dump_embl($embldb);
     &dump_est($estdb);
     &dump_mouse($mousedb);
-    
 }
+
+warn "done\n";
+exit(0);
 
 sub template_fill {
     my ($tpl,  $actual) = @_;
