@@ -148,7 +148,7 @@ sub _objs_from_sth {
   $sth->bind_columns(\$prediction_transcript_id, 
 		    \$contig_id, \$contig_start, \$contig_end, \$contig_strand,
 		    \$start_phase, \$exon_rank, \$score, \$p_value, 
-		     \$analysis_id,\$exon_count);
+		    \$analysis_id,\$exon_count);
 
   my $rca = $self->db->get_RawContigAdaptor;
   my $aa  = $self->db->get_AnalysisAdaptor;
@@ -220,7 +220,7 @@ sub _objs_from_sth {
 	$exon_strand = $strand * -1;
       } else {
 	$exon_start  = $start - $slice_start + 1;
-	$exon_end    = $end   - $slice_end   + 1;
+	$exon_end    = $end   - $slice_start   + 1;
 	$exon_strand = $strand;
       }   
       
