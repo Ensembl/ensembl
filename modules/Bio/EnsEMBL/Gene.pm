@@ -496,8 +496,10 @@ sub add_Transcript{
        $self->throw("$trans is not a Bio::EnsEMBL::TranscriptI!");
    }
 
-   # at the moment, use the SeqFeature sub hash. But in the future,
-   # possibly do something better?
+   #invalidate the start and end since they may need to be recalculated
+   $self->{start} = undef;
+   $self->{end} = undef;
+   $self->{strand} = undef;
 
    push(@{$self->{'_transcript_array'}},$trans);
 }
@@ -733,6 +735,12 @@ sub transform {
     $transcript->transform( \%exon_transforms );
     
   }
+
+  #unset the start, end, and strand - they need to be recalculated
+  $self->{start} = undef;
+  $self->{end} = undef;
+  $self->{strand} = undef;
+
   return $self;
 }
 

@@ -428,15 +428,12 @@ sub add_Exon{
        $self->throw("$exon is not a Bio::EnsEMBL::Exon!");
    }
 
-   # at the moment, use the SeqFeature sub hash. But in the future,
-   # possibly do something better?
-
-  # print STDERR "Transcript.pm: Adding exon " . $exon . "\n";
-  # print STDERR "[Start " . $exon->start . "\t";
-  # print STDERR "End " . $exon->end . "\tStrand: " . $exon->strand . "]\n\n";
+   #invalidate the start, end and strand - they may need to be recalculated
+   $self->{'_start'} = undef;
+   $self->{'_end'} = undef;
+   $self->{'_strand'} = undef;
 
    push(@{$self->{'_trans_exon_array'}},$exon);
-   
 }
 
 
@@ -573,6 +570,10 @@ sub number{
 
 sub flush_Exon{
    my ($self,@args) = @_;
+
+   $self->{'_start'} = undef;
+   $self->{'_end'} = undef;
+   $self->{'_strand'} = undef;
 
    $self->{'_trans_exon_array'} = [];
 }
@@ -1929,6 +1930,11 @@ sub transform {
   if( defined $self->{'translation'} ) {
     $self->translation->transform( $href_exons );
   }
+
+  #invalidate the current start, end, strand - they need to be recalculated
+  $self->{'_start'} = undef;
+  $self->{'_end'} = undef;
+  $self->{'_strand'} = undef;
 }
 
 
