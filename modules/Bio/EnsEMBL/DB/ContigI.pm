@@ -962,7 +962,7 @@ sub get_all_PredictionFeatures_as_Transcripts {
     foreach my $ft ($self->get_all_PredictionFeatures())
     {
 	
-	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$self);
+	push @transcripts,&Bio::EnsEMBL::TranscriptFactory::fset2transcript($ft,$self);
 	    
     }
 

@@ -82,7 +82,7 @@ use Bio::Root::RootI;
 use Bio::EnsEMBL::DB::VirtualContigI;
 use Bio::EnsEMBL::DB::VirtualMap;
 use Bio::EnsEMBL::DB::VirtualPrimarySeq;
-use Bio::EnsEMBL::DBSQL::Utils;
+use Bio::EnsEMBL::TranscriptFactory;
 use Bio::EnsEMBL::Utils::Eprof qw( eprof_start eprof_end );
 
 my $VC_UNIQUE_NUMBER = 0;
@@ -827,7 +827,7 @@ sub get_all_PredictionFeatures_as_Transcripts {
     {
 	
 	my $contig=$self->_vmap->dbobj->get_Contig($ft->raw_seqname);
-	push @transcripts,&Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+	push @transcripts,&Bio::EnsEMBL::TranscriptFactory::fset2transcript($ft,$contig);
 	    
     }
 

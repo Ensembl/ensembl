@@ -1784,7 +1784,7 @@ sub _get_stable_entry_info {
  Title   : temporary_id
  Usage   : $obj->temporary_id($newval)
  Function: Temporary ids are used for Genscan predictions - which should probably
-           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::DBSQL::Utils use this
+           be moved over to being stored inside the gene tables anyway. Bio::EnsEMBL::TranscriptFactory use this
  Example : 
  Returns : value of temporary_id
  Args    : newvalue (optional)

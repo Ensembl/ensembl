@@ -50,7 +50,7 @@ use Bio::EnsEMBL::Transcript;
 use Bio::EnsEMBL::FeatureFactory;
 use Bio::EnsEMBL::DBSQL::RawContigAdaptor;
 use DBI;
-use Bio::EnsEMBL::DBSQL::Utils;
+use Bio::EnsEMBL::TranscriptFactory;
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
 
@@ -685,7 +685,7 @@ sub fetch_PredictionFeature_as_Transcript{
     my $ft=$self->fetch_PredictionFeature_by_id($genscan_id);
     my $contig=$self->db->get_Contig($ft->seqname);
  
-    return &Bio::EnsEMBL::DBSQL::Utils::fset2transcript($ft,$contig);
+    return &Bio::EnsEMBL::TranscriptFactory::fset2transcript($ft,$contig);
 }
 
 
