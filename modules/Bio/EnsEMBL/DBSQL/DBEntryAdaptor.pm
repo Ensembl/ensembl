@@ -183,8 +183,6 @@ sub store {
 	    
 	    my ($dbSyn) = $sth->fetchrow_array();
 	    
-	    #print STDERR $dbSyn[0],"\n";
-	    
 	    if( ! $dbSyn ) {
 		$sth = $self->prepare( "
         INSERT INTO externalSynonym
@@ -194,7 +192,7 @@ sub store {
 		$sth->execute();
 	    }
 	}
-	
+    
 	
 	$sth = $self->prepare( "
    INSERT INTO objectXref
@@ -202,7 +200,6 @@ sub store {
          ensembl_object_type = ?,
          ensembl_id = ?
   " );
-	
 	$sth->execute( $ensType, $ensObject );
 	
 	$exObj->dbID( $dbX );
@@ -224,7 +221,11 @@ sub store {
 	    $sth->execute( $exObj->query_identity, $exObj->target_identity );
 	    
 	}
-    } else {
+
+    }
+    
+    else {
+	
 	$sth = $self->prepare ( "
 
               SELECT xrefId
@@ -237,7 +238,7 @@ sub store {
 	my ($tst) = $sth->fetchrow_array;
 
 
-	if (! defined $sth) {
+	if (! defined $tst) {
 	# line is already in Xref table. Need to add to objectXref
 	    $sth = $self->prepare( "
              INSERT INTO objectXref
