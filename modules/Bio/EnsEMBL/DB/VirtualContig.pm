@@ -905,27 +905,38 @@ sub _build_contig_map {
   
   #print STDERR "Left size is $left\n";
   
+  my %seen_hash;
+
+
   GOING_LEFT :
     
     while( $current_left_size < $left ) {
-      #print(STDERR "Current left = $current_left_size\n");
-      #print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
-
-      if( $current_orientation == 1 ) {
-
-	# go left wrt to the contig.
-	$overlap = $current_contig->get_left_overlap();
-
-	# if there is no left overlap, trim left to this size
-	# as this means we have run out of contigs
-	    
-	#print STDERR "Gone left\n";
-	    
-	if( !defined $overlap ) {
-	  $left = $current_left_size;
-	  #print STDERR "getting out - no overlap\n";
-	  last;
+	#print(STDERR "Current left = $current_left_size\n");
+	#print STDERR "Looking at ",$current_contig->id," with $current_left_size\n";
+	
+	if( exists $seen_hash{$current_contig->id} ) {
+	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
+	} else {
+	    $seen_hash{$current_contig->id} = 1;
 	}
+
+
+	
+	if( $current_orientation == 1 ) {
+	    
+	# go left wrt to the contig.
+	    $overlap = $current_contig->get_left_overlap();
+	    
+	    # if there is no left overlap, trim left to this size
+	    # as this means we have run out of contigs
+	    
+	    #print STDERR "Gone left\n";
+	    
+	    if( !defined $overlap ) {
+		$left = $current_left_size;
+		#print STDERR "getting out - no overlap\n";
+		last;
+	    }
 	
 	if( $overlap->distance == 1 ) {
 	  $current_left_size += $overlap->sister->golden_length -1;
@@ -1043,6 +1054,8 @@ sub _build_contig_map {
 	$current_length = $self->_left_overhang() + $current_contig->golden_length ;
     }
 
+  # flush $seen_hash
+  %seen_hash = ();
 
     #print STDERR "current length before we get into this is $current_length\n";
     
@@ -1050,6 +1063,14 @@ sub _build_contig_map {
 	#print STDERR "In building actually got $current_length towards $total\n";
 	
 	# move onto the next contig.
+
+	if( exists $seen_hash{$current_contig->id} ) {
+	    $self->throw("Bad internal error. Managed to loop back to the same contig in a virtualcontig walk. Something is inconsistent in the database. Id:".$current_contig->id);
+	} else {
+	    $seen_hash{$current_contig->id} = 1;
+	}
+
+
 	
 	if( $current_orientation == 1 ) {
 	    # go right wrt to the contig.
