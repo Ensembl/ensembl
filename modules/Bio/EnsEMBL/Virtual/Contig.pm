@@ -621,8 +621,6 @@ sub get_all_SimilarityFeatures_above_score{
     	$start=$start-$glob_start;
     	$end=$end-$glob_start;
 
-#	print STDERR "feature ",$start," end ",$end," analysis id ",$analysisid," raw ori ",$raw_ori,"\n";
-
 	  if (!$analhash{$analysisid}) 
 	  {
 	      my $feature_obj=Bio::EnsEMBL::DBSQL::Feature_Obj->new($self->dbobj);
@@ -730,7 +728,8 @@ sub get_all_RepeatFeatures {
   my $chr_name=$self->_chr_name;
   
   
-  my $statement = "SELECT rf.id,rf.seq_start,rf.seq_end,rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
+  my $statement = "SELECT rf.id,rf.seq_start+sgp.chr_start,rf.seq_end+sgp.chr_start,
+                          rf.strand,rf.score,rf.analysis,rf.hstart,rf.hend,rf.hid,
                           sgp.raw_ori,sgp.chr_start,sgp.chr_end 
                    FROM   repeat_feature rf,static_golden_path sgp
                    WHERE  sgp.raw_id = rf.contig
@@ -748,7 +747,6 @@ sub get_all_RepeatFeatures {
       (undef,\$fid,\$start,\$end,\$strand,\$score,\$analysisid,\$hstart,\$hend,\$hid,\$raw_ori,\$chr_start,\$chr_end);
 
  
-  print STDERR "testing features\n";
 
 
  my @distinct_features;  
@@ -757,8 +755,7 @@ sub get_all_RepeatFeatures {
      
      my $out;
      my $analysis;
-     
-     
+          
      foreach my $arrayref(@distinct_features){
 	 if ($start>=$arrayref->[0] && $end<=$arrayref->[1] && $analysisid == $arrayref->[2]){next FEATURE;}
      }
@@ -775,7 +772,7 @@ sub get_all_RepeatFeatures {
      
      
       if ($start>=$glob_start && $end<=$glob_end){
-	  
+
 	  $start=$start-$glob_start;
 	  $end=$end-$glob_start;
 	  
