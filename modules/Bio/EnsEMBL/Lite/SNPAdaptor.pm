@@ -108,9 +108,6 @@ sub fetch_by_Slice {
     push @snps, $snp;
   }
 	
-
-  print STDERR "Returning " . scalar @snps . " snps\n";
-
   return @snps;
 }
     
