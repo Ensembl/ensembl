@@ -306,7 +306,6 @@ CREATE TABLE supporting_feature (
 CREATE TABLE transcript (
   transcript_id       INT UNSIGNED NOT NULL auto_increment,  
   gene_id             INT UNSIGNED NOT NULL,          # foreign key gene:gene_id
-  exon_count          int NOT NULL,
   seq_region_id          int(10) unsigned NOT NULL, 
   seq_region_start       int(10) unsigned NOT NULL, 
   seq_region_end         int(10) unsigned NOT NULL, 
