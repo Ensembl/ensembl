@@ -109,6 +109,8 @@ sub fetch {
     my($disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species,$freeze);
     ($id,$disk_id,$cgp,$sv,$emblid,$htgsp,$chr,$species,$freeze)=
 	$self->_dbobj->get_id_acc($id);
+        # data fix for chr (some data is stored in chr dbmfile as 05 instead of 5)
+        $chr=~s/^0+//;
     if($id eq 'unk'){
 	$self->throw("Cannot get accession for $disk_id");
     }
