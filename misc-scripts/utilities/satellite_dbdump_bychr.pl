@@ -361,7 +361,7 @@ sub dump_embl  {
     my $sql;
 
     $sql="
-SELECT cl.*
+SELECT distinct cl.*
   FROM $litedb.gene lg,
        $satdb.clone cl
  WHERE lg.chr_name = '$chr'
@@ -370,7 +370,7 @@ SELECT cl.*
     dump_data($sql, $satdb, 'clone');
 
     $sql="
-SELECT ctg.*
+SELECT distinct ctg.*
   FROM $litedb.gene lg,
        $satdb.clone cl, 
        $satdb.contig ctg
@@ -380,7 +380,7 @@ SELECT ctg.*
 ";
     dump_data($sql, $satdb, 'contig');
     $sql ="
-SELECT dna.*
+SELECT distinct dna.*
   FROM $litedb.gene lg,
        $satdb.clone cl, 
        $satdb.contig ctg,
