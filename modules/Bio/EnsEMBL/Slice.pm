@@ -61,13 +61,12 @@ use Bio::EnsEMBL::Utils::Exception qw(throw deprecate warning);
                string VERSION (optional, defaults to '')
                int    STRAND, (optional, defaults to 1)
                Bio::EnsEMBL::DBSQL::SliceAdaptor ADAPTOR (optional)
-  Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => 'chromosome',
+  Example    : $slice = Bio::EnsEMBL::Slice->new(-coord_system => $cs,
                                                  -start => 1,
-						 -end => 10000,
+                                                 -end => 10000,
                                                  -strand => 1,
-						 -seq_region_name => 'X',
-                                                 -version => 'NCBI33',
-					         -adaptor => $slice_adaptor);
+                                                 -seq_region_name => 'X',
+                                                 -adaptor => $slice_adaptor);
   Description: Creates a new slice object.  A slice represents a region
                of sequence in a particular coordinate system.  Slices can be
                used to retrieve sequence and features from an area of
@@ -93,18 +92,21 @@ sub new {
   #new can be called as a class or object method
   my $class = ref($caller) || $caller;
 
-  my ($coord_system, $seq_region_name, $version,
+  my ($coord_system, $seq_region_name
       $start, $end, $strand, $adaptor) =
-        rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME VERSION
+        rearrange([qw(COORD_SYSTEM SEQ_REGION_NAME
                       START END STRAND ADAPTOR)], @_);
 
-  $coord_system     || throw('COORD_SYSTEM argument is required');
   $seq_region_name  || throw('SEQ_REGION_NAME argument is required');
   defined($start)   || throw('START argument is required');
   defined($end)     || throw('END argument is required');
   ($start <= $end)  || throw('start must be less than or equal to end');
 
-  $version ||= '';
+
+  if(!$coord_system || !ref($coord_system) ||
+     !$coord_system->isa('Bio::EnsEMBL::CoordSystem')) {
+    throw('COORD_SYSTEM argment must be a Bio::EnsEMBL::CoordSystem');
+  }
 
   #strand defaults to 1 if not defined
   $strand ||= 1;
@@ -121,7 +123,6 @@ sub new {
 
   return bless {'coord_system'    => $coord_system,
                 'seq_region_name' => $seq_region_name,
-                'version'         => $version,
                 'start'           => $start,
                 'end'             => $end,
                 'strand'          => $strand,
@@ -183,36 +184,13 @@ sub seq_region_name {
 }
 
 
-=head2 seq_region_name
-
-  Arg [1]    : none
-  Example    : $version = $slice->version;
-  Description: Returns the version of the seq_region that this slice is on. For
-               example if this slice is in chromosomal coordinates the
-               version might reflect the version of the assembly such as
-               'NCBI33'.  For a clone the version might be something like
-               '4'.  Some sequences may not have any version at all, in which
-               case this will return an empty string.
-  Returntype : string
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub version {
-  my $self = shift;
-  return $self->{'version'};
-}
-
 
 =head2 coord_system
 
   Arg [1]    : none
-  Example    : $cs = $slice->coord_system;
-  Description: Returns the name of the coordinate system that this slice is
-               in.  This could be 'chromosome', 'contig', 'clone', 'NTcontig',
-               etc.
-  Returntype : string
+  Example    : print $slice->coord_system->name();
+  Description: Returns the coordinate system that this slice is on.
+  Returntype : Bio::EnsEMBL::CoordSystem
   Exceptions : none
   Caller     : general
 
@@ -312,9 +290,9 @@ sub name {
   my $self = shift;
 
   return join(':',
-              $self->{'coord_system'},
+              $self->{'coord_system'}->name(),
+              $self->{'coord_system'}->version(),
               $self->{'seq_region_name'},
-              $self->{'version'},
               $self->{'start'},
               $self->{'end'},
               $self->{'strand'});
