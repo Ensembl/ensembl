@@ -1296,6 +1296,10 @@ sub get_Transcript{
             AND tscript.translation = transl.id
 	    AND cl.internal_id = con.clone
 	    AND tscript.id = '$transid'
+	    ORDER BY tscript.gene
+                     , tscript.id
+                     , e_t.rank
+                     , exon.sticky_rank
 	    };
     
 #    print STDERR "Query is " . $query . "\n";
