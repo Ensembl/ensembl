@@ -572,3 +572,11 @@ CREATE TABLE externalDB(
          url_pattern VARCHAR(255),
          PRIMARY KEY( externalDBId ) 
    	);
+
+CREATE TABLE contig_landmarkMarker (
+       contig int(10) NOT NULL,
+       marker varchar(40) NOT NULL,
+       name   varchar(40) NOT NULL,
+       KEY (contig,marker),
+       KEY (marker)
+       );
