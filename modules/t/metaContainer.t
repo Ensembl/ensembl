@@ -32,7 +32,7 @@ ok($mc);
 #
 
 my ($asm_default) = @{$mc->list_value_by_key('assembly.default')};
-ok($asm_default eq 'NCBI_30');
+ok($asm_default eq 'NCBI34');
 
 
 #
