@@ -65,8 +65,6 @@ use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 sub generic_fetch {
   my ($self, $constraint, $mapper, $slice) = @_;
 
-  $options ||= {};
-
   my $columns = join(', ', $self->_columns());
 
   my $db = $self->db();
@@ -75,14 +73,14 @@ sub generic_fetch {
 
   # if there is a slice constraint we remove the constraints ...
   unless( $constraint =~ /seq_region_id/ || $constraint eq "" ) {
-    $sql .= "WHERE $constraint";
+    $sql .= " WHERE $constraint";
   }
 
   my $sth = $db->prepare($sql);
 
   $sth->execute;
 
-  my $res = $self->_objs_from_sth($sth, $mapper, $slice, $options);
+  my $res = $self->_objs_from_sth($sth, $mapper, $slice);
 
   return $res;
 }
@@ -121,7 +119,9 @@ sub _tables {
 sub _columns {
   my $self = shift;
 
-  return qw( ae.seq_region_id ae.seq_region_start ae.seq_region_end ae.exc_type ae.exc_seq_region_id ae.exc_seq_region_start ae.exc_seq_region_end );
+  return qw( ae.seq_region_id ae.seq_region_start ae.seq_region_end 
+             ae.exc_type ae.exc_seq_region_id ae.exc_seq_region_start 
+             ae.exc_seq_region_end );
 }
 
 
@@ -148,34 +148,37 @@ sub _objs_from_sth {
   my ($seq_region_id, $seq_region_start, $seq_region_end, $type,
       $exc_seq_region_id, $exc_seq_region_start, $exc_seq_region_end);
 
-  $sth->bind_columns(\$seq_region_id, \$seq_region_start, \$seq_region_end, \$type,
-		     \$exc_seq_region_id, \$exc_seq_region_start, \$exc_seq_region_end);
+  $sth->bind_columns(\$seq_region_id, \$seq_region_start, \$seq_region_end, 
+                     \$type, \$exc_seq_region_id, \$exc_seq_region_start, 
+                     \$exc_seq_region_end);
 
   while ($sth->fetch()) {
 
     my $sr_slice  = $slice_adaptor->fetch_by_seq_region_id($seq_region_id);
     my $exc_slice = $slice_adaptor->fetch_by_seq_region_id($exc_seq_region_id);
 
-    # each row creates TWO features, each of which has alternate_slice pointing to the "other" one
+    # each row creates TWO features, each of which has alternate_slice 
+    # pointing to the "other" one
 
     push @features,
-      Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'           => $seq_region_start,
-						  '-end'             => $seq_region_end,
-						  '-strand'          => 1,
-						  '-adaptor'         => $self,
-						  '-slice'           => $sr_slice,
-						  '-alternate_slice' => $exc_slice,
-						  '-type'            => $type);
+      Bio::EnsEMBL::AssemblyExceptionFeature->new
+          ('-start'           => $seq_region_start,
+           '-end'             => $seq_region_end,
+           '-strand'          => 1,
+           '-adaptor'         => $self,
+           '-slice'           => $sr_slice,
+           '-alternate_slice' => $exc_slice,
+           '-type'            => $type);
 
     push @features, 
-      Bio::EnsEMBL::AssemblyExceptionFeature->new('-start'           => $exc_seq_region_start,
-						  '-end'             => $exc_seq_region_end,
-						  '-strand'          => 1,
-						  '-adaptor'         => $self,
-						  '-slice'           => $exc_slice,
-						  '-alternate_slice' => $sr_slice,
-						  '-type'            => $type);
-
+      Bio::EnsEMBL::AssemblyExceptionFeature->new
+          ('-start'           => $exc_seq_region_start,
+           '-end'             => $exc_seq_region_end,
+           '-strand'          => 1,
+           '-adaptor'         => $self,
+           '-slice'           => $exc_slice,
+           '-alternate_slice' => $sr_slice,
+           '-type'            => $type);
   }
 
   return \@features;
