@@ -29,13 +29,6 @@ INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-
 
 
 
-#
-# Dumping data for table 'genetype'
-#
-
-INSERT INTO genetype (gene_id, type) VALUES ('gene-id-1','ensembl');
-
-
 INSERT INTO dna (id, sequence, created) 
 VALUES (1, 'AAAAA', '2000-04-27 08:31:59');
 INSERT INTO dna (id, sequence, created) 
