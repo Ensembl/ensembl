@@ -339,28 +339,28 @@ sub _objs_from_sth {
     #if this feature is not being used, skip all rows related to it
     next if($throw_away == $misc_feature_id);
 
-    if($current == $misc_feature_id) {
+    if ($current == $misc_feature_id) {
       #still working on building up attributes and sets for current feature
 
       #if there is a misc_set, add it to the current feature
-      if($misc_set_id) {
+      if ($misc_set_id) {
         my $misc_set = $ms_hash{$misc_set_id} ||=
           $msa->fetch_by_dbID($misc_set_id);
-        if( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
-	  $feat->add_MiscSet( $misc_set );
-	  $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
-	}
+        if ( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
+          $feat->add_MiscSet( $misc_set );
+          $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
+        }
       }
 
       #if there is a new attribute add it to the current feature
-      if($attrib_value && $attrib_type_code &&
-         !$seen_attribs->{"$attrib_type_code:$attrib_value"}) {
-	my $attrib = Bio::EnsEMBL::Attribute->new
-	  ( -CODE => $attrib_type_code,
-	    -NAME => $attrib_type_name,
-	    -DESC => $attrib_type_description,
-	    -VALUE => $attrib_value
-	  );
+      if ($attrib_value && $attrib_type_code &&
+          !$seen_attribs->{"$attrib_type_code:$attrib_value"}) {
+        my $attrib = Bio::EnsEMBL::Attribute->new
+          ( -CODE => $attrib_type_code,
+            -NAME => $attrib_type_name,
+            -DESC => $attrib_type_description,
+            -VALUE => $attrib_value
+          );
 	
 	
         $feat_attribs ||= [];
@@ -369,10 +369,10 @@ sub _objs_from_sth {
       }
 
     } else {
-      if($feat) {
+      if ($feat) {
         #start working on a new feature, discard references to last one
         $feat = {};
-        $feat_attribs = {};
+        $feat_attribs = [];
         $feat_misc_sets = {};
         $seen_attribs = {};
       }
@@ -380,7 +380,7 @@ sub _objs_from_sth {
       $current = $misc_feature_id;
       my $slice = $slice_hash{"ID:".$seq_region_id};
 
-      if(!$slice) {
+      if (!$slice) {
         $slice = $sa->fetch_by_seq_region_id($seq_region_id);
         $slice_hash{"ID:".$seq_region_id} = $slice;
         $sr_name_hash{$seq_region_id} = $slice->seq_region_name();
@@ -391,7 +391,7 @@ sub _objs_from_sth {
       # remap the feature coordinates to another coord system
       # if a mapper was provided
       #
-      if($mapper) {
+      if ($mapper) {
         my $sr_name = $sr_name_hash{$seq_region_id};
         my $sr_cs   = $sr_cs_hash{$seq_region_id};
 
@@ -400,11 +400,14 @@ sub _objs_from_sth {
                            $seq_region_strand, $sr_cs);
 
         #skip features that map to gaps or coord system boundaries
-        next FEATURE if(!defined($sr_name));
+        if(!defined($sr_name)) {
+          $throw_away = $misc_feature_id;
+          next FEATURE;
+        }
 
         #get a slice in the coord system we just mapped to
-        if($asm_cs == $sr_cs ||
-           ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
+        if ($asm_cs == $sr_cs ||
+            ($cmp_cs != $sr_cs && $asm_cs->equals($sr_cs))) {
           $slice = $slice_hash{"NAME:$sr_name:$cmp_cs_name:$cmp_cs_vers"} ||=
             $sa->fetch_by_region($cmp_cs_name, $sr_name,undef, undef, undef,
                                  $cmp_cs_vers);
@@ -419,36 +422,36 @@ sub _objs_from_sth {
       # If a destination slice was provided convert the coords
       # If the dest_slice starts at 1 and is foward strand, nothing needs doing
       #
-      if($dest_slice) {
-	if($dest_slice_start != 1 || $dest_slice_strand != 1) {
-	  if($dest_slice_strand == 1) {
-	    $seq_region_start = $seq_region_start - $dest_slice_start + 1;
-	    $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
-	  } else {
-	    my $tmp_seq_region_start = $seq_region_start;
-	    $seq_region_start = $dest_slice_end - $seq_region_end + 1;
-	    $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
-	    $seq_region_strand *= -1;
-	  }
+      if ($dest_slice) {
+        if ($dest_slice_start != 1 || $dest_slice_strand != 1) {
+          if ($dest_slice_strand == 1) {
+            $seq_region_start = $seq_region_start - $dest_slice_start + 1;
+            $seq_region_end   = $seq_region_end   - $dest_slice_start + 1;
+          } else {
+            my $tmp_seq_region_start = $seq_region_start;
+            $seq_region_start = $dest_slice_end - $seq_region_end + 1;
+            $seq_region_end   = $dest_slice_end - $tmp_seq_region_start + 1;
+            $seq_region_strand *= -1;
+          }
 
-	  #throw away features off the end of the requested slice
-	  if($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
-	    #flag this feature as one to throw away
-	    $throw_away = $misc_feature_id;
-	    next FEATURE;
-	  }
-	}
+          #throw away features off the end of the requested slice
+          if ($seq_region_end < 1 || $seq_region_start > $dest_slice_length) {
+            #flag this feature as one to throw away
+            $throw_away = $misc_feature_id;
+            next FEATURE;
+          }
+        }
         $slice = $dest_slice;
       }
 
 
-      if($attrib_value && $attrib_type_code) {
-	my $attrib = Bio::EnsEMBL::Attribute->new
-	  ( -CODE => $attrib_type_code,
-	    -NAME => $attrib_type_name,
-	    -DESC => $attrib_type_description,
-	    -VALUE => $attrib_value
-	  );
+      if ($attrib_value && $attrib_type_code) {
+        my $attrib = Bio::EnsEMBL::Attribute->new
+          ( -CODE => $attrib_type_code,
+            -NAME => $attrib_type_name,
+            -DESC => $attrib_type_description,
+            -VALUE => $attrib_value
+          );
         $feat_attribs = [$attrib];
         $seen_attribs->{"$attrib_type_code:$attrib_value"} = 1;
       }
@@ -463,14 +466,14 @@ sub _objs_from_sth {
           'attributes' => $feat_attribs });
       push @features, $feat;
 
-      if($misc_set_id) {
+      if ($misc_set_id) {
         #get the misc_set object
         my $misc_set = $ms_hash{$misc_set_id} ||=
           $msa->fetch_by_dbID($misc_set_id);
-        if( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
-	  $feat->add_MiscSet( $misc_set );
-	  $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
-	}
+        if ( ! exists $feat_misc_sets->{$misc_set->{'code'}} ) {
+          $feat->add_MiscSet( $misc_set );
+          $feat_misc_sets->{$misc_set->{'code'}} = $misc_set;
+        }
       }
     }
   }
