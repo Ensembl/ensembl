@@ -60,9 +60,7 @@ use Bio::EnsEMBL::DBSQL::Clone;
 use Bio::EnsEMBL::Gene;
 use Bio::EnsEMBL::Exon;
 use Bio::EnsEMBL::Transcript;
-
 use DBI;
-use FileHandle;
 
 use Bio::EnsEMBL::DBSQL::DummyStatement;
 
@@ -109,7 +107,6 @@ sub _initialize {
   }
   my $dsn = "DBI:$driver:database=$db;host=$host";
 
-
   if( $debug && $debug > 10 ) {
       $self->_db_handle("dummy dbh handle in debug mode $debug");
   } else {
@@ -123,14 +120,7 @@ sub _initialize {
       }
      
       $self->_db_handle($dbh);
-      my $sth = $self->prepare("select dna_dir from meta");
-      my $res = $sth->execute();
-      
-      my $rowhash = $sth->fetchrow_hashref();
-      $self->_dna_directory($rowhash->{'dna_dir'});
-
   }
-
 
 # set stuff in self from @args
   return $make; # success - we hope!
@@ -321,12 +311,12 @@ sub get_Clone{
 sub get_Contig{
    my ($self,$id) = @_;
 
-   #my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
-   my $sth = $self->prepare("select id from contig where id = \"$id\"");
+   my $sth = $self->prepare("select p1.id,p2.id from dna as p1,contig as p2 where p2.id = '$id'");
+
    $sth->execute;
    my $rowa = $sth->fetchrow_arrayref;
    
-   if( ! $rowa->[0] ) {
+   if( ! $rowa->[0] || ! $rowa->[1] ) {
        $self->throw("Contig $id does not exist in the database or does not have DNA sequence");
    }
 
@@ -720,42 +710,6 @@ sub write_Contig {
    return 1;
 }
 
-=head2 write_Seq
-
- Title   : write_Seq
- Usage   : $self->write_Seq($seq)
- Function: writes the actual sequence to a file
-           really a subroutine for write_Contig -
-           you should not be wanting to call this directly
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub write_Seq{
-   my ($self,$seq,$id) = @_;
-   my $seqio;
-   if( ! $id ) {
-       $self->throw("write_Seq seq,id");
-   }
-
-   if( !defined $seq || $seq->isa("Bio::Seq") ) {
-       $self->throw("passed in no Bio::Seq object but a $seq");
-   }
-   
-   my ($fh,$filename) = $self->_writeable_dna_filehandle();
-   
-   my $byteposition = $fh->tell();
-   my $seqio = Bio::SeqIO::Fasta->new( -fh => $fh);
-   
-   $seqio->write_seq($seq);
-   my $sth =$self->prepare("insert into dnafindex (contigid,filename,bytepostion) values('$id','$filename',$byteposition)");
-   $sth->execute();   
-}
-
-
 =head2 write_Clone
 
  Title   : write_Clone
@@ -886,8 +840,6 @@ sub _flush_seq_cache{
 
 }
 
-
-
 =head2 _debug
 
  Title   : _debug
@@ -982,94 +934,6 @@ sub _unlock_tables{
    my $rv = $sth->execute();
    $self->throw("Failed to unlock tables") unless $rv;
    %{$self->{'_lock_table_hash'}} = ();
-}
-
-=head2 _writeable_dna_filehandle
-
- Title   : _writeable_dna_filehandle
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _writeable_dna_filehandle{
-   my ($self) = @_;
-
-   if( !defined $self->{'_writeable_file'} ) {
-       my $sth = $self->prepare("lock table meta;");
-       $sth->execute();
-
-       $sth = $self->prepare("select name,write_number from meta");
-       $sth->execute();
-       my $rowhash = $sth->fetchrow_hashref();
-       my $number = $rowhash->{'write_number'};
-       my $name   = $rowhash->{'name'};
-       $number++;
-       $sth = $self->prepare("replace into meta write_number values ($number) select write_number from meta where name = '$name'");
-       $sth->execute();
-
-       # now build a file with this session number
-
-       my $filename = "ens_$number.dna";
-       $self->{'_writeable_file'} = $filename;
-   }
-
-   # open file handle, seek to the end
-
-   my $fh = new FileHandle;
-   my $openf = ">>".$self->_dna_directory."/".$self->{'_writeable_file'};
-   $fh->open($openf) || do { $self->throw("Could not open $openf for writing, $!\n"); };
-   return $fh;
-}
-
-=head2 _dna_filehandle
-
- Title   : _dna_filehandle
- Usage   :
- Function:
- Example :
- Returns : 
- Args    :
-
-
-=cut
-
-sub _dna_filehandle {
-   my ($self,$filename) = @_;
-
-   my $fh = new FileHandle;
-   my $file = $self->_dna_directory."/".$filename;
-   $fh->open($file) || do {
-       $self->throw("Attempting to open $file as a dna filename, but file open error $? occured");
-   };
-
-   return $fh;
-
-}
-
-=head2 _dna_directory
-
- Title   : _dna_directory
- Usage   : $obj->_dna_directory($newval)
- Function: 
- Returns : value of _dna_directory
- Args    : newvalue (optional)
-
-
-=cut
-
-sub _dna_directory{
-   my $obj = shift;
-   if( @_ ) {
-      my $value = shift;
-      $obj->{'_dna_directory'} = $value;
-    }
-    return $obj->{'_dna_directory'};
-
 }
 
 
