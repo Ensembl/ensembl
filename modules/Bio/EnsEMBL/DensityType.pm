@@ -38,6 +38,8 @@ use strict;
 use warnings;
 
 package Bio::EnsEMBL::DensityType;
+
+use Bio::EnsEMBL::Storable;
 use Bio::EnsEMBL::Utils::Argument qw(rearrange);
 use Bio::EnsEMBL::Utils::Exception qw(throw);
 
@@ -56,7 +58,7 @@ use vars qw(@ISA);
   Description: Creates a new Density Type object
   Returntype : Bio::EnsEMBL::DensityType
   Exceptions : blocksize > 0, 
-               valuetype must be 'sum' or ratio',
+               valuetype must be 'sum' or 'ratio',
                valid analysis object must be passed
   Caller     : general
 
@@ -64,9 +66,9 @@ use vars qw(@ISA);
 
 
 sub new {
-  my $caller = shift;
+  my $class = shift;
 
-  my $class = ref($caller) || $caller;
+  my $self = $class->SUPER::new(@_);
 
   my ($analysis, $block_size, $value_type) = 
     rearrange(['ANALYSIS','BLOCK_SIZE','VALUE_TYPE'],@_);
@@ -87,9 +89,11 @@ sub new {
     throw('-BLOCK_SIZE must be greater than 0'); 
   }
 
-  return bless({'analysis'   => $analysis,
-		'block_size' => $block_size,
-		'value_type' => $value_type});
+  $self->{'analysis'} = $analysis;
+  $self->{'block_size'} = $block_size;
+  $self->{'value_type'} = $value_type;
+
+  return $self;
 }
 
 =head2 analysis
@@ -102,59 +106,54 @@ sub new {
   Caller     : general
 
 =cut
-  
+
 sub analysis{
-  my ($self,$arg) = @_;
-  
-  if (defined($arg)) {
-    $self->{analysis} = $arg;
+  my $self = shift;
+
+  if(@_) {
+    my $a = shift;
+    if(defined($a) && (!ref($a) || !$a->isa('Bio::EnsEMBL::Analysis'))) {
+      throw("Argument must be undef or a Bio::EnsEMBL::Analysis object.");
+    }
+    $self->{'analysis'} = $a;
   }
-
-
-  return $self->{analysis};
+  return $self->{'analysis'};
 }
 
 =head2 value_type
 
-  Arg [1]    : string $analysis
+  Arg [1]    : string $value_type
   Example    : none
-  Description: get/set for attribute analysis
-  Returntype : Bio::EnsE
+  Description: gettter/setter for the 
+  Returntype : float
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub value_type{
-  my ($self,$arg) = @_;
-  
-  if (defined($arg)) {
-    $self->{'value_type'} = $arg;
-  }
-
-
+  my $self = shift;
+  $self->{'value_type'} = shift if(@_);
   return $self->{'value_type'};
 }
 
+
 =head2 block_size
 
-  Arg [1]    : string
+  Arg [1]    : int
   Example    : none
-  Description: get/set for attribute block_size
-  Returntype : string
+  Description: getter/setter for attribute block_size
+  Returntype : int
   Exceptions : none
   Caller     : general
 
 =cut
 
 sub block_size{
-  my ($self,$arg) = @_;
-  
-  if (defined($arg)) {
-    $self->{'block_size'} = $arg;
-  }
-
-
+  my $self = shift;
+  $self->{'block_size'} = shift if(@_);
   return $self->{'block_size'};
 }
-  
+
+
+1;
