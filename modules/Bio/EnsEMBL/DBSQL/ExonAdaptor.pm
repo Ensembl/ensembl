@@ -476,7 +476,6 @@ sub store {
   }
 
   if ($exon->stable_id) {
-    print STDERR "stable id is defined as ".$exon->stable_id."\n";
     if (!$exon->created || 
         !$exon->modified ||
         !$exon->version) {
@@ -491,7 +490,6 @@ sub store {
                                "'" . $exon->stable_id . "'," .
                                "FROM_UNIXTIME(".$exon->created."),".
                                "FROM_UNIXTIME(".$exon->modified."))";
-    print "preparing ".$statement."\n";
      my $sth = $self->prepare($statement);
      $sth->execute();
    }
