@@ -1,4 +1,5 @@
 
+
 #
 # Ensembl module for Bio::EnsEMBL::Virtual::StaticContig
 #
@@ -273,8 +274,17 @@ sub get_all_SimilarityFeatures_above_score{
 	return ();
     }
 
+    print STDERR "SIMI: got bump factor ",$bp,"\n";
+
     if( ! defined $self->{'_feature_cache'} ) {
       &eprof_start('similarity-query');
+
+
+      #
+      # EB. DO NOT remove the sort by hid as it is crucial for the 
+      # glob factor below. Tony will have your testicles (unless you
+      # are a lady in which case lets not talk about it)
+      #
 
       my    $statement = "SELECT f.id, 
                         IF     (sgp.raw_ori=1,(f.seq_start+sgp.chr_start-sgp.raw_start-$glob_start),
@@ -291,8 +301,11 @@ sub get_all_SimilarityFeatures_above_score{
                         AND    a.id = f.analysis
                         AND    f.score > $score
                         AND    a.db in ('unigene.seq','sptr','embl_vertrna')
-                        ORDER  by start";
-      #open(T,">>/tmp/stat.sql");
+                        ORDER  by hid,start";
+      # PLEASE READ THE COMMENT ABOVE if you want to remove the sort by hid
+
+
+      #open(T,">>/tmp/stat2.sql");
       #print T $statement,"\n";
       #close(T);
 
@@ -353,6 +366,7 @@ sub get_all_SimilarityFeatures_above_score{
 	  $count++;
       }
       
+      print STDERR "FEATURE: got $count in entire call\n";
       &eprof_end('similarity-obj');
       
   }
@@ -388,7 +402,10 @@ sub get_all_SimilarityFeatures_above_score{
 sub get_all_SimilarityFeatures_by_strand{
    my ($self, $analysis_type, $score, $bp,$strand) = @_;
 
+   &eprof_start("similarity-by-strand");
+   &eprof_start("similarity-by-strand-call-to-score");
    my @features = $self->get_all_SimilarityFeatures_above_score($analysis_type, $score, $bp);
+   &eprof_end("similarity-by-strand-call-to-score");
    my (@f);
 
    foreach my $f (@features) {
@@ -399,7 +416,8 @@ sub get_all_SimilarityFeatures_by_strand{
 	   push(@f,$f);
        }
    }
-
+   &eprof_end("similarity-by-strand");
+   print STDERR "Returning ",scalar(@f)," features for ",$analysis_type,"\n";
    return (@f);
 }
 
