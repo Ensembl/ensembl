@@ -569,6 +569,38 @@ sub remove {
   $exon->{dbID} = undef;
 }
 
+=head2 list_dbIDs
 
+  Arg [1]    : none
+  Example    : @g_ids = $exon_adaptor->list_dbIDs();
+  Description: Gets an array of internal ids for all exons in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("exon");
+}
+
+=head2 list_stable_dbIDs
+
+  Arg [1]    : none
+  Example    : @stable_exon_ids = $exon_adaptor->list_stable_dbIDs();
+  Description: Gets an array of stable ids for all exons in the current db
+  Returntype : list of ints
+  Exceptions : none
+  Caller     : ?
+
+=cut
+
+sub list_stable_dbIDs {
+   my ($self) = @_;
+
+   return $self->_list_dbIDs("exon_stable_id", "stable_id");
+}
 
 1;
