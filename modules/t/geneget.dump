@@ -12,14 +12,6 @@ VALUES (4, 'contig4', 1, 6, 4, 0, NULL, 'chromosome1', 'international-d');
 INSERT INTO contig (internal_id, id, clone, length, dna, offset, corder, chromosomeId, international_id) 
 VALUES (5, 'contig5', 1, 5, 5, 0, NULL, 'chromosome1', 'international-e');
 
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
-VALUES (1, 2, 'right2left', 4, 1, 'TEST', 1);
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
-VALUES (2, 3, 'right2left', 5, 1, 'TEST', 1);
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
-VALUES (3, 4, 'right2left', 3, 2, 'TEST', 1);
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
-VALUES (4, 5, 'right2left', 5, 2, 'TEST', 1);
  
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',1,2,4,1,0,1);
 INSERT INTO exon (id,contig,seq_start,seq_end,sticky_rank,phase,strand) VALUES ('exon-1',2,2,4,2,0,1);

@@ -9,8 +9,6 @@ VALUES (2, 'contig2', 1, 40, 2, 0, NULL, 'chromosome1', 'international-b');
 
 INSERT INTO static_golden_path (fpcctg_name,chr_name,raw_id,fpcctg_start,fpcctg_end,chr_start,chr_end,raw_start,raw_end,raw_ori,type) VALUES ('ctg123','chr2',1,3000,3040,122300,122338,2,40,1,'UCSC');
 
-INSERT INTO contigoverlap (dna_a_id, dna_b_id, overlap_type, contig_a_position, contig_b_position, overlap_source, overlap_size)
-VALUES (1, 2, 'right2left', 19, 1, 'TEST', 0);
 
 
 INSERT INTO dna (id, sequence, created) 
@@ -73,8 +71,6 @@ INSERT INTO genetype (gene_id, type) VALUES ('gene-id-1','ensembl');
 
 INSERT INTO translation (id,start_exon,seq_start,end_exon,seq_end) VALUES ('trl-1','exon-1',2,'exon-2',6);
 
-INSERT INTO genedblink (gene_id,external_db,external_id) VALUES ('gene-id-1','swissprot','P000123');
-INSERT INTO transcriptdblink (transcript_id,external_db,external_id) VALUES ('transcript-1','embl','AC000012');
 
 
 

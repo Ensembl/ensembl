@@ -21,7 +21,7 @@
 
 
 ## We start with some black magic to print on failure.
-BEGIN { $| = 1; print "1..8\n"; 
+BEGIN { $| = 1; print "1..7\n"; 
 	use vars qw($loaded); }
 END {print "not ok 1\n" unless $loaded;}
 
@@ -43,7 +43,7 @@ $ens_test->do_sql_file("t/db.dump");
 my $db = $ens_test->get_DBSQL_Obj;
 print "ok 2\n";    
 
-$db->contig_overlap_source(\&ret_one);
+# $db->contig_overlap_source(\&ret_one);
 
 
 @cloneids =  $db->get_all_Clone_id();
@@ -89,15 +89,6 @@ eval {
     $contig = $db->get_Contig('AC021078.00017');
 };
 
-$db->extension_tables(1);
-
-$contig->set_attribute('silly','something');
-
-if( $contig->get_attribute('silly') ne 'something' ) {
-    print "not ok 8\n";
-} else {
-    print "ok 8\n";
-}
 
 
 sub ret_one {
