@@ -39,7 +39,7 @@ The rest of the documentation details each of the object methods. Internal metho
 # Let the code begin...
 
 
-package Bio::EnsEMBL::Analysis::ExonPair
+package Bio::EnsEMBL::Analysis::ExonPair;
 
 use vars qw(@ISA);
 use strict;
