@@ -62,7 +62,7 @@ Other fetch functions go by the convention of
 
     @object_array = @{$adaptor->fetch_all_by_XXXX($arguments_for_XXXX)};
 
-sometimes it returns an array ref denoted by the 'all' in the name of the 
+sometimes it returns an array ref denoted by the 'all' in the name of the
 method, sometimes an individual object. For example
 
     $gene = $gene_adaptor->fetch_by_stable_id($stable_id);
@@ -85,18 +85,17 @@ Post questions to the EnsEMBL developer mailing list: <ensembl-dev@ebi.ac.uk>
 
 =head1 APPENDIX
 
-The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+The rest of the documentation details each of the object methods.
+Internal methods are usually preceded with a _
 
 =cut
-
-
-# Let the code begin...
-
 
 package Bio::EnsEMBL::DBSQL::BaseAdaptor;
 use vars qw(@ISA);
 use strict;
 use Bio::EnsEMBL::Root;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw);
 
 @ISA = qw(Bio::EnsEMBL::Root);
 
@@ -122,7 +121,7 @@ sub new {
     bless $self,$class;
 
     if( !defined $dbobj || !ref $dbobj ) {
-        $self->throw("Don't have a db [$dbobj] for new adaptor");
+        throw("Don't have a db [$dbobj] for new adaptor");
     }
 
     if($dbobj->isa('Bio::EnsEMBL::Container')) {
