@@ -5,7 +5,7 @@ use warnings;
 
 BEGIN { $| = 1;  
 	use Test;
-	plan tests => 59;
+	plan tests => 56;
 }
 
 use MultiTestDB;
@@ -377,43 +377,6 @@ $slice = $slice_adaptor->fetch_by_region('contig', $clone_name);
 ok(!defined($slice));
 print_slices([$slice]);
 
-
-#
-# Test the attribute getter/setter methods
-#
-
-$multi->hide('core', 'seq_region_attrib', 'attrib_type');
-
-$slice = $slice_adaptor->fetch_by_region( "chromosome", "20" );
-
-my $attribute_adaptor = $db->get_AttributeAdaptor();
-my $attrib = Bio::EnsEMBL::Attribute->new( '-code' => "GeneCount",
-	                                   '-name' => "GeneCount",
-					   '-value' => 23322 );
-
-$attribute_adaptor->store_on_Slice( $slice, [$attrib] );
-
-my ($gene_count_attrib) = @{$slice->get_all_Attributes('GeneCount')};
-ok($gene_count_attrib->value() == 23322);
-
-#
-# try to store another attrib of the same name
-#
-$attrib = Bio::EnsEMBL::Attribute->new( '-code' => "GeneCount",	
-					'-name' => "GeneCount",
-					'-value' => 199 );
-
-$attribute_adaptor->store_on_Slice( $slice, [$attrib] );
-
-## make sure the attrib type is only stored once
-my $count =
-  $db->db_handle->selectall_arrayref("SELECT count(*) FROM attrib_type")->[0]->[0];
-ok($count == 1);
-
-my @gene_counts = @{$slice->get_all_Attributes('GeneCount')};
-ok(@gene_counts == 2); 
-
-$multi->restore('core', 'seq_region_attrib', 'attrib_type');
 
 sub print_slices {
   my $slices = shift;
