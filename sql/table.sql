@@ -1,6 +1,6 @@
 # MySQL dump 5.13
 #
-# Host: obi-wan    Database: ensembl
+# Host: localhost    Database: ensembl
 #--------------------------------------------------------
 # Server version	3.22.27
 
@@ -54,7 +54,8 @@ CREATE TABLE contig (
   orientation int(1) DEFAULT '1' NOT NULL,
   corder int(10) unsigned,
   dna varchar(40),
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY clone_index (clone)
 );
 
 #
@@ -68,6 +69,29 @@ CREATE TABLE contig_equiv (
   to_contig_id varchar(40),
   to_contig_position int(11),
   to_contig_strand char(1),
+  PRIMARY KEY (id)
+);
+
+#
+# Table structure for table 'db_update'
+#
+CREATE TABLE db_update (
+  id int(10) DEFAULT '0' NOT NULL auto_increment,
+  time_started datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  time_finished datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  clones int(10) DEFAULT '0' NOT NULL,
+  contigs int(10) DEFAULT '0' NOT NULL,
+  genes int(10) DEFAULT '0' NOT NULL,
+  exons int(10) DEFAULT '0' NOT NULL,
+  basepairs int(10) DEFAULT '0' NOT NULL,
+  features int(10) DEFAULT '0' NOT NULL,
+  transcripts int(10) DEFAULT '0' NOT NULL,
+  repeats int(10) DEFAULT '0' NOT NULL,
+  supporting_features int(10) DEFAULT '0' NOT NULL,
+  fsets int(10) DEFAULT '0' NOT NULL,
+  status varchar(40) DEFAULT 'STARTED' NOT NULL,
+  modified_start datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+  modified_end datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   PRIMARY KEY (id)
 );
 
@@ -100,7 +124,8 @@ CREATE TABLE exon (
   phase int(11) DEFAULT '0' NOT NULL,
   end_phase int(11) DEFAULT '0' NOT NULL,
   KEY idx1 (id,contig),
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY contig_index (contig)
 );
 
 #
@@ -160,9 +185,13 @@ CREATE TABLE fset (
 #
 CREATE TABLE fset_feature (
   fset varchar(40) DEFAULT '' NOT NULL,
-  feature varchar(40) DEFAULT '' NOT NULL,
+  feature int(10) unsigned DEFAULT '0' NOT NULL,
   rank int(11) DEFAULT '0' NOT NULL,
-  PRIMARY KEY (fset,feature,rank)
+  KEY ff_index (fset,feature),
+  KEY feature_index (feature),
+  KEY fset_index (fset),
+  KEY feature_fset_index (feature,fset),
+  PRIMARY KEY (feature,fset,rank)
 );
 
 #
@@ -183,7 +212,9 @@ CREATE TABLE gene (
 CREATE TABLE geneclone_neighbourhood (
   clone varchar(40) DEFAULT '' NOT NULL,
   gene varchar(40) DEFAULT '' NOT NULL,
-  PRIMARY KEY (clone,gene)
+  PRIMARY KEY (clone,gene),
+  KEY clone_index (clone),
+  KEY gene_index (gene)
 );
 
 #
@@ -211,7 +242,6 @@ CREATE TABLE mapbin (
 # Table structure for table 'meta'
 #
 CREATE TABLE meta (
-  last_update datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
   donor_database_locator varchar(100) DEFAULT '' NOT NULL,
   offset_time time DEFAULT '00:30:00' NOT NULL,
   schema_version varchar(40) DEFAULT '' NOT NULL
@@ -268,7 +298,8 @@ CREATE TABLE transcript (
   gene varchar(40) DEFAULT '' NOT NULL,
   translation varchar(40) DEFAULT '' NOT NULL,
   PRIMARY KEY (id),
-  KEY id_geneid (id)
+  KEY id_geneid (id),
+  KEY gene_index (gene)
 );
 
 #
