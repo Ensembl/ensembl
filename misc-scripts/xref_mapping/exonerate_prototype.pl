@@ -6,104 +6,70 @@ use IPC::Open3;
 
 # Use exonerate (or other program) to find xref-ensembl obejct mappings
 
+
 # XXX
 my $queryfile = "xref_dna.fasta";
 my $targetfile = "ensembl_transcripts.fasta";
 
-#run_exonerate($queryfile, $targetfile);
-parse_and_store($targetfile);
+run_mapping($queryfile, $targetfile, ".");
+store($targetfile);
 
+sub run_mapping {
 
-=head2 run_exonerate
+  my ($queryfile, $targetfile, $root_dir) = @_;
 
-  Arg[1]     : Query filename to pass to exonerate; this should be the XREF file.
-  Arg[2]     : Target filename to pass to exonerate; this should be the ENSEMBL file.
-  Example    : none
-  Description: submit mapping jobs to LSF via bsub.
-  Returntype : List of strings
-  Exceptions : none
-  Caller     : general
+  # get list of methods
+  my @methods = ("ExonerateBasic", "ExonerateBest1"); # TODO get from Ian, maybe files as well
 
-=cut
+  # foreach method, submit the appropriate job & keep track of the job name
+  my @job_names;
 
-sub run_exonerate {
+  foreach my $method (@methods) {
 
-  my ($query, $target) = @_;
+    my $obj_name = "XrefMapper::Methods::$method";
+    # check that the appropriate object exists
+    eval "require $obj_name";
+    if($@) {
 
-  my $num_jobs = calculate_num_jobs($query);
+      warn("Could not find object $obj_name corresponding to mapping method $method, skipping\n$@");
 
-  # TODO - get root_dir from config
-  my $root_dir = "/nfs/acari/gp1/work/ensembl/misc-scripts/xref_mapping";
+    } else {
 
-  # TODO - get exonerate executable from config
-  my $exonerate_path = "/usr/local/ensembl/bin/exonerate-0.8.3";
+      my $obj = $obj_name->new();
+      my $job_name = $obj->run($queryfile, $targetfile);
+      push @job_names, $job_name;
+      print "Submitted LSF job $job_name to list\n";
+      sleep 1; # make sure unique names really are unique
 
-  # DNA xref - transcript mapping
-
-  my $dna_exonerate_options = join(" ", get_dna_exonerate_options());
-
-  my $unique_name = "mapXrefDNA" . time();
-
-  my $prefix = $root_dir . "/" . basename($query);
-  $prefix =~ s/\.\w+$//;
-
-  my $output = "\$LSB_JOBINDEX.map";
-
-  my @dna_bsub = ( 'bsub', '-J', $unique_name . "[1-$num_jobs]", '-o', "$prefix.%I.out", '-e', "$prefix.%I.err");
-
-  #print "bsub command: " . join(" ", @dna_bsub) . "\n\n";
-
-  # Open a pipe to the stdin of a bsub command with the appropriate options
-  #open( BSUB, '|-' ) or exec (@dna_bsub);
-
-  # Use IPC::Open3 to open the process so that we can read and write from/to its stdout/stderr
-  my ($wtr, $rtr, $etr, $pid);
-  $pid = open3($wtr, $rtr, $etr, @dna_bsub);
-
-  # Create actual execute script to be executed with LSF, and write to pipe
-  my $dna_job = <<EOF;
-. /usr/local/lsf/conf/profile.lsf
-
-cd /tmp
-
-rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
-
-lsrcp ecs1a:$root_dir/$target /tmp/\$LSB_JOBINDEX.$target
-lsrcp ecs1a:$root_dir/$query  /tmp/\$LSB_JOBINDEX.$query
-
-$exonerate_path /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target --querychunkid \$LSB_JOBINDEX --querychunktotal $num_jobs --showvulgar false --showalignment FALSE --ryo "xrefdna:%qi:%ti:%qab:%qae:%tab:%tae:%C:%s\n" $dna_exonerate_options | grep '^xrefdna' > /tmp/$output
-
-lsrcp /tmp/$output ecs1a:$root_dir/$output
-
-rm -f /tmp/\$LSB_JOBINDEX.$query /tmp/\$LSB_JOBINDEX.$target /tmp/$output
-EOF
-
-  # TODO make sure query/target are the right way round
-
-  print $wtr $dna_job;
-
-  #print "Job:\n" . $dna_job . "\n\n";
-
-  close($wtr);
-
-  # Wait until bsub has actually run - will print to its stdout ($rtr) and then close it
-  my $jobid;
-  while (<$rtr>) {
-    if (/Job <([0-9]+)> is/) {
-      $jobid = $1;
-      print "LSF job ID for main mapping job: $jobid \n"
     }
-  }
-  if (!defined($jobid)) {
-    print STDERR "Error: could not get LSF job ID for mapping job\n";
+
+  } # foreach method
+
+  # submit depend job to wait for all mapping jobs
+  submit_depend_job($root_dir, @job_names);
+
+
+} # run_exonerate
+
+
+sub submit_depend_job {
+
+  my ($root_dir, @job_names) = @_;
+
+  # Submit a job that does nothing but wait on the main jobs to
+  # finish. This job is submitted interactively so the exec does not
+  # return until everything is finished.
+
+  # build up the bsub command; first part
+  my @depend_bsub = ('bsub', '-K');
+
+  # one -wended clause for each main job
+  foreach my $job (@job_names) {
+    push @depend_bsub, "-wended($job)";
   }
 
-  # TODO same for protein
-
-  # The above calls to bsub return immediately. We now submit a job that does
-  # nothing but wait on them to finish. This job is submitted interactively
-  # so the exec does not return until everything is finished.
-  my @depend_bsub = ('bsub', '-K', "-wended($unique_name)", '-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err", '/bin/true');
+  # rest of command
+  push @depend_bsub, ('-q', 'small', '-o', "$root_dir/depend.out", '-e', "$root_dir/depend.err", '/bin/true');
 
   #print "depend bsub:\n" . join (" ", @depend_bsub) . "\n";
 
@@ -112,8 +78,8 @@ EOF
   my $depend_jobid;
   while (<$depend_rtr>) {
     if (/Job <([0-9]+)> is/) {
-      $jobid = $1;
-      print "LSF job ID for depend job: $jobid \n" ;
+      $depend_jobid = $1;
+      print "LSF job ID for depend job: $depend_jobid \n" ;
     }
   }
   if (!defined($depend_jobid)) {
@@ -121,12 +87,24 @@ EOF
   }
 
 
-} # run_exonerate
 
+}
 
-sub parse_and_store {
+=head2 store
 
-  my $target_file_name = shift;
+  Arg[1]     : The target file used in the exonerate run. Used to work out the Ensembl object type.
+  Arg[2]     : 
+  Example    : none
+  Description: Parse exonerate output files and build files for loading into target db tables.
+  Returntype : List of strings
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub store {
+
+  my ($target_file_name) = @_;
 
   my $type = get_ensembl_object_type($target_file_name);
 
@@ -139,16 +117,42 @@ sub parse_and_store {
 			 "ensembl",
 			 {'RaiseError' => 1}) || die "Can't connect to database";
 
-  my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
+  # get current highest internal ID from xref and object_xref
+  my $max_xref_id = 0;
+  my $sth = $dbi->prepare("SELECT MAX(xref_id) FROM xref");
+  $sth->execute();
+  my $max_xref_id = ($sth->fetchrow_array())[0];
+  if (!defined $max_xref_id) {
+    print "Can't get highest existing xref_id, using 0\n)";
+  } else {
+    print "Maximum existing xref_id = $max_xref_id\n";
+  }
+  my $max_object_xref_id = 0;
+  $sth = $dbi->prepare("SELECT MAX(object_xref_id) FROM object_xref");
+  $sth->execute();
+  my $max_object_xref_id = ($sth->fetchrow_array())[0];
+  if (!defined $max_object_xref_id) {
+    print "Can't get highest existing object_xref_id, using 1\n)";
+  } else {
+    print "Maximum existing object_xref_id = $max_object_xref_id\n";
+  }
 
-  my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+
+  #my $ox_sth = $dbi->prepare("INSERT INTO object_xref(ensembl_id, ensembl_object_type, xref_id) VALUES(?,?,?)");
+
+  #my $ix_sth = $dbi->prepare("INSERT INTO identity_xref VALUES(?,?,?,?,?,?,?,?,?,?,?)");
 
   # files to write table data to
-  open (OBJECT_XREF, ">object_xref.");
+  open (OBJECT_XREF, ">object_xref.txt");
   open (IDENTITY_XREF, ">identity_xref.txt");
 
   my $total_lines = 0;
   my $total_files = 0;
+
+  my $xref_id = $max_xref_id + 1;
+  my $object_xref_id = $max_object_xref_id + 1;
+
+  # TODO - store xrefs in a file as well
 
   foreach my $file (glob("*.map")) {
 
@@ -165,17 +169,18 @@ sub parse_and_store {
 
       # TODO make sure query & target are the right way around
 
-      print OBJECT_XREF "$target_id\t$type\t$query_id\n";
-      print IDENTITY_XREF "$query_id\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
+      print OBJECT_XREF "$object_xref_id\t$target_id\t$type\t$query_id\n";
+      print IDENTITY_XREF "$object_xref_id\t$query_id\t$target_id\t$query_start\t$query_end\t$target_start\t$target_end\t$cigar_line\t$score\t\\N\t$analysis_id\n";
       # TODO - evalue?
+      $object_xref_id++;
 
       # Store in database
       # create entry in object_xref and get its object_xref_id
-      $ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
-      my $object_xref_id = $ox_sth->{'mysql_insertid'};
+      #$ox_sth->execute($target_id, $type, $query_id) || warn "Error writing to object_xref table";
+      #my $object_xref_id = $ox_sth->{'mysql_insertid'};
 
       # create entry in identity_xref
-      $ix_sth->execute($object_xref_id, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score, undef, $analysis_id) || warn "Error writing to identity_xref table";
+      #$ix_sth->execute($object_xref_id, $query_id, $target_id, $query_start, $query_end, $target_start, $target_end, $cigar_line, $score, undef, $analysis_id) || warn "Error writing to identity_xref table";
 
     }
 
@@ -187,53 +192,6 @@ sub parse_and_store {
   close(OBJECT_XREF);
 
   print "Read $total_lines lines from $total_files exonerate output files\n";
-
-}
-
-=head2 get_protein_exonerate_options
-
-  Args       : none
-  Example    : none
-  Description: Return additional options to pass to exonerate when running protein mapping
-  Returntype : List of strings
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_protein_exonerate_options {
-
-   return();
-
-}
-
-=head2 get_dna_exonerate_options
-
-  Args       : none
-  Example    : none
-  Description: Return additional options to pass to exonerate when running DNA mapping
-  Returntype : List of strings
-  Exceptions : none
-  Caller     : general
-
-=cut
-
-sub get_dna_exonerate_options {
-
-   return("--bestn", "1");
-
-}
-
-
-sub calculate_num_jobs {
-
-  my $query = shift;
-
-  my $bytes_per_job = 250000;
-
-  my $size = (stat $query)[7];
-
-  return int($size/$bytes_per_job);
 
 }
 
