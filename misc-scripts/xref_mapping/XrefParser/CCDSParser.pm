@@ -32,6 +32,8 @@ sub run {
 
   print "Parsed $count CCDS identifiers from $file\n";
 
+  close(CCDS);
+
 }
 
 
