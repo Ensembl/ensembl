@@ -276,7 +276,7 @@ sub _objs_from_sth {
     pop @out;
   } else {
     #set the stable id of the last prediction transcript
-    $out[$#out]->stable_id("$stable_ctg.stable_start.$stable_end");
+    $out[$#out]->stable_id("$stable_ctg.$stable_start.$stable_end");
   }
 
   return \@out;
