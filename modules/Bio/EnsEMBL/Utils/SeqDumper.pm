@@ -855,9 +855,13 @@ sub dump_fasta {
   my $slice = shift;
   my $FH   = shift;
 
-
-  my $species = 
-    $slice->adaptor->db->get_MetaContainer->get_Species->binomial();
+  my $species;
+  my $spec = $slice->adaptor->db->get_MetaContainer->get_Species();
+  if($spec) {
+    $species = $spec->binomial();
+  } else {
+    $species = '';
+  }
   
   my $name = $slice->name;
   my $start = 1;
