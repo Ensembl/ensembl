@@ -83,7 +83,8 @@ sub fetch_all_by_Slice {
 
     #create a snp object through a fast (hacky) constructor
     my $snp = Bio::EnsEMBL::SNP->new_fast(
-		  { '_gsf_start'  => $arrayref->[1] - $slice_start + 1,
+		  { 'dbID'       => $arrayref->[0], 
+		   '_gsf_start'  => $arrayref->[1] - $slice_start + 1,
 		    '_gsf_end'    => $arrayref->[2] - $slice_start + 1,
 		    '_snp_strand' => $arrayref->[3],
 		    '_gsf_score'  => 1,
