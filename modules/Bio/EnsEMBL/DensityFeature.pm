@@ -80,42 +80,38 @@ use vars qw(@ISA);
 
 sub new {
   my $caller = shift;
-  
+
   #allow constructor to be called as class or object method
   my $class = ref($caller) || $caller;
-  
+
   my $self = $class->SUPER::new(@_);
-  
+
   my($seq_region, $start, $end, $dt, $dv) =
-    rearrange(['SEQ_REGION', 'START', 'END', 'DENSITY_TYPE', 'DENSITY_VALUE'], @_);
-  
+    rearrange(['SEQ_REGION', 'START', 'END', 'DENSITY_TYPE', 'DENSITY_VALUE'],
+              @_);
+
   throw("Density value must be >= 0.") if($dv < 0);
-  
+
   if(!defined($dt)){
-#    if(!$dt->isStored()) {
-#      $dt->store();
-#    }
-#  }
-#  else{
     throw("Density Type is NOT optional.");
   }
-  
+
   $self->{'density_type'} = $dt;
   $self->{'density_value'} = $dv;
-  
+
   $self->{'slice'}    = $seq_region;
   $self->{'seq_region_start'} = $start;
   $self->{'seq_region_end'}   = $end;
-  
+
   return $self;
 }
 
 sub new_fast{
   my $caller = shift;
-  
+
   #allow constructor to be called as class or object method
   my $class = ref($caller) || $caller;
-  
+
   my $self = $class->SUPER::new(@_);
 
   return $self;
@@ -168,6 +164,19 @@ sub density_value {
 }
 
 
+
+=head2 analysis
+
+  Arg [1]    : (optional) Bio::EnsEMBL::Analysis $analysis
+               New value for the analysis of the attached DensityType
+  Example    : print $df->analysis()->logic_name();
+  Description: Overridden superclass analysis method, to chain to analysis
+               method on attached DensityType.
+  Returntype : Bio::EnsEMBL::Analysis
+  Exceptions : none
+  Caller     : general
+
+=cut
 
 sub analysis {
   my $self = shift;
