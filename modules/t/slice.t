@@ -5,7 +5,7 @@ use lib 't';
 
 BEGIN { $| = 1;
 	use Test;
-	plan tests => 45;
+	plan tests => 47;
 }
 
 use TestUtils qw( debug );
@@ -48,6 +48,54 @@ ok($slice->adaptor == $slice_adaptor);
 #TEST - Slice::new
 #
 my $coord_system = $csa->fetch_by_name('chromosome');
+
+
+my $test_seq = 'ATGCATGCATGCATGCATGCATGC';
+my $test_slice = new Bio::EnsEMBL::Slice
+  (-seq_region_name  => 'misc',
+   -seq_region_length => 24,
+   -start            => 1,
+   -end              => 24,
+   -strand           => 1,
+   -coord_system     => $coord_system,
+   -seq              => $test_seq,
+   );
+
+
+
+
+ok($test_slice->length == 24);
+
+my $hash = $test_slice->get_base_count;
+my $a = $hash->{'a'};
+my $c = $hash->{'c'};
+my $t = $hash->{'t'};
+my $g = $hash->{'g'};
+my $n = $hash->{'n'};
+my $gc_content = $hash->{'%gc'};
+
+ok($a == 6
+   && $c == 6 
+   && $t == 6 
+   && $g == 6 
+   && $n == 0 
+   && $gc_content == 50 
+   && $a+$c+$t+$g+$n == $test_slice->length);
+
+
+#
+# test that subseq works correctly with attached sequence
+#
+
+my $subseq = $test_slice->subseq(2, 6);
+
+debug("subseq = $subseq");
+ok($subseq eq 'TGCAT');
+
+$subseq = $test_slice->subseq(2,6,-1);
+ok($subseq eq 'ATGCA');
+debug("subseq = $subseq");
+
 
 $slice = new Bio::EnsEMBL::Slice
   (-seq_region_name   => $CHR,
@@ -255,13 +303,13 @@ ok(scalar @{$slice->project('seqlevel')});
 #
 # get_base_count
 #
-my $hash = $slice->get_base_count;
-my $a = $hash->{'a'};
-my $c = $hash->{'c'};
-my $t = $hash->{'t'};
-my $g = $hash->{'g'};
-my $n = $hash->{'n'};
-my $gc_content = $hash->{'%gc'};
+$hash = $slice->get_base_count;
+$a = $hash->{'a'};
+$c = $hash->{'c'};
+$t = $hash->{'t'};
+$g = $hash->{'g'};
+$n = $hash->{'n'};
+$gc_content = $hash->{'%gc'};
 
 debug( "Base count: a=$a c=$c t=$t g=$g n=$n \%gc=$gc_content");
 ok($a == 234371 
@@ -272,38 +320,3 @@ ok($a == 234371
    && $gc_content == 48.59 
    && $a+$c+$t+$g+$n == $slice->length);
 
-my $test_seq = 'ATGCATGCATGCATGCATGCATGC';
-my $test_slice = new Bio::EnsEMBL::Slice
-  (-seq_region_name  => 'misc',
-   -seq_region_length => 24,
-   -start            => 1,
-   -end              => 24,
-   -strand           => 1,
-   -coord_system     => $coord_system,
-   -seq              => $test_seq,
-   );
-
-
-
-
-
-
-ok($test_slice->length == 24);
-
-$hash = $test_slice->get_base_count;
-$a = $hash->{'a'};
-$c = $hash->{'c'};
-$t = $hash->{'t'};
-$g = $hash->{'g'};
-$n = $hash->{'n'};
-$gc_content = $hash->{'%gc'};
-
-
-
-ok($a == 6
-   && $c == 6 
-   && $t == 6 
-   && $g == 6 
-   && $n == 0 
-   && $gc_content == 50 
-   && $a+$c+$t+$g+$n == $test_slice->length);
