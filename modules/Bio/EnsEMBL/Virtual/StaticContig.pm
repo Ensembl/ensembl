@@ -1392,7 +1392,6 @@ sub get_all_ExternalFeatures{
    ## Note that they should always return lists (possible empty) or bad things happen.
    
     foreach my $extf ( $self->dbobj->_each_ExternalFeatureFactory ) {
-	   print STDERR "EXTFEATFACT: $extf\n";
     
         if( $extf->isa('Bio::EnsEMBL::DB::WebExternalFeatureFactoryI') ) {
 	        push(@web,$extf);
