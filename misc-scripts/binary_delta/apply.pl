@@ -126,15 +126,20 @@ foreach my $info_file (glob($delta_dir . '/*.info')) {
 	warn "\tStrange patch command: $patch_command\n";
     }
 
-    if ($v2_sum ne '(none)' && $v2_sum ne make_checksum($v2_file)) {
-	print "\tChecksum mismatch for new file\n";
-	print "\tCan not continue\n";
-	die;
-    } elsif ($v2_sum ne '(none)' && $v2_size != (stat $v2_file)[7]) {
-	print "\tSize mismatch for new file\n";
-	print "\tCan not continue\n";
-	die;
+    if ($v2_file !~ /\.gz$/) {
+	if ($v2_sum ne '(none)' && $v2_sum ne make_checksum($v2_file)) {
+	    print "\tChecksum mismatch for new file\n";
+	    print "\tCan not continue\n";
+	    die;
+    	} elsif ($v2_sum ne '(none)' && $v2_size != (stat $v2_file)[7]) {
+	    print "\tSize mismatch for new file\n";
+	    print "\tCan not continue\n";
+	    die;
+    	} else {
+	    print "\tChecksum and size ok for new file\n";
+    	}
     } else {
-	print "\tChecksum and size ok for new file\n";
+	print "\tNew file is compressed (*.gz), " .
+	    "will not verify checksum/size\n";
     }
 }
