@@ -4,8 +4,9 @@ use warnings;
 
 package InterimExon;
 
-use StatMsg;
+use Bio::EnsEMBL::Utils::Exception qw(info);
 
+use StatMsg;
 
 #
 # errors which are fatal for exons
@@ -35,11 +36,12 @@ sub is_fatal {
 
   foreach my $msg (@{$self->get_all_StatMsgs}) {
     foreach my $code (@FATAL) {
-      if(($msg & $code) == $code) {
-        print "Fatal: ", StatMsg::code2str($code), "\n";
-	return 1;
+      if(($msg->code() & $code) == $code) {
+        info("Code is Fatal: ". StatMsg::code2str($msg->code()));
+        return 1;
       }
     }
+    info("Code is NON fatal=". StatMsg::code2str($msg->code()));
   }
 
   return 0;
