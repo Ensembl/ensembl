@@ -11,8 +11,7 @@ package SeqStoreConverter::BasicConverter;
 ###############################################################################
 
 sub new {
-  my ( $class, $user, $pass, $host, $source, $target, $schema, $force, 
-       $verbose, $limit ) = @_;
+  my ( $class, $user, $pass, $host, $source, $target, $schema, $vega_schema, $force, $verbose, $limit ) = @_;
 
   my $self = bless {}, $class;
 
@@ -30,6 +29,7 @@ sub new {
   $self->source( $source );
   $self->target( $target );
   $self->schema( $schema );
+  $self->vegaschema( $vega_schema);
   $self->host( $host );
   $self->password( $pass);
   $self->user($user);
@@ -58,6 +58,13 @@ sub new {
   my $cmd = "mysql -u $user -p$pass -P $port -h $host $target < $schema";
   system ($cmd);
 
+  if ($vega_schema) {
+
+	  $self->debug("Adding vega tables for $target");
+	  die "Cannot open vega creation script" if (! -e $vega_schema);
+	  my $cmd = "mysql -u $user -p$pass -P $port -h $host $target < $vega_schema";
+	  system ($cmd);
+  }
 
   $self->debug("Creating temporary tables");
   #create a temporary table to store the mapping of old ids to new ids
@@ -133,6 +140,11 @@ sub schema {
   return $self->{'schema'};
 }
 
+sub vegaschema {
+  my $self = shift;
+  $self->{'vega_schema'} = shift if (@_);
+  return $self->{'vega_schema'};
+}
 
 sub source {
   my $self = shift;
