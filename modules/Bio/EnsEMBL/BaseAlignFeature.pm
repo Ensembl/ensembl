@@ -410,6 +410,7 @@ sub _parse_cigar {
          -START      => $qstart,
          -END        => $qend,
          -STRAND     => $strand1,
+         -HSLICE      => $self->{'hslice'},
          -HSEQNAME   => $self->{'hseqname'},
          -HSTART     => $hstart,
          -HEND       => $hend,
@@ -493,6 +494,7 @@ sub _parse_features {
 
   my $hstrand     = $f[0]->hstrand;
   my $slice       = $f[0]->slice();
+  my $hslice       = $f[0]->hslice();
   my $name        = $slice->name() if($slice);
   my $hname       = $f[0]->hseqname;
   my $score       = $f[0]->score;
@@ -737,6 +739,7 @@ sub _parse_features {
   $self->{'percent_id'} = $percent;
   $self->{'analysis'}   = $analysis;
   $self->{'slice'}      = $slice;
+  $self->{'hslice'}     = $hslice;
   $self->{'hstart'}     = $f2start;
   $self->{'hend'}       = $f2end;
   $self->{'hstrand'}    = $hstrand;
