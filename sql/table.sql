@@ -1009,9 +1009,9 @@ CREATE TABLE peptide_archive (
 CREATE TABLE seq_region (
 
   seq_region_id               INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                        VARCHAR(40),
-  coord_system_id             INT(10),
-  length                      INT(10),
+  name                        VARCHAR(40) NOT NULL,
+  coord_system_id             INT(10) NOT NULL,
+  length                      INT(10) NOT NULL,
 
   UNIQUE(coord_system_id, name),
   PRIMARY KEY (seq_region_id)
