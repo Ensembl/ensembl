@@ -87,7 +87,7 @@ sub _initialize {
 sub addFeaturePair {
     my ($self,$pair) = @_;
 
-    $self->throw("Not a Bio::SeqFeature::FeaturePair object") unless ($pair->isa("Bio::SeqFeature::FeaturePair"));
+    $self->throw("Not a Bio::EnsEMBL::FeaturePair object") unless ($pair->isa("Bio::EnsEMBL::FeaturePair"));
 
     push(@{$self->{'_pairs'}},$pair);
     

@@ -181,7 +181,7 @@ sub _read_Homol {
 						);
 	$sf1->start_frac(1);
 	$sf1->end_frac  (3);
-	
+
     } else {
 	$sf1 = new Bio::EnsEMBL::SeqFeature(-start  => $qstart,
 					    -end    => $qend,

@@ -127,7 +127,7 @@ sub read_Similarities {
 		    $self->read_MSP($mspfile,$genpep,$msp);
 		};
 		if ($@) {
-		    $self->warn("Error reading MSPFile $mspfile\n");
+		    $self->warn("Error reading MSPFile $mspfile [$@]\n");
 		}
 		
 	    } elsif ($msp->[5] eq 'pfam'){
@@ -135,7 +135,7 @@ sub read_Similarities {
 		    $self->read_Pfam($pfamfile,$genpep,$msp);
 		};
 		if ($@) {
-		    $self->warn("Error reading Pfam file\n");
+		    $self->warn("Error reading Pfam file [$@]\n");
 		}
 
 	    } elsif ($msp->[5] eq 'gff'){
@@ -565,6 +565,7 @@ sub read_MSP {
 
 	if ($type1 eq "PEP") {
 	    if ($type2 eq "DNA") {
+#		print("Homol is $homol " . $homol->feature1 . "\t" . $homol->feature2 . "\n");
 		$genpep->add_dnaHit($homol);
 	    } elsif ($type2 eq "PEP") {
 		$genpep->add_pepHit($homol);

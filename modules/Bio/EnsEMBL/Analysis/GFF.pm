@@ -46,6 +46,8 @@ use strict;
 use Bio::Root::Object;
 use Bio::SeqFeature::Generic;
 use Bio::EnsEMBL::Repeat;
+use Bio::EnsEMBL::Analysis;
+
 use FileHandle;
 
 use Bio::EnsEMBL::FeaturePair;
@@ -218,7 +220,7 @@ sub _parse_line {
     if ($attrib[0] eq "Target" && $feature eq "similarity") {
 	$f = $self->_parse_attrib($f,$feature,@attrib);
     }
-    
+
     return $f;
 }
 
@@ -321,7 +323,7 @@ sub _make_analysis {
     
     my $test    = Bio::EnsEMBL::Analysis::MSPType->each_MSPType;
     my $MSPType = Bio::EnsEMBL::Analysis::MSPType->extension2MSPType($ext);
-    my $anal    = new Bio::EnsEMBL::Analysis::Analysis;
+    my $anal    = new Bio::EnsEMBL::Analysis;
     
     $anal->db             ($MSPType->[2]);
     $anal->db_version     ($MSPType->[6]);

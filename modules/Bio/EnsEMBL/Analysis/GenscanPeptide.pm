@@ -152,11 +152,13 @@ sub _make_pepAlign {
 								 -strand => 1);
 
 	# Create the peptide homol
-	my $peph  = new Bio::EnsEMBL::Pep_SeqFeature(-start  => $pepstart,
-						     -end    => $pepend,
-						     -strand => $orient,
+	my $peph  = new Bio::EnsEMBL::Pep_SeqFeature(-start      => $pepstart,
+						     -end        => $pepend,
+						     -strand     => $orient,
 						     -start_frac => $pep_startphase,
 						     -end_frac   => $pep_endphase);
+	$peph->start_frac($pep_startphase);
+	$peph->end_frac  ($pep_endphase);
 	
 	# Add the peptide homol to the dna homol
 	my $pair = new Bio::EnsEMBL::FeaturePair(-feature1 => $dnah,
@@ -201,6 +203,8 @@ sub _find_coord {
     my $pepend;
     my $pep_endphase;
     
+#    print("Phase is " . $ex->phase . "\n");
+
     if ($prev == 0) {
 	$pepstart = 1;
 	$pep_startphase = $ex->phase + 1;
@@ -226,6 +230,7 @@ sub _find_coord {
     
     $pepend    = $nopep + $pepstart -1;
     
+#    print("phases $pep_startphase $pep_endphase\n");
     return ($pepstart,$pep_startphase,$pepend,$pep_endphase);
 }
 
@@ -363,6 +368,7 @@ sub each_Homol {
     }
 
     foreach my $dna (@{$self->{_dnaHits}}) {
+#	print("dna hit1 "  . $dna->feature1 . "\t" . $dna->feature2 . "\n");
 	my @newh = $self->_dnaHit2homol($dna);
 	push(@homols,@newh);
     }
@@ -537,7 +543,8 @@ sub _make_dna_homol {
 sub _dnaHit2homol {
     my ($self,$dnahit) = @_;
     my $debug = 0;
-
+#    print("dna hit2 "  . $dnahit->feature1 . "\t" . $dnahit->feature2 . "\n");
+#    print("DNAhit1 " . $dnahit->feature1->end_frac . "\n");
     my $pepaln  = $self->{_pepaln};
     my $pairaln = new Bio::EnsEMBL::Analysis::PepAlign;
 
@@ -562,13 +569,16 @@ sub _dnaHit2homol {
     $dnahit->invert;
 #    $dnahit = Bio::EnsEMBL::Analysis::MSPcrunch->swaphomols($dnahit);
     $pairaln->addFeaturePair($dnahit);
+#    print("DNAhit " . $dnahit->feature2->end_frac . "\n");
+
 
     my @pep     = $pepaln->eachFeaturePair;
     my @homols;
+
     
     foreach my $dna_homol ($pairaln->eachFeaturePair) {
 	my $pep_homol = $dna_homol->feature2;
-
+#	print("PEphomol $pep_homol\n");
 	# We now need to loop over each pepaln exon to see which
 	# ones the homol overlaps
 
@@ -576,7 +586,7 @@ sub _dnaHit2homol {
 	while (my $gen_exon = shift @pep) {
 	    
 	    my $pep_exon= $gen_exon->feature2;
-
+#	    print("pepexon $pep_exon");
 	    if( $debug == 1 ) {
 		print STDOUT "Debug: Before start: looking at exon in peptide coordinates of ",$pep_exon->start," to ",$pep_exon->end," dna ",$gen_exon->start," to ",$gen_exon->end,"\n";
 	    }
@@ -693,8 +703,8 @@ sub _dnaHit2homol {
 sub add_pepHit {
     my ($self,$pephit) = @_;
 
-    $self->throw("Argument to GenscanPeptide->add_pepHit must be Bio::SeqFeature::FeaturePair") 
-	unless $pephit->isa("Bio::SeqFeature::FeaturePair");
+    $self->throw("Argument to GenscanPeptide->add_pepHit must be Bio::EnsEMBL::FeaturePair") 
+	unless $pephit->isa("Bio::EnsEMBL::FeaturePair");
 
     push(@{$self->{_pepHits}},$pephit);
     
@@ -713,9 +723,9 @@ sub add_pepHit {
 sub add_dnaHit {
     my ($self,$dnahit) = @_;
 
-    $self->throw("Argument to GenscanPeptide->add_dnaHit must be Bio::SeqFeature::FeaturePair") 
-	unless $dnahit->isa("Bio::SeqFeature::FeaturePair");
-
+    $self->throw("Argument to GenscanPeptide->add_dnaHit must be Bio::EnsEMBL::FeaturePair") 
+	unless $dnahit->isa("Bio::EnsEMBL::FeaturePair");
+    
     push(@{$self->{_dnaHits}},$dnahit);
 }
 
