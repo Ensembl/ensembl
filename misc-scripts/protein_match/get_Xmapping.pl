@@ -41,7 +41,7 @@ my %sp_db;
 my %hugo_id;
 my %hugo_syn;
 
-open (OUT,">$out") || die "Can't open $out\n";;
+open (OUT,">$out") || die "Can't open $out\n";
 
 #First read the SPTR file in swiss format
 print STDERR "Reading SPTR file\n";
