@@ -774,7 +774,7 @@ sub get_all_DAS_Features{
 
   my $db = $self->adaptor->db;
   my $GeneAdaptor = $db->get_GeneAdaptor;
-  my $Gene = $GeneAdaptor->fetch_by_translation_stable_id($self->stable_id);	
+  my $Gene = $GeneAdaptor->fetch_by_translation_stable_id($self->stable_id) || return ;	
   my $slice = $Gene->feature_Slice;
 
   foreach my $dasfact( @{$self->get_all_DASFactories} ){
